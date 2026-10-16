@@ -72,8 +72,8 @@
   <ItemGroup>
     <None Include="Info.json" CopyToOutputDirectory="PreserveNewest" />
     <!-- Keep repository docs out of the compile/copy graph. -->
-    <Compile Remove="bin\**;obj\**;dist\**;References\**" />
-    <None Remove="bin\**;obj\**;dist\**;References\**" />
+    <Compile Remove="bin\**;obj\**;dist\**;References\**;tools\**;release\**" />
+    <None Remove="bin\**;obj\**;dist\**;References\**;tools\**;release\**" />
   </ItemGroup>
 
   <Target Name="CheckGameReferences" BeforeTargets="ResolveAssemblyReferences">

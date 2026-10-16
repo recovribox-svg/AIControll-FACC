@@ -17,9 +17,16 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Build Command
 ```powershell
-dotnet build CompanionAI_Pathfinder.csproj -c Release
+.\Build.ps1 [-GamePath "<...\Pathfinder Second Adventure>"] [-Deploy]
+# or: dotnet build CompanionAI_Pathfinder.csproj -c Release -p:GamePath="<game folder>"
 ```
-Output deploys directly to: `C:\Program Files (x86)\Steam\steamapps\common\Pathfinder Second Adventure\Mods\CompanionAI_Pathfinder\`
+Output: `bin\Release\` and `dist\CompanionAI_Pathfinder_v<version>.zip`. `-Deploy` / `-p:DeployToGame=true` copies to `<game>\Mods\CompanionAI_Pathfinder\`.
+
+## Turn-based command rule (v0.2.119)
+Issue every unit command through `GameInterface/CommandDispatcher.Run`. In turn-based combat the game's
+`UnitCommand.TickApproaching` only follows `ForcedPath` (else the mouse-cursor prediction path, else interrupt);
+the dispatcher computes it like native AI (`AiAction.ScorePath`). Never write `TurnController.Status`.
+See `docs/INVESTIGATION.md`.
 
 ## Architecture
 
