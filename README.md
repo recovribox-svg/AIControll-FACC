@@ -12,7 +12,7 @@ following the mouse cursor. The root cause and evidence are in [docs/INVESTIGATI
 ## Install (players)
 
 1. Install [Unity Mod Manager](https://www.nexusmods.com/site/mods/21) into the game.
-2. Take `CompanionAI_Pathfinder_v0.2.119.zip` (built as described below, found in `dist\`).
+2. Take `CompanionAI_Pathfinder_v0.2.119.zip` - prebuilt in `release\`, or build it yourself (below; output in `dist\`).
 3. Install it either way:
    - Unity Mod Manager → *Mods* tab → drag the ZIP onto the window / *Install Mod*, **or**
    - extract it to `<game>\Mods\CompanionAI_Pathfinder\` so the folder contains
