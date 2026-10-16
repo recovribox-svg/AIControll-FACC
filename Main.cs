@@ -68,6 +68,9 @@ namespace CompanionAI_Pathfinder
                 // v0.2.2: 전투 이벤트 핸들러 구독
                 CombatEventHandler.Subscribe();
 
+                // ★ v0.2.119: log the outcome of every command the mod issues (movement diagnostics)
+                CommandTrace.Subscribe();
+
                 // ★ v0.2.38: Pre-Buff Controller 초기화
                 PreBuffController.Initialize();
 
@@ -309,11 +312,13 @@ namespace CompanionAI_Pathfinder
             {
                 Log("CompanionAI 활성화됨");
                 CombatEventHandler.Subscribe();
+                CommandTrace.Subscribe();
             }
             else
             {
                 Log("CompanionAI 비활성화됨");
                 CombatEventHandler.Unsubscribe();
+                CommandTrace.Unsubscribe();
             }
 
             return true;

@@ -148,12 +148,7 @@ namespace CompanionAI_Pathfinder.Execution
                 string riderName = currentTurn?.Rider?.CharacterName ?? "null";
                 string turnStatus = currentTurn?.Status.ToString() ?? "null";
 
-                Main.Log($"[Executor] PRE-RUN: {unit.CharacterName}");
-                Main.Log($"[Executor]   IsCurrentUnit={isCurrentUnit}, Rider={riderName}, Status={turnStatus}");
-
-                // ★ v0.2.82: 발행 전 상태 확인
-                bool wasEmpty = unit.Commands.Empty;
-                bool wasHasUnfinished = unit.Commands.HasUnfinished();
+                Main.Verbose($"[Executor] PRE-RUN: {unit.CharacterName} IsCurrentUnit={isCurrentUnit}, Rider={riderName}, Status={turnStatus}");
 
                 // Pathfinder 명령 시스템으로 실행
                 var command = new UnitUseAbility(ability, target);
@@ -174,31 +169,12 @@ namespace CompanionAI_Pathfinder.Execution
                     unit.CombatState.AIData.NextCommandTime = UnityEngine.Time.time + 0.3f + UnityEngine.Random.Range(0f, 0.1f);
                 }
 
-                unit.Commands.Run(command);
-
-                // ★ v0.2.89: 상세 명령 상태 로깅
-                bool isInRunningCommands = currentTurn?.IsRunningCommand(command) ?? false;
-                Main.Log($"[Executor] POST-RUN: Empty={unit.Commands.Empty}, HasUnfinished={unit.Commands.HasUnfinished()}, InRunning={isInRunningCommands}");
-                Main.Log($"[Executor]   Command: Started={command.IsStarted}, Running={command.IsRunning}, Finished={command.IsFinished}, Acted={command.IsActed}");
-
-                // ★ v0.2.89: 슬롯 상태 로깅
-                int slotIdx = 0;
-                foreach (var cmd in unit.Commands.Raw)
+                // ★ v0.2.119: CommandDispatcher attaches a game-computed ForcedPath in turn-based combat
+                // (required by UnitCommand.TickApproaching) and verifies the command actually occupies a slot.
+                if (!GameInterface.CommandDispatcher.Run(unit, command, $"{ability.Name} -> {GetTargetName(target)}", out string failure))
                 {
-                    if (cmd != null)
-                    {
-                        bool isSameCmd = ReferenceEquals(cmd, command);
-                        Main.Log($"[Executor]   Slot[{slotIdx}]: {cmd.GetType().Name} (Started={cmd.IsStarted}, Finished={cmd.IsFinished}) {(isSameCmd ? "← OUR CMD" : "")}");
-                    }
-                    slotIdx++;
-                }
-
-                // ★ v0.2.82: 명령이 실제로 등록됐는지 검증
-                if (unit.Commands.Empty && wasEmpty)
-                {
-                    Main.Log($"[Executor] Command NOT registered: {ability.Name} -> {GetTargetName(target)}");
-                    Main.Log($"[Executor] Possible cause: CanRunCommand() returned false (CantUseStandardActions or not conscious)");
-                    return ExecutionResult.Failure($"Command not registered: {ability.Name}");
+                    Main.Log($"[Executor] Command NOT issued: {ability.Name} -> {GetTargetName(target)} ({failure})");
+                    return ExecutionResult.Failure($"Command not issued: {ability.Name} ({failure})");
                 }
 
                 Main.Log($"[Executor] Cast: {ability.Name} -> {GetTargetName(target)} (Command registered)");
@@ -226,7 +202,10 @@ namespace CompanionAI_Pathfinder.Execution
 
                 var primaryTarget = targets[0];
                 var command = new UnitUseAbility(ability, primaryTarget);
-                unit.Commands.Run(command);
+                if (!GameInterface.CommandDispatcher.Run(unit, command, $"{ability.Name} (multi)", out string failure))
+                {
+                    return ExecutionResult.Failure($"Multi-target cast not issued: {failure}");
+                }
 
                 Main.Log($"[Executor] Cast MultiTarget: {ability.Name} ({targets.Count} targets)");
                 return ExecutionResult.CastAbilityMultiTarget(ability, targets);
@@ -247,21 +226,15 @@ namespace CompanionAI_Pathfinder.Execution
         {
             try
             {
-                bool wasEmpty = unit.Commands.Empty;
-
                 var command = new UnitAttack(target);
 
                 // ★ v0.2.92: NextCommandTime 설정 (게임 AI와 동일)
                 unit.CombatState.AIData.NextCommandTime = UnityEngine.Time.time + 0.3f + UnityEngine.Random.Range(0f, 0.1f);
 
-                unit.Commands.Run(command);
-
-                // ★ v0.2.82: 명령 등록 검증
-                if (unit.Commands.Empty && wasEmpty)
+                if (!GameInterface.CommandDispatcher.Run(unit, command, $"BasicAttack -> {target.CharacterName}", out string failure))
                 {
-                    string targetName = target.CharacterName;
-                    Main.Log($"[Executor] BasicAttack NOT registered: {unit.CharacterName} -> {targetName}");
-                    return ExecutionResult.Failure($"BasicAttack not registered");
+                    Main.Log($"[Executor] BasicAttack NOT issued: {unit.CharacterName} -> {target.CharacterName} ({failure})");
+                    return ExecutionResult.Failure($"BasicAttack not issued ({failure})");
                 }
 
                 Main.Log($"[Executor] BasicAttack: {unit.CharacterName} -> {target.CharacterName} (Command registered)");
@@ -298,24 +271,20 @@ namespace CompanionAI_Pathfinder.Execution
                     return ExecutionResult.Failure("Move target invalid: not walkable or occupied");
                 }
 
-                bool wasEmpty = unit.Commands.Empty;
-
-                // ★ v0.2.93: 첫 번째 생성자 사용 (MaxApproachRadius=1000000f)
+                // ★ v0.2.93: 첫 번째 생성자 사용 (ApproachRadius = 기본값 0.3m)
                 // approachRadius=0f는 정확히 목적지에 도달해야 해서 IsUnitCloseEnough()=false 발생
-                // 첫 번째 생성자는 ApproachRadius를 설정하지 않아 MaxApproachRadius만 적용됨
                 var command = new UnitMoveTo(destination);
 
                 // ★ v0.2.92: NextCommandTime 설정 (게임 AI와 동일)
                 // Move 명령은 Standard가 아니므로 짧은 지연
                 unit.CombatState.AIData.NextCommandTime = UnityEngine.Time.time + 0.1f;
 
-                unit.Commands.Run(command);
-
-                // ★ v0.2.82: 명령 등록 검증
-                if (unit.Commands.Empty && wasEmpty)
+                // ★ v0.2.119: In turn-based combat UnitMoveTo only moves along ForcedPath (else it follows the
+                // mouse-hover prediction path or is interrupted). CommandDispatcher computes it like native AI.
+                if (!GameInterface.CommandDispatcher.Run(unit, command, $"Move ({destination.x:F1},{destination.z:F1})", out string failure))
                 {
-                    Main.Log($"[Executor] Move NOT registered: ({destination.x:F1}, {destination.z:F1})");
-                    return ExecutionResult.Failure("Move command not registered");
+                    Main.Log($"[Executor] Move NOT issued: ({destination.x:F1}, {destination.z:F1}) - {failure}");
+                    return ExecutionResult.Failure($"Move command not issued ({failure})");
                 }
 
                 Main.Log($"[Executor] Move to: ({destination.x:F1}, {destination.z:F1}) (Command registered)");

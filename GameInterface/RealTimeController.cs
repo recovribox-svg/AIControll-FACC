@@ -232,8 +232,11 @@ namespace CompanionAI_Pathfinder.GameInterface
                     {
                         if (cmd == null || cmd.IsFinished) continue;
 
-                        // Started=False인 명령이 있으면 stuck 가능성
-                        if (!cmd.IsStarted)
+                        // ★ v0.2.119: Started=False alone is NOT "stuck". UnitCommandController.ShouldStartCommand
+                        // starts UnitMoveTo / melee attacks only once IsUnitCloseEnough() is true, i.e. on arrival,
+                        // and commands legitimately wait for a real-time action cooldown. Interrupting every
+                        // not-started command cancelled all walks longer than one decision interval.
+                        if (!cmd.IsStarted && IsCommandStuck(unit, cmd))
                         {
                             hasStuckCommand = true;
                             stuckCommand = cmd;
@@ -380,6 +383,32 @@ namespace CompanionAI_Pathfinder.GameInterface
 
         #endregion
 
+        /// <summary>Seconds a not-started command may sit without the unit moving before it is treated as stuck.</summary>
+        private const float STUCK_COMMAND_SECONDS = 3f;
+
+        /// <summary>
+        /// ★ v0.2.119: A not-started command is stuck only if the unit is not walking towards it, it is not waiting
+        /// for a real-time action cooldown, and it has been pending for a while.
+        /// </summary>
+        private static bool IsCommandStuck(UnitEntityData unit, UnitCommand cmd)
+        {
+            try
+            {
+                if (unit.View != null && unit.View.IsMoving())
+                    return false;
+
+                if (!cmd.IsIgnoreCooldown && unit.CombatState != null && unit.CombatState.HasCooldownForCommand(cmd))
+                    return false;
+
+                var now = Kingmaker.Game.Instance.TimeController.GameTime;
+                return (now - cmd.ApproachStartTime).TotalSeconds > STUCK_COMMAND_SECONDS;
+            }
+            catch
+            {
+                return false;
+            }
+        }
+
         /// <summary>
         /// ★ v0.2.54: 행동 불가 상태 체크 (통합)
         /// </summary>
@@ -519,7 +548,7 @@ namespace CompanionAI_Pathfinder.GameInterface
             try
             {
                 var command = new UnitUseAbility(action.Ability, targetWrapper);
-                unit.Commands.Run(command);
+                CommandDispatcher.Run(unit, command, "RT ExecuteAbilityAction");
 
                 // ★ v0.2.46: 명령이 실제로 큐에 들어갔는지 확인
                 // 명령이 바로 취소되면 Commands.Empty가 true 상태 유지
@@ -561,7 +590,7 @@ namespace CompanionAI_Pathfinder.GameInterface
             try
             {
                 var command = new UnitAttack(target);
-                unit.Commands.Run(command);
+                CommandDispatcher.Run(unit, command, "RT ExecuteBasicAttack");
                 SetNextCommandTime(unit, command);
 
                 Main.Log($"[RT] ★ {unitName} -> {targetName}: BasicAttack");
@@ -599,8 +628,9 @@ namespace CompanionAI_Pathfinder.GameInterface
                     return;
                 }
 
-                var command = new UnitMoveTo(destination, 0f);
-                unit.Commands.Run(command);
+                // ★ v0.2.119: default ApproachRadius (0.3m); 0f never satisfies IsUnitCloseEnough(), so the move never completed
+                var command = new UnitMoveTo(destination);
+                CommandDispatcher.Run(unit, command, "RT ExecuteMoveAction");
                 SetNextCommandTime(unit, command);
 
                 Main.Log($"[RT] -> {unitName}: Move ({reason})");
@@ -916,7 +946,7 @@ namespace CompanionAI_Pathfinder.GameInterface
                 try
                 {
                     var command = new UnitUseAbility(heal, targetWrapper);
-                    unit.Commands.Run(command);
+                    CommandDispatcher.Run(unit, command, "RT TryUseHealAbility");
                     SetNextCommandTime(unit, command);  // v0.2.21
                     _healCount++;
                     Main.Log($"[RT] * {unitName} -> {targetName} Heal ({heal.Name}) #{_healCount}");
@@ -964,7 +994,7 @@ namespace CompanionAI_Pathfinder.GameInterface
                     try
                     {
                         var command = new UnitUseAbility(buff, selfTarget);
-                        unit.Commands.Run(command);
+                        CommandDispatcher.Run(unit, command, "RT TryUseBuffAbility");
                         SetNextCommandTime(unit, command);  // v0.2.21
                         _buffCount++;
                         Main.Log($"[RT] * {unitName} Buff ({buff.Name}) #{_buffCount}");
@@ -997,7 +1027,7 @@ namespace CompanionAI_Pathfinder.GameInterface
                             try
                             {
                                 var command = new UnitUseAbility(buff, allyTarget);
-                                unit.Commands.Run(command);
+                                CommandDispatcher.Run(unit, command, "RT TryUseBuffAbility");
                                 SetNextCommandTime(unit, command);  // v0.2.21
                                 _buffCount++;
                                 string allyName = ally.Descriptor?.CharacterName ?? "Unknown";
@@ -1092,7 +1122,7 @@ namespace CompanionAI_Pathfinder.GameInterface
             {
                 string targetName = bestTarget.Descriptor?.CharacterName ?? "Unknown";
                 var command = new UnitUseAbility(bestDebuff, new TargetWrapper(bestTarget));
-                unit.Commands.Run(command);
+                CommandDispatcher.Run(unit, command, "RT TryUseDebuffAbility");
                 SetNextCommandTime(unit, command);  // v0.2.21
                 _debuffCount++;
                 RecordAbilityUse(unit, bestDebuff);
@@ -1202,7 +1232,7 @@ namespace CompanionAI_Pathfinder.GameInterface
                     string unitName = unit.Descriptor?.CharacterName ?? "Unknown";
                     string targetName = target.Descriptor?.CharacterName ?? "Unknown";
                     var command = new UnitUseAbility(attack, targetWrapper);
-                    unit.Commands.Run(command);
+                    CommandDispatcher.Run(unit, command, "RT TryRangedAttack");
                     SetNextCommandTime(unit, command);  // v0.2.21
                     _attackCount++;
 
@@ -1284,7 +1314,7 @@ namespace CompanionAI_Pathfinder.GameInterface
                 try
                 {
                     var command = new UnitUseAbility(bestAbility, targetWrapper);
-                    unit.Commands.Run(command);
+                    CommandDispatcher.Run(unit, command, "RT TryAbilityAttack");
                     SetNextCommandTime(unit, command);  // v0.2.21
                     _attackCount++;
 
@@ -1393,7 +1423,7 @@ namespace CompanionAI_Pathfinder.GameInterface
             try
             {
                 var attackCommand = new UnitAttack(enemy);
-                unit.Commands.Run(attackCommand);
+                CommandDispatcher.Run(unit, attackCommand, "RT TryAttackEnemy");
                 SetNextCommandTime(unit, attackCommand);  // v0.2.21
                 _attackCount++;
                 Main.Log($"[RT] * {unitName} -> {enemyName} Attack #{_attackCount}");
@@ -1423,8 +1453,9 @@ namespace CompanionAI_Pathfinder.GameInterface
                 var direction = (enemy.Position - unit.Position).normalized;
                 var targetPos = unit.Position + direction * 3f;
 
-                var moveCommand = new UnitMoveTo(targetPos, 0f);
-                unit.Commands.Run(moveCommand);
+                // ★ v0.2.119: default ApproachRadius (0.3m); 0f never satisfies IsUnitCloseEnough(), so the move never completed
+                var moveCommand = new UnitMoveTo(targetPos);
+                CommandDispatcher.Run(unit, moveCommand, "RT TryMoveTowardsEnemy");
                 SetNextCommandTime(unit, moveCommand);  // v0.2.21
                 _moveCount++;
                 Main.Verbose($"[RT] -> {unitName} moving to {enemyName} #{_moveCount}");
@@ -1450,8 +1481,9 @@ namespace CompanionAI_Pathfinder.GameInterface
                 var direction = (unit.Position - enemy.Position).normalized;
                 var targetPos = unit.Position + direction * RETREAT_DISTANCE;
 
-                var moveCommand = new UnitMoveTo(targetPos, 0f);
-                unit.Commands.Run(moveCommand);
+                // ★ v0.2.119: default ApproachRadius (0.3m); 0f never satisfies IsUnitCloseEnough(), so the move never completed
+                var moveCommand = new UnitMoveTo(targetPos);
+                CommandDispatcher.Run(unit, moveCommand, "RT TryMoveAwayFromEnemy");
                 SetNextCommandTime(unit, moveCommand);  // v0.2.21
                 _moveCount++;
                 Main.Log($"[RT] <- {unitName} retreating from {enemyName} #{_moveCount}");
@@ -1482,8 +1514,9 @@ namespace CompanionAI_Pathfinder.GameInterface
                 var direction = (enemy.Position - unit.Position).normalized;
                 var targetPos = unit.Position + direction * Mathf.Min(moveDistance, 5f);
 
-                var moveCommand = new UnitMoveTo(targetPos, 0f);
-                unit.Commands.Run(moveCommand);
+                // ★ v0.2.119: default ApproachRadius (0.3m); 0f never satisfies IsUnitCloseEnough(), so the move never completed
+                var moveCommand = new UnitMoveTo(targetPos);
+                CommandDispatcher.Run(unit, moveCommand, "RT TryMoveToOptimalRange");
                 SetNextCommandTime(unit, moveCommand);  // v0.2.21
                 _moveCount++;
                 Main.Verbose($"[RT] -> {unitName} moving to optimal range #{_moveCount}");
@@ -1958,7 +1991,7 @@ namespace CompanionAI_Pathfinder.GameInterface
             try
             {
                 var useAbilityCommand = new UnitUseAbility(nativeAbility, target);
-                unit.Commands.Run(useAbilityCommand);
+                CommandDispatcher.Run(unit, useAbilityCommand, "RT ApplyPermanentBuffsOutOfCombat");
                 SetNextCommandTime(unit, useAbilityCommand);  // v0.2.21
                 Main.Log($"[RT] ★ {unitName}: Out-of-combat permanent buff ({nativeAbility.Name})");
                 _buffCount++;

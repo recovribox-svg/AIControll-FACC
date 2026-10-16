@@ -196,7 +196,8 @@ namespace CompanionAI_Pathfinder.Settings
         private static UnityModManager.ModEntry _modEntry;
 
         // 로깅
-        public bool EnableDebugLogging { get; set; } = true;
+        // ★ v0.2.119: off by default - verbose logging writes several lines per frame in turn-based mode
+        public bool EnableDebugLogging { get; set; } = false;
         public Language UILanguage { get; set; } = Language.English;
 
         // 유닛 제어 설정

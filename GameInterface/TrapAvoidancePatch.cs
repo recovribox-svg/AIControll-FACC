@@ -60,6 +60,19 @@ namespace CompanionAI_Pathfinder.GameInterface
                 // UnitMoveTo 명령인지 확인
                 if (cmd is UnitMoveTo moveCmd)
                 {
+                    // ★ v0.2.119: Only genuine player-issued moves (ClickGroundHandler sets CreatedByPlayer).
+                    // Skip: hover/UI click simulation (TB action predictions run click handlers inside a
+                    // temporary command set on every mouse move), cutscene/mount/fear/AI-generated moves, any move
+                    // with a precomputed ForcedPath, and turn-based combat, where movement follows the predicted /
+                    // forced path and changing only the target would desync it from the path actually walked.
+                    if (!moveCmd.CreatedByPlayer || moveCmd.Cutscene || moveCmd.ForcedPath != null ||
+                        moveCmd.IsRiderCommand || moveCmd.RiderCommand != null || moveCmd.MountCommand != null)
+                        return true;
+                    if (Kingmaker.Controllers.Clicks.PointerController.SimulatingClick)
+                        return true;
+                    if (TurnBased.Controllers.CombatController.IsInTurnBasedCombat())
+                        return true;
+
                     var unit = GetOwner(__instance);
                     if (unit == null) return true;
 
@@ -84,17 +97,13 @@ namespace CompanionAI_Pathfinder.GameInterface
                     // 안전 체크
                     if (!TrapAwarenessController.CheckMovementSafety(unit, destination, out Vector3 safeDestination))
                     {
-                        // 목적지가 다르면 새 명령으로 교체
                         if (Vector3.Distance(destination, safeDestination) > 0.5f)
                         {
                             Main.Log($"[TrapPatch] {unitName}: Avoiding trap, redirecting to safe position");
 
-                            // 새 이동 명령 생성
-                            var safeMove = new UnitMoveTo(safeDestination);
-                            safeMove.MovementDelay = moveCmd.MovementDelay;
-
-                            // 원래 명령을 안전한 명령으로 교체
-                            cmd = safeMove;
+                            // ★ v0.2.119: retarget the original command instead of replacing it, so every other
+                            // property (speed/acceleration, orientation, formation flags, markers...) is preserved.
+                            moveCmd.SetTargetForce(new Kingmaker.Utility.TargetWrapper(safeDestination));
                         }
                         else
                         {

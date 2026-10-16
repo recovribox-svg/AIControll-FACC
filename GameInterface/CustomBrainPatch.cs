@@ -79,6 +79,10 @@ namespace CompanionAI_Pathfinder.GameInterface
                 }
                 else
                 {
+                    // ★ v0.2.119: respect the "Enable in Real-Time Mode" setting (native AI runs instead)
+                    if (!(ModSettings.Instance?.EnableInRealTime ?? true))
+                        return true;
+
                     // ★ 실시간 모드 - 게임 AI 완전 대체
                     float nextTime = unit.CombatState?.AIData?.NextCommandTime ?? 0f;
                     if (nextTime >= UnityEngine.Time.time)
@@ -135,6 +139,15 @@ namespace CompanionAI_Pathfinder.GameInterface
 
             // 플레이어 팩션만 제어
             if (!unit.IsPlayerFaction)
+                return false;
+
+            // ★ v0.2.119: Units the game currently drives itself (confused, panicked, PreventDirectControl, ...)
+            // are not directly controllable; their commands come from the game and must not be replaced/interrupted.
+            if (!unit.IsDirectlyControllable)
+                return false;
+
+            // ★ v0.2.119: Crusade tactical (army) combat has its own command/path pipeline.
+            if (Kingmaker.Armies.TacticalCombat.TacticalCombatHelper.IsActive)
                 return false;
 
             var settings = ModSettings.Instance;
@@ -217,12 +230,15 @@ namespace CompanionAI_Pathfinder.GameInterface
 
         /// <summary>
         /// ★ v0.2.113: TurnController.Tick() Postfix
-        /// 완전히 재작성 - TurnBasedController 사용
+        /// ★ v0.2.119: Only acts in Preparing/Acting and never writes TurnController.Status.
         ///
-        /// 핵심 원칙:
-        /// 1. Commands.Empty 체크 (RT v3.5.7과 동일)
-        /// 2. TurnBasedController.ProcessTurn() 호출
-        /// 3. 단순화된 흐름
+        /// Native state machine (TurnController.Tick, Assembly-CSharp):
+        /// - Prepare(): directly-controllable rider → Status = Preparing (waits for input).
+        /// - Tick(), Preparing: as soon as the rider's command slots are non-empty → Status = Acting.
+        ///   Commands are only ticked while Acting/Ending (UnitCommandController.TickCommandTurnBased).
+        /// - Ending/Ended/Delayed belong to the game (turn wrap-up, or the player delayed the turn).
+        /// So issuing a command in Preparing is enough; the previous reflection-based "force Acting" hack was
+        /// unnecessary and also fired in Ending/Delayed, flipping Ending back to Acting every frame.
         /// </summary>
         public static void TurnControllerTick_Postfix(TurnController __instance)
         {
@@ -236,120 +252,44 @@ namespace CompanionAI_Pathfinder.GameInterface
                 // 우리가 제어하는 유닛만
                 if (!CustomBrainPatch.ShouldControlUnit(rider)) return;
 
+                // ★ v0.2.119: respect the "Enable in Turn-Based Mode" setting
+                if (!(ModSettings.Instance?.EnableInTurnBased ?? true)) return;
+
                 // IsDirectlyControllable 유닛만 (게임이 AI를 호출하지 않는 유닛)
                 if (!rider.IsDirectlyControllable) return;
 
                 var status = __instance.Status;
+                if (status != TurnController.TurnStatus.Preparing && status != TurnController.TurnStatus.Acting)
+                {
+                    return;
+                }
+
                 string unitName = rider.Descriptor?.CharacterName ?? "Unknown";
-
-                // Scrolling 상태에서는 대기 (카메라 이동 중)
-                if (status == TurnController.TurnStatus.Scrolling)
-                {
-                    return;
-                }
-
-                // Ended 상태에서는 대기 (턴 종료됨)
-                if (status == TurnController.TurnStatus.Ended)
-                {
-                    return;
-                }
 
                 // ★ v0.2.113: TurnBasedController 호출
                 var result = TurnBasedController.Instance.ProcessTurn(rider);
 
-                // 결과 처리
-                if (result != null)
+                if (result != null && result.Type == Core.ResultType.EndTurn)
                 {
-                    if (result.Type == Core.ResultType.EndTurn)
+                    // CanEndTurn() accepts both Preparing and Acting for a directly-controllable unit.
+                    if (__instance.CanEndTurnAndNoActing())
                     {
                         Main.Log($"[TurnTick] {unitName}: EndTurn - {result.Reason}");
-
-                        // ★ Acting으로 전환 후 턴 종료 시도
-                        if (status != TurnController.TurnStatus.Acting)
-                        {
-                            ForceStatusToActing(__instance);
-                        }
-
-                        if (__instance.CanEndTurnAndNoActing())
-                        {
-                            __instance.ForceToEnd(true);
-                        }
+                        __instance.ForceToEnd(true);
                     }
-                    else if (result.Type == Core.ResultType.Waiting)
+                    else if (__instance.CanEndTurn() && !rider.Commands.Empty && !rider.Commands.IsRunning())
                     {
-                        // ★ 명령이 발행된 경우 Acting으로 전환
-                        // 이래야 명령이 tick됨
-                        if (status != TurnController.TurnStatus.Acting)
-                        {
-                            bool hasCommands = rider.Commands.HasUnfinished();
-                            if (hasCommands)
-                            {
-                                Main.Verbose($"[TurnTick] {unitName}: Commands pending - transitioning to Acting");
-                                ForceStatusToActing(__instance);
-                            }
-                        }
+                        // Leftover command that never started (e.g. after the wait timeout) would block
+                        // CanEndTurnAndNoActing() forever; clear it so the turn can end next frame.
+                        Main.Log($"[TurnTick] {unitName}: EndTurn blocked by idle command - interrupting it");
+                        rider.Commands.InterruptAll();
                     }
                 }
+                // Waiting: nothing to do - a queued command moves the turn to Acting on the game's next Tick().
             }
             catch (Exception ex)
             {
                 Main.Error($"TurnControllerTick 패치 오류: {ex.Message}\n{ex.StackTrace}");
-            }
-        }
-
-        /// <summary>
-        /// ★ v0.2.88: TurnController.Status를 Acting으로 강제 전환
-        /// ★ v0.2.90: 리플렉션 필드 접근으로 변경 (Traverse가 실패할 수 있음)
-        /// </summary>
-        private static void ForceStatusToActing(TurnController controller)
-        {
-            try
-            {
-                // 방법 1: Harmony Traverse (auto-property setter)
-                var traverse = HarmonyLib.Traverse.Create(controller);
-                traverse.Property("Status").SetValue(TurnController.TurnStatus.Acting);
-
-                // 검증
-                if (controller.Status == TurnController.TurnStatus.Acting)
-                {
-                    Main.Verbose($"[TurnTick] Traverse.Property worked - Status is now Acting");
-                    return;
-                }
-
-                Main.Log($"[TurnTick] Traverse.Property failed, trying backing field...");
-
-                // 방법 2: 백킹 필드 직접 접근
-                var backingField = typeof(TurnController).GetField("<Status>k__BackingField",
-                    System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic);
-                if (backingField != null)
-                {
-                    backingField.SetValue(controller, TurnController.TurnStatus.Acting);
-                    Main.Log($"[TurnTick] Set via backing field - Status = {controller.Status}");
-                    return;
-                }
-
-                Main.Log($"[TurnTick] Backing field not found, trying all private fields...");
-
-                // 방법 3: Status라는 이름의 모든 필드 검색
-                var fields = typeof(TurnController).GetFields(
-                    System.Reflection.BindingFlags.Instance |
-                    System.Reflection.BindingFlags.NonPublic |
-                    System.Reflection.BindingFlags.Public);
-                foreach (var field in fields)
-                {
-                    if (field.Name.Contains("Status") && field.FieldType == typeof(TurnController.TurnStatus))
-                    {
-                        field.SetValue(controller, TurnController.TurnStatus.Acting);
-                        Main.Log($"[TurnTick] Set via field '{field.Name}' - Status = {controller.Status}");
-                        return;
-                    }
-                }
-
-                Main.Error($"[TurnTick] Could not find any way to set Status!");
-            }
-            catch (Exception ex)
-            {
-                Main.Error($"[TurnTick] Failed to force Status: {ex.Message}");
             }
         }
     }
