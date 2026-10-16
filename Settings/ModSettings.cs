@@ -285,7 +285,9 @@ namespace CompanionAI_Pathfinder.Settings
             try
             {
                 string path = GetSettingsPath();
-                string json = JsonConvert.SerializeObject(Instance, Formatting.Indented);
+                // Bind only to overloads that the game's own Newtonsoft.Json build (8.0.0.0, Owlcat) provably
+                // exposes: Assembly-CSharp itself calls SerializeObject(object, Formatting, JsonSerializerSettings).
+                string json = JsonConvert.SerializeObject(Instance, Formatting.Indented, new JsonSerializerSettings());
                 File.WriteAllText(path, json);
                 Main.Verbose("Settings saved");
             }

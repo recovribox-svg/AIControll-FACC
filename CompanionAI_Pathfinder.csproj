@@ -1,88 +1,92 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
+  <!--
+    CompanionAI_Pathfinder - Unity Mod Manager mod for Pathfinder: Wrath of the Righteous.
+
+    Reference assemblies are taken from the game install. Point the build at it with ONE of:
+      dotnet build -c Release -p:GamePath="D:\SteamLibrary\steamapps\common\Pathfinder Second Adventure"
+      set WRATH_PATH=D:\SteamLibrary\steamapps\common\Pathfinder Second Adventure   (environment variable)
+      dotnet build -c Release -p:ManagedPath="X:\some\folder\with\the\game\dlls"
+    Build.ps1 / Build.bat do this (and auto-detect Steam) for you.
+
+    -p:DeployToGame=true additionally copies the built mod into $(GamePath)\Mods\CompanionAI_Pathfinder.
+  -->
+
   <PropertyGroup>
     <TargetFramework>net48</TargetFramework>
     <AssemblyName>CompanionAI_Pathfinder</AssemblyName>
+    <RootNamespace>CompanionAI_Pathfinder</RootNamespace>
     <LangVersion>latest</LangVersion>
     <Nullable>disable</Nullable>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
-    <!-- Mods 폴더로 직접 빌드 -->
-    <OutputPath>C:\Program Files (x86)\Steam\steamapps\common\Pathfinder Second Adventure\Mods\CompanionAI_Pathfinder\</OutputPath>
     <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
+    <OutputPath>bin\$(Configuration)\</OutputPath>
+    <DebugType>portable</DebugType>
+    <!-- Game assemblies are Unity/Mono builds; silence "different runtime version" noise. -->
+    <NoWarn>$(NoWarn);MSB3277;CS0618;CS0162;CS0168;CS0219;CS0414;CS0649;CS0169;CS1998</NoWarn>
   </PropertyGroup>
 
   <PropertyGroup>
-    <!-- Pathfinder: Wrath of the Righteous install path -->
-    <GamePath>C:\Program Files (x86)\Steam\steamapps\common\Pathfinder Second Adventure</GamePath>
-    <ManagedPath>$(GamePath)\Wrath_Data\Managed</ManagedPath>
+    <GamePath Condition="'$(GamePath)' == '' And '$(WRATH_PATH)' != ''">$(WRATH_PATH)</GamePath>
+    <GamePath Condition="'$(GamePath)' == ''">C:\Program Files (x86)\Steam\steamapps\common\Pathfinder Second Adventure</GamePath>
+    <ManagedPath Condition="'$(ManagedPath)' == ''">$(GamePath)\Wrath_Data\Managed</ManagedPath>
+    <UmmPath Condition="'$(UmmPath)' == ''">$(ManagedPath)\UnityModManager</UmmPath>
   </PropertyGroup>
 
   <ItemGroup>
+    <!-- .NET Framework 4.8 reference assemblies so the build works without Visual Studio / targeting packs. -->
+    <PackageReference Include="Microsoft.NETFramework.ReferenceAssemblies.net48" Version="1.0.3" PrivateAssets="all" />
+    <!-- Harmony is supplied at runtime by Unity Mod Manager; compile-time only. -->
+    <PackageReference Include="Lib.Harmony" Version="2.2.2" ExcludeAssets="runtime" PrivateAssets="all" />
+  </ItemGroup>
+
+  <ItemGroup>
     <!-- Unity Engine -->
-    <Reference Include="UnityEngine">
-      <HintPath>$(ManagedPath)\UnityEngine.dll</HintPath>
-      <Private>False</Private>
-    </Reference>
-    <Reference Include="UnityEngine.CoreModule">
-      <HintPath>$(ManagedPath)\UnityEngine.CoreModule.dll</HintPath>
-      <Private>False</Private>
-    </Reference>
-    <Reference Include="UnityEngine.UI">
-      <HintPath>$(ManagedPath)\UnityEngine.UI.dll</HintPath>
-      <Private>False</Private>
-    </Reference>
-    <Reference Include="UnityEngine.IMGUIModule">
-      <HintPath>$(ManagedPath)\UnityEngine.IMGUIModule.dll</HintPath>
-      <Private>False</Private>
-    </Reference>
-    <Reference Include="UnityEngine.TextRenderingModule">
-      <HintPath>$(ManagedPath)\UnityEngine.TextRenderingModule.dll</HintPath>
-      <Private>False</Private>
-    </Reference>
-    <Reference Include="UnityEngine.AIModule">
-      <HintPath>$(ManagedPath)\UnityEngine.AIModule.dll</HintPath>
-      <Private>False</Private>
-    </Reference>
+    <Reference Include="UnityEngine"><HintPath>$(ManagedPath)\UnityEngine.dll</HintPath><Private>False</Private></Reference>
+    <Reference Include="UnityEngine.CoreModule"><HintPath>$(ManagedPath)\UnityEngine.CoreModule.dll</HintPath><Private>False</Private></Reference>
+    <Reference Include="UnityEngine.IMGUIModule"><HintPath>$(ManagedPath)\UnityEngine.IMGUIModule.dll</HintPath><Private>False</Private></Reference>
+    <Reference Include="UnityEngine.TextRenderingModule"><HintPath>$(ManagedPath)\UnityEngine.TextRenderingModule.dll</HintPath><Private>False</Private></Reference>
+    <Reference Include="UnityEngine.AIModule"><HintPath>$(ManagedPath)\UnityEngine.AIModule.dll</HintPath><Private>False</Private></Reference>
+    <Reference Include="UnityEngine.PhysicsModule"><HintPath>$(ManagedPath)\UnityEngine.PhysicsModule.dll</HintPath><Private>False</Private></Reference>
+    <Reference Include="UnityEngine.AnimationModule"><HintPath>$(ManagedPath)\UnityEngine.AnimationModule.dll</HintPath><Private>False</Private></Reference>
 
-    <!-- Game Assemblies -->
-    <Reference Include="Assembly-CSharp">
-      <HintPath>$(ManagedPath)\Assembly-CSharp.dll</HintPath>
-      <Private>False</Private>
-    </Reference>
-    <Reference Include="Owlcat.Runtime.Core">
-      <HintPath>$(ManagedPath)\Owlcat.Runtime.Core.dll</HintPath>
-      <Private>False</Private>
-    </Reference>
-    <Reference Include="Owlcat.Runtime.UI">
-      <HintPath>$(ManagedPath)\Owlcat.Runtime.UI.dll</HintPath>
-      <Private>False</Private>
-    </Reference>
-
-    <!-- Pathfinding -->
-    <Reference Include="AstarPathfindingProject">
-      <HintPath>$(ManagedPath)\AstarPathfindingProject.dll</HintPath>
-      <Private>False</Private>
-    </Reference>
+    <!-- Game assemblies -->
+    <Reference Include="Assembly-CSharp"><HintPath>$(ManagedPath)\Assembly-CSharp.dll</HintPath><Private>False</Private></Reference>
+    <Reference Include="Owlcat.Runtime.Core"><HintPath>$(ManagedPath)\Owlcat.Runtime.Core.dll</HintPath><Private>False</Private></Reference>
+    <Reference Include="Owlcat.Runtime.UI"><HintPath>$(ManagedPath)\Owlcat.Runtime.UI.dll</HintPath><Private>False</Private></Reference>
+    <Reference Include="Owlcat.Runtime.Visual"><HintPath>$(ManagedPath)\Owlcat.Runtime.Visual.dll</HintPath><Private>False</Private></Reference>
+    <Reference Include="Owlcat.Runtime.Validation"><HintPath>$(ManagedPath)\Owlcat.Runtime.Validation.dll</HintPath><Private>False</Private></Reference>
+    <Reference Include="Owlcat.SharedTypes"><HintPath>$(ManagedPath)\Owlcat.SharedTypes.dll</HintPath><Private>False</Private></Reference>
+    <Reference Include="AstarPathfindingProject"><HintPath>$(ManagedPath)\AstarPathfindingProject.dll</HintPath><Private>False</Private></Reference>
+    <Reference Include="UniRx"><HintPath>$(ManagedPath)\UniRx.dll</HintPath><Private>False</Private></Reference>
+    <!-- The game's own (Owlcat) Newtonsoft.Json build. Do NOT use the NuGet package: the mod must bind to
+         the assembly the game actually loads (Newtonsoft.Json 8.0.0.0, unsigned), not to a strong-named
+         13.0.0.0 that is not shipped. -->
+    <Reference Include="Newtonsoft.Json"><HintPath>$(ManagedPath)\Newtonsoft.Json.dll</HintPath><Private>False</Private></Reference>
 
     <!-- Unity Mod Manager -->
-    <Reference Include="UnityModManager">
-      <HintPath>$(ManagedPath)\UnityModManager\UnityModManager.dll</HintPath>
-      <Private>False</Private>
-    </Reference>
-
-    <!-- Harmony (game already includes 0Harmony.dll) -->
-    <PackageReference Include="Lib.Harmony" Version="2.2.2">
-      <ExcludeAssets>runtime</ExcludeAssets>
-    </PackageReference>
-
-    <!-- Json -->
-    <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
+    <Reference Include="UnityModManager"><HintPath>$(UmmPath)\UnityModManager.dll</HintPath><Private>False</Private></Reference>
   </ItemGroup>
 
-  <!-- Info.json 자동 복사 -->
   <ItemGroup>
-    <None Include="Info.json" CopyToOutputDirectory="Always" />
+    <None Include="Info.json" CopyToOutputDirectory="PreserveNewest" />
+    <!-- Keep repository docs out of the compile/copy graph. -->
+    <Compile Remove="bin\**;obj\**;dist\**;References\**" />
+    <None Remove="bin\**;obj\**;dist\**;References\**" />
   </ItemGroup>
+
+  <Target Name="CheckGameReferences" BeforeTargets="ResolveAssemblyReferences">
+    <Error Condition="!Exists('$(ManagedPath)\Assembly-CSharp.dll')"
+           Text="Game assemblies not found in '$(ManagedPath)'. Pass -p:GamePath=&lt;Wrath install folder&gt; (or set WRATH_PATH), or run Build.ps1 -GamePath &lt;folder&gt;." />
+    <Error Condition="!Exists('$(UmmPath)\UnityModManager.dll')"
+           Text="UnityModManager.dll not found in '$(UmmPath)'. Install Unity Mod Manager into the game first, or pass -p:UmmPath=&lt;folder containing UnityModManager.dll&gt;." />
+  </Target>
+
+  <Target Name="DeployToGame" AfterTargets="Build" Condition="'$(DeployToGame)' == 'true'">
+    <PropertyGroup><ModDeployDir>$(GamePath)\Mods\CompanionAI_Pathfinder</ModDeployDir></PropertyGroup>
+    <Copy SourceFiles="$(OutputPath)$(AssemblyName).dll;$(OutputPath)Info.json" DestinationFolder="$(ModDeployDir)" />
+    <Message Importance="high" Text="Deployed to $(ModDeployDir)" />
+  </Target>
 
 </Project>

@@ -1,12 +1,16 @@
 # Build results
 bin/
 obj/
-*.dll
+dist/
 *.pdb
 *.cache
 
+# Local copies of game reference assemblies (copyrighted; copied from your own install by Build.ps1)
+References/
+
 # IDE
 .vs/
+.idea/
 *.user
 *.suo
 
