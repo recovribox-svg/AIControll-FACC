@@ -81,9 +81,10 @@ namespace CompanionAI_Pathfinder.Tactics
     {
         public int Round { get; }
         public int Decisions { get; set; }
-        /// <summary>★ v0.3.1: wait bookkeeping in real seconds (frame counts depend on FPS).</summary>
-        public float WaitStarted { get; set; } = -1f;
-        public float LastProgress { get; set; }
+        /// <summary>★ v0.3.1: wait bookkeeping in seconds of ticked time (frame counts depend on FPS).</summary>
+        public bool Waiting { get; set; }
+        public float WaitSeconds { get; set; }
+        public float IdleSeconds { get; set; }
         public float LastTick { get; set; }
         public UnityEngine.Vector3 LastPosition { get; set; }
         public bool Finished { get; set; }

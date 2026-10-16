@@ -34,12 +34,14 @@ actions, and the HP or death of the target.
 3. **Selection.** A free or swift option worth at least 2 points goes first, because it doesn't use the main action
    (for example Smite Evil before a full attack, or a 5-foot step out of melee). Otherwise the best affordable main
    action is chosen. Nothing worth at least 0.5 points means the turn ends.
-4. **Learning within the turn.** An option that could not be issued, that ended without acting, or that ended while
-   the action it was chosen for (standard, full-round, swift) is still unused, is not retried in the same turn.
+4. **Learning within the turn.** An option is not retried in the same turn if it could not be issued, ended without
+   acting, was force-finished by the game before it started (an approach that stalled), or ended with the action it
+   was chosen for (standard, full-round, swift) still unused (except commands that legitimately spend none).
 5. **Waiting.** The controller waits for the command while it makes progress (the unit moves or the command is
-   executing). It gives up after 4 s without progress or 15 s in total. An idle command the AI did not issue (left over
-   from real time or an out-of-combat routine) is interrupted after 1 s, except the game's own ability toggles and
-   attacks of opportunity.
+   executing). It gives up after 4 s without progress or 15 s in total, counting only time the turn is actually ticked
+   (each tick counts at most 0.1 s, so pauses, dialogs and alt-tab don't count). An idle command the AI did not issue
+   (left over from real time or an out-of-combat routine) is interrupted after 1 s, except the game's own ability
+   toggles, attacks of opportunity, and commands the game marks as not interruptible.
 
 ## 3. Values
 
@@ -52,9 +54,9 @@ for enemies that are asleep, paralysed or helpless, and up for enemies currently
 | **Weapon attack** (single, move + attack, or full attack) | Attack list from the game (`UnitAttack{ForceFullAttack, OnlyForInspect}.Init`, as the unit-description UI does). For each attack: hit chance from `RuleCalculateAttackBonus` vs `RuleCalculateAC`, damage from `RuleCalculateWeaponStats` dice, minus damage reduction, plus crit and sneak attack. A ranged attack while threatened subtracts an attack-of-opportunity penalty. Full vs single attack is set explicitly; otherwise the game uses the UI smart-cursor mode. |
 | **Damage spell / ability / bomb** | Dice evaluated in the ability's own context (`RecalculateRanks`), × spell-resistance pass × attack-roll hit chance (touch spells) × failed-save chance (half on save if applicable), for every enemy in the area. Hitting allies costs twice the damage; if *Avoid friendly fire* is on, the option is dropped instead. Immune targets count as 0. |
 | **Heal** | Only for allies below the heal threshold (potions: *Drink healing potions below HP %* setting). Value = `min(heal, missing HP) × 0.6 × urgency` (×3 below 25 % HP, ×2 below 50 %), more if the ally is in melee. Undead only when the ability's own branch heals them (Inflict Wounds). Never aimed at an enemy. Buffs that come with a heal (Lay On Hands) add nothing on their own. |
-| **Control / debuff** | Failed-save chance × SR pass × target threat × strength (hard control such as sleep, stun or hold: 1.0; soft: 0.4; plain debuff: 0.25; "mark" such as Aid Another: 0.1, halved if no other party member is fighting that enemy) × rounds (1 for one-round effects, else up to 3). Skipped if the target already has the effect or is immune (`HasConditionImmunity`, spell immunity). Non-control debuffs fall off after two uses per combat. |
-| **Buff** | Skipped if the target already has it or it was cast on them this round. `(1 + 1.5·spell level) × rounds`. Weighted down after round 2, in easy fights, and for allies who aren't fighting. Buffs spent by the next attack or lasting one round (Perfect Strike) only on oneself, and only while an attack is still possible this turn. |
-| **Cleanse** (removes buffs by descriptor or a specific buff, no damage or heal) | Only if the target has something it removes: `(2 + 2·spell level) × rounds`. A descriptor cleanse's own buffs add nothing on their own. |
+| **Control / debuff** | Failed-save chance × SR pass × target threat × strength (hard control such as sleep, stun or hold: 1.0; soft: 0.4; plain debuff: 0.25; lasting "mark" such as Smite or a judgement: 0.15; one-round mark such as Aid Another: 0.1, halved if no other party member is fighting that enemy) × rounds (1 for one-round or one-attack effects, else up to 3). Skipped if the target already has the effect or is immune (`HasConditionImmunity`, spell immunity). Non-control debuffs fall off after two uses per combat. |
+| **Buff** | Skipped if the target already has it or it was cast on them this round. `(1 + 1.5·spell level) × rounds`. Weighted down after round 2, in easy fights, and for allies who aren't fighting. One-round or one-attack buffs (Perfect Strike) count about 2 rounds; a one-round buff on oneself only if an attack is still possible after paying for it. Not for a recipient the ability also heals (Lay On Hands). |
+| **Cleanse** (removes buffs by descriptor or a specific buff, also alongside a heal, e.g. Lay On Hands mercies) | Only if the target has something a removal whose branch applies to it would remove: `(2 + 2·spell level) × rounds`. A descriptor cleanse's own buffs add nothing on their own. |
 | **Enchantments, summons, dispels, utility** (effects that can't be verified on the target) | Once per combat per target. Utility abilities such as Appraise Foe are worth 1 point, so they only happen when nothing useful is possible. Not for abilities with a verifiable effect (damage, heal, cleanse) that is worth nothing right now, and dispel/utility never for consumables. |
 | **Charge** | Only when a normal move can't reach the target this turn: ~1.1 × single-attack value. |
 | **5-foot step out of melee** | Ranged characters and casters in melee: 0.4 × threat of the enemies in melee with them. Free; it keeps the full attack available. |
@@ -69,8 +71,10 @@ for enemies that are asleep, paralysed or helpless, and up for enemies currently
   Buff potions only in hard fights, at ×0.5. Healing potions only by urgency.
 
 **Conditional effects.** Many abilities branch on the target: Cure Wounds heals the living and harms undead, Inflict
-Wounds the reverse, Lay On Hands harms undead. `AbilityProfile` records which `Conditional` branch each damage, heal
-and buff sits in and evaluates it per target, in the ability's own execution context. Only conditions that read facts
+Wounds the reverse, Lay On Hands harms undead. `AbilityProfile` records which `Conditional` branch each damage, heal,
+buff and removal sits in and evaluates it per target (or against the caster, for a Conditional inside
+`ContextActionOnContextCaster`), in the ability's own execution context. Heals that run on the caster or on other
+units (party members, pet, random units) are not heals of the target, except for personal-range abilities. Only conditions that read facts
 of the target or caster are evaluated (`HasFact`, `HasBuff`, alignment, ally/enemy, ...). For any other condition the
 log says once `[Profile] <ability>: branch condition <type> not evaluated - both branches counted`.
 
@@ -104,9 +108,9 @@ If a companion does something odd, that line shows which option won and by how m
 | `Item:Cure Light Wounds->Seelah(dispel)=2.0` drunk at 100 % HP (Seelah ×2, Camellia ×1) | 307, 644; Recent 301 | At full HP the heal is worth 0, and the potion fell through to the once-per-combat fallback for unverifiable effects ("dispel"). | The fallback is only for abilities without a verifiable effect; consumables never get dispel/utility value. |
 | `Item:Inflict Light Wounds->Camellia(heal)`; `Item:Inflict Light Wounds->Skeletal Champion(dmg)` → `result=Fail` | 125, 343-345 | Both branches of the "undead?" `Conditional` were counted for every target. | Per-target branch evaluation (§3, Conditional effects). Heals are never aimed at enemies. |
 | `Lay On Hands — Others->Cultist Champion(debuff+buff)`; `Lay On Hands — Self->Seelah(buff)` at 92 % HP | 583, 475 | Its heal branch was ignored on living enemies, and its secondary buffs counted as a buff. | Never aimed at a living enemy; buffs that come with a heal add no value of their own. |
-| Albedo `Move+Attack->Dretch` 4× with `forcedPath=0.7m`, `Success acted=True`, standard action still unused | Recent 208-222 | The game force-finishes a turn-based command whose movement ran out as "acted" without attacking. | A command that ends with its standard/full-round/swift action still unused counts as failed for this turn. |
-| `Camellia: command wait timeout - ending turn` while her 7.6 m walk was still running (4.3 s) | 64 | Timeout of 300 *frames*, about 4.3 s at 70 FPS. | Time-based wait that resets on progress (4 s idle, 15 s cap). |
+| Albedo `Move+Attack->Dretch` 4× with `forcedPath=0.7m`, `Success acted=True`, standard action still unused | Recent 208-222 | `UnitCommandController.TickCommandTurnBased` force-finishes an approaching command whose unit stopped moving as "Success" (`IsActed`, never `IsStarted`). | Such a command, or one that ends with its standard/full-round/swift action still unused, counts as failed for this turn. |
+| `Camellia: command wait timeout - ending turn` while her 7.6 m walk was still running (4.3 s) | 64 | Timeout of 300 *frames*, about 4.3 s at 70 FPS. | Time-based wait that resets on progress (4 s idle, 15 s cap, ≤ 0.1 s per tick). |
 | Camellia's turn lost to a leftover command at turn start | Recent 204 | A command not issued this turn sat idle in her slot. | Interrupted after 1 s idle (the game's own toggles and attacks of opportunity excepted). |
-| Lann: `Aid Another->Cultist Champion(mark)=7.8` beat his attacks; walked 9.1 m, interrupted | 570-577 | A +2 for one round was valued like a 3-round mark at 0.15 × threat. | Marks 0.1 × threat, one-round effects 1 round, halved if nobody else fights that enemy; archers walking up to touch an enemy ×0.5. |
-| `Perfect Strike->Lann(buff)` cast after the full attack (5×) | 91, 171, 222, 284, 630 | A buff for the next attack was valued like a 3-round buff. | Next-attack / one-round buffs (`RemoveBuffOnAttack`, duration ≤ 1 round) need an attack left this turn. |
+| Lann: `Aid Another->Cultist Champion(mark)=7.8` beat his attacks; walked 9.1 m, interrupted | 570-577 | A +2 for one round was valued like a 3-round mark at 0.15 × threat. | One-round marks 0.1 × threat for 1 round, halved if nobody else fights that enemy; archers walking up to touch an enemy ×0.5. Lasting marks unchanged. |
+| `Perfect Strike->Lann(buff)` cast after the full attack (5×) | 91, 171, 222, 284, 630 | A one-attack buff was valued like a 3-round buff. | One-round self-buffs need an attack left after paying for them. If Perfect Strike's buff instead lasts longer and is spent by the next attack (`RemoveBuffOnAttack`), casting it after the attack still helps next turn's first attack, so it is only valued lower (≈ 2 rounds). |
 | `Treat Affliction->Albedo(buff)` with nothing to treat | 80 | Its applied buff counted as a buff. | Descriptor cleanses are valued by what they remove. This works only if the blueprint removes by descriptor; the next log will show. |

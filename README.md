@@ -22,7 +22,8 @@ combat (primary) and real-time combat.
   never aimed at enemies.
 - A command that ends without using its action (Albedo's repeated 0.7 m "Move+Attack") is not retried.
 - Long walks are no longer cut off by the wait timeout, and an idle leftover command no longer costs a turn.
-- Aid Another and other one-round marks are valued as one round; Perfect Strike is not used after the last attack.
+- Aid Another and other one-round marks are valued as one round; one-round self-buffs such as Perfect Strike are not
+  cast when no attack is left this turn.
 - Condition-removal abilities (e.g. Treat Affliction, if it removes by descriptor) only when there is something to remove.
 
 0.2.119 fixed companions not physically moving in turn-based combat ([docs/INVESTIGATION.md](docs/INVESTIGATION.md)).

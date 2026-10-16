@@ -484,7 +484,7 @@ namespace CompanionAI_Pathfinder.Tactics
                     }
                 }
 
-                float value = ScoreAbility(ctx, ability, profile, target, out string why);
+                float value = ScoreAbility(ctx, ability, profile, slot, target, out string why);
                 if (value <= 0f) continue;
                 value *= consumable;
                 if (needsMove) value *= 0.9f;
@@ -537,7 +537,8 @@ namespace CompanionAI_Pathfinder.Tactics
             return best;
         }
 
-        private static float ScoreAbility(TacticalContext ctx, AbilityData ability, AbilityProfile profile, UnitEntityData target, out string why)
+        private static float ScoreAbility(TacticalContext ctx, AbilityData ability, AbilityProfile profile, ActionSlot slot,
+                                          UnitEntityData target, out string why)
         {
             var unit = ctx.Unit;
             bool targetIsEnemy = unit.IsEnemy(target);
@@ -636,16 +637,18 @@ namespace CompanionAI_Pathfinder.Tactics
             {
                 float controlValue = 0f;
                 bool isMark = !profile.HarmfulToEnemies && profile.ControlStrength == ControlStrength.None;
-                // ★ v0.3.1: marks 0.15 → 0.1. Aid Another (+2 for one ally, one round) out-valued Lann's full attack
-                // and walked him 9 m into melee.
+                // ★ v0.3.1: a one-round / one-attack mark (Aid Another: +2 for one ally, one round) is worth 0.1 × threat
+                // for one round; it out-valued Lann's full attack and walked him 9 m into melee. Lasting marks (Smite
+                // Evil, judgements, studied target) keep 0.15 × threat × rounds.
+                bool oneShotMark = isMark && profile.IsOneShot;
                 float strength = profile.ControlStrength == ControlStrength.Hard ? 1f :
                                  profile.ControlStrength == ControlStrength.Soft ? 0.4f :
-                                 isMark ? 0.1f : 0.25f;
+                                 isMark ? (oneShotMark ? 0.1f : 0.15f) : 0.25f;
                 // Non-control debuffs/marks repeated on new targets every turn are the "spam" pattern: diminish them.
                 if (profile.ControlStrength == ControlStrength.None && CombatMemory.TimesUsed(unit, ability) >= 2)
                     strength *= 0.3f;
                 // A one-round / next-attack effect lasts one round, not the rest of the fight.
-                float effectRounds = profile.BuffsOnlyHelpNextAttack ? 1f : Math.Min(ctx.ExpectedRounds, 3f);
+                float effectRounds = profile.IsOneShot ? 1f : Math.Min(ctx.ExpectedRounds, 3f);
                 foreach (var enemy in affectedEnemies)
                 {
                     var buffs = profile.TargetBuffs.Where(b => profile.BuffAppliesTo(b, ability, enemy) != EffectApplies.No).ToList();
@@ -656,8 +659,8 @@ namespace CompanionAI_Pathfinder.Tactics
                     float p = CombatMath.SpellResistancePass(unit, enemy, ability) * CombatMath.SaveFailChance(ability, profile, enemy);
                     if (profile.NeedsAttackRoll) p *= CombatMath.SpellAttackHitChance(unit, enemy, ability);
                     float enemyValue = p * CombatMath.Threat(enemy) * strength * effectRounds;
-                    // A mark only pays off when someone else in the party is fighting that enemy.
-                    if (isMark && !(enemy.CombatState?.EngagedUnits?.Any(u => u != unit && !unit.IsEnemy(u)) ?? false))
+                    // A one-round mark only pays off when someone else in the party is fighting that enemy now.
+                    if (oneShotMark && !(enemy.CombatState?.EngagedUnits?.Any(u => u != unit && !unit.IsEnemy(u)) ?? false))
                         enemyValue *= 0.5f;
                     controlValue += enemyValue;
                 }
@@ -672,12 +675,13 @@ namespace CompanionAI_Pathfinder.Tactics
             bool appliesHelpfulBuff = !profile.HarmfulToEnemies || profile.HelpfulToAllies
                 ? (!targetIsEnemy && profile.TargetBuffs.Count > 0) || profile.CasterBuffs.Count > 0
                 : profile.CasterBuffs.Count > 0;
-            // ★ v0.3.1: buffs that come with a heal (Lay On Hands mercies, hidden trackers) are part of the heal, not a
-            // reason to cast it at full HP; a cleanse's buffs are judged by what it removes (below); a buff spent by the
-            // next attack or lasting one round (Perfect Strike) is useless once the unit has no attack left this turn.
-            bool attackLeft = ctx.HasStandard || ctx.CanFullAttack;
-            if (appliesHelpfulBuff && !profile.DealsDamage && profile.Heals.Count == 0 && !profile.IsCleanse &&
-                (!profile.BuffsOnlyHelpNextAttack || attackLeft))
+            // ★ v0.3.1: buffs that come with a heal for that recipient (Lay On Hands mercies, hidden trackers) are part of
+            // the heal, not a reason to cast it at full HP; a cleanse's buffs are judged by what it removes (below); a
+            // one-round self-buff (Perfect Strike) is useless when no attack is left after paying for it.
+            bool attackAfter = slot == ActionSlot.Free || slot == ActionSlot.Swift ? ctx.HasStandard || ctx.CanFullAttack
+                             : slot == ActionSlot.Move ? ctx.HasStandard
+                             : false;
+            if (appliesHelpfulBuff && !profile.DealsDamage && !profile.IsCleanse)
             {
                 float buffValue = 0f;
                 var recipients = profile.TargetBuffs.Count > 0 && !targetIsEnemy ? affectedAllies : new List<UnitEntityData> { unit };
@@ -687,12 +691,15 @@ namespace CompanionAI_Pathfinder.Tactics
                     var buffs = allBuffs.Where(b => profile.BuffAppliesTo(b, ability, ally) != EffectApplies.No).ToList();
                     if (buffs.Count == 0) continue;
                     if (buffs.Any(b => ally.Buffs.HasFact(b))) continue;                    // already active
-                    // Next-attack buffs only help the unit itself, this turn.
-                    if (profile.BuffsOnlyHelpNextAttack && ally != unit) continue;
+                    if (profile.Heals.Any(h => profile.AppliesTo(h, ability, ally) != EffectApplies.No)) continue;
+                    if (profile.BuffsLastOneRound && ally == unit && !attackAfter) continue;
                     if (CombatMemory.LastCastRound(unit, ability, ally) == ctx.Round) continue; // cast this round already
                     bool fighting = (ally.CombatState?.IsEngaged ?? false) || ally == unit;
                     float perRound = 1f + level * 1.5f;
-                    float rounds = profile.HasLongBuff ? ctx.ExpectedRounds : Math.Min(ctx.ExpectedRounds, 3f);
+                    // One-shot buffs: about one round of effect; ×2 keeps a swift use before attacking (Perfect Strike
+                    // before a full attack, as in the 0.3.0 logs) above the quick-action threshold.
+                    float rounds = profile.IsOneShot ? Math.Min(ctx.ExpectedRounds, 2f)
+                                 : profile.HasLongBuff ? ctx.ExpectedRounds : Math.Min(ctx.ExpectedRounds, 3f);
                     buffValue += perRound * rounds * (fighting ? 1f : 0.6f);
                 }
                 if (buffValue > 0f)
@@ -703,11 +710,11 @@ namespace CompanionAI_Pathfinder.Tactics
                 }
             }
 
-            // --- cleanses (Remove Fear, Treat Affliction...): only when the target has something to remove ---
-            if (profile.RemovesFromTarget && affectedAllies.Count > 0)
+            // --- cleanses (Remove Fear, Treat Affliction, Lay On Hands mercies...): only when the target has something to remove ---
+            if (profile.RemovesAnything && affectedAllies.Count > 0)
             {
                 float cleanseValue = 0f;
-                foreach (var ally in affectedAllies.Where(profile.WouldRemoveSomething))
+                foreach (var ally in affectedAllies.Where(a => profile.WouldRemoveSomething(ability, a)))
                 {
                     bool fighting = (ally.CombatState?.IsEngaged ?? false) || ally == unit;
                     cleanseValue += (2f + 2f * level) * Math.Min(ctx.ExpectedRounds, 3f) * (fighting ? 1f : 0.6f);
@@ -723,7 +730,7 @@ namespace CompanionAI_Pathfinder.Tactics
             // ★ v0.3.1: not for abilities whose effect IS verifiable (damage, heal, cleanse): a zero value there means
             // "not useful now" - a healing potion at full HP fell through to the "dispel" fallback (2.0) in v0.3.0.
             // Items never use the dispel/utility fallback: a consumable is gone once used.
-            bool verifiable = profile.DealsDamage || profile.Heals.Count > 0 || profile.RemovesFromTarget;
+            bool verifiable = profile.DealsDamage || profile.Heals.Count > 0 || (profile.RemovesFromTarget && !targetIsEnemy);
             if (value <= 0f && !verifiable &&
                 (profile.Enchants || profile.Summons || profile.Dispels || profile.RemovesBuffs || !profile.HasDetectableEffect))
             {

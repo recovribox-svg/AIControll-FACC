@@ -1,5 +1,4 @@
 using System;
-using Kingmaker;
 using Kingmaker.EntitySystem.Entities;
 using Kingmaker.UnitLogic.Commands;
 using Kingmaker.UnitLogic.Commands.Base;
@@ -33,6 +32,12 @@ namespace CompanionAI_Pathfinder.Core.TurnBased
         /// <summary>Seconds a command we did not issue may sit idle at our turn before it is interrupted.</summary>
         private const float FOREIGN_IDLE_TIMEOUT = 1f;
 
+        /// <summary>
+        /// Longest time one tick may count. TurnController.Tick (our postfix) only runs while the game is unpaused, in
+        /// Default mode and not waiting for UI (CombatController.Tick), so a pause, dialog or alt-tab must not count.
+        /// </summary>
+        private const float MAX_TICK_SECONDS = 0.1f;
+
         /// <summary>Safety net against decision loops; every real decision spends an action, so this is never reached normally.</summary>
         private const int MAX_DECISIONS_PER_TURN = 16;
 
@@ -56,19 +61,24 @@ namespace CompanionAI_Pathfinder.Core.TurnBased
                     var wait = Wait(unit, memory);
                     if (wait != null) return wait;
                 }
-                memory.WaitStarted = -1f;
+                memory.Waiting = false;
 
                 // Learn from the previous command: if it ended without acting (interrupted, no path, target gone),
                 // do not pick the same option again this turn.
                 if (memory.LastCommand != null)
                 {
+                    var last = memory.LastCommand;
                     string notActed = null;
-                    if (!memory.LastCommand.IsActed)
-                        notActed = $"ended without acting ({memory.LastCommand.Result})";
-                    else if (!ActionWasSpent(unit, memory.LastSlot))
-                        // ★ v0.3.1: the game force-finishes a turn-based command whose movement ran out as "Success,
-                        // acted" without the attack. Albedo repeated 'Move+Attack->Dretch' (0.7 m, no attack) four times.
-                        notActed = $"ended ({memory.LastCommand.Result}) but its {memory.LastSlot} action is still unused";
+                    if (!last.IsActed)
+                        notActed = $"ended without acting ({last.Result})";
+                    else if (!last.IsStarted)
+                        // ★ v0.3.1: UnitCommandController.TickCommandTurnBased force-finishes an approaching command whose
+                        // unit stopped moving (or that has no action left) as "Success" - IsActed, but never started.
+                        // Albedo repeated 'Move+Attack->Dretch' (0.7 m, no attack) four times.
+                        notActed = $"was force-finished before it started ({last.Result})";
+                    else if (!last.IsIgnoreCooldown && !ActionWasSpent(unit, memory.LastSlot))
+                        // Commands with IsIgnoreCooldown legitimately spend no action (sticky touch, spell combat...).
+                        notActed = $"ended ({last.Result}) but its {memory.LastSlot} action is still unused";
 
                     if (notActed != null && memory.LastCandidateKey != null)
                     {
@@ -124,43 +134,47 @@ namespace CompanionAI_Pathfinder.Core.TurnBased
         private static ExecutionResult Wait(UnitEntityData unit, TurnMemory memory)
         {
             float now = Time.unscaledTime;
-            bool paused = Game.Instance?.IsPaused ?? false;
-            if (memory.WaitStarted < 0f)
+            if (!memory.Waiting)
             {
-                memory.WaitStarted = now;
-                memory.LastProgress = now;
+                memory.Waiting = true;
+                memory.WaitSeconds = 0f;
+                memory.IdleSeconds = 0f;
                 memory.LastPosition = unit.Position;
                 memory.LastTick = now;
             }
-            // Time spent paused does not count towards the total cap.
-            if (paused) memory.WaitStarted += now - memory.LastTick;
+            float dt = Mathf.Clamp(now - memory.LastTick, 0f, MAX_TICK_SECONDS);
             memory.LastTick = now;
+            memory.WaitSeconds += dt;
 
-            // Progress: the unit moves, its command is executing (animation), or the game is paused.
+            // Progress: the unit moves or its command is executing (animation). A command that is still approaching
+            // is not "running" (UnitCommand.IsStarted only becomes true on arrival), so movement is tracked separately.
             bool running = GameAPI.HasRunningCommand(unit);
-            if (paused || running || Vector3.Distance(unit.Position, memory.LastPosition) > 0.05f)
+            if (running || Vector3.Distance(unit.Position, memory.LastPosition) > 0.05f)
             {
-                memory.LastProgress = now;
+                memory.IdleSeconds = 0f;
                 memory.LastPosition = unit.Position;
             }
-            float idle = now - memory.LastProgress;
+            else
+            {
+                memory.IdleSeconds += dt;
+            }
 
             // ★ v0.3.1: a command we did not issue this turn (left over from real time, an out-of-combat buff routine
             // or the previous combat) blocked Camellia's turn until the timeout. Clear it and decide.
             // The game's own commands (toggling an activatable ability, attacks of opportunity) are left alone.
-            if (memory.LastCommand == null && !running && idle > FOREIGN_IDLE_TIMEOUT &&
+            if (memory.LastCommand == null && !running && memory.IdleSeconds > FOREIGN_IDLE_TIMEOUT &&
                 unit.Commands.Contains(IsClearableLeftover))
             {
                 Main.Log($"[TBController] {unit.CharacterName}: idle leftover command at turn start - interrupting it");
                 unit.Commands.InterruptAll(IsClearableLeftover);
-                memory.WaitStarted = -1f;
+                memory.Waiting = false;
                 return GameAPI.IsReadyForNextAction(unit) ? null : ExecutionResult.Waiting("Clearing leftover command");
             }
 
-            if (!paused && (idle > COMMAND_IDLE_TIMEOUT || now - memory.WaitStarted > COMMAND_MAX_WAIT))
+            if (memory.IdleSeconds > COMMAND_IDLE_TIMEOUT || memory.WaitSeconds > COMMAND_MAX_WAIT)
             {
-                Main.Log($"[TBController] {unit.CharacterName}: command wait timeout ({idle:F1}s without progress, " +
-                         $"{now - memory.WaitStarted:F1}s total) - ending turn");
+                Main.Log($"[TBController] {unit.CharacterName}: command wait timeout ({memory.IdleSeconds:F1}s without progress, " +
+                         $"{memory.WaitSeconds:F1}s total) - ending turn");
                 memory.Finished = true;
                 return ExecutionResult.EndTurn("Wait timeout");
             }
@@ -169,7 +183,9 @@ namespace CompanionAI_Pathfinder.Core.TurnBased
 
         private static bool IsClearableLeftover(UnitCommand command)
         {
+            // Same protections as the game's own UnitCommands.InterruptAll(): interruptible, not cutscene/scripted-TB.
             return command != null && !command.IsStarted && !command.IsFinished &&
+                   command.IsInterruptible && !command.Cutscene && !command.DontInterruptInTurnBasedMode &&
                    !(command is UnitActivateAbility) && !(command is UnitAttackOfOpportunity);
         }
 
