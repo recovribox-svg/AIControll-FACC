@@ -56,6 +56,18 @@ namespace CompanionAI_Pathfinder.Settings
                 { Language.Korean, "실시간 모드에서 AI가 결정을 내리는 간격 (초)" }
             },
 
+            // ★ v0.3.0: Consumables
+            ["ConsumableSettings"] = new() { { Language.English, "Consumables (quick-slot items)" }, { Language.Korean, "소모품 (퀵슬롯 아이템)" } },
+            ["ConsumableSettingsDesc"] = new() {
+                { Language.English, "Only items in a character's quick slots can be used in combat (game rule). Animal companions cannot use items." },
+                { Language.Korean, "전투 중에는 퀵슬롯에 있는 아이템만 사용할 수 있습니다 (게임 규칙). 동물 동료는 아이템을 사용할 수 없습니다." }
+            },
+            ["UseConsumables"] = new() { { Language.English, "Use consumables in combat" }, { Language.Korean, "전투 중 소모품 사용" } },
+            ["UsePotions"] = new() { { Language.English, "Potions" }, { Language.Korean, "물약" } },
+            ["UseScrollsAndWands"] = new() { { Language.English, "Scrolls and wands" }, { Language.Korean, "두루마리 및 완드" } },
+            ["UseThrownItems"] = new() { { Language.English, "Alchemical and thrown items (bombs, alchemist's fire, ...)" }, { Language.Korean, "연금술/투척 아이템 (폭탄, 연금술사의 불 등)" } },
+            ["PotionHealThreshold"] = new() { { Language.English, "Drink healing potions below HP %" }, { Language.Korean, "체력 % 이하일 때 치유 물약 사용" } },
+
             // Party Members
             ["PartyMembers"] = new() { { Language.English, "Party Members" }, { Language.Korean, "파티원" } },
             ["AI"] = new() { { Language.English, "AI" }, { Language.Korean, "AI" } },
@@ -208,6 +220,13 @@ namespace CompanionAI_Pathfinder.Settings
         public bool EnableInTurnBased { get; set; } = true;
         public bool EnableInRealTime { get; set; } = true;
         public float RealTimeDecisionInterval { get; set; } = 0.5f;
+
+        // ★ v0.3.0: 소모품 (퀵슬롯 아이템) 사용 설정
+        public bool UseConsumables { get; set; } = true;
+        public bool UsePotions { get; set; } = true;
+        public bool UseScrollsAndWands { get; set; } = true;
+        public bool UseThrownItems { get; set; } = true;
+        public int PotionHealThresholdPercent { get; set; } = 50;
 
         // 캐릭터별 설정
         public Dictionary<string, CharacterSettings> CharacterSettings { get; set; } = new();

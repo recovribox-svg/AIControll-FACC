@@ -1002,6 +1002,9 @@ namespace CompanionAI_Pathfinder.Analysis
         /// <summary>
         /// SpellDescriptor에서 CC 타입 추출
         /// </summary>
+        /// <summary>★ v0.3.0: shared descriptor → CC mapping (also used for applied buffs by Tactics.AbilityProfile).</summary>
+        public static CCType AnalyzeCCTypeFromDescriptor(SpellDescriptor descriptor) => AnalyzeCCType(descriptor);
+
         private static CCType AnalyzeCCType(SpellDescriptor descriptor)
         {
             CCType result = CCType.None;

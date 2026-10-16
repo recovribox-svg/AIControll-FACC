@@ -70,6 +70,8 @@ namespace CompanionAI_Pathfinder
 
                 // ★ v0.2.119: log the outcome of every command the mod issues (movement diagnostics)
                 CommandTrace.Subscribe();
+                // ★ v0.3.0: give mount commands of AI-controlled riders a ForcedPath (turn-based)
+                MountPathHandler.Subscribe();
 
                 // ★ v0.2.38: Pre-Buff Controller 초기화
                 PreBuffController.Initialize();
@@ -313,12 +315,14 @@ namespace CompanionAI_Pathfinder
                 Log("CompanionAI 활성화됨");
                 CombatEventHandler.Subscribe();
                 CommandTrace.Subscribe();
+                MountPathHandler.Subscribe();
             }
             else
             {
                 Log("CompanionAI 비활성화됨");
                 CombatEventHandler.Unsubscribe();
                 CommandTrace.Unsubscribe();
+                MountPathHandler.Unsubscribe();
             }
 
             return true;

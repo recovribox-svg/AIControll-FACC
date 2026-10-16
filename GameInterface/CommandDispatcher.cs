@@ -71,6 +71,17 @@ namespace CompanionAI_Pathfinder.GameInterface
                         CommandTrace.LogRejected(unit, command, label, failure);
                         return false;
                     }
+
+                    // ★ v0.3.0: a full attack is only legal after at most a 5-foot step; ForceFullAttack bypasses the
+                    // game's own check, so enforce it here before anything moves.
+                    if (command is UnitAttack forcedFull && forcedFull.ForceFullAttack && turn != null &&
+                        (!turn.HasFiveFootStep(unit) || pathLength > turn.GetRemainingFiveFootStepRange(unit) + 0.05f))
+                    {
+                        command.ForcedPath = null;
+                        failure = $"full attack needs {pathLength:F1}m of movement (more than a 5-foot step)";
+                        CommandTrace.LogRejected(unit, command, label, failure);
+                        return false;
+                    }
                     hasPath = true;
                     ApplyTurnBasedMovementLimit(unit, pathLength);
                 }
@@ -101,6 +112,21 @@ namespace CompanionAI_Pathfinder.GameInterface
         public static bool Run(UnitEntityData unit, UnitCommand command, string label)
         {
             return Run(unit, command, label, out _);
+        }
+
+        /// <summary>
+        /// ★ v0.3.0: Attach a game-computed path to a command the GAME created for a unit (e.g. the mount command
+        /// SaddledUnitController builds from a rider's order). Same rules as for our own commands.
+        /// </summary>
+        public static bool AttachPathIfNeeded(UnitEntityData executor, UnitCommand command, out float pathLength, out string failure)
+        {
+            pathLength = 0f;
+            failure = null;
+            if (executor == null || command == null) return false;
+            if (!NeedsPrecomputedPath(executor, command)) return false;
+            if (!TryAttachPath(executor, command, out pathLength, out failure)) return false;
+            ApplyTurnBasedMovementLimit(executor, pathLength);
+            return true;
         }
 
         private static bool IsInSlots(UnitEntityData unit, UnitCommand command)

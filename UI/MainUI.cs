@@ -56,6 +56,8 @@ namespace CompanionAI_Pathfinder.UI
                 DrawDivider();
                 DrawCombatModeSettings();
                 DrawDivider();
+                DrawConsumableSettings();
+                DrawDivider();
                 DrawCharacterSelection();
 
                 GUILayout.EndVertical();
@@ -253,6 +255,44 @@ namespace CompanionAI_Pathfinder.UI
                 ModSettings.Save();
             }
 
+            GUILayout.EndVertical();
+        }
+
+        /// <summary>
+        /// ★ v0.3.0: 소모품 사용 설정
+        /// </summary>
+        private static void DrawConsumableSettings()
+        {
+            var settings = ModSettings.Instance;
+            GUILayout.BeginVertical(_boxStyle);
+            GUILayout.Label($"<b>{L("ConsumableSettings")}</b>", _boldLabelStyle);
+            GUILayout.Label($"<color=#888888><size=11>{L("ConsumableSettingsDesc")}</size></color>", _descriptionStyle);
+            GUILayout.Space(5);
+
+            bool changed = false;
+            bool v;
+            v = DrawCheckbox(settings.UseConsumables, L("UseConsumables")); changed |= v != settings.UseConsumables; settings.UseConsumables = v;
+            if (settings.UseConsumables)
+            {
+                GUILayout.BeginHorizontal(); GUILayout.Space(20);
+                v = DrawCheckbox(settings.UsePotions, L("UsePotions")); changed |= v != settings.UsePotions; settings.UsePotions = v;
+                GUILayout.EndHorizontal();
+                GUILayout.BeginHorizontal(); GUILayout.Space(20);
+                v = DrawCheckbox(settings.UseScrollsAndWands, L("UseScrollsAndWands")); changed |= v != settings.UseScrollsAndWands; settings.UseScrollsAndWands = v;
+                GUILayout.EndHorizontal();
+                GUILayout.BeginHorizontal(); GUILayout.Space(20);
+                v = DrawCheckbox(settings.UseThrownItems, L("UseThrownItems")); changed |= v != settings.UseThrownItems; settings.UseThrownItems = v;
+                GUILayout.EndHorizontal();
+
+                GUILayout.BeginHorizontal();
+                GUILayout.Label($"{L("PotionHealThreshold")}:", GUILayout.Width(260));
+                int threshold = Mathf.RoundToInt(GUILayout.HorizontalSlider(settings.PotionHealThresholdPercent, 10f, 90f, GUILayout.Width(150)));
+                GUILayout.Label($"<color=#00FF00>{threshold}%</color>", GUILayout.Width(50));
+                GUILayout.EndHorizontal();
+                if (threshold != settings.PotionHealThresholdPercent) { settings.PotionHealThresholdPercent = threshold; changed = true; }
+            }
+
+            if (changed) ModSettings.Save();
             GUILayout.EndVertical();
         }
 
