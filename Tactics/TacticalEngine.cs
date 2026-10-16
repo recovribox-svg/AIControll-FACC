@@ -488,6 +488,10 @@ namespace CompanionAI_Pathfinder.Tactics
                 if (value <= 0f) continue;
                 value *= consumable;
                 if (needsMove) value *= 0.9f;
+                // ★ v0.3.1: an archer walking up to an enemy to touch it gives up its ranged attacks and invites
+                // attacks of opportunity (Lann walked 9 m for Aid Another).
+                if (needsMove && ctx.HasRangedWeapon && ability.Range == AbilityRange.Touch && ctx.Unit.IsEnemy(target))
+                    value *= 0.5f;
 
                 if (best == null || value > best.Value)
                 {
@@ -552,6 +556,16 @@ namespace CompanionAI_Pathfinder.Tactics
                     ? new List<UnitEntityData>() : UnitsAround(ctx.Allies, target.Position, profile.AoERadius);
             }
 
+            // ★ v0.3.1: never aim a heal at an enemy. With per-target branches, Cure on an undead enemy (damage branch)
+            // and Lay On Hands on undead stay valid, but Lay On Hands / Cure on a living enemy and Inflict on an undead
+            // one are refused. A heal whose branch cannot be evaluated counts as reaching the enemy.
+            if (targetIsEnemy && !profile.IsAoE &&
+                profile.Heals.Any(h => profile.AppliesTo(h, ability, target) != EffectApplies.No))
+            {
+                why = "heals enemy";
+                return 0f;
+            }
+
             // --- damage ---
             if (profile.DealsDamage && affectedEnemies.Count > 0)
             {
@@ -586,13 +600,16 @@ namespace CompanionAI_Pathfinder.Tactics
                 }
             }
 
-            // --- healing (never on undead: positive energy harms them) ---
+            // --- healing (undead only when the ability's own branch heals them: positive energy harms them) ---
             if (profile.Heals.Count > 0 && affectedAllies.Count > 0)
             {
                 float healValue = 0f;
                 foreach (var ally in affectedAllies)
                 {
-                    if (AbilityClassifier.IsUndeadOrConstruct(ally)) continue;
+                    var applies = profile.Heals.Select(h => profile.AppliesTo(h, ability, ally)).ToList();
+                    if (applies.All(a => a == EffectApplies.No)) continue;             // e.g. Inflict Wounds on the living
+                    // Positive energy harms undead: only heal them when the ability's own branch says it heals them.
+                    if (!applies.Contains(EffectApplies.Yes) && AbilityClassifier.IsUndeadOrConstruct(ally)) continue;
                     float hp = CombatMath.HpPercent(ally);
                     float threshold = ability.SourceItem != null && ally == unit
                         ? (ctx.Global?.PotionHealThresholdPercent ?? 50) / 100f
@@ -619,20 +636,30 @@ namespace CompanionAI_Pathfinder.Tactics
             {
                 float controlValue = 0f;
                 bool isMark = !profile.HarmfulToEnemies && profile.ControlStrength == ControlStrength.None;
+                // ★ v0.3.1: marks 0.15 → 0.1. Aid Another (+2 for one ally, one round) out-valued Lann's full attack
+                // and walked him 9 m into melee.
                 float strength = profile.ControlStrength == ControlStrength.Hard ? 1f :
                                  profile.ControlStrength == ControlStrength.Soft ? 0.4f :
-                                 isMark ? 0.15f : 0.25f;
+                                 isMark ? 0.1f : 0.25f;
                 // Non-control debuffs/marks repeated on new targets every turn are the "spam" pattern: diminish them.
                 if (profile.ControlStrength == ControlStrength.None && CombatMemory.TimesUsed(unit, ability) >= 2)
                     strength *= 0.3f;
+                // A one-round / next-attack effect lasts one round, not the rest of the fight.
+                float effectRounds = profile.BuffsOnlyHelpNextAttack ? 1f : Math.Min(ctx.ExpectedRounds, 3f);
                 foreach (var enemy in affectedEnemies)
                 {
-                    if (profile.TargetBuffs.Any(b => enemy.Buffs.HasFact(b))) continue;
+                    var buffs = profile.TargetBuffs.Where(b => profile.BuffAppliesTo(b, ability, enemy) != EffectApplies.No).ToList();
+                    if (buffs.Count == 0) continue;
+                    if (buffs.Any(b => enemy.Buffs.HasFact(b))) continue;
                     if (profile.Control != CCType.None && AbilityClassifier.HasCCImmunity(enemy, profile.Control)) continue;
                     if (CombatRulesAnalyzer.AnalyzeResistance(unit, enemy, ability).IsCompletelyIneffective) continue;
                     float p = CombatMath.SpellResistancePass(unit, enemy, ability) * CombatMath.SaveFailChance(ability, profile, enemy);
                     if (profile.NeedsAttackRoll) p *= CombatMath.SpellAttackHitChance(unit, enemy, ability);
-                    controlValue += p * CombatMath.Threat(enemy) * strength * Math.Min(ctx.ExpectedRounds, 3f);
+                    float enemyValue = p * CombatMath.Threat(enemy) * strength * effectRounds;
+                    // A mark only pays off when someone else in the party is fighting that enemy.
+                    if (isMark && !(enemy.CombatState?.EngagedUnits?.Any(u => u != unit && !unit.IsEnemy(u)) ?? false))
+                        enemyValue *= 0.5f;
+                    controlValue += enemyValue;
                 }
                 if (controlValue > 0f)
                 {
@@ -645,14 +672,23 @@ namespace CompanionAI_Pathfinder.Tactics
             bool appliesHelpfulBuff = !profile.HarmfulToEnemies || profile.HelpfulToAllies
                 ? (!targetIsEnemy && profile.TargetBuffs.Count > 0) || profile.CasterBuffs.Count > 0
                 : profile.CasterBuffs.Count > 0;
-            if (appliesHelpfulBuff && !profile.DealsDamage)
+            // ★ v0.3.1: buffs that come with a heal (Lay On Hands mercies, hidden trackers) are part of the heal, not a
+            // reason to cast it at full HP; a cleanse's buffs are judged by what it removes (below); a buff spent by the
+            // next attack or lasting one round (Perfect Strike) is useless once the unit has no attack left this turn.
+            bool attackLeft = ctx.HasStandard || ctx.CanFullAttack;
+            if (appliesHelpfulBuff && !profile.DealsDamage && profile.Heals.Count == 0 && !profile.IsCleanse &&
+                (!profile.BuffsOnlyHelpNextAttack || attackLeft))
             {
                 float buffValue = 0f;
                 var recipients = profile.TargetBuffs.Count > 0 && !targetIsEnemy ? affectedAllies : new List<UnitEntityData> { unit };
-                var buffs = profile.TargetBuffs.Count > 0 && !targetIsEnemy ? profile.TargetBuffs : profile.CasterBuffs;
+                var allBuffs = profile.TargetBuffs.Count > 0 && !targetIsEnemy ? profile.TargetBuffs : profile.CasterBuffs;
                 foreach (var ally in recipients.Take(5))
                 {
+                    var buffs = allBuffs.Where(b => profile.BuffAppliesTo(b, ability, ally) != EffectApplies.No).ToList();
+                    if (buffs.Count == 0) continue;
                     if (buffs.Any(b => ally.Buffs.HasFact(b))) continue;                    // already active
+                    // Next-attack buffs only help the unit itself, this turn.
+                    if (profile.BuffsOnlyHelpNextAttack && ally != unit) continue;
                     if (CombatMemory.LastCastRound(unit, ability, ally) == ctx.Round) continue; // cast this round already
                     bool fighting = (ally.CombatState?.IsEngaged ?? false) || ally == unit;
                     float perRound = 1f + level * 1.5f;
@@ -667,8 +703,29 @@ namespace CompanionAI_Pathfinder.Tactics
                 }
             }
 
+            // --- cleanses (Remove Fear, Treat Affliction...): only when the target has something to remove ---
+            if (profile.RemovesFromTarget && affectedAllies.Count > 0)
+            {
+                float cleanseValue = 0f;
+                foreach (var ally in affectedAllies.Where(profile.WouldRemoveSomething))
+                {
+                    bool fighting = (ally.CombatState?.IsEngaged ?? false) || ally == unit;
+                    cleanseValue += (2f + 2f * level) * Math.Min(ctx.ExpectedRounds, 3f) * (fighting ? 1f : 0.6f);
+                }
+                if (cleanseValue > 0f)
+                {
+                    value += cleanseValue * RoleWeight(ctx, "heal");
+                    reasons.Add("cleanse");
+                }
+            }
+
             // --- effects the detector cannot verify: allow once per combat per target/caster ---
-            if (value <= 0f && (profile.Enchants || profile.Summons || profile.Dispels || profile.RemovesBuffs || !profile.HasDetectableEffect))
+            // ★ v0.3.1: not for abilities whose effect IS verifiable (damage, heal, cleanse): a zero value there means
+            // "not useful now" - a healing potion at full HP fell through to the "dispel" fallback (2.0) in v0.3.0.
+            // Items never use the dispel/utility fallback: a consumable is gone once used.
+            bool verifiable = profile.DealsDamage || profile.Heals.Count > 0 || profile.RemovesFromTarget;
+            if (value <= 0f && !verifiable &&
+                (profile.Enchants || profile.Summons || profile.Dispels || profile.RemovesBuffs || !profile.HasDetectableEffect))
             {
                 bool usedOnTarget = CombatMemory.LastCastRound(unit, ability, target).HasValue;
                 if (!usedOnTarget)
@@ -682,6 +739,10 @@ namespace CompanionAI_Pathfinder.Tactics
                     {
                         value += (1f + level * 1.5f) * ctx.ExpectedRounds * 0.5f * RoleWeight(ctx, "buff");
                         reasons.Add("enchant");
+                    }
+                    else if (ability.SourceItem != null)
+                    {
+                        // consumables: nothing verifiable to gain
                     }
                     else if (profile.Dispels || profile.RemovesBuffs)
                     {

@@ -190,11 +190,14 @@ namespace CompanionAI_Pathfinder.Tactics
         public static float EstimateAbilityDamage(AbilityData ability, AbilityProfile profile, UnitEntityData target)
         {
             if (profile.Damage.Count == 0) return 0f;
+            if (target != null && profile.Damage.All(d => profile.AppliesTo(d, ability, target) == EffectApplies.No)) return 0f;
             var ctx = CreateContext(ability, target != null ? new TargetWrapper(target) : null);
             int cl = Math.Max(1, ability.CalculateParams()?.CasterLevel ?? 1);
             float total = 0f;
             foreach (var dmg in profile.Damage)
             {
+                // ★ v0.3.1: only the branch that runs for this target (Inflict Wounds heals undead, Cure harms them).
+                if (target != null && profile.AppliesTo(dmg, ability, target) == EffectApplies.No) continue;
                 float avg = EvaluateDice(dmg.Value, ctx, Math.Min(cl, 10));
                 if (dmg.Half) avg *= 0.5f;
                 total += avg;
@@ -205,11 +208,15 @@ namespace CompanionAI_Pathfinder.Tactics
         public static float EstimateAbilityHeal(AbilityData ability, AbilityProfile profile, UnitEntityData target)
         {
             if (profile.Heals.Count == 0) return 0f;
+            if (target != null && profile.Heals.All(h => profile.AppliesTo(h, ability, target) == EffectApplies.No)) return 0f;
             var ctx = CreateContext(ability, target != null ? new TargetWrapper(target) : null);
             int cl = Math.Max(1, ability.CalculateParams()?.CasterLevel ?? 1);
             float total = 0f;
             foreach (var heal in profile.Heals)
+            {
+                if (target != null && profile.AppliesTo(heal, ability, target) == EffectApplies.No) continue;
                 total += EvaluateDice(heal.Value, ctx, Math.Min(cl, 5));
+            }
             return total;
         }
 

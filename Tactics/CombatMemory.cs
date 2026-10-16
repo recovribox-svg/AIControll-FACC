@@ -37,6 +37,7 @@ namespace CompanionAI_Pathfinder.Tactics
             Uses.Clear();
             Turns.Clear();
             _lastRound = int.MaxValue;
+            AbilityProfile.ClearConditionCache();
         }
 
         public static string AbilityKey(AbilityData ability)
@@ -80,13 +81,18 @@ namespace CompanionAI_Pathfinder.Tactics
     {
         public int Round { get; }
         public int Decisions { get; set; }
-        public int WaitFrames { get; set; }
+        /// <summary>★ v0.3.1: wait bookkeeping in real seconds (frame counts depend on FPS).</summary>
+        public float WaitStarted { get; set; } = -1f;
+        public float LastProgress { get; set; }
+        public float LastTick { get; set; }
+        public UnityEngine.Vector3 LastPosition { get; set; }
         public bool Finished { get; set; }
         public readonly HashSet<string> Failed = new HashSet<string>();
 
         /// <summary>The last command we issued and the candidate it came from (to learn from no-op results).</summary>
         public UnitCommand LastCommand { get; set; }
         public string LastCandidateKey { get; set; }
+        public ActionSlot LastSlot { get; set; }
 
         public TurnMemory(int round)
         {

@@ -5,13 +5,22 @@
 // abilities such as Appraise Foe score as attacks. This walker recurses through ANY field of type ActionList /
 // GameAction[] / GameAction and into referenced abilities (sticky-touch deliveries, ContextActionCastSpell, ...), and
 // keeps "no detectable effect" as an explicit result instead of a silent default.
+//
+// ★ v0.3.1: effects behind a Conditional (Cure/Inflict Wounds: "undead → heal / else damage", Lay On Hands) carry the
+// branch they sit in, and AppliesTo() evaluates that branch against a concrete target. v0.3.0 counted both branches
+// for everyone, so Inflict Light Wounds was valued as a heal on living Camellia and as damage on an undead Skeletal
+// Champion (where it heals). Also records what an ability removes (cleanses) and buffs that only last for the next
+// attack (RemoveBuffOnAttack / ≤ 1 round, e.g. Perfect Strike).
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 using Kingmaker.Blueprints;
 using Kingmaker.Blueprints.Classes.Spells;
+using Kingmaker.Designers.EventConditionActionSystem.Actions;
+using Kingmaker.Designers.Mechanics.Facts;
 using Kingmaker.ElementsSystem;
+using Kingmaker.EntitySystem.Entities;
 using Kingmaker.EntitySystem.Stats;
 using Kingmaker.UnitLogic;
 using Kingmaker.UnitLogic.Abilities;
@@ -19,19 +28,36 @@ using Kingmaker.UnitLogic.Abilities.Blueprints;
 using Kingmaker.UnitLogic.Abilities.Components;
 using Kingmaker.UnitLogic.Buffs.Blueprints;
 using Kingmaker.UnitLogic.FactLogic;
+using Kingmaker.UnitLogic.Mechanics;
 using Kingmaker.UnitLogic.Mechanics.Actions;
+using Kingmaker.UnitLogic.Mechanics.Conditions;
+using Kingmaker.Utility;
+using UnityEngine;
 using CompanionAI_Pathfinder.Analysis;
 
 namespace CompanionAI_Pathfinder.Tactics
 {
     public enum ControlStrength { None = 0, Soft = 1, Hard = 2 }
 
+    /// <summary>Result of evaluating an effect's Conditional branch for one target.</summary>
+    public enum EffectApplies { Unconditional, Yes, No, Unknown }
+
+    /// <summary>One enclosing Conditional: the effect runs when the checker evaluates to <see cref="Branch"/>.</summary>
+    public sealed class EffectGuard
+    {
+        public ConditionsChecker Checker;
+        public bool Branch;
+    }
+
     public sealed class AbilityProfile
     {
         public BlueprintAbility Blueprint { get; }
 
         public readonly List<ContextActionDealDamage> Damage = new List<ContextActionDealDamage>();
+        /// <summary>Heals of the ability's target(s).</summary>
         public readonly List<ContextActionHealTarget> Heals = new List<ContextActionHealTarget>();
+        /// <summary>★ v0.3.1: heals run on the caster (ContextActionOnContextCaster, life drain).</summary>
+        public readonly List<ContextActionHealTarget> CasterHeals = new List<ContextActionHealTarget>();
         /// <summary>Buffs applied to the ability's target(s).</summary>
         public readonly List<BlueprintBuff> TargetBuffs = new List<BlueprintBuff>();
         /// <summary>Buffs applied to the caster (ToCaster / ContextActionOnContextCaster).</summary>
@@ -41,6 +67,25 @@ namespace CompanionAI_Pathfinder.Tactics
         public bool Dispels { get; private set; }
         public bool RemovesBuffs { get; private set; }
         public bool Enchants { get; private set; }
+
+        /// <summary>Descriptors of buffs the ability removes from its target (ContextActionRemoveBuffsByDescriptor).</summary>
+        public SpellDescriptor RemovedDescriptors { get; private set; }
+        /// <summary>Specific buffs the ability removes from its target (ContextActionRemoveBuff without ToCaster).</summary>
+        public readonly List<BlueprintBuff> RemovedBuffs = new List<BlueprintBuff>();
+
+        /// <summary>Removes buffs/conditions from its target and neither damages nor heals: its worth is what it removes.</summary>
+        public bool RemovesFromTarget => (RemovedDescriptors != SpellDescriptor.None || RemovedBuffs.Count > 0) &&
+                                         Damage.Count == 0 && Heals.Count == 0;
+
+        /// <summary>
+        /// Removes whole classes of conditions by descriptor (fear, poison, disease...). The buffs such an ability applies
+        /// (protection, cooldown markers) only matter together with the cleanse. Removing one specific buff, by contrast,
+        /// is often a side effect of a real buff (e.g. a haste effect removing slow) and does not make it a cleanse.
+        /// </summary>
+        public bool IsCleanse => RemovedDescriptors != SpellDescriptor.None && Damage.Count == 0 && Heals.Count == 0;
+
+        /// <summary>Every buff it applies is spent by the next attack or lasts at most one round (Perfect Strike...).</summary>
+        public bool BuffsOnlyHelpNextAttack { get; private set; }
 
         public SavingThrowType Save { get; private set; } = SavingThrowType.Unknown;
         public bool HalfOnSave { get; private set; }
@@ -62,10 +107,15 @@ namespace CompanionAI_Pathfinder.Tactics
         public bool HasLongBuff { get; private set; }
 
         public bool HasDetectableEffect =>
-            Damage.Count > 0 || Heals.Count > 0 || TargetBuffs.Count > 0 || CasterBuffs.Count > 0 ||
+            Damage.Count > 0 || Heals.Count > 0 || CasterHeals.Count > 0 || TargetBuffs.Count > 0 || CasterBuffs.Count > 0 ||
             Summons || Dispels || RemovesBuffs || Enchants;
 
         public bool DealsDamage => Damage.Count > 0;
+
+        private readonly Dictionary<object, EffectGuard[]> m_Guards = new Dictionary<object, EffectGuard[]>();
+        private readonly Dictionary<BlueprintBuff, EffectGuard[]> m_BuffGuards = new Dictionary<BlueprintBuff, EffectGuard[]>();
+        private static readonly EffectGuard[] NoGuards = new EffectGuard[0];
+        private int m_ShortBuffs, m_AllBuffs;
 
         private AbilityProfile(BlueprintAbility blueprint)
         {
@@ -99,7 +149,14 @@ namespace CompanionAI_Pathfinder.Tactics
             return profile;
         }
 
-        public static void ClearCache() => Cache.Clear();
+        public static void ClearCache()
+        {
+            Cache.Clear();
+            ClearConditionCache();
+        }
+
+        /// <summary>Per-target condition results are keyed by unit id; drop them when a combat ends.</summary>
+        public static void ClearConditionCache() => CheckerCache.Clear();
 
         #endregion
 
@@ -109,6 +166,7 @@ namespace CompanionAI_Pathfinder.Tactics
         {
             var visited = new HashSet<BlueprintAbility>();
             AnalyzeAbility(Blueprint, visited, 0, toCaster: false);
+            BuffsOnlyHelpNextAttack = m_AllBuffs > 0 && m_ShortBuffs == m_AllBuffs;
 
             IsCharge = Blueprint.GetComponent<AbilityCustomCharge>() != null;
 
@@ -147,7 +205,7 @@ namespace CompanionAI_Pathfinder.Tactics
             {
                 if (run.SavingThrowType != SavingThrowType.Unknown && Save == SavingThrowType.Unknown)
                     Save = run.SavingThrowType;
-                Walk(run.Actions?.Actions, visited, depth, toCaster, 0);
+                Walk(run.Actions?.Actions, visited, depth, toCaster, 0, NoGuards);
             }
 
             var projectile = bp.GetComponent<AbilityDeliverProjectile>();
@@ -162,7 +220,8 @@ namespace CompanionAI_Pathfinder.Tactics
             }
         }
 
-        private void Walk(GameAction[] actions, HashSet<BlueprintAbility> visited, int abilityDepth, bool toCaster, int depth)
+        private void Walk(GameAction[] actions, HashSet<BlueprintAbility> visited, int abilityDepth, bool toCaster, int depth,
+                          EffectGuard[] guards)
         {
             if (actions == null || depth > 12) return;
 
@@ -170,20 +229,36 @@ namespace CompanionAI_Pathfinder.Tactics
             {
                 if (action == null) continue;
 
+                // Conditional: each branch's effects only happen when the condition has that outcome for the target.
+                if (action is Conditional conditional)
+                {
+                    Walk(conditional.IfTrue?.Actions, visited, abilityDepth, toCaster, depth + 1, With(guards, conditional.ConditionsChecker, true));
+                    Walk(conditional.IfFalse?.Actions, visited, abilityDepth, toCaster, depth + 1, With(guards, conditional.ConditionsChecker, false));
+                    continue;
+                }
+
                 switch (action)
                 {
                     case ContextActionDealDamage dmg:
                         Damage.Add(dmg);
+                        m_Guards[dmg] = guards;
                         if (dmg.HalfIfSaved) HalfOnSave = true;
                         break;
                     case ContextActionHealTarget heal:
-                        Heals.Add(heal);
+                        // A heal run on the caster (life drain) is not a heal of the target.
+                        if (toCaster) CasterHeals.Add(heal);
+                        else Heals.Add(heal);
+                        m_Guards[heal] = guards;
                         break;
                     case ContextActionApplyBuff apply when apply.Buff != null:
                         if (toCaster || apply.ToCaster) CasterBuffs.Add(apply.Buff);
                         else TargetBuffs.Add(apply.Buff);
+                        // The same buff in two branches: treat as unconditional.
+                        m_BuffGuards[apply.Buff] = m_BuffGuards.ContainsKey(apply.Buff) ? NoGuards : guards;
                         if (apply.Permanent || (apply.DurationValue != null && (int)apply.DurationValue.Rate > 0))
                             HasLongBuff = true;
+                        m_AllBuffs++;
+                        if (IsNextAttackBuff(apply)) m_ShortBuffs++;
                         break;
                     case ContextActionSpawnMonster _:
                         Summons = true;
@@ -191,9 +266,13 @@ namespace CompanionAI_Pathfinder.Tactics
                     case ContextActionDispelMagic _:
                         Dispels = true;
                         break;
-                    case ContextActionRemoveBuff _:
-                    case ContextActionRemoveBuffsByDescriptor _:
+                    case ContextActionRemoveBuff remove:
                         RemovesBuffs = true;
+                        if (!remove.ToCaster && !toCaster && remove.Buff != null) RemovedBuffs.Add(remove.Buff);
+                        break;
+                    case ContextActionRemoveBuffsByDescriptor removeByDescriptor:
+                        RemovesBuffs = true;
+                        if (!toCaster) RemovedDescriptors |= removeByDescriptor.SpellDescriptor.Value;
                         break;
                     case ContextActionSavingThrow save:
                         if (save.Type != SavingThrowType.Unknown && Save == SavingThrowType.Unknown) Save = save.Type;
@@ -209,11 +288,166 @@ namespace CompanionAI_Pathfinder.Tactics
 
                 bool childToCaster = toCaster || action is ContextActionOnContextCaster;
                 foreach (var child in ChildActionLists(action))
-                    Walk(child, visited, abilityDepth, childToCaster, depth + 1);
+                    Walk(child, visited, abilityDepth, childToCaster, depth + 1, guards);
 
                 foreach (var referenced in ReferencedAbilities(action))
                     AnalyzeAbility(referenced, visited, abilityDepth + 1, childToCaster);
             }
+        }
+
+        private static EffectGuard[] With(EffectGuard[] guards, ConditionsChecker checker, bool branch)
+        {
+            if (checker == null) return guards;
+            var result = new EffectGuard[guards.Length + 1];
+            guards.CopyTo(result, 0);
+            result[guards.Length] = new EffectGuard { Checker = checker, Branch = branch };
+            return result;
+        }
+
+        /// <summary>Spent by the next attack (RemoveBuffOnAttack) or lasting at most one round.</summary>
+        private static bool IsNextAttackBuff(ContextActionApplyBuff apply)
+        {
+            try
+            {
+                if (apply.Buff.GetComponent<RemoveBuffOnAttack>() != null) return true;
+                if (apply.Permanent) return false;
+                if (apply.UseDurationSeconds) return apply.DurationSeconds <= 6.01f;
+                var d = apply.DurationValue;
+                if (d == null || (int)d.Rate > 0) return false;
+                bool noDice = d.DiceType == Kingmaker.RuleSystem.DiceType.Zero || (d.DiceCountValue?.IsValueSimple == true && d.DiceCountValue.Value == 0);
+                return noDice && d.BonusValue != null && d.BonusValue.IsValueSimple && d.BonusValue.Value <= 1;
+            }
+            catch
+            {
+                return false;
+            }
+        }
+
+        #endregion
+
+        #region Per-target evaluation
+
+        /// <summary>
+        /// Conditions that only read facts of the target/caster (no dice, no area or encounter state), so evaluating
+        /// them outside the real cast is safe. Anything else makes the branch "Unknown" (counted, as in v0.3.0).
+        /// </summary>
+        private static readonly HashSet<Type> SafeConditions = new HashSet<Type>
+        {
+            typeof(ContextConditionHasFact), typeof(ContextConditionHasBuff), typeof(ContextConditionHasBuffFromCaster),
+            typeof(ContextConditionHasBuffWithDescriptor), typeof(ContextConditionAlignment), typeof(ContextConditionCasterHasFact),
+            typeof(ContextConditionIsAlly), typeof(ContextConditionIsEnemy), typeof(ContextConditionIsCaster),
+            typeof(ContextConditionTargetIsYourself), typeof(ContextConditionAlive), typeof(ContextConditionIsUnconscious),
+            typeof(ContextConditionIsHelpless), typeof(ContextConditionIsPartyMember), typeof(ContextConditionCharacterClass),
+            typeof(ContextConditionSize), typeof(ContextConditionIsAnimalCompanion)
+        };
+
+        private sealed class CheckerResult
+        {
+            public int Frame;
+            public bool? Result;
+        }
+
+        /// <summary>Checker outcome per (checker, target) within one frame; a decision evaluates many candidates.</summary>
+        private static readonly Dictionary<ConditionsChecker, Dictionary<string, CheckerResult>> CheckerCache =
+            new Dictionary<ConditionsChecker, Dictionary<string, CheckerResult>>();
+
+        private static readonly HashSet<string> ReportedUnknown = new HashSet<string>();
+
+        public EffectApplies AppliesTo(GameAction effect, AbilityData ability, UnitEntityData target)
+        {
+            return Evaluate(effect != null && m_Guards.TryGetValue(effect, out var g) ? g : NoGuards, ability, target);
+        }
+
+        public EffectApplies BuffAppliesTo(BlueprintBuff buff, AbilityData ability, UnitEntityData target)
+        {
+            return Evaluate(buff != null && m_BuffGuards.TryGetValue(buff, out var g) ? g : NoGuards, ability, target);
+        }
+
+        public bool HasGuardedEffects => m_Guards.Values.Any(g => g.Length > 0) || m_BuffGuards.Values.Any(g => g.Length > 0);
+
+        private static EffectApplies Evaluate(EffectGuard[] guards, AbilityData ability, UnitEntityData target)
+        {
+            if (guards.Length == 0) return EffectApplies.Unconditional;
+            if (ability == null || target == null) return EffectApplies.Unknown;
+
+            bool unknown = false;
+            foreach (var guard in guards)
+            {
+                bool? result = CheckFor(guard.Checker, ability, target);
+                if (!result.HasValue) { unknown = true; continue; }
+                if (result.Value != guard.Branch) return EffectApplies.No;
+            }
+            return unknown ? EffectApplies.Unknown : EffectApplies.Yes;
+        }
+
+        private static bool? CheckFor(ConditionsChecker checker, AbilityData ability, UnitEntityData target)
+        {
+            int frame = Time.frameCount;
+            if (!CheckerCache.TryGetValue(checker, out var perUnit))
+                CheckerCache[checker] = perUnit = new Dictionary<string, CheckerResult>();
+            if (perUnit.TryGetValue(target.UniqueId, out var cached) && cached.Frame == frame) return cached.Result;
+
+            bool? result = null;
+            try
+            {
+                if (checker.Conditions == null || checker.Conditions.Length == 0)
+                {
+                    result = true;
+                }
+                else if (!checker.Conditions.All(c => c == null || SafeConditions.Contains(c.GetType())))
+                {
+                    string types = string.Join(",", checker.Conditions.Where(c => c != null && !SafeConditions.Contains(c.GetType()))
+                                                                     .Select(c => c.GetType().Name).Distinct());
+                    if (ReportedUnknown.Add($"{ability.Blueprint?.AssetGuid}|{types}"))
+                        Main.Log($"[Profile] {ability.Name}: branch condition {types} not evaluated - both branches counted");
+                }
+                else
+                {
+                    var context = CombatMath.CreateContext(ability, new TargetWrapper(target));
+                    if (context != null)
+                    {
+                        using (context.GetDataScope(new TargetWrapper(target)))
+                        {
+                            bool and = checker.Operation == Operation.And;
+                            bool acc = and;
+                            foreach (var condition in checker.Conditions)
+                            {
+                                if (condition == null) continue;
+                                bool r = condition.Check();
+                                if (and && !r) { acc = false; break; }
+                                if (!and && r) { acc = true; break; }
+                            }
+                            result = acc;
+                        }
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                Main.Verbose($"[Profile] condition check for {ability.Name} on {target.CharacterName}: {ex.Message}");
+                result = null;
+            }
+
+            perUnit[target.UniqueId] = new CheckerResult { Frame = frame, Result = result };
+            return result;
+        }
+
+        /// <summary>The target currently has something this ability would remove.</summary>
+        public bool WouldRemoveSomething(UnitEntityData target)
+        {
+            if (target?.Buffs == null) return false;
+            try
+            {
+                foreach (var buff in target.Buffs.Enumerable)
+                {
+                    if (RemovedBuffs.Contains(buff.Blueprint)) return true;
+                    if (RemovedDescriptors != SpellDescriptor.None && buff.MaybeContext != null &&
+                        (buff.MaybeContext.SpellDescriptor & RemovedDescriptors) != SpellDescriptor.None)
+                        return true;
+                }
+            }
+            catch { }
+            return false;
         }
 
         #endregion

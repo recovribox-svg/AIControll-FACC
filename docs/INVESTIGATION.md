@@ -1,5 +1,10 @@
 # Investigation log - CompanionAI_Pathfinder
 
+- **v0.3.1** (fixes from the first 0.3.0 play logs): evidence and causes in [TACTICAL_AI.md](TACTICAL_AI.md) §6. Game
+  facts used: `Conditional {ConditionsChecker, IfTrue, IfFalse}` and `ContextCondition` reading
+  `ContextData<MechanicsContext.Data>.Current` (evaluated via `MechanicsContext.GetDataScope`); `RemoveBuffOnAttack`;
+  `ContextActionRemoveBuffsByDescriptor` matching `buff.MaybeContext.SpellDescriptor`; `UnitCommand.IsRunning` is
+  false while a command is still approaching, so movement is tracked as progress separately.
 - **v0.3.0** (decision making, weapon attacks, consumables, mount paths): see [TACTICAL_AI.md](TACTICAL_AI.md) for the
   design. The evidence came from a v0.2.119 play-session log (summary table in TACTICAL_AI.md §1), and the root causes
   were confirmed in the source and in Assembly-CSharp:

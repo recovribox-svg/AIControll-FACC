@@ -16,6 +16,15 @@ combat (primary) and real-time combat.
   hit, withdraw at very low HP.
 - **Ridden mounts** no longer follow the mouse cursor when an AI-controlled rider gives an order.
 
+**0.3.1** fixes what the first 0.3.0 play logs showed ([docs/TACTICAL_AI.md](docs/TACTICAL_AI.md) §6):
+- No more healing potions drunk at full HP.
+- Cure / Inflict Wounds and Lay On Hands are judged per target (Inflict heals undead, Cure harms them), and heals are
+  never aimed at enemies.
+- A command that ends without using its action (Albedo's repeated 0.7 m "Move+Attack") is not retried.
+- Long walks are no longer cut off by the wait timeout, and an idle leftover command no longer costs a turn.
+- Aid Another and other one-round marks are valued as one round; Perfect Strike is not used after the last attack.
+- Condition-removal abilities (e.g. Treat Affliction, if it removes by descriptor) only when there is something to remove.
+
 0.2.119 fixed companions not physically moving in turn-based combat ([docs/INVESTIGATION.md](docs/INVESTIGATION.md)).
 
 ---
@@ -23,7 +32,7 @@ combat (primary) and real-time combat.
 ## Install (players)
 
 1. Install [Unity Mod Manager](https://www.nexusmods.com/site/mods/21) into the game.
-2. Take `CompanionAI_Pathfinder_v0.3.0.zip` - prebuilt in `release\`, or build it yourself (below; output in `dist\`).
+2. Take `CompanionAI_Pathfinder_v0.3.1.zip` - prebuilt in `release\`, or build it yourself (below; output in `dist\`).
 3. Install it either way:
    - Unity Mod Manager → *Mods* tab → drag the ZIP onto the window / *Install Mod*, **or**
    - extract it to `<game>\Mods\CompanionAI_Pathfinder\` so the folder contains
