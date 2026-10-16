@@ -1,0 +1,656 @@
+// ★ v0.2.30: MovementPlanner - 이동 계획 오케스트레이터 (Pathfinder WotR 버전)
+// RT 모드 v3.5.7에서 포팅 - 전술 시스템 통합
+// ★ v0.2.65: 이동 루프 방지 메커니즘 추가
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using Kingmaker.EntitySystem.Entities;
+using Kingmaker.UnitLogic.Abilities;
+using Kingmaker.Utility;
+using UnityEngine;
+using CompanionAI_Pathfinder.Analysis;
+using CompanionAI_Pathfinder.Core;
+using CompanionAI_Pathfinder.GameInterface;
+using CompanionAI_Pathfinder.Settings;
+
+namespace CompanionAI_Pathfinder.Planning
+{
+    /// <summary>
+    /// ★ v0.2.30: 이동 관련 계획 담당
+    /// - 이동, 후퇴, 안전 이동 결정
+    /// - MovementAPI, TeamBlackboard, InfluenceMap 통합
+    /// ★ v0.2.65: 이동 루프 방지 메커니즘 추가
+    /// </summary>
+    public static class MovementPlanner
+    {
+        #region Oscillation Prevention (v0.2.65)
+
+        /// <summary>
+        /// ★ v0.2.65: 유닛별 최근 이동 위치 기록 (루프 감지용)
+        /// Key: unitId, Value: (positions, lastUpdateTime)
+        /// </summary>
+        private static readonly Dictionary<string, (List<Vector3> positions, float lastTime)> _moveHistory
+            = new Dictionary<string, (List<Vector3>, float)>();
+
+        /// <summary>
+        /// ★ v0.2.97: 이동이 차단된 유닛 (oscillation 감지 후 일시적 차단)
+        /// Key: unitId, Value: 차단된 시간
+        /// </summary>
+        private static readonly Dictionary<string, float> _movementBlockedUnits = new Dictionary<string, float>();
+
+        private const int MAX_HISTORY = 5;  // 최대 기록 수
+        private const float HISTORY_TIMEOUT = 10f;  // 기록 만료 시간 (초)
+        private const float OSCILLATION_THRESHOLD = 4f;  // 같은 위치로 간주하는 거리
+        private const float MOVEMENT_BLOCK_DURATION = 2.0f;  // ★ v0.2.97: 이동 차단 지속 시간 (초)
+
+        /// <summary>
+        /// ★ v0.2.97: 유닛이 이동 차단 상태인지 확인
+        /// Oscillation 감지 후 일정 시간 동안 모든 이동 시도 차단
+        /// </summary>
+        public static bool IsMovementBlocked(string unitId)
+        {
+            if (string.IsNullOrEmpty(unitId))
+                return false;
+
+            if (!_movementBlockedUnits.TryGetValue(unitId, out float blockedTime))
+                return false;
+
+            // 차단 시간 경과 확인
+            if (Time.time - blockedTime > MOVEMENT_BLOCK_DURATION)
+            {
+                _movementBlockedUnits.Remove(unitId);
+                Main.Verbose($"[MovementPlanner] Movement block expired for {unitId}");
+                return false;
+            }
+
+            return true;
+        }
+
+        /// <summary>
+        /// ★ v0.2.97: 유닛 이동 차단 설정
+        /// ★ v0.2.99: 차단 시 히스토리도 초기화 - 차단 해제 후 새로 시작하도록
+        /// </summary>
+        private static void BlockMovement(string unitId)
+        {
+            if (string.IsNullOrEmpty(unitId))
+                return;
+
+            _movementBlockedUnits[unitId] = Time.time;
+
+            // ★ v0.2.99: 히스토리 초기화 - 차단 해제 후 같은 패턴으로 또 감지되는 것 방지
+            _moveHistory.Remove(unitId);
+
+            Main.Log($"[MovementPlanner] ★ Movement blocked for {unitId} for {MOVEMENT_BLOCK_DURATION}s (history cleared)");
+        }
+
+        /// <summary>
+        /// ★ v0.2.65: 이동 진동 감지
+        /// 최근 이동 기록에서 비슷한 위치를 왔다갔다 하는지 확인
+        /// ★ v0.2.97: 감지 시 이동 차단 설정
+        /// </summary>
+        private static bool IsOscillating(string unitId, Vector3 newPosition)
+        {
+            if (string.IsNullOrEmpty(unitId))
+                return false;
+
+            if (!_moveHistory.TryGetValue(unitId, out var history))
+                return false;
+
+            // 오래된 기록 무시
+            if (Time.time - history.lastTime > HISTORY_TIMEOUT)
+            {
+                _moveHistory.Remove(unitId);
+                return false;
+            }
+
+            // 최근 이동 기록 중 비슷한 위치가 2회 이상 있으면 진동으로 판단
+            int similarCount = 0;
+            foreach (var pos in history.positions)
+            {
+                if (Vector3.Distance(pos, newPosition) < OSCILLATION_THRESHOLD)
+                {
+                    similarCount++;
+                    if (similarCount >= 2)
+                    {
+                        Main.Log($"[MovementPlanner] ★ Oscillation detected for {unitId} - blocking repeated movement");
+                        // ★ v0.2.97: 이동 차단 설정 - 일정 시간 동안 이동 시도 자체를 막음
+                        BlockMovement(unitId);
+                        return true;
+                    }
+                }
+            }
+
+            return false;
+        }
+
+        /// <summary>
+        /// ★ v0.2.65: 이동 위치 기록
+        /// </summary>
+        private static void RecordMovement(string unitId, Vector3 position)
+        {
+            if (string.IsNullOrEmpty(unitId))
+                return;
+
+            if (!_moveHistory.TryGetValue(unitId, out var history))
+            {
+                history = (new List<Vector3>(), Time.time);
+            }
+
+            history.positions.Add(position);
+            history.lastTime = Time.time;
+
+            // 최대 기록 수 유지
+            while (history.positions.Count > MAX_HISTORY)
+            {
+                history.positions.RemoveAt(0);
+            }
+
+            _moveHistory[unitId] = history;
+        }
+
+        /// <summary>
+        /// ★ v0.2.65: 이동 기록 초기화 (전투 종료 시 호출)
+        /// ★ v0.2.97: 이동 차단 목록도 초기화
+        /// </summary>
+        public static void ClearMoveHistory()
+        {
+            _moveHistory.Clear();
+            _movementBlockedUnits.Clear();
+        }
+
+        #endregion
+
+        #region Main Entry Points
+
+        /// <summary>
+        /// 이동 계획 (공통화)
+        /// 모든 Role에서 사용 - 적에게 도달 못하면 이동
+        /// </summary>
+        /// <param name="situation">현재 상황</param>
+        /// <param name="roleName">역할 이름 (로깅용)</param>
+        /// <param name="forceMove">공격 실패 시 이동 강제</param>
+        /// <returns>이동 행동 또는 null</returns>
+        public static MoveDecision PlanMove(Situation situation, string roleName, bool forceMove = false)
+        {
+            // ★ v0.2.97: 이동 차단 상태 체크 (oscillation 감지 후)
+            string unitId = situation.Unit?.UniqueId;
+            if (IsMovementBlocked(unitId))
+            {
+                Main.Verbose($"[{roleName}] PlanMove: Movement blocked due to oscillation");
+                return null;
+            }
+
+            // ★ v0.2.78: Move Action 가용성 체크 (턴제 전투용)
+            if (!situation.HasMoveAction)
+            {
+                Main.Verbose($"[{roleName}] PlanMove: No Move Action available");
+                return null;
+            }
+
+            // ★ v0.2.78: 물리적 이동 가능 체크
+            if (!situation.CanMove)
+            {
+                Main.Verbose($"[{roleName}] PlanMove: CanMove=false");
+                return null;
+            }
+
+            // forceMove=true면 HasHittableEnemies 체크 스킵
+            // 원거리 캐릭터가 위험 거리 내에 있으면 후퇴 이동 허용
+            if (!forceMove && situation.HasHittableEnemies)
+            {
+                // 원거리가 위험하면 이동 허용 (공격 가능해도 후퇴 필요)
+                bool isRangedInDanger = situation.PrefersRanged && situation.IsInDanger;
+                if (!isRangedInDanger)
+                    return null;
+                Main.Verbose($"[{roleName}] Ranged in danger - allowing movement despite hittable enemies");
+            }
+
+            if (!situation.HasLivingEnemies) return null;
+            if (situation.NearestEnemy == null) return null;
+
+            // Blackboard에서 전술적 타겟 결정
+            var tacticalTarget = GetTacticalMoveTarget(situation);
+            float tacticalTargetDistance = tacticalTarget != null
+                ? Vector3.Distance(situation.Unit.Position, tacticalTarget.Position)
+                : situation.NearestEnemyDistance;
+
+            Main.Log($"[{roleName}] TacticalTarget={tacticalTarget?.CharacterName ?? "null"}, Distance={tacticalTargetDistance:F1}m");
+
+            // 이동 계획
+            return PlanMoveToEnemy(situation, tacticalTarget, roleName);
+        }
+
+        /// <summary>
+        /// 후퇴 계획 (원거리 캐릭터가 적과 너무 가까울 때)
+        /// </summary>
+        public static MoveDecision PlanRetreat(Situation situation, string roleName)
+        {
+            if (situation.HasMovedThisTurn) return null;
+
+            // ★ v0.2.97: 이동 차단 상태 체크 (oscillation 감지 후)
+            string unitId = situation.Unit?.UniqueId;
+            if (IsMovementBlocked(unitId))
+            {
+                Main.Verbose($"[{roleName}] PlanRetreat: Movement blocked due to oscillation");
+                return null;
+            }
+
+            // ★ v0.2.78: Move Action 가용성 체크 (턴제 전투용)
+            if (!situation.HasMoveAction)
+            {
+                Main.Verbose($"[{roleName}] PlanRetreat: No Move Action available");
+                return null;
+            }
+
+            if (!situation.CanMove) return null;
+
+            var unit = situation.Unit;
+            var nearestEnemy = situation.NearestEnemy;
+            if (nearestEnemy == null) return null;
+
+            // 현재 위치가 이미 안전 거리 이상이면 후퇴 불필요
+            if (situation.NearestEnemyDistance >= situation.MinSafeDistance)
+            {
+                Main.Verbose($"[{roleName}] Already safe, no retreat needed");
+                return null;
+            }
+
+            // MovementAPI로 후퇴 위치 찾기
+            var retreatScore = MovementAPI.FindRetreatPosition(
+                unit,
+                situation.Enemies,
+                situation.MinSafeDistance,
+                situation.InfluenceMap
+            );
+
+            if (retreatScore == null)
+            {
+                Main.Verbose($"[{roleName}] No reachable retreat position");
+                return null;
+            }
+
+            Main.Log($"[{roleName}] Retreat to ({retreatScore.Position.x:F1},{retreatScore.Position.z:F1}) " +
+                $"Score={retreatScore.TotalScore:F1}");
+
+            return new MoveDecision
+            {
+                Destination = retreatScore.Position,
+                Reason = $"Retreat from {nearestEnemy.CharacterName}",
+                Score = retreatScore.TotalScore
+            };
+        }
+
+        /// <summary>
+        /// ★ v0.2.56: 후퇴 필요 여부 확인 (강화)
+        /// 단순 거리 체크 → 복합 위협 분석
+        /// </summary>
+        public static bool ShouldRetreat(Situation situation)
+        {
+            if (!situation.PrefersRanged)
+                return false;
+
+            // 동적 안전 거리 계산
+            float safeDist = GetDynamicSafeDistance(situation);
+
+            // 1. 기본: 가장 가까운 적이 안전 거리 내
+            if (situation.NearestEnemyDistance < safeDist)
+            {
+                Main.Verbose($"[MovementPlanner] ShouldRetreat: nearest enemy {situation.NearestEnemyDistance:F1}m < safe {safeDist:F1}m");
+                return true;
+            }
+
+            // 2. 복수 적이 접근 중 (10m 내에 2명 이상)
+            int nearbyEnemies = CountEnemiesWithinRange(situation, 10f);
+            if (nearbyEnemies >= 2 && situation.NearestEnemyDistance < safeDist * 1.5f)
+            {
+                Main.Verbose($"[MovementPlanner] ShouldRetreat: {nearbyEnemies} enemies nearby, nearest={situation.NearestEnemyDistance:F1}m");
+                return true;
+            }
+
+            // 3. HP 낮으면 더 빨리 후퇴 (HP 50% 미만이면 안전 거리 1.5배)
+            if (situation.HPPercent < 50f && situation.NearestEnemyDistance < safeDist * 1.5f)
+            {
+                Main.Verbose($"[MovementPlanner] ShouldRetreat: low HP ({situation.HPPercent:F0}%), nearest={situation.NearestEnemyDistance:F1}m");
+                return true;
+            }
+
+            return false;
+        }
+
+        /// <summary>
+        /// ★ v0.2.56: 동적 안전 거리 계산
+        /// HP, 적 수, 무기 범위에 따라 조절
+        /// </summary>
+        private static float GetDynamicSafeDistance(Situation situation)
+        {
+            float baseDist = situation.MinSafeDistance;  // 기본 10f
+
+            // HP 낮으면 안전 거리 증가
+            if (situation.HPPercent < 30f)
+                baseDist *= 1.5f;
+            else if (situation.HPPercent < 50f)
+                baseDist *= 1.2f;
+
+            // 적이 많으면 안전 거리 증가
+            int nearbyEnemies = CountEnemiesWithinRange(situation, 15f);
+            if (nearbyEnemies >= 3)
+                baseDist *= 1.3f;
+
+            // 최대 20m, 최소 8m
+            return Mathf.Clamp(baseDist, 8f, 20f);
+        }
+
+        /// <summary>
+        /// ★ v0.2.56: 특정 범위 내 적 수 카운트
+        /// </summary>
+        private static int CountEnemiesWithinRange(Situation situation, float range)
+        {
+            if (situation.Enemies == null || situation.Unit == null)
+                return 0;
+
+            int count = 0;
+            Vector3 unitPos = situation.Unit.Position;
+
+            foreach (var enemy in situation.Enemies)
+            {
+                if (enemy == null) continue;
+                try
+                {
+                    if (enemy.Descriptor?.State?.IsDead == true) continue;
+                    float dist = Vector3.Distance(unitPos, enemy.Position);
+                    if (dist <= range)
+                        count++;
+                }
+                catch { }
+            }
+            return count;
+        }
+
+        #endregion
+
+        #region Tactical Target
+
+        /// <summary>
+        /// 전술적 이동 타겟 결정
+        /// Blackboard의 SharedTarget이 있으면 우선, 없으면 BestTarget 또는 NearestEnemy
+        /// </summary>
+        private static UnitEntityData GetTacticalMoveTarget(Situation situation)
+        {
+            // 1. Blackboard의 SharedTarget 확인
+            var sharedTarget = TeamBlackboard.Instance?.SharedTarget;
+            if (sharedTarget != null && sharedTarget.HPLeft > 0 && situation.Enemies.Contains(sharedTarget))
+            {
+                Main.Log($"[MovementPlanner] ★ Using SharedTarget: {sharedTarget.CharacterName}");
+                return sharedTarget;
+            }
+
+            // 2. BestTarget 확인 (Situation에서 이미 계산됨)
+            if (situation.BestTarget != null && situation.BestTarget.HPLeft > 0)
+            {
+                Main.Log($"[MovementPlanner] Using BestTarget: {situation.BestTarget.CharacterName}");
+                return situation.BestTarget;
+            }
+
+            // 3. 폴백: NearestEnemy
+            return situation.NearestEnemy;
+        }
+
+        #endregion
+
+        #region Movement Planning
+
+        /// <summary>
+        /// 적에게 이동 계획
+        /// </summary>
+        private static MoveDecision PlanMoveToEnemy(Situation situation, UnitEntityData tacticalTarget, string roleName)
+        {
+            // 이번 턴 이미 이동했으면 스킵 (추가 이동 허용 조건 제외)
+            if (situation.HasMovedThisTurn && !situation.AllowChaseMove && !situation.AllowPostAttackMove)
+            {
+                Main.Verbose($"[{roleName}] Already moved this turn");
+                return null;
+            }
+
+            if (!situation.CanMove) return null;
+            if (situation.NearestEnemy == null) return null;
+
+            var unit = situation.Unit;
+            var target = tacticalTarget ?? situation.NearestEnemy;
+
+            if (situation.PrefersRanged)
+            {
+                // 원거리: 안전한 공격 위치 찾기
+                return PlanRangedPosition(situation, target, roleName);
+            }
+            else
+            {
+                // 근접: 적에게 접근 위치 찾기
+                return PlanMeleePosition(situation, target, roleName);
+            }
+        }
+
+        /// <summary>
+        /// 원거리 공격 위치 계획
+        /// ★ v0.2.65: 이동 루프 감지 추가
+        /// ★ v0.2.94: Range 캐릭터는 적에게 접근하지 않음 - 후퇴 또는 제자리
+        /// </summary>
+        private static MoveDecision PlanRangedPosition(Situation situation, UnitEntityData target, string roleName)
+        {
+            var unit = situation.Unit;
+            float weaponRange = situation.WeaponRange;
+            string unitId = unit?.UniqueId;
+
+            // MovementAPI로 최적 원거리 위치 찾기
+            var bestPosition = MovementAPI.FindRangedAttackPosition(
+                unit,
+                situation.Enemies,
+                weaponRange,
+                situation.InfluenceMap
+            );
+
+            if (bestPosition == null)
+            {
+                // ★ v0.2.94: Range 캐릭터는 적에게 접근하지 않음!
+                // 대신 위험 상황이면 후퇴 시도
+                if (situation.IsInDanger)
+                {
+                    var retreatPosition = MovementAPI.FindRetreatPosition(
+                        unit,
+                        situation.Enemies,
+                        situation.MinSafeDistance,
+                        situation.InfluenceMap
+                    );
+
+                    if (retreatPosition != null)
+                    {
+                        if (IsOscillating(unitId, retreatPosition.Position))
+                        {
+                            Main.Log($"[{roleName}] Retreat blocked - oscillation detected");
+                            return null;
+                        }
+
+                        RecordMovement(unitId, retreatPosition.Position);
+                        Main.Log($"[{roleName}] No attack position, tactical retreat to ({retreatPosition.Position.x:F1},{retreatPosition.Position.z:F1})");
+                        return new MoveDecision
+                        {
+                            Destination = retreatPosition.Position,
+                            Reason = $"Retreat - no safe attack position",
+                            Score = retreatPosition.TotalScore
+                        };
+                    }
+                }
+
+                // 안전하고 공격 위치도 없으면 제자리 유지
+                Main.Verbose($"[{roleName}] No safe ranged position found, staying put");
+                return null;
+            }
+
+            // 현재 위치와 거의 같으면 이동 불필요
+            float moveDistance = Vector3.Distance(unit.Position, bestPosition.Position);
+            if (moveDistance < 1f)
+            {
+                Main.Verbose($"[{roleName}] Already at optimal position");
+                return null;
+            }
+
+            // ★ v0.2.65: 진동 감지
+            if (IsOscillating(unitId, bestPosition.Position))
+            {
+                Main.Log($"[{roleName}] Movement blocked - oscillation detected");
+                return null;
+            }
+
+            RecordMovement(unitId, bestPosition.Position);
+
+            Main.Log($"[{roleName}] Ranged position: ({bestPosition.Position.x:F1},{bestPosition.Position.z:F1}) " +
+                $"Score={bestPosition.TotalScore:F1}, Hittable={bestPosition.HittableEnemyCount}");
+
+            return new MoveDecision
+            {
+                Destination = bestPosition.Position,
+                Reason = "Safe attack position",
+                Score = bestPosition.TotalScore
+            };
+        }
+
+        /// <summary>
+        /// 근접 공격 위치 계획
+        /// </summary>
+        private static MoveDecision PlanMeleePosition(Situation situation, UnitEntityData target, string roleName)
+        {
+            var unit = situation.Unit;
+
+            // MovementAPI로 근접 공격 위치 찾기
+            var bestPosition = MovementAPI.FindMeleeAttackPosition(
+                unit,
+                target,
+                situation.Enemies,
+                situation.InfluenceMap
+            );
+
+            if (bestPosition == null)
+            {
+                // 폴백: 적 위치 직접 사용
+                Main.Verbose($"[{roleName}] No melee position found, falling back to target position");
+
+                // 적 방향으로 이동
+                Vector3 direction = (target.Position - unit.Position).normalized;
+                Vector3 destination = unit.Position + direction * 6f;
+
+                // BattlefieldGrid 검증
+                if (BattlefieldGrid.Instance.ValidateTargetPosition(unit, destination))
+                {
+                    return new MoveDecision
+                    {
+                        Destination = destination,
+                        Reason = $"Approach {target.CharacterName}",
+                        Score = 10f
+                    };
+                }
+
+                return null;
+            }
+
+            // 현재 위치와 거의 같으면 이동 불필요
+            float moveDistance = Vector3.Distance(unit.Position, bestPosition.Position);
+            if (moveDistance < 1f)
+            {
+                Main.Verbose($"[{roleName}] Already at melee position");
+                return null;
+            }
+
+            Main.Log($"[{roleName}] Melee position: ({bestPosition.Position.x:F1},{bestPosition.Position.z:F1}) " +
+                $"Score={bestPosition.TotalScore:F1}");
+
+            return new MoveDecision
+            {
+                Destination = bestPosition.Position,
+                Reason = $"Melee position near {target.CharacterName}",
+                Score = bestPosition.TotalScore
+            };
+        }
+
+        #endregion
+
+        #region Post-Action Movement
+
+        /// <summary>
+        /// 행동 완료 후 안전 후퇴 (원거리 캐릭터)
+        /// </summary>
+        public static MoveDecision PlanPostActionSafeRetreat(Situation situation, string roleName)
+        {
+            // ★ v0.2.97: 이동 차단 상태 체크 (oscillation 감지 후)
+            string unitId = situation.Unit?.UniqueId;
+            if (IsMovementBlocked(unitId))
+            {
+                Main.Verbose($"[{roleName}] PlanPostActionSafeRetreat: Movement blocked due to oscillation");
+                return null;
+            }
+
+            // ★ v0.2.78: Move Action 가용성 체크 (턴제 전투용)
+            if (!situation.HasMoveAction) return null;
+            if (!situation.CanMove) return null;
+            if (!situation.PrefersRanged) return null;
+
+            var unit = situation.Unit;
+            var nearestEnemy = situation.NearestEnemy;
+            if (nearestEnemy == null) return null;
+
+            // 현재 위치가 이미 안전 거리 이상이면 이동 불필요
+            if (situation.NearestEnemyDistance >= situation.MinSafeDistance)
+            {
+                Main.Verbose($"[{roleName}] Already safe after action, no retreat needed");
+                return null;
+            }
+
+            // MovementAPI로 후퇴 위치 찾기
+            var retreatScore = MovementAPI.FindRetreatPosition(
+                unit,
+                situation.Enemies,
+                situation.MinSafeDistance,
+                situation.InfluenceMap
+            );
+
+            if (retreatScore == null)
+            {
+                Main.Verbose($"[{roleName}] No reachable safe retreat position");
+                return null;
+            }
+
+            // 최적 위치가 현재 위치보다 충분히 좋은지 확인
+            float currentDistToEnemy = situation.NearestEnemyDistance;
+            float newDistToEnemy = Vector3.Distance(retreatScore.Position, nearestEnemy.Position);
+
+            // 이동 후 거리가 현재보다 최소 2m 이상 멀어지지 않으면 이동 가치 없음
+            if (newDistToEnemy < currentDistToEnemy + 2f)
+            {
+                Main.Verbose($"[{roleName}] Retreat not worth it (current={currentDistToEnemy:F1}m, after={newDistToEnemy:F1}m)");
+                return null;
+            }
+
+            return new MoveDecision
+            {
+                Destination = retreatScore.Position,
+                Reason = $"Safe retreat from {nearestEnemy.CharacterName}",
+                Score = retreatScore.TotalScore
+            };
+        }
+
+        #endregion
+    }
+
+    /// <summary>
+    /// 이동 결정 결과
+    /// </summary>
+    public class MoveDecision
+    {
+        public Vector3 Destination { get; set; }
+        public string Reason { get; set; }
+        public float Score { get; set; }
+
+        public override string ToString()
+        {
+            return $"Move to ({Destination.x:F1},{Destination.z:F1}) - {Reason} (Score={Score:F1})";
+        }
+    }
+}
