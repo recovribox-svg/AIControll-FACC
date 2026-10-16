@@ -6,7 +6,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - **Game**: Pathfinder: Wrath of the Righteous
 - **Type**: Unity Mod Manager mod (C# .NET 4.8)
 - **Purpose**: Complete replacement of companion AI with tactical decision-making system
-- **Version**: 0.2.21 (tracked in `Info.json`)
+- **Version**: tracked in `Info.json` (0.3.0: step-wise turn-based tactical engine in `Tactics/`)
 
 ## Reference Resources
 - **Rogue Trader CompanionAI v3.5.7**: `C:\Users\veria\Downloads\CompanionAI_v3-master - v3.5.7`
@@ -30,18 +30,15 @@ See `docs/INVESTIGATION.md`.
 
 ## Architecture
 
-### AI Decision Pipeline
+### AI Decision Pipeline (v0.3.0)
 ```
-AiBrainController.TickBrain (Harmony Prefix)
-        ↓
-TurnOrchestrator (singleton)
-        ├─ SituationAnalyzer → Situation snapshot
-        │   ├─ AbilityClassifier (categorize abilities)
-        │   └─ TargetScorer (rank targets)
-        ├─ TurnPlanner → TurnPlan (ordered PlannedActions)
-        │   └─ Role strategies: DPSPlan, TankPlan, SupportPlan
-        └─ ActionExecutor → ExecutionResult
+Turn-based:  TurnController.Tick (Harmony postfix, CustomBrainPatch.TurnControllerTick_Postfix)
+                 → Core/TurnBased/TurnBasedController   (waits for commands, per-turn memory)
+                 → Tactics/TacticalEngine.Decide        (ONE best next action from current action economy)
+                 → Tactics/TacticalEngine.Execute → GameInterface/CommandDispatcher.Run
+Real-time:   AiBrainController.TickBrain (prefix) → RealTimeController → UnifiedDecisionEngine
 ```
+Design and value formulas: `docs/TACTICAL_AI.md`. Root-cause evidence: `docs/INVESTIGATION.md`.
 
 ### Key Folders
 - **Core/**: Turn orchestration - `TurnOrchestrator`, `TurnState`, `TurnPlan`, `PlannedAction`, `ExecutionResult`
@@ -65,11 +62,12 @@ Tracked per turn in `TurnState`.
 
 ## Critical Architecture Notes
 
-### Basic Attack Problem (v0.2.21 Issue)
-**DO NOT** use `UnitAttack` (basic attack) as fallback in AI decisions:
-- Basic attack = Standard Action = shares cooldown with skills
-- Pattern: Basic attack → Standard cooldown → skills blocked → repeat
-- **Solution**: Like RT v3.5.7, remove basic attacks from AI consideration entirely
+### Weapon attacks (v0.3.0 - supersedes the v0.2.21 "no basic attack" rule)
+In Pathfinder a weapon attack IS the `UnitAttack` command, and it is the main damage source of martial characters,
+archers and animal companions. Excluding it (v0.2.21 rule, borrowed from Rogue Trader) left Lann with `Attacks=0` and
+made him retreat every turn (see docs/TACTICAL_AI.md §1). The turn-based engine values weapon attacks with the game's
+own rules and competes them against spells by expected value. Always set `ForceFullAttack` or `IsSingleAttack`:
+otherwise the UI smart-cursor mode decides.
 
 ### RT v3.5.7 vs PF Differences
 | Aspect | Rogue Trader v3.5.7 | Pathfinder Current |
@@ -93,14 +91,18 @@ Tracked per turn in `TurnState`.
 - Entry point: `Main.cs` → `Main.Load()` initializes Harmony patches
 
 ### Harmony Patching
-- Main patch: `CustomBrainPatch` prefixes `AiBrainController.TickBrain`
+- Turn-based entry: `TurnBasedPatches.TurnControllerTick_Postfix` (postfix on `TurnController.Tick`)
+- Real-time entry: `CustomBrainPatch` prefixes `AiBrainController.TickBrain`
+- EventBus (no Harmony): `CommandTrace` (command outcome log), `MountPathHandler` (mount ForcedPath)
 - Uses manual patching via `AccessTools` for private methods
 - Harmony instance ID: `CompanionAI_Pathfinder`
 
-### Adding New Strategies
-1. Create class inheriting `BasePlan` in `Planning/Plans/`
-2. Override `CreatePlan(Situation)` returning `TurnPlan`
-3. Register in `TurnPlanner.SelectPlan()`
+### Changing turn-based behaviour
+- Add or retune options in `Tactics/TacticalEngine.cs` (candidates and `ScoreAbility`); keep values in
+  damage-equivalent points so options stay comparable.
+- What an ability does: `Tactics/AbilityProfile.cs`. Game-rule math: `Tactics/CombatMath.cs`.
+- Item-use policy must go through `Tactics/ConsumablePolicy.IsAllowed` (shared by turn-based and real-time).
+- Turn/combat facts that must survive re-decisions live in `Tactics/CombatMemory.cs`, never in a candidate.
 
 ### Claude Behavior Guidelines
 - **Investigate before concluding** - use decompiled sources when game behavior is unclear

@@ -1,3 +1,23 @@
+# Investigation log - CompanionAI_Pathfinder
+
+- **v0.3.0** (decision making, weapon attacks, consumables, mount paths): see [TACTICAL_AI.md](TACTICAL_AI.md) for the
+  design. The evidence came from a v0.2.119 play-session log (summary table in TACTICAL_AI.md §1), and the root causes
+  were confirmed in the source and in Assembly-CSharp:
+  - **No weapon attacks in turn-based mode.** `TurnPlanBuilder.FindBestAttack` used only `situation.AvailableAttacks`,
+    and `SituationAnalyzer.AddWeaponAttacks` only adds *abilities* with `Range == Weapon`. The real-time engine did
+    consider `BasicAttack`, which is why Lann shot in real time but retreated in turn-based combat.
+  - **Self-invalidating plans.** `TurnPlanValidator` replanned on "Position changed", caused by the unit's own planned move.
+  - **Mount commands.** `SaddledUnitController.TickDelegateRiderToMount` builds the mount's `UnitMoveTo`/`UnitAttack`
+    without `ForcedPath`, unlike `TacticalCombatRider`, which copies it. In turn-based mode it then follows the cursor
+    prediction, exactly as in §1 below.
+  - **Full vs single attack** for the directly-controllable current unit comes from the UI smart-cursor mode
+    (`UnitCombatState.IsFullAttackRestrictedBecauseOfMoveAction` → `TurnController.GetEnabledFullAttack` →
+    `m_AttackMode`). The engine sets `UnitAttack.ForceFullAttack` / `IsSingleAttack` explicitly, as
+    `AbilityDeliverAttackWithWeapon` and `MagusController` do.
+  - **Variant spells.** `AbilityData.Cast` refuses abilities with variants, so the engine expands them with `GetConversions()`.
+  - **Consumables in combat.** Only quick-slot items: `ItemEntity.OnDidEquipped` adds an ability with `SourceItem`, and
+    `IsUsableFromInventory` is false while `Player.IsInCombat`.
+
 # Movement investigation - CompanionAI_Pathfinder 0.2.118 → 0.2.119
 
 Sources examined: the supplied 0.2.118 source archive, the shipped 0.2.117/0.2.118 DLL package (decompiled), the

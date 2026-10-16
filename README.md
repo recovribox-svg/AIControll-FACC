@@ -4,15 +4,26 @@ Unity Mod Manager mod that replaces party-companion combat AI with a utility-sco
 (role-based DPS / Tank / Support plans, buff/heal/debuff selection, positioning). Works in turn-based
 combat (primary) and real-time combat.
 
-Version **0.2.119** fixes companions not physically moving in turn-based combat, and their movement
-following the mouse cursor. The root cause and evidence are in [docs/INVESTIGATION.md](docs/INVESTIGATION.md).
+**0.3.0** replaces the turn-based decision making with a step-wise tactical engine
+([docs/TACTICAL_AI.md](docs/TACTICAL_AI.md)):
+- **Weapon attacks** (single, move + attack, full attack, charge) valued with the game's own attack and damage rules.
+  Archers now shoot, and animal companions bite and claw.
+- **Spells and abilities** chosen by expected effect: damage, hard control, heals, buffs. No re-casting buffs that are
+  already active, and no spamming utility abilities such as Appraise Foe.
+- **Consumables:** potions, scrolls, wands and alchemical/thrown items **in quick slots**, used when they are worth it
+  (for example a healing potion at low HP). Each type can be toggled.
+- **Positioning:** 5-foot step out of melee for archers and casters, advance into reach or range when nothing can be
+  hit, withdraw at very low HP.
+- **Ridden mounts** no longer follow the mouse cursor when an AI-controlled rider gives an order.
+
+0.2.119 fixed companions not physically moving in turn-based combat ([docs/INVESTIGATION.md](docs/INVESTIGATION.md)).
 
 ---
 
 ## Install (players)
 
 1. Install [Unity Mod Manager](https://www.nexusmods.com/site/mods/21) into the game.
-2. Take `CompanionAI_Pathfinder_v0.2.119.zip` - prebuilt in `release\`, or build it yourself (below; output in `dist\`).
+2. Take `CompanionAI_Pathfinder_v0.3.0.zip` - prebuilt in `release\`, or build it yourself (below; output in `dist\`).
 3. Install it either way:
    - Unity Mod Manager → *Mods* tab → drag the ZIP onto the window / *Install Mod*, **or**
    - extract it to `<game>\Mods\CompanionAI_Pathfinder\` so the folder contains
@@ -24,6 +35,10 @@ following the mouse cursor. The root cause and evidence are in [docs/INVESTIGATI
 - *Control Companions* / *Control Main Character* and per-character AI on/off, role and range preference.
 - *Enable Debug Logging* - **off by default**; when on it writes several lines per frame. Leave it off unless
   you are debugging. Existing installs keep their old `settings.json`, so turn it off there if it was on.
+
+- *Consumables (quick-slot items)*: master switch plus potions / scrolls & wands / alchemical & thrown items, and the HP %
+  below which a character drinks a healing potion. **Put the items you want companions to use into their quick slots**:
+  the game only allows quick-slot items in combat, and never lets animal companions use items.
 
 Units the game is currently controlling itself (confused, panicked, dominated, cutscenes) are left to the game.
 
@@ -66,36 +81,35 @@ Harmony comes from NuGet as compile-only; Unity Mod Manager provides it at runti
 
 ## In-game test checklist (turn-based first)
 
-Every command the mod issues is logged, so one combat shows where a request stops. In the Unity Mod Manager log
-(`<game>\Wrath_Data\Managed\UnityModManager\Log.txt`, next to `UnityModManager.dll`, or the in-game UMM *Logs* tab) look for:
+Every decision and every command is logged, so one fight shows why a companion did something. In the Unity Mod
+Manager log (`<game>\Wrath_Data\Managed\UnityModManager\Log.txt`, next to `UnityModManager.dll`, or the in-game UMM
+*Logs* tab) look for:
 
 ```
-[Cmd] Seelah: ISSUED UnitMoveTo 'Move (12.3,45.6)' mode=TB/Preparing forcedPath=7.4m approachR=0.3
-[Cmd] Seelah: ENDED UnitMoveTo 'Move (12.3,45.6)' result=Success acted=True moved=7.3m after 1.6s
-[Cmd] Seelah: REJECTED UnitUseAbility '... ' mode=TB/Acting - target out of reach and no movement left this turn
+[Tactics] Lann R2 HP100% [SMWF5] enemies=4 rounds~2.6 diff=0.71 :: FullAttack(2)->Zombie=21.4 | Attack->Zombie=13.2 => FullAttack(2)->Zombie
+[Cmd] Lann: ISSUED UnitAttack 'FullAttack(2)->Zombie' mode=TB/Preparing forcedPath=none approachR=31.0
+[Cmd] Lann: ENDED UnitAttack 'FullAttack(2)->Zombie' result=Success acted=True moved=0.0m after 2.4s
 ```
-`forcedPath=none` on a turn-based command that needed to move, or `moved=0.0m` with `result=Interrupt`, means the
-movement fix did not apply - please send that log section.
+`[SMWF5]` = Standard, Move, sWift, Full attack and 5-foot step still available. The options are listed best first, with
+their values, and `=>` shows the choice. See [docs/TACTICAL_AI.md](docs/TACTICAL_AI.md) §5.
 
 | # | Scenario | Expected |
 |---|----------|----------|
-| 1 | Turn-based, companion far from enemies, **mouse resting over empty ground far away** | Companion walks toward the enemy/plan position, not toward the cursor; `ENDED ... moved>0` |
-| 2 | Same, but **hover the mouse over an enemy next to the companion** during its turn | Movement distance unaffected (limit is chosen by the AI, not the smart cursor) |
-| 3 | Turn-based melee companion: move then attack | One move action used, attack still performed in the same turn |
-| 4 | Turn-based caster: move into range then cast | Spell cast after moving |
-| 5 | Turn-based, companion adjacent to enemy | 5-foot step or no move; full attack possible |
-| 6 | Player delays a companion's turn | Turn stays delayed (mod no longer forces it back to Acting) |
-| 7 | Player-controlled character (AI disabled for it) | Normal click movement and path preview |
-| 8 | Combat start → end transitions; next combat | Turns start/end normally, no stuck turn |
-| 9 | Confused / panicked companion | Game handles it (mod skips the unit) |
-| 10 | Real-time combat (if used) | Companions walk the whole way; no stop-start every ~0.5 s |
-
----
+| 1 | Archer (Lann) with enemies in bow range | Shoots (full attack if he didn't move); doesn't retreat while there are targets |
+| 2 | Archer in melee | 5-foot step out of melee, then shoots |
+| 3 | Animal companion (Albedo) | Moves in and attacks (full attack when adjacent, charge when far); no wandering |
+| 4 | Melee (Seelah) | Smite Evil (swift) when valid, then attacks; charges distant targets |
+| 5 | Caster (Orvath) | Damage or control spells on the best target; Appraise Foe at most once per combat; no buff recast while active |
+| 6 | Support / healer | Heals allies below the threshold first; buffs early in the fight |
+| 7 | Healing potion in a quick slot, character below the potion threshold | Drinks it when that beats attacking |
+| 8 | Consumables toggled off | No item use in turn-based or real-time mode |
+| 9 | Ridden mount with an AI-controlled rider | Mount moves where the AI ordered, not to the cursor (`[Cmd] ... mount command ... given forcedPath=`) |
+| 10 | Player delays a companion's turn / combat start and end / switching TB ↔ RT | Turns proceed normally |
 
 ## Architecture
 
 ```
-TurnController.Tick (postfix)  ──► TurnBasedController ─► TurnPlanBuilder / TurnPlanValidator
+TurnController.Tick (postfix)  ──► TurnBasedController ─► Tactics/TacticalEngine (one action at a time)
 AiBrainController.TickBrain (prefix, real-time) ─► RealTimeController ─► UnifiedDecisionEngine
                                          │
                                          ▼
