@@ -348,8 +348,15 @@ namespace CompanionAI_Pathfinder.Tactics
                 // Variant parents cannot be cast ("Can't cast spell with variants"): use their variants instead.
                 if (a.Blueprint.HasVariants)
                 {
-                    foreach (var conv in a.GetConversions())
-                        if (conv?.Blueprint != null && a.Blueprint.HasVariant(conv.Blueprint)) Add(conv);
+                    try
+                    {
+                        foreach (var conv in a.GetConversions().ToList())
+                            if (conv?.Blueprint != null && a.Blueprint.HasVariant(conv.Blueprint)) Add(conv);
+                    }
+                    catch (Exception ex)
+                    {
+                        Main.Verbose($"[Tactics] variants of {a.Name}: {ex.Message}");
+                    }
                     return;
                 }
                 string key = $"{a.Blueprint.AssetGuid}|{a.Spellbook?.Blueprint?.AssetGuid}|{a.SourceItem?.UniqueId}";
@@ -394,7 +401,8 @@ namespace CompanionAI_Pathfinder.Tactics
         private static ActionSlot SlotOf(AbilityData ability)
         {
             if (ability.RequireFullRoundAction) return ActionSlot.FullRound;
-            switch (ability.ActionType)
+            // UnitUseAbility uses RuntimeActionType (metamagic such as Quicken changes it), so must we.
+            switch (ability.RuntimeActionType)
             {
                 case UnitCommand.CommandType.Free: return ActionSlot.Free;
                 case UnitCommand.CommandType.Swift: return ActionSlot.Swift;
@@ -407,21 +415,17 @@ namespace CompanionAI_Pathfinder.Tactics
         private static float ConsumableFactor(TacticalContext ctx, AbilityData ability, AbilityProfile profile)
         {
             if (!(ability.SourceItem is ItemEntityUsable item)) return 1f;
-            var g = ctx.Global;
-            if (g == null || !g.UseConsumables) return 0f;
+            if (!ConsumablePolicy.IsAllowed(ability)) return 0f;
 
             switch (item.Blueprint.Type)
             {
                 case UsableItemType.Potion:
-                    if (!g.UsePotions) return 0f;
                     // Healing potions are judged by the heal scoring (urgency); others only in real fights.
                     return profile.Heals.Count > 0 ? 1f : (ctx.Difficulty >= 0.8f ? 0.5f : 0f);
                 case UsableItemType.Scroll:
                 case UsableItemType.Wand:
-                    if (!g.UseScrollsAndWands) return 0f;
                     return 0.7f * CombatMath.UseMagicDeviceChance(ability, ctx.Unit);
                 default:
-                    if (!g.UseThrownItems) return 0f;
                     return 0.85f * CombatMath.UseMagicDeviceChance(ability, ctx.Unit);
             }
         }

@@ -998,6 +998,9 @@ namespace CompanionAI_Pathfinder.Analysis
                         string guid = abilityData.Blueprint.AssetGuid.ToString();
                         if (addedAbilities.Contains(guid)) continue;
 
+                        // ★ v0.3.0: honour the consumable settings in real-time mode too (shared policy)
+                        if (!Tactics.ConsumablePolicy.IsAllowed(abilityData)) continue;
+
                         if (!abilityData.IsAvailable)
                         {
                             filteredCount++;
