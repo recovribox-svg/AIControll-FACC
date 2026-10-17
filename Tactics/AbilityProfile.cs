@@ -489,10 +489,26 @@ namespace CompanionAI_Pathfinder.Tactics
             return result;
         }
 
-        /// <summary>The target currently has something this ability would remove (only removals whose branch runs for it).</summary>
+        /// <summary>
+        /// ★ v0.3.2: the target currently has a HARMFUL buff (debuff, poison, fear...) this ability would remove. Removing a
+        /// good buff is not a cleanse: Orvath's "Shift Form: Mortal Guise" removes the Overlord form and was valued as a
+        /// cleanse, so he switched forms back and forth every turn.
+        /// </summary>
         public bool WouldRemoveSomething(AbilityData ability, UnitEntityData target)
         {
-            if (target?.Buffs == null || m_Removals.Count == 0) return false;
+            return BuffsRemovedFrom(ability, target).Any(b => IsHarmfulFor(b, target));
+        }
+
+        /// <summary>Good buffs on the target this ability would remove (a mode switch such as Overlord ↔ Mortal Guise).</summary>
+        public List<Kingmaker.UnitLogic.Buffs.Buff> BeneficialBuffsRemoved(AbilityData ability, UnitEntityData target)
+        {
+            return BuffsRemovedFrom(ability, target).Where(b => !IsHarmfulFor(b, target)).ToList();
+        }
+
+        private IEnumerable<Kingmaker.UnitLogic.Buffs.Buff> BuffsRemovedFrom(AbilityData ability, UnitEntityData target)
+        {
+            var result = new List<Kingmaker.UnitLogic.Buffs.Buff>();
+            if (target?.Buffs == null || m_Removals.Count == 0) return result;
             try
             {
                 var buffs = target.Buffs.Enumerable.ToList();
@@ -501,15 +517,64 @@ namespace CompanionAI_Pathfinder.Tactics
                     if (AppliesTo(removal, ability, target) == EffectApplies.No) continue;
                     foreach (var buff in buffs)
                     {
-                        if (removal is ContextActionRemoveBuff rb && rb.Buff == buff.Blueprint) return true;
-                        if (removal is ContextActionRemoveBuffsByDescriptor rd && buff.MaybeContext != null &&
-                            (buff.MaybeContext.SpellDescriptor & rd.SpellDescriptor.Value) != SpellDescriptor.None)
-                            return true;
+                        bool removed = removal is ContextActionRemoveBuff rb && rb.Buff == buff.Blueprint ||
+                                       removal is ContextActionRemoveBuffsByDescriptor rd && buff.MaybeContext != null &&
+                                       (buff.MaybeContext.SpellDescriptor & rd.SpellDescriptor.Value) != SpellDescriptor.None;
+                        if (removed && !result.Contains(buff)) result.Add(buff);
                     }
                 }
             }
             catch { }
-            return false;
+            return result;
+        }
+
+        /// <summary>Flagged harmful by its blueprint, or put on the unit by one of its enemies.</summary>
+        private static bool IsHarmfulFor(Kingmaker.UnitLogic.Buffs.Buff buff, UnitEntityData unit)
+        {
+            try
+            {
+                if (buff.Blueprint != null && buff.Blueprint.Harmful) return true;
+                var caster = buff.MaybeContext?.MaybeCaster;
+                return caster != null && caster.IsEnemy(unit);
+            }
+            catch
+            {
+                return false;
+            }
+        }
+
+        /// <summary>
+        /// ★ v0.3.2: single-target effects (damage, heal, target buffs, removals), as opposed to caster-only side effects.
+        /// When none of them applies to a target, aiming the ability at it does nothing useful there (e.g. Lay On Hands -
+        /// Others on a living enemy, whose only remaining effect is a buff on the paladin).
+        /// </summary>
+        public bool HasTargetEffects => Damage.Count > 0 || Heals.Count > 0 || TargetBuffs.Count > 0 || m_Removals.Count > 0;
+
+        public bool AnyTargetEffectApplies(AbilityData ability, UnitEntityData target)
+        {
+            return Damage.Any(d => AppliesTo(d, ability, target) != EffectApplies.No) ||
+                   Heals.Any(h => AppliesTo(h, ability, target) != EffectApplies.No) ||
+                   TargetBuffs.Any(b => BuffAppliesTo(b, ability, target) != EffectApplies.No) ||
+                   m_Removals.Any(r => AppliesTo(r, ability, target) != EffectApplies.No);
+        }
+
+        private static readonly HashSet<BlueprintAbility> Described = new HashSet<BlueprintAbility>();
+
+        /// <summary>★ v0.3.2: once per ability, what its buffs are made of (evidence for tuning from play logs).</summary>
+        public void DescribeOnce()
+        {
+            if (!Described.Add(Blueprint)) return;
+            try
+            {
+                var parts = TargetBuffs.Concat(CasterBuffs).Distinct()
+                    .Select(b => BuffEffectAnalyzer.Analyze(b).ToString()).ToList();
+                if (RemovesAnything)
+                    parts.Add($"removes {RemovedDescriptors}{(RemovedBuffs.Count > 0 ? " + " + string.Join(",", RemovedBuffs.Select(b => b.name)) : "")}");
+                if (IsOneShot) parts.Add(BuffsLastOneRound ? "lasts 1 round" : "spent by next attack");
+                if (parts.Count > 0)
+                    Main.Log($"[Profile] {Blueprint.Name}: {string.Join(" ; ", parts)}");
+            }
+            catch { }
         }
 
         #endregion

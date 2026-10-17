@@ -26,6 +26,14 @@ combat (primary) and real-time combat.
   cast when no attack is left this turn.
 - Condition-removal abilities (e.g. Treat Affliction, if it removes by descriptor) only when there is something to remove.
 
+**0.3.2** fixes what the first 0.3.1 log showed ([docs/TACTICAL_AI.md](docs/TACTICAL_AI.md) §7):
+- Buffs are valued by what they actually do and whether they stack: no Treat Affliction "just because", no Feather Step
+  or Mage Armor (over real armor) items wasted.
+- Orvath no longer flips Shift Form between Overlord and Mortal Guise every turn; party-wide self buffs (Soul Power)
+  no longer count enemies in their radius as "marks".
+- An advance that runs out of its move action can continue with the standard action; abilities are not aimed at a
+  target on which none of their effects apply.
+
 0.2.119 fixed companions not physically moving in turn-based combat ([docs/INVESTIGATION.md](docs/INVESTIGATION.md)).
 
 ---
@@ -33,7 +41,7 @@ combat (primary) and real-time combat.
 ## Install (players)
 
 1. Install [Unity Mod Manager](https://www.nexusmods.com/site/mods/21) into the game.
-2. Take `CompanionAI_Pathfinder_v0.3.1.zip` - prebuilt in `release\`, or build it yourself (below; output in `dist\`).
+2. Take `CompanionAI_Pathfinder_v0.3.2.zip` - prebuilt in `release\`, or build it yourself (below; output in `dist\`).
 3. Install it either way:
    - Unity Mod Manager → *Mods* tab → drag the ZIP onto the window / *Install Mod*, **or**
    - extract it to `<game>\Mods\CompanionAI_Pathfinder\` so the folder contains

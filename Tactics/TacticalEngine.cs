@@ -398,6 +398,31 @@ namespace CompanionAI_Pathfinder.Tactics
             }
         }
 
+        /// <summary>
+        /// ★ v0.3.2: 0..1 combat worth of the best of <paramref name="buffs"/> on <paramref name="recipient"/>, from the
+        /// buff's components (BuffEffectAnalyzer, shared with real-time) and stacking with what the recipient already has
+        /// (BuffStackingAnalyzer: e.g. Mage Armor under real armor). Effects the analyzer does not recognise count 0.5 for
+        /// renewable abilities and 0 for consumables (an item is gone once used), and items need a clear combat effect.
+        /// </summary>
+        private static float BuffQuality(AbilityData ability, List<Kingmaker.UnitLogic.Buffs.Blueprints.BlueprintBuff> buffs,
+                                         UnitEntityData recipient)
+        {
+            bool item = ability.SourceItem != null;
+            float best = 0f;
+            foreach (var buff in buffs)
+            {
+                // Descriptor-based stacking only (BuffStackingAnalyzer.WouldBeEffective also matches names: "shield").
+                if (!BuffStackingAnalyzer.Analyze(buff, recipient).IsEffective) continue;
+                var analysis = BuffEffectAnalyzer.Analyze(buff);
+                float q = analysis.Recognized ? analysis.CombatValue
+                        : analysis.OnlyUnrecognized ? (item ? 0f : 0.5f)
+                        : 0.05f; // no components at all: a marker or cooldown
+                if (item && q < 0.5f) q = 0f;
+                best = Math.Max(best, q);
+            }
+            return best;
+        }
+
         private static ActionSlot SlotOf(AbilityData ability)
         {
             if (ability.RequireFullRoundAction) return ActionSlot.FullRound;
@@ -567,6 +592,14 @@ namespace CompanionAI_Pathfinder.Tactics
                 return 0f;
             }
 
+            // ★ v0.3.2: none of its effects on the target applies to this target (Lay On Hands - Others on a living
+            // enemy kept only the paladin's own side buff, valued up to 8.8).
+            if (!profile.IsAoE && target != unit && profile.HasTargetEffects && !profile.AnyTargetEffectApplies(ability, target))
+            {
+                why = "no effect on target";
+                return 0f;
+            }
+
             // --- damage ---
             if (profile.DealsDamage && affectedEnemies.Count > 0)
             {
@@ -637,6 +670,9 @@ namespace CompanionAI_Pathfinder.Tactics
             {
                 float controlValue = 0f;
                 bool isMark = !profile.HarmfulToEnemies && profile.ControlStrength == ControlStrength.None;
+                // ★ v0.3.2: a mark is aimed at one enemy. A helpful area buff centred on the caster (Soul Power, Light
+                // of the Angels) counted the enemies standing in its radius as "marks" and scored 26-38 every round.
+                if (isMark && profile.IsAoE) affectedEnemies = new List<UnitEntityData>();
                 // ★ v0.3.1: a one-round / one-attack mark (Aid Another: +2 for one ally, one round) is worth 0.1 × threat
                 // for one round; it out-valued Lann's full attack and walked him 9 m into melee. Lasting marks (Smite
                 // Evil, judgements, studied target) keep 0.15 × threat × rounds.
@@ -694,13 +730,28 @@ namespace CompanionAI_Pathfinder.Tactics
                     if (profile.Heals.Any(h => profile.AppliesTo(h, ability, ally) != EffectApplies.No)) continue;
                     if (profile.BuffsLastOneRound && ally == unit && !attackAfter) continue;
                     if (CombatMemory.LastCastRound(unit, ability, ally) == ctx.Round) continue; // cast this round already
+
+                    // ★ v0.3.2: what the buff actually does, for this recipient. Treat Affliction, Feather Step and Mage
+                    // Armor on a paladin in plate were valued like Enlarge Person in v0.3.1.
+                    float quality = BuffQuality(ability, buffs, ally);
+                    if (quality <= 0f) continue;
+                    // A mode switch (Shift Form: Overlord ↔ Mortal Guise) removes a good buff: only worth it if better.
+                    var replaced = profile.BeneficialBuffsRemoved(ability, ally);
+                    if (replaced.Count > 0)
+                    {
+                        float lost = replaced.Max(b => BuffEffectAnalyzer.GetCombatValue(b.Blueprint));
+                        if (quality <= lost + 0.05f) continue;
+                        quality -= lost;
+                    }
+
                     bool fighting = (ally.CombatState?.IsEngaged ?? false) || ally == unit;
                     float perRound = 1f + level * 1.5f;
-                    // One-shot buffs: about one round of effect; ×2 keeps a swift use before attacking (Perfect Strike
-                    // before a full attack, as in the 0.3.0 logs) above the quick-action threshold.
-                    float rounds = profile.IsOneShot ? Math.Min(ctx.ExpectedRounds, 2f)
+                    // One-round buffs last one round. Buffs spent by the next attack count ~2 rounds: that keeps a swift
+                    // use before attacking (Perfect Strike before a full attack) above the quick-action threshold.
+                    float rounds = profile.BuffsLastOneRound ? 1f
+                                 : profile.BuffsSpentByAttack ? Math.Min(ctx.ExpectedRounds, 2f)
                                  : profile.HasLongBuff ? ctx.ExpectedRounds : Math.Min(ctx.ExpectedRounds, 3f);
-                    buffValue += perRound * rounds * (fighting ? 1f : 0.6f);
+                    buffValue += perRound * rounds * quality * (fighting ? 1f : 0.6f);
                 }
                 if (buffValue > 0f)
                 {
@@ -921,7 +972,10 @@ namespace CompanionAI_Pathfinder.Tactics
 
             bool issued = CommandDispatcher.Run(unit, command, c.Label, out failure);
             if (issued && c.Kind == CandidateKind.Ability)
+            {
                 CombatMemory.RecordCast(unit, c.Ability, c.Target);
+                AbilityProfile.Get(c.Ability)?.DescribeOnce();
+            }
             return issued;
         }
 

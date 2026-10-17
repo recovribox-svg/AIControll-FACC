@@ -68,13 +68,21 @@ namespace CompanionAI_Pathfinder.Core.TurnBased
                 if (memory.LastCommand != null)
                 {
                     var last = memory.LastCommand;
+                    bool isMove = memory.LastKind == CandidateKind.Move;
+                    float moved = Vector3.Distance(unit.Position, memory.LastIssuePosition);
                     string notActed = null;
                     if (!last.IsActed)
-                        notActed = $"ended without acting ({last.Result})";
-                    else if (!last.IsStarted)
+                    {
+                        // ★ v0.3.2: a move that was cut short (its move action ran out) still made progress; the next
+                        // decision may continue with the standard action. v0.3.1 ended Albedo's turn after 8.9 m.
+                        if (!(isMove && moved >= 1f))
+                            notActed = $"ended without acting ({last.Result})";
+                    }
+                    else if (!last.IsStarted && !isMove)
                         // ★ v0.3.1: UnitCommandController.TickCommandTurnBased force-finishes an approaching command whose
                         // unit stopped moving (or that has no action left) as "Success" - IsActed, but never started.
-                        // Albedo repeated 'Move+Attack->Dretch' (0.7 m, no attack) four times.
+                        // Albedo repeated 'Move+Attack->Dretch' (0.7 m, no attack) four times. Moves are finished that
+                        // way when they arrive (5-foot step), so this only applies to attacks and abilities.
                         notActed = $"was force-finished before it started ({last.Result})";
                     else if (!last.IsIgnoreCooldown && !ActionWasSpent(unit, memory.LastSlot))
                         // Commands with IsIgnoreCooldown legitimately spend no action (sticky touch, spell combat...).
@@ -111,6 +119,8 @@ namespace CompanionAI_Pathfinder.Core.TurnBased
                         memory.LastCommand = command;
                         memory.LastCandidateKey = candidate.Key;
                         memory.LastSlot = candidate.Slot;
+                        memory.LastKind = candidate.Kind;
+                        memory.LastIssuePosition = unit.Position;
                         return ExecutionResult.Waiting($"Issued {candidate.Label}");
                     }
 

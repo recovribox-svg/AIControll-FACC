@@ -94,6 +94,8 @@ namespace CompanionAI_Pathfinder.Tactics
         public UnitCommand LastCommand { get; set; }
         public string LastCandidateKey { get; set; }
         public ActionSlot LastSlot { get; set; }
+        public CandidateKind LastKind { get; set; }
+        public UnityEngine.Vector3 LastIssuePosition { get; set; }
 
         public TurnMemory(int round)
         {

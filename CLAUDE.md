@@ -7,7 +7,8 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - **Type**: Unity Mod Manager mod (C# .NET 4.8)
 - **Purpose**: Complete replacement of companion AI with tactical decision-making system
 - **Version**: tracked in `Info.json` (0.3.0: step-wise turn-based tactical engine in `Tactics/`; 0.3.1: per-target
-  Conditional branches, next-attack buffs, cleanses, time-based command wait)
+  Conditional branches, next-attack buffs, cleanses, time-based command wait; 0.3.2: buff quality from components,
+  harmful-only cleanses, mode switches)
 
 ## Reference Resources
 - **Rogue Trader CompanionAI v3.5.7**: `C:\Users\veria\Downloads\CompanionAI_v3-master - v3.5.7`
@@ -106,6 +107,8 @@ otherwise the UI smart-cursor mode decides.
 - Turn/combat facts that must survive re-decisions live in `Tactics/CombatMemory.cs`, never in a candidate.
 - Effects behind a `Conditional` (Cure/Inflict, Lay On Hands) must be checked per target with
   `AbilityProfile.AppliesTo` / `BuffAppliesTo`; never count both branches for everyone.
+- A buff's worth comes from what it does (`Analysis/BuffEffectAnalyzer`, shared with real-time) and whether it stacks
+  on the recipient (`BuffStackingAnalyzer.Analyze`, descriptor-based); only harmful buffs count as something to cleanse.
 - A value of 0 for a verifiable effect (damage, heal, cleanse) means "not useful now": never let it fall through to
   the once-per-combat fallback for unverifiable effects. Consumables never use that fallback.
 

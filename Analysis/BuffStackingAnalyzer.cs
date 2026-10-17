@@ -94,8 +94,13 @@ namespace CompanionAI_Pathfinder.Analysis
                 }
 
                 // 2. 각 보너스에 대해 충돌 체크
+                // ★ v0.3.2: a bonus whose size could not be read (Value 0, e.g. a ContextValue) is not "superseded" by
+                // whatever the target has: unknown magnitude counts as effective.
+                int knownBonuses = 0;
                 foreach (var bonus in bonuses)
                 {
+                    if (bonus.Value <= 0) continue;
+                    knownBonuses++;
                     if (!IsDescriptorStackable(bonus.Descriptor))
                     {
                         // 비스태킹 보너스 - 기존 값과 비교
@@ -113,7 +118,7 @@ namespace CompanionAI_Pathfinder.Analysis
                 if (result.ConflictingBonuses.Count > 0)
                 {
                     // 모든 보너스가 충돌하면 효과 없음
-                    if (result.ConflictingBonuses.Count >= bonuses.Count)
+                    if (result.ConflictingBonuses.Count >= bonuses.Count && knownBonuses == bonuses.Count)
                     {
                         result.IsEffective = false;
                         result.Reason = $"All bonuses superseded: {string.Join(", ", result.ConflictingBonuses)}";

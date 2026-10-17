@@ -101,6 +101,12 @@ namespace CompanionAI_Pathfinder.Analysis
         /// <summary>공격 효과 보유 여부</summary>
         public bool HasOffensiveEffect => (Categories & BuffEffectCategory.Offensive) != 0;
 
+        /// <summary>★ v0.3.2: at least one component was recognised (the value is grounded, not a default).</summary>
+        public bool Recognized { get; set; }
+
+        /// <summary>★ v0.3.2: has components, none of which are recognised (effect unknown, not "known useless").</summary>
+        public bool OnlyUnrecognized { get; set; }
+
         /// <summary>유틸리티 전용 버프 여부</summary>
         public bool IsUtilityOnly => Categories == BuffEffectCategory.Utility ||
                                       Categories == BuffEffectCategory.SkillBonus ||
@@ -205,14 +211,25 @@ namespace CompanionAI_Pathfinder.Analysis
                 }
 
                 float maxCombatValue = 0f;
+                int unrecognized = 0, meta = 0;
 
                 foreach (var component in components)
                 {
                     if (component == null) continue;
 
+                    int before = result.DetectedComponents.Count;
                     float componentValue = AnalyzeComponent(component, result);
                     maxCombatValue = Mathf.Max(maxCombatValue, componentValue);
+                    if (result.DetectedComponents.Count == before)
+                    {
+                        // ★ v0.3.2: keep the names of components we do not know, for the log.
+                        if (IsMetaComponent(component.GetType().Name)) meta++;
+                        else { unrecognized++; result.DetectedComponents.Add("?" + component.GetType().Name); }
+                    }
                 }
+
+                result.Recognized = maxCombatValue > 0f;
+                result.OnlyUnrecognized = !result.Recognized && unrecognized > 0;
 
                 // 최종 전투 가치 결정
                 if (maxCombatValue > 0f)
@@ -245,8 +262,48 @@ namespace CompanionAI_Pathfinder.Analysis
 
             string typeName = component.GetType().Name;
 
+            // ★ v0.3.2: immunity to a movement nuisance (difficult terrain: Feather Step) is not a combat effect.
+            if (component is Kingmaker.UnitLogic.FactLogic.AddConditionImmunity immunity &&
+                immunity.Condition == Kingmaker.UnitLogic.UnitCondition.DifficultTerrain)
+            {
+                result.Categories |= BuffEffectCategory.Utility;
+                result.DetectedComponents.Add("Immunity(DifficultTerrain)=Utility");
+                return 0.1f;
+            }
+
             switch (typeName)
             {
+                // ★ v0.3.2: save bonuses only against one kind of effect (poison, disease, a school, an alignment...).
+                case "SavingThrowBonusAgainstDescriptor":
+                case "SavingThrowBonusAgainstSchool":
+                case "SavingThrowBonusAgainstSchoolAbilityValue":
+                case "SavingThrowBonusAgainstAlignment":
+                case "SavingThrowBonusAgainstAlignmentDifference":
+                case "SavingThrowBonusAgainstFact":
+                case "SavingThrowBonusAgainstFactMultiple":
+                case "SavingThrowBonusAgainstSpecificSpells":
+                case "SavingThrowBonusAgainstSpellType":
+                case "SavingThrowBonusAgainstAbilityType":
+                case "SavingThrowBonusAgainstAllies":
+                    result.Categories |= BuffEffectCategory.SaveBonus;
+                    result.DetectedComponents.Add($"ConditionalSave({typeName})");
+                    return 0.2f;
+
+                // ★ v0.3.2: roll-twice / reroll effects on d20 rolls (Perfect Strike, fortune effects).
+                case "ModifyD20":
+                    result.Categories |= BuffEffectCategory.AttackBonus;
+                    result.DetectedComponents.Add($"Reroll({typeName})");
+                    return 0.7f;
+
+                // ★ v0.3.2: weapon / armor enchantment buffs (Spirit Weapon Enchantment, Magic Weapon...).
+                case "BuffEnchantAnyWeapon":
+                case "BuffEnchantWornItem":
+                case "BuffEnchantSpecificWeaponWorn":
+                case "BuffEnchantArmor":
+                    result.Categories |= BuffEffectCategory.AttackBonus;
+                    result.DetectedComponents.Add($"Enchant({typeName})");
+                    return 0.8f;
+
                 // ═══════════════════════════════════════════════════════════════
                 // AC 관련 (전투 가치: 1.0)
                 // ═══════════════════════════════════════════════════════════════
@@ -394,6 +451,26 @@ namespace CompanionAI_Pathfinder.Analysis
                 default:
                     // 인식되지 않은 컴포넌트 - 가치 부여 안함
                     return 0f;
+            }
+        }
+
+        /// <summary>★ v0.3.2: bookkeeping components that never carry a combat effect.</summary>
+        private static bool IsMetaComponent(string typeName)
+        {
+            switch (typeName)
+            {
+                case "SpellDescriptorComponent":
+                case "RemoveWhenCombatEnded":
+                case "NotDispelable":
+                case "SetBuffOnsetDelay":
+                case "SummonedUnitBuff":
+                case "RemoveBuffOnAttack":
+                case "RemoveBuffIfCasterIsMissing":
+                case "UniqueBuff":
+                case "SpellComponent":
+                    return true;
+                default:
+                    return false;
             }
         }
 
