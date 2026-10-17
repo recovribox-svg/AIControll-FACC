@@ -226,6 +226,7 @@ namespace CompanionAI_Pathfinder.UI
             GUILayout.Label($"<b>{L("CombatModeSettings")}</b>", _boldLabelStyle);
             GUILayout.Space(5);
 
+            bool prevBossBypass = ModSettings.Instance.ProgressiveBossBypass;
             bool prevTurnBased = ModSettings.Instance.EnableInTurnBased;
             bool prevRealTime = ModSettings.Instance.EnableInRealTime;
             float prevInterval = ModSettings.Instance.RealTimeDecisionInterval;
@@ -246,9 +247,15 @@ namespace CompanionAI_Pathfinder.UI
             GUILayout.Label($"<color=#00FF00>{ModSettings.Instance.RealTimeDecisionInterval:F1}s</color>", GUILayout.Width(50));
             GUILayout.EndHorizontal();
             GUILayout.Label($"<color=#888888><size=11>{L("RealTimeDecisionIntervalDesc")}</size></color>", _descriptionStyle);
+            GUILayout.Space(3);
+
+            // ★ v0.3.7: Progressive boss bypass (global)
+            ModSettings.Instance.ProgressiveBossBypass = DrawCheckbox(ModSettings.Instance.ProgressiveBossBypass, L("ProgressiveBossBypass"));
+            GUILayout.Label($"<color=#888888><size=11>{L("ProgressiveBossBypassDesc")}</size></color>", _descriptionStyle);
 
             // 변경시 저장
-            if (prevTurnBased != ModSettings.Instance.EnableInTurnBased ||
+            if (prevBossBypass != ModSettings.Instance.ProgressiveBossBypass ||
+                prevTurnBased != ModSettings.Instance.EnableInTurnBased ||
                 prevRealTime != ModSettings.Instance.EnableInRealTime ||
                 Math.Abs(prevInterval - ModSettings.Instance.RealTimeDecisionInterval) > 0.01f)
             {
@@ -412,6 +419,32 @@ namespace CompanionAI_Pathfinder.UI
             GUILayout.Space(5);
             DrawRangePreferenceSelection();
             GUILayout.Space(5);
+            DrawSpellPolicySelection();
+            GUILayout.Space(5);
+        }
+
+        /// <summary>★ v0.3.7: per-character spell-resource policy (Standard / Progressive).</summary>
+        private static void DrawSpellPolicySelection()
+        {
+            GUILayout.Label($"<b>{L("SpellPolicy")}</b>", _boldLabelStyle);
+            GUILayout.Label($"<color=#D8D8D8><i>{L("SpellPolicyDescHeader")}</i></color>", _descriptionStyle);
+            GUILayout.Space(5);
+
+            GUILayout.BeginHorizontal();
+            foreach (SpellResourcePolicy policy in Enum.GetValues(typeof(SpellResourcePolicy)))
+            {
+                bool isSelected = _editingSettings.SpellPolicy == policy;
+                string name = Localization.GetSpellPolicyName(policy);
+                string btnText = isSelected ? $"<color=#87CEEB><b>{name}</b></color>" : $"<color=#D8D8D8>{name}</color>";
+                if (GUILayout.Toggle(isSelected, btnText, GUI.skin.button, GUILayout.Width(RANGE_BUTTON_WIDTH), GUILayout.Height(BUTTON_HEIGHT)) && !isSelected)
+                {
+                    _editingSettings.SpellPolicy = policy;
+                    ModSettings.Save();
+                }
+            }
+            GUILayout.EndHorizontal();
+            GUILayout.Space(5);
+            GUILayout.Label($"<color=#D8D8D8><i>{Localization.GetSpellPolicyDescription(_editingSettings.SpellPolicy)}</i></color>", _descriptionStyle);
         }
 
         // v0.2.3: Role selection UI

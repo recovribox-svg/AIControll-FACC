@@ -1,4 +1,4 @@
-# Turn-based tactical AI (v0.3.0, revised in v0.3.1-v0.3.6)
+# Turn-based tactical AI (v0.3.0, revised in v0.3.1-v0.3.7)
 
 This document describes how companions decide what to do in **turn-based combat**. Real-time combat still uses
 the older `UnifiedDecisionEngine`, which already handled weapon attacks. It now shares the consumable settings.
@@ -175,3 +175,16 @@ and not chosen over Grasp Heart.
 | `Out-of-combat permanent buff (Perfect Strike)` after every fight | 5878, 8747, 11091, 13386, 15899 | Its buff is permanent and removes itself after one reroll (`ModifyD20.DispellOnRerollFinished`); only `RemoveBuffOnAttack` counted as "spent by use". | Both count as one-shot: no out-of-combat casting, valued as ~2 rounds in combat. |
 | Camellia's `Cure Light Wounds` → `result=Fail` while engaged | 12424-12456 | A standard-action spell in melee needs a defensive-casting check; failing provokes an attack of opportunity and can lose the spell (`UnitUseAbility.OnTick`, `AbilityData.ProvokeAttackOfOpportunity`). | 5-foot step first when the best action is such a spell (not aimed at an adjacent enemy); otherwise the spell's value × 0.85 while engaged. Potions and wands do not provoke. |
 | 13,559 `IsReadyForNextAction` debug lines | throughout | Logged every frame while a command runs (debug logging on). | Logged only when its result changes. |
+
+## 12. v0.3.7: Progressive spell policy and area spells
+
+- **Progressive** (per character, off by default): after all options are valued and filtered, offensive spellbook
+  spells above the lowest *usable* slot level are removed from the choice. Usable = worth at least the engine's
+  minimum and at least a 25 % chance to land (spell resistance × failed save × hit). Slot level comes from the game
+  (`Spellbook.GetSpellLevel`, metamagic included; level 0 = free and never gated). Each spellbook is its own ladder.
+  A cast that would hit an enemy the game marks as a boss (`Experience.Encounter == Boss`) is not held back.
+  Same rule in real time. Full design and evidence: [PROGRESSIVE_SPELLS.md](PROGRESSIVE_SPELLS.md).
+- **Area spells**: the effects of spawned areas (`AbilityAreaEffectRunAction`, `AbilityAreaEffectBuff`) are now read,
+  so Grease, Web, Stinking Cloud and similar spells are valued as control/damage with their real radius. A control or
+  debuff area that would also catch allies is dropped when *Avoid friendly fire* is on (as damage areas already were),
+  otherwise each caught ally is subtracted.

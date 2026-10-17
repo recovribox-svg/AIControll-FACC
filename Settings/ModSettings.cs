@@ -56,6 +56,28 @@ namespace CompanionAI_Pathfinder.Settings
                 { Language.Korean, "실시간 모드에서 AI가 결정을 내리는 간격 (초)" }
             },
 
+            // ★ v0.3.7: Progressive spell-resource policy
+            ["SpellPolicy"] = new() { { Language.English, "Spell Use" }, { Language.Korean, "주문 사용" } },
+            ["SpellPolicyDescHeader"] = new() {
+                { Language.English, "How this character spends spell slots on damage and control spells" },
+                { Language.Korean, "피해/제어 주문에 주문 슬롯을 쓰는 방식" }
+            },
+            ["SpellPolicy_Standard"] = new() { { Language.English, "Standard" }, { Language.Korean, "기본" } },
+            ["SpellPolicy_Progressive"] = new() { { Language.English, "Progressive" }, { Language.Korean, "점진적" } },
+            ["SpellPolicyDesc_Standard"] = new() {
+                { Language.English, "Picks the most valuable spell, with a mild preference for weapons and cantrips in easy fights." },
+                { Language.Korean, "가장 가치 있는 주문을 선택합니다. 쉬운 전투에서는 무기와 캔트립을 약간 선호합니다." }
+            },
+            ["SpellPolicyDesc_Progressive"] = new() {
+                { Language.English, "Uses the lowest spell level that has a damage or control spell with a real chance to work; higher levels only when lower ones cannot, or against bosses. Cantrips, buffs, heals and items are unaffected." },
+                { Language.Korean, "효과가 있을 가능성이 충분한 피해/제어 주문이 있는 가장 낮은 주문 레벨을 사용합니다. 높은 레벨은 낮은 레벨로 안 될 때나 보스에게만 사용합니다. 캔트립, 버프, 치유, 아이템은 영향받지 않습니다." }
+            },
+            ["ProgressiveBossBypass"] = new() { { Language.English, "Progressive: allow higher spell levels against bosses" }, { Language.Korean, "점진적: 보스에게 높은 레벨 주문 허용" } },
+            ["ProgressiveBossBypassDesc"] = new() {
+                { Language.English, "Only enemies the game itself marks as bosses; only spells that would hit the boss." },
+                { Language.Korean, "게임이 보스로 표시한 적에게만, 보스에게 닿는 주문에만 적용됩니다." }
+            },
+
             // ★ v0.3.0: Consumables
             ["ConsumableSettings"] = new() { { Language.English, "Consumables (quick-slot items)" }, { Language.Korean, "소모품 (퀵슬롯 아이템)" } },
             ["ConsumableSettingsDesc"] = new() {
@@ -155,6 +177,8 @@ namespace CompanionAI_Pathfinder.Settings
         }
 
         public static string GetRangeName(RangePreference range) => Get($"Range_{range}");
+        public static string GetSpellPolicyName(SpellResourcePolicy policy) => Get($"SpellPolicy_{policy}");
+        public static string GetSpellPolicyDescription(SpellResourcePolicy policy) => Get($"SpellPolicyDesc_{policy}");
         public static string GetRangeDescription(RangePreference range) => Get($"RangeDesc_{range}");
 
         // v0.2.3: AI Role localization
@@ -175,6 +199,13 @@ namespace CompanionAI_Pathfinder.Settings
     /// <summary>
     /// AI 역할
     /// </summary>
+    /// <summary>★ v0.3.7: how a caster spends spell slots on offensive spells (orthogonal to role and range).</summary>
+    public enum SpellResourcePolicy
+    {
+        Standard,     // existing behaviour
+        Progressive   // lowest usable spell level first; higher levels for bosses or when lower ones cannot work
+    }
+
     public enum AIRole
     {
         DPS,        // 딜러 - 공격 우선
@@ -195,6 +226,8 @@ namespace CompanionAI_Pathfinder.Settings
 
         // 전투 행동
         public int HealAtHPPercent { get; set; } = 30;
+        /// <summary>★ v0.3.7: default Standard, so existing settings files behave exactly as before.</summary>
+        public SpellResourcePolicy SpellPolicy { get; set; } = SpellResourcePolicy.Standard;
         public bool UseBuffsBeforeAttack { get; set; } = true;
         public bool AvoidFriendlyFire { get; set; } = true;
     }
@@ -227,6 +260,9 @@ namespace CompanionAI_Pathfinder.Settings
         public bool UseScrollsAndWands { get; set; } = true;
         public bool UseThrownItems { get; set; } = true;
         public int PotionHealThresholdPercent { get; set; } = 50;
+
+        /// <summary>★ v0.3.7: Progressive casters may use higher spell levels on enemies the game marks as bosses.</summary>
+        public bool ProgressiveBossBypass { get; set; } = true;
 
         // 캐릭터별 설정
         public Dictionary<string, CharacterSettings> CharacterSettings { get; set; } = new();

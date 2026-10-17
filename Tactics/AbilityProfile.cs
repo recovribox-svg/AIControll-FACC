@@ -145,6 +145,13 @@ namespace CompanionAI_Pathfinder.Tactics
         private readonly Dictionary<BlueprintBuff, EffectGuard[]> m_BuffGuards = new Dictionary<BlueprintBuff, EffectGuard[]>();
         private static readonly EffectGuard[] NoGuards = new EffectGuard[0];
         private int m_ShortBuffs, m_SpentByAttackBuffs, m_AllBuffs;
+        private float m_AreaRadius;
+        private Kingmaker.UnitLogic.Abilities.Components.TargetType m_AreaTargets =
+            Kingmaker.UnitLogic.Abilities.Components.TargetType.Any;
+        private readonly HashSet<BlueprintAbilityAreaEffect> m_VisitedAreas = new HashSet<BlueprintAbilityAreaEffect>();
+
+        /// <summary>★ v0.3.7: the ability creates a lingering area (its effects were read from the area's components).</summary>
+        public bool SpawnsArea { get; private set; }
         /// <summary>Removal actions (ContextActionRemoveBuff / ...ByDescriptor) on the target, with their branch.</summary>
         private readonly List<GameAction> m_Removals = new List<GameAction>();
 
@@ -214,6 +221,12 @@ namespace CompanionAI_Pathfinder.Tactics
             {
                 AoERadius = around.AoERadius.Meters;
                 AoETargets = around.Targets;
+            }
+            else if (m_AreaRadius > 0f)
+            {
+                // ★ v0.3.7: a spawned area (Grease, Web, Stinking Cloud) is the spell's area of effect.
+                AoERadius = m_AreaRadius;
+                AoETargets = m_AreaTargets;
             }
 
             // Control: the spell's own descriptor plus the descriptors / conditions of what it applies.
@@ -320,6 +333,9 @@ namespace CompanionAI_Pathfinder.Tactics
                     case ContextActionSpawnMonster _:
                         Summons = true;
                         break;
+                    case ContextActionSpawnAreaEffect spawnArea:
+                        WalkAreaEffect(spawnArea.AreaEffect, visited, abilityDepth, subject, depth, guards);
+                        break;
                     case ContextActionDispelMagic _:
                         Dispels = true;
                         break;
@@ -359,6 +375,44 @@ namespace CompanionAI_Pathfinder.Tactics
 
                 foreach (var referenced in ReferencedAbilities(action))
                     AnalyzeAbility(referenced, visited, abilityDepth + 1, childSubject);
+            }
+        }
+
+        /// <summary>
+        /// ★ v0.3.7: the effects of a spawned area live in its components, not in action fields: AbilityAreaEffectRunAction
+        /// (UnitEnter / Round / UnitMove action lists) and AbilityAreaEffectBuff (a buff while inside). Without this, Grease,
+        /// Web, Stinking Cloud and the like were "unverifiable" and never counted as control.
+        /// </summary>
+        private void WalkAreaEffect(BlueprintAbilityAreaEffect area, HashSet<BlueprintAbility> visited, int abilityDepth,
+                                    EffectSubject subject, int depth, EffectGuard[] guards)
+        {
+            if (area == null || subject != EffectSubject.Target || !m_VisitedAreas.Add(area)) return;
+            SpawnsArea = true;
+            try
+            {
+                m_AreaRadius = Math.Max(m_AreaRadius, area.Size.Meters);
+                m_AreaTargets = !area.CanTargetAllies ? Kingmaker.UnitLogic.Abilities.Components.TargetType.Enemy
+                              : !area.CanTargetEnemies ? Kingmaker.UnitLogic.Abilities.Components.TargetType.Ally
+                              : Kingmaker.UnitLogic.Abilities.Components.TargetType.Any;
+
+                foreach (var run in area.GetComponents<Kingmaker.UnitLogic.Abilities.Components.AreaEffects.AbilityAreaEffectRunAction>())
+                {
+                    Walk(run.UnitEnter?.Actions, visited, abilityDepth, subject, depth + 1, guards);
+                    Walk(run.Round?.Actions, visited, abilityDepth, subject, depth + 1, guards);
+                    Walk(run.UnitMove?.Actions, visited, abilityDepth, subject, depth + 1, guards);
+                }
+                foreach (var areaBuff in area.GetComponents<Kingmaker.UnitLogic.Abilities.Components.AreaEffects.AbilityAreaEffectBuff>())
+                {
+                    var buff = areaBuff.Buff;
+                    if (buff == null) continue;
+                    TargetBuffs.Add(buff);
+                    m_BuffGuards[buff] = m_BuffGuards.ContainsKey(buff) ? NoGuards : guards;
+                    m_AllBuffs++;
+                }
+            }
+            catch (Exception ex)
+            {
+                Main.Verbose($"[Profile] area effect {area.name}: {ex.Message}");
             }
         }
 

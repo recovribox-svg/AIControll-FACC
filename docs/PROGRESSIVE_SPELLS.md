@@ -1,6 +1,7 @@
 # Progressive spell-resource policy — audit, design and plan
 
-Status: **design only, nothing implemented.** Revision 2: updated after the operator's *Progressive Reference
+Status: **implemented in v0.3.7** (operator decisions: lowest *usable* tier; boss bypass from the game flag only).
+Implementation map at the end (§I). Revision 2: updated after the operator's *Progressive Reference
 Synthesis* (§R below summarises what changed and why). Written against the working tree at `ba81d7c` (mod v0.3.6,
 branch `claude/dreamy-pasteur-b9h3rn`, clean). Line numbers refer to that commit.
 
@@ -415,3 +416,22 @@ strict exhaustion (§2.3b). None of these block implementation; all are observab
 | §6.4: strict exhaustion is an explicit choice | not discussed | §2.3b: operator decision, lowest-usable-tier recommended |
 | §7: logging of tier, per-tier counts, skip reasons, bypass transitions | basic line | skip reasons and transitions logged; detail behind debug setting |
 | §7 tests 4, 13 | — | T14 (hex restriction), T16 (toggle, save/load) added |
+
+---
+
+## §I — Implementation (v0.3.7)
+
+| Step | Files | State |
+|---|---|---|
+| 0 Area-effect analysis | `Tactics/AbilityProfile.cs` (`WalkAreaEffect`), `Tactics/TacticalEngine.cs` (control friendly fire) | done |
+| 1 Pure tier rule + tests | `Tactics/SpellTierPolicy.cs`, `tests/CompanionAI.Tests` (11 tests: T1-T8 + edge cases) | done, `dotnet test` passes |
+| 2 Settings/UI | `Settings/ModSettings.cs` (`SpellResourcePolicy`, `CharacterSettings.SpellPolicy`, `ModSettings.ProgressiveBossBypass`, EN/KR strings), `UI/MainUI.cs` (`DrawSpellPolicySelection`, bypass checkbox) | done |
+| 3 Turn-based | `Tactics/TacticalEngine.cs` (`Candidate.SuccessChance`, `ApplyProgressive` in `Decide`), `Tactics/CombatMath.cs` (`EffectChance`, shared) | done |
+| 4 Boss bypass + logs | `Tactics/ThreatAssessment.cs`, `Tactics/ProgressiveGate.cs`, `Tactics/CombatMemory.cs` | done |
+| 5 Real-time | `Core/DecisionEngine/UnifiedDecisionEngine.cs` (`ApplyProgressive`, threshold = end-turn score) | done |
+| 6 Docs/package | README, CLAUDE.md, this file, `docs/TACTICAL_AI.md` §12 | done |
+
+In-game tests T1-T16 (§3.2) have **not** been run — there is no game runtime here. Log lines to look for:
+`[Progressive] <unit> (TB|RT): <book>: tier L1 (lower skipped: ...) - held back: ...`,
+`[Progressive] boss bypass ON/OFF`, `[Progressive] would bypass (not active): ...`, and with debug logging on,
+`[Progressive] enemy <name>: Encounter=<type>, CR=<n>` once per enemy per combat.

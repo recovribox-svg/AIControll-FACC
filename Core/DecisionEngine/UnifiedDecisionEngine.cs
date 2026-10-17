@@ -125,6 +125,7 @@ namespace CompanionAI_Pathfinder.Core.DecisionEngine
                 // 4. Score all candidates with phase weights
                 swStep.Restart();
                 _scorer.ScoreAll(candidates, situation, phase);
+                candidates = ApplyProgressive(unit, situation, candidates);   // ★ v0.3.7
                 swStep.Stop();
                 scoreMs = swStep.ElapsedMilliseconds;
 
@@ -182,6 +183,7 @@ namespace CompanionAI_Pathfinder.Core.DecisionEngine
                     return ActionCandidate.EndTurn("No valid actions");
 
                 _scorer.ScoreAll(candidates, situation, situation.CombatPhase);
+                candidates = ApplyProgressive(unit, situation, candidates);   // ★ v0.3.7
                 _scorer.LogTopCandidates(candidates, unitName);
 
                 // ★ v0.2.41: HybridFinalScore 사용
@@ -195,6 +197,30 @@ namespace CompanionAI_Pathfinder.Core.DecisionEngine
         }
 
         #endregion
+
+        /// <summary>
+        /// ★ v0.3.7: Progressive spell policy in real time - the same rule as turn-based (Tactics/ProgressiveGate):
+        /// offensive spellbook spells above the lowest usable slot level are removed before the best score is taken.
+        /// An option counts as usable when it beats ending the turn and is not vetoed.
+        /// </summary>
+        private static List<ActionCandidate> ApplyProgressive(UnitEntityData unit, Situation situation, List<ActionCandidate> candidates)
+        {
+            if (!Tactics.ProgressiveGate.IsEnabledFor(unit)) return candidates;
+            float floor = candidates.Where(c => c.ActionType == CandidateType.EndTurn)
+                                    .Select(c => c.HybridFinalScore).DefaultIfEmpty(0f).Max();
+            var items = candidates.Select(c => new Tactics.GateItem
+            {
+                Source = c,
+                Label = $"{c.Ability?.Name ?? c.ActionType.ToString()}->{c.Target?.CharacterName}",
+                Ability = c.Ability,
+                Offensive = c.ActionType == CandidateType.AbilityAttack || c.ActionType == CandidateType.Debuff,
+                Value = c.IsVetoed ? 0f : c.HybridFinalScore,
+                Threshold = floor,
+                Target = c.Target
+            }).ToList();
+            var held = Tactics.ProgressiveGate.HeldBack(unit, situation.Enemies ?? new List<UnitEntityData>(), items, "RT");
+            return held.Count == 0 ? candidates : candidates.Where(c => !held.Contains(c)).ToList();
+        }
 
         #region Candidate Generation
 

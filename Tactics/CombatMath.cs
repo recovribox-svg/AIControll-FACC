@@ -220,6 +220,23 @@ namespace CompanionAI_Pathfinder.Tactics
             return total;
         }
 
+        /// <summary>
+        /// ★ v0.3.7: chance an ability's effect lands on <paramref name="enemy"/>: spell-resistance pass × attack-roll hit
+        /// chance × failed save (for damage, a successful save still counts half when the spell does half on a save).
+        /// One formula for damage/control scoring and Progressive's viability test, in both combat modes.
+        /// </summary>
+        public static float EffectChance(UnitEntityData caster, UnitEntityData enemy, AbilityData ability, AbilityProfile profile, bool damage)
+        {
+            float p = SpellResistancePass(caster, enemy, ability);
+            if (profile.NeedsAttackRoll) p *= SpellAttackHitChance(caster, enemy, ability);
+            if (profile.Save != SavingThrowType.Unknown)
+            {
+                float fail = SaveFailChance(ability, profile, enemy);
+                p *= damage ? fail + (1f - fail) * (profile.HalfOnSave ? 0.5f : 0f) : fail;
+            }
+            return p;
+        }
+
         /// <summary>Probability the target fails its save (1 when the ability has no save).</summary>
         public static float SaveFailChance(AbilityData ability, AbilityProfile profile, UnitEntityData target)
         {

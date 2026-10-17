@@ -18,6 +18,10 @@ namespace CompanionAI_Pathfinder.Tactics
         /// <summary>"caster|ability" → times used this combat.</summary>
         private static readonly Dictionary<string, int> Uses = new Dictionary<string, int>();
         private static readonly Dictionary<string, TurnMemory> Turns = new Dictionary<string, TurnMemory>();
+
+        /// <summary>★ v0.3.7: Progressive log bookkeeping for this combat (what was already reported, so transitions log once).</summary>
+        public static readonly HashSet<string> ProgressiveLogged = new HashSet<string>();
+        public static readonly HashSet<string> ActiveBosses = new HashSet<string>();
         private static int _lastRound = int.MaxValue;
 
         public static int Round => Game.Instance?.TurnBasedCombatController?.RoundNumber ?? 0;
@@ -36,6 +40,9 @@ namespace CompanionAI_Pathfinder.Tactics
             Casts.Clear();
             Uses.Clear();
             Turns.Clear();
+            ProgressiveLogged.Clear();
+            ActiveBosses.Clear();
+            ProgressiveGate.ResetCombat();
             _lastRound = int.MaxValue;
             AbilityProfile.ClearConditionCache();
         }

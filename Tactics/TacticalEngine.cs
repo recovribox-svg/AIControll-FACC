@@ -47,6 +47,8 @@ namespace CompanionAI_Pathfinder.Tactics
         public bool Offensive;
         public string Label;
         public string Key;
+        /// <summary>★ v0.3.7: chance the effect lands on its main target (1 for non-hostile options).</summary>
+        public float SuccessChance = 1f;
 
         public override string ToString() => $"{Label}={Value:F1}";
     }
@@ -102,6 +104,10 @@ namespace CompanionAI_Pathfinder.Tactics
                 .OrderByDescending(c => c.Value)
                 .ToList();
 
+            // ★ v0.3.7: Progressive spell policy - hold back higher spell levels while a lower one can do the job.
+            if (ctx.Settings.SpellPolicy == SpellResourcePolicy.Progressive)
+                usable = ApplyProgressive(ctx, usable);
+
             var quick = usable.FirstOrDefault(c => c.Slot == ActionSlot.Free || c.Slot == ActionSlot.Swift);
             var main = usable.FirstOrDefault(c => c.Slot != ActionSlot.Free && c.Slot != ActionSlot.Swift);
 
@@ -111,6 +117,29 @@ namespace CompanionAI_Pathfinder.Tactics
 
             LogDecision(ctx, usable, chosen);
             return chosen;
+        }
+
+        /// <summary>
+        /// ★ v0.3.7: Progressive spell-resource policy (docs/PROGRESSIVE_SPELLS.md), applied to the already-eligible
+        /// options: legality, targeting, immunity, action economy and repeat prevention have all run.
+        /// </summary>
+        private static List<Candidate> ApplyProgressive(TacticalContext ctx, List<Candidate> usable)
+        {
+            ProgressiveGate.LogShadowSignals(ctx);
+            var items = usable.Select(c => new GateItem
+            {
+                Source = c,
+                Label = c.Label,
+                Ability = c.Kind == CandidateKind.Ability ? c.Ability : null,
+                Offensive = c.Offensive,
+                Value = c.Value,
+                Threshold = c.Slot == ActionSlot.Free || c.Slot == ActionSlot.Swift ? MinQuickValue : MinMainValue,
+                SuccessChance = c.SuccessChance,
+                Target = c.Target,
+                Point = c.Point
+            }).ToList();
+            var held = ProgressiveGate.HeldBack(ctx.Unit, ctx.Enemies, items, "TB");
+            return held.Count == 0 ? usable : usable.Where(c => !held.Contains(c)).ToList();
         }
 
         private static bool Affordable(TacticalContext ctx, Candidate c)
@@ -594,6 +623,9 @@ namespace CompanionAI_Pathfinder.Tactics
                         NeedsMove = needsMove,
                         Value = value,
                         Offensive = why.Contains("dmg") || why.Contains("cc") || why.Contains("debuff"),
+                        SuccessChance = ctx.Unit.IsEnemy(target)
+                            ? CombatMath.EffectChance(ctx.Unit, target, ability, profile, damage: profile.DealsDamage)
+                            : 1f,
                         Label = $"{(ability.SourceItem != null ? "Item:" : "")}{ability.Name}->{target.CharacterName}({why})",
                         Key = $"abl:{CombatMemory.AbilityKey(ability)}:{target.UniqueId}"
                     };
@@ -685,13 +717,7 @@ namespace CompanionAI_Pathfinder.Tactics
                 {
                     if (CombatRulesAnalyzer.AnalyzeResistance(unit, enemy, ability).IsCompletelyIneffective) continue;
                     float dmg = CombatMath.EstimateAbilityDamage(ability, profile, enemy);
-                    float p = CombatMath.SpellResistancePass(unit, enemy, ability);
-                    if (profile.NeedsAttackRoll) p *= CombatMath.SpellAttackHitChance(unit, enemy, ability);
-                    if (profile.Save != Kingmaker.EntitySystem.Stats.SavingThrowType.Unknown)
-                    {
-                        float fail = CombatMath.SaveFailChance(ability, profile, enemy);
-                        p *= fail + (1f - fail) * (profile.HalfOnSave ? 0.5f : 0f);
-                    }
+                    float p = CombatMath.EffectChance(unit, enemy, ability, profile, damage: true);
                     dmgValue += DamageValue(enemy, dmg * p);
                 }
 
@@ -762,6 +788,19 @@ namespace CompanionAI_Pathfinder.Tactics
                     strength *= 0.3f;
                 // A one-round / next-attack effect lasts one round, not the rest of the fight.
                 float effectRounds = profile.IsOneShot ? 1f : Math.Min(ctx.ExpectedRounds, 3f);
+
+                // ★ v0.3.7: control or debuff areas that also catch allies (Grease, Web, Stinking Cloud now that areas
+                // are analysed). Same rule as damage: dropped with "Avoid friendly fire", otherwise each caught ally
+                // costs as much as an enemy of the same strength would gain.
+                float allyControlCost = 0f;
+                bool harmfulArea = profile.IsAoE && profile.AoETargets != Kingmaker.UnitLogic.Abilities.Components.TargetType.Enemy &&
+                                   (profile.HarmfulToEnemies || profile.ControlStrength != ControlStrength.None);
+                if (harmfulArea && affectedAllies.Count > 0)
+                {
+                    if (ctx.Settings.AvoidFriendlyFire) { why = "friendly fire"; return 0f; }
+                    allyControlCost = affectedAllies.Sum(a => (4f + 3f * Math.Max(1, a.Descriptor?.Progression?.CharacterLevel ?? 1)) *
+                                                             strength * effectRounds);
+                }
                 foreach (var enemy in affectedEnemies)
                 {
                     var buffs = profile.TargetBuffs.Where(b => profile.BuffAppliesTo(b, ability, enemy) != EffectApplies.No).ToList();
@@ -769,14 +808,14 @@ namespace CompanionAI_Pathfinder.Tactics
                     if (buffs.Any(b => enemy.Buffs.HasFact(b))) continue;
                     if (profile.Control != CCType.None && AbilityClassifier.HasCCImmunity(enemy, profile.Control)) continue;
                     if (CombatRulesAnalyzer.AnalyzeResistance(unit, enemy, ability).IsCompletelyIneffective) continue;
-                    float p = CombatMath.SpellResistancePass(unit, enemy, ability) * CombatMath.SaveFailChance(ability, profile, enemy);
-                    if (profile.NeedsAttackRoll) p *= CombatMath.SpellAttackHitChance(unit, enemy, ability);
+                    float p = CombatMath.EffectChance(unit, enemy, ability, profile, damage: false);
                     float enemyValue = p * CombatMath.Threat(enemy) * strength * effectRounds;
                     // A one-round mark only pays off when someone else in the party is fighting that enemy now.
                     if (oneShotMark && !(enemy.CombatState?.EngagedUnits?.Any(u => u != unit && !unit.IsEnemy(u)) ?? false))
                         enemyValue *= 0.5f;
                     controlValue += enemyValue;
                 }
+                controlValue -= allyControlCost;
                 if (controlValue > 0f)
                 {
                     value += controlValue;
