@@ -73,6 +73,8 @@ namespace CompanionAI_Pathfinder.Tactics
 
         public List<UnitEntityData> Enemies = new List<UnitEntityData>();
         public List<UnitEntityData> Allies = new List<UnitEntityData>();   // includes Unit
+        /// <summary>★ v0.3.9: party members down (unconscious, not dead): only heals are aimed at them.</summary>
+        public List<UnitEntityData> DownedAllies = new List<UnitEntityData>();
         public float ExpectedRounds;
         public float Difficulty;
         public bool HasRangedWeapon;
@@ -254,7 +256,16 @@ namespace CompanionAI_Pathfinder.Tactics
             foreach (var other in Game.Instance.State.Units)
             {
                 if (other == null || other.Descriptor?.State == null) continue;
-                if (other.Descriptor.State.IsDead || other.HPLeft <= 0) continue;
+                if (other.Descriptor.State.IsDead) continue;
+                if (other.HPLeft <= 0 || other.Descriptor.State.IsUnconscious)
+                {
+                    // ★ v0.3.9: Lann and Camellia went down in the Large Water Elemental fight; nobody could aim a heal at
+                    // them because downed allies were not in any list.
+                    if (other != unit && other.IsPlayerFaction && !unit.IsEnemy(other) &&
+                        Vector3.Distance(unit.Position, other.Position) < 30f)
+                        ctx.DownedAllies.Add(other);
+                    continue;
+                }
                 if (!(other.CombatState?.IsInCombat ?? false)) continue;
 
                 if (unit.IsEnemy(other))
@@ -286,6 +297,75 @@ namespace CompanionAI_Pathfinder.Tactics
         #endregion
 
         #region Shared value helpers
+
+        /// <summary>
+        /// ★ v0.3.9: damage that does not kill a sleeping enemy wakes it (the Sleep buff ends on damage) and throws away
+        /// the control already paid for: worth half. Seelah and Camellia hit sleeping enemies instead of awake ones.
+        /// </summary>
+        private static float WakeFactor(UnitEntityData enemy, float expectedDamage)
+        {
+            bool asleep;
+            try { asleep = enemy.Descriptor.State.HasCondition(UnitCondition.Sleeping); } catch { asleep = false; }
+            return asleep && expectedDamage < enemy.HPLeft ? 0.5f : 1f;
+        }
+
+        /// <summary>Vanilla Coup de Grace (Tabletop Tweaks keeps the blueprint and replaces its effect component).</summary>
+        private static readonly string CoupDeGraceGuid = "32280b137ca642c45be17e2d92898758";
+
+        private static bool IsCoupDeGrace(AbilityData ability) =>
+            string.Equals(ability?.Blueprint?.AssetGuid.ToString(), CoupDeGraceGuid, StringComparison.OrdinalIgnoreCase);
+
+        /// <summary>
+        /// ★ v0.3.9: Coup de Grace was "utility 1.0" (its effect is a custom component); Seelah hit a sleeping wizard for
+        /// 9.6 instead. Valued by the rules (CombatMath.EstimateCoupDeGrace): the kill chance takes the whole enemy out,
+        /// otherwise the critical damage counts. The game's own target check already requires a helpless target. It is
+        /// a full-round action that provokes: other enemies threatening the caster cost their attacks of opportunity.
+        /// </summary>
+        private static float CoupDeGraceValue(TacticalContext ctx, UnitEntityData target, out string why)
+        {
+            why = "dmg:cdg";   // "dmg" marks it offensive, like other damaging options
+            if (!ctx.Unit.IsEnemy(target)) return 0f;
+            if (!CombatMath.EstimateCoupDeGrace(ctx.Unit, target, out float damage, out float kill)) return 0f;
+            float value = kill * (Math.Max(1, target.HPLeft) + CombatMath.Threat(target)) + (1f - kill) * DamageValue(target, damage);
+            value *= RoleWeight(ctx, "damage");
+            value -= ctx.Engagers.Where(e => e != target).Sum(CombatMath.Threat) * 0.35f;
+            return Math.Max(0f, value);
+        }
+
+        /// <summary>
+        /// ★ v0.3.9: damage an ally can expect before its next turn: each enemy that can reach it (a move and an attack,
+        /// or any distance for ranged weapons and casters) adds its threat, shared among the party members it could
+        /// equally reach. The chance of dropping is then modelled as exp(-HP / danger).
+        /// </summary>
+        private static float IncomingDamage(TacticalContext ctx, UnitEntityData ally)
+        {
+            float total = 0f;
+            foreach (var enemy in ctx.Enemies)
+            {
+                float zone;
+                try
+                {
+                    bool ranged = (enemy.Body?.PrimaryHand?.MaybeWeapon?.Blueprint?.IsRanged ?? false) ||
+                                  (enemy.Descriptor?.Spellbooks?.Any() ?? false);
+                    zone = ranged ? 20f : enemy.CurrentSpeedMps * 3f + 2f + enemy.Corpulence;
+                }
+                catch
+                {
+                    zone = 11f;
+                }
+                if (Vector3.Distance(enemy.Position, ally.Position) > zone + ally.Corpulence) continue;
+                int sharedBy = Math.Max(1, ctx.Allies.Count(a => Vector3.Distance(enemy.Position, a.Position) <= zone + a.Corpulence));
+                total += CombatMath.Threat(enemy) / sharedBy;
+            }
+            return total;
+        }
+
+        /// <summary>★ v0.3.9: what keeping an ally in the fight is worth: its damage-equivalent output for up to 3 rounds.</summary>
+        private static float AllyWorth(TacticalContext ctx, UnitEntityData ally)
+        {
+            int level = Math.Max(1, ally.Descriptor?.Progression?.CharacterLevel ?? 1);
+            return (4f + 3f * level) * Math.Min(Math.Max(1f, ctx.ExpectedRounds), 3f);
+        }
 
         /// <summary>Damage dealt to an enemy, capped at its HP, plus the value of removing it from the fight.</summary>
         private static float DamageValue(UnitEntityData enemy, float expectedDamage)
@@ -339,7 +419,10 @@ namespace CompanionAI_Pathfinder.Tactics
                 float reach = single.Reach;
                 bool inReach = InRangeNow(unit, enemy.Position, reach, needLos: true);
                 float dist = ctx.Distance(enemy);
-                bool fiveFootReach = !inReach && !single.IsRanged && ctx.CanFiveFoot &&
+                // ★ v0.3.9: ranged weapons too - Lann made single "Move+Attack" shots after moving 0.1-0.7 m (out of range
+                // or line of sight by a step) and lost his second attack five times. The dispatcher refuses a full
+                // attack whose path is longer than the 5-foot step, and the next best option is then tried.
+                bool fiveFootReach = !inReach && ctx.CanFiveFoot &&
                                      dist <= reach + TurnController.MetersOfFiveFootStep * 0.85f;
 
                 float weight = RoleWeight(ctx, "damage") * PreferenceWeight(ctx, single.IsRanged);
@@ -362,7 +445,8 @@ namespace CompanionAI_Pathfinder.Tactics
                             Slot = ActionSlot.FullRound,
                             Target = enemy,
                             FullAttack = true,
-                            Value = DamageValue(enemy, full.ExpectedDamage) * weight - aooPenalty,
+                            Value = DamageValue(enemy, full.ExpectedDamage) * weight * (fiveFootReach ? 0.95f : 1f) *
+                                    WakeFactor(enemy, full.ExpectedDamage) - aooPenalty,
                             Label = $"FullAttack({full.Attacks})->{enemy.CharacterName}{(fiveFootReach ? "+5ft" : "")}",
                             Key = $"full:{enemy.UniqueId}"
                         });
@@ -379,7 +463,7 @@ namespace CompanionAI_Pathfinder.Tactics
                         Offensive = true,
                         Slot = ActionSlot.Standard,
                         Target = enemy,
-                        Value = DamageValue(enemy, single.ExpectedDamage) * weight - aooPenalty,
+                        Value = DamageValue(enemy, single.ExpectedDamage) * weight * WakeFactor(enemy, single.ExpectedDamage) - aooPenalty,
                         Label = $"Attack->{enemy.CharacterName}",
                         Key = $"atk:{enemy.UniqueId}"
                     });
@@ -394,7 +478,7 @@ namespace CompanionAI_Pathfinder.Tactics
                         NeedsMove = true,
                         Target = enemy,
                         // ranged units shooting from a new spot leave melee, so no AoO penalty after moving
-                        Value = DamageValue(enemy, single.ExpectedDamage) * weight * 0.9f,
+                        Value = DamageValue(enemy, single.ExpectedDamage) * weight * 0.9f * WakeFactor(enemy, single.ExpectedDamage),
                         Label = $"Move+Attack->{enemy.CharacterName}",
                         Key = $"matk:{enemy.UniqueId}"
                     });
@@ -639,6 +723,8 @@ namespace CompanionAI_Pathfinder.Tactics
                     targets.AddRange(ctx.Enemies);
                 if (!harmfulOnly && (ability.Blueprint.CanTargetFriends || ability.Blueprint.CanTargetSelf))
                     targets.AddRange(ctx.Allies.Where(a => a == ctx.Unit ? ability.Blueprint.CanTargetSelf : ability.Blueprint.CanTargetFriends));
+                if (profile.Heals.Count > 0 && ability.Blueprint.CanTargetFriends)
+                    targets.AddRange(ctx.DownedAllies);
             }
 
             Candidate best = null, bestViable = null, bestBoss = null;
@@ -746,6 +832,9 @@ namespace CompanionAI_Pathfinder.Tactics
             float value = 0f;
             var reasons = new List<string>();
 
+            if (IsCoupDeGrace(ability))
+                return CoupDeGraceValue(ctx, target, out why);
+
             List<UnitEntityData> affectedEnemies = targetIsEnemy ? new List<UnitEntityData> { target } : new List<UnitEntityData>();
             List<UnitEntityData> affectedAllies = targetIsEnemy ? new List<UnitEntityData>() : new List<UnitEntityData> { target };
             if (profile.IsAoE)
@@ -800,7 +889,7 @@ namespace CompanionAI_Pathfinder.Tactics
                     if (CombatRulesAnalyzer.AnalyzeResistance(unit, enemy, ability).IsCompletelyIneffective) continue;
                     float dmg = CombatMath.EstimateAbilityDamage(ability, profile, enemy);
                     float p = CombatMath.EffectChance(unit, enemy, ability, profile, damage: true);
-                    dmgValue += DamageValue(enemy, dmg * p);
+                    dmgValue += DamageValue(enemy, dmg * p) * WakeFactor(enemy, dmg * p);
                 }
 
                 // Friendly fire: hurting an ally costs twice what the same damage on an enemy is worth.
@@ -821,26 +910,53 @@ namespace CompanionAI_Pathfinder.Tactics
             }
 
             // --- healing (undead only when the ability's own branch heals them: positive energy harms them) ---
-            if (profile.Heals.Count > 0 && affectedAllies.Count > 0)
+            // ★ v0.3.9: a heal's area also reaches downed allies inside it.
+            var healTargets = profile.IsAoE && profile.AoETargets != Kingmaker.UnitLogic.Abilities.Components.TargetType.Enemy
+                ? affectedAllies.Concat(UnitsAround(ctx.DownedAllies, target.Position, profile.AoERadius)
+                                        .Where(u => profile.AreaReaches(ability, u))).ToList()
+                : affectedAllies;
+            if (profile.Heals.Count > 0 && healTargets.Count > 0)
             {
                 float healValue = 0f;
-                foreach (var ally in affectedAllies)
+                foreach (var ally in healTargets)
                 {
                     var applies = profile.Heals.Select(h => profile.AppliesTo(h, ability, ally)).ToList();
                     if (applies.All(a => a == EffectApplies.No)) continue;             // e.g. Inflict Wounds on the living
                     // Positive energy harms undead: only heal them when the ability's own branch says it heals them.
                     if (!applies.Contains(EffectApplies.Yes) && AbilityClassifier.IsUndeadOrConstruct(ally)) continue;
+                    float missing = ally.MaxHP - ally.HPLeft;
+                    float heal = Math.Min(CombatMath.EstimateAbilityHeal(ability, profile, ally), missing);
+                    if (heal <= 0f) continue;
+
+                    // ★ v0.3.9: a downed ally gets back up once its HP is above 0: worth what it does for the rest of the
+                    // fight. A heal too small to bring it up counts only a little (the next one will).
+                    if (ally.HPLeft <= 0)
+                    {
+                        float needed = 1f - ally.HPLeft;
+                        float upChance = heal >= needed ? 1f : 0.3f * heal / needed;
+                        healValue += upChance * AllyWorth(ctx, ally);
+                        continue;
+                    }
+
                     float hp = CombatMath.HpPercent(ally);
                     float threshold = ability.SourceItem != null && ally == unit
                         ? (ctx.Global?.PotionHealThresholdPercent ?? 50) / 100f
                         : Math.Max(0.35f, ctx.Settings.HealAtHPPercent / 100f + 0.2f);
                     if (hp >= threshold) continue;
 
-                    float missing = ally.MaxHP - ally.HPLeft;
-                    float heal = Math.Min(CombatMath.EstimateAbilityHeal(ability, profile, ally), missing);
-                    float urgency = hp < 0.25f ? 3f : hp < 0.5f ? 2f : 1f;
+                    float urgency = hp <= 0.25f ? 3f : hp < 0.5f ? 2f : 1f;
                     bool threatened = ally.CombatState?.IsEngaged ?? false;
                     healValue += heal * 0.6f * urgency * (threatened ? 1.25f : 1f);
+
+                    // ★ v0.3.9: how much less likely the ally is to drop before its next turn. Lann at 25 % HP valued his
+                    // potion at 5.9 against a 7.6 full attack, shot, and went down; the heal ignored who could hit him.
+                    float danger = IncomingDamage(ctx, ally);
+                    if (danger > 0f)
+                    {
+                        float before = Mathf.Exp(-Math.Max(1f, ally.HPLeft) / danger);
+                        float after = Mathf.Exp(-(Math.Max(1f, ally.HPLeft) + heal) / danger);
+                        healValue += (before - after) * AllyWorth(ctx, ally);
+                    }
                 }
                 if (healValue > 0f)
                 {
@@ -899,6 +1015,9 @@ namespace CompanionAI_Pathfinder.Tactics
                     if (CombatRulesAnalyzer.AnalyzeResistance(unit, enemy, ability).IsCompletelyIneffective) continue;
                     float p = CombatMath.EffectChance(unit, enemy, ability, profile, damage: false);
                     float enemyValue = p * CombatMath.Threat(enemy) * strength * effectRounds;
+                    // ★ v0.3.9: an enemy that already cannot act (asleep, paralysed, stunned) gains little from more
+                    // control: Orvath stunned (Grasp Heart) the Mite Scout he had just put to sleep.
+                    if (CombatMath.IsDisabled(enemy)) enemyValue *= 0.1f;
                     // A one-round mark only pays off when someone else in the party is fighting that enemy now.
                     if (oneShotMark && !(enemy.CombatState?.EngagedUnits?.Any(u => u != unit && !unit.IsEnemy(u)) ?? false))
                         enemyValue *= 0.5f;

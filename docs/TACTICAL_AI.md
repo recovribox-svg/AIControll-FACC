@@ -206,3 +206,13 @@ and not chosen over Grasp Heart.
 | Progressive on, but no line said so | - | Lines were written only when a tier was held back or escalated. | Once per combat and caster: `[Progressive] <unit> (TB): policy on - gated: ...; left alone: ...`. |
 | `Coup de Grace(utility)=1.0` vs a sleeping enemy | 1924 | No recognised effect: the blueprint is game data, not code. | Abilities that fall to the utility fallback with no detectable effect log their components/actions once (`no recognised effect - components=[...]`), so Coup de Grace can be valued from evidence next. |
 
+## 14. v0.3.9: fixes from the 0.3.8 log
+
+| What the log showed | Line(s) | Cause | Fix |
+|---|---|---|---|
+| Lann: single `Move+Attack` after moving 0.1-0.7 m with his full attack available | 693, 2163, 2361, 2431, 2755 | "5-foot step + full attack" was offered for melee weapons only. | Offered for ranged weapons too (`FullAttack(n)->X+5ft`, ×0.95). The dispatcher refuses it when the path is longer than the step and the next best option is tried. |
+| Lann at 25 % HP: full attack 7.6 over his potion 5.9; down at the end of the boss fight, Camellia too | 3119, 3261 | Heal value = HP restored × urgency; nothing about who can hit the wounded unit. Downed allies were in no list. | `IncomingDamage` (threat of each enemy that can reach the ally this round, shared among the allies it can reach) and P(drop) = exp(-HP/danger); the heal adds the drop in P(drop) × `AllyWorth` ((4 + 3·level) × up to 3 rounds). 25 % counts as "below 25 %". `DownedAllies` (unconscious, not dead) are heal targets: a heal that brings one above 0 HP is worth `AllyWorth`. |
+| `Coup de Grace(utility)=1.0` vs a sleeping wizard; Seelah attacked it for 9.6 | 677 | Its effect is Tabletop Tweaks' `CoupDeGraceTTT` component (no actions; 0.3.8 dump, line 675). | Identified by the vanilla GUID (kept by TTT) and valued by the rules: automatic critical hit with the wielded weapon, then Fort DC 10 + damage or die (`CombatMath.EstimateCoupDeGrace`); minus attacks of opportunity from other enemies. |
+| Orvath stunned (Grasp Heart) the Mite Scout he had just put to sleep; allies hit sleeping enemies | 2591, 677, 2217 | Control on an already disabled enemy was valued in full; damage on a sleeper ignored that it wakes it. | Control on a disabled enemy ×0.1; non-lethal damage on a sleeping enemy ×0.5 (`WakeFactor`). |
+| ~20 `[Profile] Soul Power: X is outside its target filter` lines | 72-76, ... | Logged per unit. | Once per ability. |
+

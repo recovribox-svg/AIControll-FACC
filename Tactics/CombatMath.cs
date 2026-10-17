@@ -138,6 +138,50 @@ namespace CompanionAI_Pathfinder.Tactics
             return result;
         }
 
+        /// <summary>
+        /// ★ v0.3.9: expected effect of a coup de grace (Pathfinder rules): the attack hits automatically and is a critical
+        /// hit with the wielded weapon; a target that survives must make a Fortitude save (DC 10 + damage dealt) or die.
+        /// Creatures immune to critical hits and death effects (undead, constructs) only take the normal damage.
+        /// Returns (damage, chance the target dies). Derived from the rules, not from a mod's component, so it works with
+        /// and without Tabletop Tweaks (which replaces the vanilla implementation).
+        /// </summary>
+        public static bool EstimateCoupDeGrace(UnitEntityData unit, UnitEntityData target, out float damage, out float killChance)
+        {
+            damage = 0f;
+            killChance = 0f;
+            var weapon = unit?.Body?.PrimaryHand?.MaybeWeapon;
+            if (weapon == null || target == null) return false;
+            try
+            {
+                var stats = Rulebook.Trigger(new RuleCalculateWeaponStats(unit, weapon));
+                float perHit = 0f;
+                foreach (var d in stats.DamageDescription)
+                    perHit += Average(d.Dice) + d.Bonus;
+                var dr = HitChanceCalculator.CalculateDamageReduction(unit, target, weapon, perHit);
+                if (dr != null && !dr.CanBypass && dr.DRValue > 0)
+                    perHit = Math.Max(0f, perHit - dr.DRValue);
+
+                bool immune = AbilityClassifier.IsUndeadOrConstruct(target);
+                damage = perHit * (immune ? 1 : Math.Max(2, stats.CriticalMultiplier));
+                int sneakDice = SafeStat(unit.Stats.SneakAttack);       // a helpless target is denied its Dex bonus
+                if (sneakDice > 0 && !immune) damage += 3.5f * sneakDice;
+
+                if (damage >= target.HPLeft) killChance = 1f;
+                else if (!immune)
+                {
+                    int fort = SafeStat(target.Stats.SaveFortitude);
+                    float dc = 10f + damage;
+                    killChance = Mathf.Clamp((dc - fort - 1f) / 20f, 0.05f, 0.95f);
+                }
+                return true;
+            }
+            catch (Exception ex)
+            {
+                Main.Verbose($"[Math] coup de grace {unit.CharacterName}->{target.CharacterName}: {ex.Message}");
+                return false;
+            }
+        }
+
         private static int SafeStat(ModifiableValue value)
         {
             try { return value?.ModifiedValue ?? 0; } catch { return 0; }
@@ -313,6 +357,16 @@ namespace CompanionAI_Pathfinder.Tactics
         /// Rough damage-per-round an enemy is worth removing. CR-based so it is stable and cheap; adjusted for enemies
         /// that are already disabled and for enemies currently attacking the party.
         /// </summary>
+        /// <summary>★ v0.3.9: cannot act right now (asleep, paralysed, stunned, helpless...).</summary>
+        public static bool IsDisabled(UnitEntityData unit)
+        {
+            var state = unit?.Descriptor?.State;
+            if (state == null) return false;
+            return state.HasCondition(UnitCondition.Sleeping) || state.HasCondition(UnitCondition.Paralyzed) ||
+                   state.HasCondition(UnitCondition.Stunned) || state.HasCondition(UnitCondition.Helpless) ||
+                   state.HasCondition(UnitCondition.CantAct) || state.IsUnconscious;
+        }
+
         public static float Threat(UnitEntityData enemy)
         {
             if (enemy == null) return 0f;
@@ -320,11 +374,7 @@ namespace CompanionAI_Pathfinder.Tactics
             try { cr = Math.Max(1, enemy.Blueprint?.CR ?? 1); } catch { }
             float threat = 4f + 3f * cr;
 
-            var state = enemy.Descriptor?.State;
-            if (state != null && (state.HasCondition(UnitCondition.Sleeping) || state.HasCondition(UnitCondition.Paralyzed) ||
-                                  state.HasCondition(UnitCondition.Stunned) || state.HasCondition(UnitCondition.Helpless) ||
-                                  state.HasCondition(UnitCondition.CantAct) || state.IsUnconscious))
-                threat *= 0.25f;
+            if (IsDisabled(enemy)) threat *= 0.25f;
 
             try { if (enemy.CombatState.EngagedUnits.Count > 0) threat *= 1.2f; } catch { }
             return threat;

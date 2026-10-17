@@ -783,11 +783,12 @@ namespace CompanionAI_Pathfinder.Tactics
             if (m_AreaCondition == null || unit == null) return true;
             var guard = new[] { new EffectGuard { Checker = m_AreaCondition, Branch = true } };
             if (Evaluate(guard, ability, unit) != EffectApplies.No) return true;
-            if (ReportedUnknown.Add($"area|{Blueprint.AssetGuid}|{unit.Blueprint?.AssetGuid}"))
+            // ★ v0.3.9: once per ability (v0.3.8 logged every unit: ~20 lines for Soul Power, whose filter wants corpses).
+            if (ReportedUnknown.Add($"area|{Blueprint.AssetGuid}"))
             {
                 string types = string.Join(",", m_AreaCondition.Conditions.Where(c => c != null).Select(c => c.GetType().Name).Distinct());
-                Main.Log($"[Profile] {ability.Name}: {unit.CharacterName} is outside its target filter ({types}, " +
-                         $"level {unit.Descriptor?.Progression?.CharacterLevel}) - not counted");
+                Main.Log($"[Profile] {ability.Name}: its target filter ({types}) excludes some units, e.g. {unit.CharacterName} " +
+                         $"(level {unit.Descriptor?.Progression?.CharacterLevel}); those are not counted");
             }
             return false;
         }
