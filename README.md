@@ -34,6 +34,11 @@ combat (primary) and real-time combat.
 - An advance that runs out of its move action can continue with the standard action; abilities are not aimed at a
   target on which none of their effects apply.
 
+**0.3.8**: Spirit Weapon Enchantment (and other weapon enchantments) is no longer recast while still active; Smite
+Evil goes on the enemy the paladin is about to attack; area spells respect who they can affect (Sleep and creatures with
+too many hit dice); no "move + attack" in a surprise round, no move offered after a 5-foot step; the log shows which
+spells the Progressive policy covers, and describes abilities the AI cannot read yet (Coup de Grace).
+
 **0.3.7**: new per-character **Spell Use: Progressive** option (off by default): casters use the lowest spell level
 that has a damage or control spell with a real chance to work, and save higher levels for when lower ones cannot work
 or for enemies the game marks as bosses. Area spells (Grease, Web, Stinking Cloud...) are now understood as control,
@@ -61,7 +66,7 @@ toggles such as Shift Form; bonus stacking follows the game's own rule (and Tabl
 ## Install (players)
 
 1. Install [Unity Mod Manager](https://www.nexusmods.com/site/mods/21) into the game.
-2. Take `CompanionAI_Pathfinder_v0.3.7.zip` - prebuilt in `release\`, or build it yourself (below; output in `dist\`).
+2. Take `CompanionAI_Pathfinder_v0.3.8.zip` - prebuilt in `release\`, or build it yourself (below; output in `dist\`).
 3. Install it either way:
    - Unity Mod Manager → *Mods* tab → drag the ZIP onto the window / *Install Mod*, **or**
    - extract it to `<game>\Mods\CompanionAI_Pathfinder\` so the folder contains

@@ -62,6 +62,41 @@ namespace CompanionAI_Pathfinder.Tactics
         }
 
         /// <summary>
+        /// ★ v0.3.8: once per combat and caster, what the policy covers: the in-scope spells with their slot level, and
+        /// why the other abilities are left alone. Without it a log could not show that the policy was on at all.
+        /// </summary>
+        private static void LogLadderOnce(UnitEntityData unit, List<GateItem> items, List<TierOption> options, string mode)
+        {
+            if (!CombatMemory.ProgressiveLogged.Add("ladder:" + mode + ":" + unit.UniqueId)) return;
+            var inScope = new SortedSet<string>();
+            var inScopeNames = new HashSet<string>();
+            var outOfScope = new SortedDictionary<string, string>();
+            for (int i = 0; i < items.Count; i++)
+            {
+                var ability = items[i].Ability;
+                if (ability == null) continue;
+                string name = ability.Name;
+                if (options[i].InScope && options[i].Level > 0)
+                {
+                    inScope.Add($"{name} L{options[i].Level} ({options[i].Book})");
+                    inScopeNames.Add(name);
+                }
+                else
+                {
+                    string why = ability.SourceItem != null ? "item"
+                               : ability.Spellbook == null ? "not a spellbook spell"
+                               : !items[i].Offensive ? "not offensive"
+                               : "level 0";
+                    if (!outOfScope.ContainsKey(name)) outOfScope[name] = why;
+                }
+            }
+            var leftAlone = outOfScope.Where(kv => !inScopeNames.Contains(kv.Key)).Select(kv => $"{kv.Key}: {kv.Value}").ToList();
+            Main.Log($"[Progressive] {unit.CharacterName} ({mode}): policy on - gated: " +
+                     $"{(inScope.Count > 0 ? string.Join(", ", inScope) : "none")}; left alone: " +
+                     $"{(leftAlone.Count > 0 ? string.Join(", ", leftAlone) : "none")}");
+        }
+
+        /// <summary>
         /// Chance the spell works on the enemy it is aimed at; for an area, on the most exposed enemy inside it (0 when no
         /// enemy is inside). Spell resistance × attack roll × failed save (damage: half on a save counts half).
         /// </summary>
@@ -77,7 +112,7 @@ namespace CompanionAI_Pathfinder.Tactics
                 if (!center.HasValue) return 1f;
                 float best = 0f;
                 foreach (var e in enemies)
-                    if (Vector3.Distance(e.Position, center.Value) <= profile.AoERadius + e.Corpulence)
+                    if (Vector3.Distance(e.Position, center.Value) <= profile.AoERadius + e.Corpulence && profile.AreaReaches(ability, e))
                         best = Math.Max(best, CombatMath.EffectChance(caster, e, ability, profile, damage));
                 return best;
             }
@@ -128,6 +163,8 @@ namespace CompanionAI_Pathfinder.Tactics
                         Bypass = bypass
                     });
                 }
+
+                LogLadderOnce(unit, items, options, mode);
 
                 var decision = SpellTierPolicy.Gate(options);
                 foreach (var key in decision.HeldBack)

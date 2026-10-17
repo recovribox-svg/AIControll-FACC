@@ -74,6 +74,51 @@ namespace CompanionAI_Pathfinder.Tactics
         public bool RemovesBuffs { get; private set; }
         public bool Enchants { get; private set; }
 
+        /// <summary>★ v0.3.8: the item enchantments it applies (ContextActionEnchantWornItem) and on whom.</summary>
+        private readonly List<KeyValuePair<ContextActionEnchantWornItem, bool>> m_Enchantments =
+            new List<KeyValuePair<ContextActionEnchantWornItem, bool>>();
+
+        /// <summary>
+        /// ★ v0.3.8: every item enchantment this ability applies is already on the item (the game's own action skips or
+        /// merely refreshes it), or there is no item to enchant (ContextActionEnchantWornItem does nothing then). Null when the enchantments are unknown (another mod's action, a buff component).
+        /// Camellia recast Spirit Weapon Enchantment at the start of every fight while it was still active.
+        /// </summary>
+        public bool? EnchantmentsPresent(UnitEntityData caster, UnitEntityData target)
+        {
+            if (m_Enchantments.Count == 0) return null;
+            try
+            {
+                foreach (var entry in m_Enchantments)
+                {
+                    var owner = entry.Value ? caster : target;
+                    var bp = entry.Key.Enchantment;
+                    if (owner?.Body == null || bp == null) return null;
+                    var slot = Kingmaker.UI.GenericSlot.EquipSlotBase.ExtractSlot(entry.Key.Slot, owner.Body);
+                    if (slot == null || !slot.HasItem) continue;          // nothing to enchant: the cast would do nothing
+                    if (!slot.Item.HasEnchantment(bp)) return false;
+                }
+                return true;
+            }
+            catch (Exception ex)
+            {
+                Main.Verbose($"[Profile] {Blueprint.name} enchantment check: {ex.Message}");
+                return null;
+            }
+        }
+
+        /// <summary>
+        /// ★ v0.3.8: the enchantment is already in place: its item enchantments are on the item, or (unknown
+        /// enchantments) every buff that carries it is already on its recipient.
+        /// </summary>
+        public bool EnchantmentActive(UnitEntityData caster, UnitEntityData target)
+        {
+            var present = EnchantmentsPresent(caster, target);
+            if (present.HasValue) return present.Value;
+            if (TargetBuffs.Count == 0 && CasterBuffs.Count == 0) return false;
+            return TargetBuffs.All(b => target != null && target.Buffs.HasFact(b)) &&
+                   CasterBuffs.All(b => caster != null && caster.Buffs.HasFact(b));
+        }
+
         /// <summary>★ v0.3.3: lowers the caster's kineticist burn (ContextActionHealBurn, e.g. Dark Elementalist Soul Power).</summary>
         public bool HealsBurn { get; private set; }
 
@@ -205,6 +250,7 @@ namespace CompanionAI_Pathfinder.Tactics
             AnalyzeAbility(Blueprint, visited, 0, EffectSubject.Target);
             BuffsLastOneRound = m_AllBuffs > 0 && m_ShortBuffs == m_AllBuffs;
             BuffsSpentByAttack = m_AllBuffs > 0 && m_SpentByAttackBuffs == m_AllBuffs;
+            MarksForOwnAttacks = TargetBuffs.Any(IsCasterOnlyAttackMark);
 
             // A personal ability's caster IS its target: its caster heals are heals of the target.
             if (Blueprint.Range == AbilityRange.Personal && CasterHeals.Count > 0)
@@ -220,6 +266,17 @@ namespace CompanionAI_Pathfinder.Tactics
             {
                 AoERadius = around.AoERadius.Meters;
                 AoETargets = around.Targets;
+                // ★ v0.3.8: the area's own filter on who is affected (AbilityTargetsAround.Select checks it per unit).
+                try
+                {
+                    var condition = HarmonyLib.AccessTools.Field(typeof(AbilityTargetsAround), "m_Condition")?.GetValue(around) as ConditionsChecker;
+                    if (condition?.Conditions != null && condition.Conditions.Length > 0)
+                        m_AreaCondition = condition;
+                }
+                catch (Exception ex)
+                {
+                    Main.Verbose($"[Profile] {Blueprint.name} area condition: {ex.Message}");
+                }
             }
             else if (m_AreaHitsAllies || m_AreaHitsEnemies)
             {
@@ -285,6 +342,7 @@ namespace CompanionAI_Pathfinder.Tactics
             foreach (var action in actions)
             {
                 if (action == null) continue;
+                m_ActionTypes.Add(action.GetType().Name);
 
                 // Conditional: each branch's effects only happen when the condition has that outcome for the target.
                 if (action is Conditional conditional)
@@ -344,6 +402,10 @@ namespace CompanionAI_Pathfinder.Tactics
                         break;
                     case ContextActionDispelMagic _:
                         Dispels = true;
+                        break;
+                    case ContextActionEnchantWornItem enchant when subject != EffectSubject.Other:
+                        m_Enchantments.Add(new KeyValuePair<ContextActionEnchantWornItem, bool>(
+                            enchant, toCaster || enchant.ToCaster || subject == EffectSubject.Caster));
                         break;
                     case ContextActionRemoveBuff remove:
                         RemovesBuffs = true;
@@ -540,6 +602,13 @@ namespace CompanionAI_Pathfinder.Tactics
             typeof(ContextConditionSize), typeof(ContextConditionIsAnimalCompanion)
         };
 
+        /// <summary>
+        /// ★ v0.3.8: also "hit dice at most N" (Sleep, Daze, Color Spray). Only the fixed form: with AddSharedValue the
+        /// limit depends on a value rolled during the real cast.
+        /// </summary>
+        private static bool IsSafe(Condition c) =>
+            c == null || SafeConditions.Contains(c.GetType()) || (c is ContextConditionHitDice hd && !hd.AddSharedValue);
+
         private sealed class CheckerResult
         {
             public int Frame;
@@ -598,9 +667,9 @@ namespace CompanionAI_Pathfinder.Tactics
                 {
                     result = true;
                 }
-                else if (!checker.Conditions.All(c => c == null || SafeConditions.Contains(c.GetType())))
+                else if (!checker.Conditions.All(IsSafe))
                 {
-                    string types = string.Join(",", checker.Conditions.Where(c => c != null && !SafeConditions.Contains(c.GetType()))
+                    string types = string.Join(",", checker.Conditions.Where(c => !IsSafe(c))
                                                                      .Select(c => c.GetType().Name).Distinct());
                     if (ReportedUnknown.Add($"{ability.Blueprint?.AssetGuid}|{types}"))
                         Main.Log($"[Profile] {ability.Name}: branch condition {types} not evaluated - both branches counted");
@@ -695,6 +764,52 @@ namespace CompanionAI_Pathfinder.Tactics
         /// When none of them applies to a target, aiming the ability at it does nothing useful there (e.g. Lay On Hands -
         /// Others on a living enemy, whose only remaining effect is a buff on the paladin).
         /// </summary>
+        /// <summary>
+        /// ★ v0.3.8: puts a mark on the target that only helps the caster's own attacks against it (Smite Evil, Studied
+        /// Target: AttackBonusAgainstTarget / DamageBonusAgainstTarget with CheckCaster only). Worth casting only on the
+        /// enemy the caster is about to attack.
+        /// </summary>
+        public bool MarksForOwnAttacks { get; private set; }
+
+        private ConditionsChecker m_AreaCondition;
+
+        /// <summary>
+        /// ★ v0.3.8: the area spell can affect this unit at all: its AbilityTargetsAround filter (Sleep: few hit dice) is
+        /// evaluated like the game does, per unit. Unknown conditions count as "reaches". Orvath cast Sleep twice in one
+        /// turn on the Cultist Champion; the filter was never read.
+        /// </summary>
+        public bool AreaReaches(AbilityData ability, UnitEntityData unit)
+        {
+            if (m_AreaCondition == null || unit == null) return true;
+            var guard = new[] { new EffectGuard { Checker = m_AreaCondition, Branch = true } };
+            if (Evaluate(guard, ability, unit) != EffectApplies.No) return true;
+            if (ReportedUnknown.Add($"area|{Blueprint.AssetGuid}|{unit.Blueprint?.AssetGuid}"))
+            {
+                string types = string.Join(",", m_AreaCondition.Conditions.Where(c => c != null).Select(c => c.GetType().Name).Distinct());
+                Main.Log($"[Profile] {ability.Name}: {unit.CharacterName} is outside its target filter ({types}, " +
+                         $"level {unit.Descriptor?.Progression?.CharacterLevel}) - not counted");
+            }
+            return false;
+        }
+
+        private static bool IsCasterOnlyAttackMark(BlueprintBuff buff)
+        {
+            try
+            {
+                // true = helps only the caster, false = helps the caster's friends too
+                var casterOnly = buff.GetComponents<Kingmaker.Designers.Mechanics.Buffs.AttackBonusAgainstTarget>()
+                                     .Select(c => c.CheckCaster && !c.CheckCasterFriend)
+                                     .Concat(buff.GetComponents<Kingmaker.Designers.Mechanics.Buffs.DamageBonusAgainstTarget>()
+                                                 .Select(c => c.CheckCaster && !c.CheckCasterFriend))
+                                     .ToList();
+                return casterOnly.Count > 0 && casterOnly.All(x => x);
+            }
+            catch
+            {
+                return false;
+            }
+        }
+
         public bool HasTargetEffects => Damage.Count > 0 || Heals.Count > 0 || TargetBuffs.Count > 0 || m_Removals.Count > 0;
 
         public bool AnyTargetEffectApplies(AbilityData ability, UnitEntityData target)
@@ -708,6 +823,30 @@ namespace CompanionAI_Pathfinder.Tactics
         private static readonly HashSet<BlueprintAbility> Described = new HashSet<BlueprintAbility>();
 
         /// <summary>★ v0.3.2: once per ability, what its buffs are made of (evidence for tuning from play logs).</summary>
+        private readonly HashSet<string> m_ActionTypes = new HashSet<string>();
+        private static readonly HashSet<BlueprintAbility> StructureDescribed = new HashSet<BlueprintAbility>();
+
+        /// <summary>
+        /// ★ v0.3.8: for abilities with no recognised effect (Coup de Grace was scored as "utility 1.0"): log once what the
+        /// blueprint is made of, so a later version can value it from evidence instead of guesses.
+        /// </summary>
+        public void DescribeStructureOnce()
+        {
+            if (!StructureDescribed.Add(Blueprint)) return;
+            try
+            {
+                var components = (Blueprint.ComponentsArray ?? new BlueprintComponent[0])
+                    .Where(c => c != null).Select(c => c.GetType().Name).Distinct();
+                Main.Log($"[Profile] {Blueprint.Name} ({Blueprint.AssetGuid}): no recognised effect - components=[{string.Join(",", components)}] " +
+                         $"actions=[{string.Join(",", m_ActionTypes.OrderBy(t => t))}] range={Blueprint.Range} " +
+                         $"fullRound={Blueprint.IsFullRoundAction} type={Blueprint.ActionType}");
+            }
+            catch (Exception ex)
+            {
+                Main.Verbose($"[Profile] structure of {Blueprint.name}: {ex.Message}");
+            }
+        }
+
         public void DescribeOnce()
         {
             if (!Described.Add(Blueprint)) return;

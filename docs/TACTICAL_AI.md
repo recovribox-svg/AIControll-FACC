@@ -193,3 +193,16 @@ and not chosen over Grasp Heart.
   never on movement); buffs an area applies last while the area does.
 - With Progressive on, each offensive spell also offers its best target with a fair (≥ 25 %) chance and its best
   boss-hitting target, since the tier gate judges those. Spells with different metamagic are separate options.
+
+## 13. v0.3.8: fixes from the 0.3.7 log
+
+| What the log showed | Line(s) | Cause | Fix |
+|---|---|---|---|
+| Camellia recast `Spirit Weapon Enchantment(enchant)` at the start of four fights | 1291, 1495, 1833, 2169 | The buff check saw it active (0), then the once-per-combat fallback for unverifiable effects cast it anyway. | `AbilityProfile` reads `ContextActionEnchantWornItem` (enchantment + slot); `EnchantmentActive` = enchantment on the item, or (unknown enchant actions) every carrier buff present → 0, no fallback. |
+| Seelah: `Smite Evil->X` then attacked Y | 283→291, 1314→1320, 1511→1517, 2210→2216 | The swift mark is decided before the attack, aimed at the most threatening evil enemy; the attack picked its own target. | `MarksForOwnAttacks` (buff with `AttackBonusAgainstTarget`/`DamageBonusAgainstTarget`, caster only); `CoupleOwnAttackMarks` keeps such marks only on the best main action's enemy (re-aimed there) and drops them when it attacks no one. |
+| Orvath: `Sleep->Cultist Champion` twice in one turn, same value | 2237, 2245 | `AbilityTargetsAround.m_Condition` (who the area can affect) was never read. | Evaluated per unit like `AbilityTargetsAround.Select`; `ContextConditionHitDice` (fixed limit) is now a safe condition. Excluded units are logged once: `[Profile] <spell>: <unit> is outside its target filter`. |
+| Albedo `Move+Attack` in round 0: moved 8.2 m, no attack | 739-746 | In a surprise round a move uses the standard action's budget (`ActionsState.UpdateMoveDistance`). | `SurpriseRound` (`unit.IsSurprising()`): options needing move + standard are not affordable. |
+| Seelah: `Advance` rejected, "no movement left" | 541, 1603 | After a 5-foot step the game allows no other movement; the engine used a different measure than the dispatcher. | `NoMovementLeft` = `GetRemainingMovementRange(unit, true, false) <= 0` (same as the dispatcher): no movement options. |
+| Progressive on, but no line said so | - | Lines were written only when a tier was held back or escalated. | Once per combat and caster: `[Progressive] <unit> (TB): policy on - gated: ...; left alone: ...`. |
+| `Coup de Grace(utility)=1.0` vs a sleeping enemy | 1924 | No recognised effect: the blueprint is game data, not code. | Abilities that fall to the utility fallback with no detectable effect log their components/actions once (`no recognised effect - components=[...]`), so Coup de Grace can be valued from evidence next. |
+

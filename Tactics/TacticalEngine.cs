@@ -64,6 +64,10 @@ namespace CompanionAI_Pathfinder.Tactics
 
         public bool HasStandard, HasMove, HasSwift, HasFullRound, CanFullAttack, CanFiveFoot;
         public float MoveRange;
+        /// <summary>★ v0.3.8: the game allows no more movement this turn (e.g. after a 5-foot step).</summary>
+        public bool NoMovementLeft;
+        /// <summary>★ v0.3.8: acting in a surprise round: one move OR one standard action, never both.</summary>
+        public bool SurpriseRound;
         public float HpPct;
         public List<UnitEntityData> Engagers = new List<UnitEntityData>();
 
@@ -111,6 +115,9 @@ namespace CompanionAI_Pathfinder.Tactics
                 catch (Exception ex) { Main.Error($"[Progressive] {unit.CharacterName}: {ex.Message} - policy skipped"); }
             }
 
+            try { usable = CoupleOwnAttackMarks(ctx, usable, memory); }
+            catch (Exception ex) { Main.Error($"[Tactics] {unit.CharacterName} marks: {ex.Message}"); }
+
             var quick = usable.FirstOrDefault(c => c.Slot == ActionSlot.Free || c.Slot == ActionSlot.Swift);
             var main = usable.FirstOrDefault(c => c.Slot != ActionSlot.Free && c.Slot != ActionSlot.Swift);
 
@@ -120,6 +127,40 @@ namespace CompanionAI_Pathfinder.Tactics
 
             LogDecision(ctx, usable, chosen);
             return chosen;
+        }
+
+        /// <summary>
+        /// ★ v0.3.8: a mark that only helps the caster's own attacks (Smite Evil) is worth something this turn only on the
+        /// enemy the caster is about to attack. The swift mark is decided before the attack, so it used to go to the most
+        /// threatening evil enemy while the attack went elsewhere: Seelah smote one enemy and attacked another in four of
+        /// six fights. Marks are kept only on the best main action's enemy (re-aimed there when possible) and dropped
+        /// when the best main action attacks no one.
+        /// </summary>
+        private static List<Candidate> CoupleOwnAttackMarks(TacticalContext ctx, List<Candidate> usable, TurnMemory memory)
+        {
+            bool IsMark(Candidate c) => c.Kind == CandidateKind.Ability && c.Target != null && ctx.Unit.IsEnemy(c.Target) &&
+                                        (AbilityProfile.Get(c.Ability)?.MarksForOwnAttacks ?? false);
+            if (!usable.Any(IsMark)) return usable;
+
+            var main = usable.FirstOrDefault(c => c.Slot != ActionSlot.Free && c.Slot != ActionSlot.Swift && !IsMark(c));
+            bool attacks = main != null && main.Target != null && ctx.Unit.IsEnemy(main.Target) &&
+                           (main.Kind == CandidateKind.WeaponAttack || main.Kind == CandidateKind.Move ||
+                            (main.Kind == CandidateKind.Ability && (AbilityProfile.Get(main.Ability)?.IsCharge ?? false)));
+            var focus = attacks ? main.Target : null;
+
+            var result = new List<Candidate>(usable.Count);
+            var reaimed = new HashSet<string>();
+            foreach (var c in usable)
+            {
+                if (!IsMark(c)) { result.Add(c); continue; }
+                if (focus == null) continue;
+                if (c.Target == focus) { if (reaimed.Add(CombatMemory.AbilityKey(c.Ability))) result.Add(c); continue; }
+                if (!reaimed.Add(CombatMemory.AbilityKey(c.Ability))) continue;
+                var alt = EvaluateAbility(ctx, c.Ability, focus).FirstOrDefault();
+                if (alt != null && alt.Value > 0f && Affordable(ctx, alt) && !memory.Failed.Contains(alt.Key))
+                    result.Add(alt);
+            }
+            return result.Distinct().OrderByDescending(c => c.Value).ToList();
         }
 
         /// <summary>
@@ -152,7 +193,7 @@ namespace CompanionAI_Pathfinder.Tactics
                 case ActionSlot.Free: return true;
                 case ActionSlot.Swift: return ctx.HasSwift;
                 case ActionSlot.Move: return ctx.HasMove || ctx.HasStandard; // a standard action can be spent as a move
-                case ActionSlot.Standard: return ctx.HasStandard && (!c.NeedsMove || ctx.HasMove);
+                case ActionSlot.Standard: return ctx.HasStandard && (!c.NeedsMove || (ctx.HasMove && !ctx.SurpriseRound && !ctx.NoMovementLeft));
                 case ActionSlot.FullRound: return c.Kind == CandidateKind.WeaponAttack ? ctx.CanFullAttack : ctx.HasFullRound;
                 default: return false;
             }
@@ -162,7 +203,7 @@ namespace CompanionAI_Pathfinder.Tactics
         {
             var sb = new StringBuilder();
             sb.Append($"[Tactics] {ctx.Unit.CharacterName} R{ctx.Round} HP{ctx.HpPct * 100:F0}% ");
-            sb.Append($"[{(ctx.HasStandard ? "S" : "-")}{(ctx.HasMove ? "M" : "-")}{(ctx.HasSwift ? "W" : "-")}{(ctx.CanFullAttack ? "F" : "-")}{(ctx.CanFiveFoot ? "5" : "-")}] ");
+            sb.Append($"[{(ctx.HasStandard ? "S" : "-")}{(ctx.HasMove ? "M" : "-")}{(ctx.HasSwift ? "W" : "-")}{(ctx.CanFullAttack ? "F" : "-")}{(ctx.CanFiveFoot ? "5" : "-")}]{(ctx.SurpriseRound ? " surprise" : "")}{(ctx.NoMovementLeft ? " no-move" : "")} ");
             sb.Append($"enemies={ctx.Enemies.Count} rounds~{ctx.ExpectedRounds:F1} diff={ctx.Difficulty:F2} :: ");
             sb.Append(string.Join(" | ", usable.Take(5).Select(c => c.ToString())));
             sb.Append(chosen != null ? $" => {chosen.Label}" : " => END TURN");
@@ -196,6 +237,12 @@ namespace CompanionAI_Pathfinder.Tactics
             {
                 ctx.CanFiveFoot = ctx.Turn.HasFiveFootStep(unit);
                 ctx.MoveRange = ctx.HasMove ? ctx.Turn.GetRemainingMovementTime(unit, false, true) * unit.CurrentSpeedMps : 0f;
+                // ★ v0.3.8: the same test the dispatcher (and native AiAction.ScorePath) applies. A 5-foot step forbids
+                // any other movement this turn, yet "Advance" was still offered and then rejected (Seelah, twice).
+                ctx.NoMovementLeft = ctx.Turn.GetRemainingMovementRange(unit, true, false) <= 0f;
+                // ★ v0.3.8: in a surprise round a move uses the standard action's budget (ActionsState.UpdateMoveDistance),
+                // so "move + attack" cannot happen: Albedo walked 8 m in round 0 and could not attack.
+                try { ctx.SurpriseRound = unit.IsSurprising(); } catch { }
             }
             else
             {
@@ -550,7 +597,8 @@ namespace CompanionAI_Pathfinder.Tactics
         /// fair chance against and the best one that hits a boss, since the tier gate judges those (a spell whose
         /// highest-value target saves easily can still be the right tier against another enemy).
         /// </summary>
-        private static IEnumerable<Candidate> EvaluateAbility(TacticalContext ctx, AbilityData ability)
+        private static IEnumerable<Candidate> EvaluateAbility(TacticalContext ctx, AbilityData ability,
+                                                              UnitEntityData onlyTarget = null)
         {
             var none = Enumerable.Empty<Candidate>();
             var profile = AbilityProfile.Get(ability);
@@ -596,6 +644,7 @@ namespace CompanionAI_Pathfinder.Tactics
             Candidate best = null, bestViable = null, bestBoss = null;
             foreach (var target in targets.Distinct())
             {
+                if (onlyTarget != null && target != onlyTarget) continue;
                 TargetWrapper wrapper = null;
                 if (ability.CanTarget(new TargetWrapper(target))) wrapper = new TargetWrapper(target);
                 else if (ability.CanTargetPoint && ability.CanTarget(new TargetWrapper(target.Position))) wrapper = new TargetWrapper(target.Position);
@@ -706,6 +755,9 @@ namespace CompanionAI_Pathfinder.Tactics
                     ? new List<UnitEntityData>() : UnitsAround(ctx.Enemies, target.Position, profile.AoERadius);
                 affectedAllies = targetsType == Kingmaker.UnitLogic.Abilities.Components.TargetType.Enemy
                     ? new List<UnitEntityData>() : UnitsAround(ctx.Allies, target.Position, profile.AoERadius);
+                // ★ v0.3.8: who the area can affect at all (Sleep: creatures with few hit dice).
+                affectedEnemies = affectedEnemies.Where(u => profile.AreaReaches(ability, u)).ToList();
+                affectedAllies = affectedAllies.Where(u => profile.AreaReaches(ability, u)).ToList();
             }
 
             // ★ v0.3.1: never aim a heal at an enemy. With per-target branches, Cure on an undead enemy (damage branch)
@@ -880,6 +932,8 @@ namespace CompanionAI_Pathfinder.Tactics
                     var buffs = allBuffs.Where(b => profile.BuffAppliesTo(b, ability, ally) != EffectApplies.No).ToList();
                     if (buffs.Count == 0) continue;
                     if (buffs.Any(b => ally.Buffs.HasFact(b))) continue;                    // already active
+                    // ★ v0.3.8: an enchanting ability whose enchantment is still on the weapon.
+                    if (profile.Enchants && profile.EnchantmentsPresent(unit, ally) == true) continue;
                     if (profile.Heals.Any(h => profile.AppliesTo(h, ability, ally) != EffectApplies.No)) continue;
                     if (profile.BuffsLastOneRound && ally == unit && !attackAfter) continue;
                     if (CombatMemory.LastCastRound(unit, ability, ally) == ctx.Round) continue; // cast this round already
@@ -948,6 +1002,10 @@ namespace CompanionAI_Pathfinder.Tactics
                     }
                     else if (profile.Enchants)
                     {
+                        // ★ v0.3.8: the fallback is for effects we cannot see. An enchantment that is still in place
+                        // (its item enchantment, or the buff that carries it) is visible: nothing to gain. Camellia
+                        // recast Spirit Weapon Enchantment at the start of four fights while it was active.
+                        if (profile.EnchantmentActive(unit, target)) { why = "already active"; return 0f; }
                         value += (1f + level * 1.5f) * ctx.ExpectedRounds * 0.5f * RoleWeight(ctx, "buff");
                         reasons.Add("enchant");
                     }
@@ -967,6 +1025,7 @@ namespace CompanionAI_Pathfinder.Tactics
                     }
                     else if (CombatMemory.TimesUsed(unit, ability) == 0)
                     {
+                        if (!profile.HasDetectableEffect) profile.DescribeStructureOnce();
                         value += 1f; // utility (e.g. Appraise Foe): only when nothing better exists
                         reasons.Add("utility");
                     }
@@ -990,6 +1049,7 @@ namespace CompanionAI_Pathfinder.Tactics
             var unit = ctx.Unit;
             if (!ctx.HasMove && !ctx.HasStandard) return;
             if (!unit.Descriptor.State.CanMove) return;
+            if (ctx.NoMovementLeft) return;
 
             // "Can I already hurt someone from here with what I have left this turn?"
             bool anyAttackNow = list.Any(c => c.Offensive && !c.NeedsMove && c.Value >= MinMainValue &&
