@@ -315,7 +315,7 @@ namespace CompanionAI_Pathfinder.Tactics
                         if (LastsADay(apply)) m_DayLongBuffs.Add(apply.Buff);
                         if (apply.Permanent || (apply.DurationValue != null && apply.DurationValue.Rate >= DurationRate.Hours))
                             m_PersistentBuffs.Add(apply.Buff);
-                        if (apply.Buff.GetComponent<RemoveBuffOnAttack>() != null) m_SpentByAttackBuffs++;
+                        if (IsSpentByUse(apply.Buff)) m_SpentByAttackBuffs++;
                         break;
                     case ContextActionSpawnMonster _:
                         Summons = true;
@@ -390,6 +390,23 @@ namespace CompanionAI_Pathfinder.Tactics
             guards.CopyTo(result, 0);
             result[guards.Length] = new EffectGuard { Checker = checker, Branch = branch, OnCaster = onCaster };
             return result;
+        }
+
+        /// <summary>
+        /// ★ v0.3.6: the buff removes itself after one use: RemoveBuffOnAttack, or ModifyD20 with DispellOnRerollFinished
+        /// (Perfect Strike: "roll twice" once, then gone). v0.3.5 missed the latter and kept Perfect Strike up after fights.
+        /// </summary>
+        private static bool IsSpentByUse(BlueprintBuff buff)
+        {
+            try
+            {
+                if (buff.GetComponent<RemoveBuffOnAttack>() != null) return true;
+                return buff.GetComponents<ModifyD20>().Any(c => c.DispellOnRerollFinished);
+            }
+            catch
+            {
+                return false;
+            }
         }
 
         /// <summary>A day or longer (or about a day in hours): a "used today" marker rather than a combat buff.</summary>

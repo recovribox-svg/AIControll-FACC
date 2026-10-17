@@ -10,7 +10,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
   Conditional branches, next-attack buffs, cleanses, time-based command wait; 0.3.2: buff quality from components,
   harmful-only cleanses, mode switches; 0.3.3: Soul Power/burn, day-long markers, summon after-spawn effects, toggles,
   game stacking rule; compatibility notes in README; 0.3.4: enchant carrier buffs, partial-stacking, dispel targets; 0.3.5: out-of-combat buff routine
-  judged by AbilityProfile, cannot-act turns, no utility fallback for removal abilities)
+  judged by AbilityProfile, cannot-act turns, no utility fallback for removal abilities; 0.3.6: self-dispelling buffs, casting in melee)
 
 ## Reference Resources
 - **Rogue Trader CompanionAI v3.5.7**: `C:\Users\veria\Downloads\CompanionAI_v3-master - v3.5.7`

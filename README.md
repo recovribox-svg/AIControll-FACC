@@ -34,6 +34,10 @@ combat (primary) and real-time combat.
 - An advance that runs out of its move action can continue with the standard action; abilities are not aimed at a
   target on which none of their effects apply.
 
+**0.3.6**: Perfect Strike (and other "once, then gone" buffs) no longer cast after fights; casters step out of melee
+before a spell that would provoke, and value such spells a little lower when they cannot; the debug line
+`IsReadyForNextAction` is logged only when it changes.
+
 **0.3.5**: the out-of-combat buff routine only keeps up real long-lasting buffs (no more Soul Power, Perfect Strike
 or item use after fights); a companion that cannot act ends its turn at once; Treat Affliction is no longer a "utility"
 fallback.
@@ -52,7 +56,7 @@ toggles such as Shift Form; bonus stacking follows the game's own rule (and Tabl
 ## Install (players)
 
 1. Install [Unity Mod Manager](https://www.nexusmods.com/site/mods/21) into the game.
-2. Take `CompanionAI_Pathfinder_v0.3.5.zip` - prebuilt in `release\`, or build it yourself (below; output in `dist\`).
+2. Take `CompanionAI_Pathfinder_v0.3.6.zip` - prebuilt in `release\`, or build it yourself (below; output in `dist\`).
 3. Install it either way:
    - Unity Mod Manager → *Mods* tab → drag the ZIP onto the window / *Install Mod*, **or**
    - extract it to `<game>\Mods\CompanionAI_Pathfinder\` so the folder contains
@@ -62,7 +66,7 @@ toggles such as Shift Form; bonus stacking follows the game's own rule (and Tabl
 ### Settings (Ctrl+F10)
 - *Enable in Turn-Based Mode* / *Enable in Real-Time Mode* - both are honoured from 0.2.119.
 - *Control Companions* / *Control Main Character* and per-character AI on/off, role and range preference.
-- *Enable Debug Logging* - **off by default**; when on it writes several lines per frame. Leave it off unless
+- *Enable Debug Logging* - **off by default**; when on it writes many `[V]` lines (several per decision). Leave it off unless
   you are debugging. Existing installs keep their old `settings.json`, so turn it off there if it was on.
 
 - *Consumables (quick-slot items)*: master switch plus potions / scrolls & wands / alchemical & thrown items, and the HP %

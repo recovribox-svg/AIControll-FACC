@@ -1,4 +1,4 @@
-# Turn-based tactical AI (v0.3.0, revised in v0.3.1-v0.3.5)
+# Turn-based tactical AI (v0.3.0, revised in v0.3.1-v0.3.6)
 
 This document describes how companions decide what to do in **turn-based combat**. Real-time combat still uses
 the older `UnifiedDecisionEngine`, which already handled weapon attacks. It now shares the consumable settings.
@@ -59,7 +59,7 @@ for enemies that are asleep, paralysed or helpless, and up for enemies currently
 | **Cleanse** (removes buffs by descriptor or a specific buff, also alongside a heal, e.g. Lay On Hands mercies) | Only if the target has a *harmful* buff (flagged harmful, or put on it by an enemy) that a removal whose branch applies to it would remove: `(2 + 2·spell level) × rounds`. A descriptor cleanse's own buffs add nothing on their own. |
 | **Enchantments, summons, dispels, utility** (effects that can't be verified on the target) | Once per combat per target. Utility abilities such as Appraise Foe are worth 1 point, so they only happen when nothing useful is possible. Not for abilities with a verifiable effect (damage, heal, cleanse) that is worth nothing right now, and dispel/utility never for consumables. |
 | **Charge** | Only when a normal move can't reach the target this turn: ~1.1 × single-attack value. |
-| **5-foot step out of melee** | Ranged characters and casters in melee: 0.4 × threat of the enemies in melee with them. Free; it keeps the full attack available. |
+| **5-foot step out of melee** | Ranged characters, casters, and anyone whose best action is a spell that provokes (not aimed at an adjacent enemy), in melee: 0.4 × threat of the enemies in melee with them. Free; it keeps the full attack available. |
 | **Withdraw** | Below 30 % HP and in melee, when nothing better exists. |
 | **Advance** | When nothing can be attacked from here. Melee advances to reach; ranged characters advance to ~85 % of weapon range with line of sight; casters without a ranged weapon stop at ~25 ft. |
 
@@ -167,3 +167,11 @@ Working as intended in this log: Spirit Weapon Enchantment cast at round 1 (line
 26-37 % HP (potion, then spell), Lann's Perfect Strike before his full attack, Albedo switching target after an
 interrupted approach, Orvath's Soul Power listed only with corpses around (`Soul Power->Orvath(burn)=5.8`, line 3815)
 and not chosen over Grasp Heart.
+
+## 11. v0.3.6: fixes from the 0.3.5 log
+
+| What the log showed | Line(s) | Cause | Fix |
+|---|---|---|---|
+| `Out-of-combat permanent buff (Perfect Strike)` after every fight | 5878, 8747, 11091, 13386, 15899 | Its buff is permanent and removes itself after one reroll (`ModifyD20.DispellOnRerollFinished`); only `RemoveBuffOnAttack` counted as "spent by use". | Both count as one-shot: no out-of-combat casting, valued as ~2 rounds in combat. |
+| Camellia's `Cure Light Wounds` → `result=Fail` while engaged | 12424-12456 | A standard-action spell in melee needs a defensive-casting check; failing provokes an attack of opportunity and can lose the spell (`UnitUseAbility.OnTick`, `AbilityData.ProvokeAttackOfOpportunity`). | 5-foot step first when the best action is such a spell (not aimed at an adjacent enemy); otherwise the spell's value × 0.85 while engaged. Potions and wands do not provoke. |
+| 13,559 `IsReadyForNextAction` debug lines | throughout | Logged every frame while a command runs (debug logging on). | Logged only when its result changes. |

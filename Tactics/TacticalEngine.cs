@@ -572,6 +572,11 @@ namespace CompanionAI_Pathfinder.Tactics
                 if (value <= 0f) continue;
                 value *= consumable;
                 if (needsMove) value *= 0.9f;
+                // ★ v0.3.6: a standard-action spell cast in melee needs a defensive-casting check; failing it provokes an
+                // attack of opportunity and can lose the spell (UnitUseAbility.OnTick). Camellia's Cure Light Wounds ended
+                // "Fail" that way. Potions and wands do not provoke (AbilityData.ProvokeAttackOfOpportunity).
+                if (slot == ActionSlot.Standard && ctx.Engagers.Count > 0 && !needsMove && ability.ProvokeAttackOfOpportunity)
+                    value *= 0.85f;
                 // ★ v0.3.1: an archer walking up to an enemy to touch it gives up its ranged attacks and invites
                 // attacks of opportunity (Lann walked 9 m for Aid Another).
                 if (needsMove && ctx.HasRangedWeapon && ability.Range == AbilityRange.Touch && ctx.Unit.IsEnemy(target))
@@ -916,8 +921,16 @@ namespace CompanionAI_Pathfinder.Tactics
             bool rangedStyle = ctx.HasRangedWeapon || ctx.Settings.RangePreference == RangePreference.Ranged ||
                                ctx.Settings.Role == AIRole.Support;
 
+            // ★ v0.3.6: anyone whose best main action is a spell that provokes in melee steps out first too (Camellia's
+            // Cure Light Wounds failed while she was engaged) - unless that spell is aimed at an enemy next to her.
+            var bestMain = list.Where(c => c.Slot != ActionSlot.Free && c.Slot != ActionSlot.Swift && !c.NeedsMove && Affordable(ctx, c))
+                               .OrderByDescending(c => c.Value).FirstOrDefault();
+            bool castsInMelee = bestMain != null && bestMain.Kind == CandidateKind.Ability && bestMain.Slot == ActionSlot.Standard &&
+                                bestMain.Ability.ProvokeAttackOfOpportunity &&
+                                !(bestMain.Target != null && ctx.Engagers.Contains(bestMain.Target));
+
             // 1) Step out of melee before shooting/casting (5-foot step: no attack of opportunity, keeps full attack).
-            if (rangedStyle && ctx.Engagers.Count > 0 && ctx.CanFiveFoot && (ctx.HasStandard || ctx.CanFullAttack))
+            if ((rangedStyle || castsInMelee) && ctx.Engagers.Count > 0 && ctx.CanFiveFoot && (ctx.HasStandard || ctx.CanFullAttack))
             {
                 var point = FindRetreatPoint(ctx, TurnController.MetersOfFiveFootStep * 0.9f);
                 if (point.HasValue)
