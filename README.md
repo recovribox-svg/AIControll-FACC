@@ -64,12 +64,17 @@ toggles such as Shift Form; bonus stacking follows the game's own rule (and Tabl
 
 ### Compatibility with other mods
 The mod has **no dependencies** besides Unity Mod Manager. Checked against the decompiled builds of
-Tabletop Tweaks Core 0.7.15 / Base 2.6.18, IsekaiMod 6.5.0, Demonology 0.1.5 and Tome of the Firebird 1.4.18:
+Tabletop Tweaks Core 0.7.15 / Base 2.6.18, IsekaiMod 6.5.0, Demonology 0.1.5, Tome of the Firebird 1.4.18 and
+Mystical Mayhem 0.7.0h (with KRXLib):
 - None of them patches a method this mod patches (`TurnController.Tick`, `AiBrainController.TickBrain`,
   `CombatController.StartTurn/Activate/Deactivate`, `UnitCommands.Run`), so load order does not matter.
 - Their changes to game rules reach the AI automatically, because it asks the game: attack/AC/damage rules, spell
   resistance (`UnitPartSpellResistance.GetValue`), Use Magic Device DC, targeting (`AbilityData.CanTarget`), variants
   (`GetConversions`) and bonus stacking (`ModifierDescriptorHelper.IsStackable`, e.g. TTT's natural-armor rule).
+- Mystical Mayhem's changes to action types (`AbilityData.ActionType`, `RequireFullRoundAction`) reach the AI through
+  `RuntimeActionType`. Its Borrowed Time extra swift action can make the log report a swift ability as "action still
+  unused"; that only stops the same ability on the same target being repeated that turn. Its spell-resistance special
+  cases (Draconic Malice, Pact Wizard) are not in the AI's estimate; the game still applies them when the spell lands.
 - Abilities added by these mods are read like vanilla ones (effects, buffs, conditions). Conditions the AI cannot
   evaluate are logged once as `[Profile] ... not evaluated` and counted conservatively.
 This is a code-level check; it has not been run in the game with these mods.
