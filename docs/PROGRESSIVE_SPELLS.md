@@ -1,6 +1,7 @@
 # Progressive spell-resource policy — audit, design and plan
 
-Status: **design only, nothing implemented.** Written against the working tree at `ba81d7c` (mod v0.3.6,
+Status: **design only, nothing implemented.** Revision 2: updated after the operator's *Progressive Reference
+Synthesis* (§R below summarises what changed and why). Written against the working tree at `ba81d7c` (mod v0.3.6,
 branch `claude/dreamy-pasteur-b9h3rn`, clean). Line numbers refer to that commit.
 
 Legend: **[V]** verified in this repository or in the decompiled game assembly (`Assembly-CSharp`, ILSpy) ·
@@ -21,7 +22,10 @@ Legend: **[V]** verified in this repository or in the decompiled game assembly (
 | Fextralife "Hard" page | **no** (DNS failure) | not used |
 | github.com/seyelive5/CompanionAI_Pathfinder | yes, README only | context: original README mentions roles and "resource conservation" but nothing about spell tiers |
 
-Nothing below relies on the inaccessible sources. Strategy statements (e.g. "save high slots for hard fights") are
+| *Progressive Reference Synthesis* (operator-supplied summary of the above) | yes | strategic/design context only; labelled **[R]** where used |
+
+Nothing below relies on the inaccessible sources directly; where the operator's synthesis of them shaped a decision,
+it is marked **[R]** and kept separate from verified facts. Strategy statements (e.g. "save high slots for hard fights") are
 the operator's stated intent, not claims from those guides.
 
 The Nexus page describes the *AI Control* fork; this workspace **is** that fork's current source (the operator's
@@ -118,11 +122,26 @@ Smite/Judgement-style marks, the after-combat buff routine, `ConsumablePolicy`. 
 **offensive spellbook spells** — `Kind == Ability`, `Ability.Spellbook != null`, `Ability.SourceItem == null`,
 `Offensive == true` (damage, hard/soft control, debuff — existing classification `:596`).
 
-Ambiguous categories, decided explicitly:
+Ambiguous categories, decided explicitly ([R] synthesis §3.4-3.6, §6.1):
+- *Hexes, spell-like and supernatural abilities, class features with their own uses*: not spellbook spells → out of
+  scope. Their own limits (e.g. a hex usable once per day per target) are enforced by the game's `CanTarget` /
+  availability checks, which the engine already applies [I — to confirm in play, T14].
+- *Scrolls, wands*: separate resource economy, governed by the existing `ConsumablePolicy` → out of scope.
 - *Damage+heal spells* (Cure Wounds on undead enemies): offensive when aimed at an enemy (`dmg`) → in scope.
 - *Marks* (Aid Another, Appraise Foe…): not spells or not "debuff" → out of scope.
 - *Summons*: out of scope (requirement lists offensive/debuff only).
 - *Buff spells that also hurt* (none identified): follow `Offensive`.
+
+### 1.5b Prerequisite gap: area-effect spells are not analysed
+
+[V] `AbilityProfile` follows actions and `BlueprintAbilityReference` fields, but not
+`ContextActionSpawnAreaEffect.m_AreaEffect` (`BlueprintAbilityAreaEffectReference`). The area's effects live in its
+components: `AbilityAreaEffectRunAction` (`UnitEnter`, `Round`, `UnitMove`, `UnitExit` action lists) and
+`AbilityAreaEffectBuff` (`m_Buff`). So Grease, Web, Stinking Cloud, Cloudkill and similar spells are currently seen as
+"unverifiable" (once-per-combat fallback), are **not** classified as offensive, and would escape Progressive.
+[R] The synthesis uses Grease as its central example of high-value control (§3.1). Extending the walker to area
+effects (and their size for friendly-fire) is therefore step 0 of the roadmap; it also improves today's valuation of
+these spells in both modes.
 
 ### 1.6 Boss/elite data
 
@@ -162,14 +181,15 @@ honoured automatically.
 |---|---|---|
 | Architectural fit | **high** | single, already-filtered candidate list per decision in both modes; one-candidate-per-AbilityData |
 | Build feasibility | **high** | only verified members (`Spellbook.GetSpellLevel`, `AbilityData.Spellbook/SourceItem/SpellLevel`, `Experience`, `EncounterType`) |
-| In-game semantic correctness | **medium** | slot math is game-authoritative, but boss-flag coverage and the viability floor need play-testing |
+| In-game semantic correctness | **medium** | slot math is game-authoritative; boss-flag coverage, the 25% success floor and area-effect analysis need play-testing |
 | Regression risk | **low** | off by default; gate only removes in-scope candidates; existing fallback untouched |
 
 ### 1.11 Highest-risk assumptions
 
 1. **Boss flag coverage** [U]: are WotR bosses actually tagged `EncounterType.Boss`? → log it per enemy at combat start.
-2. **Viability floor**: the engine's absolute floor (0.5) is too low to call a spell "meaningfully usable"
-   (a 0.6-point level-1 spell would block a 40-point level-3 one). A relative floor is proposed (§2.2) and must be tuned from logs.
+2. **Viability floor**: the engine's absolute floor (0.5) is not a meaningful-utility test. Revision 2 adds a
+   success-chance floor (25%) instead of a relative-value one; tune from logs.
+4. **Area-effect spells** are not analysed today (§1.5b) — must be fixed first or they bypass the policy.
 3. **Prepared variants**: each memorised metamagic variant is its own `AbilityData`; assumed (from `GetAllCustomSpells`
    and `SpendInternal`'s `spell.Equals(SpellShell)`) to carry its own effective level [I].
 
@@ -191,11 +211,18 @@ Definitions:
 - **Resource scope** = the spellbook (`Spellbook` instance): each book is its own ladder (a wizard's level-1 slot
   does not "block" a mythic level-1 slot, nor a second class's book).
 - **Available** = already guaranteed: only `IsAvailable` abilities become candidates.
-- **Viable** = in the post-filter `usable` list (positive value, affordable now, not failed this turn, all
-  legality/immunity/SR/targeting already applied) **and** `Value ≥ max(threshold(slot), ρ · bestInScopeValue)`,
-  where `threshold` is the engine's own `MinQuickValue`/`MinMainValue` and `ρ = 0.3` (tunable constant).
-  The relative part means "a lower slot must achieve at least 30% of what the best spell would"; it prevents a
-  near-useless low spell from blocking a decisive higher one, without letting a merely *better* higher spell win.
+- **Viable** = in the post-filter `usable` list (positive value, affordable now, not failed this turn; legality,
+  range/line of sight, immunity, already-active effects and SR immunity already applied) **and**
+  `Value ≥ threshold(slot)` (the engine's own `MinQuickValue` / `MinMainValue`) **and**
+  `SuccessChance ≥ 0.25` — the probability that the effect lands on its primary target, from the evaluator's own
+  terms: spell-resistance pass × failed-save chance (× hit chance for attack-roll spells). **[R]** "prefer an effect
+  with a credible chance of working" (synthesis §3.1-3.2, §4). This replaces revision 1's relative factor
+  (`ρ · best spell value`), which let a higher spell escalate *because it scored higher* — contrary to the core rule.
+  The success chance does not depend on what higher spells exist, so a weak-but-working low spell still blocks a
+  stronger high one (that is the point of conserving), while a low spell the target will almost surely shrug off
+  (high save, high SR) does not.
+- **Gap noted**: the engine's absolute floor `MinMainValue = 0.5` is not a meaningful-utility test; the success-chance
+  floor is the conservative addition. 0.25 is a starting value to tune from logs.
 - **Exhausted for this decision** = no viable candidate at that level in that book.
 
 ### 2.2 Algorithm (inserted in `Decide` after `usable`, before selection)
@@ -206,23 +233,25 @@ GateProgressive(ctx, usable):
   inScope = usable where Kind==Ability && Ability.Spellbook != null && Ability.SourceItem == null
                       && Offensive && L(c) > 0
   if inScope empty: return usable
-  best = max(inScope.Value)
   removed = {}
   for each book in inScope.GroupBy(Spellbook):
-      viable = book where Value >= max(Threshold(c.Slot), ρ*best)
+      viable = book where Value >= Threshold(c.Slot) && SuccessChance(c) >= 0.25
       if viable empty: continue                       // nothing in this book is worth a slot: leave it as is
       floor = min L(c) over viable
       for c in book where L(c) > floor:
           if Bypass(ctx, c): continue                 // emergency: competes normally
           removed += c
-  log once per decision if removed non-empty: "[Progressive] <unit>: tier L<floor> (book) - held back: <labels>"
+  log once per decision if removed non-empty (debug-gated detail: candidates per tier, why a tier was skipped):
+      "[Progressive] <unit>: tier L<floor> (<book>) - held back: <labels>"
+      "[Progressive] <unit>: L1 skipped (Daze: 12% chance vs Will) -> tier L2"
   return usable - removed
 ```
 
 Selection then runs unchanged on the gated list. Cases:
 - *No level-1 offensive spell available*: no level-1 candidates exist (`IsAvailable` false) → floor is the next level.
 - *Level-1 spell illegal / immune / out of range / unaffordable*: it never reached `usable` → not viable → escalate.
-- *Level-1 spell legal but weak* (`< ρ·best` or below the engine threshold): not viable → escalate.
+- *Level-1 spell legal but unlikely to work* (success chance < 25%, e.g. a Will-save spell vs a high-Will target) or
+  below the engine threshold: not viable → escalate.
 - *Level-1 spell viable but a weapon attack is better*: higher spells held back; the weapon attack wins → slot conserved.
 - *Low-level non-offensive spell*: out of scope, never a floor.
 - *Multiple books*: independent ladders.
@@ -236,22 +265,42 @@ Evaluated per candidate, per decision, from live state (no stored flag → nothi
 maps, save/load or modes):
 
 ```
-Bypass(ctx, c) = setting ProgressiveBossBypass &&
-   ( BossThreatAffected(ctx, c)            // c's target, or an enemy inside its AoE, is a qualifying threat
-     || ctx.Difficulty >= 1.25 )           // the whole fight is exceptional (existing metric)
+Bypass(ctx, c) = setting ProgressiveBossBypass && BossAffected(ctx, c)
+    // c's target, or an enemy inside its area, is a qualifying boss
 
-QualifyingThreat(e) = e ∈ ctx.Enemies (alive, conscious, targetable, not stealthed)
-                      && ( e.Blueprint.GetComponent<Experience>()?.Encounter == EncounterType.Boss      // game flag
-                           || (e.CR >= partyAverageLevel + 3 && HP% >= 50 && not helpless) )            // heuristic
+QualifyingBoss(e) = e ∈ ctx.Enemies (alive, conscious, targetable, not stealthed)
+                    && e.Blueprint.GetComponent<Experience>()?.Encounter == EncounterType.Boss   // verified game flag
+// Missing component / any other value / exception -> not a boss (fail conservatively). [R] synthesis §5.8
+
+ShadowSignals(ctx) (logged only, never bypass in this version):
+    - an enemy with blueprint CR >= party average level + 3
+    - encounter difficulty (existing metric, TacticalEngine.cs:200) >= 1.25
 ```
 
-- Scope: the boss signal only frees spells that would hit the boss — no Fireball on the mooks because a boss is in
-  the room. The difficulty signal frees all tiers (the fight as a whole is dangerous).
+**[R]** The synthesis (§5, §6.6) warns against arbitrary CR/HP/AC thresholds that have not been checked against real
+WotR data, and against comparing base CR with difficulty-scaled statistics. Revision 1 used two such thresholds as
+live triggers; revision 2 keeps only the verified game flag active and logs the heuristic signals ("would bypass:
+CR 9 vs party 5") so that play logs can show whether they would add true positives before anyone enables them.
+`BlueprintUnit.CR` is the base CR (unaffected by difficulty) [V]; the party level is character level — the
+comparison is only a candidate heuristic, not an equivalence.
+
+- Scope: the bypass only frees spells that would hit the boss — no Fireball on the mooks because a boss is in
+  the room.
 - Lifecycle: active while a qualifying enemy is a valid hostile in `ctx.Enemies`; ends when it dies, is disabled,
   flees or combat ends — automatically, because nothing is stored.
 - It only re-admits candidates to normal scoring; it never forces the highest spell.
 - Logging (gated by the existing per-combat memory so it prints on transitions, not every decision):
-  `[Progressive] boss bypass ON: <enemy> (Experience=Boss | CR 9 vs party 5)` / `... OFF: no qualifying threat`.
+  `[Progressive] boss bypass ON: <enemy> (Experience=Boss)` / `... OFF: <enemy> no longer a valid target` /
+  `[Progressive] would bypass (not active): <enemy> CR 9 vs party 5`. At combat start (debug log) each enemy's
+  `Experience.Encounter` and CR are listed — the evidence needed for §1.11-1.
+
+### 2.3b Operator decision required: strict exhaustion vs lowest *usable* tier
+
+[R] Synthesis §6.4: the rule above ("lowest tier with a viable candidate") differs from *literal* exhaustion
+("cast every level-1 slot before any level-2 slot, whatever the target"). Strict exhaustion would cast a level-1
+spell even when it has almost no chance to work, or wait (weapon/cantrip) instead of escalating; it trades
+competence for maximum slot conservation. **Recommendation: lowest usable tier** (default). Strict mode, if wanted,
+is a one-line variant (drop the success-chance test and treat any in-scope candidate as viable).
 
 Rejected alternatives: a stored "current tier" per caster (stale after rests/respec/save-load), a parallel
 decision engine, Harmony patches on `Spellbook` (unneeded, conflict risk), spell-name lists (fragile, multilingual).
@@ -264,9 +313,11 @@ decision engine, Harmony patches on `Spellbook` (unneeded, conflict risk), spell
 | `Settings/ModSettings.cs` `ModSettings` | *new* `bool ProgressiveBossBypass = true` |
 | `Settings/ModSettings.cs` `Localization` | EN/KR strings for the selector and descriptions |
 | `UI/MainUI.DrawCharacterAISettings` (`:406`) | *new* `DrawSpellPolicySelection()` beside Role/Range; global bypass toggle in the combat settings section |
+| `Tactics/AbilityProfile.cs` (walker) | follow `ContextActionSpawnAreaEffect.AreaEffect` into `AbilityAreaEffectRunAction` lists and `AbilityAreaEffectBuff`; area size for AoE radius (step 0) |
+| `Tactics/TacticalEngine.ScoreAbility` / `Candidate` | *new* `Candidate.SuccessChance` (primary target: SR pass × failed save × hit chance — terms already computed in `ScoreAbility`) |
 | *new* `Tactics/SpellTierPolicy.cs` | pure gate over plain records `(key, bookId, level, inScope, value, threshold, bypass)` → set of keys to hold back. No game types → unit-testable |
 | `Tactics/TacticalEngine.Decide` (`:100-110`) | build the records from `usable`, call the policy, drop held-back keys, log |
-| *new* `Tactics/ThreatAssessment.cs` | boss/qualifying-threat detection (Experience flag cached per blueprint + heuristic) |
+| *new* `Tactics/ThreatAssessment.cs` | boss detection from `Experience.Encounter` (cached per blueprint); shadow signals (CR, difficulty) logged only |
 | `Core/DecisionEngine/UnifiedDecisionEngine.DecideAction` (`:184`) | same policy after `ScoreAll` (real-time); in-scope = ability candidates of attack/debuff type from a spellbook |
 | *new* `tests/CompanionAI.Tests` | xUnit project (net8) referencing only `SpellTierPolicy.cs` |
 | `docs/TACTICAL_AI.md`, README | behaviour and settings |
@@ -277,14 +328,17 @@ decision engine, Harmony patches on `Spellbook` (unneeded, conflict risk), spell
 
 ### 3.1 Steps
 
+0. **Area-effect analysis** in `AbilityProfile` (prerequisite). *Done when* `[Profile]` lines show Grease/Web
+   with their buffs/conditions and these spells score as control (`cc`) in the decision log; out-of-Progressive
+   behaviour change is intended and noted in the changelog.
 1. **Pure policy** `Tactics/SpellTierPolicy.cs` + unit tests. *Done when* tests T1-T5 (data-level) pass with
    `dotnet test`. Failure mode: grouping/floor bugs — covered by tests.
 2. **Settings + localisation + UI**. *Done when* the mod builds, old `settings.json` loads with `Standard`, the
    selector persists (T11).
 3. **Turn-based integration** in `Decide`. *Done when* builds, SigDump shows only verified new references, a debug
    log shows `[Progressive]` lines (T1-T7 in game).
-4. **Threat assessment + bypass + transition logging**. *Done when* combat-start log lists, per enemy,
-   `Experience.Encounter` and CR — giving the coverage evidence for §1.11-1 (T8-T9).
+4. **Boss bypass (flag only) + shadow signals + transition logging**. *Done when* combat-start log lists, per enemy,
+   `Experience.Encounter` and CR — the coverage evidence for §1.11-1 (T8-T9) — and shadow signals log "would bypass".
 5. **Real-time integration** (shared policy). *Done when* T12 passes.
 6. **Docs, version, package.**
 
@@ -296,12 +350,14 @@ Automated (unit, pure policy — runnable here):
 |---|---|---|
 | T1 | L1 (8), L2 (20), L3 (40), weapon (10) — one book, no bypass | L2/L3 held back; final pick weapon or L1 by value |
 | T2 | no L1 candidates; L2 (20), L3 (40) | floor L2; L3 held |
-| T3 | L1 value 2 < 0.3·40; L3 40 | L1 not viable → floor L3; nothing held |
+| T3 | L1 success chance 0.12; L3 0.7 | L1 not viable → floor L3; nothing held |
+| T3b | L1 success chance 0.6 but value far below L3 | L1 viable → L3 held (no escalation on score alone) |
 | T4 | L0 cantrip + L1 + L3 | cantrip never held, never a floor |
 | T5 | Completely-Normal L1 (effective 0) + L2 | treated as level 0 |
 | T6 | two books each L1+L3 | each book keeps its own L1 floor |
 | T7 | out-of-scope (buff, heal, item, SLA) at any level | never held |
 | T8 | bypass flag on L3 candidate | L3 kept |
+| T9 | strict-mode variant (if chosen) | L1 kept as floor even at 0.12 chance |
 
 In-game (proposed, not run — no game runtime here), with debug logging on:
 
@@ -316,6 +372,9 @@ In-game (proposed, not run — no game runtime here), with debug logging on:
 | T10 | interrupt a cast (AoO) | next decision re-reads slots; no stale tier |
 | T11 | start with an old settings.json | all characters `Standard`; toggling persists |
 | T12 | same scenarios in real time | same `[Progressive]` lines |
+| T14 | witch/shaman hex usable once per target per day | hex not offered on an already-hexed target (game restriction), unaffected by Progressive |
+| T15 | Grease/Web after step 0 | classified `cc`, gated like other levelled offensive spells |
+| T16 | toggle Progressive mid-campaign; save/load mid-fight | takes effect next decision; nothing stale |
 | T13 | 10+ enemies, long fight | decision time unchanged in practice (log timestamps); no growth in caches (blueprint-keyed only) |
 
 ### 3.3 Regression control
@@ -332,10 +391,27 @@ run/not run.
 persistent state, and the slot arithmetic can be taken entirely from the game (`Spellbook.GetSpellLevel`,
 `IsAvailable`), which already handles metamagic, Completely Normal Spell, prepared/spontaneous and mythic books.
 
-Minimal design: per-character `Standard | Progressive` setting; a pure, unit-tested tier gate applied to the
-already-filtered candidate list; a per-cast boss bypass from the game's `Experience.Encounter == Boss` flag plus a
-CR/difficulty heuristic, all derived from live state each decision.
+Minimal design: per-character `Standard | Progressive` setting; area-effect analysis first; a pure, unit-tested
+tier gate on the already-filtered candidate list with a success-chance viability floor; a per-cast boss bypass from
+the game's `Experience.Encounter == Boss` flag only (CR/difficulty signals logged, not active); all derived from live
+state each decision.
 
-Open uncertainties: boss-flag coverage in real encounters (measure with the combat-start log), the relative
-viability factor ρ = 0.3 and the difficulty threshold 1.25 (tune from logs), and in-game confirmation for prepared
-metamagic variants. None of these block implementation; all are observable in the debug log.
+Open uncertainties: boss-flag coverage in real encounters (measure with the combat-start log), the 25% success
+floor (tune from logs), whether the shadow CR/difficulty signals deserve activation, and in-game confirmation for
+prepared metamagic variants and hex restrictions. Operator decision pending: lowest-usable-tier (recommended) vs
+strict exhaustion (§2.3b). None of these block implementation; all are observable in the debug log.
+
+---
+
+## §R — Revision 2: what the Reference Synthesis changed
+
+| Synthesis point | Revision 1 | Revision 2 |
+|---|---|---|
+| §3.1-3.2, §4: value is not raw damage; prefer effects with a credible chance of working | viability = engine threshold + 30 % of best spell value | viability = engine threshold + **success chance ≥ 25 %** (SR × save × hit); no score-based escalation |
+| §3.1: Grease-type control is central | area spells not considered | **area-effect analysis added as step 0** (verified gap) |
+| §5, §6.6: no invented CR/HP thresholds; fail conservatively | boss flag **or** CR ≥ party+3 **or** difficulty ≥ 1.25 | **boss flag only**; CR/difficulty logged as "would bypass" for evidence |
+| §3.5, §6.5: unlimited ≠ unrestricted; hexes have per-target limits | hexes implicitly out of scope | explicit: out of scope; game restrictions still apply; test T14 |
+| §3.6: scrolls are a separate economy | out of scope | unchanged, stated explicitly |
+| §6.4: strict exhaustion is an explicit choice | not discussed | §2.3b: operator decision, lowest-usable-tier recommended |
+| §7: logging of tier, per-tier counts, skip reasons, bypass transitions | basic line | skip reasons and transitions logged; detail behind debug setting |
+| §7 tests 4, 13 | — | T14 (hex restriction), T16 (toggle, save/load) added |
