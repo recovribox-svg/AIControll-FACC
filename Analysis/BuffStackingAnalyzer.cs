@@ -118,7 +118,9 @@ namespace CompanionAI_Pathfinder.Analysis
                 if (result.ConflictingBonuses.Count > 0)
                 {
                     // 모든 보너스가 충돌하면 효과 없음
-                    if (result.ConflictingBonuses.Count >= bonuses.Count && knownBonuses == bonuses.Count)
+                    // ★ v0.3.4: every bonus of known size superseded = no effect, even if a minor extra bonus of unknown
+                    // size exists (Mage Armor's "AC vs weapon type" part let it through on Seelah in plate in 0.3.3).
+                    if (knownBonuses > 0 && result.ConflictingBonuses.Count >= knownBonuses)
                     {
                         result.IsEffective = false;
                         result.Reason = $"All bonuses superseded: {string.Join(", ", result.ConflictingBonuses)}";

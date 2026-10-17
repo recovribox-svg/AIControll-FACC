@@ -318,6 +318,7 @@ namespace CompanionAI_Pathfinder.Analysis
                 // ═══════════════════════════════════════════════════════════════
                 // 공격 보너스 관련 (전투 가치: 1.0)
                 // ═══════════════════════════════════════════════════════════════
+                case "AttackBonusAgainstTarget":   // ★ v0.3.4: Smite Evil and similar marks
                 case "AddAttackBonus":
                 case "AttackBonusAgainstFactOwner":
                 case "AttackBonusAgainstAlignment":
@@ -329,6 +330,7 @@ namespace CompanionAI_Pathfinder.Analysis
                 // ═══════════════════════════════════════════════════════════════
                 // 데미지 보너스 관련 (전투 가치: 1.0)
                 // ═══════════════════════════════════════════════════════════════
+                case "DamageBonusAgainstTarget":   // ★ v0.3.4
                 case "AddOutgoingDamageBonus":
                 case "AddCumulativeDamageBonus":
                 case "AddBonusWeaponDamage":

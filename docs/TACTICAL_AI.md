@@ -1,4 +1,4 @@
-# Turn-based tactical AI (v0.3.0, revised in v0.3.1-v0.3.3)
+# Turn-based tactical AI (v0.3.0, revised in v0.3.1-v0.3.4)
 
 This document describes how companions decide what to do in **turn-based combat**. Real-time combat still uses
 the older `UnifiedDecisionEngine`, which already handled weapon attacks. It now shares the consumable settings.
@@ -141,3 +141,16 @@ Firebird 1.4.18 (its BlueprintCore reference lists name the vanilla blueprints) 
 | **Shift Form: Overlord / Mortal Guise** (IsekaiMod) | One free-action toggle: `Conditional(HasBuff Overlord) → RemoveBuff : ApplyBuff (permanent)`. | In combat: on, then "cleanse" back off every turn (fixed in 0.3.2). After every fight the out-of-combat routine recast it, flipping the form. | In combat: turned on when it is worth it, never off. Out of combat: toggles are left to the player. |
 | **Demonic Art I-III** (Demonology) and vanilla summons | Summon; `AfterSpawn` applies a buff to the summoned creature. | That buff counted as a buff on the caster. | Effects after a spawn belong to the summon; the ability is valued as a summon. |
 | **Appraise Foe** (IsekaiMod) | −2 AC/saves on the enemy, +2 insight to the caster's attack/AC/saves, 1 minute. | ~11, correct. | Unchanged. |
+
+## 9. v0.3.4: fixes from the first 0.3.3 log
+
+| What the log showed | Line(s) | Cause | Fix |
+|---|---|---|---|
+| Camellia never cast Spirit Weapon Enchantment: `Spirit Weapon Enchantment->Camellia(buff)=0.1-0.3` | 547, 2011, 5499, 8626, 9619, 13105, 15238 | Its buff has no components (`[NoComponents]`); the enchantment is applied by the ability's actions. 0.3.2 rated component-less buffs as markers (0.05). | A component-less buff of an enchanting ability counts as an enchantment (0.8). |
+| `Item:Mage Armor->Seelah(buff)=3.1` used (Seelah wears plate) | 548, 2249 | Mage Armor = AC+4 (Armor) + an AC-vs-weapon-type part of unreadable size; 0.3.2 let any unknown-size part make the buff "effective". | Superseded when every bonus of known size is superseded. |
+| `Treat Affliction->Orvath(dispel)=2.0` listed with nothing to treat | 4566, 8516, 9460, 11698 | The once-per-combat "dispel" fallback did not check the target. | Needs an ally with a harmful effect, or an enemy with a spell buff (Dispel Magic). |
+| Smite Evil's buff rated "unrecognised" | `[Profile] Smite Evil` | `AttackBonusAgainstTarget` / `DamageBonusAgainstTarget` unknown to the analyzer. | Recognised as attack/damage bonuses. |
+
+Checked and fine: Shift Form cast 2× in the whole log (27× before), Soul Power and Treat Affliction no longer cast,
+no wait timeouts, 5-foot steps no longer reported as failures. Orvath's quickened Sleep followed by a normal Sleep on
+the same target only happens when the first did not take (the target has no Sleep buff afterwards: a failed save).

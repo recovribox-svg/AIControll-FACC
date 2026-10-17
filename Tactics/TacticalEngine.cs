@@ -417,7 +417,10 @@ namespace CompanionAI_Pathfinder.Tactics
                 // ★ v0.3.3: a day-long buff with no recognisable combat effect is a "used today" marker (Treat Affliction:
                 // "you can treat each character only once per day"), not a buff.
                 if (!analysis.Recognized && profile.IsDayLong(buff)) continue;
+                // ★ v0.3.4: an enchanting ability's buff is often an empty carrier while the enchantment itself is applied
+                // by the ability's actions (Spirit Weapon Enchantment: "Components=[NoComponents]", valued 0.1 in 0.3.3).
                 float q = analysis.Recognized ? analysis.CombatValue
+                        : profile.Enchants ? 0.8f
                         : analysis.OnlyUnrecognized ? (item ? 0f : 0.5f)
                         : 0.05f; // no components at all: a marker or cooldown
                 if (item && q < 0.5f) q = 0f;
@@ -455,6 +458,28 @@ namespace CompanionAI_Pathfinder.Tactics
 
             float overflow = 1.5f * Math.Min(ctx.ExpectedRounds, 3f);   // +attack/+damage for the rest of the day
             return (burn > 0 ? 4f : 0f) + overflow;
+        }
+
+        /// <summary>
+        /// ★ v0.3.4: the "dispel" fallback needs a target: an enemy with a spell buff to strip (Dispel Magic), or an ally with
+        /// a harmful effect. Treat Affliction kept a 2.0 "dispel" option on Orvath with nothing to treat in 0.3.3.
+        /// </summary>
+        private static bool HasSomethingToDispel(UnitEntityData caster, UnitEntityData target, AbilityProfile profile)
+        {
+            if (target?.Buffs == null) return false;
+            try
+            {
+                bool enemy = caster.IsEnemy(target);
+                foreach (var buff in target.Buffs.Enumerable)
+                {
+                    bool harmful = buff.Blueprint.Harmful ||
+                                   (buff.MaybeContext?.MaybeCaster != null && buff.MaybeContext.MaybeCaster.IsEnemy(target));
+                    if (!enemy && harmful) return true;
+                    if (enemy && profile.Dispels && !harmful && buff.Blueprint.IsFromSpell) return true;
+                }
+            }
+            catch { }
+            return false;
         }
 
         private static ActionSlot SlotOf(AbilityData ability)
@@ -849,7 +874,7 @@ namespace CompanionAI_Pathfinder.Tactics
                     {
                         // consumables: nothing verifiable to gain
                     }
-                    else if (profile.Dispels || profile.RemovesBuffs)
+                    else if ((profile.Dispels || profile.RemovesBuffs) && HasSomethingToDispel(unit, target, profile))
                     {
                         value += 2f;
                         reasons.Add("dispel");
