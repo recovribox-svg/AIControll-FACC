@@ -8,7 +8,8 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - **Purpose**: Complete replacement of companion AI with tactical decision-making system
 - **Version**: tracked in `Info.json` (0.3.0: step-wise turn-based tactical engine in `Tactics/`; 0.3.1: per-target
   Conditional branches, next-attack buffs, cleanses, time-based command wait; 0.3.2: buff quality from components,
-  harmful-only cleanses, mode switches)
+  harmful-only cleanses, mode switches; 0.3.3: Soul Power/burn, day-long markers, summon after-spawn effects, toggles,
+  game stacking rule; compatibility notes in README)
 
 ## Reference Resources
 - **Rogue Trader CompanionAI v3.5.7**: `C:\Users\veria\Downloads\CompanionAI_v3-master - v3.5.7`
@@ -109,6 +110,8 @@ otherwise the UI smart-cursor mode decides.
   `AbilityProfile.AppliesTo` / `BuffAppliesTo`; never count both branches for everyone.
 - A buff's worth comes from what it does (`Analysis/BuffEffectAnalyzer`, shared with real-time) and whether it stacks
   on the recipient (`BuffStackingAnalyzer.Analyze`, descriptor-based); only harmful buffs count as something to cleanse.
+- Use the game's own rule functions (e.g. `ModifierDescriptorHelper.IsStackable`), never copied tables: other mods
+  (Tabletop Tweaks) patch those functions, and the mod must stay independent of them.
 - A value of 0 for a verifiable effect (damage, heal, cleanse) means "not useful now": never let it fall through to
   the once-per-combat fallback for unverifiable effects. Consumables never use that fallback.
 

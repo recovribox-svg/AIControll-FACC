@@ -34,6 +34,10 @@ combat (primary) and real-time combat.
 - An advance that runs out of its move action can continue with the standard action; abilities are not aimed at a
   target on which none of their effects apply.
 
+**0.3.3**: Soul Power only when there are fresh corpses to draw on (and worth more with burn); Treat Affliction's
+"treated today" marker is not a buff; summon spells count as summons; the out-of-combat routine no longer flips
+toggles such as Shift Form; bonus stacking follows the game's own rule (and Tabletop Tweaks' changes to it).
+
 0.2.119 fixed companions not physically moving in turn-based combat ([docs/INVESTIGATION.md](docs/INVESTIGATION.md)).
 
 ---
@@ -41,7 +45,7 @@ combat (primary) and real-time combat.
 ## Install (players)
 
 1. Install [Unity Mod Manager](https://www.nexusmods.com/site/mods/21) into the game.
-2. Take `CompanionAI_Pathfinder_v0.3.2.zip` - prebuilt in `release\`, or build it yourself (below; output in `dist\`).
+2. Take `CompanionAI_Pathfinder_v0.3.3.zip` - prebuilt in `release\`, or build it yourself (below; output in `dist\`).
 3. Install it either way:
    - Unity Mod Manager → *Mods* tab → drag the ZIP onto the window / *Install Mod*, **or**
    - extract it to `<game>\Mods\CompanionAI_Pathfinder\` so the folder contains
@@ -57,6 +61,18 @@ combat (primary) and real-time combat.
 - *Consumables (quick-slot items)*: master switch plus potions / scrolls & wands / alchemical & thrown items, and the HP %
   below which a character drinks a healing potion. **Put the items you want companions to use into their quick slots**:
   the game only allows quick-slot items in combat, and never lets animal companions use items.
+
+### Compatibility with other mods
+The mod has **no dependencies** besides Unity Mod Manager. Checked against the decompiled builds of
+Tabletop Tweaks Core 0.7.15 / Base 2.6.18, IsekaiMod 6.5.0, Demonology 0.1.5 and Tome of the Firebird 1.4.18:
+- None of them patches a method this mod patches (`TurnController.Tick`, `AiBrainController.TickBrain`,
+  `CombatController.StartTurn/Activate/Deactivate`, `UnitCommands.Run`), so load order does not matter.
+- Their changes to game rules reach the AI automatically, because it asks the game: attack/AC/damage rules, spell
+  resistance (`UnitPartSpellResistance.GetValue`), Use Magic Device DC, targeting (`AbilityData.CanTarget`), variants
+  (`GetConversions`) and bonus stacking (`ModifierDescriptorHelper.IsStackable`, e.g. TTT's natural-armor rule).
+- Abilities added by these mods are read like vanilla ones (effects, buffs, conditions). Conditions the AI cannot
+  evaluate are logged once as `[Profile] ... not evaluated` and counted conservatively.
+This is a code-level check; it has not been run in the game with these mods.
 
 Units the game is currently controlling itself (confused, panicked, dominated, cutscenes) are left to the game.
 

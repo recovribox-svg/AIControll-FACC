@@ -404,8 +404,8 @@ namespace CompanionAI_Pathfinder.Tactics
         /// (BuffStackingAnalyzer: e.g. Mage Armor under real armor). Effects the analyzer does not recognise count 0.5 for
         /// renewable abilities and 0 for consumables (an item is gone once used), and items need a clear combat effect.
         /// </summary>
-        private static float BuffQuality(AbilityData ability, List<Kingmaker.UnitLogic.Buffs.Blueprints.BlueprintBuff> buffs,
-                                         UnitEntityData recipient)
+        private static float BuffQuality(AbilityData ability, AbilityProfile profile,
+                                         List<Kingmaker.UnitLogic.Buffs.Blueprints.BlueprintBuff> buffs, UnitEntityData recipient)
         {
             bool item = ability.SourceItem != null;
             float best = 0f;
@@ -414,6 +414,9 @@ namespace CompanionAI_Pathfinder.Tactics
                 // Descriptor-based stacking only (BuffStackingAnalyzer.WouldBeEffective also matches names: "shield").
                 if (!BuffStackingAnalyzer.Analyze(buff, recipient).IsEffective) continue;
                 var analysis = BuffEffectAnalyzer.Analyze(buff);
+                // ★ v0.3.3: a day-long buff with no recognisable combat effect is a "used today" marker (Treat Affliction:
+                // "you can treat each character only once per day"), not a buff.
+                if (!analysis.Recognized && profile.IsDayLong(buff)) continue;
                 float q = analysis.Recognized ? analysis.CombatValue
                         : analysis.OnlyUnrecognized ? (item ? 0f : 0.5f)
                         : 0.05f; // no components at all: a marker or cooldown
@@ -421,6 +424,37 @@ namespace CompanionAI_Pathfinder.Tactics
                 best = Math.Max(best, q);
             }
             return best;
+        }
+
+        /// <summary>
+        /// ★ v0.3.3: Soul Power (Dark Elementalist): "gather up the souls of dead creatures with HD sum equal to or higher
+        /// than her character level ... reducing her current burn by 1", and each successful use raises her elemental
+        /// overflow attack/damage bonus for the day. Orvath cast it at round 1 with no corpses, every combat. Needs dead
+        /// creatures in its area not yet marked by it (the marker buff it applies to every creature in the burst) whose
+        /// HD reach the caster's level; worth more when there is burn to remove.
+        /// </summary>
+        private static float BurnReliefValue(TacticalContext ctx, AbilityProfile profile)
+        {
+            var unit = ctx.Unit;
+            int burn = 0;
+            try { burn = unit.Get<Kingmaker.UnitLogic.Class.Kineticist.UnitPartKineticist>()?.AcceptedBurn ?? 0; } catch { }
+
+            if (profile.IsAoE && profile.TargetBuffs.Count > 0)
+            {
+                int needed = Math.Max(1, unit.Descriptor?.Progression?.CharacterLevel ?? 1);
+                int souls = 0;
+                foreach (var other in Game.Instance.State.Units)
+                {
+                    if (other == null || other == unit || !(other.Descriptor?.State?.IsDead ?? false)) continue;
+                    if (Vector3.Distance(other.Position, unit.Position) > profile.AoERadius + other.Corpulence) continue;
+                    if (profile.TargetBuffs.Any(b => other.Buffs.HasFact(b))) continue;   // souls already used
+                    souls += Math.Max(other.Descriptor?.Progression?.CharacterLevel ?? 0, other.Blueprint?.CR ?? 1);
+                }
+                if (souls < needed) return 0f;
+            }
+
+            float overflow = 1.5f * Math.Min(ctx.ExpectedRounds, 3f);   // +attack/+damage for the rest of the day
+            return (burn > 0 ? 4f : 0f) + overflow;
         }
 
         private static ActionSlot SlotOf(AbilityData ability)
@@ -600,6 +634,19 @@ namespace CompanionAI_Pathfinder.Tactics
                 return 0f;
             }
 
+            // --- kineticist burn relief (Dark Elementalist Soul Power) ---
+            if (profile.HealsBurn)
+            {
+                float burnValue = BurnReliefValue(ctx, profile);
+                if (burnValue <= 0f)
+                {
+                    why = "nothing to gain";
+                    return 0f;
+                }
+                value += burnValue;
+                reasons.Add("burn");
+            }
+
             // --- damage ---
             if (profile.DealsDamage && affectedEnemies.Count > 0)
             {
@@ -717,7 +764,7 @@ namespace CompanionAI_Pathfinder.Tactics
             bool attackAfter = slot == ActionSlot.Free || slot == ActionSlot.Swift ? ctx.HasStandard || ctx.CanFullAttack
                              : slot == ActionSlot.Move ? ctx.HasStandard
                              : false;
-            if (appliesHelpfulBuff && !profile.DealsDamage && !profile.IsCleanse)
+            if (appliesHelpfulBuff && !profile.DealsDamage && !profile.IsCleanse && !profile.HealsBurn)
             {
                 float buffValue = 0f;
                 var recipients = profile.TargetBuffs.Count > 0 && !targetIsEnemy ? affectedAllies : new List<UnitEntityData> { unit };
@@ -733,7 +780,7 @@ namespace CompanionAI_Pathfinder.Tactics
 
                     // ★ v0.3.2: what the buff actually does, for this recipient. Treat Affliction, Feather Step and Mage
                     // Armor on a paladin in plate were valued like Enlarge Person in v0.3.1.
-                    float quality = BuffQuality(ability, buffs, ally);
+                    float quality = BuffQuality(ability, profile, buffs, ally);
                     if (quality <= 0f) continue;
                     // A mode switch (Shift Form: Overlord ↔ Mortal Guise) removes a good buff: only worth it if better.
                     var replaced = profile.BeneficialBuffsRemoved(ability, ally);

@@ -347,20 +347,16 @@ namespace CompanionAI_Pathfinder.Analysis
         /// </summary>
         private static bool IsDescriptorStackable(ModifierDescriptor descriptor)
         {
-            // 스태킹 가능한 타입들
-            switch (descriptor)
+            // ★ v0.3.3: the game's own rule (Kingmaker.Enums.ModifierDescriptorHelper.IsStackable) instead of a copied
+            // table. Mods that change stacking (Tabletop Tweaks: natural armor no longer stacks, new descriptors) patch
+            // that method, so this follows them automatically; without such mods it is the vanilla rule.
+            try
             {
-                case ModifierDescriptor.None:
-                case ModifierDescriptor.Racial:
-                case ModifierDescriptor.Dodge:
-                case ModifierDescriptor.UntypedStackable:
-                case ModifierDescriptor.Feat:
-                case ModifierDescriptor.Penalty:
-                case ModifierDescriptor.NaturalArmor: // 기본 자연 갑옷은 스택
-                    return true;
-
-                default:
-                    return false;
+                return Kingmaker.Enums.ModifierDescriptorHelper.IsStackable(descriptor);
+            }
+            catch
+            {
+                return descriptor == ModifierDescriptor.UntypedStackable || descriptor == ModifierDescriptor.Dodge;
             }
         }
 

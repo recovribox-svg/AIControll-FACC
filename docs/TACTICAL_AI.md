@@ -1,4 +1,4 @@
-# Turn-based tactical AI (v0.3.0, revised in v0.3.1 and v0.3.2)
+# Turn-based tactical AI (v0.3.0, revised in v0.3.1-v0.3.3)
 
 This document describes how companions decide what to do in **turn-based combat**. Real-time combat still uses
 the older `UnifiedDecisionEngine`, which already handled weapon attacks. It now shares the consumable settings.
@@ -128,3 +128,16 @@ All units, Orvath included. Line numbers refer to that log.
 | `Lay On Hands — Others->Mite Scout(buff)=8.8` (living enemy) | 81, 84 | Only the paladin's own side buff was left, and it counted. | An ability whose target effects none apply to the target is worth 0 there. |
 | Albedo / Seelah / Camellia: `Advance` interrupted after 6-9 m, then `END TURN` with the standard action unused | 327, 390, 1169 | The cut-short move was marked failed. | A move that made ≥ 1 m of progress is not marked failed; the next decision can keep moving. |
 | `Lann: 'move:5ft' was force-finished before it started` after a successful 5-foot step | 95, 994 | The v0.3.1 "never started" rule also caught moves, which finish that way on arrival. | The rule applies to attacks and abilities only. |
+
+## 8. v0.3.3: Soul Power, Treat Affliction, summons, toggles
+
+Sources: the in-game descriptions (screenshots), and the decompiled IsekaiMod 6.5.0, Demonology 0.1.5, Tome of the
+Firebird 1.4.18 (its BlueprintCore reference lists name the vanilla blueprints) and Tabletop Tweaks.
+
+| Ability | What it really does | Was | Now |
+|---|---|---|---|
+| **Soul Power** (vanilla Dark Elementalist, `31a1e5b2...`) | Full round: draws on dead creatures within 30 ft whose HD sum ≥ caster level, lowers burn by 1; each success raises the day's elemental-overflow attack/damage bonus. Marks every creature in the burst (`DarkElementalistSoulPowerOnceBuff`). | Valued 26-38 as buff + "marks" on enemies; cast at round 1 with no corpses. | `ContextActionHealBurn` → worth `1.5 × rounds` (+4 if there is burn), only with enough unmarked dead HD in range. |
+| **Treat Affliction** (vanilla, `b89dcf50...`) | Lore (Religion) check to remove one disease/poison; once per character per day (the 23h37m buff in the screenshot is that marker). | Its marker buff counted as a buff (8.6). | Day-long buffs with no recognised combat component are markers, worth 0; only the removal (if detectable) counts. |
+| **Shift Form: Overlord / Mortal Guise** (IsekaiMod) | One free-action toggle: `Conditional(HasBuff Overlord) → RemoveBuff : ApplyBuff (permanent)`. | In combat: on, then "cleanse" back off every turn (fixed in 0.3.2). After every fight the out-of-combat routine recast it, flipping the form. | In combat: turned on when it is worth it, never off. Out of combat: toggles are left to the player. |
+| **Demonic Art I-III** (Demonology) and vanilla summons | Summon; `AfterSpawn` applies a buff to the summoned creature. | That buff counted as a buff on the caster. | Effects after a spawn belong to the summon; the ability is valued as a summon. |
+| **Appraise Foe** (IsekaiMod) | −2 AC/saves on the enemy, +2 insight to the caster's attack/AC/saves, 1 minute. | ~11, correct. | Unchanged. |

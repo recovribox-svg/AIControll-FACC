@@ -1960,7 +1960,12 @@ namespace CompanionAI_Pathfinder.GameInterface
             // 대기열에서 제거 (성공적으로 처리됨)
             _pendingBuffUnits.Remove(unitId);
 
-            var unappliedPermanentBuffs = AbilityClassifier.GetUnappliedPermanentBuffs(unit);
+            // ★ v0.3.3: never flip an on/off switch outside combat. Isekai's "Shift Form: Overlord / Mortal Guise" applies
+            // its form buff when absent and REMOVES it when present; recast after every fight, it left Orvath's form to
+            // chance. Such toggles are the player's choice out of combat (the turn-based engine still uses them in combat).
+            var unappliedPermanentBuffs = AbilityClassifier.GetUnappliedPermanentBuffs(unit)
+                .Where(c => c.Ability != null && !(Tactics.AbilityProfile.Get(c.Ability)?.IsToggle ?? false))
+                .ToList();
             Main.Verbose($"[RT] {unitName}: Found {unappliedPermanentBuffs.Count} unapplied permanent buffs");
 
             if (unappliedPermanentBuffs.Count == 0)

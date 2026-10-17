@@ -43,7 +43,7 @@ namespace CompanionAI_Pathfinder.Tactics
     public enum EffectApplies { Unconditional, Yes, No, Unknown }
 
     /// <summary>Whom a nested action runs on: the ability's target, its caster, or someone else (party, pet, random units).</summary>
-    public enum EffectSubject { Target, Caster, Other }
+    public enum EffectSubject { Target, Caster, Other, Summoned }
 
     /// <summary>One enclosing Conditional: the effect runs when the checker evaluates to <see cref="Branch"/>.</summary>
     public sealed class EffectGuard
@@ -73,6 +73,19 @@ namespace CompanionAI_Pathfinder.Tactics
         public bool Dispels { get; private set; }
         public bool RemovesBuffs { get; private set; }
         public bool Enchants { get; private set; }
+
+        /// <summary>★ v0.3.3: lowers the caster's kineticist burn (ContextActionHealBurn, e.g. Dark Elementalist Soul Power).</summary>
+        public bool HealsBurn { get; private set; }
+
+        /// <summary>
+        /// ★ v0.3.3: applies and removes the same buff depending on whether it is already there - an on/off switch
+        /// (Isekai's "Shift Form: Overlord / Mortal Guise"). Never cast outside combat by the permanent-buff routine.
+        /// </summary>
+        public bool IsToggle => RemovedBuffs.Any(b => TargetBuffs.Contains(b) || CasterBuffs.Contains(b));
+
+        /// <summary>Buffs applied for a day or more ("treated today" markers such as Treat Affliction's).</summary>
+        private readonly HashSet<BlueprintBuff> m_DayLongBuffs = new HashSet<BlueprintBuff>();
+        public bool IsDayLong(BlueprintBuff buff) => buff != null && m_DayLongBuffs.Contains(buff);
 
         /// <summary>Descriptors of buffs the ability removes from its target (ContextActionRemoveBuffsByDescriptor).</summary>
         public SpellDescriptor RemovedDescriptors { get; private set; }
@@ -260,6 +273,19 @@ namespace CompanionAI_Pathfinder.Tactics
                     continue;
                 }
 
+                if (action is Kingmaker.UnitLogic.Class.Kineticist.Actions.ContextActionHealBurn)
+                    HealsBurn = true;
+
+                // ★ v0.3.3: what runs on a freshly summoned creature (ContextActionSpawnMonster.AfterSpawn: summon
+                // markers, Demonology's ritual buff) is not an effect on the caster or the target.
+                if (subject == EffectSubject.Summoned)
+                {
+                    if (action is ContextActionSpawnMonster) Summons = true;
+                    foreach (var child in ChildActionLists(action))
+                        Walk(child, visited, abilityDepth, subject, depth + 1, guards);
+                    continue;
+                }
+
                 switch (action)
                 {
                     case ContextActionDealDamage dmg:
@@ -282,6 +308,7 @@ namespace CompanionAI_Pathfinder.Tactics
                             HasLongBuff = true;
                         m_AllBuffs++;
                         if (LastsOneRound(apply)) m_ShortBuffs++;
+                        if (LastsADay(apply)) m_DayLongBuffs.Add(apply.Buff);
                         if (apply.Buff.GetComponent<RemoveBuffOnAttack>() != null) m_SpentByAttackBuffs++;
                         break;
                     case ContextActionSpawnMonster _:
@@ -336,6 +363,8 @@ namespace CompanionAI_Pathfinder.Tactics
             {
                 case ContextActionOnContextCaster _:
                     return EffectSubject.Caster;
+                case ContextActionSpawnMonster _:
+                    return EffectSubject.Summoned;
                 case ContextActionOnOwner _:
                 case ContextActionPartyMembers _:
                 case ContextActionsOnPet _:
@@ -355,6 +384,22 @@ namespace CompanionAI_Pathfinder.Tactics
             guards.CopyTo(result, 0);
             result[guards.Length] = new EffectGuard { Checker = checker, Branch = branch, OnCaster = onCaster };
             return result;
+        }
+
+        /// <summary>A day or longer (or about a day in hours): a "used today" marker rather than a combat buff.</summary>
+        private static bool LastsADay(ContextActionApplyBuff apply)
+        {
+            try
+            {
+                if (apply.Permanent || apply.SameDuration || apply.DurationValue == null) return false;
+                var d = apply.DurationValue;
+                if (d.Rate == DurationRate.Days) return true;
+                return d.Rate == DurationRate.Hours && d.BonusValue != null && d.BonusValue.IsValueSimple && d.BonusValue.Value >= 20;
+            }
+            catch
+            {
+                return false;
+            }
         }
 
         /// <summary>Lasts at most one round (SameDuration copies a parent duration we cannot see: not short).</summary>
