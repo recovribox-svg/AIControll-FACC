@@ -83,6 +83,10 @@ namespace CompanionAI_Pathfinder.Tactics
         /// </summary>
         public bool IsToggle => RemovedBuffs.Any(b => TargetBuffs.Contains(b) || CasterBuffs.Contains(b));
 
+        /// <summary>★ v0.3.5: buffs applied permanently or for hours/days (worth keeping up outside combat).</summary>
+        private readonly HashSet<BlueprintBuff> m_PersistentBuffs = new HashSet<BlueprintBuff>();
+        public bool IsPersistent(BlueprintBuff buff) => buff != null && m_PersistentBuffs.Contains(buff);
+
         /// <summary>Buffs applied for a day or more ("treated today" markers such as Treat Affliction's).</summary>
         private readonly HashSet<BlueprintBuff> m_DayLongBuffs = new HashSet<BlueprintBuff>();
         public bool IsDayLong(BlueprintBuff buff) => buff != null && m_DayLongBuffs.Contains(buff);
@@ -309,6 +313,8 @@ namespace CompanionAI_Pathfinder.Tactics
                         m_AllBuffs++;
                         if (LastsOneRound(apply)) m_ShortBuffs++;
                         if (LastsADay(apply)) m_DayLongBuffs.Add(apply.Buff);
+                        if (apply.Permanent || (apply.DurationValue != null && apply.DurationValue.Rate >= DurationRate.Hours))
+                            m_PersistentBuffs.Add(apply.Buff);
                         if (apply.Buff.GetComponent<RemoveBuffOnAttack>() != null) m_SpentByAttackBuffs++;
                         break;
                     case ContextActionSpawnMonster _:

@@ -1964,7 +1964,7 @@ namespace CompanionAI_Pathfinder.GameInterface
             // its form buff when absent and REMOVES it when present; recast after every fight, it left Orvath's form to
             // chance. Such toggles are the player's choice out of combat (the turn-based engine still uses them in combat).
             var unappliedPermanentBuffs = AbilityClassifier.GetUnappliedPermanentBuffs(unit)
-                .Where(c => c.Ability != null && !(Tactics.AbilityProfile.Get(c.Ability)?.IsToggle ?? false))
+                .Where(c => c.Ability != null && IsWorthKeepingUp(c.Ability, unit))
                 .ToList();
             Main.Verbose($"[RT] {unitName}: Found {unappliedPermanentBuffs.Count} unapplied permanent buffs");
 
@@ -2005,6 +2005,38 @@ namespace CompanionAI_Pathfinder.GameInterface
             {
                 Main.Error($"[RT] Out-of-combat buff failed ({nativeAbility.Name}): {ex.Message}");
             }
+        }
+
+        /// <summary>
+        /// ★ v0.3.5: what the out-of-combat routine may cast, judged by what the ability actually does (Tactics.AbilityProfile)
+        /// rather than by the classifier's "permanent buff" label. After 0.3.3 hid the Shift Form toggle, the label let
+        /// through Soul Power (spends a daily use and corpses), Perfect Strike (a daily-use, next-attack buff) and an
+        /// Inflict Light Wounds item cast on Camellia herself. Allowed: no item, no toggle, no damage/heal/burn effect, and a
+        /// buff on the caster lasting hours or permanently, with a recognised combat effect, not already active.
+        /// </summary>
+        private static bool IsWorthKeepingUp(Kingmaker.UnitLogic.Abilities.AbilityData ability, UnitEntityData unit)
+        {
+            try
+            {
+                if (ability.SourceItem != null) return false;
+                var profile = Tactics.AbilityProfile.Get(ability);
+                if (profile == null || profile.IsToggle || profile.IsOneShot || profile.HealsBurn) return false;
+                if (profile.DealsDamage || profile.Heals.Count > 0 || profile.Summons || profile.HarmfulToEnemies) return false;
+
+                foreach (var buff in profile.CasterBuffs.Concat(profile.TargetBuffs).Distinct())
+                {
+                    if (!profile.IsPersistent(buff)) continue;
+                    if (unit.Buffs.HasFact(buff)) continue;
+                    if (profile.BuffAppliesTo(buff, ability, unit) == Tactics.EffectApplies.No) continue;
+                    var analysis = BuffEffectAnalyzer.Analyze(buff);
+                    if (analysis.Recognized && analysis.CombatValue >= 0.5f) return true;
+                }
+            }
+            catch (Exception ex)
+            {
+                Main.Verbose($"[RT] IsWorthKeepingUp {ability?.Name}: {ex.Message}");
+            }
+            return false;
         }
 
         /// <summary>

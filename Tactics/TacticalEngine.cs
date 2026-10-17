@@ -874,10 +874,15 @@ namespace CompanionAI_Pathfinder.Tactics
                     {
                         // consumables: nothing verifiable to gain
                     }
-                    else if ((profile.Dispels || profile.RemovesBuffs) && HasSomethingToDispel(unit, target, profile))
+                    else if (profile.Dispels || profile.RemovesBuffs)
                     {
-                        value += 2f;
-                        reasons.Add("dispel");
+                        // ★ v0.3.5: nothing to remove = nothing to gain; do not fall through to "utility" (Treat Affliction
+                        // was offered as utility=1.0 on everyone in 0.3.4).
+                        if (HasSomethingToDispel(unit, target, profile))
+                        {
+                            value += 2f;
+                            reasons.Add("dispel");
+                        }
                     }
                     else if (CombatMemory.TimesUsed(unit, ability) == 0)
                     {

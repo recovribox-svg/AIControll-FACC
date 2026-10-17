@@ -169,6 +169,15 @@ namespace CompanionAI_Pathfinder.Core.TurnBased
                 memory.IdleSeconds += dt;
             }
 
+            // ★ v0.3.5: nothing running and the unit cannot act (asleep, stunned, paralysed...): there is nothing to wait
+            // for. v0.3.4 waited the full 4 s and logged it as a command timeout (Camellia, CanAct=False).
+            if (unit.Commands.Empty && !(unit.Descriptor?.State?.CanAct ?? true) && memory.IdleSeconds > 1f)
+            {
+                Main.Log($"[TBController] {unit.CharacterName}: cannot act this turn - ending turn");
+                memory.Finished = true;
+                return ExecutionResult.EndTurn("Cannot act");
+            }
+
             // ★ v0.3.1: a command we did not issue this turn (left over from real time, an out-of-combat buff routine
             // or the previous combat) blocked Camellia's turn until the timeout. Clear it and decide.
             // The game's own commands (toggling an activatable ability, attacks of opportunity) are left alone.

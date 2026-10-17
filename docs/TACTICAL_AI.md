@@ -1,4 +1,4 @@
-# Turn-based tactical AI (v0.3.0, revised in v0.3.1-v0.3.4)
+# Turn-based tactical AI (v0.3.0, revised in v0.3.1-v0.3.5)
 
 This document describes how companions decide what to do in **turn-based combat**. Real-time combat still uses
 the older `UnifiedDecisionEngine`, which already handled weapon attacks. It now shares the consumable settings.
@@ -154,3 +154,16 @@ Firebird 1.4.18 (its BlueprintCore reference lists name the vanilla blueprints) 
 Checked and fine: Shift Form cast 2× in the whole log (27× before), Soul Power and Treat Affliction no longer cast,
 no wait timeouts, 5-foot steps no longer reported as failures. Orvath's quickened Sleep followed by a normal Sleep on
 the same target only happens when the first did not take (the target has no Sleep buff afterwards: a failed save).
+
+## 10. v0.3.5: fixes from the first 0.3.4 log
+
+| What the log showed | Line(s) | Cause | Fix |
+|---|---|---|---|
+| After the fight: `Out-of-combat permanent buff (Soul Power)` (succeeded), `(Perfect Strike)`, `(Inflict Light Wounds)` on Camellia (`result=Fail`) | 1204, 1217, 4199-4242 | The out-of-combat routine (shared by both modes) trusted the old classifier's "permanent buff" label; hiding the Shift Form toggle in 0.3.3 exposed the next entries. | `RealTimeController.IsWorthKeepingUp`: no items, toggles, one-shot buffs, burn/damage/heal/summon effects; needs a buff on the caster lasting hours or permanently, with a recognised combat effect (≥ 0.5), not already active. |
+| `Camellia: command wait timeout (4.0s without progress)` with `CanAct=False` and no command | 795 | Nothing to wait for: she could not act. | Ends the turn after 1 s: `cannot act this turn`. |
+| `Treat Affliction->...(utility)=1.0` on every unit | 18, 802, 1021, 2320 ... | 0.3.4's "nothing to remove" check fell through to the generic utility value, which is above the main-action threshold. | Removal/dispel abilities with nothing to remove are worth 0. |
+
+Working as intended in this log: Spirit Weapon Enchantment cast at round 1 (line 1400), Camellia healing herself at
+26-37 % HP (potion, then spell), Lann's Perfect Strike before his full attack, Albedo switching target after an
+interrupted approach, Orvath's Soul Power listed only with corpses around (`Soul Power->Orvath(burn)=5.8`, line 3815)
+and not chosen over Grasp Heart.
