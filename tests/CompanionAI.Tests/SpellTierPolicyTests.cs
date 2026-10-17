@@ -97,4 +97,42 @@ public class SpellTierPolicyTests
         Assert.Empty(d.HeldBack);
         Assert.Empty(d.Notes);
     }
+
+    [Fact]
+    public void NegativeLevelIsNeverGatedOrAFloor()
+    {
+        // The game side maps unknown levels (variants: GetSpellLevel = -1) to the parent's level; anything still <= 0 is free.
+        var d = SpellTierPolicy.Gate(new[] { Spell("odd", -1, 50), Spell("w2", 2, 20), Spell("w4", 4, 40) });
+        Assert.Equal(new[] { "w4" }, d.HeldBack);
+        Assert.DoesNotContain("odd", d.HeldBack);
+    }
+
+    [Fact]
+    public void ValueExactlyAtThresholdIsViable()
+    {
+        var low = Spell("w1", 1, 0.5f);
+        low.Threshold = 0.5f;
+        var d = SpellTierPolicy.Gate(new[] { low, Spell("w3", 3, 30) });
+        Assert.Equal(new[] { "w3" }, d.HeldBack);
+    }
+
+    [Fact]
+    public void ChanceExactlyAtFloorIsViable()
+    {
+        var d = SpellTierPolicy.Gate(new[] { Spell("w1", 1, 8, chance: SpellTierPolicy.MinSuccessChance), Spell("w3", 3, 30) });
+        Assert.Equal(new[] { "w3" }, d.HeldBack);
+    }
+
+    [Fact]
+    public void NotesNameEveryBookAndTheSkippedLowerTiers()
+    {
+        var d = SpellTierPolicy.Gate(new[]
+        {
+            Spell("w1", 1, 8, chance: 0.1f, book: "Wizard"), Spell("w2", 2, 20, book: "Wizard"),
+            Spell("m3", 3, 30, book: "Mythic"),
+        });
+        Assert.Equal(2, d.Notes.Count);
+        Assert.Contains(d.Notes, n => n.StartsWith("Wizard: tier L2") && n.Contains("lower skipped") && n.Contains("w1 L1"));
+        Assert.Contains(d.Notes, n => n == "Mythic: tier L3");
+    }
 }

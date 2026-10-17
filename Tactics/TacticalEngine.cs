@@ -106,7 +106,10 @@ namespace CompanionAI_Pathfinder.Tactics
 
             // ★ v0.3.7: Progressive spell policy - hold back higher spell levels while a lower one can do the job.
             if (ctx.Settings.SpellPolicy == SpellResourcePolicy.Progressive)
-                usable = ApplyProgressive(ctx, usable);
+            {
+                try { usable = ApplyProgressive(ctx, usable); }
+                catch (Exception ex) { Main.Error($"[Progressive] {unit.CharacterName}: {ex.Message} - policy skipped"); }
+            }
 
             var quick = usable.FirstOrDefault(c => c.Slot == ActionSlot.Free || c.Slot == ActionSlot.Swift);
             var main = usable.FirstOrDefault(c => c.Slot != ActionSlot.Free && c.Slot != ActionSlot.Swift);
@@ -138,7 +141,7 @@ namespace CompanionAI_Pathfinder.Tactics
                 Target = c.Target,
                 Point = c.Point
             }).ToList();
-            var held = ProgressiveGate.HeldBack(ctx.Unit, ctx.Enemies, items, "TB");
+            var held = ProgressiveGate.HeldBack(ctx.Unit, ctx.Enemies, items, "TB", enemiesComplete: true);
             return held.Count == 0 ? usable : usable.Where(c => !held.Contains(c)).ToList();
         }
 
@@ -388,7 +391,7 @@ namespace CompanionAI_Pathfinder.Tactics
                     }
                     return;
                 }
-                string key = $"{a.Blueprint.AssetGuid}|{a.Spellbook?.Blueprint?.AssetGuid}|{a.SourceItem?.UniqueId}";
+                string key = $"{a.Blueprint.AssetGuid}|{a.Spellbook?.Blueprint?.AssetGuid}|{a.SourceItem?.UniqueId}|{MetamagicTag(a)}";
                 if (seen.Add(key)) result.Add(a);
             }
 
@@ -417,8 +420,7 @@ namespace CompanionAI_Pathfinder.Tactics
                     if (!ability.IsAvailable) continue;
                     if (AbilityClassifier.IsBlacklistedForCombat(ability)) continue;
 
-                    var best = EvaluateAbility(ctx, ability);
-                    if (best != null) list.Add(best);
+                    list.AddRange(EvaluateAbility(ctx, ability));
                 }
                 catch (Exception ex)
                 {
@@ -543,13 +545,19 @@ namespace CompanionAI_Pathfinder.Tactics
             }
         }
 
-        private static Candidate EvaluateAbility(TacticalContext ctx, AbilityData ability)
+        /// <summary>
+        /// The best target for this ability. ★ v0.3.7: with the Progressive policy also the best target the spell has a
+        /// fair chance against and the best one that hits a boss, since the tier gate judges those (a spell whose
+        /// highest-value target saves easily can still be the right tier against another enemy).
+        /// </summary>
+        private static IEnumerable<Candidate> EvaluateAbility(TacticalContext ctx, AbilityData ability)
         {
+            var none = Enumerable.Empty<Candidate>();
             var profile = AbilityProfile.Get(ability);
-            if (profile == null) return null;
+            if (profile == null) return none;
 
             float consumable = ConsumableFactor(ctx, ability, profile);
-            if (consumable <= 0f) return null;
+            if (consumable <= 0f) return none;
 
             var slot = SlotOf(ability);
             var targets = new List<UnitEntityData>();
@@ -557,7 +565,16 @@ namespace CompanionAI_Pathfinder.Tactics
                             ability.Range == AbilityRange.Personal;
 
             if (profile.IsCharge)
-                return EvaluateCharge(ctx, ability);
+            {
+                var charge = EvaluateCharge(ctx, ability);
+                return charge != null ? new[] { charge } : none;
+            }
+
+            bool progressive = ctx.Settings.SpellPolicy == SpellResourcePolicy.Progressive && ability.Spellbook != null &&
+                               ability.SourceItem == null;
+            var bosses = progressive && (ctx.Global?.ProgressiveBossBypass ?? true)
+                ? ctx.Enemies.Where(ThreatAssessment.IsBoss).ToList() : new List<UnitEntityData>();
+            string metamagic = MetamagicTag(ability);
 
             // Intent decides which side an ability may be aimed at: never a harmful spell on a friend just because the
             // blueprint allows targeting friends, never a purely helpful one on an enemy.
@@ -576,7 +593,7 @@ namespace CompanionAI_Pathfinder.Tactics
                     targets.AddRange(ctx.Allies.Where(a => a == ctx.Unit ? ability.Blueprint.CanTargetSelf : ability.Blueprint.CanTargetFriends));
             }
 
-            Candidate best = null;
+            Candidate best = null, bestViable = null, bestBoss = null;
             foreach (var target in targets.Distinct())
             {
                 TargetWrapper wrapper = null;
@@ -611,27 +628,40 @@ namespace CompanionAI_Pathfinder.Tactics
                 if (needsMove && ctx.HasRangedWeapon && ability.Range == AbilityRange.Touch && ctx.Unit.IsEnemy(target))
                     value *= 0.5f;
 
-                if (best == null || value > best.Value)
+                var candidate = new Candidate
                 {
-                    best = new Candidate
-                    {
-                        Kind = CandidateKind.Ability,
-                        Slot = slot,
-                        Ability = ability,
-                        Target = wrapper.Unit,
-                        Point = wrapper.Unit == null ? wrapper.Point : (Vector3?)null,
-                        NeedsMove = needsMove,
-                        Value = value,
-                        Offensive = why.Contains("dmg") || why.Contains("cc") || why.Contains("debuff"),
-                        SuccessChance = ctx.Unit.IsEnemy(target)
-                            ? CombatMath.EffectChance(ctx.Unit, target, ability, profile, damage: profile.DealsDamage)
-                            : 1f,
-                        Label = $"{(ability.SourceItem != null ? "Item:" : "")}{ability.Name}->{target.CharacterName}({why})",
-                        Key = $"abl:{CombatMemory.AbilityKey(ability)}:{target.UniqueId}"
-                    };
-                }
+                    Kind = CandidateKind.Ability,
+                    Slot = slot,
+                    Ability = ability,
+                    Target = wrapper.Unit,
+                    Point = wrapper.Unit == null ? wrapper.Point : (Vector3?)null,
+                    NeedsMove = needsMove,
+                    Value = value,
+                    Offensive = why.Contains("dmg") || why.Contains("cc") || why.Contains("debuff"),
+                    Label = $"{(ability.SourceItem != null ? "Item:" : "")}{ability.Name}{metamagic}->{target.CharacterName}({why})",
+                    Key = $"abl:{CombatMemory.AbilityKey(ability)}{metamagic}:{target.UniqueId}"
+                };
+                if (best == null || value > best.Value) best = candidate;
+                if (!progressive || !candidate.Offensive) continue;
+
+                candidate.SuccessChance = ProgressiveGate.SuccessChance(ctx.Unit, ctx.Enemies, ability, profile, candidate.Target, candidate.Point);
+                float threshold = slot == ActionSlot.Free || slot == ActionSlot.Swift ? MinQuickValue : MinMainValue;
+                if (candidate.SuccessChance >= SpellTierPolicy.MinSuccessChance && value >= threshold &&
+                    (bestViable == null || value > bestViable.Value))
+                    bestViable = candidate;
+                if (bosses.Count > 0 && ThreatAssessment.HitsBoss(candidate.Target, candidate.Point, profile, bosses) &&
+                    (bestBoss == null || value > bestBoss.Value))
+                    bestBoss = candidate;
             }
-            return best;
+            return new[] { best, bestViable, bestBoss }.Where(c => c != null).Distinct();
+        }
+
+        /// <summary>★ v0.3.7: metamagic and heightening make a different spell (cost, slot level): keep them apart.</summary>
+        private static string MetamagicTag(AbilityData ability)
+        {
+            var data = ability?.MetamagicData;
+            if (data == null || !data.NotEmpty && data.HeightenLevel == 0) return "";
+            return $"[{data.MetamagicMask}{(data.HeightenLevel > 0 ? "+H" + data.HeightenLevel : "")}]";
         }
 
         private static Candidate EvaluateCharge(TacticalContext ctx, AbilityData charge)
@@ -722,7 +752,8 @@ namespace CompanionAI_Pathfinder.Tactics
                 }
 
                 // Friendly fire: hurting an ally costs twice what the same damage on an enemy is worth.
-                if (affectedAllies.Count > 0 && profile.IsAoE)
+                // ★ v0.3.7: Selective metamagic spares allies (the game skips them for every area type).
+                if (affectedAllies.Count > 0 && profile.IsAoE && !ability.HasMetamagic(Kingmaker.UnitLogic.Abilities.Metamagic.Selective))
                 {
                     float dmg = CombatMath.EstimateAbilityDamage(ability, profile, affectedAllies[0]);
                     float allyCost = affectedAllies.Sum(a => Math.Min(dmg, a.HPLeft)) * 2f;
@@ -791,15 +822,21 @@ namespace CompanionAI_Pathfinder.Tactics
 
                 // ★ v0.3.7: control or debuff areas that also catch allies (Grease, Web, Stinking Cloud now that areas
                 // are analysed). Same rule as damage: dropped with "Avoid friendly fire", otherwise each caught ally
-                // costs as much as an enemy of the same strength would gain.
+                // costs as much as an enemy of the same strength would gain. Only allies the effect would actually
+                // reach count: the per-target conditions (a caster-centred aura that spares the caster, "is enemy"
+                // checks), immunity and an already-present copy; Selective metamagic spares all allies.
                 float allyControlCost = 0f;
                 bool harmfulArea = profile.IsAoE && profile.AoETargets != Kingmaker.UnitLogic.Abilities.Components.TargetType.Enemy &&
-                                   (profile.HarmfulToEnemies || profile.ControlStrength != ControlStrength.None);
-                if (harmfulArea && affectedAllies.Count > 0)
+                                   (profile.HarmfulToEnemies || profile.ControlStrength != ControlStrength.None) &&
+                                   !ability.HasMetamagic(Kingmaker.UnitLogic.Abilities.Metamagic.Selective);
+                var caughtAllies = !harmfulArea ? new List<UnitEntityData>() : affectedAllies.Where(a =>
+                    profile.TargetBuffs.Any(b => profile.BuffAppliesTo(b, ability, a) != EffectApplies.No && !a.Buffs.HasFact(b)) &&
+                    !(profile.Control != CCType.None && AbilityClassifier.HasCCImmunity(a, profile.Control))).ToList();
+                if (caughtAllies.Count > 0)
                 {
                     if (ctx.Settings.AvoidFriendlyFire) { why = "friendly fire"; return 0f; }
-                    allyControlCost = affectedAllies.Sum(a => (4f + 3f * Math.Max(1, a.Descriptor?.Progression?.CharacterLevel ?? 1)) *
-                                                             strength * effectRounds);
+                    allyControlCost = caughtAllies.Sum(a => (4f + 3f * Math.Max(1, a.Descriptor?.Progression?.CharacterLevel ?? 1)) *
+                                                           strength * effectRounds);
                 }
                 foreach (var enemy in affectedEnemies)
                 {

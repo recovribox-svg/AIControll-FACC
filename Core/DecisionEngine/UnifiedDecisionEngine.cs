@@ -218,7 +218,9 @@ namespace CompanionAI_Pathfinder.Core.DecisionEngine
                 Threshold = floor,
                 Target = c.Target
             }).ToList();
-            var held = Tactics.ProgressiveGate.HeldBack(unit, situation.Enemies ?? new List<UnitEntityData>(), items, "RT");
+            // In real time the end-turn score is 0 (UtilityScorer), so "worth it" is simply a positive score.
+            var held = Tactics.ProgressiveGate.HeldBack(unit, situation.Enemies ?? new List<UnitEntityData>(), items, "RT",
+                                                        enemiesComplete: false);
             return held.Count == 0 ? candidates : candidates.Where(c => !held.Contains(c)).ToList();
         }
 

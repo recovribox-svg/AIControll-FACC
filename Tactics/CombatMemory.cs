@@ -21,7 +21,8 @@ namespace CompanionAI_Pathfinder.Tactics
 
         /// <summary>★ v0.3.7: Progressive log bookkeeping for this combat (what was already reported, so transitions log once).</summary>
         public static readonly HashSet<string> ProgressiveLogged = new HashSet<string>();
-        public static readonly HashSet<string> ActiveBosses = new HashSet<string>();
+        /// <summary>Boss unit id → name, while the boss bypass is active.</summary>
+        public static readonly Dictionary<string, string> ActiveBosses = new Dictionary<string, string>();
         private static int _lastRound = int.MaxValue;
 
         public static int Round => Game.Instance?.TurnBasedCombatController?.RoundNumber ?? 0;

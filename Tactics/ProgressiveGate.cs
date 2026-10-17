@@ -39,15 +39,65 @@ namespace CompanionAI_Pathfinder.Tactics
             return settings != null && settings.SpellPolicy == SpellResourcePolicy.Progressive;
         }
 
+        /// <summary>
+        /// Slot level the cast will spend, from the game: Spellbook.GetSpellLevel (base level + metamagic; Completely Normal
+        /// Spell can make it 0). A variant (Command, Bestow Curse...) is cast from its parent's slot
+        /// (AbilityData.SpendOneSpellCharge spends ConvertedFrom), so its level is the parent's; GetSpellLevel on the
+        /// variant itself returns -1. A held touch charge (StickyTouch) has already spent its slot: 0.
+        /// </summary>
+        public static int EffectiveSlotLevel(AbilityData ability)
+        {
+            if (ability == null) return 0;
+            if (ability.StickyTouch != null) return 0;
+            var book = ability.Spellbook;
+            try
+            {
+                int level = book != null ? book.GetSpellLevel(ability.ConvertedFrom ?? ability) : ability.SpellLevel;
+                return level >= 0 ? level : Math.Max(0, ability.SpellLevel);
+            }
+            catch
+            {
+                return Math.Max(0, ability.SpellLevel);
+            }
+        }
+
+        /// <summary>
+        /// Chance the spell works on the enemy it is aimed at; for an area, on the most exposed enemy inside it (0 when no
+        /// enemy is inside). Spell resistance × attack roll × failed save (damage: half on a save counts half).
+        /// </summary>
+        public static float SuccessChance(UnitEntityData caster, List<UnitEntityData> enemies, AbilityData ability,
+                                          AbilityProfile profile, UnitEntityData target, Vector3? point)
+        {
+            if (profile == null) return 1f;
+            bool damage = profile.DealsDamage;
+            if (profile.IsAoE)
+            {
+                if (profile.AoETargets == Kingmaker.UnitLogic.Abilities.Components.TargetType.Ally) return 0f;
+                Vector3? center = target?.Position ?? point;
+                if (!center.HasValue) return 1f;
+                float best = 0f;
+                foreach (var e in enemies)
+                    if (Vector3.Distance(e.Position, center.Value) <= profile.AoERadius + e.Corpulence)
+                        best = Math.Max(best, CombatMath.EffectChance(caster, e, ability, profile, damage));
+                return best;
+            }
+            return target != null && caster.IsEnemy(target) ? CombatMath.EffectChance(caster, target, ability, profile, damage) : 1f;
+        }
+
         /// <summary>Options to hold back (their <see cref="GateItem.Source"/>). Never throws: on error nothing is held back.</summary>
-        public static HashSet<object> HeldBack(UnitEntityData unit, List<UnitEntityData> enemies, List<GateItem> items, string mode)
+        /// <param name="enemiesComplete">The enemy list is the whole fight (turn-based); real-time lists are distance-filtered,
+        /// so boss on/off transitions are only logged from turn-based decisions.</param>
+        public static HashSet<object> HeldBack(UnitEntityData unit, List<UnitEntityData> enemies, List<GateItem> items, string mode,
+                                               bool enemiesComplete)
         {
             var held = new HashSet<object>();
             try
             {
                 bool bypassOn = ModSettings.Instance?.ProgressiveBossBypass ?? true;
                 var bosses = bypassOn ? enemies.Where(ThreatAssessment.IsBoss).ToList() : new List<UnitEntityData>();
-                LogBossTransitions(enemies, bosses);
+                if (enemiesComplete) LogBossTransitions(enemies, bosses);
+                if (LastLog.Count > 512) LastLog.Clear();                         // real-time-only play never resets
+                if (CombatMemory.ProgressiveLogged.Count > 4096) CombatMemory.ProgressiveLogged.Clear();
 
                 var options = new List<TierOption>(items.Count);
                 for (int i = 0; i < items.Count; i++)
@@ -60,13 +110,9 @@ namespace CompanionAI_Pathfinder.Tactics
                     bool bypass = false;
                     if (inScope)
                     {
-                        // The game's own slot cost: base level + metamagic (Completely Normal Spell can make it 0).
-                        try { level = book.GetSpellLevel(it.Ability); } catch { level = Math.Max(0, it.Ability.SpellLevel); }
+                        level = EffectiveSlotLevel(it.Ability);
                         var profile = AbilityProfile.Get(it.Ability);
-                        chance = it.SuccessChance ??
-                                 (it.Target != null && unit.IsEnemy(it.Target) && profile != null
-                                     ? CombatMath.EffectChance(unit, it.Target, it.Ability, profile, profile.DealsDamage)
-                                     : 1f);
+                        chance = it.SuccessChance ?? SuccessChance(unit, enemies, it.Ability, profile, it.Target, it.Point);
                         bypass = ThreatAssessment.HitsBoss(it.Target, it.Point, profile, bosses);
                     }
                     options.Add(new TierOption
@@ -87,16 +133,22 @@ namespace CompanionAI_Pathfinder.Tactics
                 foreach (var key in decision.HeldBack)
                     held.Add(items[int.Parse(key)].Source);
 
-                string summary = decision.HeldBack.Count == 0 && decision.BypassedLabels.Count == 0 ? "" :
+                // Logged whenever a tier was chosen over something (held back, escalated past lower levels, or bypassed),
+                // and only when that outcome changes (the dedupe key leaves out values, which change every decision).
+                bool escalated = decision.Notes.Any(n => n.Contains("lower skipped"));
+                string summary = decision.HeldBack.Count == 0 && decision.BypassedLabels.Count == 0 && !escalated ? "" :
                     string.Join("; ", decision.Notes) +
                     (decision.HeldBack.Count > 0
                         ? " - held back: " + string.Join(", ", decision.HeldBack.Select(k => items[int.Parse(k)].Label))
                         : "") +
                     (decision.BypassedLabels.Count > 0 ? " - boss bypass: " + string.Join(", ", decision.BypassedLabels) : "");
                 string logKey = unit.UniqueId + "|" + mode;
-                if (summary.Length > 0 && (!LastLog.TryGetValue(logKey, out var last) || last != summary))
+                string dedupe = string.Join("|", decision.Notes.Select(n => n.Split('(')[0])) + "#" +
+                                string.Join("|", decision.HeldBack.Select(k => items[int.Parse(k)].Label).OrderBy(l => l)) + "#" +
+                                string.Join("|", decision.BypassedLabels.OrderBy(l => l));
+                if (summary.Length > 0 && (!LastLog.TryGetValue(logKey, out var last) || last != dedupe))
                     Main.Log($"[Progressive] {unit.CharacterName} ({mode}): {summary}");
-                LastLog[logKey] = summary;
+                LastLog[logKey] = summary.Length > 0 ? dedupe : "";
             }
             catch (Exception ex)
             {
@@ -114,13 +166,16 @@ namespace CompanionAI_Pathfinder.Tactics
                     Main.Verbose($"[Progressive] enemy {e.CharacterName}: Encounter={ThreatAssessment.EncounterTag(e)}, CR={e.Blueprint?.CR}");
 
             foreach (var b in bosses)
-                if (CombatMemory.ActiveBosses.Add(b.UniqueId))
+                if (!CombatMemory.ActiveBosses.ContainsKey(b.UniqueId))
+                {
+                    CombatMemory.ActiveBosses[b.UniqueId] = b.CharacterName;
                     Main.Log($"[Progressive] boss bypass ON: {b.CharacterName} (the game marks it as a boss encounter)");
-            foreach (var id in CombatMemory.ActiveBosses.ToList())
+                }
+            foreach (var entry in CombatMemory.ActiveBosses.ToList())
             {
-                if (bosses.Any(b => b.UniqueId == id)) continue;
-                CombatMemory.ActiveBosses.Remove(id);
-                Main.Log("[Progressive] boss bypass OFF: the boss is no longer a valid target");
+                if (bosses.Any(b => b.UniqueId == entry.Key)) continue;
+                CombatMemory.ActiveBosses.Remove(entry.Key);
+                Main.Log($"[Progressive] boss bypass OFF: {entry.Value} is no longer a valid target");
             }
         }
 

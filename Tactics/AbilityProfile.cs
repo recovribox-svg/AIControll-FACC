@@ -146,12 +146,11 @@ namespace CompanionAI_Pathfinder.Tactics
         private static readonly EffectGuard[] NoGuards = new EffectGuard[0];
         private int m_ShortBuffs, m_SpentByAttackBuffs, m_AllBuffs;
         private float m_AreaRadius;
-        private Kingmaker.UnitLogic.Abilities.Components.TargetType m_AreaTargets =
-            Kingmaker.UnitLogic.Abilities.Components.TargetType.Any;
+        private bool m_AreaHitsAllies, m_AreaHitsEnemies;
+        /// <summary>★ v0.3.7: walking a spawned area's actions (its buffs last while the area does, not for minutes).</summary>
+        private bool m_InArea;
         private readonly HashSet<BlueprintAbilityAreaEffect> m_VisitedAreas = new HashSet<BlueprintAbilityAreaEffect>();
 
-        /// <summary>★ v0.3.7: the ability creates a lingering area (its effects were read from the area's components).</summary>
-        public bool SpawnsArea { get; private set; }
         /// <summary>Removal actions (ContextActionRemoveBuff / ...ByDescriptor) on the target, with their branch.</summary>
         private readonly List<GameAction> m_Removals = new List<GameAction>();
 
@@ -222,11 +221,16 @@ namespace CompanionAI_Pathfinder.Tactics
                 AoERadius = around.AoERadius.Meters;
                 AoETargets = around.Targets;
             }
-            else if (m_AreaRadius > 0f)
+            else if (m_AreaHitsAllies || m_AreaHitsEnemies)
             {
-                // ★ v0.3.7: a spawned area (Grease, Web, Stinking Cloud) is the spell's area of effect.
-                AoERadius = m_AreaRadius;
-                AoETargets = m_AreaTargets;
+                // ★ v0.3.7: a spawned area (Grease, Web, Stinking Cloud) is the spell's area of effect. The blueprint's
+                // own AoERadius (what the targeting circle shows) is preferred over the area's size.
+                float shown = 0f;
+                try { shown = Blueprint.AoERadius.Meters; } catch { }
+                AoERadius = shown > 0f ? shown : m_AreaRadius;
+                AoETargets = !m_AreaHitsAllies ? Kingmaker.UnitLogic.Abilities.Components.TargetType.Enemy
+                           : !m_AreaHitsEnemies ? Kingmaker.UnitLogic.Abilities.Components.TargetType.Ally
+                           : Kingmaker.UnitLogic.Abilities.Components.TargetType.Any;
             }
 
             // Control: the spell's own descriptor plus the descriptors / conditions of what it applies.
@@ -321,10 +325,12 @@ namespace CompanionAI_Pathfinder.Tactics
                         else TargetBuffs.Add(apply.Buff);
                         // The same buff in two branches: treat as unconditional.
                         m_BuffGuards[apply.Buff] = m_BuffGuards.ContainsKey(apply.Buff) ? NoGuards : guards;
-                        if (apply.Permanent || (apply.DurationValue != null && (int)apply.DurationValue.Rate > 0))
-                            HasLongBuff = true;
                         m_AllBuffs++;
                         if (LastsOneRound(apply)) m_ShortBuffs++;
+                        // ★ v0.3.7: a buff applied by a spawned area is tied to the area, whatever its own duration.
+                        if (m_InArea) { if (IsSpentByUse(apply.Buff)) m_SpentByAttackBuffs++; break; }
+                        if (apply.Permanent || (apply.DurationValue != null && (int)apply.DurationValue.Rate > 0))
+                            HasLongBuff = true;
                         if (LastsADay(apply)) m_DayLongBuffs.Add(apply.Buff);
                         if (apply.Permanent || (apply.DurationValue != null && apply.DurationValue.Rate >= DurationRate.Hours))
                             m_PersistentBuffs.Add(apply.Buff);
@@ -387,32 +393,51 @@ namespace CompanionAI_Pathfinder.Tactics
                                     EffectSubject subject, int depth, EffectGuard[] guards)
         {
             if (area == null || subject != EffectSubject.Target || !m_VisitedAreas.Add(area)) return;
-            SpawnsArea = true;
+            bool wasInArea = m_InArea;
+            m_InArea = true;
             try
             {
-                m_AreaRadius = Math.Max(m_AreaRadius, area.Size.Meters);
-                m_AreaTargets = !area.CanTargetAllies ? Kingmaker.UnitLogic.Abilities.Components.TargetType.Enemy
-                              : !area.CanTargetEnemies ? Kingmaker.UnitLogic.Abilities.Components.TargetType.Ally
-                              : Kingmaker.UnitLogic.Abilities.Components.TargetType.Any;
+                // Size is a radius only for a cylinder; a wall's Size is its length (about half of it reaches either
+                // way from the aim point); "all area" has no usable size. The ability's own AoERadius wins (Analyze).
+                float radius = area.Shape == AreaEffectShape.Cylinder ? area.Size.Meters
+                             : area.Shape == AreaEffectShape.Wall ? area.Size.Meters / 2f : 0f;
+                m_AreaRadius = Math.Max(m_AreaRadius, radius);
+                m_AreaHitsAllies |= area.CanTargetAllies;
+                m_AreaHitsEnemies |= area.CanTargetEnemies;
 
                 foreach (var run in area.GetComponents<Kingmaker.UnitLogic.Abilities.Components.AreaEffects.AbilityAreaEffectRunAction>())
                 {
+                    // A unit standing in the area takes the per-round effect; the on-enter effect is usually the same
+                    // damage for whoever walks in, so it is not counted on top of it. Damage on moving inside (Spike
+                    // Growth) depends on the target choosing to move: not counted.
+                    int before = Damage.Count;
                     Walk(run.UnitEnter?.Actions, visited, abilityDepth, subject, depth + 1, guards);
+                    int afterEnter = Damage.Count;
                     Walk(run.Round?.Actions, visited, abilityDepth, subject, depth + 1, guards);
+                    if (Damage.Count > afterEnter && afterEnter > before)
+                        Damage.RemoveRange(before, afterEnter - before);
+                    int beforeMove = Damage.Count;
                     Walk(run.UnitMove?.Actions, visited, abilityDepth, subject, depth + 1, guards);
+                    if (Damage.Count > beforeMove)
+                        Damage.RemoveRange(beforeMove, Damage.Count - beforeMove);
                 }
                 foreach (var areaBuff in area.GetComponents<Kingmaker.UnitLogic.Abilities.Components.AreaEffects.AbilityAreaEffectBuff>())
                 {
                     var buff = areaBuff.Buff;
                     if (buff == null) continue;
                     TargetBuffs.Add(buff);
-                    m_BuffGuards[buff] = m_BuffGuards.ContainsKey(buff) ? NoGuards : guards;
+                    var buffGuards = With(guards, areaBuff.Condition, true, false);
+                    m_BuffGuards[buff] = m_BuffGuards.ContainsKey(buff) ? NoGuards : buffGuards;
                     m_AllBuffs++;
                 }
             }
             catch (Exception ex)
             {
                 Main.Verbose($"[Profile] area effect {area.name}: {ex.Message}");
+            }
+            finally
+            {
+                m_InArea = wasInArea;
             }
         }
 

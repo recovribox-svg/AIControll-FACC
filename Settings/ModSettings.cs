@@ -196,9 +196,6 @@ namespace CompanionAI_Pathfinder.Settings
         Ranged      // 원거리 - 거리 유지
     }
 
-    /// <summary>
-    /// AI 역할
-    /// </summary>
     /// <summary>★ v0.3.7: how a caster spends spell slots on offensive spells (orthogonal to role and range).</summary>
     public enum SpellResourcePolicy
     {
@@ -206,6 +203,9 @@ namespace CompanionAI_Pathfinder.Settings
         Progressive   // lowest usable spell level first; higher levels for bosses or when lower ones cannot work
     }
 
+    /// <summary>
+    /// AI 역할
+    /// </summary>
     public enum AIRole
     {
         DPS,        // 딜러 - 공격 우선

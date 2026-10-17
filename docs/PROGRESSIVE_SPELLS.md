@@ -424,12 +424,32 @@ strict exhaustion (§2.3b). None of these block implementation; all are observab
 | Step | Files | State |
 |---|---|---|
 | 0 Area-effect analysis | `Tactics/AbilityProfile.cs` (`WalkAreaEffect`), `Tactics/TacticalEngine.cs` (control friendly fire) | done |
-| 1 Pure tier rule + tests | `Tactics/SpellTierPolicy.cs`, `tests/CompanionAI.Tests` (11 tests: T1-T8 + edge cases) | done, `dotnet test` passes |
+| 1 Pure tier rule + tests | `Tactics/SpellTierPolicy.cs`, `tests/CompanionAI.Tests` (15 tests: T1-T8 + edge cases) | done, `dotnet test` passes |
 | 2 Settings/UI | `Settings/ModSettings.cs` (`SpellResourcePolicy`, `CharacterSettings.SpellPolicy`, `ModSettings.ProgressiveBossBypass`, EN/KR strings), `UI/MainUI.cs` (`DrawSpellPolicySelection`, bypass checkbox) | done |
 | 3 Turn-based | `Tactics/TacticalEngine.cs` (`Candidate.SuccessChance`, `ApplyProgressive` in `Decide`), `Tactics/CombatMath.cs` (`EffectChance`, shared) | done |
 | 4 Boss bypass + logs | `Tactics/ThreatAssessment.cs`, `Tactics/ProgressiveGate.cs`, `Tactics/CombatMemory.cs` | done |
 | 5 Real-time | `Core/DecisionEngine/UnifiedDecisionEngine.cs` (`ApplyProgressive`, threshold = end-turn score) | done |
 | 6 Docs/package | README, CLAUDE.md, this file, `docs/TACTICAL_AI.md` §12 | done |
+
+### §I.1 Review fixes (before release)
+
+An independent review of the first implementation found these; all are fixed in the released 0.3.7:
+
+| # | Finding | Fix |
+|---|---|---|
+| 1 | Variant spells (Command, Bestow Curse...) read level −1 from `GetSpellLevel` and escaped the gate | `ProgressiveGate.EffectiveSlotLevel`: a variant spends its parent's slot (`ConvertedFrom`); a held touch charge (`StickyTouch`, set only by `UnitPartTouch`) has already spent its slot: 0 |
+| 2 | Control-area friendly fire counted every ally in the radius | only allies the effect would reach (per-target conditions, CC immunity, already affected); Selective metamagic spares allies (the game skips them for every area type), damage areas included |
+| 3 | `AbilityAreaEffectBuff.Condition` was ignored | it guards the area buff like a `Conditional` |
+| 4 | Area `Size` was used as a radius for every shape; the last area decided the targets | the blueprint's own `AoERadius` first; else `Size` for a cylinder, `Size/2` for a wall, nothing for "all area"; ally/enemy reach is the union over areas |
+| 5 | Turn-based kept only the highest-value target per spell, so a viable target or a boss-hitting one could be lost to the gate | with Progressive on, also the best target with ≥ 25 % chance and the best boss-hitting one are candidates |
+| 6 | Area damage counted on enter, every round and on movement | per-round damage only (on-enter when there is no per-round damage); on-move damage depends on the target and is not counted |
+| 7 | Buffs applied by an area counted as long / persistent / day-long | an area's buffs last while the area does |
+| 8 | Logging: repeated lines, boss OFF without a name, boss transitions from distance-filtered real-time lists | outcome-based dedupe, named OFF, transitions logged only from turn-based decisions; log caches are bounded |
+| 9 | Real-time threshold | documented: the end-turn score (0), so any positive score is "worth it" there |
+| 10 | Self-centred offensive areas used chance 1 | chance = best chance among enemies inside the area (0 if none) |
+| 11 | Success chance computed for every candidate | only with Progressive on |
+| 12 | Same spell with different metamagic merged by the ability dedupe | metamagic mask and heighten level are part of the dedupe key and the candidate key |
+| 13 | A throw in the gate would abort the decision | the turn-based call is wrapped; the gate itself never throws (nothing held back on error); unused `SpawnsArea` removed |
 
 In-game tests T1-T16 (§3.2) have **not** been run — there is no game runtime here. Log lines to look for:
 `[Progressive] <unit> (TB|RT): <book>: tier L1 (lower skipped: ...) - held back: ...`,

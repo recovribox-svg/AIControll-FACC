@@ -187,4 +187,9 @@ and not chosen over Grasp Heart.
 - **Area spells**: the effects of spawned areas (`AbilityAreaEffectRunAction`, `AbilityAreaEffectBuff`) are now read,
   so Grease, Web, Stinking Cloud and similar spells are valued as control/damage with their real radius. A control or
   debuff area that would also catch allies is dropped when *Avoid friendly fire* is on (as damage areas already were),
-  otherwise each caught ally is subtracted.
+  otherwise each caught ally is subtracted. Only allies the effect would actually reach count (per-target conditions,
+  CC immunity, already affected); Selective metamagic spares allies. An area's radius is the ability's own AoE radius,
+  else the area size for a cylinder (half for a wall). Area damage counts once per round (not on enter and every round,
+  never on movement); buffs an area applies last while the area does.
+- With Progressive on, each offensive spell also offers its best target with a fair (≥ 25 %) chance and its best
+  boss-hitting target, since the tier gate judges those. Spells with different metamagic are separate options.
