@@ -269,13 +269,15 @@ namespace CompanionAI_Pathfinder.Tactics
                 ctx.MoveRange = ctx.HasMove ? unit.CurrentSpeedMps * 3f : 0f;
             }
 
-            try { ctx.Engagers.AddRange(unit.CombatState.EngagedBy.Where(e => e != null && e.HPLeft > 0)); } catch { }
+            try { ctx.Engagers.AddRange(unit.CombatState.EngagedBy.Where(e => e != null && e.Descriptor.State.IsConscious)); } catch { }
 
             foreach (var other in Game.Instance.State.Units)
             {
                 if (other == null || other.Descriptor?.State == null) continue;
                 if (other.Descriptor.State.IsDead) continue;
-                if (other.HPLeft <= 0 || other.Descriptor.State.IsUnconscious)
+                // ★ v0.3.14: by life state: a unit that stays conscious at 0 HP or less (Diehard, ferocity) still fights
+                // and is still a target; it was dropped from every list, the acting unit included.
+                if (!other.Descriptor.State.IsConscious)
                 {
                     // ★ v0.3.9: Lann and Camellia went down in the Large Water Elemental fight; nobody could aim a heal at
                     // them because downed allies were not in any list.
@@ -383,7 +385,8 @@ namespace CompanionAI_Pathfinder.Tactics
             return total;
         }
 
-        /// <summary>★ v0.3.13: what leaving melee to reach <c>destination</c> would cost (see <see cref="DisengageRisk"/>).</summary>
+        /// <summary>★ v0.3.13: what leaving melee to reach <c>destination</c> would cost (see <see cref="DisengageRisk"/>).
+        /// ★ v0.3.14: plus walking into a harmful area (see <see cref="MoveRisk"/>).</summary>
         private sealed class Disengage
         {
             public int Attacks;
@@ -391,7 +394,28 @@ namespace CompanionAI_Pathfinder.Tactics
             public float StopChance;
             /// <summary>Damage-equivalent cost of the expected damage (higher chance to drop, HP to heal later).</summary>
             public float Cost;
-            public string Tag => $" [AoO {Attacks}]";
+            /// <summary>★ v0.3.14: the harmful area the move enters, if any.</summary>
+            public string Area;
+            public string Tag => (Attacks > 0 ? $" [AoO {Attacks}]" : "") + (Area != null ? $" [into {Area}]" : "");
+        }
+
+        /// <summary>
+        /// ★ v0.3.14: everything a move to <paramref name="destination"/> risks: attacks of opportunity
+        /// (<see cref="DisengageRisk"/>) and entering a harmful area on the way or at the end (Entangle, Grease, a fire
+        /// cloud; the party's own ones too when they can affect allies, see SelectiveRule). Seelah walked into Orvath's
+        /// Entangle to attack an enemy inside and was entangled. Priced like a share of the unit's worth for the next
+        /// rounds: the area's danger level (0.4 movement-impairing, 0.6 damaging, more for death or paralysis effects)
+        /// times half of it. Null when the move risks nothing.
+        /// </summary>
+        private static Disengage MoveRisk(TacticalContext ctx, Vector3 destination)
+        {
+            var risk = DisengageRisk(ctx, destination);
+            float danger = AoeDangerAnalyzer.EnteringDanger(ctx.Unit, ctx.Unit.Position, destination, out string area);
+            if (danger <= 0f) return risk;
+            risk = risk ?? new Disengage();
+            risk.Area = area ?? "area";
+            risk.Cost += danger * 0.5f * AllyWorth(ctx, ctx.Unit);
+            return risk;
         }
 
         /// <summary>
@@ -463,6 +487,11 @@ namespace CompanionAI_Pathfinder.Tactics
             // ★ v0.3.11: a summon is temporary and replaceable: half (the summoned Cambion's heal outscored Camellia's own).
             if (IsSummon(ally)) worth *= 0.5f;
             return worth;
+        }
+
+        private static bool UsesRangedWeapon(UnitEntityData unit)
+        {
+            try { return unit.Body?.PrimaryHand?.MaybeWeapon?.Blueprint?.IsRanged ?? false; } catch { return false; }
         }
 
         private static bool IsSummon(UnitEntityData unit)
@@ -589,7 +618,7 @@ namespace CompanionAI_Pathfinder.Tactics
                     float value = DamageValue(enemy, single.ExpectedDamage) * weight * 0.9f * WakeFactor(enemy, single.ExpectedDamage);
                     string label = $"Move+Attack->{enemy.CharacterName}";
                     // ★ v0.3.13: walking out of an enemy's reach provokes (melee and ranged alike).
-                    var risk = DisengageRisk(ctx, ApproachPoint(unit, enemy, reach));
+                    var risk = MoveRisk(ctx, ApproachPoint(unit, enemy, reach));
                     if (risk != null)
                     {
                         value = value * (1f - risk.StopChance) - risk.Cost;
@@ -835,7 +864,7 @@ namespace CompanionAI_Pathfinder.Tactics
                             continue;
                         needsMove = true;
                         // ★ v0.3.13: walking up to cast can provoke too.
-                        risk = DisengageRisk(ctx, ApproachPoint(ctx.Unit, target, range));
+                        risk = MoveRisk(ctx, ApproachPoint(ctx.Unit, target, range));
                     }
                 }
 
@@ -848,6 +877,8 @@ namespace CompanionAI_Pathfinder.Tactics
                 // "Fail" that way. Potions and wands do not provoke (AbilityData.ProvokeAttackOfOpportunity).
                 if (slot == ActionSlot.Standard && ctx.Engagers.Count > 0 && !needsMove && ability.ProvokeAttackOfOpportunity)
                     value *= 0.85f;
+                // ★ v0.3.14: entangled (or "casting is difficult"): a concentration check before the spell even starts.
+                value *= CombatMath.CastingConcentrationChance(ctx.Unit, ability);
                 // ★ v0.3.1: an archer walking up to an enemy to touch it gives up its ranged attacks and invites
                 // attacks of opportunity (Lann walked 9 m for Aid Another).
                 if (needsMove && ctx.HasRangedWeapon && ability.Range == AbilityRange.Touch && ctx.Unit.IsEnemy(target))
@@ -916,7 +947,7 @@ namespace CompanionAI_Pathfinder.Tactics
                               PreferenceWeight(ctx, false) * 0.95f;
                 string label = $"Charge->{enemy.CharacterName}";
                 // ★ v0.3.13: a charge out of melee provokes like any other move.
-                var risk = DisengageRisk(ctx, ApproachPoint(ctx.Unit, enemy, single.Reach));
+                var risk = MoveRisk(ctx, ApproachPoint(ctx.Unit, enemy, single.Reach));
                 if (risk != null)
                 {
                     value = value * (1f - risk.StopChance) - risk.Cost;
@@ -1002,8 +1033,9 @@ namespace CompanionAI_Pathfinder.Tactics
                 }
 
                 // Friendly fire: hurting an ally costs twice what the same damage on an enemy is worth.
-                // ★ v0.3.7: Selective metamagic spares allies (the game skips them for every area type).
-                if (affectedAllies.Count > 0 && profile.IsAoE && !ability.HasMetamagic(Kingmaker.UnitLogic.Abilities.Metamagic.Selective))
+                // ★ v0.3.7: Selective metamagic spares allies. ★ v0.3.14: only where the game's rule says so (not in
+                // lasting areas with Tabletop Tweaks): AbilityProfile.SelectiveSparesAllies.
+                if (affectedAllies.Count > 0 && profile.IsAoE && !profile.SelectiveSparesAllies(ability))
                 {
                     float dmg = CombatMath.EstimateAbilityDamage(ability, profile, affectedAllies[0]);
                     float allyCost = affectedAllies.Sum(a => Math.Min(dmg, a.HPLeft)) * 2f;
@@ -1101,19 +1133,32 @@ namespace CompanionAI_Pathfinder.Tactics
                 // are analysed). Same rule as damage: dropped with "Avoid friendly fire", otherwise each caught ally
                 // costs as much as an enemy of the same strength would gain. Only allies the effect would actually
                 // reach count: the per-target conditions (a caster-centred aura that spares the caster, "is enemy"
-                // checks), immunity and an already-present copy; Selective metamagic spares all allies.
+                // checks), immunity and an already-present copy; Selective metamagic spares allies where the game's
+                // rule says so (★ v0.3.14: AbilityProfile.SelectiveSparesAllies).
                 float allyControlCost = 0f;
                 bool harmfulArea = profile.IsAoE && profile.AoETargets != Kingmaker.UnitLogic.Abilities.Components.TargetType.Enemy &&
                                    (profile.HarmfulToEnemies || profile.ControlStrength != ControlStrength.None) &&
-                                   !ability.HasMetamagic(Kingmaker.UnitLogic.Abilities.Metamagic.Selective);
-                var caughtAllies = !harmfulArea ? new List<UnitEntityData>() : affectedAllies.Where(a =>
+                                   !profile.SelectiveSparesAllies(ability);
+                Func<UnitEntityData, bool> wouldBeCaught = a =>
                     profile.TargetBuffs.Any(b => profile.BuffAppliesTo(b, ability, a) != EffectApplies.No && !a.Buffs.HasFact(b)) &&
-                    !(profile.Control != CCType.None && AbilityClassifier.HasCCImmunity(a, profile.Control))).ToList();
+                    !(profile.Control != CCType.None && AbilityClassifier.HasCCImmunity(a, profile.Control));
+                var caughtAllies = !harmfulArea ? new List<UnitEntityData>() : affectedAllies.Where(wouldBeCaught).ToList();
                 if (caughtAllies.Count > 0)
                 {
                     if (ctx.Settings.AvoidFriendlyFire) { why = "friendly fire"; return 0f; }
                     allyControlCost = caughtAllies.Sum(a => (4f + 3f * Math.Max(1, a.Descriptor?.Progression?.CharacterLevel ?? 1)) *
                                                            strength * effectRounds);
+                }
+                // ★ v0.3.14: a lasting area also costs the melee allies fighting at its edge: they walk in (a save, then
+                // entangled) or give up the enemies inside. Seelah was next to the Baphomet Cultist when Orvath's
+                // Entangle went down on it and walked in next turn. Half the cost of an ally caught inside.
+                if (harmfulArea && profile.SpawnedAreas.Any())
+                {
+                    allyControlCost += ctx.Allies
+                        .Where(a => a != unit && !affectedAllies.Contains(a) && !UsesRangedWeapon(a) &&
+                                    Vector3.Distance(a.Position, target.Position) <= profile.AoERadius + 2.5f + a.Corpulence &&
+                                    wouldBeCaught(a))
+                        .Sum(a => 0.5f * (4f + 3f * Math.Max(1, a.Descriptor?.Progression?.CharacterLevel ?? 1)) * strength * effectRounds);
                 }
                 foreach (var enemy in affectedEnemies)
                 {
@@ -1378,7 +1423,7 @@ namespace CompanionAI_Pathfinder.Tactics
                     float value = Math.Max(0.6f, DamageValue(single.Enemy, single.Est.ExpectedDamage) * 0.35f);
                     string label = $"Advance->{single.Enemy.CharacterName}";
                     // ★ v0.3.13: an advance that leaves an enemy's reach provokes (no attack follows, so only the cost).
-                    var risk = DisengageRisk(ctx, ApproachPoint(unit, single.Enemy, radius));
+                    var risk = MoveRisk(ctx, ApproachPoint(unit, single.Enemy, radius));
                     if (risk != null)
                     {
                         value -= risk.Cost;
@@ -1411,6 +1456,8 @@ namespace CompanionAI_Pathfinder.Tactics
                 float angle = i * 30f * Mathf.Deg2Rad;
                 var candidate = unit.Position + new Vector3(Mathf.Cos(angle), 0f, Mathf.Sin(angle)) * distance;
                 if (accept != null && !accept(candidate)) continue;
+                // ★ v0.3.14: never step back into a harmful area.
+                if (AoeDangerAnalyzer.EnteringDanger(unit, unit.Position, candidate, out _) > 0f) continue;
                 float nearestEnemy = ctx.Enemies.Min(e => Vector3.Distance(candidate, e.Position) - e.Corpulence);
                 float score = nearestEnemy - 0.15f * Vector3.Distance(candidate, allyCenter);
                 if (score > bestScore)

@@ -1,4 +1,5 @@
 using System;
+using System.Linq;
 using System.Reflection;
 using HarmonyLib;
 using Kingmaker;
@@ -128,31 +129,37 @@ namespace CompanionAI_Pathfinder.GameInterface
         /// <summary>
         /// 유닛을 제어해야 하는지 확인
         /// </summary>
-        public static bool ShouldControlUnit(UnitEntityData unit)
+        public static bool ShouldControlUnit(UnitEntityData unit) => ShouldControlUnit(unit, out _);
+
+        /// <summary>
+        /// ★ v0.3.14: the same check with the reason for a refusal (logged for party members at turn start: Seelah's
+        /// turn was refused with no reason in the log, and a directly controllable unit the mod refuses waits for the
+        /// player, which looks like a frozen turn).
+        /// </summary>
+        public static bool ShouldControlUnit(UnitEntityData unit, out string reason)
         {
-            if (unit == null)
-                return false;
+            reason = null;
+            if (unit == null) { reason = "no unit"; return false; }
 
             // 죽었거나 의식 없음
-            if (unit.HPLeft <= 0)
-                return false;
+            // ★ v0.3.14: by the game's life state, not by HP. 0.3.13 refused any unit at 0 HP or less, but a unit that
+            // stays conscious there (Diehard, ferocity) still gets its turn and the game waits for orders: the turn
+            // never progressed. Unconscious units cannot act; the game ends their turns itself.
+            var state = unit.Descriptor?.State;
+            if (state == null || !state.IsConscious) { reason = state?.IsDead == true ? "dead" : "unconscious"; return false; }
 
             // 플레이어 팩션만 제어
-            if (!unit.IsPlayerFaction)
-                return false;
+            if (!unit.IsPlayerFaction) { reason = "not in the party's faction"; return false; }
 
             // ★ v0.2.119: Units the game currently drives itself (confused, panicked, PreventDirectControl, ...)
             // are not directly controllable; their commands come from the game and must not be replaced/interrupted.
-            if (!unit.IsDirectlyControllable)
-                return false;
+            if (!unit.IsDirectlyControllable) { reason = "the game controls it now (" + WhyNotControllable(unit) + ")"; return false; }
 
             // ★ v0.2.119: Crusade tactical (army) combat has its own command/path pipeline.
-            if (Kingmaker.Armies.TacticalCombat.TacticalCombatHelper.IsActive)
-                return false;
+            if (Kingmaker.Armies.TacticalCombat.TacticalCombatHelper.IsActive) { reason = "army battle"; return false; }
 
             var settings = ModSettings.Instance;
-            if (settings == null)
-                return false;
+            if (settings == null) { reason = "settings not loaded"; return false; }
 
             // 주인공 여부 확인
             bool isMainCharacter = unit.IsMainCharacter;
@@ -160,24 +167,48 @@ namespace CompanionAI_Pathfinder.GameInterface
             // 주인공 제어 여부
             if (isMainCharacter)
             {
-                if (!settings.ControlMainCharacter)
-                    return false;
+                if (!settings.ControlMainCharacter) { reason = "main character control is off"; return false; }
             }
             else
             {
                 // 동료 제어 여부
-                if (!settings.ControlCompanions)
-                    return false;
+                if (!settings.ControlCompanions) { reason = "companion control is off"; return false; }
             }
 
             // 캐릭터별 AI 활성화 여부 확인
             string unitId = unit.UniqueId;
             string unitName = unit.Descriptor?.CharacterName ?? "Unknown";
             var charSettings = settings.GetOrCreateSettings(unitId, unitName);
-            if (!charSettings.EnableCustomAI)
-                return false;
+            if (!charSettings.EnableCustomAI) { reason = "AI is off for this character"; return false; }
 
             return true;
+        }
+
+        /// <summary>★ v0.3.14: which of the game's reasons for taking direct control away applies (for the log).</summary>
+        private static string WhyNotControllable(UnitEntityData unit)
+        {
+            try
+            {
+                var parts = new System.Collections.Generic.List<string>();
+                var confusion = unit.Get<Kingmaker.UnitLogic.Parts.UnitPartConfusion>();
+                if (confusion != null) parts.Add($"confused: {confusion.State}");
+                if (unit.Descriptor.State.IsPanicked) parts.Add("panicked");
+                if (unit.IsDetached) parts.Add("detached");
+                if (!unit.IsInGame) parts.Add("not in game");
+                if ((bool)unit.PreventDirectControl && parts.Count == 0) parts.Add("prevented by an effect");
+                foreach (var buff in unit.Buffs)
+                {
+                    if (buff?.Blueprint == null) continue;
+                    if (buff.Blueprint.ComponentsArray.Any(c => c is Kingmaker.UnitLogic.FactLogic.ChangeFaction ||
+                                                                c is Kingmaker.UnitLogic.FactLogic.SetFleeOrApproachLogic))
+                        parts.Add(buff.Name);
+                }
+                return parts.Count > 0 ? string.Join(", ", parts) : "faction or party mode";
+            }
+            catch (Exception ex)
+            {
+                return ex.Message;
+            }
         }
     }
 
@@ -212,9 +243,17 @@ namespace CompanionAI_Pathfinder.GameInterface
                 string unitName = currentUnit.Descriptor?.CharacterName ?? "Unknown";
                 Main.Log($"턴 시작: {unitName} (Status={__instance.CurrentTurn?.Status})");
 
-                if (!CustomBrainPatch.ShouldControlUnit(currentUnit))
+                bool controlled = CustomBrainPatch.ShouldControlUnit(currentUnit, out string reason);
+                s_LastTurnStartRefusal = reason;
+                if (!controlled)
                 {
-                    Main.Verbose($"유닛 제어 대상 아님: {unitName}");
+                    // ★ v0.3.14: why, and at normal level for the party's own units.
+                    if (currentUnit.IsPlayerFaction)
+                        Main.Log($"유닛 제어 대상 아님: {unitName} - {reason}" +
+                                 (currentUnit.IsPlayerFaction && currentUnit.IsDirectlyControllable && reason != "dead" && reason != "unconscious"
+                                     ? " (the game waits for your orders)" : ""));
+                    else
+                        Main.Verbose($"유닛 제어 대상 아님: {unitName} - {reason}");
                     return;
                 }
 
@@ -240,6 +279,8 @@ namespace CompanionAI_Pathfinder.GameInterface
         /// So issuing a command in Preparing is enough; the previous reflection-based "force Acting" hack was
         /// unnecessary and also fired in Ending/Delayed, flipping Ending back to Acting every frame.
         /// </summary>
+        private static string s_LastRefusalKey, s_LastTurnStartRefusal;
+
         public static void TurnControllerTick_Postfix(TurnController __instance)
         {
             try
@@ -250,7 +291,22 @@ namespace CompanionAI_Pathfinder.GameInterface
                 if (rider == null) return;
 
                 // 우리가 제어하는 유닛만
-                if (!CustomBrainPatch.ShouldControlUnit(rider)) return;
+                if (!CustomBrainPatch.ShouldControlUnit(rider, out string refusal))
+                {
+                    // ★ v0.3.14: control lost during a party member's turn (it dropped below 0 HP, was charmed...): say so
+                    // once per turn; a controllable unit the mod does not drive waits for the player.
+                    if (rider.IsPlayerFaction && __instance.Status == TurnController.TurnStatus.Preparing)
+                    {
+                        string key = $"{rider.UniqueId}|{System.Runtime.CompilerServices.RuntimeHelpers.GetHashCode(__instance)}";
+                        if (key != s_LastRefusalKey)
+                        {
+                            s_LastRefusalKey = key;
+                            if (refusal != s_LastTurnStartRefusal)
+                                Main.Log($"[TurnTick] {rider.CharacterName}: not controlled this turn - {refusal}");
+                        }
+                    }
+                    return;
+                }
 
                 // ★ v0.2.119: respect the "Enable in Turn-Based Mode" setting
                 if (!(ModSettings.Instance?.EnableInTurnBased ?? true)) return;

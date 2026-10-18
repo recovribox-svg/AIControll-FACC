@@ -287,6 +287,36 @@ namespace CompanionAI_Pathfinder.Tactics
         }
 
         /// <summary>
+        /// ★ v0.3.14: chance <paramref name="caster"/> gets the spell off at all while entangled or under a "casting is
+        /// difficult" condition. The game then makes a concentration check before every spell, potions and scrolls
+        /// included, wands excepted (UnitUseAbility.MakeConcentrationCheckIfCastingIsDifficult, RuleCheckConcentration:
+        /// d20 + concentration against 15 + spell level, twice the level when very difficult). Camellia's Daze (twice) and
+        /// Cure Light Wounds and Seelah's potion failed inside Orvath's Entangle. 1 when no check applies.
+        /// </summary>
+        public static float CastingConcentrationChance(UnitEntityData caster, AbilityData ability)
+        {
+            try
+            {
+                if (caster == null || ability?.Blueprint == null || !ability.Blueprint.IsSpell) return 1f;
+                if (ability.SourceItem != null && ability.SourceItemUsableBlueprint == null) return 1f;
+                if (ability.SourceItemUsableBlueprint != null &&
+                    ability.SourceItemUsableBlueprint.Type == Kingmaker.Blueprints.Items.Equipment.UsableItemType.Wand) return 1f;
+                var state = caster.Descriptor.State;
+                bool veryDifficult = state.HasCondition(UnitCondition.SpellCastingIsVeryDifficult);
+                if (!veryDifficult && !state.HasCondition(UnitCondition.Entangled) && !state.HasCondition(UnitCondition.SpellCastingIsDifficult))
+                    return 1f;
+                var p = ability.CalculateParams();
+                int dc = 15 + p.SpellLevel + (veryDifficult ? p.SpellLevel : 0);
+                int need = dc - p.Concentration;                       // d20 result needed
+                return Mathf.Clamp01((21f - need) / 20f);
+            }
+            catch
+            {
+                return 1f;
+            }
+        }
+
+        /// <summary>
         /// ★ v0.3.7: chance an ability's effect lands on <paramref name="enemy"/>: spell-resistance pass × attack-roll hit
         /// chance × failed save (for damage, a successful save still counts half when the spell does half on a save).
         /// One formula for damage/control scoring and Progressive's viability test, in both combat modes.

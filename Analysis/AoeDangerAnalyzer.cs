@@ -162,6 +162,44 @@ namespace CompanionAI_Pathfinder.Analysis
         }
 
         /// <summary>
+        /// ★ v0.3.14: the worst danger level (0..1) of the harmful areas a move from <paramref name="from"/> to
+        /// <paramref name="to"/> would enter: the destination or a point on the straight path lies inside, and the unit
+        /// is not already inside (entering is what triggers the save). Seelah walked into Orvath's Entangle to attack;
+        /// turn-based moves never looked at areas. <paramref name="name"/> is the area's name for the decision log.
+        /// </summary>
+        public static float EnteringDanger(UnitEntityData unit, Vector3 from, Vector3 to, out string name)
+        {
+            name = null;
+            float worst = 0f;
+            if (unit == null) return 0f;
+            try
+            {
+                var areaEffects = Game.Instance?.State?.AreaEffects;
+                if (areaEffects == null) return 0f;
+                float length = Vector3.Distance(from, to);
+                int samples = Math.Max(1, Mathf.CeilToInt(length / 1f));
+                foreach (var aoe in areaEffects)
+                {
+                    if (aoe == null || !aoe.IsInGame || aoe.IsEnded) continue;
+                    if (IsUnitInsideEffect(unit, aoe)) continue;
+                    bool enters = false;
+                    for (int i = 1; i <= samples && !enters; i++)
+                        enters = IsPositionInsideEffect(Vector3.Lerp(from, to, i / (float)samples), aoe);
+                    if (!enters) continue;
+                    var danger = EvaluateEffectDanger(unit, aoe, quiet: true);
+                    if (danger == null || danger.DangerLevel <= worst) continue;
+                    worst = danger.DangerLevel;
+                    name = aoe.Context?.SourceAbilityContext?.Ability?.Name ?? danger.Name;
+                }
+            }
+            catch (Exception ex)
+            {
+                Main.Verbose($"[AoeDanger] entering check {unit.CharacterName}: {ex.Message}");
+            }
+            return worst;
+        }
+
+        /// <summary>
         /// 모든 위험 지역 효과 목록 반환 (디버그/UI용)
         /// </summary>
         public static List<AreaEffectEntityData> GetAllDangerousEffects(UnitEntityData forUnit)
@@ -258,13 +296,17 @@ namespace CompanionAI_Pathfinder.Analysis
                     if (blueprint != null && !blueprint.AffectEnemies)
                         return false;
 
+                    // ★ v0.3.14: Selective, as the game applied it when the area spawned (Tabletop Tweaks keeps lasting
+                    // areas affecting allies). Before, every own area that could target allies counted, Selective or not.
+                    if (!CompanionAI_Pathfinder.Tactics.SelectiveRule.LiveAreaAffectsAllies(aoe))
+                        return false;
+
                     // 아군 타겟 가능하고 적 타겟 가능하면 위험할 수 있음
                     // (Fireball, Cloudkill 등)
                     if (blueprint != null && blueprint.AffectEnemies && blueprint.CanTargetAllies)
                     {
-                        // SpellDescriptor로 판단
-                        var desc = context.SpellDescriptor;
-                        if (IsDamagingDescriptor(desc) || IsMovementImpairingDescriptor(desc))
+                        Content(aoe, out bool damaging, out bool impairing);
+                        if (damaging || impairing)
                             return true;
                     }
 
@@ -301,7 +343,7 @@ namespace CompanionAI_Pathfinder.Analysis
         /// <summary>
         /// 지역 효과의 위험도 평가
         /// </summary>
-        private static DangerousEffect EvaluateEffectDanger(UnitEntityData unit, AreaEffectEntityData aoe)
+        private static DangerousEffect EvaluateEffectDanger(UnitEntityData unit, AreaEffectEntityData aoe, bool quiet = false)
         {
             if (!IsEffectHarmfulToUnit(unit, aoe))
                 return null;
@@ -319,8 +361,9 @@ namespace CompanionAI_Pathfinder.Analysis
                 result.Descriptors = descriptor;
 
                 // 피해 유형 확인
-                result.IsDamaging = IsDamagingDescriptor(descriptor);
-                result.IsMovementImpairing = IsMovementImpairingDescriptor(descriptor);
+                Content(aoe, out bool damaging, out bool impairing);
+                result.IsDamaging = damaging;
+                result.IsMovementImpairing = impairing;
 
                 // 위험도 계산
                 float dangerLevel = 0f;
@@ -348,8 +391,11 @@ namespace CompanionAI_Pathfinder.Analysis
                 // 최대 1.0으로 제한
                 result.DangerLevel = Mathf.Clamp01(dangerLevel);
 
-                Main.Verbose($"[AoeDanger] Effect '{result.Name}': Danger={result.DangerLevel:F2}, " +
-                    $"Desc={descriptor}, Damaging={result.IsDamaging}, MovImpair={result.IsMovementImpairing}");
+                if (!quiet)
+                {
+                    Main.Verbose($"[AoeDanger] Effect '{result.Name}': Danger={result.DangerLevel:F2}, " +
+                        $"Desc={descriptor}, Damaging={result.IsDamaging}, MovImpair={result.IsMovementImpairing}");
+                }
             }
             catch (Exception ex)
             {
@@ -485,6 +531,30 @@ namespace CompanionAI_Pathfinder.Analysis
             }
 
             return safety;
+        }
+
+        /// <summary>
+        /// ★ v0.3.14: what the area does, from its descriptor or, when the descriptor says nothing, from the turn-based
+        /// engine's analysis of the ability that spawned it (an area with damage, control or a debuff in its actions).
+        /// </summary>
+        private static void Content(AreaEffectEntityData aoe, out bool damaging, out bool impairing)
+        {
+            var descriptor = aoe.Context?.SpellDescriptor ?? SpellDescriptor.None;
+            damaging = IsDamagingDescriptor(descriptor);
+            impairing = IsMovementImpairingDescriptor(descriptor);
+            if (damaging || impairing) return;
+            try
+            {
+                var source = aoe.Context?.SourceAbilityContext?.Ability;
+                if (source == null) return;
+                var profile = CompanionAI_Pathfinder.Tactics.AbilityProfile.Get(source);
+                if (profile == null || !profile.SpawnedAreas.Contains(aoe.Blueprint)) return;
+                damaging = profile.DealsDamage;
+                impairing = profile.ControlStrength != CompanionAI_Pathfinder.Tactics.ControlStrength.None || profile.AppliesHarmfulBuffs;
+            }
+            catch
+            {
+            }
         }
 
         /// <summary>

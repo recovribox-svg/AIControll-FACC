@@ -877,6 +877,21 @@ namespace CompanionAI_Pathfinder.Tactics
         }
 
         /// <summary>
+        /// ★ v0.3.14: Selective metamagic keeps allies out of every part of this ability, by the game's rules: a burst
+        /// only when its target filter has no "is ally" condition, a lasting area only when the game's (possibly
+        /// mod-patched) spawn check says so (<see cref="SelectiveRule"/>). Tabletop Tweaks makes lasting areas such as
+        /// Entangle affect allies even with Selective; v0.3.13 counted every ally as spared.
+        /// </summary>
+        public bool SelectiveSparesAllies(AbilityData ability)
+        {
+            if (ability == null || !ability.HasMetamagic(Kingmaker.UnitLogic.Abilities.Metamagic.Selective)) return false;
+            if (m_AreaCondition != null && m_AreaCondition.HasIsAllyCondition()) return false;
+            foreach (var area in m_VisitedAreas)
+                if (!SelectiveRule.AreaSparesAllies(ability, area)) return false;
+            return true;
+        }
+
+        /// <summary>
         /// ★ v0.3.12: the first ally this area would harm when centred on <paramref name="center"/>, or null. The same
         /// rule as the turn-based friendly-fire check: enemy-only areas and Selective metamagic spare allies; the area's
         /// own target filter applies; control without damage only counts for allies it would actually affect (not
@@ -886,7 +901,7 @@ namespace CompanionAI_Pathfinder.Tactics
         {
             if (!IsAoE || AoETargets == Kingmaker.UnitLogic.Abilities.Components.TargetType.Enemy) return null;
             if (!DealsDamage && !HarmfulEffects && ControlStrength == ControlStrength.None) return null;
-            if (ability.HasMetamagic(Kingmaker.UnitLogic.Abilities.Metamagic.Selective)) return null;
+            if (SelectiveSparesAllies(ability)) return null;
             foreach (var ally in allies)
             {
                 if (ally == null || Vector3.Distance(ally.Position, center) > AoERadius + ally.Corpulence) continue;
@@ -966,6 +981,16 @@ namespace CompanionAI_Pathfinder.Tactics
                 if (RemovesAnything)
                     parts.Add($"removes {RemovedDescriptors}{(RemovedBuffs.Count > 0 ? " + " + string.Join(",", RemovedBuffs.Select(b => b.name)) : "")}");
                 if (IsOneShot) parts.Add(BuffsLastOneRound ? "lasts 1 round" : "spent by next attack");
+                // ★ v0.3.14: which conditions decide whether a target gets the buff (Seelah smote a Rat Swarm: either it is
+                // evil in the game's data or Smite's evil check is not where the profile looks).
+                foreach (var buff in TargetBuffs.Distinct())
+                {
+                    if (!m_BuffGuards.TryGetValue(buff, out var guards) || guards.Length == 0) continue;
+                    parts.Add($"{buff.name} only if " + string.Join(" & ", guards.Select(g =>
+                        (g.Branch ? "" : "not ") + (g.OnCaster ? "caster " : "") +
+                        string.Join("+", (g.Checker?.Conditions ?? new Condition[0]).Where(c => c != null)
+                                                                                  .Select(c => (c.Not ? "!" : "") + c.GetType().Name.Replace("ContextCondition", ""))))));
+                }
                 if (parts.Count > 0)
                     Main.Log($"[Profile] {Blueprint.Name}: {string.Join(" ; ", parts)}");
             }
