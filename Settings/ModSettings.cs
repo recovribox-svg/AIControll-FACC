@@ -25,7 +25,7 @@ namespace CompanionAI_Pathfinder.Settings
         private static readonly Dictionary<string, Dictionary<Language, string>> Strings = new()
         {
             // Header
-            ["Title"] = new() { { Language.English, "CompanionAI - Pathfinder: WotR" }, { Language.Korean, "동료 AI - 패스파인더: 정의의 분노" } },
+            ["Title"] = new() { { Language.English, "AI Control - Fully Autonomous Combat Companions" }, { Language.Korean, "AI Control - Fully Autonomous Combat Companions" } },   // ★ v0.3.12: mod name
             ["Subtitle"] = new() { { Language.English, "Tactical AI for party companions" }, { Language.Korean, "파티 동료를 위한 전술 AI" } },
 
             // Global Settings

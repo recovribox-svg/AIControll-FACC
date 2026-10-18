@@ -1,11 +1,11 @@
 {
   "Id": "CompanionAI_Pathfinder",
-  "DisplayName": "CompanionAI - Tactical AI for Companions",
-  "Author": "veria",
+  "DisplayName": "AI Control - Fully Autonomous Combat Companions",
+  "Author": "MonsieurAndroid",
   "Version": "0.3.12",
   "ManagerVersion": "0.27.0",
   "Requirements": [],
   "AssemblyName": "CompanionAI_Pathfinder.dll",
   "EntryMethod": "CompanionAI_Pathfinder.Main.Load",
-  "HomePage": ""
+  "HomePage": "https://github.com/recovribox-svg/CombatAIPWOTR"
 }

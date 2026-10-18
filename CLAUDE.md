@@ -3,6 +3,7 @@
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
 ## Project Overview
+- **Mod name**: AI Control - Fully Autonomous Combat Companions (author MonsieurAndroid); UMM `Id` stays `CompanionAI_Pathfinder` (settings path, installs)
 - **Game**: Pathfinder: Wrath of the Righteous
 - **Type**: Unity Mod Manager mod (C# .NET 4.8)
 - **Purpose**: Complete replacement of companion AI with tactical decision-making system

@@ -1,4 +1,4 @@
-# CompanionAI Pathfinder - 아키텍처 문서
+# AI Control - Fully Autonomous Combat Companions (CompanionAI_Pathfinder) - 아키텍처 문서
 
 **버전**: v0.2.57
 **작성일**: 2026-01-31

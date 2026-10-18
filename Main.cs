@@ -36,7 +36,7 @@ namespace CompanionAI_Pathfinder
 
             try
             {
-                Log("CompanionAI Pathfinder 초기화 중...");
+                Log($"{modEntry.Info.DisplayName} 초기화 중...");   // ★ v0.3.12: name from Info.json
 
                 // 설정 로드
                 ModSettings.Load(modEntry);
@@ -77,7 +77,7 @@ namespace CompanionAI_Pathfinder
                 PreBuffController.Initialize();
 
                 Enabled = true;
-                Log($"CompanionAI Pathfinder v{modEntry.Info.Version} 로드 완료!");
+                Log($"{modEntry.Info.DisplayName} v{modEntry.Info.Version} 로드 완료!");
 
                 return true;
             }
@@ -312,14 +312,14 @@ namespace CompanionAI_Pathfinder
 
             if (value)
             {
-                Log("CompanionAI 활성화됨");
+                Log($"{ModEntry?.Info?.DisplayName} 활성화됨");
                 CombatEventHandler.Subscribe();
                 CommandTrace.Subscribe();
                 MountPathHandler.Subscribe();
             }
             else
             {
-                Log("CompanionAI 비활성화됨");
+                Log($"{ModEntry?.Info?.DisplayName} 비활성화됨");
                 CombatEventHandler.Unsubscribe();
                 CommandTrace.Unsubscribe();
                 MountPathHandler.Unsubscribe();

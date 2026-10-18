@@ -1,4 +1,6 @@
-# CompanionAI - Pathfinder: Wrath of the Righteous
+# AI Control - Fully Autonomous Combat Companions
+
+*Pathfinder: Wrath of the Righteous* · by MonsieurAndroid · Unity Mod Manager id `CompanionAI_Pathfinder`
 
 Unity Mod Manager mod that replaces party-companion combat AI with a utility-scoring tactical AI
 (role-based DPS / Tank / Support plans, buff/heal/debuff selection, positioning). Works in turn-based
@@ -210,4 +212,5 @@ See `ARCHITECTURE.md` (Korean) for the decision/scoring pipeline.
 
 ## License / credits
 
-MIT. Original mod by veria (seyelive5), based on patterns from CompanionAI for Rogue Trader.
+MIT. AI Control - Fully Autonomous Combat Companions by MonsieurAndroid. Based on the original CompanionAI for Pathfinder by veria (seyelive5), which built
+on patterns from CompanionAI for Rogue Trader.
