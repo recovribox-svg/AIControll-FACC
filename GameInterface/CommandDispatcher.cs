@@ -72,6 +72,29 @@ namespace CompanionAI_Pathfinder.GameInterface
                         return false;
                     }
 
+                    // ★ v0.3.10: once a 5-foot step was taken, the game allows no other movement this turn
+                    // (TurnController.ShouldRestrictNormalMovement). Lann stepped out of melee and then had three commands
+                    // force-finished without acting; Albedo issued the same Advance fifteen times.
+                    if (turn != null && turn.Rider == unit && turn.GetMetersMovedByFiveFootStep(unit) > 0f &&
+                        pathLength > turn.GetRemainingFiveFootStepRange(unit) + 0.05f)
+                    {
+                        command.ForcedPath = null;
+                        failure = $"a 5-foot step was taken this turn: {pathLength:F1}m of movement is not allowed";
+                        CommandTrace.LogRejected(unit, command, label, failure);
+                        return false;
+                    }
+
+                    // ★ v0.3.10: the path must end within reach, as native AI checks (AiAction.ScorePath:
+                    // UnitCommand.IsUnitCloseEnough on the last waypoint). A path trimmed short by an ally standing at its
+                    // end left Seelah, Albedo and Camellia next to their target with the attack force-finished unstarted.
+                    if (!(command is UnitMoveTo) && !PathEndsInReach(unit, command, out float shortBy))
+                    {
+                        command.ForcedPath = null;
+                        failure = $"path ends out of reach ({shortBy:F1}m short)";
+                        CommandTrace.LogRejected(unit, command, label, failure);
+                        return false;
+                    }
+
                     // ★ v0.3.0: a full attack is only legal after at most a 5-foot step; ForceFullAttack bypasses the
                     // game's own check, so enforce it here before anything moves.
                     if (command is UnitAttack forcedFull && forcedFull.ForceFullAttack && turn != null &&
@@ -127,6 +150,29 @@ namespace CompanionAI_Pathfinder.GameInterface
             if (!TryAttachPath(executor, command, out pathLength, out failure)) return false;
             ApplyTurnBasedMovementLimit(executor, pathLength);
             return true;
+        }
+
+        /// <summary>The command's own arrival test (UnitCommand.IsUnitCloseEnough) applied to the end of its ForcedPath.</summary>
+        private static bool PathEndsInReach(UnitEntityData unit, UnitCommand command, out float shortBy)
+        {
+            shortBy = 0f;
+            try
+            {
+                var points = command.ForcedPath?.vectorPath;
+                if (points == null || points.Count == 0) return true;
+                Vector3 end = points[points.Count - 1];
+                Vector3 eye = end + (unit.EyePosition - unit.Position);
+                if (UnitCommand.IsUnitCloseEnough(command.ApproachPoint, end, eye, command.ApproachRadius, command.NeedLoS,
+                                                  command.GetTargetLOSObjectFudgeRadius()))
+                    return true;
+                shortBy = Math.Max(0f, Vector3.Distance(end, command.ApproachPoint) - command.ApproachRadius);
+                return false;
+            }
+            catch (Exception ex)
+            {
+                Main.Verbose($"[Dispatch] {unit.CharacterName}: reach check skipped: {ex.Message}");
+                return true;
+            }
         }
 
         private static bool IsInSlots(UnitEntityData unit, UnitCommand command)

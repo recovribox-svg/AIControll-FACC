@@ -34,6 +34,10 @@ combat (primary) and real-time combat.
 - An advance that runs out of its move action can continue with the standard action; abilities are not aimed at a
   target on which none of their effects apply.
 
+**0.3.10**: no more lost turns around 5-foot steps (after a step the AI no longer plans movement the game refuses,
+and attacks whose path would end out of reach are not issued); badly hurt characters within an enemy's reach withdraw
+when that makes them less likely to go down; archers stepping out of melee keep a target in sight.
+
 **0.3.9**: archers take a 5-foot step and still make their full attack; healing weighs who can hit the wounded
 character before its next turn (Lann no longer shoots at 25 % HP instead of drinking), and downed allies can be healed
 back up; Coup de Grace is used on helpless enemies (also with Tabletop Tweaks); sleeping enemies are not woken by weak
@@ -71,7 +75,7 @@ toggles such as Shift Form; bonus stacking follows the game's own rule (and Tabl
 ## Install (players)
 
 1. Install [Unity Mod Manager](https://www.nexusmods.com/site/mods/21) into the game.
-2. Take `CompanionAI_Pathfinder_v0.3.9.zip` - prebuilt in `release\`, or build it yourself (below; output in `dist\`).
+2. Take `CompanionAI_Pathfinder_v0.3.10.zip` - prebuilt in `release\`, or build it yourself (below; output in `dist\`).
 3. Install it either way:
    - Unity Mod Manager → *Mods* tab → drag the ZIP onto the window / *Install Mod*, **or**
    - extract it to `<game>\Mods\CompanionAI_Pathfinder\` so the folder contains

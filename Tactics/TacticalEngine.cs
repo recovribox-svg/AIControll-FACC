@@ -68,6 +68,10 @@ namespace CompanionAI_Pathfinder.Tactics
         public bool NoMovementLeft;
         /// <summary>★ v0.3.8: acting in a surprise round: one move OR one standard action, never both.</summary>
         public bool SurpriseRound;
+        /// <summary>★ v0.3.10: a 5-foot step was taken this turn: only its remainder may still be walked.</summary>
+        public bool StepTaken;
+        /// <summary>★ v0.3.10: what is left of the 5-foot step (meters).</summary>
+        public float FiveFootRange;
         public float HpPct;
         public List<UnitEntityData> Engagers = new List<UnitEntityData>();
 
@@ -205,7 +209,7 @@ namespace CompanionAI_Pathfinder.Tactics
         {
             var sb = new StringBuilder();
             sb.Append($"[Tactics] {ctx.Unit.CharacterName} R{ctx.Round} HP{ctx.HpPct * 100:F0}% ");
-            sb.Append($"[{(ctx.HasStandard ? "S" : "-")}{(ctx.HasMove ? "M" : "-")}{(ctx.HasSwift ? "W" : "-")}{(ctx.CanFullAttack ? "F" : "-")}{(ctx.CanFiveFoot ? "5" : "-")}]{(ctx.SurpriseRound ? " surprise" : "")}{(ctx.NoMovementLeft ? " no-move" : "")} ");
+            sb.Append($"[{(ctx.HasStandard ? "S" : "-")}{(ctx.HasMove ? "M" : "-")}{(ctx.HasSwift ? "W" : "-")}{(ctx.CanFullAttack ? "F" : "-")}{(ctx.CanFiveFoot ? "5" : "-")}]{(ctx.SurpriseRound ? " surprise" : "")}{(ctx.NoMovementLeft ? " no-move" : ctx.StepTaken ? " stepped" : "")} ");
             sb.Append($"enemies={ctx.Enemies.Count} rounds~{ctx.ExpectedRounds:F1} diff={ctx.Difficulty:F2} :: ");
             sb.Append(string.Join(" | ", usable.Take(5).Select(c => c.ToString())));
             sb.Append(chosen != null ? $" => {chosen.Label}" : " => END TURN");
@@ -238,6 +242,7 @@ namespace CompanionAI_Pathfinder.Tactics
             if (ctx.Turn != null && ctx.Turn.Rider == unit)
             {
                 ctx.CanFiveFoot = ctx.Turn.HasFiveFootStep(unit);
+                ctx.FiveFootRange = ctx.CanFiveFoot ? Math.Max(0f, ctx.Turn.GetRemainingFiveFootStepRange(unit)) : 0f;
                 ctx.MoveRange = ctx.HasMove ? ctx.Turn.GetRemainingMovementTime(unit, false, true) * unit.CurrentSpeedMps : 0f;
                 // ★ v0.3.8: the same test the dispatcher (and native AiAction.ScorePath) applies. A 5-foot step forbids
                 // any other movement this turn, yet "Advance" was still offered and then rejected (Seelah, twice).
@@ -245,6 +250,15 @@ namespace CompanionAI_Pathfinder.Tactics
                 // ★ v0.3.8: in a surprise round a move uses the standard action's budget (ActionsState.UpdateMoveDistance),
                 // so "move + attack" cannot happen: Albedo walked 8 m in round 0 and could not attack.
                 try { ctx.SurpriseRound = unit.IsSurprising(); } catch { }
+                // ★ v0.3.10: after a 5-foot step the game forbids any other movement this turn
+                // (TurnController.ShouldRestrictNormalMovement); GetRemainingMovementRange only says so outside
+                // five-foot-step mode. Lann stepped out of melee and lost the rest of his turn to moves the game refused.
+                if (ctx.Turn.GetMetersMovedByFiveFootStep(unit) > 0f)
+                {
+                    ctx.StepTaken = true;
+                    ctx.MoveRange = Math.Min(ctx.MoveRange, ctx.FiveFootRange);
+                    if (ctx.FiveFootRange < 0.1f) ctx.NoMovementLeft = true;
+                }
             }
             else
             {
@@ -337,7 +351,10 @@ namespace CompanionAI_Pathfinder.Tactics
         /// or any distance for ranged weapons and casters) adds its threat, shared among the party members it could
         /// equally reach. The chance of dropping is then modelled as exp(-HP / danger).
         /// </summary>
-        private static float IncomingDamage(TacticalContext ctx, UnitEntityData ally)
+        private static float IncomingDamage(TacticalContext ctx, UnitEntityData ally) => IncomingDamage(ctx, ally, ally.Position);
+
+        /// <summary>★ v0.3.10: the same, with the ally standing at <paramref name="at"/> (a withdraw destination).</summary>
+        private static float IncomingDamage(TacticalContext ctx, UnitEntityData ally, Vector3 at)
         {
             float total = 0f;
             foreach (var enemy in ctx.Enemies)
@@ -353,8 +370,8 @@ namespace CompanionAI_Pathfinder.Tactics
                 {
                     zone = 11f;
                 }
-                if (Vector3.Distance(enemy.Position, ally.Position) > zone + ally.Corpulence) continue;
-                int sharedBy = Math.Max(1, ctx.Allies.Count(a => Vector3.Distance(enemy.Position, a.Position) <= zone + a.Corpulence));
+                if (Vector3.Distance(enemy.Position, at) > zone + ally.Corpulence) continue;
+                int sharedBy = Math.Max(1, ctx.Allies.Count(a => Vector3.Distance(enemy.Position, a == ally ? at : a.Position) <= zone + a.Corpulence));
                 total += CombatMath.Threat(enemy) / sharedBy;
             }
             return total;
@@ -423,7 +440,7 @@ namespace CompanionAI_Pathfinder.Tactics
                 // or line of sight by a step) and lost his second attack five times. The dispatcher refuses a full
                 // attack whose path is longer than the 5-foot step, and the next best option is then tried.
                 bool fiveFootReach = !inReach && ctx.CanFiveFoot &&
-                                     dist <= reach + TurnController.MetersOfFiveFootStep * 0.85f;
+                                     dist <= reach + ctx.FiveFootRange * 0.85f;
 
                 float weight = RoleWeight(ctx, "damage") * PreferenceWeight(ctx, single.IsRanged);
                 if (ctx.Settings.Role == AIRole.Tank && enemy.CombatState.EngagedUnits.Any(u => u != unit && !unit.IsEnemy(u)))
@@ -1168,7 +1185,7 @@ namespace CompanionAI_Pathfinder.Tactics
             var unit = ctx.Unit;
             if (!ctx.HasMove && !ctx.HasStandard) return;
             if (!unit.Descriptor.State.CanMove) return;
-            if (ctx.NoMovementLeft) return;
+            if (ctx.NoMovementLeft || ctx.StepTaken) return;
 
             // "Can I already hurt someone from here with what I have left this turn?"
             bool anyAttackNow = list.Any(c => c.Offensive && !c.NeedsMove && c.Value >= MinMainValue &&
@@ -1187,7 +1204,18 @@ namespace CompanionAI_Pathfinder.Tactics
             // 1) Step out of melee before shooting/casting (5-foot step: no attack of opportunity, keeps full attack).
             if ((rangedStyle || castsInMelee) && ctx.Engagers.Count > 0 && ctx.CanFiveFoot && (ctx.HasStandard || ctx.CanFullAttack))
             {
-                var point = FindRetreatPoint(ctx, TurnController.MetersOfFiveFootStep * 0.9f);
+                // ★ v0.3.10: an archer steps to a spot from which it can still shoot someone (Lann stepped out of melee
+                // and then had nothing in range or sight without more movement, which the step forbids).
+                Func<Vector3, bool> keepsTarget = null;
+                if (ctx.HasRangedWeapon && !castsInMelee)
+                {
+                    float shotRange = ctx.Enemies.Select(e => CombatMath.EstimateWeaponAttack(unit, e, false))
+                                                 .FirstOrDefault(x => x != null && x.IsRanged)?.Reach ?? 0f;
+                    Vector3 eyeOffset = unit.EyePosition - unit.Position;
+                    if (shotRange > 0f)
+                        keepsTarget = p => ctx.Enemies.Any(e => UnitCommand.IsUnitCloseEnough(e.Position, p, p + eyeOffset, shotRange * 0.95f, true, 0f));
+                }
+                var point = FindRetreatPoint(ctx, ctx.FiveFootRange * 0.9f, keepsTarget);
                 if (point.HasValue)
                 {
                     list.Add(new Candidate
@@ -1199,18 +1227,34 @@ namespace CompanionAI_Pathfinder.Tactics
                 }
             }
 
-            // 2) Critically hurt and in melee with no better option: withdraw towards the party.
-            if (ctx.HpPct < 0.3f && ctx.Engagers.Count > 0)
+            // 2) Badly hurt and within reach of enemies: withdraw towards the party.
+            // ★ v0.3.10: valued like a heal - by how much less likely the unit is to drop before its next turn at the new
+            // spot, including the attacks of opportunity for leaving melee. 0.3.9 offered it only when engaged and at
+            // a fixed value: Lann (20 %, in the Large Water Elemental's reach) shot instead and went down.
+            if (ctx.HpPct < 0.5f)
             {
-                var point = FindRetreatPoint(ctx, Math.Max(ctx.MoveRange, unit.CurrentSpeedMps * 3f));
-                if (point.HasValue)
+                float hp = Math.Max(1f, unit.HPLeft);
+                float dangerHere = IncomingDamage(ctx, unit, unit.Position);
+                if (dangerHere > 0f)
                 {
-                    list.Add(new Candidate
+                    var point = FindRetreatPoint(ctx, ctx.HasMove ? ctx.MoveRange : unit.CurrentSpeedMps * 3f);
+                    if (point.HasValue)
                     {
-                        Kind = CandidateKind.Move, Slot = ActionSlot.Move, Point = point, ApproachRadius = 0.3f,
-                        Value = ctx.Engagers.Sum(CombatMath.Threat) * 0.3f,
-                        Label = "Withdraw (low HP)", Key = "move:withdraw"
-                    });
+                        float aoo = ctx.Engagers.Sum(CombatMath.Threat) * 0.5f;
+                        float dangerThere = IncomingDamage(ctx, unit, point.Value) + aoo;
+                        float pHere = Mathf.Exp(-hp / dangerHere);
+                        float pThere = dangerThere > 0f ? Mathf.Exp(-hp / dangerThere) : 0f;
+                        float value = (pHere - pThere) * AllyWorth(ctx, unit);
+                        if (value >= MinMainValue)
+                        {
+                            list.Add(new Candidate
+                            {
+                                Kind = CandidateKind.Move, Slot = ActionSlot.Move, Point = point, ApproachRadius = 0.3f,
+                                Value = value,
+                                Label = "Withdraw (low HP)", Key = "move:withdraw"
+                            });
+                        }
+                    }
                 }
             }
 
@@ -1248,7 +1292,7 @@ namespace CompanionAI_Pathfinder.Tactics
         }
 
         /// <summary>Point within <paramref name="distance"/> that maximises distance from enemies, biased towards allies.</summary>
-        private static Vector3? FindRetreatPoint(TacticalContext ctx, float distance)
+        private static Vector3? FindRetreatPoint(TacticalContext ctx, float distance, Func<Vector3, bool> accept = null)
         {
             var unit = ctx.Unit;
             var allies = ctx.Allies.Where(a => a != unit).ToList();
@@ -1262,6 +1306,7 @@ namespace CompanionAI_Pathfinder.Tactics
             {
                 float angle = i * 30f * Mathf.Deg2Rad;
                 var candidate = unit.Position + new Vector3(Mathf.Cos(angle), 0f, Mathf.Sin(angle)) * distance;
+                if (accept != null && !accept(candidate)) continue;
                 float nearestEnemy = ctx.Enemies.Min(e => Vector3.Distance(candidate, e.Position) - e.Corpulence);
                 float score = nearestEnemy - 0.15f * Vector3.Distance(candidate, allyCenter);
                 if (score > bestScore)

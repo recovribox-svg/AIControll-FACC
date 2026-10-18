@@ -216,3 +216,12 @@ and not chosen over Grasp Heart.
 | Orvath stunned (Grasp Heart) the Mite Scout he had just put to sleep; allies hit sleeping enemies | 2591, 677, 2217 | Control on an already disabled enemy was valued in full; damage on a sleeper ignored that it wakes it. | Control on a disabled enemy ×0.1; non-lethal damage on a sleeping enemy ×0.5 (`WakeFactor`). |
 | ~20 `[Profile] Soul Power: X is outside its target filter` lines | 72-76, ... | Logged per unit. | Once per ability. |
 
+## 15. v0.3.10: fixes from the 0.3.9 log
+
+| What the log showed | Line(s) | Cause | Fix |
+|---|---|---|---|
+| Albedo: `Advance->Dretch` issued 15 times, 0 m each, until the decision safety limit | 4700-4812 | His Move+Attack had been taken as a 5-foot step; afterwards the game forbids other movement (`TurnController.ShouldRestrictNormalMovement`), but `GetRemainingMovementRange` only says so outside five-foot-step mode. The interrupted move counted as "acted", so the no-repeat rule missed it. | Engine: `StepTaken` (`GetMetersMovedByFiveFootStep > 0`) caps movement at the step's remainder and drops movement options. Dispatcher: refuses paths longer than that remainder. TBController: a move that went < 0.1 m failed for this turn. |
+| Lann: stepped out of melee, then three commands force-finished without acting | 3892-3932 | Same rule; and the step-out point did not keep any enemy in range and sight. | As above; a ranged unit's step-out point must keep an enemy in range with line of sight (`UnitCommand.IsUnitCloseEnough` from the point). |
+| Seelah, Albedo, Camellia: short `Move+Attack` "force-finished before it started" | 4667, 4702, 5110, 5258 | The path's end was out of reach (trimmed because an ally stood at its end); native AI checks the end with `IsUnitCloseEnough` (`AiAction.ScorePath`), the dispatcher did not. | Attacks and abilities whose path ends out of reach are refused; the next best option is tried. |
+| Lann at 20 % HP (no potion left) shot the Large Water Elemental and went down; Seelah at 12-15 % attacked first | 6609, 3380, 6642 | "Withdraw" needed an engaging enemy and had a fixed value. | Offered below 50 % HP whenever an enemy can reach the unit; value = drop in P(drop) between here and the destination (incoming damage there + attacks of opportunity for leaving) × `AllyWorth`. |
+

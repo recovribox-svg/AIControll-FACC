@@ -71,7 +71,11 @@ namespace CompanionAI_Pathfinder.Core.TurnBased
                     bool isMove = memory.LastKind == CandidateKind.Move;
                     float moved = Vector3.Distance(unit.Position, memory.LastIssuePosition);
                     string notActed = null;
-                    if (!last.IsActed)
+                    // ★ v0.3.10: a move that went nowhere failed, whatever the command reports (an interrupted UnitMoveTo
+                    // can count as acted): Albedo issued 'Advance->Dretch' fifteen times without moving.
+                    if (isMove && moved < 0.1f)
+                        notActed = $"moved nowhere ({last.Result})";
+                    else if (!last.IsActed)
                     {
                         // ★ v0.3.2: a move that was cut short (its move action ran out) still made progress; the next
                         // decision may continue with the standard action. v0.3.1 ended Albedo's turn after 8.9 m.
