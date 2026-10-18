@@ -187,7 +187,7 @@ namespace CompanionAI_Pathfinder.Core.DecisionEngine
                 if (isInCombat && !_wasInCombat)
                 {
                     // 전투 시작 감지
-                    _realtimeCombatStartTime = UnityEngine.Time.time;
+                    _realtimeCombatStartTime = GameSeconds();  // ★ v0.3.14: game time (pauses do not count)
                     _wasInCombat = true;
                     Main.Verbose($"[PhaseDetector] Real-time combat started at {_realtimeCombatStartTime:F1}s");
                 }
@@ -202,7 +202,7 @@ namespace CompanionAI_Pathfinder.Core.DecisionEngine
                     return 1;
 
                 // 경과 시간으로 라운드 계산 (6초 = 1라운드)
-                float elapsed = UnityEngine.Time.time - _realtimeCombatStartTime;
+                float elapsed = GameSeconds() - _realtimeCombatStartTime;
                 int round = Math.Max(1, (int)(elapsed / SECONDS_PER_ROUND) + 1);
 
                 return round;
@@ -212,6 +212,8 @@ namespace CompanionAI_Pathfinder.Core.DecisionEngine
                 return 1;
             }
         }
+
+        private static float GameSeconds() => (float)Game.Instance.TimeController.GameTime.TotalSeconds;
 
         /// <summary>
         /// ★ v0.2.59: 전투 종료 시 상태 초기화 (외부 호출용)
@@ -282,8 +284,8 @@ namespace CompanionAI_Pathfinder.Core.DecisionEngine
                 if (unit?.Stats?.HitPoints == null)
                     return 100f;
 
-                float current = unit.Stats.HitPoints.ModifiedValue;
-                float max = unit.Stats.HitPoints.BaseValue;
+                float current = unit.HPLeft;  // ★ v0.3.14: current HP (was max HP after bonuses: never changed with damage)
+                float max = unit.MaxHP;
 
                 if (max <= 0)
                     return 100f;

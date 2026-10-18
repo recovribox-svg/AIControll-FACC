@@ -355,10 +355,15 @@ namespace CompanionAI_Pathfinder.Scoring.Scorers
             float targetHP = analysis?.HPPercent ?? 100f;
 
             // ★ v0.2.70: HP >= 100% (임시 HP 포함)이면 힐 완전 불필요 - Veto
-            if (targetHP >= 100f)
+            // ★ v0.3.14: above the character's heal threshold (the turn-based rule, CombatMath.HealThreshold) too.
+            // Before 0.3.14 targetHP was max HP after bonuses / base max HP (135 % for Orvath all fight), so every
+            // real-time heal was vetoed whatever the damage.
+            float healThreshold = Tactics.CombatMath.HealThreshold(candidate.Ability, situation.Unit, target,
+                                                                   situation.CharacterSettings) * 100f;
+            if (targetHP >= 100f || targetHP >= healThreshold)
             {
                 cs.AddVeto("NotOverhealing", false);
-                Main.Verbose($"[BuffScorer] Heal vetoed: {target.CharacterName} HP={targetHP:F0}% (no healing needed)");
+                Main.Verbose($"[BuffScorer] Heal vetoed: {target.CharacterName} HP={targetHP:F0}% (heals below {healThreshold:F0}%)");
                 return;
             }
 

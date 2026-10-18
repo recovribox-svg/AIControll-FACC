@@ -376,6 +376,15 @@ namespace CompanionAI_Pathfinder.GameInterface
             // ★ v0.2.23: Clear pending action tracker
             PendingActionTracker.Instance.Clear();
 
+            // ★ v0.3.14: failures are about this fight's positions and targets; ClearAll was never called, so a
+            // blacklist lasted 5 minutes into the next fight.
+            FailedAbilityTracker.Instance.ClearAll();
+
+            // ★ v0.3.14: the real-time round clock restarts with each fight. It only reset when a decision happened out
+            // of combat, which never happens (out of combat no decision is made), so the second and third real-time
+            // fights started in "Midgame".
+            CombatPhaseDetector.ResetCombatTracking();
+
             // v0.2.2: 전투 종료 후 영구 버프 자동 적용
             try
             {

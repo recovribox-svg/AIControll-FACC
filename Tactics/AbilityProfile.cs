@@ -877,6 +877,24 @@ namespace CompanionAI_Pathfinder.Tactics
         }
 
         /// <summary>
+        /// ★ v0.3.14: how <paramref name="ability"/> is aimed at <paramref name="unit"/>: the unit itself, or its spot for a
+        /// spell cast at a point (Entangle, Grease, Web). Null when neither is allowed. Shared by both engines: real time
+        /// only tried the unit, so point-cast area spells were never aimed at enemies.
+        /// </summary>
+        public static TargetWrapper TargetOn(AbilityData ability, UnitEntityData unit)
+        {
+            if (ability == null || unit == null) return null;
+            var onUnit = new TargetWrapper(unit);
+            if (ability.CanTarget(onUnit)) return onUnit;
+            if (ability.CanTargetPoint)
+            {
+                var onPoint = new TargetWrapper(unit.Position);
+                if (ability.CanTarget(onPoint)) return onPoint;
+            }
+            return null;
+        }
+
+        /// <summary>
         /// ★ v0.3.14: Selective metamagic keeps allies out of every part of this ability, by the game's rules: a burst
         /// only when its target filter has no "is ally" condition, a lasting area only when the game's (possibly
         /// mod-patched) spawn check says so (<see cref="SelectiveRule"/>). Tabletop Tweaks makes lasting areas such as

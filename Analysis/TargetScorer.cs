@@ -880,8 +880,8 @@ namespace CompanionAI_Pathfinder.Analysis
             try
             {
                 if (unit?.Stats?.HitPoints == null) return 100f;
-                float current = unit.Stats.HitPoints.ModifiedValue;
-                float max = unit.Stats.HitPoints.BaseValue;
+                float current = unit.HPLeft;  // ★ v0.3.14: current HP (was max HP after bonuses: never changed with damage)
+                float max = unit.MaxHP;
                 if (max <= 0) return 100f;
                 return (current / max) * 100f;
             }

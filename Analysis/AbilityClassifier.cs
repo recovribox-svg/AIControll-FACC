@@ -1379,6 +1379,22 @@ namespace CompanionAI_Pathfinder.Analysis
                     Main.Verbose($"[AbilityClassifier] {ability.Name}: Permanent buff but enemy-targeting, not classifying as PermanentBuff");
                 }
 
+                // ★ v0.3.14: a spell cast at a point with harmful effects (Entangle, Grease, Web, Stinking Cloud) is not a
+                // buff because its blueprint cannot target enemies directly. Real time classified Entangle as a
+                // pre-combat buff (CC:MovementImpair, AoE 12 m) and scored "Entangle -> Orvath" as a self buff.
+                // What it does decides, from the same effect analysis the turn-based engine uses.
+                if (!canTargetEnemies && ability.CanTargetPoint)
+                {
+                    var profile = CompanionAI_Pathfinder.Tactics.AbilityProfile.Get(ability);
+                    if (profile != null && !profile.HelpfulToAllies && profile.Heals.Count == 0 &&
+                        (profile.HarmfulEffects || profile.DealsDamage))
+                    {
+                        if (profile.ControlStrength != CompanionAI_Pathfinder.Tactics.ControlStrength.None)
+                            return AbilityTiming.CrowdControl;
+                        return profile.DealsDamage ? AbilityTiming.Attack : AbilityTiming.Debuff;
+                    }
+                }
+
                 // ═══════════════════════════════════════════════════════════════
                 // Phase 3: 타겟팅 기반
                 // ═══════════════════════════════════════════════════════════════

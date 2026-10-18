@@ -847,9 +847,7 @@ namespace CompanionAI_Pathfinder.Tactics
             foreach (var target in targets.Distinct())
             {
                 if (onlyTarget != null && target != onlyTarget) continue;
-                TargetWrapper wrapper = null;
-                if (ability.CanTarget(new TargetWrapper(target))) wrapper = new TargetWrapper(target);
-                else if (ability.CanTargetPoint && ability.CanTarget(new TargetWrapper(target.Position))) wrapper = new TargetWrapper(target.Position);
+                var wrapper = AbilityProfile.TargetOn(ability, target);
                 if (wrapper == null) continue;
 
                 bool needsMove = false;
@@ -1080,9 +1078,7 @@ namespace CompanionAI_Pathfinder.Tactics
                     }
 
                     float hp = CombatMath.HpPercent(ally);
-                    float threshold = ability.SourceItem != null && ally == unit
-                        ? (ctx.Global?.PotionHealThresholdPercent ?? 50) / 100f
-                        : Math.Max(0.35f, ctx.Settings.HealAtHPPercent / 100f + 0.2f);
+                    float threshold = CombatMath.HealThreshold(ability, unit, ally, ctx.Settings);
                     if (hp >= threshold) continue;
 
                     float urgency = hp <= 0.25f ? 3f : hp < 0.5f ? 2f : 1f;

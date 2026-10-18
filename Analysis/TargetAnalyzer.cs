@@ -300,8 +300,8 @@ namespace CompanionAI_Pathfinder.Analysis
                 var stats = target.Stats;
                 if (stats?.HitPoints != null)
                 {
-                    analysis.CurrentHP = stats.HitPoints.ModifiedValue;
-                    analysis.MaxHP = stats.HitPoints.BaseValue;
+                    analysis.CurrentHP = target.HPLeft;  // ★ v0.3.14: current HP (was max HP after bonuses: healing never triggered in real time)
+                    analysis.MaxHP = target.MaxHP;
                     if (analysis.MaxHP > 0)
                     {
                         analysis.HPPercent = (float)analysis.CurrentHP / analysis.MaxHP * 100f;

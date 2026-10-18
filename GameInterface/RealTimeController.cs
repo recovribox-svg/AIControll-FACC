@@ -229,6 +229,8 @@ namespace CompanionAI_Pathfinder.GameInterface
                     var rawCommands = unit.Commands.Raw;
                     bool hasStuckCommand = false;
                     UnitCommand stuckCommand = null;
+                    string stuckReason = null;
+                    bool stuckOnTarget = false;
 
                     foreach (var cmd in rawCommands)
                     {
@@ -238,7 +240,7 @@ namespace CompanionAI_Pathfinder.GameInterface
                         // starts UnitMoveTo / melee attacks only once IsUnitCloseEnough() is true, i.e. on arrival,
                         // and commands legitimately wait for a real-time action cooldown. Interrupting every
                         // not-started command cancelled all walks longer than one decision interval.
-                        if (!cmd.IsStarted && IsCommandStuck(unit, cmd))
+                        if (!cmd.IsStarted && IsCommandStuck(unit, cmd, out stuckReason, out stuckOnTarget))
                         {
                             hasStuckCommand = true;
                             stuckCommand = cmd;
@@ -250,10 +252,11 @@ namespace CompanionAI_Pathfinder.GameInterface
                     {
                         // ★ v0.2.47: Stuck 명령 감지 - 강제 취소 및 블랙리스트
                         string cmdType = stuckCommand.GetType().Name;
-                        Main.Verbose($"[RT] {unitName}: Stuck command detected ({cmdType}, Started=False) - cancelling");
+                        Main.Log($"[RT] {unitName}: Stuck command ({cmdType}) - {stuckReason} - cancelling");
 
                         // UnitUseAbility인 경우 능력 정보 추출하여 블랙리스트
-                        if (stuckCommand is UnitUseAbility useAbilityCmd)
+                        // ★ v0.3.14: only when the problem is reaching or seeing that target.
+                        if (stuckOnTarget && stuckCommand is UnitUseAbility useAbilityCmd)
                         {
                             var ability = useAbilityCmd.Ability;
                             var target = useAbilityCmd.Target?.Unit;
@@ -392,27 +395,82 @@ namespace CompanionAI_Pathfinder.GameInterface
         /// <summary>Seconds a not-started command may sit without the unit moving before it is treated as stuck.</summary>
         private const float STUCK_COMMAND_SECONDS = 3f;
 
+        /// <summary>★ v0.3.14: when each pending command last had a reason to wait (see <see cref="IsCommandStuck"/>).</summary>
+        private static readonly System.Runtime.CompilerServices.ConditionalWeakTable<UnitCommand, WaitMark> LastWait =
+            new System.Runtime.CompilerServices.ConditionalWeakTable<UnitCommand, WaitMark>();
+
+        private sealed class WaitMark { public TimeSpan Time; }
+
         /// <summary>
         /// ★ v0.2.119: A not-started command is stuck only if the unit is not walking towards it, it is not waiting
         /// for a real-time action cooldown, and it has been pending for a while.
+        /// ★ v0.3.14: "a while" counts from the last moment the command had a reason to wait, not from when it was
+        /// issued, and the reasons are the game's own (UnitCommandController.ShouldStartCommand): moving, action
+        /// cooldown, hands busy with an animation, an equipment update, waiting for initiative, unable to act,
+        /// nauseated. 0.3.13 measured from the issue time, so on the frame a 6-second cooldown ran out, before the
+        /// game started the command, it was "3 s old and not waiting": Aeiluvetar's every second attack, Orvath's
+        /// cantrips and Seelah's Charge were cancelled that way and the abilities blacklisted (90 times in one log).
+        /// <paramref name="reason"/> says what blocks a stuck command; <paramref name="targetProblem"/> is true when it
+        /// is about reaching or seeing the target (the only case worth blacklisting the ability on that target).
         /// </summary>
-        private static bool IsCommandStuck(UnitEntityData unit, UnitCommand cmd)
+        private static bool IsCommandStuck(UnitEntityData unit, UnitCommand cmd, out string reason, out bool targetProblem)
         {
+            reason = null;
+            targetProblem = false;
             try
             {
-                if (unit.View != null && unit.View.IsMoving())
-                    return false;
-
-                if (!cmd.IsIgnoreCooldown && unit.CombatState != null && unit.CombatState.HasCooldownForCommand(cmd))
-                    return false;
-
                 var now = Kingmaker.Game.Instance.TimeController.GameTime;
-                return (now - cmd.ApproachStartTime).TotalSeconds > STUCK_COMMAND_SECONDS;
+                string wait = WaitReason(unit, cmd);
+                var mark = LastWait.GetValue(cmd, _ => new WaitMark { Time = cmd.ApproachStartTime });
+                if (wait != null)
+                {
+                    mark.Time = now;
+                    return false;
+                }
+                if ((now - mark.Time).TotalSeconds <= STUCK_COMMAND_SECONDS) return false;
+
+                if (!cmd.CanStart)
+                {
+                    reason = "the game says it cannot start (e.g. cannot cast now)";
+                    targetProblem = true;
+                }
+                else if (!cmd.IsUnitCloseEnough())
+                {
+                    float dist = Vector3.Distance(unit.Position, cmd.ApproachPoint);
+                    bool sight = cmd.SightIsClear();
+                    reason = $"not in range or sight and not moving (distance {dist:F1} m, range {cmd.ApproachRadius:F1} m" +
+                             (cmd.NeedLoS ? $", line of sight {(sight ? "clear" : "blocked")}" : "") + ")";
+                    targetProblem = true;
+                }
+                else
+                {
+                    reason = "in range, nothing to wait for, but not started";
+                }
+                return true;
             }
             catch
             {
                 return false;
             }
+        }
+
+        /// <summary>★ v0.3.14: why the game is legitimately holding a command back, or null.</summary>
+        private static string WaitReason(UnitEntityData unit, UnitCommand cmd)
+        {
+            if (unit.View != null && unit.View.IsMoving()) return "moving";
+            if (cmd.AwaitMovementFinish && (unit.View?.MovementAgent?.IsReallyMoving ?? false)) return "finishing a move";
+            if (unit.AreHandsBusyWithAnimation && !cmd.DontWaitForHands) return "hands busy";
+            var state = unit.Descriptor?.State;
+            if (state == null || !state.CanAct) return "cannot act";
+            if (state.HasCondition(Kingmaker.UnitLogic.UnitCondition.Nauseated)) return "nauseated";
+            if (Kingmaker.Game.Instance.HandsEquipmentController?.IsUpdateScheduledFor(unit) ?? false) return "equipment update";
+            var combat = unit.CombatState;
+            if (combat != null && unit.IsInCombat && !cmd.IsIgnoreCooldown)
+            {
+                if (!combat.CanActInCombat) return "waiting for initiative";
+                if (combat.HasCooldownForCommand(cmd)) return "action cooldown";
+            }
+            return null;
         }
 
         /// <summary>
@@ -544,8 +602,9 @@ namespace CompanionAI_Pathfinder.GameInterface
                 return;
             }
 
-            var targetWrapper = new TargetWrapper(action.Target);
-            if (!action.Ability.CanTarget(targetWrapper))
+            // ★ v0.3.14: the unit or, for a point-cast spell, its spot (same rule as candidate generation).
+            var targetWrapper = Tactics.AbilityProfile.TargetOn(action.Ability, action.Target);
+            if (targetWrapper == null)
             {
                 Main.Verbose($"[RT] {unitName}: Cannot target {targetName} with {action.Ability.Name}");
                 return;
@@ -1372,7 +1431,7 @@ namespace CompanionAI_Pathfinder.GameInterface
 
             // 2. 적 HP 기반 능력 선택
             float targetHP = 100f;
-            try { targetHP = (target.HPLeft * 100f) / Math.Max(1, target.Stats.HitPoints.BaseValue); }
+            try { targetHP = (target.HPLeft * 100f) / Math.Max(1, target.MaxHP); }  // ★ v0.3.14: max HP with bonuses
             catch { }
 
             if (targetHP <= 30f && isWeapon)
@@ -1547,8 +1606,8 @@ namespace CompanionAI_Pathfinder.GameInterface
             try
             {
                 if (unit?.Stats?.HitPoints == null) return 100f;
-                float current = unit.Stats.HitPoints.ModifiedValue;
-                float max = unit.Stats.HitPoints.BaseValue;
+                float current = unit.HPLeft;  // ★ v0.3.14: current HP (was max HP after bonuses: never changed with damage)
+                float max = unit.MaxHP;
                 if (max <= 0) return 100f;
                 return (current / max) * 100f;
             }

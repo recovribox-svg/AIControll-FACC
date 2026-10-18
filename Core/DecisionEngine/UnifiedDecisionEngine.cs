@@ -295,6 +295,14 @@ namespace CompanionAI_Pathfinder.Core.DecisionEngine
             // === 5. Movement candidates ===
             GenerateMovementCandidates(candidates, unit, situation);
 
+            // ★ v0.3.14: an ability that failed on a target (could not reach or see it, failed to queue, repeated
+            // without effect) stays off that target for every candidate type. Only attacks were checked: Orvath chose
+            // Guidance on Aeiluvetar again right after it was blacklisted, 16 times in one fight.
+            int blacklisted = candidates.RemoveAll(c => c.Ability != null && c.Target != null &&
+                                                        FailedAbilityTracker.Instance.IsBlacklisted(unit, c.Ability, c.Target));
+            if (blacklisted > 0)
+                Main.Verbose($"[DecisionEngine] {unit.CharacterName}: {blacklisted} blacklisted ability/target candidates dropped");
+
             // === 6. Always add EndTurn as fallback ===
             candidates.Add(ActionCandidate.EndTurn("No better option"));
 
@@ -341,8 +349,8 @@ namespace CompanionAI_Pathfinder.Core.DecisionEngine
 
                     foreach (var enemy in targets)
                     {
-                        var targetWrapper = new TargetWrapper(enemy);
-                        if (!attack.CanTarget(targetWrapper))
+                        // ★ v0.3.14: the enemy or its spot (point-cast area spells).
+                        if (Tactics.AbilityProfile.TargetOn(attack, enemy) == null)
                             continue;
 
                         // ★ v0.2.109: 도달 가능성 검증 (턴제 전투에서 핵심!)
@@ -351,13 +359,6 @@ namespace CompanionAI_Pathfinder.Core.DecisionEngine
                         {
                             unreachableCount++;
                             Main.Verbose($"[DecisionEngine] ★ EXCLUDED unreachable: {attack.Name} -> {enemy.CharacterName}");
-                            continue;
-                        }
-
-                        // ★ v0.2.46: 블랙리스트된 능력+타겟 조합 제외 (Hex 1회 제한 등)
-                        if (FailedAbilityTracker.Instance.IsBlacklisted(unit, attack, enemy))
-                        {
-                            Main.Verbose($"[DecisionEngine] Skipping blacklisted: {attack.Name} -> {enemy.CharacterName}");
                             continue;
                         }
 
@@ -618,8 +619,13 @@ namespace CompanionAI_Pathfinder.Core.DecisionEngine
                     if (enemy == null)
                         continue;
 
-                    var targetWrapper = new TargetWrapper(enemy);
-                    if (!debuff.CanTarget(targetWrapper))
+                    // ★ v0.3.14: the enemy or its spot (Entangle, Grease, Web are cast at a point).
+                    if (Tactics.AbilityProfile.TargetOn(debuff, enemy) == null)
+                        continue;
+
+                    // ★ v0.3.14: already inside an active copy of this area from our side (turn-based rule, v0.3.13).
+                    var debuffProfile = Tactics.AbilityProfile.Get(debuff);
+                    if (debuffProfile != null && debuffProfile.IsAoE && debuffProfile.InOwnSideArea(unit, enemy))
                         continue;
 
                     // ★ v0.2.48: SpellDescriptor 면역 체크
@@ -810,8 +816,8 @@ namespace CompanionAI_Pathfinder.Core.DecisionEngine
             try
             {
                 if (unit?.Stats?.HitPoints == null) return 100f;
-                float current = unit.Stats.HitPoints.ModifiedValue;
-                float max = unit.Stats.HitPoints.BaseValue;
+                float current = unit.HPLeft;  // ★ v0.3.14: current HP (was max HP after bonuses: never changed with damage)
+                float max = unit.MaxHP;
                 if (max <= 0) return 100f;
                 return (current / max) * 100f;
             }

@@ -60,6 +60,19 @@ namespace CompanionAI_Pathfinder.Tactics
             return Mathf.Clamp01(unit.HPLeft / (float)max);
         }
 
+        /// <summary>
+        /// ★ v0.3.14: the HP fraction below which a heal on <paramref name="target"/> is worth casting: the character's
+        /// "Heal at HP %" plus a margin (a heal lands after the next hits), or the global potion threshold for drinking
+        /// one's own potion. One rule for both engines; real time never read the setting.
+        /// </summary>
+        public static float HealThreshold(AbilityData ability, UnitEntityData caster, UnitEntityData target,
+                                          CompanionAI_Pathfinder.Settings.CharacterSettings settings)
+        {
+            if (ability?.SourceItem != null && target == caster)
+                return (CompanionAI_Pathfinder.Settings.ModSettings.Instance?.PotionHealThresholdPercent ?? 50) / 100f;
+            return Math.Max(0.35f, (settings?.HealAtHPPercent ?? 30) / 100f + 0.2f);
+        }
+
         #endregion
 
         #region Weapon attacks

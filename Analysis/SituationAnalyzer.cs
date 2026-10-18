@@ -437,8 +437,24 @@ namespace CompanionAI_Pathfinder.Analysis
 
                 // v0.2.7: 공격 능력 없으면 기본 공격으로 체크 (UnitAttack)
                 // ★ v0.2.61: 탑승 캐릭터의 경우 Charge 등이 실패해도 기본 공격 가능
+                // ★ v0.3.14: the weapon's reach as the game's attack command uses it (both bodies' corpulence +
+                // weapon range, UnitAttack.GetApproachRadius) and its own in-range test. The old reach left out the
+                // target's body: Seelah, 1.7 m from a Quasit and 2.0 m from a Plagued Horse, had "nothing hittable"
+                // and ended her turns doing nothing.
                 float meleeReach = GetMeleeReach(unit);
-                if (!canHit && distanceToEnemy <= meleeReach)
+                var weapon = unit.Body?.PrimaryHand?.MaybeWeapon;
+                if (!canHit && weapon != null)
+                {
+                    float reach = Kingmaker.UnitLogic.Commands.UnitAttack.GetApproachRadius(weapon, unit, enemy);
+                    meleeReach = reach;
+                    if (Kingmaker.UnitLogic.Commands.Base.UnitCommand.IsUnitCloseEnough(
+                            enemy.Position, unit.Position, unit.EyePosition, reach, weapon.Blueprint?.IsRanged ?? false, 0f))
+                    {
+                        canHit = true;
+                        hitReason = weapon.Blueprint?.IsRanged == true ? "Weapon range" : "Melee reach";
+                    }
+                }
+                else if (!canHit && distanceToEnemy <= meleeReach)
                 {
                     // 근접 범위 내면 기본 공격 가능으로 간주
                     canHit = true;
@@ -706,8 +722,8 @@ namespace CompanionAI_Pathfinder.Analysis
             try
             {
                 if (unit?.Stats?.HitPoints == null) return 100f;
-                float current = unit.Stats.HitPoints.ModifiedValue;
-                float max = unit.Stats.HitPoints.BaseValue;
+                float current = unit.HPLeft;  // ★ v0.3.14: current HP (was max HP after bonuses: never changed with damage)
+                float max = unit.MaxHP;
                 if (max <= 0) return 100f;
                 return (current / max) * 100f;
             }
