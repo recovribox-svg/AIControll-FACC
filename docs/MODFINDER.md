@@ -20,11 +20,11 @@ The file is kept sorted by `Name`: this goes after "Advanced Horse" and before "
         "Service": {
             "GitHub": {
                 "Owner": "recovribox-svg",
-                "RepoName": "CombatAIPWOTR"
+                "RepoName": "AIControll-FACC"
             }
         },
         "About": "(AI coded) Replaces companion combat AI with a tactical engine, built for turn-based combat and also working in real time: weapon attacks, spells, heals, buffs, control and positioning chosen by expected value using the game's own rules.",
-        "HomepageUrl": "https://github.com/recovribox-svg/CombatAIPWOTR",
+        "HomepageUrl": "https://github.com/recovribox-svg/AIControll-FACC",
         "Tags": [ "Gameplay", "AI_Coded" ]
     },
 ```
@@ -36,6 +36,9 @@ The file is kept sorted by `Name`: this goes after "Advanced Horse" and before "
   use the same tag and an "(AI coded)" note in `About`.
 
 ## What ModFinder needs from this repository
+
+Repository: <https://github.com/recovribox-svg/AIControll-FACC> (renamed from `CombatAIPWOTR`; GitHub redirects the
+old address). `Info.json`'s `HomePage` still names the old address until the next version is built.
 
 1. **A public repository.** ModFinder reads releases through the public GitHub API. A private repository cannot be
    listed.

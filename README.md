@@ -212,5 +212,12 @@ See `ARCHITECTURE.md` (Korean) for the decision/scoring pipeline.
 
 ## License / credits
 
-MIT. AI Control - Fully Autonomous Combat Companions by MonsieurAndroid. Based on the original CompanionAI for Pathfinder by veria (seyelive5), which built
-on patterns from CompanionAI for Rogue Trader.
+MIT. **AI Control - Fully Autonomous Combat Companions** (<https://github.com/recovribox-svg/AIControll-FACC>).
+
+Contributors:
+- **MonsieurAndroid** - author: direction, design decisions, play-testing and logs.
+- **Claude** (Anthropic's AI coding assistant, via Claude Code) - code, analysis and documentation. The mod is
+  AI-coded.
+
+Based on the original CompanionAI for Pathfinder by veria (seyelive5), which built on patterns from CompanionAI for
+Rogue Trader.
