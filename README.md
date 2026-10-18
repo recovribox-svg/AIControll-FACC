@@ -34,6 +34,14 @@ combat (primary) and real-time combat.
 - An advance that runs out of its move action can continue with the standard action; abilities are not aimed at a
   target on which none of their effects apply.
 
+**0.3.12**: spells that entangle, stun or otherwise hinder are no longer cast on the caster or allies as if they were
+buffs (Orvath's Entangle), and they now count as offensive for Progressive; control spells are no longer aimed at
+enemies immune to them (the immunity check missed nearly every real spell). Real time: "Avoid friendly fire" now works
+(area spells were cast onto allies), a queued character no longer gets a new command while it is still carrying one
+out, metamagic/item/other-caster copies of a spell no longer share one classification, and the decision-interval
+setting is used. Abilities the AI fails to analyse are named in the normal log, and an unreadable settings file is kept
+as a backup before defaults replace it.
+
 **0.3.11**: healers no longer waste heals on summons that just died, and value summons below companions; no advancing
 towards an enemy that no path can reach this turn.
 
@@ -78,7 +86,7 @@ toggles such as Shift Form; bonus stacking follows the game's own rule (and Tabl
 ## Install (players)
 
 1. Install [Unity Mod Manager](https://www.nexusmods.com/site/mods/21) into the game.
-2. Take `CompanionAI_Pathfinder_v0.3.11.zip` - prebuilt in `release\`, or build it yourself (below; output in `dist\`).
+2. Take `CompanionAI_Pathfinder_v0.3.12.zip` - prebuilt in `release\`, or build it yourself (below; output in `dist\`).
 3. Install it either way:
    - Unity Mod Manager → *Mods* tab → drag the ZIP onto the window / *Install Mod*, **or**
    - extract it to `<game>\Mods\CompanionAI_Pathfinder\` so the folder contains

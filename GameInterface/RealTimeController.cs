@@ -29,8 +29,10 @@ namespace CompanionAI_Pathfinder.GameInterface
     {
         #region Constants
 
-        // Decision interval (seconds)
-        private const float DECISION_INTERVAL = 0.5f;
+        // Decision interval (seconds). ★ v0.3.12: the "Real-Time Decision Interval" setting (0.2-2 s, default 0.5), which
+        // the UI offered but nothing read.
+        private static float DecisionInterval =>
+            Mathf.Clamp(Settings.ModSettings.Instance?.RealTimeDecisionInterval ?? 0.5f, 0.2f, 2f);
 
         // ★ v0.2.32: 위상 분산 - 유닛별 최대 오프셋 (0~0.45초 분산)
         private const float MAX_PHASE_OFFSET = 0.45f;
@@ -145,7 +147,7 @@ namespace CompanionAI_Pathfinder.GameInterface
 
             // ★ v0.2.32: 위상 분산 적용된 Decision throttling
             float phaseOffset = GetUnitPhaseOffset(unitId);
-            float effectiveInterval = DECISION_INTERVAL + phaseOffset;
+            float effectiveInterval = DecisionInterval + phaseOffset;
 
             if (_lastDecisionTime.TryGetValue(unitId, out float lastTime))
             {
@@ -360,12 +362,16 @@ namespace CompanionAI_Pathfinder.GameInterface
                 var unit = Kingmaker.Game.Instance?.State?.Units?
                     .FirstOrDefault(u => u?.UniqueId == unitId);
 
-                if (unit != null && unit.HPLeft > 0 && (unit.CombatState?.IsInCombat ?? false))
+                // ★ v0.3.12: through ProcessUnit, not straight to ExecuteAIDecision: the queue skipped the readiness gates
+                // (NextCommandTime, a command still running, cannot act, ridden mount) and the control check, so a queued
+                // unit could be given a new command that replaced the one it was carrying out. Same frame, so ProcessUnit
+                // does not re-enter this queue; over budget it simply queues the unit again.
+                if (unit != null && unit.HPLeft > 0 && (unit.CombatState?.IsInCombat ?? false) &&
+                    CustomBrainPatch.ShouldControlUnit(unit))
                 {
                     try
                     {
-                        ExecuteAIDecision(unit);
-                        _lastDecisionTime[unitId] = Time.time;
+                        ProcessUnit(unit);
                         processed++;
                     }
                     catch (Exception ex)
@@ -2021,7 +2027,7 @@ namespace CompanionAI_Pathfinder.GameInterface
                 if (ability.SourceItem != null) return false;
                 var profile = Tactics.AbilityProfile.Get(ability);
                 if (profile == null || profile.IsToggle || profile.IsOneShot || profile.HealsBurn) return false;
-                if (profile.DealsDamage || profile.Heals.Count > 0 || profile.Summons || profile.HarmfulToEnemies) return false;
+                if (profile.DealsDamage || profile.Heals.Count > 0 || profile.Summons || profile.HarmfulEffects) return false;   // ★ v0.3.12: HarmfulEffects
 
                 foreach (var buff in profile.CasterBuffs.Concat(profile.TargetBuffs).Distinct())
                 {

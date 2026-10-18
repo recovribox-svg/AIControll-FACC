@@ -574,11 +574,16 @@ namespace CompanionAI_Pathfinder.Tactics
 
             foreach (var book in unit.Spellbooks ?? Enumerable.Empty<Kingmaker.UnitLogic.Spellbook>())
             {
-                try { foreach (var s in book.GetAllKnownSpells()) Add(s); } catch { }
-                try { foreach (var s in book.GetAllCustomSpells()) Add(s); } catch { }
+                // ★ v0.3.12: a failing spell list is reported (once per book and list) instead of silently skipped.
+                string bookId = book?.Blueprint?.AssetGuid.ToString();
+                try { foreach (var s in book.GetAllKnownSpells()) Add(s); }
+                catch (Exception ex) { ReportOnce($"book|{bookId}|known", $"[Tactics] {book?.Blueprint?.name}: known spells unreadable - {ex.Message}"); }
+                try { foreach (var s in book.GetAllCustomSpells()) Add(s); }
+                catch (Exception ex) { ReportOnce($"book|{bookId}|custom", $"[Tactics] {book?.Blueprint?.name}: metamagic spells unreadable - {ex.Message}"); }
                 for (int level = 0; level <= 10; level++)
                 {
-                    try { foreach (var s in book.GetSpecialSpells(level)) Add(s); } catch { }
+                    try { foreach (var s in book.GetSpecialSpells(level)) Add(s); }
+                    catch (Exception ex) { ReportOnce($"book|{bookId}|special{level}", $"[Tactics] {book?.Blueprint?.name}: special spells L{level} unreadable - {ex.Message}"); }
                 }
             }
 
@@ -598,9 +603,20 @@ namespace CompanionAI_Pathfinder.Tactics
                 }
                 catch (Exception ex)
                 {
-                    Main.Verbose($"[Tactics] {ability?.Name}: {ex.Message}");
+                    // ★ v0.3.12: an ability that throws drops out of the decision; say so once without debug mode.
+                    ReportOnce($"eval|{ability?.Blueprint?.AssetGuid}", $"[Tactics] {ability?.Name} ({ability?.Blueprint?.AssetGuid}): " +
+                               $"not evaluated - {ex.GetType().Name}: {ex.Message}");
                 }
             }
+        }
+
+        private static readonly HashSet<string> Reported = new HashSet<string>();
+
+        /// <summary>★ v0.3.12: one normal log line per key (bounded), for failures that remove an option silently.</summary>
+        private static void ReportOnce(string key, string message)
+        {
+            if (Reported.Count > 1024) Reported.Clear();
+            if (Reported.Add(key)) Main.Log(message);
         }
 
         /// <summary>
@@ -753,8 +769,9 @@ namespace CompanionAI_Pathfinder.Tactics
 
             // Intent decides which side an ability may be aimed at: never a harmful spell on a friend just because the
             // blueprint allows targeting friends, never a purely helpful one on an enemy.
-            bool helpfulOnly = profile.HelpfulToAllies && !profile.HarmfulToEnemies && !profile.DealsDamage;
-            bool harmfulOnly = (profile.HarmfulToEnemies || profile.DealsDamage) && !profile.HelpfulToAllies && profile.Heals.Count == 0;
+            // ★ v0.3.12: "harmful" includes what it applies (Entangle's Entangled buff), not only the blueprint's flag.
+            bool helpfulOnly = profile.HelpfulToAllies && !profile.HarmfulEffects && !profile.DealsDamage;
+            bool harmfulOnly = (profile.HarmfulEffects || profile.DealsDamage) && !profile.HelpfulToAllies && profile.Heals.Count == 0;
 
             if (selfOnly)
             {
@@ -762,7 +779,7 @@ namespace CompanionAI_Pathfinder.Tactics
             }
             else
             {
-                if (!helpfulOnly && (ability.Blueprint.CanTargetEnemies || (ability.CanTargetPoint && (profile.HarmfulToEnemies || profile.DealsDamage))))
+                if (!helpfulOnly && (ability.Blueprint.CanTargetEnemies || (ability.CanTargetPoint && (profile.HarmfulEffects || profile.DealsDamage))))
                     targets.AddRange(ctx.Enemies);
                 if (!harmfulOnly && (ability.Blueprint.CanTargetFriends || ability.Blueprint.CanTargetSelf))
                     targets.AddRange(ctx.Allies.Where(a => a == ctx.Unit ? ability.Blueprint.CanTargetSelf : ability.Blueprint.CanTargetFriends));
@@ -815,7 +832,7 @@ namespace CompanionAI_Pathfinder.Tactics
                     Point = wrapper.Unit == null ? wrapper.Point : (Vector3?)null,
                     NeedsMove = needsMove,
                     Value = value,
-                    Offensive = why.Contains("dmg") || why.Contains("cc") || why.Contains("debuff"),
+                    Offensive = IsOffensive(why),
                     Label = $"{(ability.SourceItem != null ? "Item:" : "")}{ability.Name}{metamagic}->{target.CharacterName}({why})",
                     Key = $"abl:{CombatMemory.AbilityKey(ability)}{metamagic}:{target.UniqueId}"
                 };
@@ -832,6 +849,22 @@ namespace CompanionAI_Pathfinder.Tactics
                     bestBoss = candidate;
             }
             return new[] { best, bestViable, bestBoss }.Where(c => c != null).Distinct();
+        }
+
+        /// <summary>
+        /// ★ v0.3.12: the option damages, controls or debuffs an enemy: one of ScoreAbility's own reason tokens ("dmg",
+        /// "dmg:cdg", "cc", "debuff"), matched exactly instead of by substring. Progressive's scope depends on it.
+        /// </summary>
+        private static bool IsOffensive(string why)
+        {
+            if (string.IsNullOrEmpty(why)) return false;
+            foreach (var part in why.Split('+'))
+            {
+                int colon = part.IndexOf(':');
+                string token = colon >= 0 ? part.Substring(0, colon) : part;
+                if (token == "dmg" || token == "cc" || token == "debuff") return true;
+            }
+            return false;
         }
 
         /// <summary>★ v0.3.7: metamagic and heightening make a different spell (cost, slot level): keep them apart.</summary>
@@ -1075,7 +1108,7 @@ namespace CompanionAI_Pathfinder.Tactics
             }
 
             // --- buffs on allies / self ---
-            bool appliesHelpfulBuff = !profile.HarmfulToEnemies || profile.HelpfulToAllies
+            bool appliesHelpfulBuff = !profile.HarmfulEffects || profile.HelpfulToAllies
                 ? (!targetIsEnemy && profile.TargetBuffs.Count > 0) || profile.CasterBuffs.Count > 0
                 : profile.CasterBuffs.Count > 0;
             // ★ v0.3.1: buffs that come with a heal for that recipient (Lay On Hands mercies, hidden trackers) are part of

@@ -78,7 +78,7 @@ namespace CompanionAI_Pathfinder.Tactics
                 string name = ability.Name;
                 if (options[i].InScope && options[i].Level > 0)
                 {
-                    inScope.Add($"{name} L{options[i].Level} ({options[i].Book})");
+                    inScope.Add($"{name} L{options[i].Level} ({options[i].BookName ?? options[i].Book})");
                     inScopeNames.Add(name);
                 }
                 else
@@ -154,7 +154,8 @@ namespace CompanionAI_Pathfinder.Tactics
                     {
                         Key = i.ToString(),
                         Label = it.Label,
-                        Book = book?.Blueprint?.name,
+                        Book = book?.Blueprint != null ? book.Blueprint.AssetGuid.ToString() : null,   // ★ v0.3.12
+                        BookName = book?.Blueprint?.name,
                         Level = level,
                         InScope = inScope,
                         Value = it.Value,
@@ -172,7 +173,7 @@ namespace CompanionAI_Pathfinder.Tactics
 
                 // Logged whenever a tier was chosen over something (held back, escalated past lower levels, or bypassed),
                 // and only when that outcome changes (the dedupe key leaves out values, which change every decision).
-                bool escalated = decision.Notes.Any(n => n.Contains("lower skipped"));
+                bool escalated = decision.Notes.Any(n => n.Contains("lower not viable"));
                 string summary = decision.HeldBack.Count == 0 && decision.BypassedLabels.Count == 0 && !escalated ? "" :
                     string.Join("; ", decision.Notes) +
                     (decision.HeldBack.Count > 0

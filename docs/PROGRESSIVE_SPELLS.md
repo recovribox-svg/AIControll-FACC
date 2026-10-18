@@ -452,6 +452,34 @@ An independent review of the first implementation found these; all are fixed in 
 | 13 | A throw in the gate would abort the decision | the turn-based call is wrapped; the gate itself never throws (nothing held back on error); unused `SpawnsArea` removed |
 
 In-game tests T1-T16 (§3.2) have **not** been run — there is no game runtime here. Log lines to look for:
-`[Progressive] <unit> (TB|RT): <book>: tier L1 (lower skipped: ...) - held back: ...`,
+`[Progressive] <unit> (TB|RT): <book>: tier L1 (lower not viable, still selectable: ...) - held back: ...` (before
+0.3.12: "lower skipped"),
 `[Progressive] boss bypass ON/OFF`, `[Progressive] would bypass (not active): ...`, and with debug logging on,
 `[Progressive] enemy <name>: Encounter=<type>, CR=<n>` once per enemy per combat.
+
+## §A — Expansion audit (v0.3.11) and what v0.3.12 changed
+
+The full audit (scope per category, coverage taxonomy and gaps, expansion matrix, architecture options, roadmap, test
+matrix) was delivered as a separate report. Its conclusion: keep Progressive spell-slot-specific; fix classification
+and diagnostics first; a policy for limited-use non-spell abilities (per-day resources, pools) is a separate, opt-in
+policy to be prototyped in shadow mode. Buffs, heals, cleanses, toggles, movement and weapons get no tier gate.
+
+Two questions the audit settled:
+
+- **Viability floor vs selectable options.** A lower tier that is not viable does not set the floor but is never held
+  back: the gate only removes levels above the floor, so the choice is never worse than Standard and a cheap spell that
+  still wins on score spends the cheaper slot. Intended; the log now says "lower not viable, still selectable" and a
+  test (`LowerNonViableTiersAreNeverHeld`) pins it.
+- **Ladder key.** A unit has one `Spellbook` per blueprint (`UnitDescriptor.m_Spellbooks`), but the key was the
+  blueprint *name*; two different books with the same name would have merged. 0.3.12 keys by the blueprint's
+  `AssetGuid` and keeps the name for the log (`BooksWithTheSameNameButDifferentKeysAreSeparateLadders`). Merged mythic
+  spells live in the class book and share its slots, so one ladder is correct for them.
+
+v0.3.12 scope corrections that affect Progressive:
+
+| Change | Effect on Progressive |
+|---|---|
+| A buff that is flagged harmful or imposes a controlling condition (`AddCondition`, `BuffStatusCondition`) on its target makes the ability harmful (`AbilityProfile.HarmfulEffects`), unless the ability is flagged helpful to allies or is personal | Spells like Entangle are aimed at enemies, valued as control, and so become **in scope** (they were "not offensive") |
+| "Offensive" is the exact reason tokens `dmg`, `cc`, `debuff` (`TacticalEngine.IsOffensive`), not substrings | none for current reasons; no accidental matches later |
+| `HasCCImmunity` tests each CC flag (spells carry `Sleep \| MindAffecting` etc.) | immune targets no longer offer viable control options |
+

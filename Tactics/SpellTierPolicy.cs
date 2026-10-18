@@ -14,8 +14,11 @@ namespace CompanionAI_Pathfinder.Tactics
     {
         /// <summary>Unique key of the option (Candidate.Key).</summary>
         public string Key;
-        /// <summary>Resource scope: each spellbook is its own ladder.</summary>
+        /// <summary>Resource scope: each spellbook is its own ladder. ★ v0.3.12: a unique key (the spellbook blueprint's
+        /// GUID), so two books that share a name cannot merge into one ladder.</summary>
         public string Book;
+        /// <summary>★ v0.3.12: the book's name, for the log only (falls back to <see cref="Book"/>).</summary>
+        public string BookName;
         /// <summary>Effective slot level as the game will spend it (metamagic included); 0 = free.</summary>
         public int Level;
         /// <summary>Offensive spellbook spell (damage / control / debuff), not an item.</summary>
@@ -34,7 +37,7 @@ namespace CompanionAI_Pathfinder.Tactics
     public sealed class TierDecision
     {
         public readonly HashSet<string> HeldBack = new HashSet<string>();
-        /// <summary>Per book: the tier allowed to compete, and why lower tiers were skipped.</summary>
+        /// <summary>Per book: the tier allowed to compete, and which lower tiers did not count as usable.</summary>
         public readonly List<string> Notes = new List<string>();
         public readonly List<string> BypassedLabels = new List<string>();
     }
@@ -62,6 +65,8 @@ namespace CompanionAI_Pathfinder.Tactics
                 if (viable.Count == 0) continue;   // nothing in this book is worth a slot now: leave it to normal scoring
 
                 int floor = viable.Min(o => o.Level);
+                // ★ v0.3.12: lower tiers that are not viable do not set the floor, but they are never held back either:
+                // they still compete in normal scoring (the gate only removes options above the floor).
                 var skipped = book.Where(o => o.Level < floor && !IsViable(o))
                                   .Select(o => $"{o.Label} L{o.Level} {Reason(o)}").ToList();
 
@@ -71,8 +76,9 @@ namespace CompanionAI_Pathfinder.Tactics
                     decision.HeldBack.Add(o.Key);
                 }
 
-                decision.Notes.Add($"{(string.IsNullOrEmpty(book.Key) ? "spells" : book.Key)}: tier L{floor}" +
-                                   (skipped.Count > 0 ? $" (lower skipped: {string.Join(", ", skipped)})" : ""));
+                string name = book.Select(o => o.BookName).FirstOrDefault(n => !string.IsNullOrEmpty(n)) ?? book.Key;
+                decision.Notes.Add($"{(string.IsNullOrEmpty(name) ? "spells" : name)}: tier L{floor}" +
+                                   (skipped.Count > 0 ? $" (lower not viable, still selectable: {string.Join(", ", skipped)})" : ""));
             }
             return decision;
         }

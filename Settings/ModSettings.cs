@@ -330,7 +330,28 @@ namespace CompanionAI_Pathfinder.Settings
             catch (Exception ex)
             {
                 Main.Error($"Failed to load settings: {ex.Message}");
+                BackUpUnreadableSettings();
                 Instance = new ModSettings();
+            }
+        }
+
+        /// <summary>
+        /// ★ v0.3.12: the next Save overwrites settings.json with defaults; keep the unreadable file so per-character
+        /// settings can be recovered by hand (settings.json.unreadable-yyyyMMdd-HHmmss).
+        /// </summary>
+        private static void BackUpUnreadableSettings()
+        {
+            try
+            {
+                string path = GetSettingsPath();
+                if (!File.Exists(path)) return;
+                string backup = $"{path}.unreadable-{DateTime.Now:yyyyMMdd-HHmmss}";
+                File.Copy(path, backup, overwrite: false);
+                Main.Error($"Unreadable settings kept as {Path.GetFileName(backup)}; defaults are used");
+            }
+            catch (Exception ex)
+            {
+                Main.Error($"Could not back up unreadable settings: {ex.Message}");
             }
         }
 

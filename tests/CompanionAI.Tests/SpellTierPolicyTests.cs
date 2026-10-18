@@ -32,7 +32,7 @@ public class SpellTierPolicyTests
     {
         var d = SpellTierPolicy.Gate(new[] { Spell("daze", 1, 6, chance: 0.12f), Spell("hold", 3, 40, chance: 0.7f) });
         Assert.Empty(d.HeldBack);
-        Assert.Contains("lower skipped", d.Notes.Single());
+        Assert.Contains("lower not viable", d.Notes.Single());
     }
 
     [Fact] // T3b
@@ -132,7 +132,34 @@ public class SpellTierPolicyTests
             Spell("m3", 3, 30, book: "Mythic"),
         });
         Assert.Equal(2, d.Notes.Count);
-        Assert.Contains(d.Notes, n => n.StartsWith("Wizard: tier L2") && n.Contains("lower skipped") && n.Contains("w1 L1"));
+        Assert.Contains(d.Notes, n => n.StartsWith("Wizard: tier L2") && n.Contains("lower not viable") && n.Contains("w1 L1"));
         Assert.Contains(d.Notes, n => n == "Mythic: tier L3");
+    }
+    [Fact] // ★ v0.3.12: lower tiers that are not viable are never removed, only higher ones
+    public void LowerNonViableTiersAreNeverHeld()
+    {
+        var d = SpellTierPolicy.Gate(new[] { Spell("daze", 1, 6, chance: 0.1f), Spell("scorch", 2, 20), Spell("fireball", 3, 40) });
+        Assert.Equal(new[] { "fireball" }, d.HeldBack);
+        Assert.Contains("still selectable", d.Notes.Single());
+    }
+
+    [Fact] // ★ v0.3.12: the ladder key is unique per book; the name is only a label
+    public void BooksWithTheSameNameButDifferentKeysAreSeparateLadders()
+    {
+        TierOption Book(string key, int level, string id) => new TierOption
+        {
+            Key = key, Label = key, Book = id, BookName = "Spellbook", Level = level, InScope = true, Value = 10, Threshold = 0.5f, SuccessChance = 0.7f
+        };
+        var d = SpellTierPolicy.Gate(new[] { Book("a1", 1, "guid-a"), Book("b3", 3, "guid-b") });
+        Assert.Empty(d.HeldBack);
+        Assert.Equal(2, d.Notes.Count);
+        Assert.All(d.Notes, n => Assert.StartsWith("Spellbook: tier", n));
+    }
+
+    [Fact] // ★ v0.3.12: an option without a book key is its own ladder, never merged into a named book
+    public void MissingBookKeyIsItsOwnLadder()
+    {
+        var d = SpellTierPolicy.Gate(new[] { Spell("w1", 1, 8, book: "Wizard"), Spell("x3", 3, 30, book: null) });
+        Assert.Empty(d.HeldBack);
     }
 }

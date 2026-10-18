@@ -801,7 +801,11 @@ namespace CompanionAI_Pathfinder.Analysis
             var bp = ability.Blueprint;
 
             // ★ v0.2.102: 캐시 확인
-            string abilityGuid = bp.AssetGuid.ToString();
+            // ★ v0.3.12: the key includes what makes this AbilityData differ from other copies of the blueprint. The
+            // cached spell level, resource type and swift flag were copied from whichever copy came first: a wand to
+            // the spellbook spell, one caster's level to another, a quickened copy to the plain one.
+            string abilityGuid = ClassificationKey(ability);
+            if (_classificationCache.Count > 4096) _classificationCache.Clear();
             if (_classificationCache.TryGetValue(abilityGuid, out var cached))
             {
                 // 캐시된 분류 결과 반환 (Ability 참조만 업데이트)
@@ -931,6 +935,14 @@ namespace CompanionAI_Pathfinder.Analysis
             _classificationCache[abilityGuid] = result;
 
             return result;
+        }
+
+        /// <summary>★ v0.3.12: blueprint + caster + spellbook + item + metamagic (spell level, resource and action type differ by these).</summary>
+        private static string ClassificationKey(AbilityData ability)
+        {
+            var meta = ability.MetamagicData;
+            return $"{ability.Blueprint.AssetGuid}|{ability.Caster?.Unit?.UniqueId}|{ability.Spellbook?.Blueprint?.AssetGuid}|" +
+                   $"{ability.SourceItem?.UniqueId}|{(meta != null ? (int)meta.MetamagicMask + ":" + meta.HeightenLevel : "")}";
         }
 
         /// <summary>
@@ -1631,6 +1643,22 @@ namespace CompanionAI_Pathfinder.Analysis
             }
         }
 
+        /// <summary>★ v0.3.12: the conditions behind each CC flag (immune to any of them = immune to that flag).</summary>
+        private static readonly KeyValuePair<CCType, UnitCondition[]>[] ConditionsByCC =
+        {
+            new KeyValuePair<CCType, UnitCondition[]>(CCType.Stun, new[] { UnitCondition.Stunned }),
+            new KeyValuePair<CCType, UnitCondition[]>(CCType.Fear, new[] { UnitCondition.Frightened, UnitCondition.Shaken, UnitCondition.Cowering }),
+            new KeyValuePair<CCType, UnitCondition[]>(CCType.Paralysis, new[] { UnitCondition.Paralyzed }),
+            new KeyValuePair<CCType, UnitCondition[]>(CCType.Petrified, new[] { UnitCondition.Petrified }),
+            new KeyValuePair<CCType, UnitCondition[]>(CCType.Sleep, new[] { UnitCondition.Sleeping }),
+            new KeyValuePair<CCType, UnitCondition[]>(CCType.Daze, new[] { UnitCondition.Dazed }),
+            new KeyValuePair<CCType, UnitCondition[]>(CCType.Blind, new[] { UnitCondition.Blindness }),
+            new KeyValuePair<CCType, UnitCondition[]>(CCType.Confusion, new[] { UnitCondition.Confusion }),
+            new KeyValuePair<CCType, UnitCondition[]>(CCType.Slow, new[] { UnitCondition.Slowed }),
+            new KeyValuePair<CCType, UnitCondition[]>(CCType.Entangle, new[] { UnitCondition.Entangled }),
+            new KeyValuePair<CCType, UnitCondition[]>(CCType.Nauseate, new[] { UnitCondition.Nauseated }),
+        };
+
         /// <summary>
         /// 특정 CC에 면역이 있는지 확인
         /// ★ v0.2.59: UnitState.HasConditionImmunity API 사용
@@ -1646,41 +1674,18 @@ namespace CompanionAI_Pathfinder.Analysis
                 if (state == null)
                     return false;
 
-                // CCType → UnitCondition 매핑하여 면역 체크
-                switch (ccType)
+                // ★ v0.3.12: CCType is a [Flags] set and spells usually carry several (Sleep | MindAffecting). The old
+                // switch matched single values only, so immunity was missed for nearly every real spell. Immune means
+                // immune to every condition the set maps to; flags without a condition (MindAffecting, Charm,
+                // MovementImpair) are left to CombatRulesAnalyzer.
+                bool any = false;
+                foreach (var entry in ConditionsByCC)
                 {
-                    case CCType.Stun:
-                        return state.HasConditionImmunity(UnitCondition.Stunned);
-
-                    case CCType.Fear:
-                        return state.HasConditionImmunity(UnitCondition.Frightened) ||
-                               state.HasConditionImmunity(UnitCondition.Shaken) ||
-                               state.HasConditionImmunity(UnitCondition.Cowering);
-
-                    case CCType.Paralysis:
-                        return state.HasConditionImmunity(UnitCondition.Paralyzed);
-
-                    case CCType.Sleep:
-                        return state.HasConditionImmunity(UnitCondition.Sleeping);
-
-                    case CCType.Blind:
-                        return state.HasConditionImmunity(UnitCondition.Blindness);
-
-                    case CCType.Confusion:
-                        return state.HasConditionImmunity(UnitCondition.Confusion);
-
-                    case CCType.Slow:
-                        return state.HasConditionImmunity(UnitCondition.Slowed);
-
-                    case CCType.Entangle:
-                        return state.HasConditionImmunity(UnitCondition.Entangled);
-
-                    case CCType.Nauseate:
-                        return state.HasConditionImmunity(UnitCondition.Nauseated);
-
-                    default:
-                        return false;
+                    if ((ccType & entry.Key) == 0) continue;
+                    any = true;
+                    if (!entry.Value.Any(state.HasConditionImmunity)) return false;
                 }
+                return any;
             }
             catch (Exception ex)
             {

@@ -125,6 +125,7 @@ namespace CompanionAI_Pathfinder.Core.DecisionEngine
                 // 4. Score all candidates with phase weights
                 swStep.Restart();
                 _scorer.ScoreAll(candidates, situation, phase);
+                VetoFriendlyFire(unit, situation, candidates);                 // ★ v0.3.12
                 candidates = ApplyProgressive(unit, situation, candidates);   // ★ v0.3.7
                 swStep.Stop();
                 scoreMs = swStep.ElapsedMilliseconds;
@@ -183,6 +184,7 @@ namespace CompanionAI_Pathfinder.Core.DecisionEngine
                     return ActionCandidate.EndTurn("No valid actions");
 
                 _scorer.ScoreAll(candidates, situation, situation.CombatPhase);
+                VetoFriendlyFire(unit, situation, candidates);                 // ★ v0.3.12
                 candidates = ApplyProgressive(unit, situation, candidates);   // ★ v0.3.7
                 _scorer.LogTopCandidates(candidates, unitName);
 
@@ -197,6 +199,40 @@ namespace CompanionAI_Pathfinder.Core.DecisionEngine
         }
 
         #endregion
+
+        /// <summary>
+        /// ★ v0.3.12: "Avoid friendly fire" in real time. AttackScorer's -1000 for allies inside an area went into
+        /// BaseScore, which HybridFinalScore (the score that is selected on) ignores, so real-time AoE spells were cast
+        /// onto allies. Uses the turn-based rule (AbilityProfile.AllyCaught); the caster counts as an ally, and a
+        /// caster-centred area is centred on the caster.
+        /// </summary>
+        private static void VetoFriendlyFire(UnitEntityData unit, Situation situation, List<ActionCandidate> candidates)
+        {
+            if (!(situation.CharacterSettings?.AvoidFriendlyFire ?? true)) return;
+            var allies = (situation.Allies ?? new List<UnitEntityData>()).Concat(new[] { unit }).ToList();
+            foreach (var c in candidates)
+            {
+                if (c.Ability == null || c.IsVetoed) continue;
+                if (c.ActionType != CandidateType.AbilityAttack && c.ActionType != CandidateType.Debuff) continue;
+                try
+                {
+                    var profile = Tactics.AbilityProfile.Get(c.Ability);
+                    if (profile == null || !profile.IsAoE) continue;
+                    bool onCaster = c.Ability.TargetAnchor == Kingmaker.UnitLogic.Abilities.Blueprints.AbilityTargetAnchor.Owner ||
+                                    c.Ability.Range == Kingmaker.UnitLogic.Abilities.Blueprints.AbilityRange.Personal;
+                    Vector3? center = onCaster ? unit.Position : c.Target?.Position;
+                    if (!center.HasValue) continue;
+                    var caught = profile.AllyCaught(c.Ability, center.Value, allies);
+                    if (caught == null) continue;
+                    c.Considerations.AddVeto("FriendlyFire", false);
+                    Main.Verbose($"[DecisionEngine] {unit.CharacterName}: {c.Ability.Name} -> {c.Target?.CharacterName} vetoed, would hit {caught.CharacterName}");
+                }
+                catch (Exception ex)
+                {
+                    Main.Verbose($"[DecisionEngine] friendly-fire check for {c.Ability?.Name}: {ex.Message}");
+                }
+            }
+        }
 
         /// <summary>
         /// ★ v0.3.7: Progressive spell policy in real time - the same rule as turn-based (Tactics/ProgressiveGate):

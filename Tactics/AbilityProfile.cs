@@ -177,6 +177,12 @@ namespace CompanionAI_Pathfinder.Tactics
         public bool HarmfulToEnemies => Blueprint.EffectOnEnemy == AbilityEffectOnUnit.Harmful;
         public bool HelpfulToAllies => Blueprint.EffectOnAlly == AbilityEffectOnUnit.Helpful;
 
+        /// <summary>★ v0.3.12: a buff it applies to its target is a debuff or a controlling condition.</summary>
+        public bool AppliesHarmfulBuffs { get; private set; }
+
+        /// <summary>★ v0.3.12: harmful by intent flag or by what it applies (damage is checked separately).</summary>
+        public bool HarmfulEffects => HarmfulToEnemies || AppliesHarmfulBuffs;
+
         /// <summary>Longest buff duration category we saw (rounds = short, minutes or longer = long).</summary>
         public bool HasLongBuff { get; private set; }
 
@@ -225,7 +231,9 @@ namespace CompanionAI_Pathfinder.Tactics
             }
             catch (Exception ex)
             {
-                Main.Verbose($"[Profile] {blueprint.name}: analysis error {ex.Message}");
+                // ★ v0.3.12: logged without debug mode (once: the profile is cached). A profile that failed half-way is
+                // still used, so this line is the only evidence that its valuation may be incomplete.
+                Main.Log($"[Profile] {blueprint.name} ({blueprint.AssetGuid}): analysis error {ex.GetType().Name}: {ex.Message} - effects may be incomplete");
             }
             Cache[blueprint] = profile;
             return profile;
@@ -301,11 +309,37 @@ namespace CompanionAI_Pathfinder.Tactics
             ControlStrength = ClassifyControl(Control);
             foreach (var buff in TargetBuffs)
             {
-                foreach (var cond in buff.GetComponents<AddCondition>())
+                foreach (var condition in ConditionsOf(buff))
                 {
-                    var s = ClassifyCondition(cond.Condition);
+                    var s = ClassifyCondition(condition);
                     if (s > ControlStrength) ControlStrength = s;
                 }
+            }
+
+            // ★ v0.3.12: what it puts on its target is harmful, whatever the blueprint's intent flags say. Orvath's
+            // Entangle (not flagged Harmful) was cast on himself as a "buff" of 9.4: its Entangled buff counted as an
+            // unrecognised beneficial buff. Abilities flagged helpful to allies, and personal abilities (their target
+            // is the caster: a condition there is a drawback, not an attack), keep their drawbacks out of this.
+            AppliesHarmfulBuffs = !HelpfulToAllies && Blueprint.Range != AbilityRange.Personal && TargetBuffs.Any(IsHarmfulBuff);
+        }
+
+        /// <summary>★ v0.3.12: conditions a buff puts on its owner (AddCondition, BuffStatusCondition).</summary>
+        private static IEnumerable<UnitCondition> ConditionsOf(BlueprintBuff buff)
+        {
+            foreach (var c in buff.GetComponents<AddCondition>()) yield return c.Condition;
+            foreach (var c in buff.GetComponents<Kingmaker.Designers.Mechanics.Buffs.BuffStatusCondition>()) yield return c.Condition;
+        }
+
+        /// <summary>★ v0.3.12: flagged harmful by its blueprint, or it imposes a controlling condition.</summary>
+        private static bool IsHarmfulBuff(BlueprintBuff buff)
+        {
+            try
+            {
+                return buff.Harmful || ConditionsOf(buff).Any(c => ClassifyCondition(c) != ControlStrength.None);
+            }
+            catch
+            {
+                return false;
             }
         }
 
@@ -472,6 +506,9 @@ namespace CompanionAI_Pathfinder.Tactics
                     // A unit standing in the area takes the per-round effect; the on-enter effect is usually the same
                     // damage for whoever walks in, so it is not counted on top of it. Damage on moving inside (Spike
                     // Growth) depends on the target choosing to move: not counted.
+                    // ★ v0.3.12: UnitExit is deliberately not walked. Exit lists usually undo the enter effect (remove
+                    // the area's buff); walked like the others, those removals would make the spell look like a cleanse
+                    // or a toggle (RemovesAnything / IsToggle).
                     int before = Damage.Count;
                     Walk(run.UnitEnter?.Actions, visited, abilityDepth, subject, depth + 1, guards);
                     int afterEnter = Damage.Count;
@@ -495,7 +532,7 @@ namespace CompanionAI_Pathfinder.Tactics
             }
             catch (Exception ex)
             {
-                Main.Verbose($"[Profile] area effect {area.name}: {ex.Message}");
+                Main.Log($"[Profile] {Blueprint.name} ({Blueprint.AssetGuid}): area effect {area.name} error {ex.GetType().Name}: {ex.Message}");   // ★ v0.3.12
             }
             finally
             {
@@ -791,6 +828,31 @@ namespace CompanionAI_Pathfinder.Tactics
                          $"(level {unit.Descriptor?.Progression?.CharacterLevel}); those are not counted");
             }
             return false;
+        }
+
+        /// <summary>
+        /// ★ v0.3.12: the first ally this area would harm when centred on <paramref name="center"/>, or null. The same
+        /// rule as the turn-based friendly-fire check: enemy-only areas and Selective metamagic spare allies; the area's
+        /// own target filter applies; control without damage only counts for allies it would actually affect (not
+        /// already under it, not immune). Used by the real-time engine, whose own area penalty never reached its score.
+        /// </summary>
+        public UnitEntityData AllyCaught(AbilityData ability, Vector3 center, IEnumerable<UnitEntityData> allies)
+        {
+            if (!IsAoE || AoETargets == Kingmaker.UnitLogic.Abilities.Components.TargetType.Enemy) return null;
+            if (!DealsDamage && !HarmfulEffects && ControlStrength == ControlStrength.None) return null;
+            if (ability.HasMetamagic(Kingmaker.UnitLogic.Abilities.Metamagic.Selective)) return null;
+            foreach (var ally in allies)
+            {
+                if (ally == null || Vector3.Distance(ally.Position, center) > AoERadius + ally.Corpulence) continue;
+                if (!AreaReaches(ability, ally)) continue;
+                if (!DealsDamage)
+                {
+                    bool affected = TargetBuffs.Any(b => BuffAppliesTo(b, ability, ally) != EffectApplies.No && !ally.Buffs.HasFact(b));
+                    if (!affected || (Control != CCType.None && AbilityClassifier.HasCCImmunity(ally, Control))) continue;
+                }
+                return ally;
+            }
+            return null;
         }
 
         private static bool IsCasterOnlyAttackMark(BlueprintBuff buff)

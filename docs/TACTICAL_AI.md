@@ -232,3 +232,17 @@ and not chosen over Grasp Heart.
 | Camellia at 37 % HP cast Cure Light Wounds on Orvath's summoned Dretch (14.7) instead of herself; the Dretch left combat at once, Camellia went down soon after | 21580 | `DownedAllies` took any player-faction unit at 0 HP; summons die there, only companions and pets go unconscious. Summons were also valued like companions (summoned Cambion 11.6 at line 21430). | Downed targets: `Player.PartyAndPets` only, never `UnitPartSummonedMonster` units. `AllyWorth` of a summon ×0.5. |
 | Albedo, three rounds: attack on the Skeletal Champion Archer refused ("path ends out of reach"), then a 1.6 m advance towards it that used his 5-foot step | 16044-16268 | The advance went to the same enemy the pathfinder could not reach. | A reach refusal marks the enemy `Unreachable` for the turn (`TurnMemory`); advances skip such enemies. |
 
+## 17. v0.3.12: verified defects from the Progressive expansion audit
+
+| What was wrong | Evidence | Fix |
+|---|---|---|
+| Orvath cast Entangle on himself as `(buff)=9.4` | 0.3.10 log line 18345; intent came only from `EffectOnEnemy`/`EffectOnAlly`, and an unrecognised buff counts 0.5 | `AbilityProfile.AppliesHarmfulBuffs`: a target buff flagged `Harmful` or imposing a controlling condition (`AddCondition`, and now `BuffStatusCondition`) makes the ability harmful (`HarmfulEffects`) unless it is flagged helpful to allies or personal. Used for target sides, the buff branch and the out-of-combat buff routine. `BuffStatusCondition` also counts for control strength. |
+| CC immunity almost never detected | `HasCCImmunity` switched on single `[Flags]` values; spells carry e.g. `Sleep \| MindAffecting` | Each flag is checked; immune = immune to every condition the set maps to (Daze and Petrified added). |
+| Real time: "Avoid friendly fire" had no effect | the area penalty went into `BaseScore`, which `HybridFinalScore` ignores; the setting was not read | `UnifiedDecisionEngine.VetoFriendlyFire` with the turn-based rule (`AbilityProfile.AllyCaught`) |
+| Real time: queued units skipped the readiness checks | `ProcessPendingUnitsQueue` called `ExecuteAIDecision` directly | queued units go through `ProcessUnit` (and `ShouldControlUnit`) |
+| Real time: one classification per blueprint | cache key = GUID; spell level, resource type and swift flag copied to wands, other casters, metamagic copies | key = blueprint + caster + spellbook + item + metamagic (bounded) |
+| Real time: decision interval setting unused | constant 0.5 s | the setting (0.2-2 s, default 0.5) |
+| Silent analysis failures | profile errors, per-ability evaluation errors and unreadable spell lists were debug-only or swallowed | logged once per ability / book in the normal log |
+| Unreadable settings.json replaced by defaults on the next save | `ModSettings.Load` | the file is kept as `settings.json.unreadable-<time>` first |
+| `UnitExit` area actions | not walked, undocumented | documented: exit lists usually undo the enter effect and would look like a cleanse |
+
