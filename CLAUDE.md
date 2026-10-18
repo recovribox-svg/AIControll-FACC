@@ -13,7 +13,8 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
   judged by AbilityProfile, cannot-act turns, no utility fallback for removal abilities; 0.3.6: self-dispelling buffs, casting in melee; 0.3.7: Progressive spell policy, area-effect spell analysis; 0.3.8: enchantments seen as active,
   own-attack marks on the attack target, area target filters, surprise round / no-move turns; 0.3.9: ranged 5-foot-step full attacks,
   danger-aware healing and downed allies, Coup de Grace by the rules, sleeping enemies; 0.3.10: 5-foot-step movement rule,
-  path-end reach check, danger-aware withdraw)
+  path-end reach check, danger-aware withdraw; 0.3.11: only companions/pets revivable, summons
+  worth half, no advance towards unreachable enemies)
 
 ## Reference Resources
 - **Rogue Trader CompanionAI v3.5.7**: `C:\Users\veria\Downloads\CompanionAI_v3-master - v3.5.7`

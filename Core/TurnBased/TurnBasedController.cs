@@ -130,6 +130,10 @@ namespace CompanionAI_Pathfinder.Core.TurnBased
 
                     Main.Log($"[TBController] {unitName}: '{candidate.Label}' could not be issued ({failure}) - trying next best");
                     memory.Failed.Add(candidate.Key);
+                    // ★ v0.3.11: no path gets within reach of this enemy: an advance towards it this turn is wasted
+                    // (Albedo spent his 5-foot step walking 1.6 m towards an archer he could not reach, three rounds running).
+                    if (candidate.Target != null && failure != null && failure.StartsWith("path ends out of reach"))
+                        memory.Unreachable.Add(candidate.Target.UniqueId);
                 }
 
                 return ExecutionResult.Waiting("Retrying next tick");

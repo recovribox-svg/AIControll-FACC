@@ -97,6 +97,8 @@ namespace CompanionAI_Pathfinder.Tactics
         public UnityEngine.Vector3 LastPosition { get; set; }
         public bool Finished { get; set; }
         public readonly HashSet<string> Failed = new HashSet<string>();
+        /// <summary>★ v0.3.11: enemies (unique ids) a path could not reach this turn - not worth advancing towards.</summary>
+        public readonly HashSet<string> Unreachable = new HashSet<string>();
 
         /// <summary>The last command we issued and the candidate it came from (to learn from no-op results).</summary>
         public UnitCommand LastCommand { get; set; }

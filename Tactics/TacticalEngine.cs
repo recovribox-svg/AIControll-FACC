@@ -77,6 +77,8 @@ namespace CompanionAI_Pathfinder.Tactics
 
         public List<UnitEntityData> Enemies = new List<UnitEntityData>();
         public List<UnitEntityData> Allies = new List<UnitEntityData>();   // includes Unit
+        /// <summary>★ v0.3.11: enemies no path could reach this turn (TurnMemory.Unreachable).</summary>
+        public HashSet<string> Unreachable = new HashSet<string>();
         /// <summary>★ v0.3.9: party members down (unconscious, not dead): only heals are aimed at them.</summary>
         public List<UnitEntityData> DownedAllies = new List<UnitEntityData>();
         public float ExpectedRounds;
@@ -98,6 +100,7 @@ namespace CompanionAI_Pathfinder.Tactics
         public static Candidate Decide(UnitEntityData unit, TurnMemory memory)
         {
             var ctx = BuildContext(unit);
+            if (ctx != null) ctx.Unreachable = memory.Unreachable;
             if (ctx == null || ctx.Enemies.Count == 0)
             {
                 Main.Log($"[Tactics] {unit.CharacterName}: no reachable enemies - end turn");
@@ -275,7 +278,9 @@ namespace CompanionAI_Pathfinder.Tactics
                 {
                     // ★ v0.3.9: Lann and Camellia went down in the Large Water Elemental fight; nobody could aim a heal at
                     // them because downed allies were not in any list.
-                    if (other != unit && other.IsPlayerFaction && !unit.IsEnemy(other) &&
+                    // ★ v0.3.11: only companions and pets go unconscious; a summon at 0 HP is gone (Camellia healed a
+                    // dropped Dretch at 37 % HP instead of herself, then went down).
+                    if (other != unit && !unit.IsEnemy(other) && IsRevivable(other) &&
                         Vector3.Distance(unit.Position, other.Position) < 30f)
                         ctx.DownedAllies.Add(other);
                     continue;
@@ -381,7 +386,28 @@ namespace CompanionAI_Pathfinder.Tactics
         private static float AllyWorth(TacticalContext ctx, UnitEntityData ally)
         {
             int level = Math.Max(1, ally.Descriptor?.Progression?.CharacterLevel ?? 1);
-            return (4f + 3f * level) * Math.Min(Math.Max(1f, ctx.ExpectedRounds), 3f);
+            float worth = (4f + 3f * level) * Math.Min(Math.Max(1f, ctx.ExpectedRounds), 3f);
+            // ★ v0.3.11: a summon is temporary and replaceable: half (the summoned Cambion's heal outscored Camellia's own).
+            if (IsSummon(ally)) worth *= 0.5f;
+            return worth;
+        }
+
+        private static bool IsSummon(UnitEntityData unit)
+        {
+            try { return unit.Get<Kingmaker.UnitLogic.Parts.UnitPartSummonedMonster>() != null; } catch { return false; }
+        }
+
+        /// <summary>★ v0.3.11: goes unconscious at 0 HP instead of dying: a party member or pet, not a summon.</summary>
+        private static bool IsRevivable(UnitEntityData unit)
+        {
+            try
+            {
+                return !IsSummon(unit) && (Game.Instance?.Player?.PartyAndPets?.Contains(unit) ?? false);
+            }
+            catch
+            {
+                return false;
+            }
         }
 
         /// <summary>Damage dealt to an enemy, capped at its HP, plus the value of removing it from the fight.</summary>
@@ -1262,6 +1288,7 @@ namespace CompanionAI_Pathfinder.Tactics
             if (!anyAttackNow)
             {
                 var single = ctx.Enemies
+                    .Where(e => !ctx.Unreachable.Contains(e.UniqueId))
                     .Select(e => new { Enemy = e, Est = CombatMath.EstimateWeaponAttack(unit, e, false) })
                     .Where(x => x.Est != null)
                     .OrderByDescending(x => DamageValue(x.Enemy, x.Est.ExpectedDamage) / Math.Max(3f, ctx.Distance(x.Enemy)))

@@ -225,3 +225,10 @@ and not chosen over Grasp Heart.
 | Seelah, Albedo, Camellia: short `Move+Attack` "force-finished before it started" | 4667, 4702, 5110, 5258 | The path's end was out of reach (trimmed because an ally stood at its end); native AI checks the end with `IsUnitCloseEnough` (`AiAction.ScorePath`), the dispatcher did not. | Attacks and abilities whose path ends out of reach are refused; the next best option is tried. |
 | Lann at 20 % HP (no potion left) shot the Large Water Elemental and went down; Seelah at 12-15 % attacked first | 6609, 3380, 6642 | "Withdraw" needed an engaging enemy and had a fixed value. | Offered below 50 % HP whenever an enemy can reach the unit; value = drop in P(drop) between here and the destination (incoming damage there + attacks of opportunity for leaving) × `AllyWorth`. |
 
+## 16. v0.3.11: fixes from the 0.3.10 log
+
+| What the log showed | Line(s) | Cause | Fix |
+|---|---|---|---|
+| Camellia at 37 % HP cast Cure Light Wounds on Orvath's summoned Dretch (14.7) instead of herself; the Dretch left combat at once, Camellia went down soon after | 21580 | `DownedAllies` took any player-faction unit at 0 HP; summons die there, only companions and pets go unconscious. Summons were also valued like companions (summoned Cambion 11.6 at line 21430). | Downed targets: `Player.PartyAndPets` only, never `UnitPartSummonedMonster` units. `AllyWorth` of a summon ×0.5. |
+| Albedo, three rounds: attack on the Skeletal Champion Archer refused ("path ends out of reach"), then a 1.6 m advance towards it that used his 5-foot step | 16044-16268 | The advance went to the same enemy the pathfinder could not reach. | A reach refusal marks the enemy `Unreachable` for the turn (`TurnMemory`); advances skip such enemies. |
+
