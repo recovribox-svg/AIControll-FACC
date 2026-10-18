@@ -155,19 +155,7 @@ namespace CompanionAI_Pathfinder.Scoring.Scorers
                 }
 
                 // ═══════════════════════════════════════════════════════════════
-                // 6. Resource consideration
-                // ═══════════════════════════════════════════════════════════════
-                if (candidate.Classification != null)
-                {
-                    int spellLevel = candidate.Classification.SpellLevel;
-                    candidate.ResourcePenalty = ResponseCurves.SpellLevelPenalty(spellLevel, weights.ResourceConservation);
-
-                    // Emergency heals = 리소스 아끼지 않음
-                    if (targetHP < 25f)
-                        candidate.ResourcePenalty *= 0.2f;
-                    else if (targetHP < 50f)
-                        candidate.ResourcePenalty *= 0.5f;
-                }
+                // 6. Resource: no penalty on heals (★ v0.3.14: the unused ResourcePenalty is gone).
 
                 // ═══════════════════════════════════════════════════════════════
                 // 7. Overhealing penalty (오버힐 방지)
@@ -338,12 +326,7 @@ namespace CompanionAI_Pathfinder.Scoring.Scorers
                 if (!situation.HasPerformedFirstAction && !situation.HasBuffedThisTurn)
                     score += 10f;
 
-                // 6. Resource consideration
-                if (candidate.Classification != null)
-                {
-                    int spellLevel = candidate.Classification.SpellLevel;
-                    candidate.ResourcePenalty = ResponseCurves.SpellLevelPenalty(spellLevel, weights.ResourceConservation);
-                }
+                // 6. Resource: the "Resource" consideration (★ v0.3.14: the unused ResourcePenalty is gone).
 
                 // Apply phase weight
                 candidate.PhaseMultiplier = weights.BuffWeight;

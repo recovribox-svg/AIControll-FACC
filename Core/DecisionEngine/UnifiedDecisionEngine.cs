@@ -249,7 +249,8 @@ namespace CompanionAI_Pathfinder.Core.DecisionEngine
                 Source = c,
                 Label = $"{c.Ability?.Name ?? c.ActionType.ToString()}->{c.Target?.CharacterName}",
                 Ability = c.Ability,
-                Offensive = c.ActionType == CandidateType.AbilityAttack || c.ActionType == CandidateType.Debuff,
+                // ★ v0.3.14: the same rule as turn-based (what the ability does to this target), not the classifier bucket.
+                Offensive = c.Ability != null && (Tactics.AbilityProfile.Get(c.Ability)?.IsOffensiveOn(c.Ability, unit, c.Target) ?? false),
                 Value = c.IsVetoed ? 0f : c.HybridFinalScore,
                 Threshold = floor,
                 Target = c.Target

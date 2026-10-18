@@ -973,180 +973,38 @@ namespace CompanionAI_Pathfinder.Analysis
             }
         }
 
+        /// <summary>
+        /// ★ v0.3.14: the shared discovery (Tactics.AbilityDiscovery, as turn-based), filtered by the consumable settings and
+        /// availability. Replaces a copy that deduplicated by blueprint GUID only (metamagic copies, a second spellbook's
+        /// copy and spells also held as wands or scrolls were lost) and never expanded variant spells.
+        /// </summary>
         private List<AbilityData> GetAvailableAbilities(UnitEntityData unit)
         {
             var result = new List<AbilityData>();
-            var addedAbilities = new HashSet<string>(); // 중복 방지용 (Blueprint GUID)
-
-            try
+            if (unit == null) return result;
+            int total = 0, filtered = 0;
+            foreach (var ability in Tactics.AbilityDiscovery.Gather(unit))
             {
-                if (unit == null) return result;
-
-                int totalCount = 0;
-                int availableCount = 0;
-                int filteredCount = 0;
-
-                // v0.2.13: 1. 기본 능력 (unit.Abilities.Enumerable)
-                if (unit.Abilities?.Enumerable != null)
-                {
-                    foreach (var ability in unit.Abilities.Enumerable)
-                    {
-                        totalCount++;
-                        var abilityData = ability?.Data;
-                        if (abilityData?.Blueprint == null) continue;
-
-                        string guid = abilityData.Blueprint.AssetGuid.ToString();
-                        if (addedAbilities.Contains(guid)) continue;
-
-                        // ★ v0.3.0: honour the consumable settings in real-time mode too (shared policy)
-                        if (!Tactics.ConsumablePolicy.IsAllowed(abilityData)) continue;
-
-                        if (!abilityData.IsAvailable)
-                        {
-                            filteredCount++;
-                            if (filteredCount <= 10)
-                            {
-                                string reason = GetUnavailableReason(abilityData);
-                                Main.Verbose($"[Analyzer] FILTERED: {abilityData.Name} - {reason}");
-                            }
-                            continue;
-                        }
-
-                        availableCount++;
-                        result.Add(abilityData);
-                        addedAbilities.Add(guid);
-                    }
-                }
-
-                // v0.2.14: 2. Spellbook 주문 열거 (진단 로깅 강화)
-                int spellbookCount = 0;
-                int spellbookAvailable = 0;
-                int spellbookFiltered = 0;
-
+                total++;
                 try
                 {
-                    // v0.2.14: Spellbook 존재 여부 확인
-                    var spellbooks = unit.Spellbooks?.ToList();
-                    int sbListCount = spellbooks?.Count ?? 0;
-                    Main.Verbose($"[Analyzer] {unit.CharacterName}: Found {sbListCount} spellbook(s)");
-
-                    if (spellbooks != null && sbListCount > 0)
+                    // ★ v0.3.0: honour the consumable settings in real-time mode too (shared policy)
+                    if (!Tactics.ConsumablePolicy.IsAllowed(ability)) continue;
+                    if (!ability.IsAvailable)
                     {
-                        foreach (var spellbook in spellbooks)
-                        {
-                            if (spellbook == null)
-                            {
-                                Main.Verbose($"[Analyzer] Null spellbook encountered");
-                                continue;
-                            }
-
-                            string sbName = spellbook.Blueprint?.Name ?? "Unknown";
-                            int casterLevel = spellbook.CasterLevel;
-                            int maxSpellLv = spellbook.MaxSpellLevel;
-                            Main.Verbose($"[Analyzer] Spellbook '{sbName}': CasterLv={casterLevel}, MaxSpellLv={maxSpellLv}");
-
-                            int sbTotal = 0;
-                            int sbAvail = 0;
-
-                            // 2a. 알려진 주문 (GetAllKnownSpells)
-                            var knownSpells = spellbook.GetAllKnownSpells()?.ToList();
-                            Main.Verbose($"[Analyzer] Spellbook '{sbName}': KnownSpells count = {knownSpells?.Count ?? 0}");
-
-                            foreach (var spell in knownSpells ?? Enumerable.Empty<AbilityData>())
-                            {
-                                spellbookCount++;
-                                sbTotal++;
-
-                                if (spell?.Blueprint == null) continue;
-
-                                string guid = spell.Blueprint.AssetGuid.ToString();
-                                if (addedAbilities.Contains(guid)) continue;
-
-                                if (!spell.IsAvailable)
-                                {
-                                    spellbookFiltered++;
-                                    continue;
-                                }
-
-                                spellbookAvailable++;
-                                sbAvail++;
-                                result.Add(spell);
-                                addedAbilities.Add(guid);
-                            }
-
-                            // 2b. 커스텀 주문 (GetAllCustomSpells)
-                            foreach (var spell in spellbook.GetAllCustomSpells())
-                            {
-                                spellbookCount++;
-                                sbTotal++;
-
-                                if (spell?.Blueprint == null) continue;
-
-                                string guid = spell.Blueprint.AssetGuid.ToString();
-                                if (addedAbilities.Contains(guid)) continue;
-
-                                if (!spell.IsAvailable)
-                                {
-                                    spellbookFiltered++;
-                                    continue;
-                                }
-
-                                spellbookAvailable++;
-                                sbAvail++;
-                                result.Add(spell);
-                                addedAbilities.Add(guid);
-                            }
-
-                            // 2c. 특수 주문 (Special spells - mythic 등)
-                            for (int level = 0; level <= 10; level++)
-                            {
-                                try
-                                {
-                                    foreach (var spell in spellbook.GetSpecialSpells(level))
-                                    {
-                                        spellbookCount++;
-                                        sbTotal++;
-
-                                        if (spell?.Blueprint == null) continue;
-
-                                        string guid = spell.Blueprint.AssetGuid.ToString();
-                                        if (addedAbilities.Contains(guid)) continue;
-
-                                        if (!spell.IsAvailable)
-                                        {
-                                            spellbookFiltered++;
-                                            continue;
-                                        }
-
-                                        spellbookAvailable++;
-                                        sbAvail++;
-                                        result.Add(spell);
-                                        addedAbilities.Add(guid);
-                                    }
-                                }
-                                catch { /* 레벨 범위 초과 무시 */ }
-                            }
-
-                            if (sbTotal > 0)
-                            {
-                                Main.Verbose($"[Analyzer] Spellbook '{sbName}': Total={sbTotal}, Available={sbAvail}");
-                            }
-                        }
+                        if (++filtered <= 10)
+                            Main.Verbose($"[Analyzer] FILTERED: {ability.Name} - {GetUnavailableReason(ability)}");
+                        continue;
                     }
+                    result.Add(ability);
                 }
-                catch (Exception sbEx)
+                catch (Exception ex)
                 {
-                    Main.Verbose($"[Analyzer] Spellbook enumeration error: {sbEx.Message}");
+                    Tactics.AbilityDiscovery.ReportOnce($"rt|{ability?.Blueprint?.AssetGuid}",
+                        $"[Analyzer] {ability?.Name} ({ability?.Blueprint?.AssetGuid}): not evaluated - {ex.GetType().Name}: {ex.Message}");
                 }
-
-                Main.Verbose($"[Analyzer] {unit.CharacterName}: Abilities={totalCount}(avail={availableCount}), " +
-                            $"Spells={spellbookCount}(avail={spellbookAvailable}), TotalResult={result.Count}");
             }
-            catch (Exception ex)
-            {
-                Main.Verbose($"[Analyzer] GetAvailableAbilities error: {ex.Message}");
-            }
-
+            Main.Verbose($"[Analyzer] {unit.CharacterName}: abilities {total}, available {result.Count}");
             return result;
         }
 

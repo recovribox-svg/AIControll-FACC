@@ -624,56 +624,9 @@ namespace CompanionAI_Pathfinder.Tactics
 
         #region Abilities, spells and items
 
-        private static IEnumerable<AbilityData> GatherAbilities(UnitEntityData unit)
-        {
-            var seen = new HashSet<string>();
-            var result = new List<AbilityData>();
-
-            void Add(AbilityData a)
-            {
-                if (a?.Blueprint == null) return;
-                // Variant parents cannot be cast ("Can't cast spell with variants"): use their variants instead.
-                if (a.Blueprint.HasVariants)
-                {
-                    try
-                    {
-                        foreach (var conv in a.GetConversions().ToList())
-                            if (conv?.Blueprint != null && a.Blueprint.HasVariant(conv.Blueprint)) Add(conv);
-                    }
-                    catch (Exception ex)
-                    {
-                        Main.Verbose($"[Tactics] variants of {a.Name}: {ex.Message}");
-                    }
-                    return;
-                }
-                string key = $"{a.Blueprint.AssetGuid}|{a.Spellbook?.Blueprint?.AssetGuid}|{a.SourceItem?.UniqueId}|{MetamagicTag(a)}";
-                if (seen.Add(key)) result.Add(a);
-            }
-
-            foreach (var ability in unit.Abilities.Enumerable)
-                Add(ability?.Data);
-
-            foreach (var book in unit.Spellbooks ?? Enumerable.Empty<Kingmaker.UnitLogic.Spellbook>())
-            {
-                // ★ v0.3.12: a failing spell list is reported (once per book and list) instead of silently skipped.
-                string bookId = book?.Blueprint?.AssetGuid.ToString();
-                try { foreach (var s in book.GetAllKnownSpells()) Add(s); }
-                catch (Exception ex) { ReportOnce($"book|{bookId}|known", $"[Tactics] {book?.Blueprint?.name}: known spells unreadable - {ex.Message}"); }
-                try { foreach (var s in book.GetAllCustomSpells()) Add(s); }
-                catch (Exception ex) { ReportOnce($"book|{bookId}|custom", $"[Tactics] {book?.Blueprint?.name}: metamagic spells unreadable - {ex.Message}"); }
-                for (int level = 0; level <= 10; level++)
-                {
-                    try { foreach (var s in book.GetSpecialSpells(level)) Add(s); }
-                    catch (Exception ex) { ReportOnce($"book|{bookId}|special{level}", $"[Tactics] {book?.Blueprint?.name}: special spells L{level} unreadable - {ex.Message}"); }
-                }
-            }
-
-            return result;
-        }
-
         private static void AddAbilityCandidates(TacticalContext ctx, List<Candidate> list)
         {
-            foreach (var ability in GatherAbilities(ctx.Unit))
+            foreach (var ability in AbilityDiscovery.Gather(ctx.Unit))   // ★ v0.3.14: shared with real time
             {
                 try
                 {
@@ -691,14 +644,7 @@ namespace CompanionAI_Pathfinder.Tactics
             }
         }
 
-        private static readonly HashSet<string> Reported = new HashSet<string>();
-
-        /// <summary>★ v0.3.12: one normal log line per key (bounded), for failures that remove an option silently.</summary>
-        private static void ReportOnce(string key, string message)
-        {
-            if (Reported.Count > 1024) Reported.Clear();
-            if (Reported.Add(key)) Main.Log(message);
-        }
+        private static void ReportOnce(string key, string message) => AbilityDiscovery.ReportOnce(key, message);
 
         /// <summary>
         /// ★ v0.3.2: 0..1 combat worth of the best of <paramref name="buffs"/> on <paramref name="recipient"/>, from the
@@ -952,13 +898,7 @@ namespace CompanionAI_Pathfinder.Tactics
             return false;
         }
 
-        /// <summary>★ v0.3.7: metamagic and heightening make a different spell (cost, slot level): keep them apart.</summary>
-        private static string MetamagicTag(AbilityData ability)
-        {
-            var data = ability?.MetamagicData;
-            if (data == null || !data.NotEmpty && data.HeightenLevel == 0) return "";
-            return $"[{data.MetamagicMask}{(data.HeightenLevel > 0 ? "+H" + data.HeightenLevel : "")}]";
-        }
+        private static string MetamagicTag(AbilityData ability) => AbilityDiscovery.MetamagicTag(ability);
 
         private static Candidate EvaluateCharge(TacticalContext ctx, AbilityData charge)
         {

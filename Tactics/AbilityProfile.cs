@@ -183,6 +183,20 @@ namespace CompanionAI_Pathfinder.Tactics
         /// <summary>★ v0.3.12: harmful by intent flag or by what it applies (damage is checked separately).</summary>
         public bool HarmfulEffects => HarmfulToEnemies || AppliesHarmfulBuffs;
 
+        /// <summary>
+        /// ★ v0.3.14: damages, controls or debuffs <paramref name="target"/>: what the turn-based engine calls offensive
+        /// (its "dmg" / "cc" / "debuff" reasons), from the effects instead of a score. Real time's Progressive scope came
+        /// from its own classifier bucket (AbilityAttack / Debuff), so the same spell could be gated in one mode and not
+        /// the other. Per-target branches count (Cure Light Wounds is offensive on an undead enemy only).
+        /// </summary>
+        public bool IsOffensiveOn(AbilityData ability, UnitEntityData caster, UnitEntityData target)
+        {
+            if (ability == null || caster == null || target == null || !caster.IsEnemy(target)) return false;
+            if (Damage.Any(d => AppliesTo(d, ability, target) != EffectApplies.No)) return true;
+            if (!HarmfulEffects && ControlStrength == ControlStrength.None) return false;
+            return TargetBuffs.Any(b => BuffAppliesTo(b, ability, target) != EffectApplies.No);
+        }
+
         /// <summary>Longest buff duration category we saw (rounds = short, minutes or longer = long).</summary>
         public bool HasLongBuff { get; private set; }
 

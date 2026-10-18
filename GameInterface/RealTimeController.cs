@@ -575,7 +575,7 @@ namespace CompanionAI_Pathfinder.GameInterface
                     PendingActionTracker.Instance.RegisterPendingBuff(action.Ability, action.Target, unit);
                 }
 
-                Main.Log($"[RT] ★ {unitName} -> {targetName}: {action.ActionType} ({action.Ability.Name}) Score={action.FinalScore:F1}");
+                Main.Log($"[RT] ★ {unitName} -> {targetName}: {action.ActionType} ({action.Ability.Name}) Score={action.HybridFinalScore:F1}");   // ★ v0.3.14: the score it was chosen by
             }
             catch (Exception ex)
             {

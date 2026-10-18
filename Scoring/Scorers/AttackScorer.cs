@@ -428,10 +428,8 @@ namespace CompanionAI_Pathfinder.Scoring.Scorers
                 // Resource consideration
                 if (classification != null)
                 {
-                    int spellLevel = classification.SpellLevel;
-                    float resourcePenalty = ResponseCurves.SpellLevelPenalty(spellLevel, weights.ResourceConservation);
-                    candidate.ResourcePenalty = resourcePenalty;
-
+                    // ★ v0.3.14: spell-level conservation is the "Resource" consideration (BuildConsiderations); the old
+                    // ResourcePenalty only fed FinalScore, which the selection (HybridFinalScore) does not use.
                     // Free abilities get bonus
                     if (classification.IsFreeToUse)
                         score += 10f;

@@ -67,9 +67,6 @@ namespace CompanionAI_Pathfinder.Scoring
         /// <summary>Role weight multiplier (DPS/Tank/Support)</summary>
         public float RoleMultiplier { get; set; } = 1f;
 
-        /// <summary>Penalty for using limited resources</summary>
-        public float ResourcePenalty { get; set; } = 0f;
-
         /// <summary>Bonus score from special conditions (kill bonus, AoE, flanking, etc.)</summary>
         public float BonusScore { get; set; } = 0f;
 
@@ -139,12 +136,12 @@ namespace CompanionAI_Pathfinder.Scoring
 
         /// <summary>
         /// Final computed score used for action selection.
-        /// Formula: (Base × Effectiveness × Phase × Role) - ResourcePenalty + Bonus + Priority
+        /// Formula: (Base × Effectiveness × Phase × Role) + Bonus + Priority (used only without considerations)
         /// ★ v0.2.49: PriorityBoost 추가
         /// </summary>
         public float FinalScore =>
             (BaseScore * EffectivenessMultiplier * PhaseMultiplier * RoleMultiplier)
-            - ResourcePenalty + BonusScore + PriorityBoost;
+            + BonusScore + PriorityBoost;
 
         /// <summary>Whether this is an attack action</summary>
         public bool IsAttack => ActionType == CandidateType.AbilityAttack || ActionType == CandidateType.BasicAttack;

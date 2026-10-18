@@ -175,22 +175,7 @@ namespace CompanionAI_Pathfinder.Scoring.Scorers
                         break;
                 }
 
-                // ═══════════════════════════════════════════════════════════════
-                // 5. Resource consideration
-                // ═══════════════════════════════════════════════════════════════
-                if (candidate.Classification != null)
-                {
-                    int spellLevel = candidate.Classification.SpellLevel;
-                    candidate.ResourcePenalty = ResponseCurves.SpellLevelPenalty(spellLevel, weights.ResourceConservation);
-
-                    // ★ v0.2.36: 적 수에 따른 리소스 페널티 조정
-                    int enemyCount = situation.Enemies?.Count ?? 1;
-                    if (enemyCount >= 4 && isHardCC)
-                    {
-                        // 적이 많으면 CC 리소스 덜 아낌
-                        candidate.ResourcePenalty *= 0.7f;
-                    }
-                }
+                // 5. Resource: the "Resource" consideration (★ v0.3.14: the unused ResourcePenalty is gone).
 
                 // ═══════════════════════════════════════════════════════════════
                 // 6. AoE CC bonus

@@ -117,22 +117,6 @@ namespace CompanionAI_Pathfinder.Scoring
             return 0.5f;
         }
 
-        /// <summary>
-        /// Spell level penalty for resource conservation.
-        /// Higher level spells get bigger penalty when conserving.
-        /// Range: 0.0 to 45.0
-        /// </summary>
-        /// <param name="spellLevel">Spell level (0-9)</param>
-        /// <param name="conservationFactor">How much to conserve (0.0 to 1.0)</param>
-        public static float SpellLevelPenalty(int spellLevel, float conservationFactor)
-        {
-            if (spellLevel <= 0)
-                return 0f;  // Cantrips have no penalty
-
-            // Penalty = level * 5 * conservation
-            // Level 9 with full conservation = 45 penalty
-            return spellLevel * 5f * conservationFactor;
-        }
 
         #endregion
 
