@@ -17,7 +17,9 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
   path-end reach check, danger-aware withdraw; 0.3.11: only companions/pets revivable, summons
   worth half, no advance towards unreachable enemies; 0.3.12: harmful-content buffs never valued as helpful, CC
   immunity for combined flags, real-time friendly-fire veto / queue gates / classifier cache key, visible analysis
-  failures; audit in `docs/PROGRESSIVE_SPELLS.md` §A)
+  failures; audit in `docs/PROGRESSIVE_SPELLS.md` §A; 0.3.13: attacks of opportunity priced into moves (game's own
+  disengage checks), no second copy of an own active control area, Empower/Maximize (incl. auto metamagic) in
+  estimates, AddContextStatBonus stacking, optional pet belt items (`GameInterface/PetItemsPatch`))
 
 ## Reference Resources
 - **Rogue Trader CompanionAI v3.5.7**: `C:\Users\veria\Downloads\CompanionAI_v3-master - v3.5.7`

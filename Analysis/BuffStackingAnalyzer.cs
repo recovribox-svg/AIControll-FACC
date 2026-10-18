@@ -294,7 +294,7 @@ namespace CompanionAI_Pathfinder.Analysis
                 {
                     Descriptor = (ModifierDescriptor)descriptor,
                     Stat = (StatType)stat,
-                    Value = value != null ? Convert.ToInt32(value) : 0
+                    Value = BonusValue(value)
                 };
             }
             catch (Exception ex)
@@ -302,6 +302,20 @@ namespace CompanionAI_Pathfinder.Analysis
                 Main.Verbose($"[BuffStackingAnalyzer] ExtractFromAddStatBonus error: {ex.Message}");
                 return null;
             }
+        }
+
+        /// <summary>
+        /// ★ v0.3.13: the bonus amount. AddContextStatBonus (Shield of Faith, many spell buffs) stores a ContextValue, which
+        /// Convert.ToInt32 cannot read ("Specified cast is not valid"): the whole bonus, descriptor included, was dropped and
+        /// the buff counted as stacking with anything. A rank- or caster-level-based value counts as 1: the descriptor and
+        /// stat are what the stacking rule needs.
+        /// </summary>
+        private static int BonusValue(object value)
+        {
+            if (value == null) return 0;
+            if (value is Kingmaker.UnitLogic.Mechanics.ContextValue context)
+                return context.ValueType == Kingmaker.UnitLogic.Mechanics.ContextValueType.Simple ? context.Value : 1;
+            try { return Convert.ToInt32(value); } catch { return 1; }
         }
 
         /// <summary>
@@ -331,7 +345,7 @@ namespace CompanionAI_Pathfinder.Analysis
                 {
                     Descriptor = descriptor != null ? (ModifierDescriptor)descriptor : ModifierDescriptor.UntypedStackable,
                     Stat = StatType.AC,
-                    Value = value != null ? Convert.ToInt32(value) : 0
+                    Value = BonusValue(value)
                 };
             }
             catch

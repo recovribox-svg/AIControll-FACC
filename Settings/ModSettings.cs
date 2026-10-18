@@ -81,8 +81,14 @@ namespace CompanionAI_Pathfinder.Settings
             // ★ v0.3.0: Consumables
             ["ConsumableSettings"] = new() { { Language.English, "Consumables (quick-slot items)" }, { Language.Korean, "소모품 (퀵슬롯 아이템)" } },
             ["ConsumableSettingsDesc"] = new() {
-                { Language.English, "Only items in a character's quick slots can be used in combat (game rule). Animal companions cannot use items." },
-                { Language.Korean, "전투 중에는 퀵슬롯에 있는 아이템만 사용할 수 있습니다 (게임 규칙). 동물 동료는 아이템을 사용할 수 없습니다." }
+                { Language.English, "Only items in a character's quick slots (belt) can be used in combat (game rule)." },
+                { Language.Korean, "전투 중에는 퀵슬롯(벨트)에 있는 아이템만 사용할 수 있습니다 (게임 규칙)." }
+            },
+            // ★ v0.3.13
+            ["PetsUseItems"] = new() { { Language.English, "Animal companions can use their belt items in combat" }, { Language.Korean, "동물 동료가 전투 중 벨트 아이템 사용 가능" } },
+            ["PetsUseItemsDesc"] = new() {
+                { Language.English, "Changes a game rule (also for you): the base game never lets animal companions use items in combat. Takes effect at once." },
+                { Language.Korean, "게임 규칙을 바꿉니다 (플레이어 조작에도 적용): 기본 게임은 동물 동료의 전투 중 아이템 사용을 막습니다. 즉시 적용됩니다." }
             },
             ["UseConsumables"] = new() { { Language.English, "Use consumables in combat" }, { Language.Korean, "전투 중 소모품 사용" } },
             ["UsePotions"] = new() { { Language.English, "Potions" }, { Language.Korean, "물약" } },
@@ -260,6 +266,8 @@ namespace CompanionAI_Pathfinder.Settings
         public bool UseScrollsAndWands { get; set; } = true;
         public bool UseThrownItems { get; set; } = true;
         public int PotionHealThresholdPercent { get; set; } = 50;
+        /// <summary>★ v0.3.13: lift the game's "animal companions cannot use items in combat" rule (GameInterface/PetItemsPatch).</summary>
+        public bool PetsUseItems { get; set; } = true;
 
         /// <summary>★ v0.3.7: Progressive casters may use higher spell levels on enemies the game marks as bosses.</summary>
         public bool ProgressiveBossBypass { get; set; } = true;

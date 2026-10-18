@@ -298,6 +298,9 @@ namespace CompanionAI_Pathfinder.UI
                 GUILayout.EndHorizontal();
                 if (threshold != settings.PotionHealThresholdPercent) { settings.PotionHealThresholdPercent = threshold; changed = true; }
             }
+            // ★ v0.3.13
+            v = DrawCheckbox(settings.PetsUseItems, L("PetsUseItems")); changed |= v != settings.PetsUseItems; settings.PetsUseItems = v;
+            GUILayout.Label($"<color=#888888><size=11>{L("PetsUseItemsDesc")}</size></color>", _descriptionStyle);
 
             if (changed) ModSettings.Save();
             GUILayout.EndVertical();

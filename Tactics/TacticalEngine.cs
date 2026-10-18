@@ -10,6 +10,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using Kingmaker;
+using Kingmaker.Controllers.Combat;
 using Kingmaker.Controllers.Units;
 using Kingmaker.EntitySystem.Entities;
 using Kingmaker.Items;
@@ -382,6 +383,78 @@ namespace CompanionAI_Pathfinder.Tactics
             return total;
         }
 
+        /// <summary>★ v0.3.13: what leaving melee to reach <c>destination</c> would cost (see <see cref="DisengageRisk"/>).</summary>
+        private sealed class Disengage
+        {
+            public int Attacks;
+            /// <summary>Chance at least one attack of opportunity hits; a hit stops the move and its action.</summary>
+            public float StopChance;
+            /// <summary>Damage-equivalent cost of the expected damage (higher chance to drop, HP to heal later).</summary>
+            public float Cost;
+            public string Tag => $" [AoO {Attacks}]";
+        }
+
+        /// <summary>
+        /// ★ v0.3.13: the attacks of opportunity a move to <paramref name="destination"/> provokes, asked from the game the
+        /// way its own path preview does (EngagementSimulator): each enemy engaging the unit whose reach the destination
+        /// leaves (<c>IsReach</c>), that would attack on disengage and can make an attack of opportunity now (both with
+        /// <c>simulate: true</c>, which has no side effects; a 5-foot step makes the game answer no). Seelah left the
+        /// Monitor Lizard (23 % HP) and the Small Earth Elemental for another enemy: both moves were stopped without an
+        /// attack and the turn was lost - Move+Attack and Charge did not count attacks of opportunity at all.
+        /// Null when nothing would attack.
+        /// </summary>
+        private static Disengage DisengageRisk(TacticalContext ctx, Vector3 destination)
+        {
+            if (ctx.Engagers.Count == 0) return null;
+            var unit = ctx.Unit;
+            // A move that fits in the 5-foot step is made as one (CommandDispatcher.ApplyTurnBasedMovementLimit).
+            if (ctx.CanFiveFoot && Vector3.Distance(unit.Position, destination) <= ctx.FiveFootRange * 0.9f) return null;
+            int attacks = 0;
+            float damage = 0f, noHit = 1f;
+            foreach (var enemy in ctx.Engagers)
+            {
+                try
+                {
+                    var hand = enemy.GetThreatHand();
+                    if (hand == null || enemy.IsReach(unit, hand, destination)) continue;
+                    if (!enemy.CombatState.ShouldAttackOnDisengage(unit, simulate: true)) continue;
+                    if (!enemy.CombatState.AttackOfOpportunity(unit, tricksterAttack: false, simulate: true)) continue;
+                    var est = CombatMath.EstimateWeaponAttack(enemy, unit, full: false);
+                    float hit = est?.FirstHitChance ?? 0.5f;
+                    damage += est?.ExpectedDamage ?? CombatMath.Threat(enemy) * 0.35f;
+                    noHit *= 1f - hit;
+                    attacks++;
+                }
+                catch (Exception ex)
+                {
+                    Main.Verbose($"[Tactics] attack of opportunity check {enemy?.CharacterName} -> {unit.CharacterName}: {ex.Message}");
+                }
+            }
+            if (attacks == 0) return null;
+
+            // Same model as healing and withdraw: the chance to drop before the next turn, P = exp(-HP / danger), now with
+            // the attacks' damage taken first; plus the HP itself (someone has to heal it).
+            float hp = Math.Max(1f, unit.HPLeft);
+            float danger = Math.Max(1f, IncomingDamage(ctx, unit, destination));
+            float before = Mathf.Exp(-hp / danger);
+            float after = damage >= hp ? 1f : Mathf.Exp(-Math.Max(1f, hp - damage) / danger);
+            return new Disengage
+            {
+                Attacks = attacks,
+                StopChance = 1f - noHit,
+                Cost = (after - before) * AllyWorth(ctx, unit) + damage * 0.3f
+            };
+        }
+
+        /// <summary>★ v0.3.13: where a move to act on <paramref name="target"/> from <paramref name="range"/> ends.</summary>
+        private static Vector3 ApproachPoint(UnitEntityData unit, UnitEntityData target, float range)
+        {
+            Vector3 away = unit.Position - target.Position;
+            away.y = 0f;
+            if (away.sqrMagnitude < 0.0001f) return unit.Position;
+            return target.Position + away.normalized * Math.Max(0.1f, Math.Min(away.magnitude, range * 0.9f));
+        }
+
         /// <summary>★ v0.3.9: what keeping an ally in the fight is worth: its damage-equivalent output for up to 3 rounds.</summary>
         private static float AllyWorth(TacticalContext ctx, UnitEntityData ally)
         {
@@ -513,6 +586,15 @@ namespace CompanionAI_Pathfinder.Tactics
                 }
                 else if (ctx.HasMove && dist - reach <= ctx.MoveRange * 0.95f)
                 {
+                    float value = DamageValue(enemy, single.ExpectedDamage) * weight * 0.9f * WakeFactor(enemy, single.ExpectedDamage);
+                    string label = $"Move+Attack->{enemy.CharacterName}";
+                    // ★ v0.3.13: walking out of an enemy's reach provokes (melee and ranged alike).
+                    var risk = DisengageRisk(ctx, ApproachPoint(unit, enemy, reach));
+                    if (risk != null)
+                    {
+                        value = value * (1f - risk.StopChance) - risk.Cost;
+                        label += risk.Tag;
+                    }
                     list.Add(new Candidate
                     {
                         Kind = CandidateKind.WeaponAttack,
@@ -520,9 +602,8 @@ namespace CompanionAI_Pathfinder.Tactics
                         Slot = ActionSlot.Standard,
                         NeedsMove = true,
                         Target = enemy,
-                        // ranged units shooting from a new spot leave melee, so no AoO penalty after moving
-                        Value = DamageValue(enemy, single.ExpectedDamage) * weight * 0.9f * WakeFactor(enemy, single.ExpectedDamage),
-                        Label = $"Move+Attack->{enemy.CharacterName}",
+                        Value = value,
+                        Label = label,
                         Key = $"matk:{enemy.UniqueId}"
                     });
                 }
@@ -797,6 +878,7 @@ namespace CompanionAI_Pathfinder.Tactics
                 if (wrapper == null) continue;
 
                 bool needsMove = false;
+                Disengage risk = null;
                 if (target != ctx.Unit)
                 {
                     float range = ability.GetApproachDistance(wrapper.Unit);
@@ -806,6 +888,8 @@ namespace CompanionAI_Pathfinder.Tactics
                         if (slot != ActionSlot.Standard || !ctx.HasMove || ctx.Distance(target) - range > ctx.MoveRange * 0.95f)
                             continue;
                         needsMove = true;
+                        // ★ v0.3.13: walking up to cast can provoke too.
+                        risk = DisengageRisk(ctx, ApproachPoint(ctx.Unit, target, range));
                     }
                 }
 
@@ -822,6 +906,7 @@ namespace CompanionAI_Pathfinder.Tactics
                 // attacks of opportunity (Lann walked 9 m for Aid Another).
                 if (needsMove && ctx.HasRangedWeapon && ability.Range == AbilityRange.Touch && ctx.Unit.IsEnemy(target))
                     value *= 0.5f;
+                if (risk != null) value = value * (1f - risk.StopChance) - risk.Cost;
 
                 var candidate = new Candidate
                 {
@@ -833,7 +918,7 @@ namespace CompanionAI_Pathfinder.Tactics
                     NeedsMove = needsMove,
                     Value = value,
                     Offensive = IsOffensive(why),
-                    Label = $"{(ability.SourceItem != null ? "Item:" : "")}{ability.Name}{metamagic}->{target.CharacterName}({why})",
+                    Label = $"{(ability.SourceItem != null ? "Item:" : "")}{ability.Name}{metamagic}->{target.CharacterName}({why}){risk?.Tag}",
                     Key = $"abl:{CombatMemory.AbilityKey(ability)}{metamagic}:{target.UniqueId}"
                 };
                 if (best == null || value > best.Value) best = candidate;
@@ -889,11 +974,19 @@ namespace CompanionAI_Pathfinder.Tactics
 
                 float value = DamageValue(enemy, single.ExpectedDamage * 1.1f) * RoleWeight(ctx, "damage") *
                               PreferenceWeight(ctx, false) * 0.95f;
+                string label = $"Charge->{enemy.CharacterName}";
+                // ★ v0.3.13: a charge out of melee provokes like any other move.
+                var risk = DisengageRisk(ctx, ApproachPoint(ctx.Unit, enemy, single.Reach));
+                if (risk != null)
+                {
+                    value = value * (1f - risk.StopChance) - risk.Cost;
+                    label += risk.Tag;
+                }
                 if (best == null || value > best.Value)
                     best = new Candidate
                     {
                         Kind = CandidateKind.Ability, Offensive = true, Slot = ActionSlot.FullRound, Ability = charge, Target = enemy,
-                        Value = value, Label = $"Charge->{enemy.CharacterName}", Key = $"charge:{enemy.UniqueId}"
+                        Value = value, Label = label, Key = $"charge:{enemy.UniqueId}"
                     };
             }
             return best;
@@ -1087,6 +1180,8 @@ namespace CompanionAI_Pathfinder.Tactics
                     var buffs = profile.TargetBuffs.Where(b => profile.BuffAppliesTo(b, ability, enemy) != EffectApplies.No).ToList();
                     if (buffs.Count == 0) continue;
                     if (buffs.Any(b => enemy.Buffs.HasFact(b))) continue;
+                    // ★ v0.3.13: already inside an active copy of this area from our side.
+                    if (profile.IsAoE && profile.InOwnSideArea(unit, enemy)) continue;
                     if (profile.Control != CCType.None && AbilityClassifier.HasCCImmunity(enemy, profile.Control)) continue;
                     if (CombatRulesAnalyzer.AnalyzeResistance(unit, enemy, ability).IsCompletelyIneffective) continue;
                     float p = CombatMath.EffectChance(unit, enemy, ability, profile, damage: false);
@@ -1340,12 +1435,21 @@ namespace CompanionAI_Pathfinder.Tactics
                     // Already there: a zero-length move would just loop.
                     if (InRangeNow(unit, single.Enemy.Position, radius, needLos)) return;
 
+                    float value = Math.Max(0.6f, DamageValue(single.Enemy, single.Est.ExpectedDamage) * 0.35f);
+                    string label = $"Advance->{single.Enemy.CharacterName}";
+                    // ★ v0.3.13: an advance that leaves an enemy's reach provokes (no attack follows, so only the cost).
+                    var risk = DisengageRisk(ctx, ApproachPoint(unit, single.Enemy, radius));
+                    if (risk != null)
+                    {
+                        value -= risk.Cost;
+                        label += risk.Tag;
+                    }
                     list.Add(new Candidate
                     {
                         Kind = CandidateKind.Move, Slot = ActionSlot.Move, Target = single.Enemy, Point = single.Enemy.Position,
                         ApproachRadius = radius, NeedLoS = needLos,
-                        Value = Math.Max(0.6f, DamageValue(single.Enemy, single.Est.ExpectedDamage) * 0.35f),
-                        Label = $"Advance->{single.Enemy.CharacterName}", Key = $"move:adv:{single.Enemy.UniqueId}"
+                        Value = value,
+                        Label = label, Key = $"move:adv:{single.Enemy.UniqueId}"
                     });
                 }
             }

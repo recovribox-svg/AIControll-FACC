@@ -202,6 +202,38 @@ namespace CompanionAI_Pathfinder.Tactics
         private bool m_InArea;
         private readonly HashSet<BlueprintAbilityAreaEffect> m_VisitedAreas = new HashSet<BlueprintAbilityAreaEffect>();
 
+        /// <summary>★ v0.3.13: the areas this ability spawns (Entangle, Grease, Web...).</summary>
+        public IEnumerable<BlueprintAbilityAreaEffect> SpawnedAreas => m_VisitedAreas;
+
+        /// <summary>
+        /// ★ v0.3.13: <paramref name="unit"/> stands in a still-active area of this ability that one of
+        /// <paramref name="caster"/>'s side put down. Orvath cast Entangle twice in one turn on the same enemy (quickened,
+        /// then again with his standard action): a second copy of the same area adds nothing the first does not do.
+        /// </summary>
+        public bool InOwnSideArea(UnitEntityData caster, UnitEntityData unit)
+        {
+            if (m_VisitedAreas.Count == 0 || caster == null || unit == null) return false;
+            try
+            {
+                var areas = Kingmaker.Game.Instance?.State?.AreaEffects;
+                if (areas == null) return false;
+                foreach (var area in areas)
+                {
+                    if (area == null || area.IsEnded || !m_VisitedAreas.Contains(area.Blueprint)) continue;
+                    var owner = area.Context?.MaybeCaster;
+                    if (owner == null || owner.IsEnemy(caster)) continue;
+                    if (area.InGameUnitsInside.Contains(unit)) return true;
+                    // A fresh area may not have registered the units inside it yet: also by distance.
+                    if (AoERadius > 0f && Vector3.Distance(area.Position, unit.Position) <= AoERadius + unit.Corpulence) return true;
+                }
+            }
+            catch (Exception ex)
+            {
+                Main.Verbose($"[Profile] {Blueprint.name} area check: {ex.Message}");
+            }
+            return false;
+        }
+
         /// <summary>Removal actions (ContextActionRemoveBuff / ...ByDescriptor) on the target, with their branch.</summary>
         private readonly List<GameAction> m_Removals = new List<GameAction>();
 

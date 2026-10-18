@@ -36,6 +36,13 @@ combat (primary) and real-time combat.
 - An advance that runs out of its move action can continue with the standard action; abilities are not aimed at a
   target on which none of their effects apply.
 
+**0.3.13**: characters no longer walk away from an enemy they are fighting without weighing the attacks of
+opportunity that costs (the game itself is asked which enemies would strike): a move out of melee is chosen only when
+it is clearly better, and is cheaper to justify for a healthy character than a wounded one. Casters no longer put a
+second copy of the same area (Entangle) on enemies already inside their own. Empowered and maximized spells, including
+automatic metamagic such as IsekaiMod's "Overpowered Ability - Auto Empower/Maximize", are valued at their real
+damage and healing. New option (on by default): animal companions can use the items in their belt slots in combat.
+
 **0.3.12**: spells that entangle, stun or otherwise hinder are no longer cast on the caster or allies as if they were
 buffs (Orvath's Entangle), and they now count as offensive for Progressive; control spells are no longer aimed at
 enemies immune to them (the immunity check missed nearly every real spell). Real time: "Avoid friendly fire" now works
@@ -88,7 +95,7 @@ toggles such as Shift Form; bonus stacking follows the game's own rule (and Tabl
 ## Install (players)
 
 1. Install [Unity Mod Manager](https://www.nexusmods.com/site/mods/21) into the game.
-2. Take `CompanionAI_Pathfinder_v0.3.12.zip` - prebuilt in `release\`, or build it yourself (below; output in `dist\`).
+2. Take `CompanionAI_Pathfinder_v0.3.13.zip` - prebuilt in `release\`, or build it yourself (below; output in `dist\`).
 3. Install it either way:
    - Unity Mod Manager → *Mods* tab → drag the ZIP onto the window / *Install Mod*, **or**
    - extract it to `<game>\Mods\CompanionAI_Pathfinder\` so the folder contains
