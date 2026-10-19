@@ -567,7 +567,9 @@ namespace CompanionAI_Pathfinder.Tactics
         private static void AddWeaponCandidates(TacticalContext ctx, List<Candidate> list)
         {
             var unit = ctx.Unit;
-            if (!ctx.HasStandard && !ctx.CanFullAttack) return;
+            // ★ v0.3.14: real time lists them during the action cooldown too (not affordable, so never chosen then): the
+            // movement step needs to know an attack is possible from here once the cooldown ends.
+            if (!ctx.HasStandard && !ctx.CanFullAttack && !CombatMemory.IsRealTime) return;
 
             foreach (var enemy in ctx.Enemies)
             {
@@ -1373,8 +1375,11 @@ namespace CompanionAI_Pathfinder.Tactics
             if (ctx.NoMovementLeft || ctx.StepTaken) return;
 
             // "Can I already hurt someone from here with what I have left this turn?"
+            // ★ v0.3.14: in real time "from here" counts while the action cooldown runs: a melee character next to an
+            // enemy waits for its next swing instead of walking to another enemy (and provoking) every half second.
             bool anyAttackNow = list.Any(c => c.Offensive && !c.NeedsMove && c.Value >= MinMainValue &&
-                                             c.Slot != ActionSlot.Free && c.Slot != ActionSlot.Swift && Affordable(ctx, c));
+                                             c.Slot != ActionSlot.Free && c.Slot != ActionSlot.Swift &&
+                                             (CombatMemory.IsRealTime || Affordable(ctx, c)));
             bool rangedStyle = ctx.HasRangedWeapon || ctx.Settings.RangePreference == RangePreference.Ranged ||
                                ctx.Settings.Role == AIRole.Support;
 
