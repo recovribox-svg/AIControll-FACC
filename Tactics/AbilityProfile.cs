@@ -28,6 +28,7 @@ using Kingmaker.UnitLogic.Abilities.Blueprints;
 using Kingmaker.UnitLogic.Abilities.Components;
 using Kingmaker.UnitLogic.Buffs.Blueprints;
 using Kingmaker.UnitLogic.FactLogic;
+using Kingmaker.RuleSystem;
 using Kingmaker.UnitLogic.Mechanics;
 using Kingmaker.UnitLogic.Mechanics.Actions;
 using Kingmaker.UnitLogic.Mechanics.Conditions;
@@ -463,6 +464,10 @@ namespace CompanionAI_Pathfinder.Tactics
                         else TargetBuffs.Add(apply.Buff);
                         // The same buff in two branches: treat as unconditional.
                         m_BuffGuards[apply.Buff] = m_BuffGuards.ContainsKey(apply.Buff) ? NoGuards : guards;
+                        // ★ v0.3.15: each application with its own branch and duration (Color Spray: 2d4 rounds on 2 HD
+                        // or less, 1d4 on 3-4 HD, 1 round on 5 HD or more).
+                        if (!(toCaster || apply.ToCaster) && !m_InArea)
+                            m_BuffApplications.Add(new BuffApplication { Buff = apply.Buff, Guards = guards, Rounds = ExpectedRounds(apply) });
                         m_AllBuffs++;
                         if (LastsOneRound(apply)) m_ShortBuffs++;
                         // ★ v0.3.7: a buff applied by a spawned area is tied to the area, whatever its own duration.
@@ -647,6 +652,66 @@ namespace CompanionAI_Pathfinder.Tactics
             {
                 return false;
             }
+        }
+
+        private sealed class BuffApplication
+        {
+            public BlueprintBuff Buff;
+            public EffectGuard[] Guards;
+            /// <summary>Expected rounds, or a negative value when the duration depends on values only the cast knows.</summary>
+            public float Rounds;
+        }
+
+        private readonly List<BuffApplication> m_BuffApplications = new List<BuffApplication>();
+
+        /// <summary>
+        /// ★ v0.3.15: expected duration of a buff application in rounds: fixed dice and bonus, any rate. A duration by
+        /// caster level or another computed value is unknown (negative), except minutes or longer, which outlast a fight.
+        /// </summary>
+        private static float ExpectedRounds(ContextActionApplyBuff apply)
+        {
+            try
+            {
+                if (apply.Permanent) return 100f;
+                if (apply.SameDuration) return -1f;
+                if (apply.UseDurationSeconds) return Math.Max(1f, apply.DurationSeconds / 6f);
+                var d = apply.DurationValue;
+                if (d == null) return -1f;
+                float perRate = d.Rate == DurationRate.Rounds ? 1f : d.Rate == DurationRate.Minutes ? 10f :
+                                d.Rate == DurationRate.TenMinutes ? 100f : 600f;
+                bool simple = (d.BonusValue == null || d.BonusValue.IsValueSimple) &&
+                              (d.DiceType <= DiceType.One || d.DiceCountValue == null || d.DiceCountValue.IsValueSimple);
+                if (!simple) return d.Rate == DurationRate.Rounds ? -1f : 10f;
+                float dice = d.DiceType <= DiceType.Zero ? 0f
+                           : (d.DiceCountValue?.Value ?? 0) * ((int)d.DiceType + 1) / 2f;
+                float rounds = (dice + (d.BonusValue?.Value ?? 0)) * perRate;
+                return rounds > 0f ? rounds : -1f;
+            }
+            catch
+            {
+                return -1f;
+            }
+        }
+
+        /// <summary>
+        /// ★ v0.3.15: how many rounds this ability's effects on <paramref name="target"/> are expected to last, from the
+        /// branch that applies to that target; negative when unknown. Color Spray on a 5 HD Cultist Champion stuns for one
+        /// round, not the three the control value assumed (Orvath cast it there five times).
+        /// </summary>
+        public float EffectRoundsOn(AbilityData ability, UnitEntityData target)
+        {
+            if (m_BuffApplications.Count == 0 || target == null) return -1f;
+            float sure = -1f, maybe = float.MaxValue;
+            foreach (var a in m_BuffApplications)
+            {
+                if (a.Rounds <= 0f) continue;
+                var applies = Evaluate(a.Guards, ability, target);
+                if (applies == EffectApplies.No) continue;
+                if (applies == EffectApplies.Unknown) maybe = Math.Min(maybe, a.Rounds);
+                else sure = Math.Max(sure, a.Rounds);
+            }
+            if (sure > 0f) return sure;
+            return maybe < float.MaxValue ? maybe : -1f;
         }
 
         /// <summary>Lasts at most one round (SameDuration copies a parent duration we cannot see: not short).</summary>

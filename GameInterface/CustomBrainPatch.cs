@@ -364,6 +364,8 @@ namespace CompanionAI_Pathfinder.GameInterface
             TurnBasedController.Instance.ResetAll();
             FailedAbilityTracker.Instance.ClearAll();
             CombatPhaseDetector.ResetCombatTracking();
+            // ★ v0.3.15: a touch charge carried into the fight (from a loaded save or the last fight) - diagnostics.
+            Tactics.CastOutcome.ReportHeldCharges();
         }
 
         /// <summary>
@@ -382,6 +384,9 @@ namespace CompanionAI_Pathfinder.GameInterface
 
             // ★ v0.3.14: damage observations are about this fight's enemies
             Tactics.DamageObserver.Clear();
+            // ★ v0.3.15: silent failures and observed saves are about this fight
+            Tactics.CastOutcome.Clear();
+            Tactics.SaveObserver.Clear();
 
             // ★ v0.3.14: failures are about this fight's positions and targets; ClearAll was never called, so a
             // blacklist lasted 5 minutes into the next fight.

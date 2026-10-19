@@ -436,6 +436,13 @@ namespace CompanionAI_Pathfinder.Tactics
                     case SavingThrowType.Will: bonus = target.Stats.SaveWill.ModifiedValue; break;
                     default: return 1f;
                 }
+                // ★ v0.3.15: contextual save bonuses the game applied the last time (SaveObserver).
+                var seen = SaveObserver.Lookup(target, profile.Save, ability.Blueprint);
+                if (seen != null)
+                {
+                    if (seen.AutoPass) return 0f;
+                    bonus += seen.Delta;
+                }
                 // Fails when d20 + bonus < DC.
                 return Mathf.Clamp((dc - bonus - 1) / 20f, 0.05f, 0.95f);
             }

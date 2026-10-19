@@ -6,8 +6,13 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using Kingmaker.Blueprints;
 using Kingmaker.EntitySystem.Entities;
+using Kingmaker.Items;
 using Kingmaker.UnitLogic.Abilities;
+using Kingmaker.UnitLogic.Abilities.Blueprints;
+using Kingmaker.UnitLogic.Abilities.Components;
+using Kingmaker.UnitLogic.Class.Kineticist;
 
 namespace CompanionAI_Pathfinder.Tactics
 {
@@ -23,17 +28,33 @@ namespace CompanionAI_Pathfinder.Tactics
             var seen = new HashSet<string>();
             var result = new List<AbilityData>();
             if (unit == null) return result;
+            var internals = KineticBladeInternals(unit);
+            var leftOut = new List<string>();
 
             void Add(AbilityData a)
             {
                 if (a?.Blueprint == null) return;
+                // ★ v0.3.15: abilities only the game itself uses. Orvath's Kinetic Blade carries its own "Fire Blast" (the
+                // damage the blade deals when its weapon hits, so no attack roll - valued 9.1 against the real blast's
+                // 8.7); cast on its own it does nothing. 6 of 6 Fire Blasts in the last fight were this one.
+                if (internals.Contains(a.Blueprint) || a.Blueprint.GetComponent<AbilityKineticBlade>() != null)
+                {
+                    leftOut.Add(a.Name);
+                    return;
+                }
                 // Variant parents cannot be cast ("Can't cast spell with variants"): use their variants instead.
                 if (a.Blueprint.HasVariants)
                 {
                     try
                     {
+                        // ★ v0.3.15: only the variants the game offers the player (MechanicActionBarSlotAbility
+                        // .GetConvertedAbilityData keeps those whose IsVisible() is true).
                         foreach (var conv in a.GetConversions().ToList())
-                            if (conv?.Blueprint != null && a.Blueprint.HasVariant(conv.Blueprint)) Add(conv);
+                        {
+                            if (conv?.Blueprint == null || !a.Blueprint.HasVariant(conv.Blueprint)) continue;
+                            if (conv.IsVisible()) Add(conv);
+                            else leftOut.Add(conv.Name);
+                        }
                     }
                     catch (Exception ex)
                     {
@@ -47,7 +68,22 @@ namespace CompanionAI_Pathfinder.Tactics
             try
             {
                 foreach (var ability in unit.Abilities.Enumerable)
-                    Add(ability?.Data);
+                {
+                    if (ability == null) continue;
+                    // ★ v0.3.15: the action bar leaves out hidden abilities (ActionBarVM.CollectAbilities: !ability.Hidden).
+                    // Ability.Hidden is also true for every item's ability (items have their own slots), so for those only
+                    // the blueprint's own flag and visibility rules count.
+                    // A held touch charge (UnitPartTouch adds it as a fact) is always the caster's to deliver.
+                    bool item = ability.SourceItem is ItemEntityUsable;
+                    bool hidden = ability.Data.StickyTouch == null &&
+                                  (item ? ability.Blueprint.Hidden || !ability.Data.IsVisible() : ability.Hidden);
+                    if (hidden)
+                    {
+                        leftOut.Add(ability.Name);
+                        continue;
+                    }
+                    Add(ability.Data);
+                }
             }
             catch (Exception ex)
             {
@@ -68,7 +104,39 @@ namespace CompanionAI_Pathfinder.Tactics
                     catch (Exception ex) { ReportOnce($"book|{bookId}|special{level}", $"[Abilities] {book?.Blueprint?.name}: special spells L{level} unreadable - {ex.Message}"); }
                 }
             }
+            if (leftOut.Count > 0)
+                ReportOnce($"hidden|{unit.UniqueId}|{leftOut.Count}",
+                           $"[Abilities] {unit.CharacterName}: left out {leftOut.Count} the game does not offer to the player: " +
+                           string.Join(", ", leftOut.Distinct().Take(12)));
             return result;
+        }
+
+        /// <summary>
+        /// ★ v0.3.15: the abilities behind the unit's kinetic blades (WeaponKineticBlade: the blade's activation and the
+        /// blast it deals on a hit), found as the game's own blade toggle finds them (AddKineticistBlade on the
+        /// activatable's buff). The game triggers them itself when the blade attacks.
+        /// </summary>
+        private static HashSet<BlueprintAbility> KineticBladeInternals(UnitEntityData unit)
+        {
+            var set = new HashSet<BlueprintAbility>();
+            try
+            {
+                void AddBlade(WeaponKineticBlade blade)
+                {
+                    if (blade == null) return;
+                    if (blade.Blast != null) set.Add(blade.Blast);
+                    if (blade.ActivationAbility != null) set.Add(blade.ActivationAbility);
+                }
+                foreach (var toggle in unit.ActivatableAbilities.Enumerable)
+                    AddBlade(toggle?.Blueprint?.Buff?.GetComponent<AddKineticistBlade>()?.Blade?.GetComponent<WeaponKineticBlade>());
+                AddBlade(unit.Body?.PrimaryHand?.MaybeWeapon?.Blueprint?.GetComponent<WeaponKineticBlade>());
+                AddBlade(unit.Body?.SecondaryHand?.MaybeWeapon?.Blueprint?.GetComponent<WeaponKineticBlade>());
+            }
+            catch (Exception ex)
+            {
+                ReportOnce($"blade|{unit.UniqueId}", $"[Abilities] {unit.CharacterName}: kinetic blade abilities unreadable - {ex.Message}");
+            }
+            return set;
         }
 
         /// <summary>What makes two AbilityData different options: blueprint, spellbook, source item, metamagic.</summary>

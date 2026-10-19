@@ -313,3 +313,18 @@ From the test4 logs (turn-based 67e90edc, real time 87aa4bc7; plan: `docs/PLAN_0
 | **Damage estimates**: `AddEnergyDamageImmunity` counted (the game's character sheet reads it; only `AddEnergyImmunity` was), effects in opposite branches of one condition counted once (`AbilityProfile.Exclusive`; Fire Blast was counted twice), and what each enemy actually took per damage type (`Tactics/DamageObserver`, `RuleDealDamage`) overrides the model. | both |
 | **Weapon options per enemy**: no attack listed against one enemy no longer drops all weapon options; a turn with no option at all says why. | both |
 | **Real time: replan after heavy damage**: an engine command that has not started is dropped when the unit lost a quarter of its HP since and is below half. | RT |
+
+## 22. v0.3.15 (test1): spells that did nothing, potions, control duration, saves, tanks
+
+From the 0.3.14 turn-based log (e62751a4 + combat log 5ee51eba + GameLog c544dcb3) and real-time log 9c5c6df2.
+
+| Change | Both modes unless noted |
+|---|---|
+| **Abilities only the game uses are left out** (`AbilityDiscovery`): the action bar's own rules (hidden facts, variants whose `IsVisible()` is false) and the kinetic blade internals (`WeaponKineticBlade.Blast` / `ActivationAbility`, `AbilityKineticBlade`). Orvath's blade carries its own "Fire Blast" (the damage the blade deals on a hit: no attack roll, so valued 9.1 against the real blast's 8.7); cast directly it does nothing. 6 of 6 Fire Blasts in the last fight were that one. What is left out is logged once per unit. | both |
+| **Did the game do anything?** (`Tactics/CastOutcome`): every damage, heal or debuff/control ability the engine issues is followed until the game's execution of it ends; touch spells until the touch is delivered. Any attack roll, damage, heal, save, SR check, buff by the caster, or a cast refused with a reason (spell failure, UMD) counts. A silent refusal (`RuleCastSpell` returns before casting, e.g. "cannot target") or no event at all is logged `[Cast] ... did nothing`; after two on the same target in a fight the ability is not chosen there again. | both |
+| **Held touch charges**: a new cast of the touch spell the unit already holds (another potion, scroll or slot) is not chosen while the held charge can reach that target (it is free; the new cast would replace it). A charge the game cannot deliver to its holder (a potion's charge after the potion healed nothing) is removed the way the game's own cleanup does (`RemoveUnitPartTouchOnAllCompanions`), so the next potion starts fresh. Seelah drank eight potions in a row, each leaving a charge. | both |
+| **Diagnostics for the potion problem**: on such a failure the log names the game's own `CantTargetReason`, the charge's source, age, and whether its fact is on the unit; charges carried into a fight are listed at its start. The root cause (the manual Cure Light Wounds failed too) is not known yet. | both |
+| **Control duration per target** (`AbilityProfile.EffectRoundsOn`): each buff application keeps its branch and expected duration. Color Spray on a 5+ HD enemy stuns one round, not the three the value assumed. | both |
+| **Real save bonuses** (`Tactics/SaveObserver`, `RuleSavingThrow`): contextual bonuses the game applied (against mind-affecting, poison, a mod's bonus) and automatic passes, kept as the difference to the plain save stat, per target and ability, plus per kind of creature. | both |
+| **Tanks accept more risk**: pay 60 % of the damage and exposure a move costs (being dropped outright stays at full price) and turn careful below a third of their HP instead of half. | both |
+| Dead setting `UseBuffsBeforeAttack` removed (old settings files still load). | - |

@@ -74,6 +74,9 @@ namespace CompanionAI_Pathfinder
                 MountPathHandler.Subscribe();
                 // ★ v0.3.14: what enemies actually take from each damage type (spell damage estimates)
                 Tactics.DamageObserver.Subscribe();
+                // ★ v0.3.15: whether the game did anything with each ability the AI used; real save bonuses seen
+                Tactics.CastOutcome.Subscribe();
+                Tactics.SaveObserver.Subscribe();
 
                 // ★ v0.2.38: Pre-Buff Controller 초기화
                 PreBuffController.Initialize();
@@ -270,6 +273,8 @@ namespace CompanionAI_Pathfinder
                 CommandTrace.Subscribe();
                 MountPathHandler.Subscribe();
                 Tactics.DamageObserver.Subscribe();
+                Tactics.CastOutcome.Subscribe();
+                Tactics.SaveObserver.Subscribe();
             }
             else
             {
@@ -277,6 +282,8 @@ namespace CompanionAI_Pathfinder
                 CombatEventHandler.Unsubscribe();
                 CommandTrace.Unsubscribe();
                 Tactics.DamageObserver.Unsubscribe();
+                Tactics.CastOutcome.Unsubscribe();
+                Tactics.SaveObserver.Unsubscribe();
                 MountPathHandler.Unsubscribe();
             }
 

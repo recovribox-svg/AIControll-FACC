@@ -240,7 +240,6 @@ namespace CompanionAI_Pathfinder.Settings
         public int HealAtHPPercent { get; set; } = 30;
         /// <summary>★ v0.3.7: default Standard, so existing settings files behave exactly as before.</summary>
         public SpellResourcePolicy SpellPolicy { get; set; } = SpellResourcePolicy.Standard;
-        public bool UseBuffsBeforeAttack { get; set; } = true;
         public bool AvoidFriendlyFire { get; set; } = true;
     }
 

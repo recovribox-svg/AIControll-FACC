@@ -129,13 +129,16 @@ namespace CompanionAI_Pathfinder.Tactics
                 return null;
             }
 
+            // ★ v0.3.15: judge the last ability this unit used before choosing again (did the game do anything with it?).
+            if (!preview) CastOutcome.Settle(unit);
+
             var candidates = new List<Candidate>();
             try { AddWeaponCandidates(ctx, candidates); } catch (Exception ex) { Main.Error($"[Tactics] weapon candidates: {ex}"); }
             try { AddAbilityCandidates(ctx, candidates); } catch (Exception ex) { Main.Error($"[Tactics] ability candidates: {ex}"); }
             try { AddMovementCandidates(ctx, candidates); } catch (Exception ex) { Main.Error($"[Tactics] movement candidates: {ex}"); }
 
             var usable = candidates
-                .Where(c => c.Value > 0f && Affordable(ctx, c) && !memory.Failed.Contains(c.Key))
+                .Where(c => c.Value > 0f && Affordable(ctx, c) && !memory.Failed.Contains(c.Key) && !SilentlyFailing(ctx, c))
                 .OrderByDescending(c => c.Value)
                 .ToList();
 
@@ -164,6 +167,18 @@ namespace CompanionAI_Pathfinder.Tactics
                          $"{ctx.NoAttackAgainst} of {ctx.Enemies.Count} enemies, no ability or move was usable" +
                          (ctx.Permissions.Notes.Length > 0 ? $" ({ctx.Permissions.Notes})" : ""));
             return chosen;
+        }
+
+        /// <summary>
+        /// ★ v0.3.15: an ability the game silently did nothing with twice on that target this fight (CastOutcome), or a
+        /// new cast of the touch spell whose charge the unit already holds: that cast would replace the charge and spend
+        /// another slot, scroll or potion, while delivering the held one is free. Camellia drank a second Cure Moderate
+        /// Wounds potion while still holding the first one's charge.
+        /// </summary>
+        private static bool SilentlyFailing(TacticalContext ctx, Candidate c)
+        {
+            if (c.Kind != CandidateKind.Ability || c.Ability == null) return false;
+            return CastOutcome.IsBlocked(ctx.Unit, c.Ability, c.Target) || CastOutcome.WouldReplaceHeldCharge(ctx.Unit, c.Ability, c.Target);
         }
 
         /// <summary>
@@ -478,7 +493,7 @@ namespace CompanionAI_Pathfinder.Tactics
             // ★ v0.3.14 (test5): badly hurt, walking to where more enemies can hit it before its next turn: the higher chance
             // to drop there (the withdraw model in reverse). Aeiluvetar at 20 % HP took "Move+Attack" (15.2) into the
             // middle of the fight. Only below half HP, as for withdrawing: a healthy fighter's place is in melee.
-            if (ctx.HpPct < 0.5f)
+            if (ctx.HpPct < CautionBelow(ctx))
             {
                 float hp = Math.Max(1f, unit.HPLeft);
                 float exposure = RiskMath.RoundDropChance(hp, IncomingDamage(ctx, unit, destination)) -
@@ -487,7 +502,7 @@ namespace CompanionAI_Pathfinder.Tactics
                 {
                     risk = risk ?? new Disengage();
                     risk.Exposed = true;
-                    risk.Cost += exposure * AllyWorth(ctx, unit);
+                    risk.Cost += exposure * AllyWorth(ctx, unit) * RiskTolerance(ctx);
                 }
             }
             return risk;
@@ -525,9 +540,22 @@ namespace CompanionAI_Pathfinder.Tactics
                 Attacks = attackers.Count,
                 StopChance = stopChance,
                 DropChance = dropNow,
-                Cost = dropNow * worth + (1f - dropNow) * Math.Max(0f, after - before) * worth + damage * 0.3f
+                Cost = dropNow * worth + ((1f - dropNow) * Math.Max(0f, after - before) * worth + damage * 0.3f) * RiskTolerance(ctx)
             };
         }
+
+        /// <summary>
+        /// ★ v0.3.15: share of a move's risk the unit's role pays. A tank's job is to stand in front and take the hits:
+        /// it pays 60 % of the damage and exposure it walks into. Being dropped outright is priced in full for every
+        /// role - a tank that goes down protects no one.
+        /// </summary>
+        private static float RiskTolerance(TacticalContext ctx) => ctx.Settings.Role == AIRole.Tank ? 0.6f : 1f;
+
+        /// <summary>
+        /// ★ v0.3.15: HP share below which the unit turns careful (prices exposure when moving, considers withdrawing):
+        /// half its HP, a third for a tank, which holds the line longer.
+        /// </summary>
+        private static float CautionBelow(TacticalContext ctx) => ctx.Settings.Role == AIRole.Tank ? 0.35f : 0.5f;
 
         /// <summary>
         /// ★ v0.3.14 (test5): one attack of opportunity from each of <paramref name="attackers"/> on a unit with
@@ -1453,7 +1481,11 @@ namespace CompanionAI_Pathfinder.Tactics
                     if (profile.Control != CCType.None && AbilityClassifier.HasCCImmunity(enemy, profile.Control)) continue;
                     if (CombatRulesAnalyzer.AnalyzeResistance(unit, enemy, ability).IsCompletelyIneffective) continue;
                     float p = CombatMath.EffectChance(unit, enemy, ability, profile, damage: false);
-                    float enemyValue = p * CombatMath.Threat(enemy) * strength * effectRounds;
+                    // ★ v0.3.15: the duration of the branch that applies to this enemy, when the profile can tell.
+                    float rounds = effectRounds;
+                    float own = profile.EffectRoundsOn(ability, enemy);
+                    if (own > 0f) rounds = Math.Min(rounds, Math.Max(1f, own));
+                    float enemyValue = p * CombatMath.Threat(enemy) * strength * rounds;
                     // ★ v0.3.9: an enemy that already cannot act (asleep, paralysed, stunned) gains little from more
                     // control: Orvath stunned (Grasp Heart) the Mite Scout he had just put to sleep.
                     if (CombatMath.IsDisabled(enemy)) enemyValue *= 0.1f;
@@ -1683,7 +1715,7 @@ namespace CompanionAI_Pathfinder.Tactics
             // ★ v0.3.10: valued like a heal - by how much less likely the unit is to drop before its next turn at the new
             // spot, including the attacks of opportunity for leaving melee. 0.3.9 offered it only when engaged and at
             // a fixed value: Lann (20 %, in the Large Water Elemental's reach) shot instead and went down.
-            if (ctx.HpPct < 0.5f)
+            if (ctx.HpPct < CautionBelow(ctx))
             {
                 float hp = Math.Max(1f, unit.HPLeft);
                 float dangerHere = IncomingDamage(ctx, unit, unit.Position);
@@ -1887,6 +1919,18 @@ namespace CompanionAI_Pathfinder.Tactics
             return false;
         }
 
+        /// <summary>
+        /// ★ v0.3.15: the ability's effect is one the game always reports when it happens (damage, a heal, a debuff or
+        /// control: an attack roll, a save or the buff on the enemy), so "nothing reported" means it did nothing.
+        /// Helpful buffs are not judged (re-applying one the unit has raises no event), nor summons, areas,
+        /// enchantments, toggles and utility.
+        /// </summary>
+        private static bool IsVerifiable(AbilityProfile profile)
+        {
+            if (profile == null || profile.Summons || profile.Enchants || profile.IsToggle || profile.SpawnedAreas.Any()) return false;
+            return profile.DealsDamage || profile.Heals.Count > 0 || (profile.TargetBuffs.Count > 0 && profile.HarmfulEffects);
+        }
+
         /// <summary>Builds the game command for a candidate and issues it through CommandDispatcher.</summary>
         public static bool Execute(UnitEntityData unit, Candidate c, out UnitCommand command, out string failure)
         {
@@ -1932,7 +1976,13 @@ namespace CompanionAI_Pathfinder.Tactics
             if (issued && c.Kind == CandidateKind.Ability)
             {
                 CombatMemory.RecordCast(unit, c.Ability, c.Target);
-                AbilityProfile.Get(c.Ability)?.DescribeOnce();
+                var profile = AbilityProfile.Get(c.Ability);
+                profile?.DescribeOnce();
+                CastOutcome.Begin(unit, c.Ability, c.Target, command, IsVerifiable(profile));
+            }
+            else if (issued)
+            {
+                CastOutcome.Forget(unit);   // its attacks must not count as the last ability's effect
             }
             return issued;
         }
