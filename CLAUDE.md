@@ -21,7 +21,9 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
   disengage checks), no second copy of an own active control area, Empower/Maximize (incl. auto metamagic) in
   estimates, AddContextStatBonus stacking, optional pet belt items (`GameInterface/PetItemsPatch`); 0.3.14: real time on the
   tactical engine, status-aware actions (`Tactics/ActionRules`, `UnitStatus`; `docs/STATUS_AWARE_PLAN.md`), path attacks of
-  opportunity and drop chance (`Tactics/RiskMath`), area exits, SR/energy/observed damage (`Tactics/DamageObserver`))
+  opportunity and drop chance (`Tactics/RiskMath`), area exits, SR/energy/observed damage (`Tactics/DamageObserver`); 0.3.15:
+  only action-bar abilities (`AbilityDiscovery`), silent cast failures and touch charges (`Tactics/CastOutcome`), TB touch
+  spells walk into reach first, per-round area cost, per-target control duration, observed saves (`Tactics/SaveObserver`))
 
 ## Reference Resources
 - **Rogue Trader CompanionAI v3.5.7**: `C:\Users\veria\Downloads\CompanionAI_v3-master - v3.5.7`

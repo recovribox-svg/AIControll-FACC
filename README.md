@@ -36,6 +36,13 @@ combat (primary) and real-time combat.
 - An advance that runs out of its move action can continue with the standard action; abilities are not aimed at a
   target on which none of their effects apply.
 
+**0.3.15** ([release/CHANGELOG_v0.3.15.md](release/CHANGELOG_v0.3.15.md)): spells and items that did nothing are fixed
+or caught. Kineticists no longer cast the Kinetic Blade's internal Fire Blast, touch scrolls and spells on others walk
+into reach before casting in turn-based mode, held touch charges are used first and stuck ones removed, and any ability
+the game silently does nothing with is logged and dropped after two tries. Melee characters weigh every round they
+would spend in Grease or other harmful areas. Crowd control uses each enemy's real duration and saves. Tanks accept
+more risk.
+
 **0.3.14** ([release/CHANGELOG_v0.3.14.md](release/CHANGELOG_v0.3.14.md)): real-time combat now uses the turn-based
 tactical AI (the old one stays selectable in the settings). Companions handle their own conditions: they stand up when
 prone (in turn-based mode they used to lie there until the fight ended), walk out of clouds while nauseated, and skip
@@ -103,7 +110,7 @@ toggles such as Shift Form; bonus stacking follows the game's own rule (and Tabl
 ## Install (players)
 
 1. Install [Unity Mod Manager](https://www.nexusmods.com/site/mods/21) into the game.
-2. Take `CompanionAI_Pathfinder_v0.3.14.zip` - prebuilt in `release\`, or build it yourself (below; output in `dist\`).
+2. Take `CompanionAI_Pathfinder_v0.3.15.zip` - prebuilt in `release\`, or build it yourself (below; output in `dist\`).
 3. Install it either way:
    - Unity Mod Manager → *Mods* tab → drag the ZIP onto the window / *Install Mod*, **or**
    - extract it to `<game>\Mods\CompanionAI_Pathfinder\` so the folder contains
