@@ -372,6 +372,24 @@ namespace CompanionAI_Pathfinder.Scoring.Scorers
             // ═══════════════════════════════════════════════════════════════
             cs.Add("HealNeed", TargetNormalizer.HPUrgency(targetHP));
 
+            // ★ v0.3.14: damage-equivalent points like attacks and buffs (turn-based heal formula: the HP restored,
+            // capped at what is missing, x0.6, x2 under 50 %, x3 under 25 %).
+            try
+            {
+                var healProfile = Tactics.AbilityProfile.Get(candidate.Ability);
+                if (healProfile != null)
+                {
+                    float restored = Math.Min(Tactics.CombatMath.EstimateAbilityHeal(candidate.Ability, healProfile, target),
+                                              Math.Max(0, target.MaxHP - target.HPLeft));
+                    float urgency = targetHP <= 25f ? 3f : targetHP < 50f ? 2f : 1f;
+                    candidate.BonusScore += restored * 0.6f * urgency;
+                }
+            }
+            catch (Exception ex)
+            {
+                Main.Verbose($"[BuffScorer] heal worth {candidate.Ability?.Name}: {ex.Message}");
+            }
+
             // ═══════════════════════════════════════════════════════════════
             // 2. 전투 페이즈 적합성
             // ═══════════════════════════════════════════════════════════════
@@ -459,6 +477,28 @@ namespace CompanionAI_Pathfinder.Scoring.Scorers
             // ═══════════════════════════════════════════════════════════════
             float combatValue = GetBuffCombatValue(candidate);
             cs.Add("CombatValue", ScoreNormalizer.BuffCombatValue(combatValue));
+
+            // ★ v0.3.14: the same scale as attacks (AttackScorer "Effect" + expected damage as bonus): the turn-based
+            // buff value in damage-equivalent points. Only in combat; out-of-combat pre-buffing is its own routine.
+            if (situation.Unit?.CombatState?.IsInCombat ?? false)
+            {
+                float worth = Tactics.TacticalEngine.BuffWorth(candidate.Ability, situation.Unit, target);
+                cs.Add("Effect", worth > 0f ? Mathf.Clamp(worth / (worth + 6f), 0.15f, 0.95f) : 0.15f);
+                candidate.BonusScore += worth;
+
+                // ★ v0.3.14: casting a buff in melee provokes like casting an attack spell does (AttackScorer "AoORisk");
+                // only attacks were charged for it, so engaged casters preferred buffs.
+                if (candidate.Ability != null)
+                {
+                    var aoo = CombatRulesAnalyzer.AnalyzeAbility(situation.Unit, candidate.Ability);
+                    if (aoo.ProvokesAoO && !aoo.HasAoOImmunity)
+                    {
+                        cs.Add("AoORisk", Mathf.Max(0.1f, aoo.DefensiveCastingSuccessChance));
+                        if (aoo.Recommendation == AbilityRecommendation.Avoid || aoo.Recommendation == AbilityRecommendation.Dangerous)
+                            candidate.BonusScore += aoo.PenaltyScore;
+                    }
+                }
+            }
 
             // ═══════════════════════════════════════════════════════════════
             // 3. 전투 페이즈 적합성

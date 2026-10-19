@@ -156,7 +156,7 @@ namespace CompanionAI_Pathfinder.GameInterface
             }
 
             _processCount++;
-            Main.Verbose($"[RT] ProcessUnit: {unitName} (#{_processCount}, phase={phaseOffset:F2}s)");
+            // ★ v0.3.14: no per-tick line (35 000 of a 110 000-line log); decisions and commands are logged anyway.
 
             // ★ v0.2.45: NextCommandTime 체크 추가 (움찔거림 방지)
             // 이전에 발행한 명령의 쿨다운이 끝나지 않았으면 새 결정 안함
@@ -282,7 +282,7 @@ namespace CompanionAI_Pathfinder.GameInterface
                     }
 
                     // 정상 진행 중인 명령 (Started=True)
-                    Main.Verbose($"[RT] {unitName}: Commands in progress (normal)");
+                    // ★ v0.3.14: not logged every tick (33 000 lines); [Cmd] ISSUED / ENDED trace each command.
                 }
                 catch (Exception ex)
                 {
@@ -421,7 +421,8 @@ namespace CompanionAI_Pathfinder.GameInterface
             {
                 var now = Kingmaker.Game.Instance.TimeController.GameTime;
                 string wait = WaitReason(unit, cmd);
-                var mark = LastWait.GetValue(cmd, _ => new WaitMark { Time = cmd.ApproachStartTime });
+                // First seen counts as a wait: a command needs 3 s of observed nothing-to-wait-for to be stuck.
+                var mark = LastWait.GetValue(cmd, _ => new WaitMark { Time = now });
                 if (wait != null)
                 {
                     mark.Time = now;

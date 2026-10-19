@@ -676,6 +676,36 @@ namespace CompanionAI_Pathfinder.Tactics
         private static void ReportOnce(string key, string message) => AbilityDiscovery.ReportOnce(key, message);
 
         /// <summary>
+        /// ★ v0.3.14: the turn-based buff value (damage-equivalent points) of casting <paramref name="ability"/> on
+        /// <paramref name="recipient"/>: what the buff does there (BuffQuality, stacking-aware) × the per-round worth of
+        /// its spell level × the rounds it lasts, less for someone not fighting. Real time's buff scoring had no such
+        /// scale: Guidance, Virtue and Resistance on Aeiluvetar outscored every attack Orvath had (GM 0.80 vs 0.65).
+        /// </summary>
+        public static float BuffWorth(AbilityData ability, UnitEntityData caster, UnitEntityData recipient, float expectedRounds = 3f)
+        {
+            try
+            {
+                var profile = AbilityProfile.Get(ability);
+                if (profile == null || recipient == null || (profile.HarmfulEffects && !profile.HelpfulToAllies)) return 0f;
+                var all = profile.TargetBuffs.Count > 0 ? profile.TargetBuffs : profile.CasterBuffs;
+                var buffs = all.Where(b => profile.BuffAppliesTo(b, ability, recipient) != EffectApplies.No && !recipient.Buffs.HasFact(b)).ToList();
+                if (buffs.Count == 0) return 0f;
+                float quality = BuffQuality(ability, profile, buffs, recipient);
+                if (quality <= 0f) return 0f;
+                float perRound = 1f + Math.Max(0, ability.SpellLevel) * 1.5f;
+                float rounds = profile.BuffsLastOneRound ? 1f
+                             : profile.BuffsSpentByAttack ? Math.Min(expectedRounds, 2f)
+                             : profile.HasLongBuff ? expectedRounds : Math.Min(expectedRounds, 3f);
+                bool fighting = (recipient.CombatState?.IsEngaged ?? false) || recipient == caster;
+                return perRound * rounds * quality * (fighting ? 1f : 0.6f);
+            }
+            catch
+            {
+                return 0f;
+            }
+        }
+
+        /// <summary>
         /// ★ v0.3.2: 0..1 combat worth of the best of <paramref name="buffs"/> on <paramref name="recipient"/>, from the
         /// buff's components (BuffEffectAnalyzer, shared with real-time) and stacking with what the recipient already has
         /// (BuffStackingAnalyzer: e.g. Mage Armor under real armor). Effects the analyzer does not recognise count 0.5 for
