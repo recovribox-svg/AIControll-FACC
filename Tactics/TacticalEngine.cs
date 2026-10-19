@@ -1102,6 +1102,7 @@ namespace CompanionAI_Pathfinder.Tactics
             if (profile.Heals.Count > 0 && healTargets.Count > 0)
             {
                 float healValue = 0f;
+                string reviveNote = null;
                 foreach (var ally in healTargets)
                 {
                     var applies = profile.Heals.Select(h => profile.AppliesTo(h, ability, ally)).ToList();
@@ -1114,11 +1115,18 @@ namespace CompanionAI_Pathfinder.Tactics
 
                     // ★ v0.3.9: a downed ally gets back up once its HP is above 0: worth what it does for the rest of the
                     // fight. A heal too small to bring it up counts only a little (the next one will).
-                    if (ally.HPLeft <= 0)
+                    // ★ v0.3.14: a heal that covers part of what is needed is that share of the way there (x0.6: the
+                    // ally is still down until the next heal lands). 0.3.9 valued it at 0.3 x the share: Camellia's
+                    // Cure Light Wounds took Seelah part of the way, then nobody healed her again and she stayed down
+                    // for the rest of the fight (the game wakes a unit only once its HP is above 0, and revives
+                    // everyone after combat, which is when she got up).
+                    if (ally.HPLeft <= 0 || !ally.Descriptor.State.IsConscious)
                     {
-                        float needed = 1f - ally.HPLeft;
-                        float upChance = heal >= needed ? 1f : 0.3f * heal / needed;
+                        float needed = Math.Max(1f, 1f - ally.HPLeft + ally.DamageNonLethal);
+                        float share = Math.Min(1f, heal / needed);
+                        float upChance = share >= 1f ? 1f : 0.6f * share;
                         healValue += upChance * AllyWorth(ctx, ally);
+                        reviveNote = $"revive {ally.CharacterName}: needs {needed:F0} HP, heals ~{heal:F0}";
                         continue;
                     }
 
@@ -1144,6 +1152,7 @@ namespace CompanionAI_Pathfinder.Tactics
                 {
                     value += healValue * RoleWeight(ctx, "heal");
                     reasons.Add("heal");
+                    if (reviveNote != null) ReportOnce($"revive|{unit.UniqueId}|{CombatMemory.Round}|{reviveNote}", $"[Tactics] {unit.CharacterName}: {ability.Name} {reviveNote}");
                 }
             }
 
@@ -1534,6 +1543,9 @@ namespace CompanionAI_Pathfinder.Tactics
                 if (accept != null && !accept(candidate)) continue;
                 // ★ v0.3.14: never step back into a harmful area.
                 if (AoeDangerAnalyzer.EnteringDanger(unit, unit.Position, candidate, out _) > 0f) continue;
+                // ★ v0.3.14: real time has no path check before the move (the turn-based dispatcher computes one): a spot
+                // off the navmesh or behind a wall left Orvath standing still for 3 s, 19 times in one session.
+                if (CombatMemory.IsRealTime && !AoeDangerAnalyzer.IsPositionValid(unit.Position, candidate)) continue;
                 float nearestEnemy = ctx.Enemies.Min(e => Vector3.Distance(candidate, e.Position) - e.Corpulence);
                 float score = nearestEnemy - 0.15f * Vector3.Distance(candidate, allyCenter);
                 if (score > bestScore)

@@ -278,9 +278,34 @@ namespace CompanionAI_Pathfinder.Tactics
                 if (target != null && profile.AppliesTo(dmg, ability, target) == EffectApplies.No) continue;
                 float avg = EvaluateDice(dmg.Value, ctx, Math.Min(cl, 10), maximize, empower);
                 if (dmg.Half) avg *= 0.5f;
-                total += avg;
+                total += AfterTargetReduction(target, dmg, avg);
             }
             return total;
+        }
+
+        /// <summary>
+        /// ★ v0.3.14: the damage left after the target's energy resistance, damage reduction and immunities, by the game's
+        /// own estimate (UnitPartDamageReduction.EstimateDamage / IsImmune, with its bypass rules). Spell damage ignored
+        /// them: Orvath's Fire Blast was valued at 25 against a Dretch (demons resist fire 10) for five rounds running.
+        /// Weapon attacks already use the DR helper (HitChanceCalculator.CalculateDamageReduction).
+        /// </summary>
+        private static float AfterTargetReduction(UnitEntityData target, ContextActionDealDamage dmg, float value)
+        {
+            if (target == null || value <= 0f || dmg?.DamageType == null) return value;
+            try
+            {
+                var part = target.Get<Kingmaker.UnitLogic.Parts.UnitPartDamageReduction>();
+                if (part == null) return value;
+                var type = dmg.DamageType;
+                if (type.Type == Kingmaker.RuleSystem.Rules.Damage.DamageType.Energy && part.IsImmune(type.Energy)) return 0f;
+                _ = part.AllSources.Count();                       // initialises the part's resistance chunks
+                var damage = type.CreateDamage(new DiceFormula(0, DiceType.Zero), 0);
+                return part.EstimateDamage(value, damage, null);
+            }
+            catch
+            {
+                return value;
+            }
         }
 
         public static float EstimateAbilityHeal(AbilityData ability, AbilityProfile profile, UnitEntityData target)

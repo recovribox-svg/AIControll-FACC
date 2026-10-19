@@ -192,59 +192,10 @@ namespace CompanionAI_Pathfinder
                     Error("CombatController.StartTurn 메서드를 찾을 수 없습니다!");
                 }
 
-                // 2. Activate() 패치
-                var activateMethod = AccessTools.Method(
-                    typeof(CombatController),
-                    "Activate"
-                );
-
-                if (activateMethod != null)
-                {
-                    var activatePostfix = AccessTools.Method(
-                        typeof(CombatPatches),
-                        "Activate_Postfix"
-                    );
-
-                    if (activatePostfix != null)
-                    {
-                        HarmonyInstance.Patch(
-                            activateMethod,
-                            postfix: new HarmonyMethod(activatePostfix)
-                        );
-                        Log("  패치됨: CombatController.Activate");
-                    }
-                }
-                else
-                {
-                    Error("CombatController.Activate 메서드를 찾을 수 없습니다!");
-                }
-
-                // 3. Deactivate() 패치
-                var deactivateMethod = AccessTools.Method(
-                    typeof(CombatController),
-                    "Deactivate"
-                );
-
-                if (deactivateMethod != null)
-                {
-                    var deactivatePostfix = AccessTools.Method(
-                        typeof(CombatPatches),
-                        "Deactivate_Postfix"
-                    );
-
-                    if (deactivatePostfix != null)
-                    {
-                        HarmonyInstance.Patch(
-                            deactivateMethod,
-                            postfix: new HarmonyMethod(deactivatePostfix)
-                        );
-                        Log("  패치됨: CombatController.Deactivate");
-                    }
-                }
-                else
-                {
-                    Error("CombatController.Deactivate 메서드를 찾을 수 없습니다!");
-                }
+                // ★ v0.3.14: CombatController.Activate/Deactivate are no longer patched. They are the controller's
+                // lifecycle, called on every game-mode switch (dialogue, UI screens, cutscenes), not combat start/end:
+                // a real-time session logged 62 "combat ended" resets, several mid-fight, each wiping the combat memory.
+                // Combat start/end now come from the game's party-combat event (CombatEventHandler).
 
                 // ★ v0.2.86: TurnController.Tick() 패치 추가
                 // IsDirectlyControllable 유닛에게 AI를 호출하기 위해 필요

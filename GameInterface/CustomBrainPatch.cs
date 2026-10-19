@@ -356,20 +356,24 @@ namespace CompanionAI_Pathfinder.GameInterface
     public static class CombatPatches
     {
         /// <summary>
-        /// 턴제 전투 활성화 시 호출 (수동 패치)
+        /// ★ v0.3.14: the party entered combat (IPartyCombatHandler, both modes). A fresh combat memory for the new fight.
         /// </summary>
-        public static void Activate_Postfix()
+        public static void OnPartyCombatStart()
         {
-            Main.Log("★★★ 턴제 전투 시작됨 ★★★");
+            Main.Log("★★★ Party combat started ★★★");
+            TurnBasedController.Instance.ResetAll();
+            FailedAbilityTracker.Instance.ClearAll();
+            CombatPhaseDetector.ResetCombatTracking();
         }
 
         /// <summary>
-        /// 턴제 전투 비활성화 시 호출 (수동 패치)
+        /// The party left combat. ★ v0.3.14: from the game's party-combat event; it was a postfix on
+        /// CombatController.Deactivate, which the game calls on every game-mode switch (dialogue, UI, cutscenes).
         /// ★ v0.2.113: TurnBasedController 사용
         /// </summary>
-        public static void Deactivate_Postfix()
+        public static void OnPartyCombatEnd()
         {
-            Main.Log("★★★ 턴제 전투 종료됨 ★★★");
+            Main.Log("★★★ Party combat ended ★★★");
             // ★ v0.2.113: TurnBasedController 상태 초기화
             TurnBasedController.Instance.ResetAll();
 
@@ -426,8 +430,23 @@ namespace CompanionAI_Pathfinder.GameInterface
     /// v0.2.2: 전투 이벤트 핸들러
     /// 유닛이 전투에서 빠져나올 때 영구 버프 적용
     /// </summary>
-    public class CombatEventHandler : IInCombatHandler
+    public class CombatEventHandler : IInCombatHandler, IPartyCombatHandler
     {
+        /// <summary>★ v0.3.14: the party's combat state changed (the game's own start/end of combat, both modes).</summary>
+        public void HandlePartyCombatStateChanged(bool inCombat)
+        {
+            if (!Main.Enabled) return;
+            try
+            {
+                if (inCombat) CombatPatches.OnPartyCombatStart();
+                else CombatPatches.OnPartyCombatEnd();
+            }
+            catch (Exception ex)
+            {
+                Main.Error($"[CombatEventHandler] party combat {(inCombat ? "start" : "end")}: {ex.Message}");
+            }
+        }
+
         private static CombatEventHandler _instance;
         private static bool _isSubscribed = false;
 

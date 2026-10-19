@@ -472,8 +472,9 @@ namespace CompanionAI_Pathfinder.Analysis
 
         /// <summary>
         /// ★ v0.2.59: 위치가 유효하고 도달 가능한지 확인
+        /// ★ v0.3.14: public - real-time back-off points use it too (Tactics.TacticalEngine.FindRetreatPoint).
         /// </summary>
-        private static bool IsPositionValid(Vector3 from, Vector3 to)
+        public static bool IsPositionValid(Vector3 from, Vector3 to)
         {
             try
             {
