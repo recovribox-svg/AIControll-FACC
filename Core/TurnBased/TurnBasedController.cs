@@ -42,7 +42,7 @@ namespace CompanionAI_Pathfinder.Core.TurnBased
         private const int MAX_DECISIONS_PER_TURN = 16;
 
         /// <summary>Candidates tried per tick when the dispatcher rejects one (e.g. no path).</summary>
-        private const int MAX_ATTEMPTS_PER_TICK = 3;
+        private const int MAX_ATTEMPTS_PER_TICK = TacticalDriver.MaxAttemptsPerDecision;
 
         public ExecutionResult ProcessTurn(UnitEntityData unit)
         {
@@ -64,42 +64,8 @@ namespace CompanionAI_Pathfinder.Core.TurnBased
                 memory.Waiting = false;
 
                 // Learn from the previous command: if it ended without acting (interrupted, no path, target gone),
-                // do not pick the same option again this turn.
-                if (memory.LastCommand != null)
-                {
-                    var last = memory.LastCommand;
-                    bool isMove = memory.LastKind == CandidateKind.Move;
-                    float moved = Vector3.Distance(unit.Position, memory.LastIssuePosition);
-                    string notActed = null;
-                    // ★ v0.3.10: a move that went nowhere failed, whatever the command reports (an interrupted UnitMoveTo
-                    // can count as acted): Albedo issued 'Advance->Dretch' fifteen times without moving.
-                    if (isMove && moved < 0.1f)
-                        notActed = $"moved nowhere ({last.Result})";
-                    else if (!last.IsActed)
-                    {
-                        // ★ v0.3.2: a move that was cut short (its move action ran out) still made progress; the next
-                        // decision may continue with the standard action. v0.3.1 ended Albedo's turn after 8.9 m.
-                        if (!(isMove && moved >= 1f))
-                            notActed = $"ended without acting ({last.Result})";
-                    }
-                    else if (!last.IsStarted && !isMove)
-                        // ★ v0.3.1: UnitCommandController.TickCommandTurnBased force-finishes an approaching command whose
-                        // unit stopped moving (or that has no action left) as "Success" - IsActed, but never started.
-                        // Albedo repeated 'Move+Attack->Dretch' (0.7 m, no attack) four times. Moves are finished that
-                        // way when they arrive (5-foot step), so this only applies to attacks and abilities.
-                        notActed = $"was force-finished before it started ({last.Result})";
-                    else if (!last.IsIgnoreCooldown && !ActionWasSpent(unit, memory.LastSlot))
-                        // Commands with IsIgnoreCooldown legitimately spend no action (sticky touch, spell combat...).
-                        notActed = $"ended ({last.Result}) but its {memory.LastSlot} action is still unused";
-
-                    if (notActed != null && memory.LastCandidateKey != null)
-                    {
-                        memory.Failed.Add(memory.LastCandidateKey);
-                        Main.Log($"[TBController] {unitName}: '{memory.LastCandidateKey}' {notActed} - not retrying this turn");
-                    }
-                    memory.LastCommand = null;
-                    memory.LastCandidateKey = null;
-                }
+                // do not pick the same option again this turn. ★ v0.3.14: shared with real time (TacticalDriver).
+                TacticalDriver.LearnFromLastCommand(unit, memory, "[TBController]");
 
                 if (memory.Decisions >= MAX_DECISIONS_PER_TURN)
                 {
@@ -120,20 +86,12 @@ namespace CompanionAI_Pathfinder.Core.TurnBased
                     memory.Decisions++;
                     if (TacticalEngine.Execute(unit, candidate, out var command, out string failure))
                     {
-                        memory.LastCommand = command;
-                        memory.LastCandidateKey = candidate.Key;
-                        memory.LastSlot = candidate.Slot;
-                        memory.LastKind = candidate.Kind;
-                        memory.LastIssuePosition = unit.Position;
+                        TacticalDriver.RecordIssued(unit, memory, candidate, command);
                         return ExecutionResult.Waiting($"Issued {candidate.Label}");
                     }
 
                     Main.Log($"[TBController] {unitName}: '{candidate.Label}' could not be issued ({failure}) - trying next best");
-                    memory.Failed.Add(candidate.Key);
-                    // ★ v0.3.11: no path gets within reach of this enemy: an advance towards it this turn is wasted
-                    // (Albedo spent his 5-foot step walking 1.6 m towards an archer he could not reach, three rounds running).
-                    if (candidate.Target != null && failure != null && failure.StartsWith("path ends out of reach"))
-                        memory.Unreachable.Add(candidate.Target.UniqueId);
+                    TacticalDriver.RecordRejected(memory, candidate, failure);
                 }
 
                 return ExecutionResult.Waiting("Retrying next tick");
@@ -214,28 +172,6 @@ namespace CompanionAI_Pathfinder.Core.TurnBased
             return command != null && !command.IsStarted && !command.IsFinished &&
                    command.IsInterruptible && !command.Cutscene && !command.DontInterruptInTurnBasedMode &&
                    !(command is UnitActivateAbility) && !(command is UnitAttackOfOpportunity);
-        }
-
-        /// <summary>Did the command that just ended use the action it was chosen for?</summary>
-        private static bool ActionWasSpent(UnitEntityData unit, ActionSlot slot)
-        {
-            try
-            {
-                switch (slot)
-                {
-                    case ActionSlot.Standard:
-                    case ActionSlot.FullRound:
-                        return !unit.HasStandardAction();
-                    case ActionSlot.Swift:
-                        return !unit.HasSwiftAction();
-                    default:
-                        return true; // free actions, and moves (a move may legitimately leave movement unused)
-                }
-            }
-            catch
-            {
-                return true;
-            }
         }
 
         public void ResetAll()

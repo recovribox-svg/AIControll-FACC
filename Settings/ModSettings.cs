@@ -50,6 +50,12 @@ namespace CompanionAI_Pathfinder.Settings
             ["CombatModeSettings"] = new() { { Language.English, "Combat Mode Settings" }, { Language.Korean, "전투 모드 설정" } },
             ["EnableInTurnBased"] = new() { { Language.English, "Enable in Turn-Based Mode" }, { Language.Korean, "턴제 모드에서 활성화" } },
             ["EnableInRealTime"] = new() { { Language.English, "Enable in Real-Time Mode" }, { Language.Korean, "실시간 모드에서 활성화" } },
+            // ★ v0.3.14
+            ["RealTimeLegacyEngine"] = new() { { Language.English, "Real time: use the old decision engine" }, { Language.Korean, "실시간: 이전 결정 엔진 사용" } },
+            ["RealTimeLegacyEngineDesc"] = new() {
+                { Language.English, "Off (recommended): real time uses the same tactical engine as turn-based. On: the pre-0.3.14 real-time engine, kept only as a fallback." },
+                { Language.Korean, "끔 (권장): 실시간도 턴제와 같은 전술 엔진을 사용합니다. 켬: 0.3.14 이전의 실시간 엔진 (대비용)." }
+            },
             ["RealTimeDecisionInterval"] = new() { { Language.English, "Real-Time Decision Interval" }, { Language.Korean, "실시간 결정 간격" } },
             ["RealTimeDecisionIntervalDesc"] = new() {
                 { Language.English, "How often AI makes decisions in real-time mode (seconds)" },
@@ -258,6 +264,8 @@ namespace CompanionAI_Pathfinder.Settings
         // 전투 모드 설정
         public bool EnableInTurnBased { get; set; } = true;
         public bool EnableInRealTime { get; set; } = true;
+        /// <summary>★ v0.3.14: false = real time is decided by Tactics/TacticalEngine (RealTimeTactics); true = the old UnifiedDecisionEngine.</summary>
+        public bool RealTimeLegacyEngine { get; set; } = false;
         public float RealTimeDecisionInterval { get; set; } = 0.5f;
 
         // ★ v0.3.0: 소모품 (퀵슬롯 아이템) 사용 설정

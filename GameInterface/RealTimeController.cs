@@ -293,7 +293,12 @@ namespace CompanionAI_Pathfinder.GameInterface
 
             try
             {
-                ExecuteAIDecision(unit);
+                // ★ v0.3.14: the turn-based tactical engine decides real time too (Tactics/RealTimeTactics); the old
+                // UnifiedDecisionEngine only when chosen in the settings.
+                if (Settings.ModSettings.Instance?.RealTimeLegacyEngine ?? false)
+                    ExecuteAIDecision(unit);
+                else
+                    Tactics.RealTimeTactics.Act(unit);
                 _lastDecisionTime[unitId] = currentTime;
             }
             catch (Exception ex)

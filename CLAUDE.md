@@ -49,7 +49,10 @@ Turn-based:  TurnController.Tick (Harmony postfix, CustomBrainPatch.TurnControll
                  → Core/TurnBased/TurnBasedController   (waits for commands, per-turn memory)
                  → Tactics/TacticalEngine.Decide        (ONE best next action from current action economy)
                  → Tactics/TacticalEngine.Execute → GameInterface/CommandDispatcher.Run
-Real-time:   AiBrainController.TickBrain (prefix) → RealTimeController → UnifiedDecisionEngine
+Real-time:   AiBrainController.TickBrain (prefix) → RealTimeController (waits: commands, stuck check, AoE escape)
+                 → Tactics/RealTimeTactics.Act → TacticalEngine.Decide / Execute   (v0.3.14: same engine as turn-based;
+                   actions left = the game's real-time cooldowns, round = 6 s, no 5-foot step; old UnifiedDecisionEngine
+                   only with the "Real time: use the old decision engine" setting)
 ```
 Design and value formulas: `docs/TACTICAL_AI.md`. Root-cause evidence: `docs/INVESTIGATION.md`.
 

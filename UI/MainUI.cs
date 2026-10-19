@@ -237,6 +237,15 @@ namespace CompanionAI_Pathfinder.UI
 
             // 실시간 모드
             ModSettings.Instance.EnableInRealTime = DrawCheckbox(ModSettings.Instance.EnableInRealTime, L("EnableInRealTime"));
+            // ★ v0.3.14
+            if (ModSettings.Instance.EnableInRealTime)
+            {
+                GUILayout.BeginHorizontal(); GUILayout.Space(20);
+                bool legacy = DrawCheckbox(ModSettings.Instance.RealTimeLegacyEngine, L("RealTimeLegacyEngine"));
+                GUILayout.EndHorizontal();
+                GUILayout.Label($"<color=#888888><size=11>{L("RealTimeLegacyEngineDesc")}</size></color>", _descriptionStyle);
+                if (legacy != ModSettings.Instance.RealTimeLegacyEngine) { ModSettings.Instance.RealTimeLegacyEngine = legacy; ModSettings.Save(); }
+            }
             GUILayout.Space(3);
 
             // 실시간 결정 간격

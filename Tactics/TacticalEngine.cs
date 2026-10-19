@@ -104,7 +104,8 @@ namespace CompanionAI_Pathfinder.Tactics
             if (ctx != null) ctx.Unreachable = memory.Unreachable;
             if (ctx == null || ctx.Enemies.Count == 0)
             {
-                Main.Log($"[Tactics] {unit.CharacterName}: no reachable enemies - end turn");
+                if (CombatMemory.IsRealTime) Main.Verbose($"[Tactics] {unit.CharacterName}: no reachable enemies - wait");
+                else Main.Log($"[Tactics] {unit.CharacterName}: no reachable enemies - end turn");
                 return null;
             }
 
@@ -212,12 +213,16 @@ namespace CompanionAI_Pathfinder.Tactics
         private static void LogDecision(TacticalContext ctx, List<Candidate> usable, Candidate chosen)
         {
             var sb = new StringBuilder();
-            sb.Append($"[Tactics] {ctx.Unit.CharacterName} R{ctx.Round} HP{ctx.HpPct * 100:F0}% ");
+            // ★ v0.3.14: real-time decisions carry "RT" (rounds are six-second spans there).
+            bool realTime = CombatMemory.IsRealTime;
+            sb.Append($"[Tactics] {ctx.Unit.CharacterName} {(realTime ? "RT" : "R")}{ctx.Round} HP{ctx.HpPct * 100:F0}% ");
             sb.Append($"[{(ctx.HasStandard ? "S" : "-")}{(ctx.HasMove ? "M" : "-")}{(ctx.HasSwift ? "W" : "-")}{(ctx.CanFullAttack ? "F" : "-")}{(ctx.CanFiveFoot ? "5" : "-")}]{(ctx.SurpriseRound ? " surprise" : "")}{(ctx.NoMovementLeft ? " no-move" : ctx.StepTaken ? " stepped" : "")} ");
             sb.Append($"enemies={ctx.Enemies.Count} rounds~{ctx.ExpectedRounds:F1} diff={ctx.Difficulty:F2} :: ");
             sb.Append(string.Join(" | ", usable.Take(5).Select(c => c.ToString())));
-            sb.Append(chosen != null ? $" => {chosen.Label}" : " => END TURN");
-            Main.Log(sb.ToString());
+            sb.Append(chosen != null ? $" => {chosen.Label}" : realTime ? " => wait" : " => END TURN");
+            // Real time decides again every half second while waiting for a cooldown: those waits only in verbose logs.
+            if (realTime && chosen == null) Main.Verbose(sb.ToString());
+            else Main.Log(sb.ToString());
         }
 
         #endregion
@@ -263,6 +268,14 @@ namespace CompanionAI_Pathfinder.Tactics
                     ctx.MoveRange = Math.Min(ctx.MoveRange, ctx.FiveFootRange);
                     if (ctx.FiveFootRange < 0.1f) ctx.NoMovementLeft = true;
                 }
+            }
+            else if (CombatMemory.IsRealTime)
+            {
+                // ★ v0.3.14: real time. Walking is free there (UnitMoveTo ignores cooldowns; an attack or spell walks to its
+                // target by itself), so moving is limited only by being able to move; the horizon is one round of it.
+                // The game's move cooldown after a standard action would otherwise forbid Move+Attack for 3 seconds.
+                ctx.HasMove = unit.Descriptor.State.CanMove;
+                ctx.MoveRange = ctx.HasMove ? unit.CurrentSpeedMps * 6f : 0f;
             }
             else
             {
@@ -1374,7 +1387,11 @@ namespace CompanionAI_Pathfinder.Tactics
                                 !(bestMain.Target != null && ctx.Engagers.Contains(bestMain.Target));
 
             // 1) Step out of melee before shooting/casting (5-foot step: no attack of opportunity, keeps full attack).
-            if ((rangedStyle || castsInMelee) && ctx.Engagers.Count > 0 && ctx.CanFiveFoot && (ctx.HasStandard || ctx.CanFullAttack))
+            // ★ v0.3.14: real time has no 5-foot step; there a ranged character backs off a few metres instead, paying
+            // for the attacks of opportunity that provokes (MoveRisk), while its action cooldown runs or right before acting.
+            bool realTime = CombatMemory.IsRealTime;
+            if ((rangedStyle || castsInMelee) && ctx.Engagers.Count > 0 && (ctx.CanFiveFoot || (realTime && ctx.HasMove)) &&
+                (ctx.HasStandard || ctx.CanFullAttack || realTime))
             {
                 // ★ v0.3.10: an archer steps to a spot from which it can still shoot someone (Lann stepped out of melee
                 // and then had nothing in range or sight without more movement, which the step forbids).
@@ -1400,14 +1417,22 @@ namespace CompanionAI_Pathfinder.Tactics
                     }).DefaultIfEmpty(0f).Max();
                 else
                     followUp = bestMain?.Value ?? 0f;
-                var point = followUp >= MinQuickValue ? FindRetreatPoint(ctx, ctx.FiveFootRange * 0.9f, keepsTarget) : null;
+                float stepDistance = realTime ? 4f : ctx.FiveFootRange * 0.9f;
+                var point = followUp >= MinQuickValue ? FindRetreatPoint(ctx, stepDistance, keepsTarget) : null;
                 if (point.HasValue)
                 {
+                    float value = Math.Min(ctx.Engagers.Sum(CombatMath.Threat) * 0.4f, followUp);
+                    string label = realTime ? "Back off out of melee" : "5ft step out of melee";
+                    if (realTime)
+                    {
+                        var risk = MoveRisk(ctx, point.Value);
+                        if (risk != null) { value -= risk.Cost; label += risk.Tag; }
+                    }
                     list.Add(new Candidate
                     {
-                        Kind = CandidateKind.Move, Slot = ActionSlot.Free, Point = point, ApproachRadius = 0.3f,
-                        Value = Math.Min(ctx.Engagers.Sum(CombatMath.Threat) * 0.4f, followUp),
-                        Label = "5ft step out of melee", Key = "move:5ft"
+                        Kind = CandidateKind.Move, Slot = realTime ? ActionSlot.Move : ActionSlot.Free, Point = point, ApproachRadius = 0.3f,
+                        Value = value,
+                        Label = label, Key = "move:5ft"
                     });
                 }
             }
@@ -1532,8 +1557,13 @@ namespace CompanionAI_Pathfinder.Tactics
                 {
                     var attack = new UnitAttack(c.Target);
                     // The game would otherwise take full/single from the UI smart-cursor mode (TurnController.GetEnabledFullAttack).
-                    if (c.FullAttack) attack.ForceFullAttack = true;
-                    else attack.IsSingleAttack = true;
+                    // ★ v0.3.14: turn-based only. In real time the game makes a full attack whenever movement allows
+                    // (UnitAttack.IsAttackFull); forcing a single attack there would throw away iterative attacks.
+                    if (!CombatMemory.IsRealTime)
+                    {
+                        if (c.FullAttack) attack.ForceFullAttack = true;
+                        else attack.IsSingleAttack = true;
+                    }
                     command = attack;
                     break;
                 }

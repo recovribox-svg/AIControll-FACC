@@ -256,3 +256,26 @@ and not chosen over Grasp Heart.
 | `[BuffStackingAnalyzer] ExtractFromAddStatBonus error: Specified cast is not valid` | line 868 (Shield of Faith) | `AddContextStatBonus` stores a `ContextValue`: its descriptor and stat are kept (amount = simple value, else 1), so its stacking with existing deflection bonuses is judged. |
 | Animal companions never used belt items | `AbilityData.CanBeCastByCaster` refuses item abilities to `PetType.AnimalCompanion` in combat (game rule) | Optional (`PetsUseItems`, default on): a transpiler replaces that single `UnitPartPet.Type` read (verified: one `callvirt get_Type` in the real assembly); all other item rules still apply. |
 
+
+## 19. v0.3.14: real time uses the tactical engine
+
+The 0.3.14 test showed the real-time engine (`Core/DecisionEngine/UnifiedDecisionEngine` + `Scoring/`) could not be tuned
+into shape: an option's score was the geometric mean of a dozen 0..1 factors, so an action with no effect but no
+downside won. Every real-time action of Lann, Aeiluvetar and Orvath was "Aid Another" (melee range), the ranged
+characters walked into melee, and no weapon attack was chosen in a whole session.
+
+Real time is now decided by the same engine as turn-based (`Tactics/RealTimeTactics.Act`, called by
+`RealTimeController.ProcessUnit` once the unit's command slots are empty):
+
+| Turn-based concept | Real time |
+|---|---|
+| Actions left this turn | The game's real-time action cooldowns (`HasStandardAction` etc. read `UnitCombatState.Cooldown`) |
+| Movement left | Unlimited walking (`UnitMoveTo` ignores cooldowns; attacks walk to their target); horizon = speed × 6 s |
+| Round (`CombatMemory.Round`, per-round memory) | 6 s of game time since the combat's first decision |
+| 5-foot step out of melee | "Back off out of melee": a 4 m move, priced with the attacks of opportunity it provokes |
+| Full or single attack flag | Not set: the game makes a full attack whenever movement allows |
+| END TURN | "wait": decided again after the decision interval (logged only in verbose mode) |
+
+Learning from a command that did nothing and the attempt loop are shared (`Tactics/TacticalDriver`), unchanged for
+turn-based. The old engine remains selectable ("Real time: use the old decision engine") as a fallback until the new
+path is proven in play.

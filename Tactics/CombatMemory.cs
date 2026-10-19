@@ -25,7 +25,27 @@ namespace CompanionAI_Pathfinder.Tactics
         public static readonly Dictionary<string, string> ActiveBosses = new Dictionary<string, string>();
         private static int _lastRound = int.MaxValue;
 
-        public static int Round => Game.Instance?.TurnBasedCombatController?.RoundNumber ?? 0;
+        /// <summary>
+        /// The combat round. Turn-based: the game's round number. ★ v0.3.14: real time has no rounds, so it is six seconds
+        /// of game time since this combat's first decision (the game's own real-time round length), counting from 1.
+        /// </summary>
+        public static int Round
+        {
+            get
+            {
+                if (TurnBased.Controllers.CombatController.IsInTurnBasedCombat())
+                    return Game.Instance?.TurnBasedCombatController?.RoundNumber ?? 0;
+                double now = Game.Instance?.TimeController?.GameTime.TotalSeconds ?? 0d;
+                if (_realTimeStart < 0d) _realTimeStart = now;
+                return 1 + (int)((now - _realTimeStart) / 6d);
+            }
+        }
+
+        /// <summary>Game time (seconds) of this combat's first real-time decision; negative until then.</summary>
+        private static double _realTimeStart = -1d;
+
+        /// <summary>★ v0.3.14: the decision runs in real-time combat.</summary>
+        public static bool IsRealTime => !TurnBased.Controllers.CombatController.IsInTurnBasedCombat();
 
         /// <summary>Called on every decision; a round number going backwards means a new combat started.</summary>
         public static void Sync()
@@ -45,6 +65,7 @@ namespace CompanionAI_Pathfinder.Tactics
             ActiveBosses.Clear();
             ProgressiveGate.ResetCombat();
             _lastRound = int.MaxValue;
+            _realTimeStart = -1d;
             AbilityProfile.ClearConditionCache();
         }
 
