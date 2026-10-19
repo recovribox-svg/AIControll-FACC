@@ -399,7 +399,61 @@ namespace CompanionAI_Pathfinder.Scoring.Scorers
                 }
             }
 
+            // ═══════════════════════════════════════════════════════════════
+            // ★ v0.3.14: what the attack actually does to this target, from the turn-based engine's math (expected
+            // damage after hit chance, saves and spell resistance; control or a debuff if it deals none). Nothing here
+            // looked at damage: Appraise Foe (no damage), Mind Spike and Jolt all scored 91.5 on the same goblin.
+            // ═══════════════════════════════════════════════════════════════
+            AddExpectedEffect(candidate, situation, cs);
+
             Main.Verbose($"[AttackScorer] {candidate.Ability?.Name ?? "BasicAttack"} -> {candidate.Target?.CharacterName}: {cs.ToDebugString()}");
+        }
+
+        /// <summary>
+        /// ★ v0.3.14: "Effect" consideration (saturating in expected damage, 0.5 at 6 points) plus the expected damage
+        /// itself as bonus points, so a stronger attack wins over a weaker one with the same other factors. An attack
+        /// with no damage counts by its control or debuff, and one with no harmful effect at all barely counts.
+        /// </summary>
+        private static void AddExpectedEffect(ActionCandidate candidate, Situation situation, ConsiderationSet cs)
+        {
+            try
+            {
+                var unit = situation.Unit;
+                var target = candidate.Target;
+                float expected;
+                float effect;
+                if (candidate.ActionType == CandidateType.BasicAttack || candidate.Ability == null)
+                {
+                    var est = Tactics.CombatMath.EstimateWeaponAttack(unit, target, full: false);
+                    expected = est?.ExpectedDamage ?? 0f;
+                    effect = expected > 0f ? Mathf.Clamp(expected / (expected + 6f), 0.15f, 0.95f) : 0.3f;
+                }
+                else
+                {
+                    var profile = Tactics.AbilityProfile.Get(candidate.Ability);
+                    if (profile == null) return;
+                    if (profile.DealsDamage)
+                    {
+                        expected = Tactics.CombatMath.EstimateAbilityDamage(candidate.Ability, profile, target) *
+                                   Tactics.CombatMath.EffectChance(unit, target, candidate.Ability, profile, damage: true);
+                        effect = Mathf.Clamp(expected / (expected + 6f), 0.15f, 0.95f);
+                    }
+                    else
+                    {
+                        expected = 0f;
+                        effect = profile.ControlStrength == Tactics.ControlStrength.Hard ? 0.7f
+                               : profile.ControlStrength == Tactics.ControlStrength.Soft ? 0.5f
+                               : profile.HarmfulEffects ? 0.4f
+                               : 0.15f;
+                    }
+                }
+                cs.Add("Effect", effect);
+                candidate.BonusScore += expected;
+            }
+            catch (Exception ex)
+            {
+                Main.Verbose($"[AttackScorer] expected effect {candidate.Ability?.Name ?? "BasicAttack"}: {ex.Message}");
+            }
         }
 
         #endregion

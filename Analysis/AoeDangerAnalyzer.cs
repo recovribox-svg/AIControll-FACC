@@ -113,8 +113,11 @@ namespace CompanionAI_Pathfinder.Analysis
 
                 if (result.IsInDanger)
                 {
-                    Main.Log($"[AoeDanger] {unit.CharacterName}: Danger={result.TotalDangerLevel:F2}, " +
-                        $"Effects={result.DangerousEffects.Count}, ShouldEscape={result.ShouldEscape}");
+                    // ★ v0.3.14: normal level only when it leads to an escape (887 identical lines in one fight).
+                    string line = $"[AoeDanger] {unit.CharacterName}: Danger={result.TotalDangerLevel:F2}, " +
+                                  $"Effects={result.DangerousEffects.Count} ({string.Join(", ", result.DangerousEffects.Select(d => d.Name))}), " +
+                                  $"ShouldEscape={result.ShouldEscape}";
+                    if (result.ShouldEscape) Main.Log(line); else Main.Verbose(line);
                 }
             }
             catch (Exception ex)
@@ -388,6 +391,15 @@ namespace CompanionAI_Pathfinder.Analysis
                 if ((descriptor & SpellDescriptor.Fear) != 0)
                     dangerLevel += 0.3f;
 
+                // ★ v0.3.14: what the area applies, from the analysis of the ability that spawned it. Stinking Cloud's
+                // descriptor says only Poison (0.3, under the 0.5 escape level), yet it nauseates: no actions at all.
+                // Orvath, Camellia and Seelah stood in one for a whole fight (887 checks, never "ShouldEscape").
+                switch (ControlOf(aoe))
+                {
+                    case CompanionAI_Pathfinder.Tactics.ControlStrength.Hard: dangerLevel = Math.Max(dangerLevel, 0.3f) + 0.5f; break;
+                    case CompanionAI_Pathfinder.Tactics.ControlStrength.Soft: dangerLevel = Math.Max(dangerLevel, 0.4f); break;
+                }
+
                 // 최대 1.0으로 제한
                 result.DangerLevel = Mathf.Clamp01(dangerLevel);
 
@@ -533,6 +545,29 @@ namespace CompanionAI_Pathfinder.Analysis
             return safety;
         }
 
+        /// <summary>★ v0.3.14: how strongly the area controls those inside (from the spawning ability's analysis).</summary>
+        private static CompanionAI_Pathfinder.Tactics.ControlStrength ControlOf(AreaEffectEntityData aoe)
+        {
+            try
+            {
+                var profile = SourceProfile(aoe);
+                return profile?.ControlStrength ?? CompanionAI_Pathfinder.Tactics.ControlStrength.None;
+            }
+            catch
+            {
+                return CompanionAI_Pathfinder.Tactics.ControlStrength.None;
+            }
+        }
+
+        /// <summary>★ v0.3.14: the profile of the ability that spawned this area, if the area is one of its own.</summary>
+        private static CompanionAI_Pathfinder.Tactics.AbilityProfile SourceProfile(AreaEffectEntityData aoe)
+        {
+            var source = aoe.Context?.SourceAbilityContext?.Ability;
+            if (source == null) return null;
+            var profile = CompanionAI_Pathfinder.Tactics.AbilityProfile.Get(source);
+            return profile != null && profile.SpawnedAreas.Contains(aoe.Blueprint) ? profile : null;
+        }
+
         /// <summary>
         /// ★ v0.3.14: what the area does, from its descriptor or, when the descriptor says nothing, from the turn-based
         /// engine's analysis of the ability that spawned it (an area with damage, control or a debuff in its actions).
@@ -545,10 +580,8 @@ namespace CompanionAI_Pathfinder.Analysis
             if (damaging || impairing) return;
             try
             {
-                var source = aoe.Context?.SourceAbilityContext?.Ability;
-                if (source == null) return;
-                var profile = CompanionAI_Pathfinder.Tactics.AbilityProfile.Get(source);
-                if (profile == null || !profile.SpawnedAreas.Contains(aoe.Blueprint)) return;
+                var profile = SourceProfile(aoe);
+                if (profile == null) return;
                 damaging = profile.DealsDamage;
                 impairing = profile.ControlStrength != CompanionAI_Pathfinder.Tactics.ControlStrength.None || profile.AppliesHarmfulBuffs;
             }
