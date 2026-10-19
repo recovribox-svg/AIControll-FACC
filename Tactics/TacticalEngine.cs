@@ -85,6 +85,10 @@ namespace CompanionAI_Pathfinder.Tactics
         public float ExpectedRounds;
         public float Difficulty;
         public bool HasRangedWeapon;
+        /// <summary>★ v0.3.14: what the unit's statuses let the game start (Nauseated, Staggered, CantMove).</summary>
+        public ActionPermissions Permissions = ActionPermissions.None;
+        /// <summary>★ v0.3.14: the unit's notable conditions, for the decision log (UnitStatus.Describe).</summary>
+        public string Status = "";
 
         public float Distance(UnitEntityData other) => Vector3.Distance(Unit.Position, other.Position);
     }
@@ -199,6 +203,13 @@ namespace CompanionAI_Pathfinder.Tactics
 
         private static bool Affordable(TacticalContext ctx, Candidate c)
         {
+            // ★ v0.3.14: options the unit's statuses keep the game from starting (ActionRules): while nauseated only
+            // plain movement starts, a staggered unit cannot walk and act, a webbed or held one cannot walk at all.
+            // Orvath queued Gather Power while nauseated and stood 26 s in the Stinking Cloud waiting for it to start.
+            if (ActionRules.Refusal(ctx.Permissions, plainMove: c.Kind == CandidateKind.Move,
+                                    walks: c.Kind == CandidateKind.Move || c.NeedsMove,
+                                    mainAction: c.Slot == ActionSlot.Standard || c.Slot == ActionSlot.FullRound) != null)
+                return false;
             switch (c.Slot)
             {
                 case ActionSlot.Free: return true;
@@ -216,6 +227,9 @@ namespace CompanionAI_Pathfinder.Tactics
             // ★ v0.3.14: real-time decisions carry "RT" (rounds are six-second spans there).
             bool realTime = CombatMemory.IsRealTime;
             sb.Append($"[Tactics] {ctx.Unit.CharacterName} {(realTime ? "RT" : "R")}{ctx.Round} HP{ctx.HpPct * 100:F0}% ");
+            // ★ v0.3.14: the unit's statuses and what they forbid ("{nauseated | nauseated: move only}").
+            if (ctx.Status.Length > 0 || ctx.Permissions.Notes.Length > 0)
+                sb.Append($"{{{ctx.Status}{(ctx.Permissions.Notes.Length > 0 ? " | " + ctx.Permissions.Notes : "")}}} ");
             sb.Append($"[{(ctx.HasStandard ? "S" : "-")}{(ctx.HasMove ? "M" : "-")}{(ctx.HasSwift ? "W" : "-")}{(ctx.CanFullAttack ? "F" : "-")}{(ctx.CanFiveFoot ? "5" : "-")}]{(ctx.SurpriseRound ? " surprise" : "")}{(ctx.NoMovementLeft ? " no-move" : ctx.StepTaken ? " stepped" : "")} ");
             sb.Append($"enemies={ctx.Enemies.Count} rounds~{ctx.ExpectedRounds:F1} diff={ctx.Difficulty:F2} :: ");
             sb.Append(string.Join(" | ", usable.Take(5).Select(c => c.ToString())));
@@ -247,6 +261,8 @@ namespace CompanionAI_Pathfinder.Tactics
             ctx.HasFullRound = unit.HasFullRoundAction();
             ctx.CanFullAttack = ctx.HasFullRound && !unit.UsedOneMoveAction() && !unit.IsMoveActionRestricted() &&
                                 !unit.Descriptor.State.HasCondition(UnitCondition.Staggered);
+            ctx.Permissions = UnitStatus.Permissions(unit, turnBased: !CombatMemory.IsRealTime);
+            ctx.Status = UnitStatus.Describe(unit);
 
             if (ctx.Turn != null && ctx.Turn.Rider == unit)
             {
@@ -1380,8 +1396,10 @@ namespace CompanionAI_Pathfinder.Tactics
         {
             var unit = ctx.Unit;
             if (!ctx.HasMove && !ctx.HasStandard) return;
-            if (!unit.Descriptor.State.CanMove) return;
+            if (!ctx.Permissions.CanWalk) return;
             if (ctx.NoMovementLeft || ctx.StepTaken) return;
+
+            AddLeaveAreaCandidate(ctx, list);
 
             // "Can I already hurt someone from here with what I have left this turn?"
             // ★ v0.3.14: in real time "from here" counts while the action cooldown runs: a melee character next to an
@@ -1525,6 +1543,79 @@ namespace CompanionAI_Pathfinder.Tactics
             }
         }
 
+        /// <summary>
+        /// ★ v0.3.14: walk out of the harmful area the unit stands in (docs/STATUS_AWARE_PLAN.md, F3). Moves only priced
+        /// walking *into* an area (MoveRisk); staying in one was free, so in turn-based combat nobody ever left a Stinking
+        /// Cloud, and a nauseated unit (movement only) ended its turn inside. Valued like entering it - the area's danger
+        /// level times half the unit's worth for the next rounds - less the attacks of opportunity of the move, so leaving
+        /// competes with acting on the same scale. A melee character that has an enemy in reach steps out where it keeps
+        /// one in reach if it can, so it can still attack after leaving.
+        /// </summary>
+        private static void AddLeaveAreaCandidate(TacticalContext ctx, List<Candidate> list)
+        {
+            var unit = ctx.Unit;
+            var inside = AoeDangerAnalyzer.InsideDanger(unit);
+            if (inside.Areas.Count == 0 || inside.Danger <= 0f) return;
+            float maxDistance = Math.Min(9f, ctx.HasMove ? ctx.MoveRange : unit.CurrentSpeedMps * 3f);
+            if (maxDistance < 1f) return;
+
+            Func<Vector3, bool> keepsTarget = null;
+            if (!UsesRangedWeapon(unit))
+            {
+                var inReach = ctx.Enemies
+                    .Select(e => new { Enemy = e, Est = CombatMath.EstimateWeaponAttack(unit, e, false) })
+                    .Where(x => x.Est != null && !x.Est.IsRanged && InRangeNow(unit, x.Enemy.Position, x.Est.Reach, true))
+                    .ToList();
+                Vector3 eyeOffset = unit.EyePosition - unit.Position;
+                if (inReach.Count > 0)
+                    keepsTarget = p => inReach.Any(x => UnitCommand.IsUnitCloseEnough(x.Enemy.Position, p, p + eyeOffset, x.Est.Reach * 0.95f, true, 0f));
+            }
+
+            Vector3? best = null;
+            float bestScore = float.MinValue;
+            bool bestKeeps = false;
+            foreach (float ring in new[] { 1.5f, 3f, 4.5f, 6f, 9f })
+            {
+                if (ring > maxDistance) break;
+                for (int i = 0; i < 16; i++)
+                {
+                    float angle = i * 22.5f * Mathf.Deg2Rad;
+                    var point = unit.Position + new Vector3(Mathf.Cos(angle), 0f, Mathf.Sin(angle)) * ring;
+                    if (!inside.IsOutside(point)) continue;
+                    if (AoeDangerAnalyzer.EnteringDanger(unit, unit.Position, point, out _) > 0f) continue;
+                    if (!AoeDangerAnalyzer.IsPositionValid(unit.Position, point)) continue;
+                    bool keeps = keepsTarget?.Invoke(point) ?? false;
+                    float nearestEnemy = ctx.Enemies.Count > 0 ? ctx.Enemies.Min(e => Vector3.Distance(point, e.Position)) : 0f;
+                    float score = (keeps ? 10f : 0f) - ring + 0.1f * Math.Min(nearestEnemy, 10f);
+                    if (score > bestScore)
+                    {
+                        bestScore = score;
+                        best = point;
+                        bestKeeps = keeps;
+                    }
+                }
+                // The nearest way out, unless a little further keeps an enemy in reach.
+                if (best.HasValue && (keepsTarget == null || bestKeeps)) break;
+            }
+            if (!best.HasValue) return;
+
+            float value = inside.Danger * 0.5f * AllyWorth(ctx, unit);
+            string label = $"Leave {inside.Name ?? "area"}";
+            var risk = MoveRisk(ctx, best.Value);
+            if (risk != null)
+            {
+                value -= risk.Cost;
+                label += risk.Tag;
+            }
+            if (value < MinMainValue) return;
+            list.Add(new Candidate
+            {
+                Kind = CandidateKind.Move, Slot = ActionSlot.Move, Point = best, ApproachRadius = 0.3f,
+                Value = value,
+                Label = label, Key = "move:leave-area"
+            });
+        }
+
         /// <summary>Point within <paramref name="distance"/> that maximises distance from enemies, biased towards allies.</summary>
         private static Vector3? FindRetreatPoint(TacticalContext ctx, float distance, Func<Vector3, bool> accept = null)
         {
@@ -1562,6 +1653,49 @@ namespace CompanionAI_Pathfinder.Tactics
         #endregion
 
         #region Execute
+
+        /// <summary>
+        /// ★ v0.3.14: the order that makes the game stand a lying unit up in turn-based combat (TurnBasedController.StandUp):
+        /// a short walk, as a player's click on the ground; the game cancels it as the unit gets up. A spot that is safe to
+        /// walk to in case it is carried out after all. <paramref name="cost"/> says what standing up costs, for the log.
+        /// </summary>
+        public static bool IssueStandUp(UnitEntityData unit, out UnitCommand command, out string cost, out string failure)
+        {
+            command = null;
+            failure = "no spot to walk to";
+            int provokes = 0;
+            try
+            {
+                if (!unit.Descriptor.State.Features.GetUpWithoutAttackOfOpportunity)
+                    provokes = unit.CombatState.EngagedBy.Count(e => e != null && e.Descriptor.State.IsConscious);
+            }
+            catch { }
+            cost = (unit.HasMoveAction() ? "move action" : "standard action") + (provokes > 0 ? $", provokes up to {provokes}" : "");
+
+            var enemies = new List<UnitEntityData>();
+            try { enemies.AddRange(unit.CombatState.EngagedBy.Where(e => e != null)); } catch { }
+            int attempts = 0;
+            foreach (float ring in new[] { 1.5f, 2.5f })
+            {
+                var points = Enumerable.Range(0, 12)
+                    .Select(i => unit.Position + new Vector3(Mathf.Cos(i * 30f * Mathf.Deg2Rad), 0f, Mathf.Sin(i * 30f * Mathf.Deg2Rad)) * ring)
+                    .Where(p => AoeDangerAnalyzer.EnteringDanger(unit, unit.Position, p, out _) <= 0f &&
+                                AoeDangerAnalyzer.IsPositionValid(unit.Position, p))
+                    // Staying next to whoever engages the unit: if the walk is carried out after all, it provokes nothing.
+                    .OrderBy(p => enemies.Count == 0 ? 0f : enemies.Max(e => Vector3.Distance(p, e.Position)));
+                foreach (var point in points)
+                {
+                    if (attempts++ >= 4) return false;
+                    var move = new UnitMoveTo(point, 0.3f);
+                    if (CommandDispatcher.Run(unit, move, "Stand up", out failure))
+                    {
+                        command = move;
+                        return true;
+                    }
+                }
+            }
+            return false;
+        }
 
         /// <summary>Builds the game command for a candidate and issues it through CommandDispatcher.</summary>
         public static bool Execute(UnitEntityData unit, Candidate c, out UnitCommand command, out string failure)

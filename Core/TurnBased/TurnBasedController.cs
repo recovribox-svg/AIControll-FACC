@@ -55,6 +55,12 @@ namespace CompanionAI_Pathfinder.Core.TurnBased
                 var memory = CombatMemory.ForTurn(unit);
                 if (memory.Finished) return ExecutionResult.EndTurn("Turn finished");
 
+                // ★ v0.3.14: lying down (tripped, Grease, healed back up) with nothing queued: the game waits for an order
+                // to stand the unit up, while UnitState.CanAct reads false, so the turn used to end as "cannot act"
+                // every round until the fight was over (docs/STATUS_AWARE_PLAN.md, F1).
+                if (unit.Commands.Empty && UnitStatus.CanStandUpOnCommand(unit))
+                    return StandUp(unit, memory);
+
                 // Wait for the previous command to finish (the game ticks it while the turn is Acting).
                 if (!GameAPI.IsReadyForNextAction(unit))
                 {
@@ -124,7 +130,8 @@ namespace CompanionAI_Pathfinder.Core.TurnBased
 
             // Progress: the unit moves or its command is executing (animation). A command that is still approaching
             // is not "running" (UnitCommand.IsStarted only becomes true on arrival), so movement is tracked separately.
-            bool running = GameAPI.HasRunningCommand(unit);
+            // ★ v0.3.14: standing up is progress too (the game's own ContinueActing counts View.IsGetUp as running).
+            bool running = GameAPI.HasRunningCommand(unit) || (unit.View?.IsGetUp ?? false);
             if (running || Vector3.Distance(unit.Position, memory.LastPosition) > 0.05f)
             {
                 memory.IdleSeconds = 0f;
@@ -139,7 +146,9 @@ namespace CompanionAI_Pathfinder.Core.TurnBased
             // for. v0.3.4 waited the full 4 s and logged it as a command timeout (Camellia, CanAct=False).
             if (unit.Commands.Empty && !(unit.Descriptor?.State?.CanAct ?? true) && memory.IdleSeconds > 1f)
             {
-                Main.Log($"[TBController] {unit.CharacterName}: cannot act this turn - ending turn");
+                // ★ v0.3.14: with the reason (93 such lines in six logs said nothing about why).
+                string status = UnitStatus.Describe(unit);
+                Main.Log($"[TBController] {unit.CharacterName}: cannot act this turn ({(status.Length > 0 ? status : "no known condition")}) - ending turn");
                 memory.Finished = true;
                 return ExecutionResult.EndTurn("Cannot act");
             }
@@ -164,6 +173,39 @@ namespace CompanionAI_Pathfinder.Core.TurnBased
                 return ExecutionResult.EndTurn("Wait timeout");
             }
             return ExecutionResult.Waiting("Command in progress");
+        }
+
+        /// <summary>
+        /// ★ v0.3.14: give the order that stands the unit up. In turn-based combat UnitProneController stands a directly
+        /// controlled unit up only while it has a command; standing then costs the move action (the standard one when
+        /// no move is left), provokes attacks of opportunity unless the unit has a feat against it, and cancels the
+        /// command that is still waiting (TurnController/UnitEntityData.TryCancelCommands) - a player's first click on
+        /// a prone character does the same. The order is a short walk; the next decision then sees the real action
+        /// economy. Standing is always right: lying down loses the turn and gives enemies +4 to hit in melee.
+        /// </summary>
+        private static ExecutionResult StandUp(UnitEntityData unit, TurnMemory memory)
+        {
+            if (memory.StandUpAttempts >= 2)
+            {
+                Main.Log($"[TBController] {unit.CharacterName}: still lying down after {memory.StandUpAttempts} orders to stand up " +
+                         $"({UnitStatus.Describe(unit)}) - ending turn");
+                memory.Finished = true;
+                return ExecutionResult.EndTurn("Could not stand up");
+            }
+            memory.StandUpAttempts++;
+            if (TacticalEngine.IssueStandUp(unit, out var command, out string cost, out string failure))
+            {
+                Main.Log($"[TBController] {unit.CharacterName}: lying down - standing up ({cost})");
+                // Ours (so the wait does not clear it as a leftover), but no option to learn from: its key stays empty.
+                memory.LastCommand = command;
+                memory.LastCandidateKey = null;
+                memory.LastKind = CandidateKind.Move;
+                memory.LastIssuePosition = unit.Position;
+                return ExecutionResult.Waiting("Standing up");
+            }
+            Main.Log($"[TBController] {unit.CharacterName}: lying down, no order to stand up could be given ({failure}) - ending turn");
+            memory.Finished = true;
+            return ExecutionResult.EndTurn("Could not stand up");
         }
 
         private static bool IsClearableLeftover(UnitCommand command)

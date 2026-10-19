@@ -7,6 +7,7 @@
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="..\..\Tactics\SpellTierPolicy.cs" Link="SpellTierPolicy.cs" />
+    <Compile Include="..\..\Tactics\ActionRules.cs" Link="ActionRules.cs" />
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.8.0" />

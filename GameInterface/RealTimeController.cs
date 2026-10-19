@@ -197,6 +197,13 @@ namespace CompanionAI_Pathfinder.GameInterface
             }
             // ★ v0.2.43: IsInExclusiveState는 체크하지 않음 - Commands.Empty 체크가 커버함
 
+            // ★ v0.3.14: nauseated: the game still starts UnitMoveTo, nothing else (UnitCommandController.ShouldStartCommand).
+            // It used to count as "cannot act" before the AoE escape below: Orvath stood 26 s in the Stinking Cloud that
+            // nauseated him, his queued Gather Power waiting to start (docs/STATUS_AWARE_PLAN.md, F2). Now the escape runs,
+            // commands that cannot start are dropped, and the tactical engine picks movement only (ActionRules).
+            bool nauseated = state.HasCondition(Kingmaker.UnitLogic.UnitCondition.Nauseated);
+            if (nauseated) DropUnstartableWhileNauseated(unit);
+
             // ★ v0.2.49: AoE 위험 지역 탈출 우선 체크
             // 이동 가능한 상태라면 AoE 위험 지역에서 탈출 시도
             if (state.CanMove)
@@ -210,6 +217,13 @@ namespace CompanionAI_Pathfinder.GameInterface
                     _lastDecisionTime[unitId] = currentTime;
                     return;
                 }
+            }
+
+            // The old engine knows nothing of "movement only": it would queue commands that cannot start.
+            if (nauseated && (Settings.ModSettings.Instance?.RealTimeLegacyEngine ?? false))
+            {
+                _lastDecisionTime[unitId] = currentTime;
+                return;
             }
 
             // Check combat state
@@ -480,6 +494,29 @@ namespace CompanionAI_Pathfinder.GameInterface
         }
 
         /// <summary>
+        /// ★ v0.3.14: commands a nauseated unit cannot start (anything but a walk) are dropped while it is nauseated, so
+        /// it can walk instead (out of the cloud, out of melee). Started commands and walks are left alone; the engine
+        /// decides again when the nausea ends.
+        /// </summary>
+        private static void DropUnstartableWhileNauseated(UnitEntityData unit)
+        {
+            try
+            {
+                if (unit.Commands.Empty || !unit.IsInCombat) return;
+                var waiting = unit.Commands.Raw.Where(c => c != null && !c.IsFinished).ToList();
+                if (waiting.Count == 0 || waiting.Any(c => c.IsStarted || c is UnitMoveTo)) return;
+                if (!waiting.All(c => c.IsInterruptible && !c.Cutscene)) return;
+                Main.Log($"[RT] {unit.CharacterName}: nauseated - dropping {string.Join(", ", waiting.Select(c => c.GetType().Name))} " +
+                         "(cannot start while nauseated; only walking can)");
+                unit.Commands.InterruptAll();
+            }
+            catch (Exception ex)
+            {
+                Main.Verbose($"[RT] {unit.CharacterName}: nauseated command check: {ex.Message}");
+            }
+        }
+
+        /// <summary>
         /// ★ v0.2.54: 행동 불가 상태 체크 (통합)
         /// </summary>
         /// <returns>불가 사유 문자열, 행동 가능시 null</returns>
@@ -493,7 +530,7 @@ namespace CompanionAI_Pathfinder.GameInterface
             if (state.HasCondition(Kingmaker.UnitLogic.UnitCondition.Stunned)) return "Stunned";
             if (state.HasCondition(Kingmaker.UnitLogic.UnitCondition.CantAct)) return "CantAct";
             if (state.HasCondition(Kingmaker.UnitLogic.UnitCondition.Dazed)) return "Dazed";
-            if (state.HasCondition(Kingmaker.UnitLogic.UnitCondition.Nauseated)) return "Nauseated";
+            // ★ v0.3.14: not Nauseated - a nauseated unit can still walk (handled in ProcessUnit).
             if (state.HasCondition(Kingmaker.UnitLogic.UnitCondition.Cowering)) return "Cowering";
             if (state.HasCondition(Kingmaker.UnitLogic.UnitCondition.Frightened)) return "Frightened";
             if (state.Prone?.Active == true) return "Prone";

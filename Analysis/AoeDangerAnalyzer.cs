@@ -202,6 +202,57 @@ namespace CompanionAI_Pathfinder.Analysis
             return worst;
         }
 
+        /// <summary>★ v0.3.14: the harmful areas a unit stands in (<see cref="InsideDanger"/>).</summary>
+        public sealed class AreasInside
+        {
+            public readonly List<AreaEffectEntityData> Areas = new List<AreaEffectEntityData>();
+            /// <summary>Worst area's danger level plus a quarter of the others' (0 when none).</summary>
+            public float Danger;
+            /// <summary>The worst area's name, for the decision log.</summary>
+            public string Name;
+
+            /// <summary><paramref name="point"/> lies outside every one of these areas.</summary>
+            public bool IsOutside(Vector3 point) => Areas.All(a => !IsPositionInsideEffect(point, a));
+        }
+
+        /// <summary>
+        /// ★ v0.3.14: the harmful areas <paramref name="unit"/> is standing in, rated like <see cref="EnteringDanger"/>
+        /// (same danger levels), without logging. Turn-based moves only priced walking into an area; nothing ever
+        /// considered walking out of the one the unit stood in (Orvath, nauseated in a Stinking Cloud).
+        /// </summary>
+        public static AreasInside InsideDanger(UnitEntityData unit)
+        {
+            var result = new AreasInside();
+            if (unit == null) return result;
+            try
+            {
+                var areaEffects = Game.Instance?.State?.AreaEffects;
+                if (areaEffects == null) return result;
+                float worst = 0f, rest = 0f;
+                foreach (var aoe in areaEffects)
+                {
+                    if (aoe == null || !aoe.IsInGame || aoe.IsEnded) continue;
+                    if (!IsUnitInsideEffect(unit, aoe)) continue;
+                    var danger = EvaluateEffectDanger(unit, aoe, quiet: true);
+                    if (danger == null || danger.DangerLevel <= 0f) continue;
+                    result.Areas.Add(aoe);
+                    if (danger.DangerLevel > worst)
+                    {
+                        rest += worst;
+                        worst = danger.DangerLevel;
+                        result.Name = aoe.Context?.SourceAbilityContext?.Ability?.Name ?? danger.Name;
+                    }
+                    else rest += danger.DangerLevel;
+                }
+                result.Danger = worst + 0.25f * rest;
+            }
+            catch (Exception ex)
+            {
+                Main.Verbose($"[AoeDanger] inside check {unit.CharacterName}: {ex.Message}");
+            }
+            return result;
+        }
+
         /// <summary>
         /// 모든 위험 지역 효과 목록 반환 (디버그/UI용)
         /// </summary>

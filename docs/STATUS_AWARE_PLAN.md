@@ -1,6 +1,9 @@
 # Status-aware companion AI: investigation and plan
 
-Analysis only. Nothing here is implemented yet. Written against the 0.3.14 work-in-progress branch.
+Written against the 0.3.14 work-in-progress branch.
+
+**Status:** phases 0–4 are implemented in the 0.3.14 test build (see section I and `docs/TACTICAL_AI.md` §20).
+Phase 5 (cleanse value) waits for playtest results of 0.3.14; phase 6 is optional.
 
 Evidence labels:
 - **[Game]**: read in the decompiled game code (`Assembly-CSharp`).
@@ -130,7 +133,7 @@ predicates only.
 |---|---|
 | `CanWalk` | `State.CanMove` |
 | `MovementOnly` | `CanAct && HasCondition(Nauseated)` |
-| `OneActionOnly` | `unit.IsMoveActionRestricted()` (covers Staggered and the surprise round; replaces the separate `SurpriseRound` test) |
+| `OneActionOnly` | `unit.IsMoveActionRestricted()` (covers Staggered and the surprise round). *As built:* turn-based only, alongside the existing `SurpriseRound` test, which stays |
 | `StandUpPending` | TB only: `IsDirectlyControllable && Prone.Active && !UnitProneController.ShouldBeProne(unit) && State.CanStandUp`. This is the formula `TurnController` uses for `UnitCanGetUpOnCommand`; read `CurrentTurn.UnitCanGetUpOnCommand` when the unit is the current turn's rider. |
 | `Reasons` | short text for the log, e.g. `[nauseated: move only]` |
 
@@ -142,17 +145,17 @@ How the permissions are used:
   - `MovementOnly` → only `CandidateKind.Move` candidates (moves are `UnitMoveTo`, which the game starts).
   - `OneActionOnly` → no candidate with `NeedsMove` and a standard action.
   - `!CanWalk` → no candidate with `NeedsMove`.
-- **Prone (TB)**. `TurnBasedController`'s "cannot act" exit and `IsReadyForNextAction` treat `StandUpPending` as
-  able. `BuildContext` reserves the action that standing up will use: the move if one is left (also no full attack),
-  otherwise the standard. The engine then decides as usual. The first command makes the game stand the unit up. The
-  game then cancels the waiting command (`TryCancelCommands`) and charges the move. `LearnFromLastCommand` does not
-  count a command cancelled by standing up as failed (it remembers "prone when issued"), so the next decision runs
-  with the real economy.
+- **Prone (TB)**. *As built (simpler than first planned):* when the unit lies down, may stand up and has nothing
+  queued, `TurnBasedController.StandUp` gives a short walk order before any decision, like a player's click on the
+  ground (`TacticalEngine.IssueStandUp`). The game stands the unit up (move action, or standard when no move is
+  left), cancels the waiting order (`TryCancelCommands`) and the next decision runs with the real economy. No option
+  is decided while lying down, so no reservation and no "cancelled by standing up" learning is needed. Two orders
+  that do not stand the unit up end the turn as before, with the reason logged.
   - Standing up always happens. Staying down loses the turn and gives enemies +4 to hit in melee; the attack of
     opportunity for standing is the lesser cost. It is logged ("stands up: move action, provokes 2").
 - **Leave harmful area** (both modes, in `AddMovementCandidates`). When the unit's own position is dangerous
-  (`AoeDangerAnalyzer.AnalyzeUnit`), offer a move to the escape point the analyzer already computes, or a
-  `FindRetreatPoint` that is outside every area.
+  (`AoeDangerAnalyzer.InsideDanger`), offer a move to the nearest point (1.5–9 m) outside every one of those areas
+  that enters no other.
   - Value: danger here × 0.5 × `AllyWorth`, minus `MoveRisk` at the destination. This is the same scale `MoveRisk`
     already uses for entering, so staying and entering are priced alike.
   - Under `MovementOnly` it is often the only option left, which is correct.

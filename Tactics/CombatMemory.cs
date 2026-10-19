@@ -117,6 +117,8 @@ namespace CompanionAI_Pathfinder.Tactics
         public float LastTick { get; set; }
         public UnityEngine.Vector3 LastPosition { get; set; }
         public bool Finished { get; set; }
+        /// <summary>★ v0.3.14: orders given this turn to stand the unit up (TurnBasedController.StandUp).</summary>
+        public int StandUpAttempts { get; set; }
         public readonly HashSet<string> Failed = new HashSet<string>();
         /// <summary>★ v0.3.11: enemies (unique ids) a path could not reach this turn - not worth advancing towards.</summary>
         public readonly HashSet<string> Unreachable = new HashSet<string>();

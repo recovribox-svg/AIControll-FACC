@@ -279,3 +279,20 @@ Real time is now decided by the same engine as turn-based (`Tactics/RealTimeTact
 Learning from a command that did nothing and the attempt loop are shared (`Tactics/TacticalDriver`), unchanged for
 turn-based. The old engine remains selectable ("Real time: use the old decision engine") as a fallback until the new
 path is proven in play.
+
+## 20. v0.3.14: statuses (investigation and plan: `docs/STATUS_AWARE_PLAN.md`)
+
+The action economy already comes from the game (`HasStandardAction` etc. include Nauseated, Staggered and the surprise
+round). What was missing were the game's rules on whether a command *starts*, and two gates that stopped units the game
+still lets act:
+
+| Status | Game rule | Mod (0.3.14) |
+|---|---|---|
+| Lying down, may stand up (TB) | `UnitProneController` stands a directly controlled unit up only while it has a command; `CanAct` reads false meanwhile | `TurnBasedController.StandUp` gives a short walk order (`TacticalEngine.IssueStandUp`), the game stands the unit up and cancels it, the next decision sees the real economy. Before, the turn ended as "cannot act" every round |
+| Nauseated | Only `UnitMoveTo` starts (`UnitCommandController.ShouldStartCommand`) | Options other than plain moves are not offered (`ActionRules`); real time no longer stops a nauseated unit before the AoE escape and drops its commands that cannot start |
+| Staggered (TB) | One move or one standard action (`IsMoveActionRestricted`) | No "walk there and act" options |
+| CantMove / MovementBan | `CanMove` false | No option that has to walk |
+| Standing in a harmful area | - | "Leave <area>": a move out, valued like entering it (danger × ½ × the unit's worth) less its attacks of opportunity; a melee character keeps an enemy in reach if it can |
+
+`Tactics/ActionRules.cs` is the pure rule (unit-tested), `Tactics/UnitStatus.cs` reads the game; decision lines show the
+unit's conditions (`{nauseated | nauseated: move only}`) and every "cannot act" line names them.
