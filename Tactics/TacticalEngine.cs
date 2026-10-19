@@ -136,6 +136,7 @@ namespace CompanionAI_Pathfinder.Tactics
             try { AddWeaponCandidates(ctx, candidates); } catch (Exception ex) { Main.Error($"[Tactics] weapon candidates: {ex}"); }
             try { AddAbilityCandidates(ctx, candidates); } catch (Exception ex) { Main.Error($"[Tactics] ability candidates: {ex}"); }
             try { AddMovementCandidates(ctx, candidates); } catch (Exception ex) { Main.Error($"[Tactics] movement candidates: {ex}"); }
+            try { PriceHeldCharge(ctx, candidates); } catch (Exception ex) { Main.Error($"[Tactics] held charge: {ex.Message}"); }
 
             var usable = candidates
                 .Where(c => c.Value > 0f && Affordable(ctx, c) && !memory.Failed.Contains(c.Key) && !SilentlyFailing(ctx, c))
@@ -167,6 +168,28 @@ namespace CompanionAI_Pathfinder.Tactics
                          $"{ctx.NoAttackAgainst} of {ctx.Enemies.Count} enemies, no ability or move was usable" +
                          (ctx.Permissions.Notes.Length > 0 ? $" ({ctx.Permissions.Notes})" : ""));
             return chosen;
+        }
+
+        /// <summary>
+        /// ★ v0.3.15: casting another spell drops a held touch charge (TouchSpellsController: any spell or spell-like
+        /// ability not from an item removes it). Those options pay for the charge they throw away: the best value the
+        /// charge has now. Camellia held an Inflict Light Wounds charge and cast Divine Zap over it.
+        /// </summary>
+        private static void PriceHeldCharge(TacticalContext ctx, List<Candidate> candidates)
+        {
+            if (CastOutcome.HeldChargeOf(ctx.Unit) == null) return;
+            var charges = candidates.Where(c => c.Kind == CandidateKind.Ability && c.Ability?.StickyTouch != null).ToList();
+            if (charges.Count == 0) return;
+            float held = charges.Max(c => c.Value);
+            if (held <= 0f) return;
+            foreach (var c in candidates)
+            {
+                if (c.Kind != CandidateKind.Ability || c.Ability == null || c.Ability.StickyTouch != null || c.Ability.SourceItem != null) continue;
+                var type = c.Ability.Blueprint.Type;
+                if (type != AbilityType.Spell && type != AbilityType.SpellLike) continue;
+                c.Value -= held;
+                c.Label += " [drops held touch]";
+            }
         }
 
         /// <summary>
@@ -482,12 +505,22 @@ namespace CompanionAI_Pathfinder.Tactics
         {
             var risk = DisengageRisk(ctx, destination);
             var unit = ctx.Unit;
-            float danger = AoeDangerAnalyzer.EnteringDanger(unit, unit.Position, destination, out string area);
+            float danger = AoeDangerAnalyzer.EnteringDanger(unit, unit.Position, destination, out string area,
+                                                            out float roundsLeft, out bool endsInside);
             if (danger > 0f)
             {
+                // ★ v0.3.15: the danger level is the share of a round the area takes from the unit each round it is
+                // affected (0.4 for Grease's fall, more for nausea or damage), times the chance it fails the save that
+                // round. Passing through risks one round; stopping inside to fight risks every round it stays, until the
+                // fight or the area ends. Melee fighters charged into Grease to reach enemies lying in it and fell in
+                // too (34 moves "into Grease" in one log): the cost was half a fight's worth × one round's chance.
+                float perRound = AllyWorth(ctx, unit) / Math.Min(Math.Max(1f, ctx.ExpectedRounds), 3f);
+                float rounds = endsInside ? Mathf.Clamp(Math.Min(roundsLeft, ctx.ExpectedRounds), 1f, 3f) : 1f;
                 risk = risk ?? new Disengage();
                 risk.Area = area ?? "area";
-                risk.Cost += danger * 0.5f * AllyWorth(ctx, unit);
+                // Inside, a fall is worse than its share of a round: standing up provokes from every enemy next to the
+                // unit, and they hit it at +4 while it lies there.
+                risk.Cost += danger * perRound * rounds * (endsInside ? 2f : 1f);
             }
 
             // ★ v0.3.14 (test5): badly hurt, walking to where more enemies can hit it before its next turn: the higher chance
@@ -1955,6 +1988,23 @@ namespace CompanionAI_Pathfinder.Tactics
                 case CandidateKind.Ability:
                 {
                     var wrapper = c.Target != null ? new TargetWrapper(c.Target) : new TargetWrapper(c.Point ?? unit.Position);
+                    // ★ v0.3.15: turn-based, a touch spell (Cure/Inflict Wounds, from a scroll or a slot) is cast where the
+                    // caster stands and the game then queues the touch itself as a walk with no path - which turn-based
+                    // movement cancels (TickApproaching needs a ForcedPath). Camellia's Inflict Light Wounds scroll on an
+                    // enemy 5.6 m away: cast, never touched, and the charge was thrown away by her next spell. Walk
+                    // first (with our path), cast from touch range on the next decision.
+                    if (c.NeedsMove && c.Target != null && !CombatMemory.IsRealTime && c.Ability.StickyTouch == null &&
+                        c.Ability.Blueprint.StickyTouch != null)
+                    {
+                        float reach = c.Ability.GetApproachDistance(c.Target);
+                        var approach = new UnitMoveTo(ApproachPoint(unit, c.Target, reach), 0.3f);
+                        if (CommandDispatcher.Run(unit, approach, $"Approach to touch: {c.Label}", out failure))
+                        {
+                            command = approach;
+                            return true;
+                        }
+                        return false;
+                    }
                     command = new UnitUseAbility(c.Ability, wrapper);
                     break;
                 }

@@ -194,8 +194,14 @@ namespace CompanionAI_Pathfinder.Tactics
                     Finish(p, false, "its touch was never delivered (the charge is still held)");
                     return;
                 }
-                // A charge held for someone else is delivered by a later command (the engine delivers held charges first).
-                if (held == p.TouchDelivery) return;
+                // A charge held for someone else is delivered by a later command (the engine delivers held charges first);
+                // still held two rounds later, it was not.
+                if (held == p.TouchDelivery)
+                {
+                    if (Now - p.IssuedAt > 2 * SettleAfterSeconds)
+                        Finish(p, false, "its touch was never delivered to " + (p.Target?.CharacterName ?? "the target"));
+                    return;
+                }
             }
             if (Now - p.IssuedAt > SettleAfterSeconds)
                 Finish(p, false, "the game never finished executing it");

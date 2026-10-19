@@ -328,3 +328,11 @@ From the 0.3.14 turn-based log (e62751a4 + combat log 5ee51eba + GameLog c544dcb
 | **Real save bonuses** (`Tactics/SaveObserver`, `RuleSavingThrow`): contextual bonuses the game applied (against mind-affecting, poison, a mod's bonus) and automatic passes, kept as the difference to the plain save stat, per target and ability, plus per kind of creature. | both |
 | **Tanks accept more risk**: pay 60 % of the damage and exposure a move costs (being dropped outright stays at full price) and turn careful below a third of their HP instead of half. | both |
 | Dead setting `UseBuffsBeforeAttack` removed (old settings files still load). | - |
+
+### 0.3.15-test2 (turn-based log 25a1e132)
+
+| Change | Modes |
+|---|---|
+| **Touch spells walk first**: a touch spell (scroll, wand or slot) on a target out of reach is cast where the caster stands and the game queues the touch as a walk without a path, which turn-based movement cancels. Both of Camellia's Inflict Light Wounds scrolls (5.6 m away, and a 5-foot step away) were cast, never touched, and the charge was lost. The engine now walks into reach itself (our path), then casts. | TB |
+| **A held charge is worth keeping**: another spell cast drops it (`TouchSpellsController`), so such options pay the charge's current best value (`[drops held touch]`). A charge held for someone else still undelivered after two rounds counts as a silent failure. | both |
+| **Areas cost per round of staying**: entering a harmful area cost its danger × half a fight's worth × one round's chance, so melee fighters charged into Grease to reach enemies lying in it (34 moves "into Grease" in one log) and fell too. Now: danger (already × the chance to fail that round's save) × the unit's per-round worth × the rounds it stays (until the fight or the area ends, up to 3), doubled when it stops inside (standing up provokes and enemies hit a prone unit at +4). Passing through costs one round. | both |

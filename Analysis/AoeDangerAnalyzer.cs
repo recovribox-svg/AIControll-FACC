@@ -163,9 +163,19 @@ namespace CompanionAI_Pathfinder.Analysis
         /// is not already inside (entering is what triggers the save). Seelah walked into Orvath's Entangle to attack;
         /// turn-based moves never looked at areas. <paramref name="name"/> is the area's name for the decision log.
         /// </summary>
-        public static float EnteringDanger(UnitEntityData unit, Vector3 from, Vector3 to, out string name)
+        public static float EnteringDanger(UnitEntityData unit, Vector3 from, Vector3 to, out string name) =>
+            EnteringDanger(unit, from, to, out name, out _, out _);
+
+        /// <summary>
+        /// ★ v0.3.15: also whether <paramref name="to"/> itself lies in the worst area (the unit would stay in it, saving
+        /// every round) and the rounds that area has left.
+        /// </summary>
+        public static float EnteringDanger(UnitEntityData unit, Vector3 from, Vector3 to, out string name,
+                                           out float roundsLeft, out bool endsInside)
         {
             name = null;
+            roundsLeft = 0f;
+            endsInside = false;
             float worst = 0f;
             if (unit == null) return 0f;
             try
@@ -186,6 +196,8 @@ namespace CompanionAI_Pathfinder.Analysis
                     if (danger == null || danger.DangerLevel <= worst) continue;
                     worst = danger.DangerLevel;
                     name = aoe.Context?.SourceAbilityContext?.Ability?.Name ?? danger.Name;
+                    endsInside = Covers(aoe, to, unit.Corpulence);
+                    roundsLeft = RoundsLeft(aoe);
                 }
             }
             catch (Exception ex)
@@ -625,6 +637,25 @@ namespace CompanionAI_Pathfinder.Analysis
             {
                 return 1f;
             }
+        }
+
+        /// <summary>★ v0.3.15: rounds the area has left (an area without a known end: 10, longer than a fight).</summary>
+        public static float RoundsLeft(AreaEffectEntityData aoe)
+        {
+            try
+            {
+                if (CreationField != null && DurationField != null && DurationField.GetValue(aoe) is TimeSpan duration &&
+                    duration > TimeSpan.Zero)
+                {
+                    var created = (TimeSpan)CreationField.GetValue(aoe);
+                    double left = (created + duration - Game.Instance.TimeController.GameTime).TotalSeconds;
+                    return Math.Max(0f, (float)(left / 6.0));
+                }
+            }
+            catch
+            {
+            }
+            return 10f;
         }
 
         /// <summary>★ v0.3.14: how strongly the area controls those inside (from the spawning ability's analysis).</summary>
