@@ -19,7 +19,9 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
   immunity for combined flags, real-time friendly-fire veto / queue gates / classifier cache key, visible analysis
   failures; audit in `docs/PROGRESSIVE_SPELLS.md` §A; 0.3.13: attacks of opportunity priced into moves (game's own
   disengage checks), no second copy of an own active control area, Empower/Maximize (incl. auto metamagic) in
-  estimates, AddContextStatBonus stacking, optional pet belt items (`GameInterface/PetItemsPatch`))
+  estimates, AddContextStatBonus stacking, optional pet belt items (`GameInterface/PetItemsPatch`); 0.3.14: real time on the
+  tactical engine, status-aware actions (`Tactics/ActionRules`, `UnitStatus`; `docs/STATUS_AWARE_PLAN.md`), path attacks of
+  opportunity and drop chance (`Tactics/RiskMath`), area exits, SR/energy/observed damage (`Tactics/DamageObserver`))
 
 ## Reference Resources
 - **Rogue Trader CompanionAI v3.5.7**: `C:\Users\veria\Downloads\CompanionAI_v3-master - v3.5.7`
