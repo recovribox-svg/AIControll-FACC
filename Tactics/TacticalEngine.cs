@@ -1178,11 +1178,18 @@ namespace CompanionAI_Pathfinder.Tactics
                 // ★ v0.3.14: a lasting area also costs the melee allies fighting at its edge: they walk in (a save, then
                 // entangled) or give up the enemies inside. Seelah was next to the Baphomet Cultist when Orvath's
                 // Entangle went down on it and walked in next turn. Half the cost of an ally caught inside.
+                // Also melee allies further away whose nearest enemy stands inside: they will walk in to fight it
+                // (Seelah charged into Orvath's round-1 Entangle twice in the 0.3.14 test).
                 if (harmfulArea && profile.SpawnedAreas.Any())
                 {
+                    Func<UnitEntityData, bool> headsInto = a =>
+                    {
+                        var nearest = ctx.Enemies.OrderBy(e => Vector3.Distance(a.Position, e.Position)).FirstOrDefault();
+                        return nearest != null && Vector3.Distance(nearest.Position, target.Position) <= profile.AoERadius;
+                    };
                     allyControlCost += ctx.Allies
                         .Where(a => a != unit && !affectedAllies.Contains(a) && !UsesRangedWeapon(a) &&
-                                    Vector3.Distance(a.Position, target.Position) <= profile.AoERadius + 2.5f + a.Corpulence &&
+                                    (Vector3.Distance(a.Position, target.Position) <= profile.AoERadius + 2.5f + a.Corpulence || headsInto(a)) &&
                                     wouldBeCaught(a))
                         .Sum(a => 0.5f * (4f + 3f * Math.Max(1, a.Descriptor?.Progression?.CharacterLevel ?? 1)) * strength * effectRounds);
                 }
@@ -1380,13 +1387,26 @@ namespace CompanionAI_Pathfinder.Tactics
                     if (shotRange > 0f)
                         keepsTarget = p => ctx.Enemies.Any(e => UnitCommand.IsUnitCloseEnough(e.Position, p, p + eyeOffset, shotRange * 0.95f, true, 0f));
                 }
-                var point = FindRetreatPoint(ctx, ctx.FiveFootRange * 0.9f, keepsTarget);
+                // ★ v0.3.14: the step is worth no more than what it makes possible. Aeiluvetar stepped out of melee
+                // (valued 7.7, from the engagers' threat) and then had nothing better than a 0.5 shot: turn wasted.
+                float followUp;
+                if (castsInMelee)
+                    followUp = bestMain.Value / 0.85f;                    // the spell without the in-melee discount
+                else if (ctx.HasRangedWeapon)
+                    followUp = ctx.Enemies.Select(e =>
+                    {
+                        var est = CombatMath.EstimateWeaponAttack(unit, e, full: ctx.CanFullAttack);
+                        return est != null && est.IsRanged ? DamageValue(e, est.ExpectedDamage) * RoleWeight(ctx, "damage") : 0f;
+                    }).DefaultIfEmpty(0f).Max();
+                else
+                    followUp = bestMain?.Value ?? 0f;
+                var point = followUp >= MinQuickValue ? FindRetreatPoint(ctx, ctx.FiveFootRange * 0.9f, keepsTarget) : null;
                 if (point.HasValue)
                 {
                     list.Add(new Candidate
                     {
                         Kind = CandidateKind.Move, Slot = ActionSlot.Free, Point = point, ApproachRadius = 0.3f,
-                        Value = ctx.Engagers.Sum(CombatMath.Threat) * 0.4f,
+                        Value = Math.Min(ctx.Engagers.Sum(CombatMath.Threat) * 0.4f, followUp),
                         Label = "5ft step out of melee", Key = "move:5ft"
                     });
                 }
