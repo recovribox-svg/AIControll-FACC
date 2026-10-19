@@ -296,3 +296,20 @@ still lets act:
 
 `Tactics/ActionRules.cs` is the pure rule (unit-tested), `Tactics/UnitStatus.cs` reads the game; decision lines show the
 unit's conditions (`{nauseated | nauseated: move only}`) and every "cannot act" line names them.
+
+## 21. v0.3.14-test5: risk on the way, areas, damage actually taken
+
+From the test4 logs (turn-based 67e90edc, real time 87aa4bc7; plan: `docs/PLAN_0.3.14_test4_TB.md`).
+
+| Change | Both modes unless noted |
+|---|---|
+| **Attacks of opportunity along the path** (`PathAttackers`): every enemy whose reach the straight walk enters and then leaves attacks, the rule of the game's own `EngagementSimulator`. Only current engagers at the destination were checked: Camellia charged past the Large Water Elemental "safely" and was dropped. | both |
+| **Real time: a lone engager always attacks** (`AttacksOnLeaving`): the game's preview (`ShouldAttackOnDisengage(simulate)`) skips "engaged with only this unit / its last target", which its real check applies. Lann and Aeiluvetar backed off "safely" and were dropped. Turn-based unchanged (its preview already answers yes). | RT |
+| **Drop chance** (`Tactics/RiskMath.cs`, unit-tested): an attack's chance to take the unit out in one blow (damage spread, crits), priced as the unit's worth, not only the average damage. Used for AoOs, standing up and revives. | both |
+| **Exposure below half HP**: walking where more enemies can hit it raises the chance to drop before the next turn (withdraw model in reverse). | both |
+| **Areas**: live areas only (`IsLive`: not ended, view loaded), the game's shape test with the unit's body (`Covers`), one exit finder (`AoeDangerAnalyzer.FindExit`) for "Leave" and the real-time emergency escape, which is not re-issued while the unit walks. An area's danger is weighted by the chance it affects the unit (descriptor/control immunity, its save DC, time left). "Leave" counts the chance a hit stops the walk. | both |
+| **Cannot act but can walk** (nausea's animation): decided with movement only after a second of waiting (`UnitEntityData.IsAbleToAct`); no Advance while only moving. | TB (no Advance: both) |
+| **Standing up** (`ShouldStandUp`): stays down only when standing (AoOs, chance to be dropped, best action after standing) is worse than lying down (+4 to be hit). **Revives** are worth the chance the ally stays up (`ReviveStaysUp`). | stand-up TB; revives both |
+| **Damage estimates**: `AddEnergyDamageImmunity` counted (the game's character sheet reads it; only `AddEnergyImmunity` was), effects in opposite branches of one condition counted once (`AbilityProfile.Exclusive`; Fire Blast was counted twice), and what each enemy actually took per damage type (`Tactics/DamageObserver`, `RuleDealDamage`) overrides the model. | both |
+| **Weapon options per enemy**: no attack listed against one enemy no longer drops all weapon options; a turn with no option at all says why. | both |
+| **Real time: replan after heavy damage**: an engine command that has not started is dropped when the unit lost a quarter of its HP since and is below half. | RT |

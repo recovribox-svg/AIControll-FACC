@@ -114,6 +114,42 @@ namespace CompanionAI_Pathfinder.Tactics
     /// </summary>
     public static class RealTimeTactics
     {
+        private sealed class IssueState
+        {
+            public int Hp;
+        }
+
+        /// <summary>HP of the unit when the engine issued each command (weak: dropped with the command).</summary>
+        private static readonly System.Runtime.CompilerServices.ConditionalWeakTable<Kingmaker.UnitLogic.Commands.Base.UnitCommand, IssueState> IssuedAtHp =
+            new System.Runtime.CompilerServices.ConditionalWeakTable<Kingmaker.UnitLogic.Commands.Base.UnitCommand, IssueState>();
+
+        /// <summary>
+        /// ★ v0.3.14 (test5): one of the unit's commands that the engine issued has not started, and since then the unit
+        /// lost a quarter of its HP or more and is below half. Decided once per command.
+        /// </summary>
+        public static bool ShouldReplanAfterDamage(UnitEntityData unit, out string why)
+        {
+            why = null;
+            try
+            {
+                int max = Math.Max(1, unit.MaxHP);
+                foreach (var command in unit.Commands.Raw)
+                {
+                    if (command == null || command.IsStarted || command.IsFinished) continue;
+                    if (!IssuedAtHp.TryGetValue(command, out var issued)) continue;
+                    int lost = issued.Hp - unit.HPLeft;
+                    if (lost >= max / 4 && unit.HPLeft < max / 2)
+                    {
+                        IssuedAtHp.Remove(command);
+                        why = $"lost {lost} HP ({issued.Hp} -> {unit.HPLeft}) while '{command.GetType().Name}' waited to start";
+                        return true;
+                    }
+                }
+            }
+            catch { }
+            return false;
+        }
+
         /// <summary>Decide and issue one action; false when nothing is worth doing now (decided again later).</summary>
         public static bool Act(UnitEntityData unit)
         {
@@ -133,6 +169,8 @@ namespace CompanionAI_Pathfinder.Tactics
                     if (TacticalEngine.Execute(unit, candidate, out var command, out string failure))
                     {
                         TacticalDriver.RecordIssued(unit, memory, candidate, command);
+                        IssuedAtHp.Remove(command);
+                        IssuedAtHp.Add(command, new IssueState { Hp = unit.HPLeft });
                         return true;
                     }
                     Main.Log($"[RT-Tactics] {unit.CharacterName}: '{candidate.Label}' could not be issued ({failure}) - trying next best");

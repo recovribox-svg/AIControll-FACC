@@ -12,6 +12,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using Kingmaker.ElementsSystem;
 using Kingmaker.EntitySystem.Entities;
 using Kingmaker.EntitySystem.Stats;
 using Kingmaker.Items;
@@ -36,6 +37,11 @@ namespace CompanionAI_Pathfinder.Tactics
         public bool IsRanged;
         public ItemEntityWeapon Weapon;
         public float FirstHitChance;
+        /// <summary>★ v0.3.14 (test5): average damage of one hit of the first attack (after damage reduction).</summary>
+        public float FirstPerHit;
+        /// <summary>★ test5: chance the first attack is a critical hit (threat range × hit chance).</summary>
+        public float FirstCritChance;
+        public float CritMultiplier = 2f;
     }
 
     public static class CombatMath
@@ -135,6 +141,12 @@ namespace CompanionAI_Pathfinder.Tactics
 
                     float threatChance = Mathf.Clamp01(stats.CriticalRange / 20f);
                     float critExtra = threatChance * p * (stats.CriticalMultiplier - 1) * perHit;
+                    if (i == 0)
+                    {
+                        result.FirstPerHit = perHit;
+                        result.FirstCritChance = threatChance * p * p;     // threat, then the confirmation roll
+                        result.CritMultiplier = Math.Max(1, stats.CriticalMultiplier);
+                    }
 
                     float sneak = 0f;
                     if (sneakDice > 0 && (flanked || acRule.IsTargetFlatFooted))
@@ -271,14 +283,31 @@ namespace CompanionAI_Pathfinder.Tactics
             var ctx = CreateContext(ability, target != null ? new TargetWrapper(target) : null);
             int cl = Math.Max(1, ability.CalculateParams()?.CasterLevel ?? 1);
             DamageMetamagic(ability, out bool maximize, out bool empower);
-            float total = 0f;
+            var parts = new List<KeyValuePair<GameAction, float>>();
             foreach (var dmg in profile.Damage)
             {
                 // ★ v0.3.1: only the branch that runs for this target (Inflict Wounds heals undead, Cure harms them).
                 if (target != null && profile.AppliesTo(dmg, ability, target) == EffectApplies.No) continue;
                 float avg = EvaluateDice(dmg.Value, ctx, Math.Min(cl, 10), maximize, empower);
                 if (dmg.Half) avg *= 0.5f;
-                total += AfterTargetReduction(target, dmg, avg);
+                parts.Add(new KeyValuePair<GameAction, float>(dmg, AfterTargetReduction(target, dmg, avg)));
+            }
+            return SumAlternatives(profile, parts);
+        }
+
+        /// <summary>
+        /// ★ v0.3.14 (test5): effects in opposite branches of one condition are alternatives: count the larger, not both
+        /// (AbilityProfile.Exclusive).
+        /// </summary>
+        private static float SumAlternatives(AbilityProfile profile, List<KeyValuePair<GameAction, float>> parts)
+        {
+            float total = 0f;
+            var taken = new List<GameAction>();
+            foreach (var part in parts.OrderByDescending(p => p.Value))
+            {
+                if (taken.Any(t => profile.Exclusive(t, part.Key))) continue;
+                taken.Add(part.Key);
+                total += part.Value;
             }
             return total;
         }
@@ -294,10 +323,19 @@ namespace CompanionAI_Pathfinder.Tactics
             if (target == null || value <= 0f || dmg?.DamageType == null) return value;
             try
             {
+                var type = dmg.DamageType;
+                // ★ v0.3.14 (test5): what this target actually took from this damage type earlier in the fight (immune,
+                // resistance, vulnerability), whatever the reason - a component the model does not know, another mod.
+                var seen = DamageObserver.Lookup(target, DamageObserver.KeyOf(type));
+                if (seen != null) return seen.Apply(value);
+                bool energy = type.Type == Kingmaker.RuleSystem.Rules.Damage.DamageType.Energy;
+                // ★ test5: the game has two energy-immunity components; only AddEnergyImmunity registers with
+                // UnitPartDamageReduction. AddEnergyDamageImmunity is read the way the game's own character sheet reads it
+                // (UnitDescriptionHelper.VisitComponents). Orvath cast Fire Blast on Quasits 31 times.
+                if (energy && HasEnergyDamageImmunity(target, type.Energy)) return 0f;
                 var part = target.Get<Kingmaker.UnitLogic.Parts.UnitPartDamageReduction>();
                 if (part == null) return value;
-                var type = dmg.DamageType;
-                if (type.Type == Kingmaker.RuleSystem.Rules.Damage.DamageType.Energy && part.IsImmune(type.Energy)) return 0f;
+                if (energy && part.IsImmune(type.Energy)) return 0f;
                 _ = part.AllSources.Count();                       // initialises the part's resistance chunks
                 var damage = type.CreateDamage(new DiceFormula(0, DiceType.Zero), 0);
                 return part.EstimateDamage(value, damage, null);
@@ -308,6 +346,18 @@ namespace CompanionAI_Pathfinder.Tactics
             }
         }
 
+        private static bool HasEnergyDamageImmunity(UnitEntityData target, Kingmaker.Enums.Damage.DamageEnergyType energy)
+        {
+            bool immune = false;
+            try
+            {
+                Kingmaker.Utility.UnitDescription.UnitDescriptionHelper.VisitComponents<Kingmaker.UnitLogic.FactLogic.AddEnergyDamageImmunity>(
+                    target, (c, f) => { if (c.EnergyType == energy) immune = true; });
+            }
+            catch { }
+            return immune;
+        }
+
         public static float EstimateAbilityHeal(AbilityData ability, AbilityProfile profile, UnitEntityData target)
         {
             if (profile.Heals.Count == 0) return 0f;
@@ -315,13 +365,13 @@ namespace CompanionAI_Pathfinder.Tactics
             var ctx = CreateContext(ability, target != null ? new TargetWrapper(target) : null);
             int cl = Math.Max(1, ability.CalculateParams()?.CasterLevel ?? 1);
             DamageMetamagic(ability, out bool maximize, out bool empower);
-            float total = 0f;
+            var parts = new List<KeyValuePair<GameAction, float>>();
             foreach (var heal in profile.Heals)
             {
                 if (target != null && profile.AppliesTo(heal, ability, target) == EffectApplies.No) continue;
-                total += EvaluateDice(heal.Value, ctx, Math.Min(cl, 5), maximize, empower);
+                parts.Add(new KeyValuePair<GameAction, float>(heal, EvaluateDice(heal.Value, ctx, Math.Min(cl, 5), maximize, empower)));
             }
-            return total;
+            return SumAlternatives(profile, parts);
         }
 
         /// <summary>

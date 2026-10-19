@@ -146,8 +146,20 @@ namespace CompanionAI_Pathfinder.Core.TurnBased
             // for. v0.3.4 waited the full 4 s and logged it as a command timeout (Camellia, CanAct=False).
             if (unit.Commands.Empty && !(unit.Descriptor?.State?.CanAct ?? true) && memory.IdleSeconds > 1f)
             {
-                // ★ v0.3.14: with the reason (93 such lines in six logs said nothing about why).
                 string status = UnitStatus.Describe(unit);
+                // ★ v0.3.14 (test5): "cannot act" but the game still lets it walk (UnitEntityData.IsAbleToAct, the test the
+                // game's own turn uses): nausea plays an animation that makes CanAct false, yet a walk order starts.
+                // Aeiluvetar ended two turns in a row inside the Stinking Cloud. Decide with movement only.
+                if (unit.Descriptor.State.CanMove && unit.IsAbleToAct() && !(unit.View?.IsGetUp ?? false))
+                {
+                    if (!memory.MovementOnlyLogged)
+                    {
+                        memory.MovementOnlyLogged = true;
+                        Main.Log($"[TBController] {unit.CharacterName}: cannot act but can walk ({(status.Length > 0 ? status : "busy")}) - movement only");
+                    }
+                    return null;
+                }
+                // ★ v0.3.14: with the reason (93 such lines in six logs said nothing about why).
                 Main.Log($"[TBController] {unit.CharacterName}: cannot act this turn ({(status.Length > 0 ? status : "no known condition")}) - ending turn");
                 memory.Finished = true;
                 return ExecutionResult.EndTurn("Cannot act");
@@ -191,6 +203,13 @@ namespace CompanionAI_Pathfinder.Core.TurnBased
                          $"({UnitStatus.Describe(unit)}) - ending turn");
                 memory.Finished = true;
                 return ExecutionResult.EndTurn("Could not stand up");
+            }
+            // ★ v0.3.14 (test5): next to enemies at low HP, standing up can be worse than staying down this turn.
+            if (memory.StandUpAttempts == 0 && !TacticalEngine.ShouldStandUp(unit, memory, out string why))
+            {
+                Main.Log($"[TBController] {unit.CharacterName}: lying down - stays down this turn: {why}");
+                memory.Finished = true;
+                return ExecutionResult.EndTurn("Stays down");
             }
             memory.StandUpAttempts++;
             if (TacticalEngine.IssueStandUp(unit, out var command, out string cost, out string failure))

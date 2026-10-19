@@ -89,6 +89,8 @@ namespace CompanionAI_Pathfinder.Tactics
         public ActionPermissions Permissions = ActionPermissions.None;
         /// <summary>★ v0.3.14: the unit's notable conditions, for the decision log (UnitStatus.Describe).</summary>
         public string Status = "";
+        /// <summary>★ v0.3.14 (test5): enemies the game lists no weapon attack against (diagnostics).</summary>
+        public int NoAttackAgainst;
 
         public float Distance(UnitEntityData other) => Vector3.Distance(Unit.Position, other.Position);
     }
@@ -102,12 +104,26 @@ namespace CompanionAI_Pathfinder.Tactics
 
         #region Decide
 
-        public static Candidate Decide(UnitEntityData unit, TurnMemory memory)
+        public static Candidate Decide(UnitEntityData unit, TurnMemory memory) => Decide(unit, memory, preview: false, out _);
+
+        /// <summary>
+        /// <paramref name="preview"/>: what the unit would do, without logging the decision (TacticalEngine.ShouldStandUp
+        /// asks it as if the unit had just stood up, which spends its move action).
+        /// </summary>
+        private static Candidate Decide(UnitEntityData unit, TurnMemory memory, bool preview, out TacticalContext built)
         {
             var ctx = BuildContext(unit);
+            built = ctx;
+            if (ctx != null && preview)
+            {
+                ctx.HasMove = false;
+                ctx.HasFullRound = ctx.CanFullAttack = ctx.CanFiveFoot = false;
+                ctx.MoveRange = 0f;
+            }
             if (ctx != null) ctx.Unreachable = memory.Unreachable;
             if (ctx == null || ctx.Enemies.Count == 0)
             {
+                if (preview) return null;
                 if (CombatMemory.IsRealTime) Main.Verbose($"[Tactics] {unit.CharacterName}: no reachable enemies - wait");
                 else Main.Log($"[Tactics] {unit.CharacterName}: no reachable enemies - end turn");
                 return null;
@@ -140,7 +156,13 @@ namespace CompanionAI_Pathfinder.Tactics
             if (quick != null && quick.Value >= MinQuickValue) chosen = quick;
             else if (main != null && main.Value >= MinMainValue) chosen = main;
 
+            if (preview) return chosen;
             LogDecision(ctx, usable, chosen);
+            // ★ v0.3.14 (test5): a turn-based unit with its actions unused and not a single option: say why.
+            if (candidates.Count == 0 && ctx.HasStandard && !CombatMemory.IsRealTime)
+                Main.Log($"[Tactics] {unit.CharacterName}: no option at all - the game lists no weapon attack against " +
+                         $"{ctx.NoAttackAgainst} of {ctx.Enemies.Count} enemies, no ability or move was usable" +
+                         (ctx.Permissions.Notes.Length > 0 ? $" ({ctx.Permissions.Notes})" : ""));
             return chosen;
         }
 
@@ -421,11 +443,16 @@ namespace CompanionAI_Pathfinder.Tactics
             public int Attacks;
             /// <summary>Chance at least one attack of opportunity hits; a hit stops the move and its action.</summary>
             public float StopChance;
+            /// <summary>★ v0.3.14 (test5): chance the attacks drop the unit on the way.</summary>
+            public float DropChance;
             /// <summary>Damage-equivalent cost of the expected damage (higher chance to drop, HP to heal later).</summary>
             public float Cost;
             /// <summary>★ v0.3.14: the harmful area the move enters, if any.</summary>
             public string Area;
-            public string Tag => (Attacks > 0 ? $" [AoO {Attacks}]" : "") + (Area != null ? $" [into {Area}]" : "");
+            /// <summary>★ test5: the destination is more dangerous for a badly hurt unit.</summary>
+            public bool Exposed;
+            public string Tag => (Attacks > 0 ? $" [AoO {Attacks}{(DropChance >= 0.1f ? $", {DropChance:P0} down" : "")}]" : "") +
+                                 (Area != null ? $" [into {Area}]" : "") + (Exposed ? " [exposed]" : "");
         }
 
         /// <summary>
@@ -439,11 +466,30 @@ namespace CompanionAI_Pathfinder.Tactics
         private static Disengage MoveRisk(TacticalContext ctx, Vector3 destination)
         {
             var risk = DisengageRisk(ctx, destination);
-            float danger = AoeDangerAnalyzer.EnteringDanger(ctx.Unit, ctx.Unit.Position, destination, out string area);
-            if (danger <= 0f) return risk;
-            risk = risk ?? new Disengage();
-            risk.Area = area ?? "area";
-            risk.Cost += danger * 0.5f * AllyWorth(ctx, ctx.Unit);
+            var unit = ctx.Unit;
+            float danger = AoeDangerAnalyzer.EnteringDanger(unit, unit.Position, destination, out string area);
+            if (danger > 0f)
+            {
+                risk = risk ?? new Disengage();
+                risk.Area = area ?? "area";
+                risk.Cost += danger * 0.5f * AllyWorth(ctx, unit);
+            }
+
+            // ★ v0.3.14 (test5): badly hurt, walking to where more enemies can hit it before its next turn: the higher chance
+            // to drop there (the withdraw model in reverse). Aeiluvetar at 20 % HP took "Move+Attack" (15.2) into the
+            // middle of the fight. Only below half HP, as for withdrawing: a healthy fighter's place is in melee.
+            if (ctx.HpPct < 0.5f)
+            {
+                float hp = Math.Max(1f, unit.HPLeft);
+                float exposure = RiskMath.RoundDropChance(hp, IncomingDamage(ctx, unit, destination)) -
+                                 RiskMath.RoundDropChance(hp, IncomingDamage(ctx, unit, unit.Position));
+                if (exposure > 0.02f)
+                {
+                    risk = risk ?? new Disengage();
+                    risk.Exposed = true;
+                    risk.Cost += exposure * AllyWorth(ctx, unit);
+                }
+            }
             return risk;
         }
 
@@ -458,45 +504,200 @@ namespace CompanionAI_Pathfinder.Tactics
         /// </summary>
         private static Disengage DisengageRisk(TacticalContext ctx, Vector3 destination)
         {
-            if (ctx.Engagers.Count == 0) return null;
             var unit = ctx.Unit;
             // A move that fits in the 5-foot step is made as one (CommandDispatcher.ApplyTurnBasedMovementLimit).
             if (ctx.CanFiveFoot && Vector3.Distance(unit.Position, destination) <= ctx.FiveFootRange * 0.9f) return null;
-            int attacks = 0;
-            float damage = 0f, noHit = 1f;
-            foreach (var enemy in ctx.Engagers)
-            {
-                try
-                {
-                    var hand = enemy.GetThreatHand();
-                    if (hand == null || enemy.IsReach(unit, hand, destination)) continue;
-                    if (!enemy.CombatState.ShouldAttackOnDisengage(unit, simulate: true)) continue;
-                    if (!enemy.CombatState.AttackOfOpportunity(unit, tricksterAttack: false, simulate: true)) continue;
-                    var est = CombatMath.EstimateWeaponAttack(enemy, unit, full: false);
-                    float hit = est?.FirstHitChance ?? 0.5f;
-                    damage += est?.ExpectedDamage ?? CombatMath.Threat(enemy) * 0.35f;
-                    noHit *= 1f - hit;
-                    attacks++;
-                }
-                catch (Exception ex)
-                {
-                    Main.Verbose($"[Tactics] attack of opportunity check {enemy?.CharacterName} -> {unit.CharacterName}: {ex.Message}");
-                }
-            }
-            if (attacks == 0) return null;
+            var attackers = PathAttackers(ctx, unit.Position, destination);
+            if (attackers.Count == 0) return null;
 
-            // Same model as healing and withdraw: the chance to drop before the next turn, P = exp(-HP / danger), now with
-            // the attacks' damage taken first; plus the HP itself (someone has to heal it).
             float hp = Math.Max(1f, unit.HPLeft);
+            PriceAttacks(unit, attackers, hp, out float damage, out float stopChance, out float dropNow);
+
+            // Dropped now: the unit is out for the rest of the fight. Otherwise the same model as healing and withdraw,
+            // the chance to drop before the next turn, P = exp(-HP / danger), with the attacks' damage taken first; plus
+            // the HP itself (someone has to heal it).
+            float worth = AllyWorth(ctx, unit);
             float danger = Math.Max(1f, IncomingDamage(ctx, unit, destination));
-            float before = Mathf.Exp(-hp / danger);
-            float after = damage >= hp ? 1f : Mathf.Exp(-Math.Max(1f, hp - damage) / danger);
+            float before = RiskMath.RoundDropChance(hp, danger);
+            float after = RiskMath.RoundDropChance(Math.Max(1f, hp - damage), danger);
             return new Disengage
             {
-                Attacks = attacks,
-                StopChance = 1f - noHit,
-                Cost = (after - before) * AllyWorth(ctx, unit) + damage * 0.3f
+                Attacks = attackers.Count,
+                StopChance = stopChance,
+                DropChance = dropNow,
+                Cost = dropNow * worth + (1f - dropNow) * Math.Max(0f, after - before) * worth + damage * 0.3f
             };
+        }
+
+        /// <summary>
+        /// ★ v0.3.14 (test5): one attack of opportunity from each of <paramref name="attackers"/> on a unit with
+        /// <paramref name="hp"/> HP: their expected damage, the chance at least one hits (a hit stops a walk) and the
+        /// chance they drop it (RiskMath: the chance one blow takes the unit out, not only its average).
+        /// </summary>
+        private static void PriceAttacks(UnitEntityData unit, List<UnitEntityData> attackers, float hp,
+                                         out float damage, out float hitChance, out float dropChance)
+        {
+            damage = 0f;
+            float noHit = 1f, noDrop = 1f;
+            foreach (var enemy in attackers)
+            {
+                var est = CombatMath.EstimateWeaponAttack(enemy, unit, full: false);
+                float hit = est?.FirstHitChance ?? 0.5f;
+                float expected = est?.ExpectedDamage ?? CombatMath.Threat(enemy) * 0.35f;
+                float perHit = est != null && est.FirstPerHit > 0f ? est.FirstPerHit : expected / Math.Max(0.05f, hit);
+                noDrop *= 1f - RiskMath.AttackDropChance(hit, est?.FirstCritChance ?? 0.05f * hit, perHit,
+                                                         est?.CritMultiplier ?? 2f, Math.Max(1f, hp - damage));
+                damage += expected;
+                noHit *= 1f - hit;
+            }
+            hitChance = 1f - noHit;
+            dropChance = 1f - noDrop;
+        }
+
+        /// <summary>
+        /// ★ v0.3.14 (test5): a downed ally brought back to <paramref name="hpAfter"/> HP lies there until its turn (enemies
+        /// get +4 to hit it in melee), then standing up provokes every enemy that threatens it (unless it has a feat
+        /// against that). The chance it is still up when it can act. Seelah was healed to 4-6 HP three times next to an
+        /// enemy and dropped again by the attack of opportunity as she stood up. Healed with more, or once the enemy is
+        /// dealt with, she stays up.
+        /// </summary>
+        private static float ReviveStaysUp(TacticalContext ctx, UnitEntityData ally, float hpAfter)
+        {
+            try
+            {
+                float roundDrop = RiskMath.RoundDropChance(hpAfter, IncomingDamage(ctx, ally, ally.Position) * 1.25f);
+                float standDrop = 0f;
+                if (!ally.Descriptor.State.Features.GetUpWithoutAttackOfOpportunity)
+                {
+                    var threats = ctx.Enemies.Where(e => Threatens(e, ally, ally.Position)).ToList();
+                    if (threats.Count > 0) PriceAttacks(ally, threats, hpAfter, out _, out _, out standDrop);
+                }
+                return (1f - roundDrop) * (1f - standDrop);
+            }
+            catch
+            {
+                return 1f;
+            }
+        }
+
+        /// <summary>
+        /// ★ v0.3.14 (test5): turn-based, lying down: stand up now, or stay down this turn? Standing provokes every enemy
+        /// that threatens the unit; lying down loses the turn and gives enemies +4 to hit it in melee. Compared on the
+        /// engine's scale: the chance to be dropped (the unit's worth) and, if it stands and survives, the best thing it
+        /// can do then (asked of the engine as if standing - the same toggle UnitEntityData.IsAbleToAct uses - with the
+        /// move action spent on standing). True when standing is at least as good; <paramref name="why"/> says why not.
+        /// </summary>
+        public static bool ShouldStandUp(UnitEntityData unit, TurnMemory memory, out string why)
+        {
+            why = null;
+            List<UnitEntityData> attackers;
+            var state = unit.Descriptor.State;
+            try
+            {
+                if (state.Features.GetUpWithoutAttackOfOpportunity) return true;
+                attackers = unit.CombatState.EngagedBy
+                    .Where(e => e != null && e.Descriptor.State.IsConscious &&
+                                e.CombatState.AttackOfOpportunity(unit, tricksterAttack: false, simulate: true))
+                    .ToList();
+            }
+            catch
+            {
+                return true;
+            }
+            if (attackers.Count == 0) return true;
+
+            Candidate best;
+            TacticalContext ctx;
+            bool wasProne = state.Prone.Active;
+            state.Prone.Active = false;
+            try
+            {
+                best = Decide(unit, memory, preview: true, out ctx);
+            }
+            catch
+            {
+                return true;
+            }
+            finally
+            {
+                state.Prone.Active = wasProne;
+            }
+            if (ctx == null) return true;
+
+            float hp = Math.Max(1f, unit.HPLeft);
+            PriceAttacks(unit, attackers, hp, out float damage, out _, out float dropNow);
+            float worth = AllyWorth(ctx, unit);
+            float danger = IncomingDamage(ctx, unit, unit.Position);
+            float stayDrop = RiskMath.RoundDropChance(hp, danger * 1.25f);
+            float afterDrop = RiskMath.RoundDropChance(Math.Max(1f, hp - damage), danger);
+            float act = best?.Value ?? 0f;
+            float stand = -dropNow * worth + (1f - dropNow) * (act - afterDrop * worth);
+            float stay = -stayDrop * worth;
+            if (stand >= stay) return true;
+            why = $"standing up provokes {attackers.Count} ({dropNow:P0} to be dropped), the best action after standing is " +
+                  $"worth {act:F1} ({best?.Label ?? "nothing"}); lying down: {stayDrop:P0} to be dropped before the next turn";
+            return false;
+        }
+
+        /// <summary>
+        /// ★ v0.3.14 (test5): the enemies that get an attack of opportunity on a walk from <paramref name="from"/> to
+        /// <paramref name="to"/>, by the game's rule for movement (Kingmaker.Controllers.Combat.EngagementSimulator, which
+        /// drives its own path preview and native AI): stepping along the path, every enemy whose reach the unit enters is
+        /// engaged, and each engaged enemy whose reach it then leaves attacks once. Only enemies already engaging the unit
+        /// were checked before, and only at the destination: Camellia charged past the Large Water Elemental, priced as
+        /// safe, and its one slam dropped her. The walk is taken as a straight line (charges are; other paths may bend).
+        /// </summary>
+        private static List<UnitEntityData> PathAttackers(TacticalContext ctx, Vector3 from, Vector3 to)
+        {
+            var unit = ctx.Unit;
+            var attackers = new List<UnitEntityData>();
+            var engaged = new HashSet<UnitEntityData>(ctx.Engagers);
+            float length = Vector3.Distance(from, to);
+            int steps = Math.Max(1, Mathf.CeilToInt(length / 0.75f));
+            for (int i = 1; i <= steps; i++)
+            {
+                var point = Vector3.Lerp(from, to, i / (float)steps);
+                foreach (var enemy in ctx.Enemies)
+                {
+                    if (attackers.Contains(enemy)) continue;
+                    try
+                    {
+                        if (Threatens(enemy, unit, point)) { engaged.Add(enemy); continue; }
+                        if (!engaged.Remove(enemy)) continue;
+                        if (AttacksOnLeaving(enemy, unit)) attackers.Add(enemy);
+                    }
+                    catch (Exception ex)
+                    {
+                        Main.Verbose($"[Tactics] attack of opportunity check {enemy?.CharacterName} -> {unit.CharacterName}: {ex.Message}");
+                    }
+                }
+            }
+            return attackers;
+        }
+
+        /// <summary>EngagementSimulator.EngagedBy: the enemy can act, has a threatening weapon reaching <paramref name="at"/>,
+        /// and sees the unit.</summary>
+        private static bool Threatens(UnitEntityData enemy, UnitEntityData unit, Vector3 at)
+        {
+            if (!enemy.Descriptor.State.CanAct) return false;
+            var hand = enemy.GetThreatHand();
+            if (hand == null || !enemy.IsReach(unit, hand, at)) return false;
+            return Kingmaker.UnitLogic.Parts.UnitPartConcealment.Calculate(enemy, unit) != Kingmaker.Enums.Concealment.Total;
+        }
+
+        /// <summary>
+        /// The engaged enemy attacks when the unit leaves its reach. ★ v0.3.14 (test5): in real time the game's preview
+        /// (ShouldAttackOnDisengage with simulate) skips two rules its real check applies: an enemy engaging only this
+        /// unit, or whose last target it is, always attacks. Lann and Aeiluvetar backed off "safely" from a lone enemy
+        /// and were dropped by its attack. Turn-based is unchanged: there the preview already answers yes.
+        /// </summary>
+        private static bool AttacksOnLeaving(UnitEntityData enemy, UnitEntityData unit)
+        {
+            var combat = enemy.CombatState;
+            bool attacks = combat.ShouldAttackOnDisengage(unit, simulate: true);
+            if (!attacks && CombatMemory.IsRealTime)
+                attacks = combat.EngagedUnits.Count() <= 1 || combat.LastTarget == unit;
+            return attacks && combat.AttackOfOpportunity(unit, tricksterAttack: false, simulate: true);
         }
 
         /// <summary>★ v0.3.13: where a move to act on <paramref name="target"/> from <paramref name="range"/> ends.</summary>
@@ -590,7 +791,9 @@ namespace CompanionAI_Pathfinder.Tactics
             foreach (var enemy in ctx.Enemies)
             {
                 var single = CombatMath.EstimateWeaponAttack(unit, enemy, full: false);
-                if (single == null) return; // unit cannot make weapon attacks at all
+                // ★ v0.3.14 (test5): no attack against this enemy (the game lists none). It used to end the whole loop as
+                // "cannot attack at all": Seelah ended two full turns with no option at all against two enemies.
+                if (single == null) { ctx.NoAttackAgainst++; continue; }
 
                 float reach = single.Reach;
                 bool inReach = InRangeNow(unit, enemy.Position, reach, needLos: true);
@@ -1141,8 +1344,15 @@ namespace CompanionAI_Pathfinder.Tactics
                         float needed = Math.Max(1f, 1f - ally.HPLeft + ally.DamageNonLethal);
                         float share = Math.Min(1f, heal / needed);
                         float upChance = share >= 1f ? 1f : 0.6f * share;
-                        healValue += upChance * AllyWorth(ctx, ally);
                         reviveNote = $"revive {ally.CharacterName}: needs {needed:F0} HP, heals ~{heal:F0}";
+                        // ★ v0.3.14 (test5): worth only as much as the chance it stays up (ReviveStaysUp).
+                        if (share >= 1f)
+                        {
+                            float staysUp = ReviveStaysUp(ctx, ally, Math.Max(1f, heal - needed + 1f));
+                            upChance *= staysUp;
+                            reviveNote += $", stays up ~{staysUp:P0}";
+                        }
+                        healValue += upChance * AllyWorth(ctx, ally);
                         continue;
                     }
 
@@ -1501,7 +1711,9 @@ namespace CompanionAI_Pathfinder.Tactics
             }
 
             // 3) Nothing to do from here: close the distance for this or the next turn.
-            if (!anyAttackNow)
+            // ★ v0.3.14 (test5): not while only movement is possible (nauseated): arriving, the unit could not attack and
+            // would only stand there being hit (Camellia walked up to a Dretch and a Cambion, nauseated, in real time).
+            if (!anyAttackNow && !ctx.Permissions.MovementOnly)
             {
                 var single = ctx.Enemies
                     .Where(e => !ctx.Unreachable.Contains(e.UniqueId))
@@ -1571,46 +1783,24 @@ namespace CompanionAI_Pathfinder.Tactics
                     keepsTarget = p => inReach.Any(x => UnitCommand.IsUnitCloseEnough(x.Enemy.Position, p, p + eyeOffset, x.Est.Reach * 0.95f, true, 0f));
             }
 
-            Vector3? best = null;
-            float bestScore = float.MinValue;
-            bool bestKeeps = false;
-            foreach (float ring in new[] { 1.5f, 3f, 4.5f, 6f, 9f })
-            {
-                if (ring > maxDistance) break;
-                for (int i = 0; i < 16; i++)
-                {
-                    float angle = i * 22.5f * Mathf.Deg2Rad;
-                    var point = unit.Position + new Vector3(Mathf.Cos(angle), 0f, Mathf.Sin(angle)) * ring;
-                    if (!inside.IsOutside(point)) continue;
-                    if (AoeDangerAnalyzer.EnteringDanger(unit, unit.Position, point, out _) > 0f) continue;
-                    if (!AoeDangerAnalyzer.IsPositionValid(unit.Position, point)) continue;
-                    bool keeps = keepsTarget?.Invoke(point) ?? false;
-                    float nearestEnemy = ctx.Enemies.Count > 0 ? ctx.Enemies.Min(e => Vector3.Distance(point, e.Position)) : 0f;
-                    float score = (keeps ? 10f : 0f) - ring + 0.1f * Math.Min(nearestEnemy, 10f);
-                    if (score > bestScore)
-                    {
-                        bestScore = score;
-                        best = point;
-                        bestKeeps = keeps;
-                    }
-                }
-                // The nearest way out, unless a little further keeps an enemy in reach.
-                if (best.HasValue && (keepsTarget == null || bestKeeps)) break;
-            }
+            var best = AoeDangerAnalyzer.FindExit(unit, inside, maxDistance, keepsTarget, out _);
             if (!best.HasValue) return;
 
+            // inside.Danger already counts the chance the area affects this unit (its save, immunities, time left).
             float value = inside.Danger * 0.5f * AllyWorth(ctx, unit);
             string label = $"Leave {inside.Name ?? "area"}";
             var risk = MoveRisk(ctx, best.Value);
             if (risk != null)
             {
-                value -= risk.Cost;
+                // ★ v0.3.14 (test5): a hit stops the walk, and the unit stays inside having taken it (Camellia, 2 attacks).
+                value = value * (1f - risk.StopChance) - risk.Cost;
                 label += risk.Tag;
             }
             if (value < MinMainValue) return;
             list.Add(new Candidate
             {
-                Kind = CandidateKind.Move, Slot = ActionSlot.Move, Point = best, ApproachRadius = 0.3f,
+                // Close to the spot: it was chosen with the unit's body just outside the area.
+                Kind = CandidateKind.Move, Slot = ActionSlot.Move, Point = best, ApproachRadius = 0.15f,
                 Value = value,
                 Label = label, Key = "move:leave-area"
             });

@@ -85,9 +85,15 @@ namespace CompanionAI_Pathfinder.Tactics
                 p.CanWalk = state.CanMove;
                 // UnitCommandController.ShouldStartCommand: while nauseated only UnitMoveTo (and area transitions) start.
                 p.MovementOnly = state.HasCondition(UnitCondition.Nauseated);
+                // ★ v0.3.14 (test5): turn-based, the game says the unit cannot act (an animation such as nausea's holds it)
+                // but may still walk: TurnBasedController only decides then after a second of waiting, so a short
+                // animation after an attack never gets here. Real time waits for the animation instead.
+                bool busyButMobile = turnBased && !state.CanAct && state.CanMove;
+                if (busyButMobile) notes.Add(p.MovementOnly ? "nauseated: move only" : "busy: move only");
+                p.MovementOnly |= busyButMobile;
                 // Real time has no such limit on walking: UnitMoveTo ignores action cooldowns there.
                 p.OneActionOnly = turnBased && unit.IsMoveActionRestricted();
-                if (p.MovementOnly) notes.Add("nauseated: move only");
+                if (p.MovementOnly && !busyButMobile) notes.Add("nauseated: move only");
                 if (!p.CanWalk) notes.Add("cannot move");
                 if (p.OneActionOnly) notes.Add(unit.Descriptor.State.HasCondition(UnitCondition.Staggered)
                     ? "staggered: one action" : "one action");

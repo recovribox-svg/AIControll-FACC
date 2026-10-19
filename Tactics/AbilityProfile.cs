@@ -714,6 +714,18 @@ namespace CompanionAI_Pathfinder.Tactics
             return Evaluate(buff != null && m_BuffGuards.TryGetValue(buff, out var g) ? g : NoGuards, ability, target);
         }
 
+        /// <summary>
+        /// ★ v0.3.14 (test5): two effects sit in opposite branches of the same condition, so at most one of them runs.
+        /// Fire Blast's damage is in both branches of an "IsEqual" condition the profile cannot evaluate; both were added
+        /// up, about twice its real damage against every target.
+        /// </summary>
+        public bool Exclusive(GameAction a, GameAction b)
+        {
+            if (a == null || b == null || ReferenceEquals(a, b)) return false;
+            if (!m_Guards.TryGetValue(a, out var ga) || !m_Guards.TryGetValue(b, out var gb)) return false;
+            return ga.Any(x => gb.Any(y => ReferenceEquals(x.Checker, y.Checker) && x.OnCaster == y.OnCaster && x.Branch != y.Branch));
+        }
+
         public bool HasGuardedEffects => m_Guards.Values.Any(g => g.Length > 0) || m_BuffGuards.Values.Any(g => g.Length > 0);
 
         private static EffectApplies Evaluate(EffectGuard[] guards, AbilityData ability, UnitEntityData target)

@@ -72,6 +72,8 @@ namespace CompanionAI_Pathfinder
                 CommandTrace.Subscribe();
                 // ★ v0.3.0: give mount commands of AI-controlled riders a ForcedPath (turn-based)
                 MountPathHandler.Subscribe();
+                // ★ v0.3.14: what enemies actually take from each damage type (spell damage estimates)
+                Tactics.DamageObserver.Subscribe();
 
                 // ★ v0.2.38: Pre-Buff Controller 초기화
                 PreBuffController.Initialize();
@@ -267,12 +269,14 @@ namespace CompanionAI_Pathfinder
                 CombatEventHandler.Subscribe();
                 CommandTrace.Subscribe();
                 MountPathHandler.Subscribe();
+                Tactics.DamageObserver.Subscribe();
             }
             else
             {
                 Log($"{ModEntry?.Info?.DisplayName} 비활성화됨");
                 CombatEventHandler.Unsubscribe();
                 CommandTrace.Unsubscribe();
+                Tactics.DamageObserver.Unsubscribe();
                 MountPathHandler.Unsubscribe();
             }
 

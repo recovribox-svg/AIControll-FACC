@@ -380,6 +380,9 @@ namespace CompanionAI_Pathfinder.GameInterface
             // ★ v0.2.23: Clear pending action tracker
             PendingActionTracker.Instance.Clear();
 
+            // ★ v0.3.14: damage observations are about this fight's enemies
+            Tactics.DamageObserver.Clear();
+
             // ★ v0.3.14: failures are about this fight's positions and targets; ClearAll was never called, so a
             // blacklist lasted 5 minutes into the next fight.
             FailedAbilityTracker.Instance.ClearAll();

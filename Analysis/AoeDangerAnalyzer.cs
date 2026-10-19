@@ -30,9 +30,6 @@ namespace CompanionAI_Pathfinder.Analysis
         private const float DANGER_THRESHOLD_ESCAPE = 0.5f;  // 이 이상이면 탈출 시도
         private const float DANGER_THRESHOLD_AVOID = 0.3f;   // 이 이상이면 진입 회피
 
-        // 탈출 방향 계산용
-        private const float ESCAPE_DISTANCE = 5f;  // 기본 탈출 거리 (미터)
-        private const int DIRECTION_SAMPLES = 8;    // 탈출 방향 샘플 수
 
         #endregion
 
@@ -80,45 +77,39 @@ namespace CompanionAI_Pathfinder.Analysis
 
             try
             {
-                // 게임의 모든 지역 효과 검사
-                var areaEffects = Game.Instance?.State?.AreaEffects;
-                if (areaEffects == null)
-                    return result;
-
-                foreach (var aoe in areaEffects)
+                // ★ v0.3.14 (test5): the same live areas and the same exit as the tactical engine's "Leave <area>"
+                // (InsideDanger / FindExit). Two separate rules disagreed: an ended Stinking Cloud still listed Seelah as
+                // inside (438 "ShouldEscape" lines in one fight, no escape possible), and near a live cloud's edge the old
+                // centre-distance test found no better spot while the game still counted her inside (she fell from 100 %
+                // to 9 % HP in it).
+                var inside = InsideDanger(unit);
+                foreach (var aoe in inside.Areas)
                 {
-                    if (aoe == null || !aoe.IsInGame)
-                        continue;
-
-                    // 유닛이 이 AoE 안에 있는지 확인
-                    if (!IsUnitInsideEffect(unit, aoe))
-                        continue;
-
-                    // 이 AoE가 유닛에게 위험한지 판단
-                    var danger = EvaluateEffectDanger(unit, aoe);
-                    if (danger != null && danger.DangerLevel > 0)
-                    {
-                        result.DangerousEffects.Add(danger);
-                        result.TotalDangerLevel += danger.DangerLevel;
-                    }
+                    var danger = EvaluateEffectDanger(unit, aoe, quiet: true);
+                    if (danger == null || danger.DangerLevel <= 0f) continue;
+                    result.DangerousEffects.Add(danger);
+                    result.TotalDangerLevel += danger.DangerLevel;
                 }
 
                 result.IsInDanger = result.DangerousEffects.Count > 0;
 
-                // 탈출이 필요하면 안전한 위치 계산
                 if (result.ShouldEscape)
-                {
-                    result.SuggestedEscapePosition = CalculateEscapePosition(unit, result.DangerousEffects);
-                }
+                    result.SuggestedEscapePosition = FindExit(unit, inside, ESCAPE_MAX_DISTANCE, null, out _);
 
                 if (result.IsInDanger)
                 {
-                    // ★ v0.3.14: normal level only when it leads to an escape (887 identical lines in one fight).
+                    // ★ v0.3.14: normal level only when it changes (848 identical lines for Seelah in one session).
                     string line = $"[AoeDanger] {unit.CharacterName}: Danger={result.TotalDangerLevel:F2}, " +
                                   $"Effects={result.DangerousEffects.Count} ({string.Join(", ", result.DangerousEffects.Select(d => d.Name))}), " +
-                                  $"ShouldEscape={result.ShouldEscape}";
-                    if (result.ShouldEscape) Main.Log(line); else Main.Verbose(line);
+                                  $"ShouldEscape={result.ShouldEscape}" +
+                                  (result.ShouldEscape && !result.SuggestedEscapePosition.HasValue ? " - no way out found" : "");
+                    if (result.ShouldEscape && (!LastReport.TryGetValue(unit.UniqueId, out var last) || last != line))
+                        Main.Log(line);
+                    else
+                        Main.Verbose(line);
+                    LastReport[unit.UniqueId] = line;
                 }
+                else LastReport.Remove(unit.UniqueId);
             }
             catch (Exception ex)
             {
@@ -127,6 +118,8 @@ namespace CompanionAI_Pathfinder.Analysis
 
             return result;
         }
+
+        private static readonly Dictionary<string, string> LastReport = new Dictionary<string, string>();
 
         /// <summary>
         /// 특정 위치가 위험 지역인지 확인 (이동 계획용)
@@ -144,11 +137,11 @@ namespace CompanionAI_Pathfinder.Analysis
 
                 foreach (var aoe in areaEffects)
                 {
-                    if (aoe == null || !aoe.IsInGame)
+                    if (!IsLive(aoe))
                         continue;
 
                     // 위치가 AoE 범위 안인지 확인
-                    if (!IsPositionInsideEffect(position, aoe))
+                    if (!Covers(aoe, position, unit.Corpulence))
                         continue;
 
                     // 유닛에게 위험한 AoE인지 확인
@@ -183,11 +176,11 @@ namespace CompanionAI_Pathfinder.Analysis
                 int samples = Math.Max(1, Mathf.CeilToInt(length / 1f));
                 foreach (var aoe in areaEffects)
                 {
-                    if (aoe == null || !aoe.IsInGame || aoe.IsEnded) continue;
+                    if (!IsLive(aoe)) continue;
                     if (IsUnitInsideEffect(unit, aoe)) continue;
                     bool enters = false;
                     for (int i = 1; i <= samples && !enters; i++)
-                        enters = IsPositionInsideEffect(Vector3.Lerp(from, to, i / (float)samples), aoe);
+                        enters = Covers(aoe, Vector3.Lerp(from, to, i / (float)samples), unit.Corpulence);
                     if (!enters) continue;
                     var danger = EvaluateEffectDanger(unit, aoe, quiet: true);
                     if (danger == null || danger.DangerLevel <= worst) continue;
@@ -211,8 +204,15 @@ namespace CompanionAI_Pathfinder.Analysis
             /// <summary>The worst area's name, for the decision log.</summary>
             public string Name;
 
-            /// <summary><paramref name="point"/> lies outside every one of these areas.</summary>
-            public bool IsOutside(Vector3 point) => Areas.All(a => !IsPositionInsideEffect(point, a));
+            /// <summary>The unit's body radius: the game counts a unit inside when its body overlaps the area.</summary>
+            public float Corpulence;
+
+            /// <summary>
+            /// The unit standing at <paramref name="point"/> would be outside every one of these areas, by the game's own
+            /// test (AreaEffectView.Contains: the area's shape against the unit's body). ★ test5: the centre distance
+            /// without the body sent Orvath out of a Stinking Cloud in three walks (3.3 m, 1.6 m, 1.0 m).
+            /// </summary>
+            public bool IsOutside(Vector3 point) => Areas.All(a => !Covers(a, point, Corpulence));
         }
 
         /// <summary>
@@ -224,6 +224,7 @@ namespace CompanionAI_Pathfinder.Analysis
         {
             var result = new AreasInside();
             if (unit == null) return result;
+            result.Corpulence = unit.Corpulence;
             try
             {
                 var areaEffects = Game.Instance?.State?.AreaEffects;
@@ -231,7 +232,7 @@ namespace CompanionAI_Pathfinder.Analysis
                 float worst = 0f, rest = 0f;
                 foreach (var aoe in areaEffects)
                 {
-                    if (aoe == null || !aoe.IsInGame || aoe.IsEnded) continue;
+                    if (!IsLive(aoe)) continue;
                     if (!IsUnitInsideEffect(unit, aoe)) continue;
                     var danger = EvaluateEffectDanger(unit, aoe, quiet: true);
                     if (danger == null || danger.DangerLevel <= 0f) continue;
@@ -285,42 +286,50 @@ namespace CompanionAI_Pathfinder.Analysis
         #region Private Methods
 
         /// <summary>
-        /// 유닛이 지역 효과 안에 있는지 확인
+        /// ★ v0.3.14 (test5): an area that still acts: in the game, not ended, with its view (its shape) loaded. An ended
+        /// area can stay in the state's list for a while with its last list of units inside.
         /// </summary>
-        private static bool IsUnitInsideEffect(UnitEntityData unit, AreaEffectEntityData aoe)
+        private static bool IsLive(AreaEffectEntityData aoe)
         {
             try
             {
-                // 게임 API 사용: InGameUnitsInside
-                var unitsInside = aoe.InGameUnitsInside;
-                return unitsInside?.Contains(unit) ?? false;
+                return aoe != null && aoe.IsInGame && !aoe.IsEnded &&
+                       (aoe.View != null || aoe.Blueprint?.Shape == AreaEffectShape.AllArea);
             }
             catch
             {
-                // 폴백: 거리 기반 체크
-                return IsPositionInsideEffect(unit.Position, aoe);
+                return false;
+            }
+        }
+
+        /// <summary>The unit is inside the area now (the game's own list, live areas only).</summary>
+        private static bool IsUnitInsideEffect(UnitEntityData unit, AreaEffectEntityData aoe)
+        {
+            if (!IsLive(aoe)) return false;
+            try
+            {
+                return aoe.InGameUnitsInside?.Contains(unit) ?? false;
+            }
+            catch
+            {
+                return Covers(aoe, unit.Position, unit.Corpulence);
             }
         }
 
         /// <summary>
-        /// 위치가 지역 효과 범위 안인지 확인
+        /// ★ v0.3.14 (test5): a body of radius <paramref name="corpulence"/> standing at <paramref name="point"/> overlaps
+        /// the area: the game's own shape test (AreaEffectView.Contains uses Shape.Contains(position, corpulence)), which
+        /// also handles non-round areas. Falls back to the blueprint's radius.
         /// </summary>
-        private static bool IsPositionInsideEffect(Vector3 position, AreaEffectEntityData aoe)
+        private static bool Covers(AreaEffectEntityData aoe, Vector3 point, float corpulence)
         {
             try
             {
-                // AoE 중심과의 거리 계산
-                float distance = Vector3.Distance(position, (aoe.View?.transform?.position) ?? aoe.Position);
-
-                // Blueprint에서 반경 가져오기
-                var blueprint = aoe.Blueprint;
-                if (blueprint == null)
-                    return false;
-
-                // Size 필드에서 반경 추정 (Shape에 따라 다름)
-                float radius = blueprint.Size.Meters;
-
-                return distance <= radius;
+                if (aoe.Blueprint?.Shape == AreaEffectShape.AllArea) return true;
+                var shape = aoe.View?.Shape;
+                if (shape != null) return shape.Contains(point, corpulence);
+                Vector3 center = aoe.Position;
+                return Vector3.Distance(point, center) <= (aoe.Blueprint?.Size.Meters ?? 0f) + corpulence;
             }
             catch
             {
@@ -452,7 +461,10 @@ namespace CompanionAI_Pathfinder.Analysis
                 }
 
                 // 최대 1.0으로 제한
-                result.DangerLevel = Mathf.Clamp01(dangerLevel);
+                // ★ v0.3.14 (test5): weighted by the chance the area affects this unit at all before it ends (its save,
+                // its immunities, the time left). Camellia (good Fortitude) left a Stinking Cloud past two attacks of
+                // opportunity, was stopped by the first and stayed inside anyway.
+                result.DangerLevel = Mathf.Clamp01(dangerLevel) * AffectChance(unit, aoe);
 
                 if (!quiet)
                 {
@@ -469,56 +481,54 @@ namespace CompanionAI_Pathfinder.Analysis
             return result;
         }
 
-        /// <summary>
-        /// 안전한 탈출 위치 계산
-        /// ★ v0.2.59: NavMesh 검증 추가
-        /// </summary>
-        private static Vector3? CalculateEscapePosition(UnitEntityData unit, List<DangerousEffect> dangers)
-        {
-            if (unit == null || dangers == null || dangers.Count == 0)
-                return null;
+        /// <summary>Farthest exit walk considered, metres.</summary>
+        private const float ESCAPE_MAX_DISTANCE = 9f;
 
+        /// <summary>
+        /// ★ v0.3.14 (test5): the nearest spot within <paramref name="maxDistance"/> where the unit would stand outside all
+        /// the areas in <paramref name="inside"/>, without walking into another one, reachable on the navmesh. Shared by
+        /// the tactical engine's "Leave <area>" and real time's emergency escape. With <paramref name="prefer"/> (e.g.
+        /// "keeps an enemy in reach"), a slightly longer way out that satisfies it wins over the nearest one.
+        /// </summary>
+        public static Vector3? FindExit(UnitEntityData unit, AreasInside inside, float maxDistance,
+                                        Func<Vector3, bool> prefer, out bool preferred)
+        {
+            preferred = false;
+            if (unit == null || inside == null || inside.Areas.Count == 0) return null;
+            Vector3? best = null;
+            float bestScore = float.MinValue;
             try
             {
-                Vector3 unitPos = unit.Position;
-                Vector3 bestPosition = unitPos;
-                float bestScore = float.MinValue;
-
-                // 여러 방향 샘플링
-                for (int i = 0; i < DIRECTION_SAMPLES; i++)
+                var enemies = unit.CombatState?.EngagedBy?.Where(e => e != null).ToList() ?? new List<UnitEntityData>();
+                foreach (float ring in new[] { 1.5f, 3f, 4.5f, 6f, 9f })
                 {
-                    float angle = (360f / DIRECTION_SAMPLES) * i;
-                    Vector3 direction = Quaternion.Euler(0, angle, 0) * Vector3.forward;
-                    Vector3 testPosition = unitPos + direction * ESCAPE_DISTANCE;
-
-                    // ★ v0.2.59: NavMesh 위치 검증
-                    if (!IsPositionValid(unitPos, testPosition))
-                        continue;  // 이동 불가능한 위치 스킵
-
-                    // 이 위치의 안전도 계산
-                    float safetyScore = CalculatePositionSafety(testPosition, dangers);
-
-                    if (safetyScore > bestScore)
+                    if (ring > maxDistance) break;
+                    for (int i = 0; i < 16; i++)
                     {
-                        bestScore = safetyScore;
-                        bestPosition = testPosition;
+                        float angle = i * 22.5f * Mathf.Deg2Rad;
+                        var point = unit.Position + new Vector3(Mathf.Cos(angle), 0f, Mathf.Sin(angle)) * ring;
+                        if (!inside.IsOutside(point)) continue;
+                        if (EnteringDanger(unit, unit.Position, point, out _) > 0f) continue;
+                        if (!IsPositionValid(unit.Position, point)) continue;
+                        bool keeps = prefer?.Invoke(point) ?? false;
+                        // Shortest way out; away from whoever engages the unit as a tie-break.
+                        float away = enemies.Count > 0 ? Math.Min(10f, enemies.Min(e => Vector3.Distance(point, e.Position))) : 0f;
+                        float score = (keeps ? 10f : 0f) - ring + 0.1f * away;
+                        if (score > bestScore)
+                        {
+                            bestScore = score;
+                            best = point;
+                            preferred = keeps;
+                        }
                     }
-                }
-
-                // 현재 위치보다 나은 곳이 있으면 반환
-                float currentSafety = CalculatePositionSafety(unitPos, dangers);
-                if (bestScore > currentSafety + 0.1f)
-                {
-                    Main.Verbose($"[AoeDanger] Escape position found: {bestPosition} (safety={bestScore:F2} vs current={currentSafety:F2})");
-                    return bestPosition;
+                    if (best.HasValue && (prefer == null || preferred)) break;
                 }
             }
             catch (Exception ex)
             {
-                Main.Error($"[AoeDanger] Error calculating escape: {ex.Message}");
+                Main.Verbose($"[AoeDanger] exit search {unit.CharacterName}: {ex.Message}");
             }
-
-            return null;
+            return best;
         }
 
         /// <summary>
@@ -558,43 +568,63 @@ namespace CompanionAI_Pathfinder.Analysis
             }
         }
 
+        private static readonly System.Reflection.FieldInfo CreationField =
+            HarmonyLib.AccessTools.Field(typeof(AreaEffectEntityData), "m_CreationTime");
+        private static readonly System.Reflection.FieldInfo DurationField =
+            HarmonyLib.AccessTools.Field(typeof(AreaEffectEntityData), "m_Duration");
+
         /// <summary>
-        /// 특정 위치의 안전도 계산 (높을수록 안전)
+        /// ★ v0.3.14 (test5): chance a lasting area does anything to <paramref name="unit"/> in the next round:
+        /// - immune by descriptor, the game's own test for who the area affects (UnitPartSpellResistance.IsImmune with
+        ///   spellDescriptorOnly, as AreaEffectEntityData.ShouldUnitBeInside): 0;
+        /// - immune to the control it applies and dealing no damage: 0;
+        /// - otherwise the chance to fail the area's save (its live DC against the unit's save; damage halved on a save
+        ///   still counts half), 1 when the area has no save;
+        /// - times the share of a round the area still lasts.
         /// </summary>
-        private static float CalculatePositionSafety(Vector3 position, List<DangerousEffect> dangers)
+        private static float AffectChance(UnitEntityData unit, AreaEffectEntityData aoe)
         {
-            float safety = 1.0f;
-
-            foreach (var danger in dangers)
+            try
             {
-                var aoe = danger.AreaEffect;
-                if (aoe == null)
-                    continue;
-
-                try
+                var context = aoe.Context;
+                if (unit.Get<Kingmaker.UnitLogic.Parts.UnitPartSpellResistance>()?.IsImmune(context, spellDescriptorOnly: true) ?? false)
+                    return 0f;
+                float chance = 1f;
+                var profile = SourceProfile(aoe);
+                if (profile != null)
                 {
-                    Vector3 aoeCenter = (aoe.View?.transform?.position) ?? aoe.Position;
-                    float distance = Vector3.Distance(position, aoeCenter);
-
-                    // AoE 반경
-                    float radius = aoe.Blueprint?.Size.Meters ?? 5f;
-
-                    if (distance < radius)
+                    if (!profile.DealsDamage && profile.Control != CCType.None && AbilityClassifier.HasCCImmunity(unit, profile.Control))
+                        return 0f;
+                    int dc = context?.Params?.DC ?? 0;
+                    if (profile.Save != Kingmaker.EntitySystem.Stats.SavingThrowType.Unknown && dc > 0)
                     {
-                        // AoE 안에 있으면 위험도만큼 안전도 감소
-                        safety -= danger.DangerLevel;
-                    }
-                    else
-                    {
-                        // AoE 밖이면 거리에 따라 약간의 안전도 보너스
-                        float distanceBonus = Mathf.Clamp01((distance - radius) / radius) * 0.2f;
-                        safety += distanceBonus;
+                        int bonus;
+                        switch (profile.Save)
+                        {
+                            case Kingmaker.EntitySystem.Stats.SavingThrowType.Fortitude: bonus = unit.Stats.SaveFortitude.ModifiedValue; break;
+                            case Kingmaker.EntitySystem.Stats.SavingThrowType.Reflex: bonus = unit.Stats.SaveReflex.ModifiedValue; break;
+                            case Kingmaker.EntitySystem.Stats.SavingThrowType.Will: bonus = unit.Stats.SaveWill.ModifiedValue; break;
+                            default: bonus = int.MinValue; break;
+                        }
+                        if (bonus != int.MinValue)
+                        {
+                            float fail = Mathf.Clamp((dc - bonus - 1) / 20f, 0.05f, 0.95f);
+                            chance = profile.DealsDamage && profile.HalfOnSave ? 0.5f + 0.5f * fail : fail;
+                        }
                     }
                 }
-                catch { }
+                if (CreationField != null && DurationField != null && DurationField.GetValue(aoe) is TimeSpan duration)
+                {
+                    var created = (TimeSpan)CreationField.GetValue(aoe);
+                    double left = (created + duration - Game.Instance.TimeController.GameTime).TotalSeconds;
+                    chance *= Mathf.Clamp01((float)(left / 6.0));
+                }
+                return chance;
             }
-
-            return safety;
+            catch
+            {
+                return 1f;
+            }
         }
 
         /// <summary>★ v0.3.14: how strongly the area controls those inside (from the spawning ability's analysis).</summary>

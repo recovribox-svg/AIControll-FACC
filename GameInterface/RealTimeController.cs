@@ -206,7 +206,10 @@ namespace CompanionAI_Pathfinder.GameInterface
 
             // ★ v0.2.49: AoE 위험 지역 탈출 우선 체크
             // 이동 가능한 상태라면 AoE 위험 지역에서 탈출 시도
-            if (state.CanMove)
+            // ★ v0.3.14 (test5): not again while it is already walking (an escape, a "Leave" or a withdraw): each new escape
+            // replaced the last one, two metres into it (14 of 24 of Camellia's escapes ended that way).
+            var walking = unit.Commands.Move as UnitMoveTo;
+            if (state.CanMove && (walking == null || walking.IsFinished))
             {
                 var aoeDanger = AoeDangerAnalyzer.AnalyzeUnit(unit);
                 if (aoeDanger.ShouldEscape && aoeDanger.SuggestedEscapePosition.HasValue)
@@ -238,6 +241,17 @@ namespace CompanionAI_Pathfinder.GameInterface
             // ★ v0.2.47: 명령 상태 상세 체크 + Stuck 명령 감지/취소
             if (!unit.Commands.Empty)
             {
+                // ★ v0.3.14 (test5): a command chosen at full health that has not started yet (still walking to its target,
+                // waiting for a cooldown) is dropped when the unit has since lost a lot of HP, so the engine can heal or
+                // withdraw now. Seelah went from 100 % to 9 % while a Smite Evil waited 5 s to start.
+                if (Tactics.RealTimeTactics.ShouldReplanAfterDamage(unit, out string replanWhy))
+                {
+                    Main.Log($"[RT] {unitName}: {replanWhy} - dropping the commands that have not started, deciding again");
+                    unit.Commands.InterruptAll(c => c != null && !c.IsStarted && c.IsInterruptible && !c.Cutscene);
+                    _lastDecisionTime[unitId] = currentTime;
+                    return;
+                }
+
                 try
                 {
                     var rawCommands = unit.Commands.Raw;
