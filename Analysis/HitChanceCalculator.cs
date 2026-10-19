@@ -22,6 +22,7 @@ using Kingmaker.UnitLogic.Abilities.Components;
 using Kingmaker.UnitLogic.FactLogic;
 using Kingmaker.UnitLogic.Mechanics.Actions;
 using Kingmaker.UnitLogic.Parts;
+using Kingmaker.Utility;
 using UnityEngine;
 
 namespace CompanionAI_Pathfinder.Analysis
@@ -446,6 +447,12 @@ namespace CompanionAI_Pathfinder.Analysis
         /// <summary>
         /// ★ v0.2.74: Spell Resistance 돌파 확률 계산
         /// SR 체크: D20 + CasterLevel >= SR
+        /// ★ v0.3.14: the game's rule (RuleSpellResistanceCheck) read without triggering it (triggering rolls dice and runs
+        /// on-resist triggers): the delivered blueprint decides whether SR applies (and not against allies when it says
+        /// so); Primal Magic Essence and IgnoreSpellResistanceForSpells skip the roll; caster level is the cast's own
+        /// (AbilityData.CalculateParams, so Arcane Reservoir / Eldritch Surge count), not the spellbook's base level;
+        /// spell penetration comes from the game's components (GetSpellPenetrationBonus); a caster with
+        /// UnitPartSpellResistanceCheckReplace uses its stat progression when that is higher; no natural 1 / 20 in this roll.
         /// </summary>
         public static SpellResistanceResult CalculateSpellResistance(
             UnitEntityData caster,
@@ -459,19 +466,19 @@ namespace CompanionAI_Pathfinder.Analysis
 
             try
             {
-                // 1. 스펠이 SR의 영향을 받는지 확인
-                result.AllowsSR = ability.Blueprint?.SpellResistance ?? false;
-
-                if (!result.AllowsSR)
+                var deliver = ability.GetDeliverBlueprint() ?? ability.Blueprint;
+                result.AllowsSR = deliver?.SpellResistance ?? false;
+                bool noRoll = !result.AllowsSR ||
+                              (deliver.IgnoreSpellResistanceForAlly && !caster.IsEnemy(target)) ||
+                              (bool)caster.Descriptor.State.Features.PrimalMagicEssence ||
+                              IgnoresSpellResistance(caster, ability);
+                if (noRoll)
                 {
-                    result.PenetrationChance = 1.0f;  // SR 무시
+                    result.PenetrationChance = 1.0f;
                     return result;
                 }
 
-                // 2. 타겟의 SR Part 확인
                 var srPart = target.Get<Kingmaker.UnitLogic.Parts.UnitPartSpellResistance>();
-
-                // 3. 스펠 면역 체크
                 if (srPart?.IsImmune(ability.Blueprint, caster) == true)
                 {
                     result.IsImmune = true;
@@ -480,31 +487,29 @@ namespace CompanionAI_Pathfinder.Analysis
                     return result;
                 }
 
-                // 4. SR 값 가져오기
                 result.TargetSR = srPart?.GetValue(ability.Blueprint, caster) ?? 0;
-
                 if (result.TargetSR <= 0)
                 {
-                    result.PenetrationChance = 1.0f;  // SR 없음
+                    result.PenetrationChance = 1.0f;
                     return result;
                 }
 
-                // 5. Caster Level (Spell Penetration) 계산
-                // CL = Spellbook CL 또는 캐릭터 레벨
-                int casterLevel = ability.Spellbook?.CasterLevel ?? caster.Progression?.CharacterLevel ?? 1;
+                int casterLevel = ability.CalculateParams()?.CasterLevel ?? ability.Spellbook?.CasterLevel ?? caster.Progression?.CharacterLevel ?? 1;
+                int bonus = GetSpellPenetrationBonus(caster, ability);
+                int penetration = casterLevel + bonus;
+                var replace = caster.Get<UnitPartSpellResistanceCheckReplace>();
+                if (replace?.Progression != null)
+                {
+                    int byStat = replace.Progression.CalculateValue(caster.Stats.GetStat(replace.StatType).ModifiedValue);
+                    if (byStat > casterLevel) penetration = byStat + bonus;
+                }
+                result.SpellPenetration = penetration;
 
-                // ★ v0.2.76: Spell Penetration 피트 보너스 감지
-                int spellPenBonus = GetSpellPenetrationBonus(caster);
+                // Resisted when SR > penetration + d20, i.e. the spell passes on a d20 of (SR - penetration) or more.
+                int need = result.TargetSR - penetration;
+                result.PenetrationChance = Mathf.Clamp01((21f - need) / 20f);
 
-                result.SpellPenetration = casterLevel + spellPenBonus;
-
-                // 6. 돌파 확률 계산
-                // D20 + CL >= SR → 성공
-                // 필요 굴림 = SR - CL
-                int needToRoll = result.TargetSR - result.SpellPenetration;
-                result.PenetrationChance = CalculateHitProbability(result.SpellPenetration, result.TargetSR);
-
-                Main.Verbose($"[HitChance] SR: {ability.Name} {caster.CharacterName} vs {target.CharacterName} - {result}");
+                Main.Verbose($"[HitChance] SR: {ability.Name} {caster.CharacterName} vs {target.CharacterName} - SR{result.TargetSR} vs CL{casterLevel}+{bonus}, Penetrate={result.PenetrationChance:P0}");
             }
             catch (Exception ex)
             {
@@ -675,77 +680,55 @@ namespace CompanionAI_Pathfinder.Analysis
         }
 
         /// <summary>
-        /// ★ v0.2.76: Spell Penetration 피트 보너스 계산
-        /// 피트별 보너스:
-        /// - Spell Penetration: +2
-        /// - Greater Spell Penetration: +2 (총 +4)
-        /// - Mythic Spell Penetration: +MythicLevel/2 (Greater 있으면 +MythicLevel)
+        /// ★ v0.3.14: the spell penetration the game adds to the caster's roll, from the components it uses for that
+        /// (RuleSpellResistanceCheck handlers): SpellPenetrationBonus (Spell Penetration, Greater, items, buffs; typed
+        /// bonuses do not stack, by the game's own stacking rule), SpellPenetrationMythicBonus and AlliedSpellcaster.
+        /// v0.2.76 matched feat names ("spellpenetration") and gave +2 for any buff whose name contained it.
+        /// Bonuses from other mods' own component types (e.g. Tabletop Tweaks' Piercing Spell) are not seen.
         /// </summary>
-        public static int GetSpellPenetrationBonus(UnitEntityData caster)
+        public static int GetSpellPenetrationBonus(UnitEntityData caster, AbilityData ability = null)
         {
             if (caster == null)
                 return 0;
 
-            int bonus = 0;
-
+            int stackable = 0;
+            var typed = new Dictionary<ModifierDescriptor, int>();
+            int mythic = 0, allied = 0;
             try
             {
-                // 방법 1: SpellPenetrationBonus 컴포넌트로 피트 감지
-                // 유닛의 모든 Facts에서 SpellPenetrationBonus 컴포넌트 찾기
-                var features = caster.Descriptor?.Progression?.Features;
-                if (features != null)
+                foreach (var fact in caster.Facts.List)
                 {
-                    foreach (var feature in features)
+                    if (fact?.Blueprint == null || !fact.Active) continue;
+                    foreach (var component in fact.Blueprint.ComponentsArray)
                     {
-                        if (feature?.Blueprint == null)
-                            continue;
-
-                        // 피트 이름 기반 감지 (폴백)
-                        string bpName = feature.Blueprint.name?.ToLowerInvariant() ?? "";
-
-                        // Spell Penetration (+2)
-                        if (bpName.Contains("spellpenetration") && !bpName.Contains("greater") && !bpName.Contains("mythic"))
+                        switch (component)
                         {
-                            bonus = Math.Max(bonus, 2);
-                        }
-                        // Greater Spell Penetration (+4 총합)
-                        else if (bpName.Contains("greaterspellpenetration"))
-                        {
-                            bonus = Math.Max(bonus, 4);
-                        }
-                        // Mythic Spell Penetration
-                        else if (bpName.Contains("mythicspellpenetration") || bpName.Contains("spellpenetrationmythic"))
-                        {
-                            int mythicLevel = caster.Progression?.MythicLevel ?? 0;
-                            // Greater 있으면 전체 Mythic Level, 없으면 절반
-                            int mythicBonus = (bonus >= 4) ? mythicLevel : (mythicLevel / 2);
-                            bonus += mythicBonus;
+                            case Kingmaker.Designers.Mechanics.Facts.SpellPenetrationBonus pen:
+                            {
+                                if (pen.CheckFact && pen.RequiredFact != null && !caster.Descriptor.HasFact(pen.RequiredFact)) break;
+                                int value = fact.MaybeContext != null ? pen.Value.Calculate(fact.MaybeContext) : pen.Value.Value;
+                                if (ModifierDescriptorHelper.IsStackable(pen.Descriptor)) stackable += value;
+                                else typed[pen.Descriptor] = Math.Max(typed.TryGetValue(pen.Descriptor, out int v) ? v : 0, value);
+                                break;
+                            }
+                            case Kingmaker.Designers.Mechanics.Facts.SpellPenetrationMythicBonus myth:
+                            {
+                                int level = caster.Progression?.MythicLevel ?? 0;
+                                mythic = Math.Max(mythic, myth.Greater != null && caster.HasFact(myth.Greater) ? level : level / 2);
+                                break;
+                            }
+                            case Kingmaker.Designers.Mechanics.Facts.AlliedSpellcaster ally:
+                            {
+                                float radius = ally.Radius.Feet().Meters;
+                                bool solo = (bool)caster.Descriptor.State.Features.SoloTactics;
+                                if (solo || Kingmaker.Game.Instance.Player.Party.Any(u => u != caster && !u.IsEnemy(caster) &&
+                                        u.Descriptor.HasFact(ally.AlliedSpellcasterFact) &&
+                                        Vector3.Distance(u.Position, caster.Position) <= radius))
+                                    allied = 2;
+                                break;
+                            }
                         }
                     }
-                }
-
-                // 방법 2: 버프에서도 Spell Penetration 보너스 확인 (아이템, 일시적 효과)
-                var buffs = caster.Buffs;
-                if (buffs != null)
-                {
-                    foreach (var buff in buffs)
-                    {
-                        if (buff?.Blueprint == null)
-                            continue;
-
-                        string buffName = buff.Blueprint.name?.ToLowerInvariant() ?? "";
-                        if (buffName.Contains("spellpenetration"))
-                        {
-                            // 버프에서 추가 보너스 (보통 +1~+2)
-                            bonus += 2;
-                            break; // 중복 방지
-                        }
-                    }
-                }
-
-                if (bonus > 0)
-                {
-                    Main.Verbose($"[HitChance] SpellPen: {caster.CharacterName} has +{bonus} spell penetration bonus");
                 }
             }
             catch (Exception ex)
@@ -753,7 +736,30 @@ namespace CompanionAI_Pathfinder.Analysis
                 Main.Error($"[HitChanceCalculator] GetSpellPenetrationBonus error: {ex.Message}");
             }
 
+            int bonus = stackable + typed.Values.Sum() + mythic + allied;
+            if (bonus > 0)
+                Main.Verbose($"[HitChance] SpellPen: {caster.CharacterName} has +{bonus} spell penetration");
             return bonus;
+        }
+
+        /// <summary>★ v0.3.14: an IgnoreSpellResistanceForSpells component on the caster covers this ability (or its parent).</summary>
+        private static bool IgnoresSpellResistance(UnitEntityData caster, AbilityData ability)
+        {
+            try
+            {
+                var bp = ability.GetDeliverBlueprint() ?? ability.Blueprint;
+                foreach (var fact in caster.Facts.List)
+                {
+                    if (fact?.Blueprint == null || !fact.Active) continue;
+                    foreach (var c in fact.Blueprint.ComponentsArray.OfType<Kingmaker.Designers.Mechanics.Facts.IgnoreSpellResistanceForSpells>())
+                        if (c.AllSpells || c.AbilityList.Contains(bp) || (bp.Parent != null && c.AbilityList.Contains(bp.Parent)))
+                            return true;
+                }
+            }
+            catch
+            {
+            }
+            return false;
         }
 
         /// <summary>
