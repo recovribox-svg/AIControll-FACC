@@ -55,6 +55,8 @@ namespace CompanionAI_Pathfinder.Tactics
         /// ★ v0.3.17: all of it - the cost and the share lost to the chance the spell is spoilt.
         /// </summary>
         public float CastRiskCost;
+        /// <summary>★ v0.3.17: the aimed enemy itself is affected (false: an area centred on it for the enemies around it).</summary>
+        public bool AimAffected = true;
         /// <summary>
         /// ★ v0.3.17: walk to <see cref="MovePoint"/> first (a spot around a harmful area, the one the value was priced
         /// for), and act from there on the next decision.
@@ -1401,10 +1403,8 @@ namespace CompanionAI_Pathfinder.Tactics
 
                 float value = ScoreAbility(ctx, ability, profile, slot, target, out string why);
                 if (value <= 0f) continue;
-                // ★ v0.3.17 (test3): an area aimed at an enemy it does not affect (immune) for the others around it: a
-                // centre on an enemy it affects, covering the same, wins the tie. "Sleep->Giant Spider" (immune) was cast
-                // for the wolves next to it, and the per-target check counted the spider as "nothing happened".
-                if (profile.IsAoE && target != ctx.Unit && ctx.Unit.IsEnemy(target) && !ctx.AimCounted) value *= 0.97f;
+                // ★ v0.3.17 (test3): does the aimed enemy itself get any of the value, or only the others in the area?
+                bool aimAffected = !(profile.IsAoE && target != ctx.Unit && ctx.Unit.IsEnemy(target)) || ctx.AimCounted;
                 value *= consumable;
                 if (needsMove) value *= 0.9f;
                 // ★ v0.3.6: a standard-action spell cast in melee needs a defensive-casting check; failing it provokes an
@@ -1451,22 +1451,23 @@ namespace CompanionAI_Pathfinder.Tactics
                             (approach?.Around != null ? $" (around {approach.Around})" : "") +
                             (provoke != null ? $" [casting provokes {provoke.Attacks}{(provoke.DropChance >= 0.1f ? $", {provoke.DropChance:P0} down" : "")}]" : ""),
                     CastRiskCost = provokeLoss,
+                    AimAffected = aimAffected,
                     MoveFirst = approach?.Around != null,
                     MovePoint = approach?.Around != null ? approach.Point : (Vector3?)null,
                     ApproachRadius = approach?.Arrival ?? 0f,
                     CheckPath = needsMove && risk?.Area == null,
                     Key = $"abl:{CombatMemory.AbilityKey(ability)}{metamagic}:{target.UniqueId}"
                 };
-                if (best == null || value > best.Value) best = candidate;
+                if (Better(candidate, best)) best = candidate;
                 if (!progressive || !candidate.Offensive) continue;
 
                 candidate.SuccessChance = ProgressiveGate.SuccessChance(ctx.Unit, ctx.Enemies, ability, profile, candidate.Target, candidate.Point);
                 float threshold = slot == ActionSlot.Free || slot == ActionSlot.Swift ? MinQuickValue : MinMainValue;
                 if (candidate.SuccessChance >= SpellTierPolicy.MinSuccessChance && value >= threshold &&
-                    (bestViable == null || value > bestViable.Value))
+                    Better(candidate, bestViable))
                     bestViable = candidate;
                 if (bosses.Count > 0 && ThreatAssessment.HitsBoss(candidate.Target, candidate.Point, profile, bosses) &&
-                    (bestBoss == null || value > bestBoss.Value))
+                    Better(candidate, bestBoss))
                     bestBoss = candidate;
             }
             return new[] { best, bestViable, bestBoss }.Where(c => c != null).Distinct();
@@ -1489,6 +1490,20 @@ namespace CompanionAI_Pathfinder.Tactics
         }
 
         private static string MetamagicTag(AbilityData ability) => AbilityDiscovery.MetamagicTag(ability);
+
+        /// <summary>
+        /// ★ v0.3.17 (test4): the better aim of the same ability. More value always wins: an area centred on an immune
+        /// enemy that catches more of the others is the better cast. Only on equal value (the same enemies covered) does
+        /// a centre on an enemy the ability affects win - "Sleep->Giant Spider" (immune) was cast for the wolves beside it.
+        /// </summary>
+        private static bool Better(Candidate candidate, Candidate than)
+        {
+            if (than == null) return true;
+            float tolerance = 1e-3f * Math.Max(1f, Math.Abs(than.Value));
+            if (candidate.Value > than.Value + tolerance) return true;
+            if (candidate.Value < than.Value - tolerance) return false;
+            return candidate.AimAffected && !than.AimAffected;
+        }
 
         private static Candidate EvaluateCharge(TacticalContext ctx, AbilityData charge)
         {
@@ -2352,7 +2367,8 @@ namespace CompanionAI_Pathfinder.Tactics
                 bool ownLogic = Kingmaker.Blueprints.BlueprintExtenstions.GetComponent<Kingmaker.UnitLogic.Abilities.Components.Base.AbilityCustomLogic>(c.Ability.Blueprint) != null;
                 // Blocking also needs effects on the target itself: an ability aimed at an enemy may only buff its caster.
                 CastOutcome.Begin(unit, c.Ability, c.Target, command, IsVerifiable(profile), watchTarget: watch,
-                                  blockOnNoReach: !ownLogic && profile != null && profile.HasTargetEffects);
+                                  blockOnNoReach: !ownLogic && profile != null && profile.HasTargetEffects,
+                                  area: profile != null && profile.IsAoE);
             }
             else if (issued)
             {

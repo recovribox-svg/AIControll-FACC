@@ -500,8 +500,13 @@ ActionExecutor, TurnOrchestrator, and RealTimeController's role-based logic.
     (`CastOutcome.FromOtherArea`).
   - The log line gives the target's level, so a Hit Dice limit can be confirmed from it.
 - **An area spell aimed at an immune enemy for the others around it** ("Sleep->Giant Spider" for the Summoned Wolves
-  next to it): a centre on an enemy it affects, covering the same, wins the tie (×0.97 when the aimed enemy itself gets
-  no value).
+  next to it). More value always wins: a centre on an immune enemy that catches more of the others is the better cast.
+  Only on equal value, the same enemies covered, does a centre on an enemy the spell affects win
+  (`TacticalEngine.Better`, `Candidate.AimAffected`).
+  - test4 used a ×0.97 factor instead. That could prefer a centre catching fewer enemies when the difference was under
+    3 %, so test5 replaced it.
+  - The per-target safety net treats an area that reached other enemies as a success, so centring on an immune enemy
+    on purpose is never blocked. Only an area that reached no one counts against its aim.
 - **Walking into an area that impedes movement or applies hard control** (Grease, Entangle, Web, Stinking Cloud's
   nausea) can stop what the walk was for: on a failed save the unit falls, is held or cannot act. This chance now joins
   the attacks-of-opportunity stop chance in `MoveRisk` (`AoeDangerAnalyzer.EnteringDanger`, out `stopChance`).

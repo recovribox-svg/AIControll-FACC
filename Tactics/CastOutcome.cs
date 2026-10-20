@@ -60,6 +60,9 @@ namespace CompanionAI_Pathfinder.Tactics
             /// <summary>★ v0.3.17: reaching nothing on the target counts as a failure against that target (not for abilities
             /// whose effect comes from their own logic later, such as Charge's attack).</summary>
             public bool BlockOnNoReach;
+            /// <summary>★ v0.3.17 (test4): an area: reaching others is a success (it may be centred on an immune enemy on
+            /// purpose, to catch more of the others); only reaching no one counts against the aim.</summary>
+            public bool Area;
             public bool TargetReached;
             public HashSet<string> Reached;
         }
@@ -116,7 +119,7 @@ namespace CompanionAI_Pathfinder.Tactics
         /// would report (damage, heal, buff, control); others are not judged.
         /// </summary>
         public static void Begin(UnitEntityData caster, AbilityData ability, UnitEntityData target, UnitCommand command, bool verifiable,
-                                 bool watchTarget = false, bool blockOnNoReach = false)
+                                 bool watchTarget = false, bool blockOnNoReach = false, bool area = false)
         {
             if (caster == null || ability?.Blueprint == null) return;
             // ★ v0.3.17: an ability aimed at an enemy is also watched when its effect is not judged (a Sleep burst), only
@@ -139,7 +142,8 @@ namespace CompanionAI_Pathfinder.Tactics
                 IssuedAt = Now,
                 Verifiable = verifiable,
                 WatchTarget = watchTarget,
-                BlockOnNoReach = watchTarget && blockOnNoReach
+                BlockOnNoReach = watchTarget && blockOnNoReach,
+                Area = area
             };
         }
 
@@ -310,6 +314,12 @@ namespace CompanionAI_Pathfinder.Tactics
         {
             ByCaster.Remove(p.Caster.UniqueId);
             bool missedTarget = p.WatchTarget && !p.TargetReached;
+            if (missedTarget && p.Area && p.Reached != null && p.Reached.Count > 0)
+            {
+                // An area centred on an enemy it does not affect, for the others in it: that worked.
+                Main.Log($"[Cast] {p.Caster.CharacterName}: {p.Name} centred on {p.Target?.CharacterName}, reached {string.Join(", ", p.Reached)}");
+                missedTarget = false;
+            }
             if (missedTarget)
             {
                 // ★ v0.3.17: nothing the game rolled touched the enemy it was aimed at - a condition the profile cannot
