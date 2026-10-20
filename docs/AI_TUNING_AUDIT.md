@@ -759,10 +759,10 @@ These findings come from the log and a code/game check. They change the phase 1 
     game spares allies.
   - The AI sees metamagic versions the player has prepared or built in the spellbook (custom spells), and picks between
     plain and Selective by value.
-- **What it does not do:** the game has no way to add metamagic at cast time from the AI side. Metamagic versions
-  are made in the spellbook, so the AI cannot "apply" Selective to a spell nobody prepared that way.
-- **Decision:** no change needed for the entering side. Whether to build metamagic versions automatically is part of
-  the active-ability plan (metamagic is in its scope).
+- **What it does not do:** add Selective itself. Metamagic versions are prepared or built in the spellbook, and
+  making one would change the player's spellbook. Whether the AI should ever do that, and how the game exposes it, is
+  checked in the active-ability plan (metamagic is in its scope).
+- **Decision:** no change needed for the entering side.
 
 ### Phase 1, revised order
 
