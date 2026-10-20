@@ -811,6 +811,32 @@ namespace CompanionAI_Pathfinder.Tactics
             return Run(checker);
         }
 
+        /// <summary>
+        /// ★ v0.3.17 (test5): the Hit Dice limits in this ability's branch conditions as the profile evaluates them, and
+        /// the target's level - for the log when the ability did nothing to its target.
+        /// </summary>
+        public string HitDiceNote(AbilityData ability, UnitEntityData target)
+        {
+            try
+            {
+                var conditions = m_Guards.Values.Concat(m_BuffGuards.Values).SelectMany(g => g)
+                    .SelectMany(g => g.Checker?.Conditions ?? new Condition[0]).OfType<ContextConditionHitDice>().Distinct().ToList();
+                if (conditions.Count == 0) return null;
+                var context = CombatMath.CreateContext(ability, new TargetWrapper(target));
+                var parts = conditions.Select(hd =>
+                {
+                    if (!hd.AddSharedValue) return $"level <= {hd.HitDice}";
+                    SharedValueRange(ability, context, hd.SharedValue, out int lo, out int mid, out int hi);
+                    return $"level <= {hd.HitDice} + {hd.SharedValue} ({lo}..{hi}, average {mid})";
+                });
+                return $"target level {target.Descriptor?.Progression?.CharacterLevel ?? 0}; Hit Dice conditions: {string.Join(", ", parts)}";
+            }
+            catch (Exception ex)
+            {
+                return "Hit Dice conditions unreadable: " + ex.Message;
+            }
+        }
+
         private static bool Run(ConditionsChecker checker)
         {
             bool and = checker.Operation == Operation.And;

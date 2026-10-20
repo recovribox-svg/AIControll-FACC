@@ -14,6 +14,7 @@
 // Abilities with effects the mod cannot see (summons, areas, teleports, utility) are never judged.
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using Kingmaker;
 using Kingmaker.EntitySystem.Entities;
 using Kingmaker.PubSubSystem;
@@ -23,6 +24,7 @@ using Kingmaker.RuleSystem.Rules.Damage;
 using Kingmaker.UnitLogic.Abilities;
 using Kingmaker.UnitLogic.Abilities.Blueprints;
 using Kingmaker.UnitLogic.Buffs;
+using Kingmaker.UnitLogic.Buffs.Blueprints;
 using Kingmaker.UnitLogic.Commands.Base;
 using Kingmaker.UnitLogic.Mechanics;
 using Kingmaker.UnitLogic.Parts;
@@ -63,6 +65,10 @@ namespace CompanionAI_Pathfinder.Tactics
             /// <summary>★ v0.3.17 (test4): an area: reaching others is a success (it may be centred on an immune enemy on
             /// purpose, to catch more of the others); only reaching no one counts against the aim.</summary>
             public bool Area;
+            /// <summary>★ v0.3.17 (test5): the buffs the ability is meant to apply; only those on the target count as it
+            /// reaching the target (a hidden marker the game adds does not). Null: any buff counts.</summary>
+            public HashSet<BlueprintBuff> Intended;
+            public AbilityData Ability;
             public bool TargetReached;
             public HashSet<string> Reached;
         }
@@ -119,7 +125,8 @@ namespace CompanionAI_Pathfinder.Tactics
         /// would report (damage, heal, buff, control); others are not judged.
         /// </summary>
         public static void Begin(UnitEntityData caster, AbilityData ability, UnitEntityData target, UnitCommand command, bool verifiable,
-                                 bool watchTarget = false, bool blockOnNoReach = false, bool area = false)
+                                 bool watchTarget = false, bool blockOnNoReach = false, bool area = false,
+                                 IEnumerable<BlueprintBuff> intendedBuffs = null)
         {
             if (caster == null || ability?.Blueprint == null) return;
             // ★ v0.3.17: an ability aimed at an enemy is also watched when its effect is not judged (a Sleep burst), only
@@ -143,7 +150,9 @@ namespace CompanionAI_Pathfinder.Tactics
                 Verifiable = verifiable,
                 WatchTarget = watchTarget,
                 BlockOnNoReach = watchTarget && blockOnNoReach,
-                Area = area
+                Area = area,
+                Intended = intendedBuffs != null && intendedBuffs.Any() ? new HashSet<BlueprintBuff>(intendedBuffs) : null,
+                Ability = ability
             };
         }
 
@@ -338,6 +347,8 @@ namespace CompanionAI_Pathfinder.Tactics
                          $"(level {level}) - no attack roll, save, spell resistance, damage or effect on it" +
                          (p.Reached != null && p.Reached.Count > 0 ? $" (it reached {string.Join(", ", p.Reached)})" : "") +
                          (p.BlockOnNoReach ? $" ({count}/{FailuresBeforeBlock}{(count >= FailuresBeforeBlock ? "; not aimed at it again this fight" : "")})" : ""));
+                string note = p.Ability != null && p.Target != null ? AbilityProfile.Get(p.Ability)?.HitDiceNote(p.Ability, p.Target) : null;
+                if (note != null) Main.Log($"[Cast] {p.Name} on {p.Target.CharacterName}: {note}");
                 if (p.BlockOnNoReach) return;   // counted once for this cast
             }
             // Only effects the mod can verify count as silent failures; the rest was watched for the log alone.
@@ -425,7 +436,10 @@ namespace CompanionAI_Pathfinder.Tactics
             try
             {
                 Mark(buff?.Context?.MaybeCaster);
-                MarkReached(buff?.Context?.MaybeCaster, buff?.Owner?.Unit, buff?.Context);
+                var pending = For(buff?.Context?.MaybeCaster);
+                // ★ v0.3.17 (test5): only the effect the ability is meant to apply counts as reaching the target.
+                if (pending?.Intended == null || (buff?.Blueprint != null && pending.Intended.Contains(buff.Blueprint)))
+                    MarkReached(buff?.Context?.MaybeCaster, buff?.Owner?.Unit, buff?.Context);
             }
             catch { }
         }
@@ -538,7 +552,11 @@ namespace CompanionAI_Pathfinder.Tactics
             if (evt != null)
             {
                 Mark(evt.Initiator);
-                MarkReached(evt.Initiator, evt.Target, evt.Context);
+                // ★ v0.3.17 (test5): the game checks spell resistance for every target of the spell before anything else
+                // (AbilityExecutionProcess.DoApplyEffect), also targets without spell resistance and ones the effect
+                // then skips (Sleep's Hit Dice limit). Only a resisted spell is an outcome on the target; Sleep on the
+                // Cultist Champion counted as "reached" through this check, every cast.
+                if (evt.IsSpellResisted) MarkReached(evt.Initiator, evt.Target, evt.Context);
             }
         }
     }

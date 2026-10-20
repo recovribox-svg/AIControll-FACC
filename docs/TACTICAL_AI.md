@@ -521,3 +521,19 @@ ActionExecutor, TurnOrchestrator, and RealTimeController's role-based logic.
   - Fighting Defensively activates `OnUnitAction`: its AC applies after the unit attacks. This answers an open
     question in `docs/ACTIVE_ABILITY_PLAN.md` (AA-3).
   - Coup de Grace is TTT's `CoupDeGraceTTT` in this game.
+
+### 0.3.17-test6: why the "reached nothing" check never fired for Sleep (test5 log ab78e9cf)
+
+Orvath again cast Sleep on the Cultist Champion every round from R2 to R8. No save was rolled on it, and no `[Cast]`
+line appeared, so the check counted every cast as having reached it. The cause is in the game code:
+`AbilityExecutionProcess.DoApplyEffect` triggers `RuleSpellResistanceCheck` for **every** target of a spell before it
+applies anything. That includes targets without spell resistance, and targets the effect then skips (Sleep's Hit Dice
+limit). That check was counted as an outcome on the target.
+
+- Now only a *resisted* spell counts from that rule.
+- A buff counts only when it is one the ability is meant to apply (`AbilityProfile.TargetBuffs`), not a hidden marker.
+- When an ability did nothing to its target, the log now also gives the target's level and the ability's Hit Dice
+  conditions as the profile evaluates them, for example `level <= 0 + Damage (4..4, average 4)`. That shows whether the
+  limit is read correctly.
+- The Cultist Champion is an encounter enemy, not spawned by Random Reinforcements. That mod clones existing creature
+  blueprints for its spawns and does not change their levels or immunities.

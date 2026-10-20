@@ -2368,7 +2368,7 @@ namespace CompanionAI_Pathfinder.Tactics
                 // Blocking also needs effects on the target itself: an ability aimed at an enemy may only buff its caster.
                 CastOutcome.Begin(unit, c.Ability, c.Target, command, IsVerifiable(profile), watchTarget: watch,
                                   blockOnNoReach: !ownLogic && profile != null && profile.HasTargetEffects,
-                                  area: profile != null && profile.IsAoE);
+                                  area: profile != null && profile.IsAoE, intendedBuffs: profile?.TargetBuffs);
             }
             else if (issued)
             {
