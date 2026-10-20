@@ -405,7 +405,7 @@ counters are kept.
 - Custom resources are checked by the game's `IsAvailable`.
 
 **Settings.** No new setting is needed for AA-0 to AA-2. AA-3 adds one: "AI may switch combat modes (Power Attack,
-Fighting Defensively, Mobility)", default on. Players who manage these by hand can keep them.
+Fighting Defensively, Mobility)", default on. Players who manage these by hand can keep them. **Decided (user): default on.**
 
 ---
 
