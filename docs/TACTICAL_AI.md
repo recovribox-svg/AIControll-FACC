@@ -382,3 +382,10 @@ reach it from that level, and test2's "count it as in reach" would have spent th
 |---|---|
 | **A provoking cast is priced by the game's rule** (`CastProvokeRisk`): the defensive-casting check (d20 + concentration vs 15 + 2 x spell level, `RuleCheckCastingDefensively`) and, on a failure, an attack of opportunity from every enemy that would engage the caster where it casts (`ProvokeAttackOfOpportunityAfterDefensivelyFail`), priced like any attack of opportunity (chance to be dropped, damage; the spell is lost when the caster drops, or half the time when hit). Replaces a flat 15 % that ignored how many enemies were there and how hard they hit. Camellia walked 3.4 m in among three Corrupted Mongrels to read Inflict Moderate Wounds; all three struck and she went down before the spell went off. Tagged `[casting provokes N]`. Potions never provoke. | both |
 | **Walking up to cast prices standing among the enemies afterwards** (the raised chance to be dropped before the next turn) at any HP; weapon moves keep the half-HP rule. | both |
+
+## 24. v0.3.17 (test1): diagnostics
+
+- **"Nothing worth doing" also on movement-only turns**, and with why "Leave area" was not offered: not inside a
+  harmful area (the condition outlasts it), no movement left, no way out within reach, or the walk out costs more than
+  staying (attacks of opportunity, chance to be stopped). Seelah stayed nauseated next to the Corrupted Mongrels for
+  three turns (log 0d742ea2) and the log could not say which. Logging only, no behaviour change.

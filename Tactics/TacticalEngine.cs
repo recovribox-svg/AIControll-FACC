@@ -75,6 +75,8 @@ namespace CompanionAI_Pathfinder.Tactics
         public bool StepTaken;
         /// <summary>★ v0.3.10: what is left of the 5-foot step (meters).</summary>
         public float FiveFootRange;
+        /// <summary>★ v0.3.16: why no "Leave area" option was offered while the unit stands in a harmful area (diagnostics).</summary>
+        public string LeaveNote;
         public float HpPct;
         public List<UnitEntityData> Engagers = new List<UnitEntityData>();
 
@@ -166,12 +168,19 @@ namespace CompanionAI_Pathfinder.Tactics
             LogDecision(ctx, usable, chosen);
             // ★ v0.3.16 (test2): options exist but none is worth anything or affordable - name the best of them. Seelah
             // ended round 1 with all her actions and 4 enemies, and the log could not say why.
-            if (chosen == null && usable.Count == 0 && candidates.Count > 0 && ctx.HasStandard && !CombatMemory.IsRealTime)
-                Main.Log($"[Tactics] {unit.CharacterName}: nothing worth doing - best of {candidates.Count} options: " +
-                         string.Join(" | ", candidates.OrderByDescending(c => c.Value).Take(4).Select(c =>
-                             $"{c.Label}={c.Value:F1}" + (!Affordable(ctx, c) ? " (not affordable)" :
-                                                         memory.Failed.Contains(c.Key) ? " (failed this turn)" :
-                                                         SilentlyFailing(ctx, c) ? " (did nothing before)" : ""))));
+            // ★ v0.3.16: also on movement-only turns (nauseated), with why "Leave area" was not offered: Seelah stayed
+            // nauseated next to the Corrupted Mongrels for three turns and the log could not say why.
+            if (chosen == null && usable.Count == 0 && (candidates.Count > 0 || ctx.LeaveNote != null) &&
+                (ctx.HasStandard || ctx.HasMove) && !CombatMemory.IsRealTime)
+                Main.Log($"[Tactics] {unit.CharacterName}: nothing worth doing" +
+                         (candidates.Count > 0
+                             ? $" - best of {candidates.Count} options: " +
+                               string.Join(" | ", candidates.OrderByDescending(c => c.Value).Take(4).Select(c =>
+                                   $"{c.Label}={c.Value:F1}" + (!Affordable(ctx, c) ? " (not affordable)" :
+                                                               memory.Failed.Contains(c.Key) ? " (failed this turn)" :
+                                                               SilentlyFailing(ctx, c) ? " (did nothing before)" : "")))
+                             : "") +
+                         (ctx.LeaveNote != null ? $"; {ctx.LeaveNote}" : ""));
             // ★ v0.3.14 (test5): a turn-based unit with its actions unused and not a single option: say why.
             if (candidates.Count == 0 && ctx.HasStandard && !CombatMemory.IsRealTime)
                 Main.Log($"[Tactics] {unit.CharacterName}: no option at all - the game lists no weapon attack against " +
@@ -1913,9 +1922,18 @@ namespace CompanionAI_Pathfinder.Tactics
         {
             var unit = ctx.Unit;
             var inside = AoeDangerAnalyzer.InsideDanger(unit);
-            if (inside.Areas.Count == 0 || inside.Danger <= 0f) return;
+            if (inside.Areas.Count == 0 || inside.Danger <= 0f)
+            {
+                // A condition can outlast its area (Stinking Cloud's nausea lasts 1d4 rounds after leaving it).
+                if (ctx.Permissions.MovementOnly) ctx.LeaveNote = "not inside a harmful area (its effect outlasts it)";
+                return;
+            }
             float maxDistance = Math.Min(9f, ctx.HasMove ? ctx.MoveRange : unit.CurrentSpeedMps * 3f);
-            if (maxDistance < 1f) return;
+            if (maxDistance < 1f)
+            {
+                ctx.LeaveNote = $"in {inside.Name ?? "a harmful area"}, no movement left to leave it";
+                return;
+            }
 
             Func<Vector3, bool> keepsTarget = null;
             if (!UsesRangedWeapon(unit))
@@ -1930,7 +1948,11 @@ namespace CompanionAI_Pathfinder.Tactics
             }
 
             var best = AoeDangerAnalyzer.FindExit(unit, inside, maxDistance, keepsTarget, out _);
-            if (!best.HasValue) return;
+            if (!best.HasValue)
+            {
+                ctx.LeaveNote = $"in {inside.Name ?? "a harmful area"}, no way out within {maxDistance:F1} m";
+                return;
+            }
 
             // inside.Danger already counts the chance the area affects this unit (its save, immunities, time left).
             float value = inside.Danger * 0.5f * AllyWorth(ctx, unit);
@@ -1942,7 +1964,12 @@ namespace CompanionAI_Pathfinder.Tactics
                 value = value * (1f - risk.StopChance) - risk.Cost;
                 label += risk.Tag;
             }
-            if (value < MinMainValue) return;
+            if (value < MinMainValue)
+            {
+                ctx.LeaveNote = $"in {inside.Name ?? "a harmful area"}: {label}={value:F1}" +
+                                (risk != null ? $" (the walk costs {risk.Cost:F1}, stopped {risk.StopChance:P0})" : "") + " - not worth it";
+                return;
+            }
             list.Add(new Candidate
             {
                 // Close to the spot: it was chosen with the unit's body just outside the area.
