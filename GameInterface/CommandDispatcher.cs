@@ -35,7 +35,10 @@ namespace CompanionAI_Pathfinder.GameInterface
         /// Initialise, (in turn-based combat) attach a game-computed path, and run the command.
         /// Returns false with a reason when the command could not be issued or was rejected immediately.
         /// </summary>
-        public static bool Run(UnitEntityData unit, UnitCommand command, string label, out string failure)
+        /// <param name="avoidAreas">★ v0.3.17: the AI priced this move as entering no harmful area: refuse it when the
+        /// game's path does (turn-based, where the path is computed here). Camellia walked into Grease to touch a summon
+        /// along a path that bent through it, while the move had been priced along a straight line that did not.</param>
+        public static bool Run(UnitEntityData unit, UnitCommand command, string label, out string failure, bool avoidAreas = false)
         {
             failure = null;
             if (unit == null || command == null)
@@ -91,6 +94,14 @@ namespace CompanionAI_Pathfinder.GameInterface
                     {
                         command.ForcedPath = null;
                         failure = $"path ends out of reach ({shortBy:F1}m short)";
+                        CommandTrace.LogRejected(unit, command, label, failure);
+                        return false;
+                    }
+
+                    if (avoidAreas && PathEntersArea(unit, command, out string area))
+                    {
+                        command.ForcedPath = null;
+                        failure = $"the path walks into {area}";
                         CommandTrace.LogRejected(unit, command, label, failure);
                         return false;
                     }
@@ -173,6 +184,55 @@ namespace CompanionAI_Pathfinder.GameInterface
                 Main.Verbose($"[Dispatch] {unit.CharacterName}: reach check skipped: {ex.Message}");
                 return true;
             }
+        }
+
+        /// <summary>
+        /// ★ v0.3.17: the command's ForcedPath, up to where the unit arrives (its own approach radius), walks into a
+        /// harmful area it is not already in (AoeDangerAnalyzer.EnteringDanger, the same test the AI prices moves with).
+        /// </summary>
+        private static bool PathEntersArea(UnitEntityData unit, UnitCommand command, out string area)
+        {
+            area = null;
+            try
+            {
+                var points = command.ForcedPath?.vectorPath;
+                if (points == null || points.Count == 0) return false;
+                Vector3 target = command.ApproachPoint;
+                float radius = Mathf.Max(0f, command.ApproachRadius);
+                Vector3 from = unit.Position;
+                foreach (var to in points)
+                {
+                    // Stop where the unit arrives: the first spot on the segment within its approach radius of the target
+                    // (flat), sampled every 0.25 m - an enemy standing in the area at the path's end is attacked from
+                    // outside it.
+                    Vector3 end = to;
+                    bool arrives = false;
+                    float length = Vector3.Distance(from, to);
+                    int steps = Math.Max(1, Mathf.CeilToInt(length / 0.25f));
+                    for (int i = 1; i <= steps; i++)
+                    {
+                        Vector3 p = Vector3.Lerp(from, to, i / (float)steps);
+                        Vector3 flat = p - target;
+                        flat.y = 0f;
+                        if (flat.magnitude > radius) continue;
+                        end = p;
+                        arrives = true;
+                        break;
+                    }
+                    if (Analysis.AoeDangerAnalyzer.EnteringDanger(unit, from, end, out string name) > 0f)
+                    {
+                        area = name ?? "a harmful area";
+                        return true;
+                    }
+                    if (arrives) break;
+                    from = end;
+                }
+            }
+            catch (Exception ex)
+            {
+                Main.Verbose($"[Dispatch] {unit.CharacterName}: area check of the path skipped: {ex.Message}");
+            }
+            return false;
         }
 
         private static bool IsInSlots(UnitEntityData unit, UnitCommand command)

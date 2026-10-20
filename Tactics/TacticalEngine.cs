@@ -52,6 +52,14 @@ namespace CompanionAI_Pathfinder.Tactics
         public float SuccessChance = 1f;
         /// <summary>★ v0.3.16: what casting this where the unit stands risks (attacks of opportunity), already in Value.</summary>
         public float CastRiskCost;
+        /// <summary>
+        /// ★ v0.3.17: walk to <see cref="MovePoint"/> first (a spot around a harmful area, the one the value was priced
+        /// for), and act from there on the next decision.
+        /// </summary>
+        public bool MoveFirst;
+        public Vector3? MovePoint;
+        /// <summary>★ v0.3.17: the move was priced as entering no harmful area: refuse a game path that walks into one.</summary>
+        public bool CheckPath;
 
         public override string ToString() => $"{Label}={Value:F1}";
     }
@@ -97,6 +105,8 @@ namespace CompanionAI_Pathfinder.Tactics
         public int NoAttackAgainst;
 
         public float Distance(UnitEntityData other) => Vector3.Distance(Unit.Position, other.Position);
+        /// <summary>★ v0.3.17: approaches planned in this decision (TacticalEngine.PlanApproach), by target and range.</summary>
+        internal readonly Dictionary<string, TacticalEngine.Approach> Approaches = new Dictionary<string, TacticalEngine.Approach>();
     }
 
     public static class TacticalEngine
@@ -514,7 +524,7 @@ namespace CompanionAI_Pathfinder.Tactics
 
         /// <summary>★ v0.3.13: what leaving melee to reach <c>destination</c> would cost (see <see cref="DisengageRisk"/>).
         /// ★ v0.3.14: plus walking into a harmful area (see <see cref="MoveRisk"/>).</summary>
-        private sealed class Disengage
+        internal sealed class Disengage
         {
             public int Attacks;
             /// <summary>Chance at least one attack of opportunity hits; a hit stops the move and its action.</summary>
@@ -849,6 +859,79 @@ namespace CompanionAI_Pathfinder.Tactics
             return target.Position + away.normalized * Math.Max(0.1f, Math.Min(away.magnitude, range * 0.9f));
         }
 
+        /// <summary>★ v0.3.17: where a move to act on a target ends, what it risks, and whether it goes around an area.</summary>
+        internal sealed class Approach
+        {
+            public Vector3 Point;
+            public Disengage Risk;
+            /// <summary>The straight approach entered a harmful area; <see cref="Point"/> is a spot outside it instead.</summary>
+            public string Around;
+            /// <summary>How close to <see cref="Point"/> the walk must end for the target to stay within reach.</summary>
+            public float Arrival = 0.3f;
+        }
+
+        /// <summary>
+        /// ★ v0.3.17: the approach to act on <paramref name="target"/> from <paramref name="range"/>. The straight line
+        /// first; when it walks into a harmful area, the cheapest spot within reach of the target that does not (two rings
+        /// around the target, 16 directions each), on walkable ground the unit can get to, not on another unit. Seelah stood
+        /// idle for eleven turns while her enemies lay in Orvath's Grease: every approach was the one straight line into
+        /// it (log 06aebf2d). When no such spot exists the straight approach keeps its honest price.
+        /// <paramref name="orNearby"/> (advancing, no action follows): failing that, a spot by the area's edge just out of
+        /// reach, where the enemy walks into the unit's reach as it comes out.
+        /// </summary>
+        private static Approach PlanApproach(TacticalContext ctx, UnitEntityData target, float range, bool alwaysExposure = false,
+                                             bool orNearby = false)
+        {
+            var unit = ctx.Unit;
+            // Asked per ability and target: the same approach is computed once per decision.
+            string key = $"{target.UniqueId}|{range:F1}|{alwaysExposure}|{orNearby}";
+            if (ctx.Approaches.TryGetValue(key, out var cached)) return cached;
+            var direct = ApproachPoint(unit, target, range);
+            var plan = new Approach { Point = direct, Risk = MoveRisk(ctx, direct, alwaysExposure) };
+            ctx.Approaches[key] = plan;
+            if (plan.Risk?.Area == null || ctx.NoMovementLeft) return plan;
+            string directArea = plan.Risk.Area;
+            try
+            {
+                float best = float.MaxValue;
+                float body = unit.Corpulence;
+                var others = ctx.Allies.Concat(ctx.Enemies).Where(u => u != unit && u != target).ToList();
+                var rings = new List<float> { Math.Max(0.6f, range * 0.85f), Math.Max(0.6f, range * 0.6f) };
+                if (orNearby) rings.AddRange(new[] { range + 1.5f, range + 3f });
+                foreach (float ring in rings)
+                {
+                    for (int i = 0; i < 16; i++)
+                    {
+                        float angle = i * 22.5f * Mathf.Deg2Rad;
+                        var point = target.Position + new Vector3(Mathf.Cos(angle), 0f, Mathf.Sin(angle)) * ring;
+                        float walk = Vector3.Distance(unit.Position, point);
+                        if (walk > ctx.MoveRange * 0.95f) continue;
+                        if (others.Any(u => Vector3.Distance(u.Position, point) < (u.Corpulence + body) * 0.9f)) continue;
+                        if (AoeDangerAnalyzer.EnteringDanger(unit, unit.Position, point, out _) > 0f) continue;
+                        if (!AoeDangerAnalyzer.IsPositionValid(unit.Position, point)) continue;
+                        var risk = MoveRisk(ctx, point, alwaysExposure);
+                        if (risk?.Area != null) continue;
+                        // Cheapest by risk; a shorter walk breaks ties.
+                        float cost = (risk?.Cost ?? 0f) + 0.05f * walk;
+                        if (cost >= best) continue;
+                        best = cost;
+                        plan = new Approach
+                        {
+                            Point = point, Risk = risk, Around = directArea,
+                            Arrival = ring < range ? Mathf.Clamp(range - ring, 0.1f, 0.3f) : 0.3f
+                        };
+                    }
+                    if (plan.Around != null) break;
+                }
+            }
+            catch (Exception ex)
+            {
+                Main.Verbose($"[Tactics] approach around an area for {unit.CharacterName}: {ex.Message}");
+            }
+            ctx.Approaches[key] = plan;
+            return plan;
+        }
+
         /// <summary>★ v0.3.9: what keeping an ally in the fight is worth: its damage-equivalent output for up to 3 rounds.</summary>
         private static float AllyWorth(TacticalContext ctx, UnitEntityData ally)
         {
@@ -999,12 +1082,15 @@ namespace CompanionAI_Pathfinder.Tactics
                     float value = DamageValue(enemy, single.ExpectedDamage) * weight * 0.9f * WakeFactor(enemy, single.ExpectedDamage);
                     string label = $"Move+Attack->{enemy.CharacterName}";
                     // ★ v0.3.13: walking out of an enemy's reach provokes (melee and ranged alike).
-                    var risk = MoveRisk(ctx, ApproachPoint(unit, enemy, reach));
+                    // ★ v0.3.17: around a harmful area when the straight approach walks into it (PlanApproach).
+                    var approach = PlanApproach(ctx, enemy, reach);
+                    var risk = approach.Risk;
                     if (risk != null)
                     {
                         value = value * (1f - risk.StopChance) - risk.Cost;
                         label += risk.Tag;
                     }
+                    if (approach.Around != null) label += $" (around {approach.Around})";
                     list.Add(new Candidate
                     {
                         Kind = CandidateKind.WeaponAttack,
@@ -1014,7 +1100,11 @@ namespace CompanionAI_Pathfinder.Tactics
                         Target = enemy,
                         Value = value,
                         Label = label,
-                        Key = $"matk:{enemy.UniqueId}"
+                        Key = $"matk:{enemy.UniqueId}",
+                        MoveFirst = approach.Around != null,
+                        MovePoint = approach.Around != null ? approach.Point : (Vector3?)null,
+                        ApproachRadius = approach.Arrival,
+                        CheckPath = risk?.Area == null
                     });
                 }
             }
@@ -1263,6 +1353,7 @@ namespace CompanionAI_Pathfinder.Tactics
 
                 bool needsMove = false;
                 Disengage risk = null;
+                Approach approach = null;
                 if (target != ctx.Unit)
                 {
                     float range = ability.GetApproachDistance(wrapper.Unit);
@@ -1280,7 +1371,9 @@ namespace CompanionAI_Pathfinder.Tactics
                             continue;
                         needsMove = true;
                         // ★ v0.3.13: walking up to cast can provoke too.
-                        risk = MoveRisk(ctx, ApproachPoint(ctx.Unit, target, range), alwaysExposure: true);
+                        // ★ v0.3.17: around a harmful area when the straight approach walks into it (PlanApproach).
+                        approach = PlanApproach(ctx, target, range, alwaysExposure: true);
+                        risk = approach.Risk;
                     }
                 }
 
@@ -1300,7 +1393,7 @@ namespace CompanionAI_Pathfinder.Tactics
                 if (slot == ActionSlot.Standard && ability.ProvokeAttackOfOpportunity &&
                     ability.SourceItemUsableBlueprint?.Type != UsableItemType.Potion)
                 {
-                    var castAt = needsMove ? ApproachPoint(ctx.Unit, target, ability.GetApproachDistance(target)) : ctx.Unit.Position;
+                    var castAt = needsMove && approach != null ? approach.Point : ctx.Unit.Position;
                     provoke = CastProvokeRisk(ctx, ability, castAt);
                     if (provoke != null)
                         value = value * (1f - provoke.StopChance) - provoke.Cost;
@@ -1324,8 +1417,13 @@ namespace CompanionAI_Pathfinder.Tactics
                     Value = value,
                     Offensive = IsOffensive(why),
                     Label = $"{(ability.SourceItem != null ? "Item:" : "")}{ability.Name}{metamagic}->{target.CharacterName}({why}){risk?.Tag}" +
+                            (approach?.Around != null ? $" (around {approach.Around})" : "") +
                             (provoke != null ? $" [casting provokes {provoke.Attacks}{(provoke.DropChance >= 0.1f ? $", {provoke.DropChance:P0} down" : "")}]" : ""),
                     CastRiskCost = provoke?.Cost ?? 0f,
+                    MoveFirst = approach?.Around != null,
+                    MovePoint = approach?.Around != null ? approach.Point : (Vector3?)null,
+                    ApproachRadius = approach?.Arrival ?? 0f,
+                    CheckPath = needsMove && risk?.Area == null,
                     Key = $"abl:{CombatMemory.AbilityKey(ability)}{metamagic}:{target.UniqueId}"
                 };
                 if (best == null || value > best.Value) best = candidate;
@@ -1910,18 +2008,25 @@ namespace CompanionAI_Pathfinder.Tactics
                     float value = Math.Max(0.6f, DamageValue(single.Enemy, single.Est.ExpectedDamage) * 0.35f);
                     string label = $"Advance->{single.Enemy.CharacterName}";
                     // ★ v0.3.13: an advance that leaves an enemy's reach provokes (no attack follows, so only the cost).
-                    var risk = MoveRisk(ctx, ApproachPoint(unit, single.Enemy, radius));
+                    // ★ v0.3.17: to a spot outside a harmful area the enemy stands in, when there is one within reach of it
+                    // (PlanApproach): from there the unit attacks next, or catches the enemy as it comes out.
+                    var approach = PlanApproach(ctx, single.Enemy, radius, orNearby: true);
+                    var risk = approach.Risk;
                     if (risk != null)
                     {
                         value -= risk.Cost;
                         label += risk.Tag;
                     }
+                    bool around = approach.Around != null;
+                    if (around) label += $" (around {approach.Around})";
                     list.Add(new Candidate
                     {
-                        Kind = CandidateKind.Move, Slot = ActionSlot.Move, Target = single.Enemy, Point = single.Enemy.Position,
-                        ApproachRadius = radius, NeedLoS = needLos,
+                        Kind = CandidateKind.Move, Slot = ActionSlot.Move, Target = single.Enemy,
+                        Point = around ? approach.Point : single.Enemy.Position,
+                        ApproachRadius = around ? approach.Arrival : radius, NeedLoS = !around && needLos,
                         Value = value,
-                        Label = label, Key = $"move:adv:{single.Enemy.UniqueId}"
+                        Label = label, Key = $"move:adv:{single.Enemy.UniqueId}",
+                        CheckPath = risk?.Area == null
                     });
                 }
             }
@@ -2094,6 +2199,22 @@ namespace CompanionAI_Pathfinder.Tactics
         {
             command = null;
             failure = null;
+            // ★ v0.3.17: an approach around a harmful area walks to the spot it was priced for, then acts on the next
+            // decision (as touch spells do in turn-based). The plain path the game would pick to the target goes through
+            // the area.
+            if (c.MoveFirst && c.MovePoint.HasValue)
+            {
+                var walk = new UnitMoveTo(c.MovePoint.Value, c.ApproachRadius > 0f ? c.ApproachRadius : 0.3f);
+                if (CommandDispatcher.Run(unit, walk, $"Approach: {c.Label}", out failure, avoidAreas: true))
+                {
+                    command = walk;
+                    c.Kind = CandidateKind.Move;
+                    c.Slot = ActionSlot.Move;
+                    CastOutcome.Forget(unit);
+                    return true;
+                }
+                return false;
+            }
             switch (c.Kind)
             {
                 case CandidateKind.WeaponAttack:
@@ -2127,7 +2248,7 @@ namespace CompanionAI_Pathfinder.Tactics
                         c.Ability.Blueprint.StickyTouch != null)
                     {
                         var approach = new UnitMoveTo(c.Target.Position, c.Ability.GetApproachDistance(c.Target) * 0.8f);
-                        if (CommandDispatcher.Run(unit, approach, $"Approach to touch: {c.Label}", out failure))
+                        if (CommandDispatcher.Run(unit, approach, $"Approach to touch: {c.Label}", out failure, avoidAreas: c.CheckPath))
                         {
                             command = approach;
                             c.Kind = CandidateKind.Move;
@@ -2153,16 +2274,19 @@ namespace CompanionAI_Pathfinder.Tactics
                 return false;
             }
 
-            bool issued = CommandDispatcher.Run(unit, command, c.Label, out failure);
+            bool issued = CommandDispatcher.Run(unit, command, c.Label, out failure, avoidAreas: c.CheckPath);
             if (issued && c.Kind == CandidateKind.Ability)
             {
                 CombatMemory.RecordCast(unit, c.Ability, c.Target);
                 var profile = AbilityProfile.Get(c.Ability);
                 profile?.DescribeOnce();
-                // ★ v0.3.17: also watched (log only): did it do anything to the enemy it was aimed at? Not for lasting
-                // areas, whose saves come later, nor summons.
-                CastOutcome.Begin(unit, c.Ability, c.Target, command, IsVerifiable(profile),
-                                  watchTarget: profile != null && !profile.SpawnedAreas.Any() && !profile.Summons);
+                // ★ v0.3.17: also watched: did it do anything to the enemy it was aimed at? Not for lasting areas, whose
+                // saves come later, summons, or Charge, whose attack the game makes after the ability ends. Twice nothing
+                // on that enemy, it is not aimed there again this fight - unless the ability runs its own logic, whose
+                // effect may come later too (logged only).
+                bool watch = profile != null && !profile.SpawnedAreas.Any() && !profile.Summons && !profile.IsCharge;
+                bool ownLogic = Kingmaker.Blueprints.BlueprintExtenstions.GetComponent<Kingmaker.UnitLogic.Abilities.Components.Base.AbilityCustomLogic>(c.Ability.Blueprint) != null;
+                CastOutcome.Begin(unit, c.Ability, c.Target, command, IsVerifiable(profile), watchTarget: watch, blockOnNoReach: !ownLogic);
             }
             else if (issued)
             {

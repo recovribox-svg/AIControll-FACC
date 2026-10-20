@@ -56,6 +56,9 @@ namespace CompanionAI_Pathfinder.Tactics
             public bool Verifiable;
             /// <summary>★ v0.3.17: an enemy the ability was aimed at; whether any rule touched it is logged (diagnostics).</summary>
             public bool WatchTarget;
+            /// <summary>★ v0.3.17: reaching nothing on the target counts as a failure against that target (not for abilities
+            /// whose effect comes from their own logic later, such as Charge's attack).</summary>
+            public bool BlockOnNoReach;
             public bool TargetReached;
             public HashSet<string> Reached;
         }
@@ -112,7 +115,7 @@ namespace CompanionAI_Pathfinder.Tactics
         /// would report (damage, heal, buff, control); others are not judged.
         /// </summary>
         public static void Begin(UnitEntityData caster, AbilityData ability, UnitEntityData target, UnitCommand command, bool verifiable,
-                                 bool watchTarget = false)
+                                 bool watchTarget = false, bool blockOnNoReach = false)
         {
             if (caster == null || ability?.Blueprint == null) return;
             // ★ v0.3.17: an ability aimed at an enemy is also watched when its effect is not judged (a Sleep burst), only
@@ -134,7 +137,8 @@ namespace CompanionAI_Pathfinder.Tactics
                 Command = command,
                 IssuedAt = Now,
                 Verifiable = verifiable,
-                WatchTarget = watchTarget
+                WatchTarget = watchTarget,
+                BlockOnNoReach = watchTarget && blockOnNoReach
             };
         }
 
@@ -304,10 +308,25 @@ namespace CompanionAI_Pathfinder.Tactics
         private static void Finish(Pending p, bool success, string why)
         {
             ByCaster.Remove(p.Caster.UniqueId);
-            if (p.WatchTarget && !p.TargetReached)
+            bool missedTarget = p.WatchTarget && !p.TargetReached;
+            if (missedTarget)
+            {
+                // ★ v0.3.17: nothing the game rolled touched the enemy it was aimed at - a condition the profile cannot
+                // read (a creature-type or level limit), an immunity it does not see. Twice: not aimed at that enemy again
+                // this fight (IsBlocked is per target). Orvath cast Sleep on a Corrupted Mongrel Brute over its Hit Dice
+                // limit five times (log 06aebf2d).
+                int count = 0;
+                if (p.BlockOnNoReach)
+                {
+                    Failures.TryGetValue(p.Key, out count);
+                    Failures[p.Key] = ++count;
+                }
                 Main.Log($"[Cast] {p.Caster.CharacterName}: {p.Name} did nothing to its target {p.Target?.CharacterName} - " +
                          "no attack roll, save, spell resistance, damage or effect on it" +
-                         (p.Reached != null && p.Reached.Count > 0 ? $" (it reached {string.Join(", ", p.Reached)})" : ""));
+                         (p.Reached != null && p.Reached.Count > 0 ? $" (it reached {string.Join(", ", p.Reached)})" : "") +
+                         (p.BlockOnNoReach ? $" ({count}/{FailuresBeforeBlock}{(count >= FailuresBeforeBlock ? "; not aimed at it again this fight" : "")})" : ""));
+                if (p.BlockOnNoReach) return;   // counted once for this cast
+            }
             // Only effects the mod can verify count as silent failures; the rest was watched for the log alone.
             if (success || !p.Verifiable) return;
             // A held charge's failure counts for the touch spell as a whole: the next scroll or potion of it fails alike.

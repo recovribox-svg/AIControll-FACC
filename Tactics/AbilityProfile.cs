@@ -32,6 +32,7 @@ using Kingmaker.RuleSystem;
 using Kingmaker.UnitLogic.Mechanics;
 using Kingmaker.UnitLogic.Mechanics.Actions;
 using Kingmaker.UnitLogic.Mechanics.Conditions;
+using Kingmaker.UnitLogic.Mechanics.Components;
 using Kingmaker.Utility;
 using UnityEngine;
 using CompanionAI_Pathfinder.Analysis;
@@ -751,11 +752,67 @@ namespace CompanionAI_Pathfinder.Tactics
         };
 
         /// <summary>
-        /// ★ v0.3.8: also "hit dice at most N" (Sleep, Daze, Color Spray). Only the fixed form: with AddSharedValue the
-        /// limit depends on a value rolled during the real cast.
+        /// ★ v0.3.8: also "hit dice at most N" (Sleep, Daze, Color Spray). ★ v0.3.17: also with AddSharedValue (the limit
+        /// plus a value the ability computes, e.g. Sleep): evaluated with that value's range (<see cref="WithSharedValues"/>).
+        /// Counted for every target before, Sleep was cast on enemies over its limit again and again (log 06aebf2d).
         /// </summary>
         private static bool IsSafe(Condition c) =>
-            c == null || SafeConditions.Contains(c.GetType()) || (c is ContextConditionHitDice hd && !hd.AddSharedValue);
+            c == null || SafeConditions.Contains(c.GetType()) || c is ContextConditionHitDice;
+
+        /// <summary>
+        /// ★ v0.3.17: the range of a shared value as the ability's own ContextCalculateSharedValue defines it (dice count
+        /// and bonus from the context, without rolling): lowest, average and highest. No component: 0, as in the game.
+        /// </summary>
+        private static void SharedValueRange(AbilityData ability, MechanicsContext context, AbilitySharedValue type,
+                                             out int min, out int avg, out int max)
+        {
+            min = avg = max = 0;
+            var source = ability?.Blueprint?.GetComponents<ContextCalculateSharedValue>()?.LastOrDefault(c => c.ValueType == type);
+            if (source?.Value == null) return;
+            int count = source.Value.DiceCountValue?.Calculate(context) ?? 0;
+            int bonus = source.Value.BonusValue?.Calculate(context) ?? 0;
+            int sides = source.Value.DiceType.Sides();
+            min = (int)((count * Math.Min(1, sides) + bonus) * source.Modifier);
+            max = (int)((count * sides + bonus) * source.Modifier);
+            avg = (int)Math.Round((count * (sides + 1) / 2.0 * (sides > 0 ? 1 : 0) + bonus) * source.Modifier);
+        }
+
+        /// <summary>
+        /// ★ v0.3.17: evaluates the checker; shared values its Hit Dice conditions add are set in this throwaway context to
+        /// their lowest and highest: the same answer both ways is the answer, otherwise the answer at the average.
+        /// </summary>
+        private static bool WithSharedValues(ConditionsChecker checker, AbilityData ability, MechanicsContext context)
+        {
+            var types = checker.Conditions.OfType<ContextConditionHitDice>().Where(h => h.AddSharedValue)
+                               .Select(h => h.SharedValue).Distinct().ToList();
+            if (types.Count == 0) return Run(checker);
+            var ranges = types.Select(t =>
+            {
+                SharedValueRange(ability, context, t, out int lo, out int mid, out int hi);
+                return new { Type = t, Lo = lo, Mid = mid, Hi = hi };
+            }).ToList();
+            foreach (var r in ranges) context[r.Type] = r.Lo;
+            bool low = Run(checker);
+            foreach (var r in ranges) context[r.Type] = r.Hi;
+            bool high = Run(checker);
+            if (low == high) return low;
+            foreach (var r in ranges) context[r.Type] = r.Mid;
+            return Run(checker);
+        }
+
+        private static bool Run(ConditionsChecker checker)
+        {
+            bool and = checker.Operation == Operation.And;
+            bool acc = and;
+            foreach (var condition in checker.Conditions)
+            {
+                if (condition == null) continue;
+                bool r = condition.Check();
+                if (and && !r) return false;
+                if (!and && r) return true;
+            }
+            return acc;
+        }
 
         private sealed class CheckerResult
         {
@@ -841,16 +898,7 @@ namespace CompanionAI_Pathfinder.Tactics
                     {
                         using (context.GetDataScope(new TargetWrapper(target)))
                         {
-                            bool and = checker.Operation == Operation.And;
-                            bool acc = and;
-                            foreach (var condition in checker.Conditions)
-                            {
-                                if (condition == null) continue;
-                                bool r = condition.Check();
-                                if (and && !r) { acc = false; break; }
-                                if (!and && r) { acc = true; break; }
-                            }
-                            result = acc;
+                            result = WithSharedValues(checker, ability, context);
                         }
                     }
                 }
