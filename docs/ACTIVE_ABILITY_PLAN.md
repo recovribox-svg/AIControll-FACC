@@ -247,15 +247,15 @@ The two modes share discovery, profile, value and execution. Real time differs i
 sources; eight playtest logs. There was no runtime enumeration yet: AA-0 adds it, and it is the continuing
 discovery mechanism.
 
-**Counts.** 31 vanilla families inspected, plus 12 cross-mod gap types:
+**Counts.** 32 vanilla families inspected, plus 12 cross-mod gap types:
 
 | Status | Families |
 |---|---|
 | OK | 9 |
-| Partly | 6 |
-| Unread | 5 |
+| Partly | 4 |
+| Unread | 3 |
 | Unseen | 3 |
-| None | 7 (all toggles) |
+| None | 10 (all toggles, Fighting Defensively and Mobility included) |
 | Engine | 2 |
 | Pref | 1 |
 
