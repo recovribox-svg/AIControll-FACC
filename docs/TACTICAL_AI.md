@@ -375,3 +375,10 @@ reach it from that level, and test2's "count it as in reach" would have spent th
 | **Paths no longer end on an ally's square**: `CommandDispatcher.TrimAllyBlockedEnd` looked the end point up with `AstarPath.GetNearest(point, NNConstraint.Default)`, which returns the nearest node that *suits* the constraint - and `NNConstraint.Suitable` rejects ally-blocked nodes - so the end was never found blocked and the trim never ran. Now the cell itself (`BattlefieldGrid.CellAt`, as the game's AI reads it: `gridGraph.GetNearest(position).node`). | TB |
 | **Walkability checks work**: `BattlefieldGrid.IsWalkable` had the same flaw (the default constraint swaps in the nearest walkable node), so every point passed. Used by the real-time emergency area escape and the old real-time engine. | RT |
 | Path pooling (`Claim`/`Release`), `BlockUntilCalculated` and `ABPath.FakePath` were checked against the library: the dispatcher's use is correct. | - |
+
+### 0.3.16 release: casting among enemies (log 0d742ea2)
+
+| Change | Modes |
+|---|---|
+| **A provoking cast is priced by the game's rule** (`CastProvokeRisk`): the defensive-casting check (d20 + concentration vs 15 + 2 x spell level, `RuleCheckCastingDefensively`) and, on a failure, an attack of opportunity from every enemy that would engage the caster where it casts (`ProvokeAttackOfOpportunityAfterDefensivelyFail`), priced like any attack of opportunity (chance to be dropped, damage; the spell is lost when the caster drops, or half the time when hit). Replaces a flat 15 % that ignored how many enemies were there and how hard they hit. Camellia walked 3.4 m in among three Corrupted Mongrels to read Inflict Moderate Wounds; all three struck and she went down before the spell went off. Tagged `[casting provokes N]`. Potions never provoke. | both |
+| **Walking up to cast prices standing among the enemies afterwards** (the raised chance to be dropped before the next turn) at any HP; weapon moves keep the half-HP rule. | both |

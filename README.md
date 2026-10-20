@@ -36,6 +36,12 @@ combat (primary) and real-time combat.
 - An advance that runs out of its move action can continue with the standard action; abilities are not aimed at a
   target on which none of their effects apply.
 
+**0.3.16** ([release/CHANGELOG_v0.3.16.md](release/CHANGELOG_v0.3.16.md)): casters no longer walk into a crowd to read a
+scroll or cast: casting among enemies is weighed by the game's defensive-casting rule and the attacks of everyone around.
+Turn-based touch spells walk into reach the way the game measures it and are cast after the walk (fixing turns lost in
+0.3.15), no movement is offered after a 5-foot step, paths no longer end on an ally's square, and real-time escapes go
+only to walkable spots.
+
 **0.3.15** ([release/CHANGELOG_v0.3.15.md](release/CHANGELOG_v0.3.15.md)): spells and items that did nothing are fixed
 or caught. Kineticists no longer cast the Kinetic Blade's internal Fire Blast, touch scrolls and spells on others walk
 into reach before casting in turn-based mode, held touch charges are used first and stuck ones removed, and any ability
@@ -110,7 +116,7 @@ toggles such as Shift Form; bonus stacking follows the game's own rule (and Tabl
 ## Install (players)
 
 1. Install [Unity Mod Manager](https://www.nexusmods.com/site/mods/21) into the game.
-2. Take `CompanionAI_Pathfinder_v0.3.15.zip` - prebuilt in `release\`, or build it yourself (below; output in `dist\`).
+2. Take `CompanionAI_Pathfinder_v0.3.16.zip` - prebuilt in `release\`, or build it yourself (below; output in `dist\`).
 3. Install it either way:
    - Unity Mod Manager → *Mods* tab → drag the ZIP onto the window / *Install Mod*, **or**
    - extract it to `<game>\Mods\CompanionAI_Pathfinder\` so the folder contains

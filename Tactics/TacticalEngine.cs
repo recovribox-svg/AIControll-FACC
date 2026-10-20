@@ -50,6 +50,8 @@ namespace CompanionAI_Pathfinder.Tactics
         public string Key;
         /// <summary>★ v0.3.7: chance the effect lands on its main target (1 for non-hostile options).</summary>
         public float SuccessChance = 1f;
+        /// <summary>★ v0.3.16: what casting this where the unit stands risks (attacks of opportunity), already in Value.</summary>
+        public float CastRiskCost;
 
         public override string ToString() => $"{Label}={Value:F1}";
     }
@@ -511,7 +513,7 @@ namespace CompanionAI_Pathfinder.Tactics
         /// rounds: the area's danger level (0.4 movement-impairing, 0.6 damaging, more for death or paralysis effects)
         /// times half of it. Null when the move risks nothing.
         /// </summary>
-        private static Disengage MoveRisk(TacticalContext ctx, Vector3 destination)
+        private static Disengage MoveRisk(TacticalContext ctx, Vector3 destination, bool alwaysExposure = false)
         {
             var risk = DisengageRisk(ctx, destination);
             var unit = ctx.Unit;
@@ -536,7 +538,9 @@ namespace CompanionAI_Pathfinder.Tactics
             // ★ v0.3.14 (test5): badly hurt, walking to where more enemies can hit it before its next turn: the higher chance
             // to drop there (the withdraw model in reverse). Aeiluvetar at 20 % HP took "Move+Attack" (15.2) into the
             // middle of the fight. Only below half HP, as for withdrawing: a healthy fighter's place is in melee.
-            if (ctx.HpPct < CautionBelow(ctx))
+            // ★ v0.3.16: a caster walking up to touch an enemy pays it at any HP - it stands among them afterwards (the
+            // weapon fighter's place is in melee, so its moves keep the half-HP rule).
+            if (alwaysExposure || ctx.HpPct < CautionBelow(ctx))
             {
                 float hp = Math.Max(1f, unit.HPLeft);
                 float exposure = RiskMath.RoundDropChance(hp, IncomingDamage(ctx, unit, destination)) -
@@ -748,6 +752,45 @@ namespace CompanionAI_Pathfinder.Tactics
 
         /// <summary>EngagementSimulator.EngagedBy: the enemy can act, has a threatening weapon reaching <paramref name="at"/>,
         /// and sees the unit.</summary>
+        /// <summary>
+        /// ★ v0.3.16: the attacks a provoking cast at <paramref name="castAt"/> risks: the chance the defensive-casting
+        /// check fails (the game's rule) times the attacks of every enemy that would engage the caster there, priced like
+        /// any attack of opportunity (chance to be dropped, damage). StopChance: the spell is lost (the caster drops, or
+        /// a hit spoils it about half the time). Null when nothing would attack.
+        /// </summary>
+        private static Disengage CastProvokeRisk(TacticalContext ctx, AbilityData ability, Vector3 castAt)
+        {
+            var unit = ctx.Unit;
+            var attackers = ctx.Enemies.Where(e =>
+            {
+                try { return Threatens(e, unit, castAt) && e.CombatState.AttackOfOpportunity(unit, tricksterAttack: false, simulate: true); }
+                catch { return false; }
+            }).ToList();
+            if (attackers.Count == 0) return null;
+            float fail;
+            try
+            {
+                var p = ability.CalculateParams();
+                int dc = 15 + 2 * Math.Max(0, p.SpellLevel);
+                fail = Mathf.Clamp01((dc - p.Concentration - 1) / 20f);
+            }
+            catch
+            {
+                fail = 0.5f;
+            }
+            if (fail <= 0f) return null;
+            float hp = Math.Max(1f, unit.HPLeft);
+            PriceAttacks(unit, attackers, hp, out float damage, out float hitChance, out float dropNow);
+            float worth = AllyWorth(ctx, unit);
+            return new Disengage
+            {
+                Attacks = attackers.Count,
+                DropChance = fail * dropNow,
+                StopChance = fail * (dropNow + (hitChance - dropNow) * 0.5f),
+                Cost = fail * (dropNow * worth + damage * 0.3f * RiskTolerance(ctx))
+            };
+        }
+
         private static bool Threatens(UnitEntityData enemy, UnitEntityData unit, Vector3 at)
         {
             if (!enemy.Descriptor.State.CanAct) return false;
@@ -1211,7 +1254,7 @@ namespace CompanionAI_Pathfinder.Tactics
                             continue;
                         needsMove = true;
                         // ★ v0.3.13: walking up to cast can provoke too.
-                        risk = MoveRisk(ctx, ApproachPoint(ctx.Unit, target, range));
+                        risk = MoveRisk(ctx, ApproachPoint(ctx.Unit, target, range), alwaysExposure: true);
                     }
                 }
 
@@ -1222,8 +1265,20 @@ namespace CompanionAI_Pathfinder.Tactics
                 // ★ v0.3.6: a standard-action spell cast in melee needs a defensive-casting check; failing it provokes an
                 // attack of opportunity and can lose the spell (UnitUseAbility.OnTick). Camellia's Cure Light Wounds ended
                 // "Fail" that way. Potions and wands do not provoke (AbilityData.ProvokeAttackOfOpportunity).
-                if (slot == ActionSlot.Standard && ctx.Engagers.Count > 0 && !needsMove && ability.ProvokeAttackOfOpportunity)
-                    value *= 0.85f;
+                // ★ v0.3.16: priced by the game's rule instead of a flat 15 %: a check of d20 + concentration against
+                // 15 + 2 x spell level (RuleCheckCastingDefensively), and on a failure every enemy engaging the caster
+                // where it casts attacks (CombatEngagementController.ProvokeAttackOfOpportunityAfterDefensivelyFail).
+                // Camellia walked 3.4 m in among three Corrupted Mongrels to read an Inflict Moderate Wounds scroll, all
+                // three struck and she went down before the spell went off.
+                Disengage provoke = null;
+                if (slot == ActionSlot.Standard && ability.ProvokeAttackOfOpportunity &&
+                    ability.SourceItemUsableBlueprint?.Type != UsableItemType.Potion)
+                {
+                    var castAt = needsMove ? ApproachPoint(ctx.Unit, target, ability.GetApproachDistance(target)) : ctx.Unit.Position;
+                    provoke = CastProvokeRisk(ctx, ability, castAt);
+                    if (provoke != null)
+                        value = value * (1f - provoke.StopChance) - provoke.Cost;
+                }
                 // ★ v0.3.14: entangled (or "casting is difficult"): a concentration check before the spell even starts.
                 value *= CombatMath.CastingConcentrationChance(ctx.Unit, ability);
                 // ★ v0.3.1: an archer walking up to an enemy to touch it gives up its ranged attacks and invites
@@ -1242,7 +1297,9 @@ namespace CompanionAI_Pathfinder.Tactics
                     NeedsMove = needsMove,
                     Value = value,
                     Offensive = IsOffensive(why),
-                    Label = $"{(ability.SourceItem != null ? "Item:" : "")}{ability.Name}{metamagic}->{target.CharacterName}({why}){risk?.Tag}",
+                    Label = $"{(ability.SourceItem != null ? "Item:" : "")}{ability.Name}{metamagic}->{target.CharacterName}({why}){risk?.Tag}" +
+                            (provoke != null ? $" [casting provokes {provoke.Attacks}{(provoke.DropChance >= 0.1f ? $", {provoke.DropChance:P0} down" : "")}]" : ""),
+                    CastRiskCost = provoke?.Cost ?? 0f,
                     Key = $"abl:{CombatMemory.AbilityKey(ability)}{metamagic}:{target.UniqueId}"
                 };
                 if (best == null || value > best.Value) best = candidate;
@@ -1739,7 +1796,7 @@ namespace CompanionAI_Pathfinder.Tactics
                 // (valued 7.7, from the engagers' threat) and then had nothing better than a 0.5 shot: turn wasted.
                 float followUp;
                 if (castsInMelee)
-                    followUp = bestMain.Value / 0.85f;                    // the spell without the in-melee discount
+                    followUp = bestMain.Value + bestMain.CastRiskCost;    // the spell without the risk of casting in melee
                 else if (ctx.HasRangedWeapon)
                     followUp = ctx.Enemies.Select(e =>
                     {
