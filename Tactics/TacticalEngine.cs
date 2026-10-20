@@ -108,6 +108,8 @@ namespace CompanionAI_Pathfinder.Tactics
         public int NoAttackAgainst;
 
         public float Distance(UnitEntityData other) => Vector3.Distance(Unit.Position, other.Position);
+        /// <summary>★ v0.3.17: set by ScoreAbility - the aimed enemy itself got some of the value (not only others in the area).</summary>
+        public bool AimCounted;
         /// <summary>★ v0.3.17: approaches planned in this decision (TacticalEngine.PlanApproach), by target and range.</summary>
         internal readonly Dictionary<string, TacticalEngine.Approach> Approaches = new Dictionary<string, TacticalEngine.Approach>();
     }
@@ -484,7 +486,7 @@ namespace CompanionAI_Pathfinder.Tactics
         /// <summary>Vanilla Coup de Grace (Tabletop Tweaks keeps the blueprint and replaces its effect component).</summary>
         private static readonly string CoupDeGraceGuid = "32280b137ca642c45be17e2d92898758";
 
-        private static bool IsCoupDeGrace(AbilityData ability) =>
+        internal static bool IsCoupDeGrace(AbilityData ability) =>
             string.Equals(ability?.Blueprint?.AssetGuid.ToString(), CoupDeGraceGuid, StringComparison.OrdinalIgnoreCase);
 
         /// <summary>
@@ -567,9 +569,16 @@ namespace CompanionAI_Pathfinder.Tactics
             var risk = DisengageRisk(ctx, destination);
             var unit = ctx.Unit;
             float danger = AoeDangerAnalyzer.EnteringDanger(unit, unit.Position, destination, out string area,
-                                                            out float roundsLeft, out bool endsInside);
+                                                            out float roundsLeft, out bool endsInside, out float areaStop);
             if (danger > 0f)
             {
+                // ★ v0.3.17: an area that impedes movement can stop the walk on the way in (a failed save: fallen or
+                // held), like an attack of opportunity that hits - whatever the move was for does not happen.
+                if (areaStop > 0f)
+                {
+                    risk = risk ?? new Disengage();
+                    risk.StopChance = 1f - (1f - risk.StopChance) * (1f - areaStop);
+                }
                 // ★ v0.3.15: the danger level is the share of a round the area takes from the unit each round it is
                 // affected (0.4 for Grease's fall, more for nausea or damage), times the chance it fails the save that
                 // round. Passing through risks one round; stopping inside to fight risks every round it stays, until the
@@ -1392,6 +1401,10 @@ namespace CompanionAI_Pathfinder.Tactics
 
                 float value = ScoreAbility(ctx, ability, profile, slot, target, out string why);
                 if (value <= 0f) continue;
+                // ★ v0.3.17 (test3): an area aimed at an enemy it does not affect (immune) for the others around it: a
+                // centre on an enemy it affects, covering the same, wins the tie. "Sleep->Giant Spider" (immune) was cast
+                // for the wolves next to it, and the per-target check counted the spider as "nothing happened".
+                if (profile.IsAoE && target != ctx.Unit && ctx.Unit.IsEnemy(target) && !ctx.AimCounted) value *= 0.97f;
                 value *= consumable;
                 if (needsMove) value *= 0.9f;
                 // ★ v0.3.6: a standard-action spell cast in melee needs a defensive-casting check; failing it provokes an
@@ -1517,6 +1530,7 @@ namespace CompanionAI_Pathfinder.Tactics
             int level = Math.Max(0, ability.SpellLevel);
             float value = 0f;
             float slotSensitive = 0f;   // ★ v0.3.17: the damage and control parts (spell-slot discount)
+            ctx.AimCounted = false;
             var reasons = new List<string>();
 
             if (IsCoupDeGrace(ability))
@@ -1576,7 +1590,9 @@ namespace CompanionAI_Pathfinder.Tactics
                     if (CombatRulesAnalyzer.AnalyzeResistance(unit, enemy, ability).IsCompletelyIneffective) continue;
                     float dmg = CombatMath.EstimateAbilityDamage(ability, profile, enemy);
                     float p = CombatMath.EffectChance(unit, enemy, ability, profile, damage: true);
-                    dmgValue += DamageValue(enemy, dmg * p) * WakeFactor(enemy, dmg * p);
+                    float part = DamageValue(enemy, dmg * p) * WakeFactor(enemy, dmg * p);
+                    dmgValue += part;
+                    if (enemy == target && part > 0f) ctx.AimCounted = true;
                 }
 
                 // Friendly fire: hurting an ally costs twice what the same damage on an enemy is worth.
@@ -1753,6 +1769,7 @@ namespace CompanionAI_Pathfinder.Tactics
                     if (oneShotMark && !(enemy.CombatState?.EngagedUnits?.Any(u => u != unit && !unit.IsEnemy(u)) ?? false))
                         enemyValue *= 0.5f;
                     controlValue += enemyValue;
+                    if (enemy == target && enemyValue > 0f) ctx.AimCounted = true;
                 }
                 controlValue -= allyControlCost;
                 if (controlValue > 0f)
@@ -2062,6 +2079,9 @@ namespace CompanionAI_Pathfinder.Tactics
                         label += risk.Tag;
                     }
                     bool around = approach.Around != null;
+                    // ★ v0.3.17 (test3): waiting at the area's edge where the unit already stands is no move. Seelah
+                    // "advanced" 0.0 m around Grease twice in a row (log 9a7bb1f9).
+                    if (around && Vector3.Distance(unit.Position, approach.Point) < 0.5f) return;
                     if (around) label += $" (around {approach.Around})";
                     list.Add(new Candidate
                     {

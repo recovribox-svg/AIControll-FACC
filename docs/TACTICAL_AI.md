@@ -490,3 +490,29 @@ ActionExecutor, TurnOrchestrator, and RealTimeController's role-based logic.
 
 - **No performance work.** test2 measured a median decision of 2–4.5 ms and a 95th percentile of 9–38 ms.
 - **`ValueModel` consolidation (C4)** moves to phase 2, where it is the base for the calibration changes.
+
+### 0.3.17-test4: fixes from the test3 turn-based log (9a7bb1f9)
+
+- **The "reached nothing" check counted effects of the caster's other areas.**
+  - Orvath cast Sleep on a Cultist Champion seven rounds running and no save was ever rolled. The Champion stood in
+    Orvath's Grease, and the Grease's saves on it counted as Sleep "reaching" it.
+  - Now an effect whose context comes from a lasting area this cast did not create does not count
+    (`CastOutcome.FromOtherArea`).
+  - The log line gives the target's level, so a Hit Dice limit can be confirmed from it.
+- **An area spell aimed at an immune enemy for the others around it** ("Sleep->Giant Spider" for the Summoned Wolves
+  next to it): a centre on an enemy it affects, covering the same, wins the tie (×0.97 when the aimed enemy itself gets
+  no value).
+- **Walking into an area that impedes movement or applies hard control** (Grease, Entangle, Web, Stinking Cloud's
+  nausea) can stop what the walk was for: on a failed save the unit falls, is held or cannot act. This chance now joins
+  the attacks-of-opportunity stop chance in `MoveRisk` (`AoeDangerAnalyzer.EnteringDanger`, out `stopChance`).
+  - It applies to Move+Attack, Charge and move-then-cast.
+  - All four chosen walks into an area in the test3 log were priced without it: Seelah into Grease for the last
+    Zombie, and into Entangle and Stinking Cloud; Camellia into Stinking Cloud. Each time the attack was lost to the
+    save.
+- **Advance around an area to where the unit already stands is not offered.** Seelah made two 0.0 m advances.
+- **Coverage report:** Charge and Coup de Grace are listed as understood (valued by the game's rules), not as
+  "effect not understood".
+- **Facts from the coverage report:**
+  - Fighting Defensively activates `OnUnitAction`: its AC applies after the unit attacks. This answers an open
+    question in `docs/ACTIVE_ABILITY_PLAN.md` (AA-3).
+  - Coup de Grace is TTT's `CoupDeGraceTTT` in this game.

@@ -24,6 +24,7 @@ using Kingmaker.UnitLogic.Abilities;
 using Kingmaker.UnitLogic.Abilities.Blueprints;
 using Kingmaker.UnitLogic.Buffs;
 using Kingmaker.UnitLogic.Commands.Base;
+using Kingmaker.UnitLogic.Mechanics;
 using Kingmaker.UnitLogic.Parts;
 using Kingmaker.Utility;
 
@@ -321,8 +322,10 @@ namespace CompanionAI_Pathfinder.Tactics
                     Failures.TryGetValue(p.Key, out count);
                     Failures[p.Key] = ++count;
                 }
-                Main.Log($"[Cast] {p.Caster.CharacterName}: {p.Name} did nothing to its target {p.Target?.CharacterName} - " +
-                         "no attack roll, save, spell resistance, damage or effect on it" +
+                int level = 0;
+                try { level = p.Target?.Descriptor?.Progression?.CharacterLevel ?? 0; } catch { }
+                Main.Log($"[Cast] {p.Caster.CharacterName}: {p.Name} did nothing to its target {p.Target?.CharacterName} " +
+                         $"(level {level}) - no attack roll, save, spell resistance, damage or effect on it" +
                          (p.Reached != null && p.Reached.Count > 0 ? $" (it reached {string.Join(", ", p.Reached)})" : "") +
                          (p.BlockOnNoReach ? $" ({count}/{FailuresBeforeBlock}{(count >= FailuresBeforeBlock ? "; not aimed at it again this fight" : "")})" : ""));
                 if (p.BlockOnNoReach) return;   // counted once for this cast
@@ -356,12 +359,29 @@ namespace CompanionAI_Pathfinder.Tactics
         }
 
         /// <summary>★ v0.3.17: a rule of <paramref name="caster"/>'s ability touched <paramref name="unit"/> (target diagnostics).</summary>
-        private static void MarkReached(UnitEntityData caster, UnitEntityData unit)
+        private static void MarkReached(UnitEntityData caster, UnitEntityData unit, MechanicsContext source = null)
         {
             var p = For(caster);
             if (p == null || !p.WatchTarget || unit == null) return;
+            // ★ v0.3.17 (test3): an effect of another lasting area of the same caster is not this cast reaching the
+            // target. The Cultist Champion stood in Orvath's Grease; its saves against the Grease counted as Sleep
+            // reaching it, so seven Sleeps that never touched it were never caught (log 9a7bb1f9).
+            if (FromOtherArea(source, p)) return;
             if (unit == p.Target) p.TargetReached = true;
             else if (unit != caster) (p.Reached ?? (p.Reached = new HashSet<string>())).Add(unit.CharacterName);
+        }
+
+        /// <summary>The rule comes from a lasting area that this cast did not create.</summary>
+        private static bool FromOtherArea(MechanicsContext context, Pending p)
+        {
+            try
+            {
+                for (var c = context; c != null; c = c.ParentContext)
+                    if (c.AssociatedBlueprint is BlueprintAbilityAreaEffect)
+                        return c.SourceAbility != p.Blueprint;
+            }
+            catch { }
+            return false;
         }
 
         public void HandleExecutionProcessStart(AbilityExecutionContext context)
@@ -395,7 +415,7 @@ namespace CompanionAI_Pathfinder.Tactics
             try
             {
                 Mark(buff?.Context?.MaybeCaster);
-                MarkReached(buff?.Context?.MaybeCaster, buff?.Owner?.Unit);
+                MarkReached(buff?.Context?.MaybeCaster, buff?.Owner?.Unit, buff?.Context);
             }
             catch { }
         }
@@ -456,7 +476,7 @@ namespace CompanionAI_Pathfinder.Tactics
             if (evt != null && !evt.IsFake)
             {
                 Mark(evt.Initiator);
-                MarkReached(evt.Initiator, evt.Target);
+                MarkReached(evt.Initiator, evt.Target, evt.Reason?.Context);
             }
         }
 
@@ -469,7 +489,7 @@ namespace CompanionAI_Pathfinder.Tactics
             if (evt != null && !evt.IsFake)
             {
                 Mark(evt.Initiator);
-                MarkReached(evt.Initiator, evt.Target);
+                MarkReached(evt.Initiator, evt.Target, evt.Reason?.Context);
             }
         }
 
@@ -482,7 +502,7 @@ namespace CompanionAI_Pathfinder.Tactics
             if (evt != null)
             {
                 Mark(evt.Initiator);
-                MarkReached(evt.Initiator, evt.Target);
+                MarkReached(evt.Initiator, evt.Target, evt.Reason?.Context);
             }
         }
 
@@ -495,7 +515,7 @@ namespace CompanionAI_Pathfinder.Tactics
             if (evt != null)
             {
                 Mark(evt.Reason?.Caster);
-                MarkReached(evt.Reason?.Caster, evt.Initiator);
+                MarkReached(evt.Reason?.Caster, evt.Initiator, evt.Reason?.Context);
             }
         }
 
@@ -508,7 +528,7 @@ namespace CompanionAI_Pathfinder.Tactics
             if (evt != null)
             {
                 Mark(evt.Initiator);
-                MarkReached(evt.Initiator, evt.Target);
+                MarkReached(evt.Initiator, evt.Target, evt.Context);
             }
         }
     }

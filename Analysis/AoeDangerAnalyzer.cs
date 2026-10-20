@@ -59,6 +59,8 @@ namespace CompanionAI_Pathfinder.Analysis
             public SpellDescriptor Descriptors { get; set; }
             public bool IsDamaging { get; set; }
             public bool IsMovementImpairing { get; set; }
+            /// <summary>★ v0.3.17: chance the area affects the unit at all before it ends (its save, immunities, time).</summary>
+            public float AffectChance { get; set; } = 1f;
         }
 
         #endregion
@@ -172,11 +174,21 @@ namespace CompanionAI_Pathfinder.Analysis
         /// every round) and the rounds that area has left.
         /// </summary>
         public static float EnteringDanger(UnitEntityData unit, Vector3 from, Vector3 to, out string name,
-                                           out float roundsLeft, out bool endsInside)
+                                           out float roundsLeft, out bool endsInside) =>
+            EnteringDanger(unit, from, to, out name, out roundsLeft, out endsInside, out _);
+
+        /// <summary>
+        /// ★ v0.3.17: also the chance an area that impedes movement (Grease, Entangle, Web) or applies hard control
+        /// (Stinking Cloud's nausea) stops what the walk was for: its save failed, the unit falls, is held or cannot act. Seelah walked into Grease to
+        /// attack the last Zombie, fell and never attacked; the price counted the rounds in the area, not the lost attack.
+        /// </summary>
+        public static float EnteringDanger(UnitEntityData unit, Vector3 from, Vector3 to, out string name,
+                                           out float roundsLeft, out bool endsInside, out float stopChance)
         {
             name = null;
             roundsLeft = 0f;
             endsInside = false;
+            stopChance = 0f;
             float worst = 0f;
             if (unit == null) return 0f;
             try
@@ -194,6 +206,10 @@ namespace CompanionAI_Pathfinder.Analysis
                         enters = Covers(aoe, Vector3.Lerp(from, to, i / (float)samples), unit.Corpulence);
                     if (!enters) continue;
                     var danger = EvaluateEffectDanger(unit, aoe, quiet: true);
+                    // Hard control (Stinking Cloud's nausea, sleep, paralysis) also takes away the attack after the walk.
+                    if (danger != null && danger.DangerLevel > 0f &&
+                        (danger.IsMovementImpairing || ControlOf(aoe) == CompanionAI_Pathfinder.Tactics.ControlStrength.Hard))
+                        stopChance = 1f - (1f - stopChance) * (1f - Mathf.Clamp01(danger.AffectChance));
                     if (danger == null || danger.DangerLevel <= worst) continue;
                     worst = danger.DangerLevel;
                     name = aoe.Context?.SourceAbilityContext?.Ability?.Name ?? danger.Name;
@@ -477,7 +493,8 @@ namespace CompanionAI_Pathfinder.Analysis
                 // ★ v0.3.14 (test5): weighted by the chance the area affects this unit at all before it ends (its save,
                 // its immunities, the time left). Camellia (good Fortitude) left a Stinking Cloud past two attacks of
                 // opportunity, was stopped by the first and stayed inside anyway.
-                result.DangerLevel = Mathf.Clamp01(dangerLevel) * AffectChance(unit, aoe);
+                result.AffectChance = AffectChance(unit, aoe);
+                result.DangerLevel = Mathf.Clamp01(dangerLevel) * result.AffectChance;
 
                 if (!quiet)
                 {

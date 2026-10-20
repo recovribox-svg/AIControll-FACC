@@ -69,6 +69,13 @@ namespace CompanionAI_Pathfinder.Tactics
                 if (!ConsumablePolicy.IsAllowed(ability)) { itemPolicy.Add(name); continue; }
                 if (AbilityClassifier.IsBlacklistedForCombat(ability)) { blacklisted.Add(name); continue; }
                 var profile = AbilityProfile.Get(ability);
+                // Charge and Coup de Grace have no effect components; the engine values them by the game's rules.
+                if (profile != null && (profile.IsCharge || TacticalEngine.IsCoupDeGrace(ability)))
+                {
+                    if (ability.IsAvailable) understood.Add($"{name} ({(profile.IsCharge ? "charge" : "coup de grace")}, by the rules)");
+                    else unavailable.Add(name);
+                    continue;
+                }
                 if (profile == null || !profile.HasDetectableEffect)
                 {
                     string components = string.Join(",", ability.Blueprint.ComponentsArray?
