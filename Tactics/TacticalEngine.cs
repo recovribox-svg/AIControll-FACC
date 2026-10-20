@@ -162,6 +162,14 @@ namespace CompanionAI_Pathfinder.Tactics
 
             if (preview) return chosen;
             LogDecision(ctx, usable, chosen);
+            // ★ v0.3.16 (test2): options exist but none is worth anything or affordable - name the best of them. Seelah
+            // ended round 1 with all her actions and 4 enemies, and the log could not say why.
+            if (chosen == null && usable.Count == 0 && candidates.Count > 0 && ctx.HasStandard && !CombatMemory.IsRealTime)
+                Main.Log($"[Tactics] {unit.CharacterName}: nothing worth doing - best of {candidates.Count} options: " +
+                         string.Join(" | ", candidates.OrderByDescending(c => c.Value).Take(4).Select(c =>
+                             $"{c.Label}={c.Value:F1}" + (!Affordable(ctx, c) ? " (not affordable)" :
+                                                         memory.Failed.Contains(c.Key) ? " (failed this turn)" :
+                                                         SilentlyFailing(ctx, c) ? " (did nothing before)" : ""))));
             // ★ v0.3.14 (test5): a turn-based unit with its actions unused and not a single option: say why.
             if (candidates.Count == 0 && ctx.HasStandard && !CombatMemory.IsRealTime)
                 Main.Log($"[Tactics] {unit.CharacterName}: no option at all - the game lists no weapon attack against " +
@@ -830,6 +838,13 @@ namespace CompanionAI_Pathfinder.Tactics
             }
         }
 
+        private static float HorizontalDistance(Vector3 a, Vector3 b)
+        {
+            a.y = 0f;
+            b.y = 0f;
+            return Vector3.Distance(a, b);
+        }
+
         private static bool InRangeNow(UnitEntityData unit, Vector3 point, float radius, bool needLos)
         {
             return UnitCommand.IsUnitCloseEnough(point, unit.Position, unit.EyePosition, radius, needLos, 0f);
@@ -1183,7 +1198,12 @@ namespace CompanionAI_Pathfinder.Tactics
                 {
                     float range = ability.GetApproachDistance(wrapper.Unit);
                     bool needLos = new UnitUseAbility(ability, wrapper).NeedLoS;
-                    if (!InRangeNow(ctx.Unit, target.Position, range, needLos))
+                    // ★ v0.3.16 (test2): a touch spell whose target is within reach on the ground counts as in reach even
+                    // when the game's 3D range test disagrees (a height difference): a walk cannot fix that, and after
+                    // a 0.5 m approach Camellia's Inflict Moderate Wounds was dropped as "needs a move" after the step.
+                    bool touchInReach = ability.Blueprint.StickyTouch != null && ability.StickyTouch == null && !needLos &&
+                                        HorizontalDistance(ctx.Unit.Position, target.Position) <= range;
+                    if (!touchInReach && !InRangeNow(ctx.Unit, target.Position, range, needLos))
                     {
                         if (slot != ActionSlot.Standard || !ctx.HasMove || ctx.Distance(target) - range > ctx.MoveRange * 0.95f)
                             continue;

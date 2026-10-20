@@ -344,3 +344,13 @@ From the 0.3.14 turn-based log (e62751a4 + combat log 5ee51eba + GameLog c544dcb
 | **No approach loop for touch spells**: the walk into reach is issued only when it moves the caster at least 0.3 m (to two thirds of touch reach). Standing within reach on the ground while the game's range test still said "out of range" (most likely a height difference), Camellia issued a 0.0 m "Approach to touch" about 40 times until the decision limit ended her turn: three turns lost in one fight. Otherwise the game's own cast is used. | TB |
 | **A walk into reach counts as a move**: it was recorded as the spell, so after a successful approach (5.5 m, 2.7 m, 0.7 m) the spell was marked "force-finished before it started" and dropped for the turn - the scroll was never cast. | TB |
 | **No movement options after a 5-foot step**: Move+Attack and spells that need a walk are not offered once the step is taken (the game forbids it; the dispatcher refused Orvath's Move+Attack and Fire Blast). | TB |
+
+### 0.3.16-test2 (turn-based log 4de5be87)
+
+Touch spells now walk and cast as intended (Camellia: approach 3.7 m, 2.0 m, 3.4 m, each followed by the Inflict
+Moderate Wounds cast; no "did nothing" lines).
+
+| Change | Modes |
+|---|---|
+| **Touch target within reach on the ground counts as in reach**: after a 0.5 m approach the game's 3D range test still said "out of range", the spell needed a move, and moves are not allowed after the 5-foot step: Camellia's Inflict Moderate Wounds (9.3) was dropped for a 3.0 attack. A walk cannot fix a height difference; the cast is issued and the game's own command handles it. | TB |
+| **"Nothing worth doing" names the best options** and why they were not taken (value, not affordable, failed this turn, did nothing before). Seelah ended a round-1 turn with all actions and four enemies, and the log could not say why. | TB |
