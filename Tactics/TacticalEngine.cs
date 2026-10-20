@@ -1198,13 +1198,15 @@ namespace CompanionAI_Pathfinder.Tactics
                 {
                     float range = ability.GetApproachDistance(wrapper.Unit);
                     bool needLos = new UnitUseAbility(ability, wrapper).NeedLoS;
-                    // ★ v0.3.16 (test2): a touch spell whose target is within reach on the ground counts as in reach even
-                    // when the game's 3D range test disagrees (a height difference): a walk cannot fix that, and after
-                    // a 0.5 m approach Camellia's Inflict Moderate Wounds was dropped as "needs a move" after the step.
-                    bool touchInReach = ability.Blueprint.StickyTouch != null && ability.StickyTouch == null && !needLos &&
-                                        HorizontalDistance(ctx.Unit.Position, target.Position) <= range;
-                    if (!touchInReach && !InRangeNow(ctx.Unit, target.Position, range, needLos))
+                    if (!InRangeNow(ctx.Unit, target.Position, range, needLos))
                     {
+                        // ★ v0.3.16 (test3): the game measures range flat unless the height difference is over 1.5 m, then
+                        // by the larger of the flat distance and half the height (GeometryUtils.MechanicsDistance). Within
+                        // reach on the ground but not by that rule, the target is over twice the reach above or below (a
+                        // ledge): a touch cannot reach it from this level. Camellia stepped 0.5 m towards such a Corrupted
+                        // Mongrel and was still out of reach; in 0.3.15 a 0.0 m approach repeated until her turn ended.
+                        if (ability.Blueprint.StickyTouch != null && HorizontalDistance(ctx.Unit.Position, target.Position) <= range * 0.9f)
+                            continue;
                         if (slot != ActionSlot.Standard || !ctx.HasMove || ctx.Distance(target) - range > ctx.MoveRange * 0.95f)
                             continue;
                         needsMove = true;
@@ -2015,16 +2017,15 @@ namespace CompanionAI_Pathfinder.Tactics
                     // movement cancels (TickApproaching needs a ForcedPath). Camellia's Inflict Light Wounds scroll on an
                     // enemy 5.6 m away: cast, never touched, and the charge was thrown away by her next spell. Walk
                     // first (with our path), cast from touch range on the next decision.
-                    // ★ v0.3.15 (test3): only when the walk gets somewhere. Standing within reach on the ground while the
-                    // game's range test still said "out of range" (a height difference), Camellia issued a 0.0 m
-                    // approach ~40 times until the decision limit ended her turn: then the game's own cast is used.
-                    // The walk counts as a move (so a walk that went nowhere is not retried, and one that arrived does
-                    // not mark the spell as failed for leaving its standard action unused).
-                    Vector3 touchPoint = c.Target != null ? ApproachPoint(unit, c.Target, c.Ability.GetApproachDistance(c.Target) * 0.67f) : unit.Position;
+                    // ★ v0.3.16: the walk counts as a move (so a walk that went nowhere is not retried, and one that
+                    // arrived does not mark the spell as failed for leaving its standard action unused). A target out of
+                    // touch reach by height alone is not offered at all (EvaluateAbility).
+                    // The walk goes to the target itself, stopping within reach by the game's own arrival test, so the
+                    // dispatcher's path (stairs, around obstacles) ends where the touch can be made.
                     if (c.NeedsMove && c.Target != null && !CombatMemory.IsRealTime && c.Ability.StickyTouch == null &&
-                        c.Ability.Blueprint.StickyTouch != null && Vector3.Distance(unit.Position, touchPoint) >= 0.3f)
+                        c.Ability.Blueprint.StickyTouch != null)
                     {
-                        var approach = new UnitMoveTo(touchPoint, 0.3f);
+                        var approach = new UnitMoveTo(c.Target.Position, c.Ability.GetApproachDistance(c.Target) * 0.8f);
                         if (CommandDispatcher.Run(unit, approach, $"Approach to touch: {c.Label}", out failure))
                         {
                             command = approach;

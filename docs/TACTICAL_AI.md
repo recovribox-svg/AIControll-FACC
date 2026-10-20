@@ -352,5 +352,18 @@ Moderate Wounds cast; no "did nothing" lines).
 
 | Change | Modes |
 |---|---|
-| **Touch target within reach on the ground counts as in reach**: after a 0.5 m approach the game's 3D range test still said "out of range", the spell needed a move, and moves are not allowed after the 5-foot step: Camellia's Inflict Moderate Wounds (9.3) was dropped for a 3.0 attack. A walk cannot fix a height difference; the cast is issued and the game's own command handles it. | TB |
+| ~~Touch target within reach on the ground counts as in reach~~ - replaced in test3, see below. | TB |
 | **"Nothing worth doing" names the best options** and why they were not taken (value, not affordable, failed this turn, did nothing before). Seelah ended a round-1 turn with all actions and four enemies, and the log could not say why. | TB |
+
+### 0.3.16-test3: the game's range rule (from the real `Owlcat.Runtime.Core.dll`)
+
+`GeometryUtils.MechanicsDistance`, the distance behind every range and reach test (`UnitCommand.IsUnitCloseEnough`):
+the flat (x/z) distance when the height difference is at most 1.5 m, otherwise the larger of the flat distance and half
+the height difference. Touch reach is the weapon reach plus both bodies (`AbilityData.GetApproachDistance`, ~1.6 m or
+more), so a target within reach on the ground but out of reach by this rule is over ~3 m above or below: a touch cannot
+reach it from that level, and test2's "count it as in reach" would have spent the scroll on a touch that never lands.
+
+| Change | Modes |
+|---|---|
+| **Touch targets out of reach by height alone are not offered** (within 90 % of reach on the ground, out of reach by the game's rule). | both |
+| **The walk into reach goes to the target** with the touch reach (×0.8) as its arrival radius, so the dispatcher's path (stairs, obstacles) ends where the game's own test says the touch can be made, instead of a point on a straight line. | TB |
