@@ -275,7 +275,9 @@ namespace CompanionAI_Pathfinder.Tactics
                 case ActionSlot.Free: return true;
                 case ActionSlot.Swift: return ctx.HasSwift;
                 case ActionSlot.Move: return ctx.HasMove || ctx.HasStandard; // a standard action can be spent as a move
-                case ActionSlot.Standard: return ctx.HasStandard && (!c.NeedsMove || (ctx.HasMove && !ctx.SurpriseRound && !ctx.NoMovementLeft));
+                // ★ v0.3.15 (test3): after a 5-foot step the game allows no other movement (the dispatcher refuses it):
+                // Orvath stepped out of melee and then had Move+Attack and Fire Blast (needing 1.5 m) refused.
+                case ActionSlot.Standard: return ctx.HasStandard && (!c.NeedsMove || (ctx.HasMove && !ctx.SurpriseRound && !ctx.NoMovementLeft && !ctx.StepTaken));
                 case ActionSlot.FullRound: return c.Kind == CandidateKind.WeaponAttack ? ctx.CanFullAttack : ctx.HasFullRound;
                 default: return false;
             }
@@ -1993,14 +1995,21 @@ namespace CompanionAI_Pathfinder.Tactics
                     // movement cancels (TickApproaching needs a ForcedPath). Camellia's Inflict Light Wounds scroll on an
                     // enemy 5.6 m away: cast, never touched, and the charge was thrown away by her next spell. Walk
                     // first (with our path), cast from touch range on the next decision.
+                    // ★ v0.3.15 (test3): only when the walk gets somewhere. Standing within reach on the ground while the
+                    // game's range test still said "out of range" (a height difference), Camellia issued a 0.0 m
+                    // approach ~40 times until the decision limit ended her turn: then the game's own cast is used.
+                    // The walk counts as a move (so a walk that went nowhere is not retried, and one that arrived does
+                    // not mark the spell as failed for leaving its standard action unused).
+                    Vector3 touchPoint = c.Target != null ? ApproachPoint(unit, c.Target, c.Ability.GetApproachDistance(c.Target) * 0.67f) : unit.Position;
                     if (c.NeedsMove && c.Target != null && !CombatMemory.IsRealTime && c.Ability.StickyTouch == null &&
-                        c.Ability.Blueprint.StickyTouch != null)
+                        c.Ability.Blueprint.StickyTouch != null && Vector3.Distance(unit.Position, touchPoint) >= 0.3f)
                     {
-                        float reach = c.Ability.GetApproachDistance(c.Target);
-                        var approach = new UnitMoveTo(ApproachPoint(unit, c.Target, reach), 0.3f);
+                        var approach = new UnitMoveTo(touchPoint, 0.3f);
                         if (CommandDispatcher.Run(unit, approach, $"Approach to touch: {c.Label}", out failure))
                         {
                             command = approach;
+                            c.Kind = CandidateKind.Move;
+                            c.Slot = ActionSlot.Move;
                             return true;
                         }
                         return false;

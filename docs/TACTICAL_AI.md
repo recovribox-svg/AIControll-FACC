@@ -336,3 +336,11 @@ From the 0.3.14 turn-based log (e62751a4 + combat log 5ee51eba + GameLog c544dcb
 | **Touch spells walk first**: a touch spell (scroll, wand or slot) on a target out of reach is cast where the caster stands and the game queues the touch as a walk without a path, which turn-based movement cancels. Both of Camellia's Inflict Light Wounds scrolls (5.6 m away, and a 5-foot step away) were cast, never touched, and the charge was lost. The engine now walks into reach itself (our path), then casts. | TB |
 | **A held charge is worth keeping**: another spell cast drops it (`TouchSpellsController`), so such options pay the charge's current best value (`[drops held touch]`). A charge held for someone else still undelivered after two rounds counts as a silent failure. | both |
 | **Areas cost per round of staying**: entering a harmful area cost its danger × half a fight's worth × one round's chance, so melee fighters charged into Grease to reach enemies lying in it (34 moves "into Grease" in one log) and fell too. Now: danger (already × the chance to fail that round's save) × the unit's per-round worth × the rounds it stays (until the fight or the area ends, up to 3), doubled when it stops inside (standing up provokes and enemies hit a prone unit at +4). Passing through costs one round. | both |
+
+## 23. v0.3.16 (test1): fixes from the 0.3.15 turn-based log (648247bb)
+
+| Change | Modes |
+|---|---|
+| **No approach loop for touch spells**: the walk into reach is issued only when it moves the caster at least 0.3 m (to two thirds of touch reach). Standing within reach on the ground while the game's range test still said "out of range" (most likely a height difference), Camellia issued a 0.0 m "Approach to touch" about 40 times until the decision limit ended her turn: three turns lost in one fight. Otherwise the game's own cast is used. | TB |
+| **A walk into reach counts as a move**: it was recorded as the spell, so after a successful approach (5.5 m, 2.7 m, 0.7 m) the spell was marked "force-finished before it started" and dropped for the turn - the scroll was never cast. | TB |
+| **No movement options after a 5-foot step**: Move+Attack and spells that need a walk are not offered once the step is taken (the game forbids it; the dispatcher refused Orvath's Move+Attack and Fire Blast). | TB |
