@@ -41,6 +41,8 @@ namespace CompanionAI_Pathfinder.GameInterface
 
         private void Update()
         {
+            // ★ v0.3.17: not while the mod is switched off in the mod manager.
+            if (!Main.Enabled) return;
             PreBuffController.Instance?.Tick();
         }
     }
@@ -190,6 +192,9 @@ namespace CompanionAI_Pathfinder.GameInterface
             {
                 if (caster == null || caster.HPLeft <= 0)
                     continue;
+                // ★ v0.3.17: only casters the AI controls (the control settings); anyone in the party can be a target.
+                if (!CustomBrainPatch.ShouldControlUnit(caster))
+                    continue;
 
                 // 스마트 분석
                 var analyses = PreBuffAnalyzer.AnalyzeAllPreBuffs(caster, party);
@@ -316,6 +321,9 @@ namespace CompanionAI_Pathfinder.GameInterface
                 return false;
             if (!request.Ability.IsAvailableForCast)
                 return false;
+            // ★ v0.3.17: the item settings apply here too (Tactics/ConsumablePolicy, shared by both combat modes).
+            if (!Tactics.ConsumablePolicy.IsAllowed(request.Ability))
+                return false;
 
             // 이미 적용된 버프 체크
             if (request.Analysis?.AppliedBuff != null)
@@ -338,7 +346,12 @@ namespace CompanionAI_Pathfinder.GameInterface
                 var target = new TargetWrapper(request.Target);
 
                 var command = new UnitUseAbility(ability, target);
-                request.Caster.Commands.Run(command);
+                // ★ v0.3.17: through the dispatcher like every other command the mod issues (CLAUDE.md).
+                if (!CommandDispatcher.Run(request.Caster, command, $"PreBuff: {ability.Name}->{request.Target.CharacterName}", out string failure))
+                {
+                    Main.Log($"[PreBuff] {request.Caster.CharacterName}: {ability.Name} not issued - {failure}");
+                    return;
+                }
 
                 // 상세 로그
                 string priorityStr = request.Analysis?.Priority.ToString() ?? "?";

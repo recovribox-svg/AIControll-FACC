@@ -284,7 +284,18 @@ namespace CompanionAI_Pathfinder.Tactics
                 Main.Log($"[Profile] {blueprint.name} ({blueprint.AssetGuid}): analysis error {ex.GetType().Name}: {ex.Message} - effects may be incomplete");
             }
             Cache[blueprint] = profile;
+            _built++;
             return profile;
+        }
+
+        private static int _built;
+
+        /// <summary>★ v0.3.17: profiles built since the last call (the slow-decision log names the cause).</summary>
+        public static int TakeBuiltCount()
+        {
+            int n = _built;
+            _built = 0;
+            return n;
         }
 
         public static void ClearCache()

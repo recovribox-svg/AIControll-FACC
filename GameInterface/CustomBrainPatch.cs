@@ -369,6 +369,7 @@ namespace CompanionAI_Pathfinder.GameInterface
             // ★ v0.3.17: diagnostics are per fight
             Tactics.FightStats.Clear();
             CompanionAI_Pathfinder.Analysis.AbilityClassifier.ResetCombatReports();
+            Tactics.CoverageReport.NewFight();
         }
 
         /// <summary>
@@ -381,6 +382,8 @@ namespace CompanionAI_Pathfinder.GameInterface
             Main.Log("★★★ Party combat ended ★★★");
             // ★ v0.3.17: [Perf] / [Calib] numbers of the fight that just ended
             Tactics.FightStats.Report();
+            // ★ v0.3.17: analysis caches of this fight's units (they are per frame now; this only frees them)
+            CompanionAI_Pathfinder.Analysis.CombatRulesAnalyzer.ClearCache();
             // ★ v0.2.113: TurnBasedController 상태 초기화
             TurnBasedController.Instance.ResetAll();
 
@@ -493,6 +496,8 @@ namespace CompanionAI_Pathfinder.GameInterface
 
             // 플레이어 팩션만 처리
             if (!unit.IsPlayerFaction) return;
+            // ★ v0.3.17: only units the AI controls - a character the player drives keeps its orders.
+            if (!CustomBrainPatch.ShouldControlUnit(unit)) return;
 
             string unitName = unit.Descriptor?.CharacterName ?? "Unknown";
             Main.Log($"[CombatEventHandler] {unitName} left combat");

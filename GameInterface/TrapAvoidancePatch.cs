@@ -52,7 +52,8 @@ namespace CompanionAI_Pathfinder.GameInterface
             Kingmaker.UnitLogic.Commands.UnitCommands __instance,
             ref UnitCommand cmd)
         {
-            if (!PatchEnabled || !TrapAwarenessController.Enabled)
+            // ★ v0.3.17: not while the mod is switched off in the mod manager (Harmony patches stay applied then).
+            if (!PatchEnabled || !TrapAwarenessController.Enabled || !Main.Enabled)
                 return true;
 
             try

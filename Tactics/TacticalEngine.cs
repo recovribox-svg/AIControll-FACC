@@ -50,7 +50,10 @@ namespace CompanionAI_Pathfinder.Tactics
         public string Key;
         /// <summary>★ v0.3.7: chance the effect lands on its main target (1 for non-hostile options).</summary>
         public float SuccessChance = 1f;
-        /// <summary>★ v0.3.16: what casting this where the unit stands risks (attacks of opportunity), already in Value.</summary>
+        /// <summary>
+        /// ★ v0.3.16: what casting this where the unit stands risks (attacks of opportunity), already in Value.
+        /// ★ v0.3.17: all of it - the cost and the share lost to the chance the spell is spoilt.
+        /// </summary>
         public float CastRiskCost;
         /// <summary>
         /// ★ v0.3.17: walk to <see cref="MovePoint"/> first (a spot around a harmful area, the one the value was priced
@@ -121,9 +124,15 @@ namespace CompanionAI_Pathfinder.Tactics
         public static Candidate Decide(UnitEntityData unit, TurnMemory memory)
         {
             // ★ v0.3.17: how long a decision takes ([Perf] at the end of the fight) - nothing was measured before.
+            AbilityProfile.TakeBuiltCount();
             var watch = System.Diagnostics.Stopwatch.StartNew();
             var chosen = Decide(unit, memory, preview: false, out _);
-            FightStats.RecordDecision(unit, watch.Elapsed.TotalMilliseconds, chosen?.Label);
+            double ms = watch.Elapsed.TotalMilliseconds;
+            FightStats.RecordDecision(unit, ms, chosen?.Label);
+            // ★ v0.3.17: two decisions of the 0.3.17-test2 log took 0.8-0.9 s (median 3 ms); say which, when it happens.
+            if (ms > 250d)
+                Main.Log($"[Perf] slow decision: {ms:F0} ms - {unit.CharacterName} R{CombatMemory.Round}: {chosen?.Label ?? "nothing"} " +
+                         $"(new ability profiles built this decision: {AbilityProfile.TakeBuiltCount()})");
             return chosen;
         }
 
@@ -142,7 +151,11 @@ namespace CompanionAI_Pathfinder.Tactics
                 ctx.MoveRange = 0f;
             }
             if (ctx != null) ctx.Unreachable = memory.Unreachable;
-            if (ctx != null && !preview) FightStats.NoteContext(ctx);
+            if (ctx != null && !preview)
+            {
+                FightStats.NoteContext(ctx);
+                CoverageReport.ReportIfChanged(unit);   // ★ v0.3.17: diagnostics, once per fight at most
+            }
             if (ctx == null || ctx.Enemies.Count == 0)
             {
                 if (preview) return null;
@@ -1390,13 +1403,18 @@ namespace CompanionAI_Pathfinder.Tactics
                 // Camellia walked 3.4 m in among three Corrupted Mongrels to read an Inflict Moderate Wounds scroll, all
                 // three struck and she went down before the spell went off.
                 Disengage provoke = null;
+                float provokeLoss = 0f;
                 if (slot == ActionSlot.Standard && ability.ProvokeAttackOfOpportunity &&
                     ability.SourceItemUsableBlueprint?.Type != UsableItemType.Potion)
                 {
                     var castAt = needsMove && approach != null ? approach.Point : ctx.Unit.Position;
                     provoke = CastProvokeRisk(ctx, ability, castAt);
                     if (provoke != null)
+                    {
+                        float before = value;
                         value = value * (1f - provoke.StopChance) - provoke.Cost;
+                        provokeLoss = before - value;
+                    }
                 }
                 // ★ v0.3.14: entangled (or "casting is difficult"): a concentration check before the spell even starts.
                 value *= CombatMath.CastingConcentrationChance(ctx.Unit, ability);
@@ -1419,7 +1437,7 @@ namespace CompanionAI_Pathfinder.Tactics
                     Label = $"{(ability.SourceItem != null ? "Item:" : "")}{ability.Name}{metamagic}->{target.CharacterName}({why}){risk?.Tag}" +
                             (approach?.Around != null ? $" (around {approach.Around})" : "") +
                             (provoke != null ? $" [casting provokes {provoke.Attacks}{(provoke.DropChance >= 0.1f ? $", {provoke.DropChance:P0} down" : "")}]" : ""),
-                    CastRiskCost = provoke?.Cost ?? 0f,
+                    CastRiskCost = provokeLoss,
                     MoveFirst = approach?.Around != null,
                     MovePoint = approach?.Around != null ? approach.Point : (Vector3?)null,
                     ApproachRadius = approach?.Arrival ?? 0f,
@@ -1498,6 +1516,7 @@ namespace CompanionAI_Pathfinder.Tactics
             bool targetIsEnemy = unit.IsEnemy(target);
             int level = Math.Max(0, ability.SpellLevel);
             float value = 0f;
+            float slotSensitive = 0f;   // ★ v0.3.17: the damage and control parts (spell-slot discount)
             var reasons = new List<string>();
 
             if (IsCoupDeGrace(ability))
@@ -1574,6 +1593,7 @@ namespace CompanionAI_Pathfinder.Tactics
                 if (dmgValue > 0f)
                 {
                     value += dmgValue * RoleWeight(ctx, "damage");
+                    slotSensitive += dmgValue * RoleWeight(ctx, "damage");
                     reasons.Add("dmg");
                 }
             }
@@ -1628,7 +1648,9 @@ namespace CompanionAI_Pathfinder.Tactics
 
                     float urgency = hp <= 0.25f ? 3f : hp < 0.5f ? 2f : 1f;
                     bool threatened = ally.CombatState?.IsEngaged ?? false;
-                    healValue += heal * 0.6f * urgency * (threatened ? 1.25f : 1f);
+                    // ★ v0.3.17: a summon is worth half (AllyWorth) in this part too: at full HP Camellia walked into
+                    // Grease to heal a summoned Dretch, the restoring part valued like a companion's (log 06aebf2d).
+                    healValue += heal * 0.6f * urgency * (threatened ? 1.25f : 1f) * (IsSummon(ally) ? 0.5f : 1f);
 
                     // ★ v0.3.9: how much less likely the ally is to drop before its next turn. Lann at 25 % HP valued his
                     // potion at 5.9 against a 7.6 full attack, shot, and went down; the heal ignored who could hit him.
@@ -1736,6 +1758,7 @@ namespace CompanionAI_Pathfinder.Tactics
                 if (controlValue > 0f)
                 {
                     value += controlValue;
+                    slotSensitive += controlValue;
                     reasons.Add(profile.ControlStrength == ControlStrength.Hard ? "cc" : isMark ? "mark" : "debuff");
                 }
             }
@@ -1861,8 +1884,10 @@ namespace CompanionAI_Pathfinder.Tactics
             }
 
             // Spell slots are a resource: in easy fights prefer weapons/cantrips over levelled spells.
-            if (level > 0 && ability.Spellbook != null && ability.SourceItem == null)
-                value *= Mathf.Clamp(0.55f + 0.45f * ctx.Difficulty, 0.55f, 1f);
+            // ★ v0.3.17: only the damage and control parts, as the Spell Use setting says ("damage and control spells";
+            // "buffs, heals and items are unaffected"). It discounted levelled heals and buffs too.
+            if (level > 0 && ability.Spellbook != null && ability.SourceItem == null && slotSensitive > 0f)
+                value -= slotSensitive * (1f - Mathf.Clamp(0.55f + 0.45f * ctx.Difficulty, 0.55f, 1f));
 
             why = reasons.Count > 0 ? string.Join("+", reasons) : "none";
             return value;
@@ -1908,6 +1933,15 @@ namespace CompanionAI_Pathfinder.Tactics
                 // ★ v0.3.10: an archer steps to a spot from which it can still shoot someone (Lann stepped out of melee
                 // and then had nothing in range or sight without more movement, which the step forbids).
                 Func<Vector3, bool> keepsTarget = null;
+                // ★ v0.3.17: a caster's step must keep the spell's target in its range (only archers were checked; a
+                // short-range spell could be left out of reach, and after a 5-foot step no other movement is allowed).
+                if (castsInMelee && bestMain.Target != null)
+                {
+                    float spellRange = bestMain.Ability.GetApproachDistance(bestMain.Target) * 0.95f;
+                    var spellTarget = bestMain.Target;
+                    Vector3 eye = unit.EyePosition - unit.Position;
+                    keepsTarget = p => UnitCommand.IsUnitCloseEnough(spellTarget.Position, p, p + eye, spellRange, true, 0f);
+                }
                 if (ctx.HasRangedWeapon && !castsInMelee)
                 {
                     float shotRange = ctx.Enemies.Select(e => CombatMath.EstimateWeaponAttack(unit, e, false))
@@ -1933,7 +1967,17 @@ namespace CompanionAI_Pathfinder.Tactics
                 var point = followUp >= MinQuickValue ? FindRetreatPoint(ctx, stepDistance, keepsTarget) : null;
                 if (point.HasValue)
                 {
-                    float value = Math.Min(ctx.Engagers.Sum(CombatMath.Threat) * 0.4f, followUp);
+                    // ★ v0.3.17: a caster's step is worth what casting here would lose (the risk priced into the spell);
+                    // with a good Concentration that is little, and it casts defensively where it stands.
+                    float value;
+                    if (castsInMelee)
+                    {
+                        // What the cast still risks from the new spot (a step may leave it next to someone).
+                        var there = CastProvokeRisk(ctx, bestMain.Ability, point.Value);
+                        float lossThere = there == null ? 0f : followUp * there.StopChance + there.Cost;
+                        value = Math.Min(followUp, Math.Max(0f, bestMain.CastRiskCost - lossThere));
+                    }
+                    else value = Math.Min(ctx.Engagers.Sum(CombatMath.Threat) * 0.4f, followUp);
                     string label = realTime ? "Back off out of melee" : "5ft step out of melee";
                     if (realTime)
                     {

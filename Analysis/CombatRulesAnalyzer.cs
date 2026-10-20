@@ -187,12 +187,15 @@ namespace CompanionAI_Pathfinder.Analysis
             = new Dictionary<string, (ThreatAnalysis, int)>();
 
         /// <summary>유닛별 AoO 면역 피트 캐시</summary>
-        private static readonly Dictionary<string, AoOImmunityInfo> _aoOImmunityCache
-            = new Dictionary<string, AoOImmunityInfo>();
+        /// <remarks>★ v0.3.17: per frame, like the threat cache. Kept for the whole session before (ClearCache had no
+        /// caller), so an immunity a buff gave once (Remove Fear, Protection from Evil) was seen forever, and one gained
+        /// later never. The live engine filters damage and control spells with it.</remarks>
+        private static readonly Dictionary<string, (AoOImmunityInfo info, int frame)> _aoOImmunityCache
+            = new Dictionary<string, (AoOImmunityInfo, int)>();
 
-        /// <summary>★ v0.2.67: 유닛별 기본 면역 정보 캐시</summary>
-        private static readonly Dictionary<string, BaseImmunityInfo> _baseImmunityCache
-            = new Dictionary<string, BaseImmunityInfo>();
+        /// <summary>★ v0.2.67: 유닛별 기본 면역 정보 캐시 (★ v0.3.17: per frame)</summary>
+        private static readonly Dictionary<string, (BaseImmunityInfo info, int frame)> _baseImmunityCache
+            = new Dictionary<string, (BaseImmunityInfo, int)>();
 
         /// <summary>캐시 클리어</summary>
         public static void ClearCache()
@@ -519,11 +522,11 @@ namespace CompanionAI_Pathfinder.Analysis
         {
             string unitId = unit.UniqueId;
 
-            if (_aoOImmunityCache.TryGetValue(unitId, out var cached))
-                return cached;
+            if (_aoOImmunityCache.TryGetValue(unitId, out var cached) && cached.frame == Time.frameCount)
+                return cached.info;
 
             var info = AnalyzeAoOImmunity(unit);
-            _aoOImmunityCache[unitId] = info;
+            _aoOImmunityCache[unitId] = (info, Time.frameCount);
 
             return info;
         }
@@ -991,11 +994,11 @@ namespace CompanionAI_Pathfinder.Analysis
         {
             string unitId = unit.UniqueId;
 
-            if (_baseImmunityCache.TryGetValue(unitId, out var cached))
-                return cached;
+            if (_baseImmunityCache.TryGetValue(unitId, out var cached) && cached.frame == Time.frameCount)
+                return cached.info;
 
             var info = AnalyzeBaseImmunity(unit);
-            _baseImmunityCache[unitId] = info;
+            _baseImmunityCache[unitId] = (info, Time.frameCount);
 
             return info;
         }

@@ -132,11 +132,16 @@ namespace CompanionAI_Pathfinder.GameInterface
                 return;
             }
 
-            // ★ v0.2.32: CombatDataCache 갱신 (프레임당 1회)
-            CombatDataCache.Instance.RefreshIfNeeded();
+            // ★ v0.3.17: the unit lists and the team blackboard are read only by the old real-time engine
+            // (SituationAnalyzer); the tactical engine never used them, yet they were rebuilt every frame.
+            if (Settings.ModSettings.Instance?.RealTimeLegacyEngine ?? false)
+            {
+                // ★ v0.2.32: CombatDataCache 갱신 (프레임당 1회)
+                CombatDataCache.Instance.RefreshIfNeeded();
 
-            // ★ v0.2.30: TeamBlackboard 전투 상태 업데이트
-            UpdateTeamBlackboardCombatState(unit);
+                // ★ v0.2.30: TeamBlackboard 전투 상태 업데이트
+                UpdateTeamBlackboardCombatState(unit);
+            }
 
             // v0.2.2: 대기 중인 영구 버프 처리
             ProcessPendingBuffs();
@@ -2058,6 +2063,10 @@ namespace CompanionAI_Pathfinder.GameInterface
         public void ApplyPermanentBuffsOutOfCombat(UnitEntityData unit, bool queueOnBusy = false)
         {
             if (unit == null)
+                return;
+            // ★ v0.3.17: only units the AI controls (main character / companions / per-character AI settings); every
+            // party member was buffed after combat, whatever the settings said.
+            if (!CustomBrainPatch.ShouldControlUnit(unit))
                 return;
 
             string unitName = unit.Descriptor?.CharacterName ?? "Unknown";

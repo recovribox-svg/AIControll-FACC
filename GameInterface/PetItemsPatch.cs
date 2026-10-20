@@ -27,7 +27,8 @@ namespace CompanionAI_Pathfinder.GameInterface
         public static PetType PetTypeForItemRule(UnitPartPet pet)
         {
             PetType type = pet.Type;
-            if (type == PetType.AnimalCompanion && (ModSettings.Instance?.PetsUseItems ?? true))
+            // ★ v0.3.17: the game's own rule again while the mod is switched off in the mod manager.
+            if (type == PetType.AnimalCompanion && Main.Enabled && (ModSettings.Instance?.PetsUseItems ?? true))
                 return (PetType)(-1);
             return type;
         }
