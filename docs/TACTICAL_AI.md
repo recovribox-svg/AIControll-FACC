@@ -367,3 +367,11 @@ reach it from that level, and test2's "count it as in reach" would have spent th
 |---|---|
 | **Touch targets out of reach by height alone are not offered** (within 90 % of reach on the ground, out of reach by the game's rule). | both |
 | **The walk into reach goes to the target** with the touch reach (×0.8) as its arrival radius, so the dispatcher's path (stairs, obstacles) ends where the game's own test says the touch can be made, instead of a point on a straight line. | TB |
+
+### 0.3.16-test4: checked against the real pathfinding library (`AstarPathfindingProject.dll`)
+
+| Change | Modes |
+|---|---|
+| **Paths no longer end on an ally's square**: `CommandDispatcher.TrimAllyBlockedEnd` looked the end point up with `AstarPath.GetNearest(point, NNConstraint.Default)`, which returns the nearest node that *suits* the constraint - and `NNConstraint.Suitable` rejects ally-blocked nodes - so the end was never found blocked and the trim never ran. Now the cell itself (`BattlefieldGrid.CellAt`, as the game's AI reads it: `gridGraph.GetNearest(position).node`). | TB |
+| **Walkability checks work**: `BattlefieldGrid.IsWalkable` had the same flaw (the default constraint swaps in the nearest walkable node), so every point passed. Used by the real-time emergency area escape and the old real-time engine. | RT |
+| Path pooling (`Claim`/`Release`), `BlockUntilCalculated` and `ABPath.FakePath` were checked against the library: the dispatcher's use is correct. | - |

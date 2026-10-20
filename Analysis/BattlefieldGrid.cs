@@ -118,6 +118,25 @@ namespace CompanionAI_Pathfinder.Analysis
         /// 월드 좌표가 Walkable인지 확인
         /// ★ v0.2.31: 캐싱 적용하여 성능 최적화
         /// </summary>
+        /// <summary>
+        /// ★ v0.3.16: the navigation grid cell containing <paramref name="worldPos"/>, unfiltered - as the game's own AI
+        /// reads it (AiAction.ScorePath: gridGraph.GetNearest(position).node). AstarPath.GetNearest with any
+        /// NNConstraint swaps in the nearest node that suits the constraint (walkable, not ally-blocked), which hides
+        /// exactly what the caller wants to know.
+        /// </summary>
+        public static Pathfinding.GraphNode CellAt(Vector3 worldPos)
+        {
+            var astar = AstarPath.active;
+            if (astar == null) return null;
+            var grid = astar.data?.gridGraph;
+            if (grid != null) return ((Pathfinding.NavGraph)grid).GetNearest(worldPos).node;
+            return astar.GetNearest(worldPos, new NNConstraint
+            {
+                constrainWalkability = false, constrainArea = false, constrainTags = false,
+                constrainDistance = false, constrainAllyBlocked = false
+            }).node;
+        }
+
         public bool IsWalkable(Vector3 worldPos)
         {
             if (!_isValid)
@@ -132,9 +151,10 @@ namespace CompanionAI_Pathfinder.Analysis
                     return cached;
                 }
 
-                // AstarPath를 통해 가장 가까운 walkable 노드 찾기
-                var nnInfo = AstarPath.active.GetNearest(worldPos, NNConstraint.Default);
-                bool walkable = nnInfo.node != null && nnInfo.node.Walkable;
+                // ★ v0.3.16: the grid cell at this point. NNConstraint.Default only returns walkable nodes (it replaces an
+                // unwalkable nearest node by the nearest walkable one), so this check passed everywhere.
+                var cell = CellAt(worldPos);
+                bool walkable = cell != null && cell.Walkable;
 
                 // 캐시 업데이트 (크기 제한)
                 if (_walkabilityCache.Count > MAX_CACHE_SIZE)

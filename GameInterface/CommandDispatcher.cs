@@ -296,7 +296,9 @@ namespace CompanionAI_Pathfinder.GameInterface
             {
                 while (points.Count > 1)
                 {
-                    var node = AstarPath.active?.GetNearest(points[points.Count - 1], NNConstraint.Default).node;
+                    // ★ v0.3.16: the cell itself. With NNConstraint.Default the lookup skips ally-blocked nodes (Suitable:
+                    // constrainAllyBlocked), so the end was never found blocked and this trim never happened.
+                    var node = Analysis.BattlefieldGrid.CellAt(points[points.Count - 1]);
                     if (node == null || node.AllyBlocked <= 0) break;
                     points.RemoveAt(points.Count - 1);
                 }
