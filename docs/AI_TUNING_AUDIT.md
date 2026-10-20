@@ -771,3 +771,17 @@ These findings come from the log and a code/game check. They change the phase 1 
 2. L3a + L3b: Hit Dice conditions with shared values; per-target "reached nothing" safety net.
 3. B4a summon heal factor, B3 caster step-out, B7 slot multiplier scope, B11/B12 gates, C1 immunity cache, C4
    ValueModel, D1 dead code, P4, P2-lite (as planned).
+
+## 12. Addendum: the 0.3.17-test2 log (2b8e3d39), the phase 0 numbers
+
+The log covers 9 turn-based fights.
+
+| Measure | Result | Decision |
+|---|---|---|
+| `[Perf]` | Median decision 2.2–4.5 ms; 95th percentile 9–38 ms; two single decisions of 0.84 s and 0.94 s. The first was in the first fight, consistent with profiles being built. | **No performance work** (P2 dropped: the hot-path savings are not needed at these numbers). test3 logs every decision over 250 ms with its cause. |
+| `[Calib]` party damage per round | Observed **3–34, typically 12–26**; the estimate assumes **40** (4 × party levels). Fight lengths 3–23 rounds against expected 2.7–4.4 at the start. | **B2 confirmed with measured data.** The prior is about 2–3× too high. Phase 2: party damage per round from the fight so far, blended with a lower prior; the prior's constant is set from these numbers. |
+| `[Calib]` enemy damage to the party | Observed **0–5 per round**; the enemies' `Threat` at the start is **16–68**. | **N5 now strongly evidenced:** `Threat`, used as damage per round in drop chances, heal danger, withdraw and exposure, is far above what these enemies dealt to this party. Phase 2: observed enemy damage per round blended with the CR prior (self-calibrating per fight, so a party that takes more damage keeps its caution). `RandomReinforcementsPerEncounter` is installed and adds enemies mid-fight; the blending must not over-trust early rounds. |
+| `[Save]` | 205 saves against party abilities: **67 passed, 77.7 expected** from the game's own chances (about 1.6 standard deviations, within luck). | **No save learning step** (L3c). Estimates with the observed save bonus match. |
+| Sleep | 26 saves rolled against Sleep. No "did nothing to its target" for it. | The Hit Dice problem did not occur in these fights; test3 evaluates the limit anyway (L3a). |
+| `[Cast] did nothing to its target` | 2, both Charge, a false alarm: the game makes the charge attack after the ability ends. | Excluded in test3. |
+| Grease / Entangle idle turns | Still present (Seelah, Aeiluvetar). | Fixed in test3 (B1). |

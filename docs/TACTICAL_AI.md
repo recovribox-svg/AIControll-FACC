@@ -410,3 +410,83 @@ No decision changes; every item below only logs, or skips building a log line no
   attack follows this turn.
 - **Noise**: each `BLACKLISTED` reason once per fight (it was logged on every decision); verbose messages on hot paths
   (spell resistance, damage reduction, resistance analysis, area danger) are no longer built when verbose logging is off.
+
+## 25. v0.3.17 (test3): phase 1 of the tuning and active-ability plans
+
+These come from `docs/AI_TUNING_AUDIT.md` (§8, §11–12) and `docs/ACTIVE_ABILITY_PLAN.md` (AA-0). Turn-based and real
+time share all of them, except where marked.
+
+### Approaching around harmful areas
+
+- **Choosing the spot (`PlanApproach`).** It applies to Move+Attack, move-then-cast and Advance.
+  - When the straight approach to a target enters a harmful area, the engine samples two rings around the target
+    within reach: 85 % and 60 % of the reach, 16 directions each.
+  - It keeps the spots that are walkable, unoccupied, within move range and reached without entering an area, and
+    takes the cheapest by `MoveRisk`.
+  - Advance also tries spots just outside reach (reach + 1.5 m / + 3 m). The unit then waits at the edge for enemies
+    coming out.
+  - With no such spot, the straight approach keeps its honest price. The label says `(around Grease)`.
+- **Walking there first.** The unit walks to that exact spot (`Candidate.MoveFirst`, arrival within the reach left)
+  and acts on its next decision, the same way the turn-based touch approach works. Valuation and execution use the same
+  destination. Seelah stood idle for 11 turns while her enemies lay in Grease (log 06aebf2d).
+- **Checking the real path (turn-based).** A move priced as entering no area (`Candidate.CheckPath`) is refused by the
+  dispatcher when the game's computed path enters one, up to the point where the unit arrives
+  (`CommandDispatcher.PathEntersArea`). Camellia walked into Grease along a bending path to touch a summon. In real time
+  the game paths by itself, so there is no check.
+
+### Conditions and the safety net
+
+- **Hit Dice with a shared value (Sleep).** `ContextConditionHitDice` with `AddSharedValue` is evaluated with the
+  shared value's range from the ability's own `ContextCalculateSharedValue`: dice count and bonus from the context, no
+  rolling. If the lowest and highest give the same answer, that is the answer; otherwise the average decides. It was
+  counted for every target before.
+- **Per-target "reached nothing".** An ability aimed at an enemy is watched. If no rule touched that enemy (attack
+  roll, save, spell resistance, damage, buff), that counts against that enemy; twice, and the ability is not aimed at
+  it again this fight. Exceptions:
+  - lasting areas, summons and Charge, which make their attack after the ability ends;
+  - abilities with their own logic;
+  - abilities with no effect on their target.
+- **Diagnostics fix.** Charge no longer shows as "did nothing to its target" (that was a false alarm in test2).
+
+### Values
+
+- **Heal.** A summon's restoring part is halved, like its worth. At full HP, Camellia healed a Dretch instead of using
+  Daze.
+- **Spell-slot discount in easy fights.** It applies to the damage and control parts only, as the Spell Use setting
+  says.
+- **Caster stepping out of melee.**
+  - The step keeps the spell's target in range.
+  - It is worth the casting risk it avoids (now the whole loss in `CastRiskCost`) minus what the cast still risks at
+    the new spot.
+  - A caster with good Concentration casts defensively where it stands.
+
+### Correctness
+
+- **Immunity caches** (`CombatRulesAnalyzer`) last one frame. They used to be kept for the whole game session, which
+  hid immunities gained later and kept ones that had ended.
+- **Mod switched off in the mod manager:** trap avoidance of the player's moves, PreBuff ticking and the pet item rule
+  stop.
+- **Units the AI does not control** (main character, companions, per-character AI switch):
+  - they are left out of the buffs after combat, of PreBuff's casters and of the leave-combat interrupt;
+  - PreBuff goes through `CommandDispatcher` and the item settings.
+- **Old real-time engine only:** its unit lists and team blackboard are updated only when it is selected, not every
+  frame.
+
+### Diagnostics
+
+- `[Perf] slow decision` for any decision over 250 ms, with the number of ability profiles built in it.
+- `[Coverage]`, once per character per session (and again when its abilities change):
+  - the action-bar abilities by what the engine makes of them: understood (with kinds), not available, blacklisted,
+    held back by item settings, or effect not understood (with component types);
+  - every toggle with the game's facts: on or started, activation type and action (the game's `GetCommandType`),
+    group, combat-end and default flags, resource and buff components.
+
+### Removed
+
+About 3.5k lines of the v0.2 planner, which had no callers: TurnPlanner and role plans, SequenceOptimizer,
+ActionExecutor, TurnOrchestrator, and RealTimeController's role-based logic.
+
+### Not done, and why
+
+- **No performance work.** test2 measured a median decision of 2–4.5 ms and a 95th percentile of 9–38 ms.
+- **`ValueModel` consolidation (C4)** moves to phase 2, where it is the base for the calibration changes.
