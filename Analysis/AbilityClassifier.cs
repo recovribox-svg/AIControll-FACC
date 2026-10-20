@@ -2145,6 +2145,20 @@ namespace CompanionAI_Pathfinder.Analysis
 
         #region ★ v0.2.100: Combat Blacklist (Shared)
 
+        /// <summary>★ v0.3.17: blacklist reasons already logged this fight (they were logged on every decision).</summary>
+        private static readonly HashSet<string> _blacklistReported = new HashSet<string>();
+
+        /// <summary>★ v0.3.17: called when the party's fight starts, so each reason is logged once per fight.</summary>
+        public static void ResetCombatReports() => _blacklistReported.Clear();
+
+        private static void ReportBlacklisted(bool important, string message)
+        {
+            if (!important && !Main.VerboseOn) return;
+            if (!_blacklistReported.Add(message)) return;
+            if (important) Main.Log(message);
+            else Main.Verbose(message);
+        }
+
         /// <summary>
         /// ★ v0.2.101: 전투에서 사용하면 안 되는 능력인지 확인 (공유 메서드)
         /// SituationAnalyzer와 UnifiedDecisionEngine 모두에서 사용
@@ -2165,7 +2179,7 @@ namespace CompanionAI_Pathfinder.Analysis
                 // 게임 API: IsSuitableForAutoUse도 HasVariants를 체크함
                 if (bp.HasVariants)
                 {
-                    Main.Verbose($"[AbilityClassifier] BLACKLISTED: {ability.Name} (Parent ability with variants - not directly castable)");
+                    ReportBlacklisted(false, $"[AbilityClassifier] BLACKLISTED: {ability.Name} (Parent ability with variants - not directly castable)");
                     return true;
                 }
 
@@ -2177,7 +2191,7 @@ namespace CompanionAI_Pathfinder.Analysis
                     {
                         if (action is Demoralize)
                         {
-                            Main.Verbose($"[AbilityClassifier] BLACKLISTED: {ability.Name} (Demoralize action)");
+                            ReportBlacklisted(false, $"[AbilityClassifier] BLACKLISTED: {ability.Name} (Demoralize action)");
                             return true;
                         }
                     }
@@ -2203,14 +2217,14 @@ namespace CompanionAI_Pathfinder.Analysis
                     // ★ v0.2.107: Fatigue 디버프만 적용하는 터치 스펠 = 무쓸모 (SpellLevel 무관)
                     if (appliesFatigueDebuff && !hasDamage)
                     {
-                        Main.Log($"[AbilityClassifier] BLACKLISTED: {ability.Name} (Fatigue-only touch spell, SpellLevel={ability.SpellLevel})");
+                        ReportBlacklisted(true, $"[AbilityClassifier] BLACKLISTED: {ability.Name} (Fatigue-only touch spell, SpellLevel={ability.SpellLevel})");
                         return true;
                     }
 
                     // SpellDescriptor.Fatigue가 있는 터치 스펠 = 무쓸모
                     if ((descriptor & SpellDescriptor.Fatigue) != 0 && !hasDamage)
                     {
-                        Main.Log($"[AbilityClassifier] BLACKLISTED: {ability.Name} (Fatigue descriptor touch spell)");
+                        ReportBlacklisted(true, $"[AbilityClassifier] BLACKLISTED: {ability.Name} (Fatigue descriptor touch spell)");
                         return true;
                     }
                 }
@@ -2229,7 +2243,7 @@ namespace CompanionAI_Pathfinder.Analysis
                         }
                         if (!hasDamage)
                         {
-                            Main.Log($"[AbilityClassifier] BLACKLISTED: {ability.Name} (Enemy-targeting touch cantrip with no damage)");
+                            ReportBlacklisted(true, $"[AbilityClassifier] BLACKLISTED: {ability.Name} (Enemy-targeting touch cantrip with no damage)");
                             return true;
                         }
                     }
@@ -2237,7 +2251,7 @@ namespace CompanionAI_Pathfinder.Analysis
                     // Daze: HD 제한이 너무 낮아서 전투에서 거의 쓸모없음
                     if ((descriptor & SpellDescriptor.Daze) != 0)
                     {
-                        Main.Verbose($"[AbilityClassifier] BLACKLISTED: {ability.Name} (Daze cantrip - low HD limit)");
+                        ReportBlacklisted(false, $"[AbilityClassifier] BLACKLISTED: {ability.Name} (Daze cantrip - low HD limit)");
                         return true;
                     }
                 }

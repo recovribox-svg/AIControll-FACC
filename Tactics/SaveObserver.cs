@@ -79,6 +79,13 @@ namespace CompanionAI_Pathfinder.Tactics
                 if (ability == null) return;
                 StatType statType = RuleSavingThrow.GetStatFromSavingThrow(evt.Type);
                 int plain = target.Stats.GetStat(statType)?.ModifiedValue ?? evt.StatValue;
+                // ★ v0.3.17: every save against the party's abilities, with the chance it had: tells bad luck from a wrong
+                // estimate (Orvath cast Sleep on a Corrupted Mongrel Brute five times; the log could not say why it failed).
+                int needed = evt.RollValueToPass;
+                float passChance = evt.AutoPass ? 1f : Math.Max(0.05f, Math.Min(0.95f, (21 - needed) / 20f));
+                Main.Log($"[Save] {target.CharacterName} vs {caster.CharacterName}'s {ability.Name}: {evt.Type} " +
+                         (evt.AutoPass ? "passes automatically" : $"{(int)evt.D20}+{evt.StatValue}{(evt.SuccessBonus != 0 ? $"+{evt.SuccessBonus}" : "")} vs DC {evt.DifficultyClass}") +
+                         $" - {(evt.IsPassed ? "passed" : "failed")} (passes on {needed}+, {passChance:P0})");
                 var seen = new Seen { Delta = evt.StatValue - plain, AutoPass = evt.AutoPass };
                 ByUnit[Key(target.UniqueId, evt.Type, ability)] = seen;
                 string kind = target.Blueprint?.AssetGuid.ToString();

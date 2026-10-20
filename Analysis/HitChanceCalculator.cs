@@ -483,7 +483,7 @@ namespace CompanionAI_Pathfinder.Analysis
                 {
                     result.IsImmune = true;
                     result.PenetrationChance = 0f;
-                    Main.Verbose($"[HitChance] SR: {target.CharacterName} is IMMUNE to {ability.Name}");
+                    if (Main.VerboseOn) Main.Verbose($"[HitChance] SR: {target.CharacterName} is IMMUNE to {ability.Name}");
                     return result;
                 }
 
@@ -509,7 +509,7 @@ namespace CompanionAI_Pathfinder.Analysis
                 int need = result.TargetSR - penetration;
                 result.PenetrationChance = Mathf.Clamp01((21f - need) / 20f);
 
-                Main.Verbose($"[HitChance] SR: {ability.Name} {caster.CharacterName} vs {target.CharacterName} - SR{result.TargetSR} vs CL{casterLevel}+{bonus}, Penetrate={result.PenetrationChance:P0}");
+                if (Main.VerboseOn) Main.Verbose($"[HitChance] SR: {ability.Name} {caster.CharacterName} vs {target.CharacterName} - SR{result.TargetSR} vs CL{casterLevel}+{bonus}, Penetrate={result.PenetrationChance:P0}");
             }
             catch (Exception ex)
             {
@@ -738,7 +738,7 @@ namespace CompanionAI_Pathfinder.Analysis
 
             int bonus = stackable + typed.Values.Sum() + mythic + allied;
             if (bonus > 0)
-                Main.Verbose($"[HitChance] SpellPen: {caster.CharacterName} has +{bonus} spell penetration");
+                if (Main.VerboseOn) Main.Verbose($"[HitChance] SpellPen: {caster.CharacterName} has +{bonus} spell penetration");
             return bonus;
         }
 
@@ -850,7 +850,7 @@ namespace CompanionAI_Pathfinder.Analysis
 
                 if (highestDR > 0)
                 {
-                    Main.Verbose($"[HitChance] DR: {target.CharacterName} has {result}");
+                    if (Main.VerboseOn) Main.Verbose($"[HitChance] DR: {target.CharacterName} has {result}");
                 }
             }
             catch (Exception ex)

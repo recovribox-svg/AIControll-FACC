@@ -366,6 +366,9 @@ namespace CompanionAI_Pathfinder.GameInterface
             CombatPhaseDetector.ResetCombatTracking();
             // ★ v0.3.15: a touch charge carried into the fight (from a loaded save or the last fight) - diagnostics.
             Tactics.CastOutcome.ReportHeldCharges();
+            // ★ v0.3.17: diagnostics are per fight
+            Tactics.FightStats.Clear();
+            CompanionAI_Pathfinder.Analysis.AbilityClassifier.ResetCombatReports();
         }
 
         /// <summary>
@@ -376,6 +379,8 @@ namespace CompanionAI_Pathfinder.GameInterface
         public static void OnPartyCombatEnd()
         {
             Main.Log("★★★ Party combat ended ★★★");
+            // ★ v0.3.17: [Perf] / [Calib] numbers of the fight that just ended
+            Tactics.FightStats.Report();
             // ★ v0.2.113: TurnBasedController 상태 초기화
             TurnBasedController.Instance.ResetAll();
 

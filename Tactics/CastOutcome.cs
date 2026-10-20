@@ -52,6 +52,12 @@ namespace CompanionAI_Pathfinder.Tactics
             public double IssuedAt;
             public bool Evidence;
             public bool ChargeStageDone;
+            /// <summary>★ v0.3.17: judged as a silent failure (damage, heal, harmful buff); others are only watched.</summary>
+            public bool Verifiable;
+            /// <summary>★ v0.3.17: an enemy the ability was aimed at; whether any rule touched it is logged (diagnostics).</summary>
+            public bool WatchTarget;
+            public bool TargetReached;
+            public HashSet<string> Reached;
         }
 
         /// <summary>Game seconds after the command ended without the execution ending: the game dropped the cast.</summary>
@@ -105,10 +111,14 @@ namespace CompanionAI_Pathfinder.Tactics
         /// Follow an ability the engine just issued. <paramref name="verifiable"/>: its profile names an effect the game
         /// would report (damage, heal, buff, control); others are not judged.
         /// </summary>
-        public static void Begin(UnitEntityData caster, AbilityData ability, UnitEntityData target, UnitCommand command, bool verifiable)
+        public static void Begin(UnitEntityData caster, AbilityData ability, UnitEntityData target, UnitCommand command, bool verifiable,
+                                 bool watchTarget = false)
         {
             if (caster == null || ability?.Blueprint == null) return;
-            if (!verifiable)
+            // ★ v0.3.17: an ability aimed at an enemy is also watched when its effect is not judged (a Sleep burst), only
+            // to log whether the game did anything to that enemy.
+            watchTarget = watchTarget && target != null && target != caster && caster.IsEnemy(target);
+            if (!verifiable && !watchTarget)
             {
                 ByCaster.Remove(caster.UniqueId);
                 return;
@@ -122,7 +132,9 @@ namespace CompanionAI_Pathfinder.Tactics
                 Blueprint = ability.Blueprint,
                 TouchDelivery = TouchDeliveryOf(ability.Blueprint),
                 Command = command,
-                IssuedAt = Now
+                IssuedAt = Now,
+                Verifiable = verifiable,
+                WatchTarget = watchTarget
             };
         }
 
@@ -292,7 +304,12 @@ namespace CompanionAI_Pathfinder.Tactics
         private static void Finish(Pending p, bool success, string why)
         {
             ByCaster.Remove(p.Caster.UniqueId);
-            if (success) return;
+            if (p.WatchTarget && !p.TargetReached)
+                Main.Log($"[Cast] {p.Caster.CharacterName}: {p.Name} did nothing to its target {p.Target?.CharacterName} - " +
+                         "no attack roll, save, spell resistance, damage or effect on it" +
+                         (p.Reached != null && p.Reached.Count > 0 ? $" (it reached {string.Join(", ", p.Reached)})" : ""));
+            // Only effects the mod can verify count as silent failures; the rest was watched for the log alone.
+            if (success || !p.Verifiable) return;
             // A held charge's failure counts for the touch spell as a whole: the next scroll or potion of it fails alike.
             string key = p.TouchDelivery != null ? FailureKey(p.Caster, p.TouchDelivery, p.Target) : p.Key;
             Failures.TryGetValue(key, out int n);
@@ -317,6 +334,15 @@ namespace CompanionAI_Pathfinder.Tactics
         {
             var p = For(caster);
             if (p != null) p.Evidence = true;
+        }
+
+        /// <summary>★ v0.3.17: a rule of <paramref name="caster"/>'s ability touched <paramref name="unit"/> (target diagnostics).</summary>
+        private static void MarkReached(UnitEntityData caster, UnitEntityData unit)
+        {
+            var p = For(caster);
+            if (p == null || !p.WatchTarget || unit == null) return;
+            if (unit == p.Target) p.TargetReached = true;
+            else if (unit != caster) (p.Reached ?? (p.Reached = new HashSet<string>())).Add(unit.CharacterName);
         }
 
         public void HandleExecutionProcessStart(AbilityExecutionContext context)
@@ -347,7 +373,12 @@ namespace CompanionAI_Pathfinder.Tactics
 
         public void HandleBuffDidAdded(Buff buff)
         {
-            try { Mark(buff?.Context?.MaybeCaster); } catch { }
+            try
+            {
+                Mark(buff?.Context?.MaybeCaster);
+                MarkReached(buff?.Context?.MaybeCaster, buff?.Owner?.Unit);
+            }
+            catch { }
         }
 
         public void HandleBuffDidRemoved(Buff buff)
@@ -366,7 +397,14 @@ namespace CompanionAI_Pathfinder.Tactics
                 // Refused by a rule (spell failure, UMD, counterspell): the combat log says so; not a silent failure.
                 if (evt.IsSpellFailed || evt.IsArcaneSpellFailed || evt.IsUMDFailed || evt.ForceFail)
                 {
+                    // ★ v0.3.17: a failed Use Magic Device check is in the combat log only as a skill roll; the wand or
+                    // scroll seemed to do nothing (Orvath's wand of Cure Light Wounds). The game keeps the charge then.
+                    if (evt.IsUMDFailed && evt.UseMagicDeviceCheck != null)
+                        Main.Log($"[Cast] {evt.Initiator?.CharacterName}: Use Magic Device failed for {evt.Spell?.Name} - " +
+                                 $"rolled {evt.UseMagicDeviceCheck.RollResult} vs DC {evt.UseMagicDeviceCheck.DC} (the item keeps its charge)");
                     Mark(evt.Initiator);
+                    var refused = For(evt.Initiator);
+                    if (refused != null) refused.WatchTarget = false;   // nothing reached the target, and the log said why
                     return;
                 }
                 // Refused without a word: RuleCastSpell returns before casting when the spell "cannot target" its target
@@ -396,7 +434,11 @@ namespace CompanionAI_Pathfinder.Tactics
 
         public void OnEventDidTrigger(RuleAttackRoll evt)
         {
-            if (evt != null && !evt.IsFake) Mark(evt.Initiator);
+            if (evt != null && !evt.IsFake)
+            {
+                Mark(evt.Initiator);
+                MarkReached(evt.Initiator, evt.Target);
+            }
         }
 
         public void OnEventAboutToTrigger(RuleDealDamage evt)
@@ -405,7 +447,11 @@ namespace CompanionAI_Pathfinder.Tactics
 
         public void OnEventDidTrigger(RuleDealDamage evt)
         {
-            if (evt != null && !evt.IsFake) Mark(evt.Initiator);
+            if (evt != null && !evt.IsFake)
+            {
+                Mark(evt.Initiator);
+                MarkReached(evt.Initiator, evt.Target);
+            }
         }
 
         public void OnEventAboutToTrigger(RuleHealDamage evt)
@@ -414,7 +460,11 @@ namespace CompanionAI_Pathfinder.Tactics
 
         public void OnEventDidTrigger(RuleHealDamage evt)
         {
-            if (evt != null) Mark(evt.Initiator);
+            if (evt != null)
+            {
+                Mark(evt.Initiator);
+                MarkReached(evt.Initiator, evt.Target);
+            }
         }
 
         public void OnEventAboutToTrigger(RuleSavingThrow evt)
@@ -423,7 +473,11 @@ namespace CompanionAI_Pathfinder.Tactics
 
         public void OnEventDidTrigger(RuleSavingThrow evt)
         {
-            if (evt != null) Mark(evt.Reason?.Caster);
+            if (evt != null)
+            {
+                Mark(evt.Reason?.Caster);
+                MarkReached(evt.Reason?.Caster, evt.Initiator);
+            }
         }
 
         public void OnEventAboutToTrigger(RuleSpellResistanceCheck evt)
@@ -432,7 +486,11 @@ namespace CompanionAI_Pathfinder.Tactics
 
         public void OnEventDidTrigger(RuleSpellResistanceCheck evt)
         {
-            if (evt != null) Mark(evt.Initiator);
+            if (evt != null)
+            {
+                Mark(evt.Initiator);
+                MarkReached(evt.Initiator, evt.Target);
+            }
         }
     }
 }

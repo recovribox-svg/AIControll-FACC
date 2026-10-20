@@ -96,7 +96,8 @@ namespace CompanionAI_Pathfinder.Analysis
                 if (result.ShouldEscape)
                     result.SuggestedEscapePosition = FindExit(unit, inside, ESCAPE_MAX_DISTANCE, null, out _);
 
-                if (result.IsInDanger)
+                // ★ v0.3.17: the line is only built when it can be logged (real time asks every half second).
+                if (result.IsInDanger && (result.ShouldEscape || Main.VerboseOn))
                 {
                     // ★ v0.3.14: normal level only when it changes (848 identical lines for Seelah in one session).
                     string line = $"[AoeDanger] {unit.CharacterName}: Danger={result.TotalDangerLevel:F2}, " +

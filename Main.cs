@@ -77,6 +77,8 @@ namespace CompanionAI_Pathfinder
                 // ★ v0.3.15: whether the game did anything with each ability the AI used; real save bonuses seen
                 Tactics.CastOutcome.Subscribe();
                 Tactics.SaveObserver.Subscribe();
+                // ★ v0.3.17: per-fight timing and calibration numbers ([Perf], [Calib])
+                Tactics.FightStats.Subscribe();
 
                 // ★ v0.2.38: Pre-Buff Controller 초기화
                 PreBuffController.Initialize();
@@ -275,6 +277,7 @@ namespace CompanionAI_Pathfinder
                 Tactics.DamageObserver.Subscribe();
                 Tactics.CastOutcome.Subscribe();
                 Tactics.SaveObserver.Subscribe();
+                Tactics.FightStats.Subscribe();
             }
             else
             {
@@ -284,6 +287,7 @@ namespace CompanionAI_Pathfinder
                 Tactics.DamageObserver.Unsubscribe();
                 Tactics.CastOutcome.Unsubscribe();
                 Tactics.SaveObserver.Unsubscribe();
+                Tactics.FightStats.Unsubscribe();
                 MountPathHandler.Unsubscribe();
             }
 
@@ -325,9 +329,15 @@ namespace CompanionAI_Pathfinder
         /// <summary>
         /// 상세 로깅 (EnableDebugLogging이 true일 때만)
         /// </summary>
+        /// <summary>
+        /// ★ v0.3.17: verbose logging is on. Hot paths check this before building their message: the string was built
+        /// (and thrown away) on every evaluation even with debug logging off.
+        /// </summary>
+        public static bool VerboseOn => Settings?.EnableDebugLogging ?? true;
+
         public static void Verbose(string message)
         {
-            if (Settings?.EnableDebugLogging ?? true)
+            if (VerboseOn)
             {
                 ModEntry?.Logger?.Log($"[V] {message}");
             }

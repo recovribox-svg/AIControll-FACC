@@ -389,3 +389,24 @@ reach it from that level, and test2's "count it as in reach" would have spent th
   harmful area (the condition outlasts it), no movement left, no way out within reach, or the walk out costs more than
   staying (attacks of opportunity, chance to be stopped). Seelah stayed nauseated next to the Corrupted Mongrels for
   three turns (log 0d742ea2) and the log could not say which. Logging only, no behaviour change.
+
+### 0.3.17-test2: phase 0 of the tuning plan (docs/AI_TUNING_AUDIT.md) - diagnostics only
+
+No decision changes; every item below only logs, or skips building a log line nobody reads.
+
+- **`[Perf]`** at the end of each fight, per combat mode: number of engine decisions, median, 95th percentile and
+  slowest time (with the unit and its choice), total (`Tactics/FightStats`).
+- **`[Calib]`** at the end of each fight: how many rounds it lasted against the expected rounds at its start, the
+  party's real damage per round against the `4 × levels` the estimate assumes, and the damage the enemies dealt per
+  round against their `Threat` at the start (findings B2 and N5).
+- **`[Save]`** for every saving throw against a party member's ability: roll, bonus, DC, result and the chance it had
+  (passes on N+). Tells bad luck from a wrong estimate (Orvath's repeated Sleep casts, log 06aebf2d).
+- **`[Cast] ... did nothing to its target`**: an ability aimed at an enemy (not a lasting area or a summon) after which
+  no rule touched that enemy (attack roll, save, spell resistance, damage, buff), with the units it did reach.
+- **`[Cast] ... Use Magic Device failed`**: the roll and DC of a failed item check. The game keeps the item's charge and
+  the combat log shows only a skill roll, so the wand seemed to do nothing (Orvath's wand of Cure Light Wounds).
+- **Decision line**: the chosen option's value, and its rank when it is not among the five listed.
+- **"Nothing worth doing"** names marks that help only the unit's own attacks (Smite Evil) as held back because no
+  attack follows this turn.
+- **Noise**: each `BLACKLISTED` reason once per fight (it was logged on every decision); verbose messages on hot paths
+  (spell resistance, damage reduction, resistance analysis, area danger) are no longer built when verbose logging is off.

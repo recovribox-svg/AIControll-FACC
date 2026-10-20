@@ -108,7 +108,14 @@ namespace CompanionAI_Pathfinder.Tactics
 
         #region Decide
 
-        public static Candidate Decide(UnitEntityData unit, TurnMemory memory) => Decide(unit, memory, preview: false, out _);
+        public static Candidate Decide(UnitEntityData unit, TurnMemory memory)
+        {
+            // ★ v0.3.17: how long a decision takes ([Perf] at the end of the fight) - nothing was measured before.
+            var watch = System.Diagnostics.Stopwatch.StartNew();
+            var chosen = Decide(unit, memory, preview: false, out _);
+            FightStats.RecordDecision(unit, watch.Elapsed.TotalMilliseconds, chosen?.Label);
+            return chosen;
+        }
 
         /// <summary>
         /// <paramref name="preview"/>: what the unit would do, without logging the decision (TacticalEngine.ShouldStandUp
@@ -125,6 +132,7 @@ namespace CompanionAI_Pathfinder.Tactics
                 ctx.MoveRange = 0f;
             }
             if (ctx != null) ctx.Unreachable = memory.Unreachable;
+            if (ctx != null && !preview) FightStats.NoteContext(ctx);
             if (ctx == null || ctx.Enemies.Count == 0)
             {
                 if (preview) return null;
@@ -154,6 +162,7 @@ namespace CompanionAI_Pathfinder.Tactics
                 catch (Exception ex) { Main.Error($"[Progressive] {unit.CharacterName}: {ex.Message} - policy skipped"); }
             }
 
+            var beforeMarks = usable;
             try { usable = CoupleOwnAttackMarks(ctx, usable, memory); }
             catch (Exception ex) { Main.Error($"[Tactics] {unit.CharacterName} marks: {ex.Message}"); }
 
@@ -178,7 +187,10 @@ namespace CompanionAI_Pathfinder.Tactics
                                string.Join(" | ", candidates.OrderByDescending(c => c.Value).Take(4).Select(c =>
                                    $"{c.Label}={c.Value:F1}" + (!Affordable(ctx, c) ? " (not affordable)" :
                                                                memory.Failed.Contains(c.Key) ? " (failed this turn)" :
-                                                               SilentlyFailing(ctx, c) ? " (did nothing before)" : "")))
+                                                               SilentlyFailing(ctx, c) ? " (did nothing before)" :
+                                                               // ★ v0.3.17: Smite Evil listed as the best option of
+                                                               // eleven idle turns - kept only with an attack after it.
+                                                               beforeMarks.Contains(c) ? " (helps own attacks only: no attack this turn)" : "")))
                              : "") +
                          (ctx.LeaveNote != null ? $"; {ctx.LeaveNote}" : ""));
             // ★ v0.3.14 (test5): a turn-based unit with its actions unused and not a single option: say why.
@@ -314,7 +326,12 @@ namespace CompanionAI_Pathfinder.Tactics
             sb.Append($"[{(ctx.HasStandard ? "S" : "-")}{(ctx.HasMove ? "M" : "-")}{(ctx.HasSwift ? "W" : "-")}{(ctx.CanFullAttack ? "F" : "-")}{(ctx.CanFiveFoot ? "5" : "-")}]{(ctx.SurpriseRound ? " surprise" : "")}{(ctx.NoMovementLeft ? " no-move" : ctx.StepTaken ? " stepped" : "")} ");
             sb.Append($"enemies={ctx.Enemies.Count} rounds~{ctx.ExpectedRounds:F1} diff={ctx.Difficulty:F2} :: ");
             sb.Append(string.Join(" | ", usable.Take(5).Select(c => c.ToString())));
-            sb.Append(chosen != null ? $" => {chosen.Label}" : realTime ? " => wait" : " => END TURN");
+            // ★ v0.3.17: the chosen option's value, and its rank when it is not among the five listed (a quick action
+            // ranked lower is taken first: 218 such choices looked like unlisted ones in the audit).
+            int rank = chosen != null ? usable.IndexOf(chosen) + 1 : 0;
+            sb.Append(chosen != null
+                ? $" => {chosen.Label} ={chosen.Value:F1}{(rank > 5 ? $" (#{rank})" : "")}"
+                : realTime ? " => wait" : " => END TURN");
             // Real time decides again every half second while waiting for a cooldown: those waits only in verbose logs.
             if (realTime && chosen == null) Main.Verbose(sb.ToString());
             else Main.Log(sb.ToString());
@@ -2142,7 +2159,10 @@ namespace CompanionAI_Pathfinder.Tactics
                 CombatMemory.RecordCast(unit, c.Ability, c.Target);
                 var profile = AbilityProfile.Get(c.Ability);
                 profile?.DescribeOnce();
-                CastOutcome.Begin(unit, c.Ability, c.Target, command, IsVerifiable(profile));
+                // ★ v0.3.17: also watched (log only): did it do anything to the enemy it was aimed at? Not for lasting
+                // areas, whose saves come later, nor summons.
+                CastOutcome.Begin(unit, c.Ability, c.Target, command, IsVerifiable(profile),
+                                  watchTarget: profile != null && !profile.SpawnedAreas.Any() && !profile.Summons);
             }
             else if (issued)
             {

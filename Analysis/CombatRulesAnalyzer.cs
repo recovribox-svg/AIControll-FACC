@@ -759,7 +759,7 @@ namespace CompanionAI_Pathfinder.Analysis
                 // 4. 최종 추천 및 페널티 계산
                 CalculateResistanceRecommendation(result);
 
-                if (result.PenaltyScore < 0 || result.HasSpellResistance)
+                if (Main.VerboseOn && (result.PenaltyScore < 0 || result.HasSpellResistance))
                 {
                     Main.Verbose($"[CombatRulesAnalyzer] {ability.Name} vs {target.CharacterName}: " +
                         $"SR={result.SpellResistance}, Immune={result.IsSpellImmune}, " +
