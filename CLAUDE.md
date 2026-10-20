@@ -63,12 +63,19 @@ Real-time:   AiBrainController.TickBrain (prefix) → RealTimeController (waits:
 Design and value formulas: `docs/TACTICAL_AI.md`. Root-cause evidence: `docs/INVESTIGATION.md`.
 
 ### Key Folders
-- **Core/**: Turn orchestration - `TurnOrchestrator`, `TurnState`, `TurnPlan`, `PlannedAction`, `ExecutionResult`
-- **Abstraction/**: Game API isolation - `IGameUnit`, `IAbilityData`, `ICombatState` with Pathfinder adapters
-- **Analysis/**: Combat analysis - `SituationAnalyzer`, `AbilityClassifier`, `TargetScorer`, `Situation`
-- **Planning/**: Role-based strategies - `TurnPlanner`, `BasePlan` (abstract), `DPSPlan`, `TankPlan`, `SupportPlan`
-- **Execution/**: Action execution - `ActionExecutor`
-- **GameInterface/**: Harmony patches - `CustomBrainPatch`, `RealTimeController`
+- **Tactics/**: the live decision engine (both modes) - `TacticalEngine`, `AbilityProfile`, `AbilityDiscovery`,
+  `CombatMath`, `RiskMath`, `CombatMemory`, `TacticalDriver` (RT), observers (`CastOutcome`, `DamageObserver`,
+  `SaveObserver`), diagnostics (`FightStats`, `CoverageReport`), `ConsumablePolicy`, `SpellTierPolicy` / `ProgressiveGate`
+- **Core/TurnBased/**: `TurnBasedController` (TB driver); **Core/**: `ExecutionResult`; legacy-engine state
+  (`TurnState`, `TurnPlan`, `PlannedAction`, `TeamBlackboard`, `CombatDataCache`, `FailedAbilityTracker`)
+- **Analysis/**: shared analyzers used by the engine (`AbilityClassifier` blacklist, `BuffEffectAnalyzer`,
+  `BuffStackingAnalyzer`, `AoeDangerAnalyzer`, `CombatRulesAnalyzer`, `HitChanceCalculator`, `BattlefieldGrid`) and the
+  legacy engine's (`SituationAnalyzer`, `TargetScorer`, `Situation`)
+- **Core/DecisionEngine/, Scoring/, Planning/MovementPlanner**: the old real-time engine (setting "Real time: use the old
+  decision engine"), kept until 0.4.0. The v0.2 planner (TurnPlanner, role plans, TurnOrchestrator, ActionExecutor) was
+  removed in 0.3.17.
+- **Abstraction/**: `PathfinderCombatStateAdapter` (mode display in the UI)
+- **GameInterface/**: Harmony patches and command issuing - `CustomBrainPatch`, `RealTimeController`, `CommandDispatcher`
 - **Settings/**: Per-character configuration with bilingual support (EN/KR)
 - **UI/**: Unity Mod Manager GUI
 

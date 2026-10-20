@@ -336,13 +336,8 @@ namespace CompanionAI_Pathfinder.Core.DecisionEngine
                         continue;
                     }
 
-                    // ★ v0.2.99: 이번 턴에 실패한 능력 제외 (무한 재시도 방지)
-                    string abilityGuid = attack.Blueprint?.AssetGuid.ToString();
-                    if (!string.IsNullOrEmpty(abilityGuid) && TurnOrchestrator.Instance.IsAbilityFailedThisTurn(unitId, abilityGuid))
-                    {
-                        Main.Verbose($"[DecisionEngine] Skipping failed ability: {attack.Name}");
-                        continue;
-                    }
+                    // ★ v0.3.17: the "failed this turn" check asked TurnOrchestrator, whose turn states were only filled by
+                    // its own ProcessTurn, which nothing called: always false. Removed with the dead planner code.
 
                     // Get targets
                     var targets = GetValidTargets(attack, situation);
