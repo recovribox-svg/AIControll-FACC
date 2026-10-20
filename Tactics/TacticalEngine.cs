@@ -2330,7 +2330,9 @@ namespace CompanionAI_Pathfinder.Tactics
                 // effect may come later too (logged only).
                 bool watch = profile != null && !profile.SpawnedAreas.Any() && !profile.Summons && !profile.IsCharge;
                 bool ownLogic = Kingmaker.Blueprints.BlueprintExtenstions.GetComponent<Kingmaker.UnitLogic.Abilities.Components.Base.AbilityCustomLogic>(c.Ability.Blueprint) != null;
-                CastOutcome.Begin(unit, c.Ability, c.Target, command, IsVerifiable(profile), watchTarget: watch, blockOnNoReach: !ownLogic);
+                // Blocking also needs effects on the target itself: an ability aimed at an enemy may only buff its caster.
+                CastOutcome.Begin(unit, c.Ability, c.Target, command, IsVerifiable(profile), watchTarget: watch,
+                                  blockOnNoReach: !ownLogic && profile != null && profile.HasTargetEffects);
             }
             else if (issued)
             {
