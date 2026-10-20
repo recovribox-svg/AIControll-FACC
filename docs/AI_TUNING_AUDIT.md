@@ -664,3 +664,110 @@ Each phase is a series of test builds you play, analysed with the dashboard in �
 - **What should not be touched now:** the selection rule, role weights, the buff model and the Threat curve. The
   evidence does not support changing them, and changing them without evidence is how the AI would lose the
   consistency it has gained since 0.3.0.
+
+---
+
+## 11. Addendum: the 0.3.16 turn-based log (06aebf2d) and your concerns
+
+These findings come from the log and a code/game check. They change the phase 1 contents as noted. Phase 0 shipped as
+0.3.17-test2 (diagnostics only).
+
+### L1. Seelah idle for 11 turns while her enemies stood in Grease
+
+- **Label:** confirmed. It confirms and raises the priority of B1.
+- **Evidence:** fight 7, R1–R12, every turn ends with "nothing worth doing". The options were:
+  - `Charge->Dretch [into Grease]` −8.5
+  - `Advance->Neophyte Fighter [into Grease]` −18.0
+  - `Smite Evil` 11.1, held back because no attack followed. 0.3.17-test2 now names that reason.
+- In R13 the Charge became worth +7.2 (2 enemies left) and she charged in. She passed the save that time.
+- **Cause:** the same as B1. Every approach is the one straight-line point into the area, and no point outside the
+  area within reach is ever considered.
+- **Decision:** B1 in phase 1, as planned. Approach points, the touch approach (L2) and charge lines keep out of
+  harmful areas. Each is checked against the real path, with the honest price kept for walking in when nothing else
+  reaches.
+
+### L2. Camellia walked into Grease to heal a summon, and fell
+
+- **Label:** confirmed.
+- **Evidence:** fight 7, R10:
+  - At 100 % HP she chose `Cure Light Wounds->Dretch(heal)=7.4` over Divine Zap 2.8.
+  - She walked 5.7 m to touch it and was interrupted by the fall.
+  - The candidate carried no `[into Grease]` tag. The risk was priced for the straight-line approach point 0.9 × range
+    from the Dretch. Execution walks the pathfinder's path to within 0.8 × reach of it, a different point and route.
+- **Causes:**
+  - (a) B4a: the summon factor applies only to the drop-chance part of the heal value. A full-HP healer topping up a
+    summon is worth more than its spells.
+  - (b) A new finding: valuation and execution use different destinations, and the real path is never checked
+    against areas.
+- **Decision:** both go in phase 1:
+  - (a) is B4a.
+  - (b) is part of B1: one destination, computed once and used both for the price and for the command; the
+    dispatcher's path checked against harmful areas.
+
+### L3. Orvath's Sleep did nothing to the Corrupted Mongrel Brute, and other control spells with Hit Dice limits
+
+- **Label:** confirmed (code + log).
+- **Evidence:**
+  - The log says `[Profile] Sleep: branch condition ContextConditionHitDice not evaluated - both branches counted`.
+  - Sleep only affects targets up to a Hit Dice limit. Its condition adds a computed value
+    (`ContextConditionHitDice` with `AddSharedValue`), and `AbilityProfile.IsSafe` evaluates only the plain form, so
+    the AI counted Sleep as able to affect any target.
+  - It was cast 5 times on the Brute (values 28–76), 4 times on Vermlek (a boss) and once on the Large Water Elemental.
+  - No save was ever reported for these casts, and the combat log showed the cast without a target result, which is
+    what happens when the Hit Dice check skips a creature.
+  - The safety net (`CastOutcome`) did not catch it. Its evidence is per caster, not per target, so any other unit's
+    save or any buff of Orvath's counted as "something happened".
+- **Remedy (phase 1):**
+  - (a) Evaluate the Hit Dice condition with the shared value as the blueprint defines it
+    (`ContextCalculateSharedValue`: dice count and bonus from the ability's own context, without rolling). Yes when the
+    target's level is under the minimum, no when over the maximum, otherwise the probability between them. This applies
+    to every spell using this condition, including mod spells and any version TTT changes, since it reads the live
+    blueprint.
+  - (b) Per-target evidence in `CastOutcome` (0.3.17-test2 already logs "did nothing to its target"). An ability that
+    twice did nothing to the enemy it was aimed at, when nothing at all was rolled on it, is not chosen against that
+    enemy again this fight. That is a general safety net for conditions the profile cannot read.
+  - (c) No extra "diminishing" factor for repeated control. The value already uses the save chance with the enemy's
+    real save bonus (`SaveObserver`), so a repeat against a target that can be affected is rational when the chance is
+    good. The new `[Save]` lines will show whether the predicted chance matches what happens. If it does not, the next
+    step is a per-target learning step on the save chance, decided on that evidence.
+- **Test:**
+  - Sleep is never chosen against a target over its Hit Dice limit.
+  - Color Spray (plain Hit Dice branches) is unchanged.
+  - A mod spell with an unreadable condition stops being chosen against an enemy after two casts that reached nothing.
+
+### L4. The wand of Cure Light Wounds that "did nothing"
+
+- **Label:** strongly evidenced.
+- **Evidence:**
+  - Orvath used the wand on Camellia (fight 3, R4). The game's `RuleCastSpell` stops on a failed Use Magic Device check
+    and keeps the charge (`ItemEntity`: `if (!IsUMDFailed) Spend()`), so nothing happens.
+  - `CastOutcome` counts a failed check as a reported outcome and logged nothing.
+  - The estimate already multiplies item value by the UMD chance (DC 20 for wands), so using it was a fair gamble.
+- **Decision:** 0.3.17-test2 logs the failed check with its roll and DC. No behaviour change.
+
+### L5. Selective without Tabletop Tweaks
+
+- **Label:** confirmed (code).
+- **Entering an area:**
+  - Movement danger asks the live area whether it can affect allies (`SelectiveRule.LiveAreaAffectsAllies`). That is
+    the value the game's own `AreaEffectEntityData.CheckSelective` set when the area spawned.
+  - Without TTT, a Selective Grease or Entangle is not harmful to companions, so they walk in without reluctance.
+  - With TTT (its rule keeps lasting areas affecting allies) they are careful, as in your game.
+- **Casting:**
+  - The friendly-fire and ally-in-area costs use the same rule (`AbilityProfile.SelectiveSparesAllies`, which runs the
+    game's `CheckSelective` on a stand-in area). A Selective version therefore loses the ally cost exactly when the
+    game spares allies.
+  - The AI sees metamagic versions the player has prepared or built in the spellbook (custom spells), and picks between
+    plain and Selective by value.
+- **What it does not do:** the game has no way to add metamagic at cast time from the AI side. Metamagic versions
+  are made in the spellbook, so the AI cannot "apply" Selective to a spell nobody prepared that way.
+- **Decision:** no change needed for the entering side. Whether to build metamagic versions automatically is part of
+  the active-ability plan (metamagic is in its scope).
+
+### Phase 1, revised order
+
+1. B1 + L1 + L2b: area-aware approach for Move+Attack, Advance, touch approach and Charge, with one destination used
+   for both price and command, and real-path checks.
+2. L3a + L3b: Hit Dice conditions with shared values; per-target "reached nothing" safety net.
+3. B4a summon heal factor, B3 caster step-out, B7 slot multiplier scope, B11/B12 gates, C1 immunity cache, C4
+   ValueModel, D1 dead code, P4, P2-lite (as planned).
