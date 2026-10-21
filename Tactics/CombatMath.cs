@@ -104,20 +104,89 @@ namespace CompanionAI_Pathfinder.Tactics
             }
         }
 
-        public static WeaponAttackEstimate EstimateWeaponAttack(UnitEntityData unit, UnitEntityData target, bool full)
+        public static WeaponAttackEstimate EstimateWeaponAttack(UnitEntityData unit, UnitEntityData target, bool full) =>
+            EstimateWeaponAttack(unit, target, full, null);
+
+        /// <summary>
+        /// ★ v0.3.18 (AA-3): one attack of an attack routine as the game's rules give it now: attack bonus, the target's AC
+        /// for it, the damage of a hit before damage reduction, critical range and multiplier, sneak attack, the DR it meets.
+        /// </summary>
+        private sealed class AttackLine
         {
+            public ItemEntityWeapon Weapon;
+            public int Index;
+            public int AttackBonus, ArmorClass;
+            public float RawPerHit, Sneak;
+            public int DamageReduction;
+            public float ThreatChance;
+            public int CritMultiplier;
+        }
+
+        private sealed class AttackRoutine
+        {
+            public int Frame;
+            public int Attacks;
+            public ItemEntityWeapon FirstWeapon;
+            public float Reach;
+            public readonly List<AttackLine> Lines = new List<AttackLine>();
+        }
+
+        /// <summary>Attack routines read this frame: the attack-mode variants of one attack reuse the rules' results.</summary>
+        private static readonly Dictionary<string, AttackRoutine> Routines = new Dictionary<string, AttackRoutine>();
+
+        /// <summary>
+        /// ★ v0.3.18 (AA-3): <paramref name="delta"/> gives, per attack (weapon, index in the routine), the attack and damage
+        /// change of an attack mode switched on or off from its current state (TacticalEngine.Modes.cs). The rules' results
+        /// are read once per frame and reused for every variant.
+        /// </summary>
+        public static WeaponAttackEstimate EstimateWeaponAttack(UnitEntityData unit, UnitEntityData target, bool full,
+                                                                Func<ItemEntityWeapon, int, KeyValuePair<int, float>> delta)
+        {
+            var routine = ReadRoutine(unit, target, full);
+            if (routine == null) return null;
+
+            var result = new WeaponAttackEstimate { Attacks = routine.Attacks };
+            result.Weapon = routine.FirstWeapon;
+            result.IsRanged = routine.FirstWeapon?.Blueprint?.IsRanged ?? false;
+            result.Reach = routine.Reach;
+            float noHit = 1f;
+            foreach (var line in routine.Lines)
+            {
+                var d = delta?.Invoke(line.Weapon, line.Index) ?? new KeyValuePair<int, float>(0, 0f);
+                float p = HitProbability(line.AttackBonus + d.Key, line.ArmorClass);
+                if (line.Index == 0) result.FirstHitChance = p;
+                noHit *= 1f - p;
+                float perHit = Math.Max(0f, line.RawPerHit + d.Value - line.DamageReduction);
+                float critExtra = line.ThreatChance * p * (line.CritMultiplier - 1) * perHit;
+                if (line.Index == 0)
+                {
+                    result.FirstPerHit = perHit;
+                    result.FirstCritChance = line.ThreatChance * p * p;     // threat, then the confirmation roll
+                    result.CritMultiplier = Math.Max(1, line.CritMultiplier);
+                }
+                result.ExpectedDamage += p * (perHit + line.Sneak) + critExtra;
+            }
+            result.AnyHitChance = 1f - noHit;
+            return result;
+        }
+
+        /// <summary>★ v0.3.18: forget the attack routines read (a new decision, or a state changed for a preview).</summary>
+        public static void ClearAttackCache() => Routines.Clear();
+
+        private static AttackRoutine ReadRoutine(UnitEntityData unit, UnitEntityData target, bool full)
+        {
+            int frame = Time.frameCount;
+            string key = $"{unit.UniqueId}|{target.UniqueId}|{full}";
+            if (Routines.TryGetValue(key, out var cached) && cached.Frame == frame) return cached;
             var attacks = EnumerateAttacks(unit, target, full);
             if (attacks.Count == 0) return null;
+            if (Routines.Count > 512) Routines.Clear();
 
-            var result = new WeaponAttackEstimate { Attacks = attacks.Count };
-            var firstWeapon = attacks[0].Weapon;
-            result.Weapon = firstWeapon;
-            result.IsRanged = firstWeapon?.Blueprint?.IsRanged ?? false;
-            result.Reach = UnitAttack.GetApproachRadius(firstWeapon, unit, target);
+            var routine = new AttackRoutine { Frame = frame, Attacks = attacks.Count, FirstWeapon = attacks[0].Weapon };
+            routine.Reach = UnitAttack.GetApproachRadius(routine.FirstWeapon, unit, target);
 
             bool flanked = target.CombatState?.IsFlanked ?? false;
             int sneakDice = SafeStat(unit.Stats.SneakAttack);
-            float noHit = 1f;
 
             for (int i = 0; i < attacks.Count; i++)
             {
@@ -130,9 +199,6 @@ namespace CompanionAI_Pathfinder.Tactics
                         TargetIsFlanked = flanked
                     }).Result;
                     var acRule = Rulebook.Trigger(new RuleCalculateAC(unit, target, weapon.Blueprint.AttackType));
-                    float p = HitProbability(ab, acRule.Result);
-                    if (i == 0) result.FirstHitChance = p;
-                    noHit *= 1f - p;
 
                     var stats = Rulebook.Trigger(new RuleCalculateWeaponStats(unit, weapon));
                     float perHit = 0f;
@@ -140,32 +206,26 @@ namespace CompanionAI_Pathfinder.Tactics
                         perHit += Average(d.Dice) + d.Bonus;
 
                     var dr = HitChanceCalculator.CalculateDamageReduction(unit, target, weapon, perHit);
-                    if (dr != null && !dr.CanBypass && dr.DRValue > 0)
-                        perHit = Math.Max(0f, perHit - dr.DRValue);
-
-                    float threatChance = Mathf.Clamp01(stats.CriticalRange / 20f);
-                    float critExtra = threatChance * p * (stats.CriticalMultiplier - 1) * perHit;
-                    if (i == 0)
+                    routine.Lines.Add(new AttackLine
                     {
-                        result.FirstPerHit = perHit;
-                        result.FirstCritChance = threatChance * p * p;     // threat, then the confirmation roll
-                        result.CritMultiplier = Math.Max(1, stats.CriticalMultiplier);
-                    }
-
-                    float sneak = 0f;
-                    if (sneakDice > 0 && (flanked || acRule.IsTargetFlatFooted))
-                        sneak = 3.5f * sneakDice;
-
-                    result.ExpectedDamage += p * (perHit + sneak) + critExtra;
+                        Weapon = weapon,
+                        Index = i,
+                        AttackBonus = ab,
+                        ArmorClass = acRule.Result,
+                        RawPerHit = perHit,
+                        DamageReduction = dr != null && !dr.CanBypass && dr.DRValue > 0 ? dr.DRValue : 0,
+                        ThreatChance = Mathf.Clamp01(stats.CriticalRange / 20f),
+                        CritMultiplier = stats.CriticalMultiplier,
+                        Sneak = sneakDice > 0 && (flanked || acRule.IsTargetFlatFooted) ? 3.5f * sneakDice : 0f
+                    });
                 }
                 catch (Exception ex)
                 {
                     Main.Verbose($"[Math] attack estimate {unit.CharacterName}->{target.CharacterName}: {ex.Message}");
                 }
             }
-            result.AnyHitChance = 1f - noHit;
-
-            return result;
+            Routines[key] = routine;
+            return routine;
         }
 
         /// <summary>

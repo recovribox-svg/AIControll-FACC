@@ -1,4 +1,4 @@
-# Turn-based tactical AI (v0.3.0, revised in v0.3.1-v0.3.7)
+﻿# Turn-based tactical AI (v0.3.0, revised in v0.3.1-v0.3.7)
 
 This document describes how companions decide what to do in **turn-based combat**. Real-time combat still uses
 the older `UnifiedDecisionEngine`, which already handled weapon attacks. It now shares the consumable settings.
@@ -916,3 +916,44 @@ so there is no thrashing.
   `[Toggle]` line follows.
 - The `[Coverage]` toggle lines now end with "AI: may start it when worth it" or "AI: leaves it (reason)".
 
+## 30. v0.3.18 (test7): active abilities, step AA-3 (attack modes and Mobility)
+
+The plan is `docs/ACTIVE_ABILITY_PLAN.md` §H AA-3, with design §E1 (b)/(c), §E2 and §E3. The code is
+`Tactics/TacticalEngine.Modes.cs`, with the setting "AI may switch combat modes" (on by default).
+
+**Which modes.** Toggles that are not started by a command and whose buff only changes attack, damage or AC through the
+game's own components:
+- `WeaponParametersAttackBonus` / `WeaponParametersDamageBonus` (Power Attack, Deadly Aim, Piranha Strike): their weapon
+  filters (ranged, two-handed, finessable, full attack only), the 1 + BAB/4 scaling, the mythic +1 and the two-handed
+  Power Attack factor (x1.5, Greater x2, mythic x5/3), as `CalculatePowerAttackScaling` does;
+- stat bonuses to the attack bonus or AC (`AddStatBonus`, `AddContextStatBonus`, `AddStatBonusAbilityValue`: Combat
+  Expertise, Fighting Defensively). Their values come from the game: a mechanics context for the unit and the buff works
+  out ranks and custom properties (Fighting Defensively's +2 / +3 AC and its attack penalty).
+
+A buff with anything else, or a component setting the AI does not model (specific weapon, grip style, dual wielding,
+off-hand only, a multiplier fact), is left as the player set it; the `[Coverage]` toggle line gives the reason, or
+"AI: may switch it with attacks and moves".
+
+**Decision.** Each weapon option (full attack, single attack, Move+Attack) is valued with every set of modes, one per
+group (the game's group rule) and each ungrouped mode on or off, at most 32 sets:
+- attack and damage by the game's own attack routine with the modes' changes (`CombatMath.EstimateWeaponAttack` with a
+  per-attack delta; the routine's rule results are read once per frame and reused for every set);
+- AC by the damage avoided until the unit's next turn where the attack is made from: 5 % of a d20 per point relative to
+  the enemies' chance to hit, priced with the drop-chance model like a heal.
+- The gain reaches the option through its own weights (wake factor, the chance a move or a shot is stopped).
+- **Hysteresis (E3):** the best set is kept only when it beats the current state by 10 % of the option's value (at least
+  0.5), and a mode is switched at most once per round.
+
+Execute switches the modes the way the action bar does (`IsOn`) just before the attack, logged as `[Toggle] <unit>:
+<mode> on|off for '<option>'`. Fighting Defensively starts on the attack itself (`ActivateOnUnitAction` Attack:
+`TryStart` when the attack is about to trigger), so its penalty applies to that attack and its AC afterwards: the
+model it is valued with.
+
+**Mobility.** While it is on, an enemy's attack of opportunity on a unit leaving its reach is cancelled when the unit
+passes a Mobility check against that enemy's CMD (`UnitCombatState.AttackOfOpportunity`: `RuleCalculateCMD`, then a
+skill check), and speed is halved.
+- Every move is priced with that chance when the unit has it on, from any source (`PriceAttacks` with the chance each
+  attack is made).
+- The AI switches it on (a free action) before one of its three best options that move and provoke, when the move still
+  fits at half speed, the attacks avoided are worth 2 or more, and that option is then the best thing to do.
+- It is switched off again, when the AI started it, once no conscious enemy engages the unit.

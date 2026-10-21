@@ -91,6 +91,13 @@ namespace CompanionAI_Pathfinder.Settings
                 { Language.Korean, "행동으로 켜고 매 라운드 자원을 쓰는 능력(바드 공연, 격노, 샤먼 정령): 가치가 있을 때 시작하고, 얻을 것이 없으면 멈춥니다. '효과 수락' 선택, 공격 모드, 탑승은 건드리지 않습니다." }
             },
 
+            // ★ v0.3.18 (AA-3)
+            ["AiSwitchesCombatModes"] = new() { { Language.English, "AI may switch combat modes (Power Attack, Fighting Defensively, Mobility)" }, { Language.Korean, "AI가 전투 모드 전환 가능 (강타, 방어적 전투, 기동성)" } },
+            ["AiSwitchesCombatModesDesc"] = new() {
+                { Language.English, "Attack modes are set with each attack when the expected damage (and, for Fighting Defensively, the damage avoided) is clearly better; Mobility is switched on before a move that would provoke, and off when no enemy is near. Modes whose effects the AI cannot read are left as you set them." },
+                { Language.Korean, "공격 모드는 기대 피해(방어적 전투는 피한 피해 포함)가 확실히 나을 때 공격마다 설정합니다. 기동성은 기회 공격을 유발할 이동 전에 켜고, 근처에 적이 없으면 끕니다. AI가 효과를 읽을 수 없는 모드는 설정한 대로 둡니다." }
+            },
+
             // ★ v0.3.0: Consumables
             ["ConsumableSettings"] = new() { { Language.English, "Consumables (quick-slot items)" }, { Language.Korean, "소모품 (퀵슬롯 아이템)" } },
             ["ConsumableSettingsDesc"] = new() {
@@ -288,6 +295,9 @@ namespace CompanionAI_Pathfinder.Settings
 
         /// <summary>★ v0.3.18 (AA-2): the engine may switch on command-activated toggles (performances, Rage family).</summary>
         public bool AiStartsToggles { get; set; } = true;
+
+        /// <summary>★ v0.3.18 (AA-3): the engine may switch attack modes and Mobility (decision recorded: default on).</summary>
+        public bool AiSwitchesCombatModes { get; set; } = true;
 
         // 캐릭터별 설정
         public Dictionary<string, CharacterSettings> CharacterSettings { get; set; } = new();

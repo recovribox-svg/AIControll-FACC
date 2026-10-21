@@ -70,6 +70,17 @@ namespace CompanionAI_Pathfinder.Tactics
 
         /// <summary>★ v0.3.18 (AA-2): the activatable ability a Toggle candidate switches on.</summary>
         public Kingmaker.UnitLogic.ActivatableAbilities.ActivatableAbility Toggle;
+        /// <summary>★ v0.3.18 (AA-3): attack modes to switch (on / off) just before this weapon attack.</summary>
+        public List<KeyValuePair<Kingmaker.UnitLogic.ActivatableAbilities.ActivatableAbility, bool>> Modes;
+        /// <summary>★ v0.3.18 (AA-3): how much of a change in the attack's damage value reaches this option's value (its
+        /// weights and risks); 0 for options that are not weapon attacks.</summary>
+        public float ModeFactor;
+        /// <summary>★ v0.3.18 (AA-3): where the attack is made from (a move's end), for the AC a mode adds there.</summary>
+        public Vector3? ModeAt;
+        /// <summary>★ v0.3.18 (AA-3): the move's risk, where it ends, and the option's value before it (Mobility).</summary>
+        internal TacticalEngine.Disengage Risk;
+        public Vector3? RiskAt;
+        public float PreRiskValue;
 
         public override string ToString() => $"{Label}={Value:F1}";
     }
@@ -128,6 +139,8 @@ namespace CompanionAI_Pathfinder.Tactics
         internal readonly Dictionary<string, TacticalEngine.Approach> Approaches = new Dictionary<string, TacticalEngine.Approach>();
         /// <summary>★ v0.3.18: provoked attacks priced in this decision (TacticalEngine.ProvokeRisk), by place and chance.</summary>
         internal readonly Dictionary<string, TacticalEngine.Disengage> Provoked = new Dictionary<string, TacticalEngine.Disengage>();
+        /// <summary>★ v0.3.18 (AA-3): the unit's attack modes, read once per decision (TacticalEngine.Modes.cs).</summary>
+        internal List<TacticalEngine.UnitMode> AttackModes;
     }
 
     public static partial class TacticalEngine
@@ -143,6 +156,7 @@ namespace CompanionAI_Pathfinder.Tactics
         {
             // ★ v0.3.17: how long a decision takes ([Perf] at the end of the fight) - nothing was measured before.
             AbilityProfile.TakeBuiltCount();
+            CombatMath.ClearAttackCache();   // ★ v0.3.18: attack routines are read fresh for each decision
             var watch = System.Diagnostics.Stopwatch.StartNew();
             var chosen = Decide(unit, memory, preview: false, out _);
             double ms = watch.Elapsed.TotalMilliseconds;
@@ -160,6 +174,12 @@ namespace CompanionAI_Pathfinder.Tactics
         /// </summary>
         private static Candidate Decide(UnitEntityData unit, TurnMemory memory, bool preview, out TacticalContext built)
         {
+            // ★ v0.3.18 (AA-3): Mobility the AI switched on goes off once no enemy threatens the unit (full speed again),
+            // before the context reads the unit's movement.
+            if (!preview)
+            {
+                try { MobilityHousekeeping(unit); } catch (Exception ex) { Main.Verbose($"[Modes] {unit.CharacterName}: {ex.Message}"); }
+            }
             var ctx = BuildContext(unit);
             built = ctx;
             if (ctx != null && preview)
@@ -194,10 +214,15 @@ namespace CompanionAI_Pathfinder.Tactics
 
             var candidates = new List<Candidate>();
             try { AddWeaponCandidates(ctx, candidates); } catch (Exception ex) { Main.Error($"[Tactics] weapon candidates: {ex}"); }
+            // ★ v0.3.18 (AA-3): each weapon option with its best attack modes.
+            try { foreach (var c in candidates.Where(c => c.Kind == CandidateKind.WeaponAttack).ToList()) ChooseAttackModes(ctx, c); }
+            catch (Exception ex) { Main.Error($"[Tactics] attack modes: {ex}"); }
             try { AddAbilityCandidates(ctx, candidates); } catch (Exception ex) { Main.Error($"[Tactics] ability candidates: {ex}"); }
             try { AddMovementCandidates(ctx, candidates); } catch (Exception ex) { Main.Error($"[Tactics] movement candidates: {ex}"); }
             // ★ v0.3.18 (AA-2): after the others, so a toggle that forbids spells is priced against the best spell.
             try { AddToggleCandidates(ctx, candidates, preview); } catch (Exception ex) { Main.Error($"[Tactics] toggle candidates: {ex}"); }
+            // ★ v0.3.18 (AA-3): Mobility before a move that would provoke.
+            try { AddMobilityCandidate(ctx, candidates); } catch (Exception ex) { Main.Error($"[Tactics] mobility: {ex}"); }
             try { PriceHeldCharge(ctx, candidates); } catch (Exception ex) { Main.Error($"[Tactics] held charge: {ex.Message}"); }
 
             var usable = candidates
@@ -670,7 +695,9 @@ namespace CompanionAI_Pathfinder.Tactics
         /// attack and the turn was lost - Move+Attack and Charge did not count attacks of opportunity at all.
         /// Null when nothing would attack.
         /// </summary>
-        private static Disengage DisengageRisk(TacticalContext ctx, Vector3 destination)
+        /// <remarks>★ v0.3.18 (AA-3): with Mobility (<paramref name="mobility"/>; null: whether the unit has it on now) each
+        /// attack happens only when the unit fails its Mobility check against that enemy's CMD.</remarks>
+        private static Disengage DisengageRisk(TacticalContext ctx, Vector3 destination, bool? mobility = null)
         {
             var unit = ctx.Unit;
             // A move that fits in the 5-foot step is made as one (CommandDispatcher.ApplyTurnBasedMovementLimit).
@@ -679,7 +706,9 @@ namespace CompanionAI_Pathfinder.Tactics
             if (attackers.Count == 0) return null;
 
             float hp = Math.Max(1f, unit.HPLeft);
-            PriceAttacks(unit, attackers, hp, out float damage, out float stopChance, out float dropNow);
+            bool mobile = mobility ?? UsesMobility(unit);
+            PriceAttacks(unit, attackers, hp, out float damage, out float stopChance, out float dropNow,
+                         mobile ? (Func<UnitEntityData, float>)(e => 1f - MobilityAvoids(unit, e)) : null);
 
             // Dropped now: the unit is out for the rest of the fight. Otherwise the same model as healing and withdraw,
             // the chance to drop before the next turn, P = exp(-HP / danger), with the attacks' damage taken first; plus
@@ -715,18 +744,23 @@ namespace CompanionAI_Pathfinder.Tactics
         /// <paramref name="hp"/> HP: their expected damage, the chance at least one hits (a hit stops a walk) and the
         /// chance they drop it (RiskMath: the chance one blow takes the unit out, not only its average).
         /// </summary>
+        /// <remarks>★ v0.3.18: <paramref name="happens"/> - the chance each attack is made at all (Mobility); null: always.</remarks>
         private static void PriceAttacks(UnitEntityData unit, List<UnitEntityData> attackers, float hp,
-                                         out float damage, out float hitChance, out float dropChance)
+                                         out float damage, out float hitChance, out float dropChance,
+                                         Func<UnitEntityData, float> happens = null)
         {
             damage = 0f;
             float noHit = 1f, noDrop = 1f;
             foreach (var enemy in attackers)
             {
                 var est = CombatMath.EstimateWeaponAttack(enemy, unit, full: false);
-                float hit = est?.FirstHitChance ?? 0.5f;
-                float expected = est?.ExpectedDamage ?? CombatMath.Threat(enemy) * 0.35f;
-                float perHit = est != null && est.FirstPerHit > 0f ? est.FirstPerHit : expected / Math.Max(0.05f, hit);
-                noDrop *= 1f - RiskMath.AttackDropChance(hit, est?.FirstCritChance ?? 0.05f * hit, perHit,
+                float made = happens == null ? 1f : Mathf.Clamp01(happens(enemy));
+                float hitIfMade = est?.FirstHitChance ?? 0.5f;
+                float expectedIfMade = est?.ExpectedDamage ?? CombatMath.Threat(enemy) * 0.35f;
+                float perHit = est != null && est.FirstPerHit > 0f ? est.FirstPerHit : expectedIfMade / Math.Max(0.05f, hitIfMade);
+                float hit = hitIfMade * made;
+                float expected = expectedIfMade * made;
+                noDrop *= 1f - RiskMath.AttackDropChance(hit, (est?.FirstCritChance ?? 0.05f * hitIfMade) * made, perHit,
                                                          est?.CritMultiplier ?? 2f, Math.Max(1f, hp - damage));
                 damage += expected;
                 noHit *= 1f - hit;
@@ -802,6 +836,7 @@ namespace CompanionAI_Pathfinder.Tactics
             finally
             {
                 state.Prone.Active = wasProne;
+                CombatMath.ClearAttackCache();   // ★ v0.3.18: estimates made while "standing" must not be reused
             }
             if (ctx == null) return true;
 
@@ -1212,6 +1247,7 @@ namespace CompanionAI_Pathfinder.Tactics
                             Target = enemy,
                             FullAttack = true,
                             Value = fullValue,
+                            ModeFactor = weight * (fiveFootReach ? 0.95f : 1f) * WakeFactor(enemy, full.ExpectedDamage) * (1f - (provoke?.StopChance ?? 0f)),
                             Label = $"FullAttack({full.Attacks})->{enemy.CharacterName}{(fiveFootReach ? "+5ft" : "")}{ProvokeTag(provoke)}",
                             Key = $"full:{enemy.UniqueId}"
                         });
@@ -1232,6 +1268,7 @@ namespace CompanionAI_Pathfinder.Tactics
                         Slot = ActionSlot.Standard,
                         Target = enemy,
                         Value = singleValue,
+                        ModeFactor = weight * WakeFactor(enemy, single.ExpectedDamage) * (1f - (provoke?.StopChance ?? 0f)),
                         Label = $"Attack->{enemy.CharacterName}{ProvokeTag(provoke)}",
                         Key = $"atk:{enemy.UniqueId}"
                     });
@@ -1239,6 +1276,7 @@ namespace CompanionAI_Pathfinder.Tactics
                 else if (ctx.HasMove && dist - reach <= ctx.MoveRange * 0.95f)
                 {
                     float value = DamageValue(enemy, single) * weight * 0.9f * WakeFactor(enemy, single.ExpectedDamage);
+                    float preRisk = value;
                     string label = $"Move+Attack->{enemy.CharacterName}";
                     // ★ v0.3.13: walking out of an enemy's reach provokes (melee and ranged alike).
                     // ★ v0.3.17: around a harmful area when the straight approach walks into it (PlanApproach).
@@ -1265,6 +1303,12 @@ namespace CompanionAI_Pathfinder.Tactics
                         NeedsMove = true,
                         Target = enemy,
                         Value = value,
+                        ModeFactor = weight * 0.9f * WakeFactor(enemy, single.ExpectedDamage) * (1f - (risk?.StopChance ?? 0f)) *
+                                     (1f - (provoke?.StopChance ?? 0f)),
+                        ModeAt = approach.Point,
+                        Risk = risk,
+                        RiskAt = approach.Point,
+                        PreRiskValue = preRisk,
                         Label = label,
                         Key = $"matk:{enemy.UniqueId}",
                         MoveFirst = approach.Around != null,
@@ -1589,6 +1633,7 @@ namespace CompanionAI_Pathfinder.Tactics
                 // attacks of opportunity (Lann walked 9 m for Aid Another).
                 if (needsMove && ctx.HasRangedWeapon && ability.Range == AbilityRange.Touch && ctx.Unit.IsEnemy(target))
                     value *= 0.5f;
+                float preRisk = value;
                 if (risk != null) value = value * (1f - risk.StopChance) - risk.Cost;
 
                 var candidate = new Candidate
@@ -1611,6 +1656,9 @@ namespace CompanionAI_Pathfinder.Tactics
                     MovePoint = approach?.Around != null ? approach.Point : (Vector3?)null,
                     ApproachRadius = approach?.Arrival ?? 0f,
                     CheckPath = needsMove && risk?.Area == null,
+                    Risk = needsMove ? risk : null,
+                    RiskAt = needsMove ? approach?.Point : null,
+                    PreRiskValue = preRisk,
                     Key = $"abl:{CombatMemory.AbilityKey(ability)}{metamagic}:{target.UniqueId}"
                 };
                 if (Better(candidate, best)) best = candidate;
@@ -2578,6 +2626,7 @@ namespace CompanionAI_Pathfinder.Tactics
                     return ExecuteToggle(unit, c, out command, out failure);
                 case CandidateKind.WeaponAttack:
                 {
+                    ApplyModes(unit, c);   // ★ v0.3.18 (AA-3)
                     var attack = new UnitAttack(c.Target);
                     // The game would otherwise take full/single from the UI smart-cursor mode (TurnController.GetEnabledFullAttack).
                     // ★ v0.3.14: turn-based only. In real time the game makes a full attack whenever movement allows

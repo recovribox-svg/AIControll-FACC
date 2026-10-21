@@ -267,10 +267,17 @@ namespace CompanionAI_Pathfinder.UI
             bool prevToggles = ModSettings.Instance.AiStartsToggles;
             ModSettings.Instance.AiStartsToggles = DrawCheckbox(ModSettings.Instance.AiStartsToggles, L("AiStartsToggles"));
             GUILayout.Label($"<color=#888888><size=11>{L("AiStartsTogglesDesc")}</size></color>", _descriptionStyle);
+            GUILayout.Space(3);
+
+            // ★ v0.3.18 (AA-3)
+            bool prevModes = ModSettings.Instance.AiSwitchesCombatModes;
+            ModSettings.Instance.AiSwitchesCombatModes = DrawCheckbox(ModSettings.Instance.AiSwitchesCombatModes, L("AiSwitchesCombatModes"));
+            GUILayout.Label($"<color=#888888><size=11>{L("AiSwitchesCombatModesDesc")}</size></color>", _descriptionStyle);
 
             // 변경시 저장
             if (prevBossBypass != ModSettings.Instance.ProgressiveBossBypass ||
                 prevToggles != ModSettings.Instance.AiStartsToggles ||
+                prevModes != ModSettings.Instance.AiSwitchesCombatModes ||
                 prevTurnBased != ModSettings.Instance.EnableInTurnBased ||
                 prevRealTime != ModSettings.Instance.EnableInRealTime ||
                 Math.Abs(prevInterval - ModSettings.Instance.RealTimeDecisionInterval) > 0.01f)

@@ -1,4 +1,4 @@
-# Active-ability intelligence: audit and plan (analysis only)
+﻿# Active-ability intelligence: audit and plan (analysis only)
 
 This document covers how the AI discovers, understands, values and uses the active abilities a character has, and
 what to change. It follows the "Active Ability Intelligence" master task prompt and is analysis and planning only: no
@@ -554,6 +554,9 @@ Each step ships as a test build. A step passes when its scenarios behave as list
 - Issued with the game's own activation (`IsOn = true` → `UnitActivateAbility`) through the dispatcher.
 
 ### AA-3: attack-mode toggles and Mobility (modifiers)
+
+**Status: implemented in 0.3.18-test7** (`docs/TACTICAL_AI.md` §30, `Tactics/TacticalEngine.Modes.cs`). Style stances
+stay in AA-4.
 
 **Attack modes:**
 

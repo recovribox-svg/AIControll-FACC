@@ -1,4 +1,4 @@
-# CLAUDE.md
+﻿# CLAUDE.md
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
@@ -34,7 +34,9 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
   spell attack rolls by the game's attack rule; real-time cannot-act rules from the game code; active abilities AA-1 -
   damage/heals by the game's preview (`IDealDamageProvider`), kill actions, conversions, point-target summons, toggle-buff
   effects, caster-provoke detection, no "utility" fallback, more read-only conditions; AA-2 - command-activated toggles
-  (performances, Rage family, spirits) as candidates, `Tactics/TacticalEngine.Toggles.cs`)
+  (performances, Rage family, spirits) as candidates, `Tactics/TacticalEngine.Toggles.cs`; AA-3 - attack modes (Power
+  Attack, Deadly Aim, Fighting Defensively, Combat Expertise) chosen per attack and Mobility per move,
+  `Tactics/TacticalEngine.Modes.cs`)
 
 ## Reference Resources
 - **Rogue Trader CompanionAI v3.5.7**: `C:\Users\veria\Downloads\CompanionAI_v3-master - v3.5.7`

@@ -117,7 +117,11 @@ namespace CompanionAI_Pathfinder.Tactics
             try
             {
                 string why = TacticalEngine.ToggleExclusion(unit, toggle);
-                return why == null ? "may start it when worth it" : $"leaves it ({why})";
+                if (why == null) return "may start it when worth it";
+                // ★ v0.3.18 (AA-3): attack modes and Mobility are decided with the attack or the move.
+                string mode = TacticalEngine.ModeExclusion(toggle);
+                if (mode == null) return "may switch it with attacks and moves";
+                return $"leaves it ({why}; as a combat mode: {mode})";
             }
             catch (Exception ex)
             {
