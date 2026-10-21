@@ -24,6 +24,27 @@ namespace CompanionAI_Pathfinder.Tactics
         /// <summary>Boss unit id → name, while the boss bypass is active.</summary>
         public static readonly Dictionary<string, string> ActiveBosses = new Dictionary<string, string>();
         private static int _lastRound = int.MaxValue;
+        /// <summary>★ v0.3.18 (AA-2): "unit|toggle" → round the AI last switched it (on or off), this combat.</summary>
+        private static readonly Dictionary<string, int> ToggleSwitches = new Dictionary<string, int>();
+        /// <summary>★ v0.3.18 (AA-2): toggles the AI switched on this combat (only those it may switch off again).</summary>
+        private static readonly HashSet<string> ToggledOnByAi = new HashSet<string>();
+
+        private static string ToggleKey(UnitEntityData unit, Kingmaker.UnitLogic.ActivatableAbilities.ActivatableAbility toggle) =>
+            $"{unit.UniqueId}|{toggle.Blueprint.AssetGuid}";
+
+        /// <summary>★ v0.3.18: the AI switched this toggle this round already (no second switch in a round: no thrashing).</summary>
+        public static bool ToggleSwitchedThisRound(UnitEntityData unit, Kingmaker.UnitLogic.ActivatableAbilities.ActivatableAbility toggle) =>
+            ToggleSwitches.TryGetValue(ToggleKey(unit, toggle), out int r) && r == Round;
+
+        public static bool ToggleStartedByAi(UnitEntityData unit, Kingmaker.UnitLogic.ActivatableAbilities.ActivatableAbility toggle) =>
+            ToggledOnByAi.Contains(ToggleKey(unit, toggle));
+
+        public static void RecordToggle(UnitEntityData unit, Kingmaker.UnitLogic.ActivatableAbilities.ActivatableAbility toggle, bool on)
+        {
+            string key = ToggleKey(unit, toggle);
+            ToggleSwitches[key] = Round;
+            if (on) ToggledOnByAi.Add(key); else ToggledOnByAi.Remove(key);
+        }
 
         /// <summary>
         /// The combat round. Turn-based: the game's round number. ★ v0.3.14: real time has no rounds, so it is six seconds
@@ -58,6 +79,8 @@ namespace CompanionAI_Pathfinder.Tactics
 
         public static void ResetCombat()
         {
+            ToggleSwitches.Clear();
+            ToggledOnByAi.Clear();
             Casts.Clear();
             Uses.Clear();
             Turns.Clear();

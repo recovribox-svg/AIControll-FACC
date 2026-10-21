@@ -84,6 +84,13 @@ namespace CompanionAI_Pathfinder.Settings
                 { Language.Korean, "게임이 보스로 표시한 적에게만, 보스에게 닿는 주문에만 적용됩니다." }
             },
 
+            // ★ v0.3.18 (AA-2)
+            ["AiStartsToggles"] = new() { { Language.English, "AI may start performances, rage and similar abilities" }, { Language.Korean, "AI가 공연, 격노 등 지속 능력을 시작할 수 있음" } },
+            ["AiStartsTogglesDesc"] = new() {
+                { Language.English, "Abilities switched on with an action that keep spending a resource each round (bardic performances, Rage, shaman spirits): started when worth it, stopped when nothing is left to gain. Never touches 'accept effect' choices, attack modes or mounting." },
+                { Language.Korean, "행동으로 켜고 매 라운드 자원을 쓰는 능력(바드 공연, 격노, 샤먼 정령): 가치가 있을 때 시작하고, 얻을 것이 없으면 멈춥니다. '효과 수락' 선택, 공격 모드, 탑승은 건드리지 않습니다." }
+            },
+
             // ★ v0.3.0: Consumables
             ["ConsumableSettings"] = new() { { Language.English, "Consumables (quick-slot items)" }, { Language.Korean, "소모품 (퀵슬롯 아이템)" } },
             ["ConsumableSettingsDesc"] = new() {
@@ -278,6 +285,9 @@ namespace CompanionAI_Pathfinder.Settings
 
         /// <summary>★ v0.3.7: Progressive casters may use higher spell levels on enemies the game marks as bosses.</summary>
         public bool ProgressiveBossBypass { get; set; } = true;
+
+        /// <summary>★ v0.3.18 (AA-2): the engine may switch on command-activated toggles (performances, Rage family).</summary>
+        public bool AiStartsToggles { get; set; } = true;
 
         // 캐릭터별 설정
         public Dictionary<string, CharacterSettings> CharacterSettings { get; set; } = new();

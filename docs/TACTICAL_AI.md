@@ -870,3 +870,49 @@ components and rules, so other mods' content is covered when it uses them.
   provoke tag.
 - The `[Coverage]` "effect not understood" lines: these abilities are no longer offered.
 
+## 29. v0.3.18 (test6): active abilities, step AA-2 (command-activated toggles)
+
+The plan is `docs/ACTIVE_ABILITY_PLAN.md` §H AA-2, with design §E1 (a) and §E3. The code is
+`Tactics/TacticalEngine.Toggles.cs` (a part of the engine), with the setting "AI may start performances, rage and
+similar abilities" (on by default).
+
+**Which toggles.** Activatable abilities whose activation is a game command (`ActivateWithUnitCommand`): bardic and
+Azata performances, the Rage family, shaman spirits such as Camellia's Battle Spirit, and judgments. A toggle is
+offered only when it is on the action bar, off, and available by the game's resource and restriction checks.
+
+Left as the player set them, with the reason in the `[Coverage]` toggle line ("AI: leaves it (...)"):
+- attack modes and Mobility (AA-3);
+- mounting (Saddle Up: a buff with `ShareFeaturesWithPet`);
+- kineticist infusions and Gather Power (modifiers of a blast);
+- toggles that need a target;
+- "accept effect" preferences (they are not command-activated);
+- a toggle the game's group rule would not start (`ActivatableAbility.TryStart`: the group's weights against its size).
+
+**Action.** `UnitActivateAbility.GetCommandType`, the game's own rule, including Quicken Performance. A toggle competes
+with attacks and spells for that action. A free one (Rage) worth 2 or more goes first, like any quick action.
+
+**Value.** The buff it puts on its recipients, valued like every buff (`BuffEffectAnalyzer`, the stacking rule):
+- **Recipients:** the caster for a self buff (Rage); the allies in its area for a performance (the area's
+  `AbilityAreaEffectBuff`, radius from the area); the enemies in it for a harmful one (a dirge), at a quarter of each
+  enemy's worth per round.
+- **Rate:** per round, like a spell of half the character's level.
+- **Duration:** the expected rounds, but no more than the resource lasts, at most 3. Engaged recipients count fully,
+  the others at 0.6, summons at half.
+- **Easy fights:** a resource spent per round is a daily resource, so it is discounted the way spell slots are.
+- **What it forbids:** `ForbidSpellCasting` (Rage), unless the caster has the feature that ignores it, costs half the
+  best spell (and item, when items are forbidden too) the caster could use instead, for those rounds.
+
+**Issued** the way the action bar does it: `IsOn = true`, and the game queues its `UnitActivateAbility`, or starts it at
+once. It does not go through the dispatcher, because there is no path to give it. Logged as
+`[Toggle] Camellia: Battle Spirit on - ...`.
+
+**Stopped** by the AI only when it started the toggle itself and nobody is left in its area. A performance with every
+ally out of range spends a round of its resource for nothing. Rage and the rest end by the game's own rules
+(`DeactivateIfCombatEnded`, the resource running out). Each toggle is switched at most once per round (`CombatMemory`),
+so there is no thrashing.
+
+**To check in the game:**
+- Camellia's Battle Spirit: `Start Battle Spirit (N in range, 4 left)` competes with her spells in round 1–2, and the
+  `[Toggle]` line follows.
+- The `[Coverage]` toggle lines now end with "AI: may start it when worth it" or "AI: leaves it (reason)".
+

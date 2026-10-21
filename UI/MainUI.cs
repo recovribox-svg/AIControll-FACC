@@ -261,9 +261,16 @@ namespace CompanionAI_Pathfinder.UI
             // ★ v0.3.7: Progressive boss bypass (global)
             ModSettings.Instance.ProgressiveBossBypass = DrawCheckbox(ModSettings.Instance.ProgressiveBossBypass, L("ProgressiveBossBypass"));
             GUILayout.Label($"<color=#888888><size=11>{L("ProgressiveBossBypassDesc")}</size></color>", _descriptionStyle);
+            GUILayout.Space(3);
+
+            // ★ v0.3.18 (AA-2)
+            bool prevToggles = ModSettings.Instance.AiStartsToggles;
+            ModSettings.Instance.AiStartsToggles = DrawCheckbox(ModSettings.Instance.AiStartsToggles, L("AiStartsToggles"));
+            GUILayout.Label($"<color=#888888><size=11>{L("AiStartsTogglesDesc")}</size></color>", _descriptionStyle);
 
             // 변경시 저장
             if (prevBossBypass != ModSettings.Instance.ProgressiveBossBypass ||
+                prevToggles != ModSettings.Instance.AiStartsToggles ||
                 prevTurnBased != ModSettings.Instance.EnableInTurnBased ||
                 prevRealTime != ModSettings.Instance.EnableInRealTime ||
                 Math.Abs(prevInterval - ModSettings.Instance.RealTimeDecisionInterval) > 0.01f)

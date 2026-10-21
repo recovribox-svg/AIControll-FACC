@@ -545,6 +545,8 @@ Each step ships as a test build. A step passes when its scenarios behave as list
 
 ### AA-2: command-activated toggles (performances, Rage family)
 
+**Status: implemented in 0.3.18-test6** (`docs/TACTICAL_AI.md` §29, `Tactics/TacticalEngine.Toggles.cs`).
+
 - Candidates of kind `Toggle`, slot from `GetCommandType`, value from the buff on the recipients, resource per round
   as a cost.
 - Penalty for what the buff forbids against the recipient's best forbidden option.

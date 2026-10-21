@@ -29,7 +29,9 @@ using CompanionAI_Pathfinder.Settings;
 
 namespace CompanionAI_Pathfinder.Tactics
 {
-    public enum CandidateKind { WeaponAttack, Ability, Move }
+    /// <remarks>★ v0.3.18 (AA-2): Toggle - switch on an activatable ability whose activation is a game command
+    /// (bardic performances, Rage family, shaman spirits): TacticalEngine.Toggles.cs.</remarks>
+    public enum CandidateKind { WeaponAttack, Ability, Move, Toggle }
     public enum ActionSlot { Free, Swift, Move, Standard, FullRound }
 
     public sealed class Candidate
@@ -65,6 +67,9 @@ namespace CompanionAI_Pathfinder.Tactics
         public Vector3? MovePoint;
         /// <summary>★ v0.3.17: the move was priced as entering no harmful area: refuse a game path that walks into one.</summary>
         public bool CheckPath;
+
+        /// <summary>★ v0.3.18 (AA-2): the activatable ability a Toggle candidate switches on.</summary>
+        public Kingmaker.UnitLogic.ActivatableAbilities.ActivatableAbility Toggle;
 
         public override string ToString() => $"{Label}={Value:F1}";
     }
@@ -125,7 +130,7 @@ namespace CompanionAI_Pathfinder.Tactics
         internal readonly Dictionary<string, TacticalEngine.Disengage> Provoked = new Dictionary<string, TacticalEngine.Disengage>();
     }
 
-    public static class TacticalEngine
+    public static partial class TacticalEngine
     {
         private const float MinMainValue = 0.5f;
         private const float MinQuickValue = 2f;
@@ -191,6 +196,8 @@ namespace CompanionAI_Pathfinder.Tactics
             try { AddWeaponCandidates(ctx, candidates); } catch (Exception ex) { Main.Error($"[Tactics] weapon candidates: {ex}"); }
             try { AddAbilityCandidates(ctx, candidates); } catch (Exception ex) { Main.Error($"[Tactics] ability candidates: {ex}"); }
             try { AddMovementCandidates(ctx, candidates); } catch (Exception ex) { Main.Error($"[Tactics] movement candidates: {ex}"); }
+            // ★ v0.3.18 (AA-2): after the others, so a toggle that forbids spells is priced against the best spell.
+            try { AddToggleCandidates(ctx, candidates, preview); } catch (Exception ex) { Main.Error($"[Tactics] toggle candidates: {ex}"); }
             try { PriceHeldCharge(ctx, candidates); } catch (Exception ex) { Main.Error($"[Tactics] held charge: {ex.Message}"); }
 
             var usable = candidates
@@ -2567,6 +2574,8 @@ namespace CompanionAI_Pathfinder.Tactics
             }
             switch (c.Kind)
             {
+                case CandidateKind.Toggle:
+                    return ExecuteToggle(unit, c, out command, out failure);
                 case CandidateKind.WeaponAttack:
                 {
                     var attack = new UnitAttack(c.Target);

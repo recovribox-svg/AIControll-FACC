@@ -8,10 +8,10 @@
 //              the item settings, or effect not understood (with the blueprint's component types, for the next step).
 //   [Coverage] toggle: every activatable ability with what the game says about it - on/started, activation type and
 //              the action it costs (UnitActivateAbility.GetCommandType, the game's own rule), group, combat-end and
-//              default flags, resource spending and what is left, and the components of its buff. The AI does not
-//              switch toggles yet; these lines answer, from the player's own game and mods, what the plan needs to know
+//              default flags, resource spending and what is left, and the components of its buff. The AI switches only
+//              command-activated toggles (AA-2, TacticalEngine.Toggles.cs); these lines answer, from the player's own game and mods, what the plan needs to know
 //              (when Fighting Defensively's AC applies, the default of the Inspire Rage "accept" toggle, rage
-//              restrictions).
+//              restrictions). ★ v0.3.18 (AA-2): and whether the AI may start it itself (command-activated toggles).
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -111,6 +111,20 @@ namespace CompanionAI_Pathfinder.Tactics
             return string.Join("+", kinds);
         }
 
+        /// <summary>★ v0.3.18 (AA-2): whether the engine may start this toggle by itself, and why not.</summary>
+        private static string AiNote(UnitEntityData unit, ActivatableAbility toggle)
+        {
+            try
+            {
+                string why = TacticalEngine.ToggleExclusion(unit, toggle);
+                return why == null ? "may start it when worth it" : $"leaves it ({why})";
+            }
+            catch (Exception ex)
+            {
+                return ex.Message;
+            }
+        }
+
         private static void ReportToggle(UnitEntityData unit, ActivatableAbility toggle)
         {
             var bp = toggle.Blueprint;
@@ -138,7 +152,8 @@ namespace CompanionAI_Pathfinder.Tactics
                      $"available={toggle.IsAvailable}; activation {bp.ActivationType}, action {command}" +
                      (bp.Group != ActivatableAbilityGroup.None ? $", group {bp.Group}" : "") +
                      $", ends with combat={bp.DeactivateIfCombatEnded}, off at once={bp.DeactivateImmediately}, " +
-                     $"on by default={bp.IsOnByDefault}{(bp.HiddenInUI ? ", hidden" : "")}{resource}{buff}");
+                     $"on by default={bp.IsOnByDefault}{(bp.HiddenInUI ? ", hidden" : "")}{resource}{buff}; " +
+                     $"AI: {AiNote(unit, toggle)}");
         }
     }
 }
