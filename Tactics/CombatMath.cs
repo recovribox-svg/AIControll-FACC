@@ -595,10 +595,18 @@ namespace CompanionAI_Pathfinder.Tactics
         /// check (RuleSkillCheck.AdjustDCByDifficulty). On a success the buff lasts 1 + (result - DC) / 5 rounds, one more
         /// with Frightening Thug: <paramref name="rounds"/> is that average over the successful rolls.
         /// </summary>
-        public static void IntimidateOdds(UnitEntityData caster, UnitEntityData target, Demoralize action, out float chance, out float rounds)
+        public static void IntimidateOdds(UnitEntityData caster, UnitEntityData target, Demoralize action, out float chance, out float rounds) =>
+            IntimidateOdds(caster, target, action, out chance, out rounds, out _);
+
+        /// <remarks>★ v0.3.18 (test10): <paramref name="fourPlus"/> - the share of the successful rolls whose duration is 4
+        /// rounds or more (Frightening Thug then adds the greater buff for a round). Swordlord's Dazzling Display adds +1
+        /// per Dueling Sword feature to the check, as the game does for that action.</remarks>
+        public static void IntimidateOdds(UnitEntityData caster, UnitEntityData target, Demoralize action, out float chance, out float rounds,
+                                          out float fourPlus)
         {
             chance = 0.5f;
             rounds = 1f;
+            fourPlus = 0f;
             if (caster == null || target == null || action == null) return;
             try
             {
@@ -606,18 +614,24 @@ namespace CompanionAI_Pathfinder.Tactics
                 int rawDc = 10 + target.Descriptor.Progression.CharacterLevel + target.Stats.Wisdom.Bonus;
                 int dc = RuleSkillCheck.AdjustDCByDifficulty(rawDc, out _);
                 int bonus = caster.Stats.CheckIntimidate.ModifiedValue + action.Bonus;
+                if (action.DazzlingDisplay && caster.Descriptor.State.Features.SwordlordWeaponProwess)
+                    bonus += caster.Descriptor.Progression.Features.Enumerable
+                                   .Count(f => f.Param?.WeaponCategory == Kingmaker.Enums.WeaponCategory.DuelingSword);
                 int thug = caster.Descriptor.State.Features.FrighteningThug ? 1 : 0;
-                int successes = 0;
+                int successes = 0, long4 = 0;
                 float sum = 0f;
                 for (int d20 = 1; d20 <= 20; d20++)
                 {
                     int result = d20 + bonus;
                     if (result < dc) continue;
                     successes++;
-                    sum += 1 + (result - rawDc) / 5 + thug;
+                    int duration = 1 + (result - rawDc) / 5 + thug;
+                    sum += duration;
+                    if (duration >= 4) long4++;
                 }
                 chance = successes / 20f;
                 rounds = successes > 0 ? sum / successes : 1f;
+                fourPlus = successes > 0 ? (float)long4 / successes : 0f;
             }
             catch (Exception ex)
             {
@@ -729,7 +743,7 @@ namespace CompanionAI_Pathfinder.Tactics
         /// (VitalStrikeMod - 1) more rolls of the weapon's damage dice, and with the mythic feat as many more times the
         /// weapon damage's bonus, added after the critical multiplier - so only the hit chance counts.
         /// </summary>
-        public static float VitalStrikeExtra(UnitEntityData unit, WeaponAttackEstimate est,
+        public static float VitalStrikeExtra(UnitEntityData unit, UnitEntityData target, WeaponAttackEstimate est,
                                              Kingmaker.UnitLogic.Abilities.Components.AbilityCustomVitalStrike vitalStrike)
         {
             int times = Math.Max(0, (vitalStrike?.VitalStrikeMod ?? 0) - 1);
@@ -745,6 +759,12 @@ namespace CompanionAI_Pathfinder.Tactics
                 float extra = times * Average(weaponDamage.Dice);
                 if (vitalStrike.MythicBlueprint != null && unit.Descriptor.HasFact(vitalStrike.MythicBlueprint))
                     extra += times * Math.Max(0, weaponDamage.Bonus);
+                // ★ v0.3.18 (test10): Rowdy - (2 x sneak attack dice)d6 precision damage on the Vital Strike
+                // (VitalStrikePart.OnEventDidTrigger(RuleCalculateWeaponStats), physical weapon damage only), nothing
+                // against a target immune to precision damage (AddImmunityToPrecisionDamage declines it).
+                int sneak = SafeStat(unit.Stats.SneakAttack);
+                if (sneak > 0 && vitalStrike.RowdyFeature != null && unit.Descriptor.HasFact(vitalStrike.RowdyFeature) && !ImmuneToPrecision(target))
+                    extra += 2 * sneak * 3.5f;
                 return est.FirstHitChance * extra;
             }
             catch (Exception ex)
@@ -752,6 +772,24 @@ namespace CompanionAI_Pathfinder.Tactics
                 Main.Verbose($"[Math] vital strike {unit.CharacterName}: {ex.Message}");
                 return 0f;
             }
+        }
+
+        /// <summary>★ v0.3.18 (test10): the target declines precision damage (AddImmunityToPrecisionDamage in its facts).</summary>
+        public static bool ImmuneToPrecision(UnitEntityData target)
+        {
+            if (target == null) return false;
+            try
+            {
+                foreach (var fact in target.Facts.List)
+                {
+                    var components = fact?.Blueprint?.ComponentsArray;
+                    if (components == null) continue;
+                    foreach (var c in components)
+                        if (c is Kingmaker.UnitLogic.FactLogic.AddImmunityToPrecisionDamage) return true;
+                }
+            }
+            catch { }
+            return false;
         }
 
         /// <summary>★ v0.3.18 (AA-4): how many targets a chain reaches in all (its TargetsCount for this cast).</summary>

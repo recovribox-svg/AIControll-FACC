@@ -1114,6 +1114,29 @@ namespace CompanionAI_Pathfinder.Tactics
 
         private static readonly HashSet<string> ReportedUnknown = new HashSet<string>();
 
+        /// <summary>
+        /// ★ v0.3.18 (test10): what the cast being scored is aimed at (a creature or the ground). Branch conditions are
+        /// evaluated in a cast context with that as its main target, as the game's own cast has it: "is the main target"
+        /// (ContextConditionIsMainTarget: a bomb's direct hit against its splash) was true for every unit of an area,
+        /// because each was evaluated as the main target of its own throwaway cast. Outside a scored aim (single-target
+        /// questions), each unit is its own main target, as before.
+        /// </summary>
+        [ThreadStatic] private static TargetWrapper s_Aim;
+
+        internal static IDisposable AimedAt(TargetWrapper aim)
+        {
+            var previous = s_Aim;
+            s_Aim = aim;
+            return new AimScope(previous);
+        }
+
+        private sealed class AimScope : IDisposable
+        {
+            private readonly TargetWrapper m_Previous;
+            public AimScope(TargetWrapper previous) { m_Previous = previous; }
+            public void Dispose() => s_Aim = m_Previous;
+        }
+
         public EffectApplies AppliesTo(GameAction effect, AbilityData ability, UnitEntityData target)
         {
             return Evaluate(effect != null && m_Guards.TryGetValue(effect, out var g) ? g : NoGuards, ability, target);
@@ -1174,8 +1197,10 @@ namespace CompanionAI_Pathfinder.Tactics
             // Caster-dependent conditions (IsAlly, CasterHasFact, HasBuffFromCaster...): key by caster and target.
             // ★ v0.3.18 (review): and by the ability itself (a scroll and the spell, metamagic copies: caster level and
             // shared values differ) - one checker is shared by every copy of the blueprint.
+            var aim = s_Aim ?? new TargetWrapper(target);
             string key = $"{caster?.UniqueId}|{target.UniqueId}|{ability.Blueprint?.AssetGuid}|{AbilityDiscovery.MetamagicTag(ability)}|" +
-                         $"{ability.SourceItem?.UniqueId}|{ability.Spellbook?.Blueprint?.AssetGuid}";
+                         $"{ability.SourceItem?.UniqueId}|{ability.Spellbook?.Blueprint?.AssetGuid}|" +
+                         (aim.Unit != null ? aim.Unit.UniqueId : $"{aim.Point.x:F1},{aim.Point.z:F1}");
             if (!CheckerCache.TryGetValue(checker, out var perUnit))
                 CheckerCache[checker] = perUnit = new Dictionary<string, CheckerResult>();
             if (perUnit.TryGetValue(key, out var cached) && cached.Frame == frame) return cached.Result;
@@ -1196,7 +1221,7 @@ namespace CompanionAI_Pathfinder.Tactics
                 }
                 else
                 {
-                    var context = CombatMath.CreateContext(ability, new TargetWrapper(target));
+                    var context = CombatMath.CreateContext(ability, aim);
                     if (context != null)
                     {
                         using (context.GetDataScope(new TargetWrapper(target)))
@@ -1526,6 +1551,31 @@ namespace CompanionAI_Pathfinder.Tactics
         #endregion
 
         #region Control classification
+
+        /// <summary>
+        /// ★ v0.3.18 (test10): the share of an enemy's worth per round that this buff takes while it lasts, on the
+        /// engine's control scale (hard control 1, soft 0.4, a plain debuff 0.25): from its descriptor and conditions, as
+        /// a profile classifies the buffs it applies.
+        /// </summary>
+        internal static float ControlShareOf(BlueprintBuff buff)
+        {
+            if (buff == null) return 0f;
+            try
+            {
+                var strength = ClassifyControl(AbilityClassifier.AnalyzeCCTypeFromDescriptor(
+                    buff.GetComponent<SpellDescriptorComponent>()?.Descriptor.Value ?? SpellDescriptor.None));
+                foreach (var condition in ConditionsOf(buff))
+                {
+                    var s = ClassifyCondition(condition);
+                    if (s > strength) strength = s;
+                }
+                return strength == ControlStrength.Hard ? 1f : strength == ControlStrength.Soft ? 0.4f : 0.25f;
+            }
+            catch
+            {
+                return 0.25f;
+            }
+        }
 
         private static ControlStrength ClassifyControl(CCType cc)
         {

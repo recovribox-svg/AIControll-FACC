@@ -14,6 +14,11 @@
 //   Vital Strike (AbilityCustomVitalStrike): one attack with the first weapon, plus (VitalStrikeMod - 1) more rolls of its
 //   damage dice after the critical multiplier (CombatMath.VitalStrikeExtra) - a standard action that beats a single
 //   attack and, after a move, a full attack the unit cannot make.
+//   Demoralize upgrades (Demoralize.RunAction), on a successful check: Frightening Thug's greater buff (Frightened) for a
+//   round when the duration reaches 4; Hellknight Fearsomeness within 3 m puts the greater buff on instead of Shaken for
+//   the whole duration; Shatter Confidence adds its buff for the duration; a mythic Trickster's Persuasion paralyses on a
+//   failed Will save (10 + Persuasion ranks), saved again each turn. Each counted on the control scale of the buff it
+//   applies, never on a target immune to that buff.
 //   Cleave (AbilityCustomCleave): an attack on the target, then on the other enemies in the melee hand's reach by distance
 //   to it, each made only while the attacks before it hit; two at most, all with Great Cleave.
 using System;
@@ -26,6 +31,7 @@ using Kingmaker.UnitLogic;
 using Kingmaker.UnitLogic.Abilities;
 using Kingmaker.UnitLogic.Abilities.Components;
 using Kingmaker.UnitLogic.Buffs.Blueprints;
+using Kingmaker.UnitLogic.Mechanics.Actions;
 using UnityEngine;
 
 namespace CompanionAI_Pathfinder.Tactics
@@ -113,7 +119,7 @@ namespace CompanionAI_Pathfinder.Tactics
             var unit = ctx.Unit;
             var est = CombatMath.EstimateWeaponAttack(unit, target, full: false);
             if (est == null) return 0f;
-            float expected = est.ExpectedDamage + CombatMath.VitalStrikeExtra(unit, est, vitalStrike);
+            float expected = est.ExpectedDamage + CombatMath.VitalStrikeExtra(unit, target, est, vitalStrike);
             float value = DamageValue(target, expected, est.AnyHitChance) * AttackWeight(ctx, target, est.IsRanged) *
                           WakeFactor(target, expected);
             // A shot provokes like any ranged attack roll (where the unit stands now; after a move the ability's approach
@@ -164,6 +170,56 @@ namespace CompanionAI_Pathfinder.Tactics
             }
             if (counted > 1) why = $"dmg:cleave {counted}";
             return value * AttackWeight(ctx, target, false);
+        }
+
+        /// <summary>
+        /// ★ v0.3.18 (test10): the extra share of <paramref name="enemy"/>'s worth per round that Demoralize's upgrades give
+        /// on a successful check, beyond its Shaken buff (<paramref name="shaken"/> share for <paramref name="rounds"/>).
+        /// Negative when the greater buff replaces Shaken on a target immune to it.
+        /// </summary>
+        private static float DemoralizeUpgrades(TacticalContext ctx, AbilityData ability, Demoralize action, UnitEntityData enemy,
+                                                float shaken, float rounds)
+        {
+            var caster = ctx.Unit;
+            float share = 0f;
+            try
+            {
+                var features = caster.Descriptor.State.Features;
+                var greater = action.GreaterBuff;
+                bool greaterWorks = greater != null && !enemy.Buffs.HasFact(greater) && !CombatMath.BuffImmune(enemy, greater, ability);
+                float greaterShare = greaterWorks ? AbilityProfile.ControlShareOf(greater) : 0f;
+                if (features.HellknightFearsomeness && caster.DistanceTo(enemy.Position) < 3f && greater != null)
+                {
+                    // The greater buff instead of Shaken, for the whole duration.
+                    share += (greaterShare - shaken) * rounds;
+                }
+                else if (features.FrighteningThug && greaterWorks)
+                {
+                    CombatMath.IntimidateOdds(caster, enemy, action, out _, out _, out float fourPlus);
+                    share += fourPlus * greaterShare;   // one round
+                }
+                if (action.ShatterConfidenceFeature != null && action.ShatterConfidenceBuff != null &&
+                    caster.Descriptor.HasFact(action.ShatterConfidenceFeature) &&
+                    !CombatMath.BuffImmune(enemy, action.ShatterConfidenceBuff, ability))
+                    share += AbilityProfile.ControlShareOf(action.ShatterConfidenceBuff) * rounds;
+                if (features.TricksterPersuasionParalyze)
+                {
+                    var paralysis = Kingmaker.Blueprints.Root.BlueprintRoot.Instance.SystemMechanics.ParalyzedBuffMindAffectingSaveEachTurn;
+                    if (paralysis != null && !CombatMath.BuffImmune(enemy, paralysis, ability))
+                    {
+                        int dc = 10 + caster.Stats.SkillPersuasion.BaseValue;
+                        float fail = Mathf.Clamp((dc - enemy.Stats.SaveWill.ModifiedValue - 1) / 20f, 0.05f, 0.95f);
+                        // Saved again each turn: it lasts while the saves fail, at most the duration.
+                        float lasts = Math.Min(rounds, 1f / Math.Max(0.05f, 1f - fail));
+                        share += fail * 1f * lasts;
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                Main.Verbose($"[Tactics] demoralize upgrades {caster.CharacterName}->{enemy.CharacterName}: {ex.Message}");
+            }
+            return share;
         }
     }
 }

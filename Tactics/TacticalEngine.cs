@@ -1640,7 +1640,10 @@ namespace CompanionAI_Pathfinder.Tactics
                     }
                 }
 
-                float value = ScoreAbility(ctx, ability, profile, slot, target, out string why);
+                float value;
+                string why;
+                using (AbilityProfile.AimedAt(wrapper))   // ★ v0.3.18 (test10): conditions see the real main target
+                    value = ScoreAbility(ctx, ability, profile, slot, target, out why);
                 if (value <= 0f) continue;
                 // ★ v0.3.18: an area that can only be aimed at a creature (not at the ground) is applied to that creature
                 // first; its spell resistance or immunity stops the whole area (AbilityProfile.TargetOn).
@@ -2178,6 +2181,10 @@ namespace CompanionAI_Pathfinder.Tactics
                     float own = profile.EffectRoundsOn(ability, enemy);
                     if (own > 0f) rounds = Math.Min(rounds, Math.Max(1f, own));
                     float enemyValue = p * CombatMath.Threat(enemy) * strength * rounds;
+                    // ★ v0.3.18 (test10): what Demoralize adds or replaces for this caster (Frightening Thug, Hellknight,
+                    // Shatter Confidence, Trickster) on a successful check (p already holds the check's chance).
+                    if (profile.Intimidation != null && buffs.Contains(profile.Intimidation.Buff))
+                        enemyValue += p * CombatMath.Threat(enemy) * DemoralizeUpgrades(ctx, ability, profile.Intimidation, enemy, strength, rounds);
                     // ★ v0.3.9: an enemy that already cannot act (asleep, paralysed, stunned) gains little from more
                     // control: Orvath stunned (Grasp Heart) the Mite Scout he had just put to sleep.
                     // ★ v0.3.18 (review): x0.4 on top of Threat's own x0.25 for a disabled enemy - 0.1 of its worth, as
