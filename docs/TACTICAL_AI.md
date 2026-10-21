@@ -794,3 +794,79 @@ The decompiled game settles what the plan left open:
 - One note for later: the Fortitude save against Coup de Grace's death effect was passed 7 times in 25 against 3.5
   expected. The sample is too small to act on.
 
+## 28. v0.3.18 (test5): active abilities, step AA-1 (foundations)
+
+The plan is `docs/ACTIVE_ABILITY_PLAN.md` §H, AA-1. Its items 1 (shared-value Hit Dice) and 5 (the per-target "reached
+nothing" safety net) shipped in 0.3.17. Nothing here names an ability or a mod. Each change reads the game's own
+components and rules, so other mods' content is covered when it uses them.
+
+### Damage, heals and kills the profile could not read (plan F)
+
+- **Previewed damage and heals.** An action that is not the vanilla `ContextActionDealDamage` but implements the game's
+  `IDealDamageProvider` is now valued by the game's own preview. That covers `ContextActionDealWeaponDamage`, Tabletop
+  Tweaks' `ContextActionDealDamageTTT` (Oracle, Lich, mythic fixes) and Mystical Mayhem's corrupting ray and drain. It
+  works as in the attack tooltip (`TacticalCombatAttackTooltipVM`): the action builds its damage rule in the ability's
+  context without triggering it, `UnitHelper.CalculateAbilityDamage` (a fake rule) gives its least and most after the
+  target's reductions, and the mean of the two is used. The same applies to `IHealDamageProvider` heals
+  (`RuleHealDamage`, fake).
+- **Kills.** `ContextActionKill` (Isekai's Instakill and Devour Prey, Power Word Kill) is valued as removing the enemy,
+  with the chance that it lands. That chance is a failed save plus spell resistance and immunity, not "half on a save",
+  through the branch the kill sits in. It replaces the damage value when it is higher.
+
+### Options that were never offered
+
+- **Conversions.** The action bar offers a spell's conversions (`GetConvertedAbilityData`): spontaneous cure and inflict
+  from a prepared slot, shadow spells, and Tabletop Tweaks' Quick Channel and Quicken Blessing. Only variants were
+  taken before, so a cleric with no Cure prepared could not heal.
+  - Now all of a spell's conversions are offered, and an ability's only those the game shows (`AbilityDiscovery`).
+  - Slot restores and slot-to-resource conversions are bookkeeping, not actions, and are left out.
+  - A conversion is its own option (its key says it spends another spell's slot). Conversions of one spell from slots
+    of the same level are one option: the one that can be cast now.
+- **Point-only summons.** Summon Monster and Summon Nature's Ally can only be aimed at a point, so they had no target
+  side and were never offered. They are now aimed at a spot towards the nearest enemy, a few metres short of it,
+  within range and line of sight, on walkable ground outside harmful areas (`SummonPoint`). The label is
+  `->a spot near the fight`. A summon counts as used once per fight, whatever it was aimed at.
+- **Toggle-buff effects.** Tabletop Tweaks' `AbilityEffectToggleBuff` (Warrior Spirit, Black Blade attunements)
+  switches a buff on the caster on or off. It was read as "utility", and a cast could switch the buff off. Now any
+  effect component whose type ends in `ToggleBuff` and exposes its buff makes the profile a toggle: the engine casts it
+  only while the buff is off and worth having.
+
+### Corrections
+
+- **Coup de Grace provokes only when it does.** Phase 2 priced its attacks of opportunity always. The vanilla ability
+  does not provoke; Tabletop Tweaks' version does, through the game's `ContextActionProvokeAttackOfOpportunity` on the
+  caster in its own component. `AbilityProfile.CasterProvokes` finds that action in any action list of the
+  blueprint's components, and every such ability now pays the provoke (`ProvokeLoss`).
+- **Enchant rule.** Only the game's own enchant actions count. Any type name with "Enchant" matched Mystical Mayhem's
+  Enchant Item and counted Mage's Disjunction as an enchantment.
+- **Fallback order.** The order is now: summon, consumables (never a fallback, as the project rule says), dispel and
+  removal, then enchantment.
+- **No "utility" value.** An ability with no recognised effect at all got "utility, once per fight". It was never
+  chosen in seven logs, and it offered things like Isekai's Planar Coliseum Return in combat. Those abilities now get
+  0, and the coverage report lists them as "effect not understood".
+- **Blacklist.**
+  - A cantrip is now judged by its spell-list level. A level-1 character's class touch power (no spellbook) counted
+    as a cantrip through `AbilityData.SpellLevel`'s fallback.
+  - A touch spell's damage is read from its sticky delivery (through the profile), so damaging touch powers are no
+    longer blacklisted as "touch cantrip with no damage".
+  - The "Daze cantrip - low HD limit" rule is removed. It never matched, and the Hit Dice limit is now read per target.
+- **More conditions evaluated per target.** The game's read-only checks were added to the safe list. Each was checked
+  in the decompiled game for side effects:
+  - target and caster HP;
+  - flanked, flat-footed, engaged;
+  - weapon, shield and two-handed equipment;
+  - buffs by school, rank or uniqueness;
+  - stat values, arcane or divine caster, blueprint, see-invisible, main target, distance, in combat, gender, main
+    character, touch charge, buff immunity.
+
+  Spirit Weapon Enchantment's weapon check was "not evaluated - both branches counted" in every log. Favored Enemy is
+  left out, because its check creates a game part on the caster.
+
+### To check in the game
+
+- A cleric or oracle out of Cure slots: `Cure ... ` options from other slots appear and are cast.
+- A Summon Monster spell on the action bar: `->a spot near the fight`, and the creature appears near the enemies.
+- With Tabletop Tweaks: Coup de Grace shows `[casting provokes N]` next to engaged enemies. Without it, it shows no
+  provoke tag.
+- The `[Coverage]` "effect not understood" lines: these abilities are no longer offered.
+

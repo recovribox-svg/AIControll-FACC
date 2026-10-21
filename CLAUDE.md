@@ -31,7 +31,9 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
   expected rounds and enemy danger from the fight's observed damage, kill-chance bonus, continuous heal curve, ranged
   attack rolls provoke (`Tactics/ProvokeObserver`, `ProvokeRisk`), real-time area escape through the engine; one
   resistance path - spell immunity in the game's order (`Tactics/ResistanceRule`), buff immunity (`CombatMath.BuffImmune`),
-  spell attack rolls by the game's attack rule; real-time cannot-act rules from the game code)
+  spell attack rolls by the game's attack rule; real-time cannot-act rules from the game code; active abilities AA-1 -
+  damage/heals by the game's preview (`IDealDamageProvider`), kill actions, conversions, point-target summons, toggle-buff
+  effects, caster-provoke detection, no "utility" fallback, more read-only conditions)
 
 ## Reference Resources
 - **Rogue Trader CompanionAI v3.5.7**: `C:\Users\veria\Downloads\CompanionAI_v3-master - v3.5.7`

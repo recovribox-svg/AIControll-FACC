@@ -519,6 +519,9 @@ Each step ships as a test build. A step passes when its scenarios behave as list
 
 ### AA-1: foundations (high confidence, broad effect)
 
+**Status: implemented in 0.3.18-test5** (`docs/TACTICAL_AI.md` §28). Items 1 (shared-value Hit Dice) and 5 shipped in
+0.3.17. Item 1's next predicates are the read-only game conditions listed there.
+
 1. **Conditions.**
    - Hit Dice with shared values: dice count and bonus from the ability's context, no rolling. Yes / no / probability.
    - Add the next most common predicates once AA-0 shows which conditions appear: creature type, alignment, has

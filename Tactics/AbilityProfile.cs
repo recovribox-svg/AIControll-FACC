@@ -60,9 +60,12 @@ namespace CompanionAI_Pathfinder.Tactics
     {
         public BlueprintAbility Blueprint { get; }
 
-        public readonly List<ContextActionDealDamage> Damage = new List<ContextActionDealDamage>();
-        /// <summary>Heals of the ability's target(s).</summary>
-        public readonly List<ContextActionHealTarget> Heals = new List<ContextActionHealTarget>();
+        /// <remarks>★ v0.3.18 (AA-1): besides ContextActionDealDamage, a kill (ContextActionKill: the target's HP) and any
+        /// other action the game can preview (IDealDamageProvider: ContextActionDealWeaponDamage, Tabletop Tweaks'
+        /// ContextActionDealDamageTTT, Mystical Mayhem's corrupting ray) - the same preview as the game's attack tooltip.</remarks>
+        public readonly List<GameAction> Damage = new List<GameAction>();
+        /// <summary>Heals of the ability's target(s). ★ v0.3.18: also actions the game previews (IHealDamageProvider).</summary>
+        public readonly List<GameAction> Heals = new List<GameAction>();
         /// <summary>★ v0.3.1: heals run on the caster (ContextActionOnContextCaster, life drain) or on other units
         /// (party members, pet, random units around) - not on the ability's target.</summary>
         public readonly List<ContextActionHealTarget> CasterHeals = new List<ContextActionHealTarget>();
@@ -350,6 +353,7 @@ namespace CompanionAI_Pathfinder.Tactics
             }
 
             IsCharge = Blueprint.GetComponent<AbilityCustomCharge>() != null;
+            CasterProvokes = FindCasterProvoke(Blueprint);
 
             var around = Blueprint.GetComponent<AbilityTargetsAround>();
             SelectsTargets = around != null;
@@ -406,6 +410,64 @@ namespace CompanionAI_Pathfinder.Tactics
             AppliesHarmfulBuffs = !HelpfulToAllies && Blueprint.Range != AbilityRange.Personal && TargetBuffs.Any(IsHarmfulBuff);
         }
 
+        /// <summary>
+        /// ★ v0.3.18 (AA-1): using the ability makes the caster provoke attacks of opportunity: the game's own
+        /// ContextActionProvokeAttackOfOpportunity on the caster, in any action list of the blueprint's components -
+        /// Tabletop Tweaks' Coup de Grace (its CoupDeGraceTTT component) provokes this way; the vanilla one does not.
+        /// </summary>
+        public bool CasterProvokes { get; private set; }
+
+        private static bool FindCasterProvoke(BlueprintAbility bp)
+        {
+            try
+            {
+                foreach (var component in bp.ComponentsArray ?? new BlueprintComponent[0])
+                {
+                    if (component == null) continue;
+                    foreach (var field in component.GetType().GetFields(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance))
+                    {
+                        if (field.FieldType != typeof(ActionList)) continue;
+                        if (ContainsCasterProvoke((field.GetValue(component) as ActionList)?.Actions, 0)) return true;
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                Main.Verbose($"[Profile] {bp?.name} provoke check: {ex.Message}");
+            }
+            return false;
+        }
+
+        private static bool ContainsCasterProvoke(GameAction[] actions, int depth)
+        {
+            if (actions == null || depth > 6) return false;
+            foreach (var action in actions)
+            {
+                if (action is ContextActionProvokeAttackOfOpportunity provoke && provoke.ApplyToCaster) return true;
+                foreach (var child in ChildActionLists(action))
+                    if (ContainsCasterProvoke(child, depth + 1)) return true;
+            }
+            return false;
+        }
+
+        /// <summary>★ v0.3.18: the buff a toggle-buff effect component switches (a "Buff" property or "m_Buff" field).</summary>
+        private static BlueprintBuff ToggledBuff(BlueprintComponent component)
+        {
+            try
+            {
+                var type = component.GetType();
+                object value = type.GetProperty("Buff", BindingFlags.Public | BindingFlags.Instance)?.GetValue(component)
+                               ?? type.GetField("m_Buff", BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance)?.GetValue(component);
+                if (value is BlueprintBuff buff) return buff;
+                if (value is BlueprintBuffReference reference) return reference.Get();
+            }
+            catch (Exception ex)
+            {
+                Main.Verbose($"[Profile] toggle buff of {component?.GetType().Name}: {ex.Message}");
+            }
+            return null;
+        }
+
         /// <summary>★ v0.3.12: conditions a buff puts on its owner (AddCondition, BuffStatusCondition).</summary>
         private static IEnumerable<UnitCondition> ConditionsOf(BlueprintBuff buff)
         {
@@ -436,6 +498,22 @@ namespace CompanionAI_Pathfinder.Tactics
                 if (run.SavingThrowType != SavingThrowType.Unknown && Save == SavingThrowType.Unknown)
                     Save = run.SavingThrowType;
                 Walk(run.Actions?.Actions, visited, depth, subject, 0, NoGuards);
+            }
+
+            // ★ v0.3.18 (AA-1): an ability whose effect switches a buff on the caster on or off (Tabletop Tweaks'
+            // AbilityEffectToggleBuff: Warrior Spirit, Black Blade attunements). Read without naming the mod: an effect
+            // component whose type ends in "ToggleBuff" and that exposes its buff. The buff counts as applied and removed,
+            // so the profile is a toggle (IsToggle) and the engine only casts it while the buff is off and worth having -
+            // a cast while it is on would switch it off.
+            foreach (var component in bp.ComponentsArray ?? new BlueprintComponent[0])
+            {
+                if (!(component is Kingmaker.UnitLogic.Abilities.Components.Base.AbilityApplyEffect) || !component.GetType().Name.EndsWith("ToggleBuff")) continue;
+                var toggled = ToggledBuff(component);
+                if (toggled == null) continue;
+                CasterBuffs.Add(toggled);
+                RemovedBuffs.Add(toggled);
+                m_AllBuffs++;
+                HasLongBuff = true;
             }
 
             var projectile = bp.GetComponent<AbilityDeliverProjectile>();
@@ -493,6 +571,22 @@ namespace CompanionAI_Pathfinder.Tactics
                         Damage.Add(dmg);
                         m_Guards[dmg] = guards;
                         if (dmg.HalfIfSaved) HalfOnSave = true;
+                        break;
+                    // ★ v0.3.18 (AA-1): a kill counts as damage equal to the target's HP, through the branch it sits in
+                    // (a failed save, an HP limit). Isekai's Instakill, Devour Prey, Power Word Kill.
+                    case ContextActionKill kill when subject == EffectSubject.Target:
+                        Damage.Add(kill);
+                        m_Guards[kill] = guards;
+                        break;
+                    // ★ v0.3.18 (AA-1): damage and heals the profile cannot read but the game can preview.
+                    case GameAction provided when provided is IDealDamageProvider && subject == EffectSubject.Target:
+                        Damage.Add(provided);
+                        m_Guards[provided] = guards;
+                        break;
+                    case GameAction providedHeal when providedHeal is IHealDamageProvider && !(providedHeal is ContextActionHealTarget) &&
+                                                     subject == EffectSubject.Target:
+                        Heals.Add(providedHeal);
+                        m_Guards[providedHeal] = guards;
                         break;
                     case ContextActionHealTarget heal:
                         // A heal run on the caster (life drain) or on other units is not a heal of the target.
@@ -558,8 +652,13 @@ namespace CompanionAI_Pathfinder.Tactics
                         break;
                 }
 
-                string typeName = action.GetType().Name;
-                if (typeName.Contains("Enchant") || typeName.Contains("EnhanceWeapon"))
+                // ★ v0.3.18 (AA-1): the game's own enchant actions only (ContextActionEnchantWornItem, the weapon / armour /
+                // shield enchant pools). Any type name with "Enchant" matched Mystical Mayhem's Enchant Item and counted
+                // Tabletop Tweaks' Mage's Disjunction as an enchantment before its dispel.
+                var actionType = action.GetType();
+                string typeName = actionType.Name;
+                if ((typeName.Contains("Enchant") || typeName.Contains("EnhanceWeapon")) &&
+                    (actionType.Namespace ?? "").StartsWith("Kingmaker"))
                     Enchants = true;
 
                 var childSubject = ChildSubject(subject, action);
@@ -787,7 +886,23 @@ namespace CompanionAI_Pathfinder.Tactics
             typeof(ContextConditionIsAlly), typeof(ContextConditionIsEnemy), typeof(ContextConditionIsCaster),
             typeof(ContextConditionTargetIsYourself), typeof(ContextConditionAlive), typeof(ContextConditionIsUnconscious),
             typeof(ContextConditionIsHelpless), typeof(ContextConditionIsPartyMember), typeof(ContextConditionCharacterClass),
-            typeof(ContextConditionSize), typeof(ContextConditionIsAnimalCompanion)
+            typeof(ContextConditionSize), typeof(ContextConditionIsAnimalCompanion),
+            // ★ v0.3.18 (AA-1): more of the game's conditions whose check only reads the target or caster (each checked
+            // in the decompiled game for side effects): HP share, flanked / flat-footed / engaged, equipment, buffs by
+            // school, rank or uniqueness, stats, caster kind, blueprint, sight, main target, distance, combat state.
+            // Spirit Weapon Enchantment's weapon check was "not evaluated - both branches counted" in every log.
+            // Favored Enemy is left out: its check creates a part on the caster.
+            typeof(ContextConditionCompareTargetHP), typeof(ContextConditionCompareCasterHP), typeof(ContextConditionIsFlanked),
+            typeof(ContextConditionIsFlatFooted), typeof(ContextConditionTargetIsEngaged), typeof(ContextConditionIsWeaponEquipped),
+            typeof(ContextConditionIsShieldEquipped), typeof(ContextConditionIsTwoHandedEquipped),
+            typeof(ContextConditionCasterHasTwoWeapons), typeof(ContextConditionCasterWeaponInTwoHands),
+            typeof(ContextConditionCasterHasBuffWithDescriptor), typeof(ContextConditionHasBuffWithSpellSchool),
+            typeof(ContextConditionHasUniqueBuff), typeof(ContextConditionStatValue), typeof(ContextConditionTargetIsArcaneCaster),
+            typeof(ContextConditionTargetIsDivineCaster), typeof(ContextConditionTargetIsBlueprint),
+            typeof(ContextConditionTargetCanSeeInvisible), typeof(ContextConditionIsMainTarget),
+            typeof(ContextConditionDistanceToTarget), typeof(ContextConditionIsInCombat), typeof(ContextConditionBuffRank),
+            typeof(ContextConditionHasBuffImmunityWithDescriptor), typeof(ContextConditionHasTouchSpellCharge),
+            typeof(ContextConditionGender), typeof(ContextConditionIsMainCharacter)
         };
 
         /// <summary>

@@ -92,7 +92,7 @@ namespace CompanionAI_Pathfinder.Tactics
             if (blacklisted.Count > 0) Main.Log($"[Coverage] {unit.CharacterName} blacklisted: {string.Join("; ", blacklisted)}");
             if (itemPolicy.Count > 0) Main.Log($"[Coverage] {unit.CharacterName} held back by the item settings: {string.Join("; ", itemPolicy)}");
             if (unread.Count > 0)
-                Main.Log($"[Coverage] {unit.CharacterName} effect not understood (valued only as 'utility', once per fight): {string.Join("; ", unread)}");
+                Main.Log($"[Coverage] {unit.CharacterName} effect not understood (not used: ★ v0.3.18 no 'utility' value any more): {string.Join("; ", unread)}");
         }
 
         private static string Kinds(AbilityProfile p)

@@ -31,7 +31,9 @@ namespace CompanionAI_Pathfinder.Tactics
             var internals = KineticBladeInternals(unit);
             var leftOut = new List<string>();
 
-            void Add(AbilityData a)
+            void Add(AbilityData a) => AddOne(a, true);
+
+            void AddOne(AbilityData a, bool withConversions)
             {
                 if (a?.Blueprint == null) return;
                 // ★ v0.3.15: abilities only the game itself uses. Orvath's Kinetic Blade carries its own "Fire Blast" (the
@@ -63,6 +65,41 @@ namespace CompanionAI_Pathfinder.Tactics
                     return;
                 }
                 if (seen.Add(Key(a))) result.Add(a);
+                if (withConversions) AddConversions(a);
+            }
+
+            // ★ v0.3.18 (AA-1): the conversions the action bar offers for this ability (MechanicActionBarSlotSpell /
+            // MechanicActionBarSlotAbility.GetConvertedAbilityData): spontaneous cure and inflict from a prepared slot,
+            // shadow spells, Tabletop Tweaks' Quick Channel and Quicken Blessing. They were dropped, so a cleric with no
+            // Cure prepared could not heal. Variants are handled above; slot restores and slot-to-resource conversions
+            // (Arcane Reservoir points, Pearl-of-Power-like abilities) are bookkeeping, not actions. A spell's conversions
+            // are all offered; an ability's only those the game shows. Equivalent conversions (the same spell from two
+            // prepared spells of one level) are one option, the one that can be cast now when there is one.
+            void AddConversions(AbilityData a)
+            {
+                List<AbilityData> conversions;
+                try { conversions = a.GetConversions().ToList(); }
+                catch (Exception ex)
+                {
+                    Main.Verbose($"[Abilities] conversions of {a.Name}: {ex.Message}");
+                    return;
+                }
+                foreach (var conv in conversions)
+                {
+                    if (conv?.Blueprint == null || conv.Blueprint == a.Blueprint || a.Blueprint.HasVariant(conv.Blueprint)) continue;
+                    if (conv.Blueprint.GetComponent<AbilityRestoreSpellSlot>() != null ||
+                        conv.Blueprint.GetComponent<AbilityConvertSpellLevelToResource>() != null) continue;
+                    if (a.Spellbook == null && !conv.IsVisible()) { leftOut.Add(conv.Name); continue; }
+                    string key = ConversionKey(conv);
+                    int index = result.FindIndex(x => x.ConvertedFrom != null && ConversionKey(x) == key);
+                    if (index >= 0)
+                    {
+                        if (!result[index].IsAvailable && conv.IsAvailable) result[index] = conv;
+                        continue;
+                    }
+                    if (seen.Contains(Key(conv))) continue;
+                    AddOne(conv, false);
+                }
             }
 
             try
@@ -139,9 +176,24 @@ namespace CompanionAI_Pathfinder.Tactics
             return set;
         }
 
-        /// <summary>What makes two AbilityData different options: blueprint, spellbook, source item, metamagic.</summary>
+        /// <summary>
+        /// What makes two AbilityData different options: blueprint, spellbook, source item, metamagic.
+        /// ★ v0.3.18: and, for a conversion, that it is one: it spends another spell's slot (a known Cure and a Cure
+        /// converted from Bless are both options).
+        /// </summary>
         public static string Key(AbilityData a) =>
-            $"{a.Blueprint.AssetGuid}|{a.Spellbook?.Blueprint?.AssetGuid}|{a.SourceItem?.UniqueId}|{MetamagicTag(a)}";
+            $"{a.Blueprint.AssetGuid}|{a.Spellbook?.Blueprint?.AssetGuid}|{a.SourceItem?.UniqueId}|{MetamagicTag(a)}" +
+            (a.ConvertedFrom != null ? $"|conv{SafeLevel(a.ConvertedFrom)}" : "");
+
+        /// <summary>★ v0.3.18: conversions of one spell from slots of one level are the same option.</summary>
+        private static string ConversionKey(AbilityData a) =>
+            $"{a.Blueprint.AssetGuid}|{a.Spellbook?.Blueprint?.AssetGuid}|{MetamagicTag(a)}|{SafeLevel(a.ConvertedFrom ?? a)}";
+
+        private static int SafeLevel(AbilityData a)
+        {
+            try { return a.Spellbook?.GetSpellLevel(a) ?? a.SpellLevel; }
+            catch { return -1; }
+        }
 
         /// <summary>★ v0.3.7: metamagic and heightening make a different spell (cost, slot level): keep them apart.</summary>
         public static string MetamagicTag(AbilityData ability)

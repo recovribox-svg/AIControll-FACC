@@ -289,13 +289,24 @@ namespace CompanionAI_Pathfinder.Tactics
             int cl = Math.Max(1, ability.CalculateParams()?.CasterLevel ?? 1);
             DamageMetamagic(ability, out bool maximize, out bool empower);
             var parts = new List<KeyValuePair<GameAction, float>>();
-            foreach (var dmg in profile.Damage)
+            foreach (var action in profile.Damage)
             {
                 // ★ v0.3.1: only the branch that runs for this target (Inflict Wounds heals undead, Cure harms them).
-                if (target != null && profile.AppliesTo(dmg, ability, target) == EffectApplies.No) continue;
-                float avg = EvaluateDice(dmg.Value, ctx, Math.Min(cl, 10), maximize, empower);
-                if (dmg.Half) avg *= 0.5f;
-                parts.Add(new KeyValuePair<GameAction, float>(dmg, AfterTargetReduction(target, dmg, avg)));
+                if (target != null && profile.AppliesTo(action, ability, target) == EffectApplies.No) continue;
+                switch (action)
+                {
+                    case ContextActionDealDamage dmg:
+                        float avg = EvaluateDice(dmg.Value, ctx, Math.Min(cl, 10), maximize, empower);
+                        if (dmg.Half) avg *= 0.5f;
+                        parts.Add(new KeyValuePair<GameAction, float>(dmg, AfterTargetReduction(target, dmg, avg)));
+                        break;
+                    // A kill is valued apart (KillApplies): it lands on a failed save, not half on a passed one.
+                    case ContextActionKill _:
+                        break;
+                    case IDealDamageProvider provider:
+                        if (target != null) parts.Add(new KeyValuePair<GameAction, float>(action, PreviewDamage(ability, ctx, provider, target)));
+                        break;
+                }
             }
             return SumAlternatives(profile, parts);
         }
@@ -371,12 +382,80 @@ namespace CompanionAI_Pathfinder.Tactics
             int cl = Math.Max(1, ability.CalculateParams()?.CasterLevel ?? 1);
             DamageMetamagic(ability, out bool maximize, out bool empower);
             var parts = new List<KeyValuePair<GameAction, float>>();
-            foreach (var heal in profile.Heals)
+            foreach (var action in profile.Heals)
             {
-                if (target != null && profile.AppliesTo(heal, ability, target) == EffectApplies.No) continue;
-                parts.Add(new KeyValuePair<GameAction, float>(heal, EvaluateDice(heal.Value, ctx, Math.Min(cl, 5), maximize, empower)));
+                if (target != null && profile.AppliesTo(action, ability, target) == EffectApplies.No) continue;
+                if (action is ContextActionHealTarget heal)
+                    parts.Add(new KeyValuePair<GameAction, float>(heal, EvaluateDice(heal.Value, ctx, Math.Min(cl, 5), maximize, empower)));
+                else if (action is IHealDamageProvider provider && target != null)
+                    parts.Add(new KeyValuePair<GameAction, float>(action, PreviewHeal(ability, ctx, provider, target)));
             }
             return SumAlternatives(profile, parts);
+        }
+
+        /// <summary>★ v0.3.18 (AA-1): one of the ability's kill actions (ContextActionKill) applies to this target.</summary>
+        public static bool KillApplies(AbilityData ability, AbilityProfile profile, UnitEntityData target) =>
+            target != null && profile.Damage.Any(a => a is ContextActionKill && profile.AppliesTo(a, ability, target) != EffectApplies.No);
+
+        /// <summary>
+        /// ★ v0.3.18 (AA-1): the damage of an action the profile cannot read, as the game previews it for its attack
+        /// tooltip (TacticalCombatAttackTooltipVM.CalculateAbilityNumbers): the action builds its damage rule in the
+        /// ability's context (IDealDamageProvider.GetDamageRule, not triggered), and the game's damage calculation
+        /// (UnitHelper.CalculateAbilityDamage, a fake rule) gives its least and most, after the target's reductions.
+        /// The mean of the two. 0 when the action cannot say.
+        /// </summary>
+        private static float PreviewDamage(AbilityData ability, MechanicsContext ctx, IDealDamageProvider provider, UnitEntityData target)
+        {
+            if (ctx == null || target == null) return 0f;
+            try
+            {
+                var caster = ability.Caster?.Unit;
+                using (ContextData<Kingmaker.UI.Models.Log.GameLogDisabled>.Request())
+                using (ctx.GetDataScope(new TargetWrapper(target)))
+                {
+                    var low = provider.GetDamageRule(caster, target);
+                    var high = provider.GetDamageRule(caster, target);
+                    if (low == null || high == null) return 0f;
+                    int min = UnitHelper.CalculateAbilityDamage(low, Kingmaker.RuleSystem.Rules.Damage.DamageCalculationType.Minimized);
+                    int max = UnitHelper.CalculateAbilityDamage(high, Kingmaker.RuleSystem.Rules.Damage.DamageCalculationType.Maximized);
+                    return Math.Max(0f, (min + max) / 2f);
+                }
+            }
+            catch (Exception ex)
+            {
+                Main.Verbose($"[Math] damage preview of {ability?.Name} on {target.CharacterName}: {ex.Message}");
+                return 0f;
+            }
+        }
+
+        /// <summary>★ v0.3.18 (AA-1): the heal of an action the profile cannot read, as the game previews it (IHealDamageProvider).</summary>
+        private static float PreviewHeal(AbilityData ability, MechanicsContext ctx, IHealDamageProvider provider, UnitEntityData target)
+        {
+            if (ctx == null || target == null) return 0f;
+            try
+            {
+                var caster = ability.Caster?.Unit;
+                using (ContextData<Kingmaker.UI.Models.Log.GameLogDisabled>.Request())
+                using (ctx.GetDataScope(new TargetWrapper(target)))
+                {
+                    float total = 0f;
+                    foreach (var type in new[] { Kingmaker.RuleSystem.Rules.Damage.DamageCalculationType.Minimized,
+                                                 Kingmaker.RuleSystem.Rules.Damage.DamageCalculationType.Maximized })
+                    {
+                        var rule = provider.GetHealRule(caster, target);
+                        if (rule == null) return 0f;
+                        rule.IsFake = true;
+                        rule.CalculationType.Set(type, null);
+                        total += Rulebook.Trigger(rule).ValueWithoutReduction;
+                    }
+                    return Math.Max(0f, total / 2f);
+                }
+            }
+            catch (Exception ex)
+            {
+                Main.Verbose($"[Math] heal preview of {ability?.Name} on {target.CharacterName}: {ex.Message}");
+                return 0f;
+            }
         }
 
         /// <summary>

@@ -522,15 +522,17 @@ namespace CompanionAI_Pathfinder.Tactics
         /// otherwise the critical damage counts. The game's own target check already requires a helpless target. It is
         /// a full-round action that provokes: other enemies threatening the caster cost their attacks of opportunity.
         /// </summary>
-        private static float CoupDeGraceValue(TacticalContext ctx, UnitEntityData target, out string why)
+        private static float CoupDeGraceValue(TacticalContext ctx, AbilityData ability, UnitEntityData target, out string why)
         {
             why = "dmg:cdg";   // "dmg" marks it offensive, like other damaging options
             if (!ctx.Unit.IsEnemy(target)) return 0f;
             if (!CombatMath.EstimateCoupDeGrace(ctx.Unit, target, out float damage, out float kill)) return 0f;
             float value = kill * (Math.Max(1, target.HPLeft) + CombatMath.Threat(target)) + (1f - kill) * DamageValue(target, damage, 0f);
             value *= RoleWeight(ctx, "damage");
-            // ★ v0.3.18: priced like every other provoking action (ProvokeRisk); the target itself is helpless.
-            var provoke = ProvokeRisk(ctx, ctx.Unit.Position, 1f, spoiledByHit: 0f);
+            // ★ v0.3.18: priced like every other provoking action (ProvokeRisk), when it provokes: Tabletop Tweaks' version
+            // makes the caster provoke (AbilityProfile.CasterProvokes), the vanilla one does not. The target is helpless.
+            bool provokes = (AbilityProfile.Get(ability)?.CasterProvokes ?? false) || ability.ProvokeAttackOfOpportunity;
+            var provoke = provokes ? ProvokeRisk(ctx, ctx.Unit.Position, 1f, spoiledByHit: 0f) : null;
             if (provoke != null) value -= provoke.Cost;
             return Math.Max(0f, value);
         }
@@ -1505,17 +1507,27 @@ namespace CompanionAI_Pathfinder.Tactics
                     targets.AddRange(ctx.DownedAllies);
             }
 
+            // ★ v0.3.18 (AA-1): a summon that can only be aimed at a point (Summon Monster, Summon Nature's Ally) had no
+            // target side at all and was never offered. It is aimed at a spot near the fight (SummonPoint) and scored as
+            // the caster's own action.
+            Vector3? summonPoint = null;
+            if (!selfOnly && targets.Count == 0 && profile.Summons && ability.CanTargetPoint)
+            {
+                summonPoint = SummonPoint(ctx, ability);
+                if (summonPoint.HasValue) targets.Add(ctx.Unit);
+            }
+
             Candidate best = null, bestViable = null, bestBoss = null;
             foreach (var target in targets.Distinct())
             {
                 if (onlyTarget != null && target != onlyTarget) continue;
-                var wrapper = AbilityProfile.TargetOn(ability, target);
+                var wrapper = summonPoint.HasValue ? new TargetWrapper(summonPoint.Value) : AbilityProfile.TargetOn(ability, target);
                 if (wrapper == null) continue;
 
                 bool needsMove = false;
                 Disengage risk = null;
                 Approach approach = null;
-                if (target != ctx.Unit)
+                if (target != ctx.Unit && !summonPoint.HasValue)
                 {
                     float range = ability.GetApproachDistance(wrapper.Unit);
                     bool needLos = new UnitUseAbility(ability, wrapper).NeedLoS;
@@ -1582,7 +1594,7 @@ namespace CompanionAI_Pathfinder.Tactics
                     NeedsMove = needsMove,
                     Value = value,
                     Offensive = IsOffensive(why),
-                    Label = $"{(ability.SourceItem != null ? "Item:" : "")}{ability.Name}{metamagic}->{target.CharacterName}({why}){risk?.Tag}" +
+                    Label = $"{(ability.SourceItem != null ? "Item:" : "")}{ability.Name}{metamagic}->{(summonPoint.HasValue ? "a spot near the fight" : target.CharacterName)}({why}){risk?.Tag}" +
                             (approach?.Around != null ? $" (around {approach.Around})" : "") +
                             (provoke != null ? $" [casting provokes {provoke.Attacks}{(provoke.DropChance >= 0.1f ? $", {provoke.DropChance:P0} down" : "")}]" : "") +
                             (rollProvoke != null ? $" [ray provokes {rollProvoke.Attacks}{(rollProvoke.DropChance >= 0.1f ? $", {rollProvoke.DropChance:P0} down" : "")}]" : ""),
@@ -1610,6 +1622,42 @@ namespace CompanionAI_Pathfinder.Tactics
         }
 
         /// <summary>
+        /// ★ v0.3.18 (AA-1): where a summon aimed at a point goes: towards the nearest enemy, a few metres short of it so
+        /// the creature arrives beside the fight rather than on it, within the ability's range and the caster's line of
+        /// sight, on walkable ground outside harmful areas. Null when no such spot exists (then it is not offered).
+        /// </summary>
+        private static Vector3? SummonPoint(TacticalContext ctx, AbilityData ability)
+        {
+            var unit = ctx.Unit;
+            var enemy = ctx.Enemies.OrderBy(e => ctx.Distance(e)).FirstOrDefault();
+            if (enemy == null) return null;
+            try
+            {
+                float range = ability.GetApproachDistance();
+                Vector3 dir = enemy.Position - unit.Position;
+                dir.y = 0f;
+                float dist = dir.magnitude;
+                if (dist < 0.5f) return null;
+                dir /= dist;
+                foreach (float wanted in new[] { dist - 2.5f, dist - 4f, range * 0.9f, range * 0.5f, 2f })
+                {
+                    float along = Mathf.Clamp(wanted, 1.5f, Math.Min(range * 0.9f, dist - 1f));
+                    var point = unit.Position + dir * along;
+                    if (!ability.CanTarget(new TargetWrapper(point))) continue;
+                    if (!InRangeNow(unit, point, range, needLos: true)) continue;
+                    if (!AoeDangerAnalyzer.IsPositionValid(unit.Position, point)) continue;
+                    if (AoeDangerAnalyzer.EnteringDanger(unit, point, point, out _) > 0f) continue;
+                    return point;
+                }
+            }
+            catch (Exception ex)
+            {
+                Main.Verbose($"[Tactics] summon point for {ability.Name}: {ex.Message}");
+            }
+            return null;
+        }
+
+        /// <summary>
         /// ★ v0.3.16: a standard-action spell cast in melee needs a defensive-casting check (CastProvokeRisk).
         /// ★ v0.3.18 (B10): a ray (an ability with a ranged attack roll) aimed at an enemy provokes by its roll as well,
         /// whatever the casting check did. An enemy makes one attack of opportunity a round (more with Combat Reflexes),
@@ -1627,6 +1675,12 @@ namespace CompanionAI_Pathfinder.Tactics
             {
                 cast = CastProvokeRisk(ctx, ability, at);
                 if (cast != null) loss = value * cast.StopChance + cast.Cost;
+            }
+            // ★ v0.3.18 (AA-1): an ability whose own actions make the caster provoke (AbilityProfile.CasterProvokes).
+            if (cast == null && profile != null && profile.CasterProvokes)
+            {
+                cast = ProvokeRisk(ctx, at, 1f, spoiledByHit: 0f);
+                if (cast != null) loss = cast.Cost;
             }
             if (profile != null && profile.RangedAttackRoll && target != null && ctx.Unit.IsEnemy(target) &&
                 ProvokeObserver.AbilityProvokes(ctx.Unit, ability))
@@ -1713,7 +1767,7 @@ namespace CompanionAI_Pathfinder.Tactics
             var reasons = new List<string>();
 
             if (IsCoupDeGrace(ability))
-                return CoupDeGraceValue(ctx, target, out why);
+                return CoupDeGraceValue(ctx, ability, target, out why);
 
             List<UnitEntityData> affectedEnemies = targetIsEnemy ? new List<UnitEntityData> { target } : new List<UnitEntityData>();
             List<UnitEntityData> affectedAllies = targetIsEnemy ? new List<UnitEntityData>() : new List<UnitEntityData> { target };
@@ -1772,6 +1826,14 @@ namespace CompanionAI_Pathfinder.Tactics
                     float dmg = CombatMath.EstimateAbilityDamage(ability, profile, enemy);
                     float p = CombatMath.EffectChance(unit, enemy, ability, profile, damage: true);
                     float part = DamageValue(enemy, dmg * p, p) * WakeFactor(enemy, dmg * p);
+                    // ★ v0.3.18 (AA-1): a kill action (Isekai's Instakill, Power Word Kill) removes the enemy when it lands:
+                    // on a failed save and through spell resistance. It subsumes the damage, so the better of the two.
+                    if (CombatMath.KillApplies(ability, profile, enemy))
+                    {
+                        float pk = CombatMath.EffectChance(unit, enemy, ability, profile, damage: false);
+                        float hp = Math.Max(1, enemy.HPLeft);
+                        part = Math.Max(part, ValueModel.DamageValue(hp * pk, hp, CombatMath.Threat(enemy), pk));
+                    }
                     dmgValue += part;
                     if (enemy == target && part > 0f) ctx.AimCounted = true;
                 }
@@ -2045,22 +2107,20 @@ namespace CompanionAI_Pathfinder.Tactics
             if (value <= 0f && !verifiable &&
                 (profile.Enchants || profile.Summons || profile.Dispels || profile.RemovesBuffs || !profile.HasDetectableEffect))
             {
-                bool usedOnTarget = CombatMemory.LastCastRound(unit, ability, target).HasValue;
+                // ★ v0.3.18: a summon is once per fight whatever it was aimed at (a point summon has no target unit).
+                bool usedOnTarget = CombatMemory.LastCastRound(unit, ability, target).HasValue ||
+                                    (profile.Summons && CombatMemory.TimesUsed(unit, ability) > 0);
                 if (!usedOnTarget)
                 {
+                    // ★ v0.3.18 (AA-1): the order is summon, then consumables (never a fallback), then dispel and removal
+                    // before enchant (a dispel that also names an enchantment was valued as an enchant), and no "utility"
+                    // value any more for an ability with no recognised effect at all: it was never chosen in seven logs,
+                    // and it offered abilities such as Isekai's Planar Coliseum Return or Cosmic Store in combat. The
+                    // coverage report lists those abilities ("effect not understood").
                     if (profile.Summons)
                     {
                         value += (3f + 3f * level) * Math.Min(ctx.ExpectedRounds, 4f) * 0.5f * (ctx.Enemies.Count >= 2 ? 1f : 0.6f);
                         reasons.Add("summon");
-                    }
-                    else if (profile.Enchants)
-                    {
-                        // ★ v0.3.8: the fallback is for effects we cannot see. An enchantment that is still in place
-                        // (its item enchantment, or the buff that carries it) is visible: nothing to gain. Camellia
-                        // recast Spirit Weapon Enchantment at the start of four fights while it was active.
-                        if (profile.EnchantmentActive(unit, target)) { why = "already active"; return 0f; }
-                        value += ValueModel.BuffPerRound(level) * ctx.ExpectedRounds * 0.5f * RoleWeight(ctx, "buff");
-                        reasons.Add("enchant");
                     }
                     else if (ability.SourceItem != null)
                     {
@@ -2076,11 +2136,18 @@ namespace CompanionAI_Pathfinder.Tactics
                             reasons.Add("dispel");
                         }
                     }
-                    else if (CombatMemory.TimesUsed(unit, ability) == 0)
+                    else if (profile.Enchants)
                     {
-                        if (!profile.HasDetectableEffect) profile.DescribeStructureOnce();
-                        value += 1f; // utility (e.g. Appraise Foe): only when nothing better exists
-                        reasons.Add("utility");
+                        // ★ v0.3.8: the fallback is for effects we cannot see. An enchantment that is still in place
+                        // (its item enchantment, or the buff that carries it) is visible: nothing to gain. Camellia
+                        // recast Spirit Weapon Enchantment at the start of four fights while it was active.
+                        if (profile.EnchantmentActive(unit, target)) { why = "already active"; return 0f; }
+                        value += ValueModel.BuffPerRound(level) * ctx.ExpectedRounds * 0.5f * RoleWeight(ctx, "buff");
+                        reasons.Add("enchant");
+                    }
+                    else if (!profile.HasDetectableEffect)
+                    {
+                        profile.DescribeStructureOnce();
                     }
                 }
             }

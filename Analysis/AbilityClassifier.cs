@@ -2203,10 +2203,18 @@ namespace CompanionAI_Pathfinder.Analysis
                                bp.GetComponent<AbilityEffectStickyTouch>() != null;
                 bool canTargetEnemy = bp.CanTargetEnemies;
 
+                // ★ v0.3.18 (AA-1): a touch spell's damage is usually in its sticky delivery ability, which the run action
+                // of the spell itself does not contain; the ability profile reads it (and damage the game can preview).
+                bool profileDamage = false;
+                if (isTouch && canTargetEnemy)
+                {
+                    try { profileDamage = CompanionAI_Pathfinder.Tactics.AbilityProfile.Get(ability)?.DealsDamage ?? false; } catch { }
+                }
+
                 if (isTouch && canTargetEnemy)
                 {
                     // 데미지와 Fatigue 디버프 분석
-                    bool hasDamage = false;
+                    bool hasDamage = profileDamage;
                     bool appliesFatigueDebuff = false;
 
                     if (runAction?.Actions?.Actions != null)
@@ -2230,12 +2238,17 @@ namespace CompanionAI_Pathfinder.Analysis
                 }
 
                 // 2. 캔트립(0레벨) 전용 블랙리스트
-                if (ability.SpellLevel == 0)
+                // ★ v0.3.18 (AA-1): a cantrip by its spell list level. AbilityData.SpellLevel falls back to a level from
+                // the caster level for abilities without a spellbook, so a level-1 character's class touch power counted
+                // as a "cantrip" and, its damage being in the sticky delivery, was blacklisted.
+                bool cantrip = false;
+                try { cantrip = ability.Spellbook != null && ability.Spellbook.GetSpellLevel(ability) == 0; } catch { }
+                if (cantrip)
                 {
                     // 적에게 사용하는 터치 캔트립 + 데미지 없음 = 무쓸모
                     if (canTargetEnemy && isTouch)
                     {
-                        bool hasDamage = false;
+                        bool hasDamage = profileDamage;
                         bool appliesFatigueDebuff = false;
                         if (runAction?.Actions?.Actions != null)
                         {
@@ -2248,12 +2261,8 @@ namespace CompanionAI_Pathfinder.Analysis
                         }
                     }
 
-                    // Daze: HD 제한이 너무 낮아서 전투에서 거의 쓸모없음
-                    if ((descriptor & SpellDescriptor.Daze) != 0)
-                    {
-                        ReportBlacklisted(false, $"[AbilityClassifier] BLACKLISTED: {ability.Name} (Daze cantrip - low HD limit)");
-                        return true;
-                    }
+                    // ★ v0.3.18 (AA-1): the "Daze cantrip - low HD limit" rule is gone: Daze's descriptor has no Daze flag,
+                    // so it never matched, and the Hit Dice limit is read per target now (AbilityProfile conditions).
                 }
 
                 return false;
