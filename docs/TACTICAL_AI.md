@@ -654,3 +654,41 @@ The result is fewer top-ups of mildly hurt allies, and the same or more for badl
 - `[Provoke]`: a party member whose ranged rolls do not provoke, the first time it is seen.
 - Decision labels show `[shot provokes N]` and `[ray provokes N]`.
 
+### 0.3.18-test2: fixes from the test1 logs (turn-based 611fe6bf, real time 0f047a15)
+
+**Grease aimed at an immune creature did nothing.**
+- Cause: Orvath aimed Grease at an airborne Quasit, which is immune to ground effects. An area spell aimed at a
+  creature is applied to that creature first. The game checks its spell resistance and immunities there
+  (`AbilityExecutionProcess.DoApplyEffect` → `RuleSpellResistanceCheck`). When it is immune, nothing happens: the area
+  is never created, so the enemies around the Quasit were not caught either.
+- Bursts that pick each unit in the area (`AbilityTargetsAround`: Sleep, Color Spray) check every unit on its own, so
+  aiming at an immune creature costs nothing there. The problem is the spawned areas (Grease, Entangle, Web, Stinking
+  Cloud) and anything else applied once to the aimed target.
+- Fix: an area ability that can be aimed at the ground is aimed at the spot where the creature stands
+  (`AbilityProfile.TargetOn`). That is the same area in the same place, and the game makes no such check.
+- An area that can only be aimed at a creature (and does not pick units itself, `AbilityProfile.SelectsTargets`) is
+  valued by that creature's chance to let it through: 0 when immune, the spell-penetration chance against spell
+  resistance.
+- The test5 aim rule stays: with equal value, the area is centred where it catches the most. An immune creature at
+  the best centre is now fine, because the area goes on the ground under it.
+
+**Seelah idle for nine turns (R9–R17) next to Grease.**
+- Cause: only the best enemy to close on was considered. That enemy lay in Grease, and no spot around the area was
+  accepted, because only spots within this turn's movement counted.
+- Fix: the three best enemies are now considered, each with its own approach. An advance may also aim at a spot
+  around the area beyond this turn's movement. The unit walks towards it on a path checked to stay out of the area,
+  and goes on next turn.
+- When no spot is found, the label says why: `(no spot around: N in or through an area, N beyond this turn's move,
+  N taken, N not walkable)`.
+
+**Checked and fine.**
+- `[Calib]`: the party's damage per round used at the end of each fight is within 1–3 of what it dealt (prior 15–23
+  against observed 7–20). The enemies dealt 0.1–0.6 of the prediction, so the danger scale ends at its 0.4 floor in 9
+  of 10 fights. That floor keeps a margin for enemies that have not attacked yet.
+- `[Perf]`: median decision 3–6 ms, 95th percentile 12–42 ms. One 773 ms first decision in real time.
+- Real time: commands waiting to start were decided again when the unit found itself in a Stinking Cloud (8 times),
+  and units left it when that was worth it (10).
+- Shots, rays and casts that provoke were priced and labelled (`[shot provokes]` 20, `[ray provokes]` 18).
+- `UnitAttack ... result=Interrupt acted=True` is how the game ends every weapon attack command after its attacks. It
+  is in every log since 0.3.15 and is not a failure.
+

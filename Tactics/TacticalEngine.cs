@@ -971,6 +971,8 @@ namespace CompanionAI_Pathfinder.Tactics
             public string Around;
             /// <summary>How close to <see cref="Point"/> the walk must end for the target to stay within reach.</summary>
             public float Arrival = 0.3f;
+            /// <summary>★ v0.3.18: the straight approach enters an area and no spot around it was found: why (decision log).</summary>
+            public string NoSpot;
         }
 
         /// <summary>
@@ -998,6 +1000,7 @@ namespace CompanionAI_Pathfinder.Tactics
             {
                 float best = float.MaxValue;
                 float body = unit.Corpulence;
+                int far = 0, taken = 0, inArea = 0, unwalkable = 0;
                 var others = ctx.Allies.Concat(ctx.Enemies).Where(u => u != unit && u != target).ToList();
                 var rings = new List<float> { Math.Max(0.6f, range * 0.85f), Math.Max(0.6f, range * 0.6f) };
                 if (orNearby) rings.AddRange(new[] { range + 1.5f, range + 3f });
@@ -1008,12 +1011,14 @@ namespace CompanionAI_Pathfinder.Tactics
                         float angle = i * 22.5f * Mathf.Deg2Rad;
                         var point = target.Position + new Vector3(Mathf.Cos(angle), 0f, Mathf.Sin(angle)) * ring;
                         float walk = Vector3.Distance(unit.Position, point);
-                        if (walk > ctx.MoveRange * 0.95f) continue;
-                        if (others.Any(u => Vector3.Distance(u.Position, point) < (u.Corpulence + body) * 0.9f)) continue;
-                        if (AoeDangerAnalyzer.EnteringDanger(unit, unit.Position, point, out _) > 0f) continue;
-                        if (!AoeDangerAnalyzer.IsPositionValid(unit.Position, point)) continue;
+                        // ★ v0.3.18: an advance (no action follows) may aim beyond this turn's movement: the unit walks
+                        // towards the spot, on a path checked to stay out of the area, and goes on next turn.
+                        if (walk > ctx.MoveRange * 0.95f && !(orNearby && ctx.HasMove)) { far++; continue; }
+                        if (others.Any(u => Vector3.Distance(u.Position, point) < (u.Corpulence + body) * 0.9f)) { taken++; continue; }
+                        if (AoeDangerAnalyzer.EnteringDanger(unit, unit.Position, point, out _) > 0f) { inArea++; continue; }
+                        if (!AoeDangerAnalyzer.IsPositionValid(unit.Position, point)) { unwalkable++; continue; }
                         var risk = MoveRisk(ctx, point, alwaysExposure);
-                        if (risk?.Area != null) continue;
+                        if (risk?.Area != null) { inArea++; continue; }
                         // Cheapest by risk; a shorter walk breaks ties.
                         float cost = (risk?.Cost ?? 0f) + 0.05f * walk;
                         if (cost >= best) continue;
@@ -1026,6 +1031,8 @@ namespace CompanionAI_Pathfinder.Tactics
                     }
                     if (plan.Around != null) break;
                 }
+                if (plan.Around == null)
+                    plan.NoSpot = $"{inArea} in or through an area, {far} beyond this turn's move, {taken} taken, {unwalkable} not walkable";
             }
             catch (Exception ex)
             {
@@ -1509,6 +1516,14 @@ namespace CompanionAI_Pathfinder.Tactics
 
                 float value = ScoreAbility(ctx, ability, profile, slot, target, out string why);
                 if (value <= 0f) continue;
+                // ★ v0.3.18: an area that can only be aimed at a creature (not at the ground) is applied to that creature
+                // first; its spell resistance or immunity stops the whole area (AbilityProfile.TargetOn).
+                if (profile.IsAoE && !profile.SelectsTargets && wrapper.Unit != null && wrapper.Unit != ctx.Unit)
+                {
+                    float aimPass = CombatMath.SpellResistancePass(ctx.Unit, wrapper.Unit, ability);
+                    if (aimPass <= 0f) continue;
+                    value *= aimPass;
+                }
                 // ★ v0.3.17 (test3): does the aimed enemy itself get any of the value, or only the others in the area?
                 bool aimAffected = !(profile.IsAoE && target != ctx.Unit && ctx.Unit.IsEnemy(target)) || ctx.AimCounted;
                 value *= consumable;
@@ -2211,15 +2226,20 @@ namespace CompanionAI_Pathfinder.Tactics
             // would only stand there being hit (Camellia walked up to a Dretch and a Cambion, nauseated, in real time).
             if (!anyAttackNow && !ctx.Permissions.MovementOnly)
             {
-                var single = ctx.Enemies
+                // ★ v0.3.18: the three best enemies to close on, each with its own approach. Only the best one was tried:
+                // Seelah ended nine turns idle (0.3.18 log 611fe6bf, R9-R17) because the approach to that enemy, lying
+                // in Grease, walked into it, while other enemies stood clear of it.
+                var ranked = ctx.Enemies
                     .Where(e => !ctx.Unreachable.Contains(e.UniqueId))
                     .Select(e => new { Enemy = e, Est = CombatMath.EstimateWeaponAttack(unit, e, false) })
                     .Where(x => x.Est != null)
                     .OrderByDescending(x => DamageValue(x.Enemy, x.Est) / Math.Max(3f, ctx.Distance(x.Enemy)))
-                    .FirstOrDefault();
+                    .Take(3)
+                    .ToList();
 
-                if (single != null)
+                for (int i = 0; i < ranked.Count; i++)
                 {
+                    var single = ranked[i];
                     float radius = single.Est.IsRanged ? single.Est.Reach * 0.85f : single.Est.Reach;
                     bool needLos = single.Est.IsRanged;
                     // Casters without a ranged weapon close to spell range, not into melee.
@@ -2228,8 +2248,12 @@ namespace CompanionAI_Pathfinder.Tactics
                         radius = Math.Max(radius, CasterApproachRadius);
                         needLos = true;
                     }
-                    // Already there: a zero-length move would just loop.
-                    if (InRangeNow(unit, single.Enemy.Position, radius, needLos)) return;
+                    // Already there: a zero-length move would just loop. Within reach of the best one: no advance at all.
+                    if (InRangeNow(unit, single.Enemy.Position, radius, needLos))
+                    {
+                        if (i == 0) return;
+                        continue;
+                    }
 
                     float value = Math.Max(0.6f, DamageValue(single.Enemy, single.Est) * 0.35f);
                     string label = $"Advance->{single.Enemy.CharacterName}";
@@ -2246,8 +2270,9 @@ namespace CompanionAI_Pathfinder.Tactics
                     bool around = approach.Around != null;
                     // ★ v0.3.17 (test3): waiting at the area's edge where the unit already stands is no move. Seelah
                     // "advanced" 0.0 m around Grease twice in a row (log 9a7bb1f9).
-                    if (around && Vector3.Distance(unit.Position, approach.Point) < 0.5f) return;
+                    if (around && Vector3.Distance(unit.Position, approach.Point) < 0.5f) continue;
                     if (around) label += $" (around {approach.Around})";
+                    else if (approach.NoSpot != null) label += $" (no spot around: {approach.NoSpot})";
                     list.Add(new Candidate
                     {
                         Kind = CandidateKind.Move, Slot = ActionSlot.Move, Target = single.Enemy,

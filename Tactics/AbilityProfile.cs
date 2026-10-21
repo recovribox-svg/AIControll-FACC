@@ -177,6 +177,12 @@ namespace CompanionAI_Pathfinder.Tactics
         public Kingmaker.UnitLogic.Abilities.Components.TargetType AoETargets { get; private set; } =
             Kingmaker.UnitLogic.Abilities.Components.TargetType.Any;
         public bool IsAoE => AoERadius > 0.01f;
+        /// <summary>
+        /// ★ v0.3.18: the game picks the units in the area one by one (AbilityTargetsAround), each with its own spell
+        /// resistance check. Without it (spawned areas: Grease, Entangle, Web) the effect is applied once, to the aimed
+        /// target: a creature aimed at that resists or is immune stops the whole area.
+        /// </summary>
+        public bool SelectsTargets { get; private set; }
 
         public CCType Control { get; private set; }
         public ControlStrength ControlStrength { get; private set; }
@@ -346,6 +352,7 @@ namespace CompanionAI_Pathfinder.Tactics
             IsCharge = Blueprint.GetComponent<AbilityCustomCharge>() != null;
 
             var around = Blueprint.GetComponent<AbilityTargetsAround>();
+            SelectsTargets = around != null;
             if (around != null)
             {
                 AoERadius = around.AoERadius.Meters;
@@ -1073,6 +1080,16 @@ namespace CompanionAI_Pathfinder.Tactics
         public static TargetWrapper TargetOn(AbilityData ability, UnitEntityData unit)
         {
             if (ability == null || unit == null) return null;
+            // ★ v0.3.18: an area ability aimed at a creature is applied to that creature first: the game checks its spell
+            // resistance and immunities there (AbilityExecutionProcess.DoApplyEffect, RuleSpellResistanceCheck), and when
+            // it is immune the whole effect is lost - the area is never created. Orvath's Grease aimed at an airborne
+            // Quasit (immune to ground effects) did nothing, though the area would have caught the enemies around it.
+            // Aimed at the ground where the creature stands, there is no such check: same area, same place.
+            if (ability.CanTargetPoint && unit != ability.Caster?.Unit && (Get(ability)?.IsAoE ?? false))
+            {
+                var ground = new TargetWrapper(unit.Position);
+                if (ability.CanTarget(ground)) return ground;
+            }
             var onUnit = new TargetWrapper(unit);
             if (ability.CanTarget(onUnit)) return onUnit;
             if (ability.CanTargetPoint)
