@@ -537,3 +537,17 @@ limit). That check was counted as an outcome on the target.
   limit is read correctly.
 - The Cultist Champion is an encounter enemy, not spawned by Random Reinforcements. That mod clones existing creature
   blueprints for its spawns and does not change their levels or immunities.
+
+### 0.3.17-test7: a buff keeps its conditions in every branch (test6 log c2b4960c)
+
+The safety net worked in test6: `Sleep did nothing to its target Cultist Champion (level 5) ... (2/2; not aimed at it
+again this fight)`, and Orvath moved on. The Hit Dice line added in test6 never printed, though, and that showed why
+the AI expected Sleep to work in the first place. `AbilityProfile` stored one set of conditions per target buff. When
+the same buff was applied in a second branch, it cleared the conditions and treated the buff as unconditional. Sleep
+applies its buff in more than one branch, so its Hit Dice limit was never checked.
+
+- Each branch a buff is applied in is now kept. The buff applies to a target when any of those branches does
+  (`BuffAppliesTo`: unconditional or yes in one branch decides; otherwise unknown, else no).
+- The Hit Dice note and the `[Profile]` description read all branches (`A & B or C`).
+- The same rule fixes any ability whose buff appears in several branches with different conditions, for example
+  alignment- or creature-type-limited buffs.

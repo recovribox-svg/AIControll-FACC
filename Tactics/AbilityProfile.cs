@@ -209,7 +209,19 @@ namespace CompanionAI_Pathfinder.Tactics
         public bool DealsDamage => Damage.Count > 0;
 
         private readonly Dictionary<object, EffectGuard[]> m_Guards = new Dictionary<object, EffectGuard[]>();
-        private readonly Dictionary<BlueprintBuff, EffectGuard[]> m_BuffGuards = new Dictionary<BlueprintBuff, EffectGuard[]>();
+        /// <summary>
+        /// The branches each target buff is applied in. ★ v0.3.17 (test6): every branch is kept - the buff applies when
+        /// any of them does. A buff found in two branches used to lose all its conditions ("unconditional"): Sleep's buff
+        /// is applied in more than one branch, so its Hit Dice limit was never checked and Orvath kept casting it at a
+        /// Cultist Champion (level 5) over the limit.
+        /// </summary>
+        private readonly Dictionary<BlueprintBuff, List<EffectGuard[]>> m_BuffGuards = new Dictionary<BlueprintBuff, List<EffectGuard[]>>();
+
+        private void AddBuffGuards(BlueprintBuff buff, EffectGuard[] guards)
+        {
+            if (!m_BuffGuards.TryGetValue(buff, out var branches)) m_BuffGuards[buff] = branches = new List<EffectGuard[]>();
+            branches.Add(guards ?? NoGuards);
+        }
         private static readonly EffectGuard[] NoGuards = new EffectGuard[0];
         private int m_ShortBuffs, m_SpentByAttackBuffs, m_AllBuffs;
         private float m_AreaRadius;
@@ -474,8 +486,7 @@ namespace CompanionAI_Pathfinder.Tactics
                     case ContextActionApplyBuff apply when apply.Buff != null:
                         if (toCaster || apply.ToCaster) CasterBuffs.Add(apply.Buff);
                         else TargetBuffs.Add(apply.Buff);
-                        // The same buff in two branches: treat as unconditional.
-                        m_BuffGuards[apply.Buff] = m_BuffGuards.ContainsKey(apply.Buff) ? NoGuards : guards;
+                        AddBuffGuards(apply.Buff, guards);
                         // ★ v0.3.15: each application with its own branch and duration (Color Spray: 2d4 rounds on 2 HD
                         // or less, 1d4 on 3-4 HD, 1 round on 5 HD or more).
                         if (!(toCaster || apply.ToCaster) && !m_InArea)
@@ -589,7 +600,7 @@ namespace CompanionAI_Pathfinder.Tactics
                     if (buff == null) continue;
                     TargetBuffs.Add(buff);
                     var buffGuards = With(guards, areaBuff.Condition, true, false);
-                    m_BuffGuards[buff] = m_BuffGuards.ContainsKey(buff) ? NoGuards : buffGuards;
+                    AddBuffGuards(buff, buffGuards);
                     m_AllBuffs++;
                 }
             }
@@ -819,7 +830,7 @@ namespace CompanionAI_Pathfinder.Tactics
         {
             try
             {
-                var conditions = m_Guards.Values.Concat(m_BuffGuards.Values).SelectMany(g => g)
+                var conditions = m_Guards.Values.Concat(m_BuffGuards.Values.SelectMany(b => b)).SelectMany(g => g)
                     .SelectMany(g => g.Checker?.Conditions ?? new Condition[0]).OfType<ContextConditionHitDice>().Distinct().ToList();
                 if (conditions.Count == 0) return null;
                 var context = CombatMath.CreateContext(ability, new TargetWrapper(target));
@@ -870,7 +881,18 @@ namespace CompanionAI_Pathfinder.Tactics
 
         public EffectApplies BuffAppliesTo(BlueprintBuff buff, AbilityData ability, UnitEntityData target)
         {
-            return Evaluate(buff != null && m_BuffGuards.TryGetValue(buff, out var g) ? g : NoGuards, ability, target);
+            if (buff == null || !m_BuffGuards.TryGetValue(buff, out var branches) || branches.Count == 0)
+                return EffectApplies.Unconditional;
+            // Applies when any branch it is applied in does.
+            bool unknown = false;
+            foreach (var guards in branches)
+            {
+                var result = Evaluate(guards, ability, target);
+                if (result == EffectApplies.Unconditional) return EffectApplies.Unconditional;
+                if (result == EffectApplies.Yes) return EffectApplies.Yes;
+                if (result == EffectApplies.Unknown) unknown = true;
+            }
+            return unknown ? EffectApplies.Unknown : EffectApplies.No;
         }
 
         /// <summary>
@@ -885,7 +907,7 @@ namespace CompanionAI_Pathfinder.Tactics
             return ga.Any(x => gb.Any(y => ReferenceEquals(x.Checker, y.Checker) && x.OnCaster == y.OnCaster && x.Branch != y.Branch));
         }
 
-        public bool HasGuardedEffects => m_Guards.Values.Any(g => g.Length > 0) || m_BuffGuards.Values.Any(g => g.Length > 0);
+        public bool HasGuardedEffects => m_Guards.Values.Any(g => g.Length > 0) || m_BuffGuards.Values.Any(b => b.Any(g => g.Length > 0));
 
         private static EffectApplies Evaluate(EffectGuard[] guards, AbilityData ability, UnitEntityData target)
         {
@@ -1165,11 +1187,11 @@ namespace CompanionAI_Pathfinder.Tactics
                 // evil in the game's data or Smite's evil check is not where the profile looks).
                 foreach (var buff in TargetBuffs.Distinct())
                 {
-                    if (!m_BuffGuards.TryGetValue(buff, out var guards) || guards.Length == 0) continue;
-                    parts.Add($"{buff.name} only if " + string.Join(" & ", guards.Select(g =>
+                    if (!m_BuffGuards.TryGetValue(buff, out var branches) || branches.Any(g => g.Length == 0)) continue;
+                    parts.Add($"{buff.name} only if " + string.Join(" or ", branches.Select(guards => string.Join(" & ", guards.Select(g =>
                         (g.Branch ? "" : "not ") + (g.OnCaster ? "caster " : "") +
                         string.Join("+", (g.Checker?.Conditions ?? new Condition[0]).Where(c => c != null)
-                                                                                  .Select(c => (c.Not ? "!" : "") + c.GetType().Name.Replace("ContextCondition", ""))))));
+                                                                                  .Select(c => (c.Not ? "!" : "") + c.GetType().Name.Replace("ContextCondition", "")))))).Distinct()));
                 }
                 if (parts.Count > 0)
                     Main.Log($"[Profile] {Blueprint.Name}: {string.Join(" ; ", parts)}");
