@@ -1,4 +1,6 @@
-// ★ v0.3.17: per-fight numbers for tuning - diagnostics only, nothing here changes a decision.
+// ★ v0.3.17: per-fight numbers for tuning. ★ v0.3.18: also the observations the engine calibrates itself with
+// (ValueModel): the party's damage per round (expected rounds, B2) and the enemies' real damage against the damage the
+// engine predicted (the drop-chance model, N5), per completed round of this fight.
 //
 // docs/AI_TUNING_AUDIT.md, phase 0:
 //   [Perf]  how long the tactical engine takes per decision (count, median, 95th percentile, slowest), per combat mode.
@@ -35,6 +37,12 @@ namespace CompanionAI_Pathfinder.Tactics
         private static float _expectedAtStart, _partyPriorPerRound, _threatAtStart;
         private static int _enemiesAtStart;
         private static long _partyDamage, _enemyDamage;
+        /// <summary>★ v0.3.18: per round of this fight - damage the party dealt, damage the enemies dealt to the party,
+        /// and the damage the engine predicted for the party at the round's first decision.</summary>
+        private static readonly Dictionary<int, float> PartyByRound = new Dictionary<int, float>();
+        private static readonly Dictionary<int, float> EnemyByRound = new Dictionary<int, float>();
+        private static readonly Dictionary<int, float> PredictedByRound = new Dictionary<int, float>();
+        private static float _lastDangerScale = 1f, _lastPartyPerRound;
 
         public static void Subscribe()
         {
@@ -61,6 +69,60 @@ namespace CompanionAI_Pathfinder.Tactics
             RealTime.Slowest = null;
             _started = false;
             _partyDamage = _enemyDamage = 0;
+            PartyByRound.Clear();
+            EnemyByRound.Clear();
+            PredictedByRound.Clear();
+            _lastDangerScale = 1f;
+            _lastPartyPerRound = 0f;
+        }
+
+        /// <summary>
+        /// ★ v0.3.18: the party's damage in the completed rounds of this fight (before <paramref name="round"/>), and how
+        /// many rounds that is. Nothing before the fight's first decision.
+        /// </summary>
+        public static void PartyObserved(int round, out float damage, out int rounds)
+        {
+            damage = 0f;
+            rounds = _started ? Math.Max(0, round - _firstRound) : 0;
+            foreach (var pair in PartyByRound)
+                if (pair.Key < round) damage += pair.Value;
+        }
+
+        /// <summary>
+        /// ★ v0.3.18: the enemies' damage to the party and the engine's prediction for it, over the completed rounds
+        /// since the first round with a prediction; <paramref name="roundsPredicted"/> counts the rounds predicted above 0.
+        /// </summary>
+        public static void DangerObserved(int round, out float observed, out float predicted, out int roundsPredicted)
+        {
+            observed = predicted = 0f;
+            roundsPredicted = 0;
+            int first = int.MaxValue;
+            foreach (var pair in PredictedByRound)
+            {
+                if (pair.Key >= round) continue;
+                predicted += pair.Value;
+                if (pair.Value > 0f)
+                {
+                    roundsPredicted++;
+                    first = Math.Min(first, pair.Key);
+                }
+            }
+            if (roundsPredicted == 0) return;
+            foreach (var pair in EnemyByRound)
+                if (pair.Key >= first && pair.Key < round) observed += pair.Value;
+        }
+
+        /// <summary>★ v0.3.18: no prediction recorded for this round yet (the engine computes one at the round's first decision).</summary>
+        public static bool NeedsPrediction(int round) => !PredictedByRound.ContainsKey(round);
+
+        /// <summary>★ v0.3.18: the damage the enemies can deal to the party this round, as the engine predicts it (uncalibrated).</summary>
+        public static void NotePrediction(int round, float damage) => PredictedByRound[round] = Math.Max(0f, damage);
+
+        /// <summary>★ v0.3.18: what the engine used at its latest decision (for the fight-end line).</summary>
+        public static void NoteCalibration(float partyPerRound, float dangerScale)
+        {
+            _lastPartyPerRound = partyPerRound;
+            _lastDangerScale = dangerScale;
         }
 
         /// <summary>One engine decision took <paramref name="ms"/> milliseconds.</summary>
@@ -87,9 +149,9 @@ namespace CompanionAI_Pathfinder.Tactics
                     _startedRealTime = CombatMemory.IsRealTime;
                     _firstRound = _lastRound = ctx.Round;
                     _expectedAtStart = ctx.ExpectedRounds;
-                    // The same assumption as TacticalEngine.BuildContext's ExpectedRounds.
+                    // The prior of TacticalEngine.BuildContext's ExpectedRounds (ValueModel).
                     float levels = ctx.Allies.Sum(a => (float)Math.Max(1, a.Descriptor?.Progression?.CharacterLevel ?? 1));
-                    _partyPriorPerRound = Math.Max(10f, levels * 4f);
+                    _partyPriorPerRound = ValueModel.PartyDamagePerRound(levels, 0f, 0f);
                     _threatAtStart = ctx.Enemies.Sum(CombatMath.Threat);
                     _enemiesAtStart = ctx.Enemies.Count;
                 }
@@ -115,9 +177,11 @@ namespace CompanionAI_Pathfinder.Tactics
                     string unit = _startedRealTime ? "6-second spans" : "rounds";
                     Main.Log($"[Calib] fight lasted {rounds} {unit} ({(_startedRealTime ? "RT" : "R")}{_firstRound}-{_lastRound}), " +
                              $"{_enemiesAtStart} enemies at the start; expected rounds at the start {_expectedAtStart:F1}; " +
-                             $"party damage {_partyDamage} = {_partyDamage / (float)rounds:F0}/round (estimate assumes {_partyPriorPerRound:F0}); " +
+                             $"party damage {_partyDamage} = {_partyDamage / (float)rounds:F0}/round (prior {_partyPriorPerRound:F0}, " +
+                             $"used at the end {_lastPartyPerRound:F0}); " +
                              $"enemy damage to the party {_enemyDamage} = {_enemyDamage / (float)rounds:F0}/round " +
-                             $"(Threat of the enemies at the start {_threatAtStart:F0})");
+                             $"(Threat of the enemies at the start {_threatAtStart:F0}; predicted {PredictedByRound.Values.Sum():F0} over " +
+                             $"{PredictedByRound.Count(p => p.Value > 0f)} rounds, danger scale at the end x{_lastDangerScale:F2})");
                 }
             }
             catch (Exception ex)
@@ -148,8 +212,21 @@ namespace CompanionAI_Pathfinder.Tactics
                 var attacker = evt.Initiator;
                 var target = evt.Target;
                 if (attacker == null || target == null || !attacker.IsEnemy(target)) return;
-                if (attacker.IsPlayerFaction) _partyDamage += Math.Max(0, evt.Result);
-                else if (target.IsPlayerFaction) _enemyDamage += Math.Max(0, evt.Result);
+                int dealt = Math.Max(0, evt.Result);
+                if (dealt == 0) return;
+                int round = CombatMemory.Round;
+                if (attacker.IsPlayerFaction)
+                {
+                    _partyDamage += dealt;
+                    PartyByRound.TryGetValue(round, out float sum);
+                    PartyByRound[round] = sum + dealt;
+                }
+                else if (target.IsPlayerFaction)
+                {
+                    _enemyDamage += dealt;
+                    EnemyByRound.TryGetValue(round, out float sum);
+                    EnemyByRound[round] = sum + dealt;
+                }
             }
             catch
             {

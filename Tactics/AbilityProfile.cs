@@ -166,6 +166,11 @@ namespace CompanionAI_Pathfinder.Tactics
         public SavingThrowType Save { get; private set; } = SavingThrowType.Unknown;
         public bool HalfOnSave { get; private set; }
         public bool NeedsAttackRoll { get; private set; }
+        /// <summary>
+        /// ★ v0.3.18: delivered by a projectile with an attack roll (rays, kinetic blasts): a ranged touch attack roll, which
+        /// provokes attacks of opportunity from enemies engaging the caster even when the spell was cast defensively.
+        /// </summary>
+        public bool RangedAttackRoll { get; private set; }
         public bool IsCharge { get; private set; }
 
         public float AoERadius { get; private set; }
@@ -427,7 +432,7 @@ namespace CompanionAI_Pathfinder.Tactics
             }
 
             var projectile = bp.GetComponent<AbilityDeliverProjectile>();
-            if (projectile != null && projectile.NeedAttackRoll) NeedsAttackRoll = true;
+            if (projectile != null && projectile.NeedAttackRoll) NeedsAttackRoll = RangedAttackRoll = true;
             if (bp.GetComponent<AbilityDeliverTouch>() != null) NeedsAttackRoll = true;
 
             var sticky = bp.StickyTouch;

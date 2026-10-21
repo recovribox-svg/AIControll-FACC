@@ -9,6 +9,7 @@
     <Compile Include="..\..\Tactics\SpellTierPolicy.cs" Link="SpellTierPolicy.cs" />
     <Compile Include="..\..\Tactics\ActionRules.cs" Link="ActionRules.cs" />
     <Compile Include="..\..\Tactics\RiskMath.cs" Link="RiskMath.cs" />
+    <Compile Include="..\..\Tactics\ValueModel.cs" Link="ValueModel.cs" />
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.8.0" />

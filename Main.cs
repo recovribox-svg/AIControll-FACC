@@ -79,6 +79,8 @@ namespace CompanionAI_Pathfinder
                 Tactics.SaveObserver.Subscribe();
                 // ★ v0.3.17: per-fight timing and calibration numbers ([Perf], [Calib])
                 Tactics.FightStats.Subscribe();
+                // ★ v0.3.18: whether a party member's ranged attack rolls provoke (Point Blank Master and the like)
+                Tactics.ProvokeObserver.Subscribe();
 
                 // ★ v0.2.38: Pre-Buff Controller 초기화
                 PreBuffController.Initialize();
@@ -278,6 +280,7 @@ namespace CompanionAI_Pathfinder
                 Tactics.CastOutcome.Subscribe();
                 Tactics.SaveObserver.Subscribe();
                 Tactics.FightStats.Subscribe();
+                Tactics.ProvokeObserver.Subscribe();
             }
             else
             {
@@ -288,6 +291,7 @@ namespace CompanionAI_Pathfinder
                 Tactics.CastOutcome.Unsubscribe();
                 Tactics.SaveObserver.Unsubscribe();
                 Tactics.FightStats.Unsubscribe();
+                Tactics.ProvokeObserver.Unsubscribe();
                 MountPathHandler.Unsubscribe();
             }
 

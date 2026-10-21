@@ -6,6 +6,7 @@
 // dispatcher refuses an option. The waiting differs: turn-based waits inside the game's turn, real time waits for the
 // unit's command slots to empty and its action cooldowns to run out (RealTimeController).
 using System;
+using System.Collections.Generic;
 using Kingmaker.EntitySystem.Entities;
 using UnityEngine;
 
@@ -117,6 +118,71 @@ namespace CompanionAI_Pathfinder.Tactics
         private sealed class IssueState
         {
             public int Hp;
+            /// <summary>★ v0.3.18: the harmful areas the unit stood in when the command was chosen (unique ids).</summary>
+            public HashSet<string> Areas;
+        }
+
+        private static HashSet<string> AreasAround(UnitEntityData unit)
+        {
+            var ids = new HashSet<string>();
+            try
+            {
+                foreach (var area in Analysis.AoeDangerAnalyzer.InsideDanger(unit).Areas)
+                    if (area != null) ids.Add(area.UniqueId);
+            }
+            catch { }
+            return ids;
+        }
+
+        /// <summary>
+        /// ★ v0.3.18 (docs/AI_TUNING_AUDIT.md B8): one of the unit's commands that the engine issued has not started, and
+        /// the unit now stands in a harmful area it was not in when that command was chosen (a Stinking Cloud cast on it
+        /// while it waited for its action cooldown). The engine decides again - whether to leave (its "Leave area" option
+        /// keeps a target in reach and prices attacks of opportunity) or to act from where it stands. Once per area and
+        /// command. The old pre-engine escape (RealTimeController) ran whenever the summed danger was 0.5 or more, with no
+        /// target kept and no attacks of opportunity priced; it is kept for the old engine only.
+        /// </summary>
+        public static bool ShouldReplanInArea(UnitEntityData unit, out string why)
+        {
+            why = null;
+            try
+            {
+                HashSet<string> now = null;
+                foreach (var command in unit.Commands.Raw)
+                {
+                    if (command == null || command.IsStarted || command.IsFinished) continue;
+                    if (!IssuedAtHp.TryGetValue(command, out var issued)) continue;
+                    now = now ?? AreasAround(unit);
+                    if (now.Count == 0) return false;
+                    if (issued.Areas != null && now.IsSubsetOf(issued.Areas)) continue;
+                    issued.Areas = now;
+                    why = $"now in a harmful area while '{command.GetType().Name}' waited to start";
+                    return true;
+                }
+            }
+            catch { }
+            return false;
+        }
+
+        /// <summary>
+        /// ★ v0.3.18 (C3): the controller cancelled a command that did not start (stuck). When it is the one the engine
+        /// issued last, that option is not chosen again this round, and an enemy it could not get to is not advanced on
+        /// either (the same as a turn-based option that did nothing). It went to a tracker only the old engine reads.
+        /// </summary>
+        public static void RecordStuck(UnitEntityData unit, Kingmaker.UnitLogic.Commands.Base.UnitCommand command, bool targetProblem)
+        {
+            try
+            {
+                var memory = CombatMemory.ForTurn(unit);
+                if (memory.LastCommand != command || memory.LastCandidateKey == null) return;
+                memory.Failed.Add(memory.LastCandidateKey);
+                var target = command.TargetUnit;
+                if (targetProblem && target != null) memory.Unreachable.Add(target.UniqueId);
+                Main.Log($"[RT-Tactics] {unit.CharacterName}: '{memory.LastCandidateKey}' was stuck - not chosen again this round");
+                memory.LastCommand = null;
+                memory.LastCandidateKey = null;
+            }
+            catch { }
         }
 
         /// <summary>HP of the unit when the engine issued each command (weak: dropped with the command).</summary>
@@ -170,7 +236,7 @@ namespace CompanionAI_Pathfinder.Tactics
                     {
                         TacticalDriver.RecordIssued(unit, memory, candidate, command);
                         IssuedAtHp.Remove(command);
-                        IssuedAtHp.Add(command, new IssueState { Hp = unit.HPLeft });
+                        IssuedAtHp.Add(command, new IssueState { Hp = unit.HPLeft, Areas = AreasAround(unit) });
                         return true;
                     }
                     Main.Log($"[RT-Tactics] {unit.CharacterName}: '{candidate.Label}' could not be issued ({failure}) - trying next best");

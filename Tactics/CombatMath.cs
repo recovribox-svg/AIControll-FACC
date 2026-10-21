@@ -42,6 +42,8 @@ namespace CompanionAI_Pathfinder.Tactics
         /// <summary>★ test5: chance the first attack is a critical hit (threat range × hit chance).</summary>
         public float FirstCritChance;
         public float CritMultiplier = 2f;
+        /// <summary>★ v0.3.18: chance at least one of the attacks hits (the kill chance, ValueModel.KillChance).</summary>
+        public float AnyHitChance;
     }
 
     public static class CombatMath
@@ -115,6 +117,7 @@ namespace CompanionAI_Pathfinder.Tactics
 
             bool flanked = target.CombatState?.IsFlanked ?? false;
             int sneakDice = SafeStat(unit.Stats.SneakAttack);
+            float noHit = 1f;
 
             for (int i = 0; i < attacks.Count; i++)
             {
@@ -129,6 +132,7 @@ namespace CompanionAI_Pathfinder.Tactics
                     var acRule = Rulebook.Trigger(new RuleCalculateAC(unit, target, weapon.Blueprint.AttackType));
                     float p = HitProbability(ab, acRule.Result);
                     if (i == 0) result.FirstHitChance = p;
+                    noHit *= 1f - p;
 
                     var stats = Rulebook.Trigger(new RuleCalculateWeaponStats(unit, weapon));
                     float perHit = 0f;
@@ -159,6 +163,7 @@ namespace CompanionAI_Pathfinder.Tactics
                     Main.Verbose($"[Math] attack estimate {unit.CharacterName}->{target.CharacterName}: {ex.Message}");
                 }
             }
+            result.AnyHitChance = 1f - noHit;
 
             return result;
         }
@@ -519,7 +524,7 @@ namespace CompanionAI_Pathfinder.Tactics
             if (enemy == null) return 0f;
             float cr = 1f;
             try { cr = Math.Max(1, enemy.Blueprint?.CR ?? 1); } catch { }
-            float threat = 4f + 3f * cr;
+            float threat = ValueModel.PerRound(cr);   // ★ v0.3.18: the shared worth per round (ValueModel)
 
             if (IsDisabled(enemy)) threat *= 0.25f;
 

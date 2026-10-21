@@ -25,7 +25,11 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
   only action-bar abilities (`AbilityDiscovery`), silent cast failures and touch charges (`Tactics/CastOutcome`), TB touch
   spells walk into reach first, per-round area cost, per-target control duration, observed saves (`Tactics/SaveObserver`);
   0.3.16: touch reach by the game's `MechanicsDistance`, provoking casts priced by the defensive-casting rule
-  (`CastProvokeRisk`), unfiltered grid-cell lookups (`BattlefieldGrid.CellAt`))
+  (`CastProvokeRisk`), unfiltered grid-cell lookups (`BattlefieldGrid.CellAt`); 0.3.17: approach around harmful areas,
+  Hit Dice conditions with shared values, per-target "reached nothing" safety net, diagnostics (`FightStats`,
+  `CoverageReport`), v0.2 planner removed; 0.3.18: calibration - shared formulas in `Tactics/ValueModel` (unit-tested),
+  expected rounds and enemy danger from the fight's observed damage, kill-chance bonus, continuous heal curve, ranged
+  attack rolls provoke (`Tactics/ProvokeObserver`, `ProvokeRisk`), real-time area escape through the engine)
 
 ## Reference Resources
 - **Rogue Trader CompanionAI v3.5.7**: `C:\Users\veria\Downloads\CompanionAI_v3-master - v3.5.7`
@@ -64,8 +68,9 @@ Design and value formulas: `docs/TACTICAL_AI.md`. Root-cause evidence: `docs/INV
 
 ### Key Folders
 - **Tactics/**: the live decision engine (both modes) - `TacticalEngine`, `AbilityProfile`, `AbilityDiscovery`,
-  `CombatMath`, `RiskMath`, `CombatMemory`, `TacticalDriver` (RT), observers (`CastOutcome`, `DamageObserver`,
-  `SaveObserver`), diagnostics (`FightStats`, `CoverageReport`), `ConsumablePolicy`, `SpellTierPolicy` / `ProgressiveGate`
+  `CombatMath`, `RiskMath`, `ValueModel` (shared value formulas, unit-tested), `CombatMemory`, `TacticalDriver` (RT),
+  observers (`CastOutcome`, `DamageObserver`, `SaveObserver`, `ProvokeObserver`), per-fight numbers (`FightStats`: also
+  the calibration input), `CoverageReport`, `ConsumablePolicy`, `SpellTierPolicy` / `ProgressiveGate`
 - **Core/TurnBased/**: `TurnBasedController` (TB driver); **Core/**: `ExecutionResult`; legacy-engine state
   (`TurnState`, `TurnPlan`, `PlannedAction`, `TeamBlackboard`, `CombatDataCache`, `FailedAbilityTracker`)
 - **Analysis/**: shared analyzers used by the engine (`AbilityClassifier` blacklist, `BuffEffectAnalyzer`,
@@ -128,7 +133,8 @@ otherwise the UI smart-cursor mode decides.
 
 ### Changing turn-based behaviour
 - Add or retune options in `Tactics/TacticalEngine.cs` (candidates and `ScoreAbility`); keep values in
-  damage-equivalent points so options stay comparable.
+  damage-equivalent points so options stay comparable. Shared formulas (worth per round, horizons, kill bonus, heal
+  curve, fight-length and danger calibration) live in `Tactics/ValueModel.cs` with unit tests: change them there.
 - What an ability does: `Tactics/AbilityProfile.cs`. Game-rule math: `Tactics/CombatMath.cs`.
 - Item-use policy must go through `Tactics/ConsumablePolicy.IsAllowed` (shared by turn-based and real-time).
 - Turn/combat facts that must survive re-decisions live in `Tactics/CombatMemory.cs`, never in a candidate.

@@ -610,14 +610,16 @@ D = dead code, N = reviewed with no change.
 - P4 legacy-only per-frame work
 - P2-lite: hoist attacker pricing; `MoveRisk` after `ScoreAbility`
 
-**Phase 2: calibration (0.3.18)**
+**Phase 2: calibration (0.3.18)** - implemented in 0.3.18-test1 (`docs/TACTICAL_AI.md` §26)
+- C4 ValueModel (moved here from phase 1)
 - B2 expected rounds from observed party damage
+- N5 observed enemy damage per round (moved here from phase 3 by the test2 numbers, §12)
 - B4b continuous heal model
 - B5 kill-chance bonus
 - B10 attack-roll provocation
 - B8 real-time escape through the engine
 - C3 stuck feedback into CombatMemory
-- P2 full memo (if phase 0 shows a need)
+- P2 full memo: dropped (§12); only the provoked-attack pricing is cached per decision
 
 **Phase 3: consolidation and investigation**
 - C2 one resistance and hit-chance path

@@ -213,8 +213,13 @@ namespace CompanionAI_Pathfinder.GameInterface
             // 이동 가능한 상태라면 AoE 위험 지역에서 탈출 시도
             // ★ v0.3.14 (test5): not again while it is already walking (an escape, a "Leave" or a withdraw): each new escape
             // replaced the last one, two metres into it (14 of 24 of Camellia's escapes ended that way).
+            // ★ v0.3.18 (B8): the old engine only. The tactical engine weighs leaving against acting itself (its "Leave
+            // area" option keeps a target in reach and prices attacks of opportunity); this escape ran whenever the summed
+            // danger was 0.5 or more, before the engine was asked (41 escapes in two real-time logs). A command waiting to
+            // start when the unit finds itself in a new area is dropped below, so the engine decides again.
+            bool legacy = Settings.ModSettings.Instance?.RealTimeLegacyEngine ?? false;
             var walking = unit.Commands.Move as UnitMoveTo;
-            if (state.CanMove && (walking == null || walking.IsFinished))
+            if (legacy && state.CanMove && (walking == null || walking.IsFinished))
             {
                 var aoeDanger = AoeDangerAnalyzer.AnalyzeUnit(unit);
                 if (aoeDanger.ShouldEscape && aoeDanger.SuggestedEscapePosition.HasValue)
@@ -249,7 +254,8 @@ namespace CompanionAI_Pathfinder.GameInterface
                 // ★ v0.3.14 (test5): a command chosen at full health that has not started yet (still walking to its target,
                 // waiting for a cooldown) is dropped when the unit has since lost a lot of HP, so the engine can heal or
                 // withdraw now. Seelah went from 100 % to 9 % while a Smite Evil waited 5 s to start.
-                if (Tactics.RealTimeTactics.ShouldReplanAfterDamage(unit, out string replanWhy))
+                if (Tactics.RealTimeTactics.ShouldReplanAfterDamage(unit, out string replanWhy) ||
+                    (!legacy && Tactics.RealTimeTactics.ShouldReplanInArea(unit, out replanWhy)))
                 {
                     Main.Log($"[RT] {unitName}: {replanWhy} - dropping the commands that have not started, deciding again");
                     unit.Commands.InterruptAll(c => c != null && !c.IsStarted && c.IsInterruptible && !c.Cutscene);
@@ -293,12 +299,14 @@ namespace CompanionAI_Pathfinder.GameInterface
                         {
                             var ability = useAbilityCmd.Ability;
                             var target = useAbilityCmd.Target?.Unit;
-                            if (ability != null && target != null)
+                            if (ability != null && target != null && legacy)
                             {
                                 FailedAbilityTracker.Instance.RecordFailure(unit, ability, target);
                                 Main.Log($"[RT] {unitName}: Blacklisted stuck ability {ability.Name} -> {target.CharacterName}");
                             }
                         }
+                        // ★ v0.3.18 (C3): the tactical engine learns from it too (the tracker above is the old engine's).
+                        if (!legacy) Tactics.RealTimeTactics.RecordStuck(unit, stuckCommand, stuckOnTarget);
 
                         // 명령 강제 취소
                         try

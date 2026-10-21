@@ -551,3 +551,106 @@ applies its buff in more than one branch, so its Hit Dice limit was never checke
 - The Hit Dice note and the `[Profile]` description read all branches (`A & B or C`).
 - The same rule fixes any ability whose buff appears in several branches with different conditions, for example
   alignment- or creature-type-limited buffs.
+
+## 26. v0.3.18 (test1): phase 2 of the tuning plan, calibration
+
+The plan is in `docs/AI_TUNING_AUDIT.md` (§4 B2, B4b, B5, B8, B10, C3, C4, N5; §8 phase 2). The shared formulas are now in
+`Tactics/ValueModel.cs`, which uses no game types, so they are unit-tested (`tests/CompanionAI.Tests/ValueModelTests.cs`,
+46 tests in all). A combatant's worth per round (4 + 3 × level, or CR) stays the scale's convention, so options keep
+their order. What changes are the quantities that must match the game: how long the fight lasts, how much damage the
+enemies really deal, the chance to kill, and what a provoked attack costs.
+
+### Fight length from the party's real damage (B2)
+
+- Before: `1 + enemy HP / max(10, 4 × party levels)`. In the 28 turn-based fights of the 0.3.17 logs the party dealt
+  1.0 / 1.4 / 1.8 damage per level per round (quartiles), not 4, and fights lasted about twice the estimate.
+- Now: the prior is 1.5 per level (at least 4). From the second round on it moves towards the damage the party really
+  dealt in the completed rounds of this fight: `(prior × 2 + dealt) / (2 + rounds)`. After two rounds what was seen
+  counts as much as the prior. Enemies that join mid-fight add their HP as they appear. The 1–6 clamp and the per-term
+  caps stay.
+- With the prior, the measured fights' real length over the estimate is 1.1 at the median (0.8 / 1.1 / 1.5). It was
+  about 1.9.
+- Effect: horizons capped at 3 rounds stay at 3 longer as the fight goes on (ally worth, control, area costs), and
+  long buffs, enchantments and summons count up to 6 rounds instead of about 4.
+
+### The enemies' real damage (N5)
+
+- Before: an enemy's `Threat` (4 + 3 × CR) was its damage per round in the drop-chance model (heals, withdraw,
+  exposure, standing up, revives). In the logs the enemies' Threat at the start was 16–82 per round, and they dealt
+  0–13 to the party.
+- Now: at the first decision of each round the engine records its prediction, the sum of every ally's incoming damage.
+  The rounds after compare it with the damage the enemies really dealt: `(dealt + 2 × prediction per round) /
+  (predicted + 2 × prediction per round)`, from 0.4 to 2. That scale multiplies `IncomingDamage`.
+- A party that takes more damage than predicted (late-game enemies hit harder than CR suggests) gets more careful. One
+  that takes less relaxes, never below 0.4, because a big hitter may still be on its way. Reinforcements are counted
+  from the round they appear, and the prior keeps the first rounds from counting too much.
+- The worth of killing or controlling an enemy still uses its Threat. That is the scale's convention, the same as an
+  ally's worth.
+
+### The chance to kill (B5)
+
+- Before: the kill bonus was the enemy's whole Threat once the expected damage reached its HP, and a quarter of Threat
+  × the HP share below. That was a fourfold jump at one point, whatever the chance to kill.
+- Now: `Threat × [P(kill) + 0.25 × (1 − P(kill)) × min(1, E / HP)]`. `P(kill)` comes from the chance the damage lands
+  (any attack hits, `WeaponAttackEstimate.AnyHitChance`; the effect chance of a spell) and the damage spread of
+  `RiskMath.ChanceAtLeast`.
+
+| Expected damage / HP (Threat 10, HP 10) | 0.25 | 0.5 | 0.75 | 0.9 | 1.0 | 1.25 | 1.5 | 2.0 |
+|---|---|---|---|---|---|---|---|---|
+| 0.3.17 | 3.1 | 6.2 | 9.4 | 11.2 | **20.0** | 20.0 | 20.0 | 20.0 |
+| 0.3.18, damage always lands | 3.1 | 6.2 | 10.7 | 14.3 | 16.2 | 17.8 | 18.8 | 20.0 |
+| 0.3.18, lands half the time | 3.1 | 8.4 | 12.8 | 14.9 | 16.2 | 16.2 | 16.2 | 16.2 |
+
+A big hit that lands half the time now kills half the time, and is valued that way above and below the HP mark.
+
+### Healing: one curve, one urgency term (B4b)
+
+- Before: each HP restored was worth 0.6 × 1 / 2 / 3 by HP band, × 1.25 when the ally was engaged, plus the
+  drop-chance term. Urgency was counted twice. There was a jump from 0 to 1.2 at the threshold, and more at 50 % and
+  25 %. Heals were the best-valued option in the logs (median 18–21, weapons 7–8).
+- Now: `ValueModel.HealPerHp` is 0 at the threshold, rising over its last 15 %, then 0.6 + 2.4 × depth below it, at
+  most 2.4. The danger of dropping is only in the drop-chance term. Downed allies keep the revive model unchanged.
+
+| HP share (threshold 50 %) | 49 % | 45 % | 40 % | 30 % | 25 % | 20 % | 10 % | 0 % |
+|---|---|---|---|---|---|---|---|---|
+| 0.3.17 | 1.2 | 1.2 | 1.2 | 1.2 | 1.8 | 1.8 | 1.8 | 1.8 |
+| 0.3.17, engaged | 1.5 | 1.5 | 1.5 | 1.5 | 2.25 | 2.25 | 2.25 | 2.25 |
+| 0.3.18 | 0.09 | 0.56 | 1.08 | 1.56 | 1.8 | 2.04 | 2.4 | 2.4 |
+
+The result is fewer top-ups of mildly hurt allies, and the same or more for badly hurt ones.
+
+### Ranged attack rolls provoke (B10)
+
+- The game provokes for every ranged and ranged-touch attack roll unless the rule's flag says no
+  (`UnitCombatEngagementController.OnEventDidTrigger(RuleAttackRoll)`). Point Blank Master sets that flag for its
+  weapon category, `IgnoreAttacksOfOpportunityForSpellList` for its spells, and mods may add more.
+- `Tactics/ProvokeObserver` reads the flag from the party's real rolls. The answer is kept per attacker and weapon
+  category, and per ability. The party also shoots outside melee, so this is known early. Before any roll, Point Blank
+  Master in the attacker's facts answers for weapons. A fake roll cannot be used: its fortification branch rolls dice.
+- `ProvokeRisk` is now the one pricing for every provoking action, at the place it happens. It covers casting in
+  melee, a ranged attack roll, and Coup de Grace. The cost is the one leaving melee already used: dropped now, more
+  likely to drop before the next turn, and the HP to heal. Casting left out the middle part before.
+- Weapons: single, full and Move+Attack shots in reach of enemies pay it. Only the attacks still to come are lost if
+  the unit drops. Before, shooting in melee cost 35 % of the engagers' Threat, flat.
+- Rays and kinetic blasts (`AbilityProfile.RangedAttackRoll`) pay it too, cast defensively or not. An enemy makes one
+  attack of opportunity a round, so a failed casting check and the roll share it.
+- The step out of melee is worth what acting in place would lose by provoking, less what the new spot still risks.
+  For archers that replaces 40 % of the engagers' Threat, and an archer with Point Blank Master no longer steps out.
+  Casters with rays now step out as well.
+
+### Real time
+
+- **B8:** the pre-engine "Emergency AoE escape" now runs for the old engine only. The tactical engine's "Leave area"
+  option already keeps a target in reach, prices attacks of opportunity and handles nausea. A command still waiting to
+  start when the unit finds itself in a new harmful area is dropped once (`RealTimeTactics.ShouldReplanInArea`), and
+  the engine decides again.
+- **C3:** a cancelled stuck command marks the engine's option as failed for the round, and its target as unreachable
+  when the target was the problem (`RealTimeTactics.RecordStuck`). The old tracker is written only for the old engine.
+
+### Diagnostics
+
+- `[Calib]` at the end of a fight now also gives the party damage per round used at the end, the predicted enemy
+  damage, and the danger scale at the end.
+- `[Provoke]`: a party member whose ranged rolls do not provoke, the first time it is seen.
+- Decision labels show `[shot provokes N]` and `[ray provokes N]`.
+
