@@ -774,6 +774,26 @@ namespace CompanionAI_Pathfinder.Tactics
             }
         }
 
+        /// <summary>
+        /// ★ v0.3.18 (test10 review): the unit's weapon attacks add its Strength bonus to damage, by the game's own weapon
+        /// rule (melee and unarmed always; a ranged weapon only through a stat-replacement enchantment such as a composite
+        /// bow's). True when unsure.
+        /// </summary>
+        public static bool StrengthAddsWeaponDamage(UnitEntityData unit)
+        {
+            try
+            {
+                var weapon = unit?.Body?.PrimaryHand?.MaybeWeapon;
+                if (weapon == null || !weapon.Blueprint.IsRanged) return true;
+                var stats = Rulebook.Trigger(new RuleCalculateWeaponStats(unit, weapon));
+                return stats.DamageBonusStat == StatType.Strength;
+            }
+            catch
+            {
+                return true;
+            }
+        }
+
         /// <summary>★ v0.3.18 (test10): the target declines precision damage (AddImmunityToPrecisionDamage in its facts).</summary>
         public static bool ImmuneToPrecision(UnitEntityData target)
         {
@@ -785,7 +805,10 @@ namespace CompanionAI_Pathfinder.Tactics
                     var components = fact?.Blueprint?.ComponentsArray;
                     if (components == null) continue;
                     foreach (var c in components)
-                        if (c is Kingmaker.UnitLogic.FactLogic.AddImmunityToPrecisionDamage) return true;
+                        // Incorporeal creatures too (the rule drops precision damage of non-ghost-touch weapons; a
+                        // ghost-touch weapon is rare enough to count them as immune).
+                        if (c is Kingmaker.UnitLogic.FactLogic.AddImmunityToPrecisionDamage ||
+                            c is Kingmaker.UnitLogic.FactLogic.GhostCriticalAndPrecisionImmunity) return true;
                 }
             }
             catch { }

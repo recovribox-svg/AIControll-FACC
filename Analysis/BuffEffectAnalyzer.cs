@@ -522,6 +522,9 @@ namespace CompanionAI_Pathfinder.Analysis
                 int? sign = amount is int n ? Math.Sign(n)
                           : amount is Kingmaker.UnitLogic.Mechanics.ContextValue cv && cv.ValueType == Kingmaker.UnitLogic.Mechanics.ContextValueType.Simple
                               ? Math.Sign(cv.Value) : (int?)null;
+                // AddContextStatBonus multiplies the value (a Multiplier of -1 turns a bonus into a penalty).
+                if (sign.HasValue && type.GetField("Multiplier", BindingFlags.Public | BindingFlags.Instance)?.GetValue(component) is int multiplier)
+                    sign = sign.Value * Math.Sign(multiplier);
                 if (sign.HasValue && sign.Value < 0)
                 {
                     result.DetectedComponents.Add($"Stat({statName})=Penalty");

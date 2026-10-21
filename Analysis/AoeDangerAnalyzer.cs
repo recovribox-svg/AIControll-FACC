@@ -196,6 +196,7 @@ namespace CompanionAI_Pathfinder.Analysis
         {
             movementOnly = false;
             affectChance = 0f;
+            bool otherKind = false;   // ★ (review) another entered area does more than hinder movement
             name = null;
             roundsLeft = 0f;
             endsInside = false;
@@ -221,6 +222,7 @@ namespace CompanionAI_Pathfinder.Analysis
                     if (danger != null && danger.DangerLevel > 0f &&
                         (danger.IsMovementImpairing || ControlOf(aoe) == CompanionAI_Pathfinder.Tactics.ControlStrength.Hard))
                         stopChance = 1f - (1f - stopChance) * (1f - Mathf.Clamp01(danger.AffectChance));
+                    if (danger != null && danger.DangerLevel > 0f && !IsMovementOnly(danger, aoe)) otherKind = true;
                     if (danger == null || danger.DangerLevel <= worst) continue;
                     worst = danger.DangerLevel;
                     name = aoe.Context?.SourceAbilityContext?.Ability?.Name ?? danger.Name;
@@ -234,6 +236,7 @@ namespace CompanionAI_Pathfinder.Analysis
             {
                 Main.Verbose($"[AoeDanger] entering check {unit.CharacterName}: {ex.Message}");
             }
+            if (otherKind) movementOnly = false;
             // ★ v0.3.18 (test10): an ally's area that is about to land (real time).
             var pending = PendingOnWay(unit, from, to);
             if (pending != null && pending.Danger * 0.5f > worst)
@@ -273,16 +276,7 @@ namespace CompanionAI_Pathfinder.Analysis
 
         private static double Now => Game.Instance?.TimeController?.GameTime.TotalSeconds ?? 0d;
 
-        public static bool HasPendingAreas
-        {
-            get
-            {
-                Prune();
-                return Pending.Count > 0;
-            }
-        }
-
-        public static void RegisterPending(Vector3 point, float radius, string name, bool damaging, bool controls,
+        public static void RegisterPending(Vector3 point, float radius, string name, bool damaging, bool controls, bool movementOnly,
                                            Kingmaker.UnitLogic.Commands.Base.UnitCommand command)
         {
             if (command == null || radius <= 0f || CombatController.IsInTurnBasedCombat()) return;
@@ -291,11 +285,40 @@ namespace CompanionAI_Pathfinder.Analysis
             {
                 Point = point, Radius = radius, Name = name, Command = command, Until = Now + 8d,
                 Danger = Math.Max(0.3f, (damaging ? 0.6f : 0f) + (controls ? 0.4f : 0f)),
-                MovementOnly = controls && !damaging
+                MovementOnly = movementOnly && !damaging
             });
         }
 
         public static void ClearPending() => Pending.Clear();
+
+        /// <summary>
+        /// ★ (review) a live area harmful to <paramref name="unit"/>, or a pending one, lies within <paramref name="radius"/>
+        /// of <paramref name="center"/>: only then is a real-time walk worth checking.
+        /// </summary>
+        public static bool HarmfulAreaNear(UnitEntityData unit, Vector3 center, float radius)
+        {
+            try
+            {
+                Prune();
+                foreach (var p in Pending)
+                    if (Vector3.Distance(p.Point, center) <= radius + p.Radius) return true;
+                var areaEffects = Game.Instance?.State?.AreaEffects;
+                if (areaEffects == null) return false;
+                foreach (var aoe in areaEffects)
+                {
+                    if (!IsLive(aoe)) continue;
+                    float size = 10f;
+                    try { size = aoe.Blueprint.Size.Meters; } catch { }
+                    if (Vector3.Distance(aoe.Position, center) > radius + size) continue;
+                    if (IsEffectHarmfulToUnit(unit, aoe)) return true;
+                }
+            }
+            catch
+            {
+                return true;   // unsure: check the walk
+            }
+            return false;
+        }
 
         private static void Prune()
         {
@@ -330,8 +353,14 @@ namespace CompanionAI_Pathfinder.Analysis
         {
             const SpellDescriptor other = SpellDescriptor.Death | SpellDescriptor.Poison | SpellDescriptor.Stun |
                                           SpellDescriptor.Paralysis | SpellDescriptor.Fear;
-            return danger.IsMovementImpairing && !danger.IsDamaging && (danger.Descriptors & other) == 0 &&
-                   ControlOf(aoe) != CompanionAI_Pathfinder.Tactics.ControlStrength.Hard;
+            if (!danger.IsMovementImpairing || danger.IsDamaging || (danger.Descriptors & other) != 0) return false;
+            var profile = SourceProfile(aoe);
+            // ★ (review) the spawning ability's own analysis decides when it is known: no damage of any kind (Spike Growth's
+            // piercing damage has no damage descriptor), no hard control, and nothing but a fall (not Entangle or Web, which
+            // hold a unit for rounds; not a blinding or sickening cloud).
+            if (profile == null) return ControlOf(aoe) != CompanionAI_Pathfinder.Tactics.ControlStrength.Hard;
+            return !profile.DealsDamage && profile.ControlStrength != CompanionAI_Pathfinder.Tactics.ControlStrength.Hard &&
+                   profile.OnlyKnocksDown;
         }
 
         /// <summary>★ v0.3.14: the harmful areas a unit stands in (<see cref="InsideDanger"/>).</summary>

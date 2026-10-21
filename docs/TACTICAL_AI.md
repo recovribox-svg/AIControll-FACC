@@ -1190,6 +1190,24 @@ time the archers woke the Spawn of the Hungry Moon after each of five Sleeps.
   `ContextConditionIsMainTarget` was true for every unit of an area (a bomb's direct hit against its splash). It is the
   only condition the AI evaluates that reads the main target.
 
+**Regression review of this batch (fixed before the build).**
+- **Movement-only areas** (priced as a fall in turn-based) are now strict: the spawning ability deals no damage of any
+  kind, applies no hard control, and its buffs impose nothing but Prone. Entangle, Web, Spike Growth and blinding or
+  sickening clouds keep the full price. A path through several areas is a fall only if every one of them is.
+- **Real-time path check:** asks A* only when a harmful or pending area lies near the walk, on the walkable navmesh
+  (graph mask 1), at the front of the queue.
+- **Walking without progress:** time spent waiting on a cooldown or an animation does not count. A target that keeps
+  moving is marked as out of reach; a fixed point the walk cannot get nearer to is only a path problem.
+- **Shared casts:** only for outcomes that do not add up (debuffs, control, marks, Coup de Grace). Two allies' damage on
+  one enemy is focus fire.
+- **No consumables on summons:** only own-side summons (a Cure on an enemy undead summon is still an attack).
+- **Demoralize upgrades:** reduced by the same repeat factor as Shaken, compared against the undiminished Shaken.
+- **Soul Power:** blocked while no one has died around and the burn has not grown since the last cast.
+- **Strength-only buffs:** reduced only when the recipient's weapon does not add Strength, by the game's weapon rule
+  (a composite bow does). An `AddContextStatBonus` with a negative multiplier counts as a penalty.
+- **Precision immunity:** incorporeal creatures (`GhostCriticalAndPrecisionImmunity`) count as immune too.
+- **Condition cache:** one checker's results are dropped when the frame changes, so per-aim keys do not pile up.
+
 **Checked and left as they are.**
 - **Grease's value** to the caster: per the player's preference, see above.
 - **Danger calibration** at its 0.4 floor in 12 of 13 fights: a deliberate safety margin, and the party took little

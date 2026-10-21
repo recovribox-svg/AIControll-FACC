@@ -1478,8 +1478,9 @@ namespace CompanionAI_Pathfinder.Tactics
                         : analysis.OnlyUnrecognized ? (item ? 0f : 0.5f)
                         : 0.05f; // no components at all: a marker or cooldown
                 if (item && q < 0.5f) q = 0f;
-                // ★ v0.3.18 (test10): Strength helps weapon attacks in melee and carrying; little for an archer or caster.
-                if (analysis.StrengthOnly && UsesRangedWeapon(recipient)) q *= 0.2f;
+                // ★ v0.3.18 (test10): Strength helps weapon attacks in melee and carrying; little for an archer or caster
+                // whose weapon does not add it (a composite bow does: the game's weapon rule decides).
+                if (analysis.StrengthOnly && !CombatMath.StrengthAddsWeaponDamage(recipient)) q *= 0.2f;
                 best = Math.Max(best, q);
             }
             return best;
@@ -1686,7 +1687,7 @@ namespace CompanionAI_Pathfinder.Tactics
 
                 // ★ v0.3.18 (test10): no consumables on a summon - temporary, and worth half (Orvath used a Cure Light
                 // Wounds item on his Dretch).
-                if (ability.SourceItem != null && target != ctx.Unit && IsSummon(target)) continue;
+                if (ability.SourceItem != null && target != ctx.Unit && !ctx.Unit.IsEnemy(target) && IsSummon(target)) continue;
                 float value;
                 string why;
                 using (AbilityProfile.AimedAt(wrapper))   // ★ v0.3.18 (test10): conditions see the real main target
@@ -1937,7 +1938,10 @@ namespace CompanionAI_Pathfinder.Tactics
             var reasons = new List<string>();
 
             // ★ v0.3.18 (test10): real time - an ally is casting this very ability on this enemy right now.
-            if (targetIsEnemy && CombatMemory.CastPendingByOther(unit, ability, target))
+            // Only outcomes that do not add up (a debuff, control, a mark, Coup de Grace): two allies' damage on one enemy is
+            // focus fire. (review)
+            if (targetIsEnemy && (IsCoupDeGrace(ability) || (!profile.DealsDamage && !profile.IsWeaponAttack)) &&
+                CombatMemory.CastPendingByOther(unit, ability, target))
             {
                 why = "an ally is already casting it on this target";
                 return 0f;
@@ -2181,8 +2185,8 @@ namespace CompanionAI_Pathfinder.Tactics
                                  isMark ? (oneShotMark ? 0.1f : 0.15f) : 0.25f;
                 // Non-control debuffs/marks repeated on new targets every turn are the "spam" pattern: diminish them.
                 // ★ v0.3.18 (test10): penalties too (Demoralize, Flare).
-                if (profile.ControlStrength <= ControlStrength.Minor && CombatMemory.TimesUsed(unit, ability) >= 2)
-                    strength *= 0.3f;
+                float repeat = profile.ControlStrength <= ControlStrength.Minor && CombatMemory.TimesUsed(unit, ability) >= 2 ? 0.3f : 1f;
+                strength *= repeat;
                 // A one-round / next-attack effect lasts one round, not the rest of the fight.
                 float effectRounds = profile.IsOneShot ? 1f : Math.Min(ctx.ExpectedRounds, 3f);
 
@@ -2251,7 +2255,8 @@ namespace CompanionAI_Pathfinder.Tactics
                     // ★ v0.3.18 (test10): what Demoralize adds or replaces for this caster (Frightening Thug, Hellknight,
                     // Shatter Confidence, Trickster) on a successful check (p already holds the check's chance).
                     if (profile.Intimidation != null && buffs.Contains(profile.Intimidation.Buff))
-                        enemyValue += p * CombatMath.Threat(enemy) * DemoralizeUpgrades(ctx, ability, profile.Intimidation, enemy, strength, rounds);
+                        enemyValue += p * CombatMath.Threat(enemy) * repeat *
+                                      DemoralizeUpgrades(ctx, ability, profile.Intimidation, enemy, strength / repeat, rounds);
                     // ★ v0.3.9: an enemy that already cannot act (asleep, paralysed, stunned) gains little from more
                     // control: Orvath stunned (Grasp Heart) the Mite Scout he had just put to sleep.
                     // ★ v0.3.18 (review): x0.4 on top of Threat's own x0.25 for a disabled enemy - 0.1 of its worth, as
@@ -2952,7 +2957,8 @@ namespace CompanionAI_Pathfinder.Tactics
                         profile.AoETargets != Kingmaker.UnitLogic.Abilities.Components.TargetType.Enemy &&
                         !profile.SelectiveSparesAllies(c.Ability))
                         AoeDangerAnalyzer.RegisterPending(c.Point ?? c.Target?.Position ?? unit.Position, profile.AoERadius, c.Ability.Name,
-                                                          profile.DealsDamage, profile.ControlStrength != ControlStrength.None, command);
+                                                          profile.DealsDamage, profile.ControlStrength != ControlStrength.None,
+                                                          profile.ControlStrength != ControlStrength.Hard && profile.OnlyKnocksDown, command);
                 }
                 catch (Exception ex) { Main.Verbose($"[Tactics] pending area: {ex.Message}"); }
                 profile?.DescribeOnce();

@@ -228,13 +228,15 @@ namespace CompanionAI_Pathfinder.GameInterface
             ABPath path = null;
             try
             {
-                var areas = Game.Instance?.State?.AreaEffects;
-                bool any = Analysis.AoeDangerAnalyzer.HasPendingAreas;
-                if (areas != null) foreach (var _ in areas) { any = true; break; }
-                if (!any) return false;
-                path = ABPath.Construct(unit.Position, command.ApproachPoint, null);
+                // Only when a harmful (or pending) area lies near the straight line: the circle around the
+                // midpoint covers every walk that does not detour far, and a far detour leaves the check unneeded.
+                Vector3 start = unit.Position, goal = command.ApproachPoint;
+                float half = Vector3.Distance(start, goal) * 0.5f;
+                if (!Analysis.AoeDangerAnalyzer.HarmfulAreaNear(unit, (start + goal) * 0.5f, half + 3f)) return false;
+                path = ABPath.Construct(start, goal, null);
+                path.nnConstraint.graphMask = 1;   // the walkable navmesh, as the game's own movement queries
                 path.Claim(PathClaimKey);
-                AstarPath.StartPath(path);
+                AstarPath.StartPath(path, pushToFront: true);
                 AstarPath.BlockUntilCalculated(path);
                 if (path.error || path.CompleteState != PathCompleteState.Complete || path.vectorPath == null || path.vectorPath.Count == 0)
                     return false;   // no answer: the move is not refused for it

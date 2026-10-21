@@ -451,6 +451,8 @@ namespace CompanionAI_Pathfinder.GameInterface
             /// <summary>★ v0.3.18 (test10): the nearest the unit has come to the command's approach point, and when.</summary>
             public float Nearest = float.MaxValue;
             public TimeSpan NearestAt;
+            /// <summary>Where the command's approach point was when first seen (a target that walks away moves it).</summary>
+            public Vector3 FirstPoint;
         }
 
         /// <summary>★ v0.3.18 (test10): seconds of walking (a round) without getting 0.5 m nearer before "moving" stops counting.</summary>
@@ -477,7 +479,7 @@ namespace CompanionAI_Pathfinder.GameInterface
                 var now = Kingmaker.Game.Instance.TimeController.GameTime;
                 string wait = WaitReason(unit, cmd);
                 // First seen counts as a wait: a command needs 3 s of observed nothing-to-wait-for to be stuck.
-                var mark = LastWait.GetValue(cmd, _ => new WaitMark { Time = now, NearestAt = now });
+                var mark = LastWait.GetValue(cmd, _ => new WaitMark { Time = now, NearestAt = now, FirstPoint = cmd.ApproachPoint });
                 // ★ v0.3.18 (test10): walking only counts as a reason to wait while it brings the unit nearer. Orvath
                 // chased his own moving Dretch with the game's touch delivery of a Cure Light Wounds item for about 75 s
                 // (the command the game queues for a held touch charge), "moving" every check, and nothing ever ended it;
@@ -493,10 +495,19 @@ namespace CompanionAI_Pathfinder.GameInterface
                     }
                     else if ((now - mark.NearestAt).TotalSeconds > NO_PROGRESS_SECONDS)
                     {
-                        reason = $"walking for {(now - mark.NearestAt).TotalSeconds:F0} s without getting nearer ({gap:F1} m to go)";
-                        targetProblem = true;
+                        // A target that keeps moving is a reason to try another one; a fixed point the walk does not
+                        // get nearer to is a path problem (blockers, crowding), not a reason to mark the target.
+                        bool chased = Vector3.Distance(mark.FirstPoint, cmd.ApproachPoint) > 1f;
+                        reason = $"walking for {(now - mark.NearestAt).TotalSeconds:F0} s without getting nearer ({gap:F1} m to go" +
+                                 (chased ? ", the target keeps moving)" : ")");
+                        targetProblem = chased;
                         return true;
                     }
+                }
+                else
+                {
+                    // Time spent waiting for something else (a cooldown, an animation) is not time without progress.
+                    mark.NearestAt = now;
                 }
                 if (wait != null)
                 {

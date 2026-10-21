@@ -1104,15 +1104,17 @@ namespace CompanionAI_Pathfinder.Tactics
             return acc;
         }
 
-        private sealed class CheckerResult
+        /// <summary>One checker's outcomes in one frame (★ v0.3.18 review: dropped when the frame changes, so the
+        /// per-aim keys do not pile up over a fight).</summary>
+        private sealed class CheckerResults
         {
             public int Frame;
-            public bool? Result;
+            public readonly Dictionary<string, bool?> Results = new Dictionary<string, bool?>();
         }
 
         /// <summary>Checker outcome per (checker, target) within one frame; a decision evaluates many candidates.</summary>
-        private static readonly Dictionary<ConditionsChecker, Dictionary<string, CheckerResult>> CheckerCache =
-            new Dictionary<ConditionsChecker, Dictionary<string, CheckerResult>>();
+        private static readonly Dictionary<ConditionsChecker, CheckerResults> CheckerCache =
+            new Dictionary<ConditionsChecker, CheckerResults>();
 
         private static readonly HashSet<string> ReportedUnknown = new HashSet<string>();
 
@@ -1204,8 +1206,13 @@ namespace CompanionAI_Pathfinder.Tactics
                          $"{ability.SourceItem?.UniqueId}|{ability.Spellbook?.Blueprint?.AssetGuid}|" +
                          (aim.Unit != null ? aim.Unit.UniqueId : $"{aim.Point.x:F1},{aim.Point.z:F1}");
             if (!CheckerCache.TryGetValue(checker, out var perUnit))
-                CheckerCache[checker] = perUnit = new Dictionary<string, CheckerResult>();
-            if (perUnit.TryGetValue(key, out var cached) && cached.Frame == frame) return cached.Result;
+                CheckerCache[checker] = perUnit = new CheckerResults { Frame = frame };
+            if (perUnit.Frame != frame)
+            {
+                perUnit.Results.Clear();
+                perUnit.Frame = frame;
+            }
+            if (perUnit.Results.TryGetValue(key, out var cached)) return cached;
 
             bool? result = null;
             try
@@ -1239,7 +1246,7 @@ namespace CompanionAI_Pathfinder.Tactics
                 result = null;
             }
 
-            perUnit[key] = new CheckerResult { Frame = frame, Result = result };
+            perUnit.Results[key] = result;
             return result;
         }
 
@@ -1553,6 +1560,13 @@ namespace CompanionAI_Pathfinder.Tactics
         #endregion
 
         #region Control classification
+
+        /// <summary>
+        /// ★ v0.3.18 (test10): the buffs it puts on its targets impose no condition but a fall (Prone) - or none, the effect
+        /// living in a component the AI does not read (Grease's buff knocks down from its own actions). An area of such an
+        /// ability only hinders movement; one that holds (Entangled, CantMove), blinds or sickens does more.
+        /// </summary>
+        public bool OnlyKnocksDown => TargetBuffs.All(b => ConditionsOf(b).All(c => c == UnitCondition.Prone));
 
         /// <summary>
         /// ★ v0.3.18 (test10): the share of an enemy's worth per round that this buff takes while it lasts, on the

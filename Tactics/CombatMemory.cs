@@ -178,9 +178,12 @@ namespace CompanionAI_Pathfinder.Tactics
         public static void NoteBurnRelief(UnitEntityData unit, Kingmaker.UnitLogic.Abilities.Blueprints.BlueprintAbility ability, int burn, int deadAround) =>
             BurnReliefs[$"{unit.UniqueId}|{ability?.AssetGuid}"] = new KeyValuePair<int, int>(burn, deadAround);
 
-        /// <summary>The burn relief was used and neither the burn nor the dead around changed since.</summary>
+        /// <summary>
+        /// The burn relief was used, no one has died around since, and the burn has not grown (a relief that took no
+        /// burn off, or that only some other source lowered, has nothing new to work with).
+        /// </summary>
         public static bool BurnReliefUnchanged(UnitEntityData unit, Kingmaker.UnitLogic.Abilities.Blueprints.BlueprintAbility ability, int burn, int deadAround) =>
-            BurnReliefs.TryGetValue($"{unit.UniqueId}|{ability?.AssetGuid}", out var last) && last.Key == burn && last.Value == deadAround;
+            BurnReliefs.TryGetValue($"{unit.UniqueId}|{ability?.AssetGuid}", out var last) && burn <= last.Key && last.Value == deadAround;
 
         /// <summary>★ v0.3.18 (test10): unit → the round it chose to stay prone (TacticalEngine.ShouldStandUp).</summary>
         private static readonly Dictionary<string, int> ProneStays = new Dictionary<string, int>();
