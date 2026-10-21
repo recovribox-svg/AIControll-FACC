@@ -578,6 +578,11 @@ stay in AA-4.
 
 ### AA-4: long tail, each only with evidence from AA-0 and logs
 
+**Status: implemented in 0.3.18-test8** (`docs/TACTICAL_AI.md` §31, `Tactics/TacticalEngine.Martial.cs`):
+- done: Demoralize and Dazzling Display, combat maneuvers, Vital Strike, Cleave, Pounce, Extend and Persistent, chains;
+- still waiting for evidence: metamagic rods, kineticist infusions, Spell Combat, style stances, resurrection and mod
+  buff components.
+
 Vital Strike, Cleave, Demoralize and Dazzling Display, combat maneuvers, metamagic rods, Extend and Persistent in the
 value, kineticist infusions, Spell Combat, and specific mod abilities whose components AA-0 shows as unread.
 

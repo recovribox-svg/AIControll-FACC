@@ -2165,7 +2165,10 @@ namespace CompanionAI_Pathfinder.Analysis
         /// 버프 효과 분석 (AppliesFatigue 등)을 활용하여 정확한 감지
         /// ★ v0.2.110: HasVariants 체크 추가 - 부모 능력(키네티시스트 블라스트 등) 제외
         /// </summary>
-        public static bool IsBlacklistedForCombat(AbilityData ability)
+        /// <remarks>★ v0.3.18 (AA-4): <paramref name="valuedByEffect"/> - the caller (the tactical engine and its coverage
+        /// report) values Demoralize and touch debuffs by what they do (the Intimidate check, the buff's conditions); only
+        /// the legacy real-time engine still needs the rules that hide them.</remarks>
+        public static bool IsBlacklistedForCombat(AbilityData ability, bool valuedByEffect = false)
         {
             if (ability?.Blueprint == null) return false;
 
@@ -2185,6 +2188,7 @@ namespace CompanionAI_Pathfinder.Analysis
 
                 // 1. Demoralize 액션 포함 능력 블랙리스트 (AI가 제대로 사용 못함)
                 var runAction = bp.GetComponent<AbilityEffectRunAction>();
+                if (valuedByEffect) return false;
                 if (runAction?.Actions?.Actions != null)
                 {
                     foreach (var action in runAction.Actions.Actions)

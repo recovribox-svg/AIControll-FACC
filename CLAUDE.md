@@ -36,7 +36,8 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
   effects, caster-provoke detection, no "utility" fallback, more read-only conditions; AA-2 - command-activated toggles
   (performances, Rage family, spirits) as candidates, `Tactics/TacticalEngine.Toggles.cs`; AA-3 - attack modes (Power
   Attack, Deadly Aim, Fighting Defensively, Combat Expertise) chosen per attack and Mobility per move,
-  `Tactics/TacticalEngine.Modes.cs`)
+  `Tactics/TacticalEngine.Modes.cs`; AA-4 - Demoralize by the Intimidate rule, combat maneuvers by CMB vs CMD, Vital
+  Strike / Cleave / Pounce, Persistent and Extend, chain targets, `Tactics/TacticalEngine.Martial.cs`)
 
 ## Reference Resources
 - **Rogue Trader CompanionAI v3.5.7**: `C:\Users\veria\Downloads\CompanionAI_v3-master - v3.5.7`

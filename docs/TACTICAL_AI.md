@@ -957,3 +957,76 @@ skill check), and speed is halved.
 - The AI switches it on (a free action) before one of its three best options that move and provoke, when the move still
   fits at half speed, the attacks avoided are worth 2 or more, and that option is then the best thing to do.
 - It is switched off again, when the AI started it, once no conscious enemy engages the unit.
+
+## 31. v0.3.18 (test8): active abilities, step AA-4 (the long tail)
+
+The plan is `docs/ACTIVE_ABILITY_PLAN.md` §H AA-4: each item only with evidence from the coverage report and the logs,
+or a confirmed game rule. The martial parts are in `Tactics/TacticalEngine.Martial.cs`.
+
+**Evidence.** The `[Coverage]` lines of the 0.3.17-test3 to 0.3.18-test2 logs (5 party members):
+- Demoralize was blacklisted for every one of them, and Touch of Fatigue for Camellia and Orvath;
+- Hydraulic Push (a bull rush) was "not understood";
+- Orvath's Burning Infusion toggle is off.
+
+No metamagic rod, Spell Combat, style stance or unread mod buff component showed up.
+
+**Demoralize and Dazzling Display.** Valued by the game's rule (`Demoralize.RunAction`):
+- **Check:** d20 + Intimidate + the action's bonus against 10 + the target's character level + its Wisdom bonus, the DC
+  adjusted by difficulty like every skill check (`CombatMath.IntimidateOdds`).
+- **Duration:** on a success the Shaken buff lasts 1 + (result - DC) / 5 rounds, one more with Frightening Thug. The
+  value uses that average over the successful rolls.
+- **Rest of the model:** the debuff path as for any spell (Shaken is soft control), with fear and mind-affecting
+  immunity from the buff's descriptors. An enemy already shaken is not demoralized again.
+
+**Blacklist.** The tactical engine and its coverage report now value Demoralize and touch debuffs by what they do
+(`IsBlacklistedForCombat(ability, valuedByEffect: true)`); only the legacy real-time engine keeps the old rules.
+Fatigued (-2 Str / Dex) is a plain debuff (0.25 x threat), no longer soft control (0.4): otherwise Touch of Fatigue
+would have beaten the damage cantrips.
+
+**Combat maneuvers.** `ContextActionCombatManeuver`, its custom version and `ContextActionDisarm`, valued as chance x
+worth x rounds.
+- **Chance:** `RuleCombatManeuver`'s roll - d20 + CMB (with the action's stat replacement: casting stat, kineticist
+  main stat, caster level as base attack) against the CMD; a natural 1 fails, a natural 20 succeeds; 0 against a target
+  immune to maneuvers.
+- **Duration:** margin / 5 + 1 rounds, as `ApplyManeuver` gives it.
+- **Worth, by maneuver:**
+  - trip, overrun and awesome blow knock the target prone: 0.4 for one round, if it can be knocked down;
+  - disarm takes a manufactured weapon: 0.6;
+  - dirty-trick blind or entangle: 0.4; sickened and sunder armor: 0.25 (not when the buff is already there or the
+    target is immune);
+  - bull rush (Hydraulic Push), in turn-based only: an enemy in melee with a party member walks back and loses its full
+    attack, 0.2 for one round;
+  - pull and grapple: 0.
+
+**Vital Strike, Cleave, Pounce.**
+- **Vital Strike** (`AbilityCustomVitalStrike`): the single attack plus (VitalStrikeMod - 1) more rolls of the weapon
+  dice (the mythic feat adds the weapon bonus as many times). They are added after the critical multiplier, so only the
+  hit chance counts (`CombatMath.VitalStrikeExtra`).
+- **Cleave** (`AbilityCustomCleave`): the target, then the enemies in the melee hand's reach by distance to it, each
+  attack made only while the attacks before it hit. Two attacks at most, all of them with Great Cleave.
+- **Pounce:** a charge by a unit with Pounce that is not staggered is a full attack (`UnitAttack`), and is valued as
+  one.
+- **Shared parts:** the role and preference weight of plain attacks (`AttackWeight`), and the ranged-shot provoke rule.
+  These abilities make attack rolls, so the silent-failure safeguard judges them.
+
+**Metamagic and chains.**
+- **Persistent:** a passed save is rolled again (`AbilityEffectRunAction`, `ContextActionSavingThrow`), so the fail
+  chance becomes 1 - pass^2.
+- **Extend:** doubles an extendable buff duration (`ContextDurationValue.IsExtendable`) in the per-target duration.
+- **Chains** (`AbilityDeliverChain`: Chain Lightning, Chains of Fire, Eldritch Chain): they reach the units nearest
+  their first target within the radius, up to the target count. Enemies, allies or both by their target type (Selective
+  keeps allies out); an ally they catch costs friendly fire like an area.
+- **Empower + Maximize:** stays as the vanilla rule (maximized x 1.5). Tabletop Tweaks' own setting gives less (about
+  20 % less with both on the same spell); that difference was judged too small to read mod settings for.
+
+**Cast outcome.** A skill check made by an ability's action (its target from the game's context data) and a combat
+maneuver roll count as the game doing something. Otherwise a failed Demoralize or trip would have left no trace and
+counted as a silent failure.
+
+**Left as they are (no evidence yet):**
+- metamagic rods;
+- kineticist infusions: Burning Infusion costs burn with every blast, and the player had switched it off;
+- Spell Combat (plan: investigate with a Magus first);
+- style stances;
+- resurrection;
+- mod buff components with other names.

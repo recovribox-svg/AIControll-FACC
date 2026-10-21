@@ -67,7 +67,7 @@ namespace CompanionAI_Pathfinder.Tactics
             {
                 string name = ability.Name + AbilityDiscovery.MetamagicTag(ability);
                 if (!ConsumablePolicy.IsAllowed(ability)) { itemPolicy.Add(name); continue; }
-                if (AbilityClassifier.IsBlacklistedForCombat(ability)) { blacklisted.Add(name); continue; }
+                if (AbilityClassifier.IsBlacklistedForCombat(ability, valuedByEffect: true)) { blacklisted.Add(name); continue; }
                 var profile = AbilityProfile.Get(ability);
                 // Charge and Coup de Grace have no effect components; the engine values them by the game's rules.
                 if (profile != null && (profile.IsCharge || TacticalEngine.IsCoupDeGrace(ability)))
@@ -101,6 +101,8 @@ namespace CompanionAI_Pathfinder.Tactics
             if (p.DealsDamage) kinds.Add("damage");
             if (p.Heals.Count > 0 || p.CasterHeals.Count > 0) kinds.Add("heal");
             if (p.TargetBuffs.Count > 0) kinds.Add(p.HarmfulEffects ? "debuff" : "buff");
+            if (p.Intimidation != null) kinds.Add("intimidate check");   // ★ v0.3.18 (AA-4)
+            foreach (var m in p.Maneuvers) kinds.Add($"maneuver {m.Type}");
             if (p.CasterBuffs.Count > 0) kinds.Add("self buff");
             if (p.Summons) kinds.Add("summon");
             if (p.Dispels) kinds.Add("dispel");

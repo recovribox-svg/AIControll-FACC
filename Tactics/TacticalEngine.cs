@@ -1193,6 +1193,15 @@ namespace CompanionAI_Pathfinder.Tactics
 
         #region Weapon attacks
 
+        /// <summary>The role and preference weight of a weapon attack on <paramref name="enemy"/> (a tank protecting an ally: x1.25).</summary>
+        private static float AttackWeight(TacticalContext ctx, UnitEntityData enemy, bool ranged)
+        {
+            float weight = RoleWeight(ctx, "damage") * PreferenceWeight(ctx, ranged);
+            if (ctx.Settings.Role == AIRole.Tank && enemy.CombatState.EngagedUnits.Any(u => u != ctx.Unit && !ctx.Unit.IsEnemy(u)))
+                weight *= 1.25f;
+            return weight;
+        }
+
         private static void AddWeaponCandidates(TacticalContext ctx, List<Candidate> list)
         {
             var unit = ctx.Unit;
@@ -1218,9 +1227,7 @@ namespace CompanionAI_Pathfinder.Tactics
                 bool fiveFootReach = !inReach && ctx.CanFiveFoot &&
                                      dist <= reach + ctx.FiveFootRange * 0.85f;
 
-                float weight = RoleWeight(ctx, "damage") * PreferenceWeight(ctx, single.IsRanged);
-                if (ctx.Settings.Role == AIRole.Tank && enemy.CombatState.EngagedUnits.Any(u => u != unit && !unit.IsEnemy(u)))
-                    weight *= 1.25f;
+                float weight = AttackWeight(ctx, enemy, single.IsRanged);
 
                 // ★ v0.3.18 (B10): a ranged attack roll provokes by the game's rule (AttackRollProvokeRisk).
                 if (single.IsRanged && single.Weapon != provokeWeapon)
@@ -1345,7 +1352,7 @@ namespace CompanionAI_Pathfinder.Tactics
                 try
                 {
                     if (!ability.IsAvailable) continue;
-                    if (AbilityClassifier.IsBlacklistedForCombat(ability)) continue;
+                    if (AbilityClassifier.IsBlacklistedForCombat(ability, valuedByEffect: true)) continue;
 
                     list.AddRange(EvaluateAbility(ctx, ability));
                 }
@@ -1542,7 +1549,7 @@ namespace CompanionAI_Pathfinder.Tactics
             // blueprint allows targeting friends, never a purely helpful one on an enemy.
             // ★ v0.3.12: "harmful" includes what it applies (Entangle's Entangled buff), not only the blueprint's flag.
             bool helpfulOnly = profile.HelpfulToAllies && !profile.HarmfulEffects && !profile.DealsDamage;
-            bool harmfulOnly = (profile.HarmfulEffects || profile.DealsDamage) && !profile.HelpfulToAllies && profile.Heals.Count == 0;
+            bool harmfulOnly = (profile.HarmfulEffects || profile.DealsDamage || profile.IsWeaponAttack || profile.Maneuvers.Count > 0) && !profile.HelpfulToAllies && profile.Heals.Count == 0;
 
             if (selfOnly)
             {
@@ -1757,7 +1764,7 @@ namespace CompanionAI_Pathfinder.Tactics
             {
                 int colon = part.IndexOf(':');
                 string token = colon >= 0 ? part.Substring(0, colon) : part;
-                if (token == "dmg" || token == "cc" || token == "debuff") return true;
+                if (token == "dmg" || token == "cc" || token == "debuff" || token == "maneuver") return true;
             }
             return false;
         }
@@ -1781,6 +1788,13 @@ namespace CompanionAI_Pathfinder.Tactics
         private static Candidate EvaluateCharge(TacticalContext ctx, AbilityData charge)
         {
             if (!ctx.CanFullAttack) return null;
+            bool pounce;
+            try
+            {
+                pounce = ctx.Unit.Descriptor.State.Features.Pounce &&
+                         !ctx.Unit.Descriptor.State.HasCondition(UnitCondition.Staggered);
+            }
+            catch { pounce = false; }
             Candidate best = null;
             foreach (var enemy in ctx.Enemies)
             {
@@ -1790,9 +1804,12 @@ namespace CompanionAI_Pathfinder.Tactics
                 // Only worth it when a normal move cannot get us there this turn.
                 if (ctx.Distance(enemy) - single.Reach <= ctx.MoveRange * 0.95f) continue;
 
-                float value = DamageValue(enemy, single, 1.1f) * RoleWeight(ctx, "damage") *
+                // ★ v0.3.18 (AA-4): with Pounce the charge ends in a full attack (UnitAttack: a charge is a full attack
+                // when the unit has Pounce and is not staggered).
+                var hit = pounce ? CombatMath.EstimateWeaponAttack(ctx.Unit, enemy, full: true) ?? single : single;
+                float value = DamageValue(enemy, hit, 1.1f) * RoleWeight(ctx, "damage") *
                               PreferenceWeight(ctx, false) * 0.95f;
-                string label = $"Charge->{enemy.CharacterName}";
+                string label = $"Charge->{enemy.CharacterName}{(pounce && hit.Attacks > 1 ? $" (pounce, {hit.Attacks} attacks)" : "")}";
                 // ★ v0.3.13: a charge out of melee provokes like any other move.
                 var risk = MoveRisk(ctx, ApproachPoint(ctx.Unit, enemy, single.Reach));
                 if (risk != null)
@@ -1823,6 +1840,9 @@ namespace CompanionAI_Pathfinder.Tactics
 
             if (IsCoupDeGrace(ability))
                 return CoupDeGraceValue(ctx, ability, target, out why);
+            // ★ v0.3.18 (AA-4): Vital Strike and Cleave are weapon attacks (TacticalEngine.Martial.cs).
+            if (profile.IsWeaponAttack)
+                return WeaponAbilityValue(ctx, profile, target, out why);
 
             List<UnitEntityData> affectedEnemies = targetIsEnemy ? new List<UnitEntityData> { target } : new List<UnitEntityData>();
             List<UnitEntityData> affectedAllies = targetIsEnemy ? new List<UnitEntityData>() : new List<UnitEntityData> { target };
@@ -1836,6 +1856,27 @@ namespace CompanionAI_Pathfinder.Tactics
                 // ★ v0.3.8: who the area can affect at all (Sleep: creatures with few hit dice).
                 affectedEnemies = affectedEnemies.Where(u => profile.AreaReaches(ability, u)).ToList();
                 affectedAllies = affectedAllies.Where(u => profile.AreaReaches(ability, u)).ToList();
+            }
+            // ★ v0.3.18 (AA-4): a chain goes on to the units nearest its first target within its radius, in the game's
+            // order (AbilityDeliverChain): enemies, allies or both by its target type (Selective spares allies).
+            bool chainCatchesAllies = false;
+            if (profile.Chain != null && !profile.IsAoE && target != unit)
+            {
+                int more = CombatMath.ChainCount(ability, profile, target) - 1;
+                float radius = profile.Chain.Radius.Meters;
+                var chainType = profile.ChainTargets;
+                bool selective = false;
+                try { selective = ability.HasMetamagic(Metamagic.Selective); } catch { }
+                IEnumerable<UnitEntityData> pool;
+                if (chainType == Kingmaker.UnitLogic.Abilities.Components.TargetType.Ally) pool = ctx.Allies;
+                else if (chainType == Kingmaker.UnitLogic.Abilities.Components.TargetType.Enemy || selective) pool = ctx.Enemies;
+                else pool = ctx.Enemies.Concat(ctx.Allies);
+                foreach (var next in pool.Where(u => u != target && u != unit && Vector3.Distance(u.Position, target.Position) <= radius)
+                                         .OrderBy(u => Vector3.Distance(u.Position, target.Position)).Take(Math.Max(0, more)))
+                {
+                    if (unit.IsEnemy(next)) { if (!affectedEnemies.Contains(next)) affectedEnemies.Add(next); }
+                    else if (!affectedAllies.Contains(next)) { affectedAllies.Add(next); chainCatchesAllies = true; }
+                }
             }
 
             // ★ v0.3.1: never aim a heal at an enemy. With per-target branches, Cure on an undead enemy (damage branch)
@@ -1896,7 +1937,7 @@ namespace CompanionAI_Pathfinder.Tactics
                 // Friendly fire: hurting an ally costs twice what the same damage on an enemy is worth.
                 // ★ v0.3.7: Selective metamagic spares allies. ★ v0.3.14: only where the game's rule says so (not in
                 // lasting areas with Tabletop Tweaks): AbilityProfile.SelectiveSparesAllies.
-                if (affectedAllies.Count > 0 && profile.IsAoE && !profile.SelectiveSparesAllies(ability))
+                if (affectedAllies.Count > 0 && (profile.IsAoE || chainCatchesAllies) && !profile.SelectiveSparesAllies(ability))
                 {
                     float dmg = CombatMath.EstimateAbilityDamage(ability, profile, affectedAllies[0]);
                     float allyCost = affectedAllies.Sum(a => Math.Min(dmg, a.HPLeft)) * 2f;
@@ -2079,6 +2120,33 @@ namespace CompanionAI_Pathfinder.Tactics
                     value += controlValue;
                     slotSensitive += controlValue;
                     reasons.Add(profile.ControlStrength == ControlStrength.Hard ? "cc" : isMark ? "mark" : "debuff");
+                }
+            }
+
+            // --- combat maneuvers (★ v0.3.18, AA-4) ---
+            if (profile.Maneuvers.Count > 0 && affectedEnemies.Count > 0)
+            {
+                float maneuverValue = 0f;
+                foreach (var enemy in affectedEnemies)
+                {
+                    foreach (var maneuver in profile.Maneuvers)
+                    {
+                        if (profile.AppliesTo(maneuver.Action, ability, enemy) == EffectApplies.No) continue;
+                        float strength = ManeuverStrength(enemy, ability, maneuver.Type, out bool lasting);
+                        if (strength <= 0f) continue;
+                        CombatMath.ManeuverOdds(unit, enemy, ability, maneuver, out float chance, out float rounds);
+                        float part = chance * CombatMath.Threat(enemy) * strength *
+                                     (lasting ? Math.Min(Math.Max(1f, rounds), Math.Min(ctx.ExpectedRounds, 3f)) : 1f);
+                        if (CombatMath.IsDisabled(enemy)) part *= 0.1f;
+                        maneuverValue += part;
+                        if (enemy == target && part > 0f) ctx.AimCounted = true;
+                    }
+                }
+                if (maneuverValue > 0f)
+                {
+                    value += maneuverValue;
+                    slotSensitive += maneuverValue;
+                    reasons.Add("maneuver");
                 }
             }
 
@@ -2596,6 +2664,7 @@ namespace CompanionAI_Pathfinder.Tactics
         private static bool IsVerifiable(AbilityProfile profile)
         {
             if (profile == null || profile.Summons || profile.Enchants || profile.IsToggle || profile.SpawnedAreas.Any()) return false;
+            if (profile.Maneuvers.Count > 0 || profile.IsWeaponAttack) return true;   // ★ v0.3.18 (AA-4): its roll is reported (CastOutcome)
             return profile.DealsDamage || profile.Heals.Count > 0 || (profile.TargetBuffs.Count > 0 && profile.HarmfulEffects);
         }
 

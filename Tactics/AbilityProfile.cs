@@ -167,6 +167,26 @@ namespace CompanionAI_Pathfinder.Tactics
         public bool IsOneShot => BuffsLastOneRound || BuffsSpentByAttack;
 
         public SavingThrowType Save { get; private set; } = SavingThrowType.Unknown;
+        /// <summary>★ v0.3.18 (AA-4): Demoralize / Dazzling Display - an Intimidate check, not a save, puts its buff on the
+        /// target (CombatMath.IntimidateOdds); the buff's duration comes from the check's result.</summary>
+        public Demoralize Intimidation { get; private set; }
+
+        /// <summary>★ v0.3.18 (AA-4): the chain delivery: after its first target, the units nearest that target within its
+        /// radius, up to its target count (AbilityDeliverChain.SelectNextTargetByMinDistance), of <see cref="ChainTargets"/>.</summary>
+        public AbilityDeliverChain Chain { get; private set; }
+        public Kingmaker.UnitLogic.Abilities.Components.TargetType ChainTargets { get; private set; }
+
+        /// <summary>★ v0.3.18 (AA-4): a combat maneuver the ability makes against its target.</summary>
+        public sealed class ManeuverEffect
+        {
+            public Kingmaker.RuleSystem.Rules.CombatManeuver Type;
+            /// <summary>The action (its branch conditions); ContextActionCombatManeuver also carries the stat replacement.</summary>
+            public GameAction Action;
+        }
+
+        /// <summary>★ v0.3.18 (AA-4): the combat maneuvers it makes (ContextActionCombatManeuver, its custom version,
+        /// ContextActionDisarm): trip, disarm, sunder, dirty tricks, bull rush (Hydraulic Push)...</summary>
+        public readonly List<ManeuverEffect> Maneuvers = new List<ManeuverEffect>();
         public bool HalfOnSave { get; private set; }
         public bool NeedsAttackRoll { get; private set; }
         /// <summary>
@@ -175,6 +195,11 @@ namespace CompanionAI_Pathfinder.Tactics
         /// </summary>
         public bool RangedAttackRoll { get; private set; }
         public bool IsCharge { get; private set; }
+        /// <summary>★ v0.3.18 (AA-4): the game's custom weapon attacks - Vital Strike (one attack with extra weapon dice)
+        /// and Cleave (attacks along the enemies in reach until one misses).</summary>
+        public AbilityCustomVitalStrike VitalStrike { get; private set; }
+        public AbilityCustomCleave Cleave { get; private set; }
+        public bool IsWeaponAttack => VitalStrike != null || Cleave != null;
 
         public float AoERadius { get; private set; }
         public Kingmaker.UnitLogic.Abilities.Components.TargetType AoETargets { get; private set; } =
@@ -209,6 +234,8 @@ namespace CompanionAI_Pathfinder.Tactics
         {
             if (ability == null || caster == null || target == null || !caster.IsEnemy(target)) return false;
             if (Damage.Any(d => AppliesTo(d, ability, target) != EffectApplies.No)) return true;
+            if (Maneuvers.Any(m => AppliesTo(m.Action, ability, target) != EffectApplies.No)) return true;   // ★ v0.3.18 (AA-4)
+            if (IsWeaponAttack) return true;
             if (!HarmfulEffects && ControlStrength == ControlStrength.None) return false;
             return TargetBuffs.Any(b => BuffAppliesTo(b, ability, target) != EffectApplies.No);
         }
@@ -218,7 +245,7 @@ namespace CompanionAI_Pathfinder.Tactics
 
         public bool HasDetectableEffect =>
             Damage.Count > 0 || Heals.Count > 0 || CasterHeals.Count > 0 || TargetBuffs.Count > 0 || CasterBuffs.Count > 0 ||
-            Summons || Dispels || RemovesBuffs || Enchants;
+            Summons || Dispels || RemovesBuffs || Enchants || Maneuvers.Count > 0 || IsWeaponAttack;
 
         public bool DealsDamage => Damage.Count > 0;
 
@@ -353,6 +380,8 @@ namespace CompanionAI_Pathfinder.Tactics
             }
 
             IsCharge = Blueprint.GetComponent<AbilityCustomCharge>() != null;
+            VitalStrike = Blueprint.GetComponent<AbilityCustomVitalStrike>();
+            Cleave = Blueprint.GetComponent<AbilityCustomCleave>();
             CasterProvokes = FindCasterProvoke(Blueprint);
 
             var around = Blueprint.GetComponent<AbilityTargetsAround>();
@@ -480,7 +509,7 @@ namespace CompanionAI_Pathfinder.Tactics
         {
             try
             {
-                return buff.Harmful || ConditionsOf(buff).Any(c => ClassifyCondition(c) != ControlStrength.None);
+                return buff.Harmful || ConditionsOf(buff).Any(c => c == UnitCondition.Fatigued || ClassifyCondition(c) != ControlStrength.None);
             }
             catch
             {
@@ -524,6 +553,14 @@ namespace CompanionAI_Pathfinder.Tactics
                 projectile.Type != Kingmaker.UnitLogic.Abilities.Components.AbilityProjectileType.Cone)
                 NeedsAttackRoll = RangedAttackRoll = true;
             if (bp.GetComponent<AbilityDeliverTouch>() != null) NeedsAttackRoll = true;
+            // ★ v0.3.18 (AA-4): a chain (Chain Lightning, Firebird's Chains of Fire, Mystical Mayhem's Eldritch Chain).
+            var chain = bp.GetComponent<AbilityDeliverChain>();
+            if (chain != null && Chain == null)
+            {
+                Chain = chain;
+                try { ChainTargets = HarmonyLib.Traverse.Create(chain).Field("m_TargetType").GetValue<Kingmaker.UnitLogic.Abilities.Components.TargetType>(); }
+                catch { ChainTargets = Kingmaker.UnitLogic.Abilities.Components.TargetType.Any; }
+            }
 
             var sticky = bp.StickyTouch;
             if (sticky?.TouchDeliveryAbility != null)
@@ -601,7 +638,11 @@ namespace CompanionAI_Pathfinder.Tactics
                         // ★ v0.3.15: each application with its own branch and duration (Color Spray: 2d4 rounds on 2 HD
                         // or less, 1d4 on 3-4 HD, 1 round on 5 HD or more).
                         if (!(toCaster || apply.ToCaster) && !m_InArea)
-                            m_BuffApplications.Add(new BuffApplication { Buff = apply.Buff, Guards = guards, Rounds = ExpectedRounds(apply) });
+                            m_BuffApplications.Add(new BuffApplication
+                            {
+                                Buff = apply.Buff, Guards = guards, Rounds = ExpectedRounds(apply),
+                                Extendable = apply.DurationValue != null && apply.DurationValue.IsExtendable
+                            });
                         m_AllBuffs++;
                         if (LastsOneRound(apply)) m_ShortBuffs++;
                         // ★ v0.3.7: a buff applied by a spawned area is tied to the area, whatever its own duration.
@@ -612,6 +653,24 @@ namespace CompanionAI_Pathfinder.Tactics
                         if (apply.Permanent || (apply.DurationValue != null && apply.DurationValue.Rate >= DurationRate.Hours))
                             m_PersistentBuffs.Add(apply.Buff);
                         if (IsSpentByUse(apply.Buff)) m_SpentByAttackBuffs++;
+                        break;
+                    case ContextActionCombatManeuver maneuver when subject == EffectSubject.Target:
+                        Maneuvers.Add(new ManeuverEffect { Type = maneuver.Type, Action = maneuver });
+                        m_Guards[maneuver] = guards;
+                        break;
+                    case ContextActionCombatManeuverCustom custom when subject == EffectSubject.Target:
+                        Maneuvers.Add(new ManeuverEffect { Type = custom.Type, Action = custom });
+                        m_Guards[custom] = guards;
+                        break;
+                    case ContextActionDisarm disarm when subject == EffectSubject.Target:
+                        Maneuvers.Add(new ManeuverEffect { Type = Kingmaker.RuleSystem.Rules.CombatManeuver.Disarm, Action = disarm });
+                        m_Guards[disarm] = guards;
+                        break;
+                    case Demoralize demoralize when subject == EffectSubject.Target && demoralize.Buff != null:
+                        Intimidation = demoralize;
+                        TargetBuffs.Add(demoralize.Buff);
+                        AddBuffGuards(demoralize.Buff, guards);
+                        m_AllBuffs++;
                         break;
                     case ContextActionSpawnMonster _:
                         Summons = true;
@@ -799,6 +858,8 @@ namespace CompanionAI_Pathfinder.Tactics
             public EffectGuard[] Guards;
             /// <summary>Expected rounds, or a negative value when the duration depends on values only the cast knows.</summary>
             public float Rounds;
+            /// <summary>★ v0.3.18 (AA-4): Extend doubles it (ContextDurationValue.IsExtendable).</summary>
+            public bool Extendable;
         }
 
         private readonly List<BuffApplication> m_BuffApplications = new List<BuffApplication>();
@@ -839,15 +900,25 @@ namespace CompanionAI_Pathfinder.Tactics
         /// </summary>
         public float EffectRoundsOn(AbilityData ability, UnitEntityData target)
         {
+            // ★ v0.3.18 (AA-4): Demoralize lasts by the check's result.
+            if (Intimidation != null && target != null && ability?.Caster?.Unit != null)
+            {
+                CombatMath.IntimidateOdds(ability.Caster.Unit, target, Intimidation, out _, out float rounds);
+                return rounds;
+            }
             if (m_BuffApplications.Count == 0 || target == null) return -1f;
+            // ★ v0.3.18 (AA-4): Extend metamagic doubles an extendable duration (ContextDurationValue.Calculate).
+            bool extended = false;
+            try { extended = ability != null && ability.HasMetamagic(Metamagic.Extend); } catch { }
             float sure = -1f, maybe = float.MaxValue;
             foreach (var a in m_BuffApplications)
             {
                 if (a.Rounds <= 0f) continue;
                 var applies = Evaluate(a.Guards, ability, target);
                 if (applies == EffectApplies.No) continue;
-                if (applies == EffectApplies.Unknown) maybe = Math.Min(maybe, a.Rounds);
-                else sure = Math.Max(sure, a.Rounds);
+                float rounds = extended && a.Extendable ? a.Rounds * 2f : a.Rounds;
+                if (applies == EffectApplies.Unknown) maybe = Math.Min(maybe, rounds);
+                else sure = Math.Max(sure, rounds);
             }
             if (sure > 0f) return sure;
             return maybe < float.MaxValue ? maybe : -1f;
@@ -1278,14 +1349,16 @@ namespace CompanionAI_Pathfinder.Tactics
             }
         }
 
-        public bool HasTargetEffects => Damage.Count > 0 || Heals.Count > 0 || TargetBuffs.Count > 0 || m_Removals.Count > 0;
+        public bool HasTargetEffects => Damage.Count > 0 || Heals.Count > 0 || TargetBuffs.Count > 0 || m_Removals.Count > 0 ||
+                                        Maneuvers.Count > 0;
 
         public bool AnyTargetEffectApplies(AbilityData ability, UnitEntityData target)
         {
             return Damage.Any(d => AppliesTo(d, ability, target) != EffectApplies.No) ||
                    Heals.Any(h => AppliesTo(h, ability, target) != EffectApplies.No) ||
                    TargetBuffs.Any(b => BuffAppliesTo(b, ability, target) != EffectApplies.No) ||
-                   m_Removals.Any(r => AppliesTo(r, ability, target) != EffectApplies.No);
+                   m_Removals.Any(r => AppliesTo(r, ability, target) != EffectApplies.No) ||
+                   Maneuvers.Any(m => AppliesTo(m.Action, ability, target) != EffectApplies.No);
         }
 
         private static readonly HashSet<BlueprintAbility> Described = new HashSet<BlueprintAbility>();
@@ -1438,7 +1511,8 @@ namespace CompanionAI_Pathfinder.Tactics
                 case UnitCondition.Slowed:
                 case UnitCondition.Staggered:
                 case UnitCondition.Blindness:
-                case UnitCondition.Fatigued:
+                // ★ v0.3.18 (AA-4): Fatigued (-2 Str / Dex, no running or charging) is a plain debuff, not control: it
+                // was "soft" control (0.4 x threat) and would have made Touch of Fatigue beat the damage cantrips.
                 case UnitCondition.Exhausted:
                 case UnitCondition.Prone:
                 case UnitCondition.CantMove:

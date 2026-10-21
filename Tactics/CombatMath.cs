@@ -557,12 +557,149 @@ namespace CompanionAI_Pathfinder.Tactics
         {
             float p = SpellResistancePass(caster, enemy, ability);
             if (profile.NeedsAttackRoll) p *= SpellAttackHitChance(caster, enemy, ability);
+            if (profile.Intimidation != null)
+            {
+                IntimidateOdds(caster, enemy, profile.Intimidation, out float success, out _);
+                p *= success;
+            }
             if (profile.Save != SavingThrowType.Unknown)
             {
                 float fail = SaveFailChance(ability, profile, enemy);
                 p *= damage ? fail + (1f - fail) * (profile.HalfOnSave ? 0.5f : 0f) : fail;
             }
             return p;
+        }
+
+        /// <summary>
+        /// ★ v0.3.18 (AA-4): Demoralize by the game's rule (Demoralize.RunAction): d20 + Intimidate + the action's bonus
+        /// against 10 + the target's character level + its Wisdom bonus, the DC adjusted by difficulty like every skill
+        /// check (RuleSkillCheck.AdjustDCByDifficulty). On a success the buff lasts 1 + (result - DC) / 5 rounds, one more
+        /// with Frightening Thug: <paramref name="rounds"/> is that average over the successful rolls.
+        /// </summary>
+        public static void IntimidateOdds(UnitEntityData caster, UnitEntityData target, Demoralize action, out float chance, out float rounds)
+        {
+            chance = 0.5f;
+            rounds = 1f;
+            if (caster == null || target == null || action == null) return;
+            try
+            {
+                int dc = 10 + target.Descriptor.Progression.CharacterLevel + target.Stats.Wisdom.Bonus;
+                dc = RuleSkillCheck.AdjustDCByDifficulty(dc, out _);
+                int bonus = caster.Stats.CheckIntimidate.ModifiedValue + action.Bonus;
+                int thug = caster.Descriptor.State.Features.FrighteningThug ? 1 : 0;
+                int successes = 0;
+                float sum = 0f;
+                for (int d20 = 1; d20 <= 20; d20++)
+                {
+                    int result = d20 + bonus;
+                    if (result < dc) continue;
+                    successes++;
+                    sum += 1 + (result - dc) / 5 + thug;
+                }
+                chance = successes / 20f;
+                rounds = successes > 0 ? sum / successes : 1f;
+            }
+            catch (Exception ex)
+            {
+                Main.Verbose($"[Math] intimidate {caster.CharacterName}->{target.CharacterName}: {ex.Message}");
+            }
+        }
+
+        /// <summary>
+        /// ★ v0.3.18 (AA-4): a combat maneuver by the game's rule (RuleCombatManeuver): d20 + CMB against the target's CMD
+        /// for that maneuver, a natural 1 fails (unless the caster always has a chance), a natural 20 succeeds, a target
+        /// immune to maneuvers is never affected. The CMB with the action's stat replacement (casting stat, kineticist main
+        /// stat, caster level as base attack: Hydraulic Push). <paramref name="rounds"/>: the effect's average duration over
+        /// the successful rolls, (margin / 5 + 1) rounds as ApplyManeuver gives it.
+        /// </summary>
+        public static void ManeuverOdds(UnitEntityData caster, UnitEntityData target, AbilityData ability, AbilityProfile.ManeuverEffect maneuver,
+                                        out float chance, out float rounds)
+        {
+            chance = 0.5f;
+            rounds = 1f;
+            if (caster == null || target == null || maneuver == null) return;
+            try
+            {
+                if (target.Descriptor.State.HasCondition(UnitCondition.ImmuneToCombatManeuvers)) { chance = 0f; return; }
+                var cmbRule = new RuleCalculateCMB(caster, target, maneuver.Type);
+                if (maneuver.Action is ContextActionCombatManeuver action && action.ReplaceStat)
+                {
+                    var stat = action.NewStat;
+                    if (action.UseKineticistMainStat)
+                        stat = caster.Get<Kingmaker.UnitLogic.Class.Kineticist.UnitPartKineticist>()?.MainStatType ?? stat;
+                    if (action.UseCastingStat) stat = ability?.Spellbook?.Blueprint.CastingAttribute ?? StatType.Charisma;
+                    if (action.UseCasterLevelAsBaseAttack && ability != null) cmbRule.ReplaceBAB = ability.CalculateParams().CasterLevel;
+                    if (action.UseBestMentalStat)
+                    {
+                        var st = caster.Stats;
+                        stat = st.Charisma.ModifiedValue >= st.Intelligence.ModifiedValue && st.Charisma.ModifiedValue >= st.Wisdom.ModifiedValue
+                            ? StatType.Charisma
+                            : st.Wisdom.ModifiedValue > st.Intelligence.ModifiedValue ? StatType.Wisdom : StatType.Intelligence;
+                    }
+                    cmbRule.ReplaceStrength = stat;
+                }
+                int cmb = Rulebook.Trigger(cmbRule).Result;
+                int cmd = Rulebook.Trigger(new RuleCalculateCMD(caster, target, maneuver.Type)).Result;
+                bool alwaysChance = caster.Descriptor.State.Features.AlwaysChance;
+                int successes = 0;
+                float sum = 0f;
+                for (int d20 = 1; d20 <= 20; d20++)
+                {
+                    bool success = d20 == 20 || ((d20 != 1 || alwaysChance) && d20 + cmb >= cmd);
+                    if (!success) continue;
+                    successes++;
+                    sum += Math.Max(0, (d20 + cmb - cmd) / 5 + 1);
+                }
+                chance = successes / 20f;
+                rounds = successes > 0 ? sum / successes : 1f;
+            }
+            catch (Exception ex)
+            {
+                Main.Verbose($"[Math] maneuver {caster.CharacterName}->{target.CharacterName}: {ex.Message}");
+            }
+        }
+
+        /// <summary>
+        /// ★ v0.3.18 (AA-4): the expected damage Vital Strike adds to one attack (AbilityCustomVitalStrike.VitalStrikePart):
+        /// (VitalStrikeMod - 1) more rolls of the weapon's damage dice, and with the mythic feat as many more times the
+        /// weapon damage's bonus, added after the critical multiplier - so only the hit chance counts.
+        /// </summary>
+        public static float VitalStrikeExtra(UnitEntityData unit, WeaponAttackEstimate est,
+                                             Kingmaker.UnitLogic.Abilities.Components.AbilityCustomVitalStrike vitalStrike)
+        {
+            int times = Math.Max(0, (vitalStrike?.VitalStrikeMod ?? 0) - 1);
+            if (times == 0 || est?.Weapon == null) return 0f;
+            try
+            {
+                var stats = Rulebook.Trigger(new RuleCalculateWeaponStats(unit, est.Weapon));
+                var weaponDamage = stats.DamageDescription.FirstOrDefault();
+                if (weaponDamage == null) return 0f;
+                float extra = times * Average(weaponDamage.Dice);
+                if (vitalStrike.MythicBlueprint != null && unit.Descriptor.HasFact(vitalStrike.MythicBlueprint))
+                    extra += times * Math.Max(0, weaponDamage.Bonus);
+                return est.FirstHitChance * extra;
+            }
+            catch (Exception ex)
+            {
+                Main.Verbose($"[Math] vital strike {unit.CharacterName}: {ex.Message}");
+                return 0f;
+            }
+        }
+
+        /// <summary>★ v0.3.18 (AA-4): how many targets a chain reaches in all (its TargetsCount for this cast).</summary>
+        public static int ChainCount(AbilityData ability, AbilityProfile profile, UnitEntityData target)
+        {
+            if (profile?.Chain?.TargetsCount == null) return 1;
+            try
+            {
+                if (profile.Chain.TargetsCount.ValueType == ContextValueType.Simple) return Math.Max(1, profile.Chain.TargetsCount.Value);
+                var ctx = CreateContext(ability, new TargetWrapper(target));
+                return ctx == null ? 1 : Math.Max(1, profile.Chain.TargetsCount.Calculate(ctx));
+            }
+            catch
+            {
+                return 1;
+            }
         }
 
         /// <summary>Probability the target fails its save (1 when the ability has no save).</summary>
@@ -588,7 +725,15 @@ namespace CompanionAI_Pathfinder.Tactics
                     bonus += seen.Delta;
                 }
                 // Fails when d20 + bonus < DC.
-                return Mathf.Clamp((dc - bonus - 1) / 20f, 0.05f, 0.95f);
+                float fail = Mathf.Clamp((dc - bonus - 1) / 20f, 0.05f, 0.95f);
+                // ★ v0.3.18 (AA-4): Persistent - a passed save is rolled again (AbilityEffectRunAction,
+                // ContextActionSavingThrow): the target resists only by passing both.
+                try
+                {
+                    if (ability.HasMetamagic(Metamagic.Persistent)) fail = 1f - (1f - fail) * (1f - fail);
+                }
+                catch { }
+                return fail;
             }
             catch
             {

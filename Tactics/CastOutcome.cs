@@ -8,7 +8,8 @@
 //   - a touch spell (Cure X Wounds, Inflict X Wounds, potions of them) only counts once its touch has been delivered;
 //   - "something happened" = any rule the game rolled for that caster meanwhile: an attack roll, damage, a heal, a saving
 //     throw, a spell-resistance check, a buff applied, or a cast the game itself refused (spell failure, UMD) - those
-//     are reported in the combat log and are not silent;
+//     are reported in the combat log and are not silent; ★ v0.3.18 (AA-4): also a skill check made by the ability
+//     (Demoralize's Intimidate) and a combat maneuver roll, which a failed Demoralize or trip leaves as its only trace;
 //   - an ability whose effect the mod can verify (damage, heal, debuff, control) that produced none of these is a silent
 //     failure: logged, and after two in a fight by the same caster the ability is not chosen again until the fight ends.
 // Abilities with effects the mod cannot see (summons, areas, teleports, utility) are never judged.
@@ -40,7 +41,9 @@ namespace CompanionAI_Pathfinder.Tactics
         IGlobalRulebookHandler<RuleDealDamage>,
         IGlobalRulebookHandler<RuleHealDamage>,
         IGlobalRulebookHandler<RuleSavingThrow>,
-        IGlobalRulebookHandler<RuleSpellResistanceCheck>
+        IGlobalRulebookHandler<RuleSpellResistanceCheck>,
+        IGlobalRulebookHandler<RuleSkillCheck>,
+        IGlobalRulebookHandler<RuleCombatManeuver>
     {
         private sealed class Pending
         {
@@ -588,6 +591,42 @@ namespace CompanionAI_Pathfinder.Tactics
                 // then skips (Sleep's Hit Dice limit). Only a resisted spell is an outcome on the target; Sleep on the
                 // Cultist Champion counted as "reached" through this check, every cast.
                 if (evt.IsSpellResisted) MarkReached(evt.Initiator, evt.Target, evt.Context);
+            }
+        }
+
+        public void OnEventAboutToTrigger(RuleSkillCheck evt)
+        {
+        }
+
+        /// <summary>★ v0.3.18 (AA-4): a skill check an ability's action makes (Demoralize): its target is the action's
+        /// current target, which the game's context data holds while the action runs.</summary>
+        public void OnEventDidTrigger(RuleSkillCheck evt)
+        {
+            try
+            {
+                var source = evt?.Reason?.Context;
+                if (source == null) return;
+                Mark(evt.Initiator);
+                var current = Kingmaker.ElementsSystem.ContextData<MechanicsContext.Data>.Current;
+                var unit = current?.Context == source ? current.CurrentTarget?.Unit : null;
+                if (unit != null) MarkReached(evt.Initiator, unit, source);
+            }
+            catch (Exception ex)
+            {
+                Main.Verbose($"[Cast] skill check: {ex.Message}");
+            }
+        }
+
+        public void OnEventAboutToTrigger(RuleCombatManeuver evt)
+        {
+        }
+
+        public void OnEventDidTrigger(RuleCombatManeuver evt)
+        {
+            if (evt != null)
+            {
+                Mark(evt.Initiator);
+                MarkReached(evt.Initiator, evt.Target, evt.Reason?.Context);
             }
         }
     }
