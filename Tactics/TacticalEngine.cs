@@ -944,13 +944,31 @@ namespace CompanionAI_Pathfinder.Tactics
         /// unit, or whose last target it is, always attacks. Lann and Aeiluvetar backed off "safely" from a lone enemy
         /// and were dropped by its attack. Turn-based is unchanged: there the preview already answers yes.
         /// </summary>
+        /// <remarks>
+        /// ★ v0.3.18: in real time the game's check looks up when the enemy engaged the unit, and throws for a reach the
+        /// move only walks into on the way (KeyNotFoundException, 500-700 times per real-time log): such attacks of
+        /// opportunity were never priced. For an engagement that has just begun the game's rule is "attacks unless it is
+        /// moving itself" (UnitCombatState.ShouldAttackOnDisengage: engaged less than 6 s, and not moved since). And the
+        /// check now says it is a disengage, so features that let a unit leave without provoking count
+        /// (DisengageWithoutAttackOfOpportunity).
+        /// </remarks>
         private static bool AttacksOnLeaving(UnitEntityData enemy, UnitEntityData unit)
         {
             var combat = enemy.CombatState;
-            bool attacks = combat.ShouldAttackOnDisengage(unit, simulate: true);
-            if (!attacks && CombatMemory.IsRealTime)
-                attacks = combat.EngagedUnits.Count() <= 1 || combat.LastTarget == unit;
-            return attacks && combat.AttackOfOpportunity(unit, tricksterAttack: false, simulate: true);
+            bool attacks;
+            if (CombatMemory.IsRealTime && !combat.EngagedUnits.Contains(unit))
+            {
+                bool moving = (Game.Instance.TimeController.GameTime - enemy.LastMoveTime).TotalSeconds < 0.5;
+                attacks = (bool)enemy.Descriptor.State.Features.DuelistNoRetreat ||
+                          (!moving && Kingmaker.UnitLogic.Parts.UnitPartConcealment.Calculate(enemy, unit) != Kingmaker.Enums.Concealment.Total);
+            }
+            else
+            {
+                attacks = combat.ShouldAttackOnDisengage(unit, simulate: true);
+                if (!attacks && CombatMemory.IsRealTime)
+                    attacks = combat.EngagedUnits.Count() <= 1 || combat.LastTarget == unit;
+            }
+            return attacks && combat.AttackOfOpportunity(unit, tricksterAttack: false, simulate: true, disengaging: true);
         }
 
         /// <summary>★ v0.3.13: where a move to act on <paramref name="target"/> from <paramref name="range"/> ends.</summary>
@@ -1000,12 +1018,17 @@ namespace CompanionAI_Pathfinder.Tactics
             {
                 float best = float.MaxValue;
                 float body = unit.Corpulence;
-                int far = 0, taken = 0, inArea = 0, unwalkable = 0;
+                int far = 0, taken = 0, inArea = 0, unwalkable = 0, noCloser = 0;
                 var others = ctx.Allies.Concat(ctx.Enemies).Where(u => u != unit && u != target).ToList();
                 var rings = new List<float> { Math.Max(0.6f, range * 0.85f), Math.Max(0.6f, range * 0.6f) };
                 if (orNearby) rings.AddRange(new[] { range + 1.5f, range + 3f });
+                float distanceNow = Vector3.Distance(unit.Position, target.Position);
                 foreach (float ring in rings)
                 {
+                    // ★ v0.3.18 (test2): a spot out of reach is only worth walking to if it is nearer the enemy than the unit
+                    // already is. Seelah, a full turn left, stepped 1 m to another spot by the Grease each turn, no
+                    // nearer than before (0.3.18-test2 turn-based log, R4-R5), and the turn ended there.
+                    if (ring > range && distanceNow <= ring + 0.75f) { noCloser++; continue; }
                     for (int i = 0; i < 16; i++)
                     {
                         float angle = i * 22.5f * Mathf.Deg2Rad;
@@ -1032,7 +1055,8 @@ namespace CompanionAI_Pathfinder.Tactics
                     if (plan.Around != null) break;
                 }
                 if (plan.Around == null)
-                    plan.NoSpot = $"{inArea} in or through an area, {far} beyond this turn's move, {taken} taken, {unwalkable} not walkable";
+                    plan.NoSpot = $"{inArea} in or through an area, {far} beyond this turn's move, {taken} taken, {unwalkable} not walkable" +
+                                  (noCloser > 0 ? $", {noCloser} ring(s) no nearer than now" : "");
             }
             catch (Exception ex)
             {

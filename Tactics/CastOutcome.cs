@@ -71,6 +71,8 @@ namespace CompanionAI_Pathfinder.Tactics
             public AbilityData Ability;
             public bool TargetReached;
             public HashSet<string> Reached;
+            /// <summary>★ v0.3.18: the game started executing the ability (its execution process began).</summary>
+            public bool Executed;
         }
 
         /// <summary>Game seconds after the command ended without the execution ending: the game dropped the cast.</summary>
@@ -210,6 +212,16 @@ namespace CompanionAI_Pathfinder.Tactics
             if (!ByCaster.TryGetValue(caster.UniqueId, out var p)) return;
             bool commandOver = p.Command == null || p.Command.IsFinished;
             if (!commandOver) return;
+            // ★ v0.3.18: the command ended before the game cast anything (interrupted: a manual order, a new command, the
+            // target gone). Nothing was tried, so nothing failed. In the 0.3.18-test2 real-time log every party command was
+            // interrupted at once several times; each counted as "did nothing to its target", and Doom was blocked on the
+            // Cultist Champion after two such interruptions.
+            if (!p.Executed && !p.Evidence && p.Command != null && !p.Command.IsActed)
+            {
+                ByCaster.Remove(caster.UniqueId);
+                Main.Verbose($"[Cast] {caster.CharacterName}: {p.Name} ended before it was cast ({p.Command.Result}) - not counted");
+                return;
+            }
             if (p.Evidence)
             {
                 Finish(p, true, null);
@@ -407,6 +419,15 @@ namespace CompanionAI_Pathfinder.Tactics
 
         public void HandleExecutionProcessStart(AbilityExecutionContext context)
         {
+            try
+            {
+                var p = For(context?.MaybeCaster);
+                if (p == null) return;
+                var bp = context.AbilityBlueprint;
+                if (bp == p.Blueprint || bp == p.TouchDelivery || context.Ability?.ConvertedFrom?.Blueprint == p.Blueprint)
+                    p.Executed = true;
+            }
+            catch { }
         }
 
         public void HandleExecutionProcessEnd(AbilityExecutionContext context)
@@ -423,7 +444,17 @@ namespace CompanionAI_Pathfinder.Tactics
                     return;
                 }
                 if (bp == p.Blueprint || context.Ability?.ConvertedFrom?.Blueprint == p.Blueprint)
+                {
+                    // ★ v0.3.18: in real time an area can find nobody left in it: its targets walked out while it was being
+                    // cast (Sleep on Neophyte Fighter, 0.3.18-test2). That is not the game refusing the ability; logged only.
+                    if (!p.Evidence && p.Area && CombatMemory.IsRealTime)
+                    {
+                        ByCaster.Remove(p.Caster.UniqueId);
+                        Main.Log($"[Cast] {p.Caster.CharacterName}: {p.Name} caught no one (in real time its targets may have moved) - not counted");
+                        return;
+                    }
                     Finish(p, p.Evidence, "it ran without an attack roll, damage, heal, save or buff");
+                }
             }
             catch (Exception ex)
             {

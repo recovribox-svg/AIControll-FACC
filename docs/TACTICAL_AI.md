@@ -692,3 +692,36 @@ The result is fewer top-ups of mildly hurt allies, and the same or more for badl
 - `UnitAttack ... result=Interrupt acted=True` is how the game ends every weapon attack command after its attacks. It
   is in every log since 0.3.15 and is not a failure.
 
+### 0.3.18-test3: fixes from the test2 logs (turn-based 62b9dd8d, real time 2e3b2678)
+
+**Real time: attacks of opportunity on the way were never priced.**
+- In real time the game's `UnitCombatState.ShouldAttackOnDisengage` looks up when the enemy engaged the unit. For a
+  reach that a planned move only walks into on the way, there is no such entry, and the game throws
+  `KeyNotFoundException`. That happened 500–700 times in each real-time log. The exception was caught, and the enemy
+  counted as not attacking.
+- Turn-based never reaches that line (it answers "attacks" before it).
+- Now, for an engagement that would begin on the way, the game's own rule is applied: an engagement younger than 6 s
+  attacks, unless the enemy is moving itself, or a Duelist's No Retreat applies.
+- The attack-of-opportunity check is also asked as a disengage, so features that let a unit leave without provoking
+  (`DisengageWithoutAttackOfOpportunity`) now count in both modes.
+
+**Real time: interrupted commands were counted as casts that did nothing.**
+- Several times every party command was interrupted at once (manual move orders): `ENDED ... result=Interrupt
+  acted=False`. The safety net counted each one as an ability that "did nothing to its target", and Doom was blocked on
+  the Cultist Champion after two of them.
+- Now a command that ended before the game started executing the ability is not judged at all (`CastOutcome.Settle`:
+  no execution, not acted).
+- In real time an area spell that ran and caught no one is logged and not counted: its targets may have walked out
+  while it was cast (Sleep on a Neophyte Fighter).
+
+**Turn-based: stepping from one spot by the Grease to another.**
+- With a full turn left, Seelah stepped 1 m to another spot by the area, no nearer the enemy than before, and her turn
+  ended there. Camellia's spot was where she already stood ("moved nowhere").
+- Now a spot out of reach is only taken when it is nearer the enemy than the unit already is.
+- Otherwise the unit waits where it stands. The label says `ring(s) no nearer than now`.
+
+**Checked and fine.**
+- `[Calib]` in both modes: the party damage per round used at the end is within 1–6 of what was dealt.
+- Grease and Entangle were aimed at the ground (no immune aim in these logs).
+- Advances went around Grease and Entangle, and paths that walked into Grease were refused and the next option taken.
+
