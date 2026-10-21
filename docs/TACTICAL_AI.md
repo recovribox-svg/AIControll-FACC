@@ -1030,3 +1030,101 @@ counted as a silent failure.
 - style stances;
 - resurrection;
 - mod buff components with other names.
+
+## 32. v0.3.18 (test9): code review before the playtest
+
+The review covered the four parts of the engine: the core, the toggles and modes (AA-2/AA-3), the long tail (AA-4), and
+the profile, math, observers and real-time path. Each finding was checked against the decompiled game before it was
+fixed.
+
+**Game side effects and wrong game rules.**
+- A combat maneuver's CMD was asked with the maneuver's type. An enemy that strikes back at that maneuver
+  (`CounterAttackOfOpportunityOnCombatManeuver`) made a real attack of opportunity on the AI unit just from the AI
+  scoring Trip. Such an enemy is now asked without the type.
+- The heal preview triggered a fake `RuleHealDamage`. Handlers that ignore `IsFake` (`RemovedByHeal`,
+  `SufferFromHealing`, heal triggers) acted on it. The heal is now read from the rule without triggering it.
+- Every spell-resistance check counted as "the cast did something", because the game runs it for every unit target. As
+  a result the silent-failure safety net never judged an ability aimed at another unit. Now only a check that decides
+  something counts: resisted, immune, or a real roll.
+- Full-round casts (a spontaneous caster's metamagic, Summon Monster) also face the defensive-casting check. They were
+  never priced for it and never stepped out of melee first.
+- Spell resistance now uses the cast's context (`UnitPartSpellResistance` context overloads): SR bonuses and penalties,
+  Piercing, the cast's descriptors.
+- Buff immunity now also reads the buff's own descriptor (the game's buff context). Example: Demoralize's Shaken
+  against a fear-immune target.
+
+**Double counting and values that never fired.**
+- **Coup de Grace:** paid its attacks of opportunity twice.
+- **Withdraw:** priced its attacks of opportunity outside the danger scale. It is now priced like every other move
+  (`MoveRisk`).
+- **Friendly fire:**
+  - each ally's own damage is estimated, not the first ally's for all;
+  - a downed ally in the area costs its whole worth;
+  - downed allies in an area count.
+- **Control on an already disabled enemy:** was discounted twice.
+- **Standing up from prone:** now compared with the whole turn that standing allows, not just the option chosen first.
+- **A performance with no one left in its area:** is stopped now. The performer was always counted as a recipient.
+- **Defense value of AC modes:** now per enemy, from its own attack roll with the d20's limits. An enemy without a
+  weapon attack gains nothing from AC.
+
+**Modes (AA-3).**
+- **Switching:** modes switch only after the dispatcher has accepted the attack. A refused attack used to leave them
+  switched and locked for the round.
+- **Turning off:** done with the game's `TurnOffImmediately`. Otherwise the buff stays until the round ends. A mode
+  whose immediate turn-off costs an action is never chosen off.
+- **Baseline:** a mode that is on but not started (Fighting Defensively between attacks) is valued as it will apply.
+- **Full-attack-only bonuses:** counted only for a real full attack.
+- **Set limit:** past 32 sets, the remaining groups keep their state; they were treated as "off".
+- **Excluded:** toggles that spend an action or a resource every round (`ActivatableAbilityUnitCommand`,
+  `ActivatableAbilityResourceLogic`).
+- **Mobility:**
+  - no longer switched on for an option this turn had already ruled out;
+  - speed x1.5 with Trickster's fast movement;
+  - the skill DC adjusted for difficulty;
+  - when the fight ends, the toggles the AI switched on that the game keeps on (Mobility) go off again.
+
+**Combat memory.** A switch between turn-based and real time mid-fight no longer counts as a new fight. The round count
+went backwards there and reset the casts, uses and toggle locks. Real time's rounds now continue from the turn-based
+round reached.
+
+**Per-fight observers.**
+- The observers are also cleared at the start of a fight. A loaded save in real time raises no "combat ended", so a
+  retried fight kept the last attempt's blocks.
+- What one creature of a kind showed is learned per fight, not for the whole session.
+
+**AA-4.**
+- **Success and failure lists:** what a maneuver (or a Demoralize) does on success counts as an unknown outcome. Its
+  failure list and Demoralize's Trickster list are not counted.
+- **Maneuver chance:**
+  - includes concealment and the attack bonuses the game copies into the CMB (flanking, the difficulty bonus);
+  - an overrun only knocks prone by 5 or more;
+  - a spell's resistance and attack roll come first.
+- **Intimidate chance:** applies to the Shaken buff only, with the duration taken from the DC before the difficulty
+  adjustment.
+- **Chains:** jump to the targets the game would pick, downed party members and unconscious enemies included.
+- **Cleave:** swings at unconscious enemies in reach too, as the game does.
+- **Vital Strike:** adds dice to physical weapon damage only.
+- **Extend:** only durations it can extend.
+
+**Other estimates.**
+- Dice of type Zero added half their count.
+- Damage pre-rolled into a shared value, and shared-value dice counts, are averaged from the ability's own calculation.
+- Evasion and Improved Evasion are counted on Reflex half-damage.
+- The Kinetic Archer's blast is rolled against touch AC.
+- Branch-condition checks are cached per ability copy (a scroll and the spell, metamagic copies).
+- The full damage on a failed save and half on a passed one are one damage, not two.
+- Self-damage is not damage to the target.
+
+**Movement.**
+- A 5-foot step before a full attack is priced like a move into a harmful area, and its path is checked.
+- A spot around an area must be cheaper than walking straight through it.
+- With Pounce, a charge is considered at any range the charge allows.
+- A summon can be cast again once the caster's summons are gone.
+- A one-round mark is not spent on an advance.
+- Leaving a harmful area is valued per round on the scale entering one uses.
+
+**Left as they are:**
+- the main-target condition for each unit of an area (`ContextConditionIsMainTarget`), a rare case;
+- the Swordlord / Hellknight / Frightening Thug upgrades of Demoralize;
+- Rowdy Vital Strike;
+- switching Mobility off while engaged when speed would matter more.

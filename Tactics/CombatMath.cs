@@ -44,6 +44,8 @@ namespace CompanionAI_Pathfinder.Tactics
         public float CritMultiplier = 2f;
         /// <summary>★ v0.3.18: chance at least one of the attacks hits (the kill chance, ValueModel.KillChance).</summary>
         public float AnyHitChance;
+        /// <summary>★ v0.3.18 (review): the first attack's attack bonus and the target's AC against it (the rules' values).</summary>
+        public int FirstAttackBonus, FirstArmorClass;
     }
 
     public static class CombatMath
@@ -160,6 +162,8 @@ namespace CompanionAI_Pathfinder.Tactics
                 float critExtra = line.ThreatChance * p * (line.CritMultiplier - 1) * perHit;
                 if (line.Index == 0)
                 {
+                    result.FirstAttackBonus = line.AttackBonus + d.Key;
+                    result.FirstArmorClass = line.ArmorClass;
                     result.FirstPerHit = perHit;
                     result.FirstCritChance = line.ThreatChance * p * p;     // threat, then the confirmation roll
                     result.CritMultiplier = Math.Max(1, line.CritMultiplier);
@@ -305,7 +309,9 @@ namespace CompanionAI_Pathfinder.Tactics
             int sides = value.DiceType.Sides();
             // ★ v0.3.13: the game's metamagic rule (RuleCalculateDamage, RuleHealDamage, ContextValueHelper): Maximize
             // takes the highest roll of every die, Empower multiplies dice + bonus by 1.5.
-            float total = (maximize ? count * sides : count * (sides + 1) / 2f) + bonus;
+            // ★ v0.3.18 (review): no dice (DiceType.Zero: 0 sides) adds nothing; it added count / 2.
+            float dice = sides <= 0 ? 0f : maximize ? count * sides : count * (sides + 1) / 2f;
+            float total = dice + bonus;
             return empower ? total * 1.5f : total;
         }
 
@@ -329,6 +335,13 @@ namespace CompanionAI_Pathfinder.Tactics
         {
             if (value == null) return 0;
             if (value.ValueType == ContextValueType.Simple) return value.Value;
+            // ★ v0.3.18 (review): a shared value is 0 in a context nobody cast (it is calculated during the cast): its
+            // average from the ability's own ContextCalculateSharedValue.
+            if (value.ValueType == ContextValueType.Shared && ctx is Kingmaker.UnitLogic.Abilities.AbilityExecutionContext shared)
+            {
+                AbilityProfile.SharedValueRange(shared.Ability, ctx, value.ValueShared, out _, out int avg, out _);
+                if (avg > 0) return avg;
+            }
             try
             {
                 if (ctx != null)
@@ -356,7 +369,15 @@ namespace CompanionAI_Pathfinder.Tactics
                 switch (action)
                 {
                     case ContextActionDealDamage dmg:
-                        float avg = EvaluateDice(dmg.Value, ctx, Math.Min(cl, 10), maximize, empower);
+                        float avg;
+                        // ★ v0.3.18 (review): damage rolled earlier into a shared value (ContextActionDealDamage
+                        // ReadPreRolledFromSharedValue) is that value's average, not the action's own (unused) dice.
+                        if (dmg.ReadPreRolledFromSharedValue && ctx is Kingmaker.UnitLogic.Abilities.AbilityExecutionContext rolled)
+                        {
+                            AbilityProfile.SharedValueRange(rolled.Ability, ctx, dmg.PreRolledSharedValue, out _, out int pre, out _);
+                            avg = pre;
+                        }
+                        else avg = EvaluateDice(dmg.Value, ctx, Math.Min(cl, 10), maximize, empower);
                         if (dmg.Half) avg *= 0.5f;
                         parts.Add(new KeyValuePair<GameAction, float>(dmg, AfterTargetReduction(target, dmg, avg)));
                         break;
@@ -498,17 +519,12 @@ namespace CompanionAI_Pathfinder.Tactics
                 using (ContextData<Kingmaker.UI.Models.Log.GameLogDisabled>.Request())
                 using (ctx.GetDataScope(new TargetWrapper(target)))
                 {
-                    float total = 0f;
-                    foreach (var type in new[] { Kingmaker.RuleSystem.Rules.Damage.DamageCalculationType.Minimized,
-                                                 Kingmaker.RuleSystem.Rules.Damage.DamageCalculationType.Maximized })
-                    {
-                        var rule = provider.GetHealRule(caster, target);
-                        if (rule == null) return 0f;
-                        rule.IsFake = true;
-                        rule.CalculationType.Set(type, null);
-                        total += Rulebook.Trigger(rule).ValueWithoutReduction;
-                    }
-                    return Math.Max(0f, total / 2f);
+                    // ★ v0.3.18 (review): read from the rule the action builds, not triggered - a fake RuleHealDamage still
+                    // runs handlers that ignore IsFake (RemovedByHeal removes its buff, SufferFromHealing deals real
+                    // damage, heal triggers run actions). Its average dice and bonus, before the target's modifiers.
+                    var rule = provider.GetHealRule(caster, target);
+                    if (rule == null) return 0f;
+                    return Math.Max(0f, Average(rule.HealFormula.ModifiedValue) + rule.Bonus);
                 }
             }
             catch (Exception ex)
@@ -557,15 +573,18 @@ namespace CompanionAI_Pathfinder.Tactics
         {
             float p = SpellResistancePass(caster, enemy, ability);
             if (profile.NeedsAttackRoll) p *= SpellAttackHitChance(caster, enemy, ability);
-            if (profile.Intimidation != null)
-            {
-                IntimidateOdds(caster, enemy, profile.Intimidation, out float success, out _);
-                p *= success;
-            }
             if (profile.Save != SavingThrowType.Unknown)
             {
                 float fail = SaveFailChance(ability, profile, enemy);
-                p *= damage ? fail + (1f - fail) * (profile.HalfOnSave ? 0.5f : 0f) : fail;
+                if (!damage) p *= fail;
+                else if (!profile.HalfOnSave) p *= fail;
+                else
+                {
+                    // ★ v0.3.18 (review): Evasion takes nothing on a passed save, Improved Evasion half on a failed one
+                    // (ContextActionDealDamage with the save's Evasion / ImprovedEvasion, set by the target's facts).
+                    EvasionOf(enemy, profile.Save, out bool evasion, out bool improved);
+                    p *= fail * (improved ? 0.5f : 1f) + (1f - fail) * (evasion ? 0f : 0.5f);
+                }
             }
             return p;
         }
@@ -583,8 +602,9 @@ namespace CompanionAI_Pathfinder.Tactics
             if (caster == null || target == null || action == null) return;
             try
             {
-                int dc = 10 + target.Descriptor.Progression.CharacterLevel + target.Stats.Wisdom.Bonus;
-                dc = RuleSkillCheck.AdjustDCByDifficulty(dc, out _);
+                // ★ v0.3.18 (review): success against the difficulty-adjusted DC, duration from the DC before it.
+                int rawDc = 10 + target.Descriptor.Progression.CharacterLevel + target.Stats.Wisdom.Bonus;
+                int dc = RuleSkillCheck.AdjustDCByDifficulty(rawDc, out _);
                 int bonus = caster.Stats.CheckIntimidate.ModifiedValue + action.Bonus;
                 int thug = caster.Descriptor.State.Features.FrighteningThug ? 1 : 0;
                 int successes = 0;
@@ -594,7 +614,7 @@ namespace CompanionAI_Pathfinder.Tactics
                     int result = d20 + bonus;
                     if (result < dc) continue;
                     successes++;
-                    sum += 1 + (result - dc) / 5 + thug;
+                    sum += 1 + (result - rawDc) / 5 + thug;
                 }
                 chance = successes / 20f;
                 rounds = successes > 0 ? sum / successes : 1f;
@@ -638,25 +658,70 @@ namespace CompanionAI_Pathfinder.Tactics
                     }
                     cmbRule.ReplaceStrength = stat;
                 }
+                // ★ v0.3.18 (review): as RuleCombatManeuver does, the attack bonuses that are not a stat (flanking, the
+                // difficulty bonus, what handlers add to the attack rule) of an empty-hand attack go into the CMB.
+                var hand = caster.Body?.EmptyHandWeapon;
+                if (hand != null)
+                {
+                    var attackRule = Rulebook.Trigger(new RuleCalculateAttackBonus(caster, target, hand, 0));
+                    foreach (var bonus in attackRule.AllBonuses)
+                        if (bonus.Stat == StatType.Unknown) cmbRule.AddModifierCopy(bonus);
+                }
                 int cmb = Rulebook.Trigger(cmbRule).Result;
-                int cmd = Rulebook.Trigger(new RuleCalculateCMD(caster, target, maneuver.Type)).Result;
+                // ★ v0.3.18 (review): an enemy that strikes back at this maneuver does so from inside the CMD rule
+                // (CounterAttackOfOpportunityOnCombatManeuver forces a real attack of opportunity): its CMD is asked for no
+                // particular maneuver then, losing only its bonuses against this one.
+                var cmdType = CountersManeuver(target, maneuver.Type) ? CombatManeuver.None : maneuver.Type;
+                int cmd = Rulebook.Trigger(new RuleCalculateCMD(caster, target, cmdType)).Result;
                 bool alwaysChance = caster.Descriptor.State.Features.AlwaysChance;
                 int successes = 0;
                 float sum = 0f;
                 for (int d20 = 1; d20 <= 20; d20++)
                 {
                     bool success = d20 == 20 || ((d20 != 1 || alwaysChance) && d20 + cmb >= cmd);
+                    // An overrun by less than 5 is a partial success: the target is not knocked down.
+                    if (maneuver.Type == CombatManeuver.Overrun && d20 + cmb - cmd < 5) success = false;
                     if (!success) continue;
                     successes++;
                     sum += Math.Max(0, (d20 + cmb - cmd) / 5 + 1);
                 }
                 chance = successes / 20f;
                 rounds = successes > 0 ? sum / successes : 1f;
+                // ★ v0.3.18 (review): concealment is checked first unless the action ignores it (RuleCombatManeuver).
+                if (!(maneuver.Action is ContextActionCombatManeuver cm && cm.IgnoreConcealment))
+                {
+                    var concealment = Kingmaker.UnitLogic.Parts.UnitPartConcealment.Calculate(caster, target);
+                    if (concealment == Kingmaker.Enums.Concealment.Total) chance *= 0.5f;
+                    else if (concealment == Kingmaker.Enums.Concealment.Partial) chance *= 0.8f;
+                }
             }
             catch (Exception ex)
             {
                 Main.Verbose($"[Math] maneuver {caster.CharacterName}->{target.CharacterName}: {ex.Message}");
             }
+        }
+
+        /// <summary>★ v0.3.18 (review): <paramref name="target"/> has a fact that answers this maneuver with an attack of
+        /// opportunity (read from its components; the type is a private field).</summary>
+        private static bool CountersManeuver(UnitEntityData target, CombatManeuver type)
+        {
+            try
+            {
+                foreach (var fact in target.Facts.List)
+                {
+                    var components = fact?.Blueprint?.ComponentsArray;
+                    if (components == null) continue;
+                    foreach (var c in components)
+                        if (c is Kingmaker.Designers.Mechanics.Facts.CounterAttackOfOpportunityOnCombatManeuver counter &&
+                            HarmonyLib.Traverse.Create(counter).Field("m_ManeuverType").GetValue<CombatManeuver>() == type)
+                            return true;
+                }
+            }
+            catch
+            {
+                return true;   // unreadable: ask without the type, never risk the real attack
+            }
+            return false;
         }
 
         /// <summary>
@@ -671,9 +736,12 @@ namespace CompanionAI_Pathfinder.Tactics
             if (times == 0 || est?.Weapon == null) return 0f;
             try
             {
-                var stats = Rulebook.Trigger(new RuleCalculateWeaponStats(unit, est.Weapon));
+                // ★ v0.3.18 (review): the game's Vital Strike attacks with the first weapon and adds dice to physical
+                // weapon damage only.
+                var weapon = unit.GetFirstWeapon() ?? est.Weapon;
+                var stats = Rulebook.Trigger(new RuleCalculateWeaponStats(unit, weapon));
                 var weaponDamage = stats.DamageDescription.FirstOrDefault();
-                if (weaponDamage == null) return 0f;
+                if (weaponDamage == null || weaponDamage.TypeDescription.Type != Kingmaker.RuleSystem.Rules.Damage.DamageType.Physical) return 0f;
                 float extra = times * Average(weaponDamage.Dice);
                 if (vitalStrike.MythicBlueprint != null && unit.Descriptor.HasFact(vitalStrike.MythicBlueprint))
                     extra += times * Math.Max(0, weaponDamage.Bonus);
@@ -700,6 +768,27 @@ namespace CompanionAI_Pathfinder.Tactics
             {
                 return 1;
             }
+        }
+
+        /// <summary>★ v0.3.18 (review): the target's Evasion / Improved Evasion for this save (Evasion, ImprovedEvasion facts).</summary>
+        private static void EvasionOf(UnitEntityData target, SavingThrowType save, out bool evasion, out bool improved)
+        {
+            evasion = improved = false;
+            if (target == null || save == SavingThrowType.Unknown) return;
+            try
+            {
+                foreach (var fact in target.Facts.List)
+                {
+                    var components = fact?.Blueprint?.ComponentsArray;
+                    if (components == null) continue;
+                    foreach (var c in components)
+                    {
+                        if (c is Kingmaker.Designers.Mechanics.Facts.Evasion e && e.SavingThrow == save) evasion = true;
+                        if (c is Kingmaker.Designers.Mechanics.Facts.ImprovedEvasion ie && ie.SavingThrow == save) improved = true;
+                    }
+                }
+            }
+            catch { }
         }
 
         /// <summary>Probability the target fails its save (1 when the ability has no save).</summary>
@@ -767,12 +856,12 @@ namespace CompanionAI_Pathfinder.Tactics
         {
             try
             {
-                if (caster != null && target != null && DeliveryWeapon(caster, ability, out var weapon, out var stat))
+                if (caster != null && target != null && DeliveryWeapon(caster, ability, out var weapon, out var stat, out var against))
                 {
                     int ab;
                     using (stat.HasValue ? ContextData<AttackBonusStatReplacement>.Request().Setup(stat.Value) : null)
                         ab = Rulebook.Trigger(new RuleCalculateAttackBonus(caster, target, weapon, 0)).Result;
-                    int ac = Rulebook.Trigger(new RuleCalculateAC(caster, target, weapon.Blueprint.AttackType)).Result;
+                    int ac = Rulebook.Trigger(new RuleCalculateAC(caster, target, against ?? weapon.Blueprint.AttackType)).Result;
                     return Mathf.Clamp(HitProbability(ab, ac), 0.05f, 0.95f);
                 }
             }
@@ -805,7 +894,12 @@ namespace CompanionAI_Pathfinder.Tactics
             {
                 var caster = ability.Caster?.Unit;
                 if (caster != null && (bool)caster.State.Features.MythicReduceResistances) return false;
-                var descriptor = ability.SpellDescriptor;
+                // ★ v0.3.18 (review): the buff's own descriptor too - the game asks with the buff's context, whose
+                // descriptor is its parent's (the ability's) and the buff's SpellDescriptorComponent (MechanicsContext):
+                // Demoralize's Shaken carries Fear only on the buff.
+                var descriptor = ability.SpellDescriptor |
+                                 (Kingmaker.Blueprints.BlueprintExtenstions.GetComponent<Kingmaker.Blueprints.Classes.Spells.SpellDescriptorComponent>(buff)?.Descriptor.Value
+                                  ?? Kingmaker.Blueprints.Classes.Spells.SpellDescriptor.None);
                 foreach (var component in BuffImmunities(target))
                 {
                     if (component is Kingmaker.UnitLogic.FactLogic.BuffDescriptorImmunity byDescriptor)
@@ -864,10 +958,18 @@ namespace CompanionAI_Pathfinder.Tactics
         /// ★ v0.3.18: the weapon the game makes the spell's attack roll with (AbilityDeliverProjectile.Deliver /
         /// AbilityDeliverTouch.Deliver), and the attack stat it uses instead of the weapon's own when it says so.
         /// </summary>
-        private static bool DeliveryWeapon(UnitEntityData caster, AbilityData ability, out ItemEntityWeapon weapon, out StatType? stat)
+        private static bool DeliveryWeapon(UnitEntityData caster, AbilityData ability, out ItemEntityWeapon weapon, out StatType? stat) =>
+            DeliveryWeapon(caster, ability, out weapon, out stat, out _);
+
+        /// <remarks>★ v0.3.18 (review): <paramref name="attackType"/> - the AC the roll is made against: a kinetic archer's
+        /// blast shoots the bow but against touch AC when the blast's own weapon is a ranged touch one
+        /// (AbilityDeliverProjectile: AttackTypeReplacement = Touch).</remarks>
+        private static bool DeliveryWeapon(UnitEntityData caster, AbilityData ability, out ItemEntityWeapon weapon, out StatType? stat,
+                                           out Kingmaker.RuleSystem.AttackType? attackType)
         {
             weapon = null;
             stat = null;
+            attackType = null;
             var bp = ability?.GetDeliverBlueprint() ?? ability?.Blueprint;
             if (bp == null) return false;
             var projectile = Kingmaker.Blueprints.BlueprintExtenstions.GetComponent<Kingmaker.UnitLogic.Abilities.Components.AbilityDeliverProjectile>(bp);
@@ -877,7 +979,11 @@ namespace CompanionAI_Pathfinder.Tactics
             {
                 if (Kingmaker.UnitLogic.Class.Kineticist.AbilityKineticist.IsArcherBlast(ability) &&
                     projectile.Type == Kingmaker.UnitLogic.Abilities.Components.AbilityProjectileType.Simple)
+                {
                     weapon = caster.Body?.PrimaryHand?.MaybeWeapon;
+                    if (projectile.Weapon?.Type?.AttackType == Kingmaker.RuleSystem.AttackType.RangedTouch)
+                        attackType = Kingmaker.RuleSystem.AttackType.Touch;
+                }
                 else weapon = Made(projectile.Weapon);
                 if (projectile.ReplaceAttackRollBonusStat)
                     stat = (bool)caster.State.Features.DomainsByIntelligenceFeature ? StatType.Intelligence : projectile.AttackRollBonusStat;

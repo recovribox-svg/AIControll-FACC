@@ -136,8 +136,13 @@ namespace CompanionAI_Pathfinder.Tactics
             // Who else is in reach: from here when the target already is; otherwise (a move first) only the enemies next
             // to the target, at a discount for not knowing where the move ends.
             bool reachNow = unit.IsReach(target, hand);
-            var others = ctx.Enemies
-                .Where(e => e != target && e.Descriptor.State.IsConscious &&
+            // ★ v0.3.18 (review): from the enemies the unit knows, as the game picks them (AbilityCustomCleave: any enemy
+            // not dead) - an unconscious one in reach takes a swing too, worth nothing.
+            IEnumerable<UnitEntityData> known;
+            try { known = unit.Memory.Enemies.Select(i => i.Unit).Where(e => e != null).ToList(); }
+            catch { known = ctx.Enemies; }
+            var others = known
+                .Where(e => e != target && !e.Descriptor.State.IsDead &&
                             (reachNow ? unit.IsReach(e, hand)
                                       : Vector3.Distance(e.Position, target.Position) <= 1.5f + e.Corpulence + target.Corpulence))
                 .OrderBy(e => (e.Position - target.Position).sqrMagnitude)
@@ -151,7 +156,8 @@ namespace CompanionAI_Pathfinder.Tactics
             {
                 var est = CombatMath.EstimateWeaponAttack(unit, enemy, full: false);
                 if (est == null) break;
-                float part = reached * DamageValue(enemy, est) * WakeFactor(enemy, est.ExpectedDamage);
+                float part = !enemy.Descriptor.State.IsConscious ? 0f
+                           : reached * DamageValue(enemy, est) * WakeFactor(enemy, est.ExpectedDamage);
                 value += enemy == target || reachNow ? part : part * 0.7f;
                 reached *= est.FirstHitChance;
                 counted++;

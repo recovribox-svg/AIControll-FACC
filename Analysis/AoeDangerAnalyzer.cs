@@ -232,6 +232,8 @@ namespace CompanionAI_Pathfinder.Analysis
             public float Danger;
             /// <summary>The worst area's name, for the decision log.</summary>
             public string Name;
+            /// <summary>★ v0.3.18 (review): rounds the worst area still lasts (as for entering one).</summary>
+            public float RoundsLeft;
 
             /// <summary>The unit's body radius: the game counts a unit inside when its body overlaps the area.</summary>
             public float Corpulence;
@@ -271,6 +273,7 @@ namespace CompanionAI_Pathfinder.Analysis
                         rest += worst;
                         worst = danger.DangerLevel;
                         result.Name = aoe.Context?.SourceAbilityContext?.Ability?.Name ?? danger.Name;
+                        result.RoundsLeft = RoundsLeft(aoe);
                     }
                     else rest += danger.DangerLevel;
                 }

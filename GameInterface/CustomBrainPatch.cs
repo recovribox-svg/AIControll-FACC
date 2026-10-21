@@ -368,6 +368,11 @@ namespace CompanionAI_Pathfinder.GameInterface
             Tactics.CastOutcome.ReportHeldCharges();
             // ★ v0.3.17: diagnostics are per fight
             Tactics.FightStats.Clear();
+            // ★ v0.3.18 (review): per-fight observations also at the start - a loaded save in real time raises no
+            // "combat ended" (Player.IsInCombat is not saved), so a retried fight kept the last attempt's blocks.
+            Tactics.CastOutcome.Clear();
+            Tactics.DamageObserver.Clear();
+            Tactics.SaveObserver.Clear();
             CompanionAI_Pathfinder.Analysis.AbilityClassifier.ResetCombatReports();
             Tactics.CoverageReport.NewFight();
         }
@@ -384,6 +389,8 @@ namespace CompanionAI_Pathfinder.GameInterface
             Tactics.FightStats.Report();
             // ★ v0.3.17: analysis caches of this fight's units (they are per frame now; this only frees them)
             CompanionAI_Pathfinder.Analysis.CombatRulesAnalyzer.ClearCache();
+            // ★ v0.3.18 (review): AI-started toggles the game keeps on out of combat (Mobility) go off first.
+            Tactics.CombatMemory.SwitchOffAiToggles();
             // ★ v0.2.113: TurnBasedController 상태 초기화
             TurnBasedController.Instance.ResetAll();
 

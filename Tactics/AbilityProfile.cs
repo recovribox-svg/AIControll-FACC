@@ -604,7 +604,8 @@ namespace CompanionAI_Pathfinder.Tactics
 
                 switch (action)
                 {
-                    case ContextActionDealDamage dmg:
+                    // ★ v0.3.18 (review): damage run on the caster (a self-cost) is not damage to the target.
+                    case ContextActionDealDamage dmg when subject != EffectSubject.Caster:
                         Damage.Add(dmg);
                         m_Guards[dmg] = guards;
                         if (dmg.HalfIfSaved) HalfOnSave = true;
@@ -641,7 +642,8 @@ namespace CompanionAI_Pathfinder.Tactics
                             m_BuffApplications.Add(new BuffApplication
                             {
                                 Buff = apply.Buff, Guards = guards, Rounds = ExpectedRounds(apply),
-                                Extendable = apply.DurationValue != null && apply.DurationValue.IsExtendable
+                                Extendable = !apply.Permanent && !apply.SameDuration && !apply.UseDurationSeconds &&
+                                             apply.DurationValue != null && apply.DurationValue.IsExtendable
                             });
                         m_AllBuffs++;
                         if (LastsOneRound(apply)) m_ShortBuffs++;
@@ -719,6 +721,28 @@ namespace CompanionAI_Pathfinder.Tactics
                 if ((typeName.Contains("Enchant") || typeName.Contains("EnhanceWeapon")) &&
                     (actionType.Namespace ?? "").StartsWith("Kingmaker"))
                     Enchants = true;
+
+                // ★ v0.3.18 (review): what a maneuver or a Demoralize does on success happens only then, and its failure
+                // list only on a failure: counted as an unknown outcome, the failure list not at all. They were walked
+                // as unconditional children - both lists for everyone - and Demoralize's Trickster list (run only for a
+                // caster with that feature) for every caster.
+                switch (action)
+                {
+                    case ContextActionCombatManeuver m:
+                        Walk(m.OnSuccess?.Actions, visited, abilityDepth, subject, depth + 1, WithRoll(guards));
+                        continue;
+                    case ContextActionCombatManeuverCustom mc:
+                        Walk(mc.Success?.Actions, visited, abilityDepth, subject, depth + 1, WithRoll(guards));
+                        continue;
+                    case Demoralize _:
+                        continue;
+                    // ★ v0.3.18 (review): full damage on a failed save and less on a passed one are one damage, not two
+                    // added together: the failed branch is walked, and the passed one only stands for "half on a save".
+                    case ContextActionConditionalSaved saved when HasDirectDamage(saved.Failed) && HasDirectDamage(saved.Succeed):
+                        Walk(saved.Failed?.Actions, visited, abilityDepth, subject, depth + 1, guards);
+                        HalfOnSave = true;
+                        continue;
+                }
 
                 var childSubject = ChildSubject(subject, action);
                 foreach (var child in ChildActionLists(action))
@@ -808,6 +832,19 @@ namespace CompanionAI_Pathfinder.Tactics
                 default:
                     return subject;
             }
+        }
+
+        /// <summary>★ v0.3.18 (review): the effect runs only when a roll the cast makes succeeds (a combat maneuver, an
+        /// Intimidate check): not known before the cast (Unknown), never unconditional.</summary>
+        private static bool HasDirectDamage(ActionList list) =>
+            list?.Actions != null && list.Actions.Any(a => a is ContextActionDealDamage);
+
+        private static EffectGuard[] WithRoll(EffectGuard[] guards)
+        {
+            var result = new EffectGuard[guards.Length + 1];
+            guards.CopyTo(result, 0);
+            result[guards.Length] = new EffectGuard { Checker = null, Branch = true };
+            return result;
         }
 
         private static EffectGuard[] With(EffectGuard[] guards, ConditionsChecker checker, bool branch, bool onCaster)
@@ -988,7 +1025,7 @@ namespace CompanionAI_Pathfinder.Tactics
         /// ★ v0.3.17: the range of a shared value as the ability's own ContextCalculateSharedValue defines it (dice count
         /// and bonus from the context, without rolling): lowest, average and highest. No component: 0, as in the game.
         /// </summary>
-        private static void SharedValueRange(AbilityData ability, MechanicsContext context, AbilitySharedValue type,
+        internal static void SharedValueRange(AbilityData ability, MechanicsContext context, AbilitySharedValue type,
                                              out int min, out int avg, out int max)
         {
             min = avg = max = 0;
@@ -1121,6 +1158,7 @@ namespace CompanionAI_Pathfinder.Tactics
             bool unknown = false;
             foreach (var guard in guards)
             {
+                if (guard.Checker == null) { unknown = true; continue; }   // a roll's outcome (WithRoll)
                 var subject = guard.OnCaster ? caster : target;
                 if (subject == null) { unknown = true; continue; }
                 bool? result = CheckFor(guard.Checker, ability, subject, caster);
@@ -1134,7 +1172,10 @@ namespace CompanionAI_Pathfinder.Tactics
         {
             int frame = Time.frameCount;
             // Caster-dependent conditions (IsAlly, CasterHasFact, HasBuffFromCaster...): key by caster and target.
-            string key = $"{caster?.UniqueId}|{target.UniqueId}";
+            // ★ v0.3.18 (review): and by the ability itself (a scroll and the spell, metamagic copies: caster level and
+            // shared values differ) - one checker is shared by every copy of the blueprint.
+            string key = $"{caster?.UniqueId}|{target.UniqueId}|{ability.Blueprint?.AssetGuid}|{AbilityDiscovery.MetamagicTag(ability)}|" +
+                         $"{ability.SourceItem?.UniqueId}|{ability.Spellbook?.Blueprint?.AssetGuid}";
             if (!CheckerCache.TryGetValue(checker, out var perUnit))
                 CheckerCache[checker] = perUnit = new Dictionary<string, CheckerResult>();
             if (perUnit.TryGetValue(key, out var cached) && cached.Frame == frame) return cached.Result;
@@ -1276,7 +1317,12 @@ namespace CompanionAI_Pathfinder.Tactics
             // it is immune the whole effect is lost - the area is never created. Orvath's Grease aimed at an airborne
             // Quasit (immune to ground effects) did nothing, though the area would have caught the enemies around it.
             // Aimed at the ground where the creature stands, there is no such check: same area, same place.
-            if (ability.CanTargetPoint && unit != ability.Caster?.Unit && (Get(ability)?.IsAoE ?? false))
+            // ★ v0.3.18 (review): only where that check would stop the area - not for an ability that picks its targets
+            // (AbilityTargetsAround: each one gets its own check) or one with an attack roll (a bomb's direct hit needs
+            // the creature as its target, AbilityDeliverProjectile).
+            var profile = Get(ability);
+            if (ability.CanTargetPoint && unit != ability.Caster?.Unit && profile != null && profile.IsAoE &&
+                !profile.SelectsTargets && !profile.NeedsAttackRoll)
             {
                 var ground = new TargetWrapper(unit.Position);
                 if (ability.CanTarget(ground)) return ground;

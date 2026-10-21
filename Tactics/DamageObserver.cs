@@ -52,6 +52,9 @@ namespace CompanionAI_Pathfinder.Tactics
         public static void Clear()
         {
             ByUnit.Clear();
+            // ★ v0.3.18 (review): what one creature of a kind showed (a cultist under Resist Energy, a +4 contextual save)
+            // was applied to every later creature of that blueprint for the whole session: kinds are learned per fight.
+            ByKind.Clear();
             Reported.Clear();
         }
 

@@ -69,6 +69,11 @@ namespace CompanionAI_Pathfinder.Tactics
             {
                 var buff = bp.Buff;
                 if (!bp.ActivateWithUnitCommand) p.Excluded = "not activated by a command";
+                // ★ v0.3.18 (review): ActivatableAbilityUnitCommand spends that action every round, and the game switches
+                // the toggle off when the unit runs another command of that type: the AI's next attack or swift ability
+                // would end it, and it would start it again next round.
+                else if (bp.GetComponent<ActivatableAbilityUnitCommand>() is ActivatableAbilityUnitCommand perRound)
+                    p.Excluded = $"spends a {perRound.Type} action every round";
                 else if (bp.IsTargeted) p.Excluded = "needs a target";
                 else if (ModifierGroups.Contains(bp.Group)) p.Excluded = "a modifier of another action (AA-4)";
                 else if (buff == null) p.Excluded = "no buff";
@@ -253,7 +258,9 @@ namespace CompanionAI_Pathfinder.Tactics
             int? resource = null;
             try { resource = toggle.ResourceCount; } catch { }
             if (!resource.HasValue) return;   // costs nothing to keep
-            bool anyone = ToggleRecipients(ctx, p, enemies: false).Any(a => a != unit || p.AreaBuffs.Any(b => !b.Harmful)) ||
+            // ★ v0.3.18 (review): the performer itself does not count - it is always in its own area, so the rule never
+            // fired for a helpful performance and the bard spent its rounds on itself after every ally had left.
+            bool anyone = ToggleRecipients(ctx, p, enemies: false).Any(a => a != unit && p.AreaBuffs.Any(b => !b.Harmful)) ||
                           ToggleRecipients(ctx, p, enemies: true).Count > 0;
             if (anyone) return;
             try

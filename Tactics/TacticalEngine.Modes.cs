@@ -107,6 +107,12 @@ namespace CompanionAI_Pathfinder.Tactics
                                 break;
                         }
                     }
+                    // ★ v0.3.18 (review): an action spent every round (ActivatableAbilityUnitCommand) or a resource per round is
+                    // not part of the attack's value: such a mode is left as the player set it.
+                    if (bp.GetComponent<ActivatableAbilityUnitCommand>() != null)
+                        p.Excluded = p.Excluded ?? "spends an action every round";
+                    else if (bp.GetComponent<ActivatableAbilityResourceLogic>() != null)
+                        p.Excluded = p.Excluded ?? "spends a resource";
                     if (mobility)
                     {
                         p.Kind = ModeKind.Mobility;
@@ -145,10 +151,22 @@ namespace CompanionAI_Pathfinder.Tactics
         internal sealed class UnitMode
         {
             public ActivatableAbility Toggle;
+            /// <summary>Switched on (or its buff still running): what a switch changes.</summary>
             public bool On;
+            /// <summary>★ v0.3.18 (review): its buff is in the game's rules now (started), so the attack routine read
+            /// from the rules already has it. A Fighting Defensively that is on between attacks is not: it starts again
+            /// on the next attack (ActivateOnUnitAction), its buff gone at the round's start.</summary>
+            public bool Active;
+            /// <summary>★ v0.3.18 (review): it is started and the game keeps its buff until the round ends when it is
+            /// switched off (TurnOffImmediatelyWithUnitCommand costs an action): an "off" would not change this attack.</summary>
+            public bool StaysUntilRoundEnd;
             public int AC;
             public int AttackStat;
+            /// <summary>Attack change the rules apply on any attack (the probe's routine has it once the buff runs).</summary>
             public Func<ItemEntityWeapon, bool, int> Attack;
+            /// <summary>★ v0.3.18 (review): attack bonus only for a full attack (WeaponParametersAttackBonus
+            /// OnlyForFullAttack): only a real full attack has it, never the probe's routine.</summary>
+            public Func<ItemEntityWeapon, bool, int> FullAttackOnly;
             public Func<ItemEntityWeapon, float> Damage;
             public string Name => Toggle.Name;
             public ActivatableAbilityGroup Group => Toggle.Blueprint.Group;
@@ -179,7 +197,15 @@ namespace CompanionAI_Pathfinder.Tactics
             // The game works the buff's ranks out itself (ContextRankConfig, custom properties), for this unit.
             var mctx = new MechanicsContext(unit, unit.Descriptor, buff);
             try { mctx.Recalculate(); } catch { }
-            var mode = new UnitMode { Toggle = toggle, On = toggle.IsOn || toggle.IsStarted };
+            var bp = toggle.Blueprint;
+            var mode = new UnitMode
+            {
+                Toggle = toggle,
+                On = toggle.IsOn || toggle.IsStarted,
+                Active = toggle.IsStarted,
+                StaysUntilRoundEnd = toggle.IsStarted && !bp.DeactivateImmediately &&
+                                     bp.GetComponent<TurnOffImmediatelyWithUnitCommand>() != null
+            };
             foreach (var c in p.StatParts)
             {
                 StatType stat;
@@ -213,8 +239,20 @@ namespace CompanionAI_Pathfinder.Tactics
                 int total = attackStat;
                 foreach (var a in attackParts)
                 {
-                    if (!WeaponFits(weapon, a.Ranged, a.OnlyTwoHanded, a.OnlyFinessable, unit)) continue;
-                    if (a.OnlyForFullAttack && !full) continue;
+                    if (a.OnlyForFullAttack || !WeaponFits(weapon, a.Ranged, a.OnlyTwoHanded, a.OnlyFinessable, unit)) continue;
+                    int n = a.UseContextIstead ? a.ContextAttackBonus.Calculate(mctx) : a.AttackBonus;
+                    if (a.ScaleByBasicAttackBonus) n *= 1 + bab / 4;
+                    total += n;
+                }
+                return total;
+            };
+            mode.FullAttackOnly = (weapon, full) =>
+            {
+                int total = 0;
+                if (!full) return 0;
+                foreach (var a in attackParts)
+                {
+                    if (!a.OnlyForFullAttack || !WeaponFits(weapon, a.Ranged, a.OnlyTwoHanded, a.OnlyFinessable, unit)) continue;
                     int n = a.UseContextIstead ? a.ContextAttackBonus.Calculate(mctx) : a.AttackBonus;
                     if (a.ScaleByBasicAttackBonus) n *= 1 + bab / 4;
                     total += n;
@@ -264,14 +302,26 @@ namespace CompanionAI_Pathfinder.Tactics
             var unit = ctx.Unit;
             float danger = IncomingDamage(ctx, unit, at);
             if (danger <= 0f) return 0f;
-            var near = ctx.Enemies.Where(e => Vector3.Distance(e.Position, at) <= 4f + e.Corpulence + unit.Corpulence).ToList();
-            float hit = near.Count == 0 ? 0.5f
-                      : near.Select(e => CombatMath.EstimateWeaponAttack(e, unit, full: false)?.FirstHitChance ?? 0.5f).Average();
-            float share = Mathf.Clamp(0.05f * acDelta / Math.Max(0.1f, hit), -1f, 0.9f);
+            // ★ v0.3.18 (review): per enemy, by its own attack roll against the AC with and without the change (the d20's
+            // limits included), weighted by its part of the danger; an enemy without a weapon attack (a caster) gains
+            // nothing from AC. One average hit chance for all, from the enemies within 4 m only, credited AC against
+            // spells, and +2 AC against an enemy that hits on a 20 only counted as 90 % of the damage avoided.
+            var parts = IncomingParts(ctx, unit, at);
+            float all = parts.Sum(p => p.Value), avoided = 0f;
+            foreach (var part in parts)
+            {
+                var est = CombatMath.EstimateWeaponAttack(part.Key, unit, full: false);
+                if (est == null) continue;
+                float before = CombatMath.HitProbability(est.FirstAttackBonus, est.FirstArmorClass);
+                float after = CombatMath.HitProbability(est.FirstAttackBonus, est.FirstArmorClass + acDelta);
+                avoided += part.Value * (before - after) / Math.Max(0.05f, before);
+            }
+            float share = all > 0f ? Mathf.Clamp(avoided / all, -1f, 0.95f) : 0f;
+            if (Math.Abs(share) < 1e-4f) return 0f;
             float hp = Math.Max(1f, unit.HPLeft);
-            float before = RiskMath.RoundDropChance(hp, danger);
-            float after = RiskMath.RoundDropChance(hp, danger * (1f - share));
-            return ((before - after) * AllyWorth(ctx, unit) + danger * share * 0.3f) * RiskTolerance(ctx);
+            float dropBefore = RiskMath.RoundDropChance(hp, danger);
+            float dropAfter = RiskMath.RoundDropChance(hp, danger * (1f - share));
+            return ((dropBefore - dropAfter) * AllyWorth(ctx, unit) + danger * share * 0.3f) * RiskTolerance(ctx);
         }
 
         /// <summary>
@@ -284,51 +334,70 @@ namespace CompanionAI_Pathfinder.Tactics
             var modes = AttackModes(ctx);
             if (modes.Count == 0 || c.Kind != CandidateKind.WeaponAttack || c.Target == null || c.ModeFactor <= 0f) return;
             var unit = ctx.Unit;
-            var baseEstimate = CombatMath.EstimateWeaponAttack(unit, c.Target, c.FullAttack);
-            if (baseEstimate == null) return;
-            float baseValue = DamageValue(c.Target, baseEstimate);
+            bool full = c.FullAttack;
             Vector3 at = c.ModeAt ?? unit.Position;
 
-            // One option per group (none on, or one of its modes), each ungrouped mode on or off.
-            var groups = modes.GroupBy(m => m.Group == ActivatableAbilityGroup.None ? (object)m : m.Group).ToList();
-            var combos = new List<List<UnitMode>> { new List<UnitMode>() };   // each combo: the modes on
-            foreach (var group in groups)
+            // ★ v0.3.18 (review): every set is valued against the game's rules as they stand (the attack routine, the AC
+            // the enemies roll against) - a mode's changes count by whether it will apply at this attack and whether it
+            // applies now. "Keep everything as it is" is valued the same way: a Fighting Defensively that is on but not
+            // started (it restarts on the attack) was missing its -4 there.
+            Func<HashSet<UnitMode>, KeyValuePair<float, float>> valueOf = set =>
             {
-                var options = new List<UnitMode> { null };
-                options.AddRange(group);
-                combos = combos.SelectMany(combo => options.Select(o => o == null ? combo : combo.Concat(new[] { o }).ToList())).ToList();
-                if (combos.Count > 32) break;
-            }
-
-            float bestGain = 0f;
-            List<UnitMode> best = null;
-            foreach (var combo in combos)
-            {
-                var changes = modes.Where(m => combo.Contains(m) != m.On).ToList();
-                if (changes.Count == 0) continue;
-                // A mode that cannot start now cannot be chosen on.
-                if (changes.Any(m => !m.On && !m.Toggle.IsAvailable)) continue;
-                if (changes.Any(m => CombatMemory.ToggleSwitchedThisRound(unit, m.Toggle))) continue;
-                int ac = changes.Sum(m => m.On ? -m.AC : m.AC);
-                bool full = c.FullAttack;
                 var estimate = CombatMath.EstimateWeaponAttack(unit, c.Target, full, (weapon, index) =>
                 {
                     int ab = 0;
                     float dmg = 0f;
-                    foreach (var m in changes)
+                    foreach (var m in modes)
                     {
-                        int sign = m.On ? -1 : 1;
+                        int sign = (set.Contains(m) ? 1 : 0) - (m.Active ? 1 : 0);
+                        if (set.Contains(m)) ab += m.FullAttackOnly(weapon, full);
+                        if (sign == 0) continue;
                         ab += sign * m.Attack(weapon, full);
                         dmg += sign * m.Damage(weapon);
                     }
                     return new KeyValuePair<int, float>(ab, dmg);
                 });
-                if (estimate == null) continue;
-                float gain = (DamageValue(c.Target, estimate) - baseValue) * c.ModeFactor + DefenseValue(ctx, at, ac);
+                int ac = modes.Sum(m => ((set.Contains(m) ? 1 : 0) - (m.Active ? 1 : 0)) * m.AC);
+                return new KeyValuePair<float, float>(estimate == null ? -1f : DamageValue(c.Target, estimate), DefenseValue(ctx, at, ac));
+            };
+            var current = new HashSet<UnitMode>(modes.Where(m => m.On));
+            var baseline = valueOf(current);
+            if (baseline.Key < 0f) return;
+
+            // One option per group (none on, or one of its modes), each ungrouped mode on or off. ★ v0.3.18 (review): past
+            // 32 sets, the groups left out keep their current state (they were left out as "off").
+            var groups = modes.GroupBy(m => m.Group == ActivatableAbilityGroup.None ? (object)m : m.Group).ToList();
+            var combos = new List<List<UnitMode>> { new List<UnitMode>() };   // each combo: the modes on
+            int used = 0;
+            foreach (var group in groups)
+            {
+                if (combos.Count * (group.Count() + 1) > 32) break;
+                var options = new List<UnitMode> { null };
+                options.AddRange(group);
+                combos = combos.SelectMany(combo => options.Select(o => o == null ? combo : combo.Concat(new[] { o }).ToList())).ToList();
+                used++;
+            }
+            var kept = groups.Skip(used).SelectMany(g => g).Where(m => m.On).ToList();
+
+            float bestGain = 0f;
+            HashSet<UnitMode> best = null;
+            foreach (var combo in combos)
+            {
+                var set = new HashSet<UnitMode>(combo.Concat(kept));
+                var changes = modes.Where(m => set.Contains(m) != m.On).ToList();
+                if (changes.Count == 0) continue;
+                // A mode that cannot start now cannot be chosen on; one whose buff stays until the round ends cannot be
+                // taken off this attack.
+                if (changes.Any(m => !m.On && !m.Toggle.IsAvailable)) continue;
+                if (changes.Any(m => m.On && m.StaysUntilRoundEnd)) continue;
+                if (changes.Any(m => CombatMemory.ToggleSwitchedThisRound(unit, m.Toggle))) continue;
+                var v = valueOf(set);
+                if (v.Key < 0f) continue;
+                float gain = (v.Key - baseline.Key) * c.ModeFactor + (v.Value - baseline.Value);
                 if (gain > bestGain)
                 {
                     bestGain = gain;
-                    best = combo;
+                    best = set;
                 }
             }
             if (best == null) return;
@@ -340,6 +409,9 @@ namespace CompanionAI_Pathfinder.Tactics
         }
 
         /// <summary>Switch the candidate's attack modes the way the action bar does, just before its attack.</summary>
+        /// <remarks>★ v0.3.18 (review): off with the game's TurnOffImmediately (its buff removed now, as the value assumed):
+        /// switching IsOn off alone leaves a started mode's buff until the round ends, unless the blueprint deactivates
+        /// immediately. Modes whose immediate turn-off costs an action are never chosen off (ChooseAttackModes).</remarks>
         private static void ApplyModes(UnitEntityData unit, Candidate c)
         {
             if (c.Modes == null) return;
@@ -347,10 +419,20 @@ namespace CompanionAI_Pathfinder.Tactics
             {
                 try
                 {
-                    if (change.Key.IsOn == change.Value) continue;
-                    change.Key.IsOn = change.Value;
-                    CombatMemory.RecordToggle(unit, change.Key, change.Value);
-                    Main.Log($"[Toggle] {unit.CharacterName}: {change.Key.Name} {(change.Value ? "on" : "off")} for '{c.Label}'");
+                    var toggle = change.Key;
+                    if (change.Value)
+                    {
+                        if (toggle.IsOn) continue;
+                        toggle.IsOn = true;
+                    }
+                    else
+                    {
+                        if (!toggle.IsOn && !toggle.IsStarted) continue;
+                        if (toggle.Blueprint.GetComponent<TurnOffImmediatelyWithUnitCommand>() == null) toggle.TurnOffImmediately();
+                        else toggle.IsOn = false;
+                    }
+                    CombatMemory.RecordToggle(unit, toggle, change.Value);
+                    Main.Log($"[Toggle] {unit.CharacterName}: {toggle.Name} {(change.Value ? "on" : "off")} for '{c.Label}'");
                 }
                 catch (Exception ex)
                 {
@@ -364,6 +446,13 @@ namespace CompanionAI_Pathfinder.Tactics
         private static ActivatableAbility MobilityToggle(UnitEntityData unit) =>
             unit.ActivatableAbilities?.Enumerable?.FirstOrDefault(t => t?.Blueprint != null && ModeExclusion(t) == null &&
                                                                        ModeOf(t.Blueprint).Kind == ModeKind.Mobility);
+
+        /// <summary>Movement speed with Mobility on (UnitEntityData: x0.5, x1.5 with Trickster's fast movement).</summary>
+        private static float MobilitySpeedFactor(UnitEntityData unit)
+        {
+            try { return unit.Descriptor.State.Features.TricksterMobilityFastMovement ? 1.5f : 0.5f; }
+            catch { return 0.5f; }
+        }
 
         /// <summary>The unit leaves reach with Mobility on (any source): its check can cancel each attack of opportunity.</summary>
         private static bool UsesMobility(UnitEntityData unit)
@@ -381,6 +470,8 @@ namespace CompanionAI_Pathfinder.Tactics
             try
             {
                 int cmd = Rulebook.Trigger(new RuleCalculateCMD(unit, enemy, CombatManeuver.None)).Result;
+                // ★ v0.3.18 (review): a skill check's DC is adjusted by difficulty (RuleSkillCheck.UpdateValues).
+                cmd = RuleSkillCheck.AdjustDCByDifficulty(cmd, out _);
                 int bonus = unit.Stats.GetStat(StatType.SkillMobility).ModifiedValue;
                 return Mathf.Clamp01((21f + bonus - cmd) / 20f);
             }
@@ -409,7 +500,7 @@ namespace CompanionAI_Pathfinder.Tactics
         /// Mobility on (a free action) before the best move-and-act option that provokes, when the attacks of opportunity it
         /// would cancel are worth more than nothing and the move still fits at half speed.
         /// </summary>
-        private static void AddMobilityCandidate(TacticalContext ctx, List<Candidate> list)
+        private static void AddMobilityCandidate(TacticalContext ctx, List<Candidate> list, TurnMemory memory)
         {
             if (!(ModSettings.Instance?.AiSwitchesCombatModes ?? true) || ctx.NoMovementLeft || ctx.StepTaken) return;
             var unit = ctx.Unit;
@@ -420,16 +511,21 @@ namespace CompanionAI_Pathfinder.Tactics
             var slot = ToggleSlot(toggle);
             if (slot != ActionSlot.Free && slot != ActionSlot.Swift) return;
             if (slot == ActionSlot.Swift && !ctx.HasSwift) return;
-            var risky = list.Where(c => c.Value > 0f && c.Risk != null && c.Risk.Attacks > 0 && c.RiskAt.HasValue &&
-                                        c.Slot != ActionSlot.Free && c.Slot != ActionSlot.Swift && Affordable(ctx, c))
+            // ★ v0.3.18 (review): only options this turn can still take (the same filter as Decide's usable list): an
+            // option refused earlier this turn was "protected" with Mobility, then dropped - half speed for nothing.
+            Func<Candidate, bool> takeable = c => c.Value > 0f && c.Slot != ActionSlot.Free && c.Slot != ActionSlot.Swift &&
+                                                  Affordable(ctx, c) && !memory.Failed.Contains(c.Key) && !SilentlyFailing(ctx, c) &&
+                                                  !(c.Target != null && ctx.Unreachable.Contains(c.Target.UniqueId));
+            float speed = MobilitySpeedFactor(unit);
+            var risky = list.Where(c => takeable(c) && c.Risk != null && c.Risk.Attacks > 0 && c.RiskAt.HasValue)
                             .OrderByDescending(c => c.Value).Take(3).ToList();
             Candidate best = null;
             Disengage without = null;
             float gain = 0f;
             foreach (var c in risky)
             {
-                // Speed halves: the move must still fit.
-                if (Vector3.Distance(unit.Position, c.RiskAt.Value) > ctx.MoveRange * 0.5f * 0.95f) continue;
+                // Speed halves (x1.5 for a Trickster with fast movement): the move must still fit.
+                if (Vector3.Distance(unit.Position, c.RiskAt.Value) > ctx.MoveRange * Math.Min(1f, speed) * 0.95f) continue;
                 var off = DisengageRisk(ctx, c.RiskAt.Value, mobility: false);
                 if (off == null) continue;
                 var on = DisengageRisk(ctx, c.RiskAt.Value, mobility: true);
@@ -443,8 +539,7 @@ namespace CompanionAI_Pathfinder.Tactics
             }
             if (best == null || gain < MinQuickValue) return;
             // Only worth it when the move it protects then is the best thing to do.
-            float other = list.Where(c => c != best && c.Value > 0f && c.Slot != ActionSlot.Free && c.Slot != ActionSlot.Swift &&
-                                          Affordable(ctx, c))
+            float other = list.Where(c => c != best && takeable(c))
                               .Select(c => c.Value).DefaultIfEmpty(0f).Max();
             if (best.Value + gain <= other) return;
             list.Add(new Candidate

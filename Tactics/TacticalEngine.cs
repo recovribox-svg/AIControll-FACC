@@ -141,6 +141,9 @@ namespace CompanionAI_Pathfinder.Tactics
         internal readonly Dictionary<string, TacticalEngine.Disengage> Provoked = new Dictionary<string, TacticalEngine.Disengage>();
         /// <summary>★ v0.3.18 (AA-3): the unit's attack modes, read once per decision (TacticalEngine.Modes.cs).</summary>
         internal List<TacticalEngine.UnitMode> AttackModes;
+        /// <summary>★ v0.3.18 (review): what the turn holds from here - the best quick option worth taking plus the best
+        /// main one (ShouldStandUp compares lying down with that, not only with the option chosen first).</summary>
+        public float TurnValue;
     }
 
     public static partial class TacticalEngine
@@ -222,7 +225,7 @@ namespace CompanionAI_Pathfinder.Tactics
             // ★ v0.3.18 (AA-2): after the others, so a toggle that forbids spells is priced against the best spell.
             try { AddToggleCandidates(ctx, candidates, preview); } catch (Exception ex) { Main.Error($"[Tactics] toggle candidates: {ex}"); }
             // ★ v0.3.18 (AA-3): Mobility before a move that would provoke.
-            try { AddMobilityCandidate(ctx, candidates); } catch (Exception ex) { Main.Error($"[Tactics] mobility: {ex}"); }
+            try { AddMobilityCandidate(ctx, candidates, memory); } catch (Exception ex) { Main.Error($"[Tactics] mobility: {ex}"); }
             try { PriceHeldCharge(ctx, candidates); } catch (Exception ex) { Main.Error($"[Tactics] held charge: {ex.Message}"); }
 
             var usable = candidates
@@ -248,6 +251,8 @@ namespace CompanionAI_Pathfinder.Tactics
             if (quick != null && quick.Value >= MinQuickValue) chosen = quick;
             else if (main != null && main.Value >= MinMainValue) chosen = main;
 
+            ctx.TurnValue = (quick != null && quick.Value >= MinQuickValue ? quick.Value : 0f) +
+                            (main != null && main.Value >= MinMainValue ? main.Value : 0f);
             if (preview) return chosen;
             LogDecision(ctx, usable, chosen);
             // ★ v0.3.16 (test2): options exist but none is worth anything or affordable - name the best of them. Seelah
@@ -335,6 +340,9 @@ namespace CompanionAI_Pathfinder.Tactics
             {
                 if (!IsMark(c)) { result.Add(c); continue; }
                 if (focus == null) continue;
+                // ★ v0.3.18 (review): an advance attacks no one this turn - a one-round / next-attack mark would be spent
+                // for nothing; a lasting one (Smite Evil) still pays off next turn.
+                if (main.Kind == CandidateKind.Move && (AbilityProfile.Get(c.Ability)?.IsOneShot ?? false)) continue;
                 if (c.Target == focus) { if (reaimed.Add(CombatMemory.AbilityKey(c.Ability))) result.Add(c); continue; }
                 if (!reaimed.Add(CombatMemory.AbilityKey(c.Ability))) continue;
                 var alt = EvaluateAbility(ctx, c.Ability, focus).FirstOrDefault();
@@ -561,11 +569,9 @@ namespace CompanionAI_Pathfinder.Tactics
             if (!CombatMath.EstimateCoupDeGrace(ctx.Unit, target, out float damage, out float kill)) return 0f;
             float value = kill * (Math.Max(1, target.HPLeft) + CombatMath.Threat(target)) + (1f - kill) * DamageValue(target, damage, 0f);
             value *= RoleWeight(ctx, "damage");
-            // ★ v0.3.18: priced like every other provoking action (ProvokeRisk), when it provokes: Tabletop Tweaks' version
-            // makes the caster provoke (AbilityProfile.CasterProvokes), the vanilla one does not. The target is helpless.
-            bool provokes = (AbilityProfile.Get(ability)?.CasterProvokes ?? false) || ability.ProvokeAttackOfOpportunity;
-            var provoke = provokes ? ProvokeRisk(ctx, ctx.Unit.Position, 1f, spoiledByHit: 0f) : null;
-            if (provoke != null) value -= provoke.Cost;
+            // ★ v0.3.18: when it provokes (Tabletop Tweaks' version makes the caster provoke: AbilityProfile.CasterProvokes)
+            // it is priced in EvaluateAbility (ProvokeLoss), like every other provoking ability. It was also subtracted
+            // here, so a provoking Coup de Grace paid its attacks of opportunity twice.
             return Math.Max(0f, value);
         }
 
@@ -586,9 +592,13 @@ namespace CompanionAI_Pathfinder.Tactics
             IncomingDamageRaw(ctx, ally, at) * ctx.DangerScale;
 
         /// <summary>★ v0.3.18: the prediction itself, from the enemies' Threat (what FightStats compares with the damage dealt).</summary>
-        private static float IncomingDamageRaw(TacticalContext ctx, UnitEntityData ally, Vector3 at)
+        private static float IncomingDamageRaw(TacticalContext ctx, UnitEntityData ally, Vector3 at) =>
+            IncomingParts(ctx, ally, at).Sum(p => p.Value);
+
+        /// <summary>★ v0.3.18 (review): each enemy's part of <see cref="IncomingDamageRaw"/> (what AC changes is per enemy).</summary>
+        private static List<KeyValuePair<UnitEntityData, float>> IncomingParts(TacticalContext ctx, UnitEntityData ally, Vector3 at)
         {
-            float total = 0f;
+            var parts = new List<KeyValuePair<UnitEntityData, float>>();
             foreach (var enemy in ctx.Enemies)
             {
                 float zone;
@@ -604,9 +614,9 @@ namespace CompanionAI_Pathfinder.Tactics
                 }
                 if (Vector3.Distance(enemy.Position, at) > zone + ally.Corpulence) continue;
                 int sharedBy = Math.Max(1, ctx.Allies.Count(a => Vector3.Distance(enemy.Position, a == ally ? at : a.Position) <= zone + a.Corpulence));
-                total += CombatMath.Threat(enemy) / sharedBy;
+                parts.Add(new KeyValuePair<UnitEntityData, float>(enemy, CombatMath.Threat(enemy) / sharedBy));
             }
-            return total;
+            return parts;
         }
 
         /// <summary>★ v0.3.13: what leaving melee to reach <c>destination</c> would cost (see <see cref="DisengageRisk"/>).
@@ -846,7 +856,9 @@ namespace CompanionAI_Pathfinder.Tactics
             float danger = IncomingDamage(ctx, unit, unit.Position);
             float stayDrop = RiskMath.RoundDropChance(hp, danger * 1.25f);
             float afterDrop = RiskMath.RoundDropChance(Math.Max(1f, hp - damage), danger);
-            float act = best?.Value ?? 0f;
+            // ★ v0.3.18 (review): the whole turn after standing (a quick option and the main one), not just the option
+            // chosen first: a swift buff worth 2.5 stood in for a standard attack worth 15.
+            float act = Math.Max(best?.Value ?? 0f, ctx.TurnValue);
             float stand = -dropNow * worth + (1f - dropNow) * (act - afterDrop * worth);
             float stay = -stayDrop * worth;
             if (stand >= stay) return true;
@@ -1060,9 +1072,11 @@ namespace CompanionAI_Pathfinder.Tactics
             string directArea = plan.Risk.Area;
             try
             {
-                float best = float.MaxValue;
+                // ★ v0.3.18 (review): a spot around the area must be cheaper than walking straight through it (a mild
+                // area against several attacks of opportunity on the way around).
+                float best = plan.Risk.Cost + 0.05f * Vector3.Distance(unit.Position, direct);
                 float body = unit.Corpulence;
-                int far = 0, taken = 0, inArea = 0, unwalkable = 0, noCloser = 0;
+                int far = 0, taken = 0, inArea = 0, unwalkable = 0, noCloser = 0, dearer = 0;
                 var others = ctx.Allies.Concat(ctx.Enemies).Where(u => u != unit && u != target).ToList();
                 var rings = new List<float> { Math.Max(0.6f, range * 0.85f), Math.Max(0.6f, range * 0.6f) };
                 if (orNearby) rings.AddRange(new[] { range + 1.5f, range + 3f });
@@ -1088,7 +1102,7 @@ namespace CompanionAI_Pathfinder.Tactics
                         if (risk?.Area != null) { inArea++; continue; }
                         // Cheapest by risk; a shorter walk breaks ties.
                         float cost = (risk?.Cost ?? 0f) + 0.05f * walk;
-                        if (cost >= best) continue;
+                        if (cost >= best) { dearer++; continue; }
                         best = cost;
                         plan = new Approach
                         {
@@ -1100,6 +1114,7 @@ namespace CompanionAI_Pathfinder.Tactics
                 }
                 if (plan.Around == null)
                     plan.NoSpot = $"{inArea} in or through an area, {far} beyond this turn's move, {taken} taken, {unwalkable} not walkable" +
+                                  (dearer > 0 ? $", {dearer} dearer than through it" : "") +
                                   (noCloser > 0 ? $", {noCloser} ring(s) no nearer than now" : "");
             }
             catch (Exception ex)
@@ -1121,6 +1136,17 @@ namespace CompanionAI_Pathfinder.Tactics
         private static bool UsesRangedWeapon(UnitEntityData unit)
         {
             try { return unit.Body?.PrimaryHand?.MaybeWeapon?.Blueprint?.IsRanged ?? false; } catch { return false; }
+        }
+
+        /// <summary>★ v0.3.18 (review): a creature <paramref name="summoner"/> summoned is still in the fight.</summary>
+        private static bool HasLivingSummon(TacticalContext ctx, UnitEntityData summoner)
+        {
+            try
+            {
+                return ctx.Allies.Any(a => a != summoner &&
+                                           a.Get<Kingmaker.UnitLogic.Parts.UnitPartSummonedMonster>()?.Summoner == summoner);
+            }
+            catch { return true; }
         }
 
         private static bool IsSummon(UnitEntityData unit)
@@ -1246,6 +1272,10 @@ namespace CompanionAI_Pathfinder.Tactics
                         // After a 5-foot step the unit shoots from about 1.5 m nearer its target; priced where it stands.
                         var provoke = shotProvokes ? AttackRollProvokeRisk(ctx, unit.Position, full.Attacks) : null;
                         if (provoke != null) fullValue = fullValue * (1f - provoke.StopChance) - provoke.Cost;
+                        // ★ v0.3.18 (review): the 5-foot step is a move like any other - into Grease or Entangle it costs
+                        // what MoveRisk says (no attacks of opportunity: the step provokes none).
+                        var stepRisk = fiveFootReach ? MoveRisk(ctx, ApproachPoint(unit, enemy, reach)) : null;
+                        if (stepRisk != null) fullValue = fullValue * (1f - stepRisk.StopChance) - stepRisk.Cost;
                         list.Add(new Candidate
                         {
                             Kind = CandidateKind.WeaponAttack,
@@ -1254,9 +1284,11 @@ namespace CompanionAI_Pathfinder.Tactics
                             Target = enemy,
                             FullAttack = true,
                             Value = fullValue,
-                            ModeFactor = weight * (fiveFootReach ? 0.95f : 1f) * WakeFactor(enemy, full.ExpectedDamage) * (1f - (provoke?.StopChance ?? 0f)),
-                            Label = $"FullAttack({full.Attacks})->{enemy.CharacterName}{(fiveFootReach ? "+5ft" : "")}{ProvokeTag(provoke)}",
-                            Key = $"full:{enemy.UniqueId}"
+                            ModeFactor = weight * (fiveFootReach ? 0.95f : 1f) * WakeFactor(enemy, full.ExpectedDamage) * (1f - (provoke?.StopChance ?? 0f)) *
+                                         (1f - (stepRisk?.StopChance ?? 0f)),
+                            Label = $"FullAttack({full.Attacks})->{enemy.CharacterName}{(fiveFootReach ? "+5ft" : "")}{ProvokeTag(provoke)}{stepRisk?.Tag}",
+                            Key = $"full:{enemy.UniqueId}",
+                            CheckPath = fiveFootReach && stepRisk?.Area == null
                         });
                     }
                 }
@@ -1732,7 +1764,10 @@ namespace CompanionAI_Pathfinder.Tactics
             cast = roll = null;
             float loss = 0f;
             // Potions and wands do not provoke (AbilityData.ProvokeAttackOfOpportunity); a potion is drunk, never cast.
-            if (slot == ActionSlot.Standard && ability.ProvokeAttackOfOpportunity &&
+            // ★ v0.3.18 (review): the check is made for a standard-action command (UnitUseAbility.OnTick), and a
+            // full-round cast is one too (AbilityData.RequireFullRoundAction needs RuntimeActionType Standard: a
+            // spontaneous caster's metamagic, Summon Monster): only standard-slot casts were priced.
+            if (ability.RuntimeActionType == UnitCommand.CommandType.Standard && ability.ProvokeAttackOfOpportunity &&
                 ability.SourceItemUsableBlueprint?.Type != UsableItemType.Potion)
             {
                 cast = CastProvokeRisk(ctx, ability, at);
@@ -1801,8 +1836,9 @@ namespace CompanionAI_Pathfinder.Tactics
                 if (!charge.CanTarget(new TargetWrapper(enemy))) continue;
                 var single = CombatMath.EstimateWeaponAttack(ctx.Unit, enemy, full: false);
                 if (single == null || InRangeNow(ctx.Unit, enemy.Position, single.Reach, true)) continue;
-                // Only worth it when a normal move cannot get us there this turn.
-                if (ctx.Distance(enemy) - single.Reach <= ctx.MoveRange * 0.95f) continue;
+                // Only worth it when a normal move cannot get us there this turn - unless the charge is a full attack
+                // (Pounce): then it beats Move+Attack at any range the charge allows (charge.CanTarget checks that).
+                if (!pounce && ctx.Distance(enemy) - single.Reach <= ctx.MoveRange * 0.95f) continue;
 
                 // ★ v0.3.18 (AA-4): with Pounce the charge ends in a full attack (UnitAttack: a charge is a full attack
                 // when the unit has Pounce and is not staggered).
@@ -1867,15 +1903,33 @@ namespace CompanionAI_Pathfinder.Tactics
                 var chainType = profile.ChainTargets;
                 bool selective = false;
                 try { selective = ability.HasMetamagic(Metamagic.Selective); } catch { }
-                IEnumerable<UnitEntityData> pool;
-                if (chainType == Kingmaker.UnitLogic.Abilities.Components.TargetType.Ally) pool = ctx.Allies;
-                else if (chainType == Kingmaker.UnitLogic.Abilities.Components.TargetType.Enemy || selective) pool = ctx.Enemies;
-                else pool = ctx.Enemies.Concat(ctx.Allies);
-                foreach (var next in pool.Where(u => u != target && u != unit && Vector3.Distance(u.Position, target.Position) <= radius)
-                                         .OrderBy(u => Vector3.Distance(u.Position, target.Position)).Take(Math.Max(0, more)))
+                // ★ v0.3.18 (review): from every unit the game would consider (AbilityDeliverChain.CheckTarget: any unit
+                // not dead, of the chain's side) - unconscious enemies and downed party members take jumps too, and the
+                // caster under "Any". An unconscious enemy's jump is worth nothing; a downed ally's is friendly fire.
+                bool Side(UnitEntityData u)
                 {
-                    if (unit.IsEnemy(next)) { if (!affectedEnemies.Contains(next)) affectedEnemies.Add(next); }
-                    else if (!affectedAllies.Contains(next)) { affectedAllies.Add(next); chainCatchesAllies = true; }
+                    bool enemy = unit.IsEnemy(u);
+                    if (chainType == Kingmaker.UnitLogic.Abilities.Components.TargetType.Enemy) return enemy;
+                    if (chainType == Kingmaker.UnitLogic.Abilities.Components.TargetType.Ally) return !enemy;
+                    return enemy || !selective;
+                }
+                var pool = new List<UnitEntityData>();
+                try
+                {
+                    foreach (var u in Game.Instance.State.Units)
+                        if (u != null && u != target && u.IsInGame && !u.Descriptor.State.IsDead && Side(u) &&
+                            Vector3.Distance(u.Position, target.Position) <= radius)
+                            pool.Add(u);
+                }
+                catch (Exception ex) { Main.Verbose($"[Tactics] chain targets: {ex.Message}"); }
+                foreach (var next in pool.OrderBy(u => Vector3.Distance(u.Position, target.Position)).Take(Math.Max(0, more)))
+                {
+                    if (unit.IsEnemy(next)) { if (ctx.Enemies.Contains(next) && !affectedEnemies.Contains(next)) affectedEnemies.Add(next); }
+                    else if ((ctx.Allies.Contains(next) || ctx.DownedAllies.Contains(next)) && !affectedAllies.Contains(next))
+                    {
+                        affectedAllies.Add(next);
+                        chainCatchesAllies = true;
+                    }
                 }
             }
 
@@ -1937,10 +1991,22 @@ namespace CompanionAI_Pathfinder.Tactics
                 // Friendly fire: hurting an ally costs twice what the same damage on an enemy is worth.
                 // ★ v0.3.7: Selective metamagic spares allies. ★ v0.3.14: only where the game's rule says so (not in
                 // lasting areas with Tabletop Tweaks): AbilityProfile.SelectiveSparesAllies.
-                if (affectedAllies.Count > 0 && (profile.IsAoE || chainCatchesAllies) && !profile.SelectiveSparesAllies(ability))
+                if ((profile.IsAoE || (chainCatchesAllies && affectedAllies.Count > 0)) && !profile.SelectiveSparesAllies(ability))
                 {
-                    float dmg = CombatMath.EstimateAbilityDamage(ability, profile, affectedAllies[0]);
-                    float allyCost = affectedAllies.Sum(a => Math.Min(dmg, a.HPLeft)) * 2f;
+                    // ★ v0.3.18 (review): each ally's own damage (its branch, energy immunity and resistance), not the
+                    // first ally's for all: a fire-immune first ally let a Fireball through the friendly-fire veto.
+                    // ★ v0.3.18 (review): a downed ally the damage reaches can be killed - its whole worth; the area's
+                    // downed allies count too (they were not in the list of allies around the target).
+                    var hurt = profile.IsAoE && profile.AoETargets != Kingmaker.UnitLogic.Abilities.Components.TargetType.Enemy
+                        ? affectedAllies.Concat(UnitsAround(ctx.DownedAllies, target.Position, profile.AoERadius)
+                                                .Where(u => profile.AreaReaches(ability, u))).Distinct().ToList()
+                        : affectedAllies;
+                    float allyCost = hurt.Sum(a =>
+                    {
+                        float dmg = CombatMath.EstimateAbilityDamage(ability, profile, a);
+                        if (dmg <= 0f) return 0f;
+                        return a.HPLeft <= 0 ? AllyWorth(ctx, a) : Math.Min(dmg, a.HPLeft) * 2f;
+                    });
                     if (ctx.Settings.AvoidFriendlyFire && allyCost > 0f) { why = "friendly fire"; return 0f; }
                     dmgValue -= allyCost;
                 }
@@ -2100,6 +2166,13 @@ namespace CompanionAI_Pathfinder.Tactics
                     if (profile.Control != CCType.None && AbilityClassifier.HasCCImmunity(enemy, profile.Control)) continue;
                     // Spell resistance and spell immunity: in the effect chance below (0 when immune).
                     float p = CombatMath.EffectChance(unit, enemy, ability, profile, damage: false);
+                    // ★ v0.3.18 (review): Demoralize's buff needs its Intimidate check (only that buff: was applied to every
+                    // effect of the ability through the effect chance).
+                    if (profile.Intimidation != null && buffs.Contains(profile.Intimidation.Buff))
+                    {
+                        CombatMath.IntimidateOdds(unit, enemy, profile.Intimidation, out float intimidated, out _);
+                        p *= intimidated;
+                    }
                     // ★ v0.3.15: the duration of the branch that applies to this enemy, when the profile can tell.
                     float rounds = effectRounds;
                     float own = profile.EffectRoundsOn(ability, enemy);
@@ -2107,7 +2180,9 @@ namespace CompanionAI_Pathfinder.Tactics
                     float enemyValue = p * CombatMath.Threat(enemy) * strength * rounds;
                     // ★ v0.3.9: an enemy that already cannot act (asleep, paralysed, stunned) gains little from more
                     // control: Orvath stunned (Grasp Heart) the Mite Scout he had just put to sleep.
-                    if (CombatMath.IsDisabled(enemy)) enemyValue *= 0.1f;
+                    // ★ v0.3.18 (review): x0.4 on top of Threat's own x0.25 for a disabled enemy - 0.1 of its worth, as
+                    // meant; the two discounts together had made it 0.025.
+                    if (CombatMath.IsDisabled(enemy)) enemyValue *= 0.4f;
                     // A one-round mark only pays off when someone else in the party is fighting that enemy now.
                     if (oneShotMark && !(enemy.CombatState?.EngagedUnits?.Any(u => u != unit && !unit.IsEnemy(u)) ?? false))
                         enemyValue *= 0.5f;
@@ -2135,9 +2210,13 @@ namespace CompanionAI_Pathfinder.Tactics
                         float strength = ManeuverStrength(enemy, ability, maneuver.Type, out bool lasting);
                         if (strength <= 0f) continue;
                         CombatMath.ManeuverOdds(unit, enemy, ability, maneuver, out float chance, out float rounds);
+                        // ★ v0.3.18 (review): the maneuver comes after the spell's resistance check and its attack roll
+                        // (Hydraulic Push; an infusion's blast must hit first).
+                        chance *= CombatMath.SpellResistancePass(unit, enemy, ability);
+                        if (profile.NeedsAttackRoll) chance *= CombatMath.SpellAttackHitChance(unit, enemy, ability);
                         float part = chance * CombatMath.Threat(enemy) * strength *
                                      (lasting ? Math.Min(Math.Max(1f, rounds), Math.Min(ctx.ExpectedRounds, 3f)) : 1f);
-                        if (CombatMath.IsDisabled(enemy)) part *= 0.1f;
+                        if (CombatMath.IsDisabled(enemy)) part *= 0.4f;   // with Threat's x0.25: 0.1, as for control
                         maneuverValue += part;
                         if (enemy == target && part > 0f) ctx.AimCounted = true;
                     }
@@ -2230,9 +2309,12 @@ namespace CompanionAI_Pathfinder.Tactics
             if (value <= 0f && !verifiable &&
                 (profile.Enchants || profile.Summons || profile.Dispels || profile.RemovesBuffs || !profile.HasDetectableEffect))
             {
-                // ★ v0.3.18: a summon is once per fight whatever it was aimed at (a point summon has no target unit).
-                bool usedOnTarget = CombatMemory.LastCastRound(unit, ability, target).HasValue ||
-                                    (profile.Summons && CombatMemory.TimesUsed(unit, ability) > 0);
+                // ★ v0.3.18: a summon is once per fight whatever it was aimed at (a point summon has no target unit) -
+                // ★ (review) while a creature the caster summoned is still fighting; once they are all gone it may summon
+                // again.
+                bool usedOnTarget = profile.Summons
+                    ? CombatMemory.TimesUsed(unit, ability) > 0 && HasLivingSummon(ctx, unit)
+                    : CombatMemory.LastCastRound(unit, ability, target).HasValue;
                 if (!usedOnTarget)
                 {
                     // ★ v0.3.18 (AA-1): the order is summon, then consumables (never a fallback), then dispel and removal
@@ -2312,7 +2394,8 @@ namespace CompanionAI_Pathfinder.Tactics
             var bestMain = list.Where(c => c.Slot != ActionSlot.Free && c.Slot != ActionSlot.Swift && !c.NeedsMove && Affordable(ctx, c))
                                .OrderByDescending(c => c.Value).FirstOrDefault();
             // ★ v0.3.18: or a ray, whose attack roll provokes (CastRiskCost holds what provoking costs it).
-            bool castsInMelee = bestMain != null && bestMain.Kind == CandidateKind.Ability && bestMain.Slot == ActionSlot.Standard &&
+            bool castsInMelee = bestMain != null && bestMain.Kind == CandidateKind.Ability &&
+                                bestMain.Ability.RuntimeActionType == UnitCommand.CommandType.Standard &&
                                 (bestMain.Ability.ProvokeAttackOfOpportunity || bestMain.CastRiskCost > 0f) &&
                                 !(bestMain.Target != null && ctx.Engagers.Contains(bestMain.Target));
 
@@ -2422,18 +2505,22 @@ namespace CompanionAI_Pathfinder.Tactics
                     var point = FindRetreatPoint(ctx, ctx.HasMove ? ctx.MoveRange : unit.CurrentSpeedMps * 3f);
                     if (point.HasValue)
                     {
-                        float aoo = ctx.Engagers.Sum(CombatMath.Threat) * 0.5f;
-                        float dangerThere = IncomingDamage(ctx, unit, point.Value) + aoo;
-                        float pHere = Mathf.Exp(-hp / dangerHere);
-                        float pThere = dangerThere > 0f ? Mathf.Exp(-hp / dangerThere) : 0f;
-                        float value = (pHere - pThere) * AllyWorth(ctx, unit);
+                        // ★ v0.3.18 (review): the walk is priced like every other move (MoveRisk: the game's own
+                        // disengage checks, Mobility, the attacks' drop chance, areas on the way). A flat half of the
+                        // engagers' Threat was added to the danger there, outside the danger scale: once the fight's
+                        // calibration lowered the scale, withdrawing from a single enemy was never worth it.
+                        var risk = MoveRisk(ctx, point.Value);
+                        float pHere = RiskMath.RoundDropChance(hp, dangerHere);
+                        float pThere = RiskMath.RoundDropChance(hp, IncomingDamage(ctx, unit, point.Value));
+                        float value = (pHere - pThere) * AllyWorth(ctx, unit) * (1f - (risk?.StopChance ?? 0f)) - (risk?.Cost ?? 0f);
                         if (value >= MinMainValue)
                         {
                             list.Add(new Candidate
                             {
                                 Kind = CandidateKind.Move, Slot = ActionSlot.Move, Point = point, ApproachRadius = 0.3f,
                                 Value = value,
-                                Label = "Withdraw (low HP)", Key = "move:withdraw"
+                                Label = "Withdraw (low HP)" + (risk?.Tag ?? ""), Key = "move:withdraw",
+                                Risk = risk, RiskAt = point, PreRiskValue = (pHere - pThere) * AllyWorth(ctx, unit)
                             });
                         }
                     }
@@ -2550,7 +2637,12 @@ namespace CompanionAI_Pathfinder.Tactics
             }
 
             // inside.Danger already counts the chance the area affects this unit (its save, immunities, time left).
-            float value = inside.Danger * 0.5f * AllyWorth(ctx, unit);
+            // ★ v0.3.18 (review): on the scale MoveRisk charges for ending a move inside the same area - its danger per
+            // round, doubled for lying or held there among enemies - for the one round until this choice comes back.
+            // It was danger x half the unit's worth for up to three rounds (a fight's worth, not a round's), off the
+            // scale entering uses.
+            float perRound = AllyWorth(ctx, unit) / ValueModel.Horizon(ctx.ExpectedRounds, 3f);
+            float value = inside.Danger * perRound * (inside.RoundsLeft >= 1f ? 2f : 1f);
             string label = $"Leave {inside.Name ?? "area"}";
             var risk = MoveRisk(ctx, best.Value);
             if (risk != null)
@@ -2695,7 +2787,6 @@ namespace CompanionAI_Pathfinder.Tactics
                     return ExecuteToggle(unit, c, out command, out failure);
                 case CandidateKind.WeaponAttack:
                 {
-                    ApplyModes(unit, c);   // ★ v0.3.18 (AA-3)
                     var attack = new UnitAttack(c.Target);
                     // The game would otherwise take full/single from the UI smart-cursor mode (TurnController.GetEnabledFullAttack).
                     // ★ v0.3.14: turn-based only. In real time the game makes a full attack whenever movement allows
@@ -2752,6 +2843,10 @@ namespace CompanionAI_Pathfinder.Tactics
             }
 
             bool issued = CommandDispatcher.Run(unit, command, c.Label, out failure, avoidAreas: c.CheckPath);
+            // ★ v0.3.18 (AA-3, review): the attack's modes once the dispatcher has taken the attack - before, a refused
+            // attack left them switched (and locked for the round) for whatever option came next. The attack rolls on
+            // later ticks; Fighting Defensively starts on the attack itself (RuleAttackWithWeapon).
+            if (issued && c.Kind == CandidateKind.WeaponAttack) ApplyModes(unit, c);
             if (issued && c.Kind == CandidateKind.Ability)
             {
                 CombatMemory.RecordCast(unit, c.Ability, c.Target);

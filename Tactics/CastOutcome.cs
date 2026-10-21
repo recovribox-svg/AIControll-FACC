@@ -557,7 +557,7 @@ namespace CompanionAI_Pathfinder.Tactics
 
         public void OnEventDidTrigger(RuleHealDamage evt)
         {
-            if (evt != null)
+            if (evt != null && !evt.IsFake)
             {
                 Mark(evt.Initiator);
                 MarkReached(evt.Initiator, evt.Target, evt.Reason?.Context);
@@ -585,7 +585,10 @@ namespace CompanionAI_Pathfinder.Tactics
         {
             if (evt != null)
             {
-                Mark(evt.Initiator);
+                // ★ v0.3.18 (review): only a check that decided something is evidence - resisted, immune, or a real roll
+                // against spell resistance. The game runs this rule for every unit target (AbilityExecutionProcess), so
+                // every ability aimed at another unit counted as having done something and the safety net never judged it.
+                if (evt.IsSpellResisted || evt.TargetIsImmune || evt.HasResistanceRoll) Mark(evt.Initiator);
                 // ★ v0.3.17 (test5): the game checks spell resistance for every target of the spell before anything else
                 // (AbilityExecutionProcess.DoApplyEffect), also targets without spell resistance and ones the effect
                 // then skips (Sleep's Hit Dice limit). Only a resisted spell is an outcome on the target; Sleep on the

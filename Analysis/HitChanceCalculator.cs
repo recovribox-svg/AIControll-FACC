@@ -481,7 +481,12 @@ namespace CompanionAI_Pathfinder.Analysis
                 }
 
                 var srPart = target.Get<Kingmaker.UnitLogic.Parts.UnitPartSpellResistance>();
-                if (srPart?.IsImmune(ability.Blueprint, caster) == true)
+                // ★ v0.3.18 (review): with the cast's context, as RuleSpellResistanceCheck asks: the blueprint overloads
+                // leave out SR bonuses (AddBonusToResistance), SR penalties, Piercing metamagic and descriptors the cast
+                // carries.
+                var srContext = srPart != null ? CompanionAI_Pathfinder.Tactics.CombatMath.CreateContext(ability, new Kingmaker.Utility.TargetWrapper(target)) : null;
+                bool immune = srPart != null && (srContext != null ? srPart.IsImmune(srContext) : srPart.IsImmune(ability.Blueprint, caster));
+                if (immune)
                 {
                     result.IsImmune = true;
                     result.PenetrationChance = 0f;
@@ -495,7 +500,7 @@ namespace CompanionAI_Pathfinder.Analysis
                     return result;
                 }
 
-                result.TargetSR = srPart?.GetValue(ability.Blueprint, caster) ?? 0;
+                result.TargetSR = srPart == null ? 0 : srContext != null ? srPart.GetValue(srContext) : srPart.GetValue(ability.Blueprint, caster);
                 if (result.TargetSR <= 0)
                 {
                     result.PenetrationChance = 1.0f;

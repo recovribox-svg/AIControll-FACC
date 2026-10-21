@@ -3,6 +3,7 @@
 // Lesson from CompanionAI v3 (LESSONS_LEARNED #20): turn facts live in state that re-planning does not throw away.
 // Buff detection (target already has the buff) is the primary anti-spam rule; this memory is the backstop for effects
 // the detector cannot see (enchantments, utility abilities, buffs applied through custom components).
+using System;
 using System.Collections.Generic;
 using Kingmaker;
 using Kingmaker.EntitySystem.Entities;
@@ -69,12 +70,67 @@ namespace CompanionAI_Pathfinder.Tactics
         public static bool IsRealTime => !TurnBased.Controllers.CombatController.IsInTurnBasedCombat();
 
         /// <summary>Called on every decision; a round number going backwards means a new combat started.</summary>
+        /// <remarks>★ v0.3.18 (review): not when the fight switched between turn-based and real time - the two count
+        /// rounds differently (the game's round number, 6-second windows), so the count went back and the toggle locks,
+        /// casts and uses of the fight were wiped mid-fight. New fights are also reset by the party-combat events.</remarks>
         public static void Sync()
         {
             int round = Round;
+            bool turnBased = !IsRealTime;
+            if (_lastRound != int.MaxValue && turnBased != _lastTurnBased)
+            {
+                // Into real time: its 6-second rounds go on from the turn-based round reached.
+                if (!turnBased)
+                {
+                    double now = Game.Instance?.TimeController?.GameTime.TotalSeconds ?? 0d;
+                    _realTimeStart = now - Math.Max(0, _lastRound) * 6d;
+                    round = Round;
+                }
+                _lastTurnBased = turnBased;
+                _lastRound = round;
+                return;
+            }
+            _lastTurnBased = turnBased;
             if (round < _lastRound)
                 ResetCombat();
             _lastRound = round;
+        }
+
+        private static bool _lastTurnBased;
+
+        /// <summary>
+        /// ★ v0.3.18 (review): when the fight ends, the toggles the AI switched on that the game keeps on out of combat
+        /// (DeactivateIfCombatEnded false - Mobility halves speed until switched off) go off again; the player had them
+        /// off. Called before the combat memory is reset (after it, they would no longer be known as the AI's).
+        /// </summary>
+        public static void SwitchOffAiToggles()
+        {
+            foreach (string key in new List<string>(ToggledOnByAi))
+            {
+                try
+                {
+                    int bar = key.IndexOf('|');
+                    if (bar < 0) continue;
+                    string unitId = key.Substring(0, bar), guid = key.Substring(bar + 1);
+                    UnitEntityData unit = null;
+                    foreach (var u in Game.Instance.State.Units)
+                        if (u.UniqueId == unitId) { unit = u; break; }
+                    if (unit?.ActivatableAbilities == null) continue;
+                    foreach (var toggle in unit.ActivatableAbilities.Enumerable)
+                    {
+                        if (toggle?.Blueprint == null || toggle.Blueprint.AssetGuid.ToString() != guid) continue;
+                        if (toggle.IsOn && !toggle.Blueprint.DeactivateIfCombatEnded)
+                        {
+                            toggle.IsOn = false;
+                            Main.Log($"[Toggle] {unit.CharacterName}: {toggle.Name} off - the fight is over (the AI had switched it on)");
+                        }
+                    }
+                }
+                catch (System.Exception ex)
+                {
+                    Main.Verbose($"[Toggle] after combat {key}: {ex.Message}");
+                }
+            }
         }
 
         public static void ResetCombat()
