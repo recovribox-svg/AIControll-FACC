@@ -468,11 +468,13 @@ namespace CompanionAI_Pathfinder.Analysis
             {
                 var deliver = ability.GetDeliverBlueprint() ?? ability.Blueprint;
                 result.AllowsSR = deliver?.SpellResistance ?? false;
-                bool noRoll = !result.AllowsSR ||
-                              (deliver.IgnoreSpellResistanceForAlly && !caster.IsEnemy(target)) ||
-                              (bool)caster.Descriptor.State.Features.PrimalMagicEssence ||
-                              IgnoresSpellResistance(caster, ability);
-                if (noRoll)
+                // ★ v0.3.18 (C2): the game's order (RuleSpellResistanceCheck.IsSpellResisted): Primal Magic Essence and
+                // IgnoreSpellResistanceForSpells let the spell through, immunity included; otherwise an immune target
+                // (UnitPartSpellResistance: spell immunity, descriptor immunity such as an airborne creature against
+                // ground effects) resists it whether or not the spell allows spell resistance; only then the roll.
+                // The immunity check sat behind the "no spell resistance" shortcut, so a spell without SR (Grease) never
+                // saw it.
+                if ((bool)caster.Descriptor.State.Features.PrimalMagicEssence || IgnoresSpellResistance(caster, ability))
                 {
                     result.PenetrationChance = 1.0f;
                     return result;
@@ -484,6 +486,12 @@ namespace CompanionAI_Pathfinder.Analysis
                     result.IsImmune = true;
                     result.PenetrationChance = 0f;
                     if (Main.VerboseOn) Main.Verbose($"[HitChance] SR: {target.CharacterName} is IMMUNE to {ability.Name}");
+                    return result;
+                }
+
+                if (!result.AllowsSR || (deliver.IgnoreSpellResistanceForAlly && !caster.IsEnemy(target)))
+                {
+                    result.PenetrationChance = 1.0f;
                     return result;
                 }
 
@@ -505,9 +513,10 @@ namespace CompanionAI_Pathfinder.Analysis
                 }
                 result.SpellPenetration = penetration;
 
-                // Resisted when SR > penetration + d20, i.e. the spell passes on a d20 of (SR - penetration) or more.
-                int need = result.TargetSR - penetration;
-                result.PenetrationChance = Mathf.Clamp01((21f - need) / 20f);
+                // Resisted when SR > penetration + d20, i.e. the spell passes on a d20 of (SR - penetration) or more
+                // (★ v0.3.18: the rule itself is Tactics/ResistanceRule, unit-tested).
+                result.PenetrationChance = CompanionAI_Pathfinder.Tactics.ResistanceRule.PassChance(
+                    bypass: false, immune: false, allowsSR: true, allyIgnores: false, result.TargetSR, penetration);
 
                 if (Main.VerboseOn) Main.Verbose($"[HitChance] SR: {ability.Name} {caster.CharacterName} vs {target.CharacterName} - SR{result.TargetSR} vs CL{casterLevel}+{bonus}, Penetrate={result.PenetrationChance:P0}");
             }

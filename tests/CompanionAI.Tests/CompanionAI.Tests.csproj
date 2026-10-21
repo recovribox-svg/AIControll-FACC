@@ -10,6 +10,7 @@
     <Compile Include="..\..\Tactics\ActionRules.cs" Link="ActionRules.cs" />
     <Compile Include="..\..\Tactics\RiskMath.cs" Link="RiskMath.cs" />
     <Compile Include="..\..\Tactics\ValueModel.cs" Link="ValueModel.cs" />
+    <Compile Include="..\..\Tactics\ResistanceRule.cs" Link="ResistanceRule.cs" />
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.8.0" />

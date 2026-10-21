@@ -471,9 +471,31 @@ namespace CompanionAI_Pathfinder.Tactics
             }
         }
 
-        /// <summary>Chance an attack-roll spell (touch / ranged touch / weapon-delivered) hits.</summary>
+        /// <summary>
+        /// Chance an attack-roll spell (touch / ranged touch / weapon-delivered) hits.
+        /// ★ v0.3.18 (C2): by the game's rules, as weapons are: the attack bonus with the delivery's own weapon (the ray or
+        /// touch "weapon" of AbilityDeliverProjectile / AbilityDeliverTouch, the bow of an archer's blast) and its stat
+        /// replacement (kinetic blasts by Dexterity, Intelligence domains), against the AC for that attack type
+        /// (touch, ranged touch). The old estimate was base attack + Strength or Dexterity against a hand-made touch AC,
+        /// without the bonuses the game's rule adds (Weapon Focus: Ray, buffs, flanking). It is kept as the fallback.
+        /// </summary>
         public static float SpellAttackHitChance(UnitEntityData caster, UnitEntityData target, AbilityData ability)
         {
+            try
+            {
+                if (caster != null && target != null && DeliveryWeapon(caster, ability, out var weapon, out var stat))
+                {
+                    int ab;
+                    using (stat.HasValue ? ContextData<AttackBonusStatReplacement>.Request().Setup(stat.Value) : null)
+                        ab = Rulebook.Trigger(new RuleCalculateAttackBonus(caster, target, weapon, 0)).Result;
+                    int ac = Rulebook.Trigger(new RuleCalculateAC(caster, target, weapon.Blueprint.AttackType)).Result;
+                    return Mathf.Clamp(HitProbability(ab, ac), 0.05f, 0.95f);
+                }
+            }
+            catch (Exception ex)
+            {
+                Main.Verbose($"[Math] spell attack roll {ability?.Name}: {ex.Message}");
+            }
             try
             {
                 return Mathf.Clamp(HitChanceCalculator.CalculateAbilityHitChance(caster, target, ability).HitChance, 0.05f, 0.95f);
@@ -482,6 +504,116 @@ namespace CompanionAI_Pathfinder.Tactics
             {
                 return 0.6f;
             }
+        }
+
+        /// <summary>
+        /// ★ v0.3.18 (C2): the target cannot receive <paramref name="buff"/> from <paramref name="ability"/>: the game's
+        /// buff immunities (RuleCanApplyBuff) - BuffDescriptorImmunity for the ability's descriptors (unless the caster
+        /// has the feature that ignores it, or Mythic's reduce-resistances), and SpecificBuffImmunity for that buff. Read
+        /// from the components the way the game decides, without triggering the rule (one of its handlers,
+        /// BuffSubstitutionOnApply, applies other buffs). Spell immunity is the spell-resistance check
+        /// (HitChanceCalculator.CalculateSpellResistance), condition immunity AbilityClassifier.HasCCImmunity.
+        /// </summary>
+        public static bool BuffImmune(UnitEntityData target, Kingmaker.UnitLogic.Buffs.Blueprints.BlueprintBuff buff, AbilityData ability)
+        {
+            if (target == null || buff == null || ability == null) return false;
+            try
+            {
+                var caster = ability.Caster?.Unit;
+                if (caster != null && (bool)caster.State.Features.MythicReduceResistances) return false;
+                var descriptor = ability.SpellDescriptor;
+                foreach (var component in BuffImmunities(target))
+                {
+                    if (component is Kingmaker.UnitLogic.FactLogic.BuffDescriptorImmunity byDescriptor)
+                    {
+                        if (!byDescriptor.Descriptor.HasAnyFlag(descriptor)) continue;
+                        if (byDescriptor.IgnoreFeature != null && caster != null && caster.Descriptor.HasFact(byDescriptor.IgnoreFeature)) continue;
+                        if (byDescriptor.CheckFact && (caster == null || !caster.Descriptor.HasFact(byDescriptor.FactToCheck))) continue;
+                        return true;
+                    }
+                    if (component is Kingmaker.UnitLogic.FactLogic.SpecificBuffImmunity specific && specific.Buff == buff)
+                    {
+                        bool alignment = caster == null ? specific.Alignment == Kingmaker.Enums.AlignmentComponent.None
+                                                        : Kingmaker.Enums.AlignmentExtension.HasComponent(caster.Descriptor.Alignment.ValueRaw, specific.Alignment);
+                        bool casterFact = !(HarmonyLib.Traverse.Create(specific).Field("m_CheckCasterFact").GetValue<bool>()) ||
+                                          (caster != null && caster.Descriptor.HasFact(
+                                              HarmonyLib.Traverse.Create(specific).Field("m_FactToCheck").GetValue<Kingmaker.Blueprints.BlueprintUnitFactReference>()?.Get()));
+                        if (alignment && casterFact) return true;
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                Main.Verbose($"[Math] buff immunity {buff.name} on {target.CharacterName}: {ex.Message}");
+            }
+            return false;
+        }
+
+        private static readonly Dictionary<string, KeyValuePair<int, List<Kingmaker.Blueprints.BlueprintComponent>>> ImmunityComponents =
+            new Dictionary<string, KeyValuePair<int, List<Kingmaker.Blueprints.BlueprintComponent>>>();
+
+        /// <summary>The unit's active buff-immunity components, gathered once per frame (a decision asks for every ability and buff).</summary>
+        private static List<Kingmaker.Blueprints.BlueprintComponent> BuffImmunities(UnitEntityData unit)
+        {
+            int frame = Time.frameCount;
+            if (ImmunityComponents.TryGetValue(unit.UniqueId, out var cached) && cached.Key == frame) return cached.Value;
+            var list = new List<Kingmaker.Blueprints.BlueprintComponent>();
+            foreach (var fact in unit.Facts.List)
+            {
+                var components = fact?.Blueprint?.ComponentsArray;
+                if (components == null || !fact.Active) continue;
+                foreach (var component in components)
+                    if (component is Kingmaker.UnitLogic.FactLogic.BuffDescriptorImmunity ||
+                        component is Kingmaker.UnitLogic.FactLogic.SpecificBuffImmunity)
+                        list.Add(component);
+            }
+            if (ImmunityComponents.Count > 256) ImmunityComponents.Clear();
+            ImmunityComponents[unit.UniqueId] = new KeyValuePair<int, List<Kingmaker.Blueprints.BlueprintComponent>>(frame, list);
+            return list;
+        }
+
+        /// <summary>One item of each delivery weapon blueprint, made the way the game makes it for each cast.</summary>
+        private static readonly Dictionary<Kingmaker.Blueprints.Items.Weapons.BlueprintItemWeapon, ItemEntityWeapon> DeliveryWeapons =
+            new Dictionary<Kingmaker.Blueprints.Items.Weapons.BlueprintItemWeapon, ItemEntityWeapon>();
+
+        /// <summary>
+        /// ★ v0.3.18: the weapon the game makes the spell's attack roll with (AbilityDeliverProjectile.Deliver /
+        /// AbilityDeliverTouch.Deliver), and the attack stat it uses instead of the weapon's own when it says so.
+        /// </summary>
+        private static bool DeliveryWeapon(UnitEntityData caster, AbilityData ability, out ItemEntityWeapon weapon, out StatType? stat)
+        {
+            weapon = null;
+            stat = null;
+            var bp = ability?.GetDeliverBlueprint() ?? ability?.Blueprint;
+            if (bp == null) return false;
+            var projectile = Kingmaker.Blueprints.BlueprintExtenstions.GetComponent<Kingmaker.UnitLogic.Abilities.Components.AbilityDeliverProjectile>(bp);
+            if (projectile != null && projectile.NeedAttackRoll && !projectile.IsHandOfTheApprentice &&
+                projectile.Type != Kingmaker.UnitLogic.Abilities.Components.AbilityProjectileType.Line &&
+                projectile.Type != Kingmaker.UnitLogic.Abilities.Components.AbilityProjectileType.Cone)
+            {
+                if (Kingmaker.UnitLogic.Class.Kineticist.AbilityKineticist.IsArcherBlast(ability) &&
+                    projectile.Type == Kingmaker.UnitLogic.Abilities.Components.AbilityProjectileType.Simple)
+                    weapon = caster.Body?.PrimaryHand?.MaybeWeapon;
+                else weapon = Made(projectile.Weapon);
+                if (projectile.ReplaceAttackRollBonusStat)
+                    stat = (bool)caster.State.Features.DomainsByIntelligenceFeature ? StatType.Intelligence : projectile.AttackRollBonusStat;
+                return weapon != null;
+            }
+            var touch = Kingmaker.Blueprints.BlueprintExtenstions.GetComponent<Kingmaker.UnitLogic.Abilities.Components.AbilityDeliverTouch>(bp);
+            if (touch?.TouchWeapon != null)
+            {
+                weapon = Made(touch.TouchWeapon);
+                return weapon != null;
+            }
+            return false;
+        }
+
+        private static ItemEntityWeapon Made(Kingmaker.Blueprints.Items.Weapons.BlueprintItemWeapon blueprint)
+        {
+            if (blueprint == null) return null;
+            if (!DeliveryWeapons.TryGetValue(blueprint, out var item))
+                DeliveryWeapons[blueprint] = item = blueprint.CreateEntity<ItemEntityWeapon>();
+            return item;
         }
 
         /// <summary>Use Magic Device success chance for items that need it (1 otherwise).</summary>

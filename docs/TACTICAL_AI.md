@@ -725,3 +725,72 @@ The result is fewer top-ups of mildly hurt allies, and the same or more for badl
 - Grease and Entangle were aimed at the ground (no immune aim in these logs).
 - Advances went around Grease and Entangle, and paths that walked into Grease were refused and the next option taken.
 
+## 27. v0.3.18 (test4): phase 3 of the tuning plan, consolidation
+
+The plan is in `docs/AI_TUNING_AUDIT.md` §4 (C2, B9, B6, N5, D2) and §8 (phase 3). N5 was done in phase 2 (§26). D2, the
+legacy real-time engine, stays until 0.4.0 (your decision).
+
+### One resistance and hit-chance path (C2)
+
+- **Spell immunity for every spell.** `HitChanceCalculator.CalculateSpellResistance` returned "passes" for any spell
+  that does not allow spell resistance before it looked at immunity. So a spell without SR (Grease, Entangle, Web)
+  never saw a target's spell immunity or descriptor immunity, such as an airborne creature against ground effects.
+  It now follows the game's order (`RuleSpellResistanceCheck.IsSpellResisted`):
+  1. Primal Magic Essence and `IgnoreSpellResistanceForSpells` let the spell through, immunity included.
+  2. Otherwise an immune target (`UnitPartSpellResistance.IsImmune`) stops it, whether or not the spell allows SR.
+  3. Only then comes the SR roll, with spell penetration.
+
+  The order is a game-free function, `Tactics/ResistanceRule.PassChance`, unit-tested in
+  `tests/CompanionAI.Tests/ResistanceRuleTests.cs`: immunity without SR, bypass over immunity, no roll without SR, and
+  penetration (50 tests in all).
+- **No second analyser in the engine.** `CombatRulesAnalyzer.AnalyzeResistance` hard-filtered damage and control
+  options with its own rules: no spell penetration, immunity only for spells with SR, energy immunity worked out a third
+  time. The engine now uses one path:
+  - spell resistance and immunity in `CombatMath.EffectChance` (0 when immune);
+  - energy immunity, resistance and observed damage in the damage estimate (`AfterTargetReduction`, `DamageObserver`);
+  - condition immunity through `AbilityClassifier.HasCCImmunity`;
+  - buff immunity through the new `CombatMath.BuffImmune`.
+
+  The analyser stays for the legacy real-time engine.
+- **Buff immunity (`CombatMath.BuffImmune`).** The game's `RuleCanApplyBuff` immunities, read from the components the
+  way the game decides:
+  - `BuffDescriptorImmunity` for the ability's descriptors, unless the caster has the feature that ignores it, or
+    Mythic's reduce-resistances;
+  - `SpecificBuffImmunity` for that buff, with its alignment and caster-fact conditions.
+
+  The rule is not triggered, because one of its handlers (`BuffSubstitutionOnApply`) applies other buffs. A creature
+  immune to a control's buff is not counted as controlled, and an immune ally is not counted as caught. Each unit's
+  immunity components are gathered once per frame.
+- **Spell attack rolls by the game's rules.** `CombatMath.SpellAttackHitChance` now uses the same rules as weapons:
+  - the attack bonus (`RuleCalculateAttackBonus`) with the delivery's own weapon: the ray or touch weapon of
+    `AbilityDeliverProjectile` / `AbilityDeliverTouch`, or the bow of an archer's blast;
+  - the delivery's attack-stat replacement (kinetic blasts by Dexterity, Intelligence domains);
+  - the AC for that attack type (`RuleCalculateAC`).
+
+  Before, it was base attack + Strength or Dexterity against a hand-made touch AC, without Weapon Focus (Ray), buffs or
+  flanking. The old estimate is the fallback.
+- **One attack-roll test.** A line or cone projectile makes no attack roll in the game, whatever its flag says.
+  `AbilityProfile.NeedsAttackRoll` and `RangedAttackRoll` follow that rule.
+
+### Real time: who cannot act (B9)
+
+The decompiled game settles what the plan left open:
+- **Dazed, Stunned, prone:** these make `UnitState.IsAble` false, so the game starts nothing. In real time
+  `UnitProneController` stands a prone unit up by itself after 3 s, so a mod stand-up order is not needed there.
+- **Frightened:** a frightened unit that sees an enemy panics (`UnitFearController`). The game takes it out of direct
+  control and runs it away, and the mod already leaves such units alone (`ShouldControlUnit`). Frightened without panic
+  (no enemy in sight) may act, but the real-time pre-filter refused it.
+- **Cowering:** the condition blocks nothing in the game's code by itself.
+- Now the real-time pre-filter refuses a cowering unit only when the game says it cannot act, a panicked unit (as
+  before, through control), and no longer a frightened one that is not panicked. Turn-based is unchanged.
+
+### Repeated control (B6): no learning step
+
+- 932 saves were logged against party abilities in the 0.3.17–0.3.18 logs. 276 passed, against 312 expected from the
+  game's own chances.
+- Enemies pass fewer saves than predicted (Sleep 35 of 173 against 48 expected). The estimate errs on the cautious
+  side, so recasting control on a target that keeps failing its save is, if anything, undervalued.
+- No per-target save learning is added.
+- One note for later: the Fortitude save against Coup de Grace's death effect was passed 7 times in 25 against 3.5
+  expected. The sample is too small to act on.
+

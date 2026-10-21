@@ -29,7 +29,9 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
   Hit Dice conditions with shared values, per-target "reached nothing" safety net, diagnostics (`FightStats`,
   `CoverageReport`), v0.2 planner removed; 0.3.18: calibration - shared formulas in `Tactics/ValueModel` (unit-tested),
   expected rounds and enemy danger from the fight's observed damage, kill-chance bonus, continuous heal curve, ranged
-  attack rolls provoke (`Tactics/ProvokeObserver`, `ProvokeRisk`), real-time area escape through the engine)
+  attack rolls provoke (`Tactics/ProvokeObserver`, `ProvokeRisk`), real-time area escape through the engine; one
+  resistance path - spell immunity in the game's order (`Tactics/ResistanceRule`), buff immunity (`CombatMath.BuffImmune`),
+  spell attack rolls by the game's attack rule; real-time cannot-act rules from the game code)
 
 ## Reference Resources
 - **Rogue Trader CompanionAI v3.5.7**: `C:\Users\veria\Downloads\CompanionAI_v3-master - v3.5.7`
@@ -68,7 +70,8 @@ Design and value formulas: `docs/TACTICAL_AI.md`. Root-cause evidence: `docs/INV
 
 ### Key Folders
 - **Tactics/**: the live decision engine (both modes) - `TacticalEngine`, `AbilityProfile`, `AbilityDiscovery`,
-  `CombatMath`, `RiskMath`, `ValueModel` (shared value formulas, unit-tested), `CombatMemory`, `TacticalDriver` (RT),
+  `CombatMath`, `RiskMath`, `ValueModel` (shared value formulas, unit-tested), `ResistanceRule` (spell resistance order,
+  unit-tested), `CombatMemory`, `TacticalDriver` (RT),
   observers (`CastOutcome`, `DamageObserver`, `SaveObserver`, `ProvokeObserver`), per-fight numbers (`FightStats`: also
   the calibration input), `CoverageReport`, `ConsumablePolicy`, `SpellTierPolicy` / `ProgressiveGate`
 - **Core/TurnBased/**: `TurnBasedController` (TB driver); **Core/**: `ExecutionResult`; legacy-engine state

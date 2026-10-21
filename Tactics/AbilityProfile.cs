@@ -439,7 +439,12 @@ namespace CompanionAI_Pathfinder.Tactics
             }
 
             var projectile = bp.GetComponent<AbilityDeliverProjectile>();
-            if (projectile != null && projectile.NeedAttackRoll) NeedsAttackRoll = RangedAttackRoll = true;
+            // ★ v0.3.18 (C2): a line or cone projectile makes no attack roll, whatever its flag says (the game's
+            // AbilityDeliverProjectile only rolls for other shapes).
+            if (projectile != null && projectile.NeedAttackRoll &&
+                projectile.Type != Kingmaker.UnitLogic.Abilities.Components.AbilityProjectileType.Line &&
+                projectile.Type != Kingmaker.UnitLogic.Abilities.Components.AbilityProjectileType.Cone)
+                NeedsAttackRoll = RangedAttackRoll = true;
             if (bp.GetComponent<AbilityDeliverTouch>() != null) NeedsAttackRoll = true;
 
             var sticky = bp.StickyTouch;

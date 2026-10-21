@@ -1764,9 +1764,11 @@ namespace CompanionAI_Pathfinder.Tactics
             if (profile.DealsDamage && affectedEnemies.Count > 0)
             {
                 float dmgValue = 0f;
+                // ★ v0.3.18 (C2): one resistance path - spell resistance (with penetration) and spell immunity in the
+                // effect chance, energy immunity and resistance in the damage estimate. A second analyser filtered here
+                // first, with its own rules (no penetration, immunity only for spells that allow spell resistance).
                 foreach (var enemy in affectedEnemies)
                 {
-                    if (CombatRulesAnalyzer.AnalyzeResistance(unit, enemy, ability).IsCompletelyIneffective) continue;
                     float dmg = CombatMath.EstimateAbilityDamage(ability, profile, enemy);
                     float p = CombatMath.EffectChance(unit, enemy, ability, profile, damage: true);
                     float part = DamageValue(enemy, dmg * p, p) * WakeFactor(enemy, dmg * p);
@@ -1901,7 +1903,8 @@ namespace CompanionAI_Pathfinder.Tactics
                                    (profile.HarmfulToEnemies || profile.ControlStrength != ControlStrength.None) &&
                                    !profile.SelectiveSparesAllies(ability);
                 Func<UnitEntityData, bool> wouldBeCaught = a =>
-                    profile.TargetBuffs.Any(b => profile.BuffAppliesTo(b, ability, a) != EffectApplies.No && !a.Buffs.HasFact(b)) &&
+                    profile.TargetBuffs.Any(b => profile.BuffAppliesTo(b, ability, a) != EffectApplies.No && !a.Buffs.HasFact(b) &&
+                                                 !CombatMath.BuffImmune(a, b, ability)) &&
                     !(profile.Control != CCType.None && AbilityClassifier.HasCCImmunity(a, profile.Control));
                 var caughtAllies = !harmfulArea ? new List<UnitEntityData>() : affectedAllies.Where(wouldBeCaught).ToList();
                 if (caughtAllies.Count > 0)
@@ -1929,13 +1932,15 @@ namespace CompanionAI_Pathfinder.Tactics
                 }
                 foreach (var enemy in affectedEnemies)
                 {
-                    var buffs = profile.TargetBuffs.Where(b => profile.BuffAppliesTo(b, ability, enemy) != EffectApplies.No).ToList();
+                    // ★ v0.3.18 (C2): the game's buff immunities (descriptor, specific buff) too.
+                    var buffs = profile.TargetBuffs.Where(b => profile.BuffAppliesTo(b, ability, enemy) != EffectApplies.No &&
+                                                               !CombatMath.BuffImmune(enemy, b, ability)).ToList();
                     if (buffs.Count == 0) continue;
                     if (buffs.Any(b => enemy.Buffs.HasFact(b))) continue;
                     // ★ v0.3.13: already inside an active copy of this area from our side.
                     if (profile.IsAoE && profile.InOwnSideArea(unit, enemy)) continue;
                     if (profile.Control != CCType.None && AbilityClassifier.HasCCImmunity(enemy, profile.Control)) continue;
-                    if (CombatRulesAnalyzer.AnalyzeResistance(unit, enemy, ability).IsCompletelyIneffective) continue;
+                    // Spell resistance and spell immunity: in the effect chance below (0 when immune).
                     float p = CombatMath.EffectChance(unit, enemy, ability, profile, damage: false);
                     // ★ v0.3.15: the duration of the branch that applies to this enemy, when the profile can tell.
                     float rounds = effectRounds;

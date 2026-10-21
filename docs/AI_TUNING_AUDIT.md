@@ -621,12 +621,12 @@ D = dead code, N = reviewed with no change.
 - C3 stuck feedback into CombatMemory
 - P2 full memo: dropped (§12); only the provoked-attack pricing is cached per decision
 
-**Phase 3: consolidation and investigation**
-- C2 one resistance and hit-chance path
-- B9 real-time cannot-act rules (decompile first)
-- N5 observed enemy damage per round → Threat
-- D2 legacy engine (your decision)
-- B6 follow-up if the save data shows a need
+**Phase 3: consolidation and investigation** - done in 0.3.18-test4 (`docs/TACTICAL_AI.md` §27)
+- C2 one resistance and hit-chance path: done
+- B9 real-time cannot-act rules (decompile first): done
+- N5 observed enemy damage per round → Threat: done in phase 2
+- D2 legacy engine (your decision): kept until 0.4.0
+- B6 follow-up if the save data shows a need: not needed (932 saves; enemies pass fewer than predicted)
 
 Each phase is a series of test builds you play, analysed with the dashboard in §7, before a release.
 

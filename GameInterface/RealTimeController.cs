@@ -558,8 +558,14 @@ namespace CompanionAI_Pathfinder.GameInterface
             if (state.HasCondition(Kingmaker.UnitLogic.UnitCondition.CantAct)) return "CantAct";
             if (state.HasCondition(Kingmaker.UnitLogic.UnitCondition.Dazed)) return "Dazed";
             // ★ v0.3.14: not Nauseated - a nauseated unit can still walk (handled in ProcessUnit).
-            if (state.HasCondition(Kingmaker.UnitLogic.UnitCondition.Cowering)) return "Cowering";
-            if (state.HasCondition(Kingmaker.UnitLogic.UnitCondition.Frightened)) return "Frightened";
+            // ★ v0.3.18 (B9, from the game code): Dazed, Stunned and lying prone make UnitState.IsAble false, so the game
+            // starts nothing (CanAct, CanMove); in real time UnitProneController stands a prone unit up by itself after
+            // 3 s. A frightened unit that sees an enemy panics (UnitFearController): the game takes it out of direct
+            // control and runs it away, and the controller never reaches this unit (CustomBrainPatch.ShouldControlUnit).
+            // Frightened without panic (no enemy in sight) may act, and was refused here. The Cowering condition blocks
+            // nothing in the game's code by itself; only when the game says the unit cannot act.
+            if (state.HasCondition(Kingmaker.UnitLogic.UnitCondition.Cowering) && !state.CanAct) return "Cowering";
+            if (state.IsPanicked) return "Panicked";
             if (state.Prone?.Active == true) return "Prone";
             return null;  // Can act
         }
