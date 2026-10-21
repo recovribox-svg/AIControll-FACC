@@ -39,7 +39,9 @@ using CompanionAI_Pathfinder.Analysis;
 
 namespace CompanionAI_Pathfinder.Tactics
 {
-    public enum ControlStrength { None = 0, Soft = 1, Hard = 2 }
+    /// <remarks>★ v0.3.18 (test10): Minor - a small penalty, not control (Shaken, Sickened, Dazzled, Fatigued: -1 / -2 to
+    /// attacks, saves or stats).</remarks>
+    public enum ControlStrength { None = 0, Minor = 1, Soft = 2, Hard = 3 }
 
     /// <summary>Result of evaluating an effect's Conditional branch for one target.</summary>
     public enum EffectApplies { Unconditional, Yes, No, Unknown }
@@ -509,7 +511,7 @@ namespace CompanionAI_Pathfinder.Tactics
         {
             try
             {
-                return buff.Harmful || ConditionsOf(buff).Any(c => c == UnitCondition.Fatigued || ClassifyCondition(c) != ControlStrength.None);
+                return buff.Harmful || ConditionsOf(buff).Any(c => ClassifyCondition(c) != ControlStrength.None);
             }
             catch
             {
@@ -1569,7 +1571,8 @@ namespace CompanionAI_Pathfinder.Tactics
                     var s = ClassifyCondition(condition);
                     if (s > strength) strength = s;
                 }
-                return strength == ControlStrength.Hard ? 1f : strength == ControlStrength.Soft ? 0.4f : 0.25f;
+                return strength == ControlStrength.Hard ? 1f : strength == ControlStrength.Soft ? 0.4f :
+                       strength == ControlStrength.Minor ? 0.15f : 0.25f;
             }
             catch
             {
@@ -1581,7 +1584,10 @@ namespace CompanionAI_Pathfinder.Tactics
         {
             if ((cc & CCType.HardCC) != 0) return ControlStrength.Hard;
             if ((cc & (CCType.Confusion | CCType.Daze | CCType.Charm | CCType.Nauseate)) != 0) return ControlStrength.Hard;
-            if ((cc & (CCType.Fear | CCType.Blind | CCType.Slow | CCType.Entangle | CCType.MovementImpair)) != 0) return ControlStrength.Soft;
+            if ((cc & (CCType.Blind | CCType.Slow | CCType.Entangle | CCType.MovementImpair)) != 0) return ControlStrength.Soft;
+            // ★ v0.3.18 (test10): a fear descriptor alone is Shaken's (-2 to attacks and saves); real fear raises it by its
+            // condition (Frightened, Cowering: hard control).
+            if ((cc & CCType.Fear) != 0) return ControlStrength.Minor;
             return ControlStrength.None;
         }
 
@@ -1601,14 +1607,19 @@ namespace CompanionAI_Pathfinder.Tactics
                 case UnitCondition.Cowering:
                 case UnitCondition.Frightened:
                     return ControlStrength.Hard;
+                // ★ v0.3.18 (test10): -2 to attacks, saves and checks (Shaken, Sickened), -1 to attacks (Dazzled), -2 Str /
+                // Dex (Fatigued): a penalty, not control. As soft control (0.4 x the enemy's worth a round, like Entangle or
+                // Blindness) Demoralize beat attacks on adjacent enemies and was cast 52 times in one turn-based log, 62 in a
+                // real-time one; Flare beat attacks too.
                 case UnitCondition.Shaken:
                 case UnitCondition.Sickened:
+                case UnitCondition.Dazzled:
+                case UnitCondition.Fatigued:
+                    return ControlStrength.Minor;
                 case UnitCondition.Entangled:
                 case UnitCondition.Slowed:
                 case UnitCondition.Staggered:
                 case UnitCondition.Blindness:
-                // ★ v0.3.18 (AA-4): Fatigued (-2 Str / Dex, no running or charging) is a plain debuff, not control: it
-                // was "soft" control (0.4 x threat) and would have made Touch of Fatigue beat the damage cantrips.
                 case UnitCondition.Exhausted:
                 case UnitCondition.Prone:
                 case UnitCondition.CantMove:

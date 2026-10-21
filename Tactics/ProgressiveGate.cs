@@ -91,7 +91,7 @@ namespace CompanionAI_Pathfinder.Tactics
                 }
             }
             var leftAlone = outOfScope.Where(kv => !inScopeNames.Contains(kv.Key)).Select(kv => $"{kv.Key}: {kv.Value}").ToList();
-            Main.Log($"[Progressive] {unit.CharacterName} ({mode}): policy on - gated: " +
+            Main.Log($"[Progressive] {unit.CharacterName} ({mode}): policy on - on the spell-level ladder (held back only while a lower level can do the job): " +
                      $"{(inScope.Count > 0 ? string.Join(", ", inScope) : "none")}; left alone: " +
                      $"{(leftAlone.Count > 0 ? string.Join(", ", leftAlone) : "none")}");
         }

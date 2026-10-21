@@ -38,7 +38,12 @@ namespace CompanionAI_Pathfinder.GameInterface
         /// <param name="avoidAreas">★ v0.3.17: the AI priced this move as entering no harmful area: refuse it when the
         /// game's path does (turn-based, where the path is computed here). Camellia walked into Grease to touch a summon
         /// along a path that bent through it, while the move had been priced along a straight line that did not.</param>
-        public static bool Run(UnitEntityData unit, UnitCommand command, string label, out string failure, bool avoidAreas = false)
+        /// <param name="fiveFootOnly">★ v0.3.18 (test10): turn-based, the move was chosen as a 5-foot step (it provokes
+        /// nothing and keeps the full attack): refused when the real path is longer than the step allows. The step was
+        /// priced as a straight line; around an ally or a corner the path grew to 3.3 m and 6.6 m, became a normal move
+        /// (ApplyTurnBasedMovementLimit) and provoked - Aeiluvetar went down from full HP.</param>
+        public static bool Run(UnitEntityData unit, UnitCommand command, string label, out string failure, bool avoidAreas = false,
+                               bool fiveFootOnly = false)
         {
             failure = null;
             if (unit == null || command == null)
@@ -71,6 +76,15 @@ namespace CompanionAI_Pathfinder.GameInterface
 
                     if (!TryAttachPath(unit, command, out pathLength, out failure))
                     {
+                        CommandTrace.LogRejected(unit, command, label, failure);
+                        return false;
+                    }
+
+                    if (fiveFootOnly && turn != null && turn.Rider == unit &&
+                        (!turn.HasFiveFootStep(unit) || pathLength > turn.GetRemainingFiveFootStepRange(unit) + 0.05f))
+                    {
+                        command.ForcedPath = null;
+                        failure = $"the 5-foot step's path is {pathLength:F1}m - longer than the step";
                         CommandTrace.LogRejected(unit, command, label, failure);
                         return false;
                     }
@@ -118,6 +132,18 @@ namespace CompanionAI_Pathfinder.GameInterface
                     }
                     hasPath = true;
                     ApplyTurnBasedMovementLimit(unit, pathLength);
+                }
+                // ★ v0.3.18 (test10): real time checks the walk against harmful areas too. The game's real-time approach
+                // follows its own navmesh path, which bends around obstacles where the straight line the move was priced
+                // on did not: Seelah and Camellia walked into Grease that the straight line missed and lay prone for most
+                // of the fight (0.3.18-test9 real-time log). The path is asked of the pathfinder on its own (not the
+                // unit's seeker, which may be steering the unit right now) and only checked, never attached: the game
+                // still walks its own path; a refused option makes the engine take the next best one.
+                else if (avoidAreas && RealTimePathEntersArea(unit, command, out string rtArea))
+                {
+                    failure = $"the path walks into {rtArea}";
+                    CommandTrace.LogRejected(unit, command, label, failure);
+                    return false;
                 }
 
                 unit.Commands.Run(command);
@@ -190,12 +216,46 @@ namespace CompanionAI_Pathfinder.GameInterface
         /// ★ v0.3.17: the command's ForcedPath, up to where the unit arrives (its own approach radius), walks into a
         /// harmful area it is not already in (AoeDangerAnalyzer.EnteringDanger, the same test the AI prices moves with).
         /// </summary>
-        private static bool PathEntersArea(UnitEntityData unit, UnitCommand command, out string area)
+        private static bool PathEntersArea(UnitEntityData unit, UnitCommand command, out string area) =>
+            PathEntersArea(unit, command.ForcedPath?.vectorPath, command, out area);
+
+        /// <summary>★ v0.3.18 (test10): real time - the walk the game would take, asked of the pathfinder directly.</summary>
+        private static bool RealTimePathEntersArea(UnitEntityData unit, UnitCommand command, out string area)
+        {
+            area = null;
+            if (CombatController.IsInTurnBasedCombat() || !unit.IsInCombat || unit.RiderPart != null) return false;
+            if (command is UnitMoveAlongPath || !command.ShouldUnitApproach) return false;
+            ABPath path = null;
+            try
+            {
+                var areas = Game.Instance?.State?.AreaEffects;
+                bool any = Analysis.AoeDangerAnalyzer.HasPendingAreas;
+                if (areas != null) foreach (var _ in areas) { any = true; break; }
+                if (!any) return false;
+                path = ABPath.Construct(unit.Position, command.ApproachPoint, null);
+                path.Claim(PathClaimKey);
+                AstarPath.StartPath(path);
+                AstarPath.BlockUntilCalculated(path);
+                if (path.error || path.CompleteState != PathCompleteState.Complete || path.vectorPath == null || path.vectorPath.Count == 0)
+                    return false;   // no answer: the move is not refused for it
+                return PathEntersArea(unit, path.vectorPath, command, out area);
+            }
+            catch (Exception ex)
+            {
+                Main.Verbose($"[Dispatch] {unit.CharacterName}: real-time path check skipped: {ex.Message}");
+                return false;
+            }
+            finally
+            {
+                path?.Release(PathClaimKey, false);
+            }
+        }
+
+        private static bool PathEntersArea(UnitEntityData unit, List<Vector3> points, UnitCommand command, out string area)
         {
             area = null;
             try
             {
-                var points = command.ForcedPath?.vectorPath;
                 if (points == null || points.Count == 0) return false;
                 Vector3 target = command.ApproachPoint;
                 float radius = Mathf.Max(0f, command.ApproachRadius);

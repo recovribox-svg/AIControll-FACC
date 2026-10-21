@@ -1128,3 +1128,72 @@ round reached.
 - the Swordlord / Hellknight / Frightening Thug upgrades of Demoralize;
 - Rowdy Vital Strike;
 - switching Mobility off while engaged when speed would matter more.
+
+## 33. v0.3.18 (test10): what the test9 play-test logs showed
+
+Evidence comes from the 0.3.18-test9 logs: turn-based (13 fights) and real time (11 fights). Each finding was traced to
+the code and the decompiled game before it was changed. The player is fine with the long fights Orvath's Grease
+produces (the party took little damage). So Grease keeps its value, and the rest of the party now plays around it.
+
+**Grease and other areas that only hinder movement.**
+- **Turn-based.** Entering one now costs what a fall costs: the move action spent standing up (a quarter of a round)
+  plus the attacks of opportunity standing provokes there, times the chance to fall. It is priced for one round, because
+  leaving is an option every turn.
+  - Before, it was priced as a share of the whole duration, about 24 points. Seelah stood idle beside the party's own
+    Grease for 37 turns (about a third of her turns) while the enemies inside it hit her.
+- **Real time.** The game keeps a unit down while the area knocks it down again (`UnitProneController`: it stands only
+  after 3 s without a fall). So the full price stays, and leaving one is valued for the rounds it still lasts. The
+  front line lay prone in Grease for 164 checks.
+- **Real-time path check.** The dispatcher now checks real-time walks against harmful areas too. It uses a path asked
+  of the pathfinder on its own (not the unit's seeker) and never attaches it. The game's own walk bends around
+  obstacles where the straight line priced for the move did not.
+- **Real-time casts in progress.** An ally's area spell that is being cast counts as the area it will be while its
+  command runs (8 s at most). Camellia walked at an archer while Orvath was being ordered to Grease it.
+
+**Penalties are not control.** Shaken, Sickened, Dazzled and Fatigued (and a fear descriptor on its own) now count as
+`ControlStrength.Minor`: 0.15 of the enemy's worth a round instead of 0.4. The anti-spam reduction now applies to
+them as well. Demoralize had been cast 52 times (turn-based) and 62 times (real time), often over attacks on adjacent
+enemies.
+
+**Sleep.** A hit that wakes a sleeping enemy without killing it is worth a tenth while another enemy is still acting;
+it used to be half. Camellia woke the sleeping Evoker every round and Orvath put it back to sleep each time. In real
+time the archers woke the Spawn of the Hungry Moon after each of five Sleeps.
+
+**Real time decides for everyone at once.**
+- **Shared casts.** An ally's cast of the same ability on the same enemy that is still running makes that option worth
+  0. This caught 19 duplicate Demoralizes and two Coups de Grace on one Cambion.
+- **Touch spells.** These walk first in real time too. Cast from afar, the game queues its own touch delivery and chases
+  the target with the held charge: Orvath followed his moving Dretch for about 75 s. This was the player's "stuck
+  channelling" report: no Fire Blast was involved.
+- **Walking without progress.** Walking counts as a reason to wait only while the unit gets 0.5 m nearer within a round.
+  Otherwise the command ends as stuck and the engine decides again.
+
+**Smaller fixes.**
+- **Turn-based 5-foot step.** It must be one: a longer real path is refused. Before, a 3.3 m path became a normal move
+  that provoked, and Aeiluvetar went down from full HP.
+- **Prone.** A unit stays prone for one turn at most. Aeiluvetar lay prone for seven turns in a row.
+- **Consumables.** None on summons, and only for a value of 2 or more.
+- **Soul Power.** Not cast again while neither the burn nor the dead around have changed (seven casts in a row).
+- **Buff values.** A stat penalty is not a benefit (Enlarge Person's -2 Dexterity), and a Strength-only buff is worth a
+  fifth to a recipient that fights at range.
+- **New diagnostics.**
+  - A revive's final value and what reduced it.
+  - What Fighting Defensively's `AddFactContextActions` runs, which is why it is still left as the player set it.
+  - Progressive's "gated" line renamed to "on the spell-level ladder".
+
+**Also in this build (asked for after the code review).**
+- **Demoralize upgrades:** Swordlord's Dazzling Display bonus, Frightening Thug's greater buff on 4+ rounds,
+  Hellknight Fearsomeness within 3 m, Shatter Confidence, and the mythic Trickster's paralysis. Each is valued on the
+  control scale of the buff it applies, never against an immune target.
+- **Rowdy Vital Strike:** (2 x sneak attack)d6 precision damage, nothing against precision-immune targets.
+- **Branch conditions:** evaluated with the cast's real aim as the main target (`AbilityProfile.AimedAt`).
+  `ContextConditionIsMainTarget` was true for every unit of an area (a bomb's direct hit against its splash). It is the
+  only condition the AI evaluates that reads the main target.
+
+**Checked and left as they are.**
+- **Grease's value** to the caster: per the player's preference, see above.
+- **Danger calibration** at its 0.4 floor in 12 of 13 fights: a deliberate safety margin, and the party took little
+  damage.
+- **Dismiss Spell, the Sleep Hit Dice pool, Arcane Reservoir's choice between caster level and DC, and Battle Spirit's
+  area:** each needs more evidence or blueprint data.
+- **Mobility switched off while engaged:** nothing in these logs showed the case.

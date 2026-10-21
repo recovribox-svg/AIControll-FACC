@@ -373,6 +373,7 @@ namespace CompanionAI_Pathfinder.GameInterface
             Tactics.CastOutcome.Clear();
             Tactics.DamageObserver.Clear();
             Tactics.SaveObserver.Clear();
+            Analysis.AoeDangerAnalyzer.ClearPending();
             CompanionAI_Pathfinder.Analysis.AbilityClassifier.ResetCombatReports();
             Tactics.CoverageReport.NewFight();
         }

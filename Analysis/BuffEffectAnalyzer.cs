@@ -92,6 +92,11 @@ namespace CompanionAI_Pathfinder.Analysis
         /// <summary>검출된 컴포넌트 목록 (디버깅용)</summary>
         public List<string> DetectedComponents { get; } = new List<string>();
 
+        /// <summary>★ v0.3.18 (test10): every effect it is valued for is a Strength bonus (Enlarge Person, Bull's
+        /// Strength): worth little to a recipient that fights at range.</summary>
+        public bool StrengthOnly { get; set; }
+        internal int StrengthParts;
+
         /// <summary>핵심 전투 효과 보유 여부</summary>
         public bool HasCoreCombatEffect => (Categories & BuffEffectCategory.CoreCombat) != 0;
 
@@ -211,7 +216,7 @@ namespace CompanionAI_Pathfinder.Analysis
                 }
 
                 float maxCombatValue = 0f;
-                int unrecognized = 0, meta = 0;
+                int unrecognized = 0, meta = 0, valued = 0;
 
                 foreach (var component in components)
                 {
@@ -220,6 +225,7 @@ namespace CompanionAI_Pathfinder.Analysis
                     int before = result.DetectedComponents.Count;
                     float componentValue = AnalyzeComponent(component, result);
                     maxCombatValue = Mathf.Max(maxCombatValue, componentValue);
+                    if (componentValue > 0f) valued++;
                     if (result.DetectedComponents.Count == before)
                     {
                         // ★ v0.3.2: keep the names of components we do not know, for the log.
@@ -229,6 +235,7 @@ namespace CompanionAI_Pathfinder.Analysis
                 }
 
                 result.Recognized = maxCombatValue > 0f;
+                result.StrengthOnly = result.StrengthParts > 0 && result.StrengthParts == valued;
                 result.OnlyUnrecognized = !result.Recognized && unrecognized > 0;
 
                 // 최종 전투 가치 결정
@@ -507,6 +514,20 @@ namespace CompanionAI_Pathfinder.Analysis
 
                 // StatType enum을 문자열로 변환
                 string statName = statValue.ToString();
+
+                // ★ v0.3.18 (test10): a penalty is not a benefit. Enlarge Person's -2 Dexterity counted like a +2 (0.8),
+                // and Enlarge was cast on Orvath, who shoots, four times.
+                var valueField = type.GetField("Value", BindingFlags.Public | BindingFlags.Instance);
+                var amount = valueField?.GetValue(component);
+                int? sign = amount is int n ? Math.Sign(n)
+                          : amount is Kingmaker.UnitLogic.Mechanics.ContextValue cv && cv.ValueType == Kingmaker.UnitLogic.Mechanics.ContextValueType.Simple
+                              ? Math.Sign(cv.Value) : (int?)null;
+                if (sign.HasValue && sign.Value < 0)
+                {
+                    result.DetectedComponents.Add($"Stat({statName})=Penalty");
+                    return 0f;
+                }
+                if (statName == "Strength") result.StrengthParts++;
 
                 return ClassifyStatType(statName, result);
             }

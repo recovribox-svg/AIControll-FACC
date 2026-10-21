@@ -102,6 +102,14 @@ namespace CompanionAI_Pathfinder.Tactics
                             case AddStatBonusAbilityValue sv when IsModeStat(sv.Stat):
                                 p.StatParts.Add(c);
                                 break;
+                            // ★ v0.3.18 (test10): name what such a component runs (Fighting Defensively has one): evidence for
+                            // whether it can be modelled.
+                            case AddFactContextActions actions:
+                                p.Excluded = p.Excluded ?? "its buff does more than the AI models (AddFactContextActions: " +
+                                             string.Join(", ", new[] { ("on", actions.Activated), ("off", actions.Deactivated), ("round", actions.NewRound) }
+                                                 .Where(l => l.Item2?.Actions?.Length > 0)
+                                                 .Select(l => l.Item1 + " " + string.Join("+", l.Item2.Actions.Where(x => x != null).Select(x => x.GetType().Name)))) + ")";
+                                break;
                             default:
                                 p.Excluded = p.Excluded ?? $"its buff does more than the AI models ({c.GetType().Name})";
                                 break;

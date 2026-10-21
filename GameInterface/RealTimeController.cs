@@ -445,7 +445,16 @@ namespace CompanionAI_Pathfinder.GameInterface
         private static readonly System.Runtime.CompilerServices.ConditionalWeakTable<UnitCommand, WaitMark> LastWait =
             new System.Runtime.CompilerServices.ConditionalWeakTable<UnitCommand, WaitMark>();
 
-        private sealed class WaitMark { public TimeSpan Time; }
+        private sealed class WaitMark
+        {
+            public TimeSpan Time;
+            /// <summary>★ v0.3.18 (test10): the nearest the unit has come to the command's approach point, and when.</summary>
+            public float Nearest = float.MaxValue;
+            public TimeSpan NearestAt;
+        }
+
+        /// <summary>★ v0.3.18 (test10): seconds of walking (a round) without getting 0.5 m nearer before "moving" stops counting.</summary>
+        private const float NO_PROGRESS_SECONDS = 6f;
 
         /// <summary>
         /// ★ v0.2.119: A not-started command is stuck only if the unit is not walking towards it, it is not waiting
@@ -468,7 +477,27 @@ namespace CompanionAI_Pathfinder.GameInterface
                 var now = Kingmaker.Game.Instance.TimeController.GameTime;
                 string wait = WaitReason(unit, cmd);
                 // First seen counts as a wait: a command needs 3 s of observed nothing-to-wait-for to be stuck.
-                var mark = LastWait.GetValue(cmd, _ => new WaitMark { Time = now });
+                var mark = LastWait.GetValue(cmd, _ => new WaitMark { Time = now, NearestAt = now });
+                // ★ v0.3.18 (test10): walking only counts as a reason to wait while it brings the unit nearer. Orvath
+                // chased his own moving Dretch with the game's touch delivery of a Cure Light Wounds item for about 75 s
+                // (the command the game queues for a held touch charge), "moving" every check, and nothing ever ended it;
+                // Lann's Move+Attack waited 37 s for 3 m. Chasing a target that keeps away now ends as stuck, and the
+                // engine decides again.
+                if (wait == "moving" && cmd.ShouldUnitApproach)
+                {
+                    float gap = Vector3.Distance(unit.Position, cmd.ApproachPoint) - Math.Max(0f, cmd.ApproachRadius);
+                    if (gap < mark.Nearest - 0.5f)
+                    {
+                        mark.Nearest = gap;
+                        mark.NearestAt = now;
+                    }
+                    else if ((now - mark.NearestAt).TotalSeconds > NO_PROGRESS_SECONDS)
+                    {
+                        reason = $"walking for {(now - mark.NearestAt).TotalSeconds:F0} s without getting nearer ({gap:F1} m to go)";
+                        targetProblem = true;
+                        return true;
+                    }
+                }
                 if (wait != null)
                 {
                     mark.Time = now;

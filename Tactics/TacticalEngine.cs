@@ -513,6 +513,8 @@ namespace CompanionAI_Pathfinder.Tactics
                 }
             }
             if (!ctx.Allies.Contains(unit)) ctx.Allies.Add(unit);
+            // ★ v0.3.18 (test10): the enemies still acting, for the cost of waking a sleeping one (WakeFactor).
+            s_ActiveEnemies = ctx.Enemies.Where(e => !CombatMath.IsDisabled(e)).ToList();
 
             float enemyHp = ctx.Enemies.Sum(e => (float)e.HPLeft);
             float enemyThreat = ctx.Enemies.Sum(CombatMath.Threat);
@@ -543,12 +545,20 @@ namespace CompanionAI_Pathfinder.Tactics
         /// ★ v0.3.9: damage that does not kill a sleeping enemy wakes it (the Sleep buff ends on damage) and throws away
         /// the control already paid for: worth half. Seelah and Camellia hit sleeping enemies instead of awake ones.
         /// </summary>
+        /// <remarks>★ v0.3.18 (test10): a tenth while another enemy is still acting - the hit frees an enemy for nothing
+        /// the party needed. At half, Camellia's Divine Zap (0.9) woke the sleeping Evoker every round from R6 to R11 and
+        /// Orvath put it back to sleep each time (0.3.18-test9 turn-based log); in real time the archers woke the Spawn of
+        /// the Hungry Moon after each of five Sleeps. Half when every enemy is down: then it has to be fought.</remarks>
         private static float WakeFactor(UnitEntityData enemy, float expectedDamage)
         {
             bool asleep;
             try { asleep = enemy.Descriptor.State.HasCondition(UnitCondition.Sleeping); } catch { asleep = false; }
-            return asleep && expectedDamage < enemy.HPLeft ? 0.5f : 1f;
+            if (!asleep || expectedDamage >= enemy.HPLeft) return 1f;
+            return s_ActiveEnemies != null && s_ActiveEnemies.Any(e => e != enemy) ? 0.1f : 0.5f;
         }
+
+        /// <summary>★ v0.3.18 (test10): the enemies not disabled in the decision being made (BuildContext).</summary>
+        private static List<UnitEntityData> s_ActiveEnemies;
 
         /// <summary>Vanilla Coup de Grace (Tabletop Tweaks keeps the blueprint and replaces its effect component).</summary>
         private static readonly string CoupDeGraceGuid = "32280b137ca642c45be17e2d92898758";
@@ -652,7 +662,8 @@ namespace CompanionAI_Pathfinder.Tactics
             var risk = DisengageRisk(ctx, destination);
             var unit = ctx.Unit;
             float danger = AoeDangerAnalyzer.EnteringDanger(unit, unit.Position, destination, out string area,
-                                                            out float roundsLeft, out bool endsInside, out float areaStop);
+                                                            out float roundsLeft, out bool endsInside, out float areaStop,
+                                                            out bool movementOnly, out float affect);
             if (danger > 0f)
             {
                 // ★ v0.3.17: an area that impedes movement can stop the walk on the way in (a failed save: fallen or
@@ -673,7 +684,17 @@ namespace CompanionAI_Pathfinder.Tactics
                 risk.Area = area ?? "area";
                 // Inside, a fall is worse than its share of a round: standing up provokes from every enemy next to the
                 // unit, and they hit it at +4 while it lies there.
-                risk.Cost += danger * perRound * rounds * (endsInside ? 2f : 1f);
+                // ★ v0.3.18 (test10): turn-based, an area that only hinders movement (Grease, Entangle, Web) costs what
+                // a fall costs - the move action spent standing up (a quarter of a round) and the attacks of opportunity
+                // that provokes where the unit lies - times the chance it falls, for the round until the choice comes
+                // back (leaving is an option every turn). Priced as a share of the area's whole duration, Seelah would not
+                // step into Orvath's Grease for 37 turns and stood idle beside it (0.3.18-test9 log). Real time keeps the
+                // full price: there the game keeps a unit down while the area knocks it down again (UnitProneController:
+                // it stands only after 3 s without a fall), so a unit that walks in lies there.
+                if (movementOnly && !CombatMemory.IsRealTime)
+                    risk.Cost += affect * (0.25f * perRound + (ProvokeRisk(ctx, destination, 1f, spoiledByHit: 0f)?.Cost ?? 0f));
+                else
+                    risk.Cost += danger * perRound * rounds * (endsInside ? 2f : 1f);
             }
 
             // ★ v0.3.14 (test5): badly hurt, walking to where more enemies can hit it before its next turn: the higher chance
@@ -862,6 +883,8 @@ namespace CompanionAI_Pathfinder.Tactics
             float stand = -dropNow * worth + (1f - dropNow) * (act - afterDrop * worth);
             float stay = -stayDrop * worth;
             if (stand >= stay) return true;
+            // ★ v0.3.18 (test10): one turn at most.
+            if (!CombatMemory.MayStayProne(unit)) return true;
             why = $"standing up provokes {attackers.Count} ({dropNow:P0} to be dropped), the best action after standing is " +
                   $"worth {act:F1} ({best?.Label ?? "nothing"}); lying down: {stayDrop:P0} to be dropped before the next turn";
             return false;
@@ -1455,6 +1478,8 @@ namespace CompanionAI_Pathfinder.Tactics
                         : analysis.OnlyUnrecognized ? (item ? 0f : 0.5f)
                         : 0.05f; // no components at all: a marker or cooldown
                 if (item && q < 0.5f) q = 0f;
+                // ★ v0.3.18 (test10): Strength helps weapon attacks in melee and carrying; little for an archer or caster.
+                if (analysis.StrengthOnly && UsesRangedWeapon(recipient)) q *= 0.2f;
                 best = Math.Max(best, q);
             }
             return best;
@@ -1470,8 +1495,10 @@ namespace CompanionAI_Pathfinder.Tactics
         private static float BurnReliefValue(TacticalContext ctx, AbilityProfile profile)
         {
             var unit = ctx.Unit;
-            int burn = 0;
-            try { burn = unit.Get<Kingmaker.UnitLogic.Class.Kineticist.UnitPartKineticist>()?.AcceptedBurn ?? 0; } catch { }
+            BurnSnapshot(unit, profile, out int burn, out int deadAround);
+            // ★ v0.3.18 (test10): nothing has changed since the last use (the same burn, no one new dead around): it would
+            // do what the last one did. Soul Power was cast seven times in a row in real time, 6 s each, nobody dying.
+            if (CombatMemory.BurnReliefUnchanged(unit, profile.Blueprint, burn, deadAround)) return 0f;
 
             if (profile.IsAoE && profile.TargetBuffs.Count > 0)
             {
@@ -1489,6 +1516,23 @@ namespace CompanionAI_Pathfinder.Tactics
 
             float overflow = 1.5f * Math.Min(ctx.ExpectedRounds, 3f);   // +attack/+damage for the rest of the day
             return (burn > 0 ? 4f : 0f) + overflow;
+        }
+
+        /// <summary>★ v0.3.18 (test10): the caster's accepted burn and the dead units within the ability's area.</summary>
+        private static void BurnSnapshot(UnitEntityData unit, AbilityProfile profile, out int burn, out int deadAround)
+        {
+            burn = 0;
+            deadAround = 0;
+            try { burn = unit.Get<Kingmaker.UnitLogic.Class.Kineticist.UnitPartKineticist>()?.AcceptedBurn ?? 0; } catch { }
+            if (!profile.IsAoE) return;
+            try
+            {
+                foreach (var other in Game.Instance.State.Units)
+                    if (other != null && other != unit && (other.Descriptor?.State?.IsDead ?? false) &&
+                        Vector3.Distance(other.Position, unit.Position) <= profile.AoERadius + other.Corpulence)
+                        deadAround++;
+            }
+            catch { }
         }
 
         /// <summary>
@@ -1640,11 +1684,15 @@ namespace CompanionAI_Pathfinder.Tactics
                     }
                 }
 
+                // ★ v0.3.18 (test10): no consumables on a summon - temporary, and worth half (Orvath used a Cure Light
+                // Wounds item on his Dretch).
+                if (ability.SourceItem != null && target != ctx.Unit && IsSummon(target)) continue;
                 float value;
                 string why;
                 using (AbilityProfile.AimedAt(wrapper))   // ★ v0.3.18 (test10): conditions see the real main target
                     value = ScoreAbility(ctx, ability, profile, slot, target, out why);
                 if (value <= 0f) continue;
+                float scored = value;
                 // ★ v0.3.18: an area that can only be aimed at a creature (not at the ground) is applied to that creature
                 // first; its spell resistance or immunity stops the whole area (AbilityProfile.TargetOn).
                 if (profile.IsAoE && !profile.SelectsTargets && wrapper.Unit != null && wrapper.Unit != ctx.Unit)
@@ -1656,6 +1704,9 @@ namespace CompanionAI_Pathfinder.Tactics
                 // ★ v0.3.17 (test3): does the aimed enemy itself get any of the value, or only the others in the area?
                 bool aimAffected = !(profile.IsAoE && target != ctx.Unit && ctx.Unit.IsEnemy(target)) || ctx.AimCounted;
                 value *= consumable;
+                // ★ v0.3.18 (test10): an item is spent for good - not for a sliver of value (healing potions were drunk for
+                // 0.8-1.4, Lann drank five Cure Light Wounds in one fight). The bar of a quick action, whatever its slot.
+                if (ability.SourceItem != null && value < MinQuickValue) continue;
                 if (needsMove) value *= 0.9f;
                 // ★ v0.3.6: a standard-action spell cast in melee needs a defensive-casting check; failing it provokes an
                 // attack of opportunity and can lose the spell (UnitUseAbility.OnTick). Camellia's Cure Light Wounds ended
@@ -1677,6 +1728,14 @@ namespace CompanionAI_Pathfinder.Tactics
                     value *= 0.5f;
                 float preRisk = value;
                 if (risk != null) value = value * (1f - risk.StopChance) - risk.Cost;
+                // ★ v0.3.18 (test10): what is left of a revive, and what took it (a downed Camellia was never revived in a
+                // real-time fight though the heal would have kept her up; the log could not say why).
+                if (ctx.DownedAllies.Contains(target))
+                    ReportOnce($"revive-value|{ctx.Unit.UniqueId}|{target.UniqueId}|{CombatMemory.Round}",
+                               $"[Tactics] {ctx.Unit.CharacterName}: revive {target.CharacterName} with {ability.Name} = {value:F1} " +
+                               $"(scored {scored:F1}{(needsMove ? ", walk x0.9" : "")}" +
+                               (provokeLoss > 0f ? $", provoking -{provokeLoss:F1}" : "") +
+                               (risk != null ? $", the walk x{1f - risk.StopChance:F2} -{risk.Cost:F1}{risk.Tag}" : "") + ")");
 
                 var candidate = new Candidate
                 {
@@ -1877,6 +1936,12 @@ namespace CompanionAI_Pathfinder.Tactics
             ctx.AimCounted = false;
             var reasons = new List<string>();
 
+            // ★ v0.3.18 (test10): real time - an ally is casting this very ability on this enemy right now.
+            if (targetIsEnemy && CombatMemory.CastPendingByOther(unit, ability, target))
+            {
+                why = "an ally is already casting it on this target";
+                return 0f;
+            }
             if (IsCoupDeGrace(ability))
                 return CoupDeGraceValue(ctx, ability, target, out why);
             // ★ v0.3.18 (AA-4): Vital Strike and Cleave are weapon attacks (TacticalEngine.Martial.cs).
@@ -2112,9 +2177,11 @@ namespace CompanionAI_Pathfinder.Tactics
                 bool oneShotMark = isMark && profile.IsOneShot;
                 float strength = profile.ControlStrength == ControlStrength.Hard ? 1f :
                                  profile.ControlStrength == ControlStrength.Soft ? 0.4f :
+                                 profile.ControlStrength == ControlStrength.Minor ? 0.15f :
                                  isMark ? (oneShotMark ? 0.1f : 0.15f) : 0.25f;
                 // Non-control debuffs/marks repeated on new targets every turn are the "spam" pattern: diminish them.
-                if (profile.ControlStrength == ControlStrength.None && CombatMemory.TimesUsed(unit, ability) >= 2)
+                // ★ v0.3.18 (test10): penalties too (Demoralize, Flare).
+                if (profile.ControlStrength <= ControlStrength.Minor && CombatMemory.TimesUsed(unit, ability) >= 2)
                     strength *= 0.3f;
                 // A one-round / next-attack effect lasts one round, not the rest of the fight.
                 float effectRounds = profile.IsOneShot ? 1f : Math.Min(ctx.ExpectedRounds, 3f);
@@ -2649,7 +2716,17 @@ namespace CompanionAI_Pathfinder.Tactics
             // It was danger x half the unit's worth for up to three rounds (a fight's worth, not a round's), off the
             // scale entering uses.
             float perRound = AllyWorth(ctx, unit) / ValueModel.Horizon(ctx.ExpectedRounds, 3f);
-            float value = inside.Danger * perRound * (inside.RoundsLeft >= 1f ? 2f : 1f);
+            float value;
+            // ★ v0.3.18 (test10): the same prices as entering (MoveRisk). Turn-based, an area that only hinders movement
+            // costs a round's fall (standing up and the attacks it provokes where the unit is) times the chance to fall.
+            // Real time, staying means lying there while it knocks the unit down again - its rounds left, up to 3 (Seelah
+            // chose Move+Attack inside Grease over leaving it, 11.9 to 8.0, and lay prone for 42 checks).
+            if (inside.MovementOnly && !CombatMemory.IsRealTime)
+                value = inside.AffectChance * (0.25f * perRound + (ProvokeRisk(ctx, unit.Position, 1f, spoiledByHit: 0f)?.Cost ?? 0f));
+            else if (CombatMemory.IsRealTime)
+                value = inside.Danger * perRound * Mathf.Clamp(Math.Min(inside.RoundsLeft, ctx.ExpectedRounds), 1f, 3f) * 2f;
+            else
+                value = inside.Danger * perRound * (inside.RoundsLeft >= 1f ? 2f : 1f);
             string label = $"Leave {inside.Name ?? "area"}";
             var risk = MoveRisk(ctx, best.Value);
             if (risk != null)
@@ -2819,7 +2896,9 @@ namespace CompanionAI_Pathfinder.Tactics
                     // touch reach by height alone is not offered at all (EvaluateAbility).
                     // The walk goes to the target itself, stopping within reach by the game's own arrival test, so the
                     // dispatcher's path (stairs, around obstacles) ends where the touch can be made.
-                    if (c.NeedsMove && c.Target != null && !CombatMemory.IsRealTime && c.Ability.StickyTouch == null &&
+                    // ★ v0.3.18 (test10): real time too. Cast from afar, the game queues its own touch delivery and chases
+                    // the target with the held charge: Orvath followed his moving Dretch that way for about 75 s.
+                    if (c.NeedsMove && c.Target != null && c.Ability.StickyTouch == null &&
                         c.Ability.Blueprint.StickyTouch != null)
                     {
                         var approach = new UnitMoveTo(c.Target.Position, c.Ability.GetApproachDistance(c.Target) * 0.8f);
@@ -2849,7 +2928,9 @@ namespace CompanionAI_Pathfinder.Tactics
                 return false;
             }
 
-            bool issued = CommandDispatcher.Run(unit, command, c.Label, out failure, avoidAreas: c.CheckPath);
+            // ★ v0.3.18 (test10): a 5-foot step must be one (CommandDispatcher refuses a longer path).
+            bool issued = CommandDispatcher.Run(unit, command, c.Label, out failure, avoidAreas: c.CheckPath,
+                                                fiveFootOnly: c.Key == "move:5ft" && !CombatMemory.IsRealTime);
             // ★ v0.3.18 (AA-3, review): the attack's modes once the dispatcher has taken the attack - before, a refused
             // attack left them switched (and locked for the round) for whatever option came next. The attack rolls on
             // later ticks; Fighting Defensively starts on the attack itself (RuleAttackWithWeapon).
@@ -2857,7 +2938,23 @@ namespace CompanionAI_Pathfinder.Tactics
             if (issued && c.Kind == CandidateKind.Ability)
             {
                 CombatMemory.RecordCast(unit, c.Ability, c.Target);
+                CombatMemory.NotePendingCast(unit, c.Ability, c.Target, command);   // ★ v0.3.18 (test10): real time
                 var profile = AbilityProfile.Get(c.Ability);
+                if (profile != null && profile.HealsBurn)
+                {
+                    BurnSnapshot(unit, profile, out int burnNow, out int deadNow);
+                    CombatMemory.NoteBurnRelief(unit, profile.Blueprint, burnNow, deadNow);
+                }
+                // ★ v0.3.18 (test10): real time - a lasting area that can catch allies counts as there while it is cast.
+                try
+                {
+                    if (CombatMemory.IsRealTime && profile != null && profile.SpawnedAreas.Any() && profile.IsAoE &&
+                        profile.AoETargets != Kingmaker.UnitLogic.Abilities.Components.TargetType.Enemy &&
+                        !profile.SelectiveSparesAllies(c.Ability))
+                        AoeDangerAnalyzer.RegisterPending(c.Point ?? c.Target?.Position ?? unit.Position, profile.AoERadius, c.Ability.Name,
+                                                          profile.DealsDamage, profile.ControlStrength != ControlStrength.None, command);
+                }
+                catch (Exception ex) { Main.Verbose($"[Tactics] pending area: {ex.Message}"); }
                 profile?.DescribeOnce();
                 // ★ v0.3.17: also watched: did it do anything to the enemy it was aimed at? Not for lasting areas, whose
                 // saves come later, summons, or Charge, whose attack the game makes after the ability ends. Twice nothing

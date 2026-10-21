@@ -133,8 +133,81 @@ namespace CompanionAI_Pathfinder.Tactics
             }
         }
 
+        /// <summary>
+        /// ★ v0.3.18 (test10): real time - an ally's cast of an ability on a target whose command is still running. Real
+        /// time decides for every unit at once: three party members demoralized the same Cultist Champion within a second
+        /// (19 such duplicates in the 0.3.18-test9 real-time log) and two of them tried to Coup de Grace the same Cambion.
+        /// Turn-based never has one running when another unit decides.
+        /// </summary>
+        private sealed class PendingCast
+        {
+            public UnitEntityData Caster;
+            public UnitEntityData Target;
+            public string Ability;
+            public UnitCommand Command;
+            public double Until;
+        }
+
+        private static readonly List<PendingCast> PendingCasts = new List<PendingCast>();
+
+        private static double GameSeconds => Game.Instance?.TimeController?.GameTime.TotalSeconds ?? 0d;
+
+        public static void NotePendingCast(UnitEntityData caster, AbilityData ability, UnitEntityData target, UnitCommand command)
+        {
+            if (!IsRealTime || caster == null || target == null || ability?.Blueprint == null || command == null) return;
+            PendingCasts.RemoveAll(p => p.Command.IsFinished || GameSeconds > p.Until);
+            PendingCasts.Add(new PendingCast { Caster = caster, Target = target, Ability = AbilityKey(ability), Command = command, Until = GameSeconds + 8d });
+        }
+
+        /// <summary>Another unit's cast of this ability on <paramref name="target"/> is still running (real time).</summary>
+        public static bool CastPendingByOther(UnitEntityData self, AbilityData ability, UnitEntityData target)
+        {
+            if (!IsRealTime || PendingCasts.Count == 0 || target == null || ability?.Blueprint == null) return false;
+            string key = AbilityKey(ability);
+            double now = GameSeconds;
+            foreach (var p in PendingCasts)
+                if (p.Caster != self && p.Target == target && p.Ability == key && !p.Command.IsFinished && now <= p.Until)
+                    return true;
+            return false;
+        }
+
+        /// <summary>★ v0.3.18 (test10): "unit|ability" → the caster's burn and the dead around it when it last used a burn
+        /// relief (Soul Power).</summary>
+        private static readonly Dictionary<string, KeyValuePair<int, int>> BurnReliefs = new Dictionary<string, KeyValuePair<int, int>>();
+
+        public static void NoteBurnRelief(UnitEntityData unit, Kingmaker.UnitLogic.Abilities.Blueprints.BlueprintAbility ability, int burn, int deadAround) =>
+            BurnReliefs[$"{unit.UniqueId}|{ability?.AssetGuid}"] = new KeyValuePair<int, int>(burn, deadAround);
+
+        /// <summary>The burn relief was used and neither the burn nor the dead around changed since.</summary>
+        public static bool BurnReliefUnchanged(UnitEntityData unit, Kingmaker.UnitLogic.Abilities.Blueprints.BlueprintAbility ability, int burn, int deadAround) =>
+            BurnReliefs.TryGetValue($"{unit.UniqueId}|{ability?.AssetGuid}", out var last) && last.Key == burn && last.Value == deadAround;
+
+        /// <summary>★ v0.3.18 (test10): unit → the round it chose to stay prone (TacticalEngine.ShouldStandUp).</summary>
+        private static readonly Dictionary<string, int> ProneStays = new Dictionary<string, int>();
+
+        /// <summary>
+        /// The unit may stay prone this round: it did not already stay down last round. Staying down does not avoid the
+        /// attacks of opportunity of standing, it puts them off; waiting one turn lets the party change the situation (kill
+        /// or draw off the enemies next to it, heal it), waiting longer only loses turns - Aeiluvetar lay prone for seven
+        /// turns in a row (0.3.18-test9 turn-based log).
+        /// </summary>
+        public static bool MayStayProne(UnitEntityData unit)
+        {
+            int round = Round;
+            if (ProneStays.TryGetValue(unit.UniqueId, out int stayed))
+            {
+                if (stayed == round) return true;             // already decided this turn
+                if (stayed == round - 1) return false;        // stayed down last turn: stand now
+            }
+            ProneStays[unit.UniqueId] = round;
+            return true;
+        }
+
         public static void ResetCombat()
         {
+            PendingCasts.Clear();
+            ProneStays.Clear();
+            BurnReliefs.Clear();
             ToggleSwitches.Clear();
             ToggledOnByAi.Clear();
             Casts.Clear();

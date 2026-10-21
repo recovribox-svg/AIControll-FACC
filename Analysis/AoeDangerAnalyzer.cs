@@ -3,6 +3,7 @@
 // 유닛이 적대적 지역 효과(Grease, Entangle, 화염 지역 등) 안에 있는지 감지
 // 이탈 필요 여부 및 안전한 방향 계산
 using System;
+using TurnBased.Controllers;
 using System.Collections.Generic;
 using System.Linq;
 using Kingmaker;
@@ -183,8 +184,18 @@ namespace CompanionAI_Pathfinder.Analysis
         /// attack the last Zombie, fell and never attacked; the price counted the rounds in the area, not the lost attack.
         /// </summary>
         public static float EnteringDanger(UnitEntityData unit, Vector3 from, Vector3 to, out string name,
-                                           out float roundsLeft, out bool endsInside, out float stopChance)
+                                           out float roundsLeft, out bool endsInside, out float stopChance) =>
+            EnteringDanger(unit, from, to, out name, out roundsLeft, out endsInside, out stopChance, out _, out _);
+
+        /// <remarks>★ v0.3.18 (test10): <paramref name="movementOnly"/> - the worst area only hinders movement (Grease,
+        /// Entangle, Web: no damage, no hard control, no poison, fear, stun, paralysis or death effect);
+        /// <paramref name="affectChance"/> - the chance it affects the unit (its save, immunities, time left).</remarks>
+        public static float EnteringDanger(UnitEntityData unit, Vector3 from, Vector3 to, out string name,
+                                           out float roundsLeft, out bool endsInside, out float stopChance,
+                                           out bool movementOnly, out float affectChance)
         {
+            movementOnly = false;
+            affectChance = 0f;
             name = null;
             roundsLeft = 0f;
             endsInside = false;
@@ -215,13 +226,112 @@ namespace CompanionAI_Pathfinder.Analysis
                     name = aoe.Context?.SourceAbilityContext?.Ability?.Name ?? danger.Name;
                     endsInside = Covers(aoe, to, unit.Corpulence);
                     roundsLeft = RoundsLeft(aoe);
+                    movementOnly = IsMovementOnly(danger, aoe);
+                    affectChance = Mathf.Clamp01(danger.AffectChance);
                 }
             }
             catch (Exception ex)
             {
                 Main.Verbose($"[AoeDanger] entering check {unit.CharacterName}: {ex.Message}");
             }
+            // ★ v0.3.18 (test10): an ally's area that is about to land (real time).
+            var pending = PendingOnWay(unit, from, to);
+            if (pending != null && pending.Danger * 0.5f > worst)
+            {
+                // The save is not known yet: half the danger and half a stop chance, as for an even save.
+                worst = pending.Danger * 0.5f;
+                name = pending.Name + " (being cast)";
+                Vector3 end = to - pending.Point; end.y = 0f;
+                endsInside = end.magnitude <= pending.Radius + unit.Corpulence;
+                roundsLeft = 10f;
+                movementOnly = pending.MovementOnly;
+                affectChance = 0.5f;
+                if (pending.MovementOnly) stopChance = 1f - (1f - stopChance) * 0.5f;
+            }
             return worst;
+        }
+
+        /// <summary>
+        /// ★ v0.3.18 (test10): area spells a party member has been ordered to cast in real time and that have not landed
+        /// yet. Real time decides for everyone at once: Camellia walked at the Forsaken Kobold Archer 12 lines after Orvath
+        /// was ordered to put Grease on it, before the area existed, and lay prone for nearly the whole fight. While the
+        /// cast's command runs (at most 8 s), its circle counts as the area it will be. Turn-based never has one: only
+        /// one unit acts at a time and its cast lands before the next decides.
+        /// </summary>
+        private sealed class PendingArea
+        {
+            public Vector3 Point;
+            public float Radius;
+            public string Name;
+            public float Danger;
+            public bool MovementOnly;
+            public Kingmaker.UnitLogic.Commands.Base.UnitCommand Command;
+            public double Until;
+        }
+
+        private static readonly List<PendingArea> Pending = new List<PendingArea>();
+
+        private static double Now => Game.Instance?.TimeController?.GameTime.TotalSeconds ?? 0d;
+
+        public static bool HasPendingAreas
+        {
+            get
+            {
+                Prune();
+                return Pending.Count > 0;
+            }
+        }
+
+        public static void RegisterPending(Vector3 point, float radius, string name, bool damaging, bool controls,
+                                           Kingmaker.UnitLogic.Commands.Base.UnitCommand command)
+        {
+            if (command == null || radius <= 0f || CombatController.IsInTurnBasedCombat()) return;
+            Prune();
+            Pending.Add(new PendingArea
+            {
+                Point = point, Radius = radius, Name = name, Command = command, Until = Now + 8d,
+                Danger = Math.Max(0.3f, (damaging ? 0.6f : 0f) + (controls ? 0.4f : 0f)),
+                MovementOnly = controls && !damaging
+            });
+        }
+
+        public static void ClearPending() => Pending.Clear();
+
+        private static void Prune()
+        {
+            double now = Now;
+            Pending.RemoveAll(p => p.Command == null || p.Command.IsFinished || now > p.Until);
+        }
+
+        /// <summary>The pending area <paramref name="from"/> → <paramref name="to"/> walks into (real time), or null.</summary>
+        private static PendingArea PendingOnWay(UnitEntityData unit, Vector3 from, Vector3 to)
+        {
+            if (Pending.Count == 0 || CombatController.IsInTurnBasedCombat()) return null;
+            Prune();
+            float length = Vector3.Distance(from, to);
+            int samples = Math.Max(1, Mathf.CeilToInt(length / 1f));
+            foreach (var area in Pending)
+            {
+                float reach = area.Radius + unit.Corpulence;
+                Vector3 flatFrom = from - area.Point; flatFrom.y = 0f;
+                if (flatFrom.magnitude <= reach) continue;   // already inside: entering is what matters
+                for (int i = 1; i <= samples; i++)
+                {
+                    Vector3 d = Vector3.Lerp(from, to, i / (float)samples) - area.Point;
+                    d.y = 0f;
+                    if (d.magnitude <= reach) return area;
+                }
+            }
+            return null;
+        }
+
+        /// <summary>★ v0.3.18 (test10): an area whose only harm is to movement (a fall, being held in place).</summary>
+        private static bool IsMovementOnly(DangerousEffect danger, AreaEffectEntityData aoe)
+        {
+            const SpellDescriptor other = SpellDescriptor.Death | SpellDescriptor.Poison | SpellDescriptor.Stun |
+                                          SpellDescriptor.Paralysis | SpellDescriptor.Fear;
+            return danger.IsMovementImpairing && !danger.IsDamaging && (danger.Descriptors & other) == 0 &&
+                   ControlOf(aoe) != CompanionAI_Pathfinder.Tactics.ControlStrength.Hard;
         }
 
         /// <summary>★ v0.3.14: the harmful areas a unit stands in (<see cref="InsideDanger"/>).</summary>
@@ -234,6 +344,10 @@ namespace CompanionAI_Pathfinder.Analysis
             public string Name;
             /// <summary>★ v0.3.18 (review): rounds the worst area still lasts (as for entering one).</summary>
             public float RoundsLeft;
+            /// <summary>★ v0.3.18 (test10): the worst area only hinders movement (see EnteringDanger).</summary>
+            public bool MovementOnly;
+            /// <summary>★ v0.3.18 (test10): the chance the worst area affects the unit.</summary>
+            public float AffectChance;
 
             /// <summary>The unit's body radius: the game counts a unit inside when its body overlaps the area.</summary>
             public float Corpulence;
@@ -274,6 +388,8 @@ namespace CompanionAI_Pathfinder.Analysis
                         worst = danger.DangerLevel;
                         result.Name = aoe.Context?.SourceAbilityContext?.Ability?.Name ?? danger.Name;
                         result.RoundsLeft = RoundsLeft(aoe);
+                        result.MovementOnly = IsMovementOnly(danger, aoe);
+                        result.AffectChance = Mathf.Clamp01(danger.AffectChance);
                     }
                     else rest += danger.DangerLevel;
                 }
