@@ -1215,3 +1215,55 @@ time the archers woke the Spawn of the Hungry Moon after each of five Sleeps.
 - **Dismiss Spell, the Sleep Hit Dice pool, Arcane Reservoir's choice between caster level and DC, and Battle Spirit's
   area:** each needs more evidence or blueprint data.
 - **Mobility switched off while engaged:** nothing in these logs showed the case.
+
+## 34. v0.3.18 (test11): what the test10 play-test logs showed
+
+Logs: turn-based (7 fights), a second turn-based session (3 fights), real time (8 fights). No errors in any of them.
+Confirmed from test10: Demoralize is no longer spammed (8 casts against 62); touch spells walk first; no consumables on
+summons; the turn-based 5-foot-step rule holds; Seelah now works around Orvath's Grease (1 idle turn against 37).
+
+**Real time.**
+- **The path check refused good walks (a test10 regression).** A path asked of A* without the unit's seeker is the
+  centres of the navmesh triangles it crosses, a zigzag that cut into the Stinking Cloud beside spots the decision had
+  put at its edge. 22 approaches were refused and Lann did nothing for two rounds. The check now uses the walk the game
+  takes: the unit's own position, the closest point to the goal, and the funnel modifier the game's movement agent
+  turns on in real time (`CommandDispatcher.GameWalk`).
+- **Refused walks are remembered** for two rounds while the unit stays within 1 m (`CombatMemory.WalkRefused`). Lann's
+  same refusals repeated 18 times over three rounds.
+- **Re-deciding on entering an area** skips walks that already counted on it: a walk out of an area, an advance or
+  withdrawal, an attack priced "[into ...]". Two leave-walks were dropped part-way through.
+- **Stuck rule:** a unit within its approach radius, with clear sight, that keeps walking for 2 s is stopped (it was 6 s).
+  A walk still looking for line of sight is left alone.
+
+**Both modes.**
+- **Summons that bring an ally-catching area** (a Dretch's Stinking Cloud, read from the creature's own facts) are worth
+  0.7 while the party has melee fighters. Orvath summoned a Dretch at the start of all 8 real-time fights; its cloud
+  nauseated Camellia for five rounds and Seelah for six. Cambion and Quasit had the same value and now win.
+- **An effect that outlasts its area** (Stinking Cloud's nausea, 1d4 rounds after leaving) is priced for its own duration
+  when walking in, not one round. Orvath stepped into the cloud for a Color Spray and lost three turns.
+- **Sleep's Hit Dice pool.** The game spends Sleep's Hit Dice target by target (`ContextActionChangeSharedValue` SubHD); the
+  profile checks each target against the whole pool. Orvath cast Sleep centred on a Kobold Evoker six times, each
+  re-sleeping the same Mongrel. After two casts that reach others but never their centre, that enemy is no longer
+  counted in the caster's area of that spell this fight (`CastOutcome.AreaSkips`); the cast stays allowed for the others.
+- **Enlarge Person on an archer** whose bow adds Strength: worth a fifth when the buff also lowers Dexterity (+1 damage
+  against -1 to hit from Dexterity and -1 from size).
+- **Coup de Grace:** damage reduction comes off the whole hit once, after the critical multiplier and with the sneak
+  attack in it.
+
+**Turn-based.**
+- **Standing up:** when no safe spot is found, spots right beside the unit are tried without the area filter (the walk
+  is only the trigger; the game cancels it as the unit stands). Revived Aeiluvetar lay prone two turns, "no spot to walk
+  to". The log now says how many spots were in an area or not walkable.
+- **5-foot step:** a step spot refused because its real path is longer than a step is not offered again that turn; up to
+  three other directions are.
+
+**Checked and left as they are.**
+- **Holy Water "thrown beside" the enemy** (player's question): the throw was aimed at the Skeletal Champion. Splash
+  weapons make a ranged touch attack, and on a miss the game sends the flask to a miss point beside the target
+  (`Projectile.CalculateMissTarget`). The AI already prices that chance. Holy Water's direct-hit/splash condition is an
+  `OrAndLogic` the profile does not evaluate, so both branches are counted for everyone; left for now, as asked.
+- **Seelah charging into nine enemies at 77 % HP:** pricing the drop chance at any HP was tried and dropped. With her HP
+  and the fight's danger scale it would not have changed that charge, and it could make low-level melee builds timid.
+- **Melee allies waiting beside the party's own Entangle:** the enemies inside are held, and the archers work on them.
+- **Slow decisions** (400-490 ms, about one per fight, no new profiles built): most likely garbage collection.
+

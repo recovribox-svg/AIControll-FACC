@@ -21,6 +21,7 @@ using Kingmaker.EntitySystem.Entities;
 using Kingmaker.UnitLogic.Commands;
 using Kingmaker.UnitLogic.Commands.Base;
 using Pathfinding;
+using Pathfinding.Util;
 using TurnBased.Controllers;
 using UnityEngine;
 
@@ -141,7 +142,7 @@ namespace CompanionAI_Pathfinder.GameInterface
                 // still walks its own path; a refused option makes the engine take the next best one.
                 else if (avoidAreas && RealTimePathEntersArea(unit, command, out string rtArea))
                 {
-                    failure = $"the path walks into {rtArea}";
+                    failure = $"{WalksIntoAreaFailure} {rtArea}";
                     CommandTrace.LogRejected(unit, command, label, failure);
                     return false;
                 }
@@ -219,6 +220,9 @@ namespace CompanionAI_Pathfinder.GameInterface
         private static bool PathEntersArea(UnitEntityData unit, UnitCommand command, out string area) =>
             PathEntersArea(unit, command.ForcedPath?.vectorPath, command, out area);
 
+        /// <summary>The start of the failure text of a real-time walk refused for a harmful area.</summary>
+        public const string WalksIntoAreaFailure = "the path walks into";
+
         /// <summary>★ v0.3.18 (test10): real time - the walk the game would take, asked of the pathfinder directly.</summary>
         private static bool RealTimePathEntersArea(UnitEntityData unit, UnitCommand command, out string area)
         {
@@ -240,7 +244,7 @@ namespace CompanionAI_Pathfinder.GameInterface
                 AstarPath.BlockUntilCalculated(path);
                 if (path.error || path.CompleteState != PathCompleteState.Complete || path.vectorPath == null || path.vectorPath.Count == 0)
                     return false;   // no answer: the move is not refused for it
-                return PathEntersArea(unit, path.vectorPath, command, out area);
+                return PathEntersArea(unit, GameWalk(path, start), command, out area);
             }
             catch (Exception ex)
             {
@@ -250,6 +254,57 @@ namespace CompanionAI_Pathfinder.GameInterface
             finally
             {
                 path?.Release(PathClaimKey, false);
+            }
+        }
+
+        /// <summary>
+        /// ★ v0.3.18 (test11): the walk a real-time unit takes along a computed path. A path without the seeker's modifiers
+        /// is the centres of the navmesh triangles it crosses, from the centre of the unit's own triangle to the centre of
+        /// the goal's - a zigzag that cut into the Stinking Cloud beside spots placed at its edge, and refused 22 approaches
+        /// the straight line had cleared (Lann idle for two rounds). The game's movement agent starts at the unit's own
+        /// position, ends at the closest point to the goal on the last triangle (Seeker.startEndModifier) and pulls the
+        /// corners tight with the funnel modifier out of turn-based combat (UnitMovementAgent): the same here.
+        /// </summary>
+        private static List<Vector3> GameWalk(ABPath path, Vector3 start)
+        {
+            var points = path.vectorPath;
+            if (points.Count == 1) points.Add(points[0]);
+            points[0] = start;
+            points[points.Count - 1] = path.endPoint;
+            var walk = new List<Vector3>();
+            List<Funnel.PathPart> parts = null;
+            try
+            {
+                parts = Funnel.SplitIntoParts(path);
+                if (parts.Count == 0) return points;
+                for (int i = 0; i < parts.Count; i++)
+                {
+                    var part = parts[i];
+                    if (!part.isLink)
+                    {
+                        var funnel = Funnel.ConstructFunnelPortals(path.path, part);
+                        var corners = Funnel.Calculate(funnel, true, false);
+                        walk.AddRange(corners);
+                        ListPool<Vector3>.Release(ref funnel.left);
+                        ListPool<Vector3>.Release(ref funnel.right);
+                        ListPool<Vector3>.Release(ref corners);
+                    }
+                    else
+                    {
+                        if (i == 0 || parts[i - 1].isLink) walk.Add(part.startPoint);
+                        if (i == parts.Count - 1 || parts[i + 1].isLink) walk.Add(part.endPoint);
+                    }
+                }
+                return walk.Count > 0 ? walk : points;
+            }
+            catch (Exception ex)
+            {
+                Main.Verbose($"[Dispatch] funnel skipped: {ex.Message}");
+                return points;
+            }
+            finally
+            {
+                if (parts != null) ListPool<Funnel.PathPart>.Release(ref parts);
             }
         }
 

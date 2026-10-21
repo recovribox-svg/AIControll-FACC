@@ -251,14 +251,15 @@ namespace CompanionAI_Pathfinder.Tactics
                 float perHit = 0f;
                 foreach (var d in stats.DamageDescription)
                     perHit += Average(d.Dice) + d.Bonus;
-                var dr = HitChanceCalculator.CalculateDamageReduction(unit, target, weapon, perHit);
-                if (dr != null && !dr.CanBypass && dr.DRValue > 0)
-                    perHit = Math.Max(0f, perHit - dr.DRValue);
-
                 bool immune = AbilityClassifier.IsUndeadOrConstruct(target);
                 damage = perHit * (immune ? 1 : Math.Max(2, stats.CriticalMultiplier));
                 int sneakDice = SafeStat(unit.Stats.SneakAttack);       // a helpless target is denied its Dex bonus
                 if (sneakDice > 0 && !immune) damage += 3.5f * sneakDice;
+                // ★ v0.3.18 (test11): damage reduction comes off the hit's total once, after the critical multiplier
+                // and with the sneak attack in it (it was taken off the unmultiplied hit before).
+                var dr = HitChanceCalculator.CalculateDamageReduction(unit, target, weapon, damage);
+                if (dr != null && !dr.CanBypass && dr.DRValue > 0)
+                    damage = Math.Max(0f, damage - dr.DRValue);
 
                 if (damage >= target.HPLeft) killChance = 1f;
                 else if (!immune)

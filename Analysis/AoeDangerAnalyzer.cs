@@ -62,6 +62,9 @@ namespace CompanionAI_Pathfinder.Analysis
             public bool IsMovementImpairing { get; set; }
             /// <summary>★ v0.3.17: chance the area affects the unit at all before it ends (its save, immunities, time).</summary>
             public float AffectChance { get; set; } = 1f;
+            /// <summary>★ v0.3.18 (test11): rounds its effect lasts after a failed save, outside the area too (Stinking
+            /// Cloud's nausea); 0 when it ends on leaving or is unknown.</summary>
+            public float LingerRounds { get; set; }
         }
 
         #endregion
@@ -185,15 +188,23 @@ namespace CompanionAI_Pathfinder.Analysis
         /// </summary>
         public static float EnteringDanger(UnitEntityData unit, Vector3 from, Vector3 to, out string name,
                                            out float roundsLeft, out bool endsInside, out float stopChance) =>
-            EnteringDanger(unit, from, to, out name, out roundsLeft, out endsInside, out stopChance, out _, out _);
+            EnteringDanger(unit, from, to, out name, out roundsLeft, out endsInside, out stopChance, out _, out _, out _);
 
         /// <remarks>★ v0.3.18 (test10): <paramref name="movementOnly"/> - the worst area only hinders movement (Grease,
         /// Entangle, Web: no damage, no hard control, no poison, fear, stun, paralysis or death effect);
         /// <paramref name="affectChance"/> - the chance it affects the unit (its save, immunities, time left).</remarks>
         public static float EnteringDanger(UnitEntityData unit, Vector3 from, Vector3 to, out string name,
                                            out float roundsLeft, out bool endsInside, out float stopChance,
-                                           out bool movementOnly, out float affectChance)
+                                           out bool movementOnly, out float affectChance) =>
+            EnteringDanger(unit, from, to, out name, out roundsLeft, out endsInside, out stopChance, out movementOnly, out affectChance, out _);
+
+        /// <remarks>★ v0.3.18 (test11): <paramref name="lingerRounds"/> - how long the worst area's effect lasts after a
+        /// failed save, outside it too (see <see cref="DangerousEffect.LingerRounds"/>).</remarks>
+        public static float EnteringDanger(UnitEntityData unit, Vector3 from, Vector3 to, out string name,
+                                           out float roundsLeft, out bool endsInside, out float stopChance,
+                                           out bool movementOnly, out float affectChance, out float lingerRounds)
         {
+            lingerRounds = 0f;
             movementOnly = false;
             affectChance = 0f;
             bool otherKind = false;   // ★ (review) another entered area does more than hinder movement
@@ -230,6 +241,7 @@ namespace CompanionAI_Pathfinder.Analysis
                     roundsLeft = RoundsLeft(aoe);
                     movementOnly = IsMovementOnly(danger, aoe);
                     affectChance = Mathf.Clamp01(danger.AffectChance);
+                    lingerRounds = danger.LingerRounds;
                 }
             }
             catch (Exception ex)
@@ -643,6 +655,7 @@ namespace CompanionAI_Pathfinder.Analysis
                 // opportunity, was stopped by the first and stayed inside anyway.
                 result.AffectChance = AffectChance(unit, aoe);
                 result.DangerLevel = Mathf.Clamp01(dangerLevel) * result.AffectChance;
+                result.LingerRounds = LingerRounds(unit, aoe);
 
                 if (!quiet)
                 {
@@ -822,6 +835,27 @@ namespace CompanionAI_Pathfinder.Analysis
             {
             }
             return 10f;
+        }
+
+        /// <summary>
+        /// ★ v0.3.18 (test11): how long what the area puts on a unit lasts once applied, from the spawning ability's
+        /// analysis: a buff given a duration (Stinking Cloud's nausea goes on for 1d4 rounds after the unit leaves). An
+        /// area buff that only lasts while inside has no duration and gives 0. Orvath walked a step into his Dretch's
+        /// Stinking Cloud for a Color Spray and lost three turns to nausea outside it; the walk was priced as one round.
+        /// </summary>
+        private static float LingerRounds(UnitEntityData unit, AreaEffectEntityData aoe)
+        {
+            try
+            {
+                var profile = SourceProfile(aoe);
+                if (profile == null) return 0f;
+                float rounds = profile.EffectRoundsOn(aoe.Context?.SourceAbilityContext?.Ability, unit);
+                return rounds > 0f ? Math.Min(rounds, 10f) : 0f;
+            }
+            catch
+            {
+                return 0f;
+            }
         }
 
         /// <summary>★ v0.3.14: how strongly the area controls those inside (from the spawning ability's analysis).</summary>

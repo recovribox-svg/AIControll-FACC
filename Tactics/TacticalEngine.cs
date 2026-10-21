@@ -311,6 +311,8 @@ namespace CompanionAI_Pathfinder.Tactics
         /// </summary>
         private static bool SilentlyFailing(TacticalContext ctx, Candidate c)
         {
+            // ★ v0.3.18 (test11): a walk the real-time path check refused from where the unit still stands.
+            if (CombatMemory.WalkRefused(ctx.Unit, c.Key)) return true;
             if (c.Kind != CandidateKind.Ability || c.Ability == null) return false;
             return CastOutcome.IsBlocked(ctx.Unit, c.Ability, c.Target) || CastOutcome.WouldReplaceHeldCharge(ctx.Unit, c.Ability, c.Target);
         }
@@ -646,7 +648,9 @@ namespace CompanionAI_Pathfinder.Tactics
             public bool Exposed;
             public Disengage Copy() => (Disengage)MemberwiseClone();
             public string Tag => (Attacks > 0 ? $" [AoO {Attacks}{(DropChance >= 0.1f ? $", {DropChance:P0} down" : "")}]" : "") +
-                                 (Area != null ? $" [into {Area}]" : "") + (Exposed ? " [exposed]" : "");
+                                 (Area != null ? $"{IntoTag}{Area}]" : "") + (Exposed ? " [exposed]" : "");
+            /// <summary>★ v0.3.18 (test11): marks an option whose walk was priced as entering a harmful area.</summary>
+            internal const string IntoTag = " [into ";
         }
 
         /// <summary>
@@ -663,7 +667,7 @@ namespace CompanionAI_Pathfinder.Tactics
             var unit = ctx.Unit;
             float danger = AoeDangerAnalyzer.EnteringDanger(unit, unit.Position, destination, out string area,
                                                             out float roundsLeft, out bool endsInside, out float areaStop,
-                                                            out bool movementOnly, out float affect);
+                                                            out bool movementOnly, out float affect, out float linger);
             if (danger > 0f)
             {
                 // ★ v0.3.17: an area that impedes movement can stop the walk on the way in (a failed save: fallen or
@@ -680,6 +684,9 @@ namespace CompanionAI_Pathfinder.Tactics
                 // too (34 moves "into Grease" in one log): the cost was half a fight's worth × one round's chance.
                 float perRound = AllyWorth(ctx, unit) / ValueModel.Horizon(ctx.ExpectedRounds, 3f);
                 float rounds = endsInside ? Mathf.Clamp(Math.Min(roundsLeft, ctx.ExpectedRounds), 1f, 3f) : 1f;
+                // ★ v0.3.18 (test11): an effect that outlasts the area (Stinking Cloud's nausea) is lost for its own
+                // duration, not only the rounds spent inside.
+                if (linger > 0f) rounds = Math.Max(rounds, Mathf.Clamp(Math.Min(linger, ctx.ExpectedRounds), 1f, 3f));
                 risk = risk ?? new Disengage();
                 risk.Area = area ?? "area";
                 // Inside, a fall is worse than its share of a round: standing up provokes from every enemy next to the
@@ -1480,7 +1487,10 @@ namespace CompanionAI_Pathfinder.Tactics
                 if (item && q < 0.5f) q = 0f;
                 // ★ v0.3.18 (test10): Strength helps weapon attacks in melee and carrying; little for an archer or caster
                 // whose weapon does not add it (a composite bow does: the game's weapon rule decides).
-                if (analysis.StrengthOnly && !CombatMath.StrengthAddsWeaponDamage(recipient)) q *= 0.2f;
+                // ★ v0.3.18 (test11): and for an archer whose bow does add it, when the buff also costs Dexterity: Enlarge
+                // Person's +1 damage against -1 to hit from Dexterity and -1 from size. It went to Aeiluvetar over a heal.
+                if (analysis.StrengthOnly && (!CombatMath.StrengthAddsWeaponDamage(recipient) ||
+                                              (analysis.DexterityPenalty && UsesRangedWeapon(recipient)))) q *= 0.2f;
                 best = Math.Max(best, q);
             }
             return best;
@@ -1962,7 +1972,7 @@ namespace CompanionAI_Pathfinder.Tactics
                 affectedAllies = targetsType == Kingmaker.UnitLogic.Abilities.Components.TargetType.Enemy
                     ? new List<UnitEntityData>() : UnitsAround(ctx.Allies, target.Position, profile.AoERadius);
                 // ★ v0.3.8: who the area can affect at all (Sleep: creatures with few hit dice).
-                affectedEnemies = affectedEnemies.Where(u => profile.AreaReaches(ability, u)).ToList();
+                affectedEnemies = affectedEnemies.Where(u => profile.AreaReaches(ability, u) && !CastOutcome.AreaSkips(unit, ability, u)).ToList();
                 affectedAllies = affectedAllies.Where(u => profile.AreaReaches(ability, u)).ToList();
             }
             // ★ v0.3.18 (AA-4): a chain goes on to the units nearest its first target within its radius, in the game's
@@ -2404,6 +2414,11 @@ namespace CompanionAI_Pathfinder.Tactics
                     if (profile.Summons)
                     {
                         value += (3f + 3f * level) * Math.Min(ctx.ExpectedRounds, 4f) * 0.5f * (ctx.Enemies.Count >= 2 ? 1f : 0.6f);
+                        // ★ v0.3.18 (test11): a creature that brings an area the game's AI will also drop on our melee
+                        // fighters (a Dretch's Stinking Cloud) is worth less than one that does not, while the party has
+                        // any: Orvath opened every fight with Summon Dretch, at the same value as Cambion and Quasit.
+                        if (profile.SummonCatchesAllies && ctx.Allies.Any(a => a != unit && !UsesRangedWeapon(a) && !IsSummon(a)))
+                            value *= 0.7f;
                         reasons.Add("summon");
                     }
                     else if (ability.SourceItem != null)
@@ -2529,7 +2544,15 @@ namespace CompanionAI_Pathfinder.Tactics
                 else
                     followUp = bestMain?.Value ?? 0f;
                 float stepDistance = realTime ? 4f : ctx.FiveFootRange * 0.9f;
-                var point = followUp >= MinQuickValue ? FindRetreatPoint(ctx, stepDistance, keepsTarget) : null;
+                // ★ v0.3.18 (test11): turn-based, a step spot whose real path was refused as longer than a step (a unit or
+                // a corner in the way: "path 2.5m") is not offered again this turn; the other directions are, up to three
+                // refusals. The engine offered the same spot again and Aeiluvetar shot from melee, provoking.
+                var refusedSteps = realTime ? null : CombatMemory.ForTurn(unit).RefusedSteps;
+                Func<Vector3, bool> stepAccept = keepsTarget;
+                if (refusedSteps != null && refusedSteps.Count > 0)
+                    stepAccept = p => (keepsTarget == null || keepsTarget(p)) && refusedSteps.All(q => Vector3.Distance(p, q) > 0.5f);
+                var point = followUp >= MinQuickValue && (refusedSteps == null || refusedSteps.Count < 3)
+                    ? FindRetreatPoint(ctx, stepDistance, stepAccept) : null;
                 if (point.HasValue)
                 {
                     // ★ v0.3.17: a caster's step is worth what casting here would lose (the risk priced into the spell);
@@ -2566,7 +2589,7 @@ namespace CompanionAI_Pathfinder.Tactics
                     {
                         Kind = CandidateKind.Move, Slot = realTime ? ActionSlot.Move : ActionSlot.Free, Point = point, ApproachRadius = 0.3f,
                         Value = value,
-                        Label = label, Key = "move:5ft"
+                        Label = label, Key = FiveFootStepKey + (refusedSteps != null && refusedSteps.Count > 0 ? $"#{refusedSteps.Count}" : "")
                     });
                 }
             }
@@ -2756,6 +2779,10 @@ namespace CompanionAI_Pathfinder.Tactics
         }
 
         /// <summary>Point within <paramref name="distance"/> that maximises distance from enemies, biased towards allies.</summary>
+        internal const string FiveFootStepKey = "move:5ft";
+
+        internal static bool IsFiveFootStepKey(string key) => key != null && key.StartsWith(FiveFootStepKey);
+
         private static Vector3? FindRetreatPoint(TacticalContext ctx, float distance, Func<Vector3, bool> accept = null)
         {
             var unit = ctx.Unit;
@@ -2813,26 +2840,45 @@ namespace CompanionAI_Pathfinder.Tactics
 
             var enemies = new List<UnitEntityData>();
             try { enemies.AddRange(unit.CombatState.EngagedBy.Where(e => e != null)); } catch { }
-            int attempts = 0;
-            foreach (float ring in new[] { 1.5f, 2.5f })
+            // ★ v0.3.18 (test11): a second pass when no safe spot is found. The walk is only the trigger - the game cancels
+            // it as the unit gets up ("Stand up ... moved=0.0m") - so a spot inside or across an area, or one the straight
+            // navmesh test rejects, still stands the unit up; the dispatcher's own path search decides whether the order
+            // can be given at all. Revived Aeiluvetar lay prone two turns until the fight ended, "no spot to walk to",
+            // every one of the 24 safe-spot candidates filtered out before an order was even tried.
+            int attempts = 0, inArea = 0, invalid = 0;
+            foreach (bool strict in new[] { true, false })
             {
-                var points = Enumerable.Range(0, 12)
-                    .Select(i => unit.Position + new Vector3(Mathf.Cos(i * 30f * Mathf.Deg2Rad), 0f, Mathf.Sin(i * 30f * Mathf.Deg2Rad)) * ring)
-                    .Where(p => AoeDangerAnalyzer.EnteringDanger(unit, unit.Position, p, out _) <= 0f &&
-                                AoeDangerAnalyzer.IsPositionValid(unit.Position, p))
-                    // Staying next to whoever engages the unit: if the walk is carried out after all, it provokes nothing.
-                    .OrderBy(p => enemies.Count == 0 ? 0f : enemies.Max(e => Vector3.Distance(p, e.Position)));
-                foreach (var point in points)
+                foreach (float ring in strict ? new[] { 1.5f, 2.5f } : new[] { 0.6f, 1.0f })
                 {
-                    if (attempts++ >= 4) return false;
-                    var move = new UnitMoveTo(point, 0.3f);
-                    if (CommandDispatcher.Run(unit, move, "Stand up", out failure))
+                    var points = new List<Vector3>();
+                    for (int i = 0; i < 12; i++)
                     {
-                        command = move;
-                        return true;
+                        var p = unit.Position + new Vector3(Mathf.Cos(i * 30f * Mathf.Deg2Rad), 0f, Mathf.Sin(i * 30f * Mathf.Deg2Rad)) * ring;
+                        if (strict)
+                        {
+                            if (AoeDangerAnalyzer.EnteringDanger(unit, unit.Position, p, out _) > 0f) { inArea++; continue; }
+                            if (!AoeDangerAnalyzer.IsPositionValid(unit.Position, p)) { invalid++; continue; }
+                        }
+                        points.Add(p);
                     }
+                    // Staying next to whoever engages the unit: if the walk is carried out after all, it provokes nothing.
+                    foreach (var point in points.OrderBy(p => enemies.Count == 0 ? 0f : enemies.Max(e => Vector3.Distance(p, e.Position))))
+                    {
+                        if (attempts++ >= (strict ? 4 : 8)) break;
+                        var move = new UnitMoveTo(point, 0.3f);
+                        if (CommandDispatcher.Run(unit, move, "Stand up", out failure))
+                        {
+                            command = move;
+                            return true;
+                        }
+                    }
+                    if (attempts >= (strict ? 4 : 8)) break;
                 }
+                if (strict && attempts == 0)
+                    Main.Log($"[Tactics] {unit.CharacterName}: no safe spot to stand up towards ({inArea} in or across a harmful area, " +
+                             $"{invalid} not walkable) - trying spots right beside it");
             }
+            if (attempts == 0) failure = $"no spot to walk to ({inArea} in or across an area, {invalid} not walkable)";
             return false;
         }
 
@@ -2935,7 +2981,7 @@ namespace CompanionAI_Pathfinder.Tactics
 
             // ★ v0.3.18 (test10): a 5-foot step must be one (CommandDispatcher refuses a longer path).
             bool issued = CommandDispatcher.Run(unit, command, c.Label, out failure, avoidAreas: c.CheckPath,
-                                                fiveFootOnly: c.Key == "move:5ft" && !CombatMemory.IsRealTime);
+                                                fiveFootOnly: IsFiveFootStepKey(c.Key) && !CombatMemory.IsRealTime);
             // ★ v0.3.18 (AA-3, review): the attack's modes once the dispatcher has taken the attack - before, a refused
             // attack left them switched (and locked for the round) for whatever option came next. The attack rolls on
             // later ticks; Fighting Defensively starts on the attack itself (RuleAttackWithWeapon).

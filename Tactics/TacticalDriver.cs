@@ -73,6 +73,8 @@ namespace CompanionAI_Pathfinder.Tactics
         public static void RecordRejected(TurnMemory memory, Candidate candidate, string failure)
         {
             memory.Failed.Add(candidate.Key);
+            // ★ v0.3.18 (test11): another direction for the next 5-foot step (TacticalEngine.AddMovementCandidates).
+            if (TacticalEngine.IsFiveFootStepKey(candidate.Key) && candidate.Point.HasValue) memory.RefusedSteps.Add(candidate.Point.Value);
             // ★ v0.3.11: no path gets within reach of this enemy: an advance towards it this turn is wasted
             // (Albedo spent his 5-foot step walking 1.6 m towards an archer he could not reach, three rounds running).
             if (candidate.Target != null && failure != null && failure.StartsWith("path ends out of reach"))
@@ -120,6 +122,13 @@ namespace CompanionAI_Pathfinder.Tactics
             public int Hp;
             /// <summary>★ v0.3.18: the harmful areas the unit stood in when the command was chosen (unique ids).</summary>
             public HashSet<string> Areas;
+            /// <summary>
+            /// ★ v0.3.18 (test11): the option already counted on walking through harmful areas - a walk out of one ("Leave
+            /// Stinking Cloud"), an advance or withdrawal priced with the areas on its way, an attack priced "[into ...]".
+            /// Re-deciding when it enters them threw away walks it had chosen with that cost in mind: two leave-walks
+            /// dropped part-way (after 1.6 m and 6 m), Seelah then took a Move+Attack and was nauseated.
+            /// </summary>
+            public bool AreasPriced;
         }
 
         private static HashSet<string> AreasAround(UnitEntityData unit)
@@ -154,6 +163,7 @@ namespace CompanionAI_Pathfinder.Tactics
                     if (!IssuedAtHp.TryGetValue(command, out var issued)) continue;
                     now = now ?? AreasAround(unit);
                     if (now.Count == 0) return false;
+                    if (issued.AreasPriced) continue;
                     if (issued.Areas != null && now.IsSubsetOf(issued.Areas)) continue;
                     issued.Areas = now;
                     why = $"now in a harmful area while '{command.GetType().Name}' waited to start";
@@ -236,11 +246,18 @@ namespace CompanionAI_Pathfinder.Tactics
                     {
                         TacticalDriver.RecordIssued(unit, memory, candidate, command);
                         IssuedAtHp.Remove(command);
-                        IssuedAtHp.Add(command, new IssueState { Hp = unit.HPLeft, Areas = AreasAround(unit) });
+                        IssuedAtHp.Add(command, new IssueState
+                        {
+                            Hp = unit.HPLeft, Areas = AreasAround(unit),
+                            AreasPriced = candidate.Kind == CandidateKind.Move ||
+                                          (candidate.Label?.Contains(TacticalEngine.Disengage.IntoTag) ?? false)
+                        });
                         return true;
                     }
                     Main.Log($"[RT-Tactics] {unit.CharacterName}: '{candidate.Label}' could not be issued ({failure}) - trying next best");
                     TacticalDriver.RecordRejected(memory, candidate, failure);
+                    if (failure != null && failure.StartsWith(GameInterface.CommandDispatcher.WalksIntoAreaFailure))
+                        CombatMemory.NoteRefusedWalk(unit, candidate.Key);
                 }
                 return false;
             }

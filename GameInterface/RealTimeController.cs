@@ -453,10 +453,15 @@ namespace CompanionAI_Pathfinder.GameInterface
             public TimeSpan NearestAt;
             /// <summary>Where the command's approach point was when first seen (a target that walks away moves it).</summary>
             public Vector3 FirstPoint;
+            /// <summary>★ v0.3.18 (test11): since when the unit has been within the approach radius and still walking.</summary>
+            public TimeSpan? InsideSince;
         }
 
         /// <summary>★ v0.3.18 (test10): seconds of walking (a round) without getting 0.5 m nearer before "moving" stops counting.</summary>
         private const float NO_PROGRESS_SECONDS = 6f;
+
+        /// <summary>★ v0.3.18 (test11): seconds a unit may keep walking once within its command's approach radius.</summary>
+        private const float ARRIVED_WALKING_SECONDS = 2f;
 
         /// <summary>
         /// ★ v0.2.119: A not-started command is stuck only if the unit is not walking towards it, it is not waiting
@@ -488,6 +493,19 @@ namespace CompanionAI_Pathfinder.GameInterface
                 if (wait == "moving" && cmd.ShouldUnitApproach)
                 {
                     float gap = Vector3.Distance(unit.Position, cmd.ApproachPoint) - Math.Max(0f, cmd.ApproachRadius);
+                    // ★ v0.3.18 (test11): within the radius and still walking (circling for sight or a free spot): Seelah
+                    // "-0.4 m to go" and Lann "-3.9 m to go" walked another 6 s before the rule above ended it. Not while
+                    // the walk is looking for line of sight (it may have to go round a corner: Aeiluvetar did, and shot).
+                    if (gap <= 0f && (!cmd.NeedLoS || cmd.SightIsClear()))
+                    {
+                        if (!mark.InsideSince.HasValue) mark.InsideSince = now;
+                        else if ((now - mark.InsideSince.Value).TotalSeconds > ARRIVED_WALKING_SECONDS)
+                        {
+                            reason = $"in range for {(now - mark.InsideSince.Value).TotalSeconds:F0} s and still walking";
+                            return true;
+                        }
+                    }
+                    else mark.InsideSince = null;
                     if (gap < mark.Nearest - 0.5f)
                     {
                         mark.Nearest = gap;

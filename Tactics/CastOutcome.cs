@@ -86,6 +86,9 @@ namespace CompanionAI_Pathfinder.Tactics
         private static readonly Dictionary<string, Pending> ByCaster = new Dictionary<string, Pending>();
         /// <summary>"caster|ability|target" → silent failures this fight (target "-" for the caster itself or a point).</summary>
         private static readonly Dictionary<string, int> Failures = new Dictionary<string, int>();
+        /// <summary>★ v0.3.18 (test11): "caster|ability|target" → casts of an area centred on that enemy that reached others
+        /// but never it, this fight.</summary>
+        private static readonly Dictionary<string, int> AreaMisses = new Dictionary<string, int>();
 
         public static void Subscribe()
         {
@@ -107,6 +110,7 @@ namespace CompanionAI_Pathfinder.Tactics
         {
             ByCaster.Clear();
             Failures.Clear();
+            AreaMisses.Clear();
             StuckCharges.Clear();
         }
 
@@ -177,6 +181,14 @@ namespace CompanionAI_Pathfinder.Tactics
             if (Failures.TryGetValue(FailureKey(caster, ability.Blueprint, target), out int n) && n >= FailuresBeforeBlock) return true;
             var delivery = TouchDeliveryOf(ability.Blueprint);
             return delivery != null && Failures.TryGetValue(FailureKey(caster, delivery, target), out n) && n >= FailuresBeforeBlock;
+        }
+
+        /// <summary>★ v0.3.18 (test11): the caster's area of this ability was centred on <paramref name="enemy"/> twice
+        /// this fight, reached others and never it: not counted among the units that area affects.</summary>
+        public static bool AreaSkips(UnitEntityData caster, AbilityData ability, UnitEntityData enemy)
+        {
+            if (caster == null || ability?.Blueprint == null || enemy == null || AreaMisses.Count == 0) return false;
+            return AreaMisses.TryGetValue(FailureKey(caster, ability.Blueprint, enemy), out int n) && n >= FailuresBeforeBlock;
         }
 
         /// <summary>The touch spell whose charge the unit is holding now (UnitPartTouch), or null.</summary>
@@ -341,7 +353,20 @@ namespace CompanionAI_Pathfinder.Tactics
             if (missedTarget && p.Area && p.Reached != null && p.Reached.Count > 0)
             {
                 // An area centred on an enemy it does not affect, for the others in it: that worked.
-                Main.Log($"[Cast] {p.Caster.CharacterName}: {p.Name} centred on {p.Target?.CharacterName}, reached {string.Join(", ", p.Reached)}");
+                // ★ v0.3.18 (test11): but the enemy at its centre is not counted in that area again after two such casts.
+                // Sleep's Hit Dice are a pool the game spends target by target (ContextActionChangeSharedValue SubHD), so
+                // the units the area reaches first use it up; the profile checks each unit against the whole pool. Orvath
+                // cast Sleep centred on a Forsaken Kobold Evoker six times in a row, each re-sleeping the same Mongrel,
+                // the Evoker never rolling a save. The cast itself stays allowed for what it does to the others.
+                int misses = 0;
+                if (p.BlockOnNoReach && p.Ability?.Blueprint != null && p.Target != null)
+                {
+                    string missKey = FailureKey(p.Caster, p.Ability.Blueprint, p.Target);
+                    AreaMisses.TryGetValue(missKey, out misses);
+                    AreaMisses[missKey] = ++misses;
+                }
+                Main.Log($"[Cast] {p.Caster.CharacterName}: {p.Name} centred on {p.Target?.CharacterName}, reached {string.Join(", ", p.Reached)}" +
+                         (misses > 0 ? $" ({misses}/{FailuresBeforeBlock}{(misses >= FailuresBeforeBlock ? $"; {p.Target?.CharacterName} not counted in its area again this fight" : "")})" : ""));
                 missedTarget = false;
             }
             if (missedTarget)

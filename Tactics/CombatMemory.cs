@@ -9,6 +9,7 @@ using Kingmaker;
 using Kingmaker.EntitySystem.Entities;
 using Kingmaker.UnitLogic.Abilities;
 using Kingmaker.UnitLogic.Commands.Base;
+using UnityEngine;
 
 namespace CompanionAI_Pathfinder.Tactics
 {
@@ -171,6 +172,28 @@ namespace CompanionAI_Pathfinder.Tactics
             return false;
         }
 
+        /// <summary>★ v0.3.18 (test11): "unit|option" → where the unit stood when the real-time path check refused that
+        /// option's walk, and until when it counts.</summary>
+        private static readonly Dictionary<string, KeyValuePair<Vector3, double>> RefusedWalks = new Dictionary<string, KeyValuePair<Vector3, double>>();
+
+        /// <summary>
+        /// ★ v0.3.18 (test11): the dispatcher refused an option's walk because the real path enters a harmful area. The
+        /// round's failed-option list forgets it after 6 s, and Lann's same approaches were refused 18 times over three
+        /// rounds, each a full decision and a path search. Remembered for two rounds while the unit stays where it was.
+        /// </summary>
+        public static void NoteRefusedWalk(UnitEntityData unit, string optionKey)
+        {
+            if (!IsRealTime || unit == null || optionKey == null) return;
+            RefusedWalks[$"{unit.UniqueId}|{optionKey}"] = new KeyValuePair<Vector3, double>(unit.Position, GameSeconds + 12d);
+        }
+
+        public static bool WalkRefused(UnitEntityData unit, string optionKey)
+        {
+            if (!IsRealTime || RefusedWalks.Count == 0 || unit == null || optionKey == null) return false;
+            if (!RefusedWalks.TryGetValue($"{unit.UniqueId}|{optionKey}", out var refused)) return false;
+            return GameSeconds <= refused.Value && Vector3.Distance(unit.Position, refused.Key) <= 1f;
+        }
+
         /// <summary>★ v0.3.18 (test10): "unit|ability" → the caster's burn and the dead around it when it last used a burn
         /// relief (Soul Power).</summary>
         private static readonly Dictionary<string, KeyValuePair<int, int>> BurnReliefs = new Dictionary<string, KeyValuePair<int, int>>();
@@ -209,6 +232,7 @@ namespace CompanionAI_Pathfinder.Tactics
         public static void ResetCombat()
         {
             PendingCasts.Clear();
+            RefusedWalks.Clear();
             ProneStays.Clear();
             BurnReliefs.Clear();
             ToggleSwitches.Clear();
@@ -279,6 +303,8 @@ namespace CompanionAI_Pathfinder.Tactics
         public readonly HashSet<string> Failed = new HashSet<string>();
         /// <summary>★ v0.3.11: enemies (unique ids) a path could not reach this turn - not worth advancing towards.</summary>
         public readonly HashSet<string> Unreachable = new HashSet<string>();
+        /// <summary>★ v0.3.18 (test11): 5-foot-step spots refused this turn (the real path was longer than a step).</summary>
+        public readonly List<UnityEngine.Vector3> RefusedSteps = new List<UnityEngine.Vector3>();
 
         /// <summary>The last command we issued and the candidate it came from (to learn from no-op results).</summary>
         public UnitCommand LastCommand { get; set; }

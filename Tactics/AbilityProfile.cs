@@ -77,6 +77,8 @@ namespace CompanionAI_Pathfinder.Tactics
         public readonly List<BlueprintBuff> CasterBuffs = new List<BlueprintBuff>();
 
         public bool Summons { get; private set; }
+        /// <summary>★ v0.3.18 (test11): the creatures it summons (ContextActionSpawnMonster.Blueprint).</summary>
+        public readonly List<Kingmaker.Blueprints.BlueprintUnit> SummonedUnits = new List<Kingmaker.Blueprints.BlueprintUnit>();
         public bool Dispels { get; private set; }
         public bool RemovesBuffs { get; private set; }
         public bool Enchants { get; private set; }
@@ -598,7 +600,11 @@ namespace CompanionAI_Pathfinder.Tactics
                 // markers, Demonology's ritual buff) is not an effect on the caster or the target.
                 if (subject == EffectSubject.Summoned)
                 {
-                    if (action is ContextActionSpawnMonster) Summons = true;
+                    if (action is ContextActionSpawnMonster spawned)
+                    {
+                        Summons = true;
+                        if (spawned.Blueprint != null && !SummonedUnits.Contains(spawned.Blueprint)) SummonedUnits.Add(spawned.Blueprint);
+                    }
                     foreach (var child in ChildActionLists(action))
                         Walk(child, visited, abilityDepth, subject, depth + 1, guards);
                     continue;
@@ -676,8 +682,9 @@ namespace CompanionAI_Pathfinder.Tactics
                         AddBuffGuards(demoralize.Buff, guards);
                         m_AllBuffs++;
                         break;
-                    case ContextActionSpawnMonster _:
+                    case ContextActionSpawnMonster spawn:
                         Summons = true;
+                        if (spawn.Blueprint != null && !SummonedUnits.Contains(spawn.Blueprint)) SummonedUnits.Add(spawn.Blueprint);
                         break;
                     case ContextActionSpawnAreaEffect spawnArea:
                         WalkAreaEffect(spawnArea.AreaEffect, visited, abilityDepth, subject, depth, guards);
@@ -1501,6 +1508,61 @@ namespace CompanionAI_Pathfinder.Tactics
         private static readonly Dictionary<Type, FieldInfo[]> ActionFields = new Dictionary<Type, FieldInfo[]>();
         private static readonly Dictionary<Type, FieldInfo[]> AbilityRefFields = new Dictionary<Type, FieldInfo[]>();
         private const BindingFlags Fields = BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic;
+
+        private bool? m_SummonCatchesAllies;
+
+        /// <summary>
+        /// ★ v0.3.18 (test11): a creature it summons has an ability of its own that spawns an area able to affect its side
+        /// (a Dretch's Stinking Cloud). The game's AI runs summons and casts such an area where the fight is, on the
+        /// party's melee fighters too: Camellia was nauseated for five rounds and Seelah for six by the Dretch Orvath
+        /// summoned to open every fight (0.3.18-test10 real-time log), and Orvath walked into its cloud in turn-based.
+        /// Read from the creature's own facts (and the facts those add), one level deep.
+        /// </summary>
+        public bool SummonCatchesAllies
+        {
+            get
+            {
+                if (m_SummonCatchesAllies.HasValue) return m_SummonCatchesAllies.Value;
+                bool found = false;
+                try
+                {
+                    foreach (var creature in SummonedUnits)
+                    {
+                        var facts = new List<Kingmaker.Blueprints.Facts.BlueprintUnitFact>();
+                        foreach (var fact in creature.AddFacts) if (fact != null) facts.Add(fact);
+                        foreach (var fact in facts.ToList())
+                            foreach (var add in fact.GetComponents<AddFacts>())
+                                foreach (var more in add.Facts) if (more != null) facts.Add(more);
+                        foreach (var ability in facts.OfType<BlueprintAbility>())
+                        {
+                            var run = ability.GetComponent<AbilityEffectRunAction>();
+                            if (run?.Actions?.Actions != null && SpawnsAllyArea(run.Actions.Actions, 0)) { found = true; break; }
+                        }
+                        if (found) break;
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Main.Verbose($"[Profile] summoned creature abilities: {ex.Message}");
+                }
+                m_SummonCatchesAllies = found;
+                return found;
+            }
+        }
+
+        private static bool SpawnsAllyArea(GameAction[] actions, int depth)
+        {
+            if (actions == null || depth > 4) return false;
+            foreach (var action in actions)
+            {
+                if (action == null) continue;
+                if (action is ContextActionSpawnAreaEffect spawn && spawn.AreaEffect != null && spawn.AreaEffect.CanTargetAllies)
+                    return true;
+                foreach (var child in ChildActionLists(action))
+                    if (SpawnsAllyArea(child, depth + 1)) return true;
+            }
+            return false;
+        }
 
         private static IEnumerable<GameAction[]> ChildActionLists(GameAction action)
         {

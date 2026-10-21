@@ -95,6 +95,8 @@ namespace CompanionAI_Pathfinder.Analysis
         /// <summary>★ v0.3.18 (test10): every effect it is valued for is a Strength bonus (Enlarge Person, Bull's
         /// Strength): worth little to a recipient that fights at range.</summary>
         public bool StrengthOnly { get; set; }
+        /// <summary>★ v0.3.18 (test11): it also lowers Dexterity (Enlarge Person's -2): an archer loses to-hit.</summary>
+        public bool DexterityPenalty { get; set; }
         internal int StrengthParts;
 
         /// <summary>핵심 전투 효과 보유 여부</summary>
@@ -528,6 +530,7 @@ namespace CompanionAI_Pathfinder.Analysis
                 if (sign.HasValue && sign.Value < 0)
                 {
                     result.DetectedComponents.Add($"Stat({statName})=Penalty");
+                    if (statName == "Dexterity") result.DexterityPenalty = true;
                     return 0f;
                 }
                 if (statName == "Strength") result.StrengthParts++;
