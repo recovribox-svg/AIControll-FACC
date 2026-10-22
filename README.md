@@ -36,9 +36,7 @@ combat (primary) and real-time combat.
 - An advance that runs out of its move action can continue with the standard action; abilities are not aimed at a
   target on which none of their effects apply.
 
-**0.3.18** ([release/CHANGELOG_v0.3.18.md](release/CHANGELOG_v0.3.18.md), includes 0.3.17): many more active
-abilities are used - performances, Rage and spirits, Power Attack and the other attack modes chosen per attack, Mobility,
-Demoralize by the Intimidate rule, combat maneuvers, Vital Strike, Cleave, Pounce, metamagic and chain spells. Melee
+**0.3.18** ([release/CHANGELOG_v0.3.18.md](release/CHANGELOG_v0.3.18.md), includes 0.3.17): Melee
 characters walk around Grease, Entangle and clouds, and real-time walks are checked against the path the game takes and
 an ally's area spell about to land. Fight length and enemy danger are calibrated from the damage actually dealt. Spells
 that do nothing to a target are dropped for it, touch spells walk into reach in real time too, prone units stand up, and
