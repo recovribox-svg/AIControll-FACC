@@ -1302,3 +1302,51 @@ item for an AI-controlled companion during its turn; in real time they can. This
 A way to let the player take over a turn is in the plan for a later version (a click on the companion's action bar
 pauses the AI for that turn, the AI waits for the player's command and then uses what is left).
 
+### 0.3.19-test2: what the test1 logs showed (turn-based 6c49226d, real time 38d120f3)
+
+Fighting Defensively worked as a mode: 9 switches in turn-based and 1 in real time, on when an enemy stood next to the
+unit, off for attacks on enemies that were no threat. The "off" gains show its -4 is read. Its switch-off action removes
+`CraneStyleWingBuff` (Crane Wing needs it): harmless. Orvath summoned Cambion or Quasit rather than the Dretch while the
+melee fighters stood. Enlarge Person went only to melee characters.
+
+**Fixed.**
+- **Toggles left on after a fight.** Fighting Defensively "ends with combat" by its blueprint, yet the AI's switch-on
+  was still on at the next fight's start (Seelah, Aeiluvetar). A toggle that ends with combat is now switched off after
+  the fight when the player had it off. It is switched back on only when it starts with an attack (`ActivateOnUnitAction`),
+  never a performance or Rage.
+- **Mode values in the coverage line of every fight** (the once-per-session line fell outside a log that starts
+  mid-session).
+- **One mark at a time.** Camellia's Ring of the Mad Duelist (a free action) marked a new enemy at every decision, the
+  same Neophyte Fighter twice in one turn: its buff has no component, so "already marked" could not be seen on the
+  enemy. A mark is not applied again while the caster's last mark from that ability still runs on a living enemy that can
+  fight. What such a mark's ability holds is logged once, as evidence for valuing it.
+- **Smite Evil with Vital Strike, Cleave and Coup de Grace.** The own-attack mark was kept only for weapon attacks, moves
+  and Charge; Seelah never smote with her seven Vital Strikes.
+- **Real time: stuck options were never learnt from.** The round's memory starts afresh every 6 s and a walk is called
+  stuck after 6 s, so `RecordStuck` always found the wrong memory (no "was stuck" line in the log). The option now
+  travels with its command, and is not offered again while the unit stands where it got stuck. A walk in range with no
+  line of sight that makes no progress counts as a problem with that target. Aeiluvetar got the same no-sight
+  Move+Attack six times and attacked once in a 16-round fight.
+- **Fighting Defensively's value bias.** The option's value came from the rules as they stand, which lack a mode that is
+  on but not started: kept on, the attack had no -4; switched off, the -4 counted as a gain on top. The value is brought
+  to the state the attack is really made in first.
+- **The Dretch's lower value applies whoever is left** (with the melee fighters down it was summoned at full value and
+  its cloud caught Orvath, Lann and Aeiluvetar).
+- **Only disabled enemies left:** their threat is no longer cut to a quarter. A sleeping, entangled Dretch was the last
+  enemy for four rounds while Camellia and Seelah found nothing worth doing.
+
+**Diagnostics for the next step.**
+- **Power Attack, Deadly Aim and Combat Expertise** reach the AI rebuilt by another mod: Power Attack's buff has only an
+  `AddInitiatorAttackWithWeaponTrigger` (the game's own has the weapon bonus components the AI reads), and Combat
+  Expertise has Tabletop Tweaks' `AddStatBonusIfHasFactTTT`. The coverage line now says what an on-attack trigger runs.
+  `blueprints.zip` holds the game's own data, not what mods change at runtime, so the log is the source for this.
+
+**Next (not in this build).**
+- Real time: a spot with line of sight for archers whose target is in range but out of sight (the game's own search
+  stalls).
+- Coup de Grace and other full-round abilities after a 5-foot step (the step is offered for full attacks only).
+- Sleep's Hit Dice pool in the game's target order.
+- A healer walking to an ally that is withdrawing; a frightened healer's touch spells.
+- An own area spell over downed allies that blocks their revival.
+- Mobility in real time (half speed costs time, not the move).
+

@@ -56,6 +56,36 @@ namespace CompanionAI_Pathfinder.Tactics
             public string RemovesOnEnd;
         }
 
+        /// <summary>★ v0.3.19 (test2): action types, with the buffs they apply and those buffs' components (for the log).</summary>
+        internal static string DescribeActions(Kingmaker.ElementsSystem.GameAction[] actions, int depth = 0)
+        {
+            if (actions == null || actions.Length == 0) return "nothing";
+            if (depth > 2) return "...";
+            var parts = new List<string>();
+            foreach (var a in actions.Where(x => x != null))
+            {
+                string part = a.GetType().Name;
+                try
+                {
+                    switch (a)
+                    {
+                        case Kingmaker.UnitLogic.Mechanics.Actions.ContextActionApplyBuff apply when apply.Buff != null:
+                            part += $" {apply.Buff.name} [{string.Join(",", apply.Buff.ComponentsArray?.Where(x => x != null).Select(x => x.GetType().Name) ?? Enumerable.Empty<string>())}]";
+                            break;
+                        case Kingmaker.UnitLogic.Mechanics.Actions.ContextActionRemoveBuff remove when remove.Buff != null:
+                            part += $" {remove.Buff.name}";
+                            break;
+                        case Kingmaker.Designers.EventConditionActionSystem.Actions.Conditional conditional:
+                            part += $"(yes: {DescribeActions(conditional.IfTrue?.Actions, depth + 1)}; no: {DescribeActions(conditional.IfFalse?.Actions, depth + 1)})";
+                            break;
+                    }
+                }
+                catch { }
+                parts.Add(part);
+            }
+            return string.Join(" + ", parts);
+        }
+
         /// <summary>
         /// ★ v0.3.19: <paramref name="actions"/> runs nothing when the buff starts or each round, and only removes buffs when
         /// it ends (ContextActionRemoveBuff, with the names of those buffs).
@@ -138,6 +168,15 @@ namespace CompanionAI_Pathfinder.Tactics
                                              string.Join(", ", new[] { ("on", actions.Activated), ("off", actions.Deactivated), ("round", actions.NewRound) }
                                                  .Where(l => l.Item2?.Actions?.Length > 0)
                                                  .Select(l => l.Item1 + " " + string.Join("+", l.Item2.Actions.Where(x => x != null).Select(x => x.GetType().Name)))) + ")";
+                                break;
+                            // ★ v0.3.19 (test2): what an on-attack trigger runs. Power Attack and Deadly Aim reached the AI as
+                            // a buff with only an AddInitiatorAttackWithWeaponTrigger in the 0.3.19-test1 install (another mod
+                            // rebuilds them at runtime; the game's own buff has the weapon bonus components the AI reads):
+                            // evidence for modelling them.
+                            case Kingmaker.UnitLogic.Mechanics.Components.AbstractWeaponTrigger trigger:
+                                p.Excluded = p.Excluded ?? $"its buff does more than the AI models ({c.GetType().Name}: " +
+                                             (trigger.TriggerBeforeAttack ? "before the attack" : "after the attack") +
+                                             (trigger.OnlyHit ? ", on a hit" : "") + ", runs " + DescribeActions(trigger.Action?.Actions) + ")";
                                 break;
                             default:
                                 p.Excluded = p.Excluded ?? $"its buff does more than the AI models ({c.GetType().Name})";
@@ -445,6 +484,17 @@ namespace CompanionAI_Pathfinder.Tactics
             var current = new HashSet<UnitMode>(modes.Where(m => m.On));
             var baseline = valueOf(current);
             if (baseline.Key < 0f) return;
+            // ★ v0.3.19 (test2): the option's own value comes from the rules as they stand, which lack a mode that is on but
+            // not started (Fighting Defensively between attacks: its -4 and its AC come back with the attack). Brought to
+            // the state the attack will really be made in, before any switch is weighed: kept on, the attack was valued
+            // without the -4; switched off, the -4 was counted as a gain on top of a value that never had it (Seelah's
+            // "[Fighting Defensively off +0.8]" in the 0.3.19-test1 real-time log).
+            if (modes.Any(m => m.On != m.Active))
+            {
+                var asTheyStand = valueOf(new HashSet<UnitMode>(modes.Where(m => m.Active)));
+                if (asTheyStand.Key >= 0f)
+                    c.Value += (baseline.Key - asTheyStand.Key) * c.ModeFactor + (baseline.Value - asTheyStand.Value);
+            }
 
             // One option per group (none on, or one of its modes), each ungrouped mode on or off. ★ v0.3.18 (review): past
             // 32 sets, the groups left out keep their current state (they were left out as "off").

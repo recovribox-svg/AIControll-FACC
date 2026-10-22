@@ -516,9 +516,12 @@ namespace CompanionAI_Pathfinder.GameInterface
                         // A target that keeps moving is a reason to try another one; a fixed point the walk does not
                         // get nearer to is a path problem (blockers, crowding), not a reason to mark the target.
                         bool chased = Vector3.Distance(mark.FirstPoint, cmd.ApproachPoint) > 1f;
+                        // ★ v0.3.19 (test2): in range but no line of sight - the game's walk is looking for a spot to see the
+                        // target from and not finding one (Aeiluvetar, -9.3 m to go, six times): a problem with that target.
+                        bool noSight = gap <= 0f && cmd.NeedLoS && !cmd.SightIsClear();
                         reason = $"walking for {(now - mark.NearestAt).TotalSeconds:F0} s without getting nearer ({gap:F1} m to go" +
-                                 (chased ? ", the target keeps moving)" : ")");
-                        targetProblem = chased;
+                                 (chased ? ", the target keeps moving)" : noSight ? ", no line of sight)" : ")");
+                        targetProblem = chased || noSight;
                         return true;
                     }
                 }

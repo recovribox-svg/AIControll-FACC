@@ -129,6 +129,8 @@ namespace CompanionAI_Pathfinder.Tactics
             /// dropped part-way (after 1.6 m and 6 m), Seelah then took a Move+Attack and was nauseated.
             /// </summary>
             public bool AreasPriced;
+            /// <summary>★ v0.3.19 (test2): the option the command came from (a stuck command is learnt from by it).</summary>
+            public string Key;
         }
 
         private static HashSet<string> AreasAround(UnitEntityData unit)
@@ -183,14 +185,25 @@ namespace CompanionAI_Pathfinder.Tactics
         {
             try
             {
+                // ★ v0.3.19 (test2): the option is kept with the command. The round's memory starts afresh every 6 s and a
+                // walk is called stuck after 6 s or more, so the issuing round's memory was always gone: no "was stuck"
+                // line in the whole 0.3.19-test1 log, and Aeiluvetar got the same no-sight Move+Attack six times
+                // ("walking for 6 s without getting nearer", one attack in a 16-round fight).
                 var memory = CombatMemory.ForTurn(unit);
-                if (memory.LastCommand != command || memory.LastCandidateKey == null) return;
-                memory.Failed.Add(memory.LastCandidateKey);
+                string key = IssuedAtHp.TryGetValue(command, out var issued) ? issued.Key : null;
+                if (key == null && memory.LastCommand == command) key = memory.LastCandidateKey;
+                if (key == null) return;
+                memory.Failed.Add(key);
+                // Not offered again while the unit stands where it got stuck (two rounds, as a refused walk).
+                CombatMemory.NoteRefusedWalk(unit, key);
                 var target = command.TargetUnit;
                 if (targetProblem && target != null) memory.Unreachable.Add(target.UniqueId);
-                Main.Log($"[RT-Tactics] {unit.CharacterName}: '{memory.LastCandidateKey}' was stuck - not chosen again this round");
-                memory.LastCommand = null;
-                memory.LastCandidateKey = null;
+                Main.Log($"[RT-Tactics] {unit.CharacterName}: '{key}' was stuck - not chosen again from here");
+                if (memory.LastCommand == command)
+                {
+                    memory.LastCommand = null;
+                    memory.LastCandidateKey = null;
+                }
             }
             catch { }
         }
@@ -248,7 +261,7 @@ namespace CompanionAI_Pathfinder.Tactics
                         IssuedAtHp.Remove(command);
                         IssuedAtHp.Add(command, new IssueState
                         {
-                            Hp = unit.HPLeft, Areas = AreasAround(unit),
+                            Hp = unit.HPLeft, Areas = AreasAround(unit), Key = candidate.Key,
                             AreasPriced = candidate.Kind == CandidateKind.Move ||
                                           (candidate.Label?.Contains(TacticalEngine.Disengage.IntoTag) ?? false)
                         });

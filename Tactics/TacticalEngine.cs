@@ -331,9 +331,17 @@ namespace CompanionAI_Pathfinder.Tactics
             if (!usable.Any(IsMark)) return usable;
 
             var main = usable.FirstOrDefault(c => c.Slot != ActionSlot.Free && c.Slot != ActionSlot.Swift && !IsMark(c));
+            // ★ v0.3.19 (test2): weapon attacks made through an ability count too - Vital Strike, Cleave (IsWeaponAttack)
+            // and Coup de Grace (Smite's damage raises its kill DC). Seelah used Vital Strike seven times in two fights and
+            // never smote with it: the mark was dropped as "no attack this turn".
+            Func<Candidate, bool> abilityAttack = m =>
+            {
+                var mp = AbilityProfile.Get(m.Ability);
+                return mp != null && (mp.IsCharge || mp.IsWeaponAttack || IsCoupDeGrace(m.Ability));
+            };
             bool attacks = main != null && main.Target != null && ctx.Unit.IsEnemy(main.Target) &&
                            (main.Kind == CandidateKind.WeaponAttack || main.Kind == CandidateKind.Move ||
-                            (main.Kind == CandidateKind.Ability && (AbilityProfile.Get(main.Ability)?.IsCharge ?? false)));
+                            (main.Kind == CandidateKind.Ability && abilityAttack(main)));
             var focus = attacks ? main.Target : null;
 
             var result = new List<Candidate>(usable.Count);
@@ -517,6 +525,7 @@ namespace CompanionAI_Pathfinder.Tactics
             if (!ctx.Allies.Contains(unit)) ctx.Allies.Add(unit);
             // ★ v0.3.18 (test10): the enemies still acting, for the cost of waking a sleeping one (WakeFactor).
             s_ActiveEnemies = ctx.Enemies.Where(e => !CombatMath.IsDisabled(e)).ToList();
+            CombatMath.OnlyDisabledEnemiesLeft = ctx.Enemies.Count > 0 && s_ActiveEnemies.Count == 0;
 
             float enemyHp = ctx.Enemies.Sum(e => (float)e.HPLeft);
             float enemyThreat = ctx.Enemies.Sum(CombatMath.Threat);
@@ -2192,6 +2201,15 @@ namespace CompanionAI_Pathfinder.Tactics
                 // still runs on a living enemy that can still fight (the same one or another).
                 if (isMark && !profile.IsAoE && affectedEnemies.Count > 0)
                 {
+                    // ★ v0.3.19 (test2): a mark whose buff has no component of its own works through something else (a
+                    // feature of the caster or of the item): what there is to read, once, as evidence for valuing it.
+                    if (profile.TargetBuffs.All(bf => (bf.ComponentsArray?.Count(x => x != null) ?? 0) == 0))
+                        ReportOnce($"emptymark|{ability.Blueprint.AssetGuid}",
+                                   $"[Profile] {ability.Name}: its mark ({string.Join(", ", profile.TargetBuffs.Select(bf => bf.name))}) has no component; " +
+                                   $"the ability has [{string.Join(",", ability.Blueprint.ComponentsArray?.Where(x => x != null).Select(x => x.GetType().Name) ?? Enumerable.Empty<string>())}]" +
+                                   (Kingmaker.Blueprints.BlueprintExtenstions.GetComponent<Kingmaker.UnitLogic.Abilities.Components.AbilityEffectRunAction>(ability.Blueprint) is var run && run?.Actions?.Actions != null
+                                       ? $", runs {DescribeActions(run.Actions.Actions)}" : "") +
+                                   (ability.SourceItem != null ? $"; item {ability.SourceItem.Blueprint?.name}" : ""));
                     float lasts = profile.IsOneShot ? 1f : Math.Min(ctx.ExpectedRounds, 3f);
                     float own = profile.EffectRoundsOn(ability, target);
                     if (own > 0f) lasts = Math.Max(1f, own);
@@ -2442,8 +2460,9 @@ namespace CompanionAI_Pathfinder.Tactics
                         // ★ v0.3.18 (test11): a creature that brings an area the game's AI will also drop on our melee
                         // fighters (a Dretch's Stinking Cloud) is worth less than one that does not, while the party has
                         // any: Orvath opened every fight with Summon Dretch, at the same value as Cambion and Quasit.
-                        if (profile.SummonCatchesAllies && ctx.Allies.Any(a => a != unit && !UsesRangedWeapon(a) && !IsSummon(a)))
-                            value *= 0.7f;
+                        // ★ v0.3.19 (test2): whoever is left - the caster and the archers too: with both melee fighters down
+                        // the Dretch was summoned at full value and its cloud caught Orvath, Lann and Aeiluvetar.
+                        if (profile.SummonCatchesAllies) value *= 0.7f;
                         reasons.Add("summon");
                     }
                     else if (ability.SourceItem != null)
