@@ -49,11 +49,43 @@ namespace CompanionAI_Pathfinder.Tactics
                 Reported[unit.UniqueId] = hash;
                 ReportAbilities(unit, abilities);
                 foreach (var t in toggles) ReportToggle(unit, t);
+                ReportKineticist(unit, abilities);
             }
             catch (Exception ex)
             {
                 Main.Verbose($"[Coverage] {unit.CharacterName}: {ex.Message}");
             }
+        }
+
+        /// <summary>
+        /// ★ v0.3.19 (test5): a kineticist's state as the game holds it (UnitPartKineticist) and each blast's burn
+        /// (AbilityKineticist.CalculateAbilityBurnCost, with Gather Power and infusions), so a log shows what the AI
+        /// saw: archer blasts through the bow, the kinetic blade, the gather mode, Elemental Overflow's damage now.
+        /// </summary>
+        private static void ReportKineticist(UnitEntityData unit, List<AbilityData> abilities)
+        {
+            var part = unit.Get<Kingmaker.UnitLogic.Class.Kineticist.UnitPartKineticist>();
+            if (part == null) return;
+            var blasts = new List<string>();
+            foreach (var ability in abilities)
+            {
+                var cost = Kingmaker.UnitLogic.Class.Kineticist.AbilityKineticist.CalculateAbilityBurnCost(ability);
+                if (!cost.HasValue) continue;
+                int overflow = CombatMath.ElementalOverflowDamage(unit, ability.Blueprint);
+                blasts.Add($"{ability.Name} burn {cost.Value.Total}" + (overflow > 0 ? $" overflow +{overflow}" : "") +
+                           (ability.IsAvailable ? "" : " (not available now)"));
+            }
+            var weapon = unit.Body?.PrimaryHand?.MaybeWeapon;
+            var bladeComponent = weapon == null ? null
+                : Kingmaker.Blueprints.BlueprintExtenstions.GetComponent<Kingmaker.UnitLogic.Class.Kineticist.WeaponKineticBlade>(weapon.Blueprint);
+            bool blade = bladeComponent != null;
+            string activation = bladeComponent?.GetActivationAbility(unit.Descriptor)?.RuntimeActionType.ToString();
+            string gather = part.GatherPowerAbility?.Data?.RuntimeActionType.ToString();
+            Main.Log($"[Coverage] {unit.CharacterName} kineticist: level {part.ClassLevel}, burn {part.AcceptedBurn}/{part.MaxBurn} " +
+                     $"(this round {part.LeftBurnThisRound} of {part.MaxBurnPerRound} left), archer blasts {part.CanUseArcherBlast()}, " +
+                     $"weapon {(weapon?.Name ?? "none")}{(blade ? $" (kinetic blade, activation {activation ?? "?"}, activated {part.IsBladeActivated})" : "")}, " +
+                     $"gather mode {part.GatherPowerMode} (gather action {gather ?? "none"}); " +
+                     $"{blasts.Count} burn abilities: {string.Join("; ", blasts)}");
         }
 
         private static void ReportAbilities(UnitEntityData unit, List<AbilityData> abilities)

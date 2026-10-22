@@ -44,6 +44,8 @@ namespace CompanionAI_Pathfinder.Tactics
         public AbilityData Ability;
         public bool FullAttack;
         public bool NeedsMove;
+        /// <summary>★ v0.3.19 (test5): times the game gathers power before this blast (CombatMath.GatherPowerCount).</summary>
+        public int GatherPower;
         public float ApproachRadius;
         public bool NeedLoS;
         /// <summary>Damages or disables an enemy (as opposed to buffs, heals, utility).</summary>
@@ -398,6 +400,13 @@ namespace CompanionAI_Pathfinder.Tactics
             if (ActionRules.Refusal(ctx.Permissions, plainMove: c.Kind == CandidateKind.Move,
                                     walks: c.Kind == CandidateKind.Move || c.NeedsMove,
                                     mainAction: c.Slot == ActionSlot.Standard || c.Slot == ActionSlot.FullRound) != null)
+                return false;
+            // ★ v0.3.19 (test5): the game gathers power before an infused blast when the gather mode is set, and in
+            // turn-based combat that takes the Move action (TurnController.CalculateKineticistPrediction; a second
+            // gather the Standard too). A blast after a walk, or one that walks, would have no action left to gather
+            // with; two gathers leave none for the blast.
+            if (c.GatherPower > 0 && !CombatMemory.IsRealTime &&
+                (c.GatherPower > 1 || c.NeedsMove || c.MoveFirst || c.Slot != ActionSlot.Standard || !ctx.HasMove))
                 return false;
             switch (c.Slot)
             {
@@ -1766,6 +1775,7 @@ namespace CompanionAI_Pathfinder.Tactics
                                (provokeLoss > 0f ? $", provoking -{provokeLoss:F1}" : "") +
                                (risk != null ? $", the walk x{1f - risk.StopChance:F2} -{risk.Cost:F1}{risk.Tag}" : "") + ")");
 
+                int gather = CombatMath.GatherPowerCount(ctx.Unit, ability);
                 var candidate = new Candidate
                 {
                     Kind = CandidateKind.Ability,
@@ -1774,12 +1784,14 @@ namespace CompanionAI_Pathfinder.Tactics
                     Target = wrapper.Unit,
                     Point = wrapper.Unit == null ? wrapper.Point : (Vector3?)null,
                     NeedsMove = needsMove,
+                    GatherPower = gather,
                     Value = value,
                     Offensive = IsOffensive(why),
                     Label = $"{(ability.SourceItem != null ? "Item:" : "")}{ability.Name}{metamagic}->{(summonPoint.HasValue ? "a spot near the fight" : target.CharacterName)}({why}){risk?.Tag}" +
                             (approach?.Around != null ? $" (around {approach.Around})" : "") +
                             (provoke != null ? $" [casting provokes {provoke.Attacks}{(provoke.DropChance >= 0.1f ? $", {provoke.DropChance:P0} down" : "")}]" : "") +
-                            (rollProvoke != null ? $" [ray provokes {rollProvoke.Attacks}{(rollProvoke.DropChance >= 0.1f ? $", {rollProvoke.DropChance:P0} down" : "")}]" : ""),
+                            (rollProvoke != null ? $" [ray provokes {rollProvoke.Attacks}{(rollProvoke.DropChance >= 0.1f ? $", {rollProvoke.DropChance:P0} down" : "")}]" : "") +
+                            (gather > 0 ? $" [gathers power {gather}]" : ""),
                     CastRiskCost = provokeLoss,
                     AimAffected = aimAffected,
                     MoveFirst = approach?.Around != null,
@@ -2541,7 +2553,10 @@ namespace CompanionAI_Pathfinder.Tactics
 
             // ★ v0.3.6: anyone whose best main action is a spell that provokes in melee steps out first too (Camellia's
             // Cure Light Wounds failed while she was engaged) - unless that spell is aimed at an enemy next to her.
-            var bestMain = list.Where(c => c.Slot != ActionSlot.Free && c.Slot != ActionSlot.Swift && !c.NeedsMove && Affordable(ctx, c))
+            // ★ v0.3.19 (test5): not a blast the game gathers power for in turn-based combat - after the walk the Move
+            // action it gathers with is gone.
+            var bestMain = list.Where(c => c.Slot != ActionSlot.Free && c.Slot != ActionSlot.Swift && !c.NeedsMove && Affordable(ctx, c) &&
+                                           (c.GatherPower == 0 || CombatMemory.IsRealTime))
                                .OrderByDescending(c => c.Value).FirstOrDefault();
             // ★ v0.3.18: or a ray, whose attack roll provokes (CastRiskCost holds what provoking costs it).
             bool castsInMelee = bestMain != null && bestMain.Kind == CandidateKind.Ability &&

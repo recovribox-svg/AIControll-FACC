@@ -1400,3 +1400,41 @@ hour-long self buffs from the same spell slots, with no setting. The "Pre-Buff P
 
 **Not verified in the game yet:** both mods together (combat-start songs, round-limit switch-off, activation groups).
 
+
+## 37. v0.3.19 (test5): kinetic blasts priced by what the game deals
+
+**Feedback** (players of 0.3.18): "kinetic blasts, and stuff like a warlock invoker blast from mystical mayhem are not
+properly used"; "kineticists aren't blasting as much as they should, especially kinetic shooter just does standard attack
+instead of a blast".
+
+**What the game adds that the estimate missed** (decompiled game code):
+- **Elemental Overflow** (`AddKineticistElementalOverflow`): on `RuleDealDamage` of the kineticist's own blasts
+  (`UnitPartKineticist.Blasts`, the variant's parent), min(Bonus, class level / 3) - limited by the burn accepted unless
+  `IgnoreBurn` - times 2 (3 for a fire blast with Fire's Fury, +2 with Elemental Engine at full burn). Its attack bonus
+  already counted: the hit chance runs the game's attack rule with the blast weapon. Now in every blast damage estimate
+  (`CombatMath.ElementalOverflowDamage`, read from the component's fields: the game adds it inside a damage rule the
+  estimate does not run). So accepted burn now has a modelled benefit; no burn cost was added (burn makes blasts
+  stronger through Overflow, and its hit-point effect is blueprint data not in the code).
+- **Kinetic archer blasts** (`AbilityKineticist.IsArcherBlast`: the archetype's flag and a ranged weapon in hand): the
+  blast is shot through the bow (`AbilityDeliverProjectile`, `RuleAttackWithWeapon`, against touch AC) and adds the bow's
+  damage modifiers and enhancement (`ContextActionDealDamage.GetDamageInfo`: `WeaponStats.DamageModifiers` + `Enhancement`).
+  Hit chance and range were already the game's; the damage now is too (`CombatMath.KineticDamageBonus`).
+- **Kinetic Blade** (`WeaponKineticBlade`): every hit casts the blade's blast with the hit's attack roll
+  (`KineticistController.TryHandleKineticBladeAttack`); the blade weapon itself deals little. Each attack line of the
+  routine now carries that blast's damage (`AttackLine.BladeBlast`, with the blade's damage modifiers for
+  `UseWeaponDamageModifiers`, Overflow, the target's resistances and spell resistance), multiplied on a critical like the
+  game does.
+- **Gather Power** (turn-based): with a gather mode set, the game puts Gather Power in front of an infused blast whose
+  burn it would lower (`KineticistController.WillGatherPower`, private: called by reflection) and the gather takes the Move
+  action, a second one the Standard too (`TurnController.CalculateKineticistPrediction`). Such a blast is affordable only
+  as a standard action with the Move action still there and no walk; it is never the follow-up of a step out of melee.
+  The candidate label shows `[gathers power N]`. Real time unchanged (no action economy there). The blast queued behind the
+  gather was counted as refused before - fixed in the same build (`CommandDispatcher`, `GameAPI.HasPendingCommands`).
+
+**Diagnostics.** `[Coverage] <name> kineticist:` once per ability set - class level, burn (accepted / max, this round),
+archer blasts, the weapon (kinetic blade, its activation action, activated), gather mode and the gather action, and each
+burn ability with its burn now (`AbilityKineticist.CalculateAbilityBurnCost`) and Overflow's damage.
+
+**Not done, waiting for a log:** Mystical Mayhem's Invoker blast has no structural blocker in the code (ray with attack
+roll, `ContextActionDealDamage`); a log of an Invoker shows how it is valued. The Kinetic Blade activation's own action
+cost before an attack is logged, not yet priced.

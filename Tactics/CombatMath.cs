@@ -119,6 +119,8 @@ namespace CompanionAI_Pathfinder.Tactics
             public int Index;
             public int AttackBonus, ArmorClass;
             public float RawPerHit, Sneak;
+            /// <summary>★ v0.3.19 (test5): the blast a kinetic blade casts on each hit (after the target's resistances).</summary>
+            public float BladeBlast;
             public int DamageReduction;
             public float ThreatChance;
             public int CritMultiplier;
@@ -158,7 +160,9 @@ namespace CompanionAI_Pathfinder.Tactics
                 float p = HitProbability(line.AttackBonus + d.Key, line.ArmorClass);
                 if (line.Index == 0) result.FirstHitChance = p;
                 noHit *= 1f - p;
-                float perHit = Math.Max(0f, line.RawPerHit + d.Value - line.DamageReduction);
+                // ★ v0.3.19 (test5): a kinetic blade's blast lands with the hit and is multiplied by its critical
+                // (ContextActionDealDamage takes the weapon's critical multiplier from the attack roll).
+                float perHit = Math.Max(0f, line.RawPerHit + d.Value - line.DamageReduction) + line.BladeBlast;
                 float critExtra = line.ThreatChance * p * (line.CritMultiplier - 1) * perHit;
                 if (line.Index == 0)
                 {
@@ -217,6 +221,7 @@ namespace CompanionAI_Pathfinder.Tactics
                         AttackBonus = ab,
                         ArmorClass = acRule.Result,
                         RawPerHit = perHit,
+                        BladeBlast = BladeBlastPerHit(unit, target, weapon),
                         DamageReduction = dr != null && !dr.CanBypass && dr.DRValue > 0 ? dr.DRValue : 0,
                         ThreatChance = Mathf.Clamp01(stats.CriticalRange / 20f),
                         CritMultiplier = stats.CriticalMultiplier,
@@ -230,6 +235,29 @@ namespace CompanionAI_Pathfinder.Tactics
             }
             Routines[key] = routine;
             return routine;
+        }
+
+        /// <summary>
+        /// ★ v0.3.19 (test5): the damage of the blast a kinetic blade casts on a hit (KineticistController
+        /// .TryHandleKineticBladeAttack: RuleCastSpell of WeaponKineticBlade.GetBlastAbility with the hit's attack roll).
+        /// The blade itself deals little: without it a Kinetic Knight's attacks were worth a fraction of what they do.
+        /// </summary>
+        private static float BladeBlastPerHit(UnitEntityData unit, UnitEntityData target, ItemEntityWeapon weapon)
+        {
+            try
+            {
+                var blade = Kingmaker.Blueprints.BlueprintExtenstions.GetComponent<Kingmaker.UnitLogic.Class.Kineticist.WeaponKineticBlade>(weapon.Blueprint);
+                var blast = blade?.GetBlastAbility(unit.Descriptor);
+                if (blast == null) return 0f;
+                var profile = AbilityProfile.Get(blast);
+                if (profile == null) return 0f;
+                return EstimateAbilityDamage(blast, profile, target, weapon) * SpellResistancePass(unit, target, blast);
+            }
+            catch (Exception ex)
+            {
+                Main.Verbose($"[Math] kinetic blade blast {unit.CharacterName}->{target.CharacterName}: {ex.Message}");
+                return 0f;
+            }
         }
 
         /// <summary>
@@ -355,7 +383,12 @@ namespace CompanionAI_Pathfinder.Tactics
             return fallback;
         }
 
-        public static float EstimateAbilityDamage(AbilityData ability, AbilityProfile profile, UnitEntityData target)
+        public static float EstimateAbilityDamage(AbilityData ability, AbilityProfile profile, UnitEntityData target) =>
+            EstimateAbilityDamage(ability, profile, target, null);
+
+        /// <param name="bladeWeapon">★ v0.3.19 (test5): the kinetic blade whose hit casts this blast (its attack roll is the
+        /// blade's: the blast's weapon damage modifiers are the blade's).</param>
+        public static float EstimateAbilityDamage(AbilityData ability, AbilityProfile profile, UnitEntityData target, ItemEntityWeapon bladeWeapon)
         {
             if (profile.Damage.Count == 0) return 0f;
             if (target != null && profile.Damage.All(d => profile.AppliesTo(d, ability, target) == EffectApplies.No)) return 0f;
@@ -379,6 +412,7 @@ namespace CompanionAI_Pathfinder.Tactics
                             avg = pre;
                         }
                         else avg = EvaluateDice(dmg.Value, ctx, Math.Min(cl, 10), maximize, empower);
+                        avg += KineticDamageBonus(ability, dmg, profile.NeedsAttackRoll || bladeWeapon != null, bladeWeapon);
                         if (dmg.Half) avg *= 0.5f;
                         parts.Add(new KeyValuePair<GameAction, float>(dmg, AfterTargetReduction(target, dmg, avg)));
                         break;
@@ -408,6 +442,127 @@ namespace CompanionAI_Pathfinder.Tactics
                 total += part.Value;
             }
             return total;
+        }
+
+        /// <summary>
+        /// ★ v0.3.19 (test5): what the game adds to a kinetic blast's damage that its dice do not show. Kinetic blasts were
+        /// valued below a plain weapon attack ("kinetic shooter just does standard attack instead of a blast"):
+        /// <list type="bullet">
+        /// <item>Elemental Overflow (AddKineticistElementalOverflow, on RuleDealDamage of the kineticist's own blasts,
+        /// UnitPartKineticist.Blasts): min(Bonus, class level / 3), limited by the burn accepted unless IgnoreBurn, times
+        /// 2 (3 for a fire blast with Fire's Fury, +2 with Elemental Engine at full burn). Read from the component's own
+        /// fields: the game adds it inside a damage rule the estimate does not run.</item>
+        /// <item>The weapon's damage modifiers (ContextActionDealDamage.GetDamageInfo): a kinetic archer's blast shot
+        /// through the bow adds the bow's (RuleCalculateWeaponStats.DamageModifiers) and its enhancement; a blast with
+        /// UseWeaponDamageModifiers cast by a kinetic blade's hit adds the blade's. Only with an attack roll, as in the
+        /// game (the modifiers come from the roll's weapon stats).</item>
+        /// </list>
+        /// 0 for everything that is not a kineticist's.
+        /// </summary>
+        private static float KineticDamageBonus(AbilityData ability, ContextActionDealDamage dmg, bool attackRoll, ItemEntityWeapon bladeWeapon)
+        {
+            var caster = ability?.Caster?.Unit;
+            var part = caster?.Get<Kingmaker.UnitLogic.Class.Kineticist.UnitPartKineticist>();
+            if (part == null) return 0f;
+            float bonus = 0f;
+            try
+            {
+                bool archer = Kingmaker.UnitLogic.Class.Kineticist.AbilityKineticist.IsArcherBlast(ability);
+                var weapon = archer ? caster.Body?.PrimaryHand?.MaybeWeapon : bladeWeapon;
+                if (attackRoll && weapon != null && (archer || dmg.UseWeaponDamageModifiers))
+                    bonus += FrameCached($"wpn|{caster.UniqueId}|{weapon.UniqueId}|{archer}", () =>
+                    {
+                        var stats = Rulebook.Trigger(new RuleCalculateWeaponStats(caster, weapon));
+                        return stats.DamageModifiers.TotalValue + (archer ? stats.Enhancement.TotalValue : 0);
+                    });
+
+                bonus += ElementalOverflowDamage(caster, ability.Blueprint);
+            }
+            catch (Exception ex)
+            {
+                Main.Verbose($"[Math] kinetic damage bonus of {ability.Name}: {ex.Message}");
+            }
+            return bonus;
+        }
+
+        private static readonly Dictionary<string, KeyValuePair<int, int>> FrameValues = new Dictionary<string, KeyValuePair<int, int>>();
+
+        /// <summary>★ v0.3.19 (test5): a value read once per frame (a decision asks for every ability and enemy).</summary>
+        private static int FrameCached(string key, Func<int> read)
+        {
+            int frame = Time.frameCount;
+            if (FrameValues.TryGetValue(key, out var cached) && cached.Key == frame) return cached.Value;
+            if (FrameValues.Count > 256) FrameValues.Clear();
+            int value = read();
+            FrameValues[key] = new KeyValuePair<int, int>(frame, value);
+            return value;
+        }
+
+        private static System.Reflection.MethodInfo _willGatherPower;
+        private static bool _willGatherPowerSought;
+
+        /// <summary>
+        /// ★ v0.3.19 (test5): how many times the game gathers power before <paramref name="ability"/> - the Gather Power
+        /// it puts in front of the blast (KineticistController.TryRunGatherPowerAction: ExecuteBefore) when the gather
+        /// mode is set and the blast costs burn the gathered power would lower. The game's own rule
+        /// (KineticistController.WillGatherPower, private: called by reflection); in turn-based combat each gather
+        /// takes the Move action, then the Standard (TurnController.CalculateKineticistPrediction). 0 when it cannot say.
+        /// </summary>
+        public static int GatherPowerCount(UnitEntityData unit, AbilityData ability)
+        {
+            var part = unit?.Get<Kingmaker.UnitLogic.Class.Kineticist.UnitPartKineticist>();
+            if (part == null || ability == null || part.GatherPowerAbility == null) return 0;
+            try
+            {
+                if (!_willGatherPowerSought)
+                {
+                    _willGatherPowerSought = true;
+                    _willGatherPower = HarmonyLib.AccessTools.Method(typeof(Kingmaker.UnitLogic.Class.Kineticist.KineticistController), "WillGatherPower",
+                        new[] { typeof(Kingmaker.UnitLogic.Class.Kineticist.UnitPartKineticist), typeof(AbilityData),
+                                typeof(int).MakeByRefType(), typeof(int).MakeByRefType() });
+                    if (_willGatherPower == null) Main.Log("[Math] KineticistController.WillGatherPower not found: Gather Power not foreseen");
+                }
+                if (_willGatherPower == null) return 0;
+                var args = new object[] { part, ability, 0, 0 };
+                return (bool)_willGatherPower.Invoke(null, args) ? (int)args[3] : 0;
+            }
+            catch (Exception ex)
+            {
+                Main.Verbose($"[Math] gather power of {ability.Name}: {ex.Message}");
+                return 0;
+            }
+        }
+
+        /// <summary>★ v0.3.19 (test5): Elemental Overflow's damage on one damage roll of <paramref name="ability"/> (see
+        /// KineticDamageBonus); 0 when it is not one of the caster's own blasts.</summary>
+        public static int ElementalOverflowDamage(UnitEntityData caster, Kingmaker.UnitLogic.Abilities.Blueprints.BlueprintAbility ability)
+        {
+            var part = caster?.Get<Kingmaker.UnitLogic.Class.Kineticist.UnitPartKineticist>();
+            var blast = ability?.Parent ?? ability;
+            if (part?.Blasts == null || blast == null || !part.Blasts.Contains(blast)) return 0;
+            return FrameCached($"ovf|{caster.UniqueId}|{blast.AssetGuid}", () => OverflowNow(caster, part, blast));
+        }
+
+        private static int OverflowNow(UnitEntityData caster, Kingmaker.UnitLogic.Class.Kineticist.UnitPartKineticist part,
+                                       Kingmaker.UnitLogic.Abilities.Blueprints.BlueprintAbility blast)
+        {
+            int bonus = 0;
+            foreach (var fact in caster.Facts.List)
+            {
+                if (fact?.Blueprint?.ComponentsArray == null || !fact.Active) continue;
+                foreach (var component in fact.Blueprint.ComponentsArray)
+                {
+                    if (!(component is Kingmaker.UnitLogic.Class.Kineticist.AddKineticistElementalOverflow overflow)) continue;
+                    int ranks = Math.Min(overflow.Bonus?.Calculate(fact.MaybeContext) ?? 0, part.ClassLevel / 3);
+                    bool engine = overflow.ElementalEngine && part.MaxBurn == part.AcceptedBurn;
+                    int per = (blast.SpellDescriptor & Kingmaker.Blueprints.Classes.Spells.SpellDescriptor.Fire) != 0 &&
+                              overflow.FiresFury != null && caster.Descriptor.HasFact(overflow.FiresFury) ? 3 : 2;
+                    if (engine) per += 2;
+                    if (!overflow.IgnoreBurn) ranks = Math.Min(ranks, part.AcceptedBurn);
+                    bonus += Math.Max(0, ranks) * per;
+                }
+            }
+            return bonus;
         }
 
         /// <summary>
