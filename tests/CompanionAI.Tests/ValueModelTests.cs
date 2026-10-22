@@ -27,6 +27,17 @@ namespace CompanionAI.Tests
         }
 
         [Fact]
+        public void ReviveWorth_RestOfTheFight_SixRoundsAtMost()
+        {
+            Assert.Equal(50f, ValueModel.ReviveWorth(2, 5f, summon: false), 3);
+            Assert.Equal(60f, ValueModel.ReviveWorth(2, 9f, summon: false), 3);    // capped at 6 rounds
+            Assert.Equal(10f, ValueModel.ReviveWorth(2, 0.5f, summon: false), 3);  // at least one round
+            Assert.Equal(25f, ValueModel.ReviveWorth(2, 5f, summon: true), 3);
+            // never less than keeping the ally up for 3 rounds
+            Assert.True(ValueModel.ReviveWorth(6, 4f, false) >= ValueModel.AllyWorth(6, 4f, false));
+        }
+
+        [Fact]
         public void BuffPerRound_IsUnchanged()
         {
             Assert.Equal(1f, ValueModel.BuffPerRound(0), 3);

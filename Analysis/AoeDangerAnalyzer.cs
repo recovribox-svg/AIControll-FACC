@@ -773,8 +773,28 @@ namespace CompanionAI_Pathfinder.Analysis
         ///   still counts half), 1 when the area has no save;
         /// - times the share of a round the area still lasts.
         /// </summary>
+        /// <summary>★ v0.3.19 (test7): party members' near-certain area effects, reported once each (see AffectChance).</summary>
+        private static readonly HashSet<string> SureReported = new HashSet<string>();
+
         private static float AffectChance(UnitEntityData unit, AreaEffectEntityData aoe)
         {
+            float result = AffectChanceRaw(unit, aoe, out string how);
+            // ★ v0.3.19 (test7): Orvath's revive of Camellia inside his Grease was priced as a walk that never arrives
+            // ("the walk x0.00") for 17 rounds; the inputs say whether that was the save or something unread.
+            try
+            {
+                if (result >= 0.9f && unit.IsPlayerFaction && SureReported.Add($"{unit.UniqueId}|{aoe.Blueprint?.AssetGuid}"))
+                    CompanionAI_Pathfinder.Main.Log($"[AoeDanger] {unit.CharacterName}: {aoe.Context?.SourceAbilityContext?.Ability?.Name ?? aoe.Blueprint?.name} " +
+                                                    $"affects it at {result:P0} ({how})");
+                if (SureReported.Count > 256) SureReported.Clear();
+            }
+            catch { }
+            return result;
+        }
+
+        private static float AffectChanceRaw(UnitEntityData unit, AreaEffectEntityData aoe, out string how)
+        {
+            how = "no save known";
             try
             {
                 var context = aoe.Context;
@@ -801,8 +821,10 @@ namespace CompanionAI_Pathfinder.Analysis
                         {
                             float fail = Mathf.Clamp((dc - bonus - 1) / 20f, 0.05f, 0.95f);
                             chance = profile.DealsDamage && profile.HalfOnSave ? 0.5f + 0.5f * fail : fail;
+                            how = $"{profile.Save} {bonus:+#;-#;0} vs DC {dc}";
                         }
                     }
+                    else how = $"save {profile.Save}, DC {dc}";
                 }
                 if (CreationField != null && DurationField != null && DurationField.GetValue(aoe) is TimeSpan duration)
                 {
@@ -812,8 +834,9 @@ namespace CompanionAI_Pathfinder.Analysis
                 }
                 return chance;
             }
-            catch
+            catch (Exception ex)
             {
+                how = "unreadable: " + ex.Message;
                 return 1f;
             }
         }

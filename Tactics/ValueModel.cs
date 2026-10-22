@@ -28,6 +28,14 @@ namespace CompanionAI_Pathfinder.Tactics
         public static float AllyWorth(int level, float expectedRounds, bool summon) =>
             PerRound(level) * Horizon(expectedRounds, 3f) * (summon ? SummonFactor : 1f);
 
+        /// <summary>
+        /// ★ v0.3.19 (test7): bringing a downed ally back: its worth per round for the rest of the fight (up to 6 rounds),
+        /// not 3 - a fallen companion stays out until someone heals it. At 3 rounds an attack outscored Camellia's revive
+        /// of Seelah every round from RT2 to RT9 (0.3.19-test6 real-time log, fight 2).
+        /// </summary>
+        public static float ReviveWorth(int level, float expectedRounds, bool summon) =>
+            PerRound(level) * Horizon(expectedRounds, 6f) * (summon ? SummonFactor : 1f);
+
         /// <summary>Per-round base of a buff (and an enchantment) of this spell level.</summary>
         public static float BuffPerRound(int spellLevel) => 1f + 1.5f * Math.Max(0, spellLevel);
 

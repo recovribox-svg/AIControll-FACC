@@ -1481,3 +1481,34 @@ weapon is in hand (`AbilityKineticist.CalculateCost` / `Spend`). Its buff has no
 
 **Not verified in the game yet.** The quiver's rank stacking when cast again with arrows left (not done: it could repeat
 every turn if ranks do not add up).
+
+## 39. v0.3.19 (test7): what the test6 logs showed (2 turn-based, 3 real-time fights)
+
+- **Fallen companions left down.** Real-time fight 2: Seelah down from RT2 to the end (RT9); Camellia's Cure Light Wounds
+  (~7) could not lift her alone (needed 9), a partial heal counts 0.6 x its share, and an attack (11.5-12.6) beat the
+  revive (7-10.5) every round. Fight 3: Seelah down at RT1, Camellia at RT2, both for ~17 rounds. A revive is now worth the
+  ally's output for the rest of the fight, up to 6 rounds (`ValueModel.ReviveWorth`, unit-tested), not 3.
+- **Grease on a downed ally.** Fight 3: Orvath's Grease went down on the unconscious Camellia; every later revive was priced
+  as walking into Grease ("the walk x0.00"). A lasting area harmful to allies now costs half the revive worth of each
+  downed ally it covers. `[AoeDanger] <name>: <area> affects it at N% (inputs)` is logged once per party member and area when
+  the chance is 90 % or more, to see whether such a price comes from the save or from something unread.
+- **The last enemy in our own Grease.** Turn-based fight 1: a sleeping goblin in Orvath's Grease lasted R4-R8; Seelah stood
+  beside it every turn (entering cost more than hitting a disabled enemy was worth). When no enemy can act, a movement-only
+  area (Grease, Entangle, Web) costs only the attack a fall stops (`MoveRisk`), so she steps in and can Coup de Grace.
+- **Sleep on the last active enemy** counts one round at most (the allies' attacks wake it): Orvath re-slept that goblin
+  while the archers shot it awake.
+- **Unread buffs that spend a limited use or burn** get no "unknown effect" value (`BuffQuality`, `SpendsLimitedUse`):
+  Searing Flesh (1 burn, a fire aura against natural / unarmed attackers - `SearingFleshEffectFeature`) was cast in all five
+  fights by a crossbowman, and a full-round Soul Power then took the burn back three times. Also: Arcane Reservoir's
+  caster-level / DC buffs (unread effect, reservoir points) are no longer used as filler. Burn accepted on cast
+  (`AbilityAcceptBurnOnCast`) is priced like a blast's burn (`BurnOf`).
+- **Ring of Foe Focus ("Ring of the Mad Duelist").** From its blueprints: a free action puts a `UniqueBuff` mark (one enemy at
+  a time) and the wearer's feature gives +2 AC against that enemy (`ACBonusAgainstBuffOwner`) and +2 on saves against it
+  (`SavingThrowBonusAgainstFactMultiple`). The mark's buff has components (`UniqueBuff`, `RemoveBuffIfCasterIsMissing`), so the
+  test2 "empty mark" guard never applied, and the AI marked enemies it did not fight, twice in one turn. Caster-side marks are
+  now valued by what they guard (`TacticalEngine.Marks.cs`): that enemy's share of the incoming threat x (AC x 5 % / 55 % +
+  saves x 2.5 %), minus what the mark gives where it is now; 0 ("already marked", "X is the better mark") otherwise.
+- **Smaller.** A "+5ft" full attack is offered only when a step towards the target gives reach and line of sight
+  (`StepGivesReach`; Lann's four refused attacks: in range, out of sight, a 3.7 m path). No "Leave <area>" to where the unit
+  stands (Seelah's 0.0 m path, 4 s stall). An item that is used up needs a value of 5 (a potion was drunk at 64 % HP for 3.7).
+- **Not changed:** the real-time decision interval (0.5 s: decisions take 18-33 ms and mostly wait for a running command).

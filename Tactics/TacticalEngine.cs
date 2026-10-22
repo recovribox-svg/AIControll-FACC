@@ -154,6 +154,8 @@ namespace CompanionAI_Pathfinder.Tactics
     {
         private const float MinMainValue = 0.5f;
         private const float MinQuickValue = 2f;
+        /// <summary>★ v0.3.19 (test7): the least an item that is used up (potion, scroll, wand charge) must be worth.</summary>
+        private const float MinSpentItemValue = 5f;
         /// <summary>~25 ft: inside Close range for low-level casters, outside most melee reach.</summary>
         private const float CasterApproachRadius = 8f;
 
@@ -729,7 +731,12 @@ namespace CompanionAI_Pathfinder.Tactics
                 // step into Orvath's Grease for 37 turns and stood idle beside it (0.3.18-test9 log). Real time keeps the
                 // full price: there the game keeps a unit down while the area knocks it down again (UnitProneController:
                 // it stands only after 3 s without a fall), so a unit that walks in lies there.
-                if (movementOnly && !CombatMemory.IsRealTime)
+                // ★ v0.3.19 (test7): no enemy can act (asleep, held, helpless): a fall there costs only the attack it
+                // stops (the stop chance above), nothing attacks the unit while it lies there. Priced as before, Seelah
+                // stood beside Orvath's Grease from R4 to R8 while the sleeping goblin inside was shot at for a value of 1
+                // (0.3.19-test6 turn-based log, fight 1); stepping in, she gets the Coup de Grace next turn.
+                if (movementOnly && CombatMath.OnlyDisabledEnemiesLeft) { }
+                else if (movementOnly && !CombatMemory.IsRealTime)
                     risk.Cost += affect * (0.25f * perRound + (ProvokeRisk(ctx, destination, 1f, spoiledByHit: 0f)?.Cost ?? 0f));
                 else
                     risk.Cost += danger * perRound * rounds * (endsInside ? 2f : 1f);
@@ -1271,6 +1278,32 @@ namespace CompanionAI_Pathfinder.Tactics
             return UnitCommand.IsUnitCloseEnough(point, unit.Position, unit.EyePosition, radius, needLos, 0f);
         }
 
+        /// <summary>
+        /// ★ v0.3.19 (test7): a point on the way towards <paramref name="enemy"/>, at most <paramref name="maxStep"/> away,
+        /// from which it is within <paramref name="reach"/> and in sight (UnitCommand.IsUnitCloseEnough, the game's test).
+        /// </summary>
+        private static bool StepGivesReach(UnitEntityData unit, UnitEntityData enemy, float reach, float maxStep)
+        {
+            try
+            {
+                Vector3 dir = enemy.Position - unit.Position;
+                dir.y = 0f;
+                if (dir.sqrMagnitude < 1e-4f) return true;
+                dir.Normalize();
+                Vector3 eye = unit.EyePosition - unit.Position;
+                foreach (float d in new[] { maxStep * 0.4f, maxStep * 0.7f, maxStep })
+                {
+                    var at = unit.Position + dir * d;
+                    if (UnitCommand.IsUnitCloseEnough(enemy.Position, at, at + eye, reach, true, 0f)) return true;
+                }
+                return false;
+            }
+            catch
+            {
+                return true;   // the dispatcher still refuses a longer path
+            }
+        }
+
         private static List<UnitEntityData> UnitsAround(List<UnitEntityData> units, Vector3 center, float radius)
         {
             return units.Where(u => Vector3.Distance(u.Position, center) <= radius + u.Corpulence).ToList();
@@ -1311,8 +1344,12 @@ namespace CompanionAI_Pathfinder.Tactics
                 // ★ v0.3.9: ranged weapons too - Lann made single "Move+Attack" shots after moving 0.1-0.7 m (out of range
                 // or line of sight by a step) and lost his second attack five times. The dispatcher refuses a full
                 // attack whose path is longer than the 5-foot step, and the next best option is then tried.
+                // ★ v0.3.19 (test7): and a step towards the target must give the reach and line of sight - the game walks
+                // the attack's approach towards it. Lann's target was in range but out of sight: the game's path was 3.7 m
+                // and the dispatcher refused four "+5ft" full attacks in two rounds (0.3.19-test6 turn-based log).
                 bool fiveFootReach = !inReach && ctx.CanFiveFoot &&
-                                     dist <= reach + ctx.FiveFootRange * 0.85f;
+                                     dist <= reach + ctx.FiveFootRange * 0.85f &&
+                                     StepGivesReach(unit, enemy, reach, ctx.FiveFootRange * 0.85f);
 
                 float weight = AttackWeight(ctx, enemy, single.IsRanged);
 
@@ -1514,7 +1551,11 @@ namespace CompanionAI_Pathfinder.Tactics
                 // by the ability's actions (Spirit Weapon Enchantment: "Components=[NoComponents]", valued 0.1 in 0.3.3).
                 float q = analysis.Recognized ? analysis.CombatValue
                         : profile.Enchants ? 0.8f
-                        : analysis.OnlyUnrecognized ? (item ? 0f : 0.5f)
+                        // ★ v0.3.19 (test7): nor for an ability that spends a limited use or burn - an effect the AI
+                        // cannot read is not worth a daily resource. Searing Flesh (1 burn, a fire aura against natural
+                        // and unarmed attackers) was cast in every fight of the test6 logs at 6.1, by a crossbowman, and
+                        // a full-round Soul Power then spent on taking the burn back.
+                        : analysis.OnlyUnrecognized ? (item || SpendsLimitedUse(ability) ? 0f : 0.5f)
                         : 0.05f; // no components at all: a marker or cooldown
                 if (item && q < 0.5f) q = 0f;
                 // ★ v0.3.18 (test10): Strength helps weapon attacks in melee and carrying; little for an archer or caster
@@ -1749,7 +1790,11 @@ namespace CompanionAI_Pathfinder.Tactics
                 value *= consumable;
                 // ★ v0.3.18 (test10): an item is spent for good - not for a sliver of value (healing potions were drunk for
                 // 0.8-1.4, Lann drank five Cure Light Wounds in one fight). The bar of a quick action, whatever its slot.
-                if (ability.SourceItem != null && value < MinQuickValue) continue;
+                // ★ v0.3.19 (test7): one that is used up (potion, scroll, wand charge) needs more: Seelah drank a Cure
+                // Moderate Wounds potion at 64 % HP for 3.7 (0.3.19-test6 real-time log, fight 1).
+                if (ability.SourceItem != null &&
+                    value < (ability.SourceItem is ItemEntityUsable spent && spent.Blueprint.SpendCharges ? MinSpentItemValue : MinQuickValue))
+                    continue;
                 if (needsMove) value *= 0.9f;
                 // ★ v0.3.6: a standard-action spell cast in melee needs a defensive-casting check; failing it provokes an
                 // attack of opportunity and can lose the spell (UnitUseAbility.OnTick). Camellia's Cure Light Wounds ended
@@ -2176,7 +2221,8 @@ namespace CompanionAI_Pathfinder.Tactics
                             upChance *= staysUp;
                             reviveNote += $", stays up ~{staysUp:P0}";
                         }
-                        healValue += upChance * AllyWorth(ctx, ally);
+                        // ★ v0.3.19 (test7): for the rest of the fight (ValueModel.ReviveWorth).
+                        healValue += upChance * ValueModel.ReviveWorth(Level(ally), ctx.ExpectedRounds, IsSummon(ally));
                         continue;
                     }
 
@@ -2220,6 +2266,26 @@ namespace CompanionAI_Pathfinder.Tactics
                 // ★ v0.3.2: a mark is aimed at one enemy. A helpful area buff centred on the caster (Soul Power, Light
                 // of the Angels) counted the enemies standing in its radius as "marks" and scored 26-38 every round.
                 if (isMark && profile.IsAoE) affectedEnemies = new List<UnitEntityData>();
+                // ★ v0.3.19 (test7): a mark whose effect is on the caster's side (Ring of Foe Focus: +2 AC and saves
+                // against the marked enemy) - valued by what it guards against that enemy (TacticalEngine.Marks.cs).
+                if (isMark && !profile.IsAoE && affectedEnemies.Count > 0 && target != null)
+                {
+                    float guard = CasterSideMarkValue(ctx, ability, profile, target, out string guardWhy);
+                    if (guard >= 0f)
+                    {
+                        if (guard <= 0f && !profile.DealsDamage && profile.Heals.Count == 0 && profile.Maneuvers.Count == 0)
+                        {
+                            why = guardWhy ?? "nothing to guard against";
+                            return 0f;
+                        }
+                        if (guard > 0f)
+                        {
+                            value += guard * RoleWeight(ctx, "buff");
+                            reasons.Add("guard");
+                        }
+                        affectedEnemies = new List<UnitEntityData>();   // not also a generic mark
+                    }
+                }
                 // ★ v0.3.19 (test2): one mark at a time from one caster and ability, while it lasts. Camellia's Ring of the
                 // Mad Duelist (a free action) marked a new enemy at every decision - two or three a round, the same
                 // Neophyte Fighter twice in one turn: its buff carries no component the AI can read, so "already marked"
@@ -2309,6 +2375,15 @@ namespace CompanionAI_Pathfinder.Tactics
                                     (Vector3.Distance(a.Position, target.Position) <= profile.AoERadius + 2.5f + a.Corpulence || headsInto(a)) &&
                                     wouldBeCaught(a))
                         .Sum(a => 0.5f * ValueModel.PerRound(Level(a)) * strength * effectRounds);
+                    // ★ v0.3.19 (test7): a downed ally lying where the area lands - whoever brings it back has to walk
+                    // in (a save, then a fall or worse), and in real time a fall keeps the walker down while it stands
+                    // there. Half of what reviving it is worth. Orvath's Grease went down on the unconscious Camellia
+                    // (0.3.19-test6 real-time log, fight 3) and every revive after it was priced as walking into Grease:
+                    // she and Seelah stayed down for 17 rounds.
+                    var downedInside = UnitsAround(ctx.DownedAllies, target.Position, profile.AoERadius)
+                        .Where(a => profile.AreaReaches(ability, a)).ToList();
+                    if (downedInside.Count > 0)
+                        allyControlCost += downedInside.Sum(a => 0.5f * ValueModel.ReviveWorth(Level(a), ctx.ExpectedRounds, IsSummon(a)));
                 }
                 foreach (var enemy in affectedEnemies)
                 {
@@ -2333,6 +2408,12 @@ namespace CompanionAI_Pathfinder.Tactics
                     float rounds = effectRounds;
                     float own = profile.EffectRoundsOn(ability, enemy);
                     if (own > 0f) rounds = Math.Min(rounds, Math.Max(1f, own));
+                    // ★ v0.3.19 (test7): sleep ends at the first hit, and on the last enemy still acting every ally's
+                    // attack goes to it: one round at most. Orvath put the last goblin back to sleep (9.7) while the
+                    // archers shot it awake again (0.3.19-test6 turn-based log, fight 1).
+                    if ((profile.Control & CCType.Sleep) != 0 && s_ActiveEnemies != null && s_ActiveEnemies.All(e => e == enemy) &&
+                        ctx.Allies.Any(a => a != unit))
+                        rounds = Math.Min(rounds, 1f);
                     float enemyValue = p * CombatMath.Threat(enemy) * strength * rounds;
                     // ★ v0.3.18 (test10): what Demoralize adds or replaces for this caster (Frightening Thug, Hellknight,
                     // Shatter Confidence, Trickster) on a successful check (p already holds the check's chance).
@@ -2811,6 +2892,13 @@ namespace CompanionAI_Pathfinder.Tactics
             if (!best.HasValue)
             {
                 ctx.LeaveNote = $"in {inside.Name ?? "a harmful area"}, no way out within {maxDistance:F1} m";
+                return;
+            }
+            // ★ v0.3.19 (test7): an exit where the unit already stands is no walk: the game made a 0.0 m path of it and
+            // Seelah's "Leave Grease" waited 4 s without progress until her turn was ended (0.3.19-test6 turn-based log).
+            if (HorizontalDistance(unit.Position, best.Value) < 0.5f)
+            {
+                ctx.LeaveNote = $"in {inside.Name ?? "a harmful area"}, the way out found is where it stands";
                 return;
             }
 

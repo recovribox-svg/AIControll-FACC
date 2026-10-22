@@ -63,10 +63,35 @@ namespace CompanionAI_Pathfinder.Tactics
         /// <summary>The burn the game takes for this ability now (after the quiver), 0 for anything else.</summary>
         internal static int BurnOf(AbilityData ability)
         {
-            var k = ability?.Blueprint == null ? null : Kingmaker.Blueprints.BlueprintExtenstions.GetComponent<AbilityKineticist>(ability.Blueprint);
-            if (k == null || ability.Caster?.Unit?.Get<UnitPartKineticist>() == null) return 0;
-            try { return Math.Max(0, k.CalculateCost(ability)); }
-            catch { return 0; }
+            if (ability?.Blueprint == null || ability.Caster?.Unit?.Get<UnitPartKineticist>() == null) return 0;
+            int burn = 0;
+            try
+            {
+                var k = Kingmaker.Blueprints.BlueprintExtenstions.GetComponent<AbilityKineticist>(ability.Blueprint);
+                if (k != null) burn += Math.Max(0, k.CalculateCost(ability));
+                // ★ v0.3.19 (test7): burn accepted on cast (AbilityAcceptBurnOnCast: Searing Flesh and other wild talents).
+                var onCast = Kingmaker.Blueprints.BlueprintExtenstions.GetComponent<AbilityAcceptBurnOnCast>(ability.Blueprint);
+                if (onCast != null) burn += Math.Max(0, onCast.BurnValue);
+            }
+            catch { }
+            return burn;
+        }
+
+        /// <summary>
+        /// ★ v0.3.19 (test7): the ability spends something limited - an ability resource (AbilityResourceLogic that spends,
+        /// with a resource) or burn.
+        /// </summary>
+        internal static bool SpendsLimitedUse(AbilityData ability)
+        {
+            if (ability?.Blueprint == null) return false;
+            try
+            {
+                foreach (var logic in Kingmaker.Blueprints.BlueprintExtenstions.GetComponents<Kingmaker.UnitLogic.Abilities.Components.AbilityResourceLogic>(ability.Blueprint))
+                    if (logic.IsSpendResource && logic.RequiredResource != null) return true;
+                return BurnOf(ability) > 0 ||
+                       Kingmaker.Blueprints.BlueprintExtenstions.GetComponent<AbilityAcceptBurnOnCast>(ability.Blueprint) != null;
+            }
+            catch { return false; }
         }
 
         /// <summary>
