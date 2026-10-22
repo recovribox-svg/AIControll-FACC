@@ -98,6 +98,10 @@ namespace CompanionAI_Pathfinder.Analysis
         /// <summary>★ v0.3.18 (test11): it also lowers Dexterity (Enlarge Person's -2): an archer loses to-hit.</summary>
         public bool DexterityPenalty { get; set; }
         internal int StrengthParts;
+        /// <summary>★ v0.3.19 (test8): every effect it is valued for makes the recipient's spells stronger (caster level,
+        /// DCs): nothing for a recipient that casts no spells.</summary>
+        public bool SpellcastingOnly { get; set; }
+        internal int SpellcastingParts;
 
         /// <summary>핵심 전투 효과 보유 여부</summary>
         public bool HasCoreCombatEffect => (Categories & BuffEffectCategory.CoreCombat) != 0;
@@ -238,6 +242,7 @@ namespace CompanionAI_Pathfinder.Analysis
 
                 result.Recognized = maxCombatValue > 0f;
                 result.StrengthOnly = result.StrengthParts > 0 && result.StrengthParts == valued;
+                result.SpellcastingOnly = result.SpellcastingParts > 0 && result.SpellcastingParts == valued;
                 result.OnlyUnrecognized = !result.Recognized && unrecognized > 0;
 
                 // 최종 전투 가치 결정
@@ -280,8 +285,40 @@ namespace CompanionAI_Pathfinder.Analysis
                 return 0.1f;
             }
 
+            // ★ v0.3.19 (test8): a buff that only grants other facts (Searing Flesh: AddFacts of its effect feature) does
+            // what they do: read them, two levels deep at most.
+            if (component is Kingmaker.UnitLogic.FactLogic.AddFacts addFacts)
+                return AnalyzeAddedFacts(addFacts, result);
+
             switch (typeName)
             {
+                // ★ v0.3.19 (test8): the recipient's spells get stronger - caster level or save DCs (Arcane Reservoir,
+                // mythic abilities, bloodline powers). Worth something only to a caster (SpellcastingOnly).
+                case "AddCasterLevelForAbility":
+                case "AddCasterLevelForSpellbook":
+                case "IncreaseCasterLevel":
+                case "IncreaseSpellDescriptorCasterLevel":
+                case "IncreaseSpellSpellbookDC":
+                case "IncreaseAllSpellsDC":
+                case "IncreaseSpellDescriptorDC":
+                case "IncreaseSpellDC":
+                    result.SpellcastingParts++;
+                    result.DetectedComponents.Add($"Casting({typeName})");
+                    return 0.4f;
+
+                // ★ v0.3.19 (test8): critical hits and damage reduction - the recipient's weapon attacks get through or
+                // hit harder (All According to Plan, bane-like effects).
+                case "CriticalConfirmationBonus":
+                case "InitiatorCritAutoconfirm":
+                    result.Categories |= BuffEffectCategory.DamageBonus;
+                    result.DetectedComponents.Add($"Critical({typeName})");
+                    return 0.4f;
+                case "IgnoreDamageReductionOnAttack":
+                case "IgnoreTargetDR":
+                    result.Categories |= BuffEffectCategory.DamageBonus;
+                    result.DetectedComponents.Add($"IgnoreDR({typeName})");
+                    return 0.4f;
+
                 // ★ v0.3.2: save bonuses only against one kind of effect (poison, disease, a school, an alignment...).
                 case "SavingThrowBonusAgainstDescriptor":
                 case "SavingThrowBonusAgainstSchool":
@@ -462,6 +499,47 @@ namespace CompanionAI_Pathfinder.Analysis
                 default:
                     // 인식되지 않은 컴포넌트 - 가치 부여 안함
                     return 0f;
+            }
+        }
+
+        [ThreadStatic] private static int _addFactsDepth;
+
+        /// <summary>
+        /// ★ v0.3.19 (test8): what the facts an AddFacts component grants do (their components, read the same way); the
+        /// names of what is not recognised there go into the log line.
+        /// </summary>
+        private static float AnalyzeAddedFacts(Kingmaker.UnitLogic.FactLogic.AddFacts addFacts, BuffEffectAnalysis result)
+        {
+            if (_addFactsDepth >= 2) return 0f;
+            _addFactsDepth++;
+            try
+            {
+                float best = 0f;
+                var unknown = new List<string>();
+                foreach (var fact in addFacts.Facts)
+                {
+                    var components = fact?.ComponentsArray;
+                    if (components == null) continue;
+                    foreach (var component in components)
+                    {
+                        if (component == null) continue;
+                        int before = result.DetectedComponents.Count;
+                        best = Mathf.Max(best, AnalyzeComponent(component, result));
+                        if (result.DetectedComponents.Count == before && !IsMetaComponent(component.GetType().Name))
+                            unknown.Add(component.GetType().Name);
+                    }
+                }
+                if (best <= 0f)
+                    result.DetectedComponents.Add("?AddFacts" + (unknown.Count > 0 ? $"({string.Join(",", unknown)})" : ""));
+                return best;
+            }
+            catch
+            {
+                return 0f;
+            }
+            finally
+            {
+                _addFactsDepth--;
             }
         }
 

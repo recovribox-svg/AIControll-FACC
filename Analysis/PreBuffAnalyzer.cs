@@ -319,6 +319,15 @@ namespace CompanionAI_Pathfinder.Analysis
                 return PreBuffPriority.Skip;
             }
 
+            // ★ v0.3.19 (test8): a buff that lasts a round or ends with the next attack is gone before the fight starts:
+            // the button cast All According to Plan (one round) before a fight (0.3.19-test6 real-time log).
+            var profile = CompanionAI_Pathfinder.Tactics.AbilityProfile.Get(ability);
+            if (profile != null && (profile.BuffsLastOneRound || profile.BuffsSpentByAttack))
+            {
+                result.Reason = "lasts one round or one attack";
+                return PreBuffPriority.Skip;
+            }
+
             if (result.CombatValue < 0.2f)
             {
                 result.Reason = $"Low combat value ({result.CombatValue:F2})";

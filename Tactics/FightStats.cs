@@ -43,6 +43,8 @@ namespace CompanionAI_Pathfinder.Tactics
         private static readonly Dictionary<int, float> EnemyByRound = new Dictionary<int, float>();
         private static readonly Dictionary<int, float> PredictedByRound = new Dictionary<int, float>();
         private static float _lastDangerScale = 1f, _lastPartyPerRound;
+        /// <summary>★ v0.3.19 (test8): per party member, the damage it took in each round of this fight.</summary>
+        private static readonly Dictionary<string, Dictionary<int, float>> TakenByRound = new Dictionary<string, Dictionary<int, float>>();
 
         public static void Subscribe()
         {
@@ -72,6 +74,7 @@ namespace CompanionAI_Pathfinder.Tactics
             PartyByRound.Clear();
             EnemyByRound.Clear();
             PredictedByRound.Clear();
+            TakenByRound.Clear();
             _lastDangerScale = 1f;
             _lastPartyPerRound = 0f;
         }
@@ -110,6 +113,20 @@ namespace CompanionAI_Pathfinder.Tactics
             if (roundsPredicted == 0) return;
             foreach (var pair in EnemyByRound)
                 if (pair.Key >= first && pair.Key < round) observed += pair.Value;
+        }
+
+        /// <summary>
+        /// ★ v0.3.19 (test8): the most damage <paramref name="unit"/> took in one round of the last three (this one
+        /// included) - what is actually hitting it. The enemies focus the front line: Seelah went from 100 % to 45 % and
+        /// from 64 % to 14 % in single rounds while the party-wide calibration had cut every prediction to 40 %.
+        /// </summary>
+        public static float RecentWorstTaken(UnitEntityData unit, int round)
+        {
+            if (unit == null || !TakenByRound.TryGetValue(unit.UniqueId, out var taken)) return 0f;
+            float worst = 0f;
+            foreach (var pair in taken)
+                if (pair.Key <= round && pair.Key > round - 3) worst = Math.Max(worst, pair.Value);
+            return worst;
         }
 
         /// <summary>★ v0.3.18: no prediction recorded for this round yet (the engine computes one at the round's first decision).</summary>
@@ -226,6 +243,10 @@ namespace CompanionAI_Pathfinder.Tactics
                     _enemyDamage += dealt;
                     EnemyByRound.TryGetValue(round, out float sum);
                     EnemyByRound[round] = sum + dealt;
+                    if (!TakenByRound.TryGetValue(target.UniqueId, out var taken))
+                        TakenByRound[target.UniqueId] = taken = new Dictionary<int, float>();
+                    taken.TryGetValue(round, out float mine);
+                    taken[round] = mine + dealt;
                 }
             }
             catch

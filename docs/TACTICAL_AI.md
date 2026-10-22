@@ -1512,3 +1512,24 @@ every turn if ranks do not add up).
   (`StepGivesReach`; Lann's four refused attacks: in range, out of sight, a 3.7 m path). No "Leave <area>" to where the unit
   stands (Seelah's 0.0 m path, 4 s stall). An item that is used up needs a value of 5 (a potion was drunk at 64 % HP for 3.7).
 - **Not changed:** the real-time decision interval (0.5 s: decisions take 18-33 ms and mostly wait for a running command).
+
+## 40. v0.3.19 (test8): danger from what hits the unit, heal items, caster-side reading of buffs
+
+- **Danger where a unit stands** (`IncomingDamage`) is at least the most damage it really took in one round of the last
+  three (`FightStats.RecentWorstTaken`), capped by the uncalibrated prediction there (a hit from an enemy now dead or gone
+  does not count). The party-wide calibration (`DangerScale`, 0.4 at its floor in every test6 fight) had cut the danger of
+  the one the enemies focus: Seelah lost 55 % of her HP in one round and 50 % in another. Every drop-chance estimate uses it:
+  potions and heals (their drop-chance term), withdraw, exposure, revives staying up, burn.
+- **Heal items** are judged by the player's potion threshold (when) and the drop chance (whether now); the test7 bar for
+  used-up items (value 5) applies only to items that do not heal. The threshold is relative: `ValueModel.HealPerHp` is 0 at
+  any threshold and rises towards 0 HP, the drop-chance term ignores the threshold.
+- **A lasting area over a downed ally** costs its half revive worth only when a conscious party member has a heal it can
+  aim at an ally (`PartyCanRevive`).
+- **Buff reading** (`BuffEffectAnalyzer`, shared with real time and the pre-buff routine): `AddFacts` is followed into the
+  facts it grants (two levels); caster level and spell DC boosts (`AddCasterLevelForAbility`, `AddCasterLevelForSpellbook`,
+  `IncreaseCasterLevel`, `IncreaseSpellDescriptorCasterLevel`, `IncreaseSpellSpellbookDC`, `IncreaseAllSpellsDC`,
+  `IncreaseSpellDescriptorDC`, `IncreaseSpellDC`) are worth 0.4, to a recipient with a spellbook only
+  (`SpellcastingOnly`); critical-hit and damage-reduction bypass components (`CriticalConfirmationBonus`,
+  `InitiatorCritAutoconfirm`, `IgnoreDamageReductionOnAttack`, `IgnoreTargetDR`) 0.4. The counts came from the unread
+  components of the three test6 logs (`AddCasterLevelForAbility` 48 times).
+- **Pre-buff button** skips buffs that last a round or end with the next attack.

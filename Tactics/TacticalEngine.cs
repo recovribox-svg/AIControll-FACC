@@ -633,8 +633,18 @@ namespace CompanionAI_Pathfinder.Tactics
         /// (<see cref="TacticalContext.DangerScale"/>): in the 0.3.17 test logs the enemies' Threat was 16-82 per round
         /// and they dealt 0-13.
         /// </summary>
-        private static float IncomingDamage(TacticalContext ctx, UnitEntityData ally, Vector3 at) =>
-            IncomingDamageRaw(ctx, ally, at) * ctx.DangerScale;
+        /// <remarks>★ v0.3.19 (test8): where the unit stands, at least what it really took in its worst recent round
+        /// (FightStats.RecentWorstTaken) - the party-wide calibration (DangerScale) must not shrink the danger of the one
+        /// the enemies are hitting. Capped by the uncalibrated prediction there, so a hit from an enemy now dead or gone
+        /// does not count.</remarks>
+        private static float IncomingDamage(TacticalContext ctx, UnitEntityData ally, Vector3 at)
+        {
+            float raw = IncomingDamageRaw(ctx, ally, at);
+            float predicted = raw * ctx.DangerScale;
+            if (HorizontalDistance(at, ally.Position) > 2f) return predicted;
+            float seen = Math.Min(FightStats.RecentWorstTaken(ally, ctx.Round), raw);
+            return Math.Max(predicted, seen);
+        }
 
         /// <summary>★ v0.3.18: the prediction itself, from the enemies' Threat (what FightStats compares with the damage dealt).</summary>
         private static float IncomingDamageRaw(TacticalContext ctx, UnitEntityData ally, Vector3 at) =>
@@ -1304,6 +1314,29 @@ namespace CompanionAI_Pathfinder.Tactics
             }
         }
 
+        /// <summary>
+        /// ★ v0.3.19 (test8): a conscious party member has a healing ability it can aim at an ally now (the same
+        /// discovery the engine uses; potions only heal their drinker).
+        /// </summary>
+        private static bool PartyCanRevive(TacticalContext ctx)
+        {
+            try
+            {
+                foreach (var ally in ctx.Allies)
+                {
+                    if (ally == null || ally.HPLeft <= 0 || !ally.Descriptor.State.IsConscious) continue;
+                    foreach (var ability in AbilityDiscovery.Gather(ally))
+                    {
+                        if (!ability.IsAvailable || !ability.Blueprint.CanTargetFriends) continue;
+                        var p = AbilityProfile.Get(ability);
+                        if (p != null && p.Heals.Count > 0) return true;
+                    }
+                }
+            }
+            catch { return true; }
+            return false;
+        }
+
         private static List<UnitEntityData> UnitsAround(List<UnitEntityData> units, Vector3 center, float radius)
         {
             return units.Where(u => Vector3.Distance(u.Position, center) <= radius + u.Corpulence).ToList();
@@ -1562,6 +1595,8 @@ namespace CompanionAI_Pathfinder.Tactics
                 // whose weapon does not add it (a composite bow does: the game's weapon rule decides).
                 // ★ v0.3.18 (test11): and for an archer whose bow does add it, when the buff also costs Dexterity: Enlarge
                 // Person's +1 damage against -1 to hit from Dexterity and -1 from size. It went to Aeiluvetar over a heal.
+                // ★ v0.3.19 (test8): caster level and DC boosts help only a recipient that casts spells.
+                if (analysis.SpellcastingOnly && !(recipient.Descriptor?.Spellbooks?.Any() ?? false)) q = 0f;
                 if (analysis.StrengthOnly && (!CombatMath.StrengthAddsWeaponDamage(recipient) ||
                                               (analysis.DexterityPenalty && UsesRangedWeapon(recipient)))) q *= 0.2f;
                 best = Math.Max(best, q);
@@ -1792,8 +1827,11 @@ namespace CompanionAI_Pathfinder.Tactics
                 // 0.8-1.4, Lann drank five Cure Light Wounds in one fight). The bar of a quick action, whatever its slot.
                 // ★ v0.3.19 (test7): one that is used up (potion, scroll, wand charge) needs more: Seelah drank a Cure
                 // Moderate Wounds potion at 64 % HP for 3.7 (0.3.19-test6 real-time log, fight 1).
+                // ★ v0.3.19 (test8): not for a heal - the player's potion threshold says when, the drop chance whether
+                // now (the bar would block a potion just under the threshold for a front-liner about to be dropped).
                 if (ability.SourceItem != null &&
-                    value < (ability.SourceItem is ItemEntityUsable spent && spent.Blueprint.SpendCharges ? MinSpentItemValue : MinQuickValue))
+                    value < (ability.SourceItem is ItemEntityUsable spent && spent.Blueprint.SpendCharges && profile.Heals.Count == 0
+                                 ? MinSpentItemValue : MinQuickValue))
                     continue;
                 if (needsMove) value *= 0.9f;
                 // ★ v0.3.6: a standard-action spell cast in melee needs a defensive-casting check; failing it provokes an
@@ -2382,7 +2420,9 @@ namespace CompanionAI_Pathfinder.Tactics
                     // she and Seelah stayed down for 17 rounds.
                     var downedInside = UnitsAround(ctx.DownedAllies, target.Position, profile.AoERadius)
                         .Where(a => profile.AreaReaches(ability, a)).ToList();
-                    if (downedInside.Count > 0)
+                    // ★ v0.3.19 (test8): only when someone in the party can bring it back - with no healer, covering it
+                    // costs nothing.
+                    if (downedInside.Count > 0 && PartyCanRevive(ctx))
                         allyControlCost += downedInside.Sum(a => 0.5f * ValueModel.ReviveWorth(Level(a), ctx.ExpectedRounds, IsSummon(a)));
                 }
                 foreach (var enemy in affectedEnemies)
