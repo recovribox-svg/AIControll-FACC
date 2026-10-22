@@ -28,9 +28,22 @@ namespace CompanionAI_Pathfinder.GameInterface
             if (unit?.Commands == null) return true;
             try
             {
-                return unit.Commands.Empty;
+                return !HasPendingCommands(unit);
             }
             catch { return true; }
+        }
+
+        /// <summary>
+        /// ★ v0.3.19 (test5): a command in a slot, or one the game queued behind a command it put first. Gather Power and
+        /// the Kinetic Blade's activation are put before a blast or an attack this way (UnitCommands.TryUseCustomHandler:
+        /// ExecuteBefore runs, the order waits in UnitCommands.Queue). Deciding again then would issue a new order, and
+        /// UnitCommands.Run clears the queue: the blast or attack was lost.
+        /// </summary>
+        public static bool HasPendingCommands(UnitEntityData unit)
+        {
+            if (unit?.Commands == null) return false;
+            try { return !unit.Commands.Empty || unit.Commands.Queue.Count > 0; }
+            catch { return !unit.Commands.Empty; }
         }
 
         /// <summary>
@@ -45,7 +58,7 @@ namespace CompanionAI_Pathfinder.GameInterface
             if (unit == null) return false;
             try
             {
-                bool commandsEmpty = unit.Commands.Empty;
+                bool commandsEmpty = !HasPendingCommands(unit);
                 bool canAct = unit.Descriptor.State.CanAct;
 
                 // ★ v0.3.6: this runs every frame while a command plays out (13,559 lines in one debug log); log changes only.

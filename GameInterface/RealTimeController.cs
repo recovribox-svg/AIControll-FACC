@@ -249,7 +249,8 @@ namespace CompanionAI_Pathfinder.GameInterface
             }
 
             // ★ v0.2.47: 명령 상태 상세 체크 + Stuck 명령 감지/취소
-            if (!unit.Commands.Empty)
+            // ★ v0.3.19 (test5): a command the game queued behind one it put first (Gather Power, Kinetic Blade) counts.
+            if (GameAPI.HasPendingCommands(unit))
             {
                 // ★ v0.3.14 (test5): a command chosen at full health that has not started yet (still walking to its target,
                 // waiting for a cooldown) is dropped when the unit has since lost a lot of HP, so the engine can heal or

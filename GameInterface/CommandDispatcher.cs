@@ -151,7 +151,18 @@ namespace CompanionAI_Pathfinder.GameInterface
 
                 // UnitCommands.Run() returns silently when CanRunCommand() fails (unconscious, CantUseStandardActions)
                 // or when a special handler consumed the command; in both cases our instance is not in a slot.
-                if (!IsInSlots(unit, command))
+                // ★ v0.3.19 (test5): queued behind a command the game put first (Gather Power before a blast, the Kinetic
+                // Blade's activation before an attack: UnitCommands.TryUseCustomHandler) is accepted - it runs when that
+                // one ends. Read as refused, the engine issued its next option at once, and UnitCommands.Run cleared the
+                // queue: the blast or attack was lost every time.
+                if (!IsInSlots(unit, command) && unit.Commands.ContainsOrQueued(command) && !command.IsFinished)
+                {
+                    UnitCommand first = null;
+                    foreach (var c in unit.Commands.Raw) if (c != null && !c.IsFinished) { first = c; break; }
+                    Main.Log($"[Dispatch] {unit.CharacterName}: {label} queued behind {(first?.GetType().Name ?? "another command")}" +
+                             (first is UnitUseAbility before ? $" ({before.Ability?.Name})" : ""));
+                }
+                else if (!IsInSlots(unit, command))
                 {
                     failure = command.IsFinished ? $"command ended immediately ({command.Result})" : "command not accepted by UnitCommands.Run";
                     CommandTrace.LogRejected(unit, command, label, failure);
