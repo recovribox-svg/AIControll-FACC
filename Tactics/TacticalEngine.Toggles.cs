@@ -288,6 +288,24 @@ namespace CompanionAI_Pathfinder.Tactics
             failure = null;
             var toggle = c.Toggle;
             if (toggle == null) { failure = "no toggle"; return false; }
+            // ★ v0.3.19 (test6): an infusion switched off (TacticalEngine.Kinetic.cs) - at once, as the action bar does.
+            if (c.ToggleOff)
+            {
+                try
+                {
+                    bool wasOn = toggle.IsOn;
+                    toggle.IsOn = false;
+                    if (toggle.IsOn) { failure = "the game did not switch it off"; return false; }
+                    CombatMemory.RecordToggle(unit, toggle, false, wasOn);
+                    Main.Log($"[Toggle] {unit.CharacterName}: {toggle.Name} off - {c.Label} = {c.Value:F1}");
+                    return true;
+                }
+                catch (Exception ex)
+                {
+                    failure = ex.Message;
+                    return false;
+                }
+            }
             try
             {
                 toggle.IsOn = true;

@@ -72,6 +72,8 @@ namespace CompanionAI_Pathfinder.Tactics
 
         /// <summary>★ v0.3.18 (AA-2): the activatable ability a Toggle candidate switches on.</summary>
         public Kingmaker.UnitLogic.ActivatableAbilities.ActivatableAbility Toggle;
+        /// <summary>★ v0.3.19 (test6): the Toggle candidate switches it off (an infusion whose burn blocks every blast).</summary>
+        public bool ToggleOff;
         /// <summary>★ v0.3.18 (AA-3): attack modes to switch (on / off) just before this weapon attack.</summary>
         public List<KeyValuePair<Kingmaker.UnitLogic.ActivatableAbilities.ActivatableAbility, bool>> Modes;
         /// <summary>★ v0.3.18 (AA-3): how much of a change in the attack's damage value reaches this option's value (its
@@ -228,6 +230,9 @@ namespace CompanionAI_Pathfinder.Tactics
             try { foreach (var c in candidates.Where(c => c.Kind == CandidateKind.WeaponAttack).ToList()) ChooseAttackModes(ctx, c); }
             catch (Exception ex) { Main.Error($"[Tactics] attack modes: {ex}"); }
             try { AddAbilityCandidates(ctx, candidates); } catch (Exception ex) { Main.Error($"[Tactics] ability candidates: {ex}"); }
+            // ★ v0.3.19 (test6): kineticists - burn priced, and what to do when burn blocks every blast.
+            try { PriceBurn(ctx, candidates); AddKineticCandidates(ctx, candidates, preview); }
+            catch (Exception ex) { Main.Error($"[Tactics] kineticist candidates: {ex}"); }
             try { AddMovementCandidates(ctx, candidates); } catch (Exception ex) { Main.Error($"[Tactics] movement candidates: {ex}"); }
             // ★ v0.3.18 (AA-2): after the others, so a toggle that forbids spells is priced against the best spell.
             try { AddToggleCandidates(ctx, candidates, preview); } catch (Exception ex) { Main.Error($"[Tactics] toggle candidates: {ex}"); }
@@ -737,7 +742,7 @@ namespace CompanionAI_Pathfinder.Tactics
             // weapon fighter's place is in melee, so its moves keep the half-HP rule).
             if (alwaysExposure || ctx.HpPct < CautionBelow(ctx))
             {
-                float hp = Math.Max(1f, unit.HPLeft);
+                float hp = Math.Max(1f, CombatMath.HpBeforeDown(unit));
                 float exposure = RiskMath.RoundDropChance(hp, IncomingDamage(ctx, unit, destination)) -
                                  RiskMath.RoundDropChance(hp, IncomingDamage(ctx, unit, unit.Position));
                 if (exposure > 0.02f)
@@ -769,7 +774,7 @@ namespace CompanionAI_Pathfinder.Tactics
             var attackers = PathAttackers(ctx, unit.Position, destination);
             if (attackers.Count == 0) return null;
 
-            float hp = Math.Max(1f, unit.HPLeft);
+            float hp = Math.Max(1f, CombatMath.HpBeforeDown(unit));
             bool mobile = mobility ?? UsesMobility(unit);
             PriceAttacks(unit, attackers, hp, out float damage, out float stopChance, out float dropNow,
                          mobile ? (Func<UnitEntityData, float>)(e => 1f - MobilityAvoids(unit, e)) : null);
@@ -904,7 +909,7 @@ namespace CompanionAI_Pathfinder.Tactics
             }
             if (ctx == null) return true;
 
-            float hp = Math.Max(1f, unit.HPLeft);
+            float hp = Math.Max(1f, CombatMath.HpBeforeDown(unit));
             PriceAttacks(unit, attackers, hp, out float damage, out _, out float dropNow);
             float worth = AllyWorth(ctx, unit);
             float danger = IncomingDamage(ctx, unit, unit.Position);
@@ -1013,7 +1018,7 @@ namespace CompanionAI_Pathfinder.Tactics
                 catch { return false; }
             }).ToList();
             if (attackers.Count == 0) return null;
-            float hp = Math.Max(1f, unit.HPLeft);
+            float hp = Math.Max(1f, CombatMath.HpBeforeDown(unit));
             PriceAttacks(unit, attackers, hp, out float damage, out float hitChance, out float dropNow);
             float worth = AllyWorth(ctx, unit);
             float danger = Math.Max(1f, IncomingDamage(ctx, unit, at));
@@ -2192,8 +2197,8 @@ namespace CompanionAI_Pathfinder.Tactics
                     float danger = IncomingDamage(ctx, ally);
                     if (danger > 0f)
                     {
-                        float before = Mathf.Exp(-Math.Max(1f, ally.HPLeft) / danger);
-                        float after = Mathf.Exp(-(Math.Max(1f, ally.HPLeft) + heal) / danger);
+                        float before = Mathf.Exp(-Math.Max(1f, CombatMath.HpBeforeDown(ally)) / danger);
+                        float after = Mathf.Exp(-(Math.Max(1f, CombatMath.HpBeforeDown(ally)) + heal) / danger);
                         healValue += (before - after) * AllyWorth(ctx, ally);
                     }
                 }
@@ -2671,7 +2676,7 @@ namespace CompanionAI_Pathfinder.Tactics
             // a fixed value: Lann (20 %, in the Large Water Elemental's reach) shot instead and went down.
             if (ctx.HpPct < CautionBelow(ctx))
             {
-                float hp = Math.Max(1f, unit.HPLeft);
+                float hp = Math.Max(1f, CombatMath.HpBeforeDown(unit));
                 float dangerHere = IncomingDamage(ctx, unit, unit.Position);
                 if (dangerHere > 0f)
                 {

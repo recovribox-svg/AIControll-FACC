@@ -1438,3 +1438,46 @@ burn ability with its burn now (`AbilityKineticist.CalculateAbilityBurnCost`) an
 **Not done, waiting for a log:** Mystical Mayhem's Invoker blast has no structural blocker in the code (ray with attack
 roll, `ContextActionDealDamage`); a log of an Invoker shows how it is valued. The Kinetic Blade activation's own action
 cost before an attack is logged, not yet priced.
+
+## 38. v0.3.19 (test6): burn, the Kinetic Sharpshooter's quiver, infusions that block every blast
+
+**Source:** the game's Kineticist blueprints (the player's `Blueprints/Classes/Kineticist` folder), read with the decompiled
+code. "Kinetic shooter" is the **Kinetic Sharpshooter** archetype (`KineticSharpshooterArchetype`:
+`AddKineticistMechanicalPart ArcherBlast`, so its blasts are shot through the bow).
+
+**What burn is.** `BurnFeature` → `AddKineticistBurnValueChangedTrigger` → `BurnEffectBuff`: `AddContextStatBonus` on
+`DamageNonLethal` of `KineticNonLethalDamageProperty` = burn x character level. The game knocks a unit out when damage +
+nonlethal reach its hit points (`UnitLifeController`); burn stays until rest (`RemoveOnRest`). Burn per round:
+`BurnPerRoundResource` 1, +1 at kineticist level 6 and every 3 after; the day's burn `BurnResource` 3 + Constitution.
+Elemental Overflow (`ElementalOverflowBonusFeature`): Bonus = class level / 3, limited by the burn accepted - so burn also
+raises blast damage (§37).
+
+**Why kineticists stopped blasting.** A blast that costs burn passes the game's restriction only with that much left this
+round (`IsAbilityRestrictionPassed`: `LeftBurnThisRound` = min(left today, left this round)). Substance infusions are on
+by default once learned (`IsOnByDefault`) and add burn to every blast (`AddKineticistBurnModifier` on the infusion's buff;
+Cluster Arrows +3, applied to all 17 base blasts). So a low-level Kinetic Sharpshooter could never blast, and any
+kineticist with an infusion on had no blast left once the day's burn was spent - only the weapon. The Sharpshooter's
+answer is its quiver (`KineticSharpshooterCreateQuiverAbility`: 1 burn, standard, class level + Constitution bonus ranks
+of `KineticSharpshooterObtainQuiverBuff` = `UnitPartKineticist.QuiverBuff`), which pays a blast's burn first when a ranged
+weapon is in hand (`AbilityKineticist.CalculateCost` / `Spend`). Its buff has no effect the analyser reads: never cast.
+
+**Changes** (`Tactics/TacticalEngine.Kinetic.cs`):
+- **Hit points before going down** (`CombatMath.HpBeforeDown` = HP left - nonlethal): the unit's HP share (caution,
+  heal threshold) and every drop-chance estimate (exposure, path attacks, withdraw, heal danger) use it.
+- **Burn priced** (`BurnCost`): the drop chance the nonlethal damage adds before the next turn (the heal model's term,
+  mirrored), 0.1 per burn hit point as a day cost, less the Overflow it adds to the blasts left; a burn that would knock
+  the unit out costs twice its worth. Applied to each kineticist ability candidate by the game's own cost after the quiver
+  (`PriceBurn`, label `[burn N: -x]`), and to weapon attacks with a kinetic blade not yet activated this round (the game
+  activates it first: free action, 1 infusion burn; label `[blade burn N]`). With too little burn left to activate it, the
+  blade's blast counts nothing.
+- **When burn blocks every blast** (none available, at least one failing the burn restriction), against the best other
+  standard / full-round option:
+  1. *Create Quiver* when the arrows make a blast affordable from next round: (blast - best other) x min(rounds left - 1,
+     arrows / burn per blast), less its own burn. Not while the quiver still holds arrows.
+  2. Otherwise, with "AI manages toggles" on, *switch off* (free, at once) the active infusion whose burn modifier blocks
+     them: (blast - its remaining burn cost - best other) x rounds left. Not a toggle the player switched in this fight;
+     back on when the fight ends (`CombatMemory.SwitchOffAiToggles`: an infusion changes the next blast and nothing else).
+  Logged once per round as `[Kinetic] <name>: blasts blocked by burn - ...` with what was done or why nothing.
+
+**Not verified in the game yet.** The quiver's rank stacking when cast again with arrows left (not done: it could repeat
+every turn if ranks do not add up).

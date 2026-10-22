@@ -20,6 +20,7 @@ using Kingmaker.UnitLogic.Abilities;
 using Kingmaker.UnitLogic.ActivatableAbilities;
 using Kingmaker.UnitLogic.Commands;
 using CompanionAI_Pathfinder.Analysis;
+using CompanionAI_Pathfinder.Settings;
 
 namespace CompanionAI_Pathfinder.Tactics
 {
@@ -162,6 +163,12 @@ namespace CompanionAI_Pathfinder.Tactics
                     return "may switch it with attacks and moves" + (values != null ? $" ({values})" : "") +
                            (removes != null ? $" (when it ends, its buff removes: {removes})" : "");
                 }
+                // ★ v0.3.19 (test6): an infusion with a burn cost - switched off when its burn blocks every blast.
+                if (TacticalEngine.IsBlastModifier(toggle.Blueprint) && toggle.Blueprint.Buff != null &&
+                    Kingmaker.Blueprints.BlueprintExtenstions.GetComponents<Kingmaker.UnitLogic.Class.Kineticist.AddKineticistBurnModifier>(toggle.Blueprint.Buff).Any(m => m.Value > 0))
+                    return (ModSettings.Instance?.AiManagesToggles ?? true)
+                        ? "leaves it, except: switches it off when its burn blocks every blast (back on after the fight)"
+                        : "leaves it (switched off in the settings)";
                 return $"leaves it ({why}; as a combat mode: {mode})";
             }
             catch (Exception ex)

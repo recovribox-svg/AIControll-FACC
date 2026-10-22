@@ -67,7 +67,21 @@ namespace CompanionAI_Pathfinder.Tactics
         public static float HpPercent(UnitEntityData unit)
         {
             int max = Math.Max(1, unit.MaxHP);
-            return Mathf.Clamp01(unit.HPLeft / (float)max);
+            return Mathf.Clamp01(HpBeforeDown(unit) / (float)max);
+        }
+
+        /// <summary>
+        /// ★ v0.3.19 (test6): the hit points before the unit goes down: the game knocks it out when damage + nonlethal
+        /// damage reach its hit points (UnitLifeController), so nonlethal damage - a kineticist's burn is burn x
+        /// character level of it until rest - comes off what is left. A kineticist with 3 burn at level 10 and no
+        /// wound read as 100 % and was 30 HP closer to dropping.
+        /// </summary>
+        public static float HpBeforeDown(UnitEntityData unit)
+        {
+            if (unit == null) return 0f;
+            int nonLethal = 0;
+            try { nonLethal = Math.Max(0, unit.DamageNonLethal); } catch { }
+            return Math.Max(0f, unit.HPLeft - nonLethal);
         }
 
         /// <summary>
@@ -249,6 +263,13 @@ namespace CompanionAI_Pathfinder.Tactics
                 var blade = Kingmaker.Blueprints.BlueprintExtenstions.GetComponent<Kingmaker.UnitLogic.Class.Kineticist.WeaponKineticBlade>(weapon.Blueprint);
                 var blast = blade?.GetBlastAbility(unit.Descriptor);
                 if (blast == null) return 0f;
+                // ★ v0.3.19 (test6): the game activates the blade before the attack (a free action, its infusion's burn:
+                // KineticBlade<Element>BurnAbility); with less burn left this round the blade cannot activate
+                // (RestrictionCanUseKineticBlade) and the hit casts nothing.
+                var part = unit.Get<Kingmaker.UnitLogic.Class.Kineticist.UnitPartKineticist>();
+                if (part != null && !part.IsBladeActivated &&
+                    (Kingmaker.UnitLogic.Class.Kineticist.AbilityKineticist.CalculateAbilityBurnCost(blade.GetActivationAbility(unit.Descriptor))?.Total ?? 0) > part.LeftBurnThisRound)
+                    return 0f;
                 var profile = AbilityProfile.Get(blast);
                 if (profile == null) return 0f;
                 return EstimateAbilityDamage(blast, profile, target, weapon) * SpellResistancePass(unit, target, blast);
@@ -535,17 +556,20 @@ namespace CompanionAI_Pathfinder.Tactics
 
         /// <summary>★ v0.3.19 (test5): Elemental Overflow's damage on one damage roll of <paramref name="ability"/> (see
         /// KineticDamageBonus); 0 when it is not one of the caster's own blasts.</summary>
-        public static int ElementalOverflowDamage(UnitEntityData caster, Kingmaker.UnitLogic.Abilities.Blueprints.BlueprintAbility ability)
+        /// <param name="extraBurn">★ v0.3.19 (test6): with this much more burn accepted (what accepting it would add).</param>
+        public static int ElementalOverflowDamage(UnitEntityData caster, Kingmaker.UnitLogic.Abilities.Blueprints.BlueprintAbility ability,
+                                                  int extraBurn = 0)
         {
             var part = caster?.Get<Kingmaker.UnitLogic.Class.Kineticist.UnitPartKineticist>();
             var blast = ability?.Parent ?? ability;
             if (part?.Blasts == null || blast == null || !part.Blasts.Contains(blast)) return 0;
-            return FrameCached($"ovf|{caster.UniqueId}|{blast.AssetGuid}", () => OverflowNow(caster, part, blast));
+            return FrameCached($"ovf|{caster.UniqueId}|{blast.AssetGuid}|{extraBurn}", () => OverflowNow(caster, part, blast, extraBurn));
         }
 
         private static int OverflowNow(UnitEntityData caster, Kingmaker.UnitLogic.Class.Kineticist.UnitPartKineticist part,
-                                       Kingmaker.UnitLogic.Abilities.Blueprints.BlueprintAbility blast)
+                                       Kingmaker.UnitLogic.Abilities.Blueprints.BlueprintAbility blast, int extraBurn)
         {
+            int accepted = Math.Min(part.MaxBurn, part.AcceptedBurn + Math.Max(0, extraBurn));
             int bonus = 0;
             foreach (var fact in caster.Facts.List)
             {
@@ -554,11 +578,11 @@ namespace CompanionAI_Pathfinder.Tactics
                 {
                     if (!(component is Kingmaker.UnitLogic.Class.Kineticist.AddKineticistElementalOverflow overflow)) continue;
                     int ranks = Math.Min(overflow.Bonus?.Calculate(fact.MaybeContext) ?? 0, part.ClassLevel / 3);
-                    bool engine = overflow.ElementalEngine && part.MaxBurn == part.AcceptedBurn;
+                    bool engine = overflow.ElementalEngine && part.MaxBurn == accepted;
                     int per = (blast.SpellDescriptor & Kingmaker.Blueprints.Classes.Spells.SpellDescriptor.Fire) != 0 &&
                               overflow.FiresFury != null && caster.Descriptor.HasFact(overflow.FiresFury) ? 3 : 2;
                     if (engine) per += 2;
-                    if (!overflow.IgnoreBurn) ranks = Math.Min(ranks, part.AcceptedBurn);
+                    if (!overflow.IgnoreBurn) ranks = Math.Min(ranks, accepted);
                     bonus += Math.Max(0, ranks) * per;
                 }
             }

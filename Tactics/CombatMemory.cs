@@ -170,7 +170,10 @@ namespace CompanionAI_Pathfinder.Tactics
                             try { resource = toggle.ResourceCount; } catch { }
                             bool startsNothingNow = bp.ActivateOnUnitAction || bp.ActivateOnCombatStarts ||
                                                     (!bp.DeactivateIfCombatEnded && !bp.ActivateWithUnitCommand);
-                            if (!startsNothingNow || bp.ActivateWithUnitCommand || resource.HasValue) continue;
+                            // ★ v0.3.19 (test6): an infusion the AI switched off because its burn blocked every blast is
+                            // put back: it changes the next blast and nothing else (no command acts, no resource).
+                            bool blastModifier = TacticalEngine.IsBlastModifier(bp) && !resource.HasValue;
+                            if (!blastModifier && (!startsNothingNow || bp.ActivateWithUnitCommand || resource.HasValue)) continue;
                         }
                         if (!wasOn || toggle.IsAvailable)
                         {

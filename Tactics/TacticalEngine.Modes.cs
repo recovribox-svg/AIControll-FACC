@@ -439,7 +439,7 @@ namespace CompanionAI_Pathfinder.Tactics
             }
             float share = all > 0f ? Mathf.Clamp(avoided / all, -1f, 0.95f) : 0f;
             if (Math.Abs(share) < 1e-4f) return 0f;
-            float hp = Math.Max(1f, unit.HPLeft);
+            float hp = Math.Max(1f, CombatMath.HpBeforeDown(unit));
             float dropBefore = RiskMath.RoundDropChance(hp, danger);
             float dropAfter = RiskMath.RoundDropChance(hp, danger * (1f - share));
             return ((dropBefore - dropAfter) * AllyWorth(ctx, unit) + danger * share * 0.3f) * RiskTolerance(ctx);
