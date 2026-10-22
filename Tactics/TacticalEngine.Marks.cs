@@ -111,7 +111,14 @@ namespace CompanionAI_Pathfinder.Tactics
             if (mark.Unique)
             {
                 var current = ctx.Enemies.FirstOrDefault(e => e != target && OursOn(e));
-                if (current != null) gain -= GuardPerRound(ctx, current, mark) * rounds;
+                // ★ v0.3.19 (test9, review): with the free-action bar at 1 the mark could hop between two enemies as they
+                // move (every half second in real time). Moved at most once a round, and only for a clearly better one.
+                if (current != null && CombatMemory.LastCastRound(unit, ability, current) == ctx.Round)
+                {
+                    why = "the mark was placed this round";
+                    return 0f;
+                }
+                if (current != null) gain -= GuardPerRound(ctx, current, mark) * rounds * 1.25f;
                 if (gain <= 0f) { why = current != null ? $"{current.CharacterName} is the better mark" : "it does not threaten the caster"; return 0f; }
             }
             if (gain <= 0f) why = "it does not threaten the caster";

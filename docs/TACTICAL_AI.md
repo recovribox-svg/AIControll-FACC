@@ -1578,3 +1578,8 @@ every turn if ranks do not add up).
   still cannot see it, for up to 18 s (`CombatMemory.NoteNoSight` / `StillNoSight`). The refused-walk memory (1 m, 12 s)
   let Aeiluvetar walk at the same unseen archer three times, 6-10 s each.
 - **Not the AI:** the 30-round fight was an IsekaiMod "Rival" Cultist Champion (party damage 4 a round).
+- **Review (test10).** The no-sight memory tests sight the way the game's walk did (`LineOfSightGeometry.HasObstacle`
+  from the eyes, as `UnitCommand.SightIsClear`), once a frame: `LineOfSightChecker` is another test and logs a line on
+  every call, and it was asked for every option on the target. The Ring of the Mad Duelist moves to another enemy at most
+  once a round and only for a guard 25 % better than the current one's: with the free-action bar at 1 it could have hopped
+  between two moving enemies (every half second in real time).

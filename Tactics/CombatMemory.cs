@@ -258,6 +258,8 @@ namespace CompanionAI_Pathfinder.Tactics
             public Vector3 UnitAt;
             public Vector3 TargetAt;
             public double Until;
+            public int CheckedFrame = -1;
+            public bool Holds;
         }
 
         /// <summary>
@@ -278,11 +280,22 @@ namespace CompanionAI_Pathfinder.Tactics
             if (!IsRealTime || NoSights.Count == 0 || unit == null || target == null) return false;
             string key = $"{unit.UniqueId}|{target.UniqueId}";
             if (!NoSights.TryGetValue(key, out var seen)) return false;
+            // Asked for every option on the target: once a frame. The sight test is the one the game's walk used
+            // (UnitCommand.SightIsClear: LineOfSightGeometry.HasObstacle from the eyes to the target), not
+            // LineOfSightChecker (another test, and a log line on every call).
+            int frame = Time.frameCount;
+            if (seen.CheckedFrame == frame) return seen.Holds;
             bool holds = GameSeconds <= seen.Until && Vector3.Distance(unit.Position, seen.UnitAt) <= 2f &&
-                         Vector3.Distance(target.Position, seen.TargetAt) <= 2f &&
-                         !CompanionAI_Pathfinder.Analysis.LineOfSightChecker.HasLineOfSight(unit, target);
-            if (!holds) NoSights.Remove(key);
-            return holds;
+                         Vector3.Distance(target.Position, seen.TargetAt) <= 2f;
+            if (holds)
+            {
+                try { holds = Owlcat.Runtime.Visual.RenderPipeline.RendererFeatures.FogOfWar.LineOfSightGeometry.Instance.HasObstacle(unit.EyePosition, target.Position, 0f); }
+                catch { holds = false; }
+            }
+            if (!holds) { NoSights.Remove(key); return false; }
+            seen.CheckedFrame = frame;
+            seen.Holds = true;
+            return true;
         }
 
         /// <summary>★ v0.3.18 (test10): "unit|ability" → the caster's burn and the dead around it when it last used a burn
