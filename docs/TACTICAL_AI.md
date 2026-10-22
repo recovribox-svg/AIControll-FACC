@@ -1371,3 +1371,32 @@ melee fighters stood. Enlarge Person went only to melee characters.
 - An own area spell over downed allies that blocks their revival.
 - Mobility in real time (half speed costs time, not the move).
 
+## 36. v0.3.19 (test4): one owner for toggles - compatibility with Buff It 2 The Limit
+
+**What the other mod does** (its source, 1.22.0, Id `BuffIt2TheLimit`): it switches activatable abilities by setting
+`IsOn` itself and calling `TryStart` (`BuffExecutor.Execute`, phase 0), at combat start (`ExecuteCombatStart`), after a
+configured round limit and when combat ends (`RoundLimitWatcher`), and handles activation groups and form chains (Shifter's
+Fury, Chimeric Aspect, mounts). It also casts buff routines from spell slots and items, on demand or at combat start. It
+offers no public API, and which abilities a player gave it lives in its own save state.
+
+**Where this mod changes the same state.** Five places switch a toggle: attack modes with an attack
+(`ApplyModes`), Mobility off when unthreatened (`MobilityHousekeeping`), starting a performance or Rage (`ExecuteToggle`),
+stopping a pointless performance (`StopIfPointless`), and the end-of-fight restore (`CombatMemory.SwitchOffAiToggles`).
+No other path issues `UnitActivateAbility` or sets `IsOn`. The "player switched it" lock sees only action-bar clicks, so
+the other mod's changes were open to being undone. One more overlap: the out-of-combat self-buff routine
+(`RealTimeController.ApplyPermanentBuffsOutOfCombat`, after every fight and between real-time decisions) casts missing
+hour-long self buffs from the same spell slots, with no setting. The "Pre-Buff Party" button runs only when clicked.
+
+**Design.** Since the other mod cannot say which toggles it owns, the owner is chosen globally by the player:
+- **"AI manages activatable abilities (toggles)"** (`AiManagesToggles`, on) replaces "AI may start performances..." and
+  "AI may switch combat modes...". Off: none of the five paths switches anything, in or out of combat; the AI still reads
+  what is on (attack routines, AC, Mobility in move pricing). On: as before, and "Leave a toggle alone..." still protects
+  the player's own clicks. A settings file from before keeps the user's choice: on only if both old switches were on.
+- **"After fights, AI companions recast their long-lasting self buffs"** (`AiRecastsSelfBuffs`, on): one gate at the
+  entry of the routine covers all its callers and clears its busy-unit queue.
+- **Detection is advisory only** (`GameInterface/ModInterop`): Unity Mod Manager's own list (`FindMod("BuffIt2TheLimit")`,
+  `Enabled`), looked up at most every 5 s, logged once when it changes. While it is active and either setting is on, the
+  settings page says to switch off the matching setting. Settings are never changed for the player.
+
+**Not verified in the game yet:** both mods together (combat-start songs, round-limit switch-off, activation groups).
+

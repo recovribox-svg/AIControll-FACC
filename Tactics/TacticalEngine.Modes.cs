@@ -218,7 +218,7 @@ namespace CompanionAI_Pathfinder.Tactics
         internal static string ModeExclusion(ActivatableAbility toggle)
         {
             if (toggle?.Blueprint == null) return "no blueprint";
-            if (!(ModSettings.Instance?.AiSwitchesCombatModes ?? true)) return "switched off in the settings";
+            if (!(ModSettings.Instance?.AiManagesToggles ?? true)) return "switched off in the settings";
             if (toggle.Blueprint.HiddenInUI) return "hidden";
             return ModeOf(toggle.Blueprint).Excluded;
         }
@@ -280,7 +280,7 @@ namespace CompanionAI_Pathfinder.Tactics
             if (ctx.AttackModes != null) return ctx.AttackModes;
             var modes = new List<UnitMode>();
             ctx.AttackModes = modes;
-            if (!(ModSettings.Instance?.AiSwitchesCombatModes ?? true)) return modes;
+            if (!(ModSettings.Instance?.AiManagesToggles ?? true)) return modes;
             var unit = ctx.Unit;
             foreach (var toggle in unit.ActivatableAbilities?.Enumerable ?? Enumerable.Empty<ActivatableAbility>())
             {
@@ -642,7 +642,7 @@ namespace CompanionAI_Pathfinder.Tactics
         /// </summary>
         private static void AddMobilityCandidate(TacticalContext ctx, List<Candidate> list, TurnMemory memory)
         {
-            if (!(ModSettings.Instance?.AiSwitchesCombatModes ?? true) || ctx.NoMovementLeft || ctx.StepTaken) return;
+            if (!(ModSettings.Instance?.AiManagesToggles ?? true) || ctx.NoMovementLeft || ctx.StepTaken) return;
             var unit = ctx.Unit;
             var toggle = MobilityToggle(unit);
             if (toggle == null || toggle.IsOn || toggle.IsStarted || !toggle.IsAvailable) return;

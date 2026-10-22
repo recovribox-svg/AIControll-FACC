@@ -139,10 +139,14 @@ toggles such as Shift Form; bonus stacking follows the game's own rule (and Tabl
   spell level first for damage/control spells; cantrips, buffs, heals and items unaffected). *Progressive: allow higher
   spell levels against bosses* (global, on by default) frees higher levels for spells that would hit an enemy the game
   marks as a boss.
-- *AI may start performances, rage and similar abilities* and *AI may switch combat modes (Power Attack, Fighting
-  Defensively, Mobility)* (both on): the AI switches these by itself during fights, also ones you set before the fight,
-  and puts them back as you left them when the fight ends. *Leave a toggle alone for the rest of the fight once you switch
-  it yourself* (on): a toggle you click during a fight stays as you set it until that fight ends.
+- *AI manages activatable abilities (toggles)* (on): in fights the AI switches the toggles it understands (performances,
+  Rage, spirits, Power Attack and the other attack modes, Fighting Defensively, Mobility) and puts them back as you left
+  them afterwards. Off: the AI never switches a toggle - they stay as you or another mod set them. Under it, *Leave a
+  toggle alone for the rest of the fight once you switch it yourself* (on) protects your own action-bar clicks.
+- *After fights, AI companions recast their long-lasting self buffs* (on): missing hour-long or permanent self buffs are
+  cast out of combat. Switch off if you buff by hand or with a buff mod.
+- **Buff It 2 The Limit:** if it manages your companions' toggles, switch *AI manages activatable abilities* off; if it
+  casts their buffs, switch the self-buff option off too. The settings page shows a reminder while that mod is active.
 - *Consumables (quick-slot items)*: master switch plus potions / scrolls & wands / alchemical & thrown items, and the HP %
   below which a character drinks a healing potion. **Put the items you want companions to use into their quick slots**:
   the game only allows quick-slot items in combat, and never lets animal companions use items.

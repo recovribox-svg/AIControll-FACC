@@ -263,28 +263,36 @@ namespace CompanionAI_Pathfinder.UI
             GUILayout.Label($"<color=#888888><size=11>{L("ProgressiveBossBypassDesc")}</size></color>", _descriptionStyle);
             GUILayout.Space(3);
 
-            // ★ v0.3.18 (AA-2)
-            bool prevToggles = ModSettings.Instance.AiStartsToggles;
-            ModSettings.Instance.AiStartsToggles = DrawCheckbox(ModSettings.Instance.AiStartsToggles, L("AiStartsToggles"));
-            GUILayout.Label($"<color=#888888><size=11>{L("AiStartsTogglesDesc")}</size></color>", _descriptionStyle);
-            GUILayout.Space(3);
-
-            // ★ v0.3.18 (AA-3)
-            bool prevModes = ModSettings.Instance.AiSwitchesCombatModes;
-            ModSettings.Instance.AiSwitchesCombatModes = DrawCheckbox(ModSettings.Instance.AiSwitchesCombatModes, L("AiSwitchesCombatModes"));
-            GUILayout.Label($"<color=#888888><size=11>{L("AiSwitchesCombatModesDesc")}</size></color>", _descriptionStyle);
+            // ★ v0.3.19: one switch for activatable abilities; the player-click rule only matters while it is on.
+            bool prevToggles = ModSettings.Instance.AiManagesToggles;
+            ModSettings.Instance.AiManagesToggles = DrawCheckbox(ModSettings.Instance.AiManagesToggles, L("AiManagesToggles"));
+            GUILayout.Label($"<color=#888888><size=11>{L("AiManagesTogglesDesc")}</size></color>", _descriptionStyle);
+            bool prevRespect = ModSettings.Instance.RespectPlayerToggles;
+            if (ModSettings.Instance.AiManagesToggles)
+            {
+                GUILayout.BeginHorizontal();
+                GUILayout.Space(25);
+                GUILayout.BeginVertical();
+                ModSettings.Instance.RespectPlayerToggles = DrawCheckbox(ModSettings.Instance.RespectPlayerToggles, L("RespectPlayerToggles"));
+                GUILayout.Label($"<color=#888888><size=11>{L("RespectPlayerTogglesDesc")}</size></color>", _descriptionStyle);
+                GUILayout.EndVertical();
+                GUILayout.EndHorizontal();
+            }
             GUILayout.Space(3);
 
             // ★ v0.3.19
-            bool prevRespect = ModSettings.Instance.RespectPlayerToggles;
-            ModSettings.Instance.RespectPlayerToggles = DrawCheckbox(ModSettings.Instance.RespectPlayerToggles, L("RespectPlayerToggles"));
-            GUILayout.Label($"<color=#888888><size=11>{L("RespectPlayerTogglesDesc")}</size></color>", _descriptionStyle);
+            bool prevSelfBuffs = ModSettings.Instance.AiRecastsSelfBuffs;
+            ModSettings.Instance.AiRecastsSelfBuffs = DrawCheckbox(ModSettings.Instance.AiRecastsSelfBuffs, L("AiRecastsSelfBuffs"));
+            GUILayout.Label($"<color=#888888><size=11>{L("AiRecastsSelfBuffsDesc")}</size></color>", _descriptionStyle);
+            if (GameInterface.ModInterop.BuffItToTheLimitActive &&
+                (ModSettings.Instance.AiManagesToggles || ModSettings.Instance.AiRecastsSelfBuffs))
+                GUILayout.Label($"<color=#FFD700><size=12>{L("BuffItDetected")}</size></color>", _descriptionStyle);
 
             // 변경시 저장
             if (prevBossBypass != ModSettings.Instance.ProgressiveBossBypass ||
-                prevToggles != ModSettings.Instance.AiStartsToggles ||
-                prevModes != ModSettings.Instance.AiSwitchesCombatModes ||
+                prevToggles != ModSettings.Instance.AiManagesToggles ||
                 prevRespect != ModSettings.Instance.RespectPlayerToggles ||
+                prevSelfBuffs != ModSettings.Instance.AiRecastsSelfBuffs ||
                 prevTurnBased != ModSettings.Instance.EnableInTurnBased ||
                 prevRealTime != ModSettings.Instance.EnableInRealTime ||
                 Math.Abs(prevInterval - ModSettings.Instance.RealTimeDecisionInterval) > 0.01f)

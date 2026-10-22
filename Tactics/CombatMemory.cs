@@ -64,6 +64,8 @@ namespace CompanionAI_Pathfinder.Tactics
         /// ★ v0.3.19: the AI may not switch this toggle: the player switched it during this fight and the setting "Leave a
         /// toggle alone for the rest of the fight once you switch it yourself" is on.
         /// </summary>
+        /// <remarks>★ v0.3.19: only a click on the action bar counts; a mod setting IsOn itself (Buff It 2 The Limit) is not
+        /// seen here - the "AI manages activatable abilities" setting is the switch for that.</remarks>
         public static bool PlayerOwnsToggle(UnitEntityData unit, Kingmaker.UnitLogic.ActivatableAbilities.ActivatableAbility toggle) =>
             PlayerToggled.Count > 0 && (Settings.ModSettings.Instance?.RespectPlayerToggles ?? true) &&
             PlayerToggled.Contains(ToggleKey(unit, toggle));
@@ -132,6 +134,9 @@ namespace CompanionAI_Pathfinder.Tactics
         /// </summary>
         public static void SwitchOffAiToggles()
         {
+            // ★ v0.3.19: the AI does not own toggles: it puts nothing back either (what it switched before the setting
+            // went off stays as it is - another mod or the player may have taken it over since).
+            if (!(Settings.ModSettings.Instance?.AiManagesToggles ?? true)) return;
             foreach (var entry in new List<KeyValuePair<string, bool>>(ToggleBeforeAi))
             {
                 string key = entry.Key;

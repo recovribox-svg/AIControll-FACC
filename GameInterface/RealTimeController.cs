@@ -1254,6 +1254,13 @@ namespace CompanionAI_Pathfinder.GameInterface
         {
             if (unit == null)
                 return;
+            // ★ v0.3.19: the one gate of the out-of-combat self-buff routine (after fights, between real-time decisions,
+            // the busy-unit queue): off when the player buffs by hand or with a buff mod (Buff It 2 The Limit).
+            if (!(Settings.ModSettings.Instance?.AiRecastsSelfBuffs ?? true))
+            {
+                _pendingBuffUnits.Remove(unit.UniqueId);
+                return;
+            }
             // ★ v0.3.17: only units the AI controls (main character / companions / per-character AI settings); every
             // party member was buffed after combat, whatever the settings said.
             if (!CustomBrainPatch.ShouldControlUnit(unit))

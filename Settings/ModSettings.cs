@@ -84,26 +84,23 @@ namespace CompanionAI_Pathfinder.Settings
                 { Language.Korean, "게임이 보스로 표시한 적에게만, 보스에게 닿는 주문에만 적용됩니다." }
             },
 
-            // ★ v0.3.18 (AA-2)
-            ["AiStartsToggles"] = new() { { Language.English, "AI may start performances, rage and similar abilities" }, { Language.Korean, "AI가 공연, 격노 등 지속 능력을 시작할 수 있음" } },
-            ["AiStartsTogglesDesc"] = new() {
-                { Language.English, "Abilities switched on with an action that keep spending a resource each round (bardic performances, Rage, shaman spirits): started when worth it, stopped when nothing is left to gain. Never touches 'accept effect' choices, attack modes or mounting." },
-                { Language.Korean, "행동으로 켜고 매 라운드 자원을 쓰는 능력(바드 공연, 격노, 샤먼 정령): 가치가 있을 때 시작하고, 얻을 것이 없으면 멈춥니다. '효과 수락' 선택, 공격 모드, 탑승은 건드리지 않습니다." }
+            // ★ v0.3.19: one switch for activatable abilities (replaces the 0.3.18 pair)
+            ["AiManagesToggles"] = new() { { Language.English, "AI manages activatable abilities (toggles)" }, { Language.Korean, "AI가 활성화 능력(토글) 관리" } },
+            ["AiManagesTogglesDesc"] = new() {
+                { Language.English, "On: in fights the AI switches the toggles it understands on and off by itself - bardic performances, Rage, shaman spirits, Power Attack and the other attack modes, Fighting Defensively, Mobility - and puts them back as you left them when the fight ends. Off: the AI never switches a toggle; they stay exactly as you or another mod (such as Buff It 2 The Limit) set them. Either way the AI fights with whatever is on." },
+                { Language.Korean, "켜기: 전투 중 AI가 이해하는 토글(바드 공연, 격노, 샤먼 정령, 강타 등 공격 모드, 방어적 전투, 기동성)을 스스로 켜고 끄며, 전투가 끝나면 원래대로 돌려놓습니다. 끄기: AI는 토글을 전혀 바꾸지 않습니다. 직접 또는 다른 모드(예: Buff It 2 The Limit)가 설정한 그대로 둡니다. 어느 쪽이든 AI는 켜져 있는 효과를 반영해 싸웁니다." }
             },
-
-            // ★ v0.3.19
             ["RespectPlayerToggles"] = new() { { Language.English, "Leave a toggle alone for the rest of the fight once you switch it yourself" }, { Language.Korean, "전투 중 직접 전환한 토글은 그 전투가 끝날 때까지 AI가 건드리지 않음" } },
             ["RespectPlayerTogglesDesc"] = new() {
-                { Language.English, "The AI switches toggles (attack modes, Mobility, performances) on and off by itself, also ones you set before the fight; after the fight they are back as you left them. When you click a companion's toggle during a fight, the AI keeps its hands off that toggle until the fight ends. Turn this off to let the AI take it over again." },
-                { Language.Korean, "AI는 토글(공격 모드, 기동성, 공연)을 스스로 켜고 끕니다. 전투 전에 설정한 것도 포함되며, 전투가 끝나면 원래대로 돌아갑니다. 전투 중 동료의 토글을 직접 클릭하면 그 전투가 끝날 때까지 AI가 그 토글을 건드리지 않습니다. 끄면 AI가 다시 관리합니다." }
+                { Language.English, "Only while the AI manages toggles. When you click a companion's toggle on its action bar during a fight, the AI keeps its hands off that toggle until the fight ends. Changes made by other mods are not clicks: if a mod manages your toggles, switch the setting above off instead." },
+                { Language.Korean, "AI가 토글을 관리할 때만 적용됩니다. 전투 중 동료의 액션 바에서 토글을 직접 클릭하면 그 전투가 끝날 때까지 AI가 그 토글을 건드리지 않습니다. 다른 모드의 변경은 클릭으로 인식되지 않으므로, 모드가 토글을 관리한다면 위 설정을 끄세요." }
             },
-
-            // ★ v0.3.18 (AA-3)
-            ["AiSwitchesCombatModes"] = new() { { Language.English, "AI may switch combat modes (Power Attack, Fighting Defensively, Mobility)" }, { Language.Korean, "AI가 전투 모드 전환 가능 (강타, 방어적 전투, 기동성)" } },
-            ["AiSwitchesCombatModesDesc"] = new() {
-                { Language.English, "Attack modes are set with each attack when the expected damage (and, for Fighting Defensively, the damage avoided) is clearly better; Mobility is switched on before a move that would provoke, and off when no enemy is near. Modes whose effects the AI cannot read are left as you set them." },
-                { Language.Korean, "공격 모드는 기대 피해(방어적 전투는 피한 피해 포함)가 확실히 나을 때 공격마다 설정합니다. 기동성은 기회 공격을 유발할 이동 전에 켜고, 근처에 적이 없으면 끕니다. AI가 효과를 읽을 수 없는 모드는 설정한 대로 둡니다." }
+            ["AiRecastsSelfBuffs"] = new() { { Language.English, "After fights, AI companions recast their long-lasting self buffs" }, { Language.Korean, "전투 후 AI 동료가 지속 시간이 긴 자기 버프를 다시 시전" } },
+            ["AiRecastsSelfBuffsDesc"] = new() {
+                { Language.English, "Self buffs lasting hours or permanently that have run out (no items, no toggles), cast when out of combat. Switch off if you buff by hand or with a buff mod, so those spell slots stay yours." },
+                { Language.Korean, "몇 시간 이상 또는 영구 지속되는 자기 버프가 사라졌을 때 전투 밖에서 다시 시전합니다(아이템, 토글 제외). 직접 또는 버프 모드로 버프한다면 꺼서 주문 슬롯을 남겨 두세요." }
             },
+            ["BuffItDetected"] = new() { { Language.English, "Buff It 2 The Limit is active. If it manages your companions' toggles or buffs, switch the matching setting above off so the two mods do not undo each other's work." }, { Language.Korean, "Buff It 2 The Limit이 활성화되어 있습니다. 그 모드가 동료의 토글이나 버프를 관리한다면, 두 모드가 서로의 작업을 되돌리지 않도록 위의 해당 설정을 끄세요." } },
 
             // ★ v0.3.0: Consumables
             ["ConsumableSettings"] = new() { { Language.English, "Consumables (quick-slot items)" }, { Language.Korean, "소모품 (퀵슬롯 아이템)" } },
@@ -300,11 +297,27 @@ namespace CompanionAI_Pathfinder.Settings
         /// <summary>★ v0.3.7: Progressive casters may use higher spell levels on enemies the game marks as bosses.</summary>
         public bool ProgressiveBossBypass { get; set; } = true;
 
-        /// <summary>★ v0.3.18 (AA-2): the engine may switch on command-activated toggles (performances, Rage family).</summary>
+        /// <summary>
+        /// ★ v0.3.19: one owner for activatable abilities (toggles). On: the AI switches the ones it can value -
+        /// performances, Rage and spirits (AA-2), attack modes and Mobility (AA-3) - and puts back after the fight what it
+        /// switched. Off: the AI switches no toggle at all, on or off, in or out of combat: they are the player's, or another
+        /// mod's (Buff It 2 The Limit sets IsOn itself, at combat start, after a round limit and when combat ends). The AI
+        /// still sees what is on. Replaces AiStartsToggles and AiSwitchesCombatModes (read once to migrate, see Load).
+        /// </summary>
+        public bool AiManagesToggles { get; set; } = true;
+
+        /// <summary>★ v0.3.18 (AA-2), legacy since 0.3.19: read only to migrate to <see cref="AiManagesToggles"/>.</summary>
         public bool AiStartsToggles { get; set; } = true;
 
-        /// <summary>★ v0.3.18 (AA-3): the engine may switch attack modes and Mobility (decision recorded: default on).</summary>
+        /// <summary>★ v0.3.18 (AA-3), legacy since 0.3.19: read only to migrate to <see cref="AiManagesToggles"/>.</summary>
         public bool AiSwitchesCombatModes { get; set; } = true;
+
+        /// <summary>
+        /// ★ v0.3.19: after a fight (and while out of combat in real time) AI-controlled characters cast their missing
+        /// long-lasting self buffs (RealTimeController.ApplyPermanentBuffsOutOfCombat). Off for players whose buffing is
+        /// done by hand or by a buff mod (Buff It 2 The Limit), which may have planned those spell slots.
+        /// </summary>
+        public bool AiRecastsSelfBuffs { get; set; } = true;
 
         /// <summary>★ v0.3.19: a toggle the player clicks during a fight is left as they set it until the fight ends.</summary>
         public bool RespectPlayerToggles { get; set; } = true;
@@ -357,6 +370,14 @@ namespace CompanionAI_Pathfinder.Settings
                     var settings = JsonConvert.DeserializeObject<ModSettings>(json);
                     if (settings != null)
                     {
+                        // ★ v0.3.19: the toggle settings became one. A file from before keeps the user's choice: the AI
+                        // manages toggles only if both old switches were on (one switched off = the user wanted control).
+                        try
+                        {
+                            if (json.IndexOf("\"" + nameof(AiManagesToggles) + "\"", StringComparison.Ordinal) < 0)
+                                settings.AiManagesToggles = settings.AiStartsToggles && settings.AiSwitchesCombatModes;
+                        }
+                        catch { }
                         Instance = settings;
                         Main.Log("Settings loaded successfully");
                     }

@@ -386,6 +386,8 @@ namespace CompanionAI_Pathfinder.GameInterface
         public static void OnPartyCombatEnd()
         {
             Main.Log("★★★ Party combat ended ★★★");
+            // ★ v0.3.19: whether Buff It 2 The Limit shares the work (logged once when it changes).
+            _ = ModInterop.BuffItToTheLimitActive;
             // ★ v0.3.17: [Perf] / [Calib] numbers of the fight that just ended
             Tactics.FightStats.Report();
             // ★ v0.3.17: analysis caches of this fight's units (they are per frame now; this only frees them)

@@ -117,7 +117,7 @@ namespace CompanionAI_Pathfinder.Tactics
         internal static string ToggleExclusion(UnitEntityData unit, ActivatableAbility toggle)
         {
             if (toggle?.Blueprint == null) return "no blueprint";
-            if (!(ModSettings.Instance?.AiStartsToggles ?? true)) return "switched off in the settings";
+            if (!(ModSettings.Instance?.AiManagesToggles ?? true)) return "switched off in the settings";
             if (toggle.Blueprint.HiddenInUI) return "hidden";
             return ProfileOf(toggle.Blueprint).Excluded;
         }
@@ -208,7 +208,7 @@ namespace CompanionAI_Pathfinder.Tactics
 
         private static void AddToggleCandidates(TacticalContext ctx, List<Candidate> list, bool preview)
         {
-            if (!(ModSettings.Instance?.AiStartsToggles ?? true)) return;
+            if (!(ModSettings.Instance?.AiManagesToggles ?? true)) return;
             var unit = ctx.Unit;
             var toggles = unit.ActivatableAbilities?.Enumerable?.Where(t => t?.Blueprint != null).ToList();
             if (toggles == null || toggles.Count == 0) return;
