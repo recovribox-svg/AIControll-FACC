@@ -249,6 +249,42 @@ namespace CompanionAI_Pathfinder.Tactics
             return GameSeconds <= refused.Value && Vector3.Distance(unit.Position, refused.Key) <= 1f;
         }
 
+        /// <summary>★ v0.3.19 (test9): "unit|target" → where both stood when the unit's walk to see the target got stuck, and
+        /// until when it counts.</summary>
+        private static readonly Dictionary<string, NoSight> NoSights = new Dictionary<string, NoSight>();
+
+        private sealed class NoSight
+        {
+            public Vector3 UnitAt;
+            public Vector3 TargetAt;
+            public double Until;
+        }
+
+        /// <summary>
+        /// ★ v0.3.19 (test9): real time - the unit's walk to get sight of <paramref name="target"/> got stuck (in range, no
+        /// line of sight: an enemy in another room behind a doorway someone stands in). The refused-walk memory holds only
+        /// while the unit stays within 1 m, for 12 s; Aeiluvetar drifted a metre or waited it out and walked at the same
+        /// unseen archer three times, 6-10 s each (0.3.19-test8 real-time log). Kept up to three rounds while neither has
+        /// moved 2 m and the unit still cannot see it.
+        /// </summary>
+        public static void NoteNoSight(UnitEntityData unit, UnitEntityData target)
+        {
+            if (!IsRealTime || unit == null || target == null) return;
+            NoSights[$"{unit.UniqueId}|{target.UniqueId}"] = new NoSight { UnitAt = unit.Position, TargetAt = target.Position, Until = GameSeconds + 18d };
+        }
+
+        public static bool StillNoSight(UnitEntityData unit, UnitEntityData target)
+        {
+            if (!IsRealTime || NoSights.Count == 0 || unit == null || target == null) return false;
+            string key = $"{unit.UniqueId}|{target.UniqueId}";
+            if (!NoSights.TryGetValue(key, out var seen)) return false;
+            bool holds = GameSeconds <= seen.Until && Vector3.Distance(unit.Position, seen.UnitAt) <= 2f &&
+                         Vector3.Distance(target.Position, seen.TargetAt) <= 2f &&
+                         !CompanionAI_Pathfinder.Analysis.LineOfSightChecker.HasLineOfSight(unit, target);
+            if (!holds) NoSights.Remove(key);
+            return holds;
+        }
+
         /// <summary>★ v0.3.18 (test10): "unit|ability" → the caster's burn and the dead around it when it last used a burn
         /// relief (Soul Power).</summary>
         private static readonly Dictionary<string, KeyValuePair<int, int>> BurnReliefs = new Dictionary<string, KeyValuePair<int, int>>();
@@ -288,6 +324,7 @@ namespace CompanionAI_Pathfinder.Tactics
         {
             PendingCasts.Clear();
             RefusedWalks.Clear();
+            NoSights.Clear();
             CombatMath.OnlyDisabledEnemiesLeft = false;
             ProneStays.Clear();
             BurnReliefs.Clear();

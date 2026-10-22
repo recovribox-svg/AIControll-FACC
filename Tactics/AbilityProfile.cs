@@ -167,8 +167,19 @@ namespace CompanionAI_Pathfinder.Tactics
         public bool BuffsLastOneRound { get; private set; }
         /// <summary>Every buff it applies is spent by its owner's next attack roll (RemoveBuffOnAttack, e.g. Perfect Strike).</summary>
         public bool BuffsSpentByAttack { get; private set; }
-        /// <summary>One round or one attack's worth of effect.</summary>
-        public bool IsOneShot => BuffsLastOneRound || BuffsSpentByAttack;
+        /// <summary>
+        /// ★ v0.3.19 (test9): every buff it applies removes itself on its owner's next d20 roll of any kind - an attack
+        /// roll, save or skill check (AddInitiator...RollTrigger / SavingThrowTrigger running ContextActionRemoveSelf):
+        /// Guidance. One roll's worth; valued as a one-minute buff, Camellia recast it on Orvath in rounds 2, 3 and 4.
+        /// </summary>
+        public bool BuffsSpentByRoll { get; private set; }
+        /// <summary>
+        /// ★ v0.3.19 (test9): every buff it applies removes itself when its owner next casts (AddAbilityUseTrigger running
+        /// ContextActionRemoveSelf): Arcane Reservoir's +1 caster level or DC for the next spell.
+        /// </summary>
+        public bool BuffsSpentByCast { get; private set; }
+        /// <summary>One round or one attack's (or roll's) worth of effect.</summary>
+        public bool IsOneShot => BuffsLastOneRound || BuffsSpentByAttack || BuffsSpentByRoll;
 
         public SavingThrowType Save { get; private set; } = SavingThrowType.Unknown;
         /// <summary>★ v0.3.18 (AA-4): Demoralize / Dazzling Display - an Intimidate check, not a save, puts its buff on the
@@ -268,7 +279,7 @@ namespace CompanionAI_Pathfinder.Tactics
             branches.Add(guards ?? NoGuards);
         }
         private static readonly EffectGuard[] NoGuards = new EffectGuard[0];
-        private int m_ShortBuffs, m_SpentByAttackBuffs, m_AllBuffs;
+        private int m_ShortBuffs, m_SpentByAttackBuffs, m_SpentByRollBuffs, m_SpentByCastBuffs, m_AllBuffs;
         private float m_AreaRadius;
         private bool m_AreaHitsAllies, m_AreaHitsEnemies;
         /// <summary>★ v0.3.7: walking a spawned area's actions (its buffs last while the area does, not for minutes).</summary>
@@ -374,6 +385,8 @@ namespace CompanionAI_Pathfinder.Tactics
             AnalyzeAbility(Blueprint, visited, 0, EffectSubject.Target);
             BuffsLastOneRound = m_AllBuffs > 0 && m_ShortBuffs == m_AllBuffs;
             BuffsSpentByAttack = m_AllBuffs > 0 && m_SpentByAttackBuffs == m_AllBuffs;
+            BuffsSpentByRoll = m_AllBuffs > 0 && !BuffsSpentByAttack && m_SpentByRollBuffs == m_AllBuffs;
+            BuffsSpentByCast = m_AllBuffs > 0 && m_SpentByCastBuffs == m_AllBuffs;
             MarksForOwnAttacks = TargetBuffs.Any(IsCasterOnlyAttackMark);
 
             // A personal ability's caster IS its target: its caster heals are heals of the target.
@@ -656,13 +669,13 @@ namespace CompanionAI_Pathfinder.Tactics
                         m_AllBuffs++;
                         if (LastsOneRound(apply)) m_ShortBuffs++;
                         // ★ v0.3.7: a buff applied by a spawned area is tied to the area, whatever its own duration.
-                        if (m_InArea) { if (IsSpentByUse(apply.Buff)) m_SpentByAttackBuffs++; break; }
+                        if (m_InArea) { CountSpent(apply.Buff); break; }
                         if (apply.Permanent || (apply.DurationValue != null && (int)apply.DurationValue.Rate > 0))
                             HasLongBuff = true;
                         if (LastsADay(apply)) m_DayLongBuffs.Add(apply.Buff);
                         if (apply.Permanent || (apply.DurationValue != null && apply.DurationValue.Rate >= DurationRate.Hours))
                             m_PersistentBuffs.Add(apply.Buff);
-                        if (IsSpentByUse(apply.Buff)) m_SpentByAttackBuffs++;
+                        CountSpent(apply.Buff);
                         break;
                     case ContextActionCombatManeuver maneuver when subject == EffectSubject.Target:
                         Maneuvers.Add(new ManeuverEffect { Type = maneuver.Type, Action = maneuver });
@@ -869,11 +882,69 @@ namespace CompanionAI_Pathfinder.Tactics
         /// ★ v0.3.6: the buff removes itself after one use: RemoveBuffOnAttack, or ModifyD20 with DispellOnRerollFinished
         /// (Perfect Strike: "roll twice" once, then gone). v0.3.5 missed the latter and kept Perfect Strike up after fights.
         /// </summary>
+        private void CountSpent(BlueprintBuff buff)
+        {
+            if (IsSpentByUse(buff)) m_SpentByAttackBuffs++;
+            if (IsSpentByUse(buff) || IsSpentByRoll(buff)) m_SpentByRollBuffs++;
+            if (IsSpentByCast(buff)) m_SpentByCastBuffs++;
+        }
+
+        /// <summary>★ v0.3.19 (test9): the list removes the buff that runs it (directly or in a branch).</summary>
+        private static bool RemovesSelf(ActionList list, int depth = 0)
+        {
+            if (list?.Actions == null || depth > 3) return false;
+            foreach (var action in list.Actions)
+            {
+                if (action is ContextActionRemoveSelf) return true;
+                if (action is Conditional c && (RemovesSelf(c.IfTrue, depth + 1) || RemovesSelf(c.IfFalse, depth + 1))) return true;
+            }
+            return false;
+        }
+
+        /// <summary>★ v0.3.19 (test9): gone after its owner's next d20 roll of some kind (see <see cref="BuffsSpentByRoll"/>).</summary>
+        internal static bool IsSpentByRoll(BlueprintBuff buff)
+        {
+            try
+            {
+                if (buff?.ComponentsArray == null) return false;
+                foreach (var c in buff.ComponentsArray)
+                {
+                    switch (c)
+                    {
+                        case AddInitiatorAttackRollTrigger t when RemovesSelf(t.Action): return true;
+                        case AddInitiatorSavingThrowTrigger t when RemovesSelf(t.Action): return true;
+                        case AddInitiatorSkillRollTrigger t when RemovesSelf(t.Action): return true;
+                        case AddInitiatorPartySkillRollTrigger t when RemovesSelf(t.Action): return true;
+                    }
+                }
+            }
+            catch
+            {
+            }
+            return false;
+        }
+
+        /// <summary>★ v0.3.19 (test9): gone when its owner next casts (see <see cref="BuffsSpentByCast"/>).</summary>
+        internal static bool IsSpentByCast(BlueprintBuff buff)
+        {
+            try
+            {
+                return buff?.ComponentsArray != null &&
+                       buff.ComponentsArray.OfType<AddAbilityUseTrigger>().Any(t => RemovesSelf(t.Action));
+            }
+            catch
+            {
+                return false;
+            }
+        }
+
         private static bool IsSpentByUse(BlueprintBuff buff)
         {
             try
             {
                 if (buff.GetComponent<RemoveBuffOnAttack>() != null) return true;
+                // ★ v0.3.19 (test9): the same, by a weapon-attack trigger that removes the buff.
+                if (buff.GetComponents<AddInitiatorAttackWithWeaponTrigger>().Any(t => RemovesSelf(t.Action))) return true;
                 return buff.GetComponents<ModifyD20>().Any(c => c.DispellOnRerollFinished);
             }
             catch

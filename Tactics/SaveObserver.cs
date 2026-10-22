@@ -29,6 +29,16 @@ namespace CompanionAI_Pathfinder.Tactics
         private static readonly Dictionary<string, Seen> ByUnit = new Dictionary<string, Seen>();
         private static readonly Dictionary<string, Seen> ByKind = new Dictionary<string, Seen>();
         private static readonly HashSet<string> Reported = new HashSet<string>();
+        /// <summary>★ v0.3.19 (test9): ability → the save the game rolled against it (by anyone): kept for the session.</summary>
+        private static readonly Dictionary<string, SavingThrowType> TypeSeen = new Dictionary<string, SavingThrowType>();
+
+        /// <summary>
+        /// ★ v0.3.19 (test9): the save the game rolls against <paramref name="ability"/>, as seen, or Unknown. Grease's save
+        /// lives in its area buff's own actions, which the ability analysis does not read: every unit was "affected at
+        /// 100 %" by it, a nimble rogue as surely as a paladin in plate.
+        /// </summary>
+        public static SavingThrowType SaveTypeOf(BlueprintAbility ability) =>
+            ability != null && TypeSeen.TryGetValue(ability.AssetGuid.ToString(), out var type) ? type : SavingThrowType.Unknown;
 
         public static void Subscribe()
         {
@@ -75,6 +85,8 @@ namespace CompanionAI_Pathfinder.Tactics
             try
             {
                 if (evt == null || evt.WasAlreadyDead) return;
+                var seenAbility = evt.Reason?.Ability?.Blueprint ?? evt.Reason?.Context?.SourceAbility;
+                if (seenAbility != null && evt.Type != SavingThrowType.Unknown) TypeSeen[seenAbility.AssetGuid.ToString()] = evt.Type;
                 var target = evt.Initiator;
                 var caster = evt.Reason?.Caster;
                 if (target == null || caster == null || !caster.IsPlayerFaction || !caster.IsEnemy(target)) return;

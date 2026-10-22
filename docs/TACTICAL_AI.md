@@ -1533,3 +1533,48 @@ every turn if ranks do not add up).
   `InitiatorCritAutoconfirm`, `IgnoreDamageReductionOnAttack`, `IgnoreTargetDR`) 0.4. The counts came from the unread
   components of the three test6 logs (`AddCasterLevelForAbility` 48 times).
 - **Pre-buff button** skips buffs that last a round or end with the next attack.
+
+## 41. v0.3.19 (test9): what the test8 logs showed (3 turn-based, 3 real-time fights)
+
+- **Bigger bodies and harmful areas.** The game holds a unit in an area by its body (`AreaEffectView.Contains`:
+  `Shape.Contains(position, Corpulence)`), and `Corpulence` grows with size (`UnitEntityView.GetSizeScale`). Seelah's walk
+  ended just outside Orvath's Grease ("around Grease"); Camellia then cast Enlarge Person on her and her bigger body lay in
+  it. A buff that makes its recipient bigger (`ChangeUnitSize`, read from the buff: `CombatMath.GrownCorpulence`) now pays
+  for the harmful area the bigger body would overlap where the recipient stands (`AoeDangerAnalyzer.GrowingDanger`),
+  priced as staying inside one (`GrowthIntoAreaCost`); label "grows into <area> -x".
+- **A knockdown area costs the turn it knocks down at its start (turn-based).** Seelah's rounds 2 and 3 ended at once with
+  `CanAct=False`: a unit an area knocks down at the start of its own turn loses that turn - `TurnController.ContinueActing`
+  ends it (not able to act, and `UnitCanGetUpOnCommand` is taken while the fall is still being applied). 14 earlier logs
+  show the same skipped turns (mostly Seelah's). The 0.3.18-test10 price (a quarter of a round for standing up) is replaced
+  by `ValueModel.KnockdownAreaCost` (unit-tested): staying inside, the next turn is lost at the chance to fall; passing
+  through, at that chance squared; a fall whose turn is not lost still costs standing up and its attacks of opportunity.
+  Entering (`MoveRisk`), leaving ("Leave Grease") and growing into one use it (`AreaStayCost`). The exemption when only
+  disabled enemies are left stays.
+- **Grease's save.** It lives in the area buff's own actions, which the ability analysis does not read: everyone was
+  "affected at 100 % (save Unknown)". `SaveObserver.SaveTypeOf` remembers the save the game rolled against each ability (by
+  anyone); `AoeDangerAnalyzer.AffectChance` uses it when the analysis has none ("(save as seen)").
+- **Ring of the Mad Duelist (caster-side marks).** No wasted marks any more, but none placed either: in rounds 19-20 the
+  Cultist Champion took a fifth of Camellia's HP a round. Its guard is now that enemy's share of what really comes at the
+  caster (`IncomingDamage`), not the party-wide danger scale alone (x0.40 in that fight); and a free action that spends
+  nothing (no spell slot, item charge, use or burn: `CostsNothing`) needs a value of 1, not the quick bar of 2
+  (`MinCostlessFreeValue`, `QuickBar`). Its value is logged once a round per target ("guards ~x a round").
+- **Revive check** (`PartyCanRevive`): a heal counts only when it heals one of the downed allies concerned
+  (`AbilityProfile.AppliesTo`: Inflict Light Wounds heals undead only), aimed at an ally or a burst that reaches allies
+  (Channel Positive Energy). Belt scrolls and wands count (action-bar items); potions do not (drinker only). Frame-cached.
+- **One-roll buffs.** Guidance removes itself on its owner's next attack roll, save or skill check
+  (`AddInitiator...RollTrigger` / `SavingThrowTrigger` running `ContextActionRemoveSelf`): `AbilityProfile.BuffsSpentByRoll`,
+  one round's worth (`BuffRounds`). Camellia recast it on Orvath in rounds 2, 3 and 4 (2.4-3.9, over attacks). A
+  weapon-attack trigger that removes its buff counts as spent by the next attack. The pre-buff button skips both, and
+  next-cast buffs.
+- **Next-spell boosts** (`TacticalEngine.Boosters.cs`). Arcane Reservoir's "Increase Caster Level" / "DC" (blueprints:
+  free action, 1 reservoir point, 2-round buff removed after the next spellbook spell by `AddAbilityUseTrigger`): Orvath
+  spent seven points in the test8 logs, mostly before Entangle, Grease or Sleep. A buff spent by the next cast
+  (`BuffsSpentByCast`) with caster-level or DC components (`SpellBoostOf`) is worth only what it adds to the best main action
+  when that is a spell it applies to (`CoupleSpellBoosts`): DC - the rise in the chance the save is failed (5 % a point,
+  up to the cap; half for half-on-save damage); caster level - the extra damage dice of a caster-level `ContextRankConfig`
+  up to its cap (stepped progressions half), x0.7 of the spell's value. Otherwise dropped. Logged: "<boost> = x (for ...)".
+- **Real time, no line of sight.** After a walk to see a target got stuck (in range, no sight: an enemy in another room
+  behind a doorway someone stands in), every option on that target is left out while neither unit has moved 2 m, the unit
+  still cannot see it, for up to 18 s (`CombatMemory.NoteNoSight` / `StillNoSight`). The refused-walk memory (1 m, 12 s)
+  let Aeiluvetar walk at the same unseen archer three times, 6-10 s each.
+- **Not the AI:** the 30-round fight was an IsekaiMod "Rival" Cultist Champion (party damage 4 a round).

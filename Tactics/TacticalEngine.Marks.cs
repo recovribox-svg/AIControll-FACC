@@ -66,11 +66,17 @@ namespace CompanionAI_Pathfinder.Tactics
         }
 
         /// <summary>Per round, what <paramref name="mark"/> on <paramref name="enemy"/> saves the caster.</summary>
+        /// <remarks>★ v0.3.19 (test9): the enemy's share of what actually comes at the caster (IncomingDamage: the predicted
+        /// threat, or what hit it these last rounds when more), not the party-wide danger scale alone. Camellia lost a fifth
+        /// of her HP a round to the Cultist Champion while the fight's scale was x0.40 and the ring stayed unused.</remarks>
         private static float GuardPerRound(TacticalContext ctx, UnitEntityData enemy, CasterSideMark mark)
         {
-            var part = IncomingParts(ctx, ctx.Unit, ctx.Unit.Position).FirstOrDefault(p => p.Key == enemy);
+            var parts = IncomingParts(ctx, ctx.Unit, ctx.Unit.Position);
+            var part = parts.FirstOrDefault(p => p.Key == enemy);
             if (part.Key == null) return 0f;
-            float fromEnemy = part.Value * ctx.DangerScale;
+            float raw = parts.Sum(p => p.Value);
+            if (raw <= 0f) return 0f;
+            float fromEnemy = IncomingDamage(ctx, ctx.Unit, ctx.Unit.Position) * part.Value / raw;
             return fromEnemy * (mark.ArmorClass * 0.05f / 0.55f + mark.Saves * 0.05f * 0.5f);
         }
 
@@ -96,7 +102,12 @@ namespace CompanionAI_Pathfinder.Tactics
             if (OursOn(target)) { why = "already marked"; return 0f; }
 
             float rounds = ValueModel.Horizon(ctx.ExpectedRounds, 3f);
-            float gain = GuardPerRound(ctx, target, mark) * rounds;
+            float perRound = GuardPerRound(ctx, target, mark);
+            float gain = perRound * rounds;
+            // ★ v0.3.19 (test9): visible, once a round per target (the ring was never chosen and the log could not say why).
+            ReportOnce($"guard|{unit.UniqueId}|{CombatMemory.Round}|{target.UniqueId}",
+                       $"[Tactics] {unit.CharacterName}: {ability.Name} on {target.CharacterName} guards ~{perRound:F1} a round " +
+                       $"(AC +{mark.ArmorClass}, saves +{mark.Saves}) for {rounds:F1} rounds");
             if (mark.Unique)
             {
                 var current = ctx.Enemies.FirstOrDefault(e => e != target && OursOn(e));

@@ -203,6 +203,8 @@ namespace CompanionAI_Pathfinder.Tactics
                     // ★ v0.3.19 (review): the target too, not only this option (Attack, full attack and spells on it walk the
                     // same way), for as long as the unit stands where it got stuck.
                     CombatMemory.NoteRefusedWalk(unit, TacticalEngine.StuckTargetKey(target));
+                    // ★ v0.3.19 (test9): no way to see it from here - kept while neither moves (CombatMemory.NoteNoSight).
+                    if (command.NeedLoS && !command.SightIsClear()) CombatMemory.NoteNoSight(unit, target);
                 }
                 Main.Log($"[RT-Tactics] {unit.CharacterName}: '{key}' was stuck - not chosen again from here");
                 if (memory.LastCommand == command)

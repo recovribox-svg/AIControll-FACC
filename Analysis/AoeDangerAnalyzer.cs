@@ -267,6 +267,48 @@ namespace CompanionAI_Pathfinder.Analysis
         }
 
         /// <summary>
+        /// ★ v0.3.19 (test9): the worst harmful area <paramref name="unit"/> would newly overlap where it stands with a
+        /// body of <paramref name="corpulence"/> - an area holds a unit by its body (AreaEffectView.Contains: Shape.Contains
+        /// with the unit's Corpulence, which grows with its size). Camellia's Enlarge Person on Seelah, who stood at the edge
+        /// of Orvath's Grease, put her in it: the Grease knocked her down at the start of her next two turns and she was
+        /// beaten unconscious where she lay (0.3.19-test8 turn-based log). Out values as for <see cref="EnteringDanger"/>.
+        /// </summary>
+        public static float GrowingDanger(UnitEntityData unit, float corpulence, out string name, out float roundsLeft,
+                                          out bool movementOnly, out float affectChance, out float lingerRounds)
+        {
+            name = null;
+            roundsLeft = 0f;
+            movementOnly = false;
+            affectChance = 0f;
+            lingerRounds = 0f;
+            float worst = 0f;
+            if (unit == null || corpulence <= unit.Corpulence + 0.01f) return 0f;
+            try
+            {
+                var areaEffects = Game.Instance?.State?.AreaEffects;
+                if (areaEffects == null) return 0f;
+                foreach (var aoe in areaEffects)
+                {
+                    if (!IsLive(aoe) || IsUnitInsideEffect(unit, aoe)) continue;
+                    if (!Covers(aoe, unit.Position, corpulence)) continue;
+                    var danger = EvaluateEffectDanger(unit, aoe, quiet: true);
+                    if (danger == null || danger.DangerLevel <= worst) continue;
+                    worst = danger.DangerLevel;
+                    name = aoe.Context?.SourceAbilityContext?.Ability?.Name ?? danger.Name;
+                    roundsLeft = RoundsLeft(aoe);
+                    movementOnly = IsMovementOnly(danger, aoe);
+                    affectChance = Mathf.Clamp01(danger.AffectChance);
+                    lingerRounds = danger.LingerRounds;
+                }
+            }
+            catch (Exception ex)
+            {
+                Main.Verbose($"[AoeDanger] growing check {unit.CharacterName}: {ex.Message}");
+            }
+            return worst;
+        }
+
+        /// <summary>
         /// ★ v0.3.18 (test10): area spells a party member has been ordered to cast in real time and that have not landed
         /// yet. Real time decides for everyone at once: Camellia walked at the Forsaken Kobold Archer 12 lines after Orvath
         /// was ordered to put Grease on it, before the area existed, and lay prone for nearly the whole fight. While the
@@ -807,10 +849,13 @@ namespace CompanionAI_Pathfinder.Analysis
                     if (!profile.DealsDamage && profile.Control != CCType.None && AbilityClassifier.HasCCImmunity(unit, profile.Control))
                         return 0f;
                     int dc = context?.Params?.DC ?? 0;
-                    if (profile.Save != Kingmaker.EntitySystem.Stats.SavingThrowType.Unknown && dc > 0)
+                    // ★ v0.3.19 (test9): a save the analysis cannot see (Grease's, in its area buff) as the game rolled it.
+                    var save = profile.Save != Kingmaker.EntitySystem.Stats.SavingThrowType.Unknown ? profile.Save
+                             : CompanionAI_Pathfinder.Tactics.SaveObserver.SaveTypeOf(context?.SourceAbilityContext?.Ability?.Blueprint);
+                    if (save != Kingmaker.EntitySystem.Stats.SavingThrowType.Unknown && dc > 0)
                     {
                         int bonus;
-                        switch (profile.Save)
+                        switch (save)
                         {
                             case Kingmaker.EntitySystem.Stats.SavingThrowType.Fortitude: bonus = unit.Stats.SaveFortitude.ModifiedValue; break;
                             case Kingmaker.EntitySystem.Stats.SavingThrowType.Reflex: bonus = unit.Stats.SaveReflex.ModifiedValue; break;
@@ -821,10 +866,10 @@ namespace CompanionAI_Pathfinder.Analysis
                         {
                             float fail = Mathf.Clamp((dc - bonus - 1) / 20f, 0.05f, 0.95f);
                             chance = profile.DealsDamage && profile.HalfOnSave ? 0.5f + 0.5f * fail : fail;
-                            how = $"{profile.Save} {bonus:+#;-#;0} vs DC {dc}";
+                            how = $"{save} {bonus:+#;-#;0} vs DC {dc}" + (save != profile.Save ? " (save as seen)" : "");
                         }
                     }
-                    else how = $"save {profile.Save}, DC {dc}";
+                    else how = $"save {save}, DC {dc}";
                 }
                 if (CreationField != null && DurationField != null && DurationField.GetValue(aoe) is TimeSpan duration)
                 {

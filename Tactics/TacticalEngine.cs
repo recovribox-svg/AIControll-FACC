@@ -154,6 +154,22 @@ namespace CompanionAI_Pathfinder.Tactics
     {
         private const float MinMainValue = 0.5f;
         private const float MinQuickValue = 2f;
+        /// <summary>
+        /// ★ v0.3.19 (test9): the least a free action that spends nothing (no spell slot, use, charge or burn) must be
+        /// worth: it costs no other action either. Camellia's Ring of the Mad Duelist (+2 AC against one enemy) stayed
+        /// under the quick bar of 2 while that enemy took a fifth of her HP a round.
+        /// </summary>
+        private const float MinCostlessFreeValue = 1f;
+
+        /// <summary>★ v0.3.19 (test9): the bar a quick (free or swift) action must clear.</summary>
+        private static float QuickBar(ActionSlot slot, AbilityData ability) =>
+            slot == ActionSlot.Free && CostsNothing(ability) ? MinCostlessFreeValue : MinQuickValue;
+
+        private static float QuickBar(Candidate c) => QuickBar(c.Slot, c.Kind == CandidateKind.Ability ? c.Ability : null);
+
+        /// <summary>★ v0.3.19 (test9): an ability whose use spends nothing: no spell slot, item charge or use, no burn.</summary>
+        internal static bool CostsNothing(AbilityData ability) =>
+            ability != null && ability.Spellbook == null && !(ability.SourceItem is ItemEntityUsable) && !SpendsLimitedUse(ability);
         /// <summary>★ v0.3.19 (test7): the least an item that is used up (potion, scroll, wand charge) must be worth.</summary>
         private const float MinSpentItemValue = 5f;
         /// <summary>~25 ft: inside Close range for low-level casters, outside most melee reach.</summary>
@@ -201,7 +217,7 @@ namespace CompanionAI_Pathfinder.Tactics
             // while the unit stands where it got stuck; the round's own list starts afresh every 6 s.
             if (CombatMemory.IsRealTime)
                 foreach (var e in ctx?.Enemies ?? Enumerable.Empty<UnitEntityData>())
-                    if (CombatMemory.WalkRefused(unit, StuckTargetKey(e))) memory.Unreachable.Add(e.UniqueId);
+                    if (CombatMemory.WalkRefused(unit, StuckTargetKey(e)) || CombatMemory.StillNoSight(unit, e)) memory.Unreachable.Add(e.UniqueId);
             if (ctx != null) ctx.Unreachable = memory.Unreachable;
             if (ctx != null && !preview)
             {
@@ -257,15 +273,20 @@ namespace CompanionAI_Pathfinder.Tactics
             var beforeMarks = usable;
             try { usable = CoupleOwnAttackMarks(ctx, usable, memory); }
             catch (Exception ex) { Main.Error($"[Tactics] {unit.CharacterName} marks: {ex.Message}"); }
+            // ★ v0.3.19 (test9): next-spell boosts (Arcane Reservoir) are worth what they add to the spell cast next.
+            try { usable = CoupleSpellBoosts(ctx, usable); }
+            catch (Exception ex) { Main.Error($"[Tactics] {unit.CharacterName} spell boosts: {ex.Message}"); }
 
-            var quick = usable.FirstOrDefault(c => c.Slot == ActionSlot.Free || c.Slot == ActionSlot.Swift);
+            // ★ v0.3.19 (test9): the best quick action that clears its own bar (a free action that spends nothing has a
+            // lower one, QuickBar).
+            var quick = usable.FirstOrDefault(c => (c.Slot == ActionSlot.Free || c.Slot == ActionSlot.Swift) && c.Value >= QuickBar(c));
             var main = usable.FirstOrDefault(c => c.Slot != ActionSlot.Free && c.Slot != ActionSlot.Swift);
 
             Candidate chosen = null;
-            if (quick != null && quick.Value >= MinQuickValue) chosen = quick;
+            if (quick != null) chosen = quick;
             else if (main != null && main.Value >= MinMainValue) chosen = main;
 
-            ctx.TurnValue = (quick != null && quick.Value >= MinQuickValue ? quick.Value : 0f) +
+            ctx.TurnValue = (quick != null ? quick.Value : 0f) +
                             (main != null && main.Value >= MinMainValue ? main.Value : 0f);
             if (preview) return chosen;
             LogDecision(ctx, usable, chosen);
@@ -327,6 +348,9 @@ namespace CompanionAI_Pathfinder.Tactics
         {
             // ★ v0.3.18 (test11): a walk the real-time path check refused from where the unit still stands.
             if (CombatMemory.WalkRefused(ctx.Unit, c.Key)) return true;
+            // ★ v0.3.19 (test9): real time - an enemy the unit could not get sight of from here (any option on it walks the
+            // same way), while neither has moved.
+            if (c.Target != null && c.Target != ctx.Unit && ctx.Unit.IsEnemy(c.Target) && CombatMemory.StillNoSight(ctx.Unit, c.Target)) return true;
             if (c.Kind != CandidateKind.Ability || c.Ability == null) return false;
             return CastOutcome.IsBlocked(ctx.Unit, c.Ability, c.Target) || CastOutcome.WouldReplaceHeldCharge(ctx.Unit, c.Ability, c.Target);
         }
@@ -390,7 +414,7 @@ namespace CompanionAI_Pathfinder.Tactics
                 Ability = c.Kind == CandidateKind.Ability ? c.Ability : null,
                 Offensive = c.Offensive,
                 Value = c.Value,
-                Threshold = c.Slot == ActionSlot.Free || c.Slot == ActionSlot.Swift ? MinQuickValue : MinMainValue,
+                Threshold = c.Slot == ActionSlot.Free || c.Slot == ActionSlot.Swift ? QuickBar(c) : MinMainValue,
                 SuccessChance = c.SuccessChance,
                 Target = c.Target,
                 Point = c.Point
@@ -725,31 +749,10 @@ namespace CompanionAI_Pathfinder.Tactics
                 // round. Passing through risks one round; stopping inside to fight risks every round it stays, until the
                 // fight or the area ends. Melee fighters charged into Grease to reach enemies lying in it and fell in
                 // too (34 moves "into Grease" in one log): the cost was half a fight's worth × one round's chance.
-                float perRound = AllyWorth(ctx, unit) / ValueModel.Horizon(ctx.ExpectedRounds, 3f);
-                float rounds = endsInside ? Mathf.Clamp(Math.Min(roundsLeft, ctx.ExpectedRounds), 1f, 3f) : 1f;
-                // ★ v0.3.18 (test11): an effect that outlasts the area (Stinking Cloud's nausea) is lost for its own
-                // duration, not only the rounds spent inside.
-                if (linger > 0f) rounds = Math.Max(rounds, Mathf.Clamp(Math.Min(linger, ctx.ExpectedRounds), 1f, 3f));
                 risk = risk ?? new Disengage();
                 risk.Area = area ?? "area";
-                // Inside, a fall is worse than its share of a round: standing up provokes from every enemy next to the
-                // unit, and they hit it at +4 while it lies there.
-                // ★ v0.3.18 (test10): turn-based, an area that only hinders movement (Grease, Entangle, Web) costs what
-                // a fall costs - the move action spent standing up (a quarter of a round) and the attacks of opportunity
-                // that provokes where the unit lies - times the chance it falls, for the round until the choice comes
-                // back (leaving is an option every turn). Priced as a share of the area's whole duration, Seelah would not
-                // step into Orvath's Grease for 37 turns and stood idle beside it (0.3.18-test9 log). Real time keeps the
-                // full price: there the game keeps a unit down while the area knocks it down again (UnitProneController:
-                // it stands only after 3 s without a fall), so a unit that walks in lies there.
-                // ★ v0.3.19 (test7): no enemy can act (asleep, held, helpless): a fall there costs only the attack it
-                // stops (the stop chance above), nothing attacks the unit while it lies there. Priced as before, Seelah
-                // stood beside Orvath's Grease from R4 to R8 while the sleeping goblin inside was shot at for a value of 1
-                // (0.3.19-test6 turn-based log, fight 1); stepping in, she gets the Coup de Grace next turn.
-                if (movementOnly && CombatMath.OnlyDisabledEnemiesLeft) { }
-                else if (movementOnly && !CombatMemory.IsRealTime)
-                    risk.Cost += affect * (0.25f * perRound + (ProvokeRisk(ctx, destination, 1f, spoiledByHit: 0f)?.Cost ?? 0f));
-                else
-                    risk.Cost += danger * perRound * rounds * (endsInside ? 2f : 1f);
+                risk.Cost += AreaStayCost(ctx, unit, danger, roundsLeft, endsInside, movementOnly, affect, linger,
+                                          () => ProvokeRisk(ctx, destination, 1f, spoiledByHit: 0f)?.Cost ?? 0f);
             }
 
             // ★ v0.3.14 (test5): badly hurt, walking to where more enemies can hit it before its next turn: the higher chance
@@ -770,6 +773,63 @@ namespace CompanionAI_Pathfinder.Tactics
                 }
             }
             return risk;
+        }
+
+        /// <summary>
+        /// ★ v0.3.19 (test9): what being caught by a harmful area costs <paramref name="who"/> (out of <see cref="MoveRisk"/>,
+        /// shared with buffs that grow a body into one, <see cref="GrowthIntoAreaCost"/>). <paramref name="standUpProvoke"/>:
+        /// the attacks of opportunity standing up would provoke where it lies (only asked when needed).
+        /// </summary>
+        private static float AreaStayCost(TacticalContext ctx, UnitEntityData who, float danger, float roundsLeft, bool endsInside,
+                                          bool movementOnly, float affect, float linger, Func<float> standUpProvoke)
+        {
+            float perRound = AllyWorth(ctx, who) / ValueModel.Horizon(ctx.ExpectedRounds, 3f);
+            float rounds = endsInside ? Mathf.Clamp(Math.Min(roundsLeft, ctx.ExpectedRounds), 1f, 3f) : 1f;
+            // ★ v0.3.18 (test11): an effect that outlasts the area (Stinking Cloud's nausea) is lost for its own
+            // duration, not only the rounds spent inside.
+            if (linger > 0f) rounds = Math.Max(rounds, Mathf.Clamp(Math.Min(linger, ctx.ExpectedRounds), 1f, 3f));
+            // Inside, a fall is worse than its share of a round: standing up provokes from every enemy next to the
+            // unit, and they hit it at +4 while it lies there.
+            // ★ v0.3.19 (test7): no enemy can act (asleep, held, helpless): a fall there costs only the attack it
+            // stops (the stop chance), nothing attacks the unit while it lies there. Priced as before, Seelah
+            // stood beside Orvath's Grease from R4 to R8 while the sleeping goblin inside was shot at for a value of 1
+            // (0.3.19-test6 turn-based log, fight 1); stepping in, she gets the Coup de Grace next turn.
+            if (movementOnly && CombatMath.OnlyDisabledEnemiesLeft) return 0f;
+            // ★ v0.3.18 (test10): turn-based, an area that only knocks down (Grease) was priced as the move action spent
+            // standing up (a quarter of a round): priced as a share of the area's whole duration, Seelah would not step into
+            // Orvath's Grease for 37 turns and stood idle beside it (0.3.18-test9 log).
+            // ★ v0.3.19 (test9): but a unit the area knocks down at the start of its own turn loses that whole turn - the
+            // game ends it at once (TurnController.ContinueActing: not able to act, and UnitCanGetUpOnCommand is taken
+            // while the fall is still being applied). Seelah, put into Orvath's Grease, lost rounds 2 and 3 that way and was
+            // beaten unconscious; 14 earlier logs show the same skipped turns (mostly Seelah's, poor Reflex). Standing
+            // inside, the next turn is lost at the chance the area affects the unit; passing through, only if it falls on
+            // the way (and so lies inside) and then again. A fall whose next turn is not lost still costs standing up.
+            if (movementOnly && !CombatMemory.IsRealTime)
+                return ValueModel.KnockdownAreaCost(perRound, affect, endsInside, affect > 0f ? standUpProvoke() : 0f);
+            // Real time: the game keeps a unit down while the area knocks it down again (UnitProneController: it stands
+            // only after 3 s without a fall), so a unit that walks in lies there.
+            return danger * perRound * rounds * (endsInside ? 2f : 1f);
+        }
+
+        /// <summary>
+        /// ★ v0.3.19 (test9): what a buff that makes <paramref name="ally"/> bigger costs where it stands: the harmful area
+        /// its bigger body would overlap (<see cref="AoeDangerAnalyzer.GrowingDanger"/>), priced as staying inside one.
+        /// 0 for a buff that does not grow it or a spot near no area.
+        /// </summary>
+        private static float GrowthIntoAreaCost(TacticalContext ctx, UnitEntityData ally, IEnumerable<Kingmaker.UnitLogic.Buffs.Blueprints.BlueprintBuff> buffs,
+                                                out string area)
+        {
+            area = null;
+            float grown = CombatMath.GrownCorpulence(ally, buffs);
+            if (grown <= 0f) return 0f;
+            float danger = AoeDangerAnalyzer.GrowingDanger(ally, grown, out area, out float roundsLeft, out bool movementOnly,
+                                                           out float affect, out float linger);
+            if (danger <= 0f) return 0f;
+            // Standing up provokes from the enemies next to it (a share of their threat, as for any ally).
+            return AreaStayCost(ctx, ally, danger, roundsLeft, endsInside: true, movementOnly, affect, linger,
+                                () => IncomingParts(ctx, ally, ally.Position).Where(p => Vector3.Distance(p.Key.Position, ally.Position) <=
+                                                                                    3f + p.Key.Corpulence + ally.Corpulence)
+                                                                          .Sum(p => p.Value) * 0.5f);
         }
 
         /// <summary>
@@ -1315,27 +1375,44 @@ namespace CompanionAI_Pathfinder.Tactics
         }
 
         /// <summary>
-        /// ★ v0.3.19 (test8): a conscious party member has a healing ability it can aim at an ally now (the same
-        /// discovery the engine uses; potions only heal their drinker).
+        /// ★ v0.3.19 (test8): someone conscious in the party has a heal it can use now on an ally - a spell, class ability or
+        /// belt item (scroll, wand). ★ v0.3.19 (test9): one that heals one of <paramref name="downed"/> (per target: Inflict
+        /// Light Wounds heals only undead, AbilityProfile.AppliesTo), aimed at an ally or a burst that reaches allies
+        /// (Channel Positive Energy is centred on the caster). Frame-cached: asked for every area candidate.
         /// </summary>
-        private static bool PartyCanRevive(TacticalContext ctx)
+        private static bool PartyCanRevive(TacticalContext ctx, List<UnitEntityData> downed)
         {
+            if (downed == null || downed.Count == 0) return false;
+            string key = string.Join(",", downed.Select(d => d.UniqueId));
+            int frame = Time.frameCount;
+            if (s_ReviveFrame == frame && s_ReviveAnswers.TryGetValue(key, out bool known)) return known;
+            if (s_ReviveFrame != frame) { s_ReviveFrame = frame; s_ReviveAnswers.Clear(); }
+            bool can = false;
             try
             {
                 foreach (var ally in ctx.Allies)
                 {
+                    if (can) break;
                     if (ally == null || ally.HPLeft <= 0 || !ally.Descriptor.State.IsConscious) continue;
                     foreach (var ability in AbilityDiscovery.Gather(ally))
                     {
-                        if (!ability.IsAvailable || !ability.Blueprint.CanTargetFriends) continue;
+                        if (!ability.IsAvailable) continue;
                         var p = AbilityProfile.Get(ability);
-                        if (p != null && p.Heals.Count > 0) return true;
+                        if (p == null || p.Heals.Count == 0) continue;
+                        bool reachesAllies = ability.Blueprint.CanTargetFriends ||
+                                             (p.IsAoE && p.AoETargets != Kingmaker.UnitLogic.Abilities.Components.TargetType.Enemy);
+                        if (!reachesAllies) continue;
+                        if (downed.Any(d => p.Heals.Any(h => p.AppliesTo(h, ability, d) != EffectApplies.No))) { can = true; break; }
                     }
                 }
             }
-            catch { return true; }
-            return false;
+            catch { can = true; }
+            s_ReviveAnswers[key] = can;
+            return can;
         }
+
+        private static int s_ReviveFrame = -1;
+        private static readonly Dictionary<string, bool> s_ReviveAnswers = new Dictionary<string, bool>();
 
         private static List<UnitEntityData> UnitsAround(List<UnitEntityData> units, Vector3 center, float radius)
         {
@@ -1549,9 +1626,7 @@ namespace CompanionAI_Pathfinder.Tactics
                 float quality = BuffQuality(ability, profile, buffs, recipient);
                 if (quality <= 0f) return 0f;
                 float perRound = 1f + Math.Max(0, ability.SpellLevel) * 1.5f;
-                float rounds = profile.BuffsLastOneRound ? 1f
-                             : profile.BuffsSpentByAttack ? Math.Min(expectedRounds, 2f)
-                             : profile.HasLongBuff ? expectedRounds : Math.Min(expectedRounds, 3f);
+                float rounds = BuffRounds(profile, expectedRounds);
                 bool fighting = (recipient.CombatState?.IsEngaged ?? false) || recipient == caster;
                 return perRound * rounds * quality * (fighting ? 1f : 0.6f);
             }
@@ -1560,6 +1635,17 @@ namespace CompanionAI_Pathfinder.Tactics
                 return 0f;
             }
         }
+
+        /// <summary>
+        /// The rounds a buff's worth is counted for. One-round buffs last one round. Buffs spent by the next attack count
+        /// ~2 rounds: that keeps a swift use before attacking (Perfect Strike before a full attack) above the quick-action
+        /// threshold. ★ v0.3.19 (test9): a buff gone after its owner's next roll of any kind (Guidance: +1 on one attack,
+        /// save or check) is one use - one round.
+        /// </summary>
+        private static float BuffRounds(AbilityProfile profile, float expectedRounds) =>
+            profile.BuffsLastOneRound || profile.BuffsSpentByRoll ? 1f
+            : profile.BuffsSpentByAttack ? Math.Min(expectedRounds, 2f)
+            : profile.HasLongBuff ? expectedRounds : Math.Min(expectedRounds, 3f);
 
         /// <summary>
         /// ★ v0.3.2: 0..1 combat worth of the best of <paramref name="buffs"/> on <paramref name="recipient"/>, from the
@@ -1829,9 +1915,10 @@ namespace CompanionAI_Pathfinder.Tactics
                 // Moderate Wounds potion at 64 % HP for 3.7 (0.3.19-test6 real-time log, fight 1).
                 // ★ v0.3.19 (test8): not for a heal - the player's potion threshold says when, the drop chance whether
                 // now (the bar would block a potion just under the threshold for a front-liner about to be dropped).
+                // ★ v0.3.19 (test9): an item that is not spent (a ring's free action) has a free action's bar.
                 if (ability.SourceItem != null &&
                     value < (ability.SourceItem is ItemEntityUsable spent && spent.Blueprint.SpendCharges && profile.Heals.Count == 0
-                                 ? MinSpentItemValue : MinQuickValue))
+                                 ? MinSpentItemValue : QuickBar(slot, ability)))
                     continue;
                 if (needsMove) value *= 0.9f;
                 // ★ v0.3.6: a standard-action spell cast in melee needs a defensive-casting check; failing it provokes an
@@ -1895,7 +1982,7 @@ namespace CompanionAI_Pathfinder.Tactics
                 if (!progressive || !candidate.Offensive) continue;
 
                 candidate.SuccessChance = ProgressiveGate.SuccessChance(ctx.Unit, ctx.Enemies, ability, profile, candidate.Target, candidate.Point);
-                float threshold = slot == ActionSlot.Free || slot == ActionSlot.Swift ? MinQuickValue : MinMainValue;
+                float threshold = slot == ActionSlot.Free || slot == ActionSlot.Swift ? QuickBar(slot, ability) : MinMainValue;
                 if (candidate.SuccessChance >= SpellTierPolicy.MinSuccessChance && value >= threshold &&
                     Better(candidate, bestViable))
                     bestViable = candidate;
@@ -2422,7 +2509,7 @@ namespace CompanionAI_Pathfinder.Tactics
                         .Where(a => profile.AreaReaches(ability, a)).ToList();
                     // ★ v0.3.19 (test8): only when someone in the party can bring it back - with no healer, covering it
                     // costs nothing.
-                    if (downedInside.Count > 0 && PartyCanRevive(ctx))
+                    if (downedInside.Count > 0 && PartyCanRevive(ctx, downedInside))
                         allyControlCost += downedInside.Sum(a => 0.5f * ValueModel.ReviveWorth(Level(a), ctx.ExpectedRounds, IsSummon(a)));
                 }
                 foreach (var enemy in affectedEnemies)
@@ -2524,6 +2611,7 @@ namespace CompanionAI_Pathfinder.Tactics
             if (appliesHelpfulBuff && !profile.DealsDamage && !profile.IsCleanse && !profile.HealsBurn)
             {
                 float buffValue = 0f;
+                float buffScale = (ctx.Round <= 2 ? 1f : 0.6f) * RoleWeight(ctx, "buff") * Math.Min(1.2f, 0.4f + ctx.Difficulty);
                 var recipients = profile.TargetBuffs.Count > 0 && !targetIsEnemy ? affectedAllies : new List<UnitEntityData> { unit };
                 var allBuffs = profile.TargetBuffs.Count > 0 && !targetIsEnemy ? profile.TargetBuffs : profile.CasterBuffs;
                 foreach (var ally in recipients.Take(5))
@@ -2552,17 +2640,22 @@ namespace CompanionAI_Pathfinder.Tactics
 
                     bool fighting = (ally.CombatState?.IsEngaged ?? false) || ally == unit;
                     float perRound = ValueModel.BuffPerRound(level);
-                    // One-round buffs last one round. Buffs spent by the next attack count ~2 rounds: that keeps a swift
-                    // use before attacking (Perfect Strike before a full attack) above the quick-action threshold.
-                    float rounds = profile.BuffsLastOneRound ? 1f
-                                 : profile.BuffsSpentByAttack ? Math.Min(ctx.ExpectedRounds, 2f)
-                                 : profile.HasLongBuff ? ctx.ExpectedRounds : Math.Min(ctx.ExpectedRounds, 3f);
-                    buffValue += perRound * rounds * quality * (fighting ? 1f : 0.6f);
+                    float rounds = BuffRounds(profile, ctx.ExpectedRounds);
+                    float worth = perRound * rounds * quality * (fighting ? 1f : 0.6f) * buffScale;
+                    // ★ v0.3.19 (test9): a buff that makes the ally bigger can put it into a harmful area it stands beside
+                    // (Enlarge Person put Seelah into Orvath's Grease). The cost is the ally's, in full.
+                    float grows = GrowthIntoAreaCost(ctx, ally, buffs, out string grownInto);
+                    if (grows > 0f)
+                    {
+                        reasons.Add($"grows into {grownInto} -{grows:F1}");
+                        if (worth <= grows) continue;
+                        worth -= grows;
+                    }
+                    buffValue += worth;
                 }
                 if (buffValue > 0f)
                 {
-                    float timing = ctx.Round <= 2 ? 1f : 0.6f;
-                    value += buffValue * timing * RoleWeight(ctx, "buff") * Math.Min(1.2f, 0.4f + ctx.Difficulty);
+                    value += buffValue;
                     reasons.Add("buff");
                 }
             }
@@ -2953,8 +3046,10 @@ namespace CompanionAI_Pathfinder.Tactics
             // costs a round's fall (standing up and the attacks it provokes where the unit is) times the chance to fall.
             // Real time, staying means lying there while it knocks the unit down again - its rounds left, up to 3 (Seelah
             // chose Move+Attack inside Grease over leaving it, 11.9 to 8.0, and lay prone for 42 checks).
+            // ★ v0.3.19 (test9): the next turn is lost when the area knocks the unit down at its start (AreaStayCost).
             if (inside.MovementOnly && !CombatMemory.IsRealTime)
-                value = inside.AffectChance * (0.25f * perRound + (ProvokeRisk(ctx, unit.Position, 1f, spoiledByHit: 0f)?.Cost ?? 0f));
+                value = AreaStayCost(ctx, unit, inside.Danger, inside.RoundsLeft, endsInside: true, movementOnly: true,
+                                     inside.AffectChance, 0f, () => ProvokeRisk(ctx, unit.Position, 1f, spoiledByHit: 0f)?.Cost ?? 0f);
             else if (CombatMemory.IsRealTime)
                 value = inside.Danger * perRound * Mathf.Clamp(Math.Min(inside.RoundsLeft, ctx.ExpectedRounds), 1f, 3f) * 2f;
             else

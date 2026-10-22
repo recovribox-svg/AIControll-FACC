@@ -44,6 +44,28 @@ namespace CompanionAI.Tests
             Assert.Equal(5.5f, ValueModel.BuffPerRound(3), 3);
         }
 
+        // --- 0.3.19-test9: knockdown areas (Grease), turn-based ---
+
+        [Fact]
+        public void KnockdownArea_StandingInsideLosesTheNextTurnAtTheFallChance()
+        {
+            // A poor Reflex (falls 80 %): the next turn is lost at 80 %, plus standing up when it is not.
+            Assert.Equal(0.8f * 10f + 0.8f * 0.2f * 0.25f * 10f, ValueModel.KnockdownAreaCost(10f, 0.8f, endsInside: true, 0f), 3);
+            // Never falls: nothing.
+            Assert.Equal(0f, ValueModel.KnockdownAreaCost(10f, 0f, endsInside: true, 5f), 3);
+            // Always falls: the whole next turn and the stand-up's attacks of opportunity.
+            Assert.Equal(10f + 3f, ValueModel.KnockdownAreaCost(10f, 1f, endsInside: true, 3f), 3);
+        }
+
+        [Fact]
+        public void KnockdownArea_PassingThroughCostsLessThanStayingInside()
+        {
+            for (float a = 0.05f; a < 1f; a += 0.05f)
+                Assert.True(ValueModel.KnockdownAreaCost(10f, a, false, 1f) <= ValueModel.KnockdownAreaCost(10f, a, true, 1f));
+            // A nimble unit (falls 20 %) pays far less than a quarter of the paladin's.
+            Assert.True(ValueModel.KnockdownAreaCost(10f, 0.2f, true, 0f) < 0.3f * ValueModel.KnockdownAreaCost(10f, 0.8f, true, 0f));
+        }
+
         // --- B2: fight length ---
 
         [Fact]

@@ -137,6 +137,25 @@ namespace CompanionAI_Pathfinder.Tactics
 
         #endregion
 
+        #region Knockdown areas (0.3.19-test9)
+
+        /// <summary>
+        /// Turn-based cost of being caught in an area that only knocks down (Grease), in a round's worth
+        /// <paramref name="perRound"/>: a unit it knocks down at the start of its own turn loses that whole turn (the game
+        /// ends it at once), so standing inside, the next turn is lost at <paramref name="affect"/> (the chance it falls
+        /// this round); passing through, only when it falls on the way (and so lies inside) and then again. A fall whose
+        /// turn is not lost costs standing up: a quarter of a round, plus the attacks of opportunity that provokes
+        /// (<paramref name="standUpProvoke"/>), at the chance of a fall.
+        /// </summary>
+        public static float KnockdownAreaCost(float perRound, float affect, bool endsInside, float standUpProvoke)
+        {
+            float a = Clamp(affect, 0f, 1f);
+            float lostTurn = endsInside ? a : a * a;
+            return lostTurn * perRound + a * (1f - a) * 0.25f * perRound + a * Math.Max(0f, standUpProvoke);
+        }
+
+        #endregion
+
         private static float Clamp(float v, float min, float max) => v < min ? min : v > max ? max : v;
     }
 }

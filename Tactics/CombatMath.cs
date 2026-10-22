@@ -84,6 +84,44 @@ namespace CompanionAI_Pathfinder.Tactics
             return Math.Max(0f, unit.HPLeft - nonLethal);
         }
 
+        private static readonly System.Reflection.FieldInfo SizeChangeType =
+            HarmonyLib.AccessTools.Field(typeof(Kingmaker.Designers.Mechanics.Buffs.ChangeUnitSize), "m_Type");
+
+        /// <summary>
+        /// ★ v0.3.19 (test9): the body size (Corpulence) <paramref name="unit"/> would have with <paramref name="buffs"/>
+        /// on it, when one of them makes it bigger (ChangeUnitSize: Enlarge Person, Animal Growth, Righteous Might...), the
+        /// way the game scales it (UnitEntityView.Corpulence = base x GetSizeScale(size), at least 0.5); 0 when none grows
+        /// it. Read from the buff, so any size-raising buff of any mod counts.
+        /// </summary>
+        public static float GrownCorpulence(UnitEntityData unit, IEnumerable<Kingmaker.UnitLogic.Buffs.Blueprints.BlueprintBuff> buffs)
+        {
+            if (unit?.View == null || buffs == null) return 0f;
+            try
+            {
+                var current = unit.Descriptor.State.Size;
+                var biggest = current;
+                foreach (var buff in buffs)
+                {
+                    if (buff == null) continue;
+                    foreach (var change in Kingmaker.Blueprints.BlueprintExtenstions.GetComponents<Kingmaker.Designers.Mechanics.Buffs.ChangeUnitSize>(buff))
+                    {
+                        bool delta = SizeChangeType == null || SizeChangeType.GetValue(change)?.ToString() == "Delta";
+                        int size = delta ? (int)unit.Descriptor.OriginalSize + change.SizeDelta : (int)change.Size;
+                        size = Mathf.Clamp(size, (int)Kingmaker.Enums.Size.Fine, (int)Kingmaker.Enums.Size.Colossal);
+                        if (size > (int)biggest) biggest = (Kingmaker.Enums.Size)size;
+                    }
+                }
+                if (biggest == current) return 0f;
+                float now = unit.View.GetSizeScale();
+                if (now <= 0.01f) return 0f;
+                return Math.Max(0.5f, unit.Corpulence * unit.View.GetSizeScale(biggest) / now);
+            }
+            catch
+            {
+                return 0f;
+            }
+        }
+
         /// <summary>
         /// ★ v0.3.14: the HP fraction below which a heal on <paramref name="target"/> is worth casting: the character's
         /// "Heal at HP %" plus a margin (a heal lands after the next hits), or the global potion threshold for drinking
