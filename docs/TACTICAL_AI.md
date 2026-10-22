@@ -1341,6 +1341,27 @@ melee fighters stood. Enlarge Person went only to melee characters.
   Expertise has Tabletop Tweaks' `AddStatBonusIfHasFactTTT`. The coverage line now says what an on-attack trigger runs.
   `blueprints.zip` holds the game's own data, not what mods change at runtime, so the log is the source for this.
 
+**Code review before the playtest (0.3.19-test3).**
+- **Disabled enemies keep their danger discount.** The "only disabled enemies left" rule raised the threat used for
+  incoming damage, Fighting Defensively's AC value and control values too; it now applies only to the worth of damage and
+  kills (`CombatMath.TargetWorth`).
+- **One mark at a time only for marks the AI cannot see** (no component on the mark buff). A visible mark is already
+  checked on the enemy; blocking it by cast memory kept Smite off a second enemy for the whole fight, and off every enemy
+  after a Smite whose command failed.
+- **End-of-fight restore never starts anything:** a toggle is put back on only when that starts nothing now (it starts
+  with combat or an attack, or simply applies its buff), never one switched on by a command or with a resource. The state
+  recorded is the real one before the AI's switch.
+- **Fighting Defensively's value correction** only for a mode that really starts with the attack (`ActivateOnUnitAction`,
+  available).
+- **Real time: a target the unit got stuck on** (no sight, keeps moving) stays out of reach while the unit stands there,
+  for every option on it, not only the one that got stuck.
+- **Combat memory reset once per fight:** the end-of-fight reset was followed by a second one at the next fight's first
+  decision, wiping a toggle click noted in between.
+- **Player clicks** count during the party's fight even for a companion that has not joined it yet (real time).
+- **Hot-path log text** is built only the first time it is written.
+- Left as is: a mode switched on by the AI turns off the player's other mode in the same group (the game's group rule);
+  it is not put back after the fight.
+
 **Next (not in this build).**
 - Real time: a spot with line of sight for archers whose target is in range but out of sight (the game's own search
   stalls).

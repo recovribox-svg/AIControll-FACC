@@ -270,8 +270,9 @@ namespace CompanionAI_Pathfinder.Tactics
             if (anyone) return;
             try
             {
+                bool wasOn = toggle.IsOn;
                 toggle.IsOn = false;
-                CombatMemory.RecordToggle(unit, toggle, false);
+                CombatMemory.RecordToggle(unit, toggle, false, wasOn);
                 Main.Log($"[Toggle] {unit.CharacterName}: {toggle.Name} off - nobody left in its area ({resource.Value} rounds left)");
             }
             catch (Exception ex)
@@ -292,7 +293,7 @@ namespace CompanionAI_Pathfinder.Tactics
                 toggle.IsOn = true;
                 if (!toggle.IsOn) { failure = "the game did not switch it on"; return false; }
                 command = unit.Commands.Raw.FirstOrDefault(x => x is UnitActivateAbility a && a.Ability == toggle);
-                CombatMemory.RecordToggle(unit, toggle, true);
+                CombatMemory.RecordToggle(unit, toggle, true, false);
                 CastOutcome.Forget(unit);
                 Main.Log($"[Toggle] {unit.CharacterName}: {toggle.Name} on - {c.Label} = {c.Value:F1}" +
                          (command == null ? " (started without a command)" : ""));

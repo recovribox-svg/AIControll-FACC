@@ -211,5 +211,13 @@ namespace CompanionAI_Pathfinder.Tactics
             if (Reported.Count > 1024) Reported.Clear();
             if (Reported.Add(key)) Main.Log(message);
         }
+
+        /// <summary>★ v0.3.19 (review): the message is only built the first time (hot paths).</summary>
+        public static void ReportOnce(string key, Func<string> message)
+        {
+            if (Reported.Count > 1024) Reported.Clear();
+            if (!Reported.Add(key)) return;
+            try { Main.Log(message()); } catch (Exception ex) { Main.Verbose($"[Report] {key}: {ex.Message}"); }
+        }
     }
 }

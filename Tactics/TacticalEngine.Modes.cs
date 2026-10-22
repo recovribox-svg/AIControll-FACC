@@ -300,7 +300,7 @@ namespace CompanionAI_Pathfinder.Tactics
                                                               (sp as AddContextStatBonus)?.Stat == StatType.AdditionalAttackBonus ||
                                                               (sp as AddStatBonusAbilityValue)?.Stat == StatType.AdditionalAttackBonus);
                     bool suspect = mode.AC > 0 && (mode.AttackStat > 0 || (hasAttackStat && mode.AttackStat == 0));
-                    ReportOnce($"modevalues|{unit.UniqueId}|{toggle.Blueprint.AssetGuid}",
+                    ReportOnce($"modevalues|{unit.UniqueId}|{toggle.Blueprint.AssetGuid}", () =>
                                $"[Modes] {unit.CharacterName}: {toggle.Name} = AC {mode.AC:+0;-0;0}, attack {mode.AttackStat:+0;-0;0}" +
                                (p.AttackParts.Count > 0 ? $" (+{p.AttackParts.Count} weapon attack part(s))" : "") +
                                (p.DamageParts.Count > 0 ? $" (+{p.DamageParts.Count} weapon damage part(s))" : "") +
@@ -489,9 +489,13 @@ namespace CompanionAI_Pathfinder.Tactics
             // the state the attack will really be made in, before any switch is weighed: kept on, the attack was valued
             // without the -4; switched off, the -4 was counted as a gain on top of a value that never had it (Seelah's
             // "[Fighting Defensively off +0.8]" in the 0.3.19-test1 real-time log).
-            if (modes.Any(m => m.On != m.Active))
+            // ★ v0.3.19 (review): only a mode that really starts with the attack (ActivateOnUnitAction, available); one that
+            // is on but cannot start adds nothing.
+            Func<UnitMode, bool> startsWithAttack = m => m.On && !m.Active && m.Toggle.Blueprint.ActivateOnUnitAction && m.Toggle.IsAvailable;
+            if (modes.Any(startsWithAttack))
             {
-                var asTheyStand = valueOf(new HashSet<UnitMode>(modes.Where(m => m.Active)));
+                // The current set without those modes: every other difference to the baseline cancels out.
+                var asTheyStand = valueOf(new HashSet<UnitMode>(modes.Where(m => m.On && !startsWithAttack(m))));
                 if (asTheyStand.Key >= 0f)
                     c.Value += (baseline.Key - asTheyStand.Key) * c.ModeFactor + (baseline.Value - asTheyStand.Value);
             }
@@ -552,6 +556,7 @@ namespace CompanionAI_Pathfinder.Tactics
                 try
                 {
                     var toggle = change.Key;
+                    bool wasOn = toggle.IsOn;
                     if (change.Value)
                     {
                         if (toggle.IsOn) continue;
@@ -563,7 +568,7 @@ namespace CompanionAI_Pathfinder.Tactics
                         if (toggle.Blueprint.GetComponent<TurnOffImmediatelyWithUnitCommand>() == null) toggle.TurnOffImmediately();
                         else toggle.IsOn = false;
                     }
-                    CombatMemory.RecordToggle(unit, toggle, change.Value);
+                    CombatMemory.RecordToggle(unit, toggle, change.Value, wasOn);
                     Main.Log($"[Toggle] {unit.CharacterName}: {toggle.Name} {(change.Value ? "on" : "off")} for '{c.Label}'");
                 }
                 catch (Exception ex)
@@ -625,8 +630,9 @@ namespace CompanionAI_Pathfinder.Tactics
             try { threatened = unit.CombatState.EngagedBy.Any(e => e != null && e.Descriptor.State.IsConscious); }
             catch { threatened = true; }
             if (threatened) return;
+            bool wasOn = toggle.IsOn;
             toggle.IsOn = false;
-            CombatMemory.RecordToggle(unit, toggle, false);
+            CombatMemory.RecordToggle(unit, toggle, false, wasOn);
             Main.Log($"[Toggle] {unit.CharacterName}: {toggle.Name} off - no enemy threatens it (full speed again)");
         }
 

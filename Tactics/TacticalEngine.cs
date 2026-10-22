@@ -191,6 +191,11 @@ namespace CompanionAI_Pathfinder.Tactics
                 ctx.HasFullRound = ctx.CanFullAttack = ctx.CanFiveFoot = false;
                 ctx.MoveRange = 0f;
             }
+            // ★ v0.3.19 (review): real time - a target the unit got stuck on (no sight, keeps moving) stays out of reach
+            // while the unit stands where it got stuck; the round's own list starts afresh every 6 s.
+            if (CombatMemory.IsRealTime)
+                foreach (var e in ctx?.Enemies ?? Enumerable.Empty<UnitEntityData>())
+                    if (CombatMemory.WalkRefused(unit, StuckTargetKey(e))) memory.Unreachable.Add(e.UniqueId);
             if (ctx != null) ctx.Unreachable = memory.Unreachable;
             if (ctx != null && !preview)
             {
@@ -573,6 +578,9 @@ namespace CompanionAI_Pathfinder.Tactics
 
         /// <summary>Vanilla Coup de Grace (Tabletop Tweaks keeps the blueprint and replaces its effect component).</summary>
         private static readonly string CoupDeGraceGuid = "32280b137ca642c45be17e2d92898758";
+
+        /// <summary>★ v0.3.19 (review): the per-target key a stuck real-time walk is remembered under.</summary>
+        internal static string StuckTargetKey(UnitEntityData target) => "target:" + target.UniqueId;
 
         internal static bool IsCoupDeGrace(AbilityData ability) =>
             string.Equals(ability?.Blueprint?.AssetGuid.ToString(), CoupDeGraceGuid, StringComparison.OrdinalIgnoreCase);
@@ -1437,6 +1445,7 @@ namespace CompanionAI_Pathfinder.Tactics
         }
 
         private static void ReportOnce(string key, string message) => AbilityDiscovery.ReportOnce(key, message);
+        private static void ReportOnce(string key, Func<string> message) => AbilityDiscovery.ReportOnce(key, message);
 
         /// <summary>
         /// ★ v0.3.14: the turn-based buff value (damage-equivalent points) of casting <paramref name="ability"/> on
@@ -2199,12 +2208,15 @@ namespace CompanionAI_Pathfinder.Tactics
                 // Neophyte Fighter twice in one turn: its buff carries no component the AI can read, so "already marked"
                 // was never seen on the enemy. The casts themselves are remembered: no second mark while the last one
                 // still runs on a living enemy that can still fight (the same one or another).
-                if (isMark && !profile.IsAoE && affectedEnemies.Count > 0)
+                // ★ v0.3.19 (review): only for a mark the AI cannot see on the enemy (its buff has no component of its own:
+                // the effect lives in a feature of the caster or of the item). A mark it can see is already checked on the
+                // enemy below; blocking it by memory kept Smite off a second enemy for the whole fight, and off every enemy
+                // after a Smite whose command failed.
+                if (isMark && !profile.IsAoE && affectedEnemies.Count > 0 &&
+                    profile.TargetBuffs.All(bf => (bf.ComponentsArray?.Count(x => x != null) ?? 0) == 0))
                 {
-                    // ★ v0.3.19 (test2): a mark whose buff has no component of its own works through something else (a
-                    // feature of the caster or of the item): what there is to read, once, as evidence for valuing it.
-                    if (profile.TargetBuffs.All(bf => (bf.ComponentsArray?.Count(x => x != null) ?? 0) == 0))
-                        ReportOnce($"emptymark|{ability.Blueprint.AssetGuid}",
+                    // What there is to read, once, as evidence for valuing such a mark.
+                    ReportOnce($"emptymark|{ability.Blueprint.AssetGuid}", () =>
                                    $"[Profile] {ability.Name}: its mark ({string.Join(", ", profile.TargetBuffs.Select(bf => bf.name))}) has no component; " +
                                    $"the ability has [{string.Join(",", ability.Blueprint.ComponentsArray?.Where(x => x != null).Select(x => x.GetType().Name) ?? Enumerable.Empty<string>())}]" +
                                    (Kingmaker.Blueprints.BlueprintExtenstions.GetComponent<Kingmaker.UnitLogic.Abilities.Components.AbilityEffectRunAction>(ability.Blueprint) is var run && run?.Actions?.Actions != null

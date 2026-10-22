@@ -197,7 +197,13 @@ namespace CompanionAI_Pathfinder.Tactics
                 // Not offered again while the unit stands where it got stuck (two rounds, as a refused walk).
                 CombatMemory.NoteRefusedWalk(unit, key);
                 var target = command.TargetUnit;
-                if (targetProblem && target != null) memory.Unreachable.Add(target.UniqueId);
+                if (targetProblem && target != null)
+                {
+                    memory.Unreachable.Add(target.UniqueId);
+                    // ★ v0.3.19 (review): the target too, not only this option (Attack, full attack and spells on it walk the
+                    // same way), for as long as the unit stands where it got stuck.
+                    CombatMemory.NoteRefusedWalk(unit, TacticalEngine.StuckTargetKey(target));
+                }
                 Main.Log($"[RT-Tactics] {unit.CharacterName}: '{key}' was stuck - not chosen again from here");
                 if (memory.LastCommand == command)
                 {

@@ -49,7 +49,8 @@ namespace CompanionAI_Pathfinder.GameInterface
             {
                 if (toggle?.Blueprint == null || !Main.Enabled || toggle.IsOn == wasOn) return;
                 var unit = toggle.Owner?.Unit;
-                if (unit == null || !unit.IsInCombat) return;
+                // The party's fight (a companion that has not joined it yet in real time is in it too).
+                if (unit == null || !(unit.IsInCombat || (Kingmaker.Game.Instance?.Player?.IsInCombat ?? false))) return;
                 Tactics.CombatMemory.NotePlayerToggle(unit, toggle);
             }
             catch (Exception ex)

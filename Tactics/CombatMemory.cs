@@ -36,12 +36,14 @@ namespace CompanionAI_Pathfinder.Tactics
         public static bool ToggleSwitchedThisRound(UnitEntityData unit, Kingmaker.UnitLogic.ActivatableAbilities.ActivatableAbility toggle) =>
             ToggleSwitches.TryGetValue(ToggleKey(unit, toggle), out int r) && r == Round;
 
-        public static void RecordToggle(UnitEntityData unit, Kingmaker.UnitLogic.ActivatableAbilities.ActivatableAbility toggle, bool on)
+        /// <param name="wasOn">★ v0.3.19 (review): IsOn just before the AI's switch (an "off" also runs on a toggle that
+        /// is started but no longer on).</param>
+        public static void RecordToggle(UnitEntityData unit, Kingmaker.UnitLogic.ActivatableAbilities.ActivatableAbility toggle, bool on, bool wasOn)
         {
             string key = ToggleKey(unit, toggle);
             ToggleSwitches[key] = Round;
             // ★ v0.3.19: the state before the AI's first switch this fight, put back when the fight ends.
-            if (!ToggleBeforeAi.ContainsKey(key)) ToggleBeforeAi[key] = !on;
+            if (!ToggleBeforeAi.ContainsKey(key)) ToggleBeforeAi[key] = wasOn;
         }
 
         /// <summary>★ v0.3.19: "unit|toggle" → whether it was on before the AI first switched it this fight.</summary>
@@ -153,7 +155,18 @@ namespace CompanionAI_Pathfinder.Tactics
                         // Aeiluvetar (0.3.19-test1 log). Such a toggle is switched off here when the player had it off,
                         // but never switched back on out of combat (a performance or Rage would start outside a fight) -
                         // except one that only starts with an attack (Fighting Defensively: ActivateOnUnitAction).
-                        if (wasOn && toggle.Blueprint.DeactivateIfCombatEnded && !toggle.Blueprint.ActivateOnUnitAction) continue;
+                        // ★ v0.3.19 (review): and never one that would act or spend now: switched on by a command
+                        // (UnitActivateAbility runs at once) or with a resource. One that starts with combat or with an
+                        // attack is safe to put back (it does nothing until then).
+                        if (wasOn)
+                        {
+                            var bp = toggle.Blueprint;
+                            int? resource = null;
+                            try { resource = toggle.ResourceCount; } catch { }
+                            bool startsNothingNow = bp.ActivateOnUnitAction || bp.ActivateOnCombatStarts ||
+                                                    (!bp.DeactivateIfCombatEnded && !bp.ActivateWithUnitCommand);
+                            if (!startsNothingNow || bp.ActivateWithUnitCommand || resource.HasValue) continue;
+                        }
                         if (!wasOn || toggle.IsAvailable)
                         {
                             toggle.IsOn = wasOn;
