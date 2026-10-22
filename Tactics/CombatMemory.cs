@@ -299,6 +299,16 @@ namespace CompanionAI_Pathfinder.Tactics
             return Casts.TryGetValue($"{caster.UniqueId}|{AbilityKey(ability)}|{target?.UniqueId ?? "-"}", out int r) ? r : (int?)null;
         }
 
+        /// <summary>★ v0.3.19 (test2): the targets (unique ids) the caster aimed this ability at this combat, with the round.</summary>
+        public static List<KeyValuePair<string, int>> CastTargets(UnitEntityData caster, AbilityData ability)
+        {
+            var result = new List<KeyValuePair<string, int>>();
+            string prefix = $"{caster.UniqueId}|{AbilityKey(ability)}|";
+            foreach (var cast in Casts)
+                if (cast.Key.StartsWith(prefix)) result.Add(new KeyValuePair<string, int>(cast.Key.Substring(prefix.Length), cast.Value));
+            return result;
+        }
+
         public static int TimesUsed(UnitEntityData caster, AbilityData ability)
         {
             return Uses.TryGetValue($"{caster.UniqueId}|{AbilityKey(ability)}", out int n) ? n : 0;

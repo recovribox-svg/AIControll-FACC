@@ -2185,6 +2185,31 @@ namespace CompanionAI_Pathfinder.Tactics
                 // ★ v0.3.2: a mark is aimed at one enemy. A helpful area buff centred on the caster (Soul Power, Light
                 // of the Angels) counted the enemies standing in its radius as "marks" and scored 26-38 every round.
                 if (isMark && profile.IsAoE) affectedEnemies = new List<UnitEntityData>();
+                // ★ v0.3.19 (test2): one mark at a time from one caster and ability, while it lasts. Camellia's Ring of the
+                // Mad Duelist (a free action) marked a new enemy at every decision - two or three a round, the same
+                // Neophyte Fighter twice in one turn: its buff carries no component the AI can read, so "already marked"
+                // was never seen on the enemy. The casts themselves are remembered: no second mark while the last one
+                // still runs on a living enemy that can still fight (the same one or another).
+                if (isMark && !profile.IsAoE && affectedEnemies.Count > 0)
+                {
+                    float lasts = profile.IsOneShot ? 1f : Math.Min(ctx.ExpectedRounds, 3f);
+                    float own = profile.EffectRoundsOn(ability, target);
+                    if (own > 0f) lasts = Math.Max(1f, own);
+                    foreach (var cast in CombatMemory.CastTargets(unit, ability))
+                    {
+                        if (CombatMemory.Round - cast.Value >= Math.Max(1, Mathf.CeilToInt(lasts))) continue;
+                        var marked = ctx.Enemies.FirstOrDefault(e => e.UniqueId == cast.Key);
+                        if (marked == null || CombatMath.IsDisabled(marked)) continue;   // dead, gone or out of the fight
+                        string markNote = marked == target ? "already marked" : $"{marked.CharacterName} is still marked";
+                        if (!profile.DealsDamage && profile.Heals.Count == 0 && profile.Maneuvers.Count == 0)
+                        {
+                            why = markNote;
+                            return 0f;
+                        }
+                        affectedEnemies = new List<UnitEntityData>();   // the rest of what it does still counts
+                        break;
+                    }
+                }
                 // ★ v0.3.1: a one-round / one-attack mark (Aid Another: +2 for one ally, one round) is worth 0.1 × threat
                 // for one round; it out-valued Lann's full attack and walked him 9 m into melee. Lasting marks (Smite
                 // Evil, judgements, studied target) keep 0.15 × threat × rounds.
