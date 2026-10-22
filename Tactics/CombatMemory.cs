@@ -110,7 +110,10 @@ namespace CompanionAI_Pathfinder.Tactics
                 return;
             }
             _lastTurnBased = turnBased;
-            if (round < _lastRound)
+            // ★ v0.3.19 (review): not again right after a reset (_lastRound is int.MaxValue then): the end-of-fight reset
+            // was followed by a second one at the next fight's first decision, wiping what had been noted in between - a
+            // toggle the player clicked as the fight began.
+            if (round < _lastRound && _lastRound != int.MaxValue)
                 ResetCombat();
             _lastRound = round;
         }

@@ -588,7 +588,7 @@ namespace CompanionAI_Pathfinder.Tactics
             why = "dmg:cdg";   // "dmg" marks it offensive, like other damaging options
             if (!ctx.Unit.IsEnemy(target)) return 0f;
             if (!CombatMath.EstimateCoupDeGrace(ctx.Unit, target, out float damage, out float kill)) return 0f;
-            float value = kill * (Math.Max(1, target.HPLeft) + CombatMath.Threat(target)) + (1f - kill) * DamageValue(target, damage, 0f);
+            float value = kill * (Math.Max(1, target.HPLeft) + CombatMath.TargetWorth(target)) + (1f - kill) * DamageValue(target, damage, 0f);
             value *= RoleWeight(ctx, "damage");
             // ★ v0.3.18: when it provokes (Tabletop Tweaks' version makes the caster provoke: AbilityProfile.CasterProvokes)
             // it is priced in EvaluateAbility (ProvokeLoss), like every other provoking ability. It was also subtracted
@@ -1217,7 +1217,7 @@ namespace CompanionAI_Pathfinder.Tactics
             if (expectedDamage <= 0f) return 0f;
             float hp = Math.Max(1, enemy.HPLeft);
             float kill = landChance > 0f ? ValueModel.KillChance(landChance, expectedDamage / landChance, hp) : 0f;
-            return ValueModel.DamageValue(expectedDamage, hp, CombatMath.Threat(enemy), kill);
+            return ValueModel.DamageValue(expectedDamage, hp, CombatMath.TargetWorth(enemy), kill);
         }
 
         /// <summary>★ v0.3.18: a weapon attack estimate's damage value (<paramref name="factor"/>: a bonus on the damage, Charge).</summary>
@@ -2073,7 +2073,7 @@ namespace CompanionAI_Pathfinder.Tactics
                     {
                         float pk = CombatMath.EffectChance(unit, enemy, ability, profile, damage: false);
                         float hp = Math.Max(1, enemy.HPLeft);
-                        part = Math.Max(part, ValueModel.DamageValue(hp * pk, hp, CombatMath.Threat(enemy), pk));
+                        part = Math.Max(part, ValueModel.DamageValue(hp * pk, hp, CombatMath.TargetWorth(enemy), pk));
                     }
                     dmgValue += part;
                     if (enemy == target && part > 0f) ctx.AimCounted = true;

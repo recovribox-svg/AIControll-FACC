@@ -1113,12 +1113,22 @@ namespace CompanionAI_Pathfinder.Tactics
             try { cr = Math.Max(1, enemy.Blueprint?.CR ?? 1); } catch { }
             float threat = ValueModel.PerRound(cr);   // ★ v0.3.18: the shared worth per round (ValueModel)
 
-            // ★ v0.3.19 (test2): not while every enemy left is disabled - the fight cannot end without them. A sleeping,
-            // entangled Dretch was the last enemy for four rounds while Camellia and Seelah found nothing worth doing.
-            if (IsDisabled(enemy) && !OnlyDisabledEnemiesLeft) threat *= 0.25f;
+            if (IsDisabled(enemy)) threat *= 0.25f;
 
             try { if (enemy.CombatState.EngagedUnits.Count > 0) threat *= 1.2f; } catch { }
             return threat;
+        }
+
+        /// <summary>
+        /// ★ v0.3.19 (test2): what taking this enemy down is worth: its <see cref="Threat"/>, but in full while every enemy
+        /// left is disabled - the fight cannot end without them. A sleeping, entangled Dretch was the last enemy for four
+        /// rounds while Camellia and Seelah found nothing worth doing. Only for the worth of damage and kills: the danger an
+        /// enemy poses (incoming damage, attacks of opportunity) keeps the disabled discount.
+        /// </summary>
+        public static float TargetWorth(UnitEntityData enemy)
+        {
+            float threat = Threat(enemy);
+            return OnlyDisabledEnemiesLeft && IsDisabled(enemy) ? threat * 4f : threat;
         }
 
         #endregion
