@@ -184,6 +184,29 @@ namespace CompanionAI_Pathfinder.Tactics
             return ModeOf(toggle.Blueprint).Excluded;
         }
 
+        /// <summary>
+        /// ★ v0.3.19 (test2): for the coverage report (written every fight) - what an attack mode changes for this unit as
+        /// the game computes it, e.g. "AC +2, attack -4"; null when it is not an attack mode the AI may switch. The
+        /// once-per-session [Modes] line could fall outside a log that starts mid-session (0.3.19-test1 turn-based log).
+        /// </summary>
+        internal static string ModeValuesNote(UnitEntityData unit, ActivatableAbility toggle)
+        {
+            try
+            {
+                if (unit == null || toggle?.Blueprint == null || ModeExclusion(toggle) != null) return null;
+                var p = ModeOf(toggle.Blueprint);
+                if (p.Kind != ModeKind.Attack) return null;
+                var mode = ReadMode(unit, toggle, p);
+                return $"AC {mode.AC:+0;-0;0}, attack {mode.AttackStat:+0;-0;0}" +
+                       (p.AttackParts.Count > 0 ? $", {p.AttackParts.Count} weapon attack part(s)" : "") +
+                       (p.DamageParts.Count > 0 ? $", {p.DamageParts.Count} weapon damage part(s)" : "");
+            }
+            catch (Exception ex)
+            {
+                return "values unreadable: " + ex.Message;
+            }
+        }
+
         /// <summary>★ v0.3.19: for the coverage report - the buffs a mode's buff removes when it ends, or null.</summary>
         internal static string ModeRemovesOnEnd(ActivatableAbility toggle) =>
             toggle?.Blueprint == null ? null : ModeOf(toggle.Blueprint).RemovesOnEnd;

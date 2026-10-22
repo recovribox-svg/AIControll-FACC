@@ -123,7 +123,7 @@ namespace CompanionAI_Pathfinder.Tactics
         /// off. Called before the combat memory is reset (after it, they would no longer be known as the AI's).
         /// ★ v0.3.19: every toggle the AI switched this fight goes back to the state it had before (the AI may now also
         /// switch the player's own pre-fight choices, Power Attack left on for instance), except one the player switched
-        /// during the fight: their last click stands. The game's own end-of-combat switch-off still applies.
+        /// during the fight: their last click stands. A toggle that ends with combat is only ever switched off here.
         /// </summary>
         public static void SwitchOffAiToggles()
         {
@@ -145,8 +145,11 @@ namespace CompanionAI_Pathfinder.Tactics
                         if (toggle?.Blueprint == null || toggle.Blueprint.AssetGuid.ToString() != guid) continue;
                         bool wasOn = entry.Value;
                         if (toggle.IsOn == wasOn) continue;
-                        // A toggle the game ends with the fight (performances, Rage, Fighting Defensively) is the game's.
-                        if (toggle.Blueprint.DeactivateIfCombatEnded) continue;
+                        // ★ v0.3.19 (test2): a toggle "ending with the fight" is not always switched off by the game:
+                        // Fighting Defensively the AI switched on was still on at the next fight's start for Seelah and
+                        // Aeiluvetar (0.3.19-test1 log). Such a toggle is switched off here when the player had it off,
+                        // but never switched back on out of combat (a performance or Rage would start outside a fight).
+                        if (wasOn && toggle.Blueprint.DeactivateIfCombatEnded) continue;
                         if (!wasOn || toggle.IsAvailable)
                         {
                             toggle.IsOn = wasOn;
