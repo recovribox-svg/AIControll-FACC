@@ -1267,3 +1267,38 @@ summons; the turn-based 5-foot-step rule holds; Seelah now works around Orvath's
 - **Melee allies waiting beside the party's own Entangle:** the enemies inside are held, and the archers work on them.
 - **Slow decisions** (400-490 ms, about one per fight, no new profiles built): most likely garbage collection.
 
+## 35. v0.3.19 (test1): Fighting Defensively, toggle ownership, the player's orders in turn-based combat
+
+**Fighting Defensively.** Every test10 coverage line left it alone: its buff has an `AddFactContextActions` that only
+removes a buff when the mode ends (`off ContextActionRemoveBuff`). Such a component changes nothing while the mode is
+on, which is what the mode is valued for, so it is accepted now (`OnlyRemovesOnEnd`). The coverage line names the buffs
+it removes, to check they are harmless.
+- **Sanity check of the values the game computes.** Each mode's AC and attack change is logged once per fight
+  (for example `[Modes] Seelah: Fighting Defensively = AC +2, attack -4`). A mode that adds AC and whose attack part reads as no
+  penalty (or a bonus) is not used: it would look like free AC and stay on all the time.
+- **Mobility.** Why it was not switched on before a move that would provoke is logged once per round: the move does not
+  fit at half speed, it saves too little, or the move is still not the best option. test10 had no Mobility switch at all
+  and no reason.
+
+**Who may switch a toggle.**
+- **The AI switches every toggle it can value**, also those the player set before the fight (until 0.3.18 it only
+  switched off what it had switched on itself).
+- **When the fight ends, every toggle the AI switched goes back to its state before the fight**
+  (`CombatMemory.SwitchOffAiToggles`). Toggles the game ends with the fight are left to the game.
+- **New setting "Leave a toggle alone for the rest of the fight once you switch it yourself" (on).** The action bar's
+  toggle clicks (`MechanicActionBarSlotActivableAbility.OnClick`, `MechanicActionBarSlotItem.OnClick`) are noted while the
+  owner is in combat (`GameInterface/PlayerTogglePatch`). The engine then leaves that toggle alone until the fight ends, and
+  it is not put back afterwards.
+
+**The player's orders in turn-based combat (investigated, not changed).** The player cannot use a spell, ability or
+item for an AI-controlled companion during its turn; in real time they can. This is not a setting of the mod:
+- The game greys out the action bar in turn-based combat unless the current unit has no command queued
+  (`MechanicActionBarSlot.CanUseIfTurnBased` → `TurnController.CanEndTurnAndNoActing`).
+- The mod gives its first order on the frame the turn starts and the next one on the frame the last ends, so the
+  queue is never empty when the bar is checked.
+- Real time has no such check: the player's order replaces the AI's (`UnitCommands.Run`), and the AI waits while a
+  command runs.
+
+A way to let the player take over a turn is in the plan for a later version (a click on the companion's action bar
+pauses the AI for that turn, the AI waits for the player's command and then uses what is left).
+

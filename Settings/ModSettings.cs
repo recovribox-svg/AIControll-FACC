@@ -91,6 +91,13 @@ namespace CompanionAI_Pathfinder.Settings
                 { Language.Korean, "행동으로 켜고 매 라운드 자원을 쓰는 능력(바드 공연, 격노, 샤먼 정령): 가치가 있을 때 시작하고, 얻을 것이 없으면 멈춥니다. '효과 수락' 선택, 공격 모드, 탑승은 건드리지 않습니다." }
             },
 
+            // ★ v0.3.19
+            ["RespectPlayerToggles"] = new() { { Language.English, "Leave a toggle alone for the rest of the fight once you switch it yourself" }, { Language.Korean, "전투 중 직접 전환한 토글은 그 전투가 끝날 때까지 AI가 건드리지 않음" } },
+            ["RespectPlayerTogglesDesc"] = new() {
+                { Language.English, "The AI switches toggles (attack modes, Mobility, performances) on and off by itself, also ones you set before the fight; after the fight they are back as you left them. When you click a companion's toggle during a fight, the AI keeps its hands off that toggle until the fight ends. Turn this off to let the AI take it over again." },
+                { Language.Korean, "AI는 토글(공격 모드, 기동성, 공연)을 스스로 켜고 끕니다. 전투 전에 설정한 것도 포함되며, 전투가 끝나면 원래대로 돌아갑니다. 전투 중 동료의 토글을 직접 클릭하면 그 전투가 끝날 때까지 AI가 그 토글을 건드리지 않습니다. 끄면 AI가 다시 관리합니다." }
+            },
+
             // ★ v0.3.18 (AA-3)
             ["AiSwitchesCombatModes"] = new() { { Language.English, "AI may switch combat modes (Power Attack, Fighting Defensively, Mobility)" }, { Language.Korean, "AI가 전투 모드 전환 가능 (강타, 방어적 전투, 기동성)" } },
             ["AiSwitchesCombatModesDesc"] = new() {
@@ -298,6 +305,9 @@ namespace CompanionAI_Pathfinder.Settings
 
         /// <summary>★ v0.3.18 (AA-3): the engine may switch attack modes and Mobility (decision recorded: default on).</summary>
         public bool AiSwitchesCombatModes { get; set; } = true;
+
+        /// <summary>★ v0.3.19: a toggle the player clicks during a fight is left as they set it until the fight ends.</summary>
+        public bool RespectPlayerToggles { get; set; } = true;
 
         // 캐릭터별 설정
         public Dictionary<string, CharacterSettings> CharacterSettings { get; set; } = new();

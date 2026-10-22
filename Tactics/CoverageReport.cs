@@ -122,7 +122,12 @@ namespace CompanionAI_Pathfinder.Tactics
                 if (why == null) return "may start it when worth it";
                 // ★ v0.3.18 (AA-3): attack modes and Mobility are decided with the attack or the move.
                 string mode = TacticalEngine.ModeExclusion(toggle);
-                if (mode == null) return "may switch it with attacks and moves";
+                if (mode == null)
+                {
+                    // ★ v0.3.19: what its buff removes when it ends (Fighting Defensively), to check it is harmless.
+                    string removes = TacticalEngine.ModeRemovesOnEnd(toggle);
+                    return "may switch it with attacks and moves" + (removes != null ? $" (when it ends, its buff removes: {removes})" : "");
+                }
                 return $"leaves it ({why}; as a combat mode: {mode})";
             }
             catch (Exception ex)

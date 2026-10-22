@@ -28,8 +28,6 @@ namespace CompanionAI_Pathfinder.Tactics
         private static int _lastRound = int.MaxValue;
         /// <summary>★ v0.3.18 (AA-2): "unit|toggle" → round the AI last switched it (on or off), this combat.</summary>
         private static readonly Dictionary<string, int> ToggleSwitches = new Dictionary<string, int>();
-        /// <summary>★ v0.3.18 (AA-2): toggles the AI switched on this combat (only those it may switch off again).</summary>
-        private static readonly HashSet<string> ToggledOnByAi = new HashSet<string>();
 
         private static string ToggleKey(UnitEntityData unit, Kingmaker.UnitLogic.ActivatableAbilities.ActivatableAbility toggle) =>
             $"{unit.UniqueId}|{toggle.Blueprint.AssetGuid}";
@@ -38,15 +36,35 @@ namespace CompanionAI_Pathfinder.Tactics
         public static bool ToggleSwitchedThisRound(UnitEntityData unit, Kingmaker.UnitLogic.ActivatableAbilities.ActivatableAbility toggle) =>
             ToggleSwitches.TryGetValue(ToggleKey(unit, toggle), out int r) && r == Round;
 
-        public static bool ToggleStartedByAi(UnitEntityData unit, Kingmaker.UnitLogic.ActivatableAbilities.ActivatableAbility toggle) =>
-            ToggledOnByAi.Contains(ToggleKey(unit, toggle));
-
         public static void RecordToggle(UnitEntityData unit, Kingmaker.UnitLogic.ActivatableAbilities.ActivatableAbility toggle, bool on)
         {
             string key = ToggleKey(unit, toggle);
             ToggleSwitches[key] = Round;
-            if (on) ToggledOnByAi.Add(key); else ToggledOnByAi.Remove(key);
+            // ★ v0.3.19: the state before the AI's first switch this fight, put back when the fight ends.
+            if (!ToggleBeforeAi.ContainsKey(key)) ToggleBeforeAi[key] = !on;
         }
+
+        /// <summary>★ v0.3.19: "unit|toggle" → whether it was on before the AI first switched it this fight.</summary>
+        private static readonly Dictionary<string, bool> ToggleBeforeAi = new Dictionary<string, bool>();
+        /// <summary>★ v0.3.19: toggles the player switched during this fight (action bar clicks, PlayerTogglePatch).</summary>
+        private static readonly HashSet<string> PlayerToggled = new HashSet<string>();
+
+        public static void NotePlayerToggle(UnitEntityData unit, Kingmaker.UnitLogic.ActivatableAbilities.ActivatableAbility toggle)
+        {
+            string key = ToggleKey(unit, toggle);
+            if (!PlayerToggled.Add(key)) return;
+            bool respected = Settings.ModSettings.Instance?.RespectPlayerToggles ?? true;
+            Main.Log($"[Toggle] {unit.CharacterName}: {toggle.Name} switched {(toggle.IsOn ? "on" : "off")} by the player" +
+                     (respected ? " - left as set until the fight ends" : ""));
+        }
+
+        /// <summary>
+        /// ★ v0.3.19: the AI may not switch this toggle: the player switched it during this fight and the setting "Leave a
+        /// toggle alone for the rest of the fight once you switch it yourself" is on.
+        /// </summary>
+        public static bool PlayerOwnsToggle(UnitEntityData unit, Kingmaker.UnitLogic.ActivatableAbilities.ActivatableAbility toggle) =>
+            PlayerToggled.Count > 0 && (Settings.ModSettings.Instance?.RespectPlayerToggles ?? true) &&
+            PlayerToggled.Contains(ToggleKey(unit, toggle));
 
         /// <summary>
         /// The combat round. Turn-based: the game's round number. ★ v0.3.14: real time has no rounds, so it is six seconds
@@ -103,11 +121,16 @@ namespace CompanionAI_Pathfinder.Tactics
         /// ★ v0.3.18 (review): when the fight ends, the toggles the AI switched on that the game keeps on out of combat
         /// (DeactivateIfCombatEnded false - Mobility halves speed until switched off) go off again; the player had them
         /// off. Called before the combat memory is reset (after it, they would no longer be known as the AI's).
+        /// ★ v0.3.19: every toggle the AI switched this fight goes back to the state it had before (the AI may now also
+        /// switch the player's own pre-fight choices, Power Attack left on for instance), except one the player switched
+        /// during the fight: their last click stands. The game's own end-of-combat switch-off still applies.
         /// </summary>
         public static void SwitchOffAiToggles()
         {
-            foreach (string key in new List<string>(ToggledOnByAi))
+            foreach (var entry in new List<KeyValuePair<string, bool>>(ToggleBeforeAi))
             {
+                string key = entry.Key;
+                if (PlayerToggled.Contains(key)) continue;
                 try
                 {
                     int bar = key.IndexOf('|');
@@ -120,10 +143,14 @@ namespace CompanionAI_Pathfinder.Tactics
                     foreach (var toggle in unit.ActivatableAbilities.Enumerable)
                     {
                         if (toggle?.Blueprint == null || toggle.Blueprint.AssetGuid.ToString() != guid) continue;
-                        if (toggle.IsOn && !toggle.Blueprint.DeactivateIfCombatEnded)
+                        bool wasOn = entry.Value;
+                        if (toggle.IsOn == wasOn) continue;
+                        // A toggle the game ends with the fight (performances, Rage, Fighting Defensively) is the game's.
+                        if (toggle.Blueprint.DeactivateIfCombatEnded) continue;
+                        if (!wasOn || toggle.IsAvailable)
                         {
-                            toggle.IsOn = false;
-                            Main.Log($"[Toggle] {unit.CharacterName}: {toggle.Name} off - the fight is over (the AI had switched it on)");
+                            toggle.IsOn = wasOn;
+                            Main.Log($"[Toggle] {unit.CharacterName}: {toggle.Name} {(wasOn ? "on" : "off")} again - the fight is over (as before it)");
                         }
                     }
                 }
@@ -236,7 +263,8 @@ namespace CompanionAI_Pathfinder.Tactics
             ProneStays.Clear();
             BurnReliefs.Clear();
             ToggleSwitches.Clear();
-            ToggledOnByAi.Clear();
+            ToggleBeforeAi.Clear();
+            PlayerToggled.Clear();
             Casts.Clear();
             Uses.Clear();
             Turns.Clear();

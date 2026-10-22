@@ -218,6 +218,8 @@ namespace CompanionAI_Pathfinder.Tactics
                 if (ToggleExclusion(unit, toggle) != null) continue;
                 var p = ProfileOf(toggle.Blueprint);
                 if (CombatMemory.ToggleSwitchedThisRound(unit, toggle)) continue;
+                // ★ v0.3.19: switched by the player during this fight.
+                if (CombatMemory.PlayerOwnsToggle(unit, toggle)) continue;
                 if (toggle.IsOn || toggle.IsStarted)
                 {
                     if (!preview) StopIfPointless(ctx, toggle, p);
@@ -248,13 +250,16 @@ namespace CompanionAI_Pathfinder.Tactics
         }
 
         /// <summary>
-        /// A performance the AI started whose area covers no ally any more, nor an enemy it hinders: switched off (free),
-        /// so its resource is not spent for nothing. The player's own toggles and self buffs (Rage) are left alone.
+        /// A performance whose area covers no ally any more, nor an enemy it hinders: switched off (free), so its resource
+        /// is not spent for nothing. Self buffs (Rage) are left alone. ★ v0.3.19: whoever started it, unless the player
+        /// switched it during this fight.
         /// </summary>
         private static void StopIfPointless(TacticalContext ctx, ActivatableAbility toggle, ToggleProfile p)
         {
             var unit = ctx.Unit;
-            if (p.Area == null || !CombatMemory.ToggleStartedByAi(unit, toggle)) return;
+            // ★ v0.3.19: the player's own pre-fight choice too (the resource is spent for nothing either way); the caller
+            // skips a toggle the player switched during this fight.
+            if (p.Area == null) return;
             int? resource = null;
             try { resource = toggle.ResourceCount; } catch { }
             if (!resource.HasValue) return;   // costs nothing to keep

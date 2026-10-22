@@ -52,6 +52,26 @@ namespace CompanionAI_Pathfinder.Tactics
             public readonly List<WeaponParametersAttackBonus> AttackParts = new List<WeaponParametersAttackBonus>();
             public readonly List<WeaponParametersDamageBonus> DamageParts = new List<WeaponParametersDamageBonus>();
             public readonly List<BlueprintComponent> StatParts = new List<BlueprintComponent>();
+            /// <summary>★ v0.3.19: the buffs its buff removes when it ends (names, for the coverage report), or null.</summary>
+            public string RemovesOnEnd;
+        }
+
+        /// <summary>
+        /// ★ v0.3.19: <paramref name="actions"/> runs nothing when the buff starts or each round, and only removes buffs when
+        /// it ends (ContextActionRemoveBuff, with the names of those buffs).
+        /// </summary>
+        private static bool OnlyRemovesOnEnd(AddFactContextActions actions, out string removed)
+        {
+            removed = null;
+            if (actions.Activated?.Actions?.Any(a => a != null) == true || actions.NewRound?.Actions?.Any(a => a != null) == true)
+                return false;
+            var ends = actions.Deactivated?.Actions?.Where(a => a != null).ToList();
+            if (ends == null || ends.Count == 0 || !ends.All(a => a is Kingmaker.UnitLogic.Mechanics.Actions.ContextActionRemoveBuff)) return false;
+            removed = string.Join(", ", ends.Cast<Kingmaker.UnitLogic.Mechanics.Actions.ContextActionRemoveBuff>().Select(r =>
+            {
+                try { return r.Buff?.name ?? "?"; } catch { return "?"; }
+            }));
+            return true;
         }
 
         private static readonly Dictionary<BlueprintActivatableAbility, ModeProfile> ModeProfiles =
@@ -104,7 +124,16 @@ namespace CompanionAI_Pathfinder.Tactics
                                 break;
                             // ★ v0.3.18 (test10): name what such a component runs (Fighting Defensively has one): evidence for
                             // whether it can be modelled.
+                            // ★ v0.3.19 (test1): one that only removes buffs when the mode ends changes nothing while it is on -
+                            // what the mode is valued for. Fighting Defensively's buff has exactly that ("off
+                            // ContextActionRemoveBuff" in every test10 coverage line) and was left alone for every companion.
+                            // The buffs it removes are named in the coverage report.
                             case AddFactContextActions actions:
+                                if (OnlyRemovesOnEnd(actions, out string removed))
+                                {
+                                    p.RemovesOnEnd = removed;
+                                    break;
+                                }
                                 p.Excluded = p.Excluded ?? "its buff does more than the AI models (AddFactContextActions: " +
                                              string.Join(", ", new[] { ("on", actions.Activated), ("off", actions.Deactivated), ("round", actions.NewRound) }
                                                  .Where(l => l.Item2?.Actions?.Length > 0)
@@ -155,6 +184,10 @@ namespace CompanionAI_Pathfinder.Tactics
             return ModeOf(toggle.Blueprint).Excluded;
         }
 
+        /// <summary>★ v0.3.19: for the coverage report - the buffs a mode's buff removes when it ends, or null.</summary>
+        internal static string ModeRemovesOnEnd(ActivatableAbility toggle) =>
+            toggle?.Blueprint == null ? null : ModeOf(toggle.Blueprint).RemovesOnEnd;
+
         /// <summary>A mode the unit has, with what switching it changes, read once per decision.</summary>
         internal sealed class UnitMode
         {
@@ -190,10 +223,28 @@ namespace CompanionAI_Pathfinder.Tactics
             foreach (var toggle in unit.ActivatableAbilities?.Enumerable ?? Enumerable.Empty<ActivatableAbility>())
             {
                 if (toggle?.Blueprint == null || ModeExclusion(toggle) != null) continue;
+                // ★ v0.3.19: switched by the player during this fight - its state stays as part of the game's rules.
+                if (CombatMemory.PlayerOwnsToggle(unit, toggle)) continue;
                 var p = ModeOf(toggle.Blueprint);
                 if (p.Kind != ModeKind.Attack) continue;
                 if (!toggle.IsOn && !toggle.IsAvailable) continue;
-                try { modes.Add(ReadMode(unit, toggle, p)); }
+                try
+                {
+                    var mode = ReadMode(unit, toggle, p);
+                    // ★ v0.3.19 (test1): what the game's own values came to, once per fight, and a sanity check. A mode
+                    // that trades attack for AC (Fighting Defensively, Combat Expertise) whose attack part reads as no
+                    // penalty would look like free AC and stay on all the time: such a reading is not trusted.
+                    bool hasAttackStat = p.StatParts.Any(sp => (sp as AddStatBonus)?.Stat == StatType.AdditionalAttackBonus ||
+                                                              (sp as AddContextStatBonus)?.Stat == StatType.AdditionalAttackBonus ||
+                                                              (sp as AddStatBonusAbilityValue)?.Stat == StatType.AdditionalAttackBonus);
+                    bool suspect = mode.AC > 0 && (mode.AttackStat > 0 || (hasAttackStat && mode.AttackStat == 0));
+                    ReportOnce($"modevalues|{unit.UniqueId}|{toggle.Blueprint.AssetGuid}",
+                               $"[Modes] {unit.CharacterName}: {toggle.Name} = AC {mode.AC:+0;-0;0}, attack {mode.AttackStat:+0;-0;0}" +
+                               (p.AttackParts.Count > 0 ? $" (+{p.AttackParts.Count} weapon attack part(s))" : "") +
+                               (p.DamageParts.Count > 0 ? $" (+{p.DamageParts.Count} weapon damage part(s))" : "") +
+                               (suspect ? " - not used: its attack penalty did not read as a penalty" : ""));
+                    if (!suspect) modes.Add(mode);
+                }
                 catch (Exception ex) { Main.Verbose($"[Modes] {unit.CharacterName} {toggle.Name}: {ex.Message}"); }
             }
             return modes;
@@ -493,7 +544,9 @@ namespace CompanionAI_Pathfinder.Tactics
         private static void MobilityHousekeeping(UnitEntityData unit)
         {
             var toggle = MobilityToggle(unit);
-            if (toggle == null || !(toggle.IsOn || toggle.IsStarted) || !CombatMemory.ToggleStartedByAi(unit, toggle)) return;
+            // ★ v0.3.19: also when the player had it on before the fight (it goes back on when the fight ends), but not
+            // when the player switched it during this fight.
+            if (toggle == null || !(toggle.IsOn || toggle.IsStarted) || CombatMemory.PlayerOwnsToggle(unit, toggle)) return;
             if (CombatMemory.ToggleSwitchedThisRound(unit, toggle)) return;
             bool threatened;
             try { threatened = unit.CombatState.EngagedBy.Any(e => e != null && e.Descriptor.State.IsConscious); }
@@ -514,7 +567,7 @@ namespace CompanionAI_Pathfinder.Tactics
             var unit = ctx.Unit;
             var toggle = MobilityToggle(unit);
             if (toggle == null || toggle.IsOn || toggle.IsStarted || !toggle.IsAvailable) return;
-            if (CombatMemory.ToggleSwitchedThisRound(unit, toggle)) return;
+            if (CombatMemory.ToggleSwitchedThisRound(unit, toggle) || CombatMemory.PlayerOwnsToggle(unit, toggle)) return;
             // Priced as a free (or swift) action next to the move; one that costs the move itself is not modelled.
             var slot = ToggleSlot(toggle);
             if (slot != ActionSlot.Free && slot != ActionSlot.Swift) return;
@@ -530,10 +583,15 @@ namespace CompanionAI_Pathfinder.Tactics
             Candidate best = null;
             Disengage without = null;
             float gain = 0f;
+            // ★ v0.3.19 (test1): why Mobility was not offered, once per round, when a move would provoke (not one switch in
+            // the test10 logs, and nothing said why).
+            Action<string> skipped = why => ReportOnce($"mobility|{unit.UniqueId}|{CombatMemory.Round}",
+                $"[Modes] {unit.CharacterName}: {toggle.Name} not switched on for '{risky.FirstOrDefault()?.Label}': {why}");
+            int tooFar = 0;
             foreach (var c in risky)
             {
                 // Speed halves (x1.5 for a Trickster with fast movement): the move must still fit.
-                if (Vector3.Distance(unit.Position, c.RiskAt.Value) > ctx.MoveRange * Math.Min(1f, speed) * 0.95f) continue;
+                if (Vector3.Distance(unit.Position, c.RiskAt.Value) > ctx.MoveRange * Math.Min(1f, speed) * 0.95f) { tooFar++; continue; }
                 var off = DisengageRisk(ctx, c.RiskAt.Value, mobility: false);
                 if (off == null) continue;
                 var on = DisengageRisk(ctx, c.RiskAt.Value, mobility: true);
@@ -545,11 +603,25 @@ namespace CompanionAI_Pathfinder.Tactics
                     gain = g;
                 }
             }
-            if (best == null || gain < MinQuickValue) return;
+            if (risky.Count == 0) return;
+            if (best == null)
+            {
+                skipped(tooFar > 0 ? $"the move would not fit at {Math.Min(1f, speed):P0} speed" : "nothing to gain");
+                return;
+            }
+            if (gain < MinQuickValue)
+            {
+                skipped($"it would save only {gain:F1} (the attacks rarely hit, or its check rarely beats their CMD)");
+                return;
+            }
             // Only worth it when the move it protects then is the best thing to do.
             float other = list.Where(c => c != best && takeable(c))
                               .Select(c => c.Value).DefaultIfEmpty(0f).Max();
-            if (best.Value + gain <= other) return;
+            if (best.Value + gain <= other)
+            {
+                skipped($"even with it, '{best.Label}' ({best.Value + gain:F1}) is not better than staying ({other:F1})");
+                return;
+            }
             list.Add(new Candidate
             {
                 Kind = CandidateKind.Toggle,

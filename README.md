@@ -141,6 +141,10 @@ toggles such as Shift Form; bonus stacking follows the game's own rule (and Tabl
   spell level first for damage/control spells; cantrips, buffs, heals and items unaffected). *Progressive: allow higher
   spell levels against bosses* (global, on by default) frees higher levels for spells that would hit an enemy the game
   marks as a boss.
+- *AI may start performances, rage and similar abilities* and *AI may switch combat modes (Power Attack, Fighting
+  Defensively, Mobility)* (both on): the AI switches these by itself during fights, also ones you set before the fight,
+  and puts them back as you left them when the fight ends. *Leave a toggle alone for the rest of the fight once you switch
+  it yourself* (on): a toggle you click during a fight stays as you set it until that fight ends.
 - *Consumables (quick-slot items)*: master switch plus potions / scrolls & wands / alchemical & thrown items, and the HP %
   below which a character drinks a healing potion. **Put the items you want companions to use into their quick slots**:
   the game only allows quick-slot items in combat, and never lets animal companions use items.
