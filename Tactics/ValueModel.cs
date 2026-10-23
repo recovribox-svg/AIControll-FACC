@@ -74,12 +74,16 @@ namespace CompanionAI_Pathfinder.Tactics
         #region Enemy damage (N5)
 
         /// <summary>Lowest and highest scale of the predicted enemy damage.</summary>
-        public const float MinDangerScale = 0.4f, MaxDangerScale = 2f;
+        /// <remarks>★ v0.3.20 (0.3.19 release logs): the floor was 0.4. All nine fights of the turn-based and real-time
+        /// logs ended at it: the enemies dealt 0-25 % of the prediction (3 of 226, 73 of 566, 96 of 389), the smoothed
+        /// share 0.2-0.3, so danger stayed 1.5-2x what was seen - Mage Armor on a paladin in melee "takes 11.6 a round"
+        /// in a fight where the whole party took 3.</remarks>
+        public const float MinDangerScale = 0.25f, MaxDangerScale = 2f;
 
         /// <summary>
         /// How much of the predicted damage the enemies really deal: the observed damage to the party over the damage the
         /// engine predicted for the same rounds (the sum of each ally's incoming damage at the start of each round), with
-        /// <see cref="PriorRounds"/> rounds of "as predicted" as the prior, 0.4..2. Below 1 the drop-chance model (heals,
+        /// <see cref="PriorRounds"/> rounds of "as predicted" as the prior, 0.25..2. Below 1 the drop-chance model (heals,
         /// withdraw, exposure) relaxes; above 1 (late-game enemies hit harder than CR suggests) it is more careful.
         /// <paramref name="roundsPredicted"/>: rounds that had a prediction above 0.
         /// </summary>

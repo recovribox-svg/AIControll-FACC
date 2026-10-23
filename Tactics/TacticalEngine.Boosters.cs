@@ -117,7 +117,8 @@ namespace CompanionAI_Pathfinder.Tactics
                 // for each of Orvath's reservoir abilities, nearly all "0.0 - no spell to boost next").
                 if (gain <= 0f)
                 {
-                    Main.Verbose($"[Tactics] {ctx.Unit.CharacterName}: {c.Ability.Name} = 0 ({note})");
+                    // ★ v0.3.20: "no spell to boost next" (372 verbose lines in one real-time log) says nothing.
+                    if (main != null) Main.Verbose($"[Tactics] {ctx.Unit.CharacterName}: {c.Ability.Name} = 0 ({note})");
                     continue;
                 }
                 ReportOnce($"boost|{ctx.Unit.UniqueId}|{CombatMemory.Round}|{c.Key}|{main?.Key}",

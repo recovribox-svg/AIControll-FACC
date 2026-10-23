@@ -329,13 +329,14 @@ namespace CompanionAI_Pathfinder.Analysis
                         if (s_Reported.Add($"trap|{trapId}"))
                             Main.Log($"[TrapAwareness] Detected trap: {trapId} at {trapView.transform.position}, {radiusInfo}");
                     }
-                    else
+                    else if (s_Reported.Add($"hidden|{trapId}"))
                     {
+                        // ★ v0.3.20: once per trap too (22 times each in one log).
                         Main.Verbose($"[TrapAwareness] Hidden trap: {trapId} at {trapView.transform.position}, {radiusInfo} (not perceived)");
                     }
                 }
 
-                Main.Verbose($"[TrapAwareness] Cache updated: {_trapCache.Count} active traps");
+
                 if (s_Reported.Count > 512) s_Reported.Clear();
             }
             catch (Exception ex)

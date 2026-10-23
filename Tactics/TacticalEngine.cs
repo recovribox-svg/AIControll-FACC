@@ -547,7 +547,12 @@ namespace CompanionAI_Pathfinder.Tactics
                 ? $" => {chosen.Label} ={chosen.Value:F1}{(rank > 5 ? $" (#{rank})" : "")}"
                 : realTime ? " => wait" : " => END TURN");
             // Real time decides again every half second while waiting for a cooldown: those waits only in verbose logs.
-            if (realTime && chosen == null) Main.Verbose(sb.ToString());
+            // ★ v0.3.20 (0.3.19 release logs): and not at all when nothing was even possible (no action left, nothing
+            // listed): 615 such lines in one real-time log said only "=> wait".
+            if (realTime && chosen == null)
+            {
+                if (usable.Count > 0) Main.Verbose(sb.ToString());
+            }
             else Main.Log(sb.ToString());
         }
 
@@ -1422,6 +1427,51 @@ namespace CompanionAI_Pathfinder.Tactics
         private static bool InRangeNow(UnitEntityData unit, Vector3 point, float radius, bool needLos)
         {
             return UnitCommand.IsUnitCloseEnough(point, unit.Position, unit.EyePosition, radius, needLos, 0f);
+        }
+
+        /// <summary>
+        /// ★ v0.3.20: the nearest spot within this move's reach from which <paramref name="enemy"/> is within
+        /// <paramref name="reach"/> and in sight (UnitCommand.IsUnitCloseEnough, the game's test), free, walkable and outside
+        /// harmful areas; null when there is none.
+        /// </summary>
+        private static Vector3? FindSightSpot(TacticalContext ctx, UnitEntityData enemy, float reach)
+        {
+            var unit = ctx.Unit;
+            try
+            {
+                Vector3 eye = unit.EyePosition - unit.Position;
+                float body = unit.Corpulence;
+                var others = ctx.Allies.Concat(ctx.Enemies).Where(u => u != unit).ToList();
+                float maxWalk = Math.Max(1.5f, ctx.MoveRange);
+                foreach (float ring in new[] { 1.5f, 3f, 4.5f, 6f, 9f })
+                {
+                    if (ring > maxWalk) break;
+                    Vector3? best = null;
+                    float bestDistance = float.MaxValue;
+                    for (int i = 0; i < 16; i++)
+                    {
+                        float angle = i * 22.5f * Mathf.Deg2Rad;
+                        var point = unit.Position + new Vector3(Mathf.Cos(angle), 0f, Mathf.Sin(angle)) * ring;
+                        if (!UnitCommand.IsUnitCloseEnough(enemy.Position, point, point + eye, reach, true, 0f)) continue;
+                        if (others.Any(u => Vector3.Distance(u.Position, point) < (u.Corpulence + body) * 0.9f)) continue;
+                        if (AoeDangerAnalyzer.EnteringDanger(unit, unit.Position, point, out _) > 0f) continue;
+                        if (!AoeDangerAnalyzer.IsPositionValid(unit.Position, point)) continue;
+                        // Of one ring, the spot nearest the enemy: the line of sight is likelier to hold as both move.
+                        float distance = Vector3.Distance(point, enemy.Position);
+                        if (distance < bestDistance)
+                        {
+                            bestDistance = distance;
+                            best = point;
+                        }
+                    }
+                    if (best.HasValue) return best;
+                }
+            }
+            catch (Exception ex)
+            {
+                Main.Verbose($"[Tactics] sight spot {unit.CharacterName}->{enemy.CharacterName}: {ex.Message}");
+            }
+            return null;
         }
 
         /// <summary>
@@ -2417,12 +2467,13 @@ namespace CompanionAI_Pathfinder.Tactics
                         float upChance = share >= 1f ? 1f : 0.6f * share;
                         reviveNote = $"revive {ally.CharacterName}: needs {needed:F0} HP, heals ~{heal:F0}";
                         // ★ v0.3.14 (test5): worth only as much as the chance it stays up (ReviveStaysUp).
-                        if (share >= 1f)
-                        {
-                            float staysUp = ReviveStaysUp(ctx, ally, Math.Max(1f, heal - needed + 1f));
-                            upChance *= staysUp;
-                            reviveNote += $", stays up ~{staysUp:P0}";
-                        }
+                        // ★ v0.3.20 (0.3.19 release logs): a heal that only takes the ally part of the way faces the same
+                        // danger once the next heal brings it up (assumed of this size). Without it, a part-way heal on
+                        // Camellia (15-17) beat bringing her up (1-3: dropped again at once) round after round, in a
+                        // fight where she went down again as soon as she stood.
+                        float staysUp = ReviveStaysUp(ctx, ally, Math.Max(1f, (share >= 1f ? heal : 2f * heal) - needed + 1f));
+                        upChance *= staysUp;
+                        reviveNote += $", stays up ~{staysUp:P0}";
                         // ★ v0.3.19 (test7): for the rest of the fight (ValueModel.ReviveWorth).
                         healValue += upChance * ValueModel.ReviveWorth(Level(ally), ctx.ExpectedRounds, IsSummon(ally));
                         continue;
@@ -3066,6 +3117,26 @@ namespace CompanionAI_Pathfinder.Tactics
 
                     float value = Math.Max(0.6f, DamageValue(single.Enemy, single.Est) * 0.35f);
                     string label = $"Advance->{single.Enemy.CharacterName}";
+                    // ★ v0.3.20 (0.3.19 real-time log): in range but out of sight. The walk towards the enemy with the
+                    // weapon's range as its radius had already arrived, so the game did not move the unit: Lann stood
+                    // 12.2 m from a Dretch (range 13.8 m) for 4 s, then walked 11 s at a Neophyte Fighter "-9.1 m to go".
+                    // Real time walks to a spot within this move it can see the enemy from (turn-based finds one with
+                    // its own path search, CommandDispatcher); with none, there is nothing to advance to.
+                    if (needLos && CombatMemory.IsRealTime && InRangeNow(unit, single.Enemy.Position, radius, false))
+                    {
+                        var sight = FindSightSpot(ctx, single.Enemy, radius);
+                        if (!sight.HasValue) continue;
+                        var sightRisk = MoveRisk(ctx, sight.Value);
+                        list.Add(new Candidate
+                        {
+                            Kind = CandidateKind.Move, Slot = ActionSlot.Move, Target = single.Enemy,
+                            Point = sight.Value, ApproachRadius = 0.3f,
+                            Value = value - (sightRisk?.Cost ?? 0f),
+                            Label = label + " (to see it)" + (sightRisk?.Tag ?? ""), Key = $"move:adv:{single.Enemy.UniqueId}",
+                            CheckPath = sightRisk?.Area == null
+                        });
+                        continue;
+                    }
                     // ★ v0.3.13: an advance that leaves an enemy's reach provokes (no attack follows, so only the cost).
                     // ★ v0.3.17: to a spot outside a harmful area the enemy stands in, when there is one within reach of it
                     // (PlanApproach): from there the unit attacks next, or catches the enemy as it comes out.

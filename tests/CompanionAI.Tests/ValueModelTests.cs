@@ -226,8 +226,10 @@ namespace CompanionAI.Tests
             Assert.Equal(0.625f, ValueModel.DangerScale(10f, 40f, 2), 3);
             // Enemies that hit far harder than predicted: more careful, at most twice.
             Assert.Equal(2f, ValueModel.DangerScale(400f, 40f, 2), 3);
-            // Nothing dealt for many rounds: never below 0.4 (a big hitter may still be on its way).
-            Assert.Equal(0.4f, ValueModel.DangerScale(0f, 200f, 10), 3);
+            // Nothing dealt for many rounds: never below 0.25 (a big hitter may still be on its way).
+            Assert.Equal(0.25f, ValueModel.DangerScale(0f, 200f, 10), 3);
+            // The 0.3.19 turn-based log's first fight: 3 dealt of 226 predicted over 7 rounds - the floor.
+            Assert.Equal(0.25f, ValueModel.DangerScale(3f, 226f, 7), 3);
         }
 
         // --- B5: kill chance ---

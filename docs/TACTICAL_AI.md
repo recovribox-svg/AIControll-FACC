@@ -1709,3 +1709,51 @@ damage. Swarms also take x1.5 from area damage (`SwarmAoeVulnerability`: a proje
 **Not settled from the snippet.** Lann had no blast among his five best options; the reason (burn, weapon, availability)
 is in the full log (`[Kinetic]`, `[Coverage]` lines). A physical archer blast shot through the bow against a swarm is
 halved by the game (the bow is the damage's weapon); the blast estimate does not apply that.
+
+## 47. v0.3.20 (test2): the 0.3.19 release logs (6 turn-based, 3 real-time fights), DarkCodex, archer blasts
+
+**Lost turns: a walk longer than one move action (turn-based).** Fight 3, rounds 4-5: Aeiluvetar's Move+Attack (path
+15.0 m), Lann's (16.3 m), Orvath's (15.7 m) and Camellia's Grease (13.0 m) were "force-finished before it started": the
+navmesh path to the target was far longer than the line the option was priced on, the dispatcher set the two-action
+movement limit, the walk used the standard action, and the game finished the attack unstarted - four turns gone. A
+command with a standard action after the walk now needs the path to fit one move action
+(`TurnController.GetRemainingMovementTime(total: false, singleActionMove: true)`); a 5-foot step, a full attack (checked
+already), full-round abilities and Charge are left as they were. Refused, the engine takes its next best option.
+"path ends out of reach (0.0m short)" now says "path ends without line of sight to the target".
+
+**Revives.** A heal too small to bring a downed ally up counted 0.6 x its share of the way, without the chance the ally
+stays up once up; a heal that brings it up counted that chance. Real-time fight 3: with the Cultist Champion next to
+Camellia, bringing her up was worth 1-3 ("stays up ~3 %") and a part-way heal 15-17, chosen round after round. The
+part-way heal now has the same factor, for the ally brought up by a next heal of the same size.
+
+**Danger calibration.** All nine fights ended at the danger scale's floor (x0.40): the enemies dealt 0-25 % of the
+prediction (3 of 226, 0 of 248, 73 of 566, 96 of 389), the smoothed share 0.2-0.3. The floor is 0.25
+(`ValueModel.MinDangerScale`, unit-tested). What the unit itself took in its worst recent round still sets its own
+danger (`FightStats.RecentWorstTaken`), so the one the enemies focus is not made careless by a quiet party.
+
+**Real time: in range, no line of sight.** An Advance with the weapon's range as its radius has already arrived when the
+unit is in range: the game did not move it (Lann, 12.2 m from a Dretch, range 13.8 m; then 11 s at "-9.1 m to go").
+Real time walks to the nearest free, walkable spot outside harmful areas within this move that sees the enemy
+(`FindSightSpot`, the game's `IsUnitCloseEnough` with line of sight), label "(to see it)"; with none there is no
+Advance on that enemy. Turn-based finds such a spot in its own path search and is unchanged.
+
+**DarkCodex Elemental Scion** (source 1.9.6, `KineticBlastDiceIncrease`): on `RuleDealDamage` of the caster's blasts the
+dice step up (d6 -> d8 -> d10 -> d12; once at level 1 for simple blasts, once more at 15 for all), inside the roll where
+no estimate can read it. Kinetic blasts now learn: each AI unit's blast, over the session, what its hits dealt against
+the estimate (critical hits and save halves left out, the rolls of one cast on one target within a second as one hit,
+compared after the hit's resistances are recorded), from three hits "as estimated", 0.67..1.6
+(`DamageObserver.BlastFactor`); every blast estimate is multiplied by it. Logged once when it first moves 10 %:
+`[DmgCheck] <unit>'s <blast> deals x1.24 of its estimate (5 hits so far): its estimates use this`. Kinetic blasts only:
+one cast, one target, one comparison. Other abilities keep the per-fight `[DmgCheck]` report only.
+
+**Kinetic archer, physical blasts against swarms.** The bow is the damage's weapon, so `SwarmDamageResistance` declines a
+physical archer blast (metal: half against a Tiny swarm; earth, bludgeoning: nothing). Read from the game's damage rule
+with the bow and the blast's damage type (`ArcherBlastDecline`, the decline only).
+
+**Log.** Removed from the verbose log: real-time "=> wait" lines with no option at all (615 in one log), zero next-spell
+boosts with no spell to boost, the trap patch's line for every player move, the trap cache line and its per-trap list on
+every refresh (now once per trap), the turn tick's "EndTurn - Nothing worth doing" (the decision line says it);
+"[HitChance] SR: X is IMMUNE to Y" once per pair.
+
+**Seen, not changed.** Most real-time "stuck" commands were the game's walk (a flying Quasit's position, doorways); they
+are cancelled after 6 s as designed. The Isekai "Rival" Cultist Champion fight (19 spans) is the enemy, not the AI.

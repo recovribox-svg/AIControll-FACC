@@ -454,6 +454,9 @@ namespace CompanionAI_Pathfinder.Analysis
         /// spell penetration comes from the game's components (GetSpellPenetrationBonus); a caster with
         /// UnitPartSpellResistanceCheckReplace uses its stat progression when that is higher; no natural 1 / 20 in this roll.
         /// </summary>
+        /// <summary>★ v0.3.20: target/ability pairs whose immunity was already logged.</summary>
+        private static readonly HashSet<string> ImmuneReported = new HashSet<string>();
+
         public static SpellResistanceResult CalculateSpellResistance(
             UnitEntityData caster,
             UnitEntityData target,
@@ -490,7 +493,10 @@ namespace CompanionAI_Pathfinder.Analysis
                 {
                     result.IsImmune = true;
                     result.PenetrationChance = 0f;
-                    if (Main.VerboseOn) Main.Verbose($"[HitChance] SR: {target.CharacterName} is IMMUNE to {ability.Name}");
+                    // ★ v0.3.20: once per target and ability (asked on every decision: the same line hundreds of times).
+                    if (Main.VerboseOn && ImmuneReported.Add($"{target.UniqueId}|{ability.Blueprint.AssetGuid}"))
+                        Main.Verbose($"[HitChance] SR: {target.CharacterName} is IMMUNE to {ability.Name}");
+                    if (ImmuneReported.Count > 512) ImmuneReported.Clear();
                     return result;
                 }
 

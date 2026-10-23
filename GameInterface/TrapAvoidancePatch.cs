@@ -93,7 +93,6 @@ namespace CompanionAI_Pathfinder.GameInterface
                     if (destination == Vector3.zero)
                         return true;
 
-                    Main.Verbose($"[TrapPatch] {unitName}: Move command to {destination}");
 
                     // 안전 체크
                     if (!TrapAwarenessController.CheckMovementSafety(unit, destination, out Vector3 safeDestination))

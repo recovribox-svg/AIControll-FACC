@@ -102,13 +102,37 @@ namespace CompanionAI_Pathfinder.GameInterface
                         return false;
                     }
 
+                    // ★ v0.3.20 (0.3.19 release logs): a standard action after the walk - the walk must fit one move action
+                    // (TurnController.GetRemainingMovementTime with singleActionMove, the game's own split). A longer
+                    // path is walked with the standard action too, and the attack or spell is then force-finished
+                    // unstarted: Aeiluvetar (15.0 m), Lann (16.3 m), Orvath (15.7 m) and Camellia's Grease (13.0 m) lost
+                    // their turns in one round of the turn-based log, the navmesh path being far longer than the line
+                    // the option was priced on. Refused here, the engine takes its next best option.
+                    if (turn != null && turn.Rider == unit && command.Type == UnitCommand.CommandType.Standard &&
+                        !(command is UnitAttack fullAttack && fullAttack.ForceFullAttack) &&
+                        !(command is UnitUseAbility walkThenCast && (walkThenCast.Ability.RequireFullRoundAction ||
+                                                                      Analysis.AbilityClassifier.IsChargeAbility(walkThenCast.Ability))) &&
+                        !(turn.HasFiveFootStep(unit) && pathLength <= turn.GetRemainingFiveFootStepRange(unit) + 0.05f))
+                    {
+                        float oneMove = turn.GetRemainingMovementTime(unit, false, true) * unit.CurrentSpeedMps;
+                        if (pathLength > oneMove + 0.3f)
+                        {
+                            command.ForcedPath = null;
+                            failure = $"the path ({pathLength:F1}m) is longer than one move action ({oneMove:F1}m)";
+                            CommandTrace.LogRejected(unit, command, label, failure);
+                            return false;
+                        }
+                    }
+
                     // ★ v0.3.10: the path must end within reach, as native AI checks (AiAction.ScorePath:
                     // UnitCommand.IsUnitCloseEnough on the last waypoint). A path trimmed short by an ally standing at its
                     // end left Seelah, Albedo and Camellia next to their target with the attack force-finished unstarted.
                     if (!(command is UnitMoveTo) && !PathEndsInReach(unit, command, out float shortBy))
                     {
                         command.ForcedPath = null;
-                        failure = $"path ends out of reach ({shortBy:F1}m short)";
+                        // ★ v0.3.20: within range at the end but no line of sight read "0.0m short".
+                        failure = shortBy < 0.05f && command.NeedLoS ? "path ends without line of sight to the target"
+                                                                     : $"path ends out of reach ({shortBy:F1}m short)";
                         CommandTrace.LogRejected(unit, command, label, failure);
                         return false;
                     }

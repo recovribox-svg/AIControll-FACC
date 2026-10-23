@@ -39,11 +39,49 @@ namespace CompanionAI_Pathfinder.Tactics
             public string Who, What;
             public int Hits;
             public float Dealt, Estimated;
-            public int LastFrame = -1;
-            public string LastTarget;
         }
 
+        /// <summary>★ v0.3.20: when each unit's ability last hit each target (its rolls within <see cref="OneHit"/> are one hit).</summary>
+        private static readonly Dictionary<string, TimeSpan> LastHit = new Dictionary<string, TimeSpan>();
+
         private static readonly Dictionary<string, Check> Checks = new Dictionary<string, Check>();
+
+        /// <summary>
+        /// ★ v0.3.20 (0.3.19 feedback): per AI unit and kinetic blast, its hits over the whole session (not cleared with a
+        /// fight: what the blast does is the caster's, not the enemy's) - see <see cref="BlastFactor"/>.
+        /// </summary>
+        private static readonly Dictionary<string, Check> Blasts = new Dictionary<string, Check>();
+
+        /// <summary>The rolls of one cast on one target arrive within this (game) time: one hit.</summary>
+        private static readonly TimeSpan OneHit = TimeSpan.FromSeconds(1.0);
+
+        /// <summary>Pseudo-hits at "as estimated" a blast's learned share starts from.</summary>
+        private const float BlastPriorHits = 3f;
+
+        /// <summary>
+        /// ★ v0.3.20 (0.3.19 feedback): what <paramref name="caster"/>'s kinetic blast really deals against the estimate, from
+        /// its hits so far (critical hits and save halves left out), starting from three hits "as estimated", 0.67..1.6; 1
+        /// with fewer than two hits and for everything that is not a kinetic blast. Some effects act inside the damage
+        /// roll, out of the estimate's reach: DarkCodex's Elemental Scion raises a blast's dice a step (d6 to d8,
+        /// KineticBlastDiceIncrease on RuleDealDamage), so Ember's "very strong single blast" lost to her bow. Kinetic
+        /// blasts only: they hit one target once a cast, so a hit compares cleanly with its estimate.
+        /// </summary>
+        public static float BlastFactor(UnitEntityData caster, Kingmaker.UnitLogic.Abilities.Blueprints.BlueprintAbility blast)
+        {
+            if (Blasts.Count == 0 || caster == null || blast == null) return 1f;
+            return Blasts.TryGetValue(caster.UniqueId + "|" + blast.AssetGuid, out var seen) ? ShareOf(seen) : 1f;
+        }
+
+        private static float ShareOf(Check seen)
+        {
+            if (seen.Hits < 2 || seen.Estimated <= 0f) return 1f;
+            float perHit = seen.Estimated / seen.Hits;
+            float share = (seen.Dealt + BlastPriorHits * perHit) / (seen.Estimated + BlastPriorHits * perHit);
+            return Math.Max(0.67f, Math.Min(1.6f, share));
+        }
+
+        private static bool IsKineticBlast(Kingmaker.UnitLogic.Abilities.Blueprints.BlueprintAbility blueprint) =>
+            Kingmaker.Blueprints.BlueprintExtenstions.GetComponent<Kingmaker.UnitLogic.Class.Kineticist.AbilityKineticist>(blueprint) != null;
 
         public static void Subscribe()
         {
@@ -69,6 +107,7 @@ namespace CompanionAI_Pathfinder.Tactics
             ByKind.Clear();
             Reported.Clear();
             Checks.Clear();
+            LastHit.Clear();
         }
 
         /// <summary>
@@ -86,7 +125,18 @@ namespace CompanionAI_Pathfinder.Tactics
                 if (Math.Abs(dealt - estimated) <= 0.25f * estimated) continue;
                 Main.Log($"[DmgCheck] {check.Who}'s {check.What}: {check.Hits} hits dealt {dealt:0.#} a hit, estimated {estimated:0.#}");
             }
+            // ★ v0.3.20: a blast whose learned share has become worth knowing, once each (when it first moves 10 %).
+            foreach (var blast in Blasts)
+            {
+                float factor = ShareOf(blast.Value);
+                if (Math.Abs(factor - 1f) < 0.1f || !ReportedBlasts.Add(blast.Key)) continue;
+                Main.Log($"[DmgCheck] {blast.Value.Who}'s {blast.Value.What} deals x{factor:0.00} of its estimate ({blast.Value.Hits} hits so far): " +
+                         "its estimates use this");
+            }
+            if (Blasts.Count > 128) { Blasts.Clear(); ReportedBlasts.Clear(); }
         }
+
+        private static readonly HashSet<string> ReportedBlasts = new HashSet<string>();
 
         /// <summary>★ v0.3.20: one damage roll of an AI unit's ability (the rolls of one cast on one target are one hit).</summary>
         private static void NoteEstimate(RuleDealDamage evt, UnitEntityData attacker, UnitEntityData target)
@@ -98,15 +148,22 @@ namespace CompanionAI_Pathfinder.Tactics
                 Kingmaker.Blueprints.BlueprintExtenstions.GetComponent<Kingmaker.UnitLogic.Class.Kineticist.WeaponKineticBlade>(evt.DamageBundle.Weapon.Blueprint) != null) return;
             if (!GameInterface.CustomBrainPatch.ShouldControlUnit(attacker)) return;
             string key = attacker.UniqueId + "|" + ability.Blueprint.AssetGuid;
-            int frame = UnityEngine.Time.frameCount;
-            if (Checks.TryGetValue(key, out var check) && check.LastFrame == frame && check.LastTarget == target.UniqueId)
+            // ★ v0.3.20: the rolls of one cast (a composite blast's two damage actions, a spell's missiles) arrive over a
+            // moment, not in one frame.
+            var now = Kingmaker.Game.Instance.TimeController.GameTime;
+            bool blast = IsKineticBlast(ability.Blueprint);
+            Blasts.TryGetValue(key, out var session);
+            string hitKey = key + "|" + target.UniqueId;
+            if (Checks.TryGetValue(key, out var check) && LastHit.TryGetValue(hitKey, out var last) && now - last <= OneHit)
             {
                 check.Dealt += evt.Result;
+                if (blast && session != null) session.Dealt += evt.Result;
                 return;
             }
             var profile = AbilityProfile.Get(ability);
             if (profile == null || profile.Damage.Count == 0) return;
-            float estimate = CombatMath.EstimateAbilityDamage(ability, profile, target);
+            // The estimate before any learned share (it is what is being checked).
+            float estimate = CombatMath.EstimateAbilityDamageRaw(ability, profile, target, null);
             if (estimate <= 0f) return;
             if (check == null)
             {
@@ -116,8 +173,15 @@ namespace CompanionAI_Pathfinder.Tactics
             check.Hits++;
             check.Dealt += evt.Result;
             check.Estimated += estimate;
-            check.LastFrame = frame;
-            check.LastTarget = target.UniqueId;
+            if (LastHit.Count > 512) LastHit.Clear();
+            LastHit[hitKey] = now;
+            if (blast)
+            {
+                if (session == null) Blasts[key] = session = new Check { Who = attacker.CharacterName, What = ability.Name };
+                session.Hits++;
+                session.Dealt += evt.Result;
+                session.Estimated += estimate;
+            }
         }
 
         /// <summary>Key of a damage type as an ability describes it (ContextActionDealDamage.DamageType).</summary>
@@ -159,7 +223,6 @@ namespace CompanionAI_Pathfinder.Tactics
                 var attacker = evt.Initiator;
                 var target = evt.Target;
                 if (attacker == null || target == null || !attacker.IsPlayerFaction || !attacker.IsEnemy(target)) return;
-                NoteEstimate(evt, attacker, target);
                 float swarmArea = CombatMath.SwarmAreaFactor(evt.Reason.Ability, target,
                     evt.Reason.Context?.AssociatedBlueprint is Kingmaker.Blueprints.Area.BlueprintArea);
                 foreach (var result in evt.ResultList)
@@ -185,6 +248,9 @@ namespace CompanionAI_Pathfinder.Tactics
                                  (seen.Immune ? "not at all (immune)" : $"x{seen.Factor:0.##} - {seen.Flat}") +
                                  $" (seen on {seen.Source}); spell estimates use this");
                 }
+                // ★ v0.3.20: after the observation above, so the estimate it is compared with already knows this hit's
+                // resistance (a first fire blast on a fire-resistant enemy is not a weak blast).
+                NoteEstimate(evt, attacker, target);
             }
             catch (Exception ex)
             {

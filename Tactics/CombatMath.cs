@@ -554,6 +554,14 @@ namespace CompanionAI_Pathfinder.Tactics
         /// blade's: the blast's weapon damage modifiers are the blade's).</param>
         public static float EstimateAbilityDamage(AbilityData ability, AbilityProfile profile, UnitEntityData target, ItemEntityWeapon bladeWeapon)
         {
+            float raw = EstimateAbilityDamageRaw(ability, profile, target, bladeWeapon);
+            // ★ v0.3.20 (0.3.19 feedback): a kinetic blast's estimate times what its hits really dealt so far.
+            return raw > 0f ? raw * DamageObserver.BlastFactor(ability?.Caster?.Unit, ability?.Blueprint) : raw;
+        }
+
+        /// <summary>★ v0.3.20: the estimate before the learned share of a blast (DamageObserver checks against it).</summary>
+        internal static float EstimateAbilityDamageRaw(AbilityData ability, AbilityProfile profile, UnitEntityData target, ItemEntityWeapon bladeWeapon)
+        {
             if (profile.Damage.Count == 0) return 0f;
             if (target != null && profile.Damage.All(d => profile.AppliesTo(d, ability, target) == EffectApplies.No)) return 0f;
             var ctx = CreateContext(ability, target != null ? new TargetWrapper(target) : null);
@@ -580,6 +588,7 @@ namespace CompanionAI_Pathfinder.Tactics
                         else avg = EvaluateDice(dmg.Value, ctx, Math.Min(cl, 10), maximize, empower);
                         avg += KineticDamageBonus(ability, dmg, profile.NeedsAttackRoll || bladeWeapon != null, bladeWeapon);
                         if (dmg.Half) avg *= 0.5f;
+                        avg *= ArcherBlastDecline(ability, dmg, target);
                         parts.Add(new KeyValuePair<GameAction, float>(dmg, AfterTargetReduction(target, dmg, avg) * swarmArea));
                         break;
                     // A kill is valued apart (KillApplies): it lands on a failed save, not half on a passed one.
@@ -649,6 +658,43 @@ namespace CompanionAI_Pathfinder.Tactics
                 Main.Verbose($"[Math] kinetic damage bonus of {ability.Name}: {ex.Message}");
             }
             return bonus;
+        }
+
+        /// <summary>
+        /// ★ v0.3.20 (playtest 1): what <paramref name="target"/> keeps of a kinetic archer's physical blast. The blast is shot
+        /// through the bow, which is the damage's weapon, so a swarm declines it as weapon damage (SwarmDamageResistance
+        /// exempts only kinetic-blast weapons: an earth blast keeps all of it, being bludgeoning; a metal blast against a
+        /// Tiny swarm half). Read from the game's damage rule with the bow and the blast's damage type, as the weapon
+        /// estimate reads a hit (ReadHitOnTarget); only the decline, the rest is the blast estimate's. 1 otherwise.
+        /// </summary>
+        private static float ArcherBlastDecline(AbilityData ability, ContextActionDealDamage dmg, UnitEntityData target)
+        {
+            if (target == null || dmg?.DamageType == null || dmg.DamageType.Type != Kingmaker.RuleSystem.Rules.Damage.DamageType.Physical) return 1f;
+            var caster = ability?.Caster?.Unit;
+            try
+            {
+                if (caster == null || !Kingmaker.UnitLogic.Class.Kineticist.AbilityKineticist.IsArcherBlast(ability)) return 1f;
+                var bow = caster.Body?.PrimaryHand?.MaybeWeapon;
+                if (bow == null) return 1f;
+                var form = dmg.DamageType.Physical?.Form;
+                return FrameCached($"archer|{caster.UniqueId}|{target.UniqueId}|{bow.UniqueId}|{form}", () =>
+                {
+                    var damage = dmg.DamageType.CreateDamage(new DiceFormula(1, DiceType.D6), 0);
+                    var deal = new Kingmaker.RuleSystem.Rules.Damage.RuleDealDamage(caster, target,
+                        new Kingmaker.RuleSystem.Rules.Damage.DamageBundle(bow, damage)) { IsFake = true, DisableBattleLogSelf = true };
+                    Kingmaker.RuleSystem.Rules.Damage.RuleCalculateDamage rule;
+                    using (ContextData<Kingmaker.UI.Models.Log.GameLogDisabled>.Request())
+                        rule = Rulebook.Trigger(new Kingmaker.RuleSystem.Rules.Damage.RuleCalculateDamage(deal));
+                    var source = rule.CalculatedDamage.Count > 0 ? rule.CalculatedDamage[0].Source : null;
+                    float factor = source == null ? 1f : source.Immune ? 0f : DeclineFactor(source.Decline.Value);
+                    return (int)Math.Round(factor * 1000f);
+                }) / 1000f;
+            }
+            catch (Exception ex)
+            {
+                Main.Verbose($"[Math] archer blast decline of {ability?.Name}: {ex.Message}");
+                return 1f;
+            }
         }
 
         private static readonly Dictionary<string, KeyValuePair<int, int>> FrameValues = new Dictionary<string, KeyValuePair<int, int>>();

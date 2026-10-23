@@ -332,8 +332,8 @@ namespace CompanionAI_Pathfinder.GameInterface
                     if (__instance.CanEndTurnAndNoActing())
                     {
                         // ★ v0.3.19 (release): the decision line already says "=> END TURN" when nothing is left to do.
-                        if (result.Reason == "Nothing worth doing") Main.Verbose($"[TurnTick] {unitName}: EndTurn - {result.Reason}");
-                        else Main.Log($"[TurnTick] {unitName}: EndTurn - {result.Reason}");
+                        // ★ v0.3.20: "Nothing worth doing" repeats the decision line's "=> END TURN".
+                        if (result.Reason != "Nothing worth doing") Main.Log($"[TurnTick] {unitName}: EndTurn - {result.Reason}");
                         __instance.ForceToEnd(true);
                     }
                     else if (__instance.CanEndTurn() && !rider.Commands.Empty && !rider.Commands.IsRunning())
