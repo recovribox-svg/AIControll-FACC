@@ -110,6 +110,16 @@ namespace CompanionAI.Tests
         }
 
         [Fact]
+        public void UsefulRounds_ToggleResource()
+        {
+            // A performance with 2 rounds of its resource left in a 5-round fight helps for 2 rounds; with 10 left, for
+            // the fight; a toggle with no resource (-1) for the fight (the unknown duration passed is the fight).
+            Assert.Equal(2f, ValueModel.UsefulRounds(2f, 5f, 5f), 3);
+            Assert.Equal(5f, ValueModel.UsefulRounds(10f, 5f, 5f), 3);
+            Assert.Equal(5f, ValueModel.UsefulRounds(-1f, 5f, 5f), 3);
+        }
+
+        [Fact]
         public void Restraint_BuffMustClearlyBeatTheImmediateAction()
         {
             Assert.False(ValueModel.BuffBeatsImmediate(10f, 9.5f));   // near tie: attack

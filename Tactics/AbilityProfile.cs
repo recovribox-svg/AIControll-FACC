@@ -1285,6 +1285,29 @@ namespace CompanionAI_Pathfinder.Tactics
             return unknown ? EffectApplies.Unknown : EffectApplies.Yes;
         }
 
+        /// <summary>
+        /// ★ v0.3.19 (class audit B1): <paramref name="checker"/> for <paramref name="target"/> under a context that is not an
+        /// ability's (a toggle's area): the game's own check, only when every condition is one of the safe ones; null when
+        /// it cannot be evaluated here.
+        /// </summary>
+        internal static bool? CheckSafe(ConditionsChecker checker, MechanicsContext context, UnitEntityData target)
+        {
+            if (checker?.Conditions == null || checker.Conditions.Length == 0) return true;
+            if (context == null || target == null || !checker.Conditions.All(IsSafe)) return null;
+            // Hit Dice limits with shared values need the ability's own value: not here.
+            if (checker.Conditions.Any(c => c is ContextConditionHitDice)) return null;
+            try
+            {
+                using (context.GetDataScope(new TargetWrapper(target)))
+                    return checker.Check();
+            }
+            catch (Exception ex)
+            {
+                Main.Verbose($"[Profile] condition check on {target.CharacterName}: {ex.Message}");
+                return null;
+            }
+        }
+
         private static bool? CheckFor(ConditionsChecker checker, AbilityData ability, UnitEntityData target, UnitEntityData caster)
         {
             int frame = Time.frameCount;

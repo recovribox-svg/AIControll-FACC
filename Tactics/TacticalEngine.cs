@@ -305,8 +305,9 @@ namespace CompanionAI_Pathfinder.Tactics
                 }
             }
             // ★ v0.3.19 (test11): why a buff was chosen, once a round per cast and recipient.
-            if (!preview && chosen != null && chosen.Kind == CandidateKind.Ability &&
-                (chosen.PureBuff || chosen.Label.Contains("(buff") || chosen.Label.Contains("+buff")))
+            if (!preview && chosen != null &&
+                (chosen.Kind == CandidateKind.Ability && (chosen.PureBuff || chosen.Label.Contains("(buff") || chosen.Label.Contains("+buff")) ||
+                 chosen.Kind == CandidateKind.Toggle && chosen.PureBuff))
             {
                 var other = usable.FirstOrDefault(c => c != chosen && !c.PureBuff && (c.Slot == ActionSlot.Free || c.Slot == ActionSlot.Swift) ==
                                                                      (chosen.Slot == ActionSlot.Free || chosen.Slot == ActionSlot.Swift));
@@ -347,6 +348,7 @@ namespace CompanionAI_Pathfinder.Tactics
 
         /// <summary>★ v0.3.19 (test11): the appraisal behind a buff candidate, for the log.</summary>
         private static string BuffNote(UnitEntityData unit, Candidate c) =>
+            c.Kind == CandidateKind.Toggle ? LastToggleAppraisal(unit, c.Key) ?? "no appraisal" :
             c.Ability == null ? "" : LastAppraisal(unit, c.Ability, c.Target ?? unit) ?? "no appraisal";
 
         /// <summary>

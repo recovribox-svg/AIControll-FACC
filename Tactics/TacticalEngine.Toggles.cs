@@ -20,6 +20,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using Kingmaker.Blueprints;
+using Kingmaker.ElementsSystem;
 using Kingmaker.EntitySystem.Entities;
 using Kingmaker.UnitLogic;
 using Kingmaker.UnitLogic.Abilities.Blueprints;
@@ -42,10 +43,19 @@ namespace CompanionAI_Pathfinder.Tactics
             public BlueprintAbilityAreaEffect Area;
             public float Radius;
             public readonly List<BlueprintBuff> AreaBuffs = new List<BlueprintBuff>();
+            /// <summary>★ v0.3.19 (class audit B1): each buff the area gives, with the conditions it is given under.</summary>
+            public readonly List<AreaGrant> Grants = new List<AreaGrant>();
             public bool AreaAllies, AreaEnemies;
             public bool ForbidsSpells, ForbidsItems;
             public BlueprintUnitFactRefs ForbidIgnore;
             public string Excluded;
+        }
+
+        /// <summary>A buff an area gives and the conditions (checker, required result) on the way to it.</summary>
+        private sealed class AreaGrant
+        {
+            public BlueprintBuff Buff;
+            public (ConditionsChecker Checker, bool Branch)[] Guards;
         }
 
         private sealed class BlueprintUnitFactRefs
@@ -97,7 +107,24 @@ namespace CompanionAI_Pathfinder.Tactics
                         p.AreaAllies = area.CanTargetAllies;
                         p.AreaEnemies = area.CanTargetEnemies;
                         foreach (var areaBuff in area.GetComponents<Kingmaker.UnitLogic.Abilities.Components.AreaEffects.AbilityAreaEffectBuff>())
-                            if (areaBuff.Buff != null) p.AreaBuffs.Add(areaBuff.Buff);
+                            if (areaBuff.Buff != null)
+                                p.Grants.Add(new AreaGrant
+                                {
+                                    Buff = areaBuff.Buff,
+                                    Guards = areaBuff.Condition?.Conditions?.Length > 0
+                                        ? new[] { (areaBuff.Condition, true) } : new (ConditionsChecker, bool)[0]
+                                });
+                        // ★ v0.3.19 (class audit B1, F1): an area may give its buff by actions - on entering and every
+                        // round, behind Conditionals (Inspired Rage: only to allies who accept it; Battle Spirit; the
+                        // Aeon gazes). Before, those areas were "applies nothing the AI can read" and never offered.
+                        // UnitExit is not read: it undoes the enter actions.
+                        foreach (var run in area.GetComponents<Kingmaker.UnitLogic.Abilities.Components.AreaEffects.AbilityAreaEffectRunAction>())
+                        {
+                            CollectGrants(run.UnitEnter?.Actions, new List<(ConditionsChecker, bool)>(), p, 0);
+                            CollectGrants(run.Round?.Actions, new List<(ConditionsChecker, bool)>(), p, 0);
+                        }
+                        foreach (var g in p.Grants)
+                            if (!p.AreaBuffs.Contains(g.Buff)) p.AreaBuffs.Add(g.Buff);
                         if (p.AreaBuffs.Count == 0 && p.Excluded == null) p.Excluded = "its area applies nothing the AI can read";
                     }
                     else p.SelfBuff = buff;
@@ -109,6 +136,57 @@ namespace CompanionAI_Pathfinder.Tactics
             }
             ToggleProfiles[bp] = p;
             return p;
+        }
+
+        /// <summary>Buffs applied by an area's actions, through Conditionals; the same buff once per branch path.</summary>
+        private static void CollectGrants(Kingmaker.ElementsSystem.GameAction[] actions, List<(ConditionsChecker, bool)> guards,
+                                          ToggleProfile p, int depth)
+        {
+            if (actions == null || depth > 4) return;
+            foreach (var action in actions)
+            {
+                switch (action)
+                {
+                    case Kingmaker.UnitLogic.Mechanics.Actions.ContextActionApplyBuff apply when apply.Buff != null && !apply.ToCaster:
+                        if (!p.Grants.Any(g => g.Buff == apply.Buff && g.Guards.Length == guards.Count))
+                            p.Grants.Add(new AreaGrant { Buff = apply.Buff, Guards = guards.ToArray() });
+                        break;
+                    case Kingmaker.Designers.EventConditionActionSystem.Actions.Conditional conditional:
+                        CollectGrants(conditional.IfTrue?.Actions, new List<(ConditionsChecker, bool)>(guards) { (conditional.ConditionsChecker, true) }, p, depth + 1);
+                        CollectGrants(conditional.IfFalse?.Actions, new List<(ConditionsChecker, bool)>(guards) { (conditional.ConditionsChecker, false) }, p, depth + 1);
+                        break;
+                }
+            }
+        }
+
+        /// <summary>
+        /// ★ v0.3.19 (class audit B1, F3): does <paramref name="grant"/> reach <paramref name="unit"/>? 1 yes, 0 no, 0.5 when a
+        /// condition cannot be evaluated here. The game's own condition check under the performer's context: an ally who
+        /// declined Inspired Rage (its acceptance toggle off) does not count - the AI reasons from that choice, never
+        /// switches it.
+        /// </summary>
+        private static float GrantReaches(AreaGrant grant, Kingmaker.UnitLogic.Mechanics.MechanicsContext context, UnitEntityData unit)
+        {
+            bool unknown = false;
+            foreach (var (checker, branch) in grant.Guards)
+            {
+                bool? result = AbilityProfile.CheckSafe(checker, context, unit);
+                if (!result.HasValue) { unknown = true; continue; }
+                if (result.Value != branch) return 0f;
+            }
+            return unknown ? 0.5f : 1f;
+        }
+
+        /// <summary>What a toggle's area gives, for the coverage report ("" when it is not an area).</summary>
+        internal static string ToggleReading(ActivatableAbility toggle)
+        {
+            if (toggle?.Blueprint == null) return "";
+            var p = ProfileOf(toggle.Blueprint);
+            if (p.Area == null || p.Grants.Count == 0) return "";
+            return $" (area {p.Radius:0.#} m gives " +
+                   string.Join(", ", p.Grants.Select(g => g.Buff.name + (g.Guards.Length > 0
+                       ? " if " + string.Join("+", g.Guards.SelectMany(x => (x.Checker?.Conditions ?? new Condition[0]).Select(c => (x.Branch ? "" : "not ") + c.GetType().Name.Replace("ContextCondition", ""))))
+                       : ""))) + ")";
         }
 
         /// <summary>
@@ -145,52 +223,100 @@ namespace CompanionAI_Pathfinder.Tactics
         /// <summary>
         /// The toggle's worth if switched on now (damage-equivalent points), and a short note for the label. 0 when it
         /// gives nothing (every recipient already has its buff, nobody in range, or what it forbids is worth more).
+        /// ★ v0.3.19 (class audit B1, F2): each recipient's share is the test11 appraisal (AppraiseToggleBuffs: its own
+        /// attacks, what comes at it, the stacking increment, ranks with the performer's numbers) over the rounds the
+        /// resource and the fight last - the same scale as a spell buff. Effects with no readable part keep the old
+        /// formula, at 60 % when the toggle takes a main action (as unread spell buffs). <paramref name="helpfulOnly"/>:
+        /// it only helps allies (a buff for the restraint rule).
         /// </summary>
         private static float ToggleValue(TacticalContext ctx, ActivatableAbility toggle, ToggleProfile p, List<Candidate> others,
-                                         out string note)
+                                         out string note, out bool helpfulOnly)
         {
             note = "";
+            helpfulOnly = false;
             var unit = ctx.Unit;
             int level = Math.Max(1, unit.Descriptor?.Progression?.CharacterLevel ?? 1);
-            // A toggle has no spell level: worth per round like a spell of half the character's level.
+            // A toggle has no spell level: worth per round like a spell of half the character's level (unread effects).
             float perRound = ValueModel.BuffPerRound(Math.Max(1, level / 2));
             int? resource = null;
             try { resource = toggle.ResourceCount; } catch { }
             float rounds = ValueModel.Horizon(resource.HasValue ? Math.Min(ctx.ExpectedRounds, resource.Value) : ctx.ExpectedRounds, 3f);
+            // The appraisal's window: the rounds the resource lasts, at most the rest of the fight (ValueModel.UsefulRounds).
+            float usefulRounds = ValueModel.UsefulRounds(resource.HasValue ? resource.Value : -1f, ctx.ExpectedRounds, ctx.ExpectedRounds);
+            bool mainSlot = ToggleSlot(toggle) != ActionSlot.Free && ToggleSlot(toggle) != ActionSlot.Swift;
+            string key = $"tgl:{toggle.Blueprint.AssetGuid}";
 
-            float value = 0f;
+            Kingmaker.UnitLogic.Mechanics.MechanicsContext toggleCtx = null;
+            try
+            {
+                toggleCtx = new Kingmaker.UnitLogic.Mechanics.MechanicsContext(unit, unit.Descriptor, (BlueprintScriptableObject)p.SelfBuff ?? toggle.Blueprint.Buff);
+                toggleCtx.RecalculateRanks();
+            }
+            catch { }
+
+            float modelled = 0f, legacy = 0f;
             int helped = 0;
-            var buffs = p.Area == null ? new List<BlueprintBuff> { p.SelfBuff } : p.AreaBuffs;
+            var details = new List<string>();
             foreach (var ally in ToggleRecipients(ctx, p, enemies: false))
             {
-                float best = 0f;
-                foreach (var buff in buffs)
+                // What reaches this ally: a self buff, or the area's grants whose conditions hold for it.
+                var reaching = new List<(BlueprintBuff Buff, float Weight)>();
+                if (p.Area == null) reaching.Add((p.SelfBuff, 1f));
+                else
+                    foreach (var grant in p.Grants)
+                    {
+                        float w = GrantReaches(grant, toggleCtx, ally);
+                        if (w > 0f) reaching.Add((grant.Buff, w));
+                    }
+                var useful = reaching.Where(r => r.Buff != null && !r.Buff.Harmful && !ally.Buffs.HasFact(r.Buff) &&
+                                                 BuffStackingAnalyzer.Analyze(r.Buff, ally).IsEffective).ToList();
+                if (useful.Count == 0) continue;
+                float weight = useful.Max(r => r.Weight);
+                var appraisal = toggleCtx != null
+                    ? AppraiseToggleBuffs(ctx, toggleCtx, key, useful.Select(r => r.Buff).Distinct().ToList(), ally, usefulRounds)
+                    : new BuffAppraisal();
+                if (appraisal.Modelled)
                 {
-                    if (buff == null || buff.Harmful || ally.Buffs.HasFact(buff)) continue;
-                    if (!BuffStackingAnalyzer.Analyze(buff, ally).IsEffective) continue;
-                    var analysis = BuffEffectAnalyzer.Analyze(buff);
+                    modelled += appraisal.Value * weight;
+                    if (appraisal.Value > 0f) helped++;
+                    if (details.Count < 3) details.Add($"{ally.CharacterName} {appraisal.Value * weight:0.#} ({appraisal.Detail})");
+                    continue;
+                }
+                float best = 0f;
+                foreach (var r in useful)
+                {
+                    var analysis = BuffEffectAnalyzer.Analyze(r.Buff);
                     float q = analysis.Recognized ? analysis.CombatValue : analysis.OnlyUnrecognized ? 0.3f : 0f;
-                    best = Math.Max(best, q);
+                    best = Math.Max(best, q * r.Weight);
                 }
                 if (best <= 0f) continue;
                 bool fighting = (ally.CombatState?.IsEngaged ?? false) || ally == unit;
-                value += perRound * rounds * best * (fighting ? 1f : 0.6f) * (IsSummon(ally) ? ValueModel.SummonFactor : 1f);
+                legacy += perRound * rounds * best * (fighting ? 1f : 0.6f) * (IsSummon(ally) ? ValueModel.SummonFactor : 1f);
                 helped++;
+                if (details.Count < 3) details.Add($"{ally.CharacterName}: effect not read (quality {best:0.##})");
             }
+            // The appraisal already carries the role weight (AppraiseParts); the old formula gets it here.
+            legacy *= RoleWeight(ctx, "buff") * (mainSlot ? 0.6f : 1f);
+            float value = modelled + legacy;
             // A harmful area on enemies (a dirge): like a debuff, a quarter of each enemy's worth per round.
             int hindered = 0;
             foreach (var enemy in ToggleRecipients(ctx, p, enemies: true))
             {
-                if (!buffs.Any(b => b != null && b.Harmful && !enemy.Buffs.HasFact(b) && !CombatMath.BuffImmune(enemy, b, null))) continue;
-                value += 0.25f * CombatMath.Threat(enemy) * rounds;
+                bool reaches = p.Area == null
+                    ? p.SelfBuff != null && p.SelfBuff.Harmful
+                    : p.Grants.Any(g => g.Buff.Harmful && !enemy.Buffs.HasFact(g.Buff) && !CombatMath.BuffImmune(enemy, g.Buff, null) &&
+                                        GrantReaches(g, toggleCtx, enemy) > 0f);
+                if (!reaches) continue;
+                value += 0.25f * CombatMath.Threat(enemy) * rounds * RoleWeight(ctx, "buff");
                 hindered++;
             }
             if (value <= 0f) return 0f;
-            value *= RoleWeight(ctx, "buff");
+            helpfulOnly = helped > 0 && hindered == 0;
             // A resource spent per round is a daily resource, like a spell slot: worth less in easy fights.
             if (resource.HasValue) value *= Mathf.Clamp(0.55f + 0.45f * ctx.Difficulty, 0.55f, 1f);
 
             // What it forbids while on: casting (and items) - the best such option the unit has now, for those rounds.
+            string forbidNote = "";
             if (p.ForbidsSpells && !(p.ForbidIgnore?.Feature != null && unit.Descriptor.HasFact(p.ForbidIgnore.Feature)))
             {
                 float bestSpell = others.Where(c => c.Kind == CandidateKind.Ability && c.Ability != null &&
@@ -198,11 +324,13 @@ namespace CompanionAI_Pathfinder.Tactics
                                         .Select(c => c.Value).DefaultIfEmpty(0f).Max();
                 float penalty = bestSpell * rounds * 0.5f;
                 value -= penalty;
-                if (penalty > 0f) note += $", forbids casting (-{penalty:F1})";
+                if (penalty > 0f) forbidNote = $", forbids casting (-{penalty:F1})";
             }
             note = (helped > 0 ? $"{helped} {(p.Area == null ? "self" : "in range")}" : "") +
                    (hindered > 0 ? $"{(helped > 0 ? ", " : "")}{hindered} enemies" : "") +
-                   (resource.HasValue ? $", {resource.Value} left" : "") + note;
+                   (resource.HasValue ? $", {resource.Value} left" : "") + forbidNote;
+            NoteToggleAppraisal(unit, key, $"{Math.Max(0f, value):0.#}: over {usefulRounds:0.#} rd" +
+                                           (details.Count > 0 ? " - " + string.Join("; ", details) : "") + forbidNote);
             return Math.Max(0f, value);
         }
 
@@ -235,7 +363,7 @@ namespace CompanionAI_Pathfinder.Tactics
                     int size = unit.Descriptor.Get<Kingmaker.UnitLogic.Parts.UnitPartActivatableAbility>()?.GetGroupSize(toggle.Blueprint.Group) ?? 1;
                     if (weight > size) continue;
                 }
-                float value = ToggleValue(ctx, toggle, p, others, out string note);
+                float value = ToggleValue(ctx, toggle, p, others, out string note, out bool helpfulOnly);
                 if (value <= 0f) continue;
                 list.Add(new Candidate
                 {
@@ -243,6 +371,8 @@ namespace CompanionAI_Pathfinder.Tactics
                     Slot = ToggleSlot(toggle),
                     Toggle = toggle,
                     Value = value,
+                    // ★ v0.3.19 (class audit B1): a toggle that only helps allies is a buff for the restraint rule (Decide).
+                    PureBuff = helpfulOnly,
                     Label = $"Start {toggle.Name} ({note})",
                     Key = $"tgl:{toggle.Blueprint.AssetGuid}"
                 });
@@ -265,8 +395,14 @@ namespace CompanionAI_Pathfinder.Tactics
             if (!resource.HasValue) return;   // costs nothing to keep
             // ★ v0.3.18 (review): the performer itself does not count - it is always in its own area, so the rule never
             // fired for a helpful performance and the bard spent its rounds on itself after every ally had left.
-            bool anyone = ToggleRecipients(ctx, p, enemies: false).Any(a => a != unit && p.AreaBuffs.Any(b => !b.Harmful)) ||
-                          ToggleRecipients(ctx, p, enemies: true).Count > 0;
+            // ★ v0.3.19 (class audit B1): an ally counts only when a helpful grant reaches it (its conditions: acceptance).
+            Kingmaker.UnitLogic.Mechanics.MechanicsContext toggleCtx = null;
+            try { toggleCtx = new Kingmaker.UnitLogic.Mechanics.MechanicsContext(unit, unit.Descriptor, toggle.Blueprint.Buff); }
+            catch { }
+            bool anyone = ToggleRecipients(ctx, p, enemies: false)
+                              .Any(a => a != unit && p.Grants.Any(g => !g.Buff.Harmful && GrantReaches(g, toggleCtx, a) > 0f)) ||
+                          ToggleRecipients(ctx, p, enemies: true)
+                              .Any(e => p.Grants.Any(g => g.Buff.Harmful && GrantReaches(g, toggleCtx, e) > 0f));
             if (anyone) return;
             try
             {

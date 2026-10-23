@@ -1633,3 +1633,25 @@ most once. Fixes:
   replaced); the "60 % on a main action" note only where that cut was applied.
 - Seen, unchanged: Seelah waits beside the party's own Grease when the last enemies stand in it (walking in is priced
   higher than her attack with about 1.4 rounds left; the ranged allies finish them).
+
+## 44. v0.3.19 (test13): class competence audit, Stage B1 - area toggles read and valued like buffs
+
+Audit: `docs/CLASS_COMPETENCE_AUDIT.md` (Stage A: baseline, pipeline, evidence, class matrix, findings F1-F6, plan).
+Stage B1 fixes F1-F3 in `TacticalEngine.Toggles.cs`:
+- **F1, areas that give their buff by actions** (`AbilityAreaEffectRunAction` UnitEnter / Round -> `Conditional`s ->
+  `ContextActionApplyBuff`, not to the caster; UnitExit not read) are read as grants next to `AbilityAreaEffectBuff`.
+  Before: "its area applies nothing the AI can read" - Camellia's Battle Spirit (4 rounds in every fight of every log)
+  was never considered; Inspired Rage the same. Checked against the supplied Mythic blueprints: the 19 Aeon gaze areas
+  and Angel Halo give their buffs this way, each behind IsAlly / CasterHasFact / HasFact conditions.
+- **F3, conditions per recipient**: each grant's conditions (the area buff's `Condition`, the Conditionals on the way)
+  are checked with the game's own `ConditionsChecker.Check` under the performer's context (`AbilityProfile.CheckSafe`,
+  the same safe-condition list; unevaluable: counted at half). An ally whose acceptance toggle is off is not a recipient;
+  the AI never switches that toggle. The stop rule ("nobody left in its area") uses the same check.
+- **F2, value**: each recipient's share is the test11 appraisal (`AppraiseToggleBuffs` -> `AppraiseParts`, shared with
+  spells: the recipient's own attacks and incoming damage, stacking increment, ranks in the performer's context) over
+  the rounds the resource and the fight last (`ValueModel.UsefulRounds`). Unread effects keep the old formula, at 60 %
+  when the toggle takes a main action. A spell prohibition keeps the toggle's own rule (`ForbidSpellCasting` with its
+  ignore feature). A toggle that only helps allies is a buff for the 15 % restraint rule and gets the "[Buff]" line.
+- Coverage: "may start it when worth it (area R m gives <buff> if <conditions>)".
+- Not changed: acceptance toggles, attack modes, infusions, Gather Power, `AiManagesToggles`, `RespectPlayerToggles`,
+  the legacy real-time engine.

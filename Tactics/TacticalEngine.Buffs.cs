@@ -111,6 +111,23 @@ namespace CompanionAI_Pathfinder.Tactics
             float duration = buffs.Max(b => EffectiveRounds(ability, profile, b, abilityCtx));
             float unknown = profile.HasLongBuff ? ctx.ExpectedRounds : Math.Min(ctx.ExpectedRounds, 3f);
             float rounds = oneAttack || profile.BuffsLastOneRound ? 1f : ValueModel.UsefulRounds(duration, ctx.ExpectedRounds, unknown);
+            return AppraiseParts(ctx, ability.Caster?.Unit ?? ctx.Unit, abilityCtx, casterLevel, buffs, parts, unread, ally, rounds,
+                                 oneAttack, duration, AppraisalKey(ctx.Unit, ability, ally), false, result);
+        }
+
+        /// <summary>
+        /// ★ v0.3.19 (class audit B1): what the read parts of <paramref name="buffs"/> are worth to <paramref name="ally"/>
+        /// over <paramref name="rounds"/>, with <paramref name="caster"/>'s numbers (<paramref name="sourceCtx"/>: the
+        /// ability's context, or a toggle's). Shared by spells (AppraiseBuff) and toggles (AppraiseToggleBuffs).
+        /// <paramref name="ignoreForbid"/>: the caller prices a spell prohibition itself (a toggle's own rule).
+        /// </summary>
+        private static BuffAppraisal AppraiseParts(TacticalContext ctx, UnitEntityData caster, MechanicsContext sourceCtx, int casterLevel,
+                                                   List<BlueprintBuff> buffs, List<BuffPart> parts, HashSet<string> unread,
+                                                   UnitEntityData ally, float rounds, bool oneAttack, float duration, string key,
+                                                   bool ignoreForbid, BuffAppraisal result)
+        {
+            var abilityCtx = sourceCtx;
+            result.Modelled = true;
             result.Rounds = rounds;
 
             var off = OffenceOf(ctx, ally);
@@ -123,7 +140,7 @@ namespace CompanionAI_Pathfinder.Tactics
             bool sizeUp = false, forbidsSpells = false;
             foreach (var p in parts)
             {
-                float amount = PartAmount(p, ability, abilityCtx, ally, casterLevel);
+                float amount = PartAmount(p, caster, abilityCtx, ally, casterLevel);
                 if (p.Conditional) amount *= 0.5f;
                 switch (p.Kind)
                 {
@@ -164,7 +181,7 @@ namespace CompanionAI_Pathfinder.Tactics
                     case BuffPartKind.EnergyResist: energyResist = Math.Max(energyResist, amount); break;
                     case BuffPartKind.ExtraAttack: extraAttacks = Math.Max(extraAttacks, amount); break;
                     case BuffPartKind.SizeUp: sizeUp = CombatMath.GrownCorpulence(ally, buffs) > 0f; break;
-                    case BuffPartKind.ForbidsSpells: forbidsSpells = true; break;
+                    case BuffPartKind.ForbidsSpells: forbidsSpells = !ignoreForbid; break;
                 }
             }
             if (sizeUp)
@@ -232,7 +249,7 @@ namespace CompanionAI_Pathfinder.Tactics
             result.Detail = $"{string.Join(", ", notes)} over {rounds:0.#} rd" +
                             (duration > 0f && !oneAttack ? $" (lasts {duration:0.#})" : oneAttack ? " (one attack/roll)" : "") +
                             (unread.Count > 0 ? $"; not read: {string.Join(",", unread.Take(3))}" : "");
-            s_LastAppraisal[AppraisalKey(ctx.Unit, ability, ally)] = $"{result.Value:0.#}: {result.Detail}";
+            s_LastAppraisal[key] = $"{result.Value:0.#}: {result.Detail}";
             return result;
         }
 
@@ -269,7 +286,7 @@ namespace CompanionAI_Pathfinder.Tactics
         }
 
         /// <summary>The size of one part with the caster's numbers (the buff's ranks under the ability's context).</summary>
-        private static float PartAmount(BuffPart p, AbilityData ability, MechanicsContext abilityCtx, UnitEntityData ally, int casterLevel)
+        private static float PartAmount(BuffPart p, UnitEntityData caster, MechanicsContext abilityCtx, UnitEntityData ally, int casterLevel)
         {
             float amount = p.Fixed;
             if (p.ScaleByBaseAttack) amount *= 1 + (ally.Stats.BaseAttackBonus.ModifiedValue / 4);
@@ -278,7 +295,7 @@ namespace CompanionAI_Pathfinder.Tactics
             {
                 try
                 {
-                    buffCtx = new MechanicsContext(ability.Caster?.Unit, ally.Descriptor, p.Owner, abilityCtx);
+                    buffCtx = new MechanicsContext(caster, ally.Descriptor, p.Owner, abilityCtx);
                     buffCtx.RecalculateRanks();
                 }
                 catch { buffCtx = abilityCtx; }
@@ -436,6 +453,41 @@ namespace CompanionAI_Pathfinder.Tactics
         }
 
         /// <summary>The last appraisal of this cast on this recipient this frame, for the decision log; null if none.</summary>
+        /// <summary>
+        /// ★ v0.3.19 (class audit B1, docs/CLASS_COMPETENCE_AUDIT.md F2): the same appraisal for what a toggle (a performance,
+        /// a rage, a spirit) gives <paramref name="ally"/>, over <paramref name="rounds"/> (its resource and the fight). Its
+        /// ranks come from <paramref name="toggleCtx"/> (the performer's context); a spell prohibition is priced by the toggle's
+        /// own rule (ForbidSpellCasting with its ignore feature), so it is left out here.
+        /// </summary>
+        internal static BuffAppraisal AppraiseToggleBuffs(TacticalContext ctx, MechanicsContext toggleCtx, string toggleKey,
+                                                          List<BlueprintBuff> buffs, UnitEntityData ally, float rounds)
+        {
+            var result = new BuffAppraisal();
+            AppraisalFrame();
+            var parts = new List<BuffPart>();
+            var unread = new HashSet<string>();
+            foreach (var b in buffs)
+            {
+                var read = BuffPartsReader.Read(b);
+                parts.AddRange(read.Parts);
+                foreach (var u in read.Unread) unread.Add(u);
+            }
+            if (!parts.Any(p => p.Kind != BuffPartKind.MentalStat && p.Kind != BuffPartKind.ForbidsSpells)) return result;
+            int level = Math.Max(1, ctx.Unit.Descriptor?.Progression?.CharacterLevel ?? 1);
+            return AppraiseParts(ctx, ctx.Unit, toggleCtx, level, buffs, parts, unread, ally, rounds, false, -1f,
+                                 $"{ctx.Unit.UniqueId}|{toggleKey}|{ally.UniqueId}", true, result);
+        }
+
+        /// <summary>The note of a toggle's last valuation (all recipients), for the "[Buff]" line.</summary>
+        internal static string LastToggleAppraisal(UnitEntityData caster, string toggleKey) =>
+            s_LastAppraisal.TryGetValue($"{caster.UniqueId}|{toggleKey}|", out var s) ? s : null;
+
+        internal static void NoteToggleAppraisal(UnitEntityData caster, string toggleKey, string note)
+        {
+            AppraisalFrame();
+            s_LastAppraisal[$"{caster.UniqueId}|{toggleKey}|"] = note;
+        }
+
         internal static string LastAppraisal(UnitEntityData caster, AbilityData ability, UnitEntityData recipient) =>
             s_LastAppraisal.TryGetValue(AppraisalKey(caster, ability, recipient), out var s) ? s : null;
     }
