@@ -267,6 +267,16 @@ namespace CompanionAI_Pathfinder.GameInterface
                 return;
             }
 
+            // ★ v0.3.19 (release review): a fight that starts mid-session ends it; the queue went on casting the
+            // remaining buffs in combat, over the engine's own decisions.
+            if (IsPartyInCombat())
+            {
+                Main.Log($"[PreBuff] Combat started - buff session stopped ({_totalBuffsApplied} applied, {_buffQueue.Count} left)");
+                _buffQueue.Clear();
+                _isBuffing = false;
+                return;
+            }
+
             // 간격 체크
             if (Time.time - _lastBuffTime < BUFF_INTERVAL)
                 return;
@@ -301,9 +311,8 @@ namespace CompanionAI_Pathfinder.GameInterface
                 }
 
                 // 버프 시전
-                ExecuteBuff(request);
+                if (ExecuteBuff(request)) _totalBuffsApplied++;
                 _lastBuffTime = Time.time;
-                _totalBuffsApplied++;
                 return;
             }
         }
@@ -338,7 +347,7 @@ namespace CompanionAI_Pathfinder.GameInterface
         /// <summary>
         /// 버프 실행
         /// </summary>
-        private void ExecuteBuff(BuffRequest request)
+        private bool ExecuteBuff(BuffRequest request)
         {
             try
             {
@@ -350,7 +359,7 @@ namespace CompanionAI_Pathfinder.GameInterface
                 if (!CommandDispatcher.Run(request.Caster, command, $"PreBuff: {ability.Name}->{request.Target.CharacterName}", out string failure))
                 {
                     Main.Log($"[PreBuff] {request.Caster.CharacterName}: {ability.Name} not issued - {failure}");
-                    return;
+                    return false;
                 }
 
                 // 상세 로그
@@ -359,10 +368,12 @@ namespace CompanionAI_Pathfinder.GameInterface
 
                 Main.Log($"[PreBuff] {request.Caster.CharacterName} -> {request.Target.CharacterName}: " +
                          $"{ability.Name} [Priority={priorityStr}, Value={valueStr}]");
+                return true;
             }
             catch (Exception ex)
             {
                 Main.Error($"[PreBuff] ExecuteBuff error: {ex.Message}");
+                return false;
             }
         }
 

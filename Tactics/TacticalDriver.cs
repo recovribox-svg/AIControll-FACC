@@ -266,6 +266,10 @@ namespace CompanionAI_Pathfinder.Tactics
                     if (TacticalEngine.Execute(unit, candidate, out var command, out string failure))
                     {
                         TacticalDriver.RecordIssued(unit, memory, candidate, command);
+                        // ★ v0.3.19 (release review): a toggle switched without a command (an infusion off, a performance
+                        // the game starts at once) has none to remember; the weak table throws on null, which ended in the
+                        // catch below - an error line and "nothing issued" for an option that was carried out.
+                        if (command == null) return true;
                         IssuedAtHp.Remove(command);
                         IssuedAtHp.Add(command, new IssueState
                         {

@@ -331,14 +331,14 @@ namespace CompanionAI_Pathfinder
         }
 
         /// <summary>
-        /// 상세 로깅 (EnableDebugLogging이 true일 때만)
-        /// </summary>
-        /// <summary>
         /// ★ v0.3.17: verbose logging is on. Hot paths check this before building their message: the string was built
         /// (and thrown away) on every evaluation even with debug logging off.
         /// </summary>
         public static bool VerboseOn => Settings?.EnableDebugLogging ?? true;
 
+        /// <summary>
+        /// 상세 로깅 (EnableDebugLogging이 true일 때만)
+        /// </summary>
         public static void Verbose(string message)
         {
             if (VerboseOn)

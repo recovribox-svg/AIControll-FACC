@@ -714,6 +714,9 @@ namespace CompanionAI_Pathfinder.Analysis
             return result;
         }
 
+        /// <summary>★ v0.3.19 (test7): party members' near-certain area effects, reported once each (see AffectChance).</summary>
+        private static readonly HashSet<string> SureReported = new HashSet<string>();
+
         /// <summary>Farthest exit walk considered, metres.</summary>
         private const float ESCAPE_MAX_DISTANCE = 9f;
 
@@ -815,9 +818,6 @@ namespace CompanionAI_Pathfinder.Analysis
         ///   still counts half), 1 when the area has no save;
         /// - times the share of a round the area still lasts.
         /// </summary>
-        /// <summary>★ v0.3.19 (test7): party members' near-certain area effects, reported once each (see AffectChance).</summary>
-        private static readonly HashSet<string> SureReported = new HashSet<string>();
-
         private static float AffectChance(UnitEntityData unit, AreaEffectEntityData aoe)
         {
             float result = AffectChanceRaw(unit, aoe, out string how);

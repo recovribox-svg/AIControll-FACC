@@ -243,8 +243,10 @@ namespace CompanionAI_Pathfinder.GameInterface
             if (!(unit.CombatState?.IsInCombat ?? false))
             {
                 // v0.2.2: 전투 외 상황에서 영구 버프 자동 적용
+                // ★ v0.3.19 (release review): throttled like a decision - this returned before the timer was set, so the
+                // check (every ability's profile) could run every frame for each party member out of combat.
+                _lastDecisionTime[unitId] = currentTime;
                 ApplyPermanentBuffsOutOfCombat(unit);
-                Main.Verbose($"[RT] {unitName}: Not in combat, checked permanent buffs");
                 return;
             }
 
@@ -1297,25 +1299,14 @@ namespace CompanionAI_Pathfinder.GameInterface
             if (unappliedPermanentBuffs.Count == 0)
                 return;
 
-            var classification = unappliedPermanentBuffs.First();
-            var nativeAbility = classification.Ability;
-
+            // ★ v0.3.19 (release review): the first castable one. Only the first was tried: one that could not target
+            // the caster stopped every other buff after it from ever being cast.
+            var target = new TargetWrapper(unit);
+            var nativeAbility = unappliedPermanentBuffs.Select(c => c.Ability)
+                .FirstOrDefault(a => a.IsAvailableForCast && a.CanTarget(target));
             if (nativeAbility == null)
             {
-                Main.Verbose($"[RT] {unitName}: Permanent buff ability is null");
-                return;
-            }
-
-            if (!nativeAbility.IsAvailableForCast)
-            {
-                Main.Verbose($"[RT] {unitName}: Permanent buff ({nativeAbility.Name}) not available for cast");
-                return;
-            }
-
-            var target = new TargetWrapper(unit);
-            if (!nativeAbility.CanTarget(target))
-            {
-                Main.Verbose($"[RT] {unitName}: Permanent buff ({nativeAbility.Name}) cannot target self");
+                Main.Verbose($"[RT] {unitName}: no unapplied permanent buff can be cast on itself now");
                 return;
             }
 
