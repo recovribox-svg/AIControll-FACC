@@ -137,6 +137,85 @@ namespace CompanionAI_Pathfinder.Tactics
 
         #endregion
 
+        #region Buffs by what they do (0.3.19-test11)
+
+        /// <summary>
+        /// Extra damage a round from <paramref name="bonus"/> on the attack roll, for a unit dealing
+        /// <paramref name="damagePerRound"/> at <paramref name="hitChance"/>: each point is 5 % of the d20, relative to the
+        /// hits it lands now, within the natural 1 / 20 limits. A penalty is a loss.
+        /// </summary>
+        public static float AttackBonusGain(float damagePerRound, float hitChance, float bonus)
+        {
+            if (damagePerRound <= 0f || hitChance <= 0f || bonus == 0f) return 0f;
+            float h = Clamp(hitChance, 0.05f, 0.95f);
+            float delta = bonus > 0f ? Math.Min(0.05f * bonus, 0.95f - h) : Math.Max(0.05f * bonus, 0.05f - h);
+            return damagePerRound * delta / h;
+        }
+
+        /// <summary>Extra damage a round from <paramref name="bonus"/> damage on each of <paramref name="hitsPerRound"/>.</summary>
+        public static float DamageBonusGain(float hitsPerRound, float bonus) => Math.Max(0f, hitsPerRound) * bonus;
+
+        /// <summary>
+        /// Damage a round kept off a unit by <paramref name="armorBonus"/> AC, against <paramref name="incoming"/> a round from
+        /// attacks that hit it at <paramref name="enemyHitChance"/> (5 % of the d20 a point, within the natural limits). A
+        /// penalty lets more through (negative).
+        /// </summary>
+        public static float ArmorGain(float incoming, float enemyHitChance, float armorBonus)
+        {
+            if (incoming <= 0f || armorBonus == 0f) return 0f;
+            float h = Clamp(enemyHitChance, 0.05f, 0.95f);
+            float delta = armorBonus > 0f ? Math.Min(0.05f * armorBonus, h - 0.05f) : -Math.Min(-0.05f * armorBonus, 0.95f - h);
+            return incoming * delta / h;
+        }
+
+        /// <summary>
+        /// Worth of damage kept off an ally: <paramref name="perRound"/> for <paramref name="rounds"/>, a third of a point per
+        /// HP (HP someone would have to heal later, as a move's damage is priced) plus the lower chance to drop
+        /// (RiskMath.RoundDropChance with the incoming damage less what is kept off) times the ally's worth. Negative for a
+        /// penalty.
+        /// </summary>
+        public static float PreventionValue(float perRound, float rounds, float hp, float incoming, float allyWorth)
+        {
+            if (perRound == 0f || rounds <= 0f) return 0f;
+            float before = RiskMath.RoundDropChance(hp, incoming);
+            float after = RiskMath.RoundDropChance(hp, Math.Max(0f, incoming - perRound));
+            float drop = Clamp((before - after) * rounds, -1f, 1f);
+            return 0.3f * perRound * rounds + drop * allyWorth;
+        }
+
+        /// <summary>Damage temporary hit points can take before they run out or the window ends.</summary>
+        public static float TempHpAbsorbed(float tempHp, float incomingPerRound, float rounds) =>
+            Math.Max(0f, Math.Min(tempHp, Math.Max(0f, incomingPerRound) * Math.Max(0f, rounds)));
+
+        /// <summary>
+        /// Damage <paramref name="images"/> mirror images take instead of their owner: each attack picks one figure of
+        /// images + 1, an image taken by a hit is gone; at most one hit per image.
+        /// </summary>
+        public static float MirrorImagesAbsorbed(float images, float hitsPerRound, float damagePerHit, float rounds)
+        {
+            if (images <= 0f || hitsPerRound <= 0f || damagePerHit <= 0f || rounds <= 0f) return 0f;
+            float taken = Math.Min(images, hitsPerRound * rounds * images / (images + 1f));
+            return taken * damagePerHit;
+        }
+
+        /// <summary>
+        /// Rounds a buff is useful for: its real duration (unknown: <paramref name="unknownRounds"/>), at most the rounds the
+        /// fight is expected to go on, at least one.
+        /// </summary>
+        public static float UsefulRounds(float durationRounds, float expectedRounds, float unknownRounds) =>
+            Clamp(Math.Min(durationRounds > 0f ? durationRounds : unknownRounds, Math.Max(1f, expectedRounds)), 1f, 6f);
+
+        /// <summary>
+        /// The player's preference for restraint: a Standard or full-round action that only buffs is taken over the best
+        /// immediate main action only when clearly better - by <see cref="BuffMargin"/> - otherwise the immediate action wins.
+        /// </summary>
+        public static bool BuffBeatsImmediate(float buffValue, float bestImmediate) =>
+            bestImmediate <= 0f || buffValue >= bestImmediate * (1f + BuffMargin);
+
+        public const float BuffMargin = 0.15f;
+
+        #endregion
+
         #region Knockdown areas (0.3.19-test9)
 
         /// <summary>

@@ -419,7 +419,7 @@ namespace CompanionAI_Pathfinder.Tactics
             catch { }
         }
 
-        private static int EvaluateValue(ContextValue value, MechanicsContext ctx, int fallback)
+        internal static int EvaluateValue(ContextValue value, MechanicsContext ctx, int fallback)
         {
             if (value == null) return 0;
             if (value.ValueType == ContextValueType.Simple) return value.Value;

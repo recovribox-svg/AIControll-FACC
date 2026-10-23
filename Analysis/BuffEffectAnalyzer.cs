@@ -289,6 +289,14 @@ namespace CompanionAI_Pathfinder.Analysis
             // what they do: read them, two levels deep at most.
             if (component is Kingmaker.UnitLogic.FactLogic.AddFacts addFacts)
                 return AnalyzeAddedFacts(addFacts, result);
+            // ★ v0.3.19 (test11): a buff that puts another buff on its owner when it starts (AddFactContextActions /
+            // AddBuffActions, Activated): Haste's HasteBuff only switches on HasteBuffEffect (extra attack, +1 attack,
+            // +1 dodge AC and Reflex), so Haste read as "effect unknown" (Spells/Level3/HasteBuff).
+            if (component is Kingmaker.UnitLogic.Mechanics.Components.AddFactContextActions contextActions)
+            {
+                var children = ChildBuffs(contextActions);
+                if (children.Count > 0) return AnalyzeChildBuffs(children, result);
+            }
 
             switch (typeName)
             {
@@ -406,11 +414,18 @@ namespace CompanionAI_Pathfinder.Analysis
                 case "AddDamageResistanceHardness":
                 case "AddEnergyDamageImmunity":
                 case "AddEnergyImmunity":
-                case "BuffAllSavesBonus":
-                case "BuffAllSkillsBonus":
                     result.Categories |= BuffEffectCategory.DamageResistance;
                     result.DetectedComponents.Add($"DR({typeName})");
                     return 0.6f;
+                // ★ v0.3.19 (test11): saves are saves, skills are skills (both read as damage resistance 0.6 before).
+                case "BuffAllSavesBonus":
+                    result.Categories |= BuffEffectCategory.SaveBonus;
+                    result.DetectedComponents.Add($"Save({typeName})");
+                    return 0.6f;
+                case "BuffAllSkillsBonus":
+                    result.Categories |= BuffEffectCategory.SkillBonus;
+                    result.DetectedComponents.Add($"Skill({typeName})");
+                    return 0.1f;
 
                 // ═══════════════════════════════════════════════════════════════
                 // 주문 저항 (전투 가치: 0.6)
@@ -531,6 +546,42 @@ namespace CompanionAI_Pathfinder.Analysis
                 }
                 if (best <= 0f)
                     result.DetectedComponents.Add("?AddFacts" + (unknown.Count > 0 ? $"({string.Join(",", unknown)})" : ""));
+                return best;
+            }
+            catch
+            {
+                return 0f;
+            }
+            finally
+            {
+                _addFactsDepth--;
+            }
+        }
+
+        /// <summary>★ v0.3.19 (test11): the buffs an AddFactContextActions puts on its owner when the fact starts.</summary>
+        public static List<BlueprintBuff> ChildBuffs(Kingmaker.UnitLogic.Mechanics.Components.AddFactContextActions component)
+        {
+            var list = new List<BlueprintBuff>();
+            try
+            {
+                foreach (var action in component?.Activated?.Actions ?? new Kingmaker.ElementsSystem.GameAction[0])
+                    if (action is Kingmaker.UnitLogic.Mechanics.Actions.ContextActionApplyBuff apply && apply.Buff != null && !apply.ToCaster)
+                        list.Add(apply.Buff);
+            }
+            catch { }
+            return list;
+        }
+
+        private static float AnalyzeChildBuffs(List<BlueprintBuff> children, BuffEffectAnalysis result)
+        {
+            if (_addFactsDepth >= 2) return 0f;
+            _addFactsDepth++;
+            try
+            {
+                float best = 0f;
+                foreach (var child in children)
+                    foreach (var component in child.ComponentsArray ?? new BlueprintComponent[0])
+                        if (component != null) best = Mathf.Max(best, AnalyzeComponent(component, result));
                 return best;
             }
             catch

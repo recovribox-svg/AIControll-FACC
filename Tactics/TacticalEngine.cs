@@ -50,6 +50,8 @@ namespace CompanionAI_Pathfinder.Tactics
         public bool NeedLoS;
         /// <summary>Damages or disables an enemy (as opposed to buffs, heals, utility).</summary>
         public bool Offensive;
+        /// <summary>★ v0.3.19 (test11): an ability whose only value here is a helpful buff (the restraint rule in Decide).</summary>
+        public bool PureBuff;
         public string Label;
         public string Key;
         /// <summary>★ v0.3.7: chance the effect lands on its main target (1 for non-hostile options).</summary>
@@ -285,6 +287,33 @@ namespace CompanionAI_Pathfinder.Tactics
             Candidate chosen = null;
             if (quick != null) chosen = quick;
             else if (main != null && main.Value >= MinMainValue) chosen = main;
+            // ★ v0.3.19 (test11): restraint with buffs that take the turn's Standard or full-round action - the player's
+            // wish: such a buff is cast over the best immediate main action only when clearly better
+            // (ValueModel.BuffBeatsImmediate, 15 %); a near tie or a weaker case goes to the immediate action.
+            if (chosen != null && chosen == main && main.PureBuff && (main.Slot == ActionSlot.Standard || main.Slot == ActionSlot.FullRound))
+            {
+                var immediate = usable.FirstOrDefault(c => c != main && !c.PureBuff && c.Slot != ActionSlot.Free && c.Slot != ActionSlot.Swift &&
+                                                           c.Value >= MinMainValue);
+                if (immediate != null && !ValueModel.BuffBeatsImmediate(main.Value, immediate.Value))
+                {
+                    if (!preview)
+                        ReportOnce($"restraint|{unit.UniqueId}|{CombatMemory.Round}|{main.Key}",
+                                   $"[Buff] {unit.CharacterName}: {main.Label} ({main.Value:0.#}) not cast - {immediate.Label} " +
+                                   $"({immediate.Value:0.#}) is within {ValueModel.BuffMargin:P0}; {BuffNote(unit, main)}");
+                    chosen = immediate;
+                    main = immediate;
+                }
+            }
+            // ★ v0.3.19 (test11): why a buff was chosen, once a round per cast and recipient.
+            if (!preview && chosen != null && chosen.Kind == CandidateKind.Ability &&
+                (chosen.PureBuff || chosen.Label.Contains("(buff") || chosen.Label.Contains("+buff")))
+            {
+                var other = usable.FirstOrDefault(c => c != chosen && !c.PureBuff && (c.Slot == ActionSlot.Free || c.Slot == ActionSlot.Swift) ==
+                                                                     (chosen.Slot == ActionSlot.Free || chosen.Slot == ActionSlot.Swift));
+                ReportOnce($"buffwhy|{unit.UniqueId}|{CombatMemory.Round}|{chosen.Key}",
+                           $"[Buff] {unit.CharacterName}: {chosen.Label} = {chosen.Value:0.#} ({chosen.Slot}) - {BuffNote(unit, chosen)}" +
+                           (other != null ? $"; best other: {other.Label} = {other.Value:0.#}" : ""));
+            }
 
             ctx.TurnValue = (quick != null ? quick.Value : 0f) +
                             (main != null && main.Value >= MinMainValue ? main.Value : 0f);
@@ -315,6 +344,10 @@ namespace CompanionAI_Pathfinder.Tactics
                          (ctx.Permissions.Notes.Length > 0 ? $" ({ctx.Permissions.Notes})" : ""));
             return chosen;
         }
+
+        /// <summary>★ v0.3.19 (test11): the appraisal behind a buff candidate, for the log.</summary>
+        private static string BuffNote(UnitEntityData unit, Candidate c) =>
+            c.Ability == null ? "" : LastAppraisal(unit, c.Ability, c.Target ?? unit) ?? "no appraisal";
 
         /// <summary>
         /// ★ v0.3.15: casting another spell drops a held touch charge (TouchSpellsController: any spell or spell-like
@@ -1962,6 +1995,7 @@ namespace CompanionAI_Pathfinder.Tactics
                     GatherPower = gather,
                     Value = value,
                     Offensive = IsOffensive(why),
+                    PureBuff = why.Split('+').All(r => r == "buff" || r.StartsWith("grows into")) && why.Contains("buff"),
                     Label = $"{(ability.SourceItem != null ? "Item:" : "")}{ability.Name}{metamagic}->{(summonPoint.HasValue ? "a spot near the fight" : target.CharacterName)}({why}){risk?.Tag}" +
                             (approach?.Around != null ? $" (around {approach.Around})" : "") +
                             (provoke != null ? $" [casting provokes {provoke.Attacks}{(provoke.DropChance >= 0.1f ? $", {provoke.DropChance:P0} down" : "")}]" : "") +
@@ -2625,23 +2659,39 @@ namespace CompanionAI_Pathfinder.Tactics
                     if (profile.BuffsLastOneRound && ally == unit && !attackAfter) continue;
                     if (CombatMemory.LastCastRound(unit, ability, ally) == ctx.Round) continue; // cast this round already
 
-                    // ★ v0.3.2: what the buff actually does, for this recipient. Treat Affliction, Feather Step and Mage
-                    // Armor on a paladin in plate were valued like Enlarge Person in v0.3.1.
-                    float quality = BuffQuality(ability, profile, buffs, ally);
-                    if (quality <= 0f) continue;
                     // A mode switch (Shift Form: Overlord ↔ Mortal Guise) removes a good buff: only worth it if better.
                     var replaced = profile.BeneficialBuffsRemoved(ability, ally);
-                    if (replaced.Count > 0)
+                    // ★ v0.3.19 (test11): what the buff does for this recipient, part by part, in damage-equivalent points
+                    // (TacticalEngine.Buffs.cs); a mode switch keeps the comparison of qualities below.
+                    var appraisal = replaced.Count == 0 ? AppraiseBuff(ctx, ability, profile, buffs, ally) : null;
+                    float worth;
+                    if (appraisal != null && appraisal.Modelled)
                     {
-                        float lost = replaced.Max(b => BuffEffectAnalyzer.GetCombatValue(b.Blueprint));
-                        if (quality <= lost + 0.05f) continue;
-                        quality -= lost;
+                        if (appraisal.Value <= 0f) continue;
+                        worth = appraisal.Value;
                     }
-
-                    bool fighting = (ally.CombatState?.IsEngaged ?? false) || ally == unit;
-                    float perRound = ValueModel.BuffPerRound(level);
-                    float rounds = BuffRounds(profile, ctx.ExpectedRounds);
-                    float worth = perRound * rounds * quality * (fighting ? 1f : 0.6f) * buffScale;
+                    else
+                    {
+                        // ★ v0.3.2: what the buff actually does, for this recipient. Treat Affliction, Feather Step and Mage
+                        // Armor on a paladin in plate were valued like Enlarge Person in v0.3.1.
+                        float quality = BuffQuality(ability, profile, buffs, ally);
+                        if (quality <= 0f) continue;
+                        if (replaced.Count > 0)
+                        {
+                            float lost = replaced.Max(b => BuffEffectAnalyzer.GetCombatValue(b.Blueprint));
+                            if (quality <= lost + 0.05f) continue;
+                            quality -= lost;
+                        }
+                        bool fighting = (ally.CombatState?.IsEngaged ?? false) || ally == unit;
+                        float perRound = ValueModel.BuffPerRound(level);
+                        float rounds = BuffRounds(profile, ctx.ExpectedRounds);
+                        worth = perRound * rounds * quality * (fighting ? 1f : 0.6f) * buffScale;
+                        // ★ v0.3.19 (test11): an effect none of whose parts can be read is not understood: on a main
+                        // action (the turn's Standard, Move or full round) it counts at 60 % - the player's preference for
+                        // restraint when the case for a buff is weak. Free and swift ones keep their value.
+                        if (slot != ActionSlot.Free && slot != ActionSlot.Swift) worth *= 0.6f;
+                        s_LastAppraisal[AppraisalKey(unit, ability, ally)] = $"{worth:0.#}: effect not read (quality {quality:0.##} x level, 60 % on a main action)";
+                    }
                     // ★ v0.3.19 (test9): a buff that makes the ally bigger can put it into a harmful area it stands beside
                     // (Enlarge Person put Seelah into Orvath's Grease). The cost is the ally's, in full.
                     float grows = GrowthIntoAreaCost(ctx, ally, buffs, out string grownInto);

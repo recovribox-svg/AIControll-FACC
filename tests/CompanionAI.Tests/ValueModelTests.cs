@@ -44,6 +44,101 @@ namespace CompanionAI.Tests
             Assert.Equal(5.5f, ValueModel.BuffPerRound(3), 3);
         }
 
+        // --- 0.3.19-test11: buffs by what they do ---
+
+        [Fact]
+        public void AttackBonus_WorthMoreWhenHitsAreHard()
+        {
+            // +1 for a fighter dealing 10 a round: at 30 % it adds a sixth, at 90 % only a little (the natural 20 limit).
+            float hard = ValueModel.AttackBonusGain(10f, 0.30f, 1f);
+            float easy = ValueModel.AttackBonusGain(10f, 0.90f, 1f);
+            Assert.Equal(10f * 0.05f / 0.30f, hard, 3);
+            Assert.True(easy < hard * 0.4f);
+            Assert.Equal(0f, ValueModel.AttackBonusGain(10f, 0.95f, 2f), 3);
+            // A bigger bonus is never worth less; a penalty is a loss.
+            Assert.True(ValueModel.AttackBonusGain(10f, 0.5f, 4f) > ValueModel.AttackBonusGain(10f, 0.5f, 1f));
+            Assert.True(ValueModel.AttackBonusGain(10f, 0.5f, -1f) < 0f);
+            // No attacks, nothing.
+            Assert.Equal(0f, ValueModel.AttackBonusGain(0f, 0.5f, 2f), 3);
+        }
+
+        [Fact]
+        public void ArmorBonus_KeepsDamageOffInProportion()
+        {
+            // +2 AC against attacks that hit at 50 %: a fifth of 10 a round.
+            Assert.Equal(2f, ValueModel.ArmorGain(10f, 0.5f, 2f), 3);
+            Assert.Equal(0f, ValueModel.ArmorGain(0f, 0.5f, 2f), 3);          // nothing attacks it
+            Assert.True(ValueModel.ArmorGain(10f, 0.5f, -2f) < 0f);           // Rage's -2 AC
+            Assert.True(ValueModel.ArmorGain(10f, 0.05f, 4f) <= 0.01f);       // they only hit on a 20 anyway
+        }
+
+        [Fact]
+        public void TempHp_CountsOnlyWhatCanBeTaken()
+        {
+            // Light of the Angels: 1 temporary HP is worth 1 HP at most, however much comes in.
+            Assert.Equal(1f, ValueModel.TempHpAbsorbed(1f, 20f, 3f), 3);
+            Assert.Equal(6f, ValueModel.TempHpAbsorbed(30f, 2f, 3f), 3);       // more than will ever be taken
+            Assert.Equal(0f, ValueModel.TempHpAbsorbed(10f, 0f, 3f), 3);
+        }
+
+        [Fact]
+        public void MirrorImages_AtMostOneHitEach()
+        {
+            float some = ValueModel.MirrorImagesAbsorbed(4f, 2f, 6f, 3f);
+            Assert.InRange(some, 0f, 4f * 6f);
+            Assert.Equal(0f, ValueModel.MirrorImagesAbsorbed(4f, 0f, 6f, 3f), 3);   // nobody attacks it
+            Assert.True(ValueModel.MirrorImagesAbsorbed(4f, 3f, 6f, 3f) >= ValueModel.MirrorImagesAbsorbed(2f, 3f, 6f, 3f));
+        }
+
+        [Fact]
+        public void Prevention_ValuesHpAndTheChanceToDrop()
+        {
+            float frontliner = ValueModel.PreventionValue(3f, 4f, 20f, 15f, 30f);
+            float safe = ValueModel.PreventionValue(3f, 4f, 60f, 4f, 30f);
+            Assert.True(frontliner > safe);                       // the one about to drop gains more
+            Assert.Equal(0f, ValueModel.PreventionValue(0f, 4f, 20f, 15f, 30f), 3);
+            Assert.True(ValueModel.PreventionValue(-2f, 4f, 20f, 15f, 30f) < 0f);   // a penalty is a cost
+        }
+
+        [Fact]
+        public void UsefulRounds_RealDurationWithinTheFight()
+        {
+            Assert.Equal(1f, ValueModel.UsefulRounds(1f, 5f, 3f), 3);    // one round
+            Assert.Equal(4f, ValueModel.UsefulRounds(10f, 4f, 3f), 3);   // a minute, a 4-round fight
+            Assert.Equal(3f, ValueModel.UsefulRounds(-1f, 5f, 3f), 3);   // unknown duration
+            Assert.Equal(6f, ValueModel.UsefulRounds(600f, 9f, 3f), 3);  // capped
+        }
+
+        [Fact]
+        public void Restraint_BuffMustClearlyBeatTheImmediateAction()
+        {
+            Assert.False(ValueModel.BuffBeatsImmediate(10f, 9.5f));   // near tie: attack
+            Assert.False(ValueModel.BuffBeatsImmediate(11f, 10f));    // 10 % better: still the attack
+            Assert.True(ValueModel.BuffBeatsImmediate(12f, 10f));     // 20 % better: the buff
+            Assert.True(ValueModel.BuffBeatsImmediate(3f, 0f));       // nothing else to do
+        }
+
+        [Fact]
+        public void Scenario_BlessOnAPartyBeatsOneAttackEarly_NotLate()
+        {
+            // Bless (+1 attack, morale) on four allies dealing 10 a round at 55 %: early (5 rounds) against a 9-point
+            // attack it wins clearly; with one round left it does not.
+            float perAlly = ValueModel.AttackBonusGain(10f, 0.55f, 1f);
+            float early = 4f * perAlly * ValueModel.UsefulRounds(10f, 5f, 3f);
+            float late = 4f * perAlly * ValueModel.UsefulRounds(10f, 1f, 3f);
+            Assert.True(ValueModel.BuffBeatsImmediate(early, 9f));
+            Assert.False(ValueModel.BuffBeatsImmediate(late, 9f));
+        }
+
+        [Fact]
+        public void Scenario_GuidanceOnOneRollIsNotAnAction()
+        {
+            // Guidance: +1 on one attack (a 55 % hit for 6): about a fifth of a point - any attack beats it.
+            float guidance = ValueModel.AttackBonusGain(0.55f * 6f, 0.55f, 1f);
+            Assert.InRange(guidance, 0f, 0.5f);
+            Assert.False(ValueModel.BuffBeatsImmediate(guidance, 1.2f));
+        }
+
         // --- 0.3.19-test9: knockdown areas (Grease), turn-based ---
 
         [Fact]

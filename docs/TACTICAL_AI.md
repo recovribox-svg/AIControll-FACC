@@ -1583,3 +1583,36 @@ every turn if ranks do not add up).
   every call, and it was asked for every option on the target. The Ring of the Mad Duelist moves to another enemy at most
   once a round and only for a guard 25 % better than the current one's: with the free-action bar at 1 it could have hopped
   between two moving enemies (every half second in real time).
+
+## 42. v0.3.19 (test11): helpful buffs valued by what they do for who gets them
+
+Audit, evidence and root causes: `docs/SHORT_BUFFS_AUDIT.md`. Checked against the game's spell and mythic blueprints
+(Spells, Mythic folders supplied by the player).
+
+- **Parts with sizes** (`Analysis/BuffParts.cs`, static, cached): attack, damage (incl. extra dice on hit), AC by bonus
+  type, saves, Strength / Dexterity / Constitution, temporary HP, concealment, miss chance, mirror images, physical DR,
+  energy resistance, extra attacks, a bigger size, no spells (Rage), AC / saves against an alignment; through `AddFacts`
+  and through buffs a buff switches on (`AddFactContextActions` / `AddBuffActions`: Haste's `HasteBuff` only switches on
+  `HasteBuffEffect`). Bookkeeping components are not "unread"; everything else is reported as unread.
+- **Real numbers**: each part is evaluated with the buff's `MechanicsContext` under the ability's execution context (the
+  game's own construction when the spell lands: caster level, ranks; shared values by their average, never rolled); the
+  duration from the ability's `DurationValue` the same way, doubled by Extend (`EffectiveRounds`).
+- **Stacking**: a non-stacking bonus counts only above the recipient's best bonus of that type
+  (`ModifierDescriptorHelper.IsStackable`); `BuffStackingAnalyzer` no longer reads a rank-based bonus as +1 (it marked
+  Shield of Faith - (CL + 6) / 6 deflection - "superseded" by any +1 deflection item).
+- **Value** (`TacticalEngine.Buffs.cs`, formulas in `ValueModel`, unit-tested): offence on the recipient's own weapon attack
+  against the enemy it would attack (`AttackBonusGain`, `DamageBonusGain`, extra attack = its first attack's expected
+  damage; half for a recipient that casts spells); defence on what comes at it (`IncomingDamage`, or its share of the
+  enemies' threat before contact) and the strongest enemy's hit chance against it (`ArmorGain`, concealment, saves x
+  0.025, DR per hit, `TempHpAbsorbed`, `MirrorImagesAbsorbed`) priced by `PreventionValue` (0.3 a HP kept + the lower
+  chance to drop x the ally's worth); over `UsefulRounds` (real duration within the expected rounds; one attack / one roll
+  for buffs spent by it). Role weight kept; the round-2 x0.6 and difficulty factors dropped (they double-counted the rounds
+  left and the danger). Summons half. Penalties count (Enlarge Person's -2 Dexterity and size: an archer loses by it).
+- **Not read**: a buff with no valued part keeps the old formula, at 60 % when it takes a main action.
+- **Restraint**: a Standard / full-round action that only buffs is taken over the best immediate main action only when it
+  is at least 15 % better (`ValueModel.BuffBeatsImmediate`); logged "[Buff] ... not cast - ... is within 15 %".
+- **Guidance** removes itself by name (`ContextActionRemoveBuff` of `GuidanceBuff`, not `ContextActionRemoveSelf`): the
+  one-roll rule of test9 now sees it.
+- **Log**: "[Buff] <caster>: <buff> = value (slot) - <parts, recipient numbers, rounds>; best other: ..." once a round per
+  cast and recipient.
+- Unchanged: the pre-buff button and out-of-combat keep-up (`BuffWorth`), toggles, the legacy real-time engine.

@@ -73,3 +73,34 @@ Repeats in the logs (Guidance, Light of the Angels) are re-evaluations with an i
 - **E. Diagnostics and tests.** One bounded line per chosen or narrowly beaten buff (parts, recipient, window, value,
   best alternative). Pure formulas in `ValueModel` with unit tests, including a Standard-action buff that should win and
   a free/swift one that should win.
+
+## 5. Implemented in 0.3.19-test11 (phases B-D)
+
+See `docs/TACTICAL_AI.md` section 42. Files: `Analysis/BuffParts.cs` (new), `Tactics/TacticalEngine.Buffs.cs` (new),
+`Tactics/ValueModel.cs` (buff formulas), `Tactics/TacticalEngine.cs` (buff block, restraint rule, `Candidate.PureBuff`,
+log), `Tactics/AbilityProfile.cs` (applications per buff, self-removal by name), `Analysis/BuffStackingAnalyzer.cs`
+(rank-based bonus no longer +1), `Analysis/BuffEffectAnalyzer.cs` (child buffs, save/skill categories),
+`tests/CompanionAI.Tests/ValueModelTests.cs` (9 new tests: 62 pass).
+
+Worked examples (formulas with numbers seen in the logs; not in-game verified):
+
+| Buff | Before | After |
+|---|---|---|
+| Light of the Angels (1 temp HP, 4 allies in 20 ft) | 10.6-22.9 | about 2.5 for the temporary HP (its effect on enemies is valued as a debuff) |
+| Guidance on Camellia (one roll) | 1.3-2.6, 6 casts in one fight | about 0.5: Divine Zap (1.2) wins |
+| Enlarge Person on Aeiluvetar (bow) | 5.7, cast in round 1 | negative (size and Dexterity cost the bow to-hit): not cast |
+| Enlarge Person on Seelah (melee) | 10.1 | about 7-11 (+2 damage a hit, -1.5 AC priced) |
+| Bless on four attackers, 5 rounds left | 2.5 x 3 x 1.0 x scale | about 9 (beats a 9-point attack only early in a fight) |
+
+Coverage over the supplied blueprints: of about 1 000 helpful-looking spell and mythic buffs, 352 have no valued part yet
+(most: area auras, immunities to conditions or descriptors, on-hit triggers, polymorph bonuses, enchantments) and keep
+the old formula; the reader reports their component names ("not read: ...").
+
+## 6. Remaining (evidence needed)
+
+1. Condition / descriptor immunities (Protection from Evil's mind-control part, Freedom of Movement) - worth depends on
+   whether the enemies apply those effects; needs the enemies' repertoire. Kept on the old formula.
+2. Aura and area buffs (`AddAreaEffect`) - recipients moving in and out; kept on the old formula.
+3. Turn order for an ally-targeted buff (an ally who already acted this round gets one round less) - not modelled.
+4. Haste-type extra attacks do not stack with another haste; only the same buff being active is checked.
+5. In-game verification: the "[Buff]" lines in the next turn-based and real-time logs.

@@ -310,11 +310,15 @@ namespace CompanionAI_Pathfinder.Analysis
         /// the buff counted as stacking with anything. A rank- or caster-level-based value counts as 1: the descriptor and
         /// stat are what the stacking rule needs.
         /// </summary>
+        /// <remarks>★ v0.3.19 (test11): a rank-based value is unknown here (0), not +1: as +1, any bonus of the same type
+        /// the target already had (a +1 deflection ring) marked it "superseded" - Shield of Faith is +2 to +5 deflection
+        /// ((CL + 6) / 6, Spells/Level1/ShieldOfFaithBuff) and would never have been cast on that target. Unknown sizes count
+        /// as effective here; the tactical engine reads the real size with the caster's context (TacticalEngine.Buffs).</remarks>
         private static int BonusValue(object value)
         {
             if (value == null) return 0;
             if (value is Kingmaker.UnitLogic.Mechanics.ContextValue context)
-                return context.ValueType == Kingmaker.UnitLogic.Mechanics.ContextValueType.Simple ? context.Value : 1;
+                return context.ValueType == Kingmaker.UnitLogic.Mechanics.ContextValueType.Simple ? context.Value : 0;
             try { return Convert.ToInt32(value); } catch { return 1; }
         }
 

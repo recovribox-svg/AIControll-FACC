@@ -657,6 +657,9 @@ namespace CompanionAI_Pathfinder.Tactics
                         if (toCaster || apply.ToCaster) CasterBuffs.Add(apply.Buff);
                         else TargetBuffs.Add(apply.Buff);
                         AddBuffGuards(apply.Buff, guards);
+                        // ★ v0.3.19 (test11): the action itself, caster buffs too, for the buff's real duration
+                        // (EffectiveRounds). Area buffs last while the area does.
+                        if (!m_InArea && !m_Applications.ContainsKey(apply.Buff)) m_Applications[apply.Buff] = apply;
                         // ★ v0.3.15: each application with its own branch and duration (Color Spray: 2d4 rounds on 2 HD
                         // or less, 1d4 on 3-4 HD, 1 round on 5 HD or more).
                         if (!(toCaster || apply.ToCaster) && !m_InArea)
@@ -890,13 +893,17 @@ namespace CompanionAI_Pathfinder.Tactics
         }
 
         /// <summary>★ v0.3.19 (test9): the list removes the buff that runs it (directly or in a branch).</summary>
-        private static bool RemovesSelf(ActionList list, int depth = 0)
+        /// <remarks>★ v0.3.19 (test11): by ContextActionRemoveSelf or by naming it (ContextActionRemoveBuff of
+        /// <paramref name="owner"/>): Guidance's triggers remove GuidanceBuff by name (Spells/Level0/GuidanceBuff), so the
+        /// test9 rule never saw it.</remarks>
+        private static bool RemovesSelf(ActionList list, BlueprintBuff owner, int depth = 0)
         {
             if (list?.Actions == null || depth > 3) return false;
             foreach (var action in list.Actions)
             {
                 if (action is ContextActionRemoveSelf) return true;
-                if (action is Conditional c && (RemovesSelf(c.IfTrue, depth + 1) || RemovesSelf(c.IfFalse, depth + 1))) return true;
+                if (owner != null && action is ContextActionRemoveBuff rb && rb.Buff == owner) return true;
+                if (action is Conditional c && (RemovesSelf(c.IfTrue, owner, depth + 1) || RemovesSelf(c.IfFalse, owner, depth + 1))) return true;
             }
             return false;
         }
@@ -911,10 +918,10 @@ namespace CompanionAI_Pathfinder.Tactics
                 {
                     switch (c)
                     {
-                        case AddInitiatorAttackRollTrigger t when RemovesSelf(t.Action): return true;
-                        case AddInitiatorSavingThrowTrigger t when RemovesSelf(t.Action): return true;
-                        case AddInitiatorSkillRollTrigger t when RemovesSelf(t.Action): return true;
-                        case AddInitiatorPartySkillRollTrigger t when RemovesSelf(t.Action): return true;
+                        case AddInitiatorAttackRollTrigger t when RemovesSelf(t.Action, buff): return true;
+                        case AddInitiatorSavingThrowTrigger t when RemovesSelf(t.Action, buff): return true;
+                        case AddInitiatorSkillRollTrigger t when RemovesSelf(t.Action, buff): return true;
+                        case AddInitiatorPartySkillRollTrigger t when RemovesSelf(t.Action, buff): return true;
                     }
                 }
             }
@@ -930,7 +937,7 @@ namespace CompanionAI_Pathfinder.Tactics
             try
             {
                 return buff?.ComponentsArray != null &&
-                       buff.ComponentsArray.OfType<AddAbilityUseTrigger>().Any(t => RemovesSelf(t.Action));
+                       buff.ComponentsArray.OfType<AddAbilityUseTrigger>().Any(t => RemovesSelf(t.Action, buff));
             }
             catch
             {
@@ -944,7 +951,7 @@ namespace CompanionAI_Pathfinder.Tactics
             {
                 if (buff.GetComponent<RemoveBuffOnAttack>() != null) return true;
                 // ★ v0.3.19 (test9): the same, by a weapon-attack trigger that removes the buff.
-                if (buff.GetComponents<AddInitiatorAttackWithWeaponTrigger>().Any(t => RemovesSelf(t.Action))) return true;
+                if (buff.GetComponents<AddInitiatorAttackWithWeaponTrigger>().Any(t => RemovesSelf(t.Action, buff))) return true;
                 return buff.GetComponents<ModifyD20>().Any(c => c.DispellOnRerollFinished);
             }
             catch
@@ -980,6 +987,11 @@ namespace CompanionAI_Pathfinder.Tactics
         }
 
         private readonly List<BuffApplication> m_BuffApplications = new List<BuffApplication>();
+        private readonly Dictionary<BlueprintBuff, ContextActionApplyBuff> m_Applications = new Dictionary<BlueprintBuff, ContextActionApplyBuff>();
+
+        /// <summary>★ v0.3.19 (test11): the action that applies <paramref name="buff"/> (the first one), or null.</summary>
+        public ContextActionApplyBuff ApplicationOf(BlueprintBuff buff) =>
+            buff != null && m_Applications.TryGetValue(buff, out var a) ? a : null;
 
         /// <summary>
         /// ★ v0.3.15: expected duration of a buff application in rounds: fixed dice and bonus, any rate. A duration by
