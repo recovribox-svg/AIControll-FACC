@@ -36,6 +36,13 @@ combat (primary) and real-time combat.
 - An advance that runs out of its move action can continue with the standard action; abilities are not aimed at a
   target on which none of their effects apply.
 
+**0.3.19** ([release/CHANGELOG_v0.3.19.md](release/CHANGELOG_v0.3.19.md)): buffs are valued by what they really do
+for the ally who gets them (with stacking, real duration and penalties), and a pure buff must clearly beat attacking.
+Performances, spirits and auras that work through their area, Rage bonuses, Warpriest Fervor and Witch Cackle are
+understood. Kineticists price burn and Elemental Overflow, fallen allies get revived, and next-spell boosts go before
+the spell they help. One setting decides who manages toggles and one whether companions rebuff after fights
+(Buff It 2 The Limit compatibility). Smaller log.
+
 **0.3.18** ([release/CHANGELOG_v0.3.18.md](release/CHANGELOG_v0.3.18.md), includes 0.3.17): Melee
 characters walk around Grease, Entangle and clouds, and real-time walks are checked against the path the game takes and
 an ally's area spell about to land. Fight length and enemy danger are calibrated from the damage actually dealt. Spells
@@ -122,7 +129,7 @@ toggles such as Shift Form; bonus stacking follows the game's own rule (and Tabl
 ## Install (players)
 
 1. Install [Unity Mod Manager](https://www.nexusmods.com/site/mods/21) into the game.
-2. Take `CompanionAI_Pathfinder_v0.3.18.zip` - prebuilt in `release\`, or build it yourself (below; output in `dist\`).
+2. Take `CompanionAI_Pathfinder_v0.3.19.zip` - prebuilt in `release\`, or build it yourself (below; output in `dist\`).
 3. Install it either way:
    - Unity Mod Manager → *Mods* tab → drag the ZIP onto the window / *Install Mod*, **or**
    - extract it to `<game>\Mods\CompanionAI_Pathfinder\` so the folder contains
