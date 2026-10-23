@@ -1959,3 +1959,31 @@ The dispatcher's path check still refuses a step that is not one.
   heal.
 - Real-time quiet waits skipped 97, 77 and 75 decisions; the slow decisions (566-913 ms) all ran during the game's
   garbage collection.
+
+## 53. v0.3.21: real time with Wrath Tactics - its rules first, AI Control fills the gaps
+
+**Request.** A player using Wrath Tactics (Gh05d, player-written rules: "heal an ally below 50 %", "buff at combat
+start") wanted both mods to work together: Wrath Tactics' rules carried out when they fire, AI Control in charge
+otherwise, never a companion left idle.
+
+**Why they clashed.** AI Control replaces the game's auto-attack at the same place (`AiBrainController.TickBrain`)
+and decides only for a unit with no command, so it never cut into a running Wrath Tactics command. But it decides
+within 0.5 s of a unit going idle, and Wrath Tactics evaluates its rules every 3 s (`TacticsConfig.TickIntervalSeconds`):
+AI Control filled every gap first. Wrath Tactics skips a unit while a cast or walk without an `AiAction` is running
+(`PlayerCommandGuard.HasForeignActiveCommand`) - AI Control's own casts and walks - so it waited for AI Control in turn.
+
+**Handoff (`Tactics/WrathHandoff`, unit-tested; `RealTimeController.WrathHadItsTurn`).** With the setting on and Wrath
+Tactics active, a unit Wrath Tactics manages (enabled for it, with an enabled global or own rule) that has no command
+is offered to Wrath Tactics first (`TacticsEvaluator.RequestTick`). AI Control waits until Wrath Tactics' evaluation
+counter has moved (it looked at its rules) or 0.6 s, then decides itself if no command came. Once per idle stretch: a
+unit AI Control then leaves waiting is not offered again until it has carried out a command; Wrath Tactics' own 3 s tick
+still covers it. A Wrath Tactics command is never cancelled by AI Control's stuck-command check.
+
+**Isolation.** Every new path starts with the setting and a cached "Wrath Tactics active" check (the mod manager's
+list, every 5 s); off, or without the mod, nothing else runs and AI Control behaves as in 0.3.20. Turn-based combat
+never reaches `RealTimeController`. Wrath Tactics is reached only by reflection (`ModInterop`, checked against 1.34.0):
+a missing or throwing member switches the handoff off for the session, logged once.
+
+**Limits.** A rule whose action is "Do nothing" gives no command and is invisible to AI Control. Wrath Tactics may still
+replace one of AI Control's weapon attacks when a rule fires (its own priority). The handoff costs at most about 0.6 s
+each time a managed companion becomes free (normally a frame or two).

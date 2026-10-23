@@ -162,6 +162,10 @@ toggles such as Shift Form; bonus stacking follows the game's own rule (and Tabl
 - *Steer my own walk orders around spotted traps* (on): when you order a party member to walk in real time or out of
   combat and the way crosses a trap your party has spotted, the walk goes around it or stops short. Unspotted traps and
   turn-based moves are never changed. Switch off to walk exactly where you click.
+- *Real time: let Wrath Tactics act first; AI Control fills the gaps* (on; only matters with the Wrath Tactics mod):
+  when a companion that has Wrath Tactics rules becomes free, Wrath Tactics checks its rules first and AI Control acts
+  only when no rule gives a command (a moment later, at most about 0.6 s). A "Do nothing" rule gives no command, so AI
+  Control acts anyway. Turn-based combat and companions without rules are not affected.
 - **Buff It 2 The Limit:** if it manages your companions' toggles, switch *AI manages activatable abilities* off; if it
   casts their buffs, switch the self-buff option off too. The settings page shows a reminder while that mod is active.
 - *Consumables (quick-slot items)*: master switch plus potions / scrolls & wands / alchemical & thrown items, and the HP %

@@ -254,6 +254,9 @@ namespace CompanionAI_Pathfinder.GameInterface
             // ★ v0.3.19 (test5): a command the game queued behind one it put first (Gather Power, Kinetic Blade) counts.
             if (GameAPI.HasPendingCommands(unit))
             {
+                // ★ v0.3.21: Wrath Tactics first - a unit with a command starts a new handoff when it is idle again.
+                if (_wrathHandoff.Count > 0) NoteCommandForHandoff(unit, unitName);
+
                 // ★ v0.3.14 (test5): a command chosen at full health that has not started yet (still walking to its target,
                 // waiting for a cooldown) is dropped when the unit has since lost a lot of HP, so the engine can heal or
                 // withdraw now. Seelah went from 100 % to 9 % while a Smite Evil waited 5 s to start.
@@ -282,7 +285,9 @@ namespace CompanionAI_Pathfinder.GameInterface
                         // starts UnitMoveTo / melee attacks only once IsUnitCloseEnough() is true, i.e. on arrival,
                         // and commands legitimately wait for a real-time action cooldown. Interrupting every
                         // not-started command cancelled all walks longer than one decision interval.
-                        if (!cmd.IsStarted && IsCommandStuck(unit, cmd, out stuckReason, out stuckOnTarget))
+                        // ★ v0.3.21: a Wrath Tactics command is its rules' to end, never cancelled here as stuck.
+                        if (!cmd.IsStarted && !(WrathFirst && ModInterop.IsWrathCommand(unit, cmd)) &&
+                            IsCommandStuck(unit, cmd, out stuckReason, out stuckOnTarget))
                         {
                             hasStuckCommand = true;
                             stuckCommand = cmd;
@@ -335,6 +340,12 @@ namespace CompanionAI_Pathfinder.GameInterface
                 return;
             }
 
+            // ★ v0.3.21: Wrath Tactics first (setting on, the mod installed, rules for this unit): it is asked before AI
+            // Control decides for an idle unit, and AI Control decides only once it had its turn (Tactics/WrathHandoff).
+            // Off, or without Wrath Tactics, this is one cached check and nothing changes.
+            if (WrathFirst && !WrathHadItsTurn(unit, unitName, currentTime))
+                return;
+
             try
             {
                 // ★ v0.3.14: the turn-based tactical engine decides real time too (Tactics/RealTimeTactics); the old
@@ -350,6 +361,71 @@ namespace CompanionAI_Pathfinder.GameInterface
                 Main.Error($"[RT] ProcessUnit error ({unitName}): {ex.Message}\n{ex.StackTrace}");
             }
         }
+
+        #region Wrath Tactics first (★ v0.3.21)
+
+        private static readonly Dictionary<string, Tactics.WrathHandoff.State> _wrathHandoff =
+            new Dictionary<string, Tactics.WrathHandoff.State>();
+        private static readonly HashSet<string> _wrathHandoffNoted = new HashSet<string>();
+
+        /// <summary>The setting is on and Wrath Tactics is installed and usable (cached by ModInterop).</summary>
+        private static bool WrathFirst =>
+            (Settings.ModSettings.Instance?.WrathTacticsFirst ?? true) && ModInterop.WrathTacticsActive;
+
+        /// <summary>
+        /// An idle unit Wrath Tactics manages: true once Wrath Tactics had its turn for this idle stretch (it evaluated,
+        /// or did not answer within <see cref="Tactics.WrathHandoff.TimeoutSeconds"/>), false while it is asked or awaited.
+        /// A unit it does not manage is never held.
+        /// </summary>
+        private static bool WrathHadItsTurn(UnitEntityData unit, string unitName, float now)
+        {
+            if (!ModInterop.WrathManages(unit)) return true;
+            if (!_wrathHandoff.TryGetValue(unit.UniqueId, out var state))
+                _wrathHandoff[unit.UniqueId] = state = new Tactics.WrathHandoff.State();
+            int tick = ModInterop.WrathTick();
+            switch (Tactics.WrathHandoff.Next(state, now, tick))
+            {
+                case Tactics.WrathHandoff.Step.Ask:
+                    Tactics.WrathHandoff.MarkAsked(state, now, tick);
+                    ModInterop.RequestWrathTick($"AI Control: {unitName} is idle");
+                    if (_wrathHandoffNoted.Add(unit.UniqueId))
+                        Main.Log($"[RT] {unitName}: Wrath Tactics has rules for it - they go first whenever it is idle, AI Control fills the gaps");
+                    return false;
+                case Tactics.WrathHandoff.Step.Wait:
+                    return false;
+                default:
+                    Main.Verbose($"[RT] {unitName}: Wrath Tactics gave no command - AI Control decides");
+                    return true;
+            }
+        }
+
+        /// <summary>The unit has a command: the next idle stretch is offered to Wrath Tactics again; say when it is theirs.</summary>
+        private static void NoteCommandForHandoff(UnitEntityData unit, string unitName)
+        {
+            if (!_wrathHandoff.TryGetValue(unit.UniqueId, out var state) || !state.Asked) return;
+            Tactics.WrathHandoff.Reset(state);
+            try
+            {
+                foreach (var cmd in unit.Commands.Raw)
+                {
+                    if (cmd == null || cmd.IsFinished || !ModInterop.IsWrathCommand(unit, cmd)) continue;
+                    Main.Log($"[RT] {unitName}: Wrath Tactics acted - {(cmd is UnitUseAbility use ? use.Ability?.Name : cmd.GetType().Name)}; " +
+                             "AI Control waits until it ends");
+                    break;
+                }
+            }
+            catch { }
+        }
+
+        /// <summary>At combat start.</summary>
+        public static void ClearWrathHandoff()
+        {
+            _wrathHandoff.Clear();
+            _wrathHandoffNoted.Clear();
+            ModInterop.ClearWrathCache();
+        }
+
+        #endregion
 
         /// <summary>
         /// ★ v0.2.32: 유닛별 위상 오프셋 계산

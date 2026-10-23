@@ -13,6 +13,7 @@
     <Compile Include="..\..\Tactics\ResistanceRule.cs" Link="ResistanceRule.cs" />
     <Compile Include="..\..\Tactics\CastLedger.cs" Link="CastLedger.cs" />
     <Compile Include="..\..\Tactics\RealTimePacing.cs" Link="RealTimePacing.cs" />
+    <Compile Include="..\..\Tactics\WrathHandoff.cs" Link="WrathHandoff.cs" />
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.8.0" />

@@ -106,6 +106,13 @@ namespace CompanionAI_Pathfinder.Settings
                 { Language.English, "When you order a party member to walk (real time or out of combat) and the way crosses a trap your party has spotted, the walk goes around it or stops short. Unspotted traps and turn-based moves are never changed. Switch off to walk exactly where you click." },
                 { Language.Korean, "실시간 또는 전투 밖에서 파티원에게 이동을 명령했을 때 경로가 파티가 발견한 함정을 지나면, 함정을 우회하거나 그 앞에서 멈춥니다. 발견되지 않은 함정과 턴제 이동은 바뀌지 않습니다. 클릭한 곳으로 그대로 걷게 하려면 끄세요." }
             },
+            // ★ v0.3.21
+            ["WrathTacticsFirst"] = new() { { Language.English, "Real time: let Wrath Tactics act first; AI Control fills the gaps" }, { Language.Korean, "실시간: Wrath Tactics가 먼저 행동하고, AI Control이 빈틈을 채움" } },
+            ["WrathTacticsFirstDesc"] = new() {
+                { Language.English, "Only with the Wrath Tactics mod. When a companion that has Wrath Tactics rules becomes free, Wrath Tactics checks its rules first; AI Control acts only when no rule gives a command, a moment later. A rule whose action is \"Do nothing\" gives no command, so AI Control acts anyway. Turn-based combat and companions without rules are not affected." },
+                { Language.Korean, "Wrath Tactics 모드가 있을 때만 적용됩니다. Wrath Tactics 규칙이 있는 동료가 행동할 수 있게 되면 Wrath Tactics가 먼저 규칙을 확인하고, 명령을 내리는 규칙이 없을 때만 잠시 후 AI Control이 행동합니다. \"아무것도 하지 않음\" 규칙은 명령을 내리지 않으므로 AI Control이 행동합니다. 턴제 전투와 규칙이 없는 동료에게는 영향이 없습니다." }
+            },
+            ["WrathTacticsDetected"] = new() { { Language.English, "Wrath Tactics is active." }, { Language.Korean, "Wrath Tactics가 활성화되어 있습니다." } },
             ["BuffItDetected"] = new() { { Language.English, "Buff It 2 The Limit is active. If it manages your companions' toggles or buffs, switch the matching setting above off so the two mods do not undo each other's work." }, { Language.Korean, "Buff It 2 The Limit이 활성화되어 있습니다. 그 모드가 동료의 토글이나 버프를 관리한다면, 두 모드가 서로의 작업을 되돌리지 않도록 위의 해당 설정을 끄세요." } },
 
             // ★ v0.3.0: Consumables
@@ -334,6 +341,13 @@ namespace CompanionAI_Pathfinder.Settings
         /// behaviour. Turn-based moves are never changed.
         /// </summary>
         public bool SteerPlayerWalksAroundTraps { get; set; } = true;
+
+        /// <summary>
+        /// ★ v0.3.21: real time with the Wrath Tactics mod - an idle companion that has Wrath Tactics rules is offered to
+        /// Wrath Tactics first and AI Control decides once it gave no command (Tactics/WrathHandoff). Does nothing
+        /// without Wrath Tactics; turn-based is never affected.
+        /// </summary>
+        public bool WrathTacticsFirst { get; set; } = true;
 
         // 캐릭터별 설정
         public Dictionary<string, CharacterSettings> CharacterSettings { get; set; } = new();

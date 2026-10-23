@@ -145,6 +145,7 @@ are built only when the legacy engine is selected (v0.3.17).
 | DOC-001 | `CLAUDE.md` | "Action economy tracked in TurnState", "basic attacks used as fallback (PROBLEM)", "decision point scattered" described the pre-0.3.14 design. | Maintainability | Info | Confirmed | **Implemented** |
 | DEAD-001 | `CombatModePatches.CheckModeChange` | No caller. | Maintainability | Info | Confirmed | Left (no removal by default) |
 | ARCH-001 | `Tactics/TacticalEngine.cs` (≈3 700 lines) | One file holds context, weapons, abilities, movement and execution; the partials split off newer families. Hard to test in isolation, but no defect traced to the size. | Maintainability | Info | Informational | No refactor (risk > benefit now) |
+| INT-002 | `RealTimeController.ProcessUnit`, `ModInterop` (Wrath Tactics) | Real time with Wrath Tactics: AI Control decided within 0.5 s of a unit going idle, Wrath Tactics evaluates every 3 s, so its rules rarely fired. | Integration | P3 | Confirmed (both mods' code) | **Implemented** (setting, first-refusal handoff; TACTICAL_AI.md §53) |
 
 Found and fixed in the same session before this register (0.3.20-test5, `docs/TACTICAL_AI.md` §50): a hit from an
 attack of opportunity counted as stopping a walk (the game lets the unit walk on); a flat half chance a hit spoils a

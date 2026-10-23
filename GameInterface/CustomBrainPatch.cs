@@ -378,6 +378,7 @@ namespace CompanionAI_Pathfinder.GameInterface
             Tactics.SaveObserver.Clear();
             Tactics.EnemyThreat.Clear();   // ★ v0.3.20 (test4)
             Tactics.RealTimeTactics.ClearQuiet();   // ★ v0.3.20 (audit PERF-001)
+            RealTimeController.ClearWrathHandoff();   // ★ v0.3.21
             Analysis.AoeDangerAnalyzer.ClearPending();
             CompanionAI_Pathfinder.Analysis.AbilityClassifier.ResetCombatReports();
             Tactics.CoverageReport.NewFight();

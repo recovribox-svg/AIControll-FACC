@@ -293,6 +293,14 @@ namespace CompanionAI_Pathfinder.UI
             bool prevTrapSteer = ModSettings.Instance.SteerPlayerWalksAroundTraps;
             ModSettings.Instance.SteerPlayerWalksAroundTraps = DrawCheckbox(ModSettings.Instance.SteerPlayerWalksAroundTraps, L("SteerPlayerWalksAroundTraps"));
             GUILayout.Label($"<color=#888888><size=11>{L("SteerPlayerWalksAroundTrapsDesc")}</size></color>", _descriptionStyle);
+            GUILayout.Space(3);
+
+            // ★ v0.3.21
+            bool prevWrathFirst = ModSettings.Instance.WrathTacticsFirst;
+            ModSettings.Instance.WrathTacticsFirst = DrawCheckbox(ModSettings.Instance.WrathTacticsFirst, L("WrathTacticsFirst"));
+            GUILayout.Label($"<color=#888888><size=11>{L("WrathTacticsFirstDesc")}</size></color>", _descriptionStyle);
+            if (GameInterface.ModInterop.WrathTacticsActive)
+                GUILayout.Label($"<color=#FFD700><size=12>{L("WrathTacticsDetected")}</size></color>", _descriptionStyle);
 
             // 변경시 저장
             if (prevBossBypass != ModSettings.Instance.ProgressiveBossBypass ||
@@ -300,6 +308,7 @@ namespace CompanionAI_Pathfinder.UI
                 prevRespect != ModSettings.Instance.RespectPlayerToggles ||
                 prevSelfBuffs != ModSettings.Instance.AiRecastsSelfBuffs ||
                 prevTrapSteer != ModSettings.Instance.SteerPlayerWalksAroundTraps ||
+                prevWrathFirst != ModSettings.Instance.WrathTacticsFirst ||
                 prevTurnBased != ModSettings.Instance.EnableInTurnBased ||
                 prevRealTime != ModSettings.Instance.EnableInRealTime ||
                 Math.Abs(prevInterval - ModSettings.Instance.RealTimeDecisionInterval) > 0.01f)
