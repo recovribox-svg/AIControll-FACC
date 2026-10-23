@@ -43,6 +43,9 @@ namespace CompanionAI_Pathfinder.Tactics
         private static readonly Dictionary<int, float> EnemyByRound = new Dictionary<int, float>();
         private static readonly Dictionary<int, float> PredictedByRound = new Dictionary<int, float>();
         private static float _lastDangerScale = 1f, _lastPartyPerRound;
+
+        /// <summary>★ v0.3.20 (test4): the fight's latest danger calibration (ValueModel.DangerScale), for EnemyThreat.</summary>
+        public static float LastDangerScale => _lastDangerScale;
         /// <summary>★ v0.3.19 (test8): per party member, the damage it took in each round of this fight.</summary>
         private static readonly Dictionary<string, Dictionary<int, float>> TakenByRound = new Dictionary<string, Dictionary<int, float>>();
 
@@ -241,6 +244,7 @@ namespace CompanionAI_Pathfinder.Tactics
                 else if (target.IsPlayerFaction)
                 {
                     _enemyDamage += dealt;
+                    EnemyThreat.NoteDealt(attacker, dealt);   // ★ v0.3.20 (test4)
                     EnemyByRound.TryGetValue(round, out float sum);
                     EnemyByRound[round] = sum + dealt;
                     if (!TakenByRound.TryGetValue(target.UniqueId, out var taken))

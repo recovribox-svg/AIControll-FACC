@@ -91,6 +91,46 @@ namespace CompanionAI_Pathfinder.Tactics
 
         #endregion
 
+        #region Enemy importance (0.3.20)
+
+        /// <summary>Range of an enemy's importance against the fight's average (EnemyThreat).</summary>
+        public const float MinThreatShare = 0.5f, MaxThreatShare = 2f;
+
+        /// <summary>
+        /// ★ v0.3.20 (test4): an enemy's share of the fight's importance. <paramref name="offence"/> is what it can do a round
+        /// (EnemyThreat), <paramref name="worth"/> its CR worth (<see cref="PerRound"/>); the totals are over every enemy of
+        /// the fight. 1 when it does as much for its CR as the average enemy; more for one that does more, 0.5..2. The fight's
+        /// total stays what the CRs give (shares average 1), so only the order between enemies changes, not how fights
+        /// weigh against heals or buffs - which the danger calibration (<see cref="DangerScale"/>) already tunes.
+        /// </summary>
+        public static float ThreatShare(float offence, float worth, float totalOffence, float totalWorth)
+        {
+            if (offence <= 0f && totalOffence <= 0f) return 1f;
+            if (worth <= 0f || totalWorth <= 0f || totalOffence <= 0f) return 1f;
+            float share = (Math.Max(0f, offence) / worth) / (totalOffence / totalWorth);
+            return Clamp(share, MinThreatShare, MaxThreatShare);
+        }
+
+        /// <summary>
+        /// ★ v0.3.20 (test4): an enemy's damage a round from what it dealt in this fight's completed rounds, with
+        /// <see cref="PriorRounds"/> rounds of <paramref name="predicted"/> as the prior (one lucky critical does not make it the
+        /// most dangerous; three rounds of hitting hard do).
+        /// </summary>
+        public static float ObservedOffence(float dealt, int rounds, float predicted) =>
+            (Math.Max(0f, dealt) + PriorRounds * Math.Max(0f, predicted)) / (Math.Max(0, rounds) + PriorRounds);
+
+        /// <summary>Most an enemy's removal gains from the ally it is about to drop.</summary>
+        public const float MaxUrgency = 0.5f;
+
+        /// <summary>
+        /// ★ v0.3.20 (test4): what taking down (or holding) an enemy is worth more when the ally it is attacking may drop to it
+        /// this round: 1 + half the drop chance, a quarter for a summon (replaceable).
+        /// </summary>
+        public static float Urgency(float dropChance, bool victimIsSummon) =>
+            1f + MaxUrgency * Clamp(dropChance, 0f, 1f) * (victimIsSummon ? 0.5f : 1f);
+
+        #endregion
+
         #region Enemy damage (N5)
 
         /// <summary>Lowest and highest scale of the predicted enemy damage.</summary>

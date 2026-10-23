@@ -311,7 +311,7 @@ namespace CompanionAI_Pathfinder.Tactics
                     : p.Grants.Any(g => g.Buff.Harmful && !enemy.Buffs.HasFact(g.Buff) && !CombatMath.BuffImmune(enemy, g.Buff, null) &&
                                         GrantReaches(g, toggleCtx, enemy) > 0f);
                 if (!reaches) continue;
-                value += 0.25f * CombatMath.Threat(enemy) * rounds * RoleWeight(ctx, "buff");
+                value += 0.25f * CombatMath.ControlWorth(enemy) * rounds * RoleWeight(ctx, "buff");
                 hindered++;
             }
             if (value <= 0f) return 0f;

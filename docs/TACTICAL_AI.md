@@ -1790,3 +1790,41 @@ here. Fight 3 with the change: Orvath's Color Spray (14.8) beats an advance (abo
 someone; every option is then valued by what this unit can do to that enemy (its hit chance and damage by the game's
 rules, resistances, kill chance capped at the HP, control's share of the threat). The importance itself knows only the
 CR: not what the enemy can do (a caster and a brute of one CR are alike), not what it did this fight, not whom it hits.
+
+## 49. v0.3.20 (test4): enemy importance by what each enemy can do and did
+
+`Tactics/EnemyThreat.cs`, pure formulas in `ValueModel` (`ThreatShare`, `ObservedOffence`, `Urgency`, unit-tested).
+
+**Before.** `CombatMath.Threat` - the importance behind kill bonuses, control values, debuffs and predicted danger - was
+4 + 3 x CR (x0.25 disabled, x1.2 in melee): a CR 2 wizard with Color Spray left and a CR 2 dretch counted the same.
+
+**Offence, once a round per enemy** (again when one joins or falls), against the party member it is most likely to
+attack (the weakest it engages, else the nearest):
+- weapons: the full attack by the game's rules (`CombatMath.EstimateWeaponAttack`: its attack bonus against that ally's
+  AC, damage after the ally's reduction, criticals) - the estimate the party's own attacks use;
+- spells and abilities with a use left that the game flags as harmful to enemies (spellbook spells it can still cast,
+  `Spellbook.CanSpend`; spell-like and supernatural abilities, `IsAvailableForCast`), the best of its six highest-level:
+  damage x the chance it lands (`CombatMath.EffectChance`: spell resistance, attack roll, save, evasion), control as the
+  ally's worth a round for up to two rounds x the chance (none against an immunity), x(1 + half the other party members
+  in its area);
+- heals with a use left (`EffectOnAlly` helpful): what the best restores on its most hurt ally - a healer undoes the
+  party's damage;
+- what it really dealt to the party in the fight's completed rounds, blended with the weapon prediction (two rounds of
+  prior, `ObservedOffence`).
+Offence = the largest of spell, heal and blended weapon value (one of them a round).
+
+**Share, not inflation.** `ThreatShare` = (offence / CR worth) against the fight's average, 0.5..2: the fight's total stays
+what the CRs give, so the balance of damage against control, heals and buffs (and the danger calibration) is unchanged;
+the order between enemies changes. `Threat` = CR worth x share (x0.25 disabled, x1.2 in melee as before).
+
+**Urgency.** For the worth of taking an enemy down or holding it (`CombatMath.ControlWorth`, used by kill bonuses,
+control, debuffs, maneuvers, hex extensions, harmful auras) - not for the danger it poses, which already drives heals:
+x(1 + 0.5 x the chance the ally it attacks drops to it this round), a quarter for a summon; only while that ally is within
+its reach. The ally's HP is read each frame.
+
+**Log.** `[Threat] R1: most dangerous first - <enemy> x1.8 (<spell> 9.8 on <ally>), <enemy> x1.2 (attacks 6.1 on <ally>),
+...; N more x0.6-0.9` at the first decision with two or more enemies; `now the most dangerous - ...` when another enemy
+leads by 15 % or more; at the end `[Threat] fight: dealt the most to the party - <enemy> 24 (rated up to x1.6), ...`.
+
+**Cost.** Once a round per enemy: one attack estimate and up to twelve ability estimates (profiles are cached per
+blueprint; a new enemy spell's profile is built once per session).

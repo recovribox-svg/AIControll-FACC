@@ -382,7 +382,7 @@ namespace CompanionAI_Pathfinder.Tactics
                     // counts (the game's Conditional is HasBuffFromCaster). A sleeping enemy kept asleep is the point of
                     // lengthening Slumber: no discount for being disabled.
                     float share = AbilityProfile.ControlShareOf(extension.Key);
-                    float threat = CombatMath.Threat(target);
+                    float threat = CombatMath.ControlWorth(target);
                     // Threat is a quarter for a disabled enemy; when this hex is what disables it, keeping it is full worth.
                     if (share >= 1f && CombatMath.IsDisabled(target)) threat *= 4f;
                     float worth = unit.IsEnemy(target) ? threat * share : 0.25f * ValueModel.PerRound(Level(target));
@@ -655,6 +655,8 @@ namespace CompanionAI_Pathfinder.Tactics
                 }
             }
             if (!ctx.Allies.Contains(unit)) ctx.Allies.Add(unit);
+            // ★ v0.3.20 (test4): each enemy's share of the fight by what it can do (once a round; Threat reads it).
+            EnemyThreat.Refresh(ctx.Round);
             // ★ v0.3.18 (test10): the enemies still acting, for the cost of waking a sleeping one (WakeFactor).
             s_ActiveEnemies = ctx.Enemies.Where(e => !CombatMath.IsDisabled(e)).ToList();
             CombatMath.OnlyDisabledEnemiesLeft = ctx.Enemies.Count > 0 && s_ActiveEnemies.Count == 0;
@@ -2675,11 +2677,11 @@ namespace CompanionAI_Pathfinder.Tactics
                     if ((profile.Control & CCType.Sleep) != 0 && s_ActiveEnemies != null && s_ActiveEnemies.All(e => e == enemy) &&
                         ctx.Allies.Any(a => a != unit))
                         rounds = Math.Min(rounds, 1f);
-                    float enemyValue = p * CombatMath.Threat(enemy) * strength * rounds;
+                    float enemyValue = p * CombatMath.ControlWorth(enemy) * strength * rounds;
                     // ★ v0.3.18 (test10): what Demoralize adds or replaces for this caster (Frightening Thug, Hellknight,
                     // Shatter Confidence, Trickster) on a successful check (p already holds the check's chance).
                     if (profile.Intimidation != null && buffs.Contains(profile.Intimidation.Buff))
-                        enemyValue += p * CombatMath.Threat(enemy) * repeat *
+                        enemyValue += p * CombatMath.ControlWorth(enemy) * repeat *
                                       DemoralizeUpgrades(ctx, ability, profile.Intimidation, enemy, strength / repeat, rounds);
                     // ★ v0.3.9: an enemy that already cannot act (asleep, paralysed, stunned) gains little from more
                     // control: Orvath stunned (Grasp Heart) the Mite Scout he had just put to sleep.
@@ -2717,7 +2719,7 @@ namespace CompanionAI_Pathfinder.Tactics
                         // (Hydraulic Push; an infusion's blast must hit first).
                         chance *= CombatMath.SpellResistancePass(unit, enemy, ability);
                         if (profile.NeedsAttackRoll) chance *= CombatMath.SpellAttackHitChance(unit, enemy, ability);
-                        float part = chance * CombatMath.Threat(enemy) * strength *
+                        float part = chance * CombatMath.ControlWorth(enemy) * strength *
                                      (lasting ? Math.Min(Math.Max(1f, rounds), Math.Min(ctx.ExpectedRounds, 3f)) : 1f);
                         if (CombatMath.IsDisabled(enemy)) part *= 0.4f;   // with Threat's x0.25: 0.1, as for control
                         maneuverValue += part;

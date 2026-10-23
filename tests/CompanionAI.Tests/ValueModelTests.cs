@@ -232,6 +232,44 @@ namespace CompanionAI.Tests
             Assert.Equal(0.25f, ValueModel.DangerScale(3f, 226f, 7), 3);
         }
 
+        // --- 0.3.20: enemy importance ---
+
+        [Fact]
+        public void ThreatShare_RedistributesTheFightsTotal()
+        {
+            // One enemy, or enemies alike: as the CR says.
+            Assert.Equal(1f, ValueModel.ThreatShare(5f, 10f, 5f, 10f), 3);
+            Assert.Equal(1f, ValueModel.ThreatShare(5f, 10f, 10f, 20f), 3);
+            // A CR 5 boss (worth 19, offence 20) and four CR 1 minions (worth 7, offence 3): the boss counts for more,
+            // the minions for less, and the fight's total stays about what the CRs gave (19 + 4 x 7 = 47).
+            float boss = ValueModel.ThreatShare(20f, 19f, 32f, 47f), minion = ValueModel.ThreatShare(3f, 7f, 32f, 47f);
+            Assert.InRange(boss, 1.5f, 1.6f);
+            Assert.InRange(minion, 0.6f, 0.65f);
+            Assert.InRange(19f * boss + 4f * 7f * minion, 45f, 49f);
+            // Clamped: nothing offensive at all is still half; a lone killer at most twice.
+            Assert.Equal(0.5f, ValueModel.ThreatShare(0f, 10f, 30f, 30f), 3);
+            Assert.Equal(2f, ValueModel.ThreatShare(30f, 10f, 31f, 40f), 3);
+            // Nothing known about any enemy: as the CR says.
+            Assert.Equal(1f, ValueModel.ThreatShare(0f, 10f, 0f, 30f), 3);
+        }
+
+        [Fact]
+        public void ObservedOffence_FromAPriorOfTwoRounds()
+        {
+            Assert.Equal(6f, ValueModel.ObservedOffence(0f, 0, 6f), 3);          // nothing seen yet: the prediction
+            Assert.Equal(12f, ValueModel.ObservedOffence(36f, 2, 6f), 3);        // 18 a round seen: (36 + 12) / 4
+            Assert.Equal(1.5f, ValueModel.ObservedOffence(0f, 6, 6f), 3);        // six quiet rounds: (0 + 12) / 8
+        }
+
+        [Fact]
+        public void Urgency_FromTheVictimsDropChance()
+        {
+            Assert.Equal(1f, ValueModel.Urgency(0f, false), 3);
+            Assert.Equal(1.5f, ValueModel.Urgency(1f, false), 3);
+            Assert.Equal(1.25f, ValueModel.Urgency(1f, true), 3);
+            Assert.Equal(1.5f, ValueModel.Urgency(3f, false), 3);                // clamped
+        }
+
         // --- 0.3.20: learned damage share (kinetic blasts) ---
 
         [Fact]

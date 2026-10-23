@@ -376,6 +376,7 @@ namespace CompanionAI_Pathfinder.GameInterface
             Tactics.CastOutcome.Clear();
             Tactics.DamageObserver.Clear();
             Tactics.SaveObserver.Clear();
+            Tactics.EnemyThreat.Clear();   // ★ v0.3.20 (test4)
             Analysis.AoeDangerAnalyzer.ClearPending();
             CompanionAI_Pathfinder.Analysis.AbilityClassifier.ResetCombatReports();
             Tactics.CoverageReport.NewFight();
@@ -395,6 +396,8 @@ namespace CompanionAI_Pathfinder.GameInterface
             Tactics.FightStats.Report();
             Tactics.SaveObserver.ReportFight();
             Tactics.DamageObserver.ReportFight();
+            Tactics.EnemyThreat.ReportFight();   // ★ v0.3.20 (test4)
+            Tactics.EnemyThreat.Clear();
             // ★ v0.3.17: analysis caches of this fight's units (they are per frame now; this only frees them)
             CompanionAI_Pathfinder.Analysis.CombatRulesAnalyzer.ClearCache();
             // ★ v0.3.18 (review): AI-started toggles the game keeps on out of combat (Mobility) go off first.

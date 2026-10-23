@@ -1520,6 +1520,8 @@ namespace CompanionAI_Pathfinder.Tactics
             float cr = 1f;
             try { cr = Math.Max(1, enemy.Blueprint?.CR ?? 1); } catch { }
             float threat = ValueModel.PerRound(cr);   // ★ v0.3.18: the shared worth per round (ValueModel)
+            // ★ v0.3.20 (test4): the enemy's share of the fight by what it can do and did (EnemyThreat), 0.5..2.
+            threat *= EnemyThreat.Share(enemy);
 
             if (IsDisabled(enemy)) threat *= 0.25f;
 
@@ -1535,9 +1537,16 @@ namespace CompanionAI_Pathfinder.Tactics
         /// </summary>
         public static float TargetWorth(UnitEntityData enemy)
         {
-            float threat = Threat(enemy);
+            float threat = ControlWorth(enemy);
             return OnlyDisabledEnemiesLeft && IsDisabled(enemy) ? threat * 4f : threat;
         }
+
+        /// <summary>
+        /// ★ v0.3.20 (test4): what holding this enemy (control, a debuff, a maneuver) or taking it down is worth: its
+        /// <see cref="Threat"/>, more while the ally it attacks may drop to it this round (EnemyThreat.Urgency, 1..1.5). Not
+        /// for the danger it poses (incoming damage): the drop chance is already that danger's consequence.
+        /// </summary>
+        public static float ControlWorth(UnitEntityData enemy) => Threat(enemy) * EnemyThreat.Urgency(enemy);
 
         #endregion
     }
