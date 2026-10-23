@@ -324,8 +324,9 @@ namespace CompanionAI_Pathfinder.Tactics
             // ended round 1 with all her actions and 4 enemies, and the log could not say why.
             // ★ v0.3.16: also on movement-only turns (nauseated), with why "Leave area" was not offered: Seelah stayed
             // nauseated next to the Corrupted Mongrels for three turns and the log could not say why.
+            // ★ v0.3.19 (release): not once the main action is spent (only "not affordable" options are left then).
             if (chosen == null && usable.Count == 0 && (candidates.Count > 0 || ctx.LeaveNote != null) &&
-                (ctx.HasStandard || ctx.HasMove) && !CombatMemory.IsRealTime)
+                (ctx.HasStandard || ctx.LeaveNote != null) && !CombatMemory.IsRealTime)
                 Main.Log($"[Tactics] {unit.CharacterName}: nothing worth doing" +
                          (candidates.Count > 0
                              ? $" - best of {candidates.Count} options: " +
@@ -346,7 +347,6 @@ namespace CompanionAI_Pathfinder.Tactics
             return chosen;
         }
 
-        /// <summary>★ v0.3.19 (test11): the appraisal behind a buff candidate, for the log.</summary>
         /// <summary>
         /// ★ v0.3.19 (class audit B2): what lengthening the caster's own active buffs is worth (Cackle: +1 round of each
         /// hex on everyone within 30 feet). A hex on an enemy: one more round of its share of that enemy's worth
@@ -387,6 +387,7 @@ namespace CompanionAI_Pathfinder.Tactics
             return total;
         }
 
+        /// <summary>★ v0.3.19 (test11): the appraisal behind a buff candidate, for the log.</summary>
         private static string BuffNote(UnitEntityData unit, Candidate c) =>
             c.Kind == CandidateKind.Toggle ? LastToggleAppraisal(unit, c.Key) ?? "no appraisal" :
             c.Ability == null ? "" : LastAppraisal(unit, c.Ability, c.Target ?? unit) ?? "no appraisal";

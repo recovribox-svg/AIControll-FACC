@@ -323,11 +323,11 @@ namespace CompanionAI_Pathfinder.Analysis
             });
         }
 
-        /// <summary>Components with no combat effect of their own (descriptors, ranks, bookkeeping, self-removal, visuals).</summary>
         private static bool IsRangedType(WeaponRangeType type) => type == WeaponRangeType.Ranged || type == WeaponRangeType.RangedNormal;
 
         private static bool IsMeleeType(WeaponRangeType type) => type == WeaponRangeType.Melee || type == WeaponRangeType.MeleeNormal;
 
+        /// <summary>Components with no combat effect of their own (descriptors, ranks, bookkeeping, self-removal, visuals).</summary>
         private static bool IsBookkeeping(BlueprintComponent c)
         {
             switch (c.GetType().Name)

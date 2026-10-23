@@ -523,7 +523,6 @@ namespace CompanionAI_Pathfinder.Analysis
                 result.PenetrationChance = CompanionAI_Pathfinder.Tactics.ResistanceRule.PassChance(
                     bypass: false, immune: false, allowsSR: true, allyIgnores: false, result.TargetSR, penetration);
 
-                if (Main.VerboseOn) Main.Verbose($"[HitChance] SR: {ability.Name} {caster.CharacterName} vs {target.CharacterName} - SR{result.TargetSR} vs CL{casterLevel}+{bonus}, Penetrate={result.PenetrationChance:P0}");
             }
             catch (Exception ex)
             {

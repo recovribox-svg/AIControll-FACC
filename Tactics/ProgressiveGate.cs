@@ -91,9 +91,11 @@ namespace CompanionAI_Pathfinder.Tactics
                 }
             }
             var leftAlone = outOfScope.Where(kv => !inScopeNames.Contains(kv.Key)).Select(kv => $"{kv.Key}: {kv.Value}").ToList();
-            Main.Log($"[Progressive] {unit.CharacterName} ({mode}): policy on - on the spell-level ladder (held back only while a lower level can do the job): " +
-                     $"{(inScope.Count > 0 ? string.Join(", ", inScope) : "none")}; left alone: " +
-                     $"{(leftAlone.Count > 0 ? string.Join(", ", leftAlone) : "none")}");
+            // ★ v0.3.19 (release): once per unit until its list changes (it was repeated at the start of every fight).
+            string text = $"[Progressive] {unit.CharacterName} ({mode}): policy on - on the spell-level ladder (held back only while a lower level can do the job): " +
+                          $"{(inScope.Count > 0 ? string.Join(", ", inScope) : "none")}; left alone: " +
+                          $"{(leftAlone.Count > 0 ? string.Join(", ", leftAlone) : "none")}";
+            AbilityDiscovery.ReportOnce($"progressive|{unit.UniqueId}|{text.GetHashCode()}", text);
         }
 
         /// <summary>

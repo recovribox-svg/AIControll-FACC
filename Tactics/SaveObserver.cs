@@ -8,6 +8,7 @@
 // kind of creature (blueprint) for the next one of the same kind; cleared when the party's fight ends. Read-only.
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using Kingmaker.EntitySystem.Entities;
 using Kingmaker.EntitySystem.Stats;
 using Kingmaker.PubSubSystem;
@@ -55,6 +56,46 @@ namespace CompanionAI_Pathfinder.Tactics
             Clear();
         }
 
+        private sealed class FightTally
+        {
+            public string Caster, Ability;
+            public int Saves, Passed, MinDc = int.MaxValue, MaxDc;
+            public float Expected;
+        }
+
+        private static readonly Dictionary<string, FightTally> Fight = new Dictionary<string, FightTally>();
+
+        private static void Tally(UnitEntityData caster, BlueprintAbility ability, RuleSavingThrow evt, float passChance)
+        {
+            string key = $"{caster.UniqueId}|{ability.AssetGuid}";
+            if (!Fight.TryGetValue(key, out var t))
+                Fight[key] = t = new FightTally { Caster = caster.CharacterName, Ability = ability.Name };
+            t.Saves++;
+            if (evt.IsPassed) t.Passed++;
+            t.Expected += passChance;
+            if (!evt.AutoPass)
+            {
+                t.MinDc = Math.Min(t.MinDc, evt.DifficultyClass);
+                t.MaxDc = Math.Max(t.MaxDc, evt.DifficultyClass);
+            }
+        }
+
+        /// <summary>★ v0.3.19 (release): the fight's saves against the party's abilities, one line each; then forgotten.</summary>
+        public static void ReportFight()
+        {
+            try
+            {
+                foreach (var t in Fight.Values.OrderBy(x => x.Caster).ThenBy(x => x.Ability))
+                    Main.Log($"[Save] {t.Caster}'s {t.Ability}: {t.Saves} saves, {t.Passed} passed (expected {t.Expected / t.Saves:P0})" +
+                             (t.MaxDc > 0 ? $", DC {(t.MinDc == t.MaxDc ? $"{t.MaxDc}" : $"{t.MinDc}-{t.MaxDc}")}" : ""));
+            }
+            catch (Exception ex)
+            {
+                Main.Verbose($"[Save] report: {ex.Message}");
+            }
+            Fight.Clear();
+        }
+
         public static void Clear()
         {
             ByUnit.Clear();
@@ -98,7 +139,10 @@ namespace CompanionAI_Pathfinder.Tactics
                 // estimate (Orvath cast Sleep on a Corrupted Mongrel Brute five times; the log could not say why it failed).
                 int needed = evt.RollValueToPass;
                 float passChance = evt.AutoPass ? 1f : Math.Max(0.05f, Math.Min(0.95f, (21 - needed) / 20f));
-                Main.Log($"[Save] {target.CharacterName} vs {caster.CharacterName}'s {ability.Name}: {evt.Type} " +
+                // ★ v0.3.19 (release): each roll at verbose level only; the normal log gets one line per caster and ability
+                // at the end of the fight (ReportFight) - saves made, passed, the chance expected and the DCs.
+                Tally(caster, ability, evt, passChance);
+                Main.Verbose($"[Save] {target.CharacterName} vs {caster.CharacterName}'s {ability.Name}: {evt.Type} " +
                          (evt.AutoPass ? "passes automatically" : $"{(int)evt.D20}+{evt.StatValue}{(evt.SuccessBonus != 0 ? $"+{evt.SuccessBonus}" : "")} vs DC {evt.DifficultyClass}") +
                          $" - {(evt.IsPassed ? "passed" : "failed")} (passes on {needed}+, {passChance:P0})");
                 var seen = new Seen { Delta = evt.StatValue - plain, AutoPass = evt.AutoPass };

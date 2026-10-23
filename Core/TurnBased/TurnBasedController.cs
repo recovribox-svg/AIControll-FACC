@@ -238,7 +238,7 @@ namespace CompanionAI_Pathfinder.Core.TurnBased
         public void ResetAll()
         {
             CombatMemory.ResetCombat();
-            Main.Log("[TBController] All states reset");
+            Main.Verbose("[TBController] All states reset");
         }
     }
 }

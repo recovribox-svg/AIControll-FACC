@@ -50,6 +50,8 @@ namespace CompanionAI_Pathfinder.Analysis
         #region Cache
 
         private static readonly Dictionary<string, CachedTrapInfo> _trapCache = new();
+        /// <summary>★ v0.3.19 (release): lines already written (each trap, each unit stopping or detouring at one).</summary>
+        private static readonly HashSet<string> s_Reported = new HashSet<string>();
         private static float _lastCacheUpdate = 0f;
         private const float CACHE_DURATION = 2.0f;
 
@@ -321,9 +323,11 @@ namespace CompanionAI_Pathfinder.Analysis
                     string radiusInfo = triggerZone != null ? "ScriptZone" :
                         (triggerRadius > 0 ? $"radius={triggerRadius:F1}" : $"default={DefaultTrapRadius:F1}");
 
+                    // ★ v0.3.19 (release): once per trap (the cache is rebuilt often and logged every trap again).
                     if (isPerceived)
                     {
-                        Main.Log($"[TrapAwareness] Detected trap: {trapId} at {trapView.transform.position}, {radiusInfo}");
+                        if (s_Reported.Add($"trap|{trapId}"))
+                            Main.Log($"[TrapAwareness] Detected trap: {trapId} at {trapView.transform.position}, {radiusInfo}");
                     }
                     else
                     {
@@ -331,7 +335,8 @@ namespace CompanionAI_Pathfinder.Analysis
                     }
                 }
 
-                Main.Log($"[TrapAwareness] Cache updated: {_trapCache.Count} active traps");
+                Main.Verbose($"[TrapAwareness] Cache updated: {_trapCache.Count} active traps");
+                if (s_Reported.Count > 512) s_Reported.Clear();
             }
             catch (Exception ex)
             {
@@ -433,7 +438,8 @@ namespace CompanionAI_Pathfinder.Analysis
                 // 첫 번째 웨이포인트를 임시 목적지로
                 safeDestination = safePath.Length > 2 ? safePath[1] : safePath[safePath.Length - 1];
 
-                Main.Log($"[TrapAwareness] {unit.CharacterName}: Avoiding trap, detour via {safeDestination}");
+                if (s_Reported.Add($"detour|{unit.UniqueId}|{dangerousTrap?.Position}"))
+                    Main.Log($"[TrapAwareness] {unit.CharacterName}: Avoiding trap, detour via {safeDestination}");
                 return false;
             }
 
@@ -447,7 +453,9 @@ namespace CompanionAI_Pathfinder.Analysis
 
                 safeDestination = dangerousTrap.Position - toTrap * stopDistance;
 
-                Main.Log($"[TrapAwareness] {unit.CharacterName}: Cannot avoid trap, stopping before it");
+                // ★ v0.3.19 (release): once per unit and trap (every move order near it repeated the line).
+                if (s_Reported.Add($"stop|{unit.UniqueId}|{dangerousTrap.Position}"))
+                    Main.Log($"[TrapAwareness] {unit.CharacterName}: Cannot avoid trap, stopping before it");
                 return false;
             }
 

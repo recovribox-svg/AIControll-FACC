@@ -104,10 +104,10 @@ namespace CompanionAI_Pathfinder.Tactics
             float rounds = ValueModel.Horizon(ctx.ExpectedRounds, 3f);
             float perRound = GuardPerRound(ctx, target, mark);
             float gain = perRound * rounds;
-            // ★ v0.3.19 (test9): visible, once a round per target (the ring was never chosen and the log could not say why).
-            ReportOnce($"guard|{unit.UniqueId}|{CombatMemory.Round}|{target.UniqueId}",
-                       $"[Tactics] {unit.CharacterName}: {ability.Name} on {target.CharacterName} guards ~{perRound:F1} a round " +
-                       $"(AC +{mark.ArmorClass}, saves +{mark.Saves}) for {rounds:F1} rounds");
+            // ★ v0.3.19 (test9): the guard's worth per target; ★ (release) at verbose level - the ring is chosen as it
+            // should be since test10, and the candidate's value is in the decision line.
+            Main.Verbose($"[Tactics] {unit.CharacterName}: {ability.Name} on {target.CharacterName} guards ~{perRound:F1} a round " +
+                         $"(AC +{mark.ArmorClass}, saves +{mark.Saves}) for {rounds:F1} rounds");
             if (mark.Unique)
             {
                 var current = ctx.Enemies.FirstOrDefault(e => e != target && OursOn(e));

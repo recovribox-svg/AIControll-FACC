@@ -569,7 +569,8 @@ namespace CompanionAI_Pathfinder.Tactics
                         else toggle.IsOn = false;
                     }
                     CombatMemory.RecordToggle(unit, toggle, change.Value, wasOn);
-                    Main.Log($"[Toggle] {unit.CharacterName}: {toggle.Name} {(change.Value ? "on" : "off")} for '{c.Label}'");
+                    // ★ v0.3.19 (release): verbose - the decision's label already says "[Fighting Defensively on ...]".
+                    Main.Verbose($"[Toggle] {unit.CharacterName}: {toggle.Name} {(change.Value ? "on" : "off")} for '{c.Label}'");
                 }
                 catch (Exception ex)
                 {

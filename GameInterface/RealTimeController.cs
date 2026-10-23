@@ -431,10 +431,6 @@ namespace CompanionAI_Pathfinder.GameInterface
                 }
             }
 
-            if (processed > 0)
-            {
-                Main.Verbose($"[RT] Processed {processed} pending units from queue");
-            }
         }
 
         #endregion
@@ -1295,7 +1291,8 @@ namespace CompanionAI_Pathfinder.GameInterface
             var unappliedPermanentBuffs = AbilityClassifier.GetUnappliedPermanentBuffs(unit)
                 .Where(c => c.Ability != null && IsWorthKeepingUp(c.Ability, unit))
                 .ToList();
-            Main.Verbose($"[RT] {unitName}: Found {unappliedPermanentBuffs.Count} unapplied permanent buffs");
+            if (unappliedPermanentBuffs.Count > 0)
+                Main.Verbose($"[RT] {unitName}: Found {unappliedPermanentBuffs.Count} unapplied permanent buffs");
 
             if (unappliedPermanentBuffs.Count == 0)
                 return;

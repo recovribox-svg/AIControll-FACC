@@ -113,9 +113,15 @@ namespace CompanionAI_Pathfinder.Tactics
                 var boost = BoostOf(c);
                 if (boost == null) { result.Add(c); continue; }
                 float gain = BoostGain(ctx, boost, main, out string note);
+                // ★ v0.3.19 (release): only a boost that is worth something reaches the normal log (two lines a round
+                // for each of Orvath's reservoir abilities, nearly all "0.0 - no spell to boost next").
+                if (gain <= 0f)
+                {
+                    Main.Verbose($"[Tactics] {ctx.Unit.CharacterName}: {c.Ability.Name} = 0 ({note})");
+                    continue;
+                }
                 ReportOnce($"boost|{ctx.Unit.UniqueId}|{CombatMemory.Round}|{c.Key}|{main?.Key}",
                            $"[Tactics] {ctx.Unit.CharacterName}: {c.Ability.Name} = {gain:F1} ({note})");
-                if (gain <= 0f) continue;
                 // ★ v0.3.19 (test12): the "[Buff]" line explains this value, not the buff formula it replaced.
                 s_LastAppraisal[AppraisalKey(ctx.Unit, c.Ability, c.Target ?? ctx.Unit)] = $"{gain:0.#}: next-spell boost, {note}";
                 c.Value = gain;

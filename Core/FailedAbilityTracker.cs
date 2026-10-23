@@ -176,7 +176,6 @@ namespace CompanionAI_Pathfinder.Core
         public void ClearAll()
         {
             _failedCombinations.Clear();
-            Main.Verbose($"[FailedAbilityTracker] Cleared all blacklisted combinations");
         }
 
         /// <summary>

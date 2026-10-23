@@ -225,8 +225,6 @@ namespace CompanionAI_Pathfinder.GameInterface
         {
             try
             {
-                Main.Log("=== StartTurn 패치 호출됨 ===");
-
                 if (!Main.Enabled)
                 {
                     Main.Verbose("모드 비활성화 상태");
@@ -241,23 +239,26 @@ namespace CompanionAI_Pathfinder.GameInterface
                 }
 
                 string unitName = currentUnit.Descriptor?.CharacterName ?? "Unknown";
-                Main.Log($"턴 시작: {unitName} (Status={__instance.CurrentTurn?.Status})");
+                // ★ v0.3.19 (release): turn starts at verbose level - each decision line names the unit and round.
+                Main.Verbose($"턴 시작: {unitName} (Status={__instance.CurrentTurn?.Status})");
 
                 bool controlled = CustomBrainPatch.ShouldControlUnit(currentUnit, out string reason);
                 s_LastTurnStartRefusal = reason;
                 if (!controlled)
                 {
                     // ★ v0.3.14: why, and at normal level for the party's own units.
+                    // ★ v0.3.19 (release): once per unit and reason (a summon's turn repeated it every round).
                     if (currentUnit.IsPlayerFaction)
-                        Main.Log($"유닛 제어 대상 아님: {unitName} - {reason}" +
-                                 (currentUnit.IsPlayerFaction && currentUnit.IsDirectlyControllable && reason != "dead" && reason != "unconscious"
-                                     ? " (the game waits for your orders)" : ""));
+                        Tactics.AbilityDiscovery.ReportOnce($"notcontrolled|{currentUnit.UniqueId}|{reason}", () =>
+                            $"유닛 제어 대상 아님: {unitName} - {reason}" +
+                            (currentUnit.IsDirectlyControllable && reason != "dead" && reason != "unconscious"
+                                ? " (the game waits for your orders)" : ""));
                     else
                         Main.Verbose($"유닛 제어 대상 아님: {unitName} - {reason}");
                     return;
                 }
 
-                Main.Log($"★ AI 제어 대상: {unitName} - TurnControllerTick에서 처리 예정");
+                Main.Verbose($"★ AI 제어 대상: {unitName} - TurnControllerTick에서 처리 예정");
                 // ★ v0.2.86: StartTurn 시점에는 Status=Scrolling이므로 호출하지 않음
                 // TurnControllerTick_Postfix에서 Preparing/Acting 상태일 때 호출
             }
@@ -330,7 +331,9 @@ namespace CompanionAI_Pathfinder.GameInterface
                     // CanEndTurn() accepts both Preparing and Acting for a directly-controllable unit.
                     if (__instance.CanEndTurnAndNoActing())
                     {
-                        Main.Log($"[TurnTick] {unitName}: EndTurn - {result.Reason}");
+                        // ★ v0.3.19 (release): the decision line already says "=> END TURN" when nothing is left to do.
+                        if (result.Reason == "Nothing worth doing") Main.Verbose($"[TurnTick] {unitName}: EndTurn - {result.Reason}");
+                        else Main.Log($"[TurnTick] {unitName}: EndTurn - {result.Reason}");
                         __instance.ForceToEnd(true);
                     }
                     else if (__instance.CanEndTurn() && !rider.Commands.Empty && !rider.Commands.IsRunning())
@@ -390,6 +393,7 @@ namespace CompanionAI_Pathfinder.GameInterface
             _ = ModInterop.BuffItToTheLimitActive;
             // ★ v0.3.17: [Perf] / [Calib] numbers of the fight that just ended
             Tactics.FightStats.Report();
+            Tactics.SaveObserver.ReportFight();
             // ★ v0.3.17: analysis caches of this fight's units (they are per frame now; this only frees them)
             CompanionAI_Pathfinder.Analysis.CombatRulesAnalyzer.ClearCache();
             // ★ v0.3.18 (review): AI-started toggles the game keeps on out of combat (Mobility) go off first.
@@ -418,7 +422,7 @@ namespace CompanionAI_Pathfinder.GameInterface
             // v0.2.2: 전투 종료 후 영구 버프 자동 적용
             try
             {
-                Main.Log("[CombatEnd] Applying permanent buffs to party...");
+                Main.Verbose("[CombatEnd] Applying permanent buffs to party...");
                 RealTimeController.Instance.ApplyPermanentBuffsToParty();
             }
             catch (Exception ex)
@@ -483,7 +487,7 @@ namespace CompanionAI_Pathfinder.GameInterface
             _instance = new CombatEventHandler();
             EventBus.Subscribe(_instance);
             _isSubscribed = true;
-            Main.Log("[CombatEventHandler] Subscribed to combat events");
+            Main.Verbose("[CombatEventHandler] Subscribed to combat events");
         }
 
         public static void Unsubscribe()
@@ -493,7 +497,7 @@ namespace CompanionAI_Pathfinder.GameInterface
             EventBus.Unsubscribe(_instance);
             _isSubscribed = false;
             _instance = null;
-            Main.Log("[CombatEventHandler] Unsubscribed from combat events");
+            Main.Verbose("[CombatEventHandler] Unsubscribed from combat events");
         }
 
         /// <summary>
@@ -510,7 +514,7 @@ namespace CompanionAI_Pathfinder.GameInterface
             if (!CustomBrainPatch.ShouldControlUnit(unit)) return;
 
             string unitName = unit.Descriptor?.CharacterName ?? "Unknown";
-            Main.Log($"[CombatEventHandler] {unitName} left combat");
+            Main.Verbose($"[CombatEventHandler] {unitName} left combat");
 
             try
             {

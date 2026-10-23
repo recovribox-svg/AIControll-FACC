@@ -98,8 +98,9 @@ namespace CompanionAI_Pathfinder.Tactics
                 parts.AddRange(read.Parts);
                 foreach (var u in read.Unread) unread.Add(u);
             }
-            // Mental stats (spell DCs) are not valued here: a buff of only those keeps the old reading.
-            if (!parts.Any(p => p.Kind != BuffPartKind.MentalStat)) return result;
+            // Mental stats (spell DCs) are not valued here: a buff of only those (or of only a spell prohibition) keeps the
+            // old reading.
+            if (!parts.Any(p => p.Kind != BuffPartKind.MentalStat && p.Kind != BuffPartKind.ForbidsSpells)) return result;
             result.Modelled = true;
 
             var abilityCtx = CombatMath.CreateContext(ability, new Kingmaker.Utility.TargetWrapper(ally));
@@ -453,7 +454,6 @@ namespace CompanionAI_Pathfinder.Tactics
             return def;
         }
 
-        /// <summary>The last appraisal of this cast on this recipient this frame, for the decision log; null if none.</summary>
         /// <summary>
         /// ★ v0.3.19 (class audit B1, docs/CLASS_COMPETENCE_AUDIT.md F2): the same appraisal for what a toggle (a performance,
         /// a rage, a spirit) gives <paramref name="ally"/>, over <paramref name="rounds"/> (its resource and the fight). Its
@@ -491,6 +491,7 @@ namespace CompanionAI_Pathfinder.Tactics
             s_LastAppraisal[$"{caster.UniqueId}|{toggleKey}|"] = note;
         }
 
+        /// <summary>The last appraisal of this cast on this recipient, for the decision log; null if none.</summary>
         internal static string LastAppraisal(UnitEntityData caster, AbilityData ability, UnitEntityData recipient) =>
             s_LastAppraisal.TryGetValue(AppraisalKey(caster, ability, recipient), out var s) ? s : null;
     }

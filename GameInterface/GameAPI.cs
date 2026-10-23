@@ -50,26 +50,13 @@ namespace CompanionAI_Pathfinder.GameInterface
         /// ★ 핵심: 유닛이 다음 행동을 할 준비가 되었는지 확인
         /// Commands.Empty && CanAct
         /// </summary>
-        private static readonly System.Collections.Generic.Dictionary<string, string> _lastReadyState =
-            new System.Collections.Generic.Dictionary<string, string>();
-
         public static bool IsReadyForNextAction(UnitEntityData unit)
         {
             if (unit == null) return false;
             try
             {
-                bool commandsEmpty = !HasPendingCommands(unit);
-                bool canAct = unit.Descriptor.State.CanAct;
-
-                // ★ v0.3.6: this runs every frame while a command plays out (13,559 lines in one debug log); log changes only.
-                string state = $"Empty={commandsEmpty}, CanAct={canAct}";
-                if (!_lastReadyState.TryGetValue(unit.UniqueId, out var last) || last != state)
-                {
-                    _lastReadyState[unit.UniqueId] = state;
-                    Main.Verbose($"[GameAPI] IsReadyForNextAction: {unit.CharacterName} - {state}");
-                }
-
-                return commandsEmpty && canAct;
+                // ★ v0.3.19 (release): no log - it runs every frame while a command plays out.
+                return !HasPendingCommands(unit) && unit.Descriptor.State.CanAct;
             }
             catch { return false; }
         }

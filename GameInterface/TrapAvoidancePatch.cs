@@ -100,7 +100,8 @@ namespace CompanionAI_Pathfinder.GameInterface
                     {
                         if (Vector3.Distance(destination, safeDestination) > 0.5f)
                         {
-                            Main.Log($"[TrapPatch] {unitName}: Avoiding trap, redirecting to safe position");
+                            // ★ v0.3.19 (release): verbose - TrapAwareness logs the stop or the detour (once per trap).
+                            Main.Verbose($"[TrapPatch] {unitName}: Avoiding trap, redirecting to safe position");
 
                             // ★ v0.2.119: retarget the original command instead of replacing it, so every other
                             // property (speed/acceleration, orientation, formation flags, markers...) is preserved.
