@@ -45,7 +45,13 @@ namespace CompanionAI_Pathfinder.Tactics
             public UnitEntityData Victim;
             public string VictimName;
             public float Zone;           // how far it reaches a victim (IncomingParts' zone)
+            /// <summary>★ v0.3.20 (test5): the descriptors of its harmful abilities with a use left and of its features
+            /// (Frightful Presence): what kinds of effect it can use on the party.</summary>
+            public Kingmaker.Blueprints.Classes.Spells.SpellDescriptor Descriptors;
         }
+
+        /// <summary>The enemies of the last assessment.</summary>
+        private static readonly List<string> Living = new List<string>();
 
         private static readonly Dictionary<string, Assessment> Assessed = new Dictionary<string, Assessment>();
         private static readonly Dictionary<string, float> Dealt = new Dictionary<string, float>();
@@ -62,6 +68,7 @@ namespace CompanionAI_Pathfinder.Tactics
         public static void Clear()
         {
             Assessed.Clear();
+            Living.Clear();
             Dealt.Clear();
             FirstRound.Clear();
             UrgencyCache.Clear();
@@ -117,6 +124,9 @@ namespace CompanionAI_Pathfinder.Tactics
         /// Assess the enemies once a round, and again when the set of enemies changes (one joins, one falls). Called by every
         /// decision (TacticalEngine.BuildContext); cheap when nothing changed.
         /// </summary>
+        /// <summary>★ v0.3.20 (test5): how often the enemies were assessed (the slow-decision line says whether this one did).</summary>
+        internal static int Assessments;
+
         public static void Refresh(int round)
         {
             List<UnitEntityData> enemies, party;
@@ -142,9 +152,12 @@ namespace CompanionAI_Pathfinder.Tactics
             _round = round;
             _setHash = hash;
             if (enemies.Count == 0 || party.Count == 0) return;
+            Assessments++;
 
+            Living.Clear();
             foreach (var enemy in enemies)
             {
+                Living.Add(enemy.UniqueId);
                 if (!FirstRound.ContainsKey(enemy.UniqueId)) FirstRound[enemy.UniqueId] = round;
                 if (!Assessed.TryGetValue(enemy.UniqueId, out var a)) Assessed[enemy.UniqueId] = a = new Assessment();
                 Assess(enemy, a, party, enemies, round);
@@ -183,6 +196,7 @@ namespace CompanionAI_Pathfinder.Tactics
                 a.Victim = victim;
                 a.VictimName = victim?.CharacterName;
                 var usable = Usable(enemy);
+                a.Descriptors = DescriptorsOf(enemy, usable);
                 if (victim != null)
                 {
                     a.Weapon = CombatMath.EstimateWeaponAttack(enemy, victim, full: true)?.ExpectedDamage ?? 0f;
@@ -197,6 +211,40 @@ namespace CompanionAI_Pathfinder.Tactics
             Dealt.TryGetValue(enemy.UniqueId, out float dealt);
             int rounds = Math.Max(0, round - (FirstRound.TryGetValue(enemy.UniqueId, out int first) ? first : round));
             a.Offence = Math.Max(Math.Max(a.Spell, a.Heal), ValueModel.ObservedOffence(dealt, rounds, a.Weapon));
+        }
+
+        /// <summary>
+        /// ★ v0.3.20 (test5): the share of the enemies in the fight that can use an effect of <paramref name="descriptor"/>
+        /// on the party (a harmful ability with a use left, or a feature of that kind), at least 0.1 (an aura, a trap or a
+        /// newcomer the assessment cannot see); 0.5 before the first assessment. What a save bonus against that kind of
+        /// effect is worth (Remove Fear's +4 against fear).
+        /// </summary>
+        public static float ShareUsing(Kingmaker.Blueprints.Classes.Spells.SpellDescriptor descriptor)
+        {
+            if (Living.Count == 0) return 0.5f;
+            int using_ = Living.Count(id => Assessed.TryGetValue(id, out var a) && (a.Descriptors & descriptor) != 0);
+            return Math.Max(0.1f, using_ / (float)Living.Count);
+        }
+
+        private static Kingmaker.Blueprints.Classes.Spells.SpellDescriptor DescriptorsOf(UnitEntityData enemy, List<AbilityData> usable)
+        {
+            var found = Kingmaker.Blueprints.Classes.Spells.SpellDescriptor.None;
+            try
+            {
+                foreach (var ability in usable)
+                    if (IsHarmful(ability)) found |= ability.Blueprint.SpellDescriptor;
+                foreach (var feature in enemy.Descriptor.Progression.Features.Enumerable)
+                {
+                    var component = feature?.Blueprint == null ? null
+                        : Kingmaker.Blueprints.BlueprintExtenstions.GetComponent<Kingmaker.Blueprints.Classes.Spells.SpellDescriptorComponent>(feature.Blueprint);
+                    if (component != null) found |= component.Descriptor.Value;
+                }
+            }
+            catch (Exception ex)
+            {
+                Main.Verbose($"[Threat] {enemy.CharacterName}'s descriptors: {ex.Message}");
+            }
+            return found;
         }
 
         /// <summary>The party member the enemy is most likely to attack: the weakest it engages, else the nearest.</summary>

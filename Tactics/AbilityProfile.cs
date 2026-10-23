@@ -442,14 +442,11 @@ namespace CompanionAI_Pathfinder.Tactics
                 if (comp != null) descriptor |= comp.Descriptor.Value;
             }
             Control = AbilityClassifier.AnalyzeCCTypeFromDescriptor(descriptor);
-            ControlStrength = ClassifyControl(Control);
+            ControlStrength = DescriptorControl(descriptor);
             foreach (var buff in TargetBuffs)
             {
-                foreach (var condition in ConditionsOf(buff))
-                {
-                    var s = ClassifyCondition(condition);
-                    if (s > ControlStrength) ControlStrength = s;
-                }
+                var s = BuffControl(buff);
+                if (s > ControlStrength) ControlStrength = s;
             }
 
             // ★ v0.3.12: what it puts on its target is harmful, whatever the blueprint's intent flags say. Orvath's
@@ -487,14 +484,20 @@ namespace CompanionAI_Pathfinder.Tactics
             return false;
         }
 
-        private static bool ContainsCasterProvoke(GameAction[] actions, int depth)
+        private static bool ContainsCasterProvoke(GameAction[] actions, int depth) =>
+            ContainsAction(actions, a => a is ContextActionProvokeAttackOfOpportunity provoke && provoke.ApplyToCaster, depth);
+
+        /// <summary>★ v0.3.20 (test5): whether an action matching <paramref name="match"/> is in <paramref name="actions"/>
+        /// or any action list nested inside them (conditionals, saves, random picks).</summary>
+        internal static bool ContainsAction(GameAction[] actions, Func<GameAction, bool> match, int depth = 0)
         {
             if (actions == null || depth > 6) return false;
             foreach (var action in actions)
             {
-                if (action is ContextActionProvokeAttackOfOpportunity provoke && provoke.ApplyToCaster) return true;
+                if (action == null) continue;
+                if (match(action)) return true;
                 foreach (var child in ChildActionLists(action))
-                    if (ContainsCasterProvoke(child, depth + 1)) return true;
+                    if (ContainsAction(child, match, depth + 1)) return true;
             }
             return false;
         }
@@ -1755,13 +1758,9 @@ namespace CompanionAI_Pathfinder.Tactics
             if (buff == null) return 0f;
             try
             {
-                var strength = ClassifyControl(AbilityClassifier.AnalyzeCCTypeFromDescriptor(
-                    buff.GetComponent<SpellDescriptorComponent>()?.Descriptor.Value ?? SpellDescriptor.None));
-                foreach (var condition in ConditionsOf(buff))
-                {
-                    var s = ClassifyCondition(condition);
-                    if (s > strength) strength = s;
-                }
+                var strength = DescriptorControl(buff.GetComponent<SpellDescriptorComponent>()?.Descriptor.Value ?? SpellDescriptor.None);
+                var s = BuffControl(buff);
+                if (s > strength) strength = s;
                 return strength == ControlStrength.Hard ? 1f : strength == ControlStrength.Soft ? 0.4f :
                        strength == ControlStrength.Minor ? 0.15f : 0.25f;
             }
@@ -1769,6 +1768,32 @@ namespace CompanionAI_Pathfinder.Tactics
             {
                 return 0.25f;
             }
+        }
+
+        /// <summary>
+        /// ★ v0.3.20 (test5): the control a descriptor alone says. Compulsion is how a spell works (it compels), not what
+        /// it does: Bane and Bless carry it with Fear and Emotion, Hold Person with Paralysis, Daze with Daze. It counted
+        /// as Charm (hard control), so the Neophyte Cleric's Bane (-1 to attacks and against fear) was valued as taking an
+        /// enemy out of the fight - "Bane 24 on Seelah" made him twice as dangerous as his fellows (0.3.20-test4 log), and
+        /// the party's own Bane counted the same. A compulsion's real effect is named by its other descriptors, its
+        /// conditions or a faction change (<see cref="BuffControl"/>).
+        /// </summary>
+        private static ControlStrength DescriptorControl(SpellDescriptor descriptor) =>
+            ClassifyControl(AbilityClassifier.AnalyzeCCTypeFromDescriptor(descriptor & ~SpellDescriptor.Compulsion));
+
+        /// <summary>★ v0.3.20 (test5): the control a buff imposes by its conditions, or by turning its bearer to the
+        /// caster's side (ChangeFaction: Dominate Person, whose descriptor is only Compulsion and Mind-Affecting).</summary>
+        private static ControlStrength BuffControl(BlueprintBuff buff)
+        {
+            var strength = ControlStrength.None;
+            if (buff == null) return strength;
+            if (buff.GetComponent<Kingmaker.UnitLogic.FactLogic.ChangeFaction>() != null) return ControlStrength.Hard;
+            foreach (var condition in ConditionsOf(buff))
+            {
+                var s = ClassifyCondition(condition);
+                if (s > strength) strength = s;
+            }
+            return strength;
         }
 
         private static ControlStrength ClassifyControl(CCType cc)

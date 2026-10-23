@@ -1123,6 +1123,53 @@ namespace CompanionAI_Pathfinder.Tactics
             }
         }
 
+        private static readonly Dictionary<string, bool> TripTriggers = new Dictionary<string, bool>();
+
+        /// <summary>
+        /// ★ v0.3.20 (test5): the chance an attack of opportunity by <paramref name="enemy"/> that hits also knocks
+        /// <paramref name="unit"/> down: a weapon trigger on a hit (its facts or its weapon's enchantments, as wolves'
+        /// bites) that trips (ContextActionCombatManeuver Trip by CMB against the unit's CMD) or knocks down. Only then
+        /// does a hit stop a walk: the game lets a moving unit walk on after an attack of opportunity (UnitAttackOfOpportunity
+        /// does nothing to its target's move; UnitMoveController interrupts a walk only when the unit can no longer move).
+        /// 0 when it has no such trigger or the unit cannot be knocked down.
+        /// </summary>
+        public static float TripOnHitChance(UnitEntityData enemy, UnitEntityData unit)
+        {
+            if (enemy == null || unit == null) return 0f;
+            try
+            {
+                if (!unit.CanBeKnockedOff()) return 0f;
+                var weapon = enemy.GetThreatHand()?.Weapon;
+                string key = $"{enemy.UniqueId}|{enemy.Facts.List.Count}|{weapon?.UniqueId}";
+                if (!TripTriggers.TryGetValue(key, out bool trips))
+                {
+                    var components = enemy.Facts.List.Where(f => f != null && f.Active && f.Blueprint?.ComponentsArray != null)
+                                          .SelectMany(f => f.Blueprint.ComponentsArray);
+                    if (weapon != null)
+                        components = components.Concat(weapon.Enchantments.Where(e => e?.Blueprint?.ComponentsArray != null)
+                                                             .SelectMany(e => e.Blueprint.ComponentsArray));
+                    trips = components.OfType<Kingmaker.UnitLogic.Mechanics.Components.AbstractWeaponTrigger>().Any(t =>
+                        !t.ActionsOnInitiator && !t.OnMiss && !t.OnlyOnFullAttack && !t.OnlyNatural20 && !t.CriticalHit && !t.OnCharge &&
+                        AbilityProfile.ContainsAction(t.Action?.Actions, a =>
+                            (a is ContextActionCombatManeuver m && m.Type == CombatManeuver.Trip) || a is ContextActionKnockdownTarget));
+                    if (TripTriggers.Count > 256) TripTriggers.Clear();
+                    TripTriggers[key] = trips;
+                }
+                if (!trips) return 0f;
+                if (unit.Descriptor.State.HasCondition(UnitCondition.ImmuneToCombatManeuvers)) return 0f;
+                int margin = FrameCached($"trip|{enemy.UniqueId}|{unit.UniqueId}", () =>
+                    Rulebook.Trigger(new RuleCalculateCMB(enemy, unit, CombatManeuver.Trip)).Result -
+                    Rulebook.Trigger(new RuleCalculateCMD(enemy, unit, CombatManeuver.Trip)).Result);
+                // d20 + CMB >= CMD; a natural 20 always succeeds, a natural 1 always fails.
+                return Mathf.Clamp((21 + margin) / 20f, 0.05f, 0.95f);
+            }
+            catch (Exception ex)
+            {
+                Main.Verbose($"[Math] trip on hit {enemy.CharacterName}->{unit.CharacterName}: {ex.Message}");
+                return 0f;
+            }
+        }
+
         /// <summary>★ v0.3.18 (review): <paramref name="target"/> has a fact that answers this maneuver with an attack of
         /// opportunity (read from its components; the type is a private field).</summary>
         private static bool CountersManeuver(UnitEntityData target, CombatManeuver type)

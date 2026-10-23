@@ -186,14 +186,19 @@ namespace CompanionAI_Pathfinder.Tactics
             // ★ v0.3.17: how long a decision takes ([Perf] at the end of the fight) - nothing was measured before.
             AbilityProfile.TakeBuiltCount();
             CombatMath.ClearAttackCache();   // ★ v0.3.18: attack routines are read fresh for each decision
+            int collections = GC.CollectionCount(0), assessments = EnemyThreat.Assessments;
             var watch = System.Diagnostics.Stopwatch.StartNew();
             var chosen = Decide(unit, memory, preview: false, out _);
             double ms = watch.Elapsed.TotalMilliseconds;
             FightStats.RecordDecision(unit, ms, chosen?.Label);
             // ★ v0.3.17: two decisions of the 0.3.17-test2 log took 0.8-0.9 s (median 3 ms); say which, when it happens.
+            // ★ v0.3.20 (test5): and whether the game's memory clean-up (garbage collection) ran meanwhile or the enemies
+            // were assessed: four 1 s decisions of the 0.3.20-test4 logs had little to weigh and built nothing new.
             if (ms > 250d)
                 Main.Log($"[Perf] slow decision: {ms:F0} ms - {unit.CharacterName} R{CombatMemory.Round}: {chosen?.Label ?? "nothing"} " +
-                         $"(new ability profiles built this decision: {AbilityProfile.TakeBuiltCount()})");
+                         $"(new ability profiles built this decision: {AbilityProfile.TakeBuiltCount()}" +
+                         $"{(GC.CollectionCount(0) != collections ? "; memory clean-up ran" : "")}" +
+                         $"{(EnemyThreat.Assessments != assessments ? "; enemies assessed" : "")})");
             return chosen;
         }
 
@@ -792,7 +797,10 @@ namespace CompanionAI_Pathfinder.Tactics
         internal sealed class Disengage
         {
             public int Attacks;
-            /// <summary>Chance at least one attack of opportunity hits; a hit stops the move and its action.</summary>
+            /// <summary>Chance the move and its action are lost: the attacks drop the unit or knock it down (a trip on a hit).
+            /// ★ v0.3.20 (test5): a hit alone does not stop a walk - the game lets the unit walk on (0.3.13-0.3.20-test4
+            /// counted every hit as a lost action, so leaving an enemy that hits half the time halved a move's worth).
+            /// For a cast or an attack it is the chance the action is spoiled (see ProvokeRisk).</summary>
             public float StopChance;
             /// <summary>★ v0.3.14 (test5): chance the attacks drop the unit on the way.</summary>
             public float DropChance;
@@ -942,7 +950,7 @@ namespace CompanionAI_Pathfinder.Tactics
 
             float hp = Math.Max(1f, CombatMath.HpBeforeDown(unit));
             bool mobile = mobility ?? UsesMobility(unit);
-            PriceAttacks(unit, attackers, hp, out float damage, out float stopChance, out float dropNow,
+            PriceAttacks(unit, attackers, hp, out float damage, out _, out float dropNow, out float knocked,
                          mobile ? (Func<UnitEntityData, float>)(e => 1f - MobilityAvoids(unit, e)) : null);
 
             // Dropped now: the unit is out for the rest of the fight. Otherwise the same model as healing and withdraw,
@@ -955,7 +963,7 @@ namespace CompanionAI_Pathfinder.Tactics
             return new Disengage
             {
                 Attacks = attackers.Count,
-                StopChance = stopChance,
+                StopChance = dropNow + (1f - dropNow) * knocked,
                 DropChance = dropNow,
                 Cost = dropNow * worth + ((1f - dropNow) * Math.Max(0f, after - before) * worth + damage * 0.3f) * RiskTolerance(ctx)
             };
@@ -976,16 +984,18 @@ namespace CompanionAI_Pathfinder.Tactics
 
         /// <summary>
         /// ★ v0.3.14 (test5): one attack of opportunity from each of <paramref name="attackers"/> on a unit with
-        /// <paramref name="hp"/> HP: their expected damage, the chance at least one hits (a hit stops a walk) and the
-        /// chance they drop it (RiskMath: the chance one blow takes the unit out, not only its average).
+        /// <paramref name="hp"/> HP: their expected damage, the chance at least one hits and the chance they drop it
+        /// (RiskMath: the chance one blow takes the unit out, not only its average).
         /// </summary>
+        /// <remarks>★ v0.3.20 (test5): <paramref name="knockChance"/> - the chance one that hits also knocks the unit down
+        /// (<see cref="CombatMath.TripOnHitChance"/>), the only hit that stops a walk.</remarks>
         /// <remarks>★ v0.3.18: <paramref name="happens"/> - the chance each attack is made at all (Mobility); null: always.</remarks>
         private static void PriceAttacks(UnitEntityData unit, List<UnitEntityData> attackers, float hp,
-                                         out float damage, out float hitChance, out float dropChance,
+                                         out float damage, out float hitChance, out float dropChance, out float knockChance,
                                          Func<UnitEntityData, float> happens = null)
         {
             damage = 0f;
-            float noHit = 1f, noDrop = 1f;
+            float noHit = 1f, noDrop = 1f, noKnock = 1f;
             foreach (var enemy in attackers)
             {
                 var est = CombatMath.EstimateWeaponAttack(enemy, unit, full: false);
@@ -999,9 +1009,11 @@ namespace CompanionAI_Pathfinder.Tactics
                                                          est?.CritMultiplier ?? 2f, Math.Max(1f, hp - damage));
                 damage += expected;
                 noHit *= 1f - hit;
+                noKnock *= 1f - hit * CombatMath.TripOnHitChance(enemy, unit);
             }
             hitChance = 1f - noHit;
             dropChance = 1f - noDrop;
+            knockChance = 1f - noKnock;
         }
 
         /// <summary>
@@ -1020,7 +1032,7 @@ namespace CompanionAI_Pathfinder.Tactics
                 if (!ally.Descriptor.State.Features.GetUpWithoutAttackOfOpportunity)
                 {
                     var threats = ctx.Enemies.Where(e => Threatens(e, ally, ally.Position)).ToList();
-                    if (threats.Count > 0) PriceAttacks(ally, threats, hpAfter, out _, out _, out standDrop);
+                    if (threats.Count > 0) PriceAttacks(ally, threats, hpAfter, out _, out _, out standDrop, out _);
                 }
                 return (1f - roundDrop) * (1f - standDrop);
             }
@@ -1076,7 +1088,7 @@ namespace CompanionAI_Pathfinder.Tactics
             if (ctx == null) return true;
 
             float hp = Math.Max(1f, CombatMath.HpBeforeDown(unit));
-            PriceAttacks(unit, attackers, hp, out float damage, out _, out float dropNow);
+            PriceAttacks(unit, attackers, hp, out float damage, out _, out float dropNow, out _);
             float worth = AllyWorth(ctx, unit);
             float danger = IncomingDamage(ctx, unit, unit.Position);
             float stayDrop = RiskMath.RoundDropChance(hp, danger * 1.25f);
@@ -1136,23 +1148,28 @@ namespace CompanionAI_Pathfinder.Tactics
         /// ★ v0.3.16: the attacks a provoking cast at <paramref name="castAt"/> risks: the chance the defensive-casting
         /// check fails (the game's rule) times the attacks of every enemy that would engage the caster there, priced like
         /// any attack of opportunity (chance to be dropped, damage). StopChance: the spell is lost (the caster drops, or
-        /// a hit spoils it about half the time). Null when nothing would attack.
+        /// a hit spoils it: the concentration check for damage). Null when nothing would attack.
         /// </summary>
         private static Disengage CastProvokeRisk(TacticalContext ctx, AbilityData ability, Vector3 castAt)
         {
             float fail;
+            int? gap = null;
             try
             {
                 var p = ability.CalculateParams();
                 int dc = 15 + 2 * Math.Max(0, p.SpellLevel);
                 fail = Mathf.Clamp01((dc - p.Concentration - 1) / 20f);
+                // ★ v0.3.20 (test5): a hit while the spell is being cast calls for a concentration check against
+                // 10 + spell level + half the damage (UnitConcentrationController, RuleCheckConcentration) - unless the
+                // game says damage cannot interrupt it (wands, held touch charges). Was a flat half.
+                if (ability.CanBeInterruptedWithDamage) gap = 10 + Math.Max(0, p.SpellLevel) - p.Concentration;
             }
             catch
             {
                 fail = 0.5f;
+                gap = 0;
             }
-            // A hit spoils the spell about half the time (the concentration check for damage while casting).
-            return ProvokeRisk(ctx, castAt, fail, spoiledByHit: 0.5f);
+            return ProvokeRisk(ctx, castAt, fail, spoiledByHit: 0f, concentrationGap: gap);
         }
 
         /// <summary>
@@ -1164,18 +1181,21 @@ namespace CompanionAI_Pathfinder.Tactics
         /// before its next turn with the damage taken, plus the HP to heal (0.3.16-0.3.17 casting left out the second part).
         /// Null when nothing would attack.
         /// </summary>
-        private static Disengage ProvokeRisk(TacticalContext ctx, Vector3 at, float chance, float spoiledByHit)
+        /// <remarks>★ v0.3.20 (test5): <paramref name="concentrationGap"/> (10 + spell level - concentration): a hit spoils the
+        /// action when the concentration check against 10 + spell level + half the hit's damage fails; it replaces
+        /// <paramref name="spoiledByHit"/>.</remarks>
+        private static Disengage ProvokeRisk(TacticalContext ctx, Vector3 at, float chance, float spoiledByHit, int? concentrationGap = null)
         {
             if (chance <= 0f) return null;
             // Asked for every target of every ability and weapon from the same spot: priced once per decision.
-            string key = $"{at.x:F1}|{at.z:F1}|{chance:F3}|{spoiledByHit:F2}";
+            string key = $"{at.x:F1}|{at.z:F1}|{chance:F3}|{spoiledByHit:F2}|{concentrationGap}";
             if (ctx.Provoked.TryGetValue(key, out var known)) return known?.Copy();
-            var risk = PriceProvoked(ctx, at, chance, spoiledByHit);
+            var risk = PriceProvoked(ctx, at, chance, spoiledByHit, concentrationGap);
             ctx.Provoked[key] = risk;
             return risk?.Copy();
         }
 
-        private static Disengage PriceProvoked(TacticalContext ctx, Vector3 at, float chance, float spoiledByHit)
+        private static Disengage PriceProvoked(TacticalContext ctx, Vector3 at, float chance, float spoiledByHit, int? concentrationGap)
         {
             var unit = ctx.Unit;
             var attackers = ctx.Enemies.Where(e =>
@@ -1185,7 +1205,12 @@ namespace CompanionAI_Pathfinder.Tactics
             }).ToList();
             if (attackers.Count == 0) return null;
             float hp = Math.Max(1f, CombatMath.HpBeforeDown(unit));
-            PriceAttacks(unit, attackers, hp, out float damage, out float hitChance, out float dropNow);
+            PriceAttacks(unit, attackers, hp, out float damage, out float hitChance, out float dropNow, out _);
+            if (concentrationGap.HasValue)
+            {
+                float perHit = hitChance > 0.01f ? damage / hitChance : 0f;
+                spoiledByHit = Mathf.Clamp01((concentrationGap.Value + (int)(perHit / 2f) - 1) / 20f);
+            }
             float worth = AllyWorth(ctx, unit);
             float danger = Math.Max(1f, IncomingDamage(ctx, unit, at));
             float dropLater = Math.Max(0f, RiskMath.RoundDropChance(Math.Max(1f, hp - damage), danger) - RiskMath.RoundDropChance(hp, danger));
@@ -3283,7 +3308,8 @@ namespace CompanionAI_Pathfinder.Tactics
             var risk = MoveRisk(ctx, best.Value);
             if (risk != null)
             {
-                // ★ v0.3.14 (test5): a hit stops the walk, and the unit stays inside having taken it (Camellia, 2 attacks).
+                // ★ v0.3.14 (test5): a walk that is stopped leaves the unit inside having taken the attacks (Camellia, 2
+                // attacks). ★ v0.3.20 (test5): stopped means dropped or knocked down, not any hit (Disengage.StopChance).
                 value = value * (1f - risk.StopChance) - risk.Cost;
                 label += risk.Tag;
             }

@@ -1828,3 +1828,56 @@ leads by 15 % or more; at the end `[Threat] fight: dealt the most to the party -
 
 **Cost.** Once a round per enemy: one attack estimate and up to twelve ability estimates (profiles are cached per
 blueprint; a new enemy spell's profile is built once per session).
+
+## 50. v0.3.20 (test5): the test4 release logs (4 turn-based, 4 real-time fights); attacks of opportunity checked
+
+**Attacks of opportunity against the game code.** The engine prices them in every place the game makes them:
+leaving an enemy's reach (`DisengageRisk`, the game's `EngagementSimulator` check, Mobility per enemy), a provoking cast
+(`CastProvokeRisk`, the defensive-casting check), a ranged attack roll (`AttackRollProvokeRisk`, `ProvokeObserver`),
+standing up, walking out of an area (`MoveRisk`), reviving next to an enemy (`ReviveStaysUp`). Their cost - the chance
+to be dropped, the extra chance to drop before the next turn, the HP to heal - was right. What they stop was not:
+- **a hit does not stop a walk.** `UnitAttackOfOpportunity` does nothing to its target's move, and
+  `UnitMoveController` interrupts a turn-based walk only when the unit can no longer move (prone, dropped, held). Since
+  0.3.13 every hit counted as a lost move and action: leaving an enemy that hits half the time halved a Move+Attack's
+  worth. Now the stop chance is the drop chance plus the chance a hit knocks the unit down - an enemy whose weapon
+  trigger trips on a hit (wolves' bites: `AbstractWeaponTrigger` with a Trip maneuver or `ContextActionKnockdownTarget`,
+  from its facts or its weapon's enchantments), by its CMB against the unit's CMD (`CombatMath.TripOnHitChance`), none
+  for a unit that cannot be knocked down;
+- **a hit spoils a spell by the concentration rule.** A hit while the spell is being cast calls for a concentration
+  check against 10 + spell level + half the damage (`UnitConcentrationController`, `RuleCheckConcentration`), and none
+  when the game says damage cannot interrupt it (`AbilityData.CanBeInterruptedWithDamage`: wands, held touch charges).
+  It was a flat half. The walk before a cast cannot spoil it: the check is made only for a cast already started.
+
+**Bane counted as taking an enemy out.** `AbilityClassifier` maps the Compulsion descriptor to Charm, and Charm is
+hard control: Bane (Compulsion, Fear, Emotion, Mind-Affecting; -1 to attacks and against fear) was valued like Hold
+Person, by the party and in the new threat assessment ("Neophyte Cleric x2.0 - Bane 24 on Seelah"). Compulsion says how a
+spell works, not what it does: the profile now reads control from the other descriptors, the buffs' conditions, and a
+faction change (`ChangeFaction`: Dominate Person, whose descriptor is only Compulsion). The immunity checks still see
+Compulsion.
+
+**Save bonuses against one kind of effect.** Remove Fear's +4 against fear counted as +2 to every save for each ally in
+its burst - up to 8.6 in fights with no fear, and it was cast once on that value. A save bonus against descriptors
+(`SavingThrowBonusAgainstDescriptor`, its context variant) now counts for the share of enemies that can use such an
+effect (`EnemyThreat.ShareUsing`: the descriptors of each enemy's harmful abilities with a use left and of its
+features, at least 0.1); a bonus against an alignment (Protection from Evil's AC and saves) for the share of enemies of
+it (`Alignment.HasComponent`). Other conditional bonuses stay at half.
+
+**Blast learning from resisted hits.** `[DmgCheck] Orvath's Fire Blast: 2 hits dealt 0 a hit, estimated 1` - a fire
+blast on a Dretch and a Quasit (fire resistance 6-7). What is left after a flat reduction says nothing about the blast,
+and the learned share fell. Only hits whose every roll reached the target as rolled (no reduction, decline,
+vulnerability or immunity) are learned and checked; a hit with a later reduced roll is taken back whole. The per-fight
+report also needs the difference to be at least 2 a hit.
+
+**Slow decisions.** Four decisions took about 1 s with little to weigh and nothing new to build (median 20-57 ms), one
+or two a fight, at any point in it: most likely the game's garbage collection on a low-end laptop. The `[Perf] slow
+decision` line now says when a garbage collection ran during it, and when the enemies were assessed, so the next log
+tells.
+
+**Looked at, left as is.**
+- Turn-based refusals "path ends without line of sight" (10, all Camellia or Seelah) are per option: Daze on the
+  Goblin Stirrer went through right after Move+Attack on it was refused. One turn was lost (Camellia R4, fight 3: three
+  options on a Ghoul Drifter in Grease, all refused, the rest worth under 0.5).
+- Real-time, fight 1: all five first commands ended 0.4-0.6 s after they were issued, with no AI line between - not
+  the AI's doing (its own drops are logged, as in fight 2: "now in a harmful area", a Dretch's Stinking Cloud).
+- Shield of Faith 15 on Seelah (real time, fight 2): +2 AC when enemies hit her on 17+ halves what reaches her
+  (9.4 a round expected) - right by the model.

@@ -77,6 +77,12 @@ namespace CompanionAI_Pathfinder.Analysis
         public bool RangedOnly, MeleeOnly;
         /// <summary>Applies only sometimes (a weapon kind, an alignment): counted at half.</summary>
         public bool Conditional;
+        /// <summary>★ v0.3.20 (test5): a save bonus only against effects of these descriptors (Remove Fear: +4 against fear):
+        /// counted for the share of enemies that can use one (EnemyThreat.ShareUsing), not at half.</summary>
+        public Kingmaker.Blueprints.Classes.Spells.SpellDescriptor Against;
+        /// <summary>★ v0.3.20 (test5): a bonus only against creatures of this alignment (Protection from Evil): counted for
+        /// the share of enemies of it, not at half.</summary>
+        public AlignmentComponent? AgainstAlignment;
         public bool ScaleByBaseAttack;
         /// <summary>★ v0.3.19 (class audit B2): the amount is per character level of the recipient (TemporaryHitPointsPerLevel).</summary>
         public bool PerRecipientLevel;
@@ -213,10 +219,10 @@ namespace CompanionAI_Pathfinder.Analysis
                         list.Parts.Add(new BuffPart { Kind = BuffPartKind.ForbidsSpells, Owner = owner });
                         break;
                     case ArmorClassBonusAgainstAlignment aca:
-                        list.Parts.Add(new BuffPart { Kind = BuffPartKind.ConditionalAC, Owner = owner, Descriptor = aca.Descriptor, Fixed = aca.Value, Value = aca.Bonus, Conditional = true });
+                        list.Parts.Add(new BuffPart { Kind = BuffPartKind.ConditionalAC, Owner = owner, Descriptor = aca.Descriptor, Fixed = aca.Value, Value = aca.Bonus, Conditional = true, AgainstAlignment = aca.alignment });
                         break;
                     case SavingThrowBonusAgainstAlignment sva:
-                        list.Parts.Add(new BuffPart { Kind = BuffPartKind.ConditionalSaves, Owner = owner, Descriptor = sva.Descriptor, Fixed = sva.Value, Value = sva.Bonus, Conditional = true });
+                        list.Parts.Add(new BuffPart { Kind = BuffPartKind.ConditionalSaves, Owner = owner, Descriptor = sva.Descriptor, Fixed = sva.Value, Value = sva.Bonus, Conditional = true, AgainstAlignment = sva.Alignment });
                         break;
                     // ★ v0.3.19 (class audit B2): components the class blueprints use for their main bonuses - Rage,
                     // Bloodrage and Inspired Rage give their attack and damage this way (melee only), stances and
@@ -264,10 +270,10 @@ namespace CompanionAI_Pathfinder.Analysis
                         break;
                     }
                     case SavingThrowBonusAgainstDescriptor svd:
-                        list.Parts.Add(new BuffPart { Kind = BuffPartKind.ConditionalSaves, Owner = owner, Descriptor = svd.ModifierDescriptor, Fixed = svd.Value, Value = svd.Bonus, Conditional = true });
+                        list.Parts.Add(new BuffPart { Kind = BuffPartKind.ConditionalSaves, Owner = owner, Descriptor = svd.ModifierDescriptor, Fixed = svd.Value, Value = svd.Bonus, Conditional = true, Against = svd.SpellDescriptor.Value });
                         break;
                     case SavingThrowContextBonusAgainstDescriptor svc:
-                        list.Parts.Add(new BuffPart { Kind = BuffPartKind.ConditionalSaves, Owner = owner, Descriptor = svc.ModifierDescriptor, Value = svc.Value, Conditional = true });
+                        list.Parts.Add(new BuffPart { Kind = BuffPartKind.ConditionalSaves, Owner = owner, Descriptor = svc.ModifierDescriptor, Value = svc.Value, Conditional = true, Against = svc.SpellDescriptor.Value });
                         break;
                     case AddFacts facts:
                         foreach (var fact in facts.Facts)

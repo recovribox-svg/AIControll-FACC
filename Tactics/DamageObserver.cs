@@ -41,8 +41,24 @@ namespace CompanionAI_Pathfinder.Tactics
             public float Dealt, Estimated;
         }
 
-        /// <summary>★ v0.3.20: when each unit's ability last hit each target (its rolls within <see cref="OneHit"/> are one hit).</summary>
-        private static readonly Dictionary<string, TimeSpan> LastHit = new Dictionary<string, TimeSpan>();
+        /// <summary>★ v0.3.20: each unit's ability's last hit on each target (its rolls within <see cref="OneHit"/> are one hit).</summary>
+        private sealed class OpenHit
+        {
+            public TimeSpan Time;
+            public float Dealt, Estimated;
+            /// <summary>Where it was counted; null once a roll of it turned out reduced (see <see cref="CleanRoll"/>).</summary>
+            public Check Check, Session;
+
+            public void Withdraw(Check from)
+            {
+                if (from == null) return;
+                from.Hits--;
+                from.Dealt -= Dealt;
+                from.Estimated -= Estimated;
+            }
+        }
+
+        private static readonly Dictionary<string, OpenHit> LastHit = new Dictionary<string, OpenHit>();
 
         private static readonly Dictionary<string, Check> Checks = new Dictionary<string, Check>();
 
@@ -118,7 +134,8 @@ namespace CompanionAI_Pathfinder.Tactics
             {
                 if (check.Hits < 2 || check.Estimated <= 0f) continue;
                 float dealt = check.Dealt / check.Hits, estimated = check.Estimated / check.Hits;
-                if (Math.Abs(dealt - estimated) <= 0.25f * estimated) continue;
+                // ★ v0.3.20 (test5): and by at least 2 a hit - "dealt 1.5, estimated 1" is dice, not a missed effect.
+                if (Math.Abs(dealt - estimated) <= Math.Max(2f, 0.25f * estimated)) continue;
                 Main.Log($"[DmgCheck] {check.Who}'s {check.What}: {check.Hits} hits dealt {dealt:0.#} a hit, estimated {estimated:0.#}");
             }
             // ★ v0.3.20: a blast whose learned share has become worth knowing, once each (when it first moves 10 %).
@@ -159,12 +176,33 @@ namespace CompanionAI_Pathfinder.Tactics
             Check session = null;
             if (blast) Blasts.TryGetValue(blastKey, out session);
             string hitKey = key + "|" + target.UniqueId;
-            if (Checks.TryGetValue(key, out var check) && LastHit.TryGetValue(hitKey, out var last) && now - last <= OneHit)
+            // ★ v0.3.20 (test5): only unreduced rolls teach anything. A fire blast on a Dretch (fire resistance 5) dealt 0
+            // against an estimate of 1 - the estimate already takes the resistance off - and the ratio of what is left
+            // after a flat reduction says nothing about the blast: Orvath's Fire Blast was reported at 0 % and its learned
+            // share fell (0.3.20-test4 log). A hit with any reduced, declined, raised or resisted roll is left out whole.
+            bool clean = CleanRoll(evt);
+            if (LastHit.TryGetValue(hitKey, out var open) && now - open.Time <= OneHit)
             {
-                check.Dealt += evt.Result;
-                if (blast && session != null) session.Dealt += evt.Result;
+                if (open.Check == null && open.Session == null) return;
+                if (!clean)
+                {
+                    open.Withdraw(open.Check);
+                    open.Withdraw(open.Session);
+                    open.Check = open.Session = null;
+                    return;
+                }
+                open.Dealt += evt.Result;
+                if (open.Check != null) open.Check.Dealt += evt.Result;
+                if (open.Session != null) open.Session.Dealt += evt.Result;
                 return;
             }
+            if (!clean)
+            {
+                if (LastHit.Count > 512) LastHit.Clear();
+                LastHit[hitKey] = new OpenHit { Time = now };
+                return;
+            }
+            Checks.TryGetValue(key, out var check);
             var profile = AbilityProfile.Get(ability);
             if (profile == null || profile.Damage.Count == 0) return;
             // The estimate before any learned share (it is what is being checked).
@@ -178,15 +216,32 @@ namespace CompanionAI_Pathfinder.Tactics
             check.Hits++;
             check.Dealt += evt.Result;
             check.Estimated += estimate;
+            var hit = new OpenHit { Time = now, Dealt = evt.Result, Estimated = estimate, Check = check };
             if (LastHit.Count > 512) LastHit.Clear();
-            LastHit[hitKey] = now;
+            LastHit[hitKey] = hit;
             if (blast)
             {
                 if (session == null) Blasts[blastKey] = session = new Check { Who = attacker.CharacterName, What = (ability.Blueprint.Parent ?? ability.Blueprint).Name };
                 session.Hits++;
                 session.Dealt += evt.Result;
                 session.Estimated += estimate;
+                hit.Session = session;
             }
+        }
+
+        /// <summary>★ v0.3.20 (test5): every roll of the damage reached the target as rolled: no flat reduction (damage
+        /// reduction, energy resistance), no decline, no vulnerability, no immunity.</summary>
+        private static bool CleanRoll(RuleDealDamage evt)
+        {
+            foreach (var result in evt.ResultList)
+            {
+                var damage = result.Source;
+                if (damage == null) continue;
+                if (result.Reduction > 0 || damage.Immune || damage.Decline.Value != DamageDeclineType.None ||
+                    Math.Abs(damage.Vulnerability - 1f) > 0.01f)
+                    return false;
+            }
+            return true;
         }
 
         /// <summary>Key of a damage type as an ability describes it (ContextActionDealDamage.DamageType).</summary>

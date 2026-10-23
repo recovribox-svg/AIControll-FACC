@@ -81,6 +81,22 @@ namespace CompanionAI_Pathfinder.Tactics
             if (s_LastAppraisal.Count > 512) s_LastAppraisal.Clear();
         }
 
+        /// <summary>★ v0.3.20 (test5): the share of the enemies in the fight of this alignment (the game's own test,
+        /// Alignment.HasComponent); half when there are none to ask.</summary>
+        private static float EnemyAlignmentShare(TacticalContext ctx, Kingmaker.Enums.AlignmentComponent alignment)
+        {
+            try
+            {
+                if (ctx.Enemies == null || ctx.Enemies.Count == 0) return 0.5f;
+                return ctx.Enemies.Count(e => Kingmaker.Enums.AlignmentExtension.HasComponent(e.Descriptor.Alignment.ValueRaw, alignment)) /
+                       (float)ctx.Enemies.Count;
+            }
+            catch
+            {
+                return 0.5f;
+            }
+        }
+
         private static string AppraisalKey(UnitEntityData caster, AbilityData ability, UnitEntityData recipient) =>
             $"{caster.UniqueId}|{CombatMemory.AbilityKey(ability)}|{recipient?.UniqueId}";
 
@@ -145,7 +161,12 @@ namespace CompanionAI_Pathfinder.Tactics
             foreach (var p in parts)
             {
                 float amount = PartAmount(p, caster, abilityCtx, ally, casterLevel);
-                if (p.Conditional) amount *= 0.5f;
+                // ★ v0.3.20 (test5): a bonus against one kind of effect or creature counts for the share of the enemies it
+                // works against; any other condition (a weapon kind) at half. Remove Fear's +4 against fear counted as +2
+                // to every save for each ally in its burst - up to 8.6 in a fight with no fear (0.3.20-test4 log).
+                if (p.Against != Kingmaker.Blueprints.Classes.Spells.SpellDescriptor.None) amount *= EnemyThreat.ShareUsing(p.Against);
+                else if (p.AgainstAlignment.HasValue) amount *= EnemyAlignmentShare(ctx, p.AgainstAlignment.Value);
+                else if (p.Conditional) amount *= 0.5f;
                 switch (p.Kind)
                 {
                     case BuffPartKind.Attack:
