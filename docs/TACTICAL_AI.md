@@ -1616,3 +1616,20 @@ Audit, evidence and root causes: `docs/SHORT_BUFFS_AUDIT.md`. Checked against th
 - **Log**: "[Buff] <caster>: <buff> = value (slot) - <parts, recipient numbers, rounds>; best other: ..." once a round per
   cast and recipient.
 - Unchanged: the pre-buff button and out-of-combat keep-up (`BuffWorth`), toggles, the legacy real-time engine.
+
+## 43. v0.3.19 (test12): test11 play-test review
+
+Evidence: the turn-based and real-time logs of 0.3.19-test11 (4 + 6 fights). The new "[Buff]" lines worked: the 15 %
+restraint held Enlarge Person back twice for Divine Zap, Guidance was valued 0.3 and never chosen, each fight cast Enlarge at
+most once. Fixes:
+- **Size-up dice**: a weapon is its wielder's size (`ItemEntityWeapon.Size` = `Wielder.State.Size` for the party), so a
+  size step scales its dice by the game's `WeaponDamageScaleTable` - bows too. The appraisal used +1 a hit; it now uses the
+  weapon's real step (longsword / longbow 1d8 -> 2d6: +2.5). Enlarge Person on an archer is therefore mildly positive
+  (-2 attack, +2.5 damage a hit), as in the game, not negative as section 42's worked example said.
+- **Arcane Reservoir DC**: the ability is a Conditional on the caster's Potent Magic fact (+1 buff, else +2 buff);
+  `SpellBoostOf` counted both buffs (+3: "lands 65% -> 80%") where the game gave +1 (Sleep DC 19 -> 20 in the log). It now
+  keeps only the branch the caster gets (`BuffAppliesTo` with the caster).
+- **Log**: the "[Buff]" line of a next-spell boost shows the boost's own note (it showed the buff formula the boost had
+  replaced); the "60 % on a main action" note only where that cut was applied.
+- Seen, unchanged: Seelah waits beside the party's own Grease when the last enemies stand in it (walking in is priced
+  higher than her attack with about 1.4 rounds left; the ranged allies finish them).

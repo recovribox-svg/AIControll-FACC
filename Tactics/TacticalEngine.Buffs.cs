@@ -19,9 +19,11 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using CompanionAI_Pathfinder.Analysis;
+using Kingmaker.Blueprints.Items.Weapons;
 using Kingmaker.EntitySystem.Entities;
 using Kingmaker.EntitySystem.Stats;
 using Kingmaker.Enums;
+using Kingmaker.Items;
 using Kingmaker.RuleSystem;
 using Kingmaker.UnitLogic.Abilities;
 using Kingmaker.UnitLogic.Buffs.Blueprints;
@@ -48,6 +50,8 @@ namespace CompanionAI_Pathfinder.Tactics
         {
             public float DamagePerRound, HitChance, PerHit, HitsPerRound, FirstAttack;
             public bool Ranged, TwoHanded, StrengthToDamage, Caster;
+            /// <summary>What one size step up adds to a hit: the weapon's dice scaled by the game's table.</summary>
+            public float SizeUpDice = 1f;
         }
 
         /// <summary>What comes at the recipient now (per frame).</summary>
@@ -165,10 +169,11 @@ namespace CompanionAI_Pathfinder.Tactics
             }
             if (sizeUp)
             {
-                // A size bigger: -1 attack and AC (the game's size modifier), weapon dice one step up (about +1 a hit).
+                // A size bigger: -1 attack and AC (the game's size modifier); the weapon is the wielder's size
+                // (ItemEntityWeapon.Size), so its dice go one step up - bows too (WeaponDamageScaleTable).
                 attack -= 1f;
                 armor -= 1f;
-                damage += 1f;
+                damage += off.SizeUpDice;
             }
             if (forbidsSpells && off.Caster)
             {
@@ -337,6 +342,25 @@ namespace CompanionAI_Pathfinder.Tactics
             }
         }
 
+        /// <summary>
+        /// The average damage a hit gains when <paramref name="weapon"/>'s wielder grows one size: the game's
+        /// <c>WeaponDamageScaleTable</c> from the weapon's current size to the next. 1 when it cannot be read.
+        /// </summary>
+        private static float SizeUpDiceGain(ItemEntityWeapon weapon)
+        {
+            try
+            {
+                if (weapon == null) return 1f;
+                var baseDice = weapon.Blueprint.BaseDamage;
+                var now = weapon.Size;
+                var bigger = WeaponDamageScaleTable.Scale(baseDice, now.Shift(1), Size.Medium, weapon.Blueprint);
+                var current = WeaponDamageScaleTable.Scale(baseDice, now, Size.Medium, weapon.Blueprint);
+                float Avg(DiceFormula f) => f.Rolls * (f.Dice.Sides() + 1) / 2f;
+                return Mathf.Clamp(Avg(bigger) - Avg(current), 0f, 6f);
+            }
+            catch { return 1f; }
+        }
+
         private static Offence OffenceOf(TacticalContext ctx, UnitEntityData ally)
         {
             if (s_Offence.TryGetValue(ally.UniqueId, out var cached)) return cached;
@@ -360,6 +384,7 @@ namespace CompanionAI_Pathfinder.Tactics
                         off.HitsPerRound = est.FirstPerHit > 0f ? est.ExpectedDamage / est.FirstPerHit : est.Attacks * off.HitChance;
                         off.Ranged = est.IsRanged;
                         off.TwoHanded = est.Weapon?.HoldInTwoHands ?? false;
+                        off.SizeUpDice = SizeUpDiceGain(est.Weapon);
                     }
                 }
                 off.StrengthToDamage = CombatMath.StrengthAddsWeaponDamage(ally);

@@ -2689,8 +2689,10 @@ namespace CompanionAI_Pathfinder.Tactics
                         // ★ v0.3.19 (test11): an effect none of whose parts can be read is not understood: on a main
                         // action (the turn's Standard, Move or full round) it counts at 60 % - the player's preference for
                         // restraint when the case for a buff is weak. Free and swift ones keep their value.
-                        if (slot != ActionSlot.Free && slot != ActionSlot.Swift) worth *= 0.6f;
-                        s_LastAppraisal[AppraisalKey(unit, ability, ally)] = $"{worth:0.#}: effect not read (quality {quality:0.##} x level, 60 % on a main action)";
+                        bool mainSlot = slot != ActionSlot.Free && slot != ActionSlot.Swift;
+                        if (mainSlot) worth *= 0.6f;
+                        s_LastAppraisal[AppraisalKey(unit, ability, ally)] =
+                            $"{worth:0.#}: effect not read (quality {quality:0.##} x level{(mainSlot ? ", 60 % on a main action" : "")})";
                     }
                     // ★ v0.3.19 (test9): a buff that makes the ally bigger can put it into a harmful area it stands beside
                     // (Enlarge Person put Seelah into Orvath's Grease). The cost is the ally's, in full.

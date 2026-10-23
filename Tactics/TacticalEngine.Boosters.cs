@@ -13,6 +13,7 @@ using System.Collections.Generic;
 using System.Linq;
 using Kingmaker.Blueprints.Classes.Spells;
 using Kingmaker.Designers.Mechanics.Facts;
+using Kingmaker.EntitySystem.Entities;
 using Kingmaker.UnitLogic.Abilities;
 using Kingmaker.UnitLogic.Abilities.Blueprints;
 using Kingmaker.UnitLogic.Buffs.Blueprints;
@@ -41,7 +42,7 @@ namespace CompanionAI_Pathfinder.Tactics
         }
 
         /// <summary>The boost of an ability whose every buff is spent by the next cast; null when it is not one.</summary>
-        internal static SpellBoost SpellBoostOf(AbilityProfile profile)
+        internal static SpellBoost SpellBoostOf(AbilityProfile profile, AbilityData ability, UnitEntityData caster)
         {
             if (profile == null || !profile.BuffsSpentByCast) return null;
             var boost = new SpellBoost();
@@ -50,6 +51,10 @@ namespace CompanionAI_Pathfinder.Tactics
                 foreach (var buff in profile.CasterBuffs.Concat(profile.TargetBuffs).Distinct())
                 {
                     if (buff?.ComponentsArray == null) continue;
+                    // ★ v0.3.19 (test12): only the branch this caster gets - Arcane Reservoir DC gives +1, or +2 with
+                    // Potent Magic (a Conditional on the caster's fact); counting both read +3 where the game gave +1.
+                    if (ability != null && caster != null &&
+                        profile.BuffAppliesTo(buff, ability, caster) == EffectApplies.No) continue;
                     foreach (var c in buff.ComponentsArray)
                     {
                         switch (c)
@@ -98,7 +103,7 @@ namespace CompanionAI_Pathfinder.Tactics
         private static List<Candidate> CoupleSpellBoosts(TacticalContext ctx, List<Candidate> usable)
         {
             SpellBoost BoostOf(Candidate c) =>
-                c.Kind == CandidateKind.Ability && c.Ability != null ? SpellBoostOf(AbilityProfile.Get(c.Ability)) : null;
+                c.Kind == CandidateKind.Ability && c.Ability != null ? SpellBoostOf(AbilityProfile.Get(c.Ability), c.Ability, ctx.Unit) : null;
             if (!usable.Any(c => BoostOf(c) != null)) return usable;
 
             var main = usable.FirstOrDefault(c => c.Slot != ActionSlot.Free && c.Slot != ActionSlot.Swift && BoostOf(c) == null);
@@ -111,6 +116,8 @@ namespace CompanionAI_Pathfinder.Tactics
                 ReportOnce($"boost|{ctx.Unit.UniqueId}|{CombatMemory.Round}|{c.Key}|{main?.Key}",
                            $"[Tactics] {ctx.Unit.CharacterName}: {c.Ability.Name} = {gain:F1} ({note})");
                 if (gain <= 0f) continue;
+                // ★ v0.3.19 (test12): the "[Buff]" line explains this value, not the buff formula it replaced.
+                s_LastAppraisal[AppraisalKey(ctx.Unit, c.Ability, c.Target ?? ctx.Unit)] = $"{gain:0.#}: next-spell boost, {note}";
                 c.Value = gain;
                 c.Label += $" [for {main.Ability.Name}]";
                 result.Add(c);
