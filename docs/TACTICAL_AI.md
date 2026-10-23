@@ -1941,3 +1941,21 @@ in the four fights (97, 62, 80 and 102 made; 5.0, 3.8, 4.0 and 5.7 s of decision
 (37-47 ms) because the skipped ones were the quick "wait" decisions. The two slow decisions (628 and 744 ms) chose
 nothing and ran during the game's garbage collection. Every refused-or-interrupted command was the game's (all five
 first commands interrupted at once, then commands on a target that died).
+
+## 52. v0.3.20 (release): the test8 logs (3 turn-based, 3 real-time fights)
+
+**5-foot steps around a unit.** Lann's "5ft step out of melee" was refused three times in each of rounds 6 and 7 of
+the first turn-based fight (the game's path was 2.5 m and 4.1 m: around the units beside him); he then shot from melee,
+provoking, and dropped to 40 %. The step's spots were checked only against harmful areas (turn-based) and the refused
+spots themselves, so the next spot in the same blocked direction was offered again. A turn-based step spot now needs a
+free line (`StepIsClear`): no other body on the spot or across the line, and the navmesh trace reaching it within 0.3 m.
+The dispatcher's path check still refuses a step that is not one.
+
+**Looked at, left as is.**
+- No chosen option provoked an attack of opportunity in either log, and no approach needed a spot search or a recount
+  of the real walk: the party fought from where it stood or walked up without leaving anyone's reach.
+- Seelah went down twice (turn-based fight 3: the Isekai Mod reinforcement Vermleks' Inflict Light Wounds, Mass; real
+  time fight 3: the Large Water Elemental while her Mage Armor was being cast) - enemy damage, not a walk or a missed
+  heal.
+- Real-time quiet waits skipped 97, 77 and 75 decisions; the slow decisions (566-913 ms) all ran during the game's
+  garbage collection.

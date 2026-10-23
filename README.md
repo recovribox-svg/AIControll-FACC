@@ -36,6 +36,13 @@ combat (primary) and real-time combat.
 - An advance that runs out of its move action can continue with the standard action; abilities are not aimed at a
   target on which none of their effects apply.
 
+**0.3.20** ([release/CHANGELOG_v0.3.20.md](release/CHANGELOG_v0.3.20.md)): attacks of opportunity are weighed and,
+when a spot that provokes less exists, avoided; the path the game really walks is counted. Enemies are rated by what
+each can do and has done. Weapon damage follows the game's rule (swarms, critical immunity, damage reduction). Walks
+that do not fit one move action no longer cost the turn, interrupted casts no longer block an ability, and real-time
+companions stop re-thinking while they wait for their action. New setting for steering your own walks around spotted
+traps.
+
 **0.3.19** ([release/CHANGELOG_v0.3.19.md](release/CHANGELOG_v0.3.19.md)): buffs are valued by what they really do
 for the ally who gets them (with stacking, real duration and penalties), and a pure buff must clearly beat attacking.
 Performances, spirits and auras that work through their area, Rage bonuses, Warpriest Fervor and Witch Cackle are
@@ -129,7 +136,7 @@ toggles such as Shift Form; bonus stacking follows the game's own rule (and Tabl
 ## Install (players)
 
 1. Install [Unity Mod Manager](https://www.nexusmods.com/site/mods/21) into the game.
-2. Take `CompanionAI_Pathfinder_v0.3.19.zip` - prebuilt in `release\`, or build it yourself (below; output in `dist\`).
+2. Take `CompanionAI_Pathfinder_v0.3.20.zip` - prebuilt in `release\`, or build it yourself (below; output in `dist\`).
 3. Install it either way:
    - Unity Mod Manager → *Mods* tab → drag the ZIP onto the window / *Install Mod*, **or**
    - extract it to `<game>\Mods\CompanionAI_Pathfinder\` so the folder contains

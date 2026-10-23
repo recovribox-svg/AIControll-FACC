@@ -3469,6 +3469,36 @@ namespace CompanionAI_Pathfinder.Tactics
 
         internal static bool IsFiveFootStepKey(string key) => key != null && key.StartsWith(FiveFootStepKey);
 
+        /// <summary>
+        /// ★ v0.3.20 (test8): the straight step from the unit to <paramref name="spot"/> is free: no other body at the spot or
+        /// across the line (the game's path walks around a unit), and the navmesh does not stop the line short of it.
+        /// </summary>
+        private static bool StepIsClear(UnitEntityData unit, Vector3 spot, List<UnitEntityData> others)
+        {
+            try
+            {
+                Vector3 from = unit.Position;
+                foreach (var u in others)
+                {
+                    float room = (u.Corpulence + unit.Corpulence) * 0.9f;
+                    if (HorizontalDistance(u.Position, spot) < room) return false;
+                    // Closest point of the step's line to the other unit (flat).
+                    Vector3 line = spot - from;
+                    line.y = 0f;
+                    Vector3 toUnit = u.Position - from;
+                    toUnit.y = 0f;
+                    float t = line.sqrMagnitude > 0.0001f ? Mathf.Clamp01(Vector3.Dot(toUnit, line) / line.sqrMagnitude) : 0f;
+                    if (t > 0f && (toUnit - line * t).magnitude < room * 0.85f) return false;
+                }
+                return Vector3.Distance(Kingmaker.View.ObstacleAnalyzer.TraceAlongNavmesh(from, spot), spot) <= 0.3f;
+            }
+            catch (Exception ex)
+            {
+                Main.Verbose($"[Tactics] step check {unit.CharacterName}: {ex.Message}");
+                return true;   // no answer: the dispatcher's path check still refuses a step that is not one
+            }
+        }
+
         private static Vector3? FindRetreatPoint(TacticalContext ctx, float distance, Func<Vector3, bool> accept = null)
         {
             var unit = ctx.Unit;
@@ -3477,6 +3507,11 @@ namespace CompanionAI_Pathfinder.Tactics
                 ? allies.Aggregate(Vector3.zero, (s, a) => s + a.Position) / allies.Count
                 : unit.Position;
 
+            // ★ v0.3.20 (test8): a turn-based 5-foot step must be one on the game's path: no unit on the spot or across the
+            // way, no wall in between. Lann's "5ft step out of melee" was refused three times in each of two turns (paths of
+            // 2.5 m and 4.1 m around the units beside him) before he shot from melee, provoking (0.3.20-test8 log, R6-R7).
+            bool step = !CombatMemory.IsRealTime && distance <= ctx.FiveFootRange + 0.05f;
+            var others = step ? ctx.Allies.Concat(ctx.Enemies).Where(u => u != unit).ToList() : null;
             Vector3? best = null;
             float bestScore = float.MinValue;
             for (int i = 0; i < 12; i++)
@@ -3489,6 +3524,7 @@ namespace CompanionAI_Pathfinder.Tactics
                 // ★ v0.3.14: real time has no path check before the move (the turn-based dispatcher computes one): a spot
                 // off the navmesh or behind a wall left Orvath standing still for 3 s, 19 times in one session.
                 if (CombatMemory.IsRealTime && !AoeDangerAnalyzer.IsPositionValid(unit.Position, candidate)) continue;
+                if (step && !StepIsClear(unit, candidate, others)) continue;
                 float nearestEnemy = ctx.Enemies.Min(e => Vector3.Distance(candidate, e.Position) - e.Corpulence);
                 float score = nearestEnemy - 0.15f * Vector3.Distance(candidate, allyCenter);
                 if (score > bestScore)
