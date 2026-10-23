@@ -152,6 +152,9 @@ toggles such as Shift Form; bonus stacking follows the game's own rule (and Tabl
   toggle alone for the rest of the fight once you switch it yourself* (on) protects your own action-bar clicks.
 - *After fights, AI companions recast their long-lasting self buffs* (on): missing hour-long or permanent self buffs are
   cast out of combat. Switch off if you buff by hand or with a buff mod.
+- *Steer my own walk orders around spotted traps* (on): when you order a party member to walk in real time or out of
+  combat and the way crosses a trap your party has spotted, the walk goes around it or stops short. Unspotted traps and
+  turn-based moves are never changed. Switch off to walk exactly where you click.
 - **Buff It 2 The Limit:** if it manages your companions' toggles, switch *AI manages activatable abilities* off; if it
   casts their buffs, switch the self-buff option off too. The settings page shows a reminder while that mod is active.
 - *Consumables (quick-slot items)*: master switch plus potions / scrolls & wands / alchemical & thrown items, and the HP %

@@ -100,6 +100,12 @@ namespace CompanionAI_Pathfinder.Settings
                 { Language.English, "Self buffs lasting hours or permanently that have run out (no items, no toggles), cast when out of combat. Switch off if you buff by hand or with a buff mod, so those spell slots stay yours." },
                 { Language.Korean, "몇 시간 이상 또는 영구 지속되는 자기 버프가 사라졌을 때 전투 밖에서 다시 시전합니다(아이템, 토글 제외). 직접 또는 버프 모드로 버프한다면 꺼서 주문 슬롯을 남겨 두세요." }
             },
+            // ★ v0.3.20 (audit INT-001)
+            ["SteerPlayerWalksAroundTraps"] = new() { { Language.English, "Steer my own walk orders around spotted traps" }, { Language.Korean, "내 이동 명령을 발견된 함정을 피해 우회" } },
+            ["SteerPlayerWalksAroundTrapsDesc"] = new() {
+                { Language.English, "When you order a party member to walk (real time or out of combat) and the way crosses a trap your party has spotted, the walk goes around it or stops short. Unspotted traps and turn-based moves are never changed. Switch off to walk exactly where you click." },
+                { Language.Korean, "실시간 또는 전투 밖에서 파티원에게 이동을 명령했을 때 경로가 파티가 발견한 함정을 지나면, 함정을 우회하거나 그 앞에서 멈춥니다. 발견되지 않은 함정과 턴제 이동은 바뀌지 않습니다. 클릭한 곳으로 그대로 걷게 하려면 끄세요." }
+            },
             ["BuffItDetected"] = new() { { Language.English, "Buff It 2 The Limit is active. If it manages your companions' toggles or buffs, switch the matching setting above off so the two mods do not undo each other's work." }, { Language.Korean, "Buff It 2 The Limit이 활성화되어 있습니다. 그 모드가 동료의 토글이나 버프를 관리한다면, 두 모드가 서로의 작업을 되돌리지 않도록 위의 해당 설정을 끄세요." } },
 
             // ★ v0.3.0: Consumables
@@ -321,6 +327,13 @@ namespace CompanionAI_Pathfinder.Settings
 
         /// <summary>★ v0.3.19: a toggle the player clicks during a fight is left as they set it until the fight ends.</summary>
         public bool RespectPlayerToggles { get; set; } = true;
+
+        /// <summary>
+        /// ★ v0.3.20 (audit INT-001): the player's own walk orders (real time and out of combat) are steered around traps the
+        /// party has spotted (GameInterface/TrapAvoidancePatch). It was always on, with no switch. On by default: today's
+        /// behaviour. Turn-based moves are never changed.
+        /// </summary>
+        public bool SteerPlayerWalksAroundTraps { get; set; } = true;
 
         // 캐릭터별 설정
         public Dictionary<string, CharacterSettings> CharacterSettings { get; set; } = new();

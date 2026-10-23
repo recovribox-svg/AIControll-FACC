@@ -53,7 +53,9 @@ namespace CompanionAI_Pathfinder.GameInterface
             ref UnitCommand cmd)
         {
             // ★ v0.3.17: not while the mod is switched off in the mod manager (Harmony patches stay applied then).
-            if (!PatchEnabled || !TrapAwarenessController.Enabled || !Main.Enabled)
+            // ★ v0.3.20 (audit INT-001): and only while the player wants it (setting, on by default).
+            if (!PatchEnabled || !TrapAwarenessController.Enabled || !Main.Enabled ||
+                !(Settings.ModSettings.Instance?.SteerPlayerWalksAroundTraps ?? true))
                 return true;
 
             try

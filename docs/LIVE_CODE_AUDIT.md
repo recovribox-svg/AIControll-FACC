@@ -135,7 +135,7 @@ are built only when the legacy engine is selected (v0.3.17).
 | LIF-001 | `CombatMemory.RecordCast` (via `TacticalEngine.Execute`), both modes | A cast was recorded when its command was **issued**. A command that ended without acting still counted: an ability valued by the once-per-combat rule for effects the AI cannot see (an enchantment, a dispel) was never offered again on that target for the rest of the fight; a buff counted as "cast this round"; a debuff's repeat discount (x0.3 after two uses) grew; a mark the AI cannot see blocked re-marking for its duration. | Correctness / lifecycle | P2 | Confirmed (code) | **Implemented** |
 | PERF-001 | `RealTimeTactics.Act` | Three quarters of real-time decisions end in "wait" while the standard action is on cooldown, each a full decision (every ability on every target). Measured in the 0.3.20-test4 real-time log: 92/125, 56/90, 100/132 and 74/97 decisions chose nothing; total decision time 6.1, 4.5, 5.6, 4.1 s per fight. | Performance | P2 | Confirmed (log) | **Implemented** (measurement pending) |
 | VAL-001 | `TacticalEngine.EvaluateAbility` | The "worth spending an item" bar (5 for a used-up item, the quick bar otherwise) was checked before the walk (x0.9), attacks of opportunity, the concentration check and the walk's risk were taken off, so an item could be used for less than the bar. | Tactical value | P3 | Confirmed (code) | **Implemented** |
-| INT-001 | `TrapAvoidancePatch` | Retargets the player's own walk orders (real time and out of combat) away from detected traps, for every party member, whatever the AI settings; no setting switches it off and the README does not mention it. Only perceived traps; turn-based combat untouched. | Integration / settings | P3 | Confirmed (code) | Needs a user decision (setting or note) |
+| INT-001 | `TrapAvoidancePatch` | Retargets the player's own walk orders (real time and out of combat) away from detected traps, for every party member, whatever the AI settings; no setting switches it off and the README does not mention it. Only perceived traps; turn-based combat untouched. | Integration / settings | P3 | Confirmed (code) | **Implemented** (setting) |
 | SET-001 | `CharacterSettings.HealAtHPPercent`, `AvoidFriendlyFire` | Live settings with no UI (settings file only): heal threshold 30 % (+20 % margin, at least 35 %), friendly-fire veto on. | Settings | Info | Confirmed | Documented here |
 | OBS-001 | live value paths (`TacticalEngine` 24, `CombatMath` 21, `AbilityProfile` 15, `AoeDangerAnalyzer` 13, others) | About 140 `catch` blocks return a default without a trace. A game update or a mod component that throws makes the value silently fall back (often conservative: no value, no immunity). | Observability | P3 | Confirmed (count) | Deferred (proposal in F) |
 | TEST-001 | `tests/CompanionAI.Tests` | Only game-independent formulas are tested (now 90 tests: value model, risk, resistance order, action rules, spell tiers, cast ledger, real-time pacing). Candidate generation, legality and final choice need the game and are verified by play logs only. | Maintainability | Info | Confirmed | Accepted (see H) |
@@ -246,7 +246,7 @@ Proposed, not done:
 
 | Item | Option A (minimal) | Option B | Recommendation |
 |---|---|---|---|
-| INT-001 trap avoidance | a line in the README | a setting "Steer my own walk orders around detected traps" (default on: today's behaviour) | B, needs the user's decision (a new UI option) |
+| INT-001 trap avoidance | a line in the README | a setting "Steer my own walk orders around spotted traps" (default on: today's behaviour) | B, done at the user's request (`ModSettings.SteerPlayerWalksAroundTraps`, checked in `TrapAvoidancePatch`; README) |
 | OBS-001 silent catches | none | one helper `Diagnostics.Swallowed(site, ex)` that logs once per site in verbose mode, applied to the value paths | B in a later maintenance pass; behaviour-neutral but touches many files |
 | LIF-003 out-of-combat buff mid-fight | gate `ApplyPermanentBuffsOutOfCombat` on the party not being in combat | - | only if a log shows it |
 | TEST-001 | keep extracting pure rules with tests when they change | decision-level fixtures need the game assemblies at test time | A |
@@ -288,7 +288,7 @@ optional-mod handling.
 
 ## I. Backlog and stopping decision
 
-Open: INT-001 (user decision), OBS-001 (maintenance pass), LIF-003 (watch), the slow-decision cause (next log). Legacy
+Open: OBS-001 (maintenance pass), LIF-003 (watch), the slow-decision cause (next log). Legacy
 engine: out of scope; kept until 0.4.0.
 
 Stopping here: the remaining items are low-impact, need a user decision, or need in-game evidence first. The modern

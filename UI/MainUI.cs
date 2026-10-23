@@ -287,12 +287,19 @@ namespace CompanionAI_Pathfinder.UI
             if (GameInterface.ModInterop.BuffItToTheLimitActive &&
                 (ModSettings.Instance.AiManagesToggles || ModSettings.Instance.AiRecastsSelfBuffs))
                 GUILayout.Label($"<color=#FFD700><size=12>{L("BuffItDetected")}</size></color>", _descriptionStyle);
+            GUILayout.Space(3);
+
+            // ★ v0.3.20 (audit INT-001)
+            bool prevTrapSteer = ModSettings.Instance.SteerPlayerWalksAroundTraps;
+            ModSettings.Instance.SteerPlayerWalksAroundTraps = DrawCheckbox(ModSettings.Instance.SteerPlayerWalksAroundTraps, L("SteerPlayerWalksAroundTraps"));
+            GUILayout.Label($"<color=#888888><size=11>{L("SteerPlayerWalksAroundTrapsDesc")}</size></color>", _descriptionStyle);
 
             // 변경시 저장
             if (prevBossBypass != ModSettings.Instance.ProgressiveBossBypass ||
                 prevToggles != ModSettings.Instance.AiManagesToggles ||
                 prevRespect != ModSettings.Instance.RespectPlayerToggles ||
                 prevSelfBuffs != ModSettings.Instance.AiRecastsSelfBuffs ||
+                prevTrapSteer != ModSettings.Instance.SteerPlayerWalksAroundTraps ||
                 prevTurnBased != ModSettings.Instance.EnableInTurnBased ||
                 prevRealTime != ModSettings.Instance.EnableInRealTime ||
                 Math.Abs(prevInterval - ModSettings.Instance.RealTimeDecisionInterval) > 0.01f)
