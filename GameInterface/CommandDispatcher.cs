@@ -43,8 +43,14 @@ namespace CompanionAI_Pathfinder.GameInterface
         /// nothing and keeps the full attack): refused when the real path is longer than the step allows. The step was
         /// priced as a straight line; around an ally or a corner the path grew to 3.3 m and 6.6 m, became a normal move
         /// (ApplyTurnBasedMovementLimit) and provoked - Aeiluvetar went down from full HP.</param>
+        /// <param name="pathAttackers">★ v0.3.20 (test8): counts the attacks of opportunity along a walk (the engine's own
+        /// rule, TacticalEngine.PathAttackers); with <paramref name="pricedAttacks"/>, the number the move was priced for on
+        /// the straight line. The walk the game will really take is counted, and a walk that provokes more is refused
+        /// (<see cref="MoreAttacksOfOpportunityFailure"/>) so the engine prices the option again with it. A path around an
+        /// ally or a corner can pass enemies the straight line did not.</param>
         public static bool Run(UnitEntityData unit, UnitCommand command, string label, out string failure, bool avoidAreas = false,
-                               bool fiveFootOnly = false)
+                               bool fiveFootOnly = false, Func<IList<Vector3>, List<UnitEntityData>> pathAttackers = null,
+                               int pricedAttacks = 0)
         {
             failure = null;
             if (unit == null || command == null)
@@ -155,6 +161,20 @@ namespace CompanionAI_Pathfinder.GameInterface
                         CommandTrace.LogRejected(unit, command, label, failure);
                         return false;
                     }
+
+                    // A walk the game makes as a 5-foot step provokes nothing (ApplyTurnBasedMovementLimit below); a longer
+                    // one (an advance) goes only as far as this turn's movement. Its time left, not GetRemainingMovementRange:
+                    // that answers the 5-foot step's range while the limit set for the last command is still the step.
+                    bool ownTurn = turn != null && turn.Rider == unit;
+                    if (pathAttackers != null &&
+                        !(ownTurn && turn.HasFiveFootStep(unit) && pathLength <= turn.GetRemainingFiveFootStepRange(unit)) &&
+                        WalkProvokesMore(unit, command.ForcedPath?.vectorPath, command, pathAttackers, pricedAttacks, out failure,
+                                         ownTurn ? turn.GetRemainingTime(unit) * unit.CurrentSpeedMps : float.MaxValue))
+                    {
+                        command.ForcedPath = null;
+                        CommandTrace.LogRejected(unit, command, label, failure);
+                        return false;
+                    }
                     hasPath = true;
                     ApplyTurnBasedMovementLimit(unit, pathLength);
                 }
@@ -164,9 +184,9 @@ namespace CompanionAI_Pathfinder.GameInterface
                 // of the fight (0.3.18-test9 real-time log). The path is asked of the pathfinder on its own (not the
                 // unit's seeker, which may be steering the unit right now) and only checked, never attached: the game
                 // still walks its own path; a refused option makes the engine take the next best one.
-                else if (avoidAreas && RealTimePathEntersArea(unit, command, out string rtArea))
+                // ★ v0.3.20 (test8): and against attacks of opportunity, on the same walk (asked once for both checks).
+                else if ((avoidAreas || pathAttackers != null) && RealTimeWalkRefused(unit, command, avoidAreas, pathAttackers, pricedAttacks, out failure))
                 {
-                    failure = $"{WalksIntoAreaFailure} {rtArea}";
                     CommandTrace.LogRejected(unit, command, label, failure);
                     return false;
                 }
@@ -264,37 +284,105 @@ namespace CompanionAI_Pathfinder.GameInterface
         public const string NoSightAtPathEndFailure = "path ends without line of sight to the target";
         public const string LongerThanOneMoveFailure = "longer than one move action";
 
-        /// <summary>★ v0.3.18 (test10): real time - the walk the game would take, asked of the pathfinder directly.</summary>
-        private static bool RealTimePathEntersArea(UnitEntityData unit, UnitCommand command, out string area)
+        /// <summary>★ v0.3.20 (test8): the failure text of a walk refused for provoking more attacks of opportunity than
+        /// the move was priced for (TacticalDriver.RecordRejected reads it).</summary>
+        public const string MoreAttacksOfOpportunityFailure = "the walk provokes more attacks of opportunity";
+
+        /// <summary>
+        /// ★ v0.3.18 (test10): real time - the walk the game would take, asked of the pathfinder directly, checked against
+        /// harmful areas (<paramref name="avoidAreas"/>) and ★ v0.3.20 (test8) attacks of opportunity
+        /// (<paramref name="pathAttackers"/>). The path is asked only when a check needs it: a harmful area or an enemy
+        /// near the straight line.
+        /// </summary>
+        private static bool RealTimeWalkRefused(UnitEntityData unit, UnitCommand command, bool avoidAreas,
+                                                Func<IList<Vector3>, List<UnitEntityData>> pathAttackers, int pricedAttacks,
+                                                out string failure)
         {
-            area = null;
+            failure = null;
             if (CombatController.IsInTurnBasedCombat() || !unit.IsInCombat || unit.RiderPart != null) return false;
             if (command is UnitMoveAlongPath || !command.ShouldUnitApproach) return false;
-            ABPath path = null;
             try
             {
-                // Only when a harmful (or pending) area lies near the straight line: the circle around the
-                // midpoint covers every walk that does not detour far, and a far detour leaves the check unneeded.
+                // The circle around the midpoint covers every walk that does not detour far, and a far detour leaves
+                // the check unneeded.
                 Vector3 start = unit.Position, goal = command.ApproachPoint;
+                Vector3 middle = (start + goal) * 0.5f;
                 float half = Vector3.Distance(start, goal) * 0.5f;
-                if (!Analysis.AoeDangerAnalyzer.HarmfulAreaNear(unit, (start + goal) * 0.5f, half + 3f)) return false;
-                path = ABPath.Construct(start, goal, null);
-                path.nnConstraint.graphMask = 1;   // the walkable navmesh, as the game's own movement queries
-                path.Claim(PathClaimKey);
-                AstarPath.StartPath(path, pushToFront: true);
-                AstarPath.BlockUntilCalculated(path);
-                if (path.error || path.CompleteState != PathCompleteState.Complete || path.vectorPath == null || path.vectorPath.Count == 0)
-                    return false;   // no answer: the move is not refused for it
-                return PathEntersArea(unit, GameWalk(path, start), command, out area);
+                bool areaCheck = avoidAreas && Analysis.AoeDangerAnalyzer.HarmfulAreaNear(unit, middle, half + 3f);
+                bool attackCheck = pathAttackers != null && EnemyNear(unit, middle, half + 4f);
+                if (!areaCheck && !attackCheck) return false;
+                var walk = RealTimeWalk(start, goal);
+                if (walk == null) return false;   // no answer: the move is not refused for it
+                if (areaCheck && PathEntersArea(unit, walk, command, out string area))
+                {
+                    failure = $"{WalksIntoAreaFailure} {area}";
+                    return true;
+                }
+                return attackCheck && WalkProvokesMore(unit, walk, command, pathAttackers, pricedAttacks, out failure);
             }
             catch (Exception ex)
             {
                 Main.Verbose($"[Dispatch] {unit.CharacterName}: real-time path check skipped: {ex.Message}");
                 return false;
             }
+        }
+
+        /// <summary>The walk the pathfinder gives a real-time unit from <paramref name="start"/> to <paramref name="goal"/>
+        /// (not the unit's seeker, which may be steering it right now); null without an answer.</summary>
+        private static List<Vector3> RealTimeWalk(Vector3 start, Vector3 goal)
+        {
+            ABPath path = null;
+            try
+            {
+                path = ABPath.Construct(start, goal, null);
+                path.nnConstraint.graphMask = 1;   // the walkable navmesh, as the game's own movement queries
+                path.Claim(PathClaimKey);
+                AstarPath.StartPath(path, pushToFront: true);
+                AstarPath.BlockUntilCalculated(path);
+                if (path.error || path.CompleteState != PathCompleteState.Complete || path.vectorPath == null || path.vectorPath.Count == 0)
+                    return null;
+                return GameWalk(path, start);
+            }
             finally
             {
                 path?.Release(PathClaimKey, false);
+            }
+        }
+
+        /// <summary>A conscious enemy of <paramref name="unit"/> within <paramref name="radius"/> of <paramref name="point"/>.</summary>
+        private static bool EnemyNear(UnitEntityData unit, Vector3 point, float radius)
+        {
+            foreach (var other in Game.Instance.State.Units)
+            {
+                if (other == null || other == unit || !other.IsInGame || other.Descriptor?.State == null ||
+                    !other.Descriptor.State.IsConscious || !unit.IsEnemy(other)) continue;
+                if (Vector3.Distance(other.Position, point) <= radius + other.Corpulence) return true;
+            }
+            return false;
+        }
+
+        /// <summary>
+        /// ★ v0.3.20 (test8): the walk along <paramref name="points"/>, up to where the unit arrives, provokes more attacks of
+        /// opportunity than <paramref name="pricedAttacks"/> (counted by <paramref name="pathAttackers"/>).
+        /// </summary>
+        private static bool WalkProvokesMore(UnitEntityData unit, List<Vector3> points, UnitCommand command,
+                                             Func<IList<Vector3>, List<UnitEntityData>> pathAttackers, int pricedAttacks,
+                                             out string failure, float maxLength = float.MaxValue)
+        {
+            failure = null;
+            try
+            {
+                if (points == null || points.Count == 0) return false;
+                var found = pathAttackers(Truncate(WalkToArrival(unit, points, command), maxLength));
+                if (found == null || found.Count <= pricedAttacks) return false;
+                failure = $"{MoreAttacksOfOpportunityFailure} ({found.Count}, priced for {pricedAttacks}: " +
+                          $"{string.Join(", ", found.ConvertAll(e => e.CharacterName))})";
+                return true;
+            }
+            catch (Exception ex)
+            {
+                Main.Verbose($"[Dispatch] {unit.CharacterName}: attack of opportunity check of the path skipped: {ex.Message}");
+                return false;
             }
         }
 
@@ -355,35 +443,14 @@ namespace CompanionAI_Pathfinder.GameInterface
             try
             {
                 if (points == null || points.Count == 0) return false;
-                Vector3 target = command.ApproachPoint;
-                float radius = Mathf.Max(0f, command.ApproachRadius);
-                Vector3 from = unit.Position;
-                foreach (var to in points)
+                var walk = WalkToArrival(unit, points, command);
+                for (int i = 1; i < walk.Count; i++)
                 {
-                    // Stop where the unit arrives: the first spot on the segment within its approach radius of the target
-                    // (flat), sampled every 0.25 m - an enemy standing in the area at the path's end is attacked from
-                    // outside it.
-                    Vector3 end = to;
-                    bool arrives = false;
-                    float length = Vector3.Distance(from, to);
-                    int steps = Math.Max(1, Mathf.CeilToInt(length / 0.25f));
-                    for (int i = 1; i <= steps; i++)
-                    {
-                        Vector3 p = Vector3.Lerp(from, to, i / (float)steps);
-                        Vector3 flat = p - target;
-                        flat.y = 0f;
-                        if (flat.magnitude > radius) continue;
-                        end = p;
-                        arrives = true;
-                        break;
-                    }
-                    if (Analysis.AoeDangerAnalyzer.EnteringDanger(unit, from, end, out string name) > 0f)
+                    if (Analysis.AoeDangerAnalyzer.EnteringDanger(unit, walk[i - 1], walk[i], out string name) > 0f)
                     {
                         area = name ?? "a harmful area";
                         return true;
                     }
-                    if (arrives) break;
-                    from = end;
                 }
             }
             catch (Exception ex)
@@ -391,6 +458,55 @@ namespace CompanionAI_Pathfinder.GameInterface
                 Main.Verbose($"[Dispatch] {unit.CharacterName}: area check of the path skipped: {ex.Message}");
             }
             return false;
+        }
+
+        /// <summary>
+        /// The walk from the unit along <paramref name="points"/>, up to where it arrives: the first spot on a segment within
+        /// the command's approach radius of the target (flat), sampled every 0.25 m - an enemy standing in an area at the
+        /// path's end is attacked from outside it. ★ v0.3.20 (test8): shared by the area and attack of opportunity checks.
+        /// </summary>
+        private static List<Vector3> WalkToArrival(UnitEntityData unit, List<Vector3> points, UnitCommand command)
+        {
+            Vector3 target = command.ApproachPoint;
+            float radius = Mathf.Max(0f, command.ApproachRadius);
+            Vector3 from = unit.Position;
+            var walk = new List<Vector3> { from };
+            foreach (var to in points)
+            {
+                Vector3 end = to;
+                bool arrives = false;
+                float length = Vector3.Distance(from, to);
+                int steps = Math.Max(1, Mathf.CeilToInt(length / 0.25f));
+                for (int i = 1; i <= steps; i++)
+                {
+                    Vector3 p = Vector3.Lerp(from, to, i / (float)steps);
+                    Vector3 flat = p - target;
+                    flat.y = 0f;
+                    if (flat.magnitude > radius) continue;
+                    end = p;
+                    arrives = true;
+                    break;
+                }
+                walk.Add(end);
+                if (arrives) break;
+                from = end;
+            }
+            return walk;
+        }
+
+        /// <summary>The first <paramref name="maxLength"/> metres of <paramref name="walk"/>.</summary>
+        private static List<Vector3> Truncate(List<Vector3> walk, float maxLength)
+        {
+            float left = maxLength;
+            for (int i = 1; i < walk.Count; i++)
+            {
+                float length = Vector3.Distance(walk[i - 1], walk[i]);
+                if (length < left) { left -= length; continue; }
+                var cut = walk.GetRange(0, i);
+                cut.Add(Vector3.Lerp(walk[i - 1], walk[i], length > 0f ? left / length : 0f));
+                return cut;
+            }
+            return walk;
         }
 
         private static bool IsInSlots(UnitEntityData unit, UnitCommand command)

@@ -672,9 +672,10 @@ namespace CompanionAI_Pathfinder.Tactics
             {
                 // Speed halves (x1.5 for a Trickster with fast movement): the move must still fit.
                 if (Vector3.Distance(unit.Position, c.RiskAt.Value) > ctx.MoveRange * Math.Min(1f, speed) * 0.95f) { tooFar++; continue; }
-                var off = DisengageRisk(ctx, c.RiskAt.Value, mobility: false);
+                // ★ v0.3.20 (test8): the attacks of the real walk when the option was priced again with them.
+                var off = DisengageRisk(ctx, c.RiskAt.Value, mobility: false, attackers: c.PathAttackers);
                 if (off == null) continue;
-                var on = DisengageRisk(ctx, c.RiskAt.Value, mobility: true);
+                var on = DisengageRisk(ctx, c.RiskAt.Value, mobility: true, attackers: c.PathAttackers);
                 float g = c.PreRiskValue * off.StopChance + off.Cost - (on == null ? 0f : c.PreRiskValue * on.StopChance + on.Cost);
                 if (best == null || c.Value + g > best.Value + gain)
                 {

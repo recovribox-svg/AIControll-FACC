@@ -73,6 +73,15 @@ namespace CompanionAI_Pathfinder.Tactics
         /// <summary>A rejected option: not tried again this round, and its enemy is unreachable when no path got there.</summary>
         public static void RecordRejected(TurnMemory memory, Candidate candidate, string failure)
         {
+            // ★ v0.3.20 (test8): the game's walk provokes more attacks of opportunity than the straight line it was priced
+            // on - priced again with them on the next decision, not dropped (TacticalEngine.RepriceRealPaths). Refused a
+            // second time, it is dropped for the turn like any other.
+            if (failure != null && failure.StartsWith(GameInterface.CommandDispatcher.MoreAttacksOfOpportunityFailure) &&
+                candidate.SeenPathAttackers != null && !memory.PathAttackers.ContainsKey(candidate.Key))
+            {
+                memory.PathAttackers[candidate.Key] = (candidate.SeenPathFrom, candidate.SeenPathAttackers);
+                return;
+            }
             memory.Failed.Add(candidate.Key);
             // ★ v0.3.18 (test11): another direction for the next 5-foot step (TacticalEngine.AddMovementCandidates).
             if (TacticalEngine.IsFiveFootStepKey(candidate.Key) && candidate.Point.HasValue) memory.RefusedSteps.Add(candidate.Point.Value);

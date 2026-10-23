@@ -87,6 +87,13 @@ namespace CompanionAI_Pathfinder.Tactics
         internal TacticalEngine.Disengage Risk;
         public Vector3? RiskAt;
         public float PreRiskValue;
+        /// <summary>★ v0.3.20 (test8): counts the attacks of opportunity along the walk the game will really take
+        /// (CommandDispatcher, chosen option only); the result is kept in <see cref="SeenPathAttackers"/>.</summary>
+        internal Func<IList<Vector3>, List<UnitEntityData>> CountPathAttackers;
+        internal List<UnitEntityData> SeenPathAttackers;
+        internal Vector3 SeenPathFrom;
+        /// <summary>★ v0.3.20 (test8): the attacks of opportunity of the real walk this option was re-priced with.</summary>
+        internal List<UnitEntityData> PathAttackers;
 
         public override string ToString() => $"{Label}={Value:F1}";
     }
@@ -270,6 +277,8 @@ namespace CompanionAI_Pathfinder.Tactics
             try { PriceBurn(ctx, candidates); AddKineticCandidates(ctx, candidates, preview); }
             catch (Exception ex) { Main.Error($"[Tactics] kineticist candidates: {ex}"); }
             try { AddMovementCandidates(ctx, candidates); } catch (Exception ex) { Main.Error($"[Tactics] movement candidates: {ex}"); }
+            // ★ v0.3.20 (test8): an option whose real walk provoked more than its straight line, at the real walk's price.
+            try { RepriceRealPaths(ctx, candidates, memory); } catch (Exception ex) { Main.Error($"[Tactics] real path prices: {ex}"); }
             // ★ v0.3.18 (AA-2): after the others, so a toggle that forbids spells is priced against the best spell.
             try { AddToggleCandidates(ctx, candidates, preview); } catch (Exception ex) { Main.Error($"[Tactics] toggle candidates: {ex}"); }
             // ★ v0.3.18 (AA-3): Mobility before a move that would provoke.
@@ -335,6 +344,8 @@ namespace CompanionAI_Pathfinder.Tactics
             ctx.TurnValue = (quick != null ? quick.Value : 0f) +
                             (main != null && main.Value >= MinMainValue ? main.Value : 0f);
             if (preview) return chosen;
+            // ★ v0.3.20 (test8): a move priced on the straight line has the game's real walk counted before it is made.
+            if (chosen?.RiskAt != null) chosen.CountPathAttackers = RealPathCounter(ctx, chosen);
             LogDecision(ctx, usable, chosen);
             // ★ v0.3.16 (test2): options exist but none is worth anything or affordable - name the best of them. Seelah
             // ended round 1 with all her actions and 4 enemies, and the log could not say why.
@@ -862,19 +873,36 @@ namespace CompanionAI_Pathfinder.Tactics
             // middle of the fight. Only below half HP, as for withdrawing: a healthy fighter's place is in melee.
             // ★ v0.3.16: a caster walking up to touch an enemy pays it at any HP - it stands among them afterwards (the
             // weapon fighter's place is in melee, so its moves keep the half-HP rule).
-            if (alwaysExposure || ctx.HpPct < CautionBelow(ctx))
+            // ★ v0.3.20 (test8): and at any HP for a move that provokes. Leaving an enemy (or walking past one) is a choice
+            // of where to stand, and its price is the attacks on the way plus the danger there against here: Camellia, at
+            // full HP beside a Skeletal Champion, walked off to a Zombie (a 9-a-round hitter) for one attack of
+            // opportunity priced 0.8, and was down before her next turn (0.3.20-test7 turn-based log, R2). A healthy
+            // fighter walking up to an enemy without provoking keeps the old rule (its place is in melee).
+            if (alwaysExposure || ctx.HpPct < CautionBelow(ctx) || (risk != null && risk.Attacks > 0))
             {
-                float hp = Math.Max(1f, CombatMath.HpBeforeDown(unit));
-                float exposure = RiskMath.RoundDropChance(hp, IncomingDamage(ctx, unit, destination)) -
-                                 RiskMath.RoundDropChance(hp, IncomingDamage(ctx, unit, unit.Position));
-                if (exposure > 0.02f)
+                float exposure = ExposureCost(ctx, destination);
+                if (exposure > 0f)
                 {
                     risk = risk ?? new Disengage();
                     risk.Exposed = true;
-                    risk.Cost += exposure * AllyWorth(ctx, unit) * RiskTolerance(ctx);
+                    risk.Cost += exposure;
                 }
             }
             return risk;
+        }
+
+        /// <summary>
+        /// ★ v0.3.14 (test5): what standing at <paramref name="destination"/> instead of here costs: the higher chance to drop
+        /// before the next turn there (the withdraw model in reverse), times the unit's worth and its role's tolerance. 0
+        /// when it is no more dangerous (or only negligibly: 2 %).
+        /// </summary>
+        private static float ExposureCost(TacticalContext ctx, Vector3 destination)
+        {
+            var unit = ctx.Unit;
+            float hp = Math.Max(1f, CombatMath.HpBeforeDown(unit));
+            float exposure = RiskMath.RoundDropChance(hp, IncomingDamage(ctx, unit, destination)) -
+                             RiskMath.RoundDropChance(hp, IncomingDamage(ctx, unit, unit.Position));
+            return exposure > 0.02f ? exposure * AllyWorth(ctx, unit) * RiskTolerance(ctx) : 0f;
         }
 
         /// <summary>
@@ -945,12 +973,18 @@ namespace CompanionAI_Pathfinder.Tactics
         /// </summary>
         /// <remarks>★ v0.3.18 (AA-3): with Mobility (<paramref name="mobility"/>; null: whether the unit has it on now) each
         /// attack happens only when the unit fails its Mobility check against that enemy's CMD.</remarks>
-        private static Disengage DisengageRisk(TacticalContext ctx, Vector3 destination, bool? mobility = null)
+        /// <remarks>★ v0.3.20 (test8): <paramref name="attackers"/> - the attacks of opportunity of the real walk, when known
+        /// (CommandDispatcher counted them on the game's path); otherwise the straight line to the destination.</remarks>
+        private static Disengage DisengageRisk(TacticalContext ctx, Vector3 destination, bool? mobility = null,
+                                               List<UnitEntityData> attackers = null)
         {
             var unit = ctx.Unit;
-            // A move that fits in the 5-foot step is made as one (CommandDispatcher.ApplyTurnBasedMovementLimit).
-            if (ctx.CanFiveFoot && Vector3.Distance(unit.Position, destination) <= ctx.FiveFootRange * 0.9f) return null;
-            var attackers = PathAttackers(ctx, unit.Position, destination);
+            if (attackers == null)
+            {
+                // A move that fits in the 5-foot step is made as one (CommandDispatcher.ApplyTurnBasedMovementLimit).
+                if (ctx.CanFiveFoot && Vector3.Distance(unit.Position, destination) <= ctx.FiveFootRange * 0.9f) return null;
+                attackers = PathAttackers(ctx, unit.Position, destination);
+            }
             if (attackers.Count == 0) return null;
 
             float hp = Math.Max(1f, CombatMath.HpBeforeDown(unit));
@@ -1119,32 +1153,101 @@ namespace CompanionAI_Pathfinder.Tactics
         /// were checked before, and only at the destination: Camellia charged past the Large Water Elemental, priced as
         /// safe, and its one slam dropped her. The walk is taken as a straight line (charges are; other paths may bend).
         /// </summary>
-        private static List<UnitEntityData> PathAttackers(TacticalContext ctx, Vector3 from, Vector3 to)
+        private static List<UnitEntityData> PathAttackers(TacticalContext ctx, Vector3 from, Vector3 to) =>
+            PathAttackers(ctx, new[] { from, to });
+
+        /// <summary>
+        /// The enemies whose reach a walk along <paramref name="path"/> leaves (sampled every 0.75 m): those engaging the
+        /// unit now and those it passes, the game's own engagement rule (UnitCombatEngagementController: an enemy engages a
+        /// unit in its reach and attacks when the unit leaves it). ★ v0.3.20 (test8): any walk, not only a straight line -
+        /// the game's real path, counted for the option chosen (CommandDispatcher).
+        /// </summary>
+        internal static List<UnitEntityData> PathAttackers(TacticalContext ctx, IList<Vector3> path)
         {
             var unit = ctx.Unit;
             var attackers = new List<UnitEntityData>();
+            if (path == null || path.Count < 2) return attackers;
             var engaged = new HashSet<UnitEntityData>(ctx.Engagers);
-            float length = Vector3.Distance(from, to);
-            int steps = Math.Max(1, Mathf.CeilToInt(length / 0.75f));
-            for (int i = 1; i <= steps; i++)
+            for (int s = 1; s < path.Count; s++)
             {
-                var point = Vector3.Lerp(from, to, i / (float)steps);
-                foreach (var enemy in ctx.Enemies)
+                Vector3 from = path[s - 1], to = path[s];
+                int steps = Math.Max(1, Mathf.CeilToInt(Vector3.Distance(from, to) / 0.75f));
+                for (int i = 1; i <= steps; i++)
                 {
-                    if (attackers.Contains(enemy)) continue;
-                    try
+                    var point = Vector3.Lerp(from, to, i / (float)steps);
+                    foreach (var enemy in ctx.Enemies)
                     {
-                        if (Threatens(enemy, unit, point)) { engaged.Add(enemy); continue; }
-                        if (!engaged.Remove(enemy)) continue;
-                        if (AttacksOnLeaving(enemy, unit)) attackers.Add(enemy);
-                    }
-                    catch (Exception ex)
-                    {
-                        Main.Verbose($"[Tactics] attack of opportunity check {enemy?.CharacterName} -> {unit.CharacterName}: {ex.Message}");
+                        if (attackers.Contains(enemy)) continue;
+                        try
+                        {
+                            if (Threatens(enemy, unit, point)) { engaged.Add(enemy); continue; }
+                            if (!engaged.Remove(enemy)) continue;
+                            if (AttacksOnLeaving(enemy, unit)) attackers.Add(enemy);
+                        }
+                        catch (Exception ex)
+                        {
+                            Main.Verbose($"[Tactics] attack of opportunity check {enemy?.CharacterName} -> {unit.CharacterName}: {ex.Message}");
+                        }
                     }
                 }
             }
             return attackers;
+        }
+
+        /// <summary>
+        /// ★ v0.3.20 (test8): the walk the game will really take for the chosen option, counted for attacks of opportunity
+        /// (the option was priced on the straight line). The dispatcher calls it with that walk (not for a 5-foot step,
+        /// which provokes nothing); what it found, and from where, is kept on the option for TacticalDriver.RecordRejected.
+        /// </summary>
+        private static Func<IList<Vector3>, List<UnitEntityData>> RealPathCounter(TacticalContext ctx, Candidate c) => path =>
+        {
+            var found = PathAttackers(ctx, path);
+            c.SeenPathAttackers = found;
+            c.SeenPathFrom = ctx.Unit.Position;
+            return found;
+        };
+
+        /// <summary>
+        /// ★ v0.3.20 (test8): an option whose real walk the dispatcher found more provoking than its straight line is priced
+        /// again with that walk's attackers (the difference in what they cost), so it competes at its true price instead of
+        /// being dropped or taken at the wrong one.
+        /// </summary>
+        private static void RepriceRealPaths(TacticalContext ctx, List<Candidate> candidates, TurnMemory memory)
+        {
+            if (memory.PathAttackers.Count == 0) return;
+            foreach (var c in candidates)
+            {
+                if (!c.RiskAt.HasValue || !memory.PathAttackers.TryGetValue(c.Key, out var seen)) continue;
+                // Counted from where the unit stood then: after a step or another walk it is another path.
+                if (Vector3.Distance(seen.From, ctx.Unit.Position) > 0.5f) continue;
+                var real = seen.Attackers.Where(e => e != null && ctx.Enemies.Contains(e)).ToList();
+                try
+                {
+                    var straight = DisengageRisk(ctx, c.RiskAt.Value);
+                    var actual = DisengageRisk(ctx, c.RiskAt.Value, attackers: real);
+                    float stop = (actual?.StopChance ?? 0f) - (straight?.StopChance ?? 0f);
+                    float cost = (actual?.Cost ?? 0f) - (straight?.Cost ?? 0f);
+                    // A move that provokes pays where it ends against here (MoveRisk); one priced as provoking nothing
+                    // did not.
+                    bool exposed = c.Risk?.Exposed ?? false;
+                    float exposure = !exposed && real.Count > 0 ? ExposureCost(ctx, c.RiskAt.Value) : 0f;
+                    cost += exposure;
+                    c.Value -= c.PreRiskValue * stop + cost;
+                    c.PathAttackers = real;
+                    var risk = c.Risk?.Copy() ?? new Disengage();
+                    if (exposure > 0f) risk.Exposed = true;
+                    risk.Attacks = real.Count;
+                    risk.StopChance = Mathf.Clamp01(risk.StopChance + stop);
+                    risk.DropChance = Mathf.Clamp01(risk.DropChance + (actual?.DropChance ?? 0f) - (straight?.DropChance ?? 0f));
+                    risk.Cost += cost;
+                    c.Risk = risk;
+                    c.Label += $" [its path: AoO {real.Count}]";
+                }
+                catch (Exception ex)
+                {
+                    Main.Verbose($"[Tactics] real path price {c.Label}: {ex.Message}");
+                }
+            }
         }
 
         /// <summary>EngagementSimulator.EngagedBy: the enemy can act, has a threatening weapon reaching <paramref name="at"/>,
@@ -1304,7 +1407,19 @@ namespace CompanionAI_Pathfinder.Tactics
             public float Arrival = 0.3f;
             /// <summary>★ v0.3.18: the straight approach enters an area and no spot around it was found: why (decision log).</summary>
             public string NoSpot;
+            /// <summary>★ v0.3.20 (test8): the straight approach provoked this many attacks of opportunity and <see cref="Point"/>
+            /// is a spot that costs less (fewer, weaker, or none: still beside the enemy it would have left).</summary>
+            public int AttacksBefore;
+            /// <summary>The unit walks to <see cref="Point"/> first and acts from there (a spot around an area or fewer attacks).</summary>
+            public bool Detours => Around != null || AttacksBefore > 0;
+            /// <summary>For the decision log.</summary>
+            public string Detour => Around != null ? $"around {Around}" :
+                                    AttacksBefore > 0 ? $"from a spot that provokes {Risk?.Attacks ?? 0}, not {AttacksBefore}" : null;
         }
+
+        /// <summary>★ v0.3.20 (test8): what the straight approach's attacks of opportunity must cost before other spots are
+        /// looked at (a sure miss on a tank is not worth a search).</summary>
+        private const float AttackDetourCost = 0.5f;
 
         /// <summary>
         /// ★ v0.3.17: the approach to act on <paramref name="target"/> from <paramref name="range"/>. The straight line
@@ -1325,8 +1440,14 @@ namespace CompanionAI_Pathfinder.Tactics
             var direct = ApproachPoint(unit, target, range);
             var plan = new Approach { Point = direct, Risk = MoveRisk(ctx, direct, alwaysExposure) };
             ctx.Approaches[key] = plan;
-            if (plan.Risk?.Area == null || ctx.NoMovementLeft) return plan;
+            // ★ v0.3.20 (test8): also when the straight approach provokes attacks of opportunity that cost something - a
+            // spot on another side of the target may provoke fewer, or none (still beside the enemy the unit would leave,
+            // or clear of one it would pass). Only spots around areas were searched; the attacks were priced but never
+            // avoided (concern from the 0.3.20-test7 play test).
+            bool provokes = plan.Risk != null && plan.Risk.Attacks > 0 && plan.Risk.Cost >= AttackDetourCost;
+            if ((plan.Risk?.Area == null && !provokes) || ctx.NoMovementLeft) return plan;
             string directArea = plan.Risk.Area;
+            int directAttacks = plan.Risk.Attacks;
             try
             {
                 // ★ v0.3.18 (review): a spot around the area must be cheaper than walking straight through it (a mild
@@ -1335,8 +1456,10 @@ namespace CompanionAI_Pathfinder.Tactics
                 float body = unit.Corpulence;
                 int far = 0, taken = 0, inArea = 0, unwalkable = 0, noCloser = 0, dearer = 0;
                 var others = ctx.Allies.Concat(ctx.Enemies).Where(u => u != unit && u != target).ToList();
-                var rings = new List<float> { Math.Max(0.6f, range * 0.85f), Math.Max(0.6f, range * 0.6f) };
-                if (orNearby) rings.AddRange(new[] { range + 1.5f, range + 3f });
+                // Attacks only: one ring of spots in reach of the target (16) - efficient, and the spots that matter.
+                var rings = new List<float> { Math.Max(0.6f, range * 0.85f) };
+                if (directArea != null) rings.Add(Math.Max(0.6f, range * 0.6f));
+                if (orNearby && directArea != null) rings.AddRange(new[] { range + 1.5f, range + 3f });
                 float distanceNow = Vector3.Distance(unit.Position, target.Position);
                 foreach (float ring in rings)
                 {
@@ -1364,12 +1487,13 @@ namespace CompanionAI_Pathfinder.Tactics
                         plan = new Approach
                         {
                             Point = point, Risk = risk, Around = directArea,
+                            AttacksBefore = directArea == null ? directAttacks : 0,
                             Arrival = ring < range ? Mathf.Clamp(range - ring, 0.1f, 0.3f) : 0.3f
                         };
                     }
-                    if (plan.Around != null) break;
+                    if (plan.Detours) break;
                 }
-                if (plan.Around == null)
+                if (plan.Around == null && directArea != null)
                     plan.NoSpot = $"{inArea} in or through an area, {far} beyond this turn's move, {taken} taken, {unwalkable} not walkable" +
                                   (dearer > 0 ? $", {dearer} dearer than through it" : "") +
                                   (noCloser > 0 ? $", {noCloser} ring(s) no nearer than now" : "");
@@ -1705,7 +1829,7 @@ namespace CompanionAI_Pathfinder.Tactics
                         value = value * (1f - provoke.StopChance) - provoke.Cost;
                         label += ProvokeTag(provoke);
                     }
-                    if (approach.Around != null) label += $" (around {approach.Around})";
+                    if (approach.Detours) label += $" ({approach.Detour})";
                     list.Add(new Candidate
                     {
                         Kind = CandidateKind.WeaponAttack,
@@ -1722,8 +1846,8 @@ namespace CompanionAI_Pathfinder.Tactics
                         PreRiskValue = preRisk,
                         Label = label,
                         Key = $"matk:{enemy.UniqueId}",
-                        MoveFirst = approach.Around != null,
-                        MovePoint = approach.Around != null ? approach.Point : (Vector3?)null,
+                        MoveFirst = approach.Detours,
+                        MovePoint = approach.Detours ? approach.Point : (Vector3?)null,
                         ApproachRadius = approach.Arrival,
                         CheckPath = risk?.Area == null
                     });
@@ -2132,14 +2256,14 @@ namespace CompanionAI_Pathfinder.Tactics
                     Offensive = IsOffensive(why),
                     PureBuff = why.Split('+').All(r => r == "buff" || r.StartsWith("grows into")) && why.Contains("buff"),
                     Label = $"{(ability.SourceItem != null ? "Item:" : "")}{ability.Name}{metamagic}->{(summonPoint.HasValue ? "a spot near the fight" : target.CharacterName)}({why}){risk?.Tag}" +
-                            (approach?.Around != null ? $" (around {approach.Around})" : "") +
+                            (approach?.Detours == true ? $" ({approach.Detour})" : "") +
                             (provoke != null ? $" [casting provokes {provoke.Attacks}{(provoke.DropChance >= 0.1f ? $", {provoke.DropChance:P0} down" : "")}]" : "") +
                             (rollProvoke != null ? $" [ray provokes {rollProvoke.Attacks}{(rollProvoke.DropChance >= 0.1f ? $", {rollProvoke.DropChance:P0} down" : "")}]" : "") +
                             (gather > 0 ? $" [gathers power {gather}]" : ""),
                     CastRiskCost = provokeLoss,
                     AimAffected = aimAffected,
-                    MoveFirst = approach?.Around != null,
-                    MovePoint = approach?.Around != null ? approach.Point : (Vector3?)null,
+                    MoveFirst = approach?.Detours == true,
+                    MovePoint = approach?.Detours == true ? approach.Point : (Vector3?)null,
                     ApproachRadius = approach?.Arrival ?? 0f,
                     CheckPath = needsMove && risk?.Area == null,
                     Risk = needsMove ? risk : null,
@@ -3225,11 +3349,11 @@ namespace CompanionAI_Pathfinder.Tactics
                 value -= risk.Cost;
                 label += risk.Tag;
             }
-            bool around = approach.Around != null;
+            bool around = approach.Detours;
             // ★ v0.3.17 (test3): waiting at the area's edge where the unit already stands is no move. Seelah
             // "advanced" 0.0 m around Grease twice in a row (log 9a7bb1f9).
             if (around && Vector3.Distance(unit.Position, approach.Point) < 0.5f) return false;
-            if (around) label += $" (around {approach.Around})";
+            if (around) label += $" ({approach.Detour})";
             else if (approach.NoSpot != null) label += $" (no spot around: {approach.NoSpot})";
             list.Add(new Candidate
             {
@@ -3238,7 +3362,8 @@ namespace CompanionAI_Pathfinder.Tactics
                 ApproachRadius = around ? approach.Arrival : radius, NeedLoS = !around && needLos,
                 Value = value,
                 Label = label, Key = $"move:adv:{enemy.UniqueId}",
-                CheckPath = risk?.Area == null
+                CheckPath = risk?.Area == null,
+                Risk = risk, RiskAt = approach.Point   // ★ v0.3.20 (test8): its real walk is counted too
             });
             return false;
         }
@@ -3314,6 +3439,7 @@ namespace CompanionAI_Pathfinder.Tactics
             else
                 value = inside.Danger * perRound * (inside.RoundsLeft >= 1f ? 2f : 1f);
             string label = $"Leave {inside.Name ?? "area"}";
+            float preRisk = value;
             var risk = MoveRisk(ctx, best.Value);
             if (risk != null)
             {
@@ -3333,7 +3459,8 @@ namespace CompanionAI_Pathfinder.Tactics
                 // Close to the spot: it was chosen with the unit's body just outside the area.
                 Kind = CandidateKind.Move, Slot = ActionSlot.Move, Point = best, ApproachRadius = 0.15f,
                 Value = value,
-                Label = label, Key = "move:leave-area"
+                Label = label, Key = "move:leave-area",
+                Risk = risk, RiskAt = best, PreRiskValue = preRisk   // ★ v0.3.20 (test8): its real walk is counted too
             });
         }
 
@@ -3455,6 +3582,10 @@ namespace CompanionAI_Pathfinder.Tactics
         }
 
         /// <summary>Builds the game command for a candidate and issues it through CommandDispatcher.</summary>
+        /// <summary>★ v0.3.20 (test8): the attacks of opportunity the option's walk was priced for (its real walk's, once
+        /// priced again with it).</summary>
+        private static int PricedAttacks(Candidate c) => c.PathAttackers?.Count ?? c.Risk?.Attacks ?? 0;
+
         public static bool Execute(UnitEntityData unit, Candidate c, out UnitCommand command, out string failure)
         {
             command = null;
@@ -3465,7 +3596,8 @@ namespace CompanionAI_Pathfinder.Tactics
             if (c.MoveFirst && c.MovePoint.HasValue)
             {
                 var walk = new UnitMoveTo(c.MovePoint.Value, c.ApproachRadius > 0f ? c.ApproachRadius : 0.3f);
-                if (CommandDispatcher.Run(unit, walk, $"Approach: {c.Label}", out failure, avoidAreas: true))
+                if (CommandDispatcher.Run(unit, walk, $"Approach: {c.Label}", out failure, avoidAreas: true,
+                                          pathAttackers: c.CountPathAttackers, pricedAttacks: PricedAttacks(c)))
                 {
                     command = walk;
                     c.Kind = CandidateKind.Move;
@@ -3512,7 +3644,8 @@ namespace CompanionAI_Pathfinder.Tactics
                         c.Ability.Blueprint.StickyTouch != null)
                     {
                         var approach = new UnitMoveTo(c.Target.Position, c.Ability.GetApproachDistance(c.Target) * 0.8f);
-                        if (CommandDispatcher.Run(unit, approach, $"Approach to touch: {c.Label}", out failure, avoidAreas: c.CheckPath))
+                        if (CommandDispatcher.Run(unit, approach, $"Approach to touch: {c.Label}", out failure, avoidAreas: c.CheckPath,
+                                                  pathAttackers: c.CountPathAttackers, pricedAttacks: PricedAttacks(c)))
                         {
                             command = approach;
                             c.Kind = CandidateKind.Move;
@@ -3540,7 +3673,8 @@ namespace CompanionAI_Pathfinder.Tactics
 
             // ★ v0.3.18 (test10): a 5-foot step must be one (CommandDispatcher refuses a longer path).
             bool issued = CommandDispatcher.Run(unit, command, c.Label, out failure, avoidAreas: c.CheckPath,
-                                                fiveFootOnly: IsFiveFootStepKey(c.Key) && !CombatMemory.IsRealTime);
+                                                fiveFootOnly: IsFiveFootStepKey(c.Key) && !CombatMemory.IsRealTime,
+                                                pathAttackers: c.CountPathAttackers, pricedAttacks: PricedAttacks(c));
             // ★ v0.3.18 (AA-3, review): the attack's modes once the dispatcher has taken the attack - before, a refused
             // attack left them switched (and locked for the round) for whatever option came next. The attack rolls on
             // later ticks; Fighting Defensively starts on the attack itself (RuleAttackWithWeapon).

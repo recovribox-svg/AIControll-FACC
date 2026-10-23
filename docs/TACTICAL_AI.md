@@ -1881,3 +1881,63 @@ tells.
   the AI's doing (its own drops are logged, as in fight 2: "now in a harmful area", a Dretch's Stinking Cloud).
 - Shield of Faith 15 on Seelah (real time, fight 2): +2 AC when enemies hit her on 17+ halves what reaches her
   (9.4 a round expected) - right by the model.
+
+## 51. v0.3.20 (test8): attacks of opportunity in target choice and movement (play-tester concern, test7 logs)
+
+**The concern.** Companions sometimes pick a farther enemy and walk off, provoking from the enemy beside them or from
+enemies on the way. Is the risk weighed, or ignored?
+
+**What was already there (0.3.13-0.3.20-test5).** Every option that moves is priced with the attacks of opportunity
+the game would make (`DisengageRisk`): the enemies engaging the unit now and every enemy whose reach the walk passes
+through (sampled every 0.75 m), each asked the game's own disengage question (`ShouldAttackOnDisengage`,
+`AttackOfOpportunity` with `simulate`). Each attack is priced by its hit chance, damage, critical range and trip chance
+against this unit (`PriceAttacks`), giving the chance to be dropped on the way, the chance the walk is stopped (dropped
+or knocked down), the extra chance to drop before the next turn, and the HP to heal, times the unit's worth (tanks pay
+60 % of the damage part). The option loses that: Move+Attack, Charge, move-then-cast, the walk to touch, Advance,
+Withdraw, Leave area and the real-time back-off. Mobility is switched on when it saves more than it costs. Provoking
+casts, shots and standing up are priced by their own rules (§50). In the test7 logs only 2 of the chosen turn-based
+options provoked (Camellia's Move+Attack on a Zombie, Orvath walking past two enemies to revive Seelah), none in real
+time: the pricing works, and provoking stays a choice when it pays.
+
+**What was missing.**
+- **No other spot was looked for.** The approach was always the straight line to the target. Only a harmful area on
+  that line made the engine look at spots around the target (§33); the attacks were priced but never avoided. A spot on
+  another side of the target can provoke nothing - still inside the reach of the enemy the unit would leave (the game
+  makes the attack only when the unit leaves an enemy's reach), or clear of one the line passes.
+- **Where the walk ends was priced only below half HP.** Camellia, at full HP beside the Skeletal Champion, walked off to
+  a Zombie for one attack of opportunity priced 0.8 ("Mobility would save only 0.8") and was down before her next turn
+  (test7 turn-based, R2). Leaving an enemy is a choice of where to stand; for a healthy fighter walking up to an enemy
+  without provoking, the old rule stays (its place is in melee).
+- **The straight line, not the real walk.** A path that bends around an ally or a corner can pass enemies the line did
+  not, as the 5-foot step (§34) and harmful areas (§33) showed before.
+
+**Changes.**
+- `PlanApproach`: when the straight approach provokes attacks that cost at least 0.5 (`AttackDetourCost`; a near-sure
+  miss is not worth a search), the 16 spots of one ring inside reach of the target are priced the same way (walkable,
+  free, within this turn's move, out of harmful areas) and the cheapest replaces the straight approach when it costs
+  less (a short walk breaks ties). The unit walks there first and acts on the next decision, as around an area. The log
+  says `(from a spot that provokes 0, not 1)`. Areas keep their two rings and the advance's spots beyond reach; an
+  attacks-only search uses one ring (16 spots, each priced once per decision and cached per target and range).
+- `MoveRisk`: a move that provokes also pays for where it ends against where the unit is (the higher chance to drop
+  before the next turn there, `ExposureCost`), at any HP. Nothing changes for a move that provokes nothing, or one to a
+  spot no more dangerous than here.
+- **The real walk is counted.** For the option chosen, `CommandDispatcher.Run` counts the attacks of opportunity along
+  the walk the game will take (`TacticalEngine.PathAttackers` on any path; turn-based: the attached `ForcedPath` up to
+  where the unit arrives and as far as this turn's movement goes, not for a walk the game makes as a 5-foot step; real
+  time: the pathfinder's walk, asked only when an enemy is near the line, together with the area check). A walk that
+  provokes more than the option was priced for is refused (`the walk provokes more attacks of opportunity (2, priced for
+  1: ...)`), the attackers are kept for the turn (`TurnMemory.PathAttackers`), and the next decision prices the option
+  again with them (`RepriceRealPaths`, `[its path: AoO 2]`, Mobility too) - not dropped: it competes at its true price.
+  Refused a second time, it is dropped for the turn like any other refusal. Advance, Withdraw and Leave area are
+  counted too.
+
+**Not overly cautious.** Nothing forbids provoking. The spot search only changes where the unit stands for the same
+action on the same target, and only to a spot that costs less; the destination price is the unit's real extra chance to
+drop there (at full HP against a weak hitter it is under the 2 % floor and costs nothing); the real walk only corrects
+an under-count. A fighter that gains more than the attacks cost still walks off and takes them.
+
+**Real time, test7.** The quiet waits for the standard action's cooldown (PERF-001) skipped 56, 33, 54 and 82 decisions
+in the four fights (97, 62, 80 and 102 made; 5.0, 3.8, 4.0 and 5.7 s of decision time). The median decision is longer
+(37-47 ms) because the skipped ones were the quick "wait" decisions. The two slow decisions (628 and 744 ms) chose
+nothing and ran during the game's garbage collection. Every refused-or-interrupted command was the game's (all five
+first commands interrupted at once, then commands on a target that died).

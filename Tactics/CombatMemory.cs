@@ -441,6 +441,11 @@ namespace CompanionAI_Pathfinder.Tactics
         public readonly Dictionary<string, float> TooFar = new Dictionary<string, float>();
         /// <summary>★ v0.3.18 (test11): 5-foot-step spots refused this turn (the real path was longer than a step).</summary>
         public readonly List<UnityEngine.Vector3> RefusedSteps = new List<UnityEngine.Vector3>();
+        /// <summary>★ v0.3.20 (test8): options (keys) whose real walk provoked more attacks of opportunity than they were
+        /// priced for (CommandDispatcher counted them on the game's path): where the unit stood and those attackers. The
+        /// engine prices the option again with them (TacticalEngine.RepriceRealPaths).</summary>
+        public readonly Dictionary<string, (UnityEngine.Vector3 From, List<UnitEntityData> Attackers)> PathAttackers =
+            new Dictionary<string, (UnityEngine.Vector3 From, List<UnitEntityData> Attackers)>();
 
         /// <summary>The last command we issued and the candidate it came from (to learn from no-op results).</summary>
         public UnitCommand LastCommand { get; set; }
