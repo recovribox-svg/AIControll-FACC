@@ -241,7 +241,11 @@ namespace CompanionAI_Pathfinder.Tactics
         }
 
         /// <summary>★ v0.3.18: forget the attack routines read (a new decision, or a state changed for a preview).</summary>
-        public static void ClearAttackCache() => Routines.Clear();
+        public static void ClearAttackCache()
+        {
+            Routines.Clear();
+            HitsOnTarget.Clear();   // ★ v0.3.20 (test3): read with the routines, forgotten with them
+        }
 
         private static AttackRoutine ReadRoutine(UnitEntityData unit, UnitEntityData target, bool full)
         {

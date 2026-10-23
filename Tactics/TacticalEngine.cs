@@ -119,6 +119,8 @@ namespace CompanionAI_Pathfinder.Tactics
         public List<UnitEntityData> Allies = new List<UnitEntityData>();   // includes Unit
         /// <summary>★ v0.3.11: enemies no path could reach this turn (TurnMemory.Unreachable).</summary>
         public HashSet<string> Unreachable = new HashSet<string>();
+        /// <summary>★ v0.3.20 (test3): enemies a walk-then-act could not reach in one move this turn (TurnMemory.TooFar).</summary>
+        public Dictionary<string, float> TooFar = new Dictionary<string, float>();
         /// <summary>★ v0.3.9: party members down (unconscious, not dead): only heals are aimed at them.</summary>
         public List<UnitEntityData> DownedAllies = new List<UnitEntityData>();
         public float ExpectedRounds;
@@ -220,7 +222,11 @@ namespace CompanionAI_Pathfinder.Tactics
             if (CombatMemory.IsRealTime)
                 foreach (var e in ctx?.Enemies ?? Enumerable.Empty<UnitEntityData>())
                     if (CombatMemory.WalkRefused(unit, StuckTargetKey(e)) || CombatMemory.StillNoSight(unit, e)) memory.Unreachable.Add(e.UniqueId);
-            if (ctx != null) ctx.Unreachable = memory.Unreachable;
+            if (ctx != null)
+            {
+                ctx.Unreachable = memory.Unreachable;
+                ctx.TooFar = memory.TooFar;
+            }
             if (ctx != null && !preview)
             {
                 FightStats.NoteContext(ctx);
@@ -3084,6 +3090,7 @@ namespace CompanionAI_Pathfinder.Tactics
             // 3) Nothing to do from here: close the distance for this or the next turn.
             // ★ v0.3.14 (test5): not while only movement is possible (nauseated): arriving, the unit could not attack and
             // would only stand there being hit (Camellia walked up to a Dretch and a Cambion, nauseated, in real time).
+            var advanced = new HashSet<string>();
             if (!anyAttackNow && !ctx.Permissions.MovementOnly)
             {
                 // ★ v0.3.18: the three best enemies to close on, each with its own approach. Only the best one was tried:
@@ -3099,71 +3106,105 @@ namespace CompanionAI_Pathfinder.Tactics
 
                 for (int i = 0; i < ranked.Count; i++)
                 {
-                    var single = ranked[i];
-                    float radius = single.Est.IsRanged ? single.Est.Reach * 0.85f : single.Est.Reach;
-                    bool needLos = single.Est.IsRanged;
-                    // Casters without a ranged weapon close to spell range, not into melee.
-                    if (!single.Est.IsRanged && rangedStyle && ctx.Settings.RangePreference != RangePreference.Melee)
-                    {
-                        radius = Math.Max(radius, CasterApproachRadius);
-                        needLos = true;
-                    }
-                    // Already there: a zero-length move would just loop. Within reach of the best one: no advance at all.
-                    if (InRangeNow(unit, single.Enemy.Position, radius, needLos))
-                    {
-                        if (i == 0) return;
-                        continue;
-                    }
-
-                    float value = Math.Max(0.6f, DamageValue(single.Enemy, single.Est) * 0.35f);
-                    string label = $"Advance->{single.Enemy.CharacterName}";
-                    // ★ v0.3.20 (0.3.19 real-time log): in range but out of sight. The walk towards the enemy with the
-                    // weapon's range as its radius had already arrived, so the game did not move the unit: Lann stood
-                    // 12.2 m from a Dretch (range 13.8 m) for 4 s, then walked 11 s at a Neophyte Fighter "-9.1 m to go".
-                    // Real time walks to a spot within this move it can see the enemy from (turn-based finds one with
-                    // its own path search, CommandDispatcher); with none, there is nothing to advance to.
-                    if (needLos && CombatMemory.IsRealTime && InRangeNow(unit, single.Enemy.Position, radius, false))
-                    {
-                        var sight = FindSightSpot(ctx, single.Enemy, radius);
-                        if (!sight.HasValue) continue;
-                        var sightRisk = MoveRisk(ctx, sight.Value);
-                        list.Add(new Candidate
-                        {
-                            Kind = CandidateKind.Move, Slot = ActionSlot.Move, Target = single.Enemy,
-                            Point = sight.Value, ApproachRadius = 0.3f,
-                            Value = value - (sightRisk?.Cost ?? 0f),
-                            Label = label + " (to see it)" + (sightRisk?.Tag ?? ""), Key = $"move:adv:{single.Enemy.UniqueId}",
-                            CheckPath = sightRisk?.Area == null
-                        });
-                        continue;
-                    }
-                    // ★ v0.3.13: an advance that leaves an enemy's reach provokes (no attack follows, so only the cost).
-                    // ★ v0.3.17: to a spot outside a harmful area the enemy stands in, when there is one within reach of it
-                    // (PlanApproach): from there the unit attacks next, or catches the enemy as it comes out.
-                    var approach = PlanApproach(ctx, single.Enemy, radius, orNearby: true);
-                    var risk = approach.Risk;
-                    if (risk != null)
-                    {
-                        value -= risk.Cost;
-                        label += risk.Tag;
-                    }
-                    bool around = approach.Around != null;
-                    // ★ v0.3.17 (test3): waiting at the area's edge where the unit already stands is no move. Seelah
-                    // "advanced" 0.0 m around Grease twice in a row (log 9a7bb1f9).
-                    if (around && Vector3.Distance(unit.Position, approach.Point) < 0.5f) continue;
-                    if (around) label += $" (around {approach.Around})";
-                    else if (approach.NoSpot != null) label += $" (no spot around: {approach.NoSpot})";
-                    list.Add(new Candidate
-                    {
-                        Kind = CandidateKind.Move, Slot = ActionSlot.Move, Target = single.Enemy,
-                        Point = around ? approach.Point : single.Enemy.Position,
-                        ApproachRadius = around ? approach.Arrival : radius, NeedLoS = !around && needLos,
-                        Value = value,
-                        Label = label, Key = $"move:adv:{single.Enemy.UniqueId}",
-                        CheckPath = risk?.Area == null
-                    });
+                    // Within reach of the best one: no advance at all.
+                    if (AddAdvanceCandidate(ctx, list, ranked[i].Enemy, ranked[i].Est, rangedStyle) && i == 0) return;
+                    advanced.Add(ranked[i].Enemy.UniqueId);
                 }
             }
+
+            // ★ v0.3.20 (test3): an enemy this turn's walk-then-act could not reach in one move action (the path refused by
+            // CommandDispatcher) gets an advance next to whatever can be done from here, at its own value - a share of
+            // what attacking that enemy next turn is worth. Without it, once the walk-then-act was refused, a unit with
+            // any option in place (a weak cantrip, Demoralize) no longer considered closing on a more important enemy
+            // farther than a move; with it, the walk competes on the same scale (0.3.19 turn-based log, fight 3: the
+            // refused walks were 13-16 m, and their double moves had put the units in reach for the next round).
+            if (ctx.TooFar.Count > 0 && !ctx.Permissions.MovementOnly)
+            {
+                foreach (var enemy in ctx.Enemies)
+                {
+                    if (!ctx.TooFar.TryGetValue(enemy.UniqueId, out float refused) || ctx.Unreachable.Contains(enemy.UniqueId) ||
+                        advanced.Contains(enemy.UniqueId)) continue;
+                    var est = CombatMath.EstimateWeaponAttack(unit, enemy, false);
+                    if (est != null) AddAdvanceCandidate(ctx, list, enemy, est, rangedStyle, refused);
+                }
+            }
+        }
+
+        /// <summary>Share of an attack an advance towards its target is worth (the attack comes next turn, if at all).</summary>
+        private const float AdvanceShare = 0.35f;
+
+        /// <summary>
+        /// One "Advance" towards <paramref name="enemy"/>: worth a share of attacking it (it attacks next, or from closer),
+        /// less what the walk costs; around a harmful area the enemy stands in when there is a spot. Returns true when the
+        /// unit is already within reach of it (nothing added). <paramref name="refusedValue"/> (above 0): offered because a
+        /// walk-then-act on it worth that much was longer than one move action - the advance is then worth the same share
+        /// of that option as of the weapon attack, whichever is more (a caster closing to cast its Grease is worth what
+        /// the Grease is, not what its dagger is), and is labelled so.
+        /// </summary>
+        private static bool AddAdvanceCandidate(TacticalContext ctx, List<Candidate> list, UnitEntityData enemy, WeaponAttackEstimate est,
+                                                bool rangedStyle, float refusedValue = 0f)
+        {
+            bool beyondOneMove = refusedValue > 0f;
+            var unit = ctx.Unit;
+            float radius = est.IsRanged ? est.Reach * 0.85f : est.Reach;
+            bool needLos = est.IsRanged;
+            // Casters without a ranged weapon close to spell range, not into melee.
+            if (!est.IsRanged && rangedStyle && ctx.Settings.RangePreference != RangePreference.Melee)
+            {
+                radius = Math.Max(radius, CasterApproachRadius);
+                needLos = true;
+            }
+            // Already there: a zero-length move would just loop.
+            if (InRangeNow(unit, enemy.Position, radius, needLos)) return true;
+
+            float value = Math.Max(0.6f, Math.Max(DamageValue(enemy, est), refusedValue) * AdvanceShare);
+            string label = $"Advance->{enemy.CharacterName}" + (beyondOneMove ? " (beyond one move)" : "");
+            // ★ v0.3.20 (0.3.19 real-time log): in range but out of sight. The walk towards the enemy with the weapon's
+            // range as its radius had already arrived, so the game did not move the unit: Lann stood 12.2 m from a Dretch
+            // (range 13.8 m) for 4 s, then walked 11 s at a Neophyte Fighter "-9.1 m to go". Real time walks to a spot
+            // within this move it can see the enemy from (turn-based finds one with its own path search,
+            // CommandDispatcher); with none, there is nothing to advance to.
+            if (needLos && CombatMemory.IsRealTime && InRangeNow(unit, enemy.Position, radius, false))
+            {
+                var sight = FindSightSpot(ctx, enemy, radius);
+                if (!sight.HasValue) return false;
+                var sightRisk = MoveRisk(ctx, sight.Value);
+                list.Add(new Candidate
+                {
+                    Kind = CandidateKind.Move, Slot = ActionSlot.Move, Target = enemy,
+                    Point = sight.Value, ApproachRadius = 0.3f,
+                    Value = value - (sightRisk?.Cost ?? 0f),
+                    Label = label + " (to see it)" + (sightRisk?.Tag ?? ""), Key = $"move:adv:{enemy.UniqueId}",
+                    CheckPath = sightRisk?.Area == null
+                });
+                return false;
+            }
+            // ★ v0.3.13: an advance that leaves an enemy's reach provokes (no attack follows, so only the cost).
+            // ★ v0.3.17: to a spot outside a harmful area the enemy stands in, when there is one within reach of it
+            // (PlanApproach): from there the unit attacks next, or catches the enemy as it comes out.
+            var approach = PlanApproach(ctx, enemy, radius, orNearby: true);
+            var risk = approach.Risk;
+            if (risk != null)
+            {
+                value -= risk.Cost;
+                label += risk.Tag;
+            }
+            bool around = approach.Around != null;
+            // ★ v0.3.17 (test3): waiting at the area's edge where the unit already stands is no move. Seelah
+            // "advanced" 0.0 m around Grease twice in a row (log 9a7bb1f9).
+            if (around && Vector3.Distance(unit.Position, approach.Point) < 0.5f) return false;
+            if (around) label += $" (around {approach.Around})";
+            else if (approach.NoSpot != null) label += $" (no spot around: {approach.NoSpot})";
+            list.Add(new Candidate
+            {
+                Kind = CandidateKind.Move, Slot = ActionSlot.Move, Target = enemy,
+                Point = around ? approach.Point : enemy.Position,
+                ApproachRadius = around ? approach.Arrival : radius, NeedLoS = !around && needLos,
+                Value = value,
+                Label = label, Key = $"move:adv:{enemy.UniqueId}",
+                CheckPath = risk?.Area == null
+            });
+            return false;
         }
 
         /// <summary>

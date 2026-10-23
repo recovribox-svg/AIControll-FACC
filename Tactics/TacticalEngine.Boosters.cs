@@ -117,8 +117,9 @@ namespace CompanionAI_Pathfinder.Tactics
                 // for each of Orvath's reservoir abilities, nearly all "0.0 - no spell to boost next").
                 if (gain <= 0f)
                 {
-                    // ★ v0.3.20: "no spell to boost next" (372 verbose lines in one real-time log) says nothing.
-                    if (main != null) Main.Verbose($"[Tactics] {ctx.Unit.CharacterName}: {c.Ability.Name} = 0 ({note})");
+                    // ★ v0.3.20: "no spell to boost next" (372 verbose lines in one real-time log, the best action being an
+                    // attack) says nothing; only why a boost does not help the spell that comes next.
+                    if (note != NoSpellToBoost) Main.Verbose($"[Tactics] {ctx.Unit.CharacterName}: {c.Ability.Name} = 0 ({note})");
                     continue;
                 }
                 ReportOnce($"boost|{ctx.Unit.UniqueId}|{CombatMemory.Round}|{c.Key}|{main?.Key}",
@@ -132,10 +133,12 @@ namespace CompanionAI_Pathfinder.Tactics
             return result.OrderByDescending(c => c.Value).ToList();
         }
 
+        private const string NoSpellToBoost = "no spell to boost next";
+
         /// <summary>What <paramref name="boost"/> adds to <paramref name="main"/>, in its own value's points.</summary>
         private static float BoostGain(TacticalContext ctx, SpellBoost boost, Candidate main, out string note)
         {
-            note = "no spell to boost next";
+            note = NoSpellToBoost;
             if (main == null || main.Kind != CandidateKind.Ability || main.Ability == null || main.Ability.SourceItem != null ||
                 main.Ability.Blueprint.Type != AbilityType.Spell || main.Value <= 0f)
                 return 0f;

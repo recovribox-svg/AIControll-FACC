@@ -232,6 +232,24 @@ namespace CompanionAI.Tests
             Assert.Equal(0.25f, ValueModel.DangerScale(3f, 226f, 7), 3);
         }
 
+        // --- 0.3.20: learned damage share (kinetic blasts) ---
+
+        [Fact]
+        public void LearnedShare_MovesWithTheHitsFromAPrior()
+        {
+            // One hit says nothing; no estimate says nothing.
+            Assert.Equal(1f, ValueModel.LearnedShare(20f, 10f, 1), 3);
+            Assert.Equal(1f, ValueModel.LearnedShare(20f, 0f, 3), 3);
+            // Elemental Scion's d6 -> d8 (x1.29 on the dice): after 5 hits of 12.9 against 10 estimated,
+            // (64.5 + 30) / (50 + 30) = 1.18 - most of the way, not all of it yet.
+            Assert.Equal(1.181f, ValueModel.LearnedShare(64.5f, 50f, 5), 3);
+            // Many hits converge on the real share.
+            Assert.InRange(ValueModel.LearnedShare(1290f, 1000f, 100), 1.27f, 1.29f);
+            // Clamped both ways: a run of bad luck or a big unread bonus cannot run away.
+            Assert.Equal(0.67f, ValueModel.LearnedShare(0f, 100f, 20), 3);
+            Assert.Equal(1.6f, ValueModel.LearnedShare(1000f, 100f, 20), 3);
+        }
+
         // --- B5: kill chance ---
 
         [Fact]

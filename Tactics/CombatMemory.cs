@@ -420,6 +420,9 @@ namespace CompanionAI_Pathfinder.Tactics
         public readonly HashSet<string> Failed = new HashSet<string>();
         /// <summary>★ v0.3.11: enemies (unique ids) a path could not reach this turn - not worth advancing towards.</summary>
         public readonly HashSet<string> Unreachable = new HashSet<string>();
+        /// <summary>★ v0.3.20 (test3): enemies (unique ids) a walk-then-act could not reach in one move action this turn,
+        /// with the value of the best option refused for it (what the unit wanted to do there).</summary>
+        public readonly Dictionary<string, float> TooFar = new Dictionary<string, float>();
         /// <summary>★ v0.3.18 (test11): 5-foot-step spots refused this turn (the real path was longer than a step).</summary>
         public readonly List<UnityEngine.Vector3> RefusedSteps = new List<UnityEngine.Vector3>();
 

@@ -71,6 +71,26 @@ namespace CompanionAI_Pathfinder.Tactics
 
         #endregion
 
+        #region Learned damage share (0.3.20)
+
+        /// <summary>Pseudo-hits at "as estimated" a learned damage share starts from, and its range.</summary>
+        public const float LearnedPriorHits = 3f, MinLearnedShare = 0.67f, MaxLearnedShare = 1.6f;
+
+        /// <summary>
+        /// ★ v0.3.20: what an ability's hits really dealt against what was estimated for them, from
+        /// <see cref="LearnedPriorHits"/> pseudo-hits "as estimated", 0.67..1.6; 1 with fewer than two hits (one hit's roll is
+        /// too noisy). Used for kinetic blasts (DamageObserver.BlastFactor).
+        /// </summary>
+        public static float LearnedShare(float dealt, float estimated, int hits)
+        {
+            if (hits < 2 || estimated <= 0f) return 1f;
+            float perHit = estimated / hits;
+            float share = (Math.Max(0f, dealt) + LearnedPriorHits * perHit) / (estimated + LearnedPriorHits * perHit);
+            return Clamp(share, MinLearnedShare, MaxLearnedShare);
+        }
+
+        #endregion
+
         #region Enemy damage (N5)
 
         /// <summary>Lowest and highest scale of the predicted enemy damage.</summary>

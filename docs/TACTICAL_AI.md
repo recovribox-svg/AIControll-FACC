@@ -1757,3 +1757,36 @@ every refresh (now once per trap), the turn tick's "EndTurn - Nothing worth doin
 
 **Seen, not changed.** Most real-time "stuck" commands were the game's walk (a flying Quasit's position, doorways); they
 are cancelled after 6 s as designed. The Isekai "Rival" Cultist Champion fight (19 spans) is the enemy, not the AI.
+
+## 48. v0.3.20 (test3): advance after a refused long walk; review of test1-test2
+
+**Correction to §47.** The "lost turns" of fight 3 were not lost: each unit walked 13-15.5 m (the game spent the
+standard action on the walk) and attacked from there the next round - in effect a double move towards a far enemy. The
+flaw was the price: the option was valued as walking and attacking this turn, which could not happen.
+
+**Advance beyond one move.** After the dispatcher refuses a walk-then-act as longer than one move action, the target is
+remembered for the turn with the refused option's value (`TurnMemory.TooFar`, `TacticalDriver.RecordRejected`), and the
+next decision offers "Advance-><enemy> (beyond one move)" next to whatever can be done from where the unit stands. It is
+worth `AdvanceShare` (0.35, the share every advance has) of the larger of the weapon attack on that enemy and the refused
+option - a caster closing to cast is worth a share of its spell, not of its dagger. An advance walks one move action; the
+next decision then has the standard action: to attack from there, or to advance again (the double move, when nothing
+better appears). Before test2 the double move happened blind; in test2 it only happened when nothing could be done from
+here. Fight 3 with the change: Orvath's Color Spray (14.8) beats an advance (about 5); Lann's shot at the Kobold Evoker
+(2.1) beats an advance (about 1.4); a melee unit whose only option here is weak walks up.
+
+**Review fixes.**
+- The test2 failure text "path ends without line of sight" no longer marked the target as out of reach for the turn
+  (the check matched on "path ends out of reach"); both texts are constants of the dispatcher, read by the driver.
+- Learned blast damage (`DamageObserver`): critical hits are also recognised by the damage's own multiplier, not only by
+  the attack roll; damage over time and lasting areas that carry the blast (Burning Infusion's burn, Deadly Earth) are
+  left out (each tick would read as a weak hit); infusion variants share what is learned (keyed by the blast); the share
+  is `ValueModel.LearnedShare` (unit-tested).
+- Buff appraisal: a buff's damage bonus counts at what the enemy keeps of weapon damage (`Offence.PhysicalFactor`: half
+  against a Tiny swarm), as the attack's own damage already did.
+- The game-rule hit cache is cleared with the attack routines (`ClearAttackCache`: a preview while "standing").
+- "no spell to boost next" stays out of the verbose log also when the best action is an attack (most of the 372).
+
+**Enemy importance (reviewed, not changed).** `CombatMath.Threat` is 4 + 3 x CR, x0.25 disabled, x1.2 in melee with
+someone; every option is then valued by what this unit can do to that enemy (its hit chance and damage by the game's
+rules, resistances, kill chance capped at the HP, control's share of the threat). The importance itself knows only the
+CR: not what the enemy can do (a caster and a brute of one CR are alike), not what it did this fight, not whom it hits.

@@ -118,7 +118,7 @@ namespace CompanionAI_Pathfinder.GameInterface
                         if (pathLength > oneMove + 0.3f)
                         {
                             command.ForcedPath = null;
-                            failure = $"the path ({pathLength:F1}m) is longer than one move action ({oneMove:F1}m)";
+                            failure = $"the path ({pathLength:F1}m) is {LongerThanOneMoveFailure} ({oneMove:F1}m)";
                             CommandTrace.LogRejected(unit, command, label, failure);
                             return false;
                         }
@@ -131,8 +131,8 @@ namespace CompanionAI_Pathfinder.GameInterface
                     {
                         command.ForcedPath = null;
                         // ★ v0.3.20: within range at the end but no line of sight read "0.0m short".
-                        failure = shortBy < 0.05f && command.NeedLoS ? "path ends without line of sight to the target"
-                                                                     : $"path ends out of reach ({shortBy:F1}m short)";
+                        failure = shortBy < 0.05f && command.NeedLoS ? NoSightAtPathEndFailure
+                                                                     : $"{OutOfReachFailure} ({shortBy:F1}m short)";
                         CommandTrace.LogRejected(unit, command, label, failure);
                         return false;
                     }
@@ -257,6 +257,12 @@ namespace CompanionAI_Pathfinder.GameInterface
 
         /// <summary>The start of the failure text of a real-time walk refused for a harmful area.</summary>
         public const string WalksIntoAreaFailure = "the path walks into";
+
+        /// <summary>★ v0.3.20: failure texts the engine reads (TacticalDriver.RecordRejected) - the path ends short of the
+        /// target, or in range without seeing it; a walk-then-act path longer than one move action.</summary>
+        public const string OutOfReachFailure = "path ends out of reach";
+        public const string NoSightAtPathEndFailure = "path ends without line of sight to the target";
+        public const string LongerThanOneMoveFailure = "longer than one move action";
 
         /// <summary>★ v0.3.18 (test10): real time - the walk the game would take, asked of the pathfinder directly.</summary>
         private static bool RealTimePathEntersArea(UnitEntityData unit, UnitCommand command, out string area)

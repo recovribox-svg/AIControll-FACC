@@ -55,9 +55,6 @@ namespace CompanionAI_Pathfinder.Tactics
         /// <summary>The rolls of one cast on one target arrive within this (game) time: one hit.</summary>
         private static readonly TimeSpan OneHit = TimeSpan.FromSeconds(1.0);
 
-        /// <summary>Pseudo-hits at "as estimated" a blast's learned share starts from.</summary>
-        private const float BlastPriorHits = 3f;
-
         /// <summary>
         /// ★ v0.3.20 (0.3.19 feedback): what <paramref name="caster"/>'s kinetic blast really deals against the estimate, from
         /// its hits so far (critical hits and save halves left out), starting from three hits "as estimated", 0.67..1.6; 1
@@ -69,16 +66,15 @@ namespace CompanionAI_Pathfinder.Tactics
         public static float BlastFactor(UnitEntityData caster, Kingmaker.UnitLogic.Abilities.Blueprints.BlueprintAbility blast)
         {
             if (Blasts.Count == 0 || caster == null || blast == null) return 1f;
-            return Blasts.TryGetValue(caster.UniqueId + "|" + blast.AssetGuid, out var seen) ? ShareOf(seen) : 1f;
+            return Blasts.TryGetValue(BlastKey(caster, blast), out var seen) ? ShareOf(seen) : 1f;
         }
 
-        private static float ShareOf(Check seen)
-        {
-            if (seen.Hits < 2 || seen.Estimated <= 0f) return 1f;
-            float perHit = seen.Estimated / seen.Hits;
-            float share = (seen.Dealt + BlastPriorHits * perHit) / (seen.Estimated + BlastPriorHits * perHit);
-            return Math.Max(0.67f, Math.Min(1.6f, share));
-        }
+        private static float ShareOf(Check seen) => ValueModel.LearnedShare(seen.Dealt, seen.Estimated, seen.Hits);
+
+        /// <summary>★ v0.3.20 (test3): a blast's infusion variants share what is learned (a dice step changes all of them
+        /// alike; learned per variant, each needed its own hits).</summary>
+        private static string BlastKey(UnitEntityData caster, Kingmaker.UnitLogic.Abilities.Blueprints.BlueprintAbility blast) =>
+            caster.UniqueId + "|" + (blast.Parent ?? blast).AssetGuid;
 
         private static bool IsKineticBlast(Kingmaker.UnitLogic.Abilities.Blueprints.BlueprintAbility blueprint) =>
             Kingmaker.Blueprints.BlueprintExtenstions.GetComponent<Kingmaker.UnitLogic.Class.Kineticist.AbilityKineticist>(blueprint) != null;
@@ -143,6 +139,13 @@ namespace CompanionAI_Pathfinder.Tactics
         {
             var ability = evt.Reason.Ability;
             if (ability?.Blueprint == null || evt.HalfBecauseSavingThrow || (evt.AttackRoll?.IsCriticalConfirmed ?? false)) return;
+            // ★ v0.3.20 (test3): a critical the attack roll does not show (the damage itself carries the multiplier).
+            foreach (var result in evt.ResultList)
+                if ((result.Source?.CriticalModifier ?? 1) > 1) return;
+            // ★ v0.3.20 (test3): damage over time and lasting areas carry the ability that made them (Burning Infusion's
+            // burn, Deadly Earth's area): each tick against a whole cast's estimate would read as a weak hit.
+            var associated = evt.Reason.Context?.AssociatedBlueprint;
+            if (associated is Kingmaker.UnitLogic.Buffs.Blueprints.BlueprintBuff || associated is Kingmaker.UnitLogic.Abilities.Blueprints.BlueprintAbilityAreaEffect) return;
             // A kinetic blade's blast is estimated with the blade's attack (CombatMath.BladeBlastPerHit).
             if (evt.DamageBundle?.Weapon?.Blueprint != null &&
                 Kingmaker.Blueprints.BlueprintExtenstions.GetComponent<Kingmaker.UnitLogic.Class.Kineticist.WeaponKineticBlade>(evt.DamageBundle.Weapon.Blueprint) != null) return;
@@ -152,7 +155,9 @@ namespace CompanionAI_Pathfinder.Tactics
             // moment, not in one frame.
             var now = Kingmaker.Game.Instance.TimeController.GameTime;
             bool blast = IsKineticBlast(ability.Blueprint);
-            Blasts.TryGetValue(key, out var session);
+            string blastKey = blast ? BlastKey(attacker, ability.Blueprint) : null;
+            Check session = null;
+            if (blast) Blasts.TryGetValue(blastKey, out session);
             string hitKey = key + "|" + target.UniqueId;
             if (Checks.TryGetValue(key, out var check) && LastHit.TryGetValue(hitKey, out var last) && now - last <= OneHit)
             {
@@ -177,7 +182,7 @@ namespace CompanionAI_Pathfinder.Tactics
             LastHit[hitKey] = now;
             if (blast)
             {
-                if (session == null) Blasts[key] = session = new Check { Who = attacker.CharacterName, What = ability.Name };
+                if (session == null) Blasts[blastKey] = session = new Check { Who = attacker.CharacterName, What = (ability.Blueprint.Parent ?? ability.Blueprint).Name };
                 session.Hits++;
                 session.Dealt += evt.Result;
                 session.Estimated += estimate;

@@ -52,6 +52,9 @@ namespace CompanionAI_Pathfinder.Tactics
             public bool Ranged, TwoHanded, StrengthToDamage, Caster;
             /// <summary>What one size step up adds to a hit: the weapon's dice scaled by the game's table.</summary>
             public float SizeUpDice = 1f;
+            /// <summary>★ v0.3.20 (test3): what the enemy keeps of extra weapon damage (a Tiny swarm half of piercing and
+            /// slashing: WeaponAttackEstimate.FirstPhysicalFactor).</summary>
+            public float PhysicalFactor = 1f;
         }
 
         /// <summary>What comes at the recipient now (per frame).</summary>
@@ -206,7 +209,7 @@ namespace CompanionAI_Pathfinder.Tactics
             {
                 float d = oneAttack ? off.FirstAttack : off.DamagePerRound;
                 float hits = oneAttack ? off.HitChance : off.HitsPerRound;
-                offencePerRound = ValueModel.AttackBonusGain(d, off.HitChance, attack) + ValueModel.DamageBonusGain(hits, damage) +
+                offencePerRound = ValueModel.AttackBonusGain(d, off.HitChance, attack) + ValueModel.DamageBonusGain(hits, damage * off.PhysicalFactor) +
                                   (oneAttack ? 0f : extraAttacks * off.FirstAttack);
                 // A recipient that also casts spells uses its weapon only part of the time.
                 if (off.Caster) offencePerRound *= 0.5f;
@@ -404,6 +407,7 @@ namespace CompanionAI_Pathfinder.Tactics
                         off.Ranged = est.IsRanged;
                         off.TwoHanded = est.Weapon?.HoldInTwoHands ?? false;
                         off.SizeUpDice = SizeUpDiceGain(est.Weapon);
+                        off.PhysicalFactor = est.FirstPhysicalFactor;
                     }
                 }
                 off.StrengthToDamage = CombatMath.StrengthAddsWeaponDamage(ally);
