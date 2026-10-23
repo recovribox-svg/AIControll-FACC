@@ -7,6 +7,7 @@
 // unit's command slots to empty and its action cooldowns to run out (RealTimeController).
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using Kingmaker.EntitySystem.Entities;
 using UnityEngine;
 
@@ -257,12 +258,68 @@ namespace CompanionAI_Pathfinder.Tactics
             return false;
         }
 
+        /// <summary>★ v0.3.20 (audit PERF-001): a unit waiting quietly for its standard action's cooldown (RealTimePacing).</summary>
+        private sealed class QuietWait
+        {
+            public double Until;
+            public RealTimePacing.Snapshot Then;
+        }
+
+        private static readonly Dictionary<string, QuietWait> Quiet = new Dictionary<string, QuietWait>();
+        private static int _quietSkips;
+
+        /// <summary>Decisions left out by quiet waits since the last call (the fight's [Perf] line).</summary>
+        public static int TakeQuietSkips()
+        {
+            int n = _quietSkips;
+            _quietSkips = 0;
+            return n;
+        }
+
+        /// <summary>A new fight: no quiet wait carries over.</summary>
+        public static void ClearQuiet()
+        {
+            Quiet.Clear();
+            _quietSkips = 0;
+        }
+
+        private static RealTimePacing.Snapshot SnapshotOf(UnitEntityData unit)
+        {
+            var snapshot = new RealTimePacing.Snapshot { Hp = unit.HPLeft };
+            try { snapshot.EngagedBy = unit.CombatState?.EngagedBy?.Count(e => e != null && e.Descriptor.State.IsConscious) ?? 0; } catch { }
+            try { snapshot.Areas = AreasAround(unit).Count; } catch { }
+            try
+            {
+                foreach (var other in Kingmaker.Game.Instance.State.Units)
+                {
+                    if (other == null || other.Descriptor?.State == null || !other.Descriptor.State.IsConscious ||
+                        !(other.CombatState?.IsInCombat ?? false)) continue;
+                    if (unit.IsEnemy(other)) snapshot.Enemies++;
+                    else if (other.IsPlayerFaction) snapshot.Allies++;
+                }
+            }
+            catch { }
+            return snapshot;
+        }
+
         /// <summary>Decide and issue one action; false when nothing is worth doing now (decided again later).</summary>
         public static bool Act(UnitEntityData unit)
         {
             if (unit == null) return false;
             try
             {
+                // ★ v0.3.20 (audit PERF-001): still waiting quietly for the cooldown, and nothing changed since.
+                if (Quiet.TryGetValue(unit.UniqueId, out var quiet))
+                {
+                    double now = Kingmaker.Game.Instance.TimeController.GameTime.TotalSeconds;
+                    if (!RealTimePacing.ShouldWake(now, quiet.Until, quiet.Then, SnapshotOf(unit)))
+                    {
+                        _quietSkips++;
+                        return false;
+                    }
+                    Quiet.Remove(unit.UniqueId);
+                }
+
                 CombatMemory.Sync();
                 var memory = CombatMemory.ForTurn(unit);
                 TacticalDriver.LearnFromLastCommand(unit, memory, "[RT-Tactics]");
@@ -270,7 +327,25 @@ namespace CompanionAI_Pathfinder.Tactics
                 for (int attempt = 0; attempt < TacticalDriver.MaxAttemptsPerDecision; attempt++)
                 {
                     var candidate = TacticalEngine.Decide(unit, memory);
-                    if (candidate == null) return false;
+                    if (candidate == null)
+                    {
+                        // ★ v0.3.20 (audit PERF-001): nothing worth doing with the standard action on cooldown - look again
+                        // when it ends (at most 2 s), or as soon as something changes.
+                        float seconds = 0f;
+                        try
+                        {
+                            float interval = Settings.ModSettings.Instance?.RealTimeDecisionInterval ?? 0.5f;
+                            seconds = RealTimePacing.QuietSeconds(unit.HasStandardAction(), unit.CombatState.Cooldown.StandardAction, interval);
+                        }
+                        catch { }
+                        if (seconds > 0f)
+                            Quiet[unit.UniqueId] = new QuietWait
+                            {
+                                Until = Kingmaker.Game.Instance.TimeController.GameTime.TotalSeconds + seconds,
+                                Then = SnapshotOf(unit)
+                            };
+                        return false;
+                    }
 
                     memory.Decisions++;
                     if (TacticalEngine.Execute(unit, candidate, out var command, out string failure))

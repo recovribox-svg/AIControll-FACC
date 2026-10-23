@@ -15,10 +15,10 @@ namespace CompanionAI_Pathfinder.Tactics
 {
     public static class CombatMemory
     {
-        /// <summary>"caster|ability|target" → round it was cast (this combat).</summary>
-        private static readonly Dictionary<string, int> Casts = new Dictionary<string, int>();
-        /// <summary>"caster|ability" → times used this combat.</summary>
-        private static readonly Dictionary<string, int> Uses = new Dictionary<string, int>();
+        /// <summary>What was cast on whom this combat, and how often (★ v0.3.20 audit LIF-001: casts the game performed).</summary>
+        private static readonly CastLedger Casts = new CastLedger();
+        /// <summary>★ v0.3.20 (audit LIF-001): caster → the command of its open cast record.</summary>
+        private static readonly Dictionary<string, UnitCommand> CastCommands = new Dictionary<string, UnitCommand>();
         private static readonly Dictionary<string, TurnMemory> Turns = new Dictionary<string, TurnMemory>();
 
         /// <summary>★ v0.3.7: Progressive log bookkeeping for this combat (what was already reported, so transitions log once).</summary>
@@ -345,7 +345,7 @@ namespace CompanionAI_Pathfinder.Tactics
             ToggleBeforeAi.Clear();
             PlayerToggled.Clear();
             Casts.Clear();
-            Uses.Clear();
+            CastCommands.Clear();
             Turns.Clear();
             ProgressiveLogged.Clear();
             ActiveBosses.Clear();
@@ -360,35 +360,51 @@ namespace CompanionAI_Pathfinder.Tactics
             return ability?.Blueprint?.AssetGuid.ToString() ?? "none";
         }
 
-        public static void RecordCast(UnitEntityData caster, AbilityData ability, UnitEntityData target)
+        /// <summary>
+        /// A cast was issued with <paramref name="command"/>. ★ v0.3.20 (audit LIF-001): it counts once the command acted
+        /// (<see cref="SettleCast"/>); one that ends without acting is taken back.
+        /// </summary>
+        public static void RecordCast(UnitEntityData caster, AbilityData ability, UnitEntityData target, UnitCommand command)
         {
-            string key = $"{caster.UniqueId}|{AbilityKey(ability)}|{target?.UniqueId ?? "-"}";
-            Casts[key] = Round;
-            string useKey = $"{caster.UniqueId}|{AbilityKey(ability)}";
-            Uses.TryGetValue(useKey, out int n);
-            Uses[useKey] = n + 1;
+            SettleCast(caster);
+            Casts.Record(caster.UniqueId, AbilityKey(ability), target?.UniqueId, Round);
+            if (command != null) CastCommands[caster.UniqueId] = command;
+            else
+            {
+                Casts.Confirm(caster.UniqueId);
+                CastCommands.Remove(caster.UniqueId);
+            }
+        }
+
+        /// <summary>
+        /// ★ v0.3.20 (audit LIF-001): once the caster's last cast command has ended, confirm its record (the game performed
+        /// it) or take it back (interrupted before it acted, or force-finished before it started). Called before each of
+        /// the caster's decisions, in both modes.
+        /// </summary>
+        public static void SettleCast(UnitEntityData caster)
+        {
+            if (caster == null || !CastCommands.TryGetValue(caster.UniqueId, out var command)) return;
+            if (command != null && !command.IsFinished) return;
+            CastCommands.Remove(caster.UniqueId);
+            if (command == null || CastLedger.Performed(command.IsStarted, command.IsActed))
+            {
+                Casts.Confirm(caster.UniqueId);
+                return;
+            }
+            if (Casts.TakeBack(caster.UniqueId))
+                Main.Verbose($"[Tactics] {caster.CharacterName}: its last cast ended without acting ({command.Result}) - not counted as cast");
         }
 
         /// <summary>Round the ability was last cast on that target this combat, or null.</summary>
-        public static int? LastCastRound(UnitEntityData caster, AbilityData ability, UnitEntityData target)
-        {
-            return Casts.TryGetValue($"{caster.UniqueId}|{AbilityKey(ability)}|{target?.UniqueId ?? "-"}", out int r) ? r : (int?)null;
-        }
+        public static int? LastCastRound(UnitEntityData caster, AbilityData ability, UnitEntityData target) =>
+            Casts.LastRound(caster.UniqueId, AbilityKey(ability), target?.UniqueId);
 
         /// <summary>★ v0.3.19 (test2): the targets (unique ids) the caster aimed this ability at this combat, with the round.</summary>
-        public static List<KeyValuePair<string, int>> CastTargets(UnitEntityData caster, AbilityData ability)
-        {
-            var result = new List<KeyValuePair<string, int>>();
-            string prefix = $"{caster.UniqueId}|{AbilityKey(ability)}|";
-            foreach (var cast in Casts)
-                if (cast.Key.StartsWith(prefix)) result.Add(new KeyValuePair<string, int>(cast.Key.Substring(prefix.Length), cast.Value));
-            return result;
-        }
+        public static List<KeyValuePair<string, int>> CastTargets(UnitEntityData caster, AbilityData ability) =>
+            Casts.Targets(caster.UniqueId, AbilityKey(ability));
 
-        public static int TimesUsed(UnitEntityData caster, AbilityData ability)
-        {
-            return Uses.TryGetValue($"{caster.UniqueId}|{AbilityKey(ability)}", out int n) ? n : 0;
-        }
+        public static int TimesUsed(UnitEntityData caster, AbilityData ability) =>
+            Casts.TimesUsed(caster.UniqueId, AbilityKey(ability));
 
         public static TurnMemory ForTurn(UnitEntityData unit)
         {

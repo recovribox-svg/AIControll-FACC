@@ -253,7 +253,12 @@ namespace CompanionAI_Pathfinder.Tactics
             }
 
             // ★ v0.3.15: judge the last ability this unit used before choosing again (did the game do anything with it?).
-            if (!preview) CastOutcome.Settle(unit);
+            // ★ v0.3.20 (audit LIF-001): and count it as cast only if its command acted.
+            if (!preview)
+            {
+                CastOutcome.Settle(unit);
+                CombatMemory.SettleCast(unit);
+            }
 
             var candidates = new List<Candidate>();
             try { AddWeaponCandidates(ctx, candidates); } catch (Exception ex) { Main.Error($"[Tactics] weapon candidates: {ex}"); }
@@ -2075,10 +2080,13 @@ namespace CompanionAI_Pathfinder.Tactics
                 // ★ v0.3.19 (test8): not for a heal - the player's potion threshold says when, the drop chance whether
                 // now (the bar would block a potion just under the threshold for a front-liner about to be dropped).
                 // ★ v0.3.19 (test9): an item that is not spent (a ring's free action) has a free action's bar.
-                if (ability.SourceItem != null &&
-                    value < (ability.SourceItem is ItemEntityUsable spent && spent.Blueprint.SpendCharges && profile.Heals.Count == 0
-                                 ? MinSpentItemValue : QuickBar(slot, ability)))
-                    continue;
+                // ★ v0.3.20 (audit VAL-001): applied to what is left after the walk, the attacks of opportunity and the
+                // concentration check (below) - it was checked before them, so an item could clear the bar and be used for
+                // what remained once its risks were paid.
+                float itemBar = ability.SourceItem == null ? 0f
+                    : ability.SourceItem is ItemEntityUsable spent && spent.Blueprint.SpendCharges && profile.Heals.Count == 0
+                        ? MinSpentItemValue : QuickBar(slot, ability);
+                if (value < itemBar) continue;
                 if (needsMove) value *= 0.9f;
                 // ★ v0.3.6: a standard-action spell cast in melee needs a defensive-casting check; failing it provokes an
                 // attack of opportunity and can lose the spell (UnitUseAbility.OnTick). Camellia's Cure Light Wounds ended
@@ -2100,6 +2108,7 @@ namespace CompanionAI_Pathfinder.Tactics
                     value *= 0.5f;
                 float preRisk = value;
                 if (risk != null) value = value * (1f - risk.StopChance) - risk.Cost;
+                if (itemBar > 0f && value < itemBar) continue;
                 // ★ v0.3.18 (test10): what is left of a revive, and what took it (a downed Camellia was never revived in a
                 // real-time fight though the heal would have kept her up; the log could not say why).
                 if (ctx.DownedAllies.Contains(target))
@@ -3538,7 +3547,7 @@ namespace CompanionAI_Pathfinder.Tactics
             if (issued && c.Kind == CandidateKind.WeaponAttack) ApplyModes(unit, c);
             if (issued && c.Kind == CandidateKind.Ability)
             {
-                CombatMemory.RecordCast(unit, c.Ability, c.Target);
+                CombatMemory.RecordCast(unit, c.Ability, c.Target, command);
                 CombatMemory.NotePendingCast(unit, c.Ability, c.Target, command);   // ★ v0.3.18 (test10): real time
                 var profile = AbilityProfile.Get(c.Ability);
                 if (profile != null && profile.HealsBurn)

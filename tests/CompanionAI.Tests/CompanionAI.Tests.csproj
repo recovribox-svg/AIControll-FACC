@@ -11,6 +11,8 @@
     <Compile Include="..\..\Tactics\RiskMath.cs" Link="RiskMath.cs" />
     <Compile Include="..\..\Tactics\ValueModel.cs" Link="ValueModel.cs" />
     <Compile Include="..\..\Tactics\ResistanceRule.cs" Link="ResistanceRule.cs" />
+    <Compile Include="..\..\Tactics\CastLedger.cs" Link="CastLedger.cs" />
+    <Compile Include="..\..\Tactics\RealTimePacing.cs" Link="RealTimePacing.cs" />
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.8.0" />

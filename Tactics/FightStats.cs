@@ -216,8 +216,11 @@ namespace CompanionAI_Pathfinder.Tactics
             if (timing.Ms.Count == 0) return;
             var sorted = timing.Ms.OrderBy(x => x).ToList();
             double Percentile(double q) => sorted[Math.Min(sorted.Count - 1, (int)Math.Floor(q * (sorted.Count - 1) + 0.5))];
+            // ★ v0.3.20 (audit PERF-001): real time - decisions left out while a unit waited quietly for its cooldown.
+            int quiet = timing == RealTime ? RealTimeTactics.TakeQuietSkips() : 0;
             Main.Log($"[Perf] {mode}: {sorted.Count} decisions, median {Percentile(0.5):F1} ms, 95% {Percentile(0.95):F1} ms, " +
-                     $"slowest {timing.SlowestMs:F1} ms ({timing.Slowest}), total {sorted.Sum():F0} ms");
+                     $"slowest {timing.SlowestMs:F1} ms ({timing.Slowest}), total {sorted.Sum():F0} ms" +
+                     (quiet > 0 ? $"; {quiet} skipped while waiting for a cooldown" : ""));
         }
 
         public void OnEventAboutToTrigger(RuleDealDamage evt)

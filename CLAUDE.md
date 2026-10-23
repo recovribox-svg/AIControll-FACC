@@ -103,7 +103,8 @@ Design and value formulas: `docs/TACTICAL_AI.md`. Root-cause evidence: `docs/INV
 
 ### Action Economy
 Pathfinder action types: Standard (1), Move (1), Swift (variable), Full-Round (2)
-Tracked per turn in `TurnState`.
+Read from the game at each decision (`TacticalContext`: `HasStandardAction` etc.; real time: the game's cooldowns);
+`TurnState` is the old real-time engine's only.
 
 ### Critical Design Decisions
 - **GUID-based ability identification** for multilingual compatibility (not string matching)
@@ -123,10 +124,12 @@ otherwise the UI smart-cursor mode decides.
 ### RT v3.5.7 vs PF Differences
 | Aspect | Rogue Trader v3.5.7 | Pathfinder Current |
 |--------|---------------------|-------------------|
-| AI Entry | `PartUnitBrain.Tick()` Behaviour Tree replacement | `AiBrainController.TickBrain()` Prefix patch |
-| Basic Attacks | Completely excluded from TurnPlanner | Used as fallback (PROBLEM) |
-| Decision Point | Single `CompanionAIDecisionNode` | Scattered in RealTimeController |
-| Command Queue | `Commands.Empty` strict check | Partial check |
+| AI Entry | `PartUnitBrain.Tick()` Behaviour Tree replacement | `AiBrainController.TickBrain()` prefix (real time), `TurnController.Tick` postfix (turn-based) |
+| Basic Attacks | Completely excluded from TurnPlanner | Weapon attacks valued by the game's rules (v0.3.0) |
+| Decision Point | Single `CompanionAIDecisionNode` | One: `TacticalEngine.Decide` for both modes (v0.3.14) |
+| Command Queue | `Commands.Empty` strict check | No decision while any command or queued command is pending (`GameAPI.HasPendingCommands`) |
+
+Live-code map, findings register and audit backlog: `docs/LIVE_CODE_AUDIT.md`.
 
 ### Pathfinder AI System (from decompile)
 - `AiBrainController.Tick()` → `ForceTick()` → `TickBrain()` (static)
