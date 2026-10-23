@@ -78,7 +78,11 @@ namespace CompanionAI_Pathfinder.Tactics
             try
             {
                 var buff = bp.Buff;
-                if (!bp.ActivateWithUnitCommand) p.Excluded = "not activated by a command";
+                // ★ v0.3.19 (class audit): Rage and Bloodrage are such toggles (Immediately, DeactivateIfCombatEnded): while
+                // on - the default, or the player's choice - the game itself starts them when a fight begins.
+                if (!bp.ActivateWithUnitCommand)
+                    p.Excluded = bp.ActivateOnCombatStarts ? "the game starts it when a fight begins while it is on (player's choice)"
+                                                           : "not activated by a command";
                 // ★ v0.3.18 (review): ActivatableAbilityUnitCommand spends that action every round, and the game switches
                 // the toggle off when the unit runs another command of that type: the AI's next attack or swift ability
                 // would end it, and it would start it again next round.

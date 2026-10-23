@@ -179,3 +179,37 @@ not read) is not confirmed without the Skald blueprints; the coverage line now p
    resources available - including one fight with several melee allies near the performer.
 3. Optional: a Kineticist of level 6+ (infusions, Gather Power levels, Elemental Overflow) for the higher-level kinetic
    paths.
+
+## 8. Addendum: verified against the Classes blueprints (user-supplied, 12 070 files)
+
+Every claim below is **[game]** (blueprint plus decompiled code) unless marked.
+
+| Class / family | What the game does | AI path now | Status |
+|---|---|---|---|
+| Skald - Inspired Rage | `InspiredRageAbility` (Standard command, RagingSongResource); `InspiredRageArea` UnitEnter: `Conditional(HasFact InspiredRageAllyToggleSwitchBuff + IsAlly)` -> (mythic branch) -> `InspiredRageEffectBuff`: `AttackTypeAttackBonus` / `WeaponAttackTypeDamageBonus` (melee, rage, rank by skald level), Will save, rage powers from the caster (`AddFactsFromCaster`); casters get `ForbidSpellCasting` | B1 reads the grant and evaluates acceptance with the game's check (the acceptance is in the area, confirmed); **B2** reads the melee attack/damage components (were unread) and counts lost spells for an accepting caster | analysed; **NV** in game |
+| Skald - other songs (Song of Strength, Song of Inspiration (Court Poet), Insightful Contemplation, Dirge of Doom, Song of the Fallen) | area toggles, grants by `AbilityAreaEffectBuff` or actions | B1 path | analysed; rage powers inside the effect (`AddFactsFromCaster`) not valued |
+| Barbarian Rage, Bloodrage | `StandartRageActivateableAbility` / `BloodragerStandartRageActivateableAbility`: ActivationType **Immediately**, DeactivateIfCombatEnded, IsOnByDefault - the game starts them at combat start while on (`ActivatableAbility.HandleUnitJoinCombat`) | not a command: left to the game and the player's on/off choice (coverage now says so) | **PO / game-automated**, not a defect |
+| Bard performances | Inspire Courage/Competence/Greatness/Heroics, Dirge, Fascinate, Frightening Tune, archetype songs: area toggles | B1 path; Inspire Courage's save bonus against fear/charm now read (B2, conditional) | analysed |
+| Shaman - Battle Spirit | `ShamanBattleSpiritAbility` area -> `ShamanBattleSpiritEffectBuff` (two `AddContextStatBonus`) | B1: now offered (was "applies nothing") | analysed; **NV** (expected in the next log: Camellia) |
+| Cleric - Channel Energy | `AbilityTargetsAround` 30 ft; `Conditional`s on CasterHasFact (positive/negative), IsAlly, HasFact (undead) -> heal or damage per unit | per-target branches (`AbilityProfile.AppliesTo`, all conditions safe) | analysed; **NV** |
+| Cleric - Touch of Good | Standard touch, 1 round: sacred +½ level attack and saves | test11 appraisal, one round, 15 % restraint | analysed (rarely worth a Standard action - by design) |
+| Cleric - Bit of Luck / Witch Fortune / Lion's Call / Knowledge, Law, Chaos domains | `ModifyD20` TakeBest (roll twice) | **B2**: read as about +3 on attacks / saves (conditional variants half) | analysed |
+| Warpriest - Fervor | heal: swift self (`WarpriestFervorPositiveAbilitySelf`) / sticky touch; **quickened self spells**: `AddMechanicsFeature FervorQuickenedSpell` -> `AbilityData.GetConversions` adds each Warpriest spell quickened, `ForceTargetOwner`, paid with Fervor | heal: generic; quickened spells: **were dropped by `AbilityDiscovery`** (a conversion with the same blueprint was skipped) - **B2 fix**: same-blueprint conversions with different metamagic are kept (Fervor, Combat Healer); self-only by `TargetAnchor.Owner` | **fixed (B2)**; **NV** |
+| Warpriest - Sacred Weapon / Armor | swift toggles, `ContextActionWeaponEnchantPool` | toggle self path; enchant pool not valued (unread, legacy formula) | partially analysed |
+| Witch - Slumber, Misfortune, Evil Eye | 1-day cooldown buff on the target first (`AbilityTargetHasFact` inverted), then the save | the game's `CanTarget` keeps a hexed target out; control duration per target; observed saves | analysed (no retry spam possible) |
+| Witch - Cackle / Chant | Move action, 30 ft: `Conditional(HasBuffFromCaster hex)` -> `ContextActionReduceBuffDuration` Increase +1 round | **was "no recognised effect" (never cast)** - **B2**: `AbilityProfile.Extensions`; value = per hexed unit within reach, one more round of its share of that enemy's worth (control scale), only while the fight outlasts the hex | **fixed (B2)**; **NV** |
+| Inquisitor - Judgments, Bane | self toggles (commands) | toggle self path; judgments' `AddFactContextActions` buffs read, `AddMechanicsFeature` parts not | partially analysed |
+
+Not covered by B2 (logged as unread, legacy value): polymorph forms (Wild Shape, Beast Shape, dragon forms),
+condition and descriptor immunities, enchantment pools, rage powers granted from the caster, on-hit triggers.
+
+### Stage B2 (0.3.19-test14)
+
+1. `AbilityDiscovery`: same-blueprint conversions with other metamagic (Fervor, Combat Healer) are options.
+2. `BuffParts`: `AttackTypeAttackBonus`, `WeaponAttackTypeDamageBonus` (melee/ranged), `ACBonusAgainstAttacks`,
+   `TemporaryHitPointsPerLevel` (per recipient level), `ModifyD20` take-best (+3 attack / saves), saving throw bonuses
+   against descriptors (conditional).
+3. Toggles: an accepting recipient's lost spells count (`ForbidSpellCasting` in the effect); the performer's keep the
+   toggle's own rule.
+4. `AbilityProfile.Extensions` + `TacticalEngine.ExtensionValue`: Cackle / Chant.
+5. Coverage wording for game-started rages.

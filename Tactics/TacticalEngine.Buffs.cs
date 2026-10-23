@@ -313,6 +313,7 @@ namespace CompanionAI_Pathfinder.Tactics
                 amount += p.Formula.Rolls * (p.Formula.Dice.Sides() + 1) / 2f;
                 if (p.FormulaBonusByCasterLevel && p.Value == null) amount += casterLevel;
             }
+            if (p.PerRecipientLevel) amount *= Math.Max(1, ally.Descriptor?.Progression?.CharacterLevel ?? 1);
             if (p.Kind == BuffPartKind.MirrorImages && p.Cap > 0) amount = Math.Min(amount, p.Cap);
             if (p.Pool != null)
             {
@@ -457,7 +458,7 @@ namespace CompanionAI_Pathfinder.Tactics
         /// ★ v0.3.19 (class audit B1, docs/CLASS_COMPETENCE_AUDIT.md F2): the same appraisal for what a toggle (a performance,
         /// a rage, a spirit) gives <paramref name="ally"/>, over <paramref name="rounds"/> (its resource and the fight). Its
         /// ranks come from <paramref name="toggleCtx"/> (the performer's context); a spell prohibition is priced by the toggle's
-        /// own rule (ForbidSpellCasting with its ignore feature), so it is left out here.
+        /// own rule (ForbidSpellCasting with its ignore feature) for the performer; for another recipient it counts.
         /// </summary>
         internal static BuffAppraisal AppraiseToggleBuffs(TacticalContext ctx, MechanicsContext toggleCtx, string toggleKey,
                                                           List<BlueprintBuff> buffs, UnitEntityData ally, float rounds)
@@ -474,8 +475,10 @@ namespace CompanionAI_Pathfinder.Tactics
             }
             if (!parts.Any(p => p.Kind != BuffPartKind.MentalStat && p.Kind != BuffPartKind.ForbidsSpells)) return result;
             int level = Math.Max(1, ctx.Unit.Descriptor?.Progression?.CharacterLevel ?? 1);
+            // The performer's own prohibition is priced by the toggle's rule (with its ignore feature); an ally in the area
+            // who accepted it (Inspired Rage on a caster) loses its spells: that counts here.
             return AppraiseParts(ctx, ctx.Unit, toggleCtx, level, buffs, parts, unread, ally, rounds, false, -1f,
-                                 $"{ctx.Unit.UniqueId}|{toggleKey}|{ally.UniqueId}", true, result);
+                                 $"{ctx.Unit.UniqueId}|{toggleKey}|{ally.UniqueId}", ally == ctx.Unit, result);
         }
 
         /// <summary>The note of a toggle's last valuation (all recipients), for the "[Buff]" line.</summary>

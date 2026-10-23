@@ -1655,3 +1655,23 @@ Stage B1 fixes F1-F3 in `TacticalEngine.Toggles.cs`:
 - Coverage: "may start it when worth it (area R m gives <buff> if <conditions>)".
 - Not changed: acceptance toggles, attack modes, infusions, Gather Power, `AiManagesToggles`, `RespectPlayerToggles`,
   the legacy real-time engine.
+
+## 45. v0.3.19 (test14): class competence Stage B2, from the Classes blueprints
+
+See `docs/CLASS_COMPETENCE_AUDIT.md` §8. Changes:
+- **Warpriest Fervor**: the game offers each Warpriest spell as a quickened, self-only conversion paid with Fervor
+  (`AbilityData.GetConversions`, `FervorQuickenedSpell`). `AbilityDiscovery.AddConversions` skipped every conversion with
+  the original's blueprint, so it was never an option; now a same-blueprint conversion with other metamagic is kept
+  (Fervor, Combat Healer). Same-spell copies without metamagic (Spell Fool) stay out.
+- **BuffParts** reads `AttackTypeAttackBonus` / `WeaponAttackTypeDamageBonus` (Rage, Bloodrage, Inspired Rage, stances:
+  Value x AttackBonus, melee or ranged), `ACBonusAgainstAttacks`, `TemporaryHitPointsPerLevel` (x the recipient's level),
+  `ModifyD20` take-best (Bit of Luck, Fortune, Lion's Call: about +3 on attacks and saves; conditional variants half), and
+  saving throw bonuses against descriptors (conditional).
+- **Toggles**: an ally who accepts a rage aura loses its spells (the effect's `ForbidSpellCasting`): counted for that
+  recipient; the performer's own prohibition keeps the toggle's rule.
+- **Witch Cackle / Chant** (`ContextActionReduceBuffDuration` Increase, behind `HasBuffFromCaster`): read as
+  `AbilityProfile.Extensions`; valued by `ExtensionValue` - each unit within reach carrying the caster's copy, one more
+  round of that hex's share of its worth (`ControlShareOf`; a hex that disables keeps its full worth), only the part of
+  the extra time the fight still lasts.
+- Rage and Bloodrage are started by the game at combat start while on (Immediately + DeactivateIfCombatEnded): the
+  coverage line says so instead of "not activated by a command".

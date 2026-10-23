@@ -86,7 +86,13 @@ namespace CompanionAI_Pathfinder.Tactics
                 }
                 foreach (var conv in conversions)
                 {
-                    if (conv?.Blueprint == null || conv.Blueprint == a.Blueprint || a.Blueprint.HasVariant(conv.Blueprint)) continue;
+                    if (conv?.Blueprint == null || a.Blueprint.HasVariant(conv.Blueprint)) continue;
+                    // ★ v0.3.19 (class audit B2): a conversion of the same spell is a different option when it adds
+                    // metamagic - Warpriest Fervor (AbilityData.GetConversions: the spell quickened, on the caster, paid with
+                    // Fervor) and Combat Healer (quickened cures, an extra slot). Dropped as "the same blueprint", a
+                    // Warpriest never cast a swift self buff through Fervor. Same-spell copies without metamagic (Spell
+                    // Fool: another resource pays) stay out: the same option at a different price.
+                    if (conv.Blueprint == a.Blueprint && MetamagicTag(conv) == MetamagicTag(a)) continue;
                     if (conv.Blueprint.GetComponent<AbilityRestoreSpellSlot>() != null ||
                         conv.Blueprint.GetComponent<AbilityConvertSpellLevelToResource>() != null) continue;
                     if (a.Spellbook == null && !conv.IsVisible()) { leftOut.Add(conv.Name); continue; }

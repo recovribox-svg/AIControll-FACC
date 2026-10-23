@@ -347,6 +347,46 @@ namespace CompanionAI_Pathfinder.Tactics
         }
 
         /// <summary>★ v0.3.19 (test11): the appraisal behind a buff candidate, for the log.</summary>
+        /// <summary>
+        /// ★ v0.3.19 (class audit B2): what lengthening the caster's own active buffs is worth (Cackle: +1 round of each
+        /// hex on everyone within 30 feet). A hex on an enemy: one more round of its share of that enemy's worth
+        /// (ValueModel's control scale, AbilityProfile.ControlShareOf), only for the part of the extra time the fight
+        /// still lasts - a hex with more rounds left than the fight gains nothing. On an ally, a quarter of a round of
+        /// its worth per round. No save: the game only adds time (ContextActionReduceBuffDuration, Increase).
+        /// </summary>
+        private static float ExtensionValue(TacticalContext ctx, AbilityData ability, AbilityProfile profile,
+                                            List<UnitEntityData> enemies, List<UnitEntityData> allies, out int lengthened)
+        {
+            lengthened = 0;
+            var unit = ctx.Unit;
+            var context = CombatMath.CreateContext(ability, new Kingmaker.Utility.TargetWrapper(unit));
+            float total = 0f;
+            foreach (var target in enemies.Concat(allies))
+            {
+                foreach (var extension in profile.Extensions)
+                {
+                    var buff = target.Buffs.Enumerable.FirstOrDefault(b => b.Blueprint == extension.Key && b.Context?.MaybeCaster == unit);
+                    if (buff == null) continue;
+                    float added = 1f;
+                    try { if (context != null) added = Math.Max(0.5f, (float)extension.Value.Calculate(context).Seconds.TotalSeconds / 6f); } catch { }
+                    float left = buff.IsPermanent ? 100f : (float)buff.TimeLeft.TotalSeconds / 6f;
+                    float useful = Mathf.Clamp(ctx.ExpectedRounds - left, 0f, added);
+                    if (useful <= 0f) continue;
+                    // The side decides, not the buff's Harmful flag (hexes are not all flagged): only the caster's own copy
+                    // counts (the game's Conditional is HasBuffFromCaster). A sleeping enemy kept asleep is the point of
+                    // lengthening Slumber: no discount for being disabled.
+                    float share = AbilityProfile.ControlShareOf(extension.Key);
+                    float threat = CombatMath.Threat(target);
+                    // Threat is a quarter for a disabled enemy; when this hex is what disables it, keeping it is full worth.
+                    if (share >= 1f && CombatMath.IsDisabled(target)) threat *= 4f;
+                    float worth = unit.IsEnemy(target) ? threat * share : 0.25f * ValueModel.PerRound(Level(target));
+                    total += worth * useful;
+                    lengthened++;
+                }
+            }
+            return total;
+        }
+
         private static string BuffNote(UnitEntityData unit, Candidate c) =>
             c.Kind == CandidateKind.Toggle ? LastToggleAppraisal(unit, c.Key) ?? "no appraisal" :
             c.Ability == null ? "" : LastAppraisal(unit, c.Ability, c.Target ?? unit) ?? "no appraisal";
@@ -2727,6 +2767,22 @@ namespace CompanionAI_Pathfinder.Tactics
                 {
                     value += cleanseValue * RoleWeight(ctx, "heal");
                     reasons.Add("cleanse");
+                }
+            }
+
+            // --- lengthening the caster's active effects (★ v0.3.19 class audit B2: Witch Cackle / Chant) ---
+            if (profile.Extensions.Count > 0)
+            {
+                float extendValue = ExtensionValue(ctx, ability, profile, affectedEnemies, affectedAllies, out int lengthened);
+                if (extendValue > 0f)
+                {
+                    value += extendValue;
+                    reasons.Add($"extends {lengthened}");
+                }
+                else if (!profile.HarmfulEffects && profile.TargetBuffs.Count == 0 && value <= 0f)
+                {
+                    why = "nothing of its to lengthen";
+                    return 0f;
                 }
             }
 

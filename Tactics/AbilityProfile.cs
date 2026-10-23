@@ -260,7 +260,10 @@ namespace CompanionAI_Pathfinder.Tactics
 
         public bool HasDetectableEffect =>
             Damage.Count > 0 || Heals.Count > 0 || CasterHeals.Count > 0 || TargetBuffs.Count > 0 || CasterBuffs.Count > 0 ||
-            Summons || Dispels || RemovesBuffs || Enchants || Maneuvers.Count > 0 || IsWeaponAttack;
+            Summons || Dispels || RemovesBuffs || Enchants || Maneuvers.Count > 0 || IsWeaponAttack || Extensions.Count > 0;
+
+        /// <summary>★ v0.3.19 (class audit B2): buffs it lengthens on its targets, and by how much (Cackle, Chant).</summary>
+        public readonly List<KeyValuePair<BlueprintBuff, ContextDurationValue>> Extensions = new List<KeyValuePair<BlueprintBuff, ContextDurationValue>>();
 
         public bool DealsDamage => Damage.Count > 0;
 
@@ -707,6 +710,12 @@ namespace CompanionAI_Pathfinder.Tactics
                         break;
                     case ContextActionDispelMagic _:
                         Dispels = true;
+                        break;
+                    // ★ v0.3.19 (class audit B2): lengthens a buff the target already has (Witch Cackle and Chant: one
+                    // more round of each of the witch's active hexes). Read as nothing before: never cast.
+                    case ContextActionReduceBuffDuration extend when extend.Increase && extend.TargetBuff != null && subject == EffectSubject.Target:
+                        if (!Extensions.Any(e => e.Key == extend.TargetBuff))
+                            Extensions.Add(new KeyValuePair<BlueprintBuff, ContextDurationValue>(extend.TargetBuff, extend.DurationValue));
                         break;
                     case ContextActionEnchantWornItem enchant when subject != EffectSubject.Other:
                         m_Enchantments.Add(new KeyValuePair<ContextActionEnchantWornItem, bool>(

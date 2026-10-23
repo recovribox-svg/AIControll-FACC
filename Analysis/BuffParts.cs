@@ -78,6 +78,8 @@ namespace CompanionAI_Pathfinder.Analysis
         /// <summary>Applies only sometimes (a weapon kind, an alignment): counted at half.</summary>
         public bool Conditional;
         public bool ScaleByBaseAttack;
+        /// <summary>★ v0.3.19 (class audit B2): the amount is per character level of the recipient (TemporaryHitPointsPerLevel).</summary>
+        public bool PerRecipientLevel;
         public float SaveShare = 1f;
 
         public override string ToString() =>
@@ -216,6 +218,57 @@ namespace CompanionAI_Pathfinder.Analysis
                     case SavingThrowBonusAgainstAlignment sva:
                         list.Parts.Add(new BuffPart { Kind = BuffPartKind.ConditionalSaves, Owner = owner, Descriptor = sva.Descriptor, Fixed = sva.Value, Value = sva.Bonus, Conditional = true });
                         break;
+                    // ★ v0.3.19 (class audit B2): components the class blueprints use for their main bonuses - Rage,
+                    // Bloodrage and Inspired Rage give their attack and damage this way (melee only), stances and
+                    // judgments too; Bit of Luck, Fortune, Lion's Call reroll the d20.
+                    case AttackTypeAttackBonus ata:
+                        list.Parts.Add(new BuffPart
+                        {
+                            Kind = BuffPartKind.Attack, Owner = owner, Descriptor = ata.Descriptor, Value = ata.Value, Multiplier = ata.AttackBonus,
+                            MeleeOnly = !ata.AllTypesExcept && IsMeleeType(ata.Type) || ata.AllTypesExcept && IsRangedType(ata.Type),
+                            RangedOnly = !ata.AllTypesExcept && IsRangedType(ata.Type) || ata.AllTypesExcept && IsMeleeType(ata.Type),
+                            Conditional = ata.CheckFact
+                        });
+                        break;
+                    case WeaponAttackTypeDamageBonus wtd:
+                        list.Parts.Add(new BuffPart
+                        {
+                            Kind = BuffPartKind.Damage, Owner = owner, Descriptor = wtd.Descriptor, Value = wtd.Value, Multiplier = wtd.AttackBonus,
+                            MeleeOnly = IsMeleeType(wtd.Type), RangedOnly = IsRangedType(wtd.Type)
+                        });
+                        break;
+                    case ACBonusAgainstAttacks acb:
+                        list.Parts.Add(new BuffPart
+                        {
+                            Kind = BuffPartKind.ArmorClass, Owner = owner, Descriptor = acb.Descriptor, Fixed = acb.ArmorClassBonus, Value = acb.Value,
+                            Conditional = acb.AgainstMeleeOnly || acb.AgainstRangedOnly || acb.OnlySneakAttack || acb.OnlyAttacksOfOpportunity ||
+                                          acb.IsTouch || acb.CheckArmorCategory || acb.NoShield || acb.OneHanded
+                        });
+                        break;
+                    case TemporaryHitPointsPerLevel tpl:
+                        list.Parts.Add(new BuffPart
+                        {
+                            Kind = BuffPartKind.TempHp, Owner = owner, Descriptor = tpl.Descriptor, Value = tpl.Value,
+                            Multiplier = tpl.HitPointsPerLevel, PerRecipientLevel = true
+                        });
+                        break;
+                    case ModifyD20 d20 when d20.TakeBest && d20.RollsAmount >= 1 && !d20.Replace:
+                    {
+                        // Two d20s, the better kept: about +3 on a roll that needs 6-15 (ValueModel works in 5 % steps).
+                        bool partial = d20.RerollOnlyIfFailed || d20.RerollOnlyIfSuccess || d20.WithChance || d20.AgainstAlignment ||
+                                       d20.SpecificDescriptor || d20.DispellOnRerollFinished || d20.DispellOn20;
+                        if ((d20.Rule & RuleType.AttackRoll) != 0)
+                            list.Parts.Add(new BuffPart { Kind = BuffPartKind.Attack, Owner = owner, Fixed = 3, Conditional = partial, Descriptor = ModifierDescriptor.UntypedStackable });
+                        if ((d20.Rule & RuleType.SavingThrow) != 0)
+                            list.Parts.Add(new BuffPart { Kind = BuffPartKind.Saves, Owner = owner, Fixed = 3, Conditional = partial, Descriptor = ModifierDescriptor.UntypedStackable });
+                        break;
+                    }
+                    case SavingThrowBonusAgainstDescriptor svd:
+                        list.Parts.Add(new BuffPart { Kind = BuffPartKind.ConditionalSaves, Owner = owner, Descriptor = svd.ModifierDescriptor, Fixed = svd.Value, Value = svd.Bonus, Conditional = true });
+                        break;
+                    case SavingThrowContextBonusAgainstDescriptor svc:
+                        list.Parts.Add(new BuffPart { Kind = BuffPartKind.ConditionalSaves, Owner = owner, Descriptor = svc.ModifierDescriptor, Value = svc.Value, Conditional = true });
+                        break;
                     case AddFacts facts:
                         foreach (var fact in facts.Facts)
                             if (fact != null) ReadInto(owner, fact.ComponentsArray, list, depth + 1);
@@ -271,6 +324,10 @@ namespace CompanionAI_Pathfinder.Analysis
         }
 
         /// <summary>Components with no combat effect of their own (descriptors, ranks, bookkeeping, self-removal, visuals).</summary>
+        private static bool IsRangedType(WeaponRangeType type) => type == WeaponRangeType.Ranged || type == WeaponRangeType.RangedNormal;
+
+        private static bool IsMeleeType(WeaponRangeType type) => type == WeaponRangeType.Melee || type == WeaponRangeType.MeleeNormal;
+
         private static bool IsBookkeeping(BlueprintComponent c)
         {
             switch (c.GetType().Name)
