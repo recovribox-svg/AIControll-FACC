@@ -33,6 +33,18 @@ namespace CompanionAI_Pathfinder.Tactics
         private static readonly Dictionary<string, Seen> ByKind = new Dictionary<string, Seen>();
         private static readonly HashSet<string> Reported = new HashSet<string>();
 
+        /// <summary>★ v0.3.20 (playtest 1): per AI unit and ability, the damage of its hits against the estimate.</summary>
+        private sealed class Check
+        {
+            public string Who, What;
+            public int Hits;
+            public float Dealt, Estimated;
+            public int LastFrame = -1;
+            public string LastTarget;
+        }
+
+        private static readonly Dictionary<string, Check> Checks = new Dictionary<string, Check>();
+
         public static void Subscribe()
         {
             if (_instance != null) return;
@@ -56,6 +68,56 @@ namespace CompanionAI_Pathfinder.Tactics
             // was applied to every later creature of that blueprint for the whole session: kinds are learned per fight.
             ByKind.Clear();
             Reported.Clear();
+            Checks.Clear();
+        }
+
+        /// <summary>
+        /// ★ v0.3.20 (playtest 1): at the end of a fight, each AI unit's damaging ability whose hits dealt more than a
+        /// quarter more or less than the engine estimated (at least two hits; critical hits and halves for a passed save
+        /// left out). An effect the estimate does not read - a mod's bonus to a blast (Elemental Scion), a class's
+        /// own damage feature - shows here. Nothing is logged when the estimates were right.
+        /// </summary>
+        public static void ReportFight()
+        {
+            foreach (var check in Checks.Values)
+            {
+                if (check.Hits < 2 || check.Estimated <= 0f) continue;
+                float dealt = check.Dealt / check.Hits, estimated = check.Estimated / check.Hits;
+                if (Math.Abs(dealt - estimated) <= 0.25f * estimated) continue;
+                Main.Log($"[DmgCheck] {check.Who}'s {check.What}: {check.Hits} hits dealt {dealt:0.#} a hit, estimated {estimated:0.#}");
+            }
+        }
+
+        /// <summary>★ v0.3.20: one damage roll of an AI unit's ability (the rolls of one cast on one target are one hit).</summary>
+        private static void NoteEstimate(RuleDealDamage evt, UnitEntityData attacker, UnitEntityData target)
+        {
+            var ability = evt.Reason.Ability;
+            if (ability?.Blueprint == null || evt.HalfBecauseSavingThrow || (evt.AttackRoll?.IsCriticalConfirmed ?? false)) return;
+            // A kinetic blade's blast is estimated with the blade's attack (CombatMath.BladeBlastPerHit).
+            if (evt.DamageBundle?.Weapon?.Blueprint != null &&
+                Kingmaker.Blueprints.BlueprintExtenstions.GetComponent<Kingmaker.UnitLogic.Class.Kineticist.WeaponKineticBlade>(evt.DamageBundle.Weapon.Blueprint) != null) return;
+            if (!GameInterface.CustomBrainPatch.ShouldControlUnit(attacker)) return;
+            string key = attacker.UniqueId + "|" + ability.Blueprint.AssetGuid;
+            int frame = UnityEngine.Time.frameCount;
+            if (Checks.TryGetValue(key, out var check) && check.LastFrame == frame && check.LastTarget == target.UniqueId)
+            {
+                check.Dealt += evt.Result;
+                return;
+            }
+            var profile = AbilityProfile.Get(ability);
+            if (profile == null || profile.Damage.Count == 0) return;
+            float estimate = CombatMath.EstimateAbilityDamage(ability, profile, target);
+            if (estimate <= 0f) return;
+            if (check == null)
+            {
+                if (Checks.Count > 256) return;
+                Checks[key] = check = new Check { Who = attacker.CharacterName, What = ability.Name };
+            }
+            check.Hits++;
+            check.Dealt += evt.Result;
+            check.Estimated += estimate;
+            check.LastFrame = frame;
+            check.LastTarget = target.UniqueId;
         }
 
         /// <summary>Key of a damage type as an ability describes it (ContextActionDealDamage.DamageType).</summary>
@@ -97,13 +159,17 @@ namespace CompanionAI_Pathfinder.Tactics
                 var attacker = evt.Initiator;
                 var target = evt.Target;
                 if (attacker == null || target == null || !attacker.IsPlayerFaction || !attacker.IsEnemy(target)) return;
+                NoteEstimate(evt, attacker, target);
+                float swarmArea = CombatMath.SwarmAreaFactor(evt.Reason.Ability, target,
+                    evt.Reason.Context?.AssociatedBlueprint is Kingmaker.Blueprints.Area.BlueprintArea);
                 foreach (var result in evt.ResultList)
                 {
                     var damage = result.Source;
                     string key = KeyOf(damage);
                     if (key == null || result.RollAndBonusValue <= 0) continue;
-                    float factor = (damage.Decline.Value == DamageDeclineType.ByHalf ? 0.5f :
-                                    damage.Decline.Value == DamageDeclineType.ByQuarter ? 0.75f : 1f) * damage.Vulnerability;
+                    // ★ v0.3.20 (playtest 1): a swarm's extra damage from areas (x1.5) belongs to that hit, not to the
+                    // damage type: the estimate adds it for area damage only (CombatMath.SwarmAreaFactor).
+                    float factor = CombatMath.DeclineFactor(damage.Decline.Value) * damage.Vulnerability / swarmArea;
                     var seen = new Seen
                     {
                         Immune = damage.Immune,

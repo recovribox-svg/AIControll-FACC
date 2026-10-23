@@ -394,6 +394,7 @@ namespace CompanionAI_Pathfinder.GameInterface
             // ★ v0.3.17: [Perf] / [Calib] numbers of the fight that just ended
             Tactics.FightStats.Report();
             Tactics.SaveObserver.ReportFight();
+            Tactics.DamageObserver.ReportFight();
             // ★ v0.3.17: analysis caches of this fight's units (they are per frame now; this only frees them)
             CompanionAI_Pathfinder.Analysis.CombatRulesAnalyzer.ClearCache();
             // ★ v0.3.18 (review): AI-started toggles the game keeps on out of combat (Mobility) go off first.

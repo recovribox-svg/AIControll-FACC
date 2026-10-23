@@ -46,6 +46,9 @@ namespace CompanionAI_Pathfinder.Tactics
         public float AnyHitChance;
         /// <summary>★ v0.3.18 (review): the first attack's attack bonus and the target's AC against it (the rules' values).</summary>
         public int FirstAttackBonus, FirstArmorClass;
+        /// <summary>★ v0.3.20 (playtest 1): what the target keeps of extra physical damage on the first weapon (0.5 for a
+        /// Tiny swarm against piercing and slashing weapons, 0 when immune, 1 normally).</summary>
+        public float FirstPhysicalFactor = 1f;
     }
 
     public static class CombatMath
@@ -171,6 +174,9 @@ namespace CompanionAI_Pathfinder.Tactics
             public int Index;
             public int AttackBonus, ArmorClass;
             public float RawPerHit, Sneak;
+            /// <summary>★ v0.3.20 (playtest 1): one hit as the game's damage rule gives it against the target (see
+            /// ReadHitOnTarget), and what the target keeps of extra physical damage.</summary>
+            public float GameHit, PhysicalFactor = 1f;
             /// <summary>★ v0.3.19 (test5): the blast a kinetic blade casts on each hit (after the target's resistances).</summary>
             public float BladeBlast;
             public int DamageReduction;
@@ -214,7 +220,10 @@ namespace CompanionAI_Pathfinder.Tactics
                 noHit *= 1f - p;
                 // ★ v0.3.19 (test5): a kinetic blade's blast lands with the hit and is multiplied by its critical
                 // (ContextActionDealDamage takes the weapon's critical multiplier from the attack roll).
-                float perHit = Math.Max(0f, line.RawPerHit + d.Value - line.DamageReduction) + line.BladeBlast;
+                // ★ v0.3.20 (playtest 1): the game's damage of a hit on this target; an attack mode's damage change counts
+                // past the damage reduction and at what the target keeps of physical damage.
+                float modeChange = Math.Max(0f, line.RawPerHit + d.Value - line.DamageReduction) - Math.Max(0f, line.RawPerHit - line.DamageReduction);
+                float perHit = Math.Max(0f, line.GameHit + modeChange * line.PhysicalFactor) + line.BladeBlast;
                 float critExtra = line.ThreatChance * p * (line.CritMultiplier - 1) * perHit;
                 if (line.Index == 0)
                 {
@@ -223,6 +232,7 @@ namespace CompanionAI_Pathfinder.Tactics
                     result.FirstPerHit = perHit;
                     result.FirstCritChance = line.ThreatChance * p * p;     // threat, then the confirmation roll
                     result.CritMultiplier = Math.Max(1, line.CritMultiplier);
+                    result.FirstPhysicalFactor = line.PhysicalFactor;
                 }
                 result.ExpectedDamage += p * (perHit + line.Sneak) + critExtra;
             }
@@ -266,6 +276,12 @@ namespace CompanionAI_Pathfinder.Tactics
                         perHit += Average(d.Dice) + d.Bonus;
 
                     var dr = HitChanceCalculator.CalculateDamageReduction(unit, target, weapon, perHit);
+                    int reduction = dr != null && !dr.CanBypass && dr.DRValue > 0 ? dr.DRValue : 0;
+                    // ★ v0.3.20 (playtest 1): the target's side of the damage by the game's own rule. Bows against a
+                    // Rat Swarm were valued at twice what they deal (SwarmDamageResistance halves piercing and slashing
+                    // weapon damage, kinetic blasts excepted), so a full attack beat Ember's Fire Blast and Camellia's
+                    // Eldritch Blast; critical hits and sneak attacks were counted on targets immune to them.
+                    var hit = ReadHitOnTarget(unit, target, weapon, stats);
                     routine.Lines.Add(new AttackLine
                     {
                         Weapon = weapon,
@@ -273,11 +289,14 @@ namespace CompanionAI_Pathfinder.Tactics
                         AttackBonus = ab,
                         ArmorClass = acRule.Result,
                         RawPerHit = perHit,
+                        GameHit = hit.Read ? hit.Damage : Math.Max(0f, perHit - reduction),
+                        PhysicalFactor = hit.Read ? hit.PhysicalFactor : 1f,
                         BladeBlast = BladeBlastPerHit(unit, target, weapon),
-                        DamageReduction = dr != null && !dr.CanBypass && dr.DRValue > 0 ? dr.DRValue : 0,
-                        ThreatChance = Mathf.Clamp01(stats.CriticalRange / 20f),
+                        DamageReduction = reduction,
+                        ThreatChance = hit.CritImmune ? 0f : Mathf.Clamp01(stats.CriticalRange / 20f),
                         CritMultiplier = stats.CriticalMultiplier,
-                        Sneak = sneakDice > 0 && (flanked || acRule.IsTargetFlatFooted) ? 3.5f * sneakDice : 0f
+                        Sneak = sneakDice > 0 && (flanked || acRule.IsTargetFlatFooted) && !ImmuneToPrecision(target)
+                            ? 3.5f * sneakDice * (hit.Read ? hit.PhysicalFactor : 1f) : 0f
                     });
                 }
                 catch (Exception ex)
@@ -287,6 +306,92 @@ namespace CompanionAI_Pathfinder.Tactics
             }
             Routines[key] = routine;
             return routine;
+        }
+
+        /// <summary>★ v0.3.20 (playtest 1): one weapon hit on a target as the game's damage rule gives it.</summary>
+        private sealed class HitOnTarget
+        {
+            public int Frame;
+            public bool Read;
+            public float Damage;
+            public float PhysicalFactor = 1f;
+            public bool CritImmune;
+        }
+
+        private static readonly Dictionary<string, HitOnTarget> HitsOnTarget = new Dictionary<string, HitOnTarget>();
+
+        /// <summary>
+        /// ★ v0.3.20 (playtest 1): the damage of one hit of <paramref name="weapon"/> on <paramref name="target"/>, before a
+        /// critical, by the game's own damage calculation - the way the game estimates a weapon's damage itself
+        /// (UnitHelper.EstimateAttackDamage / CalculateAbilityDamage: a fake RuleCalculateDamage of the weapon's damage,
+        /// nothing dealt, no log). It runs every handler on the target: damage reduction, energy resistance on a weapon's
+        /// energy dice, a swarm's resistance to weapons (SwarmDamageResistance), vulnerabilities, the difficulty setting's
+        /// decline. Also read from it: critical-hit immunity (CritImmunity unless IgnoreCritImmunity, as the damage rule
+        /// applies it) and what the target keeps of physical damage. Mean of the least and the most. Once a frame.
+        /// </summary>
+        private static HitOnTarget ReadHitOnTarget(UnitEntityData unit, UnitEntityData target, ItemEntityWeapon weapon, RuleCalculateWeaponStats stats)
+        {
+            int frame = Time.frameCount;
+            string key = $"{unit.UniqueId}|{target.UniqueId}|{weapon.UniqueId}";
+            if (HitsOnTarget.TryGetValue(key, out var cached) && cached.Frame == frame) return cached;
+            if (HitsOnTarget.Count > 512) HitsOnTarget.Clear();
+            var hit = new HitOnTarget { Frame = frame };
+            try
+            {
+                using (ContextData<Kingmaker.UI.Models.Log.GameLogDisabled>.Request())
+                {
+                    int? least = FakeWeaponDamage(unit, target, weapon, stats, Kingmaker.RuleSystem.Rules.Damage.DamageCalculationType.Minimized, out _);
+                    int? most = FakeWeaponDamage(unit, target, weapon, stats, Kingmaker.RuleSystem.Rules.Damage.DamageCalculationType.Maximized, out var rule);
+                    if (least.HasValue && most.HasValue && rule != null)
+                    {
+                        hit.Damage = (least.Value + most.Value) / 2f;
+                        hit.CritImmune = rule.CritImmunity && !rule.IgnoreCritImmunity;
+                        var physical = rule.CalculatedDamage.Select(v => v.Source)
+                            .FirstOrDefault(d => d is Kingmaker.RuleSystem.Rules.Damage.PhysicalDamage);
+                        if (physical != null)
+                            hit.PhysicalFactor = physical.Immune ? 0f : DeclineFactor(physical.Decline.Value) * physical.Vulnerability;
+                        hit.Read = true;
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                Main.Verbose($"[Math] hit on target {unit.CharacterName}->{target.CharacterName}: {ex.Message}");
+            }
+            HitsOnTarget[key] = hit;
+            return hit;
+        }
+
+        /// <summary>★ v0.3.20: the weapon's damage bundle (as UnitHelper.ApplyDamage builds it) through a fake damage rule.</summary>
+        private static int? FakeWeaponDamage(UnitEntityData unit, UnitEntityData target, ItemEntityWeapon weapon, RuleCalculateWeaponStats stats,
+                                             Kingmaker.RuleSystem.Rules.Damage.DamageCalculationType calculation,
+                                             out Kingmaker.RuleSystem.Rules.Damage.RuleCalculateDamage rule)
+        {
+            rule = null;
+            Kingmaker.RuleSystem.Rules.Damage.DamageBundle bundle = null;
+            foreach (var description in stats.DamageDescription)
+            {
+                var damage = description.CreateDamage();
+                damage.CalculationType.Set(calculation, null);
+                if (bundle == null) bundle = new Kingmaker.RuleSystem.Rules.Damage.DamageBundle(weapon, damage);
+                else bundle.Add(damage);
+            }
+            if (bundle == null) return null;
+            var deal = new Kingmaker.RuleSystem.Rules.Damage.RuleDealDamage(unit, target, bundle) { IsFake = true, DisableBattleLogSelf = true };
+            rule = Rulebook.Trigger(new Kingmaker.RuleSystem.Rules.Damage.RuleCalculateDamage(deal));
+            return rule.CalculatedDamage.Sum(v => v.FinalValue);
+        }
+
+        /// <summary>★ v0.3.20: share of a damage roll a decline leaves (RuleCalculateDamage.CalculateDamageValue).</summary>
+        public static float DeclineFactor(Kingmaker.RuleSystem.Rules.Damage.DamageDeclineType decline)
+        {
+            switch (decline)
+            {
+                case Kingmaker.RuleSystem.Rules.Damage.DamageDeclineType.None: return 1f;
+                case Kingmaker.RuleSystem.Rules.Damage.DamageDeclineType.ByQuarter: return 0.75f;
+                case Kingmaker.RuleSystem.Rules.Damage.DamageDeclineType.ByHalf: return 0.5f;
+                default: return 0f;
+            }
         }
 
         /// <summary>
@@ -455,6 +560,8 @@ namespace CompanionAI_Pathfinder.Tactics
             int cl = Math.Max(1, ability.CalculateParams()?.CasterLevel ?? 1);
             DamageMetamagic(ability, out bool maximize, out bool empower);
             var parts = new List<KeyValuePair<GameAction, float>>();
+            // ★ v0.3.20 (playtest 1): a swarm takes half again from area damage (SwarmAoeVulnerability).
+            float swarmArea = SwarmAreaFactor(ability, target, false);
             foreach (var action in profile.Damage)
             {
                 // ★ v0.3.1: only the branch that runs for this target (Inflict Wounds heals undead, Cure harms them).
@@ -473,7 +580,7 @@ namespace CompanionAI_Pathfinder.Tactics
                         else avg = EvaluateDice(dmg.Value, ctx, Math.Min(cl, 10), maximize, empower);
                         avg += KineticDamageBonus(ability, dmg, profile.NeedsAttackRoll || bladeWeapon != null, bladeWeapon);
                         if (dmg.Half) avg *= 0.5f;
-                        parts.Add(new KeyValuePair<GameAction, float>(dmg, AfterTargetReduction(target, dmg, avg)));
+                        parts.Add(new KeyValuePair<GameAction, float>(dmg, AfterTargetReduction(target, dmg, avg) * swarmArea));
                         break;
                     // A kill is valued apart (KillApplies): it lands on a failed save, not half on a passed one.
                     case ContextActionKill _:
@@ -658,6 +765,39 @@ namespace CompanionAI_Pathfinder.Tactics
             catch
             {
                 return value;
+            }
+        }
+
+        /// <summary>
+        /// ★ v0.3.20 (playtest 1): 1.5 when <paramref name="target"/> is a swarm (SwarmAoeVulnerability in its facts) and the
+        /// damage comes from an area the way the game tests it - a projectile that is not a single one (line, cone...),
+        /// an ability that targets around a point (AbilityTargetsAround), or the map itself (<paramref name="fromArea"/>: the
+        /// damage's context belongs to a BlueprintArea, a location hazard; a spell's own area effect does not count);
+        /// 1 otherwise.
+        /// </summary>
+        public static float SwarmAreaFactor(AbilityData ability, UnitEntityData target, bool fromArea)
+        {
+            if (target == null) return 1f;
+            try
+            {
+                bool swarm = FrameCached($"swarmaoe|{target.UniqueId}", () =>
+                {
+                    bool found = false;
+                    Kingmaker.Utility.UnitDescription.UnitDescriptionHelper.VisitComponents<Kingmaker.UnitLogic.FactLogic.SwarmAoeVulnerability>(
+                        target, (c, f) => found = true);
+                    return found ? 1 : 0;
+                }) == 1;
+                if (!swarm) return 1f;
+                if (fromArea) return 1.5f;
+                if (ability == null) return 1f;
+                var projectile = ability.GetDeliverProjectileFromDeliverBlueprint(Kingmaker.Armies.TacticalCombat.TacticalCombatHelper.IsActive);
+                bool area = (projectile != null && projectile.Type != Kingmaker.UnitLogic.Abilities.Components.AbilityProjectileType.Simple) ||
+                            Kingmaker.Blueprints.BlueprintExtenstions.GetComponent<Kingmaker.UnitLogic.Abilities.Components.AbilityTargetsAround>(ability.Blueprint) != null;
+                return area ? 1.5f : 1f;
+            }
+            catch
+            {
+                return 1f;
             }
         }
 
@@ -983,7 +1123,8 @@ namespace CompanionAI_Pathfinder.Tactics
                 int sneak = SafeStat(unit.Stats.SneakAttack);
                 if (sneak > 0 && vitalStrike.RowdyFeature != null && unit.Descriptor.HasFact(vitalStrike.RowdyFeature) && !ImmuneToPrecision(target))
                     extra += 2 * sneak * 3.5f;
-                return est.FirstHitChance * extra;
+                // ★ v0.3.20 (playtest 1): physical weapon damage, so what the target keeps of it (a swarm halves it).
+                return est.FirstHitChance * extra * est.FirstPhysicalFactor;
             }
             catch (Exception ex)
             {

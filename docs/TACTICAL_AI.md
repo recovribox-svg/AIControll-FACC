@@ -1675,3 +1675,37 @@ See `docs/CLASS_COMPETENCE_AUDIT.md` §8. Changes:
   the extra time the fight still lasts.
 - Rage and Bloodrage are started by the game at combat start while on (Immediately + DeactivateIfCombatEnded): the
   coverage line says so instead of "not activated by a command".
+
+## 46. v0.3.20 (test1): playtest feedback 1 - blasts against a full attack on a Rat Swarm
+
+**Report.** Three units full-attacked a Rat Swarm with a bow instead of blasting: Lann (Kinetic Sharpshooter, FullAttack(5)
+35.6, no blast in the top five), Ember (Psychokineticist, FullAttack(3) 21.7 over Fire Blast 11.4) and Camellia
+(FullAttack(3) 20.8 over Sleep 14.1 and Eldritch Blast 8.6).
+
+**Cause (game code).** Swarms carry `SwarmDamageResistance`: on `RuleCalculateDamage` every physical damage of a weapon
+that is not a kinetic blast (`WeaponCategory.KineticBlast`) is declined by half, unless bludgeoning (Tiny swarms), or
+totally (`DiminutiveOrLower`). The weapon estimate (`CombatMath.ReadRoutine`) took a hit as the weapon's average damage
+minus damage reduction, so arrows against the swarm counted twice what they deal: Ember's full attack is about 10.9, below
+her Fire Blast; Camellia's about 10.4, below Sleep. The same estimate counted critical hits on targets immune to them
+(`AddImmunityToCriticalHits` sets `RuleCalculateDamage.CritImmunity`) and sneak attack on targets immune to precision
+damage. Swarms also take x1.5 from area damage (`SwarmAoeVulnerability`: a projectile that is not single, or
+`AbilityTargetsAround`, or a location hazard - a spell's own area effect does not count); spell estimates left it out.
+
+**Changes.**
+- **Weapon hits by the game's damage rule** (`ReadHitOnTarget`): the weapon's damage bundle (as `UnitHelper.ApplyDamage`
+  builds it) through a fake `RuleCalculateDamage` at its least and most, as `UnitHelper.EstimateAttackDamage` /
+  `CalculateAbilityDamage` do - nothing dealt, no log. It applies every target handler: damage reduction, energy
+  resistance on a weapon's energy dice, swarm resistance, vulnerabilities, the difficulty setting's declines. Read from
+  the same rule: critical-hit immunity (no critical part) and what the target keeps of physical damage (attack-mode
+  damage changes, sneak attack and Vital Strike dice are scaled by it). Once a frame per unit, target and weapon. When it
+  cannot be read, the old estimate stands.
+- **Sneak attack** needs a target not immune to precision damage.
+- **Swarm area bonus** (`SwarmAreaFactor`, the game's test) in spell damage estimates; the damage observer divides it
+  out of what it records (the bonus belongs to that hit, not to the damage type).
+- **[DmgCheck]** at the end of a fight: an AI unit's damaging ability whose hits dealt more than a quarter more or less than
+  estimated (at least two hits; criticals and save halves left out). Silent when the estimates were right. For effects the
+  estimate does not read, such as a mod's blast bonus.
+
+**Not settled from the snippet.** Lann had no blast among his five best options; the reason (burn, weapon, availability)
+is in the full log (`[Kinetic]`, `[Coverage]` lines). A physical archer blast shot through the bow against a swarm is
+halved by the game (the bow is the damage's weapon); the blast estimate does not apply that.
