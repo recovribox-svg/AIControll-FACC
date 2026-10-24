@@ -36,6 +36,12 @@ combat (primary) and real-time combat.
 - An advance that runs out of its move action can continue with the standard action; abilities are not aimed at a
   target on which none of their effects apply.
 
+**0.3.21** ([release/CHANGELOG_v0.3.21.md](release/CHANGELOG_v0.3.21.md)): works alongside Wrath Tactics in real time
+(its rules first, AI Control fills the gaps). Power Attack, Deadly Aim and Combat Expertise are chosen per attack. Many
+more abilities are read from the game's own rules: invisibility, weapon enchantments and buffs, ally hexes, auras,
+poisons, regeneration, spell DC and caster level boosts, on-hit effects, Quicken / Extend, shadow spells; debuffs are
+worth what they take away.
+
 **0.3.20** ([release/CHANGELOG_v0.3.20.md](release/CHANGELOG_v0.3.20.md)): attacks of opportunity are weighed and,
 when a spot that provokes less exists, avoided; the path the game really walks is counted. Enemies are rated by what
 each can do and has done. Weapon damage follows the game's rule (swarms, critical immunity, damage reduction). Walks
@@ -136,7 +142,7 @@ toggles such as Shift Form; bonus stacking follows the game's own rule (and Tabl
 ## Install (players)
 
 1. Install [Unity Mod Manager](https://www.nexusmods.com/site/mods/21) into the game.
-2. Take `CompanionAI_Pathfinder_v0.3.20.zip` - prebuilt in `release\`, or build it yourself (below; output in `dist\`).
+2. Take `CompanionAI_Pathfinder_v0.3.21.zip` - prebuilt in `release\`, or build it yourself (below; output in `dist\`).
 3. Install it either way:
    - Unity Mod Manager → *Mods* tab → drag the ZIP onto the window / *Install Mod*, **or**
    - extract it to `<game>\Mods\CompanionAI_Pathfinder\` so the folder contains
