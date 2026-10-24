@@ -9,6 +9,7 @@ AbilityApplyEffect
 AbilityCustomCharge
 AbilityCustomCleave
 AbilityCustomLogic
+AbilityCustomMeleeAttack
 AbilityCustomVitalStrike
 AbilityData
 AbilityDeliverChain
@@ -75,6 +76,7 @@ AddStatBonusIfHasFactFeature
 AddTemporaryHP
 AdditionalAttackBonus
 AdditionalDamage
+AdditionalDamageOnHit
 AdditionalDiceOnAttack
 Analyze
 AnalyzeInternal
@@ -107,8 +109,10 @@ BuffEnchantArmor
 BuffEnchantSpecificWeaponWorn
 BuffEnchantWornItem
 BuffExtraAttack
+BuffInvisibility
 BuffMovementSpeed
 BuffPartKind
+BuffPoisonStatDamage
 BullRush
 ByHalf
 ByQuarter
@@ -145,6 +149,7 @@ ContextActionHealStatDamage
 ContextActionHealTarget
 ContextActionKill
 ContextActionKnockdownTarget
+ContextActionMeleeAttack
 ContextActionOnContextCaster
 ContextActionOnOwner
 ContextActionOnRandomAreaTarget
@@ -229,6 +234,7 @@ Electricity
 EnemyTargeting
 EnergyResist
 Entangled
+EquipmentWeaponTypeEnhancement
 Evasion
 Exhausted
 ExtraAttack
@@ -255,6 +261,7 @@ IgnoreTargetDR
 ImprovedEvasion
 IncreaseAllSpellsDC
 IncreaseCasterLevel
+IncreaseDiceSizeOnAttack
 IncreaseSpellDC
 IncreaseSpellDescriptorCasterLevel
 IncreaseSpellDescriptorDC
@@ -300,6 +307,7 @@ PhysicalDR
 PhysicalDamage
 Potion
 Prone
+ProtectionFromEnergy
 Quicken
 Ranged
 RecalculateOnFactsChange
@@ -334,6 +342,7 @@ Scroll
 SelfOrAllyBuff
 SetAttackerMissChance
 SetBuffOnsetDelay
+SetFleeOrApproachLogic
 Shaken
 ShareFeaturesWithPet
 Sickened

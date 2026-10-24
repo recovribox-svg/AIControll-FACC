@@ -55,6 +55,10 @@ namespace CompanionAI_Pathfinder.Tactics
             /// <summary>★ v0.3.20 (test3): what the enemy keeps of extra weapon damage (a Tiny swarm half of piercing and
             /// slashing: WeaponAttackEstimate.FirstPhysicalFactor).</summary>
             public float PhysicalFactor = 1f;
+            /// <summary>★ v0.3.21: the weapon it attacks with and the enemy it would attack (weapon-limited parts, invisibility).</summary>
+            public ItemEntityWeapon Weapon;
+            public UnitEntityData Enemy;
+            public int SneakDice;
         }
 
         /// <summary>What comes at the recipient now (per frame).</summary>
@@ -157,9 +161,13 @@ namespace CompanionAI_Pathfinder.Tactics
             // --- what each part adds, with this caster's numbers ---
             float attack = 0f, damage = 0f, extraAttacks = 0f, armor = 0f, concealment = 0f, miss = 0f, saves = 0f;
             float tempHp = 0f, images = 0f, physicalDr = 0f, energyResist = 0f, conHp = 0f;
+            float energyDamage = 0f, energyPool = 0f, diceUp = 0f;
             bool sizeUp = false, forbidsSpells = false;
+            BuffPart invisible = null;
             foreach (var p in parts)
             {
+                // ★ v0.3.21: a part for some weapons only counts when the recipient's weapon in hand is one of them.
+                if (p.Weapon != null && (off.Weapon?.Blueprint == null || !p.Weapon(off.Weapon.Blueprint))) continue;
                 float amount = PartAmount(p, caster, abilityCtx, ally, casterLevel);
                 // ★ v0.3.20 (test5): a bonus against one kind of effect or creature counts for the share of the enemies it
                 // works against; any other condition (a weapon kind) at half. Remove Fear's +4 against fear counted as +2
@@ -175,7 +183,8 @@ namespace CompanionAI_Pathfinder.Tactics
                         break;
                     case BuffPartKind.Damage:
                         if (p.RangedOnly && !off.Ranged || p.MeleeOnly && off.Ranged) break;
-                        damage += Increment(ally, StatType.AdditionalDamage, p, amount);
+                        if (p.Energy) energyDamage += amount;
+                        else damage += Increment(ally, StatType.AdditionalDamage, p, amount);
                         break;
                     case BuffPartKind.ArmorClass: armor += Increment(ally, StatType.AC, p, amount); break;
                     case BuffPartKind.ConditionalAC: armor += amount; break;
@@ -203,7 +212,16 @@ namespace CompanionAI_Pathfinder.Tactics
                     case BuffPartKind.MissChance: miss = Math.Max(miss, amount / 100f); break;
                     case BuffPartKind.MirrorImages: images = Math.Max(images, amount); break;
                     case BuffPartKind.PhysicalDR: physicalDr = Math.Max(physicalDr, amount); break;
-                    case BuffPartKind.EnergyResist: energyResist = Math.Max(energyResist, amount); break;
+                    case BuffPartKind.EnergyResist:
+                        energyResist = Math.Max(energyResist, amount);
+                        if (p.Pool != null) energyPool = Math.Max(energyPool, amount);   // ★ v0.3.21: absorbs this much in all
+                        break;
+                    case BuffPartKind.Invisibility:
+                        if (invisible == null || invisible.EndsOnAttack) invisible = p;
+                        break;
+                    case BuffPartKind.WeaponDiceUp:
+                        if (off.Weapon != null && amount > 0f) diceUp = Math.Max(diceUp, SizeUpDiceGain(off.Weapon, Mathf.RoundToInt(amount)));
+                        break;
                     case BuffPartKind.ExtraAttack: extraAttacks = Math.Max(extraAttacks, amount); break;
                     case BuffPartKind.SizeUp: sizeUp = CombatMath.GrownCorpulence(ally, buffs) > 0f; break;
                     case BuffPartKind.ForbidsSpells: forbidsSpells = !ignoreForbid; break;
@@ -216,6 +234,32 @@ namespace CompanionAI_Pathfinder.Tactics
                 attack -= 1f;
                 armor -= 1f;
                 damage += off.SizeUpDice;
+            }
+            damage += diceUp;
+            // ★ v0.3.21: invisible (BuffInvisibility; UnitPartConcealment.Calculate, RuleCalculateAttackBonus,
+            // RuleCheckTargetFlatFooted): enemies that cannot see invisible miss it half the time, and it attacks them at +2
+            // while they lose their Dexterity to AC (sneak attack included). The kind an attack ends counts once: its
+            // first attack and one round of cover. Nothing when it is invisible that way already.
+            float invisibleShare = 0f, invisibleOnce = 0f;
+            if (invisible != null && !AlreadyInvisible(ally, invisible))
+            {
+                invisibleShare = UnseenShare(ctx);
+                if (invisible.Conditional) invisibleShare *= 0.5f;
+                if (invisibleShare > 0f)
+                {
+                    int dex = 0;
+                    try { dex = off.Enemy != null ? Mathf.Clamp(off.Enemy.Stats.Dexterity.Bonus, 0, 6) : 0; } catch { }
+                    float bonus = 2f + dex;
+                    float sneak = off.SneakDice > 0 && off.Enemy != null && !(off.Enemy.CombatState?.IsFlanked ?? false) ? 3.5f * off.SneakDice : 0f;
+                    if (invisible.EndsOnAttack)
+                        invisibleOnce = invisibleShare * (ValueModel.AttackBonusGain(off.FirstAttack, off.HitChance, bonus) + off.HitChance * sneak);
+                    else
+                    {
+                        attack += bonus * invisibleShare;
+                        damage += sneak * invisibleShare;
+                    }
+                    notes.Add($"unseen by {invisibleShare:P0}{(invisible.EndsOnAttack ? " until it attacks" : "")}");
+                }
             }
             if (forbidsSpells && off.Caster)
             {
@@ -231,16 +275,17 @@ namespace CompanionAI_Pathfinder.Tactics
                 float d = oneAttack ? off.FirstAttack : off.DamagePerRound;
                 float hits = oneAttack ? off.HitChance : off.HitsPerRound;
                 offencePerRound = ValueModel.AttackBonusGain(d, off.HitChance, attack) + ValueModel.DamageBonusGain(hits, damage * off.PhysicalFactor) +
-                                  (oneAttack ? 0f : extraAttacks * off.FirstAttack);
+                                  ValueModel.DamageBonusGain(hits, energyDamage) + (oneAttack ? 0f : extraAttacks * off.FirstAttack);
                 // A recipient that also casts spells uses its weapon only part of the time.
                 if (off.Caster) offencePerRound *= 0.5f;
                 if (attack != 0f) notes.Add($"attack {attack:+0.#;-0.#}");
-                if (damage != 0f) notes.Add($"damage {damage:+0.#;-0.#} x{hits:0.#} hits");
+                if (damage != 0f || energyDamage != 0f) notes.Add($"damage {damage + energyDamage:+0.#;-0.#} x{hits:0.#} hits");
                 if (extraAttacks > 0f && !oneAttack) notes.Add($"+{extraAttacks:0} attack");
                 if (offencePerRound != 0f) notes.Add($"({off.DamagePerRound:0.#} dmg/rd at {off.HitChance:P0}{(off.Caster ? ", half: casts" : "")})");
             }
-            else if (attack > 0f || damage > 0f || extraAttacks > 0f)
+            else if (attack > 0f || damage > 0f || extraAttacks > 0f || energyDamage > 0f)
                 notes.Add("no weapon attack to improve");
+            if (off.Caster) invisibleOnce *= 0.5f;
 
             // --- defence: what comes at it ---
             float keptPerRound = 0f;
@@ -248,11 +293,16 @@ namespace CompanionAI_Pathfinder.Tactics
             if (def.Incoming > 0f)
             {
                 keptPerRound += ValueModel.ArmorGain(def.Incoming, def.EnemyHitChance, armor);
-                keptPerRound += def.Incoming * Math.Max(concealment, miss);
+                // ★ v0.3.21: invisibility's cover - one round for the kind its first attack ends.
+                float unseen = invisibleShare * 0.5f * (invisible != null && invisible.EndsOnAttack ? 1f / Math.Max(1f, total) : 1f);
+                keptPerRound += def.Incoming * Math.Max(Math.Max(concealment, miss), unseen);
                 keptPerRound += def.Incoming * 0.025f * saves;
                 float hitsOnIt = def.PerHit > 0f ? def.Incoming / def.PerHit : 1f;
                 if (physicalDr > 0f) keptPerRound += Math.Min(def.Incoming * 0.8f, physicalDr * hitsOnIt);
-                if (energyResist > 0f) keptPerRound += Math.Min(def.Incoming * 0.15f, energyResist * hitsOnIt);
+                // ★ v0.3.21: a pool (Protection from Energy) absorbs that much over the whole buff, not per round.
+                if (energyResist > 0f)
+                    keptPerRound += Math.Min(Math.Min(def.Incoming * 0.15f, energyResist * hitsOnIt),
+                                             energyPool > 0f ? energyPool / Math.Max(1f, total) : float.MaxValue);
                 float absorbed = ValueModel.TempHpAbsorbed(tempHp + conHp * 0.5f, def.Incoming, total) +
                                  ValueModel.MirrorImagesAbsorbed(images, hitsOnIt, def.PerHit > 0f ? def.PerHit : def.Incoming, total);
                 keptPerRound += absorbed / Math.Max(1f, total);
@@ -262,12 +312,13 @@ namespace CompanionAI_Pathfinder.Tactics
                 if (tempHp > 0f) notes.Add($"{tempHp:0} temp HP");
                 if (images > 0f) notes.Add($"{images:0.#} images");
                 if (physicalDr > 0f) notes.Add($"DR {physicalDr:0}");
+                if (energyResist > 0f) notes.Add(energyPool > 0f ? $"absorbs {energyPool:0} energy" : $"resist {energyResist:0}");
                 if (keptPerRound != 0f) notes.Add($"({(def.Expected ? "expects" : "takes")} {def.Incoming:0.#}/rd, hit at {def.EnemyHitChance:P0})");
             }
-            else if (armor > 0f || concealment > 0f || tempHp > 0f || images > 0f || physicalDr > 0f)
+            else if (armor > 0f || concealment > 0f || tempHp > 0f || images > 0f || physicalDr > 0f || energyResist > 0f)
                 notes.Add("nothing attacks it now");
 
-            float offenceValue = offencePerRound * rounds;
+            float offenceValue = offencePerRound * rounds + invisibleOnce;
             float defenceValue = ValueModel.PreventionValue(keptPerRound, rounds, def.Hp, def.Incoming, def.Worth);
             // A summon is temporary and replaceable: half (as everywhere, ValueModel.SummonFactor).
             result.Value = (offenceValue + defenceValue) * RoleWeight(ctx, "buff") * (IsSummon(ally) ? ValueModel.SummonFactor : 1f);
@@ -310,6 +361,38 @@ namespace CompanionAI_Pathfinder.Tactics
             }
         }
 
+        /// <summary>★ v0.3.21: the share of the enemies still fighting that cannot see an invisible unit (no See Invisibility or
+        /// True Seeing - UnitDescriptor.IsSeeInvisibility - and no blindsense, as UnitMemoryController judges it).</summary>
+        private static float UnseenShare(TacticalContext ctx)
+        {
+            try
+            {
+                var fighting = ctx.Enemies.Where(e => !CombatMath.IsDisabled(e)).ToList();
+                if (fighting.Count == 0) return 0f;
+                return fighting.Count(e => !e.Descriptor.IsSeeInvisibility && e.Get<Kingmaker.UnitLogic.Parts.UnitPartBlindsense>() == null) /
+                       (float)fighting.Count;
+            }
+            catch
+            {
+                return 0.5f;
+            }
+        }
+
+        /// <summary>★ v0.3.21: <paramref name="ally"/> is invisible already in a way at least as good as this part.</summary>
+        private static bool AlreadyInvisible(UnitEntityData ally, BuffPart p)
+        {
+            try
+            {
+                var state = ally.Descriptor.State;
+                return state.HasCondition(Kingmaker.UnitLogic.UnitCondition.GreaterInvisibility) ||
+                       p.EndsOnAttack && state.HasCondition(Kingmaker.UnitLogic.UnitCondition.Invisible);
+            }
+            catch
+            {
+                return false;
+            }
+        }
+
         /// <summary>The size of one part with the caster's numbers (the buff's ranks under the ability's context).</summary>
         private static float PartAmount(BuffPart p, UnitEntityData caster, MechanicsContext abilityCtx, UnitEntityData ally, int casterLevel)
         {
@@ -333,10 +416,10 @@ namespace CompanionAI_Pathfinder.Tactics
                 amount += v * p.Multiplier;
             }
             if (p.Dice != null) amount += CombatMath.EvaluateDice(p.Dice, buffCtx, casterLevel);
-            if (p.Kind == BuffPartKind.TempHp && p.Formula.Rolls > 0)
+            if (p.Formula.Rolls > 0)
             {
                 amount += p.Formula.Rolls * (p.Formula.Dice.Sides() + 1) / 2f;
-                if (p.FormulaBonusByCasterLevel && p.Value == null) amount += casterLevel;
+                if (p.Kind == BuffPartKind.TempHp && p.FormulaBonusByCasterLevel && p.Value == null) amount += casterLevel;
             }
             if (p.PerRecipientLevel) amount *= Math.Max(1, ally.Descriptor?.Progression?.CharacterLevel ?? 1);
             if (p.Kind == BuffPartKind.MirrorImages && p.Cap > 0) amount = Math.Min(amount, p.Cap);
@@ -389,17 +472,17 @@ namespace CompanionAI_Pathfinder.Tactics
         /// The average damage a hit gains when <paramref name="weapon"/>'s wielder grows one size: the game's
         /// <c>WeaponDamageScaleTable</c> from the weapon's current size to the next. 1 when it cannot be read.
         /// </summary>
-        private static float SizeUpDiceGain(ItemEntityWeapon weapon)
+        private static float SizeUpDiceGain(ItemEntityWeapon weapon, int steps = 1)
         {
             try
             {
                 if (weapon == null) return 1f;
                 var baseDice = weapon.Blueprint.BaseDamage;
                 var now = weapon.Size;
-                var bigger = WeaponDamageScaleTable.Scale(baseDice, now.Shift(1), Size.Medium, weapon.Blueprint);
+                var bigger = WeaponDamageScaleTable.Scale(baseDice, now.Shift(Math.Max(1, steps)), Size.Medium, weapon.Blueprint);
                 var current = WeaponDamageScaleTable.Scale(baseDice, now, Size.Medium, weapon.Blueprint);
                 float Avg(DiceFormula f) => f.Rolls * (f.Dice.Sides() + 1) / 2f;
-                return Mathf.Clamp(Avg(bigger) - Avg(current), 0f, 6f);
+                return Mathf.Clamp(Avg(bigger) - Avg(current), 0f, 6f * Math.Max(1, steps));
             }
             catch { return 1f; }
         }
@@ -429,9 +512,12 @@ namespace CompanionAI_Pathfinder.Tactics
                         off.TwoHanded = est.Weapon?.HoldInTwoHands ?? false;
                         off.SizeUpDice = SizeUpDiceGain(est.Weapon);
                         off.PhysicalFactor = est.FirstPhysicalFactor;
+                        off.Weapon = est.Weapon;
+                        off.Enemy = enemy;
                     }
                 }
                 off.StrengthToDamage = CombatMath.StrengthAddsWeaponDamage(ally);
+                try { off.SneakDice = Math.Max(0, ally.Stats.SneakAttack.ModifiedValue); } catch { }
             }
             catch (Exception ex)
             {

@@ -2022,3 +2022,56 @@ effect buff's context (its ranks). A triggered mode is never "in the estimate" (
 change is added to the option's value; switched, the change is weighed as for any mode. Combat Expertise was left
 for its `AttackTypeAttackBonus` (the melee penalty): read now, for the weapon in hand, and part of the free-AC sanity
 check. The `[Modes]` line says "(applied with each attack)" for a triggered mode.
+
+## 56. v0.3.21 (test4): coverage gaps - invisibility, energy protection, weapon buffs, melee attack actions, Command, Poison
+
+From the offline audit (`docs/COVERAGE_AUDIT.md`, gaps 2-7); each reader follows the game component it reads.
+- **Invisibility** (`BuffInvisibility`: Greater Invisibility, Invisibility, Vanish). In the game an invisible unit has
+  total concealment (`UnitPartConcealment.Calculate`) against attackers without See Invisibility or True Seeing; the
+  attacks it makes against such a target get +2 (`RuleCalculateAttackBonus`, concealment bonus) and the target is
+  flat-footed against it (`RuleCheckTargetFlatFooted`: no Dexterity to AC, sneak attack applies). New part
+  `Invisibility`. It counts for the share of the enemies still fighting that cannot see it (`IsSeeInvisibility`, no
+  blindsense, as `UnitMemoryController` judges it):
+  - defence: a 50 % miss chance;
+  - offence: +2 plus the nearest enemy's Dexterity bonus on attacks, and the recipient's sneak attack dice per hit.
+  The kind an offensive action ends (`NotDispellAfterOffensiveAction` false: Invisibility, Vanish) counts once, for its
+  first attack and one round of cover. Nothing is counted when the recipient is invisible that way already.
+- **Protection from Energy** (`ProtectionFromEnergy`, subclass of `AddDamageResistanceEnergy`) absorbs every point of
+  its type until its pool is spent (`CalculateValue` returns the pool left). Read before as resistance 5 per hit with
+  no pool. Now the pool is both the amount and the cap, and any energy-resistance pool is counted over the whole buff
+  (pool / rounds per round), not again each round.
+- **Weapon buffs**, judged on the recipient's weapon in hand (`BuffPart.Weapon`) instead of being counted at half:
+  - `AdditionalDamageOnHit` (Scaled Fist Draconic Fury): energy dice per hit, natural/unarmed/melee/specific-weapon
+    checks as in `OnEventAboutToTrigger`. They are not reduced like weapon damage against swarms (`BuffPart.Energy`).
+  - `EquipmentWeaponTypeEnhancement` (Magic Fang, Greater Magic Fang): enhancement bonus to attack and damage, natural
+    and unarmed attacks or one category. Typed Enhancement when not `IsStackable`.
+  - `IncreaseDiceSizeOnAttack` (Lead Blades): the weapon's dice that many sizes up, by the game's
+    `WeaponDamageScaleTable` (`SizeUpDiceGain` with steps), for the categories and subcategories it names.
+  - Keen Edge stays unread: its buff has no component and the enchantment it refers to was not in the dumps.
+- **Melee attack actions**:
+  - `AbilityCustomMeleeAttack` is Devastating Blow (its only type, read by reflection): one melee attack at -5 that
+    always threatens a critical hit. Valued by the attack estimate with the -5 and the threat chance raised to 1;
+    nothing extra against a target immune to critical hits.
+  - `ContextActionMeleeAttack` (Piledriver, Death Attack, Blade Whirlwind): one attack or the full attack with the
+    melee hand, with auto-hit and auto-threat. `SelectNewTarget` attacks the enemy in reach nearest to the target.
+    Around the caster (Blade Whirlwind) it attacks each enemy the area reaches. An ability that only attacks is a
+    weapon attack (`OnlyMeleeAttack`, `IsWeaponAttack`); one with other effects (Death Attack) adds the attack as an
+    "attack" part.
+  - **Piledriver's trip or bull rush** comes from the caster's feature: an `AddAbilityUseTrigger` for this ability puts a
+    buff on the caster whose `AddInitiatorAttackWithWeaponTrigger` (on a hit) runs `ContextActionCombatManeuver`.
+    `OnHitManeuvers` follows that chain. It values the maneuver as maneuvers are valued (`ManeuverStrength`, CMB
+    against CMD), times the hit chance.
+- **Command** (Flee, Approach: `SetFleeOrApproachLogic`). The game walks the bearer away from or to the caster and
+  takes it out of its own control (`UnitPartFleeOrApproach`, `PreventDirectControl`): hard control for its one round.
+  `IsHarmfulBuff` now uses the same control reading (`BuffControl`), so a faction change counts there too.
+- **Poison** (`BuffPoisonStatDamage`, Constitution).
+  - What the game does: one dose when it lands (`OnActivate`, whatever `NoEffectOnFirstTick` says), then each round
+    a save; a failed save is another dose, until `SuccesfullSaves` passes or `Ticks` rounds.
+  - How it is valued: the expected doses are `ValueModel.PoisonDoses` (unit-tested). Two points of Constitution are
+    one hit point per Hit Die (`CombatMath.PoisonHpLoss`), valued as damage. With no other control it replaces the
+    plain-debuff guess (0.25 of the enemy's worth per round), which it was valued at before. Other stats stay a plain
+    debuff.
+
+The audit script now also counts what the engine already did for harmful-flagged abilities whose buffs it cannot read:
+a plain debuff when the ability can be aimed at an enemy. The first audit listed Command and Poison as "never cast";
+they were cast, valued only by that guess.

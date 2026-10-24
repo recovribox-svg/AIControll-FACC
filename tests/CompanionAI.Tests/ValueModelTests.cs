@@ -359,5 +359,22 @@ namespace CompanionAI.Tests
             // Mildly hurt (45 %): far less than 0.3.17's 1.2.
             Assert.InRange(ValueModel.HealPerHp(0.45f, 0.5f), 0.5f, 0.6f);
         }
+
+        // ★ v0.3.21: poison doses (BuffPoisonStatDamage).
+        [Fact]
+        public void Poison_OneDoseWhenItLands_NoLaterRounds() =>
+            Assert.Equal(1f, ValueModel.PoisonDoses(0.5f, 0, 1), 3);
+
+        [Fact]
+        public void Poison_OneSaveEndsIt_GeometricDoses() =>
+            Assert.Equal(1f + 0.5f + 0.25f + 0.125f, ValueModel.PoisonDoses(0.5f, 3, 1), 3);
+
+        [Fact]
+        public void Poison_TwoSavesNeeded_LastsLonger() =>
+            Assert.True(ValueModel.PoisonDoses(0.5f, 5, 2) > ValueModel.PoisonDoses(0.5f, 5, 1));
+
+        [Fact]
+        public void Poison_NeverSaved_DosesEveryRound() =>
+            Assert.Equal(6f, ValueModel.PoisonDoses(1f, 5, 1), 3);
     }
 }

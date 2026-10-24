@@ -2464,7 +2464,7 @@ namespace CompanionAI_Pathfinder.Tactics
                 return CoupDeGraceValue(ctx, ability, target, out why);
             // ★ v0.3.18 (AA-4): Vital Strike and Cleave are weapon attacks (TacticalEngine.Martial.cs).
             if (profile.IsWeaponAttack)
-                return WeaponAbilityValue(ctx, profile, target, out why);
+                return WeaponAbilityValue(ctx, ability, profile, target, out why);
 
             List<UnitEntityData> affectedEnemies = targetIsEnemy ? new List<UnitEntityData> { target } : new List<UnitEntityData>();
             List<UnitEntityData> affectedAllies = targetIsEnemy ? new List<UnitEntityData>() : new List<UnitEntityData> { target };
@@ -2602,6 +2602,20 @@ namespace CompanionAI_Pathfinder.Tactics
                     value += dmgValue * RoleWeight(ctx, "damage");
                     slotSensitive += dmgValue * RoleWeight(ctx, "damage");
                     reasons.Add("dmg");
+                }
+            }
+
+            // ★ v0.3.21: a melee attack the ability makes besides its other effects (Death Attack, Blade from Shadows,
+            // Disarming Strike): one more part (TacticalEngine.Martial.cs).
+            if (profile.MeleeAttack != null && !profile.OnlyMeleeAttack && targetIsEnemy)
+            {
+                float attack = MeleeAttackValue(ctx, ability, profile, target, out _);
+                if (attack > 0f)
+                {
+                    value += attack;
+                    slotSensitive += attack;
+                    reasons.Add("attack");
+                    ctx.AimCounted = true;
                 }
             }
 
@@ -2842,6 +2856,14 @@ namespace CompanionAI_Pathfinder.Tactics
                         ctx.Allies.Any(a => a != unit))
                         rounds = Math.Min(rounds, 1f);
                     float enemyValue = p * CombatMath.ControlWorth(enemy) * strength * rounds;
+                    // ★ v0.3.21: a poison's Constitution damage is lost hit points (CombatMath.PoisonHpLoss), valued like
+                    // damage; with no other control it replaces the plain-debuff guess.
+                    float poisonHp = buffs.Sum(b => CombatMath.PoisonHpLoss(ability, b, enemy, ctx.ExpectedRounds));
+                    if (poisonHp > 0f)
+                    {
+                        float poisonValue = DamageValue(enemy, p * poisonHp, p);
+                        enemyValue = profile.ControlStrength == ControlStrength.None ? poisonValue : enemyValue + poisonValue;
+                    }
                     // ★ v0.3.18 (test10): what Demoralize adds or replaces for this caster (Frightening Thug, Hellknight,
                     // Shatter Confidence, Trickster) on a successful check (p already holds the check's chance).
                     if (profile.Intimidation != null && buffs.Contains(profile.Intimidation.Buff))

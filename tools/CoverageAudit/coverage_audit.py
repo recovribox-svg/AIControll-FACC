@@ -22,8 +22,9 @@ def ref(v):
 EFFECT_ACTIONS = {'ContextActionDealDamage','ContextActionKill','ContextActionHealTarget','ContextActionDealWeaponDamage',
   'ContextActionCombatManeuver','ContextActionCombatManeuverCustom','ContextActionDisarm','Demoralize','ContextActionSpawnMonster',
   'ContextActionDispelMagic','ContextActionReduceBuffDuration','ContextActionEnchantWornItem','ContextActionRemoveBuff',
-  'ContextActionRemoveBuffsByDescriptor'}
-RULE_COMPONENTS = {'AbilityCustomCharge','AbilityCustomVitalStrike','AbilityCustomCleave','AbilityDeliverAttackWithWeapon'}
+  'ContextActionRemoveBuffsByDescriptor','ContextActionMeleeAttack'}
+RULE_COMPONENTS = {'AbilityCustomCharge','AbilityCustomVitalStrike','AbilityCustomCleave','AbilityDeliverAttackWithWeapon',
+  'AbilityCustomMeleeAttack'}
 # structural / neutral types never counted as blockers
 NEUTRAL = re.compile(r'^(Conditional|ContextActionConditionalSaved|ContextActionSavingThrow|ContextActionOnContextCaster|ContextActionOnOwner|'
   r'ContextActionPartyMembers|ContextActionsOnPet|ContextActionOnRandomTargetsAround|ContextActionOnSwarmTargets|ContextActionOnRandomAreaTarget|'
@@ -93,6 +94,10 @@ for g, (t, name, d, rel) in abilities:
     valued_buff = any(buff_valued(b) for b in buffs) or (buffs and cc_descriptor(comps))
     if effect: cls = 'valued (damage/heal/summon/maneuver/dispel/removal/rule)'
     elif valued_buff or area: cls = 'valued through a buff or area'
+    # the engine values a buff on enemies of an ability flagged harmful as a plain debuff (TacticalEngine: 0.25 of the
+    # enemy's worth per round) even when it reads none of the buff's components
+    # (only one it can aim at an enemy: a harmful-flagged ally hex - Protective Luck - is never cast)
+    elif buffs and d.get('EffectOnEnemy') == 'Harmful' and d.get('CanTargetEnemies'): cls = 'valued as a plain debuff (harmful flag only)'
     elif buffs:
         cls = 'buff the AI cannot value (worth 0: never cast)'
         for b in buffs:

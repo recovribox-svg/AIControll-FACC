@@ -55,7 +55,12 @@ namespace CompanionAI_Pathfinder.Analysis
         ForbidsSpells,
         /// <summary>AC or saves against one alignment only (Protection from Evil).</summary>
         ConditionalAC,
-        ConditionalSaves
+        ConditionalSaves,
+        /// <summary>★ v0.3.21: invisible (BuffInvisibility): total concealment and +2 attack against enemies that cannot see
+        /// it, who also lose their Dexterity to AC against it; <see cref="BuffPart.EndsOnAttack"/> for the kind an attack ends.</summary>
+        Invisibility,
+        /// <summary>★ v0.3.21: the weapon's damage dice grow this many size steps (IncreaseDiceSizeOnAttack: Lead Blades).</summary>
+        WeaponDiceUp
     }
 
     public sealed class BuffPart
@@ -87,6 +92,13 @@ namespace CompanionAI_Pathfinder.Analysis
         /// <summary>★ v0.3.19 (class audit B2): the amount is per character level of the recipient (TemporaryHitPointsPerLevel).</summary>
         public bool PerRecipientLevel;
         public float SaveShare = 1f;
+        /// <summary>★ v0.3.21: only with weapons this accepts (natural, a category); judged on the recipient's weapon in hand
+        /// instead of counted at half. Null: any weapon.</summary>
+        public Func<Kingmaker.Blueprints.Items.Weapons.BlueprintItemWeapon, bool> Weapon;
+        /// <summary>★ v0.3.21: energy damage (not reduced like weapon damage against swarms).</summary>
+        public bool Energy;
+        /// <summary>★ v0.3.21: invisibility that ends with the bearer's first offensive action (Invisibility, Vanish).</summary>
+        public bool EndsOnAttack;
 
         public override string ToString() =>
             $"{Kind}{(Kind == BuffPartKind.Saves && SaveShare < 1f ? $"({Stat})" : "")} " +
@@ -208,6 +220,11 @@ namespace CompanionAI_Pathfinder.Analysis
                     case AddDamageResistancePhysical dr:
                         list.Parts.Add(new BuffPart { Kind = BuffPartKind.PhysicalDR, Owner = owner, Value = dr.Value, Pool = dr.UsePool ? dr.Pool : null });
                         break;
+                    // ★ v0.3.21: Protection from Energy absorbs every point of its energy type until its pool is spent
+                    // (ProtectionFromEnergy.CalculateValue returns the pool left): the pool is both the amount and the cap.
+                    case ProtectionFromEnergy pe:
+                        list.Parts.Add(new BuffPart { Kind = BuffPartKind.EnergyResist, Owner = owner, Value = pe.UsePool ? pe.Pool : pe.Value, Pool = pe.UsePool ? pe.Pool : null });
+                        break;
                     case AddDamageResistanceEnergy er:
                         list.Parts.Add(new BuffPart { Kind = BuffPartKind.EnergyResist, Owner = owner, Value = er.Value, Pool = er.UsePool ? er.Pool : null });
                         break;
@@ -275,6 +292,56 @@ namespace CompanionAI_Pathfinder.Analysis
                     case SavingThrowContextBonusAgainstDescriptor svc:
                         list.Parts.Add(new BuffPart { Kind = BuffPartKind.ConditionalSaves, Owner = owner, Descriptor = svc.ModifierDescriptor, Value = svc.Value, Conditional = true, Against = svc.SpellDescriptor.Value });
                         break;
+                    // ★ v0.3.21: Greater Invisibility (stays after attacks), Invisibility and Vanish (end at the first
+                    // offensive action against an enemy: BuffInvisibility.HandleUnitMakeOffensiveAction).
+                    case BuffInvisibility invisible:
+                        list.Parts.Add(new BuffPart
+                        {
+                            Kind = BuffPartKind.Invisibility, Owner = owner, Fixed = 50,
+                            EndsOnAttack = !invisible.NotDispellAfterOffensiveAction && !invisible.DispelWithAChance,
+                            Conditional = !invisible.NotDispellAfterOffensiveAction && invisible.DispelWithAChance
+                        });
+                        break;
+                    // ★ v0.3.21: energy dice on each weapon hit (AdditionalDamageOnHit.OnEventAboutToTrigger: Scaled Fist
+                    // Draconic Fury), with the weapons it accepts.
+                    case AdditionalDamageOnHit onHit when onHit.EnergyDamageDice.Rolls > 0:
+                    {
+                        var specific = onHit.SpecificWeapon ? onHit.Weapon : null;
+                        bool natural = onHit.OnlyNaturalAndUnarmed, melee = onHit.OnlyMelee, isSpecific = onHit.SpecificWeapon;
+                        list.Parts.Add(new BuffPart
+                        {
+                            Kind = BuffPartKind.Damage, Owner = owner, Formula = onHit.EnergyDamageDice, Energy = true, MeleeOnly = melee,
+                            Weapon = w => (!natural || w.Type.IsNatural || w.Type.IsUnarmed) && (!melee || w.IsMelee) && (!isSpecific || w == specific)
+                        });
+                        break;
+                    }
+                    // ★ v0.3.21: Magic Fang and Greater Magic Fang (EquipmentWeaponTypeEnhancement.CheckWeapon): an
+                    // enhancement bonus to attack and damage with natural and unarmed attacks, or one weapon category.
+                    case Kingmaker.Designers.Mechanics.EquipmentEnchants.EquipmentWeaponTypeEnhancement fang when fang.Enhancement > 0:
+                    {
+                        bool all = fang.AllNaturalAndUnarmed;
+                        var category = fang.Category;
+                        Func<Kingmaker.Blueprints.Items.Weapons.BlueprintItemWeapon, bool> accepts = w => all && (w.IsNatural || w.IsUnarmed) || w.Category == category;
+                        var descriptor = fang.IsStackable ? ModifierDescriptor.UntypedStackable : ModifierDescriptor.Enhancement;
+                        list.Parts.Add(new BuffPart { Kind = BuffPartKind.Attack, Owner = owner, Descriptor = descriptor, Fixed = fang.Enhancement, Weapon = accepts });
+                        list.Parts.Add(new BuffPart { Kind = BuffPartKind.Damage, Owner = owner, Descriptor = descriptor, Fixed = fang.Enhancement, Weapon = accepts });
+                        break;
+                    }
+                    // ★ v0.3.21: Lead Blades (IncreaseDiceSizeOnAttack.CheckCondition): the dice of weapons of these
+                    // categories as if the weapon were bigger.
+                    case IncreaseDiceSizeOnAttack dice:
+                    {
+                        var categories = dice.CheckWeaponCategories ? dice.Categories : null;
+                        var subCategories = dice.CheckWeaponSubCategories ? dice.SubCategories : null;
+                        list.Parts.Add(new BuffPart
+                        {
+                            Kind = BuffPartKind.WeaponDiceUp, Owner = owner, Fixed = dice.UseContextBonus ? 0 : dice.AdditionalSize,
+                            Value = dice.UseContextBonus ? dice.Value : null,
+                            Weapon = w => (categories == null || categories.Contains(w.Category)) &&
+                                          (subCategories == null || subCategories.Any(sc => w.Category.HasSubCategory(sc)))
+                        });
+                        break;
+                    }
                     case AddFacts facts:
                         foreach (var fact in facts.Facts)
                             if (fact != null) ReadInto(owner, fact.ComponentsArray, list, depth + 1);

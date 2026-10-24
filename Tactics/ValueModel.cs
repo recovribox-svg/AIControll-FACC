@@ -280,6 +280,37 @@ namespace CompanionAI_Pathfinder.Tactics
 
         #endregion
 
+        #region Poison (0.3.21)
+
+        /// <summary>
+        /// The expected number of times a poison (BuffPoisonStatDamage) deals its damage: once when it lands (OnActivate,
+        /// whatever NoEffectOnFirstTick says), then in each of the next <paramref name="laterRounds"/> rounds while it
+        /// has been saved against fewer than <paramref name="savesToEnd"/> times - a failed save (chance
+        /// <paramref name="fail"/>) deals it again, a passed one counts towards the end.
+        /// </summary>
+        public static float PoisonDoses(float fail, int laterRounds, int savesToEnd)
+        {
+            float f = Clamp(fail, 0f, 1f);
+            int saves = Math.Max(1, savesToEnd);
+            var on = new float[saves];   // chance of 0 .. saves-1 passed saves so far (still poisoned)
+            on[0] = 1f;
+            float doses = 1f;
+            for (int t = 0; t < laterRounds; t++)
+            {
+                var next = new float[saves];
+                for (int k = 0; k < saves; k++)
+                {
+                    doses += on[k] * f;
+                    next[k] += on[k] * f;
+                    if (k + 1 < saves) next[k + 1] += on[k] * (1f - f);
+                }
+                on = next;
+            }
+            return doses;
+        }
+
+        #endregion
+
         #region Knockdown areas (0.3.19-test9)
 
         /// <summary>

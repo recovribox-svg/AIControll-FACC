@@ -214,7 +214,17 @@ namespace CompanionAI_Pathfinder.Tactics
         /// and Cleave (attacks along the enemies in reach until one misses).</summary>
         public AbilityCustomVitalStrike VitalStrike { get; private set; }
         public AbilityCustomCleave Cleave { get; private set; }
-        public bool IsWeaponAttack => VitalStrike != null || Cleave != null;
+        /// <summary>★ v0.3.21: Devastating Blow (AbilityCustomMeleeAttack, its only type): one attack with the melee hand at
+        /// -5 that always threatens a critical hit.</summary>
+        public bool DevastatingBlow { get; private set; }
+        /// <summary>★ v0.3.21: a melee attack the ability makes on its target (ContextActionMeleeAttack: Piledriver, Death
+        /// Attack, Blade from Shadows, Disarming Strike), with its branch conditions.</summary>
+        public ContextActionMeleeAttack MeleeAttack { get; private set; }
+        /// <summary>★ v0.3.21: the melee attack is all it does (valued as the weapon attack it is); with other effects it is
+        /// one more part of the ability's value.</summary>
+        public bool OnlyMeleeAttack => MeleeAttack != null && Damage.Count == 0 && Heals.Count == 0 && TargetBuffs.Count == 0 &&
+                                       Maneuvers.Count == 0 && !Summons && !Dispels && !RemovesBuffs;
+        public bool IsWeaponAttack => VitalStrike != null || Cleave != null || DevastatingBlow || OnlyMeleeAttack;
 
         public float AoERadius { get; private set; }
         public Kingmaker.UnitLogic.Abilities.Components.TargetType AoETargets { get; private set; } =
@@ -402,6 +412,7 @@ namespace CompanionAI_Pathfinder.Tactics
             IsCharge = Blueprint.GetComponent<AbilityCustomCharge>() != null;
             VitalStrike = Blueprint.GetComponent<AbilityCustomVitalStrike>();
             Cleave = Blueprint.GetComponent<AbilityCustomCleave>();
+            DevastatingBlow = IsDevastatingBlow(Blueprint.GetComponent<AbilityCustomMeleeAttack>());
             CasterProvokes = FindCasterProvoke(Blueprint);
 
             var around = Blueprint.GetComponent<AbilityTargetsAround>();
@@ -532,7 +543,7 @@ namespace CompanionAI_Pathfinder.Tactics
         {
             try
             {
-                return buff.Harmful || ConditionsOf(buff).Any(c => ClassifyCondition(c) != ControlStrength.None);
+                return buff.Harmful || BuffControl(buff) != ControlStrength.None;   // ★ v0.3.21: faction change, Command too
             }
             catch
             {
@@ -693,6 +704,11 @@ namespace CompanionAI_Pathfinder.Tactics
                     case ContextActionCombatManeuverCustom custom when subject == EffectSubject.Target:
                         Maneuvers.Add(new ManeuverEffect { Type = custom.Type, Action = custom });
                         m_Guards[custom] = guards;
+                        break;
+                    // ★ v0.3.21: a weapon attack made by the ability (ContextActionMeleeAttack.RunAction).
+                    case ContextActionMeleeAttack melee when subject == EffectSubject.Target && MeleeAttack == null:
+                        MeleeAttack = melee;
+                        m_Guards[melee] = guards;
                         break;
                     case ContextActionDisarm disarm when subject == EffectSubject.Target:
                         Maneuvers.Add(new ManeuverEffect { Type = Kingmaker.RuleSystem.Rules.CombatManeuver.Disarm, Action = disarm });
@@ -1788,12 +1804,25 @@ namespace CompanionAI_Pathfinder.Tactics
             var strength = ControlStrength.None;
             if (buff == null) return strength;
             if (buff.GetComponent<Kingmaker.UnitLogic.FactLogic.ChangeFaction>() != null) return ControlStrength.Hard;
+            // ★ v0.3.21: Command (Flee, Approach): the game walks its bearer away from or up to the caster and takes it out
+            // of its own control (SetFleeOrApproachLogic: UnitPartFleeOrApproach, PreventDirectControl) - its turn is lost.
+            if (buff.GetComponent<SetFleeOrApproachLogic>() != null) return ControlStrength.Hard;
             foreach (var condition in ConditionsOf(buff))
             {
                 var s = ClassifyCondition(condition);
                 if (s > strength) strength = s;
             }
             return strength;
+        }
+
+        private static readonly FieldInfo CustomMeleeType = HarmonyLib.AccessTools.Field(typeof(AbilityCustomMeleeAttack), "m_Type");
+
+        /// <summary>★ v0.3.21: the custom melee attack is the game's Devastating Blow (its type 1; the only one in 1.4).</summary>
+        private static bool IsDevastatingBlow(AbilityCustomMeleeAttack melee)
+        {
+            if (melee == null || CustomMeleeType == null) return false;
+            try { return Convert.ToInt32(CustomMeleeType.GetValue(melee)) == 1; }
+            catch { return false; }
         }
 
         private static ControlStrength ClassifyControl(CCType cc)

@@ -102,13 +102,32 @@ namespace CompanionAI_Pathfinder.Tactics
             return false;
         }
 
-        /// <summary>Vital Strike or Cleave on <paramref name="target"/>, valued like the weapon attacks they are.</summary>
-        private static float WeaponAbilityValue(TacticalContext ctx, AbilityProfile profile, UnitEntityData target, out string why)
+        /// <summary>Vital Strike, Cleave, Devastating Blow or an ability's melee attack on <paramref name="target"/>, valued
+        /// like the weapon attacks they are.</summary>
+        private static float WeaponAbilityValue(TacticalContext ctx, AbilityData ability, AbilityProfile profile, UnitEntityData target, out string why)
         {
             why = "dmg";
+            // ★ v0.3.21: a melee attack on each enemy around (Blade Whirlwind: AbilityTargetsAround on the caster).
+            if (profile.OnlyMeleeAttack && profile.IsAoE && target != null)
+            {
+                float sum = 0f;
+                int reached = 0;
+                foreach (var enemy in UnitsAround(ctx.Enemies, target.Position, profile.AoERadius).Where(e => profile.AreaReaches(ability, e)))
+                {
+                    float part = MeleeAttackValue(ctx, ability, profile, enemy, out _);
+                    if (part <= 0f) continue;
+                    sum += part;
+                    reached++;
+                }
+                if (sum > 0f) { ctx.AimCounted = true; why = $"dmg:{reached} in reach"; }
+                else why = "no enemy in reach";
+                return sum;
+            }
             if (target == null || !ctx.Unit.IsEnemy(target)) { why = "not an enemy"; return 0f; }
             float value = profile.VitalStrike != null ? VitalStrikeValue(ctx, profile.VitalStrike, target)
-                                                      : CleaveValue(ctx, profile.Cleave, target, out why);
+                        : profile.DevastatingBlow ? DevastatingBlowValue(ctx, target)
+                        : profile.Cleave != null ? CleaveValue(ctx, profile.Cleave, target, out why)
+                        : MeleeAttackValue(ctx, ability, profile, target, out why);
             if (value > 0f) ctx.AimCounted = true;
             else why = "nothing to gain";
             return Math.Max(0f, value);
@@ -128,6 +147,127 @@ namespace CompanionAI_Pathfinder.Tactics
             {
                 var provoke = AttackRollProvokeRisk(ctx, unit.Position, 1);
                 if (provoke != null) value = value * (1f - provoke.StopChance) - provoke.Cost;
+            }
+            return value;
+        }
+
+        /// <summary>
+        /// ★ v0.3.21: Devastating Blow (AbilityCustomMeleeAttack.Deliver): one attack with the melee hand at -5 that always
+        /// threatens a critical hit (the confirmation is rolled as usual; nothing on a target immune to critical hits).
+        /// </summary>
+        private static float DevastatingBlowValue(TacticalContext ctx, UnitEntityData target)
+        {
+            var unit = ctx.Unit;
+            if (unit.GetThreatHandMelee() == null) return 0f;
+            var est = CombatMath.EstimateWeaponAttack(unit, target, false, (w, i) => new KeyValuePair<int, float>(i == 0 ? -5 : 0, 0f));
+            if (est == null || est.IsRanged) return 0f;
+            float expected = OneAttack(est, autoThreat: true);
+            return DamageValue(target, expected, est.AnyHitChance) * WakeFactor(target, expected) * AttackWeight(ctx, target, false);
+        }
+
+        /// <summary>
+        /// ★ v0.3.21: the expected damage of one attack (<paramref name="est"/> of a single attack); with
+        /// <paramref name="autoThreat"/> every hit threatens a critical hit, the confirmation rolled as usual.
+        /// </summary>
+        private static float OneAttack(WeaponAttackEstimate est, bool autoThreat)
+        {
+            float p = est.FirstHitChance;
+            if (!autoThreat || p <= 0f) return est.ExpectedDamage;
+            // The weapon's threat range (FirstCritChance = threat x hit x confirmation); 0 against a target immune to crits.
+            float threat = est.FirstCritChance / (p * p);
+            if (threat <= 0f) return est.ExpectedDamage;
+            return est.ExpectedDamage + (1f - Mathf.Clamp01(threat)) * p * (est.CritMultiplier - 1) * est.FirstPerHit;
+        }
+
+        /// <summary>
+        /// ★ v0.3.21: the melee attack an ability makes (ContextActionMeleeAttack.RunAction): with the melee hand on the
+        /// target - or, with SelectNewTarget, on the enemy in reach nearest to it - one attack or the full attack, with its
+        /// auto-hit and auto-threat options; plus what the caster's own features add to that attack while the ability runs
+        /// (<see cref="OnHitManeuvers"/>: Piledriver's trip or bull rush).
+        /// </summary>
+        private static float MeleeAttackValue(TacticalContext ctx, AbilityData ability, AbilityProfile profile, UnitEntityData target,
+                                              out string why)
+        {
+            why = "dmg";
+            var unit = ctx.Unit;
+            var action = profile.MeleeAttack;
+            var hand = unit.GetThreatHandMelee();
+            if (action == null || hand == null || target == null) return 0f;
+            if (profile.AppliesTo(action, ability, target) == EffectApplies.No) return 0f;
+            var victim = target;
+            if (action.SelectNewTarget)
+            {
+                IEnumerable<UnitEntityData> known;
+                try { known = unit.Memory.Enemies.Select(i => i.Unit).Where(e => e != null).ToList(); }
+                catch { known = ctx.Enemies; }
+                victim = known.Where(e => e != target && e.Descriptor.State.IsConscious && e.HPLeft > 0 && unit.IsReach(e, hand))
+                              .OrderBy(e => (e.Position - target.Position).sqrMagnitude).FirstOrDefault();
+                if (victim == null) { why = "no other enemy in reach"; return 0f; }
+            }
+            var est = CombatMath.EstimateWeaponAttack(unit, victim, action.FullAttack,
+                                                      action.AutoHit ? (w, i) => new KeyValuePair<int, float>(40, 0f) : (Func<Kingmaker.Items.ItemEntityWeapon, int, KeyValuePair<int, float>>)null);
+            if (est == null || est.IsRanged) return 0f;
+            float expected = action.FullAttack ? est.ExpectedDamage : OneAttack(est, action.AutoCritThreat);
+            float value = DamageValue(victim, expected, est.AnyHitChance) * WakeFactor(victim, expected);
+            float maneuver = OnHitManeuvers(ctx, ability, victim, est.FirstHitChance, out string maneuverNote);
+            if (maneuver > 0f)
+            {
+                value += maneuver;
+                why = $"dmg+{maneuverNote}";
+            }
+            return value * AttackWeight(ctx, victim, false);
+        }
+
+        /// <summary>
+        /// ★ v0.3.21: maneuvers the caster's features make on a hit while <paramref name="ability"/> runs: an
+        /// AddAbilityUseTrigger for it (before the cast) puts a buff on the caster whose AddInitiatorAttackWithWeaponTrigger
+        /// (on a hit) runs ContextActionCombatManeuver - the Two-Handed Fighter's Piledriver trips or bull rushes with the
+        /// attack. Each valued like the maneuver itself (ManeuverStrength, the CMB against CMD roll), times the hit chance.
+        /// </summary>
+        private static float OnHitManeuvers(TacticalContext ctx, AbilityData ability, UnitEntityData victim, float hitChance, out string note)
+        {
+            note = null;
+            float value = 0f;
+            var unit = ctx.Unit;
+            try
+            {
+                foreach (var fact in unit.Facts.List)
+                {
+                    if (fact?.Blueprint?.ComponentsArray == null || !fact.Active) continue;
+                    foreach (var component in fact.Blueprint.ComponentsArray)
+                    {
+                        if (!(component is Kingmaker.UnitLogic.FactLogic.AddAbilityUseTrigger use) || use.AfterCast) continue;
+                        bool forThis = use.ForOneSpell && use.Ability == ability.Blueprint ||
+                                       use.ForMultipleSpells && use.Abilities != null && use.Abilities.Any(r => r?.Get() == ability.Blueprint);
+                        if (!forThis || use.Action?.Actions == null) continue;
+                        foreach (var apply in use.Action.Actions.OfType<ContextActionApplyBuff>())
+                        {
+                            if (!apply.ToCaster || apply.Buff?.ComponentsArray == null) continue;
+                            foreach (var trigger in apply.Buff.ComponentsArray.OfType<Kingmaker.UnitLogic.Mechanics.Components.AddInitiatorAttackWithWeaponTrigger>())
+                            {
+                                if (trigger.TriggerBeforeAttack || !trigger.OnlyHit || trigger.CriticalHit || trigger.OnlyNatural20 ||
+                                    trigger.OnlySneakAttack || trigger.ActionsOnInitiator || trigger.Action?.Actions == null) continue;
+                                foreach (var m in trigger.Action.Actions.OfType<ContextActionCombatManeuver>())
+                                {
+                                    float strength = ManeuverStrength(victim, ability, m.Type, out bool lasting);
+                                    if (strength <= 0f) continue;
+                                    CombatMath.ManeuverOdds(unit, victim, ability, new AbilityProfile.ManeuverEffect { Type = m.Type, Action = m },
+                                                            out float chance, out float rounds);
+                                    float part = hitChance * chance * CombatMath.ControlWorth(victim) * strength *
+                                                 (lasting ? Math.Min(Math.Max(1f, rounds), Math.Min(ctx.ExpectedRounds, 3f)) : 1f);
+                                    if (CombatMath.IsDisabled(victim)) part *= 0.4f;
+                                    if (part <= 0f) continue;
+                                    value += part;
+                                    note = m.Type.ToString().ToLowerInvariant();
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                Main.Verbose($"[Tactics] on-hit maneuvers of {ability?.Name}: {ex.Message}");
             }
             return value;
         }
