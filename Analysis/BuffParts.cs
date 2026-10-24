@@ -132,6 +132,10 @@ namespace CompanionAI_Pathfinder.Analysis
         /// <summary>★ v0.3.21: the feature this part comes with (a Tactician's teamwork feat): nothing for a recipient that
         /// has it already.</summary>
         public Kingmaker.Blueprints.Facts.BlueprintUnitFact Granted;
+        /// <summary>★ v0.3.21 (log review): the caster's own fact this part comes with (AddFactsFromCaster: the game adds
+        /// only the facts the caster has - a Skald's rage powers through Inspired Rage, a Judge's judgements): nothing when
+        /// the caster lacks it.</summary>
+        public Kingmaker.Blueprints.Facts.BlueprintUnitFact CasterFact;
         /// <summary>★ v0.3.21 (gaps): on-hit parts - the buff put on the target, the save against it, the share of the
         /// bearer's hits it takes effect on (a natural 20: 0.05), on a critical hit only, on its first attack or hit only.</summary>
         public BlueprintBuff HitBuff;
@@ -154,7 +158,8 @@ namespace CompanionAI_Pathfinder.Analysis
         public override string ToString() =>
             $"{Kind}{(Kind == BuffPartKind.Saves && SaveShare < 1f ? $"({Stat})" : "")} " +
             (Value != null && Value.ValueType != ContextValueType.Simple ? $"{Value.ValueType}" : $"{Fixed + (Value?.Value ?? 0) * Multiplier}") +
-            (Descriptor != ModifierDescriptor.UntypedStackable ? $" {Descriptor}" : "") + (Conditional ? " (conditional)" : "");
+            (Descriptor != ModifierDescriptor.UntypedStackable ? $" {Descriptor}" : "") + (Conditional ? " (conditional)" : "") +
+            (CasterFact != null ? " (caster's)" : "");
     }
 
     public sealed class BuffPartList
@@ -162,7 +167,14 @@ namespace CompanionAI_Pathfinder.Analysis
         public readonly List<BuffPart> Parts = new List<BuffPart>();
         /// <summary>Component type names that carry an effect this reader does not value.</summary>
         public readonly List<string> Unread = new List<string>();
+        /// <summary>★ v0.3.21 (log review): unread components of a caster's fact (see <see cref="BuffPart.CasterFact"/>).</summary>
+        public readonly List<KeyValuePair<Kingmaker.Blueprints.Facts.BlueprintUnitFact, string>> CasterUnread =
+            new List<KeyValuePair<Kingmaker.Blueprints.Facts.BlueprintUnitFact, string>>();
         public bool Any => Parts.Count > 0;
+
+        /// <summary>★ v0.3.21 (log review): what is not read of this buff as <paramref name="caster"/> gives it.</summary>
+        public IEnumerable<string> UnreadFor(Kingmaker.EntitySystem.Entities.UnitEntityData caster) =>
+            Unread.Concat(CasterUnread.Where(u => caster?.Descriptor != null && Kingmaker.UnitLogic.UnitHelper.HasFact(caster.Descriptor, u.Key)).Select(u => u.Value));
         /// <summary>★ v0.3.21: the kinds of effect an immunity part already covers (each counted once).</summary>
         public Kingmaker.Blueprints.Classes.Spells.SpellDescriptor ImmuneTo;
 
@@ -476,14 +488,25 @@ namespace CompanionAI_Pathfinder.Analysis
                     }
                     case AddFacts facts:
                         foreach (var fact in facts.Facts)
-                            if (fact != null) ReadInto(owner, fact.ComponentsArray, list, depth + 1);
+                            if (fact != null && !IsAbility(fact)) ReadInto(owner, fact.ComponentsArray, list, depth + 1);
                         break;
                     // ★ v0.3.21: a Tactician shares a teamwork feat for a few rounds (Vanguard / Forester: AddFactsFromCaster;
                     // Cavalier: AddFeatureIfHasFact, "if it does not have it yet") - read as the feat's own parts.
-                    case Kingmaker.UnitLogic.FactLogic.AddFactsFromCaster fromCaster when !fromCaster.FeatureFromSelection:
-                        foreach (var fact in fromCaster.Facts)
-                            if (fact != null) ReadGranted(owner, fact, list, depth);
+                    // ★ v0.3.21 (log review): the game adds only the facts the caster has (AddFactsFromCaster.OnActivate);
+                    // each part keeps its fact and counts for a caster that has it. Camellia's Inspired Rage carried "hits
+                    // hinder" and three unread components from rage powers she does not have (0.3.21 logs). The facts of a
+                    // selection too (a Bladebound's black blade feats).
+                    case Kingmaker.UnitLogic.FactLogic.AddFactsFromCaster fromCaster:
+                    {
+                        IEnumerable<Kingmaker.Blueprints.Facts.BlueprintUnitFact> granted = !fromCaster.FeatureFromSelection
+                            ? (IEnumerable<Kingmaker.Blueprints.Facts.BlueprintUnitFact>)fromCaster.Facts
+                            : fromCaster.Selection != null
+                                ? fromCaster.Selection.AllFeatures.Cast<Kingmaker.Blueprints.Facts.BlueprintUnitFact>()
+                                : Enumerable.Empty<Kingmaker.Blueprints.Facts.BlueprintUnitFact>();
+                        foreach (var fact in granted)
+                            if (fact != null) ReadGranted(owner, fact, list, depth, fromCaster: true);
                         break;
+                    }
                     case AddFeatureIfHasFact ifHas when ifHas.Feature != null:
                         // Not: added when the bearer lacks the checked fact (the feat itself, for the Cavalier's buffs);
                         // otherwise only for bearers that have it (the feat's own follow-ups): at half.
@@ -779,17 +802,30 @@ namespace CompanionAI_Pathfinder.Analysis
         }
 
         /// <summary>★ v0.3.21: the parts of a feature a buff grants, marked with it (see <see cref="BuffPart.Granted"/>).</summary>
+        /// <param name="fromCaster">★ log review: a fact of the caster's (see <see cref="BuffPart.CasterFact"/>).</param>
         private static void ReadGranted(BlueprintBuff owner, Kingmaker.Blueprints.Facts.BlueprintUnitFact fact, BuffPartList list, int depth,
-                                        bool conditional = false)
+                                        bool conditional = false, bool fromCaster = false)
         {
-            int before = list.Parts.Count;
+            // ★ v0.3.21 (log review): a granted ability or toggle is something to use, not an effect on the bearer.
+            if (IsAbility(fact)) return;
+            int before = list.Parts.Count, unreadBefore = list.Unread.Count;
             ReadInto(owner, fact.ComponentsArray, list, depth + 1);
             for (int i = before; i < list.Parts.Count; i++)
             {
                 list.Parts[i].Granted = list.Parts[i].Granted ?? fact;
                 if (conditional) list.Parts[i].Conditional = true;
+                if (fromCaster) list.Parts[i].CasterFact = fact;
             }
+            if (!fromCaster || list.Unread.Count == unreadBefore) return;
+            for (int i = unreadBefore; i < list.Unread.Count; i++)
+                list.CasterUnread.Add(new KeyValuePair<Kingmaker.Blueprints.Facts.BlueprintUnitFact, string>(fact, list.Unread[i]));
+            list.Unread.RemoveRange(unreadBefore, list.Unread.Count - unreadBefore);
         }
+
+        /// <summary>★ v0.3.21 (log review): an ability or a toggle (its components run when used, not on the bearer).</summary>
+        private static bool IsAbility(Kingmaker.Blueprints.Facts.BlueprintUnitFact fact) =>
+            fact is Kingmaker.UnitLogic.Abilities.Blueprints.BlueprintAbility ||
+            fact is Kingmaker.UnitLogic.ActivatableAbilities.BlueprintActivatableAbility;
 
         private static void AddStat(BuffPartList list, BlueprintBuff owner, StatType stat, ModifierDescriptor descriptor, int fixedValue,
                                     ContextValue value, int multiplier, bool byBab)

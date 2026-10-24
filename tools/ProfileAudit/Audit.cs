@@ -70,6 +70,10 @@ namespace ProfileAudit
 
         private static object Field(object o, string name) => o?.GetType().GetField(name)?.GetValue(o);
 
+        /// <summary>What the reader leaves unread, a caster's own facts' marked (they count only for a caster that has them).</summary>
+        private static IEnumerable<string> AllUnread(BuffPartList read) =>
+            read.Unread.Concat(read.CasterUnread.Select(u => u.Value + " (caster's)"));
+
         private static void ClassifyToggle(Kingmaker.UnitLogic.ActivatableAbilities.BlueprintActivatableAbility bp, Row row,
                                            System.Reflection.MethodInfo modeOf, System.Reflection.MethodInfo profileOf)
         {
@@ -84,7 +88,7 @@ namespace ProfileAudit
             if (Field(toggle, "SelfBuff") is BlueprintBuff self) buffs.Add(self);
             if (Field(toggle, "AreaBuffs") is List<BlueprintBuff> area) buffs.AddRange(area);
             var parts = buffs.SelectMany(b => BuffPartsReader.Read(b).Parts).ToList();
-            var unread = buffs.SelectMany(b => BuffPartsReader.Read(b).Unread).Distinct().ToList();
+            var unread = buffs.SelectMany(b => AllUnread(BuffPartsReader.Read(b))).Distinct().ToList();
             row.Detail = "parts: " + string.Join("; ", parts.Select(x => x.ToString()).Distinct().Take(8)) +
                          (unread.Count > 0 ? " | unread: " + string.Join(",", unread.Take(5)) : "");
             if (parts.Any(x => x.Kind != BuffPartKind.MentalStat && x.Kind != BuffPartKind.ForbidsSpells)) row.Verdict = "toggle valued: buff parts";
@@ -251,7 +255,7 @@ namespace ProfileAudit
             {
                 modelled.Add("buff parts");
                 parts.AddRange(all.Select(x => x.ToString()));
-                var unread = read.SelectMany(r => r.Unread).Distinct().ToList();
+                var unread = read.SelectMany(AllUnread).Distinct().ToList();
                 if (unread.Count > 0) parts.Add("unread: " + string.Join(",", unread.Take(4)));
                 return;
             }
@@ -264,7 +268,7 @@ namespace ProfileAudit
                 float q = a.Recognized ? a.CombatValue : p.Enchants ? 0.8f : a.OnlyUnrecognized ? (limited ? 0f : 0.5f) : 0.05f;
                 if (q > best) { best = q; why = a.Recognized ? $"analyzer {a.CombatValue:0.##}" : p.Enchants ? "enchant carrier 0.8" : a.OnlyUnrecognized ? "unread 0.5" : "marker 0.05"; }
             }
-            parts.Add("unread: " + string.Join(",", read.SelectMany(r => r.Unread).Distinct().Take(5)));
+            parts.Add("unread: " + string.Join(",", read.SelectMany(AllUnread).Distinct().Take(5)));
             parts.Add("components: " + string.Join(",", buffs.SelectMany(b => b.ComponentsArray ?? new BlueprintComponent[0])
                                                             .Where(c => c != null).Select(c => c.GetType().Name).Distinct()));
             if (best >= 0.5f || (best > 0.05f)) guessed.Add($"buff by old quality ({why})");

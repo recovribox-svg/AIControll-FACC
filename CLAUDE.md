@@ -53,7 +53,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
   base game's trigger form, Wrath Tactics first-refusal handoff in real time (`GameInterface/ModInterop`,
   `Tactics/WrathHandoff`), coverage and verification audit with the real readers (`tools/ProfileAudit`,
   `docs/COVERAGE_AUDIT.md`), auras on buffs (`Tactics/TacticalEngine.Auras.cs`), immunities, sight, claws, pits,
-  regeneration, spellcasting boosts, on-hit effects, Quicken / Extend boosters, shadow spells - `docs/TACTICAL_AI.md` §55-63)
+  regeneration, spellcasting boosts, on-hit effects, Quicken / Extend boosters, shadow spells, caster-only granted facts - `docs/TACTICAL_AI.md` §55-64)
 
 ## Reference Resources
 - **Rogue Trader CompanionAI v3.5.7**: `C:\Users\veria\Downloads\CompanionAI_v3-master - v3.5.7`

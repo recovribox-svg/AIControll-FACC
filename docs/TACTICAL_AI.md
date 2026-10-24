@@ -2309,3 +2309,23 @@ Party abilities, test9 → test11: valued 2 586 → 2 658, guessed 387 → 352, 
   (`MechanicsContext.TryAffectByShadow`), Ray of Enfeeblement's shared value, the spellcasting gain only for casters.
 - Doc comment of `CombatMath.Threat` restored (it had ended up on `ShadowShare`), and `ShadowShare`'s note on summons
   corrected (an even save: half real, half at the factor).
+
+## 64. v0.3.21 (test13): the 0.3.21-test12 logs
+
+- **Facts a buff takes from its caster** (`AddFactsFromCaster`): the game adds only the facts the caster has and the
+  bearer lacks (`AddFactsFromCaster.OnActivate`). The reader counted every fact on the list: Camellia's Inspired Rage
+  carried "hits hinder" and three unread ability components from rage powers she does not have, on every ally, in both
+  logs. Each part now keeps the caster's fact (`BuffPart.CasterFact`) and counts only for a caster that has it, and so do
+  its unread components (`BuffPartList.CasterUnread`, `UnreadFor`). The facts of a selection too (`FeatureFromSelection`:
+  the Bladebound's black blade feats), which were skipped. A granted ability or toggle is something to use, not an effect
+  on its bearer: no longer read as buff parts (`AddFacts` too). Same for the Tactician's teamwork feats (§62), the Judge's
+  judgement aura, Battle Prowess, Sneaky Tricks; the offline check marks such parts "(caster's)". No verdict changed.
+- **Checked, not changed**:
+  - Aid Another against the Cultist Champion (the first real-time fight): the party's attacks hit it only on high rolls
+    (0.4-1.6), so +2 for an ally's next attack or AC (one-round mark, 0.1 of the enemy's worth) came out ahead (0.9-2.0).
+    That is the old mark rule (§3, §6), not one of the new readers.
+  - Orvath's decisions took 250-370 ms in the fight with ten enemies (2-3 slow decisions in the earlier test logs, with
+    five or six enemies): the cost grows with abilities × targets. Spells are still scored while the Standard action is
+    on cooldown, on purpose: in real time an option usable "from here" keeps a unit from walking off while it waits.
+  - The new readers in the logs: Grease (mean 17 real time, 14 turn-based) as before the difficult-terrain change, the
+    Arcane Reservoir DC / caster-level boosts at 0.5-4.4 for the spell cast next, Inspired Rage 1.6-7.7.

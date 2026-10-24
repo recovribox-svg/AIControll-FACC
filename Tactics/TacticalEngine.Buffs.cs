@@ -122,11 +122,12 @@ namespace CompanionAI_Pathfinder.Tactics
             AppraisalFrame();
             var parts = new List<BuffPart>();
             var unread = new HashSet<string>();
+            var giver = ability.Caster?.Unit ?? ctx.Unit;
             foreach (var b in buffs)
             {
                 var read = BuffPartsReader.Read(b);
                 parts.AddRange(read.Parts);
-                foreach (var u in read.Unread) unread.Add(u);
+                foreach (var u in read.UnreadFor(giver)) unread.Add(u);
             }
             var abilityCtx = CombatMath.CreateContext(ability, new Kingmaker.Utility.TargetWrapper(ally));
             // ★ v0.3.21: the weapon enchantments it puts on the recipient's weapon (Magic Weapon, Keen Edge, oils, Holy
@@ -150,7 +151,7 @@ namespace CompanionAI_Pathfinder.Tactics
             if (duration <= 0f && enchantRounds > 0f) duration = enchantRounds;
             float unknown = profile.HasLongBuff ? ctx.ExpectedRounds : Math.Min(ctx.ExpectedRounds, 3f);
             float rounds = oneAttack || profile.BuffsLastOneRound ? 1f : ValueModel.UsefulRounds(duration, ctx.ExpectedRounds, unknown);
-            return AppraiseParts(ctx, ability.Caster?.Unit ?? ctx.Unit, abilityCtx, casterLevel, buffs, parts, unread, ally, rounds,
+            return AppraiseParts(ctx, giver, abilityCtx, casterLevel, buffs, parts, unread, ally, rounds,
                                  oneAttack, duration, AppraisalKey(ctx.Unit, ability, ally), false, result);
         }
 
@@ -188,6 +189,8 @@ namespace CompanionAI_Pathfinder.Tactics
                 if (p.Weapon != null && (off.Weapon?.Blueprint == null || !p.Weapon(off.Weapon.Blueprint))) continue;
                 // ★ v0.3.21: a granted feature the recipient has already adds nothing (a Tactician's teamwork feat).
                 if (p.Granted != null && ally.Descriptor.HasFact(p.Granted)) continue;
+                // ★ v0.3.21 (log review): nor one of the caster's own that this caster does not have.
+                if (p.CasterFact != null && !(caster?.Descriptor?.HasFact(p.CasterFact) ?? false)) continue;
                 float amount = PartAmount(p, caster, abilityCtx, ally, casterLevel);
                 // ★ v0.3.20 (test5): a bonus against one kind of effect or creature counts for the share of the enemies it
                 // works against; any other condition (a weapon kind) at half. Remove Fear's +4 against fear counted as +2
@@ -563,8 +566,13 @@ namespace CompanionAI_Pathfinder.Tactics
             try
             {
                 var lists = buffs.Select(BuffPartsReader.Read).ToList();
-                partial = lists.Any(l => l.Unread.Count > 0);
-                var parts = lists.SelectMany(l => l.Parts).ToList();
+                // ★ v0.3.21 (log review): parts of the caster's own facts only for a caster that has them.
+                UnitEntityData giver = null;
+                try { giver = abilityCtx?.MaybeCaster; } catch { }
+                giver = giver ?? ctx.Unit;
+                partial = lists.Any(l => l.UnreadFor(giver).Any());
+                var parts = lists.SelectMany(l => l.Parts)
+                                 .Where(p => p.CasterFact == null || (giver.Descriptor?.HasFact(p.CasterFact) ?? false)).ToList();
                 if (parts.Count == 0) return -1f;
                 int casterLevel = 1;
                 try { casterLevel = Math.Max(1, abilityCtx?.Params?.CasterLevel ?? 1); } catch { }
@@ -886,7 +894,7 @@ namespace CompanionAI_Pathfinder.Tactics
             {
                 var read = BuffPartsReader.Read(b);
                 parts.AddRange(read.Parts);
-                foreach (var u in read.Unread) unread.Add(u);
+                foreach (var u in read.UnreadFor(ctx.Unit)) unread.Add(u);
             }
             var dcStat = CastingStat(ally);
             if (!parts.Any(p => (p.Kind != BuffPartKind.MentalStat || (dcStat.HasValue && p.Stat == dcStat.Value)) &&
