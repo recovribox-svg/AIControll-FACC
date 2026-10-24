@@ -52,8 +52,18 @@ namespace CompanionAI_Pathfinder.Tactics
             public readonly List<WeaponParametersAttackBonus> AttackParts = new List<WeaponParametersAttackBonus>();
             public readonly List<WeaponParametersDamageBonus> DamageParts = new List<WeaponParametersDamageBonus>();
             public readonly List<BlueprintComponent> StatParts = new List<BlueprintComponent>();
+            /// <summary>★ v0.3.21: attack changes by weapon range type (Combat Expertise's melee penalty).</summary>
+            public readonly List<AttackTypeAttackBonus> TypeParts = new List<AttackTypeAttackBonus>();
             /// <summary>★ v0.3.19: the buffs its buff removes when it ends (names, for the coverage report), or null.</summary>
             public string RemovesOnEnd;
+            /// <summary>★ v0.3.21: its bonuses come from a buff applied just before each suitable attack (the game's own
+            /// Power Attack, Deadly Aim, Piranha Strike: AddInitiatorAttackWithWeaponTrigger → ContextActionApplyBuff
+            /// "...BuffEffect"), so they are never in the rules between attacks.</summary>
+            public bool Triggered;
+            /// <summary>★ v0.3.21: the trigger's weapon range condition (melee / ranged), or null for any weapon.</summary>
+            public WeaponRangeType? Range;
+            /// <summary>★ v0.3.21: the effect buff a triggered part comes from - its own ranks work its values out.</summary>
+            public readonly Dictionary<BlueprintComponent, BlueprintBuff> PartOwner = new Dictionary<BlueprintComponent, BlueprintBuff>();
         }
 
         /// <summary>★ v0.3.19 (test2): action types, with the buffs they apply and those buffs' components (for the log).</summary>
@@ -152,6 +162,9 @@ namespace CompanionAI_Pathfinder.Tactics
                             case AddStatBonusAbilityValue sv when IsModeStat(sv.Stat):
                                 p.StatParts.Add(c);
                                 break;
+                            case AttackTypeAttackBonus tb:   // ★ v0.3.21
+                                p.TypeParts.Add(tb);
+                                break;
                             // ★ v0.3.18 (test10): name what such a component runs (Fighting Defensively has one): evidence for
                             // whether it can be modelled.
                             // ★ v0.3.19 (test1): one that only removes buffs when the mode ends changes nothing while it is on -
@@ -169,10 +182,15 @@ namespace CompanionAI_Pathfinder.Tactics
                                                  .Where(l => l.Item2?.Actions?.Length > 0)
                                                  .Select(l => l.Item1 + " " + string.Join("+", l.Item2.Actions.Where(x => x != null).Select(x => x.GetType().Name)))) + ")";
                                 break;
-                            // ★ v0.3.19 (test2): what an on-attack trigger runs. Power Attack and Deadly Aim reached the AI as
-                            // a buff with only an AddInitiatorAttackWithWeaponTrigger in the 0.3.19-test1 install (another mod
-                            // rebuilds them at runtime; the game's own buff has the weapon bonus components the AI reads):
-                            // evidence for modelling them.
+                            // ★ v0.3.19 (test2): what any other on-attack trigger runs (evidence for modelling it). Power Attack
+                            // and Deadly Aim showed up here until 0.3.21: their trigger form is the base game's own, read above.
+                            // ★ v0.3.21: the game's own Power Attack, Deadly Aim and Piranha Strike (PowerAttackBuffEffect,
+                            // DeadlyAimBuffEffect, PiranhaStrikeBuffEffect are base-game blueprints, not another mod's): a
+                            // before-attack trigger that applies the buff with the bonuses. Read through to that buff when the
+                            // trigger asks nothing the AI does not model (at most melee / ranged) and only applies buffs.
+                            case AddInitiatorAttackWithWeaponTrigger before when TriggeredParts(before, p, out string notRead):
+                                if (notRead != null) p.Excluded = p.Excluded ?? notRead;
+                                break;
                             case Kingmaker.UnitLogic.Mechanics.Components.AbstractWeaponTrigger trigger:
                                 p.Excluded = p.Excluded ?? $"its buff does more than the AI models ({c.GetType().Name}: " +
                                              (trigger.TriggerBeforeAttack ? "before the attack" : "after the attack") +
@@ -197,7 +215,7 @@ namespace CompanionAI_Pathfinder.Tactics
                     else
                     {
                         p.Kind = ModeKind.Attack;
-                        if (p.AttackParts.Count == 0 && p.DamageParts.Count == 0 && p.StatParts.Count == 0)
+                        if (p.AttackParts.Count == 0 && p.DamageParts.Count == 0 && p.StatParts.Count == 0 && p.TypeParts.Count == 0)
                             p.Excluded = p.Excluded ?? "not an attack mode";
                         else if (bp.ActivateWithUnitCommand)
                             p.Excluded = p.Excluded ?? "switched by a command";
@@ -213,6 +231,64 @@ namespace CompanionAI_Pathfinder.Tactics
         }
 
         private static bool IsModeStat(StatType stat) => stat == StatType.AC || stat == StatType.AdditionalAttackBonus;
+
+        /// <summary>
+        /// ★ v0.3.21: a before-attack trigger whose only condition is the weapon's range type and whose actions only apply
+        /// buffs: true, with those buffs' attack, damage and stat parts added to <paramref name="p"/> (<paramref name="notRead"/>
+        /// says why one of them is not modelled). False: not this kind of trigger, described as before.
+        /// </summary>
+        private static bool TriggeredParts(AddInitiatorAttackWithWeaponTrigger t, ModeProfile p, out string notRead)
+        {
+            notRead = null;
+            if (!t.TriggerBeforeAttack || t.CheckWeaponBlueprint || t.WeaponType != null || t.CheckWeaponCategory || t.CheckWeaponGroup ||
+                t.AllNaturalAndUnarmed || t.DuelistWeapon || t.OnlyOnFullAttack || t.OnlyOnFirstAttack || t.CheckDistance || t.OnCharge ||
+                t.OnAttackOfOpportunity)
+                return false;
+            var actions = t.Action?.Actions;
+            if (actions == null || actions.Length == 0) return false;
+            var buffs = new List<BlueprintBuff>();
+            foreach (var a in actions)
+            {
+                if (!(a is Kingmaker.UnitLogic.Mechanics.Actions.ContextActionApplyBuff apply) || apply.Buff == null) return false;
+                buffs.Add(apply.Buff);
+            }
+            p.Triggered = true;
+            if (t.CheckWeaponRangeType) p.Range = t.RangeType;
+            foreach (var buff in buffs)
+                foreach (var c in buff.ComponentsArray ?? new BlueprintComponent[0])
+                {
+                    if (c == null || ModeHelperComponents.Contains(c.GetType())) continue;
+                    switch (c)
+                    {
+                        case WeaponParametersAttackBonus a:
+                            if (a.SpecificWeaponBlueprint || a.MultiplierFact != null || PrivateFlag(a, "m_checkGripStyle"))
+                                notRead = notRead ?? $"an attack bonus the AI does not model ({buff.name})";
+                            p.AttackParts.Add(a);
+                            p.PartOwner[a] = buff;
+                            break;
+                        case WeaponParametersDamageBonus d:
+                            if (d.OnlySpecificItemBlueprint || d.DualWielding || d.OnlyToOffHandBonus || PrivateFlag(d, "m_checkGripStyle"))
+                                notRead = notRead ?? $"a damage bonus the AI does not model ({buff.name})";
+                            p.DamageParts.Add(d);
+                            p.PartOwner[d] = buff;
+                            break;
+                        case AddStatBonus s when IsModeStat(s.Stat):
+                        case AddContextStatBonus cs when IsModeStat(cs.Stat):
+                        case AddStatBonusAbilityValue sv when IsModeStat(sv.Stat):
+                            p.StatParts.Add(c);
+                            p.PartOwner[c] = buff;
+                            break;
+                        case AttackTypeAttackBonus tb:
+                            p.TypeParts.Add(tb);
+                            p.PartOwner[tb] = buff;
+                            break;
+                        default:
+                            notRead = notRead ?? $"its attack buff does more than the AI models ({buff.name}: {c.GetType().Name})";
+                            break;
+                    }
+                }
+            return true;
+        }
 
         /// <summary>Why the AI does not switch this mode (null: it may). For the coverage report.</summary>
         internal static string ModeExclusion(ActivatableAbility toggle)
@@ -260,6 +336,11 @@ namespace CompanionAI_Pathfinder.Tactics
             /// from the rules already has it. A Fighting Defensively that is on between attacks is not: it starts again
             /// on the next attack (ActivateOnUnitAction), its buff gone at the round's start.</summary>
             public bool Active;
+            /// <summary>★ v0.3.21: its changes are in the game's rules between attacks (the attack estimate already has
+            /// them): started and not a triggered mode, whose bonuses exist only during the attack.</summary>
+            public bool InEstimate;
+            /// <summary>★ v0.3.21: a triggered mode (ModeProfile.Triggered).</summary>
+            public bool Triggered;
             /// <summary>★ v0.3.18 (review): it is started and the game keeps its buff until the round ends when it is
             /// switched off (TurnOffImmediatelyWithUnitCommand costs an action): an "off" would not change this attack.</summary>
             public bool StaysUntilRoundEnd;
@@ -271,6 +352,8 @@ namespace CompanionAI_Pathfinder.Tactics
             /// OnlyForFullAttack): only a real full attack has it, never the probe's routine.</summary>
             public Func<ItemEntityWeapon, bool, int> FullAttackOnly;
             public Func<ItemEntityWeapon, float> Damage;
+            /// <summary>★ v0.3.21: the range-typed attack part alone (in <see cref="Attack"/> too).</summary>
+            public Func<ItemEntityWeapon, int> Typed;
             public string Name => Toggle.Name;
             public ActivatableAbilityGroup Group => Toggle.Blueprint.Group;
         }
@@ -299,9 +382,15 @@ namespace CompanionAI_Pathfinder.Tactics
                     bool hasAttackStat = p.StatParts.Any(sp => (sp as AddStatBonus)?.Stat == StatType.AdditionalAttackBonus ||
                                                               (sp as AddContextStatBonus)?.Stat == StatType.AdditionalAttackBonus ||
                                                               (sp as AddStatBonusAbilityValue)?.Stat == StatType.AdditionalAttackBonus);
-                    bool suspect = mode.AC > 0 && (mode.AttackStat > 0 || (hasAttackStat && mode.AttackStat == 0));
+                    // ★ v0.3.21: a penalty by weapon range type (Combat Expertise) counts with the weapon in hand.
+                    int typed = 0;
+                    var inHand = unit.Body?.PrimaryHand?.MaybeWeapon;
+                    if (p.TypeParts.Count > 0 && inHand != null) typed = mode.Typed(inHand);
+                    bool suspect = mode.AC > 0 && (mode.AttackStat > 0 ||
+                                                   ((hasAttackStat || p.TypeParts.Count > 0) && mode.AttackStat + typed >= 0));
                     ReportOnce($"modevalues|{unit.UniqueId}|{toggle.Blueprint.AssetGuid}", () =>
-                               $"[Modes] {unit.CharacterName}: {toggle.Name} = AC {mode.AC:+0;-0;0}, attack {mode.AttackStat:+0;-0;0}" +
+                               $"[Modes] {unit.CharacterName}: {toggle.Name} = AC {mode.AC:+0;-0;0}, attack {mode.AttackStat + typed:+0;-0;0}" +
+                               (p.Triggered ? " (applied with each attack)" : "") +
                                (p.AttackParts.Count > 0 ? $" (+{p.AttackParts.Count} weapon attack part(s))" : "") +
                                (p.DamageParts.Count > 0 ? $" (+{p.DamageParts.Count} weapon damage part(s))" : "") +
                                (suspect ? " - not used: its attack penalty did not read as a penalty" : ""));
@@ -324,9 +413,24 @@ namespace CompanionAI_Pathfinder.Tactics
                 Toggle = toggle,
                 On = toggle.IsOn || toggle.IsStarted,
                 Active = toggle.IsStarted,
+                InEstimate = toggle.IsStarted && !p.Triggered,
+                Triggered = p.Triggered,
                 StaysUntilRoundEnd = toggle.IsStarted && !bp.DeactivateImmediately &&
                                      bp.GetComponent<TurnOffImmediatelyWithUnitCommand>() != null
             };
+            // ★ v0.3.21: a triggered part's values from its own effect buff's ranks.
+            var contexts = new Dictionary<BlueprintBuff, MechanicsContext>();
+            Func<BlueprintComponent, MechanicsContext> ctxOf = part =>
+            {
+                if (!p.PartOwner.TryGetValue(part, out var owner)) return mctx;
+                if (contexts.TryGetValue(owner, out var oc)) return oc;
+                oc = new MechanicsContext(unit, unit.Descriptor, owner);
+                try { oc.Recalculate(); } catch { }
+                contexts[owner] = oc;
+                return oc;
+            };
+            var range = p.Range;
+            Func<ItemEntityWeapon, bool> inRange = weapon => !range.HasValue || (weapon != null && range.Value.IsSuitableWeapon(weapon));
             foreach (var c in p.StatParts)
             {
                 StatType stat;
@@ -339,11 +443,11 @@ namespace CompanionAI_Pathfinder.Tactics
                         break;
                     case AddContextStatBonus cs:
                         stat = cs.Stat;
-                        value = cs.Value.Calculate(mctx) * cs.Multiplier;
+                        value = cs.Value.Calculate(ctxOf(c)) * cs.Multiplier;
                         break;
                     case AddStatBonusAbilityValue sv:
                         stat = sv.Stat;
-                        value = sv.Value.Calculate(mctx);
+                        value = sv.Value.Calculate(ctxOf(c));
                         break;
                     default:
                         continue;
@@ -353,15 +457,31 @@ namespace CompanionAI_Pathfinder.Tactics
             }
             int bab = unit.Stats.BaseAttackBonus.ModifiedValue;
             var attackParts = p.AttackParts.ToList();
+            var typeParts = p.TypeParts.ToList();
             var damageParts = p.DamageParts.ToList();
             int attackStat = mode.AttackStat;
+            // ★ v0.3.21: AttackTypeAttackBonus - Value × AttackBonus for the matching (or every other) range type.
+            Func<ItemEntityWeapon, int> typedOf = weapon =>
+            {
+                int total = 0;
+                foreach (var tb in typeParts)
+                {
+                    if (tb.CheckFact && !unit.Descriptor.HasFact(tb.RequiredFact)) continue;
+                    if (weapon?.Blueprint == null || tb.Type.IsSuitableWeapon(weapon.Blueprint) == tb.AllTypesExcept) continue;
+                    total += tb.Value.Calculate(ctxOf(tb)) * tb.AttackBonus;
+                }
+                return total;
+            };
+            mode.Typed = typedOf;
             mode.Attack = (weapon, full) =>
             {
                 int total = attackStat;
+                if (!inRange(weapon)) return 0;   // ★ v0.3.21: the trigger does not fire for this weapon
+                total += typedOf(weapon);
                 foreach (var a in attackParts)
                 {
                     if (a.OnlyForFullAttack || !WeaponFits(weapon, a.Ranged, a.OnlyTwoHanded, a.OnlyFinessable, unit)) continue;
-                    int n = a.UseContextIstead ? a.ContextAttackBonus.Calculate(mctx) : a.AttackBonus;
+                    int n = a.UseContextIstead ? a.ContextAttackBonus.Calculate(ctxOf(a)) : a.AttackBonus;
                     if (a.ScaleByBasicAttackBonus) n *= 1 + bab / 4;
                     total += n;
                 }
@@ -370,11 +490,11 @@ namespace CompanionAI_Pathfinder.Tactics
             mode.FullAttackOnly = (weapon, full) =>
             {
                 int total = 0;
-                if (!full) return 0;
+                if (!full || !inRange(weapon)) return 0;
                 foreach (var a in attackParts)
                 {
                     if (!a.OnlyForFullAttack || !WeaponFits(weapon, a.Ranged, a.OnlyTwoHanded, a.OnlyFinessable, unit)) continue;
-                    int n = a.UseContextIstead ? a.ContextAttackBonus.Calculate(mctx) : a.AttackBonus;
+                    int n = a.UseContextIstead ? a.ContextAttackBonus.Calculate(ctxOf(a)) : a.AttackBonus;
                     if (a.ScaleByBasicAttackBonus) n *= 1 + bab / 4;
                     total += n;
                 }
@@ -383,10 +503,11 @@ namespace CompanionAI_Pathfinder.Tactics
             mode.Damage = weapon =>
             {
                 float total = 0f;
+                if (!inRange(weapon)) return 0f;
                 foreach (var d in damageParts)
                 {
                     if (!WeaponFits(weapon, d.Ranged, d.OnlyTwoHanded, d.OnlyFinessable, unit)) continue;
-                    int n = d.UseContextIstead ? d.ContextDamageBonus.Calculate(mctx) : d.DamageBonus;
+                    int n = d.UseContextIstead ? d.ContextDamageBonus.Calculate(ctxOf(d)) : d.DamageBonus;
                     if (d.MythicBlueprint != null && unit.Descriptor.HasFact(d.MythicBlueprint)) n += 1;
                     if (d.ScaleByBasicAttackBonus) n *= 1 + bab / 4;
                     // WeaponParametersDamageBonus.CalculatePowerAttackScaling (secondary natural attacks are not told apart)
@@ -470,7 +591,7 @@ namespace CompanionAI_Pathfinder.Tactics
                     float dmg = 0f;
                     foreach (var m in modes)
                     {
-                        int sign = (set.Contains(m) ? 1 : 0) - (m.Active ? 1 : 0);
+                        int sign = (set.Contains(m) ? 1 : 0) - (m.InEstimate ? 1 : 0);
                         if (set.Contains(m)) ab += m.FullAttackOnly(weapon, full);
                         if (sign == 0) continue;
                         ab += sign * m.Attack(weapon, full);
@@ -478,7 +599,7 @@ namespace CompanionAI_Pathfinder.Tactics
                     }
                     return new KeyValuePair<int, float>(ab, dmg);
                 });
-                int ac = modes.Sum(m => ((set.Contains(m) ? 1 : 0) - (m.Active ? 1 : 0)) * m.AC);
+                int ac = modes.Sum(m => ((set.Contains(m) ? 1 : 0) - (m.InEstimate ? 1 : 0)) * m.AC);
                 return new KeyValuePair<float, float>(estimate == null ? -1f : DamageValue(c.Target, estimate), DefenseValue(ctx, at, ac));
             };
             var current = new HashSet<UnitMode>(modes.Where(m => m.On));
@@ -491,7 +612,9 @@ namespace CompanionAI_Pathfinder.Tactics
             // "[Fighting Defensively off +0.8]" in the 0.3.19-test1 real-time log).
             // ★ v0.3.19 (review): only a mode that really starts with the attack (ActivateOnUnitAction, available); one that
             // is on but cannot start adds nothing.
-            Func<UnitMode, bool> startsWithAttack = m => m.On && !m.Active && m.Toggle.Blueprint.ActivateOnUnitAction && m.Toggle.IsAvailable;
+            // ★ v0.3.21: and a triggered mode that is on (its effect buff comes with each attack).
+            Func<UnitMode, bool> startsWithAttack = m => m.On && !m.InEstimate &&
+                                                         (m.Triggered ? m.Active : m.Toggle.Blueprint.ActivateOnUnitAction && m.Toggle.IsAvailable);
             if (modes.Any(startsWithAttack))
             {
                 // The current set without those modes: every other difference to the baseline cancels out.

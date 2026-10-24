@@ -2005,3 +2005,20 @@ from waking a sleeping or held enemy for a sliver of damage (the sleeping Vermle
   game starts only walking then); her next one went through. Fight 2: two Medium Earth Elementals took her from full
   HP to 6 % in a round after a Move+Attack that provoked nothing - the healthy fighter's place is in melee.
 - No refusals, no lost turns, no errors in either log; slow decisions only during the game's garbage collection.
+
+## 55. v0.3.21 (test3): Power Attack, Deadly Aim, Piranha Strike and Combat Expertise as attack modes
+
+The coverage lines of every log said "AI: leaves it" for Power Attack and Deadly Aim: their buff holds only an
+`AddInitiatorAttackWithWeaponTrigger`. A 0.3.19 comment put that down to another mod rebuilding them; it is the base
+game's own form - `PowerAttackBuffEffect`, `DeadlyAimBuffEffect`, `PiranhaStrikeBuffEffect` are game blueprints. Before
+each suitable attack the trigger applies the effect buff that carries the `WeaponParametersAttackBonus` /
+`WeaponParametersDamageBonus`. So the per-attack mode choice of 0.3.18 (AA-3) never ran for them, for anyone; they
+stayed as the player set them, and the attack estimate never counted their -hit/+damage (the effect buff exists only
+during the swing).
+
+`ModeOf` now reads through such a trigger when it fires before the attack, asks nothing the AI does not model (at most
+melee or ranged: `CheckWeaponRangeType`) and only applies buffs; their parts are read as before, each valued in its own
+effect buff's context (its ranks). A triggered mode is never "in the estimate" (`UnitMode.InEstimate`): kept on, its
+change is added to the option's value; switched, the change is weighed as for any mode. Combat Expertise was left
+for its `AttackTypeAttackBonus` (the melee penalty): read now, for the weapon in hand, and part of the free-AC sanity
+check. The `[Modes]` line says "(applied with each attack)" for a triggered mode.
