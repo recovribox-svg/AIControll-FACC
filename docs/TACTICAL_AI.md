@@ -2303,8 +2303,6 @@ Party abilities, test9 → test11: valued 2 586 → 2 658, guessed 387 → 352, 
   no effect. `ContextCalculateAbilityParamsBasedOnClass` (the DC by class level) is bookkeeping.
 - **First-hit-only damage on a buff spent by one attack** was divided by the hits per round twice. Once now.
 - **Shield Wall** force-stacks in the game; read as a shield bonus it was cancelled by a shield already worn. Untyped now.
-- **Old real-time engine**: difficult terrain as minor control (§62) would have turned Ice Storm and the Deadly Earth
-  blasts into crowd-control spells there (`AbilityClassifier`); a damage spell whose only control is minor stays an attack.
 - **Checked and correct**: Quicken by the game's rule (`AbilityData.GetDefaultActionType` makes a quickened spell
   swift, `RuntimeActionType` falls back to standard when the swift is spent, `UnitPartSpecialMetamagic` includes
   next-spell metamagic), next-spell boosters skipped by the pre-combat buff routine, shadow copies' disbelief rule
