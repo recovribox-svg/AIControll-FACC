@@ -1309,14 +1309,18 @@ namespace CompanionAI_Pathfinder.Tactics
         }
 
         /// <summary>Probability the target fails its save (1 when the ability has no save).</summary>
-        public static float SaveFailChance(AbilityData ability, AbilityProfile profile, UnitEntityData target)
+        public static float SaveFailChance(AbilityData ability, AbilityProfile profile, UnitEntityData target) =>
+            SaveFailChance(ability, profile.Save, target);
+
+        /// <summary>★ v0.3.21: the same for a save the ability's own profile does not carry (an aura's: Archon's Aura).</summary>
+        public static float SaveFailChance(AbilityData ability, SavingThrowType save, UnitEntityData target)
         {
-            if (profile.Save == SavingThrowType.Unknown || target == null) return 1f;
+            if (save == SavingThrowType.Unknown || target == null) return 1f;
             try
             {
                 int dc = ability.CalculateParams()?.DC ?? 10;
                 int bonus;
-                switch (profile.Save)
+                switch (save)
                 {
                     case SavingThrowType.Fortitude: bonus = target.Stats.SaveFortitude.ModifiedValue; break;
                     case SavingThrowType.Reflex: bonus = target.Stats.SaveReflex.ModifiedValue; break;
@@ -1324,7 +1328,7 @@ namespace CompanionAI_Pathfinder.Tactics
                     default: return 1f;
                 }
                 // ★ v0.3.15: contextual save bonuses the game applied the last time (SaveObserver).
-                var seen = SaveObserver.Lookup(target, profile.Save, ability.Blueprint);
+                var seen = SaveObserver.Lookup(target, save, ability.Blueprint);
                 if (seen != null)
                 {
                     if (seen.AutoPass) return 0f;

@@ -2968,7 +2968,9 @@ namespace CompanionAI_Pathfinder.Tactics
                 var allBuffs = profile.TargetBuffs.Count > 0 && !targetIsEnemy ? profile.TargetBuffs : profile.CasterBuffs;
                 foreach (var ally in recipients.Take(5))
                 {
-                    var buffs = allBuffs.Where(b => profile.BuffAppliesTo(b, ability, ally) != EffectApplies.No).ToList();
+                    // ★ v0.3.21 (gaps): a buff that only carries a read aura is valued by the aura (below), not on its bearer.
+                    var buffs = allBuffs.Where(b => profile.BuffAppliesTo(b, ability, ally) != EffectApplies.No &&
+                                                    !AuraOnlyCarrier(profile, b)).ToList();
                     if (buffs.Count == 0) continue;
                     if (buffs.Any(b => ally.Buffs.HasFact(b))) continue;                    // already active
                     // ★ v0.3.8: an enchanting ability whose enchantment is still on the weapon.
@@ -3027,6 +3029,17 @@ namespace CompanionAI_Pathfinder.Tactics
                 {
                     value += buffValue;
                     reasons.Add("buff");
+                }
+            }
+
+            // --- auras a buff carries around its bearer (★ v0.3.21 gaps: TacticalEngine.Auras.cs) ---
+            if (profile.Auras.Count > 0)
+            {
+                float auraValue = AuraValue(ctx, ability, profile, target, targetIsEnemy, out string auraNote);
+                if (auraValue > 0f)
+                {
+                    value += auraValue;
+                    reasons.Add(auraNote ?? "aura");
                 }
             }
 

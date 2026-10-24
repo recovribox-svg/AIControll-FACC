@@ -262,6 +262,18 @@ namespace CompanionAI_Pathfinder.Tactics
 
         public CCType Control { get; private set; }
 
+        /// <summary>★ v0.3.21 (gaps): a buff the ability applies that carries an aura (AddAreaEffect) around its bearer.</summary>
+        public sealed class AuraEffect
+        {
+            public BlueprintBuff Carrier;
+            public BlueprintAbilityAreaEffect Area;
+            /// <summary>The bearer is the caster (a personal ability, or applied to the caster); otherwise the target.</summary>
+            public bool OnCaster;
+        }
+
+        /// <summary>★ v0.3.21 (gaps): the auras its buffs carry.</summary>
+        public readonly List<AuraEffect> Auras = new List<AuraEffect>();
+
         /// <summary>★ v0.3.21: the pit its area digs (AreaEffectPit), if any.</summary>
         public Kingmaker.UnitLogic.Abilities.Components.AreaEffects.AreaEffectPit Pit { get; private set; }
 
@@ -629,7 +641,7 @@ namespace CompanionAI_Pathfinder.Tactics
         }
 
         /// <summary>★ v0.3.12: flagged harmful by its blueprint, or it imposes a controlling condition.</summary>
-        private static bool IsHarmfulBuff(BlueprintBuff buff)
+        internal static bool IsHarmfulBuff(BlueprintBuff buff)
         {
             try
             {
@@ -787,6 +799,16 @@ namespace CompanionAI_Pathfinder.Tactics
                         // ★ v0.3.19 (test11): the action itself, caster buffs too, for the buff's real duration
                         // (EffectiveRounds). Area buffs last while the area does.
                         if (!m_InArea && !m_Applications.ContainsKey(apply.Buff)) m_Applications[apply.Buff] = apply;
+                        // ★ v0.3.21 (gaps): a buff that carries an aura around its bearer (AddAreaEffect: Archon's Aura, the
+                        // domain and blessing greater powers) - valued by what the aura gives (TacticalEngine.Auras.cs).
+                        if (!m_InArea && (subject == EffectSubject.Target || toCaster || apply.ToCaster) &&
+                            apply.Buff.GetComponent<Kingmaker.UnitLogic.Buffs.Components.AddAreaEffect>()?.AreaEffect is BlueprintAbilityAreaEffect aura &&
+                            !Auras.Any(a => a.Carrier == apply.Buff))
+                            Auras.Add(new AuraEffect
+                            {
+                                Carrier = apply.Buff, Area = aura,
+                                OnCaster = toCaster || apply.ToCaster || Blueprint.Range == AbilityRange.Personal
+                            });
                         // ★ v0.3.15: each application with its own branch and duration (Color Spray: 2d4 rounds on 2 HD
                         // or less, 1d4 on 3-4 HD, 1 round on 5 HD or more).
                         if (!(toCaster || apply.ToCaster) && !m_InArea)
@@ -1937,7 +1959,7 @@ namespace CompanionAI_Pathfinder.Tactics
 
         /// <summary>★ v0.3.20 (test5): the control a buff imposes by its conditions, or by turning its bearer to the
         /// caster's side (ChangeFaction: Dominate Person, whose descriptor is only Compulsion and Mind-Affecting).</summary>
-        private static ControlStrength BuffControl(BlueprintBuff buff)
+        internal static ControlStrength BuffControl(BlueprintBuff buff)
         {
             var strength = ControlStrength.None;
             if (buff == null) return strength;

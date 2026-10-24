@@ -2209,3 +2209,32 @@ movement-speed buffs, enemy regeneration. Magic Deceiver's Magic Hack slots are 
 All folders after the review: 2 942 valued, 468 guessed, 364 nothing, 52 never offered (the ones listed in
 COVERAGE_AUDIT.md, all correct to leave).
 
+
+## 60. v0.3.21 (test9): auras on buffs, See Invisibility / True Seeing, claws, harmful performances
+
+Gaps from §59's unread list, checked with `tools/ProfileAudit` before and after.
+- **Auras carried by a buff** (`AddAreaEffect`): Archon's Aura, Aura of Greater Courage, Frightful Aspect's fear aura,
+  Repulsion, Cloak of Dreams, the Cleric domain and Warpriest blessing greater powers (Glory, Madness, Protection,
+  Liberation, Charm), Celestial Aura of Heaven, Judgment Aura, the Godclaw Hellknight tiers, Power of Faith, Ghoul Touch's
+  stench. `AbilityProfile.Auras` records the carrier and its area; `TacticalEngine.Auras.cs` values what the area gives
+  to the units around the bearer, with the same grant reading as performances (`ReadAreaGrants`, now shared and
+  following failed saves for auras), the area's conditions per unit (`GrantReaches`), allies by the buff appraisal and
+  enemies as debuffs or control times the chance it lands (spell resistance, the area's save). A carrier with no part of
+  its own is no buff on the caster any more (Archon's Aura was counted twice). Time Stop's freeze makes its bearers
+  untouchable: worth nothing as control. 34 party abilities.
+- **See Invisibility, True Seeing** (`AddCondition`): the miss chance it takes away from the recipient's attacks on the
+  enemies now - invisible ones, and Blur / Displacement for True Seeing (the game's exceptions in
+  `UnitPartConcealment.Calculate`). Nothing hidden: not cast (was a 0.5 guess every fight).
+- **Claws for empty hands** (`EmptyHandWeaponOverride`: bloodline claws, Feral Mutagen and the like): the dice they add
+  over the empty-hand attack; nothing while the hands hold a weapon (the game arms only empty hands). 64 toggles.
+- **Harmful performances by what they apply**: the toggle code tested the harmful flag only; Dirge of Doom's Shaken
+  buff carries none and was never valued on enemies. It uses `AbilityProfile.IsHarmfulBuff` now (§59).
+
+Party abilities (enemy, NPC, cutscene folders left out), test8 → test9: valued 2 539 → 2 586, guessed 415 → 387,
+nothing 269 → 250; toggles valued 138 → 202, guessed 84 → 37, nothing 74 → 57.
+
+Still unread: polymorph forms, on-hit triggers (`AddInitiatorAttackWithWeaponTrigger`: mostly special effects - a
+debuff on hit, Master Slayer's and True Judgment's kill on a failed save, Feint), `SuppressBuffs`, Reach / Extend /
+Quicken next-spell metamagic, the other teamwork feats, spell DC and caster level buffs (still the old analyzer reading,
+for casters only), Shadow Evocation / Conjuration, Black Hole, Rift of Ruin, Haunting Mists, resurrections, Ray of
+Enfeeblement's Strength penalty, movement speed, enemy regeneration.

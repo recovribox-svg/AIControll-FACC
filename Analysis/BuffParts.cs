@@ -69,6 +69,12 @@ namespace CompanionAI_Pathfinder.Analysis
         DamagePercent,
         /// <summary>★ v0.3.21: hit points healed each round while hurt (AddEffectFastHealing).</summary>
         FastHealing,
+        /// <summary>★ v0.3.21: natural weapons for empty hands (EmptyHandWeaponOverride: claws, Feral Mutagen, bloodline
+        /// claws): <see cref="BuffPart.Natural"/>; they take effect only with nothing in the hands (UnitBody.SetEmptyHandWeapon).</summary>
+        NaturalWeapon,
+        /// <summary>★ v0.3.21: sees what hides (AddCondition SeeInvisibility: Fixed 1; TrueSeeing, which also sees through
+        /// Blur and Displacement: Fixed 2 - UnitPartConcealment.Calculate).</summary>
+        Sight,
         /// <summary>★ v0.3.21: the weapon's critical threat range doubles (WeaponCriticalEdgeIncrease: keen) - not with
         /// Improved Critical, which sets the same flag (RuleCalculateWeaponStats.DoubleCriticalEdge).</summary>
         CritRangeDouble
@@ -113,6 +119,8 @@ namespace CompanionAI_Pathfinder.Analysis
         /// <summary>★ v0.3.21: the feature this part comes with (a Tactician's teamwork feat): nothing for a recipient that
         /// has it already.</summary>
         public Kingmaker.Blueprints.Facts.BlueprintUnitFact Granted;
+        /// <summary>★ v0.3.21: the empty-hand weapon a <see cref="BuffPartKind.NaturalWeapon"/> part gives.</summary>
+        public Kingmaker.Blueprints.Items.Weapons.BlueprintItemWeapon Natural;
 
         /// <summary>★ v0.3.21: a copy for some weapons only.</summary>
         public BuffPart ForWeapons(Func<Kingmaker.Blueprints.Items.Weapons.BlueprintItemWeapon, bool> weapon, BlueprintBuff owner)
@@ -512,6 +520,17 @@ namespace CompanionAI_Pathfinder.Analysis
                     case SpellImmunityToSpellDescriptor spellImmune when spellImmune.Descriptor.Value != Kingmaker.Blueprints.Classes.Spells.SpellDescriptor.None:
                         list.AddImmunity(owner, spellImmune.Descriptor.Value, ImmunitySaves, false);
                         break;
+                    case Kingmaker.Designers.Mechanics.Buffs.EmptyHandWeaponOverride claws when claws.Weapon != null && !claws.IsMonkUnarmedStrike:
+                        list.Parts.Add(new BuffPart { Kind = BuffPartKind.NaturalWeapon, Owner = owner, Natural = claws.Weapon });
+                        break;
+                    case Kingmaker.UnitLogic.FactLogic.AddCondition sees when sees.Condition == Kingmaker.UnitLogic.UnitCondition.SeeInvisibility ||
+                                                                              sees.Condition == Kingmaker.UnitLogic.UnitCondition.TrueSeeing:
+                        list.Parts.Add(new BuffPart
+                        {
+                            Kind = BuffPartKind.Sight, Owner = owner,
+                            Fixed = sees.Condition == Kingmaker.UnitLogic.UnitCondition.TrueSeeing ? 2 : 1
+                        });
+                        break;
                     case AddConditionImmunity conditionImmune when ConditionDescriptor(conditionImmune.Condition) != Kingmaker.Blueprints.Classes.Spells.SpellDescriptor.None:
                         list.AddImmunity(owner, ConditionDescriptor(conditionImmune.Condition), ImmunitySaves, false);
                         break;
@@ -720,6 +739,8 @@ namespace CompanionAI_Pathfinder.Analysis
                 // ★ v0.3.21: visual only (the model's bones, where a spell visibly leaves from)
                 case "ReplaceSourceBone":
                 case "ReplaceCastSource":
+                // ★ v0.3.21 (gaps): the aura a buff carries is read by its area (AbilityProfile.Auras, toggles' grants)
+                case "AddAreaEffect":
                     return true;
                 default:
                     return false;

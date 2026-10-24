@@ -173,7 +173,7 @@ namespace CompanionAI_Pathfinder.Tactics
             // --- what each part adds, with this caster's numbers ---
             float attack = 0f, damage = 0f, extraAttacks = 0f, armor = 0f, concealment = 0f, miss = 0f, saves = 0f;
             float tempHp = 0f, images = 0f, physicalDr = 0f, energyResist = 0f, conHp = 0f;
-            float energyDamage = 0f, energyPool = 0f, diceUp = 0f, critExtra = 0f, damagePercent = 0f, fastHealing = 0f;
+            float energyDamage = 0f, energyPool = 0f, diceUp = 0f, critExtra = 0f, damagePercent = 0f, fastHealing = 0f, sight = 0f;
             bool sizeUp = false, forbidsSpells = false;
             BuffPart invisible = null;
             foreach (var p in parts)
@@ -249,6 +249,19 @@ namespace CompanionAI_Pathfinder.Tactics
                                                             (p.Conditional ? 0.5f : 1f));
                         break;
                     case BuffPartKind.FastHealing: fastHealing = Math.Max(fastHealing, amount); break;
+                    case BuffPartKind.Sight: sight = Math.Max(sight, p.Fixed); break;
+                    case BuffPartKind.NaturalWeapon:
+                        // ★ v0.3.21: claws for empty hands - the dice they add over the empty-hand attack it makes now; nothing
+                        // while the hands hold a weapon (the game only arms empty hands with them).
+                        if (off.Weapon != null && !off.Weapon.Blueprint.IsUnarmed && !off.Weapon.Blueprint.IsNatural)
+                            notes.Add("hands hold a weapon");
+                        else if (p.Natural != null)
+                        {
+                            float claw = DiceAverage(p.Natural.BaseDamage);
+                            float now = off.Weapon != null ? DiceAverage(off.Weapon.Blueprint.BaseDamage) : 1.5f;
+                            if (claw > now) { damage += claw - now; notes.Add($"{p.Natural.name}"); }
+                        }
+                        break;
                     case BuffPartKind.DamagePercent:
                         if (p.RangedOnly && !off.Ranged || p.MeleeOnly && off.Ranged) break;
                         damagePercent = Math.Max(damagePercent, amount / 100f);
@@ -322,6 +335,18 @@ namespace CompanionAI_Pathfinder.Tactics
             }
             else if (attack > 0f || damage > 0f || extraAttacks > 0f || energyDamage > 0f || damagePercent > 0f)
                 notes.Add("no weapon attack to improve");
+            // ★ v0.3.21: See Invisibility / True Seeing - the miss chance it takes away from its attacks on the enemies now:
+            // invisible ones (50 %), and Blur / Displacement for True Seeing (UnitPartConcealment.Calculate).
+            if (sight > 0f)
+            {
+                float removable = RemovableMiss(ctx, ally, sight >= 2f);
+                if (removable > 0f && off.DamagePerRound > 0f)
+                {
+                    offencePerRound += (oneAttack ? off.FirstAttack : off.DamagePerRound) * removable * (off.Caster ? 0.5f : 1f);
+                    notes.Add($"sees through {removable:P0} miss");
+                }
+                else notes.Add("nothing hidden to see");
+            }
             if (off.Caster) invisibleOnce *= 0.5f;
 
             // --- defence: what comes at it ---
@@ -492,6 +517,48 @@ namespace CompanionAI_Pathfinder.Tactics
             catch
             {
                 return -1f;
+            }
+        }
+
+        private static float DiceAverage(DiceFormula dice) => dice.Rolls * (dice.Dice.Sides() + 1) / 2f;
+
+        private static readonly System.Reflection.FieldInfo ConcealmentEntries =
+            HarmonyLib.AccessTools.Field(typeof(Kingmaker.UnitLogic.Parts.UnitPartConcealment), "m_Concealments");
+
+        /// <summary>
+        /// ★ v0.3.21: the miss chance <paramref name="ally"/> would stop suffering, on average over the enemies still fighting,
+        /// by seeing invisible (an invisible enemy: total concealment, 50 %) or, with <paramref name="trueSeeing"/>, also
+        /// through Blur and Displacement - the game's own exceptions (UnitPartConcealment.Calculate). Nothing for what it
+        /// sees already, or while blind.
+        /// </summary>
+        private static float RemovableMiss(TacticalContext ctx, UnitEntityData ally, bool trueSeeing)
+        {
+            try
+            {
+                var state = ally.Descriptor.State;
+                if (state.HasCondition(UnitCondition.Blindness)) return 0f;
+                var fighting = ctx.Enemies.Where(e => !CombatMath.IsDisabled(e)).ToList();
+                if (fighting.Count == 0) return 0f;
+                bool seesInvisible = ally.Descriptor.IsSeeInvisibility || ally.Get<Kingmaker.UnitLogic.Parts.UnitPartBlindsense>() != null;
+                bool seesTrue = state.HasCondition(UnitCondition.TrueSeeing);
+                float sum = 0f;
+                foreach (var enemy in fighting)
+                {
+                    float miss = 0f;
+                    if (!seesInvisible && enemy.Descriptor.State.HasCondition(UnitCondition.Invisible)) miss = 0.5f;
+                    if (trueSeeing && !seesTrue &&
+                        ConcealmentEntries?.GetValue(enemy.Get<Kingmaker.UnitLogic.Parts.UnitPartConcealment>()) is
+                            List<Kingmaker.UnitLogic.Parts.UnitPartConcealment.ConcealmentEntry> entries)
+                        foreach (var entry in entries)
+                            if (entry.Descriptor == ConcealmentDescriptor.Blur || entry.Descriptor == ConcealmentDescriptor.Displacement)
+                                miss = Math.Max(miss, entry.Concealment == Concealment.Total ? 0.5f : entry.Concealment == Concealment.Partial ? 0.2f : 0f);
+                    sum += miss;
+                }
+                return sum / fighting.Count;
+            }
+            catch
+            {
+                return 0f;
             }
         }
 

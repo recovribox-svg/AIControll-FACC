@@ -56,6 +56,8 @@ namespace CompanionAI_Pathfinder.Tactics
         {
             public BlueprintBuff Buff;
             public (ConditionsChecker Checker, bool Branch)[] Guards;
+            /// <summary>★ v0.3.21: given only when this save fails (Unknown: no save).</summary>
+            public Kingmaker.EntitySystem.Stats.SavingThrowType Save = Kingmaker.EntitySystem.Stats.SavingThrowType.Unknown;
         }
 
         private sealed class BlueprintUnitFactRefs
@@ -110,23 +112,7 @@ namespace CompanionAI_Pathfinder.Tactics
                         p.Radius = area.Size.Meters;
                         p.AreaAllies = area.CanTargetAllies;
                         p.AreaEnemies = area.CanTargetEnemies;
-                        foreach (var areaBuff in area.GetComponents<Kingmaker.UnitLogic.Abilities.Components.AreaEffects.AbilityAreaEffectBuff>())
-                            if (areaBuff.Buff != null)
-                                p.Grants.Add(new AreaGrant
-                                {
-                                    Buff = areaBuff.Buff,
-                                    Guards = areaBuff.Condition?.Conditions?.Length > 0
-                                        ? new[] { (areaBuff.Condition, true) } : new (ConditionsChecker, bool)[0]
-                                });
-                        // ★ v0.3.19 (class audit B1, F1): an area may give its buff by actions - on entering and every
-                        // round, behind Conditionals (Inspired Rage: only to allies who accept it; Battle Spirit; the
-                        // Aeon gazes). Before, those areas were "applies nothing the AI can read" and never offered.
-                        // UnitExit is not read: it undoes the enter actions.
-                        foreach (var run in area.GetComponents<Kingmaker.UnitLogic.Abilities.Components.AreaEffects.AbilityAreaEffectRunAction>())
-                        {
-                            CollectGrants(run.UnitEnter?.Actions, new List<(ConditionsChecker, bool)>(), p, 0);
-                            CollectGrants(run.Round?.Actions, new List<(ConditionsChecker, bool)>(), p, 0);
-                        }
+                        ReadAreaGrants(area, p.Grants, followSaves: false);
                         foreach (var g in p.Grants)
                             if (!p.AreaBuffs.Contains(g.Buff)) p.AreaBuffs.Add(g.Buff);
                         if (p.AreaBuffs.Count == 0 && p.Excluded == null) p.Excluded = "its area applies nothing the AI can read";
@@ -142,9 +128,36 @@ namespace CompanionAI_Pathfinder.Tactics
             return p;
         }
 
+        /// <summary>
+        /// The buffs an area gives (AbilityAreaEffectBuff, or its enter and every-round actions through Conditionals), each
+        /// with the conditions it is given under. ★ v0.3.21: shared by toggles and auras on buffs (TacticalEngine.Auras.cs);
+        /// <paramref name="followSaves"/>: also the buffs given on a failed save (ContextActionSavingThrow →
+        /// ContextActionConditionalSaved.Failed: Archon's Aura), with that save.
+        /// </summary>
+        private static void ReadAreaGrants(BlueprintAbilityAreaEffect area, List<AreaGrant> grants, bool followSaves)
+        {
+            foreach (var areaBuff in area.GetComponents<Kingmaker.UnitLogic.Abilities.Components.AreaEffects.AbilityAreaEffectBuff>())
+                if (areaBuff.Buff != null)
+                    grants.Add(new AreaGrant
+                    {
+                        Buff = areaBuff.Buff,
+                        Guards = areaBuff.Condition?.Conditions?.Length > 0
+                            ? new[] { (areaBuff.Condition, true) } : new (ConditionsChecker, bool)[0]
+                    });
+            // ★ v0.3.19 (class audit B1, F1): an area may give its buff by actions - on entering and every round, behind
+            // Conditionals (Inspired Rage: only to allies who accept it; Battle Spirit; the Aeon gazes). Before, those areas
+            // were "applies nothing the AI can read" and never offered. UnitExit is not read: it undoes the enter actions.
+            foreach (var run in area.GetComponents<Kingmaker.UnitLogic.Abilities.Components.AreaEffects.AbilityAreaEffectRunAction>())
+            {
+                CollectGrants(run.UnitEnter?.Actions, new List<(ConditionsChecker, bool)>(), grants, 0, followSaves, Kingmaker.EntitySystem.Stats.SavingThrowType.Unknown);
+                CollectGrants(run.Round?.Actions, new List<(ConditionsChecker, bool)>(), grants, 0, followSaves, Kingmaker.EntitySystem.Stats.SavingThrowType.Unknown);
+            }
+        }
+
         /// <summary>Buffs applied by an area's actions, through Conditionals; the same buff once per branch path.</summary>
         private static void CollectGrants(Kingmaker.ElementsSystem.GameAction[] actions, List<(ConditionsChecker, bool)> guards,
-                                          ToggleProfile p, int depth)
+                                          List<AreaGrant> grants, int depth, bool followSaves,
+                                          Kingmaker.EntitySystem.Stats.SavingThrowType save)
         {
             if (actions == null || depth > 4) return;
             foreach (var action in actions)
@@ -152,12 +165,18 @@ namespace CompanionAI_Pathfinder.Tactics
                 switch (action)
                 {
                     case Kingmaker.UnitLogic.Mechanics.Actions.ContextActionApplyBuff apply when apply.Buff != null && !apply.ToCaster:
-                        if (!p.Grants.Any(g => g.Buff == apply.Buff && g.Guards.Length == guards.Count))
-                            p.Grants.Add(new AreaGrant { Buff = apply.Buff, Guards = guards.ToArray() });
+                        if (!grants.Any(g => g.Buff == apply.Buff && g.Guards.Length == guards.Count))
+                            grants.Add(new AreaGrant { Buff = apply.Buff, Guards = guards.ToArray(), Save = save });
                         break;
                     case Kingmaker.Designers.EventConditionActionSystem.Actions.Conditional conditional:
-                        CollectGrants(conditional.IfTrue?.Actions, new List<(ConditionsChecker, bool)>(guards) { (conditional.ConditionsChecker, true) }, p, depth + 1);
-                        CollectGrants(conditional.IfFalse?.Actions, new List<(ConditionsChecker, bool)>(guards) { (conditional.ConditionsChecker, false) }, p, depth + 1);
+                        CollectGrants(conditional.IfTrue?.Actions, new List<(ConditionsChecker, bool)>(guards) { (conditional.ConditionsChecker, true) }, grants, depth + 1, followSaves, save);
+                        CollectGrants(conditional.IfFalse?.Actions, new List<(ConditionsChecker, bool)>(guards) { (conditional.ConditionsChecker, false) }, grants, depth + 1, followSaves, save);
+                        break;
+                    case Kingmaker.UnitLogic.Mechanics.Actions.ContextActionSavingThrow saving when followSaves:
+                        CollectGrants(saving.Actions?.Actions, guards, grants, depth + 1, followSaves, saving.Type);
+                        break;
+                    case Kingmaker.UnitLogic.Mechanics.Actions.ContextActionConditionalSaved saved when followSaves:
+                        CollectGrants(saved.Failed?.Actions, guards, grants, depth + 1, followSaves, save);
                         break;
                 }
             }
@@ -272,7 +291,8 @@ namespace CompanionAI_Pathfinder.Tactics
                         float w = GrantReaches(grant, toggleCtx, ally);
                         if (w > 0f) reaching.Add((grant.Buff, w));
                     }
-                var useful = reaching.Where(r => r.Buff != null && !r.Buff.Harmful && !ally.Buffs.HasFact(r.Buff) &&
+                // ★ v0.3.21 (audit review): harmful by what it does too (AbilityProfile.IsHarmfulBuff), not only the flag.
+                var useful = reaching.Where(r => r.Buff != null && !AbilityProfile.IsHarmfulBuff(r.Buff) && !ally.Buffs.HasFact(r.Buff) &&
                                                  BuffStackingAnalyzer.Analyze(r.Buff, ally).IsEffective).ToList();
                 if (useful.Count == 0) continue;
                 float weight = useful.Max(r => r.Weight);
@@ -307,8 +327,9 @@ namespace CompanionAI_Pathfinder.Tactics
             foreach (var enemy in ToggleRecipients(ctx, p, enemies: true))
             {
                 bool reaches = p.Area == null
-                    ? p.SelfBuff != null && p.SelfBuff.Harmful
-                    : p.Grants.Any(g => g.Buff.Harmful && !enemy.Buffs.HasFact(g.Buff) && !CombatMath.BuffImmune(enemy, g.Buff, null) &&
+                    ? p.SelfBuff != null && AbilityProfile.IsHarmfulBuff(p.SelfBuff)
+                    // ★ v0.3.21 (audit review): Dirge of Doom's Shaken buff carries no harmful flag - it was never valued.
+                    : p.Grants.Any(g => HarmfulGrant(g) && !enemy.Buffs.HasFact(g.Buff) && !CombatMath.BuffImmune(enemy, g.Buff, null) &&
                                         GrantReaches(g, toggleCtx, enemy) > 0f);
                 if (!reaches) continue;
                 value += 0.25f * CombatMath.ControlWorth(enemy) * rounds * RoleWeight(ctx, "buff");
@@ -404,9 +425,9 @@ namespace CompanionAI_Pathfinder.Tactics
             try { toggleCtx = new Kingmaker.UnitLogic.Mechanics.MechanicsContext(unit, unit.Descriptor, toggle.Blueprint.Buff); }
             catch { }
             bool anyone = ToggleRecipients(ctx, p, enemies: false)
-                              .Any(a => a != unit && p.Grants.Any(g => !g.Buff.Harmful && GrantReaches(g, toggleCtx, a) > 0f)) ||
+                              .Any(a => a != unit && p.Grants.Any(g => !HarmfulGrant(g) && GrantReaches(g, toggleCtx, a) > 0f)) ||
                           ToggleRecipients(ctx, p, enemies: true)
-                              .Any(e => p.Grants.Any(g => g.Buff.Harmful && GrantReaches(g, toggleCtx, e) > 0f));
+                              .Any(e => p.Grants.Any(g => HarmfulGrant(g) && GrantReaches(g, toggleCtx, e) > 0f));
             if (anyone) return;
             try
             {

@@ -88,6 +88,8 @@ namespace ProfileAudit
             row.Detail = "parts: " + string.Join("; ", parts.Select(x => x.ToString()).Distinct().Take(8)) +
                          (unread.Count > 0 ? " | unread: " + string.Join(",", unread.Take(5)) : "");
             if (parts.Any(x => x.Kind != BuffPartKind.MentalStat && x.Kind != BuffPartKind.ForbidsSpells)) row.Verdict = "toggle valued: buff parts";
+            else if (Field(toggle, "AreaEnemies") is bool onEnemies && onEnemies && buffs.Any(b => (bool)IsHarmfulBuff.Invoke(null, new object[] { b })))
+                row.Verdict = "toggle GUESSED: harmful area (0.25 of each enemy's worth)";
             else
             {
                 var best = buffs.Select(BuffEffectAnalyzer.Analyze).Where(a => a.Recognized).Select(a => a.CombatValue).DefaultIfEmpty(0f).Max();
@@ -186,10 +188,15 @@ namespace ProfileAudit
                 bool appliesHelpful = !p.HarmfulEffects || p.HelpfulToAllies
                     ? ((allies || self) && p.TargetBuffs.Count > 0) || p.CasterBuffs.Count > 0
                     : p.CasterBuffs.Count > 0;
+                // TacticalEngine.Auras.cs: an aura the AI reads is valued by what it gives; its carrier alone is no buff.
+                string aura = AuraReading?.Invoke(null, new object[] { p }) as string;
+                if (aura != null) { modelled.Add("aura"); parts.Add("aura " + aura); }
                 if (appliesHelpful && !p.DealsDamage && !p.IsCleanse && !p.HealsBurn)
                 {
-                    var buffs = (p.TargetBuffs.Count > 0 && (allies || self) ? p.TargetBuffs : p.CasterBuffs).ToList();
-                    BuffVerdict(bp, p, buffs, modelled, guessed, parts);
+                    var buffs = (p.TargetBuffs.Count > 0 && (allies || self) ? p.TargetBuffs : p.CasterBuffs)
+                        .Where(b => !(aura != null && p.Auras.Any(a => a.Carrier == b) && !BuffPartsReader.Read(b).Any))
+                        .ToList();
+                    if (buffs.Count > 0) BuffVerdict(bp, p, buffs, modelled, guessed, parts);
                 }
                 if ((allies || self) && p.RemovesAnything) modelled.Add("cleanse");
                 if (p.Extensions.Count > 0) modelled.Add("extends");
@@ -222,6 +229,12 @@ namespace ProfileAudit
         /// <summary>TacticalEngine: AppraiseBuff when any part is read (not only mental stats / spell prohibition), else
         /// BuffQuality (BuffEffectAnalyzer, enchant 0.8, unrecognised 0.5 unless a limited use, 0.05 a marker).</summary>
         [ThreadStatic] private static string zeroBuff;
+
+        private static readonly System.Reflection.MethodInfo IsHarmfulBuff =
+            typeof(CompanionAI_Pathfinder.Tactics.AbilityProfile).GetMethod("IsHarmfulBuff", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Static);
+
+        private static readonly System.Reflection.MethodInfo AuraReading =
+            typeof(CompanionAI_Pathfinder.Tactics.TacticalEngine).GetMethod("AuraReading", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Static);
 
         private static void BuffVerdict(BlueprintAbility bp, AbilityProfile p, List<BlueprintBuff> buffs, List<string> modelled,
                                         List<string> guessed, List<string> parts)
