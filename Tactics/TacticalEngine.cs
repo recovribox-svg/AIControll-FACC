@@ -3084,7 +3084,18 @@ namespace CompanionAI_Pathfinder.Tactics
                         // (its item enchantment, or the buff that carries it) is visible: nothing to gain. Camellia
                         // recast Spirit Weapon Enchantment at the start of four fights while it was active.
                         if (profile.EnchantmentActive(unit, target)) { why = "already active"; return 0f; }
-                        value += ValueModel.BuffPerRound(level) * ctx.ExpectedRounds * 0.5f * RoleWeight(ctx, "buff");
+                        // ★ v0.3.21: a weapon enchantment the AI can read is valued by what it adds to that weapon (keen on
+                        // a weapon that is keen already, +1 on a +2 weapon: nothing), not by the spell level.
+                        var recipient = targetIsEnemy ? unit : target;
+                        var enchant = profile.WeaponEnchants.Count > 0 && !targetIsEnemy
+                            ? AppraiseBuff(ctx, ability, profile, new List<Kingmaker.UnitLogic.Buffs.Blueprints.BlueprintBuff>(), recipient) : null;
+                        if (enchant != null && enchant.Modelled)
+                        {
+                            if (enchant.Value <= 0f) { why = $"nothing to gain ({enchant.Detail})"; return 0f; }
+                            value += enchant.Value;
+                        }
+                        else
+                            value += ValueModel.BuffPerRound(level) * ctx.ExpectedRounds * 0.5f * RoleWeight(ctx, "buff");
                         reasons.Add("enchant");
                     }
                     else if (!profile.HasDetectableEffect)

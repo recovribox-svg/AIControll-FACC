@@ -20,15 +20,18 @@ taken from the code). It is an approximation:
 
 | | 0.3.21-test3 | 0.3.21-test4 | share now |
 |---|---:|---:|---:|
-| Valued: damage, heal, summon, maneuver, dispel, removal, or by the rules (Charge, Vital Strike, Cleave, Devastating Blow, melee attack actions) | 1 958 | 1 965 | 65.9 % |
-| Valued through a buff or an area | 739 | 762 | 25.6 % |
+| Valued: damage, heal, summon, maneuver, dispel, removal, weapon enchantment, or by the rules (Charge, Vital Strike, Cleave, Devastating Blow, melee attack actions) | 1 958 | 1 972 | 66.2 % |
+| Valued through a buff or an area | 739 | 759 | 25.5 % |
 | Valued as a plain debuff only (flagged harmful, aimed at an enemy; its buff unread) | - | 7 | 0.2 % |
-| Applies only buffs the AI cannot read (worth 0, never cast) | 155 | 122 | 4.1 % |
+| Applies only buffs the AI cannot read (worth 0, never cast) | 155 | 118 | 4.0 % |
 | Effect not understood (never used) | 129 | 125 | 4.2 % |
 
-About 91.5 % are valued. In the first count, the plain-debuff row was mixed into "worth 0" (Command and Poison were
-cast, valued only by that guess). Of the rest, most are out of combat or not for the AI to use: Consume Spells, item
+About 91.9 % are valued. In the first count, the plain-debuff row was mixed into "worth 0": Command and Poison were
+cast, but valued only by that guess. Of the rest, most are out of combat or not for the AI to use: Consume Spells, item
 bonds, teleports, Dimension Door, resurrection, Find Traps, Atonement, Dismiss, wandering hex choice.
+
+With the Equipment, Weapons, Items, Feats and full Spells folders added (3 279 abilities, item abilities included), 91.3 %
+are valued. The items left are almost all out of combat: manuals and tomes, Pearls of Power, the shadow-plane lantern.
 
 ## Combat-relevant gaps, in suggested order
 
@@ -37,7 +40,7 @@ bonds, teleports, Dimension Door, resurrection, Find Traps, Atonement, Dismiss, 
 | 1 | Attack modes in the base game's trigger form (`AddInitiatorAttackWithWeaponTrigger` → effect buff) and `AttackTypeAttackBonus` | Power Attack, Deadly Aim, Piranha Strike, Combat Expertise | **Done in 0.3.21** (TACTICAL_AI.md §55) |
 | 2 | Invisibility (`BuffInvisibility`) | Greater Invisibility, Vanish | **Done in 0.3.21-test4** (TACTICAL_AI.md §56) |
 | 3 | Protection from Energy (`ProtectionFromEnergy`) | Protection from Fire/Cold/Acid/Electricity/Sonic, communal | **Done in 0.3.21-test4** |
-| 4 | Extra damage on hit (`AdditionalDamageOnHit`), crit range (Keen Edge), dice size (`IncreaseDiceSizeOnAttack`), weapon enhancement (`EquipmentWeaponTypeEnhancement`, Magic Weapon/Fang) | Scaled Fist Draconic Fury, Keen Edge, Lead Blades, Magic Fang, Greater Magic Fang | **Done in 0.3.21-test4**, except Keen Edge (needs its enchantment blueprint from the Equipment folder) |
+| 4 | Extra damage on hit (`AdditionalDamageOnHit`), crit range (Keen Edge), dice size (`IncreaseDiceSizeOnAttack`), weapon enhancement (`EquipmentWeaponTypeEnhancement`, Magic Weapon/Fang) | Scaled Fist Draconic Fury, Keen Edge, Lead Blades, Magic Fang, Greater Magic Fang | **Done in 0.3.21-test4**; Keen Edge and Magic Weapon through their weapon enchantments |
 | 5 | Melee attack actions (`ContextActionMeleeAttack`, `AbilityCustomMeleeAttack`) | Two-Handed Fighter Piledriver, Devastating Blow, Blade Whirlwind, Death Attack | **Done in 0.3.21-test4** |
 | 6 | Flee / approach control (`SetFleeOrApproachLogic`) | Command (Flee, Approach) | **Done in 0.3.21-test4** (hard control) |
 | 7 | Poison stat damage (`BuffPoisonStatDamage`) | Poison, Poison Breath, Hoarfrost hex | **Done in 0.3.21-test4** (Constitution damage as lost HP) |
@@ -54,4 +57,6 @@ mythic paths.
 python3 -I tools/CoverageAudit/coverage_audit.py <dump folders...> tools/CoverageAudit/known_types.txt out.txt
 ```
 Update `known_types.txt` when a reader is added (the type names from the code). For a modded game, run it on a blueprint
-dump made with the mods loaded.
+dump made with the mods loaded. The script follows buffs, areas and touch deliveries, not item enchantments: an ability
+with `EnhanceWeapon` counts as valued, as the engine values it (from its enchantment, or by spell level when the
+enchantment is unread).

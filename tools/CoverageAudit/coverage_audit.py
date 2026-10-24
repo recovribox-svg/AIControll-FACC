@@ -22,7 +22,7 @@ def ref(v):
 EFFECT_ACTIONS = {'ContextActionDealDamage','ContextActionKill','ContextActionHealTarget','ContextActionDealWeaponDamage',
   'ContextActionCombatManeuver','ContextActionCombatManeuverCustom','ContextActionDisarm','Demoralize','ContextActionSpawnMonster',
   'ContextActionDispelMagic','ContextActionReduceBuffDuration','ContextActionEnchantWornItem','ContextActionRemoveBuff',
-  'ContextActionRemoveBuffsByDescriptor','ContextActionMeleeAttack'}
+  'ContextActionRemoveBuffsByDescriptor','ContextActionMeleeAttack','EnhanceWeapon'}
 RULE_COMPONENTS = {'AbilityCustomCharge','AbilityCustomVitalStrike','AbilityCustomCleave','AbilityDeliverAttackWithWeapon',
   'AbilityCustomMeleeAttack'}
 # structural / neutral types never counted as blockers

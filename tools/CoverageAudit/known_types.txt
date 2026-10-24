@@ -233,6 +233,7 @@ Displacement
 Electricity
 EnemyTargeting
 EnergyResist
+EnhanceWeapon
 Entangled
 EquipmentWeaponTypeEnhancement
 Evasion
@@ -393,7 +394,13 @@ Value
 Wand
 WeaponAttack
 WeaponAttackTypeDamageBonus
+WeaponConditionalDamageDice
+WeaponConditionalEnhancementBonus
+WeaponCriticalEdgeIncrease
+WeaponDamageAgainstAlignment
 WeaponDamageBonus
+WeaponEnergyDamageDice
+WeaponEnhancementBonus
 WeaponKineticBlade
 WeaponParametersAttackBonus
 WeaponParametersDamageBonus

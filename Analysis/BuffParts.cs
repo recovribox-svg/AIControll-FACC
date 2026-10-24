@@ -60,7 +60,13 @@ namespace CompanionAI_Pathfinder.Analysis
         /// it, who also lose their Dexterity to AC against it; <see cref="BuffPart.EndsOnAttack"/> for the kind an attack ends.</summary>
         Invisibility,
         /// <summary>★ v0.3.21: the weapon's damage dice grow this many size steps (IncreaseDiceSizeOnAttack: Lead Blades).</summary>
-        WeaponDiceUp
+        WeaponDiceUp,
+        /// <summary>★ v0.3.21: an enhancement bonus on the weapon itself (WeaponEnhancementBonus): attack and damage, above
+        /// what the weapon already has unless it stacks.</summary>
+        WeaponEnhancement,
+        /// <summary>★ v0.3.21: the weapon's critical threat range doubles (WeaponCriticalEdgeIncrease: keen) - not with
+        /// Improved Critical, which sets the same flag (RuleCalculateWeaponStats.DoubleCriticalEdge).</summary>
+        CritRangeDouble
     }
 
     public sealed class BuffPart
@@ -100,6 +106,16 @@ namespace CompanionAI_Pathfinder.Analysis
         /// <summary>★ v0.3.21: invisibility that ends with the bearer's first offensive action (Invisibility, Vanish).</summary>
         public bool EndsOnAttack;
 
+        /// <summary>★ v0.3.21: a copy for some weapons only.</summary>
+        public BuffPart ForWeapons(Func<Kingmaker.Blueprints.Items.Weapons.BlueprintItemWeapon, bool> weapon, BlueprintBuff owner)
+        {
+            var copy = (BuffPart)MemberwiseClone();
+            var own = Weapon;
+            copy.Weapon = own == null ? weapon : w => own(w) && weapon(w);
+            copy.Owner = Owner ?? owner;
+            return copy;
+        }
+
         public override string ToString() =>
             $"{Kind}{(Kind == BuffPartKind.Saves && SaveShare < 1f ? $"({Stat})" : "")} " +
             (Value != null && Value.ValueType != ContextValueType.Simple ? $"{Value.ValueType}" : $"{Fixed + (Value?.Value ?? 0) * Multiplier}") +
@@ -118,7 +134,77 @@ namespace CompanionAI_Pathfinder.Analysis
     {
         private static readonly Dictionary<string, BuffPartList> Cache = new Dictionary<string, BuffPartList>();
 
-        public static void ClearCache() => Cache.Clear();
+        private static readonly Dictionary<string, BuffPartList> EnchantmentCache = new Dictionary<string, BuffPartList>();
+
+        public static void ClearCache()
+        {
+            Cache.Clear();
+            EnchantmentCache.Clear();
+        }
+
+        /// <summary>
+        /// ★ v0.3.21: what a weapon enchantment does to the weapon it is on, as buff parts for its wielder: enhancement
+        /// (WeaponEnhancementBonus), keen (WeaponCriticalEdgeIncrease), energy dice on each hit (WeaponEnergyDamageDice),
+        /// dice against an alignment (WeaponDamageAgainstAlignment: Holy, Unholy, Axiomatic, Anarchic), bane
+        /// (WeaponConditionalDamageDice / WeaponConditionalEnhancementBonus against a creature type: at half).
+        /// </summary>
+        public static BuffPartList ReadEnchantment(Kingmaker.Blueprints.Items.Ecnchantments.BlueprintItemEnchantment enchantment)
+        {
+            if (enchantment == null) return new BuffPartList();
+            string key = enchantment.AssetGuid.ToString();
+            if (EnchantmentCache.TryGetValue(key, out var cached)) return cached;
+            var list = new BuffPartList();
+            try
+            {
+                foreach (var c in enchantment.ComponentsArray ?? new BlueprintComponent[0])
+                {
+                    switch (c)
+                    {
+                        case null:
+                            break;
+                        case WeaponEnhancementBonus e when e.EnhancementBonus > 0:
+                            list.Parts.Add(new BuffPart
+                            {
+                                Kind = BuffPartKind.WeaponEnhancement, Fixed = e.EnhancementBonus,
+                                Descriptor = e.Stack ? ModifierDescriptor.UntypedStackable : ModifierDescriptor.Enhancement
+                            });
+                            break;
+                        case Kingmaker.Designers.Mechanics.WeaponEnchants.WeaponCriticalEdgeIncrease _:
+                            list.Parts.Add(new BuffPart { Kind = BuffPartKind.CritRangeDouble });
+                            break;
+                        case WeaponEnergyDamageDice energy when energy.EnergyDamageDice.Rolls > 0:
+                            list.Parts.Add(new BuffPart { Kind = BuffPartKind.Damage, Formula = energy.EnergyDamageDice, Energy = true });
+                            break;
+                        case WeaponDamageAgainstAlignment aligned when aligned.Value != null:
+                            list.Parts.Add(new BuffPart
+                            {
+                                Kind = BuffPartKind.Damage, Dice = aligned.Value, Energy = true, AgainstAlignment = aligned.EnemyAlignment
+                            });
+                            break;
+                        case WeaponConditionalDamageDice bane when bane.Damage?.Dice.Rolls > 0 || bane.Damage?.Bonus > 0:
+                            list.Parts.Add(new BuffPart
+                            {
+                                Kind = BuffPartKind.Damage, Formula = bane.Damage.Dice, Fixed = bane.Damage.Bonus, Conditional = true,
+                                Energy = bane.Damage.TypeDescription?.Type != Kingmaker.RuleSystem.Rules.Damage.DamageType.Physical
+                            });
+                            break;
+                        case WeaponConditionalEnhancementBonus baneEnhancement when baneEnhancement.EnhancementBonus > 0:
+                            list.Parts.Add(new BuffPart
+                            {
+                                Kind = BuffPartKind.WeaponEnhancement, Fixed = baneEnhancement.EnhancementBonus, Conditional = true,
+                                Descriptor = ModifierDescriptor.Enhancement
+                            });
+                            break;
+                        default:
+                            if (!IsBookkeeping(c)) list.Unread.Add(c.GetType().Name);
+                            break;
+                    }
+                }
+            }
+            catch (Exception ex) { Main.Verbose($"[BuffParts] enchantment {enchantment.name}: {ex.Message}"); }
+            EnchantmentCache[key] = list;
+            return list;
+        }
 
         public static BuffPartList Read(BlueprintBuff buff)
         {

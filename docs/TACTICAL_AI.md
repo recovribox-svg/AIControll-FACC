@@ -2047,7 +2047,22 @@ From the offline audit (`docs/COVERAGE_AUDIT.md`, gaps 2-7); each reader follows
     and unarmed attacks or one category. Typed Enhancement when not `IsStackable`.
   - `IncreaseDiceSizeOnAttack` (Lead Blades): the weapon's dice that many sizes up, by the game's
     `WeaponDamageScaleTable` (`SizeUpDiceGain` with steps), for the categories and subcategories it names.
-  - Keen Edge stays unread: its buff has no component and the enchantment it refers to was not in the dumps.
+  - **Weapon enchantments** (from the Equipment / Weapons blueprints the player supplied):
+    - Which abilities: `EnhanceWeapon` (Magic Weapon, Greater Magic Weapon, Keen Edge, and their off-hand versions)
+      and `ContextActionEnchantWornItem` on the main hand (oils, Holy Sword, the Greater domain powers, Black Blade,
+      Bane). They are recorded in `AbilityProfile.WeaponEnchants`.
+    - How each enchantment is read: `BuffPartsReader.ReadEnchantment`, for the weapon it goes on (Magic Fang: natural
+      and unarmed; Magic Weapon: the main hand's; the off-hand version: a two-handed main weapon only).
+    - `WeaponEnhancementBonus` counts only above the weapon's enhancement now (`RuleCalculateWeaponStats.Enhancement`).
+    - `WeaponCriticalEdgeIncrease` (keen) adds the base threat range again, but not on a weapon whose range is doubled
+      already (`DoubleCriticalEdge`: keen or Improved Critical, the game's own flag).
+    - `WeaponEnergyDamageDice` adds energy dice per hit.
+    - `WeaponDamageAgainstAlignment` (Holy, Unholy, Axiomatic, Anarchic) counts for the share of enemies of that
+      alignment.
+    - Bane (`WeaponConditional*`) counts at half.
+    - The greater versions take the enchantment at their caster-level step, as `EnhanceWeapon.RunAction` does.
+    - An enchanting ability with no buff of its own uses this appraisal instead of the spell-level guess; "nothing to
+      gain" is reported when, for example, keen goes on a weapon that is keen already.
 - **Melee attack actions**:
   - `AbilityCustomMeleeAttack` is Devastating Blow (its only type, read by reflection): one melee attack at -5 that
     always threatens a critical hit. Valued by the attack estimate with the -5 and the threat chance raised to 1;

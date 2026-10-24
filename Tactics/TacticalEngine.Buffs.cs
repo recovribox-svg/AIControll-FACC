@@ -59,6 +59,12 @@ namespace CompanionAI_Pathfinder.Tactics
             public ItemEntityWeapon Weapon;
             public UnitEntityData Enemy;
             public int SneakDice;
+            /// <summary>★ v0.3.21: the weapon's enhancement now, whether its threat range is doubled already (keen, Improved
+            /// Critical), its base threat chance and critical multiplier (RuleCalculateWeaponStats), and whether the enemy
+            /// can be critically hit.</summary>
+            public int Enhancement;
+            public bool DoubleEdge, CanCrit;
+            public float BaseThreat, CritMultiplier = 2f;
         }
 
         /// <summary>What comes at the recipient now (per frame).</summary>
@@ -121,18 +127,23 @@ namespace CompanionAI_Pathfinder.Tactics
                 parts.AddRange(read.Parts);
                 foreach (var u in read.Unread) unread.Add(u);
             }
+            var abilityCtx = CombatMath.CreateContext(ability, new Kingmaker.Utility.TargetWrapper(ally));
+            // ★ v0.3.21: the weapon enchantments it puts on the recipient's weapon (Magic Weapon, Keen Edge, oils, Holy
+            // Sword): their parts, for the weapon each one goes on. A buff that only carries one (Keen Edge's is empty) is
+            // valued by the enchantment.
+            float enchantRounds = EnchantParts(ctx, ability, profile, abilityCtx, buffs.FirstOrDefault(), ally, parts, unread);
             // Mental stats (spell DCs) are not valued here: a buff of only those (or of only a spell prohibition) keeps the
             // old reading.
             if (!parts.Any(p => p.Kind != BuffPartKind.MentalStat && p.Kind != BuffPartKind.ForbidsSpells)) return result;
             result.Modelled = true;
 
-            var abilityCtx = CombatMath.CreateContext(ability, new Kingmaker.Utility.TargetWrapper(ally));
             int casterLevel = 1;
             try { casterLevel = Math.Max(1, abilityCtx?.Params?.CasterLevel ?? 1); } catch { }
 
             // --- useful rounds ---
             bool oneAttack = profile.BuffsSpentByAttack || profile.BuffsSpentByRoll;
-            float duration = buffs.Max(b => EffectiveRounds(ability, profile, b, abilityCtx));
+            float duration = buffs.Count > 0 ? buffs.Max(b => EffectiveRounds(ability, profile, b, abilityCtx)) : -1f;
+            if (duration <= 0f && enchantRounds > 0f) duration = enchantRounds;
             float unknown = profile.HasLongBuff ? ctx.ExpectedRounds : Math.Min(ctx.ExpectedRounds, 3f);
             float rounds = oneAttack || profile.BuffsLastOneRound ? 1f : ValueModel.UsefulRounds(duration, ctx.ExpectedRounds, unknown);
             return AppraiseParts(ctx, ability.Caster?.Unit ?? ctx.Unit, abilityCtx, casterLevel, buffs, parts, unread, ally, rounds,
@@ -161,7 +172,7 @@ namespace CompanionAI_Pathfinder.Tactics
             // --- what each part adds, with this caster's numbers ---
             float attack = 0f, damage = 0f, extraAttacks = 0f, armor = 0f, concealment = 0f, miss = 0f, saves = 0f;
             float tempHp = 0f, images = 0f, physicalDr = 0f, energyResist = 0f, conHp = 0f;
-            float energyDamage = 0f, energyPool = 0f, diceUp = 0f;
+            float energyDamage = 0f, energyPool = 0f, diceUp = 0f, critExtra = 0f;
             bool sizeUp = false, forbidsSpells = false;
             BuffPart invisible = null;
             foreach (var p in parts)
@@ -219,6 +230,21 @@ namespace CompanionAI_Pathfinder.Tactics
                     case BuffPartKind.Invisibility:
                         if (invisible == null || invisible.EndsOnAttack) invisible = p;
                         break;
+                    case BuffPartKind.WeaponEnhancement:
+                    {
+                        // Enhancement bonuses do not stack: only what it adds over the weapon's own (EnhancementValue).
+                        float gain = ModifierDescriptorHelper.IsStackable(p.Descriptor) ? amount : Math.Max(0f, amount - off.Enhancement);
+                        attack += gain;
+                        damage += gain;
+                        break;
+                    }
+                    case BuffPartKind.CritRangeDouble:
+                        // The base threat range again (RuleCalculateWeaponStats.CriticalRange), confirmed at about the hit
+                        // chance, the multiplier's extra damage: per hit.
+                        if (!off.DoubleEdge && off.CanCrit)
+                            critExtra = Math.Max(critExtra, off.BaseThreat * off.HitChance * Math.Max(0f, off.CritMultiplier - 1f) * off.PerHit *
+                                                            (p.Conditional ? 0.5f : 1f));
+                        break;
                     case BuffPartKind.WeaponDiceUp:
                         if (off.Weapon != null && amount > 0f) diceUp = Math.Max(diceUp, SizeUpDiceGain(off.Weapon, Mathf.RoundToInt(amount)));
                         break;
@@ -236,6 +262,7 @@ namespace CompanionAI_Pathfinder.Tactics
                 damage += off.SizeUpDice;
             }
             damage += diceUp;
+            if (critExtra > 0f) { energyDamage += critExtra; notes.Add("keen"); }   // not a damage bonus: no swarm halving twice
             // ★ v0.3.21: invisible (BuffInvisibility; UnitPartConcealment.Calculate, RuleCalculateAttackBonus,
             // RuleCheckTargetFlatFooted): enemies that cannot see invisible miss it half the time, and it attacks them at +2
             // while they lose their Dexterity to AC (sneak attack included). The kind an attack ends counts once: its
@@ -343,8 +370,20 @@ namespace CompanionAI_Pathfinder.Tactics
                 if (apply.Permanent) return 100f;
                 if (apply.SameDuration) return -1f;
                 if (apply.UseDurationSeconds) return Math.Max(1f, apply.DurationSeconds / 6f);
-                var d = apply.DurationValue;
-                if (d == null) return -1f;
+                return DurationRounds(apply.DurationValue, ability, abilityCtx);
+            }
+            catch
+            {
+                return -1f;
+            }
+        }
+
+        /// <summary>A ContextDurationValue in rounds with the ability's context, doubled by Extend; -1 when unknown.</summary>
+        private static float DurationRounds(ContextDurationValue d, AbilityData ability, MechanicsContext abilityCtx)
+        {
+            if (d == null) return -1f;
+            try
+            {
                 float rate = d.Rate == DurationRate.Rounds ? 1f : d.Rate == DurationRate.Minutes ? 10f :
                              d.Rate == DurationRate.TenMinutes ? 100f : d.Rate == DurationRate.Hours ? 600f : 14400f;
                 int sides = d.DiceType.Sides();
@@ -359,6 +398,39 @@ namespace CompanionAI_Pathfinder.Tactics
             {
                 return -1f;
             }
+        }
+
+        /// <summary>
+        /// ★ v0.3.21: adds the parts of the weapon enchantments <paramref name="profile"/> puts on <paramref name="ally"/>'s
+        /// weapon (AbilityProfile.WeaponEnchants), each limited to the weapons it goes on (EnhanceWeapon.ApplyMagicFang /
+        /// ApplyMagicWeapon, the main hand slot), and returns their longest duration in rounds (-1: none or unknown).
+        /// </summary>
+        private static float EnchantParts(TacticalContext ctx, AbilityData ability, AbilityProfile profile, MechanicsContext abilityCtx,
+                                          BlueprintBuff owner, UnitEntityData ally, List<BuffPart> parts, HashSet<string> unread)
+        {
+            float rounds = -1f;
+            if (profile.WeaponEnchants.Count == 0) return rounds;
+            var caster = ability.Caster?.Unit ?? ctx.Unit;
+            foreach (var effect in profile.WeaponEnchants)
+            {
+                if (effect.OnCaster && ally != caster) continue;
+                var enchantment = effect.Enchantments[0];
+                if (effect.Greater)
+                {
+                    int level = CombatMath.EvaluateValue(effect.EnchantLevel, abilityCtx, 1);
+                    enchantment = effect.Enchantments[Mathf.Clamp(level, 1, effect.Enchantments.Length) - 1];
+                }
+                var read = BuffPartsReader.ReadEnchantment(enchantment);
+                Func<Kingmaker.Blueprints.Items.Weapons.BlueprintItemWeapon, bool> on =
+                    effect.Natural ? (w => w.IsNatural || w.IsUnarmed)
+                    : effect.OffHand ? (w => w.IsTwoHanded && !w.IsNatural)
+                    : (Func<Kingmaker.Blueprints.Items.Weapons.BlueprintItemWeapon, bool>)(w => !w.IsNatural);
+                foreach (var part in read.Parts) parts.Add(part.ForWeapons(on, owner));
+                foreach (var u in read.Unread) unread.Add(u);
+                float r = effect.Permanent ? 100f : DurationRounds(effect.Duration, ability, abilityCtx);
+                rounds = Math.Max(rounds, r);
+            }
+            return rounds;
         }
 
         /// <summary>★ v0.3.21: the share of the enemies still fighting that cannot see an invisible unit (no See Invisibility or
@@ -514,6 +586,15 @@ namespace CompanionAI_Pathfinder.Tactics
                         off.PhysicalFactor = est.FirstPhysicalFactor;
                         off.Weapon = est.Weapon;
                         off.Enemy = enemy;
+                        off.CanCrit = est.FirstCritChance > 0f;
+                        off.CritMultiplier = est.CritMultiplier;
+                        if (est.Weapon != null)
+                        {
+                            var stats = Kingmaker.RuleSystem.Rulebook.Trigger(new Kingmaker.RuleSystem.Rules.RuleCalculateWeaponStats(ally, est.Weapon));
+                            off.Enhancement = stats.Enhancement.TotalValue;
+                            off.DoubleEdge = stats.DoubleCriticalEdge;
+                            off.BaseThreat = Mathf.Clamp01((21 - est.Weapon.Blueprint.CriticalRollEdge) / 20f);
+                        }
                     }
                 }
                 off.StrengthToDamage = CombatMath.StrengthAddsWeaponDamage(ally);

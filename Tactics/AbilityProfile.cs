@@ -83,6 +83,29 @@ namespace CompanionAI_Pathfinder.Tactics
         public bool RemovesBuffs { get; private set; }
         public bool Enchants { get; private set; }
 
+        /// <summary>
+        /// ★ v0.3.21: a weapon enchantment it puts on the target's (or caster's) weapon in hand - EnhanceWeapon (Magic
+        /// Weapon, Greater Magic Weapon, Keen Edge, Magic Fang's action form) or ContextActionEnchantWornItem on a hand slot
+        /// (oils, Holy Sword, domain powers, Black Blade) - valued by its enchantment's components (BuffPartsReader.ReadEnchantment).
+        /// </summary>
+        public sealed class WeaponEnchantEffect
+        {
+            public Kingmaker.Blueprints.Items.Ecnchantments.BlueprintItemEnchantment[] Enchantments;
+            /// <summary>Greater: the enchantment at EnchantLevel (1-based, capped at the list) - EnhanceWeapon.RunAction.</summary>
+            public bool Greater;
+            public ContextValue EnchantLevel;
+            /// <summary>Which of the recipient's weapons: natural and unarmed (Magic Fang), or the one in its main hand.</summary>
+            public bool Natural;
+            /// <summary>The off-hand version: the main hand's weapon only when it is two-handed (the off hand's attacks are
+            /// not valued on their own).</summary>
+            public bool OffHand;
+            public bool OnCaster;
+            public ContextDurationValue Duration;
+            public bool Permanent;
+        }
+
+        public readonly List<WeaponEnchantEffect> WeaponEnchants = new List<WeaponEnchantEffect>();
+
         /// <summary>★ v0.3.8: the item enchantments it applies (ContextActionEnchantWornItem) and on whom.</summary>
         private readonly List<KeyValuePair<ContextActionEnchantWornItem, bool>> m_Enchantments =
             new List<KeyValuePair<ContextActionEnchantWornItem, bool>>();
@@ -739,6 +762,24 @@ namespace CompanionAI_Pathfinder.Tactics
                     case ContextActionEnchantWornItem enchant when subject != EffectSubject.Other:
                         m_Enchantments.Add(new KeyValuePair<ContextActionEnchantWornItem, bool>(
                             enchant, toCaster || enchant.ToCaster || subject == EffectSubject.Caster));
+                        // ★ v0.3.21: the main hand's weapon (the off hand's is not what the AI attacks with first).
+                        if (enchant.Slot == Kingmaker.UI.GenericSlot.EquipSlotBase.SlotType.PrimaryHand && enchant.Enchantment != null)
+                            WeaponEnchants.Add(new WeaponEnchantEffect
+                            {
+                                Enchantments = new[] { enchant.Enchantment }, OnCaster = toCaster || enchant.ToCaster || subject == EffectSubject.Caster,
+                                Duration = enchant.DurationValue, Permanent = enchant.Permanent
+                            });
+                        break;
+                    // ★ v0.3.21: EnhanceWeapon.RunAction - Magic Fang enchants natural weapons and the empty hand, Magic
+                    // Weapon the weapon in the main hand (or, for the off-hand version, a two-handed one there).
+                    case EnhanceWeapon enhance when subject != EffectSubject.Other && enhance.Enchantment.Length > 0 && enhance.Enchantment.All(e => e != null):
+                        WeaponEnchants.Add(new WeaponEnchantEffect
+                        {
+                            Enchantments = enhance.Enchantment.ToArray(), Greater = enhance.Greater, EnchantLevel = enhance.EnchantLevel,
+                            Natural = enhance.EnchantmentType == EnhanceWeapon.EnchantmentApplyType.MagicFang,
+                            OffHand = enhance.EnchantmentType == EnhanceWeapon.EnchantmentApplyType.MagicWeapon && enhance.UseSecondaryHand,
+                            OnCaster = toCaster || subject == EffectSubject.Caster, Duration = enhance.DurationValue
+                        });
                         break;
                     case ContextActionRemoveBuff remove:
                         RemovesBuffs = true;
