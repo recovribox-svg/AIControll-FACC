@@ -49,7 +49,11 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
   by offence (`[Threat]`), one-move walk-then-act, casts counted when performed (`Tactics/CastLedger`), real-time quiet
   waits (`Tactics/RealTimePacing`), attacks of opportunity avoided by approach spot and counted on the real walk
   (`PlanApproach`, `CommandDispatcher.Run` pathAttackers, `TurnMemory.PathAttackers`), live-code audit
-  `docs/LIVE_CODE_AUDIT.md`; `release/CHANGELOG_v0.3.20.md`)
+  `docs/LIVE_CODE_AUDIT.md`; `release/CHANGELOG_v0.3.20.md`; 0.3.21 (in test, not released): attack modes in the
+  base game's trigger form, Wrath Tactics first-refusal handoff in real time (`GameInterface/ModInterop`,
+  `Tactics/WrathHandoff`), coverage and verification audit with the real readers (`tools/ProfileAudit`,
+  `docs/COVERAGE_AUDIT.md`), auras on buffs (`Tactics/TacticalEngine.Auras.cs`), immunities, sight, claws, pits,
+  regeneration, spellcasting boosts, on-hit effects, Quicken / Extend boosters, shadow spells - `docs/TACTICAL_AI.md` §55-63)
 
 ## Reference Resources
 - **Rogue Trader CompanionAI v3.5.7**: `C:\Users\veria\Downloads\CompanionAI_v3-master - v3.5.7`
@@ -98,8 +102,11 @@ Design and value formulas: `docs/TACTICAL_AI.md`. Root-cause evidence: `docs/INV
   `BuffStackingAnalyzer`, `AoeDangerAnalyzer`, `CombatRulesAnalyzer`, `HitChanceCalculator`, `BattlefieldGrid`) and the
   legacy engine's (`SituationAnalyzer`, `TargetScorer`, `Situation`)
 - **Core/DecisionEngine/, Scoring/, Planning/MovementPlanner**: the old real-time engine (setting "Real time: use the old
-  decision engine"), kept until 0.4.0. The v0.2 planner (TurnPlanner, role plans, TurnOrchestrator, ActionExecutor) was
-  removed in 0.3.17.
+  decision engine"). Not maintained: to be removed entirely; do not adapt it or spend changes on it. The v0.2 planner
+  (TurnPlanner, role plans, TurnOrchestrator, ActionExecutor) was removed in 0.3.17.
+- **tools/**: offline verification - `ProfileAudit` (the mod's readers on blueprint dumps), `RunnableStubs`, `SigDump`,
+  `RefStubGen`, `CoverageAudit` (`tools/README.md`); none of them ship with the mod.
+- **docs/archive/**: superseded documents (the v0.2.57 architecture, early research reports).
 - **Abstraction/**: `PathfinderCombatStateAdapter` (mode display in the UI)
 - **GameInterface/**: Harmony patches and command issuing - `CustomBrainPatch`, `RealTimeController`, `CommandDispatcher`
 - **Settings/**: Per-character configuration with bilingual support (EN/KR)

@@ -122,11 +122,7 @@ namespace ProfileAudit
                 allies = !harmfulOnly && (bp.CanTargetFriends || bp.CanTargetSelf);
                 if (!allies && !harmfulOnly && bp.CanTargetPoint && !bp.CanTargetEnemies && p.IsAoE &&
                     (p.TargetBuffs.Count > 0 || p.Heals.Count > 0 || p.RemovesAnything))
-                {
                     allies = true;
-                    if (System.Environment.GetEnvironmentVariable("PA_POINTALLY") != null)
-                        System.Console.Error.WriteLine($"POINTALLY {bp.name} aoe={p.AoETargets} buffs=[{string.Join(",", p.TargetBuffs.Select(b => b.name))}]");
-                }
                 self = !harmfulOnly && bp.CanTargetSelf;
                 if (p.Heals.Count > 0 && bp.CanTargetFriends) allies = true;
                 if (harmfulOnly && p.IsAoE && bp.CanTargetSelf && !bp.CanTargetEnemies && !bp.CanTargetPoint) { self = true; selfOnly = true; }

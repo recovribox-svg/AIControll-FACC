@@ -271,7 +271,7 @@ AiBrainController.TickBrain (prefix, real-time) ─► RealTimeController ─►
                  GameInterface/CommandTrace (EventBus: ISSUED / REJECTED / ENDED log lines)
 ```
 
-See `ARCHITECTURE.md` (Korean) for the decision/scoring pipeline.
+See `CLAUDE.md` (architecture overview) and `docs/TACTICAL_AI.md` (design and value formulas) for the decision pipeline.
 
 ## License / credits
 

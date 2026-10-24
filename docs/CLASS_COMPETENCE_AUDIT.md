@@ -52,7 +52,7 @@ Ownership (an unused feature is not a defect when one of these holds) [code]:
 | Old claim | Where | Current code | Status |
 |---|---|---|---|
 | "Activatable toggles are unsupported" | `docs/audit/ACTIVE_ABILITY_AUDIT_REPORTS.md` (0.3.17) | `TacticalEngine.Toggles.cs` (AA-2, 0.3.18), `Modes.cs` (AA-3) | outdated; but see F1/F2: area toggles that apply their buff by actions are still unread |
-| `TurnOrchestrator` architecture | `ARCHITECTURE.md` (v0.2.57) | removed in 0.3.17 (`CLAUDE.md`) | outdated document |
+| `TurnOrchestrator` architecture | `docs/archive/ARCHITECTURE_v0.2.57.md` | removed in 0.3.17 (`CLAUDE.md`) | outdated document |
 | "Kineticist only uses standard attacks" | historical complaint | `TacticalEngine.Kinetic.cs` (0.3.19-test6/7): burn, blocking infusions, quiver, blade internals | Orvath's Fire Blast chosen whenever it scores best (test7 TB: 12 of 37 offers; test11: 4 of 45); it lost to the crossbow (Kineticist 2, 1d6+1 vs heavy crossbow) or to Sleep/Grease [log]. No evidence of a remaining defect at this level; high-level Kineticist untested |
 | "Cleric does not heal" | historical complaint | heal curve, downed allies, `PartyCanRevive`, conversions (AbilityDiscovery), Cure/Inflict branches per target | no Cleric in any log; the shared heal path works for Seelah's Lay On Hands and Camellia's cures [log] - Cleric itself [untested] |
 | Short-buff unknowns: immunities, auras, ally turn order, haste stacking | `SHORT_BUFFS_AUDIT.md` §6 | unchanged | open (auras are F1/F2 here) |

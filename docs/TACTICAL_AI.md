@@ -299,7 +299,7 @@ unit's conditions (`{nauseated | nauseated: move only}`) and every "cannot act" 
 
 ## 21. v0.3.14-test5: risk on the way, areas, damage actually taken
 
-From the test4 logs (turn-based 67e90edc, real time 87aa4bc7; plan: `docs/PLAN_0.3.14_test4_TB.md`).
+From the test4 logs (turn-based 67e90edc, real time 87aa4bc7; plan: `docs/archive/PLAN_0.3.14_test4_TB.md`).
 
 | Change | Both modes unless noted |
 |---|---|
