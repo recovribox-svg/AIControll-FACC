@@ -95,6 +95,16 @@ namespace ProfileAudit
                 }
             Console.WriteLine($"loaded {loaded.Count}, failed {failed}");
             foreach (var e in firstErrors) Console.WriteLine("  " + e);
+            // ★ v0.3.22: failed deserialization is not a zero-ability success. In particular a missing Unity
+            // dependency can prevent almost the whole dump from loading while Audit.Run reports zero errors.
+            // Replace any previous report so it cannot be mistaken for evidence from this incomplete run.
+            if (failed > 0 || loaded.Count == 0)
+            {
+                var incomplete = $"INCOMPLETE: loaded {loaded.Count}, failed {failed}; no ability verdicts generated.";
+                File.WriteAllText(output, incomplete + Environment.NewLine + string.Join(Environment.NewLine, firstErrors));
+                Console.Error.WriteLine(incomplete);
+                return 1;
+            }
             foreach (var kv in loaded) ResourcesLibrary.BlueprintsCache.AddCachedBlueprint(kv.Key, kv.Value);
             foreach (var bp in loaded.Values)
                 try { bp.OnEnable(); } catch { }

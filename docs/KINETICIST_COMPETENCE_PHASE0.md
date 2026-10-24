@@ -1,6 +1,7 @@
 # Kineticist competence: Phase 0 baseline and implementation design
 
-Status: Phase 0 audit only. No runtime behavior changed; phases 1-3 are not implemented.
+Status: Phase 0 audit and subsequent data intake. No runtime behavior changed; phases 1-3 are not implemented.
+The historical environment findings below are supplemented by the data-intake follow-up at the end.
 Baseline: `cbc710a49f5fd1a303313d7c66f9405321e48a45` on `claude/dreamy-pasteur-b9h3rn`.
 Task branch: `codex/kineticist-competence`. Target: development, not main.
 
@@ -132,3 +133,49 @@ In both turn-based and real-time combat, record the exact tested commit and pack
 7. Blade extra attacks and area ticks: damage/effects counted at actual game cadence; allies and Wall orientation checked.
 
 Phase 0 cannot verify individual blueprint wiring, actual per-character scores, patched runtime costs, live toggle restoration, gather opportunity attacks or stability in either mode. These remain explicit gates for subsequent implementation and integration.
+
+## Data-intake follow-up: 24 October 2026
+
+Received `codex_kineticist_data.zip`; SHA-256
+`f05424406a72a58519ae34df94b930ab653d9590457ffa61da49a50bd68dcfb6`.
+The README and supplied ProfileAudit outputs were read. The nested archive actually contains 4,098 unique JBP files,
+including 794 under bp_kin, rather than the README's 4,104 and 800. Traversing the supplied Kineticist roots through
+four reference links independently reproduces 159 missing GUIDs. References from the fourth layer lead beyond the
+exported closure; those additional absent references should not be confused with the 159 within the chosen depth.
+Game data remains outside the repository.
+
+Blueprint inspection confirms Bowling's trigger contains ContextActionCombatManeuver with UseKineticistMainStat,
+Entangling's trigger contains a Reflex save and target-dependent branches, and metakinesis contains both
+AddKineticistBurnModifier and AutoMetamagic with explicit applicable ability lists. Rare Metal is a damage trigger;
+Pure Flame instead changes spell-resistance handling directly. A reader must not assume every substance infusion
+is a trigger with a fixed damage bonus or evaluate every effect using the blast's context: the infusion's own
+ContextCalculateAbilityParamsBasedOnClass and ranks matter.
+
+Two absent action-effect references were identified in the selected gather blueprints:
+
+- `1ffba707590b49db8b1c5cf43660fbfc`: a conditional applied buff in GatherPowerBuffI.
+- `d579a8faad5c469abfd700428364b9ee`: conditional applied buffs in GatherPowerBuffII and GatherPowerBuffIII.
+
+Their effects must be inspected before asserting all gather-related side effects are understood. Their names and
+behavior cannot be inferred from GUIDs. The workspace has reference DLLs, not the game's resource packs or a game
+installation from which to export the missing assets. Request these blueprints and their dependencies from the author.
+
+### Reproducing the offline audit
+
+The baseline harness built but could deserialize only 19 files; 4,079 failed because
+`UnityEngine.SharedInternalsModule.dll` is absent. The original harness nevertheless returned status 0 and printed
+`abilities 0, errors 0`. That is not a successful rerun of the author's report. The supplied report remains
+third-party baseline evidence, not a locally reproduced result.
+
+Fixed tools/ProfileAudit/Program.cs to return status 1 when any blueprint fails to deserialize or no blueprints load,
+and replace any stale report with an INCOMPLETE diagnostic. Verified the real supplied dataset, an empty directory,
+and malformed JSON: all three returned 1 and replaced a planted stale success report. Existing unit tests: 104 passed,
+0 failed, 0 skipped on the exact task worktree. Harness compilation succeeded with the pre-existing missing
+Assembly-CSharp-firstpass.dll reference warning; it is not a warning-free full mod build. No production mod source,
+toggle execution, version, package, or release was changed.
+
+Needed next for local blueprint verification: UnityEngine.SharedInternalsModule.dll from the same game installation.
+Assembly-CSharp-firstpass.dll is also referenced by ProfileAudit but absent locally; include it if that installation
+ships it. Further missing dependencies may become visible once the first loader failure is resolved. This gate is
+about reproducing reader behavior before enabling modifier management, not about claiming the CLR cannot compile
+new C# without these files. Safe hypothetical state evaluation, command dispatch, and phases 1-3 remain outstanding.

@@ -2352,3 +2352,12 @@ Baseline verification: 104 unit tests passed; the source compiled against the su
 and errors. Kineticist blueprint dumps and a live game were unavailable, so ProfileAudit and gameplay were not run.
 The audit also records the existing direct-toggle execution path that must be reconciled with dispatcher-owned
 command issuance before new kineticist management is enabled. No version bump or release.
+
+### Data-intake follow-up
+
+The blueprint package and prior ProfileAudit reports have now been received; see the end of the
+[Phase 0 audit](KINETICIST_COMPETENCE_PHASE0.md) for verified archive counts and two unresolved Gather Power buff GUIDs.
+A local audit attempt exposed a missing UnityEngine.SharedInternalsModule.dll dependency: 4,079 of 4,098 files failed
+to deserialize. ProfileAudit now exits unsuccessfully and marks its report INCOMPLETE in this case instead of reporting
+zero abilities as success. This is verification-tool behavior only; infusion selection and gather management remain
+unimplemented pending the reader/runtime work and its verification.
