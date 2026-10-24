@@ -35,3 +35,9 @@ loader runs on plain .NET. The rewritten copies go only into the harness's work 
 ```
 tools/ProfileAudit/run.sh <Wrath_Data/Managed> <mod dll> <work dir> <out.txt> <dump folders...>
 ```
+
+ProfileAudit requires every selected blueprint file to deserialize. If any file fails to load, or no blueprints load,
+it exits with status 1 and replaces the report with an `INCOMPLETE` diagnostic. Missing Unity dependency DLLs can
+otherwise look like a successful run with zero abilities. An incomplete run is not coverage evidence; fix the loader
+error and rerun it. Unresolved blueprint GUIDs in a successfully deserialized dump are a separate data-completeness
+limitation and still need investigation for the feature being audited.
