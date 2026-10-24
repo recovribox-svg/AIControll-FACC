@@ -64,6 +64,9 @@ namespace CompanionAI_Pathfinder.Analysis
         /// <summary>★ v0.3.21: an enhancement bonus on the weapon itself (WeaponEnhancementBonus): attack and damage, above
         /// what the weapon already has unless it stacks.</summary>
         WeaponEnhancement,
+        /// <summary>★ v0.3.21: all damage the bearer deals is raised by this many percent (OutcomingDamageAndHealingModifier:
+        /// Golden Dragon Might).</summary>
+        DamagePercent,
         /// <summary>★ v0.3.21: the weapon's critical threat range doubles (WeaponCriticalEdgeIncrease: keen) - not with
         /// Improved Critical, which sets the same flag (RuleCalculateWeaponStats.DoubleCriticalEdge).</summary>
         CritRangeDouble
@@ -462,6 +465,32 @@ namespace CompanionAI_Pathfinder.Analysis
                             MeleeOnly = true, Conditional = true
                         });
                         break;
+                    // ★ v0.3.21: Edict of Impenetrable Fortress / Invulnerability (Aeon): immune to physical damage
+                    // (AddPhysicalImmunity: every physical form, RuleCalculateDamage) - read as damage reduction no weapon
+                    // passes.
+                    case Kingmaker.UnitLogic.FactLogic.AddPhysicalImmunity _:
+                        list.Parts.Add(new BuffPart { Kind = BuffPartKind.PhysicalDR, Owner = owner, Fixed = 999 });
+                        break;
+                    // ★ v0.3.21: Golden Dragon Might: +N % to the damage the bearer deals (ModifierBonus of RuleDealDamage).
+                    case OutcomingDamageAndHealingModifier more when more.Type != OutcomingDamageAndHealingModifier.ModifyingType.OnlyHeal && more.ModifierPercents != null:
+                    {
+                        int weapon = OutgoingWeaponType(more);
+                        list.Parts.Add(new BuffPart
+                        {
+                            Kind = BuffPartKind.DamagePercent, Owner = owner, Value = more.ModifierPercents,
+                            MeleeOnly = weapon == 1, RangedOnly = weapon == 2, Conditional = OutgoingLimited(more)
+                        });
+                        break;
+                    }
+                    // ★ v0.3.21: a second buff added while a first one is on the bearer (Thousand Bites, Dragon Pride:
+                    // BuffExtraEffects.CheckAndReapply): its parts at half.
+                    case BuffExtraEffects extra when extra.ExtraEffectBuff != null:
+                    {
+                        int before = list.Parts.Count;
+                        ReadInto(extra.ExtraEffectBuff, extra.ExtraEffectBuff.ComponentsArray, list, depth + 1);
+                        for (int i = before; i < list.Parts.Count; i++) list.Parts[i].Conditional = true;
+                        break;
+                    }
                     case BackToBack _:
                         list.Parts.Add(new BuffPart { Kind = BuffPartKind.ArmorClass, Owner = owner, Fixed = 2, Conditional = true });
                         break;
@@ -539,6 +568,32 @@ namespace CompanionAI_Pathfinder.Analysis
                 Kind = kind, Owner = owner, Stat = stat, Descriptor = descriptor, Fixed = fixedValue, Value = value,
                 Multiplier = multiplier, ScaleByBaseAttack = byBab, SaveShare = share
             });
+        }
+
+        private static readonly System.Reflection.FieldInfo OutgoingWeapon =
+            HarmonyLib.AccessTools.Field(typeof(OutcomingDamageAndHealingModifier), "m_DamageWeaponType");
+        private static readonly System.Reflection.FieldInfo OutgoingFaction =
+            HarmonyLib.AccessTools.Field(typeof(OutcomingDamageAndHealingModifier), "m_SourceToTargetFactionType");
+        private static readonly System.Reflection.FieldInfo OutgoingAoe =
+            HarmonyLib.AccessTools.Field(typeof(OutcomingDamageAndHealingModifier), "m_AoeEntry");
+
+        /// <summary>★ v0.3.21: 0 any weapon, 1 melee, 2 ranged (its private WeaponType).</summary>
+        private static int OutgoingWeaponType(OutcomingDamageAndHealingModifier c)
+        {
+            try { return OutgoingWeapon == null ? 0 : Convert.ToInt32(OutgoingWeapon.GetValue(c)); }
+            catch { return 0; }
+        }
+
+        /// <summary>★ v0.3.21: only against allies, or only for (or never for) area damage: counted at half.</summary>
+        private static bool OutgoingLimited(OutcomingDamageAndHealingModifier c)
+        {
+            try
+            {
+                int faction = OutgoingFaction == null ? 0 : Convert.ToInt32(OutgoingFaction.GetValue(c));
+                int aoe = OutgoingAoe == null ? 0 : Convert.ToInt32(OutgoingAoe.GetValue(c));
+                return faction == 2 || aoe != 0;
+            }
+            catch { return true; }
         }
 
         /// <summary>★ v0.3.21: the trigger gives the attacker a buff that makes it roll its attack twice and keep the worse.</summary>

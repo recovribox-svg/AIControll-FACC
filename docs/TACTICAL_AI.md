@@ -2122,3 +2122,23 @@ they were cast, valued only by that guess.
     - Persistent: a second save, so the effect lands at `1 - (1 - fail)^2`.
   - What it never counts: metamagic the spell has already. Reach, Extend, Quicken and Selective change no number in
     the value and are not counted.
+
+## 58. v0.3.21 (test7): mythic buffs; the Units and creature folders
+
+- **Edict of Impenetrable Fortress / Edict of Invulnerability** (Aeon, `AddPhysicalImmunity`): immune to physical
+  damage (every form, `RuleCalculateDamage`). Read as damage reduction that no weapon passes, which keeps what
+  physical damage takes (`PhysicalDR`, at most 80 % of what comes at the recipient). Its log note says "immune to
+  physical damage".
+- **Golden Dragon Might** (`OutcomingDamageAndHealingModifier`): +N % to the damage the bearer deals (the
+  `ModifierBonus` of the damage rule). New part `DamagePercent`: that share of the recipient's weapon damage per round,
+  limited to melee or ranged by its private weapon type. Only against allies, or only for or never for area damage:
+  at half.
+- **Thousand Bites, Dragon Pride** (`BuffExtraEffects`): a second buff the game adds while another one is on the
+  bearer (`CheckAndReapply`). Its parts are read at half.
+- Still unread: Edict of Perseverance (`SuppressBuffs`), Equal Force, Light of Creation, Joy of Life, Ode to
+  Miraculous Magic, Second Breath, Angel Rekindle (resurrection).
+- **Units and creature blueprints** (supplied by the player). Of the 464 abilities in the Units folder, 416 are
+  valued; the 48 others are enemy or NPC only (teleports, golem attacks, test spells). Every companion ability is read.
+  Of the creature-ability folder (540 blueprints, mostly passive monster features), 20 of its 23 active abilities are
+  read, among them the summoned templates' Smite. The audit script now follows `ContextActionCastSpell` (`m_Spell`) as
+  `AbilityProfile` does; Dragon Wrath and Demon Charge were wrongly listed as not understood.

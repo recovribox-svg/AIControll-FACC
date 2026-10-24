@@ -43,7 +43,7 @@ def walk(o, acts, comps_seen, depth=0, visited=None):
         if t: acts[t] += 0
         if t: acts.setdefault(t, 0); acts[t] += 1
         for k, v in o.items():
-            if k in ('m_Buff','m_AreaEffect','m_TouchDeliveryAbility','m_Blueprint') and ref(v) and v not in visited:
+            if k in ('m_Buff','m_AreaEffect','m_TouchDeliveryAbility','m_Blueprint','m_Spell') and ref(v) and v not in visited:
                 visited.add(v); b = ref(v)
                 acts['@'+b[0]] += 1
                 for c in (b[2].get('Components') or []): walk(c, acts, comps_seen, depth+1, visited)

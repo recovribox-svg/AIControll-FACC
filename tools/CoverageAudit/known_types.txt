@@ -69,6 +69,7 @@ AddKineticistElementalOverflow
 AddMirrorImage
 AddOutgoingDamageBonus
 AddOutgoingPhysicalDamageProperty
+AddPhysicalImmunity
 AddSpeedModifier
 AddSpellResistance
 AddSpellSchool
@@ -114,6 +115,7 @@ BuffEnchantArmor
 BuffEnchantSpecificWeaponWorn
 BuffEnchantWornItem
 BuffExtraAttack
+BuffExtraEffects
 BuffInvisibility
 BuffMovementSpeed
 BuffPartKind
@@ -301,6 +303,7 @@ Nauseated
 NoComponents
 None
 NotDispelable
+OutcomingDamageAndHealingModifier
 OutflankAttackBonus
 Overlord
 Overrun

@@ -173,7 +173,7 @@ namespace CompanionAI_Pathfinder.Tactics
             // --- what each part adds, with this caster's numbers ---
             float attack = 0f, damage = 0f, extraAttacks = 0f, armor = 0f, concealment = 0f, miss = 0f, saves = 0f;
             float tempHp = 0f, images = 0f, physicalDr = 0f, energyResist = 0f, conHp = 0f;
-            float energyDamage = 0f, energyPool = 0f, diceUp = 0f, critExtra = 0f;
+            float energyDamage = 0f, energyPool = 0f, diceUp = 0f, critExtra = 0f, damagePercent = 0f;
             bool sizeUp = false, forbidsSpells = false;
             BuffPart invisible = null;
             foreach (var p in parts)
@@ -248,6 +248,10 @@ namespace CompanionAI_Pathfinder.Tactics
                             critExtra = Math.Max(critExtra, off.BaseThreat * off.HitChance * Math.Max(0f, off.CritMultiplier - 1f) * off.PerHit *
                                                             (p.Conditional ? 0.5f : 1f));
                         break;
+                    case BuffPartKind.DamagePercent:
+                        if (p.RangedOnly && !off.Ranged || p.MeleeOnly && off.Ranged) break;
+                        damagePercent = Math.Max(damagePercent, amount / 100f);
+                        break;
                     case BuffPartKind.WeaponDiceUp:
                         if (off.Weapon != null && amount > 0f) diceUp = Math.Max(diceUp, SizeUpDiceGain(off.Weapon, Mathf.RoundToInt(amount)));
                         break;
@@ -305,7 +309,9 @@ namespace CompanionAI_Pathfinder.Tactics
                 float d = oneAttack ? off.FirstAttack : off.DamagePerRound;
                 float hits = oneAttack ? off.HitChance : off.HitsPerRound;
                 offencePerRound = ValueModel.AttackBonusGain(d, off.HitChance, attack) + ValueModel.DamageBonusGain(hits, damage * off.PhysicalFactor) +
-                                  ValueModel.DamageBonusGain(hits, energyDamage) + (oneAttack ? 0f : extraAttacks * off.FirstAttack);
+                                  ValueModel.DamageBonusGain(hits, energyDamage) + (oneAttack ? 0f : extraAttacks * off.FirstAttack) +
+                                  d * damagePercent;   // ★ v0.3.21: a share more of what its attacks deal (Dragon Might)
+                if (damagePercent > 0f) notes.Add($"damage +{damagePercent:P0}");
                 // A recipient that also casts spells uses its weapon only part of the time.
                 if (off.Caster) offencePerRound *= 0.5f;
                 if (attack != 0f) notes.Add($"attack {attack:+0.#;-0.#}");
@@ -313,7 +319,7 @@ namespace CompanionAI_Pathfinder.Tactics
                 if (extraAttacks > 0f && !oneAttack) notes.Add($"+{extraAttacks:0} attack");
                 if (offencePerRound != 0f) notes.Add($"({off.DamagePerRound:0.#} dmg/rd at {off.HitChance:P0}{(off.Caster ? ", half: casts" : "")})");
             }
-            else if (attack > 0f || damage > 0f || extraAttacks > 0f || energyDamage > 0f)
+            else if (attack > 0f || damage > 0f || extraAttacks > 0f || energyDamage > 0f || damagePercent > 0f)
                 notes.Add("no weapon attack to improve");
             if (off.Caster) invisibleOnce *= 0.5f;
 
@@ -341,7 +347,7 @@ namespace CompanionAI_Pathfinder.Tactics
                 if (saves != 0f) notes.Add($"saves {saves:+0.#;-0.#}");
                 if (tempHp > 0f) notes.Add($"{tempHp:0} temp HP");
                 if (images > 0f) notes.Add($"{images:0.#} images");
-                if (physicalDr > 0f) notes.Add($"DR {physicalDr:0}");
+                if (physicalDr > 0f) notes.Add(physicalDr >= 999f ? "immune to physical damage" : $"DR {physicalDr:0}");
                 if (energyResist > 0f) notes.Add(energyPool > 0f ? $"absorbs {energyPool:0} energy" : $"resist {energyResist:0}");
                 if (keptPerRound != 0f) notes.Add($"({(def.Expected ? "expects" : "takes")} {def.Incoming:0.#}/rd, hit at {def.EnemyHitChance:P0})");
             }
