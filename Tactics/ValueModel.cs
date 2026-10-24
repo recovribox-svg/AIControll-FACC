@@ -167,6 +167,17 @@ namespace CompanionAI_Pathfinder.Tactics
             Clamp(landChance, 0f, 1f) * RiskMath.ChanceAtLeast(damageIfLands, Math.Max(1f, hp));
 
         /// <summary>
+        /// ★ v0.3.21 (gaps): a regenerating enemy (a troll) brought to 0 HP only falls unconscious and stands up again once it
+        /// has healed (UnitLifeController, AddEffectRegeneration): a "kill" takes it out for a while, a share
+        /// <see cref="RegeneratingKnockdown"/> of a real one - unless the damage stops the regeneration (fire, acid), or it is
+        /// stopped already.
+        /// </summary>
+        public static float RegeneratingKill(float killChance, bool regenerating, bool endsRegeneration) =>
+            regenerating && !endsRegeneration ? killChance * RegeneratingKnockdown : killChance;
+
+        public const float RegeneratingKnockdown = 0.35f;
+
+        /// <summary>
         /// Damage dealt to an enemy, capped at its HP, plus the value of taking it out of the fight: its whole worth
         /// (<paramref name="threat"/>) times the chance to kill it, and a quarter of it times the share of its HP otherwise
         /// (progress towards a kill). 0.3.17 and earlier gave the whole threat as soon as the expected damage reached the
@@ -300,6 +311,24 @@ namespace CompanionAI_Pathfinder.Tactics
         }
 
         public const float DebuffCap = 0.6f;
+
+        #endregion
+
+        #region Spellcasting boosts (0.3.21)
+
+        /// <summary>
+        /// What a boost to a caster's spells adds per round, from <paramref name="spellsPerRound"/> (the worth of its casting
+        /// per round): each point of save DC makes about 5 % more of the targets of its save spells fail (about 0.6 of
+        /// what it casts); a caster level adds about 2 % (dice, durations) and, like spell penetration, 5 % against the
+        /// <paramref name="resistantShare"/> of enemies with spell resistance. At most half of its casting.
+        /// </summary>
+        public static float SpellcastingGain(float spellsPerRound, float dc, float casterLevel, float penetration, float resistantShare)
+        {
+            if (spellsPerRound <= 0f) return 0f;
+            float share = 0.05f * 0.6f * Math.Max(0f, dc) + 0.02f * Math.Max(0f, casterLevel) +
+                          0.05f * Clamp(resistantShare, 0f, 1f) * (Math.Max(0f, casterLevel) + Math.Max(0f, penetration));
+            return spellsPerRound * Clamp(share, 0f, 0.5f);
+        }
 
         #endregion
 

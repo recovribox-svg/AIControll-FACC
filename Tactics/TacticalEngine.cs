@@ -665,6 +665,12 @@ namespace CompanionAI_Pathfinder.Tactics
                     if (other != unit && !unit.IsEnemy(other) && IsRevivable(other) &&
                         Vector3.Distance(unit.Position, other.Position) < 30f)
                         ctx.DownedAllies.Add(other);
+                    // ★ v0.3.21 (gaps): a regenerating enemy at 0 HP is only down - it heals and stands up again - until damage
+                    // that stops its regeneration (a troll: fire or acid) finishes it (UnitLifeController). It stays a target;
+                    // its kill is a knock-down for other damage (ValueModel.RegeneratingKill).
+                    else if (unit.IsEnemy(other) && other.Descriptor.State.IsUnconscious && CombatMath.Regenerates(other) &&
+                             (other.CombatState?.IsInCombat ?? false) && !UnitCommand.CommandTargetUntargetable(unit, other))
+                        ctx.Enemies.Add(other);
                     continue;
                 }
                 if (!(other.CombatState?.IsInCombat ?? false)) continue;
@@ -1560,17 +1566,27 @@ namespace CompanionAI_Pathfinder.Tactics
         /// the chance the damage lands at all (an attack hits, the target fails its save; 0: no kill counted); the
         /// expected damage over it is the damage when it lands.
         /// </summary>
-        private static float DamageValue(UnitEntityData enemy, float expectedDamage, float landChance)
+        /// ★ v0.3.21 (gaps): against a regenerating enemy whose regeneration runs, a kill is only a knock-down unless
+        /// <paramref name="endsRegeneration"/> (ValueModel.RegeneratingKill).
+        private static float DamageValue(UnitEntityData enemy, float expectedDamage, float landChance, bool endsRegeneration = false)
         {
             if (expectedDamage <= 0f) return 0f;
             float hp = Math.Max(1, enemy.HPLeft);
             float kill = landChance > 0f ? ValueModel.KillChance(landChance, expectedDamage / landChance, hp) : 0f;
+            kill = ValueModel.RegeneratingKill(kill, RegenerationRuns(enemy), endsRegeneration);
             return ValueModel.DamageValue(expectedDamage, hp, CombatMath.TargetWorth(enemy), kill);
+        }
+
+        /// <summary>★ v0.3.21 (gaps): its regeneration keeps it alive now (not stopped this round by fire, acid...).</summary>
+        private static bool RegenerationRuns(UnitEntityData enemy)
+        {
+            try { return enemy.Descriptor.State.IsRegenerating && CombatMath.Regenerates(enemy); }
+            catch { return false; }
         }
 
         /// <summary>★ v0.3.18: a weapon attack estimate's damage value (<paramref name="factor"/>: a bonus on the damage, Charge).</summary>
         private static float DamageValue(UnitEntityData enemy, WeaponAttackEstimate est, float factor = 1f) =>
-            est == null ? 0f : DamageValue(enemy, est.ExpectedDamage * factor, est.AnyHitChance);
+            est == null ? 0f : DamageValue(enemy, est.ExpectedDamage * factor, est.AnyHitChance, est.EndsRegeneration);
 
         private static float RoleWeight(TacticalContext ctx, string category)
         {
@@ -2575,7 +2591,7 @@ namespace CompanionAI_Pathfinder.Tactics
                 {
                     float dmg = CombatMath.EstimateAbilityDamage(ability, profile, enemy);
                     float p = CombatMath.EffectChance(unit, enemy, ability, profile, damage: true);
-                    float part = DamageValue(enemy, dmg * p, p) * WakeFactor(enemy, dmg * p);
+                    float part = DamageValue(enemy, dmg * p, p, CombatMath.AbilityEndsRegeneration(profile, enemy)) * WakeFactor(enemy, dmg * p);
                     // ★ v0.3.18 (AA-1): a kill action (Isekai's Instakill, Power Word Kill) removes the enemy when it lands:
                     // on a failed save and through spell resistance. It subsumes the damage, so the better of the two.
                     if (CombatMath.KillApplies(ability, profile, enemy))

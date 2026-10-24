@@ -69,6 +69,13 @@ namespace CompanionAI_Pathfinder.Analysis
         DamagePercent,
         /// <summary>★ v0.3.21: hit points healed each round while hurt (AddEffectFastHealing).</summary>
         FastHealing,
+        /// <summary>★ v0.3.21 (gaps): the save DCs of the bearer's spells (IncreaseAllSpellsDC; one school or kind of spell:
+        /// conditional - IncreaseSpellSchoolDC, IncreaseSpellDescriptorDC).</summary>
+        SpellDC,
+        /// <summary>★ v0.3.21 (gaps): the bearer's caster level (IncreaseCasterLevel; one school: IncreaseSpellSchoolCasterLevel).</summary>
+        CasterLevel,
+        /// <summary>★ v0.3.21 (gaps): its checks against spell resistance (SpellPenetrationBonus).</summary>
+        SpellPenetration,
         /// <summary>★ v0.3.21: natural weapons for empty hands (EmptyHandWeaponOverride: claws, Feral Mutagen, bloodline
         /// claws): <see cref="BuffPart.Natural"/>; they take effect only with nothing in the hands (UnitBody.SetEmptyHandWeapon).</summary>
         NaturalWeapon,
@@ -520,6 +527,25 @@ namespace CompanionAI_Pathfinder.Analysis
                     case SpellImmunityToSpellDescriptor spellImmune when spellImmune.Descriptor.Value != Kingmaker.Blueprints.Classes.Spells.SpellDescriptor.None:
                         list.AddImmunity(owner, spellImmune.Descriptor.Value, ImmunitySaves, false);
                         break;
+                    // ★ v0.3.21 (gaps): spellcasting boosts - valued for a recipient that casts (TacticalEngine.Buffs).
+                    case Kingmaker.Designers.Mechanics.Facts.IncreaseAllSpellsDC dc when dc.Value != null:
+                        list.Parts.Add(new BuffPart { Kind = BuffPartKind.SpellDC, Owner = owner, Value = dc.Value, Descriptor = dc.Descriptor });
+                        break;
+                    case Kingmaker.Designers.Mechanics.Facts.IncreaseSpellSchoolDC schoolDc:
+                        list.Parts.Add(new BuffPart { Kind = BuffPartKind.SpellDC, Owner = owner, Fixed = schoolDc.BonusDC, Descriptor = schoolDc.Descriptor, Conditional = true });
+                        break;
+                    case Kingmaker.Designers.Mechanics.Facts.IncreaseSpellDescriptorDC descriptorDc:
+                        list.Parts.Add(new BuffPart { Kind = BuffPartKind.SpellDC, Owner = owner, Fixed = descriptorDc.BonusDC, Descriptor = descriptorDc.ModifierDescriptor, Conditional = true });
+                        break;
+                    case Kingmaker.Designers.Mechanics.Facts.IncreaseCasterLevel cl when cl.Value != null:
+                        list.Parts.Add(new BuffPart { Kind = BuffPartKind.CasterLevel, Owner = owner, Value = cl.Value, Descriptor = cl.Descriptor });
+                        break;
+                    case Kingmaker.Designers.Mechanics.Facts.IncreaseSpellSchoolCasterLevel schoolCl:
+                        list.Parts.Add(new BuffPart { Kind = BuffPartKind.CasterLevel, Owner = owner, Fixed = schoolCl.BonusLevel, Descriptor = schoolCl.Descriptor, Conditional = true });
+                        break;
+                    case Kingmaker.Designers.Mechanics.Facts.SpellPenetrationBonus pen when pen.Value != null:
+                        list.Parts.Add(new BuffPart { Kind = BuffPartKind.SpellPenetration, Owner = owner, Value = pen.Value, Descriptor = pen.Descriptor, Conditional = pen.CheckFact });
+                        break;
                     case Kingmaker.Designers.Mechanics.Buffs.EmptyHandWeaponOverride claws when claws.Weapon != null && !claws.IsMonkUnarmedStrike:
                         list.Parts.Add(new BuffPart { Kind = BuffPartKind.NaturalWeapon, Owner = owner, Natural = claws.Weapon });
                         break;
@@ -561,6 +587,9 @@ namespace CompanionAI_Pathfinder.Analysis
                         // Haste: HasteBuff only switches on HasteBuffEffect (Spells/Level3/HasteBuff).
                         foreach (var child in BuffEffectAnalyzer.ChildBuffs(actions))
                             ReadInto(child, child.ComponentsArray, list, depth + 1);
+                        // ★ v0.3.21 (gaps): a stat change made when the buff starts (BuffActionAddStatBonus: Ray of
+                        // Enfeeblement's Strength penalty, a shared value of 1d6 + 1 per 2 levels, x-1).
+                        ReadActivatedStats(owner, actions.Activated?.Actions, list, false, 0);
                         break;
                     // ★ v0.3.21: Protective Luck (witch / shaman hex): whoever attacks the bearer gets misfortune before the
                     // roll (AddTargetBeforeAttackRollTrigger.ActionsOnAttacker -> a buff whose ModifyD20 rolls the attack
@@ -581,6 +610,40 @@ namespace CompanionAI_Pathfinder.Analysis
                         break;
                     default:
                         if (!IsBookkeeping(c)) list.Unread.Add(c.GetType().Name);
+                        break;
+                }
+            }
+        }
+
+        /// <summary>
+        /// ★ v0.3.21 (gaps): stat changes among a buff's start actions - directly, behind a save (the failed branch: the full
+        /// change; a passed save halves it for Ray of Enfeeblement, so this is its upper end) or a Conditional (marked
+        /// conditional).
+        /// </summary>
+        private static void ReadActivatedStats(BlueprintBuff owner, Kingmaker.ElementsSystem.GameAction[] actions, BuffPartList list,
+                                               bool conditional, int depth)
+        {
+            if (actions == null || depth > 4) return;
+            foreach (var action in actions)
+            {
+                switch (action)
+                {
+                    case Kingmaker.UnitLogic.Buffs.Actions.BuffActionAddStatBonus stat when stat.Value != null:
+                    {
+                        int before = list.Parts.Count;
+                        AddStat(list, owner, stat.Stat, stat.Descriptor, 0, stat.Value, 1, false);
+                        for (int i = before; i < list.Parts.Count; i++) list.Parts[i].Conditional |= conditional;
+                        break;
+                    }
+                    case Kingmaker.UnitLogic.Mechanics.Actions.ContextActionSavingThrow saving:
+                        ReadActivatedStats(owner, saving.Actions?.Actions, list, conditional, depth + 1);
+                        break;
+                    case Kingmaker.UnitLogic.Mechanics.Actions.ContextActionConditionalSaved saved:
+                        ReadActivatedStats(owner, saved.Failed?.Actions, list, conditional, depth + 1);
+                        break;
+                    case Kingmaker.Designers.EventConditionActionSystem.Actions.Conditional branch:
+                        ReadActivatedStats(owner, branch.IfTrue?.Actions, list, true, depth + 1);
+                        ReadActivatedStats(owner, branch.IfFalse?.Actions, list, true, depth + 1);
                         break;
                 }
             }

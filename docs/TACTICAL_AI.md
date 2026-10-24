@@ -2238,3 +2238,24 @@ debuff on hit, Master Slayer's and True Judgment's kill on a failed save, Feint)
 Quicken next-spell metamagic, the other teamwork feats, spell DC and caster level buffs (still the old analyzer reading,
 for casters only), Shadow Evocation / Conjuration, Black Hole, Rift of Ruin, Haunting Mists, resurrections, Ray of
 Enfeeblement's Strength penalty, movement speed, enemy regeneration.
+
+## 61. v0.3.21 (test10): stat changes at a buff's start, regeneration, spellcasting boosts
+
+- **Stat changes made when a debuff starts** (`AddFactContextActions` → `BuffActionAddStatBonus`, behind a save's failed
+  branch or a Conditional): Ray of Enfeeblement's Strength penalty (a shared value, 1d6 + 1 per 2 levels, x-1), Touch of
+  Gracelessness. Valued by their penalties (`ValueModel.DebuffShare`), not the flat 0.25. The failed branch is the full
+  penalty; a passed save halves it, so this is the upper end.
+- **Regeneration** (`AddEffectRegeneration`, `UnitPartRegeneration`): at 0 HP a regenerating enemy only falls
+  unconscious and gets up once it has healed; damage of a kind it names (a troll: fire, acid) stops it for a round, and
+  then 0 HP is death (`UnitLifeController`). A kill of a regenerating enemy whose regeneration runs is a knock-down,
+  0.35 of a real one (`ValueModel.RegeneratingKill`, unit-tested), unless the damage stops it: weapons by the game's
+  weapon rule (`RuleCalculateWeaponStats` damage types: flaming dice, material, magic; `WeaponAlignment`), abilities by
+  their damage actions' types (`CombatMath.EndsRegenerationOf`). A downed regenerating enemy stays a target, so fire
+  or acid can finish it; before, it was dropped as unconscious and stood up again.
+- **Spellcasting boosts** (`IncreaseAllSpellsDC`, `IncreaseSpellSchoolDC`, `IncreaseSpellDescriptorDC`,
+  `IncreaseCasterLevel`, `IncreaseSpellSchoolCasterLevel`, `SpellPenetrationBonus`) and the stat a recipient's DCs come
+  from (its spellbook's casting attribute: Fox's Cunning on a wizard): for a recipient that casts, its casting worth per
+  round by caster level times how much better its spells land (`ValueModel.SpellcastingGain`: 5 % per DC point on about
+  0.6 of its spells, 2 % per caster level, 5 % per point against the share of enemies with spell resistance; at most
+  half). Nothing for a recipient that casts no spells. Hell's Decree (magic), Overwhelming Spell, Ode to Miraculous Magic,
+  the Aeon DC and CL gazes, Chronomancy, Focused Infusion among 22 newly read.

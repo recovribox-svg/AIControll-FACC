@@ -390,5 +390,22 @@ namespace CompanionAI.Tests
         [Fact]
         public void Debuff_IsCapped() =>
             Assert.Equal(ValueModel.DebuffCap, ValueModel.DebuffShare(10f, 10f, 10f, 10f, 10f, 10f), 3);
+
+        [Fact]
+        public void SpellcastingGain_DcAndLevelAndPenetration()
+        {
+            Assert.Equal(10f * 0.06f, ValueModel.SpellcastingGain(10f, 2f, 0f, 0f, 0f), 3);
+            Assert.Equal(10f * (0.02f + 0.05f * 0.5f * 3f), ValueModel.SpellcastingGain(10f, 0f, 1f, 2f, 0.5f), 3);
+            Assert.Equal(5f, ValueModel.SpellcastingGain(10f, 40f, 0f, 0f, 0f), 3);
+            Assert.Equal(0f, ValueModel.SpellcastingGain(0f, 2f, 2f, 2f, 1f), 3);
+        }
+
+        [Fact]
+        public void RegeneratingKill_KnockdownUnlessTheDamageStopsIt()
+        {
+            Assert.Equal(0.8f * ValueModel.RegeneratingKnockdown, ValueModel.RegeneratingKill(0.8f, true, false), 3);
+            Assert.Equal(0.8f, ValueModel.RegeneratingKill(0.8f, true, true), 3);
+            Assert.Equal(0.8f, ValueModel.RegeneratingKill(0.8f, false, false), 3);
+        }
     }
 }

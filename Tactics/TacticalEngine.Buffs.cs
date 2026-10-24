@@ -135,7 +135,10 @@ namespace CompanionAI_Pathfinder.Tactics
             float enchantRounds = EnchantParts(ctx, ability, profile, abilityCtx, buffs.FirstOrDefault(), ally, parts, unread);
             // Mental stats (spell DCs) are not valued here: a buff of only those (or of only a spell prohibition) keeps the
             // old reading.
-            if (!parts.Any(p => p.Kind != BuffPartKind.MentalStat && p.Kind != BuffPartKind.ForbidsSpells)) return result;
+            // ★ v0.3.21 (gaps): unless it is the stat this recipient's spell DCs come from.
+            var dcStat = CastingStat(ally);
+            if (!parts.Any(p => (p.Kind != BuffPartKind.MentalStat || (dcStat.HasValue && p.Stat == dcStat.Value)) &&
+                                p.Kind != BuffPartKind.ForbidsSpells)) return result;
             result.Modelled = true;
 
             int casterLevel = 1;
@@ -174,6 +177,8 @@ namespace CompanionAI_Pathfinder.Tactics
             float attack = 0f, damage = 0f, extraAttacks = 0f, armor = 0f, concealment = 0f, miss = 0f, saves = 0f;
             float tempHp = 0f, images = 0f, physicalDr = 0f, energyResist = 0f, conHp = 0f;
             float energyDamage = 0f, energyPool = 0f, diceUp = 0f, critExtra = 0f, damagePercent = 0f, fastHealing = 0f, sight = 0f;
+            float spellDc = 0f, spellLevel = 0f, spellPenetration = 0f;
+            var castingStat = CastingStat(ally);
             bool sizeUp = false, forbidsSpells = false;
             BuffPart invisible = null;
             foreach (var p in parts)
@@ -250,6 +255,14 @@ namespace CompanionAI_Pathfinder.Tactics
                         break;
                     case BuffPartKind.FastHealing: fastHealing = Math.Max(fastHealing, amount); break;
                     case BuffPartKind.Sight: sight = Math.Max(sight, p.Fixed); break;
+                    // ★ v0.3.21 (gaps): spellcasting boosts, and the stat its spells' DCs come from (Fox's Cunning on a wizard).
+                    case BuffPartKind.SpellDC: spellDc += amount; break;
+                    case BuffPartKind.CasterLevel: spellLevel += amount; break;
+                    case BuffPartKind.SpellPenetration: spellPenetration += amount; break;
+                    case BuffPartKind.MentalStat:
+                        if (castingStat.HasValue && p.Stat == castingStat.Value)
+                            spellDc += Increment(ally, p.Stat, p, amount) / 2f;   // the ability modifier
+                        break;
                     case BuffPartKind.NaturalWeapon:
                         // ★ v0.3.21: claws for empty hands - the dice they add over the empty-hand attack it makes now; nothing
                         // while the hands hold a weapon (the game only arms empty hands with them).
@@ -335,6 +348,28 @@ namespace CompanionAI_Pathfinder.Tactics
             }
             else if (attack > 0f || damage > 0f || extraAttacks > 0f || energyDamage > 0f || damagePercent > 0f)
                 notes.Add("no weapon attack to improve");
+            // ★ v0.3.21 (gaps): spellcasting boosts - for a recipient that casts, by how much better its spells land
+            // (ValueModel.SpellcastingGain), its casting worth per round by its caster level.
+            if ((spellDc > 0f || spellLevel > 0f || spellPenetration > 0f) && castingStat.HasValue)
+            {
+                int level = 1;
+                try { level = Math.Max(1, ally.Descriptor.Spellbooks.Max(b => b.CasterLevel)); } catch { }
+                float resistant = 0f;
+                try
+                {
+                    var fighting = ctx.Enemies.Where(e => !CombatMath.IsDisabled(e)).ToList();
+                    if (fighting.Count > 0) resistant = fighting.Count(e => (e.Get<Kingmaker.UnitLogic.Parts.UnitPartSpellResistance>()?.GetValue((Kingmaker.UnitLogic.Mechanics.MechanicsContext)null) ?? 0) > 0) / (float)fighting.Count;
+                }
+                catch { }
+                float gain = ValueModel.SpellcastingGain(ValueModel.PerRound(level), spellDc, spellLevel, spellPenetration, resistant);
+                if (gain > 0f)
+                {
+                    offencePerRound += gain;
+                    notes.Add($"spells{(spellDc > 0f ? $" DC +{spellDc:0.#}" : "")}{(spellLevel > 0f ? $" CL +{spellLevel:0.#}" : "")}" +
+                              $"{(spellPenetration > 0f ? $" pen +{spellPenetration:0.#}" : "")}");
+                }
+            }
+            else if (spellDc > 0f || spellLevel > 0f || spellPenetration > 0f) notes.Add("casts no spells");
             // ★ v0.3.21: See Invisibility / True Seeing - the miss chance it takes away from its attacks on the enemies now:
             // invisible ones (50 %), and Blur / Displacement for True Seeing (UnitPartConcealment.Calculate).
             if (sight > 0f)
@@ -517,6 +552,22 @@ namespace CompanionAI_Pathfinder.Tactics
             catch
             {
                 return -1f;
+            }
+        }
+
+        /// <summary>★ v0.3.21: the stat the recipient's spell DCs come from (its spellbook with the highest caster level), or
+        /// null when it casts no spells.</summary>
+        private static StatType? CastingStat(UnitEntityData ally)
+        {
+            try
+            {
+                var book = ally.Descriptor.Spellbooks.Where(b => b.CasterLevel > 0 && b.MaxSpellLevel >= 1)
+                               .OrderByDescending(b => b.CasterLevel).FirstOrDefault();
+                return book?.Blueprint != null ? book.Blueprint.CastingAttribute : (StatType?)null;
+            }
+            catch
+            {
+                return null;
             }
         }
 
@@ -794,7 +845,9 @@ namespace CompanionAI_Pathfinder.Tactics
                 parts.AddRange(read.Parts);
                 foreach (var u in read.Unread) unread.Add(u);
             }
-            if (!parts.Any(p => p.Kind != BuffPartKind.MentalStat && p.Kind != BuffPartKind.ForbidsSpells)) return result;
+            var dcStat = CastingStat(ally);
+            if (!parts.Any(p => (p.Kind != BuffPartKind.MentalStat || (dcStat.HasValue && p.Stat == dcStat.Value)) &&
+                                p.Kind != BuffPartKind.ForbidsSpells)) return result;
             int level = Math.Max(1, ctx.Unit.Descriptor?.Progression?.CharacterLevel ?? 1);
             // The performer's own prohibition is priced by the toggle's rule (with its ignore feature); an ally in the area
             // who accepted it (Inspired Rage on a caster) loses its spells: that counts here.

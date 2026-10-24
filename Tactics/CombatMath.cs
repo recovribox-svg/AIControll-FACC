@@ -49,6 +49,9 @@ namespace CompanionAI_Pathfinder.Tactics
         /// <summary>★ v0.3.20 (playtest 1): what the target keeps of extra physical damage on the first weapon (0.5 for a
         /// Tiny swarm against piercing and slashing weapons, 0 when immune, 1 normally).</summary>
         public float FirstPhysicalFactor = 1f;
+        /// <summary>★ v0.3.21 (gaps): a hit stops the target's regeneration (its fire dice, alignment, material or magic is
+        /// one the regeneration names: AddEffectRegeneration).</summary>
+        public bool EndsRegeneration;
     }
 
     public static class CombatMath
@@ -182,6 +185,7 @@ namespace CompanionAI_Pathfinder.Tactics
             public int DamageReduction;
             public float ThreatChance;
             public int CritMultiplier;
+            public bool EndsRegeneration;
         }
 
         private sealed class AttackRoutine
@@ -234,6 +238,7 @@ namespace CompanionAI_Pathfinder.Tactics
                     result.CritMultiplier = Math.Max(1, line.CritMultiplier);
                     result.FirstPhysicalFactor = line.PhysicalFactor;
                 }
+                if (line.EndsRegeneration) result.EndsRegeneration = true;
                 result.ExpectedDamage += p * (perHit + line.Sneak) + critExtra;
             }
             result.AnyHitChance = 1f - noHit;
@@ -299,6 +304,9 @@ namespace CompanionAI_Pathfinder.Tactics
                         DamageReduction = reduction,
                         ThreatChance = hit.CritImmune ? 0f : Mathf.Clamp01(stats.CriticalRange / 20f),
                         CritMultiplier = stats.CriticalMultiplier,
+                        EndsRegeneration = Regenerates(target) &&
+                                           EndsRegenerationOf(target, stats.DamageDescription.Select(x => x.TypeDescription),
+                                                              stats.EnhancementTotal > 0 || weapon.EnchantmentValue > 0, WeaponAlignments(weapon)),
                         Sneak = sneakDice > 0 && (flanked || acRule.IsTargetFlatFooted) && !ImmuneToPrecision(target)
                             ? 3.5f * sneakDice * (hit.Read ? hit.PhysicalFactor : 1f) : 0f
                     });
@@ -1592,6 +1600,66 @@ namespace CompanionAI_Pathfinder.Tactics
         /// Rough damage-per-round an enemy is worth removing. CR-based so it is stable and cheap; adjusted for enemies
         /// that are already disabled and for enemies currently attacking the party.
         /// </summary>
+        /// <summary>★ v0.3.21 (gaps): the unit regenerates (AddEffectRegeneration: UnitPartRegeneration) - at 0 HP it only
+        /// falls unconscious while its regeneration runs, and gets up again (UnitLifeController).</summary>
+        public static bool Regenerates(UnitEntityData unit)
+        {
+            try { return (unit?.Get<Kingmaker.UnitLogic.Parts.UnitPartRegeneration>()?.Items.Count ?? 0) > 0; }
+            catch { return false; }
+        }
+
+        /// <summary>
+        /// ★ v0.3.21 (gaps): damage of these kinds stops <paramref name="target"/>'s regeneration for a round - the game's
+        /// test (AddEffectRegeneration.OnEventDidTrigger): an energy, alignment or material it names, or a magic weapon when it
+        /// says so; never an unremovable one. Then 0 HP is death.
+        /// </summary>
+        public static bool EndsRegenerationOf(UnitEntityData target, IEnumerable<Kingmaker.RuleSystem.Rules.Damage.DamageTypeDescription> types,
+                                              bool magicWeapon, IEnumerable<Kingmaker.Enums.Damage.DamageAlignment> alignments)
+        {
+            try
+            {
+                var part = target?.Get<Kingmaker.UnitLogic.Parts.UnitPartRegeneration>();
+                if (part == null || part.Items.Count == 0) return false;
+                var list = types?.Where(t => t != null).ToList() ?? new List<Kingmaker.RuleSystem.Rules.Damage.DamageTypeDescription>();
+                var aligned = (alignments ?? Enumerable.Empty<Kingmaker.Enums.Damage.DamageAlignment>()).ToList();
+                foreach (var item in part.Items)
+                {
+                    var c = item.Component;
+                    if (c == null || c.Unremovable) continue;
+                    if (c.CancelByMagicWeapon && magicWeapon) return true;
+                    foreach (var t in list)
+                    {
+                        if (t.Type == Kingmaker.RuleSystem.Rules.Damage.DamageType.Energy && c.CancelDamageEnergyTypes.Contains(t.Energy)) return true;
+                        if (t.Type == Kingmaker.RuleSystem.Rules.Damage.DamageType.Physical && c.CancelDamageMaterials.Contains(t.Physical.Material)) return true;
+                        if (c.CancelDamageAlignmentTypes.Contains(t.Common.Alignment)) return true;
+                    }
+                    if (aligned.Any(a => c.CancelDamageAlignmentTypes.Contains(a))) return true;
+                }
+            }
+            catch { }
+            return false;
+        }
+
+        /// <summary>★ v0.3.21: the alignments a weapon's enchantments add to its damage (WeaponAlignment: holy, unholy...).</summary>
+        private static IEnumerable<Kingmaker.Enums.Damage.DamageAlignment> WeaponAlignments(ItemEntityWeapon weapon)
+        {
+            var result = new List<Kingmaker.Enums.Damage.DamageAlignment>();
+            try
+            {
+                foreach (var e in weapon.Enchantments)
+                    foreach (var c in e.Blueprint.ComponentsArray ?? new Kingmaker.Blueprints.BlueprintComponent[0])
+                        if (c is Kingmaker.Designers.Mechanics.Facts.WeaponAlignment wa) result.Add(wa.Alignment);
+            }
+            catch { }
+            return result;
+        }
+
+        /// <summary>★ v0.3.21 (gaps): <paramref name="profile"/>'s damage stops <paramref name="target"/>'s regeneration
+        /// (Fire Ball or Acid Arrow on a troll).</summary>
+        public static bool AbilityEndsRegeneration(AbilityProfile profile, UnitEntityData target) =>
+            profile != null && Regenerates(target) &&
+            EndsRegenerationOf(target, profile.Damage.OfType<ContextActionDealDamage>().Select(d => d.DamageType), false, null);
+
         /// <summary>★ v0.3.9: cannot act right now (asleep, paralysed, stunned, helpless...).</summary>
         public static bool IsDisabled(UnitEntityData unit)
         {
