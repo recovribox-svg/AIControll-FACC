@@ -1597,14 +1597,11 @@ namespace CompanionAI_Pathfinder.Tactics
         #region Threat
 
         /// <summary>
-        /// Rough damage-per-round an enemy is worth removing. CR-based so it is stable and cheap; adjusted for enemies
-        /// that are already disabled and for enemies currently attacking the party.
-        /// </summary>
-        /// <summary>
         /// ★ v0.3.21 (gaps): how much of a shadow spell (a Shadow Evocation / Conjuration copy: AbilityData.ShadowSpellSettings)
         /// is real for <paramref name="target"/>. It disbelieves on a passed Will save against the spell's DC; then damage is cut
         /// to the shadow factor and any other effect lands with that chance (MechanicsContext.TryAffectByShadow,
-        /// ShadowSpellLogicExtension). 1 for any other ability; the factor alone with no target (a summon's worth).
+        /// ShadowSpellLogicExtension). 1 for any other ability; with no target (a shadow summon's worth) an even save:
+        /// half real, half at the factor.
         /// </summary>
         public static float ShadowShare(AbilityData ability, UnitEntityData target)
         {
@@ -1653,10 +1650,12 @@ namespace CompanionAI_Pathfinder.Tactics
                     foreach (var t in list)
                     {
                         if (t.Type == Kingmaker.RuleSystem.Rules.Damage.DamageType.Energy && c.CancelDamageEnergyTypes.Contains(t.Energy)) return true;
-                        if (t.Type == Kingmaker.RuleSystem.Rules.Damage.DamageType.Physical && c.CancelDamageMaterials.Contains(t.Physical.Material)) return true;
-                        if (c.CancelDamageAlignmentTypes.Contains(t.Common.Alignment)) return true;
+                        // Materials and alignments are flags (cold iron and silver at once): any one of them counts.
+                        if (t.Type == Kingmaker.RuleSystem.Rules.Damage.DamageType.Physical &&
+                            c.CancelDamageMaterials.Any(m => (t.Physical.Material & m) != 0)) return true;
+                        if (c.CancelDamageAlignmentTypes.Any(a => (t.Common.Alignment & a) != 0)) return true;
                     }
-                    if (aligned.Any(a => c.CancelDamageAlignmentTypes.Contains(a))) return true;
+                    if (aligned.Any(a => c.CancelDamageAlignmentTypes.Any(x => (a & x) != 0))) return true;
                 }
             }
             catch { }
@@ -1696,6 +1695,10 @@ namespace CompanionAI_Pathfinder.Tactics
         /// <summary>★ v0.3.19 (test2): no enemy in the decision being made can act (set by TacticalEngine.BuildContext).</summary>
         internal static bool OnlyDisabledEnemiesLeft;
 
+        /// <summary>
+        /// Rough damage-per-round an enemy is worth removing. CR-based so it is stable and cheap; adjusted for enemies
+        /// that are already disabled and for enemies currently attacking the party.
+        /// </summary>
         public static float Threat(UnitEntityData enemy)
         {
             if (enemy == null) return 0f;

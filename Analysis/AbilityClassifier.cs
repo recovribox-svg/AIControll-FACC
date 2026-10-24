@@ -1389,7 +1389,10 @@ namespace CompanionAI_Pathfinder.Analysis
                     if (profile != null && !profile.HelpfulToAllies && profile.Heals.Count == 0 &&
                         (profile.HarmfulEffects || profile.DealsDamage))
                     {
-                        if (profile.ControlStrength != CompanionAI_Pathfinder.Tactics.ControlStrength.None)
+                        // ★ v0.3.21 (review): a damage spell whose only control is minor (Ice Storm's difficult terrain)
+                        // stays an attack.
+                        if (profile.ControlStrength > CompanionAI_Pathfinder.Tactics.ControlStrength.Minor ||
+                            (profile.ControlStrength != CompanionAI_Pathfinder.Tactics.ControlStrength.None && !profile.DealsDamage))
                             return AbilityTiming.CrowdControl;
                         return profile.DealsDamage ? AbilityTiming.Attack : AbilityTiming.Debuff;
                     }

@@ -694,7 +694,8 @@ namespace CompanionAI_Pathfinder.Tactics
             s_ActiveEnemies = ctx.Enemies.Where(e => !CombatMath.IsDisabled(e)).ToList();
             CombatMath.OnlyDisabledEnemiesLeft = ctx.Enemies.Count > 0 && s_ActiveEnemies.Count == 0;
 
-            float enemyHp = ctx.Enemies.Sum(e => (float)e.HPLeft);
+            // ★ v0.3.21 (review): a downed regenerating enemy is below 0 HP; it must not shorten the fight.
+            float enemyHp = ctx.Enemies.Sum(e => (float)Math.Max(0, e.HPLeft));
             float enemyThreat = ctx.Enemies.Sum(CombatMath.Threat);
             float partyPower = ctx.Allies.Sum(a => ValueModel.PerRound(Math.Max(1, a.Descriptor?.Progression?.CharacterLevel ?? 1)));
             float partyLevels = ctx.Allies.Sum(a => (float)Math.Max(1, a.Descriptor?.Progression?.CharacterLevel ?? 1));

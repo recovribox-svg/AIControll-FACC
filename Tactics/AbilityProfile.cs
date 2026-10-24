@@ -646,7 +646,7 @@ namespace CompanionAI_Pathfinder.Tactics
             try
             {
                 return buff.Harmful || BuffControl(buff) != ControlStrength.None ||   // ★ v0.3.21: faction change, Command too
-                       TakesAwayOnly(buff);
+                       TakesAwayOnly(buff) || KillsOnStart(buff);
             }
             catch
             {
@@ -664,6 +664,43 @@ namespace CompanionAI_Pathfinder.Tactics
             if (buff.GetComponent<DoNotBenefitFromConcealment>() != null) return true;
             var parts = BuffPartsReader.Read(buff).Parts;
             return parts.Count > 0 && parts.All(IsPenalty);
+        }
+
+        /// <summary>
+        /// ★ v0.3.21 (review): the buff kills its bearer when it starts (AddFactContextActions → ContextActionKill: True
+        /// Judgment's damage buff, put on the target on a failed save).
+        /// </summary>
+        internal static bool KillsOnStart(BlueprintBuff buff)
+        {
+            try
+            {
+                return buff?.ComponentsArray != null &&
+                       buff.ComponentsArray.OfType<AddFactContextActions>().Any(a => HasKill(a.Activated?.Actions, 0));
+            }
+            catch
+            {
+                return false;
+            }
+        }
+
+        private static bool HasKill(GameAction[] actions, int depth)
+        {
+            if (actions == null || depth > 4) return false;
+            foreach (var action in actions)
+            {
+                switch (action)
+                {
+                    case ContextActionKill _:
+                        return true;
+                    case Conditional c when HasKill(c.IfTrue?.Actions, depth + 1) || HasKill(c.IfFalse?.Actions, depth + 1):
+                        return true;
+                    case ContextActionSavingThrow t when HasKill(t.Actions?.Actions, depth + 1):
+                        return true;
+                    case ContextActionConditionalSaved cs when HasKill(cs.Failed?.Actions, depth + 1):
+                        return true;
+                }
+            }
+            return false;
         }
 
         private static bool IsPenalty(BuffPart part)

@@ -2289,3 +2289,25 @@ Enfeeblement's Strength penalty, movement speed, enemy regeneration.
   of a granted feat no longer count as unread effects.
 
 Party abilities, test9 → test11: valued 2 586 → 2 658, guessed 387 → 352, nothing 250 → 213; toggles valued 202 → 206.
+
+## 63. v0.3.21 (test12): review of §61-62
+
+- **Regeneration, damage types**: materials and alignments are flags (a weapon can be cold iron and silver); the test
+  matched only the exact value. Any one flag the regeneration names now counts, as in the game's own test.
+- **Downed regenerating enemies** stay in the enemy list (§61); the fight-length estimate summed their HP below 0 and
+  shortened the expected fight. HP counts from 0. Threat, attacks of opportunity and incoming danger already required an
+  enemy that can act, or apply the disabled discount.
+- **True Judgment, Master Hunter**: their hit puts a buff on the target that kills as it starts (`AddFactContextActions` →
+  `ContextActionKill`, `AbilityProfile.KillsOnStart`); not read, so True Judgment stayed a guess although §62 listed it.
+  Read as an on-hit kill now; such a buff is harmful wherever it is applied; an empty cooldown buff put on the target is
+  no effect. `ContextCalculateAbilityParamsBasedOnClass` (the DC by class level) is bookkeeping.
+- **First-hit-only damage on a buff spent by one attack** was divided by the hits per round twice. Once now.
+- **Shield Wall** force-stacks in the game; read as a shield bonus it was cancelled by a shield already worn. Untyped now.
+- **Old real-time engine**: difficult terrain as minor control (§62) would have turned Ice Storm and the Deadly Earth
+  blasts into crowd-control spells there (`AbilityClassifier`); a damage spell whose only control is minor stays an attack.
+- **Checked and correct**: Quicken by the game's rule (`AbilityData.GetDefaultActionType` makes a quickened spell
+  swift, `RuntimeActionType` falls back to standard when the swift is spent, `UnitPartSpecialMetamagic` includes
+  next-spell metamagic), next-spell boosters skipped by the pre-combat buff routine, shadow copies' disbelief rule
+  (`MechanicsContext.TryAffectByShadow`), Ray of Enfeeblement's shared value, the spellcasting gain only for casters.
+- Doc comment of `CombatMath.Threat` restored (it had ended up on `ShadowShare`), and `ShadowShare`'s note on summons
+  corrected (an even save: half real, half at the factor).

@@ -546,7 +546,7 @@ namespace CompanionAI_Pathfinder.Analysis
                         list.Parts.Add(new BuffPart { Kind = BuffPartKind.SpellPenetration, Owner = owner, Fixed = 2, Conditional = true });
                         break;
                     case ShieldWall _:
-                        list.Parts.Add(new BuffPart { Kind = BuffPartKind.ArmorClass, Owner = owner, Fixed = 1, Descriptor = ModifierDescriptor.Shield, Conditional = true });
+                        list.Parts.Add(new BuffPart { Kind = BuffPartKind.ArmorClass, Owner = owner, Fixed = 1, Descriptor = ModifierDescriptor.UntypedStackable, Conditional = true });
                         break;
                     case AttackBonusAgainstFactOwner against:
                         list.Parts.Add(new BuffPart { Kind = BuffPartKind.Attack, Owner = owner, Fixed = against.AttackBonus, Value = against.Bonus,
@@ -703,10 +703,19 @@ namespace CompanionAI_Pathfinder.Analysis
             {
                 switch (action)
                 {
-                    // A debuff on the target; anything else it puts there (a marker, a mark of the bearer's) stays unread.
+                    // ★ v0.3.21 (review): a buff that kills its bearer as it starts is a kill (True Judgment).
+                    case Kingmaker.UnitLogic.Mechanics.Actions.ContextActionApplyBuff killing when killing.Buff != null && !killing.ToCaster &&
+                                                                                            CompanionAI_Pathfinder.Tactics.AbilityProfile.KillsOnStart(killing.Buff):
+                        found.Add(new BuffPart { Kind = BuffPartKind.OnHitKill, Owner = owner, HitSave = save, Conditional = conditional });
+                        break;
+                    // A debuff on the target; anything else it puts there (a mark of the bearer's) stays unread.
                     case Kingmaker.UnitLogic.Mechanics.Actions.ContextActionApplyBuff apply when apply.Buff != null && !apply.ToCaster &&
                                                                                           CompanionAI_Pathfinder.Tactics.AbilityProfile.IsHarmfulBuff(apply.Buff):
                         found.Add(new BuffPart { Kind = BuffPartKind.OnHitBuff, Owner = owner, HitBuff = apply.Buff, HitSave = save, Conditional = conditional });
+                        break;
+                    // ★ v0.3.21 (review): an empty buff on the target is a cooldown marker (True Judgment's), no effect.
+                    case Kingmaker.UnitLogic.Mechanics.Actions.ContextActionApplyBuff marker when marker.Buff != null &&
+                                                                                           (marker.Buff.ComponentsArray?.All(x => x == null) ?? true):
                         break;
                     case Kingmaker.UnitLogic.Mechanics.Actions.ContextActionDealDamage deal when deal.Value != null && !deal.IsAoE:
                         found.Add(new BuffPart { Kind = BuffPartKind.Damage, Owner = owner, Dice = deal.Value, Energy = true, Conditional = conditional || save != SavingThrowType.Unknown });
@@ -901,6 +910,9 @@ namespace CompanionAI_Pathfinder.Analysis
             switch (name)
             {
                 case "FeatureTagsComponent":
+                // ★ v0.3.21 (review): the DC of the buff's own effects by class level (Master Slayer) - read through the
+                // save, not an effect of its own.
+                case "ContextCalculateAbilityParamsBasedOnClass":
                 // ★ v0.3.21 (gaps): known teamwork effects with nothing the appraisal models - CMD and CMB (Coordinated
                 // Defense / Maneuvers), concentration (Shielded Caster), an extra attack of opportunity (Seize the Moment).
                 case "CoordinatedDefense":

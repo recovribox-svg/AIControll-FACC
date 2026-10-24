@@ -198,7 +198,7 @@ namespace CompanionAI_Pathfinder.Tactics
                 // ★ v0.3.21 (gaps): an on-hit effect counts on the share of hits it fires on.
                 amount *= p.Chance;
                 if (p.CritOnly) amount *= Mathf.Clamp01(off.BaseThreat) * off.HitChance;
-                if (p.FirstOnly) amount /= Math.Max(1f, off.HitsPerRound);
+                if (p.FirstOnly && !oneAttack) amount /= Math.Max(1f, off.HitsPerRound);   // one hit, not each
                 switch (p.Kind)
                 {
                     case BuffPartKind.OnHitBuff:
