@@ -2329,3 +2329,26 @@ Party abilities, test9 → test11: valued 2 586 → 2 658, guessed 387 → 352, 
     on cooldown, on purpose: in real time an option usable "from here" keeps a unit from walking off while it waits.
   - The new readers in the logs: Grease (mean 17 real time, 14 turn-based) as before the difficult-terrain change, the
     Arcane Reservoir DC / caster-level boosts at 0.5-4.4 for the spell cast next, Inspired Rage 1.6-7.7.
+
+
+## 65. Kineticist competence: Phase 0 audit (no runtime change)
+
+Baseline `cbc710a49f5fd1a303313d7c66f9405321e48a45`; task branch `codex/kineticist-competence`.
+[The Phase 0 audit](KINETICIST_COMPETENCE_PHASE0.md) records the option inventory with source locations,
+environment, supplied-assembly findings, sequential design, test evidence, and unverified behavior.
+
+The supplied game assembly confirms that `AbilityKineticist.CalculateBurnCost` raises runtime cost handlers,
+`KineticistController.WillGatherPower` uses the current/target gather ranks, and
+`TurnController.CalculateKineticistPrediction` consumes Move then Standard actions.
+`AddKineticistInfusionDamageTrigger` filters delivery and suppresses repeat effects on the same target at the
+same game time; future scoring must respect that cadence instead of blindly multiplying by damage packets.
+
+Current infusions are excluded from normal toggle scoring and only considered for stopping when burn blocks every
+blast. Phase 1 will score their effects and runtime costs with each blast on the shared ValueModel scale; Phase 2
+will compare complete gather/blast plans; Phase 3 will address only exposed area/blade/defensive-talent gaps.
+No new value formula, runtime toggle switch or [Kinetic] decision log is implemented in Phase 0.
+
+Baseline verification: 104 unit tests passed; the source compiled against the supplied references with zero warnings
+and errors. Kineticist blueprint dumps and a live game were unavailable, so ProfileAudit and gameplay were not run.
+The audit also records the existing direct-toggle execution path that must be reconciled with dispatcher-owned
+command issuance before new kineticist management is enabled. No version bump or release.
