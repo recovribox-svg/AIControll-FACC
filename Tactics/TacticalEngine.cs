@@ -312,6 +312,12 @@ namespace CompanionAI_Pathfinder.Tactics
             Candidate chosen = null;
             if (quick != null) chosen = quick;
             else if (main != null && main.Value >= MinMainValue) chosen = main;
+            // ★ v0.3.21: nothing clears the bar, but a weapon attack from where the unit stands still does some good to an
+            // enemy that is up - better than the action unused. Aeiluvetar ended round 7 with every action left beside
+            // the last enemy, a Skeletal Champion Archer her arrows hardly hurt (0.49; 0.3.20 turn-based log, fight 3).
+            // Not on a disabled enemy: there the bar keeps a sleeping or held enemy from being woken for a sliver.
+            else chosen = usable.FirstOrDefault(c => c.Kind == CandidateKind.WeaponAttack && !c.NeedsMove && !c.MoveFirst &&
+                                                     c.Value > 0.05f && c.Target != null && !CombatMath.IsDisabled(c.Target));
             // ★ v0.3.19 (test11): restraint with buffs that take the turn's Standard or full-round action - the player's
             // wish: such a buff is cast over the best immediate main action only when clearly better
             // (ValueModel.BuffBeatsImmediate, 15 %); a near tie or a weaker case goes to the immediate action.

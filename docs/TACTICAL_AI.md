@@ -1987,3 +1987,21 @@ a missing or throwing member switches the handoff off for the session, logged on
 **Limits.** A rule whose action is "Do nothing" gives no command and is invisible to AI Control. Wrath Tactics may still
 replace one of AI Control's weapon attacks when a rule fires (its own priority). The handoff costs at most about 0.6 s
 each time a managed companion becomes free (normally a frame or two).
+
+## 54. v0.3.21 (test2): the 0.3.20 release logs (3 turn-based, 4 real-time fights)
+
+**A turn left unused beside the last enemy.** Turn-based fight 3, round 7: Aeiluvetar had every action left and the
+only enemy, a Skeletal Champion Archer her arrows hardly hurt, in range - `Attack=0.5 => END TURN` (0.49, under the 0.5
+bar every main action must clear). When nothing clears the bar, a weapon attack from where the unit stands with any
+worth (more than 0.05, after its own costs) is taken now - unless the enemy is disabled: there the bar keeps the party
+from waking a sleeping or held enemy for a sliver of damage (the sleeping Vermlek's attacks were worth 0.2-0.4 in fight
+2). Both modes; nothing else changes.
+
+**Looked at, left as is.**
+- Orvath cast Sleep on "Vermlek" four rounds running (fight 2): there were two; each cast slept the one awake (the
+  party's attacks woke them), and the aimed one, already asleep, was dropped from the area count after two casts.
+- Fight 3 switched from turn-based to real time and back (rounds counted from 1 again): the player's switch.
+- Real time, fight 3: Seelah's potion was dropped as she was nauseated by the Rat Swarm right after choosing it (the
+  game starts only walking then); her next one went through. Fight 2: two Medium Earth Elementals took her from full
+  HP to 6 % in a round after a Move+Attack that provoked nothing - the healthy fighter's place is in melee.
+- No refusals, no lost turns, no errors in either log; slow decisions only during the game's garbage collection.
