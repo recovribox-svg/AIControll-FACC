@@ -119,7 +119,12 @@ namespace ProfileAudit
                 enemies = !helpfulOnly && (bp.CanTargetEnemies || (bp.CanTargetPoint && (p.HarmfulEffects || p.DealsDamage || p.Dispels)));
                 allies = !harmfulOnly && (bp.CanTargetFriends || bp.CanTargetSelf);
                 if (!allies && !harmfulOnly && bp.CanTargetPoint && !bp.CanTargetEnemies && p.IsAoE &&
-                    (p.TargetBuffs.Count > 0 || p.Heals.Count > 0 || p.RemovesAnything)) allies = true;
+                    (p.TargetBuffs.Count > 0 || p.Heals.Count > 0 || p.RemovesAnything))
+                {
+                    allies = true;
+                    if (System.Environment.GetEnvironmentVariable("PA_POINTALLY") != null)
+                        System.Console.Error.WriteLine($"POINTALLY {bp.name} aoe={p.AoETargets} buffs=[{string.Join(",", p.TargetBuffs.Select(b => b.name))}]");
+                }
                 self = !harmfulOnly && bp.CanTargetSelf;
                 if (p.Heals.Count > 0 && bp.CanTargetFriends) allies = true;
                 if (harmfulOnly && p.IsAoE && bp.CanTargetSelf && !bp.CanTargetEnemies && !bp.CanTargetPoint) { self = true; selfOnly = true; }
@@ -152,7 +157,7 @@ namespace ProfileAudit
                 if (p.MeleeAttack != null && !p.OnlyMeleeAttack) modelled.Add("melee attack");
                 if (p.TargetBuffs.Count > 0 || p.Pit != null)
                 {
-                    bool mark = !p.HarmfulToEnemies && p.ControlStrength == ControlStrength.None;
+                    bool mark = !p.HarmfulEffects && p.ControlStrength == ControlStrength.None;
                     if (mark && p.IsAoE) { }
                     else if (p.ControlStrength != ControlStrength.None) modelled.Add($"control {p.ControlStrength}");
                     else if (!mark)
@@ -164,6 +169,8 @@ namespace ProfileAudit
                                                 BuffPartKind.Constitution, BuffPartKind.MentalStat };
                         bool readable = p.TargetBuffs.SelectMany(b => BuffPartsReader.Read(b).Parts).Any(x => penalties.Contains(x.Kind));
                         if (poison) modelled.Add("poison (Con as HP)");
+                        else if (readable && p.TargetBuffs.Any(b => BuffPartsReader.Read(b).Unread.Count > 0))
+                            modelled.Add("debuff by its penalties (at least 0.25: some unread)");
                         else if (readable) modelled.Add("debuff by its penalties");
                         else guessed.Add("debuff (0.25 of worth)");
                     }

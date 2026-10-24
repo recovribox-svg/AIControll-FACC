@@ -2715,7 +2715,9 @@ namespace CompanionAI_Pathfinder.Tactics
             if ((profile.TargetBuffs.Count > 0 || profile.Pit != null) && affectedEnemies.Count > 0)
             {
                 float controlValue = 0f;
-                bool isMark = !profile.HarmfulToEnemies && profile.ControlStrength == ControlStrength.None;
+                // ★ v0.3.21 (audit review): what it applies counts too (HarmfulEffects): Crushing Despair, Prayer's enemy half,
+                // Mind Fog and the symbols carry no harmful flag, only penalties - they are debuffs, not 0.15 marks.
+                bool isMark = !profile.HarmfulEffects && profile.ControlStrength == ControlStrength.None;
                 // ★ v0.3.2: a mark is aimed at one enemy. A helpful area buff centred on the caster (Soul Power, Light
                 // of the Angels) counted the enemies standing in its radius as "marks" and scored 26-38 every round.
                 if (isMark && profile.IsAoE) affectedEnemies = new List<UnitEntityData>();
@@ -2799,7 +2801,7 @@ namespace CompanionAI_Pathfinder.Tactics
                 // rule says so (★ v0.3.14: AbilityProfile.SelectiveSparesAllies).
                 float allyControlCost = 0f;
                 bool harmfulArea = profile.IsAoE && profile.AoETargets != Kingmaker.UnitLogic.Abilities.Components.TargetType.Enemy &&
-                                   (profile.HarmfulToEnemies || profile.ControlStrength != ControlStrength.None) &&
+                                   (profile.HarmfulEffects || profile.ControlStrength != ControlStrength.None) &&
                                    !profile.SelectiveSparesAllies(ability);
                 // ★ v0.3.21: an ally that would fall into the pit is caught too.
                 Func<UnitEntityData, bool> wouldBeCaught = a =>
@@ -2874,12 +2876,14 @@ namespace CompanionAI_Pathfinder.Tactics
                         ctx.Allies.Any(a => a != unit))
                         rounds = Math.Min(rounds, 1f);
                     // ★ v0.3.21 (verification audit): a plain debuff whose penalties can be read is worth what it takes away
-                    // (ValueModel.DebuffShare); the flat share stays for one whose penalties cannot be read.
+                    // (ValueModel.DebuffShare); the flat share stays for one whose penalties cannot be read, and is the floor
+                    // for one that also does something the reader cannot value (★ audit review: Symbol of Vulnerability's
+                    // -4 saves come with a lower spell resistance and damage reduction).
                     float share = strength;
                     if (!isMark && profile.ControlStrength == ControlStrength.None)
                     {
-                        float byParts = DebuffShareOf(ctx, ability, enemy, buffs);
-                        if (byParts >= 0f) share = byParts * repeat;
+                        float byParts = DebuffShareOf(ctx, ability, enemy, buffs, out bool partial);
+                        if (byParts >= 0f) share = partial ? Math.Max(byParts * repeat, strength) : byParts * repeat;
                     }
                     float enemyValue = p * CombatMath.ControlWorth(enemy) * share * rounds;
                     // ★ v0.3.21: a poison's Constitution damage is lost hit points (CombatMath.PoisonHpLoss), valued like

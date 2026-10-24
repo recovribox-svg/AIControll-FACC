@@ -449,13 +449,18 @@ namespace CompanionAI_Pathfinder.Tactics
         /// <summary>
         /// ★ v0.3.21 (verification audit): the share of <paramref name="enemy"/>'s worth per round that
         /// <paramref name="buffs"/> take away by their penalties (ValueModel.DebuffShare), with the caster's numbers; -1 when
-        /// none of their parts can be read (the flat "plain debuff" share applies then).
+        /// none of their parts can be read (the flat "plain debuff" share applies then). <paramref name="partial"/>: they also
+        /// carry effects the reader does not value (★ audit review: the share read is then a floor, not the whole worth).
         /// </summary>
-        private static float DebuffShareOf(TacticalContext ctx, AbilityData ability, UnitEntityData enemy, List<BlueprintBuff> buffs)
+        private static float DebuffShareOf(TacticalContext ctx, AbilityData ability, UnitEntityData enemy, List<BlueprintBuff> buffs,
+                                           out bool partial)
         {
+            partial = false;
             try
             {
-                var parts = buffs.SelectMany(b => BuffPartsReader.Read(b).Parts).ToList();
+                var lists = buffs.Select(BuffPartsReader.Read).ToList();
+                partial = lists.Any(l => l.Unread.Count > 0);
+                var parts = lists.SelectMany(l => l.Parts).ToList();
                 if (parts.Count == 0) return -1f;
                 var abilityCtx = CombatMath.CreateContext(ability, new Kingmaker.Utility.TargetWrapper(enemy));
                 int casterLevel = 1;
@@ -473,7 +478,9 @@ namespace CompanionAI_Pathfinder.Tactics
                         case BuffPartKind.Damage: damage += taken; any = true; break;
                         case BuffPartKind.ArmorClass: armor += taken; any = true; break;
                         case BuffPartKind.Saves: saves += taken * p.SaveShare; any = true; break;
-                        case BuffPartKind.ConditionalSaves: saves += taken * 0.5f; any = true; break;
+                        // ★ audit review: an immunity a debuff carries (a petrified or paralysed body's) is not a penalty and
+                        // must not cancel the real ones.
+                        case BuffPartKind.ConditionalSaves: if (taken > 0f) { saves += taken * 0.5f; any = true; } break;
                         case BuffPartKind.Strength: strength += taken; any = true; break;
                         case BuffPartKind.Dexterity: dexterity += taken; any = true; break;
                         case BuffPartKind.Constitution: saves += taken * 0.5f; any = true; break;

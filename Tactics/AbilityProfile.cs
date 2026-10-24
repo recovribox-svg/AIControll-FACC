@@ -633,12 +633,32 @@ namespace CompanionAI_Pathfinder.Tactics
         {
             try
             {
-                return buff.Harmful || BuffControl(buff) != ControlStrength.None;   // ★ v0.3.21: faction change, Command too
+                return buff.Harmful || BuffControl(buff) != ControlStrength.None ||   // ★ v0.3.21: faction change, Command too
+                       TakesAwayOnly(buff);
             }
             catch
             {
                 return false;
             }
+        }
+
+        /// <summary>
+        /// ★ v0.3.21 (audit review): a buff not flagged harmful whose effect on its bearer only takes away - every part the
+        /// reader values is a penalty (Symbol of Vulnerability: -4 saves), or it strips concealment (Faerie Fire, Symbol of
+        /// Revelation: DoNotBenefitFromConcealment). Read as helpful, the symbols were aimed at the party.
+        /// </summary>
+        private static bool TakesAwayOnly(BlueprintBuff buff)
+        {
+            if (buff.GetComponent<DoNotBenefitFromConcealment>() != null) return true;
+            var parts = BuffPartsReader.Read(buff).Parts;
+            return parts.Count > 0 && parts.All(IsPenalty);
+        }
+
+        private static bool IsPenalty(BuffPart part)
+        {
+            if (part.Descriptor == Kingmaker.Enums.ModifierDescriptor.Penalty) return true;
+            int sign = part.Value != null && part.Value.ValueType == ContextValueType.Simple ? part.Value.Value : part.Value == null ? part.Fixed : 0;
+            return sign * part.Multiplier < 0;
         }
 
         private void AnalyzeAbility(BlueprintAbility bp, HashSet<BlueprintAbility> visited, int depth, EffectSubject subject)

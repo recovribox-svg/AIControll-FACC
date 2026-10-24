@@ -78,7 +78,7 @@ Party abilities (enemy, NPC and cutscene folders left out):
 | NEVER OFFERED | 113 | 41 |
 
 All folders (4 801 abilities, 0 read errors): 2 929 valued, 480 guessed, 365 nothing, 52 never offered, 18 kinetic
-blade internals. Toggles: 138 valued, 84 guessed, 74 nothing, 661 not managed by design (player choices, hidden,
+blade internals; after the review in TACTICAL_AI.md §59: 2 942 valued, 468 guessed, 364 nothing. Toggles: 138 valued, 84 guessed, 74 nothing, 661 not managed by design (player choices, hidden,
 started by the game). The 52 never offered are almost all correct: self-damage costs (Vicious), teleports, Dismiss,
 Magic Hack internal slots, Raise Dead, enemy-only charges and breath weapons. The fixes and what is still unread:
 TACTICAL_AI.md §59.

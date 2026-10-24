@@ -2153,13 +2153,20 @@ value paths (`ScoreAbility`) and says whether the ability is valued by what it d
 never offered at all.
 
 **False positives found and fixed** (looked valued, but the engine never offered them or valued them by a guess):
-- *Never offered - no side to aim at.* Personal-range areas whose buff is helpful but whose game flags say "harmful"
-  (Wizard Abjuration Resistance / Protective Ward, Arcanist Energy Shield, Transmutation school powers, Frightful
-  Aspect, Firebelly, Battle Spirit, Holy / Unholy Aura, Shield of Law, Cloak of Chaos, Rainbow Dome, Circle of
-  Clarity, unique-weapon self-centred areas, Rousing Retort): `HarmfulToEnemies` now needs an ability that can reach an
-  enemy (not friends-only, not caster-only, not an ally-only area without damage); `HelpfulToAllies` is not set for
-  enemy-only abilities. Ally areas cast at a point (Lesser Restoration's communal forms, Hell's Decree) get the allies
-  as targets; the area form of Dispel Magic is aimed at enemies; Death Attack (self-centred harmful area) at the caster.
+- *Never offered - no side to aim at.* Each kind had its own cause:
+  - personal abilities that reach only the caster but are flagged harmful to enemies (Wizard Abjuration Resistance /
+    Protective Ward, Arcanist Energy Shield, Transmutation school powers, Frightful Aspect, Firebelly, Battle Spirit):
+    `HarmfulToEnemies` now excludes them (`OnlyOnCaster`), as it excludes friends-only abilities;
+  - areas that reach only allies, flagged harmful (Holy / Unholy Aura, Shield of Law, Cloak of Chaos): excluded the same
+    way when they deal no damage;
+  - friends-only abilities whose drawback buff was read as an attack (Lesser Restoration turns Exhausted into Fatigued,
+    Hell's Decree dazzles the ally it empowers): `AppliesHarmfulBuffs` leaves friends-only abilities out;
+  - enemy-only abilities flagged helpful to allies (the Assassin's Death Attack): `HelpfulToAllies` needs an ally it can
+    reach;
+  - helpful areas that can only be aimed at the ground (Rainbow Dome, Circle of Clarity, Pillar of Life): aimed where an
+    ally stands; the area form of Dispel Magic where an enemy stands;
+  - harmful areas that can only be centred on the caster without being personal (Rolling Thunder, Explosive Fervor,
+    Crushing Presence, Rousing Retort): aimed at the caster, like a personal area; unique-weapon self-centred areas too.
 - *Debuffs by a flat 0.25.* A debuff whose buff the parts reader understands (Bestow Curse, hex
   penalties) is now valued by what its penalties take from the enemy's offence and defence
   (`ValueModel.DebuffShare`: attack, damage, AC, saves, Strength and Dexterity penalties, capped at 0.6 of the
@@ -2184,3 +2191,21 @@ next-spell metamagic, teamwork feats other than §57's four, natural-attack togg
 spellcasting buffs (`IncreaseAllSpellsDC`, `IncreaseCasterLevel`), Shadow Evocation / Conjuration, Black Hole, Rift of
 Ruin, Haunting Mists, Raise Dead and resurrections, Ray of Enfeeblement (`AddFactContextActions`, flat 0.25),
 movement-speed buffs, enemy regeneration. Magic Deceiver's Magic Hack slots are internal and correctly never offered.
+
+**Review of this audit (same build).** A second pass with the harness found mistakes in the first:
+- The new "helpful ground area" rule also aimed Symbol of Revelation (strips concealment) and Symbol of Vulnerability
+  (-4 saves) at the party: neither its blueprint nor its buff carries a harmful flag. A buff whose read parts are all
+  penalties, or that strips concealment (`DoNotBenefitFromConcealment`), now counts as harmful
+  (`AbilityProfile.TakesAwayOnly`). Both symbols are aimed at enemies.
+- The same blind spot made Crushing Despair, Prayer's enemy half, Mind Fog, the hag Evil Eye, Soul Siphon, the Peer
+  Through spells and Trickster's Bear's Grace (-8 Dexterity) count as 0.15 "marks" on enemies, and some as buffs on
+  allies caught in them. The mark test and the friendly-fire test now use everything the ability applies
+  (`HarmfulEffects`), not only the blueprint flag: they are debuffs valued by their penalties.
+- A debuff read only in part (Bestow Curse's Deterioration, Plague Storm, Symbol of Vulnerability's lower spell
+  resistance and damage reduction) kept only the share of the penalties read, which could be below the old flat 0.25:
+  the flat share is now its floor.
+- An immunity carried by a debuff no longer cancels its penalties in that share.
+
+All folders after the review: 2 942 valued, 468 guessed, 364 nothing, 52 never offered (the ones listed in
+COVERAGE_AUDIT.md, all correct to leave).
+
