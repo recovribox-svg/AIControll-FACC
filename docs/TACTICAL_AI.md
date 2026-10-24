@@ -2090,3 +2090,35 @@ From the offline audit (`docs/COVERAGE_AUDIT.md`, gaps 2-7); each reader follows
 The audit script now also counts what the engine already did for harmful-flagged abilities whose buffs it cannot read:
 a plain debuff when the ability can be aimed at an enemy. The first audit listed Command and Poison as "never cast";
 they were cast, valued only by that guess.
+
+## 57. v0.3.21 (test6): ally hexes, Protective Luck, Tactician teamwork feats, free metamagic
+
+- **Ally hexes were never cast.** The game's blueprints flag the witch and shaman hexes aimed at allies "Harmful"
+  for enemies and allies alike: Ward, Fortune, Protective Luck, Fury, Battle Ward, Draconic Resilience. Read as harmful,
+  they were offered only against enemies, which they cannot target. `AbilityProfile.HarmfulToEnemies` now needs an
+  ability that can reach an enemy (`AimsAtFriendsOnly`: no enemy, point, area or chain target, not personal). Their buffs
+  are valued like any buff on an ally. Enemy threat (`EnemyThreat.IsHarmful`) uses the same rule, so an enemy witch's
+  Ward no longer counts as an attack spell. The healing hexes were cast already, because heals may be aimed at friends.
+- **Protective Luck** (`AddTargetBeforeAttackRollTrigger`): before each attack roll against the bearer, the attacker
+  gets a buff whose `ModifyD20` rolls twice and keeps the worse (misfortune). Read as +3 AC against every attacker
+  (`MisfortuneOnAttacker`); at half when limited to melee, non-reach or a descriptor.
+- **Tactician teamwork feats** (Vanguard and Forester: `AddFactsFromCaster`; the Cavalier's buffs:
+  `AddFeatureIfHasFact`). The granted feat's own components are read and marked `BuffPart.Granted`, so an ally that
+  has the feat already gains nothing:
+  - Precise Strike (+1d6 in melee when flanking);
+  - Outflank (+2 more to hit when flanking);
+  - Back to Back (+2 AC when flanked);
+  - Shake It Off (+1 saves).
+  Each needs a partner with the feat (the Tactician gives it to everyone around), so it counts at half. The other
+  teamwork feats (Coordinated Defense, Shield Wall, Allied Spellcaster, Seize the Moment...) stay unread.
+- **Free metamagic on the next spell** (`AutoMetamagic`, through the next-spell boosters of
+  `TacticalEngine.Boosters.cs`). A buff whose metamagic ends with the spell it changes (`Once`), or that is spent by
+  the next cast, is now a booster: Phantasmal Mage, Emergency Help, Healing Blessing, Life Spirit.
+  - Where it applies: the game's own `AutoMetamagic.ShouldApplyTo` decides which spells it goes to.
+  - What it adds to the main action chosen with it:
+    - Empower: half again of the damage or healing;
+    - Maximize: about +60 % of the dice;
+    - both together: +140 %;
+    - Persistent: a second save, so the effect lands at `1 - (1 - fail)^2`.
+  - What it never counts: metamagic the spell has already. Reach, Extend, Quicken and Selective change no number in
+    the value and are not counted.

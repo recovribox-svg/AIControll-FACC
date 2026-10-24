@@ -31,10 +31,16 @@ namespace CompanionAI_Pathfinder.Tactics
             public int DC;
             public readonly List<BlueprintSpellbook> Spellbooks = new List<BlueprintSpellbook>();
             public readonly List<BlueprintAbility> Spells = new List<BlueprintAbility>();
-            public bool Any => CasterLevel > 0 || DC > 0;
+            /// <summary>★ v0.3.21: metamagic the next suitable spell gets for free (AutoMetamagic: Phantasmal Mage, Emergency
+            /// Help, Healing Blessing, Life Spirit).</summary>
+            public readonly List<AutoMetamagic> Metamagic = new List<AutoMetamagic>();
+            public bool Any => CasterLevel > 0 || DC > 0 || Metamagic.Count > 0;
 
             public bool AppliesTo(AbilityData spell)
             {
+                // ★ v0.3.21: a metamagic boost goes where the game's own rule puts it (AutoMetamagic.ShouldApplyTo).
+                if (CasterLevel == 0 && DC == 0)
+                    return spell != null && Metamagic.Any(m => AutoMetamagic.ShouldApplyTo(m, spell.Blueprint, spell));
                 if (spell?.Spellbook == null) return false;
                 if (Spells.Count > 0 && !Spells.Contains(spell.Blueprint) && !Spells.Contains(spell.Blueprint.Parent)) return false;
                 return Spellbooks.Count == 0 || Spellbooks.Contains(spell.Spellbook.Blueprint);
@@ -44,7 +50,11 @@ namespace CompanionAI_Pathfinder.Tactics
         /// <summary>The boost of an ability whose every buff is spent by the next cast; null when it is not one.</summary>
         internal static SpellBoost SpellBoostOf(AbilityProfile profile, AbilityData ability, UnitEntityData caster)
         {
-            if (profile == null || !profile.BuffsSpentByCast) return null;
+            // ★ v0.3.21: or a buff whose free metamagic ends with the spell it changes (AutoMetamagic.Once).
+            if (profile == null) return null;
+            if (!profile.BuffsSpentByCast &&
+                !(profile.CasterBuffs.Count > 0 && profile.CasterBuffs.All(b => b != null && Kingmaker.Blueprints.BlueprintExtenstions.GetComponents<AutoMetamagic>(b).Any(m => m.Once))))
+                return null;
             var boost = new SpellBoost();
             try
             {
@@ -80,6 +90,9 @@ namespace CompanionAI_Pathfinder.Tactics
                                 break;
                             case IncreaseAllSpellsDC dc:
                                 boost.DC += Math.Max(0, SimpleValue(dc.Value));
+                                break;
+                            case AutoMetamagic metamagic:
+                                boost.Metamagic.Add(metamagic);
                                 break;
                         }
                     }
@@ -173,8 +186,48 @@ namespace CompanionAI_Pathfinder.Tactics
                     parts.Add($"caster level +{boost.CasterLevel}: +{dice:P0} damage dice");
                 }
             }
+            // ★ v0.3.21: free metamagic on the spell cast next, where the game applies it and the spell does not have it.
+            share += MetamagicGain(ctx, boost, main, profile, parts);
             note = parts.Count > 0 ? $"for {main.Ability.Name}: {string.Join(", ", parts)}" : $"adds nothing to {main.Ability.Name}";
             return main.Value * share;
+        }
+
+        /// <summary>
+        /// ★ v0.3.21: the share of <paramref name="main"/>'s value that free metamagic adds: Empower half again of its
+        /// damage or healing, Maximize the dice at their best (about +60 % of a dice roll), both together half again of
+        /// the maximum (the game's rule for the pair); Persistent a second save, so a target resists only by passing both.
+        /// Reach, Extend, Quicken, Selective and the rest change no number the value is made of: not counted.
+        /// </summary>
+        private static float MetamagicGain(TacticalContext ctx, SpellBoost boost, Candidate main, AbilityProfile profile, List<string> parts)
+        {
+            Kingmaker.UnitLogic.Abilities.Metamagic flags = 0;
+            foreach (var m in boost.Metamagic)
+                if (AutoMetamagic.ShouldApplyTo(m, main.Ability.Blueprint, main.Ability)) flags |= m.Metamagic;
+            if (flags == 0) return 0f;
+            bool Has(Kingmaker.UnitLogic.Abilities.Metamagic f) => (flags & f) != 0 && !main.Ability.HasMetamagic(f);
+            float share = 0f;
+            bool numbers = profile.DealsDamage || profile.Heals.Count > 0;
+            bool empower = Has(Kingmaker.UnitLogic.Abilities.Metamagic.Empower), maximize = Has(Kingmaker.UnitLogic.Abilities.Metamagic.Maximize);
+            if (numbers && (empower || maximize))
+            {
+                float more = empower && maximize ? 1.4f : maximize ? 0.6f : 0.5f;
+                share += 0.7f * more;   // the damage or healing part of the value
+                parts.Add($"{(empower && maximize ? "empowered and maximized" : maximize ? "maximized" : "empowered")}: +{more:P0} dice");
+            }
+            if (Has(Kingmaker.UnitLogic.Abilities.Metamagic.Persistent) && profile.Save != Kingmaker.EntitySystem.Stats.SavingThrowType.Unknown &&
+                main.Target != null && ctx.Unit.IsEnemy(main.Target))
+            {
+                float fail = CombatMath.SaveFailChance(main.Ability, profile, main.Target);
+                if (fail > 0f && fail < 1f)
+                {
+                    // Resisting needs both saves: the effect lands at 1 - (1 - fail)^2 instead of fail.
+                    float gain = 1f - fail;
+                    if (profile.HalfOnSave && profile.ControlStrength == ControlStrength.None) gain *= 0.5f;
+                    share += gain;
+                    parts.Add($"persistent: lands {fail:P0} -> {1f - (1f - fail) * (1f - fail):P0}");
+                }
+            }
+            return share;
         }
 
         private static readonly System.Reflection.FieldInfo RankBase =

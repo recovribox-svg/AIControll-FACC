@@ -25,6 +25,7 @@ using Kingmaker.EntitySystem.Stats;
 using Kingmaker.Enums;
 using Kingmaker.Items;
 using Kingmaker.RuleSystem;
+using Kingmaker.UnitLogic;
 using Kingmaker.UnitLogic.Abilities;
 using Kingmaker.UnitLogic.Buffs.Blueprints;
 using Kingmaker.UnitLogic.Mechanics;
@@ -179,6 +180,8 @@ namespace CompanionAI_Pathfinder.Tactics
             {
                 // ★ v0.3.21: a part for some weapons only counts when the recipient's weapon in hand is one of them.
                 if (p.Weapon != null && (off.Weapon?.Blueprint == null || !p.Weapon(off.Weapon.Blueprint))) continue;
+                // ★ v0.3.21: a granted feature the recipient has already adds nothing (a Tactician's teamwork feat).
+                if (p.Granted != null && ally.Descriptor.HasFact(p.Granted)) continue;
                 float amount = PartAmount(p, caster, abilityCtx, ally, casterLevel);
                 // ★ v0.3.20 (test5): a bonus against one kind of effect or creature counts for the share of the enemies it
                 // works against; any other condition (a weapon kind) at half. Remove Fear's +4 against fear counted as +2

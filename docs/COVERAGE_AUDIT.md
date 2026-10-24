@@ -18,20 +18,24 @@ taken from the code). It is an approximation:
 
 ## Result (2 981 abilities, cutscene copies left out)
 
-| | 0.3.21-test3 | 0.3.21-test4 | share now |
+| | 0.3.21-test3 | 0.3.21-test6 | share now |
 |---|---:|---:|---:|
 | Valued: damage, heal, summon, maneuver, dispel, removal, weapon enchantment, or by the rules (Charge, Vital Strike, Cleave, Devastating Blow, melee attack actions) | 1 958 | 1 972 | 66.2 % |
-| Valued through a buff or an area | 739 | 759 | 25.5 % |
+| Valued through a buff or an area | 739 | 792 | 26.6 % |
 | Valued as a plain debuff only (flagged harmful, aimed at an enemy; its buff unread) | - | 7 | 0.2 % |
-| Applies only buffs the AI cannot read (worth 0, never cast) | 155 | 118 | 4.0 % |
+| Applies only buffs the AI cannot read (worth 0, never cast) | 155 | 85 | 2.9 % |
 | Effect not understood (never used) | 129 | 125 | 4.2 % |
 
-About 91.9 % are valued. In the first count, the plain-debuff row was mixed into "worth 0": Command and Poison were
+About 93 % are valued. In the first count, the plain-debuff row was mixed into "worth 0": Command and Poison were
 cast, but valued only by that guess. Of the rest, most are out of combat or not for the AI to use: Consume Spells, item
 bonds, teleports, Dimension Door, resurrection, Find Traps, Atonement, Dismiss, wandering hex choice.
 
-With the Equipment, Weapons, Items, Feats and full Spells folders added (3 279 abilities, item abilities included), 91.3 %
-are valued. The items left are almost all out of combat: manuals and tomes, Pearls of Power, the shadow-plane lantern.
+With the Equipment, Weapons, Items, Feats and full Spells folders added (3 279 abilities, item abilities included),
+92.4 % are valued. The items left are almost all out of combat: manuals and tomes, Pearls of Power, the shadow-plane
+lantern.
+
+The script judges an ability by its components only. It cannot see that the game's intent flags kept the ally hexes from
+being cast at all (TACTICAL_AI.md §57). The in-game `[Coverage]` lines show that.
 
 ## Combat-relevant gaps, in suggested order
 
@@ -44,13 +48,13 @@ are valued. The items left are almost all out of combat: manuals and tomes, Pear
 | 5 | Melee attack actions (`ContextActionMeleeAttack`, `AbilityCustomMeleeAttack`) | Two-Handed Fighter Piledriver, Devastating Blow, Blade Whirlwind, Death Attack | **Done in 0.3.21-test4** |
 | 6 | Flee / approach control (`SetFleeOrApproachLogic`) | Command (Flee, Approach) | **Done in 0.3.21-test4** (hard control) |
 | 7 | Poison stat damage (`BuffPoisonStatDamage`) | Poison, Poison Breath, Hoarfrost hex | **Done in 0.3.21-test4** (Constitution damage as lost HP) |
-| 8 | Misfortune-style triggers (`AddTargetBeforeAttackRollTrigger`, `AddAbilityUseTargetTrigger`) | Protective Luck hex | defensive hex |
-| 9 | Teamwork feat grants (`AddFactsFromCaster`, `AddFeatureIfHasFact`) | Cavalier / Vanguard / Forester Tactician | grants teamwork feats to the party |
-| 10 | Next-spell metamagic (`AutoMetamagic`) and Magus arcana | Empowered / Maximized / Quickened / Reach Arcana, Bomber's Eye | like the next-spell boosters already handled |
+| 8 | Misfortune-style triggers (`AddTargetBeforeAttackRollTrigger`, `AddAbilityUseTargetTrigger`) | Protective Luck hex | **Done in 0.3.21-test6**, with every ally hex (§57) |
+| 9 | Teamwork feat grants (`AddFactsFromCaster`, `AddFeatureIfHasFact`) | Cavalier / Vanguard / Forester Tactician | **Done in 0.3.21-test6** for Precise Strike, Outflank, Back to Back, Shake It Off |
+| 10 | Next-spell metamagic (`AutoMetamagic`) and Magus arcana | Empowered / Maximized / Quickened / Reach Arcana, Bomber's Eye | **Done in 0.3.21-test6** for Empower, Maximize, Persistent on the next spell |
 | 11 | Mythic | Aeon Edicts (`AddPhysicalImmunity`), Golden Dragon Might / Pride / Thousand Bites, Azata Joy of Life / Second Breath | per path, after the above |
 
-Each is a reader for one more game component; none needs play-testing a whole class first. Next: 8-10, then the
-mythic paths.
+Each is a reader for one more game component; none needs play-testing a whole class first. Next: the mythic
+paths (11).
 
 ## Re-running
 ```

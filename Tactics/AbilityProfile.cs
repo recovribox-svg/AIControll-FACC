@@ -263,7 +263,22 @@ namespace CompanionAI_Pathfinder.Tactics
         public CCType Control { get; private set; }
         public ControlStrength ControlStrength { get; private set; }
 
-        public bool HarmfulToEnemies => Blueprint.EffectOnEnemy == AbilityEffectOnUnit.Harmful;
+        /// <summary>
+        /// ★ v0.3.21: flagged harmful to enemies and able to reach one. The witch and shaman hexes aimed at allies (Ward,
+        /// Fortune, Protective Luck, Fury, Battle Ward, Draconic Resilience) carry EffectOnEnemy and EffectOnAlly "Harmful"
+        /// in the game's blueprints: read as harmful, they were only offered against enemies, which they cannot target,
+        /// and were never cast.
+        /// </summary>
+        public bool HarmfulToEnemies => Blueprint.EffectOnEnemy == AbilityEffectOnUnit.Harmful && !AimsAtFriendsOnly(Blueprint);
+
+        /// <summary>★ v0.3.21: the ability can only be aimed at a friend or the caster and reaches nobody else (no point, no
+        /// area around the target, not personal): its intent flags say nothing about enemies.</summary>
+        public static bool AimsAtFriendsOnly(BlueprintAbility bp)
+        {
+            if (bp == null || bp.CanTargetEnemies || bp.CanTargetPoint || bp.Range == AbilityRange.Personal) return false;
+            if (!bp.CanTargetFriends && !bp.CanTargetSelf) return false;
+            return bp.GetComponent<AbilityTargetsAround>() == null && bp.GetComponent<AbilityDeliverChain>() == null;
+        }
         public bool HelpfulToAllies => Blueprint.EffectOnAlly == AbilityEffectOnUnit.Helpful;
 
         /// <summary>★ v0.3.12: a buff it applies to its target is a debuff or a controlling condition.</summary>

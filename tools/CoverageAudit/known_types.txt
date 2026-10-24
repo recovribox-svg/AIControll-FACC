@@ -52,6 +52,8 @@ AddEnergyDamageImmunity
 AddEnergyImmunity
 AddFactContextActions
 AddFacts
+AddFactsFromCaster
+AddFeatureIfHasFact
 AddFortification
 AddGenericStatBonus
 AddImmunityToAbilityScoreDamage
@@ -73,6 +75,7 @@ AddSpellSchool
 AddStatBonus
 AddStatBonusAbilityValue
 AddStatBonusIfHasFactFeature
+AddTargetBeforeAttackRollTrigger
 AddTemporaryHP
 AdditionalAttackBonus
 AdditionalDamage
@@ -93,7 +96,9 @@ AttackBonusAgainstFactOwner
 AttackBonusAgainstSize
 AttackBonusAgainstTarget
 AttackTypeAttackBonus
+AutoMetamagic
 AwesomeBlow
+BackToBack
 BaseAttackBonus
 Blindness
 Blink
@@ -296,6 +301,7 @@ Nauseated
 NoComponents
 None
 NotDispelable
+OutflankAttackBonus
 Overlord
 Overrun
 Paralyzed
@@ -307,6 +313,7 @@ Petrified
 PhysicalDR
 PhysicalDamage
 Potion
+PreciseStrike
 Prone
 ProtectionFromEnergy
 Quicken
@@ -344,6 +351,7 @@ SelfOrAllyBuff
 SetAttackerMissChance
 SetBuffOnsetDelay
 SetFleeOrApproachLogic
+ShakeItOff
 Shaken
 ShareFeaturesWithPet
 Sickened

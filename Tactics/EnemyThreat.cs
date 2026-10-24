@@ -368,8 +368,10 @@ namespace CompanionAI_Pathfinder.Tactics
             return found.OrderByDescending(f => f.Key).Select(f => f.Value).ToList();
         }
 
+        // ★ v0.3.21: not an ally hex flagged harmful (AbilityProfile.AimsAtFriendsOnly).
         private static bool IsHarmful(AbilityData ability) =>
-            ability.Blueprint.EffectOnEnemy == Kingmaker.UnitLogic.Abilities.Blueprints.AbilityEffectOnUnit.Harmful;
+            ability.Blueprint.EffectOnEnemy == Kingmaker.UnitLogic.Abilities.Blueprints.AbilityEffectOnUnit.Harmful &&
+            !AbilityProfile.AimsAtFriendsOnly(ability.Blueprint);
 
         private static bool IsHelpful(AbilityData ability) =>
             ability.Blueprint.EffectOnAlly == Kingmaker.UnitLogic.Abilities.Blueprints.AbilityEffectOnUnit.Helpful;

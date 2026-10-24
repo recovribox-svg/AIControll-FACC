@@ -105,6 +105,9 @@ namespace CompanionAI_Pathfinder.Analysis
         public bool Energy;
         /// <summary>★ v0.3.21: invisibility that ends with the bearer's first offensive action (Invisibility, Vanish).</summary>
         public bool EndsOnAttack;
+        /// <summary>★ v0.3.21: the feature this part comes with (a Tactician's teamwork feat): nothing for a recipient that
+        /// has it already.</summary>
+        public Kingmaker.Blueprints.Facts.BlueprintUnitFact Granted;
 
         /// <summary>★ v0.3.21: a copy for some weapons only.</summary>
         public BuffPart ForWeapons(Func<Kingmaker.Blueprints.Items.Weapons.BlueprintItemWeapon, bool> weapon, BlueprintBuff owner)
@@ -432,10 +435,53 @@ namespace CompanionAI_Pathfinder.Analysis
                         foreach (var fact in facts.Facts)
                             if (fact != null) ReadInto(owner, fact.ComponentsArray, list, depth + 1);
                         break;
+                    // ★ v0.3.21: a Tactician shares a teamwork feat for a few rounds (Vanguard / Forester: AddFactsFromCaster;
+                    // Cavalier: AddFeatureIfHasFact, "if it does not have it yet") - read as the feat's own parts.
+                    case Kingmaker.UnitLogic.FactLogic.AddFactsFromCaster fromCaster when !fromCaster.FeatureFromSelection:
+                        foreach (var fact in fromCaster.Facts)
+                            if (fact != null) ReadGranted(owner, fact, list, depth);
+                        break;
+                    case AddFeatureIfHasFact ifHas when ifHas.Feature != null:
+                        // Not: added when the bearer lacks the checked fact (the feat itself, for the Cavalier's buffs);
+                        // otherwise only for bearers that have it (the feat's own follow-ups): at half.
+                        ReadGranted(owner, ifHas.Feature, list, depth, conditional: !ifHas.Not);
+                        break;
+                    // ★ v0.3.21: teamwork feats (the game's components). Each needs a partner with the same feat next to the
+                    // enemy or the bearer - counted at half.
+                    case PreciseStrike precise when precise.Damage != null:
+                        list.Parts.Add(new BuffPart
+                        {
+                            Kind = BuffPartKind.Damage, Owner = owner, Formula = precise.Damage.Dice, Fixed = precise.Damage.Bonus,
+                            MeleeOnly = true, Conditional = true
+                        });
+                        break;
+                    case OutflankAttackBonus outflank when outflank.AttackBonus > 0:
+                        list.Parts.Add(new BuffPart
+                        {
+                            Kind = BuffPartKind.Attack, Owner = owner, Fixed = outflank.AttackBonus, Descriptor = outflank.Descriptor,
+                            MeleeOnly = true, Conditional = true
+                        });
+                        break;
+                    case BackToBack _:
+                        list.Parts.Add(new BuffPart { Kind = BuffPartKind.ArmorClass, Owner = owner, Fixed = 2, Conditional = true });
+                        break;
+                    case ShakeItOff _:
+                        list.Parts.Add(new BuffPart { Kind = BuffPartKind.Saves, Owner = owner, Fixed = 1, Conditional = true });
+                        break;
                     case AddFactContextActions actions:
                         // Haste: HasteBuff only switches on HasteBuffEffect (Spells/Level3/HasteBuff).
                         foreach (var child in BuffEffectAnalyzer.ChildBuffs(actions))
                             ReadInto(child, child.ComponentsArray, list, depth + 1);
+                        break;
+                    // ★ v0.3.21: Protective Luck (witch / shaman hex): whoever attacks the bearer gets misfortune before the
+                    // roll (AddTargetBeforeAttackRollTrigger.ActionsOnAttacker -> a buff whose ModifyD20 rolls the attack
+                    // twice and keeps the worse): about +3 AC against every attacker (ValueModel works in 5 % steps).
+                    case AddTargetBeforeAttackRollTrigger before when MisfortuneOnAttacker(before):
+                        list.Parts.Add(new BuffPart
+                        {
+                            Kind = BuffPartKind.ArmorClass, Owner = owner, Fixed = 3, Descriptor = ModifierDescriptor.UntypedStackable,
+                            Conditional = before.OnlyMelee || before.NotReach || before.CheckDescriptor
+                        });
                         break;
                     case AddInitiatorAttackRollTrigger _:
                     case AddInitiatorSkillRollTrigger _:
@@ -448,6 +494,19 @@ namespace CompanionAI_Pathfinder.Analysis
                         if (!IsBookkeeping(c)) list.Unread.Add(c.GetType().Name);
                         break;
                 }
+            }
+        }
+
+        /// <summary>★ v0.3.21: the parts of a feature a buff grants, marked with it (see <see cref="BuffPart.Granted"/>).</summary>
+        private static void ReadGranted(BlueprintBuff owner, Kingmaker.Blueprints.Facts.BlueprintUnitFact fact, BuffPartList list, int depth,
+                                        bool conditional = false)
+        {
+            int before = list.Parts.Count;
+            ReadInto(owner, fact.ComponentsArray, list, depth + 1);
+            for (int i = before; i < list.Parts.Count; i++)
+            {
+                list.Parts[i].Granted = list.Parts[i].Granted ?? fact;
+                if (conditional) list.Parts[i].Conditional = true;
             }
         }
 
@@ -480,6 +539,22 @@ namespace CompanionAI_Pathfinder.Analysis
                 Kind = kind, Owner = owner, Stat = stat, Descriptor = descriptor, Fixed = fixedValue, Value = value,
                 Multiplier = multiplier, ScaleByBaseAttack = byBab, SaveShare = share
             });
+        }
+
+        /// <summary>★ v0.3.21: the trigger gives the attacker a buff that makes it roll its attack twice and keep the worse.</summary>
+        private static bool MisfortuneOnAttacker(AddTargetBeforeAttackRollTrigger trigger)
+        {
+            var actions = trigger.ActionsOnAttacker?.Actions;
+            if (actions == null) return false;
+            foreach (var apply in actions.OfType<Kingmaker.UnitLogic.Mechanics.Actions.ContextActionApplyBuff>())
+            {
+                if (apply.Buff == null) continue;
+                foreach (var d20 in apply.Buff.GetComponents<ModifyD20>())
+                    if ((d20.Rule & RuleType.AttackRoll) != 0 && !d20.TakeBest && !d20.Replace && d20.RollsAmount >= 1 &&
+                        !d20.WithChance && !d20.RerollOnlyIfFailed && !d20.RerollOnlyIfSuccess)
+                        return true;
+            }
+            return false;
         }
 
         private static bool IsRangedType(WeaponRangeType type) => type == WeaponRangeType.Ranged || type == WeaponRangeType.RangedNormal;
