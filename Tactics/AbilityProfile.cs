@@ -261,6 +261,28 @@ namespace CompanionAI_Pathfinder.Tactics
         public bool SelectsTargets { get; private set; }
 
         public CCType Control { get; private set; }
+
+        /// <summary>★ v0.3.21: the pit its area digs (AreaEffectPit), if any.</summary>
+        public Kingmaker.UnitLogic.Abilities.Components.AreaEffects.AreaEffectPit Pit { get; private set; }
+
+        /// <summary>★ v0.3.21: <paramref name="unit"/> can fall into this ability's pit (not already in one, not larger than
+        /// the pit takes, not immune by the pit's own lists - UnitInPitController.HandleEvade).</summary>
+        public bool PitHolds(UnitEntityData unit)
+        {
+            if (Pit == null || unit == null) return false;
+            try
+            {
+                if (unit.Get<Kingmaker.UnitLogic.Parts.UnitPartInPit>() != null) return false;
+                if (unit.Descriptor.State.Size > Pit.MaxUnitSize) return false;
+                foreach (var f in Pit.EvadingImmunityFacts.Concat(Pit.EffectsImmunityFacts))
+                    if (f?.Get() != null && unit.Descriptor.HasFact(f.Get())) return false;
+                return true;
+            }
+            catch
+            {
+                return false;
+            }
+        }
         public ControlStrength ControlStrength { get; private set; }
 
         /// <summary>
@@ -269,7 +291,20 @@ namespace CompanionAI_Pathfinder.Tactics
         /// in the game's blueprints: read as harmful, they were only offered against enemies, which they cannot target,
         /// and were never cast.
         /// </summary>
-        public bool HarmfulToEnemies => Blueprint.EffectOnEnemy == AbilityEffectOnUnit.Harmful && !AimsAtFriendsOnly(Blueprint);
+        public bool HarmfulToEnemies => Blueprint.EffectOnEnemy == AbilityEffectOnUnit.Harmful && !AimsAtFriendsOnly(Blueprint) && !OnlyOnCaster &&
+                                        !(IsAoE && AoETargets == Kingmaker.UnitLogic.Abilities.Components.TargetType.Ally && !DealsDamage);
+        // ★ v0.3.21 (verification audit): ...nor an area that reaches only allies (Holy Aura, Unholy Aura, Shield of Law,
+        // Cloak of Chaos are flagged harmful to enemies: their buffs were never valued, only the caster's own).
+
+        /// <summary>
+        /// ★ v0.3.21 (verification audit): a personal ability that reaches nobody but its caster - no area, no damage, no
+        /// maneuver or weapon attack, no spawned area. The same mislabel as the ally hexes: Wizard Abjuration's Energy
+        /// Resistance, Transmutation's Physical Enhancement, Protective Ward, the Arcanist's Energy Shield, Frightful Aspect,
+        /// Firebelly, the Battle Spirit are flagged harmful to enemies; read as attacks on a personal ability, they were never
+        /// offered (TacticalEngine.EvaluateAbility puts a harmful personal ability only on the caster when it is an area).
+        /// </summary>
+        public bool OnlyOnCaster => Blueprint.Range == AbilityRange.Personal && !IsAoE && !DealsDamage && Maneuvers.Count == 0 &&
+                                    !IsWeaponAttack && !m_VisitedAreas.Any();
 
         /// <summary>★ v0.3.21: the ability can only be aimed at a friend or the caster and reaches nobody else (no point, no
         /// area around the target, not personal): its intent flags say nothing about enemies.</summary>
@@ -279,7 +314,17 @@ namespace CompanionAI_Pathfinder.Tactics
             if (!bp.CanTargetFriends && !bp.CanTargetSelf) return false;
             return bp.GetComponent<AbilityTargetsAround>() == null && bp.GetComponent<AbilityDeliverChain>() == null;
         }
-        public bool HelpfulToAllies => Blueprint.EffectOnAlly == AbilityEffectOnUnit.Helpful;
+        /// <summary>★ v0.3.21 (verification audit): flagged helpful to allies and able to reach one. The Assassin's Death Attack
+        /// is flagged helpful to allies and can only target an enemy: read as helpful only, it was never offered.</summary>
+        public bool HelpfulToAllies => Blueprint.EffectOnAlly == AbilityEffectOnUnit.Helpful && !AimsAtEnemiesOnly(Blueprint);
+
+        /// <summary>★ v0.3.21: the ability can only be aimed at an enemy and reaches nobody else.</summary>
+        public static bool AimsAtEnemiesOnly(BlueprintAbility bp)
+        {
+            if (bp == null || !bp.CanTargetEnemies || bp.CanTargetFriends || bp.CanTargetSelf || bp.CanTargetPoint ||
+                bp.Range == AbilityRange.Personal) return false;
+            return bp.GetComponent<AbilityTargetsAround>() == null && bp.GetComponent<AbilityDeliverChain>() == null;
+        }
 
         /// <summary>★ v0.3.12: a buff it applies to its target is a debuff or a controlling condition.</summary>
         public bool AppliesHarmfulBuffs { get; private set; }
@@ -497,12 +542,19 @@ namespace CompanionAI_Pathfinder.Tactics
                 var s = BuffControl(buff);
                 if (s > ControlStrength) ControlStrength = s;
             }
+            // ★ v0.3.21 (verification audit): a pit holds who falls in - prone at its bottom until it climbs out (DC 25,
+            // UnitInPitController) - soft control, as Entangle is.
+            if (Pit != null && ControlStrength < ControlStrength.Soft) ControlStrength = ControlStrength.Soft;
 
             // ★ v0.3.12: what it puts on its target is harmful, whatever the blueprint's intent flags say. Orvath's
             // Entangle (not flagged Harmful) was cast on himself as a "buff" of 9.4: its Entangled buff counted as an
             // unrecognised beneficial buff. Abilities flagged helpful to allies, and personal abilities (their target
             // is the caster: a condition there is a drawback, not an attack), keep their drawbacks out of this.
-            AppliesHarmfulBuffs = !HelpfulToAllies && Blueprint.Range != AbilityRange.Personal && TargetBuffs.Any(IsHarmfulBuff);
+            // ★ v0.3.21 (verification audit): nor abilities that can only be aimed at allies - their harmful buff is the
+            // price of the effect, not an attack: Lesser Restoration turns Exhausted into Fatigued, the Devil's Hell's Decree
+            // dazzles the ally it empowers. Read as attacks, they were never offered.
+            AppliesHarmfulBuffs = !HelpfulToAllies && Blueprint.Range != AbilityRange.Personal && !AimsAtFriendsOnly(Blueprint) &&
+                                  TargetBuffs.Any(IsHarmfulBuff);
         }
 
         /// <summary>
@@ -901,6 +953,16 @@ namespace CompanionAI_Pathfinder.Tactics
                     Walk(run.UnitMove?.Actions, visited, abilityDepth, subject, depth + 1, guards);
                     if (Damage.Count > beforeMove)
                         Damage.RemoveRange(beforeMove, Damage.Count - beforeMove);
+                }
+                // ★ v0.3.21 (verification audit): Create Pit, Acid Pit, Hungry Pit, Spiked Pit (AreaEffectPit): a Reflex save
+                // avoids the fall (UnitInPitController.ReflexCheck); the fall's damage and, for some, damage each round.
+                var pit = area.GetComponent<Kingmaker.UnitLogic.Abilities.Components.AreaEffects.AreaEffectPit>();
+                if (pit != null)
+                {
+                    Pit = pit;
+                    if (Save == SavingThrowType.Unknown) Save = SavingThrowType.Reflex;
+                    Walk(pit.OnFallAction?.Actions, visited, abilityDepth, subject, depth + 1, guards);
+                    Walk(pit.EveryRoundAction?.Actions, visited, abilityDepth, subject, depth + 1, guards);
                 }
                 foreach (var areaBuff in area.GetComponents<Kingmaker.UnitLogic.Abilities.Components.AreaEffects.AbilityAreaEffectBuff>())
                 {

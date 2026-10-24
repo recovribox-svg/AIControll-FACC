@@ -57,6 +57,32 @@ being cast at all (TACTICAL_AI.md §57). The in-game `[Coverage]` lines show tha
 Each is a reader for one more game component; none needs play-testing a whole class first. What is left is listed
 in TACTICAL_AI.md §58.
 
+## Verification with the real readers (0.3.21-test8)
+The script above guesses from component names. `tools/ProfileAudit` instead loads the blueprint dumps with the game's
+own loader and runs the mod's real readers on each ability (`AbilityProfile.Get`, `BuffPartsReader.Read`,
+`BuffEffectAnalyzer.Analyze`, `TacticalEngine.ModeOf` / `ProfileOf`), then mirrors the engine's target sides and value
+paths. Verdicts:
+- **valued**: by damage, heal, control, maneuver, cleanse, dispel, removal, summon, weapon enchantment or read buff parts;
+- **GUESSED**: offered, but worth comes from a fallback (old buff quality, flat 0.25 debuff, 0.15 mark, spell-level
+  enchant guess, 0.05 marker);
+- **nothing**: offered but worth 0 (effect not understood, or an unreadable buff on a limited-use ability);
+- **NEVER OFFERED**: no target side matches, so the engine never considers it.
+
+Party abilities (enemy, NPC and cutscene folders left out):
+
+| | first run | after the fixes |
+|---|---:|---:|
+| valued | 2 420 | 2 541 |
+| GUESSED | 507 | 415 |
+| nothing | 302 | 267 |
+| NEVER OFFERED | 113 | 41 |
+
+All folders (4 801 abilities, 0 read errors): 2 929 valued, 480 guessed, 365 nothing, 52 never offered, 18 kinetic
+blade internals. Toggles: 138 valued, 84 guessed, 74 nothing, 661 not managed by design (player choices, hidden,
+started by the game). The 52 never offered are almost all correct: self-damage costs (Vicious), teleports, Dismiss,
+Magic Hack internal slots, Raise Dead, enemy-only charges and breath weapons. The fixes and what is still unread:
+TACTICAL_AI.md §59.
+
 ## Re-running
 ```
 python3 -I tools/CoverageAudit/coverage_audit.py <dump folders...> tools/CoverageAudit/known_types.txt out.txt
@@ -65,3 +91,8 @@ Update `known_types.txt` when a reader is added (the type names from the code). 
 dump made with the mods loaded. The script follows buffs, areas and touch deliveries, not item enchantments: an ability
 with `EnhanceWeapon` counts as valued, as the engine values it (from its enchantment, or by spell level when the
 enchantment is unread).
+
+Real readers (needs the game's `Wrath_Data/Managed` folder and a Release build of the mod; .NET 8):
+```
+tools/ProfileAudit/run.sh <Managed dir> bin/Release/CompanionAI_Pathfinder.dll <work dir> out.txt <dump folders...>
+```

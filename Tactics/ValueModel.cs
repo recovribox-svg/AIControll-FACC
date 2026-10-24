@@ -280,6 +280,29 @@ namespace CompanionAI_Pathfinder.Tactics
 
         #endregion
 
+        #region Debuffs by their penalties (0.3.21)
+
+        /// <summary>
+        /// The share of an enemy's worth per round a debuff takes, from its penalties (positive numbers = how much is
+        /// taken away): to-hit and damage on its attacks (about 5 % of its hits per point at a typical 60 % hit chance; a
+        /// point of damage about 5 % of a hit), Armor Class (the party's attacks on it, 4 % a point), saves (only the
+        /// party's spells against it, 2 % a point), and Strength / Dexterity through the modifiers they move. At most
+        /// <see cref="DebuffCap"/>; 0 for a debuff that takes nothing away. The engine's flat "plain debuff" share (0.25)
+        /// is for debuffs whose penalties cannot be read.
+        /// </summary>
+        public static float DebuffShare(float attack, float damage, float armor, float saves, float strength, float dexterity)
+        {
+            float a = Math.Max(0f, attack) + Math.Max(0f, strength) / 2f;
+            float d = Math.Max(0f, damage) + Math.Max(0f, strength) / 2f;
+            float ac = Math.Max(0f, armor) + Math.Max(0f, dexterity) / 2f;
+            float share = 0.05f * a / 0.6f + 0.05f * d + 0.04f * ac + 0.02f * Math.Max(0f, saves);
+            return Clamp(share, 0f, DebuffCap);
+        }
+
+        public const float DebuffCap = 0.6f;
+
+        #endregion
+
         #region Poison (0.3.21)
 
         /// <summary>

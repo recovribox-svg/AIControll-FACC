@@ -173,7 +173,7 @@ namespace CompanionAI_Pathfinder.Tactics
             // --- what each part adds, with this caster's numbers ---
             float attack = 0f, damage = 0f, extraAttacks = 0f, armor = 0f, concealment = 0f, miss = 0f, saves = 0f;
             float tempHp = 0f, images = 0f, physicalDr = 0f, energyResist = 0f, conHp = 0f;
-            float energyDamage = 0f, energyPool = 0f, diceUp = 0f, critExtra = 0f, damagePercent = 0f;
+            float energyDamage = 0f, energyPool = 0f, diceUp = 0f, critExtra = 0f, damagePercent = 0f, fastHealing = 0f;
             bool sizeUp = false, forbidsSpells = false;
             BuffPart invisible = null;
             foreach (var p in parts)
@@ -248,6 +248,7 @@ namespace CompanionAI_Pathfinder.Tactics
                             critExtra = Math.Max(critExtra, off.BaseThreat * off.HitChance * Math.Max(0f, off.CritMultiplier - 1f) * off.PerHit *
                                                             (p.Conditional ? 0.5f : 1f));
                         break;
+                    case BuffPartKind.FastHealing: fastHealing = Math.Max(fastHealing, amount); break;
                     case BuffPartKind.DamagePercent:
                         if (p.RangedOnly && !off.Ranged || p.MeleeOnly && off.Ranged) break;
                         damagePercent = Math.Max(damagePercent, amount / 100f);
@@ -332,8 +333,11 @@ namespace CompanionAI_Pathfinder.Tactics
                 // ★ v0.3.21: invisibility's cover - one round for the kind its first attack ends.
                 float unseen = invisibleShare * 0.5f * (invisible != null && invisible.EndsOnAttack ? 1f / Math.Max(1f, total) : 1f);
                 keptPerRound += def.Incoming * Math.Max(Math.Max(concealment, miss), unseen);
-                keptPerRound += def.Incoming * 0.025f * saves;
+                // ★ v0.3.21: immunities read as large save bonuses; together at most half of what comes at it.
+                keptPerRound += def.Incoming * 0.025f * Math.Min(saves, 20f);
                 float hitsOnIt = def.PerHit > 0f ? def.Incoming / def.PerHit : 1f;
+                // ★ v0.3.21: fast healing gives back what it loses, up to its rate, each round.
+                if (fastHealing > 0f) keptPerRound += Math.Min(def.Incoming, fastHealing);
                 if (physicalDr > 0f) keptPerRound += Math.Min(def.Incoming * 0.8f, physicalDr * hitsOnIt);
                 // ★ v0.3.21: a pool (Protection from Energy) absorbs that much over the whole buff, not per round.
                 if (energyResist > 0f)
@@ -440,6 +444,48 @@ namespace CompanionAI_Pathfinder.Tactics
                 rounds = Math.Max(rounds, r);
             }
             return rounds;
+        }
+
+        /// <summary>
+        /// ★ v0.3.21 (verification audit): the share of <paramref name="enemy"/>'s worth per round that
+        /// <paramref name="buffs"/> take away by their penalties (ValueModel.DebuffShare), with the caster's numbers; -1 when
+        /// none of their parts can be read (the flat "plain debuff" share applies then).
+        /// </summary>
+        private static float DebuffShareOf(TacticalContext ctx, AbilityData ability, UnitEntityData enemy, List<BlueprintBuff> buffs)
+        {
+            try
+            {
+                var parts = buffs.SelectMany(b => BuffPartsReader.Read(b).Parts).ToList();
+                if (parts.Count == 0) return -1f;
+                var abilityCtx = CombatMath.CreateContext(ability, new Kingmaker.Utility.TargetWrapper(enemy));
+                int casterLevel = 1;
+                try { casterLevel = Math.Max(1, abilityCtx?.Params?.CasterLevel ?? 1); } catch { }
+                float attack = 0f, damage = 0f, armor = 0f, saves = 0f, strength = 0f, dexterity = 0f;
+                bool any = false;
+                foreach (var p in parts)
+                {
+                    float amount = PartAmount(p, ctx.Unit, abilityCtx, enemy, casterLevel);
+                    if (p.Conditional) amount *= 0.5f;
+                    float taken = -amount;   // a penalty is a negative bonus
+                    switch (p.Kind)
+                    {
+                        case BuffPartKind.Attack: attack += taken; any = true; break;
+                        case BuffPartKind.Damage: damage += taken; any = true; break;
+                        case BuffPartKind.ArmorClass: armor += taken; any = true; break;
+                        case BuffPartKind.Saves: saves += taken * p.SaveShare; any = true; break;
+                        case BuffPartKind.ConditionalSaves: saves += taken * 0.5f; any = true; break;
+                        case BuffPartKind.Strength: strength += taken; any = true; break;
+                        case BuffPartKind.Dexterity: dexterity += taken; any = true; break;
+                        case BuffPartKind.Constitution: saves += taken * 0.5f; any = true; break;
+                        case BuffPartKind.MentalStat: saves += taken * 0.25f; any = true; break;
+                    }
+                }
+                return any ? ValueModel.DebuffShare(attack, damage, armor, saves, strength, dexterity) : -1f;
+            }
+            catch
+            {
+                return -1f;
+            }
         }
 
         /// <summary>★ v0.3.21: the share of the enemies still fighting that cannot see an invisible unit (no See Invisibility or

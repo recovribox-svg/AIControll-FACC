@@ -1,0 +1,31 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!-- Offline check of the AI's ability readers on blueprint dumps (docs/COVERAGE_AUDIT.md). Not part of the mod. -->
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net8.0</TargetFramework>
+    <Nullable>disable</Nullable>
+    <ImplicitUsings>disable</ImplicitUsings>
+    <NoWarn>$(NoWarn);MSB3277;CS1701;CS1702</NoWarn>
+    <ManagedPath Condition="'$(ManagedPath)' == ''">..\..\References\Managed</ManagedPath>
+    <ModDll Condition="'$(ModDll)' == ''">..\..\bin\Release\CompanionAI_Pathfinder.dll</ModDll>
+  </PropertyGroup>
+  <ItemGroup>
+    <!-- the mod uses HarmonyLib.AccessTools (reflection only) -->
+    <PackageReference Include="Lib.Harmony" Version="2.3.3" />
+    <Reference Include="CompanionAI_Pathfinder"><HintPath>$(ModDll)</HintPath></Reference>
+    <Reference Include="$(ManagedPath)\Assembly-CSharp.dll" />
+    <Reference Include="$(ManagedPath)\Assembly-CSharp-firstpass.dll" />
+    <Reference Include="$(ManagedPath)\Owlcat.Runtime.Core.dll" />
+    <Reference Include="$(ManagedPath)\Owlcat.Runtime.Validation.dll" />
+    <Reference Include="$(ManagedPath)\Owlcat.Runtime.UI.dll" />
+    <Reference Include="$(ManagedPath)\Owlcat.Runtime.Visual.dll" />
+    <Reference Include="$(ManagedPath)\Owlcat.SharedTypes.dll" />
+    <Reference Include="$(ManagedPath)\Newtonsoft.Json.dll" />
+    <Reference Include="$(ManagedPath)\UnityEngine.dll" />
+    <Reference Include="$(ManagedPath)\UnityEngine.CoreModule.dll" />
+    <Reference Include="$(ManagedPath)\UniRx.dll" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="$(ManagedPath)\*.dll" CopyToOutputDirectory="PreserveNewest" Visible="false" />
+  </ItemGroup>
+</Project>

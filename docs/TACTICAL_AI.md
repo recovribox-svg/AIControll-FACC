@@ -2142,3 +2142,45 @@ they were cast, valued only by that guess.
   Of the creature-ability folder (540 blueprints, mostly passive monster features), 20 of its 23 active abilities are
   read, among them the summoned templates' Smite. The audit script now follows `ContextActionCastSpell` (`m_Spell`) as
   `AbilityProfile` does; Dragon Wrath and Demon Charge were wrongly listed as not understood.
+
+## 59. v0.3.21 (test8): verification of what is valued, with the AI's own readers
+
+The coverage script (§56-58) judged abilities by component names. This audit runs the mod's real readers
+(`AbilityProfile.Get`, `BuffPartsReader.Read`, `BuffEffectAnalyzer.Analyze`, `TacticalEngine.ModeOf` / `ProfileOf`)
+on every blueprint the player supplied, outside the game (`tools/ProfileAudit`, `docs/COVERAGE_AUDIT.md`
+"Verification with the real readers"). For each ability it mirrors the engine's target sides (`EvaluateAbility`) and
+value paths (`ScoreAbility`) and says whether the ability is valued by what it does, only by a guess, by nothing, or
+never offered at all.
+
+**False positives found and fixed** (looked valued, but the engine never offered them or valued them by a guess):
+- *Never offered - no side to aim at.* Personal-range areas whose buff is helpful but whose game flags say "harmful"
+  (Wizard Abjuration Resistance / Protective Ward, Arcanist Energy Shield, Transmutation school powers, Frightful
+  Aspect, Firebelly, Battle Spirit, Holy / Unholy Aura, Shield of Law, Cloak of Chaos, Rainbow Dome, Circle of
+  Clarity, unique-weapon self-centred areas, Rousing Retort): `HarmfulToEnemies` now needs an ability that can reach an
+  enemy (not friends-only, not caster-only, not an ally-only area without damage); `HelpfulToAllies` is not set for
+  enemy-only abilities. Ally areas cast at a point (Lesser Restoration's communal forms, Hell's Decree) get the allies
+  as targets; the area form of Dispel Magic is aimed at enemies; Death Attack (self-centred harmful area) at the caster.
+- *Debuffs by a flat 0.25.* A debuff whose buff the parts reader understands (Bestow Curse, hex
+  penalties) is now valued by what its penalties take from the enemy's offence and defence
+  (`ValueModel.DebuffShare`: attack, damage, AC, saves, Strength and Dexterity penalties, capped at 0.6 of the
+  enemy's worth, unit-tested). Debuffs with nothing readable keep the flat 0.25.
+- *Immunities read as nothing.* Freedom of Movement, Death Ward and other immunities (`BuffDescriptorImmunity`, `SpellImmunityToSpellDescriptor`, `AddConditionImmunity`) are now
+  conditional saves against that descriptor; energy immunity (`AddEnergyDamageImmunity`, `AddEnergyImmunity`) is
+  energy resistance 30. Weapon enchant carriers (`BuffEnchantWornItem`, `BuffEnchantAnyWeapon`) are read by their
+  enchantments; `AddEffectFastHealing` is a heal per round, limited to the damage the recipient takes.
+- *Pits* (Create Pit, Spiked / Acid / Hungry Pit, `AreaEffectPit`): read as a control area (at least soft control),
+  with the fall and every-round actions walked and a Reflex save; units already in a pit, too large, or immune
+  (evasion / effect-immunity facts the pit names) are not counted as caught.
+- Buff saves are capped at +20 in the worth; bookkeeping components (`ReplaceSourceBone`, `ReplaceCastSource`) no
+  longer make a buff look unread.
+
+**Confirmed correct by spot checks:** Bless, Haste, Heroism, Shield of Faith, Barkskin, Mage Armor, Bull's Strength,
+Divine Favor, Blur, Displacement, Stoneskin, Divine Power, Invisibility, Magic Weapon. The offline run cannot apply
+per-unit branch conditions (Enlarge Person's size branches); the engine checks those per target in the game.
+
+**Still unread** (valued by the old quality guess, or not at all): polymorph forms, auras carried by buffs
+(`AddAreaEffect`), on-hit triggers (`AddInitiatorAttackWithWeaponTrigger`), `SuppressBuffs`, Reach / Extend / Quicken
+next-spell metamagic, teamwork feats other than §57's four, natural-attack toggles (claws, `EmptyHandWeaponOverride`),
+spellcasting buffs (`IncreaseAllSpellsDC`, `IncreaseCasterLevel`), Shadow Evocation / Conjuration, Black Hole, Rift of
+Ruin, Haunting Mists, Raise Dead and resurrections, Ray of Enfeeblement (`AddFactContextActions`, flat 0.25),
+movement-speed buffs, enemy regeneration. Magic Deceiver's Magic Hack slots are internal and correctly never offered.

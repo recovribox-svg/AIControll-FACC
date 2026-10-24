@@ -67,6 +67,8 @@ namespace CompanionAI_Pathfinder.Analysis
         /// <summary>★ v0.3.21: all damage the bearer deals is raised by this many percent (OutcomingDamageAndHealingModifier:
         /// Golden Dragon Might).</summary>
         DamagePercent,
+        /// <summary>★ v0.3.21: hit points healed each round while hurt (AddEffectFastHealing).</summary>
+        FastHealing,
         /// <summary>★ v0.3.21: the weapon's critical threat range doubles (WeaponCriticalEdgeIncrease: keen) - not with
         /// Improved Critical, which sets the same flag (RuleCalculateWeaponStats.DoubleCriticalEdge).</summary>
         CritRangeDouble
@@ -134,6 +136,17 @@ namespace CompanionAI_Pathfinder.Analysis
         /// <summary>Component type names that carry an effect this reader does not value.</summary>
         public readonly List<string> Unread = new List<string>();
         public bool Any => Parts.Count > 0;
+        /// <summary>★ v0.3.21: the kinds of effect an immunity part already covers (each counted once).</summary>
+        public Kingmaker.Blueprints.Classes.Spells.SpellDescriptor ImmuneTo;
+
+        /// <summary>★ v0.3.21: an immunity to what <paramref name="against"/> names that is not counted yet.</summary>
+        public void AddImmunity(BlueprintBuff owner, Kingmaker.Blueprints.Classes.Spells.SpellDescriptor against, int saves, bool conditional)
+        {
+            var fresh = against & ~ImmuneTo;
+            if (fresh == Kingmaker.Blueprints.Classes.Spells.SpellDescriptor.None) return;
+            ImmuneTo |= fresh;
+            Parts.Add(new BuffPart { Kind = BuffPartKind.ConditionalSaves, Owner = owner, Fixed = saves, Against = fresh, Conditional = conditional });
+        }
     }
 
     public static class BuffPartsReader
@@ -491,6 +504,34 @@ namespace CompanionAI_Pathfinder.Analysis
                         for (int i = before; i < list.Parts.Count; i++) list.Parts[i].Conditional = true;
                         break;
                     }
+                    // ★ v0.3.21 (verification audit): immunities - counted like a large save bonus against effects of that
+                    // kind, for the share of the enemies that can use one (EnemyThreat.ShareUsing).
+                    case BuffDescriptorImmunity immune when immune.Descriptor.Value != Kingmaker.Blueprints.Classes.Spells.SpellDescriptor.None:
+                        list.AddImmunity(owner, immune.Descriptor.Value, ImmunitySaves, immune.CheckFact);
+                        break;
+                    case SpellImmunityToSpellDescriptor spellImmune when spellImmune.Descriptor.Value != Kingmaker.Blueprints.Classes.Spells.SpellDescriptor.None:
+                        list.AddImmunity(owner, spellImmune.Descriptor.Value, ImmunitySaves, false);
+                        break;
+                    case AddConditionImmunity conditionImmune when ConditionDescriptor(conditionImmune.Condition) != Kingmaker.Blueprints.Classes.Spells.SpellDescriptor.None:
+                        list.AddImmunity(owner, ConditionDescriptor(conditionImmune.Condition), ImmunitySaves, false);
+                        break;
+                    case AddEnergyDamageImmunity energyImmune:
+                        list.Parts.Add(new BuffPart { Kind = BuffPartKind.EnergyResist, Owner = owner, Fixed = EnergyImmunityResist });
+                        break;
+                    case AddEnergyImmunity energyImmune2:
+                        list.Parts.Add(new BuffPart { Kind = BuffPartKind.EnergyResist, Owner = owner, Fixed = EnergyImmunityResist });
+                        break;
+                    // ★ v0.3.21 (verification audit): a weapon enchantment the buff keeps on the weapon in hand (Divine Weapon
+                    // Bond, Arcane Pool, Sacred Weapon: BuffEnchantWornItem / BuffEnchantAnyWeapon) - the enchantment's parts.
+                    case BuffEnchantWornItem worn when worn.Enchantment != null && (worn.AllWeapons || worn.Slot == Kingmaker.UI.GenericSlot.EquipSlotBase.SlotType.PrimaryHand):
+                        foreach (var part in ReadEnchantment(worn.Enchantment).Parts) list.Parts.Add(part.ForWeapons(w => true, owner));
+                        break;
+                    case BuffEnchantAnyWeapon any when any.Enchantment != null && any.Slot == Kingmaker.UI.GenericSlot.EquipSlotBase.SlotType.PrimaryHand:
+                        foreach (var part in ReadEnchantment(any.Enchantment).Parts) list.Parts.Add(part.ForWeapons(w => true, owner));
+                        break;
+                    case Kingmaker.UnitLogic.Buffs.Components.AddEffectFastHealing fast:
+                        list.Parts.Add(new BuffPart { Kind = BuffPartKind.FastHealing, Owner = owner, Fixed = fast.Heal, Value = fast.Bonus });
+                        break;
                     case BackToBack _:
                         list.Parts.Add(new BuffPart { Kind = BuffPartKind.ArmorClass, Owner = owner, Fixed = 2, Conditional = true });
                         break;
@@ -570,6 +611,38 @@ namespace CompanionAI_Pathfinder.Analysis
             });
         }
 
+        /// <summary>★ v0.3.21: an immunity reads as this many points of save bonus against its kind of effect.</summary>
+        private const int ImmunitySaves = 10;
+        /// <summary>★ v0.3.21: an energy immunity reads as resistance this high (no single hit gets through).</summary>
+        private const int EnergyImmunityResist = 30;
+
+        /// <summary>★ v0.3.21: the kind of effect that imposes a condition (for immunity to it).</summary>
+        private static Kingmaker.Blueprints.Classes.Spells.SpellDescriptor ConditionDescriptor(Kingmaker.UnitLogic.UnitCondition condition)
+        {
+            switch (condition)
+            {
+                case Kingmaker.UnitLogic.UnitCondition.Paralyzed: return Kingmaker.Blueprints.Classes.Spells.SpellDescriptor.Paralysis;
+                case Kingmaker.UnitLogic.UnitCondition.Stunned: return Kingmaker.Blueprints.Classes.Spells.SpellDescriptor.Stun;
+                case Kingmaker.UnitLogic.UnitCondition.Confusion: return Kingmaker.Blueprints.Classes.Spells.SpellDescriptor.Confusion;
+                case Kingmaker.UnitLogic.UnitCondition.Frightened:
+                case Kingmaker.UnitLogic.UnitCondition.Cowering: return Kingmaker.Blueprints.Classes.Spells.SpellDescriptor.Fear | Kingmaker.Blueprints.Classes.Spells.SpellDescriptor.Frightened;
+                case Kingmaker.UnitLogic.UnitCondition.Shaken: return Kingmaker.Blueprints.Classes.Spells.SpellDescriptor.Shaken;
+                case Kingmaker.UnitLogic.UnitCondition.Nauseated: return Kingmaker.Blueprints.Classes.Spells.SpellDescriptor.Nauseated;
+                case Kingmaker.UnitLogic.UnitCondition.Sickened: return Kingmaker.Blueprints.Classes.Spells.SpellDescriptor.Sickened;
+                case Kingmaker.UnitLogic.UnitCondition.Blindness: return Kingmaker.Blueprints.Classes.Spells.SpellDescriptor.Blindness;
+                case Kingmaker.UnitLogic.UnitCondition.Dazed: return Kingmaker.Blueprints.Classes.Spells.SpellDescriptor.Daze;
+                case Kingmaker.UnitLogic.UnitCondition.Sleeping: return Kingmaker.Blueprints.Classes.Spells.SpellDescriptor.Sleep;
+                case Kingmaker.UnitLogic.UnitCondition.Entangled:
+                case Kingmaker.UnitLogic.UnitCondition.CantMove:
+                case Kingmaker.UnitLogic.UnitCondition.Slowed: return Kingmaker.Blueprints.Classes.Spells.SpellDescriptor.MovementImpairing;
+                case Kingmaker.UnitLogic.UnitCondition.Petrified: return Kingmaker.Blueprints.Classes.Spells.SpellDescriptor.Petrified;
+                case Kingmaker.UnitLogic.UnitCondition.Fatigued: return Kingmaker.Blueprints.Classes.Spells.SpellDescriptor.Fatigue;
+                case Kingmaker.UnitLogic.UnitCondition.Exhausted: return Kingmaker.Blueprints.Classes.Spells.SpellDescriptor.Exhausted;
+                case Kingmaker.UnitLogic.UnitCondition.Staggered: return Kingmaker.Blueprints.Classes.Spells.SpellDescriptor.Staggered;
+                default: return Kingmaker.Blueprints.Classes.Spells.SpellDescriptor.None;
+            }
+        }
+
         private static readonly System.Reflection.FieldInfo OutgoingWeapon =
             HarmonyLib.AccessTools.Field(typeof(OutcomingDamageAndHealingModifier), "m_DamageWeaponType");
         private static readonly System.Reflection.FieldInfo OutgoingFaction =
@@ -644,6 +717,9 @@ namespace CompanionAI_Pathfinder.Analysis
                 case "ContextSetAbilityParams":
                 case "AbilityScoreCheckBonus":
                 case "SavesFixerRecalculate":
+                // ★ v0.3.21: visual only (the model's bones, where a spell visibly leaves from)
+                case "ReplaceSourceBone":
+                case "ReplaceCastSource":
                     return true;
                 default:
                     return false;

@@ -1,6 +1,6 @@
 # Verification tools (not needed for normal builds)
 
-Normal builds reference the real DLLs from your game install (see the top-level README). These two small
+Normal builds reference the real DLLs from your game install (see the top-level README). These small
 .NET 8 console tools were used to compile-check and binary-check the mod on a machine without the game.
 
 ## RefStubGen
@@ -24,4 +24,14 @@ dotnet run -c Release --project tools/SigDump -- old_release.dll | sort > a.txt
 dotnet run -c Release --project tools/SigDump -- bin/Release/CompanionAI_Pathfinder.dll | sort > b.txt
 dotnet run -c Release --project tools/SigDump -- <game>/Wrath_Data/Managed/Assembly-CSharp.dll | sort > game.txt
 comm -13 a.txt b.txt   # every new non-Assembly-CSharp line must also appear verbatim in game.txt
+```
+
+## ProfileAudit and RunnableStubs
+`ProfileAudit` runs the mod's ability readers on blueprint dumps outside the game and reports, per ability, whether the
+AI values it, guesses, values nothing or never offers it (docs/COVERAGE_AUDIT.md, "Verification with the real
+readers"). `RunnableStubs` is its helper: a Mono.Cecil rewriter that gives the game's engine-bound methods (Unity
+internal calls, `LocalizedString` lookups, `ScriptableObject` construction) empty bodies, so the game's blueprint
+loader runs on plain .NET. The rewritten copies go only into the harness's work folder, never into the game.
+```
+tools/ProfileAudit/run.sh <Wrath_Data/Managed> <mod dll> <work dir> <out.txt> <dump folders...>
 ```

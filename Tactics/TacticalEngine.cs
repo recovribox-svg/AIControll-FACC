@@ -2132,12 +2132,26 @@ namespace CompanionAI_Pathfinder.Tactics
             }
             else
             {
-                if (!helpfulOnly && (ability.Blueprint.CanTargetEnemies || (ability.CanTargetPoint && (profile.HarmfulEffects || profile.DealsDamage))))
+                // ★ v0.3.21 (verification audit): an area dispel aimed at the ground (Dispel Magic's area version) is aimed
+                // where an enemy stands, as harmful areas are; it was never offered.
+                if (!helpfulOnly && (ability.Blueprint.CanTargetEnemies ||
+                                     (ability.CanTargetPoint && (profile.HarmfulEffects || profile.DealsDamage || profile.Dispels))))
                     targets.AddRange(ctx.Enemies);
                 if (!harmfulOnly && (ability.Blueprint.CanTargetFriends || ability.Blueprint.CanTargetSelf))
                     targets.AddRange(ctx.Allies.Where(a => a == ctx.Unit ? ability.Blueprint.CanTargetSelf : ability.Blueprint.CanTargetFriends));
+                // ★ v0.3.21 (verification audit): a helpful area that can only be aimed at the ground (Rainbow Dome, Circle of
+                // Clarity) is aimed where an ally stands (AbilityProfile.TargetOn falls back to that point); it had no side
+                // to be aimed at and was never offered.
+                else if (!harmfulOnly && ability.CanTargetPoint && !ability.Blueprint.CanTargetEnemies && profile.IsAoE &&
+                         (profile.TargetBuffs.Count > 0 || profile.Heals.Count > 0 || profile.RemovesAnything))
+                    targets.AddRange(ctx.Allies);
                 if (profile.Heals.Count > 0 && ability.Blueprint.CanTargetFriends)
                     targets.AddRange(ctx.DownedAllies);
+                // ★ v0.3.21 (verification audit): a harmful area that can only be centred on the caster without being
+                // "personal" (Rolling Thunder, Explosive Fervor, Crushing Presence, Rousing Retort): aimed at the caster like
+                // a personal area; it reaches the enemies around. It was never offered.
+                if (harmfulOnly && profile.IsAoE && ability.Blueprint.CanTargetSelf && !ability.Blueprint.CanTargetEnemies && !ability.CanTargetPoint)
+                    targets.Add(ctx.Unit);
             }
 
             // ★ v0.3.18 (AA-1): a summon that can only be aimed at a point (Summon Monster, Summon Nature's Ally) had no
@@ -2698,7 +2712,7 @@ namespace CompanionAI_Pathfinder.Tactics
             // --- control / debuffs / marks on enemies ---
             // Harmful buffs are debuffs or crowd control; a non-harmful buff placed on an enemy is a "mark" that helps
             // us against it (Smite Evil, judgements, studied target...) and is worth less than a real debuff.
-            if (profile.TargetBuffs.Count > 0 && affectedEnemies.Count > 0)
+            if ((profile.TargetBuffs.Count > 0 || profile.Pit != null) && affectedEnemies.Count > 0)
             {
                 float controlValue = 0f;
                 bool isMark = !profile.HarmfulToEnemies && profile.ControlStrength == ControlStrength.None;
@@ -2787,7 +2801,9 @@ namespace CompanionAI_Pathfinder.Tactics
                 bool harmfulArea = profile.IsAoE && profile.AoETargets != Kingmaker.UnitLogic.Abilities.Components.TargetType.Enemy &&
                                    (profile.HarmfulToEnemies || profile.ControlStrength != ControlStrength.None) &&
                                    !profile.SelectiveSparesAllies(ability);
+                // ★ v0.3.21: an ally that would fall into the pit is caught too.
                 Func<UnitEntityData, bool> wouldBeCaught = a =>
+                    profile.PitHolds(a) ||
                     profile.TargetBuffs.Any(b => profile.BuffAppliesTo(b, ability, a) != EffectApplies.No && !a.Buffs.HasFact(b) &&
                                                  !CombatMath.BuffImmune(a, b, ability)) &&
                     !(profile.Control != CCType.None && AbilityClassifier.HasCCImmunity(a, profile.Control));
@@ -2831,7 +2847,9 @@ namespace CompanionAI_Pathfinder.Tactics
                     // ★ v0.3.18 (C2): the game's buff immunities (descriptor, specific buff) too.
                     var buffs = profile.TargetBuffs.Where(b => profile.BuffAppliesTo(b, ability, enemy) != EffectApplies.No &&
                                                                !CombatMath.BuffImmune(enemy, b, ability)).ToList();
-                    if (buffs.Count == 0) continue;
+                    // ★ v0.3.21: a pit holds by itself, with or without a buff.
+                    if (buffs.Count == 0 && !profile.PitHolds(enemy)) continue;
+                    if (profile.Pit != null && !profile.PitHolds(enemy)) continue;
                     if (buffs.Any(b => enemy.Buffs.HasFact(b))) continue;
                     // ★ v0.3.13: already inside an active copy of this area from our side.
                     if (profile.IsAoE && profile.InOwnSideArea(unit, enemy)) continue;
@@ -2855,7 +2873,15 @@ namespace CompanionAI_Pathfinder.Tactics
                     if ((profile.Control & CCType.Sleep) != 0 && s_ActiveEnemies != null && s_ActiveEnemies.All(e => e == enemy) &&
                         ctx.Allies.Any(a => a != unit))
                         rounds = Math.Min(rounds, 1f);
-                    float enemyValue = p * CombatMath.ControlWorth(enemy) * strength * rounds;
+                    // ★ v0.3.21 (verification audit): a plain debuff whose penalties can be read is worth what it takes away
+                    // (ValueModel.DebuffShare); the flat share stays for one whose penalties cannot be read.
+                    float share = strength;
+                    if (!isMark && profile.ControlStrength == ControlStrength.None)
+                    {
+                        float byParts = DebuffShareOf(ctx, ability, enemy, buffs);
+                        if (byParts >= 0f) share = byParts * repeat;
+                    }
+                    float enemyValue = p * CombatMath.ControlWorth(enemy) * share * rounds;
                     // ★ v0.3.21: a poison's Constitution damage is lost hit points (CombatMath.PoisonHpLoss), valued like
                     // damage; with no other control it replaces the plain-debuff guess.
                     float poisonHp = buffs.Sum(b => CombatMath.PoisonHpLoss(ability, b, enemy, ctx.ExpectedRounds));

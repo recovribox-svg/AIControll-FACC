@@ -376,5 +376,19 @@ namespace CompanionAI.Tests
         [Fact]
         public void Poison_NeverSaved_DosesEveryRound() =>
             Assert.Equal(6f, ValueModel.PoisonDoses(1f, 5, 1), 3);
+    
+        // ★ v0.3.21: debuffs valued by their penalties.
+        [Fact]
+        public void Debuff_NothingTakenAway_IsWorthNothing() =>
+            Assert.Equal(0f, ValueModel.DebuffShare(0f, 0f, 0f, 0f, 0f, 0f), 3);
+
+        [Fact]
+        public void Debuff_OneToHit_IsSmall_TwoStrengthIsMore() =>
+            Assert.True(ValueModel.DebuffShare(1f, 0f, 0f, 0f, 0f, 0f) < 0.1f &&
+                        ValueModel.DebuffShare(0f, 0f, 0f, 0f, 6f, 0f) > ValueModel.DebuffShare(1f, 0f, 0f, 0f, 0f, 0f));
+
+        [Fact]
+        public void Debuff_IsCapped() =>
+            Assert.Equal(ValueModel.DebuffCap, ValueModel.DebuffShare(10f, 10f, 10f, 10f, 10f, 10f), 3);
     }
 }
