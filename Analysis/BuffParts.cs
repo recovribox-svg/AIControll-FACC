@@ -69,6 +69,12 @@ namespace CompanionAI_Pathfinder.Analysis
         DamagePercent,
         /// <summary>★ v0.3.21: hit points healed each round while hurt (AddEffectFastHealing).</summary>
         FastHealing,
+        /// <summary>★ v0.3.21 (gaps): a hit of the bearer's puts <see cref="BuffPart.HitBuff"/> on its target
+        /// (AddInitiatorAttackWithWeaponTrigger → ContextActionApplyBuff: Rune blessing, Angel sword, judgments).</summary>
+        OnHitBuff,
+        /// <summary>★ v0.3.21 (gaps): a hit of the bearer's kills its target (ContextActionKill, usually on a failed save:
+        /// Master Slayer, True Judgment) - once.</summary>
+        OnHitKill,
         /// <summary>★ v0.3.21 (gaps): the save DCs of the bearer's spells (IncreaseAllSpellsDC; one school or kind of spell:
         /// conditional - IncreaseSpellSchoolDC, IncreaseSpellDescriptorDC).</summary>
         SpellDC,
@@ -126,6 +132,12 @@ namespace CompanionAI_Pathfinder.Analysis
         /// <summary>★ v0.3.21: the feature this part comes with (a Tactician's teamwork feat): nothing for a recipient that
         /// has it already.</summary>
         public Kingmaker.Blueprints.Facts.BlueprintUnitFact Granted;
+        /// <summary>★ v0.3.21 (gaps): on-hit parts - the buff put on the target, the save against it, the share of the
+        /// bearer's hits it takes effect on (a natural 20: 0.05), on a critical hit only, on its first attack or hit only.</summary>
+        public BlueprintBuff HitBuff;
+        public SavingThrowType HitSave = SavingThrowType.Unknown;
+        public float Chance = 1f;
+        public bool CritOnly, FirstOnly;
         /// <summary>★ v0.3.21: the empty-hand weapon a <see cref="BuffPartKind.NaturalWeapon"/> part gives.</summary>
         public Kingmaker.Blueprints.Items.Weapons.BlueprintItemWeapon Natural;
 
@@ -527,6 +539,22 @@ namespace CompanionAI_Pathfinder.Analysis
                     case SpellImmunityToSpellDescriptor spellImmune when spellImmune.Descriptor.Value != Kingmaker.Blueprints.Classes.Spells.SpellDescriptor.None:
                         list.AddImmunity(owner, spellImmune.Descriptor.Value, ImmunitySaves, false);
                         break;
+                    // ★ v0.3.21 (gaps): teamwork feats with numbers - Allied Spellcaster (+2 against spell resistance with an
+                    // ally who has it nearby), Shield Wall (+1 shield AC beside one), an attack bonus against some targets
+                    // (AttackBonusAgainstFactOwner: Volley Fire): conditional.
+                    case AlliedSpellcaster _:
+                        list.Parts.Add(new BuffPart { Kind = BuffPartKind.SpellPenetration, Owner = owner, Fixed = 2, Conditional = true });
+                        break;
+                    case ShieldWall _:
+                        list.Parts.Add(new BuffPart { Kind = BuffPartKind.ArmorClass, Owner = owner, Fixed = 1, Descriptor = ModifierDescriptor.Shield, Conditional = true });
+                        break;
+                    case AttackBonusAgainstFactOwner against:
+                        list.Parts.Add(new BuffPart { Kind = BuffPartKind.Attack, Owner = owner, Fixed = against.AttackBonus, Value = against.Bonus,
+                                                      Descriptor = against.Descriptor, Conditional = true });
+                        break;
+                    // ★ v0.3.21 (gaps): what the bearer's hits do (a debuff, extra damage, a kill on a failed save).
+                    case AddInitiatorAttackWithWeaponTrigger hit when ReadOnHit(owner, hit, list):
+                        break;
                     // ★ v0.3.21 (gaps): spellcasting boosts - valued for a recipient that casts (TacticalEngine.Buffs).
                     case Kingmaker.Designers.Mechanics.Facts.IncreaseAllSpellsDC dc when dc.Value != null:
                         list.Parts.Add(new BuffPart { Kind = BuffPartKind.SpellDC, Owner = owner, Value = dc.Value, Descriptor = dc.Descriptor });
@@ -610,6 +638,98 @@ namespace CompanionAI_Pathfinder.Analysis
                         break;
                     default:
                         if (!IsBookkeeping(c)) list.Unread.Add(c.GetType().Name);
+                        break;
+                }
+            }
+        }
+
+        /// <summary>
+        /// ★ v0.3.21 (gaps): an on-hit trigger's effects as parts; true when it was read (or only spends the buff: its
+        /// removal). Triggers on a miss, before the attack, on the attacker, on attacks of opportunity or on a kill are not
+        /// read; an action other than a buff, damage, a kill, a save or a removal marks the trigger as partly unread.
+        /// </summary>
+        private static bool ReadOnHit(BlueprintBuff owner, AddInitiatorAttackWithWeaponTrigger t, BuffPartList list)
+        {
+            try
+            {
+                var found = new List<BuffPart>();
+                bool unknown = false;
+                WalkOnHit(owner, t.Action?.Actions, found, false, SavingThrowType.Unknown, 0, ref unknown);
+                if (found.Count == 0) return !unknown;   // only removals (a buff spent by the attack): nothing to value
+                if (t.OnMiss || t.TriggerBeforeAttack || t.ActionsOnInitiator || t.OnAttackOfOpportunity || t.ReduceHPToZero ||
+                    t.DamageMoreTargetMaxHP || !t.OnlyHit)
+                    return false;
+                bool conditional = t.OnlySneakAttack || t.CheckWeaponGroup || t.CheckPhysicalDamageForm || t.CheckDistance ||
+                                   t.OnCharge || t.DuelistWeapon || t.AllNaturalAndUnarmed || t.OnlyOnFullAttack;
+                foreach (var part in found)
+                {
+                    var p = part;
+                    p.Chance = t.OnlyNatural20 ? 0.05f : 1f;
+                    p.CritOnly = t.CriticalHit;
+                    p.FirstOnly = t.OnlyOnFirstAttack || t.OnlyOnFirstHit;
+                    p.Conditional |= conditional;
+                    if (t.CheckWeaponBlueprint && t.WeaponBlueprint != null)
+                    {
+                        var only = t.WeaponBlueprint;
+                        p = p.ForWeapons(w => w == only, owner);
+                    }
+                    else if (t.CheckWeaponCategory)
+                    {
+                        var category = t.Category;
+                        p = p.ForWeapons(w => w.Category == category, owner);
+                    }
+                    if (t.CheckWeaponRangeType)
+                    {
+                        if (t.RangeType == Kingmaker.Enums.WeaponRangeType.Ranged) p.RangedOnly = true;
+                        else if (t.RangeType == Kingmaker.Enums.WeaponRangeType.Melee) p.MeleeOnly = true;
+                        else p.Conditional = true;
+                    }
+                    list.Parts.Add(p);
+                }
+                if (unknown) list.Unread.Add(nameof(AddInitiatorAttackWithWeaponTrigger));
+                return true;
+            }
+            catch
+            {
+                return false;
+            }
+        }
+
+        private static void WalkOnHit(BlueprintBuff owner, Kingmaker.ElementsSystem.GameAction[] actions, List<BuffPart> found, bool conditional,
+                                      SavingThrowType save, int depth, ref bool unknown)
+        {
+            if (actions == null || depth > 4) return;
+            foreach (var action in actions)
+            {
+                switch (action)
+                {
+                    // A debuff on the target; anything else it puts there (a marker, a mark of the bearer's) stays unread.
+                    case Kingmaker.UnitLogic.Mechanics.Actions.ContextActionApplyBuff apply when apply.Buff != null && !apply.ToCaster &&
+                                                                                          CompanionAI_Pathfinder.Tactics.AbilityProfile.IsHarmfulBuff(apply.Buff):
+                        found.Add(new BuffPart { Kind = BuffPartKind.OnHitBuff, Owner = owner, HitBuff = apply.Buff, HitSave = save, Conditional = conditional });
+                        break;
+                    case Kingmaker.UnitLogic.Mechanics.Actions.ContextActionDealDamage deal when deal.Value != null && !deal.IsAoE:
+                        found.Add(new BuffPart { Kind = BuffPartKind.Damage, Owner = owner, Dice = deal.Value, Energy = true, Conditional = conditional || save != SavingThrowType.Unknown });
+                        break;
+                    case Kingmaker.UnitLogic.Mechanics.Actions.ContextActionKill _:
+                        found.Add(new BuffPart { Kind = BuffPartKind.OnHitKill, Owner = owner, HitSave = save, Conditional = conditional });
+                        break;
+                    case Kingmaker.UnitLogic.Mechanics.Actions.ContextActionSavingThrow saving:
+                        WalkOnHit(owner, saving.Actions?.Actions, found, conditional, saving.Type, depth + 1, ref unknown);
+                        break;
+                    case Kingmaker.UnitLogic.Mechanics.Actions.ContextActionConditionalSaved saved:
+                        WalkOnHit(owner, saved.Failed?.Actions, found, conditional, save, depth + 1, ref unknown);
+                        break;
+                    case Kingmaker.Designers.EventConditionActionSystem.Actions.Conditional branch:
+                        WalkOnHit(owner, branch.IfTrue?.Actions, found, true, save, depth + 1, ref unknown);
+                        WalkOnHit(owner, branch.IfFalse?.Actions, found, true, save, depth + 1, ref unknown);
+                        break;
+                    case Kingmaker.UnitLogic.Mechanics.Actions.ContextActionRemoveSelf _:
+                    case Kingmaker.UnitLogic.Mechanics.Actions.ContextActionRemoveBuff _:
+                    case Kingmaker.UnitLogic.Mechanics.Actions.ContextActionChangeSharedValue _:
+                        break;
+                    default:
+                        unknown = true;
                         break;
                 }
             }
@@ -774,8 +894,19 @@ namespace CompanionAI_Pathfinder.Analysis
         /// <summary>Components with no combat effect of their own (descriptors, ranks, bookkeeping, self-removal, visuals).</summary>
         private static bool IsBookkeeping(BlueprintComponent c)
         {
-            switch (c.GetType().Name)
+            string name = c.GetType().Name;
+            // ★ v0.3.21 (gaps): a granted feat's prerequisites, tags and recommendations (teamwork feats a Tactician shares)
+            // are metadata, not effects.
+            if (name.StartsWith("Prerequisite") || name.StartsWith("Recommendation")) return true;
+            switch (name)
             {
+                case "FeatureTagsComponent":
+                // ★ v0.3.21 (gaps): known teamwork effects with nothing the appraisal models - CMD and CMB (Coordinated
+                // Defense / Maneuvers), concentration (Shielded Caster), an extra attack of opportunity (Seize the Moment).
+                case "CoordinatedDefense":
+                case "CoordinatedManeuvers":
+                case "ShieldedCaster":
+                case "SiezeTheMoment":
                 case "SpellDescriptorComponent":
                 case "ContextRankConfig":
                 case "ContextCalculateSharedValue":

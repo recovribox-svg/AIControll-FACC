@@ -178,6 +178,7 @@ namespace CompanionAI_Pathfinder.Tactics
             float tempHp = 0f, images = 0f, physicalDr = 0f, energyResist = 0f, conHp = 0f;
             float energyDamage = 0f, energyPool = 0f, diceUp = 0f, critExtra = 0f, damagePercent = 0f, fastHealing = 0f, sight = 0f;
             float spellDc = 0f, spellLevel = 0f, spellPenetration = 0f;
+            var onHit = new List<BuffPart>();
             var castingStat = CastingStat(ally);
             bool sizeUp = false, forbidsSpells = false;
             BuffPart invisible = null;
@@ -194,8 +195,16 @@ namespace CompanionAI_Pathfinder.Tactics
                 if (p.Against != Kingmaker.Blueprints.Classes.Spells.SpellDescriptor.None) amount *= EnemyThreat.ShareUsing(p.Against);
                 else if (p.AgainstAlignment.HasValue) amount *= EnemyAlignmentShare(ctx, p.AgainstAlignment.Value);
                 else if (p.Conditional) amount *= 0.5f;
+                // ★ v0.3.21 (gaps): an on-hit effect counts on the share of hits it fires on.
+                amount *= p.Chance;
+                if (p.CritOnly) amount *= Mathf.Clamp01(off.BaseThreat) * off.HitChance;
+                if (p.FirstOnly) amount /= Math.Max(1f, off.HitsPerRound);
                 switch (p.Kind)
                 {
+                    case BuffPartKind.OnHitBuff:
+                    case BuffPartKind.OnHitKill:
+                        onHit.Add(p);
+                        break;
                     case BuffPartKind.Attack:
                         if (p.RangedOnly && !off.Ranged || p.MeleeOnly && off.Ranged) break;
                         attack += Increment(ally, StatType.AdditionalAttackBonus, p, amount);
@@ -418,7 +427,33 @@ namespace CompanionAI_Pathfinder.Tactics
             else if (armor > 0f || concealment > 0f || tempHp > 0f || images > 0f || physicalDr > 0f || energyResist > 0f)
                 notes.Add("nothing attacks it now");
 
-            float offenceValue = offencePerRound * rounds + invisibleOnce;
+            // ★ v0.3.21 (gaps): what its hits do to the enemy it would attack - a debuff (as the control section values one)
+            // for the rounds it lasts, a kill once - by the chance that at least one hit lands each round.
+            float onHitOnce = 0f;
+            if (onHit.Count > 0 && off.DamagePerRound > 0f && off.Enemy != null)
+            {
+                float perHitChance = Mathf.Clamp01(off.HitChance);
+                int attacks = Math.Max(1, Mathf.RoundToInt(off.HitsPerRound / Math.Max(0.05f, perHitChance)));
+                float onHitRound = 0f;
+                foreach (var p in onHit)
+                {
+                    float h = perHitChance * p.Chance * (p.CritOnly ? Mathf.Clamp01(off.BaseThreat) * perHitChance : 1f);
+                    float landed = p.FirstOnly ? h : 1f - Mathf.Pow(1f - h, attacks);
+                    float fail = p.HitSave != SavingThrowType.Unknown ? 0.5f : 1f;
+                    float w = landed * fail * (p.Conditional ? 0.5f : 1f) * (off.Caster ? 0.5f : 1f);
+                    if (w <= 0f) continue;
+                    if (p.Kind == BuffPartKind.OnHitKill)
+                        onHitOnce = Math.Max(onHitOnce, w * CombatMath.TargetWorth(off.Enemy));
+                    else if (p.HitBuff != null && AbilityProfile.IsHarmfulBuff(p.HitBuff) && !off.Enemy.Buffs.HasFact(p.HitBuff) &&
+                             !CombatMath.BuffImmune(off.Enemy, p.HitBuff, null))
+                        onHitRound = Math.Max(onHitRound, w * CombatMath.ControlWorth(off.Enemy) *
+                                                          HarmShareIn(ctx, abilityCtx, off.Enemy, new List<BlueprintBuff> { p.HitBuff }));
+                }
+                if (onHitRound > 0f) { offencePerRound += onHitRound; notes.Add($"hits hinder {off.Enemy.CharacterName}"); }
+                if (onHitOnce > 0f) notes.Add($"hits may kill {off.Enemy.CharacterName}");
+            }
+
+            float offenceValue = offencePerRound * rounds + invisibleOnce + onHitOnce;
             float defenceValue = ValueModel.PreventionValue(keptPerRound, rounds, def.Hp, def.Incoming, def.Worth);
             // A summon is temporary and replaceable: half (as everywhere, ValueModel.SummonFactor).
             result.Value = (offenceValue + defenceValue) * RoleWeight(ctx, "buff") * (IsSummon(ally) ? ValueModel.SummonFactor : 1f);
@@ -515,6 +550,15 @@ namespace CompanionAI_Pathfinder.Tactics
         private static float DebuffShareOf(TacticalContext ctx, AbilityData ability, UnitEntityData enemy, List<BlueprintBuff> buffs,
                                            out bool partial)
         {
+            MechanicsContext abilityCtx = null;
+            try { abilityCtx = CombatMath.CreateContext(ability, new Kingmaker.Utility.TargetWrapper(enemy)); } catch { }
+            return DebuffShareIn(ctx, abilityCtx, enemy, buffs, out partial);
+        }
+
+        /// <summary>★ v0.3.21: the same with a given source context (a buff's on-hit debuff: the buff's context).</summary>
+        private static float DebuffShareIn(TacticalContext ctx, MechanicsContext abilityCtx, UnitEntityData enemy, List<BlueprintBuff> buffs,
+                                           out bool partial)
+        {
             partial = false;
             try
             {
@@ -522,7 +566,6 @@ namespace CompanionAI_Pathfinder.Tactics
                 partial = lists.Any(l => l.Unread.Count > 0);
                 var parts = lists.SelectMany(l => l.Parts).ToList();
                 if (parts.Count == 0) return -1f;
-                var abilityCtx = CombatMath.CreateContext(ability, new Kingmaker.Utility.TargetWrapper(enemy));
                 int casterLevel = 1;
                 try { casterLevel = Math.Max(1, abilityCtx?.Params?.CasterLevel ?? 1); } catch { }
                 float attack = 0f, damage = 0f, armor = 0f, saves = 0f, strength = 0f, dexterity = 0f;

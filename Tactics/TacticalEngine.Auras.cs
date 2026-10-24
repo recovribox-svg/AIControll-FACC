@@ -61,6 +61,14 @@ namespace CompanionAI_Pathfinder.Tactics
         /// <summary>The share of <paramref name="unit"/>'s worth per round that <paramref name="buffs"/> (harmful) take.</summary>
         private static float HarmShare(TacticalContext ctx, AbilityData ability, UnitEntityData unit, List<BlueprintBuff> buffs)
         {
+            MechanicsContext abilityCtx = null;
+            try { abilityCtx = CombatMath.CreateContext(ability, new Kingmaker.Utility.TargetWrapper(unit)); } catch { }
+            return HarmShareIn(ctx, abilityCtx, unit, buffs);
+        }
+
+        /// <summary>The same with a given source context.</summary>
+        private static float HarmShareIn(TacticalContext ctx, MechanicsContext abilityCtx, UnitEntityData unit, List<BlueprintBuff> buffs)
+        {
             // Frozen out of the fight on both sides: Time Stop's buff stops its bearer and makes it untouchable.
             if (buffs.Any(b => b.ComponentsArray?.Any(c => c is Kingmaker.UnitLogic.FactLogic.Untargetable ||
                                                             c is Kingmaker.UnitLogic.FactLogic.CompleteDamageImmunity) ?? false))
@@ -68,7 +76,7 @@ namespace CompanionAI_Pathfinder.Tactics
             var control = buffs.Select(AbilityProfile.BuffControl).DefaultIfEmpty(ControlStrength.None).Max();
             if (control == ControlStrength.Hard) return 1f;
             if (control == ControlStrength.Soft) return 0.4f;
-            float share = DebuffShareOf(ctx, ability, unit, buffs, out bool partial);
+            float share = DebuffShareIn(ctx, abilityCtx, unit, buffs, out bool partial);
             if (share < 0f) share = 0.25f;
             else if (partial) share = Math.Max(share, 0.25f);
             return control == ControlStrength.Minor ? Math.Max(share, 0.15f) : share;

@@ -684,6 +684,11 @@ namespace CompanionAI_Pathfinder.Tactics
                     Save = run.SavingThrowType;
                 Walk(run.Actions?.Actions, visited, depth, subject, 0, NoGuards);
             }
+            // ★ v0.3.21 (gaps): actions run on the clicked unit or point besides the main effect
+            // (AdditionalAbilityEffectRunActionOnClickedTarget.Apply): Haunting Mists' whole effect, the lingering areas of
+            // Ice Storm, Obsidian Flow, Tar Pool, Volcanic Storm.
+            foreach (var extra in bp.GetComponents<AdditionalAbilityEffectRunActionOnClickedTarget>())
+                Walk(extra.Action?.Actions, visited, depth, subject, 0, NoGuards);
 
             // ★ v0.3.18 (AA-1): an ability whose effect switches a buff on the caster on or off (Tabletop Tweaks'
             // AbilityEffectToggleBuff: Warrior Spirit, Black Blade attunements). Read without naming the mod: an effect
@@ -1125,7 +1130,10 @@ namespace CompanionAI_Pathfinder.Tactics
             try
             {
                 return buff?.ComponentsArray != null &&
-                       buff.ComponentsArray.OfType<AddAbilityUseTrigger>().Any(t => RemovesSelf(t.Action, buff));
+                       (buff.ComponentsArray.OfType<AddAbilityUseTrigger>().Any(t => RemovesSelf(t.Action, buff)) ||
+                        // ★ v0.3.21 (gaps): metamagic for the next spell, removed when that spell is cast (Magus arcana,
+                        // Universalist school powers: MetamagicOnNextSpell.OnEventAboutToTrigger(RuleCastSpell)).
+                        buff.ComponentsArray.OfType<MetamagicOnNextSpell>().Any(m => !m.DoNotRemove));
             }
             catch
             {
@@ -2020,6 +2028,9 @@ namespace CompanionAI_Pathfinder.Tactics
                 case UnitCondition.Sickened:
                 case UnitCondition.Dazzled:
                 case UnitCondition.Fatigued:
+                // ★ v0.3.21 (gaps): half speed in a lingering area (Ice Storm, Stone Call, Tar Pool): it slows an approach,
+                // nothing more - not the flat 0.25 of an unread debuff.
+                case UnitCondition.DifficultTerrain:
                     return ControlStrength.Minor;
                 case UnitCondition.Entangled:
                 case UnitCondition.Slowed:

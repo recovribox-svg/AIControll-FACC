@@ -34,13 +34,29 @@ namespace CompanionAI_Pathfinder.Tactics
             /// <summary>★ v0.3.21: metamagic the next suitable spell gets for free (AutoMetamagic: Phantasmal Mage, Emergency
             /// Help, Healing Blessing, Life Spirit).</summary>
             public readonly List<AutoMetamagic> Metamagic = new List<AutoMetamagic>();
-            public bool Any => CasterLevel > 0 || DC > 0 || Metamagic.Count > 0;
+            /// <summary>★ v0.3.21 (gaps): metamagic for the next spell of a spellbook (MetamagicOnNextSpell: Magus arcana,
+            /// Universalist school powers).</summary>
+            public readonly List<MetamagicOnNextSpell> NextSpell = new List<MetamagicOnNextSpell>();
+            public bool Any => CasterLevel > 0 || DC > 0 || Metamagic.Count > 0 || NextSpell.Count > 0;
+
+            /// <summary>The metamagic it gives <paramref name="spell"/>, by the game's own rules.</summary>
+            public Kingmaker.UnitLogic.Abilities.Metamagic MetamagicFor(AbilityData spell)
+            {
+                Kingmaker.UnitLogic.Abilities.Metamagic flags = 0;
+                if (spell == null) return flags;
+                foreach (var m in Metamagic)
+                    if (AutoMetamagic.ShouldApplyTo(m, spell.Blueprint, spell)) flags |= m.Metamagic;
+                // MetamagicOnNextSpell.OnEventAboutToTrigger(RuleCalculateAbilityParams): a spellbook spell of the right level.
+                foreach (var m in NextSpell)
+                    if (spell.Spellbook != null && spell.Blueprint.Type == AbilityType.Spell && m.CheckSpellLevel(spell)) flags |= m.Metamagic;
+                return flags;
+            }
 
             public bool AppliesTo(AbilityData spell)
             {
                 // ★ v0.3.21: a metamagic boost goes where the game's own rule puts it (AutoMetamagic.ShouldApplyTo).
                 if (CasterLevel == 0 && DC == 0)
-                    return spell != null && Metamagic.Any(m => AutoMetamagic.ShouldApplyTo(m, spell.Blueprint, spell));
+                    return spell != null && MetamagicFor(spell) != 0;
                 if (spell?.Spellbook == null) return false;
                 if (Spells.Count > 0 && !Spells.Contains(spell.Blueprint) && !Spells.Contains(spell.Blueprint.Parent)) return false;
                 return Spellbooks.Count == 0 || Spellbooks.Contains(spell.Spellbook.Blueprint);
@@ -94,6 +110,9 @@ namespace CompanionAI_Pathfinder.Tactics
                             case AutoMetamagic metamagic:
                                 boost.Metamagic.Add(metamagic);
                                 break;
+                            case MetamagicOnNextSpell next:
+                                boost.NextSpell.Add(next);
+                                break;
                         }
                     }
                 }
@@ -120,12 +139,16 @@ namespace CompanionAI_Pathfinder.Tactics
             if (!usable.Any(c => BoostOf(c) != null)) return usable;
 
             var main = usable.FirstOrDefault(c => c.Slot != ActionSlot.Free && c.Slot != ActionSlot.Swift && BoostOf(c) == null);
+            // ★ v0.3.21 (gaps): what a quickened main spell leaves room for - the best other standard action.
+            var second = main == null ? null
+                : usable.Where(c => c != main && c.Slot == ActionSlot.Standard && BoostOf(c) == null && c.Ability != main.Ability && c.Value > 0f)
+                        .OrderByDescending(c => c.Value).FirstOrDefault();
             var result = new List<Candidate>(usable.Count);
             foreach (var c in usable)
             {
                 var boost = BoostOf(c);
                 if (boost == null) { result.Add(c); continue; }
-                float gain = BoostGain(ctx, boost, main, out string note);
+                float gain = BoostGain(ctx, boost, main, out string note, c.Slot == ActionSlot.Free ? second : null);
                 // ★ v0.3.19 (release): only a boost that is worth something reaches the normal log (two lines a round
                 // for each of Orvath's reservoir abilities, nearly all "0.0 - no spell to boost next").
                 if (gain <= 0f)
@@ -149,7 +172,7 @@ namespace CompanionAI_Pathfinder.Tactics
         private const string NoSpellToBoost = "no spell to boost next";
 
         /// <summary>What <paramref name="boost"/> adds to <paramref name="main"/>, in its own value's points.</summary>
-        private static float BoostGain(TacticalContext ctx, SpellBoost boost, Candidate main, out string note)
+        private static float BoostGain(TacticalContext ctx, SpellBoost boost, Candidate main, out string note, Candidate second = null)
         {
             note = NoSpellToBoost;
             if (main == null || main.Kind != CandidateKind.Ability || main.Ability == null || main.Ability.SourceItem != null ||
@@ -188,8 +211,9 @@ namespace CompanionAI_Pathfinder.Tactics
             }
             // ★ v0.3.21: free metamagic on the spell cast next, where the game applies it and the spell does not have it.
             share += MetamagicGain(ctx, boost, main, profile, parts);
+            float extra = QuickenGain(ctx, boost, main, second, parts);
             note = parts.Count > 0 ? $"for {main.Ability.Name}: {string.Join(", ", parts)}" : $"adds nothing to {main.Ability.Name}";
-            return main.Value * share;
+            return main.Value * share + extra;
         }
 
         /// <summary>
@@ -200,9 +224,7 @@ namespace CompanionAI_Pathfinder.Tactics
         /// </summary>
         private static float MetamagicGain(TacticalContext ctx, SpellBoost boost, Candidate main, AbilityProfile profile, List<string> parts)
         {
-            Kingmaker.UnitLogic.Abilities.Metamagic flags = 0;
-            foreach (var m in boost.Metamagic)
-                if (AutoMetamagic.ShouldApplyTo(m, main.Ability.Blueprint, main.Ability)) flags |= m.Metamagic;
+            var flags = boost.MetamagicFor(main.Ability);
             if (flags == 0) return 0f;
             bool Has(Kingmaker.UnitLogic.Abilities.Metamagic f) => (flags & f) != 0 && !main.Ability.HasMetamagic(f);
             float share = 0f;
@@ -227,7 +249,45 @@ namespace CompanionAI_Pathfinder.Tactics
                     parts.Add($"persistent: lands {fail:P0} -> {1f - (1f - fail) * (1f - fail):P0}");
                 }
             }
+            // ★ v0.3.21 (gaps): Extend - the next buff or control lasts twice as long: the rounds that adds within the fight.
+            if (Has(Kingmaker.UnitLogic.Abilities.Metamagic.Extend))
+            {
+                float rounds = -1f;
+                try
+                {
+                    var abilityCtx = CombatMath.CreateContext(main.Ability, new Kingmaker.Utility.TargetWrapper(main.Target ?? ctx.Unit));
+                    foreach (var b in profile.TargetBuffs.Concat(profile.CasterBuffs))
+                        rounds = Math.Max(rounds, EffectiveRounds(main.Ability, profile, b, abilityCtx));
+                }
+                catch { }
+                if (rounds > 0f)
+                {
+                    bool control = profile.HarmfulEffects;
+                    float horizon = control ? Math.Min(ctx.ExpectedRounds, 3f) : ctx.ExpectedRounds;
+                    float now = Math.Min(rounds, horizon), then = Math.Min(2f * rounds, horizon);
+                    if (then > now && now > 0f)
+                    {
+                        share += 0.8f * (then - now) / now;   // the duration part of the value
+                        parts.Add($"extended: {now:0.#} -> {then:0.#} useful rounds");
+                    }
+                }
+            }
             return share;
+        }
+
+        /// <summary>
+        /// ★ v0.3.21 (gaps): Quicken - the next spell takes a swift action instead of its standard one, so the standard stays
+        /// for <paramref name="second"/>, the best other standard action. Only for a booster that costs nothing itself (a
+        /// swift booster would take the swift action the quickened spell needs) while a swift action is left. Reach and
+        /// Selective change nothing the value is made of.
+        /// </summary>
+        private static float QuickenGain(TacticalContext ctx, SpellBoost boost, Candidate main, Candidate second, List<string> parts)
+        {
+            if (second == null || !ctx.HasSwift || main.Slot != ActionSlot.Standard) return 0f;
+            if ((boost.MetamagicFor(main.Ability) & Kingmaker.UnitLogic.Abilities.Metamagic.Quicken) == 0 ||
+                main.Ability.HasMetamagic(Kingmaker.UnitLogic.Abilities.Metamagic.Quicken)) return 0f;
+            parts.Add($"quickened: leaves the standard action for {second.Ability?.Name ?? second.Label}");
+            return second.Value;
         }
 
         private static readonly System.Reflection.FieldInfo RankBase =

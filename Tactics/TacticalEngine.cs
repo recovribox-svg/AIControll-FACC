@@ -3114,7 +3114,8 @@ namespace CompanionAI_Pathfinder.Tactics
                     // coverage report lists those abilities ("effect not understood").
                     if (profile.Summons)
                     {
-                        value += (3f + 3f * level) * Math.Min(ctx.ExpectedRounds, 4f) * 0.5f * (ctx.Enemies.Count >= 2 ? 1f : 0.6f);
+                        value += (3f + 3f * level) * Math.Min(ctx.ExpectedRounds, 4f) * 0.5f * (ctx.Enemies.Count >= 2 ? 1f : 0.6f) *
+                                 CombatMath.ShadowShare(ability, null);   // ★ v0.3.21: a shadow summon is partly real
                         // ★ v0.3.18 (test11): a creature that brings an area the game's AI will also drop on our melee
                         // fighters (a Dretch's Stinking Cloud) is worth less than one that does not, while the party has
                         // any: Orvath opened every fight with Summon Dretch, at the same value as Cambion and Quasit.

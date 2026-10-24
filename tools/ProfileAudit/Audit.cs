@@ -188,6 +188,12 @@ namespace ProfileAudit
                 bool appliesHelpful = !p.HarmfulEffects || p.HelpfulToAllies
                     ? ((allies || self) && p.TargetBuffs.Count > 0) || p.CasterBuffs.Count > 0
                     : p.CasterBuffs.Count > 0;
+                // TacticalEngine.Boosters.cs: a buff spent by the next spell is valued by what it adds to that spell.
+                if (SpellBoostOf?.Invoke(null, new object[] { p, null, null }) != null)
+                {
+                    modelled.Add("next-spell boost");
+                    appliesHelpful = false;
+                }
                 // TacticalEngine.Auras.cs: an aura the AI reads is valued by what it gives; its carrier alone is no buff.
                 string aura = AuraReading?.Invoke(null, new object[] { p }) as string;
                 if (aura != null) { modelled.Add("aura"); parts.Add("aura " + aura); }
@@ -232,6 +238,9 @@ namespace ProfileAudit
 
         private static readonly System.Reflection.MethodInfo IsHarmfulBuff =
             typeof(CompanionAI_Pathfinder.Tactics.AbilityProfile).GetMethod("IsHarmfulBuff", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Static);
+
+        private static readonly System.Reflection.MethodInfo SpellBoostOf =
+            typeof(CompanionAI_Pathfinder.Tactics.TacticalEngine).GetMethod("SpellBoostOf", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Static);
 
         private static readonly System.Reflection.MethodInfo AuraReading =
             typeof(CompanionAI_Pathfinder.Tactics.TacticalEngine).GetMethod("AuraReading", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Static);

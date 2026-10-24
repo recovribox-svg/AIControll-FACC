@@ -987,7 +987,7 @@ namespace CompanionAI_Pathfinder.Tactics
         /// </summary>
         public static float EffectChance(UnitEntityData caster, UnitEntityData enemy, AbilityData ability, AbilityProfile profile, bool damage)
         {
-            float p = SpellResistancePass(caster, enemy, ability);
+            float p = SpellResistancePass(caster, enemy, ability) * ShadowShare(ability, enemy);
             if (profile.NeedsAttackRoll) p *= SpellAttackHitChance(caster, enemy, ability);
             if (profile.Save != SavingThrowType.Unknown)
             {
@@ -1600,6 +1600,29 @@ namespace CompanionAI_Pathfinder.Tactics
         /// Rough damage-per-round an enemy is worth removing. CR-based so it is stable and cheap; adjusted for enemies
         /// that are already disabled and for enemies currently attacking the party.
         /// </summary>
+        /// <summary>
+        /// ★ v0.3.21 (gaps): how much of a shadow spell (a Shadow Evocation / Conjuration copy: AbilityData.ShadowSpellSettings)
+        /// is real for <paramref name="target"/>. It disbelieves on a passed Will save against the spell's DC; then damage is cut
+        /// to the shadow factor and any other effect lands with that chance (MechanicsContext.TryAffectByShadow,
+        /// ShadowSpellLogicExtension). 1 for any other ability; the factor alone with no target (a summon's worth).
+        /// </summary>
+        public static float ShadowShare(AbilityData ability, UnitEntityData target)
+        {
+            try
+            {
+                var shadow = ability?.ShadowSpellSettings;
+                if (shadow?.Factor == null) return 1f;
+                float factor = Mathf.Clamp01(shadow.Factor.GetInt(ability.Caster?.Unit) / 100f);
+                if (factor <= 0f) return 1f;
+                float fail = target != null ? SaveFailChance(ability, SavingThrowType.Will, target) : 0.5f;
+                return fail + (1f - fail) * factor;
+            }
+            catch
+            {
+                return 1f;
+            }
+        }
+
         /// <summary>★ v0.3.21 (gaps): the unit regenerates (AddEffectRegeneration: UnitPartRegeneration) - at 0 HP it only
         /// falls unconscious while its regeneration runs, and gets up again (UnitLifeController).</summary>
         public static bool Regenerates(UnitEntityData unit)

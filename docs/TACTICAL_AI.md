@@ -2259,3 +2259,33 @@ Enfeeblement's Strength penalty, movement speed, enemy regeneration.
   0.6 of its spells, 2 % per caster level, 5 % per point against the share of enemies with spell resistance; at most
   half). Nothing for a recipient that casts no spells. Hell's Decree (magic), Overwhelming Spell, Ode to Miraculous Magic,
   the Aeon DC and CL gazes, Chronomancy, Focused Infusion among 22 newly read.
+
+## 62. v0.3.21 (test11): on-hit effects, Quicken / Extend for the next spell, shadow spells, clicked-target effects, teamwork feats
+
+- **On-hit effects** (`AddInitiatorAttackWithWeaponTrigger` on hit): a harmful buff put on the target (Stunning Fist and
+  its fatigue / sickened forms, Frightful Strikes, the Assassin's poisons, the Death blessing), extra damage, and a kill
+  on a failed save (Master Slayer, True Judgment) - `BuffPartKind.OnHitBuff` / `OnHitKill`, damage parts. Valued in the
+  buff appraisal against the enemy the recipient would attack: the chance at least one hit lands each round (a natural
+  20, a critical hit, the first attack only where the trigger says so), a save at half, the debuff as the control
+  section values one (`HarmShareIn`), a kill once at the enemy's worth. Triggers on a miss, before the attack, on the
+  attacker, on attacks of opportunity or on a kill stay unread; a trigger that only removes its buff is no effect.
+- **Next-spell metamagic** (`MetamagicOnNextSpell`: Magus arcana, Universalist school powers; with `AutoMetamagic`):
+  read as next-spell boosts, removed by the game when that spell is cast (`AbilityProfile.IsSpentByCast`). Quicken is
+  worth the best other standard action it leaves room for - only for a booster that costs no action while a swift action
+  is left (a swift booster takes the swift the quickened spell needs). Extend is worth the useful rounds a doubled
+  duration adds within the fight. Reach and Selective change no number the value is made of: recognised, worth nothing.
+- **Shadow Evocation / Conjuration**: their copies of other spells were already offered (the action bar's conversions)
+  but valued as the real spell. Now each target's share of the effect is the game's: it disbelieves on a passed Will save
+  against the DC, and then damage is cut to the shadow factor and other effects land with that chance
+  (`MechanicsContext.TryAffectByShadow`; `CombatMath.ShadowShare`, inside `EffectChance`); a shadow summon at the factor
+  with an even save.
+- **Clicked-target effects** (`AdditionalAbilityEffectRunActionOnClickedTarget`): Haunting Mists' whole effect, the
+  Dark Lurker's Blade from Shadows, Elemental Vortex, the lingering areas of Ice Storm, Stone Call, Volcanic Storm, Tar
+  Pool. Their difficult terrain is minor control (`UnitCondition.DifficultTerrain`), not the flat 0.25 of an unread debuff.
+  Black Hole and Rift of Ruin were already valued (damage, soft control); only the old script listed them as unread.
+- **Teamwork feats a Tactician shares**: Allied Spellcaster (+2 against spell resistance), Shield Wall (+1 shield AC),
+  Volley Fire's attack bonus (`AttackBonusAgainstFactOwner`), all conditional; Coordinated Defense / Maneuvers, Shielded
+  Caster and Seize the Moment are known but change nothing the appraisal models. Prerequisites, tags and recommendations
+  of a granted feat no longer count as unread effects.
+
+Party abilities, test9 → test11: valued 2 586 → 2 658, guessed 387 → 352, nothing 250 → 213; toggles valued 202 → 206.
