@@ -261,7 +261,7 @@ Those are historical tooling, excluded from the mod build, and must not be invok
 with `--kinetic-checks` against the rolled-back DLL: the removed feature types are
 deliberately absent. Tool retention does not retain deployed v0.3.22 logic.
 
-Branches scheduled for deletion on GitHub and locally: codex/decision-context-cost,
+Branches deleted on GitHub and locally: codex/decision-context-cost,
 codex/kineticist-competence, codex/kineticist-playtest-stutter and
 codex/orvath-summon-pacing. Additional local-only test/task branches:
 codex/test-build-download and codex/live-code-audit. The workflow-only remote
@@ -289,5 +289,19 @@ Pre-push verification:
   replacement of the installed experimental DLL. Saved accepted burn or native
   buffs are game state, not undone automatically by reverting repository code.
 
-Remote publication and branch-deletion confirmation follow in the completion
-record below.
+Completion record:
+
+- Rollback commit `faf8c76576290d91b59c0538df9a0d0240497d22` was pushed directly
+  to development under the author's explicit delegation, together with all four
+  remote deletions in one atomic Git push. No force-push was used.
+- Remote branch enumeration after that push showed exactly development, main and
+  codex/setup-contributor-workflow. All four requested test branches were absent.
+  The two additional local-only branches were also deleted. Checked-out old
+  worktrees were detached before deleting their branch names, preserving evidence.
+- Remote main remained `3d280bd3e3800f1db671112f1be1460ba05d7de5`, identical to its
+  pre-operation value. The full remote tag list was unchanged.
+- PR #5 was closed unmerged with an explicit withdrawal/handover comment. PRs
+  #2, #3 and #4 remain historical merged records; their runtime changes are undone
+  by `faf8c76`. PR #1's collaboration setup remains.
+- This completion record is a subsequent documentation-only commit; it does not
+  change the restored runtime, tests or preserved workflow/tooling.
