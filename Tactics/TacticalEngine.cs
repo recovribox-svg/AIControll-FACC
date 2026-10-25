@@ -41,11 +41,21 @@ namespace CompanionAI_Pathfinder.Tactics
         public float Value;
         public UnitEntityData Target;
         public Vector3? Point;
+        // ★ v0.3.22: retain the aimed wall orientation through command dispatch.
+        public float? Orientation;
         public AbilityData Ability;
+        internal UnitEntityData EvaluationTarget; // original scored unit, including ground-aimed area candidates
         public bool FullAttack;
         public bool NeedsMove;
         /// <summary>★ v0.3.19 (test5): times the game gathers power before this blast (CombatMath.GatherPowerCount).</summary>
         public int GatherPower;
+        /// <summary>★ v0.3.22: complete projected modifier configuration and its runtime burn, revalidated on execution.</summary>
+        public List<KeyValuePair<Kingmaker.UnitLogic.ActivatableAbilities.ActivatableAbility, bool>> KineticModes;
+        public List<KeyValuePair<Kingmaker.UnitLogic.ActivatableAbilities.ActivatableAbility, bool>> KineticFixedModes;
+        public AbilityData KineticValidationAbility;
+        public int KineticBurn;
+        public ActionSlot? KineticCastSlot;
+        public bool KineticPreparation;
         public float ApproachRadius;
         public bool NeedLoS;
         /// <summary>Damages or disables an enemy (as opposed to buffs, heals, utility).</summary>
@@ -131,6 +141,9 @@ namespace CompanionAI_Pathfinder.Tactics
         /// <summary>★ v0.3.9: party members down (unconscious, not dead): only heals are aimed at them.</summary>
         public List<UnitEntityData> DownedAllies = new List<UnitEntityData>();
         public float ExpectedRounds;
+        internal double KineticSearchMilliseconds;
+        internal int KineticEvaluations, KineticPlanCount;
+        internal bool KineticBudgetExceeded;
         /// <summary>★ v0.3.18: the party's damage per round behind <see cref="ExpectedRounds"/> (ValueModel, prior blended with this fight).</summary>
         public float PartyDamagePerRound;
         /// <summary>
@@ -215,6 +228,8 @@ namespace CompanionAI_Pathfinder.Tactics
         /// </summary>
         private static Candidate Decide(UnitEntityData unit, TurnMemory memory, bool preview, out TacticalContext built)
         {
+            using var kineticDecision = unit?.Get<Kingmaker.UnitLogic.Class.Kineticist.UnitPartKineticist>() != null
+                ? new KineticDecisionScope() : null;
             // ★ v0.3.18 (AA-3): Mobility the AI switched on goes off once no enemy threatens the unit (full speed again),
             // before the context reads the unit's movement.
             if (!preview)
@@ -274,9 +289,10 @@ namespace CompanionAI_Pathfinder.Tactics
             catch (Exception ex) { Main.Error($"[Tactics] attack modes: {ex}"); }
             try { AddAbilityCandidates(ctx, candidates); } catch (Exception ex) { Main.Error($"[Tactics] ability candidates: {ex}"); }
             // ★ v0.3.19 (test6): kineticists - burn priced, and what to do when burn blocks every blast.
-            try { PriceBurn(ctx, candidates); AddKineticCandidates(ctx, candidates, preview); }
+            try { PriceBurn(ctx, candidates); AddKineticPlanCandidates(ctx, candidates, preview); AddKineticCandidates(ctx, candidates, preview); }
             catch (Exception ex) { Main.Error($"[Tactics] kineticist candidates: {ex}"); }
             try { AddMovementCandidates(ctx, candidates); } catch (Exception ex) { Main.Error($"[Tactics] movement candidates: {ex}"); }
+            try { PriceGatherPlans(ctx, candidates); } catch (Exception ex) { Main.Error($"[Tactics] gather plans: {ex}"); }
             // ★ v0.3.20 (test8): an option whose real walk provoked more than its straight line, at the real walk's price.
             try { RepriceRealPaths(ctx, candidates, memory); } catch (Exception ex) { Main.Error($"[Tactics] real path prices: {ex}"); }
             // ★ v0.3.18 (AA-2): after the others, so a toggle that forbids spells is priced against the best spell.
@@ -353,6 +369,19 @@ namespace CompanionAI_Pathfinder.Tactics
             // ★ v0.3.20 (test8): a move priced on the straight line has the game's real walk counted before it is made.
             if (chosen?.RiskAt != null) chosen.CountPathAttackers = RealPathCounter(ctx, chosen);
             LogDecision(ctx, usable, chosen);
+            if (unit.Get<Kingmaker.UnitLogic.Class.Kineticist.UnitPartKineticist>() != null)
+            {
+                int burn = chosen?.KineticModes != null ? chosen.KineticBurn : BurnOf(chosen?.Ability);
+                var other = usable.FirstOrDefault(c => c != chosen && c.Slot != ActionSlot.Free);
+                Action<string> kineticLog = chosen == null ? (Action<string>)Main.Verbose : Main.Log;
+                kineticLog($"[Kinetic]{(ctx.KineticBudgetExceeded ? " budget" : "")} {unit.CharacterName}: {(chosen == null ? "no action" : chosen.Label)}; " +
+                         $"burn {burn}, gather {chosen?.GatherPower ?? 0}, net {chosen?.Value ?? 0f:F1}; " +
+                         $"decision~{kineticDecision?.ElapsedMilliseconds ?? 0d:F1}ms, search {ctx.KineticSearchMilliseconds:F1}ms/" +
+                         $"{ctx.KineticEvaluations} aims/{ctx.KineticPlanCount} alternatives, native action queries {kineticDecision?.ActionQueries ?? 0}, shapes {kineticDecision?.Areas.Builds ?? 0}" +
+                         (ctx.KineticBudgetExceeded ? "; current setup retained (40ms/64 aims/128 states)" : "") +
+                         (other == null ? "" : $"; other {other.Label}={other.Value:F1}") +
+                         (!(ctx.Global?.AiManagesToggles ?? true) ? "; modifiers left as set (AI manages toggles off)" : ""));
+            }
             // ★ v0.3.16 (test2): options exist but none is worth anything or affordable - name the best of them. Seelah
             // ended round 1 with all her actions and 4 enemies, and the log could not say why.
             // ★ v0.3.16: also on movement-only turns (nauseated), with why "Leave area" was not offered: Seelah stayed
@@ -545,9 +574,12 @@ namespace CompanionAI_Pathfinder.Tactics
             // turn-based combat that takes the Move action (TurnController.CalculateKineticistPrediction; a second
             // gather the Standard too). A blast after a walk, or one that walks, would have no action left to gather
             // with; two gathers leave none for the blast.
-            if (c.GatherPower > 0 && !CombatMemory.IsRealTime &&
-                (c.GatherPower > 1 || c.NeedsMove || c.MoveFirst || c.Slot != ActionSlot.Standard || !ctx.HasMove))
-                return false;
+            if (c.GatherPower > 0)
+            {
+                if (!GatherPlanFits(ctx, c, out _, out _)) return false;
+                // The native blast's slot may differ from the complete plan's slot (e.g. two gathers + Quicken).
+                if (c.KineticCastSlot.HasValue && !CombatMemory.IsRealTime) return true;
+            }
             switch (c.Slot)
             {
                 case ActionSlot.Free: return true;
@@ -1743,7 +1775,7 @@ namespace CompanionAI_Pathfinder.Tactics
             return weight;
         }
 
-        private static void AddWeaponCandidates(TacticalContext ctx, List<Candidate> list)
+        private static void AddWeaponCandidates(TacticalContext ctx, List<Candidate> list, UnitEntityData onlyTarget = null, bool? onlyFull = null)
         {
             var unit = ctx.Unit;
             // ★ v0.3.14: real time lists them during the action cooldown too (not affordable, so never chosen then): the
@@ -1752,7 +1784,7 @@ namespace CompanionAI_Pathfinder.Tactics
 
             ItemEntityWeapon provokeWeapon = null;   // the weapon weaponProvokes was asked for (the same for most enemies)
             bool weaponProvokes = true;
-            foreach (var enemy in ctx.Enemies)
+            foreach (var enemy in ctx.Enemies.Where(e => onlyTarget == null || e == onlyTarget))
             {
                 var single = CombatMath.EstimateWeaponAttack(unit, enemy, full: false);
                 // ★ v0.3.14 (test5): no attack against this enemy (the game lists none). It used to end the whole loop as
@@ -1782,12 +1814,12 @@ namespace CompanionAI_Pathfinder.Tactics
                 }
                 bool shotProvokes = single.IsRanged && weaponProvokes;
 
-                if (ctx.CanFullAttack && (inReach || fiveFootReach))
+                if (onlyFull != false && ctx.CanFullAttack && (inReach || fiveFootReach))
                 {
                     var full = CombatMath.EstimateWeaponAttack(unit, enemy, full: true);
                     if (full != null && full.Attacks > 1)
                     {
-                        float fullValue = DamageValue(enemy, full) * weight * (fiveFootReach ? 0.95f : 1f) * WakeFactor(enemy, full.ExpectedDamage);
+                        float fullValue = (DamageValue(enemy, full) + BladeEffectValue(ctx, enemy, full)) * weight * (fiveFootReach ? 0.95f : 1f) * WakeFactor(enemy, full.ExpectedDamage);
                         // After a 5-foot step the unit shoots from about 1.5 m nearer its target; priced where it stands.
                         var provoke = shotProvokes ? AttackRollProvokeRisk(ctx, unit.Position, full.Attacks) : null;
                         if (provoke != null) fullValue = fullValue * (1f - provoke.StopChance) - provoke.Cost;
@@ -1814,10 +1846,10 @@ namespace CompanionAI_Pathfinder.Tactics
 
                 if (!ctx.HasStandard) continue;
 
-                if (inReach)
+                if (onlyFull != true && inReach)
                 {
                     var provoke = shotProvokes ? AttackRollProvokeRisk(ctx, unit.Position, 1) : null;
-                    float singleValue = DamageValue(enemy, single) * weight * WakeFactor(enemy, single.ExpectedDamage);
+                    float singleValue = (DamageValue(enemy, single) + BladeEffectValue(ctx, enemy, single)) * weight * WakeFactor(enemy, single.ExpectedDamage);
                     if (provoke != null) singleValue = singleValue * (1f - provoke.StopChance) - provoke.Cost;
                     list.Add(new Candidate
                     {
@@ -1831,9 +1863,9 @@ namespace CompanionAI_Pathfinder.Tactics
                         Key = $"atk:{enemy.UniqueId}"
                     });
                 }
-                else if (ctx.HasMove && dist - reach <= ctx.MoveRange * 0.95f)
+                else if (onlyFull != true && ctx.HasMove && dist - reach <= ctx.MoveRange * 0.95f)
                 {
-                    float value = DamageValue(enemy, single) * weight * 0.9f * WakeFactor(enemy, single.ExpectedDamage);
+                    float value = (DamageValue(enemy, single) + BladeEffectValue(ctx, enemy, single)) * weight * 0.9f * WakeFactor(enemy, single.ExpectedDamage);
                     float preRisk = value;
                     string label = $"Move+Attack->{enemy.CharacterName}";
                     // ★ v0.3.13: walking out of an enemy's reach provokes (melee and ranged alike).
@@ -1979,6 +2011,8 @@ namespace CompanionAI_Pathfinder.Tactics
                 if (!analysis.Recognized && profile.IsDayLong(buff)) continue;
                 // ★ v0.3.4: an enchanting ability's buff is often an empty carrier while the enchantment itself is applied
                 // by the ability's actions (Spirit Weapon Enchantment: "Components=[NoComponents]", valued 0.1 in 0.3.3).
+                // ★ v0.3.22: kineticist wild talents require a readable effect, including empty defensive markers.
+                if (!analysis.Recognized && IsKineticWildTalent(ability)) continue;
                 float q = analysis.Recognized ? analysis.CombatValue
                         : profile.Enchants ? 0.8f
                         // ★ v0.3.19 (test7): nor for an ability that spends a limited use or burn - an effect the AI
@@ -2111,11 +2145,15 @@ namespace CompanionAI_Pathfinder.Tactics
         /// highest-value target saves easily can still be the right tier against another enemy).
         /// </summary>
         private static IEnumerable<Candidate> EvaluateAbility(TacticalContext ctx, AbilityData ability,
-                                                              UnitEntityData onlyTarget = null)
+                                                              UnitEntityData onlyTarget = null, TargetWrapper onlyAim = null)
         {
             var none = Enumerable.Empty<Candidate>();
             var profile = AbilityProfile.Get(ability);
             if (profile == null) return none;
+            // ★ v0.3.22: native gathering is blast preparation. Its removal actions spend gathered power,
+            // not a reason to cast it as a cleanse or a guessed buff on its own.
+            if (ctx.Unit.Get<Kingmaker.UnitLogic.Class.Kineticist.UnitPartKineticist>()?.GatherPowerAbility?.Data?.Blueprint == ability.Blueprint)
+                return none;
 
             float consumable = ConsumableFactor(ctx, ability, profile);
             if (consumable <= 0f) return none;
@@ -2182,11 +2220,14 @@ namespace CompanionAI_Pathfinder.Tactics
             }
 
             Candidate best = null, bestViable = null, bestBoss = null;
-            foreach (var target in targets.Distinct())
+            foreach (var aim in targets.Distinct().Where(t => onlyTarget == null || t == onlyTarget)
+                .SelectMany(t => onlyAim != null ? new[] { (Target: t, Aim: onlyAim) } : KineticAims(ctx, ability, profile, t, summonPoint)))
             {
+                var target = aim.Target;
                 if (onlyTarget != null && target != onlyTarget) continue;
-                var wrapper = summonPoint.HasValue ? new TargetWrapper(summonPoint.Value) : AbilityProfile.TargetOn(ability, target);
-                if (wrapper == null) continue;
+                var wrapper = aim.Aim;
+                if (wrapper == null || (onlyAim != null && !ability.CanTarget(wrapper))) continue;
+                KineticDecisionScope.Current?.Budget?.EvaluateAim();
 
                 bool needsMove = false;
                 Disengage risk = null;
@@ -2286,7 +2327,9 @@ namespace CompanionAI_Pathfinder.Tactics
                     Slot = slot,
                     Ability = ability,
                     Target = wrapper.Unit,
+                    EvaluationTarget = target,
                     Point = wrapper.Unit == null ? wrapper.Point : (Vector3?)null,
+                    Orientation = wrapper.Unit == null ? wrapper.Orientation : (float?)null,
                     NeedsMove = needsMove,
                     GatherPower = gather,
                     Value = value,
@@ -2306,7 +2349,8 @@ namespace CompanionAI_Pathfinder.Tactics
                     Risk = needsMove ? risk : null,
                     RiskAt = needsMove ? approach?.Point : null,
                     PreRiskValue = preRisk,
-                    Key = $"abl:{CombatMemory.AbilityKey(ability)}{metamagic}:{target.UniqueId}"
+                    Key = $"abl:{CombatMemory.AbilityKey(ability)}{metamagic}:{target.UniqueId}" +
+                          (profile.SpawnedAreas.Any(a => a.Shape == AreaEffectShape.Wall) ? $":wall:{wrapper.Orientation:F1}" : "")
                 };
                 if (Better(candidate, best)) best = candidate;
                 if (!progressive || !candidate.Offensive) continue;
@@ -2472,9 +2516,18 @@ namespace CompanionAI_Pathfinder.Tactics
         }
 
         private static float ScoreAbility(TacticalContext ctx, AbilityData ability, AbilityProfile profile, ActionSlot slot,
-                                          UnitEntityData target, out string why)
+                                          UnitEntityData target, out string why) =>
+            ScoreAbility(ctx, ability, profile, slot, target, out why, out _);
+
+        // ★ v0.3.22: expose the delivered control part so simultaneous infusions cannot each claim a whole disabled turn.
+        private static float ScoreAbility(TacticalContext ctx, AbilityData ability, AbilityProfile profile, ActionSlot slot,
+                                          UnitEntityData target, out string why, out float controlContribution)
         {
+            KineticDecisionScope.Check();
+            controlContribution = 0f;
             var unit = ctx.Unit;
+            using var areaPreview = KineticAreaPreview.Create(ability, profile,
+                AbilityProfile.CurrentAim ?? AbilityProfile.TargetOn(ability, target));
             bool targetIsEnemy = unit.IsEnemy(target);
             int level = Math.Max(0, ability.SpellLevel);
             float value = 0f;
@@ -2503,9 +2556,9 @@ namespace CompanionAI_Pathfinder.Tactics
             {
                 var targetsType = profile.AoETargets;
                 affectedEnemies = targetsType == Kingmaker.UnitLogic.Abilities.Components.TargetType.Ally
-                    ? new List<UnitEntityData>() : UnitsAround(ctx.Enemies, target.Position, profile.AoERadius);
+                    ? new List<UnitEntityData>() : areaPreview != null ? ctx.Enemies.ToList() : UnitsAround(ctx.Enemies, target.Position, profile.AoERadius);
                 affectedAllies = targetsType == Kingmaker.UnitLogic.Abilities.Components.TargetType.Enemy
-                    ? new List<UnitEntityData>() : UnitsAround(ctx.Allies, target.Position, profile.AoERadius);
+                    ? new List<UnitEntityData>() : areaPreview != null ? ctx.Allies.ToList() : UnitsAround(ctx.Allies, target.Position, profile.AoERadius);
                 // ★ v0.3.8: who the area can affect at all (Sleep: creatures with few hit dice).
                 affectedEnemies = affectedEnemies.Where(u => profile.AreaReaches(ability, u) && !CastOutcome.AreaSkips(unit, ability, u)).ToList();
                 affectedAllies = affectedAllies.Where(u => profile.AreaReaches(ability, u)).ToList();
@@ -2550,6 +2603,16 @@ namespace CompanionAI_Pathfinder.Tactics
                 }
             }
 
+            // ★ v0.3.22: the native ricochet selector honors its conditions, range and current modifier facts.
+            if (!profile.IsAoE && target != unit && profile.Ricochets.Count > 0)
+                foreach (var next in RicochetTargets(ability, profile, target))
+                {
+                    if (unit.IsEnemy(next))
+                    { if (ctx.Enemies.Contains(next) && !affectedEnemies.Contains(next)) affectedEnemies.Add(next); }
+                    else if ((ctx.Allies.Contains(next) || ctx.DownedAllies.Contains(next)) && !affectedAllies.Contains(next))
+                    { affectedAllies.Add(next); chainCatchesAllies = true; }
+                }
+
             // ★ v0.3.1: never aim a heal at an enemy. With per-target branches, Cure on an undead enemy (damage branch)
             // and Lay On Hands on undead stay valid, but Lay On Hands / Cure on a living enemy and Inflict on an undead
             // one are refused. A heal whose branch cannot be evaluated counts as reaching the enemy.
@@ -2590,7 +2653,11 @@ namespace CompanionAI_Pathfinder.Tactics
                 // first, with its own rules (no penetration, immunity only for spells that allow spell resistance).
                 foreach (var enemy in affectedEnemies)
                 {
-                    float dmg = CombatMath.EstimateAbilityDamage(ability, profile, enemy);
+                    KineticDecisionScope.Check();
+                    // ★ v0.3.22: an already ticking copy adds no new stream on this enemy.
+                    if (profile.AreaDurations.Any() && IsOwnBlast(unit.Get<Kingmaker.UnitLogic.Class.Kineticist.UnitPartKineticist>(), ability) &&
+                        profile.InOwnSideArea(unit, enemy)) continue;
+                    float dmg = CombatMath.EstimateAbilityDamage(ability, profile, enemy) * KineticAreaTicks(ctx, ability, profile, enemy);
                     float p = CombatMath.EffectChance(unit, enemy, ability, profile, damage: true);
                     float part = DamageValue(enemy, dmg * p, p, CombatMath.AbilityEndsRegeneration(profile, enemy)) * WakeFactor(enemy, dmg * p);
                     // ★ v0.3.18 (AA-1): a kill action (Isekai's Instakill, Power Word Kill) removes the enemy when it lands:
@@ -2620,7 +2687,7 @@ namespace CompanionAI_Pathfinder.Tactics
                         : affectedAllies;
                     float allyCost = hurt.Sum(a =>
                     {
-                        float dmg = CombatMath.EstimateAbilityDamage(ability, profile, a);
+                        float dmg = CombatMath.EstimateAbilityDamage(ability, profile, a) * KineticAreaTicks(ctx, ability, profile, a);
                         if (dmg <= 0f) return 0f;
                         return a.HPLeft <= 0 ? AllyWorth(ctx, a) : Math.Min(dmg, a.HPLeft) * 2f;
                     });
@@ -2634,6 +2701,16 @@ namespace CompanionAI_Pathfinder.Tactics
                     slotSensitive += dmgValue * RoleWeight(ctx, "damage");
                     reasons.Add("dmg");
                 }
+            }
+
+            // ★ v0.3.22: ongoing infusion damage is distinct from the impact damage and from a plain debuff.
+            if (profile.IsKineticEffect && profile.PeriodicEffects.Count > 0)
+            {
+                float periodic = affectedEnemies.Sum(e => KineticPeriodicDamage(ctx, ability, profile, e));
+                float allies = affectedAllies.Sum(a => KineticPeriodicDamage(ctx, ability, profile, a));
+                if (ctx.Settings.AvoidFriendlyFire && allies > 0f) { why = "friendly fire"; return 0f; }
+                float net = periodic - allies * 2f;
+                if (net > 0f) { value += net; slotSensitive += net; reasons.Add("ongoing damage"); ctx.AimCounted = true; }
             }
 
             // ★ v0.3.21: a melee attack the ability makes besides its other effects (Death Attack, Blade from Shadows,
@@ -2662,6 +2739,7 @@ namespace CompanionAI_Pathfinder.Tactics
                 string reviveNote = null;
                 foreach (var ally in healTargets)
                 {
+                    KineticDecisionScope.Check();
                     var applies = profile.Heals.Select(h => profile.AppliesTo(h, ability, ally)).ToList();
                     if (applies.All(a => a == EffectApplies.No)) continue;             // e.g. Inflict Wounds on the living
                     // Positive energy harms undead: only heal them when the ability's own branch says it heals them.
@@ -2805,7 +2883,7 @@ namespace CompanionAI_Pathfinder.Tactics
                                  isMark ? (oneShotMark ? 0.1f : 0.15f) : 0.25f;
                 // Non-control debuffs/marks repeated on new targets every turn are the "spam" pattern: diminish them.
                 // ★ v0.3.18 (test10): penalties too (Demoralize, Flare).
-                float repeat = profile.ControlStrength <= ControlStrength.Minor && CombatMemory.TimesUsed(unit, ability) >= 2 ? 0.3f : 1f;
+                float repeat = !profile.IsKineticEffect && profile.ControlStrength <= ControlStrength.Minor && CombatMemory.TimesUsed(unit, ability) >= 2 ? 0.3f : 1f;
                 strength *= repeat;
                 // A one-round / next-attack effect lasts one round, not the rest of the fight.
                 float effectRounds = profile.IsOneShot ? 1f : Math.Min(ctx.ExpectedRounds, 3f);
@@ -2823,7 +2901,7 @@ namespace CompanionAI_Pathfinder.Tactics
                 // ★ v0.3.21: an ally that would fall into the pit is caught too.
                 Func<UnitEntityData, bool> wouldBeCaught = a =>
                     profile.PitHolds(a) ||
-                    profile.TargetBuffs.Any(b => profile.BuffAppliesTo(b, ability, a) != EffectApplies.No && !a.Buffs.HasFact(b) &&
+                    profile.TargetBuffs.Any(b => profile.BuffAppliesTo(b, ability, a) != EffectApplies.No && profile.AddsBuff(b, a) &&
                                                  !CombatMath.BuffImmune(a, b, ability)) &&
                     !(profile.Control != CCType.None && AbilityClassifier.HasCCImmunity(a, profile.Control));
                 var caughtAllies = !harmfulArea ? new List<UnitEntityData>() : affectedAllies.Where(wouldBeCaught).ToList();
@@ -2863,13 +2941,14 @@ namespace CompanionAI_Pathfinder.Tactics
                 }
                 foreach (var enemy in affectedEnemies)
                 {
+                    KineticDecisionScope.Check();
                     // ★ v0.3.18 (C2): the game's buff immunities (descriptor, specific buff) too.
                     var buffs = profile.TargetBuffs.Where(b => profile.BuffAppliesTo(b, ability, enemy) != EffectApplies.No &&
-                                                               !CombatMath.BuffImmune(enemy, b, ability)).ToList();
+                                                               (!profile.IsKineticEffect || profile.AddsBuff(b, enemy)) && !CombatMath.BuffImmune(enemy, b, ability)).ToList();
                     // ★ v0.3.21: a pit holds by itself, with or without a buff.
                     if (buffs.Count == 0 && !profile.PitHolds(enemy)) continue;
                     if (profile.Pit != null && !profile.PitHolds(enemy)) continue;
-                    if (buffs.Any(b => enemy.Buffs.HasFact(b))) continue;
+                    if (!profile.IsKineticEffect && buffs.Any(b => enemy.Buffs.HasFact(b))) continue;
                     // ★ v0.3.13: already inside an active copy of this area from our side.
                     if (profile.IsAoE && profile.InOwnSideArea(unit, enemy)) continue;
                     if (profile.Control != CCType.None && AbilityClassifier.HasCCImmunity(enemy, profile.Control)) continue;
@@ -2884,7 +2963,7 @@ namespace CompanionAI_Pathfinder.Tactics
                     }
                     // ★ v0.3.15: the duration of the branch that applies to this enemy, when the profile can tell.
                     float rounds = effectRounds;
-                    float own = profile.EffectRoundsOn(ability, enemy);
+                    float own = profile.EffectRoundsOn(ability, enemy, effectRounds);
                     if (own > 0f) rounds = Math.Min(rounds, Math.Max(1f, own));
                     // ★ v0.3.19 (test7): sleep ends at the first hit, and on the last enemy still acting every ally's
                     // attack goes to it: one round at most. Orvath put the last goblin back to sleep (9.7) while the
@@ -2899,8 +2978,9 @@ namespace CompanionAI_Pathfinder.Tactics
                     float share = strength;
                     if (!isMark && profile.ControlStrength == ControlStrength.None)
                     {
-                        float byParts = DebuffShareOf(ctx, ability, enemy, buffs, out bool partial);
-                        if (byParts >= 0f) share = partial ? Math.Max(byParts * repeat, strength) : byParts * repeat;
+                        float byParts = DebuffShareOf(ctx, ability, enemy, buffs, out bool partial, profile);
+                        if (byParts >= 0f) share = partial && !profile.IsKineticEffect ? Math.Max(byParts * repeat, strength) : byParts * repeat;
+                        else if (profile.IsKineticEffect) share = 0f; // unread infusion effects are not a guessed debuff
                     }
                     float enemyValue = p * CombatMath.ControlWorth(enemy) * share * rounds;
                     // ★ v0.3.21: a poison's Constitution damage is lost hit points (CombatMath.PoisonHpLoss), valued like
@@ -2928,8 +3008,9 @@ namespace CompanionAI_Pathfinder.Tactics
                     if (enemy == target && enemyValue > 0f) ctx.AimCounted = true;
                 }
                 controlValue -= allyControlCost;
-                if (controlValue > 0f)
+                if (controlValue > 0f || profile.IsKineticEffect && controlValue < 0f)
                 {
+                    controlContribution += controlValue;
                     value += controlValue;
                     slotSensitive += controlValue;
                     reasons.Add(profile.ControlStrength == ControlStrength.Hard ? "cc" : isMark ? "mark" : "debuff");
@@ -2942,6 +3023,7 @@ namespace CompanionAI_Pathfinder.Tactics
                 float maneuverValue = 0f;
                 foreach (var enemy in affectedEnemies)
                 {
+                    KineticDecisionScope.Check();
                     foreach (var maneuver in profile.Maneuvers)
                     {
                         if (profile.AppliesTo(maneuver.Action, ability, enemy) == EffectApplies.No) continue;
@@ -2950,7 +3032,8 @@ namespace CompanionAI_Pathfinder.Tactics
                         CombatMath.ManeuverOdds(unit, enemy, ability, maneuver, out float chance, out float rounds);
                         // ★ v0.3.18 (review): the maneuver comes after the spell's resistance check and its attack roll
                         // (Hydraulic Push; an infusion's blast must hit first).
-                        chance *= CombatMath.SpellResistancePass(unit, enemy, ability);
+                        if (profile.IsKineticEffect) chance = CombatMath.EffectChance(unit, enemy, ability, profile, damage: false, conditional: chance);
+                        else chance *= CombatMath.SpellResistancePass(unit, enemy, ability);
                         if (profile.NeedsAttackRoll) chance *= CombatMath.SpellAttackHitChance(unit, enemy, ability);
                         float part = chance * CombatMath.ControlWorth(enemy) * strength *
                                      (lasting ? Math.Min(Math.Max(1f, rounds), Math.Min(ctx.ExpectedRounds, 3f)) : 1f);
@@ -2959,12 +3042,39 @@ namespace CompanionAI_Pathfinder.Tactics
                         if (enemy == target && part > 0f) ctx.AimCounted = true;
                     }
                 }
-                if (maneuverValue > 0f)
+                // ★ v0.3.22: an infusion's maneuver can catch allies even when they resist its blast damage.
+                if (profile.IsKineticEffect && profile.IsAoE && !profile.SelectiveSparesAllies(ability))
+                    foreach (var ally in affectedAllies)
+                        foreach (var maneuver in profile.Maneuvers)
+                        {
+                            if (profile.AppliesTo(maneuver.Action, ability, ally) == EffectApplies.No) continue;
+                            float strength = ManeuverStrength(ally, ability, maneuver.Type, out bool lasting);
+                            if (strength <= 0f) continue;
+                            CombatMath.ManeuverOdds(unit, ally, ability, maneuver, out float chance, out float rounds);
+                            chance = CombatMath.EffectChance(unit, ally, ability, profile, damage: false, conditional: chance);
+                            float cost = chance * CombatMath.ControlWorth(ally) * strength *
+                                (lasting ? Math.Min(Math.Max(1f, rounds), Math.Min(ctx.ExpectedRounds, 3f)) : 1f);
+                            if (ctx.Settings.AvoidFriendlyFire && cost > 0f) { why = "friendly fire"; return 0f; }
+                            maneuverValue -= cost;
+                        }
+                if (maneuverValue > 0f || profile.IsKineticEffect && maneuverValue < 0f)
                 {
+                    controlContribution += maneuverValue;
                     value += maneuverValue;
                     slotSensitive += maneuverValue;
                     reasons.Add("maneuver");
                 }
+            }
+
+            // ★ v0.3.22: a delivered dispel is valued from the native attempt order and real removable buff parts.
+            if (profile.IsKineticEffect && profile.DispelActions.Count > 0)
+            {
+                float allyDispel = affectedAllies.Sum(a => KineticDispelValue(ctx, ability, profile, a));
+                if (ctx.Settings.AvoidFriendlyFire && allyDispel > 0f) { why = "friendly fire"; return 0f; }
+                float dispel = affectedEnemies.Sum(e => KineticDispelValue(ctx, ability, profile, e)) - allyDispel;
+                value += dispel;
+                slotSensitive += dispel;
+                if (dispel != 0f) { reasons.Add("dispel"); ctx.AimCounted = true; }
             }
 
             // --- buffs on allies / self ---
@@ -3096,7 +3206,7 @@ namespace CompanionAI_Pathfinder.Tactics
             // ★ v0.3.1: not for abilities whose effect IS verifiable (damage, heal, cleanse): a zero value there means
             // "not useful now" - a healing potion at full HP fell through to the "dispel" fallback (2.0) in v0.3.0.
             // Items never use the dispel/utility fallback: a consumable is gone once used.
-            bool verifiable = profile.DealsDamage || profile.Heals.Count > 0 || (profile.RemovesFromTarget && !targetIsEnemy);
+            bool verifiable = profile.IsKineticEffect || profile.DealsDamage || profile.Heals.Count > 0 || (profile.RemovesFromTarget && !targetIsEnemy);
             if (value <= 0f && !verifiable &&
                 (profile.Enchants || profile.Summons || profile.Dispels || profile.RemovesBuffs || !profile.HasDetectableEffect))
             {
@@ -3164,6 +3274,15 @@ namespace CompanionAI_Pathfinder.Tactics
                         profile.DescribeStructureOnce();
                     }
                 }
+            }
+
+            // ★ v0.3.22: effects on an active substance infusion belong to this blast, not to a standalone buff.
+            if (!profile.IsKineticEffect)
+            {
+                float infusion = KineticEffectValue(ctx, ability, profile, slot, target, out string infusionNote, out bool unsafeInfusion);
+                if (unsafeInfusion) { why = "friendly fire"; return 0f; }
+                value += infusion;
+                if (infusionNote != null) reasons.Add($"infusion({infusionNote})");
             }
 
             // Spell slots are a resource: in easy fights prefer weapons/cantrips over levelled spells.
@@ -3743,6 +3862,22 @@ namespace CompanionAI_Pathfinder.Tactics
                 }
                 return false;
             }
+            if (!ApplyKineticPlan(unit, c, out failure, out var activation)) return false;
+            if (activation != null)
+            {
+                // ★ v0.3.22: the driver must record the command actually issued. Recording the future blast's
+                // Standard slot here would falsely report that the free activation failed to spend an action.
+                command = activation;
+                c.Kind = CandidateKind.Toggle;
+                c.Toggle = ((UnitActivateAbility)activation).Ability;
+                c.Ability = null;
+                c.Target = unit;
+                c.Point = null;
+                c.Slot = ActionSlot.Free;
+                c.Key = $"kinetic-activate:{c.Toggle.Blueprint.AssetGuid}";
+                c.Label = $"Activate {c.Toggle.Name} before re-evaluating blast";
+                return true;
+            }
             switch (c.Kind)
             {
                 case CandidateKind.Toggle:
@@ -3763,7 +3898,7 @@ namespace CompanionAI_Pathfinder.Tactics
                 }
                 case CandidateKind.Ability:
                 {
-                    var wrapper = c.Target != null ? new TargetWrapper(c.Target) : new TargetWrapper(c.Point ?? unit.Position);
+                    var wrapper = c.Target != null ? new TargetWrapper(c.Target) : new TargetWrapper(c.Point ?? unit.Position, c.Orientation, null);
                     // ★ v0.3.15: turn-based, a touch spell (Cure/Inflict Wounds, from a scroll or a slot) is cast where the
                     // caster stands and the game then queues the touch itself as a walk with no path - which turn-based
                     // movement cancels (TickApproaching needs a ForcedPath). Camellia's Inflict Light Wounds scroll on an

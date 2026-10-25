@@ -17,12 +17,9 @@
 //     bonus ranks for 1 burn) pays a blast's burn first (AbilityKineticist.CalculateCost / Spend, with a ranged weapon in
 //     hand). Its buff does nothing the buff analyser can read, so the AI never made one.
 //
-// When no blast of the kineticist is possible and burn is what blocks them, two options compete with the rest:
-//   1. Create Quiver, when the arrows make a blast affordable from next round: worth what the blast adds over the best
-//      other option, for the rounds the arrows last, less the quiver's own burn.
-//   2. Otherwise, with "AI manages toggles" on, switch off (free, at once) the infusion whose burn blocks them: worth what
-//      the blast adds over the best other option for the rest of the fight. Not a toggle the player switched in this
-//      fight; put back on when the fight ends (CombatMemory.SwitchOffAiToggles), so the player's setup stays.
+// ★ v0.3.22: complete modifier/gather/blast configurations now compete through TacticalEngine.KineticPlans.
+// This file keeps burn pricing, native restrictions and quiver recovery. It no longer estimates a disabled
+// infusion by subtracting its declared burn Value: every new configuration asks the native cost handlers.
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -132,11 +129,13 @@ namespace CompanionAI_Pathfinder.Tactics
             // A kinetic blade not yet activated this round: the game activates it before the attack, for its burn.
             float bladeCost = 0f;
             int bladeBurn = 0;
+            AbilityData bladeActivation = null;
             try
             {
                 var weapon = ctx.Unit.Body?.PrimaryHand?.MaybeWeapon;
                 var blade = weapon == null ? null : Kingmaker.Blueprints.BlueprintExtenstions.GetComponent<WeaponKineticBlade>(weapon.Blueprint);
                 var activation = blade?.GetActivationAbility(ctx.Unit.Descriptor);
+                bladeActivation = activation;
                 if (activation != null && !part.IsBladeActivated && (bladeBurn = BurnOf(activation)) > 0 &&
                     bladeBurn <= part.LeftBurnThisRound)
                     bladeCost = BurnCost(ctx, bladeBurn);
@@ -144,6 +143,12 @@ namespace CompanionAI_Pathfinder.Tactics
             catch { }
             foreach (var c in candidates)
             {
+                // ★ v0.3.22: native blade activation can queue gathers before a weapon command too.
+                if (c.Kind == CandidateKind.WeaponAttack && bladeActivation != null)
+                {
+                    c.KineticValidationAbility = bladeActivation;
+                    c.GatherPower = part.IsBladeActivated ? 0 : CombatMath.GatherPowerCount(ctx.Unit, bladeActivation);
+                }
                 if (bladeCost > 0f && c.Value > 0f && (c.Kind == CandidateKind.WeaponAttack || (c.Ability != null && AbilityProfile.Get(c.Ability)?.IsCharge == true)))
                 {
                     c.Value -= bladeCost;
@@ -173,7 +178,7 @@ namespace CompanionAI_Pathfinder.Tactics
             var blocked = blasts.Where(BurnBlocked).ToList();
             if (blocked.Count == 0) return;
 
-            float bestOther = list.Where(c => (c.Slot == ActionSlot.Standard || c.Slot == ActionSlot.FullRound) && c.Value > 0f && Affordable(ctx, c))
+            float bestOther = list.Where(c => !c.KineticPreparation && (c.Slot == ActionSlot.Standard || c.Slot == ActionSlot.FullRound) && c.Value > 0f && Affordable(ctx, c))
                                   .Select(c => c.Value).DefaultIfEmpty(0f).Max();
             float horizon = ValueModel.Horizon(ctx.ExpectedRounds, 4f);
             string why = null;
@@ -229,50 +234,11 @@ namespace CompanionAI_Pathfinder.Tactics
                 }
             }
 
-            // 2. Switch off the infusion whose burn blocks them.
-            if (!(ModSettings.Instance?.AiManagesToggles ?? true))
-            {
-                Report(ctx, preview, $"blasts blocked by burn ({BlockedNote(part)}); infusions left alone (\"AI manages toggles\" is off)" +
-                                     (why != null ? $"; {why}" : ""));
-                return;
-            }
-            Candidate bestOff = null;
-            foreach (var toggle in unit.ActivatableAbilities?.Enumerable ?? Enumerable.Empty<ActivatableAbility>())
-            {
-                if (toggle?.Blueprint == null || !(toggle.IsOn || toggle.IsStarted) || !IsBlastModifier(toggle.Blueprint)) continue;
-                if (CombatMemory.PlayerOwnsToggle(unit, toggle) || CombatMemory.ToggleSwitchedThisRound(unit, toggle)) continue;
-                var modifiers = toggle.Blueprint.Buff == null ? null
-                    : Kingmaker.Blueprints.BlueprintExtenstions.GetComponents<AddKineticistBurnModifier>(toggle.Blueprint.Buff).Where(m => m.Value > 0).ToList();
-                if (modifiers == null || modifiers.Count == 0) continue;
-                int quiverRanks = rangedInHand && quiverBuff != null ? unit.Buffs.GetBuff(quiverBuff)?.Rank ?? 0 : 0;
-                var best = BestBlast(ctx, blocked, b =>
-                {
-                    int total = TotalBurn(b);
-                    int without = total - modifiers.Where(m => Applies(m, b)).Sum(m => m.Value);
-                    int after = Math.Max(0, Math.Max(0, without) - quiverRanks);
-                    return after <= part.LeftBurnThisRound ? after : -1;
-                }, out var blast, out int burnAfter);
-                if (blast == null) continue;
-                float value = (best - BurnCost(ctx, burnAfter) - bestOther) * horizon;
-                if (value <= 0f || (bestOff != null && value <= bestOff.Value)) continue;
-                bestOff = new Candidate
-                {
-                    Kind = CandidateKind.Toggle,
-                    Slot = ActionSlot.Free,
-                    Toggle = toggle,
-                    ToggleOff = true,
-                    Value = value,
-                    Label = $"Stop {toggle.Name} (its burn blocks every blast: {blast.Name} then costs {burnAfter}, " +
-                            $"+{best - bestOther:F1} a round)",
-                    Key = $"tgl-off:{toggle.Blueprint.AssetGuid}"
-                };
-            }
-            if (bestOff != null)
-            {
-                list.Add(bestOff);
-                Report(ctx, preview, $"blasts blocked by burn - {bestOff.Label} = {bestOff.Value:F1}");
-            }
-            else Report(ctx, preview, $"blasts blocked by burn ({BlockedNote(part)}); nothing to do about it" + (why != null ? $" ({why})" : ""));
+            // ★ v0.3.22: modifier alternatives are already complete, native-costed blast candidates.
+            // Do not recover by subtracting a component's declared Value from the current cost: that bypasses
+            // cost handlers and can disagree with infusion specialization, quivers, archetypes and other mods.
+            Report(ctx, preview, $"blasts blocked by burn ({BlockedNote(part)}); per-blast modifier alternatives were evaluated" +
+                                 (why != null ? $"; {why}" : ""));
         }
 
         private static void Report(TacticalContext ctx, bool preview, string text)
@@ -317,15 +283,6 @@ namespace CompanionAI_Pathfinder.Tactics
             catch { return 0; }
         }
 
-        /// <summary>AddKineticistBurnModifier's own test: no list, or the blast or its parent in it.</summary>
-        private static bool Applies(AddKineticistBurnModifier modifier, AbilityData ability)
-        {
-            var list = modifier.AppliableTo;
-            if (!list.Any()) return true;
-            var bp = ability.Blueprint;
-            return list.Contains(bp) || (bp.Parent != null && list.Contains(bp.Parent));
-        }
-
         /// <summary>
         /// The arrows Create Quiver makes: the count of its ContextActionRepeatedActions (KineticSharpshooterQuiverProperty:
         /// class level + Constitution bonus), in the ability's own context; the class level when it cannot be read.
@@ -349,6 +306,6 @@ namespace CompanionAI_Pathfinder.Tactics
 
         /// <summary>★ v0.3.19 (test6): a kineticist infusion or gather mode - it changes the next blast, nothing else.</summary>
         internal static bool IsBlastModifier(Kingmaker.UnitLogic.ActivatableAbilities.BlueprintActivatableAbility bp) =>
-            bp != null && ModifierGroups.Contains(bp.Group);
+            bp != null && (ModifierGroups.Contains(bp.Group) || HasKineticModifier(bp));
     }
 }

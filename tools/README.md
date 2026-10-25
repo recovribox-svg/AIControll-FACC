@@ -35,3 +35,20 @@ loader runs on plain .NET. The rewritten copies go only into the harness's work 
 ```
 tools/ProfileAudit/run.sh <Wrath_Data/Managed> <mod dll> <work dir> <out.txt> <dump folders...>
 ```
+
+ProfileAudit is strict by default: a failed/empty load returns 1 and replaces any stale report with INCOMPLETE.
+For a known small number of unrelated failures, pass `--allow-failures N` among the dump arguments (for example,
+`--kinetic-checks --allow-failures 1 <dump folders...>`). Every failure is listed; an allowed run returns 0 and prefixes
+the report PARTIAL with loaded/failed counts. An empty or predominantly failed load remains INCOMPLETE even if N is
+large, preserving the guard against a missing dependency appearing to be a zero-ability success. Invalid options
+return 2. A partial report is not complete coverage. Unresolved blueprint GUIDs are a separate completeness limit.
+
+
+For kineticist data, add `--kinetic-checks` among ProfileAudit's dump arguments. This checks infusion/carrier saves,
+ongoing effects, area cadence, modifier descriptors and native preview-hook installation. It also confirms that
+native cost is unchanged outside a scope and detached dispel preparation stops before dice. It requires the new
+mod DLL and Harmony's native helper to work on the host. These are offline integration checks, not in-game actor,
+command, restoration, performance or third-party-mod tests. Never deploy the harness or its rewritten dependencies.
+
+The kinetic checks also inject a late optional-patch failure and verify rollback/readiness, check that these hooks
+cannot be found by mandatory PatchAll, exercise inactive hot-path exits, and verify per-decision native-query caching.

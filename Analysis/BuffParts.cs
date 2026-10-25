@@ -90,7 +90,9 @@ namespace CompanionAI_Pathfinder.Analysis
         Sight,
         /// <summary>★ v0.3.21: the weapon's critical threat range doubles (WeaponCriticalEdgeIncrease: keen) - not with
         /// Improved Critical, which sets the same flag (RuleCalculateWeaponStats.DoubleCriticalEdge).</summary>
-        CritRangeDouble
+        CritRangeDouble,
+        // ★ v0.3.22: outlines remove the bearer's concealment; they are harmful only when something is hidden.
+        RemovesConcealment
     }
 
     public sealed class BuffPart
@@ -633,6 +635,23 @@ namespace CompanionAI_Pathfinder.Analysis
                         break;
                     case ShakeItOff _:
                         list.Parts.Add(new BuffPart { Kind = BuffPartKind.Saves, Owner = owner, Fixed = 1, Conditional = true });
+                        break;
+                    // ★ v0.3.22: conditional penalties are filtered against the party's actual delivery options.
+                    case ACBonusAgainstWeaponSubcategory ac:
+                        list.Parts.Add(new BuffPart { Kind = BuffPartKind.ArmorClass, Owner = owner, Fixed = ac.ArmorClassBonus,
+                            Descriptor = ac.Descriptor, Weapon = w => w != null && w.Category.HasSubCategory(ac.SubCategory) });
+                        break;
+                    case ACBonusAgainstSpellsWithDescriptor ac:
+                        list.Parts.Add(new BuffPart { Kind = BuffPartKind.ArmorClass, Owner = owner, Fixed = ac.ArmorClassBonus,
+                            Descriptor = ac.Descriptor, Against = ac.SpellDescriptor.Value });
+                        break;
+                    case BuffSkillStealthBonus _:
+                        break; // ★ v0.3.22: combat scoring has no stealth routine; this is not an unread combat bonus
+                    case AddConditionImmunity outline when outline.Condition == Kingmaker.UnitLogic.UnitCondition.Invisible &&
+                                                             owner.GetComponent<DoNotBenefitFromConcealment>() != null:
+                        break; // the outline's concealment denial below already covers this part
+                    case DoNotBenefitFromConcealment _:
+                        list.Parts.Add(new BuffPart { Kind = BuffPartKind.RemovesConcealment, Owner = owner });
                         break;
                     case AddFactContextActions actions:
                         // Haste: HasteBuff only switches on HasteBuffEffect (Spells/Level3/HasteBuff).
