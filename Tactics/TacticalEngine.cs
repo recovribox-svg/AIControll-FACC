@@ -299,9 +299,14 @@ namespace CompanionAI_Pathfinder.Tactics
             try { AddAbilityCandidates(ctx, candidates); } catch (Exception ex) { Main.Error($"[Tactics] ability candidates: {ex}"); }
             DecisionReadScope.Current?.Mark("abilities");
             // ★ v0.3.19 (test6): kineticists - burn priced, and what to do when burn blocks every blast.
-            try { PriceBurn(ctx, candidates); AddKineticPlanCandidates(ctx, candidates, preview); AddKineticCandidates(ctx, candidates, preview); }
+            try
+            {
+                PriceBurn(ctx, candidates); DecisionReadScope.Current?.Mark("burn pricing");
+                AddKineticPlanCandidates(ctx, candidates, preview); DecisionReadScope.Current?.Mark("modifier plans");
+                AddKineticCandidates(ctx, candidates, preview);
+            }
             catch (Exception ex) { Main.Error($"[Tactics] kineticist candidates: {ex}"); }
-            DecisionReadScope.Current?.Mark("kinetic");
+            DecisionReadScope.Current?.Mark("burn recovery");
             try { AddMovementCandidates(ctx, candidates); } catch (Exception ex) { Main.Error($"[Tactics] movement candidates: {ex}"); }
             try { PriceGatherPlans(ctx, candidates); } catch (Exception ex) { Main.Error($"[Tactics] gather plans: {ex}"); }
             DecisionReadScope.Current?.Mark("movement/gather");

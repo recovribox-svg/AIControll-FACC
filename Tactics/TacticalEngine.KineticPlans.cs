@@ -18,6 +18,10 @@ namespace CompanionAI_Pathfinder.Tactics
 {
     public static partial class TacticalEngine
     {
+        // ★ v0.3.22: the native default part allocates an enum-sized group array. Extended-enum mods can make
+        // it large; it is read-only here, so retain one detached default instead of allocating it every decision.
+        private static readonly Lazy<UnitPartActivatableAbility> DefaultKineticGroups =
+            new Lazy<UnitPartActivatableAbility>(() => new UnitPartActivatableAbility());
         internal static bool IsKineticWildTalent(AbilityData ability) => ability?.SourceItem == null && ability?.Spellbook == null &&
             ability?.Caster?.Unit?.Get<UnitPartKineticist>() != null &&
             (ability.Blueprint.GetComponent<AbilityKineticist>() != null ||
@@ -104,7 +108,7 @@ namespace CompanionAI_Pathfinder.Tactics
             var groups = new HashSet<ActivatableAbilityGroup>(variable.Select(t => t.Blueprint.Group).Where(g => g != ActivatableAbilityGroup.None));
             var choices = ctx.Unit.ActivatableAbilities.Enumerable.Where(t => toggles.Contains(t) || groups.Contains(t.Blueprint.Group)).ToList();
             // A detached native default part is safe here: GetGroupSize reads its initialized size array only.
-            var groupPart = ctx.Unit.Get<UnitPartActivatableAbility>() ?? new UnitPartActivatableAbility();
+            var groupPart = ctx.Unit.Get<UnitPartActivatableAbility>() ?? DefaultKineticGroups.Value;
             var options = choices.Select((t, i) => new KineticConfigurations.Option
             {
                 Group = t.Blueprint.HasGroup ? (int)t.Blueprint.Group : -i - 1,

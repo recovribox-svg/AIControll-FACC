@@ -11,6 +11,8 @@ Keep `main` for author-authorized releases. Read [AGENTS.md](AGENTS.md) when coo
 Current handover (25 October 2026): the author delegated completion of PR #4's interrupted verification and development
 integration to Codex while Claude was unavailable. Read [docs/INTEGRATION_HANDOVER.md](docs/INTEGRATION_HANDOVER.md)
 and the PR timeline before resuming. Gameplay verification and any release remain separate steps.
+The subsequent author replay and Codex fixes/diagnostics are recorded in
+[docs/ORVATH_PACING_PLAYTEST.md](docs/ORVATH_PACING_PLAYTEST.md); check its PR and the latest test-build identity.
 
 ## Project Overview
 - **Mod name**: AI Control - Fully Autonomous Combat Companions (author MonsieurAndroid); UMM `Id` stays `CompanionAI_Pathfinder` (settings path, installs)

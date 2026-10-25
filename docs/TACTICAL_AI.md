@@ -2592,3 +2592,28 @@ guard hits. Per-ability timing no longer allocates a Stopwatch. 143 unit tests, 
 restoration, movement-only skips and retained deferred requests. Live speedup and complete actor/mod parity remain
 unverified; cold profiles, threat assessment and synchronous native calls can still stall. See the
 [evidence, package identity and replay checklist](DECISION_CONTEXT_PLAYTEST.md).
+
+## 69. v0.3.22 replay: rotating rule roots, kinetic group allocations and pacing attribution
+
+The latest TB/RT logs still show Orvath stalling: 31/37 decisions exceed 100 ms, with hundreds of native parameter
+queries but only 10–12 reuses. Native `Rulebook.TriggerEvent` replaces an empty root context after a top-level
+event; its identity in the cache key defeated reuse. Reads now share across empty roots within the existing
+decision/state/ability/aim boundary, with cloned results and bypasses for active rule events or ambient mechanics
+contexts. Modifier changes still invalidate state. The regression fixture rotates real empty roots instead of null.
+
+Kinetic configuration retains one lazy detached native group-default part instead of repeatedly allocating its
+enum-sized capacity array. Live unit group overrides take precedence; native `GetGroupSize` still supplies every
+capacity. Burn pricing, modifier plans and burn recovery have separate timing stages. Candidate search/scoring,
+deferred preparation, toggle ownership and game math are unchanged; no decision-quality cut was needed.
+
+Cambion is explicitly left under native control in the supplied log. A read-only timing hook reports slow unmanaged
+summon brain pipelines, while `[Pacing]` logs default/effective TB multipliers and global clocks at combat/turn
+starts. The author confirmed faster enemy animations too. No AI Control speed writes were found, and this patch
+does not override settings or claim to fix animation speed. Promptly ending unused turns can shorten transitions.
+
+143 unit tests and a clean mod build pass. Offline checks include rotating-root reuse, active-event bypass,
+group-default/live separation and Harmony state-pair binding against a stand-in; native Unity brain execution is
+not verified. The blueprint audit is explicitly partial (4,097 loaded, one known failed export, 1,220 rows, zero
+reader errors). Decision samples show reasonable healing/control/blast choices, with no additional confirmed
+decision bug. Live performance and animation attribution remain open. See
+[the evidence, decision assessment and replay checklist](ORVATH_PACING_PLAYTEST.md).

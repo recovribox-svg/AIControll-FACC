@@ -149,7 +149,8 @@ namespace CompanionAI_Pathfinder
                 // 패치 적용
                 HarmonyInstance.Patch(
                     targetMethod,
-                    prefix: new HarmonyMethod(prefixMethod)
+                    prefix: new HarmonyMethod(prefixMethod),
+                    postfix: new HarmonyMethod(AccessTools.Method(typeof(GameInterface.CustomBrainPatch), "TickBrain_Postfix"))
                 );
 
                 TickBrainPatched = true;

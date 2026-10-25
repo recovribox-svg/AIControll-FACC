@@ -23,7 +23,12 @@ namespace ProfileAudit
         private static int availabilityReads;
         private static AbilityData offered;
         private static ActionSlot offeredSlot;
-        private static bool RuleContext(ref RulebookEventContext __result) { __result = null; return false; }
+        private static void BrainShape(Kingmaker.EntitySystem.Entities.UnitEntityData unit) { }
+        private static RulebookEventContext activeRules;
+        // ★ v0.3.22: the real game replaces an empty context after each top-level event. Returning null hid
+        // the original cache-key bug; rotate real empty contexts on EVERY lookup in the regression fixture.
+        private static bool RuleContext(ref RulebookEventContext __result)
+        { __result = activeRules ?? new RulebookEventContext(); return false; }
         private static bool Discovery(ref List<AbilityData> __result) { __result = new List<AbilityData> { offered }; return false; }
         private static bool Slot(ref ActionSlot __result) { __result = offeredSlot; return false; }
         private static bool Available(ref bool __result) { availabilityReads++; __result = false; return false; }
@@ -87,6 +92,16 @@ namespace ProfileAudit
                 Require(calls == 8, "a query outside a decision was cached");
                 using (NewScope())
                 {
+                    int start = calls;
+                    activeRules = new RulebookEventContext();
+                    activeRules.PushEvent((RulebookEvent)RuntimeHelpers.GetUninitializedObject(typeof(Kingmaker.RuleSystem.Rules.RuleCalculateWeaponStats)));
+                    try { Read(ability); Read(ability); Require(calls == start + 2, "active rule context was incorrectly cached"); }
+                    finally { activeRules = null; }
+                    Read(ability); Read(ability);
+                    Require(calls == start + 3, "fresh empty roots defeated parameter reuse");
+                }
+                using (NewScope())
+                {
                     var aimedAt = typeof(AbilityProfile).GetMethod("AimedAt", BindingFlags.Static | BindingFlags.NonPublic);
                     IDisposable Aim(TargetWrapper target) => (IDisposable)aimedAt.Invoke(null, new object[] { target });
                     int start = calls;
@@ -134,8 +149,16 @@ namespace ProfileAudit
                 CheckSlot(ActionSlot.Move, true); CheckSlot(ActionSlot.Standard, true);
                 ctx.Permissions = new ActionPermissions { MovementOnly = true };
                 CheckSlot(ActionSlot.Free, false);
+
+                // The native brain body has engine internal calls unavailable on .NET. Check its signature,
+                // then verify Harmony binds our real diagnostic state pair to a stand-in with that signature.
+                Require(AccessTools.Method(typeof(Kingmaker.AI.AiBrainController), "TickBrain",
+                    new[] { typeof(Kingmaker.EntitySystem.Entities.UnitEntityData) }) != null, "native brain signature changed");
+                harmony.Patch(AccessTools.Method(typeof(DecisionReadChecks), nameof(BrainShape)),
+                    prefix: new HarmonyMethod(typeof(CompanionAI_Pathfinder.GameInterface.CustomBrainPatch), "TickBrain_Prefix"),
+                    postfix: new HarmonyMethod(typeof(CompanionAI_Pathfinder.GameInterface.CustomBrainPatch), "TickBrain_Postfix"));
             }
-            finally { harmony.UnpatchAll(harmony.Id); }
+            finally { activeRules = null; harmony.UnpatchAll(harmony.Id); }
 
             // A modded calculator uses the same native virtual dispatch as the single-class game calculator.
             var toggle = blueprints.OfType<BlueprintActivatableAbility>().First(b => b.Buff != null &&
@@ -154,7 +177,17 @@ namespace ProfileAudit
                 Require(context.Params.DC == 29 && context.Params.CasterLevel == 11, "native virtual calculator dispatch was bypassed");
             }
             finally { toggle.Buff.ComponentsArray = original; }
-            Console.WriteLine("DECISION READ CHECKS: 200 reads/1 native query; clone, ability, aim/orientation, ambient, nested-decision and modifier-state isolation; early slot pruning; native modded calculator PASS");
+            var defaults = typeof(TacticalEngine).GetField("DefaultKineticGroups", BindingFlags.Static | BindingFlags.NonPublic).GetValue(null);
+            var value = defaults.GetType().GetProperty("Value");
+            var firstDefault = (Kingmaker.UnitLogic.Parts.UnitPartActivatableAbility)value.GetValue(defaults);
+            for (int i = 0; i < 100; i++) Require(ReferenceEquals(firstDefault, value.GetValue(defaults)), "default group array was reallocated");
+            var liveGroups = new Kingmaker.UnitLogic.Parts.UnitPartActivatableAbility();
+            var group = ActivatableAbilityGroup.SubstanceInfusion;
+            int nativeDefault = firstDefault.GetGroupSize(group);
+            liveGroups.IncreaseGroupSize(group);
+            Require(liveGroups.GetGroupSize(group) != nativeDefault && firstDefault.GetGroupSize(group) == nativeDefault,
+                "live group overrides leaked into default capacity");
+            Console.WriteLine("DECISION READ CHECKS: rotating-empty-root 200 reads/1 native query; active-rule bypass; clone/aim/state isolation; shared native group defaults; brain state-pair binding; deferred scoring and calculator PASS");
         }
 
         private static void Require(bool condition, string message)

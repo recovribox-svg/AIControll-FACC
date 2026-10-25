@@ -40,8 +40,9 @@ namespace CompanionAI_Pathfinder.GameInterface
         /// 따라서 턴제에서는 이 메서드가 호출되지 않음!
         /// 턴제 AI는 TurnControllerTick_Postfix에서 처리
         /// </summary>
-        public static bool TickBrain_Prefix(UnitEntityData unit)
+        public static bool TickBrain_Prefix(UnitEntityData unit, out long __state)
         {
+            __state = 0; // ★ v0.3.22: time only a native allied summon brain that this prefix allows to run
             try
             {
                 Main.TickCount++;
@@ -64,6 +65,7 @@ namespace CompanionAI_Pathfinder.GameInterface
                 // 아군만 제어
                 if (!ShouldControlUnit(unit))
                 {
+                    __state = CombatPacingDiagnostics.NativeSummonStart(unit);
                     return true;
                 }
 
@@ -184,6 +186,13 @@ namespace CompanionAI_Pathfinder.GameInterface
             return true;
         }
 
+        // ★ v0.3.22: optional diagnostic only; never issue a command or replace the summon's native brain.
+        public static void TickBrain_Postfix(UnitEntityData unit, long __state)
+        {
+            try { CombatPacingDiagnostics.NativeSummonEnd(unit, __state); }
+            catch (Exception ex) { Main.Verbose($"[Pacing] summon timing unavailable: {ex.Message}"); }
+        }
+
         /// <summary>★ v0.3.14: which of the game's reasons for taking direct control away applies (for the log).</summary>
         private static string WhyNotControllable(UnitEntityData unit)
         {
@@ -239,6 +248,7 @@ namespace CompanionAI_Pathfinder.GameInterface
                 }
 
                 string unitName = currentUnit.Descriptor?.CharacterName ?? "Unknown";
+                CombatPacingDiagnostics.Report(unitName); // ★ v0.3.22: includes native enemy/summon turns
                 // ★ v0.3.19 (release): turn starts at verbose level - each decision line names the unit and round.
                 Main.Verbose($"턴 시작: {unitName} (Status={__instance.CurrentTurn?.Status})");
 
@@ -364,6 +374,7 @@ namespace CompanionAI_Pathfinder.GameInterface
         public static void OnPartyCombatStart()
         {
             Main.Log("★★★ Party combat started ★★★");
+            CombatPacingDiagnostics.NewFight();
             TurnBasedController.Instance.ResetAll();
             FailedAbilityTracker.Instance.ClearAll();
             CombatPhaseDetector.ResetCombatTracking();
