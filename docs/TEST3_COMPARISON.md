@@ -19,6 +19,7 @@ cache fix's live effect. Do not credit that fix for a measured percentage improv
 The new code logs `[Build]` at mod load and combat start: loaded module MVID, a file SHA-256 cached at load, and
 feature markers. Combat-only excerpts can then be checked against `test-builds/build-identity.json`. No personal
 installation path is printed. If reading the DLL fails, the loaded module ID/features remain available.
+An offline check verifies that this marker identifies the mod assembly's actual module and DLL file hash.
 
 ## Performance evidence
 

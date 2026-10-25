@@ -115,6 +115,14 @@ namespace ProfileAudit
                         !Matches(SpellDescriptor.Sonic, SpellDescriptor.Cold | SpellDescriptor.Electricity) &&
                         !Matches(SpellDescriptor.Cold, SpellDescriptor.None),
                     "conditional-save penalties require all descriptor flags instead of native any-overlap semantics");
+                var identity = typeof(TacticalEngine).Assembly.GetType("CompanionAI_Pathfinder.GameInterface.RuntimeBuildIdentity");
+                var lazyIdentity = identity.GetField("Identity", BindingFlags.NonPublic | BindingFlags.Static).GetValue(null);
+                string buildLine = (string)lazyIdentity.GetType().GetProperty("Value").GetValue(lazyIdentity);
+                string fileHash = Convert.ToHexString(System.Security.Cryptography.SHA256.HashData(
+                    System.IO.File.ReadAllBytes(typeof(TacticalEngine).Assembly.Location))).ToLowerInvariant();
+                Require(buildLine.Contains(fileHash) && buildLine.Contains(typeof(TacticalEngine).Assembly.ManifestModule.ModuleVersionId.ToString()),
+                    "combat build identity does not identify the loaded mod's module and file");
+                Console.WriteLine("BUILD IDENTITY CHECK: loaded module and DLL file hash match the runtime marker PASS");
                 // Inactive hot patches must return without looking at even a poisoned thread-local preview.
                 var active = type.GetField("PreviewActive", BindingFlags.Static | BindingFlags.NonPublic);
                 var current = type.GetField("Current", BindingFlags.Static | BindingFlags.NonPublic);
