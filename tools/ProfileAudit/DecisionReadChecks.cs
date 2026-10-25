@@ -35,7 +35,8 @@ namespace ProfileAudit
         private static bool Parameters(ref AbilityParams __result)
         {
             calls++;
-            __result = new AbilityParams { CasterLevel = 7, DC = 23 };
+            __result = new AbilityParams { CasterLevel = 7, DC = 23, SpellSource = (SpellSource)1,
+                SpellLevel = 3, Concentration = 11, Metamagic = Metamagic.Empower, RankBonus = 5 };
             return false;
         }
 
@@ -68,8 +69,11 @@ namespace ProfileAudit
                     for (int i = 0; i < 200; i++)
                     {
                         var p = Read(ability);
-                        Require(p.DC == 23, "cached parameters were changed by a consumer");
-                        p.DC = -999;
+                        Require(p.DC == 23 && p.CasterLevel == 7 && p.SpellSource == (SpellSource)1 && p.SpellLevel == 3 &&
+                            p.Concentration == 11 && p.Metamagic == Metamagic.Empower && p.RankBonus == 5,
+                            "cached parameters lost fields or were changed by a consumer");
+                        p.DC = p.CasterLevel = p.SpellLevel = p.Concentration = p.RankBonus = -999;
+                        p.Metamagic = Metamagic.Maximize; p.SpellSource = (SpellSource)0;
                     }
                     Require(calls == 1, "200 repeated queries did not reuse a native parameter result");
                     Read(second);
@@ -149,6 +153,73 @@ namespace ProfileAudit
                 CheckSlot(ActionSlot.Move, true); CheckSlot(ActionSlot.Standard, true);
                 ctx.Permissions = new ActionPermissions { MovementOnly = true };
                 CheckSlot(ActionSlot.Free, false);
+
+                // Optional, actual v0.3.21 assembly comparison. Build the release with a distinct AssemblyName
+                // so both versions bind the same staged game types without replacing the mod under test.
+                string releasePath = Environment.GetEnvironmentVariable("PA_RELEASE_BASELINE_DLL");
+                if (!string.IsNullOrEmpty(releasePath))
+                {
+                    var baseline = Assembly.LoadFrom(releasePath);
+                    if (baseline.GetName().Name == assembly.GetName().Name)
+                        throw new InvalidOperationException("release parity requires a distinctly named baseline assembly");
+                    var oldContextType = baseline.GetType(typeof(TacticalContext).FullName, true);
+                    var oldCandidateType = baseline.GetType(typeof(Candidate).FullName, true);
+                    var oldEngine = baseline.GetType(typeof(TacticalEngine).FullName, true);
+                    var oldContext = Activator.CreateInstance(oldContextType);
+                    var oldCandidate = Activator.CreateInstance(oldCandidateType);
+                    var oldAffordable = AccessTools.Method(oldEngine, "Affordable");
+                    var newAffordable = AccessTools.Method(typeof(TacticalEngine), "Affordable");
+                    void Set(object obj, string name, object value) => AccessTools.Field(obj.GetType(), name).SetValue(obj, value);
+                    int comparisons = 0;
+                    for (int bits = 0; bits < 16; bits++)
+                    foreach (bool movementOnly in new[] { false, true })
+                    foreach (ActionSlot slot in Enum.GetValues(typeof(ActionSlot)))
+                    {
+                        var fresh = new TacticalContext { HasStandard = (bits & 1) != 0, HasMove = (bits & 2) != 0,
+                            HasSwift = (bits & 4) != 0, HasFullRound = (bits & 8) != 0,
+                            Permissions = new ActionPermissions { MovementOnly = movementOnly } };
+                        Set(oldContext, "HasStandard", fresh.HasStandard); Set(oldContext, "HasMove", fresh.HasMove);
+                        Set(oldContext, "HasSwift", fresh.HasSwift); Set(oldContext, "HasFullRound", fresh.HasFullRound);
+                        var oldPermissions = Activator.CreateInstance(AccessTools.Field(oldContextType, "Permissions").FieldType);
+                        Set(oldPermissions, "MovementOnly", movementOnly); Set(oldContext, "Permissions", oldPermissions);
+                        Set(oldCandidate, "Kind", Enum.Parse(AccessTools.Field(oldCandidateType, "Kind").FieldType, nameof(CandidateKind.Ability)));
+                        Set(oldCandidate, "Slot", Enum.Parse(AccessTools.Field(oldCandidateType, "Slot").FieldType, slot.ToString()));
+                        bool expected = (bool)oldAffordable.Invoke(null, new[] { oldContext, oldCandidate });
+                        Require(expected == (bool)newAffordable.Invoke(null, new object[] { fresh, new Candidate { Kind = CandidateKind.Ability, Slot = slot } }),
+                            "non-gather ability affordability differs from v0.3.21");
+                        offeredSlot = slot; availabilityReads = 0;
+                        candidates.Invoke(null, new object[] { fresh, new List<Candidate>() });
+                        Require(availabilityReads == (expected ? 1 : 0), "early pruning skipped a v0.3.21-affordable ability");
+                        comparisons++;
+                    }
+                    Console.WriteLine($"RELEASE PARITY: {comparisons} slot/status combinations match actual v0.3.21 affordability and native-availability entry PASS");
+                    int finalComparisons = 0;
+                    for (int bits = 0; bits < 16; bits++)
+                    foreach (bool fullAttack in new[] { false, true })
+                    foreach (bool walks in new[] { false, true })
+                    foreach (CandidateKind kind in new[] { CandidateKind.Ability, CandidateKind.WeaponAttack })
+                    foreach (ActionSlot slot in Enum.GetValues(typeof(ActionSlot)))
+                    foreach (var permissions in new[] { new ActionPermissions(), new ActionPermissions { MovementOnly = true },
+                        new ActionPermissions { CanWalk = false }, new ActionPermissions { OneActionOnly = true } })
+                    {
+                        var fresh = new TacticalContext { HasStandard = (bits & 1) != 0, HasMove = (bits & 2) != 0,
+                            HasSwift = (bits & 4) != 0, HasFullRound = (bits & 8) != 0, CanFullAttack = fullAttack, Permissions = permissions };
+                        foreach (string name in new[] { "HasStandard", "HasMove", "HasSwift", "HasFullRound", "CanFullAttack" })
+                            Set(oldContext, name, AccessTools.Field(typeof(TacticalContext), name).GetValue(fresh));
+                        var oldPermissions = Activator.CreateInstance(AccessTools.Field(oldContextType, "Permissions").FieldType);
+                        Set(oldPermissions, "CanWalk", permissions.CanWalk); Set(oldPermissions, "MovementOnly", permissions.MovementOnly);
+                        Set(oldPermissions, "OneActionOnly", permissions.OneActionOnly); Set(oldContext, "Permissions", oldPermissions);
+                        Set(oldCandidate, "Kind", Enum.Parse(AccessTools.Field(oldCandidateType, "Kind").FieldType, kind.ToString()));
+                        Set(oldCandidate, "Slot", Enum.Parse(AccessTools.Field(oldCandidateType, "Slot").FieldType, slot.ToString()));
+                        Set(oldCandidate, "NeedsMove", walks);
+                        bool expected = (bool)oldAffordable.Invoke(null, new[] { oldContext, oldCandidate });
+                        Require(expected == (bool)newAffordable.Invoke(null, new object[] { fresh,
+                            new Candidate { Kind = kind, Slot = slot, NeedsMove = walks } }),
+                            "walking/status/weapon affordability differs from v0.3.21");
+                        finalComparisons++;
+                    }
+                    Console.WriteLine($"RELEASE PARITY: {finalComparisons} walking/status/weapon final-affordability comparisons PASS");
+                }
 
                 // The native brain body has engine internal calls unavailable on .NET. Check its signature,
                 // then verify Harmony binds our real diagnostic state pair to a stand-in with that signature.

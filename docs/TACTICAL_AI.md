@@ -2617,3 +2617,33 @@ not verified. The blueprint audit is explicitly partial (4,097 loaded, one known
 reader errors). Decision samples show reasonable healing/control/blast choices, with no additional confirmed
 decision bug. Live performance and animation attribution remain open. See
 [the evidence, decision assessment and replay checklist](ORVATH_PACING_PLAYTEST.md).
+
+## 70. Test3/release comparison: shared target budgets and binary identification
+
+The author clarified that current performance is tolerable. Per-fight decision medians in the supplied test3 logs
+are lower than the release logs (TB 4.0–7.4 versus 36.7–60.9 ms; RT 4.0–5.6 versus 24.9–69.6 ms). Tail latencies
+overlap; encounters differ and slow-log thresholds changed. No controlled percentage speedup or absence of stalls
+is established. The test3 logs retain the older combined kinetic/parameter format and omit pacing observations,
+despite the author confirming the new ZIP download. They cannot validate the `3230ba4` empty-root cache fix in game.
+New `[Build]` lines at load/combat start identify the module, file hash and features without printing local paths.
+
+Sleep's shared target pool is a confirmed scoring gap behind repeated casts around unreached centers. A structural
+preview now takes native selector order and native SubHD actions on detached contexts, weighting earlier SR outcomes
+without rolling. It prices only the chance that budget remains; existing runtime effect chance still handles the
+current recipient's resistance/save. One distinct buff and one deterministic pool are supported. Unsupported graphs
+retain the former estimate; no real effect or resource action is executed. This resolves the simple Sleep-pool
+backlog described in §33/35, not arbitrary action-graph simulation.
+
+Healing, control, attack outcomes and native summon ownership were reviewed in both datasets. No general attack
+retry change or scoring-weight reduction is justified by the supplied samples. The remaining hypotheses and exact
+verification/replay scope are recorded in [TEST3_COMPARISON.md](TEST3_COMPARISON.md); live post-fix behavior remains
+unverified and test-package identity must be checked before another timing comparison.
+
+The subsequent correctness audit loads a separately named actual release DLL: 160 non-gather ability slot/status
+combinations match release affordability and the new availability-entry filter; 2,560 more cases match
+walking/status/weapon final affordability. Both readers classify the same
+1,220 rows with zero errors. Exactly 42 changes are enumerated in [TEST3_READER_DIFF.md](TEST3_READER_DIFF.md), including
+nine deliberate guessed-to-zero coverage limits; this is not full decision-quality parity. It also found and fixed
+an introduced combined-descriptor error: conditional-save penalties use native mask intersection, not `HasFlag`'s
+all-flags test. Cache checks preserve all seven native parameter fields, and optional preview setup failures retain
+ordinary scoring. Complete actor/mod parity and command execution still require gameplay confirmation.

@@ -13,6 +13,8 @@ integration to Codex while Claude was unavailable. Read [docs/INTEGRATION_HANDOV
 and the PR timeline before resuming. Gameplay verification and any release remain separate steps.
 The subsequent author replay and Codex fixes/diagnostics are recorded in
 [docs/ORVATH_PACING_PLAYTEST.md](docs/ORVATH_PACING_PLAYTEST.md); check its PR and the latest test-build identity.
+PR #5's subsequent test3/release comparison, build-marker mismatch and shared Sleep-budget correction are in
+[docs/TEST3_COMPARISON.md](docs/TEST3_COMPARISON.md).
 
 ## Project Overview
 - **Mod name**: AI Control - Fully Autonomous Combat Companions (author MonsieurAndroid); UMM `Id` stays `CompanionAI_Pathfinder` (settings path, installs)

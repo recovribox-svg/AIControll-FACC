@@ -629,8 +629,14 @@ namespace CompanionAI_Pathfinder.Tactics
             ctx.Allies.Count == 0 ? 0f : ctx.Allies.Count(matches) / (float)ctx.Allies.Count;
 
         private static float PartySpellShare(TacticalContext ctx, Kingmaker.Blueprints.Classes.Spells.SpellDescriptor descriptor) =>
-            PartyDeliveryShare(ctx, a => AbilityDiscovery.Gather(a).Any(s => s.IsAvailable && s.SpellDescriptor.HasFlag(descriptor) &&
+            PartyDeliveryShare(ctx, a => AbilityDiscovery.Gather(a).Any(s => s.IsAvailable && SharesSpellDescriptor(s.SpellDescriptor, descriptor) &&
                                                                          AbilityProfile.Get(s).HarmfulEffects));
+
+        // ★ v0.3.22: native SavingThrowBonusAgainstDescriptor tests intersection, not every flag at once.
+        internal static bool SharesSpellDescriptor(Kingmaker.Blueprints.Classes.Spells.SpellDescriptor spell,
+                                                   Kingmaker.Blueprints.Classes.Spells.SpellDescriptor against) =>
+            ((Kingmaker.Blueprints.Classes.Spells.SpellDescriptorWrapper)spell &
+             (Kingmaker.Blueprints.Classes.Spells.SpellDescriptorWrapper)against) != Kingmaker.Blueprints.Classes.Spells.SpellDescriptor.None;
 
         /// <summary>★ v0.3.21: the stat the recipient's spell DCs come from (its spellbook with the highest caster level), or
         /// null when it casts no spells.</summary>

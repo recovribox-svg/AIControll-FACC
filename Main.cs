@@ -37,6 +37,7 @@ namespace CompanionAI_Pathfinder
             try
             {
                 Log($"{modEntry.Info.DisplayName} 초기화 중...");   // ★ v0.3.12: name from Info.json
+                RuntimeBuildIdentity.Report();
 
                 // 설정 로드
                 ModSettings.Load(modEntry);

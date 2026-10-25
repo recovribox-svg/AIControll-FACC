@@ -2582,6 +2582,8 @@ namespace CompanionAI_Pathfinder.Tactics
             var unit = ctx.Unit;
             using var areaPreview = KineticAreaPreview.Create(ability, profile,
                 AbilityProfile.CurrentAim ?? AbilityProfile.TargetOn(ability, target));
+            using var sharedArea = SharedAreaPreview.Begin(ability, profile,
+                AbilityProfile.CurrentAim ?? AbilityProfile.TargetOn(ability, target));
             bool targetIsEnemy = unit.IsEnemy(target);
             int level = Math.Max(0, ability.SpellLevel);
             float value = 0f;
@@ -3008,6 +3010,8 @@ namespace CompanionAI_Pathfinder.Tactics
                     if (profile.Control != CCType.None && AbilityClassifier.HasCCImmunity(enemy, profile.Control)) continue;
                     // Spell resistance and spell immunity: in the effect chance below (0 when immune).
                     float p = CombatMath.EffectChance(unit, enemy, ability, profile, damage: false);
+                    if (buffs.Count > 0 && SharedAreaPreview.TryShare(ability, buffs[0], enemy, out float poolShare))
+                        p *= poolShare;
                     // ★ v0.3.18 (review): Demoralize's buff needs its Intimidate check (only that buff: was applied to every
                     // effect of the ability through the effect chance).
                     if (profile.Intimidation != null && buffs.Contains(profile.Intimidation.Buff))

@@ -6,6 +6,7 @@ using System.Reflection;
 using CompanionAI_Pathfinder.Tactics;
 using HarmonyLib;
 using Kingmaker.Blueprints;
+using Kingmaker.Blueprints.Classes.Spells;
 using Kingmaker.EntitySystem.Stats;
 using Kingmaker.UnitLogic;
 using Kingmaker.UnitLogic.Abilities.Blueprints;
@@ -106,6 +107,14 @@ namespace ProfileAudit
                 Require((bool)install.Invoke(null, new object[] { harmony, null }), "manual optional hook installation failed");
                 DecisionReadChecks.Run(blueprints);
                 ConditionContextChecks.Check(blueprints);
+                SharedAreaChecks.Check(blueprints);
+                var descriptors = typeof(TacticalEngine).GetMethod("SharesSpellDescriptor", BindingFlags.NonPublic | BindingFlags.Static);
+                bool Matches(SpellDescriptor spell, SpellDescriptor against) => (bool)descriptors.Invoke(null, new object[] { spell, against });
+                Require(Matches(SpellDescriptor.Cold, SpellDescriptor.Cold | SpellDescriptor.Electricity) &&
+                        Matches(SpellDescriptor.Electricity | SpellDescriptor.Sonic, SpellDescriptor.Electricity) &&
+                        !Matches(SpellDescriptor.Sonic, SpellDescriptor.Cold | SpellDescriptor.Electricity) &&
+                        !Matches(SpellDescriptor.Cold, SpellDescriptor.None),
+                    "conditional-save penalties require all descriptor flags instead of native any-overlap semantics");
                 // Inactive hot patches must return without looking at even a poisoned thread-local preview.
                 var active = type.GetField("PreviewActive", BindingFlags.Static | BindingFlags.NonPublic);
                 var current = type.GetField("Current", BindingFlags.Static | BindingFlags.NonPublic);

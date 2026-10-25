@@ -1488,7 +1488,7 @@ namespace CompanionAI_Pathfinder.Tactics
         /// plus a value the ability computes, e.g. Sleep): evaluated with that value's range (<see cref="WithSharedValues"/>).
         /// Counted for every target before, Sleep was cast on enemies over its limit again and again (log 06aebf2d).
         /// </summary>
-        private static bool IsSafe(Condition c) =>
+        internal static bool IsSafe(Condition c) =>
             c == null || SafeConditions.Contains(c.GetType()) || c is ContextConditionHitDice;
 
         /// <summary>
@@ -1565,7 +1565,7 @@ namespace CompanionAI_Pathfinder.Tactics
             }
         }
 
-        private static bool Run(ConditionsChecker checker)
+        internal static bool Run(ConditionsChecker checker)
         {
             bool and = checker.Operation == Operation.And;
             bool acc = and;
@@ -1681,6 +1681,8 @@ namespace CompanionAI_Pathfinder.Tactics
 
         public EffectApplies BuffAppliesTo(BlueprintBuff buff, AbilityData ability, UnitEntityData target)
         {
+            if (SharedAreaPreview.TryShare(ability, buff, target, out float share))
+                return share > 0f ? EffectApplies.Yes : EffectApplies.No;
             if (buff == null || !m_BuffGuards.TryGetValue(buff, out var branches) || branches.Count == 0)
                 return EffectApplies.Unconditional;
             // Applies when any branch it is applied in does.
@@ -1890,6 +1892,16 @@ namespace CompanionAI_Pathfinder.Tactics
 
         private ConditionsChecker m_AreaCondition;
         private EffectGuard[] m_AreaGuard;
+        private bool m_ReadSharedAreaPlan;
+        private SharedAreaPreview.Plan m_SharedAreaPlan;
+        internal SharedAreaPreview.Plan SharedAreaPlan
+        {
+            get
+            {
+                if (!m_ReadSharedAreaPlan) { m_ReadSharedAreaPlan = true; m_SharedAreaPlan = SharedAreaPreview.Plan.Create(this); }
+                return m_SharedAreaPlan;
+            }
+        }
 
         /// <summary>
         /// ★ v0.3.8: the area spell can affect this unit at all: its AbilityTargetsAround filter (Sleep: few hit dice) is

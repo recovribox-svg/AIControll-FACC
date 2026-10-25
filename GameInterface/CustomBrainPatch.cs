@@ -374,6 +374,7 @@ namespace CompanionAI_Pathfinder.GameInterface
         public static void OnPartyCombatStart()
         {
             Main.Log("★★★ Party combat started ★★★");
+            RuntimeBuildIdentity.Report();
             CombatPacingDiagnostics.NewFight();
             TurnBasedController.Instance.ResetAll();
             FailedAbilityTracker.Instance.ClearAll();
