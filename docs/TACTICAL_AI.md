@@ -2566,3 +2566,29 @@ and zero reader errors. Integration checks cover repeated-query reuse, cloning, 
 mutable-context bypass, nested decisions, modifier invalidation, early slot pruning and native calculator dispatch.
 Post-fix frame times and installed-mod parity are unverified. No whole-decision deadline or live speedup is claimed.
 See [the evidence and replay checklist](KINETICIST_PLAYTEST_STUTTER.md) for exact package identity and limitations.
+
+## 68. v0.3.22 mid-end CPU replay: scoped condition casts and shared-value restoration
+
+The author's three new logs still show median Orvath decisions of 155.0–190.5 ms, despite much lower whole-party
+medians. One RT outlier spends 893.7 ms in abilities (Sleep 773.4 ms), making 439 native parameter queries and
+building 282 contexts, with GC during the decision. Four movement-only nausea decisions spend 54–59 ms in modifier
+search without scoring an aim. These observations identify work to eliminate; they are not a controlled CPU benchmark.
+
+The follow-up on `codex/decision-context-cost` reuses a detached native condition context only within one scored
+cast/aim, visiting each recipient with the native target scope. Condition-result lookup uses reference keys within
+that aim, avoiding repeated string/metamagic-key construction. General execution-context callers still receive fresh
+contexts; infusion effects retain their actual supplied source context. Modifier entry/restoration clears all active
+condition caches, and nested aims restore their caller's state. No cache reaches a subsequent command/decision.
+
+`WithSharedValues` now restores low/high/average trial values in `finally`; early returns and exceptions previously
+left those values behind, potentially in an infusion's fact context. Movement-only kinetic work is skipped, as are
+immediate modifier comparisons without an actionable blast/projection or next-round gathering possibility. Claude's
+3e5e37d deferred scoring for RT positioning and TB preparation is preserved, along with Free/Swift/Quicken options.
+No score weights, game formulas, target cuts or search-limit changes are involved.
+
+`[Perf]` details now cover decisions over 100 ms and include ambient parameter bypasses, condition-context reuse and
+guard hits. Per-ability timing no longer allocates a Stopwatch. 143 unit tests, clean mod/tool builds and the 4,098-load /
+1,220-row audit pass. Native fixtures cover scoped context/key isolation, native main-target parity, shared-value
+restoration, movement-only skips and retained deferred requests. Live speedup and complete actor/mod parity remain
+unverified; cold profiles, threat assessment and synchronous native calls can still stall. See the
+[evidence, package identity and replay checklist](DECISION_CONTEXT_PLAYTEST.md).

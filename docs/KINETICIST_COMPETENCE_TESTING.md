@@ -1,5 +1,8 @@
 # Kineticist competence: review and gameplay handover
 
+**Latest replay:** the mid-end CPU logs still show long Orvath decisions after the first optimisation.
+Use [condition-context fixes, package identity and replay steps](DECISION_CONTEXT_PLAYTEST.md) for the current build.
+
 **Current follow-up:** PR #2 was integrated into development. The author's 0.3.22-test1 TB/RT logs show decision
 stalls. Use the [stutter-fix evidence, replacement package identity and focused replay](KINETICIST_PLAYTEST_STUTTER.md)
 for that follow-up. The original PR #2 build identity and feature checklist below remain historical/reference material.
