@@ -58,6 +58,8 @@ namespace CompanionAI_Pathfinder.Tactics
 
         private static void AddKineticPlanCandidates(TacticalContext ctx, List<Candidate> list, bool preview)
         {
+            // ★ v0.3.22: no ability or toggle command starts while nauseated; keep movement decisions cheap.
+            if (ctx.Permissions?.MovementOnly == true) return;
             var part = ctx.Unit.Get<UnitPartKineticist>();
             if (part == null) return;
             // ★ v0.3.22 (review): preparation is for a blast the unit cannot cast now - with the Standard action spent,
@@ -86,9 +88,17 @@ namespace CompanionAI_Pathfinder.Tactics
                 (!t.Blueprint.ActivateWithUnitCommand || Kingmaker.UnitLogic.Commands.UnitActivateAbility.GetCommandType(t) ==
                     Kingmaker.UnitLogic.Commands.Base.UnitCommand.CommandType.Free) &&
                 !CombatMemory.PlayerOwnsToggle(ctx.Unit, t) && !CombatMemory.ToggleSwitchedThisRound(ctx.Unit, t) &&
-                (!CombatMemory.IsRealTime || NativeActionCost.CanQuery || t.Blueprint.Buff.GetComponent<SetKineticistGatherPowerMode>() == null) &&
+                (!CombatMemory.IsRealTime || t.Blueprint.Buff.GetComponent<SetKineticistGatherPowerMode>() == null || NativeActionCost.CanQuery) &&
                 (t.IsOn || t.IsAvailable) && t.IsOn == t.IsStarted).ToList();
             if (variable.Count == 0) return;
+            // ★ v0.3.22: preparation above must still see next-round blasts. Immediate modifier comparisons,
+            // however, need an action now: current free/swift blasts or a learned Quicken projection can qualify.
+            if (!ctx.HasStandard && !ctx.HasFullRound && !ctx.CanFullAttack &&
+                !(!CombatMemory.IsRealTime && ctx.HasMove && part.GatherPowerAbility?.Data?.IsAvailable == true && NativeActionCost.CanQuery) &&
+                !AbilityDiscovery.Gather(ctx.Unit).Any(a => IsOwnBlast(part, a) &&
+                    ActionRules.HasSlot(SlotOf(a), ctx.HasStandard, ctx.HasMove, ctx.HasSwift, ctx.HasFullRound)) &&
+                !(ctx.HasSwift && variable.Any(t => t.Blueprint.Buff.GetComponents<AutoMetamagic>()
+                    .Any(m => (m.Metamagic & Metamagic.Quicken) != 0)))) return;
 
             // Include every member of affected groups, including non-kinetic/player-owned members, as fixed choices.
             var groups = new HashSet<ActivatableAbilityGroup>(variable.Select(t => t.Blueprint.Group).Where(g => g != ActivatableAbilityGroup.None));
@@ -110,6 +120,7 @@ namespace CompanionAI_Pathfinder.Tactics
             {
                 var configurations = KineticConfigurations.OneGroupNeighbors(options, 128, out bool complete, budget.Continue);
                 if (!complete) { ctx.KineticBudgetExceeded = true; return; }
+                if (!configurations.Any(set => set.Where((on, i) => on != options[i].Current).Any())) return;
                 // Current scorer supplies the shortlist, including its actual target and wall orientation.
                 var seeds = list.Where(c => c.Kind == CandidateKind.Ability && !c.KineticPreparation && IsOwnBlast(part, c.Ability))
                     .OrderByDescending(c => c.Value).Take(3).ToList();

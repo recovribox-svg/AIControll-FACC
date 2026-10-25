@@ -217,7 +217,8 @@ namespace CompanionAI_Pathfinder.Tactics
             // ★ v0.3.17: two decisions of the 0.3.17-test2 log took 0.8-0.9 s (median 3 ms); say which, when it happens.
             // ★ v0.3.20 (test5): and whether the game's memory clean-up (garbage collection) ran meanwhile or the enemies
             // were assessed: four 1 s decisions of the 0.3.20-test4 logs had little to weigh and built nothing new.
-            if (ms > 250d)
+            // ★ v0.3.22: 150-240 ms decisions were visible stalls but fell below the old diagnostic threshold.
+            if (ms > 100d)
                 Main.Log($"[Perf] slow decision: {ms:F0} ms - {unit.CharacterName} R{CombatMemory.Round}: {chosen?.Label ?? "nothing"} " +
                          $"(new ability profiles built this decision: {AbilityProfile.TakeBuiltCount()}" +
                          $"{(GC.CollectionCount(0) != collections ? "; memory clean-up ran" : "")}" +
@@ -1941,7 +1942,7 @@ namespace CompanionAI_Pathfinder.Tactics
             if (ctx.Permissions?.MovementOnly == true) return; // ★ v0.3.22: no ability command can start
             foreach (var ability in AbilityDiscovery.Gather(ctx.Unit))   // ★ v0.3.14: shared with real time
             {
-                var watch = System.Diagnostics.Stopwatch.StartNew();
+                long started = System.Diagnostics.Stopwatch.GetTimestamp(); // ★ v0.3.22: no timer allocation per ability
                 try
                 {
                     // ★ v0.3.22: cooldown/end-of-turn decisions used to fully score every unaffordable spell.
@@ -1963,7 +1964,8 @@ namespace CompanionAI_Pathfinder.Tactics
                     ReportOnce($"eval|{ability?.Blueprint?.AssetGuid}", $"[Tactics] {ability?.Name} ({ability?.Blueprint?.AssetGuid}): " +
                                $"not evaluated - {ex.GetType().Name}: {ex.Message}");
                 }
-                finally { DecisionReadScope.Current?.AbilityTime(ability, watch.Elapsed.TotalMilliseconds); }
+                finally { DecisionReadScope.Current?.AbilityTime(ability,
+                    (System.Diagnostics.Stopwatch.GetTimestamp() - started) * 1000d / System.Diagnostics.Stopwatch.Frequency); }
             }
         }
 

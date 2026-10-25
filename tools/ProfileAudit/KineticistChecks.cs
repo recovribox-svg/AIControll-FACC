@@ -105,6 +105,7 @@ namespace ProfileAudit
                 Require(before == component.CalculateBurnCost((UnitDescriptor)null, blast).Total, "failed setup changed native cost");
                 Require((bool)install.Invoke(null, new object[] { harmony, null }), "manual optional hook installation failed");
                 DecisionReadChecks.Run(blueprints);
+                ConditionContextChecks.Check(blueprints);
                 // Inactive hot patches must return without looking at even a poisoned thread-local preview.
                 var active = type.GetField("PreviewActive", BindingFlags.Static | BindingFlags.NonPublic);
                 var current = type.GetField("Current", BindingFlags.Static | BindingFlags.NonPublic);
