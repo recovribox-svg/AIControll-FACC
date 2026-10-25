@@ -2,12 +2,14 @@
 
 ## Download the development test build
 
-**[Download the UMM test ZIP — 3230ba4](https://github.com/recovribox-svg/AIControll-FACC/raw/refs/heads/codex/orvath-summon-pacing/test-builds/AI-Control-FACC-3230ba4-UMM-test.zip)**
+**[Download the UMM test ZIP — f231e66](https://github.com/recovribox-svg/AIControll-FACC/raw/refs/heads/codex/orvath-summon-pacing/test-builds/AI-Control-FACC-f231e66-UMM-test.zip)**
 
 Close the game, drag the downloaded ZIP into Unity Mod Manager's **Mods** tab, install/update it, then launch the game.
 This experimental build includes the merged PR #4 fixes. UMM displays **0.3.21** because release metadata is unchanged;
-identify this test by **3230ba4** and its filename. This task-branch build fixes repeated Orvath calculations and
-adds summon/pacing diagnostics. In-game validation and development integration are still pending.
+identify this test by **f231e66** and its filename. This task-branch build includes the Orvath cache fixes, Sleep
+target-budget and descriptor corrections, and combat build-identification logs. Verify its `[Build]` line after
+installing; UMM may otherwise keep an earlier DLL with the same manifest version. In-game validation and development
+integration are still pending.
 
 [Download instructions, checksum and build details](test-builds/README.md).
 

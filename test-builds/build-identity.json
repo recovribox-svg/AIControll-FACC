@@ -1,13 +1,23 @@
 {
-  "source_commit": "3230ba47a3055703a82a8cce7dfccc245056d099",
+  "source_commit": "f231e66286c7c5b45f0f64e661978702b27dddac",
+  "runtime_changes_commit": "7110d488d251408368d70346571b181da4b7e86e",
   "source_branch": "codex/orvath-summon-pacing",
-  "package": "AI-Control-FACC-3230ba4-UMM-test.zip",
-  "package_sha256": "5e10e7752d3673c6292d17873609925704a38bdf4bfe76269d2ed4f169ffce14",
-  "dll_sha256": "cbdd80471d1a1dd46857fd5dea26446fa14815e9fa52a5432d972e923bf62c13",
+  "package": "AI-Control-FACC-f231e66-UMM-test.zip",
+  "package_sha256": "913ca69d32d9d99190e96d41b19a1c8a5ba88683d37d2e789112baa36cbf94a5",
+  "dll_sha256": "de97f4bbb24cb241b278c6c52deb66408e92bf45387007a558f0ddf0f43b26a5",
   "umm_id": "CompanionAI_Pathfinder",
   "manifest_version": "0.3.21",
   "experimental": true,
   "build": "Release; real game references; zero warnings/errors",
+  "unit_tests_passed": 143,
+  "release_predicate_cases_passed": 2720,
+  "blueprint_audit": {
+    "status": "PARTIAL",
+    "loaded": 4097,
+    "failed": 1,
+    "ability_rows": 1220,
+    "reader_errors": 0
+  },
   "contents": [
     "Info.json",
     "CompanionAI_Pathfinder.dll"
