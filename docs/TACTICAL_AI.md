@@ -2541,3 +2541,28 @@ all those defenses. The optional mythic free-attack extension is not implemented
   regardless of the allowance; malformed/empty wrappers count as failures. A partial report is not complete coverage.
 - In-game behavior, frame timing, restoration, performance on large high-level configuration sets, and compatibility
   with the author's installed mods remain unverified. Keep the PR draft until review and the handover tests pass.
+
+## 67. v0.3.22-test1 playtest: shared decision stalls
+
+The author's TB/RT logs confirm Orvath's stalls (kinetic-summary medians 319.5 / 534.8 ms), while every summary
+reports zero modifier-search work, native action queries and geometry builds. Camellia also stalls, reaching
+1322.1 ms in RT. Old counters do not attribute shared-stage time; these are not evidence that the bounded modifier
+search is exhausting its budget. The author tested on an Intel Core i5-8365U laptop.
+
+The follow-up on `codex/kineticist-playtest-stutter` removes spent-slot ability scoring before expensive availability,
+target and effect queries. The same slot predicate is used at final affordability; free/swift and Standard-as-Move
+options remain. Hypothetical kinetic recovery continues under its projected action type. Native parameters,
+ability discovery and kinetic fact-component reads are reused only within a synchronous decision/state. Results
+are cloned, modifier changes invalidate them, nested stand-up previews are isolated, and mutable ambient mechanics
+contexts bypass parameter caching. Execution contexts stay fresh; native game math and the unified value scale remain.
+
+`[Perf]` slow-decision lines now include stage times, top ability evaluation, native/reused parameter counts,
+execution-context builds, fact scans, discovery builds and slot skips for every class in both modes. Burning
+Infusion's runtime multi-class calculator is accepted through `ContextAbilityParamsCalculator` native virtual
+execution, rather than a single-class-only whitelist; unrelated unsupported components remain fixed.
+
+143 unit tests pass; mod/audit builds have zero warnings/errors. The 4,098-blueprint audit still yields 1,220 rows
+and zero reader errors. Integration checks cover repeated-query reuse, cloning, ability/aim/orientation isolation,
+mutable-context bypass, nested decisions, modifier invalidation, early slot pruning and native calculator dispatch.
+Post-fix frame times and installed-mod parity are unverified. No whole-decision deadline or live speedup is claimed.
+See [the evidence and replay checklist](KINETICIST_PLAYTEST_STUTTER.md) for exact package identity and limitations.

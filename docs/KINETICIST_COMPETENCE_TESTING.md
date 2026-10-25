@@ -1,5 +1,9 @@
 # Kineticist competence: review and gameplay handover
 
+**Current follow-up:** PR #2 was integrated into development. The author's 0.3.22-test1 TB/RT logs show decision
+stalls. Use the [stutter-fix evidence, replacement package identity and focused replay](KINETICIST_PLAYTEST_STUTTER.md)
+for that follow-up. The original PR #2 build identity and feature checklist below remain historical/reference material.
+
 Branch: `codex/kineticist-competence`. PR target: `claude/dreamy-pasteur-b9h3rn`.
 Source revision for the replacement test DLL: `175fad3c8b18ad673d27211913893eca6fe763c2`. This supersedes the initial 17cf71c test build.
 The test package keeps the existing Info.json version; identify it by commit and SHA-256, not by version alone.
