@@ -2361,3 +2361,158 @@ A local audit attempt exposed a missing UnityEngine.SharedInternalsModule.dll de
 to deserialize. ProfileAudit now exits unsuccessfully and marks its report INCOMPLETE in this case instead of reporting
 zero abilities as success. This is verification-tool behavior only; infusion selection and gather management remain
 unimplemented pending the reader/runtime work and its verification.
+
+## 66. Kineticist competence: modifier plans, Gather Power, and exposed delivery gaps
+
+Implementation on `codex/kineticist-competence`, based on `cbc710a49f5fd1a303313d7c66f9405321e48a45`.
+This supersedes §65's implementation-status notes; its source-linked Phase 0 findings remain historical evidence.
+No version bump, integration merge or release. Both combat modes use these candidates in `TacticalEngine.Decide`.
+Gameplay validation is still required; the [test handover](KINETICIST_COMPETENCE_TESTING.md) is the acceptance checklist.
+
+### Per-blast effects and native configurations
+
+`AbilityProfile.ForKineticInfusion` sends `AddKineticistInfusionDamageTrigger.Actions` through the existing action
+walker. An infusion has its own fact context, saves, conditions and ranks. Carrier buffs that run a save and apply
+the actual condition in `AddFactContextActions.Activated` are followed by that same walker. The cached delivery
+blast is unchanged: an infusion's save does not halve the impact damage or add a second attack roll/SR check.
+
+`TacticalEngine.KineticEffects` checks the native trigger's delivery filters and appraises the delivered profile
+through `ScoreAbility`: existing maneuver odds/immunities, buff parts, control, durations, damage and friendly-fire
+rules. `KineticEffectContext` supplies the originating context and delivery probability. Damage packets are not
+counted as separate applications. Multiple simultaneous infusions keep the strongest control package, rather than
+each claiming the same prevented actions; their distinct damage/costs still add. This is conservative when control
+packages affect disjoint recipients. Negative effects, including dispelling a harmful buff from an enemy, remain costs.
+
+`TacticalEngine.KineticPlans` enumerates learned configurations using native toggle group capacities and weights.
+There is no infusion preference order or score bonus. Each complete blast/weapon option competes on the existing
+ValueModel scale, after the native burn restriction and the existing burn valuation. The old blocking-infusion
+estimate that subtracted a component's declared burn Value is removed. Existing quiver/Overflow pricing is retained.
+
+`KineticPreview` is a scoped projection, not an activation/restoration preview:
+
+- It creates detached facts/component runtimes; no fact is added, activated, registered or subscribed to the unit.
+- It runs cloned native `AddKineticistBurnModifier` callbacks after `AbilityKineticist.CalculateBurnCost` constructs
+  its cost and before its normal cost-handler event. Cloning matters: `UseContextValue` mutates the component's Value.
+  Controlled live callbacks are suppressed in this scope; other cost handlers still run.
+- Native `AutoMetamagic.ShouldApplyTo` / `AbilityData.HasMetamagic`, current/target gather mode, and controlled
+  `UnitHelper.HasFact` / buff existence queries see the proposed configuration. This includes native ricochet conditions.
+- Pure Flame's `IgnoreSpellResistanceForSpells` callback is queried on a native resistance event; Armor-Piercing's
+  `IgnoreDamageReductionOnTarget` is queried on a fake parent damage event followed by damage calculation, without
+  triggering actual damage. Observed reduction from a different Armor-Piercing configuration cannot price that preview.
+- Current-state cost/availability/action-type parity is checked before comparing alternatives. Unrecognized native
+  method layouts, unsupported component lifecycles, targeted/resource-spending switches, and non-free activation
+  commands stay fixed. A search exceeding 4,096 legal configurations returns no partial prefix as an alleged best set.
+- Condition/attack caches are cleared between scopes. These projections cannot promise equivalence for arbitrary
+  mods that inspect other live fact collections or retain their own cached state; live testing with those mods matters.
+
+With AI toggle management off, only the player's live effects are valued. Player-owned toggles, toggles already
+switched this round, and fixed members consuming group capacity remain fixed; a fixed Gather Power member retains
+its actual mode. Execution switches off first, through `CommandDispatcher.Run`, and records every change in
+`CombatMemory`. Most supplied infusion toggles use a native free `UnitActivateAbility`; the dispatcher returns that
+queued command, and the engine waits and re-decides before casting. It does not queue the command twice or cast
+before activation finishes. Actual burn, availability, action type, gather count, and selected/fixed members are
+checked again before the blast. `SwitchOffAiToggles` restores the prior setup through the same boundary and preserves
+player edits, including a different member of the same group. Disabling AI toggle ownership also disables restoration,
+matching the existing handoff convention.
+
+### Contributions read from the supplied blueprints
+
+| Options | Contribution |
+| --- | --- |
+| Bowling, Pushing | Existing native CMB/CMD query and maneuver/control appraisal; trip eligibility uses the game's knockdown check |
+| Entangling, Chilling, Dazzling, Flash, Synaptic, Grappling, Gut-Wrenching | Guarded application/save, actual conditions, recipient immunity, penalties/control and duration |
+| Burning, Bleeding | Buff round actions through the damage reader, independently of impact damage; Burning's later save can end subsequent ticks; an already active copy adds no new stream |
+| Magnetic | Weapon-subcategory and spell-descriptor penalties, filtered against actual party delivery options |
+| Foxfire | Concealment denial through the existing sight appraisal; zero when nothing useful is hidden; both the failed-save duration and the short successful-save duration count |
+| Cluster Arrows | Repeated applications and native buff rank cap; an existing non-maximal ranked penalty can gain more ranks |
+| Chain Arrows | Native `AbilityDeliverRicochet` condition, custom target count and next-target selector; normal damage/infusion and ally rules apply to additional targets |
+| Pure Flame, Armor-Piercing | Native SR / damage-reduction bypass callbacks, not guessed extra damage |
+| Rare Metal | Its supplied trigger has no actions; no additional benefit is invented; native burn is still charged |
+| Unraveling | Eligible buffs, attempt order, bonuses and check preparation from native dispel code; readable removed benefits and the cost of removing harmful buffs; limited successes follow native order |
+| Vampiric | The supplied effect discounts a later healing talent, not blast damage. Native before/after costs value that one-use saving only if a learned healing follow-up is currently useful and there is time for it |
+| Empower, Maximize, Quicken, including cheaper variants | Existing native metamagic damage/action handling, with each configuration's actual burn |
+
+Unraveling does not execute a dispel to preview one. `NativeDispelPreview` stops `TryDispelBuff` before `TriggerRule`,
+and stops `RuleDispelMagic.OnTrigger` after native DC/CL preparation but before dice or removal. Its native
+`IsSuccessRoll` evaluates possible rolls. Native buff comparison supplies attempt order; `ValueModel.LimitedSuccessValue`
+accounts for the success cap, including unvalued/harmful earlier buffs. Unknown layouts, foreign patches or rulebook
+handlers disable this contribution; only the supplied independent caster-level checks are supported. Correlated
+`OneRollForAll` checks are left unvalued. No dispel threshold formula is copied.
+
+### Gather Power
+
+The native `UnitPartKineticist.GatherPowerAbility` identifies standalone Gather Power; it can no longer earn cleanse
+or unknown-buff value. Gather modes join the modifier search and every complete option obtains native cost and
+`KineticistController.WillGatherPower` count. Burn saved is expressed by the difference between complete candidates'
+native burn valuations, never a mode-to-burn table.
+
+`TurnController.CalculateKineticistPrediction` consumes available Move, then Standard, for successive gathers.
+`KineticConfigurations.GatherFits` applies that budget, including already-spent movement, surprise/staggered limits,
+and a quickened blast that can still use Swift after gathering. Native blade activation can gather before a weapon
+command too; a full attack cannot spend its Move gathering and keep that full attack.
+
+`NativeActionCost` calls native `UnitEntityData.SpendAction` on detached unit/combat-state copies with a fresh
+cooldown container. The verified method only reads combat mode/state and writes those cooldowns; any Harmony patch
+on it disables this query. No action is spent on the actual unit and no new action-duration table is introduced.
+
+`PriceGatherPlans` charges the best available movement opportunity and, where used, the Standard action. Real-time
+plans additionally lose throughput for native gather time not covered by the existing Standard cooldown.
+`ValueModel.PreparedBlastValue` combines net blast value, delay, opportunity, and risk on the same scale.
+Turn-based preparation that cannot finish a blast this turn is offered only for a useful improvement over the best
+immediate main action within the expected remaining fight (`PreparationGain`); it is re-evaluated next decision.
+There is no pre-combat gather routine.
+
+The supplied Gather Power is **Special/Move**. The ordinary `UnitUseAbility.OnTick` defensive-casting/provoke path is
+for provoking Standard casts, so tabletop provocation must not be imported as a fact about this implementation.
+Gather risk uses runtime provoke flags/explicit provoke actions and existing attack/drop-risk pricing. Confirm
+actual interruptions and provocation with the installed game/mod set. If native timing cannot be safely queried,
+new real-time gather-mode changes are not projected; the live mode remains the baseline.
+
+### Lasting areas, blade attacks and defensive talents
+
+Cloud/Deadly Earth round damage uses their actual spawn duration, the existing three-round area/control horizon,
+and a conservative escape forecast using the native shape and the target's current movement. Immobile/disabled
+recipients can remain longer; mobile recipients are assumed to take the shortest sampled exit. Allies use the same
+containment, damage and friendly-fire checks. An already ticking copy on an enemy is not credited as a new stream.
+This does not predict new entrants, future healing that ends bleed, or every enemy's movement choices.
+
+`KineticAreaPreview` creates inactive, temporary native shapes via `AreaEffectView.InitShape`, without an area entity,
+registration, updates or particles, and destroys them after scoring. Wall is a native box, not a circle: the native
+constructor supplies dimensions. Candidates try orientations through the aim and other enemies, and keep the angle
+in the dispatched `TargetWrapper`. Wall's supplied action damages on entry only; its empty Round list does **not**
+earn damage every round. Later crossings are not predicted. Pending-area avoidance remains conservatively circular.
+
+The blade's base blast was already attached to every game-enumerated attack, including Haste/additional attacks.
+Estimates now retain each blade hit's probability: repeated damage sums expected hits; persistent effects and
+maneuvers count the chance at least one attempt succeeds. The native infusion trigger suppresses repeats on a victim
+at the same game time, so animation/frame coincidence still needs gameplay confirmation. No damage-packet count is
+used as an attack-count formula.
+
+Defensive wild talents retain readable buff parts. Unread Flame Shield/Jagged Flesh/Searing Flesh retaliation,
+Shroud of Water custom behavior, Evasion and empty defensive markers receive zero rather than a guessed renewable
+buff value. Readable miss-chance parts can still contribute. This deliberately does not claim complete appraisal of
+all those defenses. The optional mythic free-attack extension is not implemented.
+
+### Verification and limits
+
+- **Unit suite:** 120 passed, 0 failed/skipped (`dotnet test tests/CompanionAI.Tests`). New pure tests cover legal group
+  configurations/player locks, no biased truncated search, gather action budgets, opportunity/delay/risk, preparation
+  horizon, repeated blade effects, ongoing saves, successful-save duration, future savings and ordered limited dispels.
+- **Full mod and ProfileAudit builds:** zero warnings/errors against the supplied game references.
+- **Same-data before/after:** all 4,098 blueprints deserialize; each run reads 1,220 ability/toggle rows with zero
+  reader errors, including 286 Kineticist rows. Forty Kineticist rows and two additional shared-reader rows changed; 29 modifier
+  descriptors are now identified as configuration candidates, Gather Power as blast preparation, Foxfire as read
+  penalties, and unread defensive talents as zero. This is a subset of the author's broader 4,801-row audit.
+- **`--kinetic-checks`:** 17 infusion triggers, two direct maneuvers, four direct and five carrier saves, two ongoing
+  effects, 28 lasting forms, successful-save applications, 29 modifier descriptors, and unchanged cached base profiles.
+  Native preview hooks install; cost is unchanged outside a scope; detached dispel preparation stops before dice.
+  This is not a live actor/configuration parity test or a gameplay execution test.
+- The Linux audit uses rewritten Unity-bound copies, a reference-only Unity.Mathematics shim, and a scratch Harmony
+  helper ELF metadata fix. These establish reader/selected managed-code checks only; none ship in the mod/package.
+- `Assembly-CSharp-firstpass.dll` and the separately supplied SharedInternals DLL unblock the reader. The latter may
+  differ in version from Claude's installation; no byte-identical installation match is asserted.
+- Missing buffs `1ffba707590b49db8b1c5cf43660fbfc` and `d579a8faad5c469abfd700428364b9ee` remain unavailable. Supplied
+  wiring places them only in the Water + Blood Blast gather visual branch; the ordinary water counterpart is empty.
+  Claude's visual-only explanation is plausible, not independently verified. No behavior is hard-coded from it.
+- In-game behavior, frame timing, restoration, performance on large high-level configuration sets, and compatibility
+  with the author's installed mods remain unverified. Keep the PR draft until review and the handover tests pass.

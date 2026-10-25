@@ -41,3 +41,10 @@ it exits with status 1 and replaces the report with an `INCOMPLETE` diagnostic. 
 otherwise look like a successful run with zero abilities. An incomplete run is not coverage evidence; fix the loader
 error and rerun it. Unresolved blueprint GUIDs in a successfully deserialized dump are a separate data-completeness
 limitation and still need investigation for the feature being audited.
+
+
+For kineticist data, add `--kinetic-checks` among ProfileAudit's dump arguments. This checks infusion/carrier saves,
+ongoing effects, area cadence, modifier descriptors and native preview-hook installation. It also confirms that
+native cost is unchanged outside a scope and detached dispel preparation stops before dice. It requires the new
+mod DLL and Harmony's native helper to work on the host. These are offline integration checks, not in-game actor,
+command, restoration, performance or third-party-mod tests. Never deploy the harness or its rewritten dependencies.

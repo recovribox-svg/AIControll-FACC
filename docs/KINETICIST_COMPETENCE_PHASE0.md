@@ -1,7 +1,8 @@
 # Kineticist competence: Phase 0 baseline and implementation design
 
-Status: Phase 0 audit and subsequent data intake. No runtime behavior changed; phases 1-3 are not implemented.
-The historical environment findings below are supplemented by the data-intake follow-up at the end.
+Status: historical Phase 0 baseline and data intake. Subsequent implementation and current verification are in
+[TACTICAL_AI §66](TACTICAL_AI.md#66-kineticist-competence-modifier-plans-gather-power-and-exposed-delivery-gaps) and the
+[test handover](KINETICIST_COMPETENCE_TESTING.md). The environment/status statements below describe their original stage.
 Baseline: `cbc710a49f5fd1a303313d7c66f9405321e48a45` on `claude/dreamy-pasteur-b9h3rn`.
 Task branch: `codex/kineticist-competence`. Target: development, not main.
 
