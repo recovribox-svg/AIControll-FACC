@@ -8,6 +8,10 @@ Read [CONTRIBUTING.md](CONTRIBUTING.md) for shared branch ownership, Codex pull 
 Codex works on task branches and targets pull requests at `claude/dreamy-pasteur-b9h3rn`; Claude reviews and integrates them there.
 Keep `main` for author-authorized releases. Read [AGENTS.md](AGENTS.md) when coordinating agent work.
 
+Current handover (25 October 2026): the author delegated completion of PR #4's interrupted verification and development
+integration to Codex while Claude was unavailable. Read [docs/INTEGRATION_HANDOVER.md](docs/INTEGRATION_HANDOVER.md)
+and the PR timeline before resuming. Gameplay verification and any release remain separate steps.
+
 ## Project Overview
 - **Mod name**: AI Control - Fully Autonomous Combat Companions (author MonsieurAndroid); UMM `Id` stays `CompanionAI_Pathfinder` (settings path, installs)
 - **Game**: Pathfinder: Wrath of the Righteous

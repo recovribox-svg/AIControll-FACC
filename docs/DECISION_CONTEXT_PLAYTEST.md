@@ -1,5 +1,8 @@
 # 0.3.22 follow-up: condition work during scored casts
 
+Integration follow-up: Codex completed the interrupted shared-runner verification under the author's delegation.
+See [INTEGRATION_HANDOVER.md](INTEGRATION_HANDOVER.md) for the tool fix, fresh partial-audit result and remaining tests.
+
 Branch `codex/decision-context-cost`, based on development `3e5e37dd1e3bb1e8fa54180853877a8572721e3e`.
 Code revision: `8043a34028254ec7116fa389493aa356b9937b0b`. This includes and preserves Claude's deferred-scoring
 correction after PR #3: cooldown positioning and next-round Gather Power still receive otherwise-unaffordable options.
