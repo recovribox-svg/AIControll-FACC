@@ -32,7 +32,6 @@ namespace CompanionAI_Pathfinder.Tactics
     /// <remarks>★ v0.3.18 (AA-2): Toggle - switch on an activatable ability whose activation is a game command
     /// (bardic performances, Rage family, shaman spirits): TacticalEngine.Toggles.cs.</remarks>
     public enum CandidateKind { WeaponAttack, Ability, Move, Toggle }
-    public enum ActionSlot { Free, Swift, Move, Standard, FullRound }
 
     public sealed class Candidate
     {
@@ -203,6 +202,7 @@ namespace CompanionAI_Pathfinder.Tactics
 
         public static Candidate Decide(UnitEntityData unit, TurnMemory memory)
         {
+            using var reads = new DecisionReadScope(); // ★ v0.3.22: shared, decision-local reads for every class
             // ★ v0.3.17: how long a decision takes ([Perf] at the end of the fight) - nothing was measured before.
             AbilityProfile.TakeBuiltCount();
             CombatMath.ClearAttackCache();   // ★ v0.3.18: attack routines are read fresh for each decision
@@ -218,7 +218,7 @@ namespace CompanionAI_Pathfinder.Tactics
                 Main.Log($"[Perf] slow decision: {ms:F0} ms - {unit.CharacterName} R{CombatMemory.Round}: {chosen?.Label ?? "nothing"} " +
                          $"(new ability profiles built this decision: {AbilityProfile.TakeBuiltCount()}" +
                          $"{(GC.CollectionCount(0) != collections ? "; memory clean-up ran" : "")}" +
-                         $"{(EnemyThreat.Assessments != assessments ? "; enemies assessed" : "")})");
+                         $"{(EnemyThreat.Assessments != assessments ? "; enemies assessed" : "")}); {reads.Summary()}");
             return chosen;
         }
 
@@ -228,6 +228,8 @@ namespace CompanionAI_Pathfinder.Tactics
         /// </summary>
         private static Candidate Decide(UnitEntityData unit, TurnMemory memory, bool preview, out TacticalContext built)
         {
+            // ★ v0.3.22: hypothetical stand-up decisions never reuse the caller's state-dependent reads.
+            using var previewReads = preview ? new DecisionReadScope() : null;
             using var kineticDecision = unit?.Get<Kingmaker.UnitLogic.Class.Kineticist.UnitPartKineticist>() != null
                 ? new KineticDecisionScope() : null;
             // ★ v0.3.18 (AA-3): Mobility the AI switched on goes off once no enemy threatens the unit (full speed again),
@@ -283,23 +285,31 @@ namespace CompanionAI_Pathfinder.Tactics
             }
 
             var candidates = new List<Candidate>();
+            DecisionReadScope.Current?.Mark("context");
             try { AddWeaponCandidates(ctx, candidates); } catch (Exception ex) { Main.Error($"[Tactics] weapon candidates: {ex}"); }
+            DecisionReadScope.Current?.Mark("weapons");
             // ★ v0.3.18 (AA-3): each weapon option with its best attack modes.
             try { foreach (var c in candidates.Where(c => c.Kind == CandidateKind.WeaponAttack).ToList()) ChooseAttackModes(ctx, c); }
             catch (Exception ex) { Main.Error($"[Tactics] attack modes: {ex}"); }
+            DecisionReadScope.Current?.Mark("modes");
             try { AddAbilityCandidates(ctx, candidates); } catch (Exception ex) { Main.Error($"[Tactics] ability candidates: {ex}"); }
+            DecisionReadScope.Current?.Mark("abilities");
             // ★ v0.3.19 (test6): kineticists - burn priced, and what to do when burn blocks every blast.
             try { PriceBurn(ctx, candidates); AddKineticPlanCandidates(ctx, candidates, preview); AddKineticCandidates(ctx, candidates, preview); }
             catch (Exception ex) { Main.Error($"[Tactics] kineticist candidates: {ex}"); }
+            DecisionReadScope.Current?.Mark("kinetic");
             try { AddMovementCandidates(ctx, candidates); } catch (Exception ex) { Main.Error($"[Tactics] movement candidates: {ex}"); }
             try { PriceGatherPlans(ctx, candidates); } catch (Exception ex) { Main.Error($"[Tactics] gather plans: {ex}"); }
+            DecisionReadScope.Current?.Mark("movement/gather");
             // ★ v0.3.20 (test8): an option whose real walk provoked more than its straight line, at the real walk's price.
             try { RepriceRealPaths(ctx, candidates, memory); } catch (Exception ex) { Main.Error($"[Tactics] real path prices: {ex}"); }
+            DecisionReadScope.Current?.Mark("paths");
             // ★ v0.3.18 (AA-2): after the others, so a toggle that forbids spells is priced against the best spell.
             try { AddToggleCandidates(ctx, candidates, preview); } catch (Exception ex) { Main.Error($"[Tactics] toggle candidates: {ex}"); }
             // ★ v0.3.18 (AA-3): Mobility before a move that would provoke.
             try { AddMobilityCandidate(ctx, candidates, memory); } catch (Exception ex) { Main.Error($"[Tactics] mobility: {ex}"); }
             try { PriceHeldCharge(ctx, candidates); } catch (Exception ex) { Main.Error($"[Tactics] held charge: {ex.Message}"); }
+            DecisionReadScope.Current?.Mark("toggles");
 
             var usable = candidates
                 .Where(c => c.Value > 0f && Affordable(ctx, c) && !memory.Failed.Contains(c.Key) && !SilentlyFailing(ctx, c))
@@ -368,6 +378,7 @@ namespace CompanionAI_Pathfinder.Tactics
             if (preview) return chosen;
             // ★ v0.3.20 (test8): a move priced on the straight line has the game's real walk counted before it is made.
             if (chosen?.RiskAt != null) chosen.CountPathAttackers = RealPathCounter(ctx, chosen);
+            DecisionReadScope.Current?.Mark("selection");
             LogDecision(ctx, usable, chosen);
             if (unit.Get<Kingmaker.UnitLogic.Class.Kineticist.UnitPartKineticist>() != null)
             {
@@ -580,17 +591,11 @@ namespace CompanionAI_Pathfinder.Tactics
                 // The native blast's slot may differ from the complete plan's slot (e.g. two gathers + Quicken).
                 if (c.KineticCastSlot.HasValue && !CombatMemory.IsRealTime) return true;
             }
-            switch (c.Slot)
-            {
-                case ActionSlot.Free: return true;
-                case ActionSlot.Swift: return ctx.HasSwift;
-                case ActionSlot.Move: return ctx.HasMove || ctx.HasStandard; // a standard action can be spent as a move
-                // ★ v0.3.15 (test3): after a 5-foot step the game allows no other movement (the dispatcher refuses it):
-                // Orvath stepped out of melee and then had Move+Attack and Fire Blast (needing 1.5 m) refused.
-                case ActionSlot.Standard: return ctx.HasStandard && (!c.NeedsMove || (ctx.HasMove && !ctx.SurpriseRound && !ctx.NoMovementLeft && !ctx.StepTaken));
-                case ActionSlot.FullRound: return c.Kind == CandidateKind.WeaponAttack ? ctx.CanFullAttack : ctx.HasFullRound;
-                default: return false;
-            }
+            if (!ActionRules.HasSlot(c.Slot, ctx.HasStandard, ctx.HasMove, ctx.HasSwift,
+                c.Kind == CandidateKind.WeaponAttack ? ctx.CanFullAttack : ctx.HasFullRound)) return false;
+            // ★ v0.3.15 (test3): a standard-action cast/attack needing a walk must have a legal move left too.
+            return c.Slot != ActionSlot.Standard || !c.NeedsMove ||
+                   ctx.HasMove && !ctx.SurpriseRound && !ctx.NoMovementLeft && !ctx.StepTaken;
         }
 
         private static void LogDecision(TacticalContext ctx, List<Candidate> usable, Candidate chosen)
@@ -1309,7 +1314,7 @@ namespace CompanionAI_Pathfinder.Tactics
             int? gap = null;
             try
             {
-                var p = ability.CalculateParams();
+                var p = CombatMath.AbilityParameters(ability);
                 int dc = 15 + 2 * Math.Max(0, p.SpellLevel);
                 fail = Mathf.Clamp01((dc - p.Concentration - 1) / 20f);
                 // ★ v0.3.20 (test5): a hit while the spell is being cast calls for a concentration check against
@@ -1930,10 +1935,16 @@ namespace CompanionAI_Pathfinder.Tactics
 
         private static void AddAbilityCandidates(TacticalContext ctx, List<Candidate> list)
         {
+            if (ctx.Permissions?.MovementOnly == true) return; // ★ v0.3.22: no ability command can start
             foreach (var ability in AbilityDiscovery.Gather(ctx.Unit))   // ★ v0.3.14: shared with real time
             {
+                var watch = System.Diagnostics.Stopwatch.StartNew();
                 try
                 {
+                    // ★ v0.3.22: cooldown/end-of-turn decisions used to fully score every unaffordable spell.
+                    // Modifier recovery still calls EvaluateAbility directly under its projected action type.
+                    if (!ActionRules.HasSlot(SlotOf(ability), ctx.HasStandard, ctx.HasMove, ctx.HasSwift, ctx.HasFullRound))
+                    { if (DecisionReadScope.Current != null) DecisionReadScope.Current.SkippedAbilities++; continue; }
                     if (!ability.IsAvailable) continue;
                     if (AbilityClassifier.IsBlacklistedForCombat(ability, valuedByEffect: true)) continue;
 
@@ -1945,6 +1956,7 @@ namespace CompanionAI_Pathfinder.Tactics
                     ReportOnce($"eval|{ability?.Blueprint?.AssetGuid}", $"[Tactics] {ability?.Name} ({ability?.Blueprint?.AssetGuid}): " +
                                $"not evaluated - {ex.GetType().Name}: {ex.Message}");
                 }
+                finally { DecisionReadScope.Current?.AbilityTime(ability, watch.Elapsed.TotalMilliseconds); }
             }
         }
 

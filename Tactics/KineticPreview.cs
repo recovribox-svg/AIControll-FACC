@@ -90,6 +90,20 @@ namespace CompanionAI_Pathfinder.Tactics
 
         internal static IEnumerable<(T Component, EntityFact Fact)> ActiveComponents<T>(UnitEntityData unit) where T : BlueprintComponent
         {
+            // ★ v0.3.22: SR/damage estimates used to walk every fact for every target/area aim.
+            var reads = DecisionReadScope.Current;
+            if (reads == null) return ReadActiveComponents<T>(unit);
+            var key = (unit, typeof(T));
+            if (!reads.Components.TryGetValue(key, out var cached))
+            {
+                reads.FactScans++;
+                reads.Components[key] = cached = ReadActiveComponents<T>(unit).ToArray();
+            }
+            return ((T Component, EntityFact Fact)[])cached;
+        }
+
+        private static IEnumerable<(T Component, EntityFact Fact)> ReadActiveComponents<T>(UnitEntityData unit) where T : BlueprintComponent
+        {
             var scope = Current;
             foreach (var fact in unit.Facts.List)
             {
@@ -153,6 +167,7 @@ namespace CompanionAI_Pathfinder.Tactics
             previous = Current;
             Current = this;
             PreviewActive = true;
+            DecisionReadScope.Current?.InvalidateState();
             AbilityProfile.ClearConditionCache();
             CombatMath.ClearAttackCache();
         }
@@ -182,6 +197,7 @@ namespace CompanionAI_Pathfinder.Tactics
         {
             Current = previous;
             PreviewActive = previous != null;
+            DecisionReadScope.Current?.InvalidateState();
             AbilityProfile.ClearConditionCache();
             CombatMath.ClearAttackCache();
         }

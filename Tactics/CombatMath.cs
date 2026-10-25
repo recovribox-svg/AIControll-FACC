@@ -521,7 +521,8 @@ namespace CompanionAI_Pathfinder.Tactics
         {
             try
             {
-                var ctx = ability.CreateExecutionContext(target);
+                if (DecisionReadScope.Current != null) DecisionReadScope.Current.ContextBuilds++;
+                var ctx = ability.CreateExecutionContext(target, AbilityParameters(ability));
                 ctx.RecalculateRanks();
                 return ctx;
             }
@@ -531,6 +532,10 @@ namespace CompanionAI_Pathfinder.Tactics
                 return null;
             }
         }
+
+        // ★ v0.3.22: native parameters are reused only within this decision/state/ambient context.
+        internal static AbilityParams AbilityParameters(AbilityData ability) =>
+            DecisionReadScope.Current is DecisionReadScope reads ? reads.Parameters(ability) : ability.CalculateParams();
 
         public static float EvaluateDice(ContextDiceValue value, MechanicsContext ctx, int casterLevel,
                                          bool maximize = false, bool empower = false)
@@ -604,7 +609,7 @@ namespace CompanionAI_Pathfinder.Tactics
             if (profile.Damage.Count == 0) return 0f;
             if (target != null && profile.Damage.All(d => profile.AppliesTo(d, ability, target) == EffectApplies.No)) return 0f;
             var ctx = ContextForEffects(ability, target != null ? new TargetWrapper(target) : null);
-            int cl = Math.Max(1, ctx?.Params?.CasterLevel ?? ability.CalculateParams()?.CasterLevel ?? 1);
+            int cl = Math.Max(1, ctx?.Params?.CasterLevel ?? AbilityParameters(ability)?.CasterLevel ?? 1);
             DamageMetamagic(ability, out bool maximize, out bool empower);
             if (profile.IsKineticEffect) maximize = empower = false;
             var parts = new List<KeyValuePair<GameAction, float>>();
@@ -926,7 +931,7 @@ namespace CompanionAI_Pathfinder.Tactics
             if (profile.Heals.Count == 0) return 0f;
             if (target != null && profile.Heals.All(h => profile.AppliesTo(h, ability, target) == EffectApplies.No)) return 0f;
             var ctx = CreateContext(ability, target != null ? new TargetWrapper(target) : null);
-            int cl = Math.Max(1, ability.CalculateParams()?.CasterLevel ?? 1);
+            int cl = Math.Max(1, AbilityParameters(ability)?.CasterLevel ?? 1);
             DamageMetamagic(ability, out bool maximize, out bool empower);
             var parts = new List<KeyValuePair<GameAction, float>>();
             foreach (var action in profile.Heals)
@@ -1019,7 +1024,7 @@ namespace CompanionAI_Pathfinder.Tactics
                 bool veryDifficult = state.HasCondition(UnitCondition.SpellCastingIsVeryDifficult);
                 if (!veryDifficult && !state.HasCondition(UnitCondition.Entangled) && !state.HasCondition(UnitCondition.SpellCastingIsDifficult))
                     return 1f;
-                var p = ability.CalculateParams();
+                var p = AbilityParameters(ability);
                 int dc = 15 + p.SpellLevel + (veryDifficult ? p.SpellLevel : 0);
                 int need = dc - p.Concentration;                       // d20 result needed
                 return Mathf.Clamp01((21f - need) / 20f);
@@ -1133,7 +1138,7 @@ namespace CompanionAI_Pathfinder.Tactics
                     if (action.UseKineticistMainStat)
                         stat = caster.Get<Kingmaker.UnitLogic.Class.Kineticist.UnitPartKineticist>()?.MainStatType ?? stat;
                     if (action.UseCastingStat) stat = ability?.Spellbook?.Blueprint.CastingAttribute ?? StatType.Charisma;
-                    if (action.UseCasterLevelAsBaseAttack && ability != null) cmbRule.ReplaceBAB = ability.CalculateParams().CasterLevel;
+                    if (action.UseCasterLevelAsBaseAttack && ability != null) cmbRule.ReplaceBAB = AbilityParameters(ability).CasterLevel;
                     if (action.UseBestMentalStat)
                     {
                         var st = caster.Stats;
@@ -1381,7 +1386,7 @@ namespace CompanionAI_Pathfinder.Tactics
             if (save == SavingThrowType.Unknown || target == null) return 1f;
             try
             {
-                int dc = KineticEffectContext.For(ability)?.Params?.DC ?? ability.CalculateParams()?.DC ?? 10;
+                int dc = KineticEffectContext.For(ability)?.Params?.DC ?? AbilityParameters(ability)?.DC ?? 10;
                 int bonus;
                 switch (save)
                 {
@@ -1428,7 +1433,7 @@ namespace CompanionAI_Pathfinder.Tactics
             float points = 0f;
             try
             {
-                int dc = ability?.CalculateParams()?.DC ?? 10;
+                int dc = (ability == null ? null : AbilityParameters(ability))?.DC ?? 10;
                 foreach (var poison in Kingmaker.Blueprints.BlueprintExtenstions.GetComponents<Kingmaker.Designers.Mechanics.Buffs.BuffPoisonStatDamage>(buff))
                 {
                     if (poison.Stat != StatType.Constitution) continue;

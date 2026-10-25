@@ -52,3 +52,8 @@ command, restoration, performance or third-party-mod tests. Never deploy the har
 
 The kinetic checks also inject a late optional-patch failure and verify rollback/readiness, check that these hooks
 cannot be found by mandatory PatchAll, exercise inactive hot-path exits, and verify per-decision native-query caching.
+
+The playtest follow-up also checks native parameter reuse with isolated ability/aim/modifier states, cloned results,
+mutable-ambient-context bypass, early spent-slot pruning and virtual dispatch through a synthetic native calculator
+subclass. Counting seams replace game-singleton-dependent calls in the offline process; they are not a latency
+benchmark. See `docs/KINETICIST_PLAYTEST_STUTTER.md` for the supplied logs and required gameplay replay.
