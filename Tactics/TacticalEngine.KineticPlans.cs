@@ -37,7 +37,9 @@ namespace CompanionAI_Pathfinder.Tactics
                 c is IgnoreSpellResistanceForSpells ||
                 c is IgnoreDamageReductionOnTarget ||
                 c is SetKineticistGatherPowerMode ||
-                c is ContextRankConfig || c is ContextCalculateAbilityParamsBasedOnClass ||
+                // ★ v0.3.22: native MechanicsContext dispatches this calculator's virtual Calculate method.
+                // This also covers modded multi-class calculators without copying their DC/level formulas.
+                c is ContextRankConfig || c is ContextAbilityParamsCalculator ||
                 c is RecalculateOnStatChange || c is RecalculateOnFactsChange ||
                 c is Kingmaker.Blueprints.Classes.Spells.SpellDescriptorComponent);
         }

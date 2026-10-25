@@ -113,7 +113,7 @@ namespace CompanionAI_Pathfinder.Tactics
             {
                 if (buff.ComponentsArray.Any(c => c != null && !(c is AddKineticistBurnModifier) &&
                     !(c is Kingmaker.UnitLogic.FactLogic.AddAbilityUseTrigger) &&
-                    !(c is ContextRankConfig) && !(c is ContextCalculateAbilityParamsBasedOnClass))) continue;
+                    !(c is ContextRankConfig) && !(c is ContextAbilityParamsCalculator))) continue;
                 // Limit this to heal/buff talents; a follow-up blast would recursively appraise its infusion.
                 foreach (var follow in AbilityDiscovery.Gather(ctx.Unit).Where(a => a != blast && !IsOwnBlast(ctx.Unit.Get<UnitPartKineticist>(), a)))
                 {

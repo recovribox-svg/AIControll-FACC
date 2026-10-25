@@ -513,7 +513,7 @@ namespace CompanionAI_Pathfinder.Analysis
                     return result;
                 }
 
-                int casterLevel = ability.CalculateParams()?.CasterLevel ?? ability.Spellbook?.CasterLevel ?? caster.Progression?.CharacterLevel ?? 1;
+                int casterLevel = CompanionAI_Pathfinder.Tactics.CombatMath.AbilityParameters(ability)?.CasterLevel ?? ability.Spellbook?.CasterLevel ?? caster.Progression?.CharacterLevel ?? 1;
                 int bonus = GetSpellPenetrationBonus(caster, ability);
                 int penetration = casterLevel + bonus;
                 var replace = caster.Get<UnitPartSpellResistanceCheckReplace>();
