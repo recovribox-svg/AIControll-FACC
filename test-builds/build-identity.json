@@ -1,14 +1,15 @@
 {
-  "source_commit": "fcc64b19c031db625c4da70b9fa942afc71cc222",
-  "package": "AI-Control-FACC-fcc64b1-UMM-test.zip",
-  "package_sha256": "f096660e76150b9a71a7245725196f9142c82d6a0c10d46b688aadfd0d36edd5",
-  "dll_sha256": "5e03ed141dfe42242d758795692bc5329482358f81d2f020dc6920132fcfeb50",
+  "source_commit": "3230ba47a3055703a82a8cce7dfccc245056d099",
+  "source_branch": "codex/orvath-summon-pacing",
+  "package": "AI-Control-FACC-3230ba4-UMM-test.zip",
+  "package_sha256": "5e10e7752d3673c6292d17873609925704a38bdf4bfe76269d2ed4f169ffce14",
+  "dll_sha256": "cbdd80471d1a1dd46857fd5dea26446fa14815e9fa52a5432d972e923bf62c13",
   "umm_id": "CompanionAI_Pathfinder",
   "manifest_version": "0.3.21",
   "experimental": true,
   "build": "Release; real game references; zero warnings/errors",
   "contents": [
-    "CompanionAI_Pathfinder.dll",
-    "Info.json"
+    "Info.json",
+    "CompanionAI_Pathfinder.dll"
   ]
 }
