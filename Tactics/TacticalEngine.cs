@@ -143,6 +143,9 @@ namespace CompanionAI_Pathfinder.Tactics
         internal double KineticSearchMilliseconds;
         internal int KineticEvaluations, KineticPlanCount;
         internal bool KineticBudgetExceeded;
+        /// <summary>★ v0.3.22 (review): abilities left unscored because their action slot is spent this decision
+        /// (TacticalEngine.EvaluateDeferred scores them only where an unaffordable option still matters).</summary>
+        internal readonly List<AbilityData> SlotDeferred = new List<AbilityData>();
         /// <summary>★ v0.3.18: the party's damage per round behind <see cref="ExpectedRounds"/> (ValueModel, prior blended with this fight).</summary>
         public float PartyDamagePerRound;
         /// <summary>
@@ -1944,7 +1947,11 @@ namespace CompanionAI_Pathfinder.Tactics
                     // ★ v0.3.22: cooldown/end-of-turn decisions used to fully score every unaffordable spell.
                     // Modifier recovery still calls EvaluateAbility directly under its projected action type.
                     if (!ActionRules.HasSlot(SlotOf(ability), ctx.HasStandard, ctx.HasMove, ctx.HasSwift, ctx.HasFullRound))
-                    { if (DecisionReadScope.Current != null) DecisionReadScope.Current.SkippedAbilities++; continue; }
+                    {
+                        if (DecisionReadScope.Current != null) DecisionReadScope.Current.SkippedAbilities++;
+                        ctx.SlotDeferred.Add(ability);
+                        continue;
+                    }
                     if (!ability.IsAvailable) continue;
                     if (AbilityClassifier.IsBlacklistedForCombat(ability, valuedByEffect: true)) continue;
 
@@ -1957,6 +1964,34 @@ namespace CompanionAI_Pathfinder.Tactics
                                $"not evaluated - {ex.GetType().Name}: {ex.Message}");
                 }
                 finally { DecisionReadScope.Current?.AbilityTime(ability, watch.Elapsed.TotalMilliseconds); }
+            }
+        }
+
+        /// <summary>
+        /// ★ v0.3.22 (review): the candidates of abilities skipped for a spent action slot, scored only when asked and
+        /// one ability at a time (lazy: a caller that stops at the first match scores no more). Two rules still need
+        /// options the unit cannot afford now: real time's "can I hurt someone from here while my action cooldown
+        /// runs" (AddMovementCandidates - a caster would otherwise walk off between casts) and turn-based Gather
+        /// Power preparation for next round's blast after the Standard action is spent.
+        /// </summary>
+        private static IEnumerable<Candidate> EvaluateDeferred(TacticalContext ctx, Func<AbilityData, bool> filter)
+        {
+            foreach (var ability in ctx.SlotDeferred.ToList())
+            {
+                List<Candidate> found;
+                try
+                {
+                    if (!filter(ability) || !ability.IsAvailable || AbilityClassifier.IsBlacklistedForCombat(ability, valuedByEffect: true))
+                        continue;
+                    found = EvaluateAbility(ctx, ability).ToList();
+                }
+                catch (Exception ex)
+                {
+                    ReportOnce($"eval|{ability?.Blueprint?.AssetGuid}", $"[Tactics] {ability?.Name} ({ability?.Blueprint?.AssetGuid}): " +
+                               $"not evaluated - {ex.GetType().Name}: {ex.Message}");
+                    continue;
+                }
+                foreach (var c in found) yield return c;
             }
         }
 
@@ -3326,6 +3361,14 @@ namespace CompanionAI_Pathfinder.Tactics
             bool anyAttackNow = list.Any(c => c.Offensive && !c.NeedsMove && c.Value >= MinMainValue &&
                                              c.Slot != ActionSlot.Free && c.Slot != ActionSlot.Swift &&
                                              (CombatMemory.IsRealTime || Affordable(ctx, c)));
+            // ★ v0.3.22 (review): in real time the spells skipped for the running cooldown count here too, as before.
+            if (!anyAttackNow && CombatMemory.IsRealTime && ctx.SlotDeferred.Count > 0)
+                anyAttackNow = EvaluateDeferred(ctx, a =>
+                    {
+                        var p = AbilityProfile.Get(a);
+                        return p != null && (p.DealsDamage || p.HarmfulEffects || p.Maneuvers.Count > 0);
+                    })
+                    .Any(c => c.Offensive && !c.NeedsMove && c.Value >= MinMainValue && c.Slot != ActionSlot.Free && c.Slot != ActionSlot.Swift);
             bool rangedStyle = ctx.HasRangedWeapon || ctx.Settings.RangePreference == RangePreference.Ranged ||
                                ctx.Settings.Role == AIRole.Support;
 

@@ -60,7 +60,16 @@ namespace CompanionAI_Pathfinder.Tactics
         {
             var part = ctx.Unit.Get<UnitPartKineticist>();
             if (part == null) return;
-            AddGatherPreparations(ctx, list, list.ToList());
+            // ★ v0.3.22 (review): preparation is for a blast the unit cannot cast now - with the Standard action spent,
+            // its own blasts were skipped (AddAbilityCandidates) and are scored here, burn priced as the others.
+            var plans = list.ToList();
+            if (!CombatMemory.IsRealTime && ctx.SlotDeferred.Count > 0 && part.GatherPowerAbility?.Data?.IsAvailable == true)
+            {
+                var deferred = EvaluateDeferred(ctx, a => IsOwnBlast(part, a)).ToList();
+                PriceBurn(ctx, deferred);
+                plans.AddRange(deferred);
+            }
+            AddGatherPreparations(ctx, list, plans);
             if (!(ctx.Global?.AiManagesToggles ?? true)) return;
             // RT retains baseline offense estimates while waiting, but modifier search cannot create a usable
             // Standard/Swift action. Keep movement-only wait ticks cheap; genuine Free blasts remain eligible.
