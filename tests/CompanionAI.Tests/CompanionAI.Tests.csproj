@@ -6,6 +6,7 @@
     <IsPackable>false</IsPackable>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Include="..\..\Tactics\KineticConfigurations.cs" Link="KineticConfigurations.cs" />
     <Compile Include="..\..\Tactics\SpellTierPolicy.cs" Link="SpellTierPolicy.cs" />
     <Compile Include="..\..\Tactics\ActionRules.cs" Link="ActionRules.cs" />
     <Compile Include="..\..\Tactics\RiskMath.cs" Link="RiskMath.cs" />

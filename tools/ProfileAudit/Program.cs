@@ -70,7 +70,8 @@ namespace ProfileAudit
                     if (e.Exception is System.Security.SecurityException) Console.WriteLine("FIRST CHANCE at\n" + Environment.StackTrace);
                 };
             var output = args[args.Length - 1];
-            var roots = args.Take(args.Length - 1).ToList();
+            bool kineticChecks = args.Take(args.Length - 1).Contains("--kinetic-checks");
+            var roots = args.Take(args.Length - 1).Where(a => a != "--kinetic-checks").ToList();
             RegisterTypes();
             var loaded = new Dictionary<BlueprintGuid, SimpleBlueprint>();
             int failed = 0;
@@ -108,6 +109,7 @@ namespace ProfileAudit
             foreach (var kv in loaded) ResourcesLibrary.BlueprintsCache.AddCachedBlueprint(kv.Key, kv.Value);
             foreach (var bp in loaded.Values)
                 try { bp.OnEnable(); } catch { }
+            if (kineticChecks) KineticistChecks.Run(loaded.Values.ToList());
             Audit.Run(loaded.Values.ToList(), output);
             return 0;
         }
