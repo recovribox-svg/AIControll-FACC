@@ -1,13 +1,32 @@
 # Kineticist competence: review and gameplay handover
 
 Branch: `codex/kineticist-competence`. PR target: `claude/dreamy-pasteur-b9h3rn`.
-Source revision for the test DLL: `17cf71c5d06fbd09dfde686a3eaa5e10967ac6a2`.
+Source revision for the replacement test DLL: `175fad3c8b18ad673d27211913893eca6fe763c2`. This supersedes the initial 17cf71c test build.
 The test package keeps the existing Info.json version; identify it by commit and SHA-256, not by version alone.
-Test ZIP: `AIControll-FACC-kineticist-17cf71c-test.zip`.
-ZIP SHA-256: `9d359c9e0b6345fc40713e33374c670f7ac54082d32a59ee5b03a90354966b1f`.
-DLL SHA-256: `70d7d007774e566ce887a50a47ba9640a8b91b70ef13ed004f3d46d79353a9db`.
+Test ZIP: `AIControll-FACC-kineticist-175fad3-test.zip`.
+ZIP SHA-256: `233ceeb953544417a8ec78ac1e3d4925ab3014cb4f455dce32d47d583a625266`.
+DLL SHA-256: `d7dd98250b9b85da5daf017c7540bade66cf743c18179842ede9333a7d8e9d04`.
 
 No in-game tests have been performed by Codex. No release or integration into main is implied.
+
+## Review follow-up: test this revision first
+
+Claude's [review of 7bbfdfa](https://github.com/recovribox-svg/AIControll-FACC/pull/2#issuecomment-6392146121) confirmed
+120 tests, a clean real-reference build and 45 intended verdict changes in the author's full 4,801-row dump. It also
+identified load-safety and search-cost blockers. The replacement build isolates optional patches and bounds/caches
+the search. Local checks now pass 133 tests plus injected patch-failure/rollback, inactive fast exits, query-cache and
+explicit partial-load checks. Those are not a live Mono startup/performance test.
+
+After re-review, test **Orvath at level 2 first** in both modes. At startup, look for optional-hook success or a clean
+current-setup fallback with the mod still loaded; verify other companions still work. In normal logging, RT waits
+must not emit no-action Kinetic summaries. Action summaries now include decision/search milliseconds, scored aims,
+published alternatives, native action queries and shape builds. On `[Kinetic] budget`, no proposed modifier changes
+should be applied; the current setup remains and published alternative count is zero. The time limit is cooperative
+between native calls, so record an overrun if a single call takes longer. A high-level save, if available, should test
+many infusions/metakinesis, enemies and Wall orientations, including cache lifetime/pose restoration and decision time.
+
+For the author's unrelated dump failure, rerun ProfileAudit with `--allow-failures 1`; verify the report is PARTIAL,
+names the failed blueprint and still audits the rest. Large allowances must not permit empty or mass-failed loads.
 
 ## Before testing
 

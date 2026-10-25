@@ -2383,10 +2383,19 @@ counted as separate applications. Multiple simultaneous infusions keep the stron
 each claiming the same prevented actions; their distinct damage/costs still add. This is conservative when control
 packages affect disjoint recipients. Negative effects, including dispelling a harmful buff from an enemy, remain costs.
 
-`TacticalEngine.KineticPlans` enumerates learned configurations using native toggle group capacities and weights.
-There is no infusion preference order or score bonus. Each complete blast/weapon option competes on the existing
-ValueModel scale, after the native burn restriction and the existing burn valuation. The old blocking-infusion
+`TacticalEngine.KineticPlans` now searches one modifier group at a time from the current setup, using native
+capacities/weights. It re-scores at most three best current blast/target/aim candidates and one blade target/routine;
+it does not multiply all groups, blast variants, targets and wall angles. When all blasts are blocked, a bounded
+recovery shortlist uses one current focus and the same scorer. This is a local neighborhood search, not a promise
+of the global optimum across simultaneous group changes or previously unselected aims. There is no infusion
+preference order or score bonus. Complete candidate values still use the shared scale, native restrictions and burn pricing. The old blocking-infusion
 estimate that subtracted a component's declared burn Value is removed. Existing quiver/Overflow pricing is retained.
+
+The optional `KineticPreview` and `NativeDispelPreview` hooks have **no HarmonyPatch attributes**. `Main.Load`
+installs them manually after mandatory `PatchAll`/`PatchTickBrainManually`, in a separate try/owner. A partial failure
+rolls that owner back, leaves `CostHookInstalled` false and logs once; it cannot fail the mandatory mod load. Readiness
+is published only after every hook/layout succeeds. Global existence/metamagic patches first read a plain static
+`PreviewActive` flag, before TLS or unit properties, and immediately return when no scope is active.
 
 `KineticPreview` is a scoped projection, not an activation/restoration preview:
 
@@ -2401,9 +2410,20 @@ estimate that subtracted a component's declared burn Value is removed. Existing 
   triggering actual damage. Observed reduction from a different Armor-Piercing configuration cannot price that preview.
 - Current-state cost/availability/action-type parity is checked before comparing alternatives. Unrecognized native
   method layouts, unsupported component lifecycles, targeted/resource-spending switches, and non-free activation
-  commands stay fixed. A search exceeding 4,096 legal configurations returns no partial prefix as an alleged best set.
+  commands stay fixed. Alternative search is limited to **40 ms, 64 scored aims and 128 neighbor states**. Any limit
+  discards every staged alternative and retains the current setup; it does not publish the first candidates visited.
+  Checkpoints run between expensive managed/native operations; a single native call cannot be preempted.
 - Condition/attack caches are cleared between scopes. These projections cannot promise equivalence for arbitrary
   mods that inspect other live fact collections or retain their own cached state; live testing with those mods matters.
+
+`KineticDecisionScope` caches native action durations (including failures) by unit/command/full-round flag and reuses
+area views/aim entries for that decision only. Native geometry is additionally pooled by area blueprint, so related
+variants and wall angles do not each create/destroy a GameObject. Nested scopes restore the prior pose; decision
+cleanup destroys the pool. State-dependent attack/condition caches still invalidate between modifier scopes.
+`[Kinetic]` records approximate decision time, search elapsed time, aim/plan counts, action queries and shape builds.
+An exhausted search has a `[Kinetic] budget` line with zero published alternatives. No-action summaries use
+`Main.Verbose`; normal RT wait ticks do not write them. RT modifier search also skips movement-only cooldown waits
+without an available Standard/Swift action, except for learned Free blasts.
 
 With AI toggle management off, only the player's live effects are valued. Player-owned toggles, toggles already
 switched this round, and fixed members consuming group capacity remain fixed; a fixed Gather Power member retains
@@ -2495,7 +2515,7 @@ all those defenses. The optional mythic free-attack extension is not implemented
 
 ### Verification and limits
 
-- **Unit suite:** 120 passed, 0 failed/skipped (`dotnet test tests/CompanionAI.Tests`). New pure tests cover legal group
+- **Unit suite:** 133 passed, 0 failed/skipped (`dotnet test tests/CompanionAI.Tests`). New pure tests cover legal group
   configurations/player locks, no biased truncated search, gather action budgets, opportunity/delay/risk, preparation
   horizon, repeated blade effects, ongoing saves, successful-save duration, future savings and ordered limited dispels.
 - **Full mod and ProfileAudit builds:** zero warnings/errors against the supplied game references.
@@ -2505,8 +2525,9 @@ all those defenses. The optional mythic free-attack extension is not implemented
   penalties, and unread defensive talents as zero. This is a subset of the author's broader 4,801-row audit.
 - **`--kinetic-checks`:** 17 infusion triggers, two direct maneuvers, four direct and five carrier saves, two ongoing
   effects, 28 lasting forms, successful-save applications, 29 modifier descriptors, and unchanged cached base profiles.
-  Native preview hooks install; cost is unchanged outside a scope; detached dispel preparation stops before dice.
-  This is not a live actor/configuration parity test or a gameplay execution test.
+  Manual preview hooks install; an injected failure before the final hook rolls the owner back and keeps readiness
+  false. Inactive hot paths tolerate poisoned TLS without accessing it. Native action queries cache once per decision;
+  cost is unchanged outside a scope and detached dispel preparation stops before dice. This is not a live actor/configuration parity test or a gameplay execution test.
 - The Linux audit uses rewritten Unity-bound copies, a reference-only Unity.Mathematics shim, and a scratch Harmony
   helper ELF metadata fix. These establish reader/selected managed-code checks only; none ship in the mod/package.
 - `Assembly-CSharp-firstpass.dll` and the separately supplied SharedInternals DLL unblock the reader. The latter may
@@ -2514,5 +2535,9 @@ all those defenses. The optional mythic free-attack extension is not implemented
 - Missing buffs `1ffba707590b49db8b1c5cf43660fbfc` and `d579a8faad5c469abfd700428364b9ee` remain unavailable. Supplied
   wiring places them only in the Water + Blood Blast gather visual branch; the ordinary water counterpart is empty.
   Claude's visual-only explanation is plausible, not independently verified. No behavior is hard-coded from it.
+- Review follow-up tests also cover one-group cardinality, search cancellation/deadlines, optional-install rollback,
+  and audit allowances. Default loading remains strict. `--allow-failures N` permits an explicitly bounded partial run,
+  lists every failed blueprint and marks the report PARTIAL. Empty or predominantly failed loads remain INCOMPLETE
+  regardless of the allowance; malformed/empty wrappers count as failures. A partial report is not complete coverage.
 - In-game behavior, frame timing, restoration, performance on large high-level configuration sets, and compatibility
   with the author's installed mods remain unverified. Keep the PR draft until review and the handover tests pass.
