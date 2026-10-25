@@ -11,7 +11,6 @@
 // Tactics/UnitStatus.cs fills ActionPermissions from the game; this file is the rule applied to one option.
 namespace CompanionAI_Pathfinder.Tactics
 {
-    public enum ActionSlot { Free, Swift, Move, Standard, FullRound }
     /// <summary>What the unit's statuses allow right now, as read from the game (Tactics/UnitStatus.cs).</summary>
     public sealed class ActionPermissions
     {
@@ -29,19 +28,6 @@ namespace CompanionAI_Pathfinder.Tactics
 
     public static class ActionRules
     {
-        // ★ v0.3.22: the same slot test before expensive ability scoring and at final affordability filtering.
-        public static bool HasSlot(ActionSlot slot, bool standard, bool move, bool swift, bool fullRound)
-        {
-            switch (slot)
-            {
-                case ActionSlot.Free: return true;
-                case ActionSlot.Swift: return swift;
-                case ActionSlot.Move: return move || standard;
-                case ActionSlot.Standard: return standard;
-                case ActionSlot.FullRound: return fullRound;
-                default: return false;
-            }
-        }
         /// <summary>
         /// Why the game would not start an option of this shape, or null when it would.
         /// </summary>

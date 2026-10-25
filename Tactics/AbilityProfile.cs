@@ -15,7 +15,6 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
-using System.Runtime.CompilerServices;
 using Kingmaker.Blueprints;
 using Kingmaker.Blueprints.Classes.Spells;
 using Kingmaker.Designers.EventConditionActionSystem.Actions;
@@ -81,8 +80,6 @@ namespace CompanionAI_Pathfinder.Tactics
         /// <summary>★ v0.3.18 (test11): the creatures it summons (ContextActionSpawnMonster.Blueprint).</summary>
         public readonly List<Kingmaker.Blueprints.BlueprintUnit> SummonedUnits = new List<Kingmaker.Blueprints.BlueprintUnit>();
         public bool Dispels { get; private set; }
-        // ★ v0.3.22: preserve the native dispel settings for safe, scoped probability queries.
-        internal readonly List<ContextActionDispelMagic> DispelActions = new List<ContextActionDispelMagic>();
         public bool RemovesBuffs { get; private set; }
         public bool Enchants { get; private set; }
 
@@ -215,8 +212,6 @@ namespace CompanionAI_Pathfinder.Tactics
         /// <summary>★ v0.3.18 (AA-4): the chain delivery: after its first target, the units nearest that target within its
         /// radius, up to its target count (AbilityDeliverChain.SelectNextTargetByMinDistance), of <see cref="ChainTargets"/>.</summary>
         public AbilityDeliverChain Chain { get; private set; }
-        // ★ v0.3.22: conditional ricochets (including Chain Arrows) use native count and next-target selection.
-        internal readonly List<AbilityDeliverRicochet> Ricochets = new List<AbilityDeliverRicochet>();
         public Kingmaker.UnitLogic.Abilities.Components.TargetType ChainTargets { get; private set; }
 
         /// <summary>★ v0.3.18 (AA-4): a combat maneuver the ability makes against its target.</summary>
@@ -401,9 +396,6 @@ namespace CompanionAI_Pathfinder.Tactics
 
         /// <summary>★ v0.3.13: the areas this ability spawns (Entangle, Grease, Web...).</summary>
         public IEnumerable<BlueprintAbilityAreaEffect> SpawnedAreas => m_VisitedAreas;
-        internal readonly HashSet<BlueprintAbilityAreaEffect> PeriodicAreas = new HashSet<BlueprintAbilityAreaEffect>();
-        internal readonly Dictionary<BlueprintAbilityAreaEffect, ContextDurationValue> AreaDurations =
-            new Dictionary<BlueprintAbilityAreaEffect, ContextDurationValue>();
 
         /// <summary>
         /// ★ v0.3.13: <paramref name="unit"/> stands in a still-active area of this ability that one of
@@ -440,72 +432,6 @@ namespace CompanionAI_Pathfinder.Tactics
         private AbilityProfile(BlueprintAbility blueprint)
         {
             Blueprint = blueprint;
-        }
-
-        /// <summary>★ v0.3.22: actions on one infusion damage trigger, through the normal action reader.
-        /// Delivery and the chance of the blast reaching a recipient are priced by the caller, separately from
-        /// this trigger's own save. In particular an infusion's Reflex save must not halve the blast's damage.</summary>
-        public bool IsKineticEffect { get; private set; }
-
-        private static readonly Dictionary<Kingmaker.UnitLogic.Mechanics.Components.AddKineticistInfusionDamageTrigger,
-            Dictionary<BlueprintAbility, AbilityProfile>> InfusionProfiles =
-            new Dictionary<Kingmaker.UnitLogic.Mechanics.Components.AddKineticistInfusionDamageTrigger,
-                Dictionary<BlueprintAbility, AbilityProfile>>();
-
-        public static AbilityProfile ForKineticInfusion(BlueprintAbility blast,
-            Kingmaker.UnitLogic.Mechanics.Components.AddKineticistInfusionDamageTrigger trigger)
-        {
-            if (blast == null || trigger == null) return null;
-            if (!InfusionProfiles.TryGetValue(trigger, out var profiles))
-                InfusionProfiles[trigger] = profiles = new Dictionary<BlueprintAbility, AbilityProfile>();
-            if (profiles.TryGetValue(blast, out var cached)) return cached;
-            var profile = new AbilityProfile(blast) { IsKineticEffect = true };
-            var delivery = Get(blast);
-            profile.AoERadius = delivery.AoERadius;
-            profile.AoETargets = delivery.AoETargets;
-            profile.Chain = delivery.Chain;
-            profile.Ricochets.AddRange(delivery.Ricochets);
-            profile.ChainTargets = delivery.ChainTargets;
-            profile.m_AreaCondition = delivery.m_AreaCondition;
-            foreach (var area in delivery.m_VisitedAreas) profile.m_VisitedAreas.Add(area);
-            foreach (var area in delivery.PeriodicAreas) profile.PeriodicAreas.Add(area);
-            foreach (var duration in delivery.AreaDurations) profile.AreaDurations[duration.Key] = duration.Value;
-            profile.Walk(trigger.Actions?.Actions, new HashSet<BlueprintAbility>(), 0, EffectSubject.Target, 0,
-                         new EffectGuard[0]);
-            profile.BuffsLastOneRound = profile.m_AllBuffs > 0 && profile.m_ShortBuffs == profile.m_AllBuffs;
-            profile.RefreshControl();
-            profiles[blast] = profile;
-            return profile;
-        }
-
-        // ★ v0.3.22: a delivered buff can deal damage on later rounds. Its round action is read by Walk too,
-        // with its own save; it must not change the delivery blast's save or damage.
-        internal sealed class PeriodicEffect
-        {
-            internal BlueprintBuff Buff;
-            internal AbilityProfile Tick;
-            internal bool SaveEnds;
-        }
-        internal readonly List<PeriodicEffect> PeriodicEffects = new List<PeriodicEffect>();
-        private readonly HashSet<BlueprintBuff> m_ActivatedBuffs = new HashSet<BlueprintBuff>();
-        private bool? m_SavedBranch;
-        internal bool BuffOnBothSaveOutcomes => IsKineticEffect && TargetBuffs.Count > 0 && Damage.Count == 0 && Maneuvers.Count == 0 &&
-            TargetBuffs.All(b => m_BuffApplications.Any(a => a.Buff == b && a.Saved == true) &&
-                                m_BuffApplications.Any(a => a.Buff == b && a.Saved == false));
-        private readonly List<ContextDiceValue> m_Repetitions = new List<ContextDiceValue>();
-        private readonly Dictionary<BlueprintBuff, ContextDiceValue[]> m_BuffRepetitions = new Dictionary<BlueprintBuff, ContextDiceValue[]>();
-
-        internal bool AddsBuff(BlueprintBuff buff, UnitEntityData target) => !target.Buffs.HasFact(buff) ||
-            IsKineticEffect && buff.Stacking == Kingmaker.UnitLogic.Buffs.Blueprints.StackingType.Rank &&
-            target.Buffs.GetBuff(buff).GetRank() < buff.Ranks;
-
-        internal float AddedBuffRanks(BlueprintBuff buff, MechanicsContext context, UnitEntityData target)
-        {
-            if (!IsKineticEffect || buff.Stacking != Kingmaker.UnitLogic.Buffs.Blueprints.StackingType.Rank) return 1f;
-            float count = 1f;
-            if (m_BuffRepetitions.TryGetValue(buff, out var values))
-                foreach (var value in values) count *= CombatMath.EvaluateDice(value, context, context?.Params?.CasterLevel ?? 1);
-            return Math.Max(0f, Math.Min(count, buff.Ranks - (target.Buffs.GetBuff(buff)?.GetRank() ?? 0)));
         }
 
         #region Cache
@@ -551,18 +477,11 @@ namespace CompanionAI_Pathfinder.Tactics
         public static void ClearCache()
         {
             Cache.Clear();
-            InfusionProfiles.Clear();
             ClearConditionCache();
         }
 
         /// <summary>Per-target condition results are keyed by unit id; drop them when a combat ends.</summary>
-        public static void ClearConditionCache()
-        {
-            CheckerCache.Clear();
-            // ★ v0.3.22: a nested modifier projection/restoration also invalidates detached cast contexts.
-            for (var scope = s_AimScope; scope != null; scope = scope.Previous)
-            { scope.Contexts.Clear(); scope.Results.Clear(); }
-        }
+        public static void ClearConditionCache() => CheckerCache.Clear();
 
         #endregion
 
@@ -621,13 +540,8 @@ namespace CompanionAI_Pathfinder.Tactics
                            : Kingmaker.UnitLogic.Abilities.Components.TargetType.Any;
             }
 
-            RefreshControl();
-        }
-
-        private void RefreshControl()
-        {
             // Control: the spell's own descriptor plus the descriptors / conditions of what it applies.
-            SpellDescriptor descriptor = IsKineticEffect ? SpellDescriptor.None : Blueprint.SpellDescriptor;
+            SpellDescriptor descriptor = Blueprint.SpellDescriptor;
             foreach (var buff in TargetBuffs)
             {
                 var comp = buff.GetComponent<SpellDescriptorComponent>();
@@ -838,8 +752,6 @@ namespace CompanionAI_Pathfinder.Tactics
                 NeedsAttackRoll = RangedAttackRoll = true;
             if (bp.GetComponent<AbilityDeliverTouch>() != null) NeedsAttackRoll = true;
             // ★ v0.3.18 (AA-4): a chain (Chain Lightning, Firebird's Chains of Fire, Mystical Mayhem's Eldritch Chain).
-            foreach (var ricochet in bp.GetComponents<AbilityDeliverRicochet>())
-                if (!Ricochets.Contains(ricochet)) Ricochets.Add(ricochet);
             var chain = bp.GetComponent<AbilityDeliverChain>();
             if (chain != null && Chain == null)
             {
@@ -892,14 +804,6 @@ namespace CompanionAI_Pathfinder.Tactics
                     continue;
                 }
 
-                if (IsKineticEffect && action is ContextActionRepeatedActions repeated)
-                {
-                    m_Repetitions.Add(repeated.Value);
-                    try { Walk(repeated.Actions?.Actions, visited, abilityDepth, subject, depth + 1, guards); }
-                    finally { m_Repetitions.RemoveAt(m_Repetitions.Count - 1); }
-                    continue;
-                }
-
                 switch (action)
                 {
                     // ★ v0.3.18 (review): damage run on the caster (a self-cost) is not damage to the target.
@@ -931,31 +835,6 @@ namespace CompanionAI_Pathfinder.Tactics
                         m_Guards[heal] = guards;
                         break;
                     case ContextActionApplyBuff apply when apply.Buff != null:
-                        if (IsKineticEffect) m_BuffRepetitions[apply.Buff] = m_Repetitions.ToArray();
-                        // ★ v0.3.22: infusion carriers often save/apply the real condition in Activated,
-                        // then remove themselves. Follow those actions in the same guarded reader, once per buff.
-                        if (IsKineticEffect && m_ActivatedBuffs.Add(apply.Buff))
-                        {
-                            foreach (var onFact in apply.Buff.GetComponents<AddFactContextActions>())
-                            {
-                                Walk(onFact.Activated?.Actions, visited, abilityDepth,
-                                     toCaster || apply.ToCaster ? EffectSubject.Caster : subject, depth + 1, guards);
-                                if (!(toCaster || apply.ToCaster) && onFact.NewRound?.Actions?.Length > 0)
-                                {
-                                    var tick = new AbilityProfile(Blueprint) { IsKineticEffect = true };
-                                    tick.Walk(onFact.NewRound.Actions, visited, abilityDepth, subject, depth + 1, NoGuards);
-                                    if (tick.DealsDamage)
-                                        PeriodicEffects.Add(new PeriodicEffect
-                                        {
-                                            Buff = apply.Buff, Tick = tick,
-                                            SaveEnds = tick.Save != SavingThrowType.Unknown &&
-                                                RemovesSelf(onFact.NewRound, apply.Buff)
-                                        });
-                                }
-                            }
-                            if (apply.Buff.GetComponents<AddFactContextActions>().Any(a => RemovesSelf(a.Activated, apply.Buff)))
-                                break; // the carrier itself has no persistent benefit or duration
-                        }
                         if (toCaster || apply.ToCaster) CasterBuffs.Add(apply.Buff);
                         else TargetBuffs.Add(apply.Buff);
                         AddBuffGuards(apply.Buff, guards);
@@ -977,7 +856,7 @@ namespace CompanionAI_Pathfinder.Tactics
                         if (!(toCaster || apply.ToCaster) && !m_InArea)
                             m_BuffApplications.Add(new BuffApplication
                             {
-                                Buff = apply.Buff, Guards = guards, Rounds = ExpectedRounds(apply), Saved = m_SavedBranch,
+                                Buff = apply.Buff, Guards = guards, Rounds = ExpectedRounds(apply),
                                 Extendable = !apply.Permanent && !apply.SameDuration && !apply.UseDurationSeconds &&
                                              apply.DurationValue != null && apply.DurationValue.IsExtendable
                             });
@@ -1020,11 +899,9 @@ namespace CompanionAI_Pathfinder.Tactics
                         if (spawn.Blueprint != null && !SummonedUnits.Contains(spawn.Blueprint)) SummonedUnits.Add(spawn.Blueprint);
                         break;
                     case ContextActionSpawnAreaEffect spawnArea:
-                        if (spawnArea.AreaEffect != null) AreaDurations[spawnArea.AreaEffect] = spawnArea.DurationValue;
                         WalkAreaEffect(spawnArea.AreaEffect, visited, abilityDepth, subject, depth, guards);
                         break;
-                    case ContextActionDispelMagic dispel:
-                        DispelActions.Add(dispel);
+                    case ContextActionDispelMagic _:
                         Dispels = true;
                         break;
                     // ★ v0.3.19 (class audit B2): lengthens a buff the target already has (Witch Cackle and Chant: one
@@ -1110,17 +987,6 @@ namespace CompanionAI_Pathfinder.Tactics
                         Walk(saved.Failed?.Actions, visited, abilityDepth, subject, depth + 1, guards);
                         HalfOnSave = true;
                         continue;
-                    case ContextActionConditionalSaved saved when IsKineticEffect:
-                        var previousSaved = m_SavedBranch;
-                        try
-                        {
-                            m_SavedBranch = false;
-                            Walk(saved.Failed?.Actions, visited, abilityDepth, subject, depth + 1, guards);
-                            m_SavedBranch = true;
-                            Walk(saved.Succeed?.Actions, visited, abilityDepth, subject, depth + 1, guards);
-                        }
-                        finally { m_SavedBranch = previousSaved; }
-                        continue;
                 }
 
                 var childSubject = ChildSubject(subject, action);
@@ -1165,7 +1031,6 @@ namespace CompanionAI_Pathfinder.Tactics
                     Walk(run.UnitEnter?.Actions, visited, abilityDepth, subject, depth + 1, guards);
                     int afterEnter = Damage.Count;
                     Walk(run.Round?.Actions, visited, abilityDepth, subject, depth + 1, guards);
-                    if (Damage.Count > afterEnter) PeriodicAreas.Add(area);
                     if (Damage.Count > afterEnter && afterEnter > before)
                         Damage.RemoveRange(before, afterEnter - before);
                     int beforeMove = Damage.Count;
@@ -1269,8 +1134,6 @@ namespace CompanionAI_Pathfinder.Tactics
                 if (action is ContextActionRemoveSelf) return true;
                 if (owner != null && action is ContextActionRemoveBuff rb && rb.Buff == owner) return true;
                 if (action is Conditional c && (RemovesSelf(c.IfTrue, owner, depth + 1) || RemovesSelf(c.IfFalse, owner, depth + 1))) return true;
-                // ★ v0.3.22: round saves can remove a burning buff.
-                if (ChildActionLists(action).Any(children => RemovesSelf(new ActionList { Actions = children }, owner, depth + 1))) return true;
             }
             return false;
         }
@@ -1354,7 +1217,6 @@ namespace CompanionAI_Pathfinder.Tactics
             public float Rounds;
             /// <summary>★ v0.3.18 (AA-4): Extend doubles it (ContextDurationValue.IsExtendable).</summary>
             public bool Extendable;
-            public bool? Saved; // ★ v0.3.22: successful-save duration can differ from failed-save duration
         }
 
         private readonly List<BuffApplication> m_BuffApplications = new List<BuffApplication>();
@@ -1398,15 +1260,8 @@ namespace CompanionAI_Pathfinder.Tactics
         /// branch that applies to that target; negative when unknown. Color Spray on a 5 HD Cultist Champion stuns for one
         /// round, not the three the control value assumed (Orvath cast it there five times).
         /// </summary>
-        public float EffectRoundsOn(AbilityData ability, UnitEntityData target, float horizon = float.PositiveInfinity)
+        public float EffectRoundsOn(AbilityData ability, UnitEntityData target)
         {
-            if (BuffOnBothSaveOutcomes)
-            {
-                var applications = m_BuffApplications.Where(a => Evaluate(a.Guards, ability, target) != EffectApplies.No).ToList();
-                float failed = applications.Where(a => a.Saved == false).Select(a => a.Rounds).DefaultIfEmpty(0f).Max();
-                float saved = applications.Where(a => a.Saved == true).Select(a => a.Rounds).DefaultIfEmpty(0f).Max();
-                return ValueModel.SaveDuration(CombatMath.SaveFailChance(ability, this, target), failed, saved, horizon);
-            }
             // ★ v0.3.18 (AA-4): Demoralize lasts by the check's result.
             if (Intimidation != null && target != null && ability?.Caster?.Unit != null)
             {
@@ -1523,20 +1378,13 @@ namespace CompanionAI_Pathfinder.Tactics
                 SharedValueRange(ability, context, t, out int lo, out int mid, out int hi);
                 return new { Type = t, Lo = lo, Mid = mid, Hi = hi };
             }).ToList();
-            // ★ v0.3.22: checks can use a detached cast context more than once, or an infusion's real source
-            // context. The old early return left the high/average test value written into that context.
-            var saved = ranges.Select(r => context[r.Type]).ToArray();
-            try
-            {
-                foreach (var r in ranges) context[r.Type] = r.Lo;
-                bool low = Run(checker);
-                foreach (var r in ranges) context[r.Type] = r.Hi;
-                bool high = Run(checker);
-                if (low == high) return low;
-                foreach (var r in ranges) context[r.Type] = r.Mid;
-                return Run(checker);
-            }
-            finally { for (int i = 0; i < ranges.Count; i++) context[ranges[i].Type] = saved[i]; }
+            foreach (var r in ranges) context[r.Type] = r.Lo;
+            bool low = Run(checker);
+            foreach (var r in ranges) context[r.Type] = r.Hi;
+            bool high = Run(checker);
+            if (low == high) return low;
+            foreach (var r in ranges) context[r.Type] = r.Mid;
+            return Run(checker);
         }
 
         /// <summary>
@@ -1550,7 +1398,7 @@ namespace CompanionAI_Pathfinder.Tactics
                 var conditions = m_Guards.Values.Concat(m_BuffGuards.Values.SelectMany(b => b)).SelectMany(g => g)
                     .SelectMany(g => g.Checker?.Conditions ?? new Condition[0]).OfType<ContextConditionHitDice>().Distinct().ToList();
                 if (conditions.Count == 0) return null;
-                var context = CombatMath.ContextForEffects(ability, new TargetWrapper(target));
+                var context = CombatMath.CreateContext(ability, new TargetWrapper(target));
                 var parts = conditions.Select(hd =>
                 {
                     if (!hd.AddSharedValue) return $"level <= {hd.HitDice}";
@@ -1601,77 +1449,19 @@ namespace CompanionAI_Pathfinder.Tactics
         /// questions), each unit is its own main target, as before.
         /// </summary>
         [ThreadStatic] private static TargetWrapper s_Aim;
-        [ThreadStatic] private static AimScope s_AimScope;
-
-        internal static TargetWrapper CurrentAim => s_Aim;
 
         internal static IDisposable AimedAt(TargetWrapper aim)
         {
-            var scope = new AimScope(s_Aim, s_AimScope);
+            var previous = s_Aim;
             s_Aim = aim;
-            s_AimScope = scope;
-            return scope;
+            return new AimScope(previous);
         }
 
         private sealed class AimScope : IDisposable
         {
             private readonly TargetWrapper m_Previous;
-            internal readonly AimScope Previous;
-            internal readonly List<ConditionCast> Contexts = new List<ConditionCast>();
-            internal readonly Dictionary<ConditionKey, bool?> Results = new Dictionary<ConditionKey, bool?>();
-            public AimScope(TargetWrapper previous, AimScope previousScope) { m_Previous = previous; Previous = previousScope; }
-            public void Dispose() { s_Aim = m_Previous; s_AimScope = Previous; Contexts.Clear(); Results.Clear(); }
-        }
-
-        // ★ v0.3.22: within one aim, identity keys avoid formatted strings and repeated auto-metamagic queries
-        // merely to look up a guard result. A new aim (including wall orientation) owns a new dictionary.
-        private readonly struct ConditionKey : IEquatable<ConditionKey>
-        {
-            private readonly object checker, ability, target, caster, source;
-            internal ConditionKey(object checker, object ability, object target, object caster, object source)
-            { this.checker = checker; this.ability = ability; this.target = target; this.caster = caster; this.source = source; }
-            public bool Equals(ConditionKey other) => ReferenceEquals(checker, other.checker) && ReferenceEquals(ability, other.ability) &&
-                ReferenceEquals(target, other.target) && ReferenceEquals(caster, other.caster) && ReferenceEquals(source, other.source);
-            public override bool Equals(object other) => other is ConditionKey key && Equals(key);
-            public override int GetHashCode()
-            {
-                int Hash(object value) => value == null ? 0 : RuntimeHelpers.GetHashCode(value);
-                unchecked { return ((((Hash(checker) * 397) ^ Hash(ability)) * 397 ^ Hash(target)) * 397 ^ Hash(caster)) * 397 ^ Hash(source); }
-            }
-        }
-
-        private sealed class ConditionCast
-        {
-            internal AbilityData Ability;
-            internal MechanicsContext Ambient;
-            internal TargetWrapper AmbientTarget;
-            internal RulebookEvent Rule;
-            internal AbilityExecutionContext Context;
-        }
-
-        // ★ v0.3.22: one scored cast has one main aim and native parameter/rank snapshot. Its condition readers
-        // visit each recipient with GetDataScope; rebuilding the same cast for every guard/recipient copied the
-        // native rulebook history and reran parameter rules hundreds of times for Sleep. Keep this private to
-        // conditions: damage providers and other readers still receive fresh execution contexts.
-        private static MechanicsContext ConditionContext(AbilityData ability, TargetWrapper aim)
-        {
-            var infusion = KineticEffectContext.For(ability);
-            if (infusion != null) return infusion;
-            var scope = s_AimScope;
-            if (scope == null || s_Aim == null) return CombatMath.CreateContext(ability, aim);
-            var ambient = ContextData<MechanicsContext.Data>.Current;
-            var rule = Rulebook.CurrentContext?.CurrentEvent;
-            foreach (var entry in scope.Contexts)
-                if (ReferenceEquals(entry.Ability, ability) && ReferenceEquals(entry.Ambient, ambient?.Context) &&
-                    ReferenceEquals(entry.AmbientTarget, ambient?.CurrentTarget) && ReferenceEquals(entry.Rule, rule))
-                {
-                    if (DecisionReadScope.Current != null) DecisionReadScope.Current.ConditionContextHits++;
-                    return entry.Context;
-                }
-            var context = CombatMath.CreateContext(ability, aim);
-            scope.Contexts.Add(new ConditionCast { Ability = ability, Ambient = ambient?.Context,
-                AmbientTarget = ambient?.CurrentTarget, Rule = rule, Context = context });
-            return context;
+            public AimScope(TargetWrapper previous) { m_Previous = previous; }
+            public void Dispose() => s_Aim = m_Previous;
         }
 
         public EffectApplies AppliesTo(GameAction effect, AbilityData ability, UnitEntityData target)
@@ -1753,37 +1543,22 @@ namespace CompanionAI_Pathfinder.Tactics
 
         private static bool? CheckFor(ConditionsChecker checker, AbilityData ability, UnitEntityData target, UnitEntityData caster)
         {
+            int frame = Time.frameCount;
             // Caster-dependent conditions (IsAlly, CasterHasFact, HasBuffFromCaster...): key by caster and target.
             // ★ v0.3.18 (review): and by the ability itself (a scroll and the spell, metamagic copies: caster level and
             // shared values differ) - one checker is shared by every copy of the blueprint.
             var aim = s_Aim ?? new TargetWrapper(target);
-            var scope = s_Aim != null ? s_AimScope : null;
-            var localKey = new ConditionKey(checker, ability, target, caster, KineticEffectContext.For(ability));
-            CheckerResults perUnit = null;
-            string key = null;
-            if (scope != null)
+            string key = $"{caster?.UniqueId}|{target.UniqueId}|{ability.Blueprint?.AssetGuid}|{AbilityDiscovery.MetamagicTag(ability)}|" +
+                         $"{ability.SourceItem?.UniqueId}|{ability.Spellbook?.Blueprint?.AssetGuid}|" +
+                         (aim.Unit != null ? aim.Unit.UniqueId : $"{aim.Point.x:F1},{aim.Point.z:F1}");
+            if (!CheckerCache.TryGetValue(checker, out var perUnit))
+                CheckerCache[checker] = perUnit = new CheckerResults { Frame = frame };
+            if (perUnit.Frame != frame)
             {
-                if (scope.Results.TryGetValue(localKey, out var cached))
-                {
-                    if (DecisionReadScope.Current != null) DecisionReadScope.Current.ConditionResultHits++;
-                    return cached;
-                }
+                perUnit.Results.Clear();
+                perUnit.Frame = frame;
             }
-            else
-            {
-                int frame = Time.frameCount;
-                key = $"{caster?.UniqueId}|{target.UniqueId}|{ability.Blueprint?.AssetGuid}|{AbilityDiscovery.MetamagicTag(ability)}|" +
-                         $"{ability.SourceItem?.UniqueId}|{ability.Spellbook?.Blueprint?.AssetGuid}|{KineticEffectContext.KeyFor(ability)}|" +
-                         (aim.Unit != null ? aim.Unit.UniqueId : $"{aim.Point.x:R},{aim.Point.y:R},{aim.Point.z:R}:{aim.Orientation:R}");
-                if (!CheckerCache.TryGetValue(checker, out perUnit))
-                    CheckerCache[checker] = perUnit = new CheckerResults { Frame = frame };
-                if (perUnit.Frame != frame)
-                {
-                    perUnit.Results.Clear();
-                    perUnit.Frame = frame;
-                }
-                if (perUnit.Results.TryGetValue(key, out var cached)) return cached;
-            }
+            if (perUnit.Results.TryGetValue(key, out var cached)) return cached;
 
             bool? result = null;
             try
@@ -1801,7 +1576,7 @@ namespace CompanionAI_Pathfinder.Tactics
                 }
                 else
                 {
-                    var context = ConditionContext(ability, aim);
+                    var context = CombatMath.CreateContext(ability, aim);
                     if (context != null)
                     {
                         using (context.GetDataScope(new TargetWrapper(target)))
@@ -1817,8 +1592,7 @@ namespace CompanionAI_Pathfinder.Tactics
                 result = null;
             }
 
-            if (scope != null) scope.Results[localKey] = result;
-            else perUnit.Results[key] = result;
+            perUnit.Results[key] = result;
             return result;
         }
 
@@ -1889,7 +1663,6 @@ namespace CompanionAI_Pathfinder.Tactics
         public bool MarksForOwnAttacks { get; private set; }
 
         private ConditionsChecker m_AreaCondition;
-        private EffectGuard[] m_AreaGuard;
 
         /// <summary>
         /// ★ v0.3.8: the area spell can affect this unit at all: its AbilityTargetsAround filter (Sleep: few hit dice) is
@@ -1898,9 +1671,8 @@ namespace CompanionAI_Pathfinder.Tactics
         /// </summary>
         public bool AreaReaches(AbilityData ability, UnitEntityData unit)
         {
-            if (unit != null && !KineticAreaPreview.Reaches(this, unit)) return false;
             if (m_AreaCondition == null || unit == null) return true;
-            var guard = m_AreaGuard ?? (m_AreaGuard = new[] { new EffectGuard { Checker = m_AreaCondition, Branch = true } });
+            var guard = new[] { new EffectGuard { Checker = m_AreaCondition, Branch = true } };
             if (Evaluate(guard, ability, unit) != EffectApplies.No) return true;
             // ★ v0.3.9: once per ability (v0.3.8 logged every unit: ~20 lines for Soul Power, whose filter wants corpses).
             if (ReportedUnknown.Add($"area|{Blueprint.AssetGuid}"))

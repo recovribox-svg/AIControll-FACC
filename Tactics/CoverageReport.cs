@@ -151,10 +151,6 @@ namespace CompanionAI_Pathfinder.Tactics
         {
             try
             {
-                // ★ v0.3.22: describe the current per-blast path instead of the superseded burn-blockage fallback.
-                var kinetic = TacticalEngine.KineticModifierNote(toggle.Blueprint);
-                if (kinetic != null) return (ModSettings.Instance?.AiManagesToggles ?? true)
-                    ? kinetic : "leaves it (AI manages toggles off); " + kinetic;
                 string why = TacticalEngine.ToggleExclusion(unit, toggle);
                 if (why == null) return "may start it when worth it" + TacticalEngine.ToggleReading(toggle);
                 // ★ v0.3.18 (AA-3): attack modes and Mobility are decided with the attack or the move.

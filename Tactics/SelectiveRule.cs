@@ -70,7 +70,7 @@ namespace CompanionAI_Pathfinder.Tactics
                 if (caster == null) return false;
                 // The same context a cast creates (its Params carry the metamagic, automatic metamagic included); the
                 // stand-in entity is never registered anywhere, CheckSelective only reads these two fields.
-                var context = new AbilityExecutionContext(ability, CombatMath.AbilityParameters(ability), new TargetWrapper(caster.Position));
+                var context = new AbilityExecutionContext(ability, ability.CalculateParams(), new TargetWrapper(caster.Position));
                 var stand = (AreaEffectEntityData)FormatterServices.GetUninitializedObject(typeof(AreaEffectEntityData));
                 BlueprintField.SetValue(stand, area);
                 ContextField.SetValue(stand, (MechanicsContext)context);

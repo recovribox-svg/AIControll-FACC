@@ -5,7 +5,6 @@
 // the detector cannot see (enchantments, utility abilities, buffs applied through custom components).
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using Kingmaker;
 using Kingmaker.EntitySystem.Entities;
 using Kingmaker.UnitLogic.Abilities;
@@ -167,13 +166,6 @@ namespace CompanionAI_Pathfinder.Tactics
                         if (wasOn)
                         {
                             var bp = toggle.Blueprint;
-                            // ★ v0.3.22: restoring a different member must not evict the player's new group choice.
-                            if (bp.HasGroup && unit.ActivatableAbilities.Enumerable.Any(other => other != toggle &&
-                                other.Blueprint?.Group == bp.Group && (other.IsOn || other.IsStarted) && PlayerOwnsToggle(unit, other)))
-                            {
-                                Main.Log($"[Toggle] {unit.CharacterName}: {toggle.Name} not restored - player's group choice takes precedence");
-                                continue;
-                            }
                             int? resource = null;
                             try { resource = toggle.ResourceCount; } catch { }
                             bool startsNothingNow = bp.ActivateOnUnitAction || bp.ActivateOnCombatStarts ||
@@ -185,15 +177,7 @@ namespace CompanionAI_Pathfinder.Tactics
                         }
                         if (!wasOn || toggle.IsAvailable)
                         {
-                            if (TacticalEngine.HasKineticModifier(toggle.Blueprint))
-                            {
-                                if (!GameInterface.CommandDispatcher.Run(unit, toggle, wasOn, "restore pre-combat setup", out var failure))
-                                {
-                                    Main.Log($"[Kinetic] {unit.CharacterName}: could not restore {toggle.Name}: {failure}");
-                                    continue;
-                                }
-                            }
-                            else toggle.IsOn = wasOn;
+                            toggle.IsOn = wasOn;
                             Main.Log($"[Toggle] {unit.CharacterName}: {toggle.Name} {(wasOn ? "on" : "off")} again - the fight is over (as before it)");
                         }
                     }

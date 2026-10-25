@@ -129,7 +129,7 @@ namespace CompanionAI_Pathfinder.Tactics
                 parts.AddRange(read.Parts);
                 foreach (var u in read.UnreadFor(giver)) unread.Add(u);
             }
-            var abilityCtx = CombatMath.ContextForEffects(ability, new Kingmaker.Utility.TargetWrapper(ally));
+            var abilityCtx = CombatMath.CreateContext(ability, new Kingmaker.Utility.TargetWrapper(ally));
             // ★ v0.3.21: the weapon enchantments it puts on the recipient's weapon (Magic Weapon, Keen Edge, oils, Holy
             // Sword): their parts, for the weapon each one goes on. A buff that only carries one (Keen Edge's is empty) is
             // valued by the enchantment.
@@ -472,7 +472,7 @@ namespace CompanionAI_Pathfinder.Tactics
         /// ability's context (caster level, ranks), doubled by Extend; -1 when it cannot be known (copies a parent).
         /// </summary>
         private static float EffectiveRounds(AbilityData ability, AbilityProfile profile, BlueprintBuff buff,
-                                             MechanicsContext abilityCtx)
+                                             Kingmaker.UnitLogic.Abilities.AbilityExecutionContext abilityCtx)
         {
             try
             {
@@ -551,16 +551,16 @@ namespace CompanionAI_Pathfinder.Tactics
         /// carry effects the reader does not value (★ audit review: the share read is then a floor, not the whole worth).
         /// </summary>
         private static float DebuffShareOf(TacticalContext ctx, AbilityData ability, UnitEntityData enemy, List<BlueprintBuff> buffs,
-                                           out bool partial, AbilityProfile profile = null)
+                                           out bool partial)
         {
             MechanicsContext abilityCtx = null;
-            try { abilityCtx = CombatMath.ContextForEffects(ability, new Kingmaker.Utility.TargetWrapper(enemy)); } catch { }
-            return DebuffShareIn(ctx, abilityCtx, enemy, buffs, out partial, profile);
+            try { abilityCtx = CombatMath.CreateContext(ability, new Kingmaker.Utility.TargetWrapper(enemy)); } catch { }
+            return DebuffShareIn(ctx, abilityCtx, enemy, buffs, out partial);
         }
 
         /// <summary>★ v0.3.21: the same with a given source context (a buff's on-hit debuff: the buff's context).</summary>
         private static float DebuffShareIn(TacticalContext ctx, MechanicsContext abilityCtx, UnitEntityData enemy, List<BlueprintBuff> buffs,
-                                           out bool partial, AbilityProfile profile = null, bool removingBenefits = false)
+                                           out bool partial)
         {
             partial = false;
             try
@@ -576,61 +576,35 @@ namespace CompanionAI_Pathfinder.Tactics
                 if (parts.Count == 0) return -1f;
                 int casterLevel = 1;
                 try { casterLevel = Math.Max(1, abilityCtx?.Params?.CasterLevel ?? 1); } catch { }
-                float attack = 0f, damage = 0f, armor = 0f, saves = 0f, strength = 0f, dexterity = 0f, outlineGain = 0f;
+                float attack = 0f, damage = 0f, armor = 0f, saves = 0f, strength = 0f, dexterity = 0f;
                 bool any = false;
                 foreach (var p in parts)
                 {
-                    float amount = PartAmount(p, ctx.Unit, abilityCtx, enemy, casterLevel) *
-                                   (profile?.AddedBuffRanks(p.Owner, abilityCtx, enemy) ?? 1f);
+                    float amount = PartAmount(p, ctx.Unit, abilityCtx, enemy, casterLevel);
                     if (p.Conditional) amount *= 0.5f;
-                    float taken = removingBenefits ? amount : -amount;   // removal takes away a positive benefit
+                    float taken = -amount;   // a penalty is a negative bonus
                     switch (p.Kind)
                     {
                         case BuffPartKind.Attack: attack += taken; any = true; break;
                         case BuffPartKind.Damage: damage += taken; any = true; break;
-                        case BuffPartKind.ArmorClass:
-                            if (p.Weapon != null) taken *= PartyDeliveryShare(ctx, a => p.Weapon(a.Body?.PrimaryHand?.MaybeWeapon?.Blueprint));
-                            else if (p.Against != Kingmaker.Blueprints.Classes.Spells.SpellDescriptor.None)
-                                taken *= PartySpellShare(ctx, p.Against);
-                            armor += taken; any = true; break;
-                        case BuffPartKind.RemovesConcealment:
-                            // Reuse the sight appraisal's conservative invisibility/Blur/Displacement estimate.
-                            float gained = ctx.Allies.Sum(a => OffenceOf(ctx, a).DamagePerRound * RemovableMiss(ctx, a, true, enemy));
-                            if (CombatMath.ControlWorth(enemy) > 0f)
-                                outlineGain += gained / CombatMath.ControlWorth(enemy);
-                            any = true; break;
+                        case BuffPartKind.ArmorClass: armor += taken; any = true; break;
                         case BuffPartKind.Saves: saves += taken * p.SaveShare; any = true; break;
                         // ★ audit review: an immunity a debuff carries (a petrified or paralysed body's) is not a penalty and
                         // must not cancel the real ones.
-                        case BuffPartKind.ConditionalSaves:
-                            if (taken > 0f)
-                            {
-                                float share = p.Against != Kingmaker.Blueprints.Classes.Spells.SpellDescriptor.None
-                                    ? PartySpellShare(ctx, p.Against) : 0.5f;
-                                saves += taken * share; any = true;
-                            }
-                            break;
+                        case BuffPartKind.ConditionalSaves: if (taken > 0f) { saves += taken * 0.5f; any = true; } break;
                         case BuffPartKind.Strength: strength += taken; any = true; break;
                         case BuffPartKind.Dexterity: dexterity += taken; any = true; break;
                         case BuffPartKind.Constitution: saves += taken * 0.5f; any = true; break;
                         case BuffPartKind.MentalStat: saves += taken * 0.25f; any = true; break;
                     }
                 }
-                return any ? ValueModel.DebuffShare(attack, damage, armor, saves, strength, dexterity) + outlineGain : -1f;
+                return any ? ValueModel.DebuffShare(attack, damage, armor, saves, strength, dexterity) : -1f;
             }
             catch
             {
                 return -1f;
             }
         }
-
-        // ★ v0.3.22: party composition filters conditional debuff parts, with no flat "half applies" assumption.
-        private static float PartyDeliveryShare(TacticalContext ctx, Func<UnitEntityData, bool> matches) =>
-            ctx.Allies.Count == 0 ? 0f : ctx.Allies.Count(matches) / (float)ctx.Allies.Count;
-
-        private static float PartySpellShare(TacticalContext ctx, Kingmaker.Blueprints.Classes.Spells.SpellDescriptor descriptor) =>
-            PartyDeliveryShare(ctx, a => AbilityDiscovery.Gather(a).Any(s => s.IsAvailable && s.SpellDescriptor.HasFlag(descriptor) &&
-                                                                         AbilityProfile.Get(s).HarmfulEffects));
 
         /// <summary>★ v0.3.21: the stat the recipient's spell DCs come from (its spellbook with the highest caster level), or
         /// null when it casts no spells.</summary>
@@ -659,13 +633,13 @@ namespace CompanionAI_Pathfinder.Tactics
         /// through Blur and Displacement - the game's own exceptions (UnitPartConcealment.Calculate). Nothing for what it
         /// sees already, or while blind.
         /// </summary>
-        private static float RemovableMiss(TacticalContext ctx, UnitEntityData ally, bool trueSeeing, UnitEntityData onlyEnemy = null)
+        private static float RemovableMiss(TacticalContext ctx, UnitEntityData ally, bool trueSeeing)
         {
             try
             {
                 var state = ally.Descriptor.State;
                 if (state.HasCondition(UnitCondition.Blindness)) return 0f;
-                var fighting = ctx.Enemies.Where(e => (onlyEnemy == null || e == onlyEnemy) && !CombatMath.IsDisabled(e)).ToList();
+                var fighting = ctx.Enemies.Where(e => !CombatMath.IsDisabled(e)).ToList();
                 if (fighting.Count == 0) return 0f;
                 bool seesInvisible = ally.Descriptor.IsSeeInvisibility || ally.Get<Kingmaker.UnitLogic.Parts.UnitPartBlindsense>() != null;
                 bool seesTrue = state.HasCondition(UnitCondition.TrueSeeing);

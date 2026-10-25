@@ -6,22 +6,6 @@ namespace CompanionAI.Tests
     /// <summary>★ v0.3.14: which options a unit's statuses let the game start (Tactics/ActionRules.cs).</summary>
     public class ActionRulesTests
     {
-        // ★ v0.3.22: end-of-turn/cooldown pruning must retain free/swift actions and standard-as-move.
-        [Theory]
-        [InlineData(ActionSlot.Free, false, false, false, false, true)]
-        [InlineData(ActionSlot.Standard, false, true, true, false, false)]
-        [InlineData(ActionSlot.Standard, true, false, false, false, true)]
-        [InlineData(ActionSlot.Move, true, false, false, false, true)]
-        [InlineData(ActionSlot.Move, false, true, false, false, true)]
-        [InlineData(ActionSlot.Move, false, false, true, false, false)]
-        [InlineData(ActionSlot.Swift, false, false, true, false, true)]
-        [InlineData(ActionSlot.Swift, true, true, false, true, false)]
-        [InlineData(ActionSlot.FullRound, true, true, true, false, false)]
-        [InlineData(ActionSlot.FullRound, false, false, false, true, true)]
-        public void AbilitySlotPruning_UsesTheCurrentActionEconomy(ActionSlot slot, bool standard, bool move,
-            bool swift, bool fullRound, bool expected) =>
-            Assert.Equal(expected, ActionRules.HasSlot(slot, standard, move, swift, fullRound));
-
         private static string Check(ActionPermissions p, bool plainMove, bool walks, bool mainAction) =>
             ActionRules.Refusal(p, plainMove, walks, mainAction);
 

@@ -25,20 +25,6 @@ namespace CompanionAI_Pathfinder.Tactics
         /// </summary>
         public static List<AbilityData> Gather(UnitEntityData unit)
         {
-            // ★ v0.3.22: conversions are discovered once per unit/decision state. Callers keep their own list;
-            // availability is still read live, and modifier previews invalidate this cache on entry and exit.
-            var scope = DecisionReadScope.Current;
-            if (unit == null || scope == null) return GatherUncached(unit);
-            if (!scope.Abilities.TryGetValue(unit, out var abilities))
-            {
-                scope.DiscoveryBuilds++;
-                scope.Abilities[unit] = abilities = GatherUncached(unit);
-            }
-            return new List<AbilityData>(abilities);
-        }
-
-        private static List<AbilityData> GatherUncached(UnitEntityData unit)
-        {
             var seen = new HashSet<string>();
             var result = new List<AbilityData>();
             if (unit == null) return result;

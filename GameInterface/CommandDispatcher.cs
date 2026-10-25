@@ -15,7 +15,6 @@
 // ForcedPath - and nothing more. Real-time combat and out-of-combat movement do not use ForcedPath
 // (TickApproaching calls view.MoveTo there), so commands are passed through unchanged in those modes.
 using System;
-using System.Linq;
 using System.Collections.Generic;
 using Kingmaker;
 using Kingmaker.EntitySystem.Entities;
@@ -30,32 +29,6 @@ namespace CompanionAI_Pathfinder.GameInterface
 {
     public static class CommandDispatcher
     {
-        /// <summary>★ v0.3.22: dispatcher-owned resource-free modifier switch. The native setter may queue a
-        /// free UnitActivateAbility; return that command instead of issuing a duplicate or pretending it already acted.</summary>
-        public static bool Run(UnitEntityData unit, Kingmaker.UnitLogic.ActivatableAbilities.ActivatableAbility toggle,
-                               bool on, string label, out string failure)
-            => Run(unit, toggle, on, label, out failure, out _);
-
-        public static bool Run(UnitEntityData unit, Kingmaker.UnitLogic.ActivatableAbilities.ActivatableAbility toggle,
-                               bool on, string label, out string failure, out UnitCommand activation)
-        {
-            failure = null;
-            activation = null;
-            if (unit == null || toggle?.Blueprint == null || toggle.Blueprint.IsTargeted || toggle.ResourceCount.HasValue ||
-                (toggle.Blueprint.ActivateWithUnitCommand && UnitActivateAbility.GetCommandType(toggle) != UnitCommand.CommandType.Free))
-            { failure = "not a resource-free immediate/free-command modifier"; return false; }
-            try
-            {
-                if (on && !toggle.IsAvailable) { failure = "modifier is unavailable"; return false; }
-                toggle.IsOn = on;
-                if (toggle.IsOn != on) { failure = "native modifier switch refused"; return false; }
-                activation = unit.Commands.Raw.FirstOrDefault(c => c is UnitActivateAbility a && a.Ability == toggle);
-                Main.Log($"[Toggle] {unit.CharacterName}: {toggle.Name} {(on ? "on" : "off")} - {label}");
-                return true;
-            }
-            catch (Exception ex) { failure = ex.Message; return false; }
-        }
-
         /// <summary>Claim key used while our path is being calculated (mirrors DecisionContext's claiming).</summary>
         private const string PathClaimKey = "companionai_dispatcher_path";
 

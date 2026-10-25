@@ -1,14 +1,11 @@
 # AI Control - Fully Autonomous Combat Companions
 
-## Download the development test build
+**Development has been rolled back to the v0.3.21 runtime. All v0.3.22 test builds are withdrawn.**
+Install the existing [stable v0.3.21 release](https://github.com/recovribox-svg/AIControll-FACC/releases/tag/v0.3.21),
+not a previously downloaded experimental ZIP. Fully exit the game before replacing the mod.
 
-**[Download the UMM test ZIP — fcc64b1](https://github.com/recovribox-svg/AIControll-FACC/raw/refs/heads/claude/dreamy-pasteur-b9h3rn/test-builds/AI-Control-FACC-fcc64b1-UMM-test.zip)**
-
-Close the game, drag the downloaded ZIP into Unity Mod Manager's **Mods** tab, install/update it, then launch the game.
-This experimental build includes the merged PR #4 fixes. UMM displays **0.3.21** because release metadata is unchanged;
-identify this test by **fcc64b1** and its filename. In-game validation is still pending.
-
-[Download instructions, checksum and build details](test-builds/README.md).
+Read the [rollback and failure analysis](docs/V0_3_22_POSTMORTEM.md) before resuming development.
+The [Claude/Codex contribution workflow](CONTRIBUTING.md) remains in effect.
 
 *Pathfinder: Wrath of the Righteous* · by MonsieurAndroid · Unity Mod Manager id `CompanionAI_Pathfinder`
 

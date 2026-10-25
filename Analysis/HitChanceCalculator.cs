@@ -477,7 +477,7 @@ namespace CompanionAI_Pathfinder.Analysis
                 // ground effects) resists it whether or not the spell allows spell resistance; only then the roll.
                 // The immunity check sat behind the "no spell resistance" shortcut, so a spell without SR (Grease) never
                 // saw it.
-                if ((bool)caster.Descriptor.State.Features.PrimalMagicEssence || IgnoresSpellResistance(caster, target, ability))
+                if ((bool)caster.Descriptor.State.Features.PrimalMagicEssence || IgnoresSpellResistance(caster, ability))
                 {
                     result.PenetrationChance = 1.0f;
                     return result;
@@ -513,7 +513,7 @@ namespace CompanionAI_Pathfinder.Analysis
                     return result;
                 }
 
-                int casterLevel = CompanionAI_Pathfinder.Tactics.CombatMath.AbilityParameters(ability)?.CasterLevel ?? ability.Spellbook?.CasterLevel ?? caster.Progression?.CharacterLevel ?? 1;
+                int casterLevel = ability.CalculateParams()?.CasterLevel ?? ability.Spellbook?.CasterLevel ?? caster.Progression?.CharacterLevel ?? 1;
                 int bonus = GetSpellPenetrationBonus(caster, ability);
                 int penetration = casterLevel + bonus;
                 var replace = caster.Get<UnitPartSpellResistanceCheckReplace>();
@@ -762,20 +762,17 @@ namespace CompanionAI_Pathfinder.Analysis
         }
 
         /// <summary>★ v0.3.14: an IgnoreSpellResistanceForSpells component on the caster covers this ability (or its parent).</summary>
-        private static bool IgnoresSpellResistance(UnitEntityData caster, UnitEntityData target, AbilityData ability)
+        private static bool IgnoresSpellResistance(UnitEntityData caster, AbilityData ability)
         {
             try
             {
-                var sources = CompanionAI_Pathfinder.Tactics.KineticPreview.ActiveComponents<Kingmaker.Designers.Mechanics.Facts.IgnoreSpellResistanceForSpells>(caster).ToList();
-                if (sources.Count == 0) return false;
-                var context = CompanionAI_Pathfinder.Tactics.CombatMath.CreateContext(ability, new Kingmaker.Utility.TargetWrapper(target));
-                if (context == null) return false;
-                var rule = new Kingmaker.RuleSystem.Rules.RuleSpellResistanceCheck(context, target);
-                foreach (var source in sources)
+                var bp = ability.GetDeliverBlueprint() ?? ability.Blueprint;
+                foreach (var fact in caster.Facts.List)
                 {
-                    CompanionAI_Pathfinder.Tactics.KineticPreview.QueryComponent(source.Component, source.Fact,
-                        c => c.OnEventAboutToTrigger(rule));
-                    if (rule.IgnoreSpellResistance) return true;
+                    if (fact?.Blueprint == null || !fact.Active) continue;
+                    foreach (var c in fact.Blueprint.ComponentsArray.OfType<Kingmaker.Designers.Mechanics.Facts.IgnoreSpellResistanceForSpells>())
+                        if (c.AllSpells || c.AbilityList.Contains(bp) || (bp.Parent != null && c.AbilityList.Contains(bp.Parent)))
+                            return true;
                 }
             }
             catch

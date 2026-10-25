@@ -32,14 +32,6 @@ namespace CompanionAI_Pathfinder.Tactics
     public sealed class WeaponAttackEstimate
     {
         public float ExpectedDamage;
-        // ★ v0.3.22: the native attack routine includes iterative, off-hand and additional (e.g. Haste) attacks.
-        internal readonly List<BladeDelivery> BladeDeliveries = new List<BladeDelivery>();
-        internal sealed class BladeDelivery
-        {
-            internal AbilityData Blast;
-            internal ItemEntityWeapon Weapon;
-            internal readonly List<float> Hits = new List<float>();
-        }
         public int Attacks;
         public float Reach;
         public bool IsRanged;
@@ -190,7 +182,6 @@ namespace CompanionAI_Pathfinder.Tactics
             public float GameHit, PhysicalFactor = 1f;
             /// <summary>★ v0.3.19 (test5): the blast a kinetic blade casts on each hit (after the target's resistances).</summary>
             public float BladeBlast;
-            public AbilityData BladeAbility;
             public int DamageReduction;
             public float ThreatChance;
             public int CritMultiplier;
@@ -217,7 +208,6 @@ namespace CompanionAI_Pathfinder.Tactics
         public static WeaponAttackEstimate EstimateWeaponAttack(UnitEntityData unit, UnitEntityData target, bool full,
                                                                 Func<ItemEntityWeapon, int, KeyValuePair<int, float>> delta)
         {
-            KineticDecisionScope.Check();
             var routine = ReadRoutine(unit, target, full);
             if (routine == null) return null;
 
@@ -232,16 +222,6 @@ namespace CompanionAI_Pathfinder.Tactics
                 float p = HitProbability(line.AttackBonus + d.Key, line.ArmorClass);
                 if (line.Index == 0) result.FirstHitChance = p;
                 noHit *= 1f - p;
-                if (line.BladeAbility != null)
-                {
-                    var delivery = result.BladeDeliveries.FirstOrDefault(b => b.Weapon == line.Weapon && b.Blast.Blueprint == line.BladeAbility.Blueprint);
-                    if (delivery == null)
-                    {
-                        delivery = new WeaponAttackEstimate.BladeDelivery { Blast = line.BladeAbility, Weapon = line.Weapon };
-                        result.BladeDeliveries.Add(delivery);
-                    }
-                    delivery.Hits.Add(p * SpellResistancePass(unit, target, line.BladeAbility));
-                }
                 // ★ v0.3.19 (test5): a kinetic blade's blast lands with the hit and is multiplied by its critical
                 // (ContextActionDealDamage takes the weapon's critical multiplier from the attack roll).
                 // ★ v0.3.20 (playtest 1): the game's damage of a hit on this target; an attack mode's damage change counts
@@ -311,7 +291,6 @@ namespace CompanionAI_Pathfinder.Tactics
                     // weapon damage, kinetic blasts excepted), so a full attack beat Ember's Fire Blast and Camellia's
                     // Eldritch Blast; critical hits and sneak attacks were counted on targets immune to them.
                     var hit = ReadHitOnTarget(unit, target, weapon, stats);
-                    float bladeDamage = BladeBlastPerHit(unit, target, weapon, out var bladeAbility);
                     routine.Lines.Add(new AttackLine
                     {
                         Weapon = weapon,
@@ -321,7 +300,7 @@ namespace CompanionAI_Pathfinder.Tactics
                         RawPerHit = perHit,
                         GameHit = hit.Read ? hit.Damage : Math.Max(0f, perHit - reduction),
                         PhysicalFactor = hit.Read ? hit.PhysicalFactor : 1f,
-                        BladeBlast = bladeDamage, BladeAbility = bladeAbility,
+                        BladeBlast = BladeBlastPerHit(unit, target, weapon),
                         DamageReduction = reduction,
                         ThreatChance = hit.CritImmune ? 0f : Mathf.Clamp01(stats.CriticalRange / 20f),
                         CritMultiplier = stats.CriticalMultiplier,
@@ -432,9 +411,8 @@ namespace CompanionAI_Pathfinder.Tactics
         /// .TryHandleKineticBladeAttack: RuleCastSpell of WeaponKineticBlade.GetBlastAbility with the hit's attack roll).
         /// The blade itself deals little: without it a Kinetic Knight's attacks were worth a fraction of what they do.
         /// </summary>
-        private static float BladeBlastPerHit(UnitEntityData unit, UnitEntityData target, ItemEntityWeapon weapon, out AbilityData delivered)
+        private static float BladeBlastPerHit(UnitEntityData unit, UnitEntityData target, ItemEntityWeapon weapon)
         {
-            delivered = null;
             try
             {
                 var blade = Kingmaker.Blueprints.BlueprintExtenstions.GetComponent<Kingmaker.UnitLogic.Class.Kineticist.WeaponKineticBlade>(weapon.Blueprint);
@@ -449,7 +427,6 @@ namespace CompanionAI_Pathfinder.Tactics
                     return 0f;
                 var profile = AbilityProfile.Get(blast);
                 if (profile == null) return 0f;
-                delivered = blast;
                 return EstimateAbilityDamage(blast, profile, target, weapon) * SpellResistancePass(unit, target, blast);
             }
             catch (Exception ex)
@@ -513,16 +490,11 @@ namespace CompanionAI_Pathfinder.Tactics
 
         #region Spells and abilities
 
-        /// <summary>★ v0.3.22: shared readers use the actual infusion fact context when appraising its actions.</summary>
-        public static MechanicsContext ContextForEffects(AbilityData ability, TargetWrapper target) =>
-            KineticEffectContext.For(ability) ?? CreateContext(ability, target);
-
         public static AbilityExecutionContext CreateContext(AbilityData ability, TargetWrapper target)
         {
             try
             {
-                if (DecisionReadScope.Current != null) DecisionReadScope.Current.ContextBuilds++;
-                var ctx = ability.CreateExecutionContext(target, AbilityParameters(ability));
+                var ctx = ability.CreateExecutionContext(target);
                 ctx.RecalculateRanks();
                 return ctx;
             }
@@ -532,10 +504,6 @@ namespace CompanionAI_Pathfinder.Tactics
                 return null;
             }
         }
-
-        // ★ v0.3.22: native parameters are reused only within this decision/state/ambient context.
-        internal static AbilityParams AbilityParameters(AbilityData ability) =>
-            DecisionReadScope.Current is DecisionReadScope reads ? reads.Parameters(ability) : ability.CalculateParams();
 
         public static float EvaluateDice(ContextDiceValue value, MechanicsContext ctx, int casterLevel,
                                          bool maximize = false, bool empower = false)
@@ -600,7 +568,7 @@ namespace CompanionAI_Pathfinder.Tactics
         {
             float raw = EstimateAbilityDamageRaw(ability, profile, target, bladeWeapon);
             // ★ v0.3.20 (0.3.19 feedback): a kinetic blast's estimate times what its hits really dealt so far.
-            return raw > 0f && !profile.IsKineticEffect ? raw * DamageObserver.BlastFactor(ability?.Caster?.Unit, ability?.Blueprint) : raw;
+            return raw > 0f ? raw * DamageObserver.BlastFactor(ability?.Caster?.Unit, ability?.Blueprint) : raw;
         }
 
         /// <summary>★ v0.3.20: the estimate before the learned share of a blast (DamageObserver checks against it).</summary>
@@ -608,10 +576,9 @@ namespace CompanionAI_Pathfinder.Tactics
         {
             if (profile.Damage.Count == 0) return 0f;
             if (target != null && profile.Damage.All(d => profile.AppliesTo(d, ability, target) == EffectApplies.No)) return 0f;
-            var ctx = ContextForEffects(ability, target != null ? new TargetWrapper(target) : null);
-            int cl = Math.Max(1, ctx?.Params?.CasterLevel ?? AbilityParameters(ability)?.CasterLevel ?? 1);
+            var ctx = CreateContext(ability, target != null ? new TargetWrapper(target) : null);
+            int cl = Math.Max(1, ability.CalculateParams()?.CasterLevel ?? 1);
             DamageMetamagic(ability, out bool maximize, out bool empower);
-            if (profile.IsKineticEffect) maximize = empower = false;
             var parts = new List<KeyValuePair<GameAction, float>>();
             // ★ v0.3.20 (playtest 1): a swarm takes half again from area damage (SwarmAoeVulnerability).
             float swarmArea = SwarmAreaFactor(ability, target, false);
@@ -631,11 +598,10 @@ namespace CompanionAI_Pathfinder.Tactics
                             avg = pre;
                         }
                         else avg = EvaluateDice(dmg.Value, ctx, Math.Min(cl, 10), maximize, empower);
-                        if (!profile.IsKineticEffect)
-                            avg += KineticDamageBonus(ability, dmg, profile.NeedsAttackRoll || bladeWeapon != null, bladeWeapon);
+                        avg += KineticDamageBonus(ability, dmg, profile.NeedsAttackRoll || bladeWeapon != null, bladeWeapon);
                         if (dmg.Half) avg *= 0.5f;
-                        if (!profile.IsKineticEffect) avg *= ArcherBlastDecline(ability, dmg, target);
-                        parts.Add(new KeyValuePair<GameAction, float>(dmg, AfterTargetReduction(target, dmg, avg, ability) * swarmArea));
+                        avg *= ArcherBlastDecline(ability, dmg, target);
+                        parts.Add(new KeyValuePair<GameAction, float>(dmg, AfterTargetReduction(target, dmg, avg) * swarmArea));
                         break;
                     // A kill is valued apart (KillApplies): it lands on a failed save, not half on a passed one.
                     case ContextActionKill _:
@@ -832,33 +798,12 @@ namespace CompanionAI_Pathfinder.Tactics
         /// them: Orvath's Fire Blast was valued at 25 against a Dretch (demons resist fire 10) for five rounds running.
         /// Weapon attacks already use the DR helper (HitChanceCalculator.CalculateDamageReduction).
         /// </summary>
-        private static float AfterTargetReduction(UnitEntityData target, ContextActionDealDamage dmg, float value, AbilityData ability)
+        private static float AfterTargetReduction(UnitEntityData target, ContextActionDealDamage dmg, float value)
         {
             if (target == null || value <= 0f || dmg?.DamageType == null) return value;
             try
             {
                 var type = dmg.DamageType;
-                // ★ v0.3.22: Armor-Piercing and equivalent rule handlers change the damage rule, not its dice.
-                // Ask that handler on a fake parent event, then the native calculation rule. No damage event is run.
-                var caster = ability?.Caster?.Unit;
-                if (caster != null)
-                {
-                    var sources = KineticPreview.ActiveComponents<Kingmaker.Designers.Mechanics.Facts.IgnoreDamageReductionOnTarget>(caster).ToList();
-                    bool comparingReduction = KineticPreview.Current?.Unit == caster &&
-                        KineticPreview.Current.Controlled.Any(b => Kingmaker.Blueprints.BlueprintExtenstions.GetComponent<Kingmaker.Designers.Mechanics.Facts.IgnoreDamageReductionOnTarget>(b) != null);
-                    if (sources.Count > 0 || comparingReduction)
-                    {
-                        var projectedDamage = type.CreateDamage(new DiceFormula(0, DiceType.Zero), Mathf.RoundToInt(value));
-                        var deal = new Kingmaker.RuleSystem.Rules.Damage.RuleDealDamage(caster, target,
-                            new Kingmaker.RuleSystem.Rules.Damage.DamageBundle((ItemEntityWeapon)null, projectedDamage))
-                            { IsFake = true, DisableBattleLogSelf = true, Reason = ContextForEffects(ability, new TargetWrapper(target)) };
-                        foreach (var source in sources)
-                            KineticPreview.QueryComponent(source.Component, source.Fact, c => c.OnEventAboutToTrigger(deal));
-                        if (deal.IgnoreDamageReduction || comparingReduction)
-                            return Rulebook.Trigger(new Kingmaker.RuleSystem.Rules.Damage.RuleCalculateDamage(deal))
-                                .CalculatedDamage.Sum(d => d.FinalValue);
-                    }
-                }
                 // ★ v0.3.14 (test5): what this target actually took from this damage type earlier in the fight (immune,
                 // resistance, vulnerability), whatever the reason - a component the model does not know, another mod.
                 var seen = DamageObserver.Lookup(target, DamageObserver.KeyOf(type));
@@ -931,7 +876,7 @@ namespace CompanionAI_Pathfinder.Tactics
             if (profile.Heals.Count == 0) return 0f;
             if (target != null && profile.Heals.All(h => profile.AppliesTo(h, ability, target) == EffectApplies.No)) return 0f;
             var ctx = CreateContext(ability, target != null ? new TargetWrapper(target) : null);
-            int cl = Math.Max(1, AbilityParameters(ability)?.CasterLevel ?? 1);
+            int cl = Math.Max(1, ability.CalculateParams()?.CasterLevel ?? 1);
             DamageMetamagic(ability, out bool maximize, out bool empower);
             var parts = new List<KeyValuePair<GameAction, float>>();
             foreach (var action in profile.Heals)
@@ -1024,7 +969,7 @@ namespace CompanionAI_Pathfinder.Tactics
                 bool veryDifficult = state.HasCondition(UnitCondition.SpellCastingIsVeryDifficult);
                 if (!veryDifficult && !state.HasCondition(UnitCondition.Entangled) && !state.HasCondition(UnitCondition.SpellCastingIsDifficult))
                     return 1f;
-                var p = AbilityParameters(ability);
+                var p = ability.CalculateParams();
                 int dc = 15 + p.SpellLevel + (veryDifficult ? p.SpellLevel : 0);
                 int need = dc - p.Concentration;                       // d20 result needed
                 return Mathf.Clamp01((21f - need) / 20f);
@@ -1040,15 +985,14 @@ namespace CompanionAI_Pathfinder.Tactics
         /// chance × failed save (for damage, a successful save still counts half when the spell does half on a save).
         /// One formula for damage/control scoring and Progressive's viability test, in both combat modes.
         /// </summary>
-        public static float EffectChance(UnitEntityData caster, UnitEntityData enemy, AbilityData ability, AbilityProfile profile, bool damage, float conditional = 1f)
+        public static float EffectChance(UnitEntityData caster, UnitEntityData enemy, AbilityData ability, AbilityProfile profile, bool damage)
         {
-            float p = profile.IsKineticEffect ? 1f
-                : SpellResistancePass(caster, enemy, ability) * ShadowShare(ability, enemy);
+            float p = SpellResistancePass(caster, enemy, ability) * ShadowShare(ability, enemy);
             if (profile.NeedsAttackRoll) p *= SpellAttackHitChance(caster, enemy, ability);
             if (profile.Save != SavingThrowType.Unknown)
             {
                 float fail = SaveFailChance(ability, profile, enemy);
-                if (!damage) p *= profile.BuffOnBothSaveOutcomes ? 1f : fail;
+                if (!damage) p *= fail;
                 else if (!profile.HalfOnSave) p *= fail;
                 else
                 {
@@ -1058,12 +1002,8 @@ namespace CompanionAI_Pathfinder.Tactics
                     p *= fail * (improved ? 0.5f : 1f) + (1f - fail) * (evasion ? 0f : 0.5f);
                 }
             }
-            p *= conditional;
-            return profile.IsKineticEffect ? KineticEffectContext.LandChance(ability, enemy, p, damage) : p;
+            return p;
         }
-
-        internal static bool DeliveryWeaponForEffect(AbilityData ability, out ItemEntityWeapon weapon) =>
-            DeliveryWeapon(ability.Caster.Unit, ability, out weapon, out _, out _);
 
         /// <summary>
         /// ★ v0.3.18 (AA-4): Demoralize by the game's rule (Demoralize.RunAction): d20 + Intimidate + the action's bonus
@@ -1138,7 +1078,7 @@ namespace CompanionAI_Pathfinder.Tactics
                     if (action.UseKineticistMainStat)
                         stat = caster.Get<Kingmaker.UnitLogic.Class.Kineticist.UnitPartKineticist>()?.MainStatType ?? stat;
                     if (action.UseCastingStat) stat = ability?.Spellbook?.Blueprint.CastingAttribute ?? StatType.Charisma;
-                    if (action.UseCasterLevelAsBaseAttack && ability != null) cmbRule.ReplaceBAB = AbilityParameters(ability).CasterLevel;
+                    if (action.UseCasterLevelAsBaseAttack && ability != null) cmbRule.ReplaceBAB = ability.CalculateParams().CasterLevel;
                     if (action.UseBestMentalStat)
                     {
                         var st = caster.Stats;
@@ -1386,7 +1326,7 @@ namespace CompanionAI_Pathfinder.Tactics
             if (save == SavingThrowType.Unknown || target == null) return 1f;
             try
             {
-                int dc = KineticEffectContext.For(ability)?.Params?.DC ?? AbilityParameters(ability)?.DC ?? 10;
+                int dc = ability.CalculateParams()?.DC ?? 10;
                 int bonus;
                 switch (save)
                 {
@@ -1396,7 +1336,7 @@ namespace CompanionAI_Pathfinder.Tactics
                     default: return 1f;
                 }
                 // ★ v0.3.15: contextual save bonuses the game applied the last time (SaveObserver).
-                var seen = KineticEffectContext.For(ability) == null ? SaveObserver.Lookup(target, save, ability.Blueprint) : null;
+                var seen = SaveObserver.Lookup(target, save, ability.Blueprint);
                 if (seen != null)
                 {
                     if (seen.AutoPass) return 0f;
@@ -1433,7 +1373,7 @@ namespace CompanionAI_Pathfinder.Tactics
             float points = 0f;
             try
             {
-                int dc = (ability == null ? null : AbilityParameters(ability))?.DC ?? 10;
+                int dc = ability?.CalculateParams()?.DC ?? 10;
                 foreach (var poison in Kingmaker.Blueprints.BlueprintExtenstions.GetComponents<Kingmaker.Designers.Mechanics.Buffs.BuffPoisonStatDamage>(buff))
                 {
                     if (poison.Stat != StatType.Constitution) continue;
