@@ -60,6 +60,9 @@ benchmark. See `docs/KINETICIST_PLAYTEST_STUTTER.md` for the supplied logs and r
 
 The condition-context follow-up checks cast/aim/source/recipient isolation, native main-target parity, scoped
 guard-hit isolation, shared-value restoration on normal/early/exception paths, movement-only skips and retained
-deferred scoring. The offline cache checks also require an isolated fixed `Time.frameCount` getter; live Unity
-supplies it in the game. Guard-hit fixtures use seeded results because fully initialized actor misses need the
+deferred scoring. `run.sh` creates the isolated fixed `Time.frameCount` getter needed by the offline cache checks;
+live Unity supplies it in the game. `RunnableStubs` supports explicitly named bodyless internal calls; `run.sh`
+verifies that the frame getter was actually replaced. Optional finalizers absent in some Unity versions remain
+optional. Default rewriting leaves externs alone.
+Guard-hit fixtures use seeded results because fully initialized actor misses need the
 entity registry. See `docs/DECISION_CONTEXT_PLAYTEST.md`; no harness rewrites belong in a deployed mod.
