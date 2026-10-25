@@ -57,3 +57,12 @@ The playtest follow-up also checks native parameter reuse with isolated ability/
 mutable-ambient-context bypass, early spent-slot pruning and virtual dispatch through a synthetic native calculator
 subclass. Counting seams replace game-singleton-dependent calls in the offline process; they are not a latency
 benchmark. See `docs/KINETICIST_PLAYTEST_STUTTER.md` for the supplied logs and required gameplay replay.
+
+The condition-context follow-up checks cast/aim/source/recipient isolation, native main-target parity, scoped
+guard-hit isolation, shared-value restoration on normal/early/exception paths, movement-only skips and retained
+deferred scoring. `run.sh` creates the isolated fixed `Time.frameCount` getter needed by the offline cache checks;
+live Unity supplies it in the game. `RunnableStubs` supports explicitly named bodyless internal calls; `run.sh`
+verifies that the frame getter was actually replaced. Optional finalizers absent in some Unity versions remain
+optional. Default rewriting leaves externs alone.
+Guard-hit fixtures use seeded results because fully initialized actor misses need the
+entity registry. See `docs/DECISION_CONTEXT_PLAYTEST.md`; no harness rewrites belong in a deployed mod.

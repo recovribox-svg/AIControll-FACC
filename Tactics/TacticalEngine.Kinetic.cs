@@ -169,6 +169,7 @@ namespace CompanionAI_Pathfinder.Tactics
 
         private static void AddKineticCandidates(TacticalContext ctx, List<Candidate> list, bool preview)
         {
+            if (ctx.Permissions?.MovementOnly == true) return; // ★ v0.3.22: no burn-recovery command can start
             var unit = ctx.Unit;
             var part = unit.Get<UnitPartKineticist>();
             if (part == null) return;

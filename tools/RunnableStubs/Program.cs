@@ -9,8 +9,15 @@ int n = 0;
 foreach (var type in asm.MainModule.GetTypes())
     foreach (var m in type.Methods)
     {
-        if (!m.HasBody) continue;
-        if (only.Count > 0 && !only.Contains($"{type.FullName}::{m.Name}")) continue;
+        var name = $"{type.FullName}::{m.Name}";
+        if (only.Count > 0 && !only.Contains(name)) continue;
+        // ★ v0.3.22: Unity extern getters (Time.frameCount) have no IL body. Only an explicitly named
+        // internal call may acquire one; default reference-stub rewriting still leaves externs alone.
+        if (!m.HasBody)
+        {
+            if (only.Count == 0 || !m.IsInternalCall) continue;
+            m.Body = new MethodBody(m);
+        }
         // a reference stub can carry an internal call with a placeholder body, which the runtime rejects
         m.ImplAttributes &= ~MethodImplAttributes.InternalCall;
         var body = m.Body;
@@ -36,7 +43,7 @@ foreach (var type in asm.MainModule.GetTypes())
             else il.Emit(OpCodes.Ldnull);
         }
         il.Emit(OpCodes.Ret); n++;
-        if (only.Count > 0) Console.WriteLine($"  {type.FullName}::{m.Name}");
+        if (only.Count > 0) Console.WriteLine($"  {name}");
     }
 asm.Write(args[1]);
 Console.WriteLine($"{n} bodies replaced");

@@ -35,7 +35,7 @@ namespace CompanionAI_Pathfinder.Tactics
             new Dictionary<(Identity<AbilityData>, Identity<RulebookEventContext>, (bool, Identity<UnitEntityData>, Vector3, float, bool)), AbilityParams>();
         internal readonly Dictionary<UnitEntityData, List<AbilityData>> Abilities = new Dictionary<UnitEntityData, List<AbilityData>>();
         internal readonly Dictionary<(UnitEntityData, Type), object> Components = new Dictionary<(UnitEntityData, Type), object>();
-        internal int ParameterQueries, ParameterHits, ContextBuilds, FactScans, DiscoveryBuilds, SkippedAbilities;
+        internal int ParameterQueries, ParameterHits, ParameterBypasses, ContextBuilds, ConditionContextHits, ConditionResultHits, FactScans, DiscoveryBuilds, SkippedAbilities;
         private string slowAbility;
         private double slowAbilityMs;
 
@@ -46,7 +46,7 @@ namespace CompanionAI_Pathfinder.Tactics
             // A live mechanics scope has mutable targets/shared values that mod handlers can inspect. Do not
             // memoize inside it. Normal scorer calls outside such scopes still share native parameters per aim.
             // Never cache execution contexts: their shared values, target scopes and rulebook snapshots are mutable.
-            if (ContextData<MechanicsContext.Data>.Current != null) { ParameterQueries++; return ability.CalculateParams(); }
+            if (ContextData<MechanicsContext.Data>.Current != null) { ParameterQueries++; ParameterBypasses++; return ability.CalculateParams(); }
             var aim = AbilityProfile.CurrentAim;
             var key = (new Identity<AbilityData>(ability), new Identity<RulebookEventContext>(Rulebook.CurrentContext),
                 (aim != null, new Identity<UnitEntityData>(aim?.Unit), aim?.Point ?? default,
@@ -80,7 +80,7 @@ namespace CompanionAI_Pathfinder.Tactics
         internal string Summary() => "stages " + string.Join(", ", stages.OrderByDescending(s => s.Value).Take(3)
             .Select(s => $"{s.Key}={s.Value:F1}ms")) +
             (slowAbility == null ? "" : $"; top ability {slowAbility}={slowAbilityMs:F1}ms") +
-            $"; params {ParameterQueries} native/{ParameterHits} reused, contexts {ContextBuilds}, fact scans {FactScans}, discovery {DiscoveryBuilds}, slot skips {SkippedAbilities}";
+            $"; params {ParameterQueries} native/{ParameterHits} reused/{ParameterBypasses} ambient, contexts {ContextBuilds}/{ConditionContextHits} condition reuses/{ConditionResultHits} guard hits, fact scans {FactScans}, discovery {DiscoveryBuilds}, slot skips {SkippedAbilities}";
 
         public void Dispose() { Current = previous; InvalidateState(); }
     }

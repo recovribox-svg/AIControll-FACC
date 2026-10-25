@@ -121,6 +121,15 @@ namespace ProfileAudit
                 }
                 CheckSlot(ActionSlot.Standard, false); CheckSlot(ActionSlot.FullRound, false);
                 CheckSlot(ActionSlot.Swift, false); CheckSlot(ActionSlot.Move, false); CheckSlot(ActionSlot.Free, true);
+                // Claude's deferred scoring remains necessary for cooldown positioning / next-round gathering.
+                var slotDeferred = (List<AbilityData>)AccessTools.Field(typeof(TacticalContext), "SlotDeferred").GetValue(ctx);
+                slotDeferred.Clear();
+                CheckSlot(ActionSlot.Standard, false);
+                Require(slotDeferred.Count == 1, "slot-skipped ability was lost instead of deferred");
+                availabilityReads = 0;
+                var deferred = (IEnumerable<Candidate>)AccessTools.Method(typeof(TacticalEngine), "EvaluateDeferred")
+                    .Invoke(null, new object[] { ctx, (Func<AbilityData, bool>)(_ => true) });
+                Require(!deferred.Any() && availabilityReads == 1, "explicit deferred request did not revisit native availability");
                 ctx.HasStandard = true;
                 CheckSlot(ActionSlot.Move, true); CheckSlot(ActionSlot.Standard, true);
                 ctx.Permissions = new ActionPermissions { MovementOnly = true };

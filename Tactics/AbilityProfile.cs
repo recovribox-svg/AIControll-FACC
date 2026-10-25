@@ -15,6 +15,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
+using System.Runtime.CompilerServices;
 using Kingmaker.Blueprints;
 using Kingmaker.Blueprints.Classes.Spells;
 using Kingmaker.Designers.EventConditionActionSystem.Actions;
@@ -555,7 +556,13 @@ namespace CompanionAI_Pathfinder.Tactics
         }
 
         /// <summary>Per-target condition results are keyed by unit id; drop them when a combat ends.</summary>
-        public static void ClearConditionCache() => CheckerCache.Clear();
+        public static void ClearConditionCache()
+        {
+            CheckerCache.Clear();
+            // ★ v0.3.22: a nested modifier projection/restoration also invalidates detached cast contexts.
+            for (var scope = s_AimScope; scope != null; scope = scope.Previous)
+            { scope.Contexts.Clear(); scope.Results.Clear(); }
+        }
 
         #endregion
 
@@ -1516,13 +1523,20 @@ namespace CompanionAI_Pathfinder.Tactics
                 SharedValueRange(ability, context, t, out int lo, out int mid, out int hi);
                 return new { Type = t, Lo = lo, Mid = mid, Hi = hi };
             }).ToList();
-            foreach (var r in ranges) context[r.Type] = r.Lo;
-            bool low = Run(checker);
-            foreach (var r in ranges) context[r.Type] = r.Hi;
-            bool high = Run(checker);
-            if (low == high) return low;
-            foreach (var r in ranges) context[r.Type] = r.Mid;
-            return Run(checker);
+            // ★ v0.3.22: checks can use a detached cast context more than once, or an infusion's real source
+            // context. The old early return left the high/average test value written into that context.
+            var saved = ranges.Select(r => context[r.Type]).ToArray();
+            try
+            {
+                foreach (var r in ranges) context[r.Type] = r.Lo;
+                bool low = Run(checker);
+                foreach (var r in ranges) context[r.Type] = r.Hi;
+                bool high = Run(checker);
+                if (low == high) return low;
+                foreach (var r in ranges) context[r.Type] = r.Mid;
+                return Run(checker);
+            }
+            finally { for (int i = 0; i < ranges.Count; i++) context[ranges[i].Type] = saved[i]; }
         }
 
         /// <summary>
@@ -1587,21 +1601,77 @@ namespace CompanionAI_Pathfinder.Tactics
         /// questions), each unit is its own main target, as before.
         /// </summary>
         [ThreadStatic] private static TargetWrapper s_Aim;
+        [ThreadStatic] private static AimScope s_AimScope;
 
         internal static TargetWrapper CurrentAim => s_Aim;
 
         internal static IDisposable AimedAt(TargetWrapper aim)
         {
-            var previous = s_Aim;
+            var scope = new AimScope(s_Aim, s_AimScope);
             s_Aim = aim;
-            return new AimScope(previous);
+            s_AimScope = scope;
+            return scope;
         }
 
         private sealed class AimScope : IDisposable
         {
             private readonly TargetWrapper m_Previous;
-            public AimScope(TargetWrapper previous) { m_Previous = previous; }
-            public void Dispose() => s_Aim = m_Previous;
+            internal readonly AimScope Previous;
+            internal readonly List<ConditionCast> Contexts = new List<ConditionCast>();
+            internal readonly Dictionary<ConditionKey, bool?> Results = new Dictionary<ConditionKey, bool?>();
+            public AimScope(TargetWrapper previous, AimScope previousScope) { m_Previous = previous; Previous = previousScope; }
+            public void Dispose() { s_Aim = m_Previous; s_AimScope = Previous; Contexts.Clear(); Results.Clear(); }
+        }
+
+        // ★ v0.3.22: within one aim, identity keys avoid formatted strings and repeated auto-metamagic queries
+        // merely to look up a guard result. A new aim (including wall orientation) owns a new dictionary.
+        private readonly struct ConditionKey : IEquatable<ConditionKey>
+        {
+            private readonly object checker, ability, target, caster, source;
+            internal ConditionKey(object checker, object ability, object target, object caster, object source)
+            { this.checker = checker; this.ability = ability; this.target = target; this.caster = caster; this.source = source; }
+            public bool Equals(ConditionKey other) => ReferenceEquals(checker, other.checker) && ReferenceEquals(ability, other.ability) &&
+                ReferenceEquals(target, other.target) && ReferenceEquals(caster, other.caster) && ReferenceEquals(source, other.source);
+            public override bool Equals(object other) => other is ConditionKey key && Equals(key);
+            public override int GetHashCode()
+            {
+                int Hash(object value) => value == null ? 0 : RuntimeHelpers.GetHashCode(value);
+                unchecked { return ((((Hash(checker) * 397) ^ Hash(ability)) * 397 ^ Hash(target)) * 397 ^ Hash(caster)) * 397 ^ Hash(source); }
+            }
+        }
+
+        private sealed class ConditionCast
+        {
+            internal AbilityData Ability;
+            internal MechanicsContext Ambient;
+            internal TargetWrapper AmbientTarget;
+            internal RulebookEvent Rule;
+            internal AbilityExecutionContext Context;
+        }
+
+        // ★ v0.3.22: one scored cast has one main aim and native parameter/rank snapshot. Its condition readers
+        // visit each recipient with GetDataScope; rebuilding the same cast for every guard/recipient copied the
+        // native rulebook history and reran parameter rules hundreds of times for Sleep. Keep this private to
+        // conditions: damage providers and other readers still receive fresh execution contexts.
+        private static MechanicsContext ConditionContext(AbilityData ability, TargetWrapper aim)
+        {
+            var infusion = KineticEffectContext.For(ability);
+            if (infusion != null) return infusion;
+            var scope = s_AimScope;
+            if (scope == null || s_Aim == null) return CombatMath.CreateContext(ability, aim);
+            var ambient = ContextData<MechanicsContext.Data>.Current;
+            var rule = Rulebook.CurrentContext?.CurrentEvent;
+            foreach (var entry in scope.Contexts)
+                if (ReferenceEquals(entry.Ability, ability) && ReferenceEquals(entry.Ambient, ambient?.Context) &&
+                    ReferenceEquals(entry.AmbientTarget, ambient?.CurrentTarget) && ReferenceEquals(entry.Rule, rule))
+                {
+                    if (DecisionReadScope.Current != null) DecisionReadScope.Current.ConditionContextHits++;
+                    return entry.Context;
+                }
+            var context = CombatMath.CreateContext(ability, aim);
+            scope.Contexts.Add(new ConditionCast { Ability = ability, Ambient = ambient?.Context,
+                AmbientTarget = ambient?.CurrentTarget, Rule = rule, Context = context });
+            return context;
         }
 
         public EffectApplies AppliesTo(GameAction effect, AbilityData ability, UnitEntityData target)
@@ -1683,22 +1753,37 @@ namespace CompanionAI_Pathfinder.Tactics
 
         private static bool? CheckFor(ConditionsChecker checker, AbilityData ability, UnitEntityData target, UnitEntityData caster)
         {
-            int frame = Time.frameCount;
             // Caster-dependent conditions (IsAlly, CasterHasFact, HasBuffFromCaster...): key by caster and target.
             // ★ v0.3.18 (review): and by the ability itself (a scroll and the spell, metamagic copies: caster level and
             // shared values differ) - one checker is shared by every copy of the blueprint.
             var aim = s_Aim ?? new TargetWrapper(target);
-            string key = $"{caster?.UniqueId}|{target.UniqueId}|{ability.Blueprint?.AssetGuid}|{AbilityDiscovery.MetamagicTag(ability)}|" +
-                         $"{ability.SourceItem?.UniqueId}|{ability.Spellbook?.Blueprint?.AssetGuid}|{KineticEffectContext.KeyFor(ability)}|" +
-                         (aim.Unit != null ? aim.Unit.UniqueId : $"{aim.Point.x:F1},{aim.Point.z:F1}");
-            if (!CheckerCache.TryGetValue(checker, out var perUnit))
-                CheckerCache[checker] = perUnit = new CheckerResults { Frame = frame };
-            if (perUnit.Frame != frame)
+            var scope = s_Aim != null ? s_AimScope : null;
+            var localKey = new ConditionKey(checker, ability, target, caster, KineticEffectContext.For(ability));
+            CheckerResults perUnit = null;
+            string key = null;
+            if (scope != null)
             {
-                perUnit.Results.Clear();
-                perUnit.Frame = frame;
+                if (scope.Results.TryGetValue(localKey, out var cached))
+                {
+                    if (DecisionReadScope.Current != null) DecisionReadScope.Current.ConditionResultHits++;
+                    return cached;
+                }
             }
-            if (perUnit.Results.TryGetValue(key, out var cached)) return cached;
+            else
+            {
+                int frame = Time.frameCount;
+                key = $"{caster?.UniqueId}|{target.UniqueId}|{ability.Blueprint?.AssetGuid}|{AbilityDiscovery.MetamagicTag(ability)}|" +
+                         $"{ability.SourceItem?.UniqueId}|{ability.Spellbook?.Blueprint?.AssetGuid}|{KineticEffectContext.KeyFor(ability)}|" +
+                         (aim.Unit != null ? aim.Unit.UniqueId : $"{aim.Point.x:R},{aim.Point.y:R},{aim.Point.z:R}:{aim.Orientation:R}");
+                if (!CheckerCache.TryGetValue(checker, out perUnit))
+                    CheckerCache[checker] = perUnit = new CheckerResults { Frame = frame };
+                if (perUnit.Frame != frame)
+                {
+                    perUnit.Results.Clear();
+                    perUnit.Frame = frame;
+                }
+                if (perUnit.Results.TryGetValue(key, out var cached)) return cached;
+            }
 
             bool? result = null;
             try
@@ -1716,7 +1801,7 @@ namespace CompanionAI_Pathfinder.Tactics
                 }
                 else
                 {
-                    var context = CombatMath.ContextForEffects(ability, aim);
+                    var context = ConditionContext(ability, aim);
                     if (context != null)
                     {
                         using (context.GetDataScope(new TargetWrapper(target)))
@@ -1732,7 +1817,8 @@ namespace CompanionAI_Pathfinder.Tactics
                 result = null;
             }
 
-            perUnit.Results[key] = result;
+            if (scope != null) scope.Results[localKey] = result;
+            else perUnit.Results[key] = result;
             return result;
         }
 
@@ -1803,6 +1889,7 @@ namespace CompanionAI_Pathfinder.Tactics
         public bool MarksForOwnAttacks { get; private set; }
 
         private ConditionsChecker m_AreaCondition;
+        private EffectGuard[] m_AreaGuard;
 
         /// <summary>
         /// ★ v0.3.8: the area spell can affect this unit at all: its AbilityTargetsAround filter (Sleep: few hit dice) is
@@ -1813,7 +1900,7 @@ namespace CompanionAI_Pathfinder.Tactics
         {
             if (unit != null && !KineticAreaPreview.Reaches(this, unit)) return false;
             if (m_AreaCondition == null || unit == null) return true;
-            var guard = new[] { new EffectGuard { Checker = m_AreaCondition, Branch = true } };
+            var guard = m_AreaGuard ?? (m_AreaGuard = new[] { new EffectGuard { Checker = m_AreaCondition, Branch = true } });
             if (Evaluate(guard, ability, unit) != EffectApplies.No) return true;
             // ★ v0.3.9: once per ability (v0.3.8 logged every unit: ~20 lines for Soul Power, whose filter wants corpses).
             if (ReportedUnknown.Add($"area|{Blueprint.AssetGuid}"))
