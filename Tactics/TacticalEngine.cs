@@ -44,6 +44,7 @@ namespace CompanionAI_Pathfinder.Tactics
         // ★ v0.3.22: retain the aimed wall orientation through command dispatch.
         public float? Orientation;
         public AbilityData Ability;
+        internal UnitEntityData EvaluationTarget; // original scored unit, including ground-aimed area candidates
         public bool FullAttack;
         public bool NeedsMove;
         /// <summary>★ v0.3.19 (test5): times the game gathers power before this blast (CombatMath.GatherPowerCount).</summary>
@@ -140,6 +141,9 @@ namespace CompanionAI_Pathfinder.Tactics
         /// <summary>★ v0.3.9: party members down (unconscious, not dead): only heals are aimed at them.</summary>
         public List<UnitEntityData> DownedAllies = new List<UnitEntityData>();
         public float ExpectedRounds;
+        internal double KineticSearchMilliseconds;
+        internal int KineticEvaluations, KineticPlanCount;
+        internal bool KineticBudgetExceeded;
         /// <summary>★ v0.3.18: the party's damage per round behind <see cref="ExpectedRounds"/> (ValueModel, prior blended with this fight).</summary>
         public float PartyDamagePerRound;
         /// <summary>
@@ -224,6 +228,8 @@ namespace CompanionAI_Pathfinder.Tactics
         /// </summary>
         private static Candidate Decide(UnitEntityData unit, TurnMemory memory, bool preview, out TacticalContext built)
         {
+            using var kineticDecision = unit?.Get<Kingmaker.UnitLogic.Class.Kineticist.UnitPartKineticist>() != null
+                ? new KineticDecisionScope() : null;
             // ★ v0.3.18 (AA-3): Mobility the AI switched on goes off once no enemy threatens the unit (full speed again),
             // before the context reads the unit's movement.
             if (!preview)
@@ -367,8 +373,12 @@ namespace CompanionAI_Pathfinder.Tactics
             {
                 int burn = chosen?.KineticModes != null ? chosen.KineticBurn : BurnOf(chosen?.Ability);
                 var other = usable.FirstOrDefault(c => c != chosen && c.Slot != ActionSlot.Free);
-                Main.Log($"[Kinetic] {unit.CharacterName}: {(chosen == null ? "no action" : chosen.Label)}; " +
-                         $"burn {burn}, gather {chosen?.GatherPower ?? 0}, net {chosen?.Value ?? 0f:F1}" +
+                Action<string> kineticLog = chosen == null ? (Action<string>)Main.Verbose : Main.Log;
+                kineticLog($"[Kinetic]{(ctx.KineticBudgetExceeded ? " budget" : "")} {unit.CharacterName}: {(chosen == null ? "no action" : chosen.Label)}; " +
+                         $"burn {burn}, gather {chosen?.GatherPower ?? 0}, net {chosen?.Value ?? 0f:F1}; " +
+                         $"decision~{kineticDecision?.ElapsedMilliseconds ?? 0d:F1}ms, search {ctx.KineticSearchMilliseconds:F1}ms/" +
+                         $"{ctx.KineticEvaluations} aims/{ctx.KineticPlanCount} alternatives, native action queries {kineticDecision?.ActionQueries ?? 0}, shapes {kineticDecision?.Areas.Builds ?? 0}" +
+                         (ctx.KineticBudgetExceeded ? "; current setup retained (40ms/64 aims/128 states)" : "") +
                          (other == null ? "" : $"; other {other.Label}={other.Value:F1}") +
                          (!(ctx.Global?.AiManagesToggles ?? true) ? "; modifiers left as set (AI manages toggles off)" : ""));
             }
@@ -1765,7 +1775,7 @@ namespace CompanionAI_Pathfinder.Tactics
             return weight;
         }
 
-        private static void AddWeaponCandidates(TacticalContext ctx, List<Candidate> list)
+        private static void AddWeaponCandidates(TacticalContext ctx, List<Candidate> list, UnitEntityData onlyTarget = null, bool? onlyFull = null)
         {
             var unit = ctx.Unit;
             // ★ v0.3.14: real time lists them during the action cooldown too (not affordable, so never chosen then): the
@@ -1774,7 +1784,7 @@ namespace CompanionAI_Pathfinder.Tactics
 
             ItemEntityWeapon provokeWeapon = null;   // the weapon weaponProvokes was asked for (the same for most enemies)
             bool weaponProvokes = true;
-            foreach (var enemy in ctx.Enemies)
+            foreach (var enemy in ctx.Enemies.Where(e => onlyTarget == null || e == onlyTarget))
             {
                 var single = CombatMath.EstimateWeaponAttack(unit, enemy, full: false);
                 // ★ v0.3.14 (test5): no attack against this enemy (the game lists none). It used to end the whole loop as
@@ -1804,7 +1814,7 @@ namespace CompanionAI_Pathfinder.Tactics
                 }
                 bool shotProvokes = single.IsRanged && weaponProvokes;
 
-                if (ctx.CanFullAttack && (inReach || fiveFootReach))
+                if (onlyFull != false && ctx.CanFullAttack && (inReach || fiveFootReach))
                 {
                     var full = CombatMath.EstimateWeaponAttack(unit, enemy, full: true);
                     if (full != null && full.Attacks > 1)
@@ -1836,7 +1846,7 @@ namespace CompanionAI_Pathfinder.Tactics
 
                 if (!ctx.HasStandard) continue;
 
-                if (inReach)
+                if (onlyFull != true && inReach)
                 {
                     var provoke = shotProvokes ? AttackRollProvokeRisk(ctx, unit.Position, 1) : null;
                     float singleValue = (DamageValue(enemy, single) + BladeEffectValue(ctx, enemy, single)) * weight * WakeFactor(enemy, single.ExpectedDamage);
@@ -1853,7 +1863,7 @@ namespace CompanionAI_Pathfinder.Tactics
                         Key = $"atk:{enemy.UniqueId}"
                     });
                 }
-                else if (ctx.HasMove && dist - reach <= ctx.MoveRange * 0.95f)
+                else if (onlyFull != true && ctx.HasMove && dist - reach <= ctx.MoveRange * 0.95f)
                 {
                     float value = (DamageValue(enemy, single) + BladeEffectValue(ctx, enemy, single)) * weight * 0.9f * WakeFactor(enemy, single.ExpectedDamage);
                     float preRisk = value;
@@ -2135,7 +2145,7 @@ namespace CompanionAI_Pathfinder.Tactics
         /// highest-value target saves easily can still be the right tier against another enemy).
         /// </summary>
         private static IEnumerable<Candidate> EvaluateAbility(TacticalContext ctx, AbilityData ability,
-                                                              UnitEntityData onlyTarget = null)
+                                                              UnitEntityData onlyTarget = null, TargetWrapper onlyAim = null)
         {
             var none = Enumerable.Empty<Candidate>();
             var profile = AbilityProfile.Get(ability);
@@ -2210,12 +2220,14 @@ namespace CompanionAI_Pathfinder.Tactics
             }
 
             Candidate best = null, bestViable = null, bestBoss = null;
-            foreach (var aim in targets.Distinct().SelectMany(t => KineticAims(ctx, ability, profile, t, summonPoint)))
+            foreach (var aim in targets.Distinct().Where(t => onlyTarget == null || t == onlyTarget)
+                .SelectMany(t => onlyAim != null ? new[] { (Target: t, Aim: onlyAim) } : KineticAims(ctx, ability, profile, t, summonPoint)))
             {
                 var target = aim.Target;
                 if (onlyTarget != null && target != onlyTarget) continue;
                 var wrapper = aim.Aim;
-                if (wrapper == null) continue;
+                if (wrapper == null || (onlyAim != null && !ability.CanTarget(wrapper))) continue;
+                KineticDecisionScope.Current?.Budget?.EvaluateAim();
 
                 bool needsMove = false;
                 Disengage risk = null;
@@ -2315,6 +2327,7 @@ namespace CompanionAI_Pathfinder.Tactics
                     Slot = slot,
                     Ability = ability,
                     Target = wrapper.Unit,
+                    EvaluationTarget = target,
                     Point = wrapper.Unit == null ? wrapper.Point : (Vector3?)null,
                     Orientation = wrapper.Unit == null ? wrapper.Orientation : (float?)null,
                     NeedsMove = needsMove,
@@ -2510,6 +2523,7 @@ namespace CompanionAI_Pathfinder.Tactics
         private static float ScoreAbility(TacticalContext ctx, AbilityData ability, AbilityProfile profile, ActionSlot slot,
                                           UnitEntityData target, out string why, out float controlContribution)
         {
+            KineticDecisionScope.Check();
             controlContribution = 0f;
             var unit = ctx.Unit;
             using var areaPreview = KineticAreaPreview.Create(ability, profile,
@@ -2639,6 +2653,7 @@ namespace CompanionAI_Pathfinder.Tactics
                 // first, with its own rules (no penetration, immunity only for spells that allow spell resistance).
                 foreach (var enemy in affectedEnemies)
                 {
+                    KineticDecisionScope.Check();
                     // ★ v0.3.22: an already ticking copy adds no new stream on this enemy.
                     if (profile.AreaDurations.Any() && IsOwnBlast(unit.Get<Kingmaker.UnitLogic.Class.Kineticist.UnitPartKineticist>(), ability) &&
                         profile.InOwnSideArea(unit, enemy)) continue;
@@ -2724,6 +2739,7 @@ namespace CompanionAI_Pathfinder.Tactics
                 string reviveNote = null;
                 foreach (var ally in healTargets)
                 {
+                    KineticDecisionScope.Check();
                     var applies = profile.Heals.Select(h => profile.AppliesTo(h, ability, ally)).ToList();
                     if (applies.All(a => a == EffectApplies.No)) continue;             // e.g. Inflict Wounds on the living
                     // Positive energy harms undead: only heal them when the ability's own branch says it heals them.
@@ -2925,6 +2941,7 @@ namespace CompanionAI_Pathfinder.Tactics
                 }
                 foreach (var enemy in affectedEnemies)
                 {
+                    KineticDecisionScope.Check();
                     // ★ v0.3.18 (C2): the game's buff immunities (descriptor, specific buff) too.
                     var buffs = profile.TargetBuffs.Where(b => profile.BuffAppliesTo(b, ability, enemy) != EffectApplies.No &&
                                                                (!profile.IsKineticEffect || profile.AddsBuff(b, enemy)) && !CombatMath.BuffImmune(enemy, b, ability)).ToList();
@@ -3006,6 +3023,7 @@ namespace CompanionAI_Pathfinder.Tactics
                 float maneuverValue = 0f;
                 foreach (var enemy in affectedEnemies)
                 {
+                    KineticDecisionScope.Check();
                     foreach (var maneuver in profile.Maneuvers)
                     {
                         if (profile.AppliesTo(maneuver.Action, ability, enemy) == EffectApplies.No) continue;

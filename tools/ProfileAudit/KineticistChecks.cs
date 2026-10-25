@@ -88,13 +88,51 @@ namespace ProfileAudit
             var component = blast.GetComponent<AbilityKineticist>();
             int before = component.CalculateBurnCost((UnitDescriptor)null, blast).Total;
             var type = typeof(TacticalEngine).Assembly.GetType("CompanionAI_Pathfinder.Tactics.KineticPreview", true);
-            var harmony = new Harmony("CompanionAI.offline.kinetic-checks");
+            var harmony = new Harmony((string)type.GetField("PatchOwner", BindingFlags.NonPublic | BindingFlags.Static).GetRawConstantValue());
             try
             {
-                foreach (var patch in type.GetNestedTypes(BindingFlags.NonPublic)) harmony.CreateClassProcessor(patch).Patch();
                 var dispelType = typeof(TacticalEngine).Assembly.GetType("CompanionAI_Pathfinder.Tactics.NativeDispelPreview", true);
-                foreach (var patch in dispelType.GetNestedTypes(BindingFlags.NonPublic))
-                    if (patch.GetCustomAttributes(typeof(HarmonyPatch), true).Length > 0) harmony.CreateClassProcessor(patch).Patch();
+                foreach (var owner in new[] { type, dispelType })
+                    Require(owner.GetNestedTypes(BindingFlags.NonPublic).All(p => p.GetCustomAttributes(typeof(HarmonyPatch), true).Length == 0),
+                        "optional hook leaked into mandatory PatchAll discovery");
+                var install = type.GetMethod("InstallPatches", BindingFlags.Static | BindingFlags.NonPublic);
+                int patchNumber = 0;
+                Action failLate = () => { if (++patchNumber == 9) throw new InvalidOperationException("injected optional patch failure"); };
+                Require(!(bool)install.Invoke(null, new object[] { harmony, failLate }), "optional patch failure escaped or was accepted");
+                Require(!(bool)type.GetField("CostHookInstalled", BindingFlags.NonPublic | BindingFlags.Static).GetValue(null),
+                    "partial installation published readiness");
+                Require(!harmony.GetPatchedMethods().Any(), "optional rollback left owned patches installed");
+                Require(before == component.CalculateBurnCost((UnitDescriptor)null, blast).Total, "failed setup changed native cost");
+                Require((bool)install.Invoke(null, new object[] { harmony, null }), "manual optional hook installation failed");
+                // Inactive hot patches must return without looking at even a poisoned thread-local preview.
+                var active = type.GetField("PreviewActive", BindingFlags.Static | BindingFlags.NonPublic);
+                var current = type.GetField("Current", BindingFlags.Static | BindingFlags.NonPublic);
+                try
+                {
+                    active.SetValue(null, false);
+                    current.SetValue(null, System.Runtime.CompilerServices.RuntimeHelpers.GetUninitializedObject(type));
+                    var fact = blueprints.OfType<BlueprintBuff>().First();
+                    foreach (var name in new[] { "FactExistence", "BuffExistence", "ExistingMetamagic" })
+                        Require((bool)type.GetNestedType(name, BindingFlags.NonPublic).GetMethod("Prefix", BindingFlags.Static | BindingFlags.NonPublic)
+                            .Invoke(null, new object[] { null, name == "ExistingMetamagic" ? null : fact, false }), "inactive hot prefix did not exit");
+                    type.GetNestedType("SelectedMetamagic", BindingFlags.NonPublic).GetMethod("Postfix", BindingFlags.Static | BindingFlags.NonPublic)
+                        .Invoke(null, new object[] { null, Kingmaker.UnitLogic.Abilities.Metamagic.Empower, false });
+                    type.GetNestedType("GatherProjection", BindingFlags.NonPublic).GetMethod("Postfix", BindingFlags.Static | BindingFlags.NonPublic)
+                        .Invoke(null, new object[] { null, KineticistGatherPowerMode.Off });
+                }
+                finally { current.SetValue(null, null); active.SetValue(null, false); }
+                // Cache both successes and failures for one decision, never across decisions.
+                var decisionType = typeof(TacticalEngine).Assembly.GetType("CompanionAI_Pathfinder.Tactics.KineticDecisionScope", true);
+                var actionType = typeof(TacticalEngine).Assembly.GetType("CompanionAI_Pathfinder.Tactics.NativeActionCost", true);
+                var seconds = actionType.GetMethod("TrySeconds", BindingFlags.Static | BindingFlags.NonPublic);
+                for (int decision = 0; decision < 2; decision++)
+                    using (var scope = (IDisposable)Activator.CreateInstance(decisionType, true))
+                    {
+                        for (int repeat = 0; repeat < 2; repeat++)
+                            seconds.Invoke(null, new object[] { null, Kingmaker.UnitLogic.Commands.Base.UnitCommand.CommandType.Move, false, 0f });
+                        Require((int)decisionType.GetField("ActionQueries", BindingFlags.Instance | BindingFlags.NonPublic).GetValue(scope) == 1,
+                            "native action query was not cached per decision");
+                    }
                 Require((bool)dispelType.GetProperty("HooksReady", BindingFlags.NonPublic | BindingFlags.Static).GetValue(null),
                     "native dispel layout did not accept the pre-roll safety gates");
                 // Run the native DC/CL prefix on detached data. The gate must stop before creating any die roll.
@@ -124,8 +162,14 @@ namespace ProfileAudit
                 int after = component.CalculateBurnCost((UnitDescriptor)null, blast).Total;
                 Require(before == after, "preview hooks changed native cost outside a preview scope");
             }
-            finally { harmony.UnpatchAll(harmony.Id); }
-            Console.WriteLine($"kinetic checks passed: {triggers} triggers, {maneuvers} direct maneuvers, {saves} direct saves, {wrapperSaves} carrier saves, {periodic} ongoing effects, {areaBlasts.Count} lasting forms, {selectable} selectable modifiers; native cost hook inert outside a scope; native dispel preparation stopped before dice");
+            finally
+            {
+                harmony.UnpatchAll(harmony.Id);
+                type.GetField("CostHookInstalled", BindingFlags.NonPublic | BindingFlags.Static).SetValue(null, false);
+                typeof(TacticalEngine).Assembly.GetType("CompanionAI_Pathfinder.Tactics.NativeDispelPreview", true)
+                    .GetMethod("Disable", BindingFlags.NonPublic | BindingFlags.Static).Invoke(null, null);
+            }
+            Console.WriteLine($"kinetic checks passed: {triggers} triggers, {maneuvers} direct maneuvers, {saves} direct saves, {wrapperSaves} carrier saves, {periodic} ongoing effects, {areaBlasts.Count} lasting forms, {selectable} selectable modifiers; manual setup/late-failure rollback and inactive fast exits passed; decision query cache passed; native cost inert outside scope; dispel preparation stopped before dice");
         }
 
         private static void Require(bool condition, string message)

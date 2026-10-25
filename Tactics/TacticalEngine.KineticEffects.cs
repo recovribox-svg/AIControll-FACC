@@ -34,6 +34,7 @@ namespace CompanionAI_Pathfinder.Tactics
             {
                 foreach (var trigger in fact.Blueprint.GetComponents<AddKineticistInfusionDamageTrigger>())
                 {
+                    KineticDecisionScope.Check();
                     if (!seen.Add(trigger) || !TriggerMatches(trigger, blast, fact.Context)) continue;
                     var effect = AbilityProfile.ForKineticInfusion(blast.Blueprint, trigger);
                     if (effect == null) continue;
@@ -84,6 +85,7 @@ namespace CompanionAI_Pathfinder.Tactics
                 var values = new List<float>();
                 foreach (var buff in ordered)
                 {
+                    KineticDecisionScope.Check();
                     if (!NativeDispelPreview.TryChance(dispel, source, target, buff, out float chance)) return 0f;
                     float share = DebuffShareIn(ctx, buff.Context, target, new[] { buff.Blueprint }.ToList(), out _, removingBenefits: true);
                     if (AbilityProfile.IsHarmfulBuff(buff.Blueprint))

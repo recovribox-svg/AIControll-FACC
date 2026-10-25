@@ -60,6 +60,10 @@ namespace CompanionAI_Pathfinder.Tactics
             if (part == null) return;
             AddGatherPreparations(ctx, list, list.ToList());
             if (!(ctx.Global?.AiManagesToggles ?? true)) return;
+            // RT retains baseline offense estimates while waiting, but modifier search cannot create a usable
+            // Standard/Swift action. Keep movement-only wait ticks cheap; genuine Free blasts remain eligible.
+            if (CombatMemory.IsRealTime && !ctx.HasStandard && !ctx.HasSwift &&
+                !AbilityDiscovery.Gather(ctx.Unit).Any(a => IsOwnBlast(part, a) && SlotOf(a) == ActionSlot.Free)) return;
             if (!KineticPreview.CostHookInstalled)
             {
                 Report(ctx, preview, "modifier alternatives unavailable: native cost projection is not installed");
@@ -88,58 +92,104 @@ namespace CompanionAI_Pathfinder.Tactics
                 Current = t.IsOn || t.IsStarted,
                 Locked = !variable.Contains(t)
             }).ToArray();
-            var configurations = KineticConfigurations.Enumerate(options, 4096, out bool complete);
-            if (!complete) { Report(ctx, preview, "modifier alternatives exceed preview budget; current setup retained"); return; }
-            var blasts = AbilityDiscovery.Gather(ctx.Unit).Where(a => IsOwnBlast(part, a)).ToList();
-            var currentCosts = blasts.Select(b => (Ability: b, Burn: BurnOf(b), Available: b.IsAvailable, Slot: SlotOf(b))).ToList();
-            using (new KineticPreview(ctx.Unit, variable, variable.Where(t => t.IsOn)))
-                if (currentCosts.Any(b => BurnOf(b.Ability) != b.Burn || b.Ability.IsAvailable != b.Available || SlotOf(b.Ability) != b.Slot))
-                {
-                    Report(ctx, preview, "current-state projection differs from native costs/action types; modifier alternatives disabled");
-                    return;
-                }
-            int candidateCountBefore = list.Count;
-            foreach (var set in configurations)
+            var cache = KineticDecisionScope.Current;
+            var budget = new KineticSearchBudget(40d, 64); // CPU/evaluation limits, not score weights
+            if (cache != null) cache.Budget = budget;
+            try
             {
-                if (!set.Where((on, i) => on != options[i].Current).Any()) continue;
-                var selected = variable.Where(t => set[choices.IndexOf(t)]).ToList();
-                using (new KineticPreview(ctx.Unit, variable, selected))
+                var configurations = KineticConfigurations.OneGroupNeighbors(options, 128, out bool complete, budget.Continue);
+                if (!complete) { ctx.KineticBudgetExceeded = true; return; }
+                // Current scorer supplies the shortlist, including its actual target and wall orientation.
+                var seeds = list.Where(c => c.Kind == CandidateKind.Ability && !c.KineticPreparation && IsOwnBlast(part, c.Ability))
+                    .OrderByDescending(c => c.Value).Take(3).ToList();
+                var blade = ctx.Unit.Body?.PrimaryHand?.MaybeWeapon?.Blueprint.GetComponent<WeaponKineticBlade>();
+                var activation = blade?.GetActivationAbility(ctx.Unit.Descriptor);
+                if (activation != null)
+                    seeds.AddRange(list.Where(c => c.Kind == CandidateKind.WeaponAttack).OrderByDescending(c => c.Value).Take(1));
+                if (!seeds.Any(c => c.Kind == CandidateKind.Ability))
                 {
-                    if (variable.Any(t => t.Blueprint.Buff.GetComponent<SetKineticistGatherPowerMode>() != null))
-                        KineticPreview.Current.GatherMode = choices.Where((t, i) => set[i]).Select(t => t.Blueprint.Buff?.GetComponent<SetKineticistGatherPowerMode>())
-                            .FirstOrDefault(g => g != null)?.Mode ?? KineticistGatherPowerMode.Off;
-                    var candidates = new List<Candidate>();
-                    foreach (var blast in blasts.Where(a => a.IsAvailable)) candidates.AddRange(EvaluateAbility(ctx, blast));
-                    var blade = ctx.Unit.Body?.PrimaryHand?.MaybeWeapon?.Blueprint.GetComponent<WeaponKineticBlade>();
-                    var activation = blade?.GetActivationAbility(ctx.Unit.Descriptor);
-                    if (activation != null && (part.IsBladeActivated || activation.IsAvailable))
-                    {
-                        var attacks = new List<Candidate>();
-                        AddWeaponCandidates(ctx, attacks);
-                        foreach (var attack in attacks)
+                    // An unavailable current setup still needs a path out of burn blockage. Score a bounded
+                    // recovery shortlist on one current focus, without a variants × targets × angles expansion.
+                    var focus = list.Where(c => c.Target != null && ctx.Unit.IsEnemy(c.Target)).OrderByDescending(c => c.Value)
+                        .Select(c => c.Target).FirstOrDefault() ?? ctx.Enemies.OrderByDescending(CombatMath.Threat).FirstOrDefault();
+                    var recovery = new List<Candidate>();
+                    if (focus != null)
+                        foreach (var blast in AbilityDiscovery.Gather(ctx.Unit).Where(a => IsOwnBlast(part, a)))
                         {
-                            ChooseAttackModes(ctx, attack);
-                            attack.KineticValidationAbility = activation;
+                            budget.Check();
+                            var aim = AbilityProfile.TargetOn(blast, focus);
+                            if (aim != null) recovery.AddRange(EvaluateAbility(ctx, blast, focus, aim));
                         }
-                        candidates.AddRange(attacks);
-                    }
-                    PriceBurn(ctx, candidates);
-                    foreach (var candidate in candidates)
-                    {
-                        candidate.KineticModes = variable.Select(t => new KeyValuePair<ActivatableAbility, bool>(t, selected.Contains(t))).ToList();
-                        candidate.KineticFixedModes = choices.Where(t => !variable.Contains(t))
-                            .Select(t => new KeyValuePair<ActivatableAbility, bool>(t, t.IsOn || t.IsStarted)).ToList();
-                        candidate.KineticBurn = BurnOf(candidate.KineticValidationAbility ?? candidate.Ability);
-                        string key = string.Join(",", variable.Select(t => $"{t.Blueprint.AssetGuid}:{selected.Contains(t)}"));
-                        candidate.Key += "|kinetic:" + key;
-                        candidate.Label += " [modifiers " + (selected.Count == 0 ? "none" : string.Join(", ", selected.Select(t => t.Name))) + "]";
-                        list.Add(candidate);
-                    }
-                    AddGatherPreparations(ctx, list, candidates);
+                    PriceBurn(ctx, recovery);
+                    seeds.AddRange(recovery.OrderByDescending(c => c.Value).Take(3));
                 }
+                if (seeds.Count == 0) return;
+                var validation = seeds.Select(c => c.KineticValidationAbility ?? c.Ability).Where(a => a != null).Distinct().ToList();
+                var currentCosts = validation.Select(b => (Ability: b, Burn: BurnOf(b), Available: b.IsAvailable, Slot: SlotOf(b))).ToList();
+                using (new KineticPreview(ctx.Unit, variable, variable.Where(t => t.IsOn)))
+                    if (currentCosts.Any(b => BurnOf(b.Ability) != b.Burn || b.Ability.IsAvailable != b.Available || SlotOf(b.Ability) != b.Slot))
+                    {
+                        Report(ctx, preview, "current-state projection differs from native costs/action types; modifier alternatives disabled");
+                        return;
+                    }
+                var alternatives = new List<Candidate>(); // transaction: never append a timed-out prefix to the live list
+                foreach (var set in configurations)
+                {
+                    budget.Check();
+                    if (!set.Where((on, i) => on != options[i].Current).Any()) continue;
+                    var selected = variable.Where(t => set[choices.IndexOf(t)]).ToList();
+                    using (new KineticPreview(ctx.Unit, variable, selected))
+                    {
+                        if (variable.Any(t => t.Blueprint.Buff.GetComponent<SetKineticistGatherPowerMode>() != null))
+                            KineticPreview.Current.GatherMode = choices.Where((t, i) => set[i]).Select(t => t.Blueprint.Buff?.GetComponent<SetKineticistGatherPowerMode>())
+                                .FirstOrDefault(g => g != null)?.Mode ?? KineticistGatherPowerMode.Off;
+                        var candidates = new List<Candidate>();
+                        foreach (var seed in seeds)
+                        {
+                            budget.Check();
+                            if (seed.Kind == CandidateKind.Ability)
+                            {
+                                if (!seed.Ability.IsAvailable) continue;
+                                var target = seed.EvaluationTarget ?? seed.Target;
+                                if (target == null) continue;
+                                var aim = seed.Point.HasValue ? new Kingmaker.Utility.TargetWrapper(seed.Point.Value, seed.Orientation, null)
+                                                              : new Kingmaker.Utility.TargetWrapper(seed.Target);
+                                candidates.AddRange(EvaluateAbility(ctx, seed.Ability, target, aim));
+                            }
+                            else if (activation != null && (part.IsBladeActivated || activation.IsAvailable))
+                            {
+                                budget.EvaluateAim();
+                                var attacks = new List<Candidate>();
+                                AddWeaponCandidates(ctx, attacks, seed.Target, seed.FullAttack);
+                                foreach (var attack in attacks) { ChooseAttackModes(ctx, attack); attack.KineticValidationAbility = activation; }
+                                candidates.AddRange(attacks);
+                            }
+                        }
+                        PriceBurn(ctx, candidates);
+                        foreach (var candidate in candidates)
+                        {
+                            candidate.KineticModes = variable.Select(t => new KeyValuePair<ActivatableAbility, bool>(t, selected.Contains(t))).ToList();
+                            candidate.KineticFixedModes = choices.Where(t => !variable.Contains(t))
+                                .Select(t => new KeyValuePair<ActivatableAbility, bool>(t, t.IsOn || t.IsStarted)).ToList();
+                            candidate.KineticBurn = BurnOf(candidate.KineticValidationAbility ?? candidate.Ability);
+                            candidate.Key += "|kinetic:" + string.Join(",", variable.Select(t => $"{t.Blueprint.AssetGuid}:{selected.Contains(t)}"));
+                            candidate.Label += " [modifiers " + (selected.Count == 0 ? "none" : string.Join(", ", selected.Select(t => t.Name))) + "]";
+                        }
+                        alternatives.AddRange(candidates);
+                        AddGatherPreparations(ctx, alternatives, candidates);
+                    }
+                }
+                budget.Check();
+                list.AddRange(alternatives);
+                ctx.KineticPlanCount = alternatives.Count;
             }
-            Report(ctx, preview, $"{configurations.Count} legal configurations, {list.Count - candidateCountBefore} candidate plans; " +
-                                 $"{choices.Count(t => !variable.Contains(t))} fixed group members; native cost/restrictions queried for each blast");
+            catch (KineticBudgetExceededException) { ctx.KineticBudgetExceeded = true; }
+            finally
+            {
+                ctx.KineticSearchMilliseconds = budget.ElapsedMilliseconds;
+                ctx.KineticEvaluations = budget.Evaluations;
+                if (cache != null) cache.Budget = null;
+            }
         }
 
         private static bool ApplyKineticPlan(UnitEntityData unit, Candidate candidate, out string failure,

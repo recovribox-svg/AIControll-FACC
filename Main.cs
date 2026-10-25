@@ -50,6 +50,11 @@ namespace CompanionAI_Pathfinder
                 // ★ 수동 패치: AiBrainController.TickBrain (private static 메서드)
                 PatchTickBrainManually();
 
+                // ★ v0.3.22: optional private/generic kinetic hooks cannot fail the mandatory mod load.
+                // They have no HarmonyPatch attributes, and use their own owner for safe partial rollback.
+                try { Tactics.KineticPreview.InstallPatches(new Harmony(Tactics.KineticPreview.PatchOwner)); }
+                catch (Exception ex) { Log($"[Kinetic] optional patch initialization failed; current setup retained: {ex.Message}"); }
+
                 // 패치 확인
                 var patchedMethods = HarmonyInstance.GetPatchedMethods();
                 int patchCount = 0;

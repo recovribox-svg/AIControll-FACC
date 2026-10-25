@@ -18,6 +18,18 @@ namespace CompanionAI_Pathfinder.Tactics
 
         internal static bool TrySeconds(UnitEntityData unit, UnitCommand.CommandType type, bool fullRound, out float seconds)
         {
+            KineticDecisionScope.Check();
+            var cache = KineticDecisionScope.Current;
+            var key = (unit, type, fullRound);
+            if (cache != null && cache.ActionSeconds.TryGetValue(key, out var cached))
+            { seconds = cached.Seconds; return cached.Success; }
+            bool success = QuerySeconds(unit, type, fullRound, out seconds);
+            if (cache != null) { cache.ActionQueries++; cache.ActionSeconds[key] = (success, seconds); }
+            return success;
+        }
+
+        private static bool QuerySeconds(UnitEntityData unit, UnitCommand.CommandType type, bool fullRound, out float seconds)
+        {
             seconds = 0f;
             if (!CanQuery || unit?.CombatState == null || !unit.IsInCombat) return false;
             // Verified native SpendAction only reads combat mode and writes this state's cooldown values.

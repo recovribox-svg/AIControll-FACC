@@ -31,7 +31,41 @@ namespace CompanionAI_Pathfinder.Tactics
             public bool Current, Locked;
         }
 
-        public static List<bool[]> Enumerate(IReadOnlyList<Option> options, int limit, out bool complete)
+        // ★ v0.3.22: a neighborhood is a UNION of group choices, not their Cartesian product.
+        public static List<bool[]> OneGroupNeighbors(IReadOnlyList<Option> options, int limit, out bool complete,
+                                                    Func<bool> keepSearching = null)
+        {
+            var current = new bool[options.Count];
+            var groups = new Dictionary<int, List<int>>();
+            for (int i = 0; i < options.Count; i++)
+            {
+                current[i] = options[i].Current;
+                if (!groups.TryGetValue(options[i].Group, out var indices)) groups[options[i].Group] = indices = new List<int>();
+                indices.Add(i);
+            }
+            var result = new List<bool[]> { current };
+            complete = true;
+            foreach (var group in groups.Values)
+            {
+                var members = new List<Option>();
+                foreach (int i in group) members.Add(options[i]);
+                var sets = Enumerate(members, limit, out bool localComplete, keepSearching);
+                if (!localComplete) { complete = false; result.Clear(); return result; }
+                foreach (var set in sets)
+                {
+                    var alternative = (bool[])current.Clone();
+                    bool changed = false;
+                    for (int n = 0; n < group.Count; n++)
+                    { changed |= alternative[group[n]] != set[n]; alternative[group[n]] = set[n]; }
+                    if (!changed) continue;
+                    if (result.Count >= limit) { complete = false; result.Clear(); return result; }
+                    result.Add(alternative);
+                }
+            }
+            return result;
+        }
+
+        public static List<bool[]> Enumerate(IReadOnlyList<Option> options, int limit, out bool complete, Func<bool> keepSearching = null)
         {
             if (limit < 1) throw new ArgumentOutOfRangeException(nameof(limit));
             var results = new List<bool[]>();
@@ -40,6 +74,7 @@ namespace CompanionAI_Pathfinder.Tactics
             bool overflow = false;
             void Visit(int index)
             {
+                if (keepSearching != null && !keepSearching()) overflow = true;
                 if (overflow) return;
                 if (index == options.Count)
                 {

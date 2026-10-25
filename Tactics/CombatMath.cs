@@ -217,6 +217,7 @@ namespace CompanionAI_Pathfinder.Tactics
         public static WeaponAttackEstimate EstimateWeaponAttack(UnitEntityData unit, UnitEntityData target, bool full,
                                                                 Func<ItemEntityWeapon, int, KeyValuePair<int, float>> delta)
         {
+            KineticDecisionScope.Check();
             var routine = ReadRoutine(unit, target, full);
             if (routine == null) return null;
 

@@ -69,13 +69,18 @@ namespace ProfileAudit
                 {
                     if (e.Exception is System.Security.SecurityException) Console.WriteLine("FIRST CHANCE at\n" + Environment.StackTrace);
                 };
-            var output = args[args.Length - 1];
-            bool kineticChecks = args.Take(args.Length - 1).Contains("--kinetic-checks");
-            var roots = args.Take(args.Length - 1).Where(a => a != "--kinetic-checks").ToList();
+            if (!AuditOptions.TryParse(args, out var options, out var optionError))
+            {
+                Console.Error.WriteLine(optionError);
+                Console.Error.WriteLine("Usage: ProfileAudit [--kinetic-checks] [--allow-failures N] <dump folders...> <report.txt>");
+                return 2;
+            }
+            var output = options.Output;
+            var roots = options.Roots;
             RegisterTypes();
             var loaded = new Dictionary<BlueprintGuid, SimpleBlueprint>();
             int failed = 0;
-            var firstErrors = new List<string>();
+            var loadErrors = new List<string>();
             foreach (var root in roots)
                 foreach (var file in Directory.EnumerateFiles(root, "*.jbp", SearchOption.AllDirectories))
                 {
@@ -83,34 +88,40 @@ namespace ProfileAudit
                     try
                     {
                         var w = BlueprintJsonWrapper.Load(file);
-                        if (w?.Data == null) continue;
+                        if (w?.Data == null) throw new InvalidDataException("blueprint wrapper contains no data");
                         loaded[w.Data.AssetGuid] = w.Data;
                         Audit.Paths[w.Data] = Path.GetRelativePath(root, file);
                     }
                     catch (Exception ex)
                     {
                         failed++;
-                        if (firstErrors.Count < 2) firstErrors.Add($"{Path.GetFileName(file)}: {ex}");
+                        loadErrors.Add($"{file}: {ex.GetType().Name}: {ex.Message}");
                     }
                     if (loaded.Count == 200) Console.WriteLine("200 loaded...");
                 }
             Console.WriteLine($"loaded {loaded.Count}, failed {failed}");
-            foreach (var e in firstErrors) Console.WriteLine("  " + e);
-            // ★ v0.3.22: failed deserialization is not a zero-ability success. In particular a missing Unity
-            // dependency can prevent almost the whole dump from loading while Audit.Run reports zero errors.
-            // Replace any previous report so it cannot be mistaken for evidence from this incomplete run.
-            if (failed > 0 || loaded.Count == 0)
+            foreach (var e in loadErrors) Console.WriteLine("  " + e);
+            // Explicit small allowances permit unrelated failures, but cannot turn an empty/mass-failed dump
+            // into a successful zero-ability audit. Partial reports always retain the full failure inventory.
+            if (!options.CanAudit(loaded.Count, failed))
             {
-                var incomplete = $"INCOMPLETE: loaded {loaded.Count}, failed {failed}; no ability verdicts generated.";
-                File.WriteAllText(output, incomplete + Environment.NewLine + string.Join(Environment.NewLine, firstErrors));
+                var incomplete = $"INCOMPLETE: loaded {loaded.Count}, failed {failed}, allowed {options.AllowFailures}; no ability verdicts generated.";
+                File.WriteAllText(output, incomplete + Environment.NewLine + string.Join(Environment.NewLine, loadErrors));
                 Console.Error.WriteLine(incomplete);
                 return 1;
             }
             foreach (var kv in loaded) ResourcesLibrary.BlueprintsCache.AddCachedBlueprint(kv.Key, kv.Value);
             foreach (var bp in loaded.Values)
                 try { bp.OnEnable(); } catch { }
-            if (kineticChecks) KineticistChecks.Run(loaded.Values.ToList());
+            if (options.KineticChecks) KineticistChecks.Run(loaded.Values.ToList());
             Audit.Run(loaded.Values.ToList(), output);
+            if (failed > 0)
+            {
+                string partial = $"PARTIAL: loaded {loaded.Count}, failed {failed}, allowed {options.AllowFailures}. Failed blueprints:";
+                File.WriteAllText(output, partial + Environment.NewLine + string.Join(Environment.NewLine, loadErrors) +
+                    Environment.NewLine + Environment.NewLine + File.ReadAllText(output));
+                Console.WriteLine(partial);
+            }
             return 0;
         }
     }

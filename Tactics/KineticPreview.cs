@@ -33,6 +33,49 @@ namespace CompanionAI_Pathfinder.Tactics
         private readonly List<(AddKineticistBurnModifier Modifier, EntityFactComponent Runtime)> handlers =
             new List<(AddKineticistBurnModifier, EntityFactComponent)>();
         internal static bool CostHookInstalled;
+        internal static bool PreviewActive; // plain fast exit before TLS/property access on global hot paths
+        internal const string PatchOwner = "CompanionAI_Pathfinder.KineticPreview";
+        private static bool costLayoutMatched;
+
+        internal static bool InstallPatches(Harmony harmony, Action beforeEachPatch = null)
+        {
+            CostHookInstalled = false;
+            costLayoutMatched = false;
+            bool success = OptionalPatchInstallation.TryInstall(() =>
+            {
+                NativeDispelPreview.Disable();
+                harmony.UnpatchAll(harmony.Id); // reload/retry cannot duplicate native cost injection
+                Patch(harmony, AccessTools.Method(typeof(UnitHelper), nameof(UnitHelper.HasFact),
+                    new[] { typeof(UnitDescriptor), typeof(Kingmaker.Blueprints.Facts.BlueprintFact) }), typeof(FactExistence), "Prefix", beforeEachPatch);
+                Patch(harmony, AccessTools.Method(typeof(EntityFactsProcessor<Buff>), "HasFact",
+                    new[] { typeof(Kingmaker.Blueprints.Facts.BlueprintFact) }), typeof(BuffExistence), "Prefix", beforeEachPatch);
+                Patch(harmony, AccessTools.Method(typeof(AddKineticistBurnModifier), nameof(AddKineticistBurnModifier.HandleKineticistCalculateAbilityCost)), typeof(ExistingCostModifier), "Prefix", beforeEachPatch);
+                Patch(harmony, AccessTools.Method(typeof(AutoMetamagic), nameof(AutoMetamagic.ShouldApplyTo)), typeof(ExistingMetamagic), "Prefix", beforeEachPatch);
+                Patch(harmony, AccessTools.Method(typeof(AbilityData), nameof(AbilityData.HasMetamagic)), typeof(SelectedMetamagic), "Postfix", beforeEachPatch);
+                Patch(harmony, AccessTools.PropertyGetter(typeof(UnitPartKineticist), nameof(UnitPartKineticist.GatherPowerMode)), typeof(GatherProjection), "Postfix", beforeEachPatch);
+                Patch(harmony, AccessTools.Method(typeof(AbilityKineticist), "CalculateBurnCost", new[] { typeof(UnitDescriptor), typeof(BlueprintAbility) }), typeof(CostProjection), "Transpiler", beforeEachPatch);
+                if (!costLayoutMatched) throw new InvalidOperationException("native cost layout not recognized");
+                NativeDispelPreview.InstallPatches(harmony, beforeEachPatch);
+                CostHookInstalled = true; // publish readiness only after every optional hook succeeds
+            }, () => harmony.UnpatchAll(harmony.Id), out var failure);
+            if (!success)
+            {
+                CostHookInstalled = false;
+                NativeDispelPreview.Disable();
+                Main.Log($"[Kinetic] optional preview patches unavailable; current setup retained: {failure.GetBaseException().Message}");
+            }
+            if (success) Main.Log("[Kinetic] optional preview hooks installed");
+            return success;
+        }
+
+        internal static void Patch(Harmony harmony, MethodBase original, Type patch, string kind, Action before)
+        {
+            before?.Invoke(); // offline failure-injection seam; never supplied by the game load path
+            if (original == null) throw new MissingMethodException($"optional kinetic patch target for {patch.Name}");
+            var method = new HarmonyMethod(AccessTools.Method(patch, kind));
+            harmony.Patch(original, prefix: kind == "Prefix" ? method : null,
+                postfix: kind == "Postfix" ? method : null, transpiler: kind == "Transpiler" ? method : null);
+        }
         internal KineticistGatherPowerMode? GatherMode;
 
         internal static IEnumerable<BlueprintScriptableObject> ActiveBlueprints(UnitEntityData unit)
@@ -88,6 +131,7 @@ namespace CompanionAI_Pathfinder.Tactics
             Selected = selected.Distinct().ToList();
             foreach (var bp in Selected)
             {
+                KineticDecisionScope.Check();
                 var live = unit.Buffs.GetBuff(bp);
                 var context = live?.MaybeContext ?? new MechanicsContext(unit, unit.Descriptor, bp);
                 if (live == null) context.Recalculate();
@@ -108,6 +152,7 @@ namespace CompanionAI_Pathfinder.Tactics
             }
             previous = Current;
             Current = this;
+            PreviewActive = true;
             AbilityProfile.ClearConditionCache();
             CombatMath.ClearAttackCache();
         }
@@ -121,6 +166,7 @@ namespace CompanionAI_Pathfinder.Tactics
         // runs its actual game method in a detached component context, and all other native/mod handlers still run.
         internal static void Inject(ref KineticistAbilityBurnCost cost, UnitDescriptor caster, BlueprintAbility ability)
         {
+            if (!PreviewActive) return;
             var scope = Current;
             if (scope == null || caster?.Unit != scope.Unit) return;
             foreach (var entry in scope.handlers)
@@ -135,6 +181,7 @@ namespace CompanionAI_Pathfinder.Tactics
         public void Dispose()
         {
             Current = previous;
+            PreviewActive = previous != null;
             AbilityProfile.ClearConditionCache();
             CombatMath.ClearAttackCache();
         }
@@ -149,24 +196,23 @@ namespace CompanionAI_Pathfinder.Tactics
             return true;
         }
 
-        [HarmonyPatch(typeof(Kingmaker.UnitLogic.UnitHelper), nameof(Kingmaker.UnitLogic.UnitHelper.HasFact),
-            new Type[] { typeof(UnitDescriptor), typeof(Kingmaker.Blueprints.Facts.BlueprintFact) })]
         private static class FactExistence
         {
             private static bool Prefix(UnitDescriptor __0, Kingmaker.Blueprints.Facts.BlueprintFact __1, ref bool __result)
             {
-                if (Current?.Unit != __0?.Unit || !ProjectFact(__1, out var projected)) return true;
+                if (!PreviewActive) return true;
+                var scope = Current;
+                if (scope == null || scope.Unit != __0?.Unit || !ProjectFact(__1, out var projected)) return true;
                 __result = projected;
                 return false;
             }
         }
 
-        [HarmonyPatch(typeof(EntityFactsProcessor<Buff>), nameof(EntityFactsProcessor<Buff>.HasFact),
-            new Type[] { typeof(Kingmaker.Blueprints.Facts.BlueprintFact) })]
         private static class BuffExistence
         {
             private static bool Prefix(EntityFactsProcessor __instance, Kingmaker.Blueprints.Facts.BlueprintFact __0, ref bool __result)
             {
+                if (!PreviewActive) return true;
                 // Generic processor code may be shared on Mono. Accept the base type and affect only this buff collection.
                 if (Current == null || !ReferenceEquals(__instance, Current.Unit.Buffs) || !ProjectFact(__0, out var projected)) return true;
                 __result = projected;
@@ -174,7 +220,6 @@ namespace CompanionAI_Pathfinder.Tactics
             }
         }
 
-        [HarmonyPatch(typeof(AbilityKineticist), "CalculateBurnCost", new Type[] { typeof(UnitDescriptor), typeof(BlueprintAbility) })]
         private static class CostProjection
         {
             private static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions)
@@ -186,7 +231,6 @@ namespace CompanionAI_Pathfinder.Tactics
                     x.c.operand is FieldInfo f && f.FieldType == typeof(KineticistAbilityBurnCost)).ToList();
                 if (stores.Count != 1 || code.Count < 2 || code[1].opcode != OpCodes.Stloc_0)
                 {
-                    Main.Log("[Kinetic] native cost layout not recognized; modifier alternatives disabled");
                     return code;
                 }
                 var field = (FieldInfo)stores[0].c.operand;
@@ -196,33 +240,32 @@ namespace CompanionAI_Pathfinder.Tactics
                     new CodeInstruction(OpCodes.Ldarg_1), new CodeInstruction(OpCodes.Ldarg_2),
                     new CodeInstruction(OpCodes.Call, AccessTools.Method(typeof(KineticPreview), nameof(Inject)))
                 });
-                CostHookInstalled = true;
+                costLayoutMatched = true;
                 return code;
             }
         }
 
-        [HarmonyPatch(typeof(AddKineticistBurnModifier), nameof(AddKineticistBurnModifier.HandleKineticistCalculateAbilityCost))]
         private static class ExistingCostModifier
         {
-            private static bool Prefix(AddKineticistBurnModifier __instance, UnitDescriptor __0) => !Suppress(__instance, __0);
+            private static bool Prefix(AddKineticistBurnModifier __instance, UnitDescriptor __0) => !PreviewActive || !Suppress(__instance, __0);
         }
 
-        [HarmonyPatch(typeof(AutoMetamagic), nameof(AutoMetamagic.ShouldApplyTo))]
         private static class ExistingMetamagic
         {
             private static bool Prefix(AutoMetamagic __0, AbilityData __2, ref bool __result)
             {
+                if (!PreviewActive) return true;
                 if (!Suppress(__0, __2)) return true;
                 __result = false;
                 return false;
             }
         }
 
-        [HarmonyPatch(typeof(AbilityData), nameof(AbilityData.HasMetamagic))]
         private static class SelectedMetamagic
         {
             private static void Postfix(AbilityData __instance, Metamagic __0, ref bool __result)
             {
+                if (!PreviewActive) return;
                 var scope = Current;
                 if (__result || scope == null || __instance.Caster?.Unit != scope.Unit) return;
                 foreach (var bp in scope.Selected)
@@ -237,12 +280,13 @@ namespace CompanionAI_Pathfinder.Tactics
             }
         }
 
-        [HarmonyPatch(typeof(UnitPartKineticist), nameof(UnitPartKineticist.GatherPowerMode), MethodType.Getter)]
         private static class GatherProjection
         {
             private static void Postfix(UnitPartKineticist __instance, ref KineticistGatherPowerMode __result)
             {
-                if (Current?.Unit == __instance.Owner.Unit && Current.GatherMode.HasValue) __result = Current.GatherMode.Value;
+                if (!PreviewActive) return;
+                var scope = Current;
+                if (scope != null && scope.Unit == __instance.Owner?.Unit && scope.GatherMode.HasValue) __result = scope.GatherMode.Value;
             }
         }
     }

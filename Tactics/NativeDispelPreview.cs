@@ -26,8 +26,17 @@ namespace CompanionAI_Pathfinder.Tactics
         private static readonly MethodInfo TryBuff = AccessTools.Method(typeof(ContextActionDispelMagic), "TryDispelBuff");
         private static readonly MethodInfo Prepare = AccessTools.Method(typeof(RuleDispelMagic), nameof(RuleDispelMagic.OnTrigger));
 
+        internal static void Disable() { actionHook = ruleHook = false; }
+        internal static void InstallPatches(Harmony harmony, Action before)
+        {
+            Disable();
+            KineticPreview.Patch(harmony, TryBuff, typeof(EligibilityGate), "Transpiler", before);
+            KineticPreview.Patch(harmony, Prepare, typeof(PreparationGate), "Transpiler", before);
+            if (!HooksReady) throw new InvalidOperationException("native dispel layout not recognized");
+        }
+
         private static bool NoForeignPatches(MethodInfo method) => method != null &&
-            !(Harmony.GetPatchInfo(method)?.Owners.Any(id => id != "CompanionAI_Pathfinder") ?? false);
+            !(Harmony.GetPatchInfo(method)?.Owners.Any(id => id != KineticPreview.PatchOwner) ?? false);
         internal static bool CanQuery => HooksReady && NoForeignPatches(TryBuff) && NoForeignPatches(Prepare);
 
         internal static List<Buff> OrderedBuffs(UnitEntityData target)
@@ -100,7 +109,6 @@ namespace CompanionAI_Pathfinder.Tactics
             from.labels.Clear();
         }
 
-        [HarmonyPatch(typeof(ContextActionDispelMagic), "TryDispelBuff")]
         private static class EligibilityGate
         {
             private static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions, ILGenerator generator)
@@ -129,7 +137,6 @@ namespace CompanionAI_Pathfinder.Tactics
             }
         }
 
-        [HarmonyPatch(typeof(RuleDispelMagic), nameof(RuleDispelMagic.OnTrigger))]
         private static class PreparationGate
         {
             private static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions, ILGenerator generator)
