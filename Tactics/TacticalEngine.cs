@@ -534,7 +534,10 @@ namespace CompanionAI_Pathfinder.Tactics
                 Target = c.Target,
                 Point = c.Point
             }).ToList();
-            var held = ProgressiveGate.HeldBack(ctx.Unit, ctx.Enemies, items, "TB", enemiesComplete: true);
+            // ★ infusion-test1 review: shared engine logs must use the actual mode. RT enemy lists are filtered;
+            // only the complete TB list can describe boss-presence transitions. Neither flag changes spell scores.
+            bool realTime = CombatMemory.IsRealTime;
+            var held = ProgressiveGate.HeldBack(ctx.Unit, ctx.Enemies, items, realTime ? "RT" : "TB", enemiesComplete: !realTime);
             return held.Count == 0 ? usable : usable.Where(c => !held.Contains(c)).ToList();
         }
 

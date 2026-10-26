@@ -2439,3 +2439,8 @@ Unknown damage guards retain the stable reader's policy. The old recovery estima
 omits infusion value even for a quiver plan that might retain it. Duplicate same-type infusion effects receive at
 most one contribution. Secondary ricochets and all unsupported action graphs remain unpriced. Keep the PR draft
 for review and the targeted gameplay gate; lower timing medians or passing arithmetic tests are insufficient.
+
+**Test[1] review:** [budget-laptop evidence, decision findings and diagnostic correction](INFUSION_VALUE_TEST1_REVIEW.md).
+The author reports smooth overall play. The recorded state did not exercise Bowling/Pushing; supported-infusion
+gameplay acceptance remains pending. The follow-up changes Progressive mode reporting only. Sleep's shared-HD
+budget, path/boost feasibility, energy-specific protection and cone-recipient coverage remain separate open issues.
