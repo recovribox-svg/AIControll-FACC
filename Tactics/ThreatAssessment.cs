@@ -39,9 +39,12 @@ namespace CompanionAI_Pathfinder.Tactics
 
 
         /// <summary>Would this cast hit one of the bosses: aimed at it, or a boss inside its area.</summary>
-        public static bool HitsBoss(UnitEntityData target, Vector3? point, AbilityProfile profile, List<UnitEntityData> bosses)
+        public static bool HitsBoss(UnitEntityData target, Vector3? point, AbilityProfile profile, List<UnitEntityData> bosses,
+                                    IReadOnlyCollection<UnitEntityData> recipients = null)
         {
             if (bosses.Count == 0) return false;
+            if (recipients != null) return bosses.Any(recipients.Contains);
+            if (profile?.IsProjectileCone == true) return false;
             if (target != null && bosses.Contains(target)) return true;
             if (profile == null || !profile.IsAoE) return false;
             Vector3? center = target?.Position ?? point;

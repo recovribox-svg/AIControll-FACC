@@ -252,7 +252,10 @@ namespace CompanionAI_Pathfinder.Tactics
         public float AoERadius { get; private set; }
         public Kingmaker.UnitLogic.Abilities.Components.TargetType AoETargets { get; private set; } =
             Kingmaker.UnitLogic.Abilities.Components.TargetType.Any;
-        public bool IsAoE => AoERadius > 0.01f;
+        /// <summary>Native cone delivery; its recipients are queried from the game rather than a circle.</summary>
+        public AbilityDeliverProjectile Cone { get; private set; }
+        public bool IsProjectileCone => Cone != null;
+        public bool IsAoE => AoERadius > 0.01f || IsProjectileCone;
         /// <summary>
         /// ★ v0.3.18: the game picks the units in the area one by one (AbilityTargetsAround), each with its own spell
         /// resistance check. Without it (spawned areas: Grease, Entangle, Web) the effect is applied once, to the aimed
@@ -744,6 +747,13 @@ namespace CompanionAI_Pathfinder.Tactics
             }
 
             var projectile = bp.GetComponent<AbilityDeliverProjectile>();
+            // Only the actual cast blueprint can provide this aim's cone. Referenced secondary abilities may have
+            // different origins/delivery and must not turn their parent into a fabricated cone.
+            if (ReferenceEquals(bp, Blueprint) && projectile?.Type == AbilityProjectileType.Cone)
+            {
+                Cone = projectile;
+                SelectsTargets = true;
+            }
             // ★ v0.3.18 (C2): a line or cone projectile makes no attack roll, whatever its flag says (the game's
             // AbilityDeliverProjectile only rolls for other shapes).
             if (projectile != null && projectile.NeedAttackRoll &&

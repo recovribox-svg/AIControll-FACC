@@ -26,6 +26,7 @@ namespace CompanionAI_Pathfinder.Tactics
         public float? SuccessChance;
         public UnitEntityData Target;
         public Vector3? Point;
+        public IReadOnlyCollection<UnitEntityData> Recipients;
     }
 
     public static class ProgressiveGate
@@ -107,6 +108,15 @@ namespace CompanionAI_Pathfinder.Tactics
         {
             if (profile == null) return 1f;
             bool damage = profile.DealsDamage;
+            if (profile.IsProjectileCone)
+            {
+                var aim = target != null ? AbilityProfile.TargetOn(ability, target)
+                    : point.HasValue ? new Kingmaker.Utility.TargetWrapper(point.Value) : null;
+                if (!ProjectileCone.TryCreate(ability, aim, caster.Position, out var cone) ||
+                    !cone.TryRecipients(enemies, out var recipients)) return 0f;
+                return recipients.Select(e => CombatMath.EffectChance(caster, e, ability, profile, damage))
+                    .DefaultIfEmpty(0f).Max();
+            }
             if (profile.IsAoE)
             {
                 if (profile.AoETargets == Kingmaker.UnitLogic.Abilities.Components.TargetType.Ally) return 0f;
@@ -150,7 +160,7 @@ namespace CompanionAI_Pathfinder.Tactics
                         level = EffectiveSlotLevel(it.Ability);
                         var profile = AbilityProfile.Get(it.Ability);
                         chance = it.SuccessChance ?? SuccessChance(unit, enemies, it.Ability, profile, it.Target, it.Point);
-                        bypass = ThreatAssessment.HitsBoss(it.Target, it.Point, profile, bosses);
+                        bypass = ThreatAssessment.HitsBoss(it.Target, it.Point, profile, bosses, it.Recipients);
                     }
                     options.Add(new TierOption
                     {
