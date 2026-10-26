@@ -843,6 +843,9 @@ namespace CompanionAI_Pathfinder.Tactics
             if (target == null || value <= 0f || dmg?.DamageType == null) return value;
             var seen = DamageObserver.Lookup(target, DamageObserver.KeyOf(dmg.DamageType));
             float observed = seen?.Apply(value) ?? value;
+            // A successful observed hit can prove a caster-specific bypass of visible resistance/immunity.
+            // Preserve that evidence; only a fully absorbed packet leaves its reduction as a lower bound.
+            if (seen != null && !seen.ReductionCapped) return observed;
             if (seen?.Immune == true) return 0f;
             try
             {

@@ -68,10 +68,14 @@ six-point resistance. `DamageObserver.Seen` is therefore evidence of an absorbed
 amount, potentially a lower bound. `AfterTargetReduction` previously returned
 that observation immediately and skipped known current native resistance/immunity.
 
-It now preserves the observed factor/custom reduction while also asking the existing
-native resistance query, taking the stricter remaining-damage bound. The two
-reductions are not subtracted twice. Observed or native immunity returns zero;
-an unavailable/failed native query retains the observed fallback. No resistance
+For a **fully absorbed, non-immune packet with positive reduction**, it now preserves
+that observed factor/custom reduction while also asking the existing native
+resistance query, taking the stricter remaining-damage bound. Successful-hit
+observations retain their old authority: they can demonstrate a caster-specific
+bypass of otherwise visible resistance/immunity. This avoids applying the new
+native bound indiscriminately to proven bypasses. The two
+reductions are not subtracted twice. Observed immunity retains zero; current native immunity also bounds a censored
+packet. An unavailable/failed native query retains the observed fallback. No resistance
 table, new native damage roll, enemy scan or copied burn/game rule is introduced.
 
 This corrects the source-confirmed **later observation override**. It does not

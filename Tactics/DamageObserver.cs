@@ -24,6 +24,8 @@ namespace CompanionAI_Pathfinder.Tactics
             public int Flat;
             public float Factor = 1f;
             public string Source;
+            // Native reduction on a fully absorbed packet may be capped below the actual defence.
+            public bool ReductionCapped;
 
             public float Apply(float value) => Immune ? 0f : Math.Max(0f, value * Factor - Flat);
         }
@@ -297,6 +299,7 @@ namespace CompanionAI_Pathfinder.Tactics
                     {
                         Immune = damage.Immune,
                         Flat = Math.Max(0, result.Reduction),
+                        ReductionCapped = !damage.Immune && result.Reduction > 0 && result.FinalValue == 0,
                         Factor = factor,
                         Source = evt.SourceAbility?.Name ?? damage.GetType().Name
                     };

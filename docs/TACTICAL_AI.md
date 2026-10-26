@@ -2537,8 +2537,10 @@ ordinary Toggle/Swift thresholds are unchanged and future burn remains priced.
 
 A fully resisted six-point hit recorded six absorbed against Fire Resistance 10.
 That observation previously bypassed known native defence on later estimates.
-AfterTargetReduction now keeps observed factors/custom reduction and also applies
-the native remaining-damage bound, without subtracting both reductions. The initial
+For fully absorbed packets with positive reduction, AfterTargetReduction keeps
+observed factors/custom reduction and applies the native remaining-damage bound,
+without subtracting both reductions. Successful-hit observations retain their old
+authority, including evidence of caster-specific bypass. The initial
 pre-observation discrepancy is still unverified; no complete damage-model parity
 is claimed.
 
