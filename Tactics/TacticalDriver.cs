@@ -151,6 +151,10 @@ namespace CompanionAI_Pathfinder.Tactics
             public bool AreasPriced;
             /// <summary>★ v0.3.19 (test2): the option the command came from (a stuck command is learnt from by it).</summary>
             public string Key;
+            // A separate walk has not attempted this cast. Keep the real follow-up with its live command only,
+            // so cancelling a walk which already arrived cannot blacklist the still-unattempted spell.
+            public Kingmaker.UnitLogic.Abilities.AbilityData FollowUpAbility;
+            public Kingmaker.Utility.TargetWrapper FollowUpAim;
         }
 
         private static HashSet<string> AreasAround(UnitEntityData unit)
@@ -213,6 +217,20 @@ namespace CompanionAI_Pathfinder.Tactics
                 string key = IssuedAtHp.TryGetValue(command, out var issued) ? issued.Key : null;
                 if (key == null && memory.LastCommand == command) key = memory.LastCandidateKey;
                 if (key == null) return;
+                // ★ infusion-selection / Test[2]: Camellia's touch approach was cancelled after arriving, then
+                // the parent spell's key was refused for twelve seconds. Native cast reach/sight now distinguishes
+                // that completed preparation from a failed cast. Do not clear genuine failures from other commands.
+                if (command is Kingmaker.UnitLogic.Commands.UnitMoveTo && FollowUpInReach(unit, issued))
+                {
+                    if (memory.LastCommand == command)
+                    {
+                        memory.LastCommand = null;
+                        memory.LastCandidateKey = null;
+                    }
+                    IssuedAtHp.Remove(command);
+                    Main.Log($"[RT-Tactics] {unit.CharacterName}: approach to {issued.FollowUpAbility.Name} reached native cast range/sight - reconsidering the cast");
+                    return;
+                }
                 memory.Failed.Add(key);
                 // Not offered again while the unit stands where it got stuck (two rounds, as a refused walk).
                 CombatMemory.NoteRefusedWalk(unit, key);
@@ -234,6 +252,22 @@ namespace CompanionAI_Pathfinder.Tactics
                 }
             }
             catch { }
+        }
+
+        /// <summary>Same native current-origin test as EvaluateAbility; no command is initialized or issued.</summary>
+        private static bool FollowUpInReach(UnitEntityData unit, IssueState issued)
+        {
+            var ability = issued?.FollowUpAbility;
+            var aim = issued?.FollowUpAim;
+            if (ability == null || aim == null) return false;
+            try
+            {
+                float range = ability.GetApproachDistance(aim.Unit);
+                bool needLoS = new Kingmaker.UnitLogic.Commands.UnitUseAbility(ability, aim).NeedLoS;
+                return Kingmaker.UnitLogic.Commands.Base.UnitCommand.IsUnitCloseEnough(
+                    aim.Point, unit.Position, unit.EyePosition, range, needLoS, 0f);
+            }
+            catch { return false; } // Unknown reach does not establish a completed approach.
         }
 
         /// <summary>HP of the unit when the engine issued each command (weak: dropped with the command).</summary>
@@ -368,6 +402,11 @@ namespace CompanionAI_Pathfinder.Tactics
                         IssuedAtHp.Add(command, new IssueState
                         {
                             Hp = unit.HPLeft, Areas = AreasAround(unit), Key = candidate.Key,
+                            FollowUpAbility = command is Kingmaker.UnitLogic.Commands.UnitMoveTo && candidate.Kind == CandidateKind.Move
+                                ? candidate.Ability : null,
+                            FollowUpAim = command is Kingmaker.UnitLogic.Commands.UnitMoveTo && candidate.Kind == CandidateKind.Move && candidate.Ability != null
+                                ? candidate.Target != null ? new Kingmaker.Utility.TargetWrapper(candidate.Target)
+                                    : new Kingmaker.Utility.TargetWrapper(candidate.Point ?? unit.Position) : null,
                             AreasPriced = candidate.Kind == CandidateKind.Move ||
                                           (candidate.Label?.Contains(TacticalEngine.Disengage.IntoTag) ?? false)
                         });
