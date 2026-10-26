@@ -1,23 +1,23 @@
 # AI Control - Fully Autonomous Combat Companions
 
-## New infusion-selection test — 05d1959
+## New Test[3] fixes — 019686b
 
-**[Download the new UMM test ZIP — 05d1959](test-builds/AI-Control-FACC-infusion-selection-05d1959-UMM-test.zip?raw=true)**
+**[Download the new UMM test ZIP — 019686b](test-builds/AI-Control-FACC-test3-fixes-019686b-UMM-test.zip?raw=true)**
 
-The AI can now choose and activate supported learned substance infusions by their expected effect and native burn
-cost, compared with its ordinary actions. This also addresses Test[2]'s touch-heal retry, unnecessary cooldown
-scoring and low-HP withdraw/return loop, and includes the previous Sleep/path/energy/cone fixes.
-Close the game before installing through UMM. It still displays **0.3.21**; verify the ZIP filename/startup marker.
-[Installation, exact identity and playtest steps](test-builds/README.md).
+Corrects failed infusion activation, uses the existing costless Free threshold for validated infusion switches,
+and prevents capped damage observations from replacing stronger native resistance. Includes the previously
+added infusion selection and Sleep/path/energy/cone fixes. Seelah's movement changes are **diagnostics only**,
+as approved: no target lock, movement scoring, navigation or emergency-cancellation changes.
 
-**Known limits:** Unraveling and Chain Arrows are withheld from automatic selection; Deep Slumber retains its
-previous spreading-delivery restriction. The search is bounded, but live performance and activation still need
-playtesting. Compilation, 154 unit tests and isolated native-data checks pass. The author reports the previous
-Test[2] was smooth overall on the budget laptop. [Support matrix](docs/INFUSION_SELECTION_PLAN.md).
+Close the game before installing through UMM. It still displays **0.3.21**; verify the exact startup marker.
+[Installation, identity and both-mode playtest steps](test-builds/README.md).
 
-Isolated in [draft PR #8](https://github.com/recovribox-svg/AIControll-FACC/pull/8), targeting development, with pending
-PR #7/#6 as explicit dependencies. Main and shared development remain unchanged. The earlier broad implementation
-remains withdrawn. For normal play use the
+All 154 tests pass; Release and native-data checks pass. **Live activation and performance still need testing.**
+The first-hit fire-estimate discrepancy remains under investigation. Unraveling/Chain Arrows are withheld from
+automatic selection and Deep Slumber retains its spreading restriction. [Test[3] review](docs/TEST3_REVIEW.md).
+
+Isolated in [draft PR #9](https://github.com/recovribox-svg/AIControll-FACC/pull/9), targeting development, with pending
+PR #8/#7/#6 included as dependencies. Main/development are unchanged. For normal play use the
 [stable v0.3.21 release](https://github.com/recovribox-svg/AIControll-FACC/releases/tag/v0.3.21).
 
 Read the [rollback and failure analysis](docs/V0_3_22_POSTMORTEM.md) before further development.

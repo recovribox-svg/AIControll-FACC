@@ -1,0 +1,56 @@
+{
+  "test_name": "Test3 fixes: native infusion command, resistance evidence, approved walk diagnostics",
+  "intended_development_version": "0.3.22",
+  "umm_manifest_version": "0.3.21",
+  "branch": "codex/test3-infusion-fixes",
+  "base_development_commit": "f51189fa93ffebc791489c6761e05ccbbdea0014",
+  "dependency_prs": [
+    "https://github.com/recovribox-svg/AIControll-FACC/pull/8",
+    "https://github.com/recovribox-svg/AIControll-FACC/pull/7",
+    "https://github.com/recovribox-svg/AIControll-FACC/pull/6"
+  ],
+  "runtime_source_commit": "019686b037bf76a14a01cd0afde35796820351ba",
+  "archive": "AI-Control-FACC-test3-fixes-019686b-UMM-test.zip",
+  "zip_sha256": "f01dbfbf05ea99de9705f717552812af6b510a7675150a5cc8043655d39af45f",
+  "dll_sha256": "86376ac278f44b62e0afb269d222f99e1aac208d85a055357ce21719e4a21c62",
+  "module_mvid": "256233cf-7f95-4c40-babb-e461bdd26750",
+  "startup_marker": "[Build] test3-infusion-fixes module=256233cf-7f95-4c40-babb-e461bdd26750 on v0.3.21",
+  "archive_contents": [
+    "CompanionAI_Pathfinder.dll",
+    "Info.json"
+  ],
+  "pull_request": "https://github.com/recovribox-svg/AIControll-FACC/pull/9",
+  "checks": {
+    "unit_tests": {
+      "passed": 154,
+      "failed": 0,
+      "skipped": 0
+    },
+    "release_build": {
+      "warnings": 0,
+      "errors": 0
+    },
+    "native_activation": "20 actual substance metadata fixtures reject Judgment-only matching; compiled route has native request/adoption/trace and zero manual construction/reissue; no actor/gameplay execution",
+    "quick_thresholds": "Plain mod-candidate fixtures: Free infusion1, ordinary toggle2, Swift2",
+    "native_cost": "486 native cost/quiver vectors, original unchanged, private getter binding/hybrid bound pass",
+    "native_layouts": "18 recognized of20 actual substance buffs; Unraveling/ChainArrows withheld",
+    "cone_bindings": "Native range/cone delegates and all-or-none collection pass; no live geometry",
+    "blueprint_reader": {
+      "status": "PARTIAL",
+      "loaded_exports": 4097,
+      "failed_exports": 1,
+      "ability_rows": 1220,
+      "reader_errors": 0,
+      "changed_detail_rows_vs_previous_test": 0
+    },
+    "movement_scope": "Author approved diagnostics only; no movement decision/risk/cancellation/navigation changes or extra pathfinding",
+    "in_game": "Pending for this new build; previous Test3 exposes activation failure"
+  },
+  "limitations": [
+    "Live native/third-party activation, commands, burn, restoration and Unity/Mono performance require replay.",
+    "Initial pre-observation Fire Blast estimate against Dretch remains an open lead; fix addresses later observation overriding stronger native defence.",
+    "Seelah movement investigation is diagnostic only; replay before discussing a behavior correction.",
+    "Unraveling/ChainArrows and inherited Deep Slumber spreading restriction remain; no new Gather/metakinesis/form optimizer.",
+    "Search limits exclude ordinary decision/active-effect work and cannot interrupt a native call."
+  ]
+}
