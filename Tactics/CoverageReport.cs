@@ -167,7 +167,9 @@ namespace CompanionAI_Pathfinder.Tactics
                 if (TacticalEngine.IsBlastModifier(toggle.Blueprint) && toggle.Blueprint.Buff != null &&
                     Kingmaker.Blueprints.BlueprintExtenstions.GetComponents<Kingmaker.UnitLogic.Class.Kineticist.AddKineticistBurnModifier>(toggle.Blueprint.Buff).Any(m => m.Value > 0))
                     return (ModSettings.Instance?.AiManagesToggles ?? true)
-                        ? "leaves it, except: switches it off when its burn blocks every blast (back on after the fight)"
+                        ? (toggle.Blueprint.Group == Kingmaker.UnitLogic.ActivatableAbilities.ActivatableAbilityGroup.SubstanceInfusion
+                            ? "compares supported substance effects/cost against reachable blasts; respects player ownership and round locks"
+                            : "leaves it, except: switches it off when its burn blocks every blast (back on after the fight)")
                         : "leaves it (switched off in the settings)";
                 return $"leaves it ({why}; as a combat mode: {mode})";
             }

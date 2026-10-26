@@ -2473,3 +2473,49 @@ allies, with the same set used for friendly-fire and Progressive/boss decisions.
 The detailed [plan, review corrections, checks, limits and gameplay checklist](TEST1_SCORING_FIXES.md)
 and [test download/identity](../test-builds/README.md) are the handover. Offline
 checks do not establish live stability or laptop performance parity.
+## 67. Intended v0.3.22: bounded substance-infusion selection and Test[2] fixes
+
+Test[2] remained smooth overall on the author's budget laptop, but exposed the
+previous slice's deliberate limitation: inactive infusions were never selected.
+[Log evidence and corrections](INFUSION_SELECTION_TEST2_REVIEW.md) and
+[complete implementation/support matrix](INFUSION_SELECTION_PLAN.md) distinguish
+source inspection, offline checks and pending gameplay verification.
+
+- Supported learned substance options now compete with retaining/off configurations
+  and the best ordinary action. Their actual effect graphs, native buff DC/ranks,
+  applicability, immunity, existing effects and marginal native burn cost determine
+  value on the shared `ValueModel` scale. There is no fixed infusion priority.
+- Eighteen of twenty supplied buff layouts are recognized: maneuvers, periodic
+  damage, save-based debuffs, concealment removal, matching magnetic penalties,
+  native SR/immunity/material/physical-DR effects, ranked Cluster Arrows and the
+  conditional Vampiric healer discount. Unraveling and Chain Arrows are explicitly
+  withheld from automatic selection because safe read-only valuation of their
+  dispel/secondary-delivery paths was not established. Weapon/blade/shadow delivery
+  and a new Gather/metakinesis/form optimization are outside this selector.
+- Search: four reachable blast aims, eight complete recipients per aim, 24
+  comparisons, 8 ms cooperative deadline. A native call can overrun it. This limit
+  excludes ordinary decision work and appraisal of already-active effects; it is
+  not a whole-decision latency guarantee. Ordinary blast damage/burn remains when
+  an unsupported effect cannot be valued. Form variants retain ordinary scoring.
+- No gameplay action executes during appraisal, no fake facts are installed and
+  no new global/Harmony/UI hook exists. Native cost copies are reconstructed only
+  through native constructor/reducer APIs for exact constant marginal modifiers.
+  Unknown layouts fail closed. Actual post-switch cost/availability owns execution.
+- Activation is queued through `CommandDispatcher.Run` before native `IsOn`; the
+  next decision waits for commands and requires the real owned `AppliedBuff`.
+  Global management, whole-group player ownership, capacity and per-round locks
+  apply. Duplicate entries do not multiply effects. Restoration stops alternatives
+  before restoring original states and preserves player-owned groups.
+- Test[2] fixes preserve a reached touch cast after its separate approach is
+  cancelled, omit unrelated unavailable heals/buffs during cooldown while keeping
+  future offensive/held-touch/spell-forbidding dependencies, and remove the advance
+  value floor implicated in Lann's low-HP withdraw/return loop. No combat clock or
+  animation setting is changed.
+
+Verification: 154 pure tests pass; Release compiles against supplied real game
+references without warnings/errors. A partial native-data run (4,097 loaded, one
+known unrelated failed export) recognizes the eighteen layouts, verifies 486 native
+cost/quiver vectors and bindings, and produces 1,220 ordinary reader rows with zero
+reader errors, identical to the pending PR #7 baseline. These checks do not run
+live actor activation, third-party handlers, commands or Unity/Mono frame profiling.
+The draft task branch includes PR #7/#6 dependencies; main/development are unchanged.

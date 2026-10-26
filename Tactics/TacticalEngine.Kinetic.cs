@@ -59,124 +59,6 @@ namespace CompanionAI_Pathfinder.Tactics
             return part.Blasts.Contains(blast);
         }
 
-        // ★ kinetic-infusion-value: blueprint-only descriptions; never store actor contexts, rule results or state.
-        private sealed class ActiveInfusionManeuver
-        {
-            internal readonly AbilityProfile.ManeuverEffect Maneuver;
-            internal readonly HashSet<BlueprintAbility> Abilities;
-
-            internal ActiveInfusionManeuver(ContextActionCombatManeuver action, HashSet<BlueprintAbility> abilities)
-            {
-                Maneuver = new AbilityProfile.ManeuverEffect { Type = action.Type, Action = action };
-                Abilities = abilities;
-            }
-        }
-
-        private static readonly Dictionary<BlueprintBuff, ActiveInfusionManeuver> ActiveInfusionManeuvers =
-            new Dictionary<BlueprintBuff, ActiveInfusionManeuver>();
-
-        /// <summary>
-        /// ★ kinetic-infusion-value: recognize only one direct native trip/bull-rush action. Unknown layouts are cached
-        /// as unsupported. No recursive action reader, synthetic ability or hypothetical infusion configuration.
-        /// </summary>
-        private static ActiveInfusionManeuver ReadActiveInfusionManeuver(BlueprintBuff blueprint)
-        {
-            if (blueprint == null) return null;
-            if (ActiveInfusionManeuvers.TryGetValue(blueprint, out var cached)) return cached;
-            ActiveInfusionManeuver description = null;
-            try
-            {
-                var triggers = blueprint.GetComponents<AddKineticistInfusionDamageTrigger>().ToArray();
-                if (triggers.Length == 1)
-                {
-                    var trigger = triggers[0];
-                    var actions = trigger.Actions?.Actions;
-                    if (trigger.GetType() == typeof(AddKineticistInfusionDamageTrigger) && trigger.TriggerOnDirectDamage &&
-                        !trigger.TriggerOnStatDamageOrEnergyDrain && !trigger.CheckWeaponType && !trigger.CheckSpellDescriptor &&
-                        trigger.CheckSpellParent && actions?.Length == 1 &&
-                        actions[0]?.GetType() == typeof(ContextActionCombatManeuver))
-                    {
-                        var action = (ContextActionCombatManeuver)actions[0];
-                        bool supported = (action.Type == CombatManeuver.Trip || action.Type == CombatManeuver.BullRush) &&
-                            (action.OnSuccess?.Actions == null || action.OnSuccess.Actions.Length == 0) &&
-                            action.IgnoreConcealment && !action.BatteringBlast && !action.UseCasterLevelAsBaseAttack &&
-                            !action.UseCastingStat && !action.UseBestMentalStat &&
-                            (!action.ReplaceStat || action.UseKineticistMainStat);
-                        if (supported)
-                        {
-                            var abilities = new HashSet<BlueprintAbility>(trigger.AbilityList.Where(a => a != null));
-                            if (abilities.Count > 0) description = new ActiveInfusionManeuver(action, abilities);
-                        }
-                    }
-                }
-            }
-            catch (Exception ex)
-            {
-                Main.Verbose($"[Kinetic] unsupported infusion layout {blueprint.name}: {ex.Message}");
-            }
-            ActiveInfusionManeuvers[blueprint] = description;
-            return description;
-        }
-
-        /// <summary>
-        /// ★ kinetic-infusion-value: only the primary recipient of an ordinary, actually configured projectile blast.
-        /// The caller supplies its already-calculated hit/resistance chance; no native burn, gather, parameter or
-        /// hit query is added. Maneuver odds remain target-dependent and use the existing native-rule reader.
-        /// </summary>
-        private static float ActiveInfusionManeuverValue(TacticalContext ctx, AbilityData ability, AbilityProfile profile,
-            UnitEntityData enemy, float triggerChance, out string note)
-        {
-            note = null;
-            if (ctx?.Unit == null || ability?.Blueprint == null || enemy == null || profile == null || triggerChance <= 0f ||
-                ability.Caster?.Unit != ctx.Unit || profile.IsAoE || profile.Chain != null || profile.IsWeaponAttack ||
-                !profile.NeedsAttackRoll || profile.Maneuvers.Count > 0 || profile.Save != SavingThrowType.Unknown || ability.ShadowSpellSettings != null ||
-                ability.Blueprint.CanTargetPoint || !ctx.Unit.IsEnemy(enemy)) return 0f;
-            // The ordinary target-effect gate has already proved a damage branch may run. Hybrid target effects could
-            // pass that gate without any damage event, so leave them outside this slice instead of re-reading guards.
-            if (profile.Heals.Count > 0 || profile.TargetBuffs.Count > 0 || profile.RemovesAnything || profile.RemovesBuffs || profile.Dispels)
-                return 0f;
-
-            var unit = ctx.Unit;
-            var part = unit.Get<UnitPartKineticist>();
-            if (!IsOwnBlast(part, ability) || part.ArcherBlast ||
-                ability.Blueprint.GetComponent<AbilityDeliveredByWeapon>() != null ||
-                ability.Blueprint.GetComponent<AbilityDeliverAttackWithWeapon>() != null) return 0f;
-            var projectile = ability.Blueprint.GetComponent<AbilityDeliverProjectile>();
-            if (projectile == null || !projectile.NeedAttackRoll || projectile.Type != AbilityProjectileType.Simple ||
-                profile.Damage.Count == 0 || profile.Damage.Any(a => a?.GetType() != typeof(ContextActionDealDamage))) return 0f;
-
-            float value = 0f;
-            bool tripCounted = false, pushCounted = false;
-            foreach (var toggle in unit.ActivatableAbilities?.Enumerable ?? Enumerable.Empty<ActivatableAbility>())
-            {
-                var bp = toggle?.Blueprint;
-                if (bp == null || bp.Group != ActivatableAbilityGroup.SubstanceInfusion || !(toggle.IsOn || toggle.IsStarted)) continue;
-                var buff = bp.Buff == null ? null : unit.Buffs.GetBuff(bp.Buff);
-                if (buff == null || !buff.Active || !buff.IsTurnedOn || buff.Context?.MaybeCaster != unit) continue;
-                var infusion = ReadActiveInfusionManeuver(bp.Buff);
-                if (infusion == null || (!infusion.Abilities.Contains(ability.Blueprint) &&
-                    !infusion.Abilities.Contains(ability.Blueprint.Parent))) continue;
-
-                var maneuver = infusion.Maneuver;
-                if ((maneuver.Type == CombatManeuver.Trip && tripCounted) ||
-                    (maneuver.Type == CombatManeuver.BullRush && pushCounted)) continue;
-                // Native ContextActionCombatManeuver returns before its roll when a trip target is already getting up.
-                if (maneuver.Type == CombatManeuver.Trip &&
-                    (enemy.Descriptor.State.Prone.Active || (enemy.View?.IsGetUp ?? false))) continue;
-                float strength = ManeuverStrength(enemy, ability, maneuver.Type, out _);
-                if (strength <= 0f) continue;
-                CombatMath.ManeuverOdds(unit, enemy, ability, maneuver, out float chance, out _);
-                float added = ValueModel.OnHitControlValue(triggerChance, chance, CombatMath.ControlWorth(enemy), strength);
-                if (CombatMath.IsDisabled(enemy)) added *= 0.4f;
-                if (added <= 0f) continue;
-                value += added;
-                if (maneuver.Type == CombatManeuver.Trip) tripCounted = true;
-                else pushCounted = true;
-                note = (note == null ? "" : note + "; ") + $"{toggle.Name} {maneuver.Type} +{added:F1}";
-            }
-            return value;
-        }
-
         /// <summary>The game's blast restriction fails: not enough burn left this round (or today) for its cost.</summary>
         private static bool BurnBlocked(AbilityData ability)
         {
@@ -281,7 +163,9 @@ namespace CompanionAI_Pathfinder.Tactics
                     int burn = BurnOf(c.Ability);
                     costs[c.Ability] = cost = new KeyValuePair<int, float>(burn, BurnCost(ctx, burn));
                 }
+                c.NativeBurn = cost.Key;
                 if (cost.Key <= 0) continue;
+                c.BurnPrice = cost.Value;
                 c.Value -= cost.Value;
                 c.Label += $" [burn {cost.Key}: -{cost.Value:F1}]";
             }
@@ -292,7 +176,7 @@ namespace CompanionAI_Pathfinder.Tactics
             var unit = ctx.Unit;
             var part = unit.Get<UnitPartKineticist>();
             if (part == null) return;
-            var abilities = AbilityDiscovery.Gather(unit);
+            var abilities = ctx.DiscoveredAbilities ?? AbilityDiscovery.Gather(unit);
             var blasts = abilities.Where(a => IsOwnBlast(part, a)).ToList();
             if (blasts.Count == 0 || blasts.Any(a => a.IsAvailable)) return;
             var blocked = blasts.Where(BurnBlocked).ToList();

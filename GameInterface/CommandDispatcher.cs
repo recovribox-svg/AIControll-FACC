@@ -20,6 +20,7 @@ using Kingmaker;
 using Kingmaker.EntitySystem.Entities;
 using Kingmaker.UnitLogic.Commands;
 using Kingmaker.UnitLogic.Commands.Base;
+using Kingmaker.UnitLogic.ActivatableAbilities;
 using Pathfinding;
 using Pathfinding.Util;
 using TurnBased.Controllers;
@@ -29,6 +30,42 @@ namespace CompanionAI_Pathfinder.GameInterface
 {
     public static class CommandDispatcher
     {
+        /// <summary>
+        /// Native infusion transition. Queue activation first, then request IsOn: native OnDidTurnOn sees that exact
+        /// command and does not bypass this dispatcher with a second one. Off switches have no native unit command.
+        /// This overload is execution-only; no appraisal calls it.
+        /// </summary>
+        internal static bool Run(UnitEntityData unit, ActivatableAbility activate, IList<ActivatableAbility> stop,
+            string label, out UnitCommand command, out string failure)
+        {
+            command = null;
+            failure = null;
+            if (unit == null || !unit.IsInCombat) { failure = "infusion transition is combat-only"; return false; }
+            if (!(Settings.ModSettings.Instance?.AiManagesToggles ?? true))
+            { failure = "AI toggle management is off"; return false; }
+            try
+            {
+                if (activate != null)
+                {
+                    if (!activate.Blueprint.ActivateWithUnitCommand || activate.Blueprint.IsTargeted ||
+                        UnitActivateAbility.GetCommandType(activate) != UnitCommand.CommandType.Free || activate.ResourceCount.HasValue)
+                    { failure = "infusion activation no longer has the supported free/resource-free shape"; return false; }
+                    if (!activate.IsAvailable) { failure = "infusion is no longer available"; return false; }
+                    command = new UnitActivateAbility(activate);
+                    if (!Run(unit, command, label, out failure)) return false;
+                }
+                foreach (var toggle in stop) toggle.IsOn = false;
+                if (activate != null)
+                {
+                    activate.IsOn = true;
+                    if (!activate.IsOn && !activate.IsStarted)
+                    { failure = "native activation request was refused"; return false; }
+                }
+                return true;
+            }
+            catch (Exception ex) { failure = ex.Message; return false; }
+        }
+
         /// <summary>Claim key used while our path is being calculated (mirrors DecisionContext's claiming).</summary>
         private const string PathClaimKey = "companionai_dispatcher_path";
 

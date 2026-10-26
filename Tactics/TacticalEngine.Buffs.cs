@@ -679,13 +679,13 @@ namespace CompanionAI_Pathfinder.Tactics
         /// through Blur and Displacement - the game's own exceptions (UnitPartConcealment.Calculate). Nothing for what it
         /// sees already, or while blind.
         /// </summary>
-        private static float RemovableMiss(TacticalContext ctx, UnitEntityData ally, bool trueSeeing)
+        private static float RemovableMiss(TacticalContext ctx, UnitEntityData ally, bool trueSeeing, UnitEntityData onlyEnemy = null)
         {
             try
             {
                 var state = ally.Descriptor.State;
                 if (state.HasCondition(UnitCondition.Blindness)) return 0f;
-                var fighting = ctx.Enemies.Where(e => !CombatMath.IsDisabled(e)).ToList();
+                var fighting = ctx.Enemies.Where(e => (onlyEnemy == null || e == onlyEnemy) && !CombatMath.IsDisabled(e)).ToList();
                 if (fighting.Count == 0) return 0f;
                 bool seesInvisible = ally.Descriptor.IsSeeInvisibility || ally.Get<Kingmaker.UnitLogic.Parts.UnitPartBlindsense>() != null;
                 bool seesTrue = state.HasCondition(UnitCondition.TrueSeeing);

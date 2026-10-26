@@ -5,6 +5,7 @@
 // the detector cannot see (enchantments, utility abilities, buffs applied through custom components).
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using Kingmaker;
 using Kingmaker.EntitySystem.Entities;
 using Kingmaker.UnitLogic.Abilities;
@@ -137,7 +138,8 @@ namespace CompanionAI_Pathfinder.Tactics
             // ★ v0.3.19: the AI does not own toggles: it puts nothing back either (what it switched before the setting
             // went off stays as it is - another mod or the player may have taken it over since).
             if (!(Settings.ModSettings.Instance?.AiManagesToggles ?? true)) return;
-            foreach (var entry in new List<KeyValuePair<string, bool>>(ToggleBeforeAi))
+            // Stop AI-enabled alternatives before restoring an original exclusive-group choice.
+            foreach (var entry in ToggleBeforeAi.OrderBy(e => e.Value).ToList())
             {
                 string key = entry.Key;
                 if (PlayerToggled.Contains(key)) continue;
@@ -166,6 +168,8 @@ namespace CompanionAI_Pathfinder.Tactics
                         if (wasOn)
                         {
                             var bp = toggle.Blueprint;
+                            if (TacticalEngine.IsBlastModifier(bp) && unit.ActivatableAbilities.Enumerable.Any(t =>
+                                t?.Blueprint?.Group == bp.Group && PlayerToggled.Contains(ToggleKey(unit, t)))) continue;
                             int? resource = null;
                             try { resource = toggle.ResourceCount; } catch { }
                             bool startsNothingNow = bp.ActivateOnUnitAction || bp.ActivateOnCombatStarts ||

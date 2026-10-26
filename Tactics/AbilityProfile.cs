@@ -637,7 +637,7 @@ namespace CompanionAI_Pathfinder.Tactics
         }
 
         /// <summary>★ v0.3.12: conditions a buff puts on its owner (AddCondition, BuffStatusCondition).</summary>
-        private static IEnumerable<UnitCondition> ConditionsOf(BlueprintBuff buff)
+        internal static IEnumerable<UnitCondition> ConditionsOf(BlueprintBuff buff)
         {
             foreach (var c in buff.GetComponents<AddCondition>()) yield return c.Condition;
             foreach (var c in buff.GetComponents<Kingmaker.Designers.Mechanics.Buffs.BuffStatusCondition>()) yield return c.Condition;
@@ -1363,6 +1363,21 @@ namespace CompanionAI_Pathfinder.Tactics
         private static bool IsSafe(Condition c) =>
             c == null || SafeConditions.Contains(c.GetType()) || c is ContextConditionHitDice;
 
+        /// <summary>Read the same allowlisted native conditions under an existing effect context; never execute actions.</summary>
+        internal static bool TryReadConditions(ConditionsChecker checker, MechanicsContext context,
+                                               UnitEntityData target, out bool result)
+        {
+            result = false;
+            if (checker == null || context == null || target == null ||
+                !(checker.Conditions ?? Array.Empty<Condition>()).All(IsSafe)) return false;
+            try
+            {
+                using (context.GetDataScope(new TargetWrapper(target))) result = checker.Check();
+                return true;
+            }
+            catch { return false; }
+        }
+
         /// <summary>
         /// ★ v0.3.17: the range of a shared value as the ability's own ContextCalculateSharedValue defines it (dice count
         /// and bonus from the context, without rolling): lowest, average and highest. No component: 0, as in the game.
@@ -1484,6 +1499,34 @@ namespace CompanionAI_Pathfinder.Tactics
         public EffectApplies AppliesTo(GameAction effect, AbilityData ability, UnitEntityData target)
         {
             return Evaluate(effect != null && m_Guards.TryGetValue(effect, out var g) ? g : NoGuards, ability, target);
+        }
+
+        // A material-changing infusion exposes a literal branch in the real blast graph. Read that one branch
+        // choice directly; all other guards still use actual native state. No condition/fact is changed or patched.
+        internal bool HasInfusionDamageBranch(BlueprintBuff buff) => Damage.Any(a =>
+            m_Guards.TryGetValue(a, out var guards) && guards.Any(g =>
+                g.Checker?.Conditions?.Length == 1 && g.Checker.Conditions[0] is ContextConditionCasterHasFact fact && fact.Fact == buff));
+
+        internal EffectApplies AppliesWithInfusion(GameAction effect, AbilityData ability, UnitEntityData target,
+            BlueprintBuff buff, bool on)
+        {
+            if (!m_Guards.TryGetValue(effect, out var guards)) return EffectApplies.Unconditional;
+            bool unknown = false;
+            foreach (var guard in guards)
+            {
+                if (guard.Checker?.Conditions?.Length == 1 &&
+                    guard.Checker.Conditions[0] is ContextConditionCasterHasFact fact && fact.Fact == buff)
+                {
+                    if ((fact.Not ? !on : on) != guard.Branch) return EffectApplies.No;
+                }
+                else
+                {
+                    var applies = Evaluate(new[] { guard }, ability, target);
+                    if (applies == EffectApplies.No) return applies;
+                    if (applies == EffectApplies.Unknown) unknown = true;
+                }
+            }
+            return unknown ? EffectApplies.Unknown : EffectApplies.Yes;
         }
 
         public EffectApplies BuffAppliesTo(BlueprintBuff buff, AbilityData ability, UnitEntityData target)

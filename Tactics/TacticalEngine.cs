@@ -10,6 +10,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using Kingmaker;
+using Kingmaker.Blueprints;
 using Kingmaker.Controllers.Combat;
 using Kingmaker.Controllers.Units;
 using Kingmaker.EntitySystem.Entities;
@@ -57,6 +58,10 @@ namespace CompanionAI_Pathfinder.Tactics
         public string InfusionNote;
         /// <summary>Native cone/shared-budget recipients for this aim; plain actor references, never a retained context.</summary>
         internal IReadOnlyCollection<UnitEntityData> GeometryRecipients;
+        internal TacticalEngine.InfusionAim InfusionAim;
+        internal TacticalEngine.InfusionSwitch InfusionSwitch;
+        internal float BurnPrice;
+        internal int NativeBurn;
         public string Key;
         /// <summary>★ v0.3.7: chance the effect lands on its main target (1 for non-hostile options).</summary>
         public float SuccessChance = 1f;
@@ -109,6 +114,9 @@ namespace CompanionAI_Pathfinder.Tactics
         public TurnController Turn;
         public CharacterSettings Settings;
         public ModSettings Global;
+        internal List<TacticalEngine.InfusionHit> ScoredInfusionHits;
+        internal readonly List<Candidate> InfusionProspects = new List<Candidate>();
+        internal List<AbilityData> DiscoveredAbilities;
         public int Round;
 
         public bool HasStandard, HasMove, HasSwift, HasFullRound, CanFullAttack, CanFiveFoot;
@@ -318,6 +326,9 @@ namespace CompanionAI_Pathfinder.Tactics
             // ★ v0.3.19 (test9): next-spell boosts (Arcane Reservoir) are worth what they add to the spell cast next.
             try { usable = CoupleSpellBoosts(ctx, usable); }
             catch (Exception ex) { Main.Error($"[Tactics] {unit.CharacterName} spell boosts: {ex.Message}"); }
+            try { AddInfusionChoice(ctx, usable, preview); }
+            catch (Exception ex) { ReportOnce($"infusion-search-error|{unit.UniqueId}|{ex.GetType().Name}",
+                $"[Kinetic] {unit.CharacterName}: substance search unavailable ({ex.GetType().Name}); retaining ordinary actions"); }
 
             // ★ v0.3.19 (test9): the best quick action that clears its own bar (a free action that spends nothing has a
             // lower one, QuickBar).
@@ -1922,12 +1933,25 @@ namespace CompanionAI_Pathfinder.Tactics
 
         private static void AddAbilityCandidates(TacticalContext ctx, List<Candidate> list)
         {
-            foreach (var ability in AbilityDiscovery.Gather(ctx.Unit))   // ★ v0.3.14: shared with real time
+            bool futureSpellsNeeded = (ctx.Global?.AiManagesToggles ?? true) &&
+                (ctx.Unit.ActivatableAbilities?.Enumerable?.Any(t =>
+                    t?.Blueprint?.Buff?.GetComponent<Kingmaker.UnitLogic.FactLogic.ForbidSpellCasting>() != null) ?? false);
+            ctx.DiscoveredAbilities = AbilityDiscovery.Gather(ctx.Unit);
+            foreach (var ability in ctx.DiscoveredAbilities)   // ★ v0.3.14: shared with real time
             {
                 try
                 {
                     if (!ability.IsAvailable) continue;
                     if (AbilityClassifier.IsBlacklistedForCombat(ability, valuedByEffect: true)) continue;
+                    var slot = SlotOf(ability);
+                    bool available = slot == ActionSlot.Free || slot == ActionSlot.Swift && ctx.HasSwift ||
+                        slot == ActionSlot.Move && (ctx.HasMove || ctx.HasStandard) ||
+                        slot == ActionSlot.Standard && ctx.HasStandard || slot == ActionSlot.FullRound && ctx.HasFullRound;
+                    var profile = AbilityProfile.Get(ability);
+                    bool futureOffence = profile != null && (profile.DealsDamage || profile.HarmfulEffects ||
+                        profile.ControlStrength != ControlStrength.None || profile.Maneuvers.Count > 0 || profile.IsWeaponAttack);
+                    if (!AbilityScoringPolicy.NeedsScore(available, futureOffence, ability.StickyTouch != null,
+                        futureSpellsNeeded && (ability.Blueprint.IsSpell || ability.SourceItem != null))) continue;
 
                     list.AddRange(EvaluateAbility(ctx, ability));
                 }
@@ -2246,10 +2270,14 @@ namespace CompanionAI_Pathfinder.Tactics
                 string infusionNote;
                 IReadOnlyCollection<UnitEntityData> geometryRecipients;
                 float? geometryChance;
+                ctx.ScoredInfusionHits = IsOwnBlast(ctx.Unit.Get<Kingmaker.UnitLogic.Class.Kineticist.UnitPartKineticist>(), ability)
+                    ? new List<InfusionHit>() : null;
                 using (AbilityProfile.AimedAt(wrapper))   // ★ v0.3.18 (test10): conditions see the real main target
                     value = ScoreAbility(ctx, ability, profile, slot, target, wrapper, approach?.Point ?? ctx.Unit.Position,
                         out why, out infusionNote, out geometryRecipients, out geometryChance, valueActiveInfusions);
-                if (value <= 0f) continue;
+                bool infusionProspect = value <= 0f && ctx.ScoredInfusionHits?.Count > 0 && !needsMove &&
+                    (ctx.Global?.AiManagesToggles ?? true) && ctx.InfusionProspects.Count < InfusionSearchBudget.MaxAims;
+                if (value <= 0f && !infusionProspect) continue;
                 float scored = value;
                 // ★ v0.3.18: an area that can only be aimed at a creature (not at the ground) is applied to that creature
                 // first; its spell resistance or immunity stops the whole area (AbilityProfile.TargetOn).
@@ -2290,7 +2318,8 @@ namespace CompanionAI_Pathfinder.Tactics
                 float provokeLoss = ProvokeLoss(ctx, ability, profile, slot, wrapper.Unit, castAt, value, out var provoke, out var rollProvoke);
                 value -= provokeLoss;
                 // ★ v0.3.14: entangled (or "casting is difficult"): a concentration check before the spell even starts.
-                value *= CombatMath.CastingConcentrationChance(ctx.Unit, ability);
+                float concentrationChance = CombatMath.CastingConcentrationChance(ctx.Unit, ability);
+                value *= concentrationChance;
                 // ★ v0.3.1: an archer walking up to an enemy to touch it gives up its ranged attacks and invites
                 // attacks of opportunity (Lann walked 9 m for Aid Another).
                 if (needsMove && ctx.HasRangedWeapon && ability.Range == AbilityRange.Touch && ctx.Unit.IsEnemy(target))
@@ -2319,6 +2348,14 @@ namespace CompanionAI_Pathfinder.Tactics
                     GatherPower = gather,
                     Value = value,
                     InfusionNote = infusionNote,
+                    InfusionAim = ctx.ScoredInfusionHits == null ? null : new InfusionAim
+                    {
+                        Hits = ctx.ScoredInfusionHits,
+                        DeliveryFactor = consumable * (needsMove ? 0.9f : 1f) *
+                            (1f - (provoke?.StopChance ?? 0f)) * concentrationChance *
+                            (needsMove && ctx.HasRangedWeapon && ability.Range == AbilityRange.Touch && ctx.Unit.IsEnemy(target) ? 0.5f : 1f) *
+                            (1f - (risk?.StopChance ?? 0f))
+                    },
                     GeometryRecipients = geometryRecipients,
                     Offensive = IsOffensive(why),
                     PureBuff = why.Split('+').All(r => r == "buff" || r.StartsWith("grows into")) && why.Contains("buff"),
@@ -2340,6 +2377,7 @@ namespace CompanionAI_Pathfinder.Tactics
                     Key = $"abl:{CombatMemory.AbilityKey(ability)}{metamagic}:{target.UniqueId}"
                 };
                 if (Better(candidate, best)) best = candidate;
+                if (infusionProspect) ctx.InfusionProspects.Add(candidate);
                 if (!progressive || !candidate.Offensive) continue;
 
                 candidate.SuccessChance = geometryChance ?? ProgressiveGate.SuccessChance(ctx.Unit, ctx.Enemies, ability, profile, candidate.Target, candidate.Point);
@@ -2683,18 +2721,18 @@ namespace CompanionAI_Pathfinder.Tactics
                     }
                     if (geometryChance.HasValue) geometryChance = Math.Max(geometryChance.Value, beneficialChance);
                     dmgValue += part;
-                    // ★ kinetic-infusion-value: reuse this actual recipient's hit/SR probability. Raw maneuver control
-                    // joins the normal scale before target choice and casting/walking risk, outside damage-role weights.
-                    if (valueActiveInfusions && !ability.CanTargetPoint)
+                    // Reuse this recipient's delivery estimate. Infusion effects join the shared scale before target
+                    // choice and casting/walking risk; the native cost is charged later by PriceBurn.
+                    if (valueActiveInfusions)
                     {
                         try
                         {
-                            float infusion = ActiveInfusionManeuverValue(ctx, ability, profile, enemy, p, out var note);
+                            float infusion = ActiveInfusionValue(ctx, ability, profile, enemy, p, dmg, out var note);
                             if (infusion > 0f)
                             {
                                 value += infusion;
                                 slotSensitive += infusion;
-                                reasons.Add("maneuver:active-infusion");
+                                reasons.Add("active-infusion");
                                 infusionNote = note;
                                 if (enemy == target) ctx.AimCounted = true;
                             }
@@ -3522,7 +3560,9 @@ namespace CompanionAI_Pathfinder.Tactics
             // Already there: a zero-length move would just loop.
             if (InRangeNow(unit, enemy.Position, radius, needLos)) return true;
 
-            float value = Math.Max(0.6f, Math.Max(DamageValue(enemy, est), refusedValue) * AdvanceShare);
+            // Test[2]: the old 0.6 floor repeatedly pulled low-HP Lann back after withdrawing for an attack worth 0.5.
+            // An advance must clear the ordinary action bar on its actual future payoff, like every other move.
+            float value = Math.Max(DamageValue(enemy, est), refusedValue) * AdvanceShare;
             string label = $"Advance->{enemy.CharacterName}" + (beyondOneMove ? " (beyond one move)" : "");
             // ★ v0.3.20 (0.3.19 real-time log): in range but out of sight. The walk towards the enemy with the weapon's
             // range as its radius had already arrived, so the game did not move the unit: Lann stood 12.2 m from a Dretch
@@ -3831,6 +3871,7 @@ namespace CompanionAI_Pathfinder.Tactics
         {
             command = null;
             failure = null;
+            if (c.InfusionSwitch != null) return ExecuteInfusionSwitch(unit, c, out command, out failure);
             // ★ v0.3.17: an approach around a harmful area walks to the spot it was priced for, then acts on the next
             // decision (as touch spells do in turn-based). The plain path the game would pick to the target goes through
             // the area.
