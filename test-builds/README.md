@@ -1,77 +1,78 @@
-# Kineticist infusion-value playtest
+# Test[1] scoring-fix playtest
 
-**[Download the UMM test ZIP — infusion-value 664815b](AI-Control-FACC-infusion-value-664815b-UMM-test.zip?raw=true)**
+**[Download the UMM test ZIP — 8fb0257](AI-Control-FACC-test1-scoring-fixes-8fb0257-UMM-test.zip?raw=true)**
 
-This optional update corrects Progressive RT/TB diagnostic labels and complete-list reporting. It changes no tactical
-calculation or performance algorithm. The author reported smooth overall budget-laptop play on the first test;
-[the detailed review](../docs/INFUSION_VALUE_TEST1_REVIEW.md) records both successes and unresolved model limits.
+This build addresses four findings: Sleep's shared-HD budget, blocked approaches and boost follow-ups,
+energy-specific protection, and cone recipients/friendly fire. It includes the earlier narrow active
+Bowling/Pushing valuation slice. [Draft PR #7](https://github.com/recovribox-svg/AIControll-FACC/pull/7)
+targets development and explicitly includes pending PR #6. Neither main nor development has been changed.
+This is an unmerged test for intended v0.3.22; the earlier broad attempt remains withdrawn.
 
-This is the new restricted task in [draft PR #6](https://github.com/recovribox-svg/AIControll-FACC/pull/6), on
-`codex/kineticist-infusion-value`. The author requested this package after the implementation review.
-Main and shared development remain unchanged. This is a test download, not a stable release or a revival of the
-withdrawn broad kineticist attempt. The intended next development version is v0.3.22.
+**Known capability reduction:** Deep Slumber uses native spreading delivery whose recipient order depends on live
+frames/positions. Its shared control credit is withheld, so the AI will not select that pure-control spell in this
+test. Other unsupported shared graphs/custom cones also fail closed. This restriction is deliberate and logged.
+[Full support boundaries and evidence](../docs/TEST1_SCORING_FIXES.md).
 
 ## Install
 
 1. Fully exit the game.
 2. Download the ZIP above and drag it into Unity Mod Manager's **Mods** tab, then install/update AI Control.
-3. UMM will display **0.3.21**, because release metadata remains unchanged. If UMM does not replace a same-version
-   install, extract the ZIP's two files into `<game>/Mods/CompanionAI_Pathfinder/`, overwriting those files only.
+3. UMM displays **0.3.21**, because release metadata is unchanged. If it does not replace the same-version install,
+   extract the ZIP's two files into `<game>/Mods/CompanionAI_Pathfinder/`, overwriting those files only.
    Keep your existing settings.
-4. Launch the game and check its log for this startup marker:
+4. Restart the game and check its log for this exact marker:
 
 ```text
-[Build] kinetic-infusion-value module=37bddec0-bec7-42ef-9418-c1f27a8903b1 on v0.3.21
+[Build] test1-scoring-fixes module=c528dc54-5d32-4b01-8926-0eeb7f32f7e9 on v0.3.21
 ```
 
-If that marker differs or is absent, the installed DLL is not this test. A game restart is required when replacing it.
-To return to normal play, fully exit and reinstall the existing stable v0.3.21 release.
+A missing/different marker means a different DLL is loaded. To return to normal play, fully exit and reinstall
+stable v0.3.21. Send the complete game log, this ZIP filename and your observations after testing.
 
 ## What to test
 
-This slice values **already-active, supported direct trip/push infusions**, using the actual game configuration.
-It does not turn them on or choose another infusion. Burning and Entangling are outside its scope. If Orvath knows
-only Burning, these sessions can check ordinary decisions/performance but cannot demonstrate the new infusion value.
+Use both turn-based and real-time modes, the same save/settings/other mods as the smooth Test[1] comparison:
 
-In both turn-based and real-time modes:
+- Check Orvath portrait selection out of combat, cold/warm turns, ordinary companions and summons on the budget
+  laptop. Report any new stutter or animation-speed change; offline checks cannot establish performance parity.
+- Sleep several low-HD enemies with and without allies nearby. Record actual affected recipients and SR/save
+  outcomes; the AI must not reuse the full HD pool for every creature. Unsupported forecasts explain `[HD]` once.
+- Test blocked casts, long walks, reservoir boosts and touch approaches. Boosts should wait for a viable follow-up;
+  a reachable higher-tier spell/in-reach action should remain available after a lower tier fails preparation.
+  `[Approach]` distinguishes confirmed refusals from unchecked options omitted at the three-check work limit.
+- Compare fire/cold/physical danger, matching/mismatching protection, resistance already active, pools and immunity.
+  `[Buff]` explanations show matching incoming energy and estimated prevention.
+- Try Color Spray with enemies and allies at the cone edges, beside/behind/in front, an unconscious ally, Selective,
+  obstacles and walk-then-cast positions. Avoid-friendly-fire must use the native cone and conserve unsafe casts.
+- Recheck the earlier active supported Bowling/Pushing path and toggle-management boundaries. It values an
+  already-active infusion; it does not select infusions. Burning/Entangling remain outside that narrow slice.
 
-- Compare idle portrait selection, cold/warm turns, ordinary companions and summons with stable v0.3.21, using the
-  same save, settings and other mods. Report any new stutter.
-- With Bowling/Pushing already active and the native burn affordable, compare eligible and immune targets,
-  already-prone/getting-up targets, applicable blast families and native reductions making burn zero.
-- Check the chosen-plan `[Kinetic]` line: infusion, raw contribution, target and existing burn penalty. No added-value
-  line is expected for an off/unsupported infusion or one that contributes zero.
-- Check that target choice and walking/casting risks make sense, and watch the actual maneuver outcomes.
-- Check player toggle choices, AI toggle management off/on and setup after combat. This slice adds no switcher;
-  the original burn-blocked recovery behavior still exists.
+## Identity and checks
 
-Send the full game log and this ZIP filename, plus what you observed. The detailed scope and remaining limits are in
-[TACTICAL_AI §65](../docs/TACTICAL_AI.md#65-kineticist-infusion-value-a-new-restricted-slice-on-the-restored-v0321-base).
+Flat UMM archive: exactly `CompanionAI_Pathfinder.dll` and `Info.json`. No game DLL, settings, rewritten dependency
+or offline tool. Packaging retains the exact checked Release DLL; it changes no runtime code.
+[Versioned identity](AI-Control-FACC-test1-scoring-fixes-8fb0257-UMM-test.identity.json) and
+[SHA256SUMS.txt](SHA256SUMS.txt) record checksums.
 
-## Identity and verification
+- Runtime source: `8fb02579a04ee202889478c091878997b222ba4c`.
+- ZIP SHA-256: `2263ef1bbaa14d8cb6f69127b6a279dc50b0af230359df4b3562865debd83791`.
+- DLL SHA-256: `038af46606db672625661885eb01a4a0e43f4c8316e30b93e2c5c8906bd763a7`.
+- Build against real supplied game/UMM references: **0 warnings/errors**. Unit tests: **142 passed, 0 failed/skipped**.
+- Actual-data parser checks: Sleep and its equivalent durations, rejected unsupported forms, six nonconsuming
+  threshold abilities, and Color Spray's completed metadata pass. Native cone/range delegates bind, with
+  all-or-none collection checks. These do not test live actors, geometry, conditions or casts.
+- Partial ordinary blueprint audit: **1,220 rows, 0 reader errors**, same classification counts; five detail rows
+  now distinguish energy types/immunity. **4,097 exports loaded; one known export failed** on both comparisons.
+- **In-game testing of this build is pending.** Smooth budget-laptop feedback applies to the earlier narrower
+  Test[1]. Live pathfinding, third-party rules and CPU cost remain acceptance gates. Moving plans are checked again
+  at issue; mixed/custom energy predictions and aggregate packet sizes can conservatively underprice protection.
 
-The archive contains exactly `CompanionAI_Pathfinder.dll` and `Info.json` at its root, following Build.ps1's UMM
-layout. It uses the checked diagnostic-update DLL; packaging changes no runtime code. It contains no game assemblies,
-offline tools, stand-ins or settings. [SHA256SUMS.txt](SHA256SUMS.txt) identifies the ZIP;
-[versioned build identity](AI-Control-FACC-infusion-value-664815b-UMM-test.identity.json) records source revisions,
-DLL hash and module identity.
+## Earlier downloads retained
 
-- Runtime source: `664815b8b2562eedbd7d85525a50ad498811d495`.
-- Original infusion implementation: `0a7ed97e60bda45c5a9452734fc3a278b879b6b2`.
-- DLL SHA-256: `fd863abc853c6834e73bab62bfa29a40a2ee7c9a471e5d5d76fe12decb210ba3`.
-- Release build: zero warnings/errors. Tests: 110 passed, zero failed/skipped.
-- The original infusion build's baseline/current audit reports match all 1,220 rows with zero reader errors; this
-  diagnostic update changes no reader. Coverage is partial:
-  4,097 loaded exports and the same one known failed export on both runs.
-- The original infusion build's ordinary gameplay was tested and reported smooth overall; the active Bowling/Pushing
-  path was not exercised. The diagnostic update itself has not been tested in game. These checks do not establish
-  complete gameplay stability or resolve the pre-existing scoring limits listed in the review.
+- [Original Test[1] — 0a7ed97](AI-Control-FACC-infusion-value-0a7ed97-UMM-test.zip?raw=true): the supplied Test[1] logs
+  and smooth-overall feedback refer to this build. [Original identity](build-identity.json).
+- [Optional diagnostics only — 664815b](AI-Control-FACC-infusion-value-664815b-UMM-test.zip?raw=true): corrects RT/TB
+  labels, with the same tactical calculations as original Test[1].
+  [Identity](AI-Control-FACC-infusion-value-664815b-UMM-test.identity.json).
 
-## Original Test[1] retained
-
-[Download original 0a7ed97 ZIP](AI-Control-FACC-infusion-value-0a7ed97-UMM-test.zip?raw=true).
-Its unchanged [build identity](build-identity.json) has MVID `4abd89c4-7b64-4e6f-8ae5-5d96f61ed556`.
-The supplied Test[1] logs relate to that build, not the later diagnostic update. Both ZIP hashes remain listed.
-
-Future test downloads should use a new, clearly named ZIP and matching identity/checksums, linked from the task
-branch README and PR. Keep earlier filenames immutable so submitted logs can be tied to their exact build.
+Old filenames/checksums remain unchanged so logs can be tied to the exact installed binary.

@@ -136,8 +136,9 @@ Intermediate component commits were not individually gameplay-tested.
 ## Verification results
 
 - Full Release compilation against the supplied real game/UMM references passes
-  with zero warnings/errors. Unit test count and final DLL identity are recorded
-  with the uniquely named package in `test-builds/`.
+  with zero warnings/errors. **142 unit tests pass, zero failed/skipped.** Final
+  runtime source is `8fb0257`; its unique package and DLL identity are recorded
+  in [test-builds](../test-builds/README.md) and draft PR #7.
 - Pure tests cover shared budget depletion/order, SR transitions versus saves,
   caps/failure atomicity, matching energy/rates/pools/overlap, bounded selected-path
   checks, fresh decisions and Progressive fallback after a blocked lower tier.
