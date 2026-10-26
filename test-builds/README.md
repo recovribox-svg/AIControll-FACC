@@ -1,73 +1,81 @@
-# Test[1] scoring-fix playtest
+# Infusion-selection playtest — 05d1959
 
-**[Download the UMM test ZIP — 8fb0257](AI-Control-FACC-test1-scoring-fixes-8fb0257-UMM-test.zip?raw=true)**
+**[Download the new UMM test ZIP — 05d1959](AI-Control-FACC-infusion-selection-05d1959-UMM-test.zip?raw=true)**
 
-This build addresses four findings: Sleep's shared-HD budget, blocked approaches and boost follow-ups,
-energy-specific protection, and cone recipients/friendly fire. It includes the earlier narrow active
-Bowling/Pushing valuation slice. [Draft PR #7](https://github.com/recovribox-svg/AIControll-FACC/pull/7)
-targets development and explicitly includes pending PR #6. Neither main nor development has been changed.
-This is an unmerged test for intended v0.3.22; the earlier broad attempt remains withdrawn.
+This test adds automatic selection and activation of useful learned substance infusions,
+including damage over time, debuffs and supported blast modifiers. It also addresses the
+Test[2] touch-heal retry, unnecessary cooldown scoring and low-HP withdraw/advance loop.
+It includes the previous Sleep/path/energy/cone fixes.
 
-**Known capability reduction:** Deep Slumber uses native spreading delivery whose recipient order depends on live
-frames/positions. Its shared control credit is withheld, so the AI will not select that pure-control spell in this
-test. Other unsupported shared graphs/custom cones also fail closed. This restriction is deliberate and logged.
-[Full support boundaries and evidence](../docs/TEST1_SCORING_FIXES.md).
+Work is isolated in [draft PR #8](https://github.com/recovribox-svg/AIControll-FACC/pull/8)
+into development, with pending PR #7/#6 included as dependencies. Main and shared development
+are unchanged. This is an unmerged test for intended v0.3.22; release metadata remains 0.3.21.
+The withdrawn earlier broad implementation remains withdrawn.
 
-## Install
+## Install and identify
 
 1. Fully exit the game.
-2. Download the ZIP above and drag it into Unity Mod Manager's **Mods** tab, then install/update AI Control.
-3. UMM displays **0.3.21**, because release metadata is unchanged. If it does not replace the same-version install,
-   extract the ZIP's two files into `<game>/Mods/CompanionAI_Pathfinder/`, overwriting those files only.
-   Keep your existing settings.
-4. Restart the game and check its log for this exact marker:
+2. Download the ZIP above, then drag it into Unity Mod Manager's **Mods** tab and install/update AI Control.
+3. UMM still displays **0.3.21**. If UMM does not replace the same-version install, extract the ZIP's
+   two files into `<game>/Mods/CompanionAI_Pathfinder/`, overwriting those files only. Keep your settings.
+4. Restart and verify this exact line in the complete log:
 
 ```text
-[Build] test1-scoring-fixes module=c528dc54-5d32-4b01-8926-0eeb7f32f7e9 on v0.3.21
+[Build] infusion-selection module=f4bc5e75-a6e9-4da8-ac81-73e105c47aa7 on v0.3.21
 ```
 
-A missing/different marker means a different DLL is loaded. To return to normal play, fully exit and reinstall
-stable v0.3.21. Send the complete game log, this ZIP filename and your observations after testing.
+A different/missing marker means a different DLL is loaded. To return to stable play, fully exit and
+reinstall stable v0.3.21. Send the complete log, this ZIP filename and your observations after testing.
 
 ## What to test
 
-Use both turn-based and real-time modes, the same save/settings/other mods as the smooth Test[1] comparison:
+Use both turn-based and real-time modes with the same save/settings/other mods as smooth Test[2]:
 
-- Check Orvath portrait selection out of combat, cold/warm turns, ordinary companions and summons on the budget
-  laptop. Report any new stutter or animation-speed change; offline checks cannot establish performance parity.
-- Sleep several low-HD enemies with and without allies nearby. Record actual affected recipients and SR/save
-  outcomes; the AI must not reuse the full HD pool for every creature. Unsupported forecasts explain `[HD]` once.
-- Test blocked casts, long walks, reservoir boosts and touch approaches. Boosts should wait for a viable follow-up;
-  a reachable higher-tier spell/in-reach action should remain available after a lower tier fails preparation.
-  `[Approach]` distinguishes confirmed refusals from unchecked options omitted at the three-check work limit.
-- Compare fire/cold/physical danger, matching/mismatching protection, resistance already active, pools and immunity.
-  `[Buff]` explanations show matching incoming energy and estimated prevention.
-- Try Color Spray with enemies and allies at the cone edges, beside/behind/in front, an unconscious ally, Selective,
-  obstacles and walk-then-cast positions. Avoid-friendly-fire must use the native cone and conserve unsafe casts.
-- Recheck the earlier active supported Bowling/Pushing path and toggle-management boundaries. It values an
-  already-active infusion; it does not select infusions. Burning/Entangling remain outside that narrow slice.
+- Enable **AI manages toggles**, leave learned substance infusions off, then let the AI choose in combat.
+  `[Kinetic]` lines explain comparisons, changes, target, burn and withheld types. A stronger spell/attack,
+  immunity, extra burn or a work limit can legitimately leave an infusion off.
+- Check Burning against susceptible/resistant targets, Bowling against eligible/prone/immune targets,
+  debuffs already present, and burn/quiver limits. Verify actual buff installation and blast outcomes.
+- Check replacing/stopping infusions, duplicate entries, one group switch per round, player changes,
+  management disabled and restoration of pre-fight choices after combat. Player choices during a fight
+  protect the group from AI changes for that fight when the existing respect-player setting is enabled.
+- Repeat the touch-heal/revive approach and low-HP archer retreat situations. Check ordinary companions,
+  future movement while actions cool down, and spell-forbidding modes.
+- Compare Orvath/summons' turns and idle portrait selection on the budget laptop. Report any new stutter
+  or animation-speed change. This code changes no combat-speed setting; offline checks cannot establish FPS.
+
+## Known limits
+
+The supplied data contains 20 substance buff layouts; 18 are recognized. **Unraveling and Chain Arrows
+are withheld from automatic selection** because safe read-only dispel/secondary-delivery valuation was
+not established. Exposed blast forms retain ordinary scoring; there is no new Gather/metakinesis/form
+optimizer or weapon/blade/shadow forecast. Deep Slumber's inherited spreading-delivery control restriction
+remains. [Detailed support matrix and limitations](../docs/INFUSION_SELECTION_PLAN.md).
+
+The four-aim/eight-recipient/24-comparison/8 ms limit is a cooperative **selection search** limit,
+not a bound on ordinary decisions or active-effect appraisal. Native calls can overrun it. Native
+post-switch costs remain authoritative; other mods' handlers and actual activation need playtesting.
 
 ## Identity and checks
 
-Flat UMM archive: exactly `CompanionAI_Pathfinder.dll` and `Info.json`. No game DLL, settings, rewritten dependency
-or offline tool. Packaging retains the exact checked Release DLL; it changes no runtime code.
-[Versioned identity](AI-Control-FACC-test1-scoring-fixes-8fb0257-UMM-test.identity.json) and
-[SHA256SUMS.txt](SHA256SUMS.txt) record checksums.
-
-- Runtime source: `8fb02579a04ee202889478c091878997b222ba4c`.
-- ZIP SHA-256: `2263ef1bbaa14d8cb6f69127b6a279dc50b0af230359df4b3562865debd83791`.
-- DLL SHA-256: `038af46606db672625661885eb01a4a0e43f4c8316e30b93e2c5c8906bd763a7`.
-- Build against real supplied game/UMM references: **0 warnings/errors**. Unit tests: **142 passed, 0 failed/skipped**.
-- Actual-data parser checks: Sleep and its equivalent durations, rejected unsupported forms, six nonconsuming
-  threshold abilities, and Color Spray's completed metadata pass. Native cone/range delegates bind, with
-  all-or-none collection checks. These do not test live actors, geometry, conditions or casts.
-- Partial ordinary blueprint audit: **1,220 rows, 0 reader errors**, same classification counts; five detail rows
-  now distinguish energy types/immunity. **4,097 exports loaded; one known export failed** on both comparisons.
-- **In-game testing of this build is pending.** Smooth budget-laptop feedback applies to the earlier narrower
-  Test[1]. Live pathfinding, third-party rules and CPU cost remain acceptance gates. Moving plans are checked again
-  at issue; mixed/custom energy predictions and aggregate packet sizes can conservatively underprice protection.
+- Runtime source: `05d1959bdffae641d751c1d8a5daba56142391b5`.
+- ZIP SHA-256: `447c8e2937b409c72d7af31bc0dd4bfa888ddc52c088ac881339bf52276738ad`.
+- DLL SHA-256: `7e2f5ddfe5b5721a3f41c9efa1fd0d49e5c5f5434bf44ee8320ccaf4055f0948`.
+- MVID: `f4bc5e75-a6e9-4da8-ac81-73e105c47aa7`.
+- Flat archive: exactly `CompanionAI_Pathfinder.dll` and `Info.json`; no game DLLs or harness files.
+- [Versioned identity](AI-Control-FACC-infusion-selection-05d1959-UMM-test.identity.json) and
+  [SHA256SUMS.txt](SHA256SUMS.txt) preserve package identity.
+- 154 tests pass, zero failed/skipped; full Release build has zero warnings/errors. Native-data checks
+  cover the layouts, 486 native cost/quiver cases, real modifier branches and cone bindings. Ordinary
+  audit: 1,220 unchanged rows / zero reader errors; **partial** export coverage (4,097 loaded, one failed).
+- **This new build has not been tested in game.** The author's smooth-overall Test[2] report applies to
+  the previous build. [Test[2] review and bug evidence](../docs/INFUSION_SELECTION_TEST2_REVIEW.md).
 
 ## Earlier downloads retained
+
+- [Previous Test[1] scoring-fix build — 8fb0257](AI-Control-FACC-test1-scoring-fixes-8fb0257-UMM-test.zip?raw=true)
+  and [identity](AI-Control-FACC-test1-scoring-fixes-8fb0257-UMM-test.identity.json).
+
 
 - [Original Test[1] — 0a7ed97](AI-Control-FACC-infusion-value-0a7ed97-UMM-test.zip?raw=true): the supplied Test[1] logs
   and smooth-overall feedback refer to this build. [Original identity](build-identity.json).

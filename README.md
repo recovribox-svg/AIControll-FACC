@@ -1,22 +1,23 @@
 # AI Control - Fully Autonomous Combat Companions
 
-## New Test[1] scoring-fix build — 8fb0257
+## New infusion-selection test — 05d1959
 
-**[Download the new UMM test ZIP — 8fb0257](test-builds/AI-Control-FACC-test1-scoring-fixes-8fb0257-UMM-test.zip?raw=true)**
+**[Download the new UMM test ZIP — 05d1959](test-builds/AI-Control-FACC-infusion-selection-05d1959-UMM-test.zip?raw=true)**
 
-Close the game, then install through Unity Mod Manager. This isolated test addresses Sleep's shared-HD budget,
-blocked approaches/boosters, energy-specific protection and cone recipients, on top of the narrow active-infusion
-slice. UMM still displays **0.3.21**; use the ZIP filename and startup module marker to identify it.
-[Installation, identity and focused playtest steps](test-builds/README.md).
+The AI can now choose and activate supported learned substance infusions by their expected effect and native burn
+cost, compared with its ordinary actions. This also addresses Test[2]'s touch-heal retry, unnecessary cooldown
+scoring and low-HP withdraw/return loop, and includes the previous Sleep/path/energy/cone fixes.
+Close the game before installing through UMM. It still displays **0.3.21**; verify the ZIP filename/startup marker.
+[Installation, exact identity and playtest steps](test-builds/README.md).
 
-**Known limit:** Deep Slumber's spreading delivery is unsupported and its AI control value is withheld in this test.
-The new changes pass compilation and 142 unit tests; their live performance and behavior still need playtesting.
-The earlier, narrower Test[1] felt smooth overall on the author's budget laptop.
+**Known limits:** Unraveling and Chain Arrows are withheld from automatic selection; Deep Slumber retains its
+previous spreading-delivery restriction. The search is bounded, but live performance and activation still need
+playtesting. Compilation, 154 unit tests and isolated native-data checks pass. The author reports the previous
+Test[2] was smooth overall on the budget laptop. [Support matrix](docs/INFUSION_SELECTION_PLAN.md).
 
-Work is isolated in [draft PR #7](https://github.com/recovribox-svg/AIControll-FACC/pull/7), targeting development,
-with pending [PR #6](https://github.com/recovribox-svg/AIControll-FACC/pull/6) included as an explicit dependency.
-Main and shared development remain unchanged. [Plan, results and remaining limits](docs/TEST1_SCORING_FIXES.md).
-The earlier broad v0.3.22 attempt remains withdrawn. For normal play use the
+Isolated in [draft PR #8](https://github.com/recovribox-svg/AIControll-FACC/pull/8), targeting development, with pending
+PR #7/#6 as explicit dependencies. Main and shared development remain unchanged. The earlier broad implementation
+remains withdrawn. For normal play use the
 [stable v0.3.21 release](https://github.com/recovribox-svg/AIControll-FACC/releases/tag/v0.3.21).
 
 Read the [rollback and failure analysis](docs/V0_3_22_POSTMORTEM.md) before further development.

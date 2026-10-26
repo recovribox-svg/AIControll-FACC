@@ -1,0 +1,53 @@
+{
+  "test_name": "Infusion selection / Test2 log corrections",
+  "intended_development_version": "0.3.22",
+  "umm_manifest_version": "0.3.21",
+  "branch": "codex/kineticist-infusion-selection",
+  "base_development_commit": "f51189fa93ffebc791489c6761e05ccbbdea0014",
+  "dependency_prs": [
+    "https://github.com/recovribox-svg/AIControll-FACC/pull/7",
+    "https://github.com/recovribox-svg/AIControll-FACC/pull/6"
+  ],
+  "runtime_source_commit": "05d1959bdffae641d751c1d8a5daba56142391b5",
+  "archive": "AI-Control-FACC-infusion-selection-05d1959-UMM-test.zip",
+  "zip_sha256": "447c8e2937b409c72d7af31bc0dd4bfa888ddc52c088ac881339bf52276738ad",
+  "dll_sha256": "7e2f5ddfe5b5721a3f41c9efa1fd0d49e5c5f5434bf44ee8320ccaf4055f0948",
+  "module_mvid": "f4bc5e75-a6e9-4da8-ac81-73e105c47aa7",
+  "startup_marker": "[Build] infusion-selection module=f4bc5e75-a6e9-4da8-ac81-73e105c47aa7 on v0.3.21",
+  "archive_contents": [
+    "CompanionAI_Pathfinder.dll",
+    "Info.json"
+  ],
+  "checks": {
+    "unit_tests": {
+      "passed": 154,
+      "failed": 0,
+      "skipped": 0
+    },
+    "release_build": {
+      "warnings": 0,
+      "errors": 0
+    },
+    "native_data": "20 substance buff layouts inventoried; 18 recognized, Unraveling and Chain Arrows explicitly withheld",
+    "native_cost": "486 native value-type reconstruction/quiver cases passed; original unchanged; getter binding and hybrid upper bound passed",
+    "cone_bindings": "Native cone/range delegates and all-or-none collection pass; no initialized actors",
+    "blueprint_reader": {
+      "status": "PARTIAL",
+      "loaded_exports": 4097,
+      "failed_exports": 1,
+      "ability_rows": 1220,
+      "reader_errors": 0,
+      "changed_detail_rows_vs_pr7": 0
+    },
+    "in_game": "Pending for this build; author reports prior Test[2] smooth overall on budget laptop; supplied excerpts lack startup identity"
+  },
+  "limitations": [
+    "Unraveling dispel and Chain Arrows secondary delivery withheld from automatic selection.",
+    "Search limits are cooperative, not a bound on total decision/active-effect work or live frame times.",
+    "Custom fact-dependent cost handlers and contextual saves require native post-switch validation and live testing.",
+    "Half-save delivery, periodic removal and concealment coverage are conservatively approximate.",
+    "No new Gather/metakinesis/form search or weapon/blade/shadow delivery; inherited Deep Slumber spreading restriction remains.",
+    "Initialized actors, native commands/activation/restoration and Unity/Mono performance not tested here."
+  ],
+  "pull_request": "https://github.com/recovribox-svg/AIControll-FACC/pull/8"
+}
