@@ -37,3 +37,11 @@ audit appropriate to each correction. An isolated harness is not live game proof
 Preserve all old ZIPs and publish a uniquely identified flat UMM test ZIP with MVID,
 source/checksums and both-mode gameplay steps. Include exact log evidence, remaining
 uncertainty and the unimplemented movement proposal in the durable PR handover.
+
+## Author-approved movement diagnostic scope
+
+During this review the author approved **diagnostics only; keep movement behavior
+unchanged**. Add one selected-walk appraisal explanation and a status/length from
+its already-requested native path. Do not add path queries, score changes, target
+locks, cancellation changes or policy tests/fixtures that introduce new behavior.
+The existing cancellation/outcome logs provide the remaining trace.

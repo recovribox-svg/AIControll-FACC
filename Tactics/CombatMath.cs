@@ -841,28 +841,32 @@ namespace CompanionAI_Pathfinder.Tactics
         internal static float AfterTargetReduction(UnitEntityData target, ContextActionDealDamage dmg, float value)
         {
             if (target == null || value <= 0f || dmg?.DamageType == null) return value;
+            var seen = DamageObserver.Lookup(target, DamageObserver.KeyOf(dmg.DamageType));
+            float observed = seen?.Apply(value) ?? value;
+            if (seen?.Immune == true) return 0f;
             try
             {
                 var type = dmg.DamageType;
                 // ★ v0.3.14 (test5): what this target actually took from this damage type earlier in the fight (immune,
                 // resistance, vulnerability), whatever the reason - a component the model does not know, another mod.
-                var seen = DamageObserver.Lookup(target, DamageObserver.KeyOf(type));
-                if (seen != null) return seen.Apply(value);
+                // Test[3]: observed Reduction is capped by the rolled packet (6 absorbed by Fire Resistance 10).
+                // It cannot replace a stronger known native defence. Preserve its multiplier/custom reduction,
+                // then also bound by native current resistance; do not subtract the two reductions in sequence.
                 bool energy = type.Type == Kingmaker.RuleSystem.Rules.Damage.DamageType.Energy;
                 // ★ test5: the game has two energy-immunity components; only AddEnergyImmunity registers with
                 // UnitPartDamageReduction. AddEnergyDamageImmunity is read the way the game's own character sheet reads it
                 // (UnitDescriptionHelper.VisitComponents). Orvath cast Fire Blast on Quasits 31 times.
                 if (energy && HasEnergyDamageImmunity(target, type.Energy)) return 0f;
                 var part = target.Get<Kingmaker.UnitLogic.Parts.UnitPartDamageReduction>();
-                if (part == null) return value;
+                if (part == null) return observed;
                 if (energy && part.IsImmune(type.Energy)) return 0f;
                 _ = part.AllSources.Count();                       // initialises the part's resistance chunks
                 var damage = type.CreateDamage(new DiceFormula(0, DiceType.Zero), 0);
-                return part.EstimateDamage(value, damage, null);
+                return Math.Min(observed, part.EstimateDamage(value * (seen?.Factor ?? 1f), damage, null));
             }
             catch
             {
-                return value;
+                return observed;
             }
         }
 

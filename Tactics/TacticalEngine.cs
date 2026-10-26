@@ -188,7 +188,9 @@ namespace CompanionAI_Pathfinder.Tactics
         private static float QuickBar(ActionSlot slot, AbilityData ability) =>
             slot == ActionSlot.Free && CostsNothing(ability) ? MinCostlessFreeValue : MinQuickValue;
 
-        private static float QuickBar(Candidate c) => QuickBar(c.Slot, c.Kind == CandidateKind.Ability ? c.Ability : null);
+        private static float QuickBar(Candidate c) => c.Slot == ActionSlot.Free && c.InfusionSwitch != null
+            ? MinCostlessFreeValue // Validated resource-free switch; prospective blast burn is already in its net gain.
+            : QuickBar(c.Slot, c.Kind == CandidateKind.Ability ? c.Ability : null);
 
         /// <summary>★ v0.3.19 (test9): an ability whose use spends nothing: no spell slot, item charge or use, no burn.</summary>
         internal static bool CostsNothing(AbilityData ability) =>
@@ -622,6 +624,21 @@ namespace CompanionAI_Pathfinder.Tactics
                 if (usable.Count > 0) Main.Verbose(sb.ToString());
             }
             else Main.Log(sb.ToString());
+            // Author-approved diagnostics only: no extra path/rule queries, score changes or commitment policy.
+            if (realTime && chosen != null && WalksBeforeActing(chosen))
+            {
+                try
+                {
+                    var alternative = usable.FirstOrDefault(c => c != chosen && !QuickAction(c) && !WalksBeforeActing(c));
+                    var risk = chosen.Risk;
+                    Main.Log($"[Walk] {ctx.Unit.CharacterName}: selected {chosen.Label}={chosen.Value:F1}; " +
+                        $"best in-reach main={(alternative == null ? "none" : alternative.Label + "=" + alternative.Value.ToString("F1"))}; " +
+                        $"priced movement cost={risk?.Cost ?? 0f:F1}, stop={risk?.StopChance ?? 0f:P0}, " +
+                        $"drop={risk?.DropChance ?? 0f:P0}, AoOs={risk?.Attacks ?? 0}, area={risk?.Area ?? "none"}, " +
+                        $"exposed={risk?.Exposed ?? false}; native navigation and emergency cancellation unchanged");
+                }
+                catch { } // Diagnostic failure must not change the chosen action.
+            }
         }
 
         #endregion

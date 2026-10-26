@@ -37,7 +37,7 @@ namespace CompanionAI_Pathfinder
             try
             {
                 Log($"{modEntry.Info.DisplayName} 초기화 중...");   // ★ v0.3.12: name from Info.json
-                Log($"[Build] infusion-selection module={typeof(Main).Module.ModuleVersionId:D} on v0.3.21");
+                Log($"[Build] test3-infusion-fixes module={typeof(Main).Module.ModuleVersionId:D} on v0.3.21");
 
                 // 설정 로드
                 ModSettings.Load(modEntry);

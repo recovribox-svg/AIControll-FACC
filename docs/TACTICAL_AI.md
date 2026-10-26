@@ -2501,8 +2501,9 @@ source inspection, offline checks and pending gameplay verification.
   no new global/Harmony/UI hook exists. Native cost copies are reconstructed only
   through native constructor/reducer APIs for exact constant marginal modifiers.
   Unknown layouts fail closed. Actual post-switch cost/availability owns execution.
-- Activation is queued through `CommandDispatcher.Run` before native `IsOn`; the
-  next decision waits for commands and requires the real owned `AppliedBuff`.
+- **Activation ordering corrected in §68 after Test[3]:** the dispatcher requests
+  native `IsOn` once and adopts the native-created command without reissuing it.
+  The next decision waits for commands and requires the real owned `AppliedBuff`.
   Global management, whole-group player ownership, capacity and per-round locks
   apply. Duplicate entries do not multiply effects. Restoration stops alternatives
   before restoring original states and preserves player-owned groups.
@@ -2519,3 +2520,38 @@ cost/quiver vectors and bindings, and produces 1,220 ordinary reader rows with z
 reader errors, identical to the pending PR #7 baseline. These checks do not run
 live actor activation, third-party handlers, commands or Unity/Mono frame profiling.
 The draft task branch includes PR #7/#6 dependencies; main/development are unchanged.
+
+## 68. Test[3]: native infusion commands, resistance evidence and RT walk diagnostics
+
+[Full evidence, corrections and verification](TEST3_REVIEW.md). The separate native
+CombatLog establishes actual misses, damage/resistance, opportunity hits, healing
+and encounter numbering that the AI logs alone cannot supply.
+
+Five TB Burning activations were selected and immediately interrupted. The §67
+pre-queue assumption was wrong: native OnDidTurnOn's matching predicate is
+Judgment-only. The dispatcher now requests IsOn once, adopts/tracks the native-created
+current/queued command and never constructs/reissues a second activation. Native
+DidAct, actual owned buff, management/ownership/group locks and restoration remain
+in control. Validated resource-free switches use the existing costless Free bar;
+ordinary Toggle/Swift thresholds are unchanged and future burn remains priced.
+
+A fully resisted six-point hit recorded six absorbed against Fire Resistance 10.
+That observation previously bypassed known native defence on later estimates.
+AfterTargetReduction now keeps observed factors/custom reduction and also applies
+the native remaining-damage bound, without subtracting both reductions. The initial
+pre-observation discrepancy is still unverified; no complete damage-model parity
+is claimed.
+
+Encounter #10's Seelah issue includes a completed 13.5m attack, ally-heal detours,
+opportunity damage and mod-requested emergency interruption. Continuous target-score
+thrashing is not established. The author approved diagnostics only: chosen RT walk
+score versus in-reach alternative, existing movement risks and the existing native
+path query's result/length. No added pathfinding, target lock, movement score or
+cancellation-policy change. Replay before proposing a behavioral remedy.
+
+154 pure tests pass; Release has zero warnings/errors. Actual native metadata
+checks expose the Judgment-only predicate for all 20 supplied substances; compiled
+route checks guard against manual construction/reissue, and candidate fixtures
+check Free/Swift thresholds. Existing cost/layout/cone checks and 1,220 ordinary
+reader rows pass (partial exports: 4,097 loaded, one failed). These are not live
+actor command, restoration, first-hit damage or Unity/Mono performance tests.

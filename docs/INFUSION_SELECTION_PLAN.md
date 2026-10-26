@@ -34,10 +34,11 @@ This is new work, not restoration of the withdrawn configuration-preview system.
   current availability/cost is checked again after the real transition. No fake
   facts, global patches, actor mutation during scoring or cross-decision native
   context/rule cache is introduced.
-- Issue the native activation command through CommandDispatcher.Run, then request
-  the real toggle state in the same execution path. Native OnDidTurnOn detects
-  the existing command rather than issuing a duplicate. Wait for completion and
-  actual buff installation before considering a blast. Respect global management,
+- Initial activation ordering was corrected after Test[3]: native command
+  deduplication is Judgment-specific, so pre-queuing an infusion command fails.
+  Request the real toggle inside CommandDispatcher.Run and adopt the single
+  native-created command without constructing/reissuing another. Wait for
+  completion and actual buff installation before considering a blast. Respect global management,
   player-owned competing toggles, native group capacity and per-round switch locks;
   record displaced states for ordered end-of-fight restoration.
 - Form infusions mainly grant already exposed blast variants. Continue valuing
@@ -92,9 +93,11 @@ three-round horizon. No new portrait/UI/out-of-combat route or Harmony hook exis
 
 An installed infusion requires the activatable's actual active, turned-on
 `AppliedBuff` owned by this caster. Duplicate blueprint/buff entries are deduplicated.
-New native activation is queued through `CommandDispatcher.Run` before requesting
-`IsOn`, so native `OnDidTurnOn` sees its own command and does not queue another.
-Existing drivers wait for all pending commands. The next ordinary decision reads
+The initial pre-queue/IsOn ordering was wrong: the native deduplication predicate
+only applies to Judgment, not an infusion's own command. **Test[3] exposed five
+failed activations.** The corrected `CommandDispatcher.Run` overload requests
+native `IsOn` once, then adopts/tracks the exact current/queued command the game
+creates, without issuing another. Existing drivers wait for all pending commands. The next ordinary decision reads
 actual installed effects and current native affordability; no forced blast commitment
 or cached native context/rule crosses decisions. Real transitions invalidate affected
 same-frame estimate/condition caches.
@@ -198,3 +201,5 @@ See [Test[2] evidence and replay checklist](INFUSION_SELECTION_TEST2_REVIEW.md) 
 the touch-approach, cooldown-work and retreat-loop fixes. Keep the PR draft pending
 review and both-mode gameplay testing. Use the uniquely identified download in
 [test-builds](../test-builds/README.md); metadata remains 0.3.21 until release.
+
+Test[3] correction and native-predicate validation: [review](TEST3_REVIEW.md).

@@ -16,6 +16,7 @@
 // (TickApproaching calls view.MoveTo there), so commands are passed through unchanged in those modes.
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using Kingmaker;
 using Kingmaker.EntitySystem.Entities;
 using Kingmaker.UnitLogic.Commands;
@@ -31,9 +32,10 @@ namespace CompanionAI_Pathfinder.GameInterface
     public static class CommandDispatcher
     {
         /// <summary>
-        /// Native infusion transition. Queue activation first, then request IsOn: native OnDidTurnOn sees that exact
-        /// command and does not bypass this dispatcher with a second one. Off switches have no native unit command.
-        /// This overload is execution-only; no appraisal calls it.
+        /// Native infusion transition, execution only. IsOn creates its own activation command; adopt that exact
+        /// instance here without issuing another. Native command deduplication is Judgment-specific, so pre-queuing
+        /// an infusion command makes OnDidTurnOn replace it and its interruption clears the activation request.
+        /// Free, untargeted activations have no movement path to prepare. Off switches have no native unit command.
         /// </summary>
         internal static bool Run(UnitEntityData unit, ActivatableAbility activate, IList<ActivatableAbility> stop,
             string label, out UnitCommand command, out string failure)
@@ -51,8 +53,6 @@ namespace CompanionAI_Pathfinder.GameInterface
                         UnitActivateAbility.GetCommandType(activate) != UnitCommand.CommandType.Free || activate.ResourceCount.HasValue)
                     { failure = "infusion activation no longer has the supported free/resource-free shape"; return false; }
                     if (!activate.IsAvailable) { failure = "infusion is no longer available"; return false; }
-                    command = new UnitActivateAbility(activate);
-                    if (!Run(unit, command, label, out failure)) return false;
                 }
                 foreach (var toggle in stop) toggle.IsOn = false;
                 if (activate != null)
@@ -60,6 +60,26 @@ namespace CompanionAI_Pathfinder.GameInterface
                     activate.IsOn = true;
                     if (!activate.IsOn && !activate.IsStarted)
                     { failure = "native activation request was refused"; return false; }
+                    command = unit.Commands.Raw.Concat(unit.Commands.Queue)
+                        .FirstOrDefault(c => c is UnitActivateAbility activation && activation.Ability == activate &&
+                                             !c.IsFinished && unit.Commands.ContainsOrQueued(c));
+                    if (command != null)
+                    {
+                        // Native Run has already initialized/accepted this instance. Running it again would replace
+                        // or interrupt it. Track the real command so both drivers wait for its native DidAct/buff.
+                        CommandTrace.Track(unit, command, label, null);
+                    }
+                    else
+                    {
+                        var installed = activate.AppliedBuff;
+                        if (!activate.IsStarted || installed == null || !installed.Active || !installed.IsTurnedOn ||
+                            installed.Context?.MaybeCaster != unit)
+                        {
+                            activate.IsOn = false; // A stale request is not a successful activation.
+                            failure = "native activation produced neither a pending command nor an installed buff";
+                            return false;
+                        }
+                    }
                 }
                 return true;
             }
@@ -305,7 +325,8 @@ namespace CompanionAI_Pathfinder.GameInterface
             // unit's seeker, which may be steering the unit right now) and only checked, never attached: the game
             // still walks its own path; a refused option makes the engine take the next best one.
             // ★ v0.3.20 (test8): and against attacks of opportunity, on the same walk (asked once for both checks).
-            else if ((avoidAreas || pathAttackers != null) && RealTimeWalkRefused(unit, command, avoidAreas, pathAttackers, pricedAttacks, out failure))
+            else if ((avoidAreas || pathAttackers != null) && RealTimeWalkRefused(unit, command, avoidAreas, pathAttackers,
+                pricedAttacks, out failure, diagnostics: !preflight))
             {
                 return false;
             }
@@ -384,7 +405,7 @@ namespace CompanionAI_Pathfinder.GameInterface
         /// </summary>
         private static bool RealTimeWalkRefused(UnitEntityData unit, UnitCommand command, bool avoidAreas,
                                                 Func<IList<Vector3>, List<UnitEntityData>> pathAttackers, int pricedAttacks,
-                                                out string failure)
+                                                out string failure, bool diagnostics)
         {
             failure = null;
             if (CombatController.IsInTurnBasedCombat() || !unit.IsInCombat || unit.RiderPart != null) return false;
@@ -398,8 +419,14 @@ namespace CompanionAI_Pathfinder.GameInterface
                 float half = Vector3.Distance(start, goal) * 0.5f;
                 bool areaCheck = avoidAreas && Analysis.AoeDangerAnalyzer.HarmfulAreaNear(unit, middle, half + 3f);
                 bool attackCheck = pathAttackers != null && EnemyNear(unit, middle, half + 4f);
-                if (!areaCheck && !attackCheck) return false;
+                if (!areaCheck && !attackCheck)
+                {
+                    if (diagnostics) LogWalkPath(unit, command, null, "nearby-risk gate skipped path query", areaCheck, attackCheck, pricedAttacks);
+                    return false;
+                }
                 var walk = RealTimeWalk(start, goal);
+                if (diagnostics) LogWalkPath(unit, command, walk, walk == null ? "no native path answer; existing policy permits move" : "native path returned",
+                    areaCheck, attackCheck, pricedAttacks);
                 if (walk == null) return false;   // no answer: the move is not refused for it
                 if (areaCheck && PathEntersArea(unit, walk, command, out string area))
                 {
@@ -411,8 +438,25 @@ namespace CompanionAI_Pathfinder.GameInterface
             catch (Exception ex)
             {
                 Main.Verbose($"[Dispatch] {unit.CharacterName}: real-time path check skipped: {ex.Message}");
+                if (diagnostics) LogWalkPath(unit, command, null, "path check exception: " + ex.GetType().Name,
+                    false, false, pricedAttacks);
                 return false;
             }
+        }
+
+        /// <summary>Test[3]: diagnostics only, using the existing selected-path result; never asks for another path.</summary>
+        private static void LogWalkPath(UnitEntityData unit, UnitCommand command, IList<Vector3> walk, string status,
+            bool areaCheck, bool attackCheck, int pricedAttacks)
+        {
+            try
+            {
+                float length = 0f;
+                if (walk != null) for (int i = 1; i < walk.Count; i++) length += Vector3.Distance(walk[i - 1], walk[i]);
+                string travel = walk == null ? "unknown" : $"{length:F1}m to target, ~{length / Math.Max(0.1f, unit.CurrentSpeedMps):F1}s at current speed";
+                Main.Log($"[Walk] {unit.CharacterName}: {command.GetType().Name} path status={status}; queried path={travel}; " +
+                    $"arrival radius={command.ApproachRadius:F1}m; areaCheck={areaCheck}, AoOCheck={attackCheck}, priced AoOs={pricedAttacks}");
+            }
+            catch { } // A logging failure must not change whether the action is accepted.
         }
 
         /// <summary>The walk the pathfinder gives a real-time unit from <paramref name="start"/> to <paramref name="goal"/>
