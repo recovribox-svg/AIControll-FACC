@@ -816,6 +816,9 @@ namespace CompanionAI_Pathfinder.Tactics
 
                 switch (action)
                 {
+                    case ContextActionChangeSharedValue change when change.Type == SharedValueChangeType.SubHD:
+                        m_SharedHdDebits.Add(change.SharedValue);
+                        break;
                     // ★ v0.3.18 (review): damage run on the caster (a self-cost) is not damage to the target.
                     case ContextActionDealDamage dmg when subject != EffectSubject.Caster:
                         Damage.Add(dmg);
@@ -1270,7 +1273,12 @@ namespace CompanionAI_Pathfinder.Tactics
         /// branch that applies to that target; negative when unknown. Color Spray on a 5 HD Cultist Champion stuns for one
         /// round, not the three the control value assumed (Orvath cast it there five times).
         /// </summary>
-        public float EffectRoundsOn(AbilityData ability, UnitEntityData target)
+        public float EffectRoundsOn(AbilityData ability, UnitEntityData target) => EffectRoundsOn(ability, target, null);
+
+        // A shared-budget forecast has already read the native guards under this aim's remaining budget.
+        // Reuse that result for the dependent application instead of reconstructing a full-pool target context.
+        internal float EffectRoundsOn(AbilityData ability, UnitEntityData target,
+            Func<BlueprintBuff, EffectApplies?> forecastApplicability)
         {
             // ★ v0.3.18 (AA-4): Demoralize lasts by the check's result.
             if (Intimidation != null && target != null && ability?.Caster?.Unit != null)
@@ -1286,7 +1294,7 @@ namespace CompanionAI_Pathfinder.Tactics
             foreach (var a in m_BuffApplications)
             {
                 if (a.Rounds <= 0f) continue;
-                var applies = Evaluate(a.Guards, ability, target);
+                var applies = forecastApplicability?.Invoke(a.Buff) ?? Evaluate(a.Guards, ability, target);
                 if (applies == EffectApplies.No) continue;
                 float rounds = extended && a.Extendable ? a.Rounds * 2f : a.Rounds;
                 if (applies == EffectApplies.Unknown) maybe = Math.Min(maybe, rounds);
@@ -1508,6 +1516,20 @@ namespace CompanionAI_Pathfinder.Tactics
         }
 
         public bool HasGuardedEffects => m_Guards.Values.Any(g => g.Length > 0) || m_BuffGuards.Values.Any(b => b.Any(g => g.Length > 0));
+
+        private bool? m_UsesSharedHdBudget;
+        private IReadOnlyCollection<BlueprintBuff> m_SharedHdBuffs;
+        private readonly HashSet<AbilitySharedValue> m_SharedHdDebits = new HashSet<AbilitySharedValue>();
+        private bool SharedHdGuard(EffectGuard guard) =>
+            (guard.Checker?.Conditions ?? Array.Empty<Condition>()).OfType<ContextConditionHitDice>()
+                .Any(h => h.AddSharedValue && m_SharedHdDebits.Contains(h.SharedValue));
+
+        // Immutable blueprint metadata only. Native contexts/recipient state never enter this cache.
+        internal bool UsesSharedHdBudget => (m_UsesSharedHdBudget ??
+            (m_UsesSharedHdBudget = m_Guards.Values.Any(g => g.Any(SharedHdGuard)) || SharedHdBuffs.Count > 0)).Value;
+
+        internal IReadOnlyCollection<BlueprintBuff> SharedHdBuffs => m_SharedHdBuffs ??
+            (m_SharedHdBuffs = m_BuffGuards.Where(p => p.Value.Any(g => g.Any(SharedHdGuard))).Select(p => p.Key).ToArray());
 
         private static EffectApplies Evaluate(EffectGuard[] guards, AbilityData ability, UnitEntityData target)
         {
