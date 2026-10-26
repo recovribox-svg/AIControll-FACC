@@ -1,11 +1,11 @@
 # AI Control - Fully Autonomous Combat Companions
 
-## New Test[3] fixes — 019686b
+## New Test[3] fixes — aa9fe94
 
-**[Download the new UMM test ZIP — 019686b](test-builds/AI-Control-FACC-test3-fixes-019686b-UMM-test.zip?raw=true)**
+**[Download the new UMM test ZIP — aa9fe94](test-builds/AI-Control-FACC-test3-fixes-aa9fe94-UMM-test.zip?raw=true)**
 
 Corrects failed infusion activation, uses the existing costless Free threshold for validated infusion switches,
-and prevents capped damage observations from replacing stronger native resistance. Includes the previously
+and prevents fully absorbed damage observations from replacing stronger native resistance. Includes the previously
 added infusion selection and Sleep/path/energy/cone fixes. Seelah's movement changes are **diagnostics only**,
 as approved: no target lock, movement scoring, navigation or emergency-cancellation changes.
 

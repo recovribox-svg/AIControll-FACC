@@ -1,10 +1,10 @@
-# Test[3] fixes playtest — 019686b
+# Test[3] fixes playtest — aa9fe94
 
-**[Download the new UMM test ZIP — 019686b](AI-Control-FACC-test3-fixes-019686b-UMM-test.zip?raw=true)**
+**[Download the new UMM test ZIP — aa9fe94](AI-Control-FACC-test3-fixes-aa9fe94-UMM-test.zip?raw=true)**
 
 This test corrects the failed native infusion activation seen in Test[3], classifies validated
-resource-free switches under the existing costless Free threshold, and keeps capped damage observations
-from replacing stronger known native resistance. It adds the **author-approved movement diagnostics only**:
+resource-free switches under the existing costless Free threshold, and keeps fully absorbed damage observations
+from replacing stronger known native resistance, while preserving successful-hit bypass evidence. It adds the **author-approved movement diagnostics only**:
 Seelah's target choice, movement scores, native navigation and emergency cancellation are unchanged.
 
 [Draft PR #9](https://github.com/recovribox-svg/AIControll-FACC/pull/9) targets development and includes pending
@@ -20,7 +20,7 @@ intended v0.3.22; release metadata remains 0.3.21. The withdrawn broad implement
 4. Restart and verify the complete log contains:
 
 ```text
-[Build] test3-infusion-fixes module=256233cf-7f95-4c40-babb-e461bdd26750 on v0.3.21
+[Build] test3-infusion-fixes module=02c90fc9-214f-4477-829a-7376a96d7e0a on v0.3.21
 ```
 
 A different/missing marker means another DLL is loaded. To return to normal play, fully exit and reinstall
@@ -54,12 +54,12 @@ secondary-recipient optimizer. Search limits remain cooperative and exclude ordi
 
 ## Identity and checks
 
-- Runtime source: `019686b037bf76a14a01cd0afde35796820351ba`.
-- MVID: `256233cf-7f95-4c40-babb-e461bdd26750`.
-- ZIP SHA-256: `f01dbfbf05ea99de9705f717552812af6b510a7675150a5cc8043655d39af45f`.
-- DLL SHA-256: `86376ac278f44b62e0afb269d222f99e1aac208d85a055357ce21719e4a21c62`.
+- Runtime source: `aa9fe9487561a5a26b18b961e1f2c763bc9f9bd9`.
+- MVID: `02c90fc9-214f-4477-829a-7376a96d7e0a`.
+- ZIP SHA-256: `d3b80d4b89160c077e986e38c68b81adbde27f3d5744735e672f8e041afcd589`.
+- DLL SHA-256: `c4c293e73565937263ab37b5173665845992cab7b762bbaa2d4c6ae67ef69ad2`.
 - Flat archive contains exactly `CompanionAI_Pathfinder.dll` and unchanged `Info.json`.
-- [Versioned identity](AI-Control-FACC-test3-fixes-019686b-UMM-test.identity.json) · [SHA256SUMS](SHA256SUMS.txt).
+- [Versioned identity](AI-Control-FACC-test3-fixes-aa9fe94-UMM-test.identity.json) · [SHA256SUMS](SHA256SUMS.txt).
 - 154 unit tests pass, zero failed/skipped; Release builds with zero warnings/errors. Native fixtures expose
   Judgment-only matching; compiled-route guards exclude duplicate construction/reissue; Free/Swift thresholds,
   486 cost/quiver cases and cone bindings pass. Partial blueprint audit: 4,097 loaded / one failed export;

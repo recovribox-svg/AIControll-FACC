@@ -9,12 +9,12 @@
     "https://github.com/recovribox-svg/AIControll-FACC/pull/7",
     "https://github.com/recovribox-svg/AIControll-FACC/pull/6"
   ],
-  "runtime_source_commit": "019686b037bf76a14a01cd0afde35796820351ba",
-  "archive": "AI-Control-FACC-test3-fixes-019686b-UMM-test.zip",
-  "zip_sha256": "f01dbfbf05ea99de9705f717552812af6b510a7675150a5cc8043655d39af45f",
-  "dll_sha256": "86376ac278f44b62e0afb269d222f99e1aac208d85a055357ce21719e4a21c62",
-  "module_mvid": "256233cf-7f95-4c40-babb-e461bdd26750",
-  "startup_marker": "[Build] test3-infusion-fixes module=256233cf-7f95-4c40-babb-e461bdd26750 on v0.3.21",
+  "runtime_source_commit": "aa9fe9487561a5a26b18b961e1f2c763bc9f9bd9",
+  "archive": "AI-Control-FACC-test3-fixes-aa9fe94-UMM-test.zip",
+  "zip_sha256": "d3b80d4b89160c077e986e38c68b81adbde27f3d5744735e672f8e041afcd589",
+  "dll_sha256": "c4c293e73565937263ab37b5173665845992cab7b762bbaa2d4c6ae67ef69ad2",
+  "module_mvid": "02c90fc9-214f-4477-829a-7376a96d7e0a",
+  "startup_marker": "[Build] test3-infusion-fixes module=02c90fc9-214f-4477-829a-7376a96d7e0a on v0.3.21",
   "archive_contents": [
     "CompanionAI_Pathfinder.dll",
     "Info.json"
@@ -44,7 +44,8 @@
       "changed_detail_rows_vs_previous_test": 0
     },
     "movement_scope": "Author approved diagnostics only; no movement decision/risk/cancellation/navigation changes or extra pathfinding",
-    "in_game": "Pending for this new build; previous Test3 exposes activation failure"
+    "in_game": "Pending for this new build; previous Test3 exposes activation failure",
+    "resistance_scope": "Native bound only for fully absorbed positive-reduction evidence; successful-hit observations retain prior authority including caster bypass. Compiled guard verifies gate/write."
   },
   "limitations": [
     "Live native/third-party activation, commands, burn, restoration and Unity/Mono performance require replay.",
