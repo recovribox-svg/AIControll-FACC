@@ -135,16 +135,19 @@ namespace CompanionAI_Pathfinder.Tactics
         /// <param name="enemiesComplete">The enemy list is the whole fight (turn-based); real-time lists are distance-filtered,
         /// so boss on/off transitions are only logged from turn-based decisions.</param>
         public static HashSet<object> HeldBack(UnitEntityData unit, List<UnitEntityData> enemies, List<GateItem> items, string mode,
-                                               bool enemiesComplete)
+                                               bool enemiesComplete, bool diagnostics = true)
         {
             var held = new HashSet<object>();
             try
             {
                 bool bypassOn = ModSettings.Instance?.ProgressiveBossBypass ?? true;
                 var bosses = bypassOn ? enemies.Where(ThreatAssessment.IsBoss).ToList() : new List<UnitEntityData>();
-                if (enemiesComplete) LogBossTransitions(enemies, bosses);
-                if (LastLog.Count > 512) LastLog.Clear();                         // real-time-only play never resets
-                if (CombatMemory.ProgressiveLogged.Count > 4096) CombatMemory.ProgressiveLogged.Clear();
+                if (diagnostics)
+                {
+                    if (enemiesComplete) LogBossTransitions(enemies, bosses);
+                    if (LastLog.Count > 512) LastLog.Clear();                         // real-time-only play never resets
+                    if (CombatMemory.ProgressiveLogged.Count > 4096) CombatMemory.ProgressiveLogged.Clear();
+                }
 
                 var options = new List<TierOption>(items.Count);
                 for (int i = 0; i < items.Count; i++)
@@ -177,11 +180,12 @@ namespace CompanionAI_Pathfinder.Tactics
                     });
                 }
 
-                LogLadderOnce(unit, items, options, mode);
+                if (diagnostics) LogLadderOnce(unit, items, options, mode);
 
                 var decision = SpellTierPolicy.Gate(options);
                 foreach (var key in decision.HeldBack)
                     held.Add(items[int.Parse(key)].Source);
+                if (!diagnostics) return held;
 
                 // Logged whenever a tier was chosen over something (held back, escalated past lower levels, or bypassed),
                 // and only when that outcome changes (the dedupe key leaves out values, which change every decision).
@@ -202,7 +206,7 @@ namespace CompanionAI_Pathfinder.Tactics
             }
             catch (Exception ex)
             {
-                Main.Error($"[Progressive] {unit?.CharacterName}: {ex.Message} - policy skipped for this decision");
+                if (diagnostics) Main.Error($"[Progressive] {unit?.CharacterName}: {ex.Message} - policy skipped for this decision");
                 held.Clear();
             }
             return held;

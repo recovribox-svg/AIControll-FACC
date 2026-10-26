@@ -61,135 +61,13 @@ namespace CompanionAI_Pathfinder.GameInterface
 
             try
             {
-                // UnitCommands.Run() calls Init() only when Executor is null; Init() is where commands compute
-                // ApproachRadius (UnitAttack/UnitUseAbility.Init), which we need before path-finding.
-                if (command.Executor == null)
-                    command.Init(unit);
-
-                float pathLength = 0f;
-                bool hasPath = false;
-                if (NeedsPrecomputedPath(unit, command))
-                {
-                    // Native AiAction.ScorePath rejects actions that need movement when none is left
-                    // (GetRemainingMovementRange(total: true) <= 0). Without this the command is accepted, cannot
-                    // move, and UnitCommandController force-finishes it as "Success" without acting.
-                    TurnController turn = Game.Instance?.TurnBasedCombatController?.CurrentTurn;
-                    if (turn != null && turn.Rider == unit && turn.GetRemainingMovementRange(unit, true, false) <= 0f)
-                    {
-                        failure = "target out of reach and no movement left this turn";
-                        CommandTrace.LogRejected(unit, command, label, failure);
-                        return false;
-                    }
-
-                    if (!TryAttachPath(unit, command, out pathLength, out failure))
-                    {
-                        CommandTrace.LogRejected(unit, command, label, failure);
-                        return false;
-                    }
-
-                    if (fiveFootOnly && turn != null && turn.Rider == unit &&
-                        (!turn.HasFiveFootStep(unit) || pathLength > turn.GetRemainingFiveFootStepRange(unit) + 0.05f))
-                    {
-                        command.ForcedPath = null;
-                        failure = $"the 5-foot step's path is {pathLength:F1}m - longer than the step";
-                        CommandTrace.LogRejected(unit, command, label, failure);
-                        return false;
-                    }
-
-                    // ★ v0.3.10: once a 5-foot step was taken, the game allows no other movement this turn
-                    // (TurnController.ShouldRestrictNormalMovement). Lann stepped out of melee and then had three commands
-                    // force-finished without acting; Albedo issued the same Advance fifteen times.
-                    if (turn != null && turn.Rider == unit && turn.GetMetersMovedByFiveFootStep(unit) > 0f &&
-                        pathLength > turn.GetRemainingFiveFootStepRange(unit) + 0.05f)
-                    {
-                        command.ForcedPath = null;
-                        failure = $"a 5-foot step was taken this turn: {pathLength:F1}m of movement is not allowed";
-                        CommandTrace.LogRejected(unit, command, label, failure);
-                        return false;
-                    }
-
-                    // ★ v0.3.20 (0.3.19 release logs): a standard action after the walk - the walk must fit one move action
-                    // (TurnController.GetRemainingMovementTime with singleActionMove, the game's own split). A longer
-                    // path is walked with the standard action too, and the attack or spell is then force-finished
-                    // unstarted: Aeiluvetar (15.0 m), Lann (16.3 m), Orvath (15.7 m) and Camellia's Grease (13.0 m) lost
-                    // their turns in one round of the turn-based log, the navmesh path being far longer than the line
-                    // the option was priced on. Refused here, the engine takes its next best option.
-                    if (turn != null && turn.Rider == unit && command.Type == UnitCommand.CommandType.Standard &&
-                        !(command is UnitAttack fullAttack && fullAttack.ForceFullAttack) &&
-                        !(command is UnitUseAbility walkThenCast && (walkThenCast.Ability.RequireFullRoundAction ||
-                                                                      Analysis.AbilityClassifier.IsChargeAbility(walkThenCast.Ability))) &&
-                        !(turn.HasFiveFootStep(unit) && pathLength <= turn.GetRemainingFiveFootStepRange(unit) + 0.05f))
-                    {
-                        float oneMove = turn.GetRemainingMovementTime(unit, false, true) * unit.CurrentSpeedMps;
-                        if (pathLength > oneMove + 0.3f)
-                        {
-                            command.ForcedPath = null;
-                            failure = $"the path ({pathLength:F1}m) is {LongerThanOneMoveFailure} ({oneMove:F1}m)";
-                            CommandTrace.LogRejected(unit, command, label, failure);
-                            return false;
-                        }
-                    }
-
-                    // ★ v0.3.10: the path must end within reach, as native AI checks (AiAction.ScorePath:
-                    // UnitCommand.IsUnitCloseEnough on the last waypoint). A path trimmed short by an ally standing at its
-                    // end left Seelah, Albedo and Camellia next to their target with the attack force-finished unstarted.
-                    if (!(command is UnitMoveTo) && !PathEndsInReach(unit, command, out float shortBy))
-                    {
-                        command.ForcedPath = null;
-                        // ★ v0.3.20: within range at the end but no line of sight read "0.0m short".
-                        failure = shortBy < 0.05f && command.NeedLoS ? NoSightAtPathEndFailure
-                                                                     : $"{OutOfReachFailure} ({shortBy:F1}m short)";
-                        CommandTrace.LogRejected(unit, command, label, failure);
-                        return false;
-                    }
-
-                    if (avoidAreas && PathEntersArea(unit, command, out string area))
-                    {
-                        command.ForcedPath = null;
-                        failure = $"the path walks into {area}";
-                        CommandTrace.LogRejected(unit, command, label, failure);
-                        return false;
-                    }
-
-                    // ★ v0.3.0: a full attack is only legal after at most a 5-foot step; ForceFullAttack bypasses the
-                    // game's own check, so enforce it here before anything moves.
-                    if (command is UnitAttack forcedFull && forcedFull.ForceFullAttack && turn != null &&
-                        (!turn.HasFiveFootStep(unit) || pathLength > turn.GetRemainingFiveFootStepRange(unit) + 0.05f))
-                    {
-                        command.ForcedPath = null;
-                        failure = $"full attack needs {pathLength:F1}m of movement (more than a 5-foot step)";
-                        CommandTrace.LogRejected(unit, command, label, failure);
-                        return false;
-                    }
-
-                    // A walk the game makes as a 5-foot step provokes nothing (ApplyTurnBasedMovementLimit below); a longer
-                    // one (an advance) goes only as far as this turn's movement. Its time left, not GetRemainingMovementRange:
-                    // that answers the 5-foot step's range while the limit set for the last command is still the step.
-                    bool ownTurn = turn != null && turn.Rider == unit;
-                    if (pathAttackers != null &&
-                        !(ownTurn && turn.HasFiveFootStep(unit) && pathLength <= turn.GetRemainingFiveFootStepRange(unit)) &&
-                        WalkProvokesMore(unit, command.ForcedPath?.vectorPath, command, pathAttackers, pricedAttacks, out failure,
-                                         ownTurn ? turn.GetRemainingTime(unit) * unit.CurrentSpeedMps : float.MaxValue))
-                    {
-                        command.ForcedPath = null;
-                        CommandTrace.LogRejected(unit, command, label, failure);
-                        return false;
-                    }
-                    hasPath = true;
-                    ApplyTurnBasedMovementLimit(unit, pathLength);
-                }
-                // ★ v0.3.18 (test10): real time checks the walk against harmful areas too. The game's real-time approach
-                // follows its own navmesh path, which bends around obstacles where the straight line the move was priced
-                // on did not: Seelah and Camellia walked into Grease that the straight line missed and lay prone for most
-                // of the fight (0.3.18-test9 real-time log). The path is asked of the pathfinder on its own (not the
-                // unit's seeker, which may be steering the unit right now) and only checked, never attached: the game
-                // still walks its own path; a refused option makes the engine take the next best one.
-                // ★ v0.3.20 (test8): and against attacks of opportunity, on the same walk (asked once for both checks).
-                else if ((avoidAreas || pathAttackers != null) && RealTimeWalkRefused(unit, command, avoidAreas, pathAttackers, pricedAttacks, out failure))
+                if (!TryPrepare(unit, command, out float pathLength, out bool hasPath, out failure,
+                                avoidAreas, fiveFootOnly, pathAttackers, pricedAttacks, preflight: false))
                 {
                     CommandTrace.LogRejected(unit, command, label, failure);
                     return false;
                 }
+                if (hasPath) ApplyTurnBasedMovementLimit(unit, pathLength);
 
                 unit.Commands.Run(command);
 
@@ -222,6 +100,179 @@ namespace CompanionAI_Pathfinder.GameInterface
                 Main.Error($"[Dispatch] {unit.CharacterName}: {label}: {ex}");
                 return false;
             }
+        }
+
+        /// <summary>
+        /// ★ test1-scoring-fixes: validate one proposed approach without issuing a command, changing movement limits,
+        /// activating a mode or retaining a path. Actual execution calls Run and validates again against current state.
+        /// </summary>
+        public static bool CanPrepare(UnitEntityData unit, UnitCommand command, out string failure, bool avoidAreas = false,
+                                      bool fiveFootOnly = false, Func<IList<Vector3>, List<UnitEntityData>> pathAttackers = null,
+                                      int pricedAttacks = 0)
+        {
+            failure = null;
+            try
+            {
+                // Ordinary UnitAttack.Init configures animation handles/speed. The game's inspection mode does not;
+                // restore only its native approach radius, which inspection intentionally leaves unset.
+                if (command is UnitAttack attack && command.Executor == null)
+                {
+                    attack.OnlyForInspect = true;
+                    attack.Init(unit);
+                    attack.ApproachRadius = UnitAttack.GetApproachRadius(
+                        attack.PlannedAttack?.Hand?.Weapon ?? unit.GetFirstWeapon(), unit, attack.Target);
+                }
+                return TryPrepare(unit, command, out _, out _, out failure,
+                                  avoidAreas, fiveFootOnly, pathAttackers, pricedAttacks, preflight: true);
+            }
+            catch (Exception ex)
+            {
+                failure = $"approach validation unavailable: {ex.Message}";
+                return false;
+            }
+            finally
+            {
+                // ForcedPath owns a claim on the native path; the preview must release it on every exit.
+                if (command != null) command.ForcedPath = null;
+            }
+        }
+
+        private static bool NeedsTemporaryApproachPath(UnitEntityData unit, UnitCommand command) =>
+            unit != null && unit.IsInCombat && unit.RiderPart == null && command.ForcedPath == null &&
+            !(command is UnitMoveAlongPath) && command.ShouldUnitApproach;
+
+        /// <summary>Shared preparation rules. This method never changes live movement limits or command slots.</summary>
+        private static bool TryPrepare(UnitEntityData unit, UnitCommand command, out float pathLength, out bool hasPath,
+                                       out string failure, bool avoidAreas, bool fiveFootOnly,
+                                       Func<IList<Vector3>, List<UnitEntityData>> pathAttackers, int pricedAttacks,
+                                       bool preflight)
+        {
+            pathLength = 0f;
+            hasPath = false;
+            failure = null;
+            if (unit == null || command == null)
+            {
+                failure = "null unit or command";
+                return false;
+            }
+            // UnitCommands.Run() calls Init() only when Executor is null; Init() is where commands compute
+            // ApproachRadius (UnitAttack/UnitUseAbility.Init), which we need before path-finding.
+            if (command.Executor == null)
+                command.Init(unit);
+
+            if (NeedsPrecomputedPath(unit, command) || (preflight && NeedsTemporaryApproachPath(unit, command)))
+            {
+                // Native AiAction.ScorePath rejects actions that need movement when none is left
+                // (GetRemainingMovementRange(total: true) <= 0). Without this the command is accepted, cannot
+                // move, and UnitCommandController force-finishes it as "Success" without acting.
+                TurnController turn = CombatController.IsInTurnBasedCombat()
+                    ? Game.Instance?.TurnBasedCombatController?.CurrentTurn : null;
+                if (turn != null && turn.Rider == unit && turn.GetRemainingMovementRange(unit, true, false) <= 0f)
+                {
+                    failure = "target out of reach and no movement left this turn";
+                    return false;
+                }
+
+                if (!TryAttachPath(unit, command, out pathLength, out failure))
+                {
+                    return false;
+                }
+
+                if (fiveFootOnly && turn != null && turn.Rider == unit &&
+                    (!turn.HasFiveFootStep(unit) || pathLength > turn.GetRemainingFiveFootStepRange(unit) + 0.05f))
+                {
+                    command.ForcedPath = null;
+                    failure = $"the 5-foot step's path is {pathLength:F1}m - longer than the step";
+                    return false;
+                }
+
+                // ★ v0.3.10: once a 5-foot step was taken, the game allows no other movement this turn
+                // (TurnController.ShouldRestrictNormalMovement). Lann stepped out of melee and then had three commands
+                // force-finished without acting; Albedo issued the same Advance fifteen times.
+                if (turn != null && turn.Rider == unit && turn.GetMetersMovedByFiveFootStep(unit) > 0f &&
+                    pathLength > turn.GetRemainingFiveFootStepRange(unit) + 0.05f)
+                {
+                    command.ForcedPath = null;
+                    failure = $"a 5-foot step was taken this turn: {pathLength:F1}m of movement is not allowed";
+                    return false;
+                }
+
+                // ★ v0.3.20 (0.3.19 release logs): a standard action after the walk - the walk must fit one move action
+                // (TurnController.GetRemainingMovementTime with singleActionMove, the game's own split). A longer
+                // path is walked with the standard action too, and the attack or spell is then force-finished
+                // unstarted: Aeiluvetar (15.0 m), Lann (16.3 m), Orvath (15.7 m) and Camellia's Grease (13.0 m) lost
+                // their turns in one round of the turn-based log, the navmesh path being far longer than the line
+                // the option was priced on. Refused here, the engine takes its next best option.
+                if (turn != null && turn.Rider == unit && command.Type == UnitCommand.CommandType.Standard &&
+                    !(command is UnitAttack fullAttack && fullAttack.ForceFullAttack) &&
+                    !(command is UnitUseAbility walkThenCast && (walkThenCast.Ability.RequireFullRoundAction ||
+                                                                  Analysis.AbilityClassifier.IsChargeAbility(walkThenCast.Ability))) &&
+                    !(turn.HasFiveFootStep(unit) && pathLength <= turn.GetRemainingFiveFootStepRange(unit) + 0.05f))
+                {
+                    float oneMove = turn.GetRemainingMovementTime(unit, false, true) * unit.CurrentSpeedMps;
+                    if (pathLength > oneMove + 0.3f)
+                    {
+                        command.ForcedPath = null;
+                        failure = $"the path ({pathLength:F1}m) is {LongerThanOneMoveFailure} ({oneMove:F1}m)";
+                        return false;
+                    }
+                }
+
+                // ★ v0.3.10: the path must end within reach, as native AI checks (AiAction.ScorePath:
+                // UnitCommand.IsUnitCloseEnough on the last waypoint). A path trimmed short by an ally standing at its
+                // end left Seelah, Albedo and Camellia next to their target with the attack force-finished unstarted.
+                if (!(command is UnitMoveTo) && !PathEndsInReach(unit, command, out float shortBy))
+                {
+                    command.ForcedPath = null;
+                    // ★ v0.3.20: within range at the end but no line of sight read "0.0m short".
+                    failure = shortBy < 0.05f && command.NeedLoS ? NoSightAtPathEndFailure
+                                                                 : $"{OutOfReachFailure} ({shortBy:F1}m short)";
+                    return false;
+                }
+
+                if (avoidAreas && PathEntersArea(unit, command, out string area))
+                {
+                    command.ForcedPath = null;
+                    failure = $"the path walks into {area}";
+                    return false;
+                }
+
+                // ★ v0.3.0: a full attack is only legal after at most a 5-foot step; ForceFullAttack bypasses the
+                // game's own check, so enforce it here before anything moves.
+                if (command is UnitAttack forcedFull && forcedFull.ForceFullAttack && turn != null &&
+                    (!turn.HasFiveFootStep(unit) || pathLength > turn.GetRemainingFiveFootStepRange(unit) + 0.05f))
+                {
+                    command.ForcedPath = null;
+                    failure = $"full attack needs {pathLength:F1}m of movement (more than a 5-foot step)";
+                    return false;
+                }
+
+                // A walk the game makes as a 5-foot step provokes nothing (ApplyTurnBasedMovementLimit below); a longer
+                // one (an advance) goes only as far as this turn's movement. Its time left, not GetRemainingMovementRange:
+                // that answers the 5-foot step's range while the limit set for the last command is still the step.
+                bool ownTurn = turn != null && turn.Rider == unit;
+                if (pathAttackers != null &&
+                    !(ownTurn && turn.HasFiveFootStep(unit) && pathLength <= turn.GetRemainingFiveFootStepRange(unit)) &&
+                    WalkProvokesMore(unit, command.ForcedPath?.vectorPath, command, pathAttackers, pricedAttacks, out failure,
+                                     ownTurn ? turn.GetRemainingTime(unit) * unit.CurrentSpeedMps : float.MaxValue))
+                {
+                    command.ForcedPath = null;
+                    return false;
+                }
+                hasPath = true;
+            }
+            // ★ v0.3.18 (test10): real time checks the walk against harmful areas too. The game's real-time approach
+            // follows its own navmesh path, which bends around obstacles where the straight line the move was priced
+            // on did not: Seelah and Camellia walked into Grease that the straight line missed and lay prone for most
+            // of the fight (0.3.18-test9 real-time log). The path is asked of the pathfinder on its own (not the
+            // unit's seeker, which may be steering the unit right now) and only checked, never attached: the game
+            // still walks its own path; a refused option makes the engine take the next best one.
+            // ★ v0.3.20 (test8): and against attacks of opportunity, on the same walk (asked once for both checks).
+            else if ((avoidAreas || pathAttackers != null) && RealTimeWalkRefused(unit, command, avoidAreas, pathAttackers, pricedAttacks, out failure))
+            {
+                return false;
+            }
+            return true;
         }
 
         /// <summary>Convenience overload for call sites that only log failures.</summary>
