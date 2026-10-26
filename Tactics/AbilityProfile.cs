@@ -257,7 +257,7 @@ namespace CompanionAI_Pathfinder.Tactics
         public bool IsProjectileCone => Cone != null;
         public bool IsAoE => AoERadius > 0.01f || IsProjectileCone;
         /// <summary>
-        /// ★ v0.3.18: the game picks the units in the area one by one (AbilityTargetsAround), each with its own spell
+        /// ★ v0.3.18: the game picks the units in the area one by one (around-selector or cone), each with its own spell
         /// resistance check. Without it (spawned areas: Grease, Entangle, Web) the effect is applied once, to the aimed
         /// target: a creature aimed at that resists or is immune stops the whole area.
         /// </summary>
@@ -514,7 +514,7 @@ namespace CompanionAI_Pathfinder.Tactics
             CasterProvokes = FindCasterProvoke(Blueprint);
 
             var around = Blueprint.GetComponent<AbilityTargetsAround>();
-            SelectsTargets = around != null;
+            SelectsTargets = around != null || IsProjectileCone;
             if (around != null)
             {
                 AoERadius = around.AoERadius.Meters;
@@ -752,7 +752,6 @@ namespace CompanionAI_Pathfinder.Tactics
             if (ReferenceEquals(bp, Blueprint) && projectile?.Type == AbilityProjectileType.Cone)
             {
                 Cone = projectile;
-                SelectsTargets = true;
             }
             // ★ v0.3.18 (C2): a line or cone projectile makes no attack roll, whatever its flag says (the game's
             // AbilityDeliverProjectile only rolls for other shapes).
