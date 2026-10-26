@@ -53,6 +53,8 @@ namespace CompanionAI_Pathfinder.Tactics
         /// <summary>★ v0.3.19 (test11): an ability whose only value here is a helpful buff (the restraint rule in Decide).</summary>
         public bool PureBuff;
         public string Label;
+        /// <summary>★ kinetic-infusion-value: raw supported control contribution; diagnostic only, never a cached rule/context.</summary>
+        public string InfusionNote;
         public string Key;
         /// <summary>★ v0.3.7: chance the effect lands on its main target (1 for non-hostile options).</summary>
         public float SuccessChance = 1f;
@@ -353,6 +355,10 @@ namespace CompanionAI_Pathfinder.Tactics
             // ★ v0.3.20 (test8): a move priced on the straight line has the game's real walk counted before it is made.
             if (chosen?.RiskAt != null) chosen.CountPathAttackers = RealPathCounter(ctx, chosen);
             LogDecision(ctx, usable, chosen);
+            // ★ kinetic-infusion-value: only the chosen plan is logged, after its existing native burn pricing.
+            if (chosen?.InfusionNote != null)
+                Main.Log($"[Kinetic] {unit.CharacterName}: {chosen.InfusionNote}; chosen {chosen.Label} = {chosen.Value:F1} " +
+                         "(infusion contribution before delivery-risk discounts; burn penalty is the existing [burn] label, absent at zero burn)");
             // ★ v0.3.16 (test2): options exist but none is worth anything or affordable - name the best of them. Seelah
             // ended round 1 with all her actions and 4 enemies, and the log could not say why.
             // ★ v0.3.16: also on movement-only turns (nauseated), with why "Leave area" was not offered: Seelah stayed
@@ -2111,7 +2117,7 @@ namespace CompanionAI_Pathfinder.Tactics
         /// highest-value target saves easily can still be the right tier against another enemy).
         /// </summary>
         private static IEnumerable<Candidate> EvaluateAbility(TacticalContext ctx, AbilityData ability,
-                                                              UnitEntityData onlyTarget = null)
+                                                              UnitEntityData onlyTarget = null, bool valueActiveInfusions = true)
         {
             var none = Enumerable.Empty<Candidate>();
             var profile = AbilityProfile.Get(ability);
@@ -2219,8 +2225,9 @@ namespace CompanionAI_Pathfinder.Tactics
                 if (ability.SourceItem != null && target != ctx.Unit && !ctx.Unit.IsEnemy(target) && IsSummon(target)) continue;
                 float value;
                 string why;
+                string infusionNote;
                 using (AbilityProfile.AimedAt(wrapper))   // ★ v0.3.18 (test10): conditions see the real main target
-                    value = ScoreAbility(ctx, ability, profile, slot, target, out why);
+                    value = ScoreAbility(ctx, ability, profile, slot, target, out why, out infusionNote, valueActiveInfusions);
                 if (value <= 0f) continue;
                 float scored = value;
                 // ★ v0.3.18: an area that can only be aimed at a creature (not at the ground) is applied to that creature
@@ -2290,13 +2297,15 @@ namespace CompanionAI_Pathfinder.Tactics
                     NeedsMove = needsMove,
                     GatherPower = gather,
                     Value = value,
+                    InfusionNote = infusionNote,
                     Offensive = IsOffensive(why),
                     PureBuff = why.Split('+').All(r => r == "buff" || r.StartsWith("grows into")) && why.Contains("buff"),
                     Label = $"{(ability.SourceItem != null ? "Item:" : "")}{ability.Name}{metamagic}->{(summonPoint.HasValue ? "a spot near the fight" : target.CharacterName)}({why}){risk?.Tag}" +
                             (approach?.Detours == true ? $" ({approach.Detour})" : "") +
                             (provoke != null ? $" [casting provokes {provoke.Attacks}{(provoke.DropChance >= 0.1f ? $", {provoke.DropChance:P0} down" : "")}]" : "") +
                             (rollProvoke != null ? $" [ray provokes {rollProvoke.Attacks}{(rollProvoke.DropChance >= 0.1f ? $", {rollProvoke.DropChance:P0} down" : "")}]" : "") +
-                            (gather > 0 ? $" [gathers power {gather}]" : ""),
+                            (gather > 0 ? $" [gathers power {gather}]" : "") +
+                            (infusionNote != null ? $" [infusion {infusionNote}]" : ""),
                     CastRiskCost = provokeLoss,
                     AimAffected = aimAffected,
                     MoveFirst = approach?.Detours == true,
@@ -2472,8 +2481,9 @@ namespace CompanionAI_Pathfinder.Tactics
         }
 
         private static float ScoreAbility(TacticalContext ctx, AbilityData ability, AbilityProfile profile, ActionSlot slot,
-                                          UnitEntityData target, out string why)
+                                          UnitEntityData target, out string why, out string infusionNote, bool valueActiveInfusions)
         {
+            infusionNote = null;
             var unit = ctx.Unit;
             bool targetIsEnemy = unit.IsEnemy(target);
             int level = Math.Max(0, ability.SpellLevel);
@@ -2602,6 +2612,28 @@ namespace CompanionAI_Pathfinder.Tactics
                         part = Math.Max(part, ValueModel.DamageValue(hp * pk, hp, CombatMath.TargetWorth(enemy), pk));
                     }
                     dmgValue += part;
+                    // ★ kinetic-infusion-value: reuse this actual recipient's hit/SR probability. Raw maneuver control
+                    // joins the normal scale before target choice and casting/walking risk, outside damage-role weights.
+                    if (valueActiveInfusions && !ability.CanTargetPoint)
+                    {
+                        try
+                        {
+                            float infusion = ActiveInfusionManeuverValue(ctx, ability, profile, enemy, p, out var note);
+                            if (infusion > 0f)
+                            {
+                                value += infusion;
+                                slotSensitive += infusion;
+                                reasons.Add("maneuver:active-infusion");
+                                infusionNote = note;
+                                if (enemy == target) ctx.AimCounted = true;
+                            }
+                        }
+                        catch (Exception ex)
+                        {
+                            ReportOnce($"infusion-value-error|{ability.Blueprint.AssetGuid}",
+                                $"[Kinetic] {ability.Name}: active infusion estimate unavailable ({ex.GetType().Name}); retaining ordinary blast value");
+                        }
+                    }
                     if (enemy == target && part > 0f) ctx.AimCounted = true;
                 }
 

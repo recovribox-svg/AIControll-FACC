@@ -2329,3 +2329,78 @@ Party abilities, test9 → test11: valued 2 586 → 2 658, guessed 387 → 352, 
     on cooldown, on purpose: in real time an option usable "from here" keeps a unit from walking off while it waits.
   - The new readers in the logs: Grease (mean 17 real time, 14 turn-based) as before the difficult-terrain change, the
     Arcane Reservoir DC / caster-level boosts at 0.5-4.4 for the spell cast next, Inspired Rage 1.6-7.7.
+
+## 65. Kineticist infusion value: a new, restricted slice on the restored v0.3.21 base
+
+**Task plan and proposal assessment.** Branch `codex/kineticist-infusion-value` starts at development
+`f51189fa93ffebc791489c6761e05ccbbdea0014`. Before edits, runtime and test sources matched stable tag
+`v0.3.21` (`3d280bd3e3800f1db671112f1be1460ba05d7de5`); Info.json remains 0.3.21. This is new work after
+the [withdrawal](V0_3_22_POSTMORTEM.md), with no cherry-picks or copied implementation from that attempt.
+The author's intended next version is v0.3.22; this task does not publish or bump a release.
+
+The supplied game Managed assemblies exist locally. Matching native method bodies can be inspected from those
+assemblies; the Windows decompile directory in CLAUDE.md does not exist here. Supplied blueprint exports include
+Bowling, Pushing, Burning and their referenced actions. No running Unity game or live Mono profiler is available.
+
+Four proposal details need refinement before implementation:
+
+- The stable AbilityProfile reader has no public action-list entry point. Its private walker cannot safely be
+  reused on arbitrary infusion buffs without changing a shared reader, fabricating a blueprint or using reflection.
+  **Support only one direct ContextActionCombatManeuver (Trip or BullRush) with no success actions.** Bowling and
+  Pushing fit; Burning's carrier/activation-save/damage chain and Entangling's nested conditions do not. No second
+  recursive walker, shared-reader edit, or name/GUID-specific exception is introduced.
+- A correct maneuver chance needs the existing target-dependent attack-bonus/CMB/CMD calculation rules. It cannot
+  be precomputed once per blueprint. Explicitly allow those calculations for supported active effects against an
+  actual scored recipient, reusing the blast's already-calculated hit/resistance probability. There are **zero
+  additional burn, gather, restriction, parameter, hit-chance or SR queries**. This is not advertised as arithmetic
+  only, nor as a frame-time guarantee. The added rule-handler cost still needs live testing.
+- PriceBurn runs after each ability has selected its best aim and after walking/casting risks were applied.
+  Adding raw control there would miss target competition and over-credit risky delivery. Instead add the narrowly
+  supported value in ScoreAbility's existing damage-recipient pass, separately from damage role weighting, before
+  target selection and ordinary risk discounts. PriceBurn and AddKineticCandidates's control flow remain unchanged.
+  Their existing BestBlast recovery estimate explicitly omits the new infusion contribution, since it may estimate
+  switching that infusion off. It retains its stable estimate rather than crediting an effect it would remove.
+- A source constant cannot equal the Git hash of the commit that contains that constant. The single startup
+  identity line uses the module MVID; the PR records the source revision and DLL SHA-256. No experimental archive,
+  download link, version bump or changes to loading/toggling behavior are part of this task.
+
+**Native shape and applicability.** The actual component is
+`Kingmaker.UnitLogic.Mechanics.Components.AddKineticistInfusionDamageTrigger`, with `Actions.Actions`.
+It handles damage using the **active infusion buff's** context. Its fields gate direct damage, weapon type,
+descriptor and allowed ability/parent; it deduplicates recipients at the same game time. The restricted reader
+requires direct damage and rejects weapon/descriptor filters and context-dependent maneuver variants. It requires
+an on/started SubstanceInfusion toggle, a genuinely active matching buff owned by this caster, a supported action
+and an allowed actual blast/parent. No context is manufactured and no action is executed while scoring.
+The native CalculateCost -> CalculateBurnCost -> AddKineticistBurnModifier path already charges the infusion;
+the new contribution is not gated on positive burn and adds no second burn penalty.
+
+**Supported delivery.** Ordinary direct single-target blast ability candidates only. Point targets, areas,
+chains, shadow spells, saves, weapon/blade/archer delivery and blasts already containing a maneuver stay outside
+this slice. Unsupported layouts contribute zero extra value; their existing blast damage and burn remain.
+Optional ricochet components on otherwise ordinary projectiles are allowed, but no secondary recipient or bounce
+receives added value. Hybrid target effects (buffs/heals/removals) are excluded so the existing target-effect gate
+proves that a damage branch may run. Unknown guards retain the stable reader's existing uncertainty policy;
+they are not asserted to be definitely true. No additional guard/context evaluation is introduced.
+No hypothetical configuration is scored. Infusions which are off or not actually active contribute nothing.
+Native maneuver immunities and the existing ManeuverStrength/ManeuverOdds scale remain authoritative. Trip must
+also skip an already prone/getting-up recipient. Pushing retains the existing BullRush convention: only an enemy
+engaging the party in TB has valued movement loss; RT pushes are not assigned an invented benefit.
+
+**Gather Power trace: not offered.** Supplied GatherPower ability
+`6dcbffb8012ba2a4cb4ac374a33e2d9a` has Hidden=true; AbilityDiscovery excludes hidden abilities. Its grant by
+GatherPowerAbilitiesFeature does not bypass that filter. Gather mode activatables remain excluded by ModifierGroups.
+No Gather ability/value change is needed on this evidence. This does not claim every third-party mod preserves it.
+
+**Verification plan.** Keep shared readers, native math/cost sites, controllers, dispatch, toggle ownership and all
+104 stable tests intact. Test the new pure on-hit control arithmetic; build Release against real supplied references.
+Run ordinary ProfileAudit on identical baseline/current input, with no withdrawn kinetic checks: all verdict/detail
+rows must match. Review the added runtime lines for any hooks, state mutation or extra burn/gather calls. A chosen
+supported blast gets one [Kinetic] diagnostic with its infusion contribution, target and existing burn label.
+
+**Gameplay gate, both modes.** No active infusion should behave as stable v0.3.21; compare cold and warm turns and
+idle portrait selection with the same save/settings/mods. With Bowling/Pushing already active, compare eligible,
+immune, prone/getting-up and non-applicable targets, including a zero-burn blast after native reductions. Confirm
+the added control participates in target selection and pays normal movement/provoke/concentration risks. Check
+AI toggle management off/on and end-of-fight ownership/restoration: this slice adds no toggle writer. Check a
+non-kineticist and ordinary summons. Record the startup MVID and chosen [Kinetic] lines. Compilation and offline
+reader parity are not in-game acceptance, command proof or measured FPS gains. No later roadmap slice belongs here.

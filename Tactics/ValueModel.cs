@@ -382,6 +382,17 @@ namespace CompanionAI_Pathfinder.Tactics
 
         #endregion
 
+        /// <summary>
+        /// ★ kinetic-infusion-value: one round of an on-hit maneuver's existing control share. Delivery probability
+        /// already contains the blast's hit/resistance checks; count it once, then the maneuver check once.
+        /// Native callers supply the chance and control share, not a copied game formula or an infusion weight.
+        /// </summary>
+        public static float OnHitControlValue(float triggerChance, float checkChance, float targetWorth, float controlShare)
+        {
+            if (!(triggerChance > 0f) || !(checkChance > 0f) || !(targetWorth > 0f) || !(controlShare > 0f)) return 0f;
+            return Math.Min(1f, triggerChance) * Math.Min(1f, checkChance) * targetWorth * controlShare;
+        }
+
         private static float Clamp(float v, float min, float max) => v < min ? min : v > max ? max : v;
     }
 }
