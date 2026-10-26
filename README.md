@@ -1,8 +1,16 @@
 # AI Control - Fully Autonomous Combat Companions
 
-**Development has been rolled back to the v0.3.21 runtime. All v0.3.22 test builds are withdrawn.**
-Install the existing [stable v0.3.21 release](https://github.com/recovribox-svg/AIControll-FACC/releases/tag/v0.3.21),
-not a previously downloaded experimental ZIP. Fully exit the game before replacing the mod.
+## New kineticist test build — infusion value
+
+**[Download the UMM test ZIP — infusion-value 0a7ed97](test-builds/AI-Control-FACC-infusion-value-0a7ed97-UMM-test.zip?raw=true)**
+
+Close the game, then install the ZIP using Unity Mod Manager. This new, limited test values already-active
+Bowling/Pushing effects; it does not select infusions. UMM still displays **0.3.21**; identify this test by its filename
+and startup build marker. [Installation, build identity and focused playtest steps](test-builds/README.md).
+
+The earlier broad v0.3.22 attempt and its test builds remain withdrawn. This feature branch contains the new
+restricted attempt in [draft PR #6](https://github.com/recovribox-svg/AIControll-FACC/pull/6); it has not been merged.
+For normal play, use the existing [stable v0.3.21 release](https://github.com/recovribox-svg/AIControll-FACC/releases/tag/v0.3.21).
 
 Read the [rollback and failure analysis](docs/V0_3_22_POSTMORTEM.md) before resuming development.
 The [Claude/Codex contribution workflow](CONTRIBUTING.md) remains in effect.

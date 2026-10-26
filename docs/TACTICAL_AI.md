@@ -2361,8 +2361,9 @@ Four proposal details need refinement before implementation:
   Their existing BestBlast recovery estimate explicitly omits the new infusion contribution, since it may estimate
   switching that infusion off. It retains its stable estimate rather than crediting an effect it would remove.
 - A source constant cannot equal the Git hash of the commit that contains that constant. The single startup
-  identity line uses the module MVID; the PR records the source revision and DLL SHA-256. No experimental archive,
-  download link, version bump or changes to loading/toggling behavior are part of this task.
+  identity line uses the module MVID; the PR records the source revision and DLL SHA-256. The initial proposal
+  excluded packaging; the author subsequently requested a downloadable test ZIP. That packages the same verified
+  DLL without a version bump or changes to loading/toggling behavior.
 
 **Native shape and applicability.** The actual component is
 `Kingmaker.UnitLogic.Mechanics.Components.AddKineticistInfusionDamageTrigger`, with `Actions.Actions`.
@@ -2428,7 +2429,8 @@ game DLL, rewritten dependency or blueprint export is committed or packaged.
 
 Tested DLL SHA-256: `cf0fb2a3746e1f27d782afd8d3b2bb0269d614d80ca58b677b8d48f93d202a66`.
 Startup module MVID: `4abd89c4-7b64-4e6f-8ae5-5d96f61ed556`.
-No UMM archive or release is published in this slice. Later documentation-only commits do not change these sources.
+The author subsequently requested a UMM test archive: see [download and build identity](../test-builds/README.md).
+This packages the same checked DLL. No stable release is published; packaging/documentation changes no runtime source.
 
 **Still unverified:** initialized actors' active-buff/context ownership, actual CMB/CMD and third-party handlers,
 command outcomes, idle selection/UI and combat frame times in Unity/Mono. The inherited ManeuverOdds reader still
