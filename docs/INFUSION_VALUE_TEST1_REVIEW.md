@@ -197,3 +197,10 @@ marked fixed. Keep the smooth, ordinary-play evidence and a supported-infusion
 positive test separate. A new diagnostic test ZIP uses a new filename/MVID while
 retaining the original package, so current test1 logs remain traceable. Installing
 that diagnostic update is optional: it changes reporting, not tactical choices.
+
+## Follow-up implementation
+
+The author subsequently requested resolving the four findings. That separate task
+is documented in [the scoring-fix plan and results](TEST1_SCORING_FIXES.md), on
+`codex/test1-scoring-fixes`. Its new runtime changes require another playtest;
+the smooth Test[1] feedback above does not establish their gameplay acceptance.

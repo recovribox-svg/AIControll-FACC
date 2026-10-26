@@ -2444,3 +2444,32 @@ for review and the targeted gameplay gate; lower timing medians or passing arith
 The author reports smooth overall play. The recorded state did not exercise Bowling/Pushing; supported-infusion
 gameplay acceptance remains pending. The follow-up changes Progressive mode reporting only. Sleep's shared-HD
 budget, path/boost feasibility, energy-specific protection and cone-recipient coverage remain separate open issues.
+
+## 66. Test[1] follow-up: shared HD, feasible boosts, typed protection and cones
+
+The author requested fixes for those four findings on a separate task branch.
+`codex/test1-scoring-fixes` includes pending PR #6 as an explicit dependency;
+main and shared development remain unchanged. This is an unmerged test, intended
+for v0.3.22, retaining UMM version 0.3.21 until the coordinated release process.
+
+Sleep now forecasts a consuming HD pool in native recipient order, with earlier
+SR failures preserving budget and either save outcome consuming it. Static
+shared-HD thresholds without a matching SubHD mutation keep their old scoring.
+Deep Slumber's native spreading delivery is deliberately unsupported: its control
+credit is withheld, with an `[HD]` explanation, rather than assuming Sleep order.
+
+Selected main approaches are prepared before marks/boosts, using the dispatcher's
+native path/reach/LoS rules, a three-check decision limit, and already-scored
+fallbacks. Silent Progressive views allow escalation after a blocked lower tier.
+UI previews do not pathfind. Inspection-mode attacks avoid animation setup;
+temporary paths are released and actual commands still pass through `Run`.
+
+Energy protection is priced against matching typed threat, with native pools and
+current protection kept separate. Existing spell estimates and completed damage
+events supply conservative packet sizes, avoiding weapon-hit frequency for spells.
+Cone casts use native recipients at their actual aim/planned origin, including
+allies, with the same set used for friendly-fire and Progressive/boss decisions.
+
+The detailed [plan, review corrections, checks, limits and gameplay checklist](TEST1_SCORING_FIXES.md)
+and [test download/identity](../test-builds/README.md) are the handover. Offline
+checks do not establish live stability or laptop performance parity.
