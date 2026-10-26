@@ -2375,7 +2375,7 @@ The native CalculateCost -> CalculateBurnCost -> AddKineticistBurnModifier path 
 the new contribution is not gated on positive burn and adds no second burn penalty.
 
 **Supported delivery.** Ordinary direct single-target blast ability candidates only. Point targets, areas,
-chains, shadow spells, saves, weapon/blade/archer delivery and blasts already containing a maneuver stay outside
+chains, shadow spells, saves, weapon/blade delivery, units with the ArcherBlast mechanical flag, and blasts already containing a maneuver stay outside
 this slice. Unsupported layouts contribute zero extra value; their existing blast damage and burn remain.
 Optional ricochet components on otherwise ordinary projectiles are allowed, but no secondary recipient or bounce
 receives added value. Hybrid target effects (buffs/heals/removals) are excluded so the existing target-effect gate
@@ -2404,3 +2404,36 @@ the added control participates in target selection and pays normal movement/prov
 AI toggle management off/on and end-of-fight ownership/restoration: this slice adds no toggle writer. Check a
 non-kineticist and ordinary summons. Record the startup MVID and chosen [Kinetic] lines. Compilation and offline
 reader parity are not in-game acceptance, command proof or measured FPS gains. No later roadmap slice belongs here.
+
+**Completed checks (implementation `0a7ed97`).** All 110 pure tests passed (104 stable tests retained, six new
+on-hit control arithmetic cases). Full Release build against the supplied real references: zero warnings/errors.
+Protected shared readers, CombatMath, controllers/dispatch, toggle management, Info.json and tools are unchanged.
+PriceBurn, BurnOf, BurnBlocked, TotalBurn and AddKineticCandidates's bodies match the restored baseline;
+only BestBlast's call explicitly opts out of the added contribution. The diff adds no patch, fact substitute or
+native burn/gather/restriction/parameter/hit/SR call site. Main's only change is the startup identity line.
+
+The preserved current ProfileAudit cannot compile against the restored runtime: its ordinary audit and optional
+check sources still reference removed types/members. It was not modified or described as passing. An isolated copy
+of the actual **v0.3.21 tag's** ordinary ProfileAudit ran against both restored and new DLLs on identical input,
+without the withdrawn feature checks. The final reports are byte-for-byte identical: **1,220 ability rows, zero
+reader errors; 4,097 loaded blueprints and the same one failed AchaekekSacredWeaponFeature export** on both runs.
+Coverage is PARTIAL; the old runner's zero exit status does not make that missing export complete coverage.
+
+An additional local check called the production blueprint parser on the real loaded exports (no fake actor,
+fact, context or rule): Bowling/Trip and Pushing/BullRush were accepted, Burning and Entangling rejected, and the
+supported parse was reused. The actual readers' static delivery guards admit Earth/Air Blast and their Extended
+Range variants. Bowling's allowed family matches Earth and rejects Air; Pushing matches both; both reject Fire.
+Thus the conservative guards do not silently exclude those shipped ordinary blast shapes. No diagnostic tool,
+game DLL, rewritten dependency or blueprint export is committed or packaged.
+
+Tested DLL SHA-256: `cf0fb2a3746e1f27d782afd8d3b2bb0269d614d80ca58b677b8d48f93d202a66`.
+Startup module MVID: `4abd89c4-7b64-4e6f-8ae5-5d96f61ed556`.
+No UMM archive or release is published in this slice. Later documentation-only commits do not change these sources.
+
+**Still unverified:** initialized actors' active-buff/context ownership, actual CMB/CMD and third-party handlers,
+command outcomes, idle selection/UI and combat frame times in Unity/Mono. The inherited ManeuverOdds reader still
+has its existing 0.5 exception fallback; this task neither changes it nor claims exact parity when that path fails.
+Unknown damage guards retain the stable reader's policy. The old recovery estimate remains conservative and
+omits infusion value even for a quiver plan that might retain it. Duplicate same-type infusion effects receive at
+most one contribution. Secondary ricochets and all unsupported action graphs remain unpriced. Keep the PR draft
+for review and the targeted gameplay gate; lower timing medians or passing arithmetic tests are insufficient.
