@@ -1,6 +1,10 @@
 # Kineticist infusion-value playtest
 
-**[Download the UMM test ZIP — infusion-value 0a7ed97](AI-Control-FACC-infusion-value-0a7ed97-UMM-test.zip?raw=true)**
+**[Download the UMM test ZIP — infusion-value 664815b](AI-Control-FACC-infusion-value-664815b-UMM-test.zip?raw=true)**
+
+This optional update corrects Progressive RT/TB diagnostic labels and complete-list reporting. It changes no tactical
+calculation or performance algorithm. The author reported smooth overall budget-laptop play on the first test;
+[the detailed review](../docs/INFUSION_VALUE_TEST1_REVIEW.md) records both successes and unresolved model limits.
 
 This is the new restricted task in [draft PR #6](https://github.com/recovribox-svg/AIControll-FACC/pull/6), on
 `codex/kineticist-infusion-value`. The author requested this package after the implementation review.
@@ -17,7 +21,7 @@ withdrawn broad kineticist attempt. The intended next development version is v0.
 4. Launch the game and check its log for this startup marker:
 
 ```text
-[Build] kinetic-infusion-value module=4abd89c4-7b64-4e6f-8ae5-5d96f61ed556 on v0.3.21
+[Build] kinetic-infusion-value module=37bddec0-bec7-42ef-9418-c1f27a8903b1 on v0.3.21
 ```
 
 If that marker differs or is absent, the installed DLL is not this test. A game restart is required when replacing it.
@@ -47,17 +51,27 @@ Send the full game log and this ZIP filename, plus what you observed. The detail
 ## Identity and verification
 
 The archive contains exactly `CompanionAI_Pathfinder.dll` and `Info.json` at its root, following Build.ps1's UMM
-layout. It uses the exact previously checked DLL; packaging changes no runtime code. It contains no game assemblies,
+layout. It uses the checked diagnostic-update DLL; packaging changes no runtime code. It contains no game assemblies,
 offline tools, stand-ins or settings. [SHA256SUMS.txt](SHA256SUMS.txt) identifies the ZIP;
-[build-identity.json](build-identity.json) records source revisions, DLL hash and module identity.
+[versioned build identity](AI-Control-FACC-infusion-value-664815b-UMM-test.identity.json) records source revisions,
+DLL hash and module identity.
 
-- Runtime source: `0a7ed97e60bda45c5a9452734fc3a278b879b6b2`.
-- Verified source plus documentation: `48029f58e497965e9b44ef2e2d7d5070cee96e99`.
-- DLL SHA-256: `cf0fb2a3746e1f27d782afd8d3b2bb0269d614d80ca58b677b8d48f93d202a66`.
+- Runtime source: `664815b8b2562eedbd7d85525a50ad498811d495`.
+- Original infusion implementation: `0a7ed97e60bda45c5a9452734fc3a278b879b6b2`.
+- DLL SHA-256: `fd863abc853c6834e73bab62bfa29a40a2ee7c9a471e5d5d76fe12decb210ba3`.
 - Release build: zero warnings/errors. Tests: 110 passed, zero failed/skipped.
-- Ordinary baseline/current audit reports match all 1,220 rows with zero reader errors. Coverage is partial:
+- The original infusion build's baseline/current audit reports match all 1,220 rows with zero reader errors; this
+  diagnostic update changes no reader. Coverage is partial:
   4,097 loaded exports and the same one known failed export on both runs.
-- In-game behavior and performance: awaiting playtest. These checks do not establish gameplay stability.
+- The original infusion build's ordinary gameplay was tested and reported smooth overall; the active Bowling/Pushing
+  path was not exercised. The diagnostic update itself has not been tested in game. These checks do not establish
+  complete gameplay stability or resolve the pre-existing scoring limits listed in the review.
+
+## Original Test[1] retained
+
+[Download original 0a7ed97 ZIP](AI-Control-FACC-infusion-value-0a7ed97-UMM-test.zip?raw=true).
+Its unchanged [build identity](build-identity.json) has MVID `4abd89c4-7b64-4e6f-8ae5-5d96f61ed556`.
+The supplied Test[1] logs relate to that build, not the later diagnostic update. Both ZIP hashes remain listed.
 
 Future test downloads should use a new, clearly named ZIP and matching identity/checksums, linked from the task
 branch README and PR. Keep earlier filenames immutable so submitted logs can be tied to their exact build.

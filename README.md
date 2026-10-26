@@ -2,11 +2,13 @@
 
 ## New kineticist test build — infusion value
 
-**[Download the UMM test ZIP — infusion-value 0a7ed97](test-builds/AI-Control-FACC-infusion-value-0a7ed97-UMM-test.zip?raw=true)**
+**[Download the UMM test ZIP — infusion-value 664815b](test-builds/AI-Control-FACC-infusion-value-664815b-UMM-test.zip?raw=true)**
 
 Close the game, then install the ZIP using Unity Mod Manager. This new, limited test values already-active
 Bowling/Pushing effects; it does not select infusions. UMM still displays **0.3.21**; identify this test by its filename
 and startup build marker. [Installation, build identity and focused playtest steps](test-builds/README.md).
+The latest update corrects RT/TB diagnostic labels only; tactical calculations match the first test.
+[Test[1] log review and remaining findings](docs/INFUSION_VALUE_TEST1_REVIEW.md).
 
 The earlier broad v0.3.22 attempt and its test builds remain withdrawn. This feature branch contains the new
 restricted attempt in [draft PR #6](https://github.com/recovribox-svg/AIControll-FACC/pull/6); it has not been merged.
