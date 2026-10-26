@@ -11,7 +11,7 @@ using System;
 
 namespace CompanionAI_Pathfinder.Tactics
 {
-    public static class ValueModel
+    public static partial class ValueModel
     {
         #region Worth of a combatant
 

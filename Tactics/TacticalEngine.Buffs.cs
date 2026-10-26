@@ -23,6 +23,7 @@ using Kingmaker.Blueprints.Items.Weapons;
 using Kingmaker.EntitySystem.Entities;
 using Kingmaker.EntitySystem.Stats;
 using Kingmaker.Enums;
+using Kingmaker.Enums.Damage;
 using Kingmaker.Items;
 using Kingmaker.RuleSystem;
 using Kingmaker.UnitLogic;
@@ -74,6 +75,22 @@ namespace CompanionAI_Pathfinder.Tactics
             public float Incoming, EnemyHitChance = 0.6f, PerHit, Hp, Worth;
             /// <summary>Nothing reaches it yet: <see cref="Incoming"/> is its expected share.</summary>
             public bool Expected;
+            public readonly Dictionary<DamageEnergyType, float> EnergyShares = new Dictionary<DamageEnergyType, float>();
+            public readonly Dictionary<DamageEnergyType, float> EnergyPacketSizes = new Dictionary<DamageEnergyType, float>();
+            public readonly Dictionary<DamageEnergyType, CurrentEnergyProtection> CurrentEnergy = new Dictionary<DamageEnergyType, CurrentEnergyProtection>();
+        }
+
+        private sealed class EnergyLayer
+        {
+            public float Resistance;
+            public float? Pool;
+            public bool Immunity;
+        }
+
+        private sealed class CurrentEnergyProtection
+        {
+            public float Resistance;
+            public bool Immune, Pooled, Covered;
         }
 
         private static int s_AppraisalFrame = -1;
@@ -176,8 +193,9 @@ namespace CompanionAI_Pathfinder.Tactics
 
             // --- what each part adds, with this caster's numbers ---
             float attack = 0f, damage = 0f, extraAttacks = 0f, armor = 0f, concealment = 0f, miss = 0f, saves = 0f;
-            float tempHp = 0f, images = 0f, physicalDr = 0f, energyResist = 0f, conHp = 0f;
-            float energyDamage = 0f, energyPool = 0f, diceUp = 0f, critExtra = 0f, damagePercent = 0f, fastHealing = 0f, sight = 0f;
+            float tempHp = 0f, images = 0f, physicalDr = 0f, conHp = 0f;
+            float energyDamage = 0f, diceUp = 0f, critExtra = 0f, damagePercent = 0f, fastHealing = 0f, sight = 0f;
+            var energyProtection = new Dictionary<DamageEnergyType, List<EnergyLayer>>();
             float spellDc = 0f, spellLevel = 0f, spellPenetration = 0f;
             var onHit = new List<BuffPart>();
             var castingStat = CastingStat(ally);
@@ -191,7 +209,7 @@ namespace CompanionAI_Pathfinder.Tactics
                 if (p.Granted != null && ally.Descriptor.HasFact(p.Granted)) continue;
                 // ★ v0.3.21 (log review): nor one of the caster's own that this caster does not have.
                 if (p.CasterFact != null && !(caster?.Descriptor?.HasFact(p.CasterFact) ?? false)) continue;
-                float amount = PartAmount(p, caster, abilityCtx, ally, casterLevel);
+                float amount = PartAmount(p, caster, abilityCtx, ally, casterLevel, out float? amountPool);
                 // ★ v0.3.20 (test5): a bonus against one kind of effect or creature counts for the share of the enemies it
                 // works against; any other condition (a weapon kind) at half. Remove Fear's +4 against fear counted as +2
                 // to every save for each ally in its burst - up to 8.6 in a fight with no fear (0.3.20-test4 log).
@@ -244,8 +262,21 @@ namespace CompanionAI_Pathfinder.Tactics
                     case BuffPartKind.MirrorImages: images = Math.Max(images, amount); break;
                     case BuffPartKind.PhysicalDR: physicalDr = Math.Max(physicalDr, amount); break;
                     case BuffPartKind.EnergyResist:
-                        energyResist = Math.Max(energyResist, amount);
-                        if (p.Pool != null) energyPool = Math.Max(energyPool, amount);   // ★ v0.3.21: absorbs this much in all
+                        if (!p.EnergyType.HasValue) break;
+                        // An immunity has no numeric amount to attenuate. Unknown/occasional applicability must not
+                        // turn into certain immunity merely because the ordinary amount above was multiplied by zero.
+                        if (p.EnergyImmunity && (p.Conditional || p.Against != Kingmaker.Blueprints.Classes.Spells.SpellDescriptor.None ||
+                            p.AgainstAlignment.HasValue || p.Chance < 1f || p.CritOnly || p.FirstOnly))
+                        {
+                            notes.Add($"{p.EnergyType.Value} immunity: uncertain applicability, credit withheld");
+                            break;
+                        }
+                        if (p.EnergyImmunity
+                            ? p.EnergyImmunityRespectsSuppression && ally.State.HasCondition(UnitCondition.SuppressedEnergyImmunity)
+                            : ally.State.HasCondition(UnitCondition.SuppressedEnergyResistance)) break;
+                        if (!energyProtection.TryGetValue(p.EnergyType.Value, out var layers))
+                            energyProtection[p.EnergyType.Value] = layers = new List<EnergyLayer>();
+                        layers.Add(new EnergyLayer { Resistance = amount, Pool = amountPool, Immunity = p.EnergyImmunity });
                         break;
                     case BuffPartKind.Invisibility:
                         if (invisible == null || invisible.EndsOnAttack) invisible = p;
@@ -411,10 +442,26 @@ namespace CompanionAI_Pathfinder.Tactics
                 // ★ v0.3.21: fast healing gives back what it loses, up to its rate, each round.
                 if (fastHealing > 0f) keptPerRound += Math.Min(def.Incoming, fastHealing);
                 if (physicalDr > 0f) keptPerRound += Math.Min(def.Incoming * 0.8f, physicalDr * hitsOnIt);
-                // ★ v0.3.21: a pool (Protection from Energy) absorbs that much over the whole buff, not per round.
-                if (energyResist > 0f)
-                    keptPerRound += Math.Min(Math.Min(def.Incoming * 0.15f, energyResist * hitsOnIt),
-                                             energyPool > 0f ? energyPool / Math.Max(1f, total) : float.MaxValue);
+                // ★ test1 fixes: compare each native energy separately against matching offence evidence. Same-type
+                // layers are alternatives, not added pools/rates; this conservatively avoids double-crediting overlap.
+                foreach (var entry in energyProtection)
+                {
+                    def.EnergyShares.TryGetValue(entry.Key, out float share);
+                    float matching = def.Incoming * Mathf.Clamp01(share);
+                    if (!(matching > 0f))
+                    {
+                        notes.Add($"{entry.Key} protection: no matching incoming damage");
+                        continue;
+                    }
+                    var current = EnergyProtectionOf(def, ally, entry.Key);
+                    def.EnergyPacketSizes.TryGetValue(entry.Key, out float packetSize);
+                    float energyHits = ValueModel.EnergyHitsPerRound(matching, packetSize);
+                    float kept = current.Immune || current.Covered ? 0f : entry.Value.Max(layer =>
+                        ValueModel.EnergyProtectionPerRound(matching, energyHits, total, layer.Resistance, layer.Pool,
+                            layer.Immunity, current.Resistance, current.Pooled));
+                    keptPerRound += kept;
+                    notes.Add($"{entry.Key} protection keeps {kept:0.#}/rd (matching {matching:0.#}/rd)");
+                }
                 float absorbed = ValueModel.TempHpAbsorbed(tempHp + conHp * 0.5f, def.Incoming, total) +
                                  ValueModel.MirrorImagesAbsorbed(images, hitsOnIt, def.PerHit > 0f ? def.PerHit : def.Incoming, total);
                 keptPerRound += absorbed / Math.Max(1f, total);
@@ -424,10 +471,9 @@ namespace CompanionAI_Pathfinder.Tactics
                 if (tempHp > 0f) notes.Add($"{tempHp:0} temp HP");
                 if (images > 0f) notes.Add($"{images:0.#} images");
                 if (physicalDr > 0f) notes.Add(physicalDr >= 999f ? "immune to physical damage" : $"DR {physicalDr:0}");
-                if (energyResist > 0f) notes.Add(energyPool > 0f ? $"absorbs {energyPool:0} energy" : $"resist {energyResist:0}");
                 if (keptPerRound != 0f) notes.Add($"({(def.Expected ? "expects" : "takes")} {def.Incoming:0.#}/rd, hit at {def.EnemyHitChance:P0})");
             }
-            else if (armor > 0f || concealment > 0f || tempHp > 0f || images > 0f || physicalDr > 0f || energyResist > 0f)
+            else if (armor > 0f || concealment > 0f || tempHp > 0f || images > 0f || physicalDr > 0f || energyProtection.Count > 0)
                 notes.Add("nothing attacks it now");
 
             // ★ v0.3.21 (gaps): what its hits do to the enemy it would attack - a debuff (as the control section values one)
@@ -697,8 +743,13 @@ namespace CompanionAI_Pathfinder.Tactics
         }
 
         /// <summary>The size of one part with the caster's numbers (the buff's ranks under the ability's context).</summary>
-        private static float PartAmount(BuffPart p, UnitEntityData caster, MechanicsContext abilityCtx, UnitEntityData ally, int casterLevel)
+        private static float PartAmount(BuffPart p, UnitEntityData caster, MechanicsContext abilityCtx, UnitEntityData ally, int casterLevel) =>
+            PartAmount(p, caster, abilityCtx, ally, casterLevel, out _);
+
+        private static float PartAmount(BuffPart p, UnitEntityData caster, MechanicsContext abilityCtx, UnitEntityData ally, int casterLevel,
+            out float? poolAmount)
         {
+            poolAmount = null;
             float amount = p.Fixed;
             if (p.ScaleByBaseAttack) amount *= 1 + (ally.Stats.BaseAttackBonus.ModifiedValue / 4);
             MechanicsContext buffCtx = null;
@@ -729,6 +780,7 @@ namespace CompanionAI_Pathfinder.Tactics
             if (p.Pool != null)
             {
                 int pool = CombatMath.EvaluateValue(p.Pool, buffCtx, 0);
+                poolAmount = Math.Max(0, pool);
                 if (pool > 0) amount = Math.Min(amount, pool);
             }
             return amount;
@@ -858,7 +910,8 @@ namespace CompanionAI_Pathfinder.Tactics
                 def.Hp = Math.Max(1f, CombatMath.HpBeforeDown(ally));
                 def.Worth = AllyWorth(ctx, ally);
                 // The enemy that threatens it most: its hit chance and damage per hit against this ally.
-                var top = IncomingParts(ctx, ally, ally.Position).OrderByDescending(p => p.Value).FirstOrDefault();
+                var incoming = IncomingParts(ctx, ally, ally.Position);
+                var top = incoming.OrderByDescending(p => p.Value).FirstOrDefault();
                 if (top.Key != null)
                 {
                     var est = CombatMath.EstimateWeaponAttack(top.Key, ally, full: false);
@@ -868,6 +921,20 @@ namespace CompanionAI_Pathfinder.Tactics
                         def.PerHit = est.FirstPerHit;
                     }
                 }
+                // Reuse the already gathered threat parts. Before contact, the existing defensive fallback uses
+                // the living enemy set instead. Only known energy evidence gets a share; no new ability scan occurs.
+                var exposure = incoming.Count > 0 ? incoming : ctx.Enemies.Where(e => !CombatMath.IsDisabled(e))
+                    .Select(e => new KeyValuePair<UnitEntityData, float>(e, CombatMath.Threat(e))).ToList();
+                float weight = exposure.Sum(e => Math.Max(0f, e.Value));
+                if (weight > 0f)
+                {
+                    foreach (var enemy in exposure)
+                        EnemyThreat.AddEnergyExposure(enemy.Key, enemy.Value / weight, def.EnergyShares, def.EnergyPacketSizes);
+                    // Weight packet size by each enemy's contribution to this energy, rather than by physical danger.
+                    foreach (var energy in def.EnergyPacketSizes.Keys.ToArray())
+                        def.EnergyPacketSizes[energy] = def.EnergyShares.TryGetValue(energy, out float share) && share > 0f
+                            ? def.EnergyPacketSizes[energy] / share : 0f;
+                }
             }
             catch (Exception ex)
             {
@@ -875,6 +942,47 @@ namespace CompanionAI_Pathfinder.Tactics
             }
             s_Defence[ally.UniqueId] = def;
             return def;
+        }
+
+        /// <summary>Native current protection, read once per energy in the existing frame-local defence appraisal.</summary>
+        private static CurrentEnergyProtection EnergyProtectionOf(Defence defence, UnitEntityData unit, DamageEnergyType energy)
+        {
+            if (defence.CurrentEnergy.TryGetValue(energy, out var cached)) return cached;
+            var result = new CurrentEnergyProtection();
+            try
+            {
+                var part = unit.Get<Kingmaker.UnitLogic.Parts.UnitPartDamageReduction>();
+                result.Immune = part?.IsImmune(energy) ?? false;
+                Kingmaker.Utility.UnitDescription.UnitDescriptionHelper.VisitComponents<Kingmaker.UnitLogic.FactLogic.AddEnergyDamageImmunity>(
+                    unit, (component, fact) => { if (component.EnergyType == energy) result.Immune = true; });
+                if (part != null)
+                {
+                    // Use the game's reduction estimate for a packet at least as large as the appraisal's per-hit
+                    // incoming amount. This retains installed stacking/bypass behavior without duplicating its rules.
+                    float probe = Math.Max(1f, Math.Max(defence.PerHit, defence.Incoming));
+                    var type = new Kingmaker.RuleSystem.Rules.Damage.DamageTypeDescription
+                    {
+                        Type = Kingmaker.RuleSystem.Rules.Damage.DamageType.Energy,
+                        Energy = energy
+                    };
+                    var damage = type.CreateDamage(new DiceFormula(0, DiceType.Zero), 0);
+                    foreach (var source in part.AllSources)
+                        if (source.Settings is Kingmaker.UnitLogic.FactLogic.AddDamageResistanceEnergy resistance &&
+                            resistance.Type == energy && source.Settings.UsePool && source.GetCurrentValue() > 0 &&
+                            !source.Bypassed(damage, null)) result.Pooled = true;
+                    float remaining = part.EstimateDamage(probe, damage, null);
+                    result.Resistance = Math.Max(0f, probe - remaining);
+                    result.Covered = remaining <= 0f;
+                }
+            }
+            catch (Exception ex)
+            {
+                // Unknown existing protection is not evidence that a second copy adds value.
+                result.Pooled = true;
+                Main.Verbose($"[Buff] {unit.CharacterName}'s {energy} protection could not be read: {ex.Message}");
+            }
+            defence.CurrentEnergy[energy] = result;
+            return result;
         }
 
         /// <summary>
