@@ -1,23 +1,22 @@
 # AI Control - Fully Autonomous Combat Companions
 
-## New Test[3] fixes — aa9fe94
+## New Test[4] fixes — c6af593
 
-**[Download the new UMM test ZIP — aa9fe94](test-builds/AI-Control-FACC-test3-fixes-aa9fe94-UMM-test.zip?raw=true)**
+**[Download the new UMM test ZIP — c6af593](test-builds/AI-Control-FACC-test4-fixes-c6af593-UMM-test.zip?raw=true)**
 
-Corrects failed infusion activation, uses the existing costless Free threshold for validated infusion switches,
-and prevents fully absorbed damage observations from replacing stronger native resistance. Includes the previously
-added infusion selection and Sleep/path/energy/cone fixes. Seelah's movement changes are **diagnostics only**,
-as approved: no target lock, movement scoring, navigation or emergency-cancellation changes.
+The supplied logs confirm automatic Burning Infusion now executes and deals periodic damage. This test adds
+the approved narrow Grease/control-area safety check for an ally's already committed attack approach, reuses
+repeated forecast reads locally, and adds stage timings for remaining slow decisions. Decision improvements
+are retained; movement/target commitment/navigation/cancellation policy is unchanged.
 
 Close the game before installing through UMM. It still displays **0.3.21**; verify the exact startup marker.
 [Installation, identity and both-mode playtest steps](test-builds/README.md).
 
-All 154 tests pass; Release and native-data checks pass. **Live activation and performance still need testing.**
-The first-hit fire-estimate discrepancy remains under investigation. Unraveling/Chain Arrows are withheld from
-automatic selection and Deep Slumber retains its spreading restriction. [Test[3] review](docs/TEST3_REVIEW.md).
+All **164 tests pass**; Release and native-data checks pass. **New guard effectiveness and performance need
+live testing.** Initial optimistic Fire Blast resistance estimates remain unresolved. [Full review](docs/TEST4_REVIEW.md).
 
-Isolated in [draft PR #9](https://github.com/recovribox-svg/AIControll-FACC/pull/9), targeting development, with pending
-PR #8/#7/#6 included as dependencies. Main/development are unchanged. For normal play use the
+Isolated in [draft PR #10](https://github.com/recovribox-svg/AIControll-FACC/pull/10), targeting development,
+including pending PR #9/#8/#7/#6. Main/shared development are unchanged. For normal play use the
 [stable v0.3.21 release](https://github.com/recovribox-svg/AIControll-FACC/releases/tag/v0.3.21).
 
 Read the [rollback and failure analysis](docs/V0_3_22_POSTMORTEM.md) before further development.
