@@ -24,6 +24,8 @@ namespace CompanionAI_Pathfinder.Tactics
             public int Flat;
             public float Factor = 1f;
             public string Source;
+            // Native reduction on a fully absorbed packet may be capped below the actual defence.
+            public bool ReductionCapped;
 
             public float Apply(float value) => Immune ? 0f : Math.Max(0f, value * Factor - Flat);
         }
@@ -113,6 +115,7 @@ namespace CompanionAI_Pathfinder.Tactics
         /// <summary>The party's fight ended: per-unit observations no longer apply.</summary>
         public static void Clear()
         {
+            CombatMath.ClearEnergyReadTrace();
             ByUnit.Clear();
             // ★ v0.3.18 (review): what one creature of a kind showed (a cultist under Resist Energy, a +4 contextual save)
             // was applied to every later creature of that blueprint for the whole session: kinds are learned per fight.
@@ -297,6 +300,7 @@ namespace CompanionAI_Pathfinder.Tactics
                     {
                         Immune = damage.Immune,
                         Flat = Math.Max(0, result.Reduction),
+                        ReductionCapped = !damage.Immune && result.Reduction > 0 && result.FinalValue == 0,
                         Factor = factor,
                         Source = evt.SourceAbility?.Name ?? damage.GetType().Name
                     };

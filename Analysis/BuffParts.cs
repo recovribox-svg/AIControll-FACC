@@ -127,6 +127,9 @@ namespace CompanionAI_Pathfinder.Analysis
         public Func<Kingmaker.Blueprints.Items.Weapons.BlueprintItemWeapon, bool> Weapon;
         /// <summary>★ v0.3.21: energy damage (not reduced like weapon damage against swarms).</summary>
         public bool Energy;
+        /// <summary>★ test1 fixes: the native energy resisted; null is unknown, never generic energy protection.</summary>
+        public Kingmaker.Enums.Damage.DamageEnergyType? EnergyType;
+        public bool EnergyImmunity, EnergyImmunityRespectsSuppression;
         /// <summary>★ v0.3.21: invisibility that ends with the bearer's first offensive action (Invisibility, Vanish).</summary>
         public bool EndsOnAttack;
         /// <summary>★ v0.3.21: the feature this part comes with (a Tactician's teamwork feat): nothing for a recipient that
@@ -156,8 +159,8 @@ namespace CompanionAI_Pathfinder.Analysis
         }
 
         public override string ToString() =>
-            $"{Kind}{(Kind == BuffPartKind.Saves && SaveShare < 1f ? $"({Stat})" : "")} " +
-            (Value != null && Value.ValueType != ContextValueType.Simple ? $"{Value.ValueType}" : $"{Fixed + (Value?.Value ?? 0) * Multiplier}") +
+            $"{Kind}{(Kind == BuffPartKind.Saves && SaveShare < 1f ? $"({Stat})" : "")}{(EnergyType.HasValue ? $"({EnergyType.Value})" : "")} " +
+            (EnergyImmunity ? "immune" : Value != null && Value.ValueType != ContextValueType.Simple ? $"{Value.ValueType}" : $"{Fixed + (Value?.Value ?? 0) * Multiplier}") +
             (Descriptor != ModifierDescriptor.UntypedStackable ? $" {Descriptor}" : "") + (Conditional ? " (conditional)" : "") +
             (CasterFact != null ? " (caster's)" : "");
     }
@@ -367,10 +370,10 @@ namespace CompanionAI_Pathfinder.Analysis
                     // ★ v0.3.21: Protection from Energy absorbs every point of its energy type until its pool is spent
                     // (ProtectionFromEnergy.CalculateValue returns the pool left): the pool is both the amount and the cap.
                     case ProtectionFromEnergy pe:
-                        list.Parts.Add(new BuffPart { Kind = BuffPartKind.EnergyResist, Owner = owner, Value = pe.UsePool ? pe.Pool : pe.Value, Pool = pe.UsePool ? pe.Pool : null });
+                        list.Parts.Add(new BuffPart { Kind = BuffPartKind.EnergyResist, Owner = owner, EnergyType = pe.Type, Value = pe.UsePool ? pe.Pool : pe.Value, Pool = pe.UsePool ? pe.Pool : null });
                         break;
                     case AddDamageResistanceEnergy er:
-                        list.Parts.Add(new BuffPart { Kind = BuffPartKind.EnergyResist, Owner = owner, Value = er.Value, Pool = er.UsePool ? er.Pool : null });
+                        list.Parts.Add(new BuffPart { Kind = BuffPartKind.EnergyResist, Owner = owner, EnergyType = er.Type, Value = er.Value, Pool = er.UsePool ? er.Pool : null });
                         break;
                     case Kingmaker.Designers.Mechanics.Buffs.ChangeUnitSize size:
                         if (size.SizeDelta > 0 || size.Size > Size.Medium)
@@ -612,10 +615,10 @@ namespace CompanionAI_Pathfinder.Analysis
                         list.AddImmunity(owner, ConditionDescriptor(conditionImmune.Condition), ImmunitySaves, false);
                         break;
                     case AddEnergyDamageImmunity energyImmune:
-                        list.Parts.Add(new BuffPart { Kind = BuffPartKind.EnergyResist, Owner = owner, Fixed = EnergyImmunityResist });
+                        list.Parts.Add(new BuffPart { Kind = BuffPartKind.EnergyResist, Owner = owner, EnergyType = energyImmune.EnergyType, EnergyImmunity = true });
                         break;
                     case AddEnergyImmunity energyImmune2:
-                        list.Parts.Add(new BuffPart { Kind = BuffPartKind.EnergyResist, Owner = owner, Fixed = EnergyImmunityResist });
+                        list.Parts.Add(new BuffPart { Kind = BuffPartKind.EnergyResist, Owner = owner, EnergyType = energyImmune2.Type, EnergyImmunity = true, EnergyImmunityRespectsSuppression = true });
                         break;
                     // ★ v0.3.21 (verification audit): a weapon enchantment the buff keeps on the weapon in hand (Divine Weapon
                     // Bond, Arcane Pool, Sacred Weapon: BuffEnchantWornItem / BuffEnchantAnyWeapon) - the enchantment's parts.
@@ -860,9 +863,6 @@ namespace CompanionAI_Pathfinder.Analysis
 
         /// <summary>★ v0.3.21: an immunity reads as this many points of save bonus against its kind of effect.</summary>
         private const int ImmunitySaves = 10;
-        /// <summary>★ v0.3.21: an energy immunity reads as resistance this high (no single hit gets through).</summary>
-        private const int EnergyImmunityResist = 30;
-
         /// <summary>★ v0.3.21: the kind of effect that imposes a condition (for immunity to it).</summary>
         private static Kingmaker.Blueprints.Classes.Spells.SpellDescriptor ConditionDescriptor(Kingmaker.UnitLogic.UnitCondition condition)
         {

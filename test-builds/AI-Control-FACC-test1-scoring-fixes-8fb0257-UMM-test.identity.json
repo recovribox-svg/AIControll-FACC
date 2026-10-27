@@ -1,0 +1,46 @@
+{
+  "test_name": "Test1 scoring fixes — Sleep, approaches/boosters, energy protection and cones",
+  "intended_development_version": "0.3.22",
+  "umm_manifest_version": "0.3.21",
+  "branch": "codex/test1-scoring-fixes",
+  "base_development_commit": "f51189fa93ffebc791489c6761e05ccbbdea0014",
+  "dependency_pr": "https://github.com/recovribox-svg/AIControll-FACC/pull/6",
+  "runtime_source_commit": "8fb02579a04ee202889478c091878997b222ba4c",
+  "archive": "AI-Control-FACC-test1-scoring-fixes-8fb0257-UMM-test.zip",
+  "zip_sha256": "2263ef1bbaa14d8cb6f69127b6a279dc50b0af230359df4b3562865debd83791",
+  "dll_sha256": "038af46606db672625661885eb01a4a0e43f4c8316e30b93e2c5c8906bd763a7",
+  "module_mvid": "c528dc54-5d32-4b01-8926-0eeb7f32f7e9",
+  "archive_contents": [
+    "CompanionAI_Pathfinder.dll",
+    "Info.json"
+  ],
+  "checks": {
+    "unit_tests": {
+      "passed": 142,
+      "failed": 0,
+      "skipped": 0
+    },
+    "release_build": {
+      "warnings": 0,
+      "errors": 0
+    },
+    "native_parser_and_binding": "PASS for supported Sleep, negative shapes/duration variants, threshold-only exclusions, ColorSpray metadata, cone/range delegates and all-or-none collection; no live actors",
+    "blueprint_reader": {
+      "status": "PARTIAL",
+      "loaded_exports": 4097,
+      "failed_exports": 1,
+      "ability_rows": 1220,
+      "reader_errors": 0,
+      "changed_detail_rows": 5,
+      "changed_classification_counts": 0
+    },
+    "in_game": "Pending for this build; previous narrower Test[1] reported smooth overall on the budget laptop"
+  },
+  "limitations": [
+    "Deep Slumber spreading delivery has shared control value withheld, so AI will not choose that pure-control spell in this test.",
+    "Unsupported shared-budget/custom cone shapes fail closed; no optimal cone-direction search.",
+    "Unknown/mixed energy prediction and aggregate packets can underprice protection.",
+    "Live performance, actor geometry/pathfinding, spell outcomes and third-party interactions require playtesting."
+  ],
+  "pull_request": "https://github.com/recovribox-svg/AIControll-FACC/pull/7"
+}

@@ -460,7 +460,10 @@ namespace CompanionAI_Pathfinder.Analysis
         public static SpellResistanceResult CalculateSpellResistance(
             UnitEntityData caster,
             UnitEntityData target,
-            AbilityData ability)
+            AbilityData ability) => CalculateSpellResistance(caster, target, ability, null);
+
+        internal static SpellResistanceResult CalculateSpellResistance(UnitEntityData caster, UnitEntityData target,
+            AbilityData ability, ICollection<Kingmaker.UnitLogic.Buffs.Blueprints.BlueprintBuff> excludedBypassSources)
         {
             var result = new SpellResistanceResult();
 
@@ -477,7 +480,7 @@ namespace CompanionAI_Pathfinder.Analysis
                 // ground effects) resists it whether or not the spell allows spell resistance; only then the roll.
                 // The immunity check sat behind the "no spell resistance" shortcut, so a spell without SR (Grease) never
                 // saw it.
-                if ((bool)caster.Descriptor.State.Features.PrimalMagicEssence || IgnoresSpellResistance(caster, ability))
+                if ((bool)caster.Descriptor.State.Features.PrimalMagicEssence || IgnoresSpellResistance(caster, ability, excludedBypassSources))
                 {
                     result.PenetrationChance = 1.0f;
                     return result;
@@ -762,7 +765,8 @@ namespace CompanionAI_Pathfinder.Analysis
         }
 
         /// <summary>★ v0.3.14: an IgnoreSpellResistanceForSpells component on the caster covers this ability (or its parent).</summary>
-        private static bool IgnoresSpellResistance(UnitEntityData caster, AbilityData ability)
+        private static bool IgnoresSpellResistance(UnitEntityData caster, AbilityData ability,
+            ICollection<Kingmaker.UnitLogic.Buffs.Blueprints.BlueprintBuff> excludedSources = null)
         {
             try
             {
@@ -770,6 +774,7 @@ namespace CompanionAI_Pathfinder.Analysis
                 foreach (var fact in caster.Facts.List)
                 {
                     if (fact?.Blueprint == null || !fact.Active) continue;
+                    if (fact.Blueprint is Kingmaker.UnitLogic.Buffs.Blueprints.BlueprintBuff buff && excludedSources?.Contains(buff) == true) continue;
                     foreach (var c in fact.Blueprint.ComponentsArray.OfType<Kingmaker.Designers.Mechanics.Facts.IgnoreSpellResistanceForSpells>())
                         if (c.AllSpells || c.AbilityList.Contains(bp) || (bp.Parent != null && c.AbilityList.Contains(bp.Parent)))
                             return true;

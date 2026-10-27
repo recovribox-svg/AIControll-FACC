@@ -1,0 +1,62 @@
+{
+  "test_name": "Test4 fixes: committed-approach spell safety, local forecast reuse and stage diagnostics",
+  "intended_development_version": "0.3.22",
+  "umm_manifest_version": "0.3.21",
+  "branch": "codex/test4-logic-fixes",
+  "base_development_commit": "f51189fa93ffebc791489c6761e05ccbbdea0014",
+  "dependency_prs": [
+    "https://github.com/recovribox-svg/AIControll-FACC/pull/9",
+    "https://github.com/recovribox-svg/AIControll-FACC/pull/8",
+    "https://github.com/recovribox-svg/AIControll-FACC/pull/7",
+    "https://github.com/recovribox-svg/AIControll-FACC/pull/6"
+  ],
+  "runtime_source_commit": "c6af5932caac1cd821c11dc77fa126bcb710cf90",
+  "archive": "AI-Control-FACC-test4-fixes-c6af593-UMM-test.zip",
+  "zip_sha256": "39d5c86ddd4908032841f4696421db2d02e5bb6d4d7f38b5763f2c1c897e5c1d",
+  "dll_sha256": "c364089a5a3ef53bf45f380c3203b8dd2b8da1024411a487fe10d00ff43a017f",
+  "module_mvid": "d98eb9f4-8bb4-448f-bfcb-4a701fb87368",
+  "startup_marker": "[Build] test4-logic-fixes module=d98eb9f4-8bb4-448f-bfcb-4a701fb87368 on v0.3.21",
+  "archive_contents": [
+    "CompanionAI_Pathfinder.dll",
+    "Info.json"
+  ],
+  "pull_request": "https://github.com/recovribox-svg/AIControll-FACC/pull/10",
+  "checks": {
+    "unit_tests": {
+      "passed": 164,
+      "failed": 0,
+      "skipped": 0
+    },
+    "release_build": {
+      "warnings": 0,
+      "errors": 0
+    },
+    "approach_geometry": "10 pure containment/boundary/invalid-data cases; no live positions/commands tested",
+    "compiled_memo_identity": "13 identity/hash/separation assertions; identity-only tokens, no gameplay reads",
+    "grease_metadata": "5 structural checks against supplied Grease; no live veto proof",
+    "native_activation": "20 actual substance metadata fixtures; compiled adoption guard, no command/actor execution",
+    "quick_thresholds": "Free infusion1, ordinary toggle2, Swift2 plain candidate fixtures",
+    "native_cost": "486 native cost/quiver vectors; source unchanged and binding/hybrid bound pass",
+    "native_layouts": "18 recognized of20; Unraveling and Chain Arrows withheld",
+    "cone_bindings": "Native cone/range and all-or-none query binding pass; no live geometry",
+    "blueprint_reader": {
+      "status": "PARTIAL",
+      "loaded_exports": 4097,
+      "failed_exports": 1,
+      "ability_rows": 1220,
+      "reader_errors": 0,
+      "changed_detail_rows_vs_previous_test": 0
+    },
+    "movement_scope": "Author-approved spell-safety veto only; no movement score, target lock, cancellation or navigation policy change and no added pathfinding",
+    "in_game": "Pending for this new build. Prior Test4 logs confirm eight successful Burning activations and a real periodic tick in preceding build.",
+    "performance_scope": "Local repeated-read reuse plus stage diagnostics; no measured Unity/Mono gain or decision-quality cut claimed",
+    "resistance_scope": "Existing censored-observation correction retained; new bounded exception diagnostic; initial optimism unresolved"
+  },
+  "limitations": [
+    "Guard covers only proven whole-arrival containment for exact fixed native control cylinders on equal elevation; uncertain cases retain old appraisal.",
+    "No live veto, performance, ownership or third-party command/handler test of this new build.",
+    "Initial pre-observation Fire Blast resistance discrepancy remains unresolved; old gross-cost recovery approximation remains an unexercised limitation.",
+    "Unraveling/ChainArrows and inherited Deep Slumber spreading restriction remain; no new Gather/metakinesis/form optimizer.",
+    "Search limits exclude ordinary decision and active-effect work and cannot interrupt a native call."
+  ]
+}

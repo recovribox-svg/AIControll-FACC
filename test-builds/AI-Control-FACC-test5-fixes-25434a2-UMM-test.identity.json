@@ -1,0 +1,57 @@
+{
+  "test_name": "Test5 fixes: concentration refusal tracking and bounded Sleep/energy evidence",
+  "intended_development_version": "0.3.22",
+  "umm_manifest_version": "0.3.21",
+  "branch": "codex/test5-logic-fixes",
+  "base_development_commit": "f51189fa93ffebc791489c6761e05ccbbdea0014",
+  "dependency_prs": [
+    "https://github.com/recovribox-svg/AIControll-FACC/pull/10",
+    "https://github.com/recovribox-svg/AIControll-FACC/pull/9",
+    "https://github.com/recovribox-svg/AIControll-FACC/pull/8",
+    "https://github.com/recovribox-svg/AIControll-FACC/pull/7",
+    "https://github.com/recovribox-svg/AIControll-FACC/pull/6"
+  ],
+  "runtime_source_commit": "25434a2332a467992a3385e4b1722049c1e54fbb",
+  "archive": "AI-Control-FACC-test5-fixes-25434a2-UMM-test.zip",
+  "zip_sha256": "bf91fc8ad1dabdbe4645071a54b1581c4f8e6018ec24b89f2c654ee5482bf6fd",
+  "dll_sha256": "74734f45efed6f91930d3b2019395dec28a7d58749b481523734055de2576bee",
+  "module_mvid": "5bc34728-8614-4cd9-a9ef-046868de2d4f",
+  "startup_marker": "[Build] test5-logic-fixes module=5bc34728-8614-4cd9-a9ef-046868de2d4f on v0.3.21",
+  "archive_contents": [
+    "CompanionAI_Pathfinder.dll",
+    "Info.json"
+  ],
+  "pull_request": "https://github.com/recovribox-svg/AIControll-FACC/pull/11",
+  "checks": {
+    "unit_tests": {
+      "passed": 164,
+      "failed": 0,
+      "skipped": 0
+    },
+    "release_build": {
+      "warnings": 0,
+      "errors": 0
+    },
+    "concentration_observer": "Compiled native event binding/refusal guards and Evidence=true/WatchTarget=false writes pass; successful event CFG cannot reach writes; no actor/event lifecycle run",
+    "selective": "Compiled native guard chain and six detached native Grease off/on/off assertions pass; no actors, AutoMetamagic or TTT patches tested",
+    "diagnostics": "Compiled/source HD-Aim capture boundaries and independent energy-trace return/query review pass; bounded samples, no extra appraisal or defence query",
+    "retained_native_checks": "13 memo assertions,5 Grease gates,20 activation metadata cases,Free/Swift,18 recognized layouts,486 native cost/quiver vectors,Rare Metal,cone metadata/bindings,compiled activation and resistance guards pass",
+    "blueprint_reader": {
+      "status": "PARTIAL",
+      "loaded_exports": 4097,
+      "failed_exports": 1,
+      "ability_rows": 1220,
+      "reader_errors": 0,
+      "changed_detail_rows_vs_previous_test": 0
+    },
+    "in_game": "Pending for new build. Author reports preceding Test5 smoothness8/10 and definite improvement; five successful Burning activations and six Grease vetoes appear in those logs.",
+    "behavior_scope": "Concentration failure classification fixed; Sleep math, discovery, movement/cancellation, performance budgets and game speed unchanged"
+  },
+  "limitations": [
+    "Initial Fire Blast/Burning resistance optimism remains unresolved. The24-row/fight energy trace may fill before a later case.",
+    "Human-cluster superiority over the Quasit aim was not proved; HD-Aim samples12 already-scored centres and three existing eligible IDs, not every weighted contribution.",
+    "Live concentration settlement, third-party event ordering, actual cast parameters and diagnostic overhead require replay.",
+    "A separate unacted Aid Another/no-reach event remains an ordering lead; no broad interruption policy change.",
+    "Unraveling/ChainArrows,Deep Slumber spreading and old native-cost recovery limitations remain; no new Gather/metakinesis/form optimizer."
+  ]
+}

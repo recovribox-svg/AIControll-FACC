@@ -26,12 +26,19 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using Kingmaker.Blueprints;
+using Kingmaker.EntitySystem.Stats;
 using Kingmaker.EntitySystem.Entities;
+using Kingmaker.RuleSystem.Rules;
 using Kingmaker.UnitLogic.Abilities;
+using Kingmaker.UnitLogic.Abilities.Blueprints;
+using Kingmaker.UnitLogic.Abilities.Components;
 using Kingmaker.UnitLogic.ActivatableAbilities;
+using Kingmaker.UnitLogic.Buffs.Blueprints;
 using Kingmaker.UnitLogic.Class.Kineticist;
 using Kingmaker.UnitLogic.Mechanics;
 using Kingmaker.UnitLogic.Mechanics.Actions;
+using Kingmaker.UnitLogic.Mechanics.Components;
 using UnityEngine;
 using CompanionAI_Pathfinder.Settings;
 
@@ -156,7 +163,9 @@ namespace CompanionAI_Pathfinder.Tactics
                     int burn = BurnOf(c.Ability);
                     costs[c.Ability] = cost = new KeyValuePair<int, float>(burn, BurnCost(ctx, burn));
                 }
+                c.NativeBurn = cost.Key;
                 if (cost.Key <= 0) continue;
+                c.BurnPrice = cost.Value;
                 c.Value -= cost.Value;
                 c.Label += $" [burn {cost.Key}: -{cost.Value:F1}]";
             }
@@ -167,7 +176,7 @@ namespace CompanionAI_Pathfinder.Tactics
             var unit = ctx.Unit;
             var part = unit.Get<UnitPartKineticist>();
             if (part == null) return;
-            var abilities = AbilityDiscovery.Gather(unit);
+            var abilities = ctx.DiscoveredAbilities ?? AbilityDiscovery.Gather(unit);
             var blasts = abilities.Where(a => IsOwnBlast(part, a)).ToList();
             if (blasts.Count == 0 || blasts.Any(a => a.IsAvailable)) return;
             var blocked = blasts.Where(BurnBlocked).ToList();
@@ -301,7 +310,9 @@ namespace CompanionAI_Pathfinder.Tactics
                 float value;
                 try
                 {
-                    value = EvaluateAbility(ctx, blast).Where(c => c.Value > 0f && Affordable(ctx, c))
+                    // ★ kinetic-infusion-value: this existing recovery estimate may switch an infusion OFF. Do not
+                    // credit an active infusion in that estimate; no hypothetical configuration is evaluated here.
+                    value = EvaluateAbility(ctx, blast, valueActiveInfusions: false).Where(c => c.Value > 0f && Affordable(ctx, c))
                                                        .Select(c => c.Value).DefaultIfEmpty(0f).Max();
                 }
                 catch { continue; }

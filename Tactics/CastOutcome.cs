@@ -37,6 +37,7 @@ namespace CompanionAI_Pathfinder.Tactics
         IAbilityExecutionProcessHandler,
         IUnitBuffHandler,
         IGlobalRulebookHandler<RuleCastSpell>,
+        IGlobalRulebookHandler<RuleCheckConcentration>,
         IGlobalRulebookHandler<RuleAttackRoll>,
         IGlobalRulebookHandler<RuleDealDamage>,
         IGlobalRulebookHandler<RuleHealDamage>,
@@ -505,6 +506,32 @@ namespace CompanionAI_Pathfinder.Tactics
 
         public void HandleBuffDidRemoved(Buff buff)
         {
+        }
+
+        public void OnEventAboutToTrigger(RuleCheckConcentration evt)
+        {
+        }
+
+        public void OnEventDidTrigger(RuleCheckConcentration evt)
+        {
+            try
+            {
+                // Test[5]: a logged concentration failure cancels the cast before RuleCastSpell can explain it.
+                // It is evidence of a native refusal, not a silent/target-specific failure of the ability.
+                if (evt == null || evt.Success) return;
+                var p = For(evt.Initiator);
+                var bp = evt.Spell?.Blueprint;
+                if (p == null || p.Caster != evt.Initiator || bp == null ||
+                    (bp != p.Blueprint && bp != p.TouchDelivery && evt.Spell.ConvertedFrom?.Blueprint != p.Blueprint)) return;
+                p.Evidence = true;
+                p.WatchTarget = false; // No effect reached the target; the native check explains why.
+                Main.Log($"[Cast] {p.Caster.CharacterName}: {p.Name} concentration failed " +
+                         $"({evt.ResultRoll} vs DC {evt.DC}); native failure, not counted as silent");
+            }
+            catch (Exception ex)
+            {
+                Main.Verbose($"[Cast] concentration observer: {ex.Message}");
+            }
         }
 
         public void OnEventAboutToTrigger(RuleCastSpell evt)

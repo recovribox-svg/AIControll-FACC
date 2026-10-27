@@ -2329,3 +2329,338 @@ Party abilities, test9 → test11: valued 2 586 → 2 658, guessed 387 → 352, 
     on cooldown, on purpose: in real time an option usable "from here" keeps a unit from walking off while it waits.
   - The new readers in the logs: Grease (mean 17 real time, 14 turn-based) as before the difficult-terrain change, the
     Arcane Reservoir DC / caster-level boosts at 0.5-4.4 for the spell cast next, Inspired Rage 1.6-7.7.
+
+## 65. Kineticist infusion value: a new, restricted slice on the restored v0.3.21 base
+
+**Task plan and proposal assessment.** Branch `codex/kineticist-infusion-value` starts at development
+`f51189fa93ffebc791489c6761e05ccbbdea0014`. Before edits, runtime and test sources matched stable tag
+`v0.3.21` (`3d280bd3e3800f1db671112f1be1460ba05d7de5`); Info.json remains 0.3.21. This is new work after
+the [withdrawal](V0_3_22_POSTMORTEM.md), with no cherry-picks or copied implementation from that attempt.
+The author's intended next version is v0.3.22; this task does not publish or bump a release.
+
+The supplied game Managed assemblies exist locally. Matching native method bodies can be inspected from those
+assemblies; the Windows decompile directory in CLAUDE.md does not exist here. Supplied blueprint exports include
+Bowling, Pushing, Burning and their referenced actions. No running Unity game or live Mono profiler is available.
+
+Four proposal details need refinement before implementation:
+
+- The stable AbilityProfile reader has no public action-list entry point. Its private walker cannot safely be
+  reused on arbitrary infusion buffs without changing a shared reader, fabricating a blueprint or using reflection.
+  **Support only one direct ContextActionCombatManeuver (Trip or BullRush) with no success actions.** Bowling and
+  Pushing fit; Burning's carrier/activation-save/damage chain and Entangling's nested conditions do not. No second
+  recursive walker, shared-reader edit, or name/GUID-specific exception is introduced.
+- A correct maneuver chance needs the existing target-dependent attack-bonus/CMB/CMD calculation rules. It cannot
+  be precomputed once per blueprint. Explicitly allow those calculations for supported active effects against an
+  actual scored recipient, reusing the blast's already-calculated hit/resistance probability. There are **zero
+  additional burn, gather, restriction, parameter, hit-chance or SR queries**. This is not advertised as arithmetic
+  only, nor as a frame-time guarantee. The added rule-handler cost still needs live testing.
+- PriceBurn runs after each ability has selected its best aim and after walking/casting risks were applied.
+  Adding raw control there would miss target competition and over-credit risky delivery. Instead add the narrowly
+  supported value in ScoreAbility's existing damage-recipient pass, separately from damage role weighting, before
+  target selection and ordinary risk discounts. PriceBurn and AddKineticCandidates's control flow remain unchanged.
+  Their existing BestBlast recovery estimate explicitly omits the new infusion contribution, since it may estimate
+  switching that infusion off. It retains its stable estimate rather than crediting an effect it would remove.
+- A source constant cannot equal the Git hash of the commit that contains that constant. The single startup
+  identity line uses the module MVID; the PR records the source revision and DLL SHA-256. The initial proposal
+  excluded packaging; the author subsequently requested a downloadable test ZIP. That packages the same verified
+  DLL without a version bump or changes to loading/toggling behavior.
+
+**Native shape and applicability.** The actual component is
+`Kingmaker.UnitLogic.Mechanics.Components.AddKineticistInfusionDamageTrigger`, with `Actions.Actions`.
+It handles damage using the **active infusion buff's** context. Its fields gate direct damage, weapon type,
+descriptor and allowed ability/parent; it deduplicates recipients at the same game time. The restricted reader
+requires direct damage and rejects weapon/descriptor filters and context-dependent maneuver variants. It requires
+an on/started SubstanceInfusion toggle, a genuinely active matching buff owned by this caster, a supported action
+and an allowed actual blast/parent. No context is manufactured and no action is executed while scoring.
+The native CalculateCost -> CalculateBurnCost -> AddKineticistBurnModifier path already charges the infusion;
+the new contribution is not gated on positive burn and adds no second burn penalty.
+
+**Supported delivery.** Ordinary direct single-target blast ability candidates only. Point targets, areas,
+chains, shadow spells, saves, weapon/blade delivery, units with the ArcherBlast mechanical flag, and blasts already containing a maneuver stay outside
+this slice. Unsupported layouts contribute zero extra value; their existing blast damage and burn remain.
+Optional ricochet components on otherwise ordinary projectiles are allowed, but no secondary recipient or bounce
+receives added value. Hybrid target effects (buffs/heals/removals) are excluded so the existing target-effect gate
+proves that a damage branch may run. Unknown guards retain the stable reader's existing uncertainty policy;
+they are not asserted to be definitely true. No additional guard/context evaluation is introduced.
+No hypothetical configuration is scored. Infusions which are off or not actually active contribute nothing.
+Native maneuver immunities and the existing ManeuverStrength/ManeuverOdds scale remain authoritative. Trip must
+also skip an already prone/getting-up recipient. Pushing retains the existing BullRush convention: only an enemy
+engaging the party in TB has valued movement loss; RT pushes are not assigned an invented benefit.
+
+**Gather Power trace: not offered.** Supplied GatherPower ability
+`6dcbffb8012ba2a4cb4ac374a33e2d9a` has Hidden=true; AbilityDiscovery excludes hidden abilities. Its grant by
+GatherPowerAbilitiesFeature does not bypass that filter. Gather mode activatables remain excluded by ModifierGroups.
+No Gather ability/value change is needed on this evidence. This does not claim every third-party mod preserves it.
+
+**Verification plan.** Keep shared readers, native math/cost sites, controllers, dispatch, toggle ownership and all
+104 stable tests intact. Test the new pure on-hit control arithmetic; build Release against real supplied references.
+Run ordinary ProfileAudit on identical baseline/current input, with no withdrawn kinetic checks: all verdict/detail
+rows must match. Review the added runtime lines for any hooks, state mutation or extra burn/gather calls. A chosen
+supported blast gets one [Kinetic] diagnostic with its infusion contribution, target and existing burn label.
+
+**Gameplay gate, both modes.** No active infusion should behave as stable v0.3.21; compare cold and warm turns and
+idle portrait selection with the same save/settings/mods. With Bowling/Pushing already active, compare eligible,
+immune, prone/getting-up and non-applicable targets, including a zero-burn blast after native reductions. Confirm
+the added control participates in target selection and pays normal movement/provoke/concentration risks. Check
+AI toggle management off/on and end-of-fight ownership/restoration: this slice adds no toggle writer. Check a
+non-kineticist and ordinary summons. Record the startup MVID and chosen [Kinetic] lines. Compilation and offline
+reader parity are not in-game acceptance, command proof or measured FPS gains. No later roadmap slice belongs here.
+
+**Completed checks (implementation `0a7ed97`).** All 110 pure tests passed (104 stable tests retained, six new
+on-hit control arithmetic cases). Full Release build against the supplied real references: zero warnings/errors.
+Protected shared readers, CombatMath, controllers/dispatch, toggle management, Info.json and tools are unchanged.
+PriceBurn, BurnOf, BurnBlocked, TotalBurn and AddKineticCandidates's bodies match the restored baseline;
+only BestBlast's call explicitly opts out of the added contribution. The diff adds no patch, fact substitute or
+native burn/gather/restriction/parameter/hit/SR call site. Main's only change is the startup identity line.
+
+The preserved current ProfileAudit cannot compile against the restored runtime: its ordinary audit and optional
+check sources still reference removed types/members. It was not modified or described as passing. An isolated copy
+of the actual **v0.3.21 tag's** ordinary ProfileAudit ran against both restored and new DLLs on identical input,
+without the withdrawn feature checks. The final reports are byte-for-byte identical: **1,220 ability rows, zero
+reader errors; 4,097 loaded blueprints and the same one failed AchaekekSacredWeaponFeature export** on both runs.
+Coverage is PARTIAL; the old runner's zero exit status does not make that missing export complete coverage.
+
+An additional local check called the production blueprint parser on the real loaded exports (no fake actor,
+fact, context or rule): Bowling/Trip and Pushing/BullRush were accepted, Burning and Entangling rejected, and the
+supported parse was reused. The actual readers' static delivery guards admit Earth/Air Blast and their Extended
+Range variants. Bowling's allowed family matches Earth and rejects Air; Pushing matches both; both reject Fire.
+Thus the conservative guards do not silently exclude those shipped ordinary blast shapes. No diagnostic tool,
+game DLL, rewritten dependency or blueprint export is committed or packaged.
+
+Tested DLL SHA-256: `cf0fb2a3746e1f27d782afd8d3b2bb0269d614d80ca58b677b8d48f93d202a66`.
+Startup module MVID: `4abd89c4-7b64-4e6f-8ae5-5d96f61ed556`.
+The author subsequently requested a UMM test archive: see [download and build identity](../test-builds/README.md).
+This packages the same checked DLL. No stable release is published; packaging/documentation changes no runtime source.
+
+**Still unverified:** initialized actors' active-buff/context ownership, actual CMB/CMD and third-party handlers,
+command outcomes, idle selection/UI and combat frame times in Unity/Mono. The inherited ManeuverOdds reader still
+has its existing 0.5 exception fallback; this task neither changes it nor claims exact parity when that path fails.
+Unknown damage guards retain the stable reader's policy. The old recovery estimate remains conservative and
+omits infusion value even for a quiver plan that might retain it. Duplicate same-type infusion effects receive at
+most one contribution. Secondary ricochets and all unsupported action graphs remain unpriced. Keep the PR draft
+for review and the targeted gameplay gate; lower timing medians or passing arithmetic tests are insufficient.
+
+**Test[1] review:** [budget-laptop evidence, decision findings and diagnostic correction](INFUSION_VALUE_TEST1_REVIEW.md).
+The author reports smooth overall play. The recorded state did not exercise Bowling/Pushing; supported-infusion
+gameplay acceptance remains pending. The follow-up changes Progressive mode reporting only. Sleep's shared-HD
+budget, path/boost feasibility, energy-specific protection and cone-recipient coverage remain separate open issues.
+
+## 66. Test[1] follow-up: shared HD, feasible boosts, typed protection and cones
+
+The author requested fixes for those four findings on a separate task branch.
+`codex/test1-scoring-fixes` includes pending PR #6 as an explicit dependency;
+main and shared development remain unchanged. This is an unmerged test, intended
+for v0.3.22, retaining UMM version 0.3.21 until the coordinated release process.
+
+Sleep now forecasts a consuming HD pool in native recipient order, with earlier
+SR failures preserving budget and either save outcome consuming it. Static
+shared-HD thresholds without a matching SubHD mutation keep their old scoring.
+Deep Slumber's native spreading delivery is deliberately unsupported: its control
+credit is withheld, with an `[HD]` explanation, rather than assuming Sleep order.
+
+Selected main approaches are prepared before marks/boosts, using the dispatcher's
+native path/reach/LoS rules, a three-check decision limit, and already-scored
+fallbacks. Silent Progressive views allow escalation after a blocked lower tier.
+UI previews do not pathfind. Inspection-mode attacks avoid animation setup;
+temporary paths are released and actual commands still pass through `Run`.
+
+Energy protection is priced against matching typed threat, with native pools and
+current protection kept separate. Existing spell estimates and completed damage
+events supply conservative packet sizes, avoiding weapon-hit frequency for spells.
+Cone casts use native recipients at their actual aim/planned origin, including
+allies, with the same set used for friendly-fire and Progressive/boss decisions.
+
+The detailed [plan, review corrections, checks, limits and gameplay checklist](TEST1_SCORING_FIXES.md)
+and [test download/identity](../test-builds/README.md) are the handover. Offline
+checks do not establish live stability or laptop performance parity.
+## 67. Intended v0.3.22: bounded substance-infusion selection and Test[2] fixes
+
+Test[2] remained smooth overall on the author's budget laptop, but exposed the
+previous slice's deliberate limitation: inactive infusions were never selected.
+[Log evidence and corrections](INFUSION_SELECTION_TEST2_REVIEW.md) and
+[complete implementation/support matrix](INFUSION_SELECTION_PLAN.md) distinguish
+source inspection, offline checks and pending gameplay verification.
+
+- Supported learned substance options now compete with retaining/off configurations
+  and the best ordinary action. Their actual effect graphs, native buff DC/ranks,
+  applicability, immunity, existing effects and marginal native burn cost determine
+  value on the shared `ValueModel` scale. There is no fixed infusion priority.
+- Eighteen of twenty supplied buff layouts are recognized: maneuvers, periodic
+  damage, save-based debuffs, concealment removal, matching magnetic penalties,
+  native SR/immunity/material/physical-DR effects, ranked Cluster Arrows and the
+  conditional Vampiric healer discount. Unraveling and Chain Arrows are explicitly
+  withheld from automatic selection because safe read-only valuation of their
+  dispel/secondary-delivery paths was not established. Weapon/blade/shadow delivery
+  and a new Gather/metakinesis/form optimization are outside this selector.
+- Search: four reachable blast aims, eight complete recipients per aim, 24
+  comparisons, 8 ms cooperative deadline. A native call can overrun it. This limit
+  excludes ordinary decision work and appraisal of already-active effects; it is
+  not a whole-decision latency guarantee. Ordinary blast damage/burn remains when
+  an unsupported effect cannot be valued. Form variants retain ordinary scoring.
+- No gameplay action executes during appraisal, no fake facts are installed and
+  no new global/Harmony/UI hook exists. Native cost copies are reconstructed only
+  through native constructor/reducer APIs for exact constant marginal modifiers.
+  Unknown layouts fail closed. Actual post-switch cost/availability owns execution.
+- **Activation ordering corrected in §68 after Test[3]:** the dispatcher requests
+  native `IsOn` once and adopts the native-created command without reissuing it.
+  The next decision waits for commands and requires the real owned `AppliedBuff`.
+  Global management, whole-group player ownership, capacity and per-round locks
+  apply. Duplicate entries do not multiply effects. Restoration stops alternatives
+  before restoring original states and preserves player-owned groups.
+- Test[2] fixes preserve a reached touch cast after its separate approach is
+  cancelled, omit unrelated unavailable heals/buffs during cooldown while keeping
+  future offensive/held-touch/spell-forbidding dependencies, and remove the advance
+  value floor implicated in Lann's low-HP withdraw/return loop. No combat clock or
+  animation setting is changed.
+
+Verification: 154 pure tests pass; Release compiles against supplied real game
+references without warnings/errors. A partial native-data run (4,097 loaded, one
+known unrelated failed export) recognizes the eighteen layouts, verifies 486 native
+cost/quiver vectors and bindings, and produces 1,220 ordinary reader rows with zero
+reader errors, identical to the pending PR #7 baseline. These checks do not run
+live actor activation, third-party handlers, commands or Unity/Mono frame profiling.
+The draft task branch includes PR #7/#6 dependencies; main/development are unchanged.
+
+## 68. Test[3]: native infusion commands, resistance evidence and RT walk diagnostics
+
+[Full evidence, corrections and verification](TEST3_REVIEW.md). The separate native
+CombatLog establishes actual misses, damage/resistance, opportunity hits, healing
+and encounter numbering that the AI logs alone cannot supply.
+
+Five TB Burning activations were selected and immediately interrupted. The §67
+pre-queue assumption was wrong: native OnDidTurnOn's matching predicate is
+Judgment-only. The dispatcher now requests IsOn once, adopts/tracks the native-created
+current/queued command and never constructs/reissues a second activation. Native
+DidAct, actual owned buff, management/ownership/group locks and restoration remain
+in control. Validated resource-free switches use the existing costless Free bar;
+ordinary Toggle/Swift thresholds are unchanged and future burn remains priced.
+
+A fully resisted six-point hit recorded six absorbed against Fire Resistance 10.
+That observation previously bypassed known native defence on later estimates.
+For fully absorbed packets with positive reduction, AfterTargetReduction keeps
+observed factors/custom reduction and applies the native remaining-damage bound,
+without subtracting both reductions. Successful-hit observations retain their old
+authority, including evidence of caster-specific bypass. The initial
+pre-observation discrepancy is still unverified; no complete damage-model parity
+is claimed.
+
+Encounter #10's Seelah issue includes a completed 13.5m attack, ally-heal detours,
+opportunity damage and mod-requested emergency interruption. Continuous target-score
+thrashing is not established. The author approved diagnostics only: chosen RT walk
+score versus in-reach alternative, existing movement risks and the existing native
+path query's result/length. No added pathfinding, target lock, movement score or
+cancellation-policy change. Replay before proposing a behavioral remedy.
+
+154 pure tests pass; Release has zero warnings/errors. Actual native metadata
+checks expose the Judgment-only predicate for all 20 supplied substances; compiled
+route checks guard against manual construction/reissue, and candidate fixtures
+check Free/Swift thresholds. Existing cost/layout/cone checks and 1,220 ordinary
+reader rows pass (partial exports: 4,097 loaded, one failed). These are not live
+actor command, restoration, first-hit damage or Unity/Mono performance tests.
+
+## 69. Test[4]: proven Burning execution, committed-approach spell safety and timings
+
+[Full evidence, changes, limitations and replay checklist](TEST4_REVIEW.md).
+All eight logged native infusion activations succeed across TB/RT. CombatLog
+confirms Burning DC19 and a recurring six-fire tick. Accepted burn, stop recovery
+and original-off restoration are exercised. Only Burning is gameplay-demonstrated;
+learned Bowling/Pushing are not thereby applicable to Fire Blast. Preserve valid
+Sleep centres benefiting other recipients and partial cures that accumulate
+toward revival; their labels alone do not establish broken decisions.
+
+RT7 exposes a coordination gap: Seelah starts an elemental approach before allied
+Grease lands, then fails the native Grease save. The author approved a narrow
+spell-safety guard, keeping movement/target commitment/navigation/cancellation
+policy unchanged. With AvoidFriendlyFire enabled, new harmful lasting control
+circles are withheld when a registered unfinished ordinary attack approach proves
+the ally's entire native arrival/body disk lies strictly inside. The guard reuses
+existing Selective, side, condition and immunity rules, inspects bounded current
+command slots and performs no pathfinding or gameplay actions. It initially
+supports a single direct fixed native cylindrical spawn and equal destination/
+centre elevation. Unknown shapes, slopes, mere overlap, boundaries and many
+large-target/ranged approaches retain existing appraisal. No specific live veto
+outcome is proven by the supplied positions-free logs or pure geometry tests.
+
+Spell-boost descriptions are reused only within one coupling pass, by actual
+ability identity. Identical periodic reduction reads are reused only within one
+infusion-effect appraisal, keyed by action/context/recipient identities and
+freshly calculated amount. Native contexts/ranks, dice, saves, survival, durations
+and existing limits remain; no score weights or decision scope are cut. These
+small deduplications do not establish a large performance improvement.
+
+Both Test[3] and Test[4] ran on the same budget laptop; the author reports broader
+Test[4] slowdown, much milder than the withdrawn preview. Cold profile work, warm
+control/boost appraisal and collection-overlap pauses are visible, without enough
+stage attribution to name a sole cause. Existing >250ms logs now show scalar stage
+times and nested active-infusion time; expensive TB stand-up previews are logged
+separately from ordinary decision summaries. No per-frame trace or animation-speed
+change is added.
+
+The initial optimistic Fire Blast/resistance estimate remains unresolved. Native
+inspection rejects missing chunk initialization as its explanation. Failed native
+reduction reads now produce a bounded diagnostic while preserving the old fallback;
+the earlier censored-observation fix remains. No damage-math parity claim is made.
+
+164 pure tests pass and Release builds against supplied game references with zero
+warnings/errors. Compiled memo identity, Grease metadata, existing activation/cost/
+cone checks and all 1,220 ordinary reader rows pass; the partial export corpus
+retains one known unrelated failed file. Live guard effectiveness and Unity/Mono
+performance need replay.
+The isolated task includes PR #9/#8/#7/#6 dependencies; it does not update main or
+shared development and retains release metadata 0.3.21 for intended v0.3.22.
+
+## 70. Test[5]: concentration outcome correction and bounded control/energy evidence
+
+[Full review, evidence, limits and replay checklist](TEST5_REVIEW.md). The author
+reports 8/10 smoothness with definite improvement over Test[4]. Ordinary samples
+are mostly lower, but encounter/state/work differences prevent a controlled
+speedup claim. Seven warm long decisions overlap collection in weapons/modes or
+ordinary ability work; active infusion/search does not dominate. Preserve current
+local reuse and decision scope; no further performance pruning is introduced.
+
+A confirmed outcome-tracking defect treated visible native concentration failures
+as silent/no-reach failures: Seelah's failed Cure and Orvath's failed Sleep each
+received a strike despite native CombatLog explaining the failed roll. The
+existing CastOutcome subscriber now observes failed RuleCheckConcentration for
+the matching pending caster/root/touch/ConvertedFrom spell, records native refusal
+evidence and disables target-reach judgment without claiming an effect reached.
+Successful/unrelated checks and genuine silent-effect safety remain unchanged.
+No rule is triggered and no casting-risk, command, resource or movement policy
+changes. Live settlement/event ordering still requires replay.
+
+The reported two Quasit Sleeps in TB7 are real; both saves pass. All ordinary
+centres are considered and shared-HD recipients are weighted by native eligibility,
+chance, threat/state and existing risks. Missing competing-centre values/positions
+prevent proving that a visible human cluster had greater legal expected value.
+Multi-target and useful immune-centred Sleep choices remain demonstrably present.
+No cluster bonus, weights, minimum-recipient rule or save-based blacklist is added.
+A selected-action `[HD-Aim]` diagnostic samples twelve already-appraised centres,
+existing reasons/risks and up to three existing HD-eligible IDs per centre. It
+adds no appraisal/query; capture stays off for previews/counterfactuals and cones.
+Its cap limits only diagnostics, never scoring, and its labels distinguish HD
+eligibility from positive benefit and pre-policy rows from the selected value.
+
+Five Burning activations succeed, native periodic damage is visible, and burn
+recovery/restoration remain exercised. Optimistic Fire Blast/resistance estimates
+persist without a native-query exception; actual criticals sometimes penetrate.
+No new damage formula or blanket blacklist is justified. A 24-row/fight ID-keyed
+`[Math] energy estimate` trace exposes existing raw/native/observed/final values
+and return routes without new defence queries or changed returns. Prior censored-
+observation and successful-hit bypass behavior remain; the root discrepancy is
+not claimed fixed. Samples can be exhausted before every later case is recorded.
+
+Six committed-approach Grease vetoes confirm the §69 gates are exercised, without
+proving six prevented knockdowns. Existing Selective protection goes through the
+possibly mod-patched native area check; genuinely protected allies bypass the
+new veto. No broader movement/commitment/navigation/cancellation change is made.
+The second-blast report was corrected by the author: its external grant failed
+and manual casting was unavailable too. No discovery change is warranted.
+
+164 existing pure tests pass; Release has zero warnings/errors. Retained native
+activation/cost/memo/cone checks and all 1,220 ordinary reader rows pass, with the
+same partial export coverage. Compiled observer/Selective/HD diagnostic checks
+pass, as do detached native Grease Selective off/on/off assertions; the energy
+trace has an independent source review. These do not run live actors, AutoMetamagic
+or Tabletop Tweaks handlers. No new build has been run in game. The isolated branch
+includes PR #10/#9/#8/#7/#6 and leaves main/development unchanged, retaining release
+metadata 0.3.21 for intended v0.3.22.

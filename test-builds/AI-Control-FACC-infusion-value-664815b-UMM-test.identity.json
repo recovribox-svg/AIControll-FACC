@@ -1,0 +1,30 @@
+{
+  "test_name": "Infusion value — optional test1 diagnostic correction",
+  "intended_development_version": "0.3.22",
+  "umm_manifest_version": "0.3.21",
+  "branch": "codex/kineticist-infusion-value",
+  "pull_request": "https://github.com/recovribox-svg/AIControll-FACC/pull/6",
+  "runtime_source_commit": "664815b8b2562eedbd7d85525a50ad498811d495",
+  "original_infusion_implementation": "0a7ed97e60bda45c5a9452734fc3a278b879b6b2",
+  "archive": "AI-Control-FACC-infusion-value-664815b-UMM-test.zip",
+  "zip_sha256": "ad083cccc205398ca0e9c7da7c0dfec2e98a1310459f1d20f34a8792bdd42966",
+  "dll_sha256": "fd863abc853c6834e73bab62bfa29a40a2ee7c9a471e5d5d76fe12decb210ba3",
+  "module_mvid": "37bddec0-bec7-42ef-9418-c1f27a8903b1",
+  "archive_contents": [
+    "CompanionAI_Pathfinder.dll",
+    "Info.json"
+  ],
+  "checks": {
+    "unit_tests": {
+      "passed": 110,
+      "failed": 0,
+      "skipped": 0
+    },
+    "release_build": {
+      "warnings": 0,
+      "errors": 0
+    },
+    "in_game": "diagnostic update pending; prior test1 reported smooth overall, supported active infusion unexercised"
+  },
+  "change": "Actual RT/TB Progressive labels and complete-list diagnostic flag only; no score/command/performance algorithm change."
+}

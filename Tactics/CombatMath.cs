@@ -12,6 +12,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using Kingmaker.Blueprints;
 using Kingmaker.ElementsSystem;
 using Kingmaker.EntitySystem.Entities;
 using Kingmaker.EntitySystem.Stats;
@@ -250,6 +251,13 @@ namespace CompanionAI_Pathfinder.Tactics
         {
             Routines.Clear();
             HitsOnTarget.Clear();   // ★ v0.3.20 (test3): read with the routines, forgotten with them
+        }
+
+        internal static void InfusionStateChanged()
+        {
+            ClearAttackCache();
+            FrameValues.Clear();
+            AbilityProfile.ClearConditionCache();
         }
 
         private static AttackRoutine ReadRoutine(UnitEntityData unit, UnitEntityData target, bool full)
@@ -572,20 +580,25 @@ namespace CompanionAI_Pathfinder.Tactics
         }
 
         /// <summary>★ v0.3.20: the estimate before the learned share of a blast (DamageObserver checks against it).</summary>
-        internal static float EstimateAbilityDamageRaw(AbilityData ability, AbilityProfile profile, UnitEntityData target, ItemEntityWeapon bladeWeapon)
+        internal static float EstimateAbilityDamageRaw(AbilityData ability, AbilityProfile profile, UnitEntityData target, ItemEntityWeapon bladeWeapon,
+            Func<GameAction, EffectApplies> branch = null, bool? ignorePhysicalReduction = null)
         {
             if (profile.Damage.Count == 0) return 0f;
-            if (target != null && profile.Damage.All(d => profile.AppliesTo(d, ability, target) == EffectApplies.No)) return 0f;
+            EffectApplies Applies(GameAction action) => branch?.Invoke(action) ?? profile.AppliesTo(action, ability, target);
+            if (target != null && profile.Damage.All(d => Applies(d) == EffectApplies.No)) return 0f;
             var ctx = CreateContext(ability, target != null ? new TargetWrapper(target) : null);
             int cl = Math.Max(1, ability.CalculateParams()?.CasterLevel ?? 1);
             DamageMetamagic(ability, out bool maximize, out bool empower);
             var parts = new List<KeyValuePair<GameAction, float>>();
+            bool physicalBypass = ignorePhysicalReduction ??
+                (profile.Damage.OfType<ContextActionDealDamage>().Any(d => d.DamageType?.Type == Kingmaker.RuleSystem.Rules.Damage.DamageType.Physical) &&
+                 IgnoresPhysicalReduction(ability.Caster?.Unit, target));
             // ★ v0.3.20 (playtest 1): a swarm takes half again from area damage (SwarmAoeVulnerability).
             float swarmArea = SwarmAreaFactor(ability, target, false);
             foreach (var action in profile.Damage)
             {
                 // ★ v0.3.1: only the branch that runs for this target (Inflict Wounds heals undead, Cure harms them).
-                if (target != null && profile.AppliesTo(action, ability, target) == EffectApplies.No) continue;
+                if (target != null && Applies(action) == EffectApplies.No) continue;
                 switch (action)
                 {
                     case ContextActionDealDamage dmg:
@@ -601,7 +614,9 @@ namespace CompanionAI_Pathfinder.Tactics
                         avg += KineticDamageBonus(ability, dmg, profile.NeedsAttackRoll || bladeWeapon != null, bladeWeapon);
                         if (dmg.Half) avg *= 0.5f;
                         avg *= ArcherBlastDecline(ability, dmg, target);
-                        parts.Add(new KeyValuePair<GameAction, float>(dmg, AfterTargetReduction(target, dmg, avg) * swarmArea));
+                        parts.Add(new KeyValuePair<GameAction, float>(dmg,
+                            (physicalBypass && dmg.DamageType?.Type == Kingmaker.RuleSystem.Rules.Damage.DamageType.Physical
+                                ? avg : AfterTargetReduction(target, dmg, avg, ability)) * swarmArea));
                         break;
                     // A kill is valued apart (KillApplies): it lands on a failed save, not half on a passed one.
                     case ContextActionKill _:
@@ -612,6 +627,31 @@ namespace CompanionAI_Pathfinder.Tactics
                 }
             }
             return SumAlternatives(profile, parts);
+        }
+
+        internal static bool IgnoresPhysicalReduction(UnitEntityData caster, UnitEntityData target,
+            ICollection<Kingmaker.UnitLogic.Buffs.Blueprints.BlueprintBuff> excludedSources = null)
+        {
+            if (caster == null || target == null) return false;
+            if (excludedSources == null)
+                return FrameCached($"physical-bypass|{caster.UniqueId}|{target.UniqueId}", () => ReadPhysicalBypass(caster, target, null) ? 1 : 0) != 0;
+            return ReadPhysicalBypass(caster, target, excludedSources);
+        }
+
+        private static bool ReadPhysicalBypass(UnitEntityData caster, UnitEntityData target,
+            ICollection<Kingmaker.UnitLogic.Buffs.Blueprints.BlueprintBuff> excludedSources)
+        {
+            foreach (var fact in caster.Facts.List)
+            {
+                if (fact?.Blueprint == null || !fact.Active || fact is Kingmaker.UnitLogic.Buffs.Buff actualBuff && !actualBuff.IsTurnedOn ||
+                    fact.Blueprint is Kingmaker.UnitLogic.Buffs.Blueprints.BlueprintBuff buff &&
+                    excludedSources?.Contains(buff) == true) continue;
+                foreach (var component in fact.Blueprint.GetComponents<Kingmaker.Designers.Mechanics.Facts.IgnoreDamageReductionOnTarget>())
+                    if (component.GetType() == typeof(Kingmaker.Designers.Mechanics.Facts.IgnoreDamageReductionOnTarget) &&
+                        (!component.CheckTargetAlignment || Kingmaker.Enums.AlignmentExtension.HasComponent(
+                        target.Descriptor.Alignment.ValueRaw, component.Alignment))) return true;
+            }
+            return false;
         }
 
         /// <summary>
@@ -798,32 +838,107 @@ namespace CompanionAI_Pathfinder.Tactics
         /// them: Orvath's Fire Blast was valued at 25 against a Dretch (demons resist fire 10) for five rounds running.
         /// Weapon attacks already use the DR helper (HitChanceCalculator.CalculateDamageReduction).
         /// </summary>
-        private static float AfterTargetReduction(UnitEntityData target, ContextActionDealDamage dmg, float value)
+        internal static float AfterTargetReduction(UnitEntityData target, ContextActionDealDamage dmg, float value,
+            AbilityData sourceAbility = null, bool infusion = false)
         {
             if (target == null || value <= 0f || dmg?.DamageType == null) return value;
+            var seen = DamageObserver.Lookup(target, DamageObserver.KeyOf(dmg.DamageType));
+            float observed = seen?.Apply(value) ?? value;
+            // A successful observed hit can prove a caster-specific bypass of visible resistance/immunity.
+            // Preserve that evidence; only a fully absorbed packet leaves its reduction as a lower bound.
+            if (seen != null && !seen.ReductionCapped)
+                return TraceEnergyRead(target, dmg, sourceAbility, infusion, value, observed, seen, "observed", null);
+            if (seen?.Immune == true)
+                return TraceEnergyRead(target, dmg, sourceAbility, infusion, value, 0f, seen, "observed immunity", null);
             try
             {
                 var type = dmg.DamageType;
                 // ★ v0.3.14 (test5): what this target actually took from this damage type earlier in the fight (immune,
                 // resistance, vulnerability), whatever the reason - a component the model does not know, another mod.
-                var seen = DamageObserver.Lookup(target, DamageObserver.KeyOf(type));
-                if (seen != null) return seen.Apply(value);
+                // Test[3]: observed Reduction is capped by the rolled packet (6 absorbed by Fire Resistance 10).
+                // It cannot replace a stronger known native defence. Preserve its multiplier/custom reduction,
+                // then also bound by native current resistance; do not subtract the two reductions in sequence.
                 bool energy = type.Type == Kingmaker.RuleSystem.Rules.Damage.DamageType.Energy;
                 // ★ test5: the game has two energy-immunity components; only AddEnergyImmunity registers with
                 // UnitPartDamageReduction. AddEnergyDamageImmunity is read the way the game's own character sheet reads it
                 // (UnitDescriptionHelper.VisitComponents). Orvath cast Fire Blast on Quasits 31 times.
-                if (energy && HasEnergyDamageImmunity(target, type.Energy)) return 0f;
+                if (energy && HasEnergyDamageImmunity(target, type.Energy))
+                    return TraceEnergyRead(target, dmg, sourceAbility, infusion, value, 0f, seen, "native component immunity", 0f);
                 var part = target.Get<Kingmaker.UnitLogic.Parts.UnitPartDamageReduction>();
-                if (part == null) return value;
-                if (energy && part.IsImmune(type.Energy)) return 0f;
+                if (part == null)
+                    return TraceEnergyRead(target, dmg, sourceAbility, infusion, value, observed, seen, "no reduction part", null);
+                if (energy && part.IsImmune(type.Energy))
+                    return TraceEnergyRead(target, dmg, sourceAbility, infusion, value, 0f, seen, "native part immunity", 0f);
                 _ = part.AllSources.Count();                       // initialises the part's resistance chunks
                 var damage = type.CreateDamage(new DiceFormula(0, DiceType.Zero), 0);
-                return part.EstimateDamage(value, damage, null);
+                float native = part.EstimateDamage(value * (seen?.Factor ?? 1f), damage, null);
+                return TraceEnergyRead(target, dmg, sourceAbility, infusion, value, Math.Min(observed, native), seen, "native estimate", native);
             }
-            catch
+            catch (Exception ex)
             {
-                return value;
+                AbilityDiscovery.ReportOnce($"reduction-read|{target.UniqueId}|{dmg.DamageType.Type}|{ex.GetType().Name}",
+                    $"[Math] {target.CharacterName}: native damage-reduction estimate unavailable ({ex.GetType().Name}: {ex.Message}); " +
+                    "using existing observed/raw fallback");
+                return TraceEnergyRead(target, dmg, sourceAbility, infusion, value, observed, seen, "native exception", null);
             }
+        }
+
+        // Test[5]: bounded evidence for optimistic energy forecasts. Keys retain IDs only, not actors/contexts/rules.
+        // No new defence query is made; log the inputs and whichever return route the existing calculation used.
+        private readonly struct EnergyReadKey : IEquatable<EnergyReadKey>
+        {
+            private readonly string caster, target, route;
+            private readonly BlueprintGuid ability;
+            private readonly Kingmaker.Enums.Damage.DamageEnergyType energy;
+            private readonly bool infusion;
+
+            internal EnergyReadKey(string caster, string target, BlueprintGuid ability,
+                Kingmaker.Enums.Damage.DamageEnergyType energy, string route, bool infusion)
+            {
+                this.caster = caster; this.target = target; this.ability = ability;
+                this.energy = energy; this.route = route; this.infusion = infusion;
+            }
+
+            public bool Equals(EnergyReadKey other) => caster == other.caster && target == other.target &&
+                ability.Equals(other.ability) && energy == other.energy && route == other.route && infusion == other.infusion;
+            public override bool Equals(object other) => other is EnergyReadKey key && Equals(key);
+            public override int GetHashCode()
+            {
+                unchecked
+                {
+                    int hash = caster?.GetHashCode() ?? 0;
+                    hash = hash * 397 ^ (target?.GetHashCode() ?? 0);
+                    hash = hash * 397 ^ ability.GetHashCode();
+                    hash = hash * 397 ^ (int)energy;
+                    hash = hash * 397 ^ route.GetHashCode();
+                    return hash * 397 ^ infusion.GetHashCode();
+                }
+            }
+        }
+
+        private const int MaxEnergyReadTraces = 24;
+        private static readonly HashSet<EnergyReadKey> EnergyReadsTraced = new HashSet<EnergyReadKey>();
+        internal static void ClearEnergyReadTrace() => EnergyReadsTraced.Clear();
+
+        private static float TraceEnergyRead(UnitEntityData target, ContextActionDealDamage dmg, AbilityData ability,
+            bool infusion, float raw, float remaining, DamageObserver.Seen seen, string route, float? native)
+        {
+            if (ability?.Blueprint == null || dmg.DamageType.Type != Kingmaker.RuleSystem.Rules.Damage.DamageType.Energy ||
+                EnergyReadsTraced.Count >= MaxEnergyReadTraces) return remaining;
+            try
+            {
+                var caster = ability.Caster?.Unit;
+                var key = new EnergyReadKey(caster?.UniqueId, target.UniqueId, ability.Blueprint.AssetGuid,
+                    dmg.DamageType.Energy, route, infusion);
+                if (EnergyReadsTraced.Add(key))
+                    Main.Log($"[Math] energy estimate {caster?.CharacterName}'s {ability.Name} " +
+                        $"{(infusion ? "infusion" : "direct")} -> {target.CharacterName}: {dmg.DamageType.Energy}, raw={raw:F2}, " +
+                        $"route={route}, native remaining={(native.HasValue ? native.Value.ToString("F2") : "not queried")}, " +
+                        $"observed={(seen == null ? "none" : $"factor {seen.Factor:F2}, flat {seen.Flat}, immune {seen.Immune}, capped {seen.ReductionCapped}")}, " +
+                        $"remaining={remaining:F2} (first per route; at most {MaxEnergyReadTraces} rows/fight)");
+            }
+            catch { } // Diagnostic identity/formatting must never change the estimate or its fallback.
+            return remaining;
         }
 
         /// <summary>
@@ -986,8 +1101,12 @@ namespace CompanionAI_Pathfinder.Tactics
         /// One formula for damage/control scoring and Progressive's viability test, in both combat modes.
         /// </summary>
         public static float EffectChance(UnitEntityData caster, UnitEntityData enemy, AbilityData ability, AbilityProfile profile, bool damage)
+            => EffectChance(caster, enemy, ability, profile, damage, null);
+
+        internal static float EffectChance(UnitEntityData caster, UnitEntityData enemy, AbilityData ability,
+            AbilityProfile profile, bool damage, float? resistancePass)
         {
-            float p = SpellResistancePass(caster, enemy, ability) * ShadowShare(ability, enemy);
+            float p = (resistancePass ?? SpellResistancePass(caster, enemy, ability)) * ShadowShare(ability, enemy);
             if (profile.NeedsAttackRoll) p *= SpellAttackHitChance(caster, enemy, ability);
             if (profile.Save != SavingThrowType.Unknown)
             {
@@ -1320,6 +1439,19 @@ namespace CompanionAI_Pathfinder.Tactics
         public static float SaveFailChance(AbilityData ability, AbilityProfile profile, UnitEntityData target) =>
             SaveFailChance(ability, profile.Save, target);
 
+        /// <summary>Triggered effects use their own native buff parameters, not the blast's spell DC/metamagic.</summary>
+        internal static float SaveFailChance(MechanicsContext source, SavingThrowType save, UnitEntityData target, int? inheritedDC = null)
+        {
+            if (save == SavingThrowType.Unknown) return 1f;
+            if (source?.Params == null || target == null) return 0f;
+            int bonus = save == SavingThrowType.Fortitude ? target.Stats.SaveFortitude.ModifiedValue :
+                save == SavingThrowType.Reflex ? target.Stats.SaveReflex.ModifiedValue : target.Stats.SaveWill.ModifiedValue;
+            return SaveRollFailChance(inheritedDC ?? source.Params.DC, bonus);
+        }
+
+        private static float SaveRollFailChance(int dc, int bonus) =>
+            Mathf.Clamp((dc - bonus - 1) / 20f, 0.05f, 0.95f);
+
         /// <summary>★ v0.3.21: the same for a save the ability's own profile does not carry (an aura's: Archon's Aura).</summary>
         public static float SaveFailChance(AbilityData ability, SavingThrowType save, UnitEntityData target)
         {
@@ -1343,7 +1475,7 @@ namespace CompanionAI_Pathfinder.Tactics
                     bonus += seen.Delta;
                 }
                 // Fails when d20 + bonus < DC.
-                float fail = Mathf.Clamp((dc - bonus - 1) / 20f, 0.05f, 0.95f);
+                float fail = SaveRollFailChance(dc, bonus);
                 // ★ v0.3.18 (AA-4): Persistent - a passed save is rolled again (AbilityEffectRunAction,
                 // ContextActionSavingThrow): the target resists only by passing both.
                 try

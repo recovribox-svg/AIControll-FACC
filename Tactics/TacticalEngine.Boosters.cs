@@ -11,6 +11,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Runtime.CompilerServices;
 using Kingmaker.Blueprints.Classes.Spells;
 using Kingmaker.Designers.Mechanics.Facts;
 using Kingmaker.EntitySystem.Entities;
@@ -128,20 +129,41 @@ namespace CompanionAI_Pathfinder.Tactics
         private static int SimpleValue(Kingmaker.UnitLogic.Mechanics.ContextValue value) =>
             value == null ? 0 : value.IsValueSimple ? value.Value : 1;
 
+        private sealed class BoostAbilityIdentity : IEqualityComparer<AbilityData>
+        {
+            internal static readonly BoostAbilityIdentity Instance = new BoostAbilityIdentity();
+            public bool Equals(AbilityData left, AbilityData right) => ReferenceEquals(left, right);
+            public int GetHashCode(AbilityData ability) => RuntimeHelpers.GetHashCode(ability);
+        }
+
         /// <summary>
         /// Next-spell boosts keep only what they add to the best main action, when that is a spell they apply to; dropped
         /// otherwise. Free actions, so this is the whole decision about them.
         /// </summary>
         private static List<Candidate> CoupleSpellBoosts(TacticalContext ctx, List<Candidate> usable)
         {
-            SpellBoost BoostOf(Candidate c) =>
-                c.Kind == CandidateKind.Ability && c.Ability != null ? SpellBoostOf(AbilityProfile.Get(c.Ability), c.Ability, ctx.Unit) : null;
+            // One read-only coupling pass can ask about the same actual ability at several aims/stages.
+            // Keep descriptions (including null) local; do not invoke native AbilityData equality or retain contexts.
+            Dictionary<AbilityData, SpellBoost> boosts = null;
+            SpellBoost BoostOf(Candidate c)
+            {
+                if (c.Kind != CandidateKind.Ability || c.Ability == null) return null;
+                var profile = AbilityProfile.Get(c.Ability);
+                // Preserve the original structural fast exit without adding a dictionary entry for every ordinary
+                // spell/aim. Only possible boost shapes allocate this small call-local memo.
+                if (profile == null || !profile.BuffsSpentByCast && profile.CasterBuffs.Count == 0) return null;
+                if (boosts == null) boosts = new Dictionary<AbilityData, SpellBoost>(BoostAbilityIdentity.Instance);
+                if (!boosts.TryGetValue(c.Ability, out var boost))
+                    boosts[c.Ability] = boost = SpellBoostOf(profile, c.Ability, ctx.Unit);
+                return boost;
+            }
             if (!usable.Any(c => BoostOf(c) != null)) return usable;
 
-            var main = usable.FirstOrDefault(c => c.Slot != ActionSlot.Free && c.Slot != ActionSlot.Swift && BoostOf(c) == null);
+            var main = FollowUpMain(usable, c => BoostOf(c) != null);
             // ★ v0.3.21 (gaps): what a quickened main spell leaves room for - the best other standard action.
             var second = main == null ? null
-                : usable.Where(c => c != main && c.Slot == ActionSlot.Standard && BoostOf(c) == null && c.Ability != main.Ability && c.Value > 0f)
+                : usable.Where(c => c != main && c.Slot == ActionSlot.Standard && BoostOf(c) == null && c.Ability != main.Ability &&
+                                     c.Value > 0f && !WalksBeforeActing(c))
                         .OrderByDescending(c => c.Value).FirstOrDefault();
             var result = new List<Candidate>(usable.Count);
             foreach (var c in usable)
@@ -176,8 +198,16 @@ namespace CompanionAI_Pathfinder.Tactics
         {
             note = NoSpellToBoost;
             if (main == null || main.Kind != CandidateKind.Ability || main.Ability == null || main.Ability.SourceItem != null ||
-                main.Ability.Blueprint.Type != AbilityType.Spell || main.Value <= 0f)
+                main.Ability.Blueprint.Type != AbilityType.Spell || main.Value < MinMainValue)
                 return 0f;
+            // A separate approach command is not the next cast. Preserve the booster until the next decision,
+            // after walking actually succeeds and the caster can start this spell. Ordinary walk-then-cast plans
+            // have instead passed the bounded dispatcher preparation in PreflightMainCandidates.
+            if (main.MoveFirst || TouchApproachFirst(main))
+            {
+                note = $"approach before {main.Ability.Name}; boost waits until cast is possible";
+                return 0f;
+            }
             if (!boost.AppliesTo(main.Ability)) { note = $"does not apply to {main.Ability.Name}"; return 0f; }
             var profile = AbilityProfile.Get(main.Ability);
             if (profile == null) return 0f;
@@ -283,7 +313,8 @@ namespace CompanionAI_Pathfinder.Tactics
         /// </summary>
         private static float QuickenGain(TacticalContext ctx, SpellBoost boost, Candidate main, Candidate second, List<string> parts)
         {
-            if (second == null || !ctx.HasSwift || main.Slot != ActionSlot.Standard) return 0f;
+            if (second == null || !ctx.HasSwift || main.Slot != ActionSlot.Standard ||
+                WalksBeforeActing(main) || WalksBeforeActing(second)) return 0f;
             if ((boost.MetamagicFor(main.Ability) & Kingmaker.UnitLogic.Abilities.Metamagic.Quicken) == 0 ||
                 main.Ability.HasMetamagic(Kingmaker.UnitLogic.Abilities.Metamagic.Quicken)) return 0f;
             parts.Add($"quickened: leaves the standard action for {second.Ability?.Name ?? second.Label}");

@@ -247,7 +247,7 @@ namespace CompanionAI_Pathfinder.Tactics
                 else if (target.IsPlayerFaction)
                 {
                     _enemyDamage += dealt;
-                    EnemyThreat.NoteDealt(attacker, dealt);   // ★ v0.3.20 (test4)
+                    EnemyThreat.NoteDealt(attacker, dealt, evt);   // ★ test1 fixes: retain native energy attribution too
                     EnemyByRound.TryGetValue(round, out float sum);
                     EnemyByRound[round] = sum + dealt;
                     if (!TakenByRound.TryGetValue(target.UniqueId, out var taken))

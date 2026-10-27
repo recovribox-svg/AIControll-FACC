@@ -23,7 +23,10 @@ using System.Collections.Generic;
 using System.Linq;
 using Kingmaker;
 using Kingmaker.EntitySystem.Entities;
+using Kingmaker.Enums.Damage;
+using Kingmaker.RuleSystem.Rules.Damage;
 using Kingmaker.UnitLogic.Abilities;
+using Kingmaker.UnitLogic.Mechanics.Actions;
 using UnityEngine;
 
 namespace CompanionAI_Pathfinder.Tactics
@@ -48,6 +51,9 @@ namespace CompanionAI_Pathfinder.Tactics
             /// <summary>★ v0.3.20 (test5): the descriptors of its harmful abilities with a use left and of its features
             /// (Frightful Presence): what kinds of effect it can use on the party.</summary>
             public Kingmaker.Blueprints.Classes.Spells.SpellDescriptor Descriptors;
+            // ★ test1 fixes: retain typed damage from the existing assessment, without another spell/rule query.
+            public DamageEnergyType? EnergyType;
+            public float EnergyDamage, EnergyPerCast, PredictedOffence;
         }
 
         /// <summary>The enemies of the last assessment.</summary>
@@ -55,6 +61,10 @@ namespace CompanionAI_Pathfinder.Tactics
 
         private static readonly Dictionary<string, Assessment> Assessed = new Dictionary<string, Assessment>();
         private static readonly Dictionary<string, float> Dealt = new Dictionary<string, float>();
+        private static readonly Dictionary<string, Dictionary<DamageEnergyType, float>> EnergyDealt =
+            new Dictionary<string, Dictionary<DamageEnergyType, float>>();
+        private static readonly Dictionary<string, Dictionary<DamageEnergyType, int>> EnergyEvents =
+            new Dictionary<string, Dictionary<DamageEnergyType, int>>();
         private static readonly Dictionary<string, int> FirstRound = new Dictionary<string, int>();
         private static readonly Dictionary<string, KeyValuePair<int, float>> UrgencyCache = new Dictionary<string, KeyValuePair<int, float>>();
         private static int _round = int.MinValue, _setHash;
@@ -70,6 +80,8 @@ namespace CompanionAI_Pathfinder.Tactics
             Assessed.Clear();
             Living.Clear();
             Dealt.Clear();
+            EnergyDealt.Clear();
+            EnergyEvents.Clear();
             FirstRound.Clear();
             UrgencyCache.Clear();
             _round = int.MinValue;
@@ -79,11 +91,71 @@ namespace CompanionAI_Pathfinder.Tactics
         }
 
         /// <summary>Damage an enemy dealt to the party (FightStats sees every damage roll).</summary>
-        public static void NoteDealt(UnitEntityData enemy, int dealt)
+        public static void NoteDealt(UnitEntityData enemy, int dealt, RuleDealDamage damage = null)
         {
             if (enemy == null || dealt <= 0) return;
             Dealt.TryGetValue(enemy.UniqueId, out float sum);
             Dealt[enemy.UniqueId] = sum + dealt;
+            // Attribute only the native completed result's known energy components. Normalizing to Result preserves
+            // native halving/redirection/caps without copying their rules. Unknown source data stays unattributed.
+            if (damage?.ResultList == null || damage.ResultList.Any(r => r.Source == null)) return;
+            float total = damage.ResultList.Sum(r => Math.Max(0, r.FinalValue));
+            if (total <= 0f) return;
+            var eventEnergy = new Dictionary<DamageEnergyType, float>();
+            foreach (var result in damage.ResultList)
+            {
+                if (!(result.Source is EnergyDamage energy) || result.FinalValue <= 0) continue;
+                eventEnergy.TryGetValue(energy.EnergyType, out float previous);
+                eventEnergy[energy.EnergyType] = previous + dealt * result.FinalValue / total;
+            }
+            foreach (var entry in eventEnergy)
+            {
+                if (!EnergyDealt.TryGetValue(enemy.UniqueId, out var types))
+                    EnergyDealt[enemy.UniqueId] = types = new Dictionary<DamageEnergyType, float>();
+                if (!EnergyEvents.TryGetValue(enemy.UniqueId, out var events))
+                    EnergyEvents[enemy.UniqueId] = events = new Dictionary<DamageEnergyType, int>();
+                types.TryGetValue(entry.Key, out float previous);
+                types[entry.Key] = previous + entry.Value;
+                // One completed native damage event, not one count per same-energy result-list entry.
+                events.TryGetValue(entry.Key, out int count);
+                events[entry.Key] = count + 1;
+            }
+        }
+
+        /// <summary>
+        /// ★ test1 fixes: add known matching-energy shares to an existing incoming-threat weighting. Unknown energy
+        /// contributes zero. Uses the same observed-offence prior as threat assessment, not a generic 15% allowance.
+        /// </summary>
+        internal static void AddEnergyExposure(UnitEntityData enemy, float weight, Dictionary<DamageEnergyType, float> totals,
+            Dictionary<DamageEnergyType, float> packetSizeTotals)
+        {
+            if (enemy == null || weight <= 0f) return;
+            Assessed.TryGetValue(enemy.UniqueId, out var assessment);
+            Dealt.TryGetValue(enemy.UniqueId, out float dealt);
+            EnergyDealt.TryGetValue(enemy.UniqueId, out var observed);
+            EnergyEvents.TryGetValue(enemy.UniqueId, out var events);
+            if (observed != null)
+                foreach (var entry in observed)
+                {
+                    float predicted = assessment?.EnergyType == entry.Key ? assessment.EnergyDamage : 0f;
+                    float share = ValueModel.EnergyExposureShare(entry.Value, dealt, predicted, assessment?.PredictedOffence ?? 0f);
+                    totals.TryGetValue(entry.Key, out float previous);
+                    totals[entry.Key] = previous + weight * share;
+                    int count = 0;
+                    events?.TryGetValue(entry.Key, out count);
+                    float size = ValueModel.EnergyPacketSize(assessment?.EnergyType == entry.Key ? assessment.EnergyPerCast : 0f,
+                        entry.Value, count);
+                    packetSizeTotals.TryGetValue(entry.Key, out float previousSize);
+                    packetSizeTotals[entry.Key] = previousSize + weight * share * size;
+                }
+            if (assessment?.EnergyType is DamageEnergyType type && (observed == null || !observed.ContainsKey(type)))
+            {
+                float share = ValueModel.EnergyExposureShare(0f, dealt, assessment.EnergyDamage, assessment.PredictedOffence);
+                totals.TryGetValue(type, out float previous);
+                totals[type] = previous + weight * share;
+                packetSizeTotals.TryGetValue(type, out float previousSize);
+                packetSizeTotals[type] = previousSize + weight * share * ValueModel.EnergyPacketSize(assessment.EnergyPerCast, 0f, 0);
+            }
         }
 
         /// <summary>The enemy's share of the fight's importance (1 when unknown).</summary>
@@ -187,6 +259,9 @@ namespace CompanionAI_Pathfinder.Tactics
             a.Worth = ValueModel.PerRound(cr);
             a.Weapon = 0f;
             a.Spell = a.Heal = 0f;
+            a.EnergyType = null;
+            a.EnergyDamage = 0f;
+            a.EnergyPerCast = 0f;
             a.SpellName = a.HealName = a.HealTarget = null;
             try
             {
@@ -200,7 +275,8 @@ namespace CompanionAI_Pathfinder.Tactics
                 if (victim != null)
                 {
                     a.Weapon = CombatMath.EstimateWeaponAttack(enemy, victim, full: true)?.ExpectedDamage ?? 0f;
-                    a.Spell = BestAbility(enemy, victim, party, usable, out a.SpellName);
+                    a.Spell = BestAbility(enemy, victim, party, usable, out a.SpellName, out a.EnergyType, out a.EnergyDamage,
+                        out a.EnergyPerCast);
                 }
                 a.Heal = BestHeal(enemy, enemies, usable, out a.HealName, out a.HealTarget);
             }
@@ -209,6 +285,7 @@ namespace CompanionAI_Pathfinder.Tactics
                 Main.Verbose($"[Threat] {enemy.CharacterName}: {ex.Message}");
             }
             Dealt.TryGetValue(enemy.UniqueId, out float dealt);
+            a.PredictedOffence = Math.Max(Math.Max(a.Spell, a.Heal), a.Weapon);
             int rounds = Math.Max(0, round - (FirstRound.TryGetValue(enemy.UniqueId, out int first) ? first : round));
             a.Offence = Math.Max(Math.Max(a.Spell, a.Heal), ValueModel.ObservedOffence(dealt, rounds, a.Weapon));
         }
@@ -267,9 +344,12 @@ namespace CompanionAI_Pathfinder.Tactics
         /// in its area).
         /// </summary>
         private static float BestAbility(UnitEntityData enemy, UnitEntityData victim, List<UnitEntityData> party, List<AbilityData> usable,
-                                         out string name)
+                                         out string name, out DamageEnergyType? energyType, out float energyDamage, out float energyPerCast)
         {
             name = null;
+            energyType = null;
+            energyDamage = 0f;
+            energyPerCast = 0f;
             float best = 0f;
             foreach (var ability in usable.Where(IsHarmful).Take(MaxAbilities))
             {
@@ -278,8 +358,13 @@ namespace CompanionAI_Pathfinder.Tactics
                     var profile = AbilityProfile.Get(ability);
                     if (profile == null) continue;
                     float value = 0f;
+                    float damage = 0f;
+                    float damageIfLands = 0f;
                     if (profile.DealsDamage)
-                        value += CombatMath.EstimateAbilityDamage(ability, profile, victim) * CombatMath.EffectChance(enemy, victim, ability, profile, true);
+                    {
+                        damageIfLands = CombatMath.EstimateAbilityDamage(ability, profile, victim);
+                        value += damage = damageIfLands * CombatMath.EffectChance(enemy, victim, ability, profile, true);
+                    }
                     float control = profile.ControlStrength == ControlStrength.Hard ? 1f : profile.ControlStrength == ControlStrength.Soft ? 0.4f : 0f;
                     if (control > 0f && !Analysis.AbilityClassifier.HasCCImmunity(victim, profile.Control))
                     {
@@ -288,12 +373,19 @@ namespace CompanionAI_Pathfinder.Tactics
                         value += control * ValueModel.PerRound(level) * rounds * CombatMath.EffectChance(enemy, victim, ability, profile, false);
                     }
                     if (value <= 0f) continue;
-                    if (profile.IsAoE)
-                        value *= 1f + 0.5f * party.Count(p => p != victim && Vector3.Distance(p.Position, victim.Position) <= profile.AoERadius);
+                    float area = profile.IsAoE
+                        ? 1f + 0.5f * party.Count(p => p != victim && Vector3.Distance(p.Position, victim.Position) <= profile.AoERadius)
+                        : 1f;
+                    value *= area;
                     if (value > best)
                     {
                         best = value;
                         name = ability.Name;
+                        energyType = SingleEnergy(profile);
+                        energyDamage = energyType.HasValue ? damage * area : 0f;
+                        // Aggregate one cast's same-energy damage on one victim as a single packet. Multi-packet
+                        // delivery can only make this resistance-rate estimate conservative; never use weapon hit size.
+                        energyPerCast = energyType.HasValue ? damageIfLands : 0f;
                     }
                 }
                 catch (Exception ex)
@@ -302,6 +394,21 @@ namespace CompanionAI_Pathfinder.Tactics
                 }
             }
             return best;
+        }
+
+        /// <summary>Only known, single-energy native damage is attributed before observation; mixed/custom stays unknown.</summary>
+        private static DamageEnergyType? SingleEnergy(AbilityProfile profile)
+        {
+            DamageEnergyType? type = null;
+            foreach (var action in profile.Damage)
+            {
+                if (action?.GetType() != typeof(ContextActionDealDamage)) return null;
+                var damage = (ContextActionDealDamage)action;
+                if (damage.DamageType?.Type != DamageType.Energy) return null;
+                if (type.HasValue && type.Value != damage.DamageType.Energy) return null;
+                type = damage.DamageType.Energy;
+            }
+            return type;
         }
 
         /// <summary>

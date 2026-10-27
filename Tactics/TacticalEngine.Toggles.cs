@@ -455,7 +455,12 @@ namespace CompanionAI_Pathfinder.Tactics
                 try
                 {
                     bool wasOn = toggle.IsOn;
-                    toggle.IsOn = false;
+                    if (IsBlastModifier(toggle.Blueprint))
+                    {
+                        if (!GameInterface.CommandDispatcher.Run(unit, null, new[] { toggle }, c.Label, out command, out failure)) return false;
+                        CombatMath.InfusionStateChanged();
+                    }
+                    else toggle.IsOn = false;
                     if (toggle.IsOn) { failure = "the game did not switch it off"; return false; }
                     CombatMemory.RecordToggle(unit, toggle, false, wasOn);
                     Main.Log($"[Toggle] {unit.CharacterName}: {toggle.Name} off - {c.Label} = {c.Value:F1}");

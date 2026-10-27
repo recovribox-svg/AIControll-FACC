@@ -252,9 +252,12 @@ namespace CompanionAI_Pathfinder.Tactics
         public float AoERadius { get; private set; }
         public Kingmaker.UnitLogic.Abilities.Components.TargetType AoETargets { get; private set; } =
             Kingmaker.UnitLogic.Abilities.Components.TargetType.Any;
-        public bool IsAoE => AoERadius > 0.01f;
+        /// <summary>Native cone delivery; its recipients are queried from the game rather than a circle.</summary>
+        public AbilityDeliverProjectile Cone { get; private set; }
+        public bool IsProjectileCone => Cone != null;
+        public bool IsAoE => AoERadius > 0.01f || IsProjectileCone;
         /// <summary>
-        /// ★ v0.3.18: the game picks the units in the area one by one (AbilityTargetsAround), each with its own spell
+        /// ★ v0.3.18: the game picks the units in the area one by one (around-selector or cone), each with its own spell
         /// resistance check. Without it (spawned areas: Grease, Entangle, Web) the effect is applied once, to the aimed
         /// target: a creature aimed at that resists or is immune stops the whole area.
         /// </summary>
@@ -511,7 +514,7 @@ namespace CompanionAI_Pathfinder.Tactics
             CasterProvokes = FindCasterProvoke(Blueprint);
 
             var around = Blueprint.GetComponent<AbilityTargetsAround>();
-            SelectsTargets = around != null;
+            SelectsTargets = around != null || IsProjectileCone;
             if (around != null)
             {
                 AoERadius = around.AoERadius.Meters;
@@ -634,7 +637,7 @@ namespace CompanionAI_Pathfinder.Tactics
         }
 
         /// <summary>★ v0.3.12: conditions a buff puts on its owner (AddCondition, BuffStatusCondition).</summary>
-        private static IEnumerable<UnitCondition> ConditionsOf(BlueprintBuff buff)
+        internal static IEnumerable<UnitCondition> ConditionsOf(BlueprintBuff buff)
         {
             foreach (var c in buff.GetComponents<AddCondition>()) yield return c.Condition;
             foreach (var c in buff.GetComponents<Kingmaker.Designers.Mechanics.Buffs.BuffStatusCondition>()) yield return c.Condition;
@@ -744,6 +747,12 @@ namespace CompanionAI_Pathfinder.Tactics
             }
 
             var projectile = bp.GetComponent<AbilityDeliverProjectile>();
+            // Only the actual cast blueprint can provide this aim's cone. Referenced secondary abilities may have
+            // different origins/delivery and must not turn their parent into a fabricated cone.
+            if (ReferenceEquals(bp, Blueprint) && projectile?.Type == AbilityProjectileType.Cone)
+            {
+                Cone = projectile;
+            }
             // ★ v0.3.18 (C2): a line or cone projectile makes no attack roll, whatever its flag says (the game's
             // AbilityDeliverProjectile only rolls for other shapes).
             if (projectile != null && projectile.NeedAttackRoll &&
@@ -806,6 +815,9 @@ namespace CompanionAI_Pathfinder.Tactics
 
                 switch (action)
                 {
+                    case ContextActionChangeSharedValue change when change.Type == SharedValueChangeType.SubHD:
+                        m_SharedHdDebits.Add(change.SharedValue);
+                        break;
                     // ★ v0.3.18 (review): damage run on the caster (a self-cost) is not damage to the target.
                     case ContextActionDealDamage dmg when subject != EffectSubject.Caster:
                         Damage.Add(dmg);
@@ -1260,7 +1272,12 @@ namespace CompanionAI_Pathfinder.Tactics
         /// branch that applies to that target; negative when unknown. Color Spray on a 5 HD Cultist Champion stuns for one
         /// round, not the three the control value assumed (Orvath cast it there five times).
         /// </summary>
-        public float EffectRoundsOn(AbilityData ability, UnitEntityData target)
+        public float EffectRoundsOn(AbilityData ability, UnitEntityData target) => EffectRoundsOn(ability, target, null);
+
+        // A shared-budget forecast has already read the native guards under this aim's remaining budget.
+        // Reuse that result for the dependent application instead of reconstructing a full-pool target context.
+        internal float EffectRoundsOn(AbilityData ability, UnitEntityData target,
+            Func<BlueprintBuff, EffectApplies?> forecastApplicability)
         {
             // ★ v0.3.18 (AA-4): Demoralize lasts by the check's result.
             if (Intimidation != null && target != null && ability?.Caster?.Unit != null)
@@ -1276,7 +1293,7 @@ namespace CompanionAI_Pathfinder.Tactics
             foreach (var a in m_BuffApplications)
             {
                 if (a.Rounds <= 0f) continue;
-                var applies = Evaluate(a.Guards, ability, target);
+                var applies = forecastApplicability?.Invoke(a.Buff) ?? Evaluate(a.Guards, ability, target);
                 if (applies == EffectApplies.No) continue;
                 float rounds = extended && a.Extendable ? a.Rounds * 2f : a.Rounds;
                 if (applies == EffectApplies.Unknown) maybe = Math.Min(maybe, rounds);
@@ -1345,6 +1362,21 @@ namespace CompanionAI_Pathfinder.Tactics
         /// </summary>
         private static bool IsSafe(Condition c) =>
             c == null || SafeConditions.Contains(c.GetType()) || c is ContextConditionHitDice;
+
+        /// <summary>Read the same allowlisted native conditions under an existing effect context; never execute actions.</summary>
+        internal static bool TryReadConditions(ConditionsChecker checker, MechanicsContext context,
+                                               UnitEntityData target, out bool result)
+        {
+            result = false;
+            if (checker == null || context == null || target == null ||
+                !(checker.Conditions ?? Array.Empty<Condition>()).All(IsSafe)) return false;
+            try
+            {
+                using (context.GetDataScope(new TargetWrapper(target))) result = checker.Check();
+                return true;
+            }
+            catch { return false; }
+        }
 
         /// <summary>
         /// ★ v0.3.17: the range of a shared value as the ability's own ContextCalculateSharedValue defines it (dice count
@@ -1469,6 +1501,34 @@ namespace CompanionAI_Pathfinder.Tactics
             return Evaluate(effect != null && m_Guards.TryGetValue(effect, out var g) ? g : NoGuards, ability, target);
         }
 
+        // A material-changing infusion exposes a literal branch in the real blast graph. Read that one branch
+        // choice directly; all other guards still use actual native state. No condition/fact is changed or patched.
+        internal bool HasInfusionDamageBranch(BlueprintBuff buff) => Damage.Any(a =>
+            m_Guards.TryGetValue(a, out var guards) && guards.Any(g =>
+                g.Checker?.Conditions?.Length == 1 && g.Checker.Conditions[0] is ContextConditionCasterHasFact fact && fact.Fact == buff));
+
+        internal EffectApplies AppliesWithInfusion(GameAction effect, AbilityData ability, UnitEntityData target,
+            BlueprintBuff buff, bool on)
+        {
+            if (!m_Guards.TryGetValue(effect, out var guards)) return EffectApplies.Unconditional;
+            bool unknown = false;
+            foreach (var guard in guards)
+            {
+                if (guard.Checker?.Conditions?.Length == 1 &&
+                    guard.Checker.Conditions[0] is ContextConditionCasterHasFact fact && fact.Fact == buff)
+                {
+                    if ((fact.Not ? !on : on) != guard.Branch) return EffectApplies.No;
+                }
+                else
+                {
+                    var applies = Evaluate(new[] { guard }, ability, target);
+                    if (applies == EffectApplies.No) return applies;
+                    if (applies == EffectApplies.Unknown) unknown = true;
+                }
+            }
+            return unknown ? EffectApplies.Unknown : EffectApplies.Yes;
+        }
+
         public EffectApplies BuffAppliesTo(BlueprintBuff buff, AbilityData ability, UnitEntityData target)
         {
             if (buff == null || !m_BuffGuards.TryGetValue(buff, out var branches) || branches.Count == 0)
@@ -1498,6 +1558,20 @@ namespace CompanionAI_Pathfinder.Tactics
         }
 
         public bool HasGuardedEffects => m_Guards.Values.Any(g => g.Length > 0) || m_BuffGuards.Values.Any(b => b.Any(g => g.Length > 0));
+
+        private bool? m_UsesSharedHdBudget;
+        private IReadOnlyCollection<BlueprintBuff> m_SharedHdBuffs;
+        private readonly HashSet<AbilitySharedValue> m_SharedHdDebits = new HashSet<AbilitySharedValue>();
+        private bool SharedHdGuard(EffectGuard guard) =>
+            (guard.Checker?.Conditions ?? Array.Empty<Condition>()).OfType<ContextConditionHitDice>()
+                .Any(h => h.AddSharedValue && m_SharedHdDebits.Contains(h.SharedValue));
+
+        // Immutable blueprint metadata only. Native contexts/recipient state never enter this cache.
+        internal bool UsesSharedHdBudget => (m_UsesSharedHdBudget ??
+            (m_UsesSharedHdBudget = m_Guards.Values.Any(g => g.Any(SharedHdGuard)) || SharedHdBuffs.Count > 0)).Value;
+
+        internal IReadOnlyCollection<BlueprintBuff> SharedHdBuffs => m_SharedHdBuffs ??
+            (m_SharedHdBuffs = m_BuffGuards.Where(p => p.Value.Any(g => g.Any(SharedHdGuard))).Select(p => p.Key).ToArray());
 
         private static EffectApplies Evaluate(EffectGuard[] guards, AbilityData ability, UnitEntityData target)
         {

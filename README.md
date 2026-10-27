@@ -1,10 +1,25 @@
 # AI Control - Fully Autonomous Combat Companions
 
-**Development has been rolled back to the v0.3.21 runtime. All v0.3.22 test builds are withdrawn.**
-Install the existing [stable v0.3.21 release](https://github.com/recovribox-svg/AIControll-FACC/releases/tag/v0.3.21),
-not a previously downloaded experimental ZIP. Fully exit the game before replacing the mod.
+## New Test[5] fixes — 25434a2
 
-Read the [rollback and failure analysis](docs/V0_3_22_POSTMORTEM.md) before resuming development.
+**[Download the new UMM test ZIP — 25434a2](test-builds/AI-Control-FACC-test5-fixes-25434a2-UMM-test.zip?raw=true)**
+
+Fixes false silent/no-reach strikes after actual concentration failures. Adds bounded explanations of
+already-scored Sleep aims and existing energy-damage estimates. Sleep scoring, blast discovery, movement
+rules and performance budgets stay unchanged. The preceding build earned the author's **8/10 smoothness**
+feedback; no new speedup is claimed. Initial fire-resistance optimism remains unresolved.
+
+Fully exit before installing through UMM. It still shows **0.3.21** for intended v0.3.22 development.
+[Install, exact startup marker and focused replay](test-builds/README.md).
+
+**164 tests pass**; Release and native checks pass. New concentration settlement and diagnostics still
+need in-game testing. [Full Test[5] review](docs/TEST5_REVIEW.md).
+
+[Draft PR #11](https://github.com/recovribox-svg/AIControll-FACC/pull/11) targets development, with pending
+PR #10/#9/#8/#7/#6 included. Main/shared development are unchanged. For normal play use the
+[stable v0.3.21 release](https://github.com/recovribox-svg/AIControll-FACC/releases/tag/v0.3.21).
+
+Read the [rollback and failure analysis](docs/V0_3_22_POSTMORTEM.md) before further development.
 The [Claude/Codex contribution workflow](CONTRIBUTING.md) remains in effect.
 
 *Pathfinder: Wrath of the Righteous* · by MonsieurAndroid · Unity Mod Manager id `CompanionAI_Pathfinder`

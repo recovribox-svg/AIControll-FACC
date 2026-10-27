@@ -1,0 +1,31 @@
+{
+  "test_name": "Kineticist infusion value — first slice",
+  "intended_development_version": "0.3.22",
+  "umm_manifest_version": "0.3.21",
+  "branch": "codex/kineticist-infusion-value",
+  "pull_request": "https://github.com/recovribox-svg/AIControll-FACC/pull/6",
+  "runtime_source_commit": "0a7ed97e60bda45c5a9452734fc3a278b879b6b2",
+  "verified_source_commit": "48029f58e497965e9b44ef2e2d7d5070cee96e99",
+  "base_development_commit": "f51189fa93ffebc791489c6761e05ccbbdea0014",
+  "archive": "AI-Control-FACC-infusion-value-0a7ed97-UMM-test.zip",
+  "zip_sha256": "411d0cbf7f2dac205c6eef8b6caa98ceeb5d76032cc8c7019f098ca92e2183da",
+  "dll_sha256": "cf0fb2a3746e1f27d782afd8d3b2bb0269d614d80ca58b677b8d48f93d202a66",
+  "module_mvid": "4abd89c4-7b64-4e6f-8ae5-5d96f61ed556",
+  "archive_contents": [
+    "CompanionAI_Pathfinder.dll",
+    "Info.json"
+  ],
+  "checks": {
+    "unit_tests": {
+      "passed": 110,
+      "failed": 0,
+      "skipped": 0
+    },
+    "release_build": {
+      "warnings": 0,
+      "errors": 0
+    },
+    "in_game": "pending"
+  },
+  "publication_scope": "Author-requested test download on feature branch; not a stable release."
+}
