@@ -8,9 +8,11 @@ Read [CONTRIBUTING.md](CONTRIBUTING.md) for shared branch ownership, Codex pull 
 Codex works on task branches and targets pull requests at `claude/dreamy-pasteur-b9h3rn`; Claude reviews and integrates them there.
 Keep `main` for author-authorized releases. Read [AGENTS.md](AGENTS.md) when coordinating agent work.
 
-Current handover (25 October 2026): the author delegated completion of PR #4's interrupted verification and development
-integration to Codex while Claude was unavailable. Read [docs/INTEGRATION_HANDOVER.md](docs/INTEGRATION_HANDOVER.md)
-and the PR timeline before resuming. Gameplay verification and any release remain separate steps.
+Current handover (27 October 2026): the author explicitly authorized Codex to integrate the scoped PR #6–#11
+chain and prepare the v0.3.22 UMM package on development. Read
+[docs/RELEASE_0_3_22_HANDOVER.md](docs/RELEASE_0_3_22_HANDOVER.md) before resuming.
+The author will create the GitHub release personally; Codex must not publish it or create/move release tags.
+The earlier [PR #4 integration handover](docs/INTEGRATION_HANDOVER.md) is historical and concerns work later withdrawn.
 
 ## Project Overview
 - **Mod name**: AI Control - Fully Autonomous Combat Companions (author MonsieurAndroid); UMM `Id` stays `CompanionAI_Pathfinder` (settings path, installs)
