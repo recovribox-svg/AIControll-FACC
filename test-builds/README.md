@@ -1,4 +1,10 @@
-# Test[5] fixes playtest — 25434a2
+# Archived test builds
+
+**For v0.3.22, use the [versioned UMM package](../release/CompanionAI_Pathfinder_v0.3.22.zip?raw=true).**
+[Install and release identity](../release/README.md). The older test ZIPs below retain their original
+0.3.21 metadata and checksums for reproducing historical logs.
+
+## Test[5] fixes playtest — 25434a2
 
 **[Download the new UMM test ZIP — 25434a2](AI-Control-FACC-test5-fixes-25434a2-UMM-test.zip?raw=true)**
 
