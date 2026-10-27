@@ -1,0 +1,60 @@
+{
+  "name": "AI Control - Fully Autonomous Combat Companions v0.3.22",
+  "version": "0.3.22",
+  "umm_manifest_version": "0.3.22",
+  "umm_mod_id": "CompanionAI_Pathfinder",
+  "preparation_branch": "codex/release-0.3.22",
+  "target_branch": "claude/dreamy-pasteur-b9h3rn",
+  "base_development_commit": "5152ec75a88c80d3a9d3a4490fe9d07ec3954a0d",
+  "integrated_feature_prs": [
+    6,
+    7,
+    8,
+    9,
+    10,
+    11
+  ],
+  "integrated_feature_head": "47a62bac41e56e33e98ddf9a068b737a3c0a66cc",
+  "runtime_source_commit": "a9efe55e9de5ae529e1889d5beb99f95f1bd29ce",
+  "archive": "CompanionAI_Pathfinder_v0.3.22.zip",
+  "zip_sha256": "771fbeb360418f1b4d03ea83d101ec12a88cdcc1534a51ebcb17cee2cacb12d6",
+  "dll_sha256": "3b372f48c6e080fe989182a2686ae96e464d68ac9e88c61ac9bff924e1373533",
+  "manifest_sha256": "a9e9ad083db98dbef4ea2a1f6e3f3cc7164d6055b2e10d9cc35b69d6a6fe9d07",
+  "module_mvid": "52bb4a21-9f8f-459f-93db-5c942e531fa2",
+  "startup_marker": "[Build] v0.3.22 module=52bb4a21-9f8f-459f-93db-5c942e531fa2",
+  "archive_contents": [
+    "CompanionAI_Pathfinder.dll",
+    "Info.json"
+  ],
+  "publication": "Author creates the GitHub release and tag. Codex prepares/integrates the package only; no main update or release/tag creation.",
+  "checks": {
+    "unit_tests": {
+      "passed": 164,
+      "failed": 0,
+      "skipped": 0
+    },
+    "release_build": {
+      "warnings": 0,
+      "errors": 0
+    },
+    "compiled_routes": "Concentration/Selective/HD diagnostic, activation-adoption and censored-resistance guards pass on this module",
+    "native_data": "13 memo assertions,5 Grease structural gates,20 activation metadata cases,Free/Swift thresholds,18 recognized layouts,486 cost/quiver vectors,Rare Metal,cone metadata/bindings pass",
+    "blueprint_reader": {
+      "status": "PARTIAL",
+      "loaded_exports": 4097,
+      "failed_exports": 1,
+      "ability_rows": 1220,
+      "reader_errors": 0,
+      "changed_detail_rows_vs_test5": 0
+    },
+    "package": "Exact checked DLL and v0.3.22 manifest only; all earlier release and test ZIPs retained",
+    "runtime_scope": "Only startup identity reads manifest version; gameplay source unchanged from the final Test5 fixes",
+    "in_game": "Author accepts public release and reports preceding Test5 smoothness8/10. No new live run of latest concentration/diagnostic fixes or this versioned package claimed."
+  },
+  "known_limits": [
+    "Initial Fire Blast/Burning energy-resistance optimism remains unresolved; bounded diagnostics are included.",
+    "Unraveling/Chain Arrows automatic selection and Deep Slumber spreading remain withheld; no new Gather/metakinesis/form optimizer.",
+    "Narrow new-area guard does not forecast every route/slope/overlap; actual Selective protection is respected.",
+    "All infusion families, third-party handlers and latest concentration settlement are not completely gameplay-verified."
+  ]
+}

@@ -1,26 +1,18 @@
 # AI Control - Fully Autonomous Combat Companions
 
-## New Test[5] fixes — 25434a2
+## v0.3.22
 
-**[Download the new UMM test ZIP — 25434a2](test-builds/AI-Control-FACC-test5-fixes-25434a2-UMM-test.zip?raw=true)**
+**[Download the UMM ZIP — v0.3.22](release/CompanionAI_Pathfinder_v0.3.22.zip?raw=true)**
 
-Fixes false silent/no-reach strikes after actual concentration failures. Adds bounded explanations of
-already-scored Sleep aims and existing energy-damage estimates. Sleep scoring, blast discovery, movement
-rules and performance budgets stay unchanged. The preceding build earned the author's **8/10 smoothness**
-feedback; no new speedup is claimed. Initial fire-resistance optimism remains unresolved.
+Automatic supported kineticist infusions, shared-HD/cone/energy-protection spell improvements, safer allied
+control areas, concentration/touch-cast fixes and local performance improvements. UMM displays **0.3.22**;
+existing settings are retained. Fully exit the game before installing.
 
-Fully exit before installing through UMM. It still shows **0.3.21** for intended v0.3.22 development.
-[Install, exact startup marker and focused replay](test-builds/README.md).
+[Release notes](release/CHANGELOG_v0.3.22.md) · [Install and exact package identity](release/README.md).
 
-**164 tests pass**; Release and native checks pass. New concentration settlement and diagnostics still
-need in-game testing. [Full Test[5] review](docs/TEST5_REVIEW.md).
-
-[Draft PR #11](https://github.com/recovribox-svg/AIControll-FACC/pull/11) targets development, with pending
-PR #10/#9/#8/#7/#6 included. Main/shared development are unchanged. For normal play use the
-[stable v0.3.21 release](https://github.com/recovribox-svg/AIControll-FACC/releases/tag/v0.3.21).
-
-Read the [rollback and failure analysis](docs/V0_3_22_POSTMORTEM.md) before further development.
-The [Claude/Codex contribution workflow](CONTRIBUTING.md) remains in effect.
+The author will publish the GitHub release. The prepared code/package is on
+`claude/dreamy-pasteur-b9h3rn`; main still holds v0.3.21 at this handover.
+[Integration and publication handover](docs/RELEASE_0_3_22_HANDOVER.md).
 
 *Pathfinder: Wrath of the Righteous* · by MonsieurAndroid · Unity Mod Manager id `CompanionAI_Pathfinder`
 
@@ -57,6 +49,11 @@ combat (primary) and real-time combat.
   no longer count enemies in their radius as "marks".
 - An advance that runs out of its move action can continue with the standard action; abilities are not aimed at a
   target on which none of their effects apply.
+
+**0.3.22** ([release/CHANGELOG_v0.3.22.md](release/CHANGELOG_v0.3.22.md)): supported kineticist substance
+infusions are chosen automatically with native applicability/burn; Sleep shares its HD budget, cones use native
+geometry, protection matches energy types, and spell boosts require feasible follow-ups. A narrow new-area safety
+check respects Selective. Concentration/touch-cast fixes and local forecast reuse improve reliability and performance.
 
 **0.3.21** ([release/CHANGELOG_v0.3.21.md](release/CHANGELOG_v0.3.21.md)): works alongside Wrath Tactics in real time
 (its rules first, AI Control fills the gaps). Power Attack, Deadly Aim and Combat Expertise are chosen per attack. Many
@@ -164,7 +161,7 @@ toggles such as Shift Form; bonus stacking follows the game's own rule (and Tabl
 ## Install (players)
 
 1. Install [Unity Mod Manager](https://www.nexusmods.com/site/mods/21) into the game.
-2. Take `CompanionAI_Pathfinder_v0.3.21.zip` - prebuilt in `release\`, or build it yourself (below; output in `dist\`).
+2. Download [CompanionAI_Pathfinder_v0.3.22.zip](release/CompanionAI_Pathfinder_v0.3.22.zip?raw=true), or build it yourself (below; output in `dist\`).
 3. Install it either way:
    - Unity Mod Manager → *Mods* tab → drag the ZIP onto the window / *Install Mod*, **or**
    - extract it to `<game>\Mods\CompanionAI_Pathfinder\` so the folder contains
