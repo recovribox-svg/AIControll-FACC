@@ -2557,3 +2557,54 @@ route checks guard against manual construction/reissue, and candidate fixtures
 check Free/Swift thresholds. Existing cost/layout/cone checks and 1,220 ordinary
 reader rows pass (partial exports: 4,097 loaded, one failed). These are not live
 actor command, restoration, first-hit damage or Unity/Mono performance tests.
+
+## 69. Test[4]: proven Burning execution, committed-approach spell safety and timings
+
+[Full evidence, changes, limitations and replay checklist](TEST4_REVIEW.md).
+All eight logged native infusion activations succeed across TB/RT. CombatLog
+confirms Burning DC19 and a recurring six-fire tick. Accepted burn, stop recovery
+and original-off restoration are exercised. Only Burning is gameplay-demonstrated;
+learned Bowling/Pushing are not thereby applicable to Fire Blast. Preserve valid
+Sleep centres benefiting other recipients and partial cures that accumulate
+toward revival; their labels alone do not establish broken decisions.
+
+RT7 exposes a coordination gap: Seelah starts an elemental approach before allied
+Grease lands, then fails the native Grease save. The author approved a narrow
+spell-safety guard, keeping movement/target commitment/navigation/cancellation
+policy unchanged. With AvoidFriendlyFire enabled, new harmful lasting control
+circles are withheld when a registered unfinished ordinary attack approach proves
+the ally's entire native arrival/body disk lies strictly inside. The guard reuses
+existing Selective, side, condition and immunity rules, inspects bounded current
+command slots and performs no pathfinding or gameplay actions. It initially
+supports a single direct fixed native cylindrical spawn and equal destination/
+centre elevation. Unknown shapes, slopes, mere overlap, boundaries and many
+large-target/ranged approaches retain existing appraisal. No specific live veto
+outcome is proven by the supplied positions-free logs or pure geometry tests.
+
+Spell-boost descriptions are reused only within one coupling pass, by actual
+ability identity. Identical periodic reduction reads are reused only within one
+infusion-effect appraisal, keyed by action/context/recipient identities and
+freshly calculated amount. Native contexts/ranks, dice, saves, survival, durations
+and existing limits remain; no score weights or decision scope are cut. These
+small deduplications do not establish a large performance improvement.
+
+Both Test[3] and Test[4] ran on the same budget laptop; the author reports broader
+Test[4] slowdown, much milder than the withdrawn preview. Cold profile work, warm
+control/boost appraisal and collection-overlap pauses are visible, without enough
+stage attribution to name a sole cause. Existing >250ms logs now show scalar stage
+times and nested active-infusion time; expensive TB stand-up previews are logged
+separately from ordinary decision summaries. No per-frame trace or animation-speed
+change is added.
+
+The initial optimistic Fire Blast/resistance estimate remains unresolved. Native
+inspection rejects missing chunk initialization as its explanation. Failed native
+reduction reads now produce a bounded diagnostic while preserving the old fallback;
+the earlier censored-observation fix remains. No damage-math parity claim is made.
+
+164 pure tests pass and Release builds against supplied game references with zero
+warnings/errors. Compiled memo identity, Grease metadata, existing activation/cost/
+cone checks and all 1,220 ordinary reader rows pass; the partial export corpus
+retains one known unrelated failed file. Live guard effectiveness and Unity/Mono
+performance need replay.
+The isolated task includes PR #9/#8/#7/#6 dependencies; it does not update main or
+shared development and retains release metadata 0.3.21 for intended v0.3.22.

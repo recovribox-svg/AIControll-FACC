@@ -867,8 +867,11 @@ namespace CompanionAI_Pathfinder.Tactics
                 var damage = type.CreateDamage(new DiceFormula(0, DiceType.Zero), 0);
                 return Math.Min(observed, part.EstimateDamage(value * (seen?.Factor ?? 1f), damage, null));
             }
-            catch
+            catch (Exception ex)
             {
+                AbilityDiscovery.ReportOnce($"reduction-read|{target.UniqueId}|{dmg.DamageType.Type}|{ex.GetType().Name}",
+                    $"[Math] {target.CharacterName}: native damage-reduction estimate unavailable ({ex.GetType().Name}: {ex.Message}); " +
+                    "using existing observed/raw fallback");
                 return observed;
             }
         }

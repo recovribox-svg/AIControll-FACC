@@ -1,7 +1,7 @@
 # Test[4] review scope and verification
 
 The author supplied TB/RT AI logs and a native CombatLog, requesting review of
-logic/decisions and necessary bug fixes. Test[4] ran on the budget laptop. The
+logic/decisions and necessary bug fixes. Both Test[3] and Test[4] ran on the same budget laptop. The
 author reports occasional stutter through more frequent slowdown across multiple
 actors, much milder than the withdrawn preview version, and suspects the weaker
 CPU explains some of the difference. Preserve that context; aggregate timings

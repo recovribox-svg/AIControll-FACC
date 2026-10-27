@@ -1,4 +1,4 @@
-// ★ v0.3.0: Turn-based tactical engine - decides ONE action at a time from the unit's current action economy.
+﻿// ★ v0.3.0: Turn-based tactical engine - decides ONE action at a time from the unit's current action economy.
 //
 // Why step-wise instead of the old whole-turn TurnPlan: the old planner invalidated its own plan whenever the unit
 // moved ("Position changed by 5.1m" → replan → "Retreat - no targets"), and it never considered plain weapon attacks,
@@ -117,6 +117,7 @@ namespace CompanionAI_Pathfinder.Tactics
         internal List<TacticalEngine.InfusionHit> ScoredInfusionHits;
         internal readonly List<Candidate> InfusionProspects = new List<Candidate>();
         internal List<AbilityData> DiscoveredAbilities;
+        internal DecisionTimings Timings;
         public int Round;
 
         public bool HasStandard, HasMove, HasSwift, HasFullRound, CanFullAttack, CanFiveFoot;
@@ -209,7 +210,9 @@ namespace CompanionAI_Pathfinder.Tactics
             CombatMath.ClearAttackCache();   // ★ v0.3.18: attack routines are read fresh for each decision
             int collections = GC.CollectionCount(0), assessments = EnemyThreat.Assessments;
             var watch = System.Diagnostics.Stopwatch.StartNew();
-            var chosen = Decide(unit, memory, preview: false, out _);
+            var timings = new DecisionTimings();
+            var chosen = Decide(unit, memory, preview: false, out _, timings);
+            timings.Mark(DecisionStage.Finish);
             double ms = watch.Elapsed.TotalMilliseconds;
             FightStats.RecordDecision(unit, ms, chosen?.Label);
             // ★ v0.3.17: two decisions of the 0.3.17-test2 log took 0.8-0.9 s (median 3 ms); say which, when it happens.
@@ -219,7 +222,7 @@ namespace CompanionAI_Pathfinder.Tactics
                 Main.Log($"[Perf] slow decision: {ms:F0} ms - {unit.CharacterName} R{CombatMemory.Round}: {chosen?.Label ?? "nothing"} " +
                          $"(new ability profiles built this decision: {AbilityProfile.TakeBuiltCount()}" +
                          $"{(GC.CollectionCount(0) != collections ? "; memory clean-up ran" : "")}" +
-                         $"{(EnemyThreat.Assessments != assessments ? "; enemies assessed" : "")})");
+                         $"{(EnemyThreat.Assessments != assessments ? "; enemies assessed" : "")}); {timings.Describe()}");
             return chosen;
         }
 
@@ -227,7 +230,8 @@ namespace CompanionAI_Pathfinder.Tactics
         /// <paramref name="preview"/>: what the unit would do, without logging the decision (TacticalEngine.ShouldStandUp
         /// asks it as if the unit had just stood up, which spends its move action).
         /// </summary>
-        private static Candidate Decide(UnitEntityData unit, TurnMemory memory, bool preview, out TacticalContext built)
+        private static Candidate Decide(UnitEntityData unit, TurnMemory memory, bool preview, out TacticalContext built,
+            DecisionTimings timings = null)
         {
             // ★ v0.3.18 (AA-3): Mobility the AI switched on goes off once no enemy threatens the unit (full speed again),
             // before the context reads the unit's movement.
@@ -236,6 +240,7 @@ namespace CompanionAI_Pathfinder.Tactics
                 try { MobilityHousekeeping(unit); } catch (Exception ex) { Main.Verbose($"[Modes] {unit.CharacterName}: {ex.Message}"); }
             }
             var ctx = BuildContext(unit);
+            if (ctx != null) ctx.Timings = timings;
             built = ctx;
             if (ctx != null && preview)
             {
@@ -267,6 +272,7 @@ namespace CompanionAI_Pathfinder.Tactics
             }
             if (ctx == null || ctx.Enemies.Count == 0)
             {
+                timings?.Mark(DecisionStage.Context);
                 if (preview) return null;
                 if (CombatMemory.IsRealTime) Main.Verbose($"[Tactics] {unit.CharacterName}: no reachable enemies - wait");
                 else Main.Log($"[Tactics] {unit.CharacterName}: no reachable enemies - end turn");
@@ -280,16 +286,20 @@ namespace CompanionAI_Pathfinder.Tactics
                 CastOutcome.Settle(unit);
                 CombatMemory.SettleCast(unit);
             }
+            timings?.Mark(DecisionStage.Context);
 
             var candidates = new List<Candidate>();
             try { AddWeaponCandidates(ctx, candidates); } catch (Exception ex) { Main.Error($"[Tactics] weapon candidates: {ex}"); }
             // ★ v0.3.18 (AA-3): each weapon option with its best attack modes.
             try { foreach (var c in candidates.Where(c => c.Kind == CandidateKind.WeaponAttack).ToList()) ChooseAttackModes(ctx, c); }
             catch (Exception ex) { Main.Error($"[Tactics] attack modes: {ex}"); }
+            timings?.Mark(DecisionStage.Weapons);
             try { AddAbilityCandidates(ctx, candidates); } catch (Exception ex) { Main.Error($"[Tactics] ability candidates: {ex}"); }
+            timings?.Mark(DecisionStage.Abilities);
             // ★ v0.3.19 (test6): kineticists - burn priced, and what to do when burn blocks every blast.
             try { PriceBurn(ctx, candidates); AddKineticCandidates(ctx, candidates, preview); }
             catch (Exception ex) { Main.Error($"[Tactics] kineticist candidates: {ex}"); }
+            timings?.Mark(DecisionStage.Kinetic);
             try { AddMovementCandidates(ctx, candidates); } catch (Exception ex) { Main.Error($"[Tactics] movement candidates: {ex}"); }
             // ★ v0.3.20 (test8): an option whose real walk provoked more than its straight line, at the real walk's price.
             try { RepriceRealPaths(ctx, candidates, memory); } catch (Exception ex) { Main.Error($"[Tactics] real path prices: {ex}"); }
@@ -298,6 +308,7 @@ namespace CompanionAI_Pathfinder.Tactics
             // ★ v0.3.18 (AA-3): Mobility before a move that would provoke.
             try { AddMobilityCandidate(ctx, candidates, memory); } catch (Exception ex) { Main.Error($"[Tactics] mobility: {ex}"); }
             try { PriceHeldCharge(ctx, candidates); } catch (Exception ex) { Main.Error($"[Tactics] held charge: {ex.Message}"); }
+            timings?.Mark(DecisionStage.Movement);
 
             var usable = candidates
                 .Where(c => c.Value > 0f && Affordable(ctx, c) && !memory.Failed.Contains(c.Key) && !SilentlyFailing(ctx, c))
@@ -323,14 +334,17 @@ namespace CompanionAI_Pathfinder.Tactics
                 catch (Exception ex) { Main.Error($"[Progressive] {unit.CharacterName}: {ex.Message} - policy skipped"); }
             }
             var beforeMarks = usable;
+            timings?.Mark(DecisionStage.Preparation);
             try { usable = CoupleOwnAttackMarks(ctx, usable, memory); }
             catch (Exception ex) { Main.Error($"[Tactics] {unit.CharacterName} marks: {ex.Message}"); }
             // ★ v0.3.19 (test9): next-spell boosts (Arcane Reservoir) are worth what they add to the spell cast next.
             try { usable = CoupleSpellBoosts(ctx, usable); }
             catch (Exception ex) { Main.Error($"[Tactics] {unit.CharacterName} spell boosts: {ex.Message}"); }
+            timings?.Mark(DecisionStage.Boosts);
             try { AddInfusionChoice(ctx, usable, preview); }
             catch (Exception ex) { ReportOnce($"infusion-search-error|{unit.UniqueId}|{ex.GetType().Name}",
                 $"[Kinetic] {unit.CharacterName}: substance search unavailable ({ex.GetType().Name}); retaining ordinary actions"); }
+            timings?.Mark(DecisionStage.Infusions);
 
             // ★ v0.3.19 (test9): the best quick action that clears its own bar (a free action that spends nothing has a
             // lower one, QuickBar).
@@ -1175,10 +1189,11 @@ namespace CompanionAI_Pathfinder.Tactics
             Candidate best;
             TacticalContext ctx;
             bool wasProne = state.Prone.Active;
+            var previewTimings = new DecisionTimings();
             state.Prone.Active = false;
             try
             {
-                best = Decide(unit, memory, preview: true, out ctx);
+                best = Decide(unit, memory, preview: true, out ctx, previewTimings);
             }
             catch
             {
@@ -1188,6 +1203,13 @@ namespace CompanionAI_Pathfinder.Tactics
             {
                 state.Prone.Active = wasProne;
                 CombatMath.ClearAttackCache();   // ★ v0.3.18: estimates made while "standing" must not be reused
+                previewTimings.Mark(DecisionStage.Finish);
+                if (previewTimings.ElapsedMilliseconds > 250d)
+                {
+                    try { Main.Log($"[Perf] slow stand-up preview: {previewTimings.ElapsedMilliseconds:F0} ms - {unit.CharacterName}; " +
+                        previewTimings.Describe() + "; separate from normal decision summaries"); }
+                    catch { } // Diagnostics must not change the stand-up decision.
+                }
             }
             if (ctx == null) return true;
 
@@ -2744,7 +2766,11 @@ namespace CompanionAI_Pathfinder.Tactics
                     {
                         try
                         {
-                            float infusion = ActiveInfusionValue(ctx, ability, profile, enemy, p, dmg, out var note);
+                            long infusionStarted = ctx.Timings == null ? 0 : System.Diagnostics.Stopwatch.GetTimestamp();
+                            float infusion;
+                            string note;
+                            try { infusion = ActiveInfusionValue(ctx, ability, profile, enemy, p, dmg, out note); }
+                            finally { ctx.Timings?.NoteActiveInfusion(infusionStarted); }
                             if (infusion > 0f)
                             {
                                 value += infusion;
@@ -2987,6 +3013,17 @@ namespace CompanionAI_Pathfinder.Tactics
                 {
                     if (ctx.Settings.AvoidFriendlyFire) { why = "friendly fire"; return 0f; }
                     allyControlCost = caughtAllies.Sum(a => ValueModel.PerRound(Level(a)) * strength * effectRounds);
+                }
+                // Test[4], author-approved: protect an already accepted attack approach from a new lasting circle.
+                // This reads the current command/range only; uncertain shapes keep the existing appraisal below.
+                var committedAlly = CommittedApproachCaught(ctx, ability, profile, target.Position, harmfulArea,
+                    wouldBeCaught, out string committedWhy);
+                if (committedAlly != null)
+                {
+                    why = "friendly fire on committed approach";
+                    ReportOnce($"committed-area|{unit.UniqueId}|{ability.Blueprint.AssetGuid}|{committedAlly.UniqueId}|{CombatMemory.Round}",
+                        $"[Walk] {unit.CharacterName}: withhold {ability.Name}: {committedWhy}");
+                    return 0f;
                 }
                 // ★ v0.3.14: a lasting area also costs the melee allies fighting at its edge: they walk in (a save, then
                 // entangled) or give up the enemies inside. Seelah was next to the Baphomet Cultist when Orvath's

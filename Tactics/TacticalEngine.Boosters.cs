@@ -11,6 +11,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Runtime.CompilerServices;
 using Kingmaker.Blueprints.Classes.Spells;
 using Kingmaker.Designers.Mechanics.Facts;
 using Kingmaker.EntitySystem.Entities;
@@ -128,14 +129,34 @@ namespace CompanionAI_Pathfinder.Tactics
         private static int SimpleValue(Kingmaker.UnitLogic.Mechanics.ContextValue value) =>
             value == null ? 0 : value.IsValueSimple ? value.Value : 1;
 
+        private sealed class BoostAbilityIdentity : IEqualityComparer<AbilityData>
+        {
+            internal static readonly BoostAbilityIdentity Instance = new BoostAbilityIdentity();
+            public bool Equals(AbilityData left, AbilityData right) => ReferenceEquals(left, right);
+            public int GetHashCode(AbilityData ability) => RuntimeHelpers.GetHashCode(ability);
+        }
+
         /// <summary>
         /// Next-spell boosts keep only what they add to the best main action, when that is a spell they apply to; dropped
         /// otherwise. Free actions, so this is the whole decision about them.
         /// </summary>
         private static List<Candidate> CoupleSpellBoosts(TacticalContext ctx, List<Candidate> usable)
         {
-            SpellBoost BoostOf(Candidate c) =>
-                c.Kind == CandidateKind.Ability && c.Ability != null ? SpellBoostOf(AbilityProfile.Get(c.Ability), c.Ability, ctx.Unit) : null;
+            // One read-only coupling pass can ask about the same actual ability at several aims/stages.
+            // Keep descriptions (including null) local; do not invoke native AbilityData equality or retain contexts.
+            Dictionary<AbilityData, SpellBoost> boosts = null;
+            SpellBoost BoostOf(Candidate c)
+            {
+                if (c.Kind != CandidateKind.Ability || c.Ability == null) return null;
+                var profile = AbilityProfile.Get(c.Ability);
+                // Preserve the original structural fast exit without adding a dictionary entry for every ordinary
+                // spell/aim. Only possible boost shapes allocate this small call-local memo.
+                if (profile == null || !profile.BuffsSpentByCast && profile.CasterBuffs.Count == 0) return null;
+                if (boosts == null) boosts = new Dictionary<AbilityData, SpellBoost>(BoostAbilityIdentity.Instance);
+                if (!boosts.TryGetValue(c.Ability, out var boost))
+                    boosts[c.Ability] = boost = SpellBoostOf(profile, c.Ability, ctx.Unit);
+                return boost;
+            }
             if (!usable.Any(c => BoostOf(c) != null)) return usable;
 
             var main = FollowUpMain(usable, c => BoostOf(c) != null);

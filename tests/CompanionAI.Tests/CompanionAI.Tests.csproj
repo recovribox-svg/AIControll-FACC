@@ -14,6 +14,7 @@
     <Compile Include="..\..\Tactics\ValueModel.Infusions.cs" Link="ValueModel.Infusions.cs" />
     <Compile Include="..\..\Tactics\InfusionSearchBudget.cs" Link="InfusionSearchBudget.cs" />
     <Compile Include="..\..\Tactics\AbilityScoringPolicy.cs" Link="AbilityScoringPolicy.cs" />
+    <Compile Include="..\..\Tactics\CommittedApproachSafety.cs" Link="CommittedApproachSafety.cs" />
     <Compile Include="..\..\Tactics\SharedHdBudget.cs" Link="SharedHdBudget.cs" />
     <Compile Include="..\..\Tactics\SelectedApproachFilter.cs" Link="SelectedApproachFilter.cs" />
     <Compile Include="..\..\Tactics\ResistanceRule.cs" Link="ResistanceRule.cs" />

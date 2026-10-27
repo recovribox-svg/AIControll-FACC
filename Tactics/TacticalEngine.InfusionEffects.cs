@@ -2,6 +2,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Runtime.CompilerServices;
 using Kingmaker.Blueprints;
 using Kingmaker.Blueprints.Classes.Spells;
 using Kingmaker.Designers.EventConditionActionSystem.Actions;
@@ -33,6 +34,41 @@ namespace CompanionAI_Pathfinder.Tactics
         {
             internal List<InfusionHit> Hits;
             internal float DeliveryFactor;
+        }
+
+        // Only a plain reduction result is memoized during one effect appraisal. Identity deliberately avoids
+        // native equality; a different action, source context, recipient or calculated amount must be read again.
+        private readonly struct InfusionDamageRead : IEquatable<InfusionDamageRead>
+        {
+            private readonly ContextActionDealDamage m_Action;
+            private readonly MechanicsContext m_Source;
+            private readonly UnitEntityData m_Target;
+            private readonly float m_Amount;
+
+            internal InfusionDamageRead(ContextActionDealDamage action, MechanicsContext source,
+                UnitEntityData target, float amount)
+            {
+                m_Action = action;
+                m_Source = source;
+                m_Target = target;
+                m_Amount = amount;
+            }
+
+            public bool Equals(InfusionDamageRead other) => ReferenceEquals(m_Action, other.m_Action) &&
+                ReferenceEquals(m_Source, other.m_Source) && ReferenceEquals(m_Target, other.m_Target) && m_Amount.Equals(other.m_Amount);
+            public override bool Equals(object other) => other is InfusionDamageRead read && Equals(read);
+            public override int GetHashCode()
+            {
+                unchecked
+                {
+                    int hash = IdentityHash(m_Action);
+                    hash = hash * 397 ^ IdentityHash(m_Source);
+                    hash = hash * 397 ^ IdentityHash(m_Target);
+                    return hash * 397 ^ m_Amount.GetHashCode();
+                }
+            }
+
+            private static int IdentityHash(object value) => ReferenceEquals(value, null) ? 0 : RuntimeHelpers.GetHashCode(value);
         }
 
         private static float ActiveInfusionValue(TacticalContext ctx, AbilityData ability, AbilityProfile profile,
@@ -225,8 +261,9 @@ namespace CompanionAI_Pathfinder.Tactics
             {
                 var source = installedContext ?? InfusionContext(ctx.Unit, buff, ctx.Unit);
                 int work = 0;
+                Dictionary<InfusionDamageRead, float> damageReads = null; // Allocated only at a pure damage graph's first damage node.
                 float conditional = InfusionActions(ctx, blast, description.Trigger?.Actions, source, target,
-                    ValueModel.Horizon(ctx.ExpectedRounds, 3f), 1f, 0, ref work, out _);
+                    ValueModel.Horizon(ctx.ExpectedRounds, 3f), 1f, 0, ref work, out _, description.DamageGraph, ref damageReads);
                 // Periodic damage is aggregated before HP capping. Never award a separate kill bonus on every tick,
                 // or count damage to a target the immediate blast is expected to finish. Control uses the existing
                 // shared kill-chance appraisal to discount a recipient likely to die on impact.
@@ -249,7 +286,7 @@ namespace CompanionAI_Pathfinder.Tactics
         // reduction, durations, ranks and debuff/control math reuse existing readers. Unknown branches add no value.
         private static float InfusionActions(TacticalContext ctx, AbilityData blast, ActionList list,
             MechanicsContext source, UnitEntityData target, float horizon, float failedSave, int depth,
-            ref int work, out float survives)
+            ref int work, out float survives, bool memoizeDamage, ref Dictionary<InfusionDamageRead, float> damageReads)
         {
             survives = 1f;
             if (list?.Actions == null) return 0f;
@@ -265,7 +302,7 @@ namespace CompanionAI_Pathfinder.Tactics
                     var branch = (Conditional)action;
                     if (AbilityProfile.TryReadConditions(branch.ConditionsChecker, source, target, out bool yes))
                         part = InfusionActions(ctx, blast, yes ? branch.IfTrue : branch.IfFalse, source, target,
-                            horizon, failedSave, depth + 1, ref work, out remains);
+                            horizon, failedSave, depth + 1, ref work, out remains, memoizeDamage, ref damageReads);
                 }
                 else if (action.GetType() == typeof(ContextActionSavingThrow))
                 {
@@ -275,15 +312,16 @@ namespace CompanionAI_Pathfinder.Tactics
                     // Read a present save's DC only; never create/trigger a saving-throw rule during appraisal.
                     int? inheritedDC = save.UseDCFromContextSavingThrow ? source.SavingThrow?.DifficultyClass : null;
                     float fail = CombatMath.SaveFailChance(source, save.Type, target, inheritedDC);
-                    part = InfusionActions(ctx, blast, save.Actions, source, target, horizon, fail, depth + 1, ref work, out remains);
+                    part = InfusionActions(ctx, blast, save.Actions, source, target, horizon, fail, depth + 1, ref work, out remains,
+                        memoizeDamage, ref damageReads);
                 }
                 else if (action.GetType() == typeof(ContextActionConditionalSaved))
                 {
                     var branch = (ContextActionConditionalSaved)action;
                     float a = InfusionActions(ctx, blast, branch.Failed, source, target, horizon, failedSave,
-                        depth + 1, ref work, out float aliveA);
+                        depth + 1, ref work, out float aliveA, memoizeDamage, ref damageReads);
                     float b = InfusionActions(ctx, blast, branch.Succeed, source, target, horizon, failedSave,
-                        depth + 1, ref work, out float aliveB);
+                        depth + 1, ref work, out float aliveB, memoizeDamage, ref damageReads);
                     part = failedSave * a + (1f - failedSave) * b;
                     remains = failedSave * aliveA + (1f - failedSave) * aliveB;
                 }
@@ -292,7 +330,8 @@ namespace CompanionAI_Pathfinder.Tactics
                     var apply = (ContextActionApplyBuff)action;
                     if (!apply.ToCaster && apply.Buff != null && !target.Buffs.HasFact(apply.Buff) &&
                         !CombatMath.BuffImmune(target, apply.Buff, blast))
-                        part = InfusionAppliedBuff(ctx, blast, apply, source, target, horizon, depth + 1, ref work);
+                        part = InfusionAppliedBuff(ctx, blast, apply, source, target, horizon, depth + 1, ref work,
+                            memoizeDamage, ref damageReads);
                 }
                 else if (action.GetType() == typeof(ContextActionOnContextCaster))
                 {
@@ -310,7 +349,8 @@ namespace CompanionAI_Pathfinder.Tactics
                     int count = Math.Min(ranked.Buff.Ranks - present, (int)CombatMath.EvaluateDice(repeated.Value, source, 0));
                     if (count < 0 || count > 16) throw new InvalidOperationException("ranked infusion work limit");
                     for (int rank = 0; rank < count; rank++)
-                        part += InfusionAppliedBuff(ctx, blast, ranked, source, target, horizon, depth + 1, ref work);
+                        part += InfusionAppliedBuff(ctx, blast, ranked, source, target, horizon, depth + 1, ref work,
+                            memoizeDamage, ref damageReads);
                 }
                 else if (action.GetType() == typeof(ContextActionCombatManeuver))
                 {
@@ -331,7 +371,14 @@ namespace CompanionAI_Pathfinder.Tactics
                     if (damage.ReadPreRolledFromSharedValue) continue;
                     float amount = CombatMath.EvaluateDice(damage.Value, source, 0);
                     if (damage.Half) amount *= 0.5f;
-                    part = CombatMath.AfterTargetReduction(target, damage, amount);
+                    if (!memoizeDamage) part = CombatMath.AfterTargetReduction(target, damage, amount);
+                    else
+                    {
+                        if (damageReads == null) damageReads = new Dictionary<InfusionDamageRead, float>();
+                        var read = new InfusionDamageRead(damage, source, target, amount);
+                        if (!damageReads.TryGetValue(read, out part))
+                            damageReads[read] = part = CombatMath.AfterTargetReduction(target, damage, amount);
+                    }
                 }
                 else if (action.GetType() == typeof(ContextActionRemoveSelf)) remains = 0f;
                 // FX and caster-only utility are not target damage/control. Special modifiers are handled separately.
@@ -342,13 +389,14 @@ namespace CompanionAI_Pathfinder.Tactics
         }
 
         private static float InfusionAppliedBuff(TacticalContext ctx, AbilityData blast, ContextActionApplyBuff apply,
-            MechanicsContext parent, UnitEntityData target, float horizon, int depth, ref int work)
+            MechanicsContext parent, UnitEntityData target, float horizon, int depth, ref int work,
+            bool memoizeDamage, ref Dictionary<InfusionDamageRead, float> damageReads)
         {
             var buff = apply.Buff;
             var source = InfusionContext(ctx.Unit, buff, target, parent);
             var actions = buff.GetComponent<AddFactContextActions>();
             float value = InfusionActions(ctx, blast, actions?.Activated, source, target, horizon, 1f,
-                depth + 1, ref work, out float alive);
+                depth + 1, ref work, out float alive, memoizeDamage, ref damageReads);
             if (!(alive > 0f)) return value; // A hidden carrier applies/saves/removes itself immediately.
             float rounds = apply.Permanent ? horizon : apply.UseDurationSeconds ? apply.DurationSeconds / 6f
                 : DurationRounds(apply.DurationValue, null, parent);
@@ -382,7 +430,7 @@ namespace CompanionAI_Pathfinder.Tactics
                 for (int round = 0; round < (int)Math.Floor(rounds) && running > 0f; round++)
                 {
                     float tick = InfusionActions(ctx, blast, actions.NewRound, source, target, 1f, 1f,
-                        depth + 1, ref work, out float stays);
+                        depth + 1, ref work, out float stays, memoizeDamage, ref damageReads);
                     value += running * tick;
                     running *= stays;
                 }
