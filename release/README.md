@@ -24,6 +24,9 @@ verification files or raw playtest logs are included.
 ## Publish on GitHub — author action
 
 Codex prepares and integrates the package; the author creates the GitHub release/tag.
+[Release-preparation PR #12](https://github.com/recovribox-svg/AIControll-FACC/pull/12)
+records the exact development merge revision. The immutable package commit is
+`2c626c1c1fc8ac4c94a7f7fadb63ad18ef113401`.
 
 - Create the release with tag **v0.3.22** and target the prepared revision on
   **`claude/dreamy-pasteur-b9h3rn`**. Main still represents v0.3.21 at this handover.

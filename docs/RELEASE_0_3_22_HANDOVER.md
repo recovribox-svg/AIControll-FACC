@@ -39,9 +39,10 @@ verification shim, harness, raw playtest log or settings file is shipped.
 The versioned identity sidecar and SHA256SUMS record its exact DLL/source/module.
 Earlier release and test ZIPs remain unchanged.
 
-The release-preparation PR and final development merge revision will be recorded
-in the package README/PR timeline after verification. Use that prepared revision
-as the release target, attach this ZIP, and use
+Release preparation is [PR #12](https://github.com/recovribox-svg/AIControll-FACC/pull/12).
+The immutable package commit is `2c626c1c1fc8ac4c94a7f7fadb63ad18ef113401`;
+that PR's timeline records the final development merge revision. Use that prepared
+merge revision as the release target, attach this ZIP, and use
 [CHANGELOG_v0.3.22.md](../release/CHANGELOG_v0.3.22.md) for the release notes.
 Creating the GitHub release/tag remains the author's action.
 
