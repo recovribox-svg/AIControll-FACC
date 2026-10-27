@@ -1,83 +1,93 @@
-# Test[4] fixes playtest — c6af593
+# Test[5] fixes playtest — 25434a2
 
-**[Download the new UMM test ZIP — c6af593](AI-Control-FACC-test4-fixes-c6af593-UMM-test.zip?raw=true)**
+**[Download the new UMM test ZIP — 25434a2](AI-Control-FACC-test5-fixes-25434a2-UMM-test.zip?raw=true)**
 
-The supplied Test[4] logs confirm automatic Burning executes in both modes, including actual DC19 saves and
-periodic damage. This build preserves that functionality and adds the **author-approved narrow spell-safety
-check**: with Avoid friendly fire on, a new harmful lasting control circle is withheld when an ally's accepted
-attack approach clearly ends wholly inside it. No new pathfinding, movement scores, target locks or emergency
-cancellation policy changes.
+Corrects a confirmed outcome bug: a visible failed concentration check could teach a silent/no-reach strike
+against a useful spell/target. Matching native failures now supply refusal evidence; genuine silent-effect
+protection remains. No casting-risk, resource, movement, target-commitment or cancellation policy change.
 
-It also reuses repeated boost descriptions and identical periodic reduction reads within one evaluation,
-keeping candidates and native context/dice/save calculations. Slow decisions now include stage timing;
-slow TB stand-up previews are measured separately. **No measured large speedup is claimed.** Both Test[3]
-and Test[4] were played on the same budget laptop; hardware and workload both matter.
+The author rated the preceding Test[5] **8/10 smoothness**, improved over Test[4]. This preserves prior
+optimizations and decision scope. Sleep scoring stays unchanged: the reported Quasit-versus-human-cluster
+choice lacks enough competing-aim evidence to justify new weights. Bounded diagnostics now expose existing
+Sleep aim values/rejections and energy-estimate return routes. **No resistance fix or new speedup is claimed.**
 
-[Draft PR #10](https://github.com/recovribox-svg/AIControll-FACC/pull/10) targets development and includes pending
-PR #9/#8/#7/#6 as dependencies. Main/shared development are unchanged. This is an unmerged test for intended
-v0.3.22; UMM release metadata remains 0.3.21. The withdrawn broad implementation stays withdrawn.
+[Draft PR #11](https://github.com/recovribox-svg/AIControll-FACC/pull/11) targets development and includes pending
+PR #10/#9/#8/#7/#6. Main/shared development are unchanged. This is an unmerged test for intended v0.3.22;
+release metadata remains 0.3.21. The withdrawn broad implementation remains withdrawn.
 
 ## Install and identify
 
 1. Fully exit the game.
-2. Download the ZIP above and install/update it through Unity Mod Manager's **Mods** tab.
-3. UMM still shows **0.3.21**. If it will not replace a same-version install, extract the two files into
-   `<game>/Mods/CompanionAI_Pathfinder/`, overwriting those files only. Keep existing settings.
+2. Install/update the ZIP through Unity Mod Manager's **Mods** tab.
+3. UMM still shows **0.3.21**. If it will not replace a same-version install, extract these two files into
+   `<game>/Mods/CompanionAI_Pathfinder/`, overwriting those files only. Keep settings.
 4. Restart and verify the complete log contains:
 
 ```text
-[Build] test4-logic-fixes module=d98eb9f4-8bb4-448f-bfcb-4a701fb87368 on v0.3.21
+[Build] test5-logic-fixes module=5bc34728-8614-4cd9-a9ef-046868de2d4f on v0.3.21
 ```
 
-A different/missing marker means another DLL is loaded. To return to normal play, fully exit and reinstall
-stable v0.3.21. Send both AI logs and the native **CombatLog**, this ZIP filename and your observations.
+A different/missing marker means another DLL loaded. For normal play, fully exit and reinstall stable
+v0.3.21. Send complete AI logs and native **CombatLog**, this ZIP filename and observations.
 
-## Focused playtest, both TB and RT
+## Focused playtest
 
-- Enable **AI manages toggles**. Start a fresh fight with learned infusions off. Check useful activation,
-  native buff/save/burn, replacements/off, management disabled, player-owned groups and original-state restoration.
-  A better ordinary action, immunity, applicability, extra burn or the existing threshold can keep an infusion off.
-- RT spell safety: with **Avoid friendly fire** on, approach an enemy on flat ground while another companion
-  considers Grease centred on that melee target. A clearly contained compact arrival should produce a `[Walk]`
-  withhold explanation. Compare FF off, Selective/immunity and an already-in-reach attack. Slopes, boundaries,
-  partial overlaps and many large-target/ranged approaches remain uncertain and receive no new guarantee.
-  The specific logged Seelah incident is not proven prevented without replay.
-- Compare cold/warm Orvath, summons and ordinary companions with the same save/settings/mods, including idle
-  portrait selection and TB stand-up. `[Perf]` slow lines now show stages; nested active-infusion time is already
-  included in those stages. Slow stand-up previews are separate from normal decision summaries.
-- Continue checking Fire Blast before/after resisted hits. **Initial optimistic fire estimates remain unresolved.**
-  A failed native reduction query now logs `[Math]` instead of silently falling back. Send native damage details.
+- Both modes: an ordinary failed concentration check should produce `[Cast] ... native failure, not counted
+  as silent`, with no silent/no-reach strike for that event. Genuine silent-effect cases should still be detected.
+  Live native/third-party event ordering needs replay; offline checks do not prove it.
+- Replay TB7's Quasit/human cluster. `[HD-Aim]` shows up to 12 already-scored centres, existing values/rejections,
+  scored risks and up to 3 HD-eligible recipient IDs each. Eligibility is not guaranteed positive benefit or
+  a failed save. Rows precede selected-path preparation/policy; chosen current value is printed separately.
+  All remaining centres still score; no new cluster bonus, priority, repeated-save blacklist or extra query.
+- Fire/Burning against resistant targets: include `[Math] energy estimate` and native damage packets.
+  The existing raw/native/observed/final values and return route are logged separately for direct/infusion reads,
+  at most 24 rows/fight. Other energy reads can exhaust that sample. Initial resistance optimism is **unresolved**;
+  actual criticals sometimes penetrate, so there is no blanket Fire blacklist.
+- Recheck native infusion activation/burn/off/restoration, player ownership and management off. The prior
+  logs confirm five successful Burning activations; they do not gameplay-validate every supported infusion.
+- The committed-approach Grease safety guard remains narrow and respects actual Selective protection.
+  Vanilla Selective Grease that spares allies bypasses the veto. A TTT setting that makes a lasting area
+  affect allies remains guarded. No broader path/movement guarantee; no discovery change for the second
+  blast the author confirmed was not actually granted.
+- Same save/settings/mods: compare ordinary companions, Orvath/summons and idle selection in both modes.
+  New bounded diagnostics allocate small notes/keys; live performance parity still needs replay.
 
 ## Verification and limits
 
-- **164 tests pass**, zero failed/skipped; Release has zero warnings/errors against real supplied references.
-- Native-data checks pass: 13 compiled memo identity/hash assertions, five Grease structural gates, existing
-  activation/Free/Swift/layout checks, 486 native cost/quiver vectors, Rare Metal and cone bindings.
-- Partial ordinary reader audit: 4,097 loaded exports, one known failed export; 1,220 rows / zero reader errors,
-  all normalized verdict/detail rows unchanged from the preceding build.
-- **This new build has not been tested in game.** Offline checks do not prove live spell vetoes, command handlers,
-  frame-time gains or every infusion family. Only Burning is exercised by the supplied Test[4] gameplay logs.
-- Unraveling and Chain Arrows remain withheld; Deep Slumber keeps its spreading restriction. No new Gather,
-  metakinesis or form optimizer. Search limits exclude ordinary/active-effect work and cannot interrupt native calls.
+**164 tests pass**, zero failed/skipped. Release builds against supplied game/UMM references with zero
+warnings/errors. Compiled concentration/native bindings, Selective chain and HD diagnostic boundaries pass;
+six detached vanilla Grease off/on/off assertions yield affects/spares/affects allies. No initialized actor,
+TTT/AutoMetamagic handler, gameplay rule or spawn is run by these fixtures. Energy trace return/query scope
+has an independent source review.
 
-[Full Test[4] review](../docs/TEST4_REVIEW.md) · [infusion support matrix](../docs/INFUSION_SELECTION_PLAN.md).
+Retained checks pass: 13 memo assertions, 5 Grease gates, 20 activation metadata cases, Free/Swift thresholds,
+18 recognized/two withheld layouts, 486 native cost/quiver vectors, Rare Metal,cone bindings/metadata and
+compiled activation/resistance routes. Partial ordinary reader: 4,097 loaded exports, one known failed export;
+1,220 rows, zero reader errors, all normalized details unchanged from the preceding build.
+
+**No in-game test of this new build.** Concentration settlement and diagnostics need live acceptance.
+Unraveling/Chain Arrows remain withheld; Deep Slumber keeps its spreading restriction. No new Gather,
+metakinesis or form optimizer. Separate unacted Aid Another/no-reach ordering remains an investigation lead.
+[Full review](../docs/TEST5_REVIEW.md) · [Infusion support](../docs/INFUSION_SELECTION_PLAN.md).
 
 ## Identity
 
-- Runtime source: `c6af5932caac1cd821c11dc77fa126bcb710cf90`.
-- MVID: `d98eb9f4-8bb4-448f-bfcb-4a701fb87368`.
-- ZIP SHA-256: `39d5c86ddd4908032841f4696421db2d02e5bb6d4d7f38b5763f2c1c897e5c1d`.
-- DLL SHA-256: `c364089a5a3ef53bf45f380c3203b8dd2b8da1024411a487fe10d00ff43a017f`.
-- Flat archive contains exactly `CompanionAI_Pathfinder.dll` and unchanged `Info.json`.
-- [Versioned identity](AI-Control-FACC-test4-fixes-c6af593-UMM-test.identity.json) · [SHA256SUMS](SHA256SUMS.txt).
+- Runtime source: `25434a2332a467992a3385e4b1722049c1e54fbb`.
+- MVID: `5bc34728-8614-4cd9-a9ef-046868de2d4f`.
+- ZIP SHA-256: `bf91fc8ad1dabdbe4645071a54b1581c4f8e6018ec24b89f2c654ee5482bf6fd`.
+- DLL SHA-256: `74734f45efed6f91930d3b2019395dec28a7d58749b481523734055de2576bee`.
+- Flat archive: exactly checked `CompanionAI_Pathfinder.dll` and unchanged `Info.json`.
+- [Versioned identity](AI-Control-FACC-test5-fixes-25434a2-UMM-test.identity.json) · [SHA256SUMS](SHA256SUMS.txt).
 
 ## Earlier downloads retained
 
-- [Previous native-infusion-command fixes — aa9fe94](AI-Control-FACC-test3-fixes-aa9fe94-UMM-test.zip?raw=true)
+- [Test[4] fixes — c6af593](AI-Control-FACC-test4-fixes-c6af593-UMM-test.zip?raw=true)
+  and [identity](AI-Control-FACC-test4-fixes-c6af593-UMM-test.identity.json).
+- [Native command fixes — aa9fe94](AI-Control-FACC-test3-fixes-aa9fe94-UMM-test.zip?raw=true)
   and [identity](AI-Control-FACC-test3-fixes-aa9fe94-UMM-test.identity.json).
-- [Infusion-selection Test[3] — 05d1959](AI-Control-FACC-infusion-selection-05d1959-UMM-test.zip?raw=true)
+- [Infusion selection — 05d1959](AI-Control-FACC-infusion-selection-05d1959-UMM-test.zip?raw=true)
   and [identity](AI-Control-FACC-infusion-selection-05d1959-UMM-test.identity.json).
-  **Known failed activation path; use the new build for further testing.**
+  **Known failed activation path; use the newest build for further testing.**
 - [Test[1] scoring fixes — 8fb0257](AI-Control-FACC-test1-scoring-fixes-8fb0257-UMM-test.zip?raw=true)
   and [identity](AI-Control-FACC-test1-scoring-fixes-8fb0257-UMM-test.identity.json).
 - [Original Test[1] — 0a7ed97](AI-Control-FACC-infusion-value-0a7ed97-UMM-test.zip?raw=true)
@@ -85,4 +95,4 @@ stable v0.3.21. Send both AI logs and the native **CombatLog**, this ZIP filenam
 - [Optional diagnostics — 664815b](AI-Control-FACC-infusion-value-664815b-UMM-test.zip?raw=true)
   and [identity](AI-Control-FACC-infusion-value-664815b-UMM-test.identity.json).
 
-Old filenames/checksums remain unchanged so logs can be tied to the installed binary.
+Prior filenames/checksums remain unchanged for exact log-to-build matching.

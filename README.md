@@ -1,22 +1,22 @@
 # AI Control - Fully Autonomous Combat Companions
 
-## New Test[4] fixes — c6af593
+## New Test[5] fixes — 25434a2
 
-**[Download the new UMM test ZIP — c6af593](test-builds/AI-Control-FACC-test4-fixes-c6af593-UMM-test.zip?raw=true)**
+**[Download the new UMM test ZIP — 25434a2](test-builds/AI-Control-FACC-test5-fixes-25434a2-UMM-test.zip?raw=true)**
 
-The supplied logs confirm automatic Burning Infusion now executes and deals periodic damage. This test adds
-the approved narrow Grease/control-area safety check for an ally's already committed attack approach, reuses
-repeated forecast reads locally, and adds stage timings for remaining slow decisions. Decision improvements
-are retained; movement/target commitment/navigation/cancellation policy is unchanged.
+Fixes false silent/no-reach strikes after actual concentration failures. Adds bounded explanations of
+already-scored Sleep aims and existing energy-damage estimates. Sleep scoring, blast discovery, movement
+rules and performance budgets stay unchanged. The preceding build earned the author's **8/10 smoothness**
+feedback; no new speedup is claimed. Initial fire-resistance optimism remains unresolved.
 
-Close the game before installing through UMM. It still displays **0.3.21**; verify the exact startup marker.
-[Installation, identity and both-mode playtest steps](test-builds/README.md).
+Fully exit before installing through UMM. It still shows **0.3.21** for intended v0.3.22 development.
+[Install, exact startup marker and focused replay](test-builds/README.md).
 
-All **164 tests pass**; Release and native-data checks pass. **New guard effectiveness and performance need
-live testing.** Initial optimistic Fire Blast resistance estimates remain unresolved. [Full review](docs/TEST4_REVIEW.md).
+**164 tests pass**; Release and native checks pass. New concentration settlement and diagnostics still
+need in-game testing. [Full Test[5] review](docs/TEST5_REVIEW.md).
 
-Isolated in [draft PR #10](https://github.com/recovribox-svg/AIControll-FACC/pull/10), targeting development,
-including pending PR #9/#8/#7/#6. Main/shared development are unchanged. For normal play use the
+[Draft PR #11](https://github.com/recovribox-svg/AIControll-FACC/pull/11) targets development, with pending
+PR #10/#9/#8/#7/#6 included. Main/shared development are unchanged. For normal play use the
 [stable v0.3.21 release](https://github.com/recovribox-svg/AIControll-FACC/releases/tag/v0.3.21).
 
 Read the [rollback and failure analysis](docs/V0_3_22_POSTMORTEM.md) before further development.
