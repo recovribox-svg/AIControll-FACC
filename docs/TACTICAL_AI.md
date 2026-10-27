@@ -2608,3 +2608,59 @@ retains one known unrelated failed file. Live guard effectiveness and Unity/Mono
 performance need replay.
 The isolated task includes PR #9/#8/#7/#6 dependencies; it does not update main or
 shared development and retains release metadata 0.3.21 for intended v0.3.22.
+
+## 70. Test[5]: concentration outcome correction and bounded control/energy evidence
+
+[Full review, evidence, limits and replay checklist](TEST5_REVIEW.md). The author
+reports 8/10 smoothness with definite improvement over Test[4]. Ordinary samples
+are mostly lower, but encounter/state/work differences prevent a controlled
+speedup claim. Seven warm long decisions overlap collection in weapons/modes or
+ordinary ability work; active infusion/search does not dominate. Preserve current
+local reuse and decision scope; no further performance pruning is introduced.
+
+A confirmed outcome-tracking defect treated visible native concentration failures
+as silent/no-reach failures: Seelah's failed Cure and Orvath's failed Sleep each
+received a strike despite native CombatLog explaining the failed roll. The
+existing CastOutcome subscriber now observes failed RuleCheckConcentration for
+the matching pending caster/root/touch/ConvertedFrom spell, records native refusal
+evidence and disables target-reach judgment without claiming an effect reached.
+Successful/unrelated checks and genuine silent-effect safety remain unchanged.
+No rule is triggered and no casting-risk, command, resource or movement policy
+changes. Live settlement/event ordering still requires replay.
+
+The reported two Quasit Sleeps in TB7 are real; both saves pass. All ordinary
+centres are considered and shared-HD recipients are weighted by native eligibility,
+chance, threat/state and existing risks. Missing competing-centre values/positions
+prevent proving that a visible human cluster had greater legal expected value.
+Multi-target and useful immune-centred Sleep choices remain demonstrably present.
+No cluster bonus, weights, minimum-recipient rule or save-based blacklist is added.
+A selected-action `[HD-Aim]` diagnostic samples twelve already-appraised centres,
+existing reasons/risks and up to three existing HD-eligible IDs per centre. It
+adds no appraisal/query; capture stays off for previews/counterfactuals and cones.
+Its cap limits only diagnostics, never scoring, and its labels distinguish HD
+eligibility from positive benefit and pre-policy rows from the selected value.
+
+Five Burning activations succeed, native periodic damage is visible, and burn
+recovery/restoration remain exercised. Optimistic Fire Blast/resistance estimates
+persist without a native-query exception; actual criticals sometimes penetrate.
+No new damage formula or blanket blacklist is justified. A 24-row/fight ID-keyed
+`[Math] energy estimate` trace exposes existing raw/native/observed/final values
+and return routes without new defence queries or changed returns. Prior censored-
+observation and successful-hit bypass behavior remain; the root discrepancy is
+not claimed fixed. Samples can be exhausted before every later case is recorded.
+
+Six committed-approach Grease vetoes confirm the §69 gates are exercised, without
+proving six prevented knockdowns. Existing Selective protection goes through the
+possibly mod-patched native area check; genuinely protected allies bypass the
+new veto. No broader movement/commitment/navigation/cancellation change is made.
+The second-blast report was corrected by the author: its external grant failed
+and manual casting was unavailable too. No discovery change is warranted.
+
+164 existing pure tests pass; Release has zero warnings/errors. Retained native
+activation/cost/memo/cone checks and all 1,220 ordinary reader rows pass, with the
+same partial export coverage. Compiled observer/Selective/HD diagnostic checks
+pass, as do detached native Grease Selective off/on/off assertions; the energy
+trace has an independent source review. These do not run live actors, AutoMetamagic
+or Tabletop Tweaks handlers. No new build has been run in game. The isolated branch
+includes PR #10/#9/#8/#7/#6 and leaves main/development unchanged, retaining release
+metadata 0.3.21 for intended v0.3.22.

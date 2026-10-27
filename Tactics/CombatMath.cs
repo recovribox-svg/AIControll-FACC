@@ -616,7 +616,7 @@ namespace CompanionAI_Pathfinder.Tactics
                         avg *= ArcherBlastDecline(ability, dmg, target);
                         parts.Add(new KeyValuePair<GameAction, float>(dmg,
                             (physicalBypass && dmg.DamageType?.Type == Kingmaker.RuleSystem.Rules.Damage.DamageType.Physical
-                                ? avg : AfterTargetReduction(target, dmg, avg)) * swarmArea));
+                                ? avg : AfterTargetReduction(target, dmg, avg, ability)) * swarmArea));
                         break;
                     // A kill is valued apart (KillApplies): it lands on a failed save, not half on a passed one.
                     case ContextActionKill _:
@@ -838,15 +838,18 @@ namespace CompanionAI_Pathfinder.Tactics
         /// them: Orvath's Fire Blast was valued at 25 against a Dretch (demons resist fire 10) for five rounds running.
         /// Weapon attacks already use the DR helper (HitChanceCalculator.CalculateDamageReduction).
         /// </summary>
-        internal static float AfterTargetReduction(UnitEntityData target, ContextActionDealDamage dmg, float value)
+        internal static float AfterTargetReduction(UnitEntityData target, ContextActionDealDamage dmg, float value,
+            AbilityData sourceAbility = null, bool infusion = false)
         {
             if (target == null || value <= 0f || dmg?.DamageType == null) return value;
             var seen = DamageObserver.Lookup(target, DamageObserver.KeyOf(dmg.DamageType));
             float observed = seen?.Apply(value) ?? value;
             // A successful observed hit can prove a caster-specific bypass of visible resistance/immunity.
             // Preserve that evidence; only a fully absorbed packet leaves its reduction as a lower bound.
-            if (seen != null && !seen.ReductionCapped) return observed;
-            if (seen?.Immune == true) return 0f;
+            if (seen != null && !seen.ReductionCapped)
+                return TraceEnergyRead(target, dmg, sourceAbility, infusion, value, observed, seen, "observed", null);
+            if (seen?.Immune == true)
+                return TraceEnergyRead(target, dmg, sourceAbility, infusion, value, 0f, seen, "observed immunity", null);
             try
             {
                 var type = dmg.DamageType;
@@ -859,21 +862,83 @@ namespace CompanionAI_Pathfinder.Tactics
                 // ★ test5: the game has two energy-immunity components; only AddEnergyImmunity registers with
                 // UnitPartDamageReduction. AddEnergyDamageImmunity is read the way the game's own character sheet reads it
                 // (UnitDescriptionHelper.VisitComponents). Orvath cast Fire Blast on Quasits 31 times.
-                if (energy && HasEnergyDamageImmunity(target, type.Energy)) return 0f;
+                if (energy && HasEnergyDamageImmunity(target, type.Energy))
+                    return TraceEnergyRead(target, dmg, sourceAbility, infusion, value, 0f, seen, "native component immunity", 0f);
                 var part = target.Get<Kingmaker.UnitLogic.Parts.UnitPartDamageReduction>();
-                if (part == null) return observed;
-                if (energy && part.IsImmune(type.Energy)) return 0f;
+                if (part == null)
+                    return TraceEnergyRead(target, dmg, sourceAbility, infusion, value, observed, seen, "no reduction part", null);
+                if (energy && part.IsImmune(type.Energy))
+                    return TraceEnergyRead(target, dmg, sourceAbility, infusion, value, 0f, seen, "native part immunity", 0f);
                 _ = part.AllSources.Count();                       // initialises the part's resistance chunks
                 var damage = type.CreateDamage(new DiceFormula(0, DiceType.Zero), 0);
-                return Math.Min(observed, part.EstimateDamage(value * (seen?.Factor ?? 1f), damage, null));
+                float native = part.EstimateDamage(value * (seen?.Factor ?? 1f), damage, null);
+                return TraceEnergyRead(target, dmg, sourceAbility, infusion, value, Math.Min(observed, native), seen, "native estimate", native);
             }
             catch (Exception ex)
             {
                 AbilityDiscovery.ReportOnce($"reduction-read|{target.UniqueId}|{dmg.DamageType.Type}|{ex.GetType().Name}",
                     $"[Math] {target.CharacterName}: native damage-reduction estimate unavailable ({ex.GetType().Name}: {ex.Message}); " +
                     "using existing observed/raw fallback");
-                return observed;
+                return TraceEnergyRead(target, dmg, sourceAbility, infusion, value, observed, seen, "native exception", null);
             }
+        }
+
+        // Test[5]: bounded evidence for optimistic energy forecasts. Keys retain IDs only, not actors/contexts/rules.
+        // No new defence query is made; log the inputs and whichever return route the existing calculation used.
+        private readonly struct EnergyReadKey : IEquatable<EnergyReadKey>
+        {
+            private readonly string caster, target, route;
+            private readonly BlueprintGuid ability;
+            private readonly Kingmaker.Enums.Damage.DamageEnergyType energy;
+            private readonly bool infusion;
+
+            internal EnergyReadKey(string caster, string target, BlueprintGuid ability,
+                Kingmaker.Enums.Damage.DamageEnergyType energy, string route, bool infusion)
+            {
+                this.caster = caster; this.target = target; this.ability = ability;
+                this.energy = energy; this.route = route; this.infusion = infusion;
+            }
+
+            public bool Equals(EnergyReadKey other) => caster == other.caster && target == other.target &&
+                ability.Equals(other.ability) && energy == other.energy && route == other.route && infusion == other.infusion;
+            public override bool Equals(object other) => other is EnergyReadKey key && Equals(key);
+            public override int GetHashCode()
+            {
+                unchecked
+                {
+                    int hash = caster?.GetHashCode() ?? 0;
+                    hash = hash * 397 ^ (target?.GetHashCode() ?? 0);
+                    hash = hash * 397 ^ ability.GetHashCode();
+                    hash = hash * 397 ^ (int)energy;
+                    hash = hash * 397 ^ route.GetHashCode();
+                    return hash * 397 ^ infusion.GetHashCode();
+                }
+            }
+        }
+
+        private const int MaxEnergyReadTraces = 24;
+        private static readonly HashSet<EnergyReadKey> EnergyReadsTraced = new HashSet<EnergyReadKey>();
+        internal static void ClearEnergyReadTrace() => EnergyReadsTraced.Clear();
+
+        private static float TraceEnergyRead(UnitEntityData target, ContextActionDealDamage dmg, AbilityData ability,
+            bool infusion, float raw, float remaining, DamageObserver.Seen seen, string route, float? native)
+        {
+            if (ability?.Blueprint == null || dmg.DamageType.Type != Kingmaker.RuleSystem.Rules.Damage.DamageType.Energy ||
+                EnergyReadsTraced.Count >= MaxEnergyReadTraces) return remaining;
+            try
+            {
+                var caster = ability.Caster?.Unit;
+                var key = new EnergyReadKey(caster?.UniqueId, target.UniqueId, ability.Blueprint.AssetGuid,
+                    dmg.DamageType.Energy, route, infusion);
+                if (EnergyReadsTraced.Add(key))
+                    Main.Log($"[Math] energy estimate {caster?.CharacterName}'s {ability.Name} " +
+                        $"{(infusion ? "infusion" : "direct")} -> {target.CharacterName}: {dmg.DamageType.Energy}, raw={raw:F2}, " +
+                        $"route={route}, native remaining={(native.HasValue ? native.Value.ToString("F2") : "not queried")}, " +
+                        $"observed={(seen == null ? "none" : $"factor {seen.Factor:F2}, flat {seen.Flat}, immune {seen.Immune}, capped {seen.ReductionCapped}")}, " +
+                        $"remaining={remaining:F2} (first per route; at most {MaxEnergyReadTraces} rows/fight)");
+            }
+            catch { } // Diagnostic identity/formatting must never change the estimate or its fallback.
+            return remaining;
         }
 
         /// <summary>

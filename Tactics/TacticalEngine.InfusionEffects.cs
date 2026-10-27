@@ -371,13 +371,13 @@ namespace CompanionAI_Pathfinder.Tactics
                     if (damage.ReadPreRolledFromSharedValue) continue;
                     float amount = CombatMath.EvaluateDice(damage.Value, source, 0);
                     if (damage.Half) amount *= 0.5f;
-                    if (!memoizeDamage) part = CombatMath.AfterTargetReduction(target, damage, amount);
+                    if (!memoizeDamage) part = CombatMath.AfterTargetReduction(target, damage, amount, blast, infusion: true);
                     else
                     {
                         if (damageReads == null) damageReads = new Dictionary<InfusionDamageRead, float>();
                         var read = new InfusionDamageRead(damage, source, target, amount);
                         if (!damageReads.TryGetValue(read, out part))
-                            damageReads[read] = part = CombatMath.AfterTargetReduction(target, damage, amount);
+                            damageReads[read] = part = CombatMath.AfterTargetReduction(target, damage, amount, blast, infusion: true);
                     }
                 }
                 else if (action.GetType() == typeof(ContextActionRemoveSelf)) remains = 0f;

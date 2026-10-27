@@ -60,6 +60,8 @@ namespace CompanionAI_Pathfinder.Tactics
         internal IReadOnlyCollection<UnitEntityData> GeometryRecipients;
         internal TacticalEngine.InfusionAim InfusionAim;
         internal TacticalEngine.InfusionSwitch InfusionSwitch;
+        // Test[5]: bounded read-only evidence from this ordinary ability appraisal, never a counterfactual cache.
+        internal TacticalEngine.ControlAimDiagnostics ControlAims;
         internal float BurnPrice;
         internal int NativeBurn;
         public string Key;
@@ -294,7 +296,7 @@ namespace CompanionAI_Pathfinder.Tactics
             try { foreach (var c in candidates.Where(c => c.Kind == CandidateKind.WeaponAttack).ToList()) ChooseAttackModes(ctx, c); }
             catch (Exception ex) { Main.Error($"[Tactics] attack modes: {ex}"); }
             timings?.Mark(DecisionStage.Weapons);
-            try { AddAbilityCandidates(ctx, candidates); } catch (Exception ex) { Main.Error($"[Tactics] ability candidates: {ex}"); }
+            try { AddAbilityCandidates(ctx, candidates, captureControlAims: !preview); } catch (Exception ex) { Main.Error($"[Tactics] ability candidates: {ex}"); }
             timings?.Mark(DecisionStage.Abilities);
             // ★ v0.3.19 (test6): kineticists - burn priced, and what to do when burn blocks every blast.
             try { PriceBurn(ctx, candidates); AddKineticCandidates(ctx, candidates, preview); }
@@ -392,6 +394,7 @@ namespace CompanionAI_Pathfinder.Tactics
             ctx.TurnValue = (quick != null ? quick.Value : 0f) +
                             (main != null && main.Value >= MinMainValue ? main.Value : 0f);
             if (preview) return chosen;
+            LogControlAimDiagnostics(ctx, chosen);
             // ★ v0.3.20 (test8): a move priced on the straight line has the game's real walk counted before it is made.
             if (chosen?.RiskAt != null) chosen.CountPathAttackers = RealPathCounter(ctx, chosen);
             LogDecision(ctx, usable, chosen);
@@ -1970,7 +1973,7 @@ namespace CompanionAI_Pathfinder.Tactics
 
         #region Abilities, spells and items
 
-        private static void AddAbilityCandidates(TacticalContext ctx, List<Candidate> list)
+        private static void AddAbilityCandidates(TacticalContext ctx, List<Candidate> list, bool captureControlAims = false)
         {
             bool futureSpellsNeeded = (ctx.Global?.AiManagesToggles ?? true) &&
                 (ctx.Unit.ActivatableAbilities?.Enumerable?.Any(t =>
@@ -1992,7 +1995,7 @@ namespace CompanionAI_Pathfinder.Tactics
                     if (!AbilityScoringPolicy.NeedsScore(available, futureOffence, ability.StickyTouch != null,
                         futureSpellsNeeded && (ability.Blueprint.IsSpell || ability.SourceItem != null))) continue;
 
-                    list.AddRange(EvaluateAbility(ctx, ability));
+                    list.AddRange(EvaluateAbility(ctx, ability, captureControlAims: captureControlAims));
                 }
                 catch (Exception ex)
                 {
@@ -2198,7 +2201,8 @@ namespace CompanionAI_Pathfinder.Tactics
         /// highest-value target saves easily can still be the right tier against another enemy).
         /// </summary>
         private static IEnumerable<Candidate> EvaluateAbility(TacticalContext ctx, AbilityData ability,
-                                                              UnitEntityData onlyTarget = null, bool valueActiveInfusions = true)
+                                                              UnitEntityData onlyTarget = null, bool valueActiveInfusions = true,
+                                                              bool captureControlAims = false)
         {
             var none = Enumerable.Empty<Candidate>();
             var profile = AbilityProfile.Get(ability);
@@ -2268,12 +2272,17 @@ namespace CompanionAI_Pathfinder.Tactics
                 if (summonPoint.HasValue) targets.Add(ctx.Unit);
             }
 
+            var controlAims = StartControlAimDiagnostics(profile, captureControlAims);
             Candidate best = null, bestViable = null, bestBoss = null;
             foreach (var target in targets.Distinct())
             {
                 if (onlyTarget != null && target != onlyTarget) continue;
                 var wrapper = summonPoint.HasValue ? new TargetWrapper(summonPoint.Value) : AbilityProfile.TargetOn(ability, target);
-                if (wrapper == null) continue;
+                if (wrapper == null)
+                {
+                    controlAims?.Record(target, null, "no native target wrapper");
+                    continue;
+                }
 
                 bool needsMove = false;
                 Disengage risk = null;
@@ -2290,9 +2299,15 @@ namespace CompanionAI_Pathfinder.Tactics
                         // ledge): a touch cannot reach it from this level. Camellia stepped 0.5 m towards such a Corrupted
                         // Mongrel and was still out of reach; in 0.3.15 a 0.0 m approach repeated until her turn ended.
                         if (ability.Blueprint.StickyTouch != null && HorizontalDistance(ctx.Unit.Position, target.Position) <= range * 0.9f)
+                        {
+                            controlAims?.Record(target, null, "touch height/reach restriction");
                             continue;
+                        }
                         if (slot != ActionSlot.Standard || !ctx.HasMove || ctx.Distance(target) - range > ctx.MoveRange * 0.95f)
+                        {
+                            controlAims?.Record(target, null, "outside native range/LoS; no affordable approach");
                             continue;
+                        }
                         needsMove = true;
                         // ★ v0.3.13: walking up to cast can provoke too.
                         // ★ v0.3.17: around a harmful area when the straight approach walks into it (PlanApproach).
@@ -2316,14 +2331,22 @@ namespace CompanionAI_Pathfinder.Tactics
                         out why, out infusionNote, out geometryRecipients, out geometryChance, valueActiveInfusions);
                 bool infusionProspect = value <= 0f && ctx.ScoredInfusionHits?.Count > 0 && !needsMove &&
                     (ctx.Global?.AiManagesToggles ?? true) && ctx.InfusionProspects.Count < InfusionSearchBudget.MaxAims;
-                if (value <= 0f && !infusionProspect) continue;
+                if (value <= 0f && !infusionProspect)
+                {
+                    controlAims?.Record(target, value, why, geometryRecipients, needsMove);
+                    continue;
+                }
                 float scored = value;
                 // ★ v0.3.18: an area that can only be aimed at a creature (not at the ground) is applied to that creature
                 // first; its spell resistance or immunity stops the whole area (AbilityProfile.TargetOn).
                 if (profile.IsAoE && !profile.SelectsTargets && wrapper.Unit != null && wrapper.Unit != ctx.Unit)
                 {
                     float aimPass = CombatMath.SpellResistancePass(ctx.Unit, wrapper.Unit, ability);
-                    if (aimPass <= 0f) continue;
+                    if (aimPass <= 0f)
+                    {
+                        controlAims?.Record(target, 0f, "main recipient blocks area by SR/immunity", geometryRecipients, needsMove);
+                        continue;
+                    }
                     value *= aimPass;
                 }
                 // ★ v0.3.17 (test3): does the aimed enemy itself get any of the value, or only the others in the area?
@@ -2342,7 +2365,11 @@ namespace CompanionAI_Pathfinder.Tactics
                 float itemBar = ability.SourceItem == null ? 0f
                     : ability.SourceItem is ItemEntityUsable spent && spent.Blueprint.SpendCharges && profile.Heals.Count == 0
                         ? MinSpentItemValue : QuickBar(slot, ability);
-                if (value < itemBar) continue;
+                if (value < itemBar)
+                {
+                    controlAims?.Record(target, value, "below item threshold before risks", geometryRecipients, needsMove);
+                    continue;
+                }
                 if (needsMove) value *= 0.9f;
                 // ★ v0.3.6: a standard-action spell cast in melee needs a defensive-casting check; failing it provokes an
                 // attack of opportunity and can lose the spell (UnitUseAbility.OnTick). Camellia's Cure Light Wounds ended
@@ -2365,7 +2392,11 @@ namespace CompanionAI_Pathfinder.Tactics
                     value *= 0.5f;
                 float preRisk = value;
                 if (risk != null) value = value * (1f - risk.StopChance) - risk.Cost;
-                if (itemBar > 0f && value < itemBar) continue;
+                if (itemBar > 0f && value < itemBar)
+                {
+                    controlAims?.Record(target, value, "below item threshold after risks", geometryRecipients, needsMove);
+                    continue;
+                }
                 // ★ v0.3.18 (test10): what is left of a revive, and what took it (a downed Camellia was never revived in a
                 // real-time fight though the heal would have kept her up; the log could not say why).
                 if (ctx.DownedAllies.Contains(target))
@@ -2396,6 +2427,7 @@ namespace CompanionAI_Pathfinder.Tactics
                             (1f - (risk?.StopChance ?? 0f))
                     },
                     GeometryRecipients = geometryRecipients,
+                    ControlAims = controlAims,
                     Offensive = IsOffensive(why),
                     PureBuff = why.Split('+').All(r => r == "buff" || r.StartsWith("grows into")) && why.Contains("buff"),
                     Label = $"{(ability.SourceItem != null ? "Item:" : "")}{ability.Name}{metamagic}->{(summonPoint.HasValue ? "a spot near the fight" : target.CharacterName)}({why}){risk?.Tag}" +
@@ -2415,6 +2447,8 @@ namespace CompanionAI_Pathfinder.Tactics
                     PreRiskValue = preRisk,
                     Key = $"abl:{CombatMemory.AbilityKey(ability)}{metamagic}:{target.UniqueId}"
                 };
+                controlAims?.Record(target, value, why, geometryRecipients, needsMove, provokeLoss,
+                    concentrationChance, risk?.StopChance ?? 0f, risk?.Cost ?? 0f);
                 if (Better(candidate, best)) best = candidate;
                 if (infusionProspect) ctx.InfusionProspects.Add(candidate);
                 if (!progressive || !candidate.Offensive) continue;
