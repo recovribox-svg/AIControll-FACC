@@ -1,5 +1,86 @@
 # Test builds
 
+**[Download the new UMM test ZIP — 649ed23](AI-Control-FACC-log2-fixes-649ed23-UMM-test.zip?raw=true)**
+
+This **unmerged v0.3.22 follow-up** fixes two observer bugs found in Log2:
+
+- An interrupted spell that never cast could receive a target-failure strike when
+  its caster's older Grease generated saves during the approach. It now remains
+  uncounted, preserving actual executed-cast safety checks.
+- Missed-roll splash, such as a missed Holy Water throw, could be compared with
+  full direct-hit damage in calibration. It is excluded from that comparison;
+  actual packet resistance/immunity observations remain.
+
+Includes the preceding optional TTT resistance fix from pending
+[PR #13](https://github.com/recovribox-svg/AIControll-FACC/pull/13). The new logs
+confirm TTT reads and five automatic Burning activations with native effects.
+Movement/target commitment, scoring weights, performance budgets and game speed
+are unchanged. No new speedup or in-game acceptance of this DLL is claimed.
+
+UMM still displays **0.3.22**. This separate test preserves the
+[published stable ZIP](../release/CompanionAI_Pathfinder_v0.3.22.zip?raw=true).
+
+## Install and identify this test
+
+1. Fully exit the game.
+2. Install this ZIP through Unity Mod Manager's Mods tab.
+3. If UMM refuses a same-version replacement, extract the ZIP's two files into
+   `<game>/Mods/CompanionAI_Pathfinder/`, overwriting those files only; keep settings.
+4. Restart and confirm this exact line in the complete startup log:
+
+```text
+[Build] v0.3.22 module=793a9fe8-cc9d-49fc-b535-b323a25148f3
+```
+
+A different/missing marker means another DLL loaded. To return to stable, fully
+exit, reinstall the linked stable ZIP and restart.
+
+## Focused replay
+
+- With old Grease ticking, interrupt an approaching spell before it casts. Expect
+  ended-before-cast/not-counted, with no target-failure strike for that order.
+  Existing stuck recovery and genuine executed silent-failure safety should remain.
+- When Holy Water misses, retain real splash damage/defense observations without
+  classifying missed-roll packets as full direct hits. Recheck normal hits and
+  ordinary AoE without an attack roll.
+- Recheck automatic Burning/DC/burn/off restoration, player ownership and disabled
+  management in TB/RT. Preserve TTT resistant-target avoidance, susceptible targets,
+  actual immunity, group Sleep and healing.
+- Reach/Grease remains diagnostic-only. Unknown foe intent stays unknown; no new
+  back-off behavior is intended.
+- Compare the same save/settings/mods for ordinary companions, Orvath/summons and
+  idle selection. Current supplied sessions were rated 7.5/10, not a benchmark
+  for this new DLL. Send complete AI startup/logs, native CombatLog and ZIP filename.
+
+## Checks and identity
+
+164 unit tests pass; Release has zero warnings/errors. 64 actual compiled cast-gate
+vectors/406 assertions and 20 compiled/native missed-sample assertions pass.
+The cast check reproduces the old false-strike branch. Retained TTT/native/
+infusion/cone/observer checks pass. All 1,220 ordinary reader details match release
+(4,097 exports loaded/one known failure, partial coverage). Independent review
+found no blocking regression. No initialized actor, game event or Unity/Mono
+lifecycle was run offline; live replay remains necessary.
+
+- Runtime source: `649ed232b0b2ae5ac6075f5e2b4086a6c62bfba0`.
+- Module: `793a9fe8-cc9d-49fc-b535-b323a25148f3`.
+- ZIP SHA-256: `1210e2192caa21d0702e1cad8105c75f6124a834fbc989a2fea6b676fe05e995`.
+- DLL SHA-256: `4fe88688b7005ba758f266b39d5b0d2fe1dac41525fc43797b5efb5046122ebf`.
+- Flat archive: exactly the checked DLL and unchanged `Info.json`.
+- [Identity](AI-Control-FACC-log2-fixes-649ed23-UMM-test.identity.json) · [Checksums](SHA256SUMS.txt).
+- [Evidence, limits and handover](../docs/RELEASE_0322_LOG2_REVIEW.md).
+
+## Earlier downloads
+
+All prior ZIPs, identities and checksums remain unchanged. Their original
+handover is retained below for reproducing earlier sessions; use the top link
+for this test and its correct startup marker.
+
+<details>
+<summary>Previous follow-up and historical test instructions</summary>
+
+# Test builds
+
 **[Download the new UMM test ZIP — ea20a79](AI-Control-FACC-release0322-fixes-ea20a79-UMM-test.zip?raw=true)**
 
 This **unmerged follow-up to released v0.3.22** fixes resistance appraisal when
@@ -174,3 +255,5 @@ metakinesis or form optimizer. Separate unacted Aid Another/no-reach ordering re
   and [identity](AI-Control-FACC-infusion-value-664815b-UMM-test.identity.json).
 
 Prior filenames/checksums remain unchanged for exact log-to-build matching.
+
+</details>
