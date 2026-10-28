@@ -22,7 +22,7 @@ Grease generates saving throws. The approach is then cancelled as stuck:
 Interrupt, acted=False, moved0.1m. CastOutcome nevertheless reports no target
 result and adds a (1/2) strike, whereas the cast ledger correctly says unacted.
 
-Source hypothesis: CastOutcome.Setttle's pre-execution discard requires both
+Source hypothesis: CastOutcome.Settle's pre-execution discard requires both
 !Executed and !Evidence. Old-area saves set the broad Evidence flag, while the
 separate target-reached filter correctly excludes other areas. That broad flag
 must not convert a never-executed, unacted interrupted order into a tried cast.

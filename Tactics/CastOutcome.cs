@@ -232,7 +232,9 @@ namespace CompanionAI_Pathfinder.Tactics
             // target gone). Nothing was tried, so nothing failed. In the 0.3.18-test2 real-time log every party command was
             // interrupted at once several times; each counted as "did nothing to its target", and Doom was blocked on the
             // Cultist Champion after two such interruptions.
-            if (!p.Executed && !p.Evidence && p.Command != null && !p.Command.IsActed)
+            // v0.3.22 Log2: old Grease saves can set broad Evidence while this order is still approaching.
+            // They cannot turn a never-executed, unacted command into a cast tried on its target.
+            if (!p.Executed && p.Command != null && !p.Command.IsActed)
             {
                 ByCaster.Remove(caster.UniqueId);
                 Main.Verbose($"[Cast] {caster.CharacterName}: {p.Name} ended before it was cast ({p.Command.Result}) - not counted");
