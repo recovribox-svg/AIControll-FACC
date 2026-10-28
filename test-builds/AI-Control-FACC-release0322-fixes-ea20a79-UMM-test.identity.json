@@ -1,0 +1,46 @@
+{
+  "test_name": "Released 0.3.22 follow-up: optional TTT resistance appraisal and reach diagnostics",
+  "umm_manifest_version": "0.3.22",
+  "branch": "codex/release-0322-log-fixes",
+  "base_development_commit": "0a8b8f22852ca13a30069b7283ad11ea964e3bb0",
+  "runtime_source_commit": "ea20a79082a56ef226446d31ef29d5b4c08277c5",
+  "archive": "AI-Control-FACC-release0322-fixes-ea20a79-UMM-test.zip",
+  "zip_sha256": "d1378472f5d711a7ed458b942f3db3677872910adbb870889b1580fb356351d5",
+  "dll_sha256": "35594d2719c3858c54839f191363d18050587d893f59c56502c80d694f165c70",
+  "module_mvid": "91661767-d748-41f6-8822-ec1492a08022",
+  "startup_marker": "[Build] v0.3.22 module=91661767-d748-41f6-8822-ec1492a08022",
+  "archive_contents": [
+    "CompanionAI_Pathfinder.dll",
+    "Info.json"
+  ],
+  "checks": {
+    "unit_tests": {
+      "passed": 164,
+      "failed": 0,
+      "skipped": 0
+    },
+    "release_build": {
+      "warnings": 0,
+      "errors": 0
+    },
+    "optional_provider": "Actual supplied Core0.7.15:23 compiled/native assertions,9 absent,24 binding/empty detached provider,8 each of3 mismatched shapes; all pass. No initialized actor.",
+    "reach_diagnostics": "Independent source/native read review; no movement, score, command, LoS/path query or actor retention change",
+    "retained_checks": "Memo identities,Grease gates,activation/observation routes,Free/Swift,18 recognized/two withheld infusions,486 native costs,Rare Metal,cone binding/collection,concentration/Selective/HD; pass",
+    "blueprint_reader": {
+      "status": "PARTIAL",
+      "loaded_exports": 4097,
+      "failed_exports": 1,
+      "ability_rows": 1220,
+      "reader_errors": 0,
+      "changed_detail_rows_vs_release": 0
+    },
+    "in_game": "Pending. Reviewed released-version logs are not a gameplay test of this new DLL."
+  },
+  "limitations": [
+    "TTT EstimateDamage is approximate and does not execute full stack/priority/pool damage.",
+    "Real actors,immunity,ten-point resistance,pools,bypass handlers,mixed providers,third-party settings and Unity/Mono timing require replay.",
+    "Reach behavior unchanged by author request. Diagnostics sample one actor-round and at most8 current foe command slots.",
+    "Same0.3.22 manifest as stable; identify by ZIP filename and startup module.",
+    "No new performance optimization or decision-quality cut; no controlled performance comparison."
+  ]
+}
