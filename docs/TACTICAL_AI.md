@@ -2664,3 +2664,58 @@ trace has an independent source review. These do not run live actors, AutoMetama
 or Tabletop Tweaks handlers. No new build has been run in game. The isolated branch
 includes PR #10/#9/#8/#7/#6 and leaves main/development unchanged, retaining release
 metadata 0.3.21 for intended v0.3.22.
+
+## 71. Released v0.3.22 logs: optional TTT reduction provider and reach evidence
+
+[Full evidence, compatibility limits and replay checklist](RELEASE_0322_LOG_REVIEW.md).
+The new energy sample distinguishes the previous mystery:353 of356 rows use the
+missing-vanilla-part fallback, while native Quasit damage explicitly meets Fire
+Resistance10. Raw blast7.50 and literal Burning3.50 are plausible; no native
+estimate/exception route appears in those samples.
+
+TTT's DR rework replaces native resistance components and registers a separate
+TTUnitPartDamageReduction. The supplied Core0.7.15 binary confirms the expected
+part type, registration, lazy initialization, immunity and preview API. The new
+optional adapter queries an already installed TT part only when the vanilla part
+is absent. It uses native Get, the provider's own initialization/IsImmune/
+EstimateDamage, and the existing observed-factor/minimum-remaining bound. It
+adds no hard TTT dependency, installed fact/part, damage application, pool spend,
+manual chunk reset, copied game table or Rulebook trigger. Only API metadata and
+delegates are cached; no actor/context/result survives an appraisal. Unknown or
+failed optional support retains the existing fallback with bounded diagnostics.
+
+This repairs the missing-provider compatibility path, not every damage-model
+case. TTT's preview itself is approximate; mixed vanilla+TTT providers retain
+the vanilla route rather than an invented stacking rule. Initialized actors,
+actual settings/custom handlers, pools and live first-hit values remain replay
+checks. The supplied Core/game DLLs are not committed or packaged.
+
+Native combat13 is RT5. Hand of Hosilla's actual glaive attacks total91 damage;
+companions use utilities/heals and Camellia does attempt an80%-stop advance into
+Grease, so the event is not simply idle actors or absent pathfinding. The source
+lacks a specific shorter-reach response at a hostile-area edge. A lure/back-off
+would need honest future-access value, native reach/intent and explicit anti-loop
+scope; stepping outside present reach cannot erase all potential incoming threat.
+The author approved **diagnostics only**. No movement score, back-off candidate,
+retreat threshold, target lock, navigation or cancellation change is made.
+The new `[Reach]` row prints already-scored action/risk/area/retreat data and,
+where available, a current accepted foe UnitAttack's native approach radius and
+distance-only check. Up to eight command slots and one row per actor/round are
+sampled; weak TurnMemory keys retain scalar bookkeeping only. No new forecast,
+LoS/path query, idle/UI hook or candidate mutation is introduced.
+
+New HD rows show legal range exclusions and a group Sleep46.2 beating Quasit12.6;
+no new targeting defect or weight change is justified. Six Burning activations
+succeed, healing is real, and no false silent strike appears. Native concentration
+checks both succeed, leaving the failed-event branch unexercised here. Other-mod
+blueprint warnings and ordinary acted TB interruptions are not AI exceptions.
+
+Sampled means are39.10ms TB/48.59ms RT; no current smoothness rating or controlled
+benchmark is available. Warm slow stages are ordinary abilities, not infusion
+work. Preserve decision quality and budgets. Integrated Release has zero
+warnings/errors and all 164 unit tests pass. Actual Core binding, absent/mismatched
+API fallbacks, detached empty-provider previews, compiled/native boundaries and
+retained infusion/cone checks pass. All 1,220 ordinary reader details remain
+unchanged (4,097 loaded exports/one known failure, partial coverage). No live
+new-adapter or reach-diagnostic result is claimed. The isolated task retains0.3.22 metadata and the published ZIP/tag;
+it does not update main, publish or automatically merge development.
