@@ -11,6 +11,7 @@ spell scoring weights, game speed and performance budgets are unchanged.
 UMM still displays **0.3.22**. This is a separate test, not a replacement for the
 [published stable ZIP](../release/CompanionAI_Pathfinder_v0.3.22.zip?raw=true).
 No in-game acceptance or new performance improvement is claimed.
+[Draft PR #13](https://github.com/recovribox-svg/AIControll-FACC/pull/13) targets development.
 
 ## Install and identify this test
 

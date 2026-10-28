@@ -17,8 +17,8 @@ The earlier [PR #4 integration handover](docs/INTEGRATION_HANDOVER.md) is histor
 Current follow-up (28 October 2026): released v0.3.22 log review is isolated on
 `codex/release-0322-log-fixes`; read [the evidence and replay handover](docs/RELEASE_0322_LOG_REVIEW.md).
 It adds optional TTT resistance-provider appraisal and author-approved reach/Grease
-**diagnostics only**. Movement behavior is unchanged. A draft development PR/test
-ZIP will carry exact identity; live acceptance is pending. The prior integration
+**diagnostics only**. Movement behavior is unchanged. [Draft PR #13](https://github.com/recovribox-svg/AIControll-FACC/pull/13) and the
+[test ZIP identity](test-builds/README.md) carry the handover; live acceptance is pending. The prior integration
 authorization is completed and does not authorize merging this follow-up or replacing
 the published v0.3.22 package/tag.
 

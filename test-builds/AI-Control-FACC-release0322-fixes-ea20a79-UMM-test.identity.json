@@ -42,5 +42,6 @@
     "Reach behavior unchanged by author request. Diagnostics sample one actor-round and at most8 current foe command slots.",
     "Same0.3.22 manifest as stable; identify by ZIP filename and startup module.",
     "No new performance optimization or decision-quality cut; no controlled performance comparison."
-  ]
+  ],
+  "pull_request": "https://github.com/recovribox-svg/AIControll-FACC/pull/13"
 }

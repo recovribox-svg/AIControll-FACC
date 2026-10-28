@@ -200,7 +200,7 @@ existing budgets and decision quality; no broader optimization is introduced.
 
 Branch `codex/release-0322-log-fixes` starts at released/current development
 `0a8b8f22852ca13a30069b7283ad11ea964e3bb0`; scope plan is `5b28bc2`.
-This task uses a draft development PR. The previous integration authorization
+This task uses [draft PR #13](https://github.com/recovribox-svg/AIControll-FACC/pull/13) into development. The previous integration authorization
 completed PR #6–#12; it is not an automatic merge/release instruction for this
 new task. Info.json stays0.3.22. Do not replace the published release ZIP, move
 its tag, update main or publish a GitHub release. Supply a uniquely identified
@@ -258,3 +258,21 @@ Focused replay, with complete startup/package identity and both AI/native logs:
 6. Compare ordinary actors, Orvath/summons, cold/warm turns and idle selection on
    the same save/settings/mods. Adapter delegate caching is bounded metadata,
    not a claim of zero added work or measured Unity/Mono speedup.
+
+## Downloadable test identity
+
+- Runtime source: `ea20a79082a56ef226446d31ef29d5b4c08277c5`.
+- Package commit: `fa291362ad53c3d00b8e6ac12ed284cb1d130bca`.
+- [UMM test ZIP](../test-builds/AI-Control-FACC-release0322-fixes-ea20a79-UMM-test.zip?raw=true)
+  and [install/checklist](../test-builds/README.md).
+- UMM version stays **0.3.22**; fully exit before replacement and confirm startup:
+  `[Build] v0.3.22 module=91661767-d748-41f6-8822-ec1492a08022`.
+- ZIP SHA-256: `d1378472f5d711a7ed458b942f3db3677872910adbb870889b1580fb356351d5`.
+- DLL SHA-256: `35594d2719c3858c54839f191363d18050587d893f59c56502c80d694f165c70`.
+- Flat archive contains only the checked DLL and unchanged manifest. Published
+  stable and older test archives/checksums are preserved. No game/TTT DLLs,
+  rewritten dependencies, API fixtures, private paths or native dumps are shipped.
+
+Keep supplying native CombatLog alongside complete AI logs: it establishes
+resistance, real damage/healing, save results and opportunity/ordinary attacks
+that cannot be proved from a decision forecast or command completion alone.
