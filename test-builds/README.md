@@ -2,6 +2,7 @@
 
 **[Download the new UMM test ZIP — 649ed23](AI-Control-FACC-log2-fixes-649ed23-UMM-test.zip?raw=true)**
 
+[Draft PR #14](https://github.com/recovribox-svg/AIControll-FACC/pull/14) targets development.
 This **unmerged v0.3.22 follow-up** fixes two observer bugs found in Log2:
 
 - An interrupted spell that never cast could receive a target-failure strike when

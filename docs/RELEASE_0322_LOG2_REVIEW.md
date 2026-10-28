@@ -190,7 +190,8 @@ substage timing would be needed to attribute the remaining occasional slowdown.
 
 ## Verification and replay handover
 
-New branch `codex/release0322-log2-fixes` starts at remote development `0a8b8f2` and
+[Draft PR #14](https://github.com/recovribox-svg/AIControll-FACC/pull/14) targets development.
+Branch `codex/release0322-log2-fixes` starts at remote development `0a8b8f2` and
 includes pending PR #13 at `8bb6a3c`. Its own runtime diff is only the two observer
 hunks above. Do not merge #13 or this follow-up without review/integration
 approval. Main, stable 0.3.22 ZIP/tag and earlier archives remain unchanged.
@@ -240,3 +241,16 @@ Focused TB/RT replay:
 5. Compare same-save/settings/mods ordinary companions, Orvath/summons and idle
    selection. Include complete startup/MVID, exact ZIP filename, AI logs and
    native CombatLog. Do not infer a performance improvement from these two fixes.
+
+## Downloadable test identity
+
+- Runtime source: `649ed232b0b2ae5ac6075f5e2b4086a6c62bfba0`.
+- Package commit: `1cffbc094abf07cdb9cd7d0776ed3c61116d4a1b`.
+- [Download UMM test ZIP](../test-builds/AI-Control-FACC-log2-fixes-649ed23-UMM-test.zip?raw=true)
+  and [install/checklist](../test-builds/README.md).
+- UMM remains 0.3.22. Confirm complete startup:
+  `[Build] v0.3.22 module=793a9fe8-cc9d-49fc-b535-b323a25148f3`.
+- ZIP SHA-256: `1210e2192caa21d0702e1cad8105c75f6124a834fbc989a2fea6b676fe05e995`.
+- DLL SHA-256: `4fe88688b7005ba758f266b39d5b0d2fe1dac41525fc43797b5efb5046122ebf`.
+- Archive contains only the checked DLL and unchanged manifest. All earlier test
+  archives/identities and published stable package bytes are retained.
