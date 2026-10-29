@@ -8,7 +8,6 @@ namespace ProfileAudit
         public string Output;
         public readonly List<string> Roots = new List<string>();
         public int AllowFailures;
-        public bool KineticChecks;
         public static bool TryParse(string[] args, out AuditOptions options, out string error)
         {
             options = new AuditOptions(); error = null;
@@ -17,7 +16,9 @@ namespace ProfileAudit
             bool allowanceSeen = false;
             for (int i = 0; i < args.Length - 1; i++)
             {
-                if (args[i] == "--kinetic-checks") options.KineticChecks = true;
+                // ★ v0.3.22 (tooling repair): the kinetic fixtures checked the withdrawn kineticist engine and were removed.
+                if (args[i] == "--kinetic-checks")
+                { error = "--kinetic-checks was removed with the withdrawn kineticist engine (docs/V0_3_22_POSTMORTEM.md)"; return false; }
                 else if (args[i] == "--allow-failures")
                 {
                     if (allowanceSeen || ++i >= args.Length - 1 || !int.TryParse(args[i], out int limit) || limit < 0)

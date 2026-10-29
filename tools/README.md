@@ -38,31 +38,19 @@ tools/ProfileAudit/run.sh <Wrath_Data/Managed> <mod dll> <work dir> <out.txt> <d
 
 ProfileAudit is strict by default: a failed/empty load returns 1 and replaces any stale report with INCOMPLETE.
 For a known small number of unrelated failures, pass `--allow-failures N` among the dump arguments (for example,
-`--kinetic-checks --allow-failures 1 <dump folders...>`). Every failure is listed; an allowed run returns 0 and prefixes
+`--allow-failures 1 <dump folders...>`). Every failure is listed; an allowed run returns 0 and prefixes
 the report PARTIAL with loaded/failed counts. An empty or predominantly failed load remains INCOMPLETE even if N is
 large, preserving the guard against a missing dependency appearing to be a zero-ability success. Invalid options
 return 2. A partial report is not complete coverage. Unresolved blueprint GUIDs are a separate completeness limit.
 
+Substance infusions (activatable group `SubstanceInfusion`) are reported through the mod's own scoped infusion reader
+(`TacticalEngine.DescribeInfusion`, read by reflection): verdict `infusion selection: supported` or
+`infusion selection: withheld (<the engine's reason>)`, with the buff, whether it has a damage graph, the trigger's
+action types and any spell-resistance / damage-reduction bypass. On the author's dumps (29 October 2026): 18 supported,
+Chain Arrows and Unraveling withheld. If the reader or one of its fields is renamed, the audit fails instead of
+silently reporting everything as supported.
 
-For kineticist data, add `--kinetic-checks` among ProfileAudit's dump arguments. This checks infusion/carrier saves,
-ongoing effects, area cadence, modifier descriptors and native preview-hook installation. It also confirms that
-native cost is unchanged outside a scope and detached dispel preparation stops before dice. It requires the new
-mod DLL and Harmony's native helper to work on the host. These are offline integration checks, not in-game actor,
-command, restoration, performance or third-party-mod tests. Never deploy the harness or its rewritten dependencies.
-
-The kinetic checks also inject a late optional-patch failure and verify rollback/readiness, check that these hooks
-cannot be found by mandatory PatchAll, exercise inactive hot-path exits, and verify per-decision native-query caching.
-
-The playtest follow-up also checks native parameter reuse with isolated ability/aim/modifier states, cloned results,
-mutable-ambient-context bypass, early spent-slot pruning and virtual dispatch through a synthetic native calculator
-subclass. Counting seams replace game-singleton-dependent calls in the offline process; they are not a latency
-benchmark. See `docs/KINETICIST_PLAYTEST_STUTTER.md` for the supplied logs and required gameplay replay.
-
-The condition-context follow-up checks cast/aim/source/recipient isolation, native main-target parity, scoped
-guard-hit isolation, shared-value restoration on normal/early/exception paths, movement-only skips and retained
-deferred scoring. `run.sh` creates the isolated fixed `Time.frameCount` getter needed by the offline cache checks;
-live Unity supplies it in the game. `RunnableStubs` supports explicitly named bodyless internal calls; `run.sh`
-verifies that the frame getter was actually replaced. Optional finalizers absent in some Unity versions remain
-optional. Default rewriting leaves externs alone.
-Guard-hit fixtures use seeded results because fully initialized actor misses need the
-entity registry. See `docs/DECISION_CONTEXT_PLAYTEST.md`; no harness rewrites belong in a deployed mod.
+The withdrawn kineticist engine's harness options (`--kinetic-checks`, the decision-read and condition-context
+fixtures, the `Time.frameCount` stub) were removed with that engine (`docs/V0_3_22_POSTMORTEM.md`);
+`--kinetic-checks` now fails with that explanation. Documents describing those runs (`docs/DECISION_CONTEXT_PLAYTEST.md`,
+`docs/KINETICIST_*`, `docs/INTEGRATION_HANDOVER.md`) describe their own time.

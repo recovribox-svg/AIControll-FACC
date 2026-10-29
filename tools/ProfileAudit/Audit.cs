@@ -27,10 +27,6 @@ namespace ProfileAudit
 
         public static void Run(List<SimpleBlueprint> all, string output)
         {
-            GatherAbilities.Clear();
-            foreach (var blueprint in all.OfType<BlueprintScriptableObject>())
-                foreach (var part in blueprint.GetComponents<Kingmaker.UnitLogic.Class.Kineticist.AddKineticistPart>())
-                    if (part.GatherPowerAbility != null) GatherAbilities.Add(part.GatherPowerAbility);
             var rows = new List<Row>();
             int errors = 0;
             foreach (var bp in all.OfType<BlueprintAbility>())
@@ -73,7 +69,10 @@ namespace ProfileAudit
         }
 
         private static object Field(object o, string name) => o?.GetType().GetField(name)?.GetValue(o);
-        private static readonly HashSet<BlueprintAbility> GatherAbilities = new HashSet<BlueprintAbility>();
+        // ★ v0.3.22 (tooling repair): the scoped infusion selection's own blueprint reader
+        // (TacticalEngine.DescribeInfusion, private: by reflection). Its Unsupported reason withholds a substance infusion.
+        private static readonly System.Reflection.MethodInfo DescribeInfusion =
+            typeof(TacticalEngine).GetMethod("DescribeInfusion", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Static);
 
         /// <summary>What the reader leaves unread, a caster's own facts' marked (they count only for a caster that has them).</summary>
         private static IEnumerable<string> AllUnread(BuffPartList read) =>
@@ -83,12 +82,30 @@ namespace ProfileAudit
                                            System.Reflection.MethodInfo modeOf, System.Reflection.MethodInfo profileOf)
         {
             if (bp.HiddenInUI) { row.Verdict = "toggle not managed: hidden"; return; }
-            var kineticNote = typeof(TacticalEngine).GetMethod("KineticModifierNote", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Static)
-                ?.Invoke(null, new object[] { bp }) as string;
-            if (kineticNote != null)
+            // ★ v0.3.22 (tooling repair): substance infusions are chosen per blast by TacticalEngine.AddInfusionChoice,
+            // not as toggles; the engine withholds the ones its reader marks Unsupported.
+            if (bp.Group == Kingmaker.UnitLogic.ActivatableAbilities.ActivatableAbilityGroup.SubstanceInfusion && bp.Buff != null)
             {
-                row.Verdict = "blast modifier: " + (kineticNote.StartsWith("per-blast") ? "configuration candidate" : "fixed/unprojected");
-                row.Detail = kineticNote;
+                if (DescribeInfusion == null) throw new MissingMethodException("TacticalEngine.DescribeInfusion");
+                var description = DescribeInfusion.Invoke(null, new object[] { bp.Buff });
+                if (description == null) throw new InvalidOperationException("DescribeInfusion returned no description");
+                // The description's fields are internal: read them with non-public binding (Field reads public ones).
+                object Internal(string name) => description.GetType().GetField(name,
+                    System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.NonPublic)
+                    ?.GetValue(description) ?? (name == "Unsupported" || name == "Trigger" || name == "Pierce" || name == "PiercePhysical"
+                        ? null : throw new MissingFieldException(description.GetType().FullName, name));
+                if (description.GetType().GetField("Unsupported", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic |
+                        System.Reflection.BindingFlags.Public) == null)
+                    throw new MissingFieldException(description.GetType().FullName, "Unsupported");
+                var unsupported = Internal("Unsupported") as string;
+                bool damage = Internal("DamageGraph") is bool graph && graph;
+                row.Verdict = unsupported == null ? "infusion selection: supported" : "infusion selection: withheld (" + unsupported + ")";
+                var trigger = Internal("Trigger") as Kingmaker.UnitLogic.Mechanics.Components.AddKineticistInfusionDamageTrigger;
+                var triggerActions = trigger?.Actions?.Actions?.Where(a => a != null).Select(a => a.GetType().Name).ToArray();
+                row.Detail = $"buff {bp.Buff.name}; damage graph={damage}; trigger actions=" +
+                             (triggerActions == null || triggerActions.Length == 0 ? "none" : string.Join(",", triggerActions)) +
+                             (Internal("Pierce") != null ? "; spell-resistance bypass" : "") +
+                             (Internal("PiercePhysical") != null ? "; damage-reduction bypass" : "");
                 return;
             }
             var mode = modeOf.Invoke(null, new object[] { bp });
@@ -116,8 +133,6 @@ namespace ProfileAudit
 
         private static void Classify(BlueprintAbility bp, Row row)
         {
-            if (GatherAbilities.Contains(bp))
-            { row.Verdict = "blast preparation: Gather Power"; row.Detail = "identified by AddKineticistPart; not a cleanse or guessed standalone buff"; return; }
             if (bp.GetComponent<AbilityKineticBlade>() != null) { row.Verdict = "not offered: kinetic blade internal"; return; }
             var p = AbilityProfile.Get(bp);
             if (p == null) { row.Verdict = "error"; row.Detail = "no profile"; return; }
@@ -183,7 +198,7 @@ namespace ProfileAudit
                                                                 .Any(c => c.Stat == Kingmaker.EntitySystem.Stats.StatType.Constitution));
                         var penalties = new[] { BuffPartKind.Attack, BuffPartKind.Damage, BuffPartKind.ArmorClass, BuffPartKind.Saves,
                                                 BuffPartKind.ConditionalSaves, BuffPartKind.Strength, BuffPartKind.Dexterity,
-                                                BuffPartKind.Constitution, BuffPartKind.MentalStat, BuffPartKind.RemovesConcealment };
+                                                BuffPartKind.Constitution, BuffPartKind.MentalStat };
                         bool readable = p.TargetBuffs.SelectMany(b => BuffPartsReader.Read(b).Parts).Any(x => penalties.Contains(x.Kind));
                         if (poison) modelled.Add("poison (Con as HP)");
                         else if (readable && p.TargetBuffs.Any(b => BuffPartsReader.Read(b).Unread.Count > 0))
@@ -280,13 +295,7 @@ namespace ProfileAudit
             foreach (var b in buffs)
             {
                 var a = BuffEffectAnalyzer.Analyze(b);
-                // ★ v0.3.22: a native kineticist talent has no unknown-buff fallback. The dump path
-                // supplies the missing actor/class provenance in this offline report only.
-                bool kineticTalent = (bp.GetComponent<Kingmaker.UnitLogic.Class.Kineticist.AbilityKineticist>() != null ||
-                    bp.Range == AbilityRange.Personal && bp.Type != AbilityType.Spell &&
-                    Paths.TryGetValue(bp, out var path) && path.StartsWith("Kineticist/", StringComparison.Ordinal));
-                float q = !a.Recognized && kineticTalent ? 0f :
-                    a.Recognized ? a.CombatValue : p.Enchants ? 0.8f : a.OnlyUnrecognized ? (limited ? 0f : 0.5f) : 0.05f;
+                float q = a.Recognized ? a.CombatValue : p.Enchants ? 0.8f : a.OnlyUnrecognized ? (limited ? 0f : 0.5f) : 0.05f;
                 if (q > best) { best = q; why = a.Recognized ? $"analyzer {a.CombatValue:0.##}" : p.Enchants ? "enchant carrier 0.8" : a.OnlyUnrecognized ? "unread 0.5" : "marker 0.05"; }
             }
             parts.Add("unread: " + string.Join(",", read.SelectMany(AllUnread).Distinct().Take(5)));

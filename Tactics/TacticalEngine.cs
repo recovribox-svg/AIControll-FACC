@@ -2410,12 +2410,12 @@ namespace CompanionAI_Pathfinder.Tactics
                     controlAims?.Record(target, value, "below item threshold before risks", geometryRecipients, needsMove);
                     continue;
                 }
-                if (needsMove) value *= 0.9f;
                 // Failure loses the spell's expected benefit, not the independent cost of walking/provoking.
                 // Each ability checks its native source once; affected spells share only this decision's caster result.
+                // Recommendation A: the walk and delivery discounts in one tested place (ValueModel.Delivery.cs).
                 if (!arcaneChance.HasValue) arcaneChance = ArcaneDeliveryChance(ctx, ability, captureControlAims);
                 float deliveryChance = arcaneChance.Value;
-                value *= deliveryChance;
+                value = ValueModel.DeliveredBenefit(value, needsMove, deliveryChance);
                 // ★ v0.3.6: a standard-action spell cast in melee needs a defensive-casting check; failing it provokes an
                 // attack of opportunity and can lose the spell (UnitUseAbility.OnTick). Camellia's Cure Light Wounds ended
                 // "Fail" that way. Potions and wands do not provoke (AbilityData.ProvokeAttackOfOpportunity).
@@ -2433,8 +2433,8 @@ namespace CompanionAI_Pathfinder.Tactics
                 value *= concentrationChance;
                 // ★ v0.3.1: an archer walking up to an enemy to touch it gives up its ranged attacks and invites
                 // attacks of opportunity (Lann walked 9 m for Aid Another).
-                if (needsMove && ctx.HasRangedWeapon && ability.Range == AbilityRange.Touch && ctx.Unit.IsEnemy(target))
-                    value *= 0.5f;
+                bool archerTouch = needsMove && ctx.HasRangedWeapon && ability.Range == AbilityRange.Touch && ctx.Unit.IsEnemy(target);
+                if (archerTouch) value *= ValueModel.ArcherTouchFactor;
                 float preRisk = value;
                 if (risk != null) value = value * (1f - risk.StopChance) - risk.Cost;
                 if (itemBar > 0f && value < itemBar)
@@ -2466,10 +2466,8 @@ namespace CompanionAI_Pathfinder.Tactics
                     InfusionAim = ctx.ScoredInfusionHits == null ? null : new InfusionAim
                     {
                         Hits = ctx.ScoredInfusionHits,
-                        DeliveryFactor = consumable * (needsMove ? 0.9f : 1f) * deliveryChance *
-                            (1f - (provoke?.StopChance ?? 0f)) * concentrationChance *
-                            (needsMove && ctx.HasRangedWeapon && ability.Range == AbilityRange.Touch && ctx.Unit.IsEnemy(target) ? 0.5f : 1f) *
-                            (1f - (risk?.StopChance ?? 0f))
+                        DeliveryFactor = ValueModel.InfusionDeliveryFactor(consumable, needsMove, deliveryChance,
+                            provoke?.StopChance ?? 0f, concentrationChance, archerTouch, risk?.StopChance ?? 0f)
                     },
                     GeometryRecipients = geometryRecipients,
                     ControlAims = controlAims,
@@ -2498,7 +2496,9 @@ namespace CompanionAI_Pathfinder.Tactics
                 if (infusionProspect) ctx.InfusionProspects.Add(candidate);
                 if (!progressive || !candidate.Offensive) continue;
 
-                candidate.SuccessChance = (geometryChance ?? ProgressiveGate.SuccessChance(ctx.Unit, ctx.Enemies, ability, profile, candidate.Target, candidate.Point)) * deliveryChance;
+                candidate.SuccessChance = ValueModel.DeliveredSuccessChance(
+                    geometryChance ?? ProgressiveGate.SuccessChance(ctx.Unit, ctx.Enemies, ability, profile, candidate.Target, candidate.Point),
+                    deliveryChance);
                 float threshold = slot == ActionSlot.Free || slot == ActionSlot.Swift ? QuickBar(slot, ability) : MinMainValue;
                 if (candidate.SuccessChance >= SpellTierPolicy.MinSuccessChance && value >= threshold &&
                     Better(candidate, bestViable))

@@ -79,14 +79,13 @@ namespace CompanionAI_Pathfinder.Tactics
         {
             try
             {
-                var assembly = AppDomain.CurrentDomain.GetAssemblies().FirstOrDefault(a => a.GetName().Name == AssemblyName);
-                if (assembly == null) return null; // Optional mod absent: no load, requirement or warning.
-                var type = assembly.GetType(PartName, false);
-                if (type == null || !type.IsPublic || type.IsAbstract || !typeof(OldStyleUnitPart).IsAssignableFrom(type))
-                    throw new MissingMemberException("expected public TTT resistance-part type");
-                var initialize = Exact(type, "TryInitialize", typeof(void));
-                var immunity = Exact(type, "IsImmune", typeof(bool), typeof(DamageEnergyType));
-                var estimate = Exact(type, "EstimateDamage", typeof(float), typeof(float), typeof(BaseDamage), typeof(ItemEntityWeapon));
+                // Recommendation A: the exact-shape lookup is OptionalApiBinding (unit-tested on synthetic assemblies).
+                var methods = OptionalApiBinding.Find(AppDomain.CurrentDomain.GetAssemblies(), AssemblyName, PartName,
+                    typeof(OldStyleUnitPart), out var type,
+                    new OptionalApiBinding.MethodShape("TryInitialize", typeof(void)),
+                    new OptionalApiBinding.MethodShape("IsImmune", typeof(bool), typeof(DamageEnergyType)),
+                    new OptionalApiBinding.MethodShape("EstimateDamage", typeof(float), typeof(float), typeof(BaseDamage), typeof(ItemEntityWeapon)));
+                if (methods == null) return null; // Optional mod absent: no load, requirement or warning.
                 var get = typeof(EntityDataBase).GetMethods(BindingFlags.Instance | BindingFlags.Public)
                     .Single(m => m.Name == "Get" && m.IsGenericMethodDefinition &&
                         m.GetGenericArguments().Length == 1 && m.GetParameters().Length == 0)
@@ -94,19 +93,12 @@ namespace CompanionAI_Pathfinder.Tactics
                 if (get.ReturnType != type) throw new MissingMemberException("native Get<T> return type");
 
                 var unit = Expression.Parameter(typeof(UnitEntityData), "unit");
-                var value = Expression.Parameter(typeof(object), "part");
-                var part = Expression.Convert(value, type);
-                var energy = Expression.Parameter(typeof(DamageEnergyType), "energy");
-                var amount = Expression.Parameter(typeof(float), "amount");
-                var damage = Expression.Parameter(typeof(BaseDamage), "damage");
-                var weapon = Expression.Parameter(typeof(ItemEntityWeapon), "weapon");
                 return new Binding
                 {
                     Get = Expression.Lambda<Func<UnitEntityData, object>>(Expression.Convert(Expression.Call(unit, get), typeof(object)), unit).Compile(),
-                    Initialize = Expression.Lambda<Action<object>>(Expression.Call(part, initialize), value).Compile(),
-                    IsImmune = Expression.Lambda<Func<object, DamageEnergyType, bool>>(Expression.Call(part, immunity, energy), value, energy).Compile(),
-                    Estimate = Expression.Lambda<Func<object, float, BaseDamage, ItemEntityWeapon, float>>(
-                        Expression.Call(part, estimate, amount, damage, weapon), value, amount, damage, weapon).Compile()
+                    Initialize = OptionalApiBinding.Action(type, methods[0]),
+                    IsImmune = OptionalApiBinding.Func<DamageEnergyType, bool>(type, methods[1]),
+                    Estimate = OptionalApiBinding.Func<float, BaseDamage, ItemEntityWeapon, float>(type, methods[2])
                 };
             }
             catch (Exception ex)
@@ -114,14 +106,6 @@ namespace CompanionAI_Pathfinder.Tactics
                 Report("binding", $"[Math] TTT damage-reduction preview API unavailable ({ex.GetType().Name}: {ex.Message}); retaining existing fallback");
                 return null;
             }
-        }
-
-        private static MethodInfo Exact(Type type, string name, Type result, params Type[] arguments)
-        {
-            var method = type.GetMethod(name, BindingFlags.Public | BindingFlags.Instance, null, arguments, null);
-            if (method == null || method.ReturnType != result || method.IsGenericMethod)
-                throw new MissingMethodException(type.FullName, name);
-            return method;
         }
 
         private static void Report(string key, string text)

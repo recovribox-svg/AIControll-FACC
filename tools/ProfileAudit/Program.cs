@@ -72,7 +72,7 @@ namespace ProfileAudit
             if (!AuditOptions.TryParse(args, out var options, out var optionError))
             {
                 Console.Error.WriteLine(optionError);
-                Console.Error.WriteLine("Usage: ProfileAudit [--kinetic-checks] [--allow-failures N] <dump folders...> <report.txt>");
+                Console.Error.WriteLine("Usage: ProfileAudit [--allow-failures N] <dump folders...> <report.txt>");
                 return 2;
             }
             var output = options.Output;
@@ -113,7 +113,6 @@ namespace ProfileAudit
             foreach (var kv in loaded) ResourcesLibrary.BlueprintsCache.AddCachedBlueprint(kv.Key, kv.Value);
             foreach (var bp in loaded.Values)
                 try { bp.OnEnable(); } catch { }
-            if (options.KineticChecks) KineticistChecks.Run(loaded.Values.ToList());
             Audit.Run(loaded.Values.ToList(), output);
             if (failed > 0)
             {

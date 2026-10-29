@@ -1114,7 +1114,7 @@ namespace CompanionAI_Pathfinder.Tactics
             try
             {
                 var rule = Rulebook.Trigger(new Kingmaker.RuleSystem.Rules.Abilities.RuleCalculateArcaneSpellFailureChance(caster));
-                return 1f - Mathf.Clamp01(rule.Result / 100f);
+                return ValueModel.ArcaneCastingChance(rule.Result);
             }
             catch (Exception ex)
             {

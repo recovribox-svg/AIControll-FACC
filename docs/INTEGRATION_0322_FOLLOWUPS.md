@@ -56,7 +56,8 @@ test package below. `main` was fast-forwarded to the same commit as development 
 **Inherited from Codex, not reproduced by Claude** (those harnesses exist only in Codex's workspace): the 39 arcane-chance
 guards, 64 Settle vectors / 406 assertions, 20 missed-sample assertions, the TabletopTweaks-Core 0.7.15 binding /
 absent / mismatched-shape checks (they need the TTT DLL), the kinetic/native ProfileAudit checks and the 1,220-row
-partial reader audit.
+partial reader audit. Recommendation A (below, done the same day) moved the rules those harnesses checked into the
+repository's unit tests; the real TTT 0.7.15 binding still needs the TTT DLL or a game session.
 
 ## Current package
 
@@ -93,7 +94,8 @@ Fast-forwarding `main` brought these onto the public default branch, as the auth
    TTT preview's live behaviour beyond the logs already reviewed.
 2. **Temporary diagnostics:** `[Reach]` and the extended `[Walk]` / stuck-navigation rows. They collect evidence for
    the movement discussion and should be reviewed (kept, trimmed or removed) before the next release.
-3. **Stale verification tooling:** `tools/ProfileAudit` targets the withdrawn engine and does not build (see above).
+3. **Verification tooling:** `tools/ProfileAudit` targeted the withdrawn engine and did not build; repaired by
+   Recommendation A (below) on development. `main` still carries the stale copy until the author next moves it.
 4. **Test archives** under `test-builds/` and historical documents of withdrawn work. CONTRIBUTING.md's "main: no test
    builds" convention is superseded for this update by the author's instruction; published releases are identified
    by their tags and `release/` ZIPs, not by `main`.
@@ -118,9 +120,50 @@ CombatLog.
 6. **Smoothness:** the author's last rating was 7.5/10 on a budget laptop, unchanged from the preceding build. No speedup
    or regression is claimed from unmatched encounter averages.
 
+## Recommendation A — done (29 October, development only)
+
+The author asked for Recommendation A. It is on development; `main` was **not** moved (no new authorization), and no tag
+or release was touched.
+
+**ProfileAudit builds again against the current source.**
+- The withdrawn engine's checks are gone: `KineticistChecks`, `DecisionReadChecks`, `ConditionContextChecks`, the
+  `GatherAbilities` and kinetic-talent special cases, `BuffPartKind.RemovesConcealment` and the `Time.frameCount` stub.
+  `--kinetic-checks` now fails and explains why.
+- Substance infusions are now read through the engine's own scoped reader (`TacticalEngine.DescribeInfusion`, by
+  reflection). A renamed reader or field makes the audit fail; it never silently reports everything as supported.
+- Full run on the author's dumps: 44,644 loaded, 1 known failure, 4,801 rows, 0 reader errors.
+  - 18 infusions supported. Two withheld: Chain Arrows ("delivery-changing infusion has no supported read-only
+    recipient query") and Unraveling ("dispel has no read-only native success query"). This matches Codex's "18
+    recognized / two withheld".
+  - Compared with the v0.3.21-era harness on the ecabeb4 build, only those 20 infusion rows differ. They were
+    "toggle not managed: a modifier of another action (AA-4)"; every other row is identical.
+
+**The workspace-only rules are now pure helpers with unit tests** (`dotnet test tests/CompanionAI.Tests`: 218 passed,
+was 164):
+
+| Rule (PR) | Helper | Tests |
+| --- | --- | --- |
+| Settle discards an uncast order before reading Evidence (#14) | `Tactics/ObserverRules.Settle` → Wait / NotCast / Worked / Inspect | `ObserverRulesTests` |
+| A missed native attack roll is no calibration sample (#14) | `ObserverRules.SkipCalibrationSample` | `ObserverRulesTests` |
+| The arcane chance discounts once: spell value, infusion delivery, Progressive viability (#15) | `ValueModel.ArcaneCastingChance`, `DeliveredBenefit`, `InfusionDeliveryFactor`, `DeliveredSuccessChance` (`Tactics/ValueModel.Delivery.cs`) | `DeliveryChanceTests` |
+| Optional-provider binding: absent / matching / mismatched API (#13) | `Tactics/OptionalApiBinding` (used by `ModdedDamageReduction.Bind`) | `OptionalApiBindingTests`: providers emitted at test time, no TTT DLL |
+
+- **Behaviour.** The engine, `CastOutcome`, `DamageObserver`, `CombatMath` and `ModdedDamageReduction` call these
+  helpers instead of inline code, with the same order of operations. All inputs are probabilities already in [0, 1];
+  the helpers clamp them, and a NaN now counts as 0 instead of propagating.
+- **One real gap found and closed.** The binding's "exact signature" lookup used `Type.GetMethod`, whose default binder
+  accepts widened primitives. A TTT build whose `EstimateDamage` took `double` would have passed the check.
+  - In the game this was harmless: compiling the delegate would then throw inside `Bind`, which logs once and keeps the
+    old fallback.
+  - The check now compares the parameter types exactly, and the fixture covers it.
+- **Builds.** Real-reference Release build: 0 warnings, 0 errors. `tools/SigDump` against the ecabeb4 build: no
+  external reference added or removed.
+- **No new test package.** The current ZIP (ecabeb4) remains the one to play; the changes after it are tooling and
+  behaviour-preserving extractions.
+
 ## Recommended next work (prioritized)
 
-1. **A — Reproducible verification (first).**
+1. **A — Reproducible verification. Done; see the section above.**
    - Restore a `tools/ProfileAudit` that builds against the current source: remove the withdrawn-engine checks and
      mirror the scoped infusion selection.
    - Move the workspace-only checks into the repository where they need no proprietary files: Settle's discard gate,

@@ -226,21 +226,22 @@ namespace CompanionAI_Pathfinder.Tactics
             if (caster == null) return;
             if (StuckCharges.Remove(caster.UniqueId)) ClearStuckCharge(caster);
             if (!ByCaster.TryGetValue(caster.UniqueId, out var p)) return;
-            bool commandOver = p.Command == null || p.Command.IsFinished;
-            if (!commandOver) return;
+            var step = ObserverRules.Settle(p.Command != null, p.Command?.IsFinished ?? true, p.Executed,
+                p.Command?.IsActed ?? false, p.Evidence);
+            if (step == ObserverRules.SettleStep.Wait) return;
             // ★ v0.3.18: the command ended before the game cast anything (interrupted: a manual order, a new command, the
             // target gone). Nothing was tried, so nothing failed. In the 0.3.18-test2 real-time log every party command was
             // interrupted at once several times; each counted as "did nothing to its target", and Doom was blocked on the
             // Cultist Champion after two such interruptions.
             // v0.3.22 Log2: old Grease saves can set broad Evidence while this order is still approaching.
             // They cannot turn a never-executed, unacted command into a cast tried on its target.
-            if (!p.Executed && p.Command != null && !p.Command.IsActed)
+            if (step == ObserverRules.SettleStep.NotCast)
             {
                 ByCaster.Remove(caster.UniqueId);
                 Main.Verbose($"[Cast] {caster.CharacterName}: {p.Name} ended before it was cast ({p.Command.Result}) - not counted");
                 return;
             }
-            if (p.Evidence)
+            if (step == ObserverRules.SettleStep.Worked)
             {
                 Finish(p, true, null);
                 return;

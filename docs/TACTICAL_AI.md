@@ -2799,3 +2799,17 @@ runtime change; `main` points at the same revision. 164 tests pass, the real-ref
 the v0.3.21-era reader harness gives identical rows for the v0.3.22 build and the merged build (4,801 rows). Test package
 `AI-Control-FACC-dev-integrated-ecabeb4-UMM-test.zip`, MVID `2cc6eb92-af79-4a1c-a65d-aad66d8ef315`; in-game replay is
 pending. Checks, limits and the prioritized next work are in [INTEGRATION_0322_FOLLOWUPS.md](INTEGRATION_0322_FOLLOWUPS.md).
+
+## 75. Reproducible verification (Recommendation A)
+
+Development only, 29 October 2026. `tools/ProfileAudit` builds against the current source again: the withdrawn-engine
+checks are removed, and substance infusions are read through `TacticalEngine.DescribeInfusion` (18 supported, Chain
+Arrows and Unraveling withheld). The PR #13-#15 rules are now pure, unit-tested helpers:
+- `Tactics/ObserverRules.cs`: the Settle step and the missed-roll calibration gate;
+- `Tactics/ValueModel.Delivery.cs`: the arcane casting chance applied once to the spell value, the infusion delivery
+  and Progressive viability;
+- `Tactics/OptionalApiBinding.cs`: exact-shape optional-provider binding, tested on emitted assemblies.
+
+Behaviour is unchanged, except that an optional API with widened parameter types is now refused at lookup instead of
+failing when its delegate is compiled. 218 tests pass. Details are in
+[INTEGRATION_0322_FOLLOWUPS.md](INTEGRATION_0322_FOLLOWUPS.md).
