@@ -300,6 +300,7 @@ namespace CompanionAI_Pathfinder.GameInterface
                         // ★ v0.2.47: Stuck 명령 감지 - 강제 취소 및 블랙리스트
                         string cmdType = stuckCommand.GetType().Name;
                         Main.Log($"[RT] {unitName}: Stuck command ({cmdType}) - {stuckReason} - cancelling");
+                        LogStuckNavigation(unit, stuckCommand);
 
                         // UnitUseAbility인 경우 능력 정보 추출하여 블랙리스트
                         // ★ v0.3.14: only when the problem is reaching or seeing that target.
@@ -537,6 +538,48 @@ namespace CompanionAI_Pathfinder.GameInterface
 
         /// <summary>★ v0.3.18 (test11): seconds a unit may keep walking once within its command's approach radius.</summary>
         private const float ARRIVED_WALKING_SECONDS = 2f;
+
+        // These native fields are private in the shipped assemblies. Cache metadata only; never publicize a game DLL.
+        private static readonly System.Reflection.FieldInfo NavigationNextPoint = NavigationField("m_NextPointIndex", typeof(int));
+        private static readonly System.Reflection.FieldInfo NavigationDestination = NavigationField("m_Destination", typeof(Vector3?));
+
+        private static System.Reflection.FieldInfo NavigationField(string name, Type expected)
+        {
+            try
+            {
+                var field = typeof(Kingmaker.View.UnitMovementAgent).GetField(name,
+                    System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.Public |
+                    System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.DeclaredOnly);
+                return field?.FieldType == expected ? field : null;
+            }
+            catch { return null; } // Unknown metadata is diagnostic data unavailable, not a controller failure.
+        }
+
+        // v0.3.22 fixes review: one scalar snapshot at an existing cancellation, with no new path/LoS query.
+        private static void LogStuckNavigation(UnitEntityData unit, UnitCommand command)
+        {
+            try
+            {
+                var position = unit.Position;
+                var goal = command.ApproachPoint;
+                var agent = unit.View?.AgentASP;
+                var points = agent?.Path?.vectorPath;
+                int count = points?.Count ?? 0;
+                int nextIndex = agent != null && NavigationNextPoint?.GetValue(agent) is int index ? index : -1;
+                Vector3? destination = agent != null ? NavigationDestination?.GetValue(agent) as Vector3? : null;
+                Vector3? end = count > 0 ? points[count - 1] : (Vector3?)null;
+                Vector3? next = nextIndex >= 0 && nextIndex < count ? points[nextIndex] : (Vector3?)null;
+                string at(Vector3? point) => point.HasValue
+                    ? $"({point.Value.x:F2},{point.Value.y:F2},{point.Value.z:F2})" : "unknown";
+                string endGap = end.HasValue ? $"{Vector3.Distance(end.Value, goal):F2}m" : "unknown";
+                Main.Log($"[Walk] {unit.CharacterName}: stuck navigation snapshot for {command.GetType().Name}; " +
+                    $"position={at(position)}, command goal={at(goal)}, arrival radius={command.ApproachRadius:F2}m, " +
+                    $"current-to-goal 3D gap={Vector3.Distance(position, goal):F2}m; native destination={at(destination)}, " +
+                    $"native path points={count}, endpoint={at(end)}, endpoint-to-goal 3D gap={endGap}, " +
+                    $"next waypoint={nextIndex}/{count} {at(next)}; current agent data only; no path or range/LoS query");
+            }
+            catch { } // Diagnostic failure must not change the existing stuck-memory/cancellation flow.
+        }
 
         /// <summary>
         /// ★ v0.2.119: A not-started command is stuck only if the unit is not walking towards it, it is not waiting

@@ -1104,6 +1104,31 @@ namespace CompanionAI_Pathfinder.Tactics
         }
 
         /// <summary>
+        /// v0.3.22 fixes review: the caster's native armor-failure calculation, also used by the spellbook UI.
+        /// Only queries the temporary calculation rule; RuleCastSpell would roll dice/spend resources and is never previewed.
+        /// Eligibility belongs to the actual AbilityData; callers must check it before querying or reusing this caster result.
+        /// </summary>
+        internal static float ArcaneCastingChance(UnitEntityData caster)
+        {
+            if (caster == null) return 1f;
+            try
+            {
+                var rule = Rulebook.Trigger(new Kingmaker.RuleSystem.Rules.Abilities.RuleCalculateArcaneSpellFailureChance(caster));
+                return 1f - Mathf.Clamp01(rule.Result / 100f);
+            }
+            catch (Exception ex)
+            {
+                try
+                {
+                    AbilityDiscovery.ReportOnce("arcane-chance|" + ex.GetType().Name,
+                        $"[CastChance] native arcane failure calculation unavailable ({ex.GetType().Name}); retaining existing valuation");
+                }
+                catch { } // Logging must not make a failed optional appraisal remove an ability.
+                return 1f;
+            }
+        }
+
+        /// <summary>
         /// ★ v0.3.7: chance an ability's effect lands on <paramref name="enemy"/>: spell-resistance pass × attack-roll hit
         /// chance × failed save (for damage, a successful save still counts half when the spell does half on a save).
         /// One formula for damage/control scoring and Progressive's viability test, in both combat modes.

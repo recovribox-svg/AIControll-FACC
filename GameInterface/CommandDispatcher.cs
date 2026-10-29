@@ -452,9 +452,17 @@ namespace CompanionAI_Pathfinder.GameInterface
             {
                 float length = 0f;
                 if (walk != null) for (int i = 1; i < walk.Count; i++) length += Vector3.Distance(walk[i - 1], walk[i]);
-                string travel = walk == null ? "unknown" : $"{length:F1}m to target, ~{length / Math.Max(0.1f, unit.CurrentSpeedMps):F1}s at current speed";
+                string travel = walk == null ? "unknown" : $"{length:F1}m, ~{length / Math.Max(0.1f, unit.CurrentSpeedMps):F1}s at current speed";
+                // v0.3.22 fixes review: inspect the existing answer only, never request or attach another path.
+                var goal = command.ApproachPoint;
+                Vector3? end = walk != null && walk.Count > 0 ? walk[walk.Count - 1] : (Vector3?)null;
+                string at(Vector3 point) => $"({point.x:F2},{point.y:F2},{point.z:F2})";
+                string endpoint = end.HasValue ? at(end.Value) : "unknown";
+                string gap = end.HasValue ? $"{Vector3.Distance(end.Value, goal):F2}m" : "unknown";
                 Main.Log($"[Walk] {unit.CharacterName}: {command.GetType().Name} path status={status}; queried path={travel}; " +
-                    $"arrival radius={command.ApproachRadius:F1}m; areaCheck={areaCheck}, AoOCheck={attackCheck}, priced AoOs={pricedAttacks}");
+                    $"from={at(unit.Position)}, requested goal={at(goal)}, inspection endpoint={endpoint}, endpoint-to-goal 3D gap={gap}; " +
+                    $"arrival radius={command.ApproachRadius:F2}m; areaCheck={areaCheck}, AoOCheck={attackCheck}, priced AoOs={pricedAttacks}; " +
+                    "inspection only; native execution route not recorded; range/LoS not re-queried");
             }
             catch { } // A logging failure must not change whether the action is accepted.
         }

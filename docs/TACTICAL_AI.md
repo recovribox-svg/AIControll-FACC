@@ -2756,3 +2756,38 @@ branch reproduced. Retained TTT/native/infusion/cone checks and all 1,220 ordina
 reader details pass unchanged (partial exports 4,097/one known failure). These
 are offline checks; new live event ordering and Unity timing still need replay.
 The isolated branch includes pending PR #13 and retains 0.3.22 metadata/stable ZIP/tag.
+
+
+## 73. Fixes playtest: native arcane failure and navigation evidence
+
+[Full evidence and replay handover](RELEASE_0322_FIXES_REVIEW.md). Fourteen TB/seven
+RT encounters retain 7.5/10 smoothness. All six actedFail commands have native
+causes: five 20% arcane failures and one concentration 7 vs 18. Prior observer fixes
+have positive live coverage: uncast orders remain uncounted, missed Holy Water
+splash no longer emits the false direct-hit check, and failed concentration is
+correctly classified without a target strike.
+
+The common ability appraisal now uses AbilityData's native arcane-failure gate
+and the same caster calculation as the spellbook UI. Affected abilities share
+one lazy scalar per fresh TacticalContext; unaffected sources return 1 before
+cache/query. Expected spell benefit is reduced before independent provoking
+costs; infusion delivery/Progressive viability receive the same factor once.
+Boosts already use the scaled candidate value. No copied armor rules, actual
+cast/dice/resource preview, blacklist, priority or threshold change is added.
+Bounded CastChance notes explain actual native percent; unknown reads keep the
+previous fallback. Unknown third-party handlers remain a native-UI preview limit.
+
+Combat20=RT6. Seelah's stronger wall lead is a cloud-escape move recovered by the
+existing stuck timer. No actual wall/waypoint evidence proves the cause. Walk
+logs now distinguish inspected goal/end from native execution and add one native
+agent snapshot at existing stuck cancellation. Cached private-field metadata is
+read only then. There is no additional path query or movement/cancellation rule.
+Ardub integration remains explicitly deferred.
+
+164 tests pass; integrated Release has zero warnings/errors. 39 compiled/native
+arcane guards, retained observer/provider/infusion/cone checks and all 1,220 ordinary
+reader details pass (4,097 loaded exports/one known failure, partial coverage).
+These checks do not run initialized actors/handlers or prove live performance.
+Warm slow events are ordinary ability/weapon stages with collection overlap;
+no justified quality cut or controlled speedup is claimed. Metadata stays 0.3.22,
+with an isolated draft review and unique test package; stable ZIP/tag is preserved.
