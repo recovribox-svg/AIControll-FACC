@@ -50,6 +50,16 @@ action types and any spell-resistance / damage-reduction bypass. On the author's
 Chain Arrows and Unraveling withheld. If the reader or one of its fields is renamed, the audit fails instead of
 silently reporting everything as supported.
 
+`--optional-provider <TabletopTweaks-Core.dll>` checks the mod's own TabletopTweaks-Core damage-reduction binding
+(`Tactics/ModdedDamageReduction`) against a real TTT DLL. It can run alone (no dump folders) or with them, and its lines
+head the report. It loads the DLL into the harness, lets the mod bind lazily as in the game, then calls the bound
+`TryInitialize` and `EstimateDamage` on a fresh, empty TTT part (10 fire damage must stay 10). `Get<T>` and `IsImmune`
+need a real unit, so they stay for a game session. Absent and mismatched providers are covered by the unit tests
+(`OptionalApiBindingTests`). The TTT DLL is a third-party mod: pass its path, never commit it.
+```
+tools/ProfileAudit/run.sh <Wrath_Data/Managed> <mod dll> <work dir> <out.txt> --optional-provider <TTT folder>/TabletopTweaks-Core.dll
+```
+
 The withdrawn kineticist engine's harness options (`--kinetic-checks`, the decision-read and condition-context
 fixtures, the `Time.frameCount` stub) were removed with that engine (`docs/V0_3_22_POSTMORTEM.md`);
 `--kinetic-checks` now fails with that explanation. Documents describing those runs (`docs/DECISION_CONTEXT_PLAYTEST.md`,

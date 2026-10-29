@@ -16,7 +16,9 @@ These are working conventions, not GitHub branch-protection rules.
 
 Note (29 October 2026): at the author's instruction, `main` was brought to the reviewed development revision, which
 includes test archives under `test-builds/` and changes still awaiting gameplay. Published releases are identified by
-their tags and `release/` ZIPs, not by `main`. See `docs/INTEGRATION_0322_FOLLOWUPS.md`.
+their tags and `release/` ZIPs, not by `main`. Later the same day, again at the author's instruction, `main` was moved to
+the Recommendation A revision (repaired verification tooling and behaviour-preserving, unit-tested helpers). See
+`docs/INTEGRATION_0322_FOLLOWUPS.md`.
 
 ## Starting and coordinating a task
 

@@ -8,6 +8,7 @@ namespace ProfileAudit
         public string Output;
         public readonly List<string> Roots = new List<string>();
         public int AllowFailures;
+        public string OptionalProvider;
         public static bool TryParse(string[] args, out AuditOptions options, out string error)
         {
             options = new AuditOptions(); error = null;
@@ -25,11 +26,19 @@ namespace ProfileAudit
                     { error = "--allow-failures requires one nonnegative integer"; return false; }
                     options.AllowFailures = limit; allowanceSeen = true;
                 }
+                // Recommendation A: the mod's TabletopTweaks-Core binding against that DLL (OptionalProviderCheck).
+                else if (args[i] == "--optional-provider")
+                {
+                    if (options.OptionalProvider != null || ++i >= args.Length - 1)
+                    { error = "--optional-provider requires one TabletopTweaks-Core.dll path"; return false; }
+                    options.OptionalProvider = args[i];
+                }
                 else if (args[i].StartsWith("--", StringComparison.Ordinal))
                 { error = "unknown option: " + args[i]; return false; }
                 else options.Roots.Add(args[i]);
             }
-            if (options.Roots.Count == 0) { error = "no blueprint dump folders supplied"; return false; }
+            // A provider-only run needs no dumps.
+            if (options.Roots.Count == 0 && options.OptionalProvider == null) { error = "no blueprint dump folders supplied"; return false; }
             return true;
         }
         public bool CanAudit(int loaded, int failed) => loaded > 0 && failed <= AllowFailures && (failed == 0 || loaded > failed);

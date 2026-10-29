@@ -57,7 +57,7 @@ test package below. `main` was fast-forwarded to the same commit as development 
 guards, 64 Settle vectors / 406 assertions, 20 missed-sample assertions, the TabletopTweaks-Core 0.7.15 binding /
 absent / mismatched-shape checks (they need the TTT DLL), the kinetic/native ProfileAudit checks and the 1,220-row
 partial reader audit. Recommendation A (below, done the same day) moved the rules those harnesses checked into the
-repository's unit tests; the real TTT 0.7.15 binding still needs the TTT DLL or a game session.
+repository's unit tests and checked the real TTT 0.7.15 binding offline.
 
 ## Current package
 
@@ -94,8 +94,8 @@ Fast-forwarding `main` brought these onto the public default branch, as the auth
    TTT preview's live behaviour beyond the logs already reviewed.
 2. **Temporary diagnostics:** `[Reach]` and the extended `[Walk]` / stuck-navigation rows. They collect evidence for
    the movement discussion and should be reviewed (kept, trimmed or removed) before the next release.
-3. **Verification tooling:** `tools/ProfileAudit` targeted the withdrawn engine and did not build; repaired by
-   Recommendation A (below) on development. `main` still carries the stale copy until the author next moves it.
+3. **Verification tooling:** `tools/ProfileAudit` targeted the withdrawn engine and did not build. Recommendation A
+   (below) repaired it, and the author authorized moving `main` to that revision.
 4. **Test archives** under `test-builds/` and historical documents of withdrawn work. CONTRIBUTING.md's "main: no test
    builds" convention is superseded for this update by the author's instruction; published releases are identified
    by their tags and `release/` ZIPs, not by `main`.
@@ -120,10 +120,12 @@ CombatLog.
 6. **Smoothness:** the author's last rating was 7.5/10 on a budget laptop, unchanged from the preceding build. No speedup
    or regression is claimed from unmatched encounter averages.
 
-## Recommendation A — done (29 October, development only)
+## Recommendation A — done (29 October)
 
-The author asked for Recommendation A. It is on development; `main` was **not** moved (no new authorization), and no tag
-or release was touched.
+The author asked for Recommendation A, supplied TabletopTweaks-Core 0.7.15 (`TabletopTweaks-Core_1.zip`, SHA-256
+`36a4447f44964bf76354201b9ddc849f66fa06e6d7805cb2aaab684249c01acc`, not committed: it is a third-party mod), and
+authorized moving the repaired checker to `main`. `main` was fast-forwarded to development's head. No tag or release was
+touched.
 
 **ProfileAudit builds again against the current source.**
 - The withdrawn engine's checks are gone: `KineticistChecks`, `DecisionReadChecks`, `ConditionContextChecks`, the
@@ -156,6 +158,14 @@ was 164):
   - In the game this was harmless: compiling the delegate would then throw inside `Bind`, which logs once and keeps the
     old fallback.
   - The check now compares the parameter types exactly, and the fixture covers it.
+- **Real TTT 0.7.15** (`ProfileAudit --optional-provider`): the mod's own lazy binding binds `Get<TTUnitPartDamageReduction>`,
+  `TryInitialize`, `IsImmune` and `EstimateDamage`.
+  - Through the bound delegates, TTT's own code initializes a fresh empty part and estimates 10 fire damage as 10.
+  - The decompiled 0.7.15 part has exactly the expected public signatures.
+  - Negative controls behave: a non-TTT DLL fails the check (exit 1), and the option without a path is refused (exit 2).
+  - The full dump run with TTT loaded gives the same 4,801 rows.
+  - Not checked offline: `IsImmune` and `Get<T>` on a real unit, and TTT's estimate with real resistance sources. These
+    need a game session (gameplay checklist item 3).
 - **Builds.** Real-reference Release build: 0 warnings, 0 errors. `tools/SigDump` against the ecabeb4 build: no
   external reference added or removed.
 - **No new test package.** The current ZIP (ecabeb4) remains the one to play; the changes after it are tooling and

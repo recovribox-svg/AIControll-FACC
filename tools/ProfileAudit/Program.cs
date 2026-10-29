@@ -72,12 +72,30 @@ namespace ProfileAudit
             if (!AuditOptions.TryParse(args, out var options, out var optionError))
             {
                 Console.Error.WriteLine(optionError);
-                Console.Error.WriteLine("Usage: ProfileAudit [--allow-failures N] <dump folders...> <report.txt>");
+                Console.Error.WriteLine("Usage: ProfileAudit [--allow-failures N] [--optional-provider TabletopTweaks-Core.dll] <dump folders...> <report.txt>");
                 return 2;
             }
             var output = options.Output;
             var roots = options.Roots;
             RegisterTypes();
+            var providerLines = new List<string>();
+            if (options.OptionalProvider != null)
+            {
+                try { providerLines = OptionalProviderCheck.Run(options.OptionalProvider); }
+                catch (Exception ex)
+                {
+                    var failure = $"INCOMPLETE: optional provider check failed: {ex.GetType().Name}: {ex.Message}";
+                    File.WriteAllText(output, failure + Environment.NewLine + ex);
+                    Console.Error.WriteLine(failure);
+                    return 1;
+                }
+                foreach (var line in providerLines) Console.WriteLine(line);
+                if (roots.Count == 0)
+                {
+                    File.WriteAllLines(output, providerLines);
+                    return 0;
+                }
+            }
             var loaded = new Dictionary<BlueprintGuid, SimpleBlueprint>();
             int failed = 0;
             var loadErrors = new List<string>();
@@ -121,6 +139,8 @@ namespace ProfileAudit
                     Environment.NewLine + Environment.NewLine + File.ReadAllText(output));
                 Console.WriteLine(partial);
             }
+            if (providerLines.Count > 0)
+                File.WriteAllText(output, string.Join(Environment.NewLine, providerLines) + Environment.NewLine + Environment.NewLine + File.ReadAllText(output));
             return 0;
         }
     }

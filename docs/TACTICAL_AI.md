@@ -2802,7 +2802,7 @@ pending. Checks, limits and the prioritized next work are in [INTEGRATION_0322_F
 
 ## 75. Reproducible verification (Recommendation A)
 
-Development only, 29 October 2026. `tools/ProfileAudit` builds against the current source again: the withdrawn-engine
+29 October 2026, development and `main`. `tools/ProfileAudit` builds against the current source again: the withdrawn-engine
 checks are removed, and substance infusions are read through `TacticalEngine.DescribeInfusion` (18 supported, Chain
 Arrows and Unraveling withheld). The PR #13-#15 rules are now pure, unit-tested helpers:
 - `Tactics/ObserverRules.cs`: the Settle step and the missed-roll calibration gate;
@@ -2811,5 +2811,6 @@ Arrows and Unraveling withheld). The PR #13-#15 rules are now pure, unit-tested 
 - `Tactics/OptionalApiBinding.cs`: exact-shape optional-provider binding, tested on emitted assemblies.
 
 Behaviour is unchanged, except that an optional API with widened parameter types is now refused at lookup instead of
-failing when its delegate is compiled. 218 tests pass. Details are in
+failing when its delegate is compiled. 218 tests pass. `ProfileAudit --optional-provider` binds the real
+TabletopTweaks-Core 0.7.15 through the mod's own binding and runs TTT's estimate on an empty part. Details are in
 [INTEGRATION_0322_FOLLOWUPS.md](INTEGRATION_0322_FOLLOWUPS.md).

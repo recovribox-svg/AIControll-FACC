@@ -15,9 +15,9 @@ test package is `test-builds/AI-Control-FACC-dev-integrated-ecabeb4-UMM-test.zip
 `2cc6eb92-af79-4a1c-a65d-aad66d8ef315`); in-game replay is pending. The published v0.3.22 ZIP/tag is unchanged and
 does not contain these follow-ups; the author publishes GitHub Releases and creates tags. Movement, target commitment,
 retreat, pathfinding and stuck-cancellation changes need discussion with the author first; the reach/Grease and Seelah
-wall rows are diagnostics only; Ardub/body-blocking stays deferred. Recommendation A (reproducible verification) is done on
-development only: `tools/ProfileAudit` builds again, and the PR #13-#15 rules are unit-tested helpers (218 tests); see
-the handover.
+wall rows are diagnostics only; Ardub/body-blocking stays deferred. Recommendation A (reproducible verification) is done and on
+`main` too: `tools/ProfileAudit` builds again (plus `--optional-provider` for a real TTT DLL), and the PR #13-#15 rules
+are unit-tested helpers (218 tests); see the handover.
 
 Historical handovers, superseded by the one above: [v0.3.22 release preparation](docs/RELEASE_0_3_22_HANDOVER.md)
 (27 October, PR #6–#12), [released-log review](docs/RELEASE_0322_LOG_REVIEW.md) (PR #13),
