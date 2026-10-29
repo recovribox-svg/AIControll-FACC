@@ -2791,3 +2791,11 @@ These checks do not run initialized actors/handlers or prove live performance.
 Warm slow events are ordinary ability/weapon stages with collection overlap;
 no justified quality cut or controlled speedup is claimed. Metadata stays 0.3.22,
 with an isolated draft review and unique test package; stable ZIP/tag is preserved.
+
+## 74. Integration of §71-73 (PR #13-#15) into development and main
+
+Reviewed and merged by Claude on 29 October 2026 (merge commits `f0a44df`, `1d49979`, `ecabeb4`). There is no further
+runtime change; `main` points at the same revision. 164 tests pass, the real-reference Release build has 0 warnings, and
+the v0.3.21-era reader harness gives identical rows for the v0.3.22 build and the merged build (4,801 rows). Test package
+`AI-Control-FACC-dev-integrated-ecabeb4-UMM-test.zip`, MVID `2cc6eb92-af79-4a1c-a65d-aad66d8ef315`; in-game replay is
+pending. Checks, limits and the prioritized next work are in [INTEGRATION_0322_FOLLOWUPS.md](INTEGRATION_0322_FOLLOWUPS.md).

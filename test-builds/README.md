@@ -1,6 +1,44 @@
 # Test builds
 
-**[Download the new UMM test ZIP — be0da2c](AI-Control-FACC-native-cast-chance-be0da2c-UMM-test.zip?raw=true)**
+**[Download the current integrated UMM test ZIP — ecabeb4](AI-Control-FACC-dev-integrated-ecabeb4-UMM-test.zip?raw=true)**
+
+Direct link: <https://github.com/recovribox-svg/AIControll-FACC/raw/claude/dreamy-pasteur-b9h3rn/test-builds/AI-Control-FACC-dev-integrated-ecabeb4-UMM-test.zip>
+
+This is the **reviewed, integrated development revision**: published v0.3.22 plus PR #13 (optional Tabletop Tweaks
+resistance preview, reach/Grease diagnostics), PR #14 (no false failure strike for uncast orders, missed-roll splash
+kept out of damage calibration) and PR #15 (native arcane spell-failure chance in spell valuation, stalled-navigation
+diagnostics). Its code is the same as Codex's last test (be0da2c), rebuilt from the merged revision, so it has its own
+module ID. It is **not** the published v0.3.22 release: the [published stable ZIP](../release/CompanionAI_Pathfinder_v0.3.22.zip?raw=true)
+does not contain these changes and is unchanged.
+
+UMM still displays **0.3.22**. Identify this build by its startup line:
+
+```text
+[Build] v0.3.22 module=2cc6eb92-af79-4a1c-a65d-aad66d8ef315
+```
+
+Install as for the earlier tests below (fully exit the game, install through UMM or overwrite the two files in
+`<game>/Mods/CompanionAI_Pathfinder/`, keep settings, restart).
+
+- Source: `claude/dreamy-pasteur-b9h3rn` at runtime commit `ecabeb40141ede99c2f118d99f7ffa0667d746e4`.
+- Module MVID: `2cc6eb92-af79-4a1c-a65d-aad66d8ef315`.
+- ZIP SHA-256: `34618d191de35a16aa2a3006bad73bd5e6742c9fcc5e92d2d57c1da813126423`.
+- DLL SHA-256: `06a274047b16a68841db613360848e31cfe4983fd6b9d33d5b5e5d73f21c70a0`.
+- Archive: exactly the mod DLL and the unchanged `Info.json`; no game, TTT or verification files.
+- [Identity](AI-Control-FACC-dev-integrated-ecabeb4-UMM-test.identity.json) · [Checksums](SHA256SUMS.txt) ·
+  [Integration handover](../docs/INTEGRATION_0322_FOLLOWUPS.md).
+
+Checks: Claude ran 164 unit tests (all pass), a Release build against the game's references (0 warnings, 0 errors) and
+the v0.3.21-era blueprint reader comparison (4,801 rows identical to the v0.3.22 build). **No in-game run of this DLL
+yet.** The focused replay is the be0da2c checklist below plus the earlier observer and TTT checks: arcane-failure
+`[CastChance]` notes, uncast orders not counted, missed Holy Water splash not calibrated, TTT estimates, Burning
+infusion, toggle ownership/restoration, group Sleep, healing, and the new `[Walk]`/`[Reach]` diagnostic rows.
+
+## Previous test: be0da2c (Codex, PR #15)
+
+*Historical handover text: PR #13–#15 have since been reviewed and merged (see the top of this page).*
+
+**[Download the earlier UMM test ZIP — be0da2c](AI-Control-FACC-native-cast-chance-be0da2c-UMM-test.zip?raw=true)**
 
 [Draft PR #15](https://github.com/recovribox-svg/AIControll-FACC/pull/15) targets development.
 This **unmerged v0.3.22 follow-up** accounts for native arcane spell-failure

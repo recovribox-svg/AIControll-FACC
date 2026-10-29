@@ -1,0 +1,49 @@
+{
+  "test_name": "Integrated development: v0.3.22 + reviewed PR #13, #14, #15",
+  "umm_manifest_version": "0.3.22",
+  "branch": "claude/dreamy-pasteur-b9h3rn",
+  "runtime_source_commit": "ecabeb40141ede99c2f118d99f7ffa0667d746e4",
+  "runtime_source_note": "Merge of PR #15; its source tree is identical to PR #15 head 9847561 (runtime change be0da2c). Later commits on this branch add documentation and this package only.",
+  "base_release_commit": "0a8b8f22852ca13a30069b7283ad11ea964e3bb0",
+  "integrated_pull_requests": [
+    { "number": 13, "head": "8bb6a3cb3fd12e95e369d89d21f143fd6a04160c", "merge": "f0a44df" },
+    { "number": 14, "head": "9301356fdd8405743f60958c8afe9678f4edcb81", "merge": "1d49979" },
+    { "number": 15, "head": "9847561b2f54be4aff3991aa0a7e93ea2b1f5ccd", "merge": "ecabeb4" }
+  ],
+  "archive": "AI-Control-FACC-dev-integrated-ecabeb4-UMM-test.zip",
+  "zip_sha256": "34618d191de35a16aa2a3006bad73bd5e6742c9fcc5e92d2d57c1da813126423",
+  "dll_sha256": "06a274047b16a68841db613360848e31cfe4983fd6b9d33d5b5e5d73f21c70a0",
+  "module_mvid": "2cc6eb92-af79-4a1c-a65d-aad66d8ef315",
+  "startup_marker": "[Build] v0.3.22 module=2cc6eb92-af79-4a1c-a65d-aad66d8ef315",
+  "archive_contents": [
+    "CompanionAI_Pathfinder.dll",
+    "Info.json"
+  ],
+  "checks_run_by_claude": {
+    "unit_tests": { "command": "dotnet test tests/CompanionAI.Tests", "passed": 164, "failed": 0, "skipped": 0 },
+    "release_build": { "references": "game Wrath_Data/Managed + UnityModManager (no TabletopTweaks)", "warnings": 0, "errors": 0 },
+    "external_references": "SigDump vs published v0.3.22 DLL: 5 new game member references (RuleCalculateArcaneSpellFailureChance ctor/Result, AbilityData.IsAffectedByArcaneSpellFailure, RuleAttackRoll.IsHit, UnitMovementAgentBase.Path), all resolved by the real-reference build; private UnitMovementAgent fields read by reflection confirmed in the decompiled game source.",
+    "blueprint_reader": {
+      "tool": "v0.3.21-era ProfileAudit harness (tools/ at 2c04723); the repository's current tools/ProfileAudit does not compile against the current source (it still targets the withdrawn kineticist engine)",
+      "loaded_blueprints": 44644,
+      "failed_blueprints": 1,
+      "ability_rows": 4801,
+      "reader_errors": 0,
+      "verdict_and_detail_rows_changed_vs_v0.3.22_build": 0
+    },
+    "static_review": "Incremental diffs of PR #13, #14, #15 read in full; scope boundaries (diagnostics-only movement, native queries, no copied tables, no toggle/burn/dispatch changes) confirmed."
+  },
+  "inherited_from_codex_not_reproduced": [
+    "39 compiled/native arcane-chance guards",
+    "64 Settle vectors / 406 assertions; 20 missed-sample assertions",
+    "TTT Core 0.7.15 binding / absent / mismatched-shape assertions (requires the TTT DLL, not available to Claude)",
+    "ProfileAudit kinetic/native checks and the 1,220-row partial reader audit"
+  ],
+  "in_game": "Pending. This exact DLL has not been run in the game. Earlier logs exercised the PR #13/#14 pathways with Codex's own test DLLs; the arcane-failure change (PR #15) has no gameplay replay yet.",
+  "limitations": [
+    "UMM version stays 0.3.22, the same as the published release: identify this build by its startup module line, not by version.",
+    "Reach/Grease and stalled-navigation rows are diagnostics only; movement, target commitment, retreat and stuck cancellation are unchanged.",
+    "TTT preview is the optional provider's own approximation; mixed-provider, pool and bypass parity are untested.",
+    "No measured performance change is claimed."
+  ]
+}

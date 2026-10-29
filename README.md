@@ -1,14 +1,27 @@
 # AI Control - Fully Autonomous Combat Companions
 
-## v0.3.22 follow-up test
+## Which download is which
 
-**[Download the new UMM test ZIP — be0da2c](test-builds/AI-Control-FACC-native-cast-chance-be0da2c-UMM-test.zip?raw=true)**
+| What | Contents | Status |
+| --- | --- | --- |
+| **[v0.3.22 stable ZIP](release/CompanionAI_Pathfinder_v0.3.22.zip?raw=true)** | The published v0.3.22 release (tag `v0.3.22`) | Released; unchanged |
+| **[Current test ZIP — ecabeb4](test-builds/AI-Control-FACC-dev-integrated-ecabeb4-UMM-test.zip?raw=true)** | v0.3.22 + reviewed PR #13–#15 (this repository's current source) | Test build, awaiting in-game replay |
 
-Values affected spells using native arcane failure probability; adds stalled-
-navigation diagnostics for Seelah. Movement behavior remains unchanged and Ardub
-integration is deferred. Includes the preceding resistance/observer fixes.
-UMM displays **0.3.22**. [Install, checks and replay steps](test-builds/README.md).
-Live acceptance is pending.
+The source code on `main` and on the development branch is **newer than the published v0.3.22 ZIP**: it includes the
+reviewed follow-ups below. Both ZIPs show **0.3.22** in UMM; tell them apart by the startup line in the log
+(`[Build] v0.3.22 module=...`, module IDs in [release/README.md](release/README.md) and [test-builds/README.md](test-builds/README.md)).
+GitHub Releases are published by the author; older release and test archives are kept unchanged.
+
+## Current development test build (not a release)
+
+**[Download the integrated UMM test ZIP — ecabeb4](test-builds/AI-Control-FACC-dev-integrated-ecabeb4-UMM-test.zip?raw=true)**
+
+Adds to v0.3.22: optional Tabletop Tweaks resistance preview (used only when TTT's replacement part is installed),
+no false "did nothing" strike for orders that never cast, missed-roll splash kept out of damage calibration, and
+native arcane spell-failure chance in spell valuation. Reach/Grease and stalled-navigation rows in the log are
+**diagnostics only**; movement is unchanged. Startup marker `[Build] v0.3.22 module=2cc6eb92-af79-4a1c-a65d-aad66d8ef315`.
+[Install, identity and replay steps](test-builds/README.md) · [Integration handover](docs/INTEGRATION_0322_FOLLOWUPS.md).
+In-game acceptance is pending.
 
 ## v0.3.22 stable
 
@@ -20,9 +33,8 @@ existing settings are retained. Fully exit the game before installing.
 
 [Release notes](release/CHANGELOG_v0.3.22.md) · [Install and exact package identity](release/README.md).
 
-The published v0.3.22 tag and stable package remain unchanged. The separate follow-up
-above is on `codex/release0322-fixes-review` for review into development.
-[Integration and publication handover](docs/RELEASE_0_3_22_HANDOVER.md).
+The published v0.3.22 tag and stable package remain unchanged; they do not contain the later follow-ups above.
+[v0.3.22 publication handover](docs/RELEASE_0_3_22_HANDOVER.md) (historical).
 
 *Pathfinder: Wrath of the Righteous* · by MonsieurAndroid · Unity Mod Manager id `CompanionAI_Pathfinder`
 
@@ -171,7 +183,7 @@ toggles such as Shift Form; bonus stacking follows the game's own rule (and Tabl
 ## Install (players)
 
 1. Install [Unity Mod Manager](https://www.nexusmods.com/site/mods/21) into the game.
-2. Download [CompanionAI_Pathfinder_v0.3.22.zip](release/CompanionAI_Pathfinder_v0.3.22.zip?raw=true), or build it yourself (below; output in `dist\`).
+2. Download [CompanionAI_Pathfinder_v0.3.22.zip](release/CompanionAI_Pathfinder_v0.3.22.zip?raw=true), or build it yourself (below; output in `dist\`); building from the current source gives the newer development code, not the published v0.3.22 bytes.
 3. Install it either way:
    - Unity Mod Manager → *Mods* tab → drag the ZIP onto the window / *Install Mod*, **or**
    - extract it to `<game>\Mods\CompanionAI_Pathfinder\` so the folder contains

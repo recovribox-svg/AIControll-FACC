@@ -8,35 +8,21 @@ Read [CONTRIBUTING.md](CONTRIBUTING.md) for shared branch ownership, Codex pull 
 Codex works on task branches and targets pull requests at `claude/dreamy-pasteur-b9h3rn`; Claude reviews and integrates them there.
 Keep `main` for author-authorized releases. Read [AGENTS.md](AGENTS.md) when coordinating agent work.
 
-Current handover (27 October 2026): the author explicitly authorized Codex to integrate the scoped PR #6–#11
-chain and prepare the v0.3.22 UMM package on development. Read
-[docs/RELEASE_0_3_22_HANDOVER.md](docs/RELEASE_0_3_22_HANDOVER.md) before resuming.
-The author will create the GitHub release personally; Codex must not publish it or create/move release tags.
-The earlier [PR #4 integration handover](docs/INTEGRATION_HANDOVER.md) is historical and concerns work later withdrawn.
+**Current handover (29 October 2026, Claude): read [docs/INTEGRATION_0322_FOLLOWUPS.md](docs/INTEGRATION_0322_FOLLOWUPS.md)
+before resuming.** With the author's authorization, Claude reviewed and merged PR #13, #14 and #15 into development
+(merge commits `f0a44df`, `1d49979`, `ecabeb4`) and fast-forwarded `main` to the same reviewed revision. The current
+test package is `test-builds/AI-Control-FACC-dev-integrated-ecabeb4-UMM-test.zip` (MVID
+`2cc6eb92-af79-4a1c-a65d-aad66d8ef315`); in-game replay is pending. The published v0.3.22 ZIP/tag is unchanged and
+does not contain these follow-ups; the author publishes GitHub Releases and creates tags. Movement, target commitment,
+retreat, pathfinding and stuck-cancellation changes need discussion with the author first; the reach/Grease and Seelah
+wall rows are diagnostics only; Ardub/body-blocking stays deferred. `tools/ProfileAudit` currently does not build
+against the source (it targets the withdrawn kineticist engine); see the handover.
 
-Current follow-up (28 October 2026): released v0.3.22 log review is isolated on
-`codex/release-0322-log-fixes`; read [the evidence and replay handover](docs/RELEASE_0322_LOG_REVIEW.md).
-It adds optional TTT resistance-provider appraisal and author-approved reach/Grease
-**diagnostics only**. Movement behavior is unchanged. [Draft PR #13](https://github.com/recovribox-svg/AIControll-FACC/pull/13) and the
-[test ZIP identity](test-builds/README.md) carry the handover; live acceptance is pending. The prior integration
-authorization is completed and does not authorize merging this follow-up or replacing
-the published v0.3.22 package/tag.
-
-Latest playtest follow-up (28 October 2026): `codex/release0322-log2-fixes`
-is [draft PR #14](https://github.com/recovribox-svg/AIControll-FACC/pull/14), includes pending PR #13, and narrowly fixes uncast-command failure learning and
-explicit missed-roll calibration. Read [the second-log handover](docs/RELEASE_0322_LOG2_REVIEW.md).
-New logs confirm live TTT reads and Burning effects; the new observer DLL still
-needs replay. Movement remains diagnostic-only, with no performance quality cut.
-Shared development/main, stable ZIP/tag and all earlier test archives are preserved.
-
-Current review (29 October 2026): [draft PR #15](https://github.com/recovribox-svg/AIControll-FACC/pull/15)
-on `codex/release0322-fixes-review` includes
-pending PR #14/#13. Read [the fixes-playtest handover](docs/RELEASE_0322_FIXES_REVIEW.md).
-It adds native arcane-failure probability to expected spell benefit and navigation
-DIAGNOSTICS ONLY for Seelah's combat20. Native failures remain legitimate;
-movement/cancellation policies and performance budgets remain unchanged. The
-author deferred Ardub/body-blocking integration; do not resume it implicitly.
-New build replay/review is pending; no integration/release permission is inferred.
+Historical handovers, superseded by the one above: [v0.3.22 release preparation](docs/RELEASE_0_3_22_HANDOVER.md)
+(27 October, PR #6–#12), [released-log review](docs/RELEASE_0322_LOG_REVIEW.md) (PR #13),
+[second-log review](docs/RELEASE_0322_LOG2_REVIEW.md) (PR #14), [fixes-playtest review](docs/RELEASE_0322_FIXES_REVIEW.md)
+(PR #15), the [v0.3.22 withdrawal postmortem](docs/V0_3_22_POSTMORTEM.md) and the
+[PR #4 integration handover](docs/INTEGRATION_HANDOVER.md) (work later withdrawn).
 
 ## Project Overview
 - **Mod name**: AI Control - Fully Autonomous Combat Companions (author MonsieurAndroid); UMM `Id` stays `CompanionAI_Pathfinder` (settings path, installs)
