@@ -29,6 +29,15 @@ New logs confirm live TTT reads and Burning effects; the new observer DLL still
 needs replay. Movement remains diagnostic-only, with no performance quality cut.
 Shared development/main, stable ZIP/tag and all earlier test archives are preserved.
 
+Current review (29 October 2026): [draft PR #15](https://github.com/recovribox-svg/AIControll-FACC/pull/15)
+on `codex/release0322-fixes-review` includes
+pending PR #14/#13. Read [the fixes-playtest handover](docs/RELEASE_0322_FIXES_REVIEW.md).
+It adds native arcane-failure probability to expected spell benefit and navigation
+DIAGNOSTICS ONLY for Seelah's combat20. Native failures remain legitimate;
+movement/cancellation policies and performance budgets remain unchanged. The
+author deferred Ardub/body-blocking integration; do not resume it implicitly.
+New build replay/review is pending; no integration/release permission is inferred.
+
 ## Project Overview
 - **Mod name**: AI Control - Fully Autonomous Combat Companions (author MonsieurAndroid); UMM `Id` stays `CompanionAI_Pathfinder` (settings path, installs)
 - **Game**: Pathfinder: Wrath of the Righteous

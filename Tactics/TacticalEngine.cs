@@ -120,6 +120,8 @@ namespace CompanionAI_Pathfinder.Tactics
         internal readonly List<Candidate> InfusionProspects = new List<Candidate>();
         internal List<AbilityData> DiscoveredAbilities;
         internal DecisionTimings Timings;
+        // Native caster-only armor result, lazily read for an affected ability. Never retained across decisions.
+        internal float? ArcaneCastingChance;
         public int Round;
 
         public bool HasStandard, HasMove, HasSwift, HasFullRound, CanFullAttack, CanFiveFoot;
@@ -2196,6 +2198,42 @@ namespace CompanionAI_Pathfinder.Tactics
             }
         }
 
+        private static float ArcaneDeliveryChance(TacticalContext ctx, AbilityData ability, bool explain)
+        {
+            try
+            {
+                // Runtime source/spellbook and held-touch exceptions are the game's decision, not a spell-name table.
+                if (ctx?.Unit == null || ability == null || !ability.IsAffectedByArcaneSpellFailure) return 1f;
+                if (!ctx.ArcaneCastingChance.HasValue)
+                    ctx.ArcaneCastingChance = CombatMath.ArcaneCastingChance(ctx.Unit);
+                float chance = ctx.ArcaneCastingChance.Value;
+                if (explain && chance < 1f) ExplainArcaneChance(ctx, ability, chance);
+                return chance;
+            }
+            catch (Exception ex)
+            {
+                try
+                {
+                    ReportOnce("arcane-eligibility|" + ex.GetType().Name,
+                        $"[CastChance] native arcane applicability unavailable ({ex.GetType().Name}); retaining existing valuation");
+                }
+                catch { }
+                return 1f;
+            }
+        }
+
+        // Keep the diagnostic closure out of unaffected-ability/preview appraisal; format only the bounded actual note.
+        private static void ExplainArcaneChance(TacticalContext ctx, AbilityData ability, float chance)
+        {
+            try
+            {
+                ReportOnce($"arcane-chance|{ctx.Unit.UniqueId}|{ability.Blueprint.AssetGuid}|{ctx.Round}", () =>
+                    $"[CastChance] {ctx.Unit.CharacterName}: {ability.Name} appraisal uses native arcane spell failure {1f - chance:P0}; " +
+                    $"expected spell benefit x{chance:F2}; movement and provoking costs retained");
+            }
+            catch { } // Diagnostic availability must not change the calculated chance.
+        }
+
         /// <summary>
         /// The best target for this ability. ★ v0.3.7: with the Progressive policy also the best target the spell has a
         /// fair chance against and the best one that hits a boss, since the tier gate judges those (a spell whose
@@ -2275,6 +2313,7 @@ namespace CompanionAI_Pathfinder.Tactics
 
             var controlAims = StartControlAimDiagnostics(profile, captureControlAims);
             Candidate best = null, bestViable = null, bestBoss = null;
+            float? arcaneChance = null;
             foreach (var target in targets.Distinct())
             {
                 if (onlyTarget != null && target != onlyTarget) continue;
@@ -2372,6 +2411,11 @@ namespace CompanionAI_Pathfinder.Tactics
                     continue;
                 }
                 if (needsMove) value *= 0.9f;
+                // Failure loses the spell's expected benefit, not the independent cost of walking/provoking.
+                // Each ability checks its native source once; affected spells share only this decision's caster result.
+                if (!arcaneChance.HasValue) arcaneChance = ArcaneDeliveryChance(ctx, ability, captureControlAims);
+                float deliveryChance = arcaneChance.Value;
+                value *= deliveryChance;
                 // ★ v0.3.6: a standard-action spell cast in melee needs a defensive-casting check; failing it provokes an
                 // attack of opportunity and can lose the spell (UnitUseAbility.OnTick). Camellia's Cure Light Wounds ended
                 // "Fail" that way. Potions and wands do not provoke (AbilityData.ProvokeAttackOfOpportunity).
@@ -2422,7 +2466,7 @@ namespace CompanionAI_Pathfinder.Tactics
                     InfusionAim = ctx.ScoredInfusionHits == null ? null : new InfusionAim
                     {
                         Hits = ctx.ScoredInfusionHits,
-                        DeliveryFactor = consumable * (needsMove ? 0.9f : 1f) *
+                        DeliveryFactor = consumable * (needsMove ? 0.9f : 1f) * deliveryChance *
                             (1f - (provoke?.StopChance ?? 0f)) * concentrationChance *
                             (needsMove && ctx.HasRangedWeapon && ability.Range == AbilityRange.Touch && ctx.Unit.IsEnemy(target) ? 0.5f : 1f) *
                             (1f - (risk?.StopChance ?? 0f))
@@ -2454,7 +2498,7 @@ namespace CompanionAI_Pathfinder.Tactics
                 if (infusionProspect) ctx.InfusionProspects.Add(candidate);
                 if (!progressive || !candidate.Offensive) continue;
 
-                candidate.SuccessChance = geometryChance ?? ProgressiveGate.SuccessChance(ctx.Unit, ctx.Enemies, ability, profile, candidate.Target, candidate.Point);
+                candidate.SuccessChance = (geometryChance ?? ProgressiveGate.SuccessChance(ctx.Unit, ctx.Enemies, ability, profile, candidate.Target, candidate.Point)) * deliveryChance;
                 float threshold = slot == ActionSlot.Free || slot == ActionSlot.Swift ? QuickBar(slot, ability) : MinMainValue;
                 if (candidate.SuccessChance >= SpellTierPolicy.MinSuccessChance && value >= threshold &&
                     Better(candidate, bestViable))

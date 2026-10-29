@@ -2,12 +2,13 @@
 
 ## v0.3.22 follow-up test
 
-**[Download the new UMM test ZIP — 649ed23](test-builds/AI-Control-FACC-log2-fixes-649ed23-UMM-test.zip?raw=true)**
+**[Download the new UMM test ZIP — be0da2c](test-builds/AI-Control-FACC-native-cast-chance-be0da2c-UMM-test.zip?raw=true)**
 
-Fixes false failure strikes for uncast interrupted orders and excludes explicit
-miss splash from full-hit calibration. Includes optional TTT resistance support;
-reach/Grease remains diagnostics only. UMM displays **0.3.22**.
-[Install, checks and replay steps](test-builds/README.md). Live acceptance is pending.
+Values affected spells using native arcane failure probability; adds stalled-
+navigation diagnostics for Seelah. Movement behavior remains unchanged and Ardub
+integration is deferred. Includes the preceding resistance/observer fixes.
+UMM displays **0.3.22**. [Install, checks and replay steps](test-builds/README.md).
+Live acceptance is pending.
 
 ## v0.3.22 stable
 
@@ -20,7 +21,7 @@ existing settings are retained. Fully exit the game before installing.
 [Release notes](release/CHANGELOG_v0.3.22.md) · [Install and exact package identity](release/README.md).
 
 The published v0.3.22 tag and stable package remain unchanged. The separate follow-up
-above is on `codex/release0322-log2-fixes` for review into development.
+above is on `codex/release0322-fixes-review` for review into development.
 [Integration and publication handover](docs/RELEASE_0_3_22_HANDOVER.md).
 
 *Pathfinder: Wrath of the Righteous* · by MonsieurAndroid · Unity Mod Manager id `CompanionAI_Pathfinder`
