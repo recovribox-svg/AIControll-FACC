@@ -1,75 +1,75 @@
 # Test builds
 
-**[Download the new UMM test ZIP — 649ed23](AI-Control-FACC-log2-fixes-649ed23-UMM-test.zip?raw=true)**
+**[Download the new UMM test ZIP — be0da2c](AI-Control-FACC-native-cast-chance-be0da2c-UMM-test.zip?raw=true)**
 
-[Draft PR #14](https://github.com/recovribox-svg/AIControll-FACC/pull/14) targets development.
-This **unmerged v0.3.22 follow-up** fixes two observer bugs found in Log2:
+This **unmerged v0.3.22 follow-up** accounts for native arcane spell-failure
+probability when valuing affected spells. It uses the game's own eligibility and
+spellbook-UI calculator, lazily once per decision. A 20% failure chance reduces
+expected benefit to 80%; it does not prevent legitimate random failures.
+Independent movement/provoking costs retain their handling.
 
-- An interrupted spell that never cast could receive a target-failure strike when
-  its caster's older Grease generated saves during the approach. It now remains
-  uncounted, preserving actual executed-cast safety checks.
-- Missed-roll splash, such as a missed Holy Water throw, could be compared with
-  full direct-hit damage in calibration. It is excluded from that comparison;
-  actual packet resistance/immunity observations remain.
+For Seelah's combat20 wall report, this adds **diagnostics only**: requested and
+inspected endpoints, plus native movement data when existing stuck recovery fires.
+There is no navigation, target-commitment, cancellation or exit-rule change.
+Ardub/body-blocking integration is deferred; no such dependency is included.
 
-Includes the preceding optional TTT resistance fix from pending
-[PR #13](https://github.com/recovribox-svg/AIControll-FACC/pull/13). The new logs
-confirm TTT reads and five automatic Burning activations with native effects.
-Movement/target commitment, scoring weights, performance budgets and game speed
-are unchanged. No new speedup or in-game acceptance of this DLL is claimed.
+Includes pending [PR #14](https://github.com/recovribox-svg/AIControll-FACC/pull/14)
+and [PR #13](https://github.com/recovribox-svg/AIControll-FACC/pull/13). UMM remains
+**0.3.22**. The [published stable ZIP](../release/CompanionAI_Pathfinder_v0.3.22.zip?raw=true)
+and older test archives remain unchanged. New live acceptance is pending; there
+is no performance quality cut or claimed speedup.
 
-UMM still displays **0.3.22**. This separate test preserves the
-[published stable ZIP](../release/CompanionAI_Pathfinder_v0.3.22.zip?raw=true).
-
-## Install and identify this test
+## Install and identify
 
 1. Fully exit the game.
-2. Install this ZIP through Unity Mod Manager's Mods tab.
-3. If UMM refuses a same-version replacement, extract the ZIP's two files into
+2. Install the ZIP through Unity Mod Manager's Mods tab.
+3. If UMM refuses a same-version replacement, extract its two files into
    `<game>/Mods/CompanionAI_Pathfinder/`, overwriting those files only; keep settings.
-4. Restart and confirm this exact line in the complete startup log:
+4. Restart and confirm complete startup contains:
 
 ```text
-[Build] v0.3.22 module=793a9fe8-cc9d-49fc-b535-b323a25148f3
+[Build] v0.3.22 module=bccf1618-8aa9-4a3d-9c3f-d68075ebafb8
 ```
 
-A different/missing marker means another DLL loaded. To return to stable, fully
+A different/missing module means another DLL loaded. To return to stable, fully
 exit, reinstall the linked stable ZIP and restart.
 
 ## Focused replay
 
-- With old Grease ticking, interrupt an approaching spell before it casts. Expect
-  ended-before-cast/not-counted, with no target-failure strike for that order.
-  Existing stuck recovery and genuine executed silent-failure safety should remain.
-- When Holy Water misses, retain real splash damage/defense observations without
-  classifying missed-roll packets as full direct hits. Recheck normal hits and
-  ordinary AoE without an attack roll.
-- Recheck automatic Burning/DC/burn/off restoration, player ownership and disabled
-  management in TB/RT. Preserve TTT resistant-target avoidance, susceptible targets,
-  actual immunity, group Sleep and healing.
-- Reach/Grease remains diagnostic-only. Unknown foe intent stays unknown; no new
-  back-off behavior is intended.
-- Compare the same save/settings/mods for ordinary companions, Orvath/summons and
-  idle selection. Current supplied sessions were rated 7.5/10, not a benchmark
-  for this new DLL. Send complete AI startup/logs, native CombatLog and ZIP filename.
+- Check affected spells' `[CastChance]` notes against native failure percent and
+  candidate values. Affected 20% sources should use benefit factor 0.8, while native
+  unaffected items, sources and held-touch delivery keep factor 1. Chance changes
+  should refresh on the next decision. Native failures must stay non-silent.
+- Compare armor/shield reducers, no armor, granted abilities and TTT handlers in
+  TB/RT. Spell names do not decide eligibility. Preserve useful spells rather
+  than blacklisting unlucky failures.
+- Preserve automatic Burning/DC/burn/off restoration, player ownership/disabled
+  management, resistant-target avoidance, group Sleep, healing and cast safety.
+- Replay the corridor/cloud escape. Existing Walk rows now label inspection goal/
+  endpoint/gap; a stuck event adds native destination/path end/next waypoint.
+  Include those rows; a queried path is not necessarily the execution route.
+  Movement behavior is unchanged.
+- Compare same-save/settings/mods ordinary actors, Orvath/summons and idle selection.
+  Author reports preceding sessions unchanged 7.5/10; new build timing is untested.
+  Send complete startup+AI logs, native CombatLog and the exact ZIP filename.
 
-## Checks and identity
+## Verification and identity
 
-164 unit tests pass; Release has zero warnings/errors. 64 actual compiled cast-gate
-vectors/406 assertions and 20 compiled/native missed-sample assertions pass.
-The cast check reproduces the old false-strike branch. Retained TTT/native/
-infusion/cone/observer checks pass. All 1,220 ordinary reader details match release
-(4,097 exports loaded/one known failure, partial coverage). Independent review
-found no blocking regression. No initialized actor, game event or Unity/Mono
-lifecycle was run offline; live replay remains necessary.
+164 tests pass; Release has zero warnings/errors. 39 native/compiled chance guards
+and retained observer/provider/infusion/cone checks pass. All 1,220 ordinary reader
+details match release (4,097 exports loaded/one known failure, partial coverage).
+No initialized actor, actual chance handler or Unity/Mono timing is run offline.
 
-- Runtime source: `649ed232b0b2ae5ac6075f5e2b4086a6c62bfba0`.
-- Module: `793a9fe8-cc9d-49fc-b535-b323a25148f3`.
-- ZIP SHA-256: `1210e2192caa21d0702e1cad8105c75f6124a834fbc989a2fea6b676fe05e995`.
-- DLL SHA-256: `4fe88688b7005ba758f266b39d5b0d2fe1dac41525fc43797b5efb5046122ebf`.
-- Flat archive: exactly the checked DLL and unchanged `Info.json`.
-- [Identity](AI-Control-FACC-log2-fixes-649ed23-UMM-test.identity.json) · [Checksums](SHA256SUMS.txt).
-- [Evidence, limits and handover](../docs/RELEASE_0322_LOG2_REVIEW.md).
+- Runtime source: `be0da2c5ff2d949ccf223c982dc2b01000c165c1`.
+- Module: `bccf1618-8aa9-4a3d-9c3f-d68075ebafb8`.
+- ZIP SHA-256: `018609c3e94c73fde180847c680ecc342d01687167ea1931bd1ebb641c068a2e`.
+- DLL SHA-256: `4c20a8d6a8634b45d9d2240ab8ab5b5a5845a9e2187e40c803e3d9846225055c`.
+- Archive: exactly checked mod DLL and unchanged manifest.
+- [Identity](AI-Control-FACC-native-cast-chance-be0da2c-UMM-test.identity.json) · [Checksums](SHA256SUMS.txt).
+- [Evidence and handover](../docs/RELEASE_0322_FIXES_REVIEW.md).
+- Previous observer test: [649ed23](AI-Control-FACC-log2-fixes-649ed23-UMM-test.zip?raw=true)
+  and [identity](AI-Control-FACC-log2-fixes-649ed23-UMM-test.identity.json).
+  [Its original handover](https://github.com/recovribox-svg/AIControll-FACC/blob/9301356fdd8405743f60958c8afe9678f4edcb81/test-builds/README.md).
 
 ## Earlier downloads
 

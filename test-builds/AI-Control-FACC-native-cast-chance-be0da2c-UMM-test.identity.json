@@ -1,0 +1,54 @@
+{
+  "test_name": "Native arcane failure appraisal and stalled-navigation diagnostics",
+  "umm_manifest_version": "0.3.22",
+  "branch": "codex/release0322-fixes-review",
+  "base_development_commit": "0a8b8f22852ca13a30069b7283ad11ea964e3bb0",
+  "included_pending_dependencies": [
+    14,
+    13
+  ],
+  "included_dependency_head": "9301356fdd8405743f60958c8afe9678f4edcb81",
+  "runtime_source_commit": "be0da2c5ff2d949ccf223c982dc2b01000c165c1",
+  "archive": "AI-Control-FACC-native-cast-chance-be0da2c-UMM-test.zip",
+  "zip_sha256": "018609c3e94c73fde180847c680ecc342d01687167ea1931bd1ebb641c068a2e",
+  "dll_sha256": "4c20a8d6a8634b45d9d2240ab8ab5b5a5845a9e2187e40c803e3d9846225055c",
+  "module_mvid": "bccf1618-8aa9-4a3d-9c3f-d68075ebafb8",
+  "startup_marker": "[Build] v0.3.22 module=bccf1618-8aa9-4a3d-9c3f-d68075ebafb8",
+  "archive_contents": [
+    "CompanionAI_Pathfinder.dll",
+    "Info.json"
+  ],
+  "checks": {
+    "unit_tests": {
+      "passed": 164,
+      "failed": 0,
+      "skipped": 0
+    },
+    "release_build": {
+      "warnings": 0,
+      "errors": 0
+    },
+    "arcane_chance": "39 compiled/native guards: eligibility-before-cache/query, lazy context scalar, canonical UI calculator, exactly-once benefit/infusion/Progressive factors and risk boundary; no actors or native handlers run.",
+    "navigation": "Diagnostics source/native API review; existing inspection data and one scalar snapshot at existing stuck cancellation; private fields via cached type-checked metadata; no new query or behavior change.",
+    "retained_checks": "64 Settle vectors/406 assertions,20 miss-sample assertions,concentration/Selective/HD,activation/resistance,memo/Grease,substance support,486 cost/quiver vectors,Rare Metal,cone bindings/collection pass.",
+    "optional_ttt": "23 native/metadata,9 absent,24 binding/empty detached provider,8 each of3 mismatched-shape assertions pass on final module; original Core unchanged.",
+    "blueprint_reader": {
+      "status": "PARTIAL",
+      "loaded_exports": 4097,
+      "failed_exports": 1,
+      "ability_rows": 1220,
+      "reader_errors": 0,
+      "changed_detail_rows_vs_release": 0
+    },
+    "independent_review": "No blocking arcane integration regression found.",
+    "in_game": "Pending for this new DLL. Supplied fixes-playtest logs exercise previous observer/TTT/infusion pathways but omit startup MVID."
+  },
+  "limitations": [
+    "Canonical native UI-style calculation dispatches third-party handlers; unknown contextual behavior and live chance/timing need replay.",
+    "Memo is current-caster-state per decision; future armor-changing counterfactuals require invalidation/bypass.",
+    "Generic non-arcane failure mechanisms are outside this correction.",
+    "Seelah wall cause is unproved; movement/target commitment/cancellation unchanged, Ardub integration deferred.",
+    "No performance quality/budget cut, game-speed change or measured speedup.",
+    "TTT approximate stacking/pool/mixed-provider/bypass and prior event/splash attribution limits remain."
+  ]
+}

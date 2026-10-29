@@ -7,3 +7,4 @@ d3b80d4b89160c077e986e38c68b81adbde27f3d5744735e672f8e041afcd589  AI-Control-FAC
 bf91fc8ad1dabdbe4645071a54b1581c4f8e6018ec24b89f2c654ee5482bf6fd  AI-Control-FACC-test5-fixes-25434a2-UMM-test.zip
 d1378472f5d711a7ed458b942f3db3677872910adbb870889b1580fb356351d5  AI-Control-FACC-release0322-fixes-ea20a79-UMM-test.zip
 1210e2192caa21d0702e1cad8105c75f6124a834fbc989a2fea6b676fe05e995  AI-Control-FACC-log2-fixes-649ed23-UMM-test.zip
+018609c3e94c73fde180847c680ecc342d01687167ea1931bd1ebb641c068a2e  AI-Control-FACC-native-cast-chance-be0da2c-UMM-test.zip
