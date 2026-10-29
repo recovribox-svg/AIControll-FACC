@@ -2,6 +2,7 @@
 
 **[Download the new UMM test ZIP — be0da2c](AI-Control-FACC-native-cast-chance-be0da2c-UMM-test.zip?raw=true)**
 
+[Draft PR #15](https://github.com/recovribox-svg/AIControll-FACC/pull/15) targets development.
 This **unmerged v0.3.22 follow-up** accounts for native arcane spell-failure
 probability when valuing affected spells. It uses the game's own eligibility and
 spellbook-UI calculator, lazily once per decision. A 20% failure chance reduces

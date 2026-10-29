@@ -162,6 +162,7 @@ Do not ship verification stubs, game/TTT DLLs, native dumps or local checkers.
 
 ## Branch and replay handover
 
+[Draft PR #15](https://github.com/recovribox-svg/AIControll-FACC/pull/15) targets development.
 Isolated `codex/release0322-fixes-review` starts remote development `0a8b8f2` and
 includes pending PR #14 at `9301356`, which includes PR #13. Do not merge/integrate without
 review approval. UMM stays 0.3.22; preserve stable package/tag/main/development and
@@ -180,3 +181,16 @@ all older archives. Ardub integration remains on the backburner.
 5. Include startup/MVID, exact ZIP filename, full AI logs and native CombatLog.
    Compare same-save/settings/mods ordinary actors, Orvath/summons and idle
    selection; separate native/mod-handler cost from unmatched fight aggregates.
+
+## Downloadable test identity
+
+- Runtime source: `be0da2c5ff2d949ccf223c982dc2b01000c165c1`.
+- Package commit: `8a1363435811eb1fe4b38c845481c7f7784d5165`.
+- [UMM test ZIP](../test-builds/AI-Control-FACC-native-cast-chance-be0da2c-UMM-test.zip?raw=true)
+  and [install/checklist](../test-builds/README.md).
+- UMM remains **0.3.22**. Startup must identify module
+  `bccf1618-8aa9-4a3d-9c3f-d68075ebafb8`.
+- ZIP SHA-256: `018609c3e94c73fde180847c680ecc342d01687167ea1931bd1ebb641c068a2e`.
+- DLL SHA-256: `4c20a8d6a8634b45d9d2240ab8ab5b5a5845a9e2187e40c803e3d9846225055c`.
+- Flat archive contains only checked DLL and unchanged manifest. Published stable
+  and all older test archives/identities remain byte-for-byte unchanged.

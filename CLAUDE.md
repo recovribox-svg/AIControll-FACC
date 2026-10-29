@@ -29,7 +29,8 @@ New logs confirm live TTT reads and Burning effects; the new observer DLL still
 needs replay. Movement remains diagnostic-only, with no performance quality cut.
 Shared development/main, stable ZIP/tag and all earlier test archives are preserved.
 
-Current review (29 October 2026): `codex/release0322-fixes-review` includes
+Current review (29 October 2026): [draft PR #15](https://github.com/recovribox-svg/AIControll-FACC/pull/15)
+on `codex/release0322-fixes-review` includes
 pending PR #14/#13. Read [the fixes-playtest handover](docs/RELEASE_0322_FIXES_REVIEW.md).
 It adds native arcane-failure probability to expected spell benefit and navigation
 DIAGNOSTICS ONLY for Seelah's combat20. Native failures remain legitimate;
