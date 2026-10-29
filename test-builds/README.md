@@ -1,4 +1,76 @@
-# Archived test builds
+# Test builds
+
+**[Download the new UMM test ZIP — ea20a79](AI-Control-FACC-release0322-fixes-ea20a79-UMM-test.zip?raw=true)**
+
+This **unmerged follow-up to released v0.3.22** fixes resistance appraisal when
+Tabletop Tweaks' DR rework supplies a replacement component. It queries the
+existing optional component's own preview; TTT is not required or included.
+The Hand of Hosilla/Grease case gets **diagnostics only**. Movement behavior,
+spell scoring weights, game speed and performance budgets are unchanged.
+
+UMM still displays **0.3.22**. This is a separate test, not a replacement for the
+[published stable ZIP](../release/CompanionAI_Pathfinder_v0.3.22.zip?raw=true).
+No in-game acceptance or new performance improvement is claimed.
+[Draft PR #13](https://github.com/recovribox-svg/AIControll-FACC/pull/13) targets development.
+
+## Install and identify this test
+
+1. Fully exit the game.
+2. Install this ZIP through Unity Mod Manager's Mods tab.
+3. If UMM will not replace a same-version install, extract the ZIP's two files to
+   `<game>/Mods/CompanionAI_Pathfinder/`, overwriting those files only; keep settings.
+4. Restart and confirm this exact startup line in the complete AI log:
+
+```text
+[Build] v0.3.22 module=91661767-d748-41f6-8822-ec1492a08022
+```
+
+A different/missing module marker means another DLL loaded. To return to stable,
+fully exit and reinstall the linked stable ZIP. Restart after every replacement.
+
+## Focused replay
+
+- With TTT DR rework active, meet a fresh resistant Dretch/Quasit. Before damage
+  observations, look for `[Math] ... TTT estimate` or `TTT immunity` where its
+  replacement part is installed. Compare direct Fire/Burning values with actual
+  native damage/resistance; a zero-valued Burning infusion may correctly stay off.
+- Check susceptible targets and automatic infusion activation, burn, off/restoration,
+  player-owned toggles and disabled management in TB/RT. Compare TTT absent/rework
+  off, immunity and changing pools. The provider preview is approximate; full
+  stacking/bypass parity still requires replay.
+- Replay the reach/Grease encounter. `[Reach]` records already-scored approaches,
+  risk and bounded current foe attack/distance evidence. It does not make the
+  party back away or guarantee pursuit. No movement behavior change is intended.
+- Preserve group Sleep, heals and silent-cast safety. Check ordinary companions,
+  Orvath/summons and idle selection on the same save/settings/mods.
+- Send the complete AI log **including startup**, native **CombatLog**, exact ZIP
+  filename and observations. CombatLog is useful: it confirms damage, resistance,
+  saves, heals and ordinary versus opportunity attacks that AI logs cannot prove.
+  Energy samples are capped at 24 rows/fight, so later cases may not print.
+
+## Checks and identity
+
+164 unit tests pass; Release has zero warnings/errors. Actual supplied Core 0.7.15
+binding, optional absence and incompatible API fallbacks pass. Retained native/
+compiled infusion, cost, memo, cone, Selective, concentration and HD checks pass.
+All 1,220 ordinary reader details match release (4,097 exports loaded/one known
+failure, partial coverage). No initialized actor, live resistance/pool/handler or
+Unity/Mono timing test was run.
+
+- Runtime source: `ea20a79082a56ef226446d31ef29d5b4c08277c5`.
+- Module: `91661767-d748-41f6-8822-ec1492a08022`.
+- ZIP SHA-256: `d1378472f5d711a7ed458b942f3db3677872910adbb870889b1580fb356351d5`.
+- DLL SHA-256: `35594d2719c3858c54839f191363d18050587d893f59c56502c80d694f165c70`.
+- Flat archive: exactly the checked mod DLL and unchanged `Info.json`.
+- [Identity](AI-Control-FACC-release0322-fixes-ea20a79-UMM-test.identity.json) · [Checksums](SHA256SUMS.txt).
+- [Evidence, limits and handover](../docs/RELEASE_0322_LOG_REVIEW.md).
+
+## Archived earlier tests
+
+The following is the historical Test[5] handover. Its PRs are now integrated in
+released 0.3.22; its old 0.3.21 test metadata and checksums are retained unchanged.
+Use the download at the top for this follow-up, or stable for ordinary play.
+
 
 **For v0.3.22, use the [versioned UMM package](../release/CompanionAI_Pathfinder_v0.3.22.zip?raw=true).**
 [Install and release identity](../release/README.md). The older test ZIPs below retain their original

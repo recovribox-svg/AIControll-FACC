@@ -866,7 +866,15 @@ namespace CompanionAI_Pathfinder.Tactics
                     return TraceEnergyRead(target, dmg, sourceAbility, infusion, value, 0f, seen, "native component immunity", 0f);
                 var part = target.Get<Kingmaker.UnitLogic.Parts.UnitPartDamageReduction>();
                 if (part == null)
+                {
+                    // Released v0.3.22 logs: TTT's DR rework registers a replacement part, leaving this one absent.
+                    // Query that installed provider's own preview only; retain the same observed/native bound.
+                    if (ModdedDamageReduction.TryEstimate(target, type, value * (seen?.Factor ?? 1f),
+                        out float modded, out bool immune))
+                        return TraceEnergyRead(target, dmg, sourceAbility, infusion, value, Math.Min(observed, modded),
+                            seen, immune ? "TTT immunity" : "TTT estimate", modded);
                     return TraceEnergyRead(target, dmg, sourceAbility, infusion, value, observed, seen, "no reduction part", null);
+                }
                 if (energy && part.IsImmune(type.Energy))
                     return TraceEnergyRead(target, dmg, sourceAbility, infusion, value, 0f, seen, "native part immunity", 0f);
                 _ = part.AllSources.Count();                       // initialises the part's resistance chunks

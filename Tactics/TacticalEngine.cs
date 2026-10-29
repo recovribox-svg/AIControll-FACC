@@ -395,6 +395,7 @@ namespace CompanionAI_Pathfinder.Tactics
                             (main != null && main.Value >= MinMainValue ? main.Value : 0f);
             if (preview) return chosen;
             LogControlAimDiagnostics(ctx, chosen);
+            LogReachStandoffDiagnostics(ctx, candidates, chosen, memory);
             // ★ v0.3.20 (test8): a move priced on the straight line has the game's real walk counted before it is made.
             if (chosen?.RiskAt != null) chosen.CountPathAttackers = RealPathCounter(ctx, chosen);
             LogDecision(ctx, usable, chosen);

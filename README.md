@@ -1,6 +1,15 @@
 # AI Control - Fully Autonomous Combat Companions
 
-## v0.3.22
+## v0.3.22 follow-up test
+
+**[Download the new UMM test ZIP — ea20a79](test-builds/AI-Control-FACC-release0322-fixes-ea20a79-UMM-test.zip?raw=true)**
+
+Optional Tabletop Tweaks resistance appraisal fix and reach/Grease diagnostics.
+Movement behavior is unchanged. UMM displays 0.3.22; identify this separate test
+by its ZIP filename and startup module. [Install, checks and replay steps](test-builds/README.md).
+Live acceptance is pending.
+
+## v0.3.22 stable
 
 **[Download the UMM ZIP — v0.3.22](release/CompanionAI_Pathfinder_v0.3.22.zip?raw=true)**
 
@@ -10,8 +19,8 @@ existing settings are retained. Fully exit the game before installing.
 
 [Release notes](release/CHANGELOG_v0.3.22.md) · [Install and exact package identity](release/README.md).
 
-The author will publish the GitHub release. The prepared code/package is on
-`claude/dreamy-pasteur-b9h3rn`; main still holds v0.3.21 at this handover.
+The published v0.3.22 tag and stable package remain unchanged. The separate follow-up
+above is on `codex/release-0322-log-fixes` for review into development.
 [Integration and publication handover](docs/RELEASE_0_3_22_HANDOVER.md).
 
 *Pathfinder: Wrath of the Righteous* · by MonsieurAndroid · Unity Mod Manager id `CompanionAI_Pathfinder`
