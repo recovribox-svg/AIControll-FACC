@@ -22,6 +22,13 @@ It adds optional TTT resistance-provider appraisal and author-approved reach/Gre
 authorization is completed and does not authorize merging this follow-up or replacing
 the published v0.3.22 package/tag.
 
+Latest playtest follow-up (28 October 2026): `codex/release0322-log2-fixes`
+is [draft PR #14](https://github.com/recovribox-svg/AIControll-FACC/pull/14), includes pending PR #13, and narrowly fixes uncast-command failure learning and
+explicit missed-roll calibration. Read [the second-log handover](docs/RELEASE_0322_LOG2_REVIEW.md).
+New logs confirm live TTT reads and Burning effects; the new observer DLL still
+needs replay. Movement remains diagnostic-only, with no performance quality cut.
+Shared development/main, stable ZIP/tag and all earlier test archives are preserved.
+
 ## Project Overview
 - **Mod name**: AI Control - Fully Autonomous Combat Companions (author MonsieurAndroid); UMM `Id` stays `CompanionAI_Pathfinder` (settings path, installs)
 - **Game**: Pathfinder: Wrath of the Righteous

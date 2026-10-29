@@ -2719,3 +2719,40 @@ retained infusion/cone checks pass. All 1,220 ordinary reader details remain
 unchanged (4,097 loaded exports/one known failure, partial coverage). No live
 new-adapter or reach-diagnostic result is claimed. The isolated task retains0.3.22 metadata and the published ZIP/tag;
 it does not update main, publish or automatically merge development.
+
+
+## 72. Second v0.3.22 playtest: uncast failures and missed-roll calibration
+
+[Evidence and replay handover](RELEASE_0322_LOG2_REVIEW.md). The author reports
+7.5/10 smoothness with subtle, infrequent slowdowns. Nine TB/eight RT fights show
+live optional TTT estimates/immunity and five successful automatic Burning
+activations with native DC19/ticks; preserve those paths. Startup MVID is absent
+from the excerpts, so exact loaded binary identity is not independently proven.
+
+RT's cancelled Color Spray never executed or acted, yet an earlier Grease save
+set broad Evidence and bypassed CastOutcome.Settle's uncast discard. Target
+non-reach then gained a false 1/2 strike. The discard now ignores broad Evidence
+for finished, known, unexecuted/unacted commands. Running/executed/acted,
+null-command, held-touch and genuine native/silent failure paths retain their
+existing handling. General event attribution is not redesigned.
+
+A missed Holy Water throw's one-point splash packets were compared with a full
+direct-hit estimate. DamageObserver.NoteEstimate now excludes explicit native
+missed-roll packets. Its separate per-packet defense observer remains unchanged,
+so real splash resistance/immunity observations remain. Native hit/null-roll AoE
+eligibility is preserved; successful-hit secondary splash is a separate limit.
+No item-specific formula or blacklist is introduced.
+
+20 Reach rows remain observational and explicitly unknown about accepted foe
+intent. This Hand fight deals 10HP only to Cambion, not the earlier 91HP to party
+members; no new movement response is justified. Movement/target commitment,
+pathfinding/cancellation, scores, game speed and performance budgets are unchanged.
+The largest warm spike is inclusive context/threat with GC overlap, not infusion
+work. No safe performance correction or controlled speedup is established.
+
+Release has zero warnings/errors; 164 unit tests pass. 64 actual compiled Settle vectors
+and 20 missed-sample compiled/native assertions pass, with the old false-strike
+branch reproduced. Retained TTT/native/infusion/cone checks and all 1,220 ordinary
+reader details pass unchanged (partial exports 4,097/one known failure). These
+are offline checks; new live event ordering and Unity timing still need replay.
+The isolated branch includes pending PR #13 and retains 0.3.22 metadata/stable ZIP/tag.

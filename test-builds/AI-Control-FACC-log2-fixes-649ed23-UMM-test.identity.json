@@ -1,0 +1,53 @@
+{
+  "test_name": "Log2 fixes: uncast-command failure learning and missed-roll calibration",
+  "umm_manifest_version": "0.3.22",
+  "branch": "codex/release0322-log2-fixes",
+  "base_development_commit": "0a8b8f22852ca13a30069b7283ad11ea964e3bb0",
+  "included_pending_dependency": "https://github.com/recovribox-svg/AIControll-FACC/pull/13",
+  "included_dependency_head": "8bb6a3cb3fd12e95e369d89d21f143fd6a04160c",
+  "runtime_source_commit": "649ed232b0b2ae5ac6075f5e2b4086a6c62bfba0",
+  "archive": "AI-Control-FACC-log2-fixes-649ed23-UMM-test.zip",
+  "zip_sha256": "1210e2192caa21d0702e1cad8105c75f6124a834fbc989a2fea6b676fe05e995",
+  "dll_sha256": "4fe88688b7005ba758f266b39d5b0d2fe1dac41525fc43797b5efb5046122ebf",
+  "module_mvid": "793a9fe8-cc9d-49fc-b535-b323a25148f3",
+  "startup_marker": "[Build] v0.3.22 module=793a9fe8-cc9d-49fc-b535-b323a25148f3",
+  "archive_contents": [
+    "CompanionAI_Pathfinder.dll",
+    "Info.json"
+  ],
+  "checks": {
+    "unit_tests": {
+      "passed": 164,
+      "failed": 0,
+      "skipped": 0
+    },
+    "release_build": {
+      "warnings": 0,
+      "errors": 0
+    },
+    "cast_settlement": "64 actual compiled-control-flow vectors /406 assertions pass; preceding DLL reproduces broad-Evidence false-strike branch. Scalar IL interpretation only; no live actors/events.",
+    "missed_roll_calibration": "20 compiled/native assertions pass; explicit misses cannot reach calibration, hit/null-roll remain eligible; unchanged per-packet defense-handler IL. No live actors/events.",
+    "optional_provider": "Retained actual Core0.7.15:23 metadata,9 absent,24 binding/empty detached provider and8 each of3 mismatched-shape assertions pass; no actor resistance/pool execution.",
+    "retained_checks": "Native/compiled activation,observed resistance,concentration,Selective,HD,memo,Grease gates,infusion support,486 burn/quiver vectors,Rare Metal,cone bindings/collection pass.",
+    "blueprint_reader": {
+      "status": "PARTIAL",
+      "loaded_exports": 4097,
+      "failed_exports": 1,
+      "ability_rows": 1220,
+      "reader_errors": 0,
+      "changed_detail_rows_vs_release": 0
+    },
+    "independent_review": "No blocking regression found in either new observer hunk.",
+    "in_game": "Pending for new two-fix DLL. Supplied Log2 sessions confirm preceding TTT/infusion pathways, not this new build."
+  },
+  "reviewed_playtest_feedback": "7.5/10 smoothness; subtle infrequent slowdowns. No controlled benchmark or new speedup claim.",
+  "limitations": [
+    "General event-source attribution remains broader than the uncast-order correction.",
+    "Successful-hit secondary splash and no-missed-roll provenance are not classified by this filter.",
+    "Native/third-party event ordering,touch charges,TTT handlers and Unity/Mono timing need live replay.",
+    "TTT preview/mixed-provider/stack/pool/bypass limits retained.",
+    "Reach/Grease remains diagnostics only; no movement,score,target commitment,cancellation,budget or game-speed change.",
+    "No startup MVID in supplied excerpts; new TTT/Reach pathways confirmed without independent exact-package identity."
+  ],
+  "pull_request": "https://github.com/recovribox-svg/AIControll-FACC/pull/14"
+}

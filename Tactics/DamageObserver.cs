@@ -159,6 +159,9 @@ namespace CompanionAI_Pathfinder.Tactics
         {
             var ability = evt.Reason.Ability;
             if (ability?.Blueprint == null || evt.HalfBecauseSavingThrow || (evt.AttackRoll?.IsCriticalConfirmed ?? false)) return;
+            // v0.3.22 Log2: native miss effects retain their missed attack roll (e.g. Holy Water splash).
+            // Real packet defenses are still observed above; miss-only damage is not a whole direct-hit sample.
+            if (evt.AttackRoll != null && !evt.AttackRoll.IsHit) return;
             // ★ v0.3.20 (test3): a critical the attack roll does not show (the damage itself carries the multiplier).
             foreach (var result in evt.ResultList)
                 if ((result.Source?.CriticalModifier ?? 1) > 1) return;
