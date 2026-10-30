@@ -5,7 +5,8 @@
 | What | Contents | Status |
 | --- | --- | --- |
 | **[v0.3.22 stable ZIP](release/CompanionAI_Pathfinder_v0.3.22.zip?raw=true)** | The published v0.3.22 release (tag `v0.3.22`) | Released; unchanged |
-| **[Current test ZIP — ecabeb4](test-builds/AI-Control-FACC-dev-integrated-ecabeb4-UMM-test.zip?raw=true)** | v0.3.22 + reviewed PR #13–#15 (this repository's current source) | Test build, awaiting in-game replay |
+| **[Current test ZIP — fixes2 c3f1636](test-builds/AI-Control-FACC-dev-fixes2-c3f1636-UMM-test.zip?raw=true)** | v0.3.22 + reviewed PR #13–#15 + fixes from the fixes2 logs (development source) | Test build, awaiting in-game replay |
+| [Previous test ZIP — ecabeb4](test-builds/AI-Control-FACC-dev-integrated-ecabeb4-UMM-test.zip?raw=true) | v0.3.22 + reviewed PR #13–#15 (also on `main`) | Superseded test build |
 
 The source code on `main` and on the development branch is **newer than the published v0.3.22 ZIP**: it includes the
 reviewed follow-ups below. Both ZIPs show **0.3.22** in UMM; tell them apart by the startup line in the log
@@ -14,8 +15,16 @@ GitHub Releases are published by the author; older release and test archives are
 
 ## Current development test build (not a release)
 
-**[Download the integrated UMM test ZIP — ecabeb4](test-builds/AI-Control-FACC-dev-integrated-ecabeb4-UMM-test.zip?raw=true)**
+**[Download the UMM test ZIP — fixes2 c3f1636](test-builds/AI-Control-FACC-dev-fixes2-c3f1636-UMM-test.zip?raw=true)**
 
+The ecabeb4 build below plus two fixes from the fixes2 logs:
+- archers no longer shoot sleeping enemies awake while other enemies still fight;
+- Holy Water is used only on undead and evil outsiders.
+
+Startup marker `[Build] v0.3.22 module=bd00b45e-bce8-4213-91e1-74425d708574`.
+[Review](docs/RELEASE_0322_FIXES2_REVIEW.md) · [identity and replay steps](test-builds/README.md).
+
+**Previous: [integrated UMM test ZIP — ecabeb4](test-builds/AI-Control-FACC-dev-integrated-ecabeb4-UMM-test.zip?raw=true).**
 Adds to v0.3.22: optional Tabletop Tweaks resistance preview (used only when TTT's replacement part is installed),
 no false "did nothing" strike for orders that never cast, missed-roll splash kept out of damage calibration, and
 native arcane spell-failure chance in spell valuation. Reach/Grease and stalled-navigation rows in the log are

@@ -1,6 +1,42 @@
 # Test builds
 
-**[Download the current integrated UMM test ZIP — ecabeb4](AI-Control-FACC-dev-integrated-ecabeb4-UMM-test.zip?raw=true)**
+**[Download the current UMM test ZIP — fixes2 c3f1636](AI-Control-FACC-dev-fixes2-c3f1636-UMM-test.zip?raw=true)**
+
+Direct link: <https://github.com/recovribox-svg/AIControll-FACC/raw/claude/dreamy-pasteur-b9h3rn/test-builds/AI-Control-FACC-dev-fixes2-c3f1636-UMM-test.zip>
+
+The integrated ecabeb4 build below plus the fixes from the fixes2 logs ([review](../docs/RELEASE_0322_FIXES2_REVIEW.md)):
+- archers no longer shoot sleeping enemies awake while another enemy is still fighting (the Sleep loop);
+- Holy Water-style "only against undead or evil outsiders" branches are read per target.
+
+It also carries Recommendation A's behaviour-preserving helpers. Movement is unchanged. It is **not** the published
+v0.3.22 release.
+
+UMM still displays **0.3.22**. Identify this build by its startup line, and please keep the startup part in the log you
+send:
+
+```text
+[Build] v0.3.22 module=bd00b45e-bce8-4213-91e1-74425d708574
+```
+
+- Source: `claude/dreamy-pasteur-b9h3rn` at runtime commit `c3f1636`.
+- Module MVID: `bd00b45e-bce8-4213-91e1-74425d708574`.
+- ZIP SHA-256: `176aa2343601fe3ae0ad603c8e25b040c2b0014a75cf26538ab7d8a88e7be91a`.
+- DLL SHA-256: `02ce9189fda9d47998d1215bdce62cf2bf381edefed9f8de118fca76d5f6037b`.
+- Archive: exactly the mod DLL and the unchanged `Info.json`.
+- [Identity](AI-Control-FACC-dev-fixes2-c3f1636-UMM-test.identity.json) · [Checksums](SHA256SUMS.txt).
+
+Checks: 218 unit tests pass; Release build with 0 warnings; blueprint audit unchanged (4,801 rows). **No in-game run of
+this DLL yet.**
+
+What to look for:
+- Sleep or Color Spray on one enemy while others still fight: archers shoot the awake enemies or wait, never the
+  sleeper. Melee allies may Coup de Grace it.
+- Holy Water is thrown only at undead or evil outsiders.
+- Everything in the ecabeb4 checklist below.
+
+## Previous test: ecabeb4 (integrated PR #13–#15)
+
+**[Download the integrated UMM test ZIP — ecabeb4](AI-Control-FACC-dev-integrated-ecabeb4-UMM-test.zip?raw=true)**
 
 Direct link: <https://github.com/recovribox-svg/AIControll-FACC/raw/claude/dreamy-pasteur-b9h3rn/test-builds/AI-Control-FACC-dev-integrated-ecabeb4-UMM-test.zip>
 
