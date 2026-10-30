@@ -76,27 +76,30 @@ nested conditions and was not on the list.
 - **Observers (PR #14).** The "ended before it was cast - not counted" lines appear as intended (Divine Zap, Faerie
   Fire, Earth Blast, Cure Light Wounds, Coup de Grace). No false failure strikes.
 
-## For discussion (movement / retreat — not changed)
+## Movement proposals (author-approved 30 October, implemented)
 
-These need the author's go-ahead before any code changes (movement, retreat and pathfinding rule).
+The author approved these after the first round of this review.
 
-1. **Orvath walks into his own Entangle to reach a Color Spray (RT fights 1 and 5).**
-   - The approach was priced (stop 15 %, cost 5.8) and still won.
-   - He then had to "Leave Entangle", once with 3 attacks of opportunity (RT1).
-   - Proposal: count the rounds spent stuck in one's own control area as part of the approach price.
-2. **Camellia at 11 % HP next to the Cultist Champion (TB fight 7, R3).**
-   - Healing herself was priced out by the attack of opportunity the cast provokes.
-   - "Step away, then heal" is not offered: the 5-foot-step option only follows the best main action, which was
-     Demoralize at 1.1.
-   - Proposal: let the step consider a self-heal the step would make safe.
-3. **Charge and the archer's "5-foot step, then shoot" estimate ignore the sleeping-target rule.**
-   - Code: `TacticalEngine.cs` Charge value and the step's follow-up shot.
-   - They are movement choices, so they were left out of fix 1.
-   - Proposal: apply the same `WakeFactor`.
-4. **Diagnostics for the open movement discussion.**
-   - Real time had 73 `[Reach]` and 166 `[Walk]` rows, plus four stuck-navigation snapshots: Lann and Orvath on
-     no-line-of-sight walks, and Orvath "in range for 2 s and still walking", twice.
-   - They are evidence for recommendation E in `INTEGRATION_0322_FOLLOWUPS.md`.
+1. **Orvath walked into his own Entangle (RT fights 1 and 5).** A closer look split this in two.
+   - **RT5 was a tie.** Color Spray "into Entangle" and Sleep from where he stood were both 61.6, and the tie went to
+     the walk. He was entangled (the 20 % the walk was priced at) and spent his next action leaving.
+   - **Fix:** an action the unit can do from where it stands now wins a tie within 1 % (a difference the estimates
+     cannot resolve) against one that walks first. A move that is itself the point (withdraw, leave an area, step
+     out) is not affected.
+   - **RT1 was priced correctly.** Color Spray at 58.3 against Sleep at 31.8; the area cost 5.8 at a 15 % chance to
+     be held. The exposure cost dropped out of the second appraisal because, with the enemies entangled, the game's
+     own attack-of-opportunity check no longer counted attacks on the way in. Both enemies failed the Color Spray,
+     and the three attacks of opportunity on the way out did no damage. Not changed.
+2. **Camellia at 11 % HP next to the Cultist Champion (TB fight 7, R3).** The step out of melee (turn-based) or
+   back-off (real time) now follows the provoking cast worth most without its risk, not only the best action now.
+   - It applies when that cast, safe, beats the best action now.
+   - The step is worth what the best action gains by it; for the best action itself that is the risk the step
+     removes, as before.
+   - A cast on the caster itself (a self-heal) no longer needs the old spot in its range.
+   - Her own Cure Light Wounds, priced out by the attack of opportunity it provoked, now makes the step worth taking.
+3. **Charge and the archer's step-then-shoot estimate** now use the sleeping-target rule (`WakeFactor`), like every
+   other attack.
+4. **Diagnostics.** The `[Reach]` and `[Walk]` rows are unchanged and still collect evidence for recommendation E.
 
 ## Performance evidence (for recommendation B; nothing changed)
 

@@ -2822,5 +2822,11 @@ TabletopTweaks-Core 0.7.15 through the mod's own binding and runs TTT's estimate
   awake after four of Orvath's five Sleeps, and in real time his 0.6 shot woke the target of Seelah's Coup de Grace.
 - **Nested condition groups.** `OrAndLogic` is now read per target when everything inside it is a read-only listed
   condition (`AbilityProfile.IsSafeGroup`). Holy Water's "undead or evil outsider" was unread, so both branches were
-  counted, and Lann threw it at a Medium Earth Elemental for nothing. Details are in
+  counted, and Lann threw it at a Medium Earth Elemental for nothing.
+- **Movement follow-ups (author-approved).**
+  - An action from where the unit stands wins a tie within 1 % against one that walks first: Orvath walked into
+    his own Entangle for a Color Spray worth exactly as much as Sleep in place.
+  - The step / back-off out of melee follows the provoking cast worth most without its risk when that beats the
+    best action now, so a hurt caster can step away and heal herself. A self-target keeps no range check.
+  - Charge and the archer's step-then-shoot estimate use `WakeFactor`. Details are in
 [INTEGRATION_0322_FOLLOWUPS.md](INTEGRATION_0322_FOLLOWUPS.md).

@@ -354,6 +354,16 @@ namespace CompanionAI_Pathfinder.Tactics
             // lower one, QuickBar).
             var quick = usable.FirstOrDefault(c => (c.Slot == ActionSlot.Free || c.Slot == ActionSlot.Swift) && c.Value >= QuickBar(c));
             var main = usable.FirstOrDefault(c => c.Slot != ActionSlot.Free && c.Slot != ActionSlot.Swift);
+            // ★ v0.3.22 (fixes2 review, author-approved): an action the unit can do from where it stands wins a tie (within
+            // 1 %, a difference the estimates cannot resolve) against one that walks there first. Orvath's Color Spray
+            // "into Entangle" and his Sleep from where he stood were both 61.6; he walked into his own Entangle, was
+            // entangled and spent his next action leaving it (real-time fight 5). A move that is itself the point
+            // (withdraw, leave an area, step out of melee) is not an action that walks first.
+            if (main != null && main.Kind != CandidateKind.Move && WalksBeforeActing(main))
+            {
+                var inPlace = usable.FirstOrDefault(c => c.Slot != ActionSlot.Free && c.Slot != ActionSlot.Swift && !WalksBeforeActing(c));
+                if (inPlace != null && inPlace.Value >= main.Value * 0.99f) main = inPlace;
+            }
 
             Candidate chosen = null;
             if (quick != null) chosen = quick;
@@ -2643,8 +2653,9 @@ namespace CompanionAI_Pathfinder.Tactics
                 // ★ v0.3.18 (AA-4): with Pounce the charge ends in a full attack (UnitAttack: a charge is a full attack
                 // when the unit has Pounce and is not staggered).
                 var hit = pounce ? CombatMath.EstimateWeaponAttack(ctx.Unit, enemy, full: true) ?? single : single;
+                // ★ v0.3.22 (fixes2 review, author-approved): a charge into a sleeping enemy wakes it like any hit.
                 float value = DamageValue(enemy, hit, 1.1f) * RoleWeight(ctx, "damage") *
-                              PreferenceWeight(ctx, false) * 0.95f;
+                              PreferenceWeight(ctx, false) * 0.95f * WakeFactor(enemy, hit.ExpectedDamage * 1.1f);
                 string label = $"Charge->{enemy.CharacterName}{(pounce && hit.Attacks > 1 ? $" (pounce, {hit.Attacks} attacks)" : "")}";
                 // ★ v0.3.13: a charge out of melee provokes like any other move.
                 var risk = MoveRisk(ctx, ApproachPoint(ctx.Unit, enemy, single.Reach));
@@ -3487,10 +3498,22 @@ namespace CompanionAI_Pathfinder.Tactics
                                            (c.GatherPower == 0 || CombatMemory.IsRealTime))
                                .OrderByDescending(c => c.Value).FirstOrDefault();
             // ★ v0.3.18: or a ray, whose attack roll provokes (CastRiskCost holds what provoking costs it).
-            bool castsInMelee = bestMain != null && bestMain.Kind == CandidateKind.Ability &&
-                                bestMain.Ability.RuntimeActionType == UnitCommand.CommandType.Standard &&
-                                (bestMain.Ability.ProvokeAttackOfOpportunity || bestMain.CastRiskCost > 0f) &&
-                                !(bestMain.Target != null && ctx.Engagers.Contains(bestMain.Target));
+            // ★ v0.3.22 (fixes2 review, author-approved): the cast a step makes safe need not be the best action now. At
+            // 11 % HP next to the Cultist Champion Camellia's own Cure Light Wounds was priced out by the attack of
+            // opportunity it provokes, Demoralize (1.1) became the best action, and no step was offered because it only
+            // followed that. The step now follows the provoking cast worth most without its risk, when that beats the
+            // best action now; it is worth what the best action gains by the step (for the best action itself, the risk
+            // the step removes, as before).
+            Func<Candidate, bool> provokingCast = c => c != null && c.Kind == CandidateKind.Ability &&
+                                c.Ability.RuntimeActionType == UnitCommand.CommandType.Standard &&
+                                (c.Ability.ProvokeAttackOfOpportunity || c.CastRiskCost > 0f) &&
+                                !(c.Target != null && ctx.Engagers.Contains(c.Target));
+            var stepCast = list.Where(c => c.Slot != ActionSlot.Free && c.Slot != ActionSlot.Swift && !c.NeedsMove && Affordable(ctx, c) &&
+                                           (c.GatherPower == 0 || CombatMemory.IsRealTime) && provokingCast(c))
+                               .OrderByDescending(c => c.Value + c.CastRiskCost).FirstOrDefault();
+            if (stepCast != null && bestMain != null && stepCast != bestMain && stepCast.Value + stepCast.CastRiskCost <= bestMain.Value)
+                stepCast = null;
+            bool castsInMelee = stepCast != null;
 
             // 1) Step out of melee before shooting/casting (5-foot step: no attack of opportunity, keeps full attack).
             // ★ v0.3.14: real time has no 5-foot step; there a ranged character backs off a few metres instead, paying
@@ -3504,10 +3527,11 @@ namespace CompanionAI_Pathfinder.Tactics
                 Func<Vector3, bool> keepsTarget = null;
                 // ★ v0.3.17: a caster's step must keep the spell's target in its range (only archers were checked; a
                 // short-range spell could be left out of reach, and after a 5-foot step no other movement is allowed).
-                if (castsInMelee && bestMain.Target != null)
+                // A cast on the caster itself goes wherever it steps (its own position must not hold the step back).
+                if (castsInMelee && stepCast.Target != null && stepCast.Target != unit)
                 {
-                    float spellRange = bestMain.Ability.GetApproachDistance(bestMain.Target) * 0.95f;
-                    var spellTarget = bestMain.Target;
+                    float spellRange = stepCast.Ability.GetApproachDistance(stepCast.Target) * 0.95f;
+                    var spellTarget = stepCast.Target;
                     Vector3 eye = unit.EyePosition - unit.Position;
                     keepsTarget = p => UnitCommand.IsUnitCloseEnough(spellTarget.Position, p, p + eye, spellRange, true, 0f);
                 }
@@ -3525,7 +3549,7 @@ namespace CompanionAI_Pathfinder.Tactics
                 int shots = 1;
                 ItemEntityWeapon shotWeapon = null;
                 if (castsInMelee)
-                    followUp = bestMain.Value + bestMain.CastRiskCost;    // the spell without the risk of casting in melee
+                    followUp = stepCast.Value + stepCast.CastRiskCost;    // the spell without the risk of casting in melee
                 else if (ctx.HasRangedWeapon)
                 {
                     followUp = 0f;
@@ -3533,7 +3557,8 @@ namespace CompanionAI_Pathfinder.Tactics
                     {
                         var est = CombatMath.EstimateWeaponAttack(unit, e, full: ctx.CanFullAttack);
                         if (est == null || !est.IsRanged) continue;
-                        float shot = DamageValue(e, est) * RoleWeight(ctx, "damage");
+                        // ★ v0.3.22 (fixes2 review, author-approved): a shot that would only wake a sleeper is no reason to step.
+                        float shot = DamageValue(e, est) * RoleWeight(ctx, "damage") * WakeFactor(e, est.ExpectedDamage);
                         if (shot <= followUp) continue;
                         followUp = shot;
                         shots = est.Attacks;
@@ -3560,9 +3585,9 @@ namespace CompanionAI_Pathfinder.Tactics
                     if (castsInMelee)
                     {
                         // What the cast still risks from the new spot (a step may leave it next to someone).
-                        float lossThere = ProvokeLoss(ctx, bestMain.Ability, AbilityProfile.Get(bestMain.Ability), bestMain.Slot,
-                                                      bestMain.Target, point.Value, followUp, out _, out _);
-                        value = Math.Min(followUp, Math.Max(0f, bestMain.CastRiskCost - lossThere));
+                        float lossThere = ProvokeLoss(ctx, stepCast.Ability, AbilityProfile.Get(stepCast.Ability), stepCast.Slot,
+                                                      stepCast.Target, point.Value, followUp, out _, out _);
+                        value = Math.Min(followUp, Math.Max(0f, followUp - lossThere - bestMain.Value));
                     }
                     else if (ctx.HasRangedWeapon)
                     {
