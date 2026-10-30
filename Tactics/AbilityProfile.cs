@@ -1361,7 +1361,20 @@ namespace CompanionAI_Pathfinder.Tactics
         /// Counted for every target before, Sleep was cast on enemies over its limit again and again (log 06aebf2d).
         /// </summary>
         private static bool IsSafe(Condition c) =>
-            c == null || SafeConditions.Contains(c.GetType()) || c is ContextConditionHitDice;
+            c == null || SafeConditions.Contains(c.GetType()) || c is ContextConditionHitDice ||
+            c is Kingmaker.Designers.EventConditionActionSystem.Conditions.OrAndLogic group && IsSafeGroup(group);
+
+        /// <summary>
+        /// ★ v0.3.22 (fixes2 logs): a nested group (OrAndLogic) only checks its own conditions (the decompiled game:
+        /// CheckCondition is ConditionsChecker.Check()), so it is safe when everything inside is. Holy Water's "undead or
+        /// evil outsider" is one: unread, both branches were counted, and Lann threw it at a Medium Earth Elemental for
+        /// nothing (5.9). Hit Dice limits stay top-level only: their shared values are set there (WithSharedValues).
+        /// </summary>
+        private static bool IsSafeGroup(Kingmaker.Designers.EventConditionActionSystem.Conditions.OrAndLogic group)
+        {
+            var inner = group.ConditionsChecker?.Conditions;
+            return inner != null && inner.All(c => !(c is ContextConditionHitDice) && IsSafe(c));
+        }
 
         /// <summary>Read the same allowlisted native conditions under an existing effect context; never execute actions.</summary>
         internal static bool TryReadConditions(ConditionsChecker checker, MechanicsContext context,

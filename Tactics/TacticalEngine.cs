@@ -800,12 +800,17 @@ namespace CompanionAI_Pathfinder.Tactics
         /// the party needed. At half, Camellia's Divine Zap (0.9) woke the sleeping Evoker every round from R6 to R11 and
         /// Orvath put it back to sleep each time (0.3.18-test9 turn-based log); in real time the archers woke the Spawn of
         /// the Hungry Moon after each of five Sleeps. Half when every enemy is down: then it has to be fought.</remarks>
+        /// <remarks>★ v0.3.22 (fixes2 logs): nothing while another enemy is still acting. A tenth stayed a positive "last
+        /// resort", so an archer with no other target still took the shot: Lann shot the sleeping Cultist Archer awake
+        /// after four of Orvath's five Sleeps on it (0.5 against Sleep's 45-50, turn-based fight 9), and in real time his
+        /// 0.6 shot woke the Neophyte Fighter Seelah was about to Coup de Grace (13.9). At 0 the shot is not useful now
+        /// (MinMainValue): the sleeper stays out of the fight, or helpless for a coup de grace.</remarks>
         private static float WakeFactor(UnitEntityData enemy, float expectedDamage)
         {
             bool asleep;
             try { asleep = enemy.Descriptor.State.HasCondition(UnitCondition.Sleeping); } catch { asleep = false; }
             if (!asleep || expectedDamage >= enemy.HPLeft) return 1f;
-            return s_ActiveEnemies != null && s_ActiveEnemies.Any(e => e != enemy) ? 0.1f : 0.5f;
+            return s_ActiveEnemies != null && s_ActiveEnemies.Any(e => e != enemy) ? 0f : 0.5f;
         }
 
         /// <summary>★ v0.3.18 (test10): the enemies not disabled in the decision being made (BuildContext).</summary>

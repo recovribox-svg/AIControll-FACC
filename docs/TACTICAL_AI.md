@@ -1156,7 +1156,7 @@ them as well. Demoralize had been cast 52 times (turn-based) and 62 times (real 
 enemies.
 
 **Sleep.** A hit that wakes a sleeping enemy without killing it is worth a tenth while another enemy is still acting;
-it used to be half. Camellia woke the sleeping Evoker every round and Orvath put it back to sleep each time. In real
+it used to be half. (★ v0.3.22, fixes2 logs: nothing - see §76.) Camellia woke the sleeping Evoker every round and Orvath put it back to sleep each time. In real
 time the archers woke the Spawn of the Hungry Moon after each of five Sleeps.
 
 **Real time decides for everyone at once.**
@@ -2812,5 +2812,15 @@ Arrows and Unraveling withheld). The PR #13-#15 rules are now pure, unit-tested 
 
 Behaviour is unchanged, except that an optional API with widened parameter types is now refused at lookup instead of
 failing when its delegate is compiled. 218 tests pass. `ProfileAudit --optional-provider` binds the real
-TabletopTweaks-Core 0.7.15 through the mod's own binding and runs TTT's estimate on an empty part. Details are in
+TabletopTweaks-Core 0.7.15 through the mod's own binding and runs TTT's estimate on an empty part.
+
+## 76. fixes2 logs: sleepers left asleep, nested conditions read
+
+30 October 2026, development only; review in [RELEASE_0322_FIXES2_REVIEW.md](RELEASE_0322_FIXES2_REVIEW.md).
+- **Sleeping enemies.** A hit that wakes a sleeping enemy without killing it is worth nothing while another enemy is
+  still acting (`WakeFactor` 0, was a tenth). A tenth stayed a positive last resort. Lann shot the Cultist Archer
+  awake after four of Orvath's five Sleeps, and in real time his 0.6 shot woke the target of Seelah's Coup de Grace.
+- **Nested condition groups.** `OrAndLogic` is now read per target when everything inside it is a read-only listed
+  condition (`AbilityProfile.IsSafeGroup`). Holy Water's "undead or evil outsider" was unread, so both branches were
+  counted, and Lann threw it at a Medium Earth Elemental for nothing. Details are in
 [INTEGRATION_0322_FOLLOWUPS.md](INTEGRATION_0322_FOLLOWUPS.md).
