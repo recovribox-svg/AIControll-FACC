@@ -1,6 +1,38 @@
 # Test builds
 
-**[Download the current UMM test ZIP — fixes2 c3f1636](AI-Control-FACC-dev-fixes2-c3f1636-UMM-test.zip?raw=true)**
+**[Download the current UMM test ZIP — movement 0c2e0f5](AI-Control-FACC-dev-movement-0c2e0f5-UMM-test.zip?raw=true)**
+
+Direct link: <https://github.com/recovribox-svg/AIControll-FACC/raw/claude/dreamy-pasteur-b9h3rn/test-builds/AI-Control-FACC-dev-movement-0c2e0f5-UMM-test.zip>
+
+The fixes2 build below plus the three movement follow-ups the author approved
+([review](../docs/RELEASE_0322_FIXES2_REVIEW.md)):
+- when acting from where a companion stands is worth as much as walking somewhere first, it stays (no walking into
+  its own Entangle for nothing);
+- a hurt caster next to an enemy can step away to heal herself instead of using a weak action;
+- charges and an archer's "step back, then shoot" no longer aim at sleeping enemies.
+
+Not the published v0.3.22 release. Startup line:
+
+```text
+[Build] v0.3.22 module=ba81d8ad-acb4-4dfc-80e1-1a46c8acd506
+```
+
+- Source: `claude/dreamy-pasteur-b9h3rn` at runtime commit `0c2e0f5`.
+- ZIP SHA-256: `b2b766394fb696612306c9efbb25b3dbc4d099919445d8fb2412892f49d52998`.
+- DLL SHA-256: `5f053fcfcfb26338e03ad8a71c735bb4679cb9c605cc62069dbddccb1253aa8d`.
+- Archive: the mod DLL and the unchanged `Info.json` only.
+- [Identity](AI-Control-FACC-dev-movement-0c2e0f5-UMM-test.identity.json) · [Checksums](SHA256SUMS.txt).
+
+Checks: 218 unit tests pass; Release build with 0 warnings; no new game references. **No in-game run yet.**
+
+What to look for, besides the fixes2 checks below:
+- a hurt caster in melee takes a "5ft step out of melee" (turn-based) or "Back off" (real time), then heals;
+- casters cast from where they stand when a walk would gain nothing;
+- nobody charges a sleeping enemy.
+
+## Previous test: fixes2 c3f1636
+
+**[Download the fixes2 UMM test ZIP — c3f1636](AI-Control-FACC-dev-fixes2-c3f1636-UMM-test.zip?raw=true)**
 
 Direct link: <https://github.com/recovribox-svg/AIControll-FACC/raw/claude/dreamy-pasteur-b9h3rn/test-builds/AI-Control-FACC-dev-fixes2-c3f1636-UMM-test.zip>
 
