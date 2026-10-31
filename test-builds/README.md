@@ -1,6 +1,32 @@
 # Test builds
 
-**[Download the current UMM test ZIP — movement 0c2e0f5](AI-Control-FACC-dev-movement-0c2e0f5-UMM-test.zip?raw=true)**
+**[Download the current UMM test ZIP — v0.3.23-dev-build3 (089a402)](AI-Control-FACC-v0.3.23-dev-build3-089a402-UMM-test.zip?raw=true)**
+
+Direct link: <https://github.com/recovribox-svg/AIControll-FACC/raw/claude/dreamy-pasteur-b9h3rn/test-builds/AI-Control-FACC-v0.3.23-dev-build3-089a402-UMM-test.zip>
+
+The build the author played as "v0.3.23-dev-build2" (movement 0c2e0f5 below) plus the fixes from its logs
+([review](../docs/RELEASE_0323_BUILD2_REVIEW.md)):
+- in real time, melee companions walk up to a sleeping enemy and finish it with Coup de Grace;
+- the last sleeping enemy is no longer shot awake when a melee ally can finish it;
+- a spell whose walk stopped before casting no longer counts as a failure.
+
+UMM still shows **0.3.22** until `Info.json` is bumped for the 0.3.23 release. Startup line:
+
+```text
+[Build] v0.3.22 module=582c262e-656d-4da3-83d0-0d2f43f4711f
+```
+
+- Source: `claude/dreamy-pasteur-b9h3rn` at runtime commit `089a402`.
+- ZIP SHA-256: `18a41304cca547c287a35d87bf0408f9a97e8a56be6eda3aa02c9febf074bcc0`.
+- DLL SHA-256: `870f30e1a36e81dc6e96f89ba9384c5bb33305e51a784edce689c5c6de33b4bd`.
+- Archive: the mod DLL and the unchanged `Info.json` only.
+- [Identity](AI-Control-FACC-v0.3.23-dev-build3-089a402-UMM-test.identity.json) · [Checksums](SHA256SUMS.txt).
+
+Checks: 222 unit tests pass; Release build with 0 warnings; no new game references. **No in-game run yet.**
+
+## Previous test: movement 0c2e0f5 (played as v0.3.23-dev-build2)
+
+**[Download the movement UMM test ZIP — 0c2e0f5](AI-Control-FACC-dev-movement-0c2e0f5-UMM-test.zip?raw=true)**
 
 Direct link: <https://github.com/recovribox-svg/AIControll-FACC/raw/claude/dreamy-pasteur-b9h3rn/test-builds/AI-Control-FACC-dev-movement-0c2e0f5-UMM-test.zip>
 

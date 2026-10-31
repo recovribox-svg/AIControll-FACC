@@ -1,0 +1,37 @@
+{
+  "test_name": "0.3.23 development build 3: build2 log fixes on top of movement-0c2e0f5 (author's build2)",
+  "umm_manifest_version": "0.3.22",
+  "branch": "claude/dreamy-pasteur-b9h3rn",
+  "runtime_source_commit": "089a402",
+  "runtime_source_note": "089a402 = 0c2e0f5 + real-time full-round abilities walk to their target (Coup de Grace), last sleeper left for an ally's Coup de Grace, no failure strike for casts force-finished before they started.",
+  "previous_test": "AI-Control-FACC-dev-movement-0c2e0f5-UMM-test.zip (played by the author as v0.3.23-dev-build2)",
+  "archive": "AI-Control-FACC-v0.3.23-dev-build3-089a402-UMM-test.zip",
+  "zip_sha256": "18a41304cca547c287a35d87bf0408f9a97e8a56be6eda3aa02c9febf074bcc0",
+  "dll_sha256": "870f30e1a36e81dc6e96f89ba9384c5bb33305e51a784edce689c5c6de33b4bd",
+  "module_mvid": "582c262e-656d-4da3-83d0-0d2f43f4711f",
+  "startup_marker": "[Build] v0.3.22 module=582c262e-656d-4da3-83d0-0d2f43f4711f",
+  "archive_contents": [
+    "CompanionAI_Pathfinder.dll",
+    "Info.json"
+  ],
+  "checks_run_by_claude": {
+    "unit_tests": {
+      "command": "dotnet test tests/CompanionAI.Tests",
+      "passed": 222,
+      "failed": 0,
+      "skipped": 0
+    },
+    "release_build": {
+      "references": "game Wrath_Data/Managed + UnityModManager (no TabletopTweaks)",
+      "warnings": 0,
+      "errors": 0
+    },
+    "external_references": "SigDump vs the 0c2e0f5 build: none added or removed"
+  },
+  "in_game": "Pending. This exact DLL has not been run in the game.",
+  "limitations": [
+    "UMM still shows 0.3.22 (Info.json unchanged until the 0.3.23 release); identify this build by its startup module line.",
+    "Real-time full-round walks are the only movement change; target commitment, pathfinding and stuck cancellation are unchanged.",
+    "No measured performance change is claimed."
+  ]
+}

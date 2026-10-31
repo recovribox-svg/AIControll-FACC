@@ -12,8 +12,9 @@ Keep `main` for author-authorized releases. Read [AGENTS.md](AGENTS.md) when coo
 before resuming.** With the author's authorization, Claude reviewed and merged PR #13, #14 and #15 into development
 (merge commits `f0a44df`, `1d49979`, `ecabeb4`) and fast-forwarded `main` to the same reviewed revision. The integrated
 test package was `test-builds/AI-Control-FACC-dev-integrated-ecabeb4-UMM-test.zip` (MVID
-`2cc6eb92-af79-4a1c-a65d-aad66d8ef315`); then `AI-Control-FACC-dev-fixes2-c3f1636-UMM-test.zip`; the current one is
-`AI-Control-FACC-dev-movement-0c2e0f5-UMM-test.zip` (MVID `ba81d8ad-acb4-4dfc-80e1-1a46c8acd506`, development only); in-game replay is pending. The published v0.3.22 ZIP/tag is unchanged and
+`2cc6eb92-af79-4a1c-a65d-aad66d8ef315`); then `AI-Control-FACC-dev-fixes2-c3f1636-UMM-test.zip`; then
+`AI-Control-FACC-dev-movement-0c2e0f5-UMM-test.zip` (played as v0.3.23-dev-build2); the current one is
+`AI-Control-FACC-v0.3.23-dev-build3-089a402-UMM-test.zip` (MVID `582c262e-656d-4da3-83d0-0d2f43f4711f`, development only); in-game replay is pending. The published v0.3.22 ZIP/tag is unchanged and
 does not contain these follow-ups; the author publishes GitHub Releases and creates tags. Movement, target commitment,
 retreat, pathfinding and stuck-cancellation changes need discussion with the author first; the reach/Grease and Seelah
 wall rows are diagnostics only; Ardub/body-blocking stays deferred. Recommendation A (reproducible verification) is done and on

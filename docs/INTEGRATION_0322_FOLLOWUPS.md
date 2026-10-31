@@ -63,7 +63,9 @@ repository's unit tests and checked the real TTT 0.7.15 binding offline.
 
 **Superseded on 30 October** by `test-builds/AI-Control-FACC-dev-fixes2-c3f1636-UMM-test.zip` (MVID
 `bd00b45e-bce8-4213-91e1-74425d708574`), and then by `AI-Control-FACC-dev-movement-0c2e0f5-UMM-test.zip` (MVID
-`ba81d8ad-acb4-4dfc-80e1-1a46c8acd506`, adds the approved movement follow-ups; development only): this build plus the fixes2 log fixes
+`ba81d8ad-acb4-4dfc-80e1-1a46c8acd506`, adds the approved movement follow-ups), and on 31 October by
+`AI-Control-FACC-v0.3.23-dev-build3-089a402-UMM-test.zip` (MVID `582c262e-656d-4da3-83d0-0d2f43f4711f`, the build2 log fixes,
+[RELEASE_0323_BUILD2_REVIEW.md](RELEASE_0323_BUILD2_REVIEW.md); development only): this build plus the fixes2 log fixes
 ([RELEASE_0322_FIXES2_REVIEW.md](RELEASE_0322_FIXES2_REVIEW.md)). The ecabeb4 package below is kept unchanged.
 
 [`test-builds/AI-Control-FACC-dev-integrated-ecabeb4-UMM-test.zip`](../test-builds/AI-Control-FACC-dev-integrated-ecabeb4-UMM-test.zip?raw=true)

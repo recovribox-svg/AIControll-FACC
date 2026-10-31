@@ -5,7 +5,8 @@
 | What | Contents | Status |
 | --- | --- | --- |
 | **[v0.3.22 stable ZIP](release/CompanionAI_Pathfinder_v0.3.22.zip?raw=true)** | The published v0.3.22 release (tag `v0.3.22`) | Released; unchanged |
-| **[Current test ZIP — movement 0c2e0f5](test-builds/AI-Control-FACC-dev-movement-0c2e0f5-UMM-test.zip?raw=true)** | v0.3.22 + reviewed PR #13–#15 + fixes2 log fixes + approved movement follow-ups (development source) | Test build, awaiting in-game replay |
+| **[Current test ZIP — v0.3.23-dev-build3 (089a402)](test-builds/AI-Control-FACC-v0.3.23-dev-build3-089a402-UMM-test.zip?raw=true)** | The build2 test + fixes from its logs (development source) | Test build, awaiting in-game replay |
+| [Previous test ZIP — movement 0c2e0f5 (played as v0.3.23-dev-build2)](test-builds/AI-Control-FACC-dev-movement-0c2e0f5-UMM-test.zip?raw=true) | v0.3.22 + reviewed PR #13–#15 + fixes2 log fixes + approved movement follow-ups | Superseded test build |
 | [Previous test ZIP — fixes2 c3f1636](test-builds/AI-Control-FACC-dev-fixes2-c3f1636-UMM-test.zip?raw=true) | The same without the movement follow-ups | Superseded test build |
 | [Previous test ZIP — ecabeb4](test-builds/AI-Control-FACC-dev-integrated-ecabeb4-UMM-test.zip?raw=true) | v0.3.22 + reviewed PR #13–#15 (also on `main`) | Superseded test build |
 
@@ -16,7 +17,15 @@ GitHub Releases are published by the author; older release and test archives are
 
 ## Current development test build (not a release)
 
-**[Download the UMM test ZIP — movement 0c2e0f5](test-builds/AI-Control-FACC-dev-movement-0c2e0f5-UMM-test.zip?raw=true)**
+**[Download the UMM test ZIP — v0.3.23-dev-build3 (089a402)](test-builds/AI-Control-FACC-v0.3.23-dev-build3-089a402-UMM-test.zip?raw=true)**
+(startup `[Build] v0.3.22 module=582c262e-656d-4da3-83d0-0d2f43f4711f`). It is the build2 test plus:
+- real-time Coup de Grace on sleepers;
+- the last sleeper left for a melee ally;
+- no false failure for casts stopped on their walk.
+
+[Review](docs/RELEASE_0323_BUILD2_REVIEW.md).
+
+**Previous: movement 0c2e0f5 (played as v0.3.23-dev-build2)**
 (startup `[Build] v0.3.22 module=ba81d8ad-acb4-4dfc-80e1-1a46c8acd506`). It is the fixes2 build plus the approved
 movement follow-ups:
 - a companion stays put when walking first gains nothing;
