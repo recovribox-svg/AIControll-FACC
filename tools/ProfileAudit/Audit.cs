@@ -53,6 +53,25 @@ namespace ProfileAudit
                 catch (Exception ex) { row.Verdict = "toggle error"; row.Detail = (ex.InnerException ?? ex).Message; errors++; }
                 rows.Add(row);
             }
+            // ★ v0.3.23 (Carnage task): features whose kill-fired Demoralize area the engine recognises
+            // (TacticalEngine.ShapeOf, private: by reflection) - Dreadful Carnage's free Dazzling Display.
+            var shapeOf = engine.GetMethod("ShapeOf", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Static);
+            if (shapeOf == null) throw new MissingMethodException("TacticalEngine.ShapeOf");
+            foreach (var bp in all.OfType<Kingmaker.Blueprints.Classes.BlueprintFeature>())
+            {
+                object shape;
+                try { shape = shapeOf.Invoke(null, new object[] { bp }); }
+                catch (Exception ex) { rows.Add(new Row { Name = bp.name, Path = Paths.TryGetValue(bp, out var p0) ? p0 : "?", Verdict = "kill trigger error", Detail = (ex.InnerException ?? ex).Message }); errors++; continue; }
+                if (shape == null) continue;
+                var t = shape.GetType();
+                var spell = t.GetField("Spell")?.GetValue(shape) as BlueprintAbility;
+                rows.Add(new Row
+                {
+                    Name = bp.name, Path = Paths.TryGetValue(bp, out var p1) ? p1 : "?", Verdict = "kill trigger: free demoralize area",
+                    Detail = $"casts {spell?.name} within {t.GetField("Radius")?.GetValue(shape):0.##} m" +
+                             ((bool)(t.GetField("CheckWeapon")?.GetValue(shape) ?? false) ? ", one weapon type only" : "")
+                });
+            }
             using (var w = new StreamWriter(output))
             {
                 w.WriteLine($"abilities: {rows.Count}, errors: {errors}");

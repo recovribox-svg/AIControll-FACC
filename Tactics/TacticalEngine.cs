@@ -1979,6 +1979,8 @@ namespace CompanionAI_Pathfinder.Tactics
 
             ItemEntityWeapon provokeWeapon = null;   // the weapon weaponProvokes was asked for (the same for most enemies)
             bool weaponProvokes = true;
+            // ★ v0.3.23 (Carnage task): the free Dazzling Display a kill fires (Dreadful Carnage), or null.
+            var killDisplay = KillDisplayFor(ctx);
             foreach (var enemy in ctx.Enemies)
             {
                 var single = CombatMath.EstimateWeaponAttack(unit, enemy, full: false);
@@ -2014,7 +2016,8 @@ namespace CompanionAI_Pathfinder.Tactics
                     var full = CombatMath.EstimateWeaponAttack(unit, enemy, full: true);
                     if (full != null && full.Attacks > 1)
                     {
-                        float fullValue = DamageValue(enemy, full) * weight * (fiveFootReach ? 0.95f : 1f) * WakeFactor(enemy, full.ExpectedDamage);
+                        float fullCarnage = KillDisplayCredit(killDisplay, enemy, full, unit.Position, out string fullCarnageTag);
+                        float fullValue = (DamageValue(enemy, full) + fullCarnage) * weight * (fiveFootReach ? 0.95f : 1f) * WakeFactor(enemy, full.ExpectedDamage);
                         // After a 5-foot step the unit shoots from about 1.5 m nearer its target; priced where it stands.
                         var provoke = shotProvokes ? AttackRollProvokeRisk(ctx, unit.Position, full.Attacks) : null;
                         if (provoke != null) fullValue = fullValue * (1f - provoke.StopChance) - provoke.Cost;
@@ -2032,7 +2035,7 @@ namespace CompanionAI_Pathfinder.Tactics
                             Value = fullValue,
                             ModeFactor = weight * (fiveFootReach ? 0.95f : 1f) * WakeFactor(enemy, full.ExpectedDamage) * (1f - (provoke?.StopChance ?? 0f)) *
                                          (1f - (stepRisk?.StopChance ?? 0f)),
-                            Label = $"FullAttack({full.Attacks})->{enemy.CharacterName}{(fiveFootReach ? "+5ft" : "")}{ProvokeTag(provoke)}{stepRisk?.Tag}",
+                            Label = $"FullAttack({full.Attacks})->{enemy.CharacterName}{(fiveFootReach ? "+5ft" : "")}{ProvokeTag(provoke)}{stepRisk?.Tag}{fullCarnageTag}",
                             Key = $"full:{enemy.UniqueId}",
                             CheckPath = fiveFootReach && stepRisk?.Area == null
                         });
@@ -2044,7 +2047,8 @@ namespace CompanionAI_Pathfinder.Tactics
                 if (inReach)
                 {
                     var provoke = shotProvokes ? AttackRollProvokeRisk(ctx, unit.Position, 1) : null;
-                    float singleValue = DamageValue(enemy, single) * weight * WakeFactor(enemy, single.ExpectedDamage);
+                    float singleCarnage = KillDisplayCredit(killDisplay, enemy, single, unit.Position, out string singleCarnageTag);
+                    float singleValue = (DamageValue(enemy, single) + singleCarnage) * weight * WakeFactor(enemy, single.ExpectedDamage);
                     if (provoke != null) singleValue = singleValue * (1f - provoke.StopChance) - provoke.Cost;
                     list.Add(new Candidate
                     {
@@ -2054,7 +2058,7 @@ namespace CompanionAI_Pathfinder.Tactics
                         Target = enemy,
                         Value = singleValue,
                         ModeFactor = weight * WakeFactor(enemy, single.ExpectedDamage) * (1f - (provoke?.StopChance ?? 0f)),
-                        Label = $"Attack->{enemy.CharacterName}{ProvokeTag(provoke)}",
+                        Label = $"Attack->{enemy.CharacterName}{ProvokeTag(provoke)}{singleCarnageTag}",
                         Key = $"atk:{enemy.UniqueId}"
                     });
                 }
@@ -2066,6 +2070,15 @@ namespace CompanionAI_Pathfinder.Tactics
                     // ★ v0.3.13: walking out of an enemy's reach provokes (melee and ranged alike).
                     // ★ v0.3.17: around a harmful area when the straight approach walks into it (PlanApproach).
                     var approach = PlanApproach(ctx, enemy, reach);
+                    // ★ v0.3.23 (Carnage task): a kill there fires the Display around the spot the attack is made from.
+                    float moveCarnage = KillDisplayCredit(killDisplay, enemy, single, approach.Point, out string moveCarnageTag);
+                    if (moveCarnage > 0f)
+                    {
+                        float add = moveCarnage * weight * 0.9f * WakeFactor(enemy, single.ExpectedDamage);
+                        value += add;
+                        preRisk += add;
+                        label += moveCarnageTag;
+                    }
                     // ★ v0.3.23 (build3 logs): real time, the walk's time and the enemies who step into it (RealTimeWalk).
                     float walkFactor = RealTimeWalk(ctx, enemy, approach.Point, out var intercept);
                     value *= walkFactor;
@@ -2158,6 +2171,15 @@ namespace CompanionAI_Pathfinder.Tactics
                 }
             }
         }
+
+        /// <summary>The share of an enemy's worth per round that control of this strength takes away (a hard control all of
+        /// it, soft 0.4, minor 0.15); a mark 0.15 (one round or attack 0.1), any other debuff 0.25. ★ v0.3.23: one place,
+        /// shared by an ability's own control and the Dazzling Display a kill fires (TacticalEngine.Carnage.cs).</summary>
+        private static float ControlShare(ControlStrength strength, bool isMark, bool oneShotMark) =>
+            strength == ControlStrength.Hard ? 1f :
+            strength == ControlStrength.Soft ? 0.4f :
+            strength == ControlStrength.Minor ? 0.15f :
+            isMark ? (oneShotMark ? 0.1f : 0.15f) : 0.25f;
 
         private static void ReportOnce(string key, string message) => AbilityDiscovery.ReportOnce(key, message);
         private static void ReportOnce(string key, Func<string> message) => AbilityDiscovery.ReportOnce(key, message);
@@ -3232,10 +3254,7 @@ namespace CompanionAI_Pathfinder.Tactics
                 // for one round; it out-valued Lann's full attack and walked him 9 m into melee. Lasting marks (Smite
                 // Evil, judgements, studied target) keep 0.15 × threat × rounds.
                 bool oneShotMark = isMark && profile.IsOneShot;
-                float strength = profile.ControlStrength == ControlStrength.Hard ? 1f :
-                                 profile.ControlStrength == ControlStrength.Soft ? 0.4f :
-                                 profile.ControlStrength == ControlStrength.Minor ? 0.15f :
-                                 isMark ? (oneShotMark ? 0.1f : 0.15f) : 0.25f;
+                float strength = ControlShare(profile.ControlStrength, isMark, oneShotMark);
                 // Non-control debuffs/marks repeated on new targets every turn are the "spam" pattern: diminish them.
                 // ★ v0.3.18 (test10): penalties too (Demoralize, Flare).
                 float repeat = profile.ControlStrength <= ControlStrength.Minor && CombatMemory.TimesUsed(unit, ability) >= 2 ? 0.3f : 1f;
