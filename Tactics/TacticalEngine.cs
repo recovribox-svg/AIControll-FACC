@@ -2431,6 +2431,8 @@ namespace CompanionAI_Pathfinder.Tactics
 
             float consumable = ConsumableFactor(ctx, ability, profile);
             if (consumable <= 0f) return none;
+            // ★ v0.3.23 (bombs task): an item spent as the material component (Alchemical Weapon's flask) is used up too.
+            bool spentMaterial = ability.SourceItem == null && ConsumablePolicy.SpentMaterial(ability) != null;
 
             var slot = SlotOf(ability);
             var targets = new List<UnitEntityData>();
@@ -2591,8 +2593,7 @@ namespace CompanionAI_Pathfinder.Tactics
                 // ★ v0.3.20 (audit VAL-001): applied to what is left after the walk, the attacks of opportunity and the
                 // concentration check (below) - it was checked before them, so an item could clear the bar and be used for
                 // what remained once its risks were paid.
-                // ★ v0.3.23 (bombs task): an item spent as the material component (Alchemical Weapon's flask) is used up too.
-                bool spentMaterial = ability.SourceItem == null && ConsumablePolicy.SpentMaterial(ability) != null;
+                // ★ v0.3.23 (bombs task): and one spent as the material component (spentMaterial, above).
                 float itemBar = ability.SourceItem == null && !spentMaterial ? 0f
                     : (spentMaterial || ability.SourceItem is ItemEntityUsable spent && spent.Blueprint.SpendCharges) && profile.Heals.Count == 0
                         ? MinSpentItemValue : QuickBar(slot, ability);
