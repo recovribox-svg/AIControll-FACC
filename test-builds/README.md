@@ -1,6 +1,34 @@
 # Test builds
 
-**[Download the current UMM test ZIP — v0.3.23-dev-build3 (089a402)](AI-Control-FACC-v0.3.23-dev-build3-089a402-UMM-test.zip?raw=true)**
+**[Download the current UMM test ZIP — v0.3.23-dev-build4 (da4e0a5)](AI-Control-FACC-v0.3.23-dev-build4-da4e0a5-UMM-test.zip?raw=true)**
+
+Direct link: <https://github.com/recovribox-svg/AIControll-FACC/raw/claude/dreamy-pasteur-b9h3rn/test-builds/AI-Control-FACC-v0.3.23-dev-build4-da4e0a5-UMM-test.zip>
+
+Build 3 plus the fixes from its logs and the author's play-test notes ([review](../docs/RELEASE_0323_BUILD3_REVIEW.md)):
+- a downed companion next to an enemy is no longer revived into an immediate attack of opportunity and the next blow
+  (the healer deals with that enemy first unless the heal can really keep them up);
+- real time: front-liners no longer walk past the enemy front line to chase archers and casters (long walks now cost
+  their time and the enemies who step into the way);
+- real time: no wasted orders while a companion is getting up.
+
+UMM now shows **0.3.23** (`Info.json` bumped at the author's request). It is still a development test build. Startup
+line:
+
+```text
+[Build] v0.3.23 module=f1604b11-326e-425e-a77e-2533856d4155
+```
+
+- Source: `claude/dreamy-pasteur-b9h3rn` at runtime commit `da4e0a5`.
+- ZIP SHA-256: `e07c1ff42a68d66edad817a7038875d312991307da14b98fc8f0d3364b8de7b9`.
+- DLL SHA-256: `8f8f1f9d85c87703e84332fe79ca0b507732f929b60c6a401951dc378667708c`.
+- Archive: the mod DLL and `Info.json` (version 0.3.23) only.
+- [Identity](AI-Control-FACC-v0.3.23-dev-build4-da4e0a5-UMM-test.identity.json) · [Checksums](SHA256SUMS.txt).
+
+Checks: 229 unit tests pass; Release build with 0 warnings; no new game references. **No in-game run yet.**
+
+## Previous test: v0.3.23-dev-build3 (089a402)
+
+**[Download the v0.3.23-dev-build3 UMM test ZIP (089a402)](AI-Control-FACC-v0.3.23-dev-build3-089a402-UMM-test.zip?raw=true)**
 
 Direct link: <https://github.com/recovribox-svg/AIControll-FACC/raw/claude/dreamy-pasteur-b9h3rn/test-builds/AI-Control-FACC-v0.3.23-dev-build3-089a402-UMM-test.zip>
 

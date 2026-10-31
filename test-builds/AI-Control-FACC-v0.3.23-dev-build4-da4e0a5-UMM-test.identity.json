@@ -1,0 +1,37 @@
+{
+  "test_name": "0.3.23 development build 4: build3 log fixes and the author's play-test notes",
+  "umm_manifest_version": "0.3.23",
+  "branch": "claude/dreamy-pasteur-b9h3rn",
+  "runtime_source_commit": "da4e0a5",
+  "runtime_source_note": "da4e0a5 = 089a402 + revives priced against the stand-up attack and the next blow in sequence, real-time walk time and interceptions on Move+Attack/Charge/walk-then-cast, no real-time decisions during the get-up animation; Info.json 0.3.23.",
+  "previous_test": "AI-Control-FACC-v0.3.23-dev-build3-089a402-UMM-test.zip",
+  "archive": "AI-Control-FACC-v0.3.23-dev-build4-da4e0a5-UMM-test.zip",
+  "zip_sha256": "e07c1ff42a68d66edad817a7038875d312991307da14b98fc8f0d3364b8de7b9",
+  "dll_sha256": "8f8f1f9d85c87703e84332fe79ca0b507732f929b60c6a401951dc378667708c",
+  "module_mvid": "f1604b11-326e-425e-a77e-2533856d4155",
+  "startup_marker": "[Build] v0.3.23 module=f1604b11-326e-425e-a77e-2533856d4155",
+  "archive_contents": [
+    "CompanionAI_Pathfinder.dll",
+    "Info.json"
+  ],
+  "checks_run_by_claude": {
+    "unit_tests": {
+      "command": "dotnet test tests/CompanionAI.Tests",
+      "passed": 229,
+      "failed": 0,
+      "skipped": 0
+    },
+    "release_build": {
+      "references": "game Wrath_Data/Managed + UnityModManager (no TabletopTweaks)",
+      "warnings": 0,
+      "errors": 0
+    },
+    "external_references": "SigDump vs the 089a402 build: none added or removed"
+  },
+  "in_game": "Pending. This exact DLL has not been run in the game.",
+  "limitations": [
+    "UMM shows 0.3.23, but this is a development test build, not a release.",
+    "Real-time walk pricing is a movement-valuation change made at the author's request; pathfinding and stuck cancellation are unchanged.",
+    "No measured performance change is claimed."
+  ]
+}
