@@ -272,3 +272,57 @@ Synthetic tests cover the pure rules only. Everything else needs a replay.
 - Scoring spends nothing: it reads the inventory, resources and buffs only.
 - Unrelated companions: one extra property read per item-less ability.
 - Sleep and wake, revive, Selective, TTT and the cast observers: untouched.
+
+## 5. Handover (implemented)
+
+**Commits on `claude/alchemist-carnage-quiver`** (base development `00110eb`):
+
+| Commit | What |
+| --- | --- |
+| `5bf8c1a` | This document (sections 1-4), before any code. |
+| `39ce04e` | Slice 1: flasks priced as items, weapon riders before weapon attacks, Force Bomb knockdown, daily bomb restraint, Fast Bombs note. |
+| `cabdb2e` | Slice 1 review: the spent material is read once per ability evaluation. |
+| `6c52bfa` | Slice 2: Dreadful Carnage credit on weapon attacks. `ControlShare` is one helper. ProfileAudit lists recognised kill triggers. |
+| `dc411f1` | Slice 3: no valuation change; the archer-blast explanation line and per-fight log bookkeeping (`CombatMemory.FirstThisFight`, also used by the Fast Bombs line). |
+
+**Package:** `test-builds/AI-Control-FACC-v0.3.23-dev-bombs-carnage-cabdb2e-UMM-test.zip`.
+- Source `cabdb2e`, MVID `89ffb864-46e5-4840-ba2e-15318074028e`.
+- ZIP SHA-256 `26072f85…4b82`; identity file next to it.
+- UMM stays 0.3.23.
+
+### Assumptions corrected
+
+| Claim | Where from | What the game does |
+| --- | --- | --- |
+| Alchemical Weapon adds to a bomb | Guide | It does not: a bomb is a plain attack roll, not a weapon attack. |
+| Fast Bombs is "a standard action ... full BAB of bombs after a full move" | Guide | The game builds the follow-up throws from its own full-attack routine at the moment the first throw acts. This build does not model it. |
+| A quiver adds blast damage to a full attack | Player report | Only a kinetic blade's hits add a blast; the quiver pays burn. |
+| Carnage needs a melee kill | Tabletop rule | In Wrath it fires on any damage that takes a living, non-regenerating target to 0 HP, and costs no action. |
+| TTT changes Carnage, bombs or Alchemical Weapon | Possible | Tabletop Tweaks Base 2.6.18 changes none of these mechanisms. |
+
+### Performance
+- **Work added per decision:**
+  - one material-component read per ability without a source item;
+  - one pass over the usable list when it holds a weapon-hit rider;
+  - for a Carnage or Public Execution owner only: one feature scan (one cached lookup per feature) and one Intimidate
+    estimate per enemy, then a sum per weapon option.
+- **Kept constant:** no extra native forecasts, no extra `Decide` pass, nothing spent or rolled.
+- **Profiles:** the knockdown reader runs once per blueprint, when its profile is built.
+- **Not measured in game:** no runtime timing is claimed.
+
+### Limits
+- **Fast Bombs:** valued as one throw.
+- **Carnage:** only weapon attacks are credited. The credit does not follow attack-mode changes to the kill chance, and
+  the duration a repeat adds to an existing Shaken is not counted.
+- **Bomb restraint** is fight-level (difficulty). A single dangerous enemy in an easy fight still pays it, though its
+  threat-weighted value usually wins.
+- **Knockdown chance:** for an ability with a save it always includes the failed save. That under-counts an ability
+  whose knockdown does not depend on that save, which errs on the side of restraint.
+
+### Not verified, and what would settle it
+- **All three reports:** no log, save or combat log of the reported characters was available.
+- **Replay steps:** in [test-builds/README.md](../test-builds/README.md) ("What to play").
+- **Kinetic Sharpshooter:** we need:
+  - the exact archetype and mod list (KineticistElementsExpanded was not available to check);
+  - the ability on the bar;
+  - the game's combat log of a turn where blast damage seemed to ride on arrows.

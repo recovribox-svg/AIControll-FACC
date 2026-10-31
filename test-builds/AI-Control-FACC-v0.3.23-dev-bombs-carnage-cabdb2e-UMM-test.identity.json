@@ -1,0 +1,42 @@
+{
+  "test_name": "0.3.23 development task build: Alchemist bombs and Alchemical Weapon, Dreadful Carnage, Kinetic Sharpshooter note",
+  "umm_manifest_version": "0.3.23",
+  "branch": "claude/alchemist-carnage-quiver",
+  "base_development_commit": "00110eb3de6c85bcae67fa7c1249c5f0d0fb1e92",
+  "runtime_source_commit": "cabdb2e",
+  "runtime_source_note": "cabdb2e = development 00110eb + Grenadier Alchemical Weapon's flask priced as a spent item and offered only before a weapon attack, Force Bomb's knockdown read, daily bombs share the spells' easy-fight discount, Fast Bombs and archer-blast diagnostics, Dreadful Carnage's free Dazzling Display credited to weapon attacks by kill chance.",
+  "evidence_and_handover": "docs/TASK_BOMBS_CARNAGE_QUIVER.md",
+  "previous_test": "AI-Control-FACC-v0.3.23-dev-build4-da4e0a5-UMM-test.zip",
+  "archive": "AI-Control-FACC-v0.3.23-dev-bombs-carnage-cabdb2e-UMM-test.zip",
+  "zip_sha256": "26072f850ba32186631d15a688b37109c695866f389842f11401096b45444b82",
+  "dll_sha256": "7481483f05d9012fd1f872980daaeafa5c268a9b206d3855fe8196612a6a4488",
+  "module_mvid": "89ffb864-46e5-4840-ba2e-15318074028e",
+  "startup_marker": "[Build] v0.3.23 module=89ffb864-46e5-4840-ba2e-15318074028e",
+  "archive_contents": [
+    "CompanionAI_Pathfinder.dll",
+    "Info.json"
+  ],
+  "checks_run_by_claude": {
+    "unit_tests": {
+      "command": "dotnet test tests/CompanionAI.Tests",
+      "passed": 249,
+      "failed": 0,
+      "skipped": 0
+    },
+    "release_build": {
+      "references": "game Wrath_Data/Managed + UnityModManager (no TabletopTweaks)",
+      "warnings": 0,
+      "errors": 0
+    },
+    "external_references": "SigDump vs the da4e0a5 build: 17 added, all read-only members (AddOutgoingDamageTrigger fields, MaterialComponent, ContextActionCastSpell.Spell/CastByTarget, FastBombs.Abilities, UnitState.FastBombsFeature, AbilityData.RequireMaterialComponent) and the AbilityData(blueprint, caster) constructor the game's ContextActionCastSpell uses; none removed",
+    "profile_audit": "tools/ProfileAudit on the vanilla class, buff, item, spell, mythic and feat exports: 0 errors; against the da4e0a5 build only the five abilities with ContextActionKnockdownTarget change (Force Bomb, Clashing Rocks, Cave Fangs, Water Torrent, Splintershred greataxe) and two kill triggers are listed (Dreadful Carnage, Assassin Public Execution)"
+  },
+  "in_game": "Pending. This exact DLL has not been run in the game; no log or save of the reported characters was available.",
+  "limitations": [
+    "UMM shows 0.3.23, but this is a development task build, not a release.",
+    "Fast Bombs: a bomb order is still valued as one throw (the native routine has no side-effect-free preview).",
+    "Carnage credit covers weapon attacks only (not spells or bombs) and does not follow attack-mode changes to the kill chance.",
+    "Kinetic Sharpshooter: no valuation change; the report's premise does not match the game code.",
+    "No measured performance change is claimed."
+  ]
+}

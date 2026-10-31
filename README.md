@@ -5,6 +5,7 @@
 | What | Contents | Status |
 | --- | --- | --- |
 | **[v0.3.22 stable ZIP](release/CompanionAI_Pathfinder_v0.3.22.zip?raw=true)** | The published v0.3.22 release (tag `v0.3.22`) | Released; unchanged |
+| [Task test ZIP — bombs, Carnage (cabdb2e)](test-builds/AI-Control-FACC-v0.3.23-dev-bombs-carnage-cabdb2e-UMM-test.zip?raw=true) | Build 4 + Alchemist flask/bomb fixes, Dreadful Carnage credit, Kinetic Sharpshooter note ([evidence and handover](docs/TASK_BOMBS_CARNAGE_QUIVER.md)); task branch `claude/alchemist-carnage-quiver` | Task test build, awaiting review and in-game replay |
 | **[Current test ZIP — v0.3.23-dev-build4 (da4e0a5)](test-builds/AI-Control-FACC-v0.3.23-dev-build4-da4e0a5-UMM-test.zip?raw=true)** | Build 3 + fixes from its logs and the play-test notes; UMM shows 0.3.23 (development source) | Test build, awaiting in-game replay |
 | [Previous test ZIP — v0.3.23-dev-build3 (089a402)](test-builds/AI-Control-FACC-v0.3.23-dev-build3-089a402-UMM-test.zip?raw=true) | The build2 test + fixes from its logs | Superseded test build |
 | [Previous test ZIP — movement 0c2e0f5 (played as v0.3.23-dev-build2)](test-builds/AI-Control-FACC-dev-movement-0c2e0f5-UMM-test.zip?raw=true) | v0.3.22 + reviewed PR #13–#15 + fixes2 log fixes + approved movement follow-ups | Superseded test build |
