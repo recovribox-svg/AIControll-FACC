@@ -22,11 +22,16 @@ namespace CompanionAI_Pathfinder.Tactics
         /// v0.3.22 Log2 (PR #14): a never-executed, unacted command is discarded before Evidence is read. Evidence is broad (an
         /// old Grease save on the target sets it), so it cannot turn an order interrupted on its approach into a cast tried
         /// on its target. A cast without a command object (already cleared by the game) is never discarded here.
+        /// ★ v0.3.23 (build2 logs): nor a command the game force-finished before it started. Turn-based, an approaching
+        /// command whose unit stops walking ends "Success" and acted but never started (the same rule as
+        /// <see cref="CastLedger.Performed"/> and the turn controller): Orvath's Color Spray "into Entangle" stopped after
+        /// 5.6 m and was struck "did nothing to its target (1/2)" although it was never cast.
         /// </summary>
-        public static SettleStep Settle(bool commandPresent, bool commandFinished, bool executed, bool commandActed, bool evidence)
+        public static SettleStep Settle(bool commandPresent, bool commandFinished, bool executed, bool commandStarted,
+            bool commandActed, bool evidence)
         {
             if (commandPresent && !commandFinished) return SettleStep.Wait;
-            if (commandPresent && !executed && !commandActed) return SettleStep.NotCast;
+            if (commandPresent && !executed && !CastLedger.Performed(commandStarted, commandActed)) return SettleStep.NotCast;
             return evidence ? SettleStep.Worked : SettleStep.Inspect;
         }
 

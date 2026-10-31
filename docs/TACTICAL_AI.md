@@ -2828,5 +2828,15 @@ TabletopTweaks-Core 0.7.15 through the mod's own binding and runs TTT's estimate
     his own Entangle for a Color Spray worth exactly as much as Sleep in place.
   - The step / back-off out of melee follows the provoking cast worth most without its risk when that beats the
     best action now, so a hurt caster can step away and heal herself. A self-target keeps no range check.
-  - Charge and the archer's step-then-shoot estimate use `WakeFactor`. Details are in
+  - Charge and the archer's step-then-shoot estimate use `WakeFactor`.
+
+## 77. build2 logs: Coup de Grace, the last sleeper, force-finished casts
+
+31 October 2026, development only; review in [RELEASE_0323_BUILD2_REVIEW.md](RELEASE_0323_BUILD2_REVIEW.md).
+- **Real time: full-round abilities walk to their target** like Standard ones (walking is free there). Coup de Grace
+  on a sleeper one walk away was never offered, and Seelah and Camellia waited beside one for a minute.
+- **The last sleeping enemy stays asleep** (`WakeFactor` 0) while a conscious party member with a melee weapon and Coup
+  de Grace can finish it. Without such an ally it keeps the half value.
+- **Cast outcome:** a command the game force-finished before it started is not a cast tried (`ObserverRules.Settle`,
+  same rule as `CastLedger.Performed`). Orvath's Color Spray, stopped on its walk, got a false "did nothing" strike. Details are in
 [INTEGRATION_0322_FOLLOWUPS.md](INTEGRATION_0322_FOLLOWUPS.md).

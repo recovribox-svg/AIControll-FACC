@@ -775,6 +775,7 @@ namespace CompanionAI_Pathfinder.Tactics
             // ★ v0.3.18 (test10): the enemies still acting, for the cost of waking a sleeping one (WakeFactor).
             s_ActiveEnemies = ctx.Enemies.Where(e => !CombatMath.IsDisabled(e)).ToList();
             CombatMath.OnlyDisabledEnemiesLeft = ctx.Enemies.Count > 0 && s_ActiveEnemies.Count == 0;
+            s_CoupDeGraceAllies = CombatMath.OnlyDisabledEnemiesLeft && AnyAllyCanCoupDeGrace(ctx);
 
             // ★ v0.3.21 (review): a downed regenerating enemy is below 0 HP; it must not shorten the fight.
             float enemyHp = ctx.Enemies.Sum(e => (float)Math.Max(0, e.HPLeft));
@@ -820,7 +821,32 @@ namespace CompanionAI_Pathfinder.Tactics
             bool asleep;
             try { asleep = enemy.Descriptor.State.HasCondition(UnitCondition.Sleeping); } catch { asleep = false; }
             if (!asleep || expectedDamage >= enemy.HPLeft) return 1f;
-            return s_ActiveEnemies != null && s_ActiveEnemies.Any(e => e != enemy) ? 0f : 0.5f;
+            if (s_ActiveEnemies != null && s_ActiveEnemies.Any(e => e != enemy)) return 0f;
+            // ★ v0.3.23 (build2 logs): every enemy is down, but a party member can finish this one with a Coup de Grace: then
+            // it does not have to be fought awake. Lann shot the last sleeping Corrupted Mongrel Guard awake (turn-based
+            // fight 11) and the archers and a Divine Zap woke the last Neophyte Fighter (real-time fight 7), each beside a
+            // melee ally whose Coup de Grace was worth more than all of their hits together.
+            return s_CoupDeGraceAllies ? 0f : 0.5f;
+        }
+
+        /// <summary>★ v0.3.23: a conscious party member able to act wields a melee weapon and has Coup de Grace.</summary>
+        private static bool s_CoupDeGraceAllies;
+
+        private static bool AnyAllyCanCoupDeGrace(TacticalContext ctx)
+        {
+            foreach (var ally in ctx.Allies)
+            {
+                try
+                {
+                    var state = ally.Descriptor.State;
+                    if (!state.IsConscious || !state.CanAct || !state.CanMove) continue;
+                    var weapon = ally.Body?.PrimaryHand?.MaybeWeapon;
+                    if (weapon == null || weapon.Blueprint.IsRanged) continue;
+                    if (ally.Abilities.Enumerable.Any(a => IsCoupDeGrace(a.Data))) return true;
+                }
+                catch { }
+            }
+            return false;
         }
 
         /// <summary>★ v0.3.18 (test10): the enemies not disabled in the decision being made (BuildContext).</summary>
@@ -2358,7 +2384,11 @@ namespace CompanionAI_Pathfinder.Tactics
                             controlAims?.Record(target, null, "touch height/reach restriction");
                             continue;
                         }
-                        if (slot != ActionSlot.Standard || !ctx.HasMove || ctx.Distance(target) - range > ctx.MoveRange * 0.95f)
+                        // ★ v0.3.23 (build2 logs): in real time walking is free (the game walks the unit to its target before
+                        // a full-round action too): Seelah and Camellia stood beside a sleeping Neophyte Fighter for a minute
+                        // with nothing better than 0.3 to do, their Coup de Grace never offered because it needed a walk.
+                        bool walkable = slot == ActionSlot.Standard || CombatMemory.IsRealTime && slot == ActionSlot.FullRound;
+                        if (!walkable || !ctx.HasMove || ctx.Distance(target) - range > ctx.MoveRange * 0.95f)
                         {
                             controlAims?.Record(target, null, "outside native range/LoS; no affordable approach");
                             continue;

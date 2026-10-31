@@ -227,7 +227,7 @@ namespace CompanionAI_Pathfinder.Tactics
             if (StuckCharges.Remove(caster.UniqueId)) ClearStuckCharge(caster);
             if (!ByCaster.TryGetValue(caster.UniqueId, out var p)) return;
             var step = ObserverRules.Settle(p.Command != null, p.Command?.IsFinished ?? true, p.Executed,
-                p.Command?.IsActed ?? false, p.Evidence);
+                p.Command?.IsStarted ?? false, p.Command?.IsActed ?? false, p.Evidence);
             if (step == ObserverRules.SettleStep.Wait) return;
             // ★ v0.3.18: the command ended before the game cast anything (interrupted: a manual order, a new command, the
             // target gone). Nothing was tried, so nothing failed. In the 0.3.18-test2 real-time log every party command was

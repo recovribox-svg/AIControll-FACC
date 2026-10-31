@@ -21,7 +21,9 @@ wall rows are diagnostics only; Ardub/body-blocking stays deferred. Recommendati
 are unit-tested helpers (218 tests); see the handover. The fixes2 log review (30 October,
 [docs/RELEASE_0322_FIXES2_REVIEW.md](docs/RELEASE_0322_FIXES2_REVIEW.md)) fixed sleepers being shot awake and unread nested
 conditions (Holy Water) and, with the author's approval, three movement follow-ups (tie-break for walk-first actions,
-step-out for the best provoking cast, `WakeFactor` on Charge and the step's shot), on development only.
+step-out for the best provoking cast, `WakeFactor` on Charge and the step's shot), on development only. The build2 log
+review (31 October, [docs/RELEASE_0323_BUILD2_REVIEW.md](docs/RELEASE_0323_BUILD2_REVIEW.md)) added real-time Coup de
+Grace with a walk, the last sleeper left for a Coup de Grace, and no failure strike for force-finished casts.
 
 Historical handovers, superseded by the one above: [v0.3.22 release preparation](docs/RELEASE_0_3_22_HANDOVER.md)
 (27 October, PR #6–#12), [released-log review](docs/RELEASE_0322_LOG_REVIEW.md) (PR #13),

@@ -7,30 +7,30 @@ namespace CompanionAI.Tests
     /// <summary>Recommendation A: the observers' learning gates from PR #14 (Tactics/ObserverRules.cs).</summary>
     public class ObserverRulesTests
     {
-        // Settle(commandPresent, commandFinished, executed, commandActed, evidence)
+        // Settle(commandPresent, commandFinished, executed, commandStarted, commandActed, evidence)
 
         [Theory]
         [InlineData(false, false, false)]
         [InlineData(true, true, true)]
         [InlineData(false, true, false)]
         public void RunningCommand_IsJudgedLater(bool executed, bool acted, bool evidence) =>
-            Assert.Equal(Step.Wait, ObserverRules.Settle(true, false, executed, acted, evidence));
+            Assert.Equal(Step.Wait, ObserverRules.Settle(true, false, executed, acted, acted, evidence));
 
         [Fact]
         public void InterruptedBeforeCasting_IsNotCounted() =>
-            Assert.Equal(Step.NotCast, ObserverRules.Settle(true, true, false, false, false));
+            Assert.Equal(Step.NotCast, ObserverRules.Settle(true, true, false, false, false, false));
 
         [Fact]
         public void OldGreaseEvidence_DoesNotTurnAnUncastOrderIntoACast() =>
             // v0.3.22 Log2: an approaching order interrupted while an old Grease ticked on its target.
-            Assert.Equal(Step.NotCast, ObserverRules.Settle(true, true, false, false, true));
+            Assert.Equal(Step.NotCast, ObserverRules.Settle(true, true, false, false, false, true));
 
         [Theory]
         [InlineData(true, false)]
         [InlineData(false, true)]
         [InlineData(true, true)]
         public void ExecutedOrActedCast_WithEvidence_Worked(bool executed, bool acted) =>
-            Assert.Equal(Step.Worked, ObserverRules.Settle(true, true, executed, acted, true));
+            Assert.Equal(Step.Worked, ObserverRules.Settle(true, true, executed, acted, acted, true));
 
         [Theory]
         [InlineData(true, false)]
@@ -38,7 +38,7 @@ namespace CompanionAI.Tests
         [InlineData(true, true)]
         public void ExecutedOrActedCast_WithoutEvidence_IsInspected(bool executed, bool acted) =>
             // A genuine silent failure stays possible: the touch-charge and remaining checks still run.
-            Assert.Equal(Step.Inspect, ObserverRules.Settle(true, true, executed, acted, false));
+            Assert.Equal(Step.Inspect, ObserverRules.Settle(true, true, executed, acted, acted, false));
 
         [Theory]
         [InlineData(false, true, Step.Worked)]
@@ -48,16 +48,32 @@ namespace CompanionAI.Tests
         public void CastWithoutCommandObject_IsNeverDiscardedAsUncast(bool executed, bool evidence, Step expected)
         {
             // The game already cleared the command: "finished" and "acted" carry no information then.
-            Assert.Equal(expected, ObserverRules.Settle(false, true, executed, false, evidence));
-            Assert.Equal(expected, ObserverRules.Settle(false, false, executed, false, evidence));
+            Assert.Equal(expected, ObserverRules.Settle(false, true, executed, false, false, evidence));
+            Assert.Equal(expected, ObserverRules.Settle(false, false, executed, false, false, evidence));
         }
 
         [Fact]
         public void EveryFinishedUncastUnactedCommand_IsNotCast_WhateverTheEvidence()
         {
             foreach (bool evidence in new[] { false, true })
-                Assert.Equal(Step.NotCast, ObserverRules.Settle(true, true, false, false, evidence));
+                Assert.Equal(Step.NotCast, ObserverRules.Settle(true, true, false, false, false, evidence));
         }
+
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public void ForceFinishedBeforeStarting_IsNotCast(bool evidence) =>
+            // build2 logs: a turn-based walk-then-cast whose walk stopped ends "Success", acted, never started.
+            Assert.Equal(Step.NotCast, ObserverRules.Settle(true, true, false, false, true, evidence));
+
+        [Fact]
+        public void StartedButNotActed_IsNotCast() =>
+            Assert.Equal(Step.NotCast, ObserverRules.Settle(true, true, false, true, false, false));
+
+        [Fact]
+        public void ExecutedCast_IsJudgedWhateverTheCommandFlags() =>
+            // The game's own execution report wins: a genuine silent failure stays possible.
+            Assert.Equal(Step.Inspect, ObserverRules.Settle(true, true, true, false, false, false));
 
         [Fact]
         public void MissedAttackRoll_IsNoCalibrationSample() =>
