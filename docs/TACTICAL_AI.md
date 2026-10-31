@@ -2838,5 +2838,16 @@ TabletopTweaks-Core 0.7.15 through the mod's own binding and runs TTT's estimate
 - **The last sleeping enemy stays asleep** (`WakeFactor` 0) while a conscious party member with a melee weapon and Coup
   de Grace can finish it. Without such an ally it keeps the half value.
 - **Cast outcome:** a command the game force-finished before it started is not a cast tried (`ObserverRules.Settle`,
-  same rule as `CastLedger.Performed`). Orvath's Color Spray, stopped on its walk, got a false "did nothing" strike. Details are in
+  same rule as `CastLedger.Performed`). Orvath's Color Spray, stopped on its walk, got a false "did nothing" strike.
+
+## 78. build3 logs and play-test notes: revives beside enemies, long real-time walks, get-up animation
+
+31 October 2026, development; version 0.3.23; review in [RELEASE_0323_BUILD3_REVIEW.md](RELEASE_0323_BUILD3_REVIEW.md).
+- **Revives.** `ReviveStaysUp` prices the stand-up attack of opportunity and the round of attacks one after the other,
+  each at the HP the other left. Real time stands first; turn-based lies through the round first and uses
+  `RiskMath.ExpectedTakenIfStillUp`. Four revives of Seelah beside the Cultist Champion were each dropped again at once.
+- **Real-time walks.** Move+Attack, Charge and walk-then-cast are worth `ValueModel.RealTimeWalkFactor` (the walk
+  beyond the cooldown delays the action), and melee enemies that can reach the way are priced as attacks on the walk
+  (`RealTimeWalk`, `[intercepted N]`). Front-liners walked past the enemy front line to its archers.
+- **Get-up animation.** Real time waits while `View.IsGetUp`; orders issued during it were cancelled after 0.0 s. Details are in
 [INTEGRATION_0322_FOLLOWUPS.md](INTEGRATION_0322_FOLLOWUPS.md).

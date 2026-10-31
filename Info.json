@@ -2,7 +2,7 @@
   "Id": "CompanionAI_Pathfinder",
   "DisplayName": "AI Control - Fully Autonomous Combat Companions",
   "Author": "MonsieurAndroid",
-  "Version": "0.3.22",
+  "Version": "0.3.23",
   "ManagerVersion": "0.27.0",
   "Requirements": [],
   "AssemblyName": "CompanionAI_Pathfinder.dll",

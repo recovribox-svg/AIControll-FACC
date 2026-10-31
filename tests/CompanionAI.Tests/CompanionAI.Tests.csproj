@@ -13,6 +13,7 @@
     <Compile Include="..\..\Tactics\ValueModel.Energy.cs" Link="ValueModel.Energy.cs" />
     <Compile Include="..\..\Tactics\ValueModel.Infusions.cs" Link="ValueModel.Infusions.cs" />
     <Compile Include="..\..\Tactics\ValueModel.Delivery.cs" Link="ValueModel.Delivery.cs" />
+    <Compile Include="..\..\Tactics\ValueModel.Walk.cs" Link="ValueModel.Walk.cs" />
     <Compile Include="..\..\Tactics\InfusionSearchBudget.cs" Link="InfusionSearchBudget.cs" />
     <Compile Include="..\..\Tactics\AbilityScoringPolicy.cs" Link="AbilityScoringPolicy.cs" />
     <Compile Include="..\..\Tactics\CommittedApproachSafety.cs" Link="CommittedApproachSafety.cs" />

@@ -952,8 +952,11 @@ namespace CompanionAI_Pathfinder.Tactics
             public string Area;
             /// <summary>★ test5: the destination is more dangerous for a badly hurt unit.</summary>
             public bool Exposed;
+            /// <summary>★ v0.3.23: of <see cref="Attacks"/>, the real-time enemies expected to step into the walk.</summary>
+            public int Intercepted;
             public Disengage Copy() => (Disengage)MemberwiseClone();
-            public string Tag => (Attacks > 0 ? $" [AoO {Attacks}{(DropChance >= 0.1f ? $", {DropChance:P0} down" : "")}]" : "") +
+            public string Tag => (Attacks > Intercepted ? $" [AoO {Attacks - Intercepted}{(DropChance >= 0.1f ? $", {DropChance:P0} down" : "")}]" : "") +
+                                 (Intercepted > 0 ? $" [intercepted {Intercepted}]" : "") +
                                  (Area != null ? $"{IntoTag}{Area}]" : "") + (Exposed ? " [exposed]" : "");
             /// <summary>★ v0.3.18 (test11): marks an option whose walk was priced as entering a harmful area.</summary>
             internal const string IntoTag = " [into ";
@@ -1135,6 +1138,80 @@ namespace CompanionAI_Pathfinder.Tactics
         }
 
         /// <summary>
+        /// ★ v0.3.23 (build3 logs, the author's note: front-liners walking past the enemy front line to reach its archers and
+        /// casters): real time, what walking to <paramref name="point"/> costs beyond the attacks of opportunity priced on
+        /// the path. The action comes later by the walk beyond its own cooldown (<see cref="ValueModel.RealTimeWalkFactor"/>,
+        /// returned), and enemies move while the unit walks: a melee enemy that can reach the way before the unit has passed
+        /// gets its attack in (<paramref name="intercept"/>, priced like an attack of opportunity on the walk). Not counted:
+        /// the target, enemies engaging the unit now (their attacks are the path's) and those at the destination (the fight
+        /// there). Seelah walked 13.6 m to a Cultist Archer (8.3) over an Earth Mephit and an Abrikandilu next to her (5.5,
+        /// 5.2), was shot by both archers on the way and clawed by the Abrikandilu - 33 of her 17+ HP (real-time fight 5).
+        /// Turn-based is unchanged: there enemies do not move during the unit's turn, and the path check is exact.
+        /// </summary>
+        private static float RealTimeWalk(TacticalContext ctx, UnitEntityData target, Vector3 point, out Disengage intercept)
+        {
+            intercept = null;
+            if (!CombatMemory.IsRealTime) return 1f;
+            var unit = ctx.Unit;
+            var start = unit.Position;
+            float walkSeconds = HorizontalDistance(start, point) / Math.Max(0.5f, unit.CurrentSpeedMps);
+            float cooldown = 0f;
+            try { cooldown = unit.CombatState?.Cooldown?.StandardAction ?? 0f; } catch { }
+            var interceptors = new List<UnitEntityData>();
+            if (walkSeconds > 0.5f)
+            {
+                foreach (var enemy in ctx.Enemies)
+                {
+                    if (enemy == target || ctx.Engagers.Contains(enemy)) continue;
+                    try
+                    {
+                        var state = enemy.Descriptor.State;
+                        if (CombatMath.IsDisabled(enemy) || !state.CanAct || !state.CanMove) continue;
+                        var weapon = enemy.GetThreatHandMelee()?.Weapon;
+                        if (weapon == null) continue;
+                        float reach = Math.Max(1f, weapon.AttackRange.Meters) + enemy.Corpulence + unit.Corpulence;
+                        if (HorizontalDistance(enemy.Position, point) <= reach) continue;
+                        float gap = DistanceToSegment(enemy.Position, start, point) - reach;
+                        if (gap <= enemy.CurrentSpeedMps * walkSeconds * 0.5f) interceptors.Add(enemy);
+                    }
+                    catch (Exception ex)
+                    {
+                        Main.Verbose($"[Tactics] interception {enemy?.CharacterName} -> {unit.CharacterName}: {ex.Message}");
+                    }
+                }
+            }
+            if (interceptors.Count > 0)
+            {
+                intercept = DisengageRisk(ctx, point, attackers: interceptors);
+                if (intercept != null) intercept.Intercepted = interceptors.Count;
+            }
+            return ValueModel.RealTimeWalkFactor(walkSeconds, cooldown);
+        }
+
+        /// <summary>Horizontal distance from <paramref name="p"/> to the segment <paramref name="a"/>-<paramref name="b"/>.</summary>
+        private static float DistanceToSegment(Vector3 p, Vector3 a, Vector3 b)
+        {
+            p.y = a.y = b.y = 0f;
+            var ab = b - a;
+            float lengthSq = ab.sqrMagnitude;
+            float t = lengthSq < 1e-4f ? 0f : Mathf.Clamp01(Vector3.Dot(p - a, ab) / lengthSq);
+            return Vector3.Distance(p, a + ab * t);
+        }
+
+        /// <summary>Both risks of one walk together (the stop chances compound, the costs add).</summary>
+        private static Disengage MergeRisk(Disengage risk, Disengage more)
+        {
+            if (more == null) return risk;
+            if (risk == null) return more;
+            risk.Attacks += more.Attacks;
+            risk.Intercepted += more.Intercepted;
+            risk.StopChance = 1f - (1f - risk.StopChance) * (1f - more.StopChance);
+            risk.DropChance = 1f - (1f - risk.DropChance) * (1f - more.DropChance);
+            risk.Cost += more.Cost;
+            return risk;
+        }
+
+        /// <summary>
         /// ★ v0.3.15: share of a move's risk the unit's role pays. A tank's job is to stand in front and take the hits:
         /// it pays 60 % of the damage and exposure it walks into. Being dropped outright is priced in full for every
         /// role - a tank that goes down protects no one.
@@ -1188,16 +1265,32 @@ namespace CompanionAI_Pathfinder.Tactics
         /// enemy and dropped again by the attack of opportunity as she stood up. Healed with more, or once the enemy is
         /// dealt with, she stays up.
         /// </summary>
+        /// <remarks>★ v0.3.23 (build3 logs, the author's "healed, then struck down again" note): the attack of opportunity for
+        /// standing up and the round of attacks come one after the other, so the later one meets the HP the earlier one
+        /// left. Both were judged at the full HP after the heal: Orvath brought Seelah back four times beside the Cultist
+        /// Champion at "stays up 80-93 %"; each time the stand-up attack hit (6, 8, 8, 14) and the next blow dropped her
+        /// (real-time fight 3). Real time: she stands at once, then the round follows. Turn-based: she lies there through
+        /// the enemies' turns, then stands on her own.</remarks>
         private static float ReviveStaysUp(TacticalContext ctx, UnitEntityData ally, float hpAfter)
         {
             try
             {
-                float roundDrop = RiskMath.RoundDropChance(hpAfter, IncomingDamage(ctx, ally, ally.Position) * 1.25f);
-                float standDrop = 0f;
-                if (!ally.Descriptor.State.Features.GetUpWithoutAttackOfOpportunity)
+                float danger = IncomingDamage(ctx, ally, ally.Position) * 1.25f;
+                var threats = ally.Descriptor.State.Features.GetUpWithoutAttackOfOpportunity
+                    ? new List<UnitEntityData>()
+                    : ctx.Enemies.Where(e => Threatens(e, ally, ally.Position)).ToList();
+                float standDrop = 0f, roundDrop;
+                if (CombatMemory.IsRealTime)
                 {
-                    var threats = ctx.Enemies.Where(e => Threatens(e, ally, ally.Position)).ToList();
-                    if (threats.Count > 0) PriceAttacks(ally, threats, hpAfter, out _, out _, out standDrop, out _);
+                    float standDamage = 0f;
+                    if (threats.Count > 0) PriceAttacks(ally, threats, hpAfter, out standDamage, out _, out standDrop, out _);
+                    roundDrop = RiskMath.RoundDropChance(Math.Max(1f, hpAfter - standDamage), danger);
+                }
+                else
+                {
+                    roundDrop = RiskMath.RoundDropChance(hpAfter, danger);
+                    float left = Math.Max(1f, hpAfter - RiskMath.ExpectedTakenIfStillUp(hpAfter, danger));
+                    if (threats.Count > 0) PriceAttacks(ally, threats, left, out _, out _, out standDrop, out _);
                 }
                 return (1f - roundDrop) * (1f - standDrop);
             }
@@ -1370,7 +1463,7 @@ namespace CompanionAI_Pathfinder.Tactics
                     c.PathAttackers = real;
                     var risk = c.Risk?.Copy() ?? new Disengage();
                     if (exposure > 0f) risk.Exposed = true;
-                    risk.Attacks = real.Count;
+                    risk.Attacks = real.Count + risk.Intercepted;   // ★ v0.3.23: the real-time interceptors stay counted
                     risk.StopChance = Mathf.Clamp01(risk.StopChance + stop);
                     risk.DropChance = Mathf.Clamp01(risk.DropChance + (actual?.DropChance ?? 0f) - (straight?.DropChance ?? 0f));
                     risk.Cost += cost;
@@ -1960,7 +2053,10 @@ namespace CompanionAI_Pathfinder.Tactics
                     // ★ v0.3.13: walking out of an enemy's reach provokes (melee and ranged alike).
                     // ★ v0.3.17: around a harmful area when the straight approach walks into it (PlanApproach).
                     var approach = PlanApproach(ctx, enemy, reach);
-                    var risk = approach.Risk;
+                    // ★ v0.3.23 (build3 logs): real time, the walk's time and the enemies who step into it (RealTimeWalk).
+                    float walkFactor = RealTimeWalk(ctx, enemy, approach.Point, out var intercept);
+                    value *= walkFactor;
+                    var risk = MergeRisk(approach.Risk?.Copy(), intercept);
                     if (risk != null)
                     {
                         value = value * (1f - risk.StopChance) - risk.Cost;
@@ -1982,7 +2078,7 @@ namespace CompanionAI_Pathfinder.Tactics
                         NeedsMove = true,
                         Target = enemy,
                         Value = value,
-                        ModeFactor = weight * 0.9f * WakeFactor(enemy, single.ExpectedDamage) * (1f - (risk?.StopChance ?? 0f)) *
+                        ModeFactor = weight * 0.9f * walkFactor * WakeFactor(enemy, single.ExpectedDamage) * (1f - (risk?.StopChance ?? 0f)) *
                                      (1f - (provoke?.StopChance ?? 0f)),
                         ModeAt = approach.Point,
                         Risk = risk,
@@ -2368,6 +2464,7 @@ namespace CompanionAI_Pathfinder.Tactics
                 bool needsMove = false;
                 Disengage risk = null;
                 Approach approach = null;
+                float walkFactor = 1f;
                 if (target != ctx.Unit && !summonPoint.HasValue)
                 {
                     float range = ability.GetApproachDistance(wrapper.Unit);
@@ -2397,7 +2494,9 @@ namespace CompanionAI_Pathfinder.Tactics
                         // ★ v0.3.13: walking up to cast can provoke too.
                         // ★ v0.3.17: around a harmful area when the straight approach walks into it (PlanApproach).
                         approach = PlanApproach(ctx, target, range, alwaysExposure: true);
-                        risk = approach.Risk;
+                        // ★ v0.3.23 (build3 logs): real time, the walk's time and the enemies who step into it (RealTimeWalk).
+                        walkFactor = RealTimeWalk(ctx, target, approach.Point, out var intercept);
+                        risk = MergeRisk(approach.Risk?.Copy(), intercept);
                     }
                 }
 
@@ -2460,7 +2559,7 @@ namespace CompanionAI_Pathfinder.Tactics
                 // Recommendation A: the walk and delivery discounts in one tested place (ValueModel.Delivery.cs).
                 if (!arcaneChance.HasValue) arcaneChance = ArcaneDeliveryChance(ctx, ability, captureControlAims);
                 float deliveryChance = arcaneChance.Value;
-                value = ValueModel.DeliveredBenefit(value, needsMove, deliveryChance);
+                value = ValueModel.DeliveredBenefit(value, needsMove, deliveryChance) * walkFactor;
                 // ★ v0.3.6: a standard-action spell cast in melee needs a defensive-casting check; failing it provokes an
                 // attack of opportunity and can lose the spell (UnitUseAbility.OnTick). Camellia's Cure Light Wounds ended
                 // "Fail" that way. Potions and wands do not provoke (AbilityData.ProvokeAttackOfOpportunity).
@@ -2688,7 +2787,10 @@ namespace CompanionAI_Pathfinder.Tactics
                               PreferenceWeight(ctx, false) * 0.95f * WakeFactor(enemy, hit.ExpectedDamage * 1.1f);
                 string label = $"Charge->{enemy.CharacterName}{(pounce && hit.Attacks > 1 ? $" (pounce, {hit.Attacks} attacks)" : "")}";
                 // ★ v0.3.13: a charge out of melee provokes like any other move.
-                var risk = MoveRisk(ctx, ApproachPoint(ctx.Unit, enemy, single.Reach));
+                var chargePoint = ApproachPoint(ctx.Unit, enemy, single.Reach);
+                // ★ v0.3.23 (build3 logs): real time, the run's time and the enemies who step into it (RealTimeWalk).
+                value *= RealTimeWalk(ctx, enemy, chargePoint, out var intercept);
+                var risk = MergeRisk(MoveRisk(ctx, chargePoint), intercept);
                 if (risk != null)
                 {
                     value = value * (1f - risk.StopChance) - risk.Cost;

@@ -42,6 +42,17 @@ namespace CompanionAI.Tests
         }
 
         [Fact]
+        public void ExpectedTakenIfStillUp_IsTheConditionalMean()
+        {
+            Assert.Equal(0f, RiskMath.ExpectedTakenIfStillUp(10f, 0f), 3);
+            // danger 10, hp 10: 10 - 10·e^-1/(1-e^-1) = 4.180
+            Assert.Equal(4.180f, RiskMath.ExpectedTakenIfStillUp(10f, 10f), 2);
+            // Never more than the HP a survivor had, never less than nothing; small danger: close to the mean itself.
+            Assert.InRange(RiskMath.ExpectedTakenIfStillUp(100f, 5f), 4.99f, 5.01f);
+            Assert.InRange(RiskMath.ExpectedTakenIfStillUp(2f, 50f), 0f, 2f);
+        }
+
+        [Fact]
         public void RoundDropChance_IsTheEngineModel()
         {
             Assert.Equal(0f, RiskMath.RoundDropChance(10f, 0f), 3);

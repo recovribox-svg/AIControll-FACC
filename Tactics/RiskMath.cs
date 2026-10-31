@@ -48,6 +48,21 @@ namespace CompanionAI_Pathfinder.Tactics
             return (float)Math.Exp(-Math.Max(1f, hp) / danger);
         }
 
+        /// <summary>
+        /// ★ v0.3.23 (build3 logs): in the same model, the damage a unit is expected to have taken when it is still up at the
+        /// end of the round - what is left for the next blow to finish. E[D | D &lt; hp] for an exponential D with mean
+        /// <paramref name="danger"/>: danger - hp·e^(-hp/danger) / (1 - e^(-hp/danger)).
+        /// </summary>
+        public static float ExpectedTakenIfStillUp(float hp, float danger)
+        {
+            if (danger <= 0f) return 0f;
+            hp = Math.Max(1f, hp);
+            double down = Math.Exp(-hp / danger);
+            if (down >= 1.0) return 0f;
+            double taken = danger - hp * down / (1.0 - down);
+            return (float)Math.Max(0.0, Math.Min(hp, taken));
+        }
+
         private static float Clamp01(float v) => v < 0f ? 0f : v > 1f ? 1f : v;
     }
 }

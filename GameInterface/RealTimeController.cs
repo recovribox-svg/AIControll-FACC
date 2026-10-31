@@ -200,6 +200,15 @@ namespace CompanionAI_Pathfinder.GameInterface
                 _lastDecisionTime[unitId] = currentTime;  // Throttle even when can't act
                 return;
             }
+            // ★ v0.3.23 (build3 logs): after lying prone the unit plays its get-up animation, and the game starts no command
+            // until it ends (the turn-based controller counts View.IsGetUp as running, as the game's ContinueActing does).
+            // Decided then, every order ended "Interrupt" after 0.0 s: Aeiluvetar's Aid Another eight times, Seelah's three.
+            if (unit.View?.IsGetUp ?? false)
+            {
+                Main.Verbose($"[RT] {unitName}: Cannot act - getting up");
+                _lastDecisionTime[unitId] = currentTime;
+                return;
+            }
             // ★ v0.2.43: IsInExclusiveState는 체크하지 않음 - Commands.Empty 체크가 커버함
 
             // ★ v0.3.14: nauseated: the game still starts UnitMoveTo, nothing else (UnitCommandController.ShouldStartCommand).
