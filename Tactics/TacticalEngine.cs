@@ -424,6 +424,7 @@ namespace CompanionAI_Pathfinder.Tactics
             if (chosen?.RiskAt != null) chosen.CountPathAttackers = RealPathCounter(ctx, chosen);
             LogDecision(ctx, usable, chosen);
             NoteFastBombs(unit, chosen);   // ★ v0.3.23 (bombs task)
+            NoteArcherChoice(ctx, usable, chosen);   // ★ v0.3.23 (quiver task)
             // ★ kinetic-infusion-value: only the chosen plan is logged, after its existing native burn pricing.
             if (chosen?.InfusionNote != null)
                 Main.Log($"[Kinetic] {unit.CharacterName}: {chosen.InfusionNote}; chosen {chosen.Label} = {chosen.Value:F1} " +

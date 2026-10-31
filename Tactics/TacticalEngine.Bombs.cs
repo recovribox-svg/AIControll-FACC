@@ -20,8 +20,8 @@ namespace CompanionAI_Pathfinder.Tactics
                 if (!(AbilityProfile.Get(chosen.Ability)?.ThrowsDailyBomb ?? false)) return;
                 var fast = unit.Descriptor?.State?.FastBombsFeature;
                 if (fast?.Abilities == null || !fast.Abilities.Any(r => r?.Get() == chosen.Ability.Blueprint)) return;
-                ReportOnce($"fastbombs|{unit.UniqueId}|{chosen.Ability.Blueprint.AssetGuid}",
-                           $"[Bombs] {unit.CharacterName}: Fast Bombs is on - {chosen.Ability.Name} is thrown as a full attack (one bomb a " +
+                if (!CombatMemory.FirstThisFight($"fastbombs|{unit.UniqueId}|{chosen.Ability.Blueprint.AssetGuid}")) return;
+                Main.Log($"[Bombs] {unit.CharacterName}: Fast Bombs is on - {chosen.Ability.Name} is thrown as a full attack (one bomb a " +
                            $"throw, {chosen.Ability.GetAvailableForCastCount()} left); the AI values the order as one throw");
             }
             catch (Exception ex)

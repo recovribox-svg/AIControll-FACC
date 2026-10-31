@@ -284,6 +284,34 @@ namespace CompanionAI_Pathfinder.Tactics
             else Report(ctx, preview, $"blasts blocked by burn ({BlockedNote(part)}); nothing to do about it" + (why != null ? $" ({why})" : ""));
         }
 
+        /// <summary>
+        /// ★ v0.3.23 (quiver task, docs/TASK_BOMBS_CARNAGE_QUIVER.md §3): a unit that shoots its blasts through the bow
+        /// (UnitPartKineticist.CanUseArcherBlast) chose a weapon attack while a blast was there to use - once per fight, both
+        /// values, and why they are compared as they are: a bow's arrows carry no blast damage in the game (only a kinetic
+        /// blade's hits cast a blast, KineticistController.TryHandleKineticBladeAttack), and the quiver only pays a blast's
+        /// burn (AbilityKineticist.CalculateCost / Spend). Evidence for the player's report; nothing is changed.
+        /// </summary>
+        private static void NoteArcherChoice(TacticalContext ctx, List<Candidate> usable, Candidate chosen)
+        {
+            try
+            {
+                if (chosen?.Kind != CandidateKind.WeaponAttack) return;
+                var part = ctx.Unit.Get<UnitPartKineticist>();
+                if (part == null || !part.CanUseArcherBlast()) return;
+                var blast = usable.FirstOrDefault(c => c.Kind == CandidateKind.Ability && c.Ability != null && IsOwnBlast(part, c.Ability) &&
+                                                       AbilityKineticist.IsArcherBlast(c.Ability));
+                if (blast == null || !CombatMemory.FirstThisFight($"archer|{ctx.Unit.UniqueId}")) return;
+                int quiver = part.QuiverBuff != null ? ctx.Unit.Buffs.GetBuff(part.QuiverBuff)?.Rank ?? 0 : 0;
+                Main.Log($"[Kinetic] {ctx.Unit.CharacterName}: {chosen.Label} ({chosen.Value:0.#}) over the best blast through the bow, " +
+                         $"{blast.Label} ({blast.Value:0.#}); quiver {quiver}. A bow's arrows add no blast damage in the game (only a " +
+                         "kinetic blade's hits do) and the quiver pays a blast's burn only, so the two are compared as they are");
+            }
+            catch (Exception ex)
+            {
+                Main.Verbose($"[Kinetic] {ctx.Unit?.CharacterName} archer note: {ex.Message}");
+            }
+        }
+
         private static void Report(TacticalContext ctx, bool preview, string text)
         {
             if (preview) return;

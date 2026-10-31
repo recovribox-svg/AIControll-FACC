@@ -24,6 +24,10 @@ namespace CompanionAI_Pathfinder.Tactics
 
         /// <summary>★ v0.3.7: Progressive log bookkeeping for this combat (what was already reported, so transitions log once).</summary>
         public static readonly HashSet<string> ProgressiveLogged = new HashSet<string>();
+        /// <summary>★ v0.3.23 (bombs task): explanations logged once per fight (Fast Bombs, archer blasts).</summary>
+        private static readonly HashSet<string> FightNotes = new HashSet<string>();
+        /// <summary>True the first time <paramref name="key"/> is asked for in this combat.</summary>
+        public static bool FirstThisFight(string key) => FightNotes.Count < 256 && FightNotes.Add(key);
         /// <summary>Boss unit id → name, while the boss bypass is active.</summary>
         public static readonly Dictionary<string, string> ActiveBosses = new Dictionary<string, string>();
         private static int _lastRound = int.MaxValue;
@@ -352,6 +356,7 @@ namespace CompanionAI_Pathfinder.Tactics
             CastCommands.Clear();
             Turns.Clear();
             ProgressiveLogged.Clear();
+            FightNotes.Clear();
             ActiveBosses.Clear();
             ProgressiveGate.ResetCombat();
             _lastRound = int.MaxValue;
