@@ -198,8 +198,17 @@ namespace CompanionAI_Pathfinder.Tactics
             : QuickBar(c.Slot, c.Kind == CandidateKind.Ability ? c.Ability : null);
 
         /// <summary>★ v0.3.19 (test9): an ability whose use spends nothing: no spell slot, item charge or use, no burn.</summary>
+        /// <remarks>★ v0.3.23 (bombs task): nor an item the game takes as its material component (Grenadier Alchemical
+        /// Weapon's flask: AbilityData.RequireMaterialComponent).</remarks>
         internal static bool CostsNothing(AbilityData ability) =>
-            ability != null && ability.Spellbook == null && !(ability.SourceItem is ItemEntityUsable) && !SpendsLimitedUse(ability);
+            ability != null && ability.Spellbook == null && !(ability.SourceItem is ItemEntityUsable) && !SpendsLimitedUse(ability) &&
+            !SpendsMaterial(ability);
+
+        private static bool SpendsMaterial(AbilityData ability)
+        {
+            try { return ability.RequireMaterialComponent; }
+            catch { return false; }
+        }
         /// <summary>★ v0.3.19 (test7): the least an item that is used up (potion, scroll, wand charge) must be worth.</summary>
         private const float MinSpentItemValue = 5f;
         /// <summary>~25 ft: inside Close range for low-level casters, outside most melee reach.</summary>
@@ -341,6 +350,9 @@ namespace CompanionAI_Pathfinder.Tactics
             timings?.Mark(DecisionStage.Preparation);
             try { usable = CoupleOwnAttackMarks(ctx, usable, memory); }
             catch (Exception ex) { Main.Error($"[Tactics] {unit.CharacterName} marks: {ex.Message}"); }
+            // ★ v0.3.23 (bombs task): a weapon-hit rider (Alchemical Weapon's flask) only before a weapon attack this turn.
+            try { usable = CoupleWeaponRiders(ctx, usable, explain: !preview); }
+            catch (Exception ex) { Main.Error($"[Tactics] {unit.CharacterName} weapon riders: {ex.Message}"); }
             // ★ v0.3.19 (test9): next-spell boosts (Arcane Reservoir) are worth what they add to the spell cast next.
             try { usable = CoupleSpellBoosts(ctx, usable); }
             catch (Exception ex) { Main.Error($"[Tactics] {unit.CharacterName} spell boosts: {ex.Message}"); }
@@ -411,6 +423,7 @@ namespace CompanionAI_Pathfinder.Tactics
             // ★ v0.3.20 (test8): a move priced on the straight line has the game's real walk counted before it is made.
             if (chosen?.RiskAt != null) chosen.CountPathAttackers = RealPathCounter(ctx, chosen);
             LogDecision(ctx, usable, chosen);
+            NoteFastBombs(unit, chosen);   // ★ v0.3.23 (bombs task)
             // ★ kinetic-infusion-value: only the chosen plan is logged, after its existing native burn pricing.
             if (chosen?.InfusionNote != null)
                 Main.Log($"[Kinetic] {unit.CharacterName}: {chosen.InfusionNote}; chosen {chosen.Label} = {chosen.Value:F1} " +
@@ -2319,7 +2332,16 @@ namespace CompanionAI_Pathfinder.Tactics
         /// <summary>Consumable policy multiplier; 0 means "do not use this item now".</summary>
         private static float ConsumableFactor(TacticalContext ctx, AbilityData ability, AbilityProfile profile)
         {
-            if (!(ability.SourceItem is ItemEntityUsable item)) return 1f;
+            if (!(ability.SourceItem is ItemEntityUsable item))
+            {
+                // ★ v0.3.23 (bombs task): a usable item spent as the ability's material component (Grenadier Alchemical
+                // Weapon's flask) is conserved like the same item used directly - the player's item settings, then the
+                // item type's factor. No Use Magic Device: the class ability uses the item, the unit does not activate it.
+                var material = ConsumablePolicy.SpentMaterial(ability);
+                if (material == null) return 1f;
+                if (!ConsumablePolicy.IsAllowed(ability)) return 0f;
+                return material.Type == UsableItemType.Scroll || material.Type == UsableItemType.Wand ? 0.7f : 0.85f;
+            }
             if (!ConsumablePolicy.IsAllowed(ability)) return 0f;
 
             switch (item.Blueprint.Type)
@@ -2546,8 +2568,10 @@ namespace CompanionAI_Pathfinder.Tactics
                 // ★ v0.3.20 (audit VAL-001): applied to what is left after the walk, the attacks of opportunity and the
                 // concentration check (below) - it was checked before them, so an item could clear the bar and be used for
                 // what remained once its risks were paid.
-                float itemBar = ability.SourceItem == null ? 0f
-                    : ability.SourceItem is ItemEntityUsable spent && spent.Blueprint.SpendCharges && profile.Heals.Count == 0
+                // ★ v0.3.23 (bombs task): an item spent as the material component (Alchemical Weapon's flask) is used up too.
+                bool spentMaterial = ability.SourceItem == null && ConsumablePolicy.SpentMaterial(ability) != null;
+                float itemBar = ability.SourceItem == null && !spentMaterial ? 0f
+                    : (spentMaterial || ability.SourceItem is ItemEntityUsable spent && spent.Blueprint.SpendCharges) && profile.Heals.Count == 0
                         ? MinSpentItemValue : QuickBar(slot, ability);
                 if (value < itemBar)
                 {
@@ -3371,11 +3395,24 @@ namespace CompanionAI_Pathfinder.Tactics
                         if (profile.AppliesTo(maneuver.Action, ability, enemy) == EffectApplies.No) continue;
                         float strength = ManeuverStrength(enemy, ability, maneuver.Type, out bool lasting);
                         if (strength <= 0f) continue;
-                        CombatMath.ManeuverOdds(unit, enemy, ability, maneuver, out float chance, out float rounds);
-                        // ★ v0.3.18 (review): the maneuver comes after the spell's resistance check and its attack roll
-                        // (Hydraulic Push; an infusion's blast must hit first).
-                        chance *= CombatMath.SpellResistancePass(unit, enemy, ability);
-                        if (profile.NeedsAttackRoll) chance *= CombatMath.SpellAttackHitChance(unit, enemy, ability);
+                        float chance, rounds;
+                        if (maneuver.Knockdown)
+                        {
+                            // ★ v0.3.23 (bombs task): a knockdown has no maneuver roll - it lands with the effect: spell
+                            // resistance, the attack roll and, for an ability with a save, a failed save (Force Bomb's
+                            // Reflex). Nothing more on a target already down or getting up.
+                            if (enemy.Descriptor.State.Prone.Active || (enemy.View?.IsGetUp ?? false)) continue;
+                            chance = CombatMath.EffectChance(unit, enemy, ability, profile, damage: false);
+                            rounds = 1f;
+                        }
+                        else
+                        {
+                            CombatMath.ManeuverOdds(unit, enemy, ability, maneuver, out chance, out rounds);
+                            // ★ v0.3.18 (review): the maneuver comes after the spell's resistance check and its attack roll
+                            // (Hydraulic Push; an infusion's blast must hit first).
+                            chance *= CombatMath.SpellResistancePass(unit, enemy, ability);
+                            if (profile.NeedsAttackRoll) chance *= CombatMath.SpellAttackHitChance(unit, enemy, ability);
+                        }
                         float part = chance * CombatMath.ControlWorth(enemy) * strength *
                                      (lasting ? Math.Min(Math.Max(1f, rounds), Math.Min(ctx.ExpectedRounds, 3f)) : 1f);
                         if (CombatMath.IsDisabled(enemy)) part *= 0.4f;   // with Threat's x0.25: 0.1, as for control
@@ -3593,8 +3630,16 @@ namespace CompanionAI_Pathfinder.Tactics
             // Spell slots are a resource: in easy fights prefer weapons/cantrips over levelled spells.
             // ★ v0.3.17: only the damage and control parts, as the Spell Use setting says ("damage and control spells";
             // "buffs, heals and items are unaffected"). It discounted levelled heals and buffs too.
-            if (level > 0 && ability.Spellbook != null && ability.SourceItem == null && slotSensitive > 0f)
-                value -= slotSensitive * (1f - Mathf.Clamp(0.55f + 0.45f * ctx.Difficulty, 0.55f, 1f));
+            // ★ v0.3.23 (bombs task): an Alchemist's daily bombs are such a resource too (AbilityProfile.ThrowsDailyBomb), with
+            // the same easy-fight restraint (ValueModel.LimitedUseDiscount): a bomb a little better than the crossbow in a
+            // fight the party is winning easily stays in the bag; in a hard fight nothing is taken off.
+            if (ability.SourceItem == null && slotSensitive > 0f &&
+                (level > 0 && ability.Spellbook != null || profile.ThrowsDailyBomb && ability.Spellbook == null))
+            {
+                float kept = slotSensitive * ValueModel.LimitedUseDiscount(ctx.Difficulty);
+                value -= kept;
+                if (profile.ThrowsDailyBomb && kept >= 0.05f) reasons.Add($"daily bomb -{kept:0.#}");
+            }
 
             why = reasons.Count > 0 ? string.Join("+", reasons) : "none";
             return value;
