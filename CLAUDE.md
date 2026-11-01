@@ -14,7 +14,7 @@ before resuming.** With the author's authorization, Claude reviewed and merged P
 test package was `test-builds/AI-Control-FACC-dev-integrated-ecabeb4-UMM-test.zip` (MVID
 `2cc6eb92-af79-4a1c-a65d-aad66d8ef315`); then `AI-Control-FACC-dev-fixes2-c3f1636-UMM-test.zip`; then
 `AI-Control-FACC-dev-movement-0c2e0f5-UMM-test.zip` (played as v0.3.23-dev-build2); then
-`AI-Control-FACC-v0.3.23-dev-build3-089a402-UMM-test.zip`; the current one is
+`AI-Control-FACC-v0.3.23-dev-build3-089a402-UMM-test.zip`; then
 `AI-Control-FACC-v0.3.23-dev-build4-da4e0a5-UMM-test.zip` (MVID `f1604b11-326e-425e-a77e-2533856d4155`, UMM 0.3.23, development only); in-game replay is pending. The published v0.3.22 ZIP/tag is unchanged and
 does not contain these follow-ups; the author publishes GitHub Releases and creates tags. Movement, target commitment,
 retreat, pathfinding and stuck-cancellation changes need discussion with the author first; the reach/Grease and Seelah
@@ -29,10 +29,11 @@ Grace with a walk, the last sleeper left for a Coup de Grace, and no failure str
 build3 review (31 October, [docs/RELEASE_0323_BUILD3_REVIEW.md](docs/RELEASE_0323_BUILD3_REVIEW.md)) answered the author's
 play-test notes: revives priced against the stand-up attack and the next blow in sequence, real-time walks priced by
 their time and interceptions (front-liners stay on the enemy front line), no orders during the get-up animation;
-`Info.json` is 0.3.23 from this build on. Task branch `claude/alchemist-carnage-quiver` (PR into development, awaiting
-review): player reports on Alchemist bombs / Alchemical Weapon, Dreadful Carnage and the Kinetic Sharpshooter quiver -
+`Info.json` is 0.3.23 from this build on. PR #16 (task branch `claude/alchemist-carnage-quiver`, merged into development 1 November with the author's
+authorization, merge commit `0f7f2e6`): player reports on Alchemist bombs / Alchemical Weapon, Dreadful Carnage and the Kinetic Sharpshooter quiver -
 evidence, changes and replay steps in [docs/TASK_BOMBS_CARNAGE_QUIVER.md](docs/TASK_BOMBS_CARNAGE_QUIVER.md); test ZIP
-`AI-Control-FACC-v0.3.23-dev-bombs-carnage-cabdb2e-UMM-test.zip` (MVID `89ffb864-46e5-4840-ba2e-15318074028e`).
+`AI-Control-FACC-v0.3.23-dev-bombs-carnage-cabdb2e-UMM-test.zip` (MVID `89ffb864-46e5-4840-ba2e-15318074028e`) is now the
+current development test build; in-game replay is pending.
 
 Historical handovers, superseded by the one above: [v0.3.22 release preparation](docs/RELEASE_0_3_22_HANDOVER.md)
 (27 October, PR #6–#12), [released-log review](docs/RELEASE_0322_LOG_REVIEW.md) (PR #13),

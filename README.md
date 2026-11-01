@@ -5,8 +5,8 @@
 | What | Contents | Status |
 | --- | --- | --- |
 | **[v0.3.22 stable ZIP](release/CompanionAI_Pathfinder_v0.3.22.zip?raw=true)** | The published v0.3.22 release (tag `v0.3.22`) | Released; unchanged |
-| [Task test ZIP — bombs, Carnage (cabdb2e)](test-builds/AI-Control-FACC-v0.3.23-dev-bombs-carnage-cabdb2e-UMM-test.zip?raw=true) | Build 4 + Alchemist flask/bomb fixes, Dreadful Carnage credit, Kinetic Sharpshooter note ([evidence and handover](docs/TASK_BOMBS_CARNAGE_QUIVER.md)); task branch `claude/alchemist-carnage-quiver` | Task test build, awaiting review and in-game replay |
-| **[Current test ZIP — v0.3.23-dev-build4 (da4e0a5)](test-builds/AI-Control-FACC-v0.3.23-dev-build4-da4e0a5-UMM-test.zip?raw=true)** | Build 3 + fixes from its logs and the play-test notes; UMM shows 0.3.23 (development source) | Test build, awaiting in-game replay |
+| **[Current test ZIP — bombs, Carnage (cabdb2e)](test-builds/AI-Control-FACC-v0.3.23-dev-bombs-carnage-cabdb2e-UMM-test.zip?raw=true)** | Build 4 + Alchemist flask/bomb fixes, Dreadful Carnage credit, Kinetic Sharpshooter note ([evidence and handover](docs/TASK_BOMBS_CARNAGE_QUIVER.md)); merged into development (PR #16) | Test build, awaiting in-game replay |
+| [Previous test ZIP — v0.3.23-dev-build4 (da4e0a5)](test-builds/AI-Control-FACC-v0.3.23-dev-build4-da4e0a5-UMM-test.zip?raw=true) | Build 3 + fixes from its logs and the play-test notes; UMM shows 0.3.23 (development source) | Superseded test build |
 | [Previous test ZIP — v0.3.23-dev-build3 (089a402)](test-builds/AI-Control-FACC-v0.3.23-dev-build3-089a402-UMM-test.zip?raw=true) | The build2 test + fixes from its logs | Superseded test build |
 | [Previous test ZIP — movement 0c2e0f5 (played as v0.3.23-dev-build2)](test-builds/AI-Control-FACC-dev-movement-0c2e0f5-UMM-test.zip?raw=true) | v0.3.22 + reviewed PR #13–#15 + fixes2 log fixes + approved movement follow-ups | Superseded test build |
 | [Previous test ZIP — fixes2 c3f1636](test-builds/AI-Control-FACC-dev-fixes2-c3f1636-UMM-test.zip?raw=true) | The same without the movement follow-ups | Superseded test build |
@@ -19,7 +19,17 @@ GitHub Releases are published by the author; older release and test archives are
 
 ## Current development test build (not a release)
 
-**[Download the UMM test ZIP — v0.3.23-dev-build4 (da4e0a5)](test-builds/AI-Control-FACC-v0.3.23-dev-build4-da4e0a5-UMM-test.zip?raw=true)**
+**[Download the UMM test ZIP — bombs, Carnage (cabdb2e)](test-builds/AI-Control-FACC-v0.3.23-dev-bombs-carnage-cabdb2e-UMM-test.zip?raw=true)**
+(startup `[Build] v0.3.23 module=89ffb864-46e5-4840-ba2e-15318074028e`). It is build 4 plus (PR #16):
+- Grenadier Alchemical Weapon counts the flask it uses up, follows "use thrown items", and is used only before a weapon
+  attack;
+- Force Bomb's knockdown is seen; daily bombs are kept for fights that need them;
+- a Dreadful Carnage fighter counts the free Dazzling Display a kill fires;
+- Kinetic Sharpshooter: no change (arrows carry no blast damage in the game); a log line explains the choice.
+
+[Evidence, changes and replay steps](docs/TASK_BOMBS_CARNAGE_QUIVER.md).
+
+**Previous: [v0.3.23-dev-build4 (da4e0a5)](test-builds/AI-Control-FACC-v0.3.23-dev-build4-da4e0a5-UMM-test.zip?raw=true)**
 (startup `[Build] v0.3.23 module=f1604b11-326e-425e-a77e-2533856d4155`). It is build 3 plus:
 - no revives into an immediate attack of opportunity;
 - real-time front-liners stay on the enemy front line;

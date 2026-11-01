@@ -1,10 +1,10 @@
 # Test builds
 
-## Task test build: Alchemist bombs, Dreadful Carnage, Kinetic Sharpshooter (cabdb2e)
+## Current test build: Alchemist bombs, Dreadful Carnage, Kinetic Sharpshooter (cabdb2e)
 
-**[Download the task test ZIP (cabdb2e)](AI-Control-FACC-v0.3.23-dev-bombs-carnage-cabdb2e-UMM-test.zip?raw=true)**
+**[Download the current UMM test ZIP (cabdb2e)](AI-Control-FACC-v0.3.23-dev-bombs-carnage-cabdb2e-UMM-test.zip?raw=true)**
 
-Direct link: <https://github.com/recovribox-svg/AIControll-FACC/raw/claude/alchemist-carnage-quiver/test-builds/AI-Control-FACC-v0.3.23-dev-bombs-carnage-cabdb2e-UMM-test.zip>
+Direct link: <https://github.com/recovribox-svg/AIControll-FACC/raw/claude/dreamy-pasteur-b9h3rn/test-builds/AI-Control-FACC-v0.3.23-dev-bombs-carnage-cabdb2e-UMM-test.zip>
 
 Build 4 (development `00110eb`) plus the answers to three player reports
 ([evidence, plan and handover](../docs/TASK_BOMBS_CARNAGE_QUIVER.md)). These come from the game's code and data; none of
@@ -27,7 +27,8 @@ UMM shows **0.3.23** (unchanged). Startup line:
 [Build] v0.3.23 module=89ffb864-46e5-4840-ba2e-15318074028e
 ```
 
-- Source: `claude/alchemist-carnage-quiver` at runtime commit `cabdb2e` (base development `00110eb`).
+- Source: runtime commit `cabdb2e` (task branch `claude/alchemist-carnage-quiver`, base `00110eb`), merged into development
+  by PR #16 (merge commit `0f7f2e6`).
 - ZIP SHA-256: `26072f850ba32186631d15a688b37109c695866f389842f11401096b45444b82`.
 - DLL SHA-256: `7481483f05d9012fd1f872980daaeafa5c268a9b206d3855fe8196612a6a4488`.
 - Archive: the mod DLL and `Info.json` (version 0.3.23) only.
@@ -59,7 +60,7 @@ UMM shows **0.3.23** (unchanged). Startup line:
    - the `[Kinetic] ... over the best blast through the bow` line shows both values;
    - if you still see arrows dealing blast damage, send the combat log, the archetype and the mod list.
 
-## Current development test build
+## Previous test: v0.3.23-dev-build4 (da4e0a5)
 
 **[Download the current UMM test ZIP — v0.3.23-dev-build4 (da4e0a5)](AI-Control-FACC-v0.3.23-dev-build4-da4e0a5-UMM-test.zip?raw=true)**
 
