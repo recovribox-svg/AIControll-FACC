@@ -2970,3 +2970,61 @@ within 1.5 m). `SilentlyFailing` then drops options that `WalksIntoMelee` (melee
 Charge, touch abilities that walk first, advances to within 3 m) for every unit. In the build1 real-time log only the
 three walks at the ledge archer (path end 4.42 m from the goal, radius 1.61 m) meet the test; walks blocked by units
 (path end 0.6 m from the goal) do not.
+
+## 84. v0.3.25 test 1: Unraveling and Chain Arrows in infusion selection
+
+Author request (1 November 2026); evidence and plain-language summary: [V0325_TEST1.md](V0325_TEST1.md) §1.
+- **Unraveling** (`TacticalEngine.Unraveling.cs`): `DescribeInfusion` accepts `ContextActionDispelMagic` with a
+  caster-level or DC check and no follow-up actions (`DispelUnsupported`). `InfusionActions` values it with
+  `DispelValue`: the target's buffs the action's filters take (`DispelCanTake`, the spell-level cap,
+  `OnlyTargetEnemyBuffs`), each at `ValueModel.DispelChance(dc - casterLevel - bonus)` (d20, no automatic 1/20), worth
+  `ControlWorth x share x rounds left` (a party debuff negative), in the game's order (caster level, highest first),
+  combined by `ValueModel.ExpectedDispelWorth` with the stop-after count (unit-tested, `DispelTests`).
+- **Chain Arrows** (`TacticalEngine.Ricochet.cs`): a buff with only burn/parameter components
+  (`IsDeliveryOnlyInfusion`) is `Ricochet`; `RicochetOf` finds the blast's plain `AbilityDeliverRicochet` whose
+  before-condition is an Or of "caster has buff" naming it. `RicochetValue` walks the jumps as Deliver does (nearest
+  living enemy of the caster within Radius of the current one, not hit yet, `TargetsCount` capped at 16), each at the
+  first hit's chance x SR pass ratio x 0.5 when blinking, `DamageValue x WakeFactor`; nothing when another of the
+  Or-buffs is already on the caster. Chain damage is memoised per frame (`ChainDamage`).
+
+## 85. v0.3.25 test 1: getting a held state back (psionic focus), move + standard pairs
+
+`TacticalEngine.HeldStates.cs`. A **marker state** (`IsMarkerState`: every component is `AddFactContextActions`) that
+the ability applies lastingly to its caster, that the caster lacks, and that something depends on (`Dependence`: a
+feature component other than `AddFactContextActions` asking `ContextConditionCasterHasFact`/`HasFact` for it - a
+reflection walk of action and condition fields, cached per type; a toggle with `RestrictionHasFact`; an ability with
+`AbilityCasterHasFacts`) is valued by `RegainValue` = `ValueModel.HeldStateWorth(rounds, readable, dependents,
+PerRound, togglePerRound, toggleRounds)` (unit-tested, `HeldStateWorthTests`): readable = the buffs its start actions
+apply for this unit (`CollectComing`, "has fact" conditions read on the unit), `DependentShare` 0.15 of the unit's round
+per dependent feature (cap 3), the best AI-startable requiring toggle after its own command; rounds = expected rounds,
+minus one for a standard action. Such a buff is taken out of the ordinary buff appraisal (no double count). The reason
+`regains ...` counts as a buff for the restraint rule. Cached per unit and state, rebuilt when the unit's fact count
+changes. No vanilla blueprint in the dumps is such a state.
+
+`Decide`: when the best main option is a full round and both actions are left, a move-action ability or toggle (no
+walk) plus the best standard option (no walk, no gathered power) that together beat it go first (`[Tactics] ... then
+... over ...`).
+
+Out of combat: `RealTimeController.IsWorthKeepingUp` accepts such a state (`RestoresHeldState`). When the AI issues an
+ability that ends a toggle with a state it spends, `NoteEndedByAi` records it as the AI's switch (`RecordToggle(off,
+wasOn: true)`) and, if it was on before the AI first switched it this fight (`CombatMemory.WasOnBeforeAi`), keeps it in
+`s_EndedByAi` (across fights); `RestoreEndedToggles` switches the first one whose state is back on again, one a call,
+under "AI manages activatable abilities". The out-of-combat routine runs that even with "recasts self buffs" off.
+
+## 86. v0.3.25 test 1: potions
+
+Audit in [V0325_TEST1.md](V0325_TEST1.md) §3. Four readers added:
+- `BuffEnchantArmor` (Magical Vestment): `ArmorEnchantParts` in `AppraiseBuff` picks the enchantment by the buff's
+  `BuffScaling` (caster level of the ability's context, or the recipient's BAB/class level/level) and adds an AC part of
+  `max(0, ArmorEnhancementBonus - GameHelper.GetItemEnhancementBonus(item))` for the body armor or each shield; 0
+  without the item (a part is always added: read as nothing, never guessed).
+- `WeaponAlignment` in `BuffPartsReader.ReadEnchantment` (Align Weapon, Bless Weapon's GoodAligned): `AlignmentBypass` -
+  the highest `AddDamageResistancePhysical` of the enemy attacked that this alignment bypasses alone (`Or`, or alignment
+  its only bypass; not when an `Or` reduction already falls to the weapon's enhancement), up to the hit's damage; none
+  when the weapon has the alignment. Added per hit like energy damage.
+- `WeaponCritAutoconfirmAgainstAlignment` (Bless Weapon vs evil): on an enemy of that alignment, threat x (1 - hit
+  chance) x (multiplier - 1) x per-hit damage, per hit.
+- `ContextActionDispelMagic` with `CheckType.None` aimed at the target (Lesser Restoration's fatigue, exhaustion and
+  stat-penalty removals) is a removal in `AbilityProfile` (`RemovedDescriptors`, `m_Removals`; `BuffsRemovedFrom` uses
+  the game's dispel filters through `DispelTakes`), so it is valued as a cleanse when there is something to take and is
+  "verifiable" (no fallback otherwise).

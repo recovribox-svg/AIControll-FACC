@@ -1,6 +1,26 @@
 # Test builds
 
-## Current test build: v0.3.24-dev-build3 (0a203b4), released as v0.3.24
+## Current test build: v0.3.25-dev-test1 (907cd75)
+
+**[Download the UMM test ZIP (907cd75)](AI-Control-FACC-v0.3.25-dev-test1-907cd75-UMM-test.zip?raw=true)**
+
+Direct link: <https://github.com/recovribox-svg/AIControll-FACC/raw/claude/dreamy-pasteur-b9h3rn/test-builds/AI-Control-FACC-v0.3.25-dev-test1-907cd75-UMM-test.zip>
+
+v0.3.24 plus ([notes](../docs/V0325_TEST1.md)):
+- **Kineticist:** Unraveling and Chain Arrows are chosen automatically when they are worth their burn.
+- **Psionics:** psionic focus is regained (a move action with Psionic Meditation is paired with the turn's attack), and
+  a trance the AI's spending ended goes back on after the fight.
+- **Potions:** Magical Vestment only when it beats the armor's or shield's own bonus (never without a shield); Align and
+  Bless Weapon only against damage reduction they get through (Bless Weapon also for criticals on evil enemies); Lesser
+  Restoration when fatigued, exhausted or under a stat penalty.
+
+UMM shows **0.3.25**. Startup line `[Build] v0.3.25 module=b9270500-be53-43c5-8beb-8bbf61bbafe6`.
+- ZIP SHA-256 `99ed0c04b0eb942e4f4ab1c059acbcf336b37a5a1d80f9a982e1388f3f3e3e02`; DLL SHA-256
+  `519ab3d602c542801b4ba1b8fe15b144dda67743865ae714fe0bd88cec14a7b8`.
+- [Identity](AI-Control-FACC-v0.3.25-dev-test1-907cd75-UMM-test.identity.json) · [Checksums](SHA256SUMS.txt).
+- Checks: 273 unit tests pass; release build 0 warnings; offline blueprint audit 0 errors. Not yet played.
+
+## Previous test build: v0.3.24-dev-build3 (0a203b4), released as v0.3.24
 
 **[Download the UMM test ZIP (0a203b4)](AI-Control-FACC-v0.3.24-dev-build3-0a203b4-UMM-test.zip?raw=true)** - byte-identical to the
 [v0.3.24 release ZIP](../release/CompanionAI_Pathfinder_v0.3.24.zip?raw=true).

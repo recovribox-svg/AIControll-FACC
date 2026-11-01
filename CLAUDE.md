@@ -51,7 +51,14 @@ was played next. With the author's approval, real time now shares a target out o
 path ends short of it) across the party (`CombatMemory.NoteOutOfWalkingReach`, `TacticalEngine.WalksIntoMelee`). At the
 author's request this is released as **v0.3.24** (commit `0a203b4`): `release/CompanionAI_Pathfinder_v0.3.24.zip`
 (byte-identical to `test-builds/AI-Control-FACC-v0.3.24-dev-build3-0a203b4-UMM-test.zip`, MVID `0ea24da4-70d0-4c77-9046-58f05061174b`), notes
-`release/CHANGELOG_v0.3.24.md`, `main` fast-forwarded; the author creates the GitHub release and tag `v0.3.24`.
+`release/CHANGELOG_v0.3.24.md`, `main` fast-forwarded; the author created the GitHub release and tag `v0.3.24`.
+**v0.3.25 test 1 (1 November, [docs/V0325_TEST1.md](docs/V0325_TEST1.md), `docs/TACTICAL_AI.md` §84-86, development
+only, not played):** Unraveling and Chain Arrows in automatic infusion selection (`TacticalEngine.Unraveling.cs`,
+`TacticalEngine.Ricochet.cs`, `ValueModel.Dispel.cs`); getting a held state back - psionic focus regained in and after
+combat, an AI-ended trance switched back on after the fight, move action + standard compared with a full round
+(`TacticalEngine.HeldStates.cs`, `ValueModel.HeldStateWorth`); potion audit - Magical Vestment, Align/Bless Weapon and
+Lesser Restoration read instead of guessed or ignored. `Info.json` 0.3.25; test ZIP
+`AI-Control-FACC-v0.3.25-dev-test1-907cd75-UMM-test.zip` (MVID `b9270500-be53-43c5-8beb-8bbf61bbafe6`); 273 tests.
 
 Historical handovers, superseded by the one above: [v0.3.22 release preparation](docs/RELEASE_0_3_22_HANDOVER.md)
 (27 October, PR #6–#12), [released-log review](docs/RELEASE_0322_LOG_REVIEW.md) (PR #13),
