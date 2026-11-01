@@ -29,7 +29,10 @@ Grace with a walk, the last sleeper left for a Coup de Grace, and no failure str
 build3 review (31 October, [docs/RELEASE_0323_BUILD3_REVIEW.md](docs/RELEASE_0323_BUILD3_REVIEW.md)) answered the author's
 play-test notes: revives priced against the stand-up attack and the next blow in sequence, real-time walks priced by
 their time and interceptions (front-liners stay on the enemy front line), no orders during the get-up animation;
-`Info.json` is 0.3.23 from this build on.
+`Info.json` is 0.3.23 from this build on. Task branch `claude/alchemist-carnage-quiver` (PR into development, awaiting
+review): player reports on Alchemist bombs / Alchemical Weapon, Dreadful Carnage and the Kinetic Sharpshooter quiver -
+evidence, changes and replay steps in [docs/TASK_BOMBS_CARNAGE_QUIVER.md](docs/TASK_BOMBS_CARNAGE_QUIVER.md); test ZIP
+`AI-Control-FACC-v0.3.23-dev-bombs-carnage-cabdb2e-UMM-test.zip` (MVID `89ffb864-46e5-4840-ba2e-15318074028e`).
 
 Historical handovers, superseded by the one above: [v0.3.22 release preparation](docs/RELEASE_0_3_22_HANDOVER.md)
 (27 October, PR #6–#12), [released-log review](docs/RELEASE_0322_LOG_REVIEW.md) (PR #13),

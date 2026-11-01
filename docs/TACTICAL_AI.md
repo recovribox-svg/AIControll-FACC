@@ -2851,3 +2851,69 @@ TabletopTweaks-Core 0.7.15 through the mod's own binding and runs TTT's estimate
   (`RealTimeWalk`, `[intercepted N]`). Front-liners walked past the enemy front line to its archers.
 - **Get-up animation.** Real time waits while `View.IsGetUp`; orders issued during it were cancelled after 0.0 s. Details are in
 [INTEGRATION_0322_FOLLOWUPS.md](INTEGRATION_0322_FOLLOWUPS.md).
+
+## 79. Alchemist bombs, Dreadful Carnage, Kinetic Sharpshooter quiver (player reports)
+
+31 October 2026, task branch `claude/alchemist-carnage-quiver`.
+- **Evidence.** The evidence, the plan and the handover are in [TASK_BOMBS_CARNAGE_QUIVER.md](TASK_BOMBS_CARNAGE_QUIVER.md).
+- **Not confirmed in play.** No log or save covers these reports, so every point below rests on the game code, the
+  blueprints and Tabletop Tweaks Base 2.6.18 only.
+
+### Grenadier Alchemical Weapon
+- Each use takes an Alchemist's Fire, Acid Flask or Holy Water from the inventory
+  (`AbilityData.SpendMaterialComponent`). The engine saw the ability as costless.
+- **A usable item spent as a material component is now a spent item:**
+  - the player's item settings apply (`ConsumablePolicy.SpentMaterial` / `IsAllowed`; flasks are thrown items);
+  - the item factor applies (0.85);
+  - the spent-item bar applies (5);
+  - it no longer counts as costless.
+- **A weapon-hit rider needs a weapon attack this turn.**
+  - Scope: a self buff that removes itself on its owner's next weapon hit (`BuffsSpentByWeaponHit`: the flasks,
+    Stunning Fist, Elemental Fist).
+  - It is offered only when the decision's best main action makes a weapon attack (`CoupleWeaponRiders`). A bomb is
+    a plain attack roll, so `AdditionalDiceOnAttack OnlyWeaponAttacks` never adds to it and never uses the rider up.
+  - A Move-action rider is also not offered before a full attack or an attack that walks first.
+
+### Force Bomb
+- `ContextActionKnockdownTarget` is read as a one-round prone at Trip strength.
+- Its chance is the effect's own (`CombatMath.EffectChance`: the bomb's attack roll and the failed Reflex save), not CMB
+  against CMD. Nothing on a target that cannot fall or is already prone.
+- Before this, Force Bomb counted as d4 force damage only.
+- **Others affected:** Clashing Rocks, Cave Fangs, Water Torrent and the Splintershred greataxe ability gain their
+  knockdown too (ProfileAudit diff: these five only).
+
+### Daily bombs
+- Scope: the native `AbilityIsBomb` marker plus a spent ability resource.
+- They take the levelled spells' easy-fight discount on damage and control:
+  - `ValueModel.LimitedUseDiscount`, unit-tested with the spell values pinned;
+  - 41 % at the easiest fights, nothing from difficulty 1;
+  - the decision log shows it as `daily bomb -x`.
+- No counts and no quotas.
+
+### Fast Bombs (native `FastBombs`)
+- One order throws a full-attack routine, one bomb each. It cannot be previewed without equipment events, so it is
+  still valued as one throw.
+- `[Bombs] ... Fast Bombs is on` is logged once per fight.
+
+### Dreadful Carnage
+- A kill fires a free Dazzling Display around its owner (vanilla `AddOutgoingDamageTrigger`, `TargetKilledByThisDamage`
+  → `ContextActionCastSpell`; no action cost, no weapon check).
+- **Recognised by its shape**, cached per feature (the audit lists Dreadful Carnage and the Assassin's Public Execution).
+- **Full attack, single attack and Move+Attack gain:** kill chance (the one their damage value uses; none on a
+  regenerating target) × the free Display's worth on the other enemies within its radius of where the attack is made.
+  - `ValueModel.KillTriggerCredit`, unit-tested.
+  - Credited once per option.
+  - That worth per enemy is the manual Display's own terms. Already Shaken or immune enemies count nothing.
+  - It is computed once per decision, for owners only.
+  - Label: `[Dazzling Display on a kill N %: +x]`.
+- **Not credited:** spells, bombs, attack-mode changes to the kill chance, and the duration a repeat would add to an
+  existing Shaken.
+
+### Kinetic Sharpshooter
+- **No valuation change.** Only a kinetic blade's hits add a blast to a weapon attack
+  (`KineticistController.TryHandleKineticBladeAttack`).
+- **The quiver** only pays a blast's burn (`AbilityKineticist.CalculateCost` / `Spend`).
+- **An archer blast** is one bow attack. Exploding Arrows' `AbilityDeliverAttackWithWeapon` is never run: both
+  delivery components are layer 0, and the game runs the first.
+- **Diagnostic.** A unit that shoots blasts through its bow and chooses a weapon attack while a blast was usable logs
+  both values once per fight (`[Kinetic] ... over the best blast through the bow`).

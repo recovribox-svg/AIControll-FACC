@@ -201,6 +201,15 @@ namespace CompanionAI_Pathfinder.Tactics
         /// ContextActionRemoveSelf): Arcane Reservoir's +1 caster level or DC for the next spell.
         /// </summary>
         public bool BuffsSpentByCast { get; private set; }
+        /// <summary>
+        /// ★ v0.3.23 (bombs task): every buff it applies removes itself on its owner's next weapon attack
+        /// (<see cref="IsSpentByWeaponHit"/>): Grenadier Alchemical Weapon's flask buffs, Stunning Fist's and Elemental
+        /// Fist's owner buffs. Such a rider does something only for a weapon attack (TacticalEngine.CoupleWeaponRiders).
+        /// </summary>
+        public bool BuffsSpentByWeaponHit { get; private set; }
+        /// <summary>★ v0.3.23 (bombs task): a bomb thrown from a daily resource (AbilityIsBomb + a spending
+        /// AbilityResourceLogic): its damage and control share the spells' easy-fight restraint (ValueModel.LimitedUseDiscount).</summary>
+        public bool ThrowsDailyBomb { get; private set; }
         /// <summary>One round or one attack's (or roll's) worth of effect.</summary>
         public bool IsOneShot => BuffsLastOneRound || BuffsSpentByAttack || BuffsSpentByRoll;
 
@@ -220,6 +229,9 @@ namespace CompanionAI_Pathfinder.Tactics
             public Kingmaker.RuleSystem.Rules.CombatManeuver Type;
             /// <summary>The action (its branch conditions); ContextActionCombatManeuver also carries the stat replacement.</summary>
             public GameAction Action;
+            /// <summary>★ v0.3.23 (bombs task): ContextActionKnockdownTarget - prone without a maneuver roll (Force Bomb on
+            /// a failed Reflex save, Battering Blast, Clashing Rocks): its chance is the effect's own, not CMB against CMD.</summary>
+            public bool Knockdown;
         }
 
         /// <summary>★ v0.3.18 (AA-4): the combat maneuvers it makes (ContextActionCombatManeuver, its custom version,
@@ -390,7 +402,7 @@ namespace CompanionAI_Pathfinder.Tactics
             branches.Add(guards ?? NoGuards);
         }
         private static readonly EffectGuard[] NoGuards = new EffectGuard[0];
-        private int m_ShortBuffs, m_SpentByAttackBuffs, m_SpentByRollBuffs, m_SpentByCastBuffs, m_AllBuffs;
+        private int m_ShortBuffs, m_SpentByAttackBuffs, m_SpentByRollBuffs, m_SpentByCastBuffs, m_SpentByWeaponHitBuffs, m_AllBuffs;
         private float m_AreaRadius;
         private bool m_AreaHitsAllies, m_AreaHitsEnemies;
         /// <summary>★ v0.3.7: walking a spawned area's actions (its buffs last while the area does, not for minutes).</summary>
@@ -498,6 +510,7 @@ namespace CompanionAI_Pathfinder.Tactics
             BuffsSpentByAttack = m_AllBuffs > 0 && m_SpentByAttackBuffs == m_AllBuffs;
             BuffsSpentByRoll = m_AllBuffs > 0 && !BuffsSpentByAttack && m_SpentByRollBuffs == m_AllBuffs;
             BuffsSpentByCast = m_AllBuffs > 0 && m_SpentByCastBuffs == m_AllBuffs;
+            BuffsSpentByWeaponHit = m_AllBuffs > 0 && m_SpentByWeaponHitBuffs == m_AllBuffs;
             MarksForOwnAttacks = TargetBuffs.Any(IsCasterOnlyAttackMark);
 
             // A personal ability's caster IS its target: its caster heals are heals of the target.
@@ -508,6 +521,10 @@ namespace CompanionAI_Pathfinder.Tactics
             }
 
             IsCharge = Blueprint.GetComponent<AbilityCustomCharge>() != null;
+            // ★ v0.3.23 (bombs task): the game's own bomb marker (AbilityIsBomb: AbilityDeliverProjectile reads it) on an
+            // ability that spends an ability resource - an Alchemist's daily bombs, not other class resources.
+            ThrowsDailyBomb = Blueprint.GetComponent<AbilityIsBomb>() != null &&
+                              Blueprint.GetComponents<AbilityResourceLogic>().Any(l => l.IsSpendResource && l.RequiredResource != null);
             VitalStrike = Blueprint.GetComponent<AbilityCustomVitalStrike>();
             Cleave = Blueprint.GetComponent<AbilityCustomCleave>();
             DevastatingBlow = IsDevastatingBlow(Blueprint.GetComponent<AbilityCustomMeleeAttack>());
@@ -891,6 +908,13 @@ namespace CompanionAI_Pathfinder.Tactics
                         Maneuvers.Add(new ManeuverEffect { Type = custom.Type, Action = custom });
                         m_Guards[custom] = guards;
                         break;
+                    // ★ v0.3.23 (bombs task): knocks the target prone when it can be (ContextActionKnockdownTarget.RunAction:
+                    // CanBeKnockedOff, then State.Prone) - Force Bomb's main-target branch was read as its d4 force damage
+                    // only, so it looked strictly worse than the d6 fire bomb.
+                    case ContextActionKnockdownTarget knockdown when subject == EffectSubject.Target:
+                        Maneuvers.Add(new ManeuverEffect { Type = Kingmaker.RuleSystem.Rules.CombatManeuver.Trip, Action = knockdown, Knockdown = true });
+                        m_Guards[knockdown] = guards;
+                        break;
                     // ★ v0.3.21: a weapon attack made by the ability (ContextActionMeleeAttack.RunAction).
                     case ContextActionMeleeAttack melee when subject == EffectSubject.Target && MeleeAttack == null:
                         MeleeAttack = melee;
@@ -1132,6 +1156,18 @@ namespace CompanionAI_Pathfinder.Tactics
             if (IsSpentByUse(buff)) m_SpentByAttackBuffs++;
             if (IsSpentByUse(buff) || IsSpentByRoll(buff)) m_SpentByRollBuffs++;
             if (IsSpentByCast(buff)) m_SpentByCastBuffs++;
+            if (IsSpentByWeaponHit(buff)) m_SpentByWeaponHitBuffs++;
+        }
+
+        /// <summary>
+        /// ★ v0.3.23 (bombs task): removed by its owner's next weapon attack (AddInitiatorAttackWithWeaponTrigger running
+        /// ContextActionRemoveSelf: the game fires it on RuleAttackWithWeapon only - a weapon attack, a kinetic archer blast;
+        /// never a bomb or a spell's own attack roll).
+        /// </summary>
+        private static bool IsSpentByWeaponHit(BlueprintBuff buff)
+        {
+            try { return buff.GetComponents<AddInitiatorAttackWithWeaponTrigger>().Any(t => RemovesSelf(t.Action, buff)); }
+            catch { return false; }
         }
 
         /// <summary>★ v0.3.19 (test9): the list removes the buff that runs it (directly or in a branch).</summary>

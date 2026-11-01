@@ -1,5 +1,66 @@
 # Test builds
 
+## Task test build: Alchemist bombs, Dreadful Carnage, Kinetic Sharpshooter (cabdb2e)
+
+**[Download the task test ZIP (cabdb2e)](AI-Control-FACC-v0.3.23-dev-bombs-carnage-cabdb2e-UMM-test.zip?raw=true)**
+
+Direct link: <https://github.com/recovribox-svg/AIControll-FACC/raw/claude/alchemist-carnage-quiver/test-builds/AI-Control-FACC-v0.3.23-dev-bombs-carnage-cabdb2e-UMM-test.zip>
+
+Build 4 (development `00110eb`) plus the answers to three player reports
+([evidence, plan and handover](../docs/TASK_BOMBS_CARNAGE_QUIVER.md)). These come from the game's code and data; none of
+these characters has been played with them yet.
+- **Grenadier Alchemical Weapon** now counts the flask it uses up:
+  - "use thrown items" applies to it;
+  - it must be worth a spent item;
+  - it is used only right before a weapon attack (a bomb never uses it).
+- **Force Bomb's knockdown** is now seen, so it can win over the fire bomb when knocking an enemy down is worth it.
+- **Daily bombs** are kept for fights that need them, like spell slots: in an easy fight a bomb must be clearly better
+  than the crossbow.
+- **Dreadful Carnage:** an attack that is likely to kill now counts the free Dazzling Display the kill fires, so a
+  likely kill is no longer passed over for a manual Display.
+- **Kinetic Sharpshooter:** no change. In the game, arrows never carry blast damage; the quiver only pays a blast's
+  burn. A log line now explains each fight's choice.
+
+UMM shows **0.3.23** (unchanged). Startup line:
+
+```text
+[Build] v0.3.23 module=89ffb864-46e5-4840-ba2e-15318074028e
+```
+
+- Source: `claude/alchemist-carnage-quiver` at runtime commit `cabdb2e` (base development `00110eb`).
+- ZIP SHA-256: `26072f850ba32186631d15a688b37109c695866f389842f11401096b45444b82`.
+- DLL SHA-256: `7481483f05d9012fd1f872980daaeafa5c268a9b206d3855fe8196612a6a4488`.
+- Archive: the mod DLL and `Info.json` (version 0.3.23) only.
+- [Identity](AI-Control-FACC-v0.3.23-dev-bombs-carnage-cabdb2e-UMM-test.identity.json) · [Checksums](SHA256SUMS.txt).
+
+**Checks**
+- 249 unit tests pass.
+- Release build: 0 warnings.
+- ProfileAudit: 0 errors; only the knockdown abilities change.
+- New game references: read-only only.
+- **No in-game run yet.**
+
+**What to play** (each case in turn-based and in real time where possible)
+1. A Grenadier with Alchemist's Fire in the bag, a crossbow or melee weapon, and bombs:
+   - it should not use Alchemical Weapon before a bomb;
+   - it should use it only when the next weapon attack gains enough;
+   - with "use thrown items" off, never.
+   Look for `[Buff] ... not used - it only adds to a weapon attack`.
+2. The same Alchemist in an easy fight and a hard one:
+   - an easy fight should show `daily bomb -x` on its bombs and more crossbow shots;
+   - a hard fight should show no discount.
+3. With Fast Bombs on: one `[Bombs] ... Fast Bombs is on` line per fight. Please send the combat log of a bomb turn: it
+   shows how many bombs one order threw.
+4. Force Bomb against a fire-resistant enemy that can fall: its knockdown appears as `maneuver` in the option.
+5. A Dreadful Carnage fighter with several enemies close by:
+   - attacks on a nearly dead enemy should show `[Dazzling Display on a kill N %: +x]`;
+   - a manual Display should no longer win over a likely kill.
+6. A Kinetic Sharpshooter:
+   - the `[Kinetic] ... over the best blast through the bow` line shows both values;
+   - if you still see arrows dealing blast damage, send the combat log, the archetype and the mod list.
+
+## Current development test build
+
 **[Download the current UMM test ZIP — v0.3.23-dev-build4 (da4e0a5)](AI-Control-FACC-v0.3.23-dev-build4-da4e0a5-UMM-test.zip?raw=true)**
 
 Direct link: <https://github.com/recovribox-svg/AIControll-FACC/raw/claude/dreamy-pasteur-b9h3rn/test-builds/AI-Control-FACC-v0.3.23-dev-build4-da4e0a5-UMM-test.zip>
