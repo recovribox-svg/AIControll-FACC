@@ -343,6 +343,7 @@ namespace CompanionAI_Pathfinder.Tactics
 
         public static void ResetCombat()
         {
+            TacticalEngine.ResetHeldStates();   // ★ v0.3.24
             PendingCasts.Clear();
             RefusedWalks.Clear();
             NoSights.Clear();

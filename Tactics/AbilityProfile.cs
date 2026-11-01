@@ -80,6 +80,8 @@ namespace CompanionAI_Pathfinder.Tactics
         /// <summary>★ v0.3.18 (test11): the creatures it summons (ContextActionSpawnMonster.Blueprint).</summary>
         public readonly List<Kingmaker.Blueprints.BlueprintUnit> SummonedUnits = new List<Kingmaker.Blueprints.BlueprintUnit>();
         public bool Dispels { get; private set; }
+        /// <summary>★ v0.3.24: the dispel actions themselves, for the game's own eligibility rule (TacticalEngine.DispelCanTake).</summary>
+        public readonly List<ContextActionDispelMagic> DispelActions = new List<ContextActionDispelMagic>();
         public bool RemovesBuffs { get; private set; }
         public bool Enchants { get; private set; }
 
@@ -172,6 +174,9 @@ namespace CompanionAI_Pathfinder.Tactics
         public SpellDescriptor RemovedDescriptors { get; private set; }
         /// <summary>Specific buffs the ability removes from its target (ContextActionRemoveBuff without ToCaster).</summary>
         public readonly List<BlueprintBuff> RemovedBuffs = new List<BlueprintBuff>();
+        /// <summary>★ v0.3.24: buffs the ability removes from its caster (ContextActionRemoveBuff with ToCaster, or under
+        /// ContextActionOnContextCaster); a self-targeted ability's removals are in <see cref="RemovedBuffs"/>.</summary>
+        public readonly List<BlueprintBuff> CasterRemovedBuffs = new List<BlueprintBuff>();
 
         /// <summary>Removes buffs/conditions from its target and neither damages nor heals: its worth is what it removes.</summary>
         public bool RemovesFromTarget => RemovesAnything && Damage.Count == 0 && Heals.Count == 0;
@@ -937,8 +942,9 @@ namespace CompanionAI_Pathfinder.Tactics
                     case ContextActionSpawnAreaEffect spawnArea:
                         WalkAreaEffect(spawnArea.AreaEffect, visited, abilityDepth, subject, depth, guards);
                         break;
-                    case ContextActionDispelMagic _:
+                    case ContextActionDispelMagic dispel:
                         Dispels = true;
+                        if (!DispelActions.Contains(dispel)) DispelActions.Add(dispel);
                         break;
                     // ★ v0.3.19 (class audit B2): lengthens a buff the target already has (Witch Cackle and Chant: one
                     // more round of each of the witch's active hexes). Read as nothing before: never cast.
@@ -970,6 +976,10 @@ namespace CompanionAI_Pathfinder.Tactics
                         break;
                     case ContextActionRemoveBuff remove:
                         RemovesBuffs = true;
+                        // ★ v0.3.24 (Psionics): a buff taken off the caster itself, whatever the ability is aimed at
+                        // (TacticalEngine.HeldStates: spending a state such as psionic focus).
+                        if (remove.Buff != null && (remove.ToCaster || toCaster) && !CasterRemovedBuffs.Contains(remove.Buff))
+                            CasterRemovedBuffs.Add(remove.Buff);
                         if (!remove.ToCaster && subject == EffectSubject.Target && remove.Buff != null)
                         {
                             RemovedBuffs.Add(remove.Buff);

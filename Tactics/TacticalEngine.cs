@@ -851,11 +851,32 @@ namespace CompanionAI_Pathfinder.Tactics
         /// <summary>A party member who can deliver a Coup de Grace, and how far it can come for one.</summary>
         private sealed class CoupDeGraceAlly
         {
+            public UnitEntityData Unit;
             public Vector3 Position;
             public float Corpulence;
             public float Reach;
-            public bool Reaches(UnitEntityData enemy) =>
-                Vector3.Distance(Position, enemy.Position) - Corpulence - enemy.Corpulence <= Reach;
+            private readonly Dictionary<UnitEntityData, bool> m_Reaches = new Dictionary<UnitEntityData, bool>();
+
+            /// <summary>
+            /// ★ v0.3.24 (v0.3.23 logs): within its walk and without walking into a harmful area to the sleeper. Seelah and
+            /// Camellia stood within a move of a sleeping Deskari Cultist lying in Grease: each walk in ended prone and
+            /// interrupted, the archers held their arrows four rounds (turn-based fight 6, R7-R10), and the same
+            /// happened at a sleeping Neophyte Fighter in Orvath's Entangle (fight 3, R8-R9). An own area made Selective
+            /// is no obstacle: EnteringDanger reads the game's record of whether the live area affects allies
+            /// (SelectiveRule.LiveAreaAffectsAllies), so a Selective Grease or Entangle costs the ally nothing.
+            /// </summary>
+            public bool Reaches(UnitEntityData enemy)
+            {
+                if (m_Reaches.TryGetValue(enemy, out bool known)) return known;
+                bool reaches = Vector3.Distance(Position, enemy.Position) - Corpulence - enemy.Corpulence <= Reach;
+                if (reaches)
+                {
+                    try { reaches = AoeDangerAnalyzer.EnteringDanger(Unit, Position, enemy.Position, out _) <= 0f; }
+                    catch { }
+                }
+                m_Reaches[enemy] = reaches;
+                return reaches;
+            }
         }
 
         /// <summary>★ v0.3.23: conscious party members able to act and move, wielding a melee weapon (an empty hand is
@@ -877,7 +898,7 @@ namespace CompanionAI_Pathfinder.Tactics
                     if (!ally.Abilities.Enumerable.Any(a => IsCoupDeGrace(a.Data))) continue;
                     result.Add(new CoupDeGraceAlly
                     {
-                        Position = ally.Position, Corpulence = ally.Corpulence,
+                        Unit = ally, Position = ally.Position, Corpulence = ally.Corpulence,
                         Reach = ally.CurrentSpeedMps * walkSeconds + 2f   // + a melee weapon's reach, as Threat's zone
                     });
                 }
@@ -2365,12 +2386,52 @@ namespace CompanionAI_Pathfinder.Tactics
                 {
                     bool harmful = buff.Blueprint.Harmful ||
                                    (buff.MaybeContext?.MaybeCaster != null && buff.MaybeContext.MaybeCaster.IsEnemy(target));
-                    if (!enemy && harmful) return true;
-                    if (enemy && profile.Dispels && !harmful && buff.Blueprint.IsFromSpell) return true;
+                    // ★ v0.3.24 (v0.3.23 logs): only what this ability can take off. Any harmful buff counted, so Treat
+                    // Affliction (a dispel limited to afflictions) was valued 2.0 on everyone entangled or slowed, and
+                    // Aeiluvetar spent a turn on it on Orvath (turn-based fight 13, R4).
+                    if (!enemy && harmful && CanRemove(profile, buff)) return true;
+                    if (enemy && profile.Dispels && !harmful && buff.Blueprint.IsFromSpell && CanRemove(profile, buff)) return true;
                 }
             }
             catch { }
             return false;
+        }
+
+        /// <summary>
+        /// ★ v0.3.24: whether the ability's dispel or removal actions can take <paramref name="buff"/> off: the game's own
+        /// ContextActionDispelMagic.TryDispelBuff filters (not dispellable, hidden, from spells or not, schools and
+        /// descriptor; the dispel check itself is left to chance), or a named buff or descriptor removal. An ability
+        /// with neither kind of action read is not filtered (as before).
+        /// </summary>
+        private static bool CanRemove(AbilityProfile profile, Kingmaker.UnitLogic.Buffs.Buff buff)
+        {
+            try
+            {
+                if (profile.DispelActions.Count == 0 && !profile.RemovesAnything) return true;
+                if (profile.DispelActions.Any(d => DispelCanTake(d, buff))) return true;
+                if (profile.RemovedBuffs.Contains(buff.Blueprint)) return true;
+                var descriptor = buff.MaybeContext?.SpellDescriptor ?? Kingmaker.Blueprints.Classes.Spells.SpellDescriptor.None;
+                return profile.RemovedDescriptors != Kingmaker.Blueprints.Classes.Spells.SpellDescriptor.None &&
+                       (profile.RemovedDescriptors & descriptor) != Kingmaker.Blueprints.Classes.Spells.SpellDescriptor.None;
+            }
+            catch { return true; }
+        }
+
+        private static readonly System.Reflection.FieldInfo DispelBuffTypeField =
+            HarmonyLib.AccessTools.Field(typeof(Kingmaker.UnitLogic.Mechanics.Actions.ContextActionDispelMagic), "m_BuffType");
+
+        private static bool DispelCanTake(Kingmaker.UnitLogic.Mechanics.Actions.ContextActionDispelMagic dispel, Kingmaker.UnitLogic.Buffs.Buff buff)
+        {
+            if (buff.IsNotDispelable || buff.HiddenInInspector) return false;
+            int buffType = 0;   // All, FromSpells, NotFromSpells
+            try { if (DispelBuffTypeField != null) buffType = Convert.ToInt32(DispelBuffTypeField.GetValue(dispel)); } catch { }
+            if (buffType == 1 && !buff.IsFromSpell || buffType == 2 && buff.IsFromSpell) return false;
+            var context = buff.MaybeContext;
+            if (context == null) return dispel.Schools.Length == 0 && dispel.Descriptor.Value == Kingmaker.Blueprints.Classes.Spells.SpellDescriptor.None;
+            bool school = dispel.Schools.Length == 0 || dispel.Schools.Contains(context.SpellSchool);
+            bool descriptor = dispel.Descriptor.Value == Kingmaker.Blueprints.Classes.Spells.SpellDescriptor.None ||
+                              (dispel.Descriptor.Value & context.SpellDescriptor) != Kingmaker.Blueprints.Classes.Spells.SpellDescriptor.None;
+            return dispel.CheckSchoolOrDescriptor ? school || descriptor : school && descriptor;
         }
 
         private static ActionSlot SlotOf(AbilityData ability)
@@ -3514,6 +3575,10 @@ namespace CompanionAI_Pathfinder.Tactics
 
                     // A mode switch (Shift Form: Overlord ↔ Mortal Guise) removes a good buff: only worth it if better.
                     var replaced = profile.BeneficialBuffsRemoved(ability, ally);
+                    // ★ v0.3.24 (Psionics): a held state the ability spends (psionic focus) is no mode switch: the buff is
+                    // appraised as usual and the state's cost is charged at the end (SpentStateCost).
+                    if (ally == unit && replaced.Count > 0)
+                        replaced = replaced.Where(b => !IsHeldState(ctx, ability, profile, b)).ToList();
                     // ★ v0.3.19 (test11): what the buff does for this recipient, part by part, in damage-equivalent points
                     // (TacticalEngine.Buffs.cs); a mode switch keeps the comparison of qualities below.
                     var appraisal = replaced.Count == 0 ? AppraiseBuff(ctx, ability, profile, buffs, ally) : null;
@@ -3709,6 +3774,14 @@ namespace CompanionAI_Pathfinder.Tactics
                 float kept = slotSensitive * ValueModel.LimitedUseDiscount(ctx.Difficulty);
                 value -= kept;
                 if (profile.ThrowsDailyBomb && kept >= 0.05f) reasons.Add($"daily bomb -{kept:0.#}");
+            }
+
+            // ★ v0.3.24 (Psionics): what spending a held state of the caster costs (TacticalEngine.HeldStates.cs).
+            float spent = SpentStateCost(ctx, ability, profile, target, out string spentNote);
+            if (spent > 0f)
+            {
+                value -= spent;
+                reasons.Add(spentNote);
             }
 
             why = reasons.Count > 0 ? string.Join("+", reasons) : "none";
