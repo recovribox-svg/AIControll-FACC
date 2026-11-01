@@ -32,8 +32,12 @@ their time and interceptions (front-liners stay on the enemy front line), no ord
 `Info.json` is 0.3.23 from this build on. PR #16 (task branch `claude/alchemist-carnage-quiver`, merged into development 1 November with the author's
 authorization, merge commit `0f7f2e6`): player reports on Alchemist bombs / Alchemical Weapon, Dreadful Carnage and the Kinetic Sharpshooter quiver -
 evidence, changes and replay steps in [docs/TASK_BOMBS_CARNAGE_QUIVER.md](docs/TASK_BOMBS_CARNAGE_QUIVER.md); test ZIP
-`AI-Control-FACC-v0.3.23-dev-bombs-carnage-cabdb2e-UMM-test.zip` (MVID `89ffb864-46e5-4840-ba2e-15318074028e`) is now the
-current development test build; in-game replay is pending.
+`AI-Control-FACC-v0.3.23-dev-bombs-carnage-cabdb2e-UMM-test.zip` (MVID `89ffb864-46e5-4840-ba2e-15318074028e`), played as
+build5. The build5 log review (1 November, [docs/RELEASE_0323_BUILD5_REVIEW.md](docs/RELEASE_0323_BUILD5_REVIEW.md), on
+development) fixed the 5-foot step out of melee (only for casts the Progressive policy keeps, against options that walk,
+cones keep their targets), sleepers left unshot for a far-away Coup de Grace ally, and summon after summon; test ZIP
+`AI-Control-FACC-v0.3.23-dev-build6-967050c-UMM-test.zip` (MVID `09a7ab12-2cc2-477c-a688-74765960ea97`) is now the current
+development test build; in-game replay is pending.
 
 Historical handovers, superseded by the one above: [v0.3.22 release preparation](docs/RELEASE_0_3_22_HANDOVER.md)
 (27 October, PR #6–#12), [released-log review](docs/RELEASE_0322_LOG_REVIEW.md) (PR #13),

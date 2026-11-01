@@ -5,8 +5,9 @@
 | What | Contents | Status |
 | --- | --- | --- |
 | **[v0.3.22 stable ZIP](release/CompanionAI_Pathfinder_v0.3.22.zip?raw=true)** | The published v0.3.22 release (tag `v0.3.22`) | Released; unchanged |
-| **[Current test ZIP — bombs, Carnage (cabdb2e)](test-builds/AI-Control-FACC-v0.3.23-dev-bombs-carnage-cabdb2e-UMM-test.zip?raw=true)** | Build 4 + Alchemist flask/bomb fixes, Dreadful Carnage credit, Kinetic Sharpshooter note ([evidence and handover](docs/TASK_BOMBS_CARNAGE_QUIVER.md)); merged into development (PR #16) | Test build, awaiting in-game replay |
-| [Previous test ZIP — v0.3.23-dev-build4 (da4e0a5)](test-builds/AI-Control-FACC-v0.3.23-dev-build4-da4e0a5-UMM-test.zip?raw=true) | Build 3 + fixes from its logs and the play-test notes; UMM shows 0.3.23 (development source) | Superseded test build |
+| **[Current test ZIP — v0.3.23-dev-build6 (967050c)](test-builds/AI-Control-FACC-v0.3.23-dev-build6-967050c-UMM-test.zip?raw=true)** | Bombs / Carnage build + fixes from its logs: 5-foot step, sleepers, summons ([review](docs/RELEASE_0323_BUILD5_REVIEW.md)) | Test build, awaiting in-game replay |
+| [Previous test ZIP — bombs, Carnage (cabdb2e)](test-builds/AI-Control-FACC-v0.3.23-dev-bombs-carnage-cabdb2e-UMM-test.zip?raw=true) | Build 4 + Alchemist flask/bomb fixes, Dreadful Carnage credit, Kinetic Sharpshooter note ([evidence and handover](docs/TASK_BOMBS_CARNAGE_QUIVER.md)); merged into development (PR #16); played as build5 | Superseded test build |
+| [Older test ZIP — v0.3.23-dev-build4 (da4e0a5)](test-builds/AI-Control-FACC-v0.3.23-dev-build4-da4e0a5-UMM-test.zip?raw=true) | Build 3 + fixes from its logs and the play-test notes; UMM shows 0.3.23 (development source) | Superseded test build |
 | [Previous test ZIP — v0.3.23-dev-build3 (089a402)](test-builds/AI-Control-FACC-v0.3.23-dev-build3-089a402-UMM-test.zip?raw=true) | The build2 test + fixes from its logs | Superseded test build |
 | [Previous test ZIP — movement 0c2e0f5 (played as v0.3.23-dev-build2)](test-builds/AI-Control-FACC-dev-movement-0c2e0f5-UMM-test.zip?raw=true) | v0.3.22 + reviewed PR #13–#15 + fixes2 log fixes + approved movement follow-ups | Superseded test build |
 | [Previous test ZIP — fixes2 c3f1636](test-builds/AI-Control-FACC-dev-fixes2-c3f1636-UMM-test.zip?raw=true) | The same without the movement follow-ups | Superseded test build |
@@ -19,7 +20,16 @@ GitHub Releases are published by the author; older release and test archives are
 
 ## Current development test build (not a release)
 
-**[Download the UMM test ZIP — bombs, Carnage (cabdb2e)](test-builds/AI-Control-FACC-v0.3.23-dev-bombs-carnage-cabdb2e-UMM-test.zip?raw=true)**
+**[Download the UMM test ZIP — v0.3.23-dev-build6 (967050c)](test-builds/AI-Control-FACC-v0.3.23-dev-build6-967050c-UMM-test.zip?raw=true)**
+(startup `[Build] v0.3.23 module=09a7ab12-2cc2-477c-a688-74765960ea97`). It is the bombs / Carnage build plus:
+- a caster steps out of melee only for a spell it then casts, never away from a revive it would walk to, and a cone
+  caster keeps its targets when it steps;
+- the archers shoot sleeping enemies when no melee ally is near enough to finish them with a Coup de Grace;
+- no summon after summon while the caster's demons already fight, nor in an easy fight.
+
+[Review](docs/RELEASE_0323_BUILD5_REVIEW.md).
+
+**Previous: [bombs, Carnage (cabdb2e)](test-builds/AI-Control-FACC-v0.3.23-dev-bombs-carnage-cabdb2e-UMM-test.zip?raw=true)**
 (startup `[Build] v0.3.23 module=89ffb864-46e5-4840-ba2e-15318074028e`). It is build 4 plus (PR #16):
 - Grenadier Alchemical Weapon counts the flask it uses up, follows "use thrown items", and is used only before a weapon
   attack;

@@ -1,8 +1,44 @@
 # Test builds
 
-## Current test build: Alchemist bombs, Dreadful Carnage, Kinetic Sharpshooter (cabdb2e)
+## Current test build: v0.3.23-dev-build6 (967050c)
 
-**[Download the current UMM test ZIP (cabdb2e)](AI-Control-FACC-v0.3.23-dev-bombs-carnage-cabdb2e-UMM-test.zip?raw=true)**
+**[Download the current UMM test ZIP (967050c)](AI-Control-FACC-v0.3.23-dev-build6-967050c-UMM-test.zip?raw=true)**
+
+Direct link: <https://github.com/recovribox-svg/AIControll-FACC/raw/claude/dreamy-pasteur-b9h3rn/test-builds/AI-Control-FACC-v0.3.23-dev-build6-967050c-UMM-test.zip>
+
+The bombs / Carnage build (cabdb2e, played as build5) plus the fixes from its logs ([review](../docs/RELEASE_0323_BUILD5_REVIEW.md)):
+- **5-foot step out of melee:** a caster steps only for a spell it then casts (the steps were made for spells the
+  Progressive policy held back), never away from a revive or another option it would walk to, and a cone caster
+  (Color Spray) steps only where the cone keeps its targets.
+- **Sleeping enemies:** the archers shoot them when no melee ally is near enough to finish them with a Coup de Grace
+  (two archers waited six rounds for an ally who never came).
+- **Summons:** a further summon is worth less while the caster's summons already fight, and a daily summon is kept for
+  fights that need it (six demons in six rounds against two sleeping Dretches).
+
+UMM shows **0.3.23** (unchanged). Startup line:
+
+```text
+[Build] v0.3.23 module=09a7ab12-2cc2-477c-a688-74765960ea97
+```
+
+- Source: runtime commit `967050c` on development (`claude/dreamy-pasteur-b9h3rn`), base `c6f8608`.
+- ZIP SHA-256: `8843109b813370dc60f8df5efc58d72879f1b3c2af6a385ebd436229903b2c7f`.
+- DLL SHA-256: `b4efd3f509247207fa0366dc9a96c40ddab2c5a9834744682c831cdffde77820`.
+- Archive: the mod DLL and `Info.json` (version 0.3.23) only.
+- [Identity](AI-Control-FACC-v0.3.23-dev-build6-967050c-UMM-test.identity.json) · [Checksums](SHA256SUMS.txt).
+
+**Checks**
+- 254 unit tests pass.
+- Release build: 0 warnings.
+- SigDump: no external reference added or removed.
+
+**What to play:** the same party and fights. Watch for steps out of melee (the spell after the step should be the one
+it was for), revives of a downed ally next to an enemy, Color Spray after a step, sleeping enemies left at the end of a
+fight, and Orvath's Demonic Art summons in easy fights.
+
+## Previous test build: Alchemist bombs, Dreadful Carnage, Kinetic Sharpshooter (cabdb2e)
+
+**[Download the UMM test ZIP (cabdb2e)](AI-Control-FACC-v0.3.23-dev-bombs-carnage-cabdb2e-UMM-test.zip?raw=true)**
 
 Direct link: <https://github.com/recovribox-svg/AIControll-FACC/raw/claude/dreamy-pasteur-b9h3rn/test-builds/AI-Control-FACC-v0.3.23-dev-bombs-carnage-cabdb2e-UMM-test.zip>
 

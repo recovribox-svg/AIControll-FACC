@@ -1,0 +1,39 @@
+{
+  "test_name": "0.3.23 development build 6: build5 log review (5-foot step, sleepers, summons)",
+  "umm_manifest_version": "0.3.23",
+  "branch": "claude/dreamy-pasteur-b9h3rn",
+  "base_development_commit": "c6f8608",
+  "runtime_source_commit": "967050c",
+  "runtime_source_note": "967050c = development c6f8608 (bombs / Carnage build cabdb2e, PR #16) + the 5-foot step only for casts the Progressive policy keeps, compared with options that walk, and for cones only to a spot keeping the cone's enemies; a Coup de Grace ally counts against shooting a sleeper only when it can reach it; a further summon is worth less while the caster's summons fight, and daily summons share the easy-fight discount.",
+  "evidence_and_handover": "docs/RELEASE_0323_BUILD5_REVIEW.md",
+  "previous_test": "AI-Control-FACC-v0.3.23-dev-bombs-carnage-cabdb2e-UMM-test.zip",
+  "archive": "AI-Control-FACC-v0.3.23-dev-build6-967050c-UMM-test.zip",
+  "zip_sha256": "8843109b813370dc60f8df5efc58d72879f1b3c2af6a385ebd436229903b2c7f",
+  "dll_sha256": "b4efd3f509247207fa0366dc9a96c40ddab2c5a9834744682c831cdffde77820",
+  "module_mvid": "09a7ab12-2cc2-477c-a688-74765960ea97",
+  "startup_marker": "[Build] v0.3.23 module=09a7ab12-2cc2-477c-a688-74765960ea97",
+  "archive_contents": [
+    "CompanionAI_Pathfinder.dll",
+    "Info.json"
+  ],
+  "checks_run_by_claude": {
+    "unit_tests": {
+      "command": "dotnet test tests/CompanionAI.Tests",
+      "passed": 254,
+      "failed": 0,
+      "skipped": 0
+    },
+    "release_build": {
+      "references": "game Wrath_Data/Managed + UnityModManager (no TabletopTweaks)",
+      "warnings": 0,
+      "errors": 0
+    },
+    "external_references": "SigDump vs the cabdb2e build: identical (1495), none added or removed"
+  },
+  "in_game": "Pending. This exact DLL has not been run in the game.",
+  "limitations": [
+    "UMM shows 0.3.23, but this is a development test build, not a release.",
+    "The area stand-off (melee allies not entering own Entangle/Grease) and Lann's small advance after shooting are unchanged (movement: author discussion).",
+    "No measured performance change is claimed."
+  ]
+}

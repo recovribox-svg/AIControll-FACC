@@ -2917,3 +2917,22 @@ TabletopTweaks-Core 0.7.15 through the mod's own binding and runs TTT's estimate
   delivery components are layer 0, and the game runs the first.
 - **Diagnostic.** A unit that shoots blasts through its bow and chooses a weapon attack while a blast was usable logs
   both values once per fight (`[Kinetic] ... over the best blast through the bow`).
+
+## 80. build5 logs: the 5-foot step, sleepers far from a Coup de Grace, summons
+
+1 November 2026, development. Evidence and effect on the logged cases: [RELEASE_0323_BUILD5_REVIEW.md](RELEASE_0323_BUILD5_REVIEW.md).
+- **5-foot step out of melee for a cast** (`AddMovementCandidates`).
+  - Only for casts the Progressive policy keeps: `StepPolicyHeldBack` runs the same policy silently on the options
+    worth something and affordable (the decision's own pass runs later on the finished list). All 18 turn-based steps
+    in the logs were made for spells that pass held back.
+  - Turn-based, measured against the best option of all, including those that walk first (`bestAny`): a 5-foot step
+    forbids any other movement that turn (`Affordable`). Real time keeps the in-place comparison.
+  - A projectile cone (`ProjectileCone`) steps only to a spot that keeps every enemy it was valued on and adds no ally
+    (`ConeKeepsRecipients`, the game's own cone query from the planned origin).
+- **Waking a sleeper** (`WakeFactor`). With only disabled enemies left, the "a party member can Coup de Grace it" case
+  (0 instead of 0.5) needs that member within reach of this sleeper: one move turn-based, a round's walk in real time
+  (`CoupDeGraceAlly.Reaches`: speed × 3 s or 6 s + 2 m).
+- **Summons** (`ScoreAbility`, summon fallback). The worth is multiplied by `ValueModel.SummonCrowdShare(n)` = 1/(1+n),
+  `n` = creatures this caster summoned that still fight (unit-tested), and, for a summon that spends a spell slot or a
+  daily resource (`AbilityResourceLogic.IsSpendResource`), by 1 - `LimitedUseDiscount(difficulty)` like spell slots and
+  bombs. Both are AI policy, shown in the decision log's reason.
