@@ -3946,7 +3946,19 @@ namespace CompanionAI_Pathfinder.Tactics
                         value = !ProvokeObserver.WeaponProvokes(unit, shotWeapon) ? 0f
                               : Math.Min(followUp, Math.Max(0f, loss(unit.Position) - loss(point.Value)));
                     }
-                    else value = Math.Min(ctx.Engagers.Sum(CombatMath.Threat) * 0.4f, followUp);
+                    else
+                    {
+                        // ★ v0.3.24 (build1 logs): less what the step gives up - a melee attack (out of reach after it)
+                        // and, turn-based, every option that walks first (no movement after a 5-foot step). Orvath stepped
+                        // for 3.1 away from a Color Spray needing a short walk (75.7, then 48.9: turn-based fight 4, R3-R4)
+                        // and for 6.2 away from his full attack (28.3) to cast Grease (12.3, fight 12, R6).
+                        float keeps = list.Where(c => c.Slot != ActionSlot.Free && c.Slot != ActionSlot.Swift && Affordable(ctx, c) &&
+                                                      kept(c) && c.Kind != CandidateKind.WeaponAttack &&
+                                                      (realTime || !c.NeedsMove && !c.MoveFirst))
+                                          .Select(c => c.Value).DefaultIfEmpty(0f).Max();
+                        float givenUp = Math.Max(0f, (bestAny?.Value ?? 0f) - keeps);
+                        value = Math.Min(ctx.Engagers.Sum(CombatMath.Threat) * 0.4f, followUp) - givenUp;
+                    }
                     string label = realTime ? "Back off out of melee" : "5ft step out of melee";
                     if (realTime)
                     {
