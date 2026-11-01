@@ -324,7 +324,8 @@ namespace CompanionAI_Pathfinder.GameInterface
                             }
                         }
                         // ★ v0.3.18 (C3): the tactical engine learns from it too (the tracker above is the old engine's).
-                        if (!legacy) Tactics.RealTimeTactics.RecordStuck(unit, stuckCommand, stuckOnTarget);
+                        if (!legacy) Tactics.RealTimeTactics.RecordStuck(unit, stuckCommand, stuckOnTarget,
+                                                                         NativePathFallsShort(unit, stuckCommand));
 
                         // 명령 강제 취소
                         try
@@ -562,6 +563,22 @@ namespace CompanionAI_Pathfinder.GameInterface
                 return field?.FieldType == expected ? field : null;
             }
             catch { return null; } // Unknown metadata is diagnostic data unavailable, not a controller failure.
+        }
+
+        /// <summary>
+        /// ★ v0.3.24 (build1 logs): the unit's current native path ends more than 1 m beyond the command's arrival radius
+        /// from its goal - the ground does not lead there (a ledge), as opposed to a walk blocked by units on the way, whose
+        /// path reaches the goal. The agent's existing path only; no new path query.
+        /// </summary>
+        private static bool NativePathFallsShort(UnitEntityData unit, UnitCommand command)
+        {
+            try
+            {
+                var points = unit.View?.AgentASP?.Path?.vectorPath;
+                if (points == null || points.Count == 0) return false;
+                return Vector3.Distance(points[points.Count - 1], command.ApproachPoint) > command.ApproachRadius + 1f;
+            }
+            catch { return false; }
         }
 
         // v0.3.22 fixes review: one scalar snapshot at an existing cancellation, with no new path/LoS query.

@@ -257,6 +257,29 @@ namespace CompanionAI_Pathfinder.Tactics
             return GameSeconds <= refused.Value && Vector3.Distance(unit.Position, refused.Key) <= 1f;
         }
 
+        /// <summary>★ v0.3.24 (build1 logs): target → where it stood when a party member's walk to it got stuck because the
+        /// game's own path ends short of it (a ledge), and until when that counts.</summary>
+        private static readonly Dictionary<string, KeyValuePair<Vector3, double>> OutOfWalkingReachTargets =
+            new Dictionary<string, KeyValuePair<Vector3, double>>();
+
+        /// <summary>
+        /// ★ v0.3.24 (build1 logs, author-approved): shared by the whole party. Camellia, Seelah and Orvath in turn walked
+        /// at a Cultist Archer on a ledge 4.4 m above them, each cancelled as stuck after 6 s (real-time fight 6); each
+        /// learnt only from its own walk. Kept up to three rounds while the target stays within 1.5 m of where it was.
+        /// </summary>
+        public static void NoteOutOfWalkingReach(UnitEntityData target)
+        {
+            if (!IsRealTime || target == null) return;
+            OutOfWalkingReachTargets[target.UniqueId] = new KeyValuePair<Vector3, double>(target.Position, GameSeconds + 18d);
+        }
+
+        public static bool OutOfWalkingReach(UnitEntityData target)
+        {
+            if (!IsRealTime || OutOfWalkingReachTargets.Count == 0 || target == null) return false;
+            if (!OutOfWalkingReachTargets.TryGetValue(target.UniqueId, out var noted)) return false;
+            return GameSeconds <= noted.Value && Vector3.Distance(target.Position, noted.Key) <= 1.5f;
+        }
+
         /// <summary>★ v0.3.19 (test9): "unit|target" → where both stood when the unit's walk to see the target got stuck, and
         /// until when it counts.</summary>
         private static readonly Dictionary<string, NoSight> NoSights = new Dictionary<string, NoSight>();
@@ -346,6 +369,7 @@ namespace CompanionAI_Pathfinder.Tactics
             TacticalEngine.ResetHeldStates();   // ★ v0.3.24
             PendingCasts.Clear();
             RefusedWalks.Clear();
+            OutOfWalkingReachTargets.Clear();
             NoSights.Clear();
             CombatMath.OnlyDisabledEnemiesLeft = false;
             ProneStays.Clear();

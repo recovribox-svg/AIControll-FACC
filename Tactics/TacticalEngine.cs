@@ -536,8 +536,34 @@ namespace CompanionAI_Pathfinder.Tactics
             // ★ v0.3.19 (test9): real time - an enemy the unit could not get sight of from here (any option on it walks the
             // same way), while neither has moved.
             if (c.Target != null && c.Target != ctx.Unit && ctx.Unit.IsEnemy(c.Target) && CombatMemory.StillNoSight(ctx.Unit, c.Target)) return true;
+            // ★ v0.3.24 (build1 logs, author-approved): a target the game's path does not lead to, found by any party member.
+            if (c.Target != null && ctx.Unit.IsEnemy(c.Target) && CombatMemory.OutOfWalkingReach(c.Target) && WalksIntoMelee(ctx, c)) return true;
             if (c.Kind != CandidateKind.Ability || c.Ability == null) return false;
             return CastOutcome.IsBlocked(ctx.Unit, c.Ability, c.Target) || CastOutcome.WouldReplaceHeldCharge(ctx.Unit, c.Ability, c.Target);
+        }
+
+        /// <summary>★ v0.3.24: the option has to walk into melee or touch reach of its target: a weapon attack of a unit
+        /// without a ranged weapon from more than 3 m, Charge, a touch ability that walks first, an advance to within 3 m.</summary>
+        private static bool WalksIntoMelee(TacticalContext ctx, Candidate c)
+        {
+            try
+            {
+                float gap = Vector3.Distance(ctx.Unit.Position, c.Target.Position) - ctx.Unit.Corpulence - c.Target.Corpulence;
+                switch (c.Kind)
+                {
+                    case CandidateKind.WeaponAttack:
+                        return !ctx.HasRangedWeapon && gap > 3f;
+                    case CandidateKind.Move:
+                        return c.ApproachRadius > 0f && c.ApproachRadius <= 3f && gap > 3f;
+                    case CandidateKind.Ability:
+                        if (c.Ability == null) return false;
+                        if (AbilityProfile.Get(c.Ability)?.IsCharge ?? false) return true;
+                        return (c.NeedsMove || c.MoveFirst) && c.Ability.Range == Kingmaker.UnitLogic.Abilities.Blueprints.AbilityRange.Touch;
+                    default:
+                        return false;
+                }
+            }
+            catch { return false; }
         }
 
         /// <summary>

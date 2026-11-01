@@ -205,7 +205,8 @@ namespace CompanionAI_Pathfinder.Tactics
         /// issued last, that option is not chosen again this round, and an enemy it could not get to is not advanced on
         /// either (the same as a turn-based option that did nothing). It went to a tracker only the old engine reads.
         /// </summary>
-        public static void RecordStuck(UnitEntityData unit, Kingmaker.UnitLogic.Commands.Base.UnitCommand command, bool targetProblem)
+        public static void RecordStuck(UnitEntityData unit, Kingmaker.UnitLogic.Commands.Base.UnitCommand command, bool targetProblem,
+                                       bool pathFallsShort = false)
         {
             try
             {
@@ -243,6 +244,13 @@ namespace CompanionAI_Pathfinder.Tactics
                     CombatMemory.NoteRefusedWalk(unit, TacticalEngine.StuckTargetKey(target));
                     // ★ v0.3.19 (test9): no way to see it from here - kept while neither moves (CombatMemory.NoteNoSight).
                     if (command.NeedLoS && !command.SightIsClear()) CombatMemory.NoteNoSight(unit, target);
+                    // ★ v0.3.24 (build1 logs, author-approved): the ground does not lead to it - for the whole party.
+                    if (pathFallsShort && unit.IsEnemy(target))
+                    {
+                        CombatMemory.NoteOutOfWalkingReach(target);
+                        Main.Log($"[RT-Tactics] {unit.CharacterName}: {target.CharacterName} is out of walking reach (the path ends short of it) - " +
+                                 "no party member walks into melee with it while it stays there");
+                    }
                 }
                 Main.Log($"[RT-Tactics] {unit.CharacterName}: '{key}' was stuck - not chosen again from here");
                 if (memory.LastCommand == command)
