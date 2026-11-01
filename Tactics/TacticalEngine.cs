@@ -789,7 +789,7 @@ namespace CompanionAI_Pathfinder.Tactics
             // ★ v0.3.18 (test10): the enemies still acting, for the cost of waking a sleeping one (WakeFactor).
             s_ActiveEnemies = ctx.Enemies.Where(e => !CombatMath.IsDisabled(e)).ToList();
             CombatMath.OnlyDisabledEnemiesLeft = ctx.Enemies.Count > 0 && s_ActiveEnemies.Count == 0;
-            s_CoupDeGraceAllies = CombatMath.OnlyDisabledEnemiesLeft && AnyAllyCanCoupDeGrace(ctx);
+            s_CoupDeGraceAllies = CombatMath.OnlyDisabledEnemiesLeft ? CoupDeGraceAllies(ctx) : null;
 
             // ★ v0.3.21 (review): a downed regenerating enemy is below 0 HP; it must not shorten the fight.
             float enemyHp = ctx.Enemies.Sum(e => (float)Math.Max(0, e.HPLeft));
@@ -840,14 +840,32 @@ namespace CompanionAI_Pathfinder.Tactics
             // it does not have to be fought awake. Lann shot the last sleeping Corrupted Mongrel Guard awake (turn-based
             // fight 11) and the archers and a Divine Zap woke the last Neophyte Fighter (real-time fight 7), each beside a
             // melee ally whose Coup de Grace was worth more than all of their hits together.
-            return s_CoupDeGraceAllies ? 0f : 0.5f;
+            // ★ v0.3.23 (build5 review): one that can get there - within one move turn-based (it walks, then delivers the
+            // full-round Coup de Grace next turn), within a round's walk in real time. Any such ally counted, wherever it
+            // stood: with Seelah and Camellia down, Lann and Aeiluvetar held their arrows for six rounds (turn-based fight 6,
+            // R6-R11) at two sleeping Dretches more than 10 m from the only "Coup de Grace ally", Orvath (unarmed, at half
+            // speed), who never came; the Dretches woke when the Sleep ran out.
+            return s_CoupDeGraceAllies != null && s_CoupDeGraceAllies.Any(a => a.Reaches(enemy)) ? 0f : 0.5f;
         }
 
-        /// <summary>★ v0.3.23: a conscious party member able to act wields a melee weapon and has Coup de Grace.</summary>
-        private static bool s_CoupDeGraceAllies;
-
-        private static bool AnyAllyCanCoupDeGrace(TacticalContext ctx)
+        /// <summary>A party member who can deliver a Coup de Grace, and how far it can come for one.</summary>
+        private sealed class CoupDeGraceAlly
         {
+            public Vector3 Position;
+            public float Corpulence;
+            public float Reach;
+            public bool Reaches(UnitEntityData enemy) =>
+                Vector3.Distance(Position, enemy.Position) - Corpulence - enemy.Corpulence <= Reach;
+        }
+
+        /// <summary>★ v0.3.23: conscious party members able to act and move, wielding a melee weapon (an empty hand is
+        /// one: the game's unarmed strike), with Coup de Grace; null when enemies are still acting.</summary>
+        private static List<CoupDeGraceAlly> s_CoupDeGraceAllies;
+
+        private static List<CoupDeGraceAlly> CoupDeGraceAllies(TacticalContext ctx)
+        {
+            var result = new List<CoupDeGraceAlly>();
+            float walkSeconds = CombatMemory.IsRealTime ? 6f : 3f;   // a round of walking; turn-based one move action
             foreach (var ally in ctx.Allies)
             {
                 try
@@ -856,11 +874,16 @@ namespace CompanionAI_Pathfinder.Tactics
                     if (!state.IsConscious || !state.CanAct || !state.CanMove) continue;
                     var weapon = ally.Body?.PrimaryHand?.MaybeWeapon;
                     if (weapon == null || weapon.Blueprint.IsRanged) continue;
-                    if (ally.Abilities.Enumerable.Any(a => IsCoupDeGrace(a.Data))) return true;
+                    if (!ally.Abilities.Enumerable.Any(a => IsCoupDeGrace(a.Data))) continue;
+                    result.Add(new CoupDeGraceAlly
+                    {
+                        Position = ally.Position, Corpulence = ally.Corpulence,
+                        Reach = ally.CurrentSpeedMps * walkSeconds + 2f   // + a melee weapon's reach, as Threat's zone
+                    });
                 }
                 catch { }
             }
-            return false;
+            return result;
         }
 
         /// <summary>★ v0.3.18 (test10): the enemies not disabled in the decision being made (BuildContext).</summary>
@@ -1769,6 +1792,17 @@ namespace CompanionAI_Pathfinder.Tactics
                                            a.Get<Kingmaker.UnitLogic.Parts.UnitPartSummonedMonster>()?.Summoner == summoner);
             }
             catch { return true; }
+        }
+
+        /// <summary>★ v0.3.23 (build5 review): the creatures <paramref name="summoner"/> summoned that still fight.</summary>
+        private static int LivingSummons(TacticalContext ctx, UnitEntityData summoner)
+        {
+            try
+            {
+                return ctx.Allies.Count(a => a != summoner && !a.Descriptor.State.IsDead &&
+                                             a.Get<Kingmaker.UnitLogic.Parts.UnitPartSummonedMonster>()?.Summoner == summoner);
+            }
+            catch { return 0; }
         }
 
         private static bool IsSummon(UnitEntityData unit)
@@ -3605,7 +3639,22 @@ namespace CompanionAI_Pathfinder.Tactics
                         // ★ v0.3.19 (test2): whoever is left - the caster and the archers too: with both melee fighters down
                         // the Dretch was summoned at full value and its cloud caught Orvath, Lann and Aeiluvetar.
                         if (profile.SummonCatchesAllies) value *= 0.7f;
-                        reasons.Add("summon");
+                        // ★ v0.3.23 (build5 review): what one more creature adds while the caster's earlier summons still
+                        // fight (ValueModel.SummonCrowdShare), and the easy-fight restraint the day's spell slots and bombs
+                        // already have (LimitedUseDiscount) for a summon that spends a slot or a daily resource. Each
+                        // Demonic Art II summon is its own ability, so the once-per-fight rule above never applied across
+                        // them: with two sleeping Dretches left (difficulty 0.10-0.14) Orvath summoned a different demon
+                        // every round for six rounds (turn-based fight 6, R6-R11), all at full value.
+                        int ownSummons = LivingSummons(ctx, unit);
+                        float crowd = ValueModel.SummonCrowdShare(ownSummons);
+                        bool daily = ability.SourceItem == null &&
+                                     (level > 0 && ability.Spellbook != null ||
+                                      ability.Blueprint.GetComponents<Kingmaker.UnitLogic.Abilities.Components.AbilityResourceLogic>()
+                                             .Any(l => l.IsSpendResource && l.RequiredResource != null));
+                        float easy = daily ? 1f - ValueModel.LimitedUseDiscount(ctx.Difficulty) : 1f;
+                        value *= crowd * easy;
+                        reasons.Add("summon" + (ownSummons > 0 ? $" ({ownSummons} of its own fighting: x{crowd:0.##})" : "") +
+                                    (easy < 0.995f ? $" (easy fight x{easy:0.##})" : ""));
                     }
                     else if (ability.SourceItem != null)
                     {
@@ -3692,9 +3741,22 @@ namespace CompanionAI_Pathfinder.Tactics
             // Cure Light Wounds failed while she was engaged) - unless that spell is aimed at an enemy next to her.
             // ★ v0.3.19 (test5): not a blast the game gathers power for in turn-based combat - after the walk the Move
             // action it gathers with is gone.
+            // ★ v0.3.23 (build5 review): only options the Progressive policy will leave. It runs on the decision's list after
+            // the candidates are built, so a step was made for a spell it then held back: Orvath stepped out of melee for
+            // Command Undead, Boneshaker or Blindness ("held back" in the same decision) in nine turn-based turns and then
+            // cast something he could have cast where he stood - twice giving up the walk to revive a downed Seelah.
+            var policyHolds = StepPolicyHeldBack(ctx, list);
+            Func<Candidate, bool> kept = c => policyHolds == null || !policyHolds.Contains(c);
             var bestMain = list.Where(c => c.Slot != ActionSlot.Free && c.Slot != ActionSlot.Swift && !c.NeedsMove && Affordable(ctx, c) &&
-                                           (c.GatherPower == 0 || CombatMemory.IsRealTime))
+                                           (c.GatherPower == 0 || CombatMemory.IsRealTime) && kept(c))
                                .OrderByDescending(c => c.Value).FirstOrDefault();
+            // ★ v0.3.23 (build5 review): turn-based, a 5-foot step forbids any other movement this turn (Affordable), so a
+            // step for a cast also gives up the best option that walks first. Orvath stepped (3.1) away from a revive of
+            // Seelah worth 44.0 that needed a short walk; the step's value had been measured against the best option in place.
+            var bestAny = CombatMemory.IsRealTime ? bestMain
+                : list.Where(c => c.Slot != ActionSlot.Free && c.Slot != ActionSlot.Swift && Affordable(ctx, c) &&
+                                  (c.GatherPower == 0 || CombatMemory.IsRealTime) && kept(c))
+                      .OrderByDescending(c => c.Value).FirstOrDefault();
             // ★ v0.3.18: or a ray, whose attack roll provokes (CastRiskCost holds what provoking costs it).
             // ★ v0.3.22 (fixes2 review, author-approved): the cast a step makes safe need not be the best action now. At
             // 11 % HP next to the Cultist Champion Camellia's own Cure Light Wounds was priced out by the attack of
@@ -3707,9 +3769,9 @@ namespace CompanionAI_Pathfinder.Tactics
                                 (c.Ability.ProvokeAttackOfOpportunity || c.CastRiskCost > 0f) &&
                                 !(c.Target != null && ctx.Engagers.Contains(c.Target));
             var stepCast = list.Where(c => c.Slot != ActionSlot.Free && c.Slot != ActionSlot.Swift && !c.NeedsMove && Affordable(ctx, c) &&
-                                           (c.GatherPower == 0 || CombatMemory.IsRealTime) && provokingCast(c))
+                                           (c.GatherPower == 0 || CombatMemory.IsRealTime) && provokingCast(c) && kept(c))
                                .OrderByDescending(c => c.Value + c.CastRiskCost).FirstOrDefault();
-            if (stepCast != null && bestMain != null && stepCast != bestMain && stepCast.Value + stepCast.CastRiskCost <= bestMain.Value)
+            if (stepCast != null && bestAny != null && stepCast != bestAny && stepCast.Value + stepCast.CastRiskCost <= bestAny.Value)
                 stepCast = null;
             bool castsInMelee = stepCast != null;
 
@@ -3732,6 +3794,17 @@ namespace CompanionAI_Pathfinder.Tactics
                     var spellTarget = stepCast.Target;
                     Vector3 eye = unit.EyePosition - unit.Position;
                     keepsTarget = p => UnitCommand.IsUnitCloseEnough(spellTarget.Position, p, p + eye, spellRange, true, 0f);
+                    // ★ v0.3.23 (build5 review): a cone leaves from the caster, so the step moves it. Orvath stepped for a
+                    // Color Spray worth 130.5 there (turn-based fight 3, R3); from the new spot it caught fewer enemies (68.9)
+                    // and he cast Grease instead. The step must keep every enemy the cone was valued on and add no ally.
+                    if (ProjectileCone.IsCone(stepCast.Ability.Blueprint) && stepCast.GeometryRecipients != null)
+                    {
+                        var castAbility = stepCast.Ability;
+                        var aim = new TargetWrapper(spellTarget);
+                        var counted = stepCast.GeometryRecipients.ToList();
+                        var range = keepsTarget;
+                        keepsTarget = p => range(p) && ConeKeepsRecipients(ctx, castAbility, aim, p, counted);
+                    }
                 }
                 if (ctx.HasRangedWeapon && !castsInMelee)
                 {
@@ -3785,7 +3858,7 @@ namespace CompanionAI_Pathfinder.Tactics
                         // What the cast still risks from the new spot (a step may leave it next to someone).
                         float lossThere = ProvokeLoss(ctx, stepCast.Ability, AbilityProfile.Get(stepCast.Ability), stepCast.Slot,
                                                       stepCast.Target, point.Value, followUp, out _, out _);
-                        value = Math.Min(followUp, Math.Max(0f, followUp - lossThere - bestMain.Value));
+                        value = Math.Min(followUp, Math.Max(0f, followUp - lossThere - bestAny.Value));
                     }
                     else if (ctx.HasRangedWeapon)
                     {
@@ -4103,6 +4176,45 @@ namespace CompanionAI_Pathfinder.Tactics
                 Main.Verbose($"[Tactics] step check {unit.CharacterName}: {ex.Message}");
                 return true;   // no answer: the dispatcher's path check still refuses a step that is not one
             }
+        }
+
+        /// <summary>
+        /// ★ v0.3.23 (build5 review): the options of <paramref name="list"/> the Progressive policy holds back, for the
+        /// 5-foot step (the decision's own policy pass runs later, on the same options: worth something and affordable);
+        /// null when the policy is off, no step is possible, or the silent pass fails (then nothing is held, as before).
+        /// </summary>
+        private static HashSet<Candidate> StepPolicyHeldBack(TacticalContext ctx, List<Candidate> list)
+        {
+            if (ctx.Settings.SpellPolicy != SpellResourcePolicy.Progressive || ctx.Engagers.Count == 0 ||
+                !(ctx.CanFiveFoot || (CombatMemory.IsRealTime && ctx.HasMove)))
+                return null;
+            try
+            {
+                var eligible = list.Where(c => c.Value > 0f && Affordable(ctx, c)).ToList();
+                var keeps = new HashSet<Candidate>(ApplyProgressive(ctx, eligible, diagnostics: false));
+                return new HashSet<Candidate>(eligible.Where(c => !keeps.Contains(c)));
+            }
+            catch (Exception ex)
+            {
+                Main.Verbose($"[Progressive] {ctx.Unit.CharacterName}: step policy view: {ex.Message}");
+                return null;
+            }
+        }
+
+        /// <summary>
+        /// ★ v0.3.23 (build5 review): a cone cast from <paramref name="origin"/> still reaches every enemy of
+        /// <paramref name="counted"/> (the recipients it was valued on) and no ally that was not among them. Any failed
+        /// native query refuses the spot.
+        /// </summary>
+        private static bool ConeKeepsRecipients(TacticalContext ctx, AbilityData ability, TargetWrapper aim, Vector3 origin,
+                                                List<UnitEntityData> counted)
+        {
+            if (!ProjectileCone.TryCreate(ability, aim, origin, out var cone)) return false;
+            var allies = ctx.Allies.Concat(ctx.DownedAllies).Distinct().ToList();
+            if (!cone.TryRecipients(ctx.Enemies.Concat(allies), out var reached)) return false;
+            var there = new HashSet<UnitEntityData>(reached);
+            return counted.Where(u => ctx.Enemies.Contains(u)).All(there.Contains) &&
+                   allies.Where(there.Contains).All(counted.Contains);
         }
 
         private static Vector3? FindRetreatPoint(TacticalContext ctx, float distance, Func<Vector3, bool> accept = null)
