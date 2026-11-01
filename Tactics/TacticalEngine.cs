@@ -377,6 +377,29 @@ namespace CompanionAI_Pathfinder.Tactics
                 if (inPlace != null && inPlace.Value >= main.Value * 0.99f) main = inPlace;
             }
 
+            // ★ v0.3.25 (Psionics): a move-action ability (Gain Psionic Focus with Psionic Meditation, a performance started as
+            // a move action) and the turn's standard action after it can beat a full round that takes both: the pair is
+            // compared, not the move action alone - the full attack won whenever it beat the move action by itself, so the
+            // focus was never regained while a full attack was possible. Neither may walk, nor the standard gather power
+            // (that takes the move action too).
+            if (main != null && main.Slot == ActionSlot.FullRound && ctx.HasMove && ctx.HasStandard)
+            {
+                var moveAbility = usable.FirstOrDefault(c => c.Slot == ActionSlot.Move && !c.NeedsMove && !c.MoveFirst &&
+                                                             (c.Kind == CandidateKind.Ability || c.Kind == CandidateKind.Toggle) &&
+                                                             c.Value >= MinMainValue && !WalksBeforeActing(c));
+                var standard = moveAbility == null ? null
+                    : usable.FirstOrDefault(c => c.Slot == ActionSlot.Standard && !c.NeedsMove && !c.MoveFirst && c.GatherPower == 0 &&
+                                                 c.Value >= MinMainValue && !WalksBeforeActing(c));
+                if (standard != null && moveAbility.Value + standard.Value > main.Value)
+                {
+                    if (!preview)
+                        ReportOnce($"movepair|{unit.UniqueId}|{CombatMemory.Round}|{moveAbility.Key}",
+                                   $"[Tactics] {unit.CharacterName}: {moveAbility.Label} ({moveAbility.Value:0.#}, move) then {standard.Label} " +
+                                   $"({standard.Value:0.#}) over {main.Label} ({main.Value:0.#}, full round)");
+                    main = moveAbility;
+                }
+            }
+
             Candidate chosen = null;
             if (quick != null) chosen = quick;
             else if (main != null && main.Value >= MinMainValue) chosen = main;
@@ -2785,7 +2808,9 @@ namespace CompanionAI_Pathfinder.Tactics
                     GeometryRecipients = geometryRecipients,
                     ControlAims = controlAims,
                     Offensive = IsOffensive(why),
-                    PureBuff = why.Split('+').All(r => r == "buff" || r.StartsWith("grows into")) && why.Contains("buff"),
+                    // ★ v0.3.25: getting a held state back (psionic focus) is a buff for the restraint rule too.
+                    PureBuff = why.Split('+').All(r => r == "buff" || r.StartsWith("grows into") || r.StartsWith("regains ")) &&
+                               (why.Contains("buff") || why.StartsWith("regains ") || why.Contains("+regains ")),
                     Label = $"{(ability.SourceItem != null ? "Item:" : "")}{ability.Name}{metamagic}->{(summonPoint.HasValue ? "a spot near the fight" : target.CharacterName)}({why}){risk?.Tag}" +
                             (approach?.Detours == true ? $" ({approach.Detour})" : "") +
                             (provoke != null ? $" [casting provokes {provoke.Attacks}{(provoke.DropChance >= 0.1f ? $", {provoke.DropChance:P0} down" : "")}]" : "") +
@@ -3591,6 +3616,8 @@ namespace CompanionAI_Pathfinder.Tactics
                     // ★ v0.3.21 (gaps): a buff that only carries a read aura is valued by the aura (below), not on its bearer.
                     var buffs = allBuffs.Where(b => profile.BuffAppliesTo(b, ability, ally) != EffectApplies.No &&
                                                     !AuraOnlyCarrier(profile, b)).ToList();
+                    // ★ v0.3.25 (Psionics): a held state the caster gets back is worth what depends on it (RegainValue, below).
+                    if (ally == unit && ability.SourceItem == null && AppliesMarkerState(profile, buffs)) buffs = buffs.Where(b => !RegainsHeldState(unit, profile, b)).ToList();
                     if (buffs.Count == 0) continue;
                     if (buffs.Any(b => ally.Buffs.HasFact(b))) continue;                    // already active
                     // ★ v0.3.8: an enchanting ability whose enchantment is still on the weapon.
@@ -3654,6 +3681,14 @@ namespace CompanionAI_Pathfinder.Tactics
                     value += buffValue;
                     reasons.Add("buff");
                 }
+            }
+
+            // --- a held state the caster has lost and this ability puts back (★ v0.3.25: psionic focus) ---
+            float regained = RegainValue(ctx, ability, profile, target, slot, out string regainNote);
+            if (regained > 0f)
+            {
+                value += regained;
+                reasons.Add(regainNote);
             }
 
             // --- auras a buff carries around its bearer (★ v0.3.21 gaps: TacticalEngine.Auras.cs) ---
@@ -4550,6 +4585,7 @@ namespace CompanionAI_Pathfinder.Tactics
                 CombatMemory.RecordCast(unit, c.Ability, c.Target, command);
                 CombatMemory.NotePendingCast(unit, c.Ability, c.Target, command);   // ★ v0.3.18 (test10): real time
                 var profile = AbilityProfile.Get(c.Ability);
+                NoteEndedByAi(unit, c.Ability, profile, c.Target ?? unit);   // ★ v0.3.25: a trance ended with the focus
                 if (profile != null && profile.HealsBurn)
                 {
                     BurnSnapshot(unit, profile, out int burnNow, out int deadNow);

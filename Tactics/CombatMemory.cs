@@ -51,6 +51,10 @@ namespace CompanionAI_Pathfinder.Tactics
             if (!ToggleBeforeAi.ContainsKey(key)) ToggleBeforeAi[key] = wasOn;
         }
 
+        /// <summary>★ v0.3.25: the toggle was on before the AI first switched it this fight.</summary>
+        public static bool WasOnBeforeAi(UnitEntityData unit, Kingmaker.UnitLogic.ActivatableAbilities.ActivatableAbility toggle) =>
+            ToggleBeforeAi.TryGetValue(ToggleKey(unit, toggle), out bool on) && on;
+
         /// <summary>★ v0.3.19: "unit|toggle" → whether it was on before the AI first switched it this fight.</summary>
         private static readonly Dictionary<string, bool> ToggleBeforeAi = new Dictionary<string, bool>();
         /// <summary>★ v0.3.19: toggles the player switched during this fight (action bar clicks, PlayerTogglePatch).</summary>

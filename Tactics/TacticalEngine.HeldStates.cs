@@ -34,7 +34,11 @@ using Kingmaker.UnitLogic.Mechanics.Components;
 using Kingmaker.UnitLogic.Commands;
 using Kingmaker.Designers.EventConditionActionSystem.Actions;
 using Kingmaker.ElementsSystem;
+using Kingmaker.Blueprints.Facts;
+using Kingmaker.UnitLogic.Mechanics.Conditions;
+using Kingmaker.UnitLogic;
 using CompanionAI_Pathfinder.Analysis;
+using CompanionAI_Pathfinder.Settings;
 
 namespace CompanionAI_Pathfinder.Tactics
 {
@@ -52,7 +56,11 @@ namespace CompanionAI_Pathfinder.Tactics
         /// <summary>Per unit and buff, for the fight (the unit's abilities and toggles do not change during it).</summary>
         private static readonly Dictionary<string, HeldStateInfo> s_HeldStates = new Dictionary<string, HeldStateInfo>();
 
-        internal static void ResetHeldStates() => s_HeldStates.Clear();
+        internal static void ResetHeldStates()
+        {
+            s_HeldStates.Clear();
+            s_HeldDependence.Clear();
+        }
 
         /// <summary>
         /// The cost of the held states <paramref name="ability"/> spends (none for most abilities: one list check), with
@@ -202,5 +210,302 @@ namespace CompanionAI_Pathfinder.Tactics
                 default: return 1f;
             }
         }
+
+        #region Getting a held state back (★ v0.3.25)
+
+        /// <summary>What depends on a marker state for one unit (see the file header).</summary>
+        private sealed class HeldDependence
+        {
+            public int FactCount;
+            public readonly List<BlueprintBuff> Comes = new List<BlueprintBuff>();
+            public readonly List<string> Dependents = new List<string>();
+            public readonly List<ActivatableAbility> Toggles = new List<ActivatableAbility>();
+            public bool RequiredByAbility;
+            /// <summary>Something of the unit depends on it. What only comes with it (a wrapper buff's child) is not enough:
+            /// such a buff stays with the usual buff appraisal, which reads its children.</summary>
+            public bool Any => Dependents.Count > 0 || Toggles.Count > 0 || RequiredByAbility;
+        }
+
+        /// <summary>Per unit and state; rebuilt when the unit's facts change (a level-up between fights).</summary>
+        private static readonly Dictionary<string, HeldDependence> s_HeldDependence = new Dictionary<string, HeldDependence>();
+        private static readonly Dictionary<BlueprintBuff, bool> s_MarkerStates = new Dictionary<BlueprintBuff, bool>();
+        private static readonly Dictionary<Type, System.Reflection.FieldInfo[]> s_ElementFields = new Dictionary<Type, System.Reflection.FieldInfo[]>();
+
+        /// <summary>"unit id" → toggles (blueprint GUIDs) the AI's spending ended, on before the AI first switched them.</summary>
+        private static readonly Dictionary<string, HashSet<string>> s_EndedByAi = new Dictionary<string, HashSet<string>>();
+
+        /// <summary>A buff whose only components are its start and end actions: it does nothing but carry what depends on it.</summary>
+        private static bool IsMarkerState(BlueprintBuff buff)
+        {
+            if (buff == null) return false;
+            if (s_MarkerStates.TryGetValue(buff, out bool known)) return known;
+            bool marker = false;
+            try { marker = buff.ComponentsArray.Length > 0 && buff.ComponentsArray.All(c => c is AddFactContextActions); } catch { }
+            s_MarkerStates[buff] = marker;
+            return marker;
+        }
+
+        private static HeldDependence Dependence(UnitEntityData unit, BlueprintBuff state)
+        {
+            int facts = 0;
+            try { facts = unit.Facts.List.Count; } catch { }
+            string key = unit.UniqueId + "|" + state.AssetGuid;
+            if (s_HeldDependence.TryGetValue(key, out var known) && known.FactCount == facts) return known;
+            var d = new HeldDependence { FactCount = facts };
+            try
+            {
+                // What comes with it: its start actions' buffs, the conditions read on the unit itself.
+                foreach (var actions in state.GetComponents<AddFactContextActions>())
+                    CollectComing(unit, actions.Activated, d.Comes, 0);
+                d.Comes.Remove(state);
+                // What works only while it is held: a feature asking for it before it acts. A feature's own start actions
+                // are left out: what they give comes with the state's start actions (Psionic Dodge has both).
+                foreach (var feature in unit.Progression.Features.Enumerable)
+                {
+                    var bp = feature?.Blueprint;
+                    if (bp == null) continue;
+                    if (bp.ComponentsArray.Any(c => c != null && !(c is AddFactContextActions) && AsksFor(c, state, 0)))
+                        d.Dependents.Add(bp.Name);
+                }
+                foreach (var toggle in unit.ActivatableAbilities.Enumerable)
+                    if (toggle?.Blueprint != null && toggle.Blueprint.GetComponents<RestrictionHasFact>().Any(r => !r.Not && r.Feature == state))
+                        d.Toggles.Add(toggle);
+                d.RequiredByAbility = unit.Abilities.Enumerable.Any(a => a?.Blueprint != null &&
+                    a.Blueprint.GetComponents<AbilityCasterHasFacts>().Any(c => c.Facts.Contains(state)));
+            }
+            catch (Exception ex)
+            {
+                Main.Verbose($"[Held] {unit.CharacterName} {state.name} dependence: {ex.Message}");
+            }
+            if (s_HeldDependence.Count > 512) s_HeldDependence.Clear();
+            s_HeldDependence[key] = d;
+            return d;
+        }
+
+        private static void CollectComing(UnitEntityData unit, ActionList list, List<BlueprintBuff> into, int depth)
+        {
+            if (list?.Actions == null || depth > 3) return;
+            foreach (var action in list.Actions)
+            {
+                switch (action)
+                {
+                    case ContextActionApplyBuff apply when apply.Buff != null && !apply.ToCaster:
+                        if (!into.Contains(apply.Buff)) into.Add(apply.Buff);
+                        break;
+                    case Conditional conditional:
+                        bool? holds = HoldsOnUnit(unit, conditional.ConditionsChecker);
+                        if (holds == true) CollectComing(unit, conditional.IfTrue, into, depth + 1);
+                        else if (holds == false) CollectComing(unit, conditional.IfFalse, into, depth + 1);
+                        break;
+                }
+            }
+        }
+
+        /// <summary>
+        /// Whether "has fact" conditions hold for the unit - a state's own context is the unit's (caster and target alike);
+        /// null when another kind of condition decides.
+        /// </summary>
+        private static bool? HoldsOnUnit(UnitEntityData unit, ConditionsChecker checker)
+        {
+            var conditions = checker?.Conditions;
+            if (conditions == null || conditions.Length == 0) return true;
+            bool and = checker.Operation == Operation.And;
+            bool result = and;
+            foreach (var c in conditions)
+            {
+                BlueprintUnitFact fact = c is ContextConditionCasterHasFact caster ? caster.Fact
+                                       : c is ContextConditionHasFact has ? has.Fact : null;
+                if (fact == null) return null;
+                bool holds = unit.Descriptor.HasFact(fact) != c.Not;
+                result = and ? result && holds : result || holds;
+            }
+            return result;
+        }
+
+        /// <summary>Whether an element tree (a component, its actions and conditions) asks "has <paramref name="state"/>".</summary>
+        private static bool AsksFor(object node, BlueprintBuff state, int depth)
+        {
+            if (node == null || depth > 6) return false;
+            switch (node)
+            {
+                case ContextConditionCasterHasFact caster: return !caster.Not && caster.Fact == state;
+                case ContextConditionHasFact has: return !has.Not && has.Fact == state;
+                case ActionList list: return list.Actions != null && list.Actions.Any(a => AsksFor(a, state, depth + 1));
+                case ConditionsChecker checker: return checker.Conditions != null && checker.Conditions.Any(c => AsksFor(c, state, depth + 1));
+                case Array array:
+                    foreach (var element in array)
+                        if (AsksFor(element, state, depth + 1)) return true;
+                    return false;
+            }
+            foreach (var field in ElementFields(node.GetType()))
+                if (AsksFor(field.GetValue(node), state, depth + 1)) return true;
+            return false;
+        }
+
+        /// <summary>A type's fields that hold actions or conditions (cached per type).</summary>
+        private static System.Reflection.FieldInfo[] ElementFields(Type type)
+        {
+            if (s_ElementFields.TryGetValue(type, out var known)) return known;
+            var fields = new List<System.Reflection.FieldInfo>();
+            for (var t = type; t != null && t != typeof(object); t = t.BaseType)
+                foreach (var field in t.GetFields(System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.Public |
+                                                  System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.DeclaredOnly))
+                {
+                    var ft = field.FieldType;
+                    var element = ft.IsArray ? ft.GetElementType() : ft;
+                    if (element == typeof(ActionList) || element == typeof(ConditionsChecker) ||
+                        typeof(GameAction).IsAssignableFrom(element) || typeof(Condition).IsAssignableFrom(element))
+                        fields.Add(field);
+                }
+            var result = fields.ToArray();
+            s_ElementFields[type] = result;
+            return result;
+        }
+
+        /// <summary>Whether any of <paramref name="buffs"/> is a lasting marker state (the cheap first check: no allocation).</summary>
+        private static bool AppliesMarkerState(AbilityProfile profile, List<BlueprintBuff> buffs)
+        {
+            foreach (var b in buffs)
+                if (profile.IsPersistent(b) && IsMarkerState(b)) return true;
+            return false;
+        }
+
+        /// <summary>A lasting marker state the ability puts on the unit, that it lacks and something of the unit depends on.</summary>
+        private static bool RegainsHeldState(UnitEntityData unit, AbilityProfile profile, BlueprintBuff buff) =>
+            buff != null && !profile.IsToggle && profile.IsPersistent(buff) && IsMarkerState(buff) && !unit.Buffs.HasFact(buff) &&
+            Dependence(unit, buff).Any;
+
+        /// <summary>Out of combat: whether the after-fight routine should put this state back on the unit.</summary>
+        internal static bool RestoresHeldState(UnitEntityData unit, AbilityProfile profile, BlueprintBuff buff)
+        {
+            try { return unit != null && profile != null && RegainsHeldState(unit, profile, buff); }
+            catch { return false; }
+        }
+
+        /// <summary>
+        /// What an ability that puts a lost held state back on its caster is worth now (Gain Psionic Focus), with its
+        /// decision-log reason. The state counts from the next action on: a standard action leaves this round without it.
+        /// </summary>
+        private static float RegainValue(TacticalContext ctx, AbilityData ability, AbilityProfile profile, UnitEntityData target,
+                                         ActionSlot slot, out string note)
+        {
+            note = null;
+            var unit = ctx.Unit;
+            if (ability.SourceItem != null || !AppliesMarkerState(profile, profile.CasterBuffs) &&
+                (target != unit || !AppliesMarkerState(profile, profile.TargetBuffs)) || profile.IsToggle) return 0f;
+            float total = 0f;
+            var names = new List<string>();
+            try
+            {
+                var states = profile.CasterBuffs.Concat(target == unit ? profile.TargetBuffs : Enumerable.Empty<BlueprintBuff>()).Distinct()
+                    .Where(b => profile.BuffAppliesTo(b, ability, unit) != EffectApplies.No && RegainsHeldState(unit, profile, b)).ToList();
+                if (states.Count == 0) return 0f;
+                float rounds = Math.Max(0f, ctx.ExpectedRounds - (slot == ActionSlot.Standard || slot == ActionSlot.FullRound ? 1f : 0f));
+                float unitRound = ValueModel.PerRound(Level(unit));
+                float scale = ValueModel.BuffPerRound(Math.Max(1, Level(unit) / 2));
+                foreach (var state in states)
+                {
+                    var d = Dependence(unit, state);
+                    float readable = d.Comes.Where(b => !unit.Buffs.HasFact(b)).Sum(b => BuffEffectAnalyzer.GetCombatValue(b)) * scale;
+                    float togglePerRound = 0f, toggleRounds = 0f;
+                    ActivatableAbility best = null;
+                    foreach (var toggle in d.Toggles)
+                    {
+                        if (toggle.IsOn || toggle.Blueprint.Buff == null || ToggleExclusion(unit, toggle) != null ||
+                            CombatMemory.PlayerOwnsToggle(unit, toggle)) continue;
+                        float worth = BuffEffectAnalyzer.GetCombatValue(toggle.Blueprint.Buff) * scale;
+                        if (worth <= togglePerRound) continue;
+                        togglePerRound = worth;
+                        toggleRounds = ToggleRestoreActions(unit, toggle.Blueprint.Buff);
+                        best = toggle;
+                    }
+                    float part = ValueModel.HeldStateWorth(rounds, readable, d.Dependents.Count, unitRound, togglePerRound, toggleRounds);
+                    if (part <= 0f) continue;
+                    total += part;
+                    var what = new List<string>();
+                    if (d.Comes.Count > 0) what.Add(string.Join(", ", d.Comes.Select(b => b.Name)));
+                    if (d.Dependents.Count > 0) what.Add($"{d.Dependents.Count} feat{(d.Dependents.Count > 1 ? "s" : "")}");
+                    if (best != null) what.Add(best.Name);
+                    names.Add($"{state.Name} {part:0.#}" + (what.Count > 0 ? $" ({string.Join("; ", what)})" : ""));
+                }
+            }
+            catch (Exception ex)
+            {
+                Main.Verbose($"[Held] {unit.CharacterName} {ability.Name} regain: {ex.Message}");
+                return 0f;
+            }
+            if (total > 0f) note = $"regains {string.Join(", ", names)}";
+            return total;
+        }
+
+        /// <summary>
+        /// When the AI issues an ability that ends a toggle with a state it spends (a trance with the focus): that is the
+        /// AI's switch (no second switch this round; the state before the fight is "on"), and, when the toggle was on before
+        /// the AI first switched it, it goes back on after the fight once its state is back.
+        /// </summary>
+        internal static void NoteEndedByAi(UnitEntityData unit, AbilityData ability, AbilityProfile profile, UnitEntityData target)
+        {
+            if (unit == null || profile == null || profile.HasLongBuff) return;
+            if (profile.CasterRemovedBuffs.Count == 0 && (target != unit || profile.RemovedBuffs.Count == 0)) return;
+            try
+            {
+                var removed = profile.CasterRemovedBuffs.Concat(target == unit ? profile.RemovedBuffs : Enumerable.Empty<BlueprintBuff>()).Distinct();
+                foreach (var blueprint in removed)
+                {
+                    if (unit.Buffs.GetBuff(blueprint) == null) continue;
+                    var info = HeldState(unit, blueprint, ability);
+                    if (info.Cascade.Count == 0) continue;
+                    foreach (var toggle in unit.ActivatableAbilities.Enumerable)
+                    {
+                        if (toggle?.Blueprint?.Buff == null || !toggle.IsOn || !info.Cascade.Contains(toggle.Blueprint.Buff)) continue;
+                        CombatMemory.RecordToggle(unit, toggle, false, true);
+                        if (!CombatMemory.WasOnBeforeAi(unit, toggle)) continue;
+                        if (!s_EndedByAi.TryGetValue(unit.UniqueId, out var guids)) s_EndedByAi[unit.UniqueId] = guids = new HashSet<string>();
+                        guids.Add(toggle.Blueprint.AssetGuid.ToString());
+                        Main.Log($"[Held] {unit.CharacterName}: {ability.Name} ends {toggle.Name} with {blueprint.Name} - " +
+                                 $"switched on again once {blueprint.Name} is back");
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                Main.Verbose($"[Held] {unit.CharacterName} {ability.Name} ended toggles: {ex.Message}");
+            }
+        }
+
+        internal static bool HasEndedToggles(UnitEntityData unit) =>
+            unit != null && s_EndedByAi.TryGetValue(unit.UniqueId, out var guids) && guids.Count > 0;
+
+        /// <summary>
+        /// Out of combat: the first toggle the AI's spending ended (NoteEndedByAi) whose state is back goes on again, as the
+        /// action bar does it; true when one was switched on. One the player or the fight switched on already is forgotten.
+        /// </summary>
+        internal static bool RestoreEndedToggles(UnitEntityData unit)
+        {
+            if (!(ModSettings.Instance?.AiManagesToggles ?? true) || !HasEndedToggles(unit)) return false;
+            var guids = s_EndedByAi[unit.UniqueId];
+            try
+            {
+                foreach (var toggle in unit.ActivatableAbilities.Enumerable.ToList())
+                {
+                    string guid = toggle?.Blueprint?.AssetGuid.ToString();
+                    if (guid == null || !guids.Contains(guid)) continue;
+                    if (toggle.IsOn) { guids.Remove(guid); continue; }
+                    if (!toggle.IsAvailable) continue;   // its state is not back yet
+                    guids.Remove(guid);
+                    toggle.IsOn = true;
+                    if (!toggle.IsOn) continue;
+                    Main.Log($"[Held] {unit.CharacterName}: {toggle.Name} on again - its state is back after the fight (it was on before the AI spent it)");
+                    return true;
+                }
+            }
+            catch (Exception ex)
+            {
+                Main.Verbose($"[Held] {unit.CharacterName} restore toggles: {ex.Message}");
+            }
+            return false;
+        }
+
+        #endregion
     }
 }

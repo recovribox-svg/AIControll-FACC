@@ -1400,7 +1400,10 @@ namespace CompanionAI_Pathfinder.GameInterface
                 return;
             // ★ v0.3.19: the one gate of the out-of-combat self-buff routine (after fights, between real-time decisions,
             // the busy-unit queue): off when the player buffs by hand or with a buff mod (Buff It 2 The Limit).
-            if (!(Settings.ModSettings.Instance?.AiRecastsSelfBuffs ?? true))
+            // ★ v0.3.25: a toggle the AI's own spending ended (a trance with the focus) is put back under the toggle
+            // setting instead (TacticalEngine.RestoreEndedToggles).
+            bool recasts = Settings.ModSettings.Instance?.AiRecastsSelfBuffs ?? true;
+            if (!recasts && !Tactics.TacticalEngine.HasEndedToggles(unit))
             {
                 _pendingBuffUnits.Remove(unit.UniqueId);
                 return;
@@ -1431,6 +1434,11 @@ namespace CompanionAI_Pathfinder.GameInterface
 
             // 대기열에서 제거 (성공적으로 처리됨)
             _pendingBuffUnits.Remove(unitId);
+
+            // ★ v0.3.25 (Psionics): a trance the AI's spending ended goes back on once its focus is back (one per call:
+            // the next call sees the toggle's command running and waits).
+            if (Tactics.TacticalEngine.RestoreEndedToggles(unit)) return;
+            if (!recasts) return;
 
             // ★ v0.3.3: never flip an on/off switch outside combat. Isekai's "Shift Form: Overlord / Mortal Guise" applies
             // its form buff when absent and REMOVES it when present; recast after every fight, it left Orvath's form to
@@ -1490,6 +1498,9 @@ namespace CompanionAI_Pathfinder.GameInterface
                     if (!profile.IsPersistent(buff)) continue;
                     if (unit.Buffs.HasFact(buff)) continue;
                     if (profile.BuffAppliesTo(buff, ability, unit) == Tactics.EffectApplies.No) continue;
+                    // ★ v0.3.25 (Psionics): a held state the unit depends on (psionic focus: the feats that work only while
+                    // it is held, the trance and the maneuvers that require it), though it has no effect of its own.
+                    if (Tactics.TacticalEngine.RestoresHeldState(unit, profile, buff)) return true;
                     var analysis = BuffEffectAnalyzer.Analyze(buff);
                     if (analysis.Recognized && analysis.CombatValue >= 0.5f) return true;
                 }
