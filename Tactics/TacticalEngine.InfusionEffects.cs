@@ -103,16 +103,19 @@ namespace CompanionAI_Pathfinder.Tactics
             internal IgnoreDamageReductionOnTarget PiercePhysical;
             internal bool DamageGraph;
             internal bool CasterOnly;
+            /// <summary>★ v0.3.25: switches on a ricochet on the blasts (Chain Arrows, TacticalEngine.Ricochet.cs).</summary>
+            internal bool Ricochet;
             internal string Unsupported;
 
             internal bool Applies(AbilityData blast) => blast?.Blueprint != null &&
+                (Ricochet ? RicochetOf(blast.Blueprint, Buff) != null :
                 // The installed component passes its buff context, so native ApplyInternal takes the reason-ability
                 // branch (actual Blueprint or Parent), rather than the AbilityExecutionContext/ConvertedFrom branch.
                 (Trigger != null && (!Trigger.CheckSpellParent || Trigger.AbilityList.Contains(blast.Blueprint) ||
                     Trigger.AbilityList.Contains(blast.Blueprint.Parent)) ||
                  Pierce != null && (Pierce.AllSpells || Pierce.AbilityList.Contains(blast.Blueprint) || Pierce.AbilityList.Contains(blast.Blueprint.Parent)) ||
                  PiercePhysical != null && Buff.GetComponents<Kingmaker.UnitLogic.Class.Kineticist.AddKineticistBurnModifier>().Any(m =>
-                    !m.AppliableTo.Any() || m.AppliableTo.Contains(blast.Blueprint) || m.AppliableTo.Contains(blast.Blueprint.Parent)));
+                    !m.AppliableTo.Any() || m.AppliableTo.Contains(blast.Blueprint) || m.AppliableTo.Contains(blast.Blueprint.Parent))));
         }
 
         // Only immutable blueprint descriptions. No context, native result or actor state is retained here.
@@ -138,8 +141,8 @@ namespace CompanionAI_Pathfinder.Tactics
                     if (t.GetType() != typeof(AddKineticistInfusionDamageTrigger) || !t.TriggerOnDirectDamage ||
                         t.TriggerOnStatDamageOrEnergyDrain || t.CheckWeaponType && t.WeaponType != null || t.CheckSpellDescriptor)
                         description.Unsupported = "custom damage trigger/filter";
-                    else if (AbilityProfile.ContainsAction(t.Actions?.Actions, a => a is ContextActionDispelMagic))
-                        description.Unsupported = "dispel has no read-only native success query";
+                    else if (FirstUnsupportedDispel(t.Actions) is string dispelProblem)
+                        description.Unsupported = dispelProblem;
                     else
                     {
                         description.Trigger = t;
@@ -150,6 +153,11 @@ namespace CompanionAI_Pathfinder.Tactics
                         else if (unknown) description.Unsupported = "unsupported native action in infusion graph";
                     }
                 }
+                // ★ v0.3.25: a buff with no effect of its own besides its burn switches on a delivery the blasts carry
+                // (Chain Arrows' ricochet); Applies checks each blast for one this reader follows.
+                else if (description.Pierce == null && description.PiercePhysical == null && triggers.Length == 0 &&
+                         IsDeliveryOnlyInfusion(buff))
+                    description.Ricochet = true;
                 else if (description.Pierce == null && description.PiercePhysical == null)
                     description.Unsupported = "delivery-changing infusion has no supported read-only recipient query";
             }
@@ -163,8 +171,21 @@ namespace CompanionAI_Pathfinder.Tactics
             typeof(Conditional), typeof(ContextActionSavingThrow), typeof(ContextActionConditionalSaved),
             typeof(ContextActionApplyBuff), typeof(ContextActionCombatManeuver), typeof(ContextActionDealDamage),
             typeof(ContextActionRemoveSelf), typeof(ContextActionSpawnFx), typeof(ContextActionOnContextCaster),
-            typeof(ContextActionRepeatedActions), typeof(ContextActionRemoveBuff)
+            typeof(ContextActionRepeatedActions), typeof(ContextActionRemoveBuff),
+            typeof(ContextActionDispelMagic)   // ★ v0.3.25: Unraveling (TacticalEngine.Unraveling.cs)
         };
+
+        /// <summary>★ v0.3.25: the first dispel in the graph this reader cannot follow (DispelUnsupported), or null.</summary>
+        private static string FirstUnsupportedDispel(ActionList actions)
+        {
+            string problem = null;
+            AbilityProfile.ContainsAction(actions?.Actions, a =>
+            {
+                if (a is ContextActionDispelMagic dispel && problem == null) problem = DispelUnsupported(dispel);
+                return false;
+            });
+            return problem;
+        }
 
         private static bool HasInfusionDamageGraph(ActionList root, out bool mixed, out bool unknown)
         {
@@ -259,6 +280,14 @@ namespace CompanionAI_Pathfinder.Tactics
                 target == null || !(deliveryChance > 0f) || description.CasterOnly && !creditCasterEffect) return 0f;
             try
             {
+                // ★ v0.3.25: Chain Arrows - the jumps from this target (one recipient: ricochets start at a unit target).
+                if (description.Ricochet)
+                {
+                    if (!creditCasterEffect) return 0f;   // once per aim, from its first recipient
+                    float chain = RicochetValue(ctx, blast, RicochetOf(blast.Blueprint, buff), target, deliveryChance);
+                    if (chain > 0f) note = $"{buff.name} jumps +{chain:F1} from {target.CharacterName}";
+                    return chain;
+                }
                 var source = installedContext ?? InfusionContext(ctx.Unit, buff, ctx.Unit);
                 int work = 0;
                 Dictionary<InfusionDamageRead, float> damageReads = null; // Allocated only at a pure damage graph's first damage node.
@@ -380,6 +409,8 @@ namespace CompanionAI_Pathfinder.Tactics
                             damageReads[read] = part = CombatMath.AfterTargetReduction(target, damage, amount, blast, infusion: true);
                     }
                 }
+                else if (action.GetType() == typeof(ContextActionDispelMagic))
+                    part = DispelValue(ctx, (ContextActionDispelMagic)action, source, target, horizon);   // ★ v0.3.25: Unraveling
                 else if (action.GetType() == typeof(ContextActionRemoveSelf)) remains = 0f;
                 // FX and caster-only utility are not target damage/control. Special modifiers are handled separately.
                 value += survives * part;

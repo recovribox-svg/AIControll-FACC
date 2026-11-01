@@ -17,6 +17,7 @@
     <Compile Include="..\..\Tactics\ValueModel.Resources.cs" Link="ValueModel.Resources.cs" />
     <Compile Include="..\..\Tactics\ValueModel.Summons.cs" Link="ValueModel.Summons.cs" />
     <Compile Include="..\..\Tactics\ValueModel.HeldStates.cs" Link="ValueModel.HeldStates.cs" />
+    <Compile Include="..\..\Tactics\ValueModel.Dispel.cs" Link="ValueModel.Dispel.cs" />
     <Compile Include="..\..\Tactics\ValueModel.OnKill.cs" Link="ValueModel.OnKill.cs" />
     <Compile Include="..\..\Tactics\InfusionSearchBudget.cs" Link="InfusionSearchBudget.cs" />
     <Compile Include="..\..\Tactics\AbilityScoringPolicy.cs" Link="AbilityScoringPolicy.cs" />

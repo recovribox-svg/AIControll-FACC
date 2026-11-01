@@ -25,8 +25,11 @@ namespace ProfileAudit
             public BlueprintAbility Bp;
         }
 
+        private static List<SimpleBlueprint> s_All;
+
         public static void Run(List<SimpleBlueprint> all, string output)
         {
+            s_All = all;
             var rows = new List<Row>();
             int errors = 0;
             foreach (var bp in all.OfType<BlueprintAbility>())
@@ -125,6 +128,15 @@ namespace ProfileAudit
                              (triggerActions == null || triggerActions.Length == 0 ? "none" : string.Join(",", triggerActions)) +
                              (Internal("Pierce") != null ? "; spell-resistance bypass" : "") +
                              (Internal("PiercePhysical") != null ? "; damage-reduction bypass" : "");
+                // ★ v0.3.25: a delivery-only infusion (Chain Arrows): the blasts whose ricochet the reader follows.
+                if (Internal("Ricochet") is bool ricochet && ricochet)
+                {
+                    var ricochetOf = typeof(TacticalEngine).GetMethod("RicochetOf", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Static)
+                                     ?? throw new MissingMethodException("TacticalEngine.RicochetOf");
+                    int blasts = s_All.OfType<BlueprintAbility>().Count(a => ricochetOf.Invoke(null, new object[] { a, bp.Buff }) != null);
+                    row.Detail += $"; ricochet on {blasts} blasts";
+                    if (blasts == 0) row.Verdict = "infusion selection: supported but no blast carries its ricochet";
+                }
                 return;
             }
             var mode = modeOf.Invoke(null, new object[] { bp });
