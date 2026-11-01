@@ -151,6 +151,8 @@ namespace CompanionAI_Pathfinder.Tactics
             // Sword): their parts, for the weapon each one goes on. A buff that only carries one (Keen Edge's is empty) is
             // valued by the enchantment.
             float enchantRounds = EnchantParts(ctx, ability, profile, abilityCtx, buffs.FirstOrDefault(), ally, parts, unread);
+            // ★ v0.3.25 (potions): Magical Vestment - the enhancement it adds to the recipient's own armor or shield.
+            ArmorEnchantParts(abilityCtx, buffs, ally, parts);
             // Mental stats (spell DCs) are not valued here: a buff of only those (or of only a spell prohibition) keeps the
             // old reading.
             // ★ v0.3.21 (gaps): unless it is the stat this recipient's spell DCs come from.
@@ -296,6 +298,28 @@ namespace CompanionAI_Pathfinder.Tactics
                             critExtra = Math.Max(critExtra, off.BaseThreat * off.HitChance * Math.Max(0f, off.CritMultiplier - 1f) * off.PerHit *
                                                             (p.Conditional ? 0.5f : 1f));
                         break;
+                    // ★ v0.3.25 (potions): the damage reduction an aligned weapon gets through, per hit (not a damage
+                    // bonus the enemy's other reductions apply to).
+                    // ★ v0.3.25 (potions): Bless Weapon - a threat on an evil enemy is a critical without the confirmation
+                    // roll: the share of threats the roll would have lost, at the multiplier's extra damage, per hit.
+                    case BuffPartKind.CritAutoconfirm:
+                    {
+                        bool against = false;
+                        try { against = off.Enemy != null && off.Enemy.Descriptor.Alignment.ValueRaw.HasComponent(p.CritAgainst); } catch { }
+                        if (against && off.CanCrit && !off.DoubleEdge)
+                        {
+                            float gain = Mathf.Clamp01(off.BaseThreat) * (1f - Mathf.Clamp01(off.HitChance)) * Math.Max(0f, off.CritMultiplier - 1f) * off.PerHit;
+                            if (gain > 0f) { energyDamage += gain; notes.Add($"criticals confirm on {off.Enemy.CharacterName}"); }
+                        }
+                        break;
+                    }
+                    case BuffPartKind.WeaponAlignment:
+                    {
+                        float through = AlignmentBypass(off, p.DamageAlignment);
+                        if (through > 0f) { energyDamage += through; notes.Add($"gets through DR {through:0.#}"); }
+                        else notes.Add("no damage reduction it gets through");
+                        break;
+                    }
                     case BuffPartKind.FastHealing: fastHealing = Math.Max(fastHealing, amount); break;
                     case BuffPartKind.Sight: sight = Math.Max(sight, p.Fixed); break;
                     // ★ v0.3.21 (gaps): spellcasting boosts, and the stat its spells' DCs come from (Fox's Cunning on a wizard).
@@ -555,6 +579,95 @@ namespace CompanionAI_Pathfinder.Tactics
             {
                 return -1f;
             }
+        }
+
+        private static readonly System.Reflection.FieldInfo ArmorEnchantmentsField =
+            HarmonyLib.AccessTools.Field(typeof(Kingmaker.UnitLogic.FactLogic.BuffEnchantArmor), "m_Enchantments");
+        private static readonly System.Reflection.FieldInfo ArmorScalingField =
+            HarmonyLib.AccessTools.Field(typeof(Kingmaker.UnitLogic.FactLogic.BuffEnchantArmor), "m_Scaling");
+        private static readonly System.Reflection.FieldInfo ArmorItemTypeField =
+            HarmonyLib.AccessTools.Field(typeof(Kingmaker.UnitLogic.FactLogic.BuffEnchantArmor), "m_ItemType");
+
+        /// <summary>
+        /// ★ v0.3.25 (potions): Magical Vestment (BuffEnchantArmor) puts an armor enhancement on the recipient's body armor
+        /// or on its shields (BuffEnchantArmor.OnActivate). An item's enhancement is the highest of its ArmorEnhancementBonus
+        /// enchantments (GameHelper.GetItemEnhancementBonus): the AC it adds is what it has over the item's own, and nothing
+        /// without the item. The enchantment is picked by the buff's scaling (BuffScaling.ScaleBuff), worked out here with the
+        /// ability's caster level or the recipient's level. A part is always added, so a vestment that adds nothing is read as
+        /// worth nothing rather than guessed.
+        /// </summary>
+        private static void ArmorEnchantParts(MechanicsContext abilityCtx, List<BlueprintBuff> buffs, UnitEntityData ally, List<BuffPart> parts)
+        {
+            if (ArmorEnchantmentsField == null || ArmorScalingField == null || ArmorItemTypeField == null) return;
+            foreach (var buff in buffs)
+                foreach (var component in Kingmaker.Blueprints.BlueprintExtenstions.GetComponents<Kingmaker.UnitLogic.FactLogic.BuffEnchantArmor>(buff))
+                {
+                    int gain = 0;
+                    try
+                    {
+                        var refs = ArmorEnchantmentsField.GetValue(component) as Kingmaker.Blueprints.BlueprintItemEnchantmentReference[];
+                        var scaling = ArmorScalingField.GetValue(component) as Kingmaker.Designers.Mechanics.Buffs.BuffScaling;
+                        bool armor = Convert.ToInt32(ArmorItemTypeField.GetValue(component)) == (int)Kingmaker.UnitLogic.FactLogic.BuffEnchantArmor.ItemType.Armor;
+                        if (refs == null || refs.Length == 0 || scaling == null) continue;
+                        int scale = 1;
+                        int modifier = Math.Max(1, scaling.Modifier);
+                        switch (scaling.TypeOfScaling)
+                        {
+                            case Kingmaker.Designers.Mechanics.Buffs.BuffScaling.ScalingType.ByCasterLevel:
+                                scale = Math.Max(scaling.StartingMod + Math.Max(1, abilityCtx?.Params?.CasterLevel ?? 1) / modifier, scaling.Minimum); break;
+                            case Kingmaker.Designers.Mechanics.Buffs.BuffScaling.ScalingType.ByBasicAttackBonus:
+                                scale = Math.Max(scaling.StartingMod + ally.Stats.BaseAttackBonus.ModifiedValue / modifier, scaling.Minimum); break;
+                            case Kingmaker.Designers.Mechanics.Buffs.BuffScaling.ScalingType.ByClassLevel:
+                                scale = Math.Max(scaling.StartingMod + ally.Progression.GetClassLevel(scaling.ChosenClass) / modifier, scaling.Minimum); break;
+                            case Kingmaker.Designers.Mechanics.Buffs.BuffScaling.ScalingType.ByLevel:
+                                scale = Math.Max(scaling.StartingMod + ally.Progression.CharacterLevel / modifier, scaling.Minimum); break;
+                        }
+                        var enchantment = refs[Mathf.Clamp(scale - 1, 0, refs.Length - 1)]?.Get();
+                        int bonus = enchantment == null ? 0 : Kingmaker.Blueprints.BlueprintExtenstions.GetComponent<Kingmaker.Blueprints.Items.Ecnchantments.ArmorEnhancementBonus>(enchantment)?.EnhancementValue ?? 0;
+                        var items = armor
+                            ? new List<Kingmaker.Items.ItemEntity> { ally.Body.Armor.MaybeArmor }
+                            : ally.Body.Items.OfType<Kingmaker.Items.ItemEntityShield>().Cast<Kingmaker.Items.ItemEntity>().ToList();
+                        foreach (var item in items.Where(i => i != null))
+                            gain = Math.Max(gain, bonus - Kingmaker.Designers.GameHelper.GetItemEnhancementBonus(item));
+                    }
+                    catch { gain = 0; }
+                    parts.Add(new BuffPart { Kind = BuffPartKind.ArmorClass, Owner = buff, Fixed = Math.Max(0, gain) });
+                }
+        }
+
+        /// <summary>
+        /// ★ v0.3.25 (potions): what an alignment on the recipient's weapon damage (Align Weapon, Bless Weapon) gets through on
+        /// each hit on the enemy it would attack: its highest physical damage reduction bypassed by that alignment alone
+        /// (AddDamageResistancePhysical: "or" bypasses, or alignment its only one; one that also needs a material is left out),
+        /// up to the hit's damage. Nothing when the weapon has that alignment already, or the enemy's "or" reduction falls to
+        /// the weapon's enhancement anyway.
+        /// </summary>
+        private static float AlignmentBypass(Offence off, Kingmaker.Enums.Damage.DamageAlignment alignment)
+        {
+            var enemy = off.Enemy;
+            var weapon = off.Weapon;
+            if (enemy == null || weapon == null || alignment == 0) return 0f;
+            try
+            {
+                foreach (var enchantment in weapon.Enchantments)
+                    if (enchantment.SelectComponents<Kingmaker.Designers.Mechanics.Facts.WeaponAlignment>().Any(a => (a.Alignment & alignment) != 0)) return 0f;
+                var reduction = enemy.Get<Kingmaker.UnitLogic.Parts.UnitPartDamageReduction>();
+                if (reduction == null) return 0f;
+                int enhancement = Kingmaker.Designers.GameHelper.GetItemEnhancementBonus(weapon);
+                float best = 0f;
+                foreach (var source in reduction.AllSources)
+                {
+                    if (!(source?.Settings is Kingmaker.UnitLogic.FactLogic.AddDamageResistancePhysical dr) || !dr.BypassedByAlignment ||
+                        (dr.Alignment & alignment) == 0) continue;
+                    bool alone = dr.Or || !(dr.BypassedByMaterial || dr.BypassedByForm || dr.BypassedByMagic || dr.BypassedByReality ||
+                                            dr.BypassedByWeaponType || dr.BypassedByMeleeWeapon || dr.BypassedByEpic);
+                    if (!alone) continue;
+                    if (dr.Or && dr.BypassedByMagic && enhancement >= dr.MinEnhancementBonus) continue;
+                    best = Math.Max(best, source.GetCurrentValue());
+                }
+                return Math.Min(best, Math.Max(0f, off.PerHit));
+            }
+            catch { return 0f; }
         }
 
         /// <summary>

@@ -88,6 +88,12 @@ namespace CompanionAI_Pathfinder.Analysis
         /// <summary>★ v0.3.21: sees what hides (AddCondition SeeInvisibility: Fixed 1; TrueSeeing, which also sees through
         /// Blur and Displacement: Fixed 2 - UnitPartConcealment.Calculate).</summary>
         Sight,
+        /// <summary>★ v0.3.25 (potions): the weapon's damage gets an alignment (Align Weapon, Bless Weapon:
+        /// WeaponAlignment) - worth the damage reduction it then gets through (TacticalEngine.AlignmentBypass).</summary>
+        WeaponAlignment,
+        /// <summary>★ v0.3.25 (potions): critical threats against one alignment confirm by themselves (Bless Weapon:
+        /// WeaponCritAutoconfirmAgainstAlignment) - <see cref="BuffPart.CritAgainst"/>.</summary>
+        CritAutoconfirm,
         /// <summary>★ v0.3.21: the weapon's critical threat range doubles (WeaponCriticalEdgeIncrease: keen) - not with
         /// Improved Critical, which sets the same flag (RuleCalculateWeaponStats.DoubleCriticalEdge).</summary>
         CritRangeDouble
@@ -118,6 +124,10 @@ namespace CompanionAI_Pathfinder.Analysis
         /// <summary>★ v0.3.20 (test5): a bonus only against creatures of this alignment (Protection from Evil): counted for
         /// the share of enemies of it, not at half.</summary>
         public AlignmentComponent? AgainstAlignment;
+        /// <summary>★ v0.3.25: the alignment a <see cref="BuffPartKind.WeaponAlignment"/> part gives the weapon's damage.</summary>
+        public Kingmaker.Enums.Damage.DamageAlignment DamageAlignment;
+        /// <summary>★ v0.3.25: the enemy alignment a <see cref="BuffPartKind.CritAutoconfirm"/> part works against.</summary>
+        public AlignmentComponent CritAgainst;
         public bool ScaleByBaseAttack;
         /// <summary>★ v0.3.19 (class audit B2): the amount is per character level of the recipient (TemporaryHitPointsPerLevel).</summary>
         public bool PerRecipientLevel;
@@ -232,6 +242,13 @@ namespace CompanionAI_Pathfinder.Analysis
                             break;
                         case Kingmaker.Designers.Mechanics.WeaponEnchants.WeaponCriticalEdgeIncrease _:
                             list.Parts.Add(new BuffPart { Kind = BuffPartKind.CritRangeDouble });
+                            break;
+                        // ★ v0.3.25 (potions): Align Weapon, Bless Weapon - the damage counts as that alignment.
+                        case WeaponAlignment aligned:
+                            list.Parts.Add(new BuffPart { Kind = BuffPartKind.WeaponAlignment, DamageAlignment = aligned.Alignment });
+                            break;
+                        case WeaponCritAutoconfirmAgainstAlignment autoconfirm:
+                            list.Parts.Add(new BuffPart { Kind = BuffPartKind.CritAutoconfirm, CritAgainst = autoconfirm.EnemyAlignment });
                             break;
                         case WeaponEnergyDamageDice energy when energy.EnergyDamageDice.Rolls > 0:
                             list.Parts.Add(new BuffPart { Kind = BuffPartKind.Damage, Formula = energy.EnergyDamageDice, Energy = true });
@@ -624,6 +641,10 @@ namespace CompanionAI_Pathfinder.Analysis
                     // Bond, Arcane Pool, Sacred Weapon: BuffEnchantWornItem / BuffEnchantAnyWeapon) - the enchantment's parts.
                     case BuffEnchantWornItem worn when worn.Enchantment != null && (worn.AllWeapons || worn.Slot == Kingmaker.UI.GenericSlot.EquipSlotBase.SlotType.PrimaryHand):
                         foreach (var part in ReadEnchantment(worn.Enchantment).Parts) list.Parts.Add(part.ForWeapons(w => true, owner));
+                        break;
+                    // ★ v0.3.25 (potions): Magical Vestment - an armor or shield enhancement, valued by what it adds to the
+                    // recipient's own armor or shield (TacticalEngine.ArmorEnchantParts); nothing to read here.
+                    case BuffEnchantArmor _:
                         break;
                     case BuffEnchantAnyWeapon any when any.Enchantment != null && any.Slot == Kingmaker.UI.GenericSlot.EquipSlotBase.SlotType.PrimaryHand:
                         foreach (var part in ReadEnchantment(any.Enchantment).Parts) list.Parts.Add(part.ForWeapons(w => true, owner));

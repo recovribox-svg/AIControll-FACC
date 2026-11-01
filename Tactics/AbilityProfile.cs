@@ -945,6 +945,16 @@ namespace CompanionAI_Pathfinder.Tactics
                     case ContextActionDispelMagic dispel:
                         Dispels = true;
                         if (!DispelActions.Contains(dispel)) DispelActions.Add(dispel);
+                        // ★ v0.3.25 (potions): a dispel with no check removes what its filters take, always (RuleDispelMagic,
+                        // CheckType.None): Lesser Restoration's fatigue, exhaustion and stat-penalty removals. A removal like
+                        // any other: valued as a cleanse when the target has something it takes.
+                        if (subject == EffectSubject.Target && TacticalEngine.IsAutomaticDispel(dispel))
+                        {
+                            RemovesBuffs = true;
+                            RemovedDescriptors |= dispel.Descriptor.Value;
+                            m_Removals.Add(dispel);
+                            m_Guards[dispel] = guards;
+                        }
                         break;
                     // ★ v0.3.19 (class audit B2): lengthens a buff the target already has (Witch Cackle and Chant: one
                     // more round of each of the witch's active hexes). Read as nothing before: never cast.
@@ -1759,7 +1769,8 @@ namespace CompanionAI_Pathfinder.Tactics
                     {
                         bool removed = removal is ContextActionRemoveBuff rb && rb.Buff == buff.Blueprint ||
                                        removal is ContextActionRemoveBuffsByDescriptor rd && buff.MaybeContext != null &&
-                                       (buff.MaybeContext.SpellDescriptor & rd.SpellDescriptor.Value) != SpellDescriptor.None;
+                                       (buff.MaybeContext.SpellDescriptor & rd.SpellDescriptor.Value) != SpellDescriptor.None ||
+                                       removal is ContextActionDispelMagic dm && TacticalEngine.DispelTakes(dm, buff);   // ★ v0.3.25
                         if (removed && !result.Contains(buff)) result.Add(buff);
                     }
                 }

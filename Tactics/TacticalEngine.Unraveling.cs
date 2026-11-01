@@ -45,6 +45,16 @@ namespace CompanionAI_Pathfinder.Tactics
         private static readonly System.Reflection.FieldInfo DispelMaxCasterField =
             HarmonyLib.AccessTools.Field(typeof(ContextActionDispelMagic), "m_MaxCasterLevel");
 
+        /// <summary>★ v0.3.25 (potions): a dispel with no check (RuleDispelMagic.CheckType.None): it removes what it takes.</summary>
+        internal static bool IsAutomaticDispel(ContextActionDispelMagic dispel)
+        {
+            try { return DispelCheckField != null && (RuleDispelMagic.CheckType)DispelCheckField.GetValue(dispel) == RuleDispelMagic.CheckType.None; }
+            catch { return false; }
+        }
+
+        /// <summary>★ v0.3.25: the game's filters of <paramref name="dispel"/> take <paramref name="buff"/> (DispelCanTake).</summary>
+        internal static bool DispelTakes(ContextActionDispelMagic dispel, Buff buff) => buff != null && DispelCanTake(dispel, buff);
+
         /// <summary>The dispel's fields this reader supports (a caster-level or DC check); null for anything else.</summary>
         internal static string DispelUnsupported(ContextActionDispelMagic dispel)
         {
