@@ -49,3 +49,11 @@ If nothing is lost, the step is worth what it was.
 `[Build] v0.3.24 module=c3e6faed-f700-40ff-82b6-3cd864c6a4b0`.
 
 What to watch: Orvath next to an enemy with a better spell or attack available should not step away first.
+
+## Addendum: shared out-of-walking-reach (approved), release
+
+The author approved the proposal above. Real time now marks an enemy out of walking reach for the whole party when a
+stuck walk's own path ends short of it (more than 1 m beyond the arrival radius); melee and touch options that walk to
+it are not offered while it stays put (up to three rounds). Of the 10 stuck walks in this log only the three at the
+ledge archer meet that test. Released as v0.3.24 (`release/CompanionAI_Pathfinder_v0.3.24.zip`, startup
+`[Build] v0.3.24 module=0ea24da4-70d0-4c77-9046-58f05061174b`); this last change is not yet played.

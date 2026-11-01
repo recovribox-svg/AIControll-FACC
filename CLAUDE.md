@@ -47,8 +47,11 @@ pass), dispel/removal fallback only for what the ability can remove; `Info.json`
 `AI-Control-FACC-v0.3.24-dev-build1-432a219-UMM-test.zip` (MVID `05fff211-2d9a-452c-bce0-b988c4840974`). Its logs
 ([docs/V0324_BUILD1_LOGS_REVIEW.md](docs/V0324_BUILD1_LOGS_REVIEW.md)): the ranged-style step out of melee now subtracts what
 it gives up; test ZIP `AI-Control-FACC-v0.3.24-dev-build2-2d6b49b-UMM-test.zip` (MVID `c3e6faed-f700-40ff-82b6-3cd864c6a4b0`)
-is the current development build; in-game replay pending. Open proposal (pathfinding, needs the author): share a
-"target out of walking reach" across the party.
+was played next. With the author's approval, real time now shares a target out of walking reach (the stuck walk's native
+path ends short of it) across the party (`CombatMemory.NoteOutOfWalkingReach`, `TacticalEngine.WalksIntoMelee`). At the
+author's request this is released as **v0.3.24** (commit `0a203b4`): `release/CompanionAI_Pathfinder_v0.3.24.zip`
+(byte-identical to `test-builds/AI-Control-FACC-v0.3.24-dev-build3-0a203b4-UMM-test.zip`, MVID `0ea24da4-70d0-4c77-9046-58f05061174b`), notes
+`release/CHANGELOG_v0.3.24.md`, `main` fast-forwarded; the author creates the GitHub release and tag `v0.3.24`.
 
 Historical handovers, superseded by the one above: [v0.3.22 release preparation](docs/RELEASE_0_3_22_HANDOVER.md)
 (27 October, PR #6–#12), [released-log review](docs/RELEASE_0322_LOG_REVIEW.md) (PR #13),

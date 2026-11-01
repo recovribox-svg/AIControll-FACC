@@ -4,9 +4,10 @@
 
 | What | Contents | Status |
 | --- | --- | --- |
-| **[Current test ZIP — v0.3.24-dev-build2 (2d6b49b)](test-builds/AI-Control-FACC-v0.3.24-dev-build2-2d6b49b-UMM-test.zip?raw=true)** | Build 1 + no step out of melee away from a better spell or attack ([review](docs/V0324_BUILD1_LOGS_REVIEW.md)); UMM shows 0.3.24 | Test build, awaiting in-game replay |
+| **[v0.3.24 stable ZIP](release/CompanionAI_Pathfinder_v0.3.24.zip?raw=true)** | The v0.3.24 release ([notes](release/CHANGELOG_v0.3.24.md)); same file as the build3 test ZIP | Released (tag `v0.3.24` created by the author) |
+| [Test ZIP — v0.3.24-dev-build2 (2d6b49b)](test-builds/AI-Control-FACC-v0.3.24-dev-build2-2d6b49b-UMM-test.zip?raw=true) | Build 1 + no step out of melee away from a better spell or attack ([review](docs/V0324_BUILD1_LOGS_REVIEW.md)) | Superseded test build |
 | [Previous test ZIP — v0.3.24-dev-build1 (432a219)](test-builds/AI-Control-FACC-v0.3.24-dev-build1-432a219-UMM-test.zip?raw=true) | v0.3.23 + psionic focus kept, sleepers in harmful areas, Treat Affliction ([review](docs/V0324_BUILD1_REVIEW.md)) | Superseded test build |
-| **[v0.3.23 stable ZIP](release/CompanionAI_Pathfinder_v0.3.23.zip?raw=true)** | The v0.3.23 release ([notes](release/CHANGELOG_v0.3.23.md)); same file as the build6 test ZIP | Released (tag `v0.3.23` created by the author) |
+| [v0.3.23 ZIP](release/CompanionAI_Pathfinder_v0.3.23.zip?raw=true) | The previous release (tag `v0.3.23`, [notes](release/CHANGELOG_v0.3.23.md)) | Previous release; unchanged |
 | [v0.3.22 ZIP](release/CompanionAI_Pathfinder_v0.3.22.zip?raw=true) | The previous release (tag `v0.3.22`) | Previous release; unchanged |
 | [Older test ZIP — v0.3.23-dev-build6 (967050c)](test-builds/AI-Control-FACC-v0.3.23-dev-build6-967050c-UMM-test.zip?raw=true) | Bombs / Carnage build + fixes from its logs: 5-foot step, sleepers, summons ([review](docs/RELEASE_0323_BUILD5_REVIEW.md)) | Released as v0.3.23 |
 | [Previous test ZIP — bombs, Carnage (cabdb2e)](test-builds/AI-Control-FACC-v0.3.23-dev-bombs-carnage-cabdb2e-UMM-test.zip?raw=true) | Build 4 + Alchemist flask/bomb fixes, Dreadful Carnage credit, Kinetic Sharpshooter note ([evidence and handover](docs/TASK_BOMBS_CARNAGE_QUIVER.md)); merged into development (PR #16); played as build5 | Superseded test build |
@@ -16,7 +17,7 @@
 | [Previous test ZIP — fixes2 c3f1636](test-builds/AI-Control-FACC-dev-fixes2-c3f1636-UMM-test.zip?raw=true) | The same without the movement follow-ups | Superseded test build |
 | [Previous test ZIP — ecabeb4](test-builds/AI-Control-FACC-dev-integrated-ecabeb4-UMM-test.zip?raw=true) | v0.3.22 + reviewed PR #13–#15 (also on `main`) | Superseded test build |
 
-`main` holds the v0.3.23 release source. Test builds can share a version number; tell them apart by the startup line
+`main` holds the v0.3.24 release source. Test builds can share a version number; tell them apart by the startup line
 in the log (`[Build] v0.3.23 module=...`, module IDs in [release/README.md](release/README.md) and
 [test-builds/README.md](test-builds/README.md)).
 GitHub Releases are published by the author; older release and test archives are kept unchanged.

@@ -1,8 +1,17 @@
 # Test builds
 
-## Current test build: v0.3.24-dev-build2 (2d6b49b)
+## Current test build: v0.3.24-dev-build3 (0a203b4), released as v0.3.24
 
-**[Download the current UMM test ZIP (2d6b49b)](AI-Control-FACC-v0.3.24-dev-build2-2d6b49b-UMM-test.zip?raw=true)**
+**[Download the UMM test ZIP (0a203b4)](AI-Control-FACC-v0.3.24-dev-build3-0a203b4-UMM-test.zip?raw=true)** - byte-identical to the
+[v0.3.24 release ZIP](../release/CompanionAI_Pathfinder_v0.3.24.zip?raw=true).
+
+Build 2 plus: a target the game's path does not lead to (an archer on a ledge), found by one companion, is not walked
+at by the others (real time; author-approved). Startup line
+`[Build] v0.3.24 module=0ea24da4-70d0-4c77-9046-58f05061174b`. [Identity](AI-Control-FACC-v0.3.24-dev-build3-0a203b4-UMM-test.identity.json) · [Checksums](SHA256SUMS.txt).
+
+## Previous test build: v0.3.24-dev-build2 (2d6b49b)
+
+**[Download the UMM test ZIP (2d6b49b)](AI-Control-FACC-v0.3.24-dev-build2-2d6b49b-UMM-test.zip?raw=true)**
 
 Direct link: <https://github.com/recovribox-svg/AIControll-FACC/raw/claude/dreamy-pasteur-b9h3rn/test-builds/AI-Control-FACC-v0.3.24-dev-build2-2d6b49b-UMM-test.zip>
 

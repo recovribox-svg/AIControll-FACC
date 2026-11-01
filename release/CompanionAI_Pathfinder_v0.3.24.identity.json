@@ -1,0 +1,24 @@
+{
+  "name": "AI Control - Fully Autonomous Combat Companions v0.3.24",
+  "version": "0.3.24",
+  "umm_manifest_version": "0.3.24",
+  "umm_mod_id": "CompanionAI_Pathfinder",
+  "release_branch": "claude/dreamy-pasteur-b9h3rn",
+  "runtime_source_commit": "0a203b4",
+  "same_package_as_test": "test-builds/AI-Control-FACC-v0.3.24-dev-build3-0a203b4-UMM-test.zip (byte-identical)",
+  "archive": "CompanionAI_Pathfinder_v0.3.24.zip",
+  "zip_sha256": "764553b38f35bac00769115542f2db49718141a7cdafe1e7b5a0334d186a5062",
+  "dll_sha256": "d16c50e98e78806f82e7e98e76703b974315763ebeeace0450911ff0a8a3e104",
+  "manifest_sha256": "a8ab2fc548146654ac0112dad9c2176e47e1c02e49c74a0f6b820f2f8456a84f",
+  "module_mvid": "0ea24da4-70d0-4c77-9046-58f05061174b",
+  "startup_marker": "[Build] v0.3.24 module=0ea24da4-70d0-4c77-9046-58f05061174b",
+  "archive_contents": ["CompanionAI_Pathfinder.dll", "Info.json"],
+  "authorization": "The author approved sharing unreachable targets and asked for the release (1 November 2026).",
+  "publication": "The author creates the GitHub release and tag v0.3.24 on main and attaches this ZIP.",
+  "checks": {
+    "unit_tests": { "passed": 258, "failed": 0, "skipped": 0 },
+    "release_build": { "warnings": 0, "errors": 0 },
+    "external_references": "SigDump vs the v0.3.23 release DLL: 10 read-only members added, none removed",
+    "in_game": "Build 1 (432a219) played: 12 turn-based and 13 real-time fights, no mod errors. The step-out and shared out-of-walking-reach changes and the psionic-focus rule with a psionic character are not yet played."
+  }
+}

@@ -2960,3 +2960,13 @@ TabletopTweaks-Core 0.7.15 through the mod's own binding and runs TTT's estimate
 `min(0.4 x engagers' Threat, best main)`. It now subtracts `bestAny - keeps`: `bestAny` the best affordable main option
 (turn-based including walk-first ones), `keeps` the best one that stays possible after the step (not a weapon attack;
 turn-based not walking first). A step worth nothing is not offered.
+
+## 83. v0.3.24 build 3 (released as v0.3.24): targets out of walking reach, shared
+
+Author-approved (1 November 2026). Real time: `RealTimeController` passes `NativePathFallsShort` (the agent's current
+path ends more than 1 m beyond the command's arrival radius from its goal) to `RealTimeTactics.RecordStuck`; with a
+target problem on an enemy, `CombatMemory.NoteOutOfWalkingReach` marks the target for the party (18 s, while it stays
+within 1.5 m). `SilentlyFailing` then drops options that `WalksIntoMelee` (melee weapon attacks from more than 3 m,
+Charge, touch abilities that walk first, advances to within 3 m) for every unit. In the build1 real-time log only the
+three walks at the ledge archer (path end 4.42 m from the goal, radius 1.61 m) meet the test; walks blocked by units
+(path end 0.6 m from the goal) do not.
