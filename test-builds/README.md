@@ -1,8 +1,23 @@
 # Test builds
 
-## Current test build: v0.3.24-dev-build1 (432a219)
+## Current test build: v0.3.24-dev-build2 (2d6b49b)
 
-**[Download the current UMM test ZIP (432a219)](AI-Control-FACC-v0.3.24-dev-build1-432a219-UMM-test.zip?raw=true)**
+**[Download the current UMM test ZIP (2d6b49b)](AI-Control-FACC-v0.3.24-dev-build2-2d6b49b-UMM-test.zip?raw=true)**
+
+Direct link: <https://github.com/recovribox-svg/AIControll-FACC/raw/claude/dreamy-pasteur-b9h3rn/test-builds/AI-Control-FACC-v0.3.24-dev-build2-2d6b49b-UMM-test.zip>
+
+Build 1 plus ([review](../docs/V0324_BUILD1_LOGS_REVIEW.md)): a caster next to an enemy no longer takes a 5-foot step
+away from a better option (a spell needing a short walk, its own melee attack).
+
+UMM shows **0.3.24**. Startup line `[Build] v0.3.24 module=c3e6faed-f700-40ff-82b6-3cd864c6a4b0`.
+- ZIP SHA-256 `8c3b1fe3c5108d4a8d7f010c6a19d3a5048691db38ef9ee67384f89b77b6599b`; DLL SHA-256
+  `c53a5398acee914b16afbc3236c2369828afa4276873d9903e19c16a1355343d`.
+- [Identity](AI-Control-FACC-v0.3.24-dev-build2-2d6b49b-UMM-test.identity.json) · [Checksums](SHA256SUMS.txt).
+- Checks: 258 unit tests pass; release build 0 warnings. Not yet played.
+
+## Previous test build: v0.3.24-dev-build1 (432a219)
+
+**[Download the UMM test ZIP (432a219)](AI-Control-FACC-v0.3.24-dev-build1-432a219-UMM-test.zip?raw=true)**
 
 Direct link: <https://github.com/recovribox-svg/AIControll-FACC/raw/claude/dreamy-pasteur-b9h3rn/test-builds/AI-Control-FACC-v0.3.24-dev-build1-432a219-UMM-test.zip>
 

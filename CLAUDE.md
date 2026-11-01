@@ -44,7 +44,11 @@ the author created the GitHub release and tag `v0.3.23`. The build5 review fixes
 author sent ran the build5 DLL (`89ffb864`), not the release. Fixed: held states (Psionics' psionic focus and the trance it
 ends: `TacticalEngine.HeldStates.cs`), a Coup de Grace ally must reach the sleeper outside harmful areas (Selective areas
 pass), dispel/removal fallback only for what the ability can remove; `Info.json` 0.3.24; test ZIP
-`AI-Control-FACC-v0.3.24-dev-build1-432a219-UMM-test.zip` (MVID `05fff211-2d9a-452c-bce0-b988c4840974`); in-game replay pending.
+`AI-Control-FACC-v0.3.24-dev-build1-432a219-UMM-test.zip` (MVID `05fff211-2d9a-452c-bce0-b988c4840974`). Its logs
+([docs/V0324_BUILD1_LOGS_REVIEW.md](docs/V0324_BUILD1_LOGS_REVIEW.md)): the ranged-style step out of melee now subtracts what
+it gives up; test ZIP `AI-Control-FACC-v0.3.24-dev-build2-2d6b49b-UMM-test.zip` (MVID `c3e6faed-f700-40ff-82b6-3cd864c6a4b0`)
+is the current development build; in-game replay pending. Open proposal (pathfinding, needs the author): share a
+"target out of walking reach" across the party.
 
 Historical handovers, superseded by the one above: [v0.3.22 release preparation](docs/RELEASE_0_3_22_HANDOVER.md)
 (27 October, PR #6–#12), [released-log review](docs/RELEASE_0322_LOG_REVIEW.md) (PR #13),

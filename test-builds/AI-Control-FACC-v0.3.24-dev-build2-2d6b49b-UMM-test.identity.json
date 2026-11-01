@@ -1,0 +1,22 @@
+{
+  "test_name": "0.3.24 development build 2: build1 log review (ranged-style step)",
+  "umm_manifest_version": "0.3.24",
+  "branch": "claude/dreamy-pasteur-b9h3rn",
+  "base_development_commit": "dac6a0c",
+  "runtime_source_commit": "2d6b49b",
+  "runtime_source_note": "build 1 (432a219) + the ranged-style step out of melee subtracts what it gives up (melee attacks; turn-based, options that walk first).",
+  "evidence_and_handover": "docs/V0324_BUILD1_LOGS_REVIEW.md",
+  "previous_test": "AI-Control-FACC-v0.3.24-dev-build1-432a219-UMM-test.zip",
+  "archive": "AI-Control-FACC-v0.3.24-dev-build2-2d6b49b-UMM-test.zip",
+  "zip_sha256": "8c3b1fe3c5108d4a8d7f010c6a19d3a5048691db38ef9ee67384f89b77b6599b",
+  "dll_sha256": "c53a5398acee914b16afbc3236c2369828afa4276873d9903e19c16a1355343d",
+  "module_mvid": "c3e6faed-f700-40ff-82b6-3cd864c6a4b0",
+  "startup_marker": "[Build] v0.3.24 module=c3e6faed-f700-40ff-82b6-3cd864c6a4b0",
+  "archive_contents": ["CompanionAI_Pathfinder.dll", "Info.json"],
+  "checks_run_by_claude": {
+    "unit_tests": { "passed": 258, "failed": 0, "skipped": 0 },
+    "release_build": { "warnings": 0, "errors": 0 },
+    "external_references": "SigDump unchanged from build 1"
+  },
+  "in_game": "Pending."
+}

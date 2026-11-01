@@ -4,7 +4,8 @@
 
 | What | Contents | Status |
 | --- | --- | --- |
-| **[Current test ZIP — v0.3.24-dev-build1 (432a219)](test-builds/AI-Control-FACC-v0.3.24-dev-build1-432a219-UMM-test.zip?raw=true)** | v0.3.23 + psionic focus kept, sleepers in harmful areas, Treat Affliction ([review](docs/V0324_BUILD1_REVIEW.md)); UMM shows 0.3.24 | Test build, awaiting in-game replay |
+| **[Current test ZIP — v0.3.24-dev-build2 (2d6b49b)](test-builds/AI-Control-FACC-v0.3.24-dev-build2-2d6b49b-UMM-test.zip?raw=true)** | Build 1 + no step out of melee away from a better spell or attack ([review](docs/V0324_BUILD1_LOGS_REVIEW.md)); UMM shows 0.3.24 | Test build, awaiting in-game replay |
+| [Previous test ZIP — v0.3.24-dev-build1 (432a219)](test-builds/AI-Control-FACC-v0.3.24-dev-build1-432a219-UMM-test.zip?raw=true) | v0.3.23 + psionic focus kept, sleepers in harmful areas, Treat Affliction ([review](docs/V0324_BUILD1_REVIEW.md)) | Superseded test build |
 | **[v0.3.23 stable ZIP](release/CompanionAI_Pathfinder_v0.3.23.zip?raw=true)** | The v0.3.23 release ([notes](release/CHANGELOG_v0.3.23.md)); same file as the build6 test ZIP | Released (tag `v0.3.23` created by the author) |
 | [v0.3.22 ZIP](release/CompanionAI_Pathfinder_v0.3.22.zip?raw=true) | The previous release (tag `v0.3.22`) | Previous release; unchanged |
 | [Older test ZIP — v0.3.23-dev-build6 (967050c)](test-builds/AI-Control-FACC-v0.3.23-dev-build6-967050c-UMM-test.zip?raw=true) | Bombs / Carnage build + fixes from its logs: 5-foot step, sleepers, summons ([review](docs/RELEASE_0323_BUILD5_REVIEW.md)) | Released as v0.3.23 |

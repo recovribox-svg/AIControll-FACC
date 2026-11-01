@@ -2952,3 +2952,11 @@ TabletopTweaks-Core 0.7.15 through the mod's own binding and runs TTT's estimate
   (`AoeDangerAnalyzer.EnteringDanger`; Selective own areas pass).
 - **Something to remove** (`HasSomethingToDispel` → `CanRemove` / `DispelCanTake`): the game's
   `ContextActionDispelMagic.TryDispelBuff` filters, or the named buffs / descriptors of the removal actions.
+
+## 82. v0.3.24 build 2: the ranged-style step counts what it gives up
+
+1 November 2026, development. Evidence: [V0324_BUILD1_LOGS_REVIEW.md](V0324_BUILD1_LOGS_REVIEW.md). In
+`AddMovementCandidates`, the step for a ranged-style unit without a ranged weapon (no provoking cast to make safe) was
+`min(0.4 x engagers' Threat, best main)`. It now subtracts `bestAny - keeps`: `bestAny` the best affordable main option
+(turn-based including walk-first ones), `keeps` the best one that stays possible after the step (not a weapon attack;
+turn-based not walking first). A step worth nothing is not offered.
