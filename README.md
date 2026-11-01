@@ -4,8 +4,9 @@
 
 | What | Contents | Status |
 | --- | --- | --- |
-| **[v0.3.22 stable ZIP](release/CompanionAI_Pathfinder_v0.3.22.zip?raw=true)** | The published v0.3.22 release (tag `v0.3.22`) | Released; unchanged |
-| **[Current test ZIP — v0.3.23-dev-build6 (967050c)](test-builds/AI-Control-FACC-v0.3.23-dev-build6-967050c-UMM-test.zip?raw=true)** | Bombs / Carnage build + fixes from its logs: 5-foot step, sleepers, summons ([review](docs/RELEASE_0323_BUILD5_REVIEW.md)) | Test build, awaiting in-game replay |
+| **[v0.3.23 stable ZIP](release/CompanionAI_Pathfinder_v0.3.23.zip?raw=true)** | The v0.3.23 release ([notes](release/CHANGELOG_v0.3.23.md)); same file as the build6 test ZIP | Released (tag `v0.3.23` created by the author) |
+| [v0.3.22 ZIP](release/CompanionAI_Pathfinder_v0.3.22.zip?raw=true) | The previous release (tag `v0.3.22`) | Previous release; unchanged |
+| [Test ZIP — v0.3.23-dev-build6 (967050c)](test-builds/AI-Control-FACC-v0.3.23-dev-build6-967050c-UMM-test.zip?raw=true) | Bombs / Carnage build + fixes from its logs: 5-foot step, sleepers, summons ([review](docs/RELEASE_0323_BUILD5_REVIEW.md)) | Released as v0.3.23 |
 | [Previous test ZIP — bombs, Carnage (cabdb2e)](test-builds/AI-Control-FACC-v0.3.23-dev-bombs-carnage-cabdb2e-UMM-test.zip?raw=true) | Build 4 + Alchemist flask/bomb fixes, Dreadful Carnage credit, Kinetic Sharpshooter note ([evidence and handover](docs/TASK_BOMBS_CARNAGE_QUIVER.md)); merged into development (PR #16); played as build5 | Superseded test build |
 | [Older test ZIP — v0.3.23-dev-build4 (da4e0a5)](test-builds/AI-Control-FACC-v0.3.23-dev-build4-da4e0a5-UMM-test.zip?raw=true) | Build 3 + fixes from its logs and the play-test notes; UMM shows 0.3.23 (development source) | Superseded test build |
 | [Previous test ZIP — v0.3.23-dev-build3 (089a402)](test-builds/AI-Control-FACC-v0.3.23-dev-build3-089a402-UMM-test.zip?raw=true) | The build2 test + fixes from its logs | Superseded test build |
@@ -13,9 +14,9 @@
 | [Previous test ZIP — fixes2 c3f1636](test-builds/AI-Control-FACC-dev-fixes2-c3f1636-UMM-test.zip?raw=true) | The same without the movement follow-ups | Superseded test build |
 | [Previous test ZIP — ecabeb4](test-builds/AI-Control-FACC-dev-integrated-ecabeb4-UMM-test.zip?raw=true) | v0.3.22 + reviewed PR #13–#15 (also on `main`) | Superseded test build |
 
-The source code on `main` and on the development branch is **newer than the published v0.3.22 ZIP**: it includes the
-reviewed follow-ups below. Both ZIPs show **0.3.22** in UMM; tell them apart by the startup line in the log
-(`[Build] v0.3.22 module=...`, module IDs in [release/README.md](release/README.md) and [test-builds/README.md](test-builds/README.md)).
+`main` holds the v0.3.23 release source. Test builds can share a version number; tell them apart by the startup line
+in the log (`[Build] v0.3.23 module=...`, module IDs in [release/README.md](release/README.md) and
+[test-builds/README.md](test-builds/README.md)).
 GitHub Releases are published by the author; older release and test archives are kept unchanged.
 
 ## Current development test build (not a release)

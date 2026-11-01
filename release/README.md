@@ -1,56 +1,37 @@
-# AI Control v0.3.22 — UMM package
+# AI Control v0.3.23 — UMM package
 
-**[Download CompanionAI_Pathfinder_v0.3.22.zip](CompanionAI_Pathfinder_v0.3.22.zip?raw=true)**
+**[Download CompanionAI_Pathfinder_v0.3.23.zip](CompanionAI_Pathfinder_v0.3.23.zip?raw=true)**
 
-The author authorized this version for public release. PRs #6–#11 are integrated into
-`claude/dreamy-pasteur-b9h3rn`; this package adds the **0.3.22** UMM manifest and version-correct startup identity.
-It contains the final Test[5] fixes. The only runtime-source change during packaging is that identity line;
-decision calculations, movement, toggle handling and performance budgets are unchanged.
+The author asked for this version to be released (1 November 2026). It is the development build tested as
+`v0.3.23-dev-build6` (runtime commit `967050c`); the ZIP is byte-identical to that test ZIP.
+[Release notes](CHANGELOG_v0.3.23.md).
 
 ## Install
 
 1. Fully exit the game.
 2. Install/update the ZIP through Unity Mod Manager's **Mods** tab.
-3. UMM should display **0.3.22**. Existing settings remain under `CompanionAI_Pathfinder`.
+3. UMM should display **0.3.23**. Existing settings remain under `CompanionAI_Pathfinder`.
 4. The complete startup log identifies the package:
 
 ```text
-[Build] v0.3.22 module=52bb4a21-9f8f-459f-93db-5c942e531fa2
+[Build] v0.3.23 module=09a7ab12-2cc2-477c-a688-74765960ea97
 ```
 
-The flat ZIP contains exactly `CompanionAI_Pathfinder.dll` and `Info.json`. No game DLLs, settings, offline
-verification files or raw playtest logs are included.
+The flat ZIP contains exactly `CompanionAI_Pathfinder.dll` and `Info.json`.
+- ZIP SHA-256: `8843109b813370dc60f8df5efc58d72879f1b3c2af6a385ebd436229903b2c7f`
+- DLL SHA-256: `b4efd3f509247207fa0366dc9a96c40ddab2c5a9834744682c831cdffde77820`
+- [Identity](CompanionAI_Pathfinder_v0.3.23.identity.json) · [Checksums](SHA256SUMS.txt)
 
 ## Publish on GitHub — author action
 
-Codex prepares and integrates the package; the author creates the GitHub release/tag.
-[Release-preparation PR #12](https://github.com/recovribox-svg/AIControll-FACC/pull/12)
-records the exact development merge revision. The immutable package commit is
-`2c626c1c1fc8ac4c94a7f7fadb63ad18ef113401`.
+Claude prepared the package and brought `main` to the release revision; the author creates the GitHub release and tag
+(tag pushes from Claude are refused).
+- **Releases → Draft a new release.** Tag: **v0.3.23** (new tag). Target: **`main`**.
+- Title: `AI Control - Fully Autonomous Combat Companions v0.3.23`.
+- Description: paste [CHANGELOG_v0.3.23.md](CHANGELOG_v0.3.23.md).
+- Attach **this ZIP** (download it above) as the release asset, then publish.
 
-- Create the release with tag **v0.3.22** and target the prepared revision on
-  **`claude/dreamy-pasteur-b9h3rn`**. Main still represents v0.3.21 at this handover.
-- Use the exact development merge revision recorded in the release-preparation PR timeline if development
-  has since advanced. Do not select an older experimental v0.3.22 test tag.
-- Download the ZIP above and attach **that same ZIP** as the release asset.
-- Use [CHANGELOG_v0.3.22.md](CHANGELOG_v0.3.22.md) for the release description.
+## Previous release
 
-[Development/Claude handover](../docs/RELEASE_0_3_22_HANDOVER.md) records authorization, integration and remaining
-leads. [Historical test packages](../test-builds/README.md) remain available for reproducing older reports.
-
-## Identity and checks
-
-- Runtime source: `a9efe55e9de5ae529e1889d5beb99f95f1bd29ce`.
-- Module MVID: `52bb4a21-9f8f-459f-93db-5c942e531fa2`.
-- ZIP SHA-256: `771fbeb360418f1b4d03ea83d101ec12a88cdcc1534a51ebcb17cee2cacb12d6`.
-- DLL SHA-256: `3b372f48c6e080fe989182a2686ae96e464d68ac9e88c61ac9bff924e1373533`.
-- [Identity sidecar](CompanionAI_Pathfinder_v0.3.22.identity.json) · [SHA256SUMS](SHA256SUMS.txt).
-- **164 tests pass**, zero failed/skipped; Release against supplied game/UMM references has zero warnings/errors.
-- Compiled concentration/Selective/HD, activation and resistance routes pass. Native metadata/bindings and
-  486 burn/quiver vectors pass. Partial reader: 4,097 loaded, one known failed export; 1,220 rows, zero reader
-  errors, all normalized details unchanged from Test[5].
-- The author reports 8/10 smoothness in the preceding playtest. Latest concentration/diagnostic changes have
-  automated/static verification; no fresh live game or third-party-handler test is claimed.
-
-Initial fire-resistance optimism remains unresolved; the release notes list the other scope limits.
-This package keeps all previous release and test ZIPs unchanged.
+[v0.3.22](CompanionAI_Pathfinder_v0.3.22.zip?raw=true) (tag `v0.3.22`, startup
+`[Build] v0.3.22 module=52bb4a21-9f8f-459f-93db-5c942e531fa2`, [notes](CHANGELOG_v0.3.22.md)), unchanged.

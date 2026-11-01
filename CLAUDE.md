@@ -37,7 +37,9 @@ build5. The build5 log review (1 November, [docs/RELEASE_0323_BUILD5_REVIEW.md](
 development) fixed the 5-foot step out of melee (only for casts the Progressive policy keeps, against options that walk,
 cones keep their targets), sleepers left unshot for a far-away Coup de Grace ally, and summon after summon; test ZIP
 `AI-Control-FACC-v0.3.23-dev-build6-967050c-UMM-test.zip` (MVID `09a7ab12-2cc2-477c-a688-74765960ea97`) is now the current
-development test build; in-game replay is pending.
+development test build. At the author's request (1 November) it is released as **v0.3.23**: `release/CompanionAI_Pathfinder_v0.3.23.zip`
+(byte-identical to the build6 ZIP), notes `release/CHANGELOG_v0.3.23.md`, `main` fast-forwarded to the release revision;
+the author creates the GitHub release and tag `v0.3.23`. The build5 review fixes themselves are not yet played.
 
 Historical handovers, superseded by the one above: [v0.3.22 release preparation](docs/RELEASE_0_3_22_HANDOVER.md)
 (27 October, PR #6–#12), [released-log review](docs/RELEASE_0322_LOG_REVIEW.md) (PR #13),

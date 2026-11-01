@@ -1,0 +1,27 @@
+{
+  "name": "AI Control - Fully Autonomous Combat Companions v0.3.23",
+  "version": "0.3.23",
+  "umm_manifest_version": "0.3.23",
+  "umm_mod_id": "CompanionAI_Pathfinder",
+  "release_branch": "claude/dreamy-pasteur-b9h3rn",
+  "runtime_source_commit": "967050c",
+  "same_package_as_test": "test-builds/AI-Control-FACC-v0.3.23-dev-build6-967050c-UMM-test.zip (byte-identical)",
+  "archive": "CompanionAI_Pathfinder_v0.3.23.zip",
+  "zip_sha256": "8843109b813370dc60f8df5efc58d72879f1b3c2af6a385ebd436229903b2c7f",
+  "dll_sha256": "b4efd3f509247207fa0366dc9a96c40ddab2c5a9834744682c831cdffde77820",
+  "manifest_sha256": "01edbb8d79e2bffd2a66042984cb9c2183107a71f322df2eaa023ec360dd6c90",
+  "module_mvid": "09a7ab12-2cc2-477c-a688-74765960ea97",
+  "startup_marker": "[Build] v0.3.23 module=09a7ab12-2cc2-477c-a688-74765960ea97",
+  "archive_contents": [
+    "CompanionAI_Pathfinder.dll",
+    "Info.json"
+  ],
+  "authorization": "The author asked for this to be released (1 November 2026).",
+  "publication": "The author creates the GitHub release and tag v0.3.23 on the release revision and attaches this ZIP.",
+  "checks": {
+    "unit_tests": { "passed": 254, "failed": 0, "skipped": 0 },
+    "release_build": { "warnings": 0, "errors": 0 },
+    "external_references": "SigDump: identical to the cabdb2e build played as build5",
+    "in_game": "The cabdb2e build (all changes except the build5 review fixes) was played as build5: 16 turn-based and 16 real-time fights, no mod errors. The build5 review fixes (5-foot step, sleepers, summons) are not yet played."
+  }
+}

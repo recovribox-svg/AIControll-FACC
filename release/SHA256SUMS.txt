@@ -1,2 +1,3 @@
 96fd307c7b97149bc82848c2842e01cdc2b7ed0c8878a7760b7ab6615a719a5e  CompanionAI_Pathfinder_v0.3.21.zip
 771fbeb360418f1b4d03ea83d101ec12a88cdcc1534a51ebcb17cee2cacb12d6  CompanionAI_Pathfinder_v0.3.22.zip
+8843109b813370dc60f8df5efc58d72879f1b3c2af6a385ebd436229903b2c7f  CompanionAI_Pathfinder_v0.3.23.zip
