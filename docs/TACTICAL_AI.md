@@ -2936,3 +2936,19 @@ TabletopTweaks-Core 0.7.15 through the mod's own binding and runs TTT's estimate
   `n` = creatures this caster summoned that still fight (unit-tested), and, for a summon that spends a spell slot or a
   daily resource (`AbilityResourceLogic.IsSpendResource`), by 1 - `LimitedUseDiscount(difficulty)` like spell slots and
   bombs. Both are AI policy, shown in the decision log's reason.
+
+## 81. v0.3.24 build 1: held states (psionic focus), Coup de Grace reach, dispel targets
+
+1 November 2026, development. Evidence: [V0324_BUILD1_REVIEW.md](V0324_BUILD1_REVIEW.md).
+- **Held states** (`TacticalEngine.HeldStates.cs`). A lasting good buff on the caster that the ability removes
+  (`RemovedBuffs` on a self target, `CasterRemovedBuffs` otherwise) without a lasting effect of its own (`HasLongBuff`),
+  not re-applied by it, and that something depends on (its `AddFactContextActions.Deactivated` removes buffs the unit
+  has, or an ability's `AbilityCasterHasFacts` / a toggle's `RestrictionHasFact` names it). Cost:
+  `ValueModel.SpentStateCost(rounds after the gained effect, restore actions, readable worth per round, PerRound)`;
+  restore actions = the cheapest own ability re-applying it (standard 1, move 0.5, swift 0.25, free 0.1; none: 1) + the
+  activation commands of toggles whose buffs end with it. The buff branch no longer treats such a removal as a mode
+  switch. Cached per unit and buff for the fight (`CombatMemory.ResetCombat`).
+- **Coup de Grace ally** (`CoupDeGraceAlly.Reaches`): also no harmful area on the way to the sleeper
+  (`AoeDangerAnalyzer.EnteringDanger`; Selective own areas pass).
+- **Something to remove** (`HasSomethingToDispel` → `CanRemove` / `DispelCanTake`): the game's
+  `ContextActionDispelMagic.TryDispelBuff` filters, or the named buffs / descriptors of the removal actions.

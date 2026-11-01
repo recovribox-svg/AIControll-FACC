@@ -1,0 +1,22 @@
+{
+  "test_name": "0.3.24 development build 1: v0.3.23 log review and Psionics psionic focus",
+  "umm_manifest_version": "0.3.24",
+  "branch": "claude/dreamy-pasteur-b9h3rn",
+  "base_development_commit": "c11c237 (v0.3.23 release)",
+  "runtime_source_commit": "432a219",
+  "runtime_source_note": "v0.3.23 + spending a held state (psionic focus and the trance it ends) priced, Coup de Grace ally must reach the sleeper outside harmful areas, dispel/removal fallback only for what the ability can remove; Info.json 0.3.24.",
+  "evidence_and_handover": "docs/V0324_BUILD1_REVIEW.md",
+  "previous_test": "release/CompanionAI_Pathfinder_v0.3.23.zip",
+  "archive": "AI-Control-FACC-v0.3.24-dev-build1-432a219-UMM-test.zip",
+  "zip_sha256": "5d4fa106c37ba88ed17a31636a9dd514925259085e8336f199ba69a40a31ed57",
+  "dll_sha256": "da1d3d7169281a4e1e86cec1b447f10e6c6c3dbb10513ad0c5b2fda2eebc490a",
+  "module_mvid": "05fff211-2d9a-452c-bce0-b988c4840974",
+  "startup_marker": "[Build] v0.3.24 module=05fff211-2d9a-452c-bce0-b988c4840974",
+  "archive_contents": ["CompanionAI_Pathfinder.dll", "Info.json"],
+  "checks_run_by_claude": {
+    "unit_tests": { "command": "dotnet test tests/CompanionAI.Tests", "passed": 258, "failed": 0, "skipped": 0 },
+    "release_build": { "warnings": 0, "errors": 0 },
+    "external_references": "SigDump vs the v0.3.23 release DLL: 10 read-only members added, none removed"
+  },
+  "in_game": "Pending. No psionic character has been played with it."
+}

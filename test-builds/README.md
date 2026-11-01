@@ -1,8 +1,31 @@
 # Test builds
 
-## Current test build: v0.3.23-dev-build6 (967050c)
+## Current test build: v0.3.24-dev-build1 (432a219)
 
-**[Download the current UMM test ZIP (967050c)](AI-Control-FACC-v0.3.23-dev-build6-967050c-UMM-test.zip?raw=true)**
+**[Download the current UMM test ZIP (432a219)](AI-Control-FACC-v0.3.24-dev-build1-432a219-UMM-test.zip?raw=true)**
+
+Direct link: <https://github.com/recovribox-svg/AIControll-FACC/raw/claude/dreamy-pasteur-b9h3rn/test-builds/AI-Control-FACC-v0.3.24-dev-build1-432a219-UMM-test.zip>
+
+v0.3.23 plus ([review](../docs/V0324_BUILD1_REVIEW.md)):
+- **Psionics:** a Psychic Warrior keeps its psionic focus (and the trance that ends with it) instead of spending it on
+  1-round maneuvers, except as a fight's last action.
+- **Sleeping enemies** in Grease or Entangle: the archers shoot when no melee ally can reach them safely.
+- **Treat Affliction** (and other removal abilities) only on allies with something it can remove.
+
+UMM shows **0.3.24**. Startup line:
+
+```text
+[Build] v0.3.24 module=05fff211-2d9a-452c-bce0-b988c4840974
+```
+
+- ZIP SHA-256: `5d4fa106c37ba88ed17a31636a9dd514925259085e8336f199ba69a40a31ed57`; DLL SHA-256:
+  `da1d3d7169281a4e1e86cec1b447f10e6c6c3dbb10513ad0c5b2fda2eebc490a`.
+- [Identity](AI-Control-FACC-v0.3.24-dev-build1-432a219-UMM-test.identity.json) · [Checksums](SHA256SUMS.txt).
+- Checks: 258 unit tests pass; release build 0 warnings. Not yet played.
+
+## Previous test build: v0.3.23-dev-build6 (967050c), released as v0.3.23
+
+**[Download the UMM test ZIP (967050c)](AI-Control-FACC-v0.3.23-dev-build6-967050c-UMM-test.zip?raw=true)**
 
 Direct link: <https://github.com/recovribox-svg/AIControll-FACC/raw/claude/dreamy-pasteur-b9h3rn/test-builds/AI-Control-FACC-v0.3.23-dev-build6-967050c-UMM-test.zip>
 
