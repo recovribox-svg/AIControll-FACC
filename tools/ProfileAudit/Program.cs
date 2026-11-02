@@ -72,7 +72,7 @@ namespace ProfileAudit
             if (!AuditOptions.TryParse(args, out var options, out var optionError))
             {
                 Console.Error.WriteLine(optionError);
-                Console.Error.WriteLine("Usage: ProfileAudit [--allow-failures N] [--optional-provider TabletopTweaks-Core.dll] <dump folders...> <report.txt>");
+                Console.Error.WriteLine("Usage: ProfileAudit [--allow-failures N] [--optional-provider TabletopTweaks-Core.dll] [--blocklist-checks] <dump folders...> <report.txt>");
                 return 2;
             }
             var output = options.Output;
@@ -132,6 +132,14 @@ namespace ProfileAudit
             foreach (var bp in loaded.Values)
                 try { bp.OnEnable(); } catch { }
             Audit.Run(loaded.Values.ToList(), output);
+            // ★ user-ability-blacklist: the mod's matching on these blueprints, at the head of the report.
+            int blocklistFailures = 0;
+            if (options.BlocklistChecks)
+            {
+                var blocklistLines = BlocklistCheck.Run(loaded.Values, out blocklistFailures);
+                foreach (var line in blocklistLines) Console.WriteLine(line);
+                File.WriteAllText(output, string.Join(Environment.NewLine, blocklistLines) + Environment.NewLine + Environment.NewLine + File.ReadAllText(output));
+            }
             if (failed > 0)
             {
                 string partial = $"PARTIAL: loaded {loaded.Count}, failed {failed}, allowed {options.AllowFailures}. Failed blueprints:";
@@ -141,7 +149,7 @@ namespace ProfileAudit
             }
             if (providerLines.Count > 0)
                 File.WriteAllText(output, string.Join(Environment.NewLine, providerLines) + Environment.NewLine + Environment.NewLine + File.ReadAllText(output));
-            return 0;
+            return blocklistFailures > 0 ? 1 : 0;
         }
     }
 }

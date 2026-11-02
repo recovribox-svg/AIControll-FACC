@@ -563,18 +563,18 @@ namespace CompanionAI_Pathfinder.Tactics
         }
 
         /// <summary>
-        /// ★ v0.3.15: an ability the game silently did nothing with twice on that target this fight (CastOutcome), or a
-        /// new cast of the touch spell whose charge the unit already holds: that cast would replace the charge and spend
-        /// another slot, scroll or potion, while delivering the held one is free. Camellia drank a second Cure Moderate
-        /// Wounds potion while still holding the first one's charge.
-        /// </summary>
-        /// <summary>
         /// ★ user-ability-blacklist: the option would start something the lists block - an attack mode it switches on, a
         /// toggle, a Gather Power before its blast (abilities themselves never become options). Execute checks again.
         /// </summary>
         private static bool PolicyBlocks(TacticalContext ctx, Candidate c) =>
             !ctx.Blocks.IsEmpty && UserAbilityPolicy.Blocks(ctx.Blocks, ctx.Unit, c, out _);
 
+        /// <summary>
+        /// ★ v0.3.15: an ability the game silently did nothing with twice on that target this fight (CastOutcome), or a
+        /// new cast of the touch spell whose charge the unit already holds: that cast would replace the charge and spend
+        /// another slot, scroll or potion, while delivering the held one is free. Camellia drank a second Cure Moderate
+        /// Wounds potion while still holding the first one's charge.
+        /// </summary>
         private static bool SilentlyFailing(TacticalContext ctx, Candidate c)
         {
             // ★ v0.3.18 (test11): a walk the real-time path check refused from where the unit still stands.

@@ -9,6 +9,8 @@ namespace ProfileAudit
         public readonly List<string> Roots = new List<string>();
         public int AllowFailures;
         public string OptionalProvider;
+        /// <summary>★ user-ability-blacklist: run the blocklist matching on the loaded blueprints (BlocklistCheck).</summary>
+        public bool BlocklistChecks;
         public static bool TryParse(string[] args, out AuditOptions options, out string error)
         {
             options = new AuditOptions(); error = null;
@@ -33,6 +35,7 @@ namespace ProfileAudit
                     { error = "--optional-provider requires one TabletopTweaks-Core.dll path"; return false; }
                     options.OptionalProvider = args[i];
                 }
+                else if (args[i] == "--blocklist-checks") options.BlocklistChecks = true;
                 else if (args[i].StartsWith("--", StringComparison.Ordinal))
                 { error = "unknown option: " + args[i]; return false; }
                 else options.Roots.Add(args[i]);
