@@ -203,6 +203,10 @@ namespace CompanionAI_Pathfinder.Analysis
                     classification.Timing != AbilityTiming.PreCombatBuff)
                     continue;
 
+                // ★ user-ability-blacklist: listed ones never become requests (the others go on as before).
+                if (Tactics.UserAbilityPolicy.Blocks(caster, classification.Ability))
+                    continue;
+
                 // 사용 가능한지 확인
                 if (!classification.Ability.IsAvailableForCast)
                     continue;

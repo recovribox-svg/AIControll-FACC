@@ -73,6 +73,9 @@ namespace CompanionAI_Pathfinder.Tactics
         /// <summary>A rejected option: not tried again this round, and its enemy is unreachable when no path got there.</summary>
         public static void RecordRejected(TurnMemory memory, Candidate candidate, string failure)
         {
+            // ★ user-ability-blacklist: refused by the "Abilities AI must not use" lists - not a failed option, an unreachable
+            // target or a path to learn from (the next decision does not offer it; unblocking restores it at once).
+            if (!UserAbilityRules.CountsAsFailure(failure)) return;
             // ★ v0.3.20 (test8): the game's walk provokes more attacks of opportunity than the straight line it was priced
             // on - priced again with them on the next decision, not dropped (TacticalEngine.RepriceRealPaths). Refused a
             // second time, it is dropped for the turn like any other.

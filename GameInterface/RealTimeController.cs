@@ -876,6 +876,13 @@ namespace CompanionAI_Pathfinder.GameInterface
             string unitName = unit.Descriptor?.CharacterName ?? "Unknown";
             string targetName = action.Target.Descriptor?.CharacterName ?? "Unknown";
 
+            // ★ user-ability-blacklist: the old engine's casting boundary (its candidates are filtered too). Not a failure.
+            if (Tactics.UserAbilityPolicy.Blocks(unit, action.Ability))
+            {
+                Main.Verbose($"[RT] {unitName}: {action.Ability.Name} is on an 'Abilities AI must not use' list - skipped");
+                return;
+            }
+
             // ★ v0.2.48: 반복 명령 감지 - 같은 능력+타겟이 짧은 시간 내 반복되면 블랙리스트
             if (FailedAbilityTracker.Instance.RecordCommandAndCheckRepeat(unit, action.Ability, action.Target))
             {
@@ -894,7 +901,10 @@ namespace CompanionAI_Pathfinder.GameInterface
             try
             {
                 var command = new UnitUseAbility(action.Ability, targetWrapper);
-                CommandDispatcher.Run(unit, command, "RT ExecuteAbilityAction");
+                // ★ user-ability-blacklist: a refusal by the lists is not a failed ability for the tracker below.
+                if (!CommandDispatcher.Run(unit, command, "RT ExecuteAbilityAction", out string failure) &&
+                    Tactics.UserAbilityRules.IsPolicyRefusal(failure))
+                    return;
 
                 // ★ v0.2.46: 명령이 실제로 큐에 들어갔는지 확인
                 // 명령이 바로 취소되면 Commands.Empty가 true 상태 유지
@@ -1443,8 +1453,10 @@ namespace CompanionAI_Pathfinder.GameInterface
             // ★ v0.3.3: never flip an on/off switch outside combat. Isekai's "Shift Form: Overlord / Mortal Guise" applies
             // its form buff when absent and REMOVES it when present; recast after every fight, it left Orvath's form to
             // chance. Such toggles are the player's choice out of combat (the turn-based engine still uses them in combat).
+            // ★ user-ability-blacklist: listed ones are left out before the first castable is picked, so one cannot hold up
+            // the others.
             var unappliedPermanentBuffs = AbilityClassifier.GetUnappliedPermanentBuffs(unit)
-                .Where(c => c.Ability != null && IsWorthKeepingUp(c.Ability, unit))
+                .Where(c => c.Ability != null && !Tactics.UserAbilityPolicy.Blocks(unit, c.Ability) && IsWorthKeepingUp(c.Ability, unit))
                 .ToList();
             if (unappliedPermanentBuffs.Count > 0)
                 Main.Verbose($"[RT] {unitName}: Found {unappliedPermanentBuffs.Count} unapplied permanent buffs");
@@ -1466,7 +1478,12 @@ namespace CompanionAI_Pathfinder.GameInterface
             try
             {
                 var useAbilityCommand = new UnitUseAbility(nativeAbility, target);
-                CommandDispatcher.Run(unit, useAbilityCommand, "RT ApplyPermanentBuffsOutOfCombat");
+                // ★ user-ability-blacklist: a refused command is not counted, nor does it delay the next one.
+                if (!CommandDispatcher.Run(unit, useAbilityCommand, "RT ApplyPermanentBuffsOutOfCombat", out string failure))
+                {
+                    Main.Verbose($"[RT] {unitName}: out-of-combat buff {nativeAbility.Name} not issued - {failure}");
+                    return;
+                }
                 SetNextCommandTime(unit, useAbilityCommand);  // v0.2.21
                 Main.Log($"[RT] ★ {unitName}: Out-of-combat permanent buff ({nativeAbility.Name})");
                 _buffCount++;

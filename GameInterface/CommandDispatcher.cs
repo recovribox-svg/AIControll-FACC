@@ -45,6 +45,9 @@ namespace CompanionAI_Pathfinder.GameInterface
             if (unit == null || !unit.IsInCombat) { failure = "infusion transition is combat-only"; return false; }
             if (!(Settings.ModSettings.Instance?.AiManagesToggles ?? true))
             { failure = "AI toggle management is off"; return false; }
+            // ★ user-ability-blacklist: a blocked start is refused before any infusion is stopped (nothing changes).
+            if (activate != null && Tactics.UserAbilityPolicy.Blocks(unit, activate))
+            { failure = Tactics.UserAbilityPolicy.Refusal(activate.Name); return false; }
             try
             {
                 if (activate != null)
@@ -113,6 +116,15 @@ namespace CompanionAI_Pathfinder.GameInterface
             if (unit == null || command == null)
             {
                 failure = "null unit or command";
+                return false;
+            }
+
+            // ★ user-ability-blacklist: the last safeguard for every ability AI Control issues (only the mod calls this; the
+            // game's own, the player's and other mods' commands never come here).
+            if (command is UnitUseAbility use && Tactics.UserAbilityPolicy.Blocks(unit, use.Ability))
+            {
+                failure = Tactics.UserAbilityPolicy.Refusal(use.Ability?.Name);
+                CommandTrace.LogRejected(unit, command, label, failure);
                 return false;
             }
 

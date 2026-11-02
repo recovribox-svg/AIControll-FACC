@@ -4600,6 +4600,13 @@ namespace CompanionAI_Pathfinder.Tactics
         {
             command = null;
             failure = null;
+            // ★ user-ability-blacklist: checked again right before acting, before an infusion switch, an approach walk, a
+            // touch approach, an attack's mode switches or a Gather Power is spent. Not a failed option (TacticalDriver).
+            if (UserAbilityPolicy.Blocks(unit, c, out string blocked))
+            {
+                failure = UserAbilityPolicy.Refusal(blocked);
+                return false;
+            }
             if (c.InfusionSwitch != null) return ExecuteInfusionSwitch(unit, c, out command, out failure);
             // ★ v0.3.17: an approach around a harmful area walks to the spot it was priced for, then acts on the next
             // decision (as touch spells do in turn-based). The plain path the game would pick to the target goes through
