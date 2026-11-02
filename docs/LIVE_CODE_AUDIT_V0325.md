@@ -139,3 +139,13 @@ GUID's text.
 ability is now printed) and fewer "memory clean-up ran". Decisions are unchanged by construction. If a stutter remains,
 the line names the ability and its KB; that is the next target. A frame-level stutter outside decisions would not appear
 in these lines.
+
+## 10. Test3 playtest and release
+
+Test3 (MVID `b1f83486`) played: 3 turn-based and 3 real-time fights, no mod errors. 16 slow decisions, all Orvath's.
+Most of them grew the heap by **40-300 KB** (test2: 4-10 MB); a few still grew by 5-14 MB, with no single ability
+standing out (Mono's heap figure is coarse). Three overlapped a collection (861, 897, 1446 ms) against six in test2's
+34. CPU per Orvath decision is unchanged at about 300 ms (Snowball and damage cantrips 15-30 ms each over 63 abilities):
+A4 stays open. Behaviour: no new defect. Potions were drunk in hard fights or when about to drop. The five "moved
+nowhere" turns were archers advancing towards an enemy in range but out of sight: the advance stops at range, not at a
+spot with sight. That is a movement change, left for discussion. Released as v0.3.25 at the author's request.

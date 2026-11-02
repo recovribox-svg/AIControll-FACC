@@ -68,7 +68,11 @@ the costliest abilities and heap growth. Test ZIP `AI-Control-FACC-v0.3.25-dev-t
 **v0.3.25 test 3 (2 November, audit report §9, `docs/TACTICAL_AI.md` §88):** test2 played - stutters are garbage collections
 inside Orvath's decisions (+4-10 MB each). Exact allocation fixes: ability parameters reused per decision
 (`CombatMath.ParamsOf`), struct condition-cache key, `NeedLoS` once per ability, GUID text cached; per-ability heap growth
-in the slow line. Test ZIP `AI-Control-FACC-v0.3.25-dev-test3-ffed9ac-UMM-test.zip` (MVID `b1f83486-ff07-4245-b5d2-f4b0998b5d1a`).
+in the slow line. Test ZIP `AI-Control-FACC-v0.3.25-dev-test3-ffed9ac-UMM-test.zip` (MVID `b1f83486-ff07-4245-b5d2-f4b0998b5d1a`). Test3 played (heap growth
+mostly 40-300 KB a decision, 3 collections in 16 slow lines, no mod errors). At the author's request it is released as
+**v0.3.25** (commit `ffed9ac`): `release/CompanionAI_Pathfinder_v0.3.25.zip` (byte-identical to the test3 ZIP), notes
+`release/CHANGELOG_v0.3.25.md`, `main` fast-forwarded; the author creates the GitHub release and tag `v0.3.25`. Open for
+discussion: an archer in range but without sight of an enemy advances to range, not to a spot with sight (moved nowhere).
 
 Historical handovers, superseded by the one above: [v0.3.22 release preparation](docs/RELEASE_0_3_22_HANDOVER.md)
 (27 October, PR #6–#12), [released-log review](docs/RELEASE_0322_LOG_REVIEW.md) (PR #13),
