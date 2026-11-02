@@ -28,6 +28,8 @@ namespace CompanionAI_Pathfinder.Tactics
     {
         /// <summary>Per character: the ability set last reported (its hash), so a changed set is reported again.</summary>
         private static readonly Dictionary<string, int> Reported = new Dictionary<string, int>();
+        /// <summary>★ v0.3.25 (log review): the same for the character's toggles, reported apart.</summary>
+        private static readonly Dictionary<string, int> ReportedToggles = new Dictionary<string, int>();
         /// <summary>Characters already checked in this fight (the check itself gathers the abilities once).</summary>
         private static readonly HashSet<string> CheckedThisFight = new HashSet<string>();
 
@@ -43,15 +45,29 @@ namespace CompanionAI_Pathfinder.Tactics
                 var abilities = AbilityDiscovery.Gather(unit);
                 var toggles = unit.ActivatableAbilities?.Enumerable?.Where(t => t?.Blueprint != null).ToList()
                               ?? new List<ActivatableAbility>();
+                // ★ user-ability-blacklist: what the lists block for this character is part of its set, so an edit reports
+                // that character again - not everyone (the revision alone re-reported the whole party after any edit).
+                var scope = UserAbilityPolicy.ScopeFor(unit);
                 int hash = 17;
-                foreach (var a in abilities) hash = hash * 31 + AbilityDiscovery.Key(a).GetHashCode();
-                foreach (var t in toggles) hash = hash * 31 + t.Blueprint.AssetGuid.GetHashCode();
-                hash = hash * 31 + UserAbilityPolicy.Revision;   // ★ user-ability-blacklist: a list edit is reported again
-                if (Reported.TryGetValue(unit.UniqueId, out int last) && last == hash) return;
-                Reported[unit.UniqueId] = hash;
-                ReportAbilities(unit, abilities);
-                foreach (var t in toggles) ReportToggle(unit, t);
-                ReportKineticist(unit, abilities);
+                foreach (var a in abilities)
+                    hash = hash * 31 + AbilityDiscovery.Key(a).GetHashCode() + (UserAbilityPolicy.SourceOf(scope, a) != BlockSource.None ? 1 : 0);
+                int toggleHash = 17;
+                foreach (var t in toggles)
+                    toggleHash = toggleHash * 31 + t.Blueprint.AssetGuid.GetHashCode() + (UserAbilityPolicy.SourceOf(scope, t) != BlockSource.None ? 1 : 0);
+                // ★ v0.3.25 (log review): abilities and toggles are reported apart. A spent slot or a used-up item changes the
+                // ability set, and the whole block was printed again with every toggle line - 70 % of the [Coverage] bytes
+                // (171 of 241 lines in the 0.3.25-test1 log) were toggle lines repeated without a change.
+                if (!Reported.TryGetValue(unit.UniqueId, out int last) || last != hash)
+                {
+                    Reported[unit.UniqueId] = hash;
+                    ReportAbilities(unit, abilities);
+                    ReportKineticist(unit, abilities);
+                }
+                if (!ReportedToggles.TryGetValue(unit.UniqueId, out int lastToggles) || lastToggles != toggleHash)
+                {
+                    ReportedToggles[unit.UniqueId] = toggleHash;
+                    foreach (var t in toggles) ReportToggle(unit, t);
+                }
             }
             catch (Exception ex)
             {

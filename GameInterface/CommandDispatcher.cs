@@ -460,6 +460,7 @@ namespace CompanionAI_Pathfinder.GameInterface
         private static void LogWalkPath(UnitEntityData unit, UnitCommand command, IList<Vector3> walk, string status,
             bool areaCheck, bool attackCheck, int pricedAttacks)
         {
+            if (!Main.VerboseOn) return;   // ★ v0.3.25 (log review): debug log only, nothing built otherwise
             try
             {
                 float length = 0f;
@@ -471,7 +472,9 @@ namespace CompanionAI_Pathfinder.GameInterface
                 string at(Vector3 point) => $"({point.x:F2},{point.y:F2},{point.z:F2})";
                 string endpoint = end.HasValue ? at(end.Value) : "unknown";
                 string gap = end.HasValue ? $"{Vector3.Distance(end.Value, goal):F2}m" : "unknown";
-                Main.Log($"[Walk] {unit.CharacterName}: {command.GetType().Name} path status={status}; queried path={travel}; " +
+                // ★ v0.3.25 (log review): debug log only - point-by-point inspection data from the real-time walk investigation
+                // (141 such lines, 58 KB, in the v0.3.24-build1 real-time log); the decision's own [Walk] line stays.
+                Main.Verbose($"[Walk] {unit.CharacterName}: {command.GetType().Name} path status={status}; queried path={travel}; " +
                     $"from={at(unit.Position)}, requested goal={at(goal)}, inspection endpoint={endpoint}, endpoint-to-goal 3D gap={gap}; " +
                     $"arrival radius={command.ApproachRadius:F2}m; areaCheck={areaCheck}, AoOCheck={attackCheck}, priced AoOs={pricedAttacks}; " +
                     "inspection only; native execution route not recorded; range/LoS not re-queried");

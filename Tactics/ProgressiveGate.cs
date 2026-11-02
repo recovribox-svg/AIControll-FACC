@@ -91,12 +91,33 @@ namespace CompanionAI_Pathfinder.Tactics
                     if (!outOfScope.ContainsKey(name)) outOfScope[name] = why;
                 }
             }
-            var leftAlone = outOfScope.Where(kv => !inScopeNames.Contains(kv.Key)).Select(kv => $"{kv.Key}: {kv.Value}").ToList();
-            // ★ v0.3.19 (release): once per unit until its list changes (it was repeated at the start of every fight).
+            // ★ v0.3.25 (log review): what is left alone is named only where it matters (spellbook spells kept off the ladder);
+            // abilities and items are counted. The line is keyed by the ladder: the left-alone list follows whatever the
+            // decision scored and reprinted the line up to four times a fight per character (19 lines, 10 KB in six fights).
+            var cantrips = new List<string>();
+            var notOffensive = new List<string>();
+            int notSpellbook = 0, itemCount = 0;
+            foreach (var kv in outOfScope)
+            {
+                if (inScopeNames.Contains(kv.Key)) continue;
+                switch (kv.Value)
+                {
+                    case "item": itemCount++; break;
+                    case "not a spellbook spell": notSpellbook++; break;
+                    case "not offensive": notOffensive.Add(kv.Key); break;
+                    default: cantrips.Add(kv.Key); break;
+                }
+            }
+            var leftAlone = new List<string>();
+            if (cantrips.Count > 0) leftAlone.Add("level 0: " + string.Join(", ", cantrips));
+            if (notOffensive.Count > 0) leftAlone.Add("not offensive: " + string.Join(", ", notOffensive));
+            if (notSpellbook > 0) leftAlone.Add($"{notSpellbook} not spellbook spell{(notSpellbook > 1 ? "s" : "")}");
+            if (itemCount > 0) leftAlone.Add($"{itemCount} item{(itemCount > 1 ? "s" : "")}");
+            string ladder = inScope.Count > 0 ? string.Join(", ", inScope) : "none";
+            // ★ v0.3.19 (release): once per unit until its ladder changes (it was repeated at the start of every fight).
             string text = $"[Progressive] {unit.CharacterName} ({mode}): policy on - on the spell-level ladder (held back only while a lower level can do the job): " +
-                          $"{(inScope.Count > 0 ? string.Join(", ", inScope) : "none")}; left alone: " +
-                          $"{(leftAlone.Count > 0 ? string.Join(", ", leftAlone) : "none")}";
-            AbilityDiscovery.ReportOnce($"progressive|{unit.UniqueId}|{text.GetHashCode()}", text);
+                          $"{ladder}; left alone: {(leftAlone.Count > 0 ? string.Join("; ", leftAlone) : "none")}";
+            AbilityDiscovery.ReportOnce($"progressive|{unit.UniqueId}|{mode}|{ladder.GetHashCode()}", text);
         }
 
         /// <summary>

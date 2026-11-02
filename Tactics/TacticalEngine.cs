@@ -751,7 +751,7 @@ namespace CompanionAI_Pathfinder.Tactics
                         $"best in-reach main={(alternative == null ? "none" : alternative.Label + "=" + alternative.Value.ToString("F1"))}; " +
                         $"priced movement cost={risk?.Cost ?? 0f:F1}, stop={risk?.StopChance ?? 0f:P0}, " +
                         $"drop={risk?.DropChance ?? 0f:P0}, AoOs={risk?.Attacks ?? 0}, area={risk?.Area ?? "none"}, " +
-                        $"exposed={risk?.Exposed ?? false}; native navigation and emergency cancellation unchanged");
+                        $"exposed={risk?.Exposed ?? false}");
                 }
                 catch { } // Diagnostic failure must not change the chosen action.
             }
