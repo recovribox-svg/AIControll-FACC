@@ -19,6 +19,14 @@ namespace CompanionAI_Pathfinder.Tactics
             return 1f - Clamp(MinLimitedUseShare + (1f - MinLimitedUseShare) * difficulty, MinLimitedUseShare, 1f);
         }
 
+        /// <summary>
+        /// ★ v0.3.25 (test1 logs): a used-up healing item's worth - its HP-restoring part (<paramref name="restoring"/>) with
+        /// the easy-fight restraint of <see cref="LimitedUseDiscount"/>, what else it does (<paramref name="other"/>: the
+        /// lower chance the ally drops, a revive) in full.
+        /// </summary>
+        public static float SpentHealValue(float restoring, float other, float difficulty) =>
+            Math.Max(0f, restoring) * (1f - LimitedUseDiscount(difficulty)) + Math.Max(0f, other);
+
         /// <summary>What an easy fight leaves of a limited option's damage and control at the least.</summary>
         public const float MinLimitedUseShare = 0.55f;
     }

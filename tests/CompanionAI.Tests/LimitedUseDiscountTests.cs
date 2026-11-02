@@ -51,5 +51,18 @@ namespace CompanionAI.Tests
             Assert.True(crossbow * 1.15f * (1f - ValueModel.LimitedUseDiscount(d)) < crossbow);
             Assert.True(crossbow * 2f * (1f - ValueModel.LimitedUseDiscount(d)) > crossbow);
         }
+    
+        // ★ v0.3.25 (test1 logs): a used-up healing item's top-up shares the easy-fight restraint; its drop-chance part not.
+        [Fact]
+        public void SpentHeal_TopUpDiscountedInAnEasyFight() =>
+            Assert.Equal(6f * (1f - 0.405f), ValueModel.SpentHealValue(6f, 0f, 0.1f), 3);
+
+        [Fact]
+        public void SpentHeal_DropChanceKeptInFull() =>
+            Assert.Equal(6f * (1f - 0.405f) + 9f, ValueModel.SpentHealValue(6f, 9f, 0.1f), 3);
+
+        [Fact]
+        public void SpentHeal_HardFightUnchanged() =>
+            Assert.Equal(15f, ValueModel.SpentHealValue(6f, 9f, 1.2f), 3);
     }
 }

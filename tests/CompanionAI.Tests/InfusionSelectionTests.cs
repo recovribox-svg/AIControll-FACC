@@ -70,5 +70,17 @@ namespace CompanionAI.Tests
         public void CooldownPruningRetainsDeferredDependencies(bool available, bool offence, bool heldTouch,
             bool spellOpportunity, bool expected) =>
             Assert.Equal(expected, AbilityScoringPolicy.NeedsScore(available, offence, heldTouch, spellOpportunity));
+
+        // ★ v0.3.25 (test1 logs): an unaffordable offence is read only by real time's "attack from here" question.
+        [Theory]
+        [InlineData(true, false, false, false, false, false)]  // affordable now: always scored
+        [InlineData(false, false, false, false, false, true)]  // turn-based: nothing reads it
+        [InlineData(false, false, false, true, false, false)]  // real time, question still open: scored
+        [InlineData(false, false, false, true, true, true)]    // real time, already answered: skipped
+        [InlineData(false, true, false, false, false, false)]  // held charge: its opportunity cost needs it
+        [InlineData(false, false, true, true, true, false)]    // a spell a toggle would forbid: needed
+        public void UnaffordableOffenceOnlyForTheOpenQuestion(bool available, bool heldTouch, bool spellOpportunity,
+            bool realTime, bool answered, bool skip) =>
+            Assert.Equal(skip, AbilityScoringPolicy.SkipUnaffordableOffence(available, heldTouch, spellOpportunity, realTime, answered));
     }
 }

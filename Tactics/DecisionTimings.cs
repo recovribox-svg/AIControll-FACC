@@ -1,5 +1,6 @@
 // Test[4]: scalar timing diagnostics only; no actor state, native rules or contexts retained.
 using System.Diagnostics;
+using System.Linq;
 
 namespace CompanionAI_Pathfinder.Tactics
 {
@@ -35,6 +36,30 @@ namespace CompanionAI_Pathfinder.Tactics
             }
         }
 
+        // ★ v0.3.25 (test1 logs): the three abilities whose scoring cost the most this decision, and how many were scored
+        // or skipped as unaffordable. Three slots and two counters: no allocation per ability.
+        private readonly string[] costlyNames = new string[3];
+        private readonly long[] costlyTicks = new long[3];
+        private readonly int[] costlyCandidates = new int[3];
+        private int scored, skipped;
+
+        internal void NoteAbility(string name, long startedAt, int candidates)
+        {
+            long ticks = Stopwatch.GetTimestamp() - startedAt;
+            scored++;
+            int slot = -1;
+            for (int i = 0; i < 3; i++)
+                if (costlyNames[i] == null || ticks > costlyTicks[i]) { slot = i; break; }
+            if (slot < 0) return;
+            for (int i = 2; i > slot; i--)
+            {
+                costlyNames[i] = costlyNames[i - 1]; costlyTicks[i] = costlyTicks[i - 1]; costlyCandidates[i] = costlyCandidates[i - 1];
+            }
+            costlyNames[slot] = name; costlyTicks[slot] = ticks; costlyCandidates[slot] = candidates;
+        }
+
+        internal void NoteSkippedAbility() => skipped++;
+
         internal void NoteActiveInfusion(long startedAt)
         {
             activeInfusions += Stopwatch.GetTimestamp() - startedAt;
@@ -46,6 +71,10 @@ namespace CompanionAI_Pathfinder.Tactics
             $"abilities={Milliseconds(abilities):F1}, kinetic/recovery={Milliseconds(kinetic):F1}, movement/toggles={Milliseconds(movement):F1}, " +
             $"paths/policy={Milliseconds(preparation):F1}, marks/boosts={Milliseconds(boosts):F1}, infusion-search={Milliseconds(infusions):F1}, " +
             $"finish={Milliseconds(finish):F1}; active-infusion appraisal={Milliseconds(activeInfusions):F1} ({activeCalls} recipient calls, " +
-            "included in enclosing stages, not additional time)";
+            "included in enclosing stages, not additional time)" +
+            $"; abilities scored={scored}, skipped unaffordable={skipped}" +
+            (costlyNames[0] == null ? "" : "; costliest: " + string.Join(", ", System.Linq.Enumerable.Range(0, 3)
+                .Where(i => costlyNames[i] != null)
+                .Select(i => $"{costlyNames[i]} {Milliseconds(costlyTicks[i]):F1} ms ({costlyCandidates[i]} options)")));
     }
 }

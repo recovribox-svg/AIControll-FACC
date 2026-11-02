@@ -209,6 +209,10 @@ namespace CompanionAI_Pathfinder.Tactics
             try { return ability.RequireMaterialComponent; }
             catch { return false; }
         }
+        /// <summary>★ v0.3.25: an item used up by this use (potion, scroll, wand charge).</summary>
+        private static bool IsSpentItem(AbilityData ability) =>
+            ability?.SourceItem is ItemEntityUsable spent && spent.Blueprint.SpendCharges;
+
         /// <summary>★ v0.3.19 (test7): the least an item that is used up (potion, scroll, wand charge) must be worth.</summary>
         private const float MinSpentItemValue = 5f;
         /// <summary>~25 ft: inside Close range for low-level casters, outside most melee reach.</summary>
@@ -2244,12 +2248,33 @@ namespace CompanionAI_Pathfinder.Tactics
 
         #region Abilities, spells and items
 
+        /// <summary>An offensive option worth taking from where the unit stands (AddMovementCandidates' anyAttackNow).</summary>
+        private static bool AttacksFromHere(Candidate c) =>
+            c.Offensive && !c.NeedsMove && c.Value >= MinMainValue && c.Slot != ActionSlot.Free && c.Slot != ActionSlot.Swift;
+
+        /// <summary>
+        /// ★ v0.3.25: <see cref="AttacksFromHere"/> settled before the kineticist's burn pricing (PriceBurn, which runs
+        /// later and can lower a blast or a blade attack) - only options that pricing does not touch.
+        /// </summary>
+        private static bool ResolvesAttackFromHere(TacticalContext ctx, Candidate c)
+        {
+            if (!AttacksFromHere(c)) return false;
+            if (ctx.Unit.Get<Kingmaker.UnitLogic.Class.Kineticist.UnitPartKineticist>() == null) return true;
+            return c.Kind == CandidateKind.Ability && c.Ability != null && BurnOf(c.Ability) == 0;
+        }
+
         private static void AddAbilityCandidates(TacticalContext ctx, List<Candidate> list, bool captureControlAims = false)
         {
             bool futureSpellsNeeded = (ctx.Global?.AiManagesToggles ?? true) &&
                 (ctx.Unit.ActivatableAbilities?.Enumerable?.Any(t =>
                     t?.Blueprint?.Buff?.GetComponent<Kingmaker.UnitLogic.FactLogic.ForbidSpellCasting>() != null) ?? false);
             ctx.DiscoveredAbilities = AbilityDiscovery.Gather(ctx.Unit);
+            // ★ v0.3.25 (test1 logs, performance): an offence the unit cannot afford now is read by one consumer only - real
+            // time's "can it hurt someone from here once the cooldown ends?" (AddMovementCandidates). Turn-based every reader
+            // checks Affordable, so such an ability is not scored; real time scores them only until that question is
+            // answered. Orvath spent 250-800 ms a decision scoring every spell while his standard action was on cooldown, then
+            // waited (v0.3.25-test1 real-time log). Held charges and spell-forbidding toggles still score theirs.
+            bool attackFromHere = list.Any(c => ResolvesAttackFromHere(ctx, c));
             foreach (var ability in ctx.DiscoveredAbilities)   // ★ v0.3.14: shared with real time
             {
                 try
@@ -2263,10 +2288,21 @@ namespace CompanionAI_Pathfinder.Tactics
                     var profile = AbilityProfile.Get(ability);
                     bool futureOffence = profile != null && (profile.DealsDamage || profile.HarmfulEffects ||
                         profile.ControlStrength != ControlStrength.None || profile.Maneuvers.Count > 0 || profile.IsWeaponAttack);
-                    if (!AbilityScoringPolicy.NeedsScore(available, futureOffence, ability.StickyTouch != null,
-                        futureSpellsNeeded && (ability.Blueprint.IsSpell || ability.SourceItem != null))) continue;
+                    bool spellOpportunity = futureSpellsNeeded && (ability.Blueprint.IsSpell || ability.SourceItem != null);
+                    if (!AbilityScoringPolicy.NeedsScore(available, futureOffence, ability.StickyTouch != null, spellOpportunity)) continue;
+                    if (AbilityScoringPolicy.SkipUnaffordableOffence(available, ability.StickyTouch != null, spellOpportunity,
+                                                                    CombatMemory.IsRealTime, attackFromHere))
+                    {
+                        ctx.Timings?.NoteSkippedAbility();
+                        continue;
+                    }
 
+                    long started = System.Diagnostics.Stopwatch.GetTimestamp();
+                    int before = list.Count;
                     list.AddRange(EvaluateAbility(ctx, ability, captureControlAims: captureControlAims));
+                    ctx.Timings?.NoteAbility(ability.Name, started, list.Count - before);
+                    if (!attackFromHere)
+                        for (int i = before; i < list.Count && !attackFromHere; i++) attackFromHere = ResolvesAttackFromHere(ctx, list[i]);
                 }
                 catch (Exception ex)
                 {
@@ -2738,9 +2774,10 @@ namespace CompanionAI_Pathfinder.Tactics
                 // concentration check (below) - it was checked before them, so an item could clear the bar and be used for
                 // what remained once its risks were paid.
                 // ★ v0.3.23 (bombs task): and one spent as the material component (spentMaterial, above).
+                // ★ v0.3.25 (test1 logs): heals too - a front-liner about to drop clears it by the drop-chance part of its heal,
+                // which is not discounted (above); a top-up in an easy fight does not.
                 float itemBar = ability.SourceItem == null && !spentMaterial ? 0f
-                    : (spentMaterial || ability.SourceItem is ItemEntityUsable spent && spent.Blueprint.SpendCharges) && profile.Heals.Count == 0
-                        ? MinSpentItemValue : QuickBar(slot, ability);
+                    : spentMaterial || IsSpentItem(ability) ? MinSpentItemValue : QuickBar(slot, ability);
                 if (value < itemBar)
                 {
                     controlAims?.Record(target, value, "below item threshold before risks", geometryRecipients, needsMove);
@@ -3262,6 +3299,7 @@ namespace CompanionAI_Pathfinder.Tactics
             if (profile.Heals.Count > 0 && healTargets.Count > 0)
             {
                 float healValue = 0f;
+                float restoring = 0f;   // ★ v0.3.25: the HP-restoring part alone (no revive, no drop-chance term)
                 string reviveNote = null;
                 foreach (var ally in healTargets)
                 {
@@ -3309,7 +3347,9 @@ namespace CompanionAI_Pathfinder.Tactics
                     // / x3 by HP band), and a heal was the best-valued option of the logs (median 18-21, weapons 7-8).
                     // ★ v0.3.17: a summon is worth half (AllyWorth) in this part too: at full HP Camellia walked into
                     // Grease to heal a summoned Dretch, the restoring part valued like a companion's (log 06aebf2d).
-                    healValue += heal * ValueModel.HealPerHp(hp, threshold) * (IsSummon(ally) ? ValueModel.SummonFactor : 1f);
+                    float restores = heal * ValueModel.HealPerHp(hp, threshold) * (IsSummon(ally) ? ValueModel.SummonFactor : 1f);
+                    healValue += restores;
+                    restoring += restores;
 
                     // ★ v0.3.9: how much less likely the ally is to drop before its next turn. Lann at 25 % HP valued his
                     // potion at 5.9 against a 7.6 full attack, shot, and went down; the heal ignored who could hit him.
@@ -3321,6 +3361,12 @@ namespace CompanionAI_Pathfinder.Tactics
                         healValue += (before - after) * AllyWorth(ctx, ally);
                     }
                 }
+                // ★ v0.3.25 (test1 logs): a used-up healing item (potion, scroll, wand charge) only tops HP up in an easy fight
+                // - the restoring part gets the easy-fight restraint spell slots and bombs have (ValueModel.SpentHealValue);
+                // the chance it keeps the ally from dropping, and a revive, keep their full worth. Seelah drank Cure Light
+                // Wounds at 53 % with one enemy left (difficulty 0.10) and at 65 % in easy fights (v0.3.25-test1 log).
+                if (restoring > 0f && IsSpentItem(ability))
+                    healValue = ValueModel.SpentHealValue(restoring, healValue - restoring, ctx.Difficulty);
                 if (healValue > 0f)
                 {
                     value += healValue * RoleWeight(ctx, "heal");
@@ -3865,9 +3911,7 @@ namespace CompanionAI_Pathfinder.Tactics
             // "Can I already hurt someone from here with what I have left this turn?"
             // ★ v0.3.14: in real time "from here" counts while the action cooldown runs: a melee character next to an
             // enemy waits for its next swing instead of walking to another enemy (and provoking) every half second.
-            bool anyAttackNow = list.Any(c => c.Offensive && !c.NeedsMove && c.Value >= MinMainValue &&
-                                             c.Slot != ActionSlot.Free && c.Slot != ActionSlot.Swift &&
-                                             (CombatMemory.IsRealTime || Affordable(ctx, c)));
+            bool anyAttackNow = list.Any(c => AttacksFromHere(c) && (CombatMemory.IsRealTime || Affordable(ctx, c)));
             bool rangedStyle = ctx.HasRangedWeapon || ctx.Settings.RangePreference == RangePreference.Ranged ||
                                ctx.Settings.Role == AIRole.Support;
 
