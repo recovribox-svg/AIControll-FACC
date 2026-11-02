@@ -176,7 +176,9 @@ namespace CompanionAI_Pathfinder.Tactics
             var unit = ctx.Unit;
             var part = unit.Get<UnitPartKineticist>();
             if (part == null) return;
-            var abilities = ctx.DiscoveredAbilities ?? AbilityDiscovery.Gather(unit);
+            // ★ user-ability-blacklist: the quiver and the blasts that would justify it, as AI Control may use them.
+            var abilities = ctx.AllowedAbilities ??
+                            UserAbilityPolicy.Allowed(ctx.Blocks, unit, ctx.DiscoveredAbilities ?? AbilityDiscovery.Gather(unit));
             var blasts = abilities.Where(a => IsOwnBlast(part, a)).ToList();
             if (blasts.Count == 0 || blasts.Any(a => a.IsAvailable)) return;
             var blocked = blasts.Where(BurnBlocked).ToList();

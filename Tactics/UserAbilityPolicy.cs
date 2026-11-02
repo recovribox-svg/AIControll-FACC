@@ -27,7 +27,15 @@ namespace CompanionAI_Pathfinder.Tactics
         private static int s_CompiledEdits = int.MinValue;
 
         /// <summary>Changes whenever the lists are compiled again (an edit, a reload): caches of filtered answers compare it.</summary>
-        public static int Revision { get; private set; }
+        public static int Revision
+        {
+            get
+            {
+                _ = Current;   // an edit not compiled yet counts
+                return s_Revision;
+            }
+        }
+        private static int s_Revision;
 
         private static CompiledBlocklist<BlueprintGuid> Current
         {
@@ -44,7 +52,7 @@ namespace CompanionAI_Pathfinder.Tactics
         {
             s_CompiledFor = settings;
             s_CompiledEdits = edits;
-            Revision++;
+            s_Revision++;
             s_Reported.Clear();
             if (settings == null)
             {

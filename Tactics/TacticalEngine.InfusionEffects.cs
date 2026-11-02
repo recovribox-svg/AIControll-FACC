@@ -507,7 +507,8 @@ namespace CompanionAI_Pathfinder.Tactics
                     if (modifier.GetType() != typeof(Kingmaker.UnitLogic.Class.Kineticist.AddKineticistBurnModifier) ||
                         modifier.UseContextValue || modifier.Value >= 0 || modifier.BurnType != Kingmaker.UnitLogic.Class.Kineticist.KineticistBurnType.WildTalent)
                         continue;
-                    foreach (var heal in ctx.DiscoveredAbilities ?? Enumerable.Empty<AbilityData>())
+                    // ★ user-ability-blacklist: only heals AI Control may use count as burn it would save.
+                    foreach (var heal in ctx.AllowedAbilities ?? ctx.DiscoveredAbilities ?? Enumerable.Empty<AbilityData>())
                     {
                         if (!modifier.AppliableTo.Contains(heal.Blueprint) && !modifier.AppliableTo.Contains(heal.Blueprint.Parent)) continue;
                         var profile = AbilityProfile.Get(heal);

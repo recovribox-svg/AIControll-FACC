@@ -378,6 +378,13 @@ namespace CompanionAI_Pathfinder.Tactics
                     if (!preview) StopIfPointless(ctx, toggle, p);
                     continue;
                 }
+                // ★ user-ability-blacklist: never started by the AI (switching off above stays as it was).
+                var blockedBy = UserAbilityPolicy.SourceOf(ctx.Blocks, toggle);
+                if (blockedBy != BlockSource.None)
+                {
+                    if (!preview) UserAbilityPolicy.NoteSkipped(unit, toggle.Blueprint.AssetGuid, toggle.Name, blockedBy);
+                    continue;
+                }
                 if (!toggle.IsAvailable) continue;
                 // The game's group rule (ActivatableAbility.TryStart): the weights of the group's toggles that are on,
                 // this one included, may not exceed the group's size. Otherwise it would not start, or replace another.

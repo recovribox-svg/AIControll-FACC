@@ -46,6 +46,7 @@ namespace CompanionAI_Pathfinder.Tactics
                 int hash = 17;
                 foreach (var a in abilities) hash = hash * 31 + AbilityDiscovery.Key(a).GetHashCode();
                 foreach (var t in toggles) hash = hash * 31 + t.Blueprint.AssetGuid.GetHashCode();
+                hash = hash * 31 + UserAbilityPolicy.Revision;   // ★ user-ability-blacklist: a list edit is reported again
                 if (Reported.TryGetValue(unit.UniqueId, out int last) && last == hash) return;
                 Reported[unit.UniqueId] = hash;
                 ReportAbilities(unit, abilities);
@@ -96,9 +97,14 @@ namespace CompanionAI_Pathfinder.Tactics
             var blacklisted = new List<string>();
             var itemPolicy = new List<string>();
             var unread = new List<string>();
+            var listed = new List<string>();
+            var scope = UserAbilityPolicy.ScopeFor(unit);
             foreach (var ability in abilities)
             {
                 string name = ability.Name + AbilityDiscovery.MetamagicTag(ability);
+                // ★ user-ability-blacklist
+                var source = UserAbilityPolicy.SourceOf(scope, ability);
+                if (source != BlockSource.None) { listed.Add($"{name} ({UserAbilityPolicy.Describe(source)})"); continue; }
                 if (!ConsumablePolicy.IsAllowed(ability)) { itemPolicy.Add(name); continue; }
                 if (AbilityClassifier.IsBlacklistedForCombat(ability, valuedByEffect: true)) { blacklisted.Add(name); continue; }
                 var profile = AbilityProfile.Get(ability);
@@ -124,6 +130,8 @@ namespace CompanionAI_Pathfinder.Tactics
             if (unavailable.Count > 0) Main.Log($"[Coverage] {unit.CharacterName} not available now: {string.Join("; ", unavailable)}");
             if (blacklisted.Count > 0) Main.Log($"[Coverage] {unit.CharacterName} blacklisted: {string.Join("; ", blacklisted)}");
             if (itemPolicy.Count > 0) Main.Log($"[Coverage] {unit.CharacterName} held back by the item settings: {string.Join("; ", itemPolicy)}");
+            if (listed.Count > 0)
+                Main.Log($"[Coverage] {unit.CharacterName} on an 'Abilities AI must not use' list (not started by AI Control): {string.Join("; ", listed)}");
             if (unread.Count > 0)
                 Main.Log($"[Coverage] {unit.CharacterName} effect not understood (not used: ★ v0.3.18 no 'utility' value any more): {string.Join("; ", unread)}");
         }
@@ -207,7 +215,8 @@ namespace CompanionAI_Pathfinder.Tactics
                      (bp.Group != ActivatableAbilityGroup.None ? $", group {bp.Group}" : "") +
                      $", ends with combat={bp.DeactivateIfCombatEnded}, off at once={bp.DeactivateImmediately}, " +
                      $"on by default={bp.IsOnByDefault}{(bp.HiddenInUI ? ", hidden" : "")}{resource}{buff}; " +
-                     $"AI: {AiNote(unit, toggle)}");
+                     $"AI: {AiNote(unit, toggle)}" +
+                     (UserAbilityPolicy.Blocks(unit, toggle) ? " - on an 'Abilities AI must not use' list (never switched on by the AI)" : ""));
         }
     }
 }
