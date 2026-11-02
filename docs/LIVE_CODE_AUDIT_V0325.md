@@ -142,7 +142,7 @@ in these lines.
 
 ## 10. Test3 playtest and release
 
-Test3 (MVID `b1f83486`) played: 3 turn-based and 3 real-time fights, no mod errors. 16 slow decisions, all Orvath's.
+Test3 (MVID `b1f83486`) played: 5 fights (3 turn-based and 3 real-time summaries; one fight switched mode), no mod errors. 16 slow decisions, all Orvath's.
 Most of them grew the heap by **40-300 KB** (test2: 4-10 MB); a few still grew by 5-14 MB, with no single ability
 standing out (Mono's heap figure is coarse). Three overlapped a collection (861, 897, 1446 ms) against six in test2's
 34. CPU per Orvath decision is unchanged at about 300 ms (Snowball and damage cantrips 15-30 ms each over 63 abilities):

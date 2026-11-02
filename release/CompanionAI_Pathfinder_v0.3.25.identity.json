@@ -19,6 +19,6 @@
     "unit_tests": { "passed": 282, "failed": 0, "skipped": 0 },
     "release_build": { "warnings": 0, "errors": 0 },
     "external_references": "SigDump vs v0.3.24: read-only members added, none removed",
-    "in_game": "test3 (this DLL) played: 3 turn-based and 3 real-time fights in the combined log, no mod errors. Unraveling/Chain Arrows, psionic focus regain and the new potion readers not yet exercised."
+    "in_game": "test3 (this DLL) played: 5 fights in the combined log (3 turn-based and 3 real-time summaries: one fight switched mode), no mod errors. Unraveling/Chain Arrows, psionic focus regain and the new potion readers not yet exercised."
   }
 }
