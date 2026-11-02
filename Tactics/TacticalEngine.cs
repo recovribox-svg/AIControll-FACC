@@ -226,6 +226,7 @@ namespace CompanionAI_Pathfinder.Tactics
             AbilityProfile.TakeBuiltCount();
             CombatMath.ClearAttackCache();   // ★ v0.3.18: attack routines are read fresh for each decision
             int collections = GC.CollectionCount(0), assessments = EnemyThreat.Assessments;
+            long heapBefore = GC.GetTotalMemory(false);   // ★ v0.3.25 (audit A5): what a decision allocates, roughly
             var watch = System.Diagnostics.Stopwatch.StartNew();
             var timings = new DecisionTimings();
             var chosen = Decide(unit, memory, preview: false, out _, timings);
@@ -239,7 +240,8 @@ namespace CompanionAI_Pathfinder.Tactics
                 Main.Log($"[Perf] slow decision: {ms:F0} ms - {unit.CharacterName} R{CombatMemory.Round}: {chosen?.Label ?? "nothing"} " +
                          $"(new ability profiles built this decision: {AbilityProfile.TakeBuiltCount()}" +
                          $"{(GC.CollectionCount(0) != collections ? "; memory clean-up ran" : "")}" +
-                         $"{(EnemyThreat.Assessments != assessments ? "; enemies assessed" : "")}); {timings.Describe()}");
+                         $"{(EnemyThreat.Assessments != assessments ? "; enemies assessed" : "")}" +
+                         $"{(GC.CollectionCount(0) == collections ? $"; heap +{(GC.GetTotalMemory(false) - heapBefore) / 1024} KB" : "")}); {timings.Describe()}");
             return chosen;
         }
 
