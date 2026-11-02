@@ -1,0 +1,25 @@
+{
+  "name": "AI Control - Fully Autonomous Combat Companions v0.3.25 + user ability blacklist, test 2 (log review)",
+  "version": "0.3.25",
+  "umm_manifest_version": "0.3.25",
+  "umm_mod_id": "CompanionAI_Pathfinder",
+  "branch": "claude/user-ability-blacklist",
+  "base_development_commit": "b1c8cbfc3e458d1d1979db3907f5424cbce21840",
+  "runtime_source_commit": "d1d930f",
+  "archive": "AI-Control-FACC-v0.3.25-dev-blacklist2-d1d930f-UMM-test.zip",
+  "zip_sha256": "7cfcafc05daacde191e0a2ba628da90558cc14586eb6ccd047bc8d82f52166dc",
+  "dll_sha256": "7214f36d78edb4829813cf624c1baaedced9415d5c314940c3d423ac22fbb759",
+  "manifest_sha256": "5637b45b7895b141bb75d5b15ff4caed36b6d008b78def38180b5fffefe1c59e",
+  "module_mvid": "d2dc1a06-0509-403e-87a3-3f21b580911a",
+  "startup_marker": "[Build] v0.3.25 module=d2dc1a06-0509-403e-87a3-3f21b580911a",
+  "archive_contents": ["CompanionAI_Pathfinder.dll", "Info.json"],
+  "checks": {
+    "unit_tests": { "passed": 311, "failed": 0, "skipped": 0 },
+    "release_build": { "warnings": 0, "errors": 0 },
+    "external_references": "SigDump vs blacklist1: no new game bindings",
+    "log_volume": "rules simulated on seven recent logs: normal log 15-28% smaller",
+    "packed_dll_matches_build": true,
+    "in_game": "blacklist1 played (turn-based, 6 fights): blocking, unblocking and the shared list work; this build pending"
+  },
+  "publication_scope": "Task-branch test download: the blacklist plus the log review; not a release."
+}

@@ -328,6 +328,12 @@ namespace CompanionAI_Pathfinder.GameInterface
                 return false;
             if (request.Ability == null)
                 return false;
+            // ★ user-ability-blacklist: a request queued before the ability was listed is dropped when its turn comes.
+            if (Tactics.UserAbilityPolicy.Blocks(request.Caster, request.Ability))
+            {
+                Main.Log($"[PreBuff] {request.Caster.CharacterName}: {request.Ability.Name} skipped - on an 'Abilities AI must not use' list");
+                return false;
+            }
             if (!request.Ability.IsAvailableForCast)
                 return false;
             // ★ v0.3.17: the item settings apply here too (Tactics/ConsumablePolicy, shared by both combat modes).

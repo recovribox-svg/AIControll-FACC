@@ -356,7 +356,11 @@ namespace CompanionAI_Pathfinder.Tactics
             public Func<ItemEntityWeapon, int> Typed;
             public string Name => Toggle.Name;
             public ActivatableAbilityGroup Group => Toggle.Blueprint.Group;
+            /// <summary>★ user-ability-blacklist: on a list - the AI never switches it, its current state stays in the estimate.</summary>
+            public bool Blocked;
         }
+
+        private static readonly List<UnitMode> NoModes = new List<UnitMode>();
 
         private static List<UnitMode> AttackModes(TacticalContext ctx)
         {
@@ -376,6 +380,7 @@ namespace CompanionAI_Pathfinder.Tactics
                 try
                 {
                     var mode = ReadMode(unit, toggle, p);
+                    mode.Blocked = UserAbilityPolicy.SourceOf(ctx.Blocks, toggle) != BlockSource.None;
                     // ★ v0.3.19 (test1): what the game's own values came to, once per fight, and a sanity check. A mode
                     // that trades attack for AC (Fighting Defensively, Combat Expertise) whose attack part reads as no
                     // penalty would look like free AC and stay on all the time: such a reading is not trusted.
@@ -625,7 +630,15 @@ namespace CompanionAI_Pathfinder.Tactics
 
             // One option per group (none on, or one of its modes), each ungrouped mode on or off. ★ v0.3.18 (review): past
             // 32 sets, the groups left out keep their current state (they were left out as "off").
-            var groups = modes.GroupBy(m => m.Group == ActivatableAbilityGroup.None ? (object)m : m.Group).ToList();
+            // ★ user-ability-blacklist: a mode on a list is left as it is, and so is its group while it is on (switching another
+            // of the group on would switch it off). It still counts as it stands in every set valued below.
+            var fixedModes = !modes.Any(m => m.Blocked) ? NoModes
+                : modes.Where(m => m.Blocked || m.Group != ActivatableAbilityGroup.None &&
+                                   modes.Any(b => b.Blocked && b.On && b.Group == m.Group)).ToList();
+            foreach (var m in fixedModes)
+                if (m.Blocked && !m.On) UserAbilityPolicy.NoteSkipped(unit, m.Toggle.Blueprint.AssetGuid, m.Name, UserAbilityPolicy.SourceOf(ctx.Blocks, m.Toggle));
+            var groups = modes.Where(m => !fixedModes.Contains(m))
+                              .GroupBy(m => m.Group == ActivatableAbilityGroup.None ? (object)m : m.Group).ToList();
             var combos = new List<List<UnitMode>> { new List<UnitMode>() };   // each combo: the modes on
             int used = 0;
             foreach (var group in groups)
@@ -636,7 +649,7 @@ namespace CompanionAI_Pathfinder.Tactics
                 combos = combos.SelectMany(combo => options.Select(o => o == null ? combo : combo.Concat(new[] { o }).ToList())).ToList();
                 used++;
             }
-            var kept = groups.Skip(used).SelectMany(g => g).Where(m => m.On).ToList();
+            var kept = groups.Skip(used).SelectMany(g => g).Where(m => m.On).Concat(fixedModes.Where(m => m.On)).ToList();
 
             float bestGain = 0f;
             HashSet<UnitMode> best = null;
@@ -683,6 +696,12 @@ namespace CompanionAI_Pathfinder.Tactics
                     if (change.Value)
                     {
                         if (toggle.IsOn) continue;
+                        // ★ user-ability-blacklist: the switch itself is checked too (Execute already refused such an attack).
+                        if (UserAbilityPolicy.Blocks(unit, toggle))
+                        {
+                            Main.Log($"[Blocklist] {unit.CharacterName}: {toggle.Name} not switched on for '{c.Label}' (on a list)");
+                            continue;
+                        }
                         toggle.IsOn = true;
                     }
                     else
@@ -771,6 +790,13 @@ namespace CompanionAI_Pathfinder.Tactics
             var toggle = MobilityToggle(unit);
             if (toggle == null || toggle.IsOn || toggle.IsStarted || !toggle.IsAvailable) return;
             if (CombatMemory.ToggleSwitchedThisRound(unit, toggle) || CombatMemory.PlayerOwnsToggle(unit, toggle)) return;
+            // ★ user-ability-blacklist: not switched on by the AI (MobilityHousekeeping still switches it off).
+            var blockedBy = UserAbilityPolicy.SourceOf(ctx.Blocks, toggle);
+            if (blockedBy != BlockSource.None)
+            {
+                UserAbilityPolicy.NoteSkipped(unit, toggle.Blueprint.AssetGuid, toggle.Name, blockedBy);
+                return;
+            }
             // Priced as a free (or swift) action next to the move; one that costs the move itself is not modelled.
             var slot = ToggleSlot(toggle);
             if (slot != ActionSlot.Free && slot != ActionSlot.Swift) return;

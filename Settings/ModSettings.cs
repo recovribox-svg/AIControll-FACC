@@ -205,6 +205,54 @@ namespace CompanionAI_Pathfinder.Settings
                 { Language.English, "Apply low-level buffs (level 1-2) to all party members" },
                 { Language.Korean, "모든 파티원에게 저레벨 버프(1-2레벨)를 적용합니다" }
             },
+
+            // ★ user-ability-blacklist: "Abilities AI must not use"
+            ["BL_Title"] = new() { { Language.English, "Abilities AI must not use" }, { Language.Korean, "AI가 사용하지 않을 능력" } },
+            ["BL_SharedTitle"] = new() { { Language.English, "Abilities AI must not use - every character" }, { Language.Korean, "AI가 사용하지 않을 능력 - 모든 캐릭터" } },
+            ["BL_Boundary"] = new() {
+                { Language.English, "AI Control never starts these by itself: in turn-based and real-time combat, and in its own buffing (after fights, Pre-Buff). This is not a game-wide ban. You can still use them by hand. Other mods (Wrath Tactics) and automatic effects (for example Dreadful Carnage's free Dazzling Display) are not affected. Buffs and toggles that are already on stay on, and orders already given are not interrupted." },
+                { Language.Korean, "AI Control은 이 능력들을 스스로 사용하지 않습니다(턴제·실시간 전투, 전투 후 자동 버프, 사전 버프). 게임 전체에서 막는 기능은 아닙니다. 직접 사용하는 것은 계속 가능합니다. 다른 모드(Wrath Tactics)와 자동 효과(예: Dreadful Carnage의 무료 Dazzling Display)는 영향을 받지 않습니다. 이미 켜진 버프와 토글은 유지되고, 이미 내린 명령은 중단되지 않습니다." }
+            },
+            ["BL_SharedDesc"] = new() {
+                { Language.English, "Applies to every character AI Control controls, in every campaign (saved with the mod's settings). A character's own list adds to it and cannot lift it. Add entries from a character's list in the party section, with \"Everyone\"." },
+                { Language.Korean, "AI Control이 조종하는 모든 캐릭터에 적용되며, 모든 캠페인에 적용됩니다(모드 설정에 저장). 캐릭터별 목록은 여기에 더해질 뿐 해제할 수 없습니다. 파티 섹션의 캐릭터 목록에서 \"모두\"를 선택해 추가하세요." }
+            },
+            ["BL_CharacterDesc"] = new() {
+                { Language.English, "Read when opened: press Refresh after a level-up, respec or equipment change. Entries follow this character in this playthrough." },
+                { Language.Korean, "열 때 목록을 읽습니다. 레벨업, 리스펙, 장비 변경 후에는 새로고침을 누르세요. 이 캐릭터 목록은 현재 플레이에서 이 캐릭터에게 적용됩니다." }
+            },
+            ["BL_Count"] = new() { { Language.English, "{0} for this character, {1} for everyone" }, { Language.Korean, "이 캐릭터 {0}개, 모두 {1}개" } },
+            ["BL_Search"] = new() { { Language.English, "Search" }, { Language.Korean, "검색" } },
+            ["BL_Refresh"] = new() { { Language.English, "Refresh" }, { Language.Korean, "새로고침" } },
+            ["BL_BlockedOnly"] = new() { { Language.English, "Show blocked only" }, { Language.Korean, "차단된 것만 보기" } },
+            ["BL_BlockFor"] = new() { { Language.English, "New blocks apply to:" }, { Language.Korean, "새 차단 적용 대상:" } },
+            ["BL_ThisCharacter"] = new() { { Language.English, "This character" }, { Language.Korean, "이 캐릭터" } },
+            ["BL_Everyone"] = new() { { Language.English, "Everyone" }, { Language.Korean, "모두" } },
+            ["BL_Block"] = new() { { Language.English, "Block" }, { Language.Korean, "차단" } },
+            ["BL_BlockAllVariants"] = new() { { Language.English, "Block all variants" }, { Language.Korean, "모든 변형 차단" } },
+            ["BL_UnblockHere"] = new() { { Language.English, "Unblock (this character)" }, { Language.Korean, "차단 해제 (이 캐릭터)" } },
+            ["BL_UnblockShared"] = new() { { Language.English, "Unblock (everyone)" }, { Language.Korean, "차단 해제 (모두)" } },
+            ["BL_UnblockFamilyHere"] = new() { { Language.English, "Unblock all variants (this character)" }, { Language.Korean, "모든 변형 차단 해제 (이 캐릭터)" } },
+            ["BL_UnblockFamilyShared"] = new() { { Language.English, "Unblock all variants (everyone)" }, { Language.Korean, "모든 변형 차단 해제 (모두)" } },
+            ["BL_BlockedHere"] = new() { { Language.English, "blocked for this character" }, { Language.Korean, "이 캐릭터에게 차단됨" } },
+            ["BL_BlockedShared"] = new() { { Language.English, "blocked for everyone" }, { Language.Korean, "모두에게 차단됨" } },
+            ["BL_BlockedFamily"] = new() { { Language.English, "blocked: all variants of {0}" }, { Language.Korean, "차단됨: {0}의 모든 변형" } },
+            ["BL_VariantOf"] = new() { { Language.English, "variant of {0}" }, { Language.Korean, "{0}의 변형" } },
+            ["BL_NotFound"] = new() {
+                { Language.English, "Blocked for this character, but not on it now (respec, item gone, mod removed):" },
+                { Language.Korean, "이 캐릭터에게 차단되어 있지만 지금은 없는 능력(리스펙, 아이템 없음, 모드 제거):" }
+            },
+            ["BL_Remove"] = new() { { Language.English, "Remove" }, { Language.Korean, "제거" } },
+            ["BL_NoShared"] = new() { { Language.English, "Nothing is blocked for everyone." }, { Language.Korean, "모두에게 차단된 능력이 없습니다." } },
+            ["BL_NoRows"] = new() { { Language.English, "No abilities match." }, { Language.Korean, "일치하는 능력이 없습니다." } },
+            ["BL_NoUnit"] = new() { { Language.English, "This character is not in the game right now." }, { Language.Korean, "이 캐릭터는 지금 게임에 없습니다." } },
+            ["BL_Page"] = new() { { Language.English, "Page {0}/{1}" }, { Language.Korean, "{0}/{1} 페이지" } },
+            ["BL_Prev"] = new() { { Language.English, "◀ Previous" }, { Language.Korean, "◀ 이전" } },
+            ["BL_Next"] = new() { { Language.English, "Next ▶" }, { Language.Korean, "다음 ▶" } },
+            ["BL_KindSpell"] = new() { { Language.English, "spell" }, { Language.Korean, "주문" } },
+            ["BL_KindAbility"] = new() { { Language.English, "ability" }, { Language.Korean, "능력" } },
+            ["BL_KindToggle"] = new() { { Language.English, "toggle" }, { Language.Korean, "토글" } },
+            ["BL_KindCharge"] = new() { { Language.English, "held charge" }, { Language.Korean, "유지 중인 접촉 주문" } },
         };
 
         public static string Get(string key)
@@ -272,6 +320,12 @@ namespace CompanionAI_Pathfinder.Settings
         /// <summary>★ v0.3.7: default Standard, so existing settings files behave exactly as before.</summary>
         public SpellResourcePolicy SpellPolicy { get; set; } = SpellResourcePolicy.Standard;
         public bool AvoidFriendlyFire { get; set; } = true;
+
+        /// <summary>
+        /// ★ user-ability-blacklist: abilities and toggles AI Control must not start for this character, on top of the
+        /// shared list (<see cref="ModSettings.SharedBlockedAbilities"/>). Empty by default; older files have none.
+        /// </summary>
+        public List<AbilityBlockEntry> BlockedAbilities { get; set; } = new List<AbilityBlockEntry>();
     }
 
     /// <summary>
@@ -353,6 +407,63 @@ namespace CompanionAI_Pathfinder.Settings
         public Dictionary<string, CharacterSettings> CharacterSettings { get; set; } = new();
 
         /// <summary>
+        /// ★ user-ability-blacklist (docs/TASK_USER_ABILITY_BLACKLIST.md): abilities and toggles AI Control must not start
+        /// for any character it controls. A character's own list adds to it and cannot lift it. Saved in the mod folder,
+        /// so it applies in every campaign. Empty by default.
+        /// </summary>
+        public List<AbilityBlockEntry> SharedBlockedAbilities { get; set; } = new List<AbilityBlockEntry>();
+
+        /// <summary>★ user-ability-blacklist: counts list edits (and loads), so the compiled lookup sets know they are out
+        /// of date (Tactics/UserAbilityPolicy). Not saved (internal).</summary>
+        internal int BlocklistEdits => _blocklistEdits;
+        private int _blocklistEdits;
+
+        /// <summary>
+        /// ★ user-ability-blacklist: every list made valid after loading (Settings/AbilityBlocklist.Normalize): missing lists
+        /// become empty, malformed GUIDs are left out and logged, duplicates merged. Entries the game cannot find stay.
+        /// </summary>
+        internal void NormalizeBlocklists()
+        {
+            var rejected = new List<string>();
+            SharedBlockedAbilities = AbilityBlocklist.Normalize(SharedBlockedAbilities, rejected);
+            if (CharacterSettings == null) CharacterSettings = new Dictionary<string, CharacterSettings>();
+            foreach (var character in CharacterSettings.Values)
+                if (character != null) character.BlockedAbilities = AbilityBlocklist.Normalize(character.BlockedAbilities, rejected);
+            if (rejected.Count > 0)
+                Main.Log($"[Blocklist] {rejected.Count} entr{(rejected.Count == 1 ? "y" : "ies")} without a valid blueprint GUID ignored: " +
+                         string.Join(", ", rejected));
+            _blocklistEdits++;
+        }
+
+        /// <summary>
+        /// ★ user-ability-blacklist: blocks or unblocks one ability or toggle on the shared list or a character's list, and
+        /// saves once when something changed. Returns whether the list changed.
+        /// </summary>
+        public bool SetBlocked(bool shared, string characterId, string characterName, string guid, string name, string kind, bool blocked)
+        {
+            List<AbilityBlockEntry> list;
+            if (shared)
+            {
+                if (SharedBlockedAbilities == null) SharedBlockedAbilities = new List<AbilityBlockEntry>();
+                list = SharedBlockedAbilities;
+            }
+            else
+            {
+                if (string.IsNullOrEmpty(characterId)) return false;
+                var character = GetOrCreateSettings(characterId, characterName);
+                if (character.BlockedAbilities == null) character.BlockedAbilities = new List<AbilityBlockEntry>();
+                list = character.BlockedAbilities;
+            }
+            bool changed = blocked ? AbilityBlocklist.Add(list, guid, name, kind) : AbilityBlocklist.Remove(list, guid);
+            if (!changed) return false;
+            _blocklistEdits++;
+            Save();
+            Main.Log($"[Blocklist] {(blocked ? "blocked" : "unblocked")} {(string.IsNullOrEmpty(name) ? guid : name)} " +
+                     (shared ? "for every character" : $"for {characterName ?? characterId}"));
+            return true;
+        }
+
+        /// <summary>
         /// 캐릭터 설정 가져오기 (없으면 생성)
         /// </summary>
         public CharacterSettings GetOrCreateSettings(string characterId, string characterName = null)
@@ -405,6 +516,7 @@ namespace CompanionAI_Pathfinder.Settings
                                 settings.AiManagesToggles = settings.AiStartsToggles && settings.AiSwitchesCombatModes;
                         }
                         catch { }
+                        settings.NormalizeBlocklists();   // ★ user-ability-blacklist
                         Instance = settings;
                         Main.Log("Settings loaded successfully");
                     }

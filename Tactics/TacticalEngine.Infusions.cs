@@ -87,6 +87,13 @@ namespace CompanionAI_Pathfinder.Tactics
                     var removed = active.Where(t => t != option).ToList();
                     if (removed.Count == 0 && (option == null || active.Contains(option))) continue;
                     if (budget.Exhausted) break;
+                    // ★ user-ability-blacklist: an infusion on a list is not started (no search budget spent on it); one
+                    // already installed stays in the accounting, and stopping one is not blocked.
+                    if (option != null && !active.Contains(option) && UserAbilityPolicy.SourceOf(ctx.Blocks, option) != BlockSource.None)
+                    {
+                        UserAbilityPolicy.NoteSkipped(ctx.Unit, option.Blueprint.AssetGuid, option.Name, UserAbilityPolicy.SourceOf(ctx.Blocks, option));
+                        continue;
+                    }
                     if (option != null)
                     {
                         var description = DescribeInfusion(option.Blueprint.Buff);

@@ -175,6 +175,12 @@ namespace CompanionAI_Pathfinder.Tactics
                         // attack is safe to put back (it does nothing until then).
                         if (wasOn)
                         {
+                            // ★ user-ability-blacklist: never switched back on by the AI once on a list (off stays possible).
+                            if (UserAbilityPolicy.Blocks(unit, toggle))
+                            {
+                                Main.Log($"[Toggle] {unit.CharacterName}: {toggle.Name} not switched on again after the fight (on a list)");
+                                continue;
+                            }
                             var bp = toggle.Blueprint;
                             if (TacticalEngine.IsBlastModifier(bp) && unit.ActivatableAbilities.Enumerable.Any(t =>
                                 t?.Blueprint?.Group == bp.Group && PlayerToggled.Contains(ToggleKey(unit, t)))) continue;

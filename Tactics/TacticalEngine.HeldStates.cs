@@ -51,6 +51,8 @@ namespace CompanionAI_Pathfinder.Tactics
             public List<BlueprintBuff> Cascade = new List<BlueprintBuff>();
             public float RestoreActions;     // in standard actions
             public string RestoredBy;
+            /// <summary>★ user-ability-blacklist: the lists' revision it was read with (restores the AI may not use do not count).</summary>
+            public int PolicyRevision;
         }
 
         /// <summary>Per unit and buff, for the fight (the unit's abilities and toggles do not change during it).</summary>
@@ -130,8 +132,9 @@ namespace CompanionAI_Pathfinder.Tactics
         private static HeldStateInfo HeldState(UnitEntityData unit, BlueprintBuff blueprint, AbilityData spender)
         {
             string key = unit.UniqueId + "|" + blueprint.AssetGuid;
-            if (s_HeldStates.TryGetValue(key, out var known)) return known;
-            var info = new HeldStateInfo();
+            int revision = UserAbilityPolicy.Revision;
+            if (s_HeldStates.TryGetValue(key, out var known) && known.PolicyRevision == revision) return known;
+            var info = new HeldStateInfo { PolicyRevision = revision };
             try
             {
                 // What ends with it: the buff's own AddBuffActions, Deactivated (nested Conditionals included).
@@ -139,16 +142,20 @@ namespace CompanionAI_Pathfinder.Tactics
                     CollectRemovals(actions.Deactivated, info.Cascade, 0);
                 info.Cascade.Remove(blueprint);
                 // Who requires it: another ability (AbilityCasterHasFacts) or a toggle (RestrictionHasFact).
+                // ★ user-ability-blacklist: only ones AI Control may use (a blocked one is the player's alone).
                 info.Required =
                     unit.Abilities.Enumerable.Any(a => a.Blueprint != spender.Blueprint &&
-                        a.Blueprint.GetComponents<AbilityCasterHasFacts>().Any(c => c.Facts.Contains(blueprint))) ||
+                        a.Blueprint.GetComponents<AbilityCasterHasFacts>().Any(c => c.Facts.Contains(blueprint)) &&
+                        !UserAbilityPolicy.Blocks(unit, a.Data)) ||
                     unit.ActivatableAbilities.Enumerable.Any(a =>
-                        a.Blueprint.GetComponents<RestrictionHasFact>().Any(r => !r.Not && r.Feature == blueprint));
+                        a.Blueprint.GetComponents<RestrictionHasFact>().Any(r => !r.Not && r.Feature == blueprint) &&
+                        !UserAbilityPolicy.Blocks(unit, a));
                 // What restores it: the unit's own ability that puts it on the unit, the cheapest by its action.
                 info.RestoreActions = 1f;   // no way back this fight: one action's worth
                 foreach (var a in unit.Abilities.Enumerable)
                 {
                     if (a.Blueprint == spender.Blueprint) continue;
+                    if (UserAbilityPolicy.Blocks(unit, a.Data)) continue;   // ★ user-ability-blacklist: no way back for the AI
                     var p = AbilityProfile.Get(a.Data);
                     if (p == null || !(p.TargetBuffs.Contains(blueprint) || p.CasterBuffs.Contains(blueprint))) continue;
                     float actions = ActionsOf(a.Data.RuntimeActionType, a.Data.RequireFullRoundAction);
@@ -193,6 +200,9 @@ namespace CompanionAI_Pathfinder.Tactics
             {
                 var toggle = unit.ActivatableAbilities.Enumerable.FirstOrDefault(a => a.Blueprint.Buff == buff);
                 if (toggle == null) return 0f;   // comes back with the state (Psionic Dodge's buff)
+                // ★ user-ability-blacklist: the AI will not switch it back on: no command to pay for (its loss for the rest of
+                // the fight is already in the cost).
+                if (UserAbilityPolicy.Blocks(unit, toggle)) return 0f;
                 return toggle.Blueprint.ActivationType == AbilityActivationType.WithUnitCommand
                     ? ActionsOf(UnitActivateAbility.GetCommandType(toggle), false) : 0.1f;
             }
@@ -217,6 +227,8 @@ namespace CompanionAI_Pathfinder.Tactics
         private sealed class HeldDependence
         {
             public int FactCount;
+            /// <summary>★ user-ability-blacklist: the lists' revision it was read with (toggles and abilities on a list left out).</summary>
+            public int PolicyRevision;
             public readonly List<BlueprintBuff> Comes = new List<BlueprintBuff>();
             public readonly List<string> Dependents = new List<string>();
             public readonly List<ActivatableAbility> Toggles = new List<ActivatableAbility>();
@@ -250,8 +262,9 @@ namespace CompanionAI_Pathfinder.Tactics
             int facts = 0;
             try { facts = unit.Facts.List.Count; } catch { }
             string key = unit.UniqueId + "|" + state.AssetGuid;
-            if (s_HeldDependence.TryGetValue(key, out var known) && known.FactCount == facts) return known;
-            var d = new HeldDependence { FactCount = facts };
+            int revision = UserAbilityPolicy.Revision;
+            if (s_HeldDependence.TryGetValue(key, out var known) && known.FactCount == facts && known.PolicyRevision == revision) return known;
+            var d = new HeldDependence { FactCount = facts, PolicyRevision = revision };
             try
             {
                 // What comes with it: its start actions' buffs, the conditions read on the unit itself.
@@ -267,11 +280,14 @@ namespace CompanionAI_Pathfinder.Tactics
                     if (bp.ComponentsArray.Any(c => c != null && !(c is AddFactContextActions) && AsksFor(c, state, 0)))
                         d.Dependents.Add(bp.Name);
                 }
+                // ★ user-ability-blacklist: toggles and abilities AI Control may not start do not make it worth regaining.
                 foreach (var toggle in unit.ActivatableAbilities.Enumerable)
-                    if (toggle?.Blueprint != null && toggle.Blueprint.GetComponents<RestrictionHasFact>().Any(r => !r.Not && r.Feature == state))
+                    if (toggle?.Blueprint != null && toggle.Blueprint.GetComponents<RestrictionHasFact>().Any(r => !r.Not && r.Feature == state) &&
+                        !UserAbilityPolicy.Blocks(unit, toggle))
                         d.Toggles.Add(toggle);
                 d.RequiredByAbility = unit.Abilities.Enumerable.Any(a => a?.Blueprint != null &&
-                    a.Blueprint.GetComponents<AbilityCasterHasFacts>().Any(c => c.Facts.Contains(state)));
+                    a.Blueprint.GetComponents<AbilityCasterHasFacts>().Any(c => c.Facts.Contains(state)) &&
+                    !UserAbilityPolicy.Blocks(unit, a.Data));
             }
             catch (Exception ex)
             {
@@ -460,6 +476,13 @@ namespace CompanionAI_Pathfinder.Tactics
                         if (toggle?.Blueprint?.Buff == null || !toggle.IsOn || !info.Cascade.Contains(toggle.Blueprint.Buff)) continue;
                         CombatMemory.RecordToggle(unit, toggle, false, true);
                         if (!CombatMemory.WasOnBeforeAi(unit, toggle)) continue;
+                        // ★ user-ability-blacklist: a toggle on a list is not switched back on by the AI.
+                        if (UserAbilityPolicy.Blocks(unit, toggle))
+                        {
+                            Main.Log($"[Held] {unit.CharacterName}: {ability.Name} ends {toggle.Name} with {blueprint.Name} - " +
+                                     "not switched on again by the AI (on a list)");
+                            continue;
+                        }
                         if (!s_EndedByAi.TryGetValue(unit.UniqueId, out var guids)) s_EndedByAi[unit.UniqueId] = guids = new HashSet<string>();
                         guids.Add(toggle.Blueprint.AssetGuid.ToString());
                         Main.Log($"[Held] {unit.CharacterName}: {ability.Name} ends {toggle.Name} with {blueprint.Name} - " +
@@ -491,6 +514,14 @@ namespace CompanionAI_Pathfinder.Tactics
                     string guid = toggle?.Blueprint?.AssetGuid.ToString();
                     if (guid == null || !guids.Contains(guid)) continue;
                     if (toggle.IsOn) { guids.Remove(guid); continue; }
+                    // ★ user-ability-blacklist: blocked since it ended - dropped, not kept waiting (unblocking lets later
+                    // decisions start it as usual; this old request is not replayed).
+                    if (UserAbilityPolicy.Blocks(unit, toggle))
+                    {
+                        guids.Remove(guid);
+                        Main.Log($"[Held] {unit.CharacterName}: {toggle.Name} not switched on again after the fight (on a list)");
+                        continue;
+                    }
                     if (!toggle.IsAvailable) continue;   // its state is not back yet
                     guids.Remove(guid);
                     toggle.IsOn = true;

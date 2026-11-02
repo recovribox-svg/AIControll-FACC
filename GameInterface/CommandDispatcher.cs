@@ -45,6 +45,9 @@ namespace CompanionAI_Pathfinder.GameInterface
             if (unit == null || !unit.IsInCombat) { failure = "infusion transition is combat-only"; return false; }
             if (!(Settings.ModSettings.Instance?.AiManagesToggles ?? true))
             { failure = "AI toggle management is off"; return false; }
+            // ★ user-ability-blacklist: a blocked start is refused before any infusion is stopped (nothing changes).
+            if (activate != null && Tactics.UserAbilityPolicy.Blocks(unit, activate))
+            { failure = Tactics.UserAbilityPolicy.Refusal(activate.Name); return false; }
             try
             {
                 if (activate != null)
@@ -113,6 +116,15 @@ namespace CompanionAI_Pathfinder.GameInterface
             if (unit == null || command == null)
             {
                 failure = "null unit or command";
+                return false;
+            }
+
+            // ★ user-ability-blacklist: the last safeguard for every ability AI Control issues (only the mod calls this; the
+            // game's own, the player's and other mods' commands never come here).
+            if (command is UnitUseAbility use && Tactics.UserAbilityPolicy.Blocks(unit, use.Ability))
+            {
+                failure = Tactics.UserAbilityPolicy.Refusal(use.Ability?.Name);
+                CommandTrace.LogRejected(unit, command, label, failure);
                 return false;
             }
 
@@ -448,6 +460,7 @@ namespace CompanionAI_Pathfinder.GameInterface
         private static void LogWalkPath(UnitEntityData unit, UnitCommand command, IList<Vector3> walk, string status,
             bool areaCheck, bool attackCheck, int pricedAttacks)
         {
+            if (!Main.VerboseOn) return;   // ★ v0.3.25 (log review): debug log only, nothing built otherwise
             try
             {
                 float length = 0f;
@@ -459,7 +472,9 @@ namespace CompanionAI_Pathfinder.GameInterface
                 string at(Vector3 point) => $"({point.x:F2},{point.y:F2},{point.z:F2})";
                 string endpoint = end.HasValue ? at(end.Value) : "unknown";
                 string gap = end.HasValue ? $"{Vector3.Distance(end.Value, goal):F2}m" : "unknown";
-                Main.Log($"[Walk] {unit.CharacterName}: {command.GetType().Name} path status={status}; queried path={travel}; " +
+                // ★ v0.3.25 (log review): debug log only - point-by-point inspection data from the real-time walk investigation
+                // (141 such lines, 58 KB, in the v0.3.24-build1 real-time log); the decision's own [Walk] line stays.
+                Main.Verbose($"[Walk] {unit.CharacterName}: {command.GetType().Name} path status={status}; queried path={travel}; " +
                     $"from={at(unit.Position)}, requested goal={at(goal)}, inspection endpoint={endpoint}, endpoint-to-goal 3D gap={gap}; " +
                     $"arrival radius={command.ApproachRadius:F2}m; areaCheck={areaCheck}, AoOCheck={attackCheck}, priced AoOs={pricedAttacks}; " +
                     "inspection only; native execution route not recorded; range/LoS not re-queried");

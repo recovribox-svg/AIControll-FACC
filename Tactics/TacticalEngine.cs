@@ -119,6 +119,14 @@ namespace CompanionAI_Pathfinder.Tactics
         internal List<TacticalEngine.InfusionHit> ScoredInfusionHits;
         internal readonly List<Candidate> InfusionProspects = new List<Candidate>();
         internal List<AbilityData> DiscoveredAbilities;
+        /// <summary>★ user-ability-blacklist: the "Abilities AI must not use" lists for this unit (taken once per decision),
+        /// and <see cref="DiscoveredAbilities"/> without what they block (the same list when nothing is blocked).
+        /// Discovery itself stays unfiltered; every choice and prediction of the unit's own actions reads this view.</summary>
+        internal BlockScope<Kingmaker.Blueprints.BlueprintGuid> Blocks;
+        internal List<AbilityData> AllowedAbilities;
+        /// <summary>★ user-ability-blacklist: what a held touch charge the lists block would be worth delivered: it is kept for
+        /// the player, and casting another spell over it (which drops it) still pays for it (PriceHeldCharge).</summary>
+        internal float ReservedChargeValue;
         internal DecisionTimings Timings;
         // Native caster-only armor result, lazily read for an affected ability. Never retained across decisions.
         internal float? ArcaneCastingChance;
@@ -330,7 +338,8 @@ namespace CompanionAI_Pathfinder.Tactics
             timings?.Mark(DecisionStage.Movement);
 
             var usable = candidates
-                .Where(c => c.Value > 0f && Affordable(ctx, c) && !memory.Failed.Contains(c.Key) && !SilentlyFailing(ctx, c))
+                .Where(c => c.Value > 0f && Affordable(ctx, c) && !memory.Failed.Contains(c.Key) && !SilentlyFailing(ctx, c) &&
+                            !PolicyBlocks(ctx, c))
                 .OrderByDescending(c => c.Value)
                 .ToList();
 
@@ -539,8 +548,9 @@ namespace CompanionAI_Pathfinder.Tactics
         {
             if (CastOutcome.HeldChargeOf(ctx.Unit) == null) return;
             var charges = candidates.Where(c => c.Kind == CandidateKind.Ability && c.Ability?.StickyTouch != null).ToList();
-            if (charges.Count == 0) return;
-            float held = charges.Max(c => c.Value);
+            // ★ user-ability-blacklist: a blocked charge is kept for the player and priced the same way.
+            if (charges.Count == 0 && ctx.ReservedChargeValue <= 0f) return;
+            float held = Math.Max(charges.Count > 0 ? charges.Max(c => c.Value) : 0f, ctx.ReservedChargeValue);
             if (held <= 0f) return;
             foreach (var c in candidates)
             {
@@ -551,6 +561,13 @@ namespace CompanionAI_Pathfinder.Tactics
                 c.Label += " [drops held touch]";
             }
         }
+
+        /// <summary>
+        /// ★ user-ability-blacklist: the option would start something the lists block - an attack mode it switches on, a
+        /// toggle, a Gather Power before its blast (abilities themselves never become options). Execute checks again.
+        /// </summary>
+        private static bool PolicyBlocks(TacticalContext ctx, Candidate c) =>
+            !ctx.Blocks.IsEmpty && UserAbilityPolicy.Blocks(ctx.Blocks, ctx.Unit, c, out _);
 
         /// <summary>
         /// ★ v0.3.15: an ability the game silently did nothing with twice on that target this fight (CastOutcome), or a
@@ -734,7 +751,7 @@ namespace CompanionAI_Pathfinder.Tactics
                         $"best in-reach main={(alternative == null ? "none" : alternative.Label + "=" + alternative.Value.ToString("F1"))}; " +
                         $"priced movement cost={risk?.Cost ?? 0f:F1}, stop={risk?.StopChance ?? 0f:P0}, " +
                         $"drop={risk?.DropChance ?? 0f:P0}, AoOs={risk?.Attacks ?? 0}, area={risk?.Area ?? "none"}, " +
-                        $"exposed={risk?.Exposed ?? false}; native navigation and emergency cancellation unchanged");
+                        $"exposed={risk?.Exposed ?? false}");
                 }
                 catch { } // Diagnostic failure must not change the chosen action.
             }
@@ -753,7 +770,8 @@ namespace CompanionAI_Pathfinder.Tactics
                 Global = ModSettings.Instance,
                 Settings = ModSettings.Instance?.GetOrCreateSettings(unit.UniqueId, unit.CharacterName) ?? new CharacterSettings(),
                 Round = CombatMemory.Round,
-                HpPct = CombatMath.HpPercent(unit)
+                HpPct = CombatMath.HpPercent(unit),
+                Blocks = UserAbilityPolicy.ScopeFor(unit)   // ★ user-ability-blacklist
             };
 
             ctx.HasStandard = unit.HasStandardAction();
@@ -950,7 +968,8 @@ namespace CompanionAI_Pathfinder.Tactics
                     if (!state.IsConscious || !state.CanAct || !state.CanMove) continue;
                     var weapon = ally.Body?.PrimaryHand?.MaybeWeapon;
                     if (weapon == null || weapon.Blueprint.IsRanged) continue;
-                    if (!ally.Abilities.Enumerable.Any(a => IsCoupDeGrace(a.Data))) continue;
+                    // ★ user-ability-blacklist: an ally AI Control drives with Coup de Grace blocked will not do it.
+                    if (!ally.Abilities.Enumerable.Any(a => IsCoupDeGrace(a.Data) && !UserAbilityPolicy.BlocksAiUse(ally, a.Data))) continue;
                     result.Add(new CoupDeGraceAlly
                     {
                         Unit = ally, Position = ally.Position, Corpulence = ally.Corpulence,
@@ -2034,8 +2053,14 @@ namespace CompanionAI_Pathfinder.Tactics
             if (downed == null || downed.Count == 0) return false;
             string key = string.Join(",", downed.Select(d => d.UniqueId));
             int frame = Time.frameCount;
-            if (s_ReviveFrame == frame && s_ReviveAnswers.TryGetValue(key, out bool known)) return known;
-            if (s_ReviveFrame != frame) { s_ReviveFrame = frame; s_ReviveAnswers.Clear(); }
+            int revision = UserAbilityPolicy.Revision;   // ★ user-ability-blacklist: a list edit changes the answer
+            if (s_ReviveFrame == frame && s_ReviveRevision == revision && s_ReviveAnswers.TryGetValue(key, out bool known)) return known;
+            if (s_ReviveFrame != frame || s_ReviveRevision != revision)
+            {
+                s_ReviveFrame = frame;
+                s_ReviveRevision = revision;
+                s_ReviveAnswers.Clear();
+            }
             bool can = false;
             try
             {
@@ -2046,6 +2071,8 @@ namespace CompanionAI_Pathfinder.Tactics
                     foreach (var ability in AbilityDiscovery.Gather(ally))
                     {
                         if (!ability.IsAvailable) continue;
+                        // ★ user-ability-blacklist: a heal AI Control may not use for that ally rescues nobody.
+                        if (UserAbilityPolicy.BlocksAiUse(ally, ability)) continue;
                         var p = AbilityProfile.Get(ability);
                         if (p == null || p.Heals.Count == 0) continue;
                         bool reachesAllies = ability.Blueprint.CanTargetFriends ||
@@ -2061,6 +2088,7 @@ namespace CompanionAI_Pathfinder.Tactics
         }
 
         private static int s_ReviveFrame = -1;
+        private static int s_ReviveRevision = -1;
         private static readonly Dictionary<string, bool> s_ReviveAnswers = new Dictionary<string, bool>();
 
         private static List<UnitEntityData> UnitsAround(List<UnitEntityData> units, Vector3 center, float radius)
@@ -2271,13 +2299,16 @@ namespace CompanionAI_Pathfinder.Tactics
                 (ctx.Unit.ActivatableAbilities?.Enumerable?.Any(t =>
                     t?.Blueprint?.Buff?.GetComponent<Kingmaker.UnitLogic.FactLogic.ForbidSpellCasting>() != null) ?? false);
             ctx.DiscoveredAbilities = AbilityDiscovery.Gather(ctx.Unit);
+            // ★ user-ability-blacklist: what the lists block is never appraised or offered (the same list when nothing is).
+            ctx.AllowedAbilities = UserAbilityPolicy.Allowed(ctx.Blocks, ctx.Unit, ctx.DiscoveredAbilities);
+            if (!ReferenceEquals(ctx.AllowedAbilities, ctx.DiscoveredAbilities)) ReserveBlockedCharge(ctx);
             // ★ v0.3.25 (test1 logs, performance): an offence the unit cannot afford now is read by one consumer only - real
             // time's "can it hurt someone from here once the cooldown ends?" (AddMovementCandidates). Turn-based every reader
             // checks Affordable, so such an ability is not scored; real time scores them only until that question is
             // answered. Orvath spent 250-800 ms a decision scoring every spell while his standard action was on cooldown, then
             // waited (v0.3.25-test1 real-time log). Held charges and spell-forbidding toggles still score theirs.
             bool attackFromHere = list.Any(c => ResolvesAttackFromHere(ctx, c));
-            foreach (var ability in ctx.DiscoveredAbilities)   // ★ v0.3.14: shared with real time
+            foreach (var ability in ctx.AllowedAbilities)   // ★ v0.3.14: shared with real time
             {
                 try
                 {
@@ -2317,6 +2348,28 @@ namespace CompanionAI_Pathfinder.Tactics
                     ReportOnce($"eval|{ability?.Blueprint?.AssetGuid}", $"[Tactics] {ability?.Name} ({ability?.Blueprint?.AssetGuid}): " +
                                $"not evaluated - {ex.GetType().Name}: {ex.Message}");
                 }
+            }
+        }
+
+        /// <summary>
+        /// ★ user-ability-blacklist: a held touch charge whose spell the lists block is not delivered by the AI, but it is kept
+        /// for the player: another spell cast over it drops it (the game's rule), so such a cast still pays what the charge
+        /// would be worth (PriceHeldCharge), as before. The charge is appraised for that price only, never offered.
+        /// </summary>
+        private static void ReserveBlockedCharge(TacticalContext ctx)
+        {
+            ctx.ReservedChargeValue = 0f;
+            if (CastOutcome.HeldChargeOf(ctx.Unit) == null) return;
+            foreach (var ability in ctx.DiscoveredAbilities)
+            {
+                if (ability?.StickyTouch == null || !ability.IsAvailable) continue;
+                if (UserAbilityPolicy.SourceOf(ctx.Blocks, ability) == BlockSource.None) continue;
+                try
+                {
+                    foreach (var c in EvaluateAbility(ctx, ability, ignorePolicy: true))
+                        ctx.ReservedChargeValue = Math.Max(ctx.ReservedChargeValue, c.Value);
+                }
+                catch (Exception ex) { Main.Verbose($"[Blocklist] {ctx.Unit.CharacterName} held charge {ability.Name}: {ex.Message}"); }
             }
         }
 
@@ -2610,9 +2663,12 @@ namespace CompanionAI_Pathfinder.Tactics
         /// </summary>
         private static IEnumerable<Candidate> EvaluateAbility(TacticalContext ctx, AbilityData ability,
                                                               UnitEntityData onlyTarget = null, bool valueActiveInfusions = true,
-                                                              bool captureControlAims = false)
+                                                              bool captureControlAims = false, bool ignorePolicy = false)
         {
             var none = Enumerable.Empty<Candidate>();
+            // ★ user-ability-blacklist: every caller (focus re-aims, kinetic recovery) gets nothing for a blocked ability;
+            // ignorePolicy only for the price of a held charge kept for the player (ReserveBlockedCharge).
+            if (!ignorePolicy && UserAbilityPolicy.SourceOf(ctx.Blocks, ability) != BlockSource.None) return none;
             var profile = AbilityProfile.Get(ability);
             if (profile == null) return none;
 
@@ -4544,6 +4600,13 @@ namespace CompanionAI_Pathfinder.Tactics
         {
             command = null;
             failure = null;
+            // ★ user-ability-blacklist: checked again right before acting, before an infusion switch, an approach walk, a
+            // touch approach, an attack's mode switches or a Gather Power is spent. Not a failed option (TacticalDriver).
+            if (UserAbilityPolicy.Blocks(unit, c, out string blocked))
+            {
+                failure = UserAbilityPolicy.Refusal(blocked);
+                return false;
+            }
             if (c.InfusionSwitch != null) return ExecuteInfusionSwitch(unit, c, out command, out failure);
             // ★ v0.3.17: an approach around a harmful area walks to the spot it was priced for, then acts on the next
             // decision (as touch spells do in turn-based). The plain path the game would pick to the target goes through

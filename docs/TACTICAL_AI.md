@@ -3052,3 +3052,48 @@ Audit in [V0325_TEST1.md](V0325_TEST1.md) §3. Four readers added:
 (the context clones it). Every former `CalculateParams()` call in the engine uses it. `AbilityProfile.CheckFor`'s cache key
 is `CheckerKey` (struct; caster, target, blueprint, item, spellbook, metamagic mask and heighten, aim unit or point to
 0.1 m). `EvaluateAbility` reads `NeedLoS` once per ability. `DecisionTimings` records each costliest ability's heap growth.
+
+## 89. User ability blacklist ("Abilities AI must not use")
+
+[TASK_USER_ABILITY_BLACKLIST.md](TASK_USER_ABILITY_BLACKLIST.md) has the matching, boundaries, coverage table, checks
+and play tests.
+
+- **Lists.** `ModSettings.SharedBlockedAbilities` and `CharacterSettings.BlockedAbilities` hold
+  `Settings/AbilityBlocklist` entries: GUID, stored name, kind. They are normalised on load and changed only through
+  `ModSettings.SetBlocked`, which bumps `BlocklistEdits` and saves once.
+- **One policy.** `Tactics/UserAbilityPolicy` compiles the lists lazily into `HashSet<BlueprintGuid>` sets, and again
+  when the settings instance or `BlocklistEdits` changes. `Revision` changes with each compile.
+- **Matching.** `UserAbilityRules.MatchAbility` (pure, tested) looks at:
+  - the blueprint and its `Parent` chain, at most 4 levels;
+  - `ConvertedFrom`, only when it `HasVariant` the ability;
+  - `StickyTouch` (the held charge's spell).
+  - A check allocates nothing. Empty lists return at once (`BlockScope.IsEmpty`).
+- **Engine.** `ctx.Blocks` is taken in `BuildContext`, and `ctx.AllowedAbilities` (the same list when nothing is
+  blocked) feeds:
+  - `AddAbilityCandidates`, `AddKineticCandidates` and the infusion heal relief;
+  - `EvaluateAbility`, which refuses a listed ability for every caller;
+  - `PolicyBlocks` in the usable filter;
+  - `Execute`'s first check.
+  - A refusal (`RefusalPrefix`) is not a failure (`TacticalDriver.RecordRejected`).
+- **Toggles.** Toggles, Mobility and infusion starts skip listed ones; stopping is unchanged. Attack modes that are
+  listed are fixed at their current state, and so is their group while they are on.
+- **Restores.** `ApplyModes`, `SwitchOffAiToggles`, `NoteEndedByAi` / `RestoreEndedToggles` and the dispatcher's
+  infusion overload never switch a listed toggle on.
+- **Predictions.** `CoupDeGraceAllies` and `PartyCanRevive` use `BlocksAiUse`: listed and driven by AI Control.
+  `PartyCanRevive` adds `Revision` to its frame cache. The held-state caches (`HeldStateInfo`, `HeldDependence`) store
+  `Revision`.
+- **Held charge.** A listed held charge is priced (`ReserveBlockedCharge` → `ctx.ReservedChargeValue`), never offered,
+  so `PriceHeldCharge` works as before.
+
+## 90. Log volume review (blacklist test 2)
+
+[TASK_USER_ABILITY_BLACKLIST.md](TASK_USER_ABILITY_BLACKLIST.md) §2.9.
+- **Coverage.** `CoverageReport.ReportIfChanged` hashes abilities and toggles apart (`Reported`, `ReportedToggles`).
+  Each hash includes the unit's own blocked bits, not `UserAbilityPolicy.Revision`.
+- **Energy rows.** `CombatMath.TraceEnergyRead` logs only reads that change the estimate or carry an exception.
+- **Progressive.** `ProgressiveGate.LogLadderOnce` is keyed by unit, mode and ladder, and summarises what is left
+  alone.
+- **Walk.** `CommandDispatcher.LogWalkPath` is verbose only and returns early without debug logging. The selected-walk
+  line drops its constant tail.
+- **Effect.** Normal log 15-28 % smaller on seven recent logs; decisions unchanged.
+

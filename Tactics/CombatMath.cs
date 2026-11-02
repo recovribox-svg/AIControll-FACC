@@ -988,6 +988,9 @@ namespace CompanionAI_Pathfinder.Tactics
         {
             if (ability?.Blueprint == null || dmg.DamageType.Type != Kingmaker.RuleSystem.Rules.Damage.DamageType.Energy ||
                 EnergyReadsTraced.Count >= MaxEnergyReadTraces) return remaining;
+            // ★ v0.3.25 (log review): only reads that change the estimate - a resistance, an immunity, observed damage. 117 of
+            // 144 rows of a six-fight log said raw = remaining (no resistance) and filled the 24-row cap every fight.
+            if (seen == null && Math.Abs(raw - remaining) < 0.01f && route.IndexOf("exception", StringComparison.Ordinal) < 0) return remaining;
             try
             {
                 var caster = ability.Caster?.Unit;

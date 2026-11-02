@@ -60,6 +60,18 @@ need a real unit, so they stay for a game session. Absent and mismatched provide
 tools/ProfileAudit/run.sh <Wrath_Data/Managed> <mod dll> <work dir> <out.txt> --optional-provider <TTT folder>/TabletopTweaks-Core.dll
 ```
 
+`--blocklist-checks` runs the mod's "Abilities AI must not use" matching (`UserAbilityPolicy.SourceOf`) on the loaded
+blueprints:
+- every variant is blocked by its parent's entry and by its own, but not by a sibling's;
+- conversions that are not variants (Cure from a Bless slot) do not inherit the source's ban;
+- empty lists block nothing and keep the same list.
+
+It also prints the time and allocations of one check. Its lines head the report, and a failed check returns 1
+(docs/TASK_USER_ABILITY_BLACKLIST.md §2.5).
+```
+tools/ProfileAudit/run.sh <Wrath_Data/Managed> <mod dll> <work dir> <out.txt> --blocklist-checks <dump folders...>
+```
+
 The withdrawn kineticist engine's harness options (`--kinetic-checks`, the decision-read and condition-context
 fixtures, the `Time.frameCount` stub) were removed with that engine (`docs/V0_3_22_POSTMORTEM.md`);
 `--kinetic-checks` now fails with that explanation. Documents describing those runs (`docs/DECISION_CONTEXT_PLAYTEST.md`,

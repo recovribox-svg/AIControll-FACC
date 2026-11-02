@@ -30,10 +30,14 @@
     <Compile Include="..\..\Tactics\WrathHandoff.cs" Link="WrathHandoff.cs" />
     <Compile Include="..\..\Tactics\ObserverRules.cs" Link="ObserverRules.cs" />
     <Compile Include="..\..\Tactics\OptionalApiBinding.cs" Link="OptionalApiBinding.cs" />
+    <Compile Include="..\..\Tactics\UserAbilityRules.cs" Link="UserAbilityRules.cs" />
+    <Compile Include="..\..\Settings\AbilityBlocklist.cs" Link="AbilityBlocklist.cs" />
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.8.0" />
     <PackageReference Include="xunit" Version="2.6.2" />
     <PackageReference Include="xunit.runner.visualstudio" Version="2.5.4" />
+    <!-- Only for the settings round-trip tests (the mod itself binds to the game's own Newtonsoft.Json). -->
+    <PackageReference Include="Newtonsoft.Json" Version="13.0.1" />
   </ItemGroup>
 </Project>

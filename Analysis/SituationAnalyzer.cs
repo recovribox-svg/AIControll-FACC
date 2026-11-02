@@ -1006,6 +1006,8 @@ namespace CompanionAI_Pathfinder.Analysis
                 {
                     // ★ v0.3.0: honour the consumable settings in real-time mode too (shared policy)
                     if (!Tactics.ConsumablePolicy.IsAllowed(ability)) continue;
+                    // ★ user-ability-blacklist: the old engine's candidates follow the lists too.
+                    if (Tactics.UserAbilityPolicy.Blocks(unit, ability)) continue;
                     if (!ability.IsAvailable)
                     {
                         if (++filtered <= 10)
