@@ -91,6 +91,12 @@ namespace CompanionAI_Pathfinder.Tactics
         public static BlockScope<BlueprintGuid> ScopeFor(UnitEntityData unit) =>
             unit == null ? default : Current.For(unit.UniqueId);
 
+        /// <summary>The same by the unit's id (the settings panel).</summary>
+        public static BlockScope<BlueprintGuid> ScopeFor(string unitId) => Current.For(unitId);
+
+        /// <summary>A normalised GUID text (Settings.AbilityBlocklist) as the game's key; false when it is not one.</summary>
+        public static bool TryParse(string guid, out BlueprintGuid key) => TryKey(guid, out key);
+
         private struct AbilityTree : IBlueprintTree<BlueprintAbility, BlueprintGuid>
         {
             public BlueprintGuid KeyOf(BlueprintAbility blueprint) => blueprint.AssetGuid;

@@ -58,6 +58,8 @@ namespace CompanionAI_Pathfinder.UI
                 DrawDivider();
                 DrawConsumableSettings();
                 DrawDivider();
+                AbilityBlocklistUI.DrawShared(_boxStyle, _boldLabelStyle, _descriptionStyle);   // ★ user-ability-blacklist
+                DrawDivider();
                 DrawCharacterSelection();
 
                 GUILayout.EndVertical();
@@ -446,6 +448,8 @@ namespace CompanionAI_Pathfinder.UI
             {
                 GUILayout.BeginVertical("box");
                 DrawCharacterAISettings();
+                // ★ user-ability-blacklist: the character's "Abilities AI must not use" (collapsed until opened).
+                AbilityBlocklistUI.DrawForCharacter(character.Unit, character.Id, character.Name, _boldLabelStyle, _descriptionStyle);
                 GUILayout.EndVertical();
             }
         }
