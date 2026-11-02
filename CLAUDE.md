@@ -75,12 +75,16 @@ mostly 40-300 KB a decision, 3 collections in 16 slow lines, no mod errors). At 
 discussion: an archer in range but without sight of an enemy advances to range, not to a spot with sight (moved nowhere).
 
 **User ability blacklist (2 November, task branch `claude/user-ability-blacklist`, PR into development,
-[docs/TASK_USER_ABILITY_BLACKLIST.md](docs/TASK_USER_ABILITY_BLACKLIST.md), `docs/TACTICAL_AI.md` §89, not played):**
+[docs/TASK_USER_ABILITY_BLACKLIST.md](docs/TASK_USER_ABILITY_BLACKLIST.md), `docs/TACTICAL_AI.md` §89-90):**
 "Abilities AI must not use", a shared list and one list per character (`Settings/AbilityBlocklist.cs`). There is one
 policy, `Tactics/UserAbilityPolicy.cs`, with its pure rules in `Tactics/UserAbilityRules.cs`. It is checked before
 appraisal and again in `Execute` / `CommandDispatcher`, and on every switch-on and restore route; predictions follow it.
 The panels are in `UI/AbilityBlocklistUI.cs`. `Info.json` stays 0.3.25. Test ZIP
 `AI-Control-FACC-v0.3.25-dev-blacklist1-a030c79-UMM-test.zip` (MVID `aab34bce-39d7-45c1-9346-551a9b5aa05a`); 311 tests.
+Test 1 was played (turn-based, 6 fights: blocking, unblocking and the shared list work). The log review (task doc §2.9,
+`docs/TACTICAL_AI.md` §90) cut repeated coverage, energy, Progressive and walk-inspection lines (normal log 15-28 %
+smaller). Test ZIP `AI-Control-FACC-v0.3.25-dev-blacklist2-d1d930f-UMM-test.zip` (MVID
+`d2dc1a06-0509-403e-87a3-3f21b580911a`).
 
 Historical handovers, superseded by the one above: [v0.3.22 release preparation](docs/RELEASE_0_3_22_HANDOVER.md)
 (27 October, PR #6–#12), [released-log review](docs/RELEASE_0322_LOG_REVIEW.md) (PR #13),

@@ -3085,3 +3085,15 @@ and play tests.
 - **Held charge.** A listed held charge is priced (`ReserveBlockedCharge` → `ctx.ReservedChargeValue`), never offered,
   so `PriceHeldCharge` works as before.
 
+## 90. Log volume review (blacklist test 2)
+
+[TASK_USER_ABILITY_BLACKLIST.md](TASK_USER_ABILITY_BLACKLIST.md) §2.9.
+- **Coverage.** `CoverageReport.ReportIfChanged` hashes abilities and toggles apart (`Reported`, `ReportedToggles`).
+  Each hash includes the unit's own blocked bits, not `UserAbilityPolicy.Revision`.
+- **Energy rows.** `CombatMath.TraceEnergyRead` logs only reads that change the estimate or carry an exception.
+- **Progressive.** `ProgressiveGate.LogLadderOnce` is keyed by unit, mode and ladder, and summarises what is left
+  alone.
+- **Walk.** `CommandDispatcher.LogWalkPath` is verbose only and returns early without debug logging. The selected-walk
+  line drops its constant tail.
+- **Effect.** Normal log 15-28 % smaller on seven recent logs; decisions unchanged.
+

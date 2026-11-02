@@ -1,6 +1,21 @@
 # Test builds
 
-## Feature test: "Abilities AI must not use" (task branch, a030c79)
+## Feature test 2: "Abilities AI must not use" + smaller log (task branch, d1d930f)
+
+**[Download the UMM test ZIP (d1d930f)](AI-Control-FACC-v0.3.25-dev-blacklist2-d1d930f-UMM-test.zip?raw=true)**
+
+Direct link: <https://github.com/recovribox-svg/AIControll-FACC/raw/claude/user-ability-blacklist/test-builds/AI-Control-FACC-v0.3.25-dev-blacklist2-d1d930f-UMM-test.zip>
+
+Test 1 (played: blocking, unblocking and the shared list work) plus a log review. The normal log is 15-28 % smaller on the
+recent logs, with fewer repeated diagnostic lines; decisions are unchanged
+([docs/TASK_USER_ABILITY_BLACKLIST.md](../docs/TASK_USER_ABILITY_BLACKLIST.md) §2.9).
+
+UMM shows **0.3.25**. Startup line `[Build] v0.3.25 module=d2dc1a06-0509-403e-87a3-3f21b580911a`.
+- ZIP SHA-256 `7cfcafc05daacde191e0a2ba628da90558cc14586eb6ccd047bc8d82f52166dc`; DLL SHA-256 `7214f36d78edb4829813cf624c1baaedced9415d5c314940c3d423ac22fbb759`.
+- [Identity](AI-Control-FACC-v0.3.25-dev-blacklist2-d1d930f-UMM-test.identity.json) · [Checksums](SHA256SUMS.txt).
+- Checks: 311 unit tests pass; release build 0 warnings; no new game bindings. Not played yet.
+
+## Feature test 1: "Abilities AI must not use" (task branch, a030c79)
 
 **[Download the UMM test ZIP (a030c79)](AI-Control-FACC-v0.3.25-dev-blacklist1-a030c79-UMM-test.zip?raw=true)**
 

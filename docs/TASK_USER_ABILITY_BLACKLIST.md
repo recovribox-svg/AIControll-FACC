@@ -283,6 +283,42 @@ On a 400-ability actor (real blueprints, this machine's .NET 8, not the game's M
    with *Remove*.
 10. **Regression.** With empty lists, fights should look like v0.3.25: same decisions, same `[Perf]` timings.
 
+### 2.9 Play test 1 and log review (test 2)
+
+**Test 1 played** (2 November, turn-based, 6 fights, debug logging on). Blocking works as designed:
+- **Shared list:** it held the seven Cosmic Wish abilities. The coverage report and `[Blocklist] Orvath: ... not used by
+  AI Control (shared list)` show them left out.
+- **Character list:** Grasp Heart was blocked for Orvath for fights 1-5. It was never appraised or cast; the only
+  mentions are the after-fight buff classifier reading it.
+- **Unblocking** (log line 1231) brought it back from the next decision: fight 6 used it twice. Lifting a block
+  restores the ability at once.
+- No refusal lines, loops or mod errors.
+
+**Log review: this log and the six recent v0.3.24 / v0.3.25 logs.** The mod's normal (non-debug) lines are about
+30-65 KB a fight. The decision lines (`[Tactics]`, `[Cmd]`) are the core and stay. Repeated diagnostics were trimmed
+(test 2, commit `d1d930f`):
+- **Coverage.**
+  - A list edit re-reports only the character whose blocked set changed. My test-1 code re-reported the whole party:
+    fight 6 above.
+  - Toggles are reported apart from abilities. A spent slot changes a character's ability set and used to reprint
+    every toggle line: 70 % of the coverage bytes, 171 of 241 lines in the 0.3.25-test1 log.
+- **Energy estimate rows** (`[Math]`): only the reads that change an estimate (resistance, immunity, observed damage, an
+  exception). 117 of 144 rows said raw = remaining and filled the 24-row cap every fight.
+- **Progressive ladder** (`[Progressive]`): keyed by the ladder itself. Abilities and items left alone are counted;
+  spellbook spells kept off the ladder are named. It was reprinted up to four times a fight per character.
+- **Real-time walk inspection** (`[Walk] ... path status`): debug log only, with nothing built without it. That was 141
+  lines, 58 KB, in the v0.3.24-build1 real-time log. The decision's own `[Walk]` line stays.
+
+**Result.** Simulated on the seven logs, the normal log is 15-28 % smaller (this log 177 → 128 KB, 0.3.25-test1
+635 → 484 KB, v0.3.24-build1 real time 836 → 640 KB). Decisions do not change.
+
+**Kept as they are:**
+- the `[Reach]` standoff rows (once per character and round, evidence for the open melee-standoff question);
+- `[Perf]`;
+- `[Approach]` (already once per option and round).
+
+**Debug logging** was on in this test; its `[V]` lines were another 59 KB. It is only needed for investigations.
+
 ### 2.8 Limits and open points
 
 - A toggle the AI never starts by itself can still be listed. Blocking it changes nothing.
