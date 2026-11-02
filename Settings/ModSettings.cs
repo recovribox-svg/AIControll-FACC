@@ -272,6 +272,12 @@ namespace CompanionAI_Pathfinder.Settings
         /// <summary>★ v0.3.7: default Standard, so existing settings files behave exactly as before.</summary>
         public SpellResourcePolicy SpellPolicy { get; set; } = SpellResourcePolicy.Standard;
         public bool AvoidFriendlyFire { get; set; } = true;
+
+        /// <summary>
+        /// ★ user-ability-blacklist: abilities and toggles AI Control must not start for this character, on top of the
+        /// shared list (<see cref="ModSettings.SharedBlockedAbilities"/>). Empty by default; older files have none.
+        /// </summary>
+        public List<AbilityBlockEntry> BlockedAbilities { get; set; } = new List<AbilityBlockEntry>();
     }
 
     /// <summary>
@@ -353,6 +359,63 @@ namespace CompanionAI_Pathfinder.Settings
         public Dictionary<string, CharacterSettings> CharacterSettings { get; set; } = new();
 
         /// <summary>
+        /// ★ user-ability-blacklist (docs/TASK_USER_ABILITY_BLACKLIST.md): abilities and toggles AI Control must not start
+        /// for any character it controls. A character's own list adds to it and cannot lift it. Saved in the mod folder,
+        /// so it applies in every campaign. Empty by default.
+        /// </summary>
+        public List<AbilityBlockEntry> SharedBlockedAbilities { get; set; } = new List<AbilityBlockEntry>();
+
+        /// <summary>★ user-ability-blacklist: counts list edits (and loads), so the compiled lookup sets know they are out
+        /// of date (Tactics/UserAbilityPolicy). Not saved (internal).</summary>
+        internal int BlocklistEdits => _blocklistEdits;
+        private int _blocklistEdits;
+
+        /// <summary>
+        /// ★ user-ability-blacklist: every list made valid after loading (Settings/AbilityBlocklist.Normalize): missing lists
+        /// become empty, malformed GUIDs are left out and logged, duplicates merged. Entries the game cannot find stay.
+        /// </summary>
+        internal void NormalizeBlocklists()
+        {
+            var rejected = new List<string>();
+            SharedBlockedAbilities = AbilityBlocklist.Normalize(SharedBlockedAbilities, rejected);
+            if (CharacterSettings == null) CharacterSettings = new Dictionary<string, CharacterSettings>();
+            foreach (var character in CharacterSettings.Values)
+                if (character != null) character.BlockedAbilities = AbilityBlocklist.Normalize(character.BlockedAbilities, rejected);
+            if (rejected.Count > 0)
+                Main.Log($"[Blocklist] {rejected.Count} entr{(rejected.Count == 1 ? "y" : "ies")} without a valid blueprint GUID ignored: " +
+                         string.Join(", ", rejected));
+            _blocklistEdits++;
+        }
+
+        /// <summary>
+        /// ★ user-ability-blacklist: blocks or unblocks one ability or toggle on the shared list or a character's list, and
+        /// saves once when something changed. Returns whether the list changed.
+        /// </summary>
+        public bool SetBlocked(bool shared, string characterId, string characterName, string guid, string name, string kind, bool blocked)
+        {
+            List<AbilityBlockEntry> list;
+            if (shared)
+            {
+                if (SharedBlockedAbilities == null) SharedBlockedAbilities = new List<AbilityBlockEntry>();
+                list = SharedBlockedAbilities;
+            }
+            else
+            {
+                if (string.IsNullOrEmpty(characterId)) return false;
+                var character = GetOrCreateSettings(characterId, characterName);
+                if (character.BlockedAbilities == null) character.BlockedAbilities = new List<AbilityBlockEntry>();
+                list = character.BlockedAbilities;
+            }
+            bool changed = blocked ? AbilityBlocklist.Add(list, guid, name, kind) : AbilityBlocklist.Remove(list, guid);
+            if (!changed) return false;
+            _blocklistEdits++;
+            Save();
+            Main.Log($"[Blocklist] {(blocked ? "blocked" : "unblocked")} {(string.IsNullOrEmpty(name) ? guid : name)} " +
+                     (shared ? "for every character" : $"for {characterName ?? characterId}"));
+            return true;
+        }
+
+        /// <summary>
         /// 캐릭터 설정 가져오기 (없으면 생성)
         /// </summary>
         public CharacterSettings GetOrCreateSettings(string characterId, string characterName = null)
@@ -405,6 +468,7 @@ namespace CompanionAI_Pathfinder.Settings
                                 settings.AiManagesToggles = settings.AiStartsToggles && settings.AiSwitchesCombatModes;
                         }
                         catch { }
+                        settings.NormalizeBlocklists();   // ★ user-ability-blacklist
                         Instance = settings;
                         Main.Log("Settings loaded successfully");
                     }
