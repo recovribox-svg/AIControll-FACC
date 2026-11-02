@@ -794,7 +794,8 @@ namespace CompanionAI_Pathfinder.Analysis
             UnitEntityData attacker,
             UnitEntityData target,
             ItemEntityWeapon weapon = null,
-            float estimatedDamage = 20f)
+            float estimatedDamage = 20f,
+            Kingmaker.RuleSystem.Rules.Damage.PhysicalDamage weaponDamage = null)
         {
             var result = new DamageReductionResult();
 
@@ -835,16 +836,25 @@ namespace CompanionAI_Pathfinder.Analysis
                         // (무기의 재질, 마법 보너스, 정렬 등)
                         bool bypassed = false;
 
-                        if (weapon != null)
+                        // ★ v0.3.25 (audit A5): the game's own rule (AddDamageResistancePhysical.Hit) on the weapon's
+                        // physical damage as the game describes it (RuleCalculateWeaponStats: form, material, enhancement;
+                        // the weapon's material and alignment enchantments: CombatMath.WeaponDamageProbe). Before, any +1
+                        // weapon got through a reduction that also needs cold iron or good (the "and" form), and no material
+                        // or alignment counted (a holy or cold-iron weapon against a demon's DR/good or DR/cold iron).
+                        if (weaponDamage != null && weapon != null)
                         {
-                            // 마법 무기 (+1 이상) → DR/Magic 우회
-                            if (physicalDR.BypassedByMagic && weapon.EnchantmentValue >= physicalDR.MinEnhancementBonus)
-                            {
+                            try { bypassed = !physicalDR.Hit(drSource, weaponDamage, weapon); }
+                            catch { bypassed = false; }
+                        }
+                        else if (weapon != null)
+                        {
+                            // No damage description: magic alone only where it is the reduction's only bypass or an "or" one.
+                            bool magicOnly = !(physicalDR.BypassedByMaterial || physicalDR.BypassedByForm || physicalDR.BypassedByAlignment ||
+                                               physicalDR.BypassedByReality || physicalDR.BypassedByWeaponType ||
+                                               physicalDR.BypassedByMeleeWeapon || physicalDR.BypassedByEpic);
+                            if (physicalDR.BypassedByMagic && (physicalDR.Or || magicOnly) &&
+                                weapon.EnchantmentValue >= physicalDR.MinEnhancementBonus)
                                 bypassed = true;
-                            }
-
-                            // TODO: 재질, 정렬 등 추가 체크 가능
-                            // Cold Iron, Silver, Adamantine, Good/Evil 등
                         }
 
                         if (!bypassed && currentDR > highestDR)

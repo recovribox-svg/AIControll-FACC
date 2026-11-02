@@ -144,6 +144,35 @@ namespace CompanionAI_Pathfinder.Tactics
 
         #endregion
 
+        /// <summary>
+        /// ★ v0.3.25 (audit A5): the weapon's first physical damage as the game builds it (DamageTypeDescription.CreateDamage
+        /// from RuleCalculateWeaponStats: form, the blueprint's material, enhancement), with the materials and alignments its
+        /// enchantments add when the damage is prepared (WeaponMaterial, WeaponAlignment; read, not triggered). Null when
+        /// there is none. Facts of the wielder that add a property in RulePrepareDamage (Ki Strike) are not read.
+        /// </summary>
+        internal static Kingmaker.RuleSystem.Rules.Damage.PhysicalDamage WeaponDamageProbe(RuleCalculateWeaponStats stats, ItemEntityWeapon weapon)
+        {
+            try
+            {
+                if (stats?.DamageDescription == null || weapon == null) return null;
+                foreach (var d in stats.DamageDescription)
+                {
+                    if (d?.TypeDescription == null || d.TypeDescription.Type != Kingmaker.RuleSystem.Rules.Damage.DamageType.Physical) continue;
+                    if (!(d.TypeDescription.CreateDamage(d.Dice, d.Bonus) is Kingmaker.RuleSystem.Rules.Damage.PhysicalDamage damage)) return null;
+                    foreach (var enchantment in weapon.Enchantments)
+                    {
+                        foreach (var material in enchantment.SelectComponents<Kingmaker.Designers.Mechanics.Facts.WeaponMaterial>())
+                            damage.AddMaterial(material.Material);
+                        foreach (var alignment in enchantment.SelectComponents<Kingmaker.Designers.Mechanics.Facts.WeaponAlignment>())
+                            damage.AddAlignment(alignment.Alignment);
+                    }
+                    return damage;
+                }
+            }
+            catch { }
+            return null;
+        }
+
         #region Weapon attacks
 
         /// <summary>
@@ -292,7 +321,7 @@ namespace CompanionAI_Pathfinder.Tactics
                     foreach (var d in stats.DamageDescription)
                         perHit += Average(d.Dice) + d.Bonus;
 
-                    var dr = HitChanceCalculator.CalculateDamageReduction(unit, target, weapon, perHit);
+                    var dr = HitChanceCalculator.CalculateDamageReduction(unit, target, weapon, perHit, WeaponDamageProbe(stats, weapon));
                     int reduction = dr != null && !dr.CanBypass && dr.DRValue > 0 ? dr.DRValue : 0;
                     // ★ v0.3.20 (playtest 1): the target's side of the damage by the game's own rule. Bows against a
                     // Rat Swarm were valued at twice what they deal (SwarmDamageResistance halves piercing and slashing
@@ -469,7 +498,7 @@ namespace CompanionAI_Pathfinder.Tactics
                 if (sneakDice > 0 && !immune) damage += 3.5f * sneakDice;
                 // ★ v0.3.18 (test11): damage reduction comes off the hit's total once, after the critical multiplier
                 // and with the sneak attack in it (it was taken off the unmultiplied hit before).
-                var dr = HitChanceCalculator.CalculateDamageReduction(unit, target, weapon, damage);
+                var dr = HitChanceCalculator.CalculateDamageReduction(unit, target, weapon, damage, WeaponDamageProbe(stats, weapon));
                 if (dr != null && !dr.CanBypass && dr.DRValue > 0)
                     damage = Math.Max(0f, damage - dr.DRValue);
 
