@@ -84,7 +84,10 @@ The panels are in `UI/AbilityBlocklistUI.cs`. `Info.json` stays 0.3.25. Test ZIP
 Test 1 was played (turn-based, 6 fights: blocking, unblocking and the shared list work). The log review (task doc §2.9,
 `docs/TACTICAL_AI.md` §90) cut repeated coverage, energy, Progressive and walk-inspection lines (normal log 15-28 %
 smaller). Test ZIP `AI-Control-FACC-v0.3.25-dev-blacklist2-d1d930f-UMM-test.zip` (MVID
-`d2dc1a06-0509-403e-87a3-3f21b580911a`).
+`d2dc1a06-0509-403e-87a3-3f21b580911a`). At the author's request the `[Reach]` rows went to the debug log, PR #17 was
+merged into development (merge commit `f7134ad`) and released as **v0.3.26** (commit `e10513b`, `Info.json` 0.3.26):
+`release/CompanionAI_Pathfinder_v0.3.26.zip` (MVID `24ddcf26-2006-43f5-ade7-b326abb2d62c`), notes
+`release/CHANGELOG_v0.3.26.md`, `main` fast-forwarded; the author creates the GitHub release and tag `v0.3.26`.
 
 Historical handovers, superseded by the one above: [v0.3.22 release preparation](docs/RELEASE_0_3_22_HANDOVER.md)
 (27 October, PR #6–#12), [released-log review](docs/RELEASE_0322_LOG_REVIEW.md) (PR #13),

@@ -1,10 +1,10 @@
 # Test builds
 
-## Feature test 2: "Abilities AI must not use" + smaller log (task branch, d1d930f)
+## Feature test 2: "Abilities AI must not use" + smaller log (d1d930f), released (with the [Reach] rows also moved to the debug log) as v0.3.26
 
 **[Download the UMM test ZIP (d1d930f)](AI-Control-FACC-v0.3.25-dev-blacklist2-d1d930f-UMM-test.zip?raw=true)**
 
-Direct link: <https://github.com/recovribox-svg/AIControll-FACC/raw/claude/user-ability-blacklist/test-builds/AI-Control-FACC-v0.3.25-dev-blacklist2-d1d930f-UMM-test.zip>
+Direct link: <https://github.com/recovribox-svg/AIControll-FACC/raw/claude/dreamy-pasteur-b9h3rn/test-builds/AI-Control-FACC-v0.3.25-dev-blacklist2-d1d930f-UMM-test.zip>
 
 Test 1 (played: blocking, unblocking and the shared list work) plus a log review. The normal log is 15-28 % smaller on the
 recent logs, with fewer repeated diagnostic lines; decisions are unchanged
@@ -19,7 +19,7 @@ UMM shows **0.3.25**. Startup line `[Build] v0.3.25 module=d2dc1a06-0509-403e-87
 
 **[Download the UMM test ZIP (a030c79)](AI-Control-FACC-v0.3.25-dev-blacklist1-a030c79-UMM-test.zip?raw=true)**
 
-Direct link: <https://github.com/recovribox-svg/AIControll-FACC/raw/claude/user-ability-blacklist/test-builds/AI-Control-FACC-v0.3.25-dev-blacklist1-a030c79-UMM-test.zip>
+Direct link: <https://github.com/recovribox-svg/AIControll-FACC/raw/claude/dreamy-pasteur-b9h3rn/test-builds/AI-Control-FACC-v0.3.25-dev-blacklist1-a030c79-UMM-test.zip>
 
 v0.3.25 plus a list of abilities and toggles the AI must not use.
 - **Where:** in each character's panel in the settings (Ctrl+F10), plus a shared list for everyone.

@@ -1,0 +1,25 @@
+{
+  "name": "AI Control - Fully Autonomous Combat Companions v0.3.26",
+  "version": "0.3.26",
+  "umm_manifest_version": "0.3.26",
+  "umm_mod_id": "CompanionAI_Pathfinder",
+  "release_branch": "claude/dreamy-pasteur-b9h3rn",
+  "runtime_source_commit": "e10513b",
+  "contents_since_v0.3.25": "PR #17 (user ability blacklist and log review, merge commit f7134ad) plus Info.json 0.3.26",
+  "archive": "CompanionAI_Pathfinder_v0.3.26.zip",
+  "zip_sha256": "e81f92946d1a1110471f2f17590bc0e2963cb0d8b5c27545220e1f368194c2ea",
+  "dll_sha256": "56278f8c328f5bbb6336e2e401ad82b23b51b4343604c9769301786008a26979",
+  "manifest_sha256": "fdf2b696dc9d7e112bd8e4a99ba4298086a601d4a762c725c464347543a3967f",
+  "module_mvid": "24ddcf26-2006-43f5-ade7-b326abb2d62c",
+  "startup_marker": "[Build] v0.3.26 module=24ddcf26-2006-43f5-ade7-b326abb2d62c",
+  "archive_contents": ["CompanionAI_Pathfinder.dll", "Info.json"],
+  "authorization": "The author asked to merge PR #17 and release it as v0.3.26 (2 November 2026).",
+  "publication": "The author creates the GitHub release and tag v0.3.26 on main and attaches this ZIP.",
+  "checks": {
+    "unit_tests": { "passed": 311, "failed": 0, "skipped": 0 },
+    "release_build": { "warnings": 0, "errors": 0 },
+    "external_references": "SigDump vs v0.3.25: BlueprintGuid(Guid), GUILayout.TextField, Event.current/type added",
+    "packed_dll_matches_build": true,
+    "in_game": "blacklist test 1 played (turn-based, 6 fights): blocking, unblocking and the shared list work. The log-review changes (test 2) and real time are not played; this release build differs from the played test only by those log changes and the version."
+  }
+}

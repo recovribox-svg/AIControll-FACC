@@ -4,10 +4,13 @@
 
 | What | Contents | Status |
 | --- | --- | --- |
+| **[v0.3.26 stable ZIP](release/CompanionAI_Pathfinder_v0.3.26.zip?raw=true)** | The v0.3.26 release ([notes](release/CHANGELOG_v0.3.26.md)): "Abilities AI must not use" list + smaller log | Released (the author creates tag `v0.3.26`) |
+| [Test ZIP — blacklist test 2 (d1d930f)](test-builds/AI-Control-FACC-v0.3.25-dev-blacklist2-d1d930f-UMM-test.zip?raw=true) | v0.3.25 + the list + most of the log review ([handover](docs/TASK_USER_ABILITY_BLACKLIST.md)) | Superseded by v0.3.26 |
+| [Test ZIP — blacklist test 1 (a030c79)](test-builds/AI-Control-FACC-v0.3.25-dev-blacklist1-a030c79-UMM-test.zip?raw=true) | v0.3.25 + the list | Superseded test build (played) |
 | [Test ZIP — v0.3.25-dev-test3 (ffed9ac)](test-builds/AI-Control-FACC-v0.3.25-dev-test3-ffed9ac-UMM-test.zip?raw=true) | Test 2 + much less memory garbage per decision (fewer stutters) ([report](docs/LIVE_CODE_AUDIT_V0325.md)) | Released as v0.3.25 |
 | [Test ZIP — v0.3.25-dev-test2 (2692562)](test-builds/AI-Control-FACC-v0.3.25-dev-test2-2692562-UMM-test.zip?raw=true) | Test 1 + faster decisions, no wasted healing potions, weapon damage reduction by the game's rule ([audit](docs/LIVE_CODE_AUDIT_V0325.md)) | Superseded test build (played) |
 | [Test ZIP — v0.3.25-dev-test1 (907cd75)](test-builds/AI-Control-FACC-v0.3.25-dev-test1-907cd75-UMM-test.zip?raw=true) | v0.3.24 + Unraveling/Chain Arrows chosen automatically, psionic focus regained and trance restored, smarter potions ([notes](docs/V0325_TEST1.md)) | Superseded test build (played) |
-| **[v0.3.25 stable ZIP](release/CompanionAI_Pathfinder_v0.3.25.zip?raw=true)** | The v0.3.25 release ([notes](release/CHANGELOG_v0.3.25.md)); same file as the test3 ZIP | Released (the author creates tag `v0.3.25`) |
+| [v0.3.25 ZIP](release/CompanionAI_Pathfinder_v0.3.25.zip?raw=true) | The v0.3.25 release ([notes](release/CHANGELOG_v0.3.25.md)); same file as the test3 ZIP | Previous release (tag `v0.3.25`) |
 | [v0.3.24 ZIP](release/CompanionAI_Pathfinder_v0.3.24.zip?raw=true) | The v0.3.24 release ([notes](release/CHANGELOG_v0.3.24.md)); same file as the build3 test ZIP | Previous release (tag `v0.3.24`) |
 | [Test ZIP — v0.3.24-dev-build2 (2d6b49b)](test-builds/AI-Control-FACC-v0.3.24-dev-build2-2d6b49b-UMM-test.zip?raw=true) | Build 1 + no step out of melee away from a better spell or attack ([review](docs/V0324_BUILD1_LOGS_REVIEW.md)) | Superseded test build |
 | [Previous test ZIP — v0.3.24-dev-build1 (432a219)](test-builds/AI-Control-FACC-v0.3.24-dev-build1-432a219-UMM-test.zip?raw=true) | v0.3.23 + psionic focus kept, sleepers in harmful areas, Treat Affliction ([review](docs/V0324_BUILD1_REVIEW.md)) | Superseded test build |
@@ -21,7 +24,7 @@
 | [Previous test ZIP — fixes2 c3f1636](test-builds/AI-Control-FACC-dev-fixes2-c3f1636-UMM-test.zip?raw=true) | The same without the movement follow-ups | Superseded test build |
 | [Previous test ZIP — ecabeb4](test-builds/AI-Control-FACC-dev-integrated-ecabeb4-UMM-test.zip?raw=true) | v0.3.22 + reviewed PR #13–#15 (also on `main`) | Superseded test build |
 
-`main` holds the v0.3.25 release source. Test builds can share a version number; tell them apart by the startup line
+`main` holds the v0.3.26 release source. Test builds can share a version number; tell them apart by the startup line
 in the log (`[Build] v0.3.23 module=...`, module IDs in [release/README.md](release/README.md) and
 [test-builds/README.md](test-builds/README.md)).
 GitHub Releases are published by the author; older release and test archives are kept unchanged.
