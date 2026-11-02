@@ -1,0 +1,25 @@
+{
+  "name": "AI Control - Fully Autonomous Combat Companions v0.3.25 + user ability blacklist, test 1",
+  "version": "0.3.25",
+  "umm_manifest_version": "0.3.25",
+  "umm_mod_id": "CompanionAI_Pathfinder",
+  "branch": "claude/user-ability-blacklist",
+  "base_development_commit": "b1c8cbfc3e458d1d1979db3907f5424cbce21840",
+  "runtime_source_commit": "a030c79",
+  "archive": "AI-Control-FACC-v0.3.25-dev-blacklist1-a030c79-UMM-test.zip",
+  "zip_sha256": "974abbb1cf2966f414b6dab399331261542f171cf462521115b9ba1278742d5a",
+  "dll_sha256": "ffc9ccf0ced7890dad7273bdac7747e41e4d4450d2d36eae1c2f03c72eeadad7",
+  "manifest_sha256": "5637b45b7895b141bb75d5b15ff4caed36b6d008b78def38180b5fffefe1c59e",
+  "module_mvid": "aab34bce-39d7-45c1-9346-551a9b5aa05a",
+  "startup_marker": "[Build] v0.3.25 module=aab34bce-39d7-45c1-9346-551a9b5aa05a",
+  "archive_contents": ["CompanionAI_Pathfinder.dll", "Info.json"],
+  "checks": {
+    "unit_tests": { "passed": 311, "failed": 0, "skipped": 0 },
+    "release_build": { "warnings": 0, "errors": 0 },
+    "offline_blueprint_checks": "ProfileAudit --blocklist-checks: 159 variant parents, 813 variants, 201 conversions, all checks held",
+    "external_references": "SigDump vs v0.3.25: new game bindings BlueprintGuid(Guid), GUILayout.TextField, Event.current/type",
+    "packed_dll_matches_build": true,
+    "in_game": "pending"
+  },
+  "publication_scope": "Task-branch test download for the 'Abilities AI must not use' feature (docs/TASK_USER_ABILITY_BLACKLIST.md); not a release."
+}

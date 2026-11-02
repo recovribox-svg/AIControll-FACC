@@ -1,5 +1,24 @@
 # Test builds
 
+## Feature test: "Abilities AI must not use" (task branch, a030c79)
+
+**[Download the UMM test ZIP (a030c79)](AI-Control-FACC-v0.3.25-dev-blacklist1-a030c79-UMM-test.zip?raw=true)**
+
+Direct link: <https://github.com/recovribox-svg/AIControll-FACC/raw/claude/user-ability-blacklist/test-builds/AI-Control-FACC-v0.3.25-dev-blacklist1-a030c79-UMM-test.zip>
+
+v0.3.25 plus a list of abilities and toggles the AI must not use.
+- **Where:** in each character's panel in the settings (Ctrl+F10), plus a shared list for everyone.
+- **Covers:** turn-based and real-time combat, after-fight buffing and Pre-Buff.
+- **Not touched:** your own orders, other mods and automatic effects.
+- How to use it and what to test: [docs/TASK_USER_ABILITY_BLACKLIST.md](../docs/TASK_USER_ABILITY_BLACKLIST.md) §2.1
+  and §2.7.
+
+UMM shows **0.3.25**. Startup line `[Build] v0.3.25 module=aab34bce-39d7-45c1-9346-551a9b5aa05a`.
+- ZIP SHA-256 `974abbb1cf2966f414b6dab399331261542f171cf462521115b9ba1278742d5a`; DLL SHA-256 `ffc9ccf0ced7890dad7273bdac7747e41e4d4450d2d36eae1c2f03c72eeadad7`.
+- [Identity](AI-Control-FACC-v0.3.25-dev-blacklist1-a030c79-UMM-test.identity.json) · [Checksums](SHA256SUMS.txt).
+- Checks: 311 unit tests pass; the release build has 0 warnings; the matching passes on the game's real blueprints
+  (offline). Not played yet.
+
 ## Current test build: v0.3.25-dev-test3 (ffed9ac), released as v0.3.25
 
 **[Download the UMM test ZIP (ffed9ac)](AI-Control-FACC-v0.3.25-dev-test3-ffed9ac-UMM-test.zip?raw=true)**

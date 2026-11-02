@@ -277,6 +277,14 @@ toggles such as Shift Form; bonus stacking follows the game's own rule (and Tabl
   Control acts anyway. Turn-based combat and companions without rules are not affected.
 - **Buff It 2 The Limit:** if it manages your companions' toggles, switch *AI manages activatable abilities* off; if it
   casts their buffs, switch the self-buff option off too. The settings page shows a reminder while that mod is active.
+- *Abilities AI must not use*: per character, in the character's panel, a searchable list of its spells, abilities,
+  quick-slot items and toggles. *Block* one for this character or for everyone; variant spells can be blocked one
+  variant at a time or all at once. The top-level panel lists the shared (everyone) entries.
+  - What it covers: AI Control never starts a blocked entry in either combat mode, nor in its after-fight buffing or
+    Pre-Buff.
+  - What it does not touch: you can still use them by hand, other mods (Wrath Tactics) and automatic effects (Dreadful
+    Carnage's free Dazzling Display) are not affected, and what is already on stays on.
+  - Details: [docs/TASK_USER_ABILITY_BLACKLIST.md](docs/TASK_USER_ABILITY_BLACKLIST.md).
 - *Consumables (quick-slot items)*: master switch plus potions / scrolls & wands / alchemical & thrown items, and the HP %
   below which a character drinks a healing potion. **Put the items you want companions to use into their quick slots**:
   the game only allows quick-slot items in combat, and never lets animal companions use items.
