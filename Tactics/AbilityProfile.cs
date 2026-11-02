@@ -1530,10 +1530,52 @@ namespace CompanionAI_Pathfinder.Tactics
 
         /// <summary>One checker's outcomes in one frame (★ v0.3.18 review: dropped when the frame changes, so the
         /// per-aim keys do not pile up over a fight).</summary>
+        private readonly struct CheckerKey : IEquatable<CheckerKey>
+        {
+            private readonly UnitEntityData caster, target, aimUnit;
+            private readonly BlueprintAbility blueprint;
+            private readonly object item, book;
+            private readonly int metamagic, heighten, x, z;
+
+            internal CheckerKey(UnitEntityData caster, UnitEntityData target, AbilityData ability, TargetWrapper aim)
+            {
+                this.caster = caster;
+                this.target = target;
+                blueprint = ability.Blueprint;
+                item = ability.SourceItem;
+                book = ability.Spellbook?.Blueprint;
+                var data = ability.MetamagicData;
+                metamagic = data != null && (data.NotEmpty || data.HeightenLevel != 0) ? (int)data.MetamagicMask : 0;
+                heighten = data?.HeightenLevel ?? 0;
+                aimUnit = aim.Unit;
+                x = aimUnit != null ? 0 : (int)Math.Round(aim.Point.x * 10f);
+                z = aimUnit != null ? 0 : (int)Math.Round(aim.Point.z * 10f);
+            }
+
+            public bool Equals(CheckerKey o) => caster == o.caster && target == o.target && blueprint == o.blueprint &&
+                item == o.item && book == o.book && metamagic == o.metamagic && heighten == o.heighten &&
+                aimUnit == o.aimUnit && x == o.x && z == o.z;
+            public override bool Equals(object obj) => obj is CheckerKey k && Equals(k);
+            public override int GetHashCode()
+            {
+                unchecked
+                {
+                    int h = caster?.GetHashCode() ?? 0;
+                    h = h * 397 ^ (target?.GetHashCode() ?? 0);
+                    h = h * 397 ^ (blueprint?.GetHashCode() ?? 0);
+                    h = h * 397 ^ (item?.GetHashCode() ?? 0);
+                    h = h * 397 ^ (book?.GetHashCode() ?? 0);
+                    h = h * 397 ^ metamagic ^ heighten << 16;
+                    h = h * 397 ^ (aimUnit?.GetHashCode() ?? 0);
+                    return h * 397 ^ x ^ z << 12;
+                }
+            }
+        }
+
         private sealed class CheckerResults
         {
             public int Frame;
-            public readonly Dictionary<string, bool?> Results = new Dictionary<string, bool?>();
+            public readonly Dictionary<CheckerKey, bool?> Results = new Dictionary<CheckerKey, bool?>();
         }
 
         /// <summary>Checker outcome per (checker, target) within one frame; a decision evaluates many candidates.</summary>
@@ -1691,9 +1733,10 @@ namespace CompanionAI_Pathfinder.Tactics
             // ★ v0.3.18 (review): and by the ability itself (a scroll and the spell, metamagic copies: caster level and
             // shared values differ) - one checker is shared by every copy of the blueprint.
             var aim = s_Aim ?? new TargetWrapper(target);
-            string key = $"{caster?.UniqueId}|{target.UniqueId}|{ability.Blueprint?.AssetGuid}|{AbilityDiscovery.MetamagicTag(ability)}|" +
-                         $"{ability.SourceItem?.UniqueId}|{ability.Spellbook?.Blueprint?.AssetGuid}|" +
-                         (aim.Unit != null ? aim.Unit.UniqueId : $"{aim.Point.x:F1},{aim.Point.z:F1}");
+            // ★ v0.3.25 (test2 logs, performance): a struct key - the same parts as before (caster, target, ability blueprint,
+            // metamagic, source item, spellbook, aim unit or its point to 0.1 m), without the string built for every
+            // lookup, cache hits included.
+            var key = new CheckerKey(caster, target, ability, aim);
             if (!CheckerCache.TryGetValue(checker, out var perUnit))
                 CheckerCache[checker] = perUnit = new CheckerResults { Frame = frame };
             if (perUnit.Frame != frame)

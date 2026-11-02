@@ -41,9 +41,10 @@ namespace CompanionAI_Pathfinder.Tactics
         private readonly string[] costlyNames = new string[3];
         private readonly long[] costlyTicks = new long[3];
         private readonly int[] costlyCandidates = new int[3];
+        private readonly long[] costlyBytes = new long[3];
         private int scored, skipped;
 
-        internal void NoteAbility(string name, long startedAt, int candidates)
+        internal void NoteAbility(string name, long startedAt, int candidates, long bytes = -1)
         {
             long ticks = Stopwatch.GetTimestamp() - startedAt;
             scored++;
@@ -54,8 +55,9 @@ namespace CompanionAI_Pathfinder.Tactics
             for (int i = 2; i > slot; i--)
             {
                 costlyNames[i] = costlyNames[i - 1]; costlyTicks[i] = costlyTicks[i - 1]; costlyCandidates[i] = costlyCandidates[i - 1];
+                costlyBytes[i] = costlyBytes[i - 1];
             }
-            costlyNames[slot] = name; costlyTicks[slot] = ticks; costlyCandidates[slot] = candidates;
+            costlyNames[slot] = name; costlyTicks[slot] = ticks; costlyCandidates[slot] = candidates; costlyBytes[slot] = bytes;
         }
 
         internal void NoteSkippedAbility() => skipped++;
@@ -75,6 +77,7 @@ namespace CompanionAI_Pathfinder.Tactics
             $"; abilities scored={scored}, skipped unaffordable={skipped}" +
             (costlyNames[0] == null ? "" : "; costliest: " + string.Join(", ", System.Linq.Enumerable.Range(0, 3)
                 .Where(i => costlyNames[i] != null)
-                .Select(i => $"{costlyNames[i]} {Milliseconds(costlyTicks[i]):F1} ms ({costlyCandidates[i]} options)")));
+                .Select(i => $"{costlyNames[i]} {Milliseconds(costlyTicks[i]):F1} ms ({costlyCandidates[i]} options" +
+                             (costlyBytes[i] >= 0 ? $", +{costlyBytes[i] / 1024} KB" : "") + ")")));
     }
 }

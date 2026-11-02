@@ -395,8 +395,15 @@ namespace CompanionAI_Pathfinder.Tactics
 
         public static string AbilityKey(AbilityData ability)
         {
-            return ability?.Blueprint?.AssetGuid.ToString() ?? "none";
+            var bp = ability?.Blueprint;
+            if (bp == null) return "none";
+            // ★ v0.3.25 (test2 logs): the GUID's text once per blueprint, not a new string for every lookup.
+            if (!GuidTexts.TryGetValue(bp, out var text)) GuidTexts[bp] = text = bp.AssetGuid.ToString();
+            return text;
         }
+
+        private static readonly Dictionary<Kingmaker.UnitLogic.Abilities.Blueprints.BlueprintAbility, string> GuidTexts =
+            new Dictionary<Kingmaker.UnitLogic.Abilities.Blueprints.BlueprintAbility, string>();
 
         /// <summary>
         /// A cast was issued with <paramref name="command"/>. ★ v0.3.20 (audit LIF-001): it counts once the command acted

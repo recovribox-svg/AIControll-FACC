@@ -280,6 +280,32 @@ namespace CompanionAI_Pathfinder.Tactics
         {
             Routines.Clear();
             HitsOnTarget.Clear();   // ★ v0.3.20 (test3): read with the routines, forgotten with them
+            ParamsCache.Clear();    // ★ v0.3.25 (test2 logs)
+        }
+
+        // ★ v0.3.25 (test2 logs, performance): an ability's parameters (caster level, DC, spell level, metamagic) for the
+        // decision. AbilityData.CalculateParams runs the game's RuleCalculateAbilityParams; every damage estimate, buff
+        // appraisal, save and context asked for it again, per target - thousands of rule triggers and several MB of garbage
+        // per decision for Orvath (v0.3.25-test2 logs: +4-10 MB a decision, collections inside the slowest ones). The
+        // parameters depend on the caster and the ability only (AbilityData's own equality); the game's contexts clone what
+        // they are given (AbilityExecutionContext: @params.Clone()), so sharing the object is exact. Forgotten at every
+        // decision and every frame.
+        private static readonly Dictionary<AbilityData, Kingmaker.UnitLogic.Abilities.AbilityParams> ParamsCache =
+            new Dictionary<AbilityData, Kingmaker.UnitLogic.Abilities.AbilityParams>();
+        private static int s_ParamsFrame = -1;
+
+        internal static Kingmaker.UnitLogic.Abilities.AbilityParams ParamsOf(AbilityData ability)
+        {
+            if (ability == null) return null;
+            int frame = Time.frameCount;
+            if (frame != s_ParamsFrame) { ParamsCache.Clear(); s_ParamsFrame = frame; }
+            if (!ParamsCache.TryGetValue(ability, out var p))
+            {
+                p = ability.CalculateParams();
+                if (ParamsCache.Count > 512) ParamsCache.Clear();
+                ParamsCache[ability] = p;
+            }
+            return p;
         }
 
         internal static void InfusionStateChanged()
@@ -531,7 +557,7 @@ namespace CompanionAI_Pathfinder.Tactics
         {
             try
             {
-                var ctx = ability.CreateExecutionContext(target);
+                var ctx = ability.CreateExecutionContext(target, ParamsOf(ability));
                 ctx.RecalculateRanks();
                 return ctx;
             }
@@ -616,7 +642,7 @@ namespace CompanionAI_Pathfinder.Tactics
             EffectApplies Applies(GameAction action) => branch?.Invoke(action) ?? profile.AppliesTo(action, ability, target);
             if (target != null && profile.Damage.All(d => Applies(d) == EffectApplies.No)) return 0f;
             var ctx = CreateContext(ability, target != null ? new TargetWrapper(target) : null);
-            int cl = Math.Max(1, ability.CalculateParams()?.CasterLevel ?? 1);
+            int cl = Math.Max(1, ParamsOf(ability)?.CasterLevel ?? 1);
             DamageMetamagic(ability, out bool maximize, out bool empower);
             var parts = new List<KeyValuePair<GameAction, float>>();
             bool physicalBypass = ignorePhysicalReduction ??
@@ -1028,7 +1054,7 @@ namespace CompanionAI_Pathfinder.Tactics
             if (profile.Heals.Count == 0) return 0f;
             if (target != null && profile.Heals.All(h => profile.AppliesTo(h, ability, target) == EffectApplies.No)) return 0f;
             var ctx = CreateContext(ability, target != null ? new TargetWrapper(target) : null);
-            int cl = Math.Max(1, ability.CalculateParams()?.CasterLevel ?? 1);
+            int cl = Math.Max(1, ParamsOf(ability)?.CasterLevel ?? 1);
             DamageMetamagic(ability, out bool maximize, out bool empower);
             var parts = new List<KeyValuePair<GameAction, float>>();
             foreach (var action in profile.Heals)
@@ -1121,7 +1147,7 @@ namespace CompanionAI_Pathfinder.Tactics
                 bool veryDifficult = state.HasCondition(UnitCondition.SpellCastingIsVeryDifficult);
                 if (!veryDifficult && !state.HasCondition(UnitCondition.Entangled) && !state.HasCondition(UnitCondition.SpellCastingIsDifficult))
                     return 1f;
-                var p = ability.CalculateParams();
+                var p = ParamsOf(ability);
                 int dc = 15 + p.SpellLevel + (veryDifficult ? p.SpellLevel : 0);
                 int need = dc - p.Concentration;                       // d20 result needed
                 return Mathf.Clamp01((21f - need) / 20f);
@@ -1259,7 +1285,7 @@ namespace CompanionAI_Pathfinder.Tactics
                     if (action.UseKineticistMainStat)
                         stat = caster.Get<Kingmaker.UnitLogic.Class.Kineticist.UnitPartKineticist>()?.MainStatType ?? stat;
                     if (action.UseCastingStat) stat = ability?.Spellbook?.Blueprint.CastingAttribute ?? StatType.Charisma;
-                    if (action.UseCasterLevelAsBaseAttack && ability != null) cmbRule.ReplaceBAB = ability.CalculateParams().CasterLevel;
+                    if (action.UseCasterLevelAsBaseAttack && ability != null) cmbRule.ReplaceBAB = ParamsOf(ability).CasterLevel;
                     if (action.UseBestMentalStat)
                     {
                         var st = caster.Stats;
@@ -1520,7 +1546,7 @@ namespace CompanionAI_Pathfinder.Tactics
             if (save == SavingThrowType.Unknown || target == null) return 1f;
             try
             {
-                int dc = ability.CalculateParams()?.DC ?? 10;
+                int dc = ParamsOf(ability)?.DC ?? 10;
                 int bonus;
                 switch (save)
                 {
@@ -1567,7 +1593,7 @@ namespace CompanionAI_Pathfinder.Tactics
             float points = 0f;
             try
             {
-                int dc = ability?.CalculateParams()?.DC ?? 10;
+                int dc = ParamsOf(ability)?.DC ?? 10;
                 foreach (var poison in Kingmaker.Blueprints.BlueprintExtenstions.GetComponents<Kingmaker.Designers.Mechanics.Buffs.BuffPoisonStatDamage>(buff))
                 {
                     if (poison.Stat != StatType.Constitution) continue;

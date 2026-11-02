@@ -1604,7 +1604,7 @@ namespace CompanionAI_Pathfinder.Tactics
             int? gap = null;
             try
             {
-                var p = ability.CalculateParams();
+                var p = CombatMath.ParamsOf(ability);
                 int dc = 15 + 2 * Math.Max(0, p.SpellLevel);
                 fail = Mathf.Clamp01((dc - p.Concentration - 1) / 20f);
                 // ★ v0.3.20 (test5): a hit while the spell is being cast calls for a concentration check against
@@ -2300,9 +2300,14 @@ namespace CompanionAI_Pathfinder.Tactics
                     }
 
                     long started = System.Diagnostics.Stopwatch.GetTimestamp();
+                    long heap = ctx.Timings != null ? GC.GetTotalMemory(false) : 0;
                     int before = list.Count;
                     list.AddRange(EvaluateAbility(ctx, ability, captureControlAims: captureControlAims));
-                    ctx.Timings?.NoteAbility(ability.Name, started, list.Count - before);
+                    if (ctx.Timings != null)
+                    {
+                        long grown = GC.GetTotalMemory(false) - heap;   // negative when a collection ran meanwhile
+                        ctx.Timings.NoteAbility(ability.Name, started, list.Count - before, grown >= 0 ? grown : -1);
+                    }
                     if (!attackFromHere)
                         for (int i = before; i < list.Count && !attackFromHere; i++) attackFromHere = ResolvesAttackFromHere(ctx, list[i]);
                 }
@@ -2678,6 +2683,7 @@ namespace CompanionAI_Pathfinder.Tactics
             }
 
             var controlAims = StartControlAimDiagnostics(profile, captureControlAims);
+            bool? abilityNeedsLos = null;
             Candidate best = null, bestViable = null, bestBoss = null;
             float? arcaneChance = null;
             foreach (var target in targets.Distinct())
@@ -2697,7 +2703,9 @@ namespace CompanionAI_Pathfinder.Tactics
                 if (target != ctx.Unit && !summonPoint.HasValue)
                 {
                     float range = ability.GetApproachDistance(wrapper.Unit);
-                    bool needLos = new UnitUseAbility(ability, wrapper).NeedLoS;
+                    // ★ v0.3.25 (test2 logs): the command's own rule (UnitUseAbility: no ILineOfSightIgnore component), read
+                    // once per ability - a command was built for every target only to read it.
+                    bool needLos = abilityNeedsLos ?? (abilityNeedsLos = new UnitUseAbility(ability, wrapper).NeedLoS).Value;
                     if (!InRangeNow(ctx.Unit, target.Position, range, needLos))
                     {
                         // ★ v0.3.16 (test3): the game measures range flat unless the height difference is over 1.5 m, then
