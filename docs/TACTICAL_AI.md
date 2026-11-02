@@ -3028,3 +3028,19 @@ Audit in [V0325_TEST1.md](V0325_TEST1.md) §3. Four readers added:
   stat-penalty removals) is a removal in `AbilityProfile` (`RemovedDescriptors`, `m_Removals`; `BuffsRemovedFrom` uses
   the game's dispel filters through `DispelTakes`), so it is valued as a cleanse when there is something to take and is
   "verifiable" (no fallback otherwise).
+
+## 87. v0.3.25 test 2: audit fixes from the test1 logs
+
+[LIVE_CODE_AUDIT_V0325.md](LIVE_CODE_AUDIT_V0325.md).
+- `AddAbilityCandidates`: an offensive ability whose slot is not affordable is skipped in turn-based (every reader checks
+  `Affordable`) and in real time once `ResolvesAttackFromHere` holds for some candidate (`AttacksFromHere`, the same
+  predicate as `AddMovementCandidates.anyAttackNow`; for a kineticist only burn-free abilities answer it, since
+  `PriceBurn` runs later). Held charges and spell-forbidding toggles keep scoring theirs.
+- Heal section: for a used-up item (`IsSpentItem`) the HP-restoring part is `ValueModel.SpentHealValue` (x (1 -
+  `LimitedUseDiscount`)), the drop-chance part and revives in full; such heals now face `MinSpentItemValue` like other
+  used-up items.
+- `HitChanceCalculator.CalculateDamageReduction(…, weaponDamage)`: bypass by `AddDamageResistancePhysical.Hit` on
+  `CombatMath.WeaponDamageProbe` (the first physical `DamageDescription` from `RuleCalculateWeaponStats`, plus the weapon's
+  `WeaponMaterial` / `WeaponAlignment` enchantments); without one, magic alone only for an "or" or magic-only reduction.
+- `[Perf] slow decision` adds abilities scored/skipped, the three costliest abilities with their option counts
+  (`DecisionTimings.NoteAbility`), and heap growth when no collection ran.

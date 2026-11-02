@@ -59,6 +59,12 @@ combat, an AI-ended trance switched back on after the fight, move action + stand
 (`TacticalEngine.HeldStates.cs`, `ValueModel.HeldStateWorth`); potion audit - Magical Vestment, Align/Bless Weapon and
 Lesser Restoration read instead of guessed or ignored. `Info.json` 0.3.25; test ZIP
 `AI-Control-FACC-v0.3.25-dev-test1-907cd75-UMM-test.zip` (MVID `b9270500-be53-43c5-8beb-8bbf61bbafe6`); 273 tests.
+**v0.3.25 test 2 (2 November, [docs/LIVE_CODE_AUDIT_V0325.md](docs/LIVE_CODE_AUDIT_V0325.md), `docs/TACTICAL_AI.md` §87):** test1
+played (14 fights, no mod errors); log review plus live-code audit. Fixed: unaffordable offence no longer scored
+(`AbilityScoringPolicy.SkipUnaffordableOffence`), used-up healing items restrained in easy fights
+(`ValueModel.SpentHealValue`, item bar), weapon damage reduction by the native `AddDamageResistancePhysical.Hit`
+(`CombatMath.WeaponDamageProbe`). Open: A4 sustained Orvath ability cost, A5 allocations - the slow-decision line now names
+the costliest abilities and heap growth. Test ZIP `AI-Control-FACC-v0.3.25-dev-test2-2692562-UMM-test.zip` (MVID `15e39809-c72b-47a8-8db8-e2593f1ca945`); 282 tests.
 
 Historical handovers, superseded by the one above: [v0.3.22 release preparation](docs/RELEASE_0_3_22_HANDOVER.md)
 (27 October, PR #6–#12), [released-log review](docs/RELEASE_0322_LOG_REVIEW.md) (PR #13),

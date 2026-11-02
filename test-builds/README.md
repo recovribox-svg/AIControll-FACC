@@ -1,6 +1,24 @@
 # Test builds
 
-## Current test build: v0.3.25-dev-test1 (907cd75)
+## Current test build: v0.3.25-dev-test2 (2692562)
+
+**[Download the UMM test ZIP (2692562)](AI-Control-FACC-v0.3.25-dev-test2-2692562-UMM-test.zip?raw=true)**
+
+Direct link: <https://github.com/recovribox-svg/AIControll-FACC/raw/claude/dreamy-pasteur-b9h3rn/test-builds/AI-Control-FACC-v0.3.25-dev-test2-2692562-UMM-test.zip>
+
+Test 1 plus the test1 log review and live-code audit ([report](../docs/LIVE_CODE_AUDIT_V0325.md)):
+- **Faster:** spells the character cannot cast this turn (action used, or on cooldown in real time) are no longer
+  scored - Orvath spent up to a second on them before ending his turn.
+- **Healing potions:** no top-ups in nearly-won fights; still drunk when a companion is about to drop.
+- **Weapons vs damage reduction:** the game's own rule decides what a weapon gets through (cold iron, silver, holy...).
+- **Diagnostics:** slow decisions name their three costliest abilities and the memory they used.
+
+UMM shows **0.3.25**. Startup line `[Build] v0.3.25 module=15e39809-c72b-47a8-8db8-e2593f1ca945`.
+- ZIP SHA-256 `eb196e0ba68eada30ec9444ba172ed825ed7696c1a3ddd480f4e86053a4ea943`; DLL SHA-256 `e3e3775aec38ec08cc3043ecd85edbf839f60739b4bdcee787e8f8b496d51e9c`.
+- [Identity](AI-Control-FACC-v0.3.25-dev-test2-2692562-UMM-test.identity.json) · [Checksums](SHA256SUMS.txt).
+- Checks: 282 unit tests pass; release build 0 warnings. Not yet played.
+
+## Previous test build: v0.3.25-dev-test1 (907cd75)
 
 **[Download the UMM test ZIP (907cd75)](AI-Control-FACC-v0.3.25-dev-test1-907cd75-UMM-test.zip?raw=true)**
 

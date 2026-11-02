@@ -1,0 +1,23 @@
+{
+  "name": "AI Control - Fully Autonomous Combat Companions v0.3.25 test 2",
+  "version": "0.3.25",
+  "umm_manifest_version": "0.3.25",
+  "umm_mod_id": "CompanionAI_Pathfinder",
+  "branch": "claude/dreamy-pasteur-b9h3rn",
+  "runtime_source_commit": "2692562",
+  "archive": "AI-Control-FACC-v0.3.25-dev-test2-2692562-UMM-test.zip",
+  "zip_sha256": "eb196e0ba68eada30ec9444ba172ed825ed7696c1a3ddd480f4e86053a4ea943",
+  "dll_sha256": "e3e3775aec38ec08cc3043ecd85edbf839f60739b4bdcee787e8f8b496d51e9c",
+  "manifest_sha256": "5637b45b7895b141bb75d5b15ff4caed36b6d008b78def38180b5fffefe1c59e",
+  "module_mvid": "15e39809-c72b-47a8-8db8-e2593f1ca945",
+  "startup_marker": "[Build] v0.3.25 module=15e39809-c72b-47a8-8db8-e2593f1ca945",
+  "archive_contents": ["CompanionAI_Pathfinder.dll", "Info.json"],
+  "checks": {
+    "unit_tests": { "passed": 282, "failed": 0, "skipped": 0 },
+    "release_build": { "warnings": 0, "errors": 0 },
+    "external_references": "SigDump vs test1: AddDamageResistancePhysical.Hit, PhysicalDamage.AddMaterial, BaseDamage.AddAlignment, WeaponMaterial.Material added (read-only); none removed",
+    "packed_dll_matches_build": true,
+    "in_game": "pending"
+  },
+  "publication_scope": "Development test download after the v0.3.25-test1 log review and live-code audit; not a release."
+}
