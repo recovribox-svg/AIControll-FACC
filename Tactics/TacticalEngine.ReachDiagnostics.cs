@@ -28,6 +28,8 @@ namespace CompanionAI_Pathfinder.Tactics
         private static void LogReachStandoffDiagnostics(TacticalContext ctx, List<Candidate> candidates,
             Candidate chosen, TurnMemory memory)
         {
+            // ★ v0.3.25 (author, log review): debug log only - nothing is gathered or built without it.
+            if (!Main.VerboseOn) return;
             try
             {
                 // Only the incident's primary-melee RT shape. This is called after the preview early return, not
@@ -52,10 +54,8 @@ namespace CompanionAI_Pathfinder.Tactics
 
                 var sample = ReachDiagnosticSamples.GetValue(memory, NewReachDiagnosticSample);
                 if (Interlocked.Exchange(ref sample.Claimed, 1) != 0) return;
-                // One foe/row per actor TurnMemory. Expensive names/formatting and bounded native-command reads
-                // occur only in the first ReportOnce callback; no new rule, forecast, risk or path query is made.
-                ReportOnce($"reach-area|{ctx.Unit.UniqueId}|{memory.Round}|{sample.Serial}", () =>
-                    DescribeReachStandoff(ctx, approach, normalRetreat, chosen));
+                // One foe/row per actor TurnMemory (the claim above); no new rule, forecast, risk or path query is made.
+                Main.Verbose(DescribeReachStandoff(ctx, approach, normalRetreat, chosen));
             }
             catch { } // Missing diagnostic data must never remove an action or change Decide's result.
         }
