@@ -65,6 +65,10 @@ played (14 fights, no mod errors); log review plus live-code audit. Fixed: unaff
 (`ValueModel.SpentHealValue`, item bar), weapon damage reduction by the native `AddDamageResistancePhysical.Hit`
 (`CombatMath.WeaponDamageProbe`). Open: A4 sustained Orvath ability cost, A5 allocations - the slow-decision line now names
 the costliest abilities and heap growth. Test ZIP `AI-Control-FACC-v0.3.25-dev-test2-2692562-UMM-test.zip` (MVID `15e39809-c72b-47a8-8db8-e2593f1ca945`); 282 tests.
+**v0.3.25 test 3 (2 November, audit report §9, `docs/TACTICAL_AI.md` §88):** test2 played - stutters are garbage collections
+inside Orvath's decisions (+4-10 MB each). Exact allocation fixes: ability parameters reused per decision
+(`CombatMath.ParamsOf`), struct condition-cache key, `NeedLoS` once per ability, GUID text cached; per-ability heap growth
+in the slow line. Test ZIP `AI-Control-FACC-v0.3.25-dev-test3-ffed9ac-UMM-test.zip` (MVID `b1f83486-ff07-4245-b5d2-f4b0998b5d1a`).
 
 Historical handovers, superseded by the one above: [v0.3.22 release preparation](docs/RELEASE_0_3_22_HANDOVER.md)
 (27 October, PR #6–#12), [released-log review](docs/RELEASE_0322_LOG_REVIEW.md) (PR #13),

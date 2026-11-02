@@ -3044,3 +3044,11 @@ Audit in [V0325_TEST1.md](V0325_TEST1.md) §3. Four readers added:
   `WeaponMaterial` / `WeaponAlignment` enchantments); without one, magic alone only for an "or" or magic-only reduction.
 - `[Perf] slow decision` adds abilities scored/skipped, the three costliest abilities with their option counts
   (`DecisionTimings.NoteAbility`), and heap growth when no collection ran.
+
+## 88. v0.3.25 test 3: allocations per decision
+
+`CombatMath.ParamsOf(ability)`: `AbilityData.CalculateParams` once per ability per decision and frame (cleared in
+`ClearAttackCache` and on a new frame, at most 512); `CreateContext` passes it to `CreateExecutionContext(target, params)`
+(the context clones it). Every former `CalculateParams()` call in the engine uses it. `AbilityProfile.CheckFor`'s cache key
+is `CheckerKey` (struct; caster, target, blueprint, item, spellbook, metamagic mask and heighten, aim unit or point to
+0.1 m). `EvaluateAbility` reads `NeedLoS` once per ability. `DecisionTimings` records each costliest ability's heap growth.

@@ -1,0 +1,23 @@
+{
+  "name": "AI Control - Fully Autonomous Combat Companions v0.3.25 test 3",
+  "version": "0.3.25",
+  "umm_manifest_version": "0.3.25",
+  "umm_mod_id": "CompanionAI_Pathfinder",
+  "branch": "claude/dreamy-pasteur-b9h3rn",
+  "runtime_source_commit": "ffed9ac",
+  "archive": "AI-Control-FACC-v0.3.25-dev-test3-ffed9ac-UMM-test.zip",
+  "zip_sha256": "376e6da898704ca418c41c08101957fd9530d83d076ac815759c6fd9a6bb6dba",
+  "dll_sha256": "07eae141ae6c631a36b8eb3af8872172ad3cceaf8f8ab60a8c74ac6acfc37bd9",
+  "manifest_sha256": "5637b45b7895b141bb75d5b15ff4caed36b6d008b78def38180b5fffefe1c59e",
+  "module_mvid": "b1f83486-ff07-4245-b5d2-f4b0998b5d1a",
+  "startup_marker": "[Build] v0.3.25 module=b1f83486-ff07-4245-b5d2-f4b0998b5d1a",
+  "archive_contents": ["CompanionAI_Pathfinder.dll", "Info.json"],
+  "checks": {
+    "unit_tests": { "passed": 282, "failed": 0, "skipped": 0 },
+    "release_build": { "warnings": 0, "errors": 0 },
+    "external_references": "SigDump vs test2: no change",
+    "packed_dll_matches_build": true,
+    "in_game": "pending"
+  },
+  "publication_scope": "Development test download after the v0.3.25-test2 log review (performance); not a release."
+}

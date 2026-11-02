@@ -4,7 +4,8 @@
 
 | What | Contents | Status |
 | --- | --- | --- |
-| [Test ZIP — v0.3.25-dev-test2 (2692562)](test-builds/AI-Control-FACC-v0.3.25-dev-test2-2692562-UMM-test.zip?raw=true) | Test 1 + faster decisions, no wasted healing potions, weapon damage reduction by the game's rule ([audit](docs/LIVE_CODE_AUDIT_V0325.md)) | Development test build, not yet played |
+| [Test ZIP — v0.3.25-dev-test3 (ffed9ac)](test-builds/AI-Control-FACC-v0.3.25-dev-test3-ffed9ac-UMM-test.zip?raw=true) | Test 2 + much less memory garbage per decision (fewer stutters) ([report](docs/LIVE_CODE_AUDIT_V0325.md)) | Development test build, not yet played |
+| [Test ZIP — v0.3.25-dev-test2 (2692562)](test-builds/AI-Control-FACC-v0.3.25-dev-test2-2692562-UMM-test.zip?raw=true) | Test 1 + faster decisions, no wasted healing potions, weapon damage reduction by the game's rule ([audit](docs/LIVE_CODE_AUDIT_V0325.md)) | Superseded test build (played) |
 | [Test ZIP — v0.3.25-dev-test1 (907cd75)](test-builds/AI-Control-FACC-v0.3.25-dev-test1-907cd75-UMM-test.zip?raw=true) | v0.3.24 + Unraveling/Chain Arrows chosen automatically, psionic focus regained and trance restored, smarter potions ([notes](docs/V0325_TEST1.md)) | Superseded test build (played) |
 | **[v0.3.24 stable ZIP](release/CompanionAI_Pathfinder_v0.3.24.zip?raw=true)** | The v0.3.24 release ([notes](release/CHANGELOG_v0.3.24.md)); same file as the build3 test ZIP | Released (tag `v0.3.24` created by the author) |
 | [Test ZIP — v0.3.24-dev-build2 (2d6b49b)](test-builds/AI-Control-FACC-v0.3.24-dev-build2-2d6b49b-UMM-test.zip?raw=true) | Build 1 + no step out of melee away from a better spell or attack ([review](docs/V0324_BUILD1_LOGS_REVIEW.md)) | Superseded test build |

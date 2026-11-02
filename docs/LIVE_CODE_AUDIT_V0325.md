@@ -112,3 +112,30 @@ Release build 0 warnings; 282 unit tests pass (new: `UnaffordableOffenceOnlyForT
 4. Against an enemy with DR (demons, skeletons DR/bludgeoning): weapon estimates in the decision lines should no longer
    treat a +1 weapon as getting through DR/cold iron.
 5. Send the log: the slow lines now name the costliest abilities (A4) and heap growth (A5).
+
+## 9. Test2 playtest: stutters (test3)
+
+**Evidence** (v0.3.25-test2 logs, MVID `15e39809`; 4 real-time and 4 turn-based fights; no mod errors). 34 slow
+decisions, all but two Orvath's (77 abilities, about 63 scored). Every one without a collection grew the heap by
+**4-10 MB**. The longest (500-950 ms) all had "memory clean-up ran", and the cost sat in one ability that happened to be
+running when the collection came (Guidance 753 ms, Fan of Flames 698 ms, Grease 821 ms, Lullaby 500 ms). Without one, the
+costliest abilities were 10-30 ms each (Snowball, cantrips, blasts) over about 63 abilities. The freezes the author
+reports are the game's memory clean-ups, triggered by how fast the decisions allocate. Skipping unaffordable offence
+worked: "scored=11, skipped unaffordable=33" on a move-only decision.
+
+**A7 (P1, fixed `ffed9ac`):** per target, every damage estimate, buff appraisal, save check, context and branch
+condition ran `AbilityData.CalculateParams` (the game's `RuleCalculateAbilityParams`, through every subscribed fact). That
+is a few thousand rule triggers a decision. They are now `CombatMath.ParamsOf`, once per ability per decision and frame. Contexts get
+them through the native `CreateExecutionContext(target, cachedParams)`. Exact: parameters depend on caster and ability
+(AbilityData equality), and `AbilityExecutionContext` clones what it is given. Contexts themselves are not shared, because
+Hit Dice conditions write shared values into them.
+
+**A8 (P2, fixed):** the branch-condition cache (`AbilityProfile.CheckFor`) built a string of seven parts for every
+lookup, hits included; it is a struct key of the same parts. `EvaluateAbility` built a `UnitUseAbility` per target to read
+`NeedLoS` (a blueprint property: no `ILineOfSightIgnore`); read once per ability. `CombatMemory.AbilityKey` keeps each
+GUID's text.
+
+**Acceptance for the replay:** same kind of fights; the slow lines should show far smaller heap growth (KB per costliest
+ability is now printed) and fewer "memory clean-up ran". Decisions are unchanged by construction. If a stutter remains,
+the line names the ability and its KB; that is the next target. A frame-level stutter outside decisions would not appear
+in these lines.

@@ -1,6 +1,20 @@
 # Test builds
 
-## Current test build: v0.3.25-dev-test2 (2692562)
+## Current test build: v0.3.25-dev-test3 (ffed9ac)
+
+**[Download the UMM test ZIP (ffed9ac)](AI-Control-FACC-v0.3.25-dev-test3-ffed9ac-UMM-test.zip?raw=true)**
+
+Direct link: <https://github.com/recovribox-svg/AIControll-FACC/raw/claude/dreamy-pasteur-b9h3rn/test-builds/AI-Control-FACC-v0.3.25-dev-test3-ffed9ac-UMM-test.zip>
+
+Test 2 plus performance work from the test2 logs ([report](../docs/LIVE_CODE_AUDIT_V0325.md) §9): far less memory garbage per
+decision (the stutters were the game's memory clean-ups during Orvath's decisions). Decisions themselves are unchanged.
+
+UMM shows **0.3.25**. Startup line `[Build] v0.3.25 module=b1f83486-ff07-4245-b5d2-f4b0998b5d1a`.
+- ZIP SHA-256 `376e6da898704ca418c41c08101957fd9530d83d076ac815759c6fd9a6bb6dba`; DLL SHA-256 `07eae141ae6c631a36b8eb3af8872172ad3cceaf8f8ab60a8c74ac6acfc37bd9`.
+- [Identity](AI-Control-FACC-v0.3.25-dev-test3-ffed9ac-UMM-test.identity.json) · [Checksums](SHA256SUMS.txt).
+- Checks: 282 unit tests pass; release build 0 warnings. Not yet played.
+
+## Previous test build: v0.3.25-dev-test2 (2692562)
 
 **[Download the UMM test ZIP (2692562)](AI-Control-FACC-v0.3.25-dev-test2-2692562-UMM-test.zip?raw=true)**
 
