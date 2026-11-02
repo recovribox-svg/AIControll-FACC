@@ -11,7 +11,7 @@ holds the full reachability map and findings register for everything this pass d
 | Starting development head | `35b4f63` (docs and package for test1); runtime source of test1 `907cd75` |
 | Played package | `AI-Control-FACC-v0.3.25-dev-test1-907cd75-UMM-test.zip`; the log's startup line shows MVID `b9270500-be53-43c5-8beb-8bbf61bbafe6` - the played DLL is that package |
 | Open pull requests | none |
-| Final head | see §8 (test2 package) |
+| Final head | `58dece2` (docs); runtime source of test2 `2692562`, MVID `15e39809-c72b-47a8-8db8-e2593f1ca945` |
 | Inherited checks reproduced | Release build with the game's managed assemblies: 0 warnings; `dotnet test tests/CompanionAI.Tests`: 273 passed at the start, 282 at the end |
 | Tools | game/UMM managed assemblies (reference build only), ILSpy decompiler on `Assembly-CSharp`, blueprint exports (classes, buffs, spells, mythic, feats, items, weapons, equipment), `tools/ProfileAudit`, SigDump, MVID reader |
 | Not available | the game itself (no runtime capture, profiler, frame timing or replay); Unity/Mono timing; optional-mod DLLs other than what earlier sessions decompiled |
