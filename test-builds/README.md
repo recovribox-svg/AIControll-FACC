@@ -1,6 +1,27 @@
 # Test builds
 
-## Current test build: v0.3.27-dev-test3 (faf3bbf) - real-time walks and new enemies
+## Current test build: v0.3.27-dev-test4 (375589a) - test 3 log review
+
+**[Download the UMM test ZIP (375589a)](AI-Control-FACC-v0.3.27-dev-test4-375589a-UMM-test.zip?raw=true)**
+
+Direct link: <https://github.com/recovribox-svg/AIControll-FACC/raw/claude/dreamy-pasteur-b9h3rn/test-builds/AI-Control-FACC-v0.3.27-dev-test4-375589a-UMM-test.zip>
+
+Review of the test 3 log (13 fights: 8 turn-based, 5 real time; no mod errors; [docs/TACTICAL_AI.md](../docs/TACTICAL_AI.md) §94).
+Tests 1-3 seen working: turn ends waited 0.2 s with no hang, no summons or buffs against helpless enemies, and no
+real-time walk met an uncounted enemy (the new rule had nothing to do).
+- **The fix (real time):** in fight 10 Seelah walked to a Corrupted Mongrel Ranger, and Camellia then put Grease on the
+  Brute beside it. Seelah fell four times and lay prone about 15 s. A control area is now held back when an ally's
+  walk to its target would take it into the circle, not only when its whole stopping place is inside; and a small height
+  difference no longer hides it (the game's areas are 100 m tall).
+
+UMM shows **0.3.27**. Startup line `[Build] v0.3.27 module=b6d01331-72ba-49db-a9b4-a97bd40666c3`.
+- ZIP SHA-256 `1926476b458f6ed283a424027d74159a5dd47525d49382420fb746e3dab470d0`; DLL SHA-256 `e52285bc9007331cf5a5ecde7dba434bea8089808209cdacd5835b379aaddb1f`.
+- [Identity](AI-Control-FACC-v0.3.27-dev-test4-375589a-UMM-test.identity.json) · [Checksums](SHA256SUMS.txt).
+- Checks: 324 unit tests pass; release build 0 warnings; no new game bindings. Not played yet.
+- **Test:** real-time fights with Grease or Entangle casters and melee companions. The log shows
+  `[Walk] <caster>: withhold Grease: <ally> is already approaching ...; its walk to where it stops ... meets the new ... circle`.
+
+## Test 3: v0.3.27-dev-test3 (faf3bbf) - real-time walks and new enemies (also in test 4)
 
 **[Download the UMM test ZIP (faf3bbf)](AI-Control-FACC-v0.3.27-dev-test3-faf3bbf-UMM-test.zip?raw=true)**
 

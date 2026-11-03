@@ -102,6 +102,11 @@ log (10 fights, TB and RT, no mod errors, blocklists held). No summons or pure b
 real time, a walk to a target is decided again when an enemy it did not count gets in its way - it engages the unit on
 the way, or it joined the fight since and can intercept (`RealTimeTactics.ShouldReplanOnNewThreat`,
 `TacticalEngine.CanInterceptWalk`). Includes tests 1-2. Test ZIP `AI-Control-FACC-v0.3.27-dev-test3-faf3bbf-UMM-test.zip` (MVID `7415e86a-471f-4b4f-bfca-4de5ec39513d`); 316 tests.
+**v0.3.27 test 4 (3 November, `docs/TACTICAL_AI.md` §94, development only, not played):** test 3 played (13 fights, no
+mod errors, tests 1-3 working). Real time, a control area is held back when an ally's committed walk meets it
+(`CommittedApproachSafety.WalkMeetsCircle`) and at any height in the game's 100 m cylinder. Open for the author: a
+healthy unit's walk into melee is not priced by the danger there (Camellia vs a Large Water Elemental). Test ZIP
+`AI-Control-FACC-v0.3.27-dev-test4-375589a-UMM-test.zip` (MVID `b6d01331-72ba-49db-a9b4-a97bd40666c3`); 324 tests.
 
 Historical handovers, superseded by the one above: [v0.3.22 release preparation](docs/RELEASE_0_3_22_HANDOVER.md)
 (27 October, PR #6–#12), [released-log review](docs/RELEASE_0322_LOG_REVIEW.md) (PR #13),

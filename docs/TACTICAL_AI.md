@@ -3157,3 +3157,25 @@ and play tests.
   get one attack in.
 - **Unchanged:** turn-based, the old real-time engine, and the walk's price itself.
 
+## 94. Test 3 log review: an area cast onto an ally's walk (v0.3.27 test 4)
+
+- **The log:** test 3 (`7415e86a`), 13 fights (1-8 turn-based, 9-13 real time), no mod errors.
+  - Turn ends waited about 0.2 s each (§91), the cap never hit.
+  - "Only helpless enemies left" held buffs back after Color Spray in fights 2, 3 and 7 (§92); the party attacked instead.
+  - The new-threat re-decision (§93) never fired: no real-time walk met an enemy it had not counted.
+  - Orvath's turn-based attacks of opportunity were priced (`casting provokes 1`). Fight 13: one 862 ms decision, a
+    clean-up inside Earth Blast's scoring (no heap figure); totals stayed normal.
+- **Fight 10 (real time):** Orvath cast Grease (Selective: it spared allies, DC 22) on a Corrupted Mongrel Brute; Seelah
+  chose Move+Attack on the Ranger beside it; Camellia then cast her own Grease (DC 13) on the Brute, the Ranger inside
+  the circle. Seelah failed three of five Reflex saves against it and lay prone about 15 s.
+  - Camellia's log said `withhold Grease: Seelah is already approaching ...` for one aim point, and cast it at another.
+  - The committed-approach check (Test[4], `TacticalEngine.CommittedApproachCaught`) held a cast only when the ally's
+    whole stopping disk lay inside the circle and its goal stood at exactly the area point's height (0.44 m apart).
+- **Fix:** also held when the ally's straight walk to where it stops (its approach radius short of the target, on its
+  side) meets the circle with its body (`CommittedApproachSafety.WalkMeetsCircle`, unit-tested); any height within the
+  game's cylinder counts (`AreaEffectView`: `ScriptZoneCylinder.Height = 100`, `CylinderHalfHeight`). Real time only, as
+  before; only with "Avoid friendly fire".
+- **Seen, not changed (movement, for the author):** fight 13, Camellia (Skald 2, full HP) walked into melee with a Large
+  Water Elemental (25 a slam) and went down to it and a Plagued Wolf. A healthy unit's walk into melee is not priced
+  by the danger where it ends (`MoveRisk`: `ExposureCost` only when hurt or provoking).
+

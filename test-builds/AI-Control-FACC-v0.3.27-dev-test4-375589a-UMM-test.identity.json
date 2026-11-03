@@ -1,0 +1,34 @@
+{
+  "name": "AI Control - Fully Autonomous Combat Companions v0.3.27 test 4 (control areas held for an ally's committed walk)",
+  "version": "0.3.27",
+  "umm_manifest_version": "0.3.27",
+  "umm_mod_id": "CompanionAI_Pathfinder",
+  "branch": "claude/dreamy-pasteur-b9h3rn",
+  "base_release": "v0.3.26 (e10513b)",
+  "runtime_source_commit": "375589a",
+  "archive": "AI-Control-FACC-v0.3.27-dev-test4-375589a-UMM-test.zip",
+  "zip_sha256": "1926476b458f6ed283a424027d74159a5dd47525d49382420fb746e3dab470d0",
+  "dll_sha256": "e52285bc9007331cf5a5ecde7dba434bea8089808209cdacd5835b379aaddb1f",
+  "manifest_sha256": "1caded95f222435d5bba5bf06dbf66ff707792399f9ca165e1e53dd4a6d1331f",
+  "module_mvid": "b6d01331-72ba-49db-a9b4-a97bd40666c3",
+  "startup_marker": "[Build] v0.3.27 module=b6d01331-72ba-49db-a9b4-a97bd40666c3",
+  "archive_contents": [
+    "CompanionAI_Pathfinder.dll",
+    "Info.json"
+  ],
+  "checks": {
+    "unit_tests": {
+      "passed": 324,
+      "failed": 0,
+      "skipped": 0
+    },
+    "release_build": {
+      "warnings": 0,
+      "errors": 0
+    },
+    "external_references": "SigDump vs test 3: no new game references",
+    "packed_dll_matches_build": true,
+    "in_game": "pending"
+  },
+  "publication_scope": "Development test download: tests 1-3 plus a real-time control area held back when an ally's committed walk meets it; not a release."
+}
