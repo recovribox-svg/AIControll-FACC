@@ -1313,14 +1313,7 @@ namespace CompanionAI_Pathfinder.Tactics
                     if (enemy == target || ctx.Engagers.Contains(enemy)) continue;
                     try
                     {
-                        var state = enemy.Descriptor.State;
-                        if (CombatMath.IsDisabled(enemy) || !state.CanAct || !state.CanMove) continue;
-                        var weapon = enemy.GetThreatHandMelee()?.Weapon;
-                        if (weapon == null) continue;
-                        float reach = Math.Max(1f, weapon.AttackRange.Meters) + enemy.Corpulence + unit.Corpulence;
-                        if (HorizontalDistance(enemy.Position, point) <= reach) continue;
-                        float gap = DistanceToSegment(enemy.Position, start, point) - reach;
-                        if (gap <= enemy.CurrentSpeedMps * walkSeconds * 0.5f) interceptors.Add(enemy);
+                        if (CanInterceptWalk(enemy, unit, start, point, walkSeconds)) interceptors.Add(enemy);
                     }
                     catch (Exception ex)
                     {
@@ -1334,6 +1327,31 @@ namespace CompanionAI_Pathfinder.Tactics
                 if (intercept != null) intercept.Intercepted = interceptors.Count;
             }
             return ValueModel.RealTimeWalkFactor(walkSeconds, cooldown);
+        }
+
+        /// <summary>
+        /// ★ v0.3.27: the reach of <paramref name="enemy"/>'s melee weapon on <paramref name="unit"/> (bodies included), or
+        /// -1 when it has none or cannot act or move (it intercepts nobody).
+        /// </summary>
+        internal static float InterceptReach(UnitEntityData enemy, UnitEntityData unit)
+        {
+            var state = enemy.Descriptor.State;
+            if (CombatMath.IsDisabled(enemy) || !state.CanAct || !state.CanMove) return -1f;
+            var weapon = enemy.GetThreatHandMelee()?.Weapon;
+            if (weapon == null) return -1f;
+            return Math.Max(1f, weapon.AttackRange.Meters) + enemy.Corpulence + unit.Corpulence;
+        }
+
+        /// <summary>
+        /// ★ v0.3.23 (build3 logs), shared since v0.3.27 (RealTimeTactics.ShouldReplanOnNewThreat): a melee enemy steps into
+        /// the walk from <paramref name="from"/> to <paramref name="to"/> before the unit has passed. Not the one standing at
+        /// the destination: that is the fight there.
+        /// </summary>
+        internal static bool CanInterceptWalk(UnitEntityData enemy, UnitEntityData unit, Vector3 from, Vector3 to, float walkSeconds)
+        {
+            float reach = InterceptReach(enemy, unit);
+            if (reach < 0f || HorizontalDistance(enemy.Position, to) <= reach) return false;
+            return ValueModel.CanIntercept(DistanceToSegment(enemy.Position, from, to), reach, enemy.CurrentSpeedMps, walkSeconds);
         }
 
         /// <summary>Horizontal distance from <paramref name="p"/> to the segment <paramref name="a"/>-<paramref name="b"/>.</summary>
@@ -1992,7 +2010,7 @@ namespace CompanionAI_Pathfinder.Tactics
             }
         }
 
-        private static float HorizontalDistance(Vector3 a, Vector3 b)
+        internal static float HorizontalDistance(Vector3 a, Vector3 b)
         {
             a.y = 0f;
             b.y = 0f;

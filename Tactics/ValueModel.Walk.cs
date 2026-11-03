@@ -19,5 +19,15 @@ namespace CompanionAI_Pathfinder.Tactics
             if (float.IsNaN(delay) || float.IsInfinity(delay)) return 1f;
             return RealTimeRoundSeconds / (RealTimeRoundSeconds + delay);
         }
+
+        /// <summary>
+        /// ★ v0.3.23 (build3 logs), shared since v0.3.27: a melee enemy <paramref name="distanceToWay"/> metres from the walk
+        /// steps into it before the unit has passed when it can close the gap beyond its reach in half the walk's time.
+        /// </summary>
+        public static bool CanIntercept(float distanceToWay, float reach, float enemySpeedMps, float walkSeconds)
+        {
+            if (float.IsNaN(distanceToWay) || float.IsNaN(walkSeconds) || walkSeconds <= 0f) return false;
+            return distanceToWay - Math.Max(0f, reach) <= Math.Max(0f, enemySpeedMps) * walkSeconds * 0.5f;
+        }
     }
 }

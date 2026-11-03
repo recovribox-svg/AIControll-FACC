@@ -270,7 +270,9 @@ namespace CompanionAI_Pathfinder.GameInterface
                 // waiting for a cooldown) is dropped when the unit has since lost a lot of HP, so the engine can heal or
                 // withdraw now. Seelah went from 100 % to 9 % while a Smite Evil waited 5 s to start.
                 if (Tactics.RealTimeTactics.ShouldReplanAfterDamage(unit, out string replanWhy) ||
-                    (!legacy && Tactics.RealTimeTactics.ShouldReplanInArea(unit, out replanWhy)))
+                    (!legacy && Tactics.RealTimeTactics.ShouldReplanInArea(unit, out replanWhy)) ||
+                    // ★ v0.3.27 (0.3.26 log): an enemy the walk did not count is in its way now.
+                    (!legacy && Tactics.RealTimeTactics.ShouldReplanOnNewThreat(unit, out replanWhy)))
                 {
                     Main.Log($"[RT] {unitName}: {replanWhy} - dropping the commands that have not started, deciding again");
                     unit.Commands.InterruptAll(c => c != null && !c.IsStarted && c.IsInterruptible && !c.Cutscene);

@@ -9,6 +9,8 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using Kingmaker.EntitySystem.Entities;
+using Kingmaker.UnitLogic;
+using Kingmaker.Controllers.Units;
 using UnityEngine;
 
 namespace CompanionAI_Pathfinder.Tactics
@@ -158,6 +160,40 @@ namespace CompanionAI_Pathfinder.Tactics
             // so cancelling a walk which already arrived cannot blacklist the still-unattempted spell.
             public Kingmaker.UnitLogic.Abilities.AbilityData FollowUpAbility;
             public Kingmaker.Utility.TargetWrapper FollowUpAim;
+            /// <summary>
+            /// ★ v0.3.27 (0.3.26 log): a walk to a target (an attack, a cast, an approach or advance) - one an enemy the
+            /// option did not count can get in the way of (<see cref="ShouldReplanOnNewThreat"/>). Withdrawals and walks out
+            /// of areas are not: they are walks away.
+            /// </summary>
+            public bool WatchesWay;
+            /// <summary>★ v0.3.27: the enemies in the fight, and those engaging the unit, when the option was chosen.</summary>
+            public HashSet<string> Enemies;
+            public HashSet<string> Engagers;
+        }
+
+        /// <summary>★ v0.3.27: the enemies in the fight the engine can see (TacticalEngine's context reads the same).</summary>
+        private static IEnumerable<UnitEntityData> EnemiesInFight(UnitEntityData unit)
+        {
+            foreach (var other in Kingmaker.Game.Instance.State.Units)
+            {
+                var state = other?.Descriptor?.State;
+                if (state == null || state.IsDead || !state.IsConscious) continue;
+                if (!(other.CombatState?.IsInCombat ?? false) || !unit.IsEnemy(other)) continue;
+                if (other.InStealthFor(unit.Group)) continue;
+                yield return other;
+            }
+        }
+
+        private static HashSet<string> EngagersOf(UnitEntityData unit)
+        {
+            var ids = new HashSet<string>();
+            try
+            {
+                foreach (var enemy in unit.CombatState.EngagedBy)
+                    if (enemy != null) ids.Add(enemy.UniqueId);
+            }
+            catch { }
+            return ids;
         }
 
         private static HashSet<string> AreasAround(UnitEntityData unit)
@@ -201,6 +237,74 @@ namespace CompanionAI_Pathfinder.Tactics
             }
             catch { }
             return false;
+        }
+
+        /// <summary>
+        /// ★ v0.3.27 (0.3.26 log, author-approved): a walk to a target that has not arrived yet, and an enemy the option did
+        /// not count is now in its way - it engages the unit on the way (not at the destination: that is the fight the walk
+        /// was for), or it joined the fight since and can step into the rest of the walk (the interception rule,
+        /// TacticalEngine.CanInterceptWalk). The engine decides again with it counted: walking on past it provokes, and
+        /// fighting it may be worth more. Once per command; a walk chosen again counts the newcomer and is not re-decided
+        /// for it. Real-time fight 8: Seelah chose a Move+Attack on a Corrupted Mongrel Ranger 9.6 m away while only two
+        /// enemies were in the fight; a Plagued Wolf (spawned by another mod as the fight began) joined, bit at her, and
+        /// she walked on - its attack of opportunity was a critical hit for 25, it tripped her, and she went down.
+        /// </summary>
+        public static bool ShouldReplanOnNewThreat(UnitEntityData unit, out string why)
+        {
+            why = null;
+            try
+            {
+                foreach (var command in unit.Commands.Raw)
+                {
+                    if (command == null || command.IsStarted || command.IsFinished) continue;
+                    if (!IssuedAtHp.TryGetValue(command, out var issued) || !issued.WatchesWay) continue;
+                    var to = command.ApproachPoint;
+                    float left = TacticalEngine.HorizontalDistance(unit.Position, to) - Math.Max(0f, command.ApproachRadius);
+                    if (left <= 0.5f) continue;   // arrived: what is there was the option's to price
+                    var target = command.TargetUnit;
+
+                    foreach (var enemy in unit.CombatState.EngagedBy)
+                    {
+                        if (enemy == null || enemy == target || !enemy.Descriptor.State.IsConscious) continue;
+                        if (issued.Engagers != null && issued.Engagers.Contains(enemy.UniqueId)) continue;
+                        // Within reach of the destination (with a little slack for the last steps): the fight there.
+                        float reach = TacticalEngine.InterceptReach(enemy, unit);
+                        if (reach >= 0f && TacticalEngine.HorizontalDistance(enemy.Position, to) <= reach + 1.5f) continue;
+                        Reconsider(unit, command);
+                        why = $"{enemy.CharacterName} engages it on the way, {left:0.0} m short of its target (not counted when the walk was chosen)";
+                        return true;
+                    }
+
+                    float walkSeconds = left / Math.Max(0.5f, unit.CurrentSpeedMps);
+                    if (walkSeconds <= 0.5f || issued.Enemies == null) continue;
+                    foreach (var enemy in EnemiesInFight(unit))
+                    {
+                        if (enemy == target || issued.Enemies.Contains(enemy.UniqueId)) continue;
+                        if (!TacticalEngine.CanInterceptWalk(enemy, unit, unit.Position, to, walkSeconds)) continue;
+                        Reconsider(unit, command);
+                        why = $"{enemy.CharacterName} joined the fight and can get in its way, {left:0.0} m short of its target";
+                        return true;
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                Main.Verbose($"[RT-Tactics] {unit.CharacterName}: new-threat check: {ex.Message}");
+            }
+            return false;
+        }
+
+        /// <summary>
+        /// ★ v0.3.27: the walk is dropped to be decided again, not because it failed: its option stays open (the next
+        /// decision learns nothing from the interrupted command), priced now with the newcomer.
+        /// </summary>
+        private static void Reconsider(UnitEntityData unit, Kingmaker.UnitLogic.Commands.Base.UnitCommand command)
+        {
+            IssuedAtHp.Remove(command);
+            var memory = CombatMemory.ForTurn(unit);
+            if (memory.LastCommand != command) return;
+            memory.LastCommand = null;
+            memory.LastCandidateKey = null;
         }
 
         /// <summary>
@@ -410,6 +514,7 @@ namespace CompanionAI_Pathfinder.Tactics
                         // catch below - an error line and "nothing issued" for an option that was carried out.
                         if (command == null) return true;
                         IssuedAtHp.Remove(command);
+                        bool watches = candidate.Kind != CandidateKind.Move || candidate.Target != null || candidate.Ability != null;
                         IssuedAtHp.Add(command, new IssueState
                         {
                             Hp = unit.HPLeft, Areas = AreasAround(unit), Key = candidate.Key,
@@ -419,7 +524,11 @@ namespace CompanionAI_Pathfinder.Tactics
                                 ? candidate.Target != null ? new Kingmaker.Utility.TargetWrapper(candidate.Target)
                                     : new Kingmaker.Utility.TargetWrapper(candidate.Point ?? unit.Position) : null,
                             AreasPriced = candidate.Kind == CandidateKind.Move ||
-                                          (candidate.Label?.Contains(TacticalEngine.Disengage.IntoTag) ?? false)
+                                          (candidate.Label?.Contains(TacticalEngine.Disengage.IntoTag) ?? false),
+                            // ★ v0.3.27 (0.3.26 log): what a walk to a target counted (ShouldReplanOnNewThreat).
+                            WatchesWay = watches,
+                            Enemies = watches ? new HashSet<string>(EnemiesInFight(unit).Select(e => e.UniqueId)) : null,
+                            Engagers = watches ? EngagersOf(unit) : null
                         });
                         return true;
                     }

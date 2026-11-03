@@ -29,5 +29,23 @@ namespace CompanionAI.Tests
 
         [Fact]
         public void BrokenInput_LosesNothing() => Assert.Equal(1f, ValueModel.RealTimeWalkFactor(float.NaN, 0f), 4);
+
+        // ★ v0.3.27: who can step into a walk (the walk's price and the real-time re-decision share it).
+        [Fact]
+        public void EnemyBesideTheWay_Intercepts() => Assert.True(ValueModel.CanIntercept(1.5f, 2f, 9f, 3f));
+
+        [Fact]
+        public void EnemyThatCanCloseTheGapInHalfTheWalk_Intercepts() =>
+            Assert.True(ValueModel.CanIntercept(2f + 9f * 1.5f, 2f, 9f, 3f));
+
+        [Fact]
+        public void EnemyTooFarForHalfTheWalk_DoesNot() =>
+            Assert.False(ValueModel.CanIntercept(2f + 9f * 1.5f + 0.1f, 2f, 9f, 3f));
+
+        [Fact]
+        public void NoWalkLeft_NobodyIntercepts() => Assert.False(ValueModel.CanIntercept(0f, 2f, 9f, 0f));
+
+        [Fact]
+        public void BrokenDistance_DoesNotIntercept() => Assert.False(ValueModel.CanIntercept(float.NaN, 2f, 9f, 3f));
     }
 }
