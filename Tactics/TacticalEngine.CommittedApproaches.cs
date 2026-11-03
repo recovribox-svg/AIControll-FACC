@@ -1,4 +1,5 @@
 // ★ Test[4]: protect a clearly committed ally arrival from a new harmful lasting control circle.
+// ★ v0.3.27 (test3 log): also its walk there, and at any height inside the game's 100 m cylinder.
 using System;
 using System.Linq;
 using Kingmaker;
@@ -70,18 +71,27 @@ namespace CompanionAI_Pathfinder.Tactics
                         if (target == null || !ally.IsEnemy(target) || target.Descriptor?.State?.IsDead != false) continue;
                         var point = attack.ApproachPoint;
                         float approach = attack.ApproachRadius;
-                        // Native cylinder height/view geometry cannot be forecast without spawning it. The narrow
-                        // proof only accepts exactly equal destination/area elevation; stairs and slopes stay unknown.
-                        if (point.y != areaCenter.y || !CommittedApproachSafety.FullyInside(
-                            Vector3.Distance(point, areaCenter), approach, ally.Corpulence, radius)) continue;
+                        // ★ v0.3.27 (test3 log): the game's cylinder is 100 m tall (CommittedApproachSafety.CylinderHalfHeight);
+                        // exactly equal elevation was required, and Seelah's goal stood 0.44 m above the Grease point.
+                        if (float.IsNaN(point.y - areaCenter.y) ||
+                            Math.Abs(point.y - areaCenter.y) > CommittedApproachSafety.CylinderHalfHeight) continue;
+                        bool fullyInside = CommittedApproachSafety.FullyInside(Vector3.Distance(point, areaCenter), approach,
+                                                                              ally.Corpulence, radius);
+                        // ★ v0.3.27 (test3 log): or its walk to where it stops meets the circle (it walks in or ends in it).
+                        bool walksIn = !fullyInside && CommittedApproachSafety.WalkMeetsCircle(ally.Position.x, ally.Position.z,
+                            point.x, point.z, approach, ally.Corpulence, areaCenter.x, areaCenter.z, radius);
+                        if (!fullyInside && !walksIn) continue;
                         // An unstarted attack can merely wait for cooldown while already in reach. Native distance
                         // (with sight disabled) proves this one still needs an approach; no new path or rule is run.
                         if (UnitCommand.IsUnitCloseEnough(point, ally.Position, ally.EyePosition, approach, false, 0f) ||
                             !attack.ShouldUnitApproach) continue;
                         if (!profile.AreaReaches(ability, ally) || !wouldBeCaught(ally)) continue;
-                        explanation = $"{ally.CharacterName} is already approaching {target.CharacterName}; " +
-                            $"its full native arrival/body disk ({approach:F1}m + {ally.Corpulence:F1}m) " +
-                            $"lies inside the new {radius:F1}m control circle";
+                        explanation = fullyInside
+                            ? $"{ally.CharacterName} is already approaching {target.CharacterName}; " +
+                              $"its full native arrival/body disk ({approach:F1}m + {ally.Corpulence:F1}m) " +
+                              $"lies inside the new {radius:F1}m control circle"
+                            : $"{ally.CharacterName} is already approaching {target.CharacterName}; " +
+                              $"its walk to where it stops ({approach:F1}m short of it) meets the new {radius:F1}m control circle";
                         return ally;
                     }
                 }
