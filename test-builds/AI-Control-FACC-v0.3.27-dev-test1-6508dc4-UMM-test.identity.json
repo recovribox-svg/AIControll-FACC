@@ -1,0 +1,24 @@
+{
+  "name": "AI Control - Fully Autonomous Combat Companions v0.3.27 test 1 (turn-end pacing)",
+  "version": "0.3.27",
+  "umm_manifest_version": "0.3.27",
+  "umm_mod_id": "CompanionAI_Pathfinder",
+  "branch": "claude/dreamy-pasteur-b9h3rn",
+  "base_release": "v0.3.26 (e10513b)",
+  "runtime_source_commit": "6508dc4",
+  "archive": "AI-Control-FACC-v0.3.27-dev-test1-6508dc4-UMM-test.zip",
+  "zip_sha256": "b2e08f1e30755614cf687db6c5c06693a1d7fdb74e9d321cd12eca7e4b00df99",
+  "dll_sha256": "2e3ecaf151bef875408e702833f76d68354c894a3fe6bb821941d3560a4cb793",
+  "manifest_sha256": "1caded95f222435d5bba5bf06dbf66ff707792399f9ca165e1e53dd4a6d1331f",
+  "module_mvid": "634a3871-881b-4a28-8752-09afa11207a3",
+  "startup_marker": "[Build] v0.3.27 module=634a3871-881b-4a28-8752-09afa11207a3",
+  "archive_contents": ["CompanionAI_Pathfinder.dll", "Info.json"],
+  "checks": {
+    "unit_tests": { "passed": 311, "failed": 0, "skipped": 0 },
+    "release_build": { "warnings": 0, "errors": 0 },
+    "external_references": "SigDump vs v0.3.26: ProjectileController.HasLaunchedProjectile, TimeController DeltaTime/GameDeltaTime/PlayerTimeScale/DebugTimeScale, PlayerUISettings.TimeScaleAverage, TurnController.Mount (all used by the game's own TurnController)",
+    "packed_dll_matches_build": true,
+    "in_game": "pending"
+  },
+  "publication_scope": "Development test download: AI turns end after their projectiles land and the game's idle pause; not a release."
+}
