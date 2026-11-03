@@ -767,7 +767,8 @@ namespace CompanionAI_Pathfinder.Tactics
                         $"best in-reach main={(alternative == null ? "none" : alternative.Label + "=" + alternative.Value.ToString("F1"))}; " +
                         $"priced movement cost={risk?.Cost ?? 0f:F1}, stop={risk?.StopChance ?? 0f:P0}, " +
                         $"drop={risk?.DropChance ?? 0f:P0}, AoOs={risk?.Attacks ?? 0}, area={risk?.Area ?? "none"}, " +
-                        $"exposed={risk?.Exposed ?? false}");
+                        $"exposed={risk?.Exposed ?? false}" +
+                        ((risk?.Shielding ?? 0f) > 0f ? $", shields allies {risk.Shielding:F1}" : ""));
                 }
                 catch { } // Diagnostic failure must not change the chosen action.
             }
@@ -1102,6 +1103,8 @@ namespace CompanionAI_Pathfinder.Tactics
             public bool Exposed;
             /// <summary>★ v0.3.23: of <see cref="Attacks"/>, the real-time enemies expected to step into the walk.</summary>
             public int Intercepted;
+            /// <summary>★ v0.3.27: a healthy walk's exposure taken off by the allies it shields there (diagnostics).</summary>
+            public float Shielding;
             public Disengage Copy() => (Disengage)MemberwiseClone();
             public string Tag => (Attacks > Intercepted ? $" [AoO {Attacks - Intercepted}{(DropChance >= 0.1f ? $", {DropChance:P0} down" : "")}]" : "") +
                                  (Intercepted > 0 ? $" [intercepted {Intercepted}]" : "") +
@@ -1165,7 +1168,121 @@ namespace CompanionAI_Pathfinder.Tactics
                     risk.Cost += exposure;
                 }
             }
+            else
+            {
+                // ★ v0.3.27 (author-approved, test 3 log): a healthy unit's walk pays for where it ends too - less what the
+                // allies it takes enemies off gain (HealthyExposure). Camellia (Skald 2, full HP) walked up to a Large Water
+                // Elemental (25 a slam) for a Move+Attack worth 5.8 and went down to it and a Plagued Wolf.
+                float exposure = HealthyExposure(ctx, destination, out float shielding);
+                // A walk priced at nothing gets no risk of its own (callers read a risk as something to pay); the shielding
+                // note rides on one that exists.
+                if (exposure > 0f)
+                {
+                    risk = risk ?? new Disengage();
+                    risk.Exposed = true;
+                    risk.Cost += exposure;
+                }
+                if (risk != null) risk.Shielding = shielding;
+            }
             return risk;
+        }
+
+        /// <summary>
+        /// ★ v0.3.27: the chance <paramref name="who"/>, standing at <paramref name="at"/>, goes down before its next turn
+        /// while <paramref name="mover"/> stands at <paramref name="moverAt"/>. Each enemy goes for one party member
+        /// (ValueModel.TargetChance): a melee enemy one already in its reach, else - and a ranged enemy or caster - one it
+        /// can reach this round (the zones of <see cref="IncomingParts"/>), each picked by how easily it is hit
+        /// (ValueModel.HitWeight: its base attack and best of Strength and Dexterity against Armor Class). Its threat on the
+        /// one it picks is its Threat scaled by that hit weight against the party's mean and by the fight's calibration
+        /// (DangerScale); the chances combine (ValueModel.CombinedDrop).
+        /// </summary>
+        private static float StandingDropChance(TacticalContext ctx, UnitEntityData who, Vector3 at, UnitEntityData mover, Vector3 moverAt)
+        {
+            Vector3 PositionOf(UnitEntityData a) => a == who ? at : a == mover ? moverAt : a.Position;
+            float hp = Math.Max(1f, CombatMath.HpBeforeDown(who));
+            var threats = new List<(float chance, float drop)>();
+            foreach (var enemy in ctx.Enemies)
+            {
+                if (CombatMath.IsDisabled(enemy)) continue;   // it attacks nobody before it acts again
+                bool ranged;
+                float zone, reach = -1f;
+                int attack = 0;
+                try
+                {
+                    ranged = (enemy.Body?.PrimaryHand?.MaybeWeapon?.Blueprint?.IsRanged ?? false) ||
+                             (enemy.Descriptor?.Spellbooks?.Any() ?? false);
+                    zone = ranged ? 20f : enemy.CurrentSpeedMps * 3f + 2f + enemy.Corpulence;
+                    var weapon = ranged ? null : enemy.GetThreatHandMelee()?.Weapon;
+                    if (weapon != null) reach = Math.Max(1f, weapon.AttackRange.Meters) + enemy.Corpulence + 0.5f;
+                    attack = (enemy.Stats.BaseAttackBonus?.ModifiedValue ?? 0) +
+                             Math.Max(enemy.Stats.Strength?.Bonus ?? 0, enemy.Stats.Dexterity?.Bonus ?? 0);
+                }
+                catch
+                {
+                    ranged = false;
+                    zone = 11f;
+                }
+                float reachSum = 0f, zoneSum = 0f, weightSum = 0f, whoWeight = 0f;
+                bool whoInReach = false, whoInZone = false;
+                foreach (var a in ctx.Allies)
+                {
+                    float w;
+                    try { w = ValueModel.HitWeight(attack, a.Stats.AC.ModifiedValue); } catch { w = 0.5f; }
+                    weightSum += w;
+                    if (a == who) whoWeight = w;
+                    var p = PositionOf(a);
+                    if (reach > 0f && HorizontalDistance(enemy.Position, p) <= reach + a.Corpulence)
+                    {
+                        reachSum += w;
+                        if (a == who) whoInReach = true;
+                    }
+                    if (Vector3.Distance(enemy.Position, p) <= zone + a.Corpulence)
+                    {
+                        zoneSum += w;
+                        if (a == who) whoInZone = true;
+                    }
+                }
+                float chance = ValueModel.TargetChance(whoInReach, reach > 0f ? reachSum : 0f, whoInZone, zoneSum, whoWeight);
+                if (chance <= 0f) continue;
+                float mean = weightSum / Math.Max(1, ctx.Allies.Count);
+                float threat = CombatMath.Threat(enemy) * ctx.DangerScale * (mean > 0f ? whoWeight / mean : 1f);
+                threats.Add((chance, RiskMath.RoundDropChance(hp, threat)));
+            }
+            return ValueModel.CombinedDrop(threats);
+        }
+
+        /// <summary>
+        /// ★ v0.3.27 (author-approved): the price of a healthy unit's walk to <paramref name="destination"/> for where it
+        /// ends (ValueModel.HealthyWalkExposure): its own higher chance to drop there (<see cref="StandingDropChance"/>),
+        /// less <paramref name="shielding"/> - how much less likely the rest of the party is to go down with it there
+        /// (net: an ally it draws danger towards counts against it). Front-liners stepping in front of a heavy
+        /// hitter that is on a squishier ally keep doing it; a frail unit walking up to one alone pays for it.
+        /// </summary>
+        private static float HealthyExposure(TacticalContext ctx, Vector3 destination, out float shielding)
+        {
+            shielding = 0f;
+            var unit = ctx.Unit;
+            try
+            {
+                if (HorizontalDistance(unit.Position, destination) < 0.5f) return 0f;
+                float here = StandingDropChance(ctx, unit, unit.Position, unit, unit.Position);
+                float there = StandingDropChance(ctx, unit, destination, unit, destination);
+                if (!(there - here > 0.02f)) return 0f;
+                foreach (var ally in ctx.Allies)
+                {
+                    if (ally == unit || ally?.Descriptor?.State?.IsConscious != true) continue;
+                    float before = StandingDropChance(ctx, ally, ally.Position, unit, unit.Position);
+                    float after = StandingDropChance(ctx, ally, ally.Position, unit, destination);
+                    shielding += (before - after) * AllyWorth(ctx, ally);
+                }
+                shielding = Math.Max(0f, shielding);
+                return ValueModel.HealthyWalkExposure(here, there, AllyWorth(ctx, unit), RiskTolerance(ctx), shielding);
+            }
+            catch (Exception ex)
+            {
+                Main.Verbose($"[Tactics] walk exposure {unit.CharacterName}: {ex.Message}");
+                return 0f;
+            }
         }
 
         /// <summary>
@@ -4301,7 +4418,10 @@ namespace CompanionAI_Pathfinder.Tactics
                 needLos = true;
             }
             // Already there: a zero-length move would just loop.
-            if (InRangeNow(unit, enemy.Position, radius, needLos)) return true;
+            // ★ v0.3.27 (author-approved, build5 review): a ranged weapon in its full range is there - it walked on to 85 %
+            // of it after shooting (Lann). 85 % stays the goal when it has to walk (the enemy may step back).
+            float inRange = est.IsRanged ? Math.Max(radius, est.Reach) : radius;
+            if (InRangeNow(unit, enemy.Position, inRange, needLos)) return true;
 
             // Test[2]: the old 0.6 floor repeatedly pulled low-HP Lann back after withdrawing for an attack worth 0.5.
             // An advance must clear the ordinary action bar on its actual future payoff, like every other move.
@@ -4312,9 +4432,11 @@ namespace CompanionAI_Pathfinder.Tactics
             // (range 13.8 m) for 4 s, then walked 11 s at a Neophyte Fighter "-9.1 m to go". Real time walks to a spot
             // within this move it can see the enemy from (turn-based finds one with its own path search,
             // CommandDispatcher); with none, there is nothing to advance to.
-            if (needLos && CombatMemory.IsRealTime && InRangeNow(unit, enemy.Position, radius, false))
+            // ★ v0.3.27 (author-approved, v0.3.25 test3 log): turn-based too - its path search did not look for sight, and
+            // Aeiluvetar and Lann "advanced" 0.0 m on a Neophyte Wizard in range behind cover five times.
+            if (needLos && InRangeNow(unit, enemy.Position, inRange, false))
             {
-                var sight = FindSightSpot(ctx, enemy, radius);
+                var sight = FindSightSpot(ctx, enemy, radius) ?? (inRange > radius ? FindSightSpot(ctx, enemy, inRange) : null);
                 if (!sight.HasValue) return false;
                 var sightRisk = MoveRisk(ctx, sight.Value);
                 list.Add(new Candidate

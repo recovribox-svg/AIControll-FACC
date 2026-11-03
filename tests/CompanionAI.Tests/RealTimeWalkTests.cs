@@ -47,5 +47,70 @@ namespace CompanionAI.Tests
 
         [Fact]
         public void BrokenDistance_DoesNotIntercept() => Assert.False(ValueModel.CanIntercept(float.NaN, 2f, 9f, 3f));
+
+        // ★ v0.3.27: who an enemy goes for, how easily it hits, and the combined chance to go down.
+        [Fact]
+        public void MeleeEnemy_FightsWhoIsInItsReach() =>
+            Assert.Equal(0.5f, ValueModel.TargetChance(true, 1.2f, true, 2.4f, 0.6f), 4);
+
+        [Fact]
+        public void MeleeEnemy_BusyWithOthers_LeavesTheRestAlone() =>
+            Assert.Equal(0f, ValueModel.TargetChance(false, 0.6f, true, 2.4f, 0.6f), 4);
+
+        [Fact]
+        public void MeleeEnemy_WithNobodyInReach_GoesForWhoItCanReach() =>
+            Assert.Equal(0.25f, ValueModel.TargetChance(false, 0f, true, 2.4f, 0.6f), 4);
+
+        [Fact]
+        public void EnemyOutOfRange_GoesForNobody() =>
+            Assert.Equal(0f, ValueModel.TargetChance(false, 0f, false, 2.4f, 0.6f), 4);
+
+        [Fact]
+        public void TheEasierTarget_IsPickedMoreOften()
+        {
+            float squishy = ValueModel.HitWeight(8, 14), armoured = ValueModel.HitWeight(8, 22);
+            Assert.Equal(0.75f, squishy, 4);
+            Assert.Equal(0.35f, armoured, 4);
+            Assert.True(ValueModel.TargetChance(true, squishy + armoured, true, 0f, squishy) > 0.68f);
+        }
+
+        [Fact]
+        public void HitWeight_KeepsTheNaturalOneAndTwenty()
+        {
+            Assert.Equal(0.95f, ValueModel.HitWeight(30, 10), 4);
+            Assert.Equal(0.05f, ValueModel.HitWeight(0, 40), 4);
+        }
+
+        [Fact]
+        public void CombinedDrop_OfTwoEnemies() =>
+            Assert.Equal(1f - (1f - 0.5f * 0.4f) * (1f - 1f * 0.2f), ValueModel.CombinedDrop(new[] { (0.5f, 0.4f), (1f, 0.2f) }), 4);
+
+        [Fact]
+        public void CombinedDrop_Nothing_IsZero() =>
+            Assert.Equal(0f, ValueModel.CombinedDrop(new (float, float)[0]), 4);
+
+        [Fact]
+        public void WalkIntoDanger_CostsTheRiseTimesWorth() =>
+            Assert.Equal(0.3f * 30f, ValueModel.HealthyWalkExposure(0.05f, 0.35f, 30f, 1f, 0f), 3);
+
+        [Fact]
+        public void TankPaysItsTolerance() =>
+            Assert.Equal(0.3f * 30f * 0.6f, ValueModel.HealthyWalkExposure(0.05f, 0.35f, 30f, 0.6f, 0f), 3);
+
+        [Fact]
+        public void ShieldingAnAlly_CancelsThePrice_NeverPays() =>
+            Assert.Equal(0f, ValueModel.HealthyWalkExposure(0.05f, 0.35f, 30f, 1f, 12f), 4);
+
+        [Fact]
+        public void ShieldingPartly_LowersThePrice() =>
+            Assert.Equal(9f - 4f, ValueModel.HealthyWalkExposure(0.05f, 0.35f, 30f, 1f, 4f), 3);
+
+        [Fact]
+        public void NoRealRise_IsFree()
+        {
+            Assert.Equal(0f, ValueModel.HealthyWalkExposure(0.10f, 0.115f, 30f, 1f, 0f), 4);
+            Assert.Equal(0f, ValueModel.HealthyWalkExposure(0.30f, 0.10f, 30f, 1f, 0f), 4);
+            Assert.Equal(0f, ValueModel.HealthyWalkExposure(float.NaN, 0.5f, 30f, 1f, 0f), 4);
+        }
     }
 }
