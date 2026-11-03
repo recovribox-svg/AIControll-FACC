@@ -3115,3 +3115,18 @@ and play tests.
   - The first end reason is kept for the log line, and with debug logging the wait is logged.
 - **Unchanged:** decisions, the pacing within a turn, and real time.
 
+## 92. 0.3.26 log review: helpless enemies, summon heals (v0.3.27 test 2)
+
+- **The log:** the v0.3.26 release, 10 fights, turn-based and real time, no mod errors. The user ability lists held
+  (Entangle for Orvath and Grease for everyone were never issued); the real-time interrupts were the game's own or
+  damage replans.
+- **Helpless enemies:** fight 3, round 6, the only enemy left was a sleeping Cambion Fighter that Seelah was about to
+  finish with Coup de Grace. Orvath spent a daily Demonic Art summon, and Camellia started Inspired Rage for that demon.
+  Now `TacticalEngine.PointlessAgainstHelpless` drops summons (`AbilityProfile.Summons`) and pure buffs while
+  `CombatMath.OnlyDisabledEnemiesLeft`; logged once per unit and round.
+- **Summon heals:** Camellia cast Cure Light Wounds on the summoned Abrikandilu twice. `AllyWorth`, the revive worth and
+  the restored HP of a summon were priced for the whole fight. `TacticalEngine.RoundsInFight` now caps a summon's rounds
+  by its `SummonedUnitBuff` (`BlueprintRoot.SystemMechanics`, put on every summon by `RuleSummonUnit` with the
+  summon's duration): min(expected rounds, time left / 6 s); a permanent or missing buff keeps the expected rounds.
+- **Unchanged:** movement, targets and everything else.
+

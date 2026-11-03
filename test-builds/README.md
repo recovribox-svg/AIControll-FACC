@@ -1,6 +1,29 @@
 # Test builds
 
-## Current test build: v0.3.27-dev-test1 (6508dc4) - turn-end pacing
+## Current test build: v0.3.27-dev-test2 (56d0c15) - 0.3.26 log review
+
+**[Download the UMM test ZIP (56d0c15)](AI-Control-FACC-v0.3.27-dev-test2-56d0c15-UMM-test.zip?raw=true)**
+
+Direct link: <https://github.com/recovribox-svg/AIControll-FACC/raw/claude/dreamy-pasteur-b9h3rn/test-builds/AI-Control-FACC-v0.3.27-dev-test2-56d0c15-UMM-test.zip>
+
+Test 1 (turn-end pacing, below, not played yet) plus two fixes from the author's v0.3.26 log (10 fights, turn-based and
+real time, no mod errors; [docs/TACTICAL_AI.md](../docs/TACTICAL_AI.md) §92).
+- **No summons or buffs against helpless enemies:** with only a sleeping Cambion Fighter left, waiting for Seelah's
+  Coup de Grace, Orvath spent a daily Demonic Art summon and Camellia started Inspired Rage. While every enemy left is
+  helpless, summons and pure buffs are no longer options.
+- **Healing summons by the time they have left:** Camellia healed Orvath's summoned demon twice, valued as if it would
+  fight the whole battle. A summon is now worth only the rounds until it vanishes.
+- The "Abilities AI must not use" lists held: Entangle and Grease were never used while blocked.
+
+UMM shows **0.3.27**. Startup line `[Build] v0.3.27 module=9bf1e011-c95c-45d2-b26e-d7f6548537d6`.
+- ZIP SHA-256 `f8169823a318faafa119ca0f838b5b221df3b3c52b143fb4573864fedb48f162`; DLL SHA-256 `f01f54c85b678e5382042c42bba5e30439fc44ee990f7ab8d3783038377ca7e0`.
+- [Identity](AI-Control-FACC-v0.3.27-dev-test2-56d0c15-UMM-test.identity.json) · [Checksums](SHA256SUMS.txt).
+- Checks: 311 unit tests pass; release build 0 warnings. Not played yet.
+- **Test:** test 1's projectile check, plus fights with summoners and healers. When the last enemies are asleep or held,
+  nobody should summon or start a performance or rage; the log shows `only helpless enemies left - no summons or pure
+  buffs`. Summons close to vanishing should not get heals.
+
+## Test 1: v0.3.27-dev-test1 (6508dc4) - turn-end pacing (also in test 2)
 
 **[Download the UMM test ZIP (6508dc4)](AI-Control-FACC-v0.3.27-dev-test1-6508dc4-UMM-test.zip?raw=true)**
 

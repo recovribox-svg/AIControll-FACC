@@ -93,6 +93,11 @@ projectiles and animations sped up as the next turn began. The game runs the gap
 (`TimeScaleBetweenTurns`), and the mod's `ForceToEnd` came before the game's own end-of-turn waits (projectiles landed,
 idle pause). `TurnBasedPatches.ReadyToEndTurn` now applies those waits, capped at 4 s. `Info.json` 0.3.27; test ZIP
 `AI-Control-FACC-v0.3.27-dev-test1-6508dc4-UMM-test.zip` (MVID `634a3871-881b-4a28-8752-09afa11207a3`).
+**v0.3.27 test 2 (3 November, `docs/TACTICAL_AI.md` §92, development only, not played):** review of the author's v0.3.26
+log (10 fights, TB and RT, no mod errors, blocklists held). No summons or pure buffs while only helpless enemies are left
+(`TacticalEngine.PointlessAgainstHelpless`); a summon's worth, revive and heal count only the rounds its
+`SummonedUnitBuff` has left (`TacticalEngine.RoundsInFight`). Includes test 1. Test ZIP
+`AI-Control-FACC-v0.3.27-dev-test2-56d0c15-UMM-test.zip` (MVID `9bf1e011-c95c-45d2-b26e-d7f6548537d6`).
 
 Historical handovers, superseded by the one above: [v0.3.22 release preparation](docs/RELEASE_0_3_22_HANDOVER.md)
 (27 October, PR #6–#12), [released-log review](docs/RELEASE_0322_LOG_REVIEW.md) (PR #13),

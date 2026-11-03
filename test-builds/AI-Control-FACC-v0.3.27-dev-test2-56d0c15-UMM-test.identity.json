@@ -1,0 +1,34 @@
+{
+  "name": "AI Control - Fully Autonomous Combat Companions v0.3.27 test 2 (0.3.26 log review)",
+  "version": "0.3.27",
+  "umm_manifest_version": "0.3.27",
+  "umm_mod_id": "CompanionAI_Pathfinder",
+  "branch": "claude/dreamy-pasteur-b9h3rn",
+  "base_release": "v0.3.26 (e10513b)",
+  "runtime_source_commit": "56d0c15",
+  "archive": "AI-Control-FACC-v0.3.27-dev-test2-56d0c15-UMM-test.zip",
+  "zip_sha256": "f8169823a318faafa119ca0f838b5b221df3b3c52b143fb4573864fedb48f162",
+  "dll_sha256": "f01f54c85b678e5382042c42bba5e30439fc44ee990f7ab8d3783038377ca7e0",
+  "manifest_sha256": "1caded95f222435d5bba5bf06dbf66ff707792399f9ca165e1e53dd4a6d1331f",
+  "module_mvid": "9bf1e011-c95c-45d2-b26e-d7f6548537d6",
+  "startup_marker": "[Build] v0.3.27 module=9bf1e011-c95c-45d2-b26e-d7f6548537d6",
+  "archive_contents": [
+    "CompanionAI_Pathfinder.dll",
+    "Info.json"
+  ],
+  "checks": {
+    "unit_tests": {
+      "passed": 311,
+      "failed": 0,
+      "skipped": 0
+    },
+    "release_build": {
+      "warnings": 0,
+      "errors": 0
+    },
+    "external_references": "SigDump vs test 1: Game.BlueprintRoot, SystemMechanicsRoot.SummonedUnitBuff (the buff RuleSummonUnit puts on every summon)",
+    "packed_dll_matches_build": true,
+    "in_game": "pending"
+  },
+  "publication_scope": "Development test download: test 1's turn-end pacing plus the 0.3.26 log review fixes (no summons or pure buffs against helpless enemies; summon heals valued by the time it has left); not a release."
+}
