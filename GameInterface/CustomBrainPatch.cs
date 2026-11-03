@@ -282,6 +282,64 @@ namespace CompanionAI_Pathfinder.GameInterface
         /// </summary>
         private static string s_LastRefusalKey, s_LastTurnStartRefusal;
 
+        // ★ v0.3.27 (author): the turn being ended, the reason it ended for, and the game time waited for it.
+        private static TurnController s_EndingTurn;
+        private static string s_EndReason;
+        private static float s_EndIdle, s_EndWaited;
+        private static bool s_EndCapLogged;
+
+        /// <summary>Longest wait for a turn's end (game seconds): a projectile that never lands cannot hold the fight.</summary>
+        private const float MaxTurnEndWait = 4f;
+
+        /// <summary>
+        /// ★ v0.3.27 (author): whether an AI turn may end now, by the game's own end-of-turn test for units it drives
+        /// (TurnController.Tick and ContinueActing): no projectile of the rider or its mount still in flight
+        /// (ProjectileController.HasLaunchedProjectile), not getting up, and idle - not moving - for the game's idle pause
+        /// (0.2 s / the animation speed setting x the current time scale, in game time). Called once a frame while the
+        /// decision says "end the turn"; the first reason is kept for the log.
+        /// </summary>
+        private static bool ReadyToEndTurn(TurnController turn, UnitEntityData rider, string reason, out string firstReason, out float waited)
+        {
+            if (!ReferenceEquals(turn, s_EndingTurn))
+            {
+                s_EndingTurn = turn;
+                s_EndReason = reason;
+                s_EndIdle = 0f;
+                s_EndWaited = 0f;
+                s_EndCapLogged = false;
+            }
+            firstReason = s_EndReason;
+            try
+            {
+                var time = Game.Instance.TimeController;
+                float dt = time.GameDeltaTime;
+                s_EndWaited += dt;
+                waited = s_EndWaited;
+                var mount = turn.Mount;
+                bool projectile = Game.Instance.ProjectileController.HasLaunchedProjectile(rider.Descriptor, mount?.Descriptor);
+                bool gettingUp = rider.View?.IsGetUp ?? false;
+                bool moving = (rider.View?.AgentASP?.IsReallyMoving ?? false) || (mount?.View?.AgentASP?.IsReallyMoving ?? false);
+                if (projectile || gettingUp || moving) s_EndIdle = 0f;
+                else s_EndIdle += dt;
+                float pause = 0.2f / Math.Max(0.01f, Game.Instance.Player.UISettings.TimeScaleAverage) * time.PlayerTimeScale * time.DebugTimeScale;
+                if (!projectile && !gettingUp && s_EndIdle > Math.Max(pause, time.DeltaTime)) return true;
+                if (s_EndWaited <= MaxTurnEndWait) return false;
+                if (!s_EndCapLogged)
+                {
+                    s_EndCapLogged = true;
+                    Main.Log($"[TurnTick] {rider.CharacterName}: turn ended after {MaxTurnEndWait:0} s although " +
+                             (projectile ? "a projectile is still in flight" : gettingUp ? "it is still getting up" : "it is still moving"));
+                }
+                return true;
+            }
+            catch (Exception ex)
+            {
+                waited = s_EndWaited;
+                Main.Verbose($"[TurnTick] {rider.CharacterName}: turn-end wait skipped: {ex.Message}");
+                return true;   // never hold a turn on a failed check
+            }
+        }
+
         public static void TurnControllerTick_Postfix(TurnController __instance)
         {
             try
@@ -331,9 +389,15 @@ namespace CompanionAI_Pathfinder.GameInterface
                     // CanEndTurn() accepts both Preparing and Acting for a directly-controllable unit.
                     if (__instance.CanEndTurnAndNoActing())
                     {
+                        // ★ v0.3.27 (author): ended the way the game ends its own units' turns - after the unit's projectiles
+                        // have landed and it has stood idle for the game's idle pause. Ended at once, the rest of the
+                        // animation and any projectile in flight played in the gap to the next turn, which the game runs
+                        // at triple speed (CombatController.TimeScaleBetweenTurns): spells looked sped up, projectiles vanished.
+                        if (!ReadyToEndTurn(__instance, rider, result.Reason, out string reason, out float waited)) return;
                         // ★ v0.3.19 (release): the decision line already says "=> END TURN" when nothing is left to do.
                         // ★ v0.3.20: "Nothing worth doing" repeats the decision line's "=> END TURN".
-                        if (result.Reason != "Nothing worth doing") Main.Log($"[TurnTick] {unitName}: EndTurn - {result.Reason}");
+                        if (reason != "Nothing worth doing") Main.Log($"[TurnTick] {unitName}: EndTurn - {reason}");
+                        if (Main.VerboseOn) Main.Verbose($"[TurnTick] {unitName}: turn end waited {waited:0.00} s (projectiles, idle pause)");
                         __instance.ForceToEnd(true);
                     }
                     else if (__instance.CanEndTurn() && !rider.Commands.Empty && !rider.Commands.IsRunning())
