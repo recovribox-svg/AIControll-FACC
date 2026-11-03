@@ -1,406 +1,220 @@
 # AI Control - Fully Autonomous Combat Companions
 
-## Which download is which
+A [Unity Mod Manager](https://www.nexusmods.com/site/mods/21) mod for **Pathfinder: Wrath of the Righteous** that
+replaces your companions' combat AI with a tactical one. Each companion weighs its attacks, spells, abilities, items and
+movement by what they will really do in this fight, and picks the best one. It works in **turn-based** and
+**real-time** combat.
 
-| What | Contents | Status |
-| --- | --- | --- |
-| **[v0.3.26 stable ZIP](release/CompanionAI_Pathfinder_v0.3.26.zip?raw=true)** | The v0.3.26 release ([notes](release/CHANGELOG_v0.3.26.md)): "Abilities AI must not use" list + smaller log | Released (the author creates tag `v0.3.26`) |
-| [Test ZIP — blacklist test 2 (d1d930f)](test-builds/AI-Control-FACC-v0.3.25-dev-blacklist2-d1d930f-UMM-test.zip?raw=true) | v0.3.25 + the list + most of the log review ([handover](docs/TASK_USER_ABILITY_BLACKLIST.md)) | Superseded by v0.3.26 |
-| [Test ZIP — blacklist test 1 (a030c79)](test-builds/AI-Control-FACC-v0.3.25-dev-blacklist1-a030c79-UMM-test.zip?raw=true) | v0.3.25 + the list | Superseded test build (played) |
-| [Test ZIP — v0.3.25-dev-test3 (ffed9ac)](test-builds/AI-Control-FACC-v0.3.25-dev-test3-ffed9ac-UMM-test.zip?raw=true) | Test 2 + much less memory garbage per decision (fewer stutters) ([report](docs/LIVE_CODE_AUDIT_V0325.md)) | Released as v0.3.25 |
-| [Test ZIP — v0.3.25-dev-test2 (2692562)](test-builds/AI-Control-FACC-v0.3.25-dev-test2-2692562-UMM-test.zip?raw=true) | Test 1 + faster decisions, no wasted healing potions, weapon damage reduction by the game's rule ([audit](docs/LIVE_CODE_AUDIT_V0325.md)) | Superseded test build (played) |
-| [Test ZIP — v0.3.25-dev-test1 (907cd75)](test-builds/AI-Control-FACC-v0.3.25-dev-test1-907cd75-UMM-test.zip?raw=true) | v0.3.24 + Unraveling/Chain Arrows chosen automatically, psionic focus regained and trance restored, smarter potions ([notes](docs/V0325_TEST1.md)) | Superseded test build (played) |
-| [v0.3.25 ZIP](release/CompanionAI_Pathfinder_v0.3.25.zip?raw=true) | The v0.3.25 release ([notes](release/CHANGELOG_v0.3.25.md)); same file as the test3 ZIP | Previous release (tag `v0.3.25`) |
-| [v0.3.24 ZIP](release/CompanionAI_Pathfinder_v0.3.24.zip?raw=true) | The v0.3.24 release ([notes](release/CHANGELOG_v0.3.24.md)); same file as the build3 test ZIP | Previous release (tag `v0.3.24`) |
-| [Test ZIP — v0.3.24-dev-build2 (2d6b49b)](test-builds/AI-Control-FACC-v0.3.24-dev-build2-2d6b49b-UMM-test.zip?raw=true) | Build 1 + no step out of melee away from a better spell or attack ([review](docs/V0324_BUILD1_LOGS_REVIEW.md)) | Superseded test build |
-| [Previous test ZIP — v0.3.24-dev-build1 (432a219)](test-builds/AI-Control-FACC-v0.3.24-dev-build1-432a219-UMM-test.zip?raw=true) | v0.3.23 + psionic focus kept, sleepers in harmful areas, Treat Affliction ([review](docs/V0324_BUILD1_REVIEW.md)) | Superseded test build |
-| [v0.3.23 ZIP](release/CompanionAI_Pathfinder_v0.3.23.zip?raw=true) | The previous release (tag `v0.3.23`, [notes](release/CHANGELOG_v0.3.23.md)) | Previous release; unchanged |
-| [v0.3.22 ZIP](release/CompanionAI_Pathfinder_v0.3.22.zip?raw=true) | The previous release (tag `v0.3.22`) | Previous release; unchanged |
-| [Older test ZIP — v0.3.23-dev-build6 (967050c)](test-builds/AI-Control-FACC-v0.3.23-dev-build6-967050c-UMM-test.zip?raw=true) | Bombs / Carnage build + fixes from its logs: 5-foot step, sleepers, summons ([review](docs/RELEASE_0323_BUILD5_REVIEW.md)) | Released as v0.3.23 |
-| [Previous test ZIP — bombs, Carnage (cabdb2e)](test-builds/AI-Control-FACC-v0.3.23-dev-bombs-carnage-cabdb2e-UMM-test.zip?raw=true) | Build 4 + Alchemist flask/bomb fixes, Dreadful Carnage credit, Kinetic Sharpshooter note ([evidence and handover](docs/TASK_BOMBS_CARNAGE_QUIVER.md)); merged into development (PR #16); played as build5 | Superseded test build |
-| [Older test ZIP — v0.3.23-dev-build4 (da4e0a5)](test-builds/AI-Control-FACC-v0.3.23-dev-build4-da4e0a5-UMM-test.zip?raw=true) | Build 3 + fixes from its logs and the play-test notes; UMM shows 0.3.23 (development source) | Superseded test build |
-| [Previous test ZIP — v0.3.23-dev-build3 (089a402)](test-builds/AI-Control-FACC-v0.3.23-dev-build3-089a402-UMM-test.zip?raw=true) | The build2 test + fixes from its logs | Superseded test build |
-| [Previous test ZIP — movement 0c2e0f5 (played as v0.3.23-dev-build2)](test-builds/AI-Control-FACC-dev-movement-0c2e0f5-UMM-test.zip?raw=true) | v0.3.22 + reviewed PR #13–#15 + fixes2 log fixes + approved movement follow-ups | Superseded test build |
-| [Previous test ZIP — fixes2 c3f1636](test-builds/AI-Control-FACC-dev-fixes2-c3f1636-UMM-test.zip?raw=true) | The same without the movement follow-ups | Superseded test build |
-| [Previous test ZIP — ecabeb4](test-builds/AI-Control-FACC-dev-integrated-ecabeb4-UMM-test.zip?raw=true) | v0.3.22 + reviewed PR #13–#15 (also on `main`) | Superseded test build |
-
-`main` holds the v0.3.26 release source. Test builds can share a version number; tell them apart by the startup line
-in the log (`[Build] v0.3.23 module=...`, module IDs in [release/README.md](release/README.md) and
-[test-builds/README.md](test-builds/README.md)).
-GitHub Releases are published by the author; older release and test archives are kept unchanged.
-
-## Current development test build (not a release)
-
-**[Download the UMM test ZIP — v0.3.23-dev-build6 (967050c)](test-builds/AI-Control-FACC-v0.3.23-dev-build6-967050c-UMM-test.zip?raw=true)**
-(startup `[Build] v0.3.23 module=09a7ab12-2cc2-477c-a688-74765960ea97`). It is the bombs / Carnage build plus:
-- a caster steps out of melee only for a spell it then casts, never away from a revive it would walk to, and a cone
-  caster keeps its targets when it steps;
-- the archers shoot sleeping enemies when no melee ally is near enough to finish them with a Coup de Grace;
-- no summon after summon while the caster's demons already fight, nor in an easy fight.
-
-[Review](docs/RELEASE_0323_BUILD5_REVIEW.md).
-
-**Previous: [bombs, Carnage (cabdb2e)](test-builds/AI-Control-FACC-v0.3.23-dev-bombs-carnage-cabdb2e-UMM-test.zip?raw=true)**
-(startup `[Build] v0.3.23 module=89ffb864-46e5-4840-ba2e-15318074028e`). It is build 4 plus (PR #16):
-- Grenadier Alchemical Weapon counts the flask it uses up, follows "use thrown items", and is used only before a weapon
-  attack;
-- Force Bomb's knockdown is seen; daily bombs are kept for fights that need them;
-- a Dreadful Carnage fighter counts the free Dazzling Display a kill fires;
-- Kinetic Sharpshooter: no change (arrows carry no blast damage in the game); a log line explains the choice.
-
-[Evidence, changes and replay steps](docs/TASK_BOMBS_CARNAGE_QUIVER.md).
-
-**Previous: [v0.3.23-dev-build4 (da4e0a5)](test-builds/AI-Control-FACC-v0.3.23-dev-build4-da4e0a5-UMM-test.zip?raw=true)**
-(startup `[Build] v0.3.23 module=f1604b11-326e-425e-a77e-2533856d4155`). It is build 3 plus:
-- no revives into an immediate attack of opportunity;
-- real-time front-liners stay on the enemy front line;
-- no orders while getting up.
-
-[Review](docs/RELEASE_0323_BUILD3_REVIEW.md).
-
-**Previous: v0.3.23-dev-build3 (089a402)** (startup `[Build] v0.3.22 module=582c262e-656d-4da3-83d0-0d2f43f4711f`). It is the build2 test plus:
-- real-time Coup de Grace on sleepers;
-- the last sleeper left for a melee ally;
-- no false failure for casts stopped on their walk.
-
-[Review](docs/RELEASE_0323_BUILD2_REVIEW.md).
-
-**Previous: movement 0c2e0f5 (played as v0.3.23-dev-build2)**
-(startup `[Build] v0.3.22 module=ba81d8ad-acb4-4dfc-80e1-1a46c8acd506`). It is the fixes2 build plus the approved
-movement follow-ups:
-- a companion stays put when walking first gains nothing;
-- a hurt caster steps away from melee to heal;
-- charges and step-then-shoot leave sleeping enemies alone.
-
-**Previous: [fixes2 c3f1636](test-builds/AI-Control-FACC-dev-fixes2-c3f1636-UMM-test.zip?raw=true)**, the ecabeb4 build
-below plus two fixes from the fixes2 logs:
-- archers no longer shoot sleeping enemies awake while other enemies still fight;
-- Holy Water is used only on undead and evil outsiders.
-
-Its startup marker was `[Build] v0.3.22 module=bd00b45e-bce8-4213-91e1-74425d708574`.
-[Review](docs/RELEASE_0322_FIXES2_REVIEW.md) · [identity and replay steps](test-builds/README.md).
-
-**Previous: [integrated UMM test ZIP — ecabeb4](test-builds/AI-Control-FACC-dev-integrated-ecabeb4-UMM-test.zip?raw=true).**
-Adds to v0.3.22: optional Tabletop Tweaks resistance preview (used only when TTT's replacement part is installed),
-no false "did nothing" strike for orders that never cast, missed-roll splash kept out of damage calibration, and
-native arcane spell-failure chance in spell valuation. Reach/Grease and stalled-navigation rows in the log are
-**diagnostics only**; movement is unchanged. Startup marker `[Build] v0.3.22 module=2cc6eb92-af79-4a1c-a65d-aad66d8ef315`.
-[Install, identity and replay steps](test-builds/README.md) · [Integration handover](docs/INTEGRATION_0322_FOLLOWUPS.md).
-In-game acceptance is pending.
-
-## v0.3.22 stable
-
-**[Download the UMM ZIP — v0.3.22](release/CompanionAI_Pathfinder_v0.3.22.zip?raw=true)**
-
-Automatic supported kineticist infusions, shared-HD/cone/energy-protection spell improvements, safer allied
-control areas, concentration/touch-cast fixes and local performance improvements. UMM displays **0.3.22**;
-existing settings are retained. Fully exit the game before installing.
-
-[Release notes](release/CHANGELOG_v0.3.22.md) · [Install and exact package identity](release/README.md).
-
-The published v0.3.22 tag and stable package remain unchanged; they do not contain the later follow-ups above.
-[v0.3.22 publication handover](docs/RELEASE_0_3_22_HANDOVER.md) (historical).
-
-*Pathfinder: Wrath of the Righteous* · by MonsieurAndroid · Unity Mod Manager id `CompanionAI_Pathfinder`
-
-Unity Mod Manager mod that replaces party-companion combat AI with a utility-scoring tactical AI
-(role-based DPS / Tank / Support plans, buff/heal/debuff selection, positioning). Works in turn-based
-combat (primary) and real-time combat.
-
-**0.3.0** replaces the turn-based decision making with a step-wise tactical engine
-([docs/TACTICAL_AI.md](docs/TACTICAL_AI.md)):
-- **Weapon attacks** (single, move + attack, full attack, charge) valued with the game's own attack and damage rules.
-  Archers now shoot, and animal companions bite and claw.
-- **Spells and abilities** chosen by expected effect: damage, hard control, heals, buffs. No re-casting buffs that are
-  already active, and no spamming utility abilities such as Appraise Foe.
-- **Consumables:** potions, scrolls, wands and alchemical/thrown items **in quick slots**, used when they are worth it
-  (for example a healing potion at low HP). Each type can be toggled.
-- **Positioning:** 5-foot step out of melee for archers and casters, advance into reach or range when nothing can be
-  hit, withdraw at very low HP.
-- **Ridden mounts** no longer follow the mouse cursor when an AI-controlled rider gives an order.
-
-**0.3.1** fixes what the first 0.3.0 play logs showed ([docs/TACTICAL_AI.md](docs/TACTICAL_AI.md) §6):
-- No more healing potions drunk at full HP.
-- Cure / Inflict Wounds and Lay On Hands are judged per target (Inflict heals undead, Cure harms them), and heals are
-  never aimed at enemies.
-- A command that ends without using its action (Albedo's repeated 0.7 m "Move+Attack") is not retried.
-- Long walks are no longer cut off by the wait timeout, and an idle leftover command no longer costs a turn.
-- Aid Another and other one-round marks are valued as one round; one-round self-buffs such as Perfect Strike are not
-  cast when no attack is left this turn.
-- Condition-removal abilities (e.g. Treat Affliction, if it removes by descriptor) only when there is something to remove.
-
-**0.3.2** fixes what the first 0.3.1 log showed ([docs/TACTICAL_AI.md](docs/TACTICAL_AI.md) §7):
-- Buffs are valued by what they actually do and whether they stack: no Treat Affliction "just because", no Feather Step
-  or Mage Armor (over real armor) items wasted.
-- Orvath no longer flips Shift Form between Overlord and Mortal Guise every turn; party-wide self buffs (Soul Power)
-  no longer count enemies in their radius as "marks".
-- An advance that runs out of its move action can continue with the standard action; abilities are not aimed at a
-  target on which none of their effects apply.
-
-**0.3.22** ([release/CHANGELOG_v0.3.22.md](release/CHANGELOG_v0.3.22.md)): supported kineticist substance
-infusions are chosen automatically with native applicability/burn; Sleep shares its HD budget, cones use native
-geometry, protection matches energy types, and spell boosts require feasible follow-ups. A narrow new-area safety
-check respects Selective. Concentration/touch-cast fixes and local forecast reuse improve reliability and performance.
-
-**0.3.21** ([release/CHANGELOG_v0.3.21.md](release/CHANGELOG_v0.3.21.md)): works alongside Wrath Tactics in real time
-(its rules first, AI Control fills the gaps). Power Attack, Deadly Aim and Combat Expertise are chosen per attack. Many
-more abilities are read from the game's own rules: invisibility, weapon enchantments and buffs, ally hexes, auras,
-poisons, regeneration, spell DC and caster level boosts, on-hit effects, Quicken / Extend, shadow spells; debuffs are
-worth what they take away.
-
-**0.3.20** ([release/CHANGELOG_v0.3.20.md](release/CHANGELOG_v0.3.20.md)): attacks of opportunity are weighed and,
-when a spot that provokes less exists, avoided; the path the game really walks is counted. Enemies are rated by what
-each can do and has done. Weapon damage follows the game's rule (swarms, critical immunity, damage reduction). Walks
-that do not fit one move action no longer cost the turn, interrupted casts no longer block an ability, and real-time
-companions stop re-thinking while they wait for their action. New setting for steering your own walks around spotted
-traps.
-
-**0.3.19** ([release/CHANGELOG_v0.3.19.md](release/CHANGELOG_v0.3.19.md)): buffs are valued by what they really do
-for the ally who gets them (with stacking, real duration and penalties), and a pure buff must clearly beat attacking.
-Performances, spirits and auras that work through their area, Rage bonuses, Warpriest Fervor and Witch Cackle are
-understood. Kineticists price burn and Elemental Overflow, fallen allies get revived, and next-spell boosts go before
-the spell they help. One setting decides who manages toggles and one whether companions rebuff after fights
-(Buff It 2 The Limit compatibility). Smaller log.
-
-**0.3.18** ([release/CHANGELOG_v0.3.18.md](release/CHANGELOG_v0.3.18.md), includes 0.3.17): Melee
-characters walk around Grease, Entangle and clouds, and real-time walks are checked against the path the game takes and
-an ally's area spell about to land. Fight length and enemy danger are calibrated from the damage actually dealt. Spells
-that do nothing to a target are dropped for it, touch spells walk into reach in real time too, prone units stand up, and
-no consumables go to summons. Two new settings let you keep toggles and combat modes to yourself.
-
-**0.3.16** ([release/CHANGELOG_v0.3.16.md](release/CHANGELOG_v0.3.16.md)): casters no longer walk into a crowd to read a
-scroll or cast: casting among enemies is weighed by the game's defensive-casting rule and the attacks of everyone around.
-Turn-based touch spells walk into reach the way the game measures it and are cast after the walk (fixing turns lost in
-0.3.15), no movement is offered after a 5-foot step, paths no longer end on an ally's square, and real-time escapes go
-only to walkable spots.
-
-**0.3.15** ([release/CHANGELOG_v0.3.15.md](release/CHANGELOG_v0.3.15.md)): spells and items that did nothing are fixed
-or caught. Kineticists no longer cast the Kinetic Blade's internal Fire Blast, touch scrolls and spells on others walk
-into reach before casting in turn-based mode, held touch charges are used first and stuck ones removed, and any ability
-the game silently does nothing with is logged and dropped after two tries. Melee characters weigh every round they
-would spend in Grease or other harmful areas. Crowd control uses each enemy's real duration and saves. Tanks accept
-more risk.
-
-**0.3.14** ([release/CHANGELOG_v0.3.14.md](release/CHANGELOG_v0.3.14.md)): real-time combat now uses the turn-based
-tactical AI (the old one stays selectable in the settings). Companions handle their own conditions: they stand up when
-prone (in turn-based mode they used to lie there until the fight ended), walk out of clouds while nauseated, and skip
-actions being staggered or held rules out. Attacks of opportunity are judged along the whole path, with the chance of
-being dropped in one blow. Downed allies are revived when they will stay up. Harmful areas can be left, weighing saves,
-immunities and the attacks on the way. Spell estimates use spell resistance and penetration, energy resistance and
-immunity, and what each enemy actually took.
-
-**0.3.13**: characters no longer walk away from an enemy they are fighting without weighing the attacks of
-opportunity that costs (the game itself is asked which enemies would strike): a move out of melee is chosen only when
-it is clearly better, and is cheaper to justify for a healthy character than a wounded one. Casters no longer put a
-second copy of the same area (Entangle) on enemies already inside their own. Empowered and maximized spells, including
-automatic metamagic such as IsekaiMod's "Overpowered Ability - Auto Empower/Maximize", are valued at their real
-damage and healing. New option (on by default): animal companions can use the items in their belt slots in combat.
-
-**0.3.12**: spells that entangle, stun or otherwise hinder are no longer cast on the caster or allies as if they were
-buffs (Orvath's Entangle), and they now count as offensive for Progressive; control spells are no longer aimed at
-enemies immune to them (the immunity check missed nearly every real spell). Real time: "Avoid friendly fire" now works
-(area spells were cast onto allies), a queued character no longer gets a new command while it is still carrying one
-out, metamagic/item/other-caster copies of a spell no longer share one classification, and the decision-interval
-setting is used. Abilities the AI fails to analyse are named in the normal log, and an unreadable settings file is kept
-as a backup before defaults replace it.
-
-**0.3.11**: healers no longer waste heals on summons that just died, and value summons below companions; no advancing
-towards an enemy that no path can reach this turn.
-
-**0.3.10**: no more lost turns around 5-foot steps (after a step the AI no longer plans movement the game refuses,
-and attacks whose path would end out of reach are not issued); badly hurt characters within an enemy's reach withdraw
-when that makes them less likely to go down; archers stepping out of melee keep a target in sight.
-
-**0.3.9**: archers take a 5-foot step and still make their full attack; healing weighs who can hit the wounded
-character before its next turn (Lann no longer shoots at 25 % HP instead of drinking), and downed allies can be healed
-back up; Coup de Grace is used on helpless enemies (also with Tabletop Tweaks); sleeping enemies are not woken by weak
-hits or stunned again.
-
-**0.3.8**: Spirit Weapon Enchantment (and other weapon enchantments) is no longer recast while still active; Smite
-Evil goes on the enemy the paladin is about to attack; area spells respect who they can affect (Sleep and creatures with
-too many hit dice); no "move + attack" in a surprise round, no move offered after a 5-foot step; the log shows which
-spells the Progressive policy covers, and describes abilities the AI cannot read yet (Coup de Grace).
-
-**0.3.7**: new per-character **Spell Use: Progressive** option (off by default): casters use the lowest spell level
-that has a damage or control spell with a real chance to work, and save higher levels for when lower ones cannot work
-or for enemies the game marks as bosses. Area spells (Grease, Web, Stinking Cloud...) are now understood as control,
-and not dropped on allies. See [docs/PROGRESSIVE_SPELLS.md](docs/PROGRESSIVE_SPELLS.md).
-
-**0.3.6**: Perfect Strike (and other "once, then gone" buffs) no longer cast after fights; casters step out of melee
-before a spell that would provoke, and value such spells a little lower when they cannot; the debug line
-`IsReadyForNextAction` is logged only when it changes.
-
-**0.3.5**: the out-of-combat buff routine only keeps up real long-lasting buffs (no more Soul Power, Perfect Strike
-or item use after fights); a companion that cannot act ends its turn at once; Treat Affliction is no longer a "utility"
-fallback.
-
-**0.3.4**: Camellia uses Spirit Weapon Enchantment again; Mage Armor items are no longer used over real armor;
-"dispel"-type abilities (Treat Affliction) are only considered when there is something to remove.
-
-**0.3.3**: Soul Power only when there are fresh corpses to draw on (and worth more with burn); Treat Affliction's
-"treated today" marker is not a buff; summon spells count as summons; the out-of-combat routine no longer flips
-toggles such as Shift Form; bonus stacking follows the game's own rule (and Tabletop Tweaks' changes to it).
-
-0.2.119 fixed companions not physically moving in turn-based combat ([docs/INVESTIGATION.md](docs/INVESTIGATION.md)).
+**Latest release: v0.3.26** — [download](https://github.com/recovribox-svg/AIControll-FACC/releases/latest) ·
+[release notes](release/CHANGELOG_v0.3.26.md)
 
 ---
 
-## Install (players)
+## Contents
 
-1. Install [Unity Mod Manager](https://www.nexusmods.com/site/mods/21) into the game.
-2. Download [CompanionAI_Pathfinder_v0.3.22.zip](release/CompanionAI_Pathfinder_v0.3.22.zip?raw=true), or build it yourself (below; output in `dist\`); building from the current source gives the newer development code, not the published v0.3.22 bytes.
-3. Install it either way:
-   - Unity Mod Manager → *Mods* tab → drag the ZIP onto the window / *Install Mod*, **or**
-   - extract it to `<game>\Mods\CompanionAI_Pathfinder\` so the folder contains
-     `CompanionAI_Pathfinder.dll` and `Info.json`.
-4. Start the game and open the mod settings with **Ctrl+F10**.
-
-### Settings (Ctrl+F10)
-- *Enable in Turn-Based Mode* / *Enable in Real-Time Mode* - both are honoured from 0.2.119.
-- *Control Companions* / *Control Main Character* and per-character AI on/off, role and range preference.
-- *Enable Debug Logging* - **off by default**; when on it writes many `[V]` lines (several per decision). Leave it off unless
-  you are debugging. Existing installs keep their old `settings.json`, so turn it off there if it was on.
-
-- *Spell Use* (per character, in the character's panel): **Standard** (as before) or **Progressive** (lowest usable
-  spell level first for damage/control spells; cantrips, buffs, heals and items unaffected). *Progressive: allow higher
-  spell levels against bosses* (global, on by default) frees higher levels for spells that would hit an enemy the game
-  marks as a boss.
-- *AI manages activatable abilities (toggles)* (on): in fights the AI switches the toggles it understands (performances,
-  Rage, spirits, Power Attack and the other attack modes, Fighting Defensively, Mobility) and puts them back as you left
-  them afterwards. Off: the AI never switches a toggle - they stay as you or another mod set them. Under it, *Leave a
-  toggle alone for the rest of the fight once you switch it yourself* (on) protects your own action-bar clicks.
-- *After fights, AI companions recast their long-lasting self buffs* (on): missing hour-long or permanent self buffs are
-  cast out of combat. Switch off if you buff by hand or with a buff mod.
-- *Steer my own walk orders around spotted traps* (on): when you order a party member to walk in real time or out of
-  combat and the way crosses a trap your party has spotted, the walk goes around it or stops short. Unspotted traps and
-  turn-based moves are never changed. Switch off to walk exactly where you click.
-- *Real time: let Wrath Tactics act first; AI Control fills the gaps* (on; only matters with the Wrath Tactics mod):
-  when a companion that has Wrath Tactics rules becomes free, Wrath Tactics checks its rules first and AI Control acts
-  only when no rule gives a command (a moment later, at most about 0.6 s). A "Do nothing" rule gives no command, so AI
-  Control acts anyway. Turn-based combat and companions without rules are not affected.
-- **Buff It 2 The Limit:** if it manages your companions' toggles, switch *AI manages activatable abilities* off; if it
-  casts their buffs, switch the self-buff option off too. The settings page shows a reminder while that mod is active.
-- *Abilities AI must not use*: per character, in the character's panel, a searchable list of its spells, abilities,
-  quick-slot items and toggles. *Block* one for this character or for everyone; variant spells can be blocked one
-  variant at a time or all at once. The top-level panel lists the shared (everyone) entries.
-  - What it covers: AI Control never starts a blocked entry in either combat mode, nor in its after-fight buffing or
-    Pre-Buff.
-  - What it does not touch: you can still use them by hand, other mods (Wrath Tactics) and automatic effects (Dreadful
-    Carnage's free Dazzling Display) are not affected, and what is already on stays on.
-  - Details: [docs/TASK_USER_ABILITY_BLACKLIST.md](docs/TASK_USER_ABILITY_BLACKLIST.md).
-- *Consumables (quick-slot items)*: master switch plus potions / scrolls & wands / alchemical & thrown items, and the HP %
-  below which a character drinks a healing potion. **Put the items you want companions to use into their quick slots**:
-  the game only allows quick-slot items in combat, and never lets animal companions use items.
-
-### Compatibility with other mods
-The mod has **no dependencies** besides Unity Mod Manager. Checked against the decompiled builds of
-Tabletop Tweaks Core 0.7.15 / Base 2.6.18, IsekaiMod 6.5.0, Demonology 0.1.5, Tome of the Firebird 1.4.18 and
-Mystical Mayhem 0.7.0h (with KRXLib):
-- None of them patches a method this mod patches (`TurnController.Tick`, `AiBrainController.TickBrain`,
-  `CombatController.StartTurn/Activate/Deactivate`, `UnitCommands.Run`), so load order does not matter.
-- Their changes to game rules reach the AI automatically, because it asks the game: attack/AC/damage rules, spell
-  resistance (`UnitPartSpellResistance.GetValue`), Use Magic Device DC, targeting (`AbilityData.CanTarget`), variants
-  (`GetConversions`) and bonus stacking (`ModifierDescriptorHelper.IsStackable`, e.g. TTT's natural-armor rule).
-- Mystical Mayhem's changes to action types (`AbilityData.ActionType`, `RequireFullRoundAction`) reach the AI through
-  `RuntimeActionType`. Its Borrowed Time extra swift action can make the log report a swift ability as "action still
-  unused"; that only stops the same ability on the same target being repeated that turn. Its spell-resistance special
-  cases (Draconic Malice, Pact Wizard) are not in the AI's estimate; the game still applies them when the spell lands.
-- Abilities added by these mods are read like vanilla ones (effects, buffs, conditions). Conditions the AI cannot
-  evaluate are logged once as `[Profile] ... not evaluated` and counted conservatively.
-This is a code-level check; it has not been run in the game with these mods.
-
-Units the game is currently controlling itself (confused, panicked, dominated, cutscenes) are left to the game.
+- [What it does](#what-it-does)
+- [Install](#install)
+- [Settings](#settings)
+- [Abilities AI must not use](#abilities-ai-must-not-use)
+- [Compatibility](#compatibility)
+- [Reporting a problem](#reporting-a-problem)
+- [Versions and test builds](#versions-and-test-builds)
+- [For developers](#for-developers)
+- [Credits](#credits)
 
 ---
 
-## Build (developers)
+## What it does
 
-Requirements (Windows 10/11):
-- The game installed with Unity Mod Manager applied (the build references the game's own DLLs).
-- [.NET SDK 6 or newer](https://dotnet.microsoft.com/download) - e.g. `winget install Microsoft.DotNet.SDK.8`.
-  Visual Studio is **not** required (the .NET Framework 4.8 reference assemblies come from NuGet).
+**Fights by the game's own rules.**
+- **Attacks:** single attacks, full attacks, charges and move-and-attack, judged with the game's attack, damage and
+  damage-reduction rules.
+- **Spells and abilities:** chosen by their real effect (damage, control, healing, buffs), the enemy's saves, spell
+  resistance and immunities.
+- **Buffs:** only when they help more than attacking, and never recast while still active.
 
-```bat
-Build.bat
+**Looks after the party.**
+- Heals the companion who is most likely to go down, revives fallen allies, and removes harmful conditions.
+
+**Moves sensibly.**
+- Weighs attacks of opportunity and harmful areas (Grease, clouds) before moving.
+- Steps out of melee to shoot or cast, and withdraws when badly hurt.
+
+**Uses your items.**
+- Potions, scrolls, wands and bombs **in quick slots**, when they are worth it.
+
+**Handles class features.** Some examples:
+- performances, Rage, Smite;
+- Power Attack and other combat modes;
+- kineticist burn and infusions;
+- psionic focus (Psionics mod).
+
+**Saves spells if you want.** The *Progressive* option uses the lowest spell level that does the job.
+
+**Leaves you in control.**
+- You can still give orders yourself.
+- You choose which characters the AI controls, and which abilities it must never use.
+
+---
+
+## Install
+
+1. Install [Unity Mod Manager](https://www.nexusmods.com/site/mods/21) for the game.
+2. Download `CompanionAI_Pathfinder_v0.3.26.zip` from the
+   [latest release](https://github.com/recovribox-svg/AIControll-FACC/releases/latest).
+3. **Fully exit the game.** In Unity Mod Manager, open the *Mods* tab and drag the ZIP onto the window.
+   - Or extract it to `<game>\Mods\CompanionAI_Pathfinder\`.
+4. Start the game and press **Ctrl+F10** to open the settings.
+
+Updating works the same way. Your settings are kept.
+
+> **Tip:** put the potions, scrolls and wands you want companions to use into their **quick slots**. The game only
+> lets characters use quick-slot items in combat.
+
+---
+
+## Settings
+
+Open with **Ctrl+F10**. The defaults suit most players.
+
+### Who and when
+
+| Setting | Default | What it does |
+|---|---|---|
+| Control Companions | On | The AI fights for your companions. |
+| Control Main Character | Off | The AI also fights for your main character. |
+| Enable in Turn-Based / Real-Time Mode | On / On | Choose the combat modes the AI runs in. |
+| Per character: AI on/off | On | Switch the AI off for single characters in *Party Members*. |
+
+### Per character (click a name in *Party Members*)
+
+| Setting | What it does |
+|---|---|
+| Role: DPS / Tank / Support | What the character puts first: damage, protecting allies, or healing and buffs. |
+| Range: Mixed / Melee / Ranged | Where the character prefers to fight. |
+| Spell Use: Standard / Progressive | *Progressive* saves higher spell levels and uses the lowest one that works. Cantrips, buffs, heals and items are not affected. |
+| Abilities AI must not use | See [below](#abilities-ai-must-not-use). |
+
+### Behaviour
+
+| Setting | Default | What it does |
+|---|---|---|
+| AI manages activatable abilities (toggles) | On | The AI switches performances, Rage, Power Attack, Fighting Defensively and similar, and puts them back afterwards. Off: it never touches toggles. |
+| Leave a toggle alone once you switch it yourself | On | A toggle you click stays as you set it for the rest of the fight. |
+| After fights, recast long-lasting self buffs | On | Missing hour-long and permanent self buffs are recast. Switch off if you buff by hand or with a buff mod. |
+| Progressive: allow higher spell levels against bosses | On | Progressive casters may use stronger spells on bosses. |
+| Steer my own walk orders around spotted traps | On | Your own walk orders avoid traps the party has spotted. |
+
+### Items
+
+| Setting | Default | What it does |
+|---|---|---|
+| Use consumables in combat | On | Master switch for quick-slot items. |
+| Potions / Scrolls and wands / Alchemical and thrown items | On | Each item type separately. |
+| Drink healing potions below HP % | 50 | When a companion drinks a healing potion. |
+| Animal companions can use their belt items | On | Pets may use items in their belt slots. |
+
+### Other
+
+- **Pre-Buff Party** (button): the AI-controlled casters put useful low-level buffs on the party before a fight.
+- **Enable Debug Logging** (off): writes many extra lines to the log. Switch it on only when you are asked to.
+- **Real time: use the old decision engine** (off): only for comparison. The old engine is no longer developed.
+
+---
+
+## Abilities AI must not use
+
+Each character's panel has a searchable list of its spells, abilities, quick-slot items and toggles.
+
+- **Block** an entry for this character only, or for **everyone**.
+  - Variant spells (Command, kineticist blasts, ...) can be blocked one variant at a time or all at once.
+- A blocked entry is never used by the AI:
+  - in turn-based and real-time combat;
+  - after fights;
+  - with Pre-Buff.
+- **Unblock** at any time; it takes effect at once.
+- The top-level panel lists the entries blocked for everyone.
+
+What it does **not** change:
+- you can still use the ability yourself;
+- automatic effects (for example Dreadful Carnage's free Dazzling Display) still happen;
+- other mods are not affected;
+- buffs that are already on stay on.
+
+---
+
+## Compatibility
+
+- **No dependencies** other than Unity Mod Manager. Load order does not matter.
+- **Tabletop Tweaks, IsekaiMod, Mystical Mayhem, Demonology, Tome of the Firebird:** their rule changes reach the AI
+  automatically, because it asks the game for its rules. Abilities they add are read like the game's own.
+- **Wrath Tactics:** in real time its rules act first, and AI Control fills the gaps. You can switch this in the
+  settings. A "Do nothing" rule gives no order, so AI Control acts anyway.
+- **Buff It 2 The Limit:** the settings page reminds you when it is installed. If it manages toggles or buffs, switch
+  off the matching AI Control setting.
+- **Psionics:** psionic focus and trances are understood.
+- Confused, dominated or panicked companions, and cutscenes, are left to the game.
+
+---
+
+## Reporting a problem
+
+1. Note what happened, and in which fight and mode (turn-based or real-time).
+2. Send the log file:
+   - where: `<game>\Wrath_Data\Managed\UnityModManager\Log.txt`, or the *Logs* tab in Unity Mod Manager;
+   - its first lines identify your version, for example
+     `[Build] v0.3.26 module=24ddcf26-2006-43f5-ade7-b326abb2d62c`.
+3. Debug logging is not needed unless asked for. It makes the log much longer.
+
+Every decision is logged, so one fight shows why a companion did what it did:
+
+```text
+[Tactics] Lann R2 HP100% [SMWF5] enemies=4 :: FullAttack(2)->Zombie=21.4 | Attack->Zombie=13.2 => FullAttack(2)->Zombie
 ```
-or
+
+---
+
+## Versions and test builds
+
+- **Releases:** [GitHub Releases](https://github.com/recovribox-svg/AIControll-FACC/releases), or the
+  [release folder](release/README.md) with every release ZIP and its notes.
+- **Recent release notes:** [v0.3.26](release/CHANGELOG_v0.3.26.md) · [v0.3.25](release/CHANGELOG_v0.3.25.md) ·
+  [v0.3.24](release/CHANGELOG_v0.3.24.md) · [v0.3.23](release/CHANGELOG_v0.3.23.md) ·
+  [older](release/).
+- **Test builds:** development builds for play-testing, in [test-builds](test-builds/README.md). They are not releases.
+  Each one is named by its log's startup line.
+- The previous, more detailed version of this page (version-by-version notes) is
+  [archived](docs/archive/README_until_v0.3.26.md).
+
+---
+
+## For developers
+
+The mod is C# (.NET Framework 4.8) and builds against the game's own DLLs.
+
 ```powershell
-.\Build.ps1                                   # auto-detects the Steam install
-.\Build.ps1 -GamePath "D:\SteamLibrary\steamapps\common\Pathfinder Second Adventure"
-.\Build.ps1 -GamePath "<...>" -Deploy         # also copies the mod into <game>\Mods\CompanionAI_Pathfinder
+.\Build.ps1                                     # finds the Steam install, builds, writes dist\CompanionAI_Pathfinder_v<version>.zip
+.\Build.ps1 -GamePath "<...\Pathfinder Second Adventure>" -Deploy   # also copies the mod into the game's Mods folder
+dotnet test tests/CompanionAI.Tests             # unit tests (no game needed)
 ```
 
-The script:
-1. finds `Wrath_Data\Managed` (`-GamePath`, `-ManagedPath`, `WRATH_PATH` env var, Steam registry +
-   `libraryfolders.vdf`, or an existing `References\Managed`);
-2. copies the referenced game assemblies into `References\Managed\` (git-ignored - they are the game's
-   copyrighted files; afterwards you can rebuild without the game path);
-3. runs `dotnet build -c Release`;
-4. writes `dist\CompanionAI_Pathfinder_v<version>.zip` with exactly the layout of the original release
-   (`CompanionAI_Pathfinder.dll` and `Info.json` at the archive root) and verifies its entries.
+Requirements: the game with Unity Mod Manager installed, and the [.NET SDK](https://dotnet.microsoft.com/download) 6
+or newer. Visual Studio is not needed.
 
-Plain `dotnet build -c Release -p:GamePath="<game folder>"` also works; output goes to `bin\Release\`.
-
-Reference assemblies used (all from `<game>\Wrath_Data\Managed`): `Assembly-CSharp`, `Owlcat.Runtime.Core/UI/Visual/Validation`,
-`Owlcat.SharedTypes`, `AstarPathfindingProject`, `UniRx`, `Newtonsoft.Json` (the game's own 8.0.0.0 build - the mod
-must bind to it, not to the NuGet 13.0 package), `UnityEngine*.dll`, and `UnityModManager\UnityModManager.dll`.
-Harmony comes from NuGet as compile-only; Unity Mod Manager provides it at runtime.
+| Where | What |
+|---|---|
+| [CLAUDE.md](CLAUDE.md) | Architecture overview and the current handover |
+| [docs/TACTICAL_AI.md](docs/TACTICAL_AI.md) | How decisions are made and valued |
+| [CONTRIBUTING.md](CONTRIBUTING.md) | Branches, pull requests and releases |
+| [tools/README.md](tools/README.md) | Offline verification tools |
 
 ---
 
-## In-game test checklist (turn-based first)
+## Credits
 
-Every decision and every command is logged, so one fight shows why a companion did something. In the Unity Mod
-Manager log (`<game>\Wrath_Data\Managed\UnityModManager\Log.txt`, next to `UnityModManager.dll`, or the in-game UMM
-*Logs* tab) look for:
+- **MonsieurAndroid**: author. Direction, design decisions, play-testing and logs.
+- **Claude** (Anthropic's AI coding assistant, via Claude Code): code, analysis and documentation. The mod is AI-coded.
+- Based on the original CompanionAI for Pathfinder by veria (seyelive5), which built on patterns from CompanionAI for
+  Rogue Trader.
 
-```
-[Tactics] Lann R2 HP100% [SMWF5] enemies=4 rounds~2.6 diff=0.71 :: FullAttack(2)->Zombie=21.4 | Attack->Zombie=13.2 => FullAttack(2)->Zombie
-[Cmd] Lann: ISSUED UnitAttack 'FullAttack(2)->Zombie' mode=TB/Preparing forcedPath=none approachR=31.0
-[Cmd] Lann: ENDED UnitAttack 'FullAttack(2)->Zombie' result=Success acted=True moved=0.0m after 2.4s
-```
-`[SMWF5]` = Standard, Move, sWift, Full attack and 5-foot step still available. The options are listed best first, with
-their values, and `=>` shows the choice. See [docs/TACTICAL_AI.md](docs/TACTICAL_AI.md) §5.
-
-| # | Scenario | Expected |
-|---|----------|----------|
-| 1 | Archer (Lann) with enemies in bow range | Shoots (full attack if he didn't move); doesn't retreat while there are targets |
-| 2 | Archer in melee | 5-foot step out of melee, then shoots |
-| 3 | Animal companion (Albedo) | Moves in and attacks (full attack when adjacent, charge when far); no wandering |
-| 4 | Melee (Seelah) | Smite Evil (swift) when valid, then attacks; charges distant targets |
-| 5 | Caster (Orvath) | Damage or control spells on the best target; Appraise Foe at most once per combat; no buff recast while active |
-| 6 | Support / healer | Heals allies below the threshold first; buffs early in the fight |
-| 7 | Healing potion in a quick slot, character below the potion threshold | Drinks it when that beats attacking |
-| 8 | Consumables toggled off | No item use in turn-based or real-time mode |
-| 9 | Ridden mount with an AI-controlled rider | Mount moves where the AI ordered, not to the cursor (`[Cmd] ... mount command ... given forcedPath=`) |
-| 10 | Player delays a companion's turn / combat start and end / switching TB ↔ RT | Turns proceed normally |
-
-## Architecture
-
-```
-TurnController.Tick (postfix)  ──► TurnBasedController ─► Tactics/TacticalEngine (one action at a time)
-AiBrainController.TickBrain (prefix, real-time) ─► RealTimeController ─► UnifiedDecisionEngine
-                                         │
-                                         ▼
-                     ActionExecutor / RealTimeController
-                                         │
-                                         ▼
-          GameInterface/CommandDispatcher  (Init → ForcedPath in turn-based → UnitCommands.Run → verify)
-                                         │
-                                         ▼
-                 GameInterface/CommandTrace (EventBus: ISSUED / REJECTED / ENDED log lines)
-```
-
-See `CLAUDE.md` (architecture overview) and `docs/TACTICAL_AI.md` (design and value formulas) for the decision pipeline.
-
-## License / credits
-
-MIT. **AI Control - Fully Autonomous Combat Companions** (<https://github.com/recovribox-svg/AIControll-FACC>).
-
-Contributors:
-- **MonsieurAndroid** - author: direction, design decisions, play-testing and logs.
-- **Claude** (Anthropic's AI coding assistant, via Claude Code) - code, analysis and documentation. The mod is
-  AI-coded.
-
-Based on the original CompanionAI for Pathfinder by veria (seyelive5), which built on patterns from CompanionAI for
-Rogue Trader.
+License: MIT.
