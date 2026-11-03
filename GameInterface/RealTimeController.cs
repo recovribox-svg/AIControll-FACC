@@ -642,7 +642,12 @@ namespace CompanionAI_Pathfinder.GameInterface
                     // ★ v0.3.18 (test11): within the radius and still walking (circling for sight or a free spot): Seelah
                     // "-0.4 m to go" and Lann "-3.9 m to go" walked another 6 s before the rule above ended it. Not while
                     // the walk is looking for line of sight (it may have to go round a corner: Aeiluvetar did, and shot).
-                    if (gap <= 0f && (!cmd.NeedLoS || cmd.SightIsClear()))
+                    // ★ v0.3.27 (test 5 log, author-approved): in range by the game's own test, or within a small
+                    // tolerance past the radius (Tactics/ArrivalRule). Measured as "3D gap <= 0", a unit pushing against a
+                    // body wobbled around 0 and every tick above it restarted the 2 s clock: Seelah walked 6.6 s, within
+                    // 2.01 m of a Vermlek, until the no-progress rule below ended it.
+                    bool sightOk = !cmd.NeedLoS || cmd.SightIsClear();
+                    if (Tactics.ArrivalRule.InRange(cmd.IsUnitCloseEnough(), gap, sightOk))
                     {
                         if (!mark.InsideSince.HasValue) mark.InsideSince = now;
                         else if ((now - mark.InsideSince.Value).TotalSeconds > ARRIVED_WALKING_SECONDS)
