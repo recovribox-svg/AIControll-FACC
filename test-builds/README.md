@@ -1,6 +1,34 @@
 # Test builds
 
-## Current test build: v0.3.27-dev-test4 (375589a) - test 3 log review
+## Current test build: v0.3.27-dev-test5 (ab559e8) - movement changes you approved
+
+**[Download the UMM test ZIP (ab559e8)](AI-Control-FACC-v0.3.27-dev-test5-ab559e8-UMM-test.zip?raw=true)**
+
+Direct link: <https://github.com/recovribox-svg/AIControll-FACC/raw/claude/dreamy-pasteur-b9h3rn/test-builds/AI-Control-FACC-v0.3.27-dev-test5-ab559e8-UMM-test.zip>
+
+Test 4 (below, not played yet) plus three movement changes you approved ([docs/TACTICAL_AI.md](../docs/TACTICAL_AI.md) §95).
+Both modes.
+1. **Walking into danger costs something, protecting others is not punished.** A healthy companion's walk now pays for
+   how much likelier it is to go down where it ends up. That price is reduced by how much safer it makes the rest of
+   the party (an enemy fighting it is not fighting someone else), and never goes below zero. Each enemy is assumed to
+   go for one of the companions it can reach, the easier-to-hit ones (lower AC) more often. A front-liner stepping in
+   front of a heavy hitter that is on a squishy companion pays little or nothing; a squishy companion walking up to a
+   heavy hitter alone pays a lot. Hurt companions, and walks that draw free attacks, are priced as before.
+2. **Archers walk to a clear shot in turn-based** when an enemy is in range but behind cover, as in real time (they
+   used to "advance" 0 m).
+3. **No more creeping forward:** an archer within its bow's full range no longer steps closer after shooting.
+
+UMM shows **0.3.27**. Startup line `[Build] v0.3.27 module=8a238333-6e5f-46d3-a992-c50059651499`.
+- ZIP SHA-256 `d4744022f27000a804964ca8c2c8b93d59b51d569d0e225c3093070140c5d97a`; DLL SHA-256 `6cdbd44a3e557f3c96f433bb0d50d95b3c613a22b02e7fb5ea666e5dbe5a3363`.
+- [Identity](AI-Control-FACC-v0.3.27-dev-test5-ab559e8-UMM-test.identity.json) · [Checksums](SHA256SUMS.txt).
+- Checks: 337 unit tests pass; release build 0 warnings; no new game bindings. Not played yet.
+- **Test:** fights against one or two hard hitters (elementals, ogres, bosses).
+  - Front-liners should still engage them, especially when they are on a squishy companion.
+  - Casters and support companions should not walk up to them alone; they may still join a front-liner.
+  - Watch for melee companions hanging back too much: that would mean the price is too high.
+  - Real-time `[Walk]` lines show `exposed=True` and `shields allies N` when this is at work.
+
+## Test 4: v0.3.27-dev-test4 (375589a) - test 3 log review (also in test 5)
 
 **[Download the UMM test ZIP (375589a)](AI-Control-FACC-v0.3.27-dev-test4-375589a-UMM-test.zip?raw=true)**
 

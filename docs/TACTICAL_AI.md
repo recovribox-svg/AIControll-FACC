@@ -3179,3 +3179,29 @@ and play tests.
   Water Elemental (25 a slam) and went down to it and a Plagued Wolf. A healthy unit's walk into melee is not priced
   by the danger where it ends (`MoveRisk`: `ExposureCost` only when hurt or provoking).
 
+## 95. Movement changes approved by the author (v0.3.27 test 5)
+
+Asked after the test 3 log review (§94): items 1-3 approved; the own-area reluctance (non-Selective Grease, Entangle)
+is intended; Ardub/body-blocking stays on hold.
+
+1. **Healthy walks priced by where they end, less the party's gain.**
+   - Before: a unit at full HP whose walk provoked nothing paid nothing for the danger where it ended (`MoveRisk`:
+     `ExposureCost` only when hurt, provoking or touching). Camellia (Skald 2) walked up to a Large Water Elemental
+     (fight 13) and went down to it and a Plagued Wolf.
+   - Now (`MoveRisk`, else branch; `HealthyExposure`): the rise in the unit's chance to go down before its next turn
+     (above 2 %) times its worth and role tolerance, less the drop in the other party members' chances times their
+     worth (net, so an ally it draws danger towards counts against it); never below 0
+     (`ValueModel.HealthyWalkExposure`).
+   - The chance to go down (`StandingDropChance`): each active enemy goes for one party member
+     (`ValueModel.TargetChance`): a melee enemy one already in its reach (+0.5 m), else - and a ranged enemy or caster
+     - one it can reach this round (the zones of `IncomingParts`), each picked in proportion to how easily it is hit
+     (`ValueModel.HitWeight`: base attack + best of Strength/Dexterity against AC). On the one it picks, its Threat
+     times that weight over the party's mean, times `DangerScale`; the per-enemy chances combine
+     (`ValueModel.CombinedDrop`). Sharing threat evenly understated concentrated danger (a 16-a-round enemy split four
+     ways reads as nearly harmless) and so overstated the price of stepping in front of it.
+   - The real-time `[Walk]` line shows `shields allies N`.
+2. **Turn-based sight spots for advances** (`AddAdvanceCandidate`): an enemy in range but out of sight gets the
+   advance to a spot with sight (`FindSightSpot`) in turn-based too; before, turn-based fell through to an advance of
+   0.0 m (v0.3.25 test3 log, five "moved nowhere").
+3. **No creep within range:** a ranged unit within its full reach adds no advance; 85 % stays the walking goal.
+

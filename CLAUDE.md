@@ -107,6 +107,11 @@ mod errors, tests 1-3 working). Real time, a control area is held back when an a
 (`CommittedApproachSafety.WalkMeetsCircle`) and at any height in the game's 100 m cylinder. Open for the author: a
 healthy unit's walk into melee is not priced by the danger there (Camellia vs a Large Water Elemental). Test ZIP
 `AI-Control-FACC-v0.3.27-dev-test4-375589a-UMM-test.zip` (MVID `b6d01331-72ba-49db-a9b4-a97bd40666c3`); 324 tests.
+**v0.3.27 test 5 (3 November, `docs/TACTICAL_AI.md` §95, author-approved movement changes, not played):** healthy walks
+priced by where they end less the party's gain (`TacticalEngine.StandingDropChance` / `HealthyExposure`,
+`ValueModel.TargetChance`/`HitWeight`/`CombinedDrop`/`HealthyWalkExposure`); turn-based sight spots for advances; no
+advance within full ranged reach. The author confirmed the own-area reluctance is intended; Ardub stays on hold. Test ZIP
+`AI-Control-FACC-v0.3.27-dev-test5-ab559e8-UMM-test.zip` (MVID `8a238333-6e5f-46d3-a992-c50059651499`); 337 tests.
 
 Historical handovers, superseded by the one above: [v0.3.22 release preparation](docs/RELEASE_0_3_22_HANDOVER.md)
 (27 October, PR #6–#12), [released-log review](docs/RELEASE_0322_LOG_REVIEW.md) (PR #13),
