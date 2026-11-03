@@ -1,6 +1,30 @@
 # Test builds
 
-## Current test build: v0.3.27-dev-test2 (56d0c15) - 0.3.26 log review
+## Current test build: v0.3.27-dev-test3 (faf3bbf) - real-time walks and new enemies
+
+**[Download the UMM test ZIP (faf3bbf)](AI-Control-FACC-v0.3.27-dev-test3-faf3bbf-UMM-test.zip?raw=true)**
+
+Direct link: <https://github.com/recovribox-svg/AIControll-FACC/raw/claude/dreamy-pasteur-b9h3rn/test-builds/AI-Control-FACC-v0.3.27-dev-test3-faf3bbf-UMM-test.zip>
+
+Tests 1 and 2 (below, not played yet) plus one real-time fix ([docs/TACTICAL_AI.md](../docs/TACTICAL_AI.md) §93).
+- **The problem:** in the v0.3.26 log (real-time fight 8), Seelah set off to a Corrupted Mongrel Ranger at the back
+  while only two enemies had joined the fight. A Plagued Wolf joined, reached her and bit; she kept walking, its attack of
+  opportunity was a critical hit for 25, and she went down.
+- **The fix:** while a companion is still walking to a target, the walk is dropped and decided again when an enemy it
+  did not count gets in the way: one that reaches the companion on the way (not at the target), or one that joined the
+  fight since and can step into the rest of the walk. The newcomer is then counted: walking on past it costs a free
+  attack, so fighting it often wins, but the same target can still be chosen. Once per walk; turn-based is unchanged.
+
+UMM shows **0.3.27**. Startup line `[Build] v0.3.27 module=7415e86a-471f-4b4f-bfca-4de5ec39513d`.
+- ZIP SHA-256 `89f2cea19cf9df65a68b0ff4a7d70fe5ccc73b228d8ebdc495a2cff55e7fe84a`; DLL SHA-256 `6fe33766424c25b4567f01c5b84810a6458477575926e8c5b76eea031b6a4d86`.
+- [Identity](AI-Control-FACC-v0.3.27-dev-test3-faf3bbf-UMM-test.identity.json) · [Checksums](SHA256SUMS.txt).
+- Checks: 316 unit tests pass; release build 0 warnings; no new game bindings. Not played yet.
+- **Test:** real-time fights, ideally with enemies that join late (reinforcements, enemies out of sight at the start).
+  Front-liners should turn to an enemy that reaches them instead of walking past it. The log shows
+  `[RT] <name>: <enemy> engages it on the way ...` or `... joined the fight and can get in its way ...`, followed by
+  `deciding again`.
+
+## Test 2: v0.3.27-dev-test2 (56d0c15) - 0.3.26 log review (also in test 3)
 
 **[Download the UMM test ZIP (56d0c15)](AI-Control-FACC-v0.3.27-dev-test2-56d0c15-UMM-test.zip?raw=true)**
 

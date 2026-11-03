@@ -98,6 +98,10 @@ log (10 fights, TB and RT, no mod errors, blocklists held). No summons or pure b
 (`TacticalEngine.PointlessAgainstHelpless`); a summon's worth, revive and heal count only the rounds its
 `SummonedUnitBuff` has left (`TacticalEngine.RoundsInFight`). Includes test 1. Test ZIP
 `AI-Control-FACC-v0.3.27-dev-test2-56d0c15-UMM-test.zip` (MVID `9bf1e011-c95c-45d2-b26e-d7f6548537d6`).
+**v0.3.27 test 3 (3 November, `docs/TACTICAL_AI.md` §93, development only, not played, author-approved movement change):**
+real time, a walk to a target is decided again when an enemy it did not count gets in its way - it engages the unit on
+the way, or it joined the fight since and can intercept (`RealTimeTactics.ShouldReplanOnNewThreat`,
+`TacticalEngine.CanInterceptWalk`). Includes tests 1-2. Test ZIP `AI-Control-FACC-v0.3.27-dev-test3-faf3bbf-UMM-test.zip` (MVID `7415e86a-471f-4b4f-bfca-4de5ec39513d`); 316 tests.
 
 Historical handovers, superseded by the one above: [v0.3.22 release preparation](docs/RELEASE_0_3_22_HANDOVER.md)
 (27 October, PR #6–#12), [released-log review](docs/RELEASE_0322_LOG_REVIEW.md) (PR #13),

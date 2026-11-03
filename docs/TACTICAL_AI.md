@@ -3130,3 +3130,30 @@ and play tests.
   summon's duration): min(expected rounds, time left / 6 s); a permanent or missing buff keeps the expected rounds.
 - **Unchanged:** movement, targets and everything else.
 
+## 93. Real time: walks decided again for enemies they did not count (v0.3.27 test 3)
+
+- **What the author saw:** front-liners (Seelah, maybe Camellia) walking past the enemy front line to reach its back line,
+  and paying for it.
+- **The log (v0.3.26, real-time fights 6-8):**
+  - Fight 8: Seelah chose Move+Attack on a Corrupted Mongrel Ranger (dart thrower) 9.6 m away, priced with no attacks of
+    opportunity, while only two enemies were in the fight. A Plagued Wolf and a Kobold Ghost Whisperer, spawned by
+    RandomReinforcementsPerEncounter as the fight began, joined within a second. The wolf reached her and bit; she
+    walked on, its attack of opportunity was a critical hit for 25, it tripped her, and the Guard's blow put her down.
+  - Fight 6: an archer shot Seelah down while she stood; Camellia's walk to a Water Elemental ended among three melee
+    enemies (a healthy fighter's walk into melee: `ExposureCost` applies only when hurt or provoking).
+  - Fight 7: two Scorching Rays put Seelah down where she stood. No bypass.
+- **Cause:** the walk's price (§80: attacks of opportunity on the path, walk time, interceptors) counts the enemies in
+  the fight when it is chosen, and a walk that has not arrived was decided again only for heavy damage or a harmful area.
+- **Fix (author-approved):** `RealTimeTactics.ShouldReplanOnNewThreat`, beside the damage and area checks in
+  `RealTimeController`. A walk to a target (`IssueState.WatchesWay`: not a withdrawal or a walk out of an area) that is
+  more than 0.5 m short of its arrival radius is dropped and decided again when
+  - an enemy engages the unit that did not when the walk was chosen, and is not the target or within its reach (+1.5 m)
+    of the destination (the fight there), or
+  - an enemy that was not in the fight then can step into the rest of the walk (`TacticalEngine.CanInterceptWalk`, the
+    interception rule now shared with the walk's price; `ValueModel.CanIntercept`, unit-tested).
+  - Once per command. The option stays open (`Reconsider` clears the last command, so the interruption is not a
+    failure); chosen again, the newcomer is counted and does not trigger again.
+- **Limit:** checks run at the decision interval (about 0.5 s), so an enemy that arrives and strikes at once may still
+  get one attack in.
+- **Unchanged:** turn-based, the old real-time engine, and the walk's price itself.
+

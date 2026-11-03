@@ -1,0 +1,34 @@
+{
+  "name": "AI Control - Fully Autonomous Combat Companions v0.3.27 test 3 (real-time walks decided again for enemies they did not count)",
+  "version": "0.3.27",
+  "umm_manifest_version": "0.3.27",
+  "umm_mod_id": "CompanionAI_Pathfinder",
+  "branch": "claude/dreamy-pasteur-b9h3rn",
+  "base_release": "v0.3.26 (e10513b)",
+  "runtime_source_commit": "faf3bbf",
+  "archive": "AI-Control-FACC-v0.3.27-dev-test3-faf3bbf-UMM-test.zip",
+  "zip_sha256": "89f2cea19cf9df65a68b0ff4a7d70fe5ccc73b228d8ebdc495a2cff55e7fe84a",
+  "dll_sha256": "6fe33766424c25b4567f01c5b84810a6458477575926e8c5b76eea031b6a4d86",
+  "manifest_sha256": "1caded95f222435d5bba5bf06dbf66ff707792399f9ca165e1e53dd4a6d1331f",
+  "module_mvid": "7415e86a-471f-4b4f-bfca-4de5ec39513d",
+  "startup_marker": "[Build] v0.3.27 module=7415e86a-471f-4b4f-bfca-4de5ec39513d",
+  "archive_contents": [
+    "CompanionAI_Pathfinder.dll",
+    "Info.json"
+  ],
+  "checks": {
+    "unit_tests": {
+      "passed": 316,
+      "failed": 0,
+      "skipped": 0
+    },
+    "release_build": {
+      "warnings": 0,
+      "errors": 0
+    },
+    "external_references": "SigDump vs test 2: no new game references",
+    "packed_dll_matches_build": true,
+    "in_game": "pending"
+  },
+  "publication_scope": "Development test download: tests 1 and 2 plus a real-time walk to a target decided again when an enemy it did not count gets in its way; not a release."
+}
