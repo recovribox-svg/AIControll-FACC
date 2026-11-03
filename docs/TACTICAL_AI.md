@@ -3205,3 +3205,27 @@ is intended; Ardub/body-blocking stays on hold.
    0.0 m (v0.3.25 test3 log, five "moved nowhere").
 3. **No creep within range:** a ranged unit within its full reach adds no advance; 85 % stays the walking goal.
 
+## 96. Test 5 log review (v0.3.27 test 5 played)
+
+- **The log:** test 5 (`8a238333`), 13 fights (1-5 turn-based, 6-13 real time), no mod errors, no companion down or dead
+  in the combat log.
+- **§95 at work:**
+  - Healthy-walk exposure on 38 decision lines; 19 chosen anyway. Camellia's `[Walk]` lines show costs 0.5-7.3 and
+    `shields allies` up to 8.8 (joining a front-liner). Seelah skipped exposed walks for buffs, heals, a Charge, or walks
+    into the party's own non-Selective Grease (intended); when a target was worth it she walked in and paid (RT fight 6,
+    RT4: cost 2.2). Camellia (58 % HP) stayed back from a lone far Cultist Champion that Seelah was advancing on.
+  - Advances "(to see it)" 8 times; no "moved nowhere" in the whole log (v0.3.25 test3: five).
+  - Turn-based archers attack and end the turn; no advance after shooting.
+- **Earlier fixes at work:** walks decided again for an uncounted enemy 7 times, each once, then kept or switched
+  (§93); Camellia withheld Grease twice for Seelah's walk (§94).
+- **Performance:** six slow decisions (382-769 ms), every one overlapping a garbage collection ("memory clean-up ran"),
+  in whatever stage it fell (weapons/modes, movement, a single ability with no heap figure): the collection, not the
+  new code.
+- **For the author (stuck cancellation, not changed):** real-time fight 10, Seelah's `Advance->Vermlek` was within its
+  2.01 m arrival radius (1.97 m) but pushing against bodies; the game keeps a walk going while the unit moves
+  (`UnitCommand.ShouldUnitApproach`). The "in range for 2 s and still walking" rule restarts its clock whenever the 3D
+  gap ticks above 0, and the gap wobbled around 0, so the 6 s no-progress rule ended it instead (she lost 41 % HP
+  meanwhile). Proposal: count "in range" by the game's own test (`IsUnitCloseEnough`) with a small tolerance so the
+  2 s rule ends such walks. Camellia's walk to the same Vermlek (1.0 m short, 10 s) was body-blocked by Seelah
+  (Ardub/body-blocking, on hold).
+
