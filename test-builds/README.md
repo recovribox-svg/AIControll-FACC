@@ -1,5 +1,26 @@
 # Test builds
 
+## Current test build: v0.3.27-dev-test1 (6508dc4) - turn-end pacing
+
+**[Download the UMM test ZIP (6508dc4)](AI-Control-FACC-v0.3.27-dev-test1-6508dc4-UMM-test.zip?raw=true)**
+
+Direct link: <https://github.com/recovribox-svg/AIControll-FACC/raw/claude/dreamy-pasteur-b9h3rn/test-builds/AI-Control-FACC-v0.3.27-dev-test1-6508dc4-UMM-test.zip>
+
+v0.3.26 plus one fix for turn-based combat ([docs/TACTICAL_AI.md](../docs/TACTICAL_AI.md) §91).
+- **The problem:** AI companions' turns ended the moment their last command finished. The game runs the gap between
+  turns at triple speed, so a projectile still in flight, and the end of the animation, played sped up or vanished.
+- **The fix:** a turn now ends the way the game ends its own units' turns. The AI waits until the companion's
+  projectiles have landed and it has stood idle for the game's short pause (0.2 s at x1 animation speed). It never waits
+  more than 4 s.
+
+UMM shows **0.3.27**. Startup line `[Build] v0.3.27 module=634a3871-881b-4a28-8752-09afa11207a3`.
+- ZIP SHA-256 `b2e08f1e30755614cf687db6c5c06693a1d7fdb74e9d321cd12eca7e4b00df99`; DLL SHA-256 `2e3ecaf151bef875408e702833f76d68354c894a3fe6bb821941d3560a4cb793`.
+- [Identity](AI-Control-FACC-v0.3.27-dev-test1-6508dc4-UMM-test.identity.json) · [Checksums](SHA256SUMS.txt).
+- Checks: 311 unit tests pass; release build 0 warnings. Not played yet.
+- **Test:** a turn-based fight with spells that fire projectiles (Fire Blast, rays, Magic Missile) and an archer.
+  Projectiles should fly at normal speed and land before the camera moves to the next unit, and no turn should hang.
+  With debug logging on, `[TurnTick] <name>: turn end waited ... s` shows each wait.
+
 ## Feature test 2: "Abilities AI must not use" + smaller log (d1d930f), released (with the [Reach] rows also moved to the debug log) as v0.3.26
 
 **[Download the UMM test ZIP (d1d930f)](AI-Control-FACC-v0.3.25-dev-blacklist2-d1d930f-UMM-test.zip?raw=true)**

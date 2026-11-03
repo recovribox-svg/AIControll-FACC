@@ -87,7 +87,12 @@ smaller). Test ZIP `AI-Control-FACC-v0.3.25-dev-blacklist2-d1d930f-UMM-test.zip`
 `d2dc1a06-0509-403e-87a3-3f21b580911a`). At the author's request the `[Reach]` rows went to the debug log, PR #17 was
 merged into development (merge commit `f7134ad`) and released as **v0.3.26** (commit `e10513b`, `Info.json` 0.3.26):
 `release/CompanionAI_Pathfinder_v0.3.26.zip` (MVID `24ddcf26-2006-43f5-ade7-b326abb2d62c`), notes
-`release/CHANGELOG_v0.3.26.md`, `main` fast-forwarded; the author creates the GitHub release and tag `v0.3.26`.
+`release/CHANGELOG_v0.3.26.md`, `main` fast-forwarded; the author created the GitHub release and tag `v0.3.26`.
+**v0.3.27 test 1 (3 November, `docs/TACTICAL_AI.md` §91, development only, not played):** the author saw turn-based
+projectiles and animations sped up as the next turn began. The game runs the gap between turns at x3
+(`TimeScaleBetweenTurns`), and the mod's `ForceToEnd` came before the game's own end-of-turn waits (projectiles landed,
+idle pause). `TurnBasedPatches.ReadyToEndTurn` now applies those waits, capped at 4 s. `Info.json` 0.3.27; test ZIP
+`AI-Control-FACC-v0.3.27-dev-test1-6508dc4-UMM-test.zip` (MVID `634a3871-881b-4a28-8752-09afa11207a3`).
 
 Historical handovers, superseded by the one above: [v0.3.22 release preparation](docs/RELEASE_0_3_22_HANDOVER.md)
 (27 October, PR #6–#12), [released-log review](docs/RELEASE_0322_LOG_REVIEW.md) (PR #13),

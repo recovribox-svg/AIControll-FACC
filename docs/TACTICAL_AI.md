@@ -3097,3 +3097,21 @@ and play tests.
   line drops its constant tail.
 - **Effect.** Normal log 15-28 % smaller on seven recent logs; decisions unchanged.
 
+## 91. Turn-based turn end paced like the game's own (v0.3.27 test 1)
+
+- **What the author saw:** projectile spells sped up or vanished as the next unit's turn began.
+- **The game's rules (decompiled):**
+  - `TimeController.Tick` sets `Time.timeScale` each frame: the player's turn speed while the acting unit moves or acts,
+    and `CombatController.TimeScaleBetweenTurns = 3` while there is no current turn.
+  - The game ends its own units' turns (`TurnController.Tick`) only with no running command, no projectile of rider or
+    mount in flight (`ProjectileController.HasLaunchedProjectile`), and, for units it drives, after
+    `ContinueActing`'s idle pause: 0.2 s / `UISettings.TimeScaleAverage` x `PlayerTimeScale` x `DebugTimeScale`, in
+    game time.
+- **The mod's turn end:**
+  - Before: `TurnBasedPatches.TurnControllerTick_Postfix` called `ForceToEnd` in the frame the last command finished,
+    so the rest ran at x3.
+  - Now: `ReadyToEndTurn` holds `ForceToEnd` until the same conditions hold (also not getting up and not moving),
+    capped at 4 game seconds and logged once if the cap is hit.
+  - The first end reason is kept for the log line, and with debug logging the wait is logged.
+- **Unchanged:** decisions, the pacing within a turn, and real time.
+
