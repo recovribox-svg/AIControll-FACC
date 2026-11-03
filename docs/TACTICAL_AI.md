@@ -3229,3 +3229,13 @@ is intended; Ardub/body-blocking stays on hold.
   2 s rule ends such walks. Camellia's walk to the same Vermlek (1.0 m short, 10 s) was body-blocked by Seelah
   (Ardub/body-blocking, on hold).
 
+## 97. Arrived walks end in time (v0.3.27 test 6, author-approved stuck-cancellation change)
+
+- **Cause (§96):** `RealTimeController.IsCommandStuck` counted "in range" for the 2 s arrived-and-walking rule as a 3D gap
+  ≤ 0 past the arrival radius. A unit pushing against a body wobbled around 0 (-0.04 / +0.04 m); every tick above 0 reset
+  `InsideSince`, so only the 6 s no-progress rule ended the walk.
+- **Fix:** in range = the game's own test (`UnitCommand.IsUnitCloseEnough`: mechanics distance and sight) or within
+  `ArrivalRule.Tolerance` (0.3 m) past the radius with sight clear where needed (`Tactics/ArrivalRule.InRange`,
+  unit-tested). The no-progress rule and what a cancelled walk teaches (`RealTimeTactics.RecordStuck`) are unchanged;
+  an in-range cancellation marks no target as unreachable.
+

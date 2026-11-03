@@ -1,6 +1,28 @@
 # Test builds
 
-## Current test build: v0.3.27-dev-test5 (ab559e8) - movement changes you approved
+## Current test build: v0.3.27-dev-test6 (3f005b9) - arrived walks end in time
+
+**[Download the UMM test ZIP (3f005b9)](AI-Control-FACC-v0.3.27-dev-test6-3f005b9-UMM-test.zip?raw=true)**
+
+Direct link: <https://github.com/recovribox-svg/AIControll-FACC/raw/claude/dreamy-pasteur-b9h3rn/test-builds/AI-Control-FACC-v0.3.27-dev-test6-3f005b9-UMM-test.zip>
+
+Test 5 (played: 13 fights, nobody down, all its rules working; [docs/TACTICAL_AI.md](../docs/TACTICAL_AI.md) §96) plus the
+real-time stuck-walk fix you approved (§97).
+- **The problem:** Seelah walked up to a Vermlek and was already close enough, but kept pushing against its body. The
+  "in range for 2 s and still walking" rule kept restarting because her distance wobbled by a few centimetres around
+  the limit, so the walk only ended after 6.6 s, while she lost 41 % of her HP.
+- **The fix:** "in range" now uses the game's own distance test, or up to 0.3 m past the limit (with a clear view where
+  needed), so such walks end after about 2 s and the companion acts.
+
+UMM shows **0.3.27**. Startup line `[Build] v0.3.27 module=ae5d4340-5d51-454f-bec5-2888b74cbed6`.
+- ZIP SHA-256 `3086371601af7e94dacc86cc66b75823d171d0cbb55d50fb7ac946098acc1e26`; DLL SHA-256 `99d0dcfeb1446c8ea0bdedaacb42aea7bdeca38a18aa8e8c4082beedde5f534c`.
+- [Identity](AI-Control-FACC-v0.3.27-dev-test6-3f005b9-UMM-test.identity.json) · [Checksums](SHA256SUMS.txt).
+- Checks: 342 unit tests pass; release build 0 warnings; no new game bindings. Not played yet.
+- **Test:** real-time melee fights in crowds. A companion that reaches its target but is blocked by bodies should act
+  after about 2 s; the log shows `Stuck command (...) - in range for 2 s and still walking`, rarely the 6 s
+  `walking for 6 s without getting nearer` one.
+
+## Test 5: v0.3.27-dev-test5 (ab559e8) - movement changes you approved (also in test 6)
 
 **[Download the UMM test ZIP (ab559e8)](AI-Control-FACC-v0.3.27-dev-test5-ab559e8-UMM-test.zip?raw=true)**
 
