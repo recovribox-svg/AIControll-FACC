@@ -115,7 +115,9 @@ advance within full ranged reach. The author confirmed the own-area reluctance i
 Test 5 played (`docs/TACTICAL_AI.md` §96: 13 fights, no mod errors, nobody down; all §91-95 rules seen working). Open for
 the author: the "in range for 2 s" stuck rule restarts on a flickering gap (proposal in §96).
 **v0.3.27 test 6 (4 November, `docs/TACTICAL_AI.md` §97, author-approved, not played):** that rule now counts in range by the
-game's `IsUnitCloseEnough` or 0.3 m past the radius (`Tactics/ArrivalRule`). Test ZIP `AI-Control-FACC-v0.3.27-dev-test6-3f005b9-UMM-test.zip` (MVID `ae5d4340-5d51-454f-bec5-2888b74cbed6`); 342 tests.
+game's `IsUnitCloseEnough` or 0.3 m past the radius (`Tactics/ArrivalRule`). Test ZIP `AI-Control-FACC-v0.3.27-dev-test6-3f005b9-UMM-test.zip` (MVID `ae5d4340-5d51-454f-bec5-2888b74cbed6`); 342 tests. At the author's request it is
+released as **v0.3.27** (commit `3f005b9`): `release/CompanionAI_Pathfinder_v0.3.27.zip` (byte-identical to the test6 ZIP),
+notes `release/CHANGELOG_v0.3.27.md`, `main` fast-forwarded; the author creates the GitHub release and tag `v0.3.27`.
 
 Historical handovers, superseded by the one above: [v0.3.22 release preparation](docs/RELEASE_0_3_22_HANDOVER.md)
 (27 October, PR #6–#12), [released-log review](docs/RELEASE_0322_LOG_REVIEW.md) (PR #13),

@@ -1,0 +1,35 @@
+{
+  "name": "AI Control - Fully Autonomous Combat Companions v0.3.27",
+  "version": "0.3.27",
+  "umm_manifest_version": "0.3.27",
+  "umm_mod_id": "CompanionAI_Pathfinder",
+  "release_branch": "claude/dreamy-pasteur-b9h3rn",
+  "runtime_source_commit": "3f005b9",
+  "contents_since_v0.3.26": "v0.3.27 tests 1-6 (docs/TACTICAL_AI.md §91-97); byte-identical to test-builds/AI-Control-FACC-v0.3.27-dev-test6-3f005b9-UMM-test.zip",
+  "archive": "CompanionAI_Pathfinder_v0.3.27.zip",
+  "zip_sha256": "3086371601af7e94dacc86cc66b75823d171d0cbb55d50fb7ac946098acc1e26",
+  "dll_sha256": "99d0dcfeb1446c8ea0bdedaacb42aea7bdeca38a18aa8e8c4082beedde5f534c",
+  "manifest_sha256": "1caded95f222435d5bba5bf06dbf66ff707792399f9ca165e1e53dd4a6d1331f",
+  "module_mvid": "ae5d4340-5d51-454f-bec5-2888b74cbed6",
+  "startup_marker": "[Build] v0.3.27 module=ae5d4340-5d51-454f-bec5-2888b74cbed6",
+  "archive_contents": [
+    "CompanionAI_Pathfinder.dll",
+    "Info.json"
+  ],
+  "authorization": "The author asked to release this version (test 6) as v0.3.27 (4 November 2026).",
+  "publication": "The author creates the GitHub release and tag v0.3.27 on main and attaches this ZIP.",
+  "checks": {
+    "unit_tests": {
+      "passed": 342,
+      "failed": 0,
+      "skipped": 0
+    },
+    "release_build": {
+      "warnings": 0,
+      "errors": 0
+    },
+    "external_references": "SigDump vs v0.3.26: ProjectileController.HasLaunchedProjectile, TimeController DeltaTime/GameDeltaTime/PlayerTimeScale/DebugTimeScale, PlayerUISettings.TimeScaleAverage, TurnController.Mount, Game.BlueprintRoot, SystemMechanicsRoot.SummonedUnitBuff",
+    "packed_dll_matches_build": true,
+    "in_game": "Tests 3 and 5 played (13 fights each, turn-based and real time, no mod errors; test 5: nobody down); tests 1-2 and 4 were included and seen working in those logs. The test 6 stuck-walk fix itself is not played yet."
+  }
+}

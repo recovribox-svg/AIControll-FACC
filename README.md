@@ -5,8 +5,8 @@ replaces your companions' combat AI with a tactical one. Each companion weighs i
 movement by what they will really do in this fight, and picks the best one. It works in **turn-based** and
 **real-time** combat.
 
-**Latest release: v0.3.26** — [download](https://github.com/recovribox-svg/AIControll-FACC/releases/latest) ·
-[release notes](release/CHANGELOG_v0.3.26.md)
+**Latest release: v0.3.27** — [download](https://github.com/recovribox-svg/AIControll-FACC/releases/latest) ·
+[release notes](release/CHANGELOG_v0.3.27.md)
 
 ---
 
@@ -60,7 +60,7 @@ movement by what they will really do in this fight, and picks the best one. It w
 ## Install
 
 1. Install [Unity Mod Manager](https://www.nexusmods.com/site/mods/21) for the game.
-2. Download `CompanionAI_Pathfinder_v0.3.26.zip` from the
+2. Download `CompanionAI_Pathfinder_v0.3.27.zip` from the
    [latest release](https://github.com/recovribox-svg/AIControll-FACC/releases/latest).
 3. **Fully exit the game.** In Unity Mod Manager, open the *Mods* tab and drag the ZIP onto the window.
    - Or extract it to `<game>\Mods\CompanionAI_Pathfinder\`.
@@ -163,7 +163,7 @@ What it does **not** change:
 2. Send the log file:
    - where: `<game>\Wrath_Data\Managed\UnityModManager\Log.txt`, or the *Logs* tab in Unity Mod Manager;
    - its first lines identify your version, for example
-     `[Build] v0.3.26 module=24ddcf26-2006-43f5-ade7-b326abb2d62c`.
+     `[Build] v0.3.27 module=ae5d4340-5d51-454f-bec5-2888b74cbed6`.
 3. Debug logging is not needed unless asked for. It makes the log much longer.
 
 Every decision is logged, so one fight shows why a companion did what it did:
@@ -178,7 +178,7 @@ Every decision is logged, so one fight shows why a companion did what it did:
 
 - **Releases:** [GitHub Releases](https://github.com/recovribox-svg/AIControll-FACC/releases), or the
   [release folder](release/README.md) with every release ZIP and its notes.
-- **Recent release notes:** [v0.3.26](release/CHANGELOG_v0.3.26.md) · [v0.3.25](release/CHANGELOG_v0.3.25.md) ·
+- **Recent release notes:** [v0.3.27](release/CHANGELOG_v0.3.27.md) · [v0.3.26](release/CHANGELOG_v0.3.26.md) · [v0.3.25](release/CHANGELOG_v0.3.25.md) ·
   [v0.3.24](release/CHANGELOG_v0.3.24.md) · [v0.3.23](release/CHANGELOG_v0.3.23.md) ·
   [older](release/).
 - **Test builds:** development builds for play-testing, in [test-builds](test-builds/README.md). They are not releases.
