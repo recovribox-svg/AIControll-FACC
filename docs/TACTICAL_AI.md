@@ -3142,7 +3142,7 @@ and play tests.
   - Fight 6: an archer shot Seelah down while she stood; Camellia's walk to a Water Elemental ended among three melee
     enemies (a healthy fighter's walk into melee: `ExposureCost` applies only when hurt or provoking).
   - Fight 7: two Scorching Rays put Seelah down where she stood. No bypass.
-- **Cause:** the walk's price (§80: attacks of opportunity on the path, walk time, interceptors) counts the enemies in
+- **Cause:** the walk's price (§78: attacks of opportunity on the path, walk time, interceptors) counts the enemies in
   the fight when it is chosen, and a walk that has not arrived was decided again only for heavy damage or a harmful area.
 - **Fix (author-approved):** `RealTimeTactics.ShouldReplanOnNewThreat`, beside the damage and area checks in
   `RealTimeController`. A walk to a target (`IssueState.WatchesWay`: not a withdrawal or a walk out of an area) that is
