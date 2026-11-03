@@ -339,7 +339,7 @@ namespace CompanionAI_Pathfinder.Tactics
 
             var usable = candidates
                 .Where(c => c.Value > 0f && Affordable(ctx, c) && !memory.Failed.Contains(c.Key) && !SilentlyFailing(ctx, c) &&
-                            !PolicyBlocks(ctx, c))
+                            !PolicyBlocks(ctx, c) && !PointlessAgainstHelpless(ctx, c, preview))
                 .OrderByDescending(c => c.Value)
                 .ToList();
 
@@ -560,6 +560,22 @@ namespace CompanionAI_Pathfinder.Tactics
                 c.Value -= held;
                 c.Label += " [drops held touch]";
             }
+        }
+
+        /// <summary>
+        /// ★ v0.3.27 (0.3.26 log): every enemy left is helpless (asleep, held...) and is being finished: a summon or a pure
+        /// buff (performance, self buff) does nothing more. With a sleeping Cambion Fighter left for Seelah's Coup de Grace,
+        /// Orvath spent a daily Demonic Art summon and Camellia started Inspired Rage for that new demon alone.
+        /// </summary>
+        private static bool PointlessAgainstHelpless(TacticalContext ctx, Candidate c, bool preview)
+        {
+            if (!CombatMath.OnlyDisabledEnemiesLeft) return false;
+            bool pointless = c.PureBuff ||
+                             c.Kind == CandidateKind.Ability && c.Ability != null && (AbilityProfile.Get(c.Ability)?.Summons ?? false);
+            if (pointless && !preview)
+                ReportOnce($"helpless-only|{ctx.Unit.UniqueId}|{CombatMemory.Round}",
+                           $"[Tactics] {ctx.Unit.CharacterName}: only helpless enemies left - no summons or pure buffs (e.g. {c.Label})");
+            return pointless;
         }
 
         /// <summary>
@@ -1869,7 +1885,24 @@ namespace CompanionAI_Pathfinder.Tactics
         /// <remarks>★ v0.3.11: a summon is temporary and replaceable: half (the summoned Cambion's heal outscored Camellia's own).
         /// ★ v0.3.18: the formula is ValueModel.AllyWorth.</remarks>
         private static float AllyWorth(TacticalContext ctx, UnitEntityData ally) =>
-            ValueModel.AllyWorth(Level(ally), ctx.ExpectedRounds, IsSummon(ally));
+            ValueModel.AllyWorth(Level(ally), RoundsInFight(ctx, ally), IsSummon(ally));
+
+        /// <summary>
+        /// ★ v0.3.27 (0.3.26 log): the rounds of this fight the ally can still fight - a summon only until it vanishes (the
+        /// game's SummonedUnitBuff, added by RuleSummonUnit with the summon's duration). Camellia spent Cure Light Wounds on
+        /// Orvath's summoned demon twice, valued for the whole fight.
+        /// </summary>
+        private static float RoundsInFight(TacticalContext ctx, UnitEntityData ally)
+        {
+            if (!IsSummon(ally)) return ctx.ExpectedRounds;
+            try
+            {
+                var buff = ally.Buffs.GetBuff(Game.Instance.BlueprintRoot.SystemMechanics.SummonedUnitBuff);
+                if (buff == null || buff.IsPermanent) return ctx.ExpectedRounds;
+                return Math.Min(ctx.ExpectedRounds, (float)buff.TimeLeft.TotalSeconds / 6f);
+            }
+            catch { return ctx.ExpectedRounds; }
+        }
 
         private static int Level(UnitEntityData unit) => Math.Max(1, unit.Descriptor?.Progression?.CharacterLevel ?? 1);
 
@@ -3399,7 +3432,7 @@ namespace CompanionAI_Pathfinder.Tactics
                         upChance *= staysUp;
                         reviveNote += $", stays up ~{staysUp:P0}";
                         // ★ v0.3.19 (test7): for the rest of the fight (ValueModel.ReviveWorth).
-                        healValue += upChance * ValueModel.ReviveWorth(Level(ally), ctx.ExpectedRounds, IsSummon(ally));
+                        healValue += upChance * ValueModel.ReviveWorth(Level(ally), RoundsInFight(ctx, ally), IsSummon(ally));
                         continue;
                     }
 
@@ -3414,6 +3447,8 @@ namespace CompanionAI_Pathfinder.Tactics
                     // ★ v0.3.17: a summon is worth half (AllyWorth) in this part too: at full HP Camellia walked into
                     // Grease to heal a summoned Dretch, the restoring part valued like a companion's (log 06aebf2d).
                     float restores = heal * ValueModel.HealPerHp(hp, threshold) * (IsSummon(ally) ? ValueModel.SummonFactor : 1f);
+                    // ★ v0.3.27 (0.3.26 log): a summon about to vanish gets nothing from HP it will not live to use.
+                    if (IsSummon(ally)) restores *= Math.Min(1f, RoundsInFight(ctx, ally) / Math.Max(1f, ctx.ExpectedRounds));
                     healValue += restores;
                     restoring += restores;
 
