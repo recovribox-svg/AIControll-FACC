@@ -74,7 +74,7 @@ namespace CompanionAI_Pathfinder.Tactics
         public static float HpPercent(UnitEntityData unit)
         {
             int max = Math.Max(1, unit.MaxHP);
-            return Mathf.Clamp01(HpBeforeDown(unit) / (float)max);
+            return Mathf.Clamp01(RealHpBeforeDown(unit) / (float)max);
         }
 
         /// <summary>
@@ -83,7 +83,20 @@ namespace CompanionAI_Pathfinder.Tactics
         /// character level of it until rest - comes off what is left. A kineticist with 3 burn at level 10 and no
         /// wound read as 100 % and was 30 HP closer to dropping.
         /// </summary>
+        /// <remarks>★ v0.3.28 test 3: plus temporary hit points - the game's damage takes them first
+        /// (RuleDealDamage: TemporaryHitPoints.HandleDamage, then Damage); HPLeft leaves them out, so a unit under False
+        /// Life or Aid read as nearer to dropping than it was. The HP share (HpPercent: heals, caution) and kineticist burn
+        /// keep the real hit points (<see cref="RealHpBeforeDown"/>).</remarks>
         public static float HpBeforeDown(UnitEntityData unit)
+        {
+            if (unit == null) return 0f;
+            int temporary = 0;
+            try { temporary = Math.Max(0, unit.TemporaryHP); } catch { }
+            return RealHpBeforeDown(unit) + temporary;
+        }
+
+        /// <summary>The hit points before the unit goes down, without temporary hit points.</summary>
+        public static float RealHpBeforeDown(UnitEntityData unit)
         {
             if (unit == null) return 0f;
             int nonLethal = 0;
@@ -245,11 +258,13 @@ namespace CompanionAI_Pathfinder.Tactics
             result.Weapon = routine.FirstWeapon;
             result.IsRanged = routine.FirstWeapon?.Blueprint?.IsRanged ?? false;
             result.Reach = routine.Reach;
+            // ★ v0.3.28 test 3: what reaches the target past its concealment and mirror images (LandsPastDefences).
+            float lands = LandsPastDefences(unit, target);
             float noHit = 1f;
             foreach (var line in routine.Lines)
             {
                 var d = delta?.Invoke(line.Weapon, line.Index) ?? new KeyValuePair<int, float>(0, 0f);
-                float p = HitProbability(line.AttackBonus + d.Key, line.ArmorClass);
+                float p = HitProbability(line.AttackBonus + d.Key, line.ArmorClass) * lands;
                 if (line.Index == 0) result.FirstHitChance = p;
                 noHit *= 1f - p;
                 // ★ v0.3.19 (test5): a kinetic blade's blast lands with the hit and is multiplied by its critical
@@ -1654,7 +1669,8 @@ namespace CompanionAI_Pathfinder.Tactics
                     using (stat.HasValue ? ContextData<AttackBonusStatReplacement>.Request().Setup(stat.Value) : null)
                         ab = Rulebook.Trigger(new RuleCalculateAttackBonus(caster, target, weapon, 0)).Result;
                     int ac = Rulebook.Trigger(new RuleCalculateAC(caster, target, against ?? weapon.Blueprint.AttackType)).Result;
-                    return Mathf.Clamp(HitProbability(ab, ac), 0.05f, 0.95f);
+                    // ★ v0.3.28 test 3: a ray or touch attack meets concealment and mirror images like a weapon's.
+                    return Mathf.Clamp(HitProbability(ab, ac), 0.05f, 0.95f) * LandsPastDefences(caster, target);
                 }
             }
             catch (Exception ex)
@@ -1663,7 +1679,8 @@ namespace CompanionAI_Pathfinder.Tactics
             }
             try
             {
-                return Mathf.Clamp(HitChanceCalculator.CalculateAbilityHitChance(caster, target, ability).HitChance, 0.05f, 0.95f);
+                return Mathf.Clamp(HitChanceCalculator.CalculateAbilityHitChance(caster, target, ability).HitChance, 0.05f, 0.95f) *
+                       LandsPastDefences(caster, target);
             }
             catch
             {

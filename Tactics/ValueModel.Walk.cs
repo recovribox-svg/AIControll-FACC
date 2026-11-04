@@ -123,6 +123,17 @@ namespace CompanionAI_Pathfinder.Tactics
             return Math.Min(1f, points / score);
         }
 
+        /// <summary>
+        /// ★ v0.3.28 test 3: the share of hits that reach the target itself after its miss chance
+        /// (<paramref name="missPercent"/>: concealment 20 or 50) and its mirror images (<paramref name="images"/>: the
+        /// target is picked 1 in images + 1, the game's UnitPartMirrorImage.TryAbsorbHit).
+        /// </summary>
+        public static float LandsPastDefences(int missPercent, int images)
+        {
+            float pass = 1f - Math.Min(100, Math.Max(0, missPercent)) / 100f;
+            return pass / (Math.Max(0, images) + 1f);
+        }
+
         public static bool CanIntercept(float distanceToWay, float reach, float enemySpeedMps, float walkSeconds)
         {
             if (float.IsNaN(distanceToWay) || float.IsNaN(walkSeconds) || walkSeconds <= 0f) return false;

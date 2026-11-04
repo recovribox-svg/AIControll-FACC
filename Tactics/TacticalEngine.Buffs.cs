@@ -51,6 +51,8 @@ namespace CompanionAI_Pathfinder.Tactics
         private sealed class Offence
         {
             public float DamagePerRound, HitChance, PerHit, HitsPerRound, FirstAttack;
+            /// <summary>★ v0.3.28 test 3: the share of its hits past the enemy's concealment (in the estimate already).</summary>
+            public float SeenPass = 1f;
             public bool Ranged, TwoHanded, StrengthToDamage, Caster;
             /// <summary>What one size step up adds to a hit: the weapon's dice scaled by the game's table.</summary>
             public float SizeUpDice = 1f;
@@ -444,7 +446,9 @@ namespace CompanionAI_Pathfinder.Tactics
                 float removable = RemovableMiss(ctx, ally, sight >= 2f);
                 if (removable > 0f && off.DamagePerRound > 0f)
                 {
-                    offencePerRound += (oneAttack ? off.FirstAttack : off.DamagePerRound) * removable * (off.Caster ? 0.5f : 1f);
+                    // ★ v0.3.28 test 3: of the damage before the miss chance - the estimate has the target's taken off already.
+                    offencePerRound += (oneAttack ? off.FirstAttack : off.DamagePerRound) / Math.Max(0.05f, off.SeenPass) * removable *
+                                       (off.Caster ? 0.5f : 1f);
                     notes.Add($"sees through {removable:P0} miss");
                 }
                 else notes.Add("nothing hidden to see");
@@ -971,6 +975,8 @@ namespace CompanionAI_Pathfinder.Tactics
                     var est = CombatMath.EstimateWeaponAttack(ally, enemy, full: true);
                     if (est != null && est.ExpectedDamage > 0f)
                     {
+                        // ★ v0.3.28 test 3: the estimate is past the enemy's concealment; what is left of it (SeenPass).
+                        CombatMath.LandsPastDefences(ally, enemy, out off.SeenPass);
                         off.DamagePerRound = est.ExpectedDamage;
                         off.HitChance = Mathf.Clamp(est.FirstHitChance, 0.05f, 0.95f);
                         off.PerHit = est.FirstPerHit;

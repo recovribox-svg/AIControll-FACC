@@ -116,6 +116,27 @@ namespace CompanionAI.Tests
             Assert.Equal(0f, ValueModel.AbilityDamageShare(float.NaN, 16), 4);
         }
 
+        // ★ v0.3.28 test 3: concealment and mirror images, as the game applies them after the attack roll.
+        [Fact]
+        public void NoDefences_EveryHitLands() => Assert.Equal(1f, ValueModel.LandsPastDefences(0, 0), 4);
+
+        [Fact]
+        public void Blur_TwentyPercentMiss() => Assert.Equal(0.8f, ValueModel.LandsPastDefences(20, 0), 4);
+
+        [Fact]
+        public void Displacement_FiftyPercentMiss() => Assert.Equal(0.5f, ValueModel.LandsPastDefences(50, 0), 4);
+
+        [Fact]
+        public void MirrorImages_TheRealOneOneInImagesPlusOne() =>
+            Assert.Equal(0.8f / 4f, ValueModel.LandsPastDefences(20, 3), 4);
+
+        [Fact]
+        public void BrokenDefenceInput_IsClamped()
+        {
+            Assert.Equal(0f, ValueModel.LandsPastDefences(150, 0), 4);
+            Assert.Equal(1f, ValueModel.LandsPastDefences(-5, -2), 4);
+        }
+
         [Fact]
         public void LeavingAlliesExposed_Costs() => Assert.Equal(3.9f, ValueModel.LeavesAlliesCost(-3.9f), 4);
 

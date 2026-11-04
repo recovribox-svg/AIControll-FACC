@@ -112,7 +112,7 @@ namespace CompanionAI_Pathfinder.Tactics
             if (burn <= 0) return 0f;
             var unit = ctx.Unit;
             float loss = burn * Level(unit);
-            float hp = CombatMath.HpBeforeDown(unit);
+            float hp = CombatMath.RealHpBeforeDown(unit);   // ★ v0.3.28 test 3: burn is nonlethal, not taken by temporary HP
             float worth = AllyWorth(ctx, unit);
             if (loss >= hp) return worth * 2f;
             float cost = loss * BurnDayCostPerHp;

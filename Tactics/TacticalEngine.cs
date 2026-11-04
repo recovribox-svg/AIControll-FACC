@@ -1248,7 +1248,14 @@ namespace CompanionAI_Pathfinder.Tactics
                 foreach (var a in ctx.Allies)
                 {
                     float w;
-                    try { w = ValueModel.HitWeight(attack, a.Stats.AC.ModifiedValue); } catch { w = 0.5f; }
+                    // ★ v0.3.28 test 3: past concealment and mirror images (CombatMath.LandsPastDefences), and +4 in melee
+                    // against a prone unit (the game's RuleCalculateAC; the weapon estimate reads that rule itself).
+                    try
+                    {
+                        bool prone = !ranged && (a.Descriptor?.State?.Prone?.Active ?? false);
+                        w = ValueModel.HitWeight(attack + (prone ? 4 : 0), a.Stats.AC.ModifiedValue) * CombatMath.LandsPastDefences(enemy, a);
+                    }
+                    catch { w = 0.5f; }
                     weightSum += w;
                     if (a == who) whoWeight = w;
                     var p = PositionOf(a);
