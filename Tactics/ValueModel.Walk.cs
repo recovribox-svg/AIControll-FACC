@@ -101,6 +101,17 @@ namespace CompanionAI_Pathfinder.Tactics
             return partyShift < -0.5f ? -partyShift : 0f;
         }
 
+        /// <summary>
+        /// ★ v0.3.28 (v0.3.27 turn-based log, fight 4): the share of a unit an ability-damage hit takes - the points lost of
+        /// its score (<paramref name="points"/> of <paramref name="score"/>), at most all of it (at 0 the unit is helpless).
+        /// A Shadow's 1d6 Strength on Seelah's 16: about a fifth of what she is worth in the fight.
+        /// </summary>
+        public static float AbilityDamageShare(float points, int score)
+        {
+            if (!(points > 0f) || score <= 0) return 0f;
+            return Math.Min(1f, points / score);
+        }
+
         public static bool CanIntercept(float distanceToWay, float reach, float enemySpeedMps, float walkSeconds)
         {
             if (float.IsNaN(distanceToWay) || float.IsNaN(walkSeconds) || walkSeconds <= 0f) return false;

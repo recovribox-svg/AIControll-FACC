@@ -55,7 +55,7 @@ namespace CompanionAI_Pathfinder.Tactics
         public bool EndsRegeneration;
     }
 
-    public static class CombatMath
+    public static partial class CombatMath
     {
         #region Primitives
 

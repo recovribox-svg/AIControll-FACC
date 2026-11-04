@@ -140,6 +140,11 @@ namespace ProfileAudit
                 foreach (var line in blocklistLines) Console.WriteLine(line);
                 File.WriteAllText(output, string.Join(Environment.NewLine, blocklistLines) + Environment.NewLine + Environment.NewLine + File.ReadAllText(output));
             }
+            // ★ v0.3.28: on-hit ability damage (a Shadow's Strength touch) on these blueprints.
+            var onHitLines = OnHitCheck.Run(loaded.Values, out int onHitFailures);
+            foreach (var line in onHitLines) Console.WriteLine(line);
+            File.WriteAllText(output, string.Join(Environment.NewLine, onHitLines) + Environment.NewLine + Environment.NewLine + File.ReadAllText(output));
+            blocklistFailures += onHitFailures;
             if (failed > 0)
             {
                 string partial = $"PARTIAL: loaded {loaded.Count}, failed {failed}, allowed {options.AllowFailures}. Failed blueprints:";

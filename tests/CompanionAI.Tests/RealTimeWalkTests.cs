@@ -103,6 +103,20 @@ namespace CompanionAI.Tests
             Assert.Equal(0f, ValueModel.AdvanceWorth(4f, 5.2f, 0.35f), 4);
 
         [Fact]
+        public void AbilityDamage_IsAShareOfTheScore() => Assert.Equal(3.5f / 16f, ValueModel.AbilityDamageShare(3.5f, 16), 4);
+
+        [Fact]
+        public void AbilityDamage_PastTheScore_IsAll() => Assert.Equal(1f, ValueModel.AbilityDamageShare(5f, 3), 4);
+
+        [Fact]
+        public void NoAbilityDamage_IsNothing()
+        {
+            Assert.Equal(0f, ValueModel.AbilityDamageShare(0f, 16), 4);
+            Assert.Equal(0f, ValueModel.AbilityDamageShare(3.5f, 0), 4);
+            Assert.Equal(0f, ValueModel.AbilityDamageShare(float.NaN, 16), 4);
+        }
+
+        [Fact]
         public void LeavingAlliesExposed_Costs() => Assert.Equal(3.9f, ValueModel.LeavesAlliesCost(-3.9f), 4);
 
         [Fact]

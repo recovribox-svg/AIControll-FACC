@@ -1427,7 +1427,7 @@ namespace CompanionAI_Pathfinder.Tactics
 
             float hp = Math.Max(1f, CombatMath.HpBeforeDown(unit));
             bool mobile = mobility ?? UsesMobility(unit);
-            PriceAttacks(unit, attackers, hp, out float damage, out _, out float dropNow, out float knocked,
+            PriceAttacks(unit, attackers, hp, out float damage, out _, out float dropNow, out float knocked, out float abilityShare,
                          mobile ? (Func<UnitEntityData, float>)(e => 1f - MobilityAvoids(unit, e)) : null);
 
             // Dropped now: the unit is out for the rest of the fight. Otherwise the same model as healing and withdraw,
@@ -1442,7 +1442,8 @@ namespace CompanionAI_Pathfinder.Tactics
                 Attacks = attackers.Count,
                 StopChance = dropNow + (1f - dropNow) * knocked,
                 DropChance = dropNow,
-                Cost = dropNow * worth + ((1f - dropNow) * Math.Max(0f, after - before) * worth + damage * 0.3f) * RiskTolerance(ctx)
+                Cost = dropNow * worth + ((1f - dropNow) * (Math.Max(0f, after - before) + abilityShare) * worth + damage * 0.3f) *
+                       RiskTolerance(ctx)
             };
         }
 
@@ -1562,9 +1563,18 @@ namespace CompanionAI_Pathfinder.Tactics
         /// <remarks>★ v0.3.18: <paramref name="happens"/> - the chance each attack is made at all (Mobility); null: always.</remarks>
         private static void PriceAttacks(UnitEntityData unit, List<UnitEntityData> attackers, float hp,
                                          out float damage, out float hitChance, out float dropChance, out float knockChance,
-                                         Func<UnitEntityData, float> happens = null)
+                                         Func<UnitEntityData, float> happens = null) =>
+            PriceAttacks(unit, attackers, hp, out damage, out hitChance, out dropChance, out knockChance, out _, happens);
+
+        /// <remarks>★ v0.3.28 (v0.3.27 turn-based log, fight 4): <paramref name="abilityShare"/> - the expected share of the
+        /// unit the attacks' ability damage takes (a Shadow's Strength touch: CombatMath.OnHitAbilityDamage,
+        /// ValueModel.AbilityDamageShare); callers price it as that share of the unit's worth.</remarks>
+        private static void PriceAttacks(UnitEntityData unit, List<UnitEntityData> attackers, float hp,
+                                         out float damage, out float hitChance, out float dropChance, out float knockChance,
+                                         out float abilityShare, Func<UnitEntityData, float> happens = null)
         {
             damage = 0f;
+            abilityShare = 0f;
             float noHit = 1f, noDrop = 1f, noKnock = 1f;
             foreach (var enemy in attackers)
             {
@@ -1578,6 +1588,13 @@ namespace CompanionAI_Pathfinder.Tactics
                 noDrop *= 1f - RiskMath.AttackDropChance(hit, (est?.FirstCritChance ?? 0.05f * hitIfMade) * made, perHit,
                                                          est?.CritMultiplier ?? 2f, Math.Max(1f, hp - damage));
                 damage += expected;
+                float points = CombatMath.OnHitAbilityDamage(enemy, out var abilityStat);
+                if (points > 0f)
+                {
+                    int score = 0;
+                    try { score = unit.Stats.GetStat(abilityStat)?.ModifiedValue ?? 0; } catch { }
+                    abilityShare += hit * ValueModel.AbilityDamageShare(points, score);
+                }
                 noHit *= 1f - hit;
                 noKnock *= 1f - hit * CombatMath.TripOnHitChance(enemy, unit);
             }
@@ -1682,7 +1699,7 @@ namespace CompanionAI_Pathfinder.Tactics
             if (ctx == null) return true;
 
             float hp = Math.Max(1f, CombatMath.HpBeforeDown(unit));
-            PriceAttacks(unit, attackers, hp, out float damage, out _, out float dropNow, out _);
+            PriceAttacks(unit, attackers, hp, out float damage, out _, out float dropNow, out _, out float abilityShare);
             float worth = AllyWorth(ctx, unit);
             float danger = IncomingDamage(ctx, unit, unit.Position);
             float stayDrop = RiskMath.RoundDropChance(hp, danger * 1.25f);
@@ -1690,7 +1707,7 @@ namespace CompanionAI_Pathfinder.Tactics
             // ★ v0.3.18 (review): the whole turn after standing (a quick option and the main one), not just the option
             // chosen first: a swift buff worth 2.5 stood in for a standard attack worth 15.
             float act = Math.Max(best?.Value ?? 0f, ctx.TurnValue);
-            float stand = -dropNow * worth + (1f - dropNow) * (act - afterDrop * worth);
+            float stand = -dropNow * worth + (1f - dropNow) * (act - (afterDrop + abilityShare) * worth);
             float stay = -stayDrop * worth;
             if (stand >= stay) return true;
             // ★ v0.3.18 (test10): one turn at most.
@@ -1868,7 +1885,7 @@ namespace CompanionAI_Pathfinder.Tactics
             }).ToList();
             if (attackers.Count == 0) return null;
             float hp = Math.Max(1f, CombatMath.HpBeforeDown(unit));
-            PriceAttacks(unit, attackers, hp, out float damage, out float hitChance, out float dropNow, out _);
+            PriceAttacks(unit, attackers, hp, out float damage, out float hitChance, out float dropNow, out _, out float abilityShare);
             if (concentrationGap.HasValue)
             {
                 float perHit = hitChance > 0.01f ? damage / hitChance : 0f;
@@ -1882,7 +1899,7 @@ namespace CompanionAI_Pathfinder.Tactics
                 Attacks = attackers.Count,
                 DropChance = chance * dropNow,
                 StopChance = chance * (dropNow + (hitChance - dropNow) * spoiledByHit),
-                Cost = chance * (dropNow * worth + ((1f - dropNow) * dropLater * worth + damage * 0.3f) * RiskTolerance(ctx))
+                Cost = chance * (dropNow * worth + ((1f - dropNow) * (dropLater + abilityShare) * worth + damage * 0.3f) * RiskTolerance(ctx))
             };
         }
 
