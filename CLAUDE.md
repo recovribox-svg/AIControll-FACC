@@ -126,6 +126,9 @@ count the attack they give up (`ValueModel.AdvanceWorth`), every move counts the
 **v0.3.28 test 2 (4 November, `docs/TACTICAL_AI.md` §99, not played):** the leaves-allies cost is the whole party's net rise
 (`ValueModel.LeavesAlliesCost(shift, ownFall)`, `TacticalEngine.OwnFall`), so casters and archers may step away from a
 melee a front-liner holds. Test ZIP `AI-Control-FACC-v0.3.28-dev-test2-5c87b6d-UMM-test.zip` (MVID `cd797bdb-e0cc-4fd7-8ffc-54e02040954f`); 354 tests.
+**v0.3.28 test 3 (4 November, `docs/TACTICAL_AI.md` §100, not played):** hit chances count concealment and mirror images
+(`CombatMath.LandsPastDefences`), drop chances temporary HP (`HpBeforeDown`; `RealHpBeforeDown` for heals, caution, burn),
+prone +4 in the survival model. Test ZIP `AI-Control-FACC-v0.3.28-dev-test3-2cb47db-UMM-test.zip` (MVID `09bc562d-a4dc-4c51-a8ff-ebc2e6f1cf3a`); 359 tests.
 
 Historical handovers, superseded by the one above: [v0.3.22 release preparation](docs/RELEASE_0_3_22_HANDOVER.md)
 (27 October, PR #6–#12), [released-log review](docs/RELEASE_0322_LOG_REVIEW.md) (PR #13),

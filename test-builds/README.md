@@ -1,6 +1,30 @@
 # Test builds
 
-## Current test build: v0.3.28-dev-test2 (5c87b6d) - squishies free to step away
+## Current test build: v0.3.28-dev-test3 (2cb47db) - defences counted
+
+**[Download the UMM test ZIP (2cb47db)](AI-Control-FACC-v0.3.28-dev-test3-2cb47db-UMM-test.zip?raw=true)**
+
+Direct link: <https://github.com/recovribox-svg/AIControll-FACC/raw/claude/dreamy-pasteur-b9h3rn/test-builds/AI-Control-FACC-v0.3.28-dev-test3-2cb47db-UMM-test.zip>
+
+Tests 1-2 (below, not played yet) plus defences the AI did not count ([docs/TACTICAL_AI.md](../docs/TACTICAL_AI.md) §100).
+- **Concealment and Mirror Image.** Hit chances were the plain dice roll against Armor Class. The game then gives a
+  20 % miss for Blur, fog or dim light, 50 % for Displacement or invisibility, and a hit lands on the real target only
+  1 time in (images + 1) under Mirror Image. Now counted everywhere hits are estimated, both ways:
+  - a blurred, displaced or mirror-imaged companion is less afraid of attacks of opportunity and of standing in melee
+    (your high-Dexterity fighter under Blur);
+  - attacking a displaced or invisible enemy is worth less, so companions prefer other targets or spells that ignore it.
+- **Temporary hit points** (False Life, Aid) now count towards how far a companion is from going down; healing and the
+  low-HP caution still use real HP.
+- **Prone companions** are treated as easier to hit in melee (+4), as in the game.
+
+UMM shows **0.3.28**. Startup line `[Build] v0.3.28 module=09bc562d-a4dc-4c51-a8ff-ebc2e6f1cf3a`.
+- ZIP SHA-256 `3ddbeac8dbdb091c7243ee38ed16781b2fa2cd17e2751f45b80e4b5465dda9b0`; DLL SHA-256 `519aeea0370b3b4e9ca2249e186a8fba9069764c012b00e3b8b946d6d2054eaa`.
+- [Identity](AI-Control-FACC-v0.3.28-dev-test3-2cb47db-UMM-test.identity.json) · [Checksums](SHA256SUMS.txt).
+- Checks: 359 unit tests pass; release build 0 warnings. Not played yet.
+- **Test:** fights where companions have Blur, Displacement or Mirror Image, and enemies that do (Shadows, displacer
+  creatures, invisible casters).
+
+## Test 2: v0.3.28-dev-test2 (5c87b6d) - squishies free to step away (also in test 3)
 
 **[Download the UMM test ZIP (5c87b6d)](AI-Control-FACC-v0.3.28-dev-test2-5c87b6d-UMM-test.zip?raw=true)**
 

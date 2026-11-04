@@ -3292,3 +3292,24 @@ is intended; Ardub/body-blocking stays on hold.
   smaller than test 1's (about 0.4 at that fight's scale, under the 0.5 noise floor). Her advance is held back mainly by
   `AdvanceWorth` (the Champion attack it gives up).
 
+## 100. Defences in hit and drop chances (v0.3.28 test 3)
+
+- **Question:** how a lightly armoured, high-Dexterity melee fighter is read, then a survey of other gaps.
+- **Read already:** Armor Class as the game computes it (Dexterity, dodge, deflection, buffs; the weapon estimate uses
+  `RuleCalculateAC`, so flat-footed and prone too), HP, melee or ranged by the main-hand weapon, Mobility on walks;
+  damage reduction in the weapon estimate (`WeaponDamageProbe`).
+- **Gaps found and fixed (decompiled rules):**
+  - *Concealment and mirror images* - `RuleAttackRoll` rolls the target's concealment after the attack roll
+    (`RuleConcealmentCheck`: partial 20 %, total 50 %; `UnitPartConcealment.Calculate(attacker, target, attack: true)`)
+    and mirror images (`UnitPartMirrorImage.TryAbsorbHit`: the target 1 in images + 1). All hit chances were the bare
+    roll. `CombatMath.LandsPastDefences` (cached per pair and frame, tuple key) scales `EstimateWeaponAttack`,
+    `SpellAttackHitChance` and the survival model's hit weights (`StandingDropChance`). Pure:
+    `ValueModel.LandsPastDefences`. See Invisibility / True Seeing keep their worth: valued on the damage before the
+    miss (`Offence.SeenPass`).
+  - *Temporary hit points* - taken first (`RuleDealDamage`: `TemporaryHitPoints.HandleDamage`), absent from `HPLeft`.
+    `HpBeforeDown` adds them; `HpPercent` (heals, caution) and kineticist burn use `RealHpBeforeDown`.
+  - *Prone* - the survival model's melee hit weight +4 against a prone unit.
+- **Left:** the survival model's threat is the enemy's CR-based Threat, not reduced by the target's damage reduction or
+  energy resistance (the attack-of-opportunity price is, through the weapon estimate); a concealment check's own
+  modifiers (Blind-Fight's reroll) are not read.
+
