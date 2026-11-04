@@ -631,6 +631,16 @@ namespace CompanionAI_Pathfinder.GameInterface
                 string wait = WaitReason(unit, cmd);
                 // First seen counts as a wait: a command needs 3 s of observed nothing-to-wait-for to be stuck.
                 var mark = LastWait.GetValue(cmd, _ => new WaitMark { Time = now, NearestAt = now, FirstPoint = cmd.ApproachPoint });
+                // ★ v0.3.28 (v0.3.27 real-time log, fight 5): the command's aim point became the world origin - Orvath's
+                // Color Spray on a Vermlek walked towards (0, 0, 0), "108.2 m to go", until the no-progress rule ended it
+                // 6 s later. No target stands there; end it at once (the target itself is not marked).
+                var aim = cmd.ApproachPoint;
+                if (Math.Abs(aim.x) < 0.001f && Math.Abs(aim.y) < 0.001f && Math.Abs(aim.z) < 0.001f &&
+                    unit.Position.sqrMagnitude > 1f)
+                {
+                    reason = "its aim point is lost (the world origin)";
+                    return true;
+                }
                 // ★ v0.3.18 (test10): walking only counts as a reason to wait while it brings the unit nearer. Orvath
                 // chased his own moving Dretch with the game's touch delivery of a Cure Light Wounds item for about 75 s
                 // (the command the game queues for a held touch charge), "moving" every check, and nothing ever ended it;

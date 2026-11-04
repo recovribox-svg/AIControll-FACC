@@ -75,6 +75,32 @@ namespace CompanionAI_Pathfinder.Tactics
             return cost > 0f ? cost : 0f;
         }
 
+        /// <summary>
+        /// ★ v0.3.28 (v0.3.27 turn-based log, fight 3): an advance is worth a share of attacking its target next turn, less
+        /// what it gives up - the attack the unit could make next turn from where it stands (<paramref name="lostValue"/>,
+        /// 0 when the advance keeps that enemy in reach). Seelah, beside a Cultist Champion she could hit (5.2), advanced
+        /// on a Cultist Archer for the whole of that attack's worth (3.8), took the Champion's attack of opportunity and
+        /// dropped from 82 % to 18 %.
+        /// </summary>
+        public static float AdvanceWorth(float targetValue, float lostValue, float share)
+        {
+            if (!(targetValue > 0f) || !(share > 0f)) return 0f;
+            float gain = targetValue - (lostValue > 0f && !float.IsInfinity(lostValue) ? lostValue : 0f);
+            return gain > 0f ? gain * share : 0f;
+        }
+
+        /// <summary>
+        /// ★ v0.3.28 (v0.3.27 turn-based log, fight 3): what a move costs the rest of the party - the rise in their chances to
+        /// go down, times their worth (<paramref name="partyShift"/> = Σ(before − after) × worth, negative when the move
+        /// leaves them more exposed). The Champion Seelah walked away from swung at Camellia next. Below half a point it is
+        /// noise; a move that shields them (a positive shift) pays nothing here.
+        /// </summary>
+        public static float LeavesAlliesCost(float partyShift)
+        {
+            if (float.IsNaN(partyShift) || float.IsInfinity(partyShift)) return 0f;
+            return partyShift < -0.5f ? -partyShift : 0f;
+        }
+
         public static bool CanIntercept(float distanceToWay, float reach, float enemySpeedMps, float walkSeconds)
         {
             if (float.IsNaN(distanceToWay) || float.IsNaN(walkSeconds) || walkSeconds <= 0f) return false;

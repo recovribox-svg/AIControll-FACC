@@ -148,6 +148,12 @@ namespace CompanionAI_Pathfinder.Tactics
         public List<UnitEntityData> Engagers = new List<UnitEntityData>();
 
         public List<UnitEntityData> Enemies = new List<UnitEntityData>();
+        /// <summary>★ v0.3.28: each ally's chance to go down with the unit where it stands (PartyShift), once per decision.</summary>
+        public Dictionary<UnitEntityData, float> PartyDropHere = new Dictionary<UnitEntityData, float>();
+        /// <summary>★ v0.3.28: the best enemy the unit can attack next turn from where it stands, for advances (AdvanceWorth).</summary>
+        public UnitEntityData StayEnemy;
+        public float StayValue, StayReach;
+        public bool StayNeedsLos;
         public List<UnitEntityData> Allies = new List<UnitEntityData>();   // includes Unit
         /// <summary>★ v0.3.11: enemies no path could reach this turn (TurnMemory.Unreachable).</summary>
         public HashSet<string> Unreachable = new HashSet<string>();
@@ -1105,10 +1111,13 @@ namespace CompanionAI_Pathfinder.Tactics
             public int Intercepted;
             /// <summary>★ v0.3.27: a healthy walk's exposure taken off by the allies it shields there (diagnostics).</summary>
             public float Shielding;
+            /// <summary>★ v0.3.28: of <see cref="Cost"/>, the rise in the rest of the party's danger (ValueModel.LeavesAlliesCost).</summary>
+            public float LeavesAllies;
             public Disengage Copy() => (Disengage)MemberwiseClone();
             public string Tag => (Attacks > Intercepted ? $" [AoO {Attacks - Intercepted}{(DropChance >= 0.1f ? $", {DropChance:P0} down" : "")}]" : "") +
                                  (Intercepted > 0 ? $" [intercepted {Intercepted}]" : "") +
-                                 (Area != null ? $"{IntoTag}{Area}]" : "") + (Exposed ? " [exposed]" : "");
+                                 (Area != null ? $"{IntoTag}{Area}]" : "") + (Exposed ? " [exposed]" : "") +
+                                 (LeavesAllies > 0f ? $" [leaves allies -{LeavesAllies:0.0}]" : "");
             /// <summary>★ v0.3.18 (test11): marks an option whose walk was priced as entering a harmful area.</summary>
             internal const string IntoTag = " [into ";
         }
@@ -1161,11 +1170,16 @@ namespace CompanionAI_Pathfinder.Tactics
             if (alwaysExposure || ctx.HpPct < CautionBelow(ctx) || (risk != null && risk.Attacks > 0))
             {
                 float exposure = ExposureCost(ctx, destination);
-                if (exposure > 0f)
+                // ★ v0.3.28 (v0.3.27 turn-based log, fight 3): and what leaving costs the rest of the party. Seelah walked
+                // away from the Cultist Champion she was holding (one attack of opportunity, priced), and it swung at
+                // Camellia next.
+                float leaves = ValueModel.LeavesAlliesCost(PartyShift(ctx, destination));
+                if (exposure > 0f || leaves > 0f)
                 {
                     risk = risk ?? new Disengage();
-                    risk.Exposed = true;
-                    risk.Cost += exposure;
+                    if (exposure > 0f) risk.Exposed = true;
+                    risk.LeavesAllies = leaves;
+                    risk.Cost += exposure + leaves;
                 }
             }
             else
@@ -1173,14 +1187,15 @@ namespace CompanionAI_Pathfinder.Tactics
                 // ★ v0.3.27 (author-approved, test 3 log): a healthy unit's walk pays for where it ends too - less what the
                 // allies it takes enemies off gain (HealthyExposure). Camellia (Skald 2, full HP) walked up to a Large Water
                 // Elemental (25 a slam) for a Move+Attack worth 5.8 and went down to it and a Plagued Wolf.
-                float exposure = HealthyExposure(ctx, destination, out float shielding);
+                float exposure = HealthyExposure(ctx, destination, out float shielding, out float leaves);
                 // A walk priced at nothing gets no risk of its own (callers read a risk as something to pay); the shielding
                 // note rides on one that exists.
-                if (exposure > 0f)
+                if (exposure > 0f || leaves > 0f)
                 {
                     risk = risk ?? new Disengage();
-                    risk.Exposed = true;
-                    risk.Cost += exposure;
+                    if (exposure > 0f) risk.Exposed = true;
+                    risk.LeavesAllies = leaves;
+                    risk.Cost += exposure + leaves;
                 }
                 if (risk != null) risk.Shielding = shielding;
             }
@@ -1258,31 +1273,60 @@ namespace CompanionAI_Pathfinder.Tactics
         /// (net: an ally it draws danger towards counts against it). Front-liners stepping in front of a heavy
         /// hitter that is on a squishier ally keep doing it; a frail unit walking up to one alone pays for it.
         /// </summary>
-        private static float HealthyExposure(TacticalContext ctx, Vector3 destination, out float shielding)
+        private static float HealthyExposure(TacticalContext ctx, Vector3 destination, out float shielding, out float leaves)
         {
             shielding = 0f;
+            leaves = 0f;
             var unit = ctx.Unit;
             try
             {
                 if (HorizontalDistance(unit.Position, destination) < 0.5f) return 0f;
+                // ★ v0.3.28: the party's side first - a walk that leaves allies more exposed pays for it even when its own
+                // danger does not rise (walking away from the enemy it was holding).
+                float shift = PartyShift(ctx, destination);
+                shielding = Math.Max(0f, shift);
+                leaves = ValueModel.LeavesAlliesCost(shift);
                 float here = StandingDropChance(ctx, unit, unit.Position, unit, unit.Position);
                 float there = StandingDropChance(ctx, unit, destination, unit, destination);
                 if (!(there - here > 0.02f)) return 0f;
-                foreach (var ally in ctx.Allies)
-                {
-                    if (ally == unit || ally?.Descriptor?.State?.IsConscious != true) continue;
-                    float before = StandingDropChance(ctx, ally, ally.Position, unit, unit.Position);
-                    float after = StandingDropChance(ctx, ally, ally.Position, unit, destination);
-                    shielding += (before - after) * AllyWorth(ctx, ally);
-                }
-                shielding = Math.Max(0f, shielding);
                 return ValueModel.HealthyWalkExposure(here, there, AllyWorth(ctx, unit), RiskTolerance(ctx), shielding);
             }
             catch (Exception ex)
             {
                 Main.Verbose($"[Tactics] walk exposure {unit.CharacterName}: {ex.Message}");
+                shielding = leaves = 0f;
                 return 0f;
             }
+        }
+
+        /// <summary>
+        /// ★ v0.3.27 / v0.3.28: how much less likely the rest of the party is to go down with the unit at
+        /// <paramref name="destination"/> than where it stands (<see cref="StandingDropChance"/>), times each ally's worth:
+        /// positive when it shields them there, negative when it leaves them more exposed. Where it stands now is worked out
+        /// once per decision (<see cref="TacticalContext.PartyDropHere"/>).
+        /// </summary>
+        private static float PartyShift(TacticalContext ctx, Vector3 destination)
+        {
+            var unit = ctx.Unit;
+            if (HorizontalDistance(unit.Position, destination) < 0.5f) return 0f;
+            float shift = 0f;
+            try
+            {
+                foreach (var ally in ctx.Allies)
+                {
+                    if (ally == unit || ally?.Descriptor?.State?.IsConscious != true) continue;
+                    if (!ctx.PartyDropHere.TryGetValue(ally, out float before))
+                        ctx.PartyDropHere[ally] = before = StandingDropChance(ctx, ally, ally.Position, unit, unit.Position);
+                    float after = StandingDropChance(ctx, ally, ally.Position, unit, destination);
+                    shift += (before - after) * AllyWorth(ctx, ally);
+                }
+            }
+            catch (Exception ex)
+            {
+                Main.Verbose($"[Tactics] party shift {unit.CharacterName}: {ex.Message}");
+                return 0f;
+            }
+            return shift;
         }
 
         /// <summary>
@@ -1488,6 +1532,7 @@ namespace CompanionAI_Pathfinder.Tactics
             if (risk == null) return more;
             risk.Attacks += more.Attacks;
             risk.Intercepted += more.Intercepted;
+            risk.LeavesAllies += more.LeavesAllies;   // ★ v0.3.28: shown in the tag
             risk.StopChance = 1f - (1f - risk.StopChance) * (1f - more.StopChance);
             risk.DropChance = 1f - (1f - risk.DropChance) * (1f - more.DropChance);
             risk.Cost += more.Cost;
@@ -4359,13 +4404,25 @@ namespace CompanionAI_Pathfinder.Tactics
                 // ★ v0.3.18: the three best enemies to close on, each with its own approach. Only the best one was tried:
                 // Seelah ended nine turns idle (0.3.18 log 611fe6bf, R9-R17) because the approach to that enemy, lying
                 // in Grease, walked into it, while other enemies stood clear of it.
-                var ranked = ctx.Enemies
+                var estimated = ctx.Enemies
                     .Where(e => !ctx.Unreachable.Contains(e.UniqueId))
                     .Select(e => new { Enemy = e, Est = CombatMath.EstimateWeaponAttack(unit, e, false) })
                     .Where(x => x.Est != null)
+                    .ToList();
+                var ranked = estimated
                     .OrderByDescending(x => DamageValue(x.Enemy, x.Est) / Math.Max(3f, ctx.Distance(x.Enemy)))
                     .Take(3)
                     .ToList();
+                // ★ v0.3.28 (v0.3.27 turn-based log, fight 3): the attack the unit can make next turn from where it stands -
+                // an advance that walks out of that enemy's reach gives it up (ValueModel.AdvanceWorth).
+                var stay = estimated
+                    .Where(x => InRangeNow(unit, x.Enemy.Position, x.Est.Reach, x.Est.IsRanged))
+                    .OrderByDescending(x => DamageValue(x.Enemy, x.Est))
+                    .FirstOrDefault();
+                ctx.StayEnemy = stay?.Enemy;
+                ctx.StayValue = stay != null ? DamageValue(stay.Enemy, stay.Est) : 0f;
+                ctx.StayReach = stay?.Est.Reach ?? 0f;
+                ctx.StayNeedsLos = stay?.Est.IsRanged ?? false;
 
                 for (int i = 0; i < ranked.Count; i++)
                 {
@@ -4425,8 +4482,22 @@ namespace CompanionAI_Pathfinder.Tactics
 
             // Test[2]: the old 0.6 floor repeatedly pulled low-HP Lann back after withdrawing for an attack worth 0.5.
             // An advance must clear the ordinary action bar on its actual future payoff, like every other move.
-            float value = Math.Max(DamageValue(enemy, est), refusedValue) * AdvanceShare;
+            float targetValue = Math.Max(DamageValue(enemy, est), refusedValue);
+            float value = targetValue * AdvanceShare;
             string label = $"Advance->{enemy.CharacterName}" + (beyondOneMove ? " (beyond one move)" : "");
+            // ★ v0.3.28 (v0.3.27 turn-based log, fight 3): what the advance gives up - the attack the unit could make next
+            // turn from where it stands, when it walks out of that enemy's reach. Seelah, beside a Cultist Champion she
+            // could hit, advanced on a Cultist Archer for the whole of an attack's worth and was hit leaving.
+            var stayEnemy = ctx.StayEnemy;
+            Vector3 eyeOffset = unit.EyePosition - unit.Position;
+            float WorthFrom(Vector3 at, ref string tag)
+            {
+                if (stayEnemy == null || stayEnemy == enemy || ctx.StayValue <= 0f) return value;
+                bool keeps = UnitCommand.IsUnitCloseEnough(stayEnemy.Position, at, at + eyeOffset, ctx.StayReach, ctx.StayNeedsLos, 0f);
+                if (keeps) return value;
+                tag += $" [leaves {stayEnemy.CharacterName}]";
+                return ValueModel.AdvanceWorth(targetValue, ctx.StayValue, AdvanceShare);
+            }
             // ★ v0.3.20 (0.3.19 real-time log): in range but out of sight. The walk towards the enemy with the weapon's
             // range as its radius had already arrived, so the game did not move the unit: Lann stood 12.2 m from a Dretch
             // (range 13.8 m) for 4 s, then walked 11 s at a Neophyte Fighter "-9.1 m to go". Real time walks to a spot
@@ -4439,12 +4510,14 @@ namespace CompanionAI_Pathfinder.Tactics
                 var sight = FindSightSpot(ctx, enemy, radius) ?? (inRange > radius ? FindSightSpot(ctx, enemy, inRange) : null);
                 if (!sight.HasValue) return false;
                 var sightRisk = MoveRisk(ctx, sight.Value);
+                string sightTag = "";
+                float sightValue = WorthFrom(sight.Value, ref sightTag);
                 list.Add(new Candidate
                 {
                     Kind = CandidateKind.Move, Slot = ActionSlot.Move, Target = enemy,
                     Point = sight.Value, ApproachRadius = 0.3f,
-                    Value = value - (sightRisk?.Cost ?? 0f),
-                    Label = label + " (to see it)" + (sightRisk?.Tag ?? ""), Key = $"move:adv:{enemy.UniqueId}",
+                    Value = sightValue - (sightRisk?.Cost ?? 0f),
+                    Label = label + " (to see it)" + sightTag + (sightRisk?.Tag ?? ""), Key = $"move:adv:{enemy.UniqueId}",
                     CheckPath = sightRisk?.Area == null
                 });
                 return false;
@@ -4454,6 +4527,9 @@ namespace CompanionAI_Pathfinder.Tactics
             // (PlanApproach): from there the unit attacks next, or catches the enemy as it comes out.
             var approach = PlanApproach(ctx, enemy, radius, orNearby: true);
             var risk = approach.Risk;
+            string leaveTag = "";
+            value = WorthFrom(approach.Point, ref leaveTag);
+            label += leaveTag;
             if (risk != null)
             {
                 value -= risk.Cost;

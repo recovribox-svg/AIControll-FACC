@@ -89,6 +89,30 @@ namespace CompanionAI.Tests
         public void CombinedDrop_Nothing_IsZero() =>
             Assert.Equal(0f, ValueModel.CombinedDrop(new (float, float)[0]), 4);
 
+        // ★ v0.3.28: an advance counts what it gives up; a move counts what it costs the rest of the party.
+        [Fact]
+        public void Advance_GivingUpAnAttack_IsWorthTheDifference() =>
+            Assert.Equal((11f - 5.2f) * 0.35f, ValueModel.AdvanceWorth(11f, 5.2f, 0.35f), 4);
+
+        [Fact]
+        public void Advance_KeepingTheAttack_IsWorthItAll() =>
+            Assert.Equal(11f * 0.35f, ValueModel.AdvanceWorth(11f, 0f, 0.35f), 4);
+
+        [Fact]
+        public void Advance_ToAWorseTarget_IsWorthNothing() =>
+            Assert.Equal(0f, ValueModel.AdvanceWorth(4f, 5.2f, 0.35f), 4);
+
+        [Fact]
+        public void LeavingAlliesExposed_Costs() => Assert.Equal(3.9f, ValueModel.LeavesAlliesCost(-3.9f), 4);
+
+        [Fact]
+        public void ShieldingOrNoise_CostsNothing()
+        {
+            Assert.Equal(0f, ValueModel.LeavesAlliesCost(4f), 4);
+            Assert.Equal(0f, ValueModel.LeavesAlliesCost(-0.4f), 4);
+            Assert.Equal(0f, ValueModel.LeavesAlliesCost(float.NaN), 4);
+        }
+
         [Fact]
         public void WalkIntoDanger_CostsTheRiseTimesWorth() =>
             Assert.Equal(0.3f * 30f, ValueModel.HealthyWalkExposure(0.05f, 0.35f, 30f, 1f, 0f), 3);
