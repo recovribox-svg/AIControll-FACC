@@ -95,10 +95,21 @@ namespace CompanionAI_Pathfinder.Tactics
         /// leaves them more exposed). The Champion Seelah walked away from swung at Camellia next. Below half a point it is
         /// noise; a move that shields them (a positive shift) pays nothing here.
         /// </summary>
-        public static float LeavesAlliesCost(float partyShift)
+        public static float LeavesAlliesCost(float partyShift) => LeavesAlliesCost(partyShift, 0f);
+
+        /// <summary>
+        /// ★ v0.3.28 test 2 (the author's point: a caster or archer stepping away from a melee enemy should not be held back
+        /// by the front-liner taking its blows): the rise in the rest of the party's danger, less how much less likely the
+        /// mover itself is to go down (<paramref name="ownFall"/>, × its worth) - the whole party's change. The mover's
+        /// relief only offsets the cost, it never pays the move. A squishy companion stepping out of a melee a front-liner
+        /// shares makes the party safer (the enemy turns to the harder target) and pays nothing; a front-liner walking off
+        /// the enemy it holds, with the squishy left in its reach, still pays.
+        /// </summary>
+        public static float LeavesAlliesCost(float partyShift, float ownFall)
         {
             if (float.IsNaN(partyShift) || float.IsInfinity(partyShift)) return 0f;
-            return partyShift < -0.5f ? -partyShift : 0f;
+            float net = partyShift + (ownFall > 0f && !float.IsInfinity(ownFall) ? ownFall : 0f);
+            return net < -0.5f ? -net : 0f;
         }
 
         /// <summary>

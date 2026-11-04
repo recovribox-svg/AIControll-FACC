@@ -119,6 +119,43 @@ namespace CompanionAI.Tests
         [Fact]
         public void LeavingAlliesExposed_Costs() => Assert.Equal(3.9f, ValueModel.LeavesAlliesCost(-3.9f), 4);
 
+        // ★ v0.3.28 test 2: the whole party's change (the v0.3.27 turn-based log, fight 3: Cultist Champion +6 to hit,
+        // Seelah AC 20 / 14 HP, Camellia AC 15 / ~20 HP; worth 30 each at level 2). The engine's own model: the enemy
+        // picks one of those in its reach by hit weight (TargetChance, HitWeight), threat scaled by that weight over the
+        // party mean, the chance to go down exp(-HP / threat) (RoundDropChance).
+        private static (float seelahShare, float camelliaShare, float seelahDrop, float camelliaDrop) Champion(float threat)
+        {
+            float ws = ValueModel.HitWeight(6, 20), wc = ValueModel.HitWeight(6, 15);
+            float mean = (ws + wc + ValueModel.HitWeight(6, 20) + wc + 0.5f) / 5f;   // Lann AC 20, Orvath ~15, Aeiluvetar
+            return (ValueModel.TargetChance(true, ws + wc, true, 0f, ws), ValueModel.TargetChance(true, ws + wc, true, 0f, wc),
+                    RiskMath.RoundDropChance(14f, threat * ws / mean), RiskMath.RoundDropChance(20f, threat * wc / mean));
+        }
+
+        [Theory]
+        [InlineData(7f)]    // the fight's danger scale 0.37
+        [InlineData(19f)]   // full danger
+        public void SquishySteppingAwayFromASharedEnemy_PaysNothing(float threat)
+        {
+            var c = Champion(threat);
+            float seelahRise = (1f - c.seelahShare) * c.seelahDrop * 30f;   // the Champion turns fully to Seelah
+            float camelliaFall = c.camelliaShare * c.camelliaDrop * 30f;
+            Assert.True(ValueModel.LeavesAlliesCost(-seelahRise) > 0f);                // others-only: charged
+            Assert.Equal(0f, ValueModel.LeavesAlliesCost(-seelahRise, camelliaFall), 4); // whole party: safer, free
+        }
+
+        [Fact]
+        public void FrontLinerWalkingOffTheEnemyItHolds_StillPays()
+        {
+            var c = Champion(19f);
+            float camelliaRise = (1f - c.camelliaShare) * c.camelliaDrop * 30f;   // the Champion turns fully to Camellia
+            float seelahFall = c.seelahShare * c.seelahDrop * 30f;
+            float cost = ValueModel.LeavesAlliesCost(-camelliaRise, seelahFall);
+            Assert.True(cost > 0f && cost < camelliaRise);
+        }
+
+        [Fact]
+        public void OwnReliefNeverPaysTheMove() => Assert.Equal(0f, ValueModel.LeavesAlliesCost(2f, 5f), 4);
+
         [Fact]
         public void ShieldingOrNoise_CostsNothing()
         {

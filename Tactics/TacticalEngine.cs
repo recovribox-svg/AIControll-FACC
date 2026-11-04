@@ -150,6 +150,8 @@ namespace CompanionAI_Pathfinder.Tactics
         public List<UnitEntityData> Enemies = new List<UnitEntityData>();
         /// <summary>★ v0.3.28: each ally's chance to go down with the unit where it stands (PartyShift), once per decision.</summary>
         public Dictionary<UnitEntityData, float> PartyDropHere = new Dictionary<UnitEntityData, float>();
+        /// <summary>★ v0.3.28 test 2: the unit's own chance to go down where it stands (NaN until worked out).</summary>
+        public float OwnDropHere = float.NaN;
         /// <summary>★ v0.3.28: the best enemy the unit can attack next turn from where it stands, for advances (AdvanceWorth).</summary>
         public UnitEntityData StayEnemy;
         public float StayValue, StayReach;
@@ -1130,7 +1132,10 @@ namespace CompanionAI_Pathfinder.Tactics
         /// rounds: the area's danger level (0.4 movement-impairing, 0.6 damaging, more for death or paralysis effects)
         /// times half of it. Null when the move risks nothing.
         /// </summary>
-        private static Disengage MoveRisk(TacticalContext ctx, Vector3 destination, bool alwaysExposure = false)
+        /// <param name="ownSafetyCounted">★ v0.3.28 test 2: the option's value already counts the unit's own lower danger
+        /// there (a withdrawal; a melee unit's back-off), so it does not offset what the move costs the others.</param>
+        private static Disengage MoveRisk(TacticalContext ctx, Vector3 destination, bool alwaysExposure = false,
+                                          bool ownSafetyCounted = false)
         {
             var risk = DisengageRisk(ctx, destination);
             var unit = ctx.Unit;
@@ -1173,7 +1178,8 @@ namespace CompanionAI_Pathfinder.Tactics
                 // ★ v0.3.28 (v0.3.27 turn-based log, fight 3): and what leaving costs the rest of the party. Seelah walked
                 // away from the Cultist Champion she was holding (one attack of opportunity, priced), and it swung at
                 // Camellia next.
-                float leaves = ValueModel.LeavesAlliesCost(PartyShift(ctx, destination));
+                float leaves = ValueModel.LeavesAlliesCost(PartyShift(ctx, destination),
+                                                           ownSafetyCounted ? 0f : OwnFall(ctx, destination));
                 if (exposure > 0f || leaves > 0f)
                 {
                     risk = risk ?? new Disengage();
@@ -1187,7 +1193,7 @@ namespace CompanionAI_Pathfinder.Tactics
                 // ★ v0.3.27 (author-approved, test 3 log): a healthy unit's walk pays for where it ends too - less what the
                 // allies it takes enemies off gain (HealthyExposure). Camellia (Skald 2, full HP) walked up to a Large Water
                 // Elemental (25 a slam) for a Move+Attack worth 5.8 and went down to it and a Plagued Wolf.
-                float exposure = HealthyExposure(ctx, destination, out float shielding, out float leaves);
+                float exposure = HealthyExposure(ctx, destination, ownSafetyCounted, out float shielding, out float leaves);
                 // A walk priced at nothing gets no risk of its own (callers read a risk as something to pay); the shielding
                 // note rides on one that exists.
                 if (exposure > 0f || leaves > 0f)
@@ -1273,7 +1279,8 @@ namespace CompanionAI_Pathfinder.Tactics
         /// (net: an ally it draws danger towards counts against it). Front-liners stepping in front of a heavy
         /// hitter that is on a squishier ally keep doing it; a frail unit walking up to one alone pays for it.
         /// </summary>
-        private static float HealthyExposure(TacticalContext ctx, Vector3 destination, out float shielding, out float leaves)
+        private static float HealthyExposure(TacticalContext ctx, Vector3 destination, bool ownSafetyCounted,
+                                             out float shielding, out float leaves)
         {
             shielding = 0f;
             leaves = 0f;
@@ -1281,13 +1288,14 @@ namespace CompanionAI_Pathfinder.Tactics
             try
             {
                 if (HorizontalDistance(unit.Position, destination) < 0.5f) return 0f;
+                float here = OwnDropHere(ctx);
+                float there = StandingDropChance(ctx, unit, destination, unit, destination);
                 // ★ v0.3.28: the party's side first - a walk that leaves allies more exposed pays for it even when its own
-                // danger does not rise (walking away from the enemy it was holding).
+                // danger does not rise (walking away from the enemy it was holding); ★ test 2: less its own relief there.
                 float shift = PartyShift(ctx, destination);
                 shielding = Math.Max(0f, shift);
-                leaves = ValueModel.LeavesAlliesCost(shift);
-                float here = StandingDropChance(ctx, unit, unit.Position, unit, unit.Position);
-                float there = StandingDropChance(ctx, unit, destination, unit, destination);
+                float ownFall = ownSafetyCounted ? 0f : Math.Max(0f, here - there) * AllyWorth(ctx, unit);
+                leaves = ValueModel.LeavesAlliesCost(shift, ownFall);
                 if (!(there - here > 0.02f)) return 0f;
                 return ValueModel.HealthyWalkExposure(here, there, AllyWorth(ctx, unit), RiskTolerance(ctx), shielding);
             }
@@ -1295,6 +1303,34 @@ namespace CompanionAI_Pathfinder.Tactics
             {
                 Main.Verbose($"[Tactics] walk exposure {unit.CharacterName}: {ex.Message}");
                 shielding = leaves = 0f;
+                return 0f;
+            }
+        }
+
+        /// <summary>★ v0.3.28 test 2: the unit's own chance to go down where it stands (StandingDropChance), once per decision.</summary>
+        private static float OwnDropHere(TacticalContext ctx)
+        {
+            if (float.IsNaN(ctx.OwnDropHere))
+                ctx.OwnDropHere = StandingDropChance(ctx, ctx.Unit, ctx.Unit.Position, ctx.Unit, ctx.Unit.Position);
+            return ctx.OwnDropHere;
+        }
+
+        /// <summary>
+        /// ★ v0.3.28 test 2: how much less likely the unit itself is to go down at <paramref name="destination"/> than where
+        /// it stands, times its worth (0 when it is no safer there) - its side of the party's change (LeavesAlliesCost).
+        /// </summary>
+        private static float OwnFall(TacticalContext ctx, Vector3 destination)
+        {
+            var unit = ctx.Unit;
+            if (HorizontalDistance(unit.Position, destination) < 0.5f) return 0f;
+            try
+            {
+                float fall = OwnDropHere(ctx) - StandingDropChance(ctx, unit, destination, unit, destination);
+                return fall > 0f ? fall * AllyWorth(ctx, unit) : 0f;
+            }
+            catch (Exception ex)
+            {
+                Main.Verbose($"[Tactics] own fall {unit.CharacterName}: {ex.Message}");
                 return 0f;
             }
         }
@@ -4365,7 +4401,9 @@ namespace CompanionAI_Pathfinder.Tactics
                     string label = realTime ? "Back off out of melee" : "5ft step out of melee";
                     if (realTime)
                     {
-                        var risk = MoveRisk(ctx, point.Value);
+                        // ★ v0.3.28 test 2: a caster's or archer's back-off is worth the provoke it avoids, not its own
+                        // safety - that offsets what leaving costs the others; a melee unit's is worth its engagers' Threat.
+                        var risk = MoveRisk(ctx, point.Value, ownSafetyCounted: !castsInMelee && !ctx.HasRangedWeapon);
                         if (risk != null) { value -= risk.Cost; label += risk.Tag; }
                     }
                     list.Add(new Candidate
@@ -4394,7 +4432,7 @@ namespace CompanionAI_Pathfinder.Tactics
                         // disengage checks, Mobility, the attacks' drop chance, areas on the way). A flat half of the
                         // engagers' Threat was added to the danger there, outside the danger scale: once the fight's
                         // calibration lowered the scale, withdrawing from a single enemy was never worth it.
-                        var risk = MoveRisk(ctx, point.Value);
+                        var risk = MoveRisk(ctx, point.Value, ownSafetyCounted: true);   // ★ v0.3.28 test 2: pHere - pThere below
                         float pHere = RiskMath.RoundDropChance(hp, dangerHere);
                         float pThere = RiskMath.RoundDropChance(hp, IncomingDamage(ctx, unit, point.Value));
                         float value = (pHere - pThere) * AllyWorth(ctx, unit) * (1f - (risk?.StopChance ?? 0f)) - (risk?.Cost ?? 0f);
