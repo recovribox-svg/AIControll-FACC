@@ -1,6 +1,33 @@
 # Test builds
 
-## Current test build: v0.3.27-dev-test6 (3f005b9) - arrived walks end in time
+## Current test build: v0.3.28-dev-test1 (f00d679) - v0.3.27 log review
+
+**[Download the UMM test ZIP (f00d679)](AI-Control-FACC-v0.3.28-dev-test1-f00d679-UMM-test.zip?raw=true)**
+
+Direct link: <https://github.com/recovribox-svg/AIControll-FACC/raw/claude/dreamy-pasteur-b9h3rn/test-builds/AI-Control-FACC-v0.3.28-dev-test1-f00d679-UMM-test.zip>
+
+v0.3.27 plus fixes from your v0.3.27 logs (7 turn-based and 5 real-time fights, no mod errors;
+[docs/TACTICAL_AI.md](../docs/TACTICAL_AI.md) §98). Both modes unless noted.
+1. **Front-liners hold the enemy they are fighting.** In turn-based fight 3 Seelah, beside the Cultist Champion, used her
+   move to advance on the Cultist Archer and took the Champion's free attack (82 % to 18 %); Lann then walked past it
+   to heal her. Now:
+   - an advance counts the attack it gives up: if the companion could hit an enemy next turn from where it stands, walking
+     away from it is worth only the difference (`[leaves <enemy>]` in the log);
+   - every walk counts how much more exposed it leaves the rest of the party (the Champion swung at Camellia next):
+     `[leaves allies -N]`. A badly hurt companion's retreat is weighed against this too.
+2. **Shadows' touches are no longer free.** In turn-based fight 4 Seelah cast beside a Shadow four rounds running and
+   lost Strength to three touches: their Strength damage was not counted. Attacks that drain an ability score are now
+   priced (Shadows, Nocticula's Charisma drain, some devils).
+3. **Real time:** a walk whose target point is lost (it pointed at the map's origin) ends at once instead of after 6 s.
+
+UMM shows **0.3.28**. Startup line `[Build] v0.3.28 module=3cb426c7-4b45-4d06-b226-96a2b089931a`.
+- ZIP SHA-256 `b8842e024c845f94b20c54aa34869fb14cf7bfbb7462d6cf2ee140e6a54d35d3`; DLL SHA-256 `4b92deebe68c7e821f2e7f0cd09d8f7ffd20e1befe2a2e4c2675b7ae06726fa0`.
+- [Identity](AI-Control-FACC-v0.3.28-dev-test1-f00d679-UMM-test.identity.json) · [Checksums](SHA256SUMS.txt).
+- Checks: 350 unit tests pass; release build 0 warnings; reader verified on the game's blueprints. Not played yet.
+- **Test:** fights where a front-liner is engaged with one enemy while a more dangerous one stands behind; fights with
+  Shadows. Watch for front-liners now refusing to leave a weak enemy at all, or hurt companions not retreating.
+
+## Test 6: v0.3.27-dev-test6 (3f005b9) - arrived walks end in time (released as v0.3.27)
 
 **[Download the UMM test ZIP (3f005b9)](AI-Control-FACC-v0.3.27-dev-test6-3f005b9-UMM-test.zip?raw=true)**
 

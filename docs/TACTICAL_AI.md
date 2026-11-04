@@ -3239,3 +3239,35 @@ is intended; Ardub/body-blocking stays on hold.
   unit-tested). The no-progress rule and what a cancelled walk teaches (`RealTimeTactics.RecordStuck`) are unchanged;
   an in-range cancellation marks no target as unreachable.
 
+## 98. v0.3.27 log review (v0.3.28 test 1)
+
+- **The logs:** the v0.3.27 release (`ae5d4340`), a turn-based log (7 fights) and a real-time log (5 fights), on a slower
+  laptop (decisions slower throughout), no mod errors. The test 6 stuck rule fired as intended ("in range for 2 s").
+- **Turn-based fight 3 (the author's report):**
+  - R2: Seelah (82 %), beside the Cultist Champion she could hit (Attack 5.2), cast Daze (failed), then took
+    `Advance->Cultist Archer [AoO 1] (around Grease)` = 3.8 with her move. The Champion's attack of opportunity (hits on
+    16+ against AC 20, 1d8+3) rolled 19 and 8: 11 damage, 82 % to 18 %. It swung at Camellia (AC 15) next.
+  - Lann (100 %) walked 5.4 m past it to heal Seelah with a Cure Light Wounds item (12.7 against shooting the Archer
+    10.8; the attack missed).
+  - By the model's own numbers Seelah's risk was small (25 % to be hit, 14 HP against at most 11). Two flaws:
+    the advance was worth a share of attacking the Archer next turn although staying kept the Champion attack (only
+    the difference was gained), and leaving the Champion was not priced for the allies it then threatened (the
+    shielding credit of §95 only ever cancelled a walk's own price).
+- **Fixes:**
+  - `AddAdvanceCandidate`: `ValueModel.AdvanceWorth` - the target's attack less the one given up (`ctx.StayEnemy`,
+    the best enemy in reach now) when the destination leaves its reach; tagged `[leaves X]`.
+  - `PartyShift` (shared): Σ(allies' chance to go down before - after) × worth, the allies' "before" once per decision
+    (`TacticalContext.PartyDropHere`). `MoveRisk` adds `ValueModel.LeavesAlliesCost` (its negative part above 0.5) in
+    both branches (healthy; hurt, provoking or touching), tagged `[leaves allies -N]`. A withdrawal pays it too.
+  - On-hit ability damage: turn-based fight 4, Seelah cast Divine Zap beside a Shadow (her weapon cannot hurt it) four
+    rounds running; three touches took 4-6 Strength. Its touch deals no HP damage (`Shadow_Feature_StrengthDamage`:
+    `AddInitiatorAttackWithWeaponTrigger` on hit -> `ContextActionDealDamage` AbilityDamage 1d6 Strength), so its
+    attacks of opportunity were free. `CombatMath.OnHitAbilityDamage` reads it; `PriceAttacks` adds the expected
+    `ValueModel.AbilityDamageShare` of the score, priced as that share of the unit's worth in `DisengageRisk`,
+    `ProvokeRisk` and the stand-up choice. `tools/ProfileAudit` (`OnHitCheck`): 7 facts in 15,966 unit blueprints.
+  - Real time: a command whose aim point is the world origin ends at once (`IsCommandStuck`; Orvath's Color Spray on a
+    Vermlek walked towards (0, 0, 0), "108.2 m to go", for 6 s).
+- **Looked at, no change:** Camellia died to the Large Water Elemental (real-time fight 5) after walking into its 10-ft
+  reach to cast Grease (priced 11.4 against 24.8); twice a "+5ft" full attack was refused because the real path bent
+  around bodies (2.7 m; the next option ran); Orvath's All According to Plan each round is a one-round swift buff.
+

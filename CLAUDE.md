@@ -118,6 +118,11 @@ the author: the "in range for 2 s" stuck rule restarts on a flickering gap (prop
 game's `IsUnitCloseEnough` or 0.3 m past the radius (`Tactics/ArrivalRule`). Test ZIP `AI-Control-FACC-v0.3.27-dev-test6-3f005b9-UMM-test.zip` (MVID `ae5d4340-5d51-454f-bec5-2888b74cbed6`); 342 tests. At the author's request it is
 released as **v0.3.27** (commit `3f005b9`): `release/CompanionAI_Pathfinder_v0.3.27.zip` (byte-identical to the test6 ZIP),
 notes `release/CHANGELOG_v0.3.27.md`, `main` fast-forwarded; the author creates the GitHub release and tag `v0.3.27`.
+**v0.3.28 test 1 (4 November, `docs/TACTICAL_AI.md` §98, development only, not played):** review of the v0.3.27 logs. Advances
+count the attack they give up (`ValueModel.AdvanceWorth`), every move counts the rise in the party's danger
+(`TacticalEngine.PartyShift`, `ValueModel.LeavesAlliesCost`), attacks of opportunity count on-hit ability damage
+(`CombatMath.OnHitAbilityDamage`, Shadows), real-time walks to the world origin end at once. `Info.json` 0.3.28; test ZIP
+`AI-Control-FACC-v0.3.28-dev-test1-f00d679-UMM-test.zip` (MVID `3cb426c7-4b45-4d06-b226-96a2b089931a`); 350 tests.
 
 Historical handovers, superseded by the one above: [v0.3.22 release preparation](docs/RELEASE_0_3_22_HANDOVER.md)
 (27 October, PR #6–#12), [released-log review](docs/RELEASE_0322_LOG_REVIEW.md) (PR #13),
