@@ -1,6 +1,31 @@
 # Test builds
 
-## Current test build: v0.3.28-dev-test1 (f00d679) - v0.3.27 log review
+## Current test build: v0.3.28-dev-test2 (5c87b6d) - squishies free to step away
+
+**[Download the UMM test ZIP (5c87b6d)](AI-Control-FACC-v0.3.28-dev-test2-5c87b6d-UMM-test.zip?raw=true)**
+
+Direct link: <https://github.com/recovribox-svg/AIControll-FACC/raw/claude/dreamy-pasteur-b9h3rn/test-builds/AI-Control-FACC-v0.3.28-dev-test2-5c87b6d-UMM-test.zip>
+
+Test 1 (below, not played yet) plus one correction to its "leaves allies" cost ([docs/TACTICAL_AI.md](../docs/TACTICAL_AI.md) §99).
+- **The problem (your point):** the cost counted only how much more danger the others would be in, never how much
+  safer the companion walking away became. A caster or archer stepping out of a melee that a front-liner shared was
+  charged for the front-liner taking the blows, even though the party was safer for it.
+- **The fix:** the cost is now the whole party's change, the walker included. Its own relief only cancels the cost,
+  never pays for the move.
+  - A squishy companion leaving an enemy a front-liner holds: the enemy turns to the harder target, the party is
+    safer, no cost.
+  - A front-liner walking off the enemy it holds, leaving a squishy in its reach: still charged.
+  - This rests on armour class and HP, not class names: a heavily armoured cleric counts as a front-liner, a lightly
+    armoured fighter does not.
+
+UMM shows **0.3.28**. Startup line `[Build] v0.3.28 module=cd797bdb-e0cc-4fd7-8ffc-54e02040954f`.
+- ZIP SHA-256 `7638caec9b78317b02d3527973d58e69450863af97e6f22927e2babaa6410df5`; DLL SHA-256 `0f18d91142e72d569a0986ca3ce1fc37a1d6e8acb9b4f160ceedd0f7649ab4fe`.
+- [Identity](AI-Control-FACC-v0.3.28-dev-test2-5c87b6d-UMM-test.identity.json) · [Checksums](SHA256SUMS.txt).
+- Checks: 354 unit tests pass; release build 0 warnings; no new game bindings. Not played yet.
+- **Test:** test 1's checks, plus casters and archers in melee next to a front-liner: they should step or back away to
+  cast or shoot without `[leaves allies]` holding them back; front-liners leaving squishies exposed still show it.
+
+## Test 1: v0.3.28-dev-test1 (f00d679) - v0.3.27 log review (also in test 2)
 
 **[Download the UMM test ZIP (f00d679)](AI-Control-FACC-v0.3.28-dev-test1-f00d679-UMM-test.zip?raw=true)**
 

@@ -3271,3 +3271,24 @@ is intended; Ardub/body-blocking stays on hold.
   reach to cast Grease (priced 11.4 against 24.8); twice a "+5ft" full attack was refused because the real path bent
   around bodies (2.7 m; the next option ran); Orvath's All According to Plan each round is a one-round swift buff.
 
+## 99. Leaving allies priced by the whole party (v0.3.28 test 2)
+
+- **The author's point:** a caster or archer should be free to make distance from a melee enemy; drawing its attacks is
+  the front-liner's job.
+- **Verified flaw:** `MoveRisk` added `LeavesAlliesCost(PartyShift)` - the others' rise only. The mover's own lower
+  danger was credited only where an option counts it itself (Withdraw: pHere - pThere; the melee back-off: engagers'
+  Threat × 0.4). Affected: the real-time "Back off out of melee" of casters and archers, archers' walk-to-shoot,
+  advances, touch approaches, area exits (the turn-based 5-foot step out prices no move).
+- **Evidence** (the engine's formulas on the v0.3.27 fight 3 numbers: Champion +6, Seelah AC 20 / 14 HP, Camellia AC 15 /
+  ~20 HP, worth 30; danger scale 0.37 and full): Camellia stepping away while Seelah holds the Champion was charged 1.2
+  / 6.8 although the party is safer (Camellia -1.9 / -8.1, Seelah +1.2 / +6.8); Seelah walking off it was charged
+  1.1 / 4.8 (net +0.4 / +0.8). Unit tests `SquishySteppingAwayFromASharedEnemy_PaysNothing`,
+  `FrontLinerWalkingOffTheEnemyItHolds_StillPays`.
+- **Fix:** `ValueModel.LeavesAlliesCost(shift, ownFall)` - the net rise of the whole party, the mover's own fall
+  (`OwnFall`: `StandingDropChance` here vs there × its worth; here once per decision, `TacticalContext.OwnDropHere`)
+  offsetting; never below 0, so relief never pays a move. `MoveRisk(..., ownSafetyCounted)` for Withdraw and the melee
+  back-off. Cost: one more `StandingDropChance` per priced walk.
+- **Effect on the §98 case:** Seelah's own risk beside the Champion was real (14 HP), so her walk-off's party cost is
+  smaller than test 1's (about 0.4 at that fight's scale, under the 0.5 noise floor). Her advance is held back mainly by
+  `AdvanceWorth` (the Champion attack it gives up).
+

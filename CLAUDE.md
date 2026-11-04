@@ -123,6 +123,9 @@ count the attack they give up (`ValueModel.AdvanceWorth`), every move counts the
 (`TacticalEngine.PartyShift`, `ValueModel.LeavesAlliesCost`), attacks of opportunity count on-hit ability damage
 (`CombatMath.OnHitAbilityDamage`, Shadows), real-time walks to the world origin end at once. `Info.json` 0.3.28; test ZIP
 `AI-Control-FACC-v0.3.28-dev-test1-f00d679-UMM-test.zip` (MVID `3cb426c7-4b45-4d06-b226-96a2b089931a`); 350 tests.
+**v0.3.28 test 2 (4 November, `docs/TACTICAL_AI.md` §99, not played):** the leaves-allies cost is the whole party's net rise
+(`ValueModel.LeavesAlliesCost(shift, ownFall)`, `TacticalEngine.OwnFall`), so casters and archers may step away from a
+melee a front-liner holds. Test ZIP `AI-Control-FACC-v0.3.28-dev-test2-5c87b6d-UMM-test.zip` (MVID `cd797bdb-e0cc-4fd7-8ffc-54e02040954f`); 354 tests.
 
 Historical handovers, superseded by the one above: [v0.3.22 release preparation](docs/RELEASE_0_3_22_HANDOVER.md)
 (27 October, PR #6–#12), [released-log review](docs/RELEASE_0322_LOG_REVIEW.md) (PR #13),
