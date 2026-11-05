@@ -53,7 +53,7 @@ Log references below use LF-delimited physical lines, as `rg -n` does. Some comb
 
 **Impact:** misleading offline conclusions for burn talents and other resource features; this was not another live gameplay bug.
 
-**Fix/risk:** `ValueModel.BuffFallbackQuality` (`Tactics/ValueModel.Resources.cs:12`) is now shared by live appraisal and the offline tool. Recognized effects, enchant carriers, item thresholds and lazy resource queries preserve their live priority. The tool includes unconditional `AbilityAcceptBurnOnCast`, skips unread day-long markers, and labels `AbilityKineticist` costs owner-dependent instead of pretending dumps establish current quiver/infusion costs. Ten tests cover the shared formula. Risk low; the tool still cannot simulate a real character or recipient. Its actual blueprint run remains blocked as described under verification.
+**Fix/risk:** `ValueModel.BuffFallbackQuality` (`Tactics/ValueModel.Resources.cs:12`) is now shared by live appraisal and the offline tool. Recognized effects, enchant carriers, item thresholds and lazy resource queries preserve their live priority. The tool includes unconditional `AbilityAcceptBurnOnCast`, skips unread day-long markers, and labels `AbilityKineticist` costs owner-dependent instead of pretending dumps establish current quiver/infusion costs. Ten tests cover the shared formula. Risk low; the tool still cannot simulate a real character or recipient. After the author supplied the two missing DLLs, the strict reader run completed; see verification and the saved reader snapshot below.
 
 ### 5. Preparation and Overflow policies lacked executable coverage
 
@@ -177,7 +177,7 @@ Sharpshooter-specific minimums: Exploding/Piercing Arrows3, Cluster11, Armor-Pie
 
 **Evidence:** supplied baseline/marker blueprint relationships show Enveloping Winds increments ranged miss chance by5 percentage points per marker rank; Searing Flesh increases retaliation on specified natural/unarmed melee hits, not bow damage. Native `ShroudOfWater.OnTurnOn` computes AC as min(floor(base×1.5),base+upgrade rank), using Armor/Shield descriptors and rank recalculation. Each unsaturated upgrade adds1AC before stacking. Flesh of Stone has readable DR; Aerial Evasion directly grants Evasion.
 
-Five statically traced candidates for the newly zeroed marker branch are Searing Flesh, Enveloping Winds, and Shroud Armor/Shield/Upgrade. Flesh of Stone and Knight's Resolve have readable paths; Aerial Evasion already reached the older unread-limited zero. This is not a runtime availability census. Broader blueprint folders are required to enumerate every affected class ability.
+Five statically traced candidates for the newly zeroed marker branch are Searing Flesh, Enveloping Winds, and Shroud Armor/Shield/Upgrade. Flesh of Stone and Knight's Resolve have readable paths; Aerial Evasion already reached the older unread-limited zero. The completed reader run confirms those zero/readable verdicts, including Aerial Evasion already scoring zero. This is not a runtime availability census. Broader blueprint folders are required to enumerate every affected class ability.
 
 **Impact:** zero prevents unsupported spending but can omit valuable protection. Existing appraised parts, recognized effects and enchant carriers remain valued before fallback. OOC IsWorthKeepingUp already excludes these unread markers; toggle fallback has a separate older positive OnlyUnrecognized policy and is not globally equivalent.
 
@@ -226,14 +226,21 @@ Five statically traced candidates for the newly zeroed marker branch are Searing
 | Baseline and final Release build against supplied real DLLs |Both succeed with0 warnings/errors; no deploy flag used.|
 | SigDump before/after |10 intended Assembly-CSharp safety-gate signatures added;0 removed; no new Unity/Owlcat/Harmony signatures. Full real-DLL compilation verifies native symbol availability.|
 | `git diff --check` |Pass.|
-| ProfileAudit, strict baseline and final on supplied Kineticist dumps |INCOMPLETE/exit1:5 loaded,800 failed. Missing `UnityEngine.SharedInternalsModule.dll` prevents meaningful ability verdicts; no passing coverage claimed.|
+| ProfileAudit, strict baseline |Initially INCOMPLETE/exit1:5 loaded,800 failed because SharedInternals was absent.|
+| ProfileAudit, strict final after both supplied DLLs |Pass/exit0, no failure allowance:800 unique blueprints loaded,0 failed;286 ability/toggle rows,0 reader errors. Saved [reader snapshot](CODEX_REVIEW_KINETIC_SHARPSHOOTER_PROFILE.txt).|
 | In-game replay of this review branch |Not run. Supplied logs are test3, MVID `09bc562d-a4dc-4c51-a8ff-ebc2e6f1cf3a`; they validate historical observations, not these fixes.|
 
 Final validation build DLL SHA-256: `26e3dab2bedb109e610bbe38c0a1d281a97483f47dbfdbf2ce1705c094c30f16`. No new release or test package is published by this review; existing ZIPs and version metadata are unchanged.
 
-To retry blueprint execution, supply **`UnityEngine.SharedInternalsModule.dll` from the same installation's `Wrath_Data/Managed`**. Other metadata references are absent too, but the current failure establishes only this first blocking dependency; a retry may reveal another. Supply the original mechanics-audit Markdown for an exact premise-by-premise review. The second cone GUID needs its matching spell blueprint for verified naming, and allocation attribution needs a live profile/new diagnostic capture rather than additional static rules alone.
+The author subsequently supplied `UnityEngine.SharedInternalsModule.dll`, which raised strict loading to799 with one unrelated `ElementalEngineCold13` failure requiring `Unity.Mathematics.dll`. A documented `--allow-failures 1` diagnostic run produced286 rows with0 reader errors and was explicitly PARTIAL. After the author supplied `Unity.Mathematics.dll` too, a new **strict run without an allowance** loaded all800 unique blueprints with0 failures and produced286 rows with0 errors. No replacement dependency stub was invented; the harness uses only its normal documented runtime rewrites in scratch copies. Both original supplied game DLLs remain unchanged and outside the repository.
 
-Reproduction: build the mod with `dotnet build CompanionAI_Pathfinder.csproj -c Release -p:ManagedPath=<real DLL folder> -p:UmmPath=<UMM DLL folder>`; run the tests above; run SigDump on preserved baseline/final DLLs and compare sorted output. The attempted strict reader command used `tools/ProfileAudit/run.sh <real DLL folder> <absolute mod DLL> <scratch folder> <report file> <Kineticist dump folder>` with no allowed-failure override.
+The completed run confirms Searing Flesh, Enveloping Winds, all three Shroud abilities and Aerial Evasion score zero as unread limited-use buffs, while Flesh of Stone retains readable physical DR. All17 Exploding Arrows,17 Piercing Arrows and18 Spindle variants are valued as damage. Armor-Piercing, Cluster Arrows and Unraveling report supported. The quiver's generic fallback is explicitly owner-dependent; its one-burn cost and special preparation route, rather than that generic label, govern actual AI use.
+
+**Remaining reader scope limit:** Chain Arrows reports supported but no matching ricochet. The supplied blast graph's alternative HasBuff condition references external GUID `5f7d567ae4054cc291e42fc43ef5a046`; target-count property `4a18040254d040f78c298f10649eab71` is also absent. The ricochet reader rejects an unresolved alternative. Zero matching ricochets in this archive therefore does **not** prove Chain Arrows fails in the running game or validate it completely. For that specific follow-up, the two referenced blueprint dumps are needed. No code change follows from missing input.
+
+No additional DLL is needed for the completed strict Kineticist reader run. The original mechanics-audit Markdown remains absent for an exact premise-by-premise review. The second cone GUID needs its matching spell blueprint for verified naming, and allocation attribution needs a live profile/new diagnostic capture rather than additional static rules alone.
+
+Reproduction: build the mod with `dotnet build CompanionAI_Pathfinder.csproj -c Release -p:ManagedPath=<real DLL folder> -p:UmmPath=<UMM DLL folder>`; run the tests above; run SigDump on preserved baseline/final DLLs and compare sorted output. The initial strict reader command used `tools/ProfileAudit/run.sh <real DLL folder> <absolute mod DLL> <scratch folder> <report file> <Kineticist dump folder>` with no allowed-failure override.
 
 ## Focused gameplay handover
 
@@ -244,3 +251,6 @@ Reproduction: build the mod with `dotnet build CompanionAI_Pathfinder.csproj -c 
 5. Enter a group fight in each combat mode. Confirm quiver ranks pay costly blasts, partial ranks leave only the native shortfall as burn, and one archer blast is one action. The bow full attack should still win where its real value is greater. No out-of-combat preparation should fire while any party member is fighting.
 6. Confirm unread burn markers are not guessed into use; manual defensive talent use must remain possible. Capture current burn/ranks before and after actual casts, rather than summing delayed native text.
 7. Replay Fan of Flames and the other warned cone with enemies/nearby allies; save complete new warning messages and note geometry. Record slow decisions and an allocation profile if stutter persists. This audit does not change movement/kiting or declare those failures repaired.
+
+
+Final reader reproduction: run the same generated harness after staging the two supplied DLLs, with `dotnet ProfileAudit.dll <Kineticist dump folder> <report file>` and no `--allow-failures` option. Its mod DLL SHA-256 matched the validation build above.
