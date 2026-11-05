@@ -173,10 +173,12 @@ namespace CompanionAI_Pathfinder.Tactics
         {
             float p = est.FirstHitChance;
             if (!autoThreat || p <= 0f) return est.ExpectedDamage;
-            // The weapon's threat range (FirstCritChance = threat x hit x confirmation); 0 against a target immune to crits.
-            float threat = est.FirstCritChance / (p * p);
+            // The weapon's threat range; 0 against a target immune to crits.
+            // ★ v0.3.28 test 6: every hit threatens, so a hit is a critical at the confirmation chance (about the hit
+            // chance) instead of min(threat, hit) (ValueModel.CritFactor, in the estimate already): the difference.
+            float threat = est.FirstThreatChance;
             if (threat <= 0f) return est.ExpectedDamage;
-            return est.ExpectedDamage + (1f - Mathf.Clamp01(threat)) * p * (est.CritMultiplier - 1) * est.FirstPerHit;
+            return est.ExpectedDamage + p * Math.Max(0f, p - Math.Min(Mathf.Clamp01(threat), p)) * (est.CritMultiplier - 1) * est.FirstPerHit;
         }
 
         /// <summary>

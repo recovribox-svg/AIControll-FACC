@@ -42,6 +42,8 @@ namespace CompanionAI_Pathfinder.Tactics
         public float FirstPerHit;
         /// <summary>★ test5: chance the first attack is a critical hit (threat range × hit chance).</summary>
         public float FirstCritChance;
+        /// <summary>★ v0.3.28 test 6: the first attack's critical range as a share of the d20 (0 against an immune target).</summary>
+        public float FirstThreatChance;
         public float CritMultiplier = 2f;
         /// <summary>★ v0.3.18: chance at least one of the attacks hits (the kill chance, ValueModel.KillChance).</summary>
         public float AnyHitChance;
@@ -273,13 +275,16 @@ namespace CompanionAI_Pathfinder.Tactics
                 // past the damage reduction and at what the target keeps of physical damage.
                 float modeChange = Math.Max(0f, line.RawPerHit + d.Value - line.DamageReduction) - Math.Max(0f, line.RawPerHit - line.DamageReduction);
                 float perHit = Math.Max(0f, line.GameHit + modeChange * line.PhysicalFactor) + line.BladeBlast;
-                float critExtra = line.ThreatChance * p * (line.CritMultiplier - 1) * perHit;
+                // ★ v0.3.28 test 6: a threat is a roll in the critical range that also hits, so never more likely than the
+                // hit itself (ValueModel.CritFactor, one rule with the abilities that roll to hit).
+                float critExtra = p * perHit * (ValueModel.CritFactor(line.ThreatChance, p, line.CritMultiplier) - 1f);
                 if (line.Index == 0)
                 {
                     result.FirstAttackBonus = line.AttackBonus + d.Key;
                     result.FirstArmorClass = line.ArmorClass;
                     result.FirstPerHit = perHit;
-                    result.FirstCritChance = line.ThreatChance * p * p;     // threat, then the confirmation roll
+                    result.FirstCritChance = Math.Min(line.ThreatChance, p) * p;     // a threat that hits, then the confirmation roll
+                    result.FirstThreatChance = line.ThreatChance;
                     result.CritMultiplier = Math.Max(1, line.CritMultiplier);
                     result.FirstPhysicalFactor = line.PhysicalFactor;
                 }
@@ -296,6 +301,10 @@ namespace CompanionAI_Pathfinder.Tactics
             Routines.Clear();
             HitsOnTarget.Clear();   // ★ v0.3.20 (test3): read with the routines, forgotten with them
             ParamsCache.Clear();    // ★ v0.3.25 (test2 logs)
+            // ★ v0.3.28 test 6: the attack rolls and critical factors read with them (a preview changes prone in-frame).
+            Rolls.Clear();
+            CritStats.Clear();
+            CritFactors.Clear();
         }
 
         // ★ v0.3.25 (test2 logs, performance): an ability's parameters (caster level, DC, spell level, metamagic) for the
@@ -419,6 +428,15 @@ namespace CompanionAI_Pathfinder.Tactics
         /// decline. Also read from it: critical-hit immunity (CritImmunity unless IgnoreCritImmunity, as the damage rule
         /// applies it) and what the target keeps of physical damage. Mean of the least and the most. Once a frame.
         /// </summary>
+        /// <summary>★ v0.3.28 test 6: the target takes no critical hits from this weapon (the hit read, once a frame).</summary>
+        private static bool CritImmune(UnitEntityData unit, UnitEntityData target, ItemEntityWeapon weapon)
+        {
+            if (HitsOnTarget.TryGetValue($"{unit.UniqueId}|{target.UniqueId}|{weapon.UniqueId}", out var cached) && cached.Frame == Time.frameCount)
+                return cached.CritImmune;
+            var stats = Rulebook.Trigger(new RuleCalculateWeaponStats(unit, weapon));
+            return ReadHitOnTarget(unit, target, weapon, stats).CritImmune;
+        }
+
         private static HitOnTarget ReadHitOnTarget(UnitEntityData unit, UnitEntityData target, ItemEntityWeapon weapon, RuleCalculateWeaponStats stats)
         {
             int frame = Time.frameCount;
@@ -646,7 +664,72 @@ namespace CompanionAI_Pathfinder.Tactics
         {
             float raw = EstimateAbilityDamageRaw(ability, profile, target, bladeWeapon);
             // ★ v0.3.20 (0.3.19 feedback): a kinetic blast's estimate times what its hits really dealt so far.
-            return raw > 0f ? raw * DamageObserver.BlastFactor(ability?.Caster?.Unit, ability?.Blueprint) : raw;
+            // ★ v0.3.28 test 6: and its critical hits (AbilityDamageScale). A blade's blast rides the blade's own attack,
+            // whose criticals the weapon routine counts.
+            return raw > 0f ? raw * AbilityDamageScale(ability, profile, target, bladeWeapon == null) : raw;
+        }
+
+        /// <summary>
+        /// ★ v0.3.28 test 6: what multiplies an ability's raw damage estimate: the share of a kinetic blast's estimate its
+        /// hits really dealt (DamageObserver.BlastFactor, measured on hits that were not criticals) and, for an attack roll,
+        /// its critical hits (AbilityCritFactor). One place, so the infusion planner's before and after agree.
+        /// </summary>
+        internal static float AbilityDamageScale(AbilityData ability, AbilityProfile profile, UnitEntityData target, bool criticals = true) =>
+            DamageObserver.BlastFactor(ability?.Caster?.Unit, ability?.Blueprint) *
+            (criticals ? AbilityCritFactor(ability, profile, target) : 1f);
+
+        private struct CritKey : IEquatable<CritKey>
+        {
+            public AbilityData Ability;
+            public UnitEntityData Target;
+            public bool Equals(CritKey o) => ReferenceEquals(Ability, o.Ability) && ReferenceEquals(Target, o.Target);
+            public override bool Equals(object o) => o is CritKey k && Equals(k);
+            public override int GetHashCode() => ((Ability?.GetHashCode() ?? 0) * 397) ^ (Target?.GetHashCode() ?? 0);
+        }
+
+        private static readonly Dictionary<CritKey, float> CritFactors = new Dictionary<CritKey, float>();
+        private static int s_CritFrame = -1;
+
+        /// <summary>
+        /// ★ v0.3.28 test 6: what critical hits add to a landed hit of an ability that rolls to hit (ValueModel.CritFactor).
+        /// The game multiplies the damage of a confirmed critical by the attack roll's weapon multiplier - a kinetic archer's
+        /// bow (x3 for a longbow), a ray's x2 - or x2 for a magus or eldritch archer spell
+        /// (ContextActionDealDamage.GetDamageInfo, unless the action ignores criticals). The threat range is the delivery
+        /// weapon's (RuleCalculateWeaponStats: keen, Improved Critical), a target immune to criticals takes none
+        /// (RuleCalculateDamage.CritImmunity unless the attacker ignores it), and the hit chance is the spell attack roll's.
+        /// Once a frame per ability and target. 1 for anything without an attack roll.
+        /// </summary>
+        internal static float AbilityCritFactor(AbilityData ability, AbilityProfile profile, UnitEntityData target)
+        {
+            if (ability == null || profile == null || target == null || !profile.NeedsAttackRoll) return 1f;
+            var caster = ability.Caster?.Unit;
+            if (caster == null) return 1f;
+            if (Time.frameCount != s_CritFrame) { CritFactors.Clear(); s_CritFrame = Time.frameCount; }
+            var key = new CritKey { Ability = ability, Target = target };
+            if (CritFactors.TryGetValue(key, out float cached)) return cached;
+            float factor = 1f;
+            try
+            {
+                bool any = false;
+                foreach (var action in profile.Damage)
+                    if (action is ContextActionDealDamage dmg && !dmg.IgnoreCritical) { any = true; break; }
+                if (any && DeliveryWeapon(caster, ability, out var weapon, out _, out _))
+                {
+                    CriticalOf(caster, weapon, out int range, out int weaponMultiplier);
+                    ability.IsMagusSpell(out bool magus, out bool eldritchArcher);
+                    int multiplier = magus || eldritchArcher ? 2 : weaponMultiplier;
+                    float threat = Mathf.Clamp01(range / 20f);
+                    if (threat > 0f && CritImmune(caster, target, weapon)) threat = 0f;
+                    factor = ValueModel.CritFactor(threat, SpellAttackHitChance(caster, target, ability), multiplier);
+                }
+            }
+            catch (Exception ex)
+            {
+                Main.Verbose($"[Math] critical hits of {ability.Name}: {ex.Message}");
+                factor = 1f;
+            }
+            CritFactors[key] = factor;
+            return factor;
         }
 
         /// <summary>★ v0.3.28 (codex review): a ricochet's native layer selects its own damage actions. Reuse the same
@@ -656,7 +739,8 @@ namespace CompanionAI_Pathfinder.Tactics
         {
             float raw = EstimateAbilityDamageRaw(ability, profile, target, null,
                 action => profile.AppliesAtDeliveryLayer(action, ability, target, layer));
-            return raw > 0f ? raw * DamageObserver.BlastFactor(ability?.Caster?.Unit, ability?.Blueprint) : raw;
+            // ★ v0.3.28 test 6: a jump reuses the first attack roll (RuleAttackRoll.CopyWithNewTarget), its critical too.
+            return raw > 0f ? raw * AbilityDamageScale(ability, profile, target) : raw;
         }
 
         /// <summary>★ v0.3.20: the estimate before the learned share of a blast (DamageObserver checks against it).</summary>
@@ -1661,6 +1745,74 @@ namespace CompanionAI_Pathfinder.Tactics
             }
         }
 
+        private struct RollKey : IEquatable<RollKey>
+        {
+            public UnitEntityData Caster, Target;
+            public ItemEntityWeapon Weapon;
+            public StatType? Stat;
+            public Kingmaker.RuleSystem.AttackType? Against;
+            public bool Equals(RollKey o) => ReferenceEquals(Caster, o.Caster) && ReferenceEquals(Target, o.Target) &&
+                                             ReferenceEquals(Weapon, o.Weapon) && Stat == o.Stat && Against == o.Against;
+            public override bool Equals(object o) => o is RollKey k && Equals(k);
+            public override int GetHashCode()
+            {
+                unchecked
+                {
+                    int h = Caster?.GetHashCode() ?? 0;
+                    h = h * 397 ^ (Target?.GetHashCode() ?? 0);
+                    h = h * 397 ^ (Weapon?.GetHashCode() ?? 0);
+                    h = h * 397 ^ (Stat.HasValue ? (int)Stat.Value + 1 : 0);
+                    return h * 397 ^ (Against.HasValue ? (int)Against.Value + 1 : 0);
+                }
+            }
+        }
+
+        private static readonly Dictionary<RollKey, KeyValuePair<int, int>> Rolls = new Dictionary<RollKey, KeyValuePair<int, int>>();
+        private static int s_RollFrame = -1;
+
+        /// <summary>
+        /// ★ v0.3.28 test 6: the attack bonus and AC of an ability's attack roll (the delivery weapon, its stat replacement and
+        /// the AC it is made against: DeliveryWeapon), and the share that lands past concealment and mirror images. Read by
+        /// the game's rules once a frame per caster, target and delivery: an archer's 50 blast variants share the bow's roll.
+        /// </summary>
+        internal static bool SpellAttackRoll(UnitEntityData caster, UnitEntityData target, AbilityData ability,
+                                             out int attackBonus, out int armorClass, out float lands)
+        {
+            attackBonus = armorClass = 0;
+            lands = 1f;
+            if (caster == null || target == null || !DeliveryWeapon(caster, ability, out var weapon, out var stat, out var against)) return false;
+            if (Time.frameCount != s_RollFrame) { Rolls.Clear(); s_RollFrame = Time.frameCount; }
+            var key = new RollKey { Caster = caster, Target = target, Weapon = weapon, Stat = stat, Against = against };
+            if (!Rolls.TryGetValue(key, out var roll))
+            {
+                int ab;
+                using (stat.HasValue ? ContextData<AttackBonusStatReplacement>.Request().Setup(stat.Value) : null)
+                    ab = Rulebook.Trigger(new RuleCalculateAttackBonus(caster, target, weapon, 0)).Result;
+                int ac = Rulebook.Trigger(new RuleCalculateAC(caster, target, against ?? weapon.Blueprint.AttackType)).Result;
+                Rolls[key] = roll = new KeyValuePair<int, int>(ab, ac);
+            }
+            attackBonus = roll.Key;
+            armorClass = roll.Value;
+            lands = LandsPastDefences(caster, target);
+            return true;
+        }
+
+        private static readonly Dictionary<ItemEntityWeapon, KeyValuePair<int, int>> CritStats = new Dictionary<ItemEntityWeapon, KeyValuePair<int, int>>();
+        private static int s_CritStatsFrame = -1;
+
+        /// <summary>★ v0.3.28 test 6: a weapon's critical range and multiplier (RuleCalculateWeaponStats), once a frame.</summary>
+        internal static void CriticalOf(UnitEntityData caster, ItemEntityWeapon weapon, out int range, out int multiplier)
+        {
+            if (Time.frameCount != s_CritStatsFrame) { CritStats.Clear(); s_CritStatsFrame = Time.frameCount; }
+            if (!CritStats.TryGetValue(weapon, out var crit))
+            {
+                var stats = Rulebook.Trigger(new RuleCalculateWeaponStats(caster, weapon));
+                CritStats[weapon] = crit = new KeyValuePair<int, int>(stats.CriticalRange, stats.CriticalMultiplier);
+            }
+            range = crit.Key;
+            multiplier = crit.Value;
+        }
+
         /// <summary>
         /// Chance an attack-roll spell (touch / ranged touch / weapon-delivered) hits.
         /// ★ v0.3.18 (C2): by the game's rules, as weapons are: the attack bonus with the delivery's own weapon (the ray or
@@ -1673,15 +1825,9 @@ namespace CompanionAI_Pathfinder.Tactics
         {
             try
             {
-                if (caster != null && target != null && DeliveryWeapon(caster, ability, out var weapon, out var stat, out var against))
-                {
-                    int ab;
-                    using (stat.HasValue ? ContextData<AttackBonusStatReplacement>.Request().Setup(stat.Value) : null)
-                        ab = Rulebook.Trigger(new RuleCalculateAttackBonus(caster, target, weapon, 0)).Result;
-                    int ac = Rulebook.Trigger(new RuleCalculateAC(caster, target, against ?? weapon.Blueprint.AttackType)).Result;
+                if (SpellAttackRoll(caster, target, ability, out int ab, out int ac, out float lands))
                     // ★ v0.3.28 test 3: a ray or touch attack meets concealment and mirror images like a weapon's.
-                    return Mathf.Clamp(HitProbability(ab, ac), 0.05f, 0.95f) * LandsPastDefences(caster, target);
-                }
+                    return Mathf.Clamp(HitProbability(ab, ac), 0.05f, 0.95f) * lands;
             }
             catch (Exception ex)
             {

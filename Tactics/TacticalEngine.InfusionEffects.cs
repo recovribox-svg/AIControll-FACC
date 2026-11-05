@@ -262,7 +262,7 @@ namespace CompanionAI_Pathfinder.Tactics
                 after = CombatMath.EstimateAbilityDamageRaw(blast, profile, hit.Target, null,
                     branchBuff == null ? (Func<GameAction, EffectApplies>)null :
                         action => profile.AppliesWithInfusion(action, blast, hit.Target, branchBuff, on), physicalBypass) *
-                    DamageObserver.BlastFactor(ctx.Unit, blast.Blueprint);
+                    CombatMath.AbilityDamageScale(blast, profile, hit.Target);   // ★ v0.3.28 test 6: criticals as "before" has them
             }
             resultingDamage = after;
             bool endsRegeneration = CombatMath.AbilityEndsRegeneration(profile, hit.Target);
