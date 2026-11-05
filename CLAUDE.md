@@ -138,6 +138,12 @@ exploration - native AI skips out-of-combat groups; queued-order guard; ricochet
 damage; half packets out of blast calibration) and PR #19 (catalogue "Hide blocked") reviewed and merged (merge commits
 `fc2b147`, `6841cce`); follow-up `96ba9cc` keeps a quiver refusal while its signature is unchanged (10 s backstop). Test ZIP
 `AI-Control-FACC-v0.3.28-dev-test5-96ba9cc-UMM-test.zip` (MVID `fade5da1-cea0-4048-a243-54873850148f`); 388 tests.
+**v0.3.28 test 6 (5 November, `docs/TACTICAL_AI.md` §103, author-requested, not played):** kineticist/archer engine scaled
+by the game's own numbers - planned-shot quiver reserve and in-combat refill (`PlannedShotBurn`, `TryQuiverRefill`), arrow
+and burn prices shared with the infusion planner (`KineticPriceBook`), Overflow in expected damage, critical hits for
+attack-roll abilities (`AbilityCritFactor`, `ValueModel.CritFactor`), Deadly Aim on archer blasts (`ChooseBlastAttackModes`),
+Enveloping Winds / Shroud of Water increments (`TacticalEngine.RankTalents`), context counters in slow lines. Test ZIP
+`AI-Control-FACC-v0.3.28-dev-test6-2765e04-UMM-test.zip` (MVID `3402358f-f2ee-433f-af3a-fdc6c4755e8d`); 406 tests.
 
 Historical handovers, superseded by the one above: [v0.3.22 release preparation](docs/RELEASE_0_3_22_HANDOVER.md)
 (27 October, PR #6–#12), [released-log review](docs/RELEASE_0322_LOG_REVIEW.md) (PR #13),

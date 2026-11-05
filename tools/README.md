@@ -48,6 +48,10 @@ loaded reference plain-blast graphs (layer0 full versus nonzero-layer half), and
 explicitly half packets. No actor or cast is created. Missing reference graphs are explicitly marked SKIPPED;
 failures return1. These checks verify reader behavior, not live combat. The report lists their counts separately.
 
+★ v0.3.28 test 6: it also checks the rank-increment reader (`TacticalEngine.RankTalents`): its reflected game members are
+bound, Enveloping Winds' miss chance reads its effect feature's rank once with an evaluable progression, and both Shroud of
+Water effect features name the upgrade feature (`RANK-INCREMENT n checks, failures m`; missing blueprints are SKIPPED).
+
 Substance infusions (activatable group `SubstanceInfusion`) are reported through the mod's own scoped infusion reader
 (`TacticalEngine.DescribeInfusion`, read by reflection): verdict `infusion selection: supported` or
 `infusion selection: withheld (<the engine's reason>)`, with the buff, whether it has a damage graph, the trigger's

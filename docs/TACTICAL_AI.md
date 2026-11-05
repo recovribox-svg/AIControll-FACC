@@ -3442,3 +3442,76 @@ merge `6841cce`), reviewed by Claude and merged into development on 5 November 2
   - bow-blast criticals and Deadly Aim are missing;
   - allocations are not attributed to their source.
 
+
+## 103. Kineticist and archer engine at every level (v0.3.28 test 6)
+
+Author request (5 November): the open items of §101-102, built for every stage of the game. Burn per day and per round,
+arrows per quiver, Overflow, infusion costs and reductions, Deadly Aim's size and critical ranges all change as a character
+levels, so every rule below reads them from the game at the time; nothing is fixed to Orvath's build.
+
+- **Planned-shot reserve (`PlannedShotBurn`).** The costliest shot the unit may fire: each own blast with the substance
+  infusion that is on, or with one the AI may switch on (the infusion planner's supported, available, unblocked options,
+  priced by `KineticInfusionCost.TryReplace`, which keeps the game's own decreases and specialisation), and any other kinetic
+  ability the arrows pay. Out-of-combat preparation (`QuiverToPrepare`) and the in-combat refill keep at least that many
+  arrows. In combat it is memoised per fight, round and block-list revision. It does not depend on which infusion is on,
+  since every option is compared.
+- **In-combat refill (`TryQuiverRefill`).** Offered whenever the arrows are fewer than the planned shot, not only when burn
+  blocks every blast (plain blasts cost 0, so that never happened). Worth `ValueModel.QuiverRefillWorth`:
+  - the best blast the new arrows pay for, over the best standard or full-round action now;
+  - times the smaller of the rounds left after this one and the shots the arrows cover;
+  - less the quiver's own burn.
+
+  The blast with arrows is either:
+  - one castable now while paying burn, worth the burn and arrows no longer paid; or
+  - a burn-blocked one, scored by `EvaluateAbility` (infusions on counted), at most four a round
+    (`RefillBlastBudget`), ordered by how well their element's free blast does now, then by cost. Memoised per fight,
+    round and arrows.
+
+  Affordability follows the game's limits after the quiver's burn (`MaxBurnPerRound`, `LeftBurn`).
+- **Prices (`KineticPriceBook`, one per decision, on `TacticalContext`).**
+  - `PriceBurn` and the infusion planner price a blast the same way: burn taken plus arrows spent.
+  - Arrow price (`ValueModel.ArrowPrice`): while another quiver can be made, an arrow costs one burn's price divided by
+    the arrows a quiver makes (class level + Constitution bonus, from the ability); once none can be made, a whole burn's
+    price. Labels: `[burn N: -X]`, `[arrows M: -Y]`.
+- **Overflow credit (`ValueModel.KineticOverflowCredit`).** The raw Overflow gain times the best free blast's chance to land
+  (its attack roll), minus how far that blast falls short of the best other burn-free action (weapon attacks, spells and
+  other abilities, not only weapons), for the rounds after this one. A null shortfall (no free blast offered) keeps the old
+  one-blast-a-round credit.
+- **Critical hits.**
+  - The game multiplies an attack-roll ability's damage on a confirmed critical by the attack roll's weapon multiplier:
+    the archer's bow, a ray's x2, x2 for magus and eldritch archer spells (`ContextActionDealDamage.GetDamageInfo`), unless
+    the action ignores criticals.
+  - `CombatMath.AbilityCritFactor` and `CritParts` use the delivery weapon's threat range (`RuleCalculateWeaponStats`)
+    and the target's immunity (the hit read); `ValueModel.CritFactor` = 1 + min(threat, hit) x (multiplier - 1).
+  - Applied through `AbilityDamageScale` with the blast calibration (`DamageObserver` measures non-critical hits only).
+    The infusion planner's "after" uses the same scale; ricochet jumps reuse the first roll.
+  - Weapons use the same rule (the threat can no longer exceed the hit chance). Auto-threat attacks read
+    `FirstThreatChance`.
+  - Spell attack rolls and critical stats are read once a frame per caster, target and delivery (`SpellAttackRoll`,
+    `CriticalOf`; cleared with the attack cache, since previews change prone in-frame).
+- **Deadly Aim on archer blasts (`ChooseBlastAttackModes`).**
+  - An archer blast is a bow `RuleAttackWithWeapon`, so triggered modes take part: the attack change in the roll, the
+    damage in every damage action (the bow's damage modifiers: `extraWeaponDamage` in the raw estimate).
+  - For the best four archer blasts the value is first brought to the modes that are on (a triggered mode was never in
+    the estimate). Then the best set of triggered, non-AC modes that fit the bow is chosen with the weapon options'
+    margin.
+  - `Execute` applies an ability candidate's modes after the dispatcher takes the cast.
+- **Rank-increment talents (`TacticalEngine.RankTalents`, from `AppraiseBuff`).** A cast whose buff only adds a rank to a
+  feature another fact reads:
+  - Shroud of Water's upgrade: `ShroudOfWater.OnTurnOn`'s min(floor(base x 1.5), base + rank) as an AC part with the
+    shroud's descriptor. The stacking rule counts only the gain over the bonus now or the armor worn.
+  - Enveloping Winds: the fact's `SetAttackerMissChance` recomputed with the feature's rank one higher, through the rank
+    config's own progression and limits and then the shared values. Counted for the share of the incoming damage from
+    attackers whose weapon matches its attack types.
+
+  Searing Flesh (retaliation against natural and unarmed attackers) stays unvalued. ProfileAudit checks the reflected
+  bindings and blueprint wiring (`RANK-INCREMENT 10 checks`).
+- **Diagnostics.** The slow-decision line's costliest abilities report the execution contexts and damage estimates each
+  made (`CombatMath.ContextsMade`, `DamageEstimates`).
+- **Verified:** Release build 0 warnings; 406 tests; strict ProfileAudit on the Kineticist dumps (800 loaded, 0 failed,
+  286 rows, 0 reader errors, ricochet-layer and rank-increment checks passing). Not played.
+- **Left:**
+  - the Chain Arrows forecast cap of 16 jumps (first differs at character level 32);
+  - Searing Flesh;
+  - touch and ray attacks in the Enveloping Winds share;
+  - Deadly Aim on ricochet jumps and on the splash of area forms (not counted, so conservative).

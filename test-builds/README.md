@@ -1,6 +1,42 @@
 # Test builds
 
-## Current test build: v0.3.28-dev-test5 (96ba9cc) - quiver after rest, Chain Arrows, Hide blocked
+## Current test build: v0.3.28-dev-test6 (2765e04) - kineticist and archer engine
+
+**[Download the UMM test ZIP (2765e04)](AI-Control-FACC-v0.3.28-dev-test6-2765e04-UMM-test.zip?raw=true)**
+
+Direct link: <https://github.com/recovribox-svg/AIControll-FACC/raw/claude/dreamy-pasteur-b9h3rn/test-builds/AI-Control-FACC-v0.3.28-dev-test6-2765e04-UMM-test.zip>
+
+Test 5 (below) plus the engine work you asked for ([docs/TACTICAL_AI.md](../docs/TACTICAL_AI.md) §103). Every number is read from
+the game at the time, so it follows the character as it levels: burn per day and per round, arrows per quiver,
+Elemental Overflow, infusion costs and their reductions, Deadly Aim's size, critical range and multiplier.
+- **Quiver kept for the costliest shot.** The AI keeps at least as many arrows as its costliest blast needs, counting a
+  substance infusion it may switch on in the fight (Entangling, Pushing...), not only the one on now.
+- **Quiver refilled in a fight when it pays.** When the arrows run short, Create Quiver competes with the other options:
+  it is worth the better blasts the new arrows allow, for the rounds they last, less the turn and the burn.
+- **Arrows have a price**, a share of one burn (it gets cheaper as the quiver grows), so cheaper blasts are preferred when
+  the costly one adds little.
+- **Burn and Elemental Overflow** compared fairly: Overflow counts as the damage it adds to blasts that hit, and only when
+  it makes a blast better than the best other option, spells included.
+- **Critical hits for blasts and other attack rolls.** A bow blast crits with the bow (x3 for a longbow), rays x2. Weapon
+  criticals are also no longer overcounted when the hit chance is low.
+- **Deadly Aim on bow blasts.** A bow blast is a bow attack, so Deadly Aim applies to it. The AI now weighs it and
+  switches it on or off for the shot.
+- **Enveloping Winds and Shroud of Water** are valued by what one more cast adds: +5 % miss chance against ranged attacks
+  (for the share of the danger that comes from ranged attackers), or +1 AC up to the shroud's limit. Each is then weighed
+  against its burn.
+- **Stutter evidence:** slow-decision lines now name how many contexts and damage estimates each costly ability made.
+
+UMM shows **0.3.28**. Startup line `[Build] v0.3.28 module=3402358f-f2ee-433f-af3a-fdc6c4755e8d`.
+- ZIP SHA-256 `e04bb6289e59fb9ded3225e077af16313102efae5492d530b381d2ddc8bc7410`; DLL SHA-256 `f41160638556bb7e2ed518fbee53d54b10808193f014d59f192a31c7b877d9ac`.
+- [Identity](AI-Control-FACC-v0.3.28-dev-test6-2765e04-UMM-test.identity.json) · [Checksums](SHA256SUMS.txt).
+- Checks: 406 unit tests pass; release build 0 warnings; offline blueprint audit 0 errors. Not played yet.
+- **Test:**
+  - Orvath with a longbow and Deadly Aim learned: look for `[Deadly Aim on +N]` on blast lines, `[arrows N: -X]`, and
+    `arrows short of the costliest shot` when the quiver runs low in a fight.
+  - Any caster with rays (or a kinetic archer): crit-capable attacks should look a bit stronger than before.
+  - With Enveloping Winds or Shroud of Water: their `[Buff]` lines should name `miss` or `AC` instead of "effect not read".
+
+## Test 5: v0.3.28-dev-test5 (96ba9cc) - quiver after rest, Chain Arrows, Hide blocked (also in test 6)
 
 **[Download the UMM test ZIP (96ba9cc)](AI-Control-FACC-v0.3.28-dev-test5-96ba9cc-UMM-test.zip?raw=true)**
 
