@@ -3402,3 +3402,43 @@ so test 4 did not reliably prepare a quiver after resting. The review adds a qui
 updater with mode/loading/pause/sleep/party-combat/ownership/command gates, protects queued orders in the shared
 self-buff routine, reuses per-decision burn queries, and tests the existing preparation and fallback policies.
 The half-HP floor, current-configuration reserve and Overflow threshold remain heuristics.
+
+## 102. Codex review integrated (v0.3.28 test 5)
+
+PR #18 (`codex/review-kinetic-sharpshooter`, merge `fc2b147`) and PR #19 (`codex/character-catalogue-hide-blocked`,
+merge `6841cce`), reviewed by Claude and merged into development on 5 November 2026. Findings:
+[CODEX_REVIEW_KINETIC_SHARPSHOOTER_RESULTS.md](CODEX_REVIEW_KINETIC_SHARPSHOOTER_RESULTS.md).
+
+- **Checked against the game:**
+  - `AiBrainController.ForceTick` skips every `ReadyForCombatUnitGroups` group that is not in combat, so the mod's
+    `ProcessUnit` path never runs in exploration and test 4's quiver was made only at combat end. The quiver-only driver
+    (`PreBuffUpdater` → `RealTimeController.PrepareQuiversOutOfCombat`, every 0.5 s) is needed.
+  - Plain blasts hold `Conditional(IsEqual(DeliverEffectLayer, IntConstant 0))`: full damage at layer 0, a `Half` damage
+    action otherwise. `AbilityDeliverRicochet.Layer` is 1, and `DeliverEffectLayer` reads `ContextAttackData.Layer`.
+    The ordinary estimate takes the larger alternative (`SumAlternatives`), so the first hit was right and only the jumps
+    were overvalued. `AppliesAtDeliveryLayer` keeps every other guard on the ordinary reader (same AND semantics as
+    `Evaluate`).
+  - `RuleDealDamage.Half` is the action's deliberate half (`ContextActionDealDamage.Half`), separate from
+    `HalfBecauseSavingThrow`, so `CleanRoll` drops only ricochet-style halves from the blast calibration.
+  - The `BuffQuality` refactor (`ValueModel.BuffFallbackQuality`) gives the same value as before in every branch.
+- **Verified:** Release build 0 warnings; 388 tests. SigDump: the 15 references listed in the PR, plus `RawFacts` below.
+  ProfileAudit on the Kineticist dumps: 800 loaded, 0 failed, 286 rows, 0 reader errors; ricochet-layer checker 11
+  cases, 24 branch checks on 6/6 plain blasts and 2 calibration checks, all passing.
+- **Follow-up (`96ba9cc`):** the 0.5 s driver ran action-bar discovery (`AbilityDiscovery.Gather`, which builds new
+  conversion `AbilityData`) and `CalculateAbilityBurnCost` for every kinetic variant (~60 for Orvath) twice a second
+  through all of exploration, even while the quiver held enough. `QuiverToPrepare` now keeps a refusal while
+  `QuiverSignature` is unchanged, for at most 10 s. The signature covers:
+  - the arrows, `AcceptedBurn` and `MaxBurn`;
+  - the main-hand weapon and `UserAbilityPolicy.Revision`;
+  - the toggles that are on (infusions change burn), read from the cached `RawFacts`;
+  - `HPLeft`, `MaxHP`, nonlethal damage and character level.
+
+  A rest, a fight, a weapon swap, a block-list edit or an infusion switch makes the next check a full one.
+- **Still open (Codex findings 11-17, proposals only):**
+  - the quiver keeps arrows for one current configuration only;
+  - the half-HP floor and the Overflow threshold are heuristics;
+  - no mid-fight refill and no arrow price;
+  - unread defensive wild talents (Enveloping Winds' miss chance, Shroud of Water's AC) are worth 0;
+  - bow-blast criticals and Deadly Aim are missing;
+  - allocations are not attributed to their source.
+

@@ -1,6 +1,33 @@
 # Test builds
 
-## Current test build: v0.3.28-dev-test4 (e620e71) - Kinetic Sharpshooter quiver
+## Current test build: v0.3.28-dev-test5 (96ba9cc) - quiver after rest, Chain Arrows, Hide blocked
+
+**[Download the UMM test ZIP (96ba9cc)](AI-Control-FACC-v0.3.28-dev-test5-96ba9cc-UMM-test.zip?raw=true)**
+
+Direct link: <https://github.com/recovribox-svg/AIControll-FACC/raw/claude/dreamy-pasteur-b9h3rn/test-builds/AI-Control-FACC-v0.3.28-dev-test5-96ba9cc-UMM-test.zip>
+
+Test 4 (below) plus Codex's review fixes, reviewed and merged (PR #18 and #19, [docs/TACTICAL_AI.md](../docs/TACTICAL_AI.md) §102).
+- **The quiver is now made right after a rest.** The game's AI loop only runs for a party in combat, so test 4 made the
+  quiver only when a fight ended. A separate check now runs in normal exploration (not while paused, in dialogue, a
+  cutscene, resting or loading, and never while anyone in the party is fighting).
+- **Waiting orders are not replaced.** The out-of-combat buff routine now also waits for orders in the game's command
+  queue, not only the one being carried out.
+- **Chain Arrows jumps are priced at half damage**, as the game deals them; before, each jump was counted at full damage.
+  Those half hits no longer make the AI think its blasts are weak.
+- **"Hide blocked"** in a character's ability list (Abilities AI must not use), beside "Show blocked only".
+- Between fights the quiver check no longer re-reads all of Orvath's abilities twice a second while nothing has changed.
+
+UMM shows **0.3.28**. Startup line `[Build] v0.3.28 module=fade5da1-cea0-4048-a243-54873850148f`.
+- ZIP SHA-256 `5535c5129f09259ca84c24eb899b4070509b4282e531dc22a5881ae27db11fbf`; DLL SHA-256 `8b8d06cbaf2949da15fa6182f16f40e655701c6504f65bae760787382b368961`.
+- [Identity](AI-Control-FACC-v0.3.28-dev-test5-96ba9cc-UMM-test.identity.json) · [Checksums](SHA256SUMS.txt).
+- Checks: 388 unit tests pass; release build 0 warnings; offline blueprint audit 0 errors. Not played yet.
+- **Test:**
+  - Orvath with a longbow, AI control and "AI recasts self buffs" on: rest, unpause, and wait a few seconds before any fight.
+    Expect `[Kinetic] Orvath: out of combat, make the quiver` once, not again while the quiver has enough arrows.
+  - With Chain Arrows: the jump targets take half damage, and the AI still weighs it against a single blast.
+  - The ability list: "Hide blocked" hides blocked rows and turns "Show blocked only" off, and the other way round.
+
+## Test 4: v0.3.28-dev-test4 (e620e71) - Kinetic Sharpshooter quiver (also in test 5)
 
 **[Download the UMM test ZIP (e620e71)](AI-Control-FACC-v0.3.28-dev-test4-e620e71-UMM-test.zip?raw=true)**
 

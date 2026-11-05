@@ -133,6 +133,11 @@ prone +4 in the survival model. Test ZIP `AI-Control-FACC-v0.3.28-dev-test3-2cb4
 Sharpshooter). The quiver is made out of combat (`TacticalEngine.QuiverToPrepare` from `ApplyPermanentBuffsOutOfCombat`),
 burn's Overflow offset counts only when a blast is the attack (`BlastShortfall`), unread buffs that cost burn are worth 0
 (`BuffQuality`). Test ZIP `AI-Control-FACC-v0.3.28-dev-test4-e620e71-UMM-test.zip` (MVID `213bf9ff-50b8-4c91-acaf-8c370286a712`); 359 tests.
+**v0.3.28 test 5 (5 November, `docs/TACTICAL_AI.md` §102, not played):** Codex PR #18 (quiver preparation in
+exploration - native AI skips out-of-combat groups; queued-order guard; ricochet jumps at their delivery layer's half
+damage; half packets out of blast calibration) and PR #19 (catalogue "Hide blocked") reviewed and merged (merge commits
+`fc2b147`, `6841cce`); follow-up `96ba9cc` keeps a quiver refusal while its signature is unchanged (10 s backstop). Test ZIP
+`AI-Control-FACC-v0.3.28-dev-test5-96ba9cc-UMM-test.zip` (MVID `fade5da1-cea0-4048-a243-54873850148f`); 388 tests.
 
 Historical handovers, superseded by the one above: [v0.3.22 release preparation](docs/RELEASE_0_3_22_HANDOVER.md)
 (27 October, PR #6–#12), [released-log review](docs/RELEASE_0322_LOG_REVIEW.md) (PR #13),
