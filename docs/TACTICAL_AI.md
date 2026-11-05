@@ -3316,12 +3316,14 @@ is intended; Ardub/body-blocking stays on hold.
 
 ## 101. Kinetic Sharpshooter: quiver and burn (v0.3.28 test 4)
 
-- **Play-test (test 3 build, 18 fights: 1-6 turn-based, 7-18 real time):** a higher difficulty, and Orvath as Kineticist 6
-  (Kinetic Sharpshooter, longbow) multiclassed with Isekai, sometimes under player control. 3 burn a day, 3 a round; the
-  burn was back to 0 at the start of every fight. Coverage: archer blasts on; Kinetic Quiver burn 1; Spindle and Exploding
-  Arrows burn 2.
+- **Play-test (test 3 build, 19 fights):** fights 1-6 were turn-based, fight 7 switched to real time, and 8-19
+  were real time. Orvath progressed from Kineticist 4 to 6 (Kinetic Sharpshooter with a longbow by level 6), multiclassed
+  with Isekai, sometimes under player control. At level 6 his coverage reported 3 burn a day and 3 a round. All five
+  recorded coverage samples showed burn 0/3; these logs do not establish a rest before every fight. Level-6 coverage:
+  archer blasts on; Kinetic Quiver burn 1; Spindle and Exploding Arrows burn 2.
 - **The game's rules (decompiled + blueprints):**
-  - The archetype removes Gather Power (its toggles read "available=False" from level 6) and Supercharge.
+  - The archetype removes the level-1 Infusion Selection and Gather Power (its toggles read "available=False" in the
+    level-6 coverage), and level-11 Supercharge; it adds the quiver at Kineticist 3.
   - Create Quiver (`KineticSharpshooterCreateQuiverAbility`) is a standard action, Personal, `AbilityKineticist`
     with `AllowOnlyBurnCost`, 1 burn. It applies `KineticSharpshooterObtainQuiverBuff` once per arrow
     (class level + Constitution bonus) through `ContextActionRepeatedActions`. The buff is Permanent, RemoveOnRest, and
@@ -3332,11 +3334,14 @@ is intended; Ardub/body-blocking stays on hold.
     pay them.
   - An archer blast is one bow attack: one per standard action, no full attack, no Rapid Shot or Manyshot.
 - **Findings and fixes:**
-  - *The quiver was never made.* "quiver 0" in every `[Kinetic]` line while Orvath took 48 burn (Exploding Arrows with
-    Entangling 3 burn ×4, Magma Blast, Fan of Flames, the burn wild talents). It was a candidate only when burn blocked
-    every blast (§38), and plain blasts always cost 0. `TacticalEngine.QuiverToPrepare` (from
+  - *The AI never made the quiver in the supplied log.* All 16 weapon-versus-blast diagnostics showed "quiver 0".
+    Native burn messages sum to 48, including five 3-burn messages; that is a message tally, not a reliable total of
+    actual accepted burn. The native log reads a mutable burn meter later and can report overlapping deltas.
+    It was a candidate only when burn blocked every blast (§38), while plain blasts remained available in the
+    observed decisions. `TacticalEngine.QuiverToPrepare` (from
     `RealTimeController.ApplyPermanentBuffsOutOfCombat`, under "AI recasts self buffs", after the block lists) makes
-    the quiver out of combat, where it costs no action. It does so when all of these hold:
+    a quiver preparation attempt out of combat, costing no combat turn (still a native standard-action cast).
+    Test 4 lacks a reliable post-rest driver; see the Codex review below. Its ability-selection conditions are:
     - the arrows left are fewer than the costliest quiver-paid ability's whole burn (`TotalBurn`);
     - that burn is more than 0;
     - the weapon lets the arrows pay;
@@ -3346,32 +3351,48 @@ is intended; Ardub/body-blocking stays on hold.
     It is logged once per change: `[Kinetic] <name>: out of combat, make the quiver: ...` (the "no quiver" reasons go to
     verbose). The in-combat burn-blocked option (§38) stays.
   - *Burn priced 0.* `BurnCost` subtracts the Elemental Overflow damage the burn adds to later blasts, at one blast a round.
-    Overflow adds to own blasts only (`AddKineticistElementalOverflow`). Orvath's bow full attack beat his free blast every
-    time (77.8 vs 49.2, 87.4 vs 36.3, ...), so no later blast came. Yet burn-3 Exploding Arrows was priced `-0.0` five
-    times, and the burn wild talents too. `PriceBurn` now passes `BlastShortfall`: how far the best free own blast falls
-    short of the best weapon attack. Overflow counts only when its gain closes that gap.
+    Overflow adds to own blasts only (`AddKineticistElementalOverflow`). Recorded comparisons favored his bow
+    (77.8 vs 49.2, 87.4 vs 36.3, ...); that does not prove what every later round would offer.
+    Five three-burn blast commands (four Exploding Arrows, one Magma Blast) were priced `-0.0`,
+    and the burn wild talents too. `PriceBurn` now passes `BlastShortfall`: how far the best free own blast falls
+    short of the best weapon attack. Overflow counts only when its raw gain closes that current gap; this remains
+    a policy approximation, because candidate values also include hit chance, risk and other effects.
   - *Unread burn buffs.* Searing Flesh and Enveloping Winds (1 burn each) were cast 20 times at 2.1, logged "effect not
     read (quality 0.05 x level)". Their buff is a single `AddFacts` that `BuffEffectAnalyzer` logs as `?AddFacts(...)` but
     does not count as unrecognised. That sent it to the 0.05 marker value, past the §39 rule that an unread effect is not
     worth a limited use or burn. `BuffQuality` applies the rule to that branch too.
   - *Cone warnings:* two `[Cone] native recipient query unavailable (..., InvalidOperationException)`. `ProjectileCone`
-    throws that for three causes, so the warning now carries the message.
+    has three explicit creation checks plus recipient/native failure paths, so the warning now carries the message.
+    The first GUID is Fan of Flames in the supplied Kineticist dump; the old log does not identify the cause.
 - **Assessment, against the questions in the player's audit document:**
   - *Gather Power:* not offered; the AI never used it.
-  - *Quiver:* in-combat use was understood (arrows pay burn first, `BurnOf` after the quiver) but never made; it is
-    made now, see above.
+  - *Quiver:* in-combat payment was understood (`BurnOf` after the quiver), but the AI never created one.
+    Test 4 adds a preparation attempt; reliable post-rest scheduling is added only by the review branch below.
   - *Bow blasts:* the hit chance is the bow's attack bonus (Weapon Focus and enhancement through
     `RuleCalculateAttackBonus` with the bow), against touch AC for energy blasts. Damage adds the bow's damage modifiers
     and enhancement (`KineticDamageBonus`) and its decline against swarms (`ArcherBlastDecline`). One blast per standard
     action, never a full attack of blasts. The bow full attack is a separate option, valued by the game's attack routine.
   - *Gaps left (no evidence that they change choices):*
     - a blast's critical hits (the bow's ×3) are not in the spell-attack estimate;
-    - Deadly Aim is chosen for weapon attacks only, so a blast counts it only when it is already on.
+    - Deadly Aim is chosen for weapon attacks only; a blast forecast can read modifiers already installed, but an
+      on-toggle alone does not activate a transient attack-trigger effect during a preview.
   - *Infusions:* only abilities on the action bar are candidates (`AbilityDiscovery`). Kinetic Blade, Extended Range and
-    Deadly Earth do not reach a Sharpshooter's bar. Exploding Arrows (+ Entangling switched on by the infusion planner)
+    Deadly Earth are unavailable through normal selection: Blade and Extended Range directly forbid the archetype,
+    while Deadly Earth requires Extended Range. Another mod can grant an ability outside these prerequisites.
+    Exploding Arrows (+ Entangling switched on by the infusion planner)
     was chosen against groups; Chain Arrows and Unraveling are in automatic selection (§84). The audit document's
     "Rending / Splash / Penetrate" infusions are not among Orvath's abilities in the coverage list (his forms: Spindle,
     Exploding Arrows), so there was nothing of them to score.
   - *Movement:* unchanged; ranged rules as for any archer (step out of melee, sight spots).
-  - *Performance:* Orvath's opening decisions cost 250-400 ms and +10-16 MB heap. He has 84-98 abilities and each
-    Exploding Arrows variant is ~13 ms and ~540 KB; two collections came near 1 s. Open, as A5 (allocations).
+  - *Performance:* Orvath's slow opening decisions cost 253-477 ms after the first-load 794 ms decision; some show
+    +10-16 MB heap. At level 6 he has 98-99 abilities on the action bar; quoted Exploding Arrows samples cost ~13 ms/~540 KB each.
+    Five slow lines explicitly mention memory clean-up, including other companions. Heap deltas are not an
+    allocation trace. Open, as A5 (allocations).
+
+
+**Codex review (5 November 2026; separate task branch, not in the test 4 ZIP):**
+[Full results](CODEX_REVIEW_KINETIC_SHARPSHOOTER_RESULTS.md). Native AI does not tick wholly out-of-combat groups,
+so test 4 did not reliably prepare a quiver after resting. The review adds a quiver-only, throttled exploration
+updater with mode/loading/pause/sleep/party-combat/ownership/command gates, protects queued orders in the shared
+self-buff routine, reuses per-decision burn queries, and tests the existing preparation and fallback policies.
+The half-HP floor, current-configuration reserve and Overflow threshold remain heuristics.

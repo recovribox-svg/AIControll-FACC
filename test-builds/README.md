@@ -7,18 +7,21 @@
 Direct link: <https://github.com/recovribox-svg/AIControll-FACC/raw/claude/dreamy-pasteur-b9h3rn/test-builds/AI-Control-FACC-v0.3.28-dev-test4-e620e71-UMM-test.zip>
 
 Tests 1-3 (below; test 3 played) plus the Kinetic Sharpshooter fixes from the test 3 log ([docs/TACTICAL_AI.md](../docs/TACTICAL_AI.md) §101).
-- **The quiver is made.** In 18 fights the AI never made a Kinetic Quiver ("quiver 0" every time) while Orvath took 48
-  burn. It was only considered when burn blocked every blast, which never happened. It is now made out of combat, where it
-  costs no action. That happens when the arrows left are fewer than the burn of his costliest kinetic ability (Exploding
+- **Quiver preparation added (driver limitation below).** In 19 fights the AI never made a Kinetic Quiver;
+  all 16 weapon-versus-blast diagnostics showed "quiver 0". Native burn messages sum to 48, which is not a reliable
+  total of actual burn. The old option required burn to block every blast. Test 4 adds an out-of-combat attempt
+  that costs no combat turn (still a native standard-action cast). It triggers when arrows left are fewer than
+  the burn of his costliest kinetic ability (Exploding
   Arrows with Entangling: 3), and when the quiver's burn (1 burn = nonlethal damage equal to his character level) leaves at least half his hit
   points. The arrows then pay the burn of his blasts and infusions. They do not pay for Searing Flesh, Enveloping Winds or
   Shroud of Water, which take their burn directly in the game.
-- **Burn is no longer free when he will shoot his bow.** Burn's cost was cancelled by the extra damage Elemental
-  Overflow gives to later blasts. Orvath's bow full attacks beat his blasts, so that extra damage never came: a burn-3
-  Exploding Arrows was priced 0. Overflow now counts only when a blast would be his attack.
+- **Burn credit is restricted when the bow looks better.** Burn's cost was cancelled by the extra damage Elemental
+  Overflow gives to later blasts. The recorded comparisons favored Orvath's bow, making that credit too optimistic:
+  a burn-3 Exploding Arrows was priced 0. Overflow now counts only when its raw gain covers the current
+  weapon-versus-free-blast value gap; this is an approximation.
 - **No burn on buffs the AI cannot read.** Searing Flesh and Enveloping Winds (1 burn each) were cast 20 times. The mod
   cannot read what their effect is worth, and a rule from v0.3.19 says such an effect is not worth burn. A gap let these two
-  through at a small value. They are now left to you: with 3 burn a day, that burn goes to the quiver and the blasts.
+  through at a small value. They are now left to you; Orvath's reported burn limit was 3 a day.
 - **Cone warning** now says why (two such warnings in the log, reason not recorded).
 
 UMM shows **0.3.28**. Startup line `[Build] v0.3.28 module=213bf9ff-50b8-4c91-acaf-8c370286a712`.
@@ -28,6 +31,12 @@ UMM shows **0.3.28**. Startup line `[Build] v0.3.28 module=213bf9ff-50b8-4c91-ac
 - **Test:** Orvath (Kinetic Sharpshooter, bow in hand, "AI recasts self buffs" on). After a rest, out of combat, look for
   `[Kinetic] Orvath: out of combat, make the quiver` and `Out-of-combat permanent buff (Kinetic Quiver)`. In fights,
   look for `quiver N` in `[Kinetic]` lines and Exploding Arrows with `burn 0`.
+
+**Independent review correction (separate Codex branch; not included in this ZIP):** the native AI loop skips
+wholly out-of-combat groups, so test 4 does not reliably prepare the quiver immediately after a rest. The review
+adds an independent quiver-only exploration check and queued-command guards. The logs contain 19 fights, including
+a TB-to-RT switch in fight 7; five coverage samples show zero burn, not every fight start.
+See [the audit report](../docs/CODEX_REVIEW_KINETIC_SHARPSHOOTER_RESULTS.md) for confirmed rules, fixes, limitations and replay steps.
 
 ## Test 3: v0.3.28-dev-test3 (2cb47db) - defences counted (also in test 4)
 

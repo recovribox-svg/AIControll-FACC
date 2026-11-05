@@ -1349,6 +1349,45 @@ namespace CompanionAI_Pathfinder.GameInterface
 
         #region Out-of-Combat Buffs
 
+        // ★ v0.3.28 (codex review): shared by the combat-end path and the independent exploration updater.
+        // Default mode excludes dialogue, cutscenes, rest and UI modes; loading and fake pause have separate flags.
+        private static bool QuiverPreparationMode()
+        {
+            var game = Kingmaker.Game.Instance;
+            return Main.Enabled && (Settings.ModSettings.Instance?.AiRecastsSelfBuffs ?? false) &&
+                   game?.Player != null && game.CurrentMode == Kingmaker.GameModes.GameModeType.Default &&
+                   !game.IsPaused && !game.IsFakePause && !game.IsUnloading && !game.IsLoadingSave &&
+                   !(Kingmaker.EntitySystem.Persistence.LoadingProcess.Instance?.IsLoadingInProcess ?? false) &&
+                   !game.Player.IsInCombat;
+        }
+
+        internal void PrepareQuiversOutOfCombat()
+        {
+            try
+            {
+                if (!QuiverPreparationMode()) return;
+                var party = Kingmaker.Game.Instance.Player.PartyAndPets;
+                if (party == null || party.Any(u => u != null && u.IsInCombat)) return;
+                foreach (var unit in party)
+                {
+                    if (unit?.Get<Kingmaker.UnitLogic.Class.Kineticist.UnitPartKineticist>()?.QuiverBuff == null) continue;
+                    TryPrepareQuiver(unit);
+                }
+            }
+            catch (Exception ex) { Main.Verbose($"[Kinetic] out-of-combat preparation unavailable: {ex.Message}"); }
+        }
+
+        private bool TryPrepareQuiver(UnitEntityData unit)
+        {
+            if (!QuiverPreparationMode() || unit == null || !unit.IsInGame || unit.IsSleeping || unit.IsInCombat ||
+                !(unit.Descriptor?.State?.CanAct ?? false) || (unit.View?.IsGetUp ?? false) ||
+                !CustomBrainPatch.ShouldControlUnit(unit) || GameAPI.HasPendingCommands(unit)) return false;
+            var quiver = Tactics.TacticalEngine.QuiverToPrepare(unit);
+            if (quiver == null) return false;
+            IssueOutOfCombatBuff(unit, quiver, unit.Descriptor?.CharacterName ?? "Unknown");
+            return true;
+        }
+
         /// <summary>
         /// Queue a unit for pending buff application
         /// v0.2.2: 명령 실행 중인 유닛은 대기열에 추가
@@ -1395,7 +1434,8 @@ namespace CompanionAI_Pathfinder.GameInterface
                 }
 
                 // 아직 명령 실행 중이면 대기
-                if (!unit.Commands.Empty)
+                // ★ v0.3.28 (codex review): queued commands count too; Run would otherwise clear the waiting order.
+                if (GameAPI.HasPendingCommands(unit))
                     continue;
 
                 // 전투 중이면 대기열에서 제거
@@ -1449,7 +1489,8 @@ namespace CompanionAI_Pathfinder.GameInterface
                 return;
             }
 
-            if (!unit.Commands.Empty)
+            // ★ v0.3.28 (codex review): Empty checks slots only, not the game's waiting command queue.
+            if (GameAPI.HasPendingCommands(unit))
             {
                 Main.Verbose($"[RT] {unitName}: Commands in progress, skipping permanent buffs");
                 if (queueOnBusy)
@@ -1467,13 +1508,8 @@ namespace CompanionAI_Pathfinder.GameInterface
             if (Tactics.TacticalEngine.RestoreEndedToggles(unit)) return;
             if (!recasts) return;
 
-            // ★ v0.3.28 test 4: the Kinetic Sharpshooter's quiver, made where it costs no action (TacticalEngine.QuiverToPrepare).
-            var quiver = Tactics.TacticalEngine.QuiverToPrepare(unit);
-            if (quiver != null)
-            {
-                IssueOutOfCombatBuff(unit, quiver, unitName);
-                return;
-            }
+            // ★ v0.3.28 (codex review): quiver preparation costs no combat turn; its native cast is still standard.
+            if (TryPrepareQuiver(unit)) return;
 
             // ★ v0.3.3: never flip an on/off switch outside combat. Isekai's "Shift Form: Overlord / Mortal Guise" applies
             // its form buff when absent and REMOVES it when present; recast after every fight, it left Orvath's form to

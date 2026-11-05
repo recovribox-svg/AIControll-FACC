@@ -117,8 +117,8 @@ namespace CompanionAI_Pathfinder.Tactics
         private static void Report(string key, Exception ex)
         {
             if (ReportedFailures.Add(key + "|" + ex.GetType().Name))
-                // ★ v0.3.28 test 4: the reason too - the play-test log showed two InvalidOperationExceptions, which this file
-                // throws for three different causes (no aim direction, no context, invalid range/origin).
+                // ★ v0.3.28 (codex review): keep the reason from test 4. Aim/context/range checks, recipient state,
+                // and native callees can fail; the old exception type alone cannot identify the cause.
                 Main.Warning($"[Cone] native recipient query unavailable ({key}, {ex.GetType().Name}: {ex.Message}); cone candidate omitted");
         }
 

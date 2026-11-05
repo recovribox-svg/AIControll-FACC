@@ -2718,20 +2718,12 @@ namespace CompanionAI_Pathfinder.Tactics
                 if (!analysis.Recognized && profile.IsDayLong(buff)) continue;
                 // ★ v0.3.4: an enchanting ability's buff is often an empty carrier while the enchantment itself is applied
                 // by the ability's actions (Spirit Weapon Enchantment: "Components=[NoComponents]", valued 0.1 in 0.3.3).
-                float q = analysis.Recognized ? analysis.CombatValue
-                        : profile.Enchants ? 0.8f
-                        // ★ v0.3.19 (test7): nor for an ability that spends a limited use or burn - an effect the AI
-                        // cannot read is not worth a daily resource. Searing Flesh (1 burn, a fire aura against natural
-                        // and unarmed attackers) was cast in every fight of the test6 logs at 6.1, by a crossbowman, and
-                        // a full-round Soul Power then spent on taking the burn back.
-                        : analysis.OnlyUnrecognized ? (item || SpendsLimitedUse(ability) ? 0f : 0.5f)
-                        // ★ v0.3.28 test 4: the same for the marker value. A buff whose only part is an AddFacts the
-                        // analyser cannot read lands here, not above (BuffEffectAnalyzer logs it "?AddFacts(...)" but
-                        // does not count it unrecognised): Searing Flesh and Enveloping Winds, 1 burn each, were cast
-                        // 20 times in the Kinetic Sharpshooter play-test at 2.1 ("effect not read, quality 0.05").
-                        : SpendsLimitedUse(ability) ? 0f
-                        : 0.05f; // no components at all: a marker or cooldown
-                if (item && q < 0.5f) q = 0f;
+                // ★ v0.3.28 (codex review): share the existing fallback with ProfileAudit. Keep resource queries lazy:
+                // recognized effects/enchant carriers do not need one, nor an unread component on an item.
+                bool limited = !analysis.Recognized && !profile.Enchants && !(analysis.OnlyUnrecognized && item) &&
+                               SpendsLimitedUse(ability);
+                float q = ValueModel.BuffFallbackQuality(analysis.Recognized, analysis.CombatValue, profile.Enchants,
+                                                         analysis.OnlyUnrecognized, limited, item);
                 // ★ v0.3.18 (test10): Strength helps weapon attacks in melee and carrying; little for an archer or caster
                 // whose weapon does not add it (a composite bow does: the game's weapon rule decides).
                 // ★ v0.3.18 (test11): and for an archer whose bow does add it, when the buff also costs Dexterity: Enlarge
