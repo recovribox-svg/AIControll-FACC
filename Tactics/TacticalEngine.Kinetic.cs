@@ -449,6 +449,38 @@ namespace CompanionAI_Pathfinder.Tactics
 
         private static readonly Dictionary<string, string> QuiverNotes = new Dictionary<string, string>();
 
+        /// <summary>Per unit: the signature of the last refusal and when it lapses (QuiverToPrepare).</summary>
+        private static readonly Dictionary<string, KeyValuePair<long, float>> QuiverRefusals = new Dictionary<string, KeyValuePair<long, float>>();
+        private const float QuiverRecheckSeconds = 10f;
+
+        /// <summary>
+        /// ★ v0.3.28 (review of PR #18): what QuiverToPrepare's answer depends on, other than the action bar: arrows, burn
+        /// used and the day's limit, the main-hand weapon, the block lists, the infusions and other toggles that are on
+        /// (they change each blast's burn), hit points and nonlethal damage, and character level. Rest, a fight, a weapon
+        /// swap, a block-list edit or an infusion switch changes it, so the next check is a full one.
+        /// </summary>
+        private static long QuiverSignature(UnitEntityData unit, UnitPartKineticist part)
+        {
+            unchecked
+            {
+                long h = 17;
+                h = h * 31 + (unit.Buffs.GetBuff(part.QuiverBuff)?.Rank ?? 0);
+                h = h * 31 + part.AcceptedBurn;
+                h = h * 31 + part.MaxBurn;
+                h = h * 31 + (unit.Body?.PrimaryHand?.MaybeWeapon?.UniqueId?.GetHashCode() ?? 0);
+                h = h * 31 + UserAbilityPolicy.Revision;
+                h = h * 31 + unit.HPLeft;
+                h = h * 31 + unit.MaxHP;
+                try { h = h * 31 + unit.DamageNonLethal; } catch { }
+                h = h * 31 + (unit.Descriptor?.Progression?.CharacterLevel ?? 0);
+                var toggles = unit.ActivatableAbilities?.RawFacts;
+                if (toggles != null)
+                    for (int i = 0; i < toggles.Count; i++)
+                        if (toggles[i] != null && toggles[i].IsOn) h = h * 31 + toggles[i].Blueprint.AssetGuid.GetHashCode();
+                return h;
+            }
+        }
+
         /// <summary>
         /// ★ v0.3.28 test 4 (Kinetic Sharpshooter play-test): the Create Quiver to cast now, out of combat, or null. The quiver
         /// (KineticSharpshooterObtainQuiverBuff) lasts until rest and holds class level + Constitution bonus arrows for 1
@@ -466,6 +498,15 @@ namespace CompanionAI_Pathfinder.Tactics
         {
             var part = unit?.Get<UnitPartKineticist>();
             if (part?.QuiverBuff == null || (unit.CombatState?.IsInCombat ?? false)) return null;
+            // ★ v0.3.28 (review of PR #18): the exploration driver asks every 0.5 s. A refusal is kept while nothing it
+            // depends on has changed (QuiverSignature), for at most QuiverRecheckSeconds: action-bar discovery and the burn
+            // of every kinetic variant (~60 for Orvath, native cost events each) are not redone twice a second in
+            // exploration. The backstop covers what the signature does not read (a newly learned form, a cast
+            // restriction).
+            long signature = QuiverSignature(unit, part);
+            float now = Time.time;
+            if (QuiverRefusals.TryGetValue(unit.UniqueId, out var refused) && refused.Key == signature && now < refused.Value)
+                return null;
             string why = null;
             AbilityData result = null;
             try
@@ -523,6 +564,8 @@ namespace CompanionAI_Pathfinder.Tactics
                 if (result != null) Main.Log($"[Kinetic] {unit.CharacterName}: out of combat, {why}");
                 else Main.Verbose($"[Kinetic] {unit.CharacterName}: out of combat, no quiver - {why}");
             }
+            if (result == null) QuiverRefusals[unit.UniqueId] = new KeyValuePair<long, float>(signature, now + QuiverRecheckSeconds);
+            else QuiverRefusals.Remove(unit.UniqueId);
             return result;
         }
 
