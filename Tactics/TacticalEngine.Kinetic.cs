@@ -458,6 +458,15 @@ namespace CompanionAI_Pathfinder.Tactics
             public int PerBlast;
         }
 
+        private struct PlannedMemo
+        {
+            public int Fight, Round, Revision, Burn;
+            public AbilityData Ability;
+        }
+
+        /// <summary>Per unit: the costliest shot (PlannedShotBurn) this round.</summary>
+        private static readonly Dictionary<string, PlannedMemo> PlannedMemos = new Dictionary<string, PlannedMemo>();
+
         /// <summary>Per unit: the best burn-blocked blast the arrows would open, worked out once a round (it is costly).</summary>
         private static readonly Dictionary<string, RefillMemo> RefillMemos = new Dictionary<string, RefillMemo>();
 
@@ -485,7 +494,20 @@ namespace CompanionAI_Pathfinder.Tactics
             if (!quiver.IsAvailable) { why = "Create Quiver not available now"; return false; }
             if (SlotOf(quiver) == ActionSlot.Standard && !ctx.HasStandard) return false;
             int ranks = QuiverRanks(unit, part);
-            int reserve = PlannedShotBurn(unit, part, abilities, quiver, ctx.Global?.AiManagesToggles ?? true, out var planned);
+            // The costliest shot does not depend on which substance infusion is on (each one is compared): once a round.
+            AbilityData planned;
+            int reserve;
+            int fight = CombatMemory.Fight, round = CombatMemory.Round, revision = UserAbilityPolicy.Revision;
+            if (PlannedMemos.TryGetValue(unit.UniqueId, out var pm) && pm.Fight == fight && pm.Round == round && pm.Revision == revision)
+            {
+                reserve = pm.Burn;
+                planned = pm.Ability;
+            }
+            else
+            {
+                reserve = PlannedShotBurn(unit, part, abilities, quiver, ctx.Global?.AiManagesToggles ?? true, out planned);
+                PlannedMemos[unit.UniqueId] = new PlannedMemo { Fight = fight, Round = round, Revision = revision, Burn = reserve, Ability = planned };
+            }
             if (!ValueModel.NeedsKineticQuiver(ranks, reserve))
             {
                 why = ranks > 0 ? $"the quiver still holds {ranks}" : "no kinetic ability costs burn now";
@@ -522,8 +544,6 @@ namespace CompanionAI_Pathfinder.Tactics
 
             // b) Blasts burn blocks now, scored as they would be cast with the arrows (once a round).
             string key = unit.UniqueId;
-            int round = CombatMemory.Round;
-            int fight = CombatMemory.Fight;
             if (RefillMemos.TryGetValue(key, out var memo) && memo.Fight == fight && memo.Round == round && memo.Ranks == ranks)
             {
                 if (memo.Blast != null && memo.Value > best) { best = memo.Value; blast = memo.Blast; perBlast = memo.PerBlast; }

@@ -586,8 +586,12 @@ namespace CompanionAI_Pathfinder.Tactics
 
         #region Spells and abilities
 
+        /// <summary>★ v0.3.28 test 6: execution contexts and damage estimates made so far (slow-decision diagnostics only).</summary>
+        internal static int ContextsMade, DamageEstimates;
+
         public static AbilityExecutionContext CreateContext(AbilityData ability, TargetWrapper target)
         {
+            ContextsMade++;
             try
             {
                 var ctx = ability.CreateExecutionContext(target, ParamsOf(ability));
@@ -755,6 +759,7 @@ namespace CompanionAI_Pathfinder.Tactics
             Func<GameAction, EffectApplies> branch = null, bool? ignorePhysicalReduction = null, float extraWeaponDamage = 0f)
         {
             if (profile.Damage.Count == 0) return 0f;
+            DamageEstimates++;
             EffectApplies Applies(GameAction action) => branch?.Invoke(action) ?? profile.AppliesTo(action, ability, target);
             if (target != null && profile.Damage.All(d => Applies(d) == EffectApplies.No)) return 0f;
             var ctx = CreateContext(ability, target != null ? new TargetWrapper(target) : null);

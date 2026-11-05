@@ -2610,11 +2610,13 @@ namespace CompanionAI_Pathfinder.Tactics
                     long started = System.Diagnostics.Stopwatch.GetTimestamp();
                     long heap = ctx.Timings != null ? GC.GetTotalMemory(false) : 0;
                     int before = list.Count;
+                    int contexts = CombatMath.ContextsMade, estimates = CombatMath.DamageEstimates;
                     list.AddRange(EvaluateAbility(ctx, ability, captureControlAims: captureControlAims));
                     if (ctx.Timings != null)
                     {
                         long grown = GC.GetTotalMemory(false) - heap;   // negative when a collection ran meanwhile
-                        ctx.Timings.NoteAbility(ability.Name, started, list.Count - before, grown >= 0 ? grown : -1);
+                        ctx.Timings.NoteAbility(ability.Name, started, list.Count - before, grown >= 0 ? grown : -1,
+                                                CombatMath.ContextsMade - contexts, CombatMath.DamageEstimates - estimates);
                     }
                     if (!attackFromHere)
                         for (int i = before; i < list.Count && !attackFromHere; i++) attackFromHere = ResolvesAttackFromHere(ctx, list[i]);
