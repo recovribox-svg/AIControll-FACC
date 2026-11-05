@@ -189,6 +189,8 @@ namespace CompanionAI_Pathfinder.Tactics
         internal readonly Dictionary<string, TacticalEngine.Disengage> Provoked = new Dictionary<string, TacticalEngine.Disengage>();
         /// <summary>★ v0.3.18 (AA-3): the unit's attack modes, read once per decision (TacticalEngine.Modes.cs).</summary>
         internal List<TacticalEngine.UnitMode> AttackModes;
+        /// <summary>★ v0.3.28 test 6: this decision's burn and arrow prices (TacticalEngine.PriceBurn).</summary>
+        internal TacticalEngine.KineticPriceBook KineticPrices;
         /// <summary>★ v0.3.18 (review): what the turn holds from here - the best quick option worth taking plus the best
         /// main one (ShouldStandUp compares lying down with that, not only with the option chosen first).</summary>
         public float TurnValue;

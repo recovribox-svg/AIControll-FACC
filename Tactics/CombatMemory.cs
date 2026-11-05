@@ -374,8 +374,12 @@ namespace CompanionAI_Pathfinder.Tactics
             return true;
         }
 
+        /// <summary>★ v0.3.28 test 6: counts combats (ResetCombat), so a per-round cache cannot outlive its fight.</summary>
+        public static int Fight { get; private set; }
+
         public static void ResetCombat()
         {
+            Fight++;
             TacticalEngine.ResetHeldStates();   // ★ v0.3.24
             PendingCasts.Clear();
             RefusedWalks.Clear();

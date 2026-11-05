@@ -72,7 +72,9 @@ namespace CompanionAI_Pathfinder.Tactics
             options.Insert(0, null); // Price the off baseline before spending the rest of the search budget.
             var budget = new InfusionSearchBudget();
             var roots = new Dictionary<BlueprintBuff, MechanicsContext>();
-            var burnPrices = new Dictionary<int, float>();
+            // ★ v0.3.28 test 6: the same burn and arrow prices as PriceBurn put on the current blast (aim.BurnPrice).
+            var book = ctx.KineticPrices;
+            var burnPrices = new Dictionary<long, float>();
             Candidate best = null;
             foreach (var aim in aims)
             {
@@ -126,7 +128,13 @@ namespace CompanionAI_Pathfinder.Tactics
                     if (part.GatherPowerMode != KineticistGatherPowerMode.Off && burn > aim.NativeBurn) continue;
                     // Native Total owns the reducers. Unknown hybrid wild costs/missing quiver queries retain an
                     // upper bound; current native cost is authoritative again after the real switch.
-                    if (!burnPrices.TryGetValue(burn, out float burnPrice)) burnPrices[burn] = burnPrice = BurnCost(ctx, burn);
+                    // The arrows the quiver would pay for this plan: its whole cost before the quiver, less the burn left.
+                    int arrows = 0;
+                    if (quiver > 0 && KineticInfusionCost.TryReplace(cost, aim.Ability, removeBuffs, add, out int whole, 0))
+                        arrows = Math.Max(0, Math.Min(quiver, whole - burn));
+                    long priceKey = burn * 100000L + arrows;
+                    if (!burnPrices.TryGetValue(priceKey, out float burnPrice))
+                        burnPrices[priceKey] = burnPrice = KineticPrice(ctx, book, burn, arrows);
                     float added = 0f, lost = 0f;
                     MechanicsContext source = null;
                     if (add != null && !roots.TryGetValue(add, out source))

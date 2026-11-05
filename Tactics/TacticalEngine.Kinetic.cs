@@ -107,14 +107,14 @@ namespace CompanionAI_Pathfinder.Tactics
         /// Elemental Overflow damage it adds to the blasts left in this fight. A burn that would knock the unit out
         /// costs its whole worth.
         /// ★ v0.3.28 test 4: <paramref name="blastShortfall"/> - how far the unit's best blast that costs no burn falls short
-        /// of its best other attack (PriceBurn). Overflow adds to blasts only (AddKineticistElementalOverflow: damage of an
-        /// own blast, attack of a kinetic-blast weapon), so when its gain does not close that gap the unit attacks with its
-        /// weapon in the rounds after and the gain counts for nothing. Orvath's recorded comparisons favored his bow,
-        /// yet five burn-3 blast commands (four Exploding Arrows, one Magma Blast) were priced "-0.0".
-        /// ★ v0.3.28 (codex review): this remains a current-candidate heuristic, not a forecast of every later action.
-        /// Null: about one blast a round, as before.
+        /// of its best other action (PriceBurn). Overflow adds to blasts only (AddKineticistElementalOverflow: damage of an
+        /// own blast, attack of a kinetic-blast weapon). Orvath's recorded comparisons favored his bow, yet five burn-3
+        /// blast commands (four Exploding Arrows, one Magma Blast) were priced "-0.0". Null: about one blast a round.
+        /// ★ v0.3.28 test 6: the Overflow is counted as the damage it adds to a later blast that lands
+        /// (<paramref name="landChance"/>, that blast's hit chance), and only for what it lifts that blast above the best
+        /// other action (ValueModel.KineticOverflowCredit) - the shortfall is in the same expected-damage points.
         /// </summary>
-        internal static float BurnCost(TacticalContext ctx, int burn, float? blastShortfall = null)
+        internal static float BurnCost(TacticalContext ctx, int burn, float? blastShortfall = null, float landChance = 1f)
         {
             if (burn <= 0) return 0f;
             var unit = ctx.Unit;
@@ -134,9 +134,91 @@ namespace CompanionAI_Pathfinder.Tactics
                 overflowAfter = CombatMath.ElementalOverflowDamage(unit, blast, burn);
             }
             int gain = overflowAfter - overflowNow;
-            // ★ v0.3.28 (codex review): keep the existing Overflow policy in a game-independent, tested rule.
-            cost -= ValueModel.KineticOverflowCredit(gain, blastShortfall, ValueModel.Horizon(ctx.ExpectedRounds, 4f));
+            cost -= ValueModel.KineticOverflowCredit(gain, landChance, blastShortfall, ValueModel.Horizon(ctx.ExpectedRounds, 4f));
             return Math.Max(0f, cost);
+        }
+
+        /// <summary>
+        /// ★ v0.3.28 test 6: what burn and arrows cost in this decision, worked out once (PriceBurn) and shared with the
+        /// infusion planner, so both price a blast the same way: the Overflow comparison (BlastShortfall), the arrows the
+        /// quiver pays now (the game's rule: a ranged weapon or nothing in the main hand), how many one Create Quiver makes
+        /// (class level + Constitution bonus, read from the ability) and whether another can be made.
+        /// </summary>
+        internal sealed class KineticPriceBook
+        {
+            public float? Shortfall;
+            public float LandChance = 1f;
+            public int QuiverRanks;
+            public int ArrowsPerQuiver = 1;
+            public bool CanRemake;
+            public readonly Dictionary<int, float> BurnPrices = new Dictionary<int, float>();
+        }
+
+        /// <summary>The main hand lets the quiver pay (AbilityKineticist.GetQuiverResource: a ranged weapon or nothing).</summary>
+        internal static bool QuiverPays(UnitEntityData unit)
+        {
+            var weapon = unit?.Body?.PrimaryHand?.MaybeWeapon;
+            return weapon == null || weapon.Blueprint.IsRanged;
+        }
+
+        /// <summary>The arrows the quiver holds and would pay with now (0 when the weapon in hand stops it).</summary>
+        internal static int QuiverRanks(UnitEntityData unit, UnitPartKineticist part)
+        {
+            if (part?.QuiverBuff == null || !QuiverPays(unit)) return 0;
+            return unit.Buffs.GetBuff(part.QuiverBuff)?.Rank ?? 0;
+        }
+
+        private static KineticPriceBook PriceBookFor(TacticalContext ctx, UnitPartKineticist part, List<Candidate> candidates,
+                                                     Dictionary<AbilityData, BurnQuote> costs)
+        {
+            var book = new KineticPriceBook();
+            BlastShortfall(ctx, part, candidates, costs, out book.Shortfall, out book.LandChance);
+            book.QuiverRanks = QuiverRanks(ctx.Unit, part);
+            if (book.QuiverRanks > 0)
+            {
+                try
+                {
+                    var abilities = ctx.AllowedAbilities ??
+                                    UserAbilityPolicy.Allowed(ctx.Blocks, ctx.Unit, ctx.DiscoveredAbilities ?? AbilityDiscovery.Gather(ctx.Unit));
+                    var quiver = QuiverAbility(part, abilities);
+                    if (quiver != null)
+                    {
+                        book.ArrowsPerQuiver = QuiverArrows(quiver, part);
+                        book.CanRemake = part.LeftBurn >= Math.Max(1, BurnOf(quiver));
+                    }
+                }
+                catch { }
+            }
+            ctx.KineticPrices = book;
+            return book;
+        }
+
+        /// <summary>The price of accepting <paramref name="burn"/> under this decision's Overflow comparison.</summary>
+        internal static float BurnPriceOf(TacticalContext ctx, KineticPriceBook book, int burn)
+        {
+            if (burn <= 0) return 0f;
+            if (book == null) return BurnCost(ctx, burn);
+            if (!book.BurnPrices.TryGetValue(burn, out float price))
+                book.BurnPrices[burn] = price = BurnCost(ctx, burn, book.Shortfall, book.LandChance);
+            return price;
+        }
+
+        /// <summary>★ v0.3.28 test 6: burn taken plus arrows spent (ValueModel.ArrowPrice), in damage-equivalent points.</summary>
+        internal static float KineticPrice(TacticalContext ctx, KineticPriceBook book, int burn, int arrows)
+        {
+            float price = BurnPriceOf(ctx, book, burn);
+            if (arrows > 0 && book != null)
+                price += ValueModel.ArrowPrice(arrows, BurnPriceOf(ctx, book, 1), book.ArrowsPerQuiver, book.CanRemake);
+            return price;
+        }
+
+        /// <summary>The arrows the quiver pays for <paramref name="ability"/> now: min(arrows, its whole burn) (Spend).</summary>
+        private static int ArrowsFor(AbilityData ability, KineticPriceBook book)
+        {
+            if (book == null || book.QuiverRanks <= 0 || ability?.Blueprint == null) return 0;
+            var k = Kingmaker.Blueprints.BlueprintExtenstions.GetComponent<AbilityKineticist>(ability.Blueprint);
+            if (k == null || k.AllowOnlyBurnCost) return 0;
+            return Math.Min(book.QuiverRanks, TotalBurn(ability));
         }
 
         /// <summary>Burn priced into the kineticist's ability candidates (BurnCost); the label says how much.</summary>
@@ -146,6 +228,7 @@ namespace CompanionAI_Pathfinder.Tactics
             if (part == null) return;
             // ★ v0.3.28 (codex review): one native burn read per ability in this PriceBurn call, shared with shortfall.
             var costs = new Dictionary<AbilityData, BurnQuote>();
+            var book = PriceBookFor(ctx, part, candidates, costs);
             // A kinetic blade not yet activated this round: the game activates it before the attack, for its burn.
             float bladeCost = 0f;
             int bladeBurn = 0;
@@ -156,10 +239,9 @@ namespace CompanionAI_Pathfinder.Tactics
                 var activation = blade?.GetActivationAbility(ctx.Unit.Descriptor);
                 if (activation != null && !part.IsBladeActivated && (bladeBurn = BurnOf(activation)) > 0 &&
                     bladeBurn <= part.LeftBurnThisRound)
-                    bladeCost = BurnCost(ctx, bladeBurn);
+                    bladeCost = BurnPriceOf(ctx, book, bladeBurn);
             }
             catch { }
-            float? shortfall = BlastShortfall(part, candidates, costs);
             foreach (var c in candidates)
             {
                 if (bladeCost > 0f && c.Value > 0f && (c.Kind == CandidateKind.WeaponAttack || (c.Ability != null && AbilityProfile.Get(c.Ability)?.IsCharge == true)))
@@ -172,15 +254,18 @@ namespace CompanionAI_Pathfinder.Tactics
                 var cost = BurnQuoteFor(c.Ability, costs);
                 if (!cost.Priced)
                 {
-                    cost.Price = BurnCost(ctx, cost.Burn, shortfall);
+                    // ★ v0.3.28 test 6: the arrows it takes from the quiver are priced too (they cost burn to make).
+                    cost.Arrows = ArrowsFor(c.Ability, book);
+                    cost.Price = KineticPrice(ctx, book, cost.Burn, cost.Arrows);
                     cost.Priced = true;
                     costs[c.Ability] = cost;
                 }
                 c.NativeBurn = cost.Burn;
-                if (cost.Burn <= 0) continue;
+                if (cost.Burn <= 0 && cost.Arrows <= 0) continue;
                 c.BurnPrice = cost.Price;
                 c.Value -= cost.Price;
-                c.Label += $" [burn {cost.Burn}: -{cost.Price:F1}]";
+                if (cost.Burn > 0) c.Label += $" [burn {cost.Burn}: -{BurnPriceOf(ctx, book, cost.Burn):F1}]";
+                if (cost.Arrows > 0) c.Label += $" [arrows {cost.Arrows}: -{cost.Price - BurnPriceOf(ctx, book, cost.Burn):F1}]";
             }
         }
 
@@ -188,6 +273,7 @@ namespace CompanionAI_Pathfinder.Tactics
         private struct BurnQuote
         {
             public int Burn;
+            public int Arrows;
             public float Price;
             public bool Priced;
         }
@@ -201,25 +287,42 @@ namespace CompanionAI_Pathfinder.Tactics
 
         /// <summary>
         /// ★ v0.3.28 test 4: how far the best own blast that costs no burn falls short of the best other standard or
-        /// full-round attack among <paramref name="candidates"/> (0 when a blast is best), or null when there is no free
+        /// full-round action among <paramref name="candidates"/> (0 when a blast is best), or null when there is no free
         /// blast to compare (BurnCost then keeps its one-blast-a-round assumption).
+        /// ★ v0.3.28 test 6: the other action may be any option that spends no burn - a weapon attack, a spell, another
+        /// ability - not only a weapon attack: a caster-kineticist's best other action is often a spell. And the best free
+        /// blast's chance to land (its attack roll), which the Overflow gain is weighted by.
         /// </summary>
-        private static float? BlastShortfall(UnitPartKineticist part, List<Candidate> candidates,
-                                           Dictionary<AbilityData, BurnQuote> costs)
+        private static void BlastShortfall(TacticalContext ctx, UnitPartKineticist part, List<Candidate> candidates,
+                                           Dictionary<AbilityData, BurnQuote> costs, out float? shortfall, out float landChance)
         {
+            shortfall = null;
+            landChance = 1f;
             float blast = float.MinValue, other = 0f;
+            Candidate best = null;
             foreach (var c in candidates)
             {
                 if (c.Value <= 0f || (c.Slot != ActionSlot.Standard && c.Slot != ActionSlot.FullRound)) continue;
                 if (c.Kind == CandidateKind.Ability && c.Ability != null)
                 {
-                    if (c.Value <= blast) continue;
-                    if (IsOwnBlast(part, c.Ability) && BurnQuoteFor(c.Ability, costs).Burn == 0) blast = c.Value;
+                    bool ownBlast = IsOwnBlast(part, c.Ability);
+                    if (ownBlast && c.Value <= blast) continue;
+                    if (!ownBlast && c.Value <= other) continue;
+                    if (BurnQuoteFor(c.Ability, costs).Burn != 0) continue;   // its own price is not in its value yet
+                    if (ownBlast) { blast = c.Value; best = c; }
+                    else other = c.Value;
                 }
                 else if (c.Kind == CandidateKind.WeaponAttack && c.Value > other) other = c.Value;
             }
-            if (blast == float.MinValue) return null;
-            return Math.Max(0f, other - blast);
+            if (best == null) return;
+            shortfall = Math.Max(0f, other - blast);
+            try
+            {
+                var profile = AbilityProfile.Get(best.Ability);
+                if (profile != null && profile.NeedsAttackRoll && best.Target != null)
+                    landChance = CombatMath.SpellAttackHitChance(ctx.Unit, best.Target, best.Ability);
+            }
+            catch { }
         }
 
         private static void AddKineticCandidates(TacticalContext ctx, List<Candidate> list, bool preview)
@@ -231,61 +334,20 @@ namespace CompanionAI_Pathfinder.Tactics
             var abilities = ctx.AllowedAbilities ??
                             UserAbilityPolicy.Allowed(ctx.Blocks, unit, ctx.DiscoveredAbilities ?? AbilityDiscovery.Gather(unit));
             var blasts = abilities.Where(a => IsOwnBlast(part, a)).ToList();
-            if (blasts.Count == 0 || blasts.Any(a => a.IsAvailable)) return;
+            if (blasts.Count == 0) return;
+            // ★ v0.3.28 test 6: 1. the quiver, whenever its arrows run short of the blasts the unit may want - not only
+            // when burn blocks every blast. A plain blast costs no burn, so that case never came; with the quiver empty
+            // mid-fight, the forms (Exploding Arrows, Spindle...) stayed out of reach for the rest of it.
+            if (TryQuiverRefill(ctx, list, preview, part, abilities, blasts, out string why)) return;
+            if (blasts.Any(a => a.IsAvailable)) return;
             var blocked = blasts.Where(BurnBlocked).ToList();
             if (blocked.Count == 0) return;
 
             float bestOther = list.Where(c => (c.Slot == ActionSlot.Standard || c.Slot == ActionSlot.FullRound) && c.Value > 0f && Affordable(ctx, c))
                                   .Select(c => c.Value).DefaultIfEmpty(0f).Max();
             float horizon = ValueModel.Horizon(ctx.ExpectedRounds, 4f);
-            string why = null;
-
-            // 1. The quiver.
             var quiverBuff = part.QuiverBuff;
-            var quiver = QuiverAbility(part, abilities);
-            bool rangedInHand = unit.Body?.PrimaryHand?.MaybeWeapon?.Blueprint?.IsRanged ?? false;
-            if (quiver != null && rangedInHand)
-            {
-                int ranks = unit.Buffs.GetBuff(quiverBuff)?.Rank ?? 0;
-                int arrows = QuiverArrows(quiver, part);
-                int quiverBurn = BurnOf(quiver);
-                if (!quiver.IsAvailable) why = "Create Quiver not available now";
-                else if (ranks > 0) why = $"the quiver still holds {ranks}";
-                else
-                {
-                    var best = BestBlast(ctx, blocked, b =>
-                    {
-                        int total = TotalBurn(b);
-                        int after = Math.Max(0, total - arrows);
-                        return after <= part.MaxBurnPerRound && after <= part.LeftBurn - quiverBurn ? total : -1;
-                    }, out var blast, out int perBlast);
-                    if (blast == null) why = $"{arrows} arrows would not make a blast affordable";
-                    else
-                    {
-                        float uses = Math.Min(horizon - 1f, arrows / (float)Math.Max(1, perBlast));
-                        float burnCost = BurnCost(ctx, quiverBurn);
-                        float value = Math.Max(0f, best - bestOther) * uses - burnCost;
-                        if (value > 0f)
-                        {
-                            list.RemoveAll(c => c.Kind == CandidateKind.Ability && c.Ability == quiver);
-                            list.Add(new Candidate
-                            {
-                                Kind = CandidateKind.Ability,
-                                Slot = SlotOf(quiver),
-                                Ability = quiver,
-                                Target = unit,
-                                Value = value,
-                                Label = $"{quiver.Name}->{unit.CharacterName}(quiver: {arrows} arrows pay the burn of {blast.Name}, " +
-                                        $"+{best - bestOther:F1} a round for {uses:F1} rounds{(quiverBurn > 0 ? $", burn {quiverBurn}: -{burnCost:F1}" : "")})",
-                                Key = $"abl:{CombatMemory.AbilityKey(quiver)}:{unit.UniqueId}"
-                            });
-                            Report(ctx, preview, $"blasts blocked by burn - {list.Last().Label} = {value:F1}");
-                            return;
-                        }
-                        why = $"the quiver's blast ({best:F1}) is not worth more than the best other option ({bestOther:F1})";
-                    }
-                }
-            }
+            bool rangedInHand = QuiverPays(unit);
 
             // 2. Switch off the infusion whose burn blocks them.
             if (!(ModSettings.Instance?.AiManagesToggles ?? true))
@@ -334,6 +396,199 @@ namespace CompanionAI_Pathfinder.Tactics
         }
 
         /// <summary>
+        /// ★ v0.3.28 test 6: the costliest shot the unit may fire: the whole burn (before the quiver) of its costliest
+        /// kinetic ability - each own blast with the substance infusion that is on, or with another one the AI may switch
+        /// on (the infusion planner's own candidates, priced by the game's cost arithmetic: KineticInfusionCost.TryReplace,
+        /// which keeps infusion specialisation and other reductions) - and any other kinetic ability the arrows pay
+        /// (not Create Quiver, not the abilities that accept burn on cast). Grows with the forms and infusions the unit
+        /// learns and shrinks with the reductions it gets, at every level. <paramref name="switchInfusions"/>: "AI manages
+        /// toggles" - else the current setup only.
+        /// </summary>
+        internal static int PlannedShotBurn(UnitEntityData unit, UnitPartKineticist part, IEnumerable<AbilityData> abilities,
+                                             AbilityData quiver, bool switchInfusions, out AbilityData costliest)
+        {
+            costliest = null;
+            int best = 0;
+            List<ActivatableAbility> options = null, active = null;
+            if (switchInfusions)
+            {
+                try
+                {
+                    var group = SubstanceToggles(unit);
+                    active = group.Where(t => InfusionInstalled(unit, t)).ToList();
+                    options = group.Where(t => !active.Contains(t) && !CombatMemory.PlayerOwnsToggle(unit, t) &&
+                                               !UserAbilityPolicy.Blocks(unit, t) && !t.Blueprint.HiddenInUI && t.IsAvailable &&
+                                               DescribeInfusion(t.Blueprint.Buff) is var d && d != null && d.Unsupported == null).ToList();
+                }
+                catch { options = null; }
+            }
+            foreach (var a in abilities)
+            {
+                if (a == null || a == quiver || UserAbilityPolicy.Blocks(unit, a)) continue;
+                var k = Kingmaker.Blueprints.BlueprintExtenstions.GetComponent<AbilityKineticist>(a.Blueprint);
+                if (k == null || k.AllowOnlyBurnCost) continue;
+                int total;
+                try
+                {
+                    var cost = k.CalculateBurnCost(a);
+                    total = Math.Max(0, cost.Total);
+                    if (options != null && options.Count > 0 && IsOwnBlast(part, a))
+                    {
+                        var removed = active.Select(t => t.Blueprint.Buff).ToArray();
+                        foreach (var option in options)
+                        {
+                            var description = DescribeInfusion(option.Blueprint.Buff);
+                            if (description == null || !description.Applies(a)) continue;
+                            if (KineticInfusionCost.TryReplace(cost, a, removed, option.Blueprint.Buff, out int planned, 0))
+                                total = Math.Max(total, planned);
+                        }
+                    }
+                }
+                catch { continue; }
+                if (total > best) { best = total; costliest = a; }
+            }
+            return best;
+        }
+
+        private struct RefillMemo
+        {
+            public int Fight, Round, Ranks;
+            public float Value;
+            public AbilityData Blast;
+            public int PerBlast;
+        }
+
+        /// <summary>Per unit: the best burn-blocked blast the arrows would open, worked out once a round (it is costly).</summary>
+        private static readonly Dictionary<string, RefillMemo> RefillMemos = new Dictionary<string, RefillMemo>();
+
+        /// <summary>Blocked blasts scored for a refill, at most, per unit and round (each one is a full scoring pass).</summary>
+        private const int RefillBlastBudget = 4;
+
+        /// <summary>
+        /// ★ v0.3.28 test 6: Create Quiver in combat when its arrows run short of the costliest shot the unit may fire
+        /// (PlannedShotBurn). Worth the best blast the new arrows pay for over the best action without them, for the rounds
+        /// they last (ValueModel.QuiverRefillWorth), less the quiver's own burn; it takes the standard action, so it competes
+        /// with that best action. The blast with arrows is either one the unit can cast now while paying burn - worth the
+        /// burn and arrows it would no longer pay - or one burn blocks (the forms beyond the round's burn at low levels, any
+        /// blast once the day's burn is spent), scored as it would be cast: at most RefillBlastBudget of them, chosen by how
+        /// well their element's plain blast does now and then by cost, once a round. The game's limits decide what is
+        /// affordable (MaxBurnPerRound, LeftBurn after the quiver's own burn), so it works the same at every level.
+        /// </summary>
+        private static bool TryQuiverRefill(TacticalContext ctx, List<Candidate> list, bool preview, UnitPartKineticist part,
+                                            List<AbilityData> abilities, List<AbilityData> blasts, out string why)
+        {
+            why = null;
+            var unit = ctx.Unit;
+            var quiver = QuiverAbility(part, abilities);
+            if (quiver == null) return false;
+            if (!QuiverPays(unit)) { why = "the weapon in hand stops the quiver"; return false; }
+            if (!quiver.IsAvailable) { why = "Create Quiver not available now"; return false; }
+            if (SlotOf(quiver) == ActionSlot.Standard && !ctx.HasStandard) return false;
+            int ranks = QuiverRanks(unit, part);
+            int reserve = PlannedShotBurn(unit, part, abilities, quiver, ctx.Global?.AiManagesToggles ?? true, out var planned);
+            if (!ValueModel.NeedsKineticQuiver(ranks, reserve))
+            {
+                why = ranks > 0 ? $"the quiver still holds {ranks}" : "no kinetic ability costs burn now";
+                return false;
+            }
+            int arrows = QuiverArrows(quiver, part);
+            int quiverBurn = BurnOf(quiver);
+            int after = ranks + arrows;
+            var book = ctx.KineticPrices;
+            float horizon = ValueModel.Horizon(ctx.ExpectedRounds, 4f);
+            float bestOther = list.Where(c => (c.Slot == ActionSlot.Standard || c.Slot == ActionSlot.FullRound) && c.Value > 0f && Affordable(ctx, c))
+                                  .Select(c => c.Value).DefaultIfEmpty(0f).Max();
+            // What paying with arrows would cost a blast of this whole burn: the burn the arrows do not cover, and the arrows.
+            Func<int, float> priceWith = total => KineticPrice(ctx, book, Math.Max(0, total - after), Math.Min(total, after));
+            Func<int, bool> affordableWith = total =>
+            {
+                int burn = Math.Max(0, total - after);
+                return burn <= part.MaxBurnPerRound && burn <= part.LeftBurn - quiverBurn;
+            };
+
+            // a) Blasts it can cast now, paying burn the arrows would pay: worth that price saved.
+            float best = 0f;
+            AbilityData blast = null;
+            int perBlast = 1;
+            foreach (var c in list)
+            {
+                if (c.Kind != CandidateKind.Ability || c.Ability == null || !(c.Value > 0f) || !IsOwnBlast(part, c.Ability) ||
+                    (c.Slot != ActionSlot.Standard && c.Slot != ActionSlot.FullRound) || !Affordable(ctx, c)) continue;
+                int total = TotalBurn(c.Ability);
+                if (total <= ranks || !affordableWith(total)) continue;
+                float with = c.Value + c.BurnPrice - priceWith(total);
+                if (with > best) { best = with; blast = c.Ability; perBlast = Math.Max(1, total); }
+            }
+
+            // b) Blasts burn blocks now, scored as they would be cast with the arrows (once a round).
+            string key = unit.UniqueId;
+            int round = CombatMemory.Round;
+            int fight = CombatMemory.Fight;
+            if (RefillMemos.TryGetValue(key, out var memo) && memo.Fight == fight && memo.Round == round && memo.Ranks == ranks)
+            {
+                if (memo.Blast != null && memo.Value > best) { best = memo.Value; blast = memo.Blast; perBlast = memo.PerBlast; }
+            }
+            else if (!preview)
+            {
+                // How well each element does now: the best value of its plain blast (or any affordable variant).
+                var elementScore = new Dictionary<Kingmaker.UnitLogic.Abilities.Blueprints.BlueprintAbility, float>();
+                foreach (var c in list)
+                {
+                    if (c.Kind != CandidateKind.Ability || c.Ability == null || !(c.Value > 0f) || !IsOwnBlast(part, c.Ability)) continue;
+                    var element = c.Ability.Blueprint.Parent ?? c.Ability.Blueprint;
+                    if (!elementScore.TryGetValue(element, out float v) || c.Value > v) elementScore[element] = c.Value;
+                }
+                var starved = blasts.Where(b => !b.IsAvailable && BurnBlocked(b))
+                    .Select(b => new { Blast = b, Total = TotalBurn(b) })
+                    .Where(x => x.Total > ranks && affordableWith(x.Total))
+                    .OrderByDescending(x => elementScore.TryGetValue(x.Blast.Blueprint.Parent ?? x.Blast.Blueprint, out float v) ? v : 0f)
+                    .ThenByDescending(x => x.Total)
+                    .Take(RefillBlastBudget).Select(x => x.Blast).ToList();
+                float blockedBest = 0f;
+                AbilityData blockedBlast = null;
+                int blockedPer = 1;
+                if (starved.Count > 0)
+                {
+                    float scored = BestBlast(ctx, starved, b => TotalBurn(b), out var chosen, out int whole, valueActiveInfusions: true);
+                    if (chosen != null)
+                    {
+                        blockedBest = scored - priceWith(whole);
+                        blockedBlast = chosen;
+                        blockedPer = Math.Max(1, whole);
+                    }
+                }
+                RefillMemos[key] = new RefillMemo { Fight = fight, Round = round, Ranks = ranks, Value = blockedBest, Blast = blockedBlast, PerBlast = blockedPer };
+                if (blockedBlast != null && blockedBest > best) { best = blockedBest; blast = blockedBlast; perBlast = blockedPer; }
+            }
+            if (blast == null)
+            {
+                why = $"{arrows} more arrows would not open a better blast";
+                return false;
+            }
+            float quiverPrice = BurnPriceOf(ctx, book, quiverBurn);
+            float value = ValueModel.QuiverRefillWorth(best - bestOther, after, perBlast, horizon, quiverPrice);
+            if (!(value > 0f))
+            {
+                why = $"with the arrows {blast.Name} ({best:F1}) is not worth the turn over the best other option ({bestOther:F1})";
+                return false;
+            }
+            list.RemoveAll(c => c.Kind == CandidateKind.Ability && c.Ability == quiver);
+            list.Add(new Candidate
+            {
+                Kind = CandidateKind.Ability,
+                Slot = SlotOf(quiver),
+                Ability = quiver,
+                Target = unit,
+                Value = value,
+                Label = $"{quiver.Name}->{unit.CharacterName}(quiver: {ranks}+{arrows} arrows for {blast.Name}, " +
+                        $"+{best - bestOther:F1} a round{(quiverBurn > 0 ? $", burn {quiverBurn}: -{quiverPrice:F1}" : "")})",
+                Key = $"abl:{CombatMemory.AbilityKey(quiver)}:{unit.UniqueId}"
+            });
+            Report(ctx, preview, $"arrows short of the costliest shot ({planned?.Name} {reserve}, quiver {ranks}) - {list.Last().Label} = {value:F1}");
+            return true;
+        }
+
+        /// <summary>
         /// ★ v0.3.23 (quiver task, docs/TASK_BOMBS_CARNAGE_QUIVER.md §3): a unit that shoots its blasts through the bow
         /// (UnitPartKineticist.CanUseArcherBlast) chose a weapon attack while a blast was there to use - once per fight, both
         /// values, and why they are compared as they are: a bow's arrows carry no blast damage in the game (only a kinetic
@@ -375,7 +630,7 @@ namespace CompanionAI_Pathfinder.Tactics
         /// affordable (it returns a burn figure for the label, or -1), as the engine would score them if they were.
         /// </summary>
         private static float BestBlast(TacticalContext ctx, List<AbilityData> blocked, Func<AbilityData, int> burnWith,
-                                       out AbilityData chosen, out int burn)
+                                       out AbilityData chosen, out int burn, bool valueActiveInfusions = false)
         {
             chosen = null;
             burn = 0;
@@ -389,7 +644,7 @@ namespace CompanionAI_Pathfinder.Tactics
                 {
                     // ★ kinetic-infusion-value: this existing recovery estimate may switch an infusion OFF. Do not
                     // credit an active infusion in that estimate; no hypothetical configuration is evaluated here.
-                    value = EvaluateAbility(ctx, blast, valueActiveInfusions: false).Where(c => c.Value > 0f && Affordable(ctx, c))
+                    value = EvaluateAbility(ctx, blast, valueActiveInfusions: valueActiveInfusions).Where(c => c.Value > 0f && Affordable(ctx, c))
                                                        .Select(c => c.Value).DefaultIfEmpty(0f).Max();
                 }
                 catch { continue; }
@@ -527,16 +782,10 @@ namespace CompanionAI_Pathfinder.Tactics
                     else
                     {
                         int ranks = unit.Buffs.GetBuff(part.QuiverBuff)?.Rank ?? 0;
-                        AbilityData costliest = null;
-                        int burn = 0;
-                        foreach (var a in abilities)
-                        {
-                            if (a == quiver || UserAbilityPolicy.Blocks(unit, a)) continue;
-                            var k = Kingmaker.Blueprints.BlueprintExtenstions.GetComponent<AbilityKineticist>(a.Blueprint);
-                            if (k == null || k.AllowOnlyBurnCost) continue;
-                            int total = TotalBurn(a);
-                            if (total > burn) { burn = total; costliest = a; }
-                        }
+                        // ★ v0.3.28 test 6: the costliest shot it may fire, with a substance infusion the AI may switch on
+                        // in the fight (it is off between fights) - not only the setup that happens to be on now.
+                        int burn = PlannedShotBurn(unit, part, abilities, quiver, ModSettings.Instance?.AiManagesToggles ?? true,
+                                                   out var costliest);
                         int quiverBurn = BurnOf(quiver);
                         float loss = quiverBurn * Level(unit);
                         if (costliest == null) why = "no kinetic ability costs burn now";
