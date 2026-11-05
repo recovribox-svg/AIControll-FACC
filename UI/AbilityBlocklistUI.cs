@@ -48,11 +48,13 @@ namespace CompanionAI_Pathfinder.UI
         private static HashSet<string> s_RowGuids;
         private static string s_Search = "";
         private static bool s_BlockedOnly;
+        private static bool s_HideBlocked;
         private static bool s_AddShared;
         private static int s_Page;
         private static List<Row> s_View;
         private static string s_ViewSearch;
         private static bool s_ViewBlockedOnly;
+        private static bool s_ViewHideBlocked;
         private static int s_ViewRevision = int.MinValue;
         private static List<AbilityBlockEntry> s_Missing = new List<AbilityBlockEntry>();
 
@@ -152,7 +154,17 @@ namespace CompanionAI_Pathfinder.UI
             if (GUILayout.Button(L("BL_Refresh"), GUILayout.Width(120f), GUILayout.Height(ButtonHeight))) s_Rows = null;
             GUILayout.Space(10);
             if (GUILayout.Button((s_BlockedOnly ? "☑ " : "☐ ") + L("BL_BlockedOnly"), GUI.skin.label, GUILayout.Height(ButtonHeight)))
+            {
                 s_BlockedOnly = !s_BlockedOnly;
+                if (s_BlockedOnly) s_HideBlocked = false;
+            }
+            // ★ v0.3.28: catalogue view only, mutually exclusive with "Show blocked only"; neither edits a block list.
+            GUILayout.Space(10);
+            if (GUILayout.Button((s_HideBlocked ? "☑ " : "☐ ") + L("BL_HideBlocked"), GUI.skin.label, GUILayout.Height(ButtonHeight)))
+            {
+                s_HideBlocked = !s_HideBlocked;
+                if (s_HideBlocked) s_BlockedOnly = false;
+            }
             GUILayout.FlexibleSpace();
             GUILayout.EndHorizontal();
 
@@ -166,7 +178,8 @@ namespace CompanionAI_Pathfinder.UI
             GUILayout.Space(5);
 
             int revision = UserAbilityPolicy.Revision;
-            if (layout && (s_View == null || s_ViewSearch != s_Search || s_ViewBlockedOnly != s_BlockedOnly || s_ViewRevision != revision))
+            if (layout && (s_View == null || s_ViewSearch != s_Search || s_ViewBlockedOnly != s_BlockedOnly ||
+                           s_ViewHideBlocked != s_HideBlocked || s_ViewRevision != revision))
                 BuildView(settings, unitId, unitName, revision);
             if (s_View == null) return;
 
@@ -330,7 +343,7 @@ namespace CompanionAI_Pathfinder.UI
         private static string NameOf(string display, string internalName) =>
             string.IsNullOrEmpty(display) ? internalName ?? "?" : display;
 
-        /// <summary>The rows to show (search, "blocked only") and the character's entries it does not have now.</summary>
+        /// <summary>The rows to show (search, block visibility) and the character's entries it does not have now.</summary>
         private static void BuildView(ModSettings settings, string unitId, string unitName, int revision)
         {
             var scope = UserAbilityPolicy.ScopeFor(unitId);
@@ -339,14 +352,20 @@ namespace CompanionAI_Pathfinder.UI
             foreach (var row in s_Rows)
             {
                 if (search.Length > 0 && row.Search.IndexOf(search, StringComparison.Ordinal) < 0) continue;
-                if (s_BlockedOnly && scope.SourceOf(row.Key) == BlockSource.None &&
-                    (row.FamilyGuid == null || scope.SourceOf(row.FamilyKey) == BlockSource.None)) continue;
+                // ★ v0.3.28: filter the existing rows before paging, using the same exact/family status as DrawRow.
+                if (s_BlockedOnly || s_HideBlocked)
+                {
+                    bool blocked = scope.SourceOf(row.Key) != BlockSource.None ||
+                                   (row.FamilyGuid != null && scope.SourceOf(row.FamilyKey) != BlockSource.None);
+                    if ((s_BlockedOnly && !blocked) || (s_HideBlocked && blocked)) continue;
+                }
                 view.Add(row);
             }
-            if (s_ViewSearch != s_Search || s_ViewBlockedOnly != s_BlockedOnly) s_Page = 0;
+            if (s_ViewSearch != s_Search || s_ViewBlockedOnly != s_BlockedOnly || s_ViewHideBlocked != s_HideBlocked) s_Page = 0;
             s_View = view;
             s_ViewSearch = s_Search;
             s_ViewBlockedOnly = s_BlockedOnly;
+            s_ViewHideBlocked = s_HideBlocked;
             s_ViewRevision = revision;
 
             s_Missing = new List<AbilityBlockEntry>();

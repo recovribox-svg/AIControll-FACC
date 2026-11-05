@@ -225,6 +225,7 @@ namespace CompanionAI_Pathfinder.Settings
             ["BL_Search"] = new() { { Language.English, "Search" }, { Language.Korean, "검색" } },
             ["BL_Refresh"] = new() { { Language.English, "Refresh" }, { Language.Korean, "새로고침" } },
             ["BL_BlockedOnly"] = new() { { Language.English, "Show blocked only" }, { Language.Korean, "차단된 것만 보기" } },
+            ["BL_HideBlocked"] = new() { { Language.English, "Hide blocked" }, { Language.Korean, "차단된 항목 숨기기" } },
             ["BL_BlockFor"] = new() { { Language.English, "New blocks apply to:" }, { Language.Korean, "새 차단 적용 대상:" } },
             ["BL_ThisCharacter"] = new() { { Language.English, "This character" }, { Language.Korean, "이 캐릭터" } },
             ["BL_Everyone"] = new() { { Language.English, "Everyone" }, { Language.Korean, "모두" } },
