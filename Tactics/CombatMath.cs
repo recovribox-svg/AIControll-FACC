@@ -690,6 +690,20 @@ namespace CompanionAI_Pathfinder.Tactics
         private static readonly Dictionary<CritKey, float> CritFactors = new Dictionary<CritKey, float>();
         private static int s_CritFrame = -1;
 
+        /// <summary>★ v0.3.28 test 6: an attack-roll ability's threat chance (0 against an immune target) and multiplier.</summary>
+        internal static bool CritParts(UnitEntityData caster, AbilityData ability, UnitEntityData target, out float threat, out int multiplier)
+        {
+            threat = 0f;
+            multiplier = 1;
+            if (!DeliveryWeapon(caster, ability, out var weapon, out _, out _)) return false;
+            CriticalOf(caster, weapon, out int range, out int weaponMultiplier);
+            ability.IsMagusSpell(out bool magus, out bool eldritchArcher);
+            multiplier = magus || eldritchArcher ? 2 : weaponMultiplier;
+            threat = Mathf.Clamp01(range / 20f);
+            if (threat > 0f && CritImmune(caster, target, weapon)) threat = 0f;
+            return true;
+        }
+
         /// <summary>
         /// ★ v0.3.28 test 6: what critical hits add to a landed hit of an ability that rolls to hit (ValueModel.CritFactor).
         /// The game multiplies the damage of a confirmed critical by the attack roll's weapon multiplier - a kinetic archer's
@@ -713,15 +727,8 @@ namespace CompanionAI_Pathfinder.Tactics
                 bool any = false;
                 foreach (var action in profile.Damage)
                     if (action is ContextActionDealDamage dmg && !dmg.IgnoreCritical) { any = true; break; }
-                if (any && DeliveryWeapon(caster, ability, out var weapon, out _, out _))
-                {
-                    CriticalOf(caster, weapon, out int range, out int weaponMultiplier);
-                    ability.IsMagusSpell(out bool magus, out bool eldritchArcher);
-                    int multiplier = magus || eldritchArcher ? 2 : weaponMultiplier;
-                    float threat = Mathf.Clamp01(range / 20f);
-                    if (threat > 0f && CritImmune(caster, target, weapon)) threat = 0f;
+                if (any && CritParts(caster, ability, target, out float threat, out int multiplier))
                     factor = ValueModel.CritFactor(threat, SpellAttackHitChance(caster, target, ability), multiplier);
-                }
             }
             catch (Exception ex)
             {
@@ -745,7 +752,7 @@ namespace CompanionAI_Pathfinder.Tactics
 
         /// <summary>★ v0.3.20: the estimate before the learned share of a blast (DamageObserver checks against it).</summary>
         internal static float EstimateAbilityDamageRaw(AbilityData ability, AbilityProfile profile, UnitEntityData target, ItemEntityWeapon bladeWeapon,
-            Func<GameAction, EffectApplies> branch = null, bool? ignorePhysicalReduction = null)
+            Func<GameAction, EffectApplies> branch = null, bool? ignorePhysicalReduction = null, float extraWeaponDamage = 0f)
         {
             if (profile.Damage.Count == 0) return 0f;
             EffectApplies Applies(GameAction action) => branch?.Invoke(action) ?? profile.AppliesTo(action, ability, target);
@@ -776,6 +783,9 @@ namespace CompanionAI_Pathfinder.Tactics
                         }
                         else avg = EvaluateDice(dmg.Value, ctx, Math.Min(cl, 10), maximize, empower);
                         avg += KineticDamageBonus(ability, dmg, profile.NeedsAttackRoll || bladeWeapon != null, bladeWeapon);
+                        // ★ v0.3.28 test 6: an attack mode's weapon damage (Deadly Aim) on a kinetic archer's blast - the game
+                        // adds the bow's damage modifiers to each of its damage actions (ContextActionDealDamage.GetDamageInfo).
+                        if (extraWeaponDamage != 0f) avg += extraWeaponDamage;
                         if (dmg.Half) avg *= 0.5f;
                         avg *= ArcherBlastDecline(ability, dmg, target);
                         parts.Add(new KeyValuePair<GameAction, float>(dmg,

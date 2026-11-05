@@ -680,6 +680,108 @@ namespace CompanionAI_Pathfinder.Tactics
             c.Label += " [" + string.Join(", ", c.Modes.Select(m => $"{m.Key.Name} {(m.Value ? "on" : "off")}")) + $" +{bestGain:F1}]";
         }
 
+        /// <summary>Kinetic archer blasts given attack modes, at most, per decision (each set is one damage estimate).</summary>
+        private const int BlastModeBudget = 4;
+
+        /// <summary>
+        /// ★ v0.3.28 test 6: attack modes for a kinetic archer's blasts. The blast is one attack with the bow
+        /// (AbilityDeliverProjectile: RuleAttackWithWeapon, IsFirstAttack), so the modes applied with each weapon attack
+        /// (triggered: Deadly Aim) take part in it - their attack change in the roll, their damage in the blast's damage
+        /// (ContextActionDealDamage adds the bow's damage modifiers to every damage action of an archer blast). They were
+        /// never weighed for a blast, and its estimate never had one that is on (a triggered mode exists only during the
+        /// attack). For the best few archer blasts: their value with the modes as they stand, then the best set of the
+        /// triggered modes that fit the bow, switched with the blast when it clearly pays (the weapon options' margin).
+        /// Defensive modes (AC) are left as they are: they do not take part in a cast.
+        /// </summary>
+        private static void ChooseBlastAttackModes(TacticalContext ctx, List<Candidate> candidates)
+        {
+            var unit = ctx.Unit;
+            var bow = unit.Body?.PrimaryHand?.MaybeWeapon;
+            if (bow?.Blueprint == null || !bow.Blueprint.IsRanged) return;
+            var part = unit.Get<Kingmaker.UnitLogic.Class.Kineticist.UnitPartKineticist>();
+            if (part == null) return;
+            var modes = AttackModes(ctx).Where(m => m.Triggered && m.AC == 0 && (m.Damage(bow) != 0f || m.Attack(bow, false) != 0)).ToList();
+            if (modes.Count == 0) return;
+            var blasts = candidates.Where(c => c.Kind == CandidateKind.Ability && c.Ability != null && c.Target != null && c.Value > 0f &&
+                                               c.Modes == null && IsArcherBlastSafe(c.Ability))
+                                   .OrderByDescending(c => c.Value).Take(BlastModeBudget).ToList();
+            foreach (var c in blasts)
+            {
+                try { ChooseBlastModes(ctx, c, modes, bow); }
+                catch (Exception ex) { Main.Verbose($"[Modes] {unit.CharacterName} {c.Label}: {ex.Message}"); }
+            }
+        }
+
+        private static bool IsArcherBlastSafe(Kingmaker.UnitLogic.Abilities.AbilityData ability)
+        {
+            try { return Kingmaker.UnitLogic.Class.Kineticist.AbilityKineticist.IsArcherBlast(ability); }
+            catch { return false; }
+        }
+
+        private static void ChooseBlastModes(TacticalContext ctx, Candidate c, List<UnitMode> modes, ItemEntityWeapon bow)
+        {
+            var unit = ctx.Unit;
+            var target = c.Target;
+            var profile = AbilityProfile.Get(c.Ability);
+            if (profile == null || !profile.NeedsAttackRoll || !profile.DealsDamage) return;
+            if (!CombatMath.SpellAttackRoll(unit, target, c.Ability, out int ab, out int ac, out float lands)) return;
+            float pNow = CombatMath.SpellAttackHitChance(unit, target, c.Ability);
+            if (!(pNow > 0f)) return;
+            // Spell resistance, a shadow's share, the save: the rest of the blast's chance, which no mode changes.
+            float rest = CombatMath.EffectChance(unit, target, c.Ability, profile, damage: true) / pNow;
+            bool crits = CombatMath.CritParts(unit, c.Ability, target, out float threat, out int multiplier);
+            float scale = DamageObserver.BlastFactor(unit, c.Ability.Blueprint);
+            bool endsRegeneration = CombatMath.AbilityEndsRegeneration(profile, target);
+            float weight = RoleWeight(ctx, "damage");
+            Func<HashSet<UnitMode>, float> valueOf = set =>
+            {
+                int dab = 0;
+                float ddmg = 0f;
+                foreach (var m in set) { dab += m.Attack(bow, false); ddmg += m.Damage(bow); }
+                float p = Mathf.Clamp(CombatMath.HitProbability(ab + dab, ac), 0.05f, 0.95f) * lands;
+                float raw = CombatMath.EstimateAbilityDamageRaw(c.Ability, profile, target, null, extraWeaponDamage: ddmg);
+                float perHit = raw * scale * (crits ? ValueModel.CritFactor(threat, p, multiplier) : 1f);
+                float land = p * rest;
+                float expected = perHit * land;
+                return DamageValue(target, expected, land, endsRegeneration) * WakeFactor(target, expected) * weight;
+            };
+            var none = valueOf(new HashSet<UnitMode>());
+            var current = new HashSet<UnitMode>(modes.Where(m => m.On));
+            float asTheyStand = current.Count == 0 ? none : valueOf(current);
+            // The blast is made with the modes that are on: its value brought to that state first.
+            if (current.Count > 0) c.Value += asTheyStand - none;
+
+            // One mode per group, each ungrouped one on or off; a blocked mode (and its group, while it is on) as it is.
+            var free = modes.Where(m => !m.Blocked && !(m.Group != ActivatableAbilityGroup.None &&
+                                                       modes.Any(b => b.Blocked && b.On && b.Group == m.Group))).ToList();
+            var kept = modes.Except(free).Where(m => m.On).ToList();
+            var combos = new List<List<UnitMode>> { new List<UnitMode>() };
+            foreach (var group in free.GroupBy(m => m.Group == ActivatableAbilityGroup.None ? (object)m : m.Group))
+            {
+                if (combos.Count * (group.Count() + 1) > 16) break;
+                var options = new List<UnitMode> { null };
+                options.AddRange(group);
+                combos = combos.SelectMany(combo => options.Select(o => o == null ? combo : combo.Concat(new[] { o }).ToList())).ToList();
+            }
+            float bestGain = 0f;
+            HashSet<UnitMode> best = null;
+            foreach (var combo in combos)
+            {
+                var set = new HashSet<UnitMode>(combo.Concat(kept));
+                var changes = modes.Where(m => set.Contains(m) != m.On).ToList();
+                if (changes.Count == 0) continue;
+                if (changes.Any(m => !m.On && !m.Toggle.IsAvailable)) continue;
+                if (changes.Any(m => m.On && m.StaysUntilRoundEnd)) continue;
+                if (changes.Any(m => CombatMemory.ToggleSwitchedThisRound(unit, m.Toggle))) continue;
+                float gain = valueOf(set) - asTheyStand;
+                if (gain > bestGain) { bestGain = gain; best = set; }
+            }
+            if (best == null || bestGain < Math.Max(0.5f, 0.1f * Math.Abs(c.Value))) return;
+            c.Modes = modes.Where(m => best.Contains(m) != m.On).Select(m => new KeyValuePair<ActivatableAbility, bool>(m.Toggle, !m.On)).ToList();
+            c.Value += bestGain;
+            c.Label += " [" + string.Join(", ", c.Modes.Select(m => $"{m.Key.Name} {(m.Value ? "on" : "off")}")) + $" +{bestGain:F1}]";
+        }
+
         /// <summary>Switch the candidate's attack modes the way the action bar does, just before its attack.</summary>
         /// <remarks>★ v0.3.18 (review): off with the game's TurnOffImmediately (its buff removed now, as the value assumed):
         /// switching IsOn off alone leaves a started mode's buff until the round ends, unless the blueprint deactivates

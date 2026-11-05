@@ -332,6 +332,8 @@ namespace CompanionAI_Pathfinder.Tactics
             catch (Exception ex) { Main.Error($"[Tactics] attack modes: {ex}"); }
             timings?.Mark(DecisionStage.Weapons);
             try { AddAbilityCandidates(ctx, candidates, captureControlAims: !preview); } catch (Exception ex) { Main.Error($"[Tactics] ability candidates: {ex}"); }
+            // ★ v0.3.28 test 6: Deadly Aim and other attack modes on a kinetic archer's blasts (one bow attack each).
+            try { ChooseBlastAttackModes(ctx, candidates); } catch (Exception ex) { Main.Error($"[Tactics] blast attack modes: {ex.Message}"); }
             timings?.Mark(DecisionStage.Abilities);
             // ★ v0.3.19 (test6): kineticists - burn priced, and what to do when burn blocks every blast.
             try { PriceBurn(ctx, candidates); AddKineticCandidates(ctx, candidates, preview); }
@@ -5009,6 +5011,9 @@ namespace CompanionAI_Pathfinder.Tactics
             // attack left them switched (and locked for the round) for whatever option came next. The attack rolls on
             // later ticks; Fighting Defensively starts on the attack itself (RuleAttackWithWeapon).
             if (issued && c.Kind == CandidateKind.WeaponAttack) ApplyModes(unit, c);
+            // ★ v0.3.28 test 6: a kinetic archer's blast with its attack modes (ChooseBlastAttackModes); the bow attack rolls
+            // when the projectile leaves, after the cast.
+            if (issued && c.Kind == CandidateKind.Ability && c.Modes != null) ApplyModes(unit, c);
             if (issued && c.Kind == CandidateKind.Ability)
             {
                 CombatMemory.RecordCast(unit, c.Ability, c.Target, command);
