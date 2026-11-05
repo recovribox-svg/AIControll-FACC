@@ -106,8 +106,14 @@ namespace CompanionAI_Pathfinder.Tactics
         /// it adds before the next turn (burn x character level of nonlethal damage), a small day cost, less the
         /// Elemental Overflow damage it adds to the blasts left in this fight. A burn that would knock the unit out
         /// costs its whole worth.
+        /// ★ v0.3.28 test 4: <paramref name="blastShortfall"/> - how far the unit's best blast that costs no burn falls short
+        /// of its best other attack (PriceBurn). Overflow adds to blasts only (AddKineticistElementalOverflow: damage of an
+        /// own blast, attack of a kinetic-blast weapon), so when its gain does not close that gap the unit attacks with its
+        /// weapon in the rounds after and the gain counts for nothing. Orvath's bow full attacks beat his blasts all play-test,
+        /// yet a burn-3 Exploding Arrows was priced "-0.0" five times (30 nonlethal hit points of 3 burn a day, offset by
+        /// Overflow for blasts he would not shoot). Null: about one blast a round, as before.
         /// </summary>
-        internal static float BurnCost(TacticalContext ctx, int burn)
+        internal static float BurnCost(TacticalContext ctx, int burn, float? blastShortfall = null)
         {
             if (burn <= 0) return 0f;
             var unit = ctx.Unit;
@@ -126,7 +132,9 @@ namespace CompanionAI_Pathfinder.Tactics
                 overflowNow = CombatMath.ElementalOverflowDamage(unit, blast);
                 overflowAfter = CombatMath.ElementalOverflowDamage(unit, blast, burn);
             }
-            cost -= (overflowAfter - overflowNow) * Math.Max(0f, ValueModel.Horizon(ctx.ExpectedRounds, 4f) - 1f);
+            int gain = overflowAfter - overflowNow;
+            if (blastShortfall == null || gain >= blastShortfall.Value)
+                cost -= gain * Math.Max(0f, ValueModel.Horizon(ctx.ExpectedRounds, 4f) - 1f);
             return Math.Max(0f, cost);
         }
 
@@ -149,6 +157,7 @@ namespace CompanionAI_Pathfinder.Tactics
                     bladeCost = BurnCost(ctx, bladeBurn);
             }
             catch { }
+            float? shortfall = BlastShortfall(part, candidates);
             foreach (var c in candidates)
             {
                 if (bladeCost > 0f && c.Value > 0f && (c.Kind == CandidateKind.WeaponAttack || (c.Ability != null && AbilityProfile.Get(c.Ability)?.IsCharge == true)))
@@ -161,7 +170,7 @@ namespace CompanionAI_Pathfinder.Tactics
                 if (!costs.TryGetValue(c.Ability, out var cost))
                 {
                     int burn = BurnOf(c.Ability);
-                    costs[c.Ability] = cost = new KeyValuePair<int, float>(burn, BurnCost(ctx, burn));
+                    costs[c.Ability] = cost = new KeyValuePair<int, float>(burn, BurnCost(ctx, burn, shortfall));
                 }
                 c.NativeBurn = cost.Key;
                 if (cost.Key <= 0) continue;
@@ -169,6 +178,32 @@ namespace CompanionAI_Pathfinder.Tactics
                 c.Value -= cost.Value;
                 c.Label += $" [burn {cost.Key}: -{cost.Value:F1}]";
             }
+        }
+
+        /// <summary>
+        /// ★ v0.3.28 test 4: how far the best own blast that costs no burn falls short of the best other standard or
+        /// full-round attack among <paramref name="candidates"/> (0 when a blast is best), or null when there is no free
+        /// blast to compare (BurnCost then keeps its one-blast-a-round assumption).
+        /// </summary>
+        private static float? BlastShortfall(UnitPartKineticist part, List<Candidate> candidates)
+        {
+            float blast = float.MinValue, other = 0f;
+            Dictionary<AbilityData, bool> free = null;
+            foreach (var c in candidates)
+            {
+                if (c.Value <= 0f || (c.Slot != ActionSlot.Standard && c.Slot != ActionSlot.FullRound)) continue;
+                if (c.Kind == CandidateKind.Ability && c.Ability != null)
+                {
+                    if (c.Value <= blast) continue;
+                    if (free == null) free = new Dictionary<AbilityData, bool>();
+                    if (!free.TryGetValue(c.Ability, out bool ok))
+                        free[c.Ability] = ok = IsOwnBlast(part, c.Ability) && BurnOf(c.Ability) == 0;
+                    if (ok) blast = c.Value;
+                }
+                else if (c.Kind == CandidateKind.WeaponAttack && c.Value > other) other = c.Value;
+            }
+            if (blast == float.MinValue) return null;
+            return Math.Max(0f, other - blast);
         }
 
         private static void AddKineticCandidates(TacticalContext ctx, List<Candidate> list, bool preview)
@@ -191,11 +226,7 @@ namespace CompanionAI_Pathfinder.Tactics
 
             // 1. The quiver.
             var quiverBuff = part.QuiverBuff;
-            var quiver = quiverBuff == null ? null : abilities.FirstOrDefault(a =>
-            {
-                var p = AbilityProfile.Get(a);
-                return p != null && (p.CasterBuffs.Contains(quiverBuff) || p.TargetBuffs.Contains(quiverBuff));
-            });
+            var quiver = QuiverAbility(part, abilities);
             bool rangedInHand = unit.Body?.PrimaryHand?.MaybeWeapon?.Blueprint?.IsRanged ?? false;
             if (quiver != null && rangedInHand)
             {
@@ -386,6 +417,85 @@ namespace CompanionAI_Pathfinder.Tactics
             }
             catch { }
             return Math.Max(1, part.ClassLevel);
+        }
+
+        /// <summary>The kineticist's Create Quiver: the ability that puts the quiver buff on its caster (AbilityProfile).</summary>
+        private static AbilityData QuiverAbility(UnitPartKineticist part, IEnumerable<AbilityData> abilities)
+        {
+            var quiverBuff = part?.QuiverBuff;
+            if (quiverBuff == null || abilities == null) return null;
+            return abilities.FirstOrDefault(a =>
+            {
+                var p = AbilityProfile.Get(a);
+                return p != null && (p.CasterBuffs.Contains(quiverBuff) || p.TargetBuffs.Contains(quiverBuff));
+            });
+        }
+
+        private static readonly Dictionary<string, string> QuiverNotes = new Dictionary<string, string>();
+
+        /// <summary>
+        /// ★ v0.3.28 test 4 (Kinetic Sharpshooter play-test): the Create Quiver to cast now, out of combat, or null. The quiver
+        /// (KineticSharpshooterObtainQuiverBuff) lasts until rest and holds class level + Constitution bonus arrows for 1
+        /// burn; every kinetic ability that is not Create Quiver itself takes its burn from the arrows first
+        /// (AbilityKineticist.CalculateCost / Spend, with a ranged weapon or nothing in the main hand). In combat it costs a
+        /// standard action, so the engine offered it only when burn blocked every blast - and the AI never made one: 18
+        /// fights with "quiver 0", while Orvath took 48 burn. Out of combat it costs no action, so it is made there when:
+        /// the quiver holds fewer arrows than the costliest kinetic ability the unit can use now, that ability costs burn,
+        /// the quiver is castable (burn left), the weapon lets the arrows pay, and the burn's nonlethal damage (burn x
+        /// character level) leaves at least half the unit's hit points. Abilities that accept burn on cast (Searing Flesh,
+        /// Enveloping Winds, Shroud of Water: AbilityAcceptBurnOnCast) are not paid by the arrows and do not count.
+        /// </summary>
+        internal static AbilityData QuiverToPrepare(UnitEntityData unit)
+        {
+            var part = unit?.Get<UnitPartKineticist>();
+            if (part?.QuiverBuff == null || (unit.CombatState?.IsInCombat ?? false)) return null;
+            string why = null;
+            AbilityData result = null;
+            try
+            {
+                var abilities = AbilityDiscovery.Gather(unit);
+                var quiver = QuiverAbility(part, abilities);
+                if (quiver == null) return null;
+                var weapon = unit.Body?.PrimaryHand?.MaybeWeapon;
+                int ranks = unit.Buffs.GetBuff(part.QuiverBuff)?.Rank ?? 0;
+                AbilityData costliest = null;
+                int burn = 0;
+                foreach (var a in abilities)
+                {
+                    if (a == quiver || UserAbilityPolicy.Blocks(unit, a)) continue;
+                    var k = Kingmaker.Blueprints.BlueprintExtenstions.GetComponent<AbilityKineticist>(a.Blueprint);
+                    if (k == null || k.AllowOnlyBurnCost) continue;
+                    int total = TotalBurn(a);
+                    if (total > burn) { burn = total; costliest = a; }
+                }
+                int quiverBurn = BurnOf(quiver);
+                float loss = quiverBurn * Level(unit);
+                if (UserAbilityPolicy.Blocks(unit, quiver)) why = "Create Quiver is on the block list";
+                else if (weapon != null && !weapon.Blueprint.IsRanged) why = $"{weapon.Name} in hand: the arrows pay only with a ranged weapon";
+                else if (costliest == null) why = "no kinetic ability costs burn now";
+                else if (ranks >= burn) why = $"the quiver holds {ranks}, enough for {costliest.Name} (burn {burn})";
+                else if (!quiver.IsAvailableForCast) why = $"Create Quiver not castable (burn {part.AcceptedBurn}/{part.MaxBurn})";
+                else if (CombatMath.RealHpBeforeDown(unit) - loss < 0.5f * Math.Max(1, unit.MaxHP))
+                    why = $"its burn ({loss:0} nonlethal) would leave less than half the hit points";
+                else
+                {
+                    result = quiver;
+                    why = $"make the quiver: {QuiverArrows(quiver, part)} arrows for burn {quiverBurn} " +
+                          $"(holds {ranks}; {costliest.Name} costs {burn}; burn {part.AcceptedBurn}/{part.MaxBurn})";
+                }
+            }
+            catch (Exception ex)
+            {
+                why = $"quiver check failed: {ex.Message}";
+                result = null;
+            }
+            if (why != null && (!QuiverNotes.TryGetValue(unit.UniqueId, out var last) || last != why))
+            {
+                QuiverNotes[unit.UniqueId] = why;
+                if (result != null) Main.Log($"[Kinetic] {unit.CharacterName}: out of combat, {why}");
+                else Main.Verbose($"[Kinetic] {unit.CharacterName}: out of combat, no quiver - {why}");
+            }
+            return result;
         }
 
         /// <summary>★ v0.3.19 (test6): a kineticist infusion or gather mode - it changes the next blast, nothing else.</summary>

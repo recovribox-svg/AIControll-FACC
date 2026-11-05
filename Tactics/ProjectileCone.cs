@@ -117,7 +117,9 @@ namespace CompanionAI_Pathfinder.Tactics
         private static void Report(string key, Exception ex)
         {
             if (ReportedFailures.Add(key + "|" + ex.GetType().Name))
-                Main.Warning($"[Cone] native recipient query unavailable ({key}, {ex.GetType().Name}); cone candidate omitted");
+                // ★ v0.3.28 test 4: the reason too - the play-test log showed two InvalidOperationExceptions, which this file
+                // throws for three different causes (no aim direction, no context, invalid range/origin).
+                Main.Warning($"[Cone] native recipient query unavailable ({key}, {ex.GetType().Name}: {ex.Message}); cone candidate omitted");
         }
 
         internal sealed class Query

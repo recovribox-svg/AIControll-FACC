@@ -1467,6 +1467,14 @@ namespace CompanionAI_Pathfinder.GameInterface
             if (Tactics.TacticalEngine.RestoreEndedToggles(unit)) return;
             if (!recasts) return;
 
+            // ★ v0.3.28 test 4: the Kinetic Sharpshooter's quiver, made where it costs no action (TacticalEngine.QuiverToPrepare).
+            var quiver = Tactics.TacticalEngine.QuiverToPrepare(unit);
+            if (quiver != null)
+            {
+                IssueOutOfCombatBuff(unit, quiver, unitName);
+                return;
+            }
+
             // ★ v0.3.3: never flip an on/off switch outside combat. Isekai's "Shift Form: Overlord / Mortal Guise" applies
             // its form buff when absent and REMOVES it when present; recast after every fight, it left Orvath's form to
             // chance. Such toggles are the player's choice out of combat (the turn-based engine still uses them in combat).
@@ -1492,9 +1500,14 @@ namespace CompanionAI_Pathfinder.GameInterface
                 return;
             }
 
+            IssueOutOfCombatBuff(unit, nativeAbility, unitName);
+        }
+
+        private void IssueOutOfCombatBuff(UnitEntityData unit, AbilityData nativeAbility, string unitName)
+        {
             try
             {
-                var useAbilityCommand = new UnitUseAbility(nativeAbility, target);
+                var useAbilityCommand = new UnitUseAbility(nativeAbility, new TargetWrapper(unit));
                 // ★ user-ability-blacklist: a refused command is not counted, nor does it delay the next one.
                 if (!CommandDispatcher.Run(unit, useAbilityCommand, "RT ApplyPermanentBuffsOutOfCombat", out string failure))
                 {
