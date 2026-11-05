@@ -1,0 +1,34 @@
+{
+  "name": "AI Control - Fully Autonomous Combat Companions v0.3.28 test 4 (Kinetic Sharpshooter quiver and burn)",
+  "version": "0.3.28",
+  "umm_manifest_version": "0.3.28",
+  "umm_mod_id": "CompanionAI_Pathfinder",
+  "branch": "claude/dreamy-pasteur-b9h3rn",
+  "base_release": "v0.3.27 (3f005b9)",
+  "runtime_source_commit": "e620e71",
+  "archive": "AI-Control-FACC-v0.3.28-dev-test4-e620e71-UMM-test.zip",
+  "zip_sha256": "b0d4d05e57c4e72b349c9d782623fc2bae504be5f05f8fcc512f9473d53f8175",
+  "dll_sha256": "c8e56a7f7b170ed46597b36fa815296cad879808ef8a1159c957fce86a4757f0",
+  "manifest_sha256": "ae1e19149c98be1443a2b5db7225009b14d905327a3055ff990775ef56e0f45e",
+  "module_mvid": "213bf9ff-50b8-4c91-acaf-8c370286a712",
+  "startup_marker": "[Build] v0.3.28 module=213bf9ff-50b8-4c91-acaf-8c370286a712",
+  "archive_contents": [
+    "CompanionAI_Pathfinder.dll",
+    "Info.json"
+  ],
+  "checks": {
+    "unit_tests": {
+      "passed": 359,
+      "failed": 0,
+      "skipped": 0
+    },
+    "release_build": {
+      "warnings": 0,
+      "errors": 0
+    },
+    "external_references": "SigDump vs test 3: no new game references",
+    "packed_dll_matches_build": true,
+    "in_game": "pending"
+  },
+  "publication_scope": "Development test download: tests 1-3 plus the Kinetic Sharpshooter quiver and burn pricing; not a release."
+}

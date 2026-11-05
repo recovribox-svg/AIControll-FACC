@@ -129,6 +129,10 @@ melee a front-liner holds. Test ZIP `AI-Control-FACC-v0.3.28-dev-test2-5c87b6d-U
 **v0.3.28 test 3 (4 November, `docs/TACTICAL_AI.md` §100, not played):** hit chances count concealment and mirror images
 (`CombatMath.LandsPastDefences`), drop chances temporary HP (`HpBeforeDown`; `RealHpBeforeDown` for heals, caution, burn),
 prone +4 in the survival model. Test ZIP `AI-Control-FACC-v0.3.28-dev-test3-2cb47db-UMM-test.zip` (MVID `09bc562d-a4dc-4c51-a8ff-ebc2e6f1cf3a`); 359 tests.
+**v0.3.28 test 4 (5 November, `docs/TACTICAL_AI.md` §101, not played):** test 3 played (18 fights, Orvath as Kinetic
+Sharpshooter). The quiver is made out of combat (`TacticalEngine.QuiverToPrepare` from `ApplyPermanentBuffsOutOfCombat`),
+burn's Overflow offset counts only when a blast is the attack (`BlastShortfall`), unread buffs that cost burn are worth 0
+(`BuffQuality`). Test ZIP `AI-Control-FACC-v0.3.28-dev-test4-e620e71-UMM-test.zip` (MVID `213bf9ff-50b8-4c91-acaf-8c370286a712`); 359 tests.
 
 Historical handovers, superseded by the one above: [v0.3.22 release preparation](docs/RELEASE_0_3_22_HANDOVER.md)
 (27 October, PR #6–#12), [released-log review](docs/RELEASE_0322_LOG_REVIEW.md) (PR #13),
