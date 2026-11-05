@@ -2,12 +2,12 @@
 
 ## Outcome and scope
 
-The quiver payment investigation and the narrow unread-buff correction are substantially sound. Test 4's advertised preparation **after a rest was not reliably driven**, because the native AI skips groups outside combat. This review fixes that route and the queued-command guard, reduces repeated burn queries, and corrects an offline verification rule that had fallen behind the live code. The larger strategic questions remain proposals rather than speculative changes.
+The quiver payment investigation and the narrow unread-buff correction are substantially sound. Test 4's advertised preparation **after a rest was not reliably driven**, because the native AI skips groups outside combat. This review fixes that route and the queued-command guard, reduces repeated burn queries, and corrects an offline verification rule that had fallen behind the live code. The larger strategic questions remain proposals rather than speculative changes. Three later-supplied blueprint files resolved the Chain Arrows/Color Spray data gaps and exposed a separate ricochet delivery-layer forecast bug, addressed in the supplemental findings below.
 
 - Starting development commit: `d4ac1939ac5fdda8aef0a9d83c79cf37cf531057` (includes `f4f38ee`, `e620e71`, `53664df` and the review brief).
 - Task branch: `codex/review-kinetic-sharpshooter`; target: `claude/dreamy-pasteur-b9h3rn`.
 - Reviewed code diff: `ea2e570..e620e71`; reviewed notes: TACTICAL_AI §101, relevant §38–39, test 4 README, and TASK_BOMBS_CARNAGE_QUIVER §3.
-- Inputs: the supplied review brief, Kineticist blueprint archive, both complete play-test logs, and real game/Unity/UMM DLLs available among workspace attachments. The brief defines the audit scope; its claims are evidence to check, not assumed facts.
+- Inputs: the supplied review brief, Kineticist blueprint archive, both complete play-test logs, real game/Unity/UMM DLLs, and the later-supplied DLC3 ricochet buff/property and ColorSpray blueprints. The brief defines the audit scope; its claims are evidence to check, not assumed facts.
 - `Assembly-CSharp.dll` SHA-256: `2cb7160b7154d4ffacc77b9c51b1eb26199e1294300f04fdfc073367b2ef8953`. Relevant native types were independently decompiled/inspected. No game DLL, blueprint dump, decompiled source, log or generated stub is committed.
 - The separate `Kinetic_sharpshooter_mechanics_audit.md` was not supplied. Its premises can only be assessed as quoted in the brief. Base blueprint dumps do not prove what every installed mod changes at runtime.
 
@@ -125,7 +125,7 @@ Sharpshooter-specific minimums: Exploding/Piercing Arrows3, Cluster11, Armor-Pie
 
 **Severity:** note / misunderstanding. **Verdict:** message improvement confirmed; precise historical diagnosis unresolved.
 
-**Evidence:** warnings at `Log.txt:67`, `:78` lack messages. GUID `a240a6d61e1aee040bf7d132bfe1dc07` is **Fan of Flames**, verified by `ElementalFocus/Fire/FireBlast/FireBlastInfused/FanOfFlamesFireBlastAbility.jbp:2`; the second GUID is absent from this archive. The brief's suggestion both are wizard cones is unsupported. Three explicit TryCreate checks are not exhaustive: `ProjectileCone.Query.Reaches` and native calls can also throw InvalidOperationException. The first decision later successfully casts Color Spray (`Log.txt:87`–`:93`).
+**Evidence:** warnings at `Log.txt:67`, `:78` lack messages. GUID `a240a6d61e1aee040bf7d132bfe1dc07` is **Fan of Flames**, verified by `ElementalFocus/Fire/FireBlast/FireBlastInfused/FanOfFlamesFireBlastAbility.jbp:2`; the subsequently supplied `ColorSpray.jbp:2` identifies the second GUID as **Color Spray**. The first cone is therefore a Kineticist form; the second is Color Spray. Three explicit TryCreate checks are not exhaustive: `ProjectileCone.Query.Reaches` and native calls can also throw InvalidOperationException. The first decision later successfully casts Color Spray (`Log.txt:87`–`:93`).
 
 **Impact/fix/risk:** retain test4's `ex.Message` change and fail-closed candidate omission. There is no evidence which rejected aim should have won. Deduplication still suppresses later same-GUID/same-type reasons. The review corrects the “exactly three causes” comment; changing cone geometry or weakening safety would be unsupported. A replay with new warning text is needed.
 
@@ -217,6 +217,36 @@ Five statically traced candidates for the newly zeroed marker branch are Searing
 
 **Impact/fix/risk:** ordinary layer0 does not become1.5× damage from this warning. More precise delivery-layer reading may help another case, but no proven fix is warranted here.
 
+## Supplemental findings from the three additional blueprints
+
+### 20. Ricochet damage forecast selected the primary delivery branch
+
+**Severity:** bug. **Verdict:** confirmed; scoped correction implemented, final validation recorded below.
+
+**Evidence:** supplied simple Earth/Fire blast graphs select full damage when an exact `IsEqual(DeliverEffectLayer, IntConstant(0))` passes and a `Half=true` damage action otherwise. Their native ricochet component has Layer1. `AbilityExecutionProcess.DeliveryProcess` starts dependent delivery using that component's Layer; its ApplyEffect pushes the layer into ContextAttackData, and the DeliverEffectLayer evaluator reads it. The previous ChainDamage called the ordinary estimate. Its unread IsEqual left both opposite branches eligible, and SumAlternatives selected the larger full action. This is separate from finding19: ordinary layer0 was not double-counted, but a layer1 hit was overvalued.
+
+**Impact:** Chain Arrows could receive full-damage credit for plain-blast jumps whose game graph applies half damage. A packet of20 before other existing estimate adjustments was forecast20 instead of selecting its half-damage action. This can inflate an infusion's value on groups; no provided gameplay replay establishes a specific changed choice.
+
+**Fix/risk:** only ricochet forecasts now pass the native delivery layer to an explicit branch reader. It accepts exact single native IsEqual conditions with DeliverEffectLayer/IntConstant operands in either order, honors Not, and leaves other guards on the existing reader. No native context is mutated, no unknown evaluator executes, and compound/subclass conditions retain the existing uncertainty policy. The per-frame chain cache includes the layer. Damage uses the selected action's existing Half/modifier/mitigation/learned-share path; it is not a blanket multiplier on the finished primary estimate. Ordinary first-hit forecasts are unchanged. Actual-blueprint harness assertions cover layer selection and refusal of unsupported condition shapes. In-game replay remains required.
+
+### 21. Chain length uses total character level; the forecast cap is separate
+
+**Severity:** note / gap. **Verdict:** native semantics confirmed; high-level forecast truncation confirmed, observed impact unproven.
+
+**Evidence:** `DLC3_KineticRicochetProperty.jbp` defines BaseValue1 plus a SimplePropertyGetter of Level with Div2. Native UnitPropertyExtension maps Level to Progression.CharacterLevel, so the property is `1 + floor(total character level / 2)`, not Kineticist class level or mythic rank. Native Deliver adds the initial target to used targets, then selects a new recipient for each counted jump. The count is **additional jumps**, excluding the initial target. The DLC3 buff's own trigger has empty actions, but its presence still satisfies the OR-condition on the blast's existing ricochet component.
+
+**Impact/proposal/risk:** level20 permits up to11 additional recipients, subject to range and available enemies. The mod separately caps its forecast at16; native delivery has no matching cap. The first count divergence is total character level32 (17 extras versus16), and it matters only if a viable chain contains at least17 additional recipients. No effect on the supplied lower-level session is established. The count budget remains unchanged; a future reviewed change could bound work by eligible unused recipients instead. This is a documented high-level limitation, not an inferred cause of Orvath's reported play.
+
+### 22. Deliberately half-damage packets could distort learned blast strength
+
+**Severity:** bug. **Verdict:** confirmed; fixed.
+
+**Evidence:** `DamageObserver.NoteEstimate` compares a clean hit against the ordinary whole-ability estimate. It excludes criticals and passed-save halves but did not exclude the independent native `RuleDealDamage.Half` flag. Native RuleCalculateDamage divides its local packet value for Half without marking Source.Decline, Source.Vulnerability or DamageValue.Reduction; the latter reflects resistance/hardness. An otherwise unresisted layer1 half packet could therefore pass CleanRoll and teach the session-wide BlastFactor that the whole blast is weak. That learned factor is also applied to future primary and secondary forecasts.
+
+**Impact:** could underprice future blasts and double-count the known half effect after selecting the correct ricochet branch. Mixed composite hits make a packet-only early return insufficient: a previously counted sibling packet might remain compared against the whole ability.
+
+**Fix/risk:** CleanRoll now rejects explicitly Half packets, feeding the existing whole-hit withdrawal/suppression path. Any prior sibling calibration is withdrawn, and later siblings in the same hit cannot create a partial sample. Actual packet-defense observations still run before calibration. The learning formula is unchanged; there are fewer intentionally half samples. Two native data-fixture checks invoke the shipped CleanRoll gate without an actor, constructor, fake cast or Rulebook event. Whole-hit grouping is verified by the source trace, not a live integration fixture. Nonkinetic half packets also leave fewer DmgCheck diagnostic samples; the learned strategic blast share is kinetic-only. Gameplay replay remains required.
+
 ## Verification and missing resources
 
 | Check | Actual result |
@@ -224,21 +254,25 @@ Five statically traced candidates for the newly zeroed marker branch are Searing
 | Baseline `dotnet test tests/CompanionAI.Tests` |359 passed;0 failed/skipped.|
 | Final same full suite |388 passed;0 failed/skipped.|
 | Baseline and final Release build against supplied real DLLs |Both succeed with0 warnings/errors; no deploy flag used.|
-| SigDump before/after |10 intended Assembly-CSharp safety-gate signatures added;0 removed; no new Unity/Owlcat/Harmony signatures. Full real-DLL compilation verifies native symbol availability.|
+| SigDump before/after |15 intended native signatures added versus the initial baseline:10 preparation safety references and5 supplemental layer/calibration references;0 removed; no new Unity/Owlcat/Harmony signatures. Full real-DLL compilation verifies the APIs.|
 | `git diff --check` |Pass.|
 | ProfileAudit, strict baseline |Initially INCOMPLETE/exit1:5 loaded,800 failed because SharedInternals was absent.|
-| ProfileAudit, strict final after both supplied DLLs |Pass/exit0, no failure allowance:800 unique blueprints loaded,0 failed;286 ability/toggle rows,0 reader errors. Saved [reader snapshot](CODEX_REVIEW_KINETIC_SHARPSHOOTER_PROFILE.txt).|
+| ProfileAudit after the two supplied DLLs |Strict pass:800 unique blueprints loaded,0 failed;286 ability/toggle rows,0 reader errors.|
+| Final ProfileAudit with three supplemental blueprints |Strict pass/exit0 without an allowance:803 unique blueprints loaded,0 failed;287 ability/toggle rows,0 reader errors. Saved [reader snapshot](CODEX_REVIEW_KINETIC_SHARPSHOOTER_PROFILE.txt).|
+| Native layer/calibration checks |11 checker cases,24 branch assertions on6/6 supplied plain-blast graphs, and2 calibration checks:all pass. Ordinary branch behavior is checked separately from layer-specific selection.|
 | In-game replay of this review branch |Not run. Supplied logs are test3, MVID `09bc562d-a4dc-4c51-a8ff-ebc2e6f1cf3a`; they validate historical observations, not these fixes.|
 
-Final validation build DLL SHA-256: `26e3dab2bedb109e610bbe38c0a1d281a97483f47dbfdbf2ce1705c094c30f16`. No new release or test package is published by this review; existing ZIPs and version metadata are unchanged.
+Final validation build DLL SHA-256: `acd0ad3fc0dabcb0f6cc2e5979e222431d5c2b7f05164fa3b87f023df3a6c152`; MVID `694c2ee5-a9f6-4d23-9a8c-1e96c5936627`. The supplemental code was checked with388 passing unit tests, a clean actual-DLL Release build and the strict native reader checks above. No new release or test package is published by this review; existing ZIPs and version metadata are unchanged.
 
 The author subsequently supplied `UnityEngine.SharedInternalsModule.dll`, which raised strict loading to799 with one unrelated `ElementalEngineCold13` failure requiring `Unity.Mathematics.dll`. A documented `--allow-failures 1` diagnostic run produced286 rows with0 reader errors and was explicitly PARTIAL. After the author supplied `Unity.Mathematics.dll` too, a new **strict run without an allowance** loaded all800 unique blueprints with0 failures and produced286 rows with0 errors. No replacement dependency stub was invented; the harness uses only its normal documented runtime rewrites in scratch copies. Both original supplied game DLLs remain unchanged and outside the repository.
 
 The completed run confirms Searing Flesh, Enveloping Winds, all three Shroud abilities and Aerial Evasion score zero as unread limited-use buffs, while Flesh of Stone retains readable physical DR. All17 Exploding Arrows,17 Piercing Arrows and18 Spindle variants are valued as damage. Armor-Piercing, Cluster Arrows and Unraveling report supported. The quiver's generic fallback is explicitly owner-dependent; its one-burn cost and special preparation route, rather than that generic label, govern actual AI use.
 
-**Remaining reader scope limit:** Chain Arrows reports supported but no matching ricochet. The supplied blast graph's alternative HasBuff condition references external GUID `5f7d567ae4054cc291e42fc43ef5a046`; target-count property `4a18040254d040f78c298f10649eab71` is also absent. The ricochet reader rejects an unresolved alternative. Zero matching ricochets in this archive therefore does **not** prove Chain Arrows fails in the running game or validate it completely. For that specific follow-up, the two referenced blueprint dumps are needed. No code change follows from missing input.
+**Supplemental inputs resolve the prior reference gap:** the author supplied `DLC3_KineticRicochetBuff.jbp`, `DLC3_KineticRicochetProperty.jbp` and `ColorSpray.jbp`. A strict run with all three, alongside the Kineticist archive, loaded803 unique blueprints with0 failures and produced287 ability/toggle rows with0 reader errors. Chain Arrows now reports supported with ricochet on52 blasts. The original zero-match result was missing-input evidence, not proof of a runtime failure.
 
-No additional DLL is needed for the completed strict Kineticist reader run. The original mechanics-audit Markdown remains absent for an exact premise-by-premise review. The second cone GUID needs its matching spell blueprint for verified naming, and allocation attribution needs a live profile/new diagnostic capture rather than additional static rules alone.
+Color Spray's standalone row says its effect is not understood because its external buff graphs were not included. That row does not establish an in-game failure: the supplied play-test log actually casts Color Spray. Its GUID,15-foot ordinary projectile cone, targeting shape and native range route are now verified directly. No further blueprint is required for this identity/delivery check, and static data still cannot restore the old missing exception message.
+
+No additional DLL is needed for the strict reader run. The original mechanics-audit Markdown remains absent for an exact premise-by-premise review. Allocation attribution still needs a live profile/new diagnostic capture rather than additional static rules alone.
 
 Reproduction: build the mod with `dotnet build CompanionAI_Pathfinder.csproj -c Release -p:ManagedPath=<real DLL folder> -p:UmmPath=<UMM DLL folder>`; run the tests above; run SigDump on preserved baseline/final DLLs and compare sorted output. The initial strict reader command used `tools/ProfileAudit/run.sh <real DLL folder> <absolute mod DLL> <scratch folder> <report file> <Kineticist dump folder>` with no allowed-failure override.
 
@@ -250,7 +284,8 @@ Reproduction: build the mod with `dotnet build CompanionAI_Pathfinder.csproj -c 
 4. Leave an ordinary command running or queued while combat ends/rest completes; it must finish without automatic preparation replacing it. After it finishes and normal exploration resumes, eligible quiver preparation should retry once. Watch for repeated Interrupted/never-acted quiver commands.
 5. Enter a group fight in each combat mode. Confirm quiver ranks pay costly blasts, partial ranks leave only the native shortfall as burn, and one archer blast is one action. The bow full attack should still win where its real value is greater. No out-of-combat preparation should fire while any party member is fighting.
 6. Confirm unread burn markers are not guessed into use; manual defensive talent use must remain possible. Capture current burn/ranks before and after actual casts, rather than summing delayed native text.
-7. Replay Fan of Flames and the other warned cone with enemies/nearby allies; save complete new warning messages and note geometry. Record slow decisions and an allocation profile if stutter persists. This audit does not change movement/kiting or declare those failures repaired.
+7. Replay Fan of Flames and Color Spray with enemies/nearby allies; save complete new warning messages and note geometry. Record slow decisions and an allocation profile if stutter persists. This audit does not change movement/kiting or declare those failures repaired.
 
+8. With a character that has Chain Arrows or the native DLC3 ricochet effect, use a plain blast against a nearby enemy group. Capture primary/jump damage, infusion choices and learned-share lines over several casts. Native secondary packets use their half branch; compare the displayed damage formula rather than expecting half of the primary target's independently rolled number. Ordinary primary forecasting should remain unchanged, and deliberate half jumps must not train the whole-blast share downward.
 
-Final reader reproduction: run the same generated harness after staging the two supplied DLLs, with `dotnet ProfileAudit.dll <Kineticist dump folder> <report file>` and no `--allow-failures` option. Its mod DLL SHA-256 matched the validation build above.
+Final reader reproduction: run the generated harness after staging the supplied DLLs, with `dotnet ProfileAudit.dll <Kineticist dump folder> <supplemental three-file folder> <report file>` and no `--allow-failures` option. The runner scripts take these same two dump roots. Its mod DLL SHA-256 matched the validation build above.

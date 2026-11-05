@@ -43,6 +43,11 @@ the report PARTIAL with loaded/failed counts. An empty or predominantly failed l
 large, preserving the guard against a missing dependency appearing to be a zero-ability success. Invalid options
 return 2. A partial report is not complete coverage. Unresolved blueprint GUIDs are a separate completeness limit.
 
+The audit also exercises the shipped ricochet delivery-layer reader: exact equality/Not/operand-order cases,
+loaded reference plain-blast graphs (layer0 full versus nonzero-layer half), and the damage-calibration gate for
+explicitly half packets. No actor or cast is created. Missing reference graphs are explicitly marked SKIPPED;
+failures return1. These checks verify reader behavior, not live combat. The report lists their counts separately.
+
 Substance infusions (activatable group `SubstanceInfusion`) are reported through the mod's own scoped infusion reader
 (`TacticalEngine.DescribeInfusion`, read by reflection): verdict `infusion selection: supported` or
 `infusion selection: withheld (<the engine's reason>)`, with the buff, whether it has a damage graph, the trigger's

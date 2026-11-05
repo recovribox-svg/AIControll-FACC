@@ -34,7 +34,8 @@ UMM shows **0.3.28**. Startup line `[Build] v0.3.28 module=213bf9ff-50b8-4c91-ac
 
 **Independent review correction (separate Codex branch; not included in this ZIP):** the native AI loop skips
 wholly out-of-combat groups, so test 4 does not reliably prepare the quiver immediately after a rest. The review
-adds an independent quiver-only exploration check and queued-command guards. The logs contain 19 fights, including
+adds an independent quiver-only exploration check and queued-command guards. Its supplemental review also corrects
+ricochet delivery-layer damage forecasts and excludes deliberate half packets from whole-blast calibration. The logs contain 19 fights, including
 a TB-to-RT switch in fight 7; five coverage samples show zero burn, not every fight start.
 See [the audit report](../docs/CODEX_REVIEW_KINETIC_SHARPSHOOTER_RESULTS.md) for confirmed rules, fixes, limitations and replay steps.
 

@@ -2986,6 +2986,11 @@ Author request (1 November 2026); evidence and plain-language summary: [V0325_TE
   living enemy of the caster within Radius of the current one, not hit yet, `TargetsCount` capped at 16), each at the
   first hit's chance x SR pass ratio x 0.5 when blinking, `DamageValue x WakeFactor`; nothing when another of the
   Or-buffs is already on the caster. Chain damage is memoised per frame (`ChainDamage`).
+  **Codex supplemental review (v0.3.28 task branch):** jump forecasts now select the native delivery-layer
+  branch (plain blasts use their half-damage action); the per-frame cache includes the layer. Explicit half
+  packets no longer train the whole-blast damage calibration. The supplied property counts
+  `1 + floor(total character level / 2)` additional jumps; the forecast's separate16-jump budget is unchanged.
+  Evidence and limitations: [review findings20–22](CODEX_REVIEW_KINETIC_SHARPSHOOTER_RESULTS.md).
 
 ## 85. v0.3.25 test 1: getting a held state back (psionic focus), move + standard pairs
 
@@ -3363,7 +3368,8 @@ is intended; Ardub/body-blocking stays on hold.
     worth a limited use or burn. `BuffQuality` applies the rule to that branch too.
   - *Cone warnings:* two `[Cone] native recipient query unavailable (..., InvalidOperationException)`. `ProjectileCone`
     has three explicit creation checks plus recipient/native failure paths, so the warning now carries the message.
-    The first GUID is Fan of Flames in the supplied Kineticist dump; the old log does not identify the cause.
+    The supplied dumps now identify the GUIDs as Fan of Flames and Color Spray; the old log still does not
+    identify the failure cause.
 - **Assessment, against the questions in the player's audit document:**
   - *Gather Power:* not offered; the AI never used it.
   - *Quiver:* in-combat payment was understood (`BurnOf` after the quiver), but the AI never created one.

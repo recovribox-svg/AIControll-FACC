@@ -1612,6 +1612,48 @@ namespace CompanionAI_Pathfinder.Tactics
             return Evaluate(effect != null && m_Guards.TryGetValue(effect, out var g) ? g : NoGuards, ability, target);
         }
 
+        /// <summary>★ v0.3.28 (codex review): a ricochet executes this graph at its own native delivery layer.
+        /// Override only an exact layer comparison; every other guard keeps the ordinary target/state reader.</summary>
+        internal EffectApplies AppliesAtDeliveryLayer(GameAction effect, AbilityData ability, UnitEntityData target, int layer)
+        {
+            if (effect == null || !m_Guards.TryGetValue(effect, out var guards)) return EffectApplies.Unconditional;
+            bool unknown = false;
+            foreach (var guard in guards)
+            {
+                if (TryReadDeliveryLayer(guard.Checker, layer, out bool passes))
+                {
+                    if (passes != guard.Branch) return EffectApplies.No;
+                }
+                else
+                {
+                    var applies = Evaluate(new[] { guard }, ability, target);
+                    if (applies == EffectApplies.No) return applies;
+                    if (applies == EffectApplies.Unknown) unknown = true;
+                }
+            }
+            return unknown ? EffectApplies.Unknown : EffectApplies.Yes;
+        }
+
+        // Native IsEqual compares its two IntEvaluators, and Condition.Check applies Not. Never execute an evaluator
+        // or alter ContextAttackData to preview a jump; compounds and modded subclasses remain unread here.
+        internal static bool TryReadDeliveryLayer(ConditionsChecker checker, int layer, out bool passes)
+        {
+            passes = false;
+            if (checker?.Conditions?.Length != 1 || checker.Operation != Operation.And && checker.Operation != Operation.Or ||
+                !(checker.Conditions[0] is Kingmaker.Designers.EventConditionActionSystem.Conditions.IsEqual equal) ||
+                equal.GetType() != typeof(Kingmaker.Designers.EventConditionActionSystem.Conditions.IsEqual)) return false;
+            int expected;
+            if (equal.FirstValue?.GetType() == typeof(Kingmaker.Designers.EventConditionActionSystem.Evaluators.DeliverEffectLayer) &&
+                equal.SecondValue?.GetType() == typeof(Kingmaker.Designers.EventConditionActionSystem.Evaluators.IntConstant))
+                expected = ((Kingmaker.Designers.EventConditionActionSystem.Evaluators.IntConstant)equal.SecondValue).Value;
+            else if (equal.SecondValue?.GetType() == typeof(Kingmaker.Designers.EventConditionActionSystem.Evaluators.DeliverEffectLayer) &&
+                     equal.FirstValue?.GetType() == typeof(Kingmaker.Designers.EventConditionActionSystem.Evaluators.IntConstant))
+                expected = ((Kingmaker.Designers.EventConditionActionSystem.Evaluators.IntConstant)equal.FirstValue).Value;
+            else return false;
+            passes = (layer == expected) != equal.Not;
+            return true;
+        }
+
         // A material-changing infusion exposes a literal branch in the real blast graph. Read that one branch
         // choice directly; all other guards still use actual native state. No condition/fact is changed or patched.
         internal bool HasInfusionDamageBranch(BlueprintBuff buff) => Damage.Any(a =>

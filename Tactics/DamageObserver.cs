@@ -239,6 +239,10 @@ namespace CompanionAI_Pathfinder.Tactics
         /// reduction, energy resistance), no decline, no vulnerability, no immunity.</summary>
         private static bool CleanRoll(RuleDealDamage evt)
         {
+            // ★ v0.3.28 (codex review): a ricochet's deliberate half packet is not a full-primary calibration sample.
+            // Reject it here so the existing whole-hit flow also withdraws/suppresses any sibling composite packets;
+            // packet-defense observations above still run. An early return from NoteEstimate would leave partial hits.
+            if (evt.Half) return false;
             foreach (var result in evt.ResultList)
             {
                 var damage = result.Source;
