@@ -1,0 +1,329 @@
+Strict Kineticist plus supplemental reader audit — 5 November 2026
+Source mod DLL SHA-256: acd0ad3fc0dabcb0f6cc2e5979e222431d5c2b7f05164fa3b87f023df3a6c152
+Loaded 803 unique blueprints; failed 0; failure allowance 0; exit 0.
+Scope: supplied Kineticist folder plus DLC3 ricochet buff/property and ColorSpray; other external graphs and real-unit decisions remain outside this fixture.
+
+RICOCHET-LAYER checker cases 11: passed
+RICOCHET-LAYER 6/6 plain-blast graphs, 24 branch checks; failures 0
+RICOCHET-LAYER calibration 2 checks, failures 0
+
+ONHIT ability damage read on 0 facts:
+
+abilities: 287, errors: 0
+   179  valued
+    39  toggle not managed
+    20  infusion selection
+    18  not offered
+    12  nothing
+    12  toggle valued
+     4  GUESSED
+     2  toggle nothing
+     1  NEVER OFFERED
+
+     3  GUESSED: buff by old quality (unread 0.5; only if native burn cost is zero, otherwise 0 (requires a real owner))
+     1  GUESSED: buff worth ~0 (marker 0.05)
+    20  infusion selection: supported
+     1  NEVER OFFERED: no side to aim at
+    18  not offered: kinetic blade internal
+     4  nothing: effect not understood
+     1  nothing: its effects are on a side it is not aimed at
+     7  nothing: unreadable buff on a limited-use ability (worth 0)
+    39  toggle not managed: not activated by a command
+     2  toggle nothing: buff not read
+    12  toggle valued: buff parts
+     2  valued: buff parts
+     1  valued: cleanse, dispel
+     1  valued: cleanse, removal
+     1  valued: cleanse, removal (+ guessed buff by old quality (unread 0.5))
+   168  valued: damage
+     2  valued: heal
+     3  valued: removal
+     1  valued: weapon attack
+
+GUESSED: buff by old quality (unread 0.5; only if native burn cost is zero, otherwise 0 (requires a real owner)) | WildTalents/FlameShieldAbility.jbp | FlameShieldAbility | parts: unread: AddTargetAttackRollTrigger; components: AddTargetAttackRollTrigger,ContextRankConfig,SpellDescriptorComponent | sides: self
+GUESSED: buff by old quality (unread 0.5; only if native burn cost is zero, otherwise 0 (requires a real owner)) | WildTalents/JaggedFleshAbility.jbp | JaggedFleshAbility | parts: unread: AddTargetAttackWithWeaponTrigger; components: AddTargetAttackWithWeaponTrigger | sides: self
+GUESSED: buff by old quality (unread 0.5; only if native burn cost is zero, otherwise 0 (requires a real owner)) | Archetypes/KineticSharpshooter/Abilities/KineticSharpshooterCreateQuiverAbility.jbp | KineticSharpshooterCreateQuiverAbility | parts: unread: ; components: AddFactContextActions,ContextRankConfig | sides: self
+GUESSED: buff worth ~0 (marker 0.05) | Archetypes/KineticKnight/ElementalBastion/ElementalBastionAbility.jbp | ElementalBastionAbility | parts: unread: ; components:  | sides: self
+infusion selection: supported | Archetypes/KineticSharpshooter/Abilities/ArmorPiercingInfusion/ArmorPiercingInfusionActivatableAbility.jbp | ArmorPiercingInfusionActivatableAbility | buff ArmorPiercingInfusionBuff; damage graph=False; trigger actions=none; damage-reduction bypass
+infusion selection: supported | Infusions/SubstanceInfusion/Bleeding/BleedingInfusionAbility.jbp | BleedingInfusionAbility | buff BleedingInfusionBuff; damage graph=True; trigger actions=ContextActionApplyBuff
+infusion selection: supported | Infusions/SubstanceInfusion/Bowling/BowlingInfusionAbility.jbp | BowlingInfusionAbility | buff BowlingInfusionBuff; damage graph=False; trigger actions=ContextActionCombatManeuver
+infusion selection: supported | Infusions/SubstanceInfusion/Burning/BurningInfusionAbility.jbp | BurningInfusionAbility | buff BurningInfusionBuff; damage graph=True; trigger actions=ContextActionApplyBuff
+infusion selection: supported | Archetypes/KineticSharpshooter/Abilities/ChainArrowsInfusion/ChainArrowsInfusionActivatableAbility.jbp | ChainArrowsInfusionActivatableAbility | buff ChainArrowsInfusionBuff; damage graph=False; trigger actions=none; ricochet on 52 blasts
+infusion selection: supported | Infusions/SubstanceInfusion/Chilling/ChillingInfusionAbility.jbp | ChillingInfusionAbility | buff ChillingInfusionBuff; damage graph=False; trigger actions=ContextActionApplyBuff,Conditional
+infusion selection: supported | Archetypes/KineticSharpshooter/Abilities/ClusterArrowsInfusion/ClusterArrowsInfusionAbility.jbp | ClusterArrowsInfusionAbility | buff ClusterArrowsInfusionMainBuff; damage graph=False; trigger actions=ContextActionRepeatedActions
+infusion selection: supported | Infusions/SubstanceInfusion/Dazzling/DazzlingInfusionAbility.jbp | DazzlingInfusionAbility | buff DazzlingInfusionBuff; damage graph=False; trigger actions=ContextActionSavingThrow
+infusion selection: supported | Infusions/SubstanceInfusion/Entangling/EntanglingInfusionAbility.jbp | EntanglingInfusionAbility | buff EntanglingInfusionBuff; damage graph=False; trigger actions=ContextActionSavingThrow
+infusion selection: supported | Infusions/SubstanceInfusion/Flash/FlashInfusionAbility.jbp | FlashInfusionAbility | buff FlashInfusionBuff; damage graph=False; trigger actions=ContextActionSavingThrow
+infusion selection: supported | Infusions/SubstanceInfusion/Foxfire/FoxfireInfusionAbility.jbp | FoxfireInfusionAbility | buff FoxfireInfusionBuff; damage graph=False; trigger actions=ContextActionSavingThrow
+infusion selection: supported | Infusions/SubstanceInfusion/Grappling/GrapplingInfusionAbility.jbp | GrapplingInfusionAbility | buff GrapplingInfusionBuff; damage graph=False; trigger actions=Conditional
+infusion selection: supported | Infusions/SubstanceInfusion/GutWrenching/GutWrenchingInfusionAbility.jbp | GutWrenchingInfusionAbility | buff GutWrenchingInfusionBuff; damage graph=False; trigger actions=ContextActionApplyBuff
+infusion selection: supported | Infusions/SubstanceInfusion/Magnetic/MagneticInfusionAbility.jbp | MagneticInfusionAbility | buff MagneticInfusionBuff; damage graph=False; trigger actions=ContextActionApplyBuff
+infusion selection: supported | Infusions/SubstanceInfusion/PureFlame/PureFlameInfusionAbility.jbp | PureFlameInfusionAbility | buff PureFlameInfusionBuff; damage graph=False; trigger actions=none; spell-resistance bypass
+infusion selection: supported | Infusions/SubstanceInfusion/Pushing/PushingInfusionAbility.jbp | PushingInfusionAbility | buff PushingInfusionBuff; damage graph=False; trigger actions=ContextActionCombatManeuver
+infusion selection: supported | Infusions/SubstanceInfusion/RareMetal/RareMetalInfusionAbility.jbp | RareMetalInfusionAbility | buff RareMetalInfusionBuff; damage graph=False; trigger actions=none
+infusion selection: supported | Infusions/SubstanceInfusion/Synaptic/SynapticInfusionAbility.jbp | SynapticInfusionAbility | buff SynapticInfusionBuff; damage graph=False; trigger actions=ContextActionApplyBuff
+infusion selection: supported | Infusions/SubstanceInfusion/Unraveling/UnravelingInfusionAbility.jbp | UnravelingInfusionAbility | buff UnravelingInfusionBuff; damage graph=False; trigger actions=ContextActionDispelMagic
+infusion selection: supported | Infusions/SubstanceInfusion/Vampiric/VampiricInfusionAbility.jbp | VampiricInfusionAbility | buff VampiricInfusionBuff; damage graph=False; trigger actions=ContextActionOnContextCaster
+NEVER OFFERED: no side to aim at | Infusions/DismissInfusionAbility.jbp | DismissInfusionAbility | flags: toEnemy=False harmfulBuffs=False helpful=False dmg=False aoe=False onEnemy=None onAlly=None tbuffs=[] cbuffs=[] harmfulOnly=False helpfulOnly=False enemies?False friends?False self?False point?True range=Long
+not offered: kinetic blade internal | ElementalFocus/Air/AirBlast/AirBlastInfused/KineticBladeAirBlastBurnAbility.jbp | KineticBladeAirBlastBurnAbility |
+not offered: kinetic blade internal | ElementalFocus/CompositeBlasts/BlizzardBlast/BlizzardBlastInfused/KineticBladeBlizzardBlastBurnAbility.jbp | KineticBladeBlizzardBlastBurnAbility |
+not offered: kinetic blade internal | ElementalFocus/CompositeBlasts/BloodBlast/BloodBlastInfused/KineticBladeBloodBlastBurnAbility.jbp | KineticBladeBloodBlastBurnAbility |
+not offered: kinetic blade internal | ElementalFocus/CompositeBlasts/BlueFlameBlast/BlueFlameBlastInfused/KineticBladeBlueFlameBlastBurnAbility.jbp | KineticBladeBlueFlameBlastBurnAbility |
+not offered: kinetic blade internal | ElementalFocus/CompositeBlasts/ChargedWaterBlast/ChargedWaterBlastInfused/KineticBladeChargeWaterBlastBurnAbility.jbp | KineticBladeChargeWaterBlastBurnAbility |
+not offered: kinetic blade internal | ElementalFocus/Water/ColdBlast/ColdBlastInfused/KineticBladeColdBlastBurnAbility.jbp | KineticBladeColdBlastBurnAbility |
+not offered: kinetic blade internal | ElementalFocus/Earth/EarthBlast/EarthBlastInfused/KineticBladeEarthBlastBurnAbility.jbp | KineticBladeEarthBlastBurnAbility |
+not offered: kinetic blade internal | ElementalFocus/Air/ElectricBlast/ElectricBlastInfused/KineticBladeElectricBlastBurnAbility.jbp | KineticBladeElectricBlastBurnAbility |
+not offered: kinetic blade internal | ElementalFocus/Fire/FireBlast/FireBlastInfused/KineticBladeFireBlastBurnAbility.jbp | KineticBladeFireBlastBurnAbility |
+not offered: kinetic blade internal | ElementalFocus/CompositeBlasts/IceBlast/IceBlastInfused/KineticBladeIceBlastBurnAbility.jbp | KineticBladeIceBlastBurnAbility |
+not offered: kinetic blade internal | ElementalFocus/CompositeBlasts/MagmaBlast/MagmaBlastInfused/KineticBladeMagmaBlastBurnAbility.jbp | KineticBladeMagmaBlastBurnAbility |
+not offered: kinetic blade internal | ElementalFocus/CompositeBlasts/MetalBlast/MetalBlastInfused/KineticBladeMetalBlastBurnAbility.jbp | KineticBladeMetalBlastBurnAbility |
+not offered: kinetic blade internal | ElementalFocus/CompositeBlasts/MudBlast/MudBlastInfused/KineticBladeMudBlastBurnAbility.jbp | KineticBladeMudBlastBurnAbility |
+not offered: kinetic blade internal | ElementalFocus/CompositeBlasts/PlasmaBlast/PlasmaBlastInfused/KineticBladePlasmaBlastBurnAbility.jbp | KineticBladePlasmaBlastBurnAbility |
+not offered: kinetic blade internal | ElementalFocus/CompositeBlasts/SandstormBlast/SandstormBlastInfused/KineticBladeSandstormBlastBurnAbility.jbp | KineticBladeSandstormBlastBurnAbility |
+not offered: kinetic blade internal | ElementalFocus/CompositeBlasts/SteamBlast/SteamBlastInfused/KineticBladeSteamBlastBurnAbility.jbp | KineticBladeSteamBlastBurnAbility |
+not offered: kinetic blade internal | ElementalFocus/CompositeBlasts/ThunderstormBlast/ThunderstormBlastInfused/KineticBladeThunderstormBlastBurnAbility.jbp | KineticBladeThunderstormBlastBurnAbility |
+not offered: kinetic blade internal | ElementalFocus/Water/WaterBlast/WaterBlastInfused/KineticBladeWaterBlastBurnAbility.jbp | KineticBladeWaterBlastBurnAbility |
+nothing: effect not understood | ColorSpray.jbp | ColorSpray | sides: enemy
+nothing: effect not understood | WildTalents/FoxfireAbility.jbp | FoxfireAbility | sides: enemy ally
+nothing: effect not understood | WildTalents/SlickAbility.jbp | SlickAbility | sides: enemy
+nothing: effect not understood | WildTalents/SlickShortAbility.jbp | SlickShortAbility | sides: enemy
+nothing: its effects are on a side it is not aimed at | Archetypes/DarkElementalist/DarkElementalistSoulPower/DarkElementalistSoulPowerAbility.jbp | DarkElementalistSoulPowerAbility | sides: ally self
+nothing: unreadable buff on a limited-use ability (worth 0) | WildTalents/AerialEvasionAbility.jbp | AerialEvasionAbility | parts: unread: Evasion; components: Evasion | sides: self
+nothing: unreadable buff on a limited-use ability (worth 0) | ElementalFocus/Air/EnvelopingWindsAbility.jbp | EnvelopingWindsAbility | parts: unread: ; components: AddFacts | sides: self
+nothing: unreadable buff on a limited-use ability (worth 0) | Archetypes/OverwhelmingSoul/OverwhelmingSoulMentalProwessAbility.jbp | OverwhelmingSoulMentalProwessAbility | parts: unread: AddKineticistBurnModifier,AddAbilityUseTrigger; components: AddKineticistBurnModifier,AddAbilityUseTrigger,RecalculateOnStatChange | sides: self
+nothing: unreadable buff on a limited-use ability (worth 0) | ElementalFocus/Fire/SearingFleshAbility.jbp | SearingFleshAbility | parts: unread: AddTargetAttackWithWeaponTrigger,AuraFeatureComponent; components: AddFacts | sides: self
+nothing: unreadable buff on a limited-use ability (worth 0) | ElementalFocus/Water/ShroudOFWaterArmorAbility.jbp | ShroudOFWaterArmorAbility | parts: unread: RecalculateOnFactsChange,ShroudOfWater; components: AddFacts | sides: self
+nothing: unreadable buff on a limited-use ability (worth 0) | ElementalFocus/Water/ShroudOFWaterShieldAbility.jbp | ShroudOFWaterShieldAbility | parts: unread: RecalculateOnFactsChange,ShroudOfWater; components: AddFacts | sides: self
+nothing: unreadable buff on a limited-use ability (worth 0) | ElementalFocus/Water/ShroudOFWaterUpgradeAbility.jbp | ShroudOFWaterUpgradeAbility | parts: unread: ; components: AddFacts | sides: self
+toggle not managed: not activated by a command | GatherPower/GatherPowerModeHigh.jbp | GatherPowerModeHigh | as a mode: its buff does more than the AI models (SetKineticistGatherPowerMode)
+toggle not managed: not activated by a command | GatherPower/GatherPowerModeLow.jbp | GatherPowerModeLow | as a mode: its buff does more than the AI models (SetKineticistGatherPowerMode)
+toggle not managed: not activated by a command | GatherPower/GatherPowerModeMedium.jbp | GatherPowerModeMedium | as a mode: its buff does more than the AI models (SetKineticistGatherPowerMode)
+toggle not managed: not activated by a command | ElementalFocus/Air/AirBlast/AirBlastInfused/KineticBladeAirBlastAbility.jbp | KineticBladeAirBlastAbility | as a mode: its buff does more than the AI models (AddKineticistBlade)
+toggle not managed: not activated by a command | ElementalFocus/CompositeBlasts/BlizzardBlast/BlizzardBlastInfused/KineticBladeBlizzardBlastAbility.jbp | KineticBladeBlizzardBlastAbility | as a mode: its buff does more than the AI models (AddKineticistBlade)
+toggle not managed: not activated by a command | ElementalFocus/CompositeBlasts/BloodBlast/BloodBlastInfused/KineticBladeBloodBlastAbility.jbp | KineticBladeBloodBlastAbility | as a mode: its buff does more than the AI models (AddKineticistBlade)
+toggle not managed: not activated by a command | ElementalFocus/CompositeBlasts/BlueFlameBlast/BlueFlameBlastInfused/KineticBladeBlueFlameBlastAbility.jbp | KineticBladeBlueFlameBlastAbility | as a mode: its buff does more than the AI models (AddKineticistBlade)
+toggle not managed: not activated by a command | ElementalFocus/CompositeBlasts/ChargedWaterBlast/ChargedWaterBlastInfused/KineticBladeChargeWaterBlastAbility.jbp | KineticBladeChargeWaterBlastAbility | as a mode: its buff does more than the AI models (AddKineticistBlade)
+toggle not managed: not activated by a command | ElementalFocus/Water/ColdBlast/ColdBlastInfused/KineticBladeColdBlastAbility.jbp | KineticBladeColdBlastAbility | as a mode: its buff does more than the AI models (AddKineticistBlade)
+toggle not managed: not activated by a command | ElementalFocus/Earth/EarthBlast/EarthBlastInfused/KineticBladeEarthBlastAbility.jbp | KineticBladeEarthBlastAbility | as a mode: its buff does more than the AI models (AddKineticistBlade)
+toggle not managed: not activated by a command | ElementalFocus/Air/ElectricBlast/ElectricBlastInfused/KineticBladeElectricBlastAbility.jbp | KineticBladeElectricBlastAbility | as a mode: its buff does more than the AI models (AddKineticistBlade)
+toggle not managed: not activated by a command | ElementalFocus/Fire/FireBlast/FireBlastInfused/KineticBladeFireBlastAbility.jbp | KineticBladeFireBlastAbility | as a mode: its buff does more than the AI models (AddKineticistBlade)
+toggle not managed: not activated by a command | ElementalFocus/CompositeBlasts/IceBlast/IceBlastInfused/KineticBladeIceBlastAbility.jbp | KineticBladeIceBlastAbility | as a mode: its buff does more than the AI models (AddKineticistBlade)
+toggle not managed: not activated by a command | ElementalFocus/CompositeBlasts/MagmaBlast/MagmaBlastInfused/KineticBladeMagmaBlastAbility.jbp | KineticBladeMagmaBlastAbility | as a mode: its buff does more than the AI models (AddKineticistBlade)
+toggle not managed: not activated by a command | ElementalFocus/CompositeBlasts/MetalBlast/MetalBlastInfused/KineticBladeMetalBlastAbility.jbp | KineticBladeMetalBlastAbility | as a mode: its buff does more than the AI models (AddKineticistBlade)
+toggle not managed: not activated by a command | ElementalFocus/CompositeBlasts/MudBlast/MudBlastInfused/KineticBladeMudBlastAbility.jbp | KineticBladeMudBlastAbility | as a mode: its buff does more than the AI models (AddKineticistBlade)
+toggle not managed: not activated by a command | ElementalFocus/CompositeBlasts/PlasmaBlast/PlasmaBlastInfused/KineticBladePlasmaBlastAbility.jbp | KineticBladePlasmaBlastAbility | as a mode: its buff does more than the AI models (AddKineticistBlade)
+toggle not managed: not activated by a command | ElementalFocus/CompositeBlasts/SandstormBlast/SandstormBlastInfused/KineticBladeSandstormBlastAbility.jbp | KineticBladeSandstormBlastAbility | as a mode: its buff does more than the AI models (AddKineticistBlade)
+toggle not managed: not activated by a command | ElementalFocus/CompositeBlasts/SteamBlast/SteamBlastInfused/KineticBladeSteamBlastAbility.jbp | KineticBladeSteamBlastAbility | as a mode: its buff does more than the AI models (AddKineticistBlade)
+toggle not managed: not activated by a command | ElementalFocus/CompositeBlasts/ThunderstormBlast/ThunderstormBlastInfused/KineticBladeThunderstormBlastAbility.jbp | KineticBladeThunderstormBlastAbility | as a mode: its buff does more than the AI models (AddKineticistBlade)
+toggle not managed: not activated by a command | ElementalFocus/Water/WaterBlast/WaterBlastInfused/KineticBladeWaterBlastAbility.jbp | KineticBladeWaterBlastAbility | as a mode: its buff does more than the AI models (AddKineticistBlade)
+toggle not managed: not activated by a command | Archetypes/Psychokineticist/MentalOverflow/MentalOverflowLevel11Cha.jbp | MentalOverflowLevel11Cha | as a mode: its buff does more than the AI models (AddStatBonus)
+toggle not managed: not activated by a command | Archetypes/Psychokineticist/MentalOverflow/MentalOverflowLevel11Int.jbp | MentalOverflowLevel11Int | as a mode: its buff does more than the AI models (AddStatBonus)
+toggle not managed: not activated by a command | Archetypes/Psychokineticist/MentalOverflow/MentalOverflowLevel11Wis.jbp | MentalOverflowLevel11Wis | as a mode: its buff does more than the AI models (AddStatBonus)
+toggle not managed: not activated by a command | Archetypes/Psychokineticist/MentalOverflow/MentalOverflowLevel16ChaIntWis.jbp | MentalOverflowLevel16ChaIntWis | as a mode: its buff does more than the AI models (AddStatBonus)
+toggle not managed: not activated by a command | Archetypes/Psychokineticist/MentalOverflow/MentalOverflowLevel16ChaWisInt.jbp | MentalOverflowLevel16ChaWisInt | as a mode: its buff does more than the AI models (AddStatBonus)
+toggle not managed: not activated by a command | Archetypes/Psychokineticist/MentalOverflow/MentalOverflowLevel16IntChaWis.jbp | MentalOverflowLevel16IntChaWis | as a mode: its buff does more than the AI models (AddStatBonus)
+toggle not managed: not activated by a command | Archetypes/Psychokineticist/MentalOverflow/MentalOverflowLevel16IntWisCha.jbp | MentalOverflowLevel16IntWisCha | as a mode: its buff does more than the AI models (AddStatBonus)
+toggle not managed: not activated by a command | Archetypes/Psychokineticist/MentalOverflow/MentalOverflowLevel16WisChaInt.jbp | MentalOverflowLevel16WisChaInt | as a mode: its buff does more than the AI models (AddStatBonus)
+toggle not managed: not activated by a command | Archetypes/Psychokineticist/MentalOverflow/MentalOverflowLevel16WisIntCha.jbp | MentalOverflowLevel16WisIntCha | as a mode: its buff does more than the AI models (AddStatBonus)
+toggle not managed: not activated by a command | Archetypes/Psychokineticist/MentalOverflow/MentalOverflowLevel6IntCha.jbp | MentalOverflowLevel6IntCha | as a mode: its buff does more than the AI models (AddStatBonus)
+toggle not managed: not activated by a command | Archetypes/Psychokineticist/MentalOverflow/MentalOverflowLevel6IntWis.jbp | MentalOverflowLevel6IntWis | as a mode: its buff does more than the AI models (AddStatBonus)
+toggle not managed: not activated by a command | Archetypes/Psychokineticist/MentalOverflow/MentalOverflowLevel6WisCha.jbp | MentalOverflowLevel6WisCha | as a mode: its buff does more than the AI models (AddStatBonus)
+toggle not managed: not activated by a command | Metakinesis/MetakinesisEmpowerAbility.jbp | MetakinesisEmpowerAbility | as a mode: its buff does more than the AI models (AddKineticistBurnModifier)
+toggle not managed: not activated by a command | Metakinesis/MetakinesisEmpowerCheaperAbility.jbp | MetakinesisEmpowerCheaperAbility | as a mode: its buff does more than the AI models (AddKineticistBurnModifier)
+toggle not managed: not activated by a command | Metakinesis/MetakinesisMaximizedAbility.jbp | MetakinesisMaximizedAbility | as a mode: its buff does more than the AI models (AddKineticistBurnModifier)
+toggle not managed: not activated by a command | Metakinesis/MetakinesisMaximizedCheaperAbility.jbp | MetakinesisMaximizedCheaperAbility | as a mode: its buff does more than the AI models (AddKineticistBurnModifier)
+toggle not managed: not activated by a command | Metakinesis/MetakinesisQuickenAbility.jbp | MetakinesisQuickenAbility | as a mode: its buff does more than the AI models (AddKineticistBurnModifier)
+toggle not managed: not activated by a command | Metakinesis/MetakinesisQuickenCheaperAbility.jbp | MetakinesisQuickenCheaperAbility | as a mode: its buff does more than the AI models (AddKineticistBurnModifier)
+toggle nothing: buff not read | ElementalFocus/Water/ShroudOfWaterArmorMode.jbp | ShroudOfWaterArmorMode | parts:  | unread: RecalculateOnFactsChange,ShroudOfWater
+toggle nothing: buff not read | ElementalFocus/Water/ShroudOfWaterShieldMode.jbp | ShroudOfWaterShieldMode | parts:  | unread: RecalculateOnFactsChange,ShroudOfWater
+toggle valued: buff parts | ElementalOverflow/ElementalOverflowLevel11ConAbility.jbp | ElementalOverflowLevel11ConAbility | parts: Strength 2 Size; Dexterity 2 Size; Constitution 4 Size
+toggle valued: buff parts | ElementalOverflow/ElementalOverflowLevel11DexAbility.jbp | ElementalOverflowLevel11DexAbility | parts: Constitution 2 Size; Strength 2 Size; Dexterity 4 Size
+toggle valued: buff parts | ElementalOverflow/ElementalOverflowLevel11StrAbility.jbp | ElementalOverflowLevel11StrAbility | parts: Constitution 2 Size; Dexterity 2 Size; Strength 4 Size
+toggle valued: buff parts | ElementalOverflow/ElementalOverflowLevel16ConDexStrAbility.jbp | ElementalOverflowLevel16ConDexStrAbility | parts: Strength 2 Size; Dexterity 4 Size; Constitution 6 Size
+toggle valued: buff parts | ElementalOverflow/ElementalOverflowLevel16ConStrDexAbility.jbp | ElementalOverflowLevel16ConStrDexAbility | parts: Strength 4 Size; Dexterity 2 Size; Constitution 6 Size
+toggle valued: buff parts | ElementalOverflow/ElementalOverflowLevel16DexConStrAbility.jbp | ElementalOverflowLevel16DexConStrAbility | parts: Constitution 4 Size; Strength 2 Size; Dexterity 6 Size
+toggle valued: buff parts | ElementalOverflow/ElementalOverflowLevel16DexStrConAbility.jbp | ElementalOverflowLevel16DexStrConAbility | parts: Strength 4 Size; Constitution 2 Size; Dexterity 6 Size
+toggle valued: buff parts | ElementalOverflow/ElementalOverflowLevel16StrConDexAbility.jbp | ElementalOverflowLevel16StrConDexAbility | parts: Constitution 4 Size; Dexterity 2 Size; Strength 6 Size
+toggle valued: buff parts | ElementalOverflow/ElementalOverflowLevel16StrDexConAbility.jbp | ElementalOverflowLevel16StrDexConAbility | parts: Constitution 2 Size; Dexterity 4 Size; Strength 6 Size
+toggle valued: buff parts | ElementalOverflow/ElementalOverflowLevel6DexConAbility.jbp | ElementalOverflowLevel6DexConAbility | parts: Constitution 2 Size; Dexterity 2 Size
+toggle valued: buff parts | ElementalOverflow/ElementalOverflowLevel6StrConAbility.jbp | ElementalOverflowLevel6StrConAbility | parts: Strength 2 Size; Constitution 2 Size
+toggle valued: buff parts | ElementalOverflow/ElementalOverflowLevel6StrDexAbility.jbp | ElementalOverflowLevel6StrDexAbility | parts: Strength 2 Size; Dexterity 2 Size
+valued: buff parts | ElementalFocus/Earth/FleshOfStoneAbility.jbp | FleshOfStoneAbility | parts: PhysicalDR Shared; unread: RecalculateOnFactsChange | sides: self
+valued: buff parts | Archetypes/KineticKnight/KnightsResolve/KnightsResolveResoluteAbiltiy.jbp | KnightsResolveResoluteAbiltiy | parts: Saves 3 (conditional) | sides: self
+valued: cleanse, dispel | WildTalents/KineticRestorationAbility.jbp | KineticRestorationAbility | sides: self
+valued: cleanse, removal | Archetypes/KineticKnight/KnightsResolve/KnightsResolveDeterminedAbility.jbp | KnightsResolveDeterminedAbility | sides: ally self
+valued: cleanse, removal (+ guessed buff by old quality (unread 0.5)) | GatherPower/GatherPower.jbp | GatherPower | parts: unread: AddKineticistAcceptBurnTrigger; components: AddKineticistAcceptBurnTrigger,AddFactContextActions | sides: self
+valued: damage | ElementalFocus/Air/AirBlast/AirBlastAbility.jbp | AirBlastAbility | sides: enemy
+valued: damage | ElementalFocus/Air/AirBlast/AirBlastKineticBladeDamage.jbp | AirBlastKineticBladeDamage | sides: enemy
+valued: damage | ElementalFocus/CompositeBlasts/BlizzardBlast/BlizzardBlastAbility.jbp | BlizzardBlastAbility | sides: enemy
+valued: damage | ElementalFocus/CompositeBlasts/BlizzardBlast/BlizzardBlastBladeDamage.jbp | BlizzardBlastBladeDamage | sides: enemy
+valued: damage | ElementalFocus/CompositeBlasts/BloodBlast/BloodBlastAbility.jbp | BloodBlastAbility | sides: enemy
+valued: damage | ElementalFocus/CompositeBlasts/BloodBlast/BloodBlastBladeDamage.jbp | BloodBlastBladeDamage | sides: enemy
+valued: damage | ElementalFocus/CompositeBlasts/BlueFlameBlast/BlueFlameBlastAbility.jbp | BlueFlameBlastAbility | sides: enemy
+valued: damage | ElementalFocus/CompositeBlasts/BlueFlameBlast/BlueFlameBlastBladeDamage.jbp | BlueFlameBlastBladeDamage | sides: enemy
+valued: damage | ElementalFocus/Air/ElectricBlast/ChainElectricBlastAbility.jbp | ChainElectricBlastAbility | sides: enemy
+valued: damage | ElementalFocus/CompositeBlasts/ChargedWaterBlast/ChargedWaterBlastAbility.jbp | ChargedWaterBlastAbility | sides: enemy
+valued: damage | ElementalFocus/CompositeBlasts/ChargedWaterBlast/ChargedWaterBlastBladeDamage.jbp | ChargedWaterBlastBladeDamage | sides: enemy
+valued: damage | ElementalFocus/CompositeBlasts/BlizzardBlast/BlizzardBlastInfused/CloudBlizzardBlastAbility.jbp | CloudBlizzardBlastAbility | sides: enemy
+valued: damage | ElementalFocus/CompositeBlasts/SandstormBlast/SandstormBlastInfused/CloudSandstormBlastAbility.jbp | CloudSandstormBlastAbility | sides: enemy
+valued: damage | ElementalFocus/CompositeBlasts/SteamBlast/SteamBlastInfused/CloudSteamBlastAbility.jbp | CloudSteamBlastAbility | sides: enemy
+valued: damage | ElementalFocus/CompositeBlasts/ThunderstormBlast/ThunderstormBlastInfused/CloudThunderstormBlastAbility.jbp | CloudThunderstormBlastAbility | sides: enemy
+valued: damage | ElementalFocus/Water/ColdBlast/ColdBlastAbility.jbp | ColdBlastAbility | sides: enemy
+valued: damage | ElementalFocus/Water/ColdBlast/ColdBlastBladeDamage.jbp | ColdBlastBladeDamage | sides: enemy
+valued: damage | ElementalFocus/Air/AirBlast/AirBlastInfused/CycloneAirBlastAbility.jbp | CycloneAirBlastAbility | sides: enemy self
+valued: damage | ElementalFocus/CompositeBlasts/BlizzardBlast/BlizzardBlastInfused/CycloneBlizzardBlastAbility.jbp | CycloneBlizzardBlastAbility | sides: enemy self
+valued: damage | ElementalFocus/CompositeBlasts/SandstormBlast/SandstormBlastInfused/CycloneSandstormBlastAbility.jbp | CycloneSandstormBlastAbility | sides: enemy self
+valued: damage | ElementalFocus/CompositeBlasts/ThunderstormBlast/ThunderstormBlastInfused/CycloneThunderstormBlastAbility.jbp | CycloneThunderstormBlastAbility | sides: enemy self
+valued: damage | ElementalFocus/Earth/EarthBlast/EarthBlastInfused/DeadlyEarthEarthBlastAbility.jbp | DeadlyEarthEarthBlastAbility | sides: enemy
+valued: damage | ElementalFocus/CompositeBlasts/MagmaBlast/MagmaBlastInfused/DeadlyEarthMagmaBlastAbility.jbp | DeadlyEarthMagmaBlastAbility | sides: enemy
+valued: damage | ElementalFocus/CompositeBlasts/MetalBlast/MetalBlastInfused/DeadlyEarthMetalBlastAbility.jbp | DeadlyEarthMetalBlastAbility | sides: enemy
+valued: damage | ElementalFocus/CompositeBlasts/MudBlast/MudBlastInfused/DeadlyEarthMudBlastAbility.jbp | DeadlyEarthMudBlastAbility | sides: enemy
+valued: damage | ElementalFocus/CompositeBlasts/BlueFlameBlast/BlueFlameBlastInfused/DetonationBlueFlameBlastAbility.jbp | DetonationBlueFlameBlastAbility | sides: enemy ally self
+valued: damage | ElementalFocus/Fire/FireBlast/FireBlastInfused/DetonationFireBlastAbility.jbp | DetonationFireBlastAbility | sides: enemy ally self
+valued: damage | ElementalFocus/Earth/EarthBlast/EarthBlastAbility.jbp | EarthBlastAbility | sides: enemy
+valued: damage | ElementalFocus/Earth/EarthBlast/EarthBlastBladeDamage.jbp | EarthBlastBladeDamage | sides: enemy
+valued: damage | ElementalFocus/Air/ElectricBlast/ElectricBlastAbility.jbp | ElectricBlastAbility | sides: enemy
+valued: damage | ElementalFocus/Air/ElectricBlast/ElectricBlastBladeDamage.jbp | ElectricBlastBladeDamage | sides: enemy
+valued: damage | ElementalFocus/CompositeBlasts/BlueFlameBlast/BlueFlameBlastInfused/EruptionBlueFlameBlastAbility.jbp | EruptionBlueFlameBlastAbility | sides: enemy
+valued: damage | ElementalFocus/Fire/FireBlast/FireBlastInfused/EruptionFireBlastAbility.jbp | EruptionFireBlastAbility | sides: enemy
+valued: damage | ElementalFocus/CompositeBlasts/MagmaBlast/MagmaBlastInfused/EruptionMagmaBlastAbility.jbp | EruptionMagmaBlastAbility | sides: enemy
+valued: damage | ElementalFocus/CompositeBlasts/SteamBlast/SteamBlastInfused/EruptionSteamBlastAbility.jbp | EruptionSteamBlastAbility | sides: enemy
+valued: damage | Archetypes/KineticSharpshooter/Abilities/ExplodingArrowsInfusion/ExplodingArrowsAirBlastAbility.jbp | ExplodingArrowsAirBlastAbility | sides: enemy
+valued: damage | Archetypes/KineticSharpshooter/Abilities/ExplodingArrowsInfusion/ExplodingArrowsBlizzardBlastAbility.jbp | ExplodingArrowsBlizzardBlastAbility | sides: enemy
+valued: damage | Archetypes/KineticSharpshooter/Abilities/ExplodingArrowsInfusion/ExplodingArrowsBlueFlameBlastAbility.jbp | ExplodingArrowsBlueFlameBlastAbility | sides: enemy
+valued: damage | Archetypes/KineticSharpshooter/Abilities/ExplodingArrowsInfusion/ExplodingArrowsChargedWaterBlastAbility.jbp | ExplodingArrowsChargedWaterBlastAbility | sides: enemy
+valued: damage | Archetypes/KineticSharpshooter/Abilities/ExplodingArrowsInfusion/ExplodingArrowsColdBlastAbility.jbp | ExplodingArrowsColdBlastAbility | sides: enemy
+valued: damage | Archetypes/KineticSharpshooter/Abilities/ExplodingArrowsInfusion/ExplodingArrowsEarthBlastAbility.jbp | ExplodingArrowsEarthBlastAbility | sides: enemy
+valued: damage | Archetypes/KineticSharpshooter/Abilities/ExplodingArrowsInfusion/ExplodingArrowsElectricBlastAbility.jbp | ExplodingArrowsElectricBlastAbility | sides: enemy
+valued: damage | Archetypes/KineticSharpshooter/Abilities/ExplodingArrowsInfusion/ExplodingArrowsFireBlastAbility.jbp | ExplodingArrowsFireBlastAbility | sides: enemy
+valued: damage | Archetypes/KineticSharpshooter/Abilities/ExplodingArrowsInfusion/ExplodingArrowsIceBlastAbility.jbp | ExplodingArrowsIceBlastAbility | sides: enemy
+valued: damage | Archetypes/KineticSharpshooter/Abilities/ExplodingArrowsInfusion/ExplodingArrowsMagmaBlastAbility.jbp | ExplodingArrowsMagmaBlastAbility | sides: enemy
+valued: damage | Archetypes/KineticSharpshooter/Abilities/ExplodingArrowsInfusion/ExplodingArrowsMetalBlastAbility.jbp | ExplodingArrowsMetalBlastAbility | sides: enemy
+valued: damage | Archetypes/KineticSharpshooter/Abilities/ExplodingArrowsInfusion/ExplodingArrowsMudBlastAbility.jbp | ExplodingArrowsMudBlastAbility | sides: enemy
+valued: damage | Archetypes/KineticSharpshooter/Abilities/ExplodingArrowsInfusion/ExplodingArrowsPlasmaBlastAbility.jbp | ExplodingArrowsPlasmaBlastAbility | sides: enemy
+valued: damage | Archetypes/KineticSharpshooter/Abilities/ExplodingArrowsInfusion/ExplodingArrowsSandstormBlastAbility.jbp | ExplodingArrowsSandstormBlastAbility | sides: enemy
+valued: damage | Archetypes/KineticSharpshooter/Abilities/ExplodingArrowsInfusion/ExplodingArrowsSteamBlastAbility.jbp | ExplodingArrowsSteamBlastAbility | sides: enemy
+valued: damage | Archetypes/KineticSharpshooter/Abilities/ExplodingArrowsInfusion/ExplodingArrowsThunderstormBlastAbility.jbp | ExplodingArrowsThunderstormBlastAbility | sides: enemy
+valued: damage | Archetypes/KineticSharpshooter/Abilities/ExplodingArrowsInfusion/ExplodingArrowsWaterBlastAbility.jbp | ExplodingArrowsWaterBlastAbility | sides: enemy
+valued: damage | ElementalFocus/Air/AirBlast/AirBlastInfused/ExtendedRangeAirBlastAbility.jbp | ExtendedRangeAirBlastAbility | sides: enemy
+valued: damage | ElementalFocus/CompositeBlasts/BlizzardBlast/BlizzardBlastInfused/ExtendedRangeBlizzardBlastAbility.jbp | ExtendedRangeBlizzardBlastAbility | sides: enemy
+valued: damage | ElementalFocus/CompositeBlasts/BloodBlast/BloodBlastInfused/ExtendedRangeBloodBlastAbility.jbp | ExtendedRangeBloodBlastAbility | sides: enemy
+valued: damage | ElementalFocus/CompositeBlasts/BlueFlameBlast/BlueFlameBlastInfused/ExtendedRangeBlueFlameBlastAbility.jbp | ExtendedRangeBlueFlameBlastAbility | sides: enemy
+valued: damage | ElementalFocus/CompositeBlasts/ChargedWaterBlast/ChargedWaterBlastInfused/ExtendedRangeChargedWaterBlastAbility.jbp | ExtendedRangeChargedWaterBlastAbility | sides: enemy
+valued: damage | ElementalFocus/Water/ColdBlast/ColdBlastInfused/ExtendedRangeColdBlastAbility.jbp | ExtendedRangeColdBlastAbility | sides: enemy
+valued: damage | ElementalFocus/Earth/EarthBlast/EarthBlastInfused/ExtendedRangeEarthBlastAbility.jbp | ExtendedRangeEarthBlastAbility | sides: enemy
+valued: damage | ElementalFocus/Air/ElectricBlast/ElectricBlastInfused/ExtendedRangeElectricBlastAbility.jbp | ExtendedRangeElectricBlastAbility | sides: enemy
+valued: damage | ElementalFocus/Fire/FireBlast/FireBlastInfused/ExtendedRangeFireBlastAbility.jbp | ExtendedRangeFireBlastAbility | sides: enemy
+valued: damage | ElementalFocus/CompositeBlasts/IceBlast/IceBlastInfused/ExtendedRangeIceBlastAbility.jbp | ExtendedRangeIceBlastAbility | sides: enemy
+valued: damage | ElementalFocus/CompositeBlasts/MagmaBlast/MagmaBlastInfused/ExtendedRangeMagmaBlastAbility.jbp | ExtendedRangeMagmaBlastAbility | sides: enemy
+valued: damage | ElementalFocus/CompositeBlasts/MetalBlast/MetalBlastInfused/ExtendedRangeMetalBlastAbility.jbp | ExtendedRangeMetalBlastAbility | sides: enemy
+valued: damage | ElementalFocus/CompositeBlasts/MudBlast/MudBlastInfused/ExtendedRangeMudBlastAbility.jbp | ExtendedRangeMudBlastAbility | sides: enemy
+valued: damage | ElementalFocus/CompositeBlasts/PlasmaBlast/PlasmaBlastInfused/ExtendedRangePlasmaBlastAbility.jbp | ExtendedRangePlasmaBlastAbility | sides: enemy
+valued: damage | ElementalFocus/CompositeBlasts/SandstormBlast/SandstormBlastInfused/ExtendedRangeSandstormBlastAbility.jbp | ExtendedRangeSandstormBlastAbility | sides: enemy
+valued: damage | ElementalFocus/CompositeBlasts/SteamBlast/SteamBlastInfused/ExtendedRangeSteamBlastAbility.jbp | ExtendedRangeSteamBlastAbility | sides: enemy
+valued: damage | ElementalFocus/CompositeBlasts/ThunderstormBlast/ThunderstormBlastInfused/ExtendedRangeThunderstormBlastAbility.jbp | ExtendedRangeThunderstormBlastAbility | sides: enemy
+valued: damage | ElementalFocus/Water/WaterBlast/WaterBlastInfused/ExtendedRangeWaterBlastAbility.jbp | ExtendedRangeWaterBlastAbility | sides: enemy
+valued: damage | ElementalFocus/CompositeBlasts/BlueFlameBlast/BlueFlameBlastInfused/FanOfFlamesBlueFlameBlastAbility.jbp | FanOfFlamesBlueFlameBlastAbility | sides: enemy
+valued: damage | ElementalFocus/Fire/FireBlast/FireBlastInfused/FanOfFlamesFireBlastAbility.jbp | FanOfFlamesFireBlastAbility | sides: enemy
+valued: damage | ElementalFocus/Fire/FireBlast/FireBlastAbility.jbp | FireBlastAbility | sides: enemy
+valued: damage | ElementalFocus/Fire/FireBlast/FireBlastBladeDamage.jbp | FireBlastBladeDamage | sides: enemy
+valued: damage | ElementalFocus/Earth/EarthBlast/EarthBlastInfused/FragmentationEarthBlastAbility.jbp | FragmentationEarthBlastAbility | sides: enemy
+valued: damage | ElementalFocus/CompositeBlasts/IceBlast/IceBlastInfused/FragmentationIceBlastAbility.jbp | FragmentationIceBlastAbility | sides: enemy
+valued: damage | ElementalFocus/CompositeBlasts/MetalBlast/MetalBlastInfused/FragmentationMetalBlastAbility.jbp | FragmentationMetalBlastAbility | sides: enemy
+valued: damage | ElementalFocus/CompositeBlasts/IceBlast/IceBlastAbility.jbp | IceBlastAbility | sides: enemy
+valued: damage | ElementalFocus/CompositeBlasts/IceBlast/IceBlastBladeDamage.jbp | IceBlastBladeDamage | sides: enemy
+valued: damage | ElementalFocus/CompositeBlasts/MagmaBlast/MagmaBlastAbility.jbp | MagmaBlastAbility | sides: enemy
+valued: damage | ElementalFocus/CompositeBlasts/MagmaBlast/MagmaBlastBladeDamage.jbp | MagmaBlastBladeDamage | sides: enemy
+valued: damage | ElementalFocus/CompositeBlasts/MetalBlast/MetalBlastAbility.jbp | MetalBlastAbility | sides: enemy
+valued: damage | ElementalFocus/CompositeBlasts/MetalBlast/MetalBlastBladeDamage.jbp | MetalBlastBladeDamage | sides: enemy
+valued: damage | ElementalFocus/CompositeBlasts/MudBlast/MudBlastAbility.jbp | MudBlastAbility | sides: enemy
+valued: damage | ElementalFocus/CompositeBlasts/MudBlast/MudBlastBladeDamage.jbp | MudBlastBladeDamage | sides: enemy
+valued: damage | Archetypes/KineticSharpshooter/Abilities/PiercingArrowsInfusion/PiercingArrowsAirBlastAbility.jbp | PiercingArrowsAirBlastAbility | sides: enemy
+valued: damage | Archetypes/KineticSharpshooter/Abilities/PiercingArrowsInfusion/PiercingArrowsBlizzardBlastAbility.jbp | PiercingArrowsBlizzardBlastAbility | sides: enemy
+valued: damage | Archetypes/KineticSharpshooter/Abilities/PiercingArrowsInfusion/PiercingArrowsBlueFlameBlastAbility.jbp | PiercingArrowsBlueFlameBlastAbility | sides: enemy
+valued: damage | Archetypes/KineticSharpshooter/Abilities/PiercingArrowsInfusion/PiercingArrowsChargedWaterBlastAbility.jbp | PiercingArrowsChargedWaterBlastAbility | sides: enemy
+valued: damage | Archetypes/KineticSharpshooter/Abilities/PiercingArrowsInfusion/PiercingArrowsColdBlastAbility.jbp | PiercingArrowsColdBlastAbility | sides: enemy
+valued: damage | Archetypes/KineticSharpshooter/Abilities/PiercingArrowsInfusion/PiercingArrowsEarthBlastAbility.jbp | PiercingArrowsEarthBlastAbility | sides: enemy
+valued: damage | Archetypes/KineticSharpshooter/Abilities/PiercingArrowsInfusion/PiercingArrowsElectricBlastAbility.jbp | PiercingArrowsElectricBlastAbility | sides: enemy
+valued: damage | Archetypes/KineticSharpshooter/Abilities/PiercingArrowsInfusion/PiercingArrowsFireBlastAbility.jbp | PiercingArrowsFireBlastAbility | sides: enemy
+valued: damage | Archetypes/KineticSharpshooter/Abilities/PiercingArrowsInfusion/PiercingArrowsIceBlastAbility.jbp | PiercingArrowsIceBlastAbility | sides: enemy
+valued: damage | Archetypes/KineticSharpshooter/Abilities/PiercingArrowsInfusion/PiercingArrowsMagmaBlastAbility.jbp | PiercingArrowsMagmaBlastAbility | sides: enemy
+valued: damage | Archetypes/KineticSharpshooter/Abilities/PiercingArrowsInfusion/PiercingArrowsMetalBlastAbility.jbp | PiercingArrowsMetalBlastAbility | sides: enemy
+valued: damage | Archetypes/KineticSharpshooter/Abilities/PiercingArrowsInfusion/PiercingArrowsMudBlastAbility.jbp | PiercingArrowsMudBlastAbility | sides: enemy
+valued: damage | Archetypes/KineticSharpshooter/Abilities/PiercingArrowsInfusion/PiercingArrowsPlasmaBlastAbility.jbp | PiercingArrowsPlasmaBlastAbility | sides: enemy
+valued: damage | Archetypes/KineticSharpshooter/Abilities/PiercingArrowsInfusion/PiercingArrowsSandstormBlastAbility.jbp | PiercingArrowsSandstormBlastAbility | sides: enemy
+valued: damage | Archetypes/KineticSharpshooter/Abilities/PiercingArrowsInfusion/PiercingArrowsSteamBlastAbility.jbp | PiercingArrowsSteamBlastAbility | sides: enemy
+valued: damage | Archetypes/KineticSharpshooter/Abilities/PiercingArrowsInfusion/PiercingArrowsThunderstormBlastAbility.jbp | PiercingArrowsThunderstormBlastAbility | sides: enemy
+valued: damage | Archetypes/KineticSharpshooter/Abilities/PiercingArrowsInfusion/PiercingArrowsWaterBlastAbility.jbp | PiercingArrowsWaterBlastAbility | sides: enemy
+valued: damage | ElementalFocus/CompositeBlasts/PlasmaBlast/PlasmaBlastAbility.jbp | PlasmaBlastAbility | sides: enemy
+valued: damage | ElementalFocus/CompositeBlasts/PlasmaBlast/PlasmaBlastBladeDamage.jbp | PlasmaBlastBladeDamage | sides: enemy
+valued: damage | ElementalFocus/CompositeBlasts/SandstormBlast/SandstormBlastAbility.jbp | SandstormBlastAbility | sides: enemy
+valued: damage | ElementalFocus/CompositeBlasts/SandstormBlast/SandstormBlastBladeDamage.jbp | SandstormBlastBladeDamage | sides: enemy
+valued: damage | ElementalFocus/Air/AirBlast/AirBlastInfused/SpindleAirBlastAbility.jbp | SpindleAirBlastAbility | sides: enemy
+valued: damage | ElementalFocus/CompositeBlasts/BlizzardBlast/BlizzardBlastInfused/SpindleBlizzardBlastAbility.jbp | SpindleBlizzardBlastAbility | sides: enemy
+valued: damage | ElementalFocus/CompositeBlasts/BloodBlast/BloodBlastInfused/SpindleBloodBlastAbility.jbp | SpindleBloodBlastAbility | sides: enemy
+valued: damage | ElementalFocus/CompositeBlasts/BlueFlameBlast/BlueFlameBlastInfused/SpindleBlueFlameBlastAbility.jbp | SpindleBlueFlameBlastAbility | sides: enemy
+valued: damage | ElementalFocus/CompositeBlasts/ChargedWaterBlast/ChargedWaterBlastInfused/SpindleChargedWaterBlastAbility.jbp | SpindleChargedWaterBlastAbility | sides: enemy
+valued: damage | ElementalFocus/Water/ColdBlast/ColdBlastInfused/SpindleColdBlastAbility.jbp | SpindleColdBlastAbility | sides: enemy
+valued: damage | ElementalFocus/Earth/EarthBlast/EarthBlastInfused/SpindleEarthBlastAbility.jbp | SpindleEarthBlastAbility | sides: enemy
+valued: damage | ElementalFocus/Air/ElectricBlast/ElectricBlastInfused/SpindleElectricBlastAbility.jbp | SpindleElectricBlastAbility | sides: enemy
+valued: damage | ElementalFocus/Fire/FireBlast/FireBlastInfused/SpindleFireBlastAbility.jbp | SpindleFireBlastAbility | sides: enemy
+valued: damage | ElementalFocus/CompositeBlasts/IceBlast/IceBlastInfused/SpindleIceBlastAbility.jbp | SpindleIceBlastAbility | sides: enemy
+valued: damage | ElementalFocus/CompositeBlasts/MagmaBlast/MagmaBlastInfused/SpindleMagmaBlastAbility.jbp | SpindleMagmaBlastAbility | sides: enemy
+valued: damage | ElementalFocus/CompositeBlasts/MetalBlast/MetalBlastInfused/SpindleMetalBlastAbility.jbp | SpindleMetalBlastAbility | sides: enemy
+valued: damage | ElementalFocus/CompositeBlasts/MudBlast/MudBlastInfused/SpindleMudBlastAbility.jbp | SpindleMudBlastAbility | sides: enemy
+valued: damage | ElementalFocus/CompositeBlasts/PlasmaBlast/PlasmaBlastInfused/SpindlePlasmaBlastAbility.jbp | SpindlePlasmaBlastAbility | sides: enemy
+valued: damage | ElementalFocus/CompositeBlasts/SandstormBlast/SandstormBlastInfused/SpindleSandstormBlastAbility.jbp | SpindleSandstormBlastAbility | sides: enemy
+valued: damage | ElementalFocus/CompositeBlasts/SteamBlast/SteamBlastInfused/SpindleSteamBlastAbility.jbp | SpindleSteamBlastAbility | sides: enemy
+valued: damage | ElementalFocus/CompositeBlasts/ThunderstormBlast/ThunderstormBlastInfused/SpindleThunderstormBlastAbility.jbp | SpindleThunderstormBlastAbility | sides: enemy
+valued: damage | ElementalFocus/Water/WaterBlast/WaterBlastInfused/SpindleWaterBlastAbility.jbp | SpindleWaterBlastAbility | sides: enemy
+valued: damage | ElementalFocus/CompositeBlasts/BloodBlast/BloodBlastInfused/SprayBloodBlastAbility.jbp | SprayBloodBlastAbility | sides: enemy
+valued: damage | ElementalFocus/CompositeBlasts/ChargedWaterBlast/ChargedWaterBlastInfused/SprayChargedWaterBlastAbility.jbp | SprayChargedWaterBlastAbility | sides: enemy
+valued: damage | ElementalFocus/Water/WaterBlast/WaterBlastInfused/SprayWaterBlastAbility.jbp | SprayWaterBlastAbility | sides: enemy
+valued: damage | ElementalFocus/CompositeBlasts/SteamBlast/SteamBlastAbility.jbp | SteamBlastAbility | sides: enemy
+valued: damage | ElementalFocus/CompositeBlasts/SteamBlast/SteamBlastBladeDamage.jbp | SteamBlastBladeDamage | sides: enemy
+valued: damage | ElementalFocus/CompositeBlasts/ThunderstormBlast/ThunderstormBlastAbility.jbp | ThunderstormBlastAbility | sides: enemy
+valued: damage | ElementalFocus/CompositeBlasts/ThunderstormBlast/ThunderstormBlastBladeDamage.jbp | ThunderstormBlastBladeDamage | sides: enemy
+valued: damage | WildTalents/TidalWaveAbility.jbp | TidalWaveAbility | sides: enemy
+valued: damage | ElementalFocus/Air/AirBlast/AirBlastInfused/TorrentAirBlastAbility.jbp | TorrentAirBlastAbility | sides: enemy
+valued: damage | ElementalFocus/CompositeBlasts/BlizzardBlast/BlizzardBlastInfused/TorrentBlizzardBlastAbility.jbp | TorrentBlizzardBlastAbility | sides: enemy
+valued: damage | ElementalFocus/CompositeBlasts/BloodBlast/BloodBlastInfused/TorrentBloodBlastAbility.jbp | TorrentBloodBlastAbility | sides: enemy
+valued: damage | ElementalFocus/CompositeBlasts/BlueFlameBlast/BlueFlameBlastInfused/TorrentBlueFlameBlastAbility.jbp | TorrentBlueFlameBlastAbility | sides: enemy
+valued: damage | ElementalFocus/CompositeBlasts/ChargedWaterBlast/ChargedWaterBlastInfused/TorrentChargedWaterBlastAbility.jbp | TorrentChargedWaterBlastAbility | sides: enemy
+valued: damage | ElementalFocus/Air/ElectricBlast/ElectricBlastInfused/TorrentElectricBlastAbility.jbp | TorrentElectricBlastAbility | sides: enemy
+valued: damage | ElementalFocus/Fire/FireBlast/FireBlastInfused/TorrentFireBlastAbility.jbp | TorrentFireBlastAbility | sides: enemy
+valued: damage | ElementalFocus/CompositeBlasts/MagmaBlast/MagmaBlastInfused/TorrentMagmaBlastAbility.jbp | TorrentMagmaBlastAbility | sides: enemy
+valued: damage | ElementalFocus/CompositeBlasts/MudBlast/MudBlastInfused/TorrentMudBlastAbility.jbp | TorrentMudBlastAbility | sides: enemy
+valued: damage | ElementalFocus/CompositeBlasts/PlasmaBlast/PlasmaBlastInfused/TorrentPlasmaBlastAbility.jbp | TorrentPlasmaBlastAbility | sides: enemy
+valued: damage | ElementalFocus/CompositeBlasts/SandstormBlast/SandstormBlastInfused/TorrentSandstormBlastAbility.jbp | TorrentSandstormBlastAbility | sides: enemy
+valued: damage | ElementalFocus/CompositeBlasts/SteamBlast/SteamBlastInfused/TorrentSteamBlastAbility.jbp | TorrentSteamBlastAbility | sides: enemy
+valued: damage | ElementalFocus/CompositeBlasts/ThunderstormBlast/ThunderstormBlastInfused/TorrentThunderstormBlastAbility.jbp | TorrentThunderstormBlastAbility | sides: enemy
+valued: damage | ElementalFocus/Water/WaterBlast/WaterBlastInfused/TorrentWaterBlastAbility.jbp | TorrentWaterBlastAbility | sides: enemy
+valued: damage | ElementalFocus/Air/AirBlast/AirBlastInfused/WallAirBlastAbility.jbp | WallAirBlastAbility | sides: enemy
+valued: damage | ElementalFocus/CompositeBlasts/BlizzardBlast/BlizzardBlastInfused/WallBlizzardBlastAbility.jbp | WallBlizzardBlastAbility | sides: enemy
+valued: damage | ElementalFocus/CompositeBlasts/BloodBlast/BloodBlastInfused/WallBloodBlastAbility.jbp | WallBloodBlastAbility | sides: enemy
+valued: damage | ElementalFocus/CompositeBlasts/BlueFlameBlast/BlueFlameBlastInfused/WallBlueFlameBlastAbility.jbp | WallBlueFlameBlastAbility | sides: enemy
+valued: damage | ElementalFocus/CompositeBlasts/ChargedWaterBlast/ChargedWaterBlastInfused/WallChargedWaterBlastAbility.jbp | WallChargedWaterBlastAbility | sides: enemy
+valued: damage | ElementalFocus/Water/ColdBlast/ColdBlastInfused/WallColdBlastAbility.jbp | WallColdBlastAbility | sides: enemy
+valued: damage | ElementalFocus/Earth/EarthBlast/EarthBlastInfused/WallEarthBlastAbility.jbp | WallEarthBlastAbility | sides: enemy
+valued: damage | ElementalFocus/Air/ElectricBlast/ElectricBlastInfused/WallElectricBlastAbility.jbp | WallElectricBlastAbility | sides: enemy
+valued: damage | ElementalFocus/Fire/FireBlast/FireBlastInfused/WallFireBlastAbility.jbp | WallFireBlastAbility | sides: enemy
+valued: damage | ElementalFocus/CompositeBlasts/IceBlast/IceBlastInfused/WallIceBlastAbility.jbp | WallIceBlastAbility | sides: enemy
+valued: damage | ElementalFocus/CompositeBlasts/MagmaBlast/MagmaBlastInfused/WallMagmaBlastAbility.jbp | WallMagmaBlastAbility | sides: enemy
+valued: damage | ElementalFocus/CompositeBlasts/MetalBlast/MetalBlastInfused/WallMetalBlastAbility.jbp | WallMetalBlastAbility | sides: enemy
+valued: damage | ElementalFocus/CompositeBlasts/MudBlast/MudBlastInfused/WallMudBlastAbility.jbp | WallMudBlastAbility | sides: enemy
+valued: damage | ElementalFocus/CompositeBlasts/PlasmaBlast/PlasmaBlastInfused/WallPlasmaBlastAbility.jbp | WallPlasmaBlastAbility | sides: enemy
+valued: damage | ElementalFocus/CompositeBlasts/SandstormBlast/SandstormBlastInfused/WallSandstormBlastAbility.jbp | WallSandstormBlastAbility | sides: enemy
+valued: damage | ElementalFocus/CompositeBlasts/SteamBlast/SteamBlastInfused/WallSteamBlastAbility.jbp | WallSteamBlastAbility | sides: enemy
+valued: damage | ElementalFocus/CompositeBlasts/ThunderstormBlast/ThunderstormBlastInfused/WallThunderstormBlastAbility.jbp | WallThunderstormBlastAbility | sides: enemy
+valued: damage | ElementalFocus/Water/WaterBlast/WaterBlastInfused/WallWaterBlastAbility.jbp | WallWaterBlastAbility | sides: enemy
+valued: damage | ElementalFocus/Water/WaterBlast/WaterBlastAbility.jbp | WaterBlastAbility | sides: enemy
+valued: damage | ElementalFocus/Water/WaterBlast/WaterBlastBladeDamage.jbp | WaterBlastBladeDamage | sides: enemy
+valued: damage | ElementalFocus/Water/WaterBlast/WaterBlastInfused/WrackBloodBlastAbility.jbp | WrackBloodBlastAbility | sides: enemy
+valued: damage | ElementalFocus/CompositeBlasts/BloodBlast/BloodBlastInfused/WrackBloodBlastAbility.jbp | WrackBloodBlastAbility | sides: enemy
+valued: heal | WildTalents/HealingBurstAbility.jbp | HealingBurstAbility | sides: ally self
+valued: heal | WildTalents/KineticHealerAbility.jbp | KineticHealerAbility | sides: ally self
+valued: removal | WildTalents/Celerity.jbp | Celerity | sides: ally self
+valued: removal | WildTalents/CelerityShort.jbp | CelerityShort | sides: ally self
+valued: removal | WildTalents/KineticRevificationAbility.jbp | KineticRevificationAbility | sides: ally self
+valued: weapon attack | Infusions/FormInfusions/BladeWhirlwind/BladeWhirlwindAbility.jbp | BladeWhirlwindAbility | sides: enemy self

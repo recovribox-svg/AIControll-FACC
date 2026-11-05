@@ -649,6 +649,16 @@ namespace CompanionAI_Pathfinder.Tactics
             return raw > 0f ? raw * DamageObserver.BlastFactor(ability?.Caster?.Unit, ability?.Blueprint) : raw;
         }
 
+        /// <summary>★ v0.3.28 (codex review): a ricochet's native layer selects its own damage actions. Reuse the same
+        /// per-action half, modifiers, mitigation and learned share; halving a finished primary estimate is not equivalent.</summary>
+        internal static float EstimateAbilityDamageAtDeliveryLayer(AbilityData ability, AbilityProfile profile,
+                                                                   UnitEntityData target, int layer)
+        {
+            float raw = EstimateAbilityDamageRaw(ability, profile, target, null,
+                action => profile.AppliesAtDeliveryLayer(action, ability, target, layer));
+            return raw > 0f ? raw * DamageObserver.BlastFactor(ability?.Caster?.Unit, ability?.Blueprint) : raw;
+        }
+
         /// <summary>★ v0.3.20: the estimate before the learned share of a blast (DamageObserver checks against it).</summary>
         internal static float EstimateAbilityDamageRaw(AbilityData ability, AbilityProfile profile, UnitEntityData target, ItemEntityWeapon bladeWeapon,
             Func<GameAction, EffectApplies> branch = null, bool? ignorePhysicalReduction = null)

@@ -19,6 +19,7 @@ namespace CompanionAI_Pathfinder.GameInterface
     public class PreBuffUpdater : MonoBehaviour
     {
         private static PreBuffUpdater _instance;
+        private float _nextQuiverCheck;
 
         public static void Create()
         {
@@ -44,6 +45,11 @@ namespace CompanionAI_Pathfinder.GameInterface
             // ★ v0.3.17: not while the mod is switched off in the mod manager.
             if (!Main.Enabled) return;
             PreBuffController.Instance?.Tick();
+            // ★ v0.3.28 (codex review): native AI ticks skip groups outside combat, including after a rest.
+            // Only quiver preparation uses this independent driver; it does not start a general pre-buff session.
+            if (Time.time < _nextQuiverCheck) return;
+            _nextQuiverCheck = Time.time + 0.5f;
+            RealTimeController.Instance.PrepareQuiversOutOfCombat();
         }
     }
 

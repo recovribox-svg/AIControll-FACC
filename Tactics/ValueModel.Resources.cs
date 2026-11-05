@@ -5,6 +5,21 @@ namespace CompanionAI_Pathfinder.Tactics
     public static partial class ValueModel
     {
         /// <summary>
+        /// ★ v0.3.28 (codex review): the fallback for a buff whose parts were not modelled. Shared with the offline
+        /// audit so an unread marker cannot appear useful there after the live engine has rejected its resource cost.
+        /// Day-long markers and recipient-specific stacking/role adjustments are handled by the caller.
+        /// </summary>
+        public static float BuffFallbackQuality(bool recognized, float combatValue, bool enchants,
+                                                bool onlyUnrecognized, bool limitedUse, bool item)
+        {
+            float quality = recognized ? combatValue
+                : enchants ? 0.8f
+                : onlyUnrecognized ? (item || limitedUse ? 0f : 0.5f)
+                : limitedUse ? 0f : 0.05f;
+            return item && quality < 0.5f ? 0f : quality;
+        }
+
+        /// <summary>
         /// The share of a daily resource's damage and control that an easy fight takes off its value: levelled spell
         /// slots since v0.3.17, ★ v0.3.23 (bombs task) an Alchemist's daily bombs too. 1 - clamp(0.55 + 0.45 x difficulty,
         /// 0.55, 1): 41 % at the easiest fights (difficulty 0.1), 22.5 % at 0.5, nothing once the enemies' threat reaches the

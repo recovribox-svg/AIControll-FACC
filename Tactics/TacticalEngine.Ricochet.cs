@@ -5,7 +5,8 @@
 //   ChainArrowsInfusionBuff or DLC3_KineticRicochetBuff". After the blast hits, Deliver jumps from the current target to
 //   the nearest living enemy of the caster within Radius (10 ft) of it, not hit yet, up to TargetsCount times (a caster
 //   property: 1 + level/2); every jump reuses the original attack roll (RuleAttackRoll.CopyWithNewTarget with the first
-//   target) and gets the blast's full effects. Blinking units are skipped half the time. It was withheld for lack of "a
+//   target) and executes the blast graph at the ricochet's own layer (plain blasts select their half-damage branch).
+//   Blinking units are skipped half the time. It was withheld for lack of "a
 //   read-only recipient query"; the selection is pure geometry over the game's own unit list, so it is forecast here
 //   without launching anything. Each jump's recipient takes the blast's estimated damage at the first hit's chance,
 //   adjusted for its own spell resistance.
@@ -93,16 +94,17 @@ namespace CompanionAI_Pathfinder.Tactics
 
         // The blast's estimate on one jump recipient, once per frame: a scored blast is asked for every target it could
         // start from, and their jumps share recipients.
-        private static readonly Dictionary<KeyValuePair<AbilityData, UnitEntityData>, float> s_ChainDamage =
-            new Dictionary<KeyValuePair<AbilityData, UnitEntityData>, float>();
+        private static readonly Dictionary<(AbilityData, UnitEntityData, int), float> s_ChainDamage =
+            new Dictionary<(AbilityData, UnitEntityData, int), float>();
         private static int s_ChainDamageFrame = -1;
 
-        private static float ChainDamage(AbilityData blast, AbilityProfile profile, UnitEntityData recipient)
+        private static float ChainDamage(AbilityData blast, AbilityProfile profile, UnitEntityData recipient, int layer)
         {
             if (Time.frameCount != s_ChainDamageFrame) { s_ChainDamage.Clear(); s_ChainDamageFrame = Time.frameCount; }
-            var key = new KeyValuePair<AbilityData, UnitEntityData>(blast, recipient);
+            // ★ v0.3.28 (codex review): never reuse a primary/other-layer forecast for this native delivery layer.
+            var key = (blast, recipient, layer);
             if (!s_ChainDamage.TryGetValue(key, out float damage))
-                s_ChainDamage[key] = damage = CombatMath.EstimateAbilityDamage(blast, profile, recipient);   // observed blast factor included
+                s_ChainDamage[key] = damage = CombatMath.EstimateAbilityDamageAtDeliveryLayer(blast, profile, recipient, layer);
             return damage;
         }
 
@@ -143,7 +145,7 @@ namespace CompanionAI_Pathfinder.Tactics
                 float land = chance * Math.Min(1f, CombatMath.SpellResistancePass(unit, next, blast) / startPass);
                 try { if ((bool)next.State.Features.Blinking && !unit.Descriptor.IsSeeInvisibility) land *= 0.5f; } catch { }
                 if (!(land > 0f)) continue;
-                float damage = ChainDamage(blast, profile, next);
+                float damage = ChainDamage(blast, profile, next, ricochet.Component.Layer);
                 bool endsRegeneration = CombatMath.AbilityEndsRegeneration(profile, next);
                 value += DamageValue(next, damage * land, land, endsRegeneration) * WakeFactor(next, damage * land);
             }

@@ -145,6 +145,11 @@ namespace ProfileAudit
             foreach (var line in onHitLines) Console.WriteLine(line);
             File.WriteAllText(output, string.Join(Environment.NewLine, onHitLines) + Environment.NewLine + Environment.NewLine + File.ReadAllText(output));
             blocklistFailures += onHitFailures;
+            // ★ v0.3.28 (codex review): the actual layer reader and loaded plain-blast full/half branches.
+            var layerLines = RicochetLayerCheck.Run(loaded.Values, out int layerFailures);
+            foreach (var line in layerLines) Console.WriteLine(line);
+            File.WriteAllText(output, string.Join(Environment.NewLine, layerLines) + Environment.NewLine + Environment.NewLine + File.ReadAllText(output));
+            blocklistFailures += layerFailures;
             if (failed > 0)
             {
                 string partial = $"PARTIAL: loaded {loaded.Count}, failed {failed}, allowed {options.AllowFailures}. Failed blueprints:";

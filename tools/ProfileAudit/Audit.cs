@@ -320,14 +320,25 @@ namespace ProfileAudit
                 if (unread.Count > 0) parts.Add("unread: " + string.Join(",", unread.Take(4)));
                 return;
             }
-            bool limited = bp.GetComponents<AbilityResourceLogic>().Any(l => l.IsSpendResource && l.RequiredResource != null);
+            // ★ v0.3.28 (codex review): unconditional on-cast burn is limited even without an ability resource.
+            // AbilityKineticist.CalculateCost needs a real owner (quiver, infusions, reductions), unavailable here.
+            bool limited = bp.GetComponents<AbilityResourceLogic>().Any(l => l.IsSpendResource && l.RequiredResource != null) ||
+                           bp.GetComponent<Kingmaker.UnitLogic.Class.Kineticist.AbilityAcceptBurnOnCast>() != null;
+            bool unitBurn = bp.GetComponent<Kingmaker.UnitLogic.Class.Kineticist.AbilityKineticist>() != null && !limited;
             float best = 0f;
             string why = "";
             foreach (var b in buffs)
             {
                 var a = BuffEffectAnalyzer.Analyze(b);
-                float q = a.Recognized ? a.CombatValue : p.Enchants ? 0.8f : a.OnlyUnrecognized ? (limited ? 0f : 0.5f) : 0.05f;
-                if (q > best) { best = q; why = a.Recognized ? $"analyzer {a.CombatValue:0.##}" : p.Enchants ? "enchant carrier 0.8" : a.OnlyUnrecognized ? "unread 0.5" : "marker 0.05"; }
+                if (!a.Recognized && p.IsDayLong(b)) continue;
+                float q = ValueModel.BuffFallbackQuality(a.Recognized, a.CombatValue, p.Enchants, a.OnlyUnrecognized, limited, false);
+                if (q > best)
+                {
+                    best = q;
+                    why = a.Recognized ? $"analyzer {a.CombatValue:0.##}" : p.Enchants ? "enchant carrier 0.8"
+                        : (a.OnlyUnrecognized ? "unread 0.5" : "marker 0.05") +
+                          (unitBurn ? "; only if native burn cost is zero, otherwise 0 (requires a real owner)" : "");
+                }
             }
             parts.Add("unread: " + string.Join(",", read.SelectMany(AllUnread).Distinct().Take(5)));
             parts.Add("components: " + string.Join(",", buffs.SelectMany(b => b.ComponentsArray ?? new BlueprintComponent[0])
