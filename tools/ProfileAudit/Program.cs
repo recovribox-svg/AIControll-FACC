@@ -150,6 +150,11 @@ namespace ProfileAudit
             foreach (var line in layerLines) Console.WriteLine(line);
             File.WriteAllText(output, string.Join(Environment.NewLine, layerLines) + Environment.NewLine + Environment.NewLine + File.ReadAllText(output));
             blocklistFailures += layerFailures;
+            // ★ v0.3.28 test 6: the rank-increment reader (Enveloping Winds, Shroud of Water).
+            var rankLines = RankTalentCheck.Run(loaded.Values, out int rankFailures);
+            foreach (var line in rankLines) Console.WriteLine(line);
+            File.WriteAllText(output, string.Join(Environment.NewLine, rankLines) + Environment.NewLine + Environment.NewLine + File.ReadAllText(output));
+            blocklistFailures += rankFailures;
             if (failed > 0)
             {
                 string partial = $"PARTIAL: loaded {loaded.Count}, failed {failed}, allowed {options.AllowFailures}. Failed blueprints:";

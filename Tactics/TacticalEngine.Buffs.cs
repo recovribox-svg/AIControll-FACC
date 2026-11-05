@@ -148,6 +148,9 @@ namespace CompanionAI_Pathfinder.Tactics
                 parts.AddRange(read.Parts);
                 foreach (var u in read.UnreadFor(giver)) unread.Add(u);
             }
+            // ★ v0.3.28 test 6: a cast that only adds a rank to a feature another fact reads (Enveloping Winds, Shroud of
+            // Water's upgrade): what that rank adds (TacticalEngine.RankTalents).
+            AddRankIncrementParts(ctx, buffs, ally, parts);
             var abilityCtx = CombatMath.CreateContext(ability, new Kingmaker.Utility.TargetWrapper(ally));
             // ★ v0.3.21: the weapon enchantments it puts on the recipient's weapon (Magic Weapon, Keen Edge, oils, Holy
             // Sword): their parts, for the weapon each one goes on. A buff that only carries one (Keen Edge's is empty) is
