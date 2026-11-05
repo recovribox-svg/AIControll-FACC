@@ -2725,6 +2725,11 @@ namespace CompanionAI_Pathfinder.Tactics
                         // and unarmed attackers) was cast in every fight of the test6 logs at 6.1, by a crossbowman, and
                         // a full-round Soul Power then spent on taking the burn back.
                         : analysis.OnlyUnrecognized ? (item || SpendsLimitedUse(ability) ? 0f : 0.5f)
+                        // ★ v0.3.28 test 4: the same for the marker value. A buff whose only part is an AddFacts the
+                        // analyser cannot read lands here, not above (BuffEffectAnalyzer logs it "?AddFacts(...)" but
+                        // does not count it unrecognised): Searing Flesh and Enveloping Winds, 1 burn each, were cast
+                        // 20 times in the Kinetic Sharpshooter play-test at 2.1 ("effect not read, quality 0.05").
+                        : SpendsLimitedUse(ability) ? 0f
                         : 0.05f; // no components at all: a marker or cooldown
                 if (item && q < 0.5f) q = 0f;
                 // ★ v0.3.18 (test10): Strength helps weapon attacks in melee and carrying; little for an archer or caster
