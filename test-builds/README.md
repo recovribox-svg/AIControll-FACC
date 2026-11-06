@@ -1,6 +1,34 @@
 # Test builds
 
-## Current test build: v0.3.29-dev-test3 (71959e6) - healers stop walking once they can touch
+## Current test build: v0.3.29-dev-test4 (090023a) - companions take a free side of the enemy
+
+**[Download the UMM test ZIP (090023a)](AI-Control-FACC-v0.3.29-dev-test4-090023a-UMM-test.zip?raw=true)**
+
+Direct link: <https://github.com/recovribox-svg/AIControll-FACC/raw/claude/dreamy-pasteur-b9h3rn/test-builds/AI-Control-FACC-v0.3.29-dev-test4-090023a-UMM-test.zip>
+
+Test 3 (below) plus body-blocking fix 1, which you approved ([docs/TACTICAL_AI.md](../docs/TACTICAL_AI.md) §116):
+- **Real time - no two companions aim for the same spot.** Before walking up to an enemy, a companion checks whether the
+  spot it would stand on is taken: by a companion standing there, by one already walking there, or by another enemy
+  beside the target. If it is, it walks to the nearest free side instead (often flanking). The log tag is
+  `(to a free side: Seelah stands where it would)` or `... walks to where it would`.
+- **The walk ends as soon as it can swing.** On the way to that side, the companion stops and attacks the moment the
+  enemy is in reach. The log says `... is in reach of its weapon - the walk to a free side of it ends`.
+- **No room at all:** a companion doesn't walk to an enemy that is fully surrounded, and picks another enemy or action.
+  The log says `no free side beside ...` (once a fight per companion and enemy).
+- Turn-based fights are unchanged (the game already handles it there). Heals and spells keep their usual approach.
+- Cost: a few distance checks per decision. Only when the spot is taken does it price up to four other spots. The
+  slow-decision line counts them (`crowded approaches searched for a free side`).
+
+UMM shows **0.3.29**. Startup line `[Build] v0.3.29 module=fd38dde0-9b19-4290-bba5-1606b45874f0`.
+- ZIP SHA-256 `0287627fc021dde561ea4222f87518ab8e4ead15e4deddbcfae8b9d835f28053`; DLL SHA-256 `9b2af9babc55ed42d7f5db7180f106191fc2ec6c25a2ecf206e7d3a4cb2ecd0c`.
+- [Identity](AI-Control-FACC-v0.3.29-dev-test4-090023a-UMM-test.identity.json) · [Checksums](SHA256SUMS.txt).
+- Checks: 474 unit tests pass; release build 0 warnings; offline blueprint audit 0 errors; no new game references. Not
+  played yet.
+- **Test:** real-time fights where two or three melee companions go for the same enemy, especially at the start of a
+  fight. They should spread round it instead of queueing behind each other, and fewer `Stuck command` lines should
+  appear.
+
+## Test 3: v0.3.29-dev-test3 (71959e6) - healers stop walking once they can touch (also in test 4)
 
 **[Download the UMM test ZIP (71959e6)](AI-Control-FACC-v0.3.29-dev-test3-71959e6-UMM-test.zip?raw=true)**
 

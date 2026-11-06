@@ -208,6 +208,11 @@ Test 2 played (`docs/TACTICAL_AI.md` §115: 12 fights, no mod errors, R1-R3 seen
 extra interrupted command traced, no loop). **v0.3.29 test 3 (6 November, §115, not played):** a real-time walk to touch range ends
 once the game's reach test reaches the touch's target (`RealTimeTactics.ShouldEndArrivedTouchWalk`; Lann circled Camellia 7.6 s).
 Test ZIP `AI-Control-FACC-v0.3.29-dev-test3-71959e6-UMM-test.zip` (MVID `a5d5b19e-da23-4aaf-bd93-d6037457f66d`); 466 tests.
+**v0.3.29 test 4 (6 November, §116, author-approved body-blocking fix 1, not played):** real time, an approach that ends in body contact
+takes a free side of its target when another body, or a companion's walk end (`SpotRules.WalkEnd`), takes its straight spot
+(`TacticalEngine.Spots.cs`, `PlanApproach`); the walk ends once the enemy is in reach (`RealTimeTactics.ShouldEndArrivedWalk`); no free
+side: no weapon walk or advance to it. Turn-based unchanged. Test ZIP `AI-Control-FACC-v0.3.29-dev-test4-090023a-UMM-test.zip`
+(MVID `fd38dde0-9b19-4290-bba5-1606b45874f0`); 474 tests.
 
 Historical handovers, superseded by the one above: [v0.3.22 release preparation](docs/RELEASE_0_3_22_HANDOVER.md)
 (27 October, PR #6–#12), [released-log review](docs/RELEASE_0322_LOG_REVIEW.md) (PR #13),

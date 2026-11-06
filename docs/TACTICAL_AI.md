@@ -4071,3 +4071,62 @@ each one was traced:
 
 Test ZIP `AI-Control-FACC-v0.3.29-dev-test3-71959e6-UMM-test.zip` (MVID `a5d5b19e-da23-4aaf-bd93-d6037457f66d`);
 466 tests.
+
+## 116. v0.3.29 test 4: real-time spot claims (author-approved, body blocking fix 1)
+
+The author asked for the body-blocking explanation, then approved fix 1 if, after refining it, it was the best that could
+be done and worth its cost.
+
+**What body blocking is, from the game's code.**
+- Turn-based, `TurnBased.Controllers.CombatController` marks the cells units stand on (`setAllyBlocked`, dynamic
+  walkability for enemies), and a walk cannot stop on an ally's cell (`UnitCommand.CannotStop`).
+- Real time, the walk is planned on the empty grid; `UnitMovementAgent` steers round bodies only as it goes, and gives up
+  after 7 s without nearing its next waypoint (`m_StuckTimeStop`). A walk whose end spot another body stands on pushes
+  against it until a stuck rule ends it (R2: 2 s; the in-range and no-progress rules).
+
+**Evidence (real-time logs v0.3.27, v0.3.28 test 7, test 15, v0.3.29 test 2).**
+- 15 of 70 walks to an enemy (Move+Attack) started while another companion walked to the same enemy, typically from
+  1-2 m away: two straight approaches from nearly one place end on nearly one spot. In v0.3.29 test 2's first fight,
+  Seelah's and Camellia's would have ended 0.1 m apart (unit test `SpotRulesTests`).
+- Stuck cancellations: 2-6 per 5-7 fights. Not every one is a taken end spot: Camellia's two "blocked" walks in
+  v0.3.29 test 2 never left her starting spot (boxed in where she stood), and claims do not help that.
+
+**The rule.**
+- `PlanApproach`, real time, approaches that end in body contact (`SpotRules.ContactRange`: range up to 4 m - weapon
+  reach, touch): the spot the straight approach ends on is checked against the other bodies (`TacticalEngine.Spots.cs`).
+  - Companions count where they stand or, when walking (a command of their own not started and not yet close enough by
+    `UnitCommand.IsUnitCloseEnough`), where their walk ends: on the straight line, 90 % of the command's approach radius
+    short of its approach point (`SpotRules.WalkEnd`, the same rule as `ApproachPoint`).
+  - Enemies count where they stand (beside the target).
+  - Taken: closer than 90 % of the two bodies' summed corpulence (`SpotRules.Takes`, the share the area search has used
+    since v0.3.17), on the same floor (within 2 m of height).
+- Taken: the ring of 16 spots round the target the area search uses, nearest first; free ones are priced in full
+  (`MoveRisk`: attacks of opportunity, areas, exposure, the party's shift) up to 4 (`SpotRules.PricedSpots`), and the unit
+  walks to the cheapest first (the walk-first path of area detours, `MoveFirst`). Log tag "(to a free side: Seelah stands
+  where it would)" or "... walks to where it would".
+- A walk to a free side ends as soon as the enemy is in the weapon's reach by the game's attack rule
+  (`RealTimeTactics.ShouldEndArrivedWalk`: `UnitAttack.GetApproachRadius`, `IsUnitCloseEnough` with sight), so the unit
+  attacks from the first spot in reach. A real-time `UnitMoveTo` is not a move action
+  (`UnitCombatState.HandleUnitCommandDidAct`), so the full attack is kept. The walk is reconsidered, not marked as tried.
+- No free side: a weapon walk (`Move+Attack`) or an advance to that enemy is not offered while that holds - another
+  enemy or action instead. Said once a fight per unit and enemy: "[Walk] X: no free side beside Y (...) - no walk to it
+  while that holds". Casts and heals keep the straight approach (a heal is not given up on a guess).
+- Turn-based is unchanged (the game's own cells do this there). Real time with a free straight spot is unchanged.
+
+**Refinements over the first proposal.**
+- Walking companions claim where their walk ends, not where they are on the way.
+- Enemies beside the target count as well as companions.
+- The walk to a free side ends once in reach (no shuffling to the exact spot).
+- A bounded search: at most 4 spots fully priced, only when the straight spot is taken.
+
+**Cost.** Bodies are read once a decision (the party's commands, at most 8 each, plus enemy positions). The check of the
+straight spot is a few distance tests per approach. The search runs only for a taken spot, with at most 4 full spot
+prices, each about what one Move+Attack option already costs. The slow-decision line counts it: "crowded approaches
+searched for a free side N (M with none)".
+
+**Limits.** It cannot foresee bodies that move after the decision; it does not free a unit boxed in where it stands; a
+narrow corridor with a companion in front still blocks (no wider route is planned). Body blocking in real time is not
+gone; this removes its most common avoidable case.
+
+Test ZIP `AI-Control-FACC-v0.3.29-dev-test4-090023a-UMM-test.zip` (MVID `fd38dde0-9b19-4290-bba5-1606b45874f0`);
+474 tests.
