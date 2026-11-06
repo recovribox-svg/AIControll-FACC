@@ -124,6 +124,19 @@ namespace CompanionAI_Pathfinder.Tactics
         }
 
         /// <summary>
+        /// ★ v0.3.28 test 12 (author's enquiry: Shadows, Nabasu, Mandragora swarms): what an enemy's weapon hits cost its victim
+        /// in ability damage over a round - the expected hits times the share of the victim each takes
+        /// (<see cref="AbilityDamageShare"/>) times the victim's worth in the fight. A Shadow's touch deals no hit points, so
+        /// its threat was its HP damage alone: "Shadow x0.5 (attacks 0.8 on Seelah)", the lowest share in every fight it
+        /// was in, though each hit takes 1d6 Strength.
+        /// </summary>
+        public static float OnHitAbilityOffence(float expectedHits, float points, int score, float victimWorth)
+        {
+            if (!(expectedHits > 0f) || !(victimWorth > 0f)) return 0f;
+            return expectedHits * AbilityDamageShare(points, score) * victimWorth;
+        }
+
+        /// <summary>
         /// ★ v0.3.28 test 3: the share of hits that reach the target itself after its miss chance
         /// (<paramref name="missPercent"/>: concealment 20 or 50) and its mirror images (<paramref name="images"/>: the
         /// target is picked 1 in images + 1, the game's UnitPartMirrorImage.TryAbsorbHit).

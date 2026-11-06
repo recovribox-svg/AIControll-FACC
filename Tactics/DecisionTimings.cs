@@ -45,9 +45,13 @@ namespace CompanionAI_Pathfinder.Tactics
         // ★ v0.3.28 test 6: execution contexts and damage estimates each costly ability made (where allocations come from).
         private readonly int[] costlyContexts = new int[3];
         private readonly int[] costlyEstimates = new int[3];
+        // ★ v0.3.28 test 12: the heap growth inside damage estimates and hit/save chances (CombatMath.MeasureHeap).
+        private readonly long[] costlyEstimateBytes = new long[3];
+        private readonly long[] costlyChanceBytes = new long[3];
         private int scored, skipped;
 
-        internal void NoteAbility(string name, long startedAt, int candidates, long bytes = -1, int contexts = -1, int estimates = -1)
+        internal void NoteAbility(string name, long startedAt, int candidates, long bytes = -1, int contexts = -1, int estimates = -1,
+                                  long estimateBytes = 0, long chanceBytes = 0)
         {
             long ticks = Stopwatch.GetTimestamp() - startedAt;
             scored++;
@@ -59,9 +63,11 @@ namespace CompanionAI_Pathfinder.Tactics
             {
                 costlyNames[i] = costlyNames[i - 1]; costlyTicks[i] = costlyTicks[i - 1]; costlyCandidates[i] = costlyCandidates[i - 1];
                 costlyBytes[i] = costlyBytes[i - 1]; costlyContexts[i] = costlyContexts[i - 1]; costlyEstimates[i] = costlyEstimates[i - 1];
+                costlyEstimateBytes[i] = costlyEstimateBytes[i - 1]; costlyChanceBytes[i] = costlyChanceBytes[i - 1];
             }
             costlyNames[slot] = name; costlyTicks[slot] = ticks; costlyCandidates[slot] = candidates; costlyBytes[slot] = bytes;
             costlyContexts[slot] = contexts; costlyEstimates[slot] = estimates;
+            costlyEstimateBytes[slot] = estimateBytes; costlyChanceBytes[slot] = chanceBytes;
         }
 
         internal void NoteSkippedAbility() => skipped++;
@@ -82,7 +88,9 @@ namespace CompanionAI_Pathfinder.Tactics
             (costlyNames[0] == null ? "" : "; costliest: " + string.Join(", ", System.Linq.Enumerable.Range(0, 3)
                 .Where(i => costlyNames[i] != null)
                 .Select(i => $"{costlyNames[i]} {Milliseconds(costlyTicks[i]):F1} ms ({costlyCandidates[i]} options" +
-                             (costlyBytes[i] >= 0 ? $", +{costlyBytes[i] / 1024} KB" : "") +
+                             (costlyBytes[i] >= 0 ? $", +{costlyBytes[i] / 1024} KB" +
+                                 (costlyEstimateBytes[i] + costlyChanceBytes[i] >= 1024
+                                     ? $" (damage estimates +{costlyEstimateBytes[i] / 1024}, hit/save chances +{costlyChanceBytes[i] / 1024})" : "") : "") +
                              (costlyContexts[i] >= 0 ? $", {costlyContexts[i]} contexts, {costlyEstimates[i]} damage estimates" : "") + ")")));
     }
 }

@@ -1432,11 +1432,72 @@ namespace CompanionAI_Pathfinder.GameInterface
             // 14 of them cancelled, Orvath halting behind the party each time. It starts once the party has stood still
             // (sampled before the unit's own gates: its own walk counts too).
             bool moving = PartyOnTheMove();
-            if (QuiverModeBlock() != null || QuiverUnitBlock(unit) != null || moving) return false;
+            bool idle = IdleFor(unit, HarvestIdleSeconds);
+            if (QuiverModeBlock() != null || QuiverUnitBlock(unit) != null || moving || !idle) return false;
+            if (!HarvestMayStart(unit)) return false;
             var ability = Tactics.TacticalEngine.SoulHarvestToCast(unit);
             if (ability == null) return false;
-            IssueOutOfCombatBuff(unit, ability, unit.Descriptor?.CharacterName ?? "Unknown");
+            var command = IssueOutOfCombatBuff(unit, ability, unit.Descriptor?.CharacterName ?? "Unknown");
+            if (command != null) Harvests[unit.UniqueId] = HarvestTry.Started(Harvests.TryGetValue(unit.UniqueId, out var t) ? t : null, command);
             return true;
+        }
+
+        /// <summary>
+        /// ★ v0.3.28 test 12: the harvest starts only once the unit has had no order at all for 3 s, and one cut off before it
+        /// acted waits longer each time; after five it is left to the player until the next fight. Test 11: 23 harvests
+        /// issued after fights, 16 ended "Interrupt" without acting and without the unit moving. Orvath is the player's own
+        /// character, and the author casts Dispel Magic with him after fights: each cast replaced the harvest, which started
+        /// again in the gap before the next one. The 2 s "party standing still" wait did not help, as nobody was walking.
+        /// </summary>
+        private sealed class HarvestTry
+        {
+            public Kingmaker.UnitLogic.Commands.Base.UnitCommand Command;
+            public int Interrupted;
+            public float RetryAt;
+
+            public static HarvestTry Started(HarvestTry before, Kingmaker.UnitLogic.Commands.Base.UnitCommand command) =>
+                new HarvestTry { Command = command, Interrupted = before?.Interrupted ?? 0, RetryAt = before?.RetryAt ?? 0f };
+        }
+
+        private const int HarvestTries = 5;
+        private const float HarvestIdleSeconds = 3f;
+        private static readonly Dictionary<string, HarvestTry> Harvests = new Dictionary<string, HarvestTry>();
+        private static readonly Dictionary<string, float> LastBusyAt = new Dictionary<string, float>();
+
+        /// <summary>A fight started: harvest attempts count again from none.</summary>
+        internal static void ClearHarvestTries()
+        {
+            Harvests.Clear();
+            LastBusyAt.Clear();
+        }
+
+        /// <summary>
+        /// The unit has had no command (its own, the player's or another mod's) for <paramref name="seconds"/> - sampled at
+        /// every out-of-combat check (the exploration driver's every 0.5 s); the first sample counts as busy.
+        /// </summary>
+        private static bool IdleFor(UnitEntityData unit, float seconds)
+        {
+            float now = UnityEngine.Time.time;
+            if (GameAPI.HasPendingCommands(unit) || !LastBusyAt.ContainsKey(unit.UniqueId)) LastBusyAt[unit.UniqueId] = now;
+            return now - LastBusyAt[unit.UniqueId] >= seconds;
+        }
+
+        private static bool HarvestMayStart(UnitEntityData unit)
+        {
+            if (!Harvests.TryGetValue(unit.UniqueId, out var t)) return true;
+            float now = UnityEngine.Time.time;
+            if (t.Command != null && t.Command.IsFinished)
+            {
+                if (t.Command.IsActed) { Harvests.Remove(unit.UniqueId); return true; }
+                t.Interrupted++;
+                t.RetryAt = now + 4f * t.Interrupted;
+                t.Command = null;
+                if (t.Interrupted == HarvestTries)
+                    Main.Log($"[Kinetic] {unit.CharacterName}: out of combat, Soul Power was cut off {HarvestTries} times before it was " +
+                             "cast (other orders replaced it) - left to the player until the next fight");
+            }
+            if (t.Command != null) return false;
+            return t.Interrupted < HarvestTries && now >= t.RetryAt;
         }
 
         private static float _partyMovedAt = -100f;
@@ -1637,7 +1698,7 @@ namespace CompanionAI_Pathfinder.GameInterface
             IssueOutOfCombatBuff(unit, nativeAbility, unitName);
         }
 
-        private void IssueOutOfCombatBuff(UnitEntityData unit, AbilityData nativeAbility, string unitName)
+        private UnitUseAbility IssueOutOfCombatBuff(UnitEntityData unit, AbilityData nativeAbility, string unitName)
         {
             try
             {
@@ -1646,15 +1707,17 @@ namespace CompanionAI_Pathfinder.GameInterface
                 if (!CommandDispatcher.Run(unit, useAbilityCommand, "RT ApplyPermanentBuffsOutOfCombat", out string failure))
                 {
                     Main.Verbose($"[RT] {unitName}: out-of-combat buff {nativeAbility.Name} not issued - {failure}");
-                    return;
+                    return null;
                 }
                 SetNextCommandTime(unit, useAbilityCommand);  // v0.2.21
                 Main.Log($"[RT] ★ {unitName}: Out-of-combat permanent buff ({nativeAbility.Name})");
                 _buffCount++;
+                return useAbilityCommand;
             }
             catch (Exception ex)
             {
                 Main.Error($"[RT] Out-of-combat buff failed ({nativeAbility.Name}): {ex.Message}");
+                return null;
             }
         }
 

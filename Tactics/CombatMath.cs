@@ -667,11 +667,38 @@ namespace CompanionAI_Pathfinder.Tactics
         /// blade's: the blast's weapon damage modifiers are the blade's).</param>
         public static float EstimateAbilityDamage(AbilityData ability, AbilityProfile profile, UnitEntityData target, ItemEntityWeapon bladeWeapon)
         {
-            float raw = EstimateAbilityDamageRaw(ability, profile, target, bladeWeapon);
-            // ★ v0.3.20 (0.3.19 feedback): a kinetic blast's estimate times what its hits really dealt so far.
-            // ★ v0.3.28 test 6: and its critical hits (AbilityDamageScale). A blade's blast rides the blade's own attack,
-            // whose criticals the weapon routine counts.
-            return raw > 0f ? raw * AbilityDamageScale(ability, profile, target, bladeWeapon == null) : raw;
+            long heap = HeapMark();
+            try
+            {
+                float raw = EstimateAbilityDamageRaw(ability, profile, target, bladeWeapon);
+                // ★ v0.3.20 (0.3.19 feedback): a kinetic blast's estimate times what its hits really dealt so far.
+                // ★ v0.3.28 test 6: and its critical hits (AbilityDamageScale). A blade's blast rides the blade's own attack,
+                // whose criticals the weapon routine counts.
+                return raw > 0f ? raw * AbilityDamageScale(ability, profile, target, bladeWeapon == null) : raw;
+            }
+            finally { HeapSince(heap, ref EstimateBytes); }
+        }
+
+        // ★ v0.3.28 test 12: where an ability's heap growth comes from (slow-decision diagnostics only). Test 11 still showed
+        // +4-7 MB per Orvath decision after the damage contexts were shared (one context per blast instead of five), so the
+        // contexts were not the main source. Measured only while a decision is timed; nested calls are counted once.
+        internal static bool MeasureHeap;
+        internal static long EstimateBytes, ChanceBytes;
+        private static int s_HeapDepth;
+
+        private static long HeapMark()
+        {
+            if (!MeasureHeap || s_HeapDepth++ > 0) return -1;
+            return GC.GetTotalMemory(false);
+        }
+
+        private static void HeapSince(long mark, ref long total)
+        {
+            if (!MeasureHeap) { s_HeapDepth = 0; return; }
+            if (--s_HeapDepth < 0) s_HeapDepth = 0;
+            if (mark < 0) return;
+            long grown = GC.GetTotalMemory(false) - mark;   // negative when a collection ran meanwhile
+            if (grown > 0) total += grown;
         }
 
         /// <summary>
@@ -1403,6 +1430,14 @@ namespace CompanionAI_Pathfinder.Tactics
             => EffectChance(caster, enemy, ability, profile, damage, null);
 
         internal static float EffectChance(UnitEntityData caster, UnitEntityData enemy, AbilityData ability,
+            AbilityProfile profile, bool damage, float? resistancePass)
+        {
+            long heap = HeapMark();
+            try { return EffectChanceCore(caster, enemy, ability, profile, damage, resistancePass); }
+            finally { HeapSince(heap, ref ChanceBytes); }
+        }
+
+        private static float EffectChanceCore(UnitEntityData caster, UnitEntityData enemy, AbilityData ability,
             AbilityProfile profile, bool damage, float? resistancePass)
         {
             float p = (resistancePass ?? SpellResistancePass(caster, enemy, ability)) * ShadowShare(ability, enemy);

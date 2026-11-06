@@ -88,5 +88,21 @@ namespace CompanionAI.Tests
         [InlineData(true)]
         public void PacketWithoutAttackRoll_IsASample(bool hitFlag) =>
             Assert.False(ObserverRules.SkipCalibrationSample(false, hitFlag));
+
+        // AwaitDelivery(executed, executionEnded, watchTarget, targetReached, ageSeconds, limitSeconds)
+
+        [Fact]
+        public void TravellingCone_NotYetAtItsTarget_Waits() =>
+            // v0.3.28 test 11: Fan of Flames judged before its flames reached the Deskari Cultist.
+            Assert.True(ObserverRules.AwaitDelivery(true, false, true, false, 1.5, 6));
+
+        [Theory]
+        [InlineData(true, true, true, false, 1.5)]   // execution ended: judge now
+        [InlineData(true, false, true, true, 1.5)]   // target already reached
+        [InlineData(true, false, false, false, 1.5)] // no aimed enemy watched
+        [InlineData(false, false, true, false, 1.5)] // never executed
+        [InlineData(true, false, true, false, 7.0)]  // past the limit: judged anyway
+        public void Delivery_IsNotAwaited_Otherwise(bool executed, bool ended, bool watch, bool reached, double age) =>
+            Assert.False(ObserverRules.AwaitDelivery(executed, ended, watch, reached, age, 6));
     }
 }

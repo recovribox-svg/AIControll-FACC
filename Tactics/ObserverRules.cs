@@ -36,6 +36,17 @@ namespace CompanionAI_Pathfinder.Tactics
         }
 
         /// <summary>
+        /// ★ v0.3.28 test 12: a cast that worked but has not yet reached the enemy it was aimed at, while the game is still
+        /// executing it (a cone or a line travels outward after its command ends: AbilityDeliverProjectile's step-based
+        /// delivery, the execution's end reported after the last unit), is judged when that execution ends - up to
+        /// <paramref name="limitSeconds"/> after it was issued. Judged at the next decision, test 11 struck "centred on X,
+        /// reached Seelah (1/2)" for Fan of Flames casts that went on to burn X; two such strikes leave X out of the area.
+        /// </summary>
+        public static bool AwaitDelivery(bool executed, bool executionEnded, bool watchTarget, bool targetReached,
+            double ageSeconds, double limitSeconds) =>
+            executed && !executionEnded && watchTarget && !targetReached && ageSeconds <= limitSeconds;
+
+        /// <summary>
         /// v0.3.22 Log2 (PR #14): a damage packet whose own attack roll missed (Holy Water's splash keeps the missed roll) is
         /// not a direct-hit sample for the estimate calibration. Packets without an attack roll (saves, automatic hits) are
         /// samples; the defense observations of every packet are separate and unaffected.

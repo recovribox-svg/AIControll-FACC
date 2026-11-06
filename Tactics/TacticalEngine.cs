@@ -184,6 +184,11 @@ namespace CompanionAI_Pathfinder.Tactics
         /// <summary>★ v0.3.17: set by ScoreAbility - the aimed enemy itself got some of the value (not only others in the area).</summary>
         public bool AimCounted;
         /// <summary>
+        /// ★ v0.3.28 test 12: the allies the last scored area or cone would catch and what that costs ("catches Seelah -52"),
+        /// shown on the option's decision label; null when it catches none.
+        /// </summary>
+        public string FriendlyFireNote;
+        /// <summary>
         /// ★ v0.3.28 test 11: the revive reading of the heal valued last for (ability, ally) this decision, printed with the
         /// revive's value line (one line instead of two each round; test 10: 172 revive lines while Seelah was down).
         /// </summary>
@@ -2624,12 +2629,16 @@ namespace CompanionAI_Pathfinder.Tactics
                     long heap = ctx.Timings != null ? GC.GetTotalMemory(false) : 0;
                     int before = list.Count;
                     int contexts = CombatMath.ContextsMade, estimates = CombatMath.DamageEstimates;
-                    list.AddRange(EvaluateAbility(ctx, ability, captureControlAims: captureControlAims));
+                    long estimateBytes = CombatMath.EstimateBytes, chanceBytes = CombatMath.ChanceBytes;
+                    CombatMath.MeasureHeap = ctx.Timings != null;
+                    try { list.AddRange(EvaluateAbility(ctx, ability, captureControlAims: captureControlAims)); }
+                    finally { CombatMath.MeasureHeap = false; }
                     if (ctx.Timings != null)
                     {
                         long grown = GC.GetTotalMemory(false) - heap;   // negative when a collection ran meanwhile
                         ctx.Timings.NoteAbility(ability.Name, started, list.Count - before, grown >= 0 ? grown : -1,
-                                                CombatMath.ContextsMade - contexts, CombatMath.DamageEstimates - estimates);
+                                                CombatMath.ContextsMade - contexts, CombatMath.DamageEstimates - estimates,
+                                                CombatMath.EstimateBytes - estimateBytes, CombatMath.ChanceBytes - chanceBytes);
                     }
                     if (!attackFromHere)
                         for (int i = before; i < list.Count && !attackFromHere; i++) attackFromHere = ResolvesAttackFromHere(ctx, list[i]);
@@ -3065,6 +3074,48 @@ namespace CompanionAI_Pathfinder.Tactics
                 using (AbilityProfile.AimedAt(wrapper))   // ★ v0.3.18 (test10): conditions see the real main target
                     value = ScoreAbility(ctx, ability, profile, slot, target, wrapper, approach?.Point ?? ctx.Unit.Position,
                         out why, out infusionNote, out geometryRecipients, out geometryChance, valueActiveInfusions);
+                string friendlyFire = ctx.FriendlyFireNote;
+                string turnedNote = null;
+                // ★ v0.3.28 test 12: a cone that catches allies, cast from where the caster stands, is also tried turned past
+                // them (aimed at a point, TacticalEngine.ConeAim.cs); the better of the two aims is offered.
+                if (friendlyFire != null && !needsMove && profile.IsProjectileCone)
+                {
+                    var turned = ConeAimPastAllies(ctx, ability, profile, target, geometryRecipients, out turnedNote);
+                    if (turned != null)
+                    {
+                        var straightHits = ctx.ScoredInfusionHits;
+                        bool straightCounted = ctx.AimCounted;
+                        ctx.ScoredInfusionHits = straightHits == null ? null : new List<InfusionHit>();
+                        float turnedValue;
+                        string turnedWhy, turnedInfusion;
+                        IReadOnlyCollection<UnitEntityData> turnedRecipients;
+                        float? turnedChance;
+                        using (AbilityProfile.AimedAt(turned))
+                            turnedValue = ScoreAbility(ctx, ability, profile, slot, target, turned, ctx.Unit.Position,
+                                out turnedWhy, out turnedInfusion, out turnedRecipients, out turnedChance, valueActiveInfusions);
+                        if (turnedValue > value)
+                        {
+                            wrapper = turned;
+                            value = turnedValue;
+                            why = turnedWhy;
+                            infusionNote = turnedInfusion;
+                            geometryRecipients = turnedRecipients;
+                            geometryChance = turnedChance;
+                            friendlyFire = ctx.FriendlyFireNote;
+                        }
+                        else
+                        {
+                            ctx.ScoredInfusionHits = straightHits;
+                            ctx.AimCounted = straightCounted;
+                            turnedNote = null;
+                        }
+                    }
+                }
+                // ★ v0.3.28 test 12: a cone that needs a walk first walks to the spot it was priced from and is aimed on the
+                // next decision. Issued as one command, the game stopped as soon as the target was in range - up to 1.6 m
+                // short of that spot - and the cone left from further back: allies fighting in front of the caster were
+                // behind its tip in the appraisal and inside it for real (test 11: Seelah and Camellia).
+                bool coneWalk = needsMove && approach != null && profile.IsProjectileCone;
                 bool infusionProspect = value <= 0f && ctx.ScoredInfusionHits?.Count > 0 && !needsMove &&
                     (ctx.Global?.AiManagesToggles ?? true) && ctx.InfusionProspects.Count < InfusionSearchBudget.MaxAims;
                 if (value <= 0f && !infusionProspect)
@@ -3179,11 +3230,14 @@ namespace CompanionAI_Pathfinder.Tactics
                             (provoke != null ? $" [casting provokes {provoke.Attacks}{(provoke.DropChance >= 0.1f ? $", {provoke.DropChance:P0} down" : "")}]" : "") +
                             (rollProvoke != null ? $" [ray provokes {rollProvoke.Attacks}{(rollProvoke.DropChance >= 0.1f ? $", {rollProvoke.DropChance:P0} down" : "")}]" : "") +
                             (gather > 0 ? $" [gathers power {gather}]" : "") +
-                            (infusionNote != null ? $" [infusion {infusionNote}]" : ""),
+                            (infusionNote != null ? $" [infusion {infusionNote}]" : "") +
+                            (turnedNote != null ? $" [{turnedNote}]" : "") +
+                            (friendlyFire != null ? $" [{friendlyFire}]" : "") +
+                            (coneWalk && approach.Detours != true ? " [walks to its casting spot first]" : ""),
                     CastRiskCost = provokeLoss,
                     AimAffected = aimAffected,
-                    MoveFirst = approach?.Detours == true,
-                    MovePoint = approach?.Detours == true ? approach.Point : (Vector3?)null,
+                    MoveFirst = approach?.Detours == true || coneWalk,
+                    MovePoint = approach?.Detours == true || coneWalk ? approach.Point : (Vector3?)null,
                     ApproachRadius = approach?.Arrival ?? 0f,
                     CheckPath = needsMove && risk?.Area == null,
                     Risk = needsMove ? risk : null,
@@ -3378,6 +3432,7 @@ namespace CompanionAI_Pathfinder.Tactics
             float value = 0f;
             float slotSensitive = 0f;   // ★ v0.3.17: the damage and control parts (spell-slot discount)
             ctx.AimCounted = false;
+            ctx.FriendlyFireNote = null;
             var reasons = new List<string>();
 
             // ★ v0.3.18 (test10): real time - an ally is casting this very ability on this enemy right now.
@@ -3585,13 +3640,17 @@ namespace CompanionAI_Pathfinder.Tactics
                     var hurt = profile.IsAoE && profile.AoETargets != Kingmaker.UnitLogic.Abilities.Components.TargetType.Enemy
                         ? affectedAllies.Concat(DownedRecipients()).Distinct().ToList()
                         : affectedAllies;
-                    float allyCost = hurt.Sum(a =>
+                    float allyCost = 0f;
+                    List<string> caughtNames = null;
+                    foreach (var a in hurt)
                     {
                         float dmg = CombatMath.EstimateAbilityDamage(ability, profile, a);
-                        if (dmg <= 0f) return 0f;
-                        return a.HPLeft <= 0 ? AllyWorth(ctx, a) : Math.Min(dmg, a.HPLeft) * 2f;
-                    });
+                        if (dmg <= 0f) continue;
+                        allyCost += a.HPLeft <= 0 ? AllyWorth(ctx, a) : Math.Min(dmg, a.HPLeft) * 2f;
+                        (caughtNames ?? (caughtNames = new List<string>())).Add(a.CharacterName);
+                    }
                     if (ctx.Settings.AvoidFriendlyFire && allyCost > 0f) { why = "friendly fire"; return 0f; }
+                    if (allyCost > 0f) ctx.FriendlyFireNote = $"catches {string.Join(", ", caughtNames)} -{allyCost:F0}";
                     dmgValue -= allyCost;
                 }
 
@@ -3600,6 +3659,14 @@ namespace CompanionAI_Pathfinder.Tactics
                     value += dmgValue * RoleWeight(ctx, "damage");
                     slotSensitive += dmgValue * RoleWeight(ctx, "damage");
                     reasons.Add("dmg");
+                }
+                // ★ v0.3.28 test 12: when the allies it catches cost more than the enemies are worth, the difference counts
+                // against the option. It was cut off at nothing, so the area's other parts (a debuff, an infusion's
+                // effect) still made it worth casting into the party.
+                else if (dmgValue < 0f && ctx.FriendlyFireNote != null)
+                {
+                    value += dmgValue;
+                    reasons.Add("friendly fire");
                 }
             }
 
@@ -3807,6 +3874,10 @@ namespace CompanionAI_Pathfinder.Tactics
                 {
                     if (ctx.Settings.AvoidFriendlyFire) { why = "friendly fire"; return 0f; }
                     allyControlCost = caughtAllies.Sum(a => ValueModel.PerRound(Level(a)) * strength * effectRounds);
+                    // ★ v0.3.28 test 12: shown on the decision label, and a cone that catches them is tried turned past them.
+                    string controlNote = $"{(profile.ControlStrength == ControlStrength.Hard ? "controls" : "debuffs")} " +
+                                         $"{string.Join(", ", caughtAllies.Select(a => a.CharacterName))} -{allyControlCost:F0}";
+                    ctx.FriendlyFireNote = ctx.FriendlyFireNote == null ? controlNote : ctx.FriendlyFireNote + "; " + controlNote;
                 }
                 // Test[4], author-approved: protect an already accepted attack approach from a new lasting circle.
                 // This reads the current command/range only; uncertain shapes keep the existing appraisal below.
@@ -3924,6 +3995,13 @@ namespace CompanionAI_Pathfinder.Tactics
                     value += controlValue;
                     slotSensitive += controlValue;
                     reasons.Add(profile.ControlStrength == ControlStrength.Hard ? "cc" : isMark ? "mark" : "debuff");
+                }
+                // ★ v0.3.28 test 12: allies it catches cost more than the enemies it holds: that counts against the option
+                // (it was cut off at nothing, as for damage).
+                else if (controlValue < 0f && allyControlCost > 0f)
+                {
+                    value += controlValue;
+                    if (!reasons.Contains("friendly fire")) reasons.Add("friendly fire");
                 }
             }
 

@@ -77,6 +77,8 @@ namespace CompanionAI_Pathfinder.Tactics
             public HashSet<string> Reached;
             /// <summary>★ v0.3.18: the game started executing the ability (its execution process began).</summary>
             public bool Executed;
+            /// <summary>★ v0.3.28 test 12: and finished it (after the last delivery).</summary>
+            public bool ExecutionEnded;
         }
 
         /// <summary>Game seconds after the command ended without the execution ending: the game dropped the cast.</summary>
@@ -243,6 +245,9 @@ namespace CompanionAI_Pathfinder.Tactics
             }
             if (step == ObserverRules.SettleStep.Worked)
             {
+                // ★ v0.3.28 test 12: a cone still travelling towards its aimed enemy is judged when its execution ends.
+                if (ObserverRules.AwaitDelivery(p.Executed, p.ExecutionEnded, p.WatchTarget, p.TargetReached,
+                        Now - p.IssuedAt, SettleAfterSeconds)) return;
                 Finish(p, true, null);
                 return;
             }
@@ -477,6 +482,7 @@ namespace CompanionAI_Pathfinder.Tactics
                 }
                 if (bp == p.Blueprint || context.Ability?.ConvertedFrom?.Blueprint == p.Blueprint)
                 {
+                    p.ExecutionEnded = true;
                     // ★ v0.3.18: in real time an area can find nobody left in it: its targets walked out while it was being
                     // cast (Sleep on Neophyte Fighter, 0.3.18-test2). That is not the game refusing the ability; logged only.
                     if (!p.Evidence && p.Area && CombatMemory.IsRealTime)

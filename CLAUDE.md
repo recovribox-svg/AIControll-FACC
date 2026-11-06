@@ -166,8 +166,7 @@ blast damage. Test ZIP `AI-Control-FACC-v0.3.28-dev-test10-f5faa25-UMM-test.zip`
 The after-fight Soul Power harvest waits until the party has stood still for 2 s (`RealTimeController.PartyOnTheMove`: 14 of
 21 casts were cut off by the walk); damage estimates share one context per ability and frame when the target cannot change
 the numbers (`CombatMath.DamageContext` / `ContextIsTargetFree`, ProfileAudit DAMAGE-CONTEXT); log trimmed (Coverage diffs,
-energy rows per session, one turn-start line, revive notes merged, Progressive by spell). Open for the author: a touch cast
-dropped after its approach walk (Camellia, §108). Test ZIP `AI-Control-FACC-v0.3.28-dev-test11-4d6036e-UMM-test.zip` (MVID
+energy rows per session, one turn-start line, revive notes merged, Progressive by spell). Test ZIP `AI-Control-FACC-v0.3.28-dev-test11-4d6036e-UMM-test.zip` (MVID
 `7aa18b9e-c844-477e-854b-d86589fb09f7`); 423 tests.
 
 Historical handovers, superseded by the one above: [v0.3.22 release preparation](docs/RELEASE_0_3_22_HANDOVER.md)

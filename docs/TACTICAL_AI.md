@@ -3681,9 +3681,10 @@ abilities share, all 170 blasts; Greed Stack Explosion (target buff rank) keeps 
   one set of three level-1 spells).
 
 Also read and left as they are: Seelah stayed down from round 1 to the end of a 9-enemy fight while three allies could
-revive her; the revive (5-14, "stays up" 10-56 %) lost to attacks (14-18) by the approved revive model. **Open for the
-author (target commitment):** in round 7 Camellia walked 8.2 m to touch Seelah for Cure Light Wounds (5.0), then at the
-next decision chose an Advance (6.0) over the cure she had walked for (5.5, no walk now), with 2 enemies and ~1 round
-left. A rule that keeps a touch cast after its approach walk is a target-commitment change, so it waits for the author.
+revive her; the revive (5-14, "stays up" 10-56 %) lost to attacks (14-18) by the approved revive model. In round 7
+Camellia walked 8.2 m to touch Seelah for Cure Light Wounds (5.0), then chose an Advance (6.0) over the cure (5.5): from
+her new spot a place beside the Cambion Cleric outside the Grease was in reach (3.9 before the walk), with 2 enemies and
+about one round left (a revive is worth the rounds left). The author agreed this is the engine re-deciding on what it
+sees, not a missing commitment rule; no change.
 
 Test ZIP `AI-Control-FACC-v0.3.28-dev-test11-4d6036e-UMM-test.zip` (MVID `7aa18b9e-c844-477e-854b-d86589fb09f7`); 423 tests.

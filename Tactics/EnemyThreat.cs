@@ -38,6 +38,9 @@ namespace CompanionAI_Pathfinder.Tactics
             public string Name;
             public float Worth;          // ValueModel.PerRound(CR)
             public float Weapon;         // full attack on its likely victim, by the rules
+            /// <summary>★ v0.3.28 test 12: the part of <see cref="Weapon"/> its hits' ability damage is worth.</summary>
+            public float AbilityDamage;
+            public string AbilityStat;
             public float Spell;          // its best castable harmful ability on that victim (and those around)
             public string SpellName;
             public float Heal;           // its best castable heal on its most hurt ally
@@ -258,6 +261,8 @@ namespace CompanionAI_Pathfinder.Tactics
             try { cr = Math.Max(1, enemy.Blueprint?.CR ?? 1); } catch { }
             a.Worth = ValueModel.PerRound(cr);
             a.Weapon = 0f;
+            a.AbilityDamage = 0f;
+            a.AbilityStat = null;
             a.Spell = a.Heal = 0f;
             a.EnergyType = null;
             a.EnergyDamage = 0f;
@@ -274,7 +279,22 @@ namespace CompanionAI_Pathfinder.Tactics
                 a.Descriptors = DescriptorsOf(enemy, usable);
                 if (victim != null)
                 {
-                    a.Weapon = CombatMath.EstimateWeaponAttack(enemy, victim, full: true)?.ExpectedDamage ?? 0f;
+                    var attack = CombatMath.EstimateWeaponAttack(enemy, victim, full: true);
+                    a.Weapon = attack?.ExpectedDamage ?? 0f;
+                    // ★ v0.3.28 test 12: the ability damage its hits deal (a Shadow's Strength touch), priced as the share of the
+                    // victim it takes (the same reading the party's walks and revives use: CombatMath.OnHitAbilityDamage).
+                    var abilityStat = Kingmaker.EntitySystem.Stats.StatType.Unknown;
+                    float points = attack == null ? 0f : CombatMath.OnHitAbilityDamage(enemy, out abilityStat);
+                    if (points > 0f)
+                    {
+                        int score = 0;
+                        try { score = victim.Stats.GetStat(abilityStat)?.ModifiedValue ?? 0; } catch { }
+                        int level = Math.Max(1, victim.Descriptor?.Progression?.CharacterLevel ?? 1);
+                        a.AbilityDamage = ValueModel.OnHitAbilityOffence(attack.Attacks * attack.FirstHitChance, points, score,
+                            ValueModel.AllyWorth(level, 3f, false));
+                        a.AbilityStat = abilityStat.ToString();
+                        a.Weapon += a.AbilityDamage;
+                    }
                     a.Spell = BestAbility(enemy, victim, party, usable, out a.SpellName, out a.EnergyType, out a.EnergyDamage,
                         out a.EnergyPerCast);
                 }
@@ -287,7 +307,10 @@ namespace CompanionAI_Pathfinder.Tactics
             Dealt.TryGetValue(enemy.UniqueId, out float dealt);
             a.PredictedOffence = Math.Max(Math.Max(a.Spell, a.Heal), a.Weapon);
             int rounds = Math.Max(0, round - (FirstRound.TryGetValue(enemy.UniqueId, out int first) ? first : round));
-            a.Offence = Math.Max(Math.Max(a.Spell, a.Heal), ValueModel.ObservedOffence(dealt, rounds, a.Weapon));
+            // ★ v0.3.28 test 12: what it dealt is hit points; its ability damage is kept apart from that blend (a Shadow
+            // deals none, and its prediction would wear away with every round it drained Strength).
+            a.Offence = Math.Max(Math.Max(a.Spell, a.Heal),
+                ValueModel.ObservedOffence(dealt, rounds, a.Weapon - a.AbilityDamage) + a.AbilityDamage);
         }
 
         /// <summary>
@@ -489,6 +512,7 @@ namespace CompanionAI_Pathfinder.Tactics
             if (a.Spell > 0f && a.Spell >= a.Offence - 0.01f) why = $"{a.SpellName} {a.Spell:0.#} on {a.VictimName}";
             else if (a.Heal > 0f && a.Heal >= a.Offence - 0.01f) why = $"heals: {a.HealName} {a.Heal:0.#} on {a.HealTarget}";
             else why = $"attacks {a.Weapon:0.#} on {a.VictimName}" +
+                       (a.AbilityDamage > 0.05f ? $" ({a.AbilityDamage:0.#} of it {a.AbilityStat} damage)" : "") +
                        (Math.Abs(a.Offence - a.Weapon) > 0.5f ? $", {a.Offence:0.#} a round with what it dealt" : "");
             return $"{a.Name} x{a.Share:0.0} ({why})";
         }
