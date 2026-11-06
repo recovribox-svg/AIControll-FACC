@@ -36,6 +36,9 @@ namespace CompanionAI_Pathfinder.Tactics
             public float NegativeLevels;
             /// <summary>Rounds the victim is controlled, weighted by the control's strength (hard 1, soft 0.4).</summary>
             public float Control;
+            /// <summary>★ v0.3.29 test 1: the chance one application controls the victim at all (<see cref="Control"/> over
+            /// it is how long), so repeated hits count it once over (<see cref="Repeated"/>).</summary>
+            public float ControlChance;
 
             public bool IsEmpty => HitPoints <= 0f && NegativeLevels <= 0f && Control <= 0f && Points.Values.All(v => v <= 0f);
 
@@ -48,7 +51,27 @@ namespace CompanionAI_Pathfinder.Tactics
                 HitPoints += other.HitPoints * weight;
                 NegativeLevels += other.NegativeLevels * weight;
                 Control += other.Control * weight;
+                ControlChance += other.ControlChance * weight;
                 foreach (var entry in other.Points) AddPoints(entry.Key, entry.Value * weight);
+            }
+
+            /// <summary>
+            /// ★ v0.3.29 test 1: <paramref name="applications"/> applications in one round (a full attack's expected hits):
+            /// damage, ability damage and negative levels add up; control does not - a second paralysis in the same round
+            /// costs no more turns (ValueModel.RepeatedControl). The Ghoul Creeper read 63.9 a round on Seelah, 2.4 hits
+            /// each worth 1.2 rounds of paralysis, against 24-31 it dealt.
+            /// </summary>
+            public Affliction Repeated(float applications)
+            {
+                var many = new Affliction();
+                if (!(applications > 0f)) return many;
+                many.HitPoints = HitPoints * applications;
+                many.NegativeLevels = NegativeLevels * applications;
+                foreach (var entry in Points) many.AddPoints(entry.Key, entry.Value * applications);
+                many.Control = ValueModel.RepeatedControl(Control, ControlChance, applications);
+                many.ControlChance = Math.Min(1f, ControlChance) > 0f && applications > 1f
+                    ? 1f - (float)Math.Pow(1f - Math.Min(1f, ControlChance), applications) : ControlChance * applications;
+                return many;
             }
 
             public void AddPoints(StatType stat, float points)
@@ -152,6 +175,7 @@ namespace CompanionAI_Pathfinder.Tactics
             var control = AbilityProfile.BuffControl(buff);
             if (control == ControlStrength.Hard) into.Control += weight * rounds;
             else if (control == ControlStrength.Soft) into.Control += weight * 0.4f * rounds;
+            if (control == ControlStrength.Hard || control == ControlStrength.Soft) into.ControlChance += weight;
             // Its own round actions (a custom poison: MandragoraSwarmPoisonBuff), from the next round on.
             foreach (var round in Kingmaker.Blueprints.BlueprintExtenstions.GetComponents<Kingmaker.UnitLogic.Mechanics.Components.AddFactContextActions>(buff))
             {
@@ -351,14 +375,15 @@ namespace CompanionAI_Pathfinder.Tactics
         }
 
         /// <summary>
-        /// What one weapon hit of <paramref name="attacker"/> is worth beyond the hit's own damage on <paramref name="victim"/>,
-        /// in hit points (AfflictionHp), once a frame per pair: the party's own poisoned or draining weapons are valued with it.
+        /// What <paramref name="hits"/> weapon hits of <paramref name="attacker"/> (an attack's expected hits) are worth beyond
+        /// the hits' own damage on <paramref name="victim"/>, in hit points (AfflictionHp of Affliction.Repeated), once a frame
+        /// per pair and hit count: the party's own poisoned or draining weapons are valued with it.
         /// </summary>
-        internal static float OnHitHp(UnitEntityData attacker, UnitEntityData victim)
+        internal static float OnHitHp(UnitEntityData attacker, UnitEntityData victim, float hits)
         {
-            if (attacker == null || victim == null || !HasHitAfflictions(attacker)) return 0f;
-            return FrameCached($"onhit-hp|{attacker.UniqueId}|{victim.UniqueId}",
-                () => (int)Math.Round(AfflictionHp(OnHitAffliction(attacker, victim), victim) * 100f)) / 100f;
+            if (attacker == null || victim == null || !(hits > 0f) || !HasHitAfflictions(attacker)) return 0f;
+            return FrameCached($"onhit-hp|{attacker.UniqueId}|{victim.UniqueId}|{(int)Math.Round(hits * 20f)}",
+                () => (int)Math.Round(AfflictionHp(OnHitAffliction(attacker, victim).Repeated(hits), victim) * 100f)) / 100f;
         }
 
         /// <summary>

@@ -2279,7 +2279,7 @@ namespace CompanionAI_Pathfinder.Tactics
         /// CombatMath.OnHitHp), for the hits it is expected to land.</remarks>
         private static float DamageValue(UnitEntityData enemy, WeaponAttackEstimate est, float factor = 1f) =>
             est == null ? 0f : DamageValue(enemy, est.ExpectedDamage * factor +
-                                           est.Attacks * est.FirstHitChance * CombatMath.OnHitHp(est.Attacker, enemy),
+                                           CombatMath.OnHitHp(est.Attacker, enemy, est.Attacks * est.FirstHitChance),
                                            est.AnyHitChance, est.EndsRegeneration);
 
         private static float RoleWeight(TacticalContext ctx, string category)

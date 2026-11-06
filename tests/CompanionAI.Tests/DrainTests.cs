@@ -65,5 +65,31 @@ namespace CompanionAI.Tests
         [Fact]
         public void AfflictionShare_NeverMoreThanAll() =>
             Assert.Equal(1f, ValueModel.AfflictionShare(0.9f, 3f, 4, 3f), 3);
-    }
+    
+        // ★ v0.3.29 test 1: control over a round's several hits counts once over.
+        [Fact]
+        public void RepeatedControl_ChanceOfAtLeastOne()
+        {
+            // The Ghoul Creeper: 1.2 rounds a hit (40 % to paralyse for 3 rounds), 2.4 hits: 3 x (1 - 0.6^2.4), not 2.88.
+            float expected = 3f * (1f - (float)System.Math.Pow(0.6, 2.4));
+            Assert.Equal(expected, ValueModel.RepeatedControl(1.2f, 0.4f, 2.4f), 3);
+            Assert.True(ValueModel.RepeatedControl(1.2f, 0.4f, 2.4f) < 1.2f * 2.4f);
+        }
+
+        [Fact]
+        public void RepeatedControl_OneOrFewerApplicationsScaleAsTheyAre()
+        {
+            Assert.Equal(1.2f, ValueModel.RepeatedControl(1.2f, 0.4f, 1f), 4);
+            Assert.Equal(0.6f, ValueModel.RepeatedControl(1.2f, 0.4f, 0.5f), 4);
+            Assert.Equal(2.4f, ValueModel.RepeatedControl(1.2f, 0f, 2f), 4);   // no chance known: as before
+        }
+
+        [Fact]
+        public void RepeatedControl_SureControlIsItsDuration()
+        {
+            Assert.Equal(3f, ValueModel.RepeatedControl(3f, 1f, 4f), 4);
+            Assert.Equal(0f, ValueModel.RepeatedControl(0f, 0.5f, 3f), 4);
+            Assert.Equal(0f, ValueModel.RepeatedControl(1f, 0.5f, 0f), 4);
+        }
+}
 }

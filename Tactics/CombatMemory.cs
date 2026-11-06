@@ -494,6 +494,14 @@ namespace CompanionAI_Pathfinder.Tactics
         /// <summary>★ v0.3.20 (test3): enemies (unique ids) a walk-then-act could not reach in one move action this turn,
         /// with the value of the best option refused for it (what the unit wanted to do there).</summary>
         public readonly Dictionary<string, float> TooFar = new Dictionary<string, float>();
+
+        /// <summary>★ v0.3.29 test 1: <paramref name="targetId"/> is farther than this turn's walk-then-act allows; keeps the
+        /// best value refused for it (TacticalDriver: the dispatcher's refusal; the engine's pre-issue path check).</summary>
+        public void NoteTooFar(string targetId, float value)
+        {
+            if (string.IsNullOrEmpty(targetId)) return;
+            TooFar[targetId] = TooFar.TryGetValue(targetId, out float before) ? Math.Max(before, value) : value;
+        }
         /// <summary>★ v0.3.18 (test11): 5-foot-step spots refused this turn (the real path was longer than a step).</summary>
         public readonly List<UnityEngine.Vector3> RefusedSteps = new List<UnityEngine.Vector3>();
         /// <summary>★ v0.3.20 (test8): options (keys) whose real walk provoked more attacks of opportunity than they were

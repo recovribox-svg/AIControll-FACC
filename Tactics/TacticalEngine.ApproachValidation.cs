@@ -77,12 +77,18 @@ namespace CompanionAI_Pathfinder.Tactics
                     // range/action against this target globally unreachable, or survive into a changed frame.
                     if (memory != null && failure.StartsWith(CommandDispatcher.MoreAttacksOfOpportunityFailure) && c.SeenPathAttackers != null)
                         memory.PathAttackers[c.Key] = (c.SeenPathFrom, c.SeenPathAttackers);
+                    // ★ v0.3.29 test 1: farther than this turn's walk-then-act allows - the next decision offers an advance on
+                    // it at the refused option's worth, as when the dispatcher refuses the walk (TacticalDriver).
+                    if (memory != null && c.Target != null && failure.Contains(CommandDispatcher.LongerThanOneMoveFailure))
+                        memory.NoteTooFar(c.Target.UniqueId, c.Value);
                     ReportOnce($"preflight|{ctx.Unit.UniqueId}|{CombatMemory.Round}|{c.Key}|{failure}",
                         $"[Approach] {ctx.Unit.CharacterName}: {c.Label} withheld before issue/boost ({failure})");
                 },
                 omitted => ReportOnce($"preflight-budget|{ctx.Unit.UniqueId}|{CombatMemory.Round}",
                     $"[Approach] {ctx.Unit.CharacterName}: {SelectedApproachFilter.MaxChecks} selected path checks used; " +
-                    $"{omitted} unchecked walking options withheld for this decision (not proven unreachable)"));
+                    $"{omitted} unchecked walking options withheld for this decision (not proven unreachable; plain moves kept)"),
+                // ★ v0.3.29 test 1: a plain move (an advance, a withdrawal) spends nothing first; the dispatcher checks its walk.
+                c => c.Kind == CandidateKind.Move && !c.NeedsMove && !c.MoveFirst);
         }
 
         /// <summary>Throwaway command matching Execute's approach/reach settings; never queued or retained.</summary>

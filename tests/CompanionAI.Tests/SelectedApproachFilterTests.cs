@@ -62,6 +62,21 @@ namespace CompanionAI.Tests
         }
 
         [Fact]
+        public void WorkLimitKeepsUncheckedPlainMoves()
+        {
+            // ★ v0.3.29 test 1 (TB fight 6, Lann R1): three walk-then-shoots each longer than one move; the advances were
+            // withheld with them and the turn ended unused. A plain move spends nothing first: it stays.
+            var walks = Enumerable.Range(0, 4).Select(i => new Plan("walk" + i, walks: true)).ToArray();
+            var advance = new Plan("advance", walks: true);
+            int omitted = 0;
+            var result = SelectedApproachFilter.Apply(walks.Concat(new[] { advance }), SelectMain, NeedsCheck,
+                p => false, null, count => omitted = count, keepUnchecked: p => p.Key == "advance");
+            Assert.Equal(1, omitted);                       // the fourth walk-then-act
+            Assert.Equal(new[] { advance }, result);
+            Assert.Same(advance, SelectMain(result));
+        }
+
+        [Fact]
         public void ChangedRangeOrNewDecisionCanTrySameTargetAgain()
         {
             var melee = new Plan("same target/melee", walks: true);

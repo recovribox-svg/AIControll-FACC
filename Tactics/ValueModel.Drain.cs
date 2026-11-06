@@ -62,6 +62,22 @@ namespace CompanionAI_Pathfinder.Tactics
         }
 
         /// <summary>
+        /// ★ v0.3.29 test 1: the rounds of control <paramref name="applications"/> applications in one round are expected to
+        /// cost a victim, when one controls it with chance <paramref name="chance"/> for <paramref name="control"/> /
+        /// <paramref name="chance"/> rounds: control does not add up (a second paralysis in the same round costs no more
+        /// turns), so it is that duration times the chance at least one lands, 1 - (1 - chance)^applications. Up to one
+        /// application, or with no chance known, it scales as it is.
+        /// </summary>
+        public static float RepeatedControl(float control, float chance, float applications)
+        {
+            if (!(control > 0f) || !(applications > 0f) || float.IsInfinity(control)) return 0f;
+            if (applications <= 1f || !(chance > 0.001f)) return control * applications;
+            float duration = control / chance;
+            float landed = 1f - (float)Math.Pow(1f - Math.Min(1f, chance), applications);
+            return Math.Min(control * applications, duration * landed);
+        }
+
+        /// <summary>
         /// ★ v0.3.28 test 14: the share of a victim an affliction takes for the fight's worth model (the walk and revive
         /// prices: share x its worth): the ability shares (<paramref name="abilityShare"/>), negative levels over its
         /// character level, and the control rounds over the 3 rounds the worth counts; at most all of it.

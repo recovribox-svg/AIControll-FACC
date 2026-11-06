@@ -100,10 +100,7 @@ namespace CompanionAI_Pathfinder.Tactics
             // ★ v0.3.20 (test3): the target is farther than this turn's walk-then-act allows - an advance towards it is
             // offered next to whatever can be done from here (TacticalEngine.AddMovementCandidates).
             if (candidate.Target != null && failure != null && failure.Contains(GameInterface.CommandDispatcher.LongerThanOneMoveFailure))
-            {
-                string id = candidate.Target.UniqueId;
-                memory.TooFar[id] = memory.TooFar.TryGetValue(id, out float before) ? Math.Max(before, candidate.Value) : candidate.Value;
-            }
+                memory.NoteTooFar(candidate.Target.UniqueId, candidate.Value);
         }
 
         /// <summary>Did the command that just ended use the action it was chosen for?</summary>

@@ -291,11 +291,13 @@ namespace CompanionAI_Pathfinder.Tactics
                         var onHit = CombatMath.OnHitAffliction(enemy, victim);
                         if (!onHit.IsEmpty)
                         {
-                            float hits = attack.Attacks * attack.FirstHitChance;
-                            float total = CombatMath.AfflictionHp(onHit, victim);
-                            float hitPoints = Math.Min(total, Math.Min(Math.Max(0f, victim.HPLeft), onHit.HitPoints));
-                            a.Weapon += hits * hitPoints;
-                            a.AbilityDamage += hits * (total - hitPoints);
+                            // ★ v0.3.29 test 1: the round's expected hits together (Affliction.Repeated): their control
+                            // counted once over, the whole at most what the victim has left.
+                            var hitsTogether = onHit.Repeated(attack.Attacks * attack.FirstHitChance);
+                            float total = CombatMath.AfflictionHp(hitsTogether, victim);
+                            float hitPoints = Math.Min(total, Math.Min(Math.Max(0f, victim.HPLeft), hitsTogether.HitPoints));
+                            a.Weapon += hitPoints;
+                            a.AbilityDamage += total - hitPoints;
                             a.AbilityStat = DescribeAffliction(onHit);
                         }
                     }
