@@ -341,7 +341,9 @@ namespace CompanionAI_Pathfinder.Tactics
             if (TryQuiverRefill(ctx, list, preview, part, abilities, blasts, out string why)) return;
             // ★ v0.3.28 test 7: the refill's reason, once a fight. Test 6 had "quiver 0" in all 14 fights and no word why;
             // it was only reported while burn blocked every blast.
-            if (why != null && !preview && CombatMemory.FirstThisFight($"refill|{unit.UniqueId}"))
+            // ★ v0.3.28 test 9: the save's lasting no-quiver state once a session (test 8 logged it in all 13 fights).
+            if (why != null && !preview && (part.QuiverBuff == null ? NoQuiverLogged.Add(unit.UniqueId)
+                                                                     : CombatMemory.FirstThisFight($"refill|{unit.UniqueId}")))
                 Main.Log($"[Kinetic] {unit.CharacterName}: no quiver refill - {why} (quiver {QuiverRanks(unit, part)})");
             if (blasts.Any(a => a.IsAvailable)) return;
             var blocked = blasts.Where(BurnBlocked).ToList();
@@ -753,12 +755,20 @@ namespace CompanionAI_Pathfinder.Tactics
             return note;
         }
 
+        private static readonly HashSet<string> NoQuiverLogged = new HashSet<string>();
         private static readonly Dictionary<string, KeyValuePair<int, string>> NoQuiverNotes = new Dictionary<string, KeyValuePair<int, string>>();
 
         private static string DescribeNoQuiver(UnitEntityData unit, UnitPartKineticist part)
         {
-            string source = null;
-            try { source = (KineticistSettings?.GetValue(part) as AddKineticistPart)?.OwnerBlueprint?.name; } catch { }
+            string source = null, stat = null;
+            try
+            {
+                var settings = KineticistSettings?.GetValue(part) as AddKineticistPart;
+                source = settings?.OwnerBlueprint?.name;
+                // ★ v0.3.28 test 9: the same part sets the main stat and the burn pool (Dark Elementalist: Intelligence).
+                stat = settings != null ? settings.MainStat.ToString() : null;
+            }
+            catch { }
             var withQuiver = new List<string>();
             try
             {
@@ -771,7 +781,8 @@ namespace CompanionAI_Pathfinder.Tactics
                 }
             }
             catch { }
-            return $"the game gives it no quiver: its kineticist part comes from {source ?? "an unknown feature"}, which names no " +
+            return $"the game gives it no quiver: its kineticist part comes from {source ?? "an unknown feature"}" +
+                   (stat != null ? $" (main stat {stat}, its burn pool)" : "") + ", which names no " +
                    "quiver buff" + (withQuiver.Count > 0 ? $" ({string.Join(", ", withQuiver.Distinct())} names one, but the game sets " +
                                                              "the part up only once)" : "") +
                    " - the game never takes burn from arrows then, so Create Quiver is not cast";
