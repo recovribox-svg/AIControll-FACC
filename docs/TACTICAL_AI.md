@@ -3688,3 +3688,59 @@ about one round left (a revive is worth the rounds left). The author agreed this
 sees, not a missing commitment rule; no change.
 
 Test ZIP `AI-Control-FACC-v0.3.28-dev-test11-4d6036e-UMM-test.zip` (MVID `7aa18b9e-c844-477e-854b-d86589fb09f7`); 423 tests.
+
+## 109. Test 11 log review: cones and the front line, cone delivery, ability-damage threat (v0.3.28 test 12)
+
+Test 11 log (`ffc54518`, 16 fights TB and RT, MVID `7aa18b9e`, no mod errors) and combat log, with the author's two questions:
+cone spells that catch allies (Fan of Flames, which Selective does not cover) and how enemies that drain ability scores are
+rated.
+
+**Fan of Flames and the front line (fixed).** Three of four Fan of Flames casts hit allies (combat log: Seelah 26 fire;
+Camellia, half on a save; then both). The engine did read the cone with the game's own recipient query
+(`ProjectileCone`: `AbilityDeliverProjectile.WouldTargetUnitCone`, its 45-degree edges, sight and Selective - Isekai's Auto
+Selective is `AutoMetamagic` `SpellOnly`, so a supernatural blast never gets it) and priced caught allies at twice the damage.
+But each cast walked first (`forcedPath` 1.7-2.1 m), and the cone was priced from `ApproachPoint` (0.9 x range from the
+target) while the game stopped the walk as soon as the target was within range (`UnitCommand.IsUnitCloseEnough`): up to
+1.6 m short (range 16.2 m). The cone left from further back, and allies fighting in front of Orvath, behind its planned
+tip, were inside it. Now:
+- a projectile cone that needs a walk walks to the spot it was priced from first (`MoveFirst`, as the area detours do) and is
+  aimed on the next decision from where the unit stands;
+- from where the caster stands, a cone whose straight aim catches allies is also tried turned 12/24/36 degrees either way
+  (`TacticalEngine.ConeAim.cs`): a point aim (all 48 projectile cones in the dumps can be aimed at a point; the game delivers
+  towards the point's direction from the caster, `CorrectPosition`), read with the same native query, keeping the aimed
+  enemy and catching the fewest allies; both aims are scored and the better is offered (`[turned +24 deg past Seelah]`);
+- friendly fire that costs more than the enemies are worth now counts against the option, for damage and for control; it
+  was cut off at zero, so other parts (a debuff, an infusion) could still carry a cast into the party;
+- decision labels name the allies an area catches and the cost (`[catches Seelah -52]`, `[controls Camellia -12]`).
+Repositioning beyond the walk the option already makes (a new spot chosen for a better angle) is not added: the turned aims
+cover the common case at no movement cost, and a spot search per cone and enemy would multiply the cone queries.
+
+**Cone delivery judged too early (fixed).** `[Cast] Orvath: Fan of Flames centred on Deskari Cultist, reached Seelah (1/2)`
+- yet the combat log shows the Cultist burned. A cone travels outward after its command ends
+(`StepBasedDeliver`), and `CastOutcome.Settle` judged it at the next decision; two such strikes leave the enemy out of the
+area. A cast that worked but has not reached its aimed enemy while its execution is still running is now judged when the
+execution ends (`ObserverRules.AwaitDelivery`, unit-tested; at most the existing 6 s).
+
+**Ability-damage enemies (the author's enquiry; fixed for weapon drain).** The threat rating (`EnemyThreat`) counted a
+weapon's hit-point damage, castable harmful abilities and observed HP damage. A Shadow's touch (1d6 Strength,
+`Shadow_Feature_StrengthDamage`) deals no hit points: `Shadow x0.5 (attacks 0.8 on Seelah)`, the lowest share in every fight.
+The ability damage was already read (`CombatMath.OnHitAbilityDamage`) but only priced into walks and revives. Now its hits
+count as `ValueModel.OnHitAbilityOffence` = hits x share of the victim's score (`AbilityDamageShare`) x the victim's worth,
+added outside the observed-HP blend (which would otherwise wear it away). Not changed, for the record: a Nabasu is rated by
+its spells (Hold Person Mass, Vampiric Touch; its Enervation's negative levels are read as their dice of damage); a Mandragora
+swarm's 5d6 swarm damage is an aura (counted once it deals damage, through the observed blend) and its Constitution poison
+is not counted. Spells whose "damage" is ability damage or energy drain (`ContextActionDealDamage` types `AbilityDamage`,
+`EnergyDrain`) are valued as hit-point damage of their dice, for the party's own spells too; a correct reading is a wider
+change (negative levels: -1 to rolls, lost hit points) left for discussion.
+
+**After-fight Soul Power, corrected cause.** §108 blamed the party walking; test 11 still had 16 of 23 harvests cut off with
+nobody moving. The author casts Dispel Magic with Orvath (the player character) after fights; each order replaced the
+6-second cast and the harvest started again in the gap. It now starts only once the unit has had no order for 3 s
+(`RealTimeController.IdleFor`), waits 4 s more per cut-off and stops after 5 until the next fight.
+
+**Performance.** Sharing damage contexts (§108) took blasts from 5 contexts to 1, but Orvath's decisions still grew the heap
+by 4-7 MB (the 0.9-1.2 s decisions are collections), so contexts were not the main allocator. The slow-decision line now
+splits each costly ability's heap growth into damage estimates and hit/save chances (`CombatMath.MeasureHeap`), to find
+it in the next log rather than guess.
+
+Test ZIP `AI-Control-FACC-v0.3.28-dev-test12-03d3f6a-UMM-test.zip` (MVID `fc4b18a2-a859-4465-b8dd-c73ea85a0633`); 434 tests.

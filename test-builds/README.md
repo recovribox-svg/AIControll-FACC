@@ -1,6 +1,40 @@
 # Test builds
 
-## Current test build: v0.3.28-dev-test11 (4d6036e) - smoother harvest, lighter decisions, shorter log
+## Current test build: v0.3.28-dev-test12 (03d3f6a) - cones that spare the party, Shadows taken seriously
+
+**[Download the UMM test ZIP (03d3f6a)](AI-Control-FACC-v0.3.28-dev-test12-03d3f6a-UMM-test.zip?raw=true)**
+
+Direct link: <https://github.com/recovribox-svg/AIControll-FACC/raw/claude/dreamy-pasteur-b9h3rn/test-builds/AI-Control-FACC-v0.3.28-dev-test12-03d3f6a-UMM-test.zip>
+
+Test 11 (below) plus the review of its log and your cone / ability-damage questions ([docs/TACTICAL_AI.md](../docs/TACTICAL_AI.md) §109):
+- **Fan of Flames (and every cone) and your front line.** Three of four Fan of Flames casts hit Seelah or Camellia. The AI
+  did count allies in the cone, but when Orvath had to walk into range first it priced the cone from a spot up to 1.6 m
+  further forward than where the game actually stopped him - so allies just in front of him were "behind" the cone in
+  the plan and inside it for real. Now:
+  - a cone that needs a walk walks to the spot it was priced from first, and is aimed on the next decision from where he
+    really stands;
+  - a cone that would catch allies is also tried turned 12-36 degrees past them (cones can be aimed at the ground, so the
+    flames go beside the ally instead of through them); the better aim wins;
+  - if allies would still be caught and that costs more than the enemies are worth, the cone loses to other options
+    (before, that cost was cut off at zero and other parts of the cast could still make it look good);
+  - decision lines say who a cone would catch, e.g. `[catches Seelah -52]`, or `[turned +24 deg past Seelah]`.
+- **Shadows (Strength drain) now count as a real threat.** They were rated the least dangerous enemy in every fight
+  ("Shadow x0.5, attacks 0.8"), because the threat rating only counted hit-point damage. Their Strength damage now counts
+  as the share of the victim it takes; the `[Threat]` line shows it, for example `attacks 5.9 on Seelah (5.1 of it Strength damage)`.
+- **Soul Power after fights waits for you.** Your Dispel Magic casts after fights replaced the harvest each time (16 of 23
+  cut off). It now starts only when Orvath has had no order for 3 seconds, and gives up after 5 cut-offs until the next fight.
+- **A cone is no longer marked as having "missed" its target** while its flames are still travelling (that mark made the
+  AI stop counting the enemy in its areas after two casts).
+
+UMM shows **0.3.28**. Startup line `[Build] v0.3.28 module=fc4b18a2-a859-4465-b8dd-c73ea85a0633`.
+- ZIP SHA-256 `8d873e22dab6c2e1ae6453681f79180f51cb6de417a5c566ea9e9448f0f813ae`; DLL SHA-256 `b2f15e2efa6259d1d32737fa32a79bf1434c836230ed083d712522a1da1c9a7c`.
+- [Identity](AI-Control-FACC-v0.3.28-dev-test12-03d3f6a-UMM-test.identity.json) · [Checksums](SHA256SUMS.txt).
+- Checks: 434 unit tests pass; release build 0 warnings; offline blueprint audit 0 errors. Not played yet.
+- **Test:** a fight where Seelah or Camellia stand in melee in front of Orvath: Fan of Flames should go past them (look
+  for `turned` or `walks to its casting spot first` on his decision line), or he should pick something else. With Shadows
+  around, `[Threat]` should rate them above x0.5. After a fight, cast your Dispel Magic: Soul Power should follow once you stop.
+
+## Test 11: v0.3.28-dev-test11 (4d6036e) - smoother harvest, lighter decisions, shorter log (also in test 12)
 
 **[Download the UMM test ZIP (4d6036e)](AI-Control-FACC-v0.3.28-dev-test11-4d6036e-UMM-test.zip?raw=true)**
 

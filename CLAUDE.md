@@ -168,6 +168,13 @@ The after-fight Soul Power harvest waits until the party has stood still for 2 s
 the numbers (`CombatMath.DamageContext` / `ContextIsTargetFree`, ProfileAudit DAMAGE-CONTEXT); log trimmed (Coverage diffs,
 energy rows per session, one turn-start line, revive notes merged, Progressive by spell). Test ZIP `AI-Control-FACC-v0.3.28-dev-test11-4d6036e-UMM-test.zip` (MVID
 `7aa18b9e-c844-477e-854b-d86589fb09f7`); 423 tests.
+**v0.3.28 test 12 (6 November, `docs/TACTICAL_AI.md` §109, author-requested, not played):** test 11 log reviewed (16 fights,
+no mod errors). Cones that need a walk walk to the priced spot first (`MoveFirst`), cones that catch allies are also tried
+turned past them (`TacticalEngine.ConeAim.cs`), friendly fire beyond the enemies' worth counts against the option; cone
+delivery judged when its execution ends (`ObserverRules.AwaitDelivery`); weapon ability damage in enemy threat
+(`ValueModel.OnHitAbilityOffence`, Shadows); after-fight Soul Power waits for 3 s without orders (the author's Dispel Magic
+casts replaced it). Open: ability-damage / energy-drain spells valued as HP dice. Test ZIP
+`AI-Control-FACC-v0.3.28-dev-test12-03d3f6a-UMM-test.zip` (MVID `fc4b18a2-a859-4465-b8dd-c73ea85a0633`); 434 tests.
 
 Historical handovers, superseded by the one above: [v0.3.22 release preparation](docs/RELEASE_0_3_22_HANDOVER.md)
 (27 October, PR #6–#12), [released-log review](docs/RELEASE_0322_LOG_REVIEW.md) (PR #13),
