@@ -382,11 +382,46 @@ namespace CompanionAI_Pathfinder.Tactics
             try
             {
                 float range = ability.GetApproachDistance(aim.Unit);
-                bool needLoS = new Kingmaker.UnitLogic.Commands.UnitUseAbility(ability, aim).NeedLoS;
+                // ★ v0.3.29 test 3: the command's own rule (UnitUseAbility's constructor: no ILineOfSightIgnore component),
+                // read without building a command - this now runs on every tick of a touch walk (ShouldEndArrivedTouchWalk).
+                bool needLoS = Kingmaker.Blueprints.BlueprintExtenstions.GetComponent<
+                    Kingmaker.UnitLogic.Abilities.Components.TargetCheckers.ILineOfSightIgnore>(ability.Blueprint) == null;
                 return Kingmaker.UnitLogic.Commands.Base.UnitCommand.IsUnitCloseEnough(
                     aim.Point, unit.Position, unit.EyePosition, range, needLoS, 0f);
             }
             catch { return false; } // Unknown reach does not establish a completed approach.
+        }
+
+        /// <summary>
+        /// ★ v0.3.29 test 3 (v0.3.29 test 2 real-time log): a walk to touch range (a touch spell or item: the engine walks
+        /// first, then casts) whose target is in the game's own reach of that touch now - the walk ends and the engine casts.
+        /// Lann's walk to touch Camellia with a Cure Light Wounds item went on 7.6 s, circling a body inside the cast's reach
+        /// and just outside the walk's own arrival radius (80 % of it), until the 6 s no-progress rule ended it. Not for a
+        /// walk to a chosen casting spot (a cone aimed past allies): only touch deliveries.
+        /// </summary>
+        public static bool ShouldEndArrivedTouchWalk(UnitEntityData unit, out string why)
+        {
+            why = null;
+            try
+            {
+                foreach (var command in unit.Commands.Raw)
+                {
+                    if (!(command is Kingmaker.UnitLogic.Commands.UnitMoveTo) || command.IsStarted || command.IsFinished) continue;
+                    if (!IssuedAtHp.TryGetValue(command, out var issued)) continue;
+                    var ability = issued.FollowUpAbility;
+                    if (ability?.Blueprint?.StickyTouch == null || issued.FollowUpAim?.Unit == null) continue;
+                    if (!FollowUpInReach(unit, issued)) continue;
+                    // Arrived, not failed: the walk's end must not mark the touch as tried (LearnFromLastCommand).
+                    Reconsider(unit, command);
+                    why = $"{issued.FollowUpAim.Unit.CharacterName} is in reach of its {ability.Name} touch - the walk to it ends";
+                    return true;
+                }
+            }
+            catch (Exception ex)
+            {
+                Main.Verbose($"[RT-Tactics] {unit.CharacterName}: touch-walk check: {ex.Message}");
+            }
+            return false;
         }
 
         /// <summary>HP of the unit when the engine issued each command (weak: dropped with the command).</summary>

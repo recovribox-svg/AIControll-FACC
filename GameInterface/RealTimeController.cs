@@ -272,7 +272,9 @@ namespace CompanionAI_Pathfinder.GameInterface
                 if (Tactics.RealTimeTactics.ShouldReplanAfterDamage(unit, out string replanWhy) ||
                     (!legacy && Tactics.RealTimeTactics.ShouldReplanInArea(unit, out replanWhy)) ||
                     // ★ v0.3.27 (0.3.26 log): an enemy the walk did not count is in its way now.
-                    (!legacy && Tactics.RealTimeTactics.ShouldReplanOnNewThreat(unit, out replanWhy)))
+                    (!legacy && Tactics.RealTimeTactics.ShouldReplanOnNewThreat(unit, out replanWhy)) ||
+                    // ★ v0.3.29 test 3: a walk to touch range whose target is in reach of the touch already.
+                    (!legacy && Tactics.RealTimeTactics.ShouldEndArrivedTouchWalk(unit, out replanWhy)))
                 {
                     Main.Log($"[RT] {unitName}: {replanWhy} - dropping the commands that have not started, deciding again");
                     unit.Commands.InterruptAll(c => c != null && !c.IsStarted && c.IsInterruptible && !c.Cutscene);
