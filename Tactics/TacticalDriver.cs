@@ -157,6 +157,8 @@ namespace CompanionAI_Pathfinder.Tactics
             // so cancelling a walk which already arrived cannot blacklist the still-unattempted spell.
             public Kingmaker.UnitLogic.Abilities.AbilityData FollowUpAbility;
             public Kingmaker.Utility.TargetWrapper FollowUpAim;
+            /// <summary>★ v0.3.29 test 4: a walk to a free side of this enemy, to attack it (TacticalEngine.Spots.cs).</summary>
+            public UnitEntityData FollowUpAttack;
             /// <summary>
             /// ★ v0.3.27 (0.3.26 log): a walk to a target (an attack, a cast, an approach or advance) - one an enemy the
             /// option did not count can get in the way of (<see cref="ShouldReplanOnNewThreat"/>). Withdrawals and walks out
@@ -383,7 +385,7 @@ namespace CompanionAI_Pathfinder.Tactics
             {
                 float range = ability.GetApproachDistance(aim.Unit);
                 // ★ v0.3.29 test 3: the command's own rule (UnitUseAbility's constructor: no ILineOfSightIgnore component),
-                // read without building a command - this now runs on every tick of a touch walk (ShouldEndArrivedTouchWalk).
+                // read without building a command - this now runs on every check of a touch walk (ShouldEndArrivedWalk).
                 bool needLoS = Kingmaker.Blueprints.BlueprintExtenstions.GetComponent<
                     Kingmaker.UnitLogic.Abilities.Components.TargetCheckers.ILineOfSightIgnore>(ability.Blueprint) == null;
                 return Kingmaker.UnitLogic.Commands.Base.UnitCommand.IsUnitCloseEnough(
@@ -398,8 +400,11 @@ namespace CompanionAI_Pathfinder.Tactics
         /// Lann's walk to touch Camellia with a Cure Light Wounds item went on 7.6 s, circling a body inside the cast's reach
         /// and just outside the walk's own arrival radius (80 % of it), until the 6 s no-progress rule ended it. Not for a
         /// walk to a chosen casting spot (a cone aimed past allies): only touch deliveries.
+        /// ★ v0.3.29 test 4 (author-approved): and a walk to a free side of an enemy (TacticalEngine.Spots.cs) once that enemy
+        /// is in the reach of the unit's weapon by the game's attack rule (UnitAttack.GetApproachRadius, the game's distance
+        /// and sight test) - the side was chosen to stand in reach, and any spot on the way that is in reach will do.
         /// </summary>
-        public static bool ShouldEndArrivedTouchWalk(UnitEntityData unit, out string why)
+        public static bool ShouldEndArrivedWalk(UnitEntityData unit, out string why)
         {
             why = null;
             try
@@ -408,6 +413,14 @@ namespace CompanionAI_Pathfinder.Tactics
                 {
                     if (!(command is Kingmaker.UnitLogic.Commands.UnitMoveTo) || command.IsStarted || command.IsFinished) continue;
                     if (!IssuedAtHp.TryGetValue(command, out var issued)) continue;
+                    var foe = issued.FollowUpAttack;
+                    if (foe != null)
+                    {
+                        if (foe.Descriptor?.State?.IsConscious != true || !AttackReaches(unit, foe)) continue;
+                        Reconsider(unit, command);
+                        why = $"{foe.CharacterName} is in reach of its weapon - the walk to a free side of it ends";
+                        return true;
+                    }
                     var ability = issued.FollowUpAbility;
                     if (ability?.Blueprint?.StickyTouch == null || issued.FollowUpAim?.Unit == null) continue;
                     if (!FollowUpInReach(unit, issued)) continue;
@@ -419,9 +432,22 @@ namespace CompanionAI_Pathfinder.Tactics
             }
             catch (Exception ex)
             {
-                Main.Verbose($"[RT-Tactics] {unit.CharacterName}: touch-walk check: {ex.Message}");
+                Main.Verbose($"[RT-Tactics] {unit.CharacterName}: arrived-walk check: {ex.Message}");
             }
             return false;
+        }
+
+        /// <summary>★ v0.3.29 test 4: the game's own reach test for an attack on <paramref name="target"/> from where the unit
+        /// stands (UnitAttack's approach radius with the weapon it would attack with, sight needed).</summary>
+        private static bool AttackReaches(UnitEntityData unit, UnitEntityData target)
+        {
+            try
+            {
+                float reach = Kingmaker.UnitLogic.Commands.UnitAttack.GetApproachRadius(unit.GetFirstWeapon(), unit, target);
+                return Kingmaker.UnitLogic.Commands.Base.UnitCommand.IsUnitCloseEnough(
+                    target.Position, unit.Position, unit.EyePosition, reach, true, 0f);
+            }
+            catch { return false; }
         }
 
         /// <summary>HP of the unit when the engine issued each command (weak: dropped with the command).</summary>
@@ -562,6 +588,7 @@ namespace CompanionAI_Pathfinder.Tactics
                             FollowUpAim = command is Kingmaker.UnitLogic.Commands.UnitMoveTo && candidate.Kind == CandidateKind.Move && candidate.Ability != null
                                 ? candidate.Target != null ? new Kingmaker.Utility.TargetWrapper(candidate.Target)
                                     : new Kingmaker.Utility.TargetWrapper(candidate.Point ?? unit.Position) : null,
+                            FollowUpAttack = command is Kingmaker.UnitLogic.Commands.UnitMoveTo && candidate.WalkEndsInReach ? candidate.Target : null,
                             AreasPriced = candidate.Kind == CandidateKind.Move ||
                                           (candidate.Label?.Contains(TacticalEngine.Disengage.IntoTag) ?? false),
                             // ★ v0.3.27 (0.3.26 log): what a walk to a target counted (ShouldReplanOnNewThreat).

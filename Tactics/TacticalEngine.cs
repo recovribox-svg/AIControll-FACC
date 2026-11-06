@@ -79,6 +79,8 @@ namespace CompanionAI_Pathfinder.Tactics
         /// for), and act from there on the next decision.
         /// </summary>
         public bool MoveFirst;
+        /// <summary>★ v0.3.29 test 4: a weapon attack's walk to a free side of its target, ended once the target is in reach.</summary>
+        public bool WalkEndsInReach;
         public Vector3? MovePoint;
         /// <summary>★ v0.3.17: the move was priced as entering no harmful area: refuse a game path that walks into one.</summary>
         public bool CheckPath;
@@ -195,6 +197,8 @@ namespace CompanionAI_Pathfinder.Tactics
         public readonly Dictionary<string, string> ReviveNotes = new Dictionary<string, string>();
         /// <summary>★ v0.3.17: approaches planned in this decision (TacticalEngine.PlanApproach), by target and range.</summary>
         internal readonly Dictionary<string, TacticalEngine.Approach> Approaches = new Dictionary<string, TacticalEngine.Approach>();
+        /// <summary>★ v0.3.29 test 4: the other units' bodies - or, walking, where their walks end - read once (TacticalEngine.Spots.cs).</summary>
+        internal List<TacticalEngine.Body> Bodies;
         /// <summary>★ v0.3.18: provoked attacks priced in this decision (TacticalEngine.ProvokeRisk), by place and chance.</summary>
         internal readonly Dictionary<string, TacticalEngine.Disengage> Provoked = new Dictionary<string, TacticalEngine.Disengage>();
         /// <summary>★ v0.3.18 (AA-3): the unit's attack modes, read once per decision (TacticalEngine.Modes.cs).</summary>
@@ -259,6 +263,7 @@ namespace CompanionAI_Pathfinder.Tactics
             var timings = new DecisionTimings();
             s_StrikeReads = 0;
             s_StrikeReadTicks = 0;
+            s_FreeSideSearches = s_NoFreeSide = 0;
             var chosen = Decide(unit, memory, preview: false, out _, timings);
             timings.Mark(DecisionStage.Finish);
             double ms = watch.Elapsed.TotalMilliseconds;
@@ -272,6 +277,7 @@ namespace CompanionAI_Pathfinder.Tactics
                          $"{(GC.CollectionCount(0) != collections ? "; memory clean-up ran" : "")}" +
                          $"{(EnemyThreat.Assessments != assessments ? "; enemies assessed" : "")}" +
                          $"{(s_StrikeReads > 0 ? $"; enemy attacks read for the drop chance {s_StrikeReads} ({s_StrikeReadTicks * 1000d / System.Diagnostics.Stopwatch.Frequency:F1} ms)" : "")}" +
+                         FreeSideNote() +
                          $"{(GC.CollectionCount(0) == collections ? $"; heap +{(GC.GetTotalMemory(false) - heapBefore) / 1024} KB" : "")}); {timings.Describe()}");
             return chosen;
         }
@@ -2102,12 +2108,18 @@ namespace CompanionAI_Pathfinder.Tactics
             /// <summary>★ v0.3.20 (test8): the straight approach provoked this many attacks of opportunity and <see cref="Point"/>
             /// is a spot that costs less (fewer, weaker, or none: still beside the enemy it would have left).</summary>
             public int AttacksBefore;
+            /// <summary>★ v0.3.29 test 4 (real time): another body takes the straight approach's spot (who, and how);
+            /// <see cref="Point"/> is a free side of the target (TacticalEngine.Spots.cs).</summary>
+            public string Beside;
+            /// <summary>★ v0.3.29 test 4: the straight spot is taken and no side of the target is free: why (log).</summary>
+            public string NoFreeSide;
             /// <summary>The unit walks to <see cref="Point"/> first and acts from there (a spot around an area or fewer attacks).</summary>
-            public bool Detours => Around != null || AroundSwarm != null || AttacksBefore > 0;
+            public bool Detours => Around != null || AroundSwarm != null || AttacksBefore > 0 || Beside != null;
             /// <summary>For the decision log.</summary>
             public string Detour => Around != null ? $"around {Around}" :
                                     AroundSwarm != null ? $"clear of {AroundSwarm}'s swarm" :
-                                    AttacksBefore > 0 ? $"from a spot that provokes {Risk?.Attacks ?? 0}, not {AttacksBefore}" : null;
+                                    AttacksBefore > 0 ? $"from a spot that provokes {Risk?.Attacks ?? 0}, not {AttacksBefore}" :
+                                    Beside != null ? $"to a free side: {Beside}" : null;
         }
 
         /// <summary>★ v0.3.20 (test8): what the straight approach's attacks of opportunity must cost before other spots are
@@ -2141,9 +2153,17 @@ namespace CompanionAI_Pathfinder.Tactics
             // ★ v0.3.28 test 15 (author-approved): and when it ends where a swarm's round strikes the unit - a spot on another
             // side of the target may be clear of the swarm's space (the target is then still in reach).
             string directSwarm = ctx.NoMovementLeft ? null : StruckBySwarm(ctx, direct);
-            if ((plan.Risk?.Area == null && !provokes && directSwarm == null) || ctx.NoMovementLeft) return plan;
+            // ★ v0.3.29 test 4 (author-approved, body blocking): real time, and when another body takes the spot the straight
+            // approach ends on - a companion standing there, one walking there, an enemy beside the target - a free side of
+            // the target instead. The game's real-time walk would push against that body (TacticalEngine.Spots.cs).
+            bool claims = SpotRules.Applies(CombatMemory.IsRealTime, range, ctx.NoMovementLeft);
+            var takenBy = claims ? TakenAt(ctx, direct, target) : null;
+            if ((plan.Risk?.Area == null && !provokes && directSwarm == null && takenBy == null) || ctx.NoMovementLeft) return plan;
             string directArea = plan.Risk?.Area;
             int directAttacks = plan.Risk?.Attacks ?? 0;
+            // Only the spot is in question: the nearest free sides are priced, a few at most (SpotRules.PricedSpots).
+            bool onlyTaken = takenBy != null && directArea == null && directSwarm == null && !provokes;
+            if (takenBy != null) s_FreeSideSearches++;
             try
             {
                 // ★ v0.3.18 (review): a spot around the area must be cheaper than walking straight through it (a mild
@@ -2152,6 +2172,9 @@ namespace CompanionAI_Pathfinder.Tactics
                 // costs - its walk price counts only a rise over where the unit stands, nothing when it is struck there too.
                 float best = Math.Max(plan.Risk?.Cost ?? 0f, directSwarm != null ? SwarmStayPrice(ctx, direct) : 0f) +
                              0.05f * Vector3.Distance(unit.Position, direct);
+                // ★ v0.3.29 test 4: a taken spot cannot be stood on: any free side beats it, at its own price.
+                if (takenBy != null) best = float.MaxValue;
+                int priced = 0;
                 float body = unit.Corpulence;
                 int far = 0, taken = 0, inArea = 0, inSwarm = 0, unwalkable = 0, noCloser = 0, dearer = 0;
                 var others = ctx.Allies.Concat(ctx.Enemies).Where(u => u != unit && u != target).ToList();
@@ -2166,17 +2189,21 @@ namespace CompanionAI_Pathfinder.Tactics
                     // already is. Seelah, a full turn left, stepped 1 m to another spot by the Grease each turn, no
                     // nearer than before (0.3.18-test2 turn-based log, R4-R5), and the turn ended there.
                     if (ring > range && distanceNow <= ring + 0.75f) { noCloser++; continue; }
-                    for (int i = 0; i < 16; i++)
+                    var spots = RingSpots(target.Position, ring, unit.Position, nearestFirst: onlyTaken);
+                    foreach (var point in spots)
                     {
-                        float angle = i * 22.5f * Mathf.Deg2Rad;
-                        var point = target.Position + new Vector3(Mathf.Cos(angle), 0f, Mathf.Sin(angle)) * ring;
                         float walk = Vector3.Distance(unit.Position, point);
                         // ★ v0.3.18: an advance (no action follows) may aim beyond this turn's movement: the unit walks
                         // towards the spot, on a path checked to stay out of the area, and goes on next turn.
                         if (walk > ctx.MoveRange * 0.95f && !(orNearby && ctx.HasMove)) { far++; continue; }
-                        if (others.Any(u => Vector3.Distance(u.Position, point) < (u.Corpulence + body) * 0.9f)) { taken++; continue; }
+                        // ★ v0.3.29 test 4: in real time a walking companion takes the spot its walk ends on, not the one it
+                        // is passing (TakenAt); turn-based, everyone else stands still.
+                        if (claims ? TakenAt(ctx, point, target) != null
+                                   : others.Any(u => Vector3.Distance(u.Position, point) < (u.Corpulence + body) * 0.9f)) { taken++; continue; }
+                        if (onlyTaken && priced >= SpotRules.PricedSpots) { dearer++; continue; }
                         if (AoeDangerAnalyzer.EnteringDanger(unit, unit.Position, point, out _) > 0f) { inArea++; continue; }
                         if (!AoeDangerAnalyzer.IsPositionValid(unit.Position, point)) { unwalkable++; continue; }
+                        priced++;
                         var risk = MoveRisk(ctx, point, alwaysExposure);
                         if (risk?.Area != null) { inArea++; continue; }
                         if (directSwarm != null && StruckBySwarm(ctx, point) != null) { inSwarm++; continue; }
@@ -2187,11 +2214,20 @@ namespace CompanionAI_Pathfinder.Tactics
                         plan = new Approach
                         {
                             Point = point, Risk = risk, Around = directArea, AroundSwarm = directSwarm,
-                            AttacksBefore = directArea == null && directSwarm == null ? directAttacks : 0,
+                            // ★ v0.3.29 test 4: the attacks it saves only when they were why the search ran (they were then).
+                            AttacksBefore = directArea == null && directSwarm == null && provokes ? directAttacks : 0,
+                            Beside = takenBy.HasValue ? TakerNote(takenBy.Value) : null,
                             Arrival = ring < range ? Mathf.Clamp(range - ring, 0.1f, 0.3f) : 0.3f
                         };
                     }
                     if (plan.Detours) break;
+                }
+                // ★ v0.3.29 test 4: the straight spot is taken and no side of the target is free.
+                if (takenBy.HasValue && plan.Beside == null)
+                {
+                    s_NoFreeSide++;
+                    plan.NoFreeSide = $"{TakerNote(takenBy.Value)}; {taken} of the other spots taken, {far} beyond this move, " +
+                                      $"{inArea} in areas, {unwalkable} not walkable" + (dearer > 0 ? $", {dearer} not priced" : "");
                 }
                 if (plan.Around == null && plan.AroundSwarm == null && (directArea != null || directSwarm != null))
                     plan.NoSpot = $"{inArea} in or through an area, " + (directSwarm != null ? $"{inSwarm} in {directSwarm}'s swarm, " : "") +
@@ -2572,6 +2608,8 @@ namespace CompanionAI_Pathfinder.Tactics
                     // ★ v0.3.13: walking out of an enemy's reach provokes (melee and ranged alike).
                     // ★ v0.3.17: around a harmful area when the straight approach walks into it (PlanApproach).
                     var approach = PlanApproach(ctx, enemy, reach);
+                    // ★ v0.3.29 test 4 (author-approved): real time, no free side of it to stand on - another enemy or action.
+                    if (SkipNoFreeSide(ctx, enemy, approach)) continue;
                     // ★ v0.3.23 (Carnage task): a kill there fires the Display around the spot the attack is made from.
                     float moveCarnage = KillDisplayCredit(killDisplay, enemy, single, approach.Point, out string moveCarnageTag);
                     if (moveCarnage > 0f)
@@ -2617,7 +2655,9 @@ namespace CompanionAI_Pathfinder.Tactics
                         MoveFirst = approach.Detours,
                         MovePoint = approach.Detours ? approach.Point : (Vector3?)null,
                         ApproachRadius = approach.Arrival,
-                        CheckPath = risk?.Area == null
+                        CheckPath = risk?.Area == null,
+                        // ★ v0.3.29 test 4: the walk to a free side ends once the enemy is in reach (RealTimeTactics).
+                        WalkEndsInReach = approach.Beside != null
                     });
                 }
             }
@@ -4736,6 +4776,8 @@ namespace CompanionAI_Pathfinder.Tactics
             // ★ v0.3.17: to a spot outside a harmful area the enemy stands in, when there is one within reach of it
             // (PlanApproach): from there the unit attacks next, or catches the enemy as it comes out.
             var approach = PlanApproach(ctx, enemy, radius, orNearby: true);
+            // ★ v0.3.29 test 4 (author-approved): real time, no free side of it to stand on.
+            if (SkipNoFreeSide(ctx, enemy, approach)) return false;
             var risk = approach.Risk;
             string leaveTag = "";
             value = WorthFrom(approach.Point, ref leaveTag);
