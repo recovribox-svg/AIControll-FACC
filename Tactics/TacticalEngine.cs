@@ -1078,10 +1078,11 @@ namespace CompanionAI_Pathfinder.Tactics
             foreach (var enemy in ctx.Enemies)
             {
                 float zone;
+                bool ranged = false;
                 try
                 {
-                    bool ranged = (enemy.Body?.PrimaryHand?.MaybeWeapon?.Blueprint?.IsRanged ?? false) ||
-                                  (enemy.Descriptor?.Spellbooks?.Any() ?? false);
+                    ranged = (enemy.Body?.PrimaryHand?.MaybeWeapon?.Blueprint?.IsRanged ?? false) ||
+                             (enemy.Descriptor?.Spellbooks?.Any() ?? false);
                     zone = ranged ? 20f : enemy.CurrentSpeedMps * 3f + 2f + enemy.Corpulence;
                 }
                 catch
@@ -1089,8 +1090,13 @@ namespace CompanionAI_Pathfinder.Tactics
                     zone = 11f;
                 }
                 if (Vector3.Distance(enemy.Position, at) > zone + ally.Corpulence) continue;
+                // ★ v0.3.28 test 7 (author-approved): a melee enemy's full attack only where it strikes from where it
+                // stands (or a 5-foot step); a walk first is one attack, and only if the area it stands in lets it go
+                // (StrikeShareAt). The Schir in Camellia's Grease counted in full at every spot it could walk to.
+                float share = ranged ? 1f : StrikeShareAt(enemy, ally, at);
+                if (!(share > 0f)) continue;
                 int sharedBy = Math.Max(1, ctx.Allies.Count(a => Vector3.Distance(enemy.Position, a == ally ? at : a.Position) <= zone + a.Corpulence));
-                parts.Add(new KeyValuePair<UnitEntityData, float>(enemy, CombatMath.Threat(enemy) / sharedBy));
+                parts.Add(new KeyValuePair<UnitEntityData, float>(enemy, CombatMath.Threat(enemy) * share / sharedBy));
             }
             return parts;
         }
@@ -1277,7 +1283,9 @@ namespace CompanionAI_Pathfinder.Tactics
                 float chance = ValueModel.TargetChance(whoInReach, reach > 0f ? reachSum : 0f, whoInZone, zoneSum, whoWeight);
                 if (chance <= 0f) continue;
                 float mean = weightSum / Math.Max(1, ctx.Allies.Count);
-                float threat = CombatMath.Threat(enemy) * ctx.DangerScale * (mean > 0f ? whoWeight / mean : 1f);
+                // ★ v0.3.28 test 7: as much of its round as reaches the spot (StrikeShareAt).
+                float threat = CombatMath.Threat(enemy) * ctx.DangerScale * (mean > 0f ? whoWeight / mean : 1f) *
+                               (ranged ? 1f : StrikeShareAt(enemy, who, at));
                 threats.Add((chance, RiskMath.RoundDropChance(hp, threat)));
             }
             return ValueModel.CombinedDrop(threats);
@@ -4459,6 +4467,9 @@ namespace CompanionAI_Pathfinder.Tactics
                     }
                 }
             }
+
+            // 2b) ★ v0.3.28 test 7 (author-approved): at any HP, out of the reach of enemies it cannot hit back from here.
+            AddOutOfReachCandidate(ctx, list, kept);
 
             // 3) Nothing to do from here: close the distance for this or the next turn.
             // ★ v0.3.14 (test5): not while only movement is possible (nauseated): arriving, the unit could not attack and

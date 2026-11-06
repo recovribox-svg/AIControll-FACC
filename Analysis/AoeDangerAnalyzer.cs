@@ -267,6 +267,44 @@ namespace CompanionAI_Pathfinder.Analysis
         }
 
         /// <summary>
+        /// ★ v0.3.28 test 7: the chance the areas <paramref name="unit"/> stands in hold it this round - knock it down or
+        /// keep it in place (Grease, Entangle, Web) or take its actions (hard control): its failed save, as for a unit
+        /// walking in (<see cref="EnteringDanger(UnitEntityData, Vector3, Vector3, out string, out float, out bool, out float)"/>),
+        /// which leaves out the areas a unit is already inside. Asked of enemies: one in the party's Grease must stay up to
+        /// walk out of it and attack. <paramref name="name"/>: the area that holds it most.
+        /// </summary>
+        public static float HeldInsideChance(UnitEntityData unit, out string name)
+        {
+            name = null;
+            float held = 0f, most = 0f;
+            if (unit == null) return 0f;
+            try
+            {
+                var areaEffects = Game.Instance?.State?.AreaEffects;
+                if (areaEffects == null) return 0f;
+                foreach (var aoe in areaEffects)
+                {
+                    if (!IsLive(aoe) || !IsUnitInsideEffect(unit, aoe)) continue;
+                    var danger = EvaluateEffectDanger(unit, aoe, quiet: true);
+                    if (danger == null || !(danger.DangerLevel > 0f)) continue;
+                    if (!danger.IsMovementImpairing && ControlOf(aoe) != CompanionAI_Pathfinder.Tactics.ControlStrength.Hard) continue;
+                    float chance = Mathf.Clamp01(danger.AffectChance);
+                    held = 1f - (1f - held) * (1f - chance);
+                    if (chance > most)
+                    {
+                        most = chance;
+                        name = aoe.Context?.SourceAbilityContext?.Ability?.Name ?? danger.Name;
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                Main.Verbose($"[AoeDanger] held-inside check {unit.CharacterName}: {ex.Message}");
+            }
+            return held;
+        }
+
+        /// <summary>
         /// ★ v0.3.19 (test9): the worst harmful area <paramref name="unit"/> would newly overlap where it stands with a
         /// body of <paramref name="corpulence"/> - an area holds a unit by its body (AreaEffectView.Contains: Shape.Contains
         /// with the unit's Corpulence, which grows with its size). Camellia's Enlarge Person on Seelah, who stood at the edge
