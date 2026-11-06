@@ -3896,3 +3896,75 @@ The author approved pricing standing inside a swarm as danger (the open point of
 ProfileAudit SWARM-AREA (swarm unit dumps): 15 swarm spaces; 15 of the 16 buffs that carry one strike each round (13 once a
 target is at the centre, 2 everyone inside: Creeping Doom, the Raven swarm). `GenericSwarmBuff` only registers targets. Test
 ZIP `AI-Control-FACC-v0.3.28-dev-test15-2415cf8-UMM-test.zip` (MVID `794e6682-f29b-426a-a940-680ed813c83c`); 457 tests.
+
+## 113. v0.3.28 test 15 logs, the v0.3.28 release, v0.3.29 test 1 and a real-time melee-targeting proposal
+
+**The logs.** Test 15 was played in 14 fights (8 turn-based, 6 real-time); the game's combat log covers all 14.
+- No mod errors. The only error line comes from another mod (WrathPatches).
+- Nobody went down by a decision that priced wrong, except the RT case below. Camellia died in turn-based fight 5 to a
+  65-damage ×4 scythe crit from a Deskari's Cutthroat. She was at full HP and already in its reach, and a crit like
+  that is about 3 % an attack.
+- Decisions:
+  - turn-based median 25-51 ms, 95th percentile 123-229 ms;
+  - real-time median 29-50 ms, 95th percentile 184-232 ms;
+  - five slow lines of 683-1064 ms are garbage collections inside one cheap ability (the open A5 item);
+  - heap growth in slow lines: median 2.3 MB in real time, against 5.7 MB in the test 11 log.
+- Tests 13-14 seen working in `[Threat]`: the Abrikandilu's Charisma touch, the Ghoul Creeper's Constitution and
+  Dexterity damage and its paralysis, the Plagued Horse's disease. No swarm was met, so §112 ran every decision
+  without error but was not exercised.
+- At the author's request (release if the logs show it stable) this build is released as **v0.3.28** (commit
+  `2415cf8`, byte-identical to the test 15 ZIP). The two fixes below are development only, `Info.json` 0.3.29.
+
+**Fixed in v0.3.29 test 1.**
+- **An unused turn** (turn-based fight 6, Lann R1, `[SMWF5]` → END TURN).
+  - The pre-issue path check (`SelectedApproachFilter`, `PreflightMainCandidates`) refused his three walk-then-shoots,
+    each "longer than one move action" (9.7 m paths, 9.1 m move).
+  - Its budget of three checks then withheld every other walking option, his advances included.
+  - Before that check existed, such a refusal came from the dispatcher, and the next decision offered "Advance (beyond
+    one move)" at the refused option's worth (§ v0.3.20 test 3, `TurnMemory.TooFar`). The early refusal skipped that.
+  - Now plain moves (advances, withdrawals) stay when the budget runs out (`keepUnchecked`): nothing is spent before
+    them, and the dispatcher checks their walk when they are issued.
+  - A "longer than one move" refusal in the check is noted like the dispatcher's (`TurnMemory.NoteTooFar`, shared by
+    both).
+- **Repeated hits' control** (the Ghoul Creeper read 63.9 a round on Seelah, 24-31 dealt).
+  - Each of its 2.4 expected hits counted 1.2 rounds of paralysis, and the weapon's hits were multiplied out one by one.
+  - A round's hits are now read together (`Affliction.Repeated`). Damage, ability damage and negative levels add up.
+  - Control counts its duration times the chance at least one hit lands it (`ValueModel.RepeatedControl`, from
+    `Affliction.ControlChance`): 3 × (1 − 0.6^2.4) = 2.1 rounds, not 2.9.
+  - The whole is at most what the victim has left.
+- Test ZIP `AI-Control-FACC-v0.3.29-dev-test1-d752fa8-UMM-test.zip` (MVID `67c56db1-76e4-40bb-bfac-83ed603be6b6`);
+  461 tests.
+
+**The author's real-time report (first RT fight): Seelah never fought.**
+- **What the log shows:**
+  - At RT1 her only weapon option was "Move+Attack→Medium Earth Elemental" (4.4, `[intercepted 1] [exposed]`, "shields
+    allies 10.3"). No mongrel was in her reach, and walks onto them priced below zero for a frail unit (Witch 1 /
+    Monk 1, about 17 HP).
+  - The walk found a 9.9 m path. After 4.6 m and 2.7 s a Corrupted Mongrel hit her for 5 and the Elemental's slam for
+    14. She was down without a swing.
+  - The re-decision for an enemy engaging a walking unit (`ShouldReplanOnNewThreat`, §93) does not fire for an enemy
+    within reach of the walk's destination ("the fight there"). The mongrels stood around the Elemental.
+  - The same log has Lann's walk to heal her blocked by bodies: 0.4 m in 6.8 s, ended only by the 6 s no-progress
+    rule, so a whole round was lost. About one such walk per real-time log.
+- **The author's proposal:**
+  - Right that a melee companion should answer the enemies engaging it and should not stay committed to a distant
+    target.
+  - The log does not show a pathfinding failure: she was cut down on the way.
+  - As a hard rule ("always the nearest engaging enemy; switch only when it falls or the better target comes into
+    reach") it would undo the approved front-line behaviour of §95: stepping in front of a heavy hitter on a squishy
+    ally. It would also tie units to harmless engagers (asleep, held) and block the steps out of an unanswered reach.
+- **Proposal (needs the author's approval: target commitment, movement and stuck cancellation):**
+  - R1 (real time): an enemy that engages a walking unit within its own weapon's reach makes it decide again at once,
+    also near the destination, while the walk's target is not yet in reach. The engine then weighs attacking the
+    engager (no walk, no attack of opportunity) against walking on (priced with the attack of opportunity for leaving
+    its reach and the rest of the walk). Once per engager per walk. A rule, not a hard target lock.
+  - R2 (real time): a walk that makes no progress (under 0.5 m) for 2 s instead of 6 s ends and is decided again. The
+    target is noted out of walking reach for a few seconds (`CombatMemory.NoteOutOfWalkingReach`), as for the native
+    path that ends short.
+  - R3 (both modes): the chance of going down at a spot from melee enemies in reach is computed from their real hits
+    (hit chance, damage per hit, criticals: the reading `RiskMath.AttackDropChance` already uses for attacks of
+    opportunity) instead of exp(−HP / expected damage). For Seelah that model gave about 13 % next to the Elemental;
+    two hitters of 5 and 14 on 17 HP make it closer to 40 %. Low-HP units would then stop volunteering to tank heavy
+    hitters.
+  - R1 and R2 answer the report directly. R3 is the larger change (every walk's price) and also covers Camellia's
+    kind of death.

@@ -193,6 +193,12 @@ SWARM-AREA. Test ZIP `AI-Control-FACC-v0.3.28-dev-test15-2415cf8-UMM-test.zip` (
 (14 fights, no mod errors). At the author's request it is released as **v0.3.28** (commit `2415cf8`):
 `release/CompanionAI_Pathfinder_v0.3.28.zip` (byte-identical to the test15 ZIP), notes `release/CHANGELOG_v0.3.28.md`, `main`
 fast-forwarded; the author creates the GitHub release and tag `v0.3.28`.
+**v0.3.29 test 1 (6 November, `docs/TACTICAL_AI.md` §113, development only, not played):** test-15 log review. The pre-issue path
+check keeps plain moves when its budget runs out and notes "longer than one move" refusals (`SelectedApproachFilter` keepUnchecked,
+`TurnMemory.NoteTooFar`: Lann's unused turn); a round's hits read together, control once over (`Affliction.Repeated`,
+`ValueModel.RepeatedControl`: Ghoul Creeper). `Info.json` 0.3.29. Proposal for the author in §113: real-time re-decision when
+engaged on a walk (R1), 2 s blocked walks (R2), drop chance from enemies' real hits (R3). Test ZIP
+`AI-Control-FACC-v0.3.29-dev-test1-d752fa8-UMM-test.zip` (MVID `67c56db1-76e4-40bb-bfac-83ed603be6b6`); 461 tests.
 
 Historical handovers, superseded by the one above: [v0.3.22 release preparation](docs/RELEASE_0_3_22_HANDOVER.md)
 (27 October, PR #6–#12), [released-log review](docs/RELEASE_0322_LOG_REVIEW.md) (PR #13),

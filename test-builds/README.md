@@ -1,6 +1,30 @@
 # Test builds
 
-## Current test build: v0.3.28-dev-test15 (2415cf8) - standing in a swarm priced as danger (released as v0.3.28)
+## Current test build: v0.3.29-dev-test1 (d752fa8) - two fixes from the test 15 logs
+
+**[Download the UMM test ZIP (d752fa8)](AI-Control-FACC-v0.3.29-dev-test1-d752fa8-UMM-test.zip?raw=true)**
+
+Direct link: <https://github.com/recovribox-svg/AIControll-FACC/raw/claude/dreamy-pasteur-b9h3rn/test-builds/AI-Control-FACC-v0.3.29-dev-test1-d752fa8-UMM-test.zip>
+
+v0.3.28 (released) plus two fixes from your test 15 logs ([docs/TACTICAL_AI.md](../docs/TACTICAL_AI.md) §113):
+- **No more unused turn when every walk is just too long.** In turn-based fight 6, Lann ended round 1 doing nothing.
+  His three walk-then-shoot options were each slightly longer than one move. The check that refused them also held back
+  his plain advances. Now an advance is still offered, as it was before that check existed.
+- **Paralysing enemies rated sensibly.** The Ghoul Creeper's several hits each counted a full paralysis, so it read about
+  twice as dangerous as it is (63.9 a round against 24-31 dealt). A second paralysis in the same round costs no more
+  turns, so the hits now count once over for that.
+- Also there: a proposal for the real-time melee targeting you reported (Seelah and the Earth Elemental). It waits for
+  your decision and is not in this build.
+
+UMM shows **0.3.29**. Startup line `[Build] v0.3.29 module=67c56db1-76e4-40bb-bfac-83ed603be6b6`.
+- ZIP SHA-256 `be320cd6d58e8d22d85223b25365ccf44542881756fbb5143a82ed5fd7bbd8c5`; DLL SHA-256 `41a15ecf3eeed8f89b030536a63cb40545a484e0636499c5477e7c7f7aab59b3`.
+- [Identity](AI-Control-FACC-v0.3.29-dev-test1-d752fa8-UMM-test.identity.json) · [Checksums](SHA256SUMS.txt).
+- Checks: 461 unit tests pass; release build 0 warnings; offline blueprint audit 0 errors; no new game references. Not
+  played yet.
+- **Test:** turn-based fights where enemies start far away: archers and casters should advance when they cannot reach
+  anyone this turn, not end the turn idle. Fights with ghouls: `[Threat]` should rate them closer to what they deal.
+
+## Test 15: v0.3.28-dev-test15 (2415cf8) - standing in a swarm priced as danger (released as v0.3.28)
 
 **[Download the UMM test ZIP (2415cf8)](AI-Control-FACC-v0.3.28-dev-test15-2415cf8-UMM-test.zip?raw=true)**
 

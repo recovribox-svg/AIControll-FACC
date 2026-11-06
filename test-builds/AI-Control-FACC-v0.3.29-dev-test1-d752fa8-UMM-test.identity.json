@@ -1,0 +1,35 @@
+{
+  "name": "AI Control - Fully Autonomous Combat Companions v0.3.29 test 1 (test-15 log fixes)",
+  "version": "0.3.29",
+  "umm_manifest_version": "0.3.29",
+  "umm_mod_id": "CompanionAI_Pathfinder",
+  "branch": "claude/dreamy-pasteur-b9h3rn",
+  "base_release": "v0.3.28 (2415cf8)",
+  "runtime_source_commit": "d752fa8",
+  "archive": "AI-Control-FACC-v0.3.29-dev-test1-d752fa8-UMM-test.zip",
+  "zip_sha256": "be320cd6d58e8d22d85223b25365ccf44542881756fbb5143a82ed5fd7bbd8c5",
+  "dll_sha256": "41a15ecf3eeed8f89b030536a63cb40545a484e0636499c5477e7c7f7aab59b3",
+  "manifest_sha256": "7d399d2fdadbbf57fa7fafafbfa1b5350bf751c775264b33b2f17ef4e6a7c40e",
+  "module_mvid": "67c56db1-76e4-40bb-bfac-83ed603be6b6",
+  "startup_marker": "[Build] v0.3.29 module=67c56db1-76e4-40bb-bfac-83ed603be6b6",
+  "archive_contents": [
+    "CompanionAI_Pathfinder.dll",
+    "Info.json"
+  ],
+  "checks": {
+    "unit_tests": {
+      "passed": 461,
+      "failed": 0,
+      "skipped": 0
+    },
+    "release_build": {
+      "warnings": 0,
+      "errors": 0
+    },
+    "external_references": "SigDump vs v0.3.28: no new public game members",
+    "packed_dll_matches_build": true,
+    "in_game": "pending",
+    "profile_audit": "Kineticist + Spells + Buffs + swarm, spider and Shadow unit dumps, strict: 3572 loaded, 0 failed, 0 reader errors; all checks pass (ricochet-layer, rank-increment, quiver-binding, soul-power, damage-context, drain, affliction, swarm-area)"
+  },
+  "publication_scope": "Development test download: v0.3.28 plus the test-15 log fixes (no unused turn when walks are just over one move; a round's hits counted together for control); not a release."
+}
