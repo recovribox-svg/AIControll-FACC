@@ -189,7 +189,10 @@ control, immunities; in enemy threat, walk/revive prices and the party's poisone
 danger of the spot by the game's swarm rules (`CombatMath.Swarms.cs`, `TacticalEngine.Swarms.cs`, `ValueModel.Swarm.cs`):
 struck in full inside it (inner-circle rule where the strike waits for it), half within its walk; walk prices, approach spots
 clear of a swarm, a step or move out (`AddOutOfSwarmCandidate`); harmful-area analyzer skips swarm spaces; ProfileAudit
-SWARM-AREA. Test ZIP `AI-Control-FACC-v0.3.28-dev-test15-2415cf8-UMM-test.zip` (MVID `794e6682-f29b-426a-a940-680ed813c83c`); 457 tests.
+SWARM-AREA. Test ZIP `AI-Control-FACC-v0.3.28-dev-test15-2415cf8-UMM-test.zip` (MVID `794e6682-f29b-426a-a940-680ed813c83c`); 457 tests. Test 15 played
+(14 fights, no mod errors). At the author's request it is released as **v0.3.28** (commit `2415cf8`):
+`release/CompanionAI_Pathfinder_v0.3.28.zip` (byte-identical to the test15 ZIP), notes `release/CHANGELOG_v0.3.28.md`, `main`
+fast-forwarded; the author creates the GitHub release and tag `v0.3.28`.
 
 Historical handovers, superseded by the one above: [v0.3.22 release preparation](docs/RELEASE_0_3_22_HANDOVER.md)
 (27 October, PR #6–#12), [released-log review](docs/RELEASE_0322_LOG_REVIEW.md) (PR #13),

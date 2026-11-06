@@ -1,6 +1,6 @@
 # Test builds
 
-## Current test build: v0.3.28-dev-test15 (2415cf8) - standing in a swarm priced as danger
+## Current test build: v0.3.28-dev-test15 (2415cf8) - standing in a swarm priced as danger (released as v0.3.28)
 
 **[Download the UMM test ZIP (2415cf8)](AI-Control-FACC-v0.3.28-dev-test15-2415cf8-UMM-test.zip?raw=true)**
 
