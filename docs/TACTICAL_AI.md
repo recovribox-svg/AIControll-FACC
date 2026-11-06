@@ -3613,3 +3613,35 @@ Psychokineticist stat) and Tome of the Firebird (Extra Burn, Internal Buffer for
 do not touch the part. The note is now logged once a session and names the part's main stat.
 
 Test ZIP `AI-Control-FACC-v0.3.28-dev-test9-18fba94-UMM-test.zip` (MVID `fd940d66-16b4-4fad-8d02-d5e97e6e9be0`); 413 tests.
+
+## 107. Dark Elementalist competence (v0.3.28 test 10)
+
+Author request (with a third-party combat guide): can the AI play a Dark Elementalist well? Evidence from the game's
+blueprints (DarkElementalistArchetype and its features), the engine's code paths and the logs.
+
+**Already right (read from the game):** the main stat (DarkElementalistBurnFeature: `AddKineticistPart.MainStat` =
+Intelligence) drives blast damage (each blast's DamageBonus rank reads `KineticistMainStatProperty`; physical as is,
+energy halved) and DCs, and the engine takes both from the game's preview and contexts; the burn pool (3, no increase:
+DarkElementalistBurnResource) and per-round limit come from `UnitPartKineticist.MaxBurn`; accepted burn earns no Overflow
+(the archetype's Overflow buff has `IgnoreBurn`; `CombatMath.OverflowNow` honours it, so `BurnCost` credits none); saves
+come from the unit's stats. The guide's Soul Power description differs from the game; the game's rule is used.
+
+**Soul Power (DarkElementalistSoulPowerAbility), fixed:** the pool is the caster's character level; the units its filter
+lets in (dead, without DarkELementalistSoulPowerOnceBuff) have their character levels taken off it; reaching it heals one
+burn (`ContextActionHealBurn`) and adds a rank of DarkElementalistSuccessfullSoulPowerFeature, read by
+DarkElementalistOverflowBonusBuff (Overflow, IgnoreBurn, capped at class level / 3). Every unit in the burst is marked,
+success or not. Before: corpses counted by the larger of character level and CR, a success worth a fixed 4 + 1.5 a round
+past the cap (an older log: 24 casts at 8.5). Now (`TacticalEngine.SoulPower.cs`): `ReadSoulHarvest` counts through the
+ability's own filter (`AbilityProfile.AreaReaches`, so DarkCodex's QoL variant - free action, out of combat only, no filter
+- is read as it is), `ValueModel.SoulHarvestSucceeds` / `OverflowRankGain` (unit-tested), the damage per rank shared with
+the Overflow reader (`CombatMath.OverflowDamagePerRank`). In a fight it is worth one burn's price while there is burn
+(`BurnCost`) and the rank's credit for this fight's blasts (`ValueModel.KineticOverflowCredit`, with the price book's
+comparison when present). **Out of combat** (`SoulHarvestToCast`, from the end of combat and the exploration driver,
+same gates as the quiver): cast when it would succeed and heals burn or adds a rank under the cap - the corpses still lie
+there and no turn is spent. ProfileAudit SOUL-POWER checks the wiring.
+
+**Main-stat buffs:** a buff to a kineticist's main stat (Fox's Cunning for a Dark Elementalist, Bear's Endurance otherwise)
+is valued for the blast damage bonus it adds (the blast's DamageBonus progression before and after; one blast a round, half
+while the unit also has a weapon attack). Not modelled: its wild-talent DC rise, the +1 attack per Overflow rank.
+
+Test ZIP `AI-Control-FACC-v0.3.28-dev-test10-f5faa25-UMM-test.zip` (MVID `eeb140e7-6d84-43b2-bbcc-a0e1cf8e0529`); 423 tests.

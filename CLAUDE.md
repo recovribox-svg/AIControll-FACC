@@ -158,6 +158,10 @@ by its stop chance; Orvath's kineticist part names no quiver buff (the game then
 kineticist part is `DarkElementalistBurnFeature` (likely Isekai's Dark Elementalist Legacy: no quiver, Intelligence); the
 author confirmed arrows never pay. Note once a session with the main stat. Test ZIP
 `AI-Control-FACC-v0.3.28-dev-test9-18fba94-UMM-test.zip` (MVID `fd940d66-16b4-4fad-8d02-d5e97e6e9be0`); 413 tests.
+**v0.3.28 test 10 (6 November, `docs/TACTICAL_AI.md` §107, author-requested, not played):** Dark Elementalist. Soul Power by
+the game's rules (`TacticalEngine.SoulPower.cs`: corpse character levels through the ability's filter, burn price, Overflow
+rank under its cap) and harvested after fights (`RealTimeController.TryHarvestSouls`); kineticist main-stat buffs valued for
+blast damage. Test ZIP `AI-Control-FACC-v0.3.28-dev-test10-f5faa25-UMM-test.zip` (MVID `eeb140e7-6d84-43b2-bbcc-a0e1cf8e0529`); 423 tests.
 
 Historical handovers, superseded by the one above: [v0.3.22 release preparation](docs/RELEASE_0_3_22_HANDOVER.md)
 (27 October, PR #6–#12), [released-log review](docs/RELEASE_0322_LOG_REVIEW.md) (PR #13),

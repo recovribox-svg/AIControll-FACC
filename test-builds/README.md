@@ -1,6 +1,29 @@
 # Test builds
 
-## Current test build: v0.3.28-dev-test9 (18fba94) - the quiver explained
+## Current test build: v0.3.28-dev-test10 (f5faa25) - Dark Elementalist
+
+**[Download the UMM test ZIP (f5faa25)](AI-Control-FACC-v0.3.28-dev-test10-f5faa25-UMM-test.zip?raw=true)**
+
+Direct link: <https://github.com/recovribox-svg/AIControll-FACC/raw/claude/dreamy-pasteur-b9h3rn/test-builds/AI-Control-FACC-v0.3.28-dev-test10-f5faa25-UMM-test.zip>
+
+Test 9 (below) plus the Dark Elementalist review ([docs/TACTICAL_AI.md](../docs/TACTICAL_AI.md) §107). Intelligence for blasts,
+DCs and the 3-burn cap were already handled (the AI reads them from the game). What changes:
+- **Soul Power by the game's real rules:** it works only when the dead bodies within 30 ft (not yet harvested) add up to
+  Orvath's character level, then it heals 1 burn and adds +1 Elemental Overflow until rest - which stops at a third of his
+  kineticist level (2 at level 6). The AI now counts the bodies the way the game does, and values a cast by the burn it
+  heals and by an Overflow rank only while under that cap (an older log shows 24 casts for nothing more).
+- **Harvest after fights:** right after a fight, while the bodies still lie around, Orvath casts Soul Power when it would
+  work and is worth it - no combat turn spent. Look for `[Kinetic] Orvath: out of combat, Soul Power - harvest: souls ...`.
+- **Fox's Cunning (or Bear's Endurance for a normal kineticist)** is now valued for the blast damage it adds.
+
+UMM shows **0.3.28**. Startup line `[Build] v0.3.28 module=eeb140e7-6d84-43b2-bbcc-a0e1cf8e0529`.
+- ZIP SHA-256 `952bc475e6f78c42e9e5b99b3884cd003620840b1d7ebf5ad8dc93636a2f45e3`; DLL SHA-256 `5387b5c38087263eaf8bcbb51b5b927296781d3fa9c71db62a316a8453bce633`.
+- [Identity](AI-Control-FACC-v0.3.28-dev-test10-f5faa25-UMM-test.identity.json) · [Checksums](SHA256SUMS.txt).
+- Checks: 423 unit tests pass; release build 0 warnings; offline blueprint audit 0 errors. Not played yet.
+- **Test:** after a fight with several kills near Orvath while he has burn, he should cast Soul Power once (burn goes down);
+  in fights, Soul Power should only appear when enough bodies lie within 30 ft.
+
+## Test 9: v0.3.28-dev-test9 (18fba94) - the quiver explained (also in test 10)
 
 **[Download the UMM test ZIP (18fba94)](AI-Control-FACC-v0.3.28-dev-test9-18fba94-UMM-test.zip?raw=true)**
 

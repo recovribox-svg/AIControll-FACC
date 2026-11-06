@@ -1,0 +1,35 @@
+{
+  "name": "AI Control - Fully Autonomous Combat Companions v0.3.28 test 10 (Dark Elementalist)",
+  "version": "0.3.28",
+  "umm_manifest_version": "0.3.28",
+  "umm_mod_id": "CompanionAI_Pathfinder",
+  "branch": "claude/dreamy-pasteur-b9h3rn",
+  "base_release": "v0.3.27 (3f005b9)",
+  "runtime_source_commit": "f5faa25",
+  "archive": "AI-Control-FACC-v0.3.28-dev-test10-f5faa25-UMM-test.zip",
+  "zip_sha256": "952bc475e6f78c42e9e5b99b3884cd003620840b1d7ebf5ad8dc93636a2f45e3",
+  "dll_sha256": "5387b5c38087263eaf8bcbb51b5b927296781d3fa9c71db62a316a8453bce633",
+  "manifest_sha256": "ae1e19149c98be1443a2b5db7225009b14d905327a3055ff990775ef56e0f45e",
+  "module_mvid": "eeb140e7-6d84-43b2-bbcc-a0e1cf8e0529",
+  "startup_marker": "[Build] v0.3.28 module=eeb140e7-6d84-43b2-bbcc-a0e1cf8e0529",
+  "archive_contents": [
+    "CompanionAI_Pathfinder.dll",
+    "Info.json"
+  ],
+  "checks": {
+    "unit_tests": {
+      "passed": 423,
+      "failed": 0,
+      "skipped": 0
+    },
+    "release_build": {
+      "warnings": 0,
+      "errors": 0
+    },
+    "external_references": "SigDump vs test 9: unchanged",
+    "packed_dll_matches_build": true,
+    "in_game": "pending",
+    "profile_audit": "Kineticist dumps, strict: 800 loaded, 0 failed, 286 rows, 0 reader errors; ricochet-layer, rank-increment, quiver-binding and soul-power checks pass"
+  },
+  "publication_scope": "Development test download: test 9 plus Dark Elementalist Soul Power by the game's rules (harvested after fights), kineticist main-stat buffs valued; not a release."
+}
