@@ -1427,11 +1427,36 @@ namespace CompanionAI_Pathfinder.GameInterface
         private bool TryHarvestSouls(UnitEntityData unit)
         {
             if (unit?.Get<Kingmaker.UnitLogic.Class.Kineticist.UnitPartKineticist>() == null) return false;
-            if (QuiverModeBlock() != null || QuiverUnitBlock(unit) != null) return false;
+            // ★ v0.3.28 test 11: Soul Power is a full-round cast (6 s). Started while the party walks on after a fight, the
+            // walk cancelled it and the harvest started again 1.5 s later - test 10: 21 casts issued for Orvath after fights,
+            // 14 of them cancelled, Orvath halting behind the party each time. It starts once the party has stood still
+            // (sampled before the unit's own gates: its own walk counts too).
+            bool moving = PartyOnTheMove();
+            if (QuiverModeBlock() != null || QuiverUnitBlock(unit) != null || moving) return false;
             var ability = Tactics.TacticalEngine.SoulHarvestToCast(unit);
             if (ability == null) return false;
             IssueOutOfCombatBuff(unit, ability, unit.Descriptor?.CharacterName ?? "Unknown");
             return true;
+        }
+
+        private static float _partyMovedAt = -100f;
+
+        /// <summary>
+        /// ★ v0.3.28 test 11: true while a party member moves or moved within the last 2 s (sampled by the exploration
+        /// updater every 0.5 s and by every out-of-combat check).
+        /// </summary>
+        private static bool PartyOnTheMove()
+        {
+            float now = UnityEngine.Time.time;
+            try
+            {
+                var party = Kingmaker.Game.Instance?.Player?.PartyAndPets;
+                if (party != null)
+                    foreach (var member in party)
+                        if (member != null && member.IsInGame && (member.View?.IsMoving() ?? false)) { _partyMovedAt = now; break; }
+            }
+            catch { _partyMovedAt = now; }
+            return now - _partyMovedAt < 2f;
         }
 
         private bool TryPrepareQuiver(UnitEntityData unit)

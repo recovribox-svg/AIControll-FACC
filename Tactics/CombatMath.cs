@@ -336,6 +336,7 @@ namespace CompanionAI_Pathfinder.Tactics
         {
             ClearAttackCache();
             FrameValues.Clear();
+            DamageContexts.Clear();
             AbilityProfile.ClearConditionCache();
         }
 
@@ -762,7 +763,7 @@ namespace CompanionAI_Pathfinder.Tactics
             DamageEstimates++;
             EffectApplies Applies(GameAction action) => branch?.Invoke(action) ?? profile.AppliesTo(action, ability, target);
             if (target != null && profile.Damage.All(d => Applies(d) == EffectApplies.No)) return 0f;
-            var ctx = CreateContext(ability, target != null ? new TargetWrapper(target) : null);
+            var ctx = DamageContext(ability, profile, target);
             int cl = Math.Max(1, ParamsOf(ability)?.CasterLevel ?? 1);
             DamageMetamagic(ability, out bool maximize, out bool empower);
             var parts = new List<KeyValuePair<GameAction, float>>();
@@ -807,6 +808,69 @@ namespace CompanionAI_Pathfinder.Tactics
             }
             return SumAlternatives(profile, parts);
         }
+
+        // ★ v0.3.28 test 11: one execution context per ability and frame for damage whose numbers the target cannot change.
+        // Each damage estimate made a context of its own (a blast appraised on five enemies made five), and Orvath's
+        // decisions grew the heap by 4-6 MB (test 10: Fire Blast +232 KB, 5 contexts) - the garbage collections behind
+        // the 0.7-1 s decisions. Only the dice and shared values read it here, so sharing it is exact when nothing they
+        // read depends on the target (ContextIsTargetFree); otherwise every estimate still makes its own.
+        private static readonly Dictionary<AbilityData, MechanicsContext> DamageContexts = new Dictionary<AbilityData, MechanicsContext>();
+        private static int s_DamageContextFrame = -1;
+        private static readonly Dictionary<Kingmaker.UnitLogic.Abilities.Blueprints.BlueprintAbility, bool> TargetFreeDamage =
+            new Dictionary<Kingmaker.UnitLogic.Abilities.Blueprints.BlueprintAbility, bool>();
+        private static readonly System.Reflection.FieldInfo RankBaseType =
+            HarmonyLib.AccessTools.Field(typeof(Kingmaker.UnitLogic.Mechanics.Components.ContextRankConfig), "m_BaseValueType");
+
+        private static MechanicsContext DamageContext(AbilityData ability, AbilityProfile profile, UnitEntityData target)
+        {
+            if (target == null) return CreateContext(ability, null);
+            if (!ContextIsTargetFree(ability.Blueprint, profile)) return CreateContext(ability, new TargetWrapper(target));
+            int frame = Time.frameCount;
+            if (frame != s_DamageContextFrame) { DamageContexts.Clear(); s_DamageContextFrame = frame; }
+            if (!DamageContexts.TryGetValue(ability, out var ctx))
+            {
+                ctx = CreateContext(ability, new TargetWrapper(target));
+                if (DamageContexts.Count > 256) DamageContexts.Clear();
+                DamageContexts[ability] = ctx;
+            }
+            return ctx;
+        }
+
+        /// <summary>
+        /// ★ v0.3.28 test 11: the damage numbers of <paramref name="blueprint"/> read nothing of the target: no damage the
+        /// game previews per target (an IDealDamageProvider other than ContextActionDealDamage), no rank config on a
+        /// target's buff (ContextRankBaseValueType.TargetBuffRank), and no damage or shared-value dice reading a target
+        /// property or buff rank (ContextValueType.Target*).
+        /// </summary>
+        internal static bool ContextIsTargetFree(Kingmaker.UnitLogic.Abilities.Blueprints.BlueprintAbility blueprint, AbilityProfile profile)
+        {
+            if (blueprint == null || profile == null) return false;
+            if (TargetFreeDamage.TryGetValue(blueprint, out bool free)) return free;
+            free = RankBaseType != null;
+            try
+            {
+                foreach (var action in profile.Damage)
+                {
+                    if (action is ContextActionDealDamage dmg) { free &= DiceTargetFree(dmg.Value); continue; }
+                    if (!(action is ContextActionKill)) free = false;
+                }
+                foreach (var config in blueprint.GetComponents<Kingmaker.UnitLogic.Mechanics.Components.ContextRankConfig>())
+                    if (RankBaseType?.GetValue(config) is Kingmaker.UnitLogic.Mechanics.Components.ContextRankBaseValueType type &&
+                        type == Kingmaker.UnitLogic.Mechanics.Components.ContextRankBaseValueType.TargetBuffRank) free = false;
+                foreach (var shared in blueprint.GetComponents<Kingmaker.UnitLogic.Mechanics.Components.ContextCalculateSharedValue>())
+                    free &= DiceTargetFree(shared.Value);
+            }
+            catch { free = false; }
+            TargetFreeDamage[blueprint] = free;
+            return free;
+        }
+
+        private static bool DiceTargetFree(ContextDiceValue dice) =>
+            dice == null || ValueTargetFree(dice.DiceCountValue) && ValueTargetFree(dice.BonusValue);
+
+        private static bool ValueTargetFree(ContextValue value) =>
+            value == null || value.ValueType != ContextValueType.TargetProperty && value.ValueType != ContextValueType.TargetCustomProperty &&
+                             value.ValueType != ContextValueType.TargetNamedProperty && value.ValueType != ContextValueType.TargetBuffRank;
 
         internal static bool IgnoresPhysicalReduction(UnitEntityData caster, UnitEntityData target,
             ICollection<Kingmaker.UnitLogic.Buffs.Blueprints.BlueprintBuff> excludedSources = null)
@@ -1115,28 +1179,37 @@ namespace CompanionAI_Pathfinder.Tactics
         }
 
         private const int MaxEnergyReadTraces = 24;
+        // ★ v0.3.28 test 11: rows once a session per creature kind (and the same numbers), counted per fight. Keyed by the
+        // target unit and cleared every fight, the same read came back with every new fight's creatures (test 10: 159 rows,
+        // 36 KB; Orvath's Fan of Flames on a Vermlek six times).
         private static readonly HashSet<EnergyReadKey> EnergyReadsTraced = new HashSet<EnergyReadKey>();
-        internal static void ClearEnergyReadTrace() => EnergyReadsTraced.Clear();
+        private static int EnergyRowsThisFight;
+        internal static void ClearEnergyReadTrace()
+        {
+            EnergyRowsThisFight = 0;
+            if (EnergyReadsTraced.Count > 4096) EnergyReadsTraced.Clear();
+        }
 
         private static float TraceEnergyRead(UnitEntityData target, ContextActionDealDamage dmg, AbilityData ability,
             bool infusion, float raw, float remaining, DamageObserver.Seen seen, string route, float? native)
         {
             if (ability?.Blueprint == null || dmg.DamageType.Type != Kingmaker.RuleSystem.Rules.Damage.DamageType.Energy ||
-                EnergyReadsTraced.Count >= MaxEnergyReadTraces) return remaining;
+                EnergyRowsThisFight >= MaxEnergyReadTraces) return remaining;
             // ★ v0.3.25 (log review): only reads that change the estimate - a resistance, an immunity, observed damage. 117 of
             // 144 rows of a six-fight log said raw = remaining (no resistance) and filled the 24-row cap every fight.
             if (seen == null && Math.Abs(raw - remaining) < 0.01f && route.IndexOf("exception", StringComparison.Ordinal) < 0) return remaining;
             try
             {
                 var caster = ability.Caster?.Unit;
-                var key = new EnergyReadKey(caster?.UniqueId, target.UniqueId, ability.Blueprint.AssetGuid,
-                    dmg.DamageType.Energy, route, infusion);
-                if (EnergyReadsTraced.Add(key))
-                    Main.Log($"[Math] energy estimate {caster?.CharacterName}'s {ability.Name} " +
+                var key = new EnergyReadKey(caster?.UniqueId, $"{target.Blueprint?.AssetGuid}|{raw:F0}|{remaining:F0}",
+                    ability.Blueprint.AssetGuid, dmg.DamageType.Energy, route, infusion);
+                if (!EnergyReadsTraced.Add(key)) return remaining;
+                EnergyRowsThisFight++;
+                Main.Log($"[Math] energy estimate {caster?.CharacterName}'s {ability.Name} " +
                         $"{(infusion ? "infusion" : "direct")} -> {target.CharacterName}: {dmg.DamageType.Energy}, raw={raw:F2}, " +
                         $"route={route}, native remaining={(native.HasValue ? native.Value.ToString("F2") : "not queried")}, " +
                         $"observed={(seen == null ? "none" : $"factor {seen.Factor:F2}, flat {seen.Flat}, immune {seen.Immune}, capped {seen.ReductionCapped}")}, " +
-                        $"remaining={remaining:F2} (first per route; at most {MaxEnergyReadTraces} rows/fight)");
+                        $"remaining={remaining:F2} (first per creature kind and route this session; at most {MaxEnergyReadTraces} rows/fight)");
             }
             catch { } // Diagnostic identity/formatting must never change the estimate or its fallback.
             return remaining;

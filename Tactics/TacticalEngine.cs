@@ -183,6 +183,11 @@ namespace CompanionAI_Pathfinder.Tactics
         public float Distance(UnitEntityData other) => Vector3.Distance(Unit.Position, other.Position);
         /// <summary>★ v0.3.17: set by ScoreAbility - the aimed enemy itself got some of the value (not only others in the area).</summary>
         public bool AimCounted;
+        /// <summary>
+        /// ★ v0.3.28 test 11: the revive reading of the heal valued last for (ability, ally) this decision, printed with the
+        /// revive's value line (one line instead of two each round; test 10: 172 revive lines while Seelah was down).
+        /// </summary>
+        public readonly Dictionary<string, string> ReviveNotes = new Dictionary<string, string>();
         /// <summary>★ v0.3.17: approaches planned in this decision (TacticalEngine.PlanApproach), by target and range.</summary>
         internal readonly Dictionary<string, TacticalEngine.Approach> Approaches = new Dictionary<string, TacticalEngine.Approach>();
         /// <summary>★ v0.3.18: provoked attacks priced in this decision (TacticalEngine.ProvokeRisk), by place and chance.</summary>
@@ -2669,6 +2674,9 @@ namespace CompanionAI_Pathfinder.Tactics
             strength == ControlStrength.Minor ? 0.15f :
             isMark ? (oneShotMark ? 0.1f : 0.15f) : 0.25f;
 
+        private static string ReviveNoteKey(AbilityData ability, UnitEntityData ally) =>
+            $"{ability?.Blueprint?.AssetGuid}|{ability?.SourceItem?.UniqueId}|{ally?.UniqueId}";
+
         private static void ReportOnce(string key, string message) => AbilityDiscovery.ReportOnce(key, message);
         private static void ReportOnce(string key, Func<string> message) => AbilityDiscovery.ReportOnce(key, message);
 
@@ -3137,6 +3145,7 @@ namespace CompanionAI_Pathfinder.Tactics
                 if (ctx.DownedAllies.Contains(target))
                     ReportOnce($"revive-value|{ctx.Unit.UniqueId}|{target.UniqueId}|{CombatMemory.Round}",
                                $"[Tactics] {ctx.Unit.CharacterName}: revive {target.CharacterName} with {ability.Name} = {value:F1} " +
+                               (ctx.ReviveNotes.TryGetValue(ReviveNoteKey(ability, target), out var reviveNote) ? $"[{reviveNote}] " : "") +
                                $"(scored {scored:F1}{(needsMove ? ", walk x0.9" : "")}" +
                                (provokeLoss > 0f ? $", provoking -{provokeLoss:F1}" : "") +
                                (risk != null ? $", the walk x{1f - risk.StopChance:F2} -{risk.Cost:F1}{risk.Tag}" : "") + ")");
@@ -3618,6 +3627,7 @@ namespace CompanionAI_Pathfinder.Tactics
                 float healValue = 0f;
                 float restoring = 0f;   // ★ v0.3.25: the HP-restoring part alone (no revive, no drop-chance term)
                 string reviveNote = null;
+                UnitEntityData reviveTarget = null;
                 foreach (var ally in healTargets)
                 {
                     var applies = profile.Heals.Select(h => profile.AppliesTo(h, ability, ally)).ToList();
@@ -3640,7 +3650,8 @@ namespace CompanionAI_Pathfinder.Tactics
                         float needed = Math.Max(1f, 1f - ally.HPLeft + ally.DamageNonLethal);
                         float share = Math.Min(1f, heal / needed);
                         float upChance = share >= 1f ? 1f : 0.6f * share;
-                        reviveNote = $"revive {ally.CharacterName}: needs {needed:F0} HP, heals ~{heal:F0}";
+                        reviveNote = $"needs {needed:F0} HP, heals ~{heal:F0}";
+                        reviveTarget = ally;
                         // ★ v0.3.14 (test5): worth only as much as the chance it stays up (ReviveStaysUp).
                         // ★ v0.3.20 (0.3.19 release logs): a heal that only takes the ally part of the way faces the same
                         // danger once the next heal brings it up (assumed of this size). Without it, a part-way heal on
@@ -3690,7 +3701,7 @@ namespace CompanionAI_Pathfinder.Tactics
                 {
                     value += healValue * RoleWeight(ctx, "heal");
                     reasons.Add("heal");
-                    if (reviveNote != null) ReportOnce($"revive|{unit.UniqueId}|{CombatMemory.Round}|{reviveNote}", $"[Tactics] {unit.CharacterName}: {ability.Name} {reviveNote}");
+                    if (reviveNote != null) ctx.ReviveNotes[ReviveNoteKey(ability, reviveTarget)] = reviveNote;
                 }
             }
 

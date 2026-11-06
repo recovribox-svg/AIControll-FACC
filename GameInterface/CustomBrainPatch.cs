@@ -239,11 +239,13 @@ namespace CompanionAI_Pathfinder.GameInterface
                 }
 
                 string unitName = currentUnit.Descriptor?.CharacterName ?? "Unknown";
-                // ★ v0.3.19 (release): turn starts at verbose level - each decision line names the unit and round.
-                Main.Verbose($"턴 시작: {unitName} (Status={__instance.CurrentTurn?.Status})");
-
                 bool controlled = CustomBrainPatch.ShouldControlUnit(currentUnit, out string reason);
                 s_LastTurnStartRefusal = reason;
+                // ★ v0.3.19 (release): turn starts at verbose level - each decision line names the unit and round.
+                // ★ v0.3.28 test 11: one line a turn start, with whose turn it is (test 10: three verbose lines a turn -
+                // the start, "AI control target" for the party and "not controlled" for every enemy: 330 lines).
+                Main.Verbose($"[Turn] {unitName}: turn starts (Status={__instance.CurrentTurn?.Status}) - " +
+                             (controlled ? "AI Control acts" : $"not AI Control's: {reason}"));
                 if (!controlled)
                 {
                     // ★ v0.3.14: why, and at normal level for the party's own units.
@@ -253,12 +255,9 @@ namespace CompanionAI_Pathfinder.GameInterface
                             $"유닛 제어 대상 아님: {unitName} - {reason}" +
                             (currentUnit.IsDirectlyControllable && reason != "dead" && reason != "unconscious"
                                 ? " (the game waits for your orders)" : ""));
-                    else
-                        Main.Verbose($"유닛 제어 대상 아님: {unitName} - {reason}");
                     return;
                 }
 
-                Main.Verbose($"★ AI 제어 대상: {unitName} - TurnControllerTick에서 처리 예정");
                 // ★ v0.2.86: StartTurn 시점에는 Status=Scrolling이므로 호출하지 않음
                 // TurnControllerTick_Postfix에서 Preparing/Acting 상태일 때 호출
             }

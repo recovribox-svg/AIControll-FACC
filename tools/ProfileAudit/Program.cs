@@ -165,6 +165,11 @@ namespace ProfileAudit
             foreach (var line in soulLines) Console.WriteLine(line);
             File.WriteAllText(output, string.Join(Environment.NewLine, soulLines) + Environment.NewLine + Environment.NewLine + File.ReadAllText(output));
             blocklistFailures += soulFailures;
+            // ★ v0.3.28 test 11: which damage abilities share one execution context across targets.
+            var contextLines = DamageContextCheck.Run(loaded.Values, out int contextFailures);
+            foreach (var line in contextLines) Console.WriteLine(line);
+            File.WriteAllText(output, string.Join(Environment.NewLine, contextLines) + Environment.NewLine + Environment.NewLine + File.ReadAllText(output));
+            blocklistFailures += contextFailures;
             if (failed > 0)
             {
                 string partial = $"PARTIAL: loaded {loaded.Count}, failed {failed}, allowed {options.AllowFailures}. Failed blueprints:";

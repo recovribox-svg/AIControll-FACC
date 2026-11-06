@@ -141,6 +141,24 @@ namespace CompanionAI_Pathfinder.Tactics
                 if (!ability.IsAvailable) { unavailable.Add(name); continue; }
                 understood.Add($"{name} ({Kinds(profile)})");
             }
+            // ★ v0.3.28 test 11: after the first report, only what changed. A spent slot or a used-up scroll changes the
+            // set, and every list was printed in full again (test 10: Camellia's 4-line block 6 times, Seelah's 5 times;
+            // 44 KB of [Coverage] lines in a 611 KB log).
+            var entries = new List<string>();
+            void Add(string list, List<string> names) { foreach (var n in names) entries.Add(list + ": " + n); }
+            Add("understood", understood); Add("not available now", unavailable); Add("blacklisted", blacklisted);
+            Add("held back by the item settings", itemPolicy); Add("on a 'must not use' list", listed); Add("effect not understood", unread);
+            bool first = !LastEntries.TryGetValue(unit.UniqueId, out var before);
+            LastEntries[unit.UniqueId] = entries;
+            if (!first)
+            {
+                var gone = MultisetMinus(before, entries);
+                var added = MultisetMinus(entries, before);
+                Main.Log($"[Coverage] {unit.CharacterName} abilities changed: {abilities.Count} on the action bar, understood {understood.Count}" +
+                         (added.Count > 0 ? $"; now {string.Join("; ", added)}" : "") +
+                         (gone.Count > 0 ? $"; no longer {string.Join("; ", gone)}" : ""));
+                return;
+            }
             Main.Log($"[Coverage] {unit.CharacterName} abilities: {abilities.Count} on the action bar; " +
                      $"understood {understood.Count}: {string.Join("; ", understood)}");
             if (unavailable.Count > 0) Main.Log($"[Coverage] {unit.CharacterName} not available now: {string.Join("; ", unavailable)}");
@@ -150,6 +168,23 @@ namespace CompanionAI_Pathfinder.Tactics
                 Main.Log($"[Coverage] {unit.CharacterName} on an 'Abilities AI must not use' list (not started by AI Control): {string.Join("; ", listed)}");
             if (unread.Count > 0)
                 Main.Log($"[Coverage] {unit.CharacterName} effect not understood (not used: ★ v0.3.18 no 'utility' value any more): {string.Join("; ", unread)}");
+        }
+
+        /// <summary>★ v0.3.28 test 11: per character, the entries of its last ability report ("list: name").</summary>
+        private static readonly Dictionary<string, List<string>> LastEntries = new Dictionary<string, List<string>>();
+
+        /// <summary>The entries of <paramref name="a"/> not matched one for one in <paramref name="b"/> (duplicates count).</summary>
+        internal static List<string> MultisetMinus(List<string> a, List<string> b)
+        {
+            var left = new Dictionary<string, int>();
+            foreach (var x in b) left[x] = (left.TryGetValue(x, out int n) ? n : 0) + 1;
+            var result = new List<string>();
+            foreach (var x in a)
+            {
+                if (left.TryGetValue(x, out int n) && n > 0) left[x] = n - 1;
+                else result.Add(x);
+            }
+            return result;
         }
 
         private static string Kinds(AbilityProfile p)

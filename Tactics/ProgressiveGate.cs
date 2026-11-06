@@ -66,6 +66,14 @@ namespace CompanionAI_Pathfinder.Tactics
         /// ★ v0.3.8: once per combat and caster, what the policy covers: the in-scope spells with their slot level, and
         /// why the other abilities are left alone. Without it a log could not show that the policy was on at all.
         /// </summary>
+        /// <summary>★ v0.3.28 test 11: the spell part of an option label ("Boneshaker->Vermlek(dmg)" -> "Boneshaker").</summary>
+        private static string SpellOf(string label)
+        {
+            if (label == null) return "";
+            int arrow = label.IndexOf("->", StringComparison.Ordinal);
+            return arrow > 0 ? label.Substring(0, arrow) : label;
+        }
+
         private static void LogLadderOnce(UnitEntityData unit, List<GateItem> items, List<TierOption> options, string mode)
         {
             if (!CombatMemory.ProgressiveLogged.Add("ladder:" + mode + ":" + unit.UniqueId)) return;
@@ -219,7 +227,9 @@ namespace CompanionAI_Pathfinder.Tactics
                     (decision.BypassedLabels.Count > 0 ? " - boss bypass: " + string.Join(", ", decision.BypassedLabels) : "");
                 string logKey = unit.UniqueId + "|" + mode;
                 string dedupe = string.Join("|", decision.Notes.Select(n => n.Split('(')[0])) + "#" +
-                                string.Join("|", decision.HeldBack.Select(k => items[int.Parse(k)].Label).OrderBy(l => l)) + "#" +
+                                // ★ v0.3.28 test 11: by spell, not by spell and target - the same three level-1 spells held back
+                                // on a different enemy were printed again (test 10: 51 lines for Orvath, one set of spells).
+                                string.Join("|", decision.HeldBack.Select(k => SpellOf(items[int.Parse(k)].Label)).Distinct().OrderBy(l => l)) + "#" +
                                 string.Join("|", decision.BypassedLabels.OrderBy(l => l));
                 if (summary.Length > 0 && (!LastLog.TryGetValue(logKey, out var last) || last != dedupe))
                     Main.Log($"[Progressive] {unit.CharacterName} ({mode}): {summary}");
