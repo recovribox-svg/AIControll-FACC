@@ -204,6 +204,10 @@ when an engager it can hit back stands near the walk's destination (`TacticalEng
 as blocked (`RealTimeController.BLOCKED_WALK_SECONDS`); R3 drop chances take the larger of the exponential and melee enemies' real
 hits (`RiskMath.FullAttackDropChance`, `TacticalEngine.Strikes.cs`: `StandingDropChance`, `SpotDrop`), reads once a round per pair.
 Test ZIP `AI-Control-FACC-v0.3.29-dev-test2-6221118-UMM-test.zip` (MVID `add726f5-13c2-4f48-ab1e-cf3a3c819b70`); 466 tests.
+Test 2 played (`docs/TACTICAL_AI.md` §115: 12 fights, no mod errors, R1-R3 seen working, R3 at most 6.4 ms a slow decision; every
+extra interrupted command traced, no loop). **v0.3.29 test 3 (6 November, §115, not played):** a real-time walk to touch range ends
+once the game's reach test reaches the touch's target (`RealTimeTactics.ShouldEndArrivedTouchWalk`; Lann circled Camellia 7.6 s).
+Test ZIP `AI-Control-FACC-v0.3.29-dev-test3-71959e6-UMM-test.zip` (MVID `a5d5b19e-da23-4aaf-bd93-d6037457f66d`); 466 tests.
 
 Historical handovers, superseded by the one above: [v0.3.22 release preparation](docs/RELEASE_0_3_22_HANDOVER.md)
 (27 October, PR #6–#12), [released-log review](docs/RELEASE_0322_LOG_REVIEW.md) (PR #13),

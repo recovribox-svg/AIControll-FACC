@@ -4029,3 +4029,45 @@ to free (1.4 with the attack of opportunity) and beat Daze (3.1).
 
 Test ZIP `AI-Control-FACC-v0.3.29-dev-test2-6221118-UMM-test.zip` (MVID `add726f5-13c2-4f48-ab1e-cf3a3c819b70`);
 466 tests.
+
+## 115. v0.3.29 test 3: test-2 log review, touch walks end in reach
+
+Test 2 played: 12 fights (turn-based and real time), no mod errors (the only error lines are WrathPatches' notes on an
+Isekai blueprint), nobody of the party died.
+
+**R1-R3 seen working.**
+- R1: "engages it on the way ... it can hit back from here" twice and "joined the fight" three times in real time. Seelah
+  then fought the engager (fight 1: the Corrupted Mongrel Brute, 2.3 m short of her target).
+- R2: two walks ended "blocked: walking on the spot for 2 s" (Camellia, 2.4 m and 2.6 s); each unit picked another
+  option at once.
+- R3 cost, from the slow-decision lines: 1-11 enemy attacks read, 0.0-6.4 ms in a slow decision (8 such lines in real
+  time, 5 in turn-based). It is a small part of those decisions; most of their time is still Orvath's ability stage.
+
+**More interrupted commands (32 of 239 in real time; test 15: 17 of 172).** Every interrupt in the mod logs a line, so
+each one was traced:
+- R1/R2 re-decisions: 6 for a new threat (test 15: 2), 2 blocked walks (new).
+- Targets an ally killed first, before the walk ended (the game's `UnitAttack.ShouldBeInterrupted`), and a unit knocked
+  prone or replaced by its next order: the rest. Two pairs in the first round of real-time fight 1 (Seelah and Camellia together,
+  0.2-0.4 s after the order) have no mod line; they match the game or a player order, not a decision loop.
+- No command was interrupted and re-issued in a loop.
+
+**Fixed: a walk to touch range ends once the touch reaches.**
+- Three walks to touch an ally with Cure Light Wounds (Lann's item twice, Camellia's spell) circled a body inside the
+  touch's own reach, just outside the walk's arrival radius (1.3 m). They ran until the 2 s in-range rule or the 6 s
+  no-progress rule ended them: 7.6 s (Lann, fight 1), 2.6 s, 2.9 s. Lann's heal was no longer worth it by then.
+- `RealTimeTactics.ShouldEndArrivedTouchWalk` (in the controller's re-decision chain): a not-started `UnitMoveTo` the
+  engine issued for a touch delivery (`StickyTouch`) whose target the game's reach test already reaches
+  (`FollowUpInReach`: `IsUnitCloseEnough` with the touch's approach distance and line-of-sight rule) is dropped. The
+  engine casts. As in the stuck rule's "reached native cast range" case, the walk is reconsidered, not marked as tried.
+  Walks to a casting spot (a cone aimed past allies) are not touched. Log: "X is in reach of its Y touch - the walk to it
+  ends".
+- `FollowUpInReach` reads the line-of-sight rule from the blueprint (no `ILineOfSightIgnore`, the `UnitUseAbility`
+  constructor's rule) instead of building a command each call, since it now runs on every check of a touch walk.
+
+**Seen, not changed.**
+- Orvath's Grease walk (real time) moved 0.4 m in 3.5 s with no game path, and ended as "not in range or sight and not
+  moving". His next blast went off at once. This is body blocking (Ardub stays on hold).
+- Two garbage-collection pauses of about 1.3 s, inside Orvath's decisions (3-6 MB a decision): the known A5 item.
+
+Test ZIP `AI-Control-FACC-v0.3.29-dev-test3-71959e6-UMM-test.zip` (MVID `a5d5b19e-da23-4aaf-bd93-d6037457f66d`);
+466 tests.

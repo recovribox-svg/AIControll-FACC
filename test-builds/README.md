@@ -1,6 +1,28 @@
 # Test builds
 
-## Current test build: v0.3.29-dev-test2 (6221118) - melee companions answer who engages them
+## Current test build: v0.3.29-dev-test3 (71959e6) - healers stop walking once they can touch
+
+**[Download the UMM test ZIP (71959e6)](AI-Control-FACC-v0.3.29-dev-test3-71959e6-UMM-test.zip?raw=true)**
+
+Direct link: <https://github.com/recovribox-svg/AIControll-FACC/raw/claude/dreamy-pasteur-b9h3rn/test-builds/AI-Control-FACC-v0.3.29-dev-test3-71959e6-UMM-test.zip>
+
+Test 2 (below) plus one real-time fix from your test 2 logs ([docs/TACTICAL_AI.md](../docs/TACTICAL_AI.md) §115):
+- **Real time - a walk to touch an ally ends as soon as the touch reaches.** Lann walking to heal Camellia with a Cure
+  Light Wounds item circled her for 7.6 s: he was close enough to touch her, but not yet at the spot the walk aimed for.
+  The walk now ends the moment the game says the touch reaches, and the companion casts. The log says
+  `... is in reach of its Cure Light Wounds touch - the walk to it ends`.
+- Your test 2 showed R1-R3 working, no mod errors and nobody of the party down. R3 cost at most 6.4 ms in a slow
+  decision.
+
+UMM shows **0.3.29**. Startup line `[Build] v0.3.29 module=a5d5b19e-da23-4aaf-bd93-d6037457f66d`.
+- ZIP SHA-256 `96135845e799b67d0bb91589790cb1778771c2074fb520cc8968dbd140dd600e`; DLL SHA-256 `44adcc68f68bc8010b5f3c1776f1aeb177e54ed10354feb30815cfc66f547132`.
+- [Identity](AI-Control-FACC-v0.3.29-dev-test3-71959e6-UMM-test.identity.json) · [Checksums](SHA256SUMS.txt).
+- Checks: 466 unit tests pass; release build 0 warnings; offline blueprint audit 0 errors; no new game references. Not
+  played yet.
+- **Test:** real-time fights where a companion heals an ally by touch (Cure Light Wounds spell or wand) in a crowd: it
+  should cast as soon as it is next to the ally, not circle them.
+
+## Test 2: v0.3.29-dev-test2 (6221118) - melee companions answer who engages them (also in test 3)
 
 **[Download the UMM test ZIP (6221118)](AI-Control-FACC-v0.3.29-dev-test2-6221118-UMM-test.zip?raw=true)**
 
