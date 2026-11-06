@@ -285,13 +285,12 @@ namespace CompanionAI_Pathfinder.Tactics
                     // victim it takes (the same reading the party's walks and revives use: CombatMath.OnHitAbilityDamage).
                     var abilityStat = Kingmaker.EntitySystem.Stats.StatType.Unknown;
                     float points = attack == null ? 0f : CombatMath.OnHitAbilityDamage(enemy, out abilityStat);
-                    if (points > 0f)
+                    // ★ v0.3.28 test 13: in hit points (ValueModel.AbilityDamageEquivalent, the reading its spells' drain uses), and
+                    // nothing on a victim immune to it.
+                    if (points > 0f && !CombatMath.AbilityDamageImmune(victim, abilityStat, false))
                     {
-                        int score = 0;
-                        try { score = victim.Stats.GetStat(abilityStat)?.ModifiedValue ?? 0; } catch { }
-                        int level = Math.Max(1, victim.Descriptor?.Progression?.CharacterLevel ?? 1);
-                        a.AbilityDamage = ValueModel.OnHitAbilityOffence(attack.Attacks * attack.FirstHitChance, points, score,
-                            ValueModel.AllyWorth(level, 3f, false));
+                        a.AbilityDamage = ValueModel.OnHitAbilityOffence(attack.Attacks * attack.FirstHitChance, points,
+                            CombatMath.AbilityScore(victim, abilityStat), victim.HPLeft);
                         a.AbilityStat = abilityStat.ToString();
                         a.Weapon += a.AbilityDamage;
                     }
@@ -388,6 +387,11 @@ namespace CompanionAI_Pathfinder.Tactics
                         damageIfLands = CombatMath.EstimateAbilityDamage(ability, profile, victim);
                         value += damage = damageIfLands * CombatMath.EffectChance(enemy, victim, ability, profile, true);
                     }
+                    // ★ v0.3.28 test 13: a poison it applies (BuffPoisonStatDamage), in the hit points its doses are worth on the
+                    // victim within three rounds (CombatMath.PoisonHpLoss: any score, a score taken below 1 kills).
+                    float poison = 0f;
+                    foreach (var buff in profile.TargetBuffs) poison += CombatMath.PoisonHpLoss(ability, buff, victim, 3f);
+                    if (poison > 0f) value += poison * CombatMath.EffectChance(enemy, victim, ability, profile, false);
                     float control = profile.ControlStrength == ControlStrength.Hard ? 1f : profile.ControlStrength == ControlStrength.Soft ? 0.4f : 0f;
                     if (control > 0f && !Analysis.AbilityClassifier.HasCCImmunity(victim, profile.Control))
                     {

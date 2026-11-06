@@ -170,6 +170,11 @@ namespace ProfileAudit
             foreach (var line in contextLines) Console.WriteLine(line);
             File.WriteAllText(output, string.Join(Environment.NewLine, contextLines) + Environment.NewLine + Environment.NewLine + File.ReadAllText(output));
             blocklistFailures += contextFailures;
+            // ★ v0.3.28 test 13: ability damage and negative levels read as such.
+            var drainLines = DrainCheck.Run(loaded.Values, out int drainFailures);
+            foreach (var line in drainLines) Console.WriteLine(line);
+            File.WriteAllText(output, string.Join(Environment.NewLine, drainLines) + Environment.NewLine + Environment.NewLine + File.ReadAllText(output));
+            blocklistFailures += drainFailures;
             if (failed > 0)
             {
                 string partial = $"PARTIAL: loaded {loaded.Count}, failed {failed}, allowed {options.AllowFailures}. Failed blueprints:";

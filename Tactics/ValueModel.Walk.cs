@@ -124,16 +124,17 @@ namespace CompanionAI_Pathfinder.Tactics
         }
 
         /// <summary>
-        /// ★ v0.3.28 test 12 (author's enquiry: Shadows, Nabasu, Mandragora swarms): what an enemy's weapon hits cost its victim
-        /// in ability damage over a round - the expected hits times the share of the victim each takes
-        /// (<see cref="AbilityDamageShare"/>) times the victim's worth in the fight. A Shadow's touch deals no hit points, so
-        /// its threat was its HP damage alone: "Shadow x0.5 (attacks 0.8 on Seelah)", the lowest share in every fight it
-        /// was in, though each hit takes 1d6 Strength.
+        /// ★ v0.3.28 test 12 (author's enquiry: Shadows, Nabasu, Mandragora swarms): what an enemy's weapon hits are worth in
+        /// ability damage over a round, in the hit points the threat model counts - the expected hits times what each is worth
+        /// (<see cref="AbilityDamageEquivalent"/>: the share of the victim's score of its hit points left; ★ test 13: in hit
+        /// points, as its spells' drain now is, instead of the victim's worth). A Shadow's touch deals no hit points, so its
+        /// threat was its HP damage alone: "Shadow x0.5 (attacks 0.8 on Seelah)", the lowest share in every fight it was in,
+        /// though each hit takes 1d6 Strength.
         /// </summary>
-        public static float OnHitAbilityOffence(float expectedHits, float points, int score, float victimWorth)
+        public static float OnHitAbilityOffence(float expectedHits, float points, int score, float victimHpLeft)
         {
-            if (!(expectedHits > 0f) || !(victimWorth > 0f)) return 0f;
-            return expectedHits * AbilityDamageShare(points, score) * victimWorth;
+            if (!(expectedHits > 0f)) return 0f;
+            return expectedHits * AbilityDamageEquivalent(points, score, victimHpLeft);
         }
 
         /// <summary>

@@ -109,9 +109,9 @@ namespace CompanionAI.Tests
         public void AbilityDamage_PastTheScore_IsAll() => Assert.Equal(1f, ValueModel.AbilityDamageShare(5f, 3), 4);
 
         [Fact]
-        public void ShadowTouch_ThreatIsHitsTimesShareTimesWorth() =>
-            // v0.3.28 test 12: a Shadow's 1d6 Strength on Seelah's 16, hitting 60 %, Seelah worth 39 for the fight.
-            Assert.Equal(0.6f * 3.5f / 16f * 39f, ValueModel.OnHitAbilityOffence(0.6f, 3.5f, 16, 39f), 3);
+        public void ShadowTouch_ThreatIsHitsTimesShareOfHitPoints() =>
+            // v0.3.28 test 12/13: a Shadow's 1d6 Strength on Seelah's 16, hitting 60 %, Seelah with 30 hit points left.
+            Assert.Equal(0.6f * 3.5f / 16f * 30f, ValueModel.OnHitAbilityOffence(0.6f, 3.5f, 16, 30f), 3);
 
         [Theory]
         [InlineData(0f, 3.5f, 16, 39f)]

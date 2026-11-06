@@ -805,6 +805,15 @@ namespace CompanionAI_Pathfinder.Tactics
                 if (target != null && Applies(action) == EffectApplies.No) continue;
                 switch (action)
                 {
+                    // ★ v0.3.28 test 13: ability damage and negative levels are worth what they take of the target's two other
+                    // life bars (CombatMath.Drain.cs), not hit-point damage of their dice through its resistances.
+                    case ContextActionDealDamage drain when KindOf(drain) != DealKind.HitPoints:
+                    {
+                        float amount = EvaluateDice(drain.Value, ctx, Math.Min(cl, 10), maximize, empower);
+                        parts.Add(new KeyValuePair<GameAction, float>(drain,
+                            target != null ? DrainEquivalent(drain, KindOf(drain), amount, target) : amount));
+                        break;
+                    }
                     case ContextActionDealDamage dmg:
                         float avg;
                         // ★ v0.3.18 (review): damage rolled earlier into a shared value (ContextActionDealDamage
@@ -1827,24 +1836,25 @@ namespace CompanionAI_Pathfinder.Tactics
 
         /// <summary>
         /// ★ v0.3.21: the hit points <paramref name="buff"/>'s poison (BuffPoisonStatDamage) is expected to take from
-        /// <paramref name="target"/> through Constitution damage within <paramref name="maxRounds"/>: the dice once when it
-        /// lands (OnActivate), then each round a save against the ability's DC, damage on a failure, until it was saved
-        /// SuccesfullSaves times or Ticks rounds passed (ITickEachRound.OnNewRound). Two points of Constitution are one hit
-        /// point per Hit Die. 0 for any other stat (those stay a plain debuff).
+        /// <paramref name="target"/> within <paramref name="maxRounds"/>: the dice once when it lands (OnActivate), then each
+        /// round a save against the ability's DC, damage on a failure, until it was saved SuccesfullSaves times or Ticks rounds
+        /// passed (ITickEachRound.OnNewRound). Constitution: two points are one hit point per Hit Die.
+        /// ★ v0.3.28 test 13: every score, as the share of it the doses take of the hit points left (a score taken below 1
+        /// kills: ValueModel.AbilityDamageEquivalent) - for Constitution the larger of the two readings; nothing for a score the
+        /// target is immune to (AddImmunityToAbilityScoreDamage). Other scores counted as a plain debuff before.
         /// </summary>
         public static float PoisonHpLoss(AbilityData ability, Kingmaker.UnitLogic.Buffs.Blueprints.BlueprintBuff buff, UnitEntityData target,
                                          float maxRounds)
         {
             if (buff == null || target == null) return 0f;
-            float points = 0f;
             try
             {
                 int dc = ParamsOf(ability)?.DC ?? 10;
+                var byStat = new Dictionary<StatType, float>();
                 foreach (var poison in Kingmaker.Blueprints.BlueprintExtenstions.GetComponents<Kingmaker.Designers.Mechanics.Buffs.BuffPoisonStatDamage>(buff))
                 {
-                    if (poison.Stat != StatType.Constitution) continue;
                     float each = Average(poison.Value) + poison.Bonus;
-                    if (each <= 0f) continue;
+                    if (each <= 0f || AbilityDamageImmune(target, poison.Stat, false)) continue;
                     float fail = 1f;
                     switch (poison.SaveType)
                     {
@@ -1853,11 +1863,18 @@ namespace CompanionAI_Pathfinder.Tactics
                         case SavingThrowType.Will: fail = Mathf.Clamp((dc - target.Stats.SaveWill.ModifiedValue - 1) / 20f, 0.05f, 0.95f); break;
                     }
                     int later = Math.Min(poison.Ticks - 1, Mathf.FloorToInt(Math.Max(0f, maxRounds - 1f)));
-                    points += each * ValueModel.PoisonDoses(fail, Math.Max(0, later), poison.SuccesfullSaves);
+                    float points = each * ValueModel.PoisonDoses(fail, Math.Max(0, later), poison.SuccesfullSaves);
+                    byStat[poison.Stat] = (byStat.TryGetValue(poison.Stat, out float had) ? had : 0f) + points;
                 }
-                if (points <= 0f) return 0f;
-                int hitDice = Math.Max(1, target.Descriptor.Progression.CharacterLevel);
-                return Math.Min(points / 2f * hitDice, Math.Max(0f, target.HPLeft));
+                float hpLeft = Math.Max(0f, target.HPLeft), loss = 0f;
+                foreach (var entry in byStat)
+                {
+                    float share = ValueModel.AbilityDamageEquivalent(entry.Value, AbilityScore(target, entry.Key), hpLeft);
+                    if (entry.Key == StatType.Constitution)
+                        share = Math.Max(share, entry.Value / 2f * Math.Max(1, target.Descriptor.Progression.CharacterLevel));
+                    loss += share;
+                }
+                return Math.Min(loss, hpLeft);
             }
             catch
             {

@@ -1654,12 +1654,9 @@ namespace CompanionAI_Pathfinder.Tactics
                                                          est?.CritMultiplier ?? 2f, Math.Max(1f, hp - damage));
                 damage += expected;
                 float points = CombatMath.OnHitAbilityDamage(enemy, out var abilityStat);
-                if (points > 0f)
-                {
-                    int score = 0;
-                    try { score = unit.Stats.GetStat(abilityStat)?.ModifiedValue ?? 0; } catch { }
-                    abilityShare += hit * ValueModel.AbilityDamageShare(points, score);
-                }
+                // ★ v0.3.28 test 13: not on a unit immune to it; its current score by the same reader as the threat model.
+                if (points > 0f && !CombatMath.AbilityDamageImmune(unit, abilityStat, false))
+                    abilityShare += hit * ValueModel.AbilityDamageShare(points, CombatMath.AbilityScore(unit, abilityStat));
                 noHit *= 1f - hit;
                 noKnock *= 1f - hit * CombatMath.TripOnHitChance(enemy, unit);
             }

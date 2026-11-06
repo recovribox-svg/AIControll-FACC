@@ -190,7 +190,14 @@ namespace CompanionAI_Pathfinder.Tactics
         private static string Kinds(AbilityProfile p)
         {
             var kinds = new List<string>();
-            if (p.DealsDamage) kinds.Add("damage");
+            if (p.DealsDamage)
+            {
+                // ★ v0.3.28 test 13: ability damage and negative levels are valued as such (CombatMath.Drain.cs).
+                var deals = p.Damage.OfType<Kingmaker.UnitLogic.Mechanics.Actions.ContextActionDealDamage>().Select(CombatMath.KindOf).ToList();
+                if (deals.Count == 0 || deals.Any(k => k == CombatMath.DealKind.HitPoints)) kinds.Add("damage");
+                if (deals.Contains(CombatMath.DealKind.AbilityDamage)) kinds.Add("ability damage");
+                if (deals.Contains(CombatMath.DealKind.EnergyDrain)) kinds.Add("negative levels");
+            }
             if (p.Heals.Count > 0 || p.CasterHeals.Count > 0) kinds.Add("heal");
             if (p.TargetBuffs.Count > 0) kinds.Add(p.HarmfulEffects ? "debuff" : "buff");
             if (p.Intimidation != null) kinds.Add("intimidate check");   // ★ v0.3.18 (AA-4)
