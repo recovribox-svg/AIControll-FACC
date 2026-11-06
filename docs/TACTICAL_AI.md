@@ -3645,3 +3645,45 @@ is valued for the blast damage bonus it adds (the blast's DamageBonus progressio
 while the unit also has a weapon attack). Not modelled: its wild-talent DC rise, the +1 attack per Overflow rank.
 
 Test ZIP `AI-Control-FACC-v0.3.28-dev-test10-f5faa25-UMM-test.zip` (MVID `eeb140e7-6d84-43b2-bbcc-a0e1cf8e0529`); 423 tests.
+
+## 108. Test 10 log review: harvest timing, shared damage contexts, log trimming (v0.3.28 test 11)
+
+Test 10 log (`56f0ef23`, 611 KB, 12 fights TB and RT, no mod errors) and combat log. Soul Power's attack/damage bonus shows in
+the combat log (`+1 [Soul Power]` attack, `+2`/`+3` damage), so the harvest works.
+
+**Harvest re-issued while the party walked (fixed).** After fights Orvath's harvest was issued 21 times; 14 ended
+`Interrupt` after 0-2.5 s with no movement of his own (`moved=0.0m`), each re-issued 1.5 s later by the out-of-combat
+throttle, until one finished. Soul Power is a full-round cast (`m_IsFullRoundAction`, 6 s; DarkCodex's free-action QoL
+variant was off: the classifier read `ActionType=Standard, FullRound=True`); the party walking on after the fight cut it
+off. `RealTimeController.TryHarvestSouls` now starts it only when no party member has moved for 2 s
+(`PartyOnTheMove`, sampled by the exploration driver every 0.5 s before the unit's own gates, so its own walk counts).
+Burn and the Overflow rank read twice in a row sometimes dropped between two checks with no cast finished (burn 1 -> 0,
+"at its cap" -> "+1"): something reset them outside the mod - most likely an after-combat restore in ToyBox, which was
+loaded. The mod reads the state as it is each time, so no change follows from it.
+
+**Allocations (performance).** The 0.7-1 s decisions are garbage collections (no `heap +` figure on the costliest ability,
+as found in §88). Orvath's decisions grew the heap by 4-6 MB, about 200 KB a blast: `EstimateAbilityDamageRaw` made a new
+`AbilityExecutionContext` (with `RecalculateRanks`) for every target it appraised. In that method the context is read only
+for dice and shared values; now (`CombatMath.DamageContext`) one context per ability and frame is shared across targets
+when nothing those read depends on the target (`ContextIsTargetFree`: no per-target preview provider, no
+`ContextRankBaseValueType.TargetBuffRank`, no `ContextValueType.Target*` in damage or shared-value dice). Exact, not an
+approximation; cleared with the infusion state. ProfileAudit DAMAGE-CONTEXT (kineticist + spell dumps): 447 of 448 damage
+abilities share, all 170 blasts; Greed Stack Explosion (target buff rank) keeps its own.
+
+**Log trimming** (about 80 KB of the mod's lines in this log):
+- `[Coverage]` abilities: after the first report only a "changed" line with what is now / no longer in each list (Camellia's
+  4-line block had been printed 6 times, Seelah's 5).
+- `[Math] energy estimate` rows: once a session per caster, ability, creature kind, route and numbers (keyed by the target
+  unit and cleared each fight, the same read came back every fight); still at most 24 a fight.
+- Turn start: one verbose `[Turn]` line saying whose turn it is and why not AI Control's, instead of three (330 lines).
+- Revive: the "needs N HP, heals ~N, stays up ~N %" reading is printed inside the revive value line (`ReviveNotes`).
+- `[Progressive]` held-back lines: printed again only when the set of held-back spells changes, not their targets (51 lines,
+  one set of three level-1 spells).
+
+Also read and left as they are: Seelah stayed down from round 1 to the end of a 9-enemy fight while three allies could
+revive her; the revive (5-14, "stays up" 10-56 %) lost to attacks (14-18) by the approved revive model. **Open for the
+author (target commitment):** in round 7 Camellia walked 8.2 m to touch Seelah for Cure Light Wounds (5.0), then at the
+next decision chose an Advance (6.0) over the cure she had walked for (5.5, no walk now), with 2 enemies and ~1 round
+left. A rule that keeps a touch cast after its approach walk is a target-commitment change, so it waits for the author.
+
+Test ZIP `AI-Control-FACC-v0.3.28-dev-test11-4d6036e-UMM-test.zip` (MVID `7aa18b9e-c844-477e-854b-d86589fb09f7`); 423 tests.

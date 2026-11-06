@@ -162,6 +162,13 @@ author confirmed arrows never pay. Note once a session with the main stat. Test 
 the game's rules (`TacticalEngine.SoulPower.cs`: corpse character levels through the ability's filter, burn price, Overflow
 rank under its cap) and harvested after fights (`RealTimeController.TryHarvestSouls`); kineticist main-stat buffs valued for
 blast damage. Test ZIP `AI-Control-FACC-v0.3.28-dev-test10-f5faa25-UMM-test.zip` (MVID `eeb140e7-6d84-43b2-bbcc-a0e1cf8e0529`); 423 tests.
+**v0.3.28 test 11 (6 November, `docs/TACTICAL_AI.md` §108, not played):** test 10 log reviewed (12 fights, no mod errors).
+The after-fight Soul Power harvest waits until the party has stood still for 2 s (`RealTimeController.PartyOnTheMove`: 14 of
+21 casts were cut off by the walk); damage estimates share one context per ability and frame when the target cannot change
+the numbers (`CombatMath.DamageContext` / `ContextIsTargetFree`, ProfileAudit DAMAGE-CONTEXT); log trimmed (Coverage diffs,
+energy rows per session, one turn-start line, revive notes merged, Progressive by spell). Open for the author: a touch cast
+dropped after its approach walk (Camellia, §108). Test ZIP `AI-Control-FACC-v0.3.28-dev-test11-4d6036e-UMM-test.zip` (MVID
+`7aa18b9e-c844-477e-854b-d86589fb09f7`); 423 tests.
 
 Historical handovers, superseded by the one above: [v0.3.22 release preparation](docs/RELEASE_0_3_22_HANDOVER.md)
 (27 October, PR #6–#12), [released-log review](docs/RELEASE_0322_LOG_REVIEW.md) (PR #13),

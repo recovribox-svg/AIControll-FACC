@@ -1,6 +1,30 @@
 # Test builds
 
-## Current test build: v0.3.28-dev-test10 (f5faa25) - Dark Elementalist
+## Current test build: v0.3.28-dev-test11 (4d6036e) - smoother harvest, lighter decisions, shorter log
+
+**[Download the UMM test ZIP (4d6036e)](AI-Control-FACC-v0.3.28-dev-test11-4d6036e-UMM-test.zip?raw=true)**
+
+Direct link: <https://github.com/recovribox-svg/AIControll-FACC/raw/claude/dreamy-pasteur-b9h3rn/test-builds/AI-Control-FACC-v0.3.28-dev-test11-4d6036e-UMM-test.zip>
+
+Test 10 (below) plus the review of its log ([docs/TACTICAL_AI.md](../docs/TACTICAL_AI.md) §108):
+- **Soul Power after fights waits until the party stops walking.** It is a 6-second cast: in the test 10 log it was
+  started 21 times after fights and your party's walk cancelled 14 of them, so Orvath kept halting behind. It now starts
+  once everyone has stood still for 2 seconds.
+- **Less memory garbage in kineticist decisions** (the cause of the occasional 0.7-1 s pause): a blast's damage was worked
+  out with a fresh game "context" for every enemy it was compared on; the numbers do not depend on the enemy, so one is
+  reused. Decisions are unchanged.
+- **Shorter log:** repeated ability lists show only what changed, one turn-start line instead of three, revive details in
+  one line, repeated "held back" and energy lines printed once. About 80 KB less in a log like test 10's (611 KB).
+
+UMM shows **0.3.28**. Startup line `[Build] v0.3.28 module=7aa18b9e-c844-477e-854b-d86589fb09f7`.
+- ZIP SHA-256 `b21be61c7e528dbdf68503b0bcfc50d085984f7d52787d26e64ee1c382a85e61`; DLL SHA-256 `d6dbfb11594ce6b113bde015aedcd1b403b1467e8222ef3b2d2777f533618019`.
+- [Identity](AI-Control-FACC-v0.3.28-dev-test11-4d6036e-UMM-test.identity.json) · [Checksums](SHA256SUMS.txt).
+- Checks: 423 unit tests pass; release build 0 warnings; offline blueprint audit 0 errors (new damage-context check: all
+  170 blasts share one context). Not played yet.
+- **Test:** after a fight, walk on at once: Orvath should follow without stopping, and cast Soul Power when you stop.
+  The `[Perf] slow decision` lines should show less `heap +` growth for Orvath (it was +4-6 MB).
+
+## Test 10: v0.3.28-dev-test10 (f5faa25) - Dark Elementalist (also in test 11)
 
 **[Download the UMM test ZIP (f5faa25)](AI-Control-FACC-v0.3.28-dev-test10-f5faa25-UMM-test.zip?raw=true)**
 
