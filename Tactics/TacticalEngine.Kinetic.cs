@@ -339,6 +339,10 @@ namespace CompanionAI_Pathfinder.Tactics
             // when burn blocks every blast. A plain blast costs no burn, so that case never came; with the quiver empty
             // mid-fight, the forms (Exploding Arrows, Spindle...) stayed out of reach for the rest of it.
             if (TryQuiverRefill(ctx, list, preview, part, abilities, blasts, out string why)) return;
+            // ★ v0.3.28 test 7: the refill's reason, once a fight. Test 6 had "quiver 0" in all 14 fights and no word why;
+            // it was only reported while burn blocked every blast.
+            if (why != null && !preview && CombatMemory.FirstThisFight($"refill|{unit.UniqueId}"))
+                Main.Log($"[Kinetic] {unit.CharacterName}: no quiver refill - {why} (quiver {QuiverRanks(unit, part)})");
             if (blasts.Any(a => a.IsAvailable)) return;
             var blocked = blasts.Where(BurnBlocked).ToList();
             if (blocked.Count == 0) return;
@@ -489,7 +493,11 @@ namespace CompanionAI_Pathfinder.Tactics
             why = null;
             var unit = ctx.Unit;
             var quiver = QuiverAbility(part, abilities);
-            if (quiver == null) return false;
+            if (quiver == null)
+            {
+                if (part.CanUseArcherBlast()) why = $"no ability puts {part.QuiverBuff?.name ?? "a quiver"} on it";
+                return false;
+            }
             if (!QuiverPays(unit)) { why = "the weapon in hand stops the quiver"; return false; }
             if (!quiver.IsAvailable) { why = "Create Quiver not available now"; return false; }
             if (SlotOf(quiver) == ActionSlot.Standard && !ctx.HasStandard) return false;
@@ -796,8 +804,13 @@ namespace CompanionAI_Pathfinder.Tactics
                 {
                     var abilities = AbilityDiscovery.Gather(unit);
                     var quiver = QuiverAbility(part, abilities);
-                    if (quiver == null) return null;
-                    if (UserAbilityPolicy.Blocks(unit, quiver)) why = "Create Quiver is on the block list";
+                    // ★ v0.3.28 test 7: named, not silent, for a unit that shoots its blasts (only those make arrows).
+                    if (quiver == null)
+                    {
+                        if (!part.CanUseArcherBlast()) return null;
+                        why = $"no ability among its {abilities.Count} puts {part.QuiverBuff.name} on it";
+                    }
+                    else if (UserAbilityPolicy.Blocks(unit, quiver)) why = "Create Quiver is on the block list";
                     else if (!quiver.IsAvailableForCast) why = $"Create Quiver not castable (burn {part.AcceptedBurn}/{part.MaxBurn})";
                     else
                     {

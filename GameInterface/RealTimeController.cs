@@ -1351,26 +1351,59 @@ namespace CompanionAI_Pathfinder.GameInterface
 
         // ★ v0.3.28 (codex review): shared by the combat-end path and the independent exploration updater.
         // Default mode excludes dialogue, cutscenes, rest and UI modes; loading and fake pause have separate flags.
-        private static bool QuiverPreparationMode()
+        private static bool QuiverPreparationMode() => QuiverModeBlock() == null;
+
+        /// <summary>
+        /// ★ v0.3.28 test 7: why quivers cannot be prepared now (null when they can). The test-6 play-test made no quiver
+        /// in 14 fights and logged no reason: every one of these checks returned silently.
+        /// </summary>
+        private static string QuiverModeBlock()
         {
             var game = Kingmaker.Game.Instance;
-            return Main.Enabled && (Settings.ModSettings.Instance?.AiRecastsSelfBuffs ?? false) &&
-                   game?.Player != null && game.CurrentMode == Kingmaker.GameModes.GameModeType.Default &&
-                   !game.IsPaused && !game.IsFakePause && !game.IsUnloading && !game.IsLoadingSave &&
-                   !(Kingmaker.EntitySystem.Persistence.LoadingProcess.Instance?.IsLoadingInProcess ?? false) &&
-                   !game.Player.IsInCombat;
+            if (!Main.Enabled) return "the mod is switched off";
+            if (!(Settings.ModSettings.Instance?.AiRecastsSelfBuffs ?? false)) return "\"recast self buffs after fights\" is off";
+            if (game?.Player == null) return "no game";
+            if (game.CurrentMode != Kingmaker.GameModes.GameModeType.Default) return $"game mode {game.CurrentMode}";
+            if (game.IsPaused || game.IsFakePause) return "paused";
+            if (game.IsUnloading || game.IsLoadingSave ||
+                (Kingmaker.EntitySystem.Persistence.LoadingProcess.Instance?.IsLoadingInProcess ?? false)) return "loading";
+            if (game.Player.IsInCombat) return "the party is in combat";
+            return null;
+        }
+
+        /// <summary>★ v0.3.28 test 7: (unit, reason) pairs already logged - each reason once a session per unit.</summary>
+        private static readonly HashSet<string> QuiverBlockNotes = new HashSet<string>();
+
+        private static void NoteQuiverBlock(UnitEntityData unit, string reason)
+        {
+            if (unit == null || reason == null || !QuiverBlockNotes.Add(unit.UniqueId + "|" + reason)) return;
+            Main.Log($"[Kinetic] {unit.CharacterName}: quiver not prepared out of combat - {reason}");
+        }
+
+        /// <summary>Only kineticists that can make arrows (Create Quiver: the Kinetic Sharpshooter's archer blasts).</summary>
+        private static bool QuiverMaker(UnitEntityData unit)
+        {
+            var part = unit?.Get<Kingmaker.UnitLogic.Class.Kineticist.UnitPartKineticist>();
+            if (part?.QuiverBuff == null) return false;
+            try { return part.CanUseArcherBlast(); }
+            catch { return false; }
         }
 
         internal void PrepareQuiversOutOfCombat()
         {
             try
             {
-                if (!QuiverPreparationMode()) return;
-                var party = Kingmaker.Game.Instance.Player.PartyAndPets;
-                if (party == null || party.Any(u => u != null && u.IsInCombat)) return;
+                var player = Kingmaker.Game.Instance?.Player;
+                var party = player?.PartyAndPets;
+                // In combat the engine decides (TryQuiverRefill); nothing to note twice a second.
+                if (party == null || player.IsInCombat) return;
+                string mode = QuiverModeBlock();
+                UnitEntityData fighting = mode == null ? party.FirstOrDefault(u => u != null && u.IsInCombat) : null;
                 foreach (var unit in party)
                 {
-                    if (unit?.Get<Kingmaker.UnitLogic.Class.Kineticist.UnitPartKineticist>()?.QuiverBuff == null) continue;
+                    if (!QuiverMaker(unit)) continue;
+                    if (mode != null) { NoteQuiverBlock(unit, mode); continue; }
+                    if (fighting != null) { NoteQuiverBlock(unit, $"{fighting.CharacterName} is still in combat"); continue; }
                     TryPrepareQuiver(unit);
                 }
             }
@@ -1379,13 +1412,27 @@ namespace CompanionAI_Pathfinder.GameInterface
 
         private bool TryPrepareQuiver(UnitEntityData unit)
         {
-            if (!QuiverPreparationMode() || unit == null || !unit.IsInGame || unit.IsSleeping || unit.IsInCombat ||
-                !(unit.Descriptor?.State?.CanAct ?? false) || (unit.View?.IsGetUp ?? false) ||
-                !CustomBrainPatch.ShouldControlUnit(unit) || GameAPI.HasPendingCommands(unit)) return false;
+            if (unit == null || !QuiverMaker(unit)) return false;
+            string block = QuiverModeBlock() ?? QuiverUnitBlock(unit);
+            if (block != null) { NoteQuiverBlock(unit, block); return false; }
             var quiver = Tactics.TacticalEngine.QuiverToPrepare(unit);
             if (quiver == null) return false;
             IssueOutOfCombatBuff(unit, quiver, unit.Descriptor?.CharacterName ?? "Unknown");
             return true;
+        }
+
+        /// <summary>★ v0.3.28 test 7: why this unit cannot start a cast out of combat now (null when it can).</summary>
+        private static string QuiverUnitBlock(UnitEntityData unit)
+        {
+            if (!unit.IsInGame) return "not in the game";
+            if (unit.IsSleeping) return "asleep (out of the game's update)";
+            if (unit.IsInCombat) return "in combat";
+            if (!(unit.Descriptor?.State?.CanAct ?? false)) return "cannot act";
+            if (unit.View?.IsGetUp ?? false) return "getting up";
+            if (!CustomBrainPatch.ShouldControlUnit(unit, out string why)) return why ?? "not controlled by AI Control";
+            // A walk or any other order: the cast waits, as it always did (an exploration walk ends; logged once).
+            if (GameAPI.HasPendingCommands(unit)) return "busy with a command";
+            return null;
         }
 
         /// <summary>

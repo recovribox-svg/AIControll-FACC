@@ -155,6 +155,11 @@ namespace ProfileAudit
             foreach (var line in rankLines) Console.WriteLine(line);
             File.WriteAllText(output, string.Join(Environment.NewLine, rankLines) + Environment.NewLine + Environment.NewLine + File.ReadAllText(output));
             blocklistFailures += rankFailures;
+            // ★ v0.3.28 test 7: Create Quiver found by the quiver buff the kineticist part names.
+            var quiverLines = QuiverBindingCheck.Run(loaded.Values, out int quiverFailures);
+            foreach (var line in quiverLines) Console.WriteLine(line);
+            File.WriteAllText(output, string.Join(Environment.NewLine, quiverLines) + Environment.NewLine + Environment.NewLine + File.ReadAllText(output));
+            blocklistFailures += quiverFailures;
             if (failed > 0)
             {
                 string partial = $"PARTIAL: loaded {loaded.Count}, failed {failed}, allowed {options.AllowFailures}. Failed blueprints:";
