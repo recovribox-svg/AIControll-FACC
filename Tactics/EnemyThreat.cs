@@ -281,19 +281,34 @@ namespace CompanionAI_Pathfinder.Tactics
                 {
                     var attack = CombatMath.EstimateWeaponAttack(enemy, victim, full: true);
                     a.Weapon = attack?.ExpectedDamage ?? 0f;
-                    // ★ v0.3.28 test 12: the ability damage its hits deal (a Shadow's Strength touch), priced as the share of the
-                    // victim it takes (the same reading the party's walks and revives use: CombatMath.OnHitAbilityDamage).
-                    var abilityStat = Kingmaker.EntitySystem.Stats.StatType.Unknown;
-                    float points = attack == null ? 0f : CombatMath.OnHitAbilityDamage(enemy, out abilityStat);
-                    // ★ v0.3.28 test 13: in hit points (ValueModel.AbilityDamageEquivalent, the reading its spells' drain uses), and
-                    // nothing on a victim immune to it.
-                    if (points > 0f && !CombatMath.AbilityDamageImmune(victim, abilityStat, false))
+                    // ★ v0.3.28 test 12: the ability damage its hits deal (a Shadow's Strength touch).
+                    // ★ test 13: in hit points. ★ test 14: everything its hits carry (a giant spider's poison, a Shadow's
+                    // touch, negative levels, control: CombatMath.OnHitAffliction), and a swarm's round (the Mandragora swarm's
+                    // 5d6, nausea and poison: CombatMath.SwarmRoundAffliction). Hit points join the weapon's prediction (what
+                    // it deals is observed as hit points); the rest is kept apart from that blend.
+                    if (attack != null && attack.Attacks > 0)
                     {
-                        a.AbilityDamage = ValueModel.OnHitAbilityOffence(attack.Attacks * attack.FirstHitChance, points,
-                            CombatMath.AbilityScore(victim, abilityStat), victim.HPLeft);
-                        a.AbilityStat = abilityStat.ToString();
-                        a.Weapon += a.AbilityDamage;
+                        var onHit = CombatMath.OnHitAffliction(enemy, victim);
+                        if (!onHit.IsEmpty)
+                        {
+                            float hits = attack.Attacks * attack.FirstHitChance;
+                            float total = CombatMath.AfflictionHp(onHit, victim);
+                            float hitPoints = Math.Min(total, Math.Min(Math.Max(0f, victim.HPLeft), onHit.HitPoints));
+                            a.Weapon += hits * hitPoints;
+                            a.AbilityDamage += hits * (total - hitPoints);
+                            a.AbilityStat = DescribeAffliction(onHit);
+                        }
                     }
+                    var swarm = CombatMath.SwarmRoundAffliction(enemy, victim);
+                    if (!swarm.IsEmpty)
+                    {
+                        float total = CombatMath.AfflictionHp(swarm, victim);
+                        float hitPoints = Math.Min(Math.Max(0f, victim.HPLeft), swarm.HitPoints);
+                        a.Weapon += hitPoints;
+                        a.AbilityDamage += Math.Max(0f, total - hitPoints);
+                        a.AbilityStat = "swarm: " + DescribeAffliction(swarm);
+                    }
+                    a.Weapon += a.AbilityDamage;
                     a.Spell = BestAbility(enemy, victim, party, usable, out a.SpellName, out a.EnergyType, out a.EnergyDamage,
                         out a.EnergyPerCast);
                 }
@@ -510,13 +525,24 @@ namespace CompanionAI_Pathfinder.Tactics
         private static bool IsHelpful(AbilityData ability) =>
             ability.Blueprint.EffectOnAlly == Kingmaker.UnitLogic.Abilities.Blueprints.AbilityEffectOnUnit.Helpful;
 
+        /// <summary>★ v0.3.28 test 14: what an affliction carries, for the [Threat] line.</summary>
+        private static string DescribeAffliction(CombatMath.Affliction affliction)
+        {
+            var parts = new List<string>();
+            if (affliction.HitPoints > 0.05f) parts.Add($"{affliction.HitPoints:0.#} HP");
+            foreach (var entry in affliction.Points.Where(p => p.Value > 0.05f)) parts.Add($"{entry.Key} {entry.Value:0.#}");
+            if (affliction.NegativeLevels > 0.05f) parts.Add($"{affliction.NegativeLevels:0.#} negative levels");
+            if (affliction.Control > 0.05f) parts.Add($"control {affliction.Control:0.#} rounds");
+            return string.Join(", ", parts);
+        }
+
         private static string Describe(Assessment a)
         {
             string why;
             if (a.Spell > 0f && a.Spell >= a.Offence - 0.01f) why = $"{a.SpellName} {a.Spell:0.#} on {a.VictimName}";
             else if (a.Heal > 0f && a.Heal >= a.Offence - 0.01f) why = $"heals: {a.HealName} {a.Heal:0.#} on {a.HealTarget}";
             else why = $"attacks {a.Weapon:0.#} on {a.VictimName}" +
-                       (a.AbilityDamage > 0.05f ? $" ({a.AbilityDamage:0.#} of it {a.AbilityStat} damage)" : "") +
+                       (a.AbilityDamage > 0.05f ? $" ({a.AbilityDamage:0.#} of it beyond hit points: {a.AbilityStat})" : "") +
                        (Math.Abs(a.Offence - a.Weapon) > 0.5f ? $", {a.Offence:0.#} a round with what it dealt" : "");
             return $"{a.Name} x{a.Share:0.0} ({why})";
         }

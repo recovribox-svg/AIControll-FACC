@@ -41,5 +41,36 @@ namespace CompanionAI_Pathfinder.Tactics
             float lost = Math.Min(hpLeft, HitPointsPerNegativeLevel * levels);
             return Math.Min(hpLeft, lost + levels / characterLevel * (hpLeft - lost));
         }
+
+        /// <summary>
+        /// ★ v0.3.28 test 14: the chance a saving throw of <paramref name="save"/> fails against <paramref name="dc"/> (a d20
+        /// that must reach the DC; a 1 always fails, a 20 always passes).
+        /// </summary>
+        public static float SaveFailChance(int dc, int save) => Clamp((dc - save - 1) / 20f, 0.05f, 0.95f);
+
+        /// <summary>
+        /// ★ v0.3.28 test 14: what an affliction (a weapon hit's poison, a swarm's round) is worth in hit points on a victim
+        /// with <paramref name="hpLeft"/> left: its hit-point damage plus its ability damage and negative levels in hit points
+        /// (<paramref name="drainHp"/>, already read per score), at most what is left, plus the rounds it controls the victim
+        /// (<paramref name="controlRounds"/>, hard control 1 a round, soft 0.4) at the victim's worth a round - the measure
+        /// the threat model gives a controlling spell (EnemyThreat.BestAbility).
+        /// </summary>
+        public static float AfflictionWorth(float hitPoints, float drainHp, float controlRounds, float hpLeft, float victimPerRound)
+        {
+            float harm = Math.Min(Math.Max(0f, hpLeft), Math.Max(0f, hitPoints) + Math.Max(0f, drainHp));
+            return harm + Math.Max(0f, controlRounds) * Math.Max(0f, victimPerRound);
+        }
+
+        /// <summary>
+        /// ★ v0.3.28 test 14: the share of a victim an affliction takes for the fight's worth model (the walk and revive
+        /// prices: share x its worth): the ability shares (<paramref name="abilityShare"/>), negative levels over its
+        /// character level, and the control rounds over the 3 rounds the worth counts; at most all of it.
+        /// </summary>
+        public static float AfflictionShare(float abilityShare, float negativeLevels, int characterLevel, float controlRounds)
+        {
+            float share = Math.Max(0f, abilityShare) + Math.Max(0f, controlRounds) / 3f;
+            if (negativeLevels > 0f) share += characterLevel <= 0 ? 1f : negativeLevels / characterLevel;
+            return Math.Min(1f, share);
+        }
     }
 }

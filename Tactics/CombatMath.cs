@@ -55,6 +55,8 @@ namespace CompanionAI_Pathfinder.Tactics
         /// <summary>★ v0.3.21 (gaps): a hit stops the target's regeneration (its fire dice, alignment, material or magic is
         /// one the regeneration names: AddEffectRegeneration).</summary>
         public bool EndsRegeneration;
+        /// <summary>★ v0.3.28 test 14: who attacks (its hits' afflictions: CombatMath.OnHitHp).</summary>
+        public UnitEntityData Attacker;
     }
 
     public static partial class CombatMath
@@ -256,7 +258,7 @@ namespace CompanionAI_Pathfinder.Tactics
             var routine = ReadRoutine(unit, target, full);
             if (routine == null) return null;
 
-            var result = new WeaponAttackEstimate { Attacks = routine.Attacks };
+            var result = new WeaponAttackEstimate { Attacks = routine.Attacks, Attacker = unit };
             result.Weapon = routine.FirstWeapon;
             result.IsRanged = routine.FirstWeapon?.Blueprint?.IsRanged ?? false;
             result.Reach = routine.Reach;

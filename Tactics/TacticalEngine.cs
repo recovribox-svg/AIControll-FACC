@@ -1653,10 +1653,10 @@ namespace CompanionAI_Pathfinder.Tactics
                 noDrop *= 1f - RiskMath.AttackDropChance(hit, (est?.FirstCritChance ?? 0.05f * hitIfMade) * made, perHit,
                                                          est?.CritMultiplier ?? 2f, Math.Max(1f, hp - damage));
                 damage += expected;
-                float points = CombatMath.OnHitAbilityDamage(enemy, out var abilityStat);
-                // ★ v0.3.28 test 13: not on a unit immune to it; its current score by the same reader as the threat model.
-                if (points > 0f && !CombatMath.AbilityDamageImmune(unit, abilityStat, false))
-                    abilityShare += hit * ValueModel.AbilityDamageShare(points, CombatMath.AbilityScore(unit, abilityStat));
+                // ★ v0.3.28 test 14: everything its hits carry - ability damage, a poison's doses, negative levels, control -
+                // as the share of the unit it takes (CombatMath.Afflictions.cs; immunities read).
+                float share = CombatMath.OnHitShare(enemy, unit);
+                if (share > 0f) abilityShare += hit * share;
                 noHit *= 1f - hit;
                 noKnock *= 1f - hit * CombatMath.TripOnHitChance(enemy, unit);
             }
@@ -2235,8 +2235,12 @@ namespace CompanionAI_Pathfinder.Tactics
         }
 
         /// <summary>★ v0.3.18: a weapon attack estimate's damage value (<paramref name="factor"/>: a bonus on the damage, Charge).</summary>
+        /// <remarks>★ v0.3.28 test 14: and what its hits carry beyond their damage (a poisoned or draining weapon:
+        /// CombatMath.OnHitHp), for the hits it is expected to land.</remarks>
         private static float DamageValue(UnitEntityData enemy, WeaponAttackEstimate est, float factor = 1f) =>
-            est == null ? 0f : DamageValue(enemy, est.ExpectedDamage * factor, est.AnyHitChance, est.EndsRegeneration);
+            est == null ? 0f : DamageValue(enemy, est.ExpectedDamage * factor +
+                                           est.Attacks * est.FirstHitChance * CombatMath.OnHitHp(est.Attacker, enemy),
+                                           est.AnyHitChance, est.EndsRegeneration);
 
         private static float RoleWeight(TacticalContext ctx, string category)
         {

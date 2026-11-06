@@ -175,6 +175,11 @@ namespace ProfileAudit
             foreach (var line in drainLines) Console.WriteLine(line);
             File.WriteAllText(output, string.Join(Environment.NewLine, drainLines) + Environment.NewLine + Environment.NewLine + File.ReadAllText(output));
             blocklistFailures += drainFailures;
+            // ★ v0.3.28 test 14: weapon-hit and swarm-round afflictions.
+            var afflictionLines = AfflictionCheck.Run(loaded.Values, out int afflictionFailures);
+            foreach (var line in afflictionLines) Console.WriteLine(line);
+            File.WriteAllText(output, string.Join(Environment.NewLine, afflictionLines) + Environment.NewLine + Environment.NewLine + File.ReadAllText(output));
+            blocklistFailures += afflictionFailures;
             if (failed > 0)
             {
                 string partial = $"PARTIAL: loaded {loaded.Count}, failed {failed}, allowed {options.AllowFailures}. Failed blueprints:";

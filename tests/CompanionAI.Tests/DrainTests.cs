@@ -43,5 +43,27 @@ namespace CompanionAI.Tests
         [InlineData(2.5f, 6, 0f)]
         public void NegativeLevels_NothingWithoutLevelsOrHitPoints(float levels, int level, float hp) =>
             Assert.Equal(0f, ValueModel.EnergyDrainEquivalent(levels, level, hp), 4);
+
+        // ★ v0.3.28 test 14: weapon and swarm afflictions.
+
+        [Theory]
+        [InlineData(18, 5, 0.6f)]    // needs 13+ on the d20: fails on 1-12
+        [InlineData(10, 15, 0.05f)]  // only a 1 fails
+        [InlineData(30, 2, 0.95f)]   // only a 20 passes
+        public void SaveFailChance_ByTheD20(int dc, int save, float fail) =>
+            Assert.Equal(fail, ValueModel.SaveFailChance(dc, save), 3);
+
+        [Fact]
+        public void Affliction_IsHarmCappedByHitPoints_PlusControl() =>
+            // A swarm round: 17.5 damage and 3 of drain on a victim with 15 left, nauseated 0.6 rounds at 13 a round.
+            Assert.Equal(15f + 0.6f * 13f, ValueModel.AfflictionWorth(17.5f, 3f, 0.6f, 15f, 13f), 3);
+
+        [Fact]
+        public void AfflictionShare_AddsScoresLevelsAndControl() =>
+            Assert.Equal(0.2f + 1f / 4f + 0.6f / 3f, ValueModel.AfflictionShare(0.2f, 1f, 4, 0.6f), 3);
+
+        [Fact]
+        public void AfflictionShare_NeverMoreThanAll() =>
+            Assert.Equal(1f, ValueModel.AfflictionShare(0.9f, 3f, 4, 3f), 3);
     }
 }
