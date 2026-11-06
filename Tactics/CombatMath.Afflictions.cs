@@ -313,12 +313,16 @@ namespace CompanionAI_Pathfinder.Tactics
                 if (limb?.MaybeWeapon != null) yield return limb.MaybeWeapon;
         }
 
+        /// <summary>The round actions strike the swarm's targets: ContextActionSwarmAttack (the Mandragora swarm), or
+        /// ★ v0.3.28 test 15: ContextActionOnSwarmTargets run directly (the Raven swarm, Creeping Doom: no attack animation
+        /// first). Through Conditionals, 3 deep.</summary>
         private static bool HasSwarmAttack(ActionList list, int depth)
         {
             if (list?.Actions == null || depth > 3) return false;
             foreach (var action in list.Actions)
             {
-                if (action is Kingmaker.Assets.UnitLogic.Mechanics.Actions.ContextActionSwarmAttack) return true;
+                if (action is Kingmaker.Assets.UnitLogic.Mechanics.Actions.ContextActionSwarmAttack ||
+                    action is ContextActionOnSwarmTargets) return true;
                 if (action is Kingmaker.Designers.EventConditionActionSystem.Actions.Conditional c &&
                     (HasSwarmAttack(c.IfTrue, depth + 1) || HasSwarmAttack(c.IfFalse, depth + 1))) return true;
             }

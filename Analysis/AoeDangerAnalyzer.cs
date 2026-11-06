@@ -585,6 +585,10 @@ namespace CompanionAI_Pathfinder.Analysis
             }
         }
 
+        /// <summary>★ v0.3.28 test 15: <see cref="Covers"/> for a live area the caller found itself (a swarm's space,
+        /// CombatMath.SwarmStrikes).</summary>
+        public static bool CoversPoint(AreaEffectEntityData aoe, Vector3 point, float corpulence) => IsLive(aoe) && Covers(aoe, point, corpulence);
+
         /// <summary>
         /// ★ v0.3.14 (test5): a body of radius <paramref name="corpulence"/> standing at <paramref name="point"/> overlaps
         /// the area: the game's own shape test (AreaEffectView.Contains uses Shape.Contains(position, corpulence)), which
@@ -615,6 +619,11 @@ namespace CompanionAI_Pathfinder.Analysis
             {
                 var context = aoe.Context;
                 if (context == null)
+                    return false;
+
+                // ★ v0.3.28 test 15: a swarm's space is priced by the swarm's own model where it strikes (CombatMath.Swarms.cs,
+                // the danger at a spot); read here too by its descriptor, it would count twice and hold units off it as an area.
+                if (CompanionAI_Pathfinder.Tactics.CombatMath.IsSwarmTargetArea(aoe.Blueprint))
                     return false;
 
                 // 시전자 확인

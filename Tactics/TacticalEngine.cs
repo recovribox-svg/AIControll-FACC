@@ -1100,6 +1100,15 @@ namespace CompanionAI_Pathfinder.Tactics
                     zone = 11f;
                 }
                 if (Vector3.Distance(enemy.Position, at) > zone + ally.Corpulence) continue;
+                // ★ v0.3.28 test 15 (author-approved): a swarm's round where it strikes - everyone in its space in full, else
+                // half of it within its walk, shared (TacticalEngine.Swarms.cs).
+                var swarmArea = CombatMath.SwarmAreaOf(enemy);
+                if (swarmArea != null)
+                {
+                    float part = SwarmPart(ctx, enemy, swarmArea, ally, at, zone);
+                    if (part > 0f) parts.Add(new KeyValuePair<UnitEntityData, float>(enemy, part));
+                    continue;
+                }
                 // ★ v0.3.28 test 7 (author-approved): a melee enemy's full attack only where it strikes from where it
                 // stands (or a 5-foot step); a walk first is one attack, and only if the area it stands in lets it go
                 // (StrikeShareAt). The Schir in Camellia's Grease counted in full at every spot it could walk to.
@@ -1135,11 +1144,15 @@ namespace CompanionAI_Pathfinder.Tactics
             public float Shielding;
             /// <summary>★ v0.3.28: of <see cref="Cost"/>, the rise in the rest of the party's danger (ValueModel.LeavesAlliesCost).</summary>
             public float LeavesAllies;
+            /// <summary>★ v0.3.28 test 15: the swarm whose round strikes the unit where the walk ends, when it does not strike
+            /// it where it stands (the price is in the exposure: the danger there; this is for the decision log).</summary>
+            public string Swarm;
             public Disengage Copy() => (Disengage)MemberwiseClone();
             public string Tag => (Attacks > Intercepted ? $" [AoO {Attacks - Intercepted}{(DropChance >= 0.1f ? $", {DropChance:P0} down" : "")}]" : "") +
                                  (Intercepted > 0 ? $" [intercepted {Intercepted}]" : "") +
                                  (Area != null ? $"{IntoTag}{Area}]" : "") + (Exposed ? " [exposed]" : "") +
-                                 (LeavesAllies > 0f ? $" [leaves allies -{LeavesAllies:0.0}]" : "");
+                                 (LeavesAllies > 0f ? $" [leaves allies -{LeavesAllies:0.0}]" : "") +
+                                 (Swarm != null ? $" [in {Swarm}'s swarm]" : "");
             /// <summary>★ v0.3.18 (test11): marks an option whose walk was priced as entering a harmful area.</summary>
             internal const string IntoTag = " [into ";
         }
@@ -1225,6 +1238,12 @@ namespace CompanionAI_Pathfinder.Tactics
                 }
                 if (risk != null) risk.Shielding = shielding;
             }
+            // ★ v0.3.28 test 15: name a swarm the walk ends in (its danger is priced in the exposure above).
+            if (risk != null)
+            {
+                string swarm = StruckBySwarm(ctx, destination);
+                if (swarm != null && StruckBySwarm(ctx, unit.Position) != swarm) risk.Swarm = swarm;
+            }
             return risk;
         }
 
@@ -1245,6 +1264,15 @@ namespace CompanionAI_Pathfinder.Tactics
             foreach (var enemy in ctx.Enemies)
             {
                 if (CombatMath.IsDisabled(enemy)) continue;   // it attacks nobody before it acts again
+                // ★ v0.3.28 test 15 (author-approved): a swarm strikes everyone in its space, it picks nobody
+                // (TacticalEngine.Swarms.cs).
+                var swarmArea = CombatMath.SwarmAreaOf(enemy);
+                if (swarmArea != null)
+                {
+                    var swarm = SwarmDrop(ctx, enemy, swarmArea, who, at, PositionOf, hp);
+                    if (swarm.chance > 0f) threats.Add(swarm);
+                    continue;
+                }
                 bool ranged;
                 float zone, reach = -1f;
                 int attack = 0;
@@ -2037,6 +2065,9 @@ namespace CompanionAI_Pathfinder.Tactics
             public Disengage Risk;
             /// <summary>The straight approach entered a harmful area; <see cref="Point"/> is a spot outside it instead.</summary>
             public string Around;
+            /// <summary>★ v0.3.28 test 15: the straight approach ends where this swarm's round strikes the unit;
+            /// <see cref="Point"/> is a spot in reach of the target that it does not.</summary>
+            public string AroundSwarm;
             /// <summary>How close to <see cref="Point"/> the walk must end for the target to stay within reach.</summary>
             public float Arrival = 0.3f;
             /// <summary>★ v0.3.18: the straight approach enters an area and no spot around it was found: why (decision log).</summary>
@@ -2045,9 +2076,10 @@ namespace CompanionAI_Pathfinder.Tactics
             /// is a spot that costs less (fewer, weaker, or none: still beside the enemy it would have left).</summary>
             public int AttacksBefore;
             /// <summary>The unit walks to <see cref="Point"/> first and acts from there (a spot around an area or fewer attacks).</summary>
-            public bool Detours => Around != null || AttacksBefore > 0;
+            public bool Detours => Around != null || AroundSwarm != null || AttacksBefore > 0;
             /// <summary>For the decision log.</summary>
             public string Detour => Around != null ? $"around {Around}" :
+                                    AroundSwarm != null ? $"clear of {AroundSwarm}'s swarm" :
                                     AttacksBefore > 0 ? $"from a spot that provokes {Risk?.Attacks ?? 0}, not {AttacksBefore}" : null;
         }
 
@@ -2079,20 +2111,26 @@ namespace CompanionAI_Pathfinder.Tactics
             // or clear of one it would pass). Only spots around areas were searched; the attacks were priced but never
             // avoided (concern from the 0.3.20-test7 play test).
             bool provokes = plan.Risk != null && plan.Risk.Attacks > 0 && plan.Risk.Cost >= AttackDetourCost;
-            if ((plan.Risk?.Area == null && !provokes) || ctx.NoMovementLeft) return plan;
-            string directArea = plan.Risk.Area;
-            int directAttacks = plan.Risk.Attacks;
+            // ★ v0.3.28 test 15 (author-approved): and when it ends where a swarm's round strikes the unit - a spot on another
+            // side of the target may be clear of the swarm's space (the target is then still in reach).
+            string directSwarm = ctx.NoMovementLeft ? null : StruckBySwarm(ctx, direct);
+            if ((plan.Risk?.Area == null && !provokes && directSwarm == null) || ctx.NoMovementLeft) return plan;
+            string directArea = plan.Risk?.Area;
+            int directAttacks = plan.Risk?.Attacks ?? 0;
             try
             {
                 // ★ v0.3.18 (review): a spot around the area must be cheaper than walking straight through it (a mild
                 // area against several attacks of opportunity on the way around).
-                float best = plan.Risk.Cost + 0.05f * Vector3.Distance(unit.Position, direct);
+                // ★ v0.3.28 test 15: against a spot clear of a swarm, the straight approach also costs what being struck there
+                // costs - its walk price counts only a rise over where the unit stands, nothing when it is struck there too.
+                float best = Math.Max(plan.Risk?.Cost ?? 0f, directSwarm != null ? SwarmStayPrice(ctx, direct) : 0f) +
+                             0.05f * Vector3.Distance(unit.Position, direct);
                 float body = unit.Corpulence;
-                int far = 0, taken = 0, inArea = 0, unwalkable = 0, noCloser = 0, dearer = 0;
+                int far = 0, taken = 0, inArea = 0, inSwarm = 0, unwalkable = 0, noCloser = 0, dearer = 0;
                 var others = ctx.Allies.Concat(ctx.Enemies).Where(u => u != unit && u != target).ToList();
                 // Attacks only: one ring of spots in reach of the target (16) - efficient, and the spots that matter.
                 var rings = new List<float> { Math.Max(0.6f, range * 0.85f) };
-                if (directArea != null) rings.Add(Math.Max(0.6f, range * 0.6f));
+                if (directArea != null || directSwarm != null) rings.Add(Math.Max(0.6f, range * 0.6f));
                 if (orNearby && directArea != null) rings.AddRange(new[] { range + 1.5f, range + 3f });
                 float distanceNow = Vector3.Distance(unit.Position, target.Position);
                 foreach (float ring in rings)
@@ -2114,21 +2152,23 @@ namespace CompanionAI_Pathfinder.Tactics
                         if (!AoeDangerAnalyzer.IsPositionValid(unit.Position, point)) { unwalkable++; continue; }
                         var risk = MoveRisk(ctx, point, alwaysExposure);
                         if (risk?.Area != null) { inArea++; continue; }
+                        if (directSwarm != null && StruckBySwarm(ctx, point) != null) { inSwarm++; continue; }
                         // Cheapest by risk; a shorter walk breaks ties.
                         float cost = (risk?.Cost ?? 0f) + 0.05f * walk;
                         if (cost >= best) { dearer++; continue; }
                         best = cost;
                         plan = new Approach
                         {
-                            Point = point, Risk = risk, Around = directArea,
-                            AttacksBefore = directArea == null ? directAttacks : 0,
+                            Point = point, Risk = risk, Around = directArea, AroundSwarm = directSwarm,
+                            AttacksBefore = directArea == null && directSwarm == null ? directAttacks : 0,
                             Arrival = ring < range ? Mathf.Clamp(range - ring, 0.1f, 0.3f) : 0.3f
                         };
                     }
                     if (plan.Detours) break;
                 }
-                if (plan.Around == null && directArea != null)
-                    plan.NoSpot = $"{inArea} in or through an area, {far} beyond this turn's move, {taken} taken, {unwalkable} not walkable" +
+                if (plan.Around == null && plan.AroundSwarm == null && (directArea != null || directSwarm != null))
+                    plan.NoSpot = $"{inArea} in or through an area, " + (directSwarm != null ? $"{inSwarm} in {directSwarm}'s swarm, " : "") +
+                                  $"{far} beyond this turn's move, {taken} taken, {unwalkable} not walkable" +
                                   (dearer > 0 ? $", {dearer} dearer than through it" : "") +
                                   (noCloser > 0 ? $", {noCloser} ring(s) no nearer than now" : "");
             }
@@ -4536,6 +4576,8 @@ namespace CompanionAI_Pathfinder.Tactics
 
             // 2b) ★ v0.3.28 test 7 (author-approved): at any HP, out of the reach of enemies it cannot hit back from here.
             AddOutOfReachCandidate(ctx, list, kept);
+            // 2c) ★ v0.3.28 test 15 (author-approved): at any HP, out of the space of a swarm whose round strikes it.
+            AddOutOfSwarmCandidate(ctx, list, kept);
 
             // 3) Nothing to do from here: close the distance for this or the next turn.
             // ★ v0.3.14 (test5): not while only movement is possible (nauseated): arriving, the unit could not attack and

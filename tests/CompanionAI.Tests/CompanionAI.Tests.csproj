@@ -17,6 +17,7 @@
     <Compile Include="..\..\Tactics\ValueModel.Walk.cs" Link="ValueModel.Walk.cs" />
     <Compile Include="..\..\Tactics\ValueModel.Drain.cs" Link="ValueModel.Drain.cs" />
     <Compile Include="..\..\Tactics\ValueModel.Reach.cs" Link="ValueModel.Reach.cs" />
+    <Compile Include="..\..\Tactics\ValueModel.Swarm.cs" Link="ValueModel.Swarm.cs" />
     <Compile Include="..\..\Tactics\ValueModel.Resources.cs" Link="ValueModel.Resources.cs" />
     <Compile Include="..\..\Tactics\ValueModel.Kinetic.cs" Link="ValueModel.Kinetic.cs" />
     <Compile Include="..\..\Tactics\ValueModel.Attacks.cs" Link="ValueModel.Attacks.cs" />

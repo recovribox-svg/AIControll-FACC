@@ -180,6 +180,11 @@ namespace ProfileAudit
             foreach (var line in afflictionLines) Console.WriteLine(line);
             File.WriteAllText(output, string.Join(Environment.NewLine, afflictionLines) + Environment.NewLine + Environment.NewLine + File.ReadAllText(output));
             blocklistFailures += afflictionFailures;
+            // ★ v0.3.28 test 15: swarm spaces.
+            var swarmLines = SwarmAreaCheck.Run(loaded.Values, out int swarmFailures);
+            foreach (var line in swarmLines) Console.WriteLine(line);
+            File.WriteAllText(output, string.Join(Environment.NewLine, swarmLines) + Environment.NewLine + Environment.NewLine + File.ReadAllText(output));
+            blocklistFailures += swarmFailures;
             if (failed > 0)
             {
                 string partial = $"PARTIAL: loaded {loaded.Count}, failed {failed}, allowed {options.AllowFailures}. Failed blueprints:";
