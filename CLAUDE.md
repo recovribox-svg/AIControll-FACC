@@ -199,6 +199,11 @@ check keeps plain moves when its budget runs out and notes "longer than one move
 `ValueModel.RepeatedControl`: Ghoul Creeper). `Info.json` 0.3.29. Proposal for the author in §113: real-time re-decision when
 engaged on a walk (R1), 2 s blocked walks (R2), drop chance from enemies' real hits (R3). Test ZIP
 `AI-Control-FACC-v0.3.29-dev-test1-d752fa8-UMM-test.zip` (MVID `67c56db1-76e4-40bb-bfac-83ed603be6b6`); 461 tests.
+**v0.3.29 test 2 (6 November, `docs/TACTICAL_AI.md` §114, author-approved movement changes, not played):** R1 real time decides again
+when an engager it can hit back stands near the walk's destination (`TacticalEngine.CanHitBack`); R2 a walk on the spot for 2 s ends
+as blocked (`RealTimeController.BLOCKED_WALK_SECONDS`); R3 drop chances take the larger of the exponential and melee enemies' real
+hits (`RiskMath.FullAttackDropChance`, `TacticalEngine.Strikes.cs`: `StandingDropChance`, `SpotDrop`), reads once a round per pair.
+Test ZIP `AI-Control-FACC-v0.3.29-dev-test2-6221118-UMM-test.zip` (MVID `add726f5-13c2-4f48-ab1e-cf3a3c819b70`); 466 tests.
 
 Historical handovers, superseded by the one above: [v0.3.22 release preparation](docs/RELEASE_0_3_22_HANDOVER.md)
 (27 October, PR #6–#12), [released-log review](docs/RELEASE_0322_LOG_REVIEW.md) (PR #13),

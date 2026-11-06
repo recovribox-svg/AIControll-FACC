@@ -1,0 +1,35 @@
+{
+  "name": "AI Control - Fully Autonomous Combat Companions v0.3.29 test 2 (engaged walks, blocked walks, heavy hits)",
+  "version": "0.3.29",
+  "umm_manifest_version": "0.3.29",
+  "umm_mod_id": "CompanionAI_Pathfinder",
+  "branch": "claude/dreamy-pasteur-b9h3rn",
+  "base_release": "v0.3.28 (2415cf8)",
+  "runtime_source_commit": "6221118",
+  "archive": "AI-Control-FACC-v0.3.29-dev-test2-6221118-UMM-test.zip",
+  "zip_sha256": "9ce6385cc7d5025816620f67b5ea1cd0d19f6542d640ba0966986cf383f54f40",
+  "dll_sha256": "3ae198257be22cc4d44038b757b7bdb42b9d539a3cdc29b58a28b239d92f2432",
+  "manifest_sha256": "7d399d2fdadbbf57fa7fafafbfa1b5350bf751c775264b33b2f17ef4e6a7c40e",
+  "module_mvid": "add726f5-13c2-4f48-ab1e-cf3a3c819b70",
+  "startup_marker": "[Build] v0.3.29 module=add726f5-13c2-4f48-ab1e-cf3a3c819b70",
+  "archive_contents": [
+    "CompanionAI_Pathfinder.dll",
+    "Info.json"
+  ],
+  "checks": {
+    "unit_tests": {
+      "passed": 466,
+      "failed": 0,
+      "skipped": 0
+    },
+    "release_build": {
+      "warnings": 0,
+      "errors": 0
+    },
+    "external_references": "SigDump vs v0.3.29 test 1: no new public game members",
+    "packed_dll_matches_build": true,
+    "in_game": "pending",
+    "profile_audit": "Kineticist + Spells + Buffs + swarm, spider and Shadow unit dumps, strict: 3572 loaded, 0 failed, 0 reader errors; all checks pass (ricochet-layer, rank-increment, quiver-binding, soul-power, damage-context, drain, affliction, swarm-area)"
+  },
+  "publication_scope": "Development test download: test 1 plus the author-approved R1-R3 (real-time re-decision when engaged on a walk, 2 s blocked walks, drop chance from melee enemies' real hits); not a release."
+}

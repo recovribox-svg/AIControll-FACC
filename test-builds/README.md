@@ -1,6 +1,37 @@
 # Test builds
 
-## Current test build: v0.3.29-dev-test1 (d752fa8) - two fixes from the test 15 logs
+## Current test build: v0.3.29-dev-test2 (6221118) - melee companions answer who engages them
+
+**[Download the UMM test ZIP (6221118)](AI-Control-FACC-v0.3.29-dev-test2-6221118-UMM-test.zip?raw=true)**
+
+Direct link: <https://github.com/recovribox-svg/AIControll-FACC/raw/claude/dreamy-pasteur-b9h3rn/test-builds/AI-Control-FACC-v0.3.29-dev-test2-6221118-UMM-test.zip>
+
+Test 1 (below) plus the three changes you approved ([docs/TACTICAL_AI.md](../docs/TACTICAL_AI.md) §114):
+- **R1, real time - fight who engages you.** A melee companion walking to a distant enemy now stops to think when a
+  nearer enemy engages it on the way, even one standing next to its target, as long as it can hit that enemy back. It
+  then compares fighting it there with walking on, and walking on now pays for the free attack it would take. The log
+  says `... engages it on the way ... it can hit back from here`.
+- **R2, real time - blocked walks end after 2 s.** A companion walking on the spot, boxed in by bodies, gives up after
+  2 seconds instead of 6 and picks something else. The log says `Stuck command ... blocked: walking on the spot`.
+- **R3, both modes - heavy hitters judged by their real blows.** The chance of going down next to a melee enemy now also
+  looks at its actual hits (hit chance, damage per hit, critical hits) and takes the higher reading. A low-HP companion
+  is more careful around big hitters, especially late in a fight. Healthy front-liners are unchanged.
+- **Cost:** the new calculation takes under a microsecond. Each enemy's attack against each companion is read once a
+  round. The slow-decision line in the log shows how often (`enemy attacks read for the drop chance`).
+
+UMM shows **0.3.29**. Startup line `[Build] v0.3.29 module=add726f5-13c2-4f48-ab1e-cf3a3c819b70`.
+- ZIP SHA-256 `9ce6385cc7d5025816620f67b5ea1cd0d19f6542d640ba0966986cf383f54f40`; DLL SHA-256 `3ae198257be22cc4d44038b757b7bdb42b9d539a3cdc29b58a28b239d92f2432`.
+- [Identity](AI-Control-FACC-v0.3.29-dev-test2-6221118-UMM-test.identity.json) · [Checksums](SHA256SUMS.txt).
+- Checks: 466 unit tests pass; release build 0 warnings; offline blueprint audit 0 errors; no new game references. Not
+  played yet.
+- **Test:**
+  - real-time fights where a melee companion walks past weaker enemies towards a stronger one: it should fight what
+    engages it;
+  - crowded real-time fights: no companion should stand pushing against bodies for long;
+  - low-HP companions next to heavy hitters, either mode: they should step back more readily;
+  - slow-decision lines: check the new attack-read count.
+
+## Test 1: v0.3.29-dev-test1 (d752fa8) - two fixes from the test 15 logs (also in test 2)
 
 **[Download the UMM test ZIP (d752fa8)](AI-Control-FACC-v0.3.29-dev-test1-d752fa8-UMM-test.zip?raw=true)**
 
@@ -13,8 +44,7 @@ v0.3.28 (released) plus two fixes from your test 15 logs ([docs/TACTICAL_AI.md](
 - **Paralysing enemies rated sensibly.** The Ghoul Creeper's several hits each counted a full paralysis, so it read about
   twice as dangerous as it is (63.9 a round against 24-31 dealt). A second paralysis in the same round costs no more
   turns, so the hits now count once over for that.
-- Also there: a proposal for the real-time melee targeting you reported (Seelah and the Earth Elemental). It waits for
-  your decision and is not in this build.
+- Also there: a proposal for the real-time melee targeting you reported (Seelah and the Earth Elemental), built in test 2.
 
 UMM shows **0.3.29**. Startup line `[Build] v0.3.29 module=67c56db1-76e4-40bb-bfac-83ed603be6b6`.
 - ZIP SHA-256 `be320cd6d58e8d22d85223b25365ccf44542881756fbb5143a82ed5fd7bbd8c5`; DLL SHA-256 `41a15ecf3eeed8f89b030536a63cb40545a484e0636499c5477e7c7f7aab59b3`.

@@ -3963,8 +3963,69 @@ ZIP `AI-Control-FACC-v0.3.28-dev-test15-2415cf8-UMM-test.zip` (MVID `794e6682-f2
     path that ends short.
   - R3 (both modes): the chance of going down at a spot from melee enemies in reach is computed from their real hits
     (hit chance, damage per hit, criticals: the reading `RiskMath.AttackDropChance` already uses for attacks of
-    opportunity) instead of exp(−HP / expected damage). For Seelah that model gave about 13 % next to the Elemental;
-    two hitters of 5 and 14 on 17 HP make it closer to 40 %. Low-HP units would then stop volunteering to tank heavy
-    hitters.
-  - R1 and R2 answer the report directly. R3 is the larger change (every walk's price) and also covers Camellia's
-    kind of death.
+    opportunity) instead of exp(−HP / expected damage). (Corrected in §114: for Seelah the model already read about
+    40 % there, from the Elemental's full Threat; it is the fight's later danger calibration that shrinks a heavy
+    hitter's slam.)
+  - R1 and R2 answer the report directly. R3 is the larger change (every walk's price).
+
+## 114. v0.3.29 test 2: R1-R3 (author-approved)
+
+The author approved R1-R3 of §113 and asked whether R3 costs much.
+
+**A correction first.** §113 said the survival model put Seelah's chance of going down next to the Medium Earth Elemental
+at about 13 %. That number came from the Elemental's offence (8.5) instead of its Threat. `StandingDropChance` uses the
+Threat: PerRound(CR 3) = 13, times its share x1.5, at the fight's start with danger scale 1, so about 19.5. Against
+17 HP that is exp(−17/19.5) ≈ 42 %. Her worth is 30 (`AllyWorth`: 10 a round for 3 rounds), so the walk's own risk was
+priced at about 11. The shielding credit for drawing the Elemental off the party was 10.3. The walk was therefore close
+to free (1.4 with the attack of opportunity) and beat Daze (3.1).
+- The model saw the danger. It traded Seelah's safety for the party's.
+- R1 is what changes that fight: engaged by the mongrel, she now decides again and can fight it.
+- R3 matters later in fights. The calibration (`ValueModel.DangerScale`, x0.25-0.67 at the ends of the test-15 fights)
+  shrinks every enemy's mean, so a 14-damage slam on 17 HP then reads about 10-15 % by the exponential. Its real hits
+  say about 25 %, and near 50 % with a mongrel's 5 on top.
+
+**R1 (real time).**
+- `RealTimeTactics.ShouldReplanOnNewThreat` skipped an engager standing within reach of the walk's destination ("the
+  fight there").
+- Now it decides again when the unit can hit that engager back from where it is (`TacticalEngine.CanHitBack`: the game's
+  reach test on its threatening hand) and the walk's target is not yet in reach. Log: "... engages it on the way ...
+  (not counted when the walk was chosen; it can hit back from here)".
+- The engine then weighs attacking the engager against walking on, which pays the attack of opportunity for leaving its
+  reach.
+- Once per engager per walk: the next walk counts it among its engagers.
+
+**R2 (real time).**
+- `RealTimeController.IsCommandStuck` tracks where a walking unit last moved 0.5 m from (`WaitMark.MovedFrom/MovedAt`).
+  Walking on the spot for 2 s (`BLOCKED_WALK_SECONDS`) ends the command: "Stuck command ... blocked: walking on the
+  spot for 2 s (X m to go)". The candidate is not chosen again from there (`RecordStuck`, not a target problem).
+- Time waiting for something else resets the clock: a cooldown, an animation, standing up, not "moving".
+- A walk round a wall keeps moving and is not caught. The 6 s no-progress rule (getting no nearer) still covers chases.
+
+**R3 (both modes).**
+- `RiskMath.FullAttackDropChance(attacks, hit, crit, perHit, critMultiplier, hp)`: every count of plain and critical hits
+  by its multinomial chance, with the damage spread of `ChanceAtLeast`. One attack equals `AttackDropChance`
+  (unit-tested). 0.4-0.9 µs a call on .NET 8 (benchmark: 200 000 calls), no allocation (power buffers kept between
+  calls).
+- `TacticalEngine.Strikes.cs`:
+  - `StrikeOf(enemy, victim)` reads the enemy's melee full attack (`EstimateWeaponAttack`) once a round per pair, cached
+    by fight and round.
+  - `StrikeProfileOf` takes the routine as n copies of its first attack: a shortfall of the later attacks lowers the hit
+    chance, a surplus (sneak attack, a heavier natural weapon) raises the damage.
+  - `HeavyHitDrops` reads each heavy hitter against the HP the others there are expected to leave (chance × expected
+    damage).
+- Where it counts:
+  - `StandingDropChance` (healthy walks, the party shift, the own fall) takes, per melee enemy whose full attack lands
+    (`FullStrikeLands`: in reach or a free 5-foot step, `StrikeShareAt` = 1), the larger of its exponential drop and its
+    real-hits drop.
+  - `SpotDrop` does the same for the IncomingDamage model (a hurt unit's exposure, the withdrawal, the step out of reach
+    and the step out of a swarm), each enemy's share split among the party members it threatens.
+  - Heals and revives keep the exponential (they do not price where a unit stands).
+- **Cost.**
+  - The formula is microseconds a decision.
+  - The attack reads run the game's rules once per melee enemy and party member it can reach, per round. That is at most
+    about enemies × party members on the first decision of a round, then none. The weapons stage of a slow line,
+    12-30 ms for a unit's own reads against every enemy, suggests a few milliseconds a decision on average.
+  - The slow-decision line now counts them: "enemy attacks read for the drop chance N (X ms)".
+
+Test ZIP `AI-Control-FACC-v0.3.29-dev-test2-6221118-UMM-test.zip` (MVID `add726f5-13c2-4f48-ab1e-cf3a3c819b70`);
+466 tests.
