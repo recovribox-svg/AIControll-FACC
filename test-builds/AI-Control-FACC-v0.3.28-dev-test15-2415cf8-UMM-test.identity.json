@@ -1,0 +1,35 @@
+{
+  "name": "AI Control - Fully Autonomous Combat Companions v0.3.28 test 15 (standing in a swarm priced as danger)",
+  "version": "0.3.28",
+  "umm_manifest_version": "0.3.28",
+  "umm_mod_id": "CompanionAI_Pathfinder",
+  "branch": "claude/dreamy-pasteur-b9h3rn",
+  "base_release": "v0.3.27 (3f005b9)",
+  "runtime_source_commit": "2415cf8",
+  "archive": "AI-Control-FACC-v0.3.28-dev-test15-2415cf8-UMM-test.zip",
+  "zip_sha256": "eaf819611a872275f61964a89f154b7f03eb971aaabab5f29a3893c52f532589",
+  "dll_sha256": "a3461a0e67ba1bb60679148eb4d32f467d4e9eaf2c0e6562d98296743e2d75e3",
+  "manifest_sha256": "ae1e19149c98be1443a2b5db7225009b14d905327a3055ff990775ef56e0f45e",
+  "module_mvid": "794e6682-f29b-426a-a940-680ed813c83c",
+  "startup_marker": "[Build] v0.3.28 module=794e6682-f29b-426a-a940-680ed813c83c",
+  "archive_contents": [
+    "CompanionAI_Pathfinder.dll",
+    "Info.json"
+  ],
+  "checks": {
+    "unit_tests": {
+      "passed": 457,
+      "failed": 0,
+      "skipped": 0
+    },
+    "release_build": {
+      "warnings": 0,
+      "errors": 0
+    },
+    "external_references": "SigDump vs test 14: 1 new public game member (ContextActionSwarmTarget.Remove), none removed",
+    "packed_dll_matches_build": true,
+    "in_game": "pending",
+    "profile_audit": "Kineticist + Spells + Buffs + Mandragora, Rat, Locust, Spider, Tick, Raven and Vescavor swarm, spider and Shadow unit dumps, strict: 3572 loaded, 0 failed, 0 reader errors; ricochet-layer, rank-increment, quiver-binding, soul-power, damage-context, drain, affliction and swarm-area (15 swarm spaces; 15 of 16 carrier buffs strike each round, 13 once a target is at the centre, 2 everyone inside) checks pass"
+  },
+  "publication_scope": "Development test download: test 14 plus a swarm's space priced as danger of the spot by the game's swarm rules (walk prices, approach spots clear of a swarm, a step or move out of one); author-approved movement change; not a release."
+}

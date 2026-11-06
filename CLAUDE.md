@@ -185,6 +185,11 @@ carry beyond hit points, read from the game's actions (`CombatMath.Afflictions.c
 enchantments (giant spider poison, Shadow touch), swarm rounds (Mandragora swarm: 5d6, nausea, poison), saves, poison doses,
 control, immunities; in enemy threat, walk/revive prices and the party's poisoned weapons; ProfileAudit AFFLICTION. Test ZIP
 `AI-Control-FACC-v0.3.28-dev-test14-eb73349-UMM-test.zip` (MVID `a3caf884-f21e-49e4-aa34-52758a29f726`); 450 tests.
+**v0.3.28 test 15 (6 November, `docs/TACTICAL_AI.md` §112, author-approved movement change, not played):** a swarm's space as
+danger of the spot by the game's swarm rules (`CombatMath.Swarms.cs`, `TacticalEngine.Swarms.cs`, `ValueModel.Swarm.cs`):
+struck in full inside it (inner-circle rule where the strike waits for it), half within its walk; walk prices, approach spots
+clear of a swarm, a step or move out (`AddOutOfSwarmCandidate`); harmful-area analyzer skips swarm spaces; ProfileAudit
+SWARM-AREA. Test ZIP `AI-Control-FACC-v0.3.28-dev-test15-2415cf8-UMM-test.zip` (MVID `794e6682-f29b-426a-a940-680ed813c83c`); 457 tests.
 
 Historical handovers, superseded by the one above: [v0.3.22 release preparation](docs/RELEASE_0_3_22_HANDOVER.md)
 (27 October, PR #6–#12), [released-log review](docs/RELEASE_0322_LOG_REVIEW.md) (PR #13),

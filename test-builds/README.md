@@ -1,6 +1,36 @@
 # Test builds
 
-## Current test build: v0.3.28-dev-test14 (eb73349) - Mandragora swarms and poisoned weapons valued by what they do
+## Current test build: v0.3.28-dev-test15 (2415cf8) - standing in a swarm priced as danger
+
+**[Download the UMM test ZIP (2415cf8)](AI-Control-FACC-v0.3.28-dev-test15-2415cf8-UMM-test.zip?raw=true)**
+
+Direct link: <https://github.com/recovribox-svg/AIControll-FACC/raw/claude/dreamy-pasteur-b9h3rn/test-builds/AI-Control-FACC-v0.3.28-dev-test15-2415cf8-UMM-test.zip>
+
+Test 14 (below) plus the movement change you approved: standing inside a swarm is now priced as danger
+([docs/TACTICAL_AI.md](../docs/TACTICAL_AI.md) §112). The AI follows the game's own swarm rules. A swarm carries a small
+space around it (5 ft for the Mandragora swarm). Every party member inside is hit by its round, as long as one of them is
+right at its centre. The Raven swarm and Creeping Doom hit everyone inside every round. Until now a swarm counted like a
+melee enemy without a weapon: standing in it cost no more than standing next to it, and nothing made anyone walk out.
+- **Inside a swarm** the whole round counts for everyone it hits, not shared out among them. **Just outside** it counts
+  half (the swarm has to come to you first), shared among those it could reach.
+- **Walking into a swarm** is priced like walking somewhere dangerous; the log tags it `[in Mandragora Swarm's swarm]`.
+- **Approaching an enemy next to a swarm**, the AI looks for a spot in reach of that enemy but clear of the swarm; the log
+  says `(clear of Mandragora Swarm's swarm)`.
+- **Already inside**, a companion may take a **5-foot step or a short move out of the swarm**. It does so when the danger it
+  escapes is worth more than what it gives up. Spells and ranged attacks still work from the new spot. A melee attack is
+  lost if its target is out of reach from there. A fighter who is beating the swarm stays while its attacks are worth more.
+- The log notes each swarm once a fight: `[Swarm] Mandragora Swarm: its round strikes every party member in its space ...`.
+
+UMM shows **0.3.28**. Startup line `[Build] v0.3.28 module=794e6682-f29b-426a-a940-680ed813c83c`.
+- ZIP SHA-256 `eaf819611a872275f61964a89f154b7f03eb971aaabab5f29a3893c52f532589`; DLL SHA-256 `a3461a0e67ba1bb60679148eb4d32f467d4e9eaf2c0e6562d98296743e2d75e3`.
+- [Identity](AI-Control-FACC-v0.3.28-dev-test15-2415cf8-UMM-test.identity.json) · [Checksums](SHA256SUMS.txt).
+- Checks: 457 unit tests pass; release build 0 warnings; offline blueprint audit 0 errors (new swarm-space check: 15 swarm
+  spaces read, 15 of the 16 swarm buffs that carry one strike each round). Not played yet.
+- **Test:** a fight with Mandragora (or rat, locust, spider) swarms, turn-based and real time. Casters and archers caught in
+  a swarm should step or walk out of it (`5ft step out of ... swarm`, `Move out of ... swarm`); others should not walk into
+  one without reason. A front-liner with good HP may still fight a swarm from inside.
+
+## Test 14: v0.3.28-dev-test14 (eb73349) - Mandragora swarms and poisoned weapons valued by what they do (also in test 15)
 
 **[Download the UMM test ZIP (eb73349)](AI-Control-FACC-v0.3.28-dev-test14-eb73349-UMM-test.zip?raw=true)**
 
@@ -23,8 +53,7 @@ UMM shows **0.3.28**. Startup line `[Build] v0.3.28 module=a3caf884-f21e-49e4-aa
 - Checks: 450 unit tests pass; release build 0 warnings; offline blueprint audit 0 errors (new affliction check: the giant
   spider's bite, the Shadow's touch and the Mandragora swarm's round read correctly). Not played yet.
 - **Test:** a fight with Mandragora swarms or giant spiders. `[Threat]` should rate them higher than before and name the
-  swarm or poison part, and the party should go after them sooner. Not yet: standing inside a swarm is not priced as a
-  danger of the spot (only the swarm's threat rating rises), so a walk out of a swarm is not chosen for it.
+  swarm or poison part, and the party should go after them sooner. (Standing inside a swarm is priced from test 15 on.)
 
 ## Test 13: v0.3.28-dev-test13 (1b74af6) - ability drain and negative levels valued by the game's rules (also in test 14)
 

@@ -3830,9 +3830,69 @@ touch 3.5 Strength; the Mandragora swarm's round 17.5 HP and 1 round of control.
 actions are empty in the dumps (they read 0 there), so its Constitution part is seen only in game.
 
 **Not covered.** Standing in a swarm's space is not a danger of the spot (`PartyShift`, approach and withdraw prices): only the
-threat rating rises, so the party goes after the swarm sooner but no walk is chosen to leave it. A trigger's weapon filters
+threat rating rises, so the party goes after the swarm sooner but no walk is chosen to leave it (done in §112). A trigger's weapon filters
 (a bite-only poison) are not read, so the poison counts for each of the attacker's hits. `BuffPoisonStatDamageContext` (none
 in the dumps) is not read.
 
 ProfileAudit AFFLICTION (spider, Shadow and Mandragora swarm dumps) checks the readings above. Test ZIP
 `AI-Control-FACC-v0.3.28-dev-test14-eb73349-UMM-test.zip` (MVID `a3caf884-f21e-49e4-aa34-52758a29f726`); 450 tests.
+
+## 112. A swarm's space as danger of the spot (v0.3.28 test 15, author-approved movement change)
+
+The author approved pricing standing inside a swarm as danger (the open point of §111).
+
+**The game's rules (decompile, Mandragora swarm blueprints).**
+- A swarm carries an area. Its aura buff (`MandragoraSwarmDamageBuff`) has an `AddAreaEffect` (`MandragoraSwarmDamageArea`,
+  a 5-foot cylinder that moves with the swarm) and the round actions.
+- The area's `AbilityAreaEffectBuff` gives every enemy inside an effect buff. Its Activated actions add that unit to the
+  swarm's targets (`ContextActionSwarmTarget` → `UnitPartSwarmAttack.TargetsList`); its Deactivated actions remove it.
+- Each round, `ContextActionSwarmAttack` → `ContextActionOnSwarmTargets` strikes every target. For most swarms this happens
+  only while one target is in the swarm's inner circle (`ContextSwarmHasEnemiesInInnerCircle`: closer than 1 m plus half its
+  body).
+- The Raven swarm and Creeping Doom run `ContextActionOnSwarmTargets` straight from NewRound and strike everyone inside every
+  round; their inner-circle condition only plays the animation.
+- The round comes from the buff's NewRound: every 6 s of game time, and turn-based at the first turn start after that time.
+  Between a unit's turns it lands once, about half the time after the swarm's own move.
+- Until test 14, a swarm counted at a spot like a melee enemy without a weapon (`StrikeShareAt` = 1). That was its whole
+  Threat anywhere it could walk this round, shared among the party members there. Standing in its space cost no more than
+  standing beside it, and nothing walked a unit out. The harmful-area analyzer rated the space by its descriptor only,
+  normally 0.
+
+**Now** (`CombatMath.Swarms.cs`, `TacticalEngine.Swarms.cs`, `ValueModel.Swarm.cs`, unit-tested in `SwarmShareTests`):
+- **Finding the space.** `SwarmAreaOf` finds each swarm's live area once a frame, by its structure (`IsSwarmTargetArea`:
+  the area's buff adds swarm targets). It is used only for a unit with a swarm round (§111's sources; ContextActionOnSwarmTargets
+  is read as a strike too, so the Raven swarm's round now also enters its threat). Of two such areas on one swarm, the
+  larger is kept.
+- **Who is struck.** `SwarmStrikes(swarm, area, who, at, ...)` applies the game's rule. The unit is struck if it is inside
+  the area by the game's shape test (`AoeDangerAnalyzer.CoversPoint`, bodies included). For a swarm whose strike waits
+  (`StrikeWaitsForInnerCircle`), it or another party member must also be in the inner circle.
+- **The danger at a spot** (`IncomingParts`, `StandingDropChance`):
+  - Struck there: the swarm's Threat in full, for everyone struck, not shared out (`ValueModel.SwarmShare` = 1).
+  - Not struck but within its walk: half (`SwarmWalkShare`), shared among the party members it could walk onto.
+  - No hit weight (the round rolls no attack). Instead `SwarmVictimFactor`: the round's worth on that unit (saves,
+    immunities, scores: §111's `AfflictionHp`) against the party's mean, at most 3.
+  - `PartyShift` follows the rule too: a unit stepping into the inner circle makes the swarm strike allies at the edge of
+    its space.
+- **What it changes.**
+  - Every walk's exposure (MoveRisk: `HealthyExposure`, `ExposureCost`, `PartyShift`) prices ending in a swarm, tagged
+    `[in X's swarm]`.
+  - `PlanApproach` looks for a spot in reach of the target clear of the swarm when the straight approach ends in it
+    (`AroundSwarm`, "clear of X's swarm"). The straight approach is weighed with what being struck there costs
+    (`SwarmStayPrice`), not only its rise over where the unit stands.
+  - A unit the round strikes is offered a 5-foot step or a 3/4.5/6 m move out (`AddOutOfSwarmCandidate`, keys
+    `move:5ft#swarm` / `move:outofswarm`). It is worth the drop chance it escapes (times its worth and its role's
+    tolerance, as walking in is priced), less the move's cost (attacks of opportunity, areas, what leaving costs the
+    allies) and less what it gives up. What it keeps: spells, ranged attacks, and melee attacks on targets still in reach
+    from the new spot; turn-based, nothing that walks first after a 5-foot step, nothing of the full round after a move.
+  - The harmful-area analyzer skips swarm spaces, so they are not counted twice or held off as an area.
+  - One `[Swarm]` line a fight per swarm says what its round is read as.
+
+**Not covered.**
+- Where the swarm will walk is not predicted beyond "half of it within its walk".
+- A swarm on the party's side (Creeping Doom, a summoned swarm) is not valued for the enemies standing in it.
+- Rat swarms and the others are read from their blueprints the same way. Only the Mandragora swarm's structure was traced
+  in the decompile end to end.
+
+ProfileAudit SWARM-AREA (swarm unit dumps): 15 swarm spaces; 15 of the 16 buffs that carry one strike each round (13 once a
+target is at the centre, 2 everyone inside: Creeping Doom, the Raven swarm). `GenericSwarmBuff` only registers targets. Test
+ZIP `AI-Control-FACC-v0.3.28-dev-test15-2415cf8-UMM-test.zip` (MVID `794e6682-f29b-426a-a940-680ed813c83c`); 457 tests.
