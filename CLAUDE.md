@@ -154,6 +154,10 @@ out of reach only when the unit's own weapon reaches no enemy (not for ranged-we
 by its stop chance; Orvath's kineticist part names no quiver buff (the game then never takes burn from arrows), and
 `NoQuiverBuffNote` names the feature that set it up. Test ZIP `AI-Control-FACC-v0.3.28-dev-test8-94d0835-UMM-test.zip`
 (MVID `54337c75-a6f2-424d-b5bc-769ebc4849f5`); 413 tests.
+**v0.3.28 test 9 (6 November, `docs/TACTICAL_AI.md` §106, not played):** test 8 played (13 fights, no mod errors). Orvath's
+kineticist part is `DarkElementalistBurnFeature` (likely Isekai's Dark Elementalist Legacy: no quiver, Intelligence); the
+author confirmed arrows never pay. Note once a session with the main stat. Test ZIP
+`AI-Control-FACC-v0.3.28-dev-test9-18fba94-UMM-test.zip` (MVID `fd940d66-16b4-4fad-8d02-d5e97e6e9be0`); 413 tests.
 
 Historical handovers, superseded by the one above: [v0.3.22 release preparation](docs/RELEASE_0_3_22_HANDOVER.md)
 (27 October, PR #6–#12), [released-log review](docs/RELEASE_0322_LOG_REVIEW.md) (PR #13),

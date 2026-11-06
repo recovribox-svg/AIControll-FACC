@@ -1,6 +1,24 @@
 # Test builds
 
-## Current test build: v0.3.28-dev-test8 (94d0835) - test-7 log fixes
+## Current test build: v0.3.28-dev-test9 (18fba94) - the quiver explained
+
+**[Download the UMM test ZIP (18fba94)](AI-Control-FACC-v0.3.28-dev-test9-18fba94-UMM-test.zip?raw=true)**
+
+Direct link: <https://github.com/recovribox-svg/AIControll-FACC/raw/claude/dreamy-pasteur-b9h3rn/test-builds/AI-Control-FACC-v0.3.28-dev-test9-18fba94-UMM-test.zip>
+
+Test 8 (below), reviewed on its play-test (13 fights, no mod errors, nobody down in turn-based). [docs/TACTICAL_AI.md](../docs/TACTICAL_AI.md) §106.
+- **The quiver:** Orvath's kineticist part comes from **DarkElementalistBurnFeature** (most likely the Isekai Protagonist's
+  Dark Elementalist Legacy). That part has no quiver, uses Intelligence as the kineticist main stat and the Dark
+  Elementalist burn pool. Your in-game check agrees: Exploding Arrows still cost burn with a quiver. This is the save's
+  character build, not something AI Control can change; the AI correctly leaves Create Quiver alone.
+- The note is now logged once a session (it was repeated every fight) and names the main stat.
+
+UMM shows **0.3.28**. Startup line `[Build] v0.3.28 module=fd940d66-16b4-4fad-8d02-d5e97e6e9be0`.
+- ZIP SHA-256 `03b0690ebed4dc6127bb468307cf5e61e2964fee3f274fc42d49028e2c73270b`; DLL SHA-256 `a98e1d7ac191e95b84cb92a07d363b21c72d9c0dc18a97c524d107623a877751`.
+- [Identity](AI-Control-FACC-v0.3.28-dev-test9-18fba94-UMM-test.identity.json) · [Checksums](SHA256SUMS.txt).
+- Checks: 413 unit tests pass; release build 0 warnings. Not played yet.
+
+## Test 8: v0.3.28-dev-test8 (94d0835) - test-7 log fixes (also in test 9)
 
 **[Download the UMM test ZIP (94d0835)](AI-Control-FACC-v0.3.28-dev-test8-94d0835-UMM-test.zip?raw=true)**
 

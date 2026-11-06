@@ -3594,3 +3594,22 @@ down, and the revive and heal choices there hold up (with one enemy left Orvath 
   once a fight in combat and once a session between fights.
 
 Test ZIP `AI-Control-FACC-v0.3.28-dev-test8-94d0835-UMM-test.zip` (MVID `54337c75-a6f2-424d-b5bc-769ebc4849f5`); 413 tests.
+
+## 106. Test-8 play-test: the quiver explained (v0.3.28 test 9)
+
+Test 8 played: 5 turn-based and 8 real-time fights, no mod errors, nobody down in turn-based (Camellia once in real
+time). The step out of reach fired only where intended (two debug `[Reach]` rows judged the way out too costly; Seelah
+walked on instead); one turn-based 5-foot step out of melee. Interrupted orders were the real-time re-plans (an enemy
+engaging the walk, a large HP loss before the order started). One turn-based Cure Light Wounds potion ended "Interrupt,
+acted=False" although the combat log shows its 9 HP heal and the standard action stayed: a game outcome, harmless.
+
+The quiver: `NoQuiverBuffNote` named **DarkElementalistBurnFeature** as the source of Orvath's kineticist part (BurnFeature
+also present, refused by the game's one-part rule); the author's in-game check confirmed Exploding Arrows still cost burn
+with a quiver. That part's `AddKineticistPart` has no quiver buff, main stat Intelligence and the Dark Elementalist burn
+resource (BurnFeature: Constitution, quiver `KineticSharpshooterObtainQuiverBuff`). Orvath is a Kinetic Sharpshooter, so the
+feature most likely comes from the Isekai Protagonist's Dark Elementalist Legacy (Isekai `KineticDarkElementalistLegacy`).
+Tabletop Tweaks (2.6.18: alternate capstone, one UI flag), DarkCodex (Elemental Ascetic clone keeps the quiver;
+Psychokineticist stat) and Tome of the Firebird (Extra Burn, Internal Buffer for Dark Elementalist / Overwhelming Soul)
+do not touch the part. The note is now logged once a session and names the part's main stat.
+
+Test ZIP `AI-Control-FACC-v0.3.28-dev-test9-18fba94-UMM-test.zip` (MVID `fd940d66-16b4-4fad-8d02-d5e97e6e9be0`); 413 tests.
