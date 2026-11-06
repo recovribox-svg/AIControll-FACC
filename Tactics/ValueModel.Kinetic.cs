@@ -61,5 +61,23 @@ namespace CompanionAI_Pathfinder.Tactics
             float uses = Math.Min(Math.Max(0f, horizon - 1f), shots);
             return gainPerRound * uses - Math.Max(0f, quiverBurnPrice);
         }
+    
+        /// <summary>
+        /// ★ v0.3.28 test 10 (Dark Elementalist): Soul Power (DarkElementalistSoulPowerAbility) takes a pool of the caster's
+        /// character level and walks the units its filter lets in (corpses not yet harvested), taking each one's character
+        /// level off the pool while the pool stays above it; the first unit that reaches it heals one burn and adds a rank of
+        /// the Overflow feature, once a cast. The order does not matter: it succeeds when their levels together reach the pool.
+        /// </summary>
+        public static bool SoulHarvestSucceeds(int pool, int souls) => pool > 0 && souls >= pool;
+
+        /// <summary>
+        /// ★ v0.3.28 test 10: the Elemental Overflow ranks one more rank of its feature adds, under the game's cap of a third of
+        /// the kineticist's class level (AddKineticistElementalOverflow: min(Bonus, ClassLevel / 3)).
+        /// </summary>
+        public static int OverflowRankGain(int rank, int classLevel)
+        {
+            int cap = Math.Max(0, classLevel / 3);
+            return Math.Min(Math.Max(0, rank) + 1, cap) - Math.Min(Math.Max(0, rank), cap);
+        }
     }
 }

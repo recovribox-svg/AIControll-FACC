@@ -92,5 +92,24 @@ namespace CompanionAI.Tests
         [InlineData(float.NaN, 0.6f, 3f, 1f)]
         public void CriticalsRaiseALandedHit(float threat, float hit, float mult, float expected) =>
             Assert.Equal(expected, ValueModel.CritFactor(threat, hit, mult), 3);
+
+        // ★ v0.3.28 test 10: Dark Elementalist Soul Power (character-level pool, Overflow ranks capped at class level / 3).
+        [Theory]
+        [InlineData(10, 9, false)]
+        [InlineData(10, 10, true)]
+        [InlineData(10, 14, true)]
+        [InlineData(0, 5, false)]
+        public void SoulHarvest_NeedsTheCastersLevelInSouls(int pool, int souls, bool expected) =>
+            Assert.Equal(expected, ValueModel.SoulHarvestSucceeds(pool, souls));
+
+        [Theory]
+        [InlineData(0, 6, 1)]    // level 6: cap 2
+        [InlineData(1, 6, 1)]
+        [InlineData(2, 6, 0)]    // capped: more successes add nothing
+        [InlineData(5, 6, 0)]
+        [InlineData(0, 2, 0)]    // below level 3 there is no Overflow at all
+        [InlineData(4, 15, 1)]
+        public void OverflowRankGain_StopsAtTheGamesCap(int rank, int classLevel, int expected) =>
+            Assert.Equal(expected, ValueModel.OverflowRankGain(rank, classLevel));
     }
 }

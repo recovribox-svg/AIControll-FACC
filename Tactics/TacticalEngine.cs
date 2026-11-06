@@ -2751,39 +2751,6 @@ namespace CompanionAI_Pathfinder.Tactics
             return best;
         }
 
-        /// <summary>
-        /// ★ v0.3.3: Soul Power (Dark Elementalist): "gather up the souls of dead creatures with HD sum equal to or higher
-        /// than her character level ... reducing her current burn by 1", and each successful use raises her elemental
-        /// overflow attack/damage bonus for the day. Orvath cast it at round 1 with no corpses, every combat. Needs dead
-        /// creatures in its area not yet marked by it (the marker buff it applies to every creature in the burst) whose
-        /// HD reach the caster's level; worth more when there is burn to remove.
-        /// </summary>
-        private static float BurnReliefValue(TacticalContext ctx, AbilityProfile profile)
-        {
-            var unit = ctx.Unit;
-            BurnSnapshot(unit, profile, out int burn, out int deadAround);
-            // ★ v0.3.18 (test10): nothing has changed since the last use (the same burn, no one new dead around): it would
-            // do what the last one did. Soul Power was cast seven times in a row in real time, 6 s each, nobody dying.
-            if (CombatMemory.BurnReliefUnchanged(unit, profile.Blueprint, burn, deadAround)) return 0f;
-
-            if (profile.IsAoE && profile.TargetBuffs.Count > 0)
-            {
-                int needed = Math.Max(1, unit.Descriptor?.Progression?.CharacterLevel ?? 1);
-                int souls = 0;
-                foreach (var other in Game.Instance.State.Units)
-                {
-                    if (other == null || other == unit || !(other.Descriptor?.State?.IsDead ?? false)) continue;
-                    if (Vector3.Distance(other.Position, unit.Position) > profile.AoERadius + other.Corpulence) continue;
-                    if (profile.TargetBuffs.Any(b => other.Buffs.HasFact(b))) continue;   // souls already used
-                    souls += Math.Max(other.Descriptor?.Progression?.CharacterLevel ?? 0, other.Blueprint?.CR ?? 1);
-                }
-                if (souls < needed) return 0f;
-            }
-
-            float overflow = 1.5f * Math.Min(ctx.ExpectedRounds, 3f);   // +attack/+damage for the rest of the day
-            return (burn > 0 ? 4f : 0f) + overflow;
-        }
-
         /// <summary>★ v0.3.18 (test10): the caster's accepted burn and the dead units within the ability's area.</summary>
         private static void BurnSnapshot(UnitEntityData unit, AbilityProfile profile, out int burn, out int deadAround)
         {
@@ -3533,10 +3500,10 @@ namespace CompanionAI_Pathfinder.Tactics
             // --- kineticist burn relief (Dark Elementalist Soul Power) ---
             if (profile.HealsBurn)
             {
-                float burnValue = BurnReliefValue(ctx, profile);
+                float burnValue = BurnReliefValue(ctx, ability, profile, out string reliefWhy);
                 if (burnValue <= 0f)
                 {
-                    why = "nothing to gain";
+                    why = reliefWhy ?? "nothing to gain";
                     return 0f;
                 }
                 value += burnValue;

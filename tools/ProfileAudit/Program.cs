@@ -160,6 +160,11 @@ namespace ProfileAudit
             foreach (var line in quiverLines) Console.WriteLine(line);
             File.WriteAllText(output, string.Join(Environment.NewLine, quiverLines) + Environment.NewLine + Environment.NewLine + File.ReadAllText(output));
             blocklistFailures += quiverFailures;
+            // ★ v0.3.28 test 10: Soul Power's burn relief and Overflow rank wiring.
+            var soulLines = SoulPowerCheck.Run(loaded.Values, out int soulFailures);
+            foreach (var line in soulLines) Console.WriteLine(line);
+            File.WriteAllText(output, string.Join(Environment.NewLine, soulLines) + Environment.NewLine + Environment.NewLine + File.ReadAllText(output));
+            blocklistFailures += soulFailures;
             if (failed > 0)
             {
                 string partial = $"PARTIAL: loaded {loaded.Count}, failed {failed}, allowed {options.AllowFailures}. Failed blueprints:";

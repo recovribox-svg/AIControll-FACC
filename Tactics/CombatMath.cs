@@ -988,6 +988,21 @@ namespace CompanionAI_Pathfinder.Tactics
             return FrameCached($"ovf|{caster.UniqueId}|{blast.AssetGuid}|{extraBurn}", () => OverflowNow(caster, part, blast, extraBurn));
         }
 
+        /// <summary>
+        /// ★ v0.3.28 test 10: the damage one Overflow rank adds to a hit of <paramref name="blast"/> (AddKineticistElementalOverflow:
+        /// 2, 3 for a fire blast with Fire's Fury, +2 more with Elemental Engine at the burn limit). Shared by the Overflow
+        /// reader and Soul Power's rank gain.
+        /// </summary>
+        internal static int OverflowDamagePerRank(UnitEntityData caster, Kingmaker.UnitLogic.Class.Kineticist.UnitPartKineticist part,
+                                                  Kingmaker.UnitLogic.Class.Kineticist.AddKineticistElementalOverflow overflow,
+                                                  Kingmaker.UnitLogic.Abilities.Blueprints.BlueprintAbility blast, int accepted)
+        {
+            int per = blast != null && (blast.SpellDescriptor & Kingmaker.Blueprints.Classes.Spells.SpellDescriptor.Fire) != 0 &&
+                      overflow.FiresFury != null && caster.Descriptor.HasFact(overflow.FiresFury) ? 3 : 2;
+            if (overflow.ElementalEngine && part.MaxBurn == accepted) per += 2;
+            return per;
+        }
+
         private static int OverflowNow(UnitEntityData caster, Kingmaker.UnitLogic.Class.Kineticist.UnitPartKineticist part,
                                        Kingmaker.UnitLogic.Abilities.Blueprints.BlueprintAbility blast, int extraBurn)
         {
@@ -1000,12 +1015,8 @@ namespace CompanionAI_Pathfinder.Tactics
                 {
                     if (!(component is Kingmaker.UnitLogic.Class.Kineticist.AddKineticistElementalOverflow overflow)) continue;
                     int ranks = Math.Min(overflow.Bonus?.Calculate(fact.MaybeContext) ?? 0, part.ClassLevel / 3);
-                    bool engine = overflow.ElementalEngine && part.MaxBurn == accepted;
-                    int per = (blast.SpellDescriptor & Kingmaker.Blueprints.Classes.Spells.SpellDescriptor.Fire) != 0 &&
-                              overflow.FiresFury != null && caster.Descriptor.HasFact(overflow.FiresFury) ? 3 : 2;
-                    if (engine) per += 2;
                     if (!overflow.IgnoreBurn) ranks = Math.Min(ranks, accepted);
-                    bonus += Math.Max(0, ranks) * per;
+                    bonus += Math.Max(0, ranks) * OverflowDamagePerRank(caster, part, overflow, blast, accepted);
                 }
             }
             return bonus;

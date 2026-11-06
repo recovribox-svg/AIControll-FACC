@@ -1408,6 +1408,8 @@ namespace CompanionAI_Pathfinder.GameInterface
                 UnitEntityData fighting = mode == null ? party.FirstOrDefault(u => u != null && u.IsInCombat) : null;
                 foreach (var unit in party)
                 {
+                    // ★ v0.3.28 test 10: a Dark Elementalist harvests the corpses around it first (Soul Power heals burn).
+                    if (mode == null && fighting == null && TryHarvestSouls(unit)) continue;
                     if (!QuiverMaker(unit)) continue;
                     if (mode != null) { NoteQuiverBlock(unit, mode); continue; }
                     if (fighting != null) { NoteQuiverBlock(unit, $"{fighting.CharacterName} is still in combat"); continue; }
@@ -1415,6 +1417,21 @@ namespace CompanionAI_Pathfinder.GameInterface
                 }
             }
             catch (Exception ex) { Main.Verbose($"[Kinetic] out-of-combat preparation unavailable: {ex.Message}"); }
+        }
+
+        /// <summary>
+        /// ★ v0.3.28 test 10: out of combat, a burn healer whose harvest would succeed and give something
+        /// (Tactics.TacticalEngine.SoulHarvestToCast): the corpses of the fight still lie around and no combat turn is spent.
+        /// Same gates as the quiver; quiet for units without a kineticist part.
+        /// </summary>
+        private bool TryHarvestSouls(UnitEntityData unit)
+        {
+            if (unit?.Get<Kingmaker.UnitLogic.Class.Kineticist.UnitPartKineticist>() == null) return false;
+            if (QuiverModeBlock() != null || QuiverUnitBlock(unit) != null) return false;
+            var ability = Tactics.TacticalEngine.SoulHarvestToCast(unit);
+            if (ability == null) return false;
+            IssueOutOfCombatBuff(unit, ability, unit.Descriptor?.CharacterName ?? "Unknown");
+            return true;
         }
 
         private bool TryPrepareQuiver(UnitEntityData unit)
@@ -1562,6 +1579,8 @@ namespace CompanionAI_Pathfinder.GameInterface
             if (Tactics.TacticalEngine.RestoreEndedToggles(unit)) return;
             if (!recasts) return;
 
+            // ★ v0.3.28 test 10: Soul Power on the fight's corpses, before they are left behind (heals burn first).
+            if (TryHarvestSouls(unit)) return;
             // ★ v0.3.28 (codex review): quiver preparation costs no combat turn; its native cast is still standard.
             if (TryPrepareQuiver(unit)) return;
 

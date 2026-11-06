@@ -162,7 +162,10 @@ namespace CompanionAI_Pathfinder.Tactics
             // old reading.
             // ★ v0.3.21 (gaps): unless it is the stat this recipient's spell DCs come from.
             var dcStat = CastingStat(ally);
-            if (!parts.Any(p => (p.Kind != BuffPartKind.MentalStat || (dcStat.HasValue && p.Stat == dcStat.Value)) &&
+            // ★ v0.3.28 test 10: or the kineticist's main stat (a Dark Elementalist's Intelligence: Fox's Cunning).
+            var kineticStat = KineticMainStat(ally);
+            if (!parts.Any(p => (p.Kind != BuffPartKind.MentalStat || (dcStat.HasValue && p.Stat == dcStat.Value) ||
+                                 (kineticStat.HasValue && p.Stat == kineticStat.Value)) &&
                                 p.Kind != BuffPartKind.ForbidsSpells)) return result;
             result.Modelled = true;
 
@@ -200,7 +203,7 @@ namespace CompanionAI_Pathfinder.Tactics
 
             // --- what each part adds, with this caster's numbers ---
             float attack = 0f, damage = 0f, extraAttacks = 0f, armor = 0f, concealment = 0f, miss = 0f, saves = 0f;
-            float tempHp = 0f, images = 0f, physicalDr = 0f, conHp = 0f;
+            float tempHp = 0f, images = 0f, physicalDr = 0f, conHp = 0f, blastDamage = 0f;
             float energyDamage = 0f, diceUp = 0f, critExtra = 0f, damagePercent = 0f, fastHealing = 0f, sight = 0f;
             var energyProtection = new Dictionary<DamageEnergyType, List<EnergyLayer>>();
             float spellDc = 0f, spellLevel = 0f, spellPenetration = 0f;
@@ -262,7 +265,13 @@ namespace CompanionAI_Pathfinder.Tactics
                         armor += d * 0.5f;   // armour may cap it
                         break;
                     }
-                    case BuffPartKind.Constitution: conHp += Increment(ally, StatType.Constitution, p, amount) / 2f * Math.Max(1, ally.Descriptor.Progression.CharacterLevel); break;
+                    case BuffPartKind.Constitution:
+                    {
+                        float inc = Increment(ally, StatType.Constitution, p, amount);
+                        conHp += inc / 2f * Math.Max(1, ally.Descriptor.Progression.CharacterLevel);
+                        blastDamage += KineticMainStatBlastGain(ally, StatType.Constitution, inc);   // ★ v0.3.28 test 10
+                        break;
+                    }
                     case BuffPartKind.TempHp: tempHp = Math.Max(tempHp, Increment(ally, StatType.TemporaryHitPoints, p, amount)); break;
                     case BuffPartKind.Concealment: concealment = Math.Max(concealment, amount / 100f); break;
                     case BuffPartKind.MissChance: miss = Math.Max(miss, amount / 100f); break;
@@ -334,6 +343,8 @@ namespace CompanionAI_Pathfinder.Tactics
                     case BuffPartKind.MentalStat:
                         if (castingStat.HasValue && p.Stat == castingStat.Value)
                             spellDc += Increment(ally, p.Stat, p, amount) / 2f;   // the ability modifier
+                        // ★ v0.3.28 test 10: a kineticist's main stat raises its blasts' damage bonus.
+                        blastDamage += KineticMainStatBlastGain(ally, p.Stat, Increment(ally, p.Stat, p, amount));
                         break;
                     case BuffPartKind.NaturalWeapon:
                         // ★ v0.3.21: claws for empty hands - the dice they add over the empty-hand attack it makes now; nothing
@@ -420,6 +431,15 @@ namespace CompanionAI_Pathfinder.Tactics
             }
             else if (attack > 0f || damage > 0f || extraAttacks > 0f || energyDamage > 0f || damagePercent > 0f)
                 notes.Add("no weapon attack to improve");
+            // ★ v0.3.28 test 10: a kineticist's blast damage bonus from its main stat: one blast a round at its weapon's hit
+            // chance (or an even chance with no weapon estimate), at half while it also has a weapon attack it often uses.
+            if (blastDamage > 0f)
+            {
+                float land = off.HitChance > 0f ? off.HitChance : 0.5f;
+                float share = off.DamagePerRound > 0f ? 0.5f : 1f;
+                offencePerRound += blastDamage * land * share;
+                notes.Add($"blasts {blastDamage:+0.#} damage");
+            }
             // ★ v0.3.21 (gaps): spellcasting boosts - for a recipient that casts, by how much better its spells land
             // (ValueModel.SpellcastingGain), its casting worth per round by its caster level.
             if ((spellDc > 0f || spellLevel > 0f || spellPenetration > 0f) && castingStat.HasValue)
@@ -770,6 +790,38 @@ namespace CompanionAI_Pathfinder.Tactics
             {
                 return -1f;
             }
+        }
+
+        /// <summary>★ v0.3.28 test 10: the stat a kineticist's blasts and wild talents scale with (its kineticist part), or null.</summary>
+        private static StatType? KineticMainStat(UnitEntityData ally)
+        {
+            try { return ally?.Get<Kingmaker.UnitLogic.Class.Kineticist.UnitPartKineticist>()?.MainStatType; }
+            catch { return null; }
+        }
+
+        /// <summary>
+        /// ★ v0.3.28 test 10: what raising <paramref name="stat"/> by <paramref name="increment"/> adds to one hit of the
+        /// kineticist's first blast, when that stat is its main stat: the blast's own DamageBonus rank (ContextRankConfig on
+        /// KineticistMainStatProperty: the modifier as is for physical blasts, halved for energy) before and after.
+        /// </summary>
+        private static float KineticMainStatBlastGain(UnitEntityData ally, StatType stat, float increment)
+        {
+            try
+            {
+                var part = ally?.Get<Kingmaker.UnitLogic.Class.Kineticist.UnitPartKineticist>();
+                if (part == null || part.MainStatType != stat || !(increment > 0f)) return 0f;
+                int value = ally.Stats.GetStat(stat)?.ModifiedValue ?? 10;
+                int now = (value - 10) / 2, after = (value + (int)increment - 10) / 2;
+                if (after <= now) return 0f;
+                var blast = part.Blasts?.FirstOrDefault();
+                var config = blast == null ? null : Kingmaker.Blueprints.BlueprintExtenstions.GetComponents<ContextRankConfig>(blast)
+                    .FirstOrDefault(c => c.Type == AbilityRankType.DamageBonus);
+                if (config == null || RankApplyProgression == null) return after - now;
+                int a = (int)RankApplyProgression.Invoke(config, new object[] { after });
+                int b = (int)RankApplyProgression.Invoke(config, new object[] { now });
+                return Math.Max(0, a - b);
+            }
+            catch { return 0f; }
         }
 
         /// <summary>★ v0.3.21: the stat the recipient's spell DCs come from (its spellbook with the highest caster level), or
@@ -1127,7 +1179,10 @@ namespace CompanionAI_Pathfinder.Tactics
                 foreach (var u in read.UnreadFor(ctx.Unit)) unread.Add(u);
             }
             var dcStat = CastingStat(ally);
-            if (!parts.Any(p => (p.Kind != BuffPartKind.MentalStat || (dcStat.HasValue && p.Stat == dcStat.Value)) &&
+            // ★ v0.3.28 test 10: or the kineticist's main stat (a Dark Elementalist's Intelligence: Fox's Cunning).
+            var kineticStat = KineticMainStat(ally);
+            if (!parts.Any(p => (p.Kind != BuffPartKind.MentalStat || (dcStat.HasValue && p.Stat == dcStat.Value) ||
+                                 (kineticStat.HasValue && p.Stat == kineticStat.Value)) &&
                                 p.Kind != BuffPartKind.ForbidsSpells)) return result;
             int level = Math.Max(1, ctx.Unit.Descriptor?.Progression?.CharacterLevel ?? 1);
             // The performer's own prohibition is priced by the toggle's rule (with its ignore feature); an ally in the area
