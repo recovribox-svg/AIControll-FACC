@@ -1,6 +1,34 @@
 # Test builds
 
-## Current test build: v0.3.28-dev-test7 (f180d9b) - reach and Grease, quiver reasons
+## Current test build: v0.3.28-dev-test8 (94d0835) - test-7 log fixes
+
+**[Download the UMM test ZIP (94d0835)](AI-Control-FACC-v0.3.28-dev-test8-94d0835-UMM-test.zip?raw=true)**
+
+Direct link: <https://github.com/recovribox-svg/AIControll-FACC/raw/claude/dreamy-pasteur-b9h3rn/test-builds/AI-Control-FACC-v0.3.28-dev-test8-94d0835-UMM-test.zip>
+
+Test 7 (below) plus fixes from its logs ([docs/TACTICAL_AI.md](../docs/TACTICAL_AI.md) §105):
+- **Stepping out of reach, as agreed:** only for a companion whose own weapon cannot reach the enemy hitting it (and who
+  is not fighting anyone else in reach). In test 7 it also fired in the wrong cases: Camellia hit the Cultist Champion and
+  then walked away from it (taking an attack of opportunity), and in real time Seelah walked off the Mongrel she was
+  beating between two swings. Archers no longer use it; they keep their own "back off out of melee" before a shot.
+- **"Back off out of melee" (real time)** now counts the chance the attacks of opportunity stop the walk. Camellia,
+  entangled at 6 HP, backed off past two attacks that dropped her 97 % of the time.
+- **The quiver, found:** in your game Orvath's kineticist part has no quiver at all. The game sets it up once, from the
+  first kineticist feature that turns on, and only takes burn from arrows through it, so arrows would never pay for his
+  blasts, even if you made a quiver by hand. The AI was right to leave Create Quiver alone. The log now names the feature
+  that set the part up: look for `[Kinetic] Orvath: ... the game gives it no quiver: its kineticist part comes from ...`.
+
+UMM shows **0.3.28**. Startup line `[Build] v0.3.28 module=54337c75-a6f2-424d-b5bc-769ebc4849f5`.
+- ZIP SHA-256 `69fe08eccdba62aa3d4c713cec1e7a9333034d8b2da68452acabf9f167e71cbc`; DLL SHA-256 `20946fce1dbb16aaa6820da563a9f799a466decca893cb6736aafff0240cbec5`.
+- [Identity](AI-Control-FACC-v0.3.28-dev-test8-94d0835-UMM-test.identity.json) · [Checksums](SHA256SUMS.txt).
+- Checks: 413 unit tests pass; release build 0 warnings; offline blueprint audit 0 errors. Not played yet.
+- **Test:**
+  - Send the `[Kinetic] Orvath: ... no quiver` line: it names the feature behind it. In game, a quick check: cast Create
+    Quiver by hand and see whether Exploding Arrows still costs burn.
+  - Front-liners should no longer walk away from an enemy they are fighting; at the edge of a Grease, out of a
+    reach-weapon enemy's reach, they still may.
+
+## Test 7: v0.3.28-dev-test7 (f180d9b) - reach and Grease, quiver reasons (also in test 8)
 
 **[Download the UMM test ZIP (f180d9b)](AI-Control-FACC-v0.3.28-dev-test7-f180d9b-UMM-test.zip?raw=true)**
 

@@ -149,6 +149,11 @@ fights, no mod errors). A melee enemy's danger at a spot counts its full attack 
 if its area lets it go (`ValueModel.StrikeShare`, `TacticalEngine.Reach.cs`, `AoeDangerAnalyzer.HeldInsideChance`); a step out
 of an unanswered reach at any HP (`AddOutOfReachCandidate`); every out-of-combat quiver refusal is named. Test ZIP
 `AI-Control-FACC-v0.3.28-dev-test7-f180d9b-UMM-test.zip` (MVID `c786e760-c342-4fc4-9e1e-f130a36152f8`); 413 tests.
+**v0.3.28 test 8 (6 November, `docs/TACTICAL_AI.md` §105, not played):** test 7 played (13 fights, no mod errors). The step
+out of reach only when the unit's own weapon reaches no enemy (not for ranged-weapon units); the real-time back-off scaled
+by its stop chance; Orvath's kineticist part names no quiver buff (the game then never takes burn from arrows), and
+`NoQuiverBuffNote` names the feature that set it up. Test ZIP `AI-Control-FACC-v0.3.28-dev-test8-94d0835-UMM-test.zip`
+(MVID `54337c75-a6f2-424d-b5bc-769ebc4849f5`); 413 tests.
 
 Historical handovers, superseded by the one above: [v0.3.22 release preparation](docs/RELEASE_0_3_22_HANDOVER.md)
 (27 October, PR #6–#12), [released-log review](docs/RELEASE_0322_LOG_REVIEW.md) (PR #13),

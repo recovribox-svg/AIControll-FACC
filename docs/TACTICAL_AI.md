@@ -3563,3 +3563,34 @@ it off never paid; Enveloping Winds and Shroud of Water were already active, so 
 Buff It 2 The Limit "is active" line appears in only some logs although the mod runs in all; it gates no behaviour.
 
 Test ZIP `AI-Control-FACC-v0.3.28-dev-test7-f180d9b-UMM-test.zip` (MVID `c786e760-c342-4fc4-9e1e-f130a36152f8`); 413 tests.
+
+## 105. Test-7 log fixes: step out of reach by the own weapon, back-off stop chance, the quiver's missing part (v0.3.28 test 8)
+
+Review of the test-7 play-test: 6 turn-based and 7 real-time fights, no mod errors; performance as before (one garbage
+collection over a second in each mode). Seelah's one turn-based down (fight 4) came from ranged hits (a cultist wizard
+and a CR4 elf archer, 23 damage), not from her charge; the real-time fights with reinforcements put several companions
+down, and the revive and heal choices there hold up (with one enemy left Orvath kills it rather than revive).
+
+- **Step out of an unanswered reach (§104) - the rule now matches what was agreed.** Test 7 judged "cannot hit it
+  back" by the options left. Turn-based, Camellia attacked the Cultist Champion and then, her standard action spent,
+  walked out of its reach past an attack of opportunity (3.1). Real time lists no attack while a swing's cooldown runs:
+  Seelah walked off the Corrupted Mongrel she was beating (2 attacks of opportunity), and Lann and Orvath walked off
+  between shots. Now: not for a unit with a ranged weapon in hand (its back-off before the shot covers it), not while
+  the unit's own weapon reaches any enemy (the game's reach test, `Threatens(unit, enemy, enemy.Position)`: it is holding
+  a melee whose cost of leaving this turn's options cannot show), and the strikers are the enemies whose reach covers
+  the unit. The fight-7 case (at the Grease edge, the Schir out of the weapon's reach) is unchanged.
+- **"Back off out of melee" (real time) scaled by its stop chance.** Its worth - the cast or shot it makes safe - was
+  reduced by the walk's cost but not by the chance the attacks of opportunity stop it; Camellia, entangled at 6 HP,
+  chose it at 21.9 past two attacks that dropped her 97 % of the time. It now uses the withdraw's rule
+  (`value x (1 - stop) - cost`) and records its risk, so the real-path repricing (`RepriceRealPaths`) applies to it.
+- **The quiver, root cause.** Test 7's reason was "no ability puts a quiver on it" in all 13 fights, with nothing between
+  fights: `UnitPartKineticist.QuiverBuff` is null for Orvath. It is the quiver buff of the `AddKineticistPart` that set the
+  part up; the game sets it up once (a second one is refused, "Can't add UnitPartKineticist twice") and takes burn from
+  arrows only through that buff (`AbilityKineticist.GetQuiverResource`). The Kinetic Sharpshooter's own source, the base
+  `BurnFeature`, names `KineticSharpshooterObtainQuiverBuff` (the ProfileAudit QUIVER-BINDING check), so another kineticist
+  feature turned on first in this save, likely one of the Isekai Protagonist's Kinetic Legacy variants (their Burn
+  features name no quiver). With no quiver buff the arrows never pay, so leaving Create Quiver alone is right.
+  `TacticalEngine.NoQuiverBuffNote` names the feature that set the part up and those that would have named a quiver,
+  once a fight in combat and once a session between fights.
+
+Test ZIP `AI-Control-FACC-v0.3.28-dev-test8-94d0835-UMM-test.zip` (MVID `54337c75-a6f2-424d-b5bc-769ebc4849f5`); 413 tests.

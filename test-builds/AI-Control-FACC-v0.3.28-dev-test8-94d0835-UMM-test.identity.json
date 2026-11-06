@@ -1,0 +1,35 @@
+{
+  "name": "AI Control - Fully Autonomous Combat Companions v0.3.28 test 8 (test-7 log fixes)",
+  "version": "0.3.28",
+  "umm_manifest_version": "0.3.28",
+  "umm_mod_id": "CompanionAI_Pathfinder",
+  "branch": "claude/dreamy-pasteur-b9h3rn",
+  "base_release": "v0.3.27 (3f005b9)",
+  "runtime_source_commit": "94d0835",
+  "archive": "AI-Control-FACC-v0.3.28-dev-test8-94d0835-UMM-test.zip",
+  "zip_sha256": "69fe08eccdba62aa3d4c713cec1e7a9333034d8b2da68452acabf9f167e71cbc",
+  "dll_sha256": "20946fce1dbb16aaa6820da563a9f799a466decca893cb6736aafff0240cbec5",
+  "manifest_sha256": "ae1e19149c98be1443a2b5db7225009b14d905327a3055ff990775ef56e0f45e",
+  "module_mvid": "54337c75-a6f2-424d-b5bc-769ebc4849f5",
+  "startup_marker": "[Build] v0.3.28 module=54337c75-a6f2-424d-b5bc-769ebc4849f5",
+  "archive_contents": [
+    "CompanionAI_Pathfinder.dll",
+    "Info.json"
+  ],
+  "checks": {
+    "unit_tests": {
+      "passed": 413,
+      "failed": 0,
+      "skipped": 0
+    },
+    "release_build": {
+      "warnings": 0,
+      "errors": 0
+    },
+    "external_references": "SigDump vs test 7: BlueprintComponent.OwnerBlueprint and AddKineticistPart.QuiverBuff (both in the decompiled game; compiled against the real game assemblies)",
+    "packed_dll_matches_build": true,
+    "in_game": "pending",
+    "profile_audit": "Kineticist dumps, strict: 800 loaded, 0 failed, 286 rows, 0 reader errors; ricochet-layer, rank-increment and quiver-binding checks pass"
+  },
+  "publication_scope": "Development test download: test 7 plus the test-7 log fixes (step out of reach by the own weapon's reach, back-off scaled by its stop chance, the quiver's missing part named); not a release."
+}
