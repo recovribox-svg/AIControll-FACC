@@ -495,7 +495,8 @@ namespace CompanionAI_Pathfinder.Tactics
             var quiver = QuiverAbility(part, abilities);
             if (quiver == null)
             {
-                if (part.CanUseArcherBlast()) why = $"no ability puts {part.QuiverBuff?.name ?? "a quiver"} on it";
+                if (part.CanUseArcherBlast())
+                    why = part.QuiverBuff == null ? NoQuiverBuffNote(unit, part) : $"no ability puts {part.QuiverBuff.name} on it";
                 return false;
             }
             if (!QuiverPays(unit)) { why = "the weapon in hand stops the quiver"; return false; }
@@ -731,6 +732,50 @@ namespace CompanionAI_Pathfinder.Tactics
         }
 
         private static readonly Dictionary<string, string> QuiverNotes = new Dictionary<string, string>();
+
+        private static readonly System.Reflection.FieldInfo KineticistSettings =
+            HarmonyLib.AccessTools.Field(typeof(UnitPartKineticist), "m_Settings");
+
+        /// <summary>
+        /// ★ v0.3.28 test 8 (test-7 logs: "no ability puts a quiver on it" in all 13 fights, nothing between fights): the
+        /// kineticist part names no quiver buff (UnitPartKineticist.QuiverBuff is its AddKineticistPart's). The game sets
+        /// the part up once, from the first AddKineticistPart that turns on (a second one is refused: "Can't add
+        /// UnitPartKineticist twice"), and takes burn from arrows only through that buff (AbilityKineticist
+        /// .GetQuiverResource) - without it the arrows never pay, so Create Quiver is left alone. Names the feature that set
+        /// the part up and the unit's features whose part would have named a quiver.
+        /// </summary>
+        internal static string NoQuiverBuffNote(UnitEntityData unit, UnitPartKineticist part)
+        {
+            // Read once a fight (it walks every fact): the exploration driver asks twice a second.
+            if (NoQuiverNotes.TryGetValue(unit.UniqueId, out var memo) && memo.Key == CombatMemory.Fight) return memo.Value;
+            string note = DescribeNoQuiver(unit, part);
+            NoQuiverNotes[unit.UniqueId] = new KeyValuePair<int, string>(CombatMemory.Fight, note);
+            return note;
+        }
+
+        private static readonly Dictionary<string, KeyValuePair<int, string>> NoQuiverNotes = new Dictionary<string, KeyValuePair<int, string>>();
+
+        private static string DescribeNoQuiver(UnitEntityData unit, UnitPartKineticist part)
+        {
+            string source = null;
+            try { source = (KineticistSettings?.GetValue(part) as AddKineticistPart)?.OwnerBlueprint?.name; } catch { }
+            var withQuiver = new List<string>();
+            try
+            {
+                foreach (var fact in unit.Facts.List)
+                {
+                    var components = (fact?.Blueprint as BlueprintScriptableObject)?.ComponentsArray;
+                    if (components == null) continue;
+                    foreach (var component in components)
+                        if (component is AddKineticistPart add && add.QuiverBuff != null) withQuiver.Add(fact.Blueprint.name);
+                }
+            }
+            catch { }
+            return $"the game gives it no quiver: its kineticist part comes from {source ?? "an unknown feature"}, which names no " +
+                   "quiver buff" + (withQuiver.Count > 0 ? $" ({string.Join(", ", withQuiver.Distinct())} names one, but the game sets " +
+                                                             "the part up only once)" : "") +
+                   " - the game never takes burn from arrows then, so Create Quiver is not cast";
+        }
 
         /// <summary>Per unit: the signature of the last refusal and when it lapses (QuiverToPrepare).</summary>
         private static readonly Dictionary<string, KeyValuePair<long, float>> QuiverRefusals = new Dictionary<string, KeyValuePair<long, float>>();

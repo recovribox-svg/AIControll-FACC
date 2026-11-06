@@ -1384,8 +1384,15 @@ namespace CompanionAI_Pathfinder.GameInterface
         private static bool QuiverMaker(UnitEntityData unit)
         {
             var part = unit?.Get<Kingmaker.UnitLogic.Class.Kineticist.UnitPartKineticist>();
-            if (part?.QuiverBuff == null) return false;
-            try { return part.CanUseArcherBlast(); }
+            if (part == null) return false;
+            try
+            {
+                if (!part.CanUseArcherBlast()) return false;
+                // ★ v0.3.28 test 8: an archer kineticist whose part names no quiver (test 7: Orvath) - said once, not skipped
+                // in silence.
+                if (part.QuiverBuff == null) { NoteQuiverBlock(unit, Tactics.TacticalEngine.NoQuiverBuffNote(unit, part)); return false; }
+                return true;
+            }
             catch { return false; }
         }
 

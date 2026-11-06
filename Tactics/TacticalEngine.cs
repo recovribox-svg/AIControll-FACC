@@ -4417,17 +4417,26 @@ namespace CompanionAI_Pathfinder.Tactics
                         value = Math.Min(ctx.Engagers.Sum(CombatMath.Threat) * 0.4f, followUp) - givenUp;
                     }
                     string label = realTime ? "Back off out of melee" : "5ft step out of melee";
+                    Disengage backOffRisk = null;
+                    float preRisk = value;
                     if (realTime)
                     {
                         // ★ v0.3.28 test 2: a caster's or archer's back-off is worth the provoke it avoids, not its own
                         // safety - that offsets what leaving costs the others; a melee unit's is worth its engagers' Threat.
-                        var risk = MoveRisk(ctx, point.Value, ownSafetyCounted: !castsInMelee && !ctx.HasRangedWeapon);
-                        if (risk != null) { value -= risk.Cost; label += risk.Tag; }
+                        backOffRisk = MoveRisk(ctx, point.Value, ownSafetyCounted: !castsInMelee && !ctx.HasRangedWeapon);
+                        // ★ v0.3.28 test 8 (test-7 real-time log): what the back-off makes possible happens only if the walk
+                        // is not stopped (the withdraw's and every approach's rule). Camellia, entangled at 6 HP, chose a
+                        // back-off worth 21.9 past two attacks of opportunity that dropped her 97 % of the time.
+                        if (backOffRisk != null)
+                        {
+                            value = value * (1f - backOffRisk.StopChance) - backOffRisk.Cost;
+                            label += backOffRisk.Tag;
+                        }
                     }
                     list.Add(new Candidate
                     {
                         Kind = CandidateKind.Move, Slot = realTime ? ActionSlot.Move : ActionSlot.Free, Point = point, ApproachRadius = 0.3f,
-                        Value = value,
+                        Value = value, Risk = backOffRisk, RiskAt = backOffRisk != null ? point : null, PreRiskValue = preRisk,
                         Label = label, Key = FiveFootStepKey + (refusedSteps != null && refusedSteps.Count > 0 ? $"#{refusedSteps.Count}" : "")
                     });
                 }

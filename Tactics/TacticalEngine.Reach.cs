@@ -93,7 +93,8 @@ namespace CompanionAI_Pathfinder.Tactics
 
         /// <summary>
         /// ★ v0.3.28 test 7: at any HP, a step (turn-based: a 5-foot step, no attack of opportunity) or a short move out of
-        /// the reach of enemies that strike the unit where it stands while it has no attack on them from there. Worth what
+        /// the reach of enemies that strike the unit where it stands while its own weapon reaches none of them (nor any
+        /// other enemy: it is not holding a melee there). Not for a unit with a ranged weapon in hand. Worth what
         /// the withdrawal is worth - how much less likely the unit is to drop before its next turn there (the reach-aware
         /// danger of <see cref="IncomingParts"/>) - less what the move costs (MoveRisk: attacks of opportunity, areas, and what
         /// leaving costs the allies it covers, so a front-liner holding an enemy off a caster stays) and less the best option
@@ -107,13 +108,21 @@ namespace CompanionAI_Pathfinder.Tactics
             bool realTime = CombatMemory.IsRealTime;
             bool canStep = !realTime && ctx.CanFiveFoot;
             if (!canStep && !ctx.HasMove) return;
+            // ★ v0.3.28 test 8 (test-7 logs): an archer's way out of melee is the step or back-off before its shot (1) above;
+            // offered here too, Lann and Orvath walked off in real time between their own shots.
+            if (ctx.HasRangedWeapon) return;
             List<UnitEntityData> unanswered;
             try
             {
+                // ★ v0.3.28 test 8: "cannot hit it back" by the game's reach test on the unit's own weapon, not by the
+                // options left this turn. Turn-based, Camellia attacked the Cultist Champion and then walked out of its reach
+                // (an attack of opportunity) once her standard action was spent; real time, Seelah walked off the Corrupted
+                // Mongrel she was beating between swings (no attack is listed while the swing's cooldown runs). A unit that
+                // reaches any enemy where it stands holds that melee: what leaving costs it there (its next attacks, the walk
+                // back) is not in this turn's options.
+                if (ctx.Enemies.Any(e => !CombatMath.IsDisabled(e) && Threatens(unit, e, e.Position))) return;
                 unanswered = ctx.Enemies.Where(e => !CombatMath.IsDisabled(e) && e.GetThreatHandMelee() != null &&
-                                                    Threatens(e, unit, unit.Position) &&
-                                                    !list.Any(c => c.Target == e && !c.NeedsMove && c.Value >= MinMainValue &&
-                                                                   Answers(c)))
+                                                    Threatens(e, unit, unit.Position))
                                         .ToList();
             }
             catch { return; }
@@ -171,16 +180,9 @@ namespace CompanionAI_Pathfinder.Tactics
             if (chosen != null) list.Add(chosen);
             // Why it stays where it is struck, once a round (the review of the next play-test needs it).
             else if (Main.VerboseOn && CombatMemory.FirstThisFight($"reach|{unit.UniqueId}|{CombatMemory.Round}"))
-                Main.Verbose($"[Reach] {unit.CharacterName}: in the reach of {names} with no attack on it (danger here {dangerHere:0.#}); " +
+                Main.Verbose($"[Reach] {unit.CharacterName}: in the reach of {names}, which its weapon does not reach (danger here {dangerHere:0.#}); " +
                              (float.IsNegativeInfinity(bestSeen) ? "no free spot out of its reach within a step or a short move"
                                                                   : $"the best way out is worth {bestSeen:0.#}, not enough"));
-        }
-
-        /// <summary>An option that hurts the enemy it targets: a weapon attack or a damaging ability.</summary>
-        private static bool Answers(Candidate c)
-        {
-            if (c.Kind == CandidateKind.WeaponAttack) return true;
-            return c.Kind == CandidateKind.Ability && c.Ability != null && (AbilityProfile.Get(c.Ability)?.DealsDamage ?? false);
         }
     }
 }
