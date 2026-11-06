@@ -206,7 +206,7 @@ hits (`RiskMath.FullAttackDropChance`, `TacticalEngine.Strikes.cs`: `StandingDro
 Test ZIP `AI-Control-FACC-v0.3.29-dev-test2-6221118-UMM-test.zip` (MVID `add726f5-13c2-4f48-ab1e-cf3a3c819b70`); 466 tests.
 Test 2 played (`docs/TACTICAL_AI.md` §115: 12 fights, no mod errors, R1-R3 seen working, R3 at most 6.4 ms a slow decision; every
 extra interrupted command traced, no loop). **v0.3.29 test 3 (6 November, §115, not played):** a real-time walk to touch range ends
-once the game's reach test reaches the touch's target (`RealTimeTactics.ShouldEndArrivedTouchWalk`; Lann circled Camellia 7.6 s).
+once the game's reach test reaches the touch's target (`RealTimeTactics.ShouldEndArrivedWalk` since test 4; Lann circled Camellia 7.6 s).
 Test ZIP `AI-Control-FACC-v0.3.29-dev-test3-71959e6-UMM-test.zip` (MVID `a5d5b19e-da23-4aaf-bd93-d6037457f66d`); 466 tests.
 **v0.3.29 test 4 (6 November, §116, author-approved body-blocking fix 1, not played):** real time, an approach that ends in body contact
 takes a free side of its target when another body, or a companion's walk end (`SpotRules.WalkEnd`), takes its straight spot
