@@ -180,6 +180,11 @@ by the game's rules (`CombatMath.Drain.cs`, `ValueModel.Drain.cs`): a score belo
 character level kill; worth the share of that life bar of the hit points left (5 HP per level first), immunities read; in
 every damage estimate (party spells, friendly fire, enemy threat), poisons of any score; ProfileAudit DRAIN. Test ZIP
 `AI-Control-FACC-v0.3.28-dev-test13-1b74af6-UMM-test.zip` (MVID `76028a95-9ba1-43ce-8250-abb0aecaa5ef`); 444 tests.
+**v0.3.28 test 14 (6 November, `docs/TACTICAL_AI.md` §111, author-requested, not played):** what weapon hits and swarm rounds
+carry beyond hit points, read from the game's actions (`CombatMath.Afflictions.cs`): on-hit triggers of facts and weapon
+enchantments (giant spider poison, Shadow touch), swarm rounds (Mandragora swarm: 5d6, nausea, poison), saves, poison doses,
+control, immunities; in enemy threat, walk/revive prices and the party's poisoned weapons; ProfileAudit AFFLICTION. Test ZIP
+`AI-Control-FACC-v0.3.28-dev-test14-eb73349-UMM-test.zip` (MVID `a3caf884-f21e-49e4-aa34-52758a29f726`); 450 tests.
 
 Historical handovers, superseded by the one above: [v0.3.22 release preparation](docs/RELEASE_0_3_22_HANDOVER.md)
 (27 October, PR #6–#12), [released-log review](docs/RELEASE_0322_LOG_REVIEW.md) (PR #13),

@@ -1,6 +1,32 @@
 # Test builds
 
-## Current test build: v0.3.28-dev-test13 (1b74af6) - ability drain and negative levels valued by the game's rules
+## Current test build: v0.3.28-dev-test14 (eb73349) - Mandragora swarms and poisoned weapons valued by what they do
+
+**[Download the UMM test ZIP (eb73349)](AI-Control-FACC-v0.3.28-dev-test14-eb73349-UMM-test.zip?raw=true)**
+
+Direct link: <https://github.com/recovribox-svg/AIControll-FACC/raw/claude/dreamy-pasteur-b9h3rn/test-builds/AI-Control-FACC-v0.3.28-dev-test14-eb73349-UMM-test.zip>
+
+Test 13 (below) plus your request: the Mandragora swarm's poison and weapon poisons ([docs/TACTICAL_AI.md](../docs/TACTICAL_AI.md) §111).
+The AI now reads what an enemy's hit, or a swarm's round, does beyond hit points, from the actions the game itself runs:
+- **Swarms** (Mandragora swarm): each round in its space is 5d6 damage, a save or a round of nausea, and a save or its
+  poison (more saves, Constitution damage, confusion). Before, the swarm's round was not counted at all.
+- **Poisoned hits** (giant spiders' bite, poisoned or draining weapon enchantments, a Shadow's Strength touch): each hit
+  counts its save, the poison's doses over the next rounds, the score they damage and any control it causes.
+- **Saves and immunities** are read per target: a high Fortitude save makes a poison worth less, and a target immune to
+  poison, to that score's damage or to negative levels gets nothing from it.
+- **The party's own poisoned weapons** count the same way when the AI compares a weapon attack with its other options.
+- The `[Threat]` line names it: `(X of it beyond hit points: swarm: ...)`.
+
+UMM shows **0.3.28**. Startup line `[Build] v0.3.28 module=a3caf884-f21e-49e4-aa34-52758a29f726`.
+- ZIP SHA-256 `8f8f1428e4bea326737d0ae30c83cdf54806c51b033f5af1bf22f15ef1ef4e2c`; DLL SHA-256 `21b7ab720e4a005a8a7da986159a14615f60162882a76654a5b62880dc60bac7`.
+- [Identity](AI-Control-FACC-v0.3.28-dev-test14-eb73349-UMM-test.identity.json) · [Checksums](SHA256SUMS.txt).
+- Checks: 450 unit tests pass; release build 0 warnings; offline blueprint audit 0 errors (new affliction check: the giant
+  spider's bite, the Shadow's touch and the Mandragora swarm's round read correctly). Not played yet.
+- **Test:** a fight with Mandragora swarms or giant spiders. `[Threat]` should rate them higher than before and name the
+  swarm or poison part, and the party should go after them sooner. Not yet: standing inside a swarm is not priced as a
+  danger of the spot (only the swarm's threat rating rises), so a walk out of a swarm is not chosen for it.
+
+## Test 13: v0.3.28-dev-test13 (1b74af6) - ability drain and negative levels valued by the game's rules (also in test 14)
 
 **[Download the UMM test ZIP (1b74af6)](AI-Control-FACC-v0.3.28-dev-test13-1b74af6-UMM-test.zip?raw=true)**
 

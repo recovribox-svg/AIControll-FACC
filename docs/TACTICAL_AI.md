@@ -3784,3 +3784,55 @@ ProfileAudit DRAIN (kineticist + spell dumps): 8 negative-level abilities (Enerv
 Life put theirs on a revived target with no hit points, worth 0) and 27 ability-damage abilities read as such; Enervation
 must read as negative levels. Test ZIP `AI-Control-FACC-v0.3.28-dev-test13-1b74af6-UMM-test.zip` (MVID
 `76028a95-9ba1-43ce-8250-abb0aecaa5ef`); 444 tests.
+
+## 111. Weapon-hit and swarm afflictions by the game's actions (v0.3.28 test 14, author-requested)
+
+The author asked for the Mandragora swarm's poison and weapon poisons to be valued (the gaps §110 left open).
+
+**The game's structure (decompile, blueprint dumps).**
+- A weapon hit's extra effects come from `AddInitiatorAttackWithWeaponTrigger` (on hit, actions on the target) on the
+  attacker's facts, or on its weapon's enchantments (`AnimatedWeaponPoisonEnchant`: the same component). The giant spider's
+  bite: a Fortitude save at the fact's DC (`ContextCalculateAbilityParams`, Constitution), on a failure `GiantSpiderPoisonBuff`
+  (`BuffPoisonStatDamage`: 1d2 Strength, 4 ticks, cured by 1 save). A Shadow's touch: 1d6 Strength, no save.
+- A swarm's round comes from `AddFactContextActions.NewRound` with `ContextActionSwarmAttack` on the swarm's own facts. The
+  Mandragora swarm: 5d6, a Fortitude save or Nauseated for a round, and a Fortitude save or `MandragoraSwarmPoisonBuff`, whose
+  own round actions are a save, then Constitution damage and Confusion. Until now the swarm's round counted only once its
+  damage had been dealt (the observed blend), and a hit's poison not at all (§110 read only a trigger's direct ability
+  damage).
+
+**Now** (`CombatMath.Afflictions.cs`; `ValueModel.SaveFailChance`, `AfflictionWorth`, `AfflictionShare`, unit-tested in
+`DrainTests`): `ReadAffliction` walks the action list the game runs, for one victim:
+- `ContextActionSavingThrow` (its fact's DC, or a simple custom DC) gives the victim's chance to fail
+  (`SaveFailChance(dc, save)`: a d20 against the DC, 5-95 %); `ContextActionConditionalSaved` splits into its failed and
+  passed branches by it; a `Conditional` counts its larger branch (its condition is not evaluated); swarm attack and swarm
+  target actions are followed;
+- damage by kind (§110: hit points, ability points per score, negative levels);
+- an applied buff (not on the caster, not refused: `BuffDescriptorImmunity` without caster checks, `SpecificBuffImmunity`)
+  counts its poison doses over 3 rounds (`ValueModel.PoisonDoses`), its control for the rounds it lasts (hard 1 a round, soft
+  0.4: `AbilityProfile.BuffControl`) and its own round actions from the next round on.
+- `AfflictionHp` turns it into hit points on the victim: its hit points, its ability damage and negative levels by the §110
+  rules (immunities, disabled scores), at most the hit points left, plus its control rounds at the victim's worth a round
+  (`ValueModel.PerRound`, as a controlling spell is priced in `EnemyThreat.BestAbility`). `AfflictionShare` is the same as a
+  share of the victim, for the walk and revive prices.
+- Sources are read once per unit, fact count and weapon (`SourcesOf`), a frame check skips attackers without any
+  (`HasHitAfflictions`), and the per-pair results are frame-cached.
+
+**Where it counts.**
+- Enemy threat (`EnemyThreat.Assess`): the expected hits (attacks x first-hit chance) times a hit's affliction, and a swarm's
+  round. The hit-point part joins the weapon's prediction (it is observed as damage dealt); the rest is kept out of the
+  observed blend. `[Threat]` reads `(X of it beyond hit points: swarm: 17.5 HP, ..., control 1 rounds)` (the parts it read).
+- Walk and revive prices (`PriceAttacks`): `OnHitShare` replaces the ability-damage share of §109-110.
+- The party's own weapon attacks (`DamageValue(enemy, est)`: `WeaponAttackEstimate.Attacker`): the expected hits times
+  `OnHitHp`, so a poisoned or draining weapon is worth its poison against targets that can take it.
+
+Example readings (ProfileAudit AFFLICTION, saves at an even chance): the giant spider's bite 1.31 Strength a hit; the Shadow's
+touch 3.5 Strength; the Mandragora swarm's round 17.5 HP and 1 round of control. The swarm poison's Constitution damage
+actions are empty in the dumps (they read 0 there), so its Constitution part is seen only in game.
+
+**Not covered.** Standing in a swarm's space is not a danger of the spot (`PartyShift`, approach and withdraw prices): only the
+threat rating rises, so the party goes after the swarm sooner but no walk is chosen to leave it. A trigger's weapon filters
+(a bite-only poison) are not read, so the poison counts for each of the attacker's hits. `BuffPoisonStatDamageContext` (none
+in the dumps) is not read.
+
+ProfileAudit AFFLICTION (spider, Shadow and Mandragora swarm dumps) checks the readings above. Test ZIP
+`AI-Control-FACC-v0.3.28-dev-test14-eb73349-UMM-test.zip` (MVID `a3caf884-f21e-49e4-aa34-52758a29f726`); 450 tests.
