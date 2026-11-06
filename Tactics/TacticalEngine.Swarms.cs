@@ -159,10 +159,9 @@ namespace CompanionAI_Pathfinder.Tactics
                 (striking ?? (striking = new List<(UnitEntityData, AreaEffectEntityData)>())).Add((enemy, area));
             }
             if (striking == null || !canStep && !ctx.HasMove) return;
-            float hp = Math.Max(1f, CombatMath.HpBeforeDown(unit));
             float dangerHere = IncomingDamage(ctx, unit, unit.Position);
             if (!(dangerHere > 0f)) return;
-            float pHere = RiskMath.RoundDropChance(hp, dangerHere);
+            float pHere = SpotDrop(ctx, unit, unit.Position);   // ★ v0.3.29 test 2 (R3)
             float worth = AllyWorth(ctx, unit);
             float best = list.Where(c => c.Slot != ActionSlot.Free && c.Slot != ActionSlot.Swift && Affordable(ctx, c) && kept(c))
                              .Select(c => c.Value).DefaultIfEmpty(0f).Max();
@@ -188,7 +187,7 @@ namespace CompanionAI_Pathfinder.Tactics
                 float dangerThere = IncomingDamage(ctx, unit, point.Value);
                 // By the role's tolerance, as walking in is priced (MoveRisk's exposure): a tank that walks into a swarm
                 // for an attack worth more than the discounted danger does not step straight back out.
-                float gain = (pHere - RiskMath.RoundDropChance(hp, dangerThere)) * worth * RiskTolerance(ctx);
+                float gain = (pHere - SpotDrop(ctx, unit, point.Value)) * worth * RiskTolerance(ctx);
                 var p = point.Value;
                 float keeps = list.Where(c => c.Slot != ActionSlot.Free && c.Slot != ActionSlot.Swift && Affordable(ctx, c) && kept(c) &&
                                               (c.Kind != CandidateKind.WeaponAttack || ctx.HasRangedWeapon || ReachesFrom(unit, c.Target, p)) &&

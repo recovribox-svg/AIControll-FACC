@@ -257,6 +257,8 @@ namespace CompanionAI_Pathfinder.Tactics
             long heapBefore = GC.GetTotalMemory(false);   // ★ v0.3.25 (audit A5): what a decision allocates, roughly
             var watch = System.Diagnostics.Stopwatch.StartNew();
             var timings = new DecisionTimings();
+            s_StrikeReads = 0;
+            s_StrikeReadTicks = 0;
             var chosen = Decide(unit, memory, preview: false, out _, timings);
             timings.Mark(DecisionStage.Finish);
             double ms = watch.Elapsed.TotalMilliseconds;
@@ -269,6 +271,7 @@ namespace CompanionAI_Pathfinder.Tactics
                          $"(new ability profiles built this decision: {AbilityProfile.TakeBuiltCount()}" +
                          $"{(GC.CollectionCount(0) != collections ? "; memory clean-up ran" : "")}" +
                          $"{(EnemyThreat.Assessments != assessments ? "; enemies assessed" : "")}" +
+                         $"{(s_StrikeReads > 0 ? $"; enemy attacks read for the drop chance {s_StrikeReads} ({s_StrikeReadTicks * 1000d / System.Diagnostics.Stopwatch.Frequency:F1} ms)" : "")}" +
                          $"{(GC.CollectionCount(0) == collections ? $"; heap +{(GC.GetTotalMemory(false) - heapBefore) / 1024} KB" : "")}); {timings.Describe()}");
             return chosen;
         }
@@ -1261,6 +1264,8 @@ namespace CompanionAI_Pathfinder.Tactics
             Vector3 PositionOf(UnitEntityData a) => a == who ? at : a == mover ? moverAt : a.Position;
             float hp = Math.Max(1f, CombatMath.HpBeforeDown(who));
             var threats = new List<(float chance, float drop)>();
+            List<(UnitEntityData, float)> heavy = null;   // ★ v0.3.29 test 2 (R3): melee full attacks that land there
+            List<int> heavyAt = null;
             foreach (var enemy in ctx.Enemies)
             {
                 if (CombatMath.IsDisabled(enemy)) continue;   // it attacks nobody before it acts again
@@ -1324,7 +1329,22 @@ namespace CompanionAI_Pathfinder.Tactics
                 // ★ v0.3.28 test 7: as much of its round as reaches the spot (StrikeShareAt).
                 float threat = CombatMath.Threat(enemy) * ctx.DangerScale * (mean > 0f ? whoWeight / mean : 1f) *
                                (ranged ? 1f : StrikeShareAt(enemy, who, at));
+                if (!ranged && FullStrikeLands(enemy, who, at))
+                {
+                    (heavy ?? (heavy = new List<(UnitEntityData, float)>())).Add((enemy, chance));
+                    (heavyAt ?? (heavyAt = new List<int>())).Add(threats.Count);
+                }
                 threats.Add((chance, RiskMath.RoundDropChance(hp, threat)));
+            }
+            // ★ v0.3.29 test 2 (author-approved, R3): a heavy hitter's real hits, where they drop it more often than the mean says.
+            if (heavy != null)
+            {
+                var drops = HeavyHitDrops(heavy, who, hp);
+                for (int i = 0; i < drops.Length; i++)
+                {
+                    var t = threats[heavyAt[i]];
+                    if (drops[i] > t.drop) threats[heavyAt[i]] = (t.chance, drops[i]);
+                }
             }
             return ValueModel.CombinedDrop(threats);
         }
@@ -1430,9 +1450,8 @@ namespace CompanionAI_Pathfinder.Tactics
         private static float ExposureCost(TacticalContext ctx, Vector3 destination)
         {
             var unit = ctx.Unit;
-            float hp = Math.Max(1f, CombatMath.HpBeforeDown(unit));
-            float exposure = RiskMath.RoundDropChance(hp, IncomingDamage(ctx, unit, destination)) -
-                             RiskMath.RoundDropChance(hp, IncomingDamage(ctx, unit, unit.Position));
+            // ★ v0.3.29 test 2 (R3): with the real hits of the melee enemies whose full attack lands there (SpotDrop).
+            float exposure = SpotDrop(ctx, unit, destination) - SpotDrop(ctx, unit, unit.Position);
             return exposure > 0.02f ? exposure * AllyWorth(ctx, unit) * RiskTolerance(ctx) : 0f;
         }
 
@@ -1588,6 +1607,14 @@ namespace CompanionAI_Pathfinder.Tactics
         /// ★ v0.3.27: the reach of <paramref name="enemy"/>'s melee weapon on <paramref name="unit"/> (bodies included), or
         /// -1 when it has none or cannot act or move (it intercepts nobody).
         /// </summary>
+        /// <summary>★ v0.3.29 test 2 (R1): <paramref name="unit"/>'s weapon reaches <paramref name="enemy"/> from where it stands
+        /// (the game's reach test on its threatening hand: a melee weapon).</summary>
+        internal static bool CanHitBack(UnitEntityData unit, UnitEntityData enemy)
+        {
+            try { return unit != null && enemy != null && Threatens(unit, enemy, enemy.Position); }
+            catch { return false; }
+        }
+
         internal static float InterceptReach(UnitEntityData enemy, UnitEntityData unit)
         {
             var state = enemy.Descriptor.State;
@@ -4545,7 +4572,6 @@ namespace CompanionAI_Pathfinder.Tactics
             // a fixed value: Lann (20 %, in the Large Water Elemental's reach) shot instead and went down.
             if (ctx.HpPct < CautionBelow(ctx))
             {
-                float hp = Math.Max(1f, CombatMath.HpBeforeDown(unit));
                 float dangerHere = IncomingDamage(ctx, unit, unit.Position);
                 if (dangerHere > 0f)
                 {
@@ -4557,8 +4583,8 @@ namespace CompanionAI_Pathfinder.Tactics
                         // engagers' Threat was added to the danger there, outside the danger scale: once the fight's
                         // calibration lowered the scale, withdrawing from a single enemy was never worth it.
                         var risk = MoveRisk(ctx, point.Value, ownSafetyCounted: true);   // ★ v0.3.28 test 2: pHere - pThere below
-                        float pHere = RiskMath.RoundDropChance(hp, dangerHere);
-                        float pThere = RiskMath.RoundDropChance(hp, IncomingDamage(ctx, unit, point.Value));
+                        float pHere = SpotDrop(ctx, unit, unit.Position);   // ★ v0.3.29 test 2 (R3)
+                        float pThere = SpotDrop(ctx, unit, point.Value);
                         float value = (pHere - pThere) * AllyWorth(ctx, unit) * (1f - (risk?.StopChance ?? 0f)) - (risk?.Cost ?? 0f);
                         if (value >= MinMainValue)
                         {

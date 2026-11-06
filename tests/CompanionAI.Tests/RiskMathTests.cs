@@ -59,5 +59,49 @@ namespace CompanionAI.Tests
             Assert.Equal((float)System.Math.Exp(-2.0), RiskMath.RoundDropChance(20f, 10f), 3);
             Assert.True(RiskMath.RoundDropChance(5f, 10f) > RiskMath.RoundDropChance(20f, 10f));
         }
-    }
+    
+        // ★ v0.3.29 test 2 (R3): a full attack's chance to drop a unit from its real hits.
+        [Fact]
+        public void FullAttackDropChance_OneAttackIsTheSingleAttackRule()
+        {
+            float one = RiskMath.FullAttackDropChance(1, 0.7f, 0.05f, 14f, 2f, 17f);
+            Assert.Equal(RiskMath.AttackDropChance(0.7f, 0.05f, 14f, 2f, 17f), one, 4);
+        }
+
+        [Fact]
+        public void FullAttackDropChance_TheEarthElementalsSlamOnSeelah()
+        {
+            // 14 a slam at 70 %, crit x2 at 5 %, 17 HP: about 0.65 x 0.29 + 0.05 = 0.24.
+            Assert.InRange(RiskMath.FullAttackDropChance(1, 0.7f, 0.05f, 14f, 2f, 17f), 0.22f, 0.26f);
+            // The same slam once a mongrel has taken 5: about 0.65 x 0.64 + 0.05 = 0.47.
+            Assert.InRange(RiskMath.FullAttackDropChance(1, 0.7f, 0.05f, 14f, 2f, 12f), 0.44f, 0.50f);
+        }
+
+        [Fact]
+        public void FullAttackDropChance_MoreAttacksMoreChance()
+        {
+            float two = RiskMath.FullAttackDropChance(2, 0.6f, 0.03f, 9f, 2f, 15f);
+            float three = RiskMath.FullAttackDropChance(3, 0.6f, 0.03f, 9f, 2f, 15f);
+            Assert.True(three > two);
+            Assert.True(two > RiskMath.FullAttackDropChance(1, 0.6f, 0.03f, 9f, 2f, 15f));
+        }
+
+        [Fact]
+        public void FullAttackDropChance_ScytheCritOnAFullHpFighter()
+        {
+            // x4 scythe, 16 a hit, 5 % crits, 25 HP: only the crit drops her.
+            float p = RiskMath.FullAttackDropChance(1, 0.6f, 0.03f, 16f, 4f, 25f);
+            Assert.InRange(p, 0.03f, 0.04f);
+        }
+
+        [Fact]
+        public void FullAttackDropChance_Bounds()
+        {
+            Assert.Equal(1f, RiskMath.FullAttackDropChance(1, 0.5f, 0f, 5f, 2f, 0f), 4);
+            Assert.Equal(0f, RiskMath.FullAttackDropChance(0, 0.5f, 0f, 5f, 2f, 10f), 4);
+            Assert.Equal(0f, RiskMath.FullAttackDropChance(3, 0f, 0f, 5f, 2f, 10f), 4);
+            Assert.Equal(0f, RiskMath.FullAttackDropChance(2, 0.9f, 0.1f, 2f, 2f, 100f), 4);   // never enough
+            Assert.InRange(RiskMath.FullAttackDropChance(40, 0.9f, 0.1f, 9f, 2f, 10f), 0.9f, 1f);
+        }
+}
 }

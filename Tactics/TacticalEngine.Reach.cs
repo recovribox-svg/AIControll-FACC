@@ -127,10 +127,9 @@ namespace CompanionAI_Pathfinder.Tactics
             }
             catch { return; }
             if (unanswered.Count == 0) return;
-            float hp = Math.Max(1f, CombatMath.HpBeforeDown(unit));
             float dangerHere = IncomingDamage(ctx, unit, unit.Position);
             if (!(dangerHere > 0f)) return;
-            float pHere = RiskMath.RoundDropChance(hp, dangerHere);
+            float pHere = SpotDrop(ctx, unit, unit.Position);   // ★ v0.3.29 test 2 (R3)
             float worth = AllyWorth(ctx, unit);
             float best = list.Where(c => c.Slot != ActionSlot.Free && c.Slot != ActionSlot.Swift && Affordable(ctx, c) && kept(c))
                              .Select(c => c.Value).DefaultIfEmpty(0f).Max();
@@ -154,7 +153,7 @@ namespace CompanionAI_Pathfinder.Tactics
                 var point = FindRetreatPoint(ctx, distance, outOfReach);
                 if (!point.HasValue) continue;
                 var risk = MoveRisk(ctx, point.Value, ownSafetyCounted: true);
-                float pThere = RiskMath.RoundDropChance(hp, IncomingDamage(ctx, unit, point.Value));
+                float pThere = SpotDrop(ctx, unit, point.Value);
                 float gain = (pHere - pThere) * worth;
                 // What is left after the move: no melee attack (out of reach of where it stood), and turn-based nothing
                 // that walks first after a 5-foot step, nothing of the full round after a move.

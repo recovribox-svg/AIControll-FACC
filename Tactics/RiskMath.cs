@@ -33,6 +33,52 @@ namespace CompanionAI_Pathfinder.Tactics
             return Clamp01(normal + crit);
         }
 
+        /// <summary>
+        /// ★ v0.3.29 test 2 (author-approved, R3): chance that a full attack of <paramref name="attacks"/> attacks drops a unit
+        /// with <paramref name="hp"/> HP - each attack hits with <paramref name="hitChance"/>, part of the hits critical
+        /// (<paramref name="critChance"/>, damage x <paramref name="critMultiplier"/>), each hit averaging
+        /// <paramref name="perHit"/>: every count of plain and critical hits by its chance (a multinomial), and the damage of
+        /// those hits with the spread of <see cref="ChanceAtLeast"/>. One attack is <see cref="AttackDropChance"/>.
+        /// </summary>
+        public static float FullAttackDropChance(int attacks, float hitChance, float critChance, float perHit, float critMultiplier, float hp)
+        {
+            if (hp <= 0f) return 1f;
+            if (attacks <= 0 || !(perHit > 0f) || !(hitChance > 0f)) return 0f;
+            int n = Math.Min(attacks, MaxAttacks);
+            float hit = Clamp01(hitChance);
+            float crit = Math.Min(Clamp01(critChance), hit);
+            double plain = hit - crit, miss = 1d - hit, m = Math.Max(1f, critMultiplier);
+            // Powers once (the engine asks this for every spot it prices): plain^k, crit^j, miss^r for 0..n, in buffers kept
+            // between calls (the engine runs on one thread) so pricing a spot allocates nothing.
+            double[] pp = s_Plain, cp = s_Crit, mp = s_Miss;
+            pp[0] = cp[0] = mp[0] = 1d;
+            for (int i = 1; i <= n; i++) { pp[i] = pp[i - 1] * plain; cp[i] = cp[i - 1] * crit; mp[i] = mp[i - 1] * miss; }
+            double drop = 0d;
+            for (int k = 0; k <= n; k++)
+                for (int j = 0; k + j <= n; j++)
+                {
+                    if (k + j == 0) continue;
+                    double chance = Choose(n, k) * Choose(n - k, j) * pp[k] * cp[j] * mp[n - k - j];
+                    if (chance <= 1e-9) continue;
+                    drop += chance * ChanceAtLeast((float)(perHit * (k + j * m)), hp);
+                }
+            return Clamp01((float)drop);
+        }
+
+        /// <summary>Attacks of one full attack counted at most (a hydra's heads); the rest add little to a drop chance.</summary>
+        private const int MaxAttacks = 10;
+
+        private static readonly double[] s_Plain = new double[MaxAttacks + 1], s_Crit = new double[MaxAttacks + 1],
+                                         s_Miss = new double[MaxAttacks + 1];
+
+        private static double Choose(int n, int k)
+        {
+            if (k < 0 || k > n) return 0d;
+            double c = 1d;
+            for (int i = 1; i <= k; i++) c = c * (n - k + i) / i;
+            return c;
+        }
+
         /// <summary>Chance that at least one of several independent attacks drops the unit (each against full HP).</summary>
         public static float AnyDrops(params float[] chances)
         {

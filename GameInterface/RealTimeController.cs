@@ -543,6 +543,9 @@ namespace CompanionAI_Pathfinder.GameInterface
             public Vector3 FirstPoint;
             /// <summary>★ v0.3.18 (test11): since when the unit has been within the approach radius and still walking.</summary>
             public TimeSpan? InsideSince;
+            /// <summary>★ v0.3.29 test 2 (author-approved, R2): where the walking unit last was 0.5 m away from, and when.</summary>
+            public Vector3 MovedFrom;
+            public TimeSpan MovedAt;
         }
 
         /// <summary>★ v0.3.18 (test10): seconds of walking (a round) without getting 0.5 m nearer before "moving" stops counting.</summary>
@@ -550,6 +553,14 @@ namespace CompanionAI_Pathfinder.GameInterface
 
         /// <summary>★ v0.3.18 (test11): seconds a unit may keep walking once within its command's approach radius.</summary>
         private const float ARRIVED_WALKING_SECONDS = 2f;
+
+        /// <summary>
+        /// ★ v0.3.29 test 2 (author-approved, R2): seconds a walking unit may stay on the spot (under 0.5 m) before its walk is
+        /// blocked. Lann's walk to heal Seelah moved 0.4 m in 6.8 s, boxed in by bodies, and only the 6 s no-progress rule
+        /// ended it - a whole round lost (v0.3.28 test 15 real-time log). A walk round a wall still moves, so it is not
+        /// caught; time spent waiting for something else (a cooldown, an animation, standing up) does not count.
+        /// </summary>
+        private const float BLOCKED_WALK_SECONDS = 2f;
 
         // These native fields are private in the shipped assemblies. Cache metadata only; never publicize a game DLL.
         private static readonly System.Reflection.FieldInfo NavigationNextPoint = NavigationField("m_NextPointIndex", typeof(int));
@@ -630,7 +641,10 @@ namespace CompanionAI_Pathfinder.GameInterface
                 var now = Kingmaker.Game.Instance.TimeController.GameTime;
                 string wait = WaitReason(unit, cmd);
                 // First seen counts as a wait: a command needs 3 s of observed nothing-to-wait-for to be stuck.
-                var mark = LastWait.GetValue(cmd, _ => new WaitMark { Time = now, NearestAt = now, FirstPoint = cmd.ApproachPoint });
+                var mark = LastWait.GetValue(cmd, _ => new WaitMark
+                {
+                    Time = now, NearestAt = now, FirstPoint = cmd.ApproachPoint, MovedFrom = unit.Position, MovedAt = now
+                });
                 // ★ v0.3.28 (v0.3.27 real-time log, fight 5): the command's aim point became the world origin - Orvath's
                 // Color Spray on a Vermlek walked towards (0, 0, 0), "108.2 m to go", until the no-progress rule ended it
                 // 6 s later. No target stands there; end it at once (the target itself is not marked).
@@ -667,6 +681,18 @@ namespace CompanionAI_Pathfinder.GameInterface
                         }
                     }
                     else mark.InsideSince = null;
+                    // ★ v0.3.29 test 2 (R2): walking on the spot - pushed against bodies - for 2 s ends the walk.
+                    if (Tactics.TacticalEngine.HorizontalDistance(unit.Position, mark.MovedFrom) > 0.5f)
+                    {
+                        mark.MovedFrom = unit.Position;
+                        mark.MovedAt = now;
+                    }
+                    else if ((now - mark.MovedAt).TotalSeconds > BLOCKED_WALK_SECONDS)
+                    {
+                        reason = $"blocked: walking on the spot for {(now - mark.MovedAt).TotalSeconds:F0} s ({gap:F1} m to go)";
+                        targetProblem = false;
+                        return true;
+                    }
                     if (gap < mark.Nearest - 0.5f)
                     {
                         mark.Nearest = gap;
@@ -690,6 +716,8 @@ namespace CompanionAI_Pathfinder.GameInterface
                 {
                     // Time spent waiting for something else (a cooldown, an animation) is not time without progress.
                     mark.NearestAt = now;
+                    mark.MovedFrom = unit.Position;   // ★ v0.3.29 test 2 (R2): nor time walking on the spot
+                    mark.MovedAt = now;
                 }
                 if (wait != null)
                 {

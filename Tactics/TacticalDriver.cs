@@ -265,10 +265,17 @@ namespace CompanionAI_Pathfinder.Tactics
                         if (enemy == null || enemy == target || !enemy.Descriptor.State.IsConscious) continue;
                         if (issued.Engagers != null && issued.Engagers.Contains(enemy.UniqueId)) continue;
                         // Within reach of the destination (with a little slack for the last steps): the fight there.
+                        // ★ v0.3.29 test 2 (author-approved, R1): unless the unit can hit it back from where it is, short of
+                        // the target it walks to - then the engine weighs that fight here (no walk, no attack of opportunity)
+                        // against walking on. Seelah walked past Corrupted Mongrels standing round the Medium Earth Elemental
+                        // and went down to a mongrel's 5 and the slam's 14 before she swung (v0.3.28 test 15, real-time fight 1).
                         float reach = TacticalEngine.InterceptReach(enemy, unit);
-                        if (reach >= 0f && TacticalEngine.HorizontalDistance(enemy.Position, to) <= reach + 1.5f) continue;
+                        bool atDestination = reach >= 0f && TacticalEngine.HorizontalDistance(enemy.Position, to) <= reach + 1.5f;
+                        bool answers = TacticalEngine.CanHitBack(unit, enemy);
+                        if (atDestination && !answers) continue;
                         Reconsider(unit, command);
-                        why = $"{enemy.CharacterName} engages it on the way, {left:0.0} m short of its target (not counted when the walk was chosen)";
+                        why = $"{enemy.CharacterName} engages it on the way, {left:0.0} m short of its target (not counted when the walk was chosen" +
+                              (atDestination ? "; it can hit back from here" : "") + ")";
                         return true;
                     }
 
