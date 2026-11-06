@@ -52,6 +52,9 @@ failures return1. These checks verify reader behavior, not live combat. The repo
 bound, Enveloping Winds' miss chance reads its effect feature's rank once with an evaluable progression, and both Shroud of
 Water effect features name the upgrade feature (`RANK-INCREMENT n checks, failures m`; missing blueprints are SKIPPED).
 
+★ v0.3.28 test 7: and the link the quiver preparation relies on - Create Quiver's profile puts on its caster the very buff
+the kineticist part names as the quiver (`QUIVER-BINDING ok` or `FAILED`; SKIPPED without the Kinetic Sharpshooter dumps).
+
 Substance infusions (activatable group `SubstanceInfusion`) are reported through the mod's own scoped infusion reader
 (`TacticalEngine.DescribeInfusion`, read by reflection): verdict `infusion selection: supported` or
 `infusion selection: withheld (<the engine's reason>)`, with the buff, whether it has a damage graph, the trigger's

@@ -3515,3 +3515,51 @@ levels, so every rule below reads them from the game at the time; nothing is fix
   - Searing Flesh;
   - touch and ray attacks in the Enveloping Winds share;
   - Deadly Aim on ricochet jumps and on the splash of area forms (not counted, so conservative).
+
+## 104. Reach-aware danger, the step out of an unanswered reach, quiver reasons (v0.3.28 test 7)
+
+Review of the test-6 play-test (14 fights, turn-based and real time, no mod errors; performance as in test 3: 27 slow
+decisions, heap growth median 8.5 MB in them, two garbage collections over a second) and the author's note on fight 7.
+
+**Fight 7 (author-approved, option 3 of the note).** The Ferocious Schir, inside Camellia's non-Selective Grease, swung its
+masterwork bardiche at Camellia and Seelah, who stood just beyond the Grease's edge and could not hit back without walking
+in. In round 4 Camellia, at 95 % HP, was offered Demoralize (1.2) and nothing else; she ended her turn in its reach with her
+move and 5-foot step unused and was knocked out before Orvath killed it. Had it lived, both would have stayed there,
+healing themselves: no move was offered while healthy, and the low-HP withdraw was worth about nothing because
+`IncomingParts` counted a melee enemy's full Threat at every spot it could walk to this round.
+- **Strike share (`ValueModel.StrikeShare`, `TacticalEngine.StrikeShareAt`).** A melee enemy's round reaches a spot in full
+  within its weapon's reach (bodies included) or a 5-foot step of it (`TurnController.MetersOfFiveFootStep`; the game's
+  own AI steps and full-attacks, `AiAction.ScorePath`). Farther, it must walk first: one attack - its single attack against
+  its full attack by the game's attack rule (`CombatMath.EstimateWeaponAttack`, once a frame per enemy) - and only if an
+  area it stands in does not hold it this round (`AoeDangerAnalyzer.HeldInsideChance`: Grease, Entangle, Web or hard
+  control, its failed save, as for a unit walking in). Within the step, a held enemy gets one attack once up. Turn-based,
+  a prone enemy stands up with its move action: one attack in reach, none beyond. Enemies with a ranged weapon or spells
+  are unchanged. Used by both danger models, `IncomingParts` (heals, withdraws, the cost of moves) and
+  `StandingDropChance` (healthy walks, the party's shift).
+- **Step out of an unanswered reach (`AddOutOfReachCandidate`).** At any HP, when enemies strike the unit where it stands
+  (the game's reach test, `Threatens`) and it has no weapon attack or damaging ability on them from there: a 5-foot step
+  (turn-based, no attack of opportunity) or a 3-6 m move to the spot out of their reach that `FindRetreatPoint` finds (no
+  harmful area, a clear step). Worth the withdrawal's value - the drop chance here against there in the reach-aware model,
+  times the unit's worth - less `MoveRisk` (attacks of opportunity, areas, and `LeavesAlliesCost`: a front-liner holding the
+  enemy off a caster stays) and less the best option it gives up (no melee attack after it; turn-based, nothing that walks
+  first after a step, nothing of the full round after a move). Keys `move:5ft#reach` / `move:outofreach`. When it stays, a
+  debug `[Reach]` line says why, once a round.
+- **What follows.** Out of reach, walking back in is priced by the healthy-walk exposure, which now sees the full attack
+  in reach against one attack outside: no back-and-forth. If the enemy leaves its area to follow, it is in reach and the
+  unit's attacks on it are back. Walking into the Grease to hit it stays the existing approach "into" an area, priced by its
+  fall chance, and wins when the value says so.
+
+**Quiver never made (tests 4-6).** "quiver 0" in all 14 fights, and no preparation or refusal line at all: every gate of
+the out-of-combat preparation (`RealTimeController.PrepareQuiversOutOfCombat` / `TryPrepareQuiver`) and the
+"Create Quiver not found" exit of `QuiverToPrepare` returned silently. The code read and an offline check (`QUIVER-BINDING`
+in ProfileAudit: Create Quiver's profile puts `KineticSharpshooterObtainQuiverBuff`, the buff `BurnFeature`'s
+`AddKineticistPart` names, on its caster) rule out the ability lookup; the remaining gates (game mode, settings, control,
+a running command) could not be told apart from the log. Each now names itself once per character and reason
+(`quiver not prepared out of combat - <reason>`); the in-combat refill's reason is logged once a fight, not only while burn
+blocks every blast. The checks run only for kineticists that shoot their blasts (`CanUseArcherBlast`).
+
+**Seen working in test 6:** Deadly Aim on bow blasts is credited silently when it is already on (Orvath's is), and switching
+it off never paid; Enveloping Winds and Shroud of Water were already active, so no cast was weighed. **Side note:** the
+Buff It 2 The Limit "is active" line appears in only some logs although the mod runs in all; it gates no behaviour.
+
+Test ZIP `AI-Control-FACC-v0.3.28-dev-test7-f180d9b-UMM-test.zip` (MVID `c786e760-c342-4fc4-9e1e-f130a36152f8`); 413 tests.

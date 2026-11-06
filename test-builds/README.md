@@ -1,6 +1,33 @@
 # Test builds
 
-## Current test build: v0.3.28-dev-test6 (2765e04) - kineticist and archer engine
+## Current test build: v0.3.28-dev-test7 (f180d9b) - reach and Grease, quiver reasons
+
+**[Download the UMM test ZIP (f180d9b)](AI-Control-FACC-v0.3.28-dev-test7-f180d9b-UMM-test.zip?raw=true)**
+
+Direct link: <https://github.com/recovribox-svg/AIControll-FACC/raw/claude/dreamy-pasteur-b9h3rn/test-builds/AI-Control-FACC-v0.3.28-dev-test7-f180d9b-UMM-test.zip>
+
+Test 6 (below) plus the fixes from its play-test ([docs/TACTICAL_AI.md](../docs/TACTICAL_AI.md) §104):
+- **Reach enemies in your own Grease (the Ferocious Schir, fight 7).** The AI now knows the difference between an enemy that
+  can hit a spot from where it stands and one that must walk there first: a walk costs it its full attack (one swing
+  instead), and out of a slippery area only if it stays on its feet. A companion that cannot hit such an enemy back may take
+  a 5-foot step (or a short move) just out of its reach, at any HP, when that is worth more than what it gives up -
+  including leaving an ally the enemy would then turn on, so front-liners guarding a caster hold. If the enemy comes out of
+  the Grease to follow, the companion's attacks are back; walking into the Grease to hit it stays possible when it is worth
+  the risk (the enemy nearly dead, for example).
+- **The Kinetic Sharpshooter's quiver.** Test 6 never made a quiver and never said why. Every reason it stops is now
+  logged, once: `[Kinetic] Orvath: quiver not prepared out of combat - <reason>` or `out of combat, no quiver - <reason>`,
+  and in a fight `no quiver refill - <reason>` once.
+
+UMM shows **0.3.28**. Startup line `[Build] v0.3.28 module=c786e760-c342-4fc4-9e1e-f130a36152f8`.
+- ZIP SHA-256 `5b67e4cd29c5cf016f4f867ee62abe628529884b26c0f32ac26f15dc97e74e05`; DLL SHA-256 `1fe5b23b1ecd3742137f26672c9bf555c7f68d076938f2864c6798ef70fe3ef1`.
+- [Identity](AI-Control-FACC-v0.3.28-dev-test7-f180d9b-UMM-test.identity.json) · [Checksums](SHA256SUMS.txt).
+- Checks: 413 unit tests pass; release build 0 warnings; offline blueprint audit 0 errors. Not played yet.
+- **Test:**
+  - A melee companion at the edge of a Grease with a reach-weapon enemy inside it: look for `5ft step out of <enemy>'s
+    reach` or `Move out of <enemy>'s reach` on its `[Tactics]` line; when it stays, a `[Reach]` line (debug log) says why.
+  - After any fight with Orvath: send the log lines with `quiver` in them; they name what stops the quiver.
+
+## Test 6: v0.3.28-dev-test6 (2765e04) - kineticist and archer engine (also in test 7)
 
 **[Download the UMM test ZIP (2765e04)](AI-Control-FACC-v0.3.28-dev-test6-2765e04-UMM-test.zip?raw=true)**
 

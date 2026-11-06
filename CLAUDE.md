@@ -144,6 +144,11 @@ and burn prices shared with the infusion planner (`KineticPriceBook`), Overflow 
 attack-roll abilities (`AbilityCritFactor`, `ValueModel.CritFactor`), Deadly Aim on archer blasts (`ChooseBlastAttackModes`),
 Enveloping Winds / Shroud of Water increments (`TacticalEngine.RankTalents`), context counters in slow lines. Test ZIP
 `AI-Control-FACC-v0.3.28-dev-test6-2765e04-UMM-test.zip` (MVID `3402358f-f2ee-433f-af3a-fdc6c4755e8d`); 406 tests.
+**v0.3.28 test 7 (6 November, `docs/TACTICAL_AI.md` §104, author-approved movement change, not played):** test 6 played (14
+fights, no mod errors). A melee enemy's danger at a spot counts its full attack only in reach or a step of it, else one attack
+if its area lets it go (`ValueModel.StrikeShare`, `TacticalEngine.Reach.cs`, `AoeDangerAnalyzer.HeldInsideChance`); a step out
+of an unanswered reach at any HP (`AddOutOfReachCandidate`); every out-of-combat quiver refusal is named. Test ZIP
+`AI-Control-FACC-v0.3.28-dev-test7-f180d9b-UMM-test.zip` (MVID `c786e760-c342-4fc4-9e1e-f130a36152f8`); 413 tests.
 
 Historical handovers, superseded by the one above: [v0.3.22 release preparation](docs/RELEASE_0_3_22_HANDOVER.md)
 (27 October, PR #6–#12), [released-log review](docs/RELEASE_0322_LOG_REVIEW.md) (PR #13),
