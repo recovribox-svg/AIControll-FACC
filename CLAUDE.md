@@ -173,8 +173,13 @@ no mod errors). Cones that need a walk walk to the priced spot first (`MoveFirst
 turned past them (`TacticalEngine.ConeAim.cs`), friendly fire beyond the enemies' worth counts against the option; cone
 delivery judged when its execution ends (`ObserverRules.AwaitDelivery`); weapon ability damage in enemy threat
 (`ValueModel.OnHitAbilityOffence`, Shadows); after-fight Soul Power waits for 3 s without orders (the author's Dispel Magic
-casts replaced it). Open: ability-damage / energy-drain spells valued as HP dice. Test ZIP
-`AI-Control-FACC-v0.3.28-dev-test12-03d3f6a-UMM-test.zip` (MVID `fc4b18a2-a859-4465-b8dd-c73ea85a0633`); 434 tests.
+casts replaced it). Test ZIP `AI-Control-FACC-v0.3.28-dev-test12-03d3f6a-UMM-test.zip` (MVID
+`fc4b18a2-a859-4465-b8dd-c73ea85a0633`); 434 tests.
+**v0.3.28 test 13 (6 November, `docs/TACTICAL_AI.md` §110, author-requested, not played):** ability damage and negative levels
+by the game's rules (`CombatMath.Drain.cs`, `ValueModel.Drain.cs`): a score below 1 kills, as many negative levels as the
+character level kill; worth the share of that life bar of the hit points left (5 HP per level first), immunities read; in
+every damage estimate (party spells, friendly fire, enemy threat), poisons of any score; ProfileAudit DRAIN. Test ZIP
+`AI-Control-FACC-v0.3.28-dev-test13-1b74af6-UMM-test.zip` (MVID `76028a95-9ba1-43ce-8250-abb0aecaa5ef`); 444 tests.
 
 Historical handovers, superseded by the one above: [v0.3.22 release preparation](docs/RELEASE_0_3_22_HANDOVER.md)
 (27 October, PR #6–#12), [released-log review](docs/RELEASE_0322_LOG_REVIEW.md) (PR #13),

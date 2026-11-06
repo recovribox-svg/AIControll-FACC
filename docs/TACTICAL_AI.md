@@ -3744,3 +3744,43 @@ splits each costly ability's heap growth into damage estimates and hit/save chan
 it in the next log rather than guess.
 
 Test ZIP `AI-Control-FACC-v0.3.28-dev-test12-03d3f6a-UMM-test.zip` (MVID `fc4b18a2-a859-4465-b8dd-c73ea85a0633`); 434 tests.
+
+## 110. Ability damage and negative levels by the game's rules (v0.3.28 test 13, author-requested)
+
+The author asked for ability-drain spells and enemies to be recognised as the threat they are (follow-up to §109, which
+covered a weapon's on-hit drain in the threat only).
+
+**The game's rules (decompile).** A `ContextActionDealDamage` is one of three kinds (private `m_Type`): hit points, ability
+damage (`RuleDealStatDamage`: `AbilityType`, `Drain`) or energy drain (`RuleDrainEnergy`: negative levels).
+- Ability damage: a score taken below 1 sets `UnitState.MarkedForDeath` - the creature dies, it is not only helpless.
+  `AddImmunityToAbilityScoreDamage` (per score, damage or also drain, an ignore rule for some casters) refuses it; a disabled
+  score (`ModifiableValueAttributeStat.Enabled`, e.g. an undead's Constitution) cannot take it.
+- Negative levels (`UnitPartNegativeLevels`, the system `NegativeLevelsBuff` with `NegativeLevelComponent`): each is -1 to
+  skills, saves, attack, CMD and caster level and -5 hit points; as many as the character level kill
+  (`UnitLifeController.ForceTickOnUnit`). `AddImmunityToEnergyDrain` refuses them (Death Ward, undead traits).
+Until now every kind was estimated as hit-point damage of its dice, through the target's damage reduction and energy
+resistance: Enervation's 1d4 levels as 2.5 damage.
+
+**Now** (`CombatMath.Drain.cs`, `ValueModel.Drain.cs`, unit-tested in `DrainTests`):
+- ability damage is worth `AbilityDamageShare(points, score)` of the target's hit points left - the share of the score it
+  takes; the whole score is the target's hit points (a kill, so the kill bonus follows);
+- negative levels are worth 5 hit points each, then `levels / character level` of the rest; reaching the level is a kill;
+- immune targets and disabled scores give 0. It runs inside `EstimateAbilityDamageRaw`, so every user gets it: the party's
+  spells (Enervation, Polar Ray, Wracking Ray, the Contagion diseases), friendly fire, the enemy threat's best castable ability
+  (`EnemyThreat.BestAbility`: a Nabasu's Enervation), and kill chances.
+- Poisons (`CombatMath.PoisonHpLoss`, `BuffPoisonStatDamage`) count every score by the same share, Constitution by the larger
+  of that and its hit-point loss (two points per Hit Die); only Constitution counted before. Enemy poison spells now enter
+  their threat.
+- A weapon's on-hit drain in the threat (§109) is in the same hit-point terms (`OnHitAbilityOffence` takes the victim's hit
+  points left instead of its worth) and skips immune victims, as does the walk/revive pricing (`PriceAttacks`).
+- `[Coverage]` kinds say `ability damage` / `negative levels`.
+
+Example readings: Enervation (2.5 levels) on a level-4 enemy with 30 HP: 12.5 + 2.5/4 x 17.5 = 23.4 (was 2.5); a Shadow's
+1d6 Strength on Seelah (Strength 16, 30 HP left) at 60 % to hit: 3.9 a round added to its 0.8 - about a Cultist Champion's
+threat, more against a low-Strength caster (Strength 10: 6.3). Not covered: a Mandragora swarm's Constitution poison comes
+from its swarm aura, not an ability (its swarm damage counts once dealt); on-hit poisons on weapons.
+
+ProfileAudit DRAIN (kineticist + spell dumps): 8 negative-level abilities (Enervation, Energy Drain; Raise Dead and Breath of
+Life put theirs on a revived target with no hit points, worth 0) and 27 ability-damage abilities read as such; Enervation
+must read as negative levels. Test ZIP `AI-Control-FACC-v0.3.28-dev-test13-1b74af6-UMM-test.zip` (MVID
+`76028a95-9ba1-43ce-8250-abb0aecaa5ef`); 444 tests.

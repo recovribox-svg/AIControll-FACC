@@ -1,6 +1,33 @@
 # Test builds
 
-## Current test build: v0.3.28-dev-test12 (03d3f6a) - cones that spare the party, Shadows taken seriously
+## Current test build: v0.3.28-dev-test13 (1b74af6) - ability drain and negative levels valued by the game's rules
+
+**[Download the UMM test ZIP (1b74af6)](AI-Control-FACC-v0.3.28-dev-test13-1b74af6-UMM-test.zip?raw=true)**
+
+Direct link: <https://github.com/recovribox-svg/AIControll-FACC/raw/claude/dreamy-pasteur-b9h3rn/test-builds/AI-Control-FACC-v0.3.28-dev-test13-1b74af6-UMM-test.zip>
+
+Test 12 (below) plus your request: ability damage and energy drain recognised for what they do ([docs/TACTICAL_AI.md](../docs/TACTICAL_AI.md) §110).
+In this game a score taken below 1 kills the creature, and as many negative levels as its character level kill it, so both
+are a second and third "life bar". Until now the AI counted them as a little hit-point damage (Enervation's 1d4 levels as
+2.5 damage). Now:
+- **Ability damage** (Strength, Dexterity, ... - Shadows, Polar Ray, Wracking Ray, diseases) is worth the share of the
+  score it takes, applied to the target's remaining hit points; taking the whole score counts as a kill.
+- **Negative levels** (Enervation, Energy Drain, Nabasu spells) are worth their real 5 HP each plus the share of the way to
+  the target's level; enough levels count as a kill. Enervation on a level-4 enemy with 30 HP is now worth about 23, not 2.5.
+- **Poisons** count every score they damage, not only Constitution.
+- **Immunities** are respected (undead without Constitution, Death Ward, creatures immune to ability damage).
+- This applies everywhere: what the party casts, what enemies are rated by (`[Threat]`), and the danger of standing next to
+  them. The ability list in the log says `ability damage` / `negative levels` for such spells.
+
+UMM shows **0.3.28**. Startup line `[Build] v0.3.28 module=76028a95-9ba1-43ce-8250-abb0aecaa5ef`.
+- ZIP SHA-256 `4f9769b5993fe8d57ce0b1cd87d0b7ce8b3c940130cf9471c24afbcd99d888e5`; DLL SHA-256 `6feb12e87683113a307bd9d7e3b3370572ce2c2f5f64160907f659641c9d0767`.
+- [Identity](AI-Control-FACC-v0.3.28-dev-test13-1b74af6-UMM-test.identity.json) · [Checksums](SHA256SUMS.txt).
+- Checks: 444 unit tests pass; release build 0 warnings; offline blueprint audit 0 errors (new drain check: 8 negative-level
+  and 27 ability-damage spells read correctly). Not played yet.
+- **Test:** fights with Shadows or a Nabasu: `[Threat]` should rate them above x0.5, and the party should go after them
+  earlier. A caster with Enervation or Polar Ray should now pick them more often against suitable targets.
+
+## Test 12: v0.3.28-dev-test12 (03d3f6a) - cones that spare the party, Shadows taken seriously (also in test 13)
 
 **[Download the UMM test ZIP (03d3f6a)](AI-Control-FACC-v0.3.28-dev-test12-03d3f6a-UMM-test.zip?raw=true)**
 
