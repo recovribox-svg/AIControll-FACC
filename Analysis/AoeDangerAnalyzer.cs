@@ -836,7 +836,12 @@ namespace CompanionAI_Pathfinder.Analysis
                 }
 
                 // 2. 경로가 막혀있는지 확인
-                Vector3 blocked = ObstacleAnalyzer.TraceAlongNavmesh(from, to);
+                // ★ v0.3.29 test 7: from the nearest point of the navmesh. ObstacleAnalyzer.TraceAlongNavmesh returns its start's
+                // nearest navmesh point at once when the start is off the mesh by more than 1 cm (no linecast at all), so a unit
+                // standing just off it found every spot farther than 1 m "blocked": in every free-side search with unwalkable
+                // spots in the v0.3.29 test-4/6 real-time logs (38 of 76), all the remaining spots were unwalkable together.
+                var start = ObstacleAnalyzer.GetNearestNode(from, null);
+                Vector3 blocked = ObstacleAnalyzer.TraceAlongNavmesh(start.node != null ? start.position : from, to);
                 float pathBlocked = Vector3.Distance(blocked, to);
 
                 // 목표 지점과 막힌 지점 차이가 1m 이상이면 경로 막힘
