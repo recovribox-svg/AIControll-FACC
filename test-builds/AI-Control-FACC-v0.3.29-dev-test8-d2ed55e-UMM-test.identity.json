@@ -1,0 +1,35 @@
+{
+  "name": "AI Control - Fully Autonomous Combat Companions v0.3.29 test 8 (doors offered, walks that go nowhere)",
+  "version": "0.3.29",
+  "umm_manifest_version": "0.3.29",
+  "umm_mod_id": "CompanionAI_Pathfinder",
+  "branch": "claude/dreamy-pasteur-b9h3rn",
+  "base_release": "v0.3.28 (2415cf8)",
+  "runtime_source_commit": "d2ed55e",
+  "archive": "AI-Control-FACC-v0.3.29-dev-test8-d2ed55e-UMM-test.zip",
+  "zip_sha256": "46118e6b3d0cdb70ab38c0992d131ef080587affdada73880b0f38e3620b9d4b",
+  "dll_sha256": "f02ca1c667e4d77b48535c992d541bf69a49e8ebe0fb18285b11cbb097ba4d6e",
+  "manifest_sha256": "7d399d2fdadbbf57fa7fafafbfa1b5350bf751c775264b33b2f17ef4e6a7c40e",
+  "module_mvid": "2cfa0361-1e09-4a1b-93a9-ee9997377af8",
+  "startup_marker": "[Build] v0.3.29 module=2cfa0361-1e09-4a1b-93a9-ee9997377af8",
+  "archive_contents": [
+    "CompanionAI_Pathfinder.dll",
+    "Info.json"
+  ],
+  "checks": {
+    "unit_tests": {
+      "passed": 489,
+      "failed": 0,
+      "skipped": 0
+    },
+    "release_build": {
+      "warnings": 0,
+      "errors": 0
+    },
+    "external_references": "SigDump vs v0.3.29 test 7: new public game members for door visibility and locks (EntityDataBase.IsInFogOfWar, EntityDataBase.Parts, EntityPartsManager.GetAll, InteractionPart.Enabled, InteractionPart<InteractionDoorSettings>.Settings, InteractionSettings.ProximityRadius, InteractionRestrictionPart.IsPassed) and Mathf.Sqrt, all present in the shipped game",
+    "packed_dll_matches_build": true,
+    "in_game": "pending",
+    "profile_audit": "Kineticist + Spells + Buffs + swarm, spider and Shadow unit dumps, strict: 3572 loaded, 0 failed, 0 reader errors; all checks pass (ricochet-layer, rank-increment, quiver-binding, soul-power, damage-context, drain, affliction, swarm-area)"
+  },
+  "publication_scope": "Development test download: test 7 plus the door option actually offered (game visibility rule, passed locks, detour, enemies out of reach), turn-based walks that go nowhere refused, real-time stop-start dead-end walks ended; not a release."
+}

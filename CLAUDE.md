@@ -228,6 +228,11 @@ Test 6 played (§119: 12 fights, no mod errors, no stuck walks in real time). **
 `DoorRules`, `CandidateKind.Interact`, the game's `UnitInteractWithObject`; real time drops an opening whose door is open,
 `ShouldDropOpenedDoor`); `AoeDangerAnalyzer.IsPositionValid` traces from the nearest navmesh point (an off-mesh start read every
 spot as blocked). Test ZIP `AI-Control-FACC-v0.3.29-dev-test7-ed5cb78-UMM-test.zip` (MVID `ebc7a0d7-4e64-4104-8b08-0332bac68e76`); 485 tests.
+Test 7 played (§120: no door was ever offered - `IsRevealed` is never set for doors with the fog on). **v0.3.29 test 8 (7 November,
+§120, not played):** doors by the game's visibility rule, passed locks (`InteractionRestrictionPart.IsPassed`), enemies out of sight or
+reach, detour test (`DoorRules.OnTheWay`), no walk when at the door, `[Door]` reasons; turn-based walks of 0.0 m refused
+(`CommandDispatcher.TryPrepare`); real-time stop-start dead-end walks end (`IsCommandStuck` clocks). Test ZIP
+`AI-Control-FACC-v0.3.29-dev-test8-d2ed55e-UMM-test.zip` (MVID `2cfa0361-1e09-4a1b-93a9-ee9997377af8`); 489 tests.
 
 Historical handovers, superseded by the one above: [v0.3.22 release preparation](docs/RELEASE_0_3_22_HANDOVER.md)
 (27 October, PR #6–#12), [released-log review](docs/RELEASE_0322_LOG_REVIEW.md) (PR #13),

@@ -1,6 +1,35 @@
 # Test builds
 
-## Current test build: v0.3.29-dev-test7 (ed5cb78) - companions open doors to enemies
+## Current test build: v0.3.29-dev-test8 (d2ed55e) - doors really offered now, no lost turns on walks that go nowhere
+
+**[Download the UMM test ZIP (d2ed55e)](AI-Control-FACC-v0.3.29-dev-test8-d2ed55e-UMM-test.zip?raw=true)**
+
+Direct link: <https://github.com/recovribox-svg/AIControll-FACC/raw/claude/dreamy-pasteur-b9h3rn/test-builds/AI-Control-FACC-v0.3.29-dev-test8-d2ed55e-UMM-test.zip>
+
+Test 7 (below) plus fixes from your test 7 log ([docs/TACTICAL_AI.md](../docs/TACTICAL_AI.md) §120):
+- **Doors (both modes) - the option was never offered in test 7.** Test 7 only looked at doors the game marks as
+  "revealed", and the game never marks an ordinary door that way while the fog of war is on. So every door was skipped.
+  Doors now count when the game itself shows them to you. A locked door counts too when the party holds its key, the
+  story has unlocked it, or its lock was already picked; a lock nobody has picked is still left alone. A door also counts
+  when the companions' walks to an enemy failed (not only when the enemy is out of sight), and a door off the straight
+  line counts when going through it is not much longer. A companion already standing at the door opens it without
+  walking. When no door is offered for an enemy behind one, the log now says why: `[Door] ... no door to open (...)`.
+- **Turn-based - no more lost turns on walks that go nowhere.** Seelah lost three turns (one was a Cure Light Wounds for
+  Camellia at 58 %) to walks of 0.0 m - other companions held the squares ahead. Such a walk is now refused at once and
+  she takes her next best action.
+- **Real time - walks stuck at a dead end now end.** Lann and Aeiluvetar stood at the door for about 11 s each, walking
+  and stopping over and over, and the "walking on the spot for 2 s" rule never fired: each stop restarted its clock. Now
+  only a real reason to wait (a cooldown, an animation) restarts it.
+
+UMM shows **0.3.29**. Startup line `[Build] v0.3.29 module=2cfa0361-1e09-4a1b-93a9-ee9997377af8`.
+- ZIP SHA-256 `46118e6b3d0cdb70ab38c0992d131ef080587affdada73880b0f38e3620b9d4b`; DLL SHA-256 `f02ca1c667e4d77b48535c992d541bf69a49e8ebe0fb18285b11cbb097ba4d6e`.
+- [Identity](AI-Control-FACC-v0.3.29-dev-test8-d2ed55e-UMM-test.identity.json) · [Checksums](SHA256SUMS.txt).
+- Checks: 489 unit tests pass; release build 0 warnings; offline blueprint audit 0 errors; new game references for door
+  visibility and locks, all public game functions. Not played yet.
+- **Test:** the same rooms as your test 7 log (the Neophyte Wizard behind the door in turn-based, the Dretch behind the
+  door in real time): a companion should `Open door to ...`; if none does, send the `[Door]` lines.
+
+## Test 7: v0.3.29-dev-test7 (ed5cb78) - companions open doors to enemies (the door option fixed in test 8)
 
 **[Download the UMM test ZIP (ed5cb78)](AI-Control-FACC-v0.3.29-dev-test7-ed5cb78-UMM-test.zip?raw=true)**
 

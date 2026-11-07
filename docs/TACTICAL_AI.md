@@ -4259,3 +4259,64 @@ Test 6 played: 12 fights (7 turn-based, 5 real-time), no mod errors (WrathPatche
 Test ZIP `AI-Control-FACC-v0.3.29-dev-test7-ed5cb78-UMM-test.zip` (MVID `ebc7a0d7-4e64-4104-8b08-0332bac68e76`);
 485 tests.
 
+## 120. v0.3.29 test 8: test-7 log review - the door option was never offered; walks that go nowhere
+
+Test 7 played (one log, 13 fights: 7 turn-based, 6 real time; the build line names test 7's DLL, `ebc7a0d7`; no mod
+errors). The author: "Companions still could not open unlocked doors to reach enemy behind." Not one `Open door` option
+appears in the log, in either mode.
+
+**Fixed: no door ever passed the door filter.**
+- The turn-based fight (log lines 18081-18422) is the test-6 room again: the Neophyte Wizard stood behind the closed door
+  for rounds 1-6; 28 walks and spells were withheld for "path ends without line of sight", most of them at him. The real-time fight with
+  the Dretch (18863-18978) had the same door: Lann's and Aeiluvetar's advances both ended on one navmesh point at the
+  door, (113.00, 71.20), 13 m short of the Dretch.
+- Test 7 asked for `EntityDataBase.IsRevealed`. The game sets it for a map object only when the fog of war is off
+  (`FogOfWarController.Tick`), for area exits (`SceneLoader.ApplyFowStartOptions`) and for traps
+  (`TrapObjectView`). Seeing a door only clears its `IsInFogOfWar` (`UpdateInFogOfWarState`), so with the fog on every
+  door read as unrevealed and was dropped.
+- `TacticalEngine.Doors.cs` now:
+  - Sees a door by the game's own rule for showing a map object (`EntityVisibilityForPlayerController.IsVisible`): the
+    perception check is passed (`StaticEntityData.IsPerceptionCheckPassed`, true for doors with no hidden-door check),
+    and it is revealed or out of the fog.
+  - Opens locked doors the game counts as passed (`InteractionRestrictionPart.IsPassed`): the key in the party's
+    inventory (`KeyRestrictionPart`), a story-unlocked flag (`UnlockRestrictionPart`), a lock already picked
+    (`DisableDeviceRestrictionPart.Unlocked`). An unpicked lock is never tried: its check rolls Trickery, can jam the lock
+    and spends the action. Other restrictions (conditions, scripts) are left alone.
+  - Considers an enemy out of sight (eye to eye) or one this turn's walks could not reach (`TurnMemory.Unreachable`: the
+    dispatcher refused a walk to it as out of reach or without sight; real time, also a stuck walk on it).
+  - Measures "on the way" as the detour through the door: the way through it may be up to 4 m or half the straight
+    distance longer (`DoorRules.OnTheWay`, `MinDetour`, `DetourShare`). Test 7's 3 m corridor along the straight line
+    missed doors in the wall of the next room. The door with the least detour is chosen per enemy.
+  - Needs no walk when the unit stands within the door's proximity radius already (`InteractionSettings.ProximityRadius`,
+    4 m by default), so a unit boxed in at the door can still open it (`BoxedInWalk` only stops options that walk).
+  - The no-sight memory (`CombatMemory.StillNoSight`) no longer drops the opening of a door to that enemy
+    (`SilentlyFailing`): opening the door is how to see it.
+  - Says once a fight per unit and enemy why no door was offered, when that matters (the walks failed, or a refused door
+    stands within 8 m), for example `[Door] Seelah: Neophyte Wizard is out of sight - no door to open (nearest closed door 2.1 m
+    away: in the fog of war)`.
+
+**Fixed: turn-based walks that go nowhere.**
+- Seelah lost three turns, each to a walk of 0.0 m (log lines 18246, 18341, 18383): an advance on the wizard from the
+  door, one on the Cultist Archer, and the walk to touch Camellia (58 % HP) with Cure Light Wounds. Each time the game's
+  walk waited until the 4 s command wait ended her turn. The path had been cut back to her own square: the cells ahead
+  were held by allies (`CommandDispatcher.TrimAllyBlockedEnd`).
+- `CommandDispatcher.TryPrepare` now refuses a turn-based `UnitMoveTo` whose path is under 0.1 m while the unit is more
+  than 0.4 m short of its arrival radius, as "path ends out of reach (the walk goes nowhere ...)". The engine takes its
+  next best option, and the target counts as out of reach for the turn. Attacks and spells were already refused at their
+  path's end (`PathEndsInReach`).
+
+**Fixed: real-time walks at a dead end never ended.**
+- Lann's and Aeiluvetar's advances on the Dretch ran 11.8 s and 10.8 s, ending only with the fight, though none of the
+  stuck rules is longer than 6 s. A walk to the end of a path that stops at a closed door stops, asks for its path again
+  and moves a little, over and over. Every stopped tick restarted the 2 s on-the-spot and 6 s no-progress clocks, and
+  every moving tick the 3 s standing-still one.
+- `RealTimeController.IsCommandStuck` now restarts those clocks only while the unit waits for something else (a
+  cooldown, an animation, standing up) or its command is not approaching. Standing still on an approach with nothing to
+  wait for is no progress either. This is the author-approved 2 s rule (§114, R2) doing what it was meant to.
+
+**Seen working from test 7:** the walkable-spot fix (§119) - 22 "no free side" lines, now with 0-12 spots unwalkable
+each instead of all of them together; 10 stuck walks ended by the rules (7 by the 2 s rule); boxed in 4 times; no mod
+errors. The combat log has no door interactions (the player opened none either).
+
+Test ZIP `AI-Control-FACC-v0.3.29-dev-test8-d2ed55e-UMM-test.zip` (MVID `2cfa0361-1e09-4a1b-93a9-ee9997377af8`);
+489 tests.
