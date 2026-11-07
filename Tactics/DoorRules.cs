@@ -1,13 +1,18 @@
 // ★ v0.3.29 test 7 (v0.3.29 test 6 turn-based log, the author's note): a closed door between a unit and an enemy it cannot
 // see (TacticalEngine.Doors.cs). Pure geometry, unit-tested.
+// ★ v0.3.29 test 8: "on the way" is how much longer the way through the door is than the straight line (the detour), not
+// a 3 m corridor along that line - a door in the wall of the next room stands well off the line to an enemy in its corner.
 using System;
 
 namespace CompanionAI_Pathfinder.Tactics
 {
     public static class DoorRules
     {
-        /// <summary>Metres to either side of the straight line to the enemy a door may stand and still be in the way.</summary>
-        public const float Corridor = 3f;
+        /// <summary>Metres the way through a door may be longer than the straight line and the door still be on the way...</summary>
+        public const float MinDetour = 4f;
+
+        /// <summary>...or this share of the straight line, when that is more (a far enemy, a room further on).</summary>
+        public const float DetourShare = 0.5f;
 
         /// <summary>Metres of height between a door and the line beyond which they are on different floors.</summary>
         public const float SameFloor = 3f;
@@ -19,22 +24,38 @@ namespace CompanionAI_Pathfinder.Tactics
         public const float OverAdvance = 0.5f;
 
         /// <summary>
-        /// The door at (<paramref name="doorX"/>, <paramref name="doorZ"/>) stands on the way from the unit
-        /// (<paramref name="fromX"/>, <paramref name="fromZ"/>) to the enemy (<paramref name="toX"/>, <paramref name="toZ"/>):
-        /// along the line between them (not behind the unit, at most 1.5 m beyond the enemy) and within
-        /// <see cref="Corridor"/> of it. Unusable input is not on the way.
+        /// ★ v0.3.29 test 8: how many metres longer the way from the unit (<paramref name="fromX"/>, <paramref name="fromZ"/>)
+        /// through the door (<paramref name="doorX"/>, <paramref name="doorZ"/>) to the enemy (<paramref name="toX"/>,
+        /// <paramref name="toZ"/>) is than the straight line between them; NaN for unusable input or an enemy where the
+        /// unit stands.
         /// </summary>
-        public static bool OnTheWay(float fromX, float fromZ, float toX, float toZ, float doorX, float doorZ)
+        public static float Detour(float fromX, float fromZ, float toX, float toZ, float doorX, float doorZ)
         {
-            float lx = toX - fromX, lz = toZ - fromZ;
-            float length = (float)Math.Sqrt(lx * lx + lz * lz);
-            if (!(length > 0.5f) || float.IsInfinity(length)) return false;
-            float ux = lx / length, uz = lz / length;
-            float dx = doorX - fromX, dz = doorZ - fromZ;
-            float along = dx * ux + dz * uz;
-            float aside = Math.Abs(dx * uz - dz * ux);
-            if (float.IsNaN(along) || float.IsNaN(aside)) return false;
-            return along > 0f && along <= length + 1.5f && aside <= Corridor;
+            float direct = Distance(fromX, fromZ, toX, toZ);
+            if (!(direct > 0.5f) || float.IsInfinity(direct)) return float.NaN;
+            float through = Distance(fromX, fromZ, doorX, doorZ) + Distance(doorX, doorZ, toX, toZ);
+            if (float.IsNaN(through) || float.IsInfinity(through)) return float.NaN;
+            return Math.Max(0f, through - direct);
+        }
+
+        /// <summary>The longest detour that still counts as on the way to an enemy <paramref name="direct"/> metres off.</summary>
+        public static float MaxDetour(float direct) => Math.Max(MinDetour, DetourShare * Math.Max(0f, direct));
+
+        /// <summary>
+        /// The door stands on the way from the unit to the enemy: walking through it is at most <see cref="MaxDetour"/>
+        /// longer than the straight line. Unusable input is not on the way.
+        /// </summary>
+        public static bool OnTheWay(float fromX, float fromZ, float toX, float toZ, float doorX, float doorZ, out float detour)
+        {
+            detour = Detour(fromX, fromZ, toX, toZ, doorX, doorZ);
+            if (float.IsNaN(detour)) return false;
+            return detour <= MaxDetour(Distance(fromX, fromZ, toX, toZ));
+        }
+
+        private static float Distance(float ax, float az, float bx, float bz)
+        {
+            float dx = ax - bx, dz = az - bz;
+            return (float)Math.Sqrt(dx * dx + dz * dz);
         }
     }
 }

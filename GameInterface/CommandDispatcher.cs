@@ -247,6 +247,21 @@ namespace CompanionAI_Pathfinder.GameInterface
                     return false;
                 }
 
+                // ★ v0.3.29 test 8 (v0.3.29 test 7 turn-based log): a walk whose path goes nowhere - cut back to where the
+                // unit stands (the cells ahead held by allies: TrimAllyBlockedEnd) - never ends: the game's walk waits on
+                // it until the turn's 4 s command wait gives up. Seelah lost three turns so (an advance on the Neophyte
+                // Wizard from the door, one on the Cultist Archer, and the touch of a Cure Light Wounds for Camellia at
+                // 58 % HP), 0.0 m each. Refused here, the engine takes its next best option; the target counts as out
+                // of reach this turn (TacticalDriver.RecordRejected), so a door on the way is offered for it.
+                // Attacks and spells are refused at their path's end below (PathEndsInReach).
+                if (turn != null && command is UnitMoveTo && pathLength < NowhereWalk &&
+                    FlatDistance(unit.Position, command.ApproachPoint) - command.ApproachRadius > NowhereWalk + 0.3f)
+                {
+                    command.ForcedPath = null;
+                    failure = $"{OutOfReachFailure} (the walk goes nowhere: {pathLength:F1}m, held where it stands)";
+                    return false;
+                }
+
                 if (fiveFootOnly && turn != null && turn.Rider == unit &&
                     (!turn.HasFiveFootStep(unit) || pathLength > turn.GetRemainingFiveFootStepRange(unit) + 0.05f))
                 {
@@ -404,6 +419,15 @@ namespace CompanionAI_Pathfinder.GameInterface
         public const string OutOfReachFailure = "path ends out of reach";
         public const string NoSightAtPathEndFailure = "path ends without line of sight to the target";
         public const string LongerThanOneMoveFailure = "longer than one move action";
+
+        /// <summary>★ v0.3.29 test 8: metres below which a turn-based walk's path goes nowhere (TryPrepare).</summary>
+        private const float NowhereWalk = 0.1f;
+
+        private static float FlatDistance(Vector3 a, Vector3 b)
+        {
+            float dx = a.x - b.x, dz = a.z - b.z;
+            return Mathf.Sqrt(dx * dx + dz * dz);
+        }
 
         /// <summary>★ v0.3.20 (test8): the failure text of a walk refused for provoking more attacks of opportunity than
         /// the move was priced for (TacticalDriver.RecordRejected reads it).</summary>

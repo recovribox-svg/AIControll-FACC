@@ -634,7 +634,9 @@ namespace CompanionAI_Pathfinder.Tactics
             if (BoxedInWalk(ctx, c)) return true;
             // ★ v0.3.19 (test9): real time - an enemy the unit could not get sight of from here (any option on it walks the
             // same way), while neither has moved.
-            if (c.Target != null && c.Target != ctx.Unit && ctx.Unit.IsEnemy(c.Target) && CombatMemory.StillNoSight(ctx.Unit, c.Target)) return true;
+            // ★ v0.3.29 test 8: not the opening of a door to it - that is the way to get sight of it.
+            if (c.Kind != CandidateKind.Interact && c.Target != null && c.Target != ctx.Unit && ctx.Unit.IsEnemy(c.Target) &&
+                CombatMemory.StillNoSight(ctx.Unit, c.Target)) return true;
             // ★ v0.3.24 (build1 logs, author-approved): a target the game's path does not lead to, found by any party member.
             if (c.Target != null && ctx.Unit.IsEnemy(c.Target) && CombatMemory.OutOfWalkingReach(c.Target) && WalksIntoMelee(ctx, c)) return true;
             if (c.Kind != CandidateKind.Ability || c.Ability == null) return false;

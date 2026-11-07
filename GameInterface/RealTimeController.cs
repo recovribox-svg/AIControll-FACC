@@ -723,7 +723,13 @@ namespace CompanionAI_Pathfinder.GameInterface
                         return true;
                     }
                 }
-                else
+                // ★ v0.3.29 test 8 (v0.3.29 test 7 real-time log): only time spent waiting for something else restarts the
+                // clocks. A walk to a dead end - the path ends at a closed door - stops, asks for its path again and moves
+                // a little, over and over; every stopped tick restarted the 2 s on-the-spot and the 6 s no-progress clocks,
+                // and every moving tick the 3 s standing-still one, so none ever ran out: Lann and Aeiluvetar stood at the
+                // door (113.0, 71.2) for 11.8 s and 10.8 s, until the fight ended. Standing still on an approach with
+                // nothing to wait for is no progress either.
+                else if (wait != null || !cmd.ShouldUnitApproach)
                 {
                     // Time spent waiting for something else (a cooldown, an animation) is not time without progress.
                     mark.NearestAt = now;
