@@ -4358,3 +4358,56 @@ companions fought what they could reach and then used Aid Another or ended their
 (MVID `b1371c3f-bb68-4d1c-b881-9753eb663685`), notes `release/CHANGELOG_v0.3.29.md`; 479 tests, release build 0
 warnings, offline audit 3572 blueprints read, 0 errors. Not byte-identical to a played build: it is test 8 with the door
 work removed. `main` is fast-forwarded; the author creates the GitHub release and tag `v0.3.29`.
+
+## 122. v0.3.30 test 1: Profane Ascension spam - unique buffs and buff switches
+
+A player's bug report, reproduced by the author (log on the v0.3.29 release DLL `b1371c3f`, 2 fights, no mod errors,
+no stalls): "the tactical engine would spam Profane Ascension". In the second fight Lann cast Profane Invocation 25
+times, more than the party's 22 weapon attacks: Intelligence 10, Strength 4, Dexterity 4, Charisma 3 and others, on
+himself, Aeiluvetar, Seelah, Camellia and Orvath, in both modes.
+
+**What the ability is (blueprints `Mythic/Demon/DemonQuestReward/DemonicOverlord`).**
+- Profane Ascension (Demonic Overlord) gives two ability groups (`ProfaneAscensionAbility1` / `2`), each with six
+  variants, one per stat: a free action on an ally or the caster.
+- Each variant removes that recipient's other stat buffs of its group (`ContextActionRemoveBuff`) and applies its own
+  (`ProfaneAscension<Stat>Buff1/2`): permanent, +2 profane to the stat, with `UniqueBuff`.
+- `UniqueBuff` registers the buff with its caster (`UnitPartUniqueBuffs.NewBuff`). Putting the same buff on someone else
+  removes the caster's old copy.
+
+**Why it was spammed.**
+- Each cast was valued as a gain for the recipient only. Dexterity went to Aeiluvetar (6.2), then to Seelah (7.5, which
+  took it off Aeiluvetar), then to Aeiluvetar again (6.6), and so on. Free actions cost nothing in the action economy,
+  so every decision took one before the main action.
+- Intelligence, Wisdom and Charisma are not read for a recipient that does not cast with them (or blast with them):
+  the old quality estimate (0.7 x level) made them 8.8 on Lann and 5.3-8.8 on others. They moved between all five
+  the same way.
+- A variant that replaces the recipient's sibling buff compared the two by their labels (0.8 for any physical stat,
+  0.7 for any mental one): "Profane Invocation — Strength -> Orvath = 1.3 (quality 0.1)" in place of a mental-stat
+  invocation on the Dark Elementalist.
+
+**Fixed.**
+- `TacticalEngine.UniqueBuffHeldElsewhere`: the ally holding one of the cast's buffs from this caster, when the buff
+  is unique (`IsUniqueBuff`, the game's component, cached).
+- The cast on another recipient then:
+  - is not offered if the buff was put on the holder this round (as unique marks, §64);
+  - is worth its value there less the holder's loss, and nothing unless clearly better
+    (`ValueModel.BuffSwitchGain`, margin 1.25, the marks' margin; unit-tested).
+- The holder's loss is its appraisal without that buff (`AppraiseHeldBuff`). `Increment`, which counts a bonus only
+  above the best of its type already there, skips the modifiers whose `Source` is that buff (`Modifier.Source` is the
+  buff fact: `ModifiableValue.AddModifier(value, EntityFactComponent, ...)`). Otherwise the holder's own +2 read as
+  "already there" and every move as free. Unread buffs use the quality estimate without the stacking check
+  (`BuffQuality(..., held: true)`).
+- Once a fight per caster and ability: `[Buff] Lann: Profane Invocation — Dexterity stays on Aeiluvetar (one recipient
+  at a time: Seelah 7.5 is not clearly better than 6.6 there)`.
+- A cast that removes the recipient's beneficial buffs (`BeneficialBuffsRemoved`) is judged by both appraisals when
+  both can be read (`ReplacedWorth`, each without its own bonus), with the same margin. Otherwise the quality
+  comparison stays.
+
+**Expected.** Each invocation is placed once on its best recipient (up to one per stat and group, each recipient one
+stat per group), then stays. It moves only when a clearly better recipient appears (once a round at most). The
+mental-stat estimate (Intelligence on an archer) is unchanged and is still a guess. Reading those stats for
+non-casters (Wisdom for Will saves, Charisma for a paladin's saves) is a separate improvement.
+
+Offline: ProfileAudit on the 28 Demonic Overlord blueprints reads all 12 variants without error (physical stats by
+parts; Charisma, Intelligence and Wisdom guessed at 0.7). `Info.json` 0.3.30. Test ZIP
+`AI-Control-FACC-v0.3.30-dev-test1-cf080c6-UMM-test.zip` (MVID `fdee1c86-2d4f-4ddb-8256-621cec66b451`); 486 tests.

@@ -1,0 +1,35 @@
+{
+  "name": "AI Control - Fully Autonomous Combat Companions v0.3.30 test 1 (unique buffs not moved back and forth: Profane Ascension)",
+  "version": "0.3.30",
+  "umm_manifest_version": "0.3.30",
+  "umm_mod_id": "CompanionAI_Pathfinder",
+  "branch": "claude/dreamy-pasteur-b9h3rn",
+  "base_release": "v0.3.28 (2415cf8)",
+  "runtime_source_commit": "cf080c6",
+  "archive": "AI-Control-FACC-v0.3.30-dev-test1-cf080c6-UMM-test.zip",
+  "zip_sha256": "1f925d9dc664833842bd0bfc790e548214ccda68eb573286153d4a1f5703ff23",
+  "dll_sha256": "29895c744a6d8f632a5eea354f11a5e68d77f526d682447c383d7c8f0b6bffa4",
+  "manifest_sha256": "7d399d2fdadbbf57fa7fafafbfa1b5350bf751c775264b33b2f17ef4e6a7c40e",
+  "module_mvid": "fdee1c86-2d4f-4ddb-8256-621cec66b451",
+  "startup_marker": "[Build] v0.3.30 module=fdee1c86-2d4f-4ddb-8256-621cec66b451",
+  "archive_contents": [
+    "CompanionAI_Pathfinder.dll",
+    "Info.json"
+  ],
+  "checks": {
+    "unit_tests": {
+      "passed": 486,
+      "failed": 0,
+      "skipped": 0
+    },
+    "release_build": {
+      "warnings": 0,
+      "errors": 0
+    },
+    "external_references": "SigDump vs v0.3.29: 1 new public game member (ModifiableValue.Modifier.Source), present in the shipped game",
+    "packed_dll_matches_build": true,
+    "in_game": "pending",
+    "profile_audit": "Kineticist + Spells + Buffs + swarm, spider and Shadow unit dumps, strict: 3572 loaded, 0 failed, 0 reader errors; all checks pass (ricochet-layer, rank-increment, quiver-binding, soul-power, damage-context, drain, affliction, swarm-area)"
+  },
+  "publication_scope": "Development test download: v0.3.29 plus the fix for the Profane Ascension spam (unique buffs moved only when clearly better, at most once a round; buff switches judged per recipient); not a release."
+}

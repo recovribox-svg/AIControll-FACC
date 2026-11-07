@@ -52,3 +52,4 @@ be320cd6d58e8d22d85223b25365ccf44542881756fbb5143a82ed5fd7bbd8c5  AI-Control-FAC
 73fdc39b723fa5a566977db7811eaf33f0fec3fe4403c301839d74682b1a41f3  AI-Control-FACC-v0.3.29-dev-test6-1bb3f79-UMM-test.zip
 2fc2998a55b14d0b09c1cdd9ad5b0944e063cd637743912a5230600ebcffeb4a  AI-Control-FACC-v0.3.29-dev-test7-ed5cb78-UMM-test.zip
 46118e6b3d0cdb70ab38c0992d131ef080587affdada73880b0f38e3620b9d4b  AI-Control-FACC-v0.3.29-dev-test8-d2ed55e-UMM-test.zip
+1f925d9dc664833842bd0bfc790e548214ccda68eb573286153d4a1f5703ff23  AI-Control-FACC-v0.3.30-dev-test1-cf080c6-UMM-test.zip

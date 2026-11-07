@@ -238,6 +238,12 @@ taken out (commit `811fae2`) and saved for a later version (`docs/future/door-op
 trace, turn-based walks that go nowhere, real-time stuck-walk clocks. Released as **v0.3.29**: `release/CompanionAI_Pathfinder_v0.3.29.zip`
 (MVID `b1371c3f-bb68-4d1c-b881-9753eb663685`, not byte-identical to a played build: test 8 minus the door work), notes
 `release/CHANGELOG_v0.3.29.md`, `main` fast-forwarded; the author creates the GitHub release and tag `v0.3.29`; 479 tests.
+**v0.3.30 test 1 (7 November, `docs/TACTICAL_AI.md` §122, not played):** bug report reproduced by the author - Lann cast Profane
+Invocation (Demonic Overlord, free action, permanent `UniqueBuff`) 25 times a fight. A unique buff held by another ally costs that
+ally's loss (`UniqueBuffHeldElsewhere`, `AppraiseHeldBuff`: `Increment` skips the buff's own `Modifier.Source`), needs a clearly better
+recipient (`ValueModel.BuffSwitchGain`, 1.25) and moves at most once a round; sibling-buff switches judged by both appraisals
+(`ReplacedWorth`). `Info.json` 0.3.30. Test ZIP `AI-Control-FACC-v0.3.30-dev-test1-cf080c6-UMM-test.zip` (MVID
+`fdee1c86-2d4f-4ddb-8256-621cec66b451`); 486 tests.
 
 Historical handovers, superseded by the one above: [v0.3.22 release preparation](docs/RELEASE_0_3_22_HANDOVER.md)
 (27 October, PR #6–#12), [released-log review](docs/RELEASE_0322_LOG_REVIEW.md) (PR #13),

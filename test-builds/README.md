@@ -1,6 +1,31 @@
 # Test builds
 
-## Current test build: v0.3.29-dev-test8 (d2ed55e) - doors really offered now, no lost turns on walks that go nowhere (released as v0.3.29 without the door work)
+## Current test build: v0.3.30-dev-test1 (cf080c6) - no more Profane Ascension spam
+
+**[Download the UMM test ZIP (cf080c6)](AI-Control-FACC-v0.3.30-dev-test1-cf080c6-UMM-test.zip?raw=true)**
+
+Direct link: <https://github.com/recovribox-svg/AIControll-FACC/raw/claude/dreamy-pasteur-b9h3rn/test-builds/AI-Control-FACC-v0.3.30-dev-test1-cf080c6-UMM-test.zip>
+
+v0.3.29 (the release) plus the fix for the bug report you reproduced ([docs/TACTICAL_AI.md](../docs/TACTICAL_AI.md) §122):
+- **Profane Ascension spam.** Lann cast Profane Invocation 25 times in one fight. Each invocation is a free action whose
+  buff lasts for good, but the game lets the caster keep each one on only one companion at a time: putting it on a new
+  companion takes it off the old one. The AI counted every cast as a pure gain, so the buff hopped back and forth
+  between companions. Now moving it counts what the old companion loses, the new one must be clearly better (by a
+  quarter), and it moves at most once a round. The log says once a fight why it stays:
+  `[Buff] Lann: Profane Invocation — Dexterity stays on Aeiluvetar (one recipient at a time: ...)`.
+- **One invocation replacing another on the same companion** is now judged by what each does for that companion,
+  when both can be read. Lann had put Strength in place of a mental-stat invocation on Orvath.
+- What to expect: Lann hands out his invocations at the start of a fight (they are free and last), then stops.
+
+UMM shows **0.3.30**. Startup line `[Build] v0.3.30 module=fdee1c86-2d4f-4ddb-8256-621cec66b451`.
+- ZIP SHA-256 `1f925d9dc664833842bd0bfc790e548214ccda68eb573286153d4a1f5703ff23`; DLL SHA-256 `29895c744a6d8f632a5eea354f11a5e68d77f526d682447c383d7c8f0b6bffa4`.
+- [Identity](AI-Control-FACC-v0.3.30-dev-test1-cf080c6-UMM-test.identity.json) · [Checksums](SHA256SUMS.txt).
+- Checks: 486 unit tests pass; release build 0 warnings; offline blueprint audit 0 errors (also on the Profane Ascension
+  blueprints); one new game reference, a public game field. Not played yet.
+- **Test:** the fight from your log with Lann's Profane Invocation on the action bar: a few casts at the start, then
+  none; send the log if he keeps casting.
+
+## Test 8: v0.3.29-dev-test8 (d2ed55e) - doors really offered now, no lost turns on walks that go nowhere (released as v0.3.29 without the door work)
 
 **[Download the UMM test ZIP (d2ed55e)](AI-Control-FACC-v0.3.29-dev-test8-d2ed55e-UMM-test.zip?raw=true)**
 
