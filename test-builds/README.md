@@ -1,6 +1,29 @@
 # Test builds
 
-## Current test build: v0.3.29-dev-test6 (1bb3f79) - boxed-in companions stop trying to walk
+## Current test build: v0.3.29-dev-test7 (ed5cb78) - companions open doors to enemies
+
+**[Download the UMM test ZIP (ed5cb78)](AI-Control-FACC-v0.3.29-dev-test7-ed5cb78-UMM-test.zip?raw=true)**
+
+Direct link: <https://github.com/recovribox-svg/AIControll-FACC/raw/claude/dreamy-pasteur-b9h3rn/test-builds/AI-Control-FACC-v0.3.29-dev-test7-ed5cb78-UMM-test.zip>
+
+Test 6 (below) plus two fixes from your test 6 logs and note ([docs/TACTICAL_AI.md](../docs/TACTICAL_AI.md) §119):
+- **Closed doors, both modes.** When an enemy is out of sight behind a closed door on the way to it, a companion can
+  now walk up to the door and open it, as you would. Only unlocked doors with no trap seen on them. In real time a
+  companion does not walk to a door another companion is already opening, and gives up if it is opened meanwhile. The
+  log says `Open door to Neophyte Wizard`.
+- **Spots wrongly read as unreachable.** A companion standing slightly off the game's walking mesh read every spot near
+  an enemy as unreachable (all of them at once). That made "no free side" far too common, and also blocked walking
+  round harmful areas and backing off. Now fixed.
+
+UMM shows **0.3.29**. Startup line `[Build] v0.3.29 module=ebc7a0d7-4e64-4104-8b08-0332bac68e76`.
+- ZIP SHA-256 `2fc2998a55b14d0b09c1cdd9ad5b0944e063cd637743912a5230600ebcffeb4a`; DLL SHA-256 `ddea415d7f23be0f4d15ca40a14af52198c2be27ef75be47fcf92476deb1adb7`.
+- [Identity](AI-Control-FACC-v0.3.29-dev-test7-ed5cb78-UMM-test.identity.json) · [Checksums](SHA256SUMS.txt).
+- Checks: 485 unit tests pass; release build 0 warnings; offline blueprint audit 0 errors; new game references for door
+  interaction, all public game functions. Not played yet.
+- **Test:** a fight where an enemy stands behind a closed door (turn-based and real time): a companion should open it;
+  and crowded melee: fewer `no free side` lines.
+
+## Test 6: v0.3.29-dev-test6 (1bb3f79) - boxed-in companions stop trying to walk (also in test 7)
 
 **[Download the UMM test ZIP (1bb3f79)](AI-Control-FACC-v0.3.29-dev-test6-1bb3f79-UMM-test.zip?raw=true)**
 

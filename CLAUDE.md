@@ -223,6 +223,11 @@ Test ZIP
 the unit in there for 6 s - no option that walks first is offered except leaving an area or a swarm (`CombatMemory.NoteStuckWalk` /
 `BoxedIn`, `SpotRules.StuckInARow`, `TacticalEngine.BoxedInWalk`). Test ZIP `AI-Control-FACC-v0.3.29-dev-test6-1bb3f79-UMM-test.zip`
 (MVID `a0e8296b-b0d4-4019-99ae-a54bdd385ac7`); 479 tests.
+Test 6 played (§119: 12 fights, no mod errors, no stuck walks in real time). **v0.3.29 test 7 (7 November, §119, not played):**
+"Open door to X" in both modes for a closed, unlocked door on the way to an enemy out of sight (`TacticalEngine.Doors.cs`,
+`DoorRules`, `CandidateKind.Interact`, the game's `UnitInteractWithObject`; real time drops an opening whose door is open,
+`ShouldDropOpenedDoor`); `AoeDangerAnalyzer.IsPositionValid` traces from the nearest navmesh point (an off-mesh start read every
+spot as blocked). Test ZIP `AI-Control-FACC-v0.3.29-dev-test7-ed5cb78-UMM-test.zip` (MVID `ebc7a0d7-4e64-4104-8b08-0332bac68e76`); 485 tests.
 
 Historical handovers, superseded by the one above: [v0.3.22 release preparation](docs/RELEASE_0_3_22_HANDOVER.md)
 (27 October, PR #6–#12), [released-log review](docs/RELEASE_0322_LOG_REVIEW.md) (PR #13),

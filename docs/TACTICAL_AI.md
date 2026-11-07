@@ -4215,3 +4215,47 @@ The author approved the §117 proposal.
 
 Test ZIP `AI-Control-FACC-v0.3.29-dev-test6-1bb3f79-UMM-test.zip` (MVID `a0e8296b-b0d4-4019-99ae-a54bdd385ac7`);
 479 tests.
+
+## 119. v0.3.29 test 7: test-6 log review - closed doors, walkable spots
+
+Test 6 played: 12 fights (7 turn-based, 5 real-time), no mod errors (WrathPatches' notes on Isekai blueprints only).
+- Real time: no walk ended as stuck (the test-4 logs had 6 and 14), so the boxed-in rule never had to act; four walks
+  ended as arrived ("arrived by the game's own test"); 50 free-side approaches. Orvath and the others cast 8 cones (Color
+  Spray, Fan of Flames) and none caught a companion in the combat log.
+- Turn-based: the turns that ended with the move action unused had nothing worth walking for, except the door below.
+
+**Fixed: a closed door between the party and an enemy (the author's note).**
+- Second turn-based fight, rounds 3-6: a Neophyte Wizard stood in the next room behind a closed door. Every walk and
+  spell at him was refused before issue ("path ends without line of sight to the target"), the advances ended at the
+  door, and the companions passed their turns until the game ended the fight. The engine had no way to open a door.
+- `TacticalEngine.Doors.cs`, both modes: "Open door to X" (`CandidateKind.Interact`) for a closed door on the way
+  (`DoorRules.OnTheWay`: along the line to the enemy, not behind the unit, at most 1.5 m beyond the enemy, within 3 m of
+  the line, on the same floor; unit-tested) to an enemy the unit cannot see (the game's sight test,
+  `LineOfSightGeometry.HasObstacle`, eye to eye).
+  - The game's own interaction, as the player's click (`UnitInteractWithObject`): a standard action that walks within
+    the door's proximity radius (4 m by default) with sight of it first; turn-based, the dispatcher gives it its path
+    like any walk, and the path is checked before issue (`NeedsMove`).
+  - Only doors anyone may open now: revealed and in play, enabled and openable in combat (`CanInteract`), an
+    `Approach` interaction, no lock, key or skill check left (`InteractionRestrictionPart` unless `AlreadyUnlocked`), no
+    trap seen on it. Locked doors are left alone (a failed check would spend the action for nothing).
+  - Worth an advance on that enemy (`AdvanceShare` of attacking it) plus 0.5 (`DoorRules.OverAdvance`): the advance
+    cannot get past the door, the opening can, for the whole party. The most valuable enemy behind each door counts.
+  - Not offered while another companion is already on its way to open that door. Real time, a pending opening whose
+    door is open already is dropped (`RealTimeTactics.ShouldDropOpenedDoor`): interacting with an open door closes it
+    (`InteractionDoorPart.Open` switches it).
+  - Doors are read from the area's map objects at most once a second, and only while some enemy is out of sight.
+
+**Fixed: spots read as unwalkable whenever the unit stood off the navmesh.**
+- `AoeDangerAnalyzer.IsPositionValid` traced a straight navmesh line from the unit's raw position. The game's
+  `ObstacleAnalyzer.TraceAlongNavmesh` returns its start's nearest navmesh point at once when the start is more than
+  1 cm off the mesh (no linecast), so every spot farther than 1 m read as blocked. In all 38 free-side searches with
+  unwalkable spots in the test-4 and test-6 real-time logs, every remaining spot was unwalkable together - never some of
+  them - and the companion got "no free side" (9 of 16 such lines in test 6, 19 of 26 and 10 of 34 in the test-4 logs).
+  The A* linecast itself returns the end point when nothing blocks the line (`NavmeshBase.Linecast`), so the start was the
+  fault.
+- The trace now starts from the nearest navmesh point. The same test serves the spots round harmful areas and swarms,
+  the free sides, the back-off and withdraw spots and the sight spots, which all failed the same way.
+
+Test ZIP `AI-Control-FACC-v0.3.29-dev-test7-ed5cb78-UMM-test.zip` (MVID `ebc7a0d7-4e64-4104-8b08-0332bac68e76`);
+485 tests.
+
