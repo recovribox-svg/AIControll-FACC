@@ -4320,3 +4320,41 @@ errors. The combat log has no door interactions (the player opened none either).
 
 Test ZIP `AI-Control-FACC-v0.3.29-dev-test8-d2ed55e-UMM-test.zip` (MVID `2cfa0361-1e09-4a1b-93a9-ee9997377af8`);
 489 tests.
+
+## 121. v0.3.29 test-8 log, the door work taken out, the v0.3.29 release
+
+Test 8 played (one log, 3 fights: 2 turn-based, 1 real time; build line `2cfa0361`, test 8's DLL; no mod errors). The
+author: "open doors fix still didn't work" - take the door work out, keep it for a future version, and release.
+
+**Why no door was opened: the game does not allow it in combat.**
+- Test 8's `[Door]` lines (log lines 405-455) named the reason for every closed door near the enemies behind it, for
+  every companion: "not usable in combat". That door's interaction has `InteractionSettings.NotInCombat` set:
+  `InteractionPart.CanInteract()` is false while `Player.IsInCombat`, and `UnitInteractWithObject.OnAction` fails it.
+  The game forbids opening it during a fight, for the player as well, and the AI rightly left it shut.
+- Opening it anyway would mean calling `InteractionDoorPart.Open()` past the game's rule, which the mod does not do.
+
+**Taken out (commit `811fae2`), saved for later.**
+- Removed: `TacticalEngine.Doors.cs`, `DoorRules.cs` and its 10 tests, `CandidateKind.Interact` / `Candidate.Door` and
+  their hooks (candidate call, `Execute`, `ApproachCommand`, the no-sight exemption in `SilentlyFailing`),
+  `RealTimeTactics.ShouldDropOpenedDoor` and its replan line. The code is test 6's again in all those places
+  (`git diff 8b43886` touches only the three kept fixes below).
+- Saved: `docs/future/door-opening.patch` restores the feature with `git apply`. Applied to `811fae2`, it gives test 8's
+  code exactly (checked: no difference in any `.cs` or `.csproj`). `docs/future/DOOR_OPENING.md` records what the
+  feature did, the three logs' evidence and what to check before bringing it back.
+- Kept, not door logic:
+  - the walkable-spot trace from the nearest navmesh point (test 7, §119): 22 "no free side" lines in the test-7 log,
+    with 0-12 spots unwalkable each, instead of all of them together;
+  - turn-based walks that go nowhere refused (test 8, §120): in the test-8 log Seelah's two 0.0 m advances were
+    refused before issue and no turn was lost (3 lost in the test-7 log);
+  - the real-time stuck-walk clocks (test 8, §120): no stuck walk at all in the test-8 log's real-time fight, so no
+    false stop either.
+
+**The rest of the test-8 log: sound.** No command wait timeouts, no stuck walks. In the real-time fight Seelah fell
+from 100 % to 24 % and 12 % against the Zombie Ranger and Cultist Champion and drank Cure Light Wounds potions until she
+stood at 94 %, then fought on. In the turn-based fight, with the Neophyte Wizard out of reach behind the door, the
+companions fought what they could reach and then used Aid Another or ended their turns, as the game allows.
+
+**Released as v0.3.29** at the author's request: `release/CompanionAI_Pathfinder_v0.3.29.zip` from commit `811fae2`
+(MVID `b1371c3f-bb68-4d1c-b881-9753eb663685`), notes `release/CHANGELOG_v0.3.29.md`; 479 tests, release build 0
+warnings, offline audit 3572 blueprints read, 0 errors. Not byte-identical to a played build: it is test 8 with the door
+work removed. `main` is fast-forwarded; the author creates the GitHub release and tag `v0.3.29`.

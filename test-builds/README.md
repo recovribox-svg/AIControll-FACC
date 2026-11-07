@@ -1,6 +1,6 @@
 # Test builds
 
-## Current test build: v0.3.29-dev-test8 (d2ed55e) - doors really offered now, no lost turns on walks that go nowhere
+## Current test build: v0.3.29-dev-test8 (d2ed55e) - doors really offered now, no lost turns on walks that go nowhere (released as v0.3.29 without the door work)
 
 **[Download the UMM test ZIP (d2ed55e)](AI-Control-FACC-v0.3.29-dev-test8-d2ed55e-UMM-test.zip?raw=true)**
 

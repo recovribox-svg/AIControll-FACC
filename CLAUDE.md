@@ -233,6 +233,11 @@ Test 7 played (§120: no door was ever offered - `IsRevealed` is never set for d
 reach, detour test (`DoorRules.OnTheWay`), no walk when at the door, `[Door]` reasons; turn-based walks of 0.0 m refused
 (`CommandDispatcher.TryPrepare`); real-time stop-start dead-end walks end (`IsCommandStuck` clocks). Test ZIP
 `AI-Control-FACC-v0.3.29-dev-test8-d2ed55e-UMM-test.zip` (MVID `2cfa0361-1e09-4a1b-93a9-ee9997377af8`); 489 tests.
+Test 8 played (§121: the door is `NotInCombat` - the game forbids opening it in a fight). At the author's request the door work is
+taken out (commit `811fae2`) and saved for a later version (`docs/future/door-opening.patch` + `DOOR_OPENING.md`); kept: walkable-spot
+trace, turn-based walks that go nowhere, real-time stuck-walk clocks. Released as **v0.3.29**: `release/CompanionAI_Pathfinder_v0.3.29.zip`
+(MVID `b1371c3f-bb68-4d1c-b881-9753eb663685`, not byte-identical to a played build: test 8 minus the door work), notes
+`release/CHANGELOG_v0.3.29.md`, `main` fast-forwarded; the author creates the GitHub release and tag `v0.3.29`; 479 tests.
 
 Historical handovers, superseded by the one above: [v0.3.22 release preparation](docs/RELEASE_0_3_22_HANDOVER.md)
 (27 October, PR #6–#12), [released-log review](docs/RELEASE_0322_LOG_REVIEW.md) (PR #13),

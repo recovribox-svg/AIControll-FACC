@@ -1,0 +1,36 @@
+{
+  "name": "AI Control - Fully Autonomous Combat Companions v0.3.29",
+  "version": "0.3.29",
+  "umm_manifest_version": "0.3.29",
+  "umm_mod_id": "CompanionAI_Pathfinder",
+  "release_branch": "claude/dreamy-pasteur-b9h3rn",
+  "runtime_source_commit": "811fae2",
+  "contents_since_v0.3.28": "v0.3.29 tests 1-8 (docs/TACTICAL_AI.md §113-121) without the door-opening work of tests 7-8, which is saved in docs/future (door-opening.patch, DOOR_OPENING.md); the code equals test 6 plus the walkable-spot trace (test 7), the turn-based walk-goes-nowhere refusal and the real-time stuck-walk clocks (test 8)",
+  "archive": "CompanionAI_Pathfinder_v0.3.29.zip",
+  "zip_sha256": "c9b8ff16c5864e121c0fd9c42b1c6899778c1c121ead972fd748094a7c345a7c",
+  "dll_sha256": "d9213172ccb30d4d34fe617e8d67665c9f2bcd71fd77ebba45644e31b655938f",
+  "manifest_sha256": "7d399d2fdadbbf57fa7fafafbfa1b5350bf751c775264b33b2f17ef4e6a7c40e",
+  "module_mvid": "b1371c3f-bb68-4d1c-b881-9753eb663685",
+  "startup_marker": "[Build] v0.3.29 module=b1371c3f-bb68-4d1c-b881-9753eb663685",
+  "archive_contents": [
+    "CompanionAI_Pathfinder.dll",
+    "Info.json"
+  ],
+  "authorization": "The author asked to take the door-opening work out, keep it for a future version, and release (7 November 2026).",
+  "publication": "The author creates the GitHub release and tag v0.3.29 on main and attaches this ZIP.",
+  "checks": {
+    "unit_tests": {
+      "passed": 479,
+      "failed": 0,
+      "skipped": 0
+    },
+    "release_build": {
+      "warnings": 0,
+      "errors": 0
+    },
+    "external_references": "SigDump vs v0.3.28: 3 new public game members (AbilityDeliverProjectile.WouldTargetPointCone, UnitEntityView.Corpulence, Mathf.Sqrt), none removed; the door-opening references of tests 7-8 are gone",
+    "packed_dll_matches_build": true,
+    "in_game": "Not byte-identical to a played build: test 8 (played, 3 fights, no mod errors) with the door work removed. v0.3.29 test builds 2, 4, 6, 7 and 8 were played in more than 40 fights with no mod errors.",
+    "profile_audit": "Kineticist + Spells + Buffs + swarm, spider and Shadow unit dumps, strict: 3572 loaded, 0 failed, 0 reader errors"
+  }
+}
