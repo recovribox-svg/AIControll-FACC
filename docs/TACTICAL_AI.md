@@ -4130,3 +4130,66 @@ gone; this removes its most common avoidable case.
 
 Test ZIP `AI-Control-FACC-v0.3.29-dev-test4-090023a-UMM-test.zip` (MVID `fd38dde0-9b19-4290-bba5-1606b45874f0`);
 474 tests.
+
+## 117. v0.3.29 test 5: test-4 log review - Orvath's advances, walking-in friendly fire, arrived walks
+
+Test 4 played (one turn-based and two real-time logs, the game's combat log; saves and difficulty varied). No mod errors;
+the only error lines are WrathPatches' notes on other mods' blueprints. The turn-based log is clean (80 orders, none cut
+off or failed). The author asked about three real-time behaviours and whether they are mistakes or Orvath's stats.
+
+**1-2. Orvath walks up for cones and stays at close range: his stats, by the game's own numbers.**
+- Orvath is the Isekai protagonist (level 4) with armour class 29 (Grandmaster's Foresight +9, Plot Armor +2) and a
+  Color Spray save DC of 24. Enemies hit him 8 times in 84 attacks in the combat log (Mirror Image took 4 more).
+- The engine's danger is per target, from the game's attack rules: the same Zombie is "attacks 0.6 on Orvath" and
+  "attacks 5.5 on Seelah" (`[Threat]`), a Corrupted Mongrel 0.1 on him. His chance to go down next to the front line is
+  close to 0, so the walk to a cone spot is priced at 0 ("priced movement cost=0.0, exposed=False") and the back-off
+  out of reach is worth less than nothing ("the best way out is worth -0.9, not enough").
+- Color Spray's range is 15 ft (a cone from the caster), so casting it means standing within about 4.5 m of the target.
+  The walk is the shortest one to that range (`PlanApproach`), not a detour to spare allies. His Auto Selective
+  (ToyBox "Overpowered Ability", `AutoSelectiveBuff`, the game's `AutoMetamagic`) is seen: `AbilityData.HasMetamagic`
+  reads it through `UnitPartSpecialMetamagic`, no Color Spray decision counted an ally, and no companion made a save
+  against his Color Spray in the combat log.
+- The same model is careful where the danger is real. In the two real-time logs the other companions stepped out of
+  enemy reach or withdrew 14 times (Seelah out of a Dretch's, a Zombie's and a Large Water Elemental's reach, Lann and
+  Aeiluvetar backing off out of melee, Camellia and Seelah withdrawing at low HP). In the second log Orvath, at about
+  41 hit points in all on that save, moved out of the Large Water Elemental's reach (danger 19 -> 2.3).
+- Not changed.
+
+**Fixed: allies walking into a cone or a burst.**
+- Orvath's Fan of Flames (a burn ability: Auto Selective covers spells only) was aimed past Seelah and Camellia where
+  they stood. Both were walking to the Cultist Archer and took 9 each when it landed 1.5 s later (Seelah 13 -> 4 HP).
+  The friendly-fire check read only where allies stood.
+- Real time, a cone or burst now also counts the allies whose walk - a command of their own not yet started, ending
+  where the spot claims put it (`TacticalEngine.Spots.cs`) - passes into it in the time a cast takes
+  (`SpotRules.WalkInSeconds`, 2 s), tested every 0.5 m (`SpotRules.WalkSteps`, `TacticalEngine.AlliesWalkingInto`).
+  - Cones: the game's own target rule (`AbilityDeliverProjectile.CanTargetUnit`, Selective) and point test
+    (`WouldTargetPointCone`: sight, the 45-degree edges, range, the body) at those points (`ProjectileCone.Query.ReachesAt`).
+  - Bursts: the same distance rule as allies standing in them (`UnitsAround`), the area's target type and
+    `AreaReaches`; not for a Hit Dice pool (the game's selection is by where units stand).
+  - Priced as friendly fire like an ally standing there (or refused with "avoid friendly fire" on); the label names them
+    "catches Seelah (walking in)". Turn-based is unchanged (nobody else moves during a turn).
+
+**3. Companions circling next to enemies: fixed - arrived walks end.**
+- The game finishes a walk (`UnitMoveTo`) only when the walker stops moving (`AwaitMovementFinish`,
+  `UnitCommandController.ShouldStartCommand`). An advance is aimed at the enemy's own position with the reach as its
+  radius; within reach, the walker kept pushing round the enemy's body. Eight walks in the two logs were ended only by
+  the "in range for 2 s and still walking" rule, after 2.7-6.6 s: Seelah within 1.0 m of a Hand of Hosilla (radius
+  1.6 m) and four other enemies, Camellia twice, Orvath once.
+- A walk the engine issued that the game's own test counts as arrived (`UnitCommand.IsUnitCloseEnough`: its radius,
+  sight where it needs it) now ends once that has held for 0.4 s (`RealTimeTactics.ShouldEndArrivedWalk` /
+  `WalkArrived`): about 0.5-1 s after arriving instead of 2 s or more. The option is reconsidered, not marked as tried.
+  A walk that stops by itself finishes before the second look. Log: "arrived by the game's own test 0.6 s ago and still
+  walking - the walk ends".
+
+**Proposed, not built (needs the author's decision): a unit boxed in where it stands.**
+- At the start of the second log's first fight Orvath stood boxed in (no path out moved him more than 0.8 m) and tried
+  six different walks from that spot in about 25 s (two cones, two blasts, an attack, another cone), each ended as stuck
+  (6.9, 8.3, 4.2, 2.5, 2.5, 2.5 s). A stuck walk only rules out its own option from that spot.
+- Proposal: after two stuck walks in a row from within 1 m of one spot, no walking option is offered from there for one
+  round (6 s), except getting out of a harmful area; the unit acts from where it stands or waits for the bodies to move.
+- Seen in 1 fight of the two test-4 logs (and once twice in a row in v0.3.29 test 2).
+
+**Seen, not changed.** Garbage-collection pauses inside decisions (11 of 41 slow lines, 0.7-1.5 s): the known A5 item.
+
+Test ZIP `AI-Control-FACC-v0.3.29-dev-test5-9a75cbd-UMM-test.zip` (MVID `9e40ed9f-390a-415c-ad46-b46af6b505ab`);
+477 tests.

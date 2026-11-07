@@ -1,6 +1,31 @@
 # Test builds
 
-## Current test build: v0.3.29-dev-test4 (090023a) - companions take a free side of the enemy
+## Current test build: v0.3.29-dev-test5 (9a75cbd) - no friendly fire on allies walking in, no circling
+
+**[Download the UMM test ZIP (9a75cbd)](AI-Control-FACC-v0.3.29-dev-test5-9a75cbd-UMM-test.zip?raw=true)**
+
+Direct link: <https://github.com/recovribox-svg/AIControll-FACC/raw/claude/dreamy-pasteur-b9h3rn/test-builds/AI-Control-FACC-v0.3.29-dev-test5-9a75cbd-UMM-test.zip>
+
+Test 4 (below) plus two real-time fixes from your test 4 logs ([docs/TACTICAL_AI.md](../docs/TACTICAL_AI.md) §117):
+- **Allies walking into a cone or blast count as caught.** Orvath's Fan of Flames was aimed past Seelah and Camellia
+  where they stood, but both were walking into its path and took 9 each when it landed (Seelah dropped to 4 HP). The
+  check now also looks at where walking companions will be when the spell lands. The log says
+  `catches Seelah (walking in)`.
+- **No more circling next to enemies.** A walk the game already counts as arrived used to go on until the walker
+  stopped moving, so companions pushed round an enemy's body for 2-7 s. It now ends about half a second after arriving.
+  The log says `arrived by the game's own test ... - the walk ends`.
+- Orvath's forward cone casting and close-range shooting are unchanged: by the game's own rules enemies hit him about
+  1 time in 10 (armour class 29), so standing there costs him almost nothing. Other companions still step back.
+
+UMM shows **0.3.29**. Startup line `[Build] v0.3.29 module=9e40ed9f-390a-415c-ad46-b46af6b505ab`.
+- ZIP SHA-256 `393738433a22fb428413e4fd18879e01c5515712a4532b5c54427a7ab040d155`; DLL SHA-256 `420dc1bc9dbe40daa0969e20665f0be28240ed45788b1101cb1f9f11e6254e2a`.
+- [Identity](AI-Control-FACC-v0.3.29-dev-test5-9a75cbd-UMM-test.identity.json) · [Checksums](SHA256SUMS.txt).
+- Checks: 477 unit tests pass; release build 0 warnings; offline blueprint audit 0 errors; two new game references,
+  both public game functions. Not played yet.
+- **Test:** real-time fights where Orvath uses Fan of Flames or another non-selective area while melee companions run
+  in; and melee companions advancing on enemies: they should stop and fight once in reach, not circle.
+
+## Test 4: v0.3.29-dev-test4 (090023a) - companions take a free side of the enemy (also in test 5)
 
 **[Download the UMM test ZIP (090023a)](AI-Control-FACC-v0.3.29-dev-test4-090023a-UMM-test.zip?raw=true)**
 

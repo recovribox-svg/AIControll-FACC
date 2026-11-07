@@ -1,0 +1,35 @@
+{
+  "name": "AI Control - Fully Autonomous Combat Companions v0.3.29 test 5 (walking-in friendly fire, arrived walks)",
+  "version": "0.3.29",
+  "umm_manifest_version": "0.3.29",
+  "umm_mod_id": "CompanionAI_Pathfinder",
+  "branch": "claude/dreamy-pasteur-b9h3rn",
+  "base_release": "v0.3.28 (2415cf8)",
+  "runtime_source_commit": "9a75cbd",
+  "archive": "AI-Control-FACC-v0.3.29-dev-test5-9a75cbd-UMM-test.zip",
+  "zip_sha256": "393738433a22fb428413e4fd18879e01c5515712a4532b5c54427a7ab040d155",
+  "dll_sha256": "420dc1bc9dbe40daa0969e20665f0be28240ed45788b1101cb1f9f11e6254e2a",
+  "manifest_sha256": "7d399d2fdadbbf57fa7fafafbfa1b5350bf751c775264b33b2f17ef4e6a7c40e",
+  "module_mvid": "9e40ed9f-390a-415c-ad46-b46af6b505ab",
+  "startup_marker": "[Build] v0.3.29 module=9e40ed9f-390a-415c-ad46-b46af6b505ab",
+  "archive_contents": [
+    "CompanionAI_Pathfinder.dll",
+    "Info.json"
+  ],
+  "checks": {
+    "unit_tests": {
+      "passed": 477,
+      "failed": 0,
+      "skipped": 0
+    },
+    "release_build": {
+      "warnings": 0,
+      "errors": 0
+    },
+    "external_references": "SigDump vs v0.3.29 test 4: two new public game members, both present in the shipped game (AbilityDeliverProjectile.WouldTargetPointCone, UnitEntityView.Corpulence)",
+    "packed_dll_matches_build": true,
+    "in_game": "pending",
+    "profile_audit": "Kineticist + Spells + Buffs + swarm, spider and Shadow unit dumps, strict: 3572 loaded, 0 failed, 0 reader errors; all checks pass (ricochet-layer, rank-increment, quiver-binding, soul-power, damage-context, drain, affliction, swarm-area)"
+  },
+  "publication_scope": "Development test download: test 4 plus two real-time fixes from the test 4 logs (allies walking into a cone or burst count as caught; a walk the game counts as arrived ends after 0.4 s); not a release."
+}

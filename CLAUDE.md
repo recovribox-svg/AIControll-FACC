@@ -213,6 +213,12 @@ takes a free side of its target when another body, or a companion's walk end (`S
 (`TacticalEngine.Spots.cs`, `PlanApproach`); the walk ends once the enemy is in reach (`RealTimeTactics.ShouldEndArrivedWalk`); no free
 side: no weapon walk or advance to it. Turn-based unchanged. Test ZIP `AI-Control-FACC-v0.3.29-dev-test4-090023a-UMM-test.zip`
 (MVID `fd38dde0-9b19-4290-bba5-1606b45874f0`); 474 tests.
+Test 4 played (`docs/TACTICAL_AI.md` §117: Orvath's forward cones and close-range shots are his stats - armour class 29, enemies hit
+8 of 84; Auto Selective is read). **v0.3.29 test 5 (7 November, §117, not played):** real time, allies whose walk passes into a cone
+or burst during the cast count as caught (`TacticalEngine.AlliesWalkingInto`, `ProjectileCone.Query.ReachesAt`: Fan of Flames hit
+Seelah and Camellia); a walk the game counts as arrived ends after 0.4 s (`RealTimeTactics.WalkArrived`: circling next to enemies).
+Proposed for the author: no walks for a round from a spot two stuck walks in a row came from. Test ZIP
+`AI-Control-FACC-v0.3.29-dev-test5-9a75cbd-UMM-test.zip` (MVID `9e40ed9f-390a-415c-ad46-b46af6b505ab`); 477 tests.
 
 Historical handovers, superseded by the one above: [v0.3.22 release preparation](docs/RELEASE_0_3_22_HANDOVER.md)
 (27 October, PR #6–#12), [released-log review](docs/RELEASE_0322_LOG_REVIEW.md) (PR #13),
