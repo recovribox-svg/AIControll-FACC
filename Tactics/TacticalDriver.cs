@@ -159,6 +159,8 @@ namespace CompanionAI_Pathfinder.Tactics
             public Kingmaker.Utility.TargetWrapper FollowUpAim;
             /// <summary>★ v0.3.29 test 4: a walk to a free side of this enemy, to attack it (TacticalEngine.Spots.cs).</summary>
             public UnitEntityData FollowUpAttack;
+            /// <summary>★ v0.3.29 test 5: game seconds since the walk has been arrived by the game's own test (-1: not yet).</summary>
+            public double ArrivedAt = -1d;
             /// <summary>
             /// ★ v0.3.27 (0.3.26 log): a walk to a target (an attack, a cast, an approach or advance) - one an enemy the
             /// option did not count can get in the way of (<see cref="ShouldReplanOnNewThreat"/>). Withdrawals and walks out
@@ -414,20 +416,21 @@ namespace CompanionAI_Pathfinder.Tactics
                     if (!(command is Kingmaker.UnitLogic.Commands.UnitMoveTo) || command.IsStarted || command.IsFinished) continue;
                     if (!IssuedAtHp.TryGetValue(command, out var issued)) continue;
                     var foe = issued.FollowUpAttack;
-                    if (foe != null)
+                    if (foe != null && foe.Descriptor?.State?.IsConscious == true && AttackReaches(unit, foe))
                     {
-                        if (foe.Descriptor?.State?.IsConscious != true || !AttackReaches(unit, foe)) continue;
                         Reconsider(unit, command);
                         why = $"{foe.CharacterName} is in reach of its weapon - the walk to a free side of it ends";
                         return true;
                     }
                     var ability = issued.FollowUpAbility;
-                    if (ability?.Blueprint?.StickyTouch == null || issued.FollowUpAim?.Unit == null) continue;
-                    if (!FollowUpInReach(unit, issued)) continue;
-                    // Arrived, not failed: the walk's end must not mark the touch as tried (LearnFromLastCommand).
-                    Reconsider(unit, command);
-                    why = $"{issued.FollowUpAim.Unit.CharacterName} is in reach of its {ability.Name} touch - the walk to it ends";
-                    return true;
+                    if (ability?.Blueprint?.StickyTouch != null && issued.FollowUpAim?.Unit != null && FollowUpInReach(unit, issued))
+                    {
+                        // Arrived, not failed: the walk's end must not mark the touch as tried (LearnFromLastCommand).
+                        Reconsider(unit, command);
+                        why = $"{issued.FollowUpAim.Unit.CharacterName} is in reach of its {ability.Name} touch - the walk to it ends";
+                        return true;
+                    }
+                    if (WalkArrived(unit, command, issued, out why)) return true;
                 }
             }
             catch (Exception ex)
@@ -435,6 +438,40 @@ namespace CompanionAI_Pathfinder.Tactics
                 Main.Verbose($"[RT-Tactics] {unit.CharacterName}: arrived-walk check: {ex.Message}");
             }
             return false;
+        }
+
+        /// <summary>★ v0.3.29 test 5: seconds a walk may go on once the game's own test counts it as arrived.</summary>
+        private const double ArrivedWalkSeconds = 0.4d;
+
+        /// <summary>
+        /// ★ v0.3.29 test 5 (v0.3.29 test 4 real-time logs: the author saw companions circle next to enemies): a walk the
+        /// engine issued that the game's own test counts as arrived (UnitCommand.IsUnitCloseEnough: within its radius, with
+        /// sight where it needs it) ends once that has held for <see cref="ArrivedWalkSeconds"/>. The game only finishes a
+        /// walk when the walker stops moving (UnitMoveTo.AwaitMovementFinish, UnitCommandController.ShouldStartCommand),
+        /// and an advance aimed at an enemy's own position kept pushing round its body: Seelah within 1.0 m of a Hand of
+        /// Hosilla (radius 1.6 m) and four other enemies, Camellia twice, Orvath once - eight walks ended only by the
+        /// "in range for 2 s" rule, after 2.7-6.6 s. A walk that stops by itself finishes before the second look (no line).
+        /// </summary>
+        private static bool WalkArrived(UnitEntityData unit, Kingmaker.UnitLogic.Commands.Base.UnitCommand command, IssueState issued,
+                                        out string why)
+        {
+            why = null;
+            if (!command.IsUnitCloseEnough())
+            {
+                issued.ArrivedAt = -1d;
+                return false;
+            }
+            double now = Kingmaker.Game.Instance.TimeController.GameTime.TotalSeconds;
+            if (issued.ArrivedAt < 0d)
+            {
+                issued.ArrivedAt = now;
+                return false;
+            }
+            if (now - issued.ArrivedAt < ArrivedWalkSeconds) return false;
+            // Arrived, not failed: the option is not marked as tried (LearnFromLastCommand).
+            Reconsider(unit, command);
+            why = $"arrived by the game's own test {now - issued.ArrivedAt:F1} s ago and still walking - the walk ends";
+            return true;
         }
 
         /// <summary>★ v0.3.29 test 4: the game's own reach test for an attack on <paramref name="target"/> from where the unit

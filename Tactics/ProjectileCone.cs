@@ -18,6 +18,7 @@ namespace CompanionAI_Pathfinder.Tactics
         private delegate bool ConeTarget(AbilityDeliverProjectile projectile, AbilityExecutionContext context,
             UnitEntityData caster, UnitEntityData recipient, Vector3 launchPosition, Vector2 direction, float distance);
         private delegate float ProjectileRange(AbilityDeliverProjectile projectile, AbilityExecutionContext context, bool reach);
+        private delegate bool CanTarget(AbilityDeliverProjectile projectile, AbilityExecutionContext context, UnitEntityData unit);
 
         // Only blueprint components and API delegates survive an aim. Null caches a non-cone blueprint.
         private static readonly Dictionary<BlueprintAbility, AbilityDeliverProjectile> Components =
@@ -26,6 +27,29 @@ namespace CompanionAI_Pathfinder.Tactics
         private static ConeTarget s_Target;
         private static ProjectileRange s_Range;
         private static bool s_BindingsSought;
+        // ★ v0.3.29 test 5: the game's own "can this cone affect that unit" rule (Selective), for positions not yet reached.
+        private static CanTarget s_CanTarget;
+        private static bool s_CanTargetSought;
+
+        private static bool BindCanTarget()
+        {
+            if (s_CanTargetSought) return s_CanTarget != null;
+            s_CanTargetSought = true;
+            try
+            {
+                var method = typeof(AbilityDeliverProjectile).GetMethod("CanTargetUnit", BindingFlags.Instance | BindingFlags.NonPublic,
+                    null, new[] { typeof(AbilityExecutionContext), typeof(UnitEntityData) }, null);
+                if (method == null || method.ContainsGenericParameters)
+                    throw new MissingMethodException("Native cone target rule was not found");
+                s_CanTarget = (CanTarget)Delegate.CreateDelegate(typeof(CanTarget), method);
+            }
+            catch (Exception ex)
+            {
+                s_CanTarget = null;
+                Report("can-target", ex);
+            }
+            return s_CanTarget != null;
+        }
 
         public static bool IsCone(BlueprintAbility blueprint) => Component(blueprint) != null;
 
@@ -169,6 +193,31 @@ namespace CompanionAI_Pathfinder.Tactics
                     IsValid = false;
                     Report(m_BlueprintKey, ex);
                     throw new InvalidOperationException("Native cone recipient query failed; discard this aim", ex);
+                }
+            }
+
+            /// <summary>
+            /// ★ v0.3.29 test 5: <paramref name="recipient"/> would be caught standing at <paramref name="at"/> - the game's own
+            /// target rule (CanTargetUnit: Selective) and point test (WouldTargetPointCone: sight, the 45-degree edges, range,
+            /// the body), the recipient's eye height carried over. For a walk it has not finished: a position that cannot be
+            /// read is not caught, and it never invalidates the aim.
+            /// </summary>
+            public bool ReachesAt(UnitEntityData recipient, Vector3 at)
+            {
+                if (!IsValid || recipient == null || ReferenceEquals(recipient, m_Caster) || !BindCanTarget()) return false;
+                try
+                {
+                    if (recipient.Descriptor?.State == null || recipient.Descriptor.State.IsDead) return false;
+                    float body = recipient.View != null ? recipient.View.Corpulence : recipient.Corpulence;
+                    Vector3 eye = at + (recipient.EyePosition - recipient.Position);
+                    // Beyond the cone's range from its launch point no edge reaches it: no sight ray is cast for it.
+                    if (TacticalEngine.HorizontalDistance(eye, m_Launch) > Range + body + 0.5f) return false;
+                    return s_CanTarget(m_Projectile, m_Context, recipient) &&
+                           m_Projectile.WouldTargetPointCone(m_Launch, eye, body, m_Direction, Range);
+                }
+                catch
+                {
+                    return false;
                 }
             }
 

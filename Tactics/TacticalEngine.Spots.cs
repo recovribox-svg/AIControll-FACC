@@ -127,6 +127,48 @@ namespace CompanionAI_Pathfinder.Tactics
             return true;
         }
 
+        /// <summary>
+        /// ★ v0.3.29 test 5 (v0.3.29 test 4 real-time log): the allies not in <paramref name="counted"/> whose walk, in the
+        /// time a cast takes (SpotRules.WalkInSeconds), passes a point where <paramref name="inside"/> says the area would
+        /// catch them. Orvath's Fan of Flames was aimed past Seelah and Camellia where they stood; both were walking to the
+        /// Cultist Archer and took 9 each when it landed 1.5 s later (Seelah 13 -> 4 HP). Real time only (turn-based, nobody
+        /// else moves during a turn); a walking ally is where its own command not yet started takes it (BodiesFor).
+        /// </summary>
+        private static List<UnitEntityData> AlliesWalkingInto(TacticalContext ctx, ICollection<UnitEntityData> counted,
+                                                              Func<UnitEntityData, Vector3, bool> inside)
+        {
+            if (!CombatMemory.IsRealTime) return null;
+            List<UnitEntityData> found = null;
+            try
+            {
+                foreach (var body in BodiesFor(ctx))
+                {
+                    var ally = body.Unit;
+                    if (!body.Walking || ally == ctx.Unit || counted.Contains(ally) || !ctx.Allies.Contains(ally)) continue;
+                    Vector3 from = ally.Position;
+                    float distance = HorizontalDistance(from, body.At);
+                    int steps = SpotRules.WalkSteps(distance, Math.Max(1.5f, ally.CurrentSpeedMps), SpotRules.WalkInSeconds,
+                                                    SpotRules.WalkInStep, out float covered);
+                    for (int k = 1; k <= steps; k++)
+                    {
+                        var point = Vector3.Lerp(from, body.At, covered * k / steps / distance);
+                        if (!inside(ally, point)) continue;
+                        (found ?? (found = new List<UnitEntityData>())).Add(ally);
+                        break;
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                Main.Verbose($"[Tactics] walking-in allies for {ctx.Unit.CharacterName}: {ex.Message}");
+            }
+            return found;
+        }
+
+        /// <summary>For the decision log: an ally counted because it walks into the area.</summary>
+        private static string WalkingInTag(List<UnitEntityData> walkingIn, UnitEntityData ally) =>
+            walkingIn != null && walkingIn.Contains(ally) ? " (walking in)" : "";
+
         /// <summary>The slow-decision line's note on crowded approaches.</summary>
         private static string FreeSideNote() =>
             s_FreeSideSearches > 0 ? $"; crowded approaches searched for a free side {s_FreeSideSearches}" +

@@ -3560,6 +3560,8 @@ namespace CompanionAI_Pathfinder.Tactics
 
             List<UnitEntityData> affectedEnemies = targetIsEnemy ? new List<UnitEntityData> { target } : new List<UnitEntityData>();
             List<UnitEntityData> affectedAllies = targetIsEnemy ? new List<UnitEntityData>() : new List<UnitEntityData> { target };
+            // ★ v0.3.29 test 5: allies counted because their walk takes them into the area while it is cast (AlliesWalkingInto).
+            List<UnitEntityData> walkingIn = null;
             SharedHdControl.TryForAim(ability, profile, actualAim, out var sharedHd);
             EffectApplies? ForecastApplies(Kingmaker.UnitLogic.Buffs.Blueprints.BlueprintBuff buff, UnitEntityData recipient,
                                           bool friendly = false)
@@ -3584,6 +3586,10 @@ namespace CompanionAI_Pathfinder.Tactics
                 geometryChance = 0f;
                 affectedEnemies = ctx.Enemies.Where(u => set.Contains(u) && !CastOutcome.AreaSkips(unit, ability, u)).ToList();
                 affectedAllies = ctx.Allies.Concat(ctx.DownedAllies).Where(set.Contains).Distinct().ToList();
+                // ★ v0.3.29 test 5: real time, and the allies walking into the cone by the time it lands (the game's own
+                // target rule and point test at the points of their walk).
+                walkingIn = AlliesWalkingInto(ctx, affectedAllies, (ally, at) => cone.ReachesAt(ally, at));
+                if (walkingIn != null) affectedAllies.AddRange(walkingIn);
             }
             else if (profile.IsAoE)
             {
@@ -3599,6 +3605,16 @@ namespace CompanionAI_Pathfinder.Tactics
                 affectedAllies = sharedHd?.Supported == true
                     ? ctx.Allies.Where(sharedHd.Selects).ToList()
                     : affectedAllies.Where(u => profile.AreaReaches(ability, u)).ToList();
+                // ★ v0.3.29 test 5: real time, and the allies walking into it by the time it lands - the same distance rule
+                // (UnitsAround). Not for a Hit Dice pool (its selection is the game's own, by where units stand).
+                if (targetsType != Kingmaker.UnitLogic.Abilities.Components.TargetType.Enemy && sharedHd?.Supported != true)
+                {
+                    Vector3 center = target.Position;
+                    float radius = profile.AoERadius;
+                    walkingIn = AlliesWalkingInto(ctx, affectedAllies, (ally, at) =>
+                        Vector3.Distance(at, center) <= radius + ally.Corpulence && profile.AreaReaches(ability, ally));
+                    if (walkingIn != null) affectedAllies.AddRange(walkingIn);
+                }
             }
             List<UnitEntityData> DownedRecipients() => profile.IsProjectileCone
                 ? affectedAllies.Where(ctx.DownedAllies.Contains).ToList()
@@ -3755,7 +3771,7 @@ namespace CompanionAI_Pathfinder.Tactics
                         float dmg = CombatMath.EstimateAbilityDamage(ability, profile, a);
                         if (dmg <= 0f) continue;
                         allyCost += a.HPLeft <= 0 ? AllyWorth(ctx, a) : Math.Min(dmg, a.HPLeft) * 2f;
-                        (caughtNames ?? (caughtNames = new List<string>())).Add(a.CharacterName);
+                        (caughtNames ?? (caughtNames = new List<string>())).Add(a.CharacterName + WalkingInTag(walkingIn, a));
                     }
                     if (ctx.Settings.AvoidFriendlyFire && allyCost > 0f) { why = "friendly fire"; return 0f; }
                     if (allyCost > 0f) ctx.FriendlyFireNote = $"catches {string.Join(", ", caughtNames)} -{allyCost:F0}";
@@ -3984,7 +4000,7 @@ namespace CompanionAI_Pathfinder.Tactics
                     allyControlCost = caughtAllies.Sum(a => ValueModel.PerRound(Level(a)) * strength * effectRounds);
                     // ★ v0.3.28 test 12: shown on the decision label, and a cone that catches them is tried turned past them.
                     string controlNote = $"{(profile.ControlStrength == ControlStrength.Hard ? "controls" : "debuffs")} " +
-                                         $"{string.Join(", ", caughtAllies.Select(a => a.CharacterName))} -{allyControlCost:F0}";
+                                         $"{string.Join(", ", caughtAllies.Select(a => a.CharacterName + WalkingInTag(walkingIn, a)))} -{allyControlCost:F0}";
                     ctx.FriendlyFireNote = ctx.FriendlyFireNote == null ? controlNote : ctx.FriendlyFireNote + "; " + controlNote;
                 }
                 // Test[4], author-approved: protect an already accepted attack approach from a new lasting circle.

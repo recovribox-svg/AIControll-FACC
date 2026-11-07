@@ -43,6 +43,28 @@ namespace CompanionAI_Pathfinder.Tactics
         }
 
         /// <summary>
+        /// ★ v0.3.29 test 5: seconds an ally's walk counts on while a cast is under way (a cast takes 1-1.5 s and a cone or
+        /// burst lands about then). Seelah walked 4.4 m in 1.8 s into Orvath's Fan of Flames (v0.3.29 test 4 real-time log).
+        /// </summary>
+        public const float WalkInSeconds = 2f;
+
+        /// <summary>Metres between the points of a walk tested for walking into an area.</summary>
+        public const float WalkInStep = 0.5f;
+
+        /// <summary>
+        /// ★ v0.3.29 test 5: the stretch of a walk of <paramref name="distance"/> metres covered in <paramref name="seconds"/>
+        /// at <paramref name="speed"/> (<paramref name="covered"/>), and how many points <paramref name="step"/> apart test
+        /// it, the last at its end. Nothing for unusable input.
+        /// </summary>
+        public static int WalkSteps(float distance, float speed, float seconds, float step, out float covered)
+        {
+            covered = 0f;
+            if (!(distance > 0f) || !(speed > 0f) || !(seconds > 0f) || !(step > 0f) || float.IsInfinity(distance)) return 0;
+            covered = Math.Min(distance, speed * seconds);
+            return (int)Math.Ceiling(covered / step);
+        }
+
+        /// <summary>
         /// Where a straight walk from (<paramref name="fromX"/>, <paramref name="fromZ"/>) to within
         /// <paramref name="radius"/> of (<paramref name="toX"/>, <paramref name="toZ"/>) stops: on the line between them, 90 %
         /// of the radius short of the point (TacticalEngine.ApproachPoint), or where it stands when it is that close already.

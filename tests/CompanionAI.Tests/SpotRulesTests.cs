@@ -62,5 +62,27 @@ namespace CompanionAI.Tests
             Assert.False(SpotRules.Applies(true, 9f, false));       // a cast from range stands clear of the crowd
             Assert.False(SpotRules.Applies(true, 1.6f, true));      // nothing left to move with
         }
+        [Fact]
+        public void WalkSteps_CountsTheStretchWalkedDuringTheCast()
+        {
+            // Seelah, 3 m/s, 9 m from where she stops: 6 m of it in 2 s, tested every 0.5 m.
+            Assert.Equal(12, SpotRules.WalkSteps(9f, 3f, SpotRules.WalkInSeconds, SpotRules.WalkInStep, out float covered));
+            Assert.Equal(6f, covered, 3);
+        }
+
+        [Fact]
+        public void WalkSteps_AShortWalkIsTestedToItsEnd()
+        {
+            Assert.Equal(3, SpotRules.WalkSteps(1.2f, 3f, 2f, 0.5f, out float covered));
+            Assert.Equal(1.2f, covered, 3);
+        }
+
+        [Fact]
+        public void WalkSteps_NoWalkOrBrokenInput_TestsNothing()
+        {
+            Assert.Equal(0, SpotRules.WalkSteps(0f, 3f, 2f, 0.5f, out _));
+            Assert.Equal(0, SpotRules.WalkSteps(5f, float.NaN, 2f, 0.5f, out _));
+            Assert.Equal(0, SpotRules.WalkSteps(float.PositiveInfinity, 3f, 2f, 0.5f, out _));
+        }
     }
 }
