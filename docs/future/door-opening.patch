@@ -1,0 +1,542 @@
+diff --git b/GameInterface/CommandDispatcher.cs a/GameInterface/CommandDispatcher.cs
+index 0da9f0f..e262a67 100644
+--- b/GameInterface/CommandDispatcher.cs
++++ a/GameInterface/CommandDispatcher.cs
+@@ -252,7 +252,7 @@ namespace CompanionAI_Pathfinder.GameInterface
+                 // it until the turn's 4 s command wait gives up. Seelah lost three turns so (an advance on the Neophyte
+                 // Wizard from the door, one on the Cultist Archer, and the touch of a Cure Light Wounds for Camellia at
+                 // 58 % HP), 0.0 m each. Refused here, the engine takes its next best option; the target counts as out
+-                // of reach this turn (TacticalDriver.RecordRejected).
++                // of reach this turn (TacticalDriver.RecordRejected), so a door on the way is offered for it.
+                 // Attacks and spells are refused at their path's end below (PathEndsInReach).
+                 if (turn != null && command is UnitMoveTo && pathLength < NowhereWalk &&
+                     FlatDistance(unit.Position, command.ApproachPoint) - command.ApproachRadius > NowhereWalk + 0.3f)
+diff --git b/GameInterface/RealTimeController.cs a/GameInterface/RealTimeController.cs
+index 02f4e1b..f875f9c 100644
+--- b/GameInterface/RealTimeController.cs
++++ a/GameInterface/RealTimeController.cs
+@@ -275,7 +275,9 @@ namespace CompanionAI_Pathfinder.GameInterface
+                     (!legacy && Tactics.RealTimeTactics.ShouldReplanOnNewThreat(unit, out replanWhy)) ||
+                     // ★ v0.3.29 test 3: a walk to touch range whose target is in reach of the touch already.
+                     // ★ v0.3.29 test 4: or a walk to a free side of an enemy that is in reach of the weapon already.
+-                    (!legacy && Tactics.RealTimeTactics.ShouldEndArrivedWalk(unit, out replanWhy)))
++                    (!legacy && Tactics.RealTimeTactics.ShouldEndArrivedWalk(unit, out replanWhy)) ||
++                    // ★ v0.3.29 test 7: a door-opening whose door someone opened meanwhile (it would close it again).
++                    (!legacy && Tactics.RealTimeTactics.ShouldDropOpenedDoor(unit, out replanWhy)))
+                 {
+                     Main.Log($"[RT] {unitName}: {replanWhy} - dropping the commands that have not started, deciding again");
+                     unit.Commands.InterruptAll(c => c != null && !c.IsStarted && c.IsInterruptible && !c.Cutscene);
+diff --git b/Tactics/DoorRules.cs a/Tactics/DoorRules.cs
+new file mode 100644
+index 0000000..5f5b3de
+--- /dev/null
++++ a/Tactics/DoorRules.cs
+@@ -0,0 +1,61 @@
++// ★ v0.3.29 test 7 (v0.3.29 test 6 turn-based log, the author's note): a closed door between a unit and an enemy it cannot
++// see (TacticalEngine.Doors.cs). Pure geometry, unit-tested.
++// ★ v0.3.29 test 8: "on the way" is how much longer the way through the door is than the straight line (the detour), not
++// a 3 m corridor along that line - a door in the wall of the next room stands well off the line to an enemy in its corner.
++using System;
++
++namespace CompanionAI_Pathfinder.Tactics
++{
++    public static class DoorRules
++    {
++        /// <summary>Metres the way through a door may be longer than the straight line and the door still be on the way...</summary>
++        public const float MinDetour = 4f;
++
++        /// <summary>...or this share of the straight line, when that is more (a far enemy, a room further on).</summary>
++        public const float DetourShare = 0.5f;
++
++        /// <summary>Metres of height between a door and the line beyond which they are on different floors.</summary>
++        public const float SameFloor = 3f;
++
++        /// <summary>
++        /// ★ v0.3.29 test 7: what opening a door to an enemy is worth beyond an advance on it: the advance cannot get past
++        /// the closed door, the opening can - and lets the rest of the party through.
++        /// </summary>
++        public const float OverAdvance = 0.5f;
++
++        /// <summary>
++        /// ★ v0.3.29 test 8: how many metres longer the way from the unit (<paramref name="fromX"/>, <paramref name="fromZ"/>)
++        /// through the door (<paramref name="doorX"/>, <paramref name="doorZ"/>) to the enemy (<paramref name="toX"/>,
++        /// <paramref name="toZ"/>) is than the straight line between them; NaN for unusable input or an enemy where the
++        /// unit stands.
++        /// </summary>
++        public static float Detour(float fromX, float fromZ, float toX, float toZ, float doorX, float doorZ)
++        {
++            float direct = Distance(fromX, fromZ, toX, toZ);
++            if (!(direct > 0.5f) || float.IsInfinity(direct)) return float.NaN;
++            float through = Distance(fromX, fromZ, doorX, doorZ) + Distance(doorX, doorZ, toX, toZ);
++            if (float.IsNaN(through) || float.IsInfinity(through)) return float.NaN;
++            return Math.Max(0f, through - direct);
++        }
++
++        /// <summary>The longest detour that still counts as on the way to an enemy <paramref name="direct"/> metres off.</summary>
++        public static float MaxDetour(float direct) => Math.Max(MinDetour, DetourShare * Math.Max(0f, direct));
++
++        /// <summary>
++        /// The door stands on the way from the unit to the enemy: walking through it is at most <see cref="MaxDetour"/>
++        /// longer than the straight line. Unusable input is not on the way.
++        /// </summary>
++        public static bool OnTheWay(float fromX, float fromZ, float toX, float toZ, float doorX, float doorZ, out float detour)
++        {
++            detour = Detour(fromX, fromZ, toX, toZ, doorX, doorZ);
++            if (float.IsNaN(detour)) return false;
++            return detour <= MaxDetour(Distance(fromX, fromZ, toX, toZ));
++        }
++
++        private static float Distance(float ax, float az, float bx, float bz)
++        {
++            float dx = ax - bx, dz = az - bz;
++            return (float)Math.Sqrt(dx * dx + dz * dz);
++        }
++    }
++}
+diff --git b/Tactics/TacticalDriver.cs a/Tactics/TacticalDriver.cs
+index 9885f0f..ac6c59a 100644
+--- b/Tactics/TacticalDriver.cs
++++ a/Tactics/TacticalDriver.cs
+@@ -448,6 +448,32 @@ namespace CompanionAI_Pathfinder.Tactics
+             return false;
+         }
+ 
++        /// <summary>
++        /// ★ v0.3.29 test 7: real time, a door-opening the unit has not started yet whose door someone has opened meanwhile -
++        /// dropped, because interacting with an open door closes it again (InteractionDoorPart.Open switches the door).
++        /// </summary>
++        public static bool ShouldDropOpenedDoor(UnitEntityData unit, out string why)
++        {
++            why = null;
++            try
++            {
++                foreach (var command in unit.Commands.Raw)
++                {
++                    if (!(command is Kingmaker.UnitLogic.Commands.UnitInteractWithObject open) || open.IsStarted || open.IsFinished) continue;
++                    if (!(open.Interaction is Kingmaker.View.MapObjects.InteractionDoorPart door) || !door.IsOpen) continue;
++                    if (!IssuedAtHp.TryGetValue(command, out _)) continue;   // only the engine's own door-openings
++                    Reconsider(unit, command);
++                    why = "the door it was walking to open is open already";
++                    return true;
++                }
++            }
++            catch (Exception ex)
++            {
++                Main.Verbose($"[RT-Tactics] {unit.CharacterName}: door check: {ex.Message}");
++            }
++            return false;
++        }
++
+         /// <summary>★ v0.3.29 test 5: seconds a walk may go on once the game's own test counts it as arrived.</summary>
+         private const double ArrivedWalkSeconds = 0.4d;
+ 
+diff --git b/Tactics/TacticalEngine.ApproachValidation.cs a/Tactics/TacticalEngine.ApproachValidation.cs
+index 4dda364..d80a4bc 100644
+--- b/Tactics/TacticalEngine.ApproachValidation.cs
++++ a/Tactics/TacticalEngine.ApproachValidation.cs
+@@ -119,6 +119,9 @@ namespace CompanionAI_Pathfinder.Tactics
+             }
+             if (c.Kind == CandidateKind.Move)
+                 return new UnitMoveTo(c.Point ?? ctx.Unit.Position, c.ApproachRadius) { NeedLoS = c.NeedLoS };
++            // ★ v0.3.29 test 7: the door's interaction walks within its proximity radius (TacticalEngine.Doors.cs).
++            if (c.Kind == CandidateKind.Interact && c.Door != null)
++                return new UnitInteractWithObject(c.Door);
+             throw new InvalidOperationException("no movement command for this candidate");
+         }
+ 
+diff --git b/Tactics/TacticalEngine.Doors.cs a/Tactics/TacticalEngine.Doors.cs
+new file mode 100644
+index 0000000..b5df953
+--- /dev/null
++++ a/Tactics/TacticalEngine.Doors.cs
+@@ -0,0 +1,259 @@
++// ★ v0.3.29 test 7 (v0.3.29 test 6 turn-based log, the author's note): a closed door between the party and an enemy. A
++// Neophyte Wizard stood in the next room behind a closed door for rounds 3-6 of the second fight; every walk and spell at
++// him was refused before issue ("path ends without line of sight to the target"), the advances ended at the door, and the
++// companions ended their turns with Aid Another or nothing until the game ended the fight. The engine knew no way to open
++// a door. It now offers "Open door" - the game's own interaction (UnitInteractWithObject, a standard action that walks
++// within the door's proximity radius first, as the player's click does) - when a closed door stands on the way to an
++// enemy the unit cannot see. Only doors the game lets anyone open now: enabled, openable in combat, no lock, key or skill
++// check left (InteractionRestrictionPart unless already unlocked), no trap seen on them, revealed.
++// ★ v0.3.29 test 8 (v0.3.29 test 7 log, turn-based and real time: "companions still could not open unlocked doors"): no
++// door was ever offered. The test-7 filter asked for EntityDataBase.IsRevealed, which the game sets for a map object only
++// with the fog of war off (FogOfWarController.Tick), for area exits (SceneLoader) and for traps - never for a door the
++// party sees, so every door was dropped. A door is now seen by the game's own rule (EntityVisibilityForPlayerController:
++// perception check passed, and revealed or out of the fog). Also: a lock the party has the key for, a story-unlocked one
++// or one already picked passes (the restriction's own IsPassed; an unpicked lock is never tried - its Trickery roll can jam
++// it); the door counts for an enemy out of sight or one this turn's walks could not reach (TurnMemory.Unreachable: the same
++// fight's real-time walks ended at the door, 113.0/71.2, for 11 s); "on the way" is the detour through the door
++// (DoorRules.OnTheWay), the least detour per enemy; no walk is needed when the unit stands within the door's radius already
++// (so a unit boxed in at the door may still open it); and a once-a-fight line names why no door was offered.
++using System;
++using System.Collections.Generic;
++using Kingmaker;
++using Kingmaker.EntitySystem.Entities;
++using Kingmaker.UnitLogic.Commands;
++using Kingmaker.View.MapObjects;
++using Kingmaker.View.MapObjects.InteractionRestrictions;
++using UnityEngine;
++
++namespace CompanionAI_Pathfinder.Tactics
++{
++    public static partial class TacticalEngine
++    {
++        /// <summary>A closed door in the area and why the AI may not open it now (<see cref="Refusal"/> null: it may).</summary>
++        private struct ClosedDoor
++        {
++            public InteractionDoorPart Door;
++            public Vector3 At;
++            public string Refusal;
++        }
++
++        private static List<ClosedDoor> s_ClosedDoors;
++        private static double s_ClosedDoorsAt = -10d;
++
++        /// <summary>The area's closed doors, each with why it may not be opened, read at most once a second.</summary>
++        private static List<ClosedDoor> ClosedDoors()
++        {
++            double now = Game.Instance?.TimeController?.GameTime.TotalSeconds ?? 0d;
++            if (s_ClosedDoors != null && Math.Abs(now - s_ClosedDoorsAt) < 1d) return s_ClosedDoors;
++            var doors = new List<ClosedDoor>();
++            try
++            {
++                foreach (var mapObject in Game.Instance.State.MapObjects)
++                {
++                    if (mapObject == null || !mapObject.IsInGame) continue;
++                    var door = mapObject.Get<InteractionDoorPart>();
++                    if (door == null || door.IsOpen || door.View == null) continue;
++                    doors.Add(new ClosedDoor { Door = door, At = door.View.transform.position, Refusal = WhyNotOpenable(door) });
++                }
++            }
++            catch (Exception ex)
++            {
++                Main.Verbose($"[Tactics] doors: {ex.Message}");
++            }
++            s_ClosedDoors = doors;
++            s_ClosedDoorsAt = now;
++            return doors;
++        }
++
++        /// <summary>
++        /// Why a party member may not open <paramref name="door"/> now with a plain interaction (UnitInteractWithObject);
++        /// null when it may.
++        /// </summary>
++        private static string WhyNotOpenable(InteractionDoorPart door)
++        {
++            try
++            {
++                if (door.IsOpen) return "open";
++                if (door.Type != Kingmaker.View.MapObjects.InteractionType.Approach) return "not opened by walking up to it";
++                if (!door.Enabled) return "disabled";
++                if (!door.CanInteract()) return "not usable in combat";
++                if (door.HasVisibleTrap()) return "trapped";
++                // The game's own rule for showing a map object (EntityVisibilityForPlayerController.IsVisible).
++                var owner = door.Owner;
++                if (!owner.IsPerceptionCheckPassed) return "not found yet";
++                if (!owner.IsRevealed && owner.IsInFogOfWar) return "in the fog of war";
++                return door.AlreadyUnlocked ? null : LockRefusal(owner);
++            }
++            catch (Exception ex)
++            {
++                return "unreadable (" + ex.GetType().Name + ")";
++            }
++        }
++
++        /// <summary>
++        /// ★ v0.3.29 test 8: why the door's restrictions stop a plain opening, or null. A restriction the game counts as
++        /// passed (InteractionRestrictionPart.IsPassed: the key in the party's inventory, a story-unlocked flag, a lock
++        /// already picked) opens it. A lock not yet picked is never tried: its check (DisableDeviceRestrictionPart) rolls
++        /// Trickery, can jam the lock and spends the action for nothing on a failure.
++        /// </summary>
++        private static string LockRefusal(MapObjectEntityData owner)
++        {
++            var restrictions = owner.Parts.GetAll<InteractionRestrictionPart>();
++            if (restrictions == null || restrictions.Count == 0) return null;
++            bool passed = false;
++            string refusal = null;
++            foreach (var restriction in restrictions)
++            {
++                if (restriction == null) continue;
++                if (restriction.IsPassed) passed = true;
++                else if (restriction is DisableDeviceRestrictionPart) return "locked (needs a Trickery check)";
++                else refusal = refusal ?? (restriction is KeyRestrictionPart ? "locked (needs a key)" : $"restricted ({restriction.GetType().Name})");
++            }
++            return passed ? null : refusal ?? "restricted";
++        }
++
++        /// <summary>Another party member is already on its way to open <paramref name="door"/> (an interaction not finished).</summary>
++        private static bool AllyOpening(TacticalContext ctx, InteractionDoorPart door)
++        {
++            foreach (var ally in ctx.Allies)
++            {
++                if (ally == null || ally == ctx.Unit || ally.Commands?.Raw == null) continue;
++                foreach (var command in ally.Commands.Raw)
++                    if (command is UnitInteractWithObject open && !open.IsFinished && open.Interaction == door) return true;
++            }
++            return false;
++        }
++
++        /// <summary>Metres from a door within which the game's interaction starts without a walk (its proximity radius).</summary>
++        private static float DoorRadius(InteractionDoorPart door)
++        {
++            try { return door.Settings.ProximityRadius > 0f ? door.Settings.ProximityRadius : 4f; }
++            catch { return 4f; }
++        }
++
++        /// <summary>
++        /// "Open door" options: for each enemy out of the unit's sight, or out of reach of this turn's walks
++        /// (<see cref="TacticalContext.Unreachable"/>), the closed door the game lets the party open with the least detour on
++        /// the way to it (DoorRules.OnTheWay), worth what an advance on that enemy is worth, a little more
++        /// (DoorRules.OverAdvance: the advance cannot get past the door, the opening can, for the whole party); the most
++        /// valuable enemy behind each door counts. The real path to the door is checked before issue like any walk
++        /// (NeedsMove), unless the unit stands within the door's radius already.
++        /// </summary>
++        private static void AddOpenDoorCandidates(TacticalContext ctx, List<Candidate> list)
++        {
++            if (!ctx.Permissions.CanWalk || ctx.Permissions.MovementOnly || !ctx.HasStandard) return;
++            var unit = ctx.Unit;
++            List<ClosedDoor> doors = null;
++            Dictionary<InteractionDoorPart, Candidate> best = null;
++            foreach (var enemy in ctx.Enemies)
++            {
++                if (enemy == null || enemy.Descriptor?.State?.IsConscious != true) continue;
++                bool unreachable = ctx.Unreachable != null && ctx.Unreachable.Contains(enemy.UniqueId);
++                bool hidden = false;
++                if (!unreachable)
++                {
++                    try
++                    {
++                        hidden = Owlcat.Runtime.Visual.RenderPipeline.RendererFeatures.FogOfWar.LineOfSightGeometry.Instance
++                            .HasObstacle(unit.EyePosition, enemy.EyePosition, 0f);
++                    }
++                    catch { continue; }
++                    if (!hidden) continue;
++                }
++                doors = doors ?? ClosedDoors();
++                if (doors.Count == 0)
++                {
++                    if (unreachable) NoDoorNote(ctx, enemy, hidden, "no closed door in the area");
++                    return;
++                }
++                var est = CombatMath.EstimateWeaponAttack(unit, enemy, false);
++                float worth = est != null ? DamageValue(enemy, est) : 0f;
++                if (!(worth > 0f)) continue;
++                float value = worth * AdvanceShare + DoorRules.OverAdvance;
++
++                // The door with the least detour; for the log, the nearest one refused and why.
++                InteractionDoorPart chosen = null;
++                Vector3 chosenAt = default;
++                float least = float.MaxValue, refusedAt = float.MaxValue;
++                string refused = null;
++                foreach (var closed in doors)
++                {
++                    var door = closed.Door;
++                    if (door.IsOpen) continue;   // opened since the list was read
++                    Vector3 at = closed.At;
++                    float near = HorizontalDistance(unit.Position, at);
++                    string why = closed.Refusal;
++                    float detour = float.NaN;
++                    if (why == null && Math.Abs(at.y - unit.Position.y) > DoorRules.SameFloor && Math.Abs(at.y - enemy.Position.y) > DoorRules.SameFloor)
++                        why = "on another floor";
++                    if (why == null && !DoorRules.OnTheWay(unit.Position.x, unit.Position.z, enemy.Position.x, enemy.Position.z, at.x, at.z, out detour))
++                        why = float.IsNaN(detour) ? "not on the way" : $"off the way ({detour:F1} m longer)";
++                    if (why == null && AllyOpening(ctx, door)) why = "an ally is opening it";
++                    bool walk = near > DoorRadius(door) - 0.3f;
++                    if (why == null && walk && ctx.NoMovementLeft) why = "no movement left to walk to it";
++                    if (why != null)
++                    {
++                        if (near < refusedAt) { refusedAt = near; refused = why; }
++                        continue;
++                    }
++                    if (detour < least)
++                    {
++                        least = detour;
++                        chosen = door;
++                        chosenAt = at;
++                    }
++                }
++                if (chosen == null)
++                {
++                    // Said when it matters: the walks to the enemy failed, or a door it might be stands near.
++                    if (unreachable || refusedAt <= NoDoorNoteRange)
++                        NoDoorNote(ctx, enemy, hidden, refused == null ? "no closed door on the way"
++                                                                       : $"nearest closed door {refusedAt:F1} m away: {refused}");
++                    continue;
++                }
++                if (best != null && best.TryGetValue(chosen, out var known) && known.Value >= value) continue;
++                bool needsWalk = HorizontalDistance(unit.Position, chosenAt) > DoorRadius(chosen) - 0.3f;
++                (best ?? (best = new Dictionary<InteractionDoorPart, Candidate>()))[chosen] = new Candidate
++                {
++                    Kind = CandidateKind.Interact,
++                    Slot = ActionSlot.Standard,
++                    Door = chosen,
++                    Target = enemy,
++                    NeedsMove = needsWalk,
++                    CheckPath = needsWalk,
++                    Value = value,
++                    Label = $"Open door to {enemy.CharacterName}",
++                    Key = $"door:{chosen.Owner.UniqueId}"
++                };
++            }
++            if (best != null) list.AddRange(best.Values);
++        }
++
++        /// <summary>Metres within which a closed door the unit may not open is named for an enemy merely out of sight.</summary>
++        private const float NoDoorNoteRange = 8f;
++
++        /// <summary>For the log, once a fight per unit and enemy: an enemy out of sight or reach with no door to open.</summary>
++        private static void NoDoorNote(TacticalContext ctx, UnitEntityData enemy, bool hidden, string why) =>
++            ReportOnce($"no-door|{CombatMemory.Fight}|{ctx.Unit.UniqueId}|{enemy.UniqueId}",
++                () => $"[Door] {ctx.Unit.CharacterName}: {enemy.CharacterName} is {(hidden ? "out of sight" : "out of reach")} - " +
++                      $"no door to open ({why})");
++
++        /// <summary>Open the door: the game's own interaction, walking within its proximity radius first.</summary>
++        private static bool ExecuteOpenDoor(UnitEntityData unit, Candidate c, out Kingmaker.UnitLogic.Commands.Base.UnitCommand command,
++                                            out string failure)
++        {
++            command = null;
++            // Interacting with an open door closes it (InteractionDoorPart.Open switches it).
++            string refusal = c.Door == null ? "no door" : WhyNotOpenable(c.Door);
++            if (refusal != null)
++            {
++                failure = $"the door cannot be opened now ({refusal})";
++                return false;
++            }
++            var open = new UnitInteractWithObject(c.Door);
++            if (!GameInterface.CommandDispatcher.Run(unit, open, c.Label, out failure, avoidAreas: true)) return false;
++            command = open;
++            return true;
++        }
++    }
++}
+diff --git b/Tactics/TacticalEngine.cs a/Tactics/TacticalEngine.cs
+index 2064fbd..87b2876 100644
+--- b/Tactics/TacticalEngine.cs
++++ a/Tactics/TacticalEngine.cs
+@@ -32,7 +32,7 @@ namespace CompanionAI_Pathfinder.Tactics
+ {
+     /// <remarks>★ v0.3.18 (AA-2): Toggle - switch on an activatable ability whose activation is a game command
+     /// (bardic performances, Rage family, shaman spirits): TacticalEngine.Toggles.cs.</remarks>
+-    public enum CandidateKind { WeaponAttack, Ability, Move, Toggle }
++    public enum CandidateKind { WeaponAttack, Ability, Move, Toggle, Interact }
+     public enum ActionSlot { Free, Swift, Move, Standard, FullRound }
+ 
+     public sealed class Candidate
+@@ -81,6 +81,8 @@ namespace CompanionAI_Pathfinder.Tactics
+         public bool MoveFirst;
+         /// <summary>★ v0.3.29 test 4: a weapon attack's walk to a free side of its target, ended once the target is in reach.</summary>
+         public bool WalkEndsInReach;
++        /// <summary>★ v0.3.29 test 7: the door an "Open door" option opens (TacticalEngine.Doors.cs).</summary>
++        public Kingmaker.View.MapObjects.InteractionDoorPart Door;
+         public Vector3? MovePoint;
+         /// <summary>★ v0.3.17: the move was priced as entering no harmful area: refuse a game path that walks into one.</summary>
+         public bool CheckPath;
+@@ -359,6 +361,8 @@ namespace CompanionAI_Pathfinder.Tactics
+             catch (Exception ex) { Main.Error($"[Tactics] kineticist candidates: {ex}"); }
+             timings?.Mark(DecisionStage.Kinetic);
+             try { AddMovementCandidates(ctx, candidates); } catch (Exception ex) { Main.Error($"[Tactics] movement candidates: {ex}"); }
++            // ★ v0.3.29 test 7: a closed door on the way to an enemy the unit cannot see (TacticalEngine.Doors.cs).
++            try { AddOpenDoorCandidates(ctx, candidates); } catch (Exception ex) { Main.Error($"[Tactics] door candidates: {ex}"); }
+             // ★ v0.3.20 (test8): an option whose real walk provoked more than its straight line, at the real walk's price.
+             try { RepriceRealPaths(ctx, candidates, memory); } catch (Exception ex) { Main.Error($"[Tactics] real path prices: {ex}"); }
+             // ★ v0.3.18 (AA-2): after the others, so a toggle that forbids spells is priced against the best spell.
+@@ -630,7 +634,9 @@ namespace CompanionAI_Pathfinder.Tactics
+             if (BoxedInWalk(ctx, c)) return true;
+             // ★ v0.3.19 (test9): real time - an enemy the unit could not get sight of from here (any option on it walks the
+             // same way), while neither has moved.
+-            if (c.Target != null && c.Target != ctx.Unit && ctx.Unit.IsEnemy(c.Target) && CombatMemory.StillNoSight(ctx.Unit, c.Target)) return true;
++            // ★ v0.3.29 test 8: not the opening of a door to it - that is the way to get sight of it.
++            if (c.Kind != CandidateKind.Interact && c.Target != null && c.Target != ctx.Unit && ctx.Unit.IsEnemy(c.Target) &&
++                CombatMemory.StillNoSight(ctx.Unit, c.Target)) return true;
+             // ★ v0.3.24 (build1 logs, author-approved): a target the game's path does not lead to, found by any party member.
+             if (c.Target != null && ctx.Unit.IsEnemy(c.Target) && CombatMemory.OutOfWalkingReach(c.Target) && WalksIntoMelee(ctx, c)) return true;
+             if (c.Kind != CandidateKind.Ability || c.Ability == null) return false;
+@@ -5129,6 +5135,7 @@ namespace CompanionAI_Pathfinder.Tactics
+                 return false;
+             }
+             if (c.InfusionSwitch != null) return ExecuteInfusionSwitch(unit, c, out command, out failure);
++            if (c.Kind == CandidateKind.Interact && c.Door != null) return ExecuteOpenDoor(unit, c, out command, out failure);
+             // ★ v0.3.17: an approach around a harmful area walks to the spot it was priced for, then acts on the next
+             // decision (as touch spells do in turn-based). The plain path the game would pick to the target goes through
+             // the area.
+diff --git b/tests/CompanionAI.Tests/CompanionAI.Tests.csproj a/tests/CompanionAI.Tests/CompanionAI.Tests.csproj
+index efeba4d..a5e651e 100644
+--- b/tests/CompanionAI.Tests/CompanionAI.Tests.csproj
++++ a/tests/CompanionAI.Tests/CompanionAI.Tests.csproj
+@@ -11,6 +11,7 @@
+     <Compile Include="..\..\Tactics\RiskMath.cs" Link="RiskMath.cs" />
+     <Compile Include="..\..\Tactics\ArrivalRule.cs" Link="ArrivalRule.cs" />
+     <Compile Include="..\..\Tactics\SpotRules.cs" Link="SpotRules.cs" />
++    <Compile Include="..\..\Tactics\DoorRules.cs" Link="DoorRules.cs" />
+     <Compile Include="..\..\Tactics\ValueModel.cs" Link="ValueModel.cs" />
+     <Compile Include="..\..\Tactics\ValueModel.Energy.cs" Link="ValueModel.Energy.cs" />
+     <Compile Include="..\..\Tactics\ValueModel.Infusions.cs" Link="ValueModel.Infusions.cs" />
+diff --git b/tests/CompanionAI.Tests/DoorRulesTests.cs a/tests/CompanionAI.Tests/DoorRulesTests.cs
+new file mode 100644
+index 0000000..61d3156
+--- /dev/null
++++ a/tests/CompanionAI.Tests/DoorRulesTests.cs
+@@ -0,0 +1,63 @@
++using CompanionAI_Pathfinder.Tactics;
++using Xunit;
++
++namespace CompanionAI.Tests
++{
++    /// <summary>★ v0.3.29 test 7/8: a closed door on the way to an enemy (Tactics/DoorRules.cs).</summary>
++    public class DoorRulesTests
++    {
++        private static bool OnTheWay(float doorX, float doorZ) => DoorRules.OnTheWay(0f, 0f, 10f, 0f, doorX, doorZ, out _);
++
++        [Fact]
++        public void ADoorOnTheLine_IsNoDetour()
++        {
++            Assert.True(DoorRules.OnTheWay(0f, 0f, 10f, 0f, 6f, 0f, out float detour));
++            Assert.Equal(0f, detour, 3);
++        }
++
++        [Fact]
++        public void ADoorBetween_IsOnTheWay() => Assert.True(OnTheWay(6f, 1f));
++
++        [Fact]
++        public void ADoorJustBeyondTheEnemy_IsOnTheWay() => Assert.True(OnTheWay(11f, 0f));
++
++        /// <summary>The test-7 corridor (3 m) refused this one: a door in the wall of the next room, 4 m off the line.</summary>
++        [Fact]
++        public void ADoorInTheNextRoomsWall_IsOnTheWay() => Assert.True(OnTheWay(5f, 4f));
++
++        [Fact]
++        public void ADoorBehindTheUnit_IsNot() => Assert.False(OnTheWay(-3f, 0f));
++
++        [Fact]
++        public void ADoorFarToTheSide_IsNot() => Assert.False(OnTheWay(5f, 8f));
++
++        [Fact]
++        public void ADoorFarBeyondTheEnemy_IsNot() => Assert.False(OnTheWay(14f, 0f));
++
++        [Fact]
++        public void AFarEnemy_AllowsALongerDetour()
++        {
++            Assert.Equal(DoorRules.MinDetour, DoorRules.MaxDetour(4f));
++            Assert.Equal(15f, DoorRules.MaxDetour(30f), 3);
++            // 30 m away, a door 10 m off the line half-way: 2 * sqrt(15^2 + 10^2) - 30 = 6.06 m longer.
++            Assert.True(DoorRules.OnTheWay(0f, 0f, 30f, 0f, 15f, 10f, out _));
++        }
++
++        [Fact]
++        public void TheNearerDoor_HasTheShorterDetour()
++        {
++            float near = DoorRules.Detour(0f, 0f, 10f, 0f, 5f, 1f);
++            float far = DoorRules.Detour(0f, 0f, 10f, 0f, 5f, 3f);
++            Assert.True(near < far);
++        }
++
++        [Fact]
++        public void NoDistanceOrBrokenInput_IsNot()
++        {
++            Assert.False(DoorRules.OnTheWay(0f, 0f, 0.1f, 0f, 0.05f, 0f, out _));
++            Assert.False(DoorRules.OnTheWay(0f, 0f, float.NaN, 0f, 5f, 0f, out _));
++            Assert.False(DoorRules.OnTheWay(0f, 0f, 10f, 0f, float.PositiveInfinity, 0f, out _));
++            Assert.True(float.IsNaN(DoorRules.Detour(0f, 0f, 0f, 0f, 1f, 1f)));
++        }
++    }
++}

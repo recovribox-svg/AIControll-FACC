@@ -448,32 +448,6 @@ namespace CompanionAI_Pathfinder.Tactics
             return false;
         }
 
-        /// <summary>
-        /// ★ v0.3.29 test 7: real time, a door-opening the unit has not started yet whose door someone has opened meanwhile -
-        /// dropped, because interacting with an open door closes it again (InteractionDoorPart.Open switches the door).
-        /// </summary>
-        public static bool ShouldDropOpenedDoor(UnitEntityData unit, out string why)
-        {
-            why = null;
-            try
-            {
-                foreach (var command in unit.Commands.Raw)
-                {
-                    if (!(command is Kingmaker.UnitLogic.Commands.UnitInteractWithObject open) || open.IsStarted || open.IsFinished) continue;
-                    if (!(open.Interaction is Kingmaker.View.MapObjects.InteractionDoorPart door) || !door.IsOpen) continue;
-                    if (!IssuedAtHp.TryGetValue(command, out _)) continue;   // only the engine's own door-openings
-                    Reconsider(unit, command);
-                    why = "the door it was walking to open is open already";
-                    return true;
-                }
-            }
-            catch (Exception ex)
-            {
-                Main.Verbose($"[RT-Tactics] {unit.CharacterName}: door check: {ex.Message}");
-            }
-            return false;
-        }
-
         /// <summary>★ v0.3.29 test 5: seconds a walk may go on once the game's own test counts it as arrived.</summary>
         private const double ArrivedWalkSeconds = 0.4d;
 

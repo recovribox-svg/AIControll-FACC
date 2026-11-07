@@ -32,7 +32,7 @@ namespace CompanionAI_Pathfinder.Tactics
 {
     /// <remarks>★ v0.3.18 (AA-2): Toggle - switch on an activatable ability whose activation is a game command
     /// (bardic performances, Rage family, shaman spirits): TacticalEngine.Toggles.cs.</remarks>
-    public enum CandidateKind { WeaponAttack, Ability, Move, Toggle, Interact }
+    public enum CandidateKind { WeaponAttack, Ability, Move, Toggle }
     public enum ActionSlot { Free, Swift, Move, Standard, FullRound }
 
     public sealed class Candidate
@@ -81,8 +81,6 @@ namespace CompanionAI_Pathfinder.Tactics
         public bool MoveFirst;
         /// <summary>★ v0.3.29 test 4: a weapon attack's walk to a free side of its target, ended once the target is in reach.</summary>
         public bool WalkEndsInReach;
-        /// <summary>★ v0.3.29 test 7: the door an "Open door" option opens (TacticalEngine.Doors.cs).</summary>
-        public Kingmaker.View.MapObjects.InteractionDoorPart Door;
         public Vector3? MovePoint;
         /// <summary>★ v0.3.17: the move was priced as entering no harmful area: refuse a game path that walks into one.</summary>
         public bool CheckPath;
@@ -361,8 +359,6 @@ namespace CompanionAI_Pathfinder.Tactics
             catch (Exception ex) { Main.Error($"[Tactics] kineticist candidates: {ex}"); }
             timings?.Mark(DecisionStage.Kinetic);
             try { AddMovementCandidates(ctx, candidates); } catch (Exception ex) { Main.Error($"[Tactics] movement candidates: {ex}"); }
-            // ★ v0.3.29 test 7: a closed door on the way to an enemy the unit cannot see (TacticalEngine.Doors.cs).
-            try { AddOpenDoorCandidates(ctx, candidates); } catch (Exception ex) { Main.Error($"[Tactics] door candidates: {ex}"); }
             // ★ v0.3.20 (test8): an option whose real walk provoked more than its straight line, at the real walk's price.
             try { RepriceRealPaths(ctx, candidates, memory); } catch (Exception ex) { Main.Error($"[Tactics] real path prices: {ex}"); }
             // ★ v0.3.18 (AA-2): after the others, so a toggle that forbids spells is priced against the best spell.
@@ -634,9 +630,7 @@ namespace CompanionAI_Pathfinder.Tactics
             if (BoxedInWalk(ctx, c)) return true;
             // ★ v0.3.19 (test9): real time - an enemy the unit could not get sight of from here (any option on it walks the
             // same way), while neither has moved.
-            // ★ v0.3.29 test 8: not the opening of a door to it - that is the way to get sight of it.
-            if (c.Kind != CandidateKind.Interact && c.Target != null && c.Target != ctx.Unit && ctx.Unit.IsEnemy(c.Target) &&
-                CombatMemory.StillNoSight(ctx.Unit, c.Target)) return true;
+            if (c.Target != null && c.Target != ctx.Unit && ctx.Unit.IsEnemy(c.Target) && CombatMemory.StillNoSight(ctx.Unit, c.Target)) return true;
             // ★ v0.3.24 (build1 logs, author-approved): a target the game's path does not lead to, found by any party member.
             if (c.Target != null && ctx.Unit.IsEnemy(c.Target) && CombatMemory.OutOfWalkingReach(c.Target) && WalksIntoMelee(ctx, c)) return true;
             if (c.Kind != CandidateKind.Ability || c.Ability == null) return false;
@@ -5135,7 +5129,6 @@ namespace CompanionAI_Pathfinder.Tactics
                 return false;
             }
             if (c.InfusionSwitch != null) return ExecuteInfusionSwitch(unit, c, out command, out failure);
-            if (c.Kind == CandidateKind.Interact && c.Door != null) return ExecuteOpenDoor(unit, c, out command, out failure);
             // ★ v0.3.17: an approach around a harmful area walks to the spot it was priced for, then acts on the next
             // decision (as touch spells do in turn-based). The plain path the game would pick to the target goes through
             // the area.

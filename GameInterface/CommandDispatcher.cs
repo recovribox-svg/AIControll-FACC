@@ -252,7 +252,7 @@ namespace CompanionAI_Pathfinder.GameInterface
                 // it until the turn's 4 s command wait gives up. Seelah lost three turns so (an advance on the Neophyte
                 // Wizard from the door, one on the Cultist Archer, and the touch of a Cure Light Wounds for Camellia at
                 // 58 % HP), 0.0 m each. Refused here, the engine takes its next best option; the target counts as out
-                // of reach this turn (TacticalDriver.RecordRejected), so a door on the way is offered for it.
+                // of reach this turn (TacticalDriver.RecordRejected).
                 // Attacks and spells are refused at their path's end below (PathEndsInReach).
                 if (turn != null && command is UnitMoveTo && pathLength < NowhereWalk &&
                     FlatDistance(unit.Position, command.ApproachPoint) - command.ApproachRadius > NowhereWalk + 0.3f)

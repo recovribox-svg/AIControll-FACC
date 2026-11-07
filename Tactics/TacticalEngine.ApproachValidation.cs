@@ -119,9 +119,6 @@ namespace CompanionAI_Pathfinder.Tactics
             }
             if (c.Kind == CandidateKind.Move)
                 return new UnitMoveTo(c.Point ?? ctx.Unit.Position, c.ApproachRadius) { NeedLoS = c.NeedLoS };
-            // ★ v0.3.29 test 7: the door's interaction walks within its proximity radius (TacticalEngine.Doors.cs).
-            if (c.Kind == CandidateKind.Interact && c.Door != null)
-                return new UnitInteractWithObject(c.Door);
             throw new InvalidOperationException("no movement command for this candidate");
         }
 

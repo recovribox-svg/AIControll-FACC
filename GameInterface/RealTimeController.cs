@@ -275,9 +275,7 @@ namespace CompanionAI_Pathfinder.GameInterface
                     (!legacy && Tactics.RealTimeTactics.ShouldReplanOnNewThreat(unit, out replanWhy)) ||
                     // ★ v0.3.29 test 3: a walk to touch range whose target is in reach of the touch already.
                     // ★ v0.3.29 test 4: or a walk to a free side of an enemy that is in reach of the weapon already.
-                    (!legacy && Tactics.RealTimeTactics.ShouldEndArrivedWalk(unit, out replanWhy)) ||
-                    // ★ v0.3.29 test 7: a door-opening whose door someone opened meanwhile (it would close it again).
-                    (!legacy && Tactics.RealTimeTactics.ShouldDropOpenedDoor(unit, out replanWhy)))
+                    (!legacy && Tactics.RealTimeTactics.ShouldEndArrivedWalk(unit, out replanWhy)))
                 {
                     Main.Log($"[RT] {unitName}: {replanWhy} - dropping the commands that have not started, deciding again");
                     unit.Commands.InterruptAll(c => c != null && !c.IsStarted && c.IsInterruptible && !c.Cutscene);
