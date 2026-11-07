@@ -127,6 +127,72 @@ namespace CompanionAI_Pathfinder.Tactics
             }
         }
 
+        /// <summary>
+        /// ★ v0.3.30 test 1: while set, the buff whose own bonuses the appraisal leaves out (<see cref="Increment"/>): what a holder
+        /// would lose if it went (AppraiseHeldBuff). Read on the game's main thread only.
+        /// </summary>
+        private static Kingmaker.EntitySystem.EntityFact s_AppraiseWithout;
+
+        /// <summary>
+        /// ★ v0.3.30 test 1 (bug report, Profane Ascension): what <paramref name="buffs"/> are worth to <paramref name="holder"/>,
+        /// which has them now (<paramref name="held"/>, put there by this caster): their value as if it did not, so the bonus
+        /// they give is not counted as "already there". Modelled = false when none of their parts can be read.
+        /// </summary>
+        internal static BuffAppraisal AppraiseHeldBuff(TacticalContext ctx, AbilityData ability, AbilityProfile profile,
+                                                       List<BlueprintBuff> buffs, UnitEntityData holder,
+                                                       Kingmaker.EntitySystem.EntityFact held)
+        {
+            var previous = s_AppraiseWithout;
+            s_AppraiseWithout = held;
+            try { return AppraiseBuff(ctx, ability, profile, buffs, holder); }
+            finally { s_AppraiseWithout = previous; }
+        }
+
+        private static readonly Dictionary<BlueprintBuff, bool> s_UniqueBuffs = new Dictionary<BlueprintBuff, bool>();
+
+        /// <summary>★ v0.3.30 test 1: the buff has the game's UniqueBuff component: its caster keeps it on one unit at a time.</summary>
+        internal static bool IsUniqueBuff(BlueprintBuff buff)
+        {
+            if (buff == null) return false;
+            if (s_UniqueBuffs.TryGetValue(buff, out bool unique)) return unique;
+            try { unique = Kingmaker.Blueprints.BlueprintExtenstions.GetComponent<Kingmaker.UnitLogic.FactLogic.UniqueBuff>(buff) != null; }
+            catch { unique = false; }
+            s_UniqueBuffs[buff] = unique;
+            return unique;
+        }
+
+        /// <summary>
+        /// ★ v0.3.30 test 1 (bug report, Profane Ascension): the ally other than <paramref name="recipient"/> that holds one of
+        /// <paramref name="buffs"/> from <paramref name="caster"/>, when that buff is unique (UniqueBuff): putting it on the
+        /// recipient takes it off that ally (UnitPartUniqueBuffs.NewBuff). Null when no such buff is held elsewhere.
+        /// </summary>
+        internal static Kingmaker.UnitLogic.Buffs.Buff UniqueBuffHeldElsewhere(TacticalContext ctx, UnitEntityData caster,
+                                                                               List<BlueprintBuff> buffs, UnitEntityData recipient,
+                                                                               out UnitEntityData holder)
+        {
+            holder = null;
+            try
+            {
+                foreach (var b in buffs)
+                {
+                    if (!IsUniqueBuff(b)) continue;
+                    foreach (var ally in ctx.Allies)
+                    {
+                        if (ally == null || ally == recipient) continue;
+                        foreach (var buff in ally.Buffs.Enumerable)
+                        {
+                            if (buff.Blueprint != b || buff.Context?.MaybeCaster != caster) continue;
+                            holder = ally;
+                            return buff;
+                        }
+                    }
+                }
+            }
+            catch { }
+            holder = null;
+            return null;
+        }
+
         private static string AppraisalKey(UnitEntityData caster, AbilityData ability, UnitEntityData recipient) =>
             $"{caster.UniqueId}|{CombatMemory.AbilityKey(ability)}|{recipient?.UniqueId}";
 
@@ -986,7 +1052,9 @@ namespace CompanionAI_Pathfinder.Tactics
                 if (modifiable == null) return amount;
                 int existing = 0;
                 foreach (var m in modifiable.Modifiers)
-                    if (m.ModDescriptor == p.Descriptor) existing = Math.Max(existing, m.ModValue);
+                    // ★ v0.3.30 test 1: not the bonus of the buff being appraised on its own holder (AppraiseHeldBuff).
+                    if (m.ModDescriptor == p.Descriptor && (s_AppraiseWithout == null || m.Source != s_AppraiseWithout))
+                        existing = Math.Max(existing, m.ModValue);
                 return Math.Max(0f, amount - existing);
             }
             catch

@@ -2833,6 +2833,29 @@ namespace CompanionAI_Pathfinder.Tactics
         /// threshold. ★ v0.3.19 (test9): a buff gone after its owner's next roll of any kind (Guidance: +1 on one attack,
         /// save or check) is one use - one round.
         /// </summary>
+        /// <summary>
+        /// ★ v0.3.30 test 1: what the buffs <paramref name="replaced"/> on <paramref name="ally"/> (the ones the cast removes) do for
+        /// it now, each appraised without its own bonus. False when any of them cannot be read.
+        /// </summary>
+        private static bool ReplacedWorth(TacticalContext ctx, AbilityData ability, AbilityProfile profile,
+                                          List<Kingmaker.UnitLogic.Buffs.Buff> replaced, UnitEntityData ally, out float worth)
+        {
+            worth = 0f;
+            foreach (var r in replaced)
+            {
+                if (r?.Blueprint == null) return false;
+                var lost = AppraiseHeldBuff(ctx, ability, profile, new List<Kingmaker.UnitLogic.Buffs.Blueprints.BlueprintBuff> { r.Blueprint }, ally, r);
+                if (lost == null || !lost.Modelled) return false;
+                worth += Math.Max(0f, lost.Value);
+            }
+            return true;
+        }
+
+        /// <summary>★ v0.3.30 test 1: once a fight per caster and ability, why a unique buff stays where it is.</summary>
+        private static void UniqueKeptNote(UnitEntityData caster, AbilityData ability, UnitEntityData holder, string why) =>
+            ReportOnce($"unique-kept|{CombatMemory.Fight}|{caster.UniqueId}|{CombatMemory.AbilityKey(ability)}",
+                () => $"[Buff] {caster.CharacterName}: {ability.Name} stays on {holder.CharacterName} (one recipient at a time: {why})");
+
         private static float BuffRounds(AbilityProfile profile, float expectedRounds) =>
             profile.BuffsLastOneRound || profile.BuffsSpentByRoll ? 1f
             : profile.BuffsSpentByAttack ? Math.Min(expectedRounds, 2f)
@@ -2845,14 +2868,16 @@ namespace CompanionAI_Pathfinder.Tactics
         /// renewable abilities and 0 for consumables (an item is gone once used), and items need a clear combat effect.
         /// </summary>
         private static float BuffQuality(AbilityData ability, AbilityProfile profile,
-                                         List<Kingmaker.UnitLogic.Buffs.Blueprints.BlueprintBuff> buffs, UnitEntityData recipient)
+                                         List<Kingmaker.UnitLogic.Buffs.Blueprints.BlueprintBuff> buffs, UnitEntityData recipient,
+                                         bool held = false)
         {
             bool item = ability.SourceItem != null;
             float best = 0f;
             foreach (var buff in buffs)
             {
                 // Descriptor-based stacking only (BuffStackingAnalyzer.WouldBeEffective also matches names: "shield").
-                if (!BuffStackingAnalyzer.Analyze(buff, recipient).IsEffective) continue;
+                // ★ v0.3.30 test 1: not for a recipient holding the buff already (what it would lose: the buff is its own bonus).
+                if (!held && !BuffStackingAnalyzer.Analyze(buff, recipient).IsEffective) continue;
                 var analysis = BuffEffectAnalyzer.Analyze(buff);
                 // ★ v0.3.3: a day-long buff with no recognisable combat effect is a "used today" marker (Treat Affliction:
                 // "you can treat each character only once per day"), not a buff.
@@ -4215,8 +4240,26 @@ namespace CompanionAI_Pathfinder.Tactics
                     // ★ v0.3.19 (test11): what the buff does for this recipient, part by part, in damage-equivalent points
                     // (TacticalEngine.Buffs.cs); a mode switch keeps the comparison of qualities below.
                     var appraisal = replaced.Count == 0 ? AppraiseBuff(ctx, ability, profile, buffs, ally) : null;
-                    float worth;
-                    if (appraisal != null && appraisal.Modelled)
+                    float worth = 0f;
+                    bool switchJudged = false;
+                    // ★ v0.3.30 test 1 (bug report, Profane Ascension): a switch between buffs that can both be read for this
+                    // recipient is judged by what each does for it, with the margin of a unique move. The quality labels
+                    // (0.8 for any physical stat, 0.7 for any mental one) put Strength in place of a mental-stat
+                    // invocation on Orvath, the Dark Elementalist whose blasts use Intelligence, as a gain of 1.3.
+                    if (replaced.Count > 0)
+                    {
+                        var incoming = AppraiseBuff(ctx, ability, profile, buffs, ally);
+                        if (incoming != null && incoming.Modelled && ReplacedWorth(ctx, ability, profile, replaced, ally, out float lostWorth))
+                        {
+                            float gain = ValueModel.BuffSwitchGain(incoming.Value, lostWorth);
+                            if (gain <= 0f) continue;
+                            reasons.Add($"replaces {string.Join(", ", replaced.Select(r => r.Blueprint.name))} -{lostWorth:0.#}");
+                            worth = gain;
+                            switchJudged = true;
+                        }
+                    }
+                    if (switchJudged) { }
+                    else if (appraisal != null && appraisal.Modelled)
                     {
                         if (appraisal.Value <= 0f) continue;
                         worth = appraisal.Value;
@@ -4244,6 +4287,38 @@ namespace CompanionAI_Pathfinder.Tactics
                         if (mainSlot) worth *= 0.6f;
                         s_LastAppraisal[AppraisalKey(unit, ability, ally)] =
                             $"{worth:0.#}: effect not read (quality {quality:0.##} x level{(mainSlot ? ", 60 % on a main action" : "")})";
+                    }
+                    // ★ v0.3.30 test 1 (bug report, reproduced by the author: Lann cast Profane Invocation 25 times in one fight, a free
+                    // action each). A unique buff (UniqueBuff) its caster keeps on another ally leaves that ally when it is put
+                    // on this one (UnitPartUniqueBuffs.NewBuff): Dexterity went Aeiluvetar 6.2 -> Seelah 7.5 -> Aeiluvetar 6.6,
+                    // and so on, each counted as a pure gain. Now the holder's loss counts, the move needs a clearly better
+                    // recipient (ValueModel.BuffSwitchGain), and it moves at most once a round, as unique marks do.
+                    var held = UniqueBuffHeldElsewhere(ctx, unit, buffs, ally, out var holder);
+                    if (held != null)
+                    {
+                        if (CombatMemory.LastCastRound(unit, ability, holder) == ctx.Round)
+                        {
+                            UniqueKeptNote(unit, ability, holder, $"put on {holder.CharacterName} this round");
+                            continue;
+                        }
+                        var heldAppraisal = AppraiseHeldBuff(ctx, ability, profile, buffs, holder, held);
+                        float kept;
+                        if (heldAppraisal != null && heldAppraisal.Modelled) kept = Math.Max(0f, heldAppraisal.Value);
+                        else
+                        {
+                            float heldQuality = BuffQuality(ability, profile, buffs, holder, held: true);
+                            bool holderFighting = (holder.CombatState?.IsEngaged ?? false) || holder == unit;
+                            kept = ValueModel.BuffPerRound(level) * BuffRounds(profile, ctx.ExpectedRounds) * heldQuality *
+                                   (holderFighting ? 1f : 0.6f) * buffScale * (slot != ActionSlot.Free && slot != ActionSlot.Swift ? 0.6f : 1f);
+                        }
+                        float gain = ValueModel.BuffSwitchGain(worth, kept);
+                        if (gain <= 0f)
+                        {
+                            UniqueKeptNote(unit, ability, holder, $"{ally.CharacterName} {worth:0.#} is not clearly better than {kept:0.#} there");
+                            continue;
+                        }
+                        reasons.Add($"from {holder.CharacterName} -{kept:0.#}");
+                        worth = gain;
                     }
                     // ★ v0.3.19 (test9): a buff that makes the ally bigger can put it into a harmful area it stands beside
                     // (Enlarge Person put Seelah into Orvath's Grease). The cost is the ally's, in full.
