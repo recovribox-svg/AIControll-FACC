@@ -1,6 +1,28 @@
 # Test builds
 
-## Current test build: v0.3.29-dev-test5 (9a75cbd) - no friendly fire on allies walking in, no circling
+## Current test build: v0.3.29-dev-test6 (1bb3f79) - boxed-in companions stop trying to walk
+
+**[Download the UMM test ZIP (1bb3f79)](AI-Control-FACC-v0.3.29-dev-test6-1bb3f79-UMM-test.zip?raw=true)**
+
+Direct link: <https://github.com/recovribox-svg/AIControll-FACC/raw/claude/dreamy-pasteur-b9h3rn/test-builds/AI-Control-FACC-v0.3.29-dev-test6-1bb3f79-UMM-test.zip>
+
+Test 5 (below) plus the change you approved ([docs/TACTICAL_AI.md](../docs/TACTICAL_AI.md) §118):
+- **Real time - a companion boxed in where it stands stops trying to walk for a round.** When two walks in a row get
+  nowhere from the same spot, the companion offers no walk from there for 6 seconds. It acts from where it stands or
+  waits for the crowd to move. Getting out of a harmful area or a swarm is still allowed. The log says
+  `boxed in here - 2 walks in a row got nowhere from this spot`.
+- In the fight from your log, Orvath tried six walks from one boxed-in spot. This rule would have stopped the last two;
+  the earlier ones alternated with casts from where he stood anyway.
+
+UMM shows **0.3.29**. Startup line `[Build] v0.3.29 module=a0e8296b-b0d4-4019-99ae-a54bdd385ac7`.
+- ZIP SHA-256 `73fdc39b723fa5a566977db7811eaf33f0fec3fe4403c301839d74682b1a41f3`; DLL SHA-256 `da1b3f27dcdea586eb5344a067d08040e068981c7db1da61331af4b9b5ae9bd2`.
+- [Identity](AI-Control-FACC-v0.3.29-dev-test6-1bb3f79-UMM-test.identity.json) · [Checksums](SHA256SUMS.txt).
+- Checks: 479 unit tests pass; release build 0 warnings; offline blueprint audit 0 errors; no new game references. Not
+  played yet.
+- **Test:** crowded real-time fights, especially fight starts with the party bunched up: a companion that can't get out
+  should act from where it is instead of spinning, and fewer `Stuck command` lines should follow one another.
+
+## Test 5: v0.3.29-dev-test5 (9a75cbd) - no friendly fire on allies walking in, no circling (also in test 6)
 
 **[Download the UMM test ZIP (9a75cbd)](AI-Control-FACC-v0.3.29-dev-test5-9a75cbd-UMM-test.zip?raw=true)**
 

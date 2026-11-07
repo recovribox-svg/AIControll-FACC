@@ -4181,7 +4181,7 @@ off or failed). The author asked about three real-time behaviours and whether th
   A walk that stops by itself finishes before the second look. Log: "arrived by the game's own test 0.6 s ago and still
   walking - the walk ends".
 
-**Proposed, not built (needs the author's decision): a unit boxed in where it stands.**
+**Proposed here, built in test 6 with the author's approval (§118): a unit boxed in where it stands.**
 - At the start of the second log's first fight Orvath stood boxed in (no path out moved him more than 0.8 m) and tried
   six different walks from that spot in about 25 s (two cones, two blasts, an attack, another cone), each ended as stuck
   (6.9, 8.3, 4.2, 2.5, 2.5, 2.5 s). A stuck walk only rules out its own option from that spot.
@@ -4193,3 +4193,25 @@ off or failed). The author asked about three real-time behaviours and whether th
 
 Test ZIP `AI-Control-FACC-v0.3.29-dev-test5-9a75cbd-UMM-test.zip` (MVID `9e40ed9f-390a-415c-ad46-b46af6b505ab`);
 477 tests.
+
+## 118. v0.3.29 test 6: a unit boxed in where it stands (author-approved)
+
+The author approved the §117 proposal.
+- A real-time walk ended as stuck because it got nowhere ("blocked", "walking for 6 s without getting nearer", "not in
+  range or sight and not moving") less than 1 m from where it was issued is noted (`CombatMemory.NoteStuckWalk`; the
+  issue record keeps where the unit stood, `IssueState.From`). Arrived walks and commands that could not start do not
+  count.
+- The second such walk in a row from within 1 m of one spot, at most 20 s after the first (`SpotRules.StuckInARow`,
+  unit-tested), boxes the unit in there for 6 s, one round (`CombatMemory.BoxedIn`). Log: "boxed in here - 2 walks in a
+  row got nowhere from this spot; no walk offered from it for 6 s".
+- While boxed in, no option that walks first is offered (`TacticalEngine.BoxedInWalk`, in the same filter as refused
+  walks): Move+Attack, casts out of range, advances, back-offs. Getting out of a harmful area or a swarm stays open.
+  The unit acts from where it stands or waits for the bodies round it to move. Moving more than 1 m away, or the 6 s
+  ending, lifts it; each further stuck walk from the spot boxes it in again.
+- In the logged case (Orvath, second test-4 log) the first walks alternated with casts from where he stood that
+  outlasted 6 s, so the rule would have stopped the last two of his six walks (about 5 s of walking on the spot).
+  It bites hardest where a unit has nothing but walks to choose from.
+- Turn-based is unchanged.
+
+Test ZIP `AI-Control-FACC-v0.3.29-dev-test6-1bb3f79-UMM-test.zip` (MVID `a0e8296b-b0d4-4019-99ae-a54bdd385ac7`);
+479 tests.

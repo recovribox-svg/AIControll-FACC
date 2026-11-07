@@ -217,8 +217,12 @@ Test 4 played (`docs/TACTICAL_AI.md` §117: Orvath's forward cones and close-ran
 8 of 84; Auto Selective is read). **v0.3.29 test 5 (7 November, §117, not played):** real time, allies whose walk passes into a cone
 or burst during the cast count as caught (`TacticalEngine.AlliesWalkingInto`, `ProjectileCone.Query.ReachesAt`: Fan of Flames hit
 Seelah and Camellia); a walk the game counts as arrived ends after 0.4 s (`RealTimeTactics.WalkArrived`: circling next to enemies).
-Proposed for the author: no walks for a round from a spot two stuck walks in a row came from. Test ZIP
+Test ZIP
 `AI-Control-FACC-v0.3.29-dev-test5-9a75cbd-UMM-test.zip` (MVID `9e40ed9f-390a-415c-ad46-b46af6b505ab`); 477 tests.
+**v0.3.29 test 6 (7 November, §118, author-approved, not played):** real time, two walks in a row that got nowhere from one spot box
+the unit in there for 6 s - no option that walks first is offered except leaving an area or a swarm (`CombatMemory.NoteStuckWalk` /
+`BoxedIn`, `SpotRules.StuckInARow`, `TacticalEngine.BoxedInWalk`). Test ZIP `AI-Control-FACC-v0.3.29-dev-test6-1bb3f79-UMM-test.zip`
+(MVID `a0e8296b-b0d4-4019-99ae-a54bdd385ac7`); 479 tests.
 
 Historical handovers, superseded by the one above: [v0.3.22 release preparation](docs/RELEASE_0_3_22_HANDOVER.md)
 (27 October, PR #6–#12), [released-log review](docs/RELEASE_0322_LOG_REVIEW.md) (PR #13),
