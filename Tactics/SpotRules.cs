@@ -64,6 +64,24 @@ namespace CompanionAI_Pathfinder.Tactics
             return (int)Math.Ceiling(covered / step);
         }
 
+        /// <summary>★ v0.3.29 test 6: walks in a row that got nowhere from one spot before the unit counts as boxed in there.</summary>
+        public const int BoxedInWalks = 2;
+        /// <summary>Seconds two such walks may lie apart to count as in a row.</summary>
+        public const double BoxedInWindow = 20d;
+        /// <summary>Metres from the spot within which a walk counts as starting from it.</summary>
+        public const float BoxedInRadius = 1f;
+
+        /// <summary>
+        /// ★ v0.3.29 test 6: how many walks in a row have now got nowhere from one spot: one more than <paramref name="previous"/>
+        /// when this one began within <see cref="BoxedInRadius"/> of the last one's spot and at most
+        /// <see cref="BoxedInWindow"/> after it, else this is the first. Unusable input starts afresh.
+        /// </summary>
+        public static int StuckInARow(int previous, float distanceFromSpot, double secondsSinceLast)
+        {
+            if (previous < 1 || float.IsNaN(distanceFromSpot) || double.IsNaN(secondsSinceLast) || secondsSinceLast < 0d) return 1;
+            return distanceFromSpot <= BoxedInRadius && secondsSinceLast <= BoxedInWindow ? previous + 1 : 1;
+        }
+
         /// <summary>
         /// Where a straight walk from (<paramref name="fromX"/>, <paramref name="fromZ"/>) to within
         /// <paramref name="radius"/> of (<paramref name="toX"/>, <paramref name="toZ"/>) stops: on the line between them, 90 %

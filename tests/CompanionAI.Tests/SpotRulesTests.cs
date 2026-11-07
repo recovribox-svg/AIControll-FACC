@@ -84,5 +84,25 @@ namespace CompanionAI.Tests
             Assert.Equal(0, SpotRules.WalkSteps(5f, float.NaN, 2f, 0.5f, out _));
             Assert.Equal(0, SpotRules.WalkSteps(float.PositiveInfinity, 3f, 2f, 0.5f, out _));
         }
+
+        [Fact]
+        public void StuckInARow_FromOneSpot_Counts()
+        {
+            // Orvath at the start of the second test-4 fight: walks 0.2-0.8 m apart, 10 s or so between them.
+            int count = 1;
+            count = SpotRules.StuckInARow(count, 0.6f, 10d);
+            Assert.Equal(2, count);
+            Assert.True(count >= SpotRules.BoxedInWalks);
+            Assert.Equal(3, SpotRules.StuckInARow(count, 0.1f, 4d));
+        }
+
+        [Fact]
+        public void StuckInARow_ElsewhereOrLater_StartsAfresh()
+        {
+            Assert.Equal(1, SpotRules.StuckInARow(1, 3f, 5d));     // the unit got somewhere in between
+            Assert.Equal(1, SpotRules.StuckInARow(1, 0.2f, 30d));  // a long time since the last one
+            Assert.Equal(1, SpotRules.StuckInARow(0, 0.2f, 5d));   // no walk before
+            Assert.Equal(1, SpotRules.StuckInARow(2, float.NaN, 5d));
+        }
     }
 }

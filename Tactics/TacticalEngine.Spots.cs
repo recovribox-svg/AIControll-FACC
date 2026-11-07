@@ -165,6 +165,22 @@ namespace CompanionAI_Pathfinder.Tactics
             return found;
         }
 
+        /// <summary>
+        /// ★ v0.3.29 test 6 (author-approved): the option walks first and the unit is boxed in where it stands - two walks in a
+        /// row got nowhere from this spot (CombatMemory.NoteStuckWalk) - so it is not offered for a round. Getting out of a
+        /// harmful area or a swarm stays open (its walk is the way out, and staying costs). The unit acts from where it stands
+        /// or waits for the bodies round it to move. Said once per boxed-in spell.
+        /// </summary>
+        private static bool BoxedInWalk(TacticalContext ctx, Candidate c)
+        {
+            if (!CombatMemory.IsRealTime || !(c.NeedsMove || c.MoveFirst || c.Kind == CandidateKind.Move)) return false;
+            if (c.Key == "move:leave-area" || c.Key == "move:outofswarm") return false;
+            if (!CombatMemory.BoxedIn(ctx.Unit, out double until)) return false;
+            ReportOnce($"boxed-in|{ctx.Unit.UniqueId}|{until:F1}",
+                () => $"[Walk] {ctx.Unit.CharacterName}: boxed in - no walk offered for now (e.g. {c.Label})");
+            return true;
+        }
+
         /// <summary>For the decision log: an ally counted because it walks into the area.</summary>
         private static string WalkingInTag(List<UnitEntityData> walkingIn, UnitEntityData ally) =>
             walkingIn != null && walkingIn.Contains(ally) ? " (walking in)" : "";

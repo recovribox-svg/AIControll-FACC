@@ -161,6 +161,8 @@ namespace CompanionAI_Pathfinder.Tactics
             public UnitEntityData FollowUpAttack;
             /// <summary>★ v0.3.29 test 5: game seconds since the walk has been arrived by the game's own test (-1: not yet).</summary>
             public double ArrivedAt = -1d;
+            /// <summary>★ v0.3.29 test 6: where the unit stood when the command was issued (a walk that got nowhere).</summary>
+            public Vector3 From;
             /// <summary>
             /// ★ v0.3.27 (0.3.26 log): a walk to a target (an attack, a cast, an approach or advance) - one an enemy the
             /// option did not count can get in the way of (<see cref="ShouldReplanOnNewThreat"/>). Withdrawals and walks out
@@ -321,7 +323,7 @@ namespace CompanionAI_Pathfinder.Tactics
         /// either (the same as a turn-based option that did nothing). It went to a tracker only the old engine reads.
         /// </summary>
         public static void RecordStuck(UnitEntityData unit, Kingmaker.UnitLogic.Commands.Base.UnitCommand command, bool targetProblem,
-                                       bool pathFallsShort = false)
+                                       bool pathFallsShort = false, bool walkGotNowhere = false)
         {
             try
             {
@@ -350,6 +352,12 @@ namespace CompanionAI_Pathfinder.Tactics
                 memory.Failed.Add(key);
                 // Not offered again while the unit stands where it got stuck (two rounds, as a refused walk).
                 CombatMemory.NoteRefusedWalk(unit, key);
+                // ★ v0.3.29 test 6 (author-approved): a walk that got nowhere (under 1 m from where it began) - the second in
+                // a row from one spot boxes the unit in there for a round (TacticalEngine: no walking option offered).
+                if (walkGotNowhere && issued != null && TacticalEngine.HorizontalDistance(unit.Position, issued.From) < SpotRules.BoxedInRadius &&
+                    CombatMemory.NoteStuckWalk(unit))
+                    Main.Log($"[RT-Tactics] {unit.CharacterName}: boxed in here - {SpotRules.BoxedInWalks} walks in a row got nowhere " +
+                             $"from this spot; no walk offered from it for {CombatMemory.BoxedInSeconds:F0} s (acting from where it stands)");
                 var target = command.TargetUnit;
                 if (targetProblem && target != null)
                 {
@@ -619,7 +627,7 @@ namespace CompanionAI_Pathfinder.Tactics
                         bool watches = candidate.Kind != CandidateKind.Move || candidate.Target != null || candidate.Ability != null;
                         IssuedAtHp.Add(command, new IssueState
                         {
-                            Hp = unit.HPLeft, Areas = AreasAround(unit), Key = candidate.Key,
+                            Hp = unit.HPLeft, Areas = AreasAround(unit), Key = candidate.Key, From = unit.Position,
                             FollowUpAbility = command is Kingmaker.UnitLogic.Commands.UnitMoveTo && candidate.Kind == CandidateKind.Move
                                 ? candidate.Ability : null,
                             FollowUpAim = command is Kingmaker.UnitLogic.Commands.UnitMoveTo && candidate.Kind == CandidateKind.Move && candidate.Ability != null

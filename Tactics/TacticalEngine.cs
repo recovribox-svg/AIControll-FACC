@@ -626,6 +626,8 @@ namespace CompanionAI_Pathfinder.Tactics
         {
             // ★ v0.3.18 (test11): a walk the real-time path check refused from where the unit still stands.
             if (CombatMemory.WalkRefused(ctx.Unit, c.Key)) return true;
+            // ★ v0.3.29 test 6 (author-approved): boxed in where it stands - no walk for a round (TacticalEngine.Spots.cs).
+            if (BoxedInWalk(ctx, c)) return true;
             // ★ v0.3.19 (test9): real time - an enemy the unit could not get sight of from here (any option on it walks the
             // same way), while neither has moved.
             if (c.Target != null && c.Target != ctx.Unit && ctx.Unit.IsEnemy(c.Target) && CombatMemory.StillNoSight(ctx.Unit, c.Target)) return true;

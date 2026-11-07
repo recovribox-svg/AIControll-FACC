@@ -330,7 +330,8 @@ namespace CompanionAI_Pathfinder.GameInterface
                         }
                         // ★ v0.3.18 (C3): the tactical engine learns from it too (the tracker above is the old engine's).
                         if (!legacy) Tactics.RealTimeTactics.RecordStuck(unit, stuckCommand, stuckOnTarget,
-                                                                         NativePathFallsShort(unit, stuckCommand));
+                                                                         NativePathFallsShort(unit, stuckCommand),
+                                                                         walkGotNowhere: WalkGotNowhere(stuckReason));
 
                         // 명령 강제 취소
                         try
@@ -550,6 +551,11 @@ namespace CompanionAI_Pathfinder.GameInterface
             public Vector3 MovedFrom;
             public TimeSpan MovedAt;
         }
+
+        /// <summary>★ v0.3.29 test 6: the stuck rule that ended the walk says it got nowhere (blocked, no nearer, not moving) -
+        /// not that it arrived or could not start.</summary>
+        private static bool WalkGotNowhere(string reason) =>
+            reason != null && (reason.StartsWith("blocked") || reason.StartsWith("walking for") || reason.StartsWith("not in range or sight"));
 
         /// <summary>★ v0.3.18 (test10): seconds of walking (a round) without getting 0.5 m nearer before "moving" stops counting.</summary>
         private const float NO_PROGRESS_SECONDS = 6f;

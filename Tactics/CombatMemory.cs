@@ -267,6 +267,48 @@ namespace CompanionAI_Pathfinder.Tactics
             return GameSeconds <= refused.Value && Vector3.Distance(unit.Position, refused.Key) <= 1f;
         }
 
+        /// <summary>★ v0.3.29 test 6: unit → the spot its last walks got nowhere from, how many in a row, the last one's time,
+        /// and until when it counts as boxed in there.</summary>
+        private static readonly Dictionary<string, StuckSpot> StuckSpots = new Dictionary<string, StuckSpot>();
+
+        private struct StuckSpot
+        {
+            public Vector3 At;
+            public int Count;
+            public double Last;
+            public double BoxedUntil;
+        }
+
+        /// <summary>Seconds (one round) the unit offers no walk from that spot.</summary>
+        public const double BoxedInSeconds = 6d;
+
+        /// <summary>
+        /// ★ v0.3.29 test 6 (author-approved): a walk of the unit's got nowhere - stuck, under 1 m from where it began. The
+        /// second in a row from within 1 m of one spot (at most 20 s apart) boxes the unit in there for a round: true then.
+        /// Orvath tried six walks in about 25 s from one spot at the start of a fight (v0.3.29 test 4, second real-time log),
+        /// each ended as stuck; one stuck walk only ruled out its own option.
+        /// </summary>
+        public static bool NoteStuckWalk(UnitEntityData unit)
+        {
+            if (!IsRealTime || unit == null) return false;
+            double now = GameSeconds;
+            bool known = StuckSpots.TryGetValue(unit.UniqueId, out var last);
+            int count = known ? SpotRules.StuckInARow(last.Count, Vector3.Distance(unit.Position, last.At), now - last.Last) : 1;
+            var spot = new StuckSpot { At = count > 1 ? last.At : unit.Position, Count = count, Last = now };
+            if (count >= SpotRules.BoxedInWalks) spot.BoxedUntil = now + BoxedInSeconds;
+            StuckSpots[unit.UniqueId] = spot;
+            return count >= SpotRules.BoxedInWalks;
+        }
+
+        /// <summary>★ v0.3.29 test 6: the unit is boxed in where it stands (NoteStuckWalk), and until when.</summary>
+        public static bool BoxedIn(UnitEntityData unit, out double until)
+        {
+            until = 0d;
+            if (!IsRealTime || StuckSpots.Count == 0 || unit == null || !StuckSpots.TryGetValue(unit.UniqueId, out var spot)) return false;
+            until = spot.BoxedUntil;
+            return GameSeconds <= spot.BoxedUntil && Vector3.Distance(unit.Position, spot.At) <= SpotRules.BoxedInRadius;
+        }
+
         /// <summary>★ v0.3.24 (build1 logs): target → where it stood when a party member's walk to it got stuck because the
         /// game's own path ends short of it (a ledge), and until when that counts.</summary>
         private static readonly Dictionary<string, KeyValuePair<Vector3, double>> OutOfWalkingReachTargets =
@@ -383,6 +425,7 @@ namespace CompanionAI_Pathfinder.Tactics
             TacticalEngine.ResetHeldStates();   // ★ v0.3.24
             PendingCasts.Clear();
             RefusedWalks.Clear();
+            StuckSpots.Clear();   // ★ v0.3.29 test 6
             OutOfWalkingReachTargets.Clear();
             NoSights.Clear();
             CombatMath.OnlyDisabledEnemiesLeft = false;
