@@ -1,6 +1,34 @@
 # Test builds
 
-## Current test build: v0.3.30-dev-test1 (cf080c6) - no more Profane Ascension spam
+## Current test build: v0.3.30-dev-test2 (827841f) - stat buffs valued by what they do for each character
+
+**[Download the UMM test ZIP (827841f)](AI-Control-FACC-v0.3.30-dev-test2-827841f-UMM-test.zip?raw=true)**
+
+Direct link: <https://github.com/recovribox-svg/AIControll-FACC/raw/claude/dreamy-pasteur-b9h3rn/test-builds/AI-Control-FACC-v0.3.30-dev-test2-827841f-UMM-test.zip>
+
+Test 1 (below) plus what you asked for ([docs/TACTICAL_AI.md](../docs/TACTICAL_AI.md) §123):
+- **Buffs to Strength, Dexterity, Constitution, Intelligence, Wisdom or Charisma are valued by what that stat does for
+  the character who gets it**, read from the game itself, for any build, class or mod:
+  - the stat its weapon attacks and damage really use (Weapon Finesse, a Zen Archer's Wisdom, a two-handed weapon's
+    1.5 x Strength);
+  - its saves (Will from Wisdom, Reflex from Dexterity, Fortitude from Constitution), its armour class (unless its
+    armour caps it) and hit points (Charisma for an undead character);
+  - its own features that add the stat to something: a paladin's Charisma to all saves, a monk's Wisdom to AC, a
+    Scaled Fist's Charisma to AC, an Arcanist's Arcane Accuracy, a cavalier's challenge;
+  - the stat its spells' DCs come from, and a kineticist's main stat, as before.
+- Before, Intelligence, Wisdom and Charisma got the same rough guess for everyone who did not cast with them, so
+  Profane Invocation's Intelligence looked as good on an archer as anything. Now it is worth nothing there, and
+  Wisdom on a Zen Archer is worth his attacks, AC and Will save.
+
+UMM shows **0.3.30**. Startup line `[Build] v0.3.30 module=05361eac-e11f-4c14-a363-3355229923c2`.
+- ZIP SHA-256 `e658b0571543a1e141b1090e3bf601333449af1cd9012d1d85fc6323d616a958`; DLL SHA-256 `cc93ff252ac52ff6256852d6f4277cee606affaacf5a2a50a8668785f0fa9940`.
+- [Identity](AI-Control-FACC-v0.3.30-dev-test2-827841f-UMM-test.identity.json) · [Checksums](SHA256SUMS.txt).
+- Checks: 493 unit tests pass; release build 0 warnings; offline blueprint audit 0 errors, and the new reader checked on
+  the game's class blueprints (Divine Grace, monk, Scaled Fist and Imitator AC read correctly). Not played yet.
+- **Test:** a fight with Profane Invocation on anyone's action bar: the invocations should go where they help (for Lann,
+  Wisdom or Dexterity rather than Intelligence), a few casts at the start and then none.
+
+## Test 1: v0.3.30-dev-test1 (cf080c6) - no more Profane Ascension spam
 
 **[Download the UMM test ZIP (cf080c6)](AI-Control-FACC-v0.3.30-dev-test1-cf080c6-UMM-test.zip?raw=true)**
 

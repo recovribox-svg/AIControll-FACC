@@ -244,6 +244,11 @@ ally's loss (`UniqueBuffHeldElsewhere`, `AppraiseHeldBuff`: `Increment` skips th
 recipient (`ValueModel.BuffSwitchGain`, 1.25) and moves at most once a round; sibling-buff switches judged by both appraisals
 (`ReplacedWorth`). `Info.json` 0.3.30. Test ZIP `AI-Control-FACC-v0.3.30-dev-test1-cf080c6-UMM-test.zip` (MVID
 `fdee1c86-2d4f-4ddb-8256-621cec66b451`); 486 tests.
+**v0.3.30 test 2 (8 November, `docs/TACTICAL_AI.md` §123, author-requested, not played):** all six ability scores valued by what they
+feed on the recipient, from the game's links (`TacticalEngine.StatLinks.cs`: attack/damage stat by the rules, save/AC/HP base stats,
+`DerivativeStatBonus` and stat-ranked `AddContextStatBonus` facts; `ValueModel.StatUse`), mental stats modelled for every recipient;
+ProfileAudit STAT-LINKS. Test ZIP `AI-Control-FACC-v0.3.30-dev-test2-827841f-UMM-test.zip` (MVID
+`05361eac-e11f-4c14-a363-3355229923c2`); 493 tests.
 
 Historical handovers, superseded by the one above: [v0.3.22 release preparation](docs/RELEASE_0_3_22_HANDOVER.md)
 (27 October, PR #6–#12), [released-log review](docs/RELEASE_0322_LOG_REVIEW.md) (PR #13),

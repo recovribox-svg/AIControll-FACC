@@ -4411,3 +4411,56 @@ non-casters (Wisdom for Will saves, Charisma for a paladin's saves) is a separat
 Offline: ProfileAudit on the 28 Demonic Overlord blueprints reads all 12 variants without error (physical stats by
 parts; Charisma, Intelligence and Wisdom guessed at 0.7). `Info.json` 0.3.30. Test ZIP
 `AI-Control-FACC-v0.3.30-dev-test1-cf080c6-UMM-test.zip` (MVID `fdee1c86-2d4f-4ddb-8256-621cec66b451`); 486 tests.
+
+## 123. v0.3.30 test 2: ability scores valued by what they feed on the recipient
+
+The author asked for Intelligence, Wisdom and Charisma to be valued properly, well integrated and performant, for any
+build (a public mod: any character may have Profane Ascension or any stat buff, custom builds included).
+
+**Before.**
+- `AppraiseBuff` read a mental stat only when it was the recipient's casting stat (spell DC) or a kineticist's main stat.
+  Otherwise a buff of only mental stats was not modelled and took the old quality guess (0.7 x level, §122). Every
+  non-caster read the same, whatever its features.
+- Strength was read as attack for melee and damage for `StrengthAddsWeaponDamage`; Dexterity as attack for ranged and half
+  an AC point. Weapon Finesse, Zen Archery, Reflex and Fortitude saves were missed.
+
+**Now: one reader for all six scores (`TacticalEngine.StatLinks.cs`), from the game's own links on that recipient.**
+- Weapon: the attack stat of `RuleCalculateAttackBonusWithoutTarget` after the unit's own replacements
+  (`AttackStatReplacement`: Weapon Finesse, Zen Archery's Wisdom; mods that replace it the same way), and the damage
+  stat and multiplier of `RuleCalculateWeaponStats` (two hands 1.5, a composite bow's Strength, Dexterity-to-damage
+  features). Read in `OffenceOf`, reusing its weapon rule; with no enemy to estimate against, for the weapon in hand.
+- Saves: each save's `ModifiableValueSavingThrow.BaseStat` (a third of the saves each).
+- Armour class: `ModifiableValueArmorClass.BaseAttribute` (features can replace it), unless the armour already caps it
+  (`BaseAttributeAppliedBonus` below the stat's bonus).
+- Hit points: `ModifiableValueHitPoints.BaseStat` (Constitution; Charisma for the undead), per character level.
+- Facts that follow the score (`FactStatLinksOf`, once per blueprint): `DerivativeStatBonus`; `AddContextStatBonus` whose
+  rank is a `ContextRankConfig` on the score's bonus (`IsBasedOnStatBonus`; `m_Stat` by reflection; a rank of the score
+  itself counts two per modifier point); or a custom-property bonus on a fact recalculated on the score
+  (`RecalculateOnStatChange`). Targets read: the three saves, AC, attack, damage, hit points. Skills, initiative and the
+  like are known and count nothing.
+- Casting stat (spell DC) and kineticist main stat (blast damage) as before.
+- The pure combination is `ValueModel.StatUse` / `StatTarget` / `ModifierGain` (unit-tested). A unit's links are read
+  once a round (`UnitStatUse`). Mental-stat buffs are now modelled for every recipient (`HasReadableParts`): what they
+  feed, or nothing.
+- `Offence.StrengthToDamage` and `KineticMainStat` went: replaced by the rule-read damage stat and the existing kinetic
+  gain.
+
+**Verified offline.** ProfileAudit `STAT-LINKS` runs the fact reader on every loaded feature and buff. On the class dumps
+plus the Demonic Overlord's (12,087 blueprints, one Warpriest blueprint unloadable offline), 22 of 10,723 facts carry
+links. Required cases pass:
+- `DivineGrace`: Charisma to all three saves;
+- `MonkACBonusBuff`: Wisdom to AC;
+- `ScaledFistACBonusBuff`: Charisma to AC, by the recalculated custom property;
+- `ImitationMonkACBonus`: Intelligence to AC.
+
+Others found: Shifter AC (Wisdom), cavalier challenges (Charisma to attack and damage), Arcane Accuracy (Intelligence to
+attack), Friend to Animals (Charisma to saves). In the spell dumps: Bestow Grace (Charisma to saves).
+
+**For Profane Invocation.**
+- On a Zen Archer (Lann), Wisdom is attack +1, AC +1 (monk) and Will per modifier point; Dexterity is AC and Reflex;
+  Intelligence nothing.
+- On a paladin, Charisma is all saves plus its spells' DC.
+- On a Dark Elementalist, Intelligence is its blasts and DCs.
+
+`Info.json` 0.3.30. Test ZIP `AI-Control-FACC-v0.3.30-dev-test2-827841f-UMM-test.zip` (MVID
+`05361eac-e11f-4c14-a363-3355229923c2`); 493 tests.
