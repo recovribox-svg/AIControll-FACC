@@ -8,6 +8,21 @@ Read [CONTRIBUTING.md](CONTRIBUTING.md) for shared branch ownership, Codex pull 
 Codex works on task branches and targets pull requests at `claude/dreamy-pasteur-b9h3rn`; Claude reviews and integrates them there.
 Keep `main` for author-authorized releases. Read [AGENTS.md](AGENTS.md) when coordinating agent work.
 
+**Competence programme task handover (8 November 2026, Codex; review/integration pending):** start with
+[docs/CLASS_COMPETENCE_CURRENT.md](docs/CLASS_COMPETENCE_CURRENT.md), its class matrix, native contracts,
+mod evidence and prioritized register. Branch `codex/class-competence-foundation` starts from development
+`71ca3de` (0.3.30 test 2); the manifest remains 0.3.30. Selected first-stage repairs cover save-boost probability,
+supported active burn-consequence graphs and area-grant path identity. This is not whole-roster or installed-mod
+certification: only Kineticist's class/archetype export is supplied, other inventory and current gameplay/Unity
+performance are pending. The reported mods include TTT Core/Base, Isekai, Psionics, MysticalMayhem,
+TomeOfTheFirebird, DarkCodex and Demonology. The author reports DarkCodex 1.9.6/Mind Shield off; other versions and installed binary identities remain unverified. DarkCodex can replace
+the native Psychokineticist burn property, so native-shape reader checks do not certify its patched property.
+Candidate source `4f8a8b7`, MVID `a22f23e0-64b2-4b76-b6bb-aa274edac6a8`:
+[test ZIP](test-builds/AI-Control-FACC-v0.3.30-dev-competence1-4f8a8b7-UMM-test.zip) / [identity](test-builds/AI-Control-FACC-v0.3.30-dev-competence1-4f8a8b7-UMM-test.identity.json). Combined checks: 518 unit + 9 inventory tests;
+real-reference build 0 warnings/errors; partial ProfileAudit803 loaded/0failed/0readererrors, 53 new fixture/route checks.
+Live gameplay and matched Unity performance remain pending. Use the offline BlueprintInventory tool to request derived roster metadata rather than a whole-game upload.
+Preserve all movement/target/pathfinding/cancellation boundaries below; no new movement policy is part of this task.
+
 **Current handover (29 October 2026, Claude): read [docs/INTEGRATION_0322_FOLLOWUPS.md](docs/INTEGRATION_0322_FOLLOWUPS.md)
 before resuming.** With the author's authorization, Claude reviewed and merged PR #13, #14 and #15 into development
 (merge commits `f0a44df`, `1d49979`, `ecabeb4`) and fast-forwarded `main` to the same reviewed revision. The integrated

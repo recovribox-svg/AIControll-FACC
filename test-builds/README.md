@@ -1,5 +1,20 @@
 # Test builds
 
+## Task-branch candidate: competence foundation 1 (4f8a8b7)
+
+**[Download the UMM test ZIP](AI-Control-FACC-v0.3.30-dev-competence1-4f8a8b7-UMM-test.zip?raw=true)** · [Identity](AI-Control-FACC-v0.3.30-dev-competence1-4f8a8b7-UMM-test.identity.json) · [Current audit](../docs/CLASS_COMPETENCE_CURRENT.md)
+
+Direct link: <https://github.com/recovribox-svg/AIControll-FACC/raw/refs/heads/codex/class-competence-foundation/test-builds/AI-Control-FACC-v0.3.30-dev-competence1-4f8a8b7-UMM-test.zip>
+
+For review on `codex/class-competence-foundation`, based on 0.3.30 test 2 (`71ca3de`). This is a separate candidate awaiting review/integration and gameplay, not a stable release. The current development test-2 archive below is preserved.
+
+- Corrects next-spell DC forecasting (actual d20/Persistent, half/Evasion and shadow disbelief), supported active burn-consequence graphs (ordinary nonlethal versus native Psychokineticist Will penalties), and area-grant path identity/duplicate harmful parts.
+- Source: `4f8a8b72581ff783fc8a7d8f54005bdb3f189a9c`. UMM still displays **0.3.30**; startup marker `[Build] v0.3.30 module=a22f23e0-64b2-4b76-b6bb-aa274edac6a8`.
+- ZIP SHA-256 `511fc52ed0d8977e1b962a5373e00207cff5d93e96db6d8f87c7b726a151e211`; DLL SHA-256 `dcf9d832f1241cc4a999e33f687003806432c84a7e07d9cbea89014ff036c9d4`. Packaged DLL/manifest bytes and ZIP CRC were checked against the validated build/source; only those two files are included.
+- Checks: **518 unit tests**, **9 inventory-tool tests**; real-reference Release build **0 warnings/errors**. Partial reader corpus **803 loaded, 0 failed, 287 rows, 0 errors**, plus **14 area / 13 save-route / 26 burn checks**. Reference scope remains open: **147 missing nonzero references**, AFFLICTION/SWARM skipped and several positive samples absent; see the audit. The harness has two pre-existing missing-firstpass warnings, separate from the mod build.
+- **Gameplay/Unity performance pending.** In TB and RT compare useful and declined boosts, standard versus Psych burn including low-HP/Will/rank transitions, and recipient branches/acceptance. Capture the startup MVID, full AI/native logs and competing values; [contracts and replay matrix](../docs/competence/IMPLEMENTATION.md). Author reports DarkCodex1.9.6/Mind Shield off; actual active graphs are checked structurally, not inferred from the class name.
+- To continue actual-roster coverage without a whole-game upload, use [BlueprintInventory](../tools/BlueprintInventory/README.md) on a current post-initialization export and send its derived JSON with game/DLC/mod versions.
+
 ## Current test build: v0.3.30-dev-test2 (827841f) - stat buffs valued by what they do for each character
 
 **[Download the UMM test ZIP (827841f)](AI-Control-FACC-v0.3.30-dev-test2-827841f-UMM-test.zip?raw=true)**

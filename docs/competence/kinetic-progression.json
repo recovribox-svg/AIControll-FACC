@@ -1,0 +1,516 @@
+[
+  {
+    "asset": "365b50dba54efb74fa24c07e9b7a838c",
+    "file": "Archetypes/BloodKineticist/BloodKineticistArchetype.jbp",
+    "type": "f04f17ea4eae4fb89afa5b4021444740, BlueprintArchetype",
+    "add": [
+      {
+        "level": 1,
+        "features": [
+          "BloodKineticistWrackFeature"
+        ]
+      },
+      {
+        "level": 5,
+        "features": [
+          "BloodKineticistBleedingFeature"
+        ]
+      },
+      {
+        "level": 7,
+        "features": [
+          "BloodKineticistBloodBlastFeature"
+        ]
+      },
+      {
+        "level": 9,
+        "features": [
+          "BloodKineticistGutWrenchingFeature"
+        ]
+      },
+      {
+        "level": 11,
+        "features": [
+          "BloodKineticistVampiricFeature"
+        ]
+      },
+      {
+        "level": 20,
+        "features": [
+          "BloodKineticistBloodMasteryFeature"
+        ]
+      }
+    ],
+    "remove": [
+      {
+        "level": 1,
+        "features": [
+          "InfusionSelection"
+        ]
+      },
+      {
+        "level": 7,
+        "features": [
+          "SecondatyElementalFocusSelection"
+        ]
+      },
+      {
+        "level": 5,
+        "features": [
+          "InfusionSelection"
+        ]
+      },
+      {
+        "level": 9,
+        "features": [
+          "InfusionSelection"
+        ]
+      },
+      {
+        "level": 11,
+        "features": [
+          "InfusionSelection"
+        ]
+      }
+    ]
+  },
+  {
+    "asset": "f12f18ae8842425489d29f302e69134c",
+    "file": "Archetypes/DarkElementalist/DarkElementalistArchetype.jbp",
+    "type": "f04f17ea4eae4fb89afa5b4021444740, BlueprintArchetype",
+    "add": [
+      {
+        "level": 1,
+        "features": [
+          "DarkElementalistDarkStudies",
+          "DarkElementalistBurnFeature",
+          "DarkElementalistElementalOverflowProgression"
+        ]
+      }
+    ],
+    "remove": [
+      {
+        "level": 1,
+        "features": [
+          "BurnFeature",
+          "ElementalOverflowProgression"
+        ]
+      }
+    ]
+  },
+  {
+    "asset": "4a8324d676d642c99edcdda6988ca3b1",
+    "file": "Archetypes/ElementalEngine/ElementalEngineArchetype.jbp",
+    "type": "f04f17ea4eae4fb89afa5b4021444740, BlueprintArchetype",
+    "add": [
+      {
+        "level": 3,
+        "features": [
+          "ElementalEngineBurnoutFeature",
+          "ElementalEngineBurnoutTriggerFeature"
+        ]
+      },
+      {
+        "level": 7,
+        "features": [
+          "ElementalEngineAdditionalEffectsFeature7"
+        ]
+      },
+      {
+        "level": 13,
+        "features": [
+          "ElementalEngineAdditionalEffectsFeature13"
+        ]
+      }
+    ],
+    "remove": [
+      {
+        "level": 1,
+        "features": [
+          "ElementalOverflowProgression"
+        ]
+      },
+      {
+        "level": 11,
+        "features": [
+          "Supercharge"
+        ]
+      }
+    ]
+  },
+  {
+    "asset": "7d61d9b2250260a45b18c5634524a8fb",
+    "file": "Archetypes/KineticKnight/KineticKnightArchetype.jbp",
+    "type": "f04f17ea4eae4fb89afa5b4021444740, BlueprintArchetype",
+    "add": [
+      {
+        "level": 1,
+        "features": [
+          "KineticBladeInfusion",
+          "KineticKnightElementalFocusSelection",
+          "KineticKnightElementalBlade",
+          "KineticWarriorFeature",
+          "ELementalBastionFeature"
+        ]
+      },
+      {
+        "level": 9,
+        "features": [
+          "BladeWhirlwindInfusion"
+        ]
+      },
+      {
+        "level": 3,
+        "features": [
+          "KnightsResolve"
+        ]
+      }
+    ],
+    "remove": [
+      {
+        "level": 11,
+        "features": [
+          "Supercharge"
+        ]
+      },
+      {
+        "level": 1,
+        "features": [
+          "InfusionSelection",
+          "ElementalFocusSelection"
+        ]
+      },
+      {
+        "level": 3,
+        "features": [
+          "InfusionSelection"
+        ]
+      },
+      {
+        "level": 9,
+        "features": [
+          "InfusionSelection"
+        ]
+      },
+      {
+        "level": 5,
+        "features": [
+          "MetakinesisEmpowerFeature"
+        ]
+      },
+      {
+        "level": 9,
+        "features": [
+          "MetakinesisMaximizedFeature"
+        ]
+      },
+      {
+        "level": 13,
+        "features": [
+          "MetakinesisQuickenFeature"
+        ]
+      },
+      {
+        "level": 19,
+        "features": [
+          "MetakinesisMaster"
+        ]
+      }
+    ]
+  },
+  {
+    "asset": "e0684d0a6ef44cae9d095f5318618a85",
+    "file": "Archetypes/KineticSharpshooter/KineticSharpshooterArchetype.jbp",
+    "type": "f04f17ea4eae4fb89afa5b4021444740, BlueprintArchetype",
+    "add": [
+      {
+        "level": 1,
+        "features": [
+          "KineticSharpshootterMainMechanicalHiddenFeature",
+          "KineticSharpshooterProficiencies",
+          "KineticSharpshooterMainFeature"
+        ]
+      },
+      {
+        "level": 3,
+        "features": [
+          "KineticQuiverFeature"
+        ]
+      },
+      {
+        "level": 20,
+        "features": [
+          "KineticSharpshooterCapstoneFeature"
+        ]
+      }
+    ],
+    "remove": [
+      {
+        "level": 1,
+        "features": [
+          "InfusionSelection",
+          "GatherPowerAbilitiesFeature"
+        ]
+      },
+      {
+        "level": 11,
+        "features": [
+          "Supercharge"
+        ]
+      }
+    ]
+  },
+  {
+    "asset": "aa11888104d17f7459851e8d559ffa98",
+    "file": "Archetypes/OverwhelmingSoul/OverwhelmingSoulArchetype.jbp",
+    "type": "f04f17ea4eae4fb89afa5b4021444740, BlueprintArchetype",
+    "add": [
+      {
+        "level": 1,
+        "features": [
+          "OverwhelmingSoulBurnFeature",
+          "OverwhelmingSoulMindOverMatterFeature"
+        ]
+      },
+      {
+        "level": 3,
+        "features": [
+          "OverwhelmingSoulOverwhelmingPowerFeature"
+        ]
+      },
+      {
+        "level": 6,
+        "features": [
+          "OverwhelmingSoulOverwhelmingPowerFeature",
+          "OverwhelmingSoulMentalProwessFeature"
+        ]
+      },
+      {
+        "level": 9,
+        "features": [
+          "OverwhelmingSoulOverwhelmingPowerFeature"
+        ]
+      },
+      {
+        "level": 10,
+        "features": [
+          "OverwhelmingSoulMentalProwessAdditionalUseFeature"
+        ]
+      },
+      {
+        "level": 12,
+        "features": [
+          "OverwhelmingSoulOverwhelmingPowerFeature"
+        ]
+      },
+      {
+        "level": 14,
+        "features": [
+          "OverwhelmingSoulMentalProwessAdditionalUseFeature"
+        ]
+      },
+      {
+        "level": 15,
+        "features": [
+          "OverwhelmingSoulOverwhelmingPowerFeature"
+        ]
+      },
+      {
+        "level": 18,
+        "features": [
+          "OverwhelmingSoulOverwhelmingPowerFeature",
+          "OverwhelmingSoulMentalProwessAdditionalUseFeature"
+        ]
+      }
+    ],
+    "remove": [
+      {
+        "level": 1,
+        "features": [
+          "BurnFeature",
+          "ElementalOverflowProgression"
+        ]
+      }
+    ]
+  },
+  {
+    "asset": "f2847dd4b12fffd41beaa3d7120d27ad",
+    "file": "Archetypes/Psychokineticist/PsychokineticistArchetype.jbp",
+    "type": "f04f17ea4eae4fb89afa5b4021444740, BlueprintArchetype",
+    "add": [
+      {
+        "level": 1,
+        "features": [
+          "PsychokineticistBurnFeature",
+          "MentalOverflowProgression",
+          "PsychokineticistEmotionalIntensity",
+          "PsychokineticistMindBurn"
+        ]
+      }
+    ],
+    "remove": [
+      {
+        "level": 1,
+        "features": [
+          "BurnFeature",
+          "ElementalOverflowProgression"
+        ]
+      },
+      {
+        "level": 3,
+        "features": []
+      }
+    ]
+  },
+  {
+    "asset": "42a455d9ec1ad924d889272429eb8391",
+    "file": "KineticistClass.jbp",
+    "type": "5f2bdd25f161a0d4c97bee89cf923d77, BlueprintCharacterClass",
+    "add": [],
+    "remove": []
+  },
+  {
+    "asset": "b79e92dd495edd64e90fb483c504b8df",
+    "file": "KineticistProgression.jbp",
+    "type": "bec71e89a676a99458c9e2d0804f2a0c, BlueprintProgression",
+    "add": [],
+    "remove": [],
+    "progression": [
+      {
+        "level": 1,
+        "features": [
+          "BurnFeature",
+          "KineticistProficiencies",
+          "GatherPowerAbilitiesFeature",
+          "ElementalFocusSelection",
+          "InfusionSelection",
+          "KineticBlastProgression",
+          "ElementalOverflowProgression",
+          "InfusionSpecializationProgression",
+          "DismissInfusionFeature"
+        ]
+      },
+      {
+        "level": 2,
+        "features": [
+          "WildTalentSelection"
+        ]
+      },
+      {
+        "level": 3,
+        "features": [
+          "InfusionSelection",
+          "ElementalOverflowBonusFeature"
+        ]
+      },
+      {
+        "level": 4,
+        "features": [
+          "WildTalentSelection"
+        ]
+      },
+      {
+        "level": 5,
+        "features": [
+          "MetakinesisEmpowerFeature",
+          "InfusionSelection"
+        ]
+      },
+      {
+        "level": 6,
+        "features": [
+          "WildTalentSelection"
+        ]
+      },
+      {
+        "level": 7,
+        "features": [
+          "SecondatyElementalFocusSelection"
+        ]
+      },
+      {
+        "level": 8,
+        "features": [
+          "WildTalentSelection"
+        ]
+      },
+      {
+        "level": 9,
+        "features": [
+          "InfusionSelection",
+          "MetakinesisMaximizedFeature"
+        ]
+      },
+      {
+        "level": 10,
+        "features": [
+          "WildTalentSelection"
+        ]
+      },
+      {
+        "level": 11,
+        "features": [
+          "InfusionSelection",
+          "Supercharge"
+        ]
+      },
+      {
+        "level": 12,
+        "features": [
+          "WildTalentSelection"
+        ]
+      },
+      {
+        "level": 13,
+        "features": [
+          "InfusionSelection",
+          "MetakinesisQuickenFeature"
+        ]
+      },
+      {
+        "level": 14,
+        "features": [
+          "WildTalentSelection"
+        ]
+      },
+      {
+        "level": 15,
+        "features": [
+          "ThirdElementalFocusSelection"
+        ]
+      },
+      {
+        "level": 16,
+        "features": [
+          "WildTalentSelection",
+          "CompositeBlastSpecialisation"
+        ]
+      },
+      {
+        "level": 17,
+        "features": [
+          "InfusionSelection"
+        ]
+      },
+      {
+        "level": 18,
+        "features": [
+          "WildTalentSelection"
+        ]
+      },
+      {
+        "level": 19,
+        "features": [
+          "InfusionSelection",
+          "MetakinesisMaster"
+        ]
+      },
+      {
+        "level": 20,
+        "features": [
+          "WildTalentSelection"
+        ]
+      }
+    ]
+  }
+]

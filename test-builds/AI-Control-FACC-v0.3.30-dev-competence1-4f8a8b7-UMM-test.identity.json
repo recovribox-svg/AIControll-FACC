@@ -1,0 +1,76 @@
+{
+  "name": "AI Control competence programme foundation candidate 1",
+  "version": "0.3.30",
+  "umm_manifest_version": "0.3.30",
+  "umm_mod_id": "CompanionAI_Pathfinder",
+  "branch": "codex/class-competence-foundation",
+  "starting_development_commit": "71ca3de04d97d8a4ce14f7ab5bb75bcc84488504",
+  "runtime_source_commit": "4f8a8b72581ff783fc8a7d8f54005bdb3f189a9c",
+  "archive": "AI-Control-FACC-v0.3.30-dev-competence1-4f8a8b7-UMM-test.zip",
+  "zip_sha256": "511fc52ed0d8977e1b962a5373e00207cff5d93e96db6d8f87c7b726a151e211",
+  "dll_sha256": "dcf9d832f1241cc4a999e33f687003806432c84a7e07d9cbea89014ff036c9d4",
+  "manifest_sha256": "d6ee91e78dc5d4981ad51a1a1a85bb1e7fe3f0a87814697f2fd9ee1c20d35594",
+  "module_mvid": "a22f23e0-64b2-4b76-b6bb-aa274edac6a8",
+  "startup_marker": "[Build] v0.3.30 module=a22f23e0-64b2-4b76-b6bb-aa274edac6a8",
+  "archive_contents": [
+    "CompanionAI_Pathfinder.dll",
+    "Info.json"
+  ],
+  "checks": {
+    "unit_tests": {
+      "passed": 518,
+      "failed": 0,
+      "skipped": 0
+    },
+    "inventory_tests": {
+      "passed": 9,
+      "failed": 0
+    },
+    "release_build": {
+      "warnings": 0,
+      "errors": 0,
+      "references": "actual supplied game DLLs, no compile stubs"
+    },
+    "profile_audit": {
+      "loaded": 803,
+      "failed": 0,
+      "rows": 287,
+      "reader_errors": 0,
+      "area_grant_checks": 14,
+      "save_boost_call_paths": 13,
+      "burn_consequence_checks": 26,
+      "actual_burn_features_loaded": 2,
+      "actual_burn_features_expected": 2,
+      "unresolved_nonzero_references": 147,
+      "unresolved_occurrences": 695,
+      "explicit_skips": [
+        "AFFLICTION",
+        "SWARM-AREA"
+      ],
+      "positive_samples_absent": [
+        "Enervation",
+        "on-hit creature effects",
+        "STAT-LINKS linked facts"
+      ],
+      "harness_build_warnings": 2,
+      "harness_warning": "Pre-existing MSB3106 missing unused Assembly-CSharp-firstpass.dll reference",
+      "optional_provider": "not supplied"
+    },
+    "external_signatures": {
+      "total": 1658,
+      "new_against_baseline": 11,
+      "removed_against_baseline": 0
+    },
+    "packed_dll_matches_checked_build": true,
+    "packed_manifest_matches_source": true,
+    "archive_crc": "passed",
+    "in_game": "pending",
+    "unity_performance": "pending"
+  },
+  "reported_darkcodex": {
+    "version": "1.9.6",
+    "MindShield": "disabled; user-reported",
+    "installed_binary_and_postinit_graph": "unverified"
+  },
+  "publication_scope": "Task-branch UMM test candidate for review and paired TB/RT replay; not a release or whole-roster/mod compatibility certification."
+}

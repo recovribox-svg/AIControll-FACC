@@ -140,8 +140,9 @@ namespace CompanionAI_Pathfinder.Tactics
                             // A harmful aura that also reaches allies costs what it takes from them.
                             var hurt = Reaching(ally, true);
                             if (hurt.Count > 0)
+                                // Several retained branch paths can grant the same buff; appraise its parts once.
                                 total -= hurt.Max(r => r.Weight) * CombatMath.ControlWorth(ally) *
-                                         HarmShare(ctx, ability, ally, hurt.Select(r => r.Buff).ToList()) * harmRounds;
+                                         HarmShare(ctx, ability, ally, hurt.Select(r => r.Buff).Distinct().ToList()) * harmRounds;
                         }
                     if (aura.Area.CanTargetEnemies)
                         foreach (var enemy in UnitsAround(ctx.Enemies, bearer.Position, radius))
@@ -150,7 +151,7 @@ namespace CompanionAI_Pathfinder.Tactics
                             if (hits.Count == 0) continue;
                             float p = CombatMath.SpellResistancePass(unit, enemy, ability) *
                                       hits.Max(r => r.Weight * CombatMath.SaveFailChance(ability, r.Save, enemy));
-                            float worth = p * CombatMath.ControlWorth(enemy) * HarmShare(ctx, ability, enemy, hits.Select(r => r.Buff).ToList()) * harmRounds;
+                            float worth = p * CombatMath.ControlWorth(enemy) * HarmShare(ctx, ability, enemy, hits.Select(r => r.Buff).Distinct().ToList()) * harmRounds;
                             if (CombatMath.IsDisabled(enemy)) worth *= 0.4f;
                             if (worth <= 0f) continue;
                             total += worth;

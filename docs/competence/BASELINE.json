@@ -1,0 +1,85 @@
+{
+  "date": "2026-11-08",
+  "source_commit": "71ca3de04d97d8a4ce14f7ab5bb75bcc84488504",
+  "manifest_version": "0.3.30",
+  "current_development_package": "0.3.30 test 2 (827841f)",
+  "fresh_baseline_dll": {
+    "size": 1206272,
+    "assembly": "CompanionAI_Pathfinder, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null",
+    "mvid": "99b8e985-f47d-43e9-8556-1f5d6865f8fd",
+    "sha256": "23689d03ad6010b4c86efaafa3443707efa2f4dbc54a3aa6f80321f1ca3bca09",
+    "fileVersion": "",
+    "productVersion": "",
+    "informative": null,
+    "versionConstants": []
+  },
+  "tests": {
+    "passed": 493,
+    "failed": 0,
+    "skipped": 0
+  },
+  "real_reference_release_build": {
+    "warnings": 0,
+    "errors": 0
+  },
+  "profile_audit": {
+    "loaded": 803,
+    "failed": 0,
+    "ability_toggle_rows": 287,
+    "reader_errors": 0,
+    "explicit_skips": [
+      "AFFLICTION",
+      "SWARM-AREA"
+    ],
+    "absent_positive_samples": [
+      "Enervation",
+      "on-hit creature effects",
+      "STAT-LINKS linked facts"
+    ],
+    "optional_provider": "not supplied"
+  },
+  "independent_reference_inventory": {
+    "distinct_references": 901,
+    "reference_occurrences": 4887,
+    "unresolved_distinct": 147,
+    "unresolved_occurrences": 695,
+    "unresolved_source_files": 214,
+    "classes": 1,
+    "archetypes": 7,
+    "progressions": 41,
+    "corpus_sha256": "1efffa543035403ce9926a6e96435d04412add06a19d62ac7afa6ce45a39ad9f",
+    "meaning": "Syntactic !bp references within the supplied export only; not all necessarily traversed by AI readers."
+  },
+  "native_assembly": {
+    "file": "Assembly-CSharp.dll",
+    "sha256": "2cb7160b7154d4ffacc77b9c51b1eb26199e1294300f04fdfc073367b2ef8953",
+    "mvid": "90a9869c-2792-4c7b-bfb7-5a8b33da7c82",
+    "assembly_version": "0.0.0.0",
+    "installed_game_patch": "unknown"
+  },
+  "reported_content_mods": [
+    "Tabletop Tweaks Core",
+    "Tabletop Tweaks Base",
+    "Isekai",
+    "Psionics",
+    "MysticalMayhem",
+    "TomeOfTheFirebird",
+    "DarkCodex",
+    "Demonology"
+  ],
+  "installed_mod_versions": "DarkCodex version/config user-reported; other versions unknown; public source candidates recorded separately",
+  "current_gameplay": "pending",
+  "current_unity_performance": "pending",
+  "historical_gameplay": {
+    "build": "0.3.28 test 3",
+    "mvid": "09bc562d-a4dc-4c51-a8ff-ebc2e6f1cf3a",
+    "meaning": "Inherited supplied AI/native combat logs; no upgrade to current build acceptance."
+  },
+  "reported_mod_configuration": {
+    "DarkCodex": {
+      "version": "1.9.6",
+      "MindShield": "disabled (user-reported)",
+      "installed_binary_identity": "not supplied"
+    }
+  }
+}

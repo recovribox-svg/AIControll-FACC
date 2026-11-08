@@ -4464,3 +4464,29 @@ attack), Friend to Animals (Charisma to saves). In the spell dumps: Bestow Grace
 
 `Info.json` 0.3.30. Test ZIP `AI-Control-FACC-v0.3.30-dev-test2-827841f-UMM-test.zip` (MVID
 `05361eac-e11f-4c14-a363-3355229923c2`); 493 tests.
+
+## 124. Class competence programme: foundation from 0.3.30 test 2
+
+Current register: [CLASS_COMPETENCE_CURRENT.md](CLASS_COMPETENCE_CURRENT.md). It preserves historical reports,
+reconciles later implementations and separates actor availability, permission, understanding, decision/execution,
+offline validation, gameplay and performance. Its base-family map is a planning taxonomy; only the supplied
+Kineticist class plus seven archetypes have current export-backed roster/progression metadata.
+
+The selected first stage repairs the first failing boundaries in three shared mechanisms:
+
+- A next-spell DC boost changes the actual modeled saving throw before natural-roll limits and Persistent.
+  Half-save/Evasion fractions and shadow disbelief contribute their own before/after factors. SR and hit chance
+  remain unchanged. Existing mixed-effect and compound-metamagic approximations are recorded, not certified away.
+- Native burn is an event whose active feature applies consequences. The supported direct permanent replacement
+  buff/property/rank shape yields actual nonlethal/save deltas; a Psychokineticist-shaped graph has Will/skill penalties
+  rather than phantom HP loss. Active facts, held rank scalars and repeated delta quotes are decision-local.
+  Unknown/modded properties retain an explicit legacy fallback; DarkCodex Mind Shield requires its own evidence.
+- Area grants retain checker identity, branch polarity and nearest save-wrapper identity. Identical modeled paths
+  deduplicate; different paths survive. Harmful aura consumers appraise each resulting buff's parts once. Unknown
+  guard probabilities, composed weighting, custom/nested save DCs and recurring resource lifecycle remain scheduled.
+
+Contracts, fixture results, bounded work/cache lifetimes, rollback and paired TB/RT replay cases are in
+[competence/IMPLEMENTATION.md](competence/IMPLEMENTATION.md) and
+[competence/MECHANIC_CONTRACTS.md](competence/MECHANIC_CONTRACTS.md). No class rotation or new movement,
+target commitment, retreat, pathfinding or cancellation behavior is introduced. Compilation and reader fixtures
+do not establish live actor competence or Unity performance; the identified test package must be replayed.

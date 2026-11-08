@@ -1454,19 +1454,51 @@ namespace CompanionAI_Pathfinder.Tactics
             float p = (resistancePass ?? SpellResistancePass(caster, enemy, ability)) * ShadowShare(ability, enemy);
             if (profile.NeedsAttackRoll) p *= SpellAttackHitChance(caster, enemy, ability);
             if (profile.Save != SavingThrowType.Unknown)
-            {
-                float fail = SaveFailChance(ability, profile, enemy);
-                if (!damage) p *= fail;
-                else if (!profile.HalfOnSave) p *= fail;
-                else
-                {
-                    // ★ v0.3.18 (review): Evasion takes nothing on a passed save, Improved Evasion half on a failed one
-                    // (ContextActionDealDamage with the save's Evasion / ImprovedEvasion, set by the target's facts).
-                    EvasionOf(enemy, profile.Save, out bool evasion, out bool improved);
-                    p *= fail * (improved ? 0.5f : 1f) + (1f - fail) * (evasion ? 0f : 0.5f);
-                }
-            }
+                p *= SaveEffectFactor(ability, profile, enemy, damage);
             return p;
+        }
+
+        /// <summary>The save-dependent part only; shared by ordinary effect forecasting and next-spell DC boosts.</summary>
+        private static float SaveEffectFactor(AbilityData ability, AbilityProfile profile, UnitEntityData target, bool damage,
+                                             int dcBonus = 0)
+        {
+            float fail = SaveFailChance(ability, profile.Save, target, dcBonus);
+            bool half = damage && profile.HalfOnSave;
+            bool evasion = false, improved = false;
+            if (half) EvasionOf(target, profile.Save, out evasion, out improved);
+            return ValueModel.SaveEffectFactor(fail, half, evasion, improved);
+        }
+
+        /// <summary>
+        /// ★ v0.3.30 competence programme: the marginal save contribution of a DC boost. Read the same actual save
+        /// bonuses, observed automatic success, d20 limits, Persistent and Evasion as the ordinary forecast, including
+        /// a shadow spell's separate disbelief Will save. SR/hit remain independent of DC.
+        /// </summary>
+        internal static float DcBoostShare(AbilityData ability, AbilityProfile profile, UnitEntityData target, int dcBonus,
+                                           bool damage, out float before, out float after)
+        {
+            bool hasSave = profile.Save != SavingThrowType.Unknown;
+            bool half = hasSave && damage && profile.HalfOnSave;
+            bool evasion = false, improved = false;
+            if (half) EvasionOf(target, profile.Save, out evasion, out improved);
+            float failBefore = hasSave ? SaveFailChance(ability, profile.Save, target) : 1f;
+            float failAfter = dcBonus > 0 && hasSave ? SaveFailChance(ability, profile.Save, target, dcBonus) : failBefore;
+            before = ValueModel.SaveEffectFactor(failBefore, half, evasion, improved);
+            after = ValueModel.SaveEffectFactor(failAfter, half, evasion, improved);
+            // Factor.GetInt is an existing native settings query: evaluate it once, then reuse that value for both DCs.
+            float reality = ShadowRealityFactor(ability);
+            if (profile.Save == SavingThrowType.Will)
+            {
+                // The ordinary Will save and disbelief use the same forecast inputs; reuse these scalar results.
+                before *= ValueModel.ShadowEffectFactor(failBefore, reality);
+                after *= ValueModel.ShadowEffectFactor(failAfter, reality);
+            }
+            else
+            {
+                before *= ShadowShare(ability, target, 0, reality);
+                after *= ShadowShare(ability, target, Math.Max(0, dcBonus), reality);
+            }
+            return ValueModel.SaveBoostShare(before, after);
         }
 
         /// <summary>
@@ -1795,15 +1827,19 @@ namespace CompanionAI_Pathfinder.Tactics
         }
 
         private static float SaveRollFailChance(int dc, int bonus) =>
-            Mathf.Clamp((dc - bonus - 1) / 20f, 0.05f, 0.95f);
+            ValueModel.SaveFailChance(dc, bonus);
 
         /// <summary>★ v0.3.21: the same for a save the ability's own profile does not carry (an aura's: Archon's Aura).</summary>
-        public static float SaveFailChance(AbilityData ability, SavingThrowType save, UnitEntityData target)
+        public static float SaveFailChance(AbilityData ability, SavingThrowType save, UnitEntityData target) =>
+            SaveFailChance(ability, save, target, 0);
+
+        /// <summary>A read-only DC forecast: add to the actual DC before natural-roll limits and Persistent.</summary>
+        internal static float SaveFailChance(AbilityData ability, SavingThrowType save, UnitEntityData target, int dcBonus)
         {
             if (save == SavingThrowType.Unknown || target == null) return 1f;
             try
             {
-                int dc = ParamsOf(ability)?.DC ?? 10;
+                int dc = (ParamsOf(ability)?.DC ?? 10) + dcBonus;
                 int bonus;
                 switch (save)
                 {
@@ -1819,16 +1855,12 @@ namespace CompanionAI_Pathfinder.Tactics
                     if (seen.AutoPass) return 0f;
                     bonus += seen.Delta;
                 }
-                // Fails when d20 + bonus < DC.
-                float fail = SaveRollFailChance(dc, bonus);
                 // ★ v0.3.18 (AA-4): Persistent - a passed save is rolled again (AbilityEffectRunAction,
                 // ContextActionSavingThrow): the target resists only by passing both.
-                try
-                {
-                    if (ability.HasMetamagic(Metamagic.Persistent)) fail = 1f - (1f - fail) * (1f - fail);
-                }
+                bool persistent = false;
+                try { persistent = ability.HasMetamagic(Metamagic.Persistent); }
                 catch { }
-                return fail;
+                return ValueModel.SpellSaveFailChance(dc, bonus, persistent);
             }
             catch
             {
@@ -2152,21 +2184,31 @@ namespace CompanionAI_Pathfinder.Tactics
         /// ShadowSpellLogicExtension). 1 for any other ability; with no target (a shadow summon's worth) an even save:
         /// half real, half at the factor.
         /// </summary>
-        public static float ShadowShare(AbilityData ability, UnitEntityData target)
+        public static float ShadowShare(AbilityData ability, UnitEntityData target) => ShadowShare(ability, target, 0);
+
+        /// <summary>A shadow copy's disbelief save uses the same actual boosted DC as its ordinary save.</summary>
+        internal static float ShadowShare(AbilityData ability, UnitEntityData target, int dcBonus) =>
+            ShadowShare(ability, target, dcBonus, ShadowRealityFactor(ability));
+
+        private static float ShadowRealityFactor(AbilityData ability)
         {
             try
             {
                 var shadow = ability?.ShadowSpellSettings;
                 if (shadow?.Factor == null) return 1f;
-                float factor = Mathf.Clamp01(shadow.Factor.GetInt(ability.Caster?.Unit) / 100f);
-                if (factor <= 0f) return 1f;
-                float fail = target != null ? SaveFailChance(ability, SavingThrowType.Will, target) : 0.5f;
-                return fail + (1f - fail) * factor;
+                return Mathf.Clamp01(shadow.Factor.GetInt(ability.Caster?.Unit) / 100f);
             }
             catch
             {
                 return 1f;
             }
+        }
+
+        private static float ShadowShare(AbilityData ability, UnitEntityData target, int dcBonus, float reality)
+        {
+            if (reality <= 0f || reality >= 1f) return 1f;
+            float fail = target != null ? SaveFailChance(ability, SavingThrowType.Will, target, dcBonus) : 0.5f;
+            return ValueModel.ShadowEffectFactor(fail, reality);
         }
 
         /// <summary>★ v0.3.21 (gaps): the unit regenerates (AddEffectRegeneration: UnitPartRegeneration) - at 0 HP it only
