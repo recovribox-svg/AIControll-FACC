@@ -1,0 +1,171 @@
+{
+  "starting_commit": "fdc5e5e0906a4afc7a1af22cebbc29c0ed8d7e20",
+  "version": "0.3.30",
+  "dll": {
+    "assembly": "CompanionAI_Pathfinder, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null",
+    "mvid": "9a4ed23d-c613-4ace-a10b-9d2f55761d62",
+    "sha256": "f3ee39c45bb393a0cb1144dd69671cc54352c5c2d66b0c1f894a90848a9f9f11",
+    "size": 1226240
+  },
+  "input_corpus_sha256": "a0454cbe724e62e5534f373254676d7189251fa2f75a45b3fffd6a4fc223190c",
+  "mapping_pr": "https://github.com/recovribox-svg/AIControll-FACC/pull/21",
+  "native_assembly": {
+    "mvid": "90a9869c-2792-4c7b-bfb7-5a8b33da7c82",
+    "sha256": "2cb7160b7154d4ffacc77b9c51b1eb26199e1294300f04fdfc073367b2ef8953",
+    "game_patch_version": "not established"
+  },
+  "unit_tests": {
+    "baseline_passed": 522,
+    "candidate_passed": 537,
+    "failed": 0,
+    "skipped": 0
+  },
+  "release_build": {
+    "references": "supplied actual native and UMM files; existing Harmony 2.2.2 compile dependency",
+    "warnings": 0,
+    "errors": 0
+  },
+  "strict_audit": {
+    "loaded_unique": 44637,
+    "failed": 1,
+    "allowed": 0,
+    "status": "INCOMPLETE",
+    "exit_code": 1,
+    "ability_verdicts": false
+  },
+  "diagnostic_audit": {
+    "loaded_unique": 44637,
+    "failed": 1,
+    "allowed": 1,
+    "status": "PARTIAL",
+    "exit_code": 0,
+    "rows": 4807,
+    "reader_errors": 0,
+    "explicit_skips": []
+  },
+  "known_failure": {
+    "name": "AchaekekSacredWeaponFeature",
+    "asset_id": "c37574188b0242d2ac04a454a0430dd5",
+    "sha256": "1fd534ef0fc9573520d101c721e5d2721812fdb5b8f8a13e29fcbc3acb06ac0f",
+    "error": "SecurityException: ECall methods must be packaged into a system module."
+  },
+  "native_cost_checks": {
+    "checks": 84,
+    "progression_shaped_kits": 6,
+    "judgment_graphs": 15,
+    "failures": 0,
+    "skips": 0,
+    "actor_creation": false,
+    "provider_initialization": false,
+    "native_commands": false
+  },
+  "source_identities": [
+    {
+      "file": "Tactics/TacticalEngine.Toggles.cs",
+      "sha256": "beac86206253ea7f0c1cbb04a4dfc93d83812912ee59231889b3c64947b5fdbc"
+    },
+    {
+      "file": "Tactics/ValueModel.Toggles.cs",
+      "sha256": "11e57a06f022cfefb754b2256fb7ef2e86aff7ea73279fc6aa753c8674abd614"
+    },
+    {
+      "file": "tests/CompanionAI.Tests/ToggleResourceTests.cs",
+      "sha256": "652f1371bbc50f7c32c1b46f143b2aee72469e3cc7a590eeaf4820b86ee1019f"
+    },
+    {
+      "file": "tests/ToggleCosts.Native/Program.cs",
+      "sha256": "69b3bb369c5f977cb4f60341201e92420518651f40d85eb55076653433d48f6f"
+    }
+  ],
+  "class_mythic_scope": [
+    {
+      "spend_type": "TurnOn",
+      "exported": 27,
+      "without_structural_profile_exclusion": 25
+    },
+    {
+      "spend_type": "Start",
+      "exported": 5,
+      "without_structural_profile_exclusion": 4
+    },
+    {
+      "spend_type": "NewRound",
+      "exported": 151,
+      "without_structural_profile_exclusion": 125
+    },
+    {
+      "spend_type": "Attack",
+      "exported": 2,
+      "without_structural_profile_exclusion": 0
+    },
+    {
+      "spend_type": "Judgment",
+      "exported": 15,
+      "without_structural_profile_exclusion": 15
+    },
+    {
+      "spend_type": "AttackHit",
+      "exported": 1,
+      "without_structural_profile_exclusion": 0
+    },
+    {
+      "spend_type": "AttackCrit",
+      "exported": 1,
+      "without_structural_profile_exclusion": 0
+    },
+    {
+      "spend_type": "OncePerMinute",
+      "exported": 44,
+      "without_structural_profile_exclusion": 43
+    },
+    {
+      "spend_type": "OncePerHour",
+      "exported": 8,
+      "without_structural_profile_exclusion": 8
+    },
+    {
+      "spend_type": "OncePerTenMinutes",
+      "exported": 12,
+      "without_structural_profile_exclusion": 12
+    }
+  ],
+  "signature_comparison": {
+    "baseline_mvid": "0ed42ac5-d9ce-4f88-a339-388028b036c3",
+    "added_member_refs": 17,
+    "native_added_refs": 11,
+    "harmony_added_refs": 6,
+    "resolved": 17,
+    "providers": "supplied native assembly and Harmony 2.2.2 compile provider; no runtime-Harmony compatibility certificate",
+    "added": [
+      "0Harmony F System.Collections.ObjectModel.ReadOnlyCollection`1<HarmonyLib.Patch> HarmonyLib.Patches::Finalizers",
+      "0Harmony F System.Collections.ObjectModel.ReadOnlyCollection`1<HarmonyLib.Patch> HarmonyLib.Patches::Postfixes",
+      "0Harmony F System.Collections.ObjectModel.ReadOnlyCollection`1<HarmonyLib.Patch> HarmonyLib.Patches::Prefixes",
+      "0Harmony F System.Collections.ObjectModel.ReadOnlyCollection`1<HarmonyLib.Patch> HarmonyLib.Patches::Transpilers",
+      "0Harmony M class HarmonyLib.Patches HarmonyLib.Harmony::GetPatchInfo(class System.Reflection.MethodBase) this=False",
+      "0Harmony M class System.Reflection.MethodInfo HarmonyLib.Patch::get_PatchMethod() this=True",
+      "Assembly-CSharp F class !0 Kingmaker.EntitySystem.BlueprintComponentAndRuntime`1<Kingmaker.UnitLogic.ActivatableAbilities.ActivatableAbilityResourceLogic>::Component",
+      "Assembly-CSharp F class Kingmaker.ElementsSystem.ActionList Kingmaker.Designers.Mechanics.Facts.CombatStateTrigger::CombatStartActions",
+      "Assembly-CSharp F class Kingmaker.EntitySystem.EntityFactComponent Kingmaker.EntitySystem.BlueprintComponentAndRuntime`1<Kingmaker.UnitLogic.ActivatableAbilities.ActivatableAbilityResourceLogic>::Runtime",
+      "Assembly-CSharp F valuetype System.Boolean Kingmaker.UnitLogic.ActivatableAbilities.BlueprintActivatableAbility::DeactivateAfterFirstRound",
+      "Assembly-CSharp F valuetype System.Boolean Kingmaker.UnitLogic.Mechanics.Actions.ContextSpendResource::ContextValueSpendure",
+      "Assembly-CSharp F valuetype System.Int32 Kingmaker.UnitLogic.ActivatableAbilities.ActivatableAbilityResourceLogic/ComponentData::RoundsToSpendingCounter",
+      "Assembly-CSharp M System.Collections.Generic.IEnumerable`1<Kingmaker.EntitySystem.BlueprintComponentAndRuntime`1<!!0>> Kingmaker.EntitySystem.EntityFact::SelectComponentsWithRuntime() this=True",
+      "Assembly-CSharp M class Kingmaker.Blueprints.BlueprintAbilityResource Kingmaker.UnitLogic.Mechanics.Actions.ContextSpendResource::get_Resource() this=True",
+      "Assembly-CSharp M class Kingmaker.Blueprints.Facts.BlueprintUnitFact Kingmaker.UnitLogic.ActivatableAbilities.ActivatableAbilityResourceLogic::get_FreeBlueprint() this=True",
+      "Assembly-CSharp M valuetype System.Boolean Kingmaker.EntitySystem.EntityFactComponent::TryGetData(!!0&) this=True",
+      "Assembly-CSharp M valuetype System.Single Kingmaker.UnitLogic.ActivatableAbilities.ActivatableAbility::get_TimeToNextRound() this=True"
+    ]
+  },
+  "gameplay": "pending",
+  "unity_performance": "pending",
+  "remaining_fallbacks": [
+    "multiple/custom spend components",
+    "source-item charges",
+    "first-round expiry",
+    "missing/invalid renewal state",
+    "unknown cost/callback patches",
+    "unsupported activation actions/guards",
+    "depleted-pool DeactivateImmediately event lifetime"
+  ],
+  "test_package": "recorded in the following packaging commit"
+}
