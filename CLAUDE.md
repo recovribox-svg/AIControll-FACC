@@ -18,6 +18,13 @@ prerequisite gate values, area-grant note corrected (`7e89a16`). Derived roster 
 (C07 Magus held charge first - confirmed execution gap; then C06 toggle resource horizons, C08 forms). Test ZIP
 `AI-Control-FACC-v0.3.30-dev-competence2-7e89a16-UMM-test.zip` (MVID `0ed42ac5-d9ce-4f88-a339-388028b036c3`); 522 unit +
 11 inventory tests; not played. Manifest stays 0.3.30. Preserve all movement/target/pathfinding/cancellation boundaries below.
+**competence3 (8 November 2026, `docs/TACTICAL_AI.md` §126, not played):** competence2 played (6 TB + 8 RT fights, higher enemy
+difficulty, eleven-member party, no mod errors). Invisible last enemy revealed by Faerie Fire/Glitterdust where the party saw
+it vanish (`HiddenEnemies`, `TacticalEngine.Hidden.cs`; a search walk would be a movement change - for the author); walk prices
+read once per decision (`TacticalEngine.DropModel.cs`, allies x enemies x allies per spot before); unique buffs settle 3 rounds
+(`ValueModel.UniqueMoveAllowed`); cast-time damage bonuses and Point-Blank Shot in ability damage (`CombatMath.CastBonus.cs`:
+Throw Anything bombs were valued at a third). Orvath's burn stays on the older model (DarkCodex replaces `BurnNumberProperty`).
+Test ZIP `AI-Control-FACC-v0.3.30-dev-competence3-cfd8f0a-UMM-test.zip` (MVID `97bdfced-0fac-49d9-9673-2138acc373f2`); 531 tests.
 
 **Current handover (29 October 2026, Claude): read [docs/INTEGRATION_0322_FOLLOWUPS.md](docs/INTEGRATION_0322_FOLLOWUPS.md)
 before resuming.** With the author's authorization, Claude reviewed and merged PR #13, #14 and #15 into development

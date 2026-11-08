@@ -1,0 +1,29 @@
+{
+  "name": "AI Control competence3: review of the competence2 play-test",
+  "version": "0.3.30",
+  "umm_manifest_version": "0.3.30",
+  "umm_mod_id": "CompanionAI_Pathfinder",
+  "branch": "claude/dreamy-pasteur-b9h3rn",
+  "runtime_source_commit": "cfd8f0a",
+  "archive": "AI-Control-FACC-v0.3.30-dev-competence3-cfd8f0a-UMM-test.zip",
+  "zip_sha256": "2544eec76470b87d5be1046c8ba35456113e570de9fe7143a4d3eb4c3579dca5",
+  "dll_sha256": "69aec4f46f61eb268e102a5c756f070b56f31f85bac7fb1426f4aaac6b295edc",
+  "manifest_sha256": "d6ee91e78dc5d4981ad51a1a1a85bb1e7fe3f0a87814697f2fd9ee1c20d35594",
+  "module_mvid": "97bdfced-0fac-49d9-9673-2138acc373f2",
+  "startup_marker": "[Build] v0.3.30 module=97bdfced-0fac-49d9-9673-2138acc373f2",
+  "archive_contents": [
+    "CompanionAI_Pathfinder.dll",
+    "Info.json"
+  ],
+  "checks": {
+    "unit_tests": { "passed": 531, "failed": 0, "skipped": 0 },
+    "release_build": { "warnings": 0, "errors": 0, "references": "real game assemblies, clean worktree at cfd8f0a" },
+    "external_references": "SigDump: 1695 members (competence2: 1660); the added ones are DamageBonusConditional, DistanceDamageBonus and AddAbilityUseTrigger fields, EntityDataBase.Parts and UnitGroup.Memory, all compiled against the shipped game",
+    "profile_audit": "arc, buffs, classes, feats, kineticist, mythic, spells, creature abilities/weapons: 16069 loaded, 1 failed (AchaekekSacredWeaponFeature: an engine call outside the game); all checks 0 failures incl. REVEAL 3 (Faerie Fire, Glitterdust), CAST-BONUS 2 (Throw Anything, Arcane Bomb, Targeted Bomb Admixture, Underground Chemist), BURN-CONSEQUENCE 42, SAVE-BOOST 16, AREA-GRANT-PATH 14",
+    "packed_dll_matches_build": true,
+    "packed_manifest_matches_source": true,
+    "in_game": "pending",
+    "unity_performance": "pending"
+  },
+  "publication_scope": "Development test download: competence2 plus the fixes from its play-test (invisible enemies revealed, decision cost with large parties, unique buffs settle, cast-time bomb damage); not a release."
+}

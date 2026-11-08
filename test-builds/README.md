@@ -1,6 +1,29 @@
 # Test builds
 
-## Current test build: v0.3.30-dev-competence2 (7e89a16) - competence foundation integrated, with review fixes
+## Current test build: v0.3.30-dev-competence3 (cfd8f0a) - fixes from the competence2 play-test
+
+**[Download the UMM test ZIP (cfd8f0a)](AI-Control-FACC-v0.3.30-dev-competence3-cfd8f0a-UMM-test.zip?raw=true)** · [Identity](AI-Control-FACC-v0.3.30-dev-competence3-cfd8f0a-UMM-test.identity.json) · [Checksums](SHA256SUMS.txt) · [Notes](../docs/TACTICAL_AI.md)
+
+Direct link: <https://github.com/recovribox-svg/AIControll-FACC/raw/claude/dreamy-pasteur-b9h3rn/test-builds/AI-Control-FACC-v0.3.30-dev-competence3-cfd8f0a-UMM-test.zip>
+
+competence2 plus the fixes from its play-test (`docs/TACTICAL_AI.md` §126). UMM still shows **0.3.30**; startup marker
+`[Build] v0.3.30 module=97bdfced-0fac-49d9-9673-2138acc373f2`. ZIP SHA-256 `2544eec76470b87d5be1046c8ba35456113e570de9fe7143a4d3eb4c3579dca5`,
+DLL SHA-256 `69aec4f46f61eb268e102a5c756f070b56f31f85bac7fb1426f4aaac6b295edc`.
+
+- **Invisible enemies:** when the only enemies left are hidden by invisibility, a party member with Faerie Fire or
+  Glitterdust casts it where the party saw the enemy vanish (once per vanishing). Without such a spell the party still waits.
+- **Large parties:** the price of a walk (who it leaves exposed) is read once per decision instead of once per spot -
+  real-time decisions with eleven members should be much quicker (the logs showed 80-90 ms each, up to 1.6 s).
+- **Profane Invocation** (and other one-recipient buffs) stays three rounds where it was put unless moving it gains a lot.
+- **Alchemist bombs and splash weapons** are valued with Throw Anything's Intelligence bonus and Point-Blank Shot (they were
+  valued at about a third of what they deal).
+- Checks: 531 unit tests; real-DLL build 0 warnings; offline audit 16069 blueprints. **Not played yet.**
+- What to test (TB and RT): an invisible last enemy with Orvath (Faerie Fire) in the party - look for
+  "Faerie Fire->reveal"; the Bandit Alchemist's bomb use (the end-of-fight "[DmgCheck] ... Alchemist Bomb" line should be
+  gone or much closer); Profane Invocation casts per fight; slow-decision lines ("[Perf] slow decision") and their new
+  "stage heap KB" part.
+
+## Previous test build: v0.3.30-dev-competence2 (7e89a16) - competence foundation integrated, with review fixes
 
 **[Download the UMM test ZIP (7e89a16)](AI-Control-FACC-v0.3.30-dev-competence2-7e89a16-UMM-test.zip?raw=true)** · [Identity](AI-Control-FACC-v0.3.30-dev-competence2-7e89a16-UMM-test.identity.json) · [Checksums](SHA256SUMS.txt) · [Current register](../docs/CLASS_COMPETENCE_CURRENT.md)
 
