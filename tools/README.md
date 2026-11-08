@@ -7,6 +7,7 @@ below compile-check, binary-check and inspect readers outside the game. The stan
 [BlueprintInventory](BlueprintInventory/README.md) reads local JBP exports and emits derived class/archetype/progression
 metadata, prerequisite links, input identities and reference-closure counts. It helps request targeted mechanism graphs
 without uploading the whole game. It never executes native code or changes exports; its inventory is not gameplay validation.
+`roster_summary.py` turns that report into the compact roster used by the competence matrix (`docs/competence/ROSTER.md`).
 
 ## RefStubGen
 Generates **compile-only** reference stubs for game assemblies that are not available (Owlcat.*, AstarPathfindingProject,

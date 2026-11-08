@@ -4490,3 +4490,26 @@ Contracts, fixture results, bounded work/cache lifetimes, rollback and paired TB
 [competence/MECHANIC_CONTRACTS.md](competence/MECHANIC_CONTRACTS.md). No class rotation or new movement,
 target commitment, retreat, pathfinding or cancellation behavior is introduced. Compilation and reader fixtures
 do not establish live actor competence or Unity performance; the identified test package must be replayed.
+
+## 125. Competence programme: PR #20 integrated, review fixes (competence2)
+
+PR #20 (§124) was reviewed against the author's programme text and merged into development (`452c761`). The review
+reproduced its tests, build and package identity, then ran its compiled readers on actual blueprints and real kits.
+
+- **Burn on real kits.** From class level 6 `ElementalOverflowProgression` grants `ElementalOverflowEffectFeature`, a second
+  burn-change trigger (fortification and the level-6/11/16 stat-choice buffs); the Adaptation talents add energy-resistance
+  triggers. The reader made the whole burn price unknown when any trigger was not a consequence buff, so ordinary kineticists
+  past level 5 fell back to the old estimate and a Psychokineticist with an Adaptation talent got the phantom HP cost back.
+  Benefit-only burn buffs are now set aside by their components (fail-closed list, no GUIDs); the audit reads 8 real kits.
+- **Per-rest price.** A Psychokineticist's burn (Will penalty until rest, the daily pool) cost nothing when no danger was
+  seen. Every burn now pays the per-rest price it paid before the reader (burn x character level x 0.1).
+- **Next-spell Persistent** shares the DC boost's save-effect factor (half damage at a 50 % fail chance +16.7 %, with Evasion
+  +50 %, not a flat +25 %); shadow disbelief is its own Will save at the spell's DC and is never re-rolled for Persistent.
+- **Area grants:** guarded enter/round copies stay two paths (checker identity); no value counts twice. Inventory keeps
+  prerequisite gate values; a derived roster (`docs/competence/ROSTER.md`) replaces the Kineticist-only roster input.
+- **Next:** C07 first - native `CreateCastCommand` turns a held Magus charge into a Spellstrike `UnitAttack`, but `Execute`
+  always issues `UnitUseAbility`, so such a charge is delivered by touch without weapon damage. Then C06 (115 of 266
+  resource toggles do not spend per round) and C08 (149 polymorph components).
+
+Test ZIP `AI-Control-FACC-v0.3.30-dev-competence2-7e89a16-UMM-test.zip` (MVID `0ed42ac5-d9ce-4f88-a339-388028b036c3`);
+522 unit tests, 11 inventory tests; offline audit 4031 blueprints, 0 errors. Not played.

@@ -120,3 +120,34 @@ Permitted tactical change: a buff path previously discarded may now be considere
 ### Replay contract
 
 Obtain a complete actual area graph with opposite/independent conditional paths applying the same buff, including its carrier, recipient acceptance/exemption facts and save/resource graphs. In TB and RT: positive recipient matching the previously dropped path; negative recipient rejecting that path and not receiving the buff; transition acceptance/fact/position or save context changes at the next decision. Verify discovery/permissions, per-recipient guards, stacking and native applied buff, then compare cast/activation against attack/spell alternatives and continuing resource cost. Mixed helpful/harmful/saved and unknown-guard behavior remains a separate C05 acceptance track. Do not increase spell-permission or switch player-owned acceptance to make the fixture pass.
+
+## Integration follow-up (competence2, 8 November 2026, Claude)
+
+Merged as `452c761`; runtime follow-ups `cf62263`, `4c63578`, `7e89a16`; package
+`AI-Control-FACC-v0.3.30-dev-competence2-7e89a16-UMM-test.zip` (MVID `0ed42ac5-d9ce-4f88-a339-388028b036c3`).
+
+**Burn reader on actor kits (F1).** First failing boundary: `ReadBurnConsequences` required every active burn-change trigger
+to be a consequence buff. Real kits carry benefit triggers: `ElementalOverflowEffectFeature` from class level 6 (fortification,
+shared values, level-6/11/16 stat-choice buffs it applies and takes back) and the Adaptation talents (energy resistance).
+A trigger buff without `AddContextStatBonus` is now set aside when every component is a listed benefit shape
+(`ContextRankConfig`, `AddDamageResistanceEnergy`, nonnegative `AddFortification`, `AddFactContextActions` whose actions are
+shared-value changes, conditionals, non-harmful buff applications by `AbilityProfile.IsHarmfulBuff`, and removals of buffs the
+same graph applies). Anything else keeps the whole price unknown; a kit with only benefit triggers is unknown too.
+Alternatives rejected: allow-listing by GUID (programme §5), and treating every unknown component as benefit (fail-open).
+Cost: the check runs once per decision that prices burn, over the trigger buffs' components and their action lists (depth
+≤ 4); no cache added. ProfileAudit kits: ordinary + Overflow, + all Adaptations, Psychokineticist + Aerial, + Heat/Cold,
+Dark Elementalist, Overwhelming Soul (modeled, ordinary deltas), Elemental Engine Burnout and benefit-only kits (unknown).
+
+**Per-rest burn price (F2).** `KineticBurnConsequenceCost` now takes the burn's own day price (burn × character level × 0.1,
+the value the HP-loss term carried before the reader) for every part; the nonlethal and Will terms add the in-fight risk.
+Permitted tactical difference: a Psychokineticist no longer gets burn for free when no danger is seen; ordinary kineticists
+are unchanged except when a held burn buff is missing (the day price no longer grows with the full re-application).
+
+**Next-spell Persistent and disbelief (F3).** `CombatMath.PersistentBoostShare` / `ValueModel.PersistentBoostShare` use the
+same save-effect factor as the DC boost. Disbelief opts out of Persistent through `SaveFailChance(..., allowPersistent: false)`,
+in both the ordinary forecast (`ShadowShare`) and the DC-boost share; the shared-scalar shortcut for Will spells is gone (at
+most two extra save reads, shadow spells only).
+
+**Checks:** 522 unit tests, 11 inventory tests, real-DLL build 0 warnings, ProfileAudit Kineticist 800/0 and broad set
+4031/0 with 0 reader errors (BURN 42 checks, SAVE-BOOST 16 routes, AREA-GRANT-PATH 14). Gameplay and Unity performance pending.
+Rollback: revert `cf62263` (burn) and `4c63578` (Persistent/disbelief) independently.

@@ -44,6 +44,18 @@ Send the derived report, the current game patch/DLC, the exporter/source used an
 
 By default, exit 0 means a report was produced; inspect its status/counts. `--strict` returns exit 1 for a partial report. Invalid arguments, missing inputs, an empty JBP scope or output errors return exit 2. Without `--output`, JSON goes to stdout.
 
+## Roster summary
+
+`roster_summary.py` condenses an inventory report into the roster the competence matrix plans from - classes with flags,
+archetypes and main-progression levels, prestige gates, archetype add/remove deltas by level, and the other progressions
+(bloodlines, domains, selections, pets). Names, levels and gates only.
+
+```sh
+python3 tools/BlueprintInventory/roster_summary.py inventory.json --json roster.json --markdown ROSTER.md
+```
+
+`docs/competence/ROSTER.md` / `roster.json` were made this way from the base-game Classes and Mythic exports.
+
 ## Cost and checks
 
 The tool reads each discovered physical input file once per invocation. Work scales with sorted file discovery, JSON bytes, references and roster metadata; it does not perform dependency downloads or native queries. It retains source/asset identities, a reference counter with bounded examples, and the three roster types' metadata until output is written. State is discarded when the invocation ends. There is no game decision cache, tactical search cap or Unity performance claim.

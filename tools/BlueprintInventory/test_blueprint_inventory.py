@@ -98,6 +98,23 @@ class BlueprintInventoryTests(unittest.TestCase):
         self.assertNotIn("not copied", json.dumps(result["classes"]))
         self.assertEqual(result["classes"][0]["prerequisites"][3]["references"][0]["asset_id"], FEATURE)
 
+    def test_roster_summary_condenses_names_levels_and_gates(self):
+        import roster_summary
+        self.write("Class.jbp", bp(CLASS, "BlueprintCharacterClass", PrestigeClass=False, m_Progression="!bp_" + PROGRESSION,
+                   m_Archetypes=["!bp_" + ARCHETYPE]))
+        self.write("Arch.jbp", bp(ARCHETYPE, "BlueprintArchetype", AddFeatures=[{"Level": 3, "m_Features": ["!bp_" + FEATURE]}]))
+        self.write("Progression.jbp", bp(PROGRESSION, "BlueprintProgression", m_Classes=[{"m_Class": "!bp_" + CLASS}],
+                   LevelEntries=[{"Level": 1, "m_Features": ["!bp_" + FEATURE, "!bp_" + MISSING]}]))
+        self.write("Feature.jbp", bp(FEATURE, "BlueprintFeature"))
+        roster = roster_summary.summarize(inventory.inventory([self.export]))
+        self.assertEqual(roster["counts"]["classes"], 1)
+        self.assertEqual(roster["classes"][0]["archetypes"], ["Arch"])
+        self.assertEqual(roster["classes"][0]["levels"]["1"], ["Feature", "missing:" + MISSING])
+        self.assertEqual(roster["archetypes"][0]["parents"], ["Class"])
+        self.assertEqual(roster["archetypes"][0]["add"], {"3": ["Feature"]})
+        self.assertEqual(roster["counts"]["other_progressions"], 0)
+        self.assertIn("| Arch | Class | 3: Feature | - |", roster_summary.markdown(roster))
+
     def test_bom_case_normalization_zero_reference_and_ignored_json(self):
         self.write("Class.JBP", bp(CLASS.upper(), "BlueprintCharacterClass",
                    m_Progression="!bp_" + MISSING.upper(), m_Archetypes=["!bp_" + "0" * 32]), bom=True)

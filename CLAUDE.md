@@ -8,20 +8,16 @@ Read [CONTRIBUTING.md](CONTRIBUTING.md) for shared branch ownership, Codex pull 
 Codex works on task branches and targets pull requests at `claude/dreamy-pasteur-b9h3rn`; Claude reviews and integrates them there.
 Keep `main` for author-authorized releases. Read [AGENTS.md](AGENTS.md) when coordinating agent work.
 
-**Competence programme task handover (8 November 2026, Codex; review/integration pending):** start with
-[docs/CLASS_COMPETENCE_CURRENT.md](docs/CLASS_COMPETENCE_CURRENT.md), its class matrix, native contracts,
-mod evidence and prioritized register. Branch `codex/class-competence-foundation` starts from development
-`71ca3de` (0.3.30 test 2); the manifest remains 0.3.30. Selected first-stage repairs cover save-boost probability,
-supported active burn-consequence graphs and area-grant path identity. This is not whole-roster or installed-mod
-certification: only Kineticist's class/archetype export is supplied, other inventory and current gameplay/Unity
-performance are pending. The reported mods include TTT Core/Base, Isekai, Psionics, MysticalMayhem,
-TomeOfTheFirebird, DarkCodex and Demonology. The author reports DarkCodex 1.9.6/Mind Shield off; other versions and installed binary identities remain unverified. DarkCodex can replace
-the native Psychokineticist burn property, so native-shape reader checks do not certify its patched property.
-Candidate source `4f8a8b7`, MVID `a22f23e0-64b2-4b76-b6bb-aa274edac6a8`:
-[test ZIP](test-builds/AI-Control-FACC-v0.3.30-dev-competence1-4f8a8b7-UMM-test.zip) / [identity](test-builds/AI-Control-FACC-v0.3.30-dev-competence1-4f8a8b7-UMM-test.identity.json). Combined checks: 518 unit + 9 inventory tests;
-real-reference build 0 warnings/errors; partial ProfileAudit803 loaded/0failed/0readererrors, 53 new fixture/route checks.
-Live gameplay and matched Unity performance remain pending. Use the offline BlueprintInventory tool to request derived roster metadata rather than a whole-game upload.
-Preserve all movement/target/pathfinding/cancellation boundaries below; no new movement policy is part of this task.
+**Competence programme (8 November 2026): PR #20 integrated, read [docs/CLASS_COMPETENCE_CURRENT.md](docs/CLASS_COMPETENCE_CURRENT.md)
+first.** Codex's foundation (`codex/class-competence-foundation`, from 0.3.30 test 2 `71ca3de`) was reviewed against the
+author's programme text and merged into development (`452c761`). Review fixes: burn consequences read on real kineticist kits
+(Elemental Overflow from level 6 and the Adaptation talents had made every such kit "unknown") and every burn keeps its per-rest
+price (`cf62263`); next-spell Persistent through the save-effect factor, disbelief never Persistent (`4c63578`); inventory keeps
+prerequisite gate values, area-grant note corrected (`7e89a16`). Derived roster from the Classes + Mythic exports:
+`docs/competence/ROSTER.md` (72 class blueprints, 212 archetypes). Next stages re-ranked by the programme's Phase D order
+(C07 Magus held charge first - confirmed execution gap; then C06 toggle resource horizons, C08 forms). Test ZIP
+`AI-Control-FACC-v0.3.30-dev-competence2-7e89a16-UMM-test.zip` (MVID `0ed42ac5-d9ce-4f88-a339-388028b036c3`); 522 unit +
+11 inventory tests; not played. Manifest stays 0.3.30. Preserve all movement/target/pathfinding/cancellation boundaries below.
 
 **Current handover (29 October 2026, Claude): read [docs/INTEGRATION_0322_FOLLOWUPS.md](docs/INTEGRATION_0322_FOLLOWUPS.md)
 before resuming.** With the author's authorization, Claude reviewed and merged PR #13, #14 and #15 into development
@@ -264,6 +260,9 @@ feed on the recipient, from the game's links (`TacticalEngine.StatLinks.cs`: att
 `DerivativeStatBonus` and stat-ranked `AddContextStatBonus` facts; `ValueModel.StatUse`), mental stats modelled for every recipient;
 ProfileAudit STAT-LINKS. Test ZIP `AI-Control-FACC-v0.3.30-dev-test2-827841f-UMM-test.zip` (MVID
 `05361eac-e11f-4c14-a363-3355229923c2`); 493 tests.
+**v0.3.30 competence2 (8 November, `docs/TACTICAL_AI.md` §124-125, not played):** PR #20 (competence programme foundation)
+merged with review fixes - see the competence handover at the top. Test ZIP
+`AI-Control-FACC-v0.3.30-dev-competence2-7e89a16-UMM-test.zip` (MVID `0ed42ac5-d9ce-4f88-a339-388028b036c3`); 522 tests.
 
 Historical handovers, superseded by the one above: [v0.3.22 release preparation](docs/RELEASE_0_3_22_HANDOVER.md)
 (27 October, PR #6–#12), [released-log review](docs/RELEASE_0322_LOG_REVIEW.md) (PR #13),

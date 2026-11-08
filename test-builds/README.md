@@ -1,6 +1,28 @@
 # Test builds
 
-## Task-branch candidate: competence foundation 1 (4f8a8b7)
+## Current test build: v0.3.30-dev-competence2 (7e89a16) - competence foundation integrated, with review fixes
+
+**[Download the UMM test ZIP (7e89a16)](AI-Control-FACC-v0.3.30-dev-competence2-7e89a16-UMM-test.zip?raw=true)** · [Identity](AI-Control-FACC-v0.3.30-dev-competence2-7e89a16-UMM-test.identity.json) · [Checksums](SHA256SUMS.txt) · [Current register](../docs/CLASS_COMPETENCE_CURRENT.md)
+
+Direct link: <https://github.com/recovribox-svg/AIControll-FACC/raw/claude/dreamy-pasteur-b9h3rn/test-builds/AI-Control-FACC-v0.3.30-dev-competence2-7e89a16-UMM-test.zip>
+
+Development build: 0.3.30 test 2 plus PR #20 (merged as `452c761`) plus its review fixes. UMM still shows **0.3.30**; startup
+marker `[Build] v0.3.30 module=0ed42ac5-d9ce-4f88-a339-388028b036c3`. ZIP SHA-256 `299869319f364e8babf59e27da4db17da043bb98c8b51da21dcdebb177880ac4`,
+DLL SHA-256 `53227972f3d92685072605d8d6897daa98e8a8c0531d989c7cbf357e2646afc0`; the packed DLL and manifest are byte-identical to the checked build.
+
+- **Next-spell boosters** (Arcane Reservoir DC, free Persistent): the gain comes from the target's actual save, natural 1/20,
+  half damage and Evasion; shadow spells' disbelief is its own save (never Persistent).
+- **Kineticist burn** is priced by what the character's burn feature really does: ordinary burn is nonlethal damage; a
+  Psychokineticist's is a Will penalty, with no phantom HP loss. Elemental Overflow (level 6+) and the Adaptation talents no
+  longer hide that. Every burn still pays its per-rest price, so it is not spent for nothing.
+- **Area buffs** (performances, auras) keep every distinct branch that can give a buff.
+- Checks: 522 unit + 11 inventory tests; real-DLL build 0 warnings; offline audit 4031 blueprints, 0 errors, 42 burn /
+  16 save-route / 14 area checks pass. **Not played yet.**
+- What to test (TB and RT): a level-6+ kineticist (no "burn consequences unknown" line, same burn choices as test 2); a
+  Psychokineticist with and without an Adaptation talent at low HP (no low-HP burn refusals; Will drops 2 per burn);
+  an Arcanist/next-spell DC booster on a half-damage spell against a target with Evasion; a Skald or Bard song.
+
+## Task-branch candidate: competence foundation 1 (4f8a8b7) - superseded by competence2
 
 **[Download the UMM test ZIP](AI-Control-FACC-v0.3.30-dev-competence1-4f8a8b7-UMM-test.zip?raw=true)** · [Identity](AI-Control-FACC-v0.3.30-dev-competence1-4f8a8b7-UMM-test.identity.json) · [Current audit](../docs/CLASS_COMPETENCE_CURRENT.md)
 
@@ -15,7 +37,7 @@ For review on `codex/class-competence-foundation`, based on 0.3.30 test 2 (`71ca
 - **Gameplay/Unity performance pending.** In TB and RT compare useful and declined boosts, standard versus Psych burn including low-HP/Will/rank transitions, and recipient branches/acceptance. Capture the startup MVID, full AI/native logs and competing values; [contracts and replay matrix](../docs/competence/IMPLEMENTATION.md). Author reports DarkCodex1.9.6/Mind Shield off; actual active graphs are checked structurally, not inferred from the class name.
 - To continue actual-roster coverage without a whole-game upload, use [BlueprintInventory](../tools/BlueprintInventory/README.md) on a current post-initialization export and send its derived JSON with game/DLC/mod versions.
 
-## Current test build: v0.3.30-dev-test2 (827841f) - stat buffs valued by what they do for each character
+## Earlier test build: v0.3.30-dev-test2 (827841f) - stat buffs valued by what they do for each character
 
 **[Download the UMM test ZIP (827841f)](AI-Control-FACC-v0.3.30-dev-test2-827841f-UMM-test.zip?raw=true)**
 
