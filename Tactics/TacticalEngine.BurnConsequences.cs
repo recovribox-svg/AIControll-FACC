@@ -34,6 +34,9 @@ namespace CompanionAI_Pathfinder.Tactics
             internal string Unknown;
             internal int Accepted, ClassLevel, CharacterLevel;
             internal readonly List<BurnStatConsequence> Stats = new List<BurnStatConsequence>();
+            /// <summary>★ v0.3.30 competence2: burn-ranked buffs that only give (Overflow fortification, Adaptation
+            /// resistance). Read and set aside: they are not a cost, and the existing Overflow credit is separate.</summary>
+            internal readonly List<BlueprintBuff> Benefits = new List<BlueprintBuff>();
             // Only requested burn alternatives, owned by one decision; no actor/global key or context survives it.
             internal readonly Dictionary<int, BurnDelta> Deltas = new Dictionary<int, BurnDelta>();
         }
@@ -79,6 +82,16 @@ namespace CompanionAI_Pathfinder.Tactics
                             return UnknownBurn(model, "burn trigger is not a direct permanent replacement buff");
                         var buff = apply.Buff;
                         if (!seen.Add(buff)) continue; // Reapplying the same replacement buff does not add another modifier.
+                        // ★ v0.3.30 competence2 (PR #20 review): an actor's kit carries more burn-change triggers than
+                        // its burn feature - from class level 6 Elemental Overflow's fortification/stat-choice buff, and
+                        // the Adaptation talents' energy resistance. A buff with no stat modifier is a cost only if it is
+                        // not one of the listed benefit shapes; it must not make the whole actor's burn price unknown.
+                        if (!buff.ComponentsArray.Any(c => c is AddContextStatBonus))
+                        {
+                            if (!BurnBenefitOnly(buff)) return UnknownBurn(model, "burn buff has an unsupported consequence component");
+                            model.Benefits.Add(buff);
+                            continue;
+                        }
                         var configs = buff.GetComponents<ContextRankConfig>().ToList();
                         int statCount = 0;
                         foreach (var component in buff.ComponentsArray)
@@ -107,6 +120,8 @@ namespace CompanionAI_Pathfinder.Tactics
                     }
                 }
                 if (triggers == 0) return UnknownBurn(model, "no supported active burn-change trigger");
+                // Only benefit triggers (a part whose burn feature is not one of these shapes): the cost is not known.
+                if (model.Stats.Count == 0) return UnknownBurn(model, "no supported burn consequence buff");
                 model.Modeled = true;
             }
             catch (Exception ex) { return UnknownBurn(model, "burn consequence query failed: " + ex.GetType().Name); }
@@ -118,7 +133,85 @@ namespace CompanionAI_Pathfinder.Tactics
             model.Modeled = false;
             model.Unknown = reason;
             model.Stats.Clear();
+            model.Benefits.Clear();
             return model;
+        }
+
+        /// <summary>
+        /// ★ v0.3.30 competence2: a burn-ranked buff that only gives - fortification, energy resistance, or fact actions
+        /// that set shared values and apply (or take back) buffs that are not harmful by what they do. Fail-closed: any
+        /// other component or action keeps the burn price unknown. Nothing is evaluated or applied here.
+        /// </summary>
+        private static bool BurnBenefitOnly(BlueprintBuff buff)
+        {
+            if (buff.ComponentsArray == null || AbilityProfile.IsHarmfulBuff(buff)) return false;
+            foreach (var component in buff.ComponentsArray)
+            {
+                switch (component)
+                {
+                    case ContextRankConfig _:
+                    case AddDamageResistanceEnergy _:
+                        continue;
+                    case AddFortification fortification when fortification.UseContextValue || fortification.Bonus >= 0:
+                        continue;
+                    case AddFactContextActions actions:
+                        var applied = new HashSet<BlueprintBuff>();
+                        if (BurnBenefitActions(actions.Activated?.Actions, applied, 0) &&
+                            BurnBenefitActions(actions.Deactivated?.Actions, applied, 0) &&
+                            BurnBenefitActions(actions.NewRound?.Actions, applied, 0) &&
+                            BurnRemovesOnlyOwn(actions, applied))
+                            continue;
+                        return false;
+                    default:
+                        return false;
+                }
+            }
+            return true;
+        }
+
+        private static bool BurnBenefitActions(Kingmaker.ElementsSystem.GameAction[] actions, HashSet<BlueprintBuff> applied, int depth)
+        {
+            if (actions == null) return true;
+            if (depth > 4) return false;
+            foreach (var action in actions)
+            {
+                switch (action)
+                {
+                    case ContextActionChangeSharedValue _:
+                    case ContextActionRemoveBuff _:   // checked against what this graph applies (BurnRemovesOnlyOwn)
+                        break;
+                    case ContextActionApplyBuff apply when apply.Buff != null && !apply.ToCaster && !AbilityProfile.IsHarmfulBuff(apply.Buff):
+                        applied.Add(apply.Buff);
+                        break;
+                    case Kingmaker.Designers.EventConditionActionSystem.Actions.Conditional conditional
+                        when BurnBenefitActions(conditional.IfTrue?.Actions, applied, depth + 1) &&
+                             BurnBenefitActions(conditional.IfFalse?.Actions, applied, depth + 1):
+                        break;
+                    default:
+                        return false;
+                }
+            }
+            return true;
+        }
+
+        /// <summary>A removal only takes back a buff the same graph gives (Overflow swaps its level-6/11/16 stat buffs).</summary>
+        private static bool BurnRemovesOnlyOwn(AddFactContextActions actions, HashSet<BlueprintBuff> applied)
+        {
+            bool Own(Kingmaker.ElementsSystem.GameAction[] list, int depth)
+            {
+                if (list == null) return true;
+                if (depth > 4) return false;
+                foreach (var action in list)
+                {
+                    if (action is ContextActionRemoveBuff remove && (remove.ToCaster || remove.Buff == null || !applied.Contains(remove.Buff)))
+                        return false;
+                    if (action is Kingmaker.Designers.EventConditionActionSystem.Actions.Conditional conditional &&
+                        (!Own(conditional.IfTrue?.Actions, depth + 1) || !Own(conditional.IfFalse?.Actions, depth + 1)))
+                        return false;
+                }
+                return true;
+            }
+            return Own(actions.Activated?.Actions, 0) && Own(actions.Deactivated?.Actions, 0) && Own(actions.NewRound?.Actions, 0);
         }
 
         private static bool SupportedBurnStat(StatType stat)

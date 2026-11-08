@@ -127,7 +127,8 @@ namespace CompanionAI_Pathfinder.Tactics
             {
                 nonlethal = burn * Level(unit);
                 saves = 0f;
-                ReportOnce($"burn-consequence|{unit.UniqueId}|{CombatMemory.Fight}|{CombatMemory.Round}",
+                // ★ v0.3.30 competence2: once a fight per unit (it repeated every round).
+                ReportOnce($"burn-consequence|{unit.UniqueId}|{CombatMemory.Fight}",
                     $"[Tactics] {unit.CharacterName}: burn consequences unknown ({model.Unknown ?? "rank evaluation"}); using legacy nonlethal fallback");
             }
             float loss = Math.Max(0, nonlethal);
@@ -135,8 +136,12 @@ namespace CompanionAI_Pathfinder.Tactics
             float worth = AllyWorth(ctx, unit);
             if (loss >= hp) return worth * 2f;
             float danger = IncomingDamage(ctx, unit);
+            // ★ v0.3.30 competence2: the per-rest price of the burn itself, as before the consequence reader (burn x
+            // character level x the day cost per HP), for every part: the pool and an until-rest consequence are spent
+            // whether the consequence is nonlethal or a Will penalty.
+            float dayPrice = burn * Level(unit) * BurnDayCostPerHp;
             float cost = ValueModel.KineticBurnConsequenceCost(loss, saves, hp, danger, worth,
-                ValueModel.Horizon(ctx.ExpectedRounds, 4f), BurnDayCostPerHp);
+                ValueModel.Horizon(ctx.ExpectedRounds, 4f), dayPrice);
             // The Overflow the burn raises, for the blasts after this one (about one a round).
             int overflowNow = 0, overflowAfter = 0;
             foreach (var blast in (unit.Get<UnitPartKineticist>()?.Blasts ?? Enumerable.Empty<Kingmaker.UnitLogic.Abilities.Blueprints.BlueprintAbility>()).Take(1))
