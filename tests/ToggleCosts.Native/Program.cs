@@ -22,6 +22,10 @@ namespace ToggleCostsNative
 {
     internal static class Program
     {
+        private sealed class DerivedFactGuard : Kingmaker.UnitLogic.Mechanics.Conditions.ContextConditionCasterHasFact
+        {
+            protected override bool CheckCondition() => throw new InvalidOperationException("A scoring reader must not execute this custom condition.");
+        }
         private const BindingFlags Static = BindingFlags.NonPublic | BindingFlags.Static;
         private const BindingFlags Instance = BindingFlags.NonPublic | BindingFlags.Instance;
 
@@ -161,6 +165,14 @@ namespace ToggleCostsNative
             var unknownArgs = new object[] { altered, Logic("SmitingJudgmentAbilityMagic").RequiredResource,
                 new Func<BlueprintUnitFact,bool>(inquisitor.Contains),0 };
             Check(!(bool)activationCost.Invoke(null,unknownArgs), "unknown guard with unequal resource branches stays fallback");
+            var customGuard = (DerivedFactGuard)RuntimeHelpers.GetUninitializedObject(typeof(DerivedFactGuard));
+            var originalFactGuard = (Kingmaker.UnitLogic.Mechanics.Conditions.ContextConditionCasterHasFact)
+                Find<BlueprintBuff>("JudgmentWatcherBuff").GetComponent<AddFactContextActions>().Activated.Actions.OfType<Conditional>().Single().ConditionsChecker.Conditions.First();
+            var factField = typeof(Kingmaker.UnitLogic.Mechanics.Conditions.ContextConditionCasterHasFact).GetField("m_Fact",Instance);
+            factField.SetValue(customGuard,factField.GetValue(originalFactGuard));
+            guard.ConditionsChecker = Clone(guard.ConditionsChecker);
+            guard.ConditionsChecker.Conditions = new Condition[]{ customGuard };
+            Check(!(bool)activationCost.Invoke(null,unknownArgs), "derived fact guards remain unknown and are never evaluated");
             foreach (var name in new[] { "SwordSaintPerfectStrikeAbility", "SwordSaintPerfectStrikeCritAbility", "DestructionDomainBaseActivateableAbility", "DestructionDomainBaseActivateableAbilitySeparatist" })
             {
                 var bp = Find<BlueprintActivatableAbility>(name); var p = profile.Invoke(null,new object[]{bp});

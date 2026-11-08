@@ -18,6 +18,8 @@ Candidate branch `codex/class-competence-toggle-costs`, based on development `fd
 
 Native semantics were inspected in the supplied `ActivatableAbilityResourceLogic` (`OnStart`, `OnNewRound`, `CalcResourceCost`, `SpendResource`), `ActivatableAbility` (`TryStart`, `OnAttack`/`OnHit`/`OnCrit`), controller ticking and `ContextSpendResource.RunAction`. The latter spends **one** when `ContextValueSpendure=false`; its serialized `Value` can be zero. TTT evidence is the supplied Core 0.7.15, module `cdfed43f-53a0-4186-a181-75496eecec8f`, and Base 2.6.18/settings. No decompiled source or supplied binaries are committed.
 
+Base's `ActivatableResourceFreeResourceLogic` was also inspected. The supplied `DisableAfterCombatDeactivationOfUnlimitedAbilities` flag is true: its gated patches can keep single-FreeBlueprint abilities on after combat and skip their ordinary new-round callback while free and available. The quote reads that current free fact as zero cost; after it is lost, actual timer data is read again or remains fallback. Existing game/mod lifecycle and AI restoration ownership are preserved; this is not a live initialization check.
+
 ## Preserved policy and explicit limits
 
 | Boundary | Disposition |

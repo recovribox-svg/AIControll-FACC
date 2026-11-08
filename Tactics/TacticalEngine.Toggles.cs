@@ -421,7 +421,7 @@ namespace CompanionAI_Pathfinder.Tactics
                         bool known = true;
                         foreach (var condition in checker.Conditions ?? Array.Empty<Condition>())
                         {
-                            if (!(condition is ContextConditionCasterHasFact fact) || fact.Fact == null) { known = false; break; }
+                            if (!(condition is ContextConditionCasterHasFact fact) || condition.GetType() != typeof(ContextConditionCasterHasFact) || fact.Fact == null) { known = false; break; }
                             if (possible.Contains(fact.Fact) && !Has(fact.Fact)) return false;
                             bool matches = Has(fact.Fact) != fact.Not;
                             result = checker.Operation == Operation.And ? result && matches : result || matches;
