@@ -8,6 +8,17 @@ Read [CONTRIBUTING.md](CONTRIBUTING.md) for shared branch ownership, Codex pull 
 Codex works on task branches and targets pull requests at `claude/dreamy-pasteur-b9h3rn`; Claude reviews and integrates them there.
 Keep `main` for author-authorized releases. Read [AGENTS.md](AGENTS.md) when coordinating agent work.
 
+**Phase B mapping task (8 November 2026, Codex; review pending):** `codex/class-competence-map` starts at `fdc5e5e`.
+Read [docs/CLASS_COMPETENCE_CURRENT.md](docs/CLASS_COMPETENCE_CURRENT.md) and
+[docs/competence/PHASE_B_VALIDATION.md](docs/competence/PHASE_B_VALIDATION.md): 74 exported class assets / 213 archetypes,
+9,426 per-feature rows and bounded selection-aware signatures; installed DLL/settings identities and eight byte-identical loader caches.
+No runtime/version/package change. Strict reader: 44,637 loaded / one known Unity-bound failure, no verdicts; separately allowed-one
+PARTIAL pass: 4,807 rows / zero reader errors, 8/8 actor-shaped burn kits; 24 Python + four static-assembly checks.
+Generated mod graphs remain absent despite post-initialization export provenance; DarkCodex settings enable Elemental Scion,
+whose property replacement is not present in the exported native property. Do not infer mod compatibility or full actor competence.
+**Ownership:** Claude handles C07 dispatch/Spellstrike/Spell Combat and C08 forms. Codex handles C06 only in a separate PR after the
+mapping PR is open. Movement, acceptance, blocklist, release and version boundaries remain as below.
+
 **Competence programme (8 November 2026): PR #20 integrated, read [docs/CLASS_COMPETENCE_CURRENT.md](docs/CLASS_COMPETENCE_CURRENT.md)
 first.** Codex's foundation (`codex/class-competence-foundation`, from 0.3.30 test 2 `71ca3de`) was reviewed against the
 author's programme text and merged into development (`452c761`). Review fixes: burn consequences read on real kineticist kits

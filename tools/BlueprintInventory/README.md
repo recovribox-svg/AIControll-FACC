@@ -67,3 +67,7 @@ python3 -m unittest discover -s tools/BlueprintInventory -v
 ```
 
 Tests exercise linked class/progression/archetype metadata, prerequisite extraction, BOM/case/zero references, malformed files, duplicate ambiguity, reference example bounds, digest determinism, overlapping inputs, symlink/empty input handling and output preservation. Test fixtures are synthetic and contain no exported game data.
+
+## Progression mechanics and installed-code metadata
+
+See [MECHANIC_MAP.md](MECHANIC_MAP.md) for the bounded class/archetype/selection map, complete per-feature/prevalence tables, reader-evidence limits and static assembly index. These tools add no runtime AI behavior.

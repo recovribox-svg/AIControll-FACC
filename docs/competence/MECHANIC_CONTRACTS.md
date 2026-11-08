@@ -1,5 +1,7 @@
 # Mechanic contracts and replay plan
 
+**Current mapping:** [CLASS_MATRIX.md](CLASS_MATRIX.md), [PHASE_B_VALIDATION.md](PHASE_B_VALIDATION.md) and [INSTALLED_MODS.md](INSTALLED_MODS.md) add the expanded export/installed-code evidence. Foundation observations below retain their original revision scope; the competence2 review fixes and current register take precedence for runtime behavior.
+
 Inspected 8 November 2026 against starting source `71ca3de04d97d8a4ce14f7ab5bb75bcc84488504` (0.3.30 test 2). Native observations below were re-read from the supplied `Assembly-CSharp.dll` decompilation/IL; its SHA-256 is `2cb7160b7154d4ffacc77b9c51b1eb26199e1294300f04fdfc073367b2ef8953`, MVID `90a9869c-2792-4c7b-bfb7-5a8b33da7c82`. Native code/decompilations remain outside the repository. This fingerprint has not been matched to the author's currently installed patch or patched content-mod runtime.
 
 The user reports **Tabletop Tweaks Core/Base, Isekai, Psionics, MysticalMayhem, TomeOfTheFirebird and DarkCodex**. Names establish user-reported presence only; versions, configuration, enabled patches and current class/component graphs remain unknown. Generic component recognition can apply to their grants, but this is not a compatibility certificate. Old custom-class names and historical provider routes do not establish the present load order or current patched semantics.
