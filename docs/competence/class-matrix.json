@@ -1,0 +1,510 @@
+{
+  "revision": "71ca3de04d97d8a4ce14f7ab5bb75bcc84488504",
+  "version": "0.3.30-test2",
+  "scope": "planning taxonomy; not complete authoritative playable roster",
+  "source_report": "CLASS_MATRIX.md",
+  "base_rows": [
+    {
+      "class_name": "Alchemist",
+      "roster_confirmation": "provisional-taxonomy-only",
+      "mechanics_and_paths": "Bomb damage/control/splash/Precise S; material riders M; mutagen/stat buffs B",
+      "breakpoints_to_sample": "Bomb unlock/type changes; Precise; Fast Bombs multiple expenditure; Grenadier action upgrades",
+      "understanding_accuracy_boundary": "Partial; one-throw Fast Bombs forecast; mutagen replacement/form details need graph",
+      "historical_evidence": "Bomb task native/source report, not an Alchemist replay certificate",
+      "actor_availability": "unknown",
+      "permission": "conditional-AI-selectable; concrete game/player-owned exceptions in narrative",
+      "understanding": "partial-shared-support",
+      "decision_execution": "not-tested-current",
+      "validation": [
+        "current-source-inspection",
+        "historical-report-reconciliation"
+      ],
+      "runtime_validation": "pending",
+      "performance": "unmeasured-current",
+      "progression_levels": "inventory-pending"
+    },
+    {
+      "class_name": "Arcanist",
+      "roster_confirmation": "provisional-taxonomy-only",
+      "mechanics_and_paths": "Spellbook/conversions S; reservoir next-spell boosts M",
+      "breakpoints_to_sample": "Changed metamagic; reservoir spend; exploit grant versus spell action",
+      "understanding_accuracy_boundary": "Partial; known booster path, all exploits/unusual reservoirs unexamined",
+      "historical_evidence": "Old Orvath reservoir report only",
+      "actor_availability": "unknown",
+      "permission": "conditional-AI-selectable; concrete game/player-owned exceptions in narrative",
+      "understanding": "partial-shared-support",
+      "decision_execution": "not-tested-current",
+      "validation": [
+        "current-source-inspection",
+        "historical-report-reconciliation"
+      ],
+      "runtime_validation": "pending",
+      "performance": "unmeasured-current",
+      "progression_levels": "inventory-pending"
+    },
+    {
+      "class_name": "Barbarian",
+      "roster_confirmation": "provisional-taxonomy-only",
+      "mechanics_and_paths": "Current rage effects W/B; command eligibility T",
+      "breakpoints_to_sample": "Native combat-start state; rage-power grants; fatigue/expiry; capstone triggers",
+      "understanding_accuracy_boundary": "Base immediate rage game-automated/player-owned; actual power graphs partial",
+      "historical_evidence": "Old native audit ownership finding",
+      "actor_availability": "unknown",
+      "permission": "conditional-AI-selectable; concrete game/player-owned exceptions in narrative",
+      "understanding": "partial-shared-support",
+      "decision_execution": "not-tested-current",
+      "validation": [
+        "current-source-inspection",
+        "historical-report-reconciliation"
+      ],
+      "runtime_validation": "pending",
+      "performance": "unmeasured-current",
+      "progression_levels": "inventory-pending"
+    },
+    {
+      "class_name": "Bard",
+      "roster_confirmation": "provisional-taxonomy-only",
+      "mechanics_and_paths": "Performances/areas T/B; spells S",
+      "breakpoints_to_sample": "First song; action/drain changes; save-dependent/harmful and replacement songs",
+      "understanding_accuracy_boundary": "Partial; recipient grants exist; harmful/save parity and continuing drain need concrete assets",
+      "historical_evidence": "Earlier copied performances on other classes, not full Bard proof",
+      "actor_availability": "unknown",
+      "permission": "conditional-AI-selectable; concrete game/player-owned exceptions in narrative",
+      "understanding": "partial-shared-support",
+      "decision_execution": "not-tested-current",
+      "validation": [
+        "current-source-inspection",
+        "historical-report-reconciliation"
+      ],
+      "runtime_validation": "pending",
+      "performance": "unmeasured-current",
+      "progression_levels": "inventory-pending"
+    },
+    {
+      "class_name": "Bloodrager",
+      "roster_confirmation": "provisional-taxonomy-only",
+      "mechanics_and_paths": "Game-started Bloodrage T; current attack/bloodline buffs W/B; spells S",
+      "breakpoints_to_sample": "Spell prohibition exemption; bloodline/form unlock; resource transitions",
+      "understanding_accuracy_boundary": "Partial; ordinary rage owned by game/player; bloodline unique effects unexamined",
+      "historical_evidence": "Native historical report only",
+      "actor_availability": "unknown",
+      "permission": "conditional-AI-selectable; concrete game/player-owned exceptions in narrative",
+      "understanding": "partial-shared-support",
+      "decision_execution": "not-tested-current",
+      "validation": [
+        "current-source-inspection",
+        "historical-report-reconciliation"
+      ],
+      "runtime_validation": "pending",
+      "performance": "unmeasured-current",
+      "progression_levels": "inventory-pending"
+    },
+    {
+      "class_name": "Cavalier",
+      "roster_confirmation": "provisional-taxonomy-only",
+      "mechanics_and_paths": "Challenge-like marks M; Tactician grants B; mount P",
+      "breakpoints_to_sample": "Challenge target switch; teamwork selection/grant; mount/body/state",
+      "understanding_accuracy_boundary": "Partial; exact challenge variants and pet-subject forecasts need graph",
+      "historical_evidence": "Historical teamwork/StatLinks findings",
+      "actor_availability": "unknown",
+      "permission": "conditional-AI-selectable; concrete game/player-owned exceptions in narrative",
+      "understanding": "partial-shared-support",
+      "decision_execution": "not-tested-current",
+      "validation": [
+        "current-source-inspection",
+        "historical-report-reconciliation"
+      ],
+      "runtime_validation": "pending",
+      "performance": "unmeasured-current",
+      "progression_levels": "inventory-pending"
+    },
+    {
+      "class_name": "Cleric",
+      "roster_confirmation": "provisional-taxonomy-only",
+      "mechanics_and_paths": "Channel/living-undead branches S; cures/conversions; support B",
+      "breakpoints_to_sample": "Positive/negative and selective; domain unlock; one-round versus sustained powers",
+      "understanding_accuracy_boundary": "Partial; shared paths exist, actual domains/action/resource deltas unexamined",
+      "historical_evidence": "Earlier Seelah/Camellia healing proves shared shape, not Cleric class",
+      "actor_availability": "unknown",
+      "permission": "conditional-AI-selectable; concrete game/player-owned exceptions in narrative",
+      "understanding": "partial-shared-support",
+      "decision_execution": "not-tested-current",
+      "validation": [
+        "current-source-inspection",
+        "historical-report-reconciliation"
+      ],
+      "runtime_validation": "pending",
+      "performance": "unmeasured-current",
+      "progression_levels": "inventory-pending"
+    },
+    {
+      "class_name": "Druid",
+      "roster_confirmation": "provisional-taxonomy-only",
+      "mechanics_and_paths": "Spells/summons S; pet P; current natural attacks W",
+      "breakpoints_to_sample": "Wild Shape unlock/form replacement; casting restrictions; return; pet progression",
+      "understanding_accuracy_boundary": "Partial current state; full pre-form counterfactual forecast unknown",
+      "historical_evidence": "No current class replay established",
+      "actor_availability": "unknown",
+      "permission": "conditional-AI-selectable; concrete game/player-owned exceptions in narrative",
+      "understanding": "partial-shared-support",
+      "decision_execution": "not-tested-current",
+      "validation": [
+        "current-source-inspection",
+        "historical-report-reconciliation"
+      ],
+      "runtime_validation": "pending",
+      "performance": "unmeasured-current",
+      "progression_levels": "inventory-pending"
+    },
+    {
+      "class_name": "Fighter",
+      "roster_confirmation": "provisional-taxonomy-only",
+      "mechanics_and_paths": "Native full/single W; maneuvers/modes M",
+      "breakpoints_to_sample": "Iteratives; weapon/mode/feat changes; Piledriver/Devastating Blow",
+      "understanding_accuracy_boundary": "Modeled supported actions; every passive/weapon trigger not certified",
+      "historical_evidence": "Historical martial path evidence only",
+      "actor_availability": "unknown",
+      "permission": "conditional-AI-selectable; concrete game/player-owned exceptions in narrative",
+      "understanding": "partial-shared-support",
+      "decision_execution": "not-tested-current",
+      "validation": [
+        "current-source-inspection",
+        "historical-report-reconciliation"
+      ],
+      "runtime_validation": "pending",
+      "performance": "unmeasured-current",
+      "progression_levels": "inventory-pending"
+    },
+    {
+      "class_name": "Hunter",
+      "roster_confirmation": "provisional-taxonomy-only",
+      "mechanics_and_paths": "Pet P; spells S; teamwork B",
+      "breakpoints_to_sample": "Pet/focus choices; granted feat recipients; redirection",
+      "understanding_accuracy_boundary": "Partial; pet-directed effects need subject-specific check",
+      "historical_evidence": "No current class replay established",
+      "actor_availability": "unknown",
+      "permission": "conditional-AI-selectable; concrete game/player-owned exceptions in narrative",
+      "understanding": "partial-shared-support",
+      "decision_execution": "not-tested-current",
+      "validation": [
+        "current-source-inspection",
+        "historical-report-reconciliation"
+      ],
+      "runtime_validation": "pending",
+      "performance": "unmeasured-current",
+      "progression_levels": "inventory-pending"
+    },
+    {
+      "class_name": "Inquisitor",
+      "roster_confirmation": "provisional-taxonomy-only",
+      "mechanics_and_paths": "Judgments/Bane T/B; spells S; marks/weapon W/M",
+      "breakpoints_to_sample": "Judgment capacity/ranks; Bane resource/weapon compatibility",
+      "understanding_accuracy_boundary": "Partial; component-specific enchant/mechanics-feature gaps may remain",
+      "historical_evidence": "Old class addendum, not current native recheck",
+      "actor_availability": "unknown",
+      "permission": "conditional-AI-selectable; concrete game/player-owned exceptions in narrative",
+      "understanding": "partial-shared-support",
+      "decision_execution": "not-tested-current",
+      "validation": [
+        "current-source-inspection",
+        "historical-report-reconciliation"
+      ],
+      "runtime_validation": "pending",
+      "performance": "unmeasured-current",
+      "progression_levels": "inventory-pending"
+    },
+    {
+      "class_name": "Kineticist",
+      "roster_confirmation": "export-verified",
+      "mechanics_and_paths": "Native part/costs/delivery K; preparation; rank talents; attacks W",
+      "breakpoints_to_sample": "Actual base progression and seven deltas below",
+      "understanding_accuracy_boundary": "Substantial modeled paths; remaining strategic limits/native archetype costs reviewed separately",
+      "historical_evidence": "Several versioned Orvath reports; runtime kit mixes external grants",
+      "actor_availability": "unknown",
+      "permission": "conditional-AI-selectable; concrete game/player-owned exceptions in narrative",
+      "understanding": "partial-shared-support",
+      "decision_execution": "not-tested-current",
+      "validation": [
+        "current-source-inspection",
+        "historical-report-reconciliation"
+      ],
+      "runtime_validation": "pending",
+      "performance": "unmeasured-current",
+      "progression_levels": "see actual kinetic progression JSON"
+    },
+    {
+      "class_name": "Magus",
+      "roster_confirmation": "provisional-taxonomy-only",
+      "mechanics_and_paths": "Spells/touch S; arcana boosts M; current attacks W",
+      "breakpoints_to_sample": "Spell Combat/Spellstrike combined action; offhand/weapon restriction; Eldritch Archer",
+      "understanding_accuracy_boundary": "Partial; ability crit x2 explicitly supported (`CombatMath.cs:728`); combined forecast/command contract unestablished",
+      "historical_evidence": "No broad class runtime certificate",
+      "actor_availability": "unknown",
+      "permission": "conditional-AI-selectable; concrete game/player-owned exceptions in narrative",
+      "understanding": "partial-shared-support",
+      "decision_execution": "not-tested-current",
+      "validation": [
+        "current-source-inspection",
+        "historical-report-reconciliation"
+      ],
+      "runtime_validation": "pending",
+      "performance": "unmeasured-current",
+      "progression_levels": "inventory-pending"
+    },
+    {
+      "class_name": "Monk",
+      "roster_confirmation": "provisional-taxonomy-only",
+      "mechanics_and_paths": "Native attacks W; Ki/riders M/B; stat-linked AC B",
+      "breakpoints_to_sample": "Flurry/current routine; Stunning Fist follow-up; Zen Archer/Scaled Fist links",
+      "understanding_accuracy_boundary": "Partial; special Ki/form/action variants unexamined",
+      "historical_evidence": "Historical Lann current-kit attacks, not all Monk archetypes",
+      "actor_availability": "unknown",
+      "permission": "conditional-AI-selectable; concrete game/player-owned exceptions in narrative",
+      "understanding": "partial-shared-support",
+      "decision_execution": "not-tested-current",
+      "validation": [
+        "current-source-inspection",
+        "historical-report-reconciliation"
+      ],
+      "runtime_validation": "pending",
+      "performance": "unmeasured-current",
+      "progression_levels": "inventory-pending"
+    },
+    {
+      "class_name": "Oracle",
+      "roster_confirmation": "provisional-taxonomy-only",
+      "mechanics_and_paths": "Spells/conversions S; support B",
+      "breakpoints_to_sample": "Combat Healer conversion; mystery/revelation/curse unlock",
+      "understanding_accuracy_boundary": "Partial; alternate-price conversion/dependency cases need actor",
+      "historical_evidence": "No current class replay established",
+      "actor_availability": "unknown",
+      "permission": "conditional-AI-selectable; concrete game/player-owned exceptions in narrative",
+      "understanding": "partial-shared-support",
+      "decision_execution": "not-tested-current",
+      "validation": [
+        "current-source-inspection",
+        "historical-report-reconciliation"
+      ],
+      "runtime_validation": "pending",
+      "performance": "unmeasured-current",
+      "progression_levels": "inventory-pending"
+    },
+    {
+      "class_name": "Paladin",
+      "roster_confirmation": "provisional-taxonomy-only",
+      "mechanics_and_paths": "Smite-like mark/attack M; Lay on Hands/support B; W",
+      "breakpoints_to_sample": "Self/other action; mercies; saves/stat links; mark exclusivity",
+      "understanding_accuracy_boundary": "Modeled supported shapes; unique bond/aura/mercy variants unexamined",
+      "historical_evidence": "Old Seelah reports; later stat reader source",
+      "actor_availability": "unknown",
+      "permission": "conditional-AI-selectable; concrete game/player-owned exceptions in narrative",
+      "understanding": "partial-shared-support",
+      "decision_execution": "not-tested-current",
+      "validation": [
+        "current-source-inspection",
+        "historical-report-reconciliation"
+      ],
+      "runtime_validation": "pending",
+      "performance": "unmeasured-current",
+      "progression_levels": "inventory-pending"
+    },
+    {
+      "class_name": "Ranger",
+      "roster_confirmation": "provisional-taxonomy-only",
+      "mechanics_and_paths": "Weapon routines W; spell/pet S/P; marks if recognized M",
+      "breakpoints_to_sample": "Style/iteratives; companion; Quarry/terrain/target restrictions",
+      "understanding_accuracy_boundary": "Partial; named class mechanics not universally inspected",
+      "historical_evidence": "No current class replay established",
+      "actor_availability": "unknown",
+      "permission": "conditional-AI-selectable; concrete game/player-owned exceptions in narrative",
+      "understanding": "partial-shared-support",
+      "decision_execution": "not-tested-current",
+      "validation": [
+        "current-source-inspection",
+        "historical-report-reconciliation"
+      ],
+      "runtime_validation": "pending",
+      "performance": "unmeasured-current",
+      "progression_levels": "inventory-pending"
+    },
+    {
+      "class_name": "Rogue",
+      "roster_confirmation": "provisional-taxonomy-only",
+      "mechanics_and_paths": "Sneak/current routine W; debuffs/control S; Rowdy W",
+      "breakpoints_to_sample": "Precision immunity/flanking/range; debilitation; Rowdy Vital Strike",
+      "understanding_accuracy_boundary": "Partial; precision approximation and extra class triggers need native matching",
+      "historical_evidence": "Rowdy current explicit code, not runtime acceptance",
+      "actor_availability": "unknown",
+      "permission": "conditional-AI-selectable; concrete game/player-owned exceptions in narrative",
+      "understanding": "partial-shared-support",
+      "decision_execution": "not-tested-current",
+      "validation": [
+        "current-source-inspection",
+        "historical-report-reconciliation"
+      ],
+      "runtime_validation": "pending",
+      "performance": "unmeasured-current",
+      "progression_levels": "inventory-pending"
+    },
+    {
+      "class_name": "Shaman",
+      "roster_confirmation": "provisional-taxonomy-only",
+      "mechanics_and_paths": "Spells/healing S/B; spirit T; hex extension S",
+      "breakpoints_to_sample": "Battle Spirit grant; hex cooldown/immunity; Chant; spirit replacements",
+      "understanding_accuracy_boundary": "Partial; supported extension/area mechanisms; per-spirit deltas unknown",
+      "historical_evidence": "Old Camellia reports only",
+      "actor_availability": "unknown",
+      "permission": "conditional-AI-selectable; concrete game/player-owned exceptions in narrative",
+      "understanding": "partial-shared-support",
+      "decision_execution": "not-tested-current",
+      "validation": [
+        "current-source-inspection",
+        "historical-report-reconciliation"
+      ],
+      "runtime_validation": "pending",
+      "performance": "unmeasured-current",
+      "progression_levels": "inventory-pending"
+    },
+    {
+      "class_name": "Shifter",
+      "roster_confirmation": "provisional-taxonomy-only",
+      "mechanics_and_paths": "Current natural routine W; Wisdom-AC link B",
+      "breakpoints_to_sample": "Major/minor aspect; form/gear/attack replacement; return action",
+      "understanding_accuracy_boundary": "Partial current body; pre-transformation replacement model unestablished",
+      "historical_evidence": "StatLinks historical reader mentions Shifter AC",
+      "actor_availability": "unknown",
+      "permission": "conditional-AI-selectable; concrete game/player-owned exceptions in narrative",
+      "understanding": "partial-shared-support",
+      "decision_execution": "not-tested-current",
+      "validation": [
+        "current-source-inspection",
+        "historical-report-reconciliation"
+      ],
+      "runtime_validation": "pending",
+      "performance": "unmeasured-current",
+      "progression_levels": "inventory-pending"
+    },
+    {
+      "class_name": "Skald",
+      "roster_confirmation": "provisional-taxonomy-only",
+      "mechanics_and_paths": "Rage/song areas T; acceptance B; spells S; granted powers B",
+      "breakpoints_to_sample": "Acceptance off/on; rage powers actually owned; replacement songs; action/drain changes",
+      "understanding_accuracy_boundary": "Partial; accepting caster's loss modeled; exact save/resource/lifecycle parity open",
+      "historical_evidence": "Old copied song states, not complete Skald replay",
+      "actor_availability": "unknown",
+      "permission": "conditional-AI-selectable; concrete game/player-owned exceptions in narrative",
+      "understanding": "partial-shared-support",
+      "decision_execution": "not-tested-current",
+      "validation": [
+        "current-source-inspection",
+        "historical-report-reconciliation"
+      ],
+      "runtime_validation": "pending",
+      "performance": "unmeasured-current",
+      "progression_levels": "inventory-pending"
+    },
+    {
+      "class_name": "Slayer",
+      "roster_confirmation": "provisional-taxonomy-only",
+      "mechanics_and_paths": "Studied Target-like M; precision W; talents S/B",
+      "breakpoints_to_sample": "Studied-target action change; sneak; talent trigger",
+      "understanding_accuracy_boundary": "Partial; own-mark coupling exists, graph/progression confirmation pending",
+      "historical_evidence": "Current component-based code, not all Slayer builds",
+      "actor_availability": "unknown",
+      "permission": "conditional-AI-selectable; concrete game/player-owned exceptions in narrative",
+      "understanding": "partial-shared-support",
+      "decision_execution": "not-tested-current",
+      "validation": [
+        "current-source-inspection",
+        "historical-report-reconciliation"
+      ],
+      "runtime_validation": "pending",
+      "performance": "unmeasured-current",
+      "progression_levels": "inventory-pending"
+    },
+    {
+      "class_name": "Sorcerer",
+      "roster_confirmation": "provisional-taxonomy-only",
+      "mechanics_and_paths": "Spontaneous spellbook S; bloodline buffs/boosts B/M",
+      "breakpoints_to_sample": "Metamagic full action; bloodline grant/passive; conversion/resource",
+      "understanding_accuracy_boundary": "Partial; unique bloodline/form dependency graphs unexamined",
+      "historical_evidence": "No current class replay established",
+      "actor_availability": "unknown",
+      "permission": "conditional-AI-selectable; concrete game/player-owned exceptions in narrative",
+      "understanding": "partial-shared-support",
+      "decision_execution": "not-tested-current",
+      "validation": [
+        "current-source-inspection",
+        "historical-report-reconciliation"
+      ],
+      "runtime_validation": "pending",
+      "performance": "unmeasured-current",
+      "progression_levels": "inventory-pending"
+    },
+    {
+      "class_name": "Warpriest",
+      "roster_confirmation": "provisional-taxonomy-only",
+      "mechanics_and_paths": "Fervor quickened conversion S; heal B; Sacred/Blessing T/M",
+      "breakpoints_to_sample": "Fervor unlock/self restriction; resource; weapon/armor pool; blessing action",
+      "understanding_accuracy_boundary": "Discovery correction implemented; enchant-pool and unique blessings unresolved",
+      "historical_evidence": "Historical actual blueprint addendum only",
+      "actor_availability": "unknown",
+      "permission": "conditional-AI-selectable; concrete game/player-owned exceptions in narrative",
+      "understanding": "partial-shared-support",
+      "decision_execution": "not-tested-current",
+      "validation": [
+        "current-source-inspection",
+        "historical-report-reconciliation"
+      ],
+      "runtime_validation": "pending",
+      "performance": "unmeasured-current",
+      "progression_levels": "inventory-pending"
+    },
+    {
+      "class_name": "Witch",
+      "roster_confirmation": "provisional-taxonomy-only",
+      "mechanics_and_paths": "Hex branches/cooldown S; Cackle extension S; buffs B",
+      "breakpoints_to_sample": "First hex; daily-target immunity; extension expiry; familiar/archetype spell changes",
+      "understanding_accuracy_boundary": "Partial; shared extension exists, actual branches/stacking need graph and replay",
+      "historical_evidence": "Earlier class addendum, not current Witch gameplay",
+      "actor_availability": "unknown",
+      "permission": "conditional-AI-selectable; concrete game/player-owned exceptions in narrative",
+      "understanding": "partial-shared-support",
+      "decision_execution": "not-tested-current",
+      "validation": [
+        "current-source-inspection",
+        "historical-report-reconciliation"
+      ],
+      "runtime_validation": "pending",
+      "performance": "unmeasured-current",
+      "progression_levels": "inventory-pending"
+    },
+    {
+      "class_name": "Wizard",
+      "roster_confirmation": "provisional-taxonomy-only",
+      "mechanics_and_paths": "Prepared spells/variants S; buffs B; next-spell M",
+      "breakpoints_to_sample": "Slots/metamagic; schools; bonded-resource recovery",
+      "understanding_accuracy_boundary": "Partial; explicit recovery/slot bookkeeping intentionally outside candidate support",
+      "historical_evidence": "No current class replay established",
+      "actor_availability": "unknown",
+      "permission": "conditional-AI-selectable; concrete game/player-owned exceptions in narrative",
+      "understanding": "partial-shared-support",
+      "decision_execution": "not-tested-current",
+      "validation": [
+        "current-source-inspection",
+        "historical-report-reconciliation"
+      ],
+      "runtime_validation": "pending",
+      "performance": "unmeasured-current",
+      "progression_levels": "inventory-pending"
+    }
+  ],
+  "kinetic_progression_data": "kinetic-progression.json",
+  "schema_note": "Independent states. Export presence is not actor availability or permission. Current gameplay and Unity performance remain pending. Planning rows are not an authoritative roster.",
+  "implementation_source_commit": "4f8a8b72581ff783fc8a7d8f54005bdb3f189a9c",
+  "selected_repairs": [
+    "C01 save/disbelief boost composition",
+    "C02 supported active burn consequences",
+    "C03 modeled area path identity"
+  ]
+}
