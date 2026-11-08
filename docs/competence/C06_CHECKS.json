@@ -1,11 +1,11 @@
 {
-  "starting_commit": "fdc5e5e0906a4afc7a1af22cebbc29c0ed8d7e20",
+  "starting_commit": "3443d94b960d14011f7a72e69af4d534eaecaf50",
   "version": "0.3.30",
   "dll": {
     "assembly": "CompanionAI_Pathfinder, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null",
-    "mvid": "4f92cc10-5f8d-469c-a3a6-3a257065775e",
-    "sha256": "c31094e8dc315c3b9bbac3ec636d4d71e1035cd4bde7cc11f46f5e38169a3c06",
-    "size": 1226240
+    "mvid": "641ff828-00b6-46aa-9f92-3748fae7f2f6",
+    "sha256": "b27f7c1c6c96a6f9e86fc5d85b788dd27ba9a6cee78ac8ee37f3185606d0ef9c",
+    "size": 1241600
   },
   "input_corpus_sha256": "a0454cbe724e62e5534f373254676d7189251fa2f75a45b3fffd6a4fc223190c",
   "mapping_pr": "https://github.com/recovribox-svg/AIControll-FACC/pull/21",
@@ -15,10 +15,11 @@
     "game_patch_version": "not established"
   },
   "unit_tests": {
-    "baseline_passed": 522,
-    "candidate_passed": 537,
+    "baseline_passed": 531,
+    "candidate_passed": 547,
     "failed": 0,
-    "skipped": 0
+    "skipped": 0,
+    "intake_candidate_passed": 546
   },
   "release_build": {
     "references": "supplied actual native and UMM files; existing Harmony 2.2.2 compile dependency",
@@ -41,7 +42,12 @@
     "exit_code": 0,
     "rows": 4807,
     "reader_errors": 0,
-    "explicit_skips": []
+    "explicit_skips": [],
+    "reveal_checks": 3,
+    "cast_bonus_checks": 2,
+    "burn_checks": 42,
+    "save_route_checks": 16,
+    "area_grant_checks": 14
   },
   "known_failure": {
     "name": "AchaekekSacredWeaponFeature",
@@ -50,7 +56,7 @@
     "error": "SecurityException: ECall methods must be packaged into a system module."
   },
   "native_cost_checks": {
-    "checks": 85,
+    "checks": 90,
     "progression_shaped_kits": 6,
     "judgment_graphs": 15,
     "failures": 0,
@@ -62,19 +68,19 @@
   "source_identities": [
     {
       "file": "Tactics/TacticalEngine.Toggles.cs",
-      "sha256": "00466a27399bf54f99dc59f4ba28418f79675fd910564e5c19446a09d8cb2236"
+      "sha256": "7c749a39bdd470383b75db834948fbf58c3e32dd483046f028164b926cdf3c49"
     },
     {
       "file": "Tactics/ValueModel.Toggles.cs",
-      "sha256": "11e57a06f022cfefb754b2256fb7ef2e86aff7ea73279fc6aa753c8674abd614"
+      "sha256": "2428c1f314d92857145a254477de720fdd9bf46783897e94b78d7d31a95ad0a1"
     },
     {
       "file": "tests/CompanionAI.Tests/ToggleResourceTests.cs",
-      "sha256": "652f1371bbc50f7c32c1b46f143b2aee72469e3cc7a590eeaf4820b86ee1019f"
+      "sha256": "b3def445f9956e0a7571c6db34a6de5eb60180c0ad408cf4e05211b73df8103f"
     },
     {
       "file": "tests/ToggleCosts.Native/Program.cs",
-      "sha256": "8c7d81cddf774c9173d685df80980cff52fba5c92b3cf909f6e3f1334b80596c"
+      "sha256": "bab28f7083fecb6eb3dfa37e827a05d1733db4c5d95d32b2503ff80f7f4cc02f"
     }
   ],
   "class_mythic_scope": [
@@ -130,11 +136,11 @@
     }
   ],
   "signature_comparison": {
-    "baseline_mvid": "0ed42ac5-d9ce-4f88-a339-388028b036c3",
-    "added_member_refs": 17,
-    "native_added_refs": 11,
+    "baseline_mvid": "740e7ec5-27f8-4575-9187-258b0f61f426",
+    "added_member_refs": 19,
+    "native_added_refs": 13,
     "harmony_added_refs": 6,
-    "resolved": 17,
+    "resolved": 19,
     "providers": "supplied native assembly and Harmony 2.2.2 compile provider; no runtime-Harmony compatibility certificate",
     "added": [
       "0Harmony F System.Collections.ObjectModel.ReadOnlyCollection`1<HarmonyLib.Patch> HarmonyLib.Patches::Finalizers",
@@ -146,15 +152,21 @@
       "Assembly-CSharp F class !0 Kingmaker.EntitySystem.BlueprintComponentAndRuntime`1<Kingmaker.UnitLogic.ActivatableAbilities.ActivatableAbilityResourceLogic>::Component",
       "Assembly-CSharp F class Kingmaker.ElementsSystem.ActionList Kingmaker.Designers.Mechanics.Facts.CombatStateTrigger::CombatStartActions",
       "Assembly-CSharp F class Kingmaker.EntitySystem.EntityFactComponent Kingmaker.EntitySystem.BlueprintComponentAndRuntime`1<Kingmaker.UnitLogic.ActivatableAbilities.ActivatableAbilityResourceLogic>::Runtime",
+      "Assembly-CSharp F class Kingmaker.Utility.CountableFlag Kingmaker.UnitLogic.UnitMechanicFeatures::JudgmentSwitch",
       "Assembly-CSharp F valuetype System.Boolean Kingmaker.UnitLogic.ActivatableAbilities.BlueprintActivatableAbility::DeactivateAfterFirstRound",
       "Assembly-CSharp F valuetype System.Boolean Kingmaker.UnitLogic.Mechanics.Actions.ContextSpendResource::ContextValueSpendure",
       "Assembly-CSharp F valuetype System.Int32 Kingmaker.UnitLogic.ActivatableAbilities.ActivatableAbilityResourceLogic/ComponentData::RoundsToSpendingCounter",
       "Assembly-CSharp M System.Collections.Generic.IEnumerable`1<Kingmaker.EntitySystem.BlueprintComponentAndRuntime`1<!!0>> Kingmaker.EntitySystem.EntityFact::SelectComponentsWithRuntime() this=True",
       "Assembly-CSharp M class Kingmaker.Blueprints.BlueprintAbilityResource Kingmaker.UnitLogic.Mechanics.Actions.ContextSpendResource::get_Resource() this=True",
       "Assembly-CSharp M class Kingmaker.Blueprints.Facts.BlueprintUnitFact Kingmaker.UnitLogic.ActivatableAbilities.ActivatableAbilityResourceLogic::get_FreeBlueprint() this=True",
+      "Assembly-CSharp M valuetype Kingmaker.UnitLogic.FactLogic.AddMechanicsFeature/MechanicsFeatureType Kingmaker.UnitLogic.FactLogic.AddMechanicsFeature::get_Feature() this=True",
       "Assembly-CSharp M valuetype System.Boolean Kingmaker.EntitySystem.EntityFactComponent::TryGetData(!!0&) this=True",
       "Assembly-CSharp M valuetype System.Single Kingmaker.UnitLogic.ActivatableAbilities.ActivatableAbility::get_TimeToNextRound() this=True"
-    ]
+    ],
+    "baseline_source": "3443d94",
+    "baseline_member_refs": 1695,
+    "candidate_member_refs": 1714,
+    "removed_member_refs": 0
   },
   "gameplay": "pending",
   "unity_performance": "pending",
@@ -165,19 +177,58 @@
     "missing/invalid renewal state",
     "unknown cost/callback patches",
     "unsupported activation actions/guards",
-    "depleted-pool DeactivateImmediately event lifetime"
+    "depleted-pool DeactivateImmediately event lifetime when native availability requires a positive pool"
   ],
   "test_package": {
-    "file": "AI-Control-FACC-v0.3.30-dev-toggle-costs-a861a2b-UMM-test.zip",
-    "identity_file": "AI-Control-FACC-v0.3.30-dev-toggle-costs-a861a2b-UMM-test.identity.json",
-    "zip_sha256": "e760a7fd53d765cea5b9e4e751456bf6b5c16aed81f0c24af7d9d73d5997e82c",
+    "file": "AI-Control-FACC-v0.3.30-dev-toggle-review-c6e8b25-UMM-test.zip",
+    "identity_file": "AI-Control-FACC-v0.3.30-dev-toggle-review-c6e8b25-UMM-test.identity.json",
+    "zip_sha256": "72009adbec07c01187995f2cfba7e245a05de06165098e96da5ccc2d589e42a9",
     "build_byte_check": true
   },
-  "source_commit": "a861a2b896dc14b47706f954dca8d6022f3a87b1",
+  "source_commit": "c6e8b25ac8ca1d5fec65e02b561ce5fd3aa8ae5e",
   "ttt_base_free_lifecycle": {
     "saved_flag": "DisableAfterCombatDeactivationOfUnlimitedAbilities",
     "enabled": true,
     "inspection": "installed Base 2.6.18 gated StopOutOfCombat/ActivatableAbility.OnNewRound prefixes; current free-fact quote is zero, actual timer read after loss",
     "runtime_initialization": "not tested"
+  },
+  "original_starting_commit": "fdc5e5e0906a4afc7a1af22cebbc29c0ed8d7e20",
+  "reconciled_development": "1f58150b8e50f9a322ba0b8d3fcc095fe188420f",
+  "superseded_package": {
+    "source_commit": "a861a2b896dc14b47706f954dca8d6022f3a87b1",
+    "dll": {
+      "assembly": "CompanionAI_Pathfinder, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null",
+      "mvid": "4f92cc10-5f8d-469c-a3a6-3a257065775e",
+      "sha256": "c31094e8dc315c3b9bbac3ec636d4d71e1035cd4bde7cc11f46f5e38169a3c06",
+      "size": 1226240
+    },
+    "test_package": {
+      "file": "AI-Control-FACC-v0.3.30-dev-toggle-review-c6e8b25-UMM-test.zip",
+      "identity_file": "AI-Control-FACC-v0.3.30-dev-toggle-review-c6e8b25-UMM-test.identity.json",
+      "zip_sha256": "72009adbec07c01187995f2cfba7e245a05de06165098e96da5ccc2d589e42a9",
+      "build_byte_check": true
+    }
+  },
+  "self_review": {
+    "requested_base": "3443d94b960d14011f7a72e69af4d534eaecaf50",
+    "original_pr_head": "6d4e9930e6f40bb05aed0b1588429ffd663ebdda",
+    "correction_commit": "c6e8b25ac8ca1d5fec65e02b561ce5fd3aa8ae5e",
+    "status": "Corrections complete; external review/gameplay pending",
+    "last_judgment": "Actual JudgmentSwitch mechanic or a certain stable activation path waives the one-point availability requirement; separate timed watcher does not certify it.",
+    "patch_contract_cache": "Weak TacticalContext key; immutable known/TTT booleans only; fresh context rechecks; no actor/pool/timer cache. Native method identities cached once.",
+    "metadata_fixture": "Serialized Harmony records temporarily replaced/restored; no wrapping/patch application. Host native detour helper unavailable.",
+    "native_harness_harmony": "2.3.3, distinct from mod compile provider 2.2.2",
+    "preserved_development_changes": [
+      "cfd8f0a reveal/large-party decision/unique-buff settle/cast-time bonuses",
+      "3443d94 named burn-fallback diagnostic"
+    ]
+  },
+  "bubbleprints_cross_check": {
+    "receipt": "BUBBLEPRINTS_CHECK.json",
+    "database_version": "2.7.0x_0",
+    "selected_data_equal": "28/28",
+    "judgment_abilities": 15,
+    "installed_version_confirmed": false,
+    "merged_into_reader_corpus": false
   }
 }

@@ -1,6 +1,17 @@
 # Test builds
 
-## Task-branch candidate: v0.3.30 toggle costs (a861a2b) — review and gameplay pending
+## Task-branch candidate: v0.3.30 toggle self-review (c6e8b25) — review and gameplay pending
+
+[UMM test ZIP](AI-Control-FACC-v0.3.30-dev-toggle-review-c6e8b25-UMM-test.zip?raw=true) · [Identity](AI-Control-FACC-v0.3.30-dev-toggle-review-c6e8b25-UMM-test.identity.json) · [Changes and paired TB/RT replay](../docs/competence/C06_TOGGLE_COSTS.md)
+
+Source `c6e8b25ac8ca1d5fec65e02b561ce5fd3aa8ae5e`, branch `codex/class-competence-toggle-costs`; author-requested development base `3443d94`, packaging reconciled at `1f58150`. Includes Claude's competence3 fixes and named burn diagnostic. Manifest stays **0.3.30**; startup MVID `641ff828-00b6-46aa-9f92-3748fae7f2f6`. ZIP SHA-256 `72009adbec07c01187995f2cfba7e245a05de06165098e96da5ccc2d589e42a9`.
+
+Corrects the last Judgment use's watcher/availability boundary and shares Harmony patch-contract inspection within each decision, with a fresh check on the next context. Supported spend windows, already-paid time and existing ownership/acceptance/blocklist/restoration policies remain as documented. This supersedes the older `a861a2b` C06 candidate below.
+
+**547 unit tests, 90 compiled native checks / six progression-shaped kits, zero-warning real-reference Release build, 19/19 added references resolved against competence3b.** Strict audit: incomplete on the same one known Unity-bound input, no verdicts. Separate PARTIAL diagnostic: 4,807 rows / zero reader errors. Packed DLL/unchanged manifest equal the tested build bytes. **Unplayed; matched Unity performance remains pending.**
+
+
+## Superseded task-branch candidate: v0.3.30 toggle costs (a861a2b)
 
 [UMM test ZIP](AI-Control-FACC-v0.3.30-dev-toggle-costs-a861a2b-UMM-test.zip?raw=true) · [Identity](AI-Control-FACC-v0.3.30-dev-toggle-costs-a861a2b-UMM-test.identity.json) · [Changes and paired TB/RT replay](../docs/competence/C06_TOGGLE_COSTS.md)
 
@@ -60,7 +71,7 @@ DLL SHA-256 `53227972f3d92685072605d8d6897daa98e8a8c0531d989c7cbf357e2646afc0`; 
   longer hide that. Every burn still pays its per-rest price, so it is not spent for nothing.
 - **Area buffs** (performances, auras) keep every distinct branch that can give a buff.
 - Checks: 522 unit + 11 inventory tests; real-DLL build 0 warnings; offline audit 4031 blueprints, 0 errors, 42 burn /
-  16 save-route / 14 area checks pass. **Not played yet.**
+  16 save-route / 14 area checks pass. **Played: author/§126 report 6 TB + 8 RT fights; see the newer competence3 fixes above.**
 - What to test (TB and RT): a level-6+ kineticist (no "burn consequences unknown" line, same burn choices as test 2); a
   Psychokineticist with and without an Adaptation talent at low HP (no low-HP burn refusals; Will drops 2 per burn);
   an Arcanist/next-spell DC booster on a half-damage spell against a target with Evasion; a Skald or Bard song.

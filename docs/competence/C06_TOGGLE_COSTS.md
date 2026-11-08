@@ -30,6 +30,8 @@ Base's `ActivatableResourceFreeResourceLogic` was also inspected. The supplied `
 
 Patch-snapshot fixtures use the pinned offline Harmony provider's serialized metadata records. The host cannot run its native detour helper, so no method wrapper is installed or invoked; the original bytes are restored after the test. That checks production metadata inspection and context invalidation, not live patch application. Actual TTT initialization and Harmony runtime outcomes remain gameplay work.
 
+The author-supplied BubblePrints engine additionally decoded its official 2.7.0x_0 database: all fifteen Judgment abilities and the watcher (within 28 selected records) are exactly Data-equal to the supplied JBP exports. [Cross-check receipt](BUBBLEPRINTS_CHECK.json). This supports those graph shapes; it does not establish the installed game patch or active mods. The versioned database is not substituted into the strict/PARTIAL audit corpus.
+
 ## Preserved policy and explicit limits
 
 | Boundary | Disposition |
