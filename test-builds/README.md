@@ -1,5 +1,13 @@
 # Test builds
 
+## Task-branch candidate: v0.3.30 toggle costs (a861a2b) — review and gameplay pending
+
+[UMM test ZIP](AI-Control-FACC-v0.3.30-dev-toggle-costs-a861a2b-UMM-test.zip?raw=true) · [Identity](AI-Control-FACC-v0.3.30-dev-toggle-costs-a861a2b-UMM-test.identity.json) · [Changes and paired TB/RT replay](../docs/competence/C06_TOGGLE_COSTS.md)
+
+Source `a861a2b896dc14b47706f954dca8d6022f3a87b1`, branch `codex/class-competence-toggle-costs`; manifest remains 0.3.30. Startup MVID `4f92cc10-5f8d-469c-a3a6-3a257065775e`. Resource windows follow supported start/round/interval/Judgment costs and already-paid time; native event-dependent depletion and unknown contracts retain fallback. Existing ownership, acceptance, blocklists and restoration remain in place.
+
+537 unit tests, 85 compiled cost checks across six progression-shaped kits, zero-warning real-reference Release build and 17 resolved added references. Strict audit remains incomplete on one known offline Unity-bound input; the separate PARTIAL run has 4,807 rows and zero reader errors. ZIP bytes match the checked committed-source build; only the mod DLL and unchanged manifest are packed. **Unplayed candidate; no Unity performance claim.**
+
 ## Current test build: v0.3.30-dev-competence2 (7e89a16) - competence foundation integrated, with review fixes
 
 **[Download the UMM test ZIP (7e89a16)](AI-Control-FACC-v0.3.30-dev-competence2-7e89a16-UMM-test.zip?raw=true)** · [Identity](AI-Control-FACC-v0.3.30-dev-competence2-7e89a16-UMM-test.identity.json) · [Checksums](SHA256SUMS.txt) · [Current register](../docs/CLASS_COMPETENCE_CURRENT.md)

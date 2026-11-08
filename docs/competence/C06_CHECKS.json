@@ -3,8 +3,8 @@
   "version": "0.3.30",
   "dll": {
     "assembly": "CompanionAI_Pathfinder, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null",
-    "mvid": "9a4ed23d-c613-4ace-a10b-9d2f55761d62",
-    "sha256": "f3ee39c45bb393a0cb1144dd69671cc54352c5c2d66b0c1f894a90848a9f9f11",
+    "mvid": "4f92cc10-5f8d-469c-a3a6-3a257065775e",
+    "sha256": "c31094e8dc315c3b9bbac3ec636d4d71e1035cd4bde7cc11f46f5e38169a3c06",
     "size": 1226240
   },
   "input_corpus_sha256": "a0454cbe724e62e5534f373254676d7189251fa2f75a45b3fffd6a4fc223190c",
@@ -50,7 +50,7 @@
     "error": "SecurityException: ECall methods must be packaged into a system module."
   },
   "native_cost_checks": {
-    "checks": 84,
+    "checks": 85,
     "progression_shaped_kits": 6,
     "judgment_graphs": 15,
     "failures": 0,
@@ -62,7 +62,7 @@
   "source_identities": [
     {
       "file": "Tactics/TacticalEngine.Toggles.cs",
-      "sha256": "beac86206253ea7f0c1cbb04a4dfc93d83812912ee59231889b3c64947b5fdbc"
+      "sha256": "00466a27399bf54f99dc59f4ba28418f79675fd910564e5c19446a09d8cb2236"
     },
     {
       "file": "Tactics/ValueModel.Toggles.cs",
@@ -74,7 +74,7 @@
     },
     {
       "file": "tests/ToggleCosts.Native/Program.cs",
-      "sha256": "69b3bb369c5f977cb4f60341201e92420518651f40d85eb55076653433d48f6f"
+      "sha256": "8c7d81cddf774c9173d685df80980cff52fba5c92b3cf909f6e3f1334b80596c"
     }
   ],
   "class_mythic_scope": [
@@ -167,5 +167,17 @@
     "unsupported activation actions/guards",
     "depleted-pool DeactivateImmediately event lifetime"
   ],
-  "test_package": "recorded in the following packaging commit"
+  "test_package": {
+    "file": "AI-Control-FACC-v0.3.30-dev-toggle-costs-a861a2b-UMM-test.zip",
+    "identity_file": "AI-Control-FACC-v0.3.30-dev-toggle-costs-a861a2b-UMM-test.identity.json",
+    "zip_sha256": "e760a7fd53d765cea5b9e4e751456bf6b5c16aed81f0c24af7d9d73d5997e82c",
+    "build_byte_check": true
+  },
+  "source_commit": "a861a2b896dc14b47706f954dca8d6022f3a87b1",
+  "ttt_base_free_lifecycle": {
+    "saved_flag": "DisableAfterCombatDeactivationOfUnlimitedAbilities",
+    "enabled": true,
+    "inspection": "installed Base 2.6.18 gated StopOutOfCombat/ActivatableAbility.OnNewRound prefixes; current free-fact quote is zero, actual timer read after loss",
+    "runtime_initialization": "not tested"
+  }
 }
