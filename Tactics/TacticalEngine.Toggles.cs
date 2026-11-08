@@ -58,6 +58,8 @@ namespace CompanionAI_Pathfinder.Tactics
             public (ConditionsChecker Checker, bool Branch)[] Guards;
             /// <summary>★ v0.3.21: given only when this save fails (Unknown: no save).</summary>
             public Kingmaker.EntitySystem.Stats.SavingThrowType Save = Kingmaker.EntitySystem.Stats.SavingThrowType.Unknown;
+            /// <summary>Identity of the nearest save wrapper; different wrappers can carry different DC rules.</summary>
+            public Kingmaker.UnitLogic.Mechanics.Actions.ContextActionSavingThrow SaveAction;
         }
 
         private sealed class BlueprintUnitFactRefs
@@ -157,7 +159,8 @@ namespace CompanionAI_Pathfinder.Tactics
         /// <summary>Buffs applied by an area's actions, through Conditionals; the same buff once per branch path.</summary>
         private static void CollectGrants(Kingmaker.ElementsSystem.GameAction[] actions, List<(ConditionsChecker, bool)> guards,
                                           List<AreaGrant> grants, int depth, bool followSaves,
-                                          Kingmaker.EntitySystem.Stats.SavingThrowType save)
+                                          Kingmaker.EntitySystem.Stats.SavingThrowType save,
+                                          Kingmaker.UnitLogic.Mechanics.Actions.ContextActionSavingThrow saveAction = null)
         {
             if (actions == null || depth > 4) return;
             foreach (var action in actions)
@@ -165,21 +168,35 @@ namespace CompanionAI_Pathfinder.Tactics
                 switch (action)
                 {
                     case Kingmaker.UnitLogic.Mechanics.Actions.ContextActionApplyBuff apply when apply.Buff != null && !apply.ToCaster:
-                        if (!grants.Any(g => g.Buff == apply.Buff && g.Guards.Length == guards.Count))
-                            grants.Add(new AreaGrant { Buff = apply.Buff, Guards = guards.ToArray(), Save = save });
+                        // ★ v0.3.30 (competence): equal depth does not mean the same path. Keep opposite branches,
+                        // distinct checkers and save wrappers; only repeated identical enter/round paths collapse.
+                        if (!grants.Any(g => SameGrantPath(g, apply.Buff, guards, save, saveAction)))
+                            grants.Add(new AreaGrant { Buff = apply.Buff, Guards = guards.ToArray(), Save = save, SaveAction = saveAction });
                         break;
                     case Kingmaker.Designers.EventConditionActionSystem.Actions.Conditional conditional:
-                        CollectGrants(conditional.IfTrue?.Actions, new List<(ConditionsChecker, bool)>(guards) { (conditional.ConditionsChecker, true) }, grants, depth + 1, followSaves, save);
-                        CollectGrants(conditional.IfFalse?.Actions, new List<(ConditionsChecker, bool)>(guards) { (conditional.ConditionsChecker, false) }, grants, depth + 1, followSaves, save);
+                        CollectGrants(conditional.IfTrue?.Actions, new List<(ConditionsChecker, bool)>(guards) { (conditional.ConditionsChecker, true) }, grants, depth + 1, followSaves, save, saveAction);
+                        CollectGrants(conditional.IfFalse?.Actions, new List<(ConditionsChecker, bool)>(guards) { (conditional.ConditionsChecker, false) }, grants, depth + 1, followSaves, save, saveAction);
                         break;
                     case Kingmaker.UnitLogic.Mechanics.Actions.ContextActionSavingThrow saving when followSaves:
-                        CollectGrants(saving.Actions?.Actions, guards, grants, depth + 1, followSaves, saving.Type);
+                        CollectGrants(saving.Actions?.Actions, guards, grants, depth + 1, followSaves, saving.Type, saving);
                         break;
                     case Kingmaker.UnitLogic.Mechanics.Actions.ContextActionConditionalSaved saved when followSaves:
-                        CollectGrants(saved.Failed?.Actions, guards, grants, depth + 1, followSaves, save);
+                        CollectGrants(saved.Failed?.Actions, guards, grants, depth + 1, followSaves, save, saveAction);
                         break;
                 }
             }
+        }
+
+        private static bool SameGrantPath(AreaGrant grant, BlueprintBuff buff, List<(ConditionsChecker Checker, bool Branch)> guards,
+                                          Kingmaker.EntitySystem.Stats.SavingThrowType save,
+                                          Kingmaker.UnitLogic.Mechanics.Actions.ContextActionSavingThrow saveAction)
+        {
+            if (grant.Buff != buff || grant.Save != save || !ReferenceEquals(grant.SaveAction, saveAction) ||
+                grant.Guards.Length != guards.Count) return false;
+            for (int i = 0; i < guards.Count; i++)
+                if (!ReferenceEquals(grant.Guards[i].Checker, guards[i].Checker) || grant.Guards[i].Branch != guards[i].Branch)
+                    return false;
+            return true;
         }
 
         /// <summary>

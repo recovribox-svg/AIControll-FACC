@@ -1,11 +1,13 @@
 // ★ v0.3.19 (test6): kineticist burn, the Kinetic Sharpshooter's quiver and infusions that block every blast - from the
 // game's Kineticist blueprints (docs/TACTICAL_AI.md §38).
 //
-//   - Burn is nonlethal damage: BurnFeature's AddKineticistBurnValueChangedTrigger applies BurnEffectBuff, an
+//   - Standard burn is nonlethal damage: BurnFeature's AddKineticistBurnValueChangedTrigger applies BurnEffectBuff, an
 //     AddContextStatBonus on DamageNonLethal of burn x character level (KineticNonLethalDamageProperty), and the game
 //     knocks a unit out when damage + nonlethal reach its hit points (UnitLifeController). It stays until rest. A burn
 //     cost (BurnCost) is the drop chance it adds - the heal model's drop-chance term, mirrored - and a small day cost,
 //     less the Elemental Overflow it raises for the blasts still to come.
+//     Alternate burn follows its active native consequence graph (TacticalEngine.BurnConsequences), including a
+//     supported Will/skill penalty replacement instead of this HP modifier; unknown graphs retain a visible fallback.
 //   - A blast that costs burn passes the game's restriction only with that much burn left this round
 //     (AbilityKineticist.IsAbilityRestrictionPassed: MaxBurnPerRound, LeftBurnThisRound = min(left today, left this
 //     round)): 1 per round below level 6, and nothing once the day's burn is spent. A substance infusion is on by
@@ -102,10 +104,10 @@ namespace CompanionAI_Pathfinder.Tactics
         }
 
         /// <summary>
-        /// What accepting <paramref name="burn"/> costs the kineticist, in damage-equivalent points: the chance to drop
-        /// it adds before the next turn (burn x character level of nonlethal damage), a small day cost, less the
-        /// Elemental Overflow damage it adds to the blasts left in this fight. A burn that would knock the unit out
-        /// costs its whole worth.
+        /// What accepting <paramref name="burn"/> costs through its active supported native consequence graph: actual
+        /// nonlethal loss/day/drop risk and saving-throw penalties, less Elemental Overflow for the blasts left in this
+        /// fight. Unknown graphs keep the visible legacy nonlethal fallback. A burn that would knock the unit out costs
+        /// its whole worth. Skill utility is unmodeled, as in the shared buff appraisal.
         /// ★ v0.3.28 test 4: <paramref name="blastShortfall"/> - how far the unit's best blast that costs no burn falls short
         /// of its best other action (PriceBurn). Overflow adds to blasts only (AddKineticistElementalOverflow: damage of an
         /// own blast, attack of a kinetic-blast weapon). Orvath's recorded comparisons favored his bow, yet five burn-3
@@ -118,14 +120,23 @@ namespace CompanionAI_Pathfinder.Tactics
         {
             if (burn <= 0) return 0f;
             var unit = ctx.Unit;
-            float loss = burn * Level(unit);
+            // ★ v0.3.30 competence: the native burn handler applies the active feature's consequence buff; HP damage
+            // is not unconditional. Unsupported graphs retain the inherited HP fallback and say so explicitly.
+            var model = BurnConsequencesFor(ctx);
+            if (!BurnConsequenceDelta(model, burn, out int nonlethal, out float saves))
+            {
+                nonlethal = burn * Level(unit);
+                saves = 0f;
+                ReportOnce($"burn-consequence|{unit.UniqueId}|{CombatMemory.Fight}|{CombatMemory.Round}",
+                    $"[Tactics] {unit.CharacterName}: burn consequences unknown ({model.Unknown ?? "rank evaluation"}); using legacy nonlethal fallback");
+            }
+            float loss = Math.Max(0, nonlethal);
             float hp = CombatMath.RealHpBeforeDown(unit);   // ★ v0.3.28 test 3: burn is nonlethal, not taken by temporary HP
             float worth = AllyWorth(ctx, unit);
             if (loss >= hp) return worth * 2f;
-            float cost = loss * BurnDayCostPerHp;
             float danger = IncomingDamage(ctx, unit);
-            if (danger > 0f)
-                cost += (Mathf.Exp(-(hp - loss) / danger) - Mathf.Exp(-hp / danger)) * worth;
+            float cost = ValueModel.KineticBurnConsequenceCost(loss, saves, hp, danger, worth,
+                ValueModel.Horizon(ctx.ExpectedRounds, 4f), BurnDayCostPerHp);
             // The Overflow the burn raises, for the blasts after this one (about one a round).
             int overflowNow = 0, overflowAfter = 0;
             foreach (var blast in (unit.Get<UnitPartKineticist>()?.Blasts ?? Enumerable.Empty<Kingmaker.UnitLogic.Abilities.Blueprints.BlueprintAbility>()).Take(1))

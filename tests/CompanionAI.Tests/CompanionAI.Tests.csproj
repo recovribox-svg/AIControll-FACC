@@ -28,6 +28,8 @@
     <Compile Include="..\..\Tactics\ValueModel.OnKill.cs" Link="ValueModel.OnKill.cs" />
     <Compile Include="..\..\Tactics\ValueModel.UniqueBuff.cs" Link="ValueModel.UniqueBuff.cs" />
     <Compile Include="..\..\Tactics\ValueModel.Stats.cs" Link="ValueModel.Stats.cs" />
+    <Compile Include="..\..\Tactics\ValueModel.Saves.cs" Link="ValueModel.Saves.cs" />
+    <Compile Include="..\..\Tactics\ValueModel.BurnConsequences.cs" Link="ValueModel.BurnConsequences.cs" />
     <Compile Include="..\..\Tactics\InfusionSearchBudget.cs" Link="InfusionSearchBudget.cs" />
     <Compile Include="..\..\Tactics\AbilityScoringPolicy.cs" Link="AbilityScoringPolicy.cs" />
     <Compile Include="..\..\Tactics\CommittedApproachSafety.cs" Link="CommittedApproachSafety.cs" />

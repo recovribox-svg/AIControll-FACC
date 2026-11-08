@@ -190,6 +190,21 @@ namespace ProfileAudit
             foreach (var line in statLines) Console.WriteLine(line);
             File.WriteAllText(output, string.Join(Environment.NewLine, statLines) + Environment.NewLine + Environment.NewLine + File.ReadAllText(output));
             blocklistFailures += statFailures;
+            // ★ v0.3.30 (competence): preserve each modeled area-grant branch/save path.
+            var areaPathLines = AreaGrantPathCheck.Run(out int areaPathFailures);
+            foreach (var line in areaPathLines) Console.WriteLine(line);
+            File.WriteAllText(output, string.Join(Environment.NewLine, areaPathLines) + Environment.NewLine + Environment.NewLine + File.ReadAllText(output));
+            blocklistFailures += areaPathFailures;
+            // ★ v0.3.30 (competence): the compiled production route shares the save math exercised by unit tests.
+            var saveBoostLines = SaveBoostCheck.Run(out int saveBoostFailures);
+            foreach (var line in saveBoostLines) Console.WriteLine(line);
+            File.WriteAllText(output, string.Join(Environment.NewLine, saveBoostLines) + Environment.NewLine + Environment.NewLine + File.ReadAllText(output));
+            blocklistFailures += saveBoostFailures;
+            // ★ v0.3.30 competence: actual native burn-change feature graphs and their marginal consequences.
+            var burnLines = BurnConsequenceCheck.Run(loaded.Values, out int burnFailures);
+            foreach (var line in burnLines) Console.WriteLine(line);
+            File.WriteAllText(output, string.Join(Environment.NewLine, burnLines) + Environment.NewLine + Environment.NewLine + File.ReadAllText(output));
+            blocklistFailures += burnFailures;
             if (failed > 0)
             {
                 string partial = $"PARTIAL: loaded {loaded.Count}, failed {failed}, allowed {options.AllowFailures}. Failed blueprints:";

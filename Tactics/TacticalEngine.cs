@@ -205,6 +205,8 @@ namespace CompanionAI_Pathfinder.Tactics
         internal List<TacticalEngine.UnitMode> AttackModes;
         /// <summary>★ v0.3.28 test 6: this decision's burn and arrow prices (TacticalEngine.PriceBurn).</summary>
         internal TacticalEngine.KineticPriceBook KineticPrices;
+        /// <summary>★ v0.3.30 competence: active burn consequence graph, read once for this decision only.</summary>
+        internal TacticalEngine.BurnConsequenceModel BurnConsequences;
         /// <summary>★ v0.3.18 (review): what the turn holds from here - the best quick option worth taking plus the best
         /// main one (ShouldStandUp compares lying down with that, not only with the option chosen first).</summary>
         public float TurnValue;

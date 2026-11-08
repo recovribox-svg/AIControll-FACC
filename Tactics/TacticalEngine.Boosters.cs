@@ -214,18 +214,17 @@ namespace CompanionAI_Pathfinder.Tactics
 
             float share = 0f;
             var parts = new List<string>();
-            // DC: the chance the save is failed rises by 5 % a point (up to the natural-1 cap); the value grows with it.
-            if (boost.DC > 0 && profile.Save != Kingmaker.EntitySystem.Stats.SavingThrowType.Unknown &&
-                main.Target != null && ctx.Unit.IsEnemy(main.Target))
+            // ★ v0.3.30 competence programme: adjust ordinary and shadow disbelief saves before d20 limits/Persistent.
+            // SR/attack remain independent; adding DC to the composite probability overvalues the boost.
+            if (boost.DC > 0 && main.Target != null && ctx.Unit.IsEnemy(main.Target))
             {
-                float p = CombatMath.EffectChance(ctx.Unit, main.Target, main.Ability, profile, damage: false);
-                if (p > 0f && p < 0.95f)
+                bool halfDamage = profile.DealsDamage && profile.HalfOnSave && profile.ControlStrength == ControlStrength.None;
+                float dc = CombatMath.DcBoostShare(main.Ability, profile, main.Target, boost.DC, halfDamage,
+                                                   out float before, out float after);
+                if (dc > 0f)
                 {
-                    float dc = Math.Min(0.05f * boost.DC, 0.95f - p) / Math.Max(0.1f, p);
-                    // Half on a save: the save only decides half of the damage.
-                    if (profile.HalfOnSave && profile.ControlStrength == ControlStrength.None) dc *= 0.5f;
                     share += dc;
-                    parts.Add($"DC +{boost.DC}: lands {p:P0} -> {Math.Min(0.95f, p + 0.05f * boost.DC):P0}");
+                    parts.Add($"DC +{boost.DC}: {(halfDamage ? "damage" : "effect")} save/reality factor {before:P0} -> {after:P0}");
                 }
             }
             // Caster level: more damage dice where a caster-level rank counts them, up to its cap.
