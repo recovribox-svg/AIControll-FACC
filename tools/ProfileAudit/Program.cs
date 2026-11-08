@@ -185,6 +185,11 @@ namespace ProfileAudit
             foreach (var line in swarmLines) Console.WriteLine(line);
             File.WriteAllText(output, string.Join(Environment.NewLine, swarmLines) + Environment.NewLine + Environment.NewLine + File.ReadAllText(output));
             blocklistFailures += swarmFailures;
+            // ★ v0.3.30 test 2: facts whose bonus follows an ability score.
+            var statLines = StatLinkCheck.Run(loaded.Values, out int statFailures);
+            foreach (var line in statLines) Console.WriteLine(line);
+            File.WriteAllText(output, string.Join(Environment.NewLine, statLines) + Environment.NewLine + Environment.NewLine + File.ReadAllText(output));
+            blocklistFailures += statFailures;
             if (failed > 0)
             {
                 string partial = $"PARTIAL: loaded {loaded.Count}, failed {failed}, allowed {options.AllowFailures}. Failed blueprints:";

@@ -53,7 +53,12 @@ namespace CompanionAI_Pathfinder.Tactics
             public float DamagePerRound, HitChance, PerHit, HitsPerRound, FirstAttack;
             /// <summary>★ v0.3.28 test 3: the share of its hits past the enemy's concealment (in the estimate already).</summary>
             public float SeenPass = 1f;
-            public bool Ranged, TwoHanded, StrengthToDamage, Caster;
+            public bool Ranged, TwoHanded, Caster;
+            /// <summary>★ v0.3.30 test 2: the weapon's attack and damage stat by the game's rules (TacticalEngine.StatLinks.cs);
+            /// Unknown / null when it was not read.</summary>
+            public StatType AttackStat = StatType.Unknown;
+            public StatType? DamageStat;
+            public float DamageStatMultiplier = 1f;
             /// <summary>What one size step up adds to a hit: the weapon's dice scaled by the game's table.</summary>
             public float SizeUpDice = 1f;
             /// <summary>★ v0.3.20 (test3): what the enemy keeps of extra weapon damage (a Tiny swarm half of piercing and
@@ -193,6 +198,13 @@ namespace CompanionAI_Pathfinder.Tactics
             return null;
         }
 
+        /// <summary>★ v0.3.30 test 2: the parts can be appraised - anything but a spell prohibition alone.</summary>
+        private static bool HasReadableParts(List<BuffPart> parts)
+        {
+            foreach (var p in parts) if (p.Kind != BuffPartKind.ForbidsSpells) return true;
+            return false;
+        }
+
         private static string AppraisalKey(UnitEntityData caster, AbilityData ability, UnitEntityData recipient) =>
             $"{caster.UniqueId}|{CombatMemory.AbilityKey(ability)}|{recipient?.UniqueId}";
 
@@ -224,15 +236,9 @@ namespace CompanionAI_Pathfinder.Tactics
             float enchantRounds = EnchantParts(ctx, ability, profile, abilityCtx, buffs.FirstOrDefault(), ally, parts, unread);
             // ★ v0.3.25 (potions): Magical Vestment - the enhancement it adds to the recipient's own armor or shield.
             ArmorEnchantParts(abilityCtx, buffs, ally, parts);
-            // Mental stats (spell DCs) are not valued here: a buff of only those (or of only a spell prohibition) keeps the
-            // old reading.
-            // ★ v0.3.21 (gaps): unless it is the stat this recipient's spell DCs come from.
-            var dcStat = CastingStat(ally);
-            // ★ v0.3.28 test 10: or the kineticist's main stat (a Dark Elementalist's Intelligence: Fox's Cunning).
-            var kineticStat = KineticMainStat(ally);
-            if (!parts.Any(p => (p.Kind != BuffPartKind.MentalStat || (dcStat.HasValue && p.Stat == dcStat.Value) ||
-                                 (kineticStat.HasValue && p.Stat == kineticStat.Value)) &&
-                                p.Kind != BuffPartKind.ForbidsSpells)) return result;
+            // A buff of only a spell prohibition keeps the old reading.
+            // ★ v0.3.30 test 2: mental stats are read for every recipient (StatUseOf): what they feed on it, or nothing.
+            if (!HasReadableParts(parts)) return result;
             result.Modelled = true;
 
             int casterLevel = 1;
@@ -317,25 +323,28 @@ namespace CompanionAI_Pathfinder.Tactics
                         saves += p.SaveShare * (p.SaveShare < 1f ? Increment(ally, p.Stat, p, amount) : Increment(ally, StatType.SaveWill, p, amount));
                         break;
                     case BuffPartKind.ConditionalSaves: saves += amount; break;
+                    // ★ v0.3.30 test 2: every ability score by what it feeds on this recipient, from the game's own links
+                    // (TacticalEngine.StatLinks.cs): its weapon's attack and damage stat, the saves', armour class's and hit
+                    // points' base stats, facts that follow the score (Divine Grace, a monk's Wisdom to AC), its casting
+                    // stat; and a kineticist's main stat. Strength and Dexterity were read by melee or ranged alone
+                    // (Weapon Finesse and Zen Archery missed, Reflex and Fortitude never), mental stats not at all.
                     case BuffPartKind.Strength:
-                    {
-                        float s = Increment(ally, StatType.Strength, p, amount) / 2f;   // ability modifier
-                        if (!off.Ranged) attack += s;
-                        if (off.StrengthToDamage) damage += s * (off.TwoHanded ? 1.5f : 1f);
-                        break;
-                    }
                     case BuffPartKind.Dexterity:
-                    {
-                        float d = Increment(ally, StatType.Dexterity, p, amount) / 2f;
-                        if (off.Ranged) attack += d;
-                        armor += d * 0.5f;   // armour may cap it
-                        break;
-                    }
                     case BuffPartKind.Constitution:
+                    case BuffPartKind.MentalStat:
                     {
-                        float inc = Increment(ally, StatType.Constitution, p, amount);
-                        conHp += inc / 2f * Math.Max(1, ally.Descriptor.Progression.CharacterLevel);
-                        blastDamage += KineticMainStatBlastGain(ally, StatType.Constitution, inc);   // ★ v0.3.28 test 10
+                        var stat = AttributeOfPart(p);
+                        if (stat == StatType.Unknown) break;
+                        float inc = Increment(ally, stat, p, amount);
+                        float mod = ValueModel.ModifierGain(inc);
+                        var use = StatUseOf(ally, stat, off, castingStat);
+                        attack += use.Attack * mod;
+                        damage += use.Damage * mod;
+                        armor += use.Armor * mod;
+                        saves += use.Saves * mod;
+                        conHp += use.HitPoints * mod;
+                        spellDc += use.SpellDc * mod;
+                        blastDamage += KineticMainStatBlastGain(ally, stat, inc);   // ★ v0.3.28 test 10
                         break;
                     }
                     case BuffPartKind.TempHp: tempHp = Math.Max(tempHp, Increment(ally, StatType.TemporaryHitPoints, p, amount)); break;
@@ -406,12 +415,6 @@ namespace CompanionAI_Pathfinder.Tactics
                     case BuffPartKind.SpellDC: spellDc += amount; break;
                     case BuffPartKind.CasterLevel: spellLevel += amount; break;
                     case BuffPartKind.SpellPenetration: spellPenetration += amount; break;
-                    case BuffPartKind.MentalStat:
-                        if (castingStat.HasValue && p.Stat == castingStat.Value)
-                            spellDc += Increment(ally, p.Stat, p, amount) / 2f;   // the ability modifier
-                        // ★ v0.3.28 test 10: a kineticist's main stat raises its blasts' damage bonus.
-                        blastDamage += KineticMainStatBlastGain(ally, p.Stat, Increment(ally, p.Stat, p, amount));
-                        break;
                     case BuffPartKind.NaturalWeapon:
                         // ★ v0.3.21: claws for empty hands - the dice they add over the empty-hand attack it makes now; nothing
                         // while the hands hold a weapon (the game only arms empty hands with them).
@@ -858,13 +861,6 @@ namespace CompanionAI_Pathfinder.Tactics
             }
         }
 
-        /// <summary>★ v0.3.28 test 10: the stat a kineticist's blasts and wild talents scale with (its kineticist part), or null.</summary>
-        private static StatType? KineticMainStat(UnitEntityData ally)
-        {
-            try { return ally?.Get<Kingmaker.UnitLogic.Class.Kineticist.UnitPartKineticist>()?.MainStatType; }
-            catch { return null; }
-        }
-
         /// <summary>
         /// ★ v0.3.28 test 10: what raising <paramref name="stat"/> by <paramref name="increment"/> adds to one hit of the
         /// kineticist's first blast, when that stat is its main stat: the blast's own DamageBonus rank (ContextRankConfig on
@@ -1119,10 +1115,14 @@ namespace CompanionAI_Pathfinder.Tactics
                             off.Enhancement = stats.Enhancement.TotalValue;
                             off.DoubleEdge = stats.DoubleCriticalEdge;
                             off.BaseThreat = Mathf.Clamp01((21 - est.Weapon.Blueprint.CriticalRollEdge) / 20f);
+                            // ★ v0.3.30 test 2: the stats its attacks and damage come from, by the game's rules.
+                            ReadWeaponStats(ally, est.Weapon, off, stats);
                         }
                     }
                 }
-                off.StrengthToDamage = CombatMath.StrengthAddsWeaponDamage(ally);
+                // ★ v0.3.30 test 2: with no enemy to estimate against, for the weapon in its hand. Replaces the
+                // Strength-to-damage flag.
+                if (off.AttackStat == StatType.Unknown) ReadWeaponStats(ally, ally.Body?.PrimaryHand?.MaybeWeapon, off);
                 try { off.SneakDice = Math.Max(0, ally.Stats.SneakAttack.ModifiedValue); } catch { }
             }
             catch (Exception ex)
@@ -1246,12 +1246,8 @@ namespace CompanionAI_Pathfinder.Tactics
                 parts.AddRange(read.Parts);
                 foreach (var u in read.UnreadFor(ctx.Unit)) unread.Add(u);
             }
-            var dcStat = CastingStat(ally);
-            // ★ v0.3.28 test 10: or the kineticist's main stat (a Dark Elementalist's Intelligence: Fox's Cunning).
-            var kineticStat = KineticMainStat(ally);
-            if (!parts.Any(p => (p.Kind != BuffPartKind.MentalStat || (dcStat.HasValue && p.Stat == dcStat.Value) ||
-                                 (kineticStat.HasValue && p.Stat == kineticStat.Value)) &&
-                                p.Kind != BuffPartKind.ForbidsSpells)) return result;
+            // ★ v0.3.30 test 2: mental stats are read for every recipient (StatUseOf), as for spells.
+            if (!HasReadableParts(parts)) return result;
             int level = Math.Max(1, ctx.Unit.Descriptor?.Progression?.CharacterLevel ?? 1);
             // The performer's own prohibition is priced by the toggle's rule (with its ignore feature); an ally in the area
             // who accepted it (Inspired Rage on a caster) loses its spells: that counts here.
