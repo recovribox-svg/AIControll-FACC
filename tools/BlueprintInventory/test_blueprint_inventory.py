@@ -72,6 +72,32 @@ class BlueprintInventoryTests(unittest.TestCase):
         self.assertEqual(result["status"], "partial")
         self.assertNotIn(str(self.root), json.dumps(result))
 
+    def test_prerequisite_gate_values_are_kept(self):
+        # Prestige classes are defined by these gates (Arcane Trickster: stat values, arcane spell level 2).
+        self.write("Prestige.jbp", bp(CLASS, "BlueprintCharacterClass", PrestigeClass=True, m_Archetypes=[],
+                   Components=[
+                       {"$type": "f" * 32 + ", PrerequisiteStatValue", "Group": "All", "Stat": "SkillThievery",
+                        "Value": 7, "CheckInProgression": False},
+                       {"$type": "f" * 32 + ", PrerequisiteCasterTypeSpellLevel", "Group": "All", "IsArcane": True,
+                        "OnlySpontaneous": False, "RequiredSpellLevel": 2},
+                       {"$type": "f" * 32 + ", PrerequisiteProficiency", "Group": "Any",
+                        "ArmorProficiencies": ["Light", "Medium"], "WeaponProficiencies": []},
+                       {"$type": "f" * 32 + ", PrerequisiteCondition", "Group": "All",
+                        "Condition": {"$type": "e" * 32 + ", HasFactCondition", "m_Fact": "!bp_" + FEATURE},
+                        "UIText": {"m_Key": "not copied"}, "Comment": "not copied"}]))
+        result = inventory.inventory([self.export])
+        gates = [p["gates"] for p in result["classes"][0]["prerequisites"]]
+        self.assertEqual(gates[0]["Stat"], "SkillThievery")
+        self.assertEqual(gates[0]["Value"], 7)
+        self.assertTrue(gates[1]["IsArcane"])
+        self.assertEqual(gates[1]["RequiredSpellLevel"], 2)
+        self.assertEqual(gates[2]["ArmorProficiencies"], ["Light", "Medium"])
+        self.assertNotIn("WeaponProficiencies", gates[2])
+        self.assertEqual(gates[3]["Condition"], {"type": "HasFactCondition"})
+        self.assertNotIn("UIText", gates[3])
+        self.assertNotIn("not copied", json.dumps(result["classes"]))
+        self.assertEqual(result["classes"][0]["prerequisites"][3]["references"][0]["asset_id"], FEATURE)
+
     def test_bom_case_normalization_zero_reference_and_ignored_json(self):
         self.write("Class.JBP", bp(CLASS.upper(), "BlueprintCharacterClass",
                    m_Progression="!bp_" + MISSING.upper(), m_Archetypes=["!bp_" + "0" * 32]), bom=True)

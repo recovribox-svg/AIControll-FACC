@@ -11,8 +11,9 @@ _GUID = re.compile(r"^[0-9a-fA-F]{32}$")
 _REFERENCE = re.compile(r"^!bp_([0-9a-fA-F]{32})$")
 _ZERO = "0" * 32
 _ROSTER_TYPES = {"BlueprintCharacterClass", "BlueprintArchetype", "BlueprintProgression"}
-_GATE_FIELDS = ("Group", "Not", "Level", "Rank", "Min", "Max", "Amount",
-                "CheckInProgression", "HideInUI", "IsFeatureSelectionWhiteList")
+# Component bookkeeping, not gates. Blueprint references are reported separately; nested objects (localized UI text,
+# condition graphs) are not copied, only the type of a nested component.
+_NON_GATE_FIELDS = {"$type", "name", "m_Overrides", "m_Flags", "PrototypeLink", "Comment"}
 
 
 def blueprint_type(raw):
@@ -91,6 +92,28 @@ def _levels(value, assets):
     return result
 
 
+def _scalar(value):
+    return isinstance(value, (str, bool, int, float, type(None))) and not (
+        isinstance(value, str) and _REFERENCE.fullmatch(value))
+
+
+def _gates(component):
+    """Every scalar gate of a prerequisite (Stat/Value, Alignment, RequiredSpellLevel/IsArcane, Level, Amount, ...)."""
+    gates = {}
+    for key in sorted(component):
+        value = component[key]
+        if key in _NON_GATE_FIELDS:
+            continue
+        if _scalar(value):
+            if value is None or not (isinstance(value, str) and value.startswith("!bp_")):
+                gates[key] = value
+        elif isinstance(value, list) and value and all(_scalar(item) for item in value):
+            gates[key] = value
+        elif isinstance(value, dict) and isinstance(value.get("$type"), str):
+            gates[key] = {"type": blueprint_type(value["$type"])}
+    return gates
+
+
 def _prerequisites(data, assets):
     result = []
     components = data.get("Components", [])
@@ -102,8 +125,7 @@ def _prerequisites(data, assets):
         kind = blueprint_type(component.get("$type"))
         if "Prerequisite" not in kind:
             continue
-        gates = {key: component[key] for key in _GATE_FIELDS
-                 if key in component and isinstance(component[key], (str, bool, int, float, type(None)))}
+        gates = _gates(component)
         result.append({"component_index": index, "type": kind, "gates": gates,
                        "references": _refs(component, assets)})
     return result

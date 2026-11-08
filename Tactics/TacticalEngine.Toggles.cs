@@ -170,6 +170,10 @@ namespace CompanionAI_Pathfinder.Tactics
                     case Kingmaker.UnitLogic.Mechanics.Actions.ContextActionApplyBuff apply when apply.Buff != null && !apply.ToCaster:
                         // ★ v0.3.30 (competence): equal depth does not mean the same path. Keep opposite branches,
                         // distinct checkers and save wrappers; only repeated identical enter/round paths collapse.
+                        // ★ v0.3.30 competence2 (PR #20 review): "identical" is the same checker object, so only unguarded
+                        // copies collapse - loaded UnitEnter and Round lists never share one (Inspired Rage, Judgement
+                        // aura: two paths). Consumers take distinct buffs and the largest weight, so nothing counts twice;
+                        // the cost is one more condition check per recipient for such areas.
                         if (!grants.Any(g => SameGrantPath(g, apply.Buff, guards, save, saveAction)))
                             grants.Add(new AreaGrant { Buff = apply.Buff, Guards = guards.ToArray(), Save = save, SaveAction = saveAction });
                         break;
@@ -226,7 +230,7 @@ namespace CompanionAI_Pathfinder.Tactics
             return $" (area {p.Radius:0.#} m gives " +
                    string.Join(", ", p.Grants.Select(g => g.Buff.name + (g.Guards.Length > 0
                        ? " if " + string.Join("+", g.Guards.SelectMany(x => (x.Checker?.Conditions ?? new Condition[0]).Select(c => (x.Branch ? "" : "not ") + c.GetType().Name.Replace("ContextCondition", ""))))
-                       : ""))) + ")";
+                       : "")).Distinct()) + ")";   // ★ v0.3.30 competence2: enter and round paths read alike once
         }
 
         /// <summary>
