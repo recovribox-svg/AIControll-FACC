@@ -1,0 +1,415 @@
+{
+  "schema_version": 1,
+  "source": "Supplied installed-mod packages, settings, and byte-identical loader caches; files do not establish successful initialization or actual actor ownership.",
+  "mods": [
+    {
+      "id": "Demonology",
+      "display_name": "Demonology",
+      "manifest_version": "0.1.5",
+      "assembly_file": "Demonology.dll",
+      "assembly_identity": "Demonology, Version=1.5.18.0, Culture=neutral, PublicKeyToken=null",
+      "mvid": "b83fe54a-aca8-4ffe-baac-c36b874d1bdd",
+      "sha256": "041b54262f8d241b04d85f8ac682f45ccc68460b270fc81c03f55fa62b37ac5b",
+      "info_sha256": "99f91310dd57f8d8602d6e9a9719cd1d02a767fdb9990dbb597ac4a9ef131fc3",
+      "requirements": [],
+      "load_after": [],
+      "load_success": "not established by files alone"
+    },
+    {
+      "id": "TomeOfTheFirebird",
+      "display_name": "Tome Of The Firebird",
+      "manifest_version": "1.4.18",
+      "assembly_file": "TomeOfTheFirebird.dll",
+      "assembly_identity": "TomeOfTheFirebird, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null",
+      "mvid": "6b63b5c2-ba69-4676-992f-ec22b4b92cb7",
+      "sha256": "5afb76769ad7fc036c9d70ae8cdad9d0866b3a6306072b94498ecfe6088a0a86",
+      "info_sha256": "30cac5860be87ee10ee1ced991bf5500aaea8ccd8a40c5dbf0013f97f663ce6c",
+      "requirements": [
+        "TabletopTweaks-Core",
+        "ModMenu-1.3.0"
+      ],
+      "load_after": [
+        "TabletopTweaks-Core",
+        "TabletopTweaks-Base",
+        "KineticistElementsExpanded"
+      ],
+      "load_success": "not established by files alone"
+    },
+    {
+      "id": "MysticalMayhem",
+      "display_name": "Mystical Mayhem",
+      "manifest_version": "0.7.0h",
+      "assembly_file": "MysticalMayhem.dll",
+      "assembly_identity": "MysticalMayhem, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null",
+      "mvid": "9d291a2f-6a7e-4bdd-8f01-48ae43dccee3",
+      "sha256": "d88f16cb253299d22eb43ac581c073fc17c9c25d37864d95878fd84c0f806d5d",
+      "info_sha256": "5d7543fdf05d1cb9c66dca42246b75b4faa6df700d1f30163b7c83ad68a645fb",
+      "requirements": [
+        "ModMenu-2.0.3"
+      ],
+      "load_after": [],
+      "load_success": "not established by files alone"
+    },
+    {
+      "id": "DarkCodex",
+      "display_name": "DarkCodex",
+      "manifest_version": "1.9.6",
+      "assembly_file": "DarkCodex.dll",
+      "assembly_identity": "DarkCodex, Version=1.9.6.0, Culture=neutral, PublicKeyToken=null",
+      "mvid": "f03f6866-18d2-4744-b5fe-38fc25cc3aa1",
+      "sha256": "8a82a017220a65ee00ae7e9182ecb30bf49b44a01c961e9897c379add648e147",
+      "info_sha256": "932e0283c7869a3d27025875fc0d4301a53bce8b1dbfa8c879ca7071c7f11d4d",
+      "requirements": [],
+      "load_after": [],
+      "load_success": "not established by files alone"
+    },
+    {
+      "id": "TabletopTweaks-Core",
+      "display_name": "Tabletop Tweaks Core",
+      "manifest_version": "0.7.15",
+      "assembly_file": "TabletopTweaks-Core.dll",
+      "assembly_identity": "TabletopTweaks-Core, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null",
+      "mvid": "cdfed43f-53a0-4186-a181-75496eecec8f",
+      "sha256": "aba06b62e8433febb57f9a703bfe5224ad1063676729fca8263644a3b3f535b0",
+      "info_sha256": "61990d5b6000f616207e8513d0e046da30a7a58ef56b884c3056ccd62e645346",
+      "requirements": [],
+      "load_after": [
+        "MewsiferConsole.Mod"
+      ],
+      "load_success": "not established by files alone"
+    },
+    {
+      "id": "IsekaiMod",
+      "display_name": "Isekai Reimagined",
+      "manifest_version": "6.5.0",
+      "assembly_file": "IsekaiMod.dll",
+      "assembly_identity": "IsekaiMod, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null",
+      "mvid": "c9574edd-40fe-41a1-b79a-68bd772ee303",
+      "sha256": "5111d4d5540ba039b3472951993c49e64d604dcc12bfab0eff2df2a7a7d58fce",
+      "info_sha256": "ef6000c189bd931cb9e28dd0e51da90f8750b1c7708ee8c6569013a40ce72bb9",
+      "requirements": [
+        "TabletopTweaks-Core-0.7.14"
+      ],
+      "load_after": [
+        "TabletopTweaks-Core",
+        "TabletopTweaks-Base",
+        "ExpandedContent",
+        "KineticistElementsExpanded",
+        "MysticalMayhem",
+        "SpellbookMerge",
+        "TomeOfTheFirebird"
+      ],
+      "load_success": "not established by files alone"
+    },
+    {
+      "id": "TabletopTweaks-Base",
+      "display_name": "Tabletop Tweaks Base",
+      "manifest_version": "2.6.18",
+      "assembly_file": "TabletopTweaks-Base.dll",
+      "assembly_identity": "TabletopTweaks-Base, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null",
+      "mvid": "36a91e27-4074-4ad2-b4be-642d77edb788",
+      "sha256": "1704bcd6e77eee241db43c4f23c47e1b0f0acf7d7b386fca2d57c0748af546ef",
+      "info_sha256": "9cad35a893b691de2b2d527fdd03b3c924da7507f967c20288cd0facec0d9b47",
+      "requirements": [
+        "TabletopTweaks-Core-0.7.15"
+      ],
+      "load_after": [
+        "TabletopTweaks-Core"
+      ],
+      "load_success": "not established by files alone"
+    },
+    {
+      "id": "PsychicWarrior",
+      "display_name": "Psionics",
+      "manifest_version": "0.2.3",
+      "assembly_file": "Psionics.dll",
+      "assembly_identity": "Psionics.merged, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null",
+      "mvid": "0501ad1b-c557-4744-a473-b00b015a2fde",
+      "sha256": "c31d64a001b79d3b5b49ced1324188c73ddadf8f58440dd46ef2758cec9f7aad",
+      "info_sha256": "066f2606bf8abafb7a7ea14d1681503a87dfa46ae7ebc7ee4b1069218c28b5ed",
+      "requirements": [],
+      "load_after": [],
+      "load_success": "not established by files alone"
+    }
+  ],
+  "companion_libraries": [
+    {
+      "assembly": "CodexLib, Version=1.8.3.1, Culture=neutral, PublicKeyToken=null",
+      "mvid": "50b8b14e-3c65-4851-b2b7-1e4c3a0eaf4b",
+      "sha256": "ca58622cf85ea9c28711ad0a031ad8df86237d837db6093f24eddff1ba8a0313",
+      "file": "CodexLib.dll"
+    },
+    {
+      "assembly": "KRXLib, Version=1.2.0.0, Culture=neutral, PublicKeyToken=null",
+      "mvid": "e16009f5-e790-495f-8877-3005c54c95cb",
+      "sha256": "3bd9600042a98f11816eb200e4df525c1db66892463674085b809d3ccd4dc608",
+      "file": "KRXLib.dll"
+    }
+  ],
+  "cache_comparisons": [
+    {
+      "cache_file": "IsekaiMod.dll.12940.cache",
+      "assembly_file": "IsekaiMod.dll",
+      "sha256": "5111d4d5540ba039b3472951993c49e64d604dcc12bfab0eff2df2a7a7d58fce",
+      "byte_identical_to_supplied_dll": true
+    },
+    {
+      "cache_file": "DarkCodex.dll.59382.cache",
+      "assembly_file": "DarkCodex.dll",
+      "sha256": "8a82a017220a65ee00ae7e9182ecb30bf49b44a01c961e9897c379add648e147",
+      "byte_identical_to_supplied_dll": true
+    },
+    {
+      "cache_file": "TabletopTweaks-Base.dll.65282.cache",
+      "assembly_file": "TabletopTweaks-Base.dll",
+      "sha256": "1704bcd6e77eee241db43c4f23c47e1b0f0acf7d7b386fca2d57c0748af546ef",
+      "byte_identical_to_supplied_dll": true
+    },
+    {
+      "cache_file": "TabletopTweaks-Core.dll.58560.cache",
+      "assembly_file": "TabletopTweaks-Core.dll",
+      "sha256": "aba06b62e8433febb57f9a703bfe5224ad1063676729fca8263644a3b3f535b0",
+      "byte_identical_to_supplied_dll": true
+    },
+    {
+      "cache_file": "TomeOfTheFirebird.dll.46743.cache",
+      "assembly_file": "TomeOfTheFirebird.dll",
+      "sha256": "5afb76769ad7fc036c9d70ae8cdad9d0866b3a6306072b94498ecfe6088a0a86",
+      "byte_identical_to_supplied_dll": true
+    },
+    {
+      "cache_file": "MysticalMayhem.dll.45840.cache",
+      "assembly_file": "MysticalMayhem.dll",
+      "sha256": "d88f16cb253299d22eb43ac581c073fc17c9c25d37864d95878fd84c0f806d5d",
+      "byte_identical_to_supplied_dll": true
+    },
+    {
+      "cache_file": "Demonology.dll.38295.cache",
+      "assembly_file": "Demonology.dll",
+      "sha256": "041b54262f8d241b04d85f8ac682f45ccc68460b270fc81c03f55fa62b37ac5b",
+      "byte_identical_to_supplied_dll": true
+    },
+    {
+      "cache_file": "Psionics.dll.30902.cache",
+      "assembly_file": "Psionics.dll",
+      "sha256": "c31d64a001b79d3b5b49ced1324188c73ddadf8f58440dd46ef2758cec9f7aad",
+      "byte_identical_to_supplied_dll": true
+    }
+  ],
+  "settings_identities": [
+    {
+      "source": "Mod Settings/DarkCodex Settings/settings.json",
+      "sha256": "0ba06fedb1c037475e3c30c092edbb175584ebe00607d51366d0fd6d8b3b3580"
+    },
+    {
+      "source": "Mod Settings/Demonology Settings/UserSettings/Blueprints.json",
+      "sha256": "5913395e7146ccd6755e9af5664d1cabfc214e3524e2914adca221be437efe0a"
+    },
+    {
+      "source": "Mod Settings/Isekai Mod User Settings/UserSettings/AddedContent.json",
+      "sha256": "fc4147bd2999cf178f8ecd742bdbba872bcb8bb3b6c144c4d886f47b6f5722cf"
+    },
+    {
+      "source": "Mod Settings/Isekai Mod User Settings/UserSettings/Blueprints.json",
+      "sha256": "5522f376a073468915266fdce470a16e8c67fcc098db073e585d5ba77a97cd88"
+    },
+    {
+      "source": "Mod Settings/TTT Base Settings/UserSettings/AddedContent.json",
+      "sha256": "1dc913818e0557abd670966c2183636bac860bc30e2922799a378471010eee0c"
+    },
+    {
+      "source": "Mod Settings/TTT Base Settings/UserSettings/Blueprints.json",
+      "sha256": "2e9e7854197acdd9378af2ba46997d2a128392fb73b0c26f6bca4e9b44bddd30"
+    },
+    {
+      "source": "Mod Settings/TTT Base Settings/UserSettings/Fixes.json",
+      "sha256": "db1f786151f7fc5e3ec5671ca6cc76c0c97fb1a2d709ce67fb2fd42bc95787a7"
+    },
+    {
+      "source": "Mod Settings/TTT Core settings/UserSettings/Blueprints.json",
+      "sha256": "bf5a08d6a40c23ce5f973c05077f1c0d4de5b183143896bfa2d80fc41b39c359"
+    }
+  ],
+  "settings_gate_evidence": {
+    "DarkCodex": {
+      "NewFeatureDefaultOn": false,
+      "Blacklist": [],
+      "Whitelist": [
+        "Kineticist.CreateElementalScion"
+      ],
+      "PsychokineticistStat": "Wisdom",
+      "MindShield": "disabled by supplied default/whitelist configuration",
+      "gate": "Shared.Main.LoadSafe -> PatchInfoCollection.IsDisenabled; whitelist wins after blacklist checks"
+    },
+    "TTT_Base": {
+      "fix_flags": 350,
+      "enabled_fix_flags": 348,
+      "added_content_flags": 163,
+      "enabled_added_content_flags": 162,
+      "selected_fix_flags": {
+        "Alchemist.Base.Settings.DispelingBombs": true,
+        "Alchemist.Base.Settings.MutagenStacking": true,
+        "Alchemist.Archetypes.Grenadier.Settings.BrewPotions": true,
+        "Alchemist.Archetypes.Grenadier.Settings.PoisonResistance": true,
+        "Alchemist.Archetypes.IncenseSynthesizer.Settings.ImprovedIncense": true,
+        "Alchemist.Archetypes.IncenseSynthesizer.Settings.SacredIncense": true,
+        "Alchemist.Archetypes.IncenseSynthesizer.Settings.ThickFog": true,
+        "Alchemist.Archetypes.Vivisectionist.Settings.Discoveries": true,
+        "Magus.Base.Settings.FighterTraining": true,
+        "Magus.Base.Settings.FixBurstStacking": true,
+        "Magus.Base.Settings.SpellCombatAbilityVariants": true,
+        "Magus.Base.Settings.SpellCombatDisableImmediatly": true,
+        "Magus.Base.Settings.SpellCombatSpellbookRestrictions": true,
+        "Magus.Archetypes.EldritchScion.Settings.FighterTraining": true,
+        "Magus.Archetypes.Hexcrafter.Settings.Spells": true,
+        "Magus.Archetypes.SwordSaint.Settings.FighterTraining": true,
+        "Magus.Archetypes.SwordSaint.Settings.PerfectCritical": true,
+        "Skald.Base.Settings.SpellKenning": true,
+        "Skald.Archetypes.BattleScion.Settings.BattleProwessSelection": true,
+        "Warpriest.Base.Settings.FighterTraining": true,
+        "Warpriest.Base.Settings.WarBlessing": true
+      },
+      "archetype_flags": {
+        "Archetypes.Settings.BladeBound": true,
+        "Archetypes.Settings.CauldronWitchArchetype": true,
+        "Archetypes.Settings.ChannelerOfTheUnknown": true,
+        "Archetypes.Settings.DivineCommander": true,
+        "Archetypes.Settings.ElementalMasterArchetype": true,
+        "Archetypes.Settings.HolyBeast": true,
+        "Archetypes.Settings.MetamagicRager": true,
+        "Archetypes.Settings.NatureFang": true
+      }
+    },
+    "Isekai": {
+      "ExcludeCompanionsFromIsekaiClass": true,
+      "AllowMainCharacterRetinue": false,
+      "EnableLevelUncapping": true,
+      "MergeIsekaiSpellList": false,
+      "RestrictExceptionalFeats": false,
+      "RestrictMythicOPAbility": false,
+      "RestrictMythicSpecialPower": false
+    },
+    "ModMenu_or_other_saved_preferences": "Not supplied for MysticalMayhem/TomeOfTheFirebird/Psionics; source defaults are not promoted to enabled-patch evidence."
+  },
+  "generated_guid_maps": [
+    {
+      "settings_source": "Mod Settings/Mod Settings/Isekai Mod User Settings/UserSettings/Blueprints.json",
+      "generated_id_entries": 4097,
+      "present_in_export": 0,
+      "examples": []
+    },
+    {
+      "settings_source": "Mod Settings/Mod Settings/TTT Core settings/UserSettings/Blueprints.json",
+      "generated_id_entries": 0,
+      "present_in_export": 0,
+      "examples": []
+    },
+    {
+      "settings_source": "Mod Settings/Mod Settings/TTT Base Settings/UserSettings/Blueprints.json",
+      "generated_id_entries": 1427,
+      "present_in_export": 0,
+      "examples": []
+    },
+    {
+      "settings_source": "Mod Settings/Mod Settings/Demonology Settings/UserSettings/Blueprints.json",
+      "generated_id_entries": 109,
+      "present_in_export": 0,
+      "examples": []
+    },
+    {
+      "settings_source": "MysticalMayhem/BlueprintGuids.json",
+      "generated_id_entries": 906,
+      "present_in_export": 0,
+      "examples": []
+    }
+  ],
+  "source_construction_index": "installed-construction-sites.json",
+  "compatibility": "not certified",
+  "additional_uploads": [
+    {
+      "label": "Blueprints-A.json",
+      "sha256": "5913395e7146ccd6755e9af5664d1cabfc214e3524e2914adca221be437efe0a",
+      "bytes": 7140,
+      "matches_existing": [
+        "Mod Settings/Mod Settings/Demonology Settings/UserSettings/Blueprints.json"
+      ],
+      "format": "JSON",
+      "keys": [
+        "OverrideIds",
+        "NewBlueprints",
+        "AutoGenerated",
+        "UnusedGUIDs"
+      ],
+      "entries": 4,
+      "new_blueprints": 109
+    },
+    {
+      "label": "AddedContent.json",
+      "sha256": "28acab978278485fde5df0dec0a77ecd1194151936637c26154237dde356b034",
+      "bytes": 4008,
+      "matches_existing": [
+        "IsekaiMod/IsekaiMod/Config/AddedContent.json"
+      ],
+      "format": "JSON",
+      "keys": [
+        "NewSettingsOffByDefault",
+        "ExcludeCompanionsFromIsekaiClass",
+        "AllowMainCharacterRetinue",
+        "RestrictExceptionalFeats",
+        "RestrictMythicOPAbility",
+        "RestrictMythicSpecialPower",
+        "MultipleMythicOPAbility",
+        "MultipleMythicSpecialPower",
+        "MergeIsekaiSpellList",
+        "IsekaiDefaultClothes",
+        "IsekaiSpellsKnownIncrement",
+        "EnableLevelUncapping"
+      ],
+      "entries": 35,
+      "new_blueprints": 0
+    },
+    {
+      "label": "Blueprints-B.json",
+      "sha256": "e0c4b79fe55d66e2cda2c7a9a30be17bb1950059dd3a1134d37b25167767e885",
+      "bytes": 317404,
+      "matches_existing": [
+        "IsekaiMod/IsekaiMod/Config/Blueprints.json"
+      ],
+      "format": "JSON",
+      "keys": [
+        "OverrideIds",
+        "NewBlueprints",
+        "AutoGenerated",
+        "UnusedGUIDs"
+      ],
+      "entries": 4,
+      "new_blueprints": 4097
+    },
+    {
+      "label": "BlueprintGuids.json",
+      "sha256": "0dbf297bcf5ad84cfbecc71339082ba3ac3367f647a6b104087c46603f494f7c",
+      "bytes": 60261,
+      "matches_existing": [
+        "MysticalMayhem/BlueprintGuids.json"
+      ],
+      "format": "JSON",
+      "keys": [
+        "AbjurationCL2",
+        "AbjurationDC2",
+        "AbundantArcaneSmite",
+        "AbundantSpellSynthesis",
+        "AcadamaeGraduate",
+        "ArcaneSmiteEvilAbility",
+        "ArcaneSmiteEvilAdditionalUse",
+        "ArcaneSmiteEvilBuff",
+        "ArcaneSmiteEvilFeature",
+        "ArcaneSmiteEvilResource",
+        "ArcaneTricksterDraconicWarlock",
+        "ArcaneTricksterWarlock"
+      ],
+      "entries": 906,
+      "new_blueprints": 0
+    }
+  ],
+  "supplementary_index": "SUPPLEMENTARY_INDEX.json"
+}

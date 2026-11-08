@@ -1,5 +1,7 @@
 # Class roster (derived)
 
+**Expanded Phase B map:** [CLASS_MATRIX.md](CLASS_MATRIX.md) reconciles this Classes/Mythic seed with all fourteen supplied export groups: two additional NPC class assets and one Penta archetype come from Units. This seed roster is retained as its original source snapshot; the native playable-class list and generated mod graphs remain separate evidence.
+
 Derived from a blueprint_inventory.py report of the supplied exports: names, levels and prerequisite gates only. Not the installed or modded roster; the game's playable-class list (ProgressionRoot) is not read, so export_group is the export's folder, not a game fact.
 
 Source corpus `1966ce543a80682d0d147fb3f71eac0ba57a7d37f055060f655670e6087d3bec` (inventory status `partial`). Counts: 72 classes (13 prestige, 15 mythic), 212 archetypes, 557 other progressions (bloodlines, domains, selections, pets...).

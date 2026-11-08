@@ -1,0 +1,219 @@
+{
+  "schema_version": 1,
+  "starting_commit": "fdc5e5e0906a4afc7a1af22cebbc29c0ed8d7e20",
+  "runtime_change": false,
+  "competence2_dll": {
+    "mvid": "0ed42ac5-d9ce-4f88-a339-388028b036c3",
+    "sha256": "53227972f3d92685072605d8d6897daa98e8a8c0531d989c7cbf357e2646afc0",
+    "size": 1218048
+  },
+  "python_tests": {
+    "passed": 24,
+    "failed": 0
+  },
+  "assembly_self_checks": {
+    "passed": 4,
+    "failed": 0
+  },
+  "profile_audit_strict": {
+    "loaded": 44637,
+    "failed": 1,
+    "allowed": 0,
+    "ability_verdicts_generated": false,
+    "exit_code": 1
+  },
+  "profile_audit_diagnostic": {
+    "status": "PARTIAL",
+    "loaded": 44637,
+    "failed": 1,
+    "allowed": 1,
+    "rows": 4807,
+    "reader_errors": 0,
+    "exit_code": 0,
+    "explicit_skips": [],
+    "burn_checks": 42,
+    "burn_features": "2/2",
+    "actor_shaped_kits": "8/8",
+    "save_routes": 16,
+    "area_grants": 14,
+    "onhit_positive_facts": 12,
+    "affliction_checks": 4,
+    "swarm_areas": 18,
+    "stat_link_facts": 27012,
+    "positive_stat_link_facts": 53
+  },
+  "known_load_failure": {
+    "name": "AchaekekSacredWeaponFeature",
+    "asset_id": "c37574188b0242d2ac04a454a0430dd5",
+    "sha256": "1fd534ef0fc9573520d101c721e5d2721812fdb5b8f8a13e29fcbc3acb06ac0f",
+    "error": "SecurityException: ECall methods must be packaged into a system module.",
+    "meaning": "Native Unity-bound offline deserialization failure; strict run stopped with no ability verdicts."
+  },
+  "optional_provider_execution": "not run; static installed assembly/IL inspection only",
+  "gameplay": "pending",
+  "unity_performance": "pending",
+  "map_counts": {
+    "classes": 74,
+    "archetypes": 213,
+    "interaction_deltas": 994,
+    "mapped_fact_nodes": 13671,
+    "mechanic_signatures": 3071,
+    "missing_reachable_refs": 66,
+    "depth_frontier_refs": 1089,
+    "unclassified_relation_occurrences": 6177
+  },
+  "raw_reference_inventory": {
+    "kind": "Syntactic nonzero !bp_GUID references; other asset encodings are not counted. Missing references need not have been dereferenced by a reader.",
+    "distinct_references": 36228,
+    "occurrences": 410462,
+    "zero_reference_occurrences_ignored": 0,
+    "unresolved_distinct": 2056,
+    "unresolved_occurrences": 37866,
+    "ambiguous_distinct": 10,
+    "example_limit_per_reference": 1
+  },
+  "canonicalization": "10 Data-identical copies unify; no conflicting GUIDs. Raw inventory retains the ten duplicate/ambiguous references; mapper never guesses between different definitions.",
+  "reader_source_identity": {
+    "files": [
+      {
+        "file": "Analysis/BuffParts.cs",
+        "sha256": "0caf7b070188bb8655078d0fec893e9aa783c0f2419953e0ea19f6bf3a4cefcd"
+      },
+      {
+        "file": "Tactics/AbilityProfile.cs",
+        "sha256": "a4cfa5907def0224eb98c7ed7d4c418b834a90e38a5746ee6276f2de029d00ae"
+      },
+      {
+        "file": "Tactics/CombatMath.cs",
+        "sha256": "e2aeb6f6e8c5d14794960aee7a7f08a1f7b2f3a4edd1019983cc060c0949561f"
+      },
+      {
+        "file": "Tactics/AbilityDiscovery.cs",
+        "sha256": "ac24c8a06a87fe6d34e7408b22e7dc33915c941dde7e68141b583dfd4b45f759"
+      },
+      {
+        "file": "Tactics/TacticalEngine.ApproachValidation.cs",
+        "sha256": "26719acb8da2d155fb9a78a9cc3412d503378ec892d2acebb48375d58e417cee"
+      },
+      {
+        "file": "Tactics/TacticalEngine.Auras.cs",
+        "sha256": "8f20c24a544be6ff06fb533c2a0fb1a4b7985967ad658784d68fc58de486ee7f"
+      },
+      {
+        "file": "Tactics/TacticalEngine.Bombs.cs",
+        "sha256": "2f8daad3aed72dec8739e1c65b6ecb0eb6f39b798b1ef0229007951dd3e87aa4"
+      },
+      {
+        "file": "Tactics/TacticalEngine.Boosters.cs",
+        "sha256": "8ac55743b20f4fe594f7499a8f0f09043ea074dd4179348314fe233a1ab6c735"
+      },
+      {
+        "file": "Tactics/TacticalEngine.Buffs.cs",
+        "sha256": "cf63b73bf0e98c702d30086d6054a91b9e5859c111e0449775d821748e213272"
+      },
+      {
+        "file": "Tactics/TacticalEngine.BurnConsequences.cs",
+        "sha256": "8dd143e74d346221ec5c65c99f12aacee95f9830519da0071a4c7976ac1e2c46"
+      },
+      {
+        "file": "Tactics/TacticalEngine.Carnage.cs",
+        "sha256": "d9fbe5c5a4b7ecf66179a6e88062288796f5bbd698d37395487a3fdca5e78afe"
+      },
+      {
+        "file": "Tactics/TacticalEngine.CommittedApproaches.cs",
+        "sha256": "115a9af45efc5346c1e59d5061a23f455e6e57ee0695489729ffdc947404872b"
+      },
+      {
+        "file": "Tactics/TacticalEngine.ConeAim.cs",
+        "sha256": "b15b2f4014c6e9736128a5247bf48d9020e0c87b91370ea5a7278e0c261f08ca"
+      },
+      {
+        "file": "Tactics/TacticalEngine.ControlAimDiagnostics.cs",
+        "sha256": "da4a99997d20b747fc0321cc24a708d34d8e1b4eb41e791404a32d775eb0c420"
+      },
+      {
+        "file": "Tactics/TacticalEngine.HeldStates.cs",
+        "sha256": "231e076c2601559e742160bebbf8243070bb4adfea8331fcc8a9ef860dbc6d52"
+      },
+      {
+        "file": "Tactics/TacticalEngine.InfusionEffects.cs",
+        "sha256": "248a1f1f19bb35b3b2b849b3bd233a18b77a531bb5ac1412ca9ebb8c0b8157fc"
+      },
+      {
+        "file": "Tactics/TacticalEngine.Infusions.cs",
+        "sha256": "91123c65a9a77c90c0150c1d83e478af2a6be88b6363a0890acb9960a716e102"
+      },
+      {
+        "file": "Tactics/TacticalEngine.Kinetic.cs",
+        "sha256": "21854ffd37ef385fc56fc208725e7137f1746152a769ec6e1ed7a2f0162c6445"
+      },
+      {
+        "file": "Tactics/TacticalEngine.Marks.cs",
+        "sha256": "69e086d1429a7781525ac4a991d116bf97ae1b1f56e505ecafbe7f8361049f26"
+      },
+      {
+        "file": "Tactics/TacticalEngine.Martial.cs",
+        "sha256": "9269e29c2b9b95916317da4354f0d0082abdb5d2f362fa81ba08aa954389a36b"
+      },
+      {
+        "file": "Tactics/TacticalEngine.Modes.cs",
+        "sha256": "7a5e90a087cc3bf83d7e284d95b053fa50b9b12636dddcb660842a0ea28f0c08"
+      },
+      {
+        "file": "Tactics/TacticalEngine.RankTalents.cs",
+        "sha256": "65b3c8ed841ce034782838e80cd1a9f2b1f9f64e9f97038bfe7ae761c3047e45"
+      },
+      {
+        "file": "Tactics/TacticalEngine.Reach.cs",
+        "sha256": "03762610bcaa4ecad4597fc26b69420d754350999dd5c1ecb29477c0094e5d51"
+      },
+      {
+        "file": "Tactics/TacticalEngine.ReachDiagnostics.cs",
+        "sha256": "7edb4001287a5537614f98ec1db9a2420803c0af5d09396f88dbb5c663a010a4"
+      },
+      {
+        "file": "Tactics/TacticalEngine.Ricochet.cs",
+        "sha256": "b36066ddbc13aa2ef5329f0a81b85b9e2cee9328f37f225b57364a77effb9da0"
+      },
+      {
+        "file": "Tactics/TacticalEngine.Riders.cs",
+        "sha256": "c5adaed758b92954e01731613cfc7ca658fd2401cb9eebaa69a19a5d6e0fab0d"
+      },
+      {
+        "file": "Tactics/TacticalEngine.SoulPower.cs",
+        "sha256": "a666f1162311c3f71b9e66f81946f0893b67e2f98f7faa29200a063f96e16ccd"
+      },
+      {
+        "file": "Tactics/TacticalEngine.Spots.cs",
+        "sha256": "f099d2bfcfaadb358fcc238a5a79c236b6b5e42ceedb0b636cfc1e4063d3fa8d"
+      },
+      {
+        "file": "Tactics/TacticalEngine.StatLinks.cs",
+        "sha256": "a5a450537043d15a9bcb4e30b8d2e3a3c5429633a141f295879753c85259ca84"
+      },
+      {
+        "file": "Tactics/TacticalEngine.Strikes.cs",
+        "sha256": "bb65b045982be085045a97650e2e06c66e8c1f00aebe3507c85f3f60269f24d1"
+      },
+      {
+        "file": "Tactics/TacticalEngine.Swarms.cs",
+        "sha256": "f1e56f217f6848a7601db1ac3ea0ccac42360401d47605ef12d28546c8b58493"
+      },
+      {
+        "file": "Tactics/TacticalEngine.Toggles.cs",
+        "sha256": "a95660857c16349c1ee36c74cb9f3e7af20416a1691dd3fde5c011ebdd67729f"
+      },
+      {
+        "file": "Tactics/TacticalEngine.Unraveling.cs",
+        "sha256": "f4e32fa2938d4cb8f376bec75ba47427e27fb755ee95650f57dda5f588428705"
+      },
+      {
+        "file": "Tactics/TacticalEngine.cs",
+        "sha256": "cd4709fbca026b9c3e114a6ccc43694db7160646f74602a543cfd98908e39a8d"
+      }
+    ],
+    "sha256": "164e469d0abb4b393ed229881b3ae231c5caa6347e59890c8517beea2eef1d8f"
+  },
+  "map_tool_sha256": "18e1855e7536e3a2c2ae6c468add0e1bc343575e3e1ac2d876301246f71f276f",
+  "artifact_integrity": "passed on final generated files: source/tool hashes, normalized indexes, 9,426 feature/3,071 signature CSV rows, local links, and no runtime source diff"
+}

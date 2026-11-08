@@ -1,5 +1,7 @@
 # Reported content mods: public source leads and compatibility boundary
 
+**Installed evidence now available:** [INSTALLED_MODS.md](INSTALLED_MODS.md) / [INSTALLED_MODS.json](INSTALLED_MODS.json) supersede the missing-installed-files statements below. This note preserves the foundation stage's public-source leads; do not substitute those candidate revisions for the supplied binaries/settings.
+
 Checked 8 November 2026 using the connected GitHub repository search/fetch tools. This is read-only public-source evidence. The author reports using Tabletop Tweaks Core/Base, Isekai, Psionics, MysticalMayhem, TomeOfTheFirebird, DarkCodex and Demonology. The author subsequently reports **DarkCodex v1.9.6 with the Mind Shield option OFF**. Other mod versions remain unreported. No installed DLL fingerprint, settings file, post-initialization graph or complete startup manifest was supplied; the version/option statement is user-reported evidence. Public repository heads/releases below are **candidate source identities**, never a statement of the installed revision, active configuration, complete roster or compatibility.
 
 ## Candidate source inventory
