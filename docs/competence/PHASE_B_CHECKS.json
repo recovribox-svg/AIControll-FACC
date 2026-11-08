@@ -1,14 +1,9 @@
 {
   "schema_version": 1,
-  "starting_commit": "fdc5e5e0906a4afc7a1af22cebbc29c0ed8d7e20",
+  "starting_commit": "3443d94b960d14011f7a72e69af4d534eaecaf50",
   "runtime_change": false,
-  "competence2_dll": {
-    "mvid": "0ed42ac5-d9ce-4f88-a339-388028b036c3",
-    "sha256": "53227972f3d92685072605d8d6897daa98e8a8c0531d989c7cbf357e2646afc0",
-    "size": 1218048
-  },
   "python_tests": {
-    "passed": 24,
+    "passed": 27,
     "failed": 0
   },
   "assembly_self_checks": {
@@ -40,7 +35,9 @@
     "affliction_checks": 4,
     "swarm_areas": 18,
     "stat_link_facts": 27012,
-    "positive_stat_link_facts": 53
+    "positive_stat_link_facts": 53,
+    "reveal_checks": 3,
+    "cast_bonus_checks": 2
   },
   "known_load_failure": {
     "name": "AchaekekSacredWeaponFeature",
@@ -56,11 +53,11 @@
     "classes": 74,
     "archetypes": 213,
     "interaction_deltas": 994,
-    "mapped_fact_nodes": 13671,
-    "mechanic_signatures": 3071,
-    "missing_reachable_refs": 66,
-    "depth_frontier_refs": 1089,
-    "unclassified_relation_occurrences": 6177
+    "mapped_fact_nodes": 13576,
+    "mechanic_signatures": 4510,
+    "missing_reachable_refs": 56,
+    "depth_frontier_refs": 767,
+    "unclassified_relation_occurrences": 6159
   },
   "raw_reference_inventory": {
     "kind": "Syntactic nonzero !bp_GUID references; other asset encodings are not counted. Missing references need not have been dereferenced by a reader.",
@@ -84,12 +81,36 @@
         "sha256": "a4cfa5907def0224eb98c7ed7d4c418b834a90e38a5746ee6276f2de029d00ae"
       },
       {
-        "file": "Tactics/CombatMath.cs",
-        "sha256": "e2aeb6f6e8c5d14794960aee7a7f08a1f7b2f3a4edd1019983cc060c0949561f"
-      },
-      {
         "file": "Tactics/AbilityDiscovery.cs",
         "sha256": "ac24c8a06a87fe6d34e7408b22e7dc33915c941dde7e68141b583dfd4b45f759"
+      },
+      {
+        "file": "Tactics/CombatMath.Afflictions.cs",
+        "sha256": "f7ee1b65ebe0b0e0c7ea0d754967eff68ba1269faf137c72c96357884948d08a"
+      },
+      {
+        "file": "Tactics/CombatMath.CastBonus.cs",
+        "sha256": "000b59ca98c41ee62204d9178b2a65fea9bc3fa99bdee32a4421b9eb0d6b051b"
+      },
+      {
+        "file": "Tactics/CombatMath.Defences.cs",
+        "sha256": "bb94dac286aa43e5ec0c9ac535247a90231fa9fbf8df5ea1c0bcc8564a730f09"
+      },
+      {
+        "file": "Tactics/CombatMath.Drain.cs",
+        "sha256": "4d89ee8c3aab83b28d73e432b9c338389d42932cdbbfa40b66ec6f154796c737"
+      },
+      {
+        "file": "Tactics/CombatMath.OnHit.cs",
+        "sha256": "78db3d7aed2cb0d1abef27439885612dc585ba40634fddfeb26d8517254017b2"
+      },
+      {
+        "file": "Tactics/CombatMath.Swarms.cs",
+        "sha256": "408d4dc24e1c12c3299f2d11004f01ec0252f4d1a7bbb5e86088c73916e62081"
+      },
+      {
+        "file": "Tactics/CombatMath.cs",
+        "sha256": "e416fcd2e85d889ad7bf1558428044d91022a60b8c1f6213f81ed6e810e0210d"
       },
       {
         "file": "Tactics/TacticalEngine.ApproachValidation.cs",
@@ -113,7 +134,7 @@
       },
       {
         "file": "Tactics/TacticalEngine.BurnConsequences.cs",
-        "sha256": "8dd143e74d346221ec5c65c99f12aacee95f9830519da0071a4c7976ac1e2c46"
+        "sha256": "4029206fde7fbe3e7c3677184d4e5ce0ffdd3864c48ca22a1bc0e6d4139e6436"
       },
       {
         "file": "Tactics/TacticalEngine.Carnage.cs",
@@ -132,8 +153,16 @@
         "sha256": "da4a99997d20b747fc0321cc24a708d34d8e1b4eb41e791404a32d775eb0c420"
       },
       {
+        "file": "Tactics/TacticalEngine.DropModel.cs",
+        "sha256": "7f55e238acba633e901932e0067f409312a30a406aa2f1e31f7b83b2b44f4dfc"
+      },
+      {
         "file": "Tactics/TacticalEngine.HeldStates.cs",
         "sha256": "231e076c2601559e742160bebbf8243070bb4adfea8331fcc8a9ef860dbc6d52"
+      },
+      {
+        "file": "Tactics/TacticalEngine.Hidden.cs",
+        "sha256": "cbf58e7dbb915504855376eee8f85faf061651adf9353a56474ad420b9fcfbef"
       },
       {
         "file": "Tactics/TacticalEngine.InfusionEffects.cs",
@@ -209,11 +238,65 @@
       },
       {
         "file": "Tactics/TacticalEngine.cs",
-        "sha256": "cd4709fbca026b9c3e114a6ccc43694db7160646f74602a543cfd98908e39a8d"
+        "sha256": "43c3ecb62faf90671d282d38e9ee32ce3a5bb518d2267e44f19f8004038169a0"
       }
     ],
-    "sha256": "164e469d0abb4b393ed229881b3ae231c5caa6347e59890c8517beea2eef1d8f"
+    "sha256": "2606293f48007aaf7a882eefd85c4a14884ec7d3aa10b052da188964df5e3564"
   },
-  "map_tool_sha256": "18e1855e7536e3a2c2ae6c468add0e1bc343575e3e1ac2d876301246f71f276f",
-  "artifact_integrity": "passed on final generated files: source/tool hashes, normalized indexes, 9,426 feature/3,071 signature CSV rows, local links, and no runtime source diff"
+  "map_tool_sha256": "5705dce81ab7b6eb827fd0774c5824e7a700756b9e925328c0d0be193a8c7527",
+  "artifact_integrity": "Validated normalized indexes, source/tool hashes, 9,426 feature and 4,510 signature CSV rows, local links and no runtime source diff relative to reconciled development.",
+  "original_starting_commit": "fdc5e5e0906a4afc7a1af22cebbc29c0ed8d7e20",
+  "reconciled_development_head": "1f58150",
+  "historical_competence2_dll": {
+    "mvid": "0ed42ac5-d9ce-4f88-a339-388028b036c3",
+    "sha256": "53227972f3d92685072605d8d6897daa98e8a8c0531d989c7cbf357e2646afc0",
+    "size": 1218048
+  },
+  "reader_dll": {
+    "package": "AI-Control-FACC-v0.3.30-dev-competence3b-3443d94-UMM-test.zip",
+    "source_commit": "3443d94b960d14011f7a72e69af4d534eaecaf50",
+    "mvid": "740e7ec5-27f8-4575-9187-258b0f61f426",
+    "sha256": "2c41160be8cd9aa7eaa1c1a8844a934b62d89a084dc0aa33acdfdffd2a2dce1e",
+    "size": 1231872,
+    "zip_sha256": "1ee0273724ef6db2f2ab49abdabc936bdb3bfac8cdceb41fc582ee3821d2b0fd"
+  },
+  "feature_csv_rows": 9426,
+  "signature_csv_rows": 4510,
+  "self_review": {
+    "original_pr_head": "6b0954c6c03f566ac0df01d3b7a048e747f9203c",
+    "requested_base": "3443d94b960d14011f7a72e69af4d534eaecaf50",
+    "integration_commit": "1f58150",
+    "status": "Corrections complete; external review pending",
+    "findings": [
+      "Generic reference fields falsely expanded rank inputs, filters and suppression targets; native component/field contracts now separate dependencies from effects.",
+      "Fixed amounts, nested values/dice and activatable command fields were omitted from signatures.",
+      "Split CombatMath readers and outer scopes after local helpers were missing or misattributed; comments and quoted prose are now excluded from typed evidence.",
+      "Evidence handover refreshed to competence3b; Elemental Scion attribution narrowed to BurnNumberProperty consumers."
+    ],
+    "prior_map_counts": {
+      "mapped_fact_nodes": 13671,
+      "mechanic_signatures": 3071,
+      "missing_reachable_refs": 66,
+      "depth_frontier_refs": 1089,
+      "unclassified_relation_occurrences": 6177
+    }
+  },
+  "inherited_gameplay_report": {
+    "source": "Author update and docs/TACTICAL_AI.md section 126",
+    "package": "competence2 / MVID 0ed42ac5-d9ce-4f88-a339-388028b036c3",
+    "turn_based_fights": 6,
+    "real_time_fights": 8,
+    "raw_new_logs_supplied_for_this_self_review": false,
+    "scope": "Author/Claude-reported gameplay; does not validate competence3b or C06 candidate."
+  },
+  "bubbleprints_cross_check": {
+    "receipt": "BUBBLEPRINTS_CHECK.json",
+    "database_version": "2.7.0x_0",
+    "engine_execution": "supplied BPFile reader used through private .NET 8 adapter",
+    "records_read": 236660,
+    "selected_exact_matches": "28/28",
+    "judgment_abilities": 15,
+    "merged_into_mapping_corpus": false,
+    "installed_version_confirmed": false
+  }
 }

@@ -1,4 +1,4 @@
-﻿# CLAUDE.md
+# CLAUDE.md
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
@@ -8,16 +8,15 @@ Read [CONTRIBUTING.md](CONTRIBUTING.md) for shared branch ownership, Codex pull 
 Codex works on task branches and targets pull requests at `claude/dreamy-pasteur-b9h3rn`; Claude reviews and integrates them there.
 Keep `main` for author-authorized releases. Read [AGENTS.md](AGENTS.md) when coordinating agent work.
 
-**Phase B mapping task (8 November 2026, Codex; review pending):** `codex/class-competence-map` starts at `fdc5e5e`.
+**Phase B mapping task (8 November 2026, Codex; PR #21 review pending):** originally `fdc5e5e`; self-review based on author-requested `3443d94`, reconciled with packaging `1f58150`.
 Read [docs/CLASS_COMPETENCE_CURRENT.md](docs/CLASS_COMPETENCE_CURRENT.md) and
 [docs/competence/PHASE_B_VALIDATION.md](docs/competence/PHASE_B_VALIDATION.md): 74 exported class assets / 213 archetypes,
 9,426 per-feature rows and bounded selection-aware signatures; installed DLL/settings identities and eight byte-identical loader caches.
 No runtime/version/package change. Strict reader: 44,637 loaded / one known Unity-bound failure, no verdicts; separately allowed-one
-PARTIAL pass: 4,807 rows / zero reader errors, 8/8 actor-shaped burn kits; 24 Python + four static-assembly checks.
+PARTIAL pass on competence3b: 4,807 rows / zero reader errors, 8/8 actor-shaped burn kits, reveal/cast-bonus checks; 27 Python + four static-assembly checks. Self-review corrected query/grant edges, value/action signatures and split-reader/scope citations: 13,576 nodes / 4,510 signatures / 56 missing / 767 frontier / 6,159 unclassified relations.
 Generated mod graphs remain absent despite post-initialization export provenance; DarkCodex settings enable Elemental Scion,
-whose property replacement is not present in the exported native property. Do not infer mod compatibility or full actor competence.
-**Ownership:** Claude handles C07 dispatch/Spellstrike/Spell Combat and C08 forms. Codex handles C06 only in a separate PR after the
-mapping PR is open. Movement, acceptance, blocklist, release and version boundaries remain as below.
+whose `BurnNumberProperty` replacement is not present in the exported native property. This affects the Psychokineticist stat-penalty consumer; it does not explain Orvath's `KineticNonLethalDamageProperty` fallback (§126, diagnostic `3443d94`). Do not infer mod compatibility or full actor competence.
+**Ownership:** Claude handles C07 dispatch/Spellstrike/Spell Combat and C08 forms. Codex handles C06 only in separate PR #22 (self-review corrections, external review pending). Movement, acceptance, blocklist, release and version boundaries remain as below.
 
 **Competence programme (8 November 2026): PR #20 integrated, read [docs/CLASS_COMPETENCE_CURRENT.md](docs/CLASS_COMPETENCE_CURRENT.md)
 first.** Codex's foundation (`codex/class-competence-foundation`, from 0.3.30 test 2 `71ca3de`) was reviewed against the

@@ -1,0 +1,247 @@
+{
+  "scope": "Version-labelled supplementary stock-data cross-check; not installed patch/mod state. No raw blueprint data or third-party binaries committed.",
+  "program_version": "BlueprintExplorer 2.1.0",
+  "uploaded_zip_sha256": "3990a15ac180ba0fdddb8b6816e544e32315823a9919c31bca404e13655cd354",
+  "engine_file": "BubbleprintEngine.dll",
+  "engine_sha256": "adc967fc88cde5940af6ff30caf0b11aee2529ba88f9bbdeb39863c7c82765fa",
+  "database_url": "https://github.com/factubsio/BubblePrintsData/releases/download/2.7.0x_0/blueprints_raw_2.7.0x_0.binz",
+  "database_version": "2.7.0x_0",
+  "database_sha256": "03ba6e29782c0c14e0c0383cd739560358641f7b5842f1dcfb690246e73c9c6a",
+  "database_bytes": 136905792,
+  "records_read": 236660,
+  "records_expected": 236660,
+  "targets_requested": 28,
+  "targets_found": 28,
+  "exact_data_matches": 28,
+  "method": "Private .NET 8 adapter uses supplied BPFile.Reader/CreateReadContext/Open for chunk decoding; no UI, settings, mod/game initializer or network manager executed.",
+  "adapter_build_warnings": 1,
+  "adapter_warning": "MSB3277: supplied metadata dependency version conflict; separate from deployable mod build. Reader completed and selected Data comparisons were exact.",
+  "gui_execution": "Not run: WindowsDesktop app unavailable on this Linux host.",
+  "missing": [],
+  "records": [
+    {
+      "asset_id": "c37574188b0242d2ac04a454a0430dd5",
+      "name": "AchaekekSacredWeaponFeature",
+      "type": "BlueprintFeature",
+      "data_equal": true,
+      "database_data_sha256": "beded7cc4f49e072cf7b15291f6faf61202765d1300b2aa3d04b4d9b1937cce0",
+      "supplied_data_sha256": "beded7cc4f49e072cf7b15291f6faf61202765d1300b2aa3d04b4d9b1937cce0"
+    },
+    {
+      "asset_id": "e6c2a4b287ca91541843734f2161928a",
+      "name": "AlchemistThrowAnything",
+      "type": "BlueprintFeature",
+      "data_equal": true,
+      "database_data_sha256": "38cc85382dc5d71a3b3378c400a82e12fd04dc0910552a729438aff76832b2e9",
+      "supplied_data_sha256": "38cc85382dc5d71a3b3378c400a82e12fd04dc0910552a729438aff76832b2e9"
+    },
+    {
+      "asset_id": "95b1c0d55f30996429a3a4eba4d2b4a6",
+      "name": "BurnEffectBuff",
+      "type": "BlueprintBuff",
+      "data_equal": true,
+      "database_data_sha256": "1c4833ba3f7b6238ad848bbfcf55c3eaaccadb3070c703afcf65d32cad9f6adf",
+      "supplied_data_sha256": "1c4833ba3f7b6238ad848bbfcf55c3eaaccadb3070c703afcf65d32cad9f6adf"
+    },
+    {
+      "asset_id": "02c5943c77717974cb7fa1b7c0dc51f8",
+      "name": "BurnNumberProperty",
+      "type": "BlueprintUnitProperty",
+      "data_equal": true,
+      "database_data_sha256": "a3a365a43eb1684a8523b5c38ef40c998a562b943fdc6f6b5686b8cf0bb7c69c",
+      "supplied_data_sha256": "a3a365a43eb1684a8523b5c38ef40c998a562b943fdc6f6b5686b8cf0bb7c69c"
+    },
+    {
+      "asset_id": "4ebaf39efb8ffb64baf92784808dc49c",
+      "name": "DestructionJudgmentAbility",
+      "type": "BlueprintActivatableAbility",
+      "data_equal": true,
+      "database_data_sha256": "99ae1f67c6c382f483f279e4ba11e361f673b6af3c2f07381f90d36eae6b0bfb",
+      "supplied_data_sha256": "99ae1f67c6c382f483f279e4ba11e361f673b6af3c2f07381f90d36eae6b0bfb"
+    },
+    {
+      "asset_id": "00b6d36e31548dc4ab0ac9d15e64a980",
+      "name": "HealingJudgmentAbility",
+      "type": "BlueprintActivatableAbility",
+      "data_equal": true,
+      "database_data_sha256": "05eacb37c08b1fdfef98238334394112700a02b84471122cdb4914df3e37622f",
+      "supplied_data_sha256": "05eacb37c08b1fdfef98238334394112700a02b84471122cdb4914df3e37622f"
+    },
+    {
+      "asset_id": "394088e9e54ccd64698c7bd87534027f",
+      "name": "JudgmentResource",
+      "type": "BlueprintAbilityResource",
+      "data_equal": true,
+      "database_data_sha256": "72ed5c19c6525a8da8f452439df2b0e51f5403ced2234da8af8ff23c75eee89f",
+      "supplied_data_sha256": "72ed5c19c6525a8da8f452439df2b0e51f5403ced2234da8af8ff23c75eee89f"
+    },
+    {
+      "asset_id": "9b8bb2ce8f67e5b4fa634ed6a6671f7a",
+      "name": "JudgmentWatcherBuff",
+      "type": "BlueprintBuff",
+      "data_equal": true,
+      "database_data_sha256": "4e21e6990394b02f14d822ad52b4b2c011945053e3277babcbebbd58f9ac318d",
+      "supplied_data_sha256": "4e21e6990394b02f14d822ad52b4b2c011945053e3277babcbebbd58f9ac318d"
+    },
+    {
+      "asset_id": "ddffa896d4605a44f95baa6d0d350828",
+      "name": "JusticeJudgmentAbility",
+      "type": "BlueprintActivatableAbility",
+      "data_equal": true,
+      "database_data_sha256": "b5f199cc2d9592dbaddd8b9b985d25fe7f39450e12154effb2ac5e9bf6c2bf75",
+      "supplied_data_sha256": "b5f199cc2d9592dbaddd8b9b985d25fe7f39450e12154effb2ac5e9bf6c2bf75"
+    },
+    {
+      "asset_id": "ac8b7875fff5c0643ac499d404947fff",
+      "name": "KineticNonLethalDamageProperty",
+      "type": "BlueprintUnitProperty",
+      "data_equal": true,
+      "database_data_sha256": "1cc44bd4a6d61da24e0b07094e5de59320a2c4cff32ab14e061df47986c57158",
+      "supplied_data_sha256": "1cc44bd4a6d61da24e0b07094e5de59320a2c4cff32ab14e061df47986c57158"
+    },
+    {
+      "asset_id": "86d53d49c22a4781bf9eac33e680c85b",
+      "name": "MovanicDevaInquisitor_JudgmentsActivateAbility",
+      "type": "BlueprintAbility",
+      "data_equal": true,
+      "database_data_sha256": "92b877dbf6f9f8370ee52c74338c86a48fefa39a129a3686e1ce651299750a53",
+      "supplied_data_sha256": "92b877dbf6f9f8370ee52c74338c86a48fefa39a129a3686e1ce651299750a53"
+    },
+    {
+      "asset_id": "487af80cdfbaad74b8c2fd644c538233",
+      "name": "PiercingJudgmentAbility",
+      "type": "BlueprintActivatableAbility",
+      "data_equal": true,
+      "database_data_sha256": "3b25c83a9c9479a64c01c3f3824c0357ef9b325ca0d1e553447d373a4d823020",
+      "supplied_data_sha256": "3b25c83a9c9479a64c01c3f3824c0357ef9b325ca0d1e553447d373a4d823020"
+    },
+    {
+      "asset_id": "0da0c194d6e1d43419eb8d990b28e0ab",
+      "name": "PointBlankShot",
+      "type": "BlueprintFeature",
+      "data_equal": true,
+      "database_data_sha256": "912bf93af27d5b8b71d3e17a380e2df73677cdead492f69ff4c7f1afdda9eccd",
+      "supplied_data_sha256": "912bf93af27d5b8b71d3e17a380e2df73677cdead492f69ff4c7f1afdda9eccd"
+    },
+    {
+      "asset_id": "1bb08308c9f6a5e4697887cd438b7221",
+      "name": "ProtectionJudgmentAbility",
+      "type": "BlueprintActivatableAbility",
+      "data_equal": true,
+      "database_data_sha256": "29c3d705d7fd897ba0546a5c2bceeb9d217691b0ce6c4f939613f5d11b14f80c",
+      "supplied_data_sha256": "29c3d705d7fd897ba0546a5c2bceeb9d217691b0ce6c4f939613f5d11b14f80c"
+    },
+    {
+      "asset_id": "a9e3e785ea41449499b6b5d3d22a0856",
+      "name": "PsychokineticistBurnBuff",
+      "type": "BlueprintBuff",
+      "data_equal": true,
+      "database_data_sha256": "930967687af714c32cd94f54e077e646c71ae2233b3780b1f8d65194fbbf258e",
+      "supplied_data_sha256": "930967687af714c32cd94f54e077e646c71ae2233b3780b1f8d65194fbbf258e"
+    },
+    {
+      "asset_id": "2fa48527ba627254ba9bf4556330a4d4",
+      "name": "PsychokineticistBurnFeature",
+      "type": "BlueprintFeature",
+      "data_equal": true,
+      "database_data_sha256": "e4313aa12a0dfee96736fad43307fd30a14a9a012d8132d0788361fb6cd7e80f",
+      "supplied_data_sha256": "e4313aa12a0dfee96736fad43307fd30a14a9a012d8132d0788361fb6cd7e80f"
+    },
+    {
+      "asset_id": "15d3b21354c105b498a0b1b293280ded",
+      "name": "PurityJudgmentAbility",
+      "type": "BlueprintActivatableAbility",
+      "data_equal": true,
+      "database_data_sha256": "21ddaf466e7ae9af5a0c256e5c5397d7307d34f1249805c840b4eb4bf97ee0d0",
+      "supplied_data_sha256": "21ddaf466e7ae9af5a0c256e5c5397d7307d34f1249805c840b4eb4bf97ee0d0"
+    },
+    {
+      "asset_id": "1452fb3e0e3e2f6488bee09050097b6f",
+      "name": "ResiliencyJudgmentAbilityChaos",
+      "type": "BlueprintActivatableAbility",
+      "data_equal": true,
+      "database_data_sha256": "54693d9fce1b26c5c0e1e6cc240edf68464d87d34811db0fec67e734169e0924",
+      "supplied_data_sha256": "54693d9fce1b26c5c0e1e6cc240edf68464d87d34811db0fec67e734169e0924"
+    },
+    {
+      "asset_id": "1f7e326d3a88fd84985a60e416388c27",
+      "name": "ResiliencyJudgmentAbilityEvil",
+      "type": "BlueprintActivatableAbility",
+      "data_equal": true,
+      "database_data_sha256": "d6f56bf13038a40672f7e85dc00c0471e6a8542bb01f54e521e11652d0e3150f",
+      "supplied_data_sha256": "d6f56bf13038a40672f7e85dc00c0471e6a8542bb01f54e521e11652d0e3150f"
+    },
+    {
+      "asset_id": "d47ecfecae485ac41b54fe4e8027797c",
+      "name": "ResiliencyJudgmentAbilityGood",
+      "type": "BlueprintActivatableAbility",
+      "data_equal": true,
+      "database_data_sha256": "f907ed30788eb1ca1446e87b1e2f7cc9fbaf733c417611444f5992c6ef090e67",
+      "supplied_data_sha256": "f907ed30788eb1ca1446e87b1e2f7cc9fbaf733c417611444f5992c6ef090e67"
+    },
+    {
+      "asset_id": "3bb25de520e78744ea3ac406b918ab3e",
+      "name": "ResiliencyJudgmentAbilityLaw",
+      "type": "BlueprintActivatableAbility",
+      "data_equal": true,
+      "database_data_sha256": "84ccaaf55711b6a47bcbcffced5b6eccbe56e49d365e440e5838f5b658c77739",
+      "supplied_data_sha256": "84ccaaf55711b6a47bcbcffced5b6eccbe56e49d365e440e5838f5b658c77739"
+    },
+    {
+      "asset_id": "bfec9cee57e7a7d47a8641c5c9d43c41",
+      "name": "ResiliencyJudgmentAbilityMagic",
+      "type": "BlueprintActivatableAbility",
+      "data_equal": true,
+      "database_data_sha256": "7e5c19da3521476036a096754f52573b64f4e5acf5afc2aca9ba392248f6f55d",
+      "supplied_data_sha256": "7e5c19da3521476036a096754f52573b64f4e5acf5afc2aca9ba392248f6f55d"
+    },
+    {
+      "asset_id": "ad61fc9dec7822b45891c78c9da5d5da",
+      "name": "ResistanceJudgmentAbility",
+      "type": "BlueprintActivatableAbility",
+      "data_equal": true,
+      "database_data_sha256": "96da765cb7a064a24f40ed81037fde49553c6b3d37d91ae49524c857e3fe6c57",
+      "supplied_data_sha256": "96da765cb7a064a24f40ed81037fde49553c6b3d37d91ae49524c857e3fe6c57"
+    },
+    {
+      "asset_id": "2c448ab4135c7c741b6f0f223901f9fa",
+      "name": "SmitingJudgmentAbilityAdamantite",
+      "type": "BlueprintActivatableAbility",
+      "data_equal": true,
+      "database_data_sha256": "8538d3fb56843bc022848b829e41ae75b41ac209b2e17a85e4ed4dda5fae6d84",
+      "supplied_data_sha256": "8538d3fb56843bc022848b829e41ae75b41ac209b2e17a85e4ed4dda5fae6d84"
+    },
+    {
+      "asset_id": "72fe16312b4479145afc6cc6c87cd08f",
+      "name": "SmitingJudgmentAbilityAlignment",
+      "type": "BlueprintActivatableAbility",
+      "data_equal": true,
+      "database_data_sha256": "2ff42b4db0591186e24015d2a4cbde388ed920926dac1a55015e275e9d4e0740",
+      "supplied_data_sha256": "2ff42b4db0591186e24015d2a4cbde388ed920926dac1a55015e275e9d4e0740"
+    },
+    {
+      "asset_id": "d7e61eb9f0cec5e49bd1b0c428fa98e4",
+      "name": "SmitingJudgmentAbilityMagic",
+      "type": "BlueprintActivatableAbility",
+      "data_equal": true,
+      "database_data_sha256": "7c9ad8b1afbf386480813e80b87d06e6b6353608078e82a3d38ba1f54a68ffff",
+      "supplied_data_sha256": "7c9ad8b1afbf386480813e80b87d06e6b6353608078e82a3d38ba1f54a68ffff"
+    },
+    {
+      "asset_id": "4594286e4a565cd41ad9475f6c903fda",
+      "name": "SmitingJudgmentBuffMagic",
+      "type": "BlueprintBuff",
+      "data_equal": true,
+      "database_data_sha256": "f01189a78211ddde290c20a93a9cd21e3a810a12a8a2cf53c379e8205ae5a2ad",
+      "supplied_data_sha256": "f01189a78211ddde290c20a93a9cd21e3a810a12a8a2cf53c379e8205ae5a2ad"
+    },
+    {
+      "asset_id": "d69715dc0de8f8b44ac9f20188c7c22e",
+      "name": "TrueJudgmentAbility",
+      "type": "BlueprintAbility",
+      "data_equal": true,
+      "database_data_sha256": "0d2f2d3f49d1210013db05513371e130760d648c047fd70d42534af98302e419",
+      "supplied_data_sha256": "0d2f2d3f49d1210013db05513371e130760d648c047fd70d42534af98302e419"
+    }
+  ]
+}

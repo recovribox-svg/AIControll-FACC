@@ -29,6 +29,63 @@ DEPENDENCY_FIELDS = {'m_CheckedFact', 'm_Fact', 'm_RequiredFact', 'm_RequiredFac
 DEPENDENCY_FIELDS.update({'m_CheckedFacts','m_FeatureList','m_AdditionalClasses','m_AdditionalArchetypes','m_Archetypes',
                           'Archetype','m_Projectiles','m_SummonPool','m_RequiredResource','ResourceCostDecreasingFacts',
                           'ResourceCostIncreasingFacts','m_Spellbooks','m_WeaponType','m_UnitFact'})
+DEPENDENCY_FIELDS.update({'m_ResourceCostIncreasingFacts','m_ResourceCostDecreasingFacts','m_FreeBlueprint','m_FreeBlueprints'})
+# These field names occur on both grants and queries. Unreviewed combinations stay unclassified;
+# rank inputs, filters and immunity targets must not import the referenced fact's own capabilities.
+REFERENCE_GRANTS = {
+    'm_Feature': {'AddFeatureOnClassLevel','AddFeatureIfHasFact','AddUnitFeatureEquipment','AddFeatureOnApply',
+                  'AddFeatureToPet','AddBuffOnCombatStart','AddFactIfArchetype','AddFeatureToNPC'},
+    'm_Features': {'ApplyClassProgression','AddParametrizedFeatures','ShareFeaturesWithPet'},
+    'm_Buff': {'ContextActionApplyBuff','BuffOnEntityCreated','AbilityAreaEffectBuff','AuraFeatureComponent',
+               'AttachBuff','Demoralize','BuffOnLightOrNoArmor','BuffOnArmor','AddBuffInBadWeather',
+               'AddBuffOnCorruptionClear','WeaponDebuffOnAttack','WeaponBuffOnAttack'},
+    'm_Ability': set(),
+    'm_Spell': {'AddKnownSpell','ContextActionCastSpell','AddSpellKnownTemporary'},
+    'm_Facts': {'AbilityApplyFact','AddFacts','AddFactsFromCaster','AddFactsToMount','AddFactsToPet','AddFeatureOnAlignment','Polymorph'},
+    'm_Abilities': {'AddAbilityToCharacterComponent'},
+    'm_Buffs': {'ShareBuffsWithPet'},
+    'm_AreaEffect': {'AddAreaEffect','ContextActionSpawnAreaEffect'},
+    'm_ActivatableAbility': {'ActivatableAbilitySetItem'},
+    'm_AdditionalLimbs': {'Polymorph'},
+    'm_Enchant': {'AddBondProperty'},
+    'm_Enchantment': {'ContextActionEnchantWornItem','EnhanceWeapon'},
+    'm_EnchantmentBlueprint': {'BuffEnchantAnyWeapon','BuffEnchantSpecificWeaponWorn','BuffEnchantWornItem'},
+    'm_Enchantments': {'BuffEnchantArmor'},
+    'm_ExtraEffectBuff': {'BuffExtraEffects'},
+    'm_NewFact': {'FixUnitOnPostLoad_AddNewFact','HasArmorFeatureUnlock','HasShieldFeatureUnlock',
+                  'MonkNoArmorAndMonkWeaponFeatureUnlock','MonkNoArmorFeatureUnlock'},
+    'm_PermanentFeature': {'ContextActionAddFeature'},
+    'm_Resource': {'AddAbilityResources'},
+    'm_TouchDeliveryAbility': {'AbilityEffectStickyTouch'},
+    'm_TouchWeapon': {'AbilityDeliverTouch'},
+    'm_Variants': {'AbilityVariants','ActivatableAbilityVariants'},
+    'm_Weapon': {'AbilityDeliverClashingRocks','AbilityDeliverProjectile','AddAdditionalLimb','AddAdditionalLimbIfHasFact',
+                 'AddSecondaryAttacks','AdditionalDamageOnHit','EmptyHandWeaponOverride','SetChargeWeapon'},
+}
+REFERENCE_QUERIES = {
+    'm_Feature': {'ContextRankConfig','UniqueAreaEffect','SacredWeaponDamageOverride'},
+    'm_Features': {'NoSelectionIfAlreadyHasFeature','FightingDefensivelyACBonusProperty',
+                   'FightingDefensivelyAttackPenaltyProperty','BaseAttackPropertyWithFeatureList'},
+    'm_Buff': {'ContextRankConfig','SpecificBuffImmunity','HasBuff'},
+    'm_Ability': {'SwitchActivatableAbility','ReplaceAbilityParamsWithContext','ReplaceAbilitiesStat','FreeActionSpell',
+                  'AddAbilityUseTrigger','SpellLevelByClassLevel','ReplaceAbilityDC','SpellFixedDC','MonkReplaceAbilityDC'},
+    'm_Spell': {'AddCasterLevelForAbility','ReplaceCasterLevelOfAbility','AddCasterLevelEquipment','IncreaseSpellDC',
+                'SpecificSpellDamageBonus','SpendChargesOnSpellCast'},
+    'm_Facts': {'ACBonusAgainstFactOwnerMultiple','ACBonusUnlessFactMultiple','AbilityCasterHasFacts','AbilityCasterHasNoFacts',
+                'HideFactsWhileEtudePlaying','IgnoreConcealmentAgainstFactOwner','MissAgainstFactOwner','ModifyOutgoingHealAmount',
+                'SavingThrowBonusAgainstFactMultiple','SavingThrowBonusUnlessFactMultiple'},
+    'm_Abilities': {'BindAbilitiesToHighest','IgnoreAttacksOfOpportunityForSpellList','PreventAbilityInterruption'},
+    'm_Buffs': {'AbilityTargetHasConditionOrBuff','SuppressBuffs'},
+    'm_Area': {'CurrentAreaIs'},
+    'm_CustomProperty': {'ContextCalculateAbilityParams','ContextRankConfig'},
+    'm_Enchantments': {'ImproveEnhancmentIfHasEnchantment'},
+    'm_Resource': {'AbilityConvertSpellLevelToResource','AddAbilityResourceTrigger','AeonSavedStateFeature',
+                   'ContextRestoreResource','ContextSpendResource','DeathActions','FlamewardenBurningRenewal',
+                   'IncreaseResourceAmount','IncreaseResourceAmountBySharedValue','IncreaseResourcesByClass','SpellFool','WizardEnergyAbsorption'},
+    'm_WeaponBlueprint': {'AddInitiatorAttackWithWeaponTrigger','BuffEnchantSpecificWeaponWorn',
+                          'SacredWeaponFavoriteDamageOverride','WeaponParametersAttackBonus',
+                          'WeaponParametersCriticalMultiplierIncrease','WeaponParametersDamageBonus'},
+}
 SCALAR_FIELDS = {'ActionType', 'Type', 'SpendType', 'Amount', 'Cost', 'IsSpendResource', 'IsFullRoundAction',
                  'Stat', 'Descriptor', 'Multiplier', 'CommandType', 'DeactivateImmediately', 'ActivateWithUnitCommand',
                  'OnlyOnHit', 'OnlyOnCriticalHit', 'OnlyOnFirstHit', 'OnlyOnFirstAttack', 'OnAttackOfOpportunity',
@@ -38,6 +95,10 @@ SCALAR_FIELDS = {'ActionType', 'Type', 'SpendType', 'Amount', 'Cost', 'IsSpendRe
 SCALAR_FIELDS.update({'HalfIfSaved','IsAoE','Half','HasMinimal','OnlyOnSneakAttack','OnlyOnMeleeAttack','OnlyOnRangedAttack',
                       'OnlyOnFullAttack','OnlyOnAttackOfOpportunity','OnlyOnCharge','RequireWeaponCategory','UseWeaponGroup',
                       'Energy','ValueType','ValueRank','ValueShared','Rate','DiceType'})
+SCALAR_FIELDS.update({'Value','m_StartLevel','m_StartValue','m_BaseValue','BaseValue','ProgressionValue',
+                      'ActivationType','m_ActivateWithUnitCommand','m_ActivateOnUnitAction','DeactivateIfCombatEnded',
+                      'DeactivateAfterFirstRound','DeactivateIfOwnerDisabled','DeactivateIfOwnerUnconscious',
+                      'OnlyInCombat','m_UseListForFreeBlueprints','ContextValueSpendure','UseDurationSeconds','SameDuration','AsChild'})
 NONCOMBAT = re.compile(r'^(Prerequisite|Recommendation|FeatureTags|Recalculate|ContextRankConfig|ContextCalculateSharedValue|AddClassSkill|SpellListComponent|SpellComponent|'
                        r'LevelUp|ClassLevels|AddProficiencies|AddStarting)')
 VISUAL = re.compile(r'(Fx$|^AbilitySpawnFx|^Play|^SpawnFx|^AddVisual|^UnitView|^Portrait|^ChangeAnimation|^HideInUI)')
@@ -127,7 +188,8 @@ def reader_index(source_root):
     """Locate typed reader/query evidence, never infer complete semantic support from a code token."""
     found = defaultdict(list)
     files = [Path(source_root) / 'Analysis/BuffParts.cs', Path(source_root) / 'Tactics/AbilityProfile.cs',
-             Path(source_root) / 'Tactics/CombatMath.cs', Path(source_root) / 'Tactics/AbilityDiscovery.cs']
+             Path(source_root) / 'Tactics/AbilityDiscovery.cs']
+    files += sorted((Path(source_root) / 'Tactics').glob('CombatMath*.cs'))
     files += sorted((Path(source_root) / 'Tactics').glob('TacticalEngine*.cs'))
     declaration = re.compile(r'^\s*(?:public|private|internal|protected)\s+(?:static\s+)?(?:[\w.<>,?\[\]()]|\s)+\s+(\w+)\s*\(')
     local_void = re.compile(r'^\s*(?:static\s+)?void\s+(\w+)\s*\(')
@@ -137,16 +199,31 @@ def reader_index(source_root):
         if not file.exists(): continue
         identities.append({'file':file.relative_to(source_root).as_posix(),'sha256':hashlib.sha256(file.read_bytes()).hexdigest()})
         method = 'type-specific query'
-        for line, text in enumerate(file.read_text(encoding='utf-8-sig').splitlines(), 1):
-            if text.lstrip().startswith('//'): continue
+        scopes=[];pending=None;depth=0
+        # Preserve source line numbers while excluding comments and quoted prose from typed-code evidence.
+        source = file.read_text(encoding='utf-8-sig')
+        code_only = re.sub(r'//[^\n]*|/\*[\s\S]*?\*/|(?:\$@|@\$|@)"(?:[^"]|"")*"|\$?"(?:\\.|[^"\\])*"|\'(?:\\.|[^\'\\])*\'',
+                           lambda match: re.sub(r'[^\n]', ' ', match[0]), source)
+        for line, text in enumerate(code_only.splitlines(), 1):
             m = declaration.match(text) or local_void.match(text)
             if m:
                 method = m[1]
+                pending=method
                 method_locations.setdefault(file.relative_to(source_root).as_posix()+'::'+method,line)
             for hit in evidence.finditer(text):
                 name = next(x for x in hit.groups() if x).rsplit('.', 1)[-1]
                 item = {'file': file.relative_to(source_root).as_posix(), 'method': method, 'line': line}
                 if item not in found[name]: found[name].append(item)
+            # Braces inside quoted diagnostics are not code scopes. A local helper must not steal later
+            # citations from its enclosing method. Unrecognized declarations retain file/line query evidence.
+            code=text
+            if pending and '{' in code:
+                scopes.append((pending,depth+1));pending=None
+            elif pending and '=>' in code:
+                pending=None
+            depth+=code.count('{')-code.count('}')
+            while scopes and depth<scopes[-1][1]:scopes.pop()
+            method=scopes[-1][0] if scopes else 'type-specific query'
     result=dict(found)
     result['$source_identity']={'files':identities,'sha256':digest(identities)}
     result['$method_locations']=method_locations
@@ -210,12 +287,14 @@ def edges_of(asset):
     for kind, node, path in typed_nodes(data.get('Components', []), 'Components'):
         dependency = bool(re.search(r'Prerequisite|Restriction|ContextCondition|Recommendation', kind))
         for key, value in node.items():
-            if kind=='AddFactIfArchetype' and key=='m_Fact':
+            if kind=='AddFactIfArchetype' and key=='m_Feature':
                 add(value,'conditional-grant',path+'.'+key)
-            elif re.search(r'^(ContextActionRemove|ContextActionDispel|AbilityEffectRemove|RemoveBuff|RemoveFeature)',kind):
+            elif re.search(r'^(ContextActionRemove|ContextActionDispel|AbilityEffectRemove|RemoveBuff|RemoveFeature|DetachBuff)',kind):
                 if key!='$type':add(value,'removal-target',path+'.'+key)
-            elif key in DEPENDENCY_FIELDS or dependency:
+            elif key in DEPENDENCY_FIELDS or dependency or kind in REFERENCE_QUERIES.get(key,set()):
                 if key != '$type': add(value, 'dependency', path + '.' + key)
+            elif key in EFFECT_FIELDS and kind not in REFERENCE_GRANTS.get(key,set()):
+                pass # Reported below as an unclassified reference; field spelling alone is not a grant contract.
             elif key in EFFECT_FIELDS:
                 add(value, 'conditional-grant' if re.search(r'If|OnClassLevel|FromCaster|Pet|Mount', kind) else 'effect', path + '.' + key)
     covered={e['field'] for e in edges}
@@ -233,11 +312,19 @@ def local_signatures(asset, evidence, signatures):
         nodes.insert(0, (asset['type'], asset['data'], '$'))
     for kind, node, _ in nodes:
         if kind in {'ContextValue', 'ContextDurationValue', 'ConditionsChecker', 'DiceFormula', 'ActionList'}: continue
-        scalars = {key: value for key, value in node.items() if key in SCALAR_FIELDS and isinstance(value, (bool, int, float, str))}
-        for field in ['Value','DamageType','DurationValue']:
-            if isinstance(node.get(field),dict):
-                for key,value in node[field].items():
-                    if key in SCALAR_FIELDS and isinstance(value,(bool,int,float,str)):scalars[field+'.'+key]=value
+        scalars = {}
+        def parameters(value,path=''):
+            if isinstance(value,dict):
+                for key,child in value.items():
+                    name=path+'.'+key if path else key
+                    if key in SCALAR_FIELDS and isinstance(child,(bool,int,float,str)):scalars[name]=child
+                    # Each nested typed action/component has its own signature. Keep untyped value/duration/dice
+                    # expressions with their owner, without folding a whole action list into its parent signature.
+                    elif isinstance(child,dict) and ('$type' not in child or blueprint_type(child['$type']) in {'ContextValue','ContextDurationValue','DiceFormula'}):parameters(child,name)
+                    elif isinstance(child,list):
+                        for i,item in enumerate(child):
+                            if isinstance(item,dict) and '$type' not in item:parameters(item,f'{name}[{i}]')
+        parameters(node)
         payload = {'type': kind, 'parameters': scalars}
         key = digest(payload)[:16]
         if key in signatures and any(signatures[key][k] != payload[k] for k in payload): raise ValueError('signature collision')
