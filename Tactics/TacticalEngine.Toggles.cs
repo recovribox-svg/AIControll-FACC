@@ -20,6 +20,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
+using System.Runtime.CompilerServices;
 using Kingmaker.Blueprints;
 using Kingmaker.ElementsSystem;
 using Kingmaker.EntitySystem.Entities;
@@ -301,14 +302,30 @@ namespace CompanionAI_Pathfinder.Tactics
         }
 
         // Exact installed Core contract. Unknown patches keep the existing fallback instead of guessing their prices.
+        private const string ToggleSpendCallback = "Kingmaker.UnitLogic.ActivatableAbilities.IActivatableAbilitySpendResourceLogic.";
+        private static readonly MethodInfo[] ToggleSpendMethods = new[]
+        {
+            "SpendResource", "CalcResourceCost", ToggleSpendCallback + "OnAbilityTurnOn", ToggleSpendCallback + "OnStart", ToggleSpendCallback + "OnNewRound"
+        }.Select(name => HarmonyLib.AccessTools.Method(typeof(ActivatableAbilityResourceLogic), name)).ToArray();
+        private static readonly Guid InspectedTttSpendModule = new Guid("cdfed43f-53a0-4186-a181-75496eecec8f");
+        private sealed class ToggleSpendPatchContract
+        {
+            public readonly bool Known, Ttt;
+            public ToggleSpendPatchContract() { Known = KnownToggleSpendPatches(out bool ttt); Ttt = ttt; }
+        }
+        private static readonly ConditionalWeakTable<TacticalContext, ToggleSpendPatchContract> ToggleSpendContracts =
+            new ConditionalWeakTable<TacticalContext, ToggleSpendPatchContract>();
+        // Harmony 2.2.2 deserializes patch metadata on GetPatchInfo. Share one inspection within this decision,
+        // but read it again for a new context. Facts, pool amounts and renewal data are never retained here.
+        private static ToggleSpendPatchContract ToggleSpendContractFor(TacticalContext ctx) =>
+            ToggleSpendContracts.GetValue(ctx, _ => new ToggleSpendPatchContract());
+
         private static bool KnownToggleSpendPatches(out bool ttt)
         {
             ttt = false;
             bool prefix = false, postfix = false;
-            const string callback = "Kingmaker.UnitLogic.ActivatableAbilities.IActivatableAbilitySpendResourceLogic.";
-            foreach (string name in new[] { "SpendResource", "CalcResourceCost", callback + "OnAbilityTurnOn", callback + "OnStart", callback + "OnNewRound" })
+            foreach (var method in ToggleSpendMethods)
             {
-                var method = HarmonyLib.AccessTools.Method(typeof(ActivatableAbilityResourceLogic), name);
                 if (method == null) return false;
                 var patches = HarmonyLib.Harmony.GetPatchInfo(method);
                 if (patches == null) continue;
@@ -316,9 +333,9 @@ namespace CompanionAI_Pathfinder.Tactics
                 foreach (var patch in patches.Prefixes.Concat(patches.Postfixes))
                 {
                     var m = patch.PatchMethod;
-                    if (name != "SpendResource" || m?.DeclaringType?.FullName !=
+                    if (method.Name != "SpendResource" || m?.DeclaringType?.FullName !=
                         "TabletopTweaks.Core.MechanicsChanges.ActivatableAbilitySpendLogic+ActivatableAbilityResourceLogic_SpendResource_PerfectCritical_Patch" ||
-                        m.Module.ModuleVersionId != new Guid("cdfed43f-53a0-4186-a181-75496eecec8f")) return false;
+                        m.Module.ModuleVersionId != InspectedTttSpendModule) return false;
                     if (m.Name == "Prefix") prefix = true;
                     else if (m.Name == "Postfix") postfix = true;
                     else return false;
@@ -338,14 +355,16 @@ namespace CompanionAI_Pathfinder.Tactics
 
         /// <summary>Bounded activation-only resource actions, including the shared once-per-fight Judgment watcher.</summary>
         private static bool TryToggleActivationCost(BlueprintBuff buff, BlueprintAbilityResource resource,
-            Func<BlueprintUnitFact, bool> owns, out int cost)
+            Func<BlueprintUnitFact, bool> owns, out int cost, out bool grantsJudgmentSwitch)
         {
             cost = 0;
+            grantsJudgmentSwitch = false;
             var path = new HashSet<BlueprintBuff>();
             var added = new HashSet<BlueprintUnitFact>();
             var possible = new HashSet<BlueprintUnitFact>();
             bool Has(BlueprintUnitFact fact) => fact != null && (added.Contains(fact) || owns(fact));
             int total = 0;
+            bool judgmentSwitch = false;
             bool InertBuff(BlueprintBuff current, int depth)
             {
                 if (current == null || depth > 4) return false;
@@ -376,7 +395,7 @@ namespace CompanionAI_Pathfinder.Tactics
                 }
                 return true;
             }
-            bool Visit(BlueprintBuff current, int depth)
+            bool Visit(BlueprintBuff current, int depth, bool stable)
             {
                 if (current == null || depth > 4 || !path.Add(current)) return false;
                 if (current.Stacking == StackingType.Ignore && Has(current)) { path.Remove(current); return true; }
@@ -387,18 +406,21 @@ namespace CompanionAI_Pathfinder.Tactics
                     if (component is AddFactContextActions actions)
                     {
                         if (!Inert(actions.NewRound?.Actions, depth) || !Inert(actions.Deactivated?.Actions, depth) ||
-                            !Actions(actions.Activated?.Actions, depth)) return false;
+                            !Actions(actions.Activated?.Actions, depth, stable)) return false;
                     }
                     else if (component is Kingmaker.Designers.Mechanics.Facts.CombatStateTrigger combat)
                     {
                         if (combat.CombatStartActions?.Actions?.Length > 0) return false;
                     }
+                    else if (component is AddMechanicsFeature mechanics && stable &&
+                             mechanics.Feature == AddMechanicsFeature.MechanicsFeatureType.JudgmentSwitch)
+                        judgmentSwitch = true;
                     else if (!ToggleActivationPassives.Contains(component.GetType().Name)) return false;
                 }
                 path.Remove(current);
                 return true;
             }
-            bool Actions(GameAction[] actions, int depth)
+            bool Actions(GameAction[] actions, int depth, bool stable)
             {
                 if (depth > 4) return false;
                 foreach (var action in actions ?? Array.Empty<GameAction>())
@@ -411,7 +433,7 @@ namespace CompanionAI_Pathfinder.Tactics
                     }
                     else if (action is ContextActionApplyBuff apply)
                     {
-                        if (!Visit(apply.Buff, depth + 1)) return false;
+                        if (!Visit(apply.Buff, depth + 1, stable && (apply.Permanent || apply.SameDuration))) return false;
                     }
                     else if (action is Kingmaker.Designers.EventConditionActionSystem.Actions.Conditional conditional)
                     {
@@ -434,18 +456,19 @@ namespace CompanionAI_Pathfinder.Tactics
                             if (!Inert(conditional.IfTrue?.Actions, depth) || !Inert(conditional.IfFalse?.Actions, depth)) return false;
                             continue;
                         }
-                        if (!Actions(result ? conditional.IfTrue?.Actions : conditional.IfFalse?.Actions, depth + 1)) return false;
+                        if (!Actions(result ? conditional.IfTrue?.Actions : conditional.IfFalse?.Actions, depth + 1, stable)) return false;
                     }
                     else if (!(action is ContextActionSpawnFx) && !(action is ContextActionChangeSharedValue) && !(action is ContextActionHealTarget)) return false;
                 }
                 return true;
             }
-            bool ok = Visit(buff, 0);
+            bool ok = Visit(buff, 0, true);
             cost = total;
+            grantsJudgmentSwitch = ok && judgmentSwitch;
             return ok;
         }
 
-        private static bool TryToggleSpendWindow(ActivatableAbility toggle, float expectedRounds,
+        private static bool TryToggleSpendWindow(TacticalContext ctx, ActivatableAbility toggle,
             out ValueModel.ToggleSpendWindow window, out string note)
         {
             window = default;
@@ -458,11 +481,13 @@ namespace CompanionAI_Pathfinder.Tactics
                 var pairs = toggle.SelectComponentsWithRuntime<ActivatableAbilityResourceLogic>().ToArray();
                 if (all.Length == 0)
                 {
-                    window = ValueModel.ToggleResourceWindow(ValueModel.ToggleSpendCadence.Free, 0, 0, toggle.IsStarted, expectedRounds);
+                    window = ValueModel.ToggleResourceWindow(ValueModel.ToggleSpendCadence.Free, 0, 0, toggle.IsStarted, ctx.ExpectedRounds);
                     return true;
                 }
-                if (all.Length != 1 || pairs.Length != 1 || !KnownToggleSpendPatches(out bool ttt))
+                var contract = ToggleSpendContractFor(ctx);
+                if (all.Length != 1 || pairs.Length != 1 || !contract.Known)
                 { note = "multiple/custom spend fallback"; return false; }
+                bool ttt = contract.Ttt;
                 var logic = pairs[0].Component;
                 var resource = logic.RequiredResource;
                 if (resource == null) { note = "missing resource fallback"; return false; }
@@ -471,6 +496,7 @@ namespace CompanionAI_Pathfinder.Tactics
                 if (!TryToggleUnitCost(logic, f => toggle.Owner.HasFact(f), packedCrit, out int cost))
                 { note = "unread cost fallback"; return false; }
                 ValueModel.ToggleSpendCadence cadence;
+                bool judgmentSwitch = toggle.Owner.State.Features.JudgmentSwitch;
                 switch (logic.SpendType)
                 {
                     case ActivatableAbilityResourceLogic.ResourceSpendType.Start:
@@ -481,8 +507,12 @@ namespace CompanionAI_Pathfinder.Tactics
                     case ActivatableAbilityResourceLogic.ResourceSpendType.OncePerHour: cadence = ValueModel.ToggleSpendCadence.Hour; break;
                     case ActivatableAbilityResourceLogic.ResourceSpendType.Judgment:
                         cadence = ValueModel.ToggleSpendCadence.ExternalActivation;
-                        if (!toggle.IsStarted && !TryToggleActivationCost(toggle.Blueprint.Buff, resource, f => toggle.Owner.HasFact(f), out cost))
-                        { note = "external activation cost fallback"; return false; }
+                        if (!toggle.IsStarted)
+                        {
+                            if (!TryToggleActivationCost(toggle.Blueprint.Buff, resource, f => toggle.Owner.HasFact(f), out cost, out bool addsSwitch))
+                            { note = "external activation cost fallback"; return false; }
+                            judgmentSwitch |= addsSwitch;
+                        }
                         break;
                     default:
                         // Attack/Hit/Crit modes in the supplied class/mythic corpus are not command-activated; keep that
@@ -499,13 +529,13 @@ namespace CompanionAI_Pathfinder.Tactics
                     counter = data.RoundsToSpendingCounter;
                 }
                 int quantity = toggle.Owner.Resources.GetResourceAmount(resource);
-                window = ValueModel.ToggleResourceWindow(cadence, quantity, cost, toggle.IsStarted, expectedRounds,
+                window = ValueModel.ToggleResourceWindow(cadence, quantity, cost, toggle.IsStarted, ctx.ExpectedRounds,
                     toggle.TimeToNextRound, counter, ttt && cadence == ValueModel.ToggleSpendCadence.Activation);
                 // Native OnAttack/OnHit/OnCrit can stop any DeactivateImmediately toggle once IsAvailable fails,
                 // even a paid timed mode. Its last paid block then depends on future actions, not just its timer.
                 // Keep the old fallback at that boundary; do not advertise a whole minute with an empty pool.
-                if (toggle.Blueprint.DeactivateImmediately && cost > 0 && window.Rounds > 0f &&
-                    quantity - window.StartCost - window.ContinueCost <= 0)
+                bool needsPositivePool = logic.SpendType != ActivatableAbilityResourceLogic.ResourceSpendType.Judgment || !judgmentSwitch;
+                if (ValueModel.ToggleEventLifetimeUnknown(toggle.Blueprint.DeactivateImmediately, quantity, cost, window, needsPositivePool))
                 { note = "depleted-pool event lifetime fallback"; return false; }
                 note = $"{quantity} units left, {cost}/{cadence}, start {window.StartCost}, upcoming {window.ContinueCost}";
                 return true;
@@ -531,7 +561,7 @@ namespace CompanionAI_Pathfinder.Tactics
             int level = Math.Max(1, unit.Descriptor?.Progression?.CharacterLevel ?? 1);
             // A toggle has no spell level: worth per round like a spell of half the character's level (unread effects).
             float perRound = ValueModel.BuffPerRound(Math.Max(1, level / 2));
-            bool priced = TryToggleSpendWindow(toggle, ctx.ExpectedRounds, out var spending, out string spendNote);
+            bool priced = TryToggleSpendWindow(ctx, toggle, out var spending, out string spendNote);
             if (priced && spending.Rounds <= 0f) { note = spendNote; return 0f; }
             int? resource = null;
             if (!priced) { try { resource = toggle.ResourceCount; } catch { } }
@@ -698,7 +728,7 @@ namespace CompanionAI_Pathfinder.Tactics
             // ★ v0.3.19: the player's own pre-fight choice too (the resource is spent for nothing either way); the caller
             // skips a toggle the player switched during this fight.
             if (p.Area == null) return;
-            bool priced = TryToggleSpendWindow(toggle, ctx.ExpectedRounds, out var spending, out string spendNote);
+            bool priced = TryToggleSpendWindow(ctx, toggle, out var spending, out string spendNote);
             int? resource = null;
             if (priced)
             {

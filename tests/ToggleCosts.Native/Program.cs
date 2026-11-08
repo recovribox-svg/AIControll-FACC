@@ -28,6 +28,7 @@ namespace ToggleCostsNative
         }
         private const BindingFlags Static = BindingFlags.NonPublic | BindingFlags.Static;
         private const BindingFlags Instance = BindingFlags.NonPublic | BindingFlags.Instance;
+        private static void PatchSnapshotProbe() => throw new InvalidOperationException("Metadata probe must not execute native callbacks.");
 
         private static int Main(string[] args)
         {
@@ -49,6 +50,34 @@ namespace ToggleCostsNative
             var patchArgs = new object[] { false };
             Check((bool)typeof(TacticalEngine).GetMethod("KnownToggleSpendPatches",Static).Invoke(null,patchArgs) && !(bool)patchArgs[0],
                 "native spend/cost/explicit callback members bind without initializing a provider");
+            var contractFor = typeof(TacticalEngine).GetMethod("ToggleSpendContractFor",Static) ?? throw new MissingMethodException("ToggleSpendContractFor");
+            var decision = new TacticalContext();
+            object Contract(TacticalContext ctx) => contractFor.Invoke(null,new object[]{ctx});
+            bool Known(object c) => (bool)c.GetType().GetField("Known").GetValue(c);
+            var initialContract = Contract(decision);
+            Check(Known(initialContract) && ReferenceEquals(initialContract,Contract(decision)), "one immutable patch inspection shared within a decision");
+            var emptyCallback = HarmonyLib.AccessTools.Method(typeof(ActivatableAbilityResourceLogic),
+                "Kingmaker.UnitLogic.ActivatableAbilities.IActivatableAbilitySpendResourceLogic.OnAbilityTurnOn");
+            // Exercise the metadata queried by production, without wrapping/executing a native method. Harmony's
+            // platform detour helper cannot run on this host. This pinned harness fixture is not patch application.
+            var harmonyAssembly = typeof(HarmonyLib.Harmony).Assembly;
+            var sharedState = harmonyAssembly.GetType("HarmonyLib.HarmonySharedState",throwOnError:true);
+            var patchState = (Dictionary<MethodBase,byte[]>)HarmonyLib.AccessTools.Field(sharedState,"state").GetValue(null);
+            var synthetic = new HarmonyLib.PatchInfo();
+            HarmonyLib.AccessTools.Method(typeof(HarmonyLib.PatchInfo),"AddPrefixes").Invoke(synthetic,new object[]{
+                "CompanionAI.C06.NativeFixture.PatchSnapshot",
+                new[]{new HarmonyLib.HarmonyMethod(typeof(Program).GetMethod("PatchSnapshotProbe",Static))}});
+            var serialize = HarmonyLib.AccessTools.Method(harmonyAssembly.GetType("HarmonyLib.PatchInfoSerialization",throwOnError:true),"Serialize");
+            byte[] saved;
+            lock(patchState) { patchState.TryGetValue(emptyCallback,out saved); }
+            try
+            {
+                lock(patchState) { patchState[emptyCallback]=(byte[])serialize.Invoke(null,new object[]{synthetic}); }
+                Check(ReferenceEquals(initialContract,Contract(decision)), "an existing decision keeps its inspected contract");
+                Check(!Known(Contract(new TacticalContext())), "a new decision detects unrecognized callback patch metadata");
+            }
+            finally { lock(patchState) { if(saved==null) patchState.Remove(emptyCallback); else patchState[emptyCallback]=saved; } }
+            Check(Known(Contract(new TacticalContext())), "a new decision rechecks after patch metadata is removed");
             var scoped = all.OfType<BlueprintActivatableAbility>().Where(b =>
                 ProfileAudit.Audit.Paths.TryGetValue(b,out var path) && (path.StartsWith("Classes/",StringComparison.Ordinal) || path.StartsWith("Mythic/",StringComparison.Ordinal)))
                 .Where(b => b.GetComponent<ActivatableAbilityResourceLogic>() != null).ToArray();
@@ -137,8 +166,12 @@ namespace ToggleCostsNative
                 var l = bp.GetComponent<ActivatableAbilityResourceLogic>();
                 bool Activation(HashSet<BlueprintUnitFact> own, int expected)
                 {
-                    var a = new object[] { bp.Buff, l.RequiredResource, new Func<BlueprintUnitFact,bool>(own.Contains), 0 };
-                    return (bool)activationCost.Invoke(null,a) && (int)a[3] == expected;
+                    var a = new object[] { bp.Buff, l.RequiredResource, new Func<BlueprintUnitFact,bool>(own.Contains), 0, false };
+                    bool ok=(bool)activationCost.Invoke(null,a);
+                    bool switchHeld=(bool)a[4] || own.Contains(watcher);
+                    var window=ValueModel.ToggleResourceWindow(ValueModel.ToggleSpendCadence.ExternalActivation,expected,expected,false,6);
+                    return ok && (int)a[3] == expected && switchHeld && window.Rounds == 6 &&
+                        !ValueModel.ToggleEventLifetimeUnknown(bp.DeactivateImmediately,expected,expected,window,!switchHeld);
                 }
                 var own = new HashSet<BlueprintUnitFact>(inquisitor); own.Remove(paid); own.Remove(watcher); own.Remove(l.FreeBlueprint);
                 Check(Activation(own,1), bp.name + " first activation spends one via watcher");
@@ -155,6 +188,18 @@ namespace ToggleCostsNative
             var alteredActions = Clone(originalActions);
             alteredActions.Activated = Clone(originalActions.Activated);
             alteredActions.Activated.Actions = originalActions.Activated.Actions.ToArray();
+            var temporary = Clone(smiting);
+            var temporaryActions = Clone(alteredActions);
+            temporaryActions.Activated = Clone(alteredActions.Activated);
+            temporaryActions.Activated.Actions = alteredActions.Activated.Actions.ToArray();
+            var temporaryWatcher = Clone(temporaryActions.Activated.Actions.OfType<ContextActionApplyBuff>().First());
+            temporaryWatcher.Permanent = temporaryWatcher.SameDuration = false;
+            temporaryActions.Activated.Actions[Array.FindIndex(temporaryActions.Activated.Actions,a => a is ContextActionApplyBuff)] = temporaryWatcher;
+            temporary.ComponentsArray = smiting.ComponentsArray.Select(c => c == originalActions ? temporaryActions : c).ToArray();
+            var temporaryArgs = new object[] { temporary, Logic("SmitingJudgmentAbilityMagic").RequiredResource,
+                new Func<BlueprintUnitFact,bool>(inquisitor.Contains),0,false };
+            Check((bool)activationCost.Invoke(null,temporaryArgs) && (int)temporaryArgs[3] == 1 && !(bool)temporaryArgs[4],
+                "a separately timed watcher does not certify JudgmentSwitch for the full toggle lifetime");
             var guard = Clone(alteredActions.Activated.Actions.OfType<Conditional>().First());
             guard.IfTrue = Clone(guard.IfTrue);
             guard.IfTrue.Actions = new GameAction[] { Find<BlueprintBuff>("JudgmentWatcherBuff").GetComponent<AddFactContextActions>()
@@ -163,7 +208,7 @@ namespace ToggleCostsNative
             alteredActions.Activated.Actions[guardIndex] = guard;
             altered.ComponentsArray = smiting.ComponentsArray.Select(c => c == originalActions ? alteredActions : c).ToArray();
             var unknownArgs = new object[] { altered, Logic("SmitingJudgmentAbilityMagic").RequiredResource,
-                new Func<BlueprintUnitFact,bool>(inquisitor.Contains),0 };
+                new Func<BlueprintUnitFact,bool>(inquisitor.Contains),0,false };
             Check(!(bool)activationCost.Invoke(null,unknownArgs), "unknown guard with unequal resource branches stays fallback");
             var customGuard = (DerivedFactGuard)RuntimeHelpers.GetUninitializedObject(typeof(DerivedFactGuard));
             var originalFactGuard = (Kingmaker.UnitLogic.Mechanics.Conditions.ContextConditionCasterHasFact)

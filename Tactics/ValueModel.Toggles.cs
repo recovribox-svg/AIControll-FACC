@@ -17,6 +17,13 @@ namespace CompanionAI_Pathfinder.Tactics
             { Rounds = rounds; NextPaymentRounds = next; StartCost = start; ContinueCost = continuing; StopSavesResource = saves; }
         }
 
+        /// <summary>Native event callbacks check availability after spending. JudgmentSwitch waives the one-point
+        /// requirement; an empty pool alone cannot end a Judgment while that mechanic is held.</summary>
+        public static bool ToggleEventLifetimeUnknown(bool deactivateImmediately, int quantity, int cost,
+            ToggleSpendWindow window, bool needsPositivePool) =>
+            needsPositivePool && deactivateImmediately && cost > 0 && window.Rounds > 0f &&
+            quantity - window.StartCost - window.ContinueCost <= 0;
+
         /// <summary>
         /// Native callbacks: Start/TurnOn pay once; timed modes pay at start and renew after their counter reaches zero;
         /// NewRound pays on each callback. An active toggle has already paid its start. The next callback may be due now.

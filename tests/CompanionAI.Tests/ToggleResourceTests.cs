@@ -74,6 +74,18 @@ namespace CompanionAI.Tests
         }
 
         [Fact]
+        public void LastJudgmentUseRetainsPaidTimeWhenItsWatcherWaivesThePoolRequirement()
+        {
+            var first = ToggleResourceWindow(ToggleSpendCadence.ExternalActivation,1,1,false,6);
+            Assert.Equal(1,first.StartCost); Assert.Equal(6,first.Rounds);
+            Assert.False(ToggleEventLifetimeUnknown(true,1,1,first,false));
+            Assert.True(ToggleEventLifetimeUnknown(true,1,1,first,true));
+            var oneShot = ToggleResourceWindow(ToggleSpendCadence.Activation,1,1,false,6,endsEmptyAfterStart:true);
+            Assert.Equal(0,oneShot.Rounds);
+            Assert.False(ToggleEventLifetimeUnknown(true,1,1,oneShot,true));
+        }
+
+        [Fact]
         public void RecurringPricesAreNotDroppedInEasyFights()
         {
             var w = ToggleResourceWindow(ToggleSpendCadence.Round, 20, 1, false, 4);
