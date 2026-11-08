@@ -31,5 +31,19 @@ namespace CompanionAI_Pathfinder.Tactics
         /// </summary>
         public static float SaveBoostShare(float before, float after) =>
             before > 0f && after > before ? (after - before) / before : 0f;
+
+        /// <summary>★ v0.3.30 competence2: Persistent - a passed save is rolled again at the same DC; resisting needs both.</summary>
+        public static float PersistentFail(float fail) => 1f - (1f - fail) * (1f - fail);
+
+        /// <summary>
+        /// ★ v0.3.30 competence2 (PR #20 review): what free Persistent adds, as a share of the save-dependent effect -
+        /// the same effect factor as a DC boost (half damage, Evasion, Improved Evasion), not a flat half for half-on-save.
+        /// Nothing for a save that always or never fails here.
+        /// </summary>
+        public static float PersistentBoostShare(float fail, bool halfOnSave, bool evasion = false, bool improved = false) =>
+            fail > 0f && fail < 1f
+                ? SaveBoostShare(SaveEffectFactor(fail, halfOnSave, evasion, improved),
+                                 SaveEffectFactor(PersistentFail(fail), halfOnSave, evasion, improved))
+                : 0f;
     }
 }

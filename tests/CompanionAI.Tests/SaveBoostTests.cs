@@ -150,6 +150,33 @@ namespace CompanionAI.Tests
             Assert.Equal(0f, ValueModel.SaveBoostShare(before, after));
         }
 
+        // ★ v0.3.30 competence2 (PR #20 review): free Persistent through the same save-effect factor as a DC boost.
+        [Fact]
+        public void Persistent_SaveNegates_GainsTheSecondRoll()
+        {
+            Assert.Equal(0.75f, ValueModel.PersistentFail(0.5f), 5);
+            Assert.Equal(0.5f, ValueModel.PersistentBoostShare(0.5f, halfOnSave: false), 5);   // .50 -> .75
+        }
+
+        [Fact]
+        public void Persistent_HalfDamage_IsNotAFlatHalf()
+        {
+            // Ordinary half damage: .75 -> .875 of the damage, +16.7 % (the old flat half said +25 %).
+            Assert.Equal(0.875f / 0.75f - 1f, ValueModel.PersistentBoostShare(0.5f, halfOnSave: true), 4);
+            // Evasion takes nothing on a pass: .50 -> .75, +50 % (the old flat half said +25 %).
+            Assert.Equal(0.5f, ValueModel.PersistentBoostShare(0.5f, halfOnSave: true, evasion: true), 4);
+            // Improved Evasion: .25 -> .375, also +50 %.
+            Assert.Equal(0.5f, ValueModel.PersistentBoostShare(0.5f, halfOnSave: true, evasion: true, improved: true), 4);
+        }
+
+        [Fact]
+        public void Persistent_NoGainWhenTheSaveCannotChange()
+        {
+            Assert.Equal(0f, ValueModel.PersistentBoostShare(0f, halfOnSave: false));
+            Assert.Equal(0f, ValueModel.PersistentBoostShare(1f, halfOnSave: true));
+            Assert.Equal(0f, ValueModel.PersistentBoostShare(float.NaN, halfOnSave: false));
+        }
+
         [Fact]
         public void AutomaticWillSuccess_ShadowOnlyDcDoesNotGain()
         {

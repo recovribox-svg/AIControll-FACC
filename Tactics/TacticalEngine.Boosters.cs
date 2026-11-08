@@ -268,14 +268,15 @@ namespace CompanionAI_Pathfinder.Tactics
             if (Has(Kingmaker.UnitLogic.Abilities.Metamagic.Persistent) && profile.Save != Kingmaker.EntitySystem.Stats.SavingThrowType.Unknown &&
                 main.Target != null && ctx.Unit.IsEnemy(main.Target))
             {
-                float fail = CombatMath.SaveFailChance(main.Ability, profile, main.Target);
-                if (fail > 0f && fail < 1f)
+                // ★ v0.3.30 competence2 (PR #20 review): resisting needs both saves; the gain goes through the same
+                // save-effect factor as a DC boost (half damage and Evasion), not a flat half for half-on-save spells.
+                bool halfDamage = profile.DealsDamage && profile.HalfOnSave && profile.ControlStrength == ControlStrength.None;
+                float gain = CombatMath.PersistentBoostShare(main.Ability, profile, main.Target, halfDamage,
+                                                             out float before, out float after);
+                if (gain > 0f)
                 {
-                    // Resisting needs both saves: the effect lands at 1 - (1 - fail)^2 instead of fail.
-                    float gain = 1f - fail;
-                    if (profile.HalfOnSave && profile.ControlStrength == ControlStrength.None) gain *= 0.5f;
                     share += gain;
-                    parts.Add($"persistent: lands {fail:P0} -> {1f - (1f - fail) * (1f - fail):P0}");
+                    parts.Add($"persistent: {(halfDamage ? "damage" : "effect")} save factor {before:P0} -> {after:P0}");
                 }
             }
             // ★ v0.3.21 (gaps): Extend - the next buff or control lasts twice as long: the rounds that adds within the fight.

@@ -42,8 +42,9 @@ namespace ProfileAudit
             var effect = Method(typeof(CombatMath), "EffectChanceCore", 6);
             var factor = Method(typeof(CombatMath), "SaveEffectFactor", 5);
             // There is also a four-argument MechanicsContext save overload; select the actual DC-offset ability route.
+            // ★ v0.3.30 competence2: five parameters since the disbelief save opts out of Persistent.
             var dcSave = typeof(CombatMath).GetMethods(flags).SingleOrDefault(m => m.Name == "SaveFailChance" &&
-                m.GetParameters().Length == 4 && m.GetParameters()[0].ParameterType.Name == "AbilityData");
+                m.GetParameters().Length == 5 && m.GetParameters()[0].ParameterType.Name == "AbilityData");
             var pureFactor = Method(typeof(ValueModel), "SaveEffectFactor", 4);
             var pureSave = Method(typeof(ValueModel), "SpellSaveFailChance", 4);
             Calls(boost, marginal, "BoostGain -> DcBoostShare");
@@ -60,6 +61,11 @@ namespace ProfileAudit
             Calls(shadow, Method(typeof(ValueModel), "ShadowEffectFactor", 2), "shadow disbelief -> shared reality math");
             Calls(effect, Method(typeof(CombatMath), "ShadowShare", 2), "ordinary EffectChance -> shadow share");
             Calls(Method(typeof(CombatMath), "ShadowShare", 3), shadow, "ordinary shadow route -> shared disbelief forecast");
+            // ★ v0.3.30 competence2 (PR #20 review): free Persistent on the next spell uses the same save-effect factor.
+            var persistent = Method(typeof(CombatMath), "PersistentBoostShare", 6);
+            Calls(Method(typeof(TacticalEngine), "MetamagicGain", 5), persistent, "MetamagicGain -> Persistent save-factor share");
+            Calls(persistent, Method(typeof(ValueModel), "PersistentBoostShare", 4), "Persistent share -> shared pure math");
+            Calls(persistent, pureFactor, "Persistent share -> shared save outcome factor");
             lines.Insert(0, $"SAVE-BOOST: {checks} compiled call-path checks, failures {bad}; actor/native outcome NOT TESTED");
             failures = bad;
             return lines;

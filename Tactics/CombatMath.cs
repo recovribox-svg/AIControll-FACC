@@ -1487,18 +1487,32 @@ namespace CompanionAI_Pathfinder.Tactics
             after = ValueModel.SaveEffectFactor(failAfter, half, evasion, improved);
             // Factor.GetInt is an existing native settings query: evaluate it once, then reuse that value for both DCs.
             float reality = ShadowRealityFactor(ability);
-            if (profile.Save == SavingThrowType.Will)
-            {
-                // The ordinary Will save and disbelief use the same forecast inputs; reuse these scalar results.
-                before *= ValueModel.ShadowEffectFactor(failBefore, reality);
-                after *= ValueModel.ShadowEffectFactor(failAfter, reality);
-            }
-            else
-            {
-                before *= ShadowShare(ability, target, 0, reality);
-                after *= ShadowShare(ability, target, Math.Max(0, dcBonus), reality);
-            }
+            // ★ v0.3.30 competence2 (PR #20 review): disbelief is its own Will save at the spell's DC
+            // (MechanicsContext.TryAffectByShadow), never re-rolled for Persistent, so it is not the ordinary save's
+            // number even for a Will spell. ShadowShare answers 1 at once for a spell that is not a shadow copy.
+            before *= ShadowShare(ability, target, 0, reality);
+            after *= ShadowShare(ability, target, Math.Max(0, dcBonus), reality);
             return ValueModel.SaveBoostShare(before, after);
+        }
+
+        /// <summary>
+        /// ★ v0.3.30 competence2 (PR #20 review): the marginal save contribution of free Persistent on the next spell -
+        /// a passed save is rolled again at the same DC (ContextActionSavingThrow) - through the same save-effect factor
+        /// as a DC boost: half damage and the target's Evasion / Improved Evasion change what a failed save is worth.
+        /// Disbelief is not re-rolled, so a shadow copy's reality cancels out of the relative gain.
+        /// </summary>
+        internal static float PersistentBoostShare(AbilityData ability, AbilityProfile profile, UnitEntityData target,
+                                                   bool damage, out float before, out float after)
+        {
+            before = after = 0f;
+            if (profile.Save == SavingThrowType.Unknown || target == null) return 0f;
+            bool half = damage && profile.HalfOnSave;
+            bool evasion = false, improved = false;
+            if (half) EvasionOf(target, profile.Save, out evasion, out improved);
+            float fail = SaveFailChance(ability, profile.Save, target);
+            before = ValueModel.SaveEffectFactor(fail, half, evasion, improved);
+            after = ValueModel.SaveEffectFactor(ValueModel.PersistentFail(fail), half, evasion, improved);
+            return ValueModel.PersistentBoostShare(fail, half, evasion, improved);
         }
 
         /// <summary>
@@ -1834,7 +1848,8 @@ namespace CompanionAI_Pathfinder.Tactics
             SaveFailChance(ability, save, target, 0);
 
         /// <summary>A read-only DC forecast: add to the actual DC before natural-roll limits and Persistent.</summary>
-        internal static float SaveFailChance(AbilityData ability, SavingThrowType save, UnitEntityData target, int dcBonus)
+        internal static float SaveFailChance(AbilityData ability, SavingThrowType save, UnitEntityData target, int dcBonus,
+                                             bool allowPersistent = true)
         {
             if (save == SavingThrowType.Unknown || target == null) return 1f;
             try
@@ -1858,7 +1873,7 @@ namespace CompanionAI_Pathfinder.Tactics
                 // ★ v0.3.18 (AA-4): Persistent - a passed save is rolled again (AbilityEffectRunAction,
                 // ContextActionSavingThrow): the target resists only by passing both.
                 bool persistent = false;
-                try { persistent = ability.HasMetamagic(Metamagic.Persistent); }
+                try { persistent = allowPersistent && ability.HasMetamagic(Metamagic.Persistent); }
                 catch { }
                 return ValueModel.SpellSaveFailChance(dc, bonus, persistent);
             }
@@ -2207,7 +2222,8 @@ namespace CompanionAI_Pathfinder.Tactics
         private static float ShadowShare(AbilityData ability, UnitEntityData target, int dcBonus, float reality)
         {
             if (reality <= 0f || reality >= 1f) return 1f;
-            float fail = target != null ? SaveFailChance(ability, SavingThrowType.Will, target, dcBonus) : 0.5f;
+            // ★ v0.3.30 competence2: the disbelief save is never re-rolled for Persistent (TryAffectByShadow).
+            float fail = target != null ? SaveFailChance(ability, SavingThrowType.Will, target, dcBonus, allowPersistent: false) : 0.5f;
             return ValueModel.ShadowEffectFactor(fail, reality);
         }
 
