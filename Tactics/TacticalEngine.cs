@@ -43,6 +43,8 @@ namespace CompanionAI_Pathfinder.Tactics
         public UnitEntityData Target;
         public Vector3? Point;
         public AbilityData Ability;
+        /// <summary>★ v0.3.30 competence3: a revealing area aimed where these hidden enemies vanished (HiddenEnemies.NoteTried).</summary>
+        internal List<UnitEntityData> Reveals;
         public bool FullAttack;
         public bool NeedsMove;
         /// <summary>★ v0.3.19 (test5): times the game gathers power before this blast (CombatMath.GatherPowerCount).</summary>
@@ -150,10 +152,15 @@ namespace CompanionAI_Pathfinder.Tactics
         public List<UnitEntityData> Engagers = new List<UnitEntityData>();
 
         public List<UnitEntityData> Enemies = new List<UnitEntityData>();
+        /// <summary>★ v0.3.30 competence3: enemies in the fight the party cannot see because invisibility hides them
+        /// (in stealth for the party, Invisible condition) - only a revealing area can bring them back (TacticalEngine.Hidden.cs).</summary>
+        public List<UnitEntityData> HiddenEnemies = new List<UnitEntityData>();
         /// <summary>★ v0.3.28: each ally's chance to go down with the unit where it stands (PartyShift), once per decision.</summary>
         public Dictionary<UnitEntityData, float> PartyDropHere = new Dictionary<UnitEntityData, float>();
         /// <summary>★ v0.3.28 test 2: the unit's own chance to go down where it stands (NaN until worked out).</summary>
         public float OwnDropHere = float.NaN;
+        /// <summary>★ v0.3.30 competence3: what the drop model reads that no position changes, once per decision.</summary>
+        internal TacticalEngine.DropTable DropTable;
         /// <summary>★ v0.3.28: the best enemy the unit can attack next turn from where it stands, for advances (AdvanceWorth).</summary>
         public UnitEntityData StayEnemy;
         public float StayValue, StayReach;
@@ -332,6 +339,18 @@ namespace CompanionAI_Pathfinder.Tactics
             {
                 timings?.Mark(DecisionStage.Context);
                 if (preview) return null;
+                // ★ v0.3.30 competence3: the only enemies left are hidden by invisibility - reveal them where they vanished.
+                if (ctx != null && ctx.HiddenEnemies.Count > 0)
+                {
+                    Candidate reveal = null;
+                    try { reveal = RevealHidden(ctx); }
+                    catch (Exception ex) { Main.Verbose($"[Hidden] {unit.CharacterName}: {ex.Message}"); }
+                    if (reveal != null)
+                    {
+                        LogDecision(ctx, new List<Candidate> { reveal }, reveal);
+                        return reveal;
+                    }
+                }
                 if (CombatMemory.IsRealTime) Main.Verbose($"[Tactics] {unit.CharacterName}: no reachable enemies - wait");
                 else Main.Log($"[Tactics] {unit.CharacterName}: no reachable enemies - end turn");
                 return null;
@@ -900,7 +919,11 @@ namespace CompanionAI_Pathfinder.Tactics
                 {
                     if (other.Descriptor.State.IsUnconscious) continue;
                     if (UnitCommand.CommandTargetUntargetable(unit, other)) continue;
-                    if (other.InStealthFor(unit.Group)) continue;
+                    if (other.InStealthFor(unit.Group))
+                    {
+                        if (other.Descriptor.State.HasCondition(UnitCondition.Invisible)) ctx.HiddenEnemies.Add(other);
+                        continue;
+                    }
                     ctx.Enemies.Add(other);
                 }
                 else if (other.IsPlayerFaction || other == unit)
@@ -1276,68 +1299,32 @@ namespace CompanionAI_Pathfinder.Tactics
             var threats = new List<(float chance, float drop)>();
             List<(UnitEntityData, float)> heavy = null;   // ★ v0.3.29 test 2 (R3): melee full attacks that land there
             List<int> heavyAt = null;
-            foreach (var enemy in ctx.Enemies)
+            // ★ v0.3.30 competence3: what does not depend on where anyone stands is read once per decision
+            // (TacticalEngine.DropModel.cs); only the unit asked about and the walker are put where they would stand.
+            var table = DropTableOf(ctx);
+            int whoIndex = table.IndexOf(who);
+            int moverIndex = mover == who ? -1 : table.IndexOf(mover);
+            foreach (var row in table.Rows)
             {
-                if (CombatMath.IsDisabled(enemy)) continue;   // it attacks nobody before it acts again
-                // ★ v0.3.28 test 15 (author-approved): a swarm strikes everyone in its space, it picks nobody
-                // (TacticalEngine.Swarms.cs).
-                var swarmArea = CombatMath.SwarmAreaOf(enemy);
-                if (swarmArea != null)
+                if (row.Skip) continue;
+                var enemy = row.Enemy;
+                if (row.Swarm != null)
                 {
-                    var swarm = SwarmDrop(ctx, enemy, swarmArea, who, at, PositionOf, hp);
+                    var swarm = SwarmDrop(ctx, enemy, row.Swarm, who, at, PositionOf, hp);
                     if (swarm.chance > 0f) threats.Add(swarm);
                     continue;
                 }
-                bool ranged;
-                float zone, reach = -1f;
-                int attack = 0;
-                try
-                {
-                    ranged = (enemy.Body?.PrimaryHand?.MaybeWeapon?.Blueprint?.IsRanged ?? false) ||
-                             (enemy.Descriptor?.Spellbooks?.Any() ?? false);
-                    zone = ranged ? 20f : enemy.CurrentSpeedMps * 3f + 2f + enemy.Corpulence;
-                    var weapon = ranged ? null : enemy.GetThreatHandMelee()?.Weapon;
-                    if (weapon != null) reach = Math.Max(1f, weapon.AttackRange.Meters) + enemy.Corpulence + 0.5f;
-                    attack = (enemy.Stats.BaseAttackBonus?.ModifiedValue ?? 0) +
-                             Math.Max(enemy.Stats.Strength?.Bonus ?? 0, enemy.Stats.Dexterity?.Bonus ?? 0);
-                }
-                catch
-                {
-                    ranged = false;
-                    zone = 11f;
-                }
-                float reachSum = 0f, zoneSum = 0f, weightSum = 0f, whoWeight = 0f;
-                bool whoInReach = false, whoInZone = false;
-                foreach (var a in ctx.Allies)
-                {
-                    float w;
-                    // ★ v0.3.28 test 3: past concealment and mirror images (CombatMath.LandsPastDefences), and +4 in melee
-                    // against a prone unit (the game's RuleCalculateAC; the weapon estimate reads that rule itself).
-                    try
-                    {
-                        bool prone = !ranged && (a.Descriptor?.State?.Prone?.Active ?? false);
-                        w = ValueModel.HitWeight(attack + (prone ? 4 : 0), a.Stats.AC.ModifiedValue) * CombatMath.LandsPastDefences(enemy, a);
-                    }
-                    catch { w = 0.5f; }
-                    weightSum += w;
-                    if (a == who) whoWeight = w;
-                    var p = PositionOf(a);
-                    if (reach > 0f && HorizontalDistance(enemy.Position, p) <= reach + a.Corpulence)
-                    {
-                        reachSum += w;
-                        if (a == who) whoInReach = true;
-                    }
-                    if (Vector3.Distance(enemy.Position, p) <= zone + a.Corpulence)
-                    {
-                        zoneSum += w;
-                        if (a == who) whoInZone = true;
-                    }
-                }
-                float chance = ValueModel.TargetChance(whoInReach, reach > 0f ? reachSum : 0f, whoInZone, zoneSum, whoWeight);
+                float reachSum = row.ReachSum, zoneSum = row.ZoneSum;
+                Replace(table, row, moverIndex, moverAt, ref reachSum, ref zoneSum, out _, out _);
+                Replace(table, row, whoIndex, at, ref reachSum, ref zoneSum, out bool whoInReach, out bool whoInZone);
+                float whoWeight = whoIndex >= 0 ? row.Weight[whoIndex] : 0f;
+                bool ranged = row.Ranged;
+                float reach = row.Reach;
+                float chance = ValueModel.TargetChance(whoInReach, reach > 0f ? Settled(reachSum) : 0f, whoInZone, Settled(zoneSum), whoWeight);
                 if (chance <= 0f) continue;
-                float mean = weightSum / Math.Max(1, ctx.Allies.Count);
+                float mean = row.WeightSum / Math.Max(1, ctx.Allies.Count);
                 // ★ v0.3.28 test 7: as much of its round as reaches the spot (StrikeShareAt).
-                float threat = CombatMath.Threat(enemy) * ctx.DangerScale * (mean > 0f ? whoWeight / mean : 1f) *
+                float threat = row.Threat * (mean > 0f ? whoWeight / mean : 1f) *
                                (ranged ? 1f : StrikeShareAt(enemy, who, at));
                 if (!ranged && FullStrikeLands(enemy, who, at))
                 {
@@ -4319,6 +4306,14 @@ namespace CompanionAI_Pathfinder.Tactics
                             UniqueKeptNote(unit, ability, holder, $"{ally.CharacterName} {worth:0.#} is not clearly better than {kept:0.#} there");
                             continue;
                         }
+                        // ★ v0.3.30 competence3: and it settles where it was put for a few rounds (ValueModel.UniqueMoveAllowed).
+                        int? placed = CombatMemory.LastCastRound(unit, ability, holder);
+                        int? since = placed.HasValue ? ctx.Round - placed.Value : (int?)null;
+                        if (!ValueModel.UniqueMoveAllowed(since, gain))
+                        {
+                            UniqueKeptNote(unit, ability, holder, $"put there {since} round(s) ago; moving to {ally.CharacterName} gains only {gain:0.#}");
+                            continue;
+                        }
                         reasons.Add($"from {holder.CharacterName} -{kept:0.#}");
                         worth = gain;
                     }
@@ -5298,6 +5293,7 @@ namespace CompanionAI_Pathfinder.Tactics
             // ★ v0.3.28 test 6: a kinetic archer's blast with its attack modes (ChooseBlastAttackModes); the bow attack rolls
             // when the projectile leaves, after the cast.
             if (issued && c.Kind == CandidateKind.Ability && c.Modes != null) ApplyModes(unit, c);
+            if (issued && c.Reveals != null) HiddenEnemies.NoteTried(c.Reveals);   // ★ v0.3.30 competence3: once per vanishing
             if (issued && c.Kind == CandidateKind.Ability)
             {
                 CombatMemory.RecordCast(unit, c.Ability, c.Target, command);

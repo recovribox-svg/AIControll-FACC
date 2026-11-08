@@ -42,6 +42,7 @@
     <Compile Include="..\..\Tactics\ObserverRules.cs" Link="ObserverRules.cs" />
     <Compile Include="..\..\Tactics\OptionalApiBinding.cs" Link="OptionalApiBinding.cs" />
     <Compile Include="..\..\Tactics\UserAbilityRules.cs" Link="UserAbilityRules.cs" />
+    <Compile Include="..\..\Tactics\HiddenRules.cs" Link="HiddenRules.cs" />
     <Compile Include="..\..\Settings\AbilityBlocklist.cs" Link="AbilityBlocklist.cs" />
   </ItemGroup>
   <ItemGroup>

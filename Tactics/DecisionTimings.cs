@@ -12,6 +12,11 @@ namespace CompanionAI_Pathfinder.Tactics
         private long previous;
         private long context, weapons, abilities, kinetic, movement, preparation, boosts, infusions, finish;
         private long activeInfusions;
+        // ★ v0.3.30 competence3: heap growth per stage (negative when the game's memory clean-up ran in it), so a slow line
+        // says where a decision's allocations come from (the competence2 logs: up to 33 MB a decision, the costliest
+        // abilities only a few MB of it).
+        private long heapAtMark = System.GC.GetTotalMemory(false);
+        private readonly long[] stageBytes = new long[9];
         private int activeCalls;
 
         internal DecisionTimings() { previous = started; }
@@ -22,6 +27,9 @@ namespace CompanionAI_Pathfinder.Tactics
         {
             long now = Stopwatch.GetTimestamp(), ticks = now - previous;
             previous = now;
+            long heap = System.GC.GetTotalMemory(false);
+            stageBytes[(int)stage] += heap - heapAtMark;
+            heapAtMark = heap;
             switch (stage)
             {
                 case DecisionStage.Context: context += ticks; break;
@@ -84,6 +92,9 @@ namespace CompanionAI_Pathfinder.Tactics
             $"paths/policy={Milliseconds(preparation):F1}, marks/boosts={Milliseconds(boosts):F1}, infusion-search={Milliseconds(infusions):F1}, " +
             $"finish={Milliseconds(finish):F1}; active-infusion appraisal={Milliseconds(activeInfusions):F1} ({activeCalls} recipient calls, " +
             "included in enclosing stages, not additional time)" +
+            $"; stage heap KB: context {stageBytes[0] / 1024}, weapons {stageBytes[1] / 1024}, abilities {stageBytes[2] / 1024}, " +
+            $"kinetic {stageBytes[3] / 1024}, movement {stageBytes[4] / 1024}, paths {stageBytes[5] / 1024}, boosts {stageBytes[6] / 1024}, " +
+            $"infusions {stageBytes[7] / 1024}, finish {stageBytes[8] / 1024}" +
             $"; abilities scored={scored}, skipped unaffordable={skipped}" +
             (costlyNames[0] == null ? "" : "; costliest: " + string.Join(", ", System.Linq.Enumerable.Range(0, 3)
                 .Where(i => costlyNames[i] != null)

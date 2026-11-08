@@ -4513,3 +4513,39 @@ reproduced its tests, build and package identity, then ran its compiled readers 
 
 Test ZIP `AI-Control-FACC-v0.3.30-dev-competence2-7e89a16-UMM-test.zip` (MVID `0ed42ac5-d9ce-4f88-a339-388028b036c3`);
 522 unit tests, 11 inventory tests; offline audit 4031 blueprints, 0 errors. Not played.
+
+## 126. competence2 played: invisible enemies, an eleven-member party, Profane Invocation, bomb damage (competence3)
+
+The author played the competence2 build (MVID `0ed42ac5`) on a higher enemy difficulty with an eleven-member party: 6
+turn-based and 8 real-time fights, no mod errors. Notes from the author: the party idled while the last enemy was invisible,
+and Profane Invocation was still repeated now and then.
+
+- **Hidden enemies (turn-based fight 3, ~20 idle rounds).** A Cultist Conjurer held prone in Orvath's Grease and Entangle
+  turned invisible. The game hides an invisible unit in stealth (`UnitStealthController`: an enemy spots it only by seeing
+  invisibility with sight, blindsense, standing next to it, or a Perception roll against its Stealth +20), and every party
+  turn ended "no reachable enemies". Orvath had Faerie Fire: its buff (like Glitterdust's) makes the creatures in it immune
+  to the Invisible condition (`AddConditionImmunity`), which ends that stealth on the next stealth tick. Now, while no enemy
+  can be seen and an enemy in the fight is hidden by invisibility, an ally aims such an area where the party saw it vanish
+  (`HiddenEnemies`, the game's `IUnitStealthHandler`, only for enemies the party had in its memory), from where it stands,
+  once per vanishing, cheapest source first (`TacticalEngine.Hidden.cs`, `HiddenRules`, unit-tested). The engine never reads
+  where a hidden enemy really is. Without such a spell the party still waits; walking to the spot to find it by the
+  adjacency rule is a movement change and is left to the author (proposal in the review notes).
+- **Decision cost with eleven members.** Real-time decisions went from a median of 25-35 ms (five members, v0.3.29) to
+  80-90 ms; Aid Another's touch approach alone cost 70-115 ms a decision (2.6 ms before). `StandingDropChance` read every
+  ally's hit weight, concealment and reach for every enemy, and `PartyShift` asks it for every ally at every priced spot -
+  allies x enemies x allies per spot. Those reads are now one table per decision (`TacticalEngine.DropModel.cs`); a spot
+  re-places only the asking unit and the walker. Same numbers. Slow-decision lines now show heap growth per stage (decisions
+  allocated up to 33 MB, mostly outside the costliest abilities; the 1.4-1.6 s spikes were garbage collections).
+- **Profane Invocation moved 5-10 times a real-time fight**, each 6-second span, for net gains of 1.2-3.3 (Constitution went
+  Knight Commander -> Aeiluvetar -> Knight Commander within three spans). A unique buff its caster put on an ally in this
+  fight now stays there for three rounds unless the move gains at least 5 (`ValueModel.UniqueMoveAllowed`).
+- **Bomb damage estimated at a third.** The Alchemist's Throw Anything puts `AlchemistThrowAnythingBuff`
+  (`DamageBonusConditional`, +Intelligence) on the caster as a bomb or splash weapon is cast (`AddAbilityUseTrigger`); the
+  estimate never saw it (combat log "1d6 + 9", estimate 1d6 = 3.5, dealt 10-12). Ability damage now adds such cast-time
+  bonuses (the game's trigger filter, unconditional bonuses from a constant or a caster stat) and Point-Blank Shot
+  (`DistanceDamageBonus`) for projectiles with an attack roll (`CombatMath.CastBonus.cs`); kinetic blasts keep their learned
+  share. ProfileAudit CAST-BONUS also finds Arcane Bomb, Targeted Bomb Admixture and Underground Chemist.
+- **Known, unchanged:** Orvath's burn consequences stay on the older model - DarkCodex's Elemental Scion patch replaces
+  `BurnNumberProperty` with its own getter, which the reader does not read (fail-closed, as before competence2).
+
+ProfileAudit REVEAL and CAST-BONUS; 531 unit tests.

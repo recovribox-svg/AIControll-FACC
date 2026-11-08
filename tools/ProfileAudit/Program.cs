@@ -205,6 +205,16 @@ namespace ProfileAudit
             foreach (var line in burnLines) Console.WriteLine(line);
             File.WriteAllText(output, string.Join(Environment.NewLine, burnLines) + Environment.NewLine + Environment.NewLine + File.ReadAllText(output));
             blocklistFailures += burnFailures;
+            // ★ v0.3.30 competence3: buffs that end invisibility (Faerie Fire, Glitterdust).
+            var revealLines = RevealCheck.Run(loaded.Values, out int revealFailures);
+            foreach (var line in revealLines) Console.WriteLine(line);
+            File.WriteAllText(output, string.Join(Environment.NewLine, revealLines) + Environment.NewLine + Environment.NewLine + File.ReadAllText(output));
+            blocklistFailures += revealFailures;
+            // ★ v0.3.30 competence3: cast-time damage bonuses (Throw Anything).
+            var castBonusLines = CastBonusCheck.Run(loaded.Values, out int castBonusFailures);
+            foreach (var line in castBonusLines) Console.WriteLine(line);
+            File.WriteAllText(output, string.Join(Environment.NewLine, castBonusLines) + Environment.NewLine + Environment.NewLine + File.ReadAllText(output));
+            blocklistFailures += castBonusFailures;
             if (failed > 0)
             {
                 string partial = $"PARTIAL: loaded {loaded.Count}, failed {failed}, allowed {options.AllowFailures}. Failed blueprints:";

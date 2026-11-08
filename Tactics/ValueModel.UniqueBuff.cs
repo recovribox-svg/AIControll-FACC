@@ -26,5 +26,28 @@ namespace CompanionAI_Pathfinder.Tactics
             if (newWorth <= kept * BuffSwitchMargin) return 0f;
             return newWorth - kept;
         }
+
+        /// <summary>
+        /// ★ v0.3.30 competence3 (author's play-test note: Profane Invocation still repeated): rounds a unique buff its caster put
+        /// on an ally in this fight stays there before it may move again. The competence2 real-time log moved invocations 5-10
+        /// times a fight - every 6-second span, for net gains of 1.2-3.3, and one Constitution buff went Knight Commander ->
+        /// Aeiluvetar -> Knight Commander within three spans - as the fight's numbers shifted.
+        /// </summary>
+        public const int UniqueSettleRounds = 3;
+
+        /// <summary>A move gaining at least this much is taken before the buff has settled (an ally about to drop).</summary>
+        public const float UniqueSettleOverride = 5f;
+
+        /// <summary>
+        /// A unique buff may leave its holder: the move gains something (<see cref="BuffSwitchGain"/>) and the buff was not put
+        /// there in this fight within <see cref="UniqueSettleRounds"/> (<paramref name="roundsSincePlaced"/> null: not by this
+        /// caster in this fight), or it gains at least <see cref="UniqueSettleOverride"/>.
+        /// </summary>
+        public static bool UniqueMoveAllowed(int? roundsSincePlaced, float gain)
+        {
+            if (float.IsNaN(gain) || !(gain > 0f)) return false;
+            if (!roundsSincePlaced.HasValue || roundsSincePlaced.Value >= UniqueSettleRounds) return true;
+            return gain >= UniqueSettleOverride;
+        }
     }
 }

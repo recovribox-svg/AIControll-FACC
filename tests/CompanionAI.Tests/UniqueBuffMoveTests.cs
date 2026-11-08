@@ -38,5 +38,31 @@ namespace CompanionAI.Tests
             Assert.Equal(0f, ValueModel.BuffSwitchGain(float.NaN, 1f));
             Assert.Equal(0f, ValueModel.BuffSwitchGain(5f, float.NaN));
         }
+    
+        // ★ v0.3.30 competence3: a unique buff settles where it was put.
+        [Fact]
+        public void PutThisFightLessThanThreeRoundsAgo_SmallGainStays()
+        {
+            Assert.False(ValueModel.UniqueMoveAllowed(0, 3.3f));
+            Assert.False(ValueModel.UniqueMoveAllowed(2, 2.2f));
+        }
+
+        [Fact]
+        public void SettledOrNotPutByThisCasterThisFight_Moves()
+        {
+            Assert.True(ValueModel.UniqueMoveAllowed(3, 1.2f));
+            Assert.True(ValueModel.UniqueMoveAllowed(null, 1.2f));
+        }
+
+        /// <summary>The competence2 log: Constitution worth 21.1 on Tuvel, badly hurt, moves at once.</summary>
+        [Fact]
+        public void ALargeGain_MovesBeforeItSettles() => Assert.True(ValueModel.UniqueMoveAllowed(1, 21.1f));
+
+        [Fact]
+        public void NoGain_NeverMoves()
+        {
+            Assert.False(ValueModel.UniqueMoveAllowed(null, 0f));
+            Assert.False(ValueModel.UniqueMoveAllowed(5, float.NaN));
+        }
     }
 }

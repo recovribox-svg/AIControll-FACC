@@ -428,6 +428,7 @@ namespace CompanionAI_Pathfinder.Tactics
             StuckSpots.Clear();   // ★ v0.3.29 test 6
             OutOfWalkingReachTargets.Clear();
             NoSights.Clear();
+            HiddenEnemies.Reset();   // ★ v0.3.30 competence3
             CombatMath.OnlyDisabledEnemiesLeft = false;
             ProneStays.Clear();
             BurnReliefs.Clear();

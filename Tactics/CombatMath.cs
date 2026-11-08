@@ -827,6 +827,8 @@ namespace CompanionAI_Pathfinder.Tactics
                         }
                         else avg = EvaluateDice(dmg.Value, ctx, Math.Min(cl, 10), maximize, empower);
                         avg += KineticDamageBonus(ability, dmg, profile.NeedsAttackRoll || bladeWeapon != null, bladeWeapon);
+                        // ★ v0.3.30 competence3: what the game adds at the roll (Throw Anything's cast-time buff, Point-Blank Shot).
+                        avg += CastDamageBonus(ability, target);
                         // ★ v0.3.28 test 6: an attack mode's weapon damage (Deadly Aim) on a kinetic archer's blast - the game
                         // adds the bow's damage modifiers to each of its damage actions (ContextActionDealDamage.GetDamageInfo).
                         if (extraWeaponDamage != 0f) avg += extraWeaponDamage;
