@@ -36,7 +36,8 @@ read once per decision (`TacticalEngine.DropModel.cs`, allies x enemies x allies
 (`ValueModel.UniqueMoveAllowed`); cast-time damage bonuses and Point-Blank Shot in ability damage (`CombatMath.CastBonus.cs`:
 Throw Anything bombs were valued at a third). Orvath's burn stays on the older model, cause not yet known (not DarkCodex: its patch hits
 `BurnNumberProperty`, which his native burn buffs do not rank by); competence3b names buff, property and getters in that line.
-Test ZIP `AI-Control-FACC-v0.3.30-dev-competence3-cfd8f0a-UMM-test.zip` (MVID `97bdfced-0fac-49d9-9673-2138acc373f2`); 531 tests.
+Test ZIP `AI-Control-FACC-v0.3.30-dev-competence3-cfd8f0a-UMM-test.zip` (MVID `97bdfced-0fac-49d9-9673-2138acc373f2`), then
+`AI-Control-FACC-v0.3.30-dev-competence3b-3443d94-UMM-test.zip` (MVID `740e7ec5-27f8-4575-9187-258b0f61f426`, the named burn line); 531 tests.
 
 **Current handover (29 October 2026, Claude): read [docs/INTEGRATION_0322_FOLLOWUPS.md](docs/INTEGRATION_0322_FOLLOWUPS.md)
 before resuming.** With the author's authorization, Claude reviewed and merged PR #13, #14 and #15 into development

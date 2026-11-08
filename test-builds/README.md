@@ -1,6 +1,16 @@
 # Test builds
 
-## Current test build: v0.3.30-dev-competence3 (cfd8f0a) - fixes from the competence2 play-test
+## Current test build: v0.3.30-dev-competence3b (3443d94) - competence3 plus a clearer burn line
+
+**[Download the UMM test ZIP (3443d94)](AI-Control-FACC-v0.3.30-dev-competence3b-3443d94-UMM-test.zip?raw=true)** · [Identity](AI-Control-FACC-v0.3.30-dev-competence3b-3443d94-UMM-test.identity.json) · [Checksums](SHA256SUMS.txt)
+
+Direct link: <https://github.com/recovribox-svg/AIControll-FACC/raw/claude/dreamy-pasteur-b9h3rn/test-builds/AI-Control-FACC-v0.3.30-dev-competence3b-3443d94-UMM-test.zip>
+
+Everything in competence3 below, plus: when a kineticist's burn cost cannot be read ("burn consequences unknown"), the line
+names the buff, its property and the feature it came from. Startup marker
+`[Build] v0.3.30 module=740e7ec5-27f8-4575-9187-258b0f61f426`. ZIP SHA-256 `1ee0273724ef6db2f2ab49abdabc936bdb3bfac8cdceb41fc582ee3821d2b0fd`.
+
+## Previous test build: v0.3.30-dev-competence3 (cfd8f0a) - fixes from the competence2 play-test
 
 **[Download the UMM test ZIP (cfd8f0a)](AI-Control-FACC-v0.3.30-dev-competence3-cfd8f0a-UMM-test.zip?raw=true)** · [Identity](AI-Control-FACC-v0.3.30-dev-competence3-cfd8f0a-UMM-test.identity.json) · [Checksums](SHA256SUMS.txt) · [Notes](../docs/TACTICAL_AI.md)
 
