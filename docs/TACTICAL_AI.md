@@ -4545,7 +4545,11 @@ and Profane Invocation was still repeated now and then.
   bonuses (the game's trigger filter, unconditional bonuses from a constant or a caster stat) and Point-Blank Shot
   (`DistanceDamageBonus`) for projectiles with an attack roll (`CombatMath.CastBonus.cs`); kinetic blasts keep their learned
   share. ProfileAudit CAST-BONUS also finds Arcane Bomb, Targeted Bomb Admixture and Underground Chemist.
-- **Known, unchanged:** Orvath's burn consequences stay on the older model - DarkCodex's Elemental Scion patch replaces
-  `BurnNumberProperty` with its own getter, which the reader does not read (fail-closed, as before competence2).
+- **Known, unchanged:** Orvath's burn consequences stay on the older model ("burn property has additional or unsupported
+  arithmetic", once a fight; fail-closed, as before competence2). Not yet explained: the native Dark Elementalist kit reads
+  offline (ProfileAudit BURN kit), its nonlethal buff ranks by `KineticNonLethalDamageProperty`, which neither DarkCodex
+  (it replaces `BurnNumberProperty`, read only by Psychokineticist stat buffs), Tabletop Tweaks nor Isekai's legacy patch
+  changes - so another fact or mod in his kit is the one. The reason now names the buff, its property, the getter types
+  and the feature it came from (competence3b), so the next log says which.
 
 ProfileAudit REVEAL and CAST-BONUS; 531 unit tests.

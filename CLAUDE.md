@@ -23,7 +23,8 @@ difficulty, eleven-member party, no mod errors). Invisible last enemy revealed b
 it vanish (`HiddenEnemies`, `TacticalEngine.Hidden.cs`; a search walk would be a movement change - for the author); walk prices
 read once per decision (`TacticalEngine.DropModel.cs`, allies x enemies x allies per spot before); unique buffs settle 3 rounds
 (`ValueModel.UniqueMoveAllowed`); cast-time damage bonuses and Point-Blank Shot in ability damage (`CombatMath.CastBonus.cs`:
-Throw Anything bombs were valued at a third). Orvath's burn stays on the older model (DarkCodex replaces `BurnNumberProperty`).
+Throw Anything bombs were valued at a third). Orvath's burn stays on the older model, cause not yet known (not DarkCodex: its patch hits
+`BurnNumberProperty`, which his native burn buffs do not rank by); competence3b names buff, property and getters in that line.
 Test ZIP `AI-Control-FACC-v0.3.30-dev-competence3-cfd8f0a-UMM-test.zip` (MVID `97bdfced-0fac-49d9-9673-2138acc373f2`); 531 tests.
 
 **Current handover (29 October 2026, Claude): read [docs/INTEGRATION_0322_FOLLOWUPS.md](docs/INTEGRATION_0322_FOLLOWUPS.md)

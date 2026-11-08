@@ -74,12 +74,12 @@ namespace CompanionAI_Pathfinder.Tactics
                 {
                     triggers++;
                     if (!(source is BlueprintFeature) || trigger.Action?.Actions == null || trigger.Action.Actions.Length == 0)
-                        return UnknownBurn(model, "burn trigger has no supported feature action graph");
+                        return UnknownBurn(model, $"burn trigger has no supported feature action graph: {source.name}");
                     foreach (var action in trigger.Action.Actions)
                     {
                         if (!(action is ContextActionApplyBuff apply) || !apply.Permanent || apply.SameDuration || apply.Buff == null ||
                             apply.Buff.Stacking != StackingType.Replace)
-                            return UnknownBurn(model, "burn trigger is not a direct permanent replacement buff");
+                            return UnknownBurn(model, $"burn trigger is not a direct permanent replacement buff: {source.name}");
                         var buff = apply.Buff;
                         if (!seen.Add(buff)) continue; // Reapplying the same replacement buff does not add another modifier.
                         // ★ v0.3.30 competence2 (PR #20 review): an actor's kit carries more burn-change triggers than
@@ -88,7 +88,7 @@ namespace CompanionAI_Pathfinder.Tactics
                         // not one of the listed benefit shapes; it must not make the whole actor's burn price unknown.
                         if (!buff.ComponentsArray.Any(c => c is AddContextStatBonus))
                         {
-                            if (!BurnBenefitOnly(buff)) return UnknownBurn(model, "burn buff has an unsupported consequence component");
+                            if (!BurnBenefitOnly(buff)) return UnknownBurn(model, $"burn buff has an unsupported consequence component: {buff.name} from {source.name}");
                             model.Benefits.Add(buff);
                             continue;
                         }
@@ -100,23 +100,30 @@ namespace CompanionAI_Pathfinder.Tactics
                             if (!(component is AddContextStatBonus stat) || stat.Value == null ||
                                 stat.Value.ValueType != ContextValueType.Rank || stat.HasMinimal || stat.Descriptor != ModifierDescriptor.UntypedStackable ||
                                 !SupportedBurnStat(stat.Stat))
-                                return UnknownBurn(model, "burn buff has an unsupported consequence component");
+                                return UnknownBurn(model, $"burn buff has an unsupported consequence component: {buff.name} from {source.name}");
                             var restrictions = BurnStatRestrictions.GetValue(stat) as RestrictionCalculator;
                             if (restrictions?.Property != null && (restrictions.Property.Getters == null || restrictions.Property.Getters.Length != 0))
-                                return UnknownBurn(model, "burn stat has a conditional restriction");
+                                return UnknownBurn(model, $"burn stat has a conditional restriction: {buff.name} from {source.name}");
                             var ranks = configs.Where(c => c.Type == stat.Value.ValueRank).ToList();
                             if (ranks.Count != 1 || !(RankConfigBaseType.GetValue(ranks[0]) is ContextRankBaseValueType baseType) ||
                                 baseType != ContextRankBaseValueType.CustomProperty || (bool)BurnRankIntensified.GetValue(ranks[0]))
-                                return UnknownBurn(model, "burn stat rank is not an unmodified burn custom property");
+                                return UnknownBurn(model, $"burn stat rank is not an unmodified burn custom property: {buff.name} from {source.name}");
                             var property = (BurnRankProperty.GetValue(ranks[0]) as BlueprintUnitPropertyReference)?.Get();
                             var getters = property?.ComponentsArray;
                             if (property == null || property.BaseValue != 0 || property.OperationOnComponents != BlueprintUnitProperty.MathOperation.Sum ||
                                 getters == null || getters.Length != 1 || !(getters[0] is KineticistBurnPropertyGetter burn) || burn.Settings != null)
-                                return UnknownBurn(model, "burn property has additional or unsupported arithmetic");
+                                // ★ v0.3.30 competence3: name what was read - the competence2 logs said only "unsupported arithmetic"
+                                // for Orvath, and the native Dark Elementalist kit reads fine offline (ProfileAudit BURN kits).
+                                return UnknownBurn(model, "burn property has additional or unsupported arithmetic: " +
+                                    $"{buff.name} ranks by {property?.name ?? "no property"} (base {property?.BaseValue}, " +
+                                    $"{property?.OperationOnComponents}, getters " +
+                                    $"{(getters == null ? "none" : string.Join("+", getters.Select(g => g?.GetType().Name ?? "null")))}" +
+                                    $"{(getters != null && getters.Length == 1 && getters[0] is KineticistBurnPropertyGetter b && b.Settings != null ? ", with settings" : "")})" +
+                                    $" from {source.name}");
                             model.Stats.Add(new BurnStatConsequence { Stat = stat.Stat, Multiplier = stat.Multiplier, Rank = ranks[0], Burn = burn, Buff = buff });
                             statCount++;
                         }
-                        if (statCount == 0) return UnknownBurn(model, "burn buff contains no modeled stat consequence");
+                        if (statCount == 0) return UnknownBurn(model, $"burn buff contains no modeled stat consequence: {buff.name} from {source.name}");
                     }
                 }
                 if (triggers == 0) return UnknownBurn(model, "no supported active burn-change trigger");
