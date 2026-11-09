@@ -4553,3 +4553,14 @@ and Profane Invocation was still repeated now and then.
   and the feature it came from (competence3b), so the next log says which.
 
 ProfileAudit REVEAL and CAST-BONUS; 531 unit tests.
+
+
+## 128. C06 playtest: viewless reinforcement targets do not abort attack appraisal
+
+The author played the C06 review build (MVID `641ff828-00b6-46aa-9f92-3748fae7f2f6`); the startup marker is in `TB Mode Log C06.txt`, and the author confirms the other two AI logs use that build. In `Log 3 RT+ TB.txt` lines 91–110, immediately after RandomReinforcementsPerEncounter spawn messages, native `UnitAttack.GetApproachRadius` throws from `CombatMath.ReadRoutine`. Weapon candidates, two Aid Another appraisals and the movement stage encounter the same missing-view query.
+
+The supplied native assembly (`90a9869c-2792-4c7b-bfb7-5a8b33da7c82`) dereferences both executor and target views in this method; its target-view corpulence call is IL `002a`, matching the logged offset. A combat entity can appear in a candidate set before its view exists. `ReadRoutine` now returns no estimate for that pair until both views exist, before enumerating attacks or calling the native geometry method. Other valid targets continue through the existing candidate loop. It does not invent reach or construct a view.
+
+`ProfileAudit/NativeViewCheck` invokes the compiled private reader on six viewless/null actor pairs, single/full attack, without an entity constructor, attack rule or command. Existing game-independent tests and a real-reference Release build are required; exact receipts accompany the completed branch. No movement/commitment/retreat/pathfinding/stuck-cancellation code is changed.
+
+**Replay, TB and RT:** spawn reinforcements as combat begins, keep valid visible enemies alongside newly spawned ones, and confirm ordinary attacks/Aid Another remain available, no `GetApproachRadius` null-reference line occurs, and the new target becomes eligible after its native view exists. This new fix is not yet played.

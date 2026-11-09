@@ -344,6 +344,9 @@ namespace CompanionAI_Pathfinder.Tactics
 
         private static AttackRoutine ReadRoutine(UnitEntityData unit, UnitEntityData target, bool full)
         {
+            // C06 playtest: reinforcement entities can reach the decision before their view exists. The native
+            // GetApproachRadius dereferences both views; leave this pair unpriced until it has its native geometry.
+            if (unit?.View is null || target?.View is null) return null;
             int frame = Time.frameCount;
             string key = $"{unit.UniqueId}|{target.UniqueId}|{full}";
             if (Routines.TryGetValue(key, out var cached) && cached.Frame == frame) return cached;

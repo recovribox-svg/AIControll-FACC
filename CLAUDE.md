@@ -1,4 +1,4 @@
-﻿# CLAUDE.md
+# CLAUDE.md
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
@@ -7,6 +7,8 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 Read [CONTRIBUTING.md](CONTRIBUTING.md) for shared branch ownership, Codex pull requests, handovers, verification, and releases.
 Codex works on task branches and targets pull requests at `claude/dreamy-pasteur-b9h3rn`; Claude reviews and integrates them there.
 Keep `main` for author-authorized releases. Read [AGENTS.md](AGENTS.md) when coordinating agent work.
+
+**C06 playtest interim fix (9 November 2026, Codex; review pending):** `codex/c06-native-query-guards` is based on played C06 / PR #22 head `ab810b3`, which includes development `1f58150` / `3443d94`. Read [docs/C06_NATIVE_VIEW_GUARD.md](docs/C06_NATIVE_VIEW_GUARD.md). Log 3 has one viewless reinforcement target that aborts weapon and movement candidate stages through native `UnitAttack.GetApproachRadius`; `CombatMath.ReadRoutine` now waits for both native views before querying geometry. Six compiled native checks cover viewless/null actor pairs without initializing an actor. No movement, target commitment, cancellation or dispatch policy changes. Other C06 playtest findings are separate tasks; manifest stays 0.3.30.
 
 **Competence programme (8 November 2026): PR #20 integrated, read [docs/CLASS_COMPETENCE_CURRENT.md](docs/CLASS_COMPETENCE_CURRENT.md)
 first.** Codex's foundation (`codex/class-competence-foundation`, from 0.3.30 test 2 `71ca3de`) was reviewed against the
