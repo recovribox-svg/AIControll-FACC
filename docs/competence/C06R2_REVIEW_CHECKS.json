@@ -1,0 +1,208 @@
+{
+  "task": "C06R2 playtest review / C06R3 corrections",
+  "checked_source_commit": "b19312aa35ede504ab8e160bd42a63ab9792bcac",
+  "source_branch": "codex/c06r2-playtest-review",
+  "starting_c06r2_commit": "ba5d5d3346b97598fb14aba5e073661dcc9a7a31",
+  "dependency_pr": 29,
+  "development_base": "1f58150b8e50f9a322ba0b8d3fcc095fe188420f",
+  "reported_game_version": "Steam 2.7.0x (author report)",
+  "version": "0.3.30",
+  "dll": {
+    "assembly": "CompanionAI_Pathfinder, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null",
+    "mvid": "8af1ad59-23ff-429e-9a1a-55033bb86e0a",
+    "sha256": "5d0f7a90efa46d428616376c5a54b63ff00a80403128966a6d3fc14472a7564e",
+    "size": 1265664
+  },
+  "review_inputs": "docs/C06R2_PLAYTEST_INPUTS.json",
+  "review_summary": {
+    "fights": 23,
+    "logged_decision_summaries": 714,
+    "ai_exceptions": 0,
+    "ordinary_faerie_fire_selections": 5,
+    "swarm_exit_orders": 12,
+    "slow_samples": 10,
+    "slow_samples_marked_gc": 5
+  },
+  "unit_tests": {
+    "passed": 558,
+    "failed": 0,
+    "skipped": 0
+  },
+  "inventory_tests": {
+    "passed": 11,
+    "failed": 0
+  },
+  "release_build": {
+    "actual_game_and_umm_references": true,
+    "warnings": 0,
+    "errors": 0,
+    "source_committed_before_build": true
+  },
+  "strict_native_compatible_audit": {
+    "status": "PASS",
+    "exit_code": 0,
+    "scope": "C06_NATIVE_COMPATIBLE_SCOPE.json",
+    "source_files": 44647,
+    "loaded_unique": 44637,
+    "failed": 0,
+    "allowed_load_failures": 0,
+    "ability_rows": 4807,
+    "reader_errors": 0,
+    "input_bytes_modified": false
+  },
+  "original_full_corpus_audit": {
+    "status": "INCOMPLETE",
+    "exit_code": 1,
+    "source_files": 44648,
+    "loaded_unique": 44637,
+    "failed": 1,
+    "allowed_load_failures": 0,
+    "ability_verdicts_generated": false,
+    "failure": "AchaekekSacredWeaponFeature: SawtoothSaber string vs native SawtoothSabre enum; failed parser logging reaches offline Unity ECall",
+    "input_sha256": "1fd534ef0fc9573520d101c721e5d2721812fdb5b8f8a13e29fcbc3acb06ac0f",
+    "input_bytes_modified": false
+  },
+  "native_reveal_value_checks": {
+    "checks": 7,
+    "failures": 0,
+    "actual_faerie_components": true,
+    "mixed_blindness_buff_preserved": true,
+    "native_disable_counter_starting_values": [
+      0,
+      3
+    ],
+    "normal_and_throwing_preview_balanced": true,
+    "actor_setup": false,
+    "native_concealment_query_executed": false
+  },
+  "toybox_reader_checks": {
+    "checks": 10,
+    "failures": 0,
+    "uploaded_version": "1.7.33.0",
+    "uploaded_mvid": "fa5b0826-3a00-42d9-9d74-1cfe530fd2cb",
+    "uploaded_sha256": "ed6fcc0d5f53cdd4100d13d238f284a367ae10e007c1ac1a6a2e102ac42df45f",
+    "played_hook_mvid": "32f07445-d1d7-41fc-9cf3-dc7838a41a4f",
+    "same_binary_assumed": false,
+    "complete_prefix_and_getter_il_verified": true,
+    "live_settings_read_each_quote": true,
+    "offline_settings_data_injected": true,
+    "unknown_callback_and_wrong_native_target_rejected": true,
+    "judgment_independent_activation_cost_preserved": true,
+    "provider_setup_getter_or_static_main_settings_executed": false,
+    "harmony_metadata_only": true,
+    "patch_wrapper_executed": false,
+    "toybox_modified": false
+  },
+  "native_swarm_checks": {
+    "checks": 27,
+    "failures": 0,
+    "actor_setup": false,
+    "native_casts_executed": false
+  },
+  "native_toggle_checks": {
+    "checks": 98,
+    "failures": 0,
+    "progression_shaped_kits": 6,
+    "harmony_wrapper_application": false
+  },
+  "tome_burn_checks": {
+    "checks": 14,
+    "failures": 0,
+    "provider_setup_getter_executed": false
+  },
+  "native_view_checks": {
+    "checks": 6,
+    "failures": 0,
+    "scratch_frame_clock": 0
+  },
+  "signature_check": {
+    "baseline_mvid": "675da0f1-3cb6-4531-8724-70bc9ae2dedd",
+    "added_member_refs": 2,
+    "resolved_added_refs": 2,
+    "details": [
+      "VERIFIED System.Int32 Kingmaker.Designers.Mechanics.Buffs.BuffSkillStealthBonus::Value",
+      "VERIFIED System.Void Kingmaker.UnitLogic.Parts.UnitPartConcealment::set_Disable(System.Boolean)",
+      "VERIFIED_COUNT 2 EXPECTED 2"
+    ]
+  },
+  "native_assembly": {
+    "mvid": "90a9869c-2792-4c7b-bfb7-5a8b33da7c82",
+    "sha256": "2cb7160b7154d4ffacc77b9c51b1eb26199e1294300f04fdfc073367b2ef8953"
+  },
+  "performance_scope": {
+    "empty_immutable_buff_parts_skip_context_creation": true,
+    "reveal_gain_cache": "one target entry per decision; no weapon forecast/context without removable concealment",
+    "movement_search_budget_changed": false,
+    "matched_unity_decision_latency_and_allocations": "pending gameplay; no frame-time speedup claimed"
+  },
+  "source_identities": [
+    {
+      "file": "Tactics/TacticalEngine.Buffs.cs",
+      "sha256": "cbd9b192d8bfe122774c1d605ecfd8a953b3c6895585a13ccafb4e70aa0dcb97"
+    },
+    {
+      "file": "Tactics/TacticalEngine.RevealValue.cs",
+      "sha256": "094f8e3fa99cd3c9f1daa0918b2e1da268de7f11ffba8c7d223ee1f8f7c3e424"
+    },
+    {
+      "file": "Tactics/TacticalEngine.Toggles.cs",
+      "sha256": "14d43c175351e822eddf9bba7ff482ca934c600ccaf5858cb2950d1cacec96ce"
+    },
+    {
+      "file": "Tactics/TacticalEngine.cs",
+      "sha256": "67e75e5b94630a19fb2dbdfdc876d72355b509d9853b9233d2a53b1000e7bab3"
+    },
+    {
+      "file": "Tactics/ToggleSpendOverride.cs",
+      "sha256": "7fcf5b45c7dd2ee331435efe8dadabac1998b061c342556a9853bc301cb31598"
+    },
+    {
+      "file": "Tactics/ValueModel.Reveal.cs",
+      "sha256": "53ebaa80287b76e070c52d0f1b8bbfbc1e3f6daeab5720e07a9a75cfd235b945"
+    },
+    {
+      "file": "tests/CompanionAI.Tests/CompanionAI.Tests.csproj",
+      "sha256": "d5aadbe5ad3259b55026e27a57484f63ccb23bf1025429f7dc53321c7de3112b"
+    },
+    {
+      "file": "tests/CompanionAI.Tests/RevealValueTests.cs",
+      "sha256": "5a2508e5118def9fdd4391ceb41871c9e9bee959bfcd27c0ef295c1aed500548"
+    },
+    {
+      "file": "tests/ToyBoxSpend.Native/Program.cs",
+      "sha256": "f6f2b223fd377a9d3d78516cc76b2fa6217da0e943454e13237ee74f1b8cc2bf"
+    },
+    {
+      "file": "tests/ToyBoxSpend.Native/ToyBoxSpend.Native.csproj",
+      "sha256": "9368cde4fe01d802b7058c0738b483aa436829fd6586bdc4b4ce560dbe736265"
+    },
+    {
+      "file": "tools/ProfileAudit/Program.cs",
+      "sha256": "b9278d0b1e47c293425e41035b5cc31ebebcbc3219febc94c323b9d310089c14"
+    },
+    {
+      "file": "tools/ProfileAudit/RevealValueCheck.cs",
+      "sha256": "b54dffd2765a1cc174b7ae036cb2a2977066687d3ff010f9f76226171df2267c"
+    }
+  ],
+  "boundaries": {
+    "movement_commitment_retreat_pathfinding_cancellation_changed": false,
+    "attached_damage_proposal_implemented": false,
+    "c07_included": false,
+    "native_actor_or_command_execution": false,
+    "gameplay_of_c06r3": "pending",
+    "main_or_development_push": false,
+    "release": false
+  },
+  "reproduce": [
+    "dotnet test tests/CompanionAI.Tests -c Release",
+    "python3 -m unittest discover -s tools/BlueprintInventory -v",
+    "dotnet build CompanionAI_Pathfinder.csproj -c Release -p:ManagedPath=<actual Managed> -p:UmmPath=<actual UMM>",
+    "tools/ProfileAudit/run.sh <actual Managed> <checked DLL> <scratch harness> <report> <14 compatible roots; see C06_NATIVE_COMPATIBLE_SCOPE.json>",
+    "ToggleCosts.Native with actual Psionics provider: 98 checks",
+    "TomeBurn.Native with actual TTT Core and Tome providers: 14 checks",
+    "ToyBoxSpend.Native <supplied ToyBox.dll> <14 compatible roots> <report>: 10 checks; copy only fixture startup files into prepared scratch harness",
+    "SigDump current vs played C06R2; resolve both added member references against actual assemblies"
+  ],
+  "offline_harness": "Scratch rewritten Unity-dependent copies are for reader checks only. The deployed mod bytes are never rewritten; no harness/provider/game assemblies enter the package."
+}
