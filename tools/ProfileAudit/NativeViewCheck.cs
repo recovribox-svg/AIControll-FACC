@@ -26,7 +26,7 @@ namespace ProfileAudit
                     { bad++; lines.Add("NATIVE-VIEW FAILED: an incomplete actor pair supplied an attack routine"); }
                 }
                 catch (Exception ex)
-                { bad++; lines.Add("NATIVE-VIEW FAILED: " + ex.GetBaseException().GetType().Name); }
+                { bad++; lines.Add("NATIVE-VIEW FAILED: " + ex.GetBaseException()); }
             }
             lines.Insert(0, $"NATIVE-VIEW {checks} checks, failures {bad}; uninitialized viewless entities, no actor setup or native commands");
             failures = bad;

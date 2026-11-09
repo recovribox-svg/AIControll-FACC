@@ -16,6 +16,7 @@ stub() { dotnet "$OUT/stubs/RunnableStubs.dll" "$@"; }
 for f in "$M"/UnityEngine.*Module.dll; do n=$(basename "$f"); [ "$n" = "UnityEngine.CoreModule.dll" ] && continue; stub "$f" "$OUT/$n" > /dev/null; done
 stub "$M/Assembly-CSharp.dll" "$OUT/Assembly-CSharp.dll" Kingmaker.Localization.LocalizedString::op_Implicit Kingmaker.Localization.LocalizedString::ToString > /dev/null
 stub "$M/UnityEngine.CoreModule.dll" "$OUT/UnityEngine.CoreModule.dll" UnityEngine.ScriptableObject::.ctor UnityEngine.Object::Finalize \
-   UnityEngine.AnimationCurve::.ctor UnityEngine.AnimationCurve::Finalize UnityEngine.Gradient::.ctor UnityEngine.Gradient::Finalize > /dev/null
+   UnityEngine.AnimationCurve::.ctor UnityEngine.AnimationCurve::Finalize UnityEngine.Gradient::.ctor UnityEngine.Gradient::Finalize \
+   UnityEngine.Time::get_frameCount > /dev/null
 [ -d "$M/UnityModManager" ] && cp "$M"/UnityModManager/*.dll "$OUT/"
 (cd "$OUT" && dotnet ProfileAudit.dll "$@" "$REPORT")
