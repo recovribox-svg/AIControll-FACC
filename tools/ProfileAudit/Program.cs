@@ -206,6 +206,10 @@ namespace ProfileAudit
             File.WriteAllText(output, string.Join(Environment.NewLine, burnLines) + Environment.NewLine + Environment.NewLine + File.ReadAllText(output));
             blocklistFailures += burnFailures;
             // ★ v0.3.30 competence3: buffs that end invisibility (Faerie Fire, Glitterdust).
+            var viewLines = NativeViewCheck.Run(out int viewFailures);
+            foreach (var line in viewLines) Console.WriteLine(line);
+            File.AppendAllText(output, Environment.NewLine + string.Join(Environment.NewLine, viewLines));
+            blocklistFailures += viewFailures;
             var revealLines = RevealCheck.Run(loaded.Values, out int revealFailures);
             foreach (var line in revealLines) Console.WriteLine(line);
             File.WriteAllText(output, string.Join(Environment.NewLine, revealLines) + Environment.NewLine + Environment.NewLine + File.ReadAllText(output));

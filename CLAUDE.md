@@ -12,6 +12,10 @@ Keep `main` for author-authorized releases. Read [AGENTS.md](AGENTS.md) when coo
 
 Verification receipt: [docs/competence/C06_PLAYTEST_REVIEW_CHECKS.json](docs/competence/C06_PLAYTEST_REVIEW_CHECKS.json). Exact checked source and DLL identity are recorded there; a later receipt-only commit does not replace that tested DLL.
 
+**C06 playtest interim fix (9 November 2026, Codex; review pending):** `codex/c06-native-query-guards` is based on played C06 / PR #22 head `ab810b3`, which includes development `1f58150` / `3443d94`. Read [docs/C06_NATIVE_VIEW_GUARD.md](docs/C06_NATIVE_VIEW_GUARD.md). Log 3 has one viewless reinforcement target that aborts weapon and movement candidate stages through native `UnitAttack.GetApproachRadius`; `CombatMath.ReadRoutine` now waits for both native views before querying geometry. Six compiled native checks cover viewless/null actor pairs without initializing an actor. No movement, target commitment, cancellation or dispatch policy changes. Other C06 playtest findings are separate tasks; manifest stays 0.3.30.
+
+Verification receipt: [docs/competence/C06_QUERY_GUARD_CHECKS.json](docs/competence/C06_QUERY_GUARD_CHECKS.json). Exact checked source and DLL identity are recorded there; a later receipt-only commit does not replace that tested DLL.
+
 **Competence programme (8 November 2026): PR #20 integrated, read [docs/CLASS_COMPETENCE_CURRENT.md](docs/CLASS_COMPETENCE_CURRENT.md)
 first.** Codex's foundation (`codex/class-competence-foundation`, from 0.3.30 test 2 `71ca3de`) was reviewed against the
 author's programme text and merged into development (`452c761`). Review fixes: burn consequences read on real kineticist kits

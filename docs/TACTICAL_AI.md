@@ -4554,7 +4554,6 @@ and Profane Invocation was still repeated now and then.
 
 ProfileAudit REVEAL and CAST-BONUS; 531 unit tests.
 
-
 ## 127. C06 played: drain threats, query failure, cost fallback, burn composite and swarms
 
 The author supplied three C06 AI logs plus native combat log, identifies current Steam as 2.7.0x, and confirms all AI captures are C06. The TB startup and Log 3 stack identify module `641ff828-00b6-46aa-9f92-3748fae7f2f6`; native module is `90a9869c-2792-4c7b-bfb7-5a8b33da7c82`. [Review and exact evidence](C06_PLAYTEST_REVIEW.md), [input hashes](C06_PLAYTEST_REVIEW_INPUTS.json), [swarm movement proposal](C06_SWARM_PROPOSAL.md). Raw logs are not committed.
@@ -4566,3 +4565,13 @@ The swarm encounters have no existing area/exit diagnostics. Native Corrupted Ra
 Slow-decision samples place the largest positive heap deltas in ability appraisal, especially Tuvel; negative deltas and the 1,917 ms Orvath sample explicitly coincide with collection. They do not identify exact per-thread allocations or prove a C06 toggle-stage regression. Faerie Fire casts are ordinary ones, bombs have a small sample without a bomb bias warning, and Profane Invocation is absent. Hidden reveal and settle behavior cannot be marked tested from these logs. Melee Magus is present; held Spellstrike dispatch remains a separate native-factory/action/pricing boundary.
 
 For every new runtime build, retain all unit tests, real-reference 0-warning Release build, exact strict compatible-data scope plus the separately disclosed raw-corpus enum failure, signatures, unique source/MVID/checksum and native no-actor fixture limits. Replay positive/negative/state transitions in TB and RT; movement implementation waits for explicit author approval.
+
+## 128. C06 playtest: viewless reinforcement targets do not abort attack appraisal
+
+The author played the C06 review build (MVID `641ff828-00b6-46aa-9f92-3748fae7f2f6`); the startup marker is in `TB Mode Log C06.txt`, and the author confirms the other two AI logs use that build. In `Log 3 RT+ TB.txt` lines 91–110, immediately after RandomReinforcementsPerEncounter spawn messages, native `UnitAttack.GetApproachRadius` throws from `CombatMath.ReadRoutine`. Weapon candidates, two Aid Another appraisals and the movement stage encounter the same missing-view query.
+
+The supplied native assembly (`90a9869c-2792-4c7b-bfb7-5a8b33da7c82`) dereferences both executor and target views in this method; its target-view corpulence call is IL `002a`, matching the logged offset. A combat entity can appear in a candidate set before its view exists. `ReadRoutine` now returns no estimate for that pair until both views exist, before enumerating attacks or calling the native geometry method. Other valid targets continue through the existing candidate loop. It does not invent reach or construct a view.
+
+`ProfileAudit/NativeViewCheck` invokes the compiled private reader on six viewless/null actor pairs, single/full attack, without an entity constructor, attack rule or command. With the scratch-only frame-count bridge rewritten to zero, the original reader fails 6/6 with NullReferenceException and the corrected reader passes 6/6. The bridge only permits offline JIT/fixture execution; it is never shipped and does not measure frame invalidation or gameplay. Existing game-independent tests and a real-reference Release build are required; exact receipts accompany the completed branch. No movement/commitment/retreat/pathfinding/stuck-cancellation code is changed.
+
+**Replay, TB and RT:** spawn reinforcements as combat begins, keep valid visible enemies alongside newly spawned ones, and confirm ordinary attacks/Aid Another remain available, no `GetApproachRadius` null-reference line occurs, and the new target becomes eligible after its native view exists. This new fix is not yet played.
