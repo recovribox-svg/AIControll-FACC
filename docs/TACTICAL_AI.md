@@ -4553,3 +4553,18 @@ and Profane Invocation was still repeated now and then.
   and the feature it came from (competence3b), so the next log says which.
 
 ProfileAudit REVEAL and CAST-BONUS; 531 unit tests.
+
+
+## 129. C06 playtest: Tome's composite nonlethal burn property
+
+All three AI logs name Orvath's actual unknown shape: `BurnEffectBuff` ranks by `KineticNonLethalDamageProperty` (base 0, Sum, one `CompositeCustomPropertyGetter`) from `DarkElementalistBurnFeature`. That confirms the property §126 intentionally left unexplained; it is separate from DarkCodex's `BurnNumberProperty` replacement.
+
+The supplied TomeOfTheFirebird 1.4.18 `BurnResistance.Make` removes the native nonlethal getter from `ac8b7875fff5c0643ac499d404947fff` and adds TTT's composite Sum: character-level-multiplied accepted burn, plus `-2 * accepted burn` when its Burn Resistance feature is owned. The property rewrite precedes the setting that exposes the feat; ownership is still a native feature query. Inspected modules: TTT Core `cdfed43f-53a0-4186-a181-75496eecec8f`, Tome `6b63b5c2-ba69-4676-992f-ec22b4b92cb7`. This code matches the logged shape, but runtime recognition also checks the actual object fields rather than assuming every composite is that patch.
+
+`ModdedBurnProperties` reads that exact two-term shape by optional reflection, with settings absent, Sum mode, zero entry constants, denominator 1, numerators 1/-2, native burn getter flags and the inspected HasFeature wrapper. Actual ownership uses `unit.Progression.Features.HasFact`, matching the installed condition; the blueprint-only entry point remains unknown for this shape when ownership cannot be queried. No mod getter, condition or factory is called, and no mod binary is a compile/deployment dependency. Metadata bindings are weak type-keyed; mutable fields and ownership are read for each decision.
+
+The calculation preserves the provider's float conversion and separate floor for each term before sum, then the existing native rank progression/caps and current-modifier anchor. Overflow/unsupported arithmetic stays fallback. The ordinary native and Psychokineticist graphs remain supported, and the existing per-rest burn price remains for every part.
+
+Fourteen compiled fixtures use the supplied provider layouts on the real Dark Elementalist graph: feat absent/present, zero/one/two/repeated quotes and changed ownership; missing ownership, mode, constants, fractional scaling and missing feature reject. Original graph components are restored afterward. No provider initialization/getter/condition or actor/command executes. Two pure arithmetic regressions include the provider's float rounding. Final committed-source tests, build and audits are recorded with the branch.
+
+**Replay, TB and RT:** Orvath with the same installed modules; confirm the named legacy fallback disappears only when the actual shape matches, and one added burn's nonlethal change follows current character level, reduced by two only when Burn Resistance is owned. Check accepted-burn transitions and native HP/nonlethal values, Overflow/Adaptation, low-HP declines and day-resource restraint. Other composite shapes must still say unknown. Not yet played.

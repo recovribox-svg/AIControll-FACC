@@ -49,6 +49,8 @@ namespace CompanionAI_Pathfinder.Tactics
             internal int Multiplier;
             internal ContextRankConfig Rank;
             internal KineticistBurnPropertyGetter Burn;
+            internal bool FlooredComposite;
+            internal int FeatureAdjustment;
             internal BlueprintBuff Buff;
             internal int? CurrentAmount;
         }
@@ -60,6 +62,10 @@ namespace CompanionAI_Pathfinder.Tactics
         /// </summary>
         internal static BurnConsequenceModel ReadBurnConsequences(IEnumerable<BlueprintScriptableObject> activeFacts,
             int accepted, int classLevel, int characterLevel)
+            => ReadBurnConsequencesWithOwnership(activeFacts, accepted, classLevel, characterLevel, null);
+
+        internal static BurnConsequenceModel ReadBurnConsequencesWithOwnership(IEnumerable<BlueprintScriptableObject> activeFacts,
+            int accepted, int classLevel, int characterLevel, Func<BlueprintFeatureBase, bool> ownsFeature)
         {
             var model = new BurnConsequenceModel { Accepted = accepted, ClassLevel = classLevel, CharacterLevel = characterLevel };
             try
@@ -110,8 +116,12 @@ namespace CompanionAI_Pathfinder.Tactics
                                 return UnknownBurn(model, $"burn stat rank is not an unmodified burn custom property: {buff.name} from {source.name}");
                             var property = (BurnRankProperty.GetValue(ranks[0]) as BlueprintUnitPropertyReference)?.Get();
                             var getters = property?.ComponentsArray;
+                            KineticistBurnPropertyGetter burn = null;
+                            bool composite = false;
+                            int adjustment = 0;
                             if (property == null || property.BaseValue != 0 || property.OperationOnComponents != BlueprintUnitProperty.MathOperation.Sum ||
-                                getters == null || getters.Length != 1 || !(getters[0] is KineticistBurnPropertyGetter burn) || burn.Settings != null)
+                                getters == null || getters.Length != 1 || !(getters[0] is PropertyValueGetter valueGetter) ||
+                                !ModdedBurnProperties.TryRead(valueGetter, ownsFeature, out burn, out composite, out adjustment))
                                 // ★ v0.3.30 competence3: name what was read - the competence2 logs said only "unsupported arithmetic"
                                 // for Orvath, and the native Dark Elementalist kit reads fine offline (ProfileAudit BURN kits).
                                 return UnknownBurn(model, "burn property has additional or unsupported arithmetic: " +
@@ -120,7 +130,8 @@ namespace CompanionAI_Pathfinder.Tactics
                                     $"{(getters == null ? "none" : string.Join("+", getters.Select(g => g?.GetType().Name ?? "null")))}" +
                                     $"{(getters != null && getters.Length == 1 && getters[0] is KineticistBurnPropertyGetter b && b.Settings != null ? ", with settings" : "")})" +
                                     $" from {source.name}");
-                            model.Stats.Add(new BurnStatConsequence { Stat = stat.Stat, Multiplier = stat.Multiplier, Rank = ranks[0], Burn = burn, Buff = buff });
+                            model.Stats.Add(new BurnStatConsequence { Stat = stat.Stat, Multiplier = stat.Multiplier, Rank = ranks[0], Burn = burn,
+                                Buff = buff, FlooredComposite = composite, FeatureAdjustment = adjustment });
                             statCount++;
                         }
                         if (statCount == 0) return UnknownBurn(model, $"burn buff contains no modeled stat consequence: {buff.name} from {source.name}");
@@ -256,6 +267,11 @@ namespace CompanionAI_Pathfinder.Tactics
                     int scale = checked((stat.Burn.MultiplyOnClassLevel ? model.ClassLevel : 1) *
                                         (stat.Burn.MultyplyOnCharacterLevel ? model.CharacterLevel : 1));
                     int now = checked(model.Accepted * scale), next = checked((model.Accepted + Math.Max(0, addedBurn)) * scale);
+                    if (stat.FlooredComposite)
+                    {
+                        now = ValueModel.TomeBurnValue(model.Accepted, scale, stat.FeatureAdjustment);
+                        next = ValueModel.TomeBurnValue(checked(model.Accepted + addedBurn), scale, stat.FeatureAdjustment);
+                    }
                     now = (int)RankApplyProgression.Invoke(stat.Rank, new object[] { now });
                     next = (int)RankApplyProgression.Invoke(stat.Rank, new object[] { next });
                     // Intensified-dependent configs were excluded. These pure caps do not consult a context.
@@ -278,7 +294,8 @@ namespace CompanionAI_Pathfinder.Tactics
             var unit = ctx.Unit;
             var part = unit.Get<UnitPartKineticist>();
             var facts = unit.Facts.List.Where(f => f != null && f.Active).Select(f => f.Blueprint).OfType<BlueprintScriptableObject>();
-            var model = ReadBurnConsequences(facts, part?.AcceptedBurn ?? 0, part?.ClassLevel ?? 0, Level(unit));
+            var model = ReadBurnConsequencesWithOwnership(facts, part?.AcceptedBurn ?? 0, part?.ClassLevel ?? 0, Level(unit),
+                feature => unit.Progression.Features.HasFact(feature));
             if (model.Modeled)
             {
                 // The next burn replaces the buff with its new total. Compare with what is actually held now: a

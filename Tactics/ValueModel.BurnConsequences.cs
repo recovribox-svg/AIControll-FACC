@@ -5,6 +5,11 @@ namespace CompanionAI_Pathfinder.Tactics
 {
     public static partial class ValueModel
     {
+        /// <summary>Inspected TTT composite entry arithmetic: each native integer term becomes float and is floored
+        /// separately, then the two integers are summed. Unsupported overflow stays in the caller's fallback.</summary>
+        public static int TomeBurnValue(int accepted, int baseScale, int featureAdjustment) =>
+            checked((int)Math.Floor((float)checked(accepted * baseScale)) + (int)Math.Floor((float)featureAdjustment * accepted));
+
         /// <summary>
         /// Nonlethal loss uses real HP and the increased next-turn drop chance. Save changes use the same
         /// weighted-save/incoming-damage/prevention policy as recipient buffs. Skills have no combat valuation here.
