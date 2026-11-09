@@ -4553,3 +4553,18 @@ and Profane Invocation was still repeated now and then.
   and the feature it came from (competence3b), so the next log says which.
 
 ProfileAudit REVEAL and CAST-BONUS; 531 unit tests.
+
+
+## 131. C06 playtest: scope Psionics' global resource-cost postfix
+
+Every sampled resource performance in the three author-confirmed C06 logs reports `multiple/custom spend fallback`, including Inspired Rage, Inspire Courage, Battle Prowess and Song of Strength. This does not establish that each resource component is custom. The original C06 patch check rejected every unknown hook globally, so one confined modification disabled the bounded cost model for unrelated toggles.
+
+The supplied Psionics DLL/cache (`Psionics.merged`, MVID `0501ad1b-c557-4744-a473-b00b015a2fde`, SHA-256 `c31d64a001b79d3b5b49ced1324188c73ddadf8f58440dd46ef2758cec9f7aad`) defines `MindBladeEnchantPoolPatch.CalcResourceCost_Postfix`: it assigns `__result` only when the owning fact GUID appears in `MindBladeEnchantments.AbilityToggleCosts`. The map is static readonly with mutable contents, and its type initializer only constructs empty BCL collections. The availability postfix is left to native legality.
+
+The cost inspector recognizes that exact module/member/postfix placement and binds the readonly map field. Each quote reads its current contents; a mapped Mind Blade enchantment keeps the existing custom/event/pool fallback. Unmapped native toggles can use the native/inspected TTT cost window. Unknown module identities, callbacks, patch kinds, transpilers/finalizers and unavailable maps remain fallback. Diagnostics distinguish component count, patch identity and mapped cost. Cost metadata is still inspected once per decision, not per toggle; no actor facts, pool amounts or dictionary contents are retained in that snapshot.
+
+The reader also requires a runtime spending component only for an active, paid timed interval whose counter is actually needed. An inactive activation/round quote reads its unique blueprint component; it does not initialize runtime data or demand unrelated timer state. Native command/profile admission is unchanged.
+
+Compiled native fixtures load the supplied Psionics member as metadata, replace/restore serialized Harmony metadata, exercise map insertion/zero/update/removal within one decision, and reject the cost postfix on another callback. They do not install a method wrapper, call a provider blueprint initializer, create an actor or spend resources. Exact test/build/audit receipts accompany the completed branch.
+
+**Replay, TB and RT:** with the same installed mod set, expect supported Inspired Rage/Inspire Courage notes to show units/cadence/start/upcoming cost instead of the generic fallback if these are the only relevant patches. If another provider is active, retain its new named fallback line. Compare one-/two-unit costs, zero/free states, paid intervals and restoration; Mind Blade enchantment admission is unchanged. This fix is not yet played.

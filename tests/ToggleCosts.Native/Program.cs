@@ -32,8 +32,17 @@ namespace ToggleCostsNative
 
         private static int Main(string[] args)
         {
+            string psionicsProvider = null;
+            var auditArgs = new List<string>();
+            for (int i = 0; i < args.Length; i++)
+            {
+                if (args[i] != "--psionics-provider") { auditArgs.Add(args[i]); continue; }
+                if (psionicsProvider != null || ++i == args.Length || !File.Exists(args[i]))
+                { Console.Error.WriteLine("--psionics-provider requires one supplied DLL path"); return 2; }
+                psionicsProvider = args[i];
+            }
             // Reuse the real loader/readers without changing their strict/partial accounting or production tool.
-            int audit = (int)typeof(ProfileAudit.Program).GetMethod("Main", Static).Invoke(null, new object[] { args });
+            int audit = (int)typeof(ProfileAudit.Program).GetMethod("Main", Static).Invoke(null, new object[] { auditArgs.ToArray() });
             if (audit != 0) return audit;
             var all = (List<SimpleBlueprint>)typeof(ProfileAudit.Audit).GetField("s_All", Static).GetValue(null);
             var byName = all.GroupBy(x => x.name).ToDictionary(g => g.Key, g => g.First());
@@ -78,6 +87,54 @@ namespace ToggleCostsNative
             }
             finally { lock(patchState) { if(saved==null) patchState.Remove(emptyCallback); else patchState[emptyCallback]=saved; } }
             Check(Known(Contract(new TacticalContext())), "a new decision rechecks after patch metadata is removed");
+            if (psionicsProvider != null)
+            {
+                var provider = Assembly.LoadFrom(Path.GetFullPath(psionicsProvider));
+                var postfix = provider.GetType("Psionics.HarmonyPatches.MindBladeEnchantPoolPatch",throwOnError:true)
+                    .GetMethod("CalcResourceCost_Postfix");
+                var metadata = new HarmonyLib.PatchInfo();
+                HarmonyLib.AccessTools.Method(typeof(HarmonyLib.PatchInfo),"AddPostfixes").Invoke(metadata,new object[]{
+                    "CompanionAI.C06.NativeFixture.PsionicsScope",new[]{new HarmonyLib.HarmonyMethod(postfix)}});
+                var costMethod = HarmonyLib.AccessTools.Method(typeof(ActivatableAbilityResourceLogic),"CalcResourceCost");
+                var nativeCost = typeof(TacticalEngine).GetMethod("NativeToggleCostUnchanged",Static);
+                byte[] savedCost;
+                lock(patchState) { patchState.TryGetValue(costMethod,out savedCost); }
+                Dictionary<string,int> costs = null;
+                string inserted = null;
+                try
+                {
+                    lock(patchState) { patchState[costMethod]=(byte[])serialize.Invoke(null,new object[]{metadata}); }
+                    var scopedContract = Contract(new TacticalContext());
+                    Check(Known(scopedContract), "inspected Psionics postfix is known without applying a native patch");
+                    var costField=(FieldInfo)scopedContract.GetType().GetField("PsionicCosts").GetValue(scopedContract);
+                    costs=(Dictionary<string,int>)costField.GetValue(null); // inspected BCL-only data-holder initializer
+                    var bp=all.OfType<BlueprintActivatableAbility>().First(b => b.GetComponent<ActivatableAbilityResourceLogic>() != null &&
+                        !costs.ContainsKey(b.AssetGuid.ToString()));
+                    bool Unchanged() => (bool)nativeCost.Invoke(null,new object[]{scopedContract,bp,null});
+                    Check(Unchanged(), "an unmapped native toggle keeps its native cost contract");
+                    inserted=bp.AssetGuid.ToString(); costs.Add(inserted,3);
+                    Check(!Unchanged(), "a mapped three-point Mind Blade cost remains fallback");
+                    costs[inserted]=0;
+                    Check(!Unchanged(), "a mapped zero cost still has a custom pool contract");
+                    costs.Remove(inserted); inserted=null;
+                    Check(Unchanged(), "map changes are read afresh within the existing decision snapshot");
+                    Check(ReferenceEquals(initialContract,Contract(decision)), "a previously inspected decision keeps its own metadata snapshot");
+                    lock(patchState) { patchState[emptyCallback]=(byte[])serialize.Invoke(null,new object[]{metadata}); }
+                    Check(!Known(Contract(new TacticalContext())), "the Psionics cost postfix is not accepted on another callback");
+                }
+                finally
+                {
+                    if(inserted!=null) costs.Remove(inserted);
+                    lock(patchState)
+                    {
+                        if(savedCost==null) patchState.Remove(costMethod); else patchState[costMethod]=savedCost;
+                        if(saved==null) patchState.Remove(emptyCallback); else patchState[emptyCallback]=saved;
+                    }
+                }
+                Check(Known(Contract(new TacticalContext())), "native metadata contract returns after fixture restoration");
+                lines.Add("PSIONICS-SCOPE: actual supplied patch member and mutable cost map checked; data-holder collections only, no Configure, actor, provider blueprint initializer or patch application");
+            }
+            else lines.Add("PSIONICS-SCOPE SKIPPED: no --psionics-provider supplied");
             var scoped = all.OfType<BlueprintActivatableAbility>().Where(b =>
                 ProfileAudit.Audit.Paths.TryGetValue(b,out var path) && (path.StartsWith("Classes/",StringComparison.Ordinal) || path.StartsWith("Mythic/",StringComparison.Ordinal)))
                 .Where(b => b.GetComponent<ActivatableAbilityResourceLogic>() != null).ToArray();

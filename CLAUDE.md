@@ -1,4 +1,4 @@
-﻿# CLAUDE.md
+# CLAUDE.md
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
@@ -7,6 +7,8 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 Read [CONTRIBUTING.md](CONTRIBUTING.md) for shared branch ownership, Codex pull requests, handovers, verification, and releases.
 Codex works on task branches and targets pull requests at `claude/dreamy-pasteur-b9h3rn`; Claude reviews and integrates them there.
 Keep `main` for author-authorized releases. Read [AGENTS.md](AGENTS.md) when coordinating agent work.
+
+**C06 playtest / Psionics cost scope (9 November 2026, Codex; review pending):** `codex/c06-psionics-cost-scope` starts at played C06 / PR #22 `ab810b3`, including development `1f58150` / `3443d94`. Read [docs/C06_PSIONICS_COST_SCOPE.md](docs/C06_PSIONICS_COST_SCOPE.md) and §131. All sampled paid performances had the old generic patch fallback; inspected Psionics 0.2.3 globally postfixes cost but only changes GUIDs in `MindBladeEnchantments.AbilityToggleCosts`. The exact module/member is recognized; the live map is checked each quote, mapped enchantments remain fallback, and unknown hooks now identify their method/type/module. Snapshot lifetime remains one decision. No C07/C08, movement, ownership or dispatch change; version 0.3.30.
 
 **Competence programme (8 November 2026): PR #20 integrated, read [docs/CLASS_COMPETENCE_CURRENT.md](docs/CLASS_COMPETENCE_CURRENT.md)
 first.** Codex's foundation (`codex/class-competence-foundation`, from 0.3.30 test 2 `71ca3de`) was reviewed against the
