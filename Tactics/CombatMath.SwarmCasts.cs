@@ -94,7 +94,7 @@ namespace CompanionAI_Pathfinder.Tactics
             internal SwarmCast(AbilityData ability, AbilityTargetsAround selector)
             {
                 Ability = ability; Selector = selector; Profile = AbilityProfile.Get(ability);
-                NeedCastSight = ability.Blueprint.GetComponent<Kingmaker.UnitLogic.Abilities.Components.Base.ILineOfSightIgnore>() == null;
+                NeedCastSight = ability.Blueprint.GetComponent<Kingmaker.UnitLogic.Abilities.Components.TargetCheckers.ILineOfSightIgnore>() == null;
             }
             internal void Reset() { unchecked { Generation++; } Sight.Clear(); Anchors.Clear(); }
 
