@@ -1,0 +1,29 @@
+{
+  "raw_files": 44648,
+  "linked_unmodified_files": 44647,
+  "excluded": [
+    {
+      "asset_id": "c37574188b0242d2ac04a454a0430dd5",
+      "name": "AchaekekSacredWeaponFeature",
+      "sha256": "1fd534ef0fc9573520d101c721e5d2721812fdb5b8f8a13e29fcbc3acb06ac0f",
+      "reason": "Serialized Category=SawtoothSaber; supplied native enum=SawtoothSabre. Native enum parser catches parse error, then offline Unity logger fails. No input normalization."
+    }
+  ],
+  "roots": [
+    "MythicAbilities",
+    "Classes",
+    "Feats",
+    "DLC",
+    "Equipment",
+    "Items",
+    "Mythic",
+    "Spells",
+    "Weapons",
+    "Units",
+    "Buffs",
+    "CreatureAbilities",
+    "CreatureWeapons",
+    "Abilities"
+  ],
+  "all_other_file_bytes_unmodified": true
+}
