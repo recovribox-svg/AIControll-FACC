@@ -1550,3 +1550,10 @@ metakinesis or form optimizer. Separate unacted Aid Another/no-reach ordering re
 Prior filenames/checksums remain unchanged for exact log-to-build matching.
 
 </details>
+
+
+## C06R1 playtest review candidate (9 November 2026, not played)
+
+[UMM test ZIP](AI-Control-FACC-v0.3.30-dev-C06R1-a19fb54-UMM-test.zip) · [identity](AI-Control-FACC-v0.3.30-dev-C06R1-a19fb54-UMM-test.identity.json) · [checksums](AI-Control-FACC-v0.3.30-dev-C06R1-a19fb54-UMM-test.sha256). Source `a19fb54`, startup MVID `1a2a9e3e-dd56-4849-b49e-7144ad3b7ed5`; manifest 0.3.30. ZIP SHA-256 `4c365d16cd074ab7b4223c34f0ffb664bf27e50e743b5717a3d4f85ccedff406`.
+
+Includes the five focused C06 fixes/diagnostics (PRs #23–#27) over the played C06 / PR #22. See [expected changes and TB/RT replay](../docs/C06_PLAYTEST_CANDIDATE.md) and [combined checks](../docs/competence/C06_COMBINED_CHECKS.json). 551 unit + 11 inventory tests; Release 0 warnings; strict compatible scope 44,637 unique / 0 failed, 4,807 rows / 0 reader errors; 98 toggle, 14 supplied-provider burn and 6 viewless checks pass. Original full corpus remains INCOMPLETE with the named enum failure. No movement/avoidance change; swarm proposal awaits author approval. Gameplay/Unity performance pending; development only, not a release.
