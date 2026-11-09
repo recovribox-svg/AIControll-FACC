@@ -41,6 +41,14 @@ namespace CompanionAI_Pathfinder.Tactics
             catch { return 0; }
         }
 
+        /// <summary>Read the native accumulated count without creating a part or caching mutable victim state.</summary>
+        internal static int LevelsBeforeDrainDeath(UnitEntityData unit)
+        {
+            int level = Math.Max(1, unit?.Descriptor?.Progression?.CharacterLevel ?? 1);
+            int drained = unit?.Get<Kingmaker.UnitLogic.Parts.UnitPartNegativeLevels>()?.Count ?? 0;
+            return ValueModel.LevelsBeforeDrainDeath(level, drained);
+        }
+
         /// <summary>
         /// The game would refuse <paramref name="unit"/> this ability damage (AddImmunityToAbilityScoreDamage on its facts: the
         /// score listed, or every score when none is; damage, or drain too when it says so). A component with an ignore rule
@@ -102,8 +110,7 @@ namespace CompanionAI_Pathfinder.Tactics
                 if (kind == DealKind.EnergyDrain)
                 {
                     if (EnergyDrainImmune(target)) return 0f;
-                    int level = Math.Max(1, target.Descriptor?.Progression?.CharacterLevel ?? 1);
-                    return ValueModel.EnergyDrainEquivalent(amount, level, target.HPLeft);
+                    return ValueModel.EnergyDrainEquivalent(amount, LevelsBeforeDrainDeath(target), target.HPLeft);
                 }
             }
             catch (Exception ex)

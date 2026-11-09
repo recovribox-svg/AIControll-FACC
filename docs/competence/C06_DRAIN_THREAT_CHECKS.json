@@ -1,0 +1,100 @@
+{
+  "task": "drain-threat",
+  "checked_source_commit": "8cecd92f9ae5f9791b507a81f43187003fd85000",
+  "starting_commit": "ab810b364ff2f78243b123e42cde46374914056f",
+  "development_base": "1f58150b8e50f9a322ba0b8d3fcc095fe188420f",
+  "dependency_pr": 22,
+  "version": "0.3.30",
+  "reported_game_version": "Steam 2.7.0x (author report; not independently read from installation)",
+  "played_baseline_mvid": "641ff828-00b6-46aa-9f92-3748fae7f2f6",
+  "dll": {
+    "assembly": "CompanionAI_Pathfinder, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null",
+    "mvid": "262b5ad5-b372-4e53-a61c-d3ee423f600f",
+    "sha256": "3557fa6241574d3b66616ceb8881c72cf3e54ccfadf39bdaa54f2e0981085e6e",
+    "size": 1242112
+  },
+  "unit_tests": {
+    "passed": 549,
+    "failed": 0,
+    "skipped": 0
+  },
+  "release_build": {
+    "references": "actual supplied native assemblies and UMM; existing Harmony 2.2.2 compile dependency",
+    "warnings": 0,
+    "errors": 0
+  },
+  "strict_native_compatible_audit": {
+    "status": "PASS",
+    "exit_code": 0,
+    "source_files": 44647,
+    "loaded_unique": 44637,
+    "failed": 0,
+    "allowed_load_failures": 0,
+    "ability_rows": 4807,
+    "reader_errors": 0,
+    "scope": "C06_NATIVE_COMPATIBLE_SCOPE.json",
+    "input_bytes_modified": false
+  },
+  "original_full_corpus": {
+    "source_files": 44648,
+    "strict_status": "INCOMPLETE",
+    "loaded_unique": 44637,
+    "failed": 1,
+    "strict_ability_verdicts": false,
+    "prior_diagnostic_status": "PARTIAL",
+    "reason": "One separately fingerprinted enum spelling mismatch; unchanged malformed input is not silently normalized or treated as a passing full-corpus audit."
+  },
+  "native_toggle_checks": {
+    "checks": 90,
+    "failures": 0,
+    "progression_shaped_kits": 6,
+    "judgment_graphs": 15,
+    "actor_setup": false,
+    "native_commands": false
+  },
+  "signature_check": {
+    "baseline_mvid": "641ff828-00b6-46aa-9f92-3748fae7f2f6",
+    "added_member_refs": 1,
+    "resolved_added_refs": 1,
+    "details": [
+      "VERIFIED System.Int32 Kingmaker.UnitLogic.Parts.UnitPartNegativeLevels::get_Count()",
+      "VERIFIED_COUNT 1 EXPECTED 1"
+    ]
+  },
+  "native_assembly": {
+    "mvid": "90a9869c-2792-4c7b-bfb7-5a8b33da7c82",
+    "sha256": "2cb7160b7154d4ffacc77b9c51b1eb26199e1294300f04fdfc073367b2ef8953"
+  },
+  "source_identities": [
+    {
+      "file": "Tactics/CombatMath.Afflictions.cs",
+      "sha256": "fb831e29b545262b3fb37bc7963eec0721c74dc7f4bdc036091ffa87f6fec62a"
+    },
+    {
+      "file": "Tactics/CombatMath.Drain.cs",
+      "sha256": "a40a7d04e9a6fb61bd262a4d1793b443f79911ed752bb587b7bb1599e408a310"
+    },
+    {
+      "file": "Tactics/CombatMath.cs",
+      "sha256": "157c87f283b8ad610007fea2f717f115d8493532efb633a9036efc716b854950"
+    },
+    {
+      "file": "Tactics/EnemyThreat.cs",
+      "sha256": "d98c88d371b4f02c973226f36bfd5046a8693caf25a6e38c1960f96a900a16da"
+    },
+    {
+      "file": "Tactics/ValueModel.Drain.cs",
+      "sha256": "349eb99c71d1e2b338cbb153b62e2bfd3e1f143a7e3c2f06ab186e8789862347"
+    },
+    {
+      "file": "tests/CompanionAI.Tests/DrainTests.cs",
+      "sha256": "7d87af3597c1fe544660c0f245bca0d46c5690308e3a7895fe82c3b27d70c080"
+    }
+  ],
+  "limits": [
+    "No author gameplay test of this candidate yet.",
+    "Offline scratch dependencies are rewritten only as documented by ProfileAudit; they are never deployable.",
+    "No matched Unity performance/allocation measurement or full mod/actor initialization certificate.",
+    "Movement, commitment, retreat, pathfinding and cancellation changes remain subject to explicit author approval."
+  ]
+}

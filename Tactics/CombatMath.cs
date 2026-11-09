@@ -2343,7 +2343,8 @@ namespace CompanionAI_Pathfinder.Tactics
         /// <see cref="Threat"/>, more while the ally it attacks may drop to it this round (EnemyThreat.Urgency, 1..1.5). Not
         /// for the danger it poses (incoming damage): the drop chance is already that danger's consequence.
         /// </summary>
-        public static float ControlWorth(UnitEntityData enemy) => Threat(enemy) * EnemyThreat.Urgency(enemy);
+        public static float ControlWorth(UnitEntityData enemy) =>
+            ValueModel.NonHitPointRemovalWorth(Threat(enemy), EnemyThreat.NonHitPointHarm(enemy), enemy != null && IsDisabled(enemy)) * EnemyThreat.Urgency(enemy);
 
         #endregion
     }

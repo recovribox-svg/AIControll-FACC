@@ -165,6 +165,11 @@ namespace CompanionAI_Pathfinder.Tactics
         public static float Share(UnitEntityData enemy) =>
             enemy != null && Assessed.TryGetValue(enemy.UniqueId, out var a) ? a.Share : 1f;
 
+        /// <summary>The already assessed harm beyond HP (scores, negative levels, on-hit control), kept out of
+        /// observed HP calibration. A dictionary lookup only; unknown/unread sources add no removal floor.</summary>
+        internal static float NonHitPointHarm(UnitEntityData enemy) =>
+            enemy != null && Assessed.TryGetValue(enemy.UniqueId, out var a) ? a.AbilityDamage : 0f;
+
         /// <summary>
         /// What taking this enemy down or holding it gains from the ally it may drop this round (1..1.5): the chance that
         /// ally drops to its offence (scaled like all predicted damage by the fight's danger calibration) while within its

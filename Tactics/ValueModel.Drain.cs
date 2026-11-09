@@ -18,6 +18,16 @@ namespace CompanionAI_Pathfinder.Tactics
         /// <summary>Hit points one negative level takes (NegativeLevelComponent: HitPoints -5 per level).</summary>
         public const float HitPointsPerNegativeLevel = 5f;
 
+        /// <summary>UnitLifeController compares accumulated UnitPartNegativeLevels.Count with character level.
+        /// The remaining part of that limit is the denominator for the next drain, not the original full level.</summary>
+        public static int LevelsBeforeDrainDeath(int characterLevel, int alreadyDrained) =>
+            Math.Max(0, Math.Max(1, characterLevel) - Math.Max(0, alreadyDrained));
+
+        /// <summary>Read non-HP harm is a lower bound on the value of removing its source. Keep the existing disabled
+        /// discount; no extra class/tag multiplier and no change to the calibrated incoming-HP threat.</summary>
+        public static float NonHitPointRemovalWorth(float ordinaryWorth, float nonHitPointHarm, bool disabled) =>
+            Math.Max(Math.Max(0f, ordinaryWorth), Math.Max(0f, nonHitPointHarm) * (disabled ? 0.25f : 1f));
+
         /// <summary>
         /// The hit points <paramref name="points"/> of ability damage to a score of <paramref name="score"/> are worth on a
         /// target with <paramref name="hpLeft"/> left: the share of the score (<see cref="AbilityDamageShare"/>) of those hit
