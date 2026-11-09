@@ -178,7 +178,7 @@ namespace CompanionAI_Pathfinder.Tactics
         /// </summary>
         internal static bool SwarmStrikes(UnitEntityData swarm, SwarmSpace space,
                                           UnitEntityData who, Vector3 at, Func<UnitEntityData, Vector3> positionOf,
-                                          IEnumerable<UnitEntityData> party)
+                                          IReadOnlyList<UnitEntityData> party)
         {
             if (swarm == null || space == null || who == null) return false;
             try

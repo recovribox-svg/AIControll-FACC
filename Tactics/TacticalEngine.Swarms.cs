@@ -175,8 +175,15 @@ namespace CompanionAI_Pathfinder.Tactics
             float best = list.Where(c => c.Slot != ActionSlot.Free && c.Slot != ActionSlot.Swift && Affordable(ctx, c) && kept(c))
                              .Select(c => c.Value).DefaultIfEmpty(0f).Max();
             var refused = realTime ? null : CombatMemory.ForTurn(unit).RefusedSteps;
-            Func<Vector3, bool> clear = p => striking.All(s => !CombatMath.SwarmStrikes(s.swarm, s.area, unit, p, null, SwarmTargets(ctx))) &&
-                                             (refused == null || refused.All(q => Vector3.Distance(p, q) > 0.5f));
+            bool Clear(Vector3 p)
+            {
+                foreach (var s in striking)
+                    if (CombatMath.SwarmStrikes(s.swarm, s.area, unit, p, null, SwarmTargets(ctx))) return false;
+                if (refused != null)
+                    foreach (var q in refused) if (Vector3.Distance(p, q) <= 0.5f) return false;
+                return true;
+            }
+            Func<Vector3, bool> clear = Clear;
             var circles = SwarmExitCircles(ctx, striking);
             var distances = new List<(float distance, bool step)>();
             if (canStep && (refused == null || refused.Count < 3)) distances.Add((ctx.FiveFootRange * 0.9f, true));

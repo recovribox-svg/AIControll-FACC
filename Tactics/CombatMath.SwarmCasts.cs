@@ -141,14 +141,15 @@ namespace CompanionAI_Pathfinder.Tactics
                        ClearSight(Ability.Caster.Unit.EyePosition, at + v.EyeOffset);
             }
 
-            internal bool Covers(UnitEntityData who, Vector3 at, Func<UnitEntityData, Vector3> positionOf, IEnumerable<UnitEntityData> party)
+            internal bool Covers(UnitEntityData who, Vector3 at, Func<UnitEntityData, Vector3> positionOf, IReadOnlyList<UnitEntityData> party)
             {
                 var v = Victim(who);
                 if (!v.Affected) return false;
                 if (v.OwnBurst && CanAnchor(who, at) && ClearSight(at + v.EyeOffset, at)) return true;
                 if (party == null) return false;
-                foreach (var anchor in party)
+                for (int i = 0; i < party.Count; i++)
                 {
+                    var anchor = party[i];
                     if (anchor == null || anchor == who) continue;
                     Vector3 p = positionOf != null ? positionOf(anchor) : anchor.Position;
                     if (!CanAnchor(anchor, p)) continue;
@@ -184,19 +185,22 @@ namespace CompanionAI_Pathfinder.Tactics
                 return v;
             }
 
-            internal void AddExitCircles(UnitEntityData who, IEnumerable<UnitEntityData> party, List<SwarmGeometry.Circle> circles)
+            internal void AddExitCircles(UnitEntityData who, IReadOnlyList<UnitEntityData> party, List<SwarmGeometry.Circle> circles)
             {
                 var v = Victim(who);
                 if (!v.Affected) return;
                 var caster = Ability.Caster.Unit;
                 if (v.Primary && v.OwnBurst && v.Reach >= 0f) circles.Add(new SwarmGeometry.Circle(caster.Position.x, caster.Position.z, v.Reach));
                 if (party == null) return;
-                foreach (var anchor in party)
+                for (int i = 0; i < party.Count; i++)
+                {
+                    var anchor = party[i];
                     if (anchor != null && anchor != who && CanAnchor(anchor, anchor.Position))
                     {
                         var centre = anchor.Position + Victim(anchor).EyeOffset;
                         circles.Add(new SwarmGeometry.Circle(centre.x, centre.z, Selector.AoERadius.Meters + v.Body));
                     }
+                }
             }
         }
     }
