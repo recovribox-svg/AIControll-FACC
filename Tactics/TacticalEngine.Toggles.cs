@@ -308,10 +308,17 @@ namespace CompanionAI_Pathfinder.Tactics
             "SpendResource", "CalcResourceCost", ToggleSpendCallback + "OnAbilityTurnOn", ToggleSpendCallback + "OnStart", ToggleSpendCallback + "OnNewRound"
         }.Select(name => HarmonyLib.AccessTools.Method(typeof(ActivatableAbilityResourceLogic), name)).ToArray();
         private static readonly Guid InspectedTttSpendModule = new Guid("cdfed43f-53a0-4186-a181-75496eecec8f");
+        private static readonly Guid InspectedPsionicsSpendModule = new Guid("0501ad1b-c557-4744-a473-b00b015a2fde");
         private sealed class ToggleSpendPatchContract
         {
             public readonly bool Known, Ttt;
-            public ToggleSpendPatchContract() { Known = KnownToggleSpendPatches(out bool ttt); Ttt = ttt; }
+            public readonly FieldInfo PsionicCosts;
+            public readonly string Unknown;
+            public ToggleSpendPatchContract()
+            {
+                Known = ReadToggleSpendPatches(out bool ttt, out var costs, out string unknown);
+                Ttt = ttt; PsionicCosts = costs; Unknown = unknown;
+            }
         }
         private static readonly ConditionalWeakTable<TacticalContext, ToggleSpendPatchContract> ToggleSpendContracts =
             new ConditionalWeakTable<TacticalContext, ToggleSpendPatchContract>();
@@ -321,29 +328,64 @@ namespace CompanionAI_Pathfinder.Tactics
             ToggleSpendContracts.GetValue(ctx, _ => new ToggleSpendPatchContract());
 
         private static bool KnownToggleSpendPatches(out bool ttt)
+            => ReadToggleSpendPatches(out ttt, out _, out _);
+
+        private static bool ReadToggleSpendPatches(out bool ttt, out FieldInfo psionicCosts, out string unknown)
         {
             ttt = false;
+            psionicCosts = null;
+            unknown = null;
             bool prefix = false, postfix = false;
             foreach (var method in ToggleSpendMethods)
             {
-                if (method == null) return false;
+                if (method == null) { unknown = "native spend binding unavailable"; return false; }
                 var patches = HarmonyLib.Harmony.GetPatchInfo(method);
                 if (patches == null) continue;
-                if (patches.Transpilers.Count > 0 || patches.Finalizers.Count > 0) return false;
+                if (patches.Transpilers.Count > 0 || patches.Finalizers.Count > 0)
+                { unknown = method.Name + " transpiler/finalizer"; return false; }
                 foreach (var patch in patches.Prefixes.Concat(patches.Postfixes))
                 {
                     var m = patch.PatchMethod;
+                    bool isPrefix = patches.Prefixes.Contains(patch);
+                    // Psionics 0.2.3 overrides cost only for GUIDs in this live map. Its static constructor makes
+                    // empty BCL collections only; no blueprint initializer or patch method is called by this reader.
+                    if (method.Name == "CalcResourceCost" && !isPrefix && m?.Name == "CalcResourceCost_Postfix" &&
+                        m.DeclaringType?.FullName == "Psionics.HarmonyPatches.MindBladeEnchantPoolPatch" &&
+                        m.Module.ModuleVersionId == InspectedPsionicsSpendModule)
+                    {
+                        psionicCosts = HarmonyLib.AccessTools.Field(m.DeclaringType.Assembly.GetType("Psionics.Shared.Mechanics.MindBladeEnchantments"), "AbilityToggleCosts");
+                        if (psionicCosts?.IsStatic != true || !psionicCosts.IsInitOnly || psionicCosts.FieldType != typeof(Dictionary<string, int>))
+                        { unknown = "Psionics cost-map binding unavailable"; return false; }
+                        continue;
+                    }
                     if (method.Name != "SpendResource" || m?.DeclaringType?.FullName !=
                         "TabletopTweaks.Core.MechanicsChanges.ActivatableAbilitySpendLogic+ActivatableAbilityResourceLogic_SpendResource_PerfectCritical_Patch" ||
-                        m.Module.ModuleVersionId != InspectedTttSpendModule) return false;
-                    if (m.Name == "Prefix") prefix = true;
-                    else if (m.Name == "Postfix") postfix = true;
-                    else return false;
+                        m.Module.ModuleVersionId != InspectedTttSpendModule)
+                    {
+                        unknown = $"{method.Name}: {m?.DeclaringType?.FullName}.{m?.Name} module {m?.Module.ModuleVersionId}";
+                        return false;
+                    }
+                    if (isPrefix && m.Name == "Prefix") prefix = true;
+                    else if (!isPrefix && m.Name == "Postfix") postfix = true;
+                    else { unknown = "TTT spend patch kind mismatch"; return false; }
                 }
             }
-            if (prefix != postfix) return false;
+            if (prefix != postfix) { unknown = "incomplete TTT spend patch pair"; return false; }
             ttt = prefix && postfix;
             return true;
+        }
+
+        private static bool NativeToggleCostUnchanged(ToggleSpendPatchContract contract, BlueprintActivatableAbility blueprint, out string note)
+        {
+            note = null;
+            if (contract.PsionicCosts == null) return true;
+            // Contents can change independently of Harmony metadata. Read the map for this quote, not into the
+            // decision snapshot. Mapped Mind Blade enchantments keep their existing event/pool fallback.
+            var costs = contract.PsionicCosts.GetValue(null) as Dictionary<string, int>;
+            if (costs == null) { note = "Psionics cost-map unavailable"; return false; }
+            if (!costs.ContainsKey(blueprint.AssetGuid.ToString())) return true;
+            note = "Psionics Mind Blade enchantment cost";
+            return false;
         }
 
         private static readonly HashSet<string> ToggleActivationPassives = new HashSet<string>
@@ -478,17 +520,18 @@ namespace CompanionAI_Pathfinder.Tactics
                 if (toggle.SourceItem != null) { note = "item-charge fallback"; return false; }
                 if (toggle.Blueprint.DeactivateAfterFirstRound) { note = "first-round expiry fallback"; return false; }
                 var all = toggle.Blueprint.ComponentsArray.OfType<IActivatableAbilitySpendResourceLogic>().ToArray();
-                var pairs = toggle.SelectComponentsWithRuntime<ActivatableAbilityResourceLogic>().ToArray();
                 if (all.Length == 0)
                 {
                     window = ValueModel.ToggleResourceWindow(ValueModel.ToggleSpendCadence.Free, 0, 0, toggle.IsStarted, ctx.ExpectedRounds);
                     return true;
                 }
+                if (all.Length != 1 || !(all[0] is ActivatableAbilityResourceLogic logic))
+                { note = $"multiple/custom spend fallback ({all.Length} components)"; return false; }
                 var contract = ToggleSpendContractFor(ctx);
-                if (all.Length != 1 || pairs.Length != 1 || !contract.Known)
-                { note = "multiple/custom spend fallback"; return false; }
+                if (!contract.Known) { note = "unrecognized spend patch fallback (" + contract.Unknown + ")"; return false; }
+                if (!NativeToggleCostUnchanged(contract, toggle.Blueprint, out string scopeNote))
+                { note = scopeNote + " fallback"; return false; }
                 bool ttt = contract.Ttt;
-                var logic = pairs[0].Component;
                 var resource = logic.RequiredResource;
                 if (resource == null) { note = "missing resource fallback"; return false; }
                 int raw = (int)logic.SpendType;
@@ -524,7 +567,9 @@ namespace CompanionAI_Pathfinder.Tactics
                 bool timed = cadence == ValueModel.ToggleSpendCadence.Minute || cadence == ValueModel.ToggleSpendCadence.TenMinutes || cadence == ValueModel.ToggleSpendCadence.Hour;
                 if (toggle.IsStarted && timed && cost > 0)
                 {
-                    if (!pairs[0].Runtime.TryGetData<ActivatableAbilityResourceLogic.ComponentData>(out var data) || data.RoundsToSpendingCounter <= 0)
+                    var pairs = toggle.SelectComponentsWithRuntime<ActivatableAbilityResourceLogic>().Where(p => p.Component == logic).ToArray();
+                    if (pairs.Length != 1 || pairs[0].Runtime == null ||
+                        !pairs[0].Runtime.TryGetData<ActivatableAbilityResourceLogic.ComponentData>(out var data) || data.RoundsToSpendingCounter <= 0)
                     { note = "unread renewal timer fallback"; return false; }
                     counter = data.RoundsToSpendingCounter;
                 }
