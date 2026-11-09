@@ -34,7 +34,14 @@ namespace CompanionAI_Pathfinder.Tactics
                     // Read the actual live native shape, including any changed radius/centre. Other shapes retain the
                     // existing search. The final native Contains check is still mandatory for every chosen hint.
                     if (!(area?.View?.Shape is ScriptZoneCylinder cylinder) || cylinder.GetType() != typeof(ScriptZoneCylinder)) return null;
-                    circles.Add(new SwarmGeometry.Circle(cylinder.Center.x, cylinder.Center.z, cylinder.Radius + who.Corpulence));
+                    var transform = cylinder.transform;
+                    var scale = transform.lossyScale;
+                    if (Math.Abs(Math.Abs(scale.x) - Math.Abs(scale.z)) > .0001f ||
+                        Math.Abs(Vector3.Dot(transform.up, Vector3.up)) < .9999f) return null;
+                    // Contains inverse-transforms the point, then adds the native body in local space. Its world circle
+                    // therefore scales the whole radius/body sum. Nonuniform or tilted cylinders are not world circles.
+                    var centre = transform.TransformPoint(cylinder.Center);
+                    circles.Add(new SwarmGeometry.Circle(centre.x, centre.z, Math.Abs(scale.x) * (cylinder.Radius + who.Corpulence)));
                 }
             }
             return circles.Count > 0 ? circles : null;

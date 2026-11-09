@@ -128,10 +128,13 @@
     "AbilityTargetsAround.Select centres GetTargetsAround on the chosen unit EyePosition, then applies enemy/dead/untargetable/LOS filters.",
     "GameHelper.IsUnitInRange compares MechanicsDistance with selector radius plus recipient Corpulence and checks native LOS.",
     "AbilityData.GetApproachDistance uses actual custom range plus caster/target bodies for these casts.",
-    "UnitPartSwarmAttack.HasEnemiesInInnerCircle reads its registered TargetsList, including unconscious entries; count/activation is not a facts-manager generation."
+    "UnitPartSwarmAttack.HasEnemiesInInnerCircle reads its registered TargetsList, including unconscious entries; count/activation is not a facts-manager generation.",
+    "UnitCommand.IsUnitCloseEnough squares ApproachRadius and checks command LOS from caster eye to Target.Point; TargetWrapper.Point is the unit body position.",
+    "ScriptZoneCylinder.Contains inverse-transforms the world point before applying its local Center and Radius plus recipient body. World-circle hints therefore require an upright uniform XZ transform; other transforms retain the existing search."
   ],
   "limits": [
     "Input graphs establish a supported native delivery gap, not the exact unavailable live actor/area state in the old log.",
-    "No game sources or raw JBP contents are reproduced."
+    "No game sources or raw JBP contents are reproduced.",
+    "Native cylinder transforms/Contains cannot execute in the offline host; field/signature checks are distinct from live Unity geometry."
   ]
 }

@@ -88,10 +88,15 @@ namespace CompanionAI_Pathfinder.Tactics
             internal readonly AbilityProfile Profile;
             private readonly Dictionary<UnitEntityData, CastVictim> Victims = new Dictionary<UnitEntityData, CastVictim>();
             private readonly Dictionary<(Vector3, Vector3), bool> Sight = new Dictionary<(Vector3, Vector3), bool>();
+            private readonly Dictionary<(UnitEntityData, Vector3), bool> Anchors = new Dictionary<(UnitEntityData, Vector3), bool>();
+            private readonly bool NeedCastSight;
             private int Generation;
             internal SwarmCast(AbilityData ability, AbilityTargetsAround selector)
-            { Ability = ability; Selector = selector; Profile = AbilityProfile.Get(ability); }
-            internal void Reset() { unchecked { Generation++; } Sight.Clear(); }
+            {
+                Ability = ability; Selector = selector; Profile = AbilityProfile.Get(ability);
+                NeedCastSight = ability.Blueprint.GetComponent<Kingmaker.UnitLogic.Abilities.Components.Base.ILineOfSightIgnore>() == null;
+            }
+            internal void Reset() { unchecked { Generation++; } Sight.Clear(); Anchors.Clear(); }
 
             internal sealed class CastVictim
             {
@@ -137,8 +142,16 @@ namespace CompanionAI_Pathfinder.Tactics
             internal bool CanAnchor(UnitEntityData anchor, Vector3 at)
             {
                 var v = Victim(anchor);
-                return v.Primary && v.Reach >= 0f && GeometryUtils.MechanicsDistance(Ability.Caster.Unit.Position, at) <= v.Reach &&
-                       ClearSight(Ability.Caster.Unit.EyePosition, at + v.EyeOffset);
+                if (!v.Primary) return false;
+                var key = (anchor, at);
+                if (Anchors.TryGetValue(key, out bool ready)) return ready;
+                var caster = Ability.Caster.Unit;
+                // UnitUseAbility approaches Target.Point (the body's position). Use the native gate, including its
+                // signed-radius squaring and command LOS, rather than approximating it by a positive radius/eye ray.
+                bool reachable = Kingmaker.UnitLogic.Commands.Base.UnitCommand.IsUnitCloseEnough(at, caster.Position,
+                    caster.EyePosition, v.Reach, NeedCastSight, 0f);
+                Anchors[key] = reachable;
+                return reachable;
             }
 
             internal bool Covers(UnitEntityData who, Vector3 at, Func<UnitEntityData, Vector3> positionOf, IReadOnlyList<UnitEntityData> party)
@@ -190,7 +203,7 @@ namespace CompanionAI_Pathfinder.Tactics
                 var v = Victim(who);
                 if (!v.Affected) return;
                 var caster = Ability.Caster.Unit;
-                if (v.Primary && v.OwnBurst && v.Reach >= 0f) circles.Add(new SwarmGeometry.Circle(caster.Position.x, caster.Position.z, v.Reach));
+                if (v.Primary && v.OwnBurst) circles.Add(new SwarmGeometry.Circle(caster.Position.x, caster.Position.z, Math.Abs(v.Reach)));
                 if (party == null) return;
                 for (int i = 0; i < party.Count; i++)
                 {

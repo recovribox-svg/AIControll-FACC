@@ -103,10 +103,15 @@ namespace ProfileAudit
                 long bytes = GC.GetAllocatedBytesForCurrentThread() - before;
                 Check(bytes == 0, "10000 unchanged native fact snapshots allocate zero managed bytes (observed " + bytes + ")");
 
-                var shape = new Kingmaker.View.MapObjects.SriptZones.ScriptZoneCylinder
-                { Center = UnityEngine.Vector3.zero, Radius = 2f, Height = 100f };
-                Check(shape.Contains(new UnityEngine.Vector3(2.4f, 0, 0), .5f), "native cylinder includes recipient body at the boundary");
-                Check(!shape.Contains(new UnityEngine.Vector3(2.6f, 0, 0), .5f), "native cylinder excludes a body beyond its actual radius");
+                var cylinderType = typeof(Kingmaker.View.MapObjects.SriptZones.ScriptZoneCylinder);
+                Check(cylinderType.GetField("Radius")?.FieldType == typeof(float) && cylinderType.GetField("Center")?.FieldType == typeof(UnityEngine.Vector3),
+                    "actual native cylinder local radius/centre fields bind");
+                Check(cylinderType.GetMethod("Contains", new[] { typeof(UnityEngine.Vector3), typeof(float) })?.ReturnType == typeof(bool),
+                    "native Contains point/body signature binds; live Transform execution requires Unity");
+                Check(Kingmaker.UnitLogic.Commands.Base.UnitCommand.IsUnitCloseEnough(new UnityEngine.Vector3(1, 0, 0),
+                    UnityEngine.Vector3.zero, UnityEngine.Vector3.zero, -2f, false, 0f), "native signed approach radius is squared, not rejected as negative");
+                Check(!Kingmaker.UnitLogic.Commands.Base.UnitCommand.IsUnitCloseEnough(new UnityEngine.Vector3(3, 0, 0),
+                    UnityEngine.Vector3.zero, UnityEngine.Vector3.zero, -2f, false, 0f), "native approach gate rejects a point beyond that squared radius");
 
                 var epoch = typeof(CombatMath).GetField("s_SwarmDecision", BindingFlags.NonPublic | BindingFlags.Static);
                 var frame = typeof(CombatMath).GetField("s_SwarmFrame", BindingFlags.NonPublic | BindingFlags.Static);
