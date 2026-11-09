@@ -238,7 +238,7 @@ namespace CompanionAI_Pathfinder.Tactics
                 if (!AbilityDamageImmune(victim, entry.Key, false))
                     drain += ValueModel.AbilityDamageEquivalent(entry.Value, AbilityScore(victim, entry.Key), hpLeft);
             if (affliction.NegativeLevels > 0f && !EnergyDrainImmune(victim))
-                drain += ValueModel.EnergyDrainEquivalent(affliction.NegativeLevels, level, hpLeft);
+                drain += ValueModel.EnergyDrainEquivalent(affliction.NegativeLevels, LevelsBeforeDrainDeath(victim), hpLeft);
             return ValueModel.AfflictionWorth(affliction.HitPoints, drain, affliction.Control, hpLeft, ValueModel.PerRound(level));
         }
 
@@ -252,7 +252,7 @@ namespace CompanionAI_Pathfinder.Tactics
                 if (!AbilityDamageImmune(victim, entry.Key, false))
                     share += ValueModel.AbilityDamageShare(entry.Value, AbilityScore(victim, entry.Key));
             float levels = affliction.NegativeLevels > 0f && !EnergyDrainImmune(victim) ? affliction.NegativeLevels : 0f;
-            return ValueModel.AfflictionShare(share, levels, Math.Max(1, victim.Descriptor?.Progression?.CharacterLevel ?? 1), affliction.Control);
+            return ValueModel.AfflictionShare(share, levels, levels > 0f ? LevelsBeforeDrainDeath(victim) : 1, affliction.Control);
         }
 
         private sealed class AfflictionSource

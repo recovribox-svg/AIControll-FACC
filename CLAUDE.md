@@ -1,4 +1,4 @@
-﻿# CLAUDE.md
+# CLAUDE.md
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
@@ -7,6 +7,8 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 Read [CONTRIBUTING.md](CONTRIBUTING.md) for shared branch ownership, Codex pull requests, handovers, verification, and releases.
 Codex works on task branches and targets pull requests at `claude/dreamy-pasteur-b9h3rn`; Claude reviews and integrates them there.
 Keep `main` for author-authorized releases. Read [AGENTS.md](AGENTS.md) when coordinating agent work.
+
+**C06 playtest / drain threat (9 November 2026, Codex; review pending):** `codex/c06-drain-threats` starts at played C06 / PR #22 `ab810b3`, including development `1f58150` / `3443d94`. Read [docs/C06_DRAIN_THREATS.md](docs/C06_DRAIN_THREATS.md) and §130. Native death compares `UnitPartNegativeLevels.Count` with character level; new drain now uses the remaining limit. Existing recognized beyond-HP harm also floors target-removal/control worth, which otherwise lost most of its magnitude through the x2 CR share cap. Incoming-HP calibration and action/commitment/movement algorithms are unchanged; the shared effect reader now knows existing negative levels. 549 unit tests pass in the first check; final committed build/audit receipt follows. Manifest 0.3.30; no forced target or class-name bonus.
 
 **Competence programme (8 November 2026): PR #20 integrated, read [docs/CLASS_COMPETENCE_CURRENT.md](docs/CLASS_COMPETENCE_CURRENT.md)
 first.** Codex's foundation (`codex/class-competence-foundation`, from 0.3.30 test 2 `71ca3de`) was reviewed against the
