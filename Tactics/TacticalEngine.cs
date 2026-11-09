@@ -172,6 +172,7 @@ namespace CompanionAI_Pathfinder.Tactics
         public Dictionary<string, float> TooFar = new Dictionary<string, float>();
         /// <summary>★ v0.3.9: party members down (unconscious, not dead): only heals are aimed at them.</summary>
         public List<UnitEntityData> DownedAllies = new List<UnitEntityData>();
+        internal List<UnitEntityData> SwarmRecipients;
         public float ExpectedRounds;
         /// <summary>★ v0.3.18: the party's damage per round behind <see cref="ExpectedRounds"/> (ValueModel, prior blended with this fight).</summary>
         public float PartyDamagePerRound;
@@ -1135,16 +1136,16 @@ namespace CompanionAI_Pathfinder.Tactics
                 {
                     zone = 11f;
                 }
-                if (Vector3.Distance(enemy.Position, at) > zone + ally.Corpulence) continue;
                 // ★ v0.3.28 test 15 (author-approved): a swarm's round where it strikes - everyone in its space in full, else
                 // half of it within its walk, shared (TacticalEngine.Swarms.cs).
-                var swarmArea = CombatMath.SwarmAreaOf(enemy);
+                var swarmArea = CombatMath.SwarmSpaceOf(enemy);
                 if (swarmArea != null)
                 {
                     float part = SwarmPart(ctx, enemy, swarmArea, ally, at, zone);
                     if (part > 0f) parts.Add(new KeyValuePair<UnitEntityData, float>(enemy, part));
                     continue;
                 }
+                if (Vector3.Distance(enemy.Position, at) > zone + ally.Corpulence) continue;
                 // ★ v0.3.28 test 7 (author-approved): a melee enemy's full attack only where it strikes from where it
                 // stands (or a 5-foot step); a walk first is one attack, and only if the area it stands in lets it go
                 // (StrikeShareAt). The Schir in Camellia's Grease counted in full at every spot it could walk to.

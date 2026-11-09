@@ -1,6 +1,6 @@
 # C06 swarm investigation and movement proposal
 
-**Status: proposal only; explicit author approval required before movement-related implementation.** The active task forbids changes to movement, commitment, retreat, pathfinding and stuck-walk cancellation. The diagnostics in this branch do not select or reprice moves.
+**Status: approved by the author on 9 November 2026 and implemented on `codex/c06-swarm-coverage`.** See [C06_SWARM_IMPLEMENTATION.md](C06_SWARM_IMPLEMENTATION.md) for the bounded native rules, performance work, validation and replay. The original proposal below is preserved as its approval scope; unrelated movement, commitment, retreat, pathfinding and cancellation changes still require approval.
 
 ## Evidence
 
@@ -26,4 +26,4 @@ Likely affected files after approval: CombatMath.Swarms.cs, source-cache handlin
 
 ## Paired acceptance
 
-For each encountered swarm, test already inside, entering, just outside, another ally at its centre, multiple overlapping swarms, zero/one move remaining, immunity/high versus low HP, and a useful attack/spell that should beat leaving. Include legal exits and blocked exits in both modes. Observe native damage/target inclusion and the final issued outcome. Verify that a unit does not immediately walk back into the same danger for a stale appraisal. New movement behavior remains unimplemented until the author approves this proposal.
+For each encountered swarm, test already inside, entering, just outside, another ally at its centre, multiple overlapping swarms, zero/one move remaining, immunity/high versus low HP, and a useful attack/spell that should beat leaving. Include legal exits and blocked exits in both modes. Observe native damage/target inclusion and the final issued outcome. Verify that a unit does not immediately walk back into the same danger for a stale appraisal. The author subsequently approved this scope; implementation and pending gameplay checks are documented in the linked task handover.

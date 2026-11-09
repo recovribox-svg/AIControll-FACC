@@ -19,6 +19,7 @@
     <Compile Include="..\..\Tactics\ValueModel.Drain.cs" Link="ValueModel.Drain.cs" />
     <Compile Include="..\..\Tactics\ValueModel.Reach.cs" Link="ValueModel.Reach.cs" />
     <Compile Include="..\..\Tactics\ValueModel.Swarm.cs" Link="ValueModel.Swarm.cs" />
+    <Compile Include="..\..\Tactics\SwarmGeometry.cs" Link="SwarmGeometry.cs" />
     <Compile Include="..\..\Tactics\ValueModel.Resources.cs" Link="ValueModel.Resources.cs" />
     <Compile Include="..\..\Tactics\ValueModel.Toggles.cs" Link="ValueModel.Toggles.cs" />
     <Compile Include="..\..\Tactics\ValueModel.Kinetic.cs" Link="ValueModel.Kinetic.cs" />

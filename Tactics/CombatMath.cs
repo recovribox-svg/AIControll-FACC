@@ -300,6 +300,7 @@ namespace CompanionAI_Pathfinder.Tactics
         /// <summary>★ v0.3.18: forget the attack routines read (a new decision, or a state changed for a preview).</summary>
         public static void ClearAttackCache()
         {
+            NewSwarmDecision(); // Dynamic source/availability snapshots must also expire between same-frame decisions.
             Routines.Clear();
             HitsOnTarget.Clear();   // ★ v0.3.20 (test3): read with the routines, forgotten with them
             ParamsCache.Clear();    // ★ v0.3.25 (test2 logs)

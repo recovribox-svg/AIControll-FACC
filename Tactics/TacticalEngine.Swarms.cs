@@ -31,10 +31,11 @@ namespace CompanionAI_Pathfinder.Tactics
         /// Threat, all of it where its round strikes, else half of it shared among the party members within its walk
         /// (<paramref name="zone"/>), times how hard its round is on <paramref name="who"/> (CombatMath.SwarmVictimFactor).
         /// </summary>
-        private static float SwarmPart(TacticalContext ctx, UnitEntityData swarm, AreaEffectEntityData area, UnitEntityData who,
+        private static float SwarmPart(TacticalContext ctx, UnitEntityData swarm, CombatMath.SwarmSpace area, UnitEntityData who,
                                        Vector3 at, float zone)
         {
-            bool struck = CombatMath.SwarmStrikes(swarm, area, who, at, a => a == who ? at : a.Position, ctx.Allies);
+            bool struck = CombatMath.SwarmStrikes(swarm, area, who, at, a => a == who ? at : a.Position, SwarmTargets(ctx));
+            if (!struck && Vector3.Distance(swarm.Position, at) > zone + who.Corpulence) return 0f;
             int sharedBy = struck ? 1 : Math.Max(1, ctx.Allies.Count(a => Vector3.Distance(swarm.Position, a == who ? at : a.Position) <= zone + a.Corpulence));
             return CombatMath.Threat(swarm) * ValueModel.SwarmShare(struck, true) *
                    CombatMath.SwarmVictimFactor(swarm, who, ctx.Allies) / sharedBy;
@@ -46,11 +47,11 @@ namespace CompanionAI_Pathfinder.Tactics
         /// drop by its Threat, the fight's calibration and how hard its round is on <paramref name="who"/>. No hit weight: a
         /// swarm's round rolls no attack.
         /// </summary>
-        private static (float chance, float drop) SwarmDrop(TacticalContext ctx, UnitEntityData swarm, AreaEffectEntityData area,
+        private static (float chance, float drop) SwarmDrop(TacticalContext ctx, UnitEntityData swarm, CombatMath.SwarmSpace area,
                                                             UnitEntityData who, Vector3 at, Func<UnitEntityData, Vector3> positionOf, float hp)
         {
             float chance;
-            if (CombatMath.SwarmStrikes(swarm, area, who, at, positionOf, ctx.Allies)) chance = 1f;
+            if (CombatMath.SwarmStrikes(swarm, area, who, at, positionOf, SwarmTargets(ctx))) chance = 1f;
             else
             {
                 float zone = SwarmZone(swarm);
@@ -71,9 +72,9 @@ namespace CompanionAI_Pathfinder.Tactics
             var unit = ctx.Unit;
             foreach (var enemy in ctx.Enemies)
             {
-                var area = CombatMath.SwarmAreaOf(enemy);
+                var area = CombatMath.SwarmSpaceOf(enemy);
                 if (area == null || CombatMath.IsDisabled(enemy)) continue;
-                if (CombatMath.SwarmStrikes(enemy, area, unit, at, null, ctx.Allies)) return enemy.CharacterName;
+                if (CombatMath.SwarmStrikes(enemy, area, unit, at, null, SwarmTargets(ctx))) return enemy.CharacterName;
             }
             return null;
         }
@@ -92,9 +93,9 @@ namespace CompanionAI_Pathfinder.Tactics
                 var threats = new List<(float chance, float drop)>();
                 foreach (var enemy in ctx.Enemies)
                 {
-                    var area = CombatMath.SwarmAreaOf(enemy);
+                    var area = CombatMath.SwarmSpaceOf(enemy);
                     if (area == null || CombatMath.IsDisabled(enemy)) continue;
-                    if (!CombatMath.SwarmStrikes(enemy, area, unit, at, null, ctx.Allies)) continue;
+                    if (!CombatMath.SwarmStrikes(enemy, area, unit, at, null, SwarmTargets(ctx))) continue;
                     threats.Add(SwarmDrop(ctx, enemy, area, unit, at, a => a == unit ? at : a.Position, hp));
                 }
                 return threats.Count == 0 ? 0f : ValueModel.CombinedDrop(threats) * AllyWorth(ctx, unit) * RiskTolerance(ctx);
@@ -117,13 +118,21 @@ namespace CompanionAI_Pathfinder.Tactics
         }
 
         /// <summary>One line a fight per swarm: what its round is read as and how far its space reaches.</summary>
-        private static void NoteSwarm(UnitEntityData swarm, AreaEffectEntityData area, UnitEntityData victim)
+        private static void NoteSwarm(UnitEntityData swarm, CombatMath.SwarmSpace area, UnitEntityData victim)
         {
             if (!CombatMemory.FirstThisFight("swarm|" + swarm.UniqueId)) return;
             try
             {
                 var round = CombatMath.SwarmRoundAffliction(swarm, victim);
-                float radius = area.Blueprint?.Size.Meters ?? 0f;
+                if (area.Cast != null)
+                {
+                    Main.Log($"[Swarm] {swarm.CharacterName}: native Standard cast {area.Cast.Ability.Blueprint.name}, " +
+                        $"target-centred selector {area.Cast.Selector.AoERadius.Meters:0.##} m plus recipient body; " +
+                        $"native approach distance on {victim.CharacterName} {area.Cast.Victim(victim).Reach:0.##} m; " +
+                        $"one cast worth {CombatMath.SwarmRoundHp(swarm, victim):0.#} on that victim (no periodic aura inferred)");
+                    return;
+                }
+                float radius = area.Area?.Blueprint?.Size.Meters ?? 0f;
                 Main.Log($"[Swarm] {swarm.CharacterName}: its round strikes every party member in its space ({radius:0.#} m plus the " +
                          $"body{(CombatMath.SwarmWaitsForCentre(swarm) ? ", while one is at its centre" : "")}) - on {victim.CharacterName} " +
                          $"{CombatMath.SwarmRoundHp(swarm, victim):0.#} HP " +
@@ -148,15 +157,15 @@ namespace CompanionAI_Pathfinder.Tactics
             var unit = ctx.Unit;
             bool realTime = CombatMemory.IsRealTime;
             bool canStep = !realTime && ctx.CanFiveFoot;
-            List<(UnitEntityData swarm, AreaEffectEntityData area)> striking = null;
+            List<(UnitEntityData swarm, CombatMath.SwarmSpace area)> striking = null;
             foreach (var enemy in ctx.Enemies)
             {
-                var area = CombatMath.SwarmAreaOf(enemy);
+                var area = CombatMath.SwarmSpaceOf(enemy);
                 if (area == null) continue;
                 NoteSwarm(enemy, area, unit);   // once a fight per swarm, here: once a decision, not in the danger sums
                 if (CombatMath.IsDisabled(enemy)) continue;
-                if (!CombatMath.SwarmStrikes(enemy, area, unit, unit.Position, null, ctx.Allies)) continue;
-                (striking ?? (striking = new List<(UnitEntityData, AreaEffectEntityData)>())).Add((enemy, area));
+                if (!CombatMath.SwarmStrikes(enemy, area, unit, unit.Position, null, SwarmTargets(ctx))) continue;
+                (striking ?? (striking = new List<(UnitEntityData, CombatMath.SwarmSpace)>())).Add((enemy, area));
             }
             if (striking == null || !canStep && !ctx.HasMove) return;
             float dangerHere = IncomingDamage(ctx, unit, unit.Position);
@@ -166,22 +175,24 @@ namespace CompanionAI_Pathfinder.Tactics
             float best = list.Where(c => c.Slot != ActionSlot.Free && c.Slot != ActionSlot.Swift && Affordable(ctx, c) && kept(c))
                              .Select(c => c.Value).DefaultIfEmpty(0f).Max();
             var refused = realTime ? null : CombatMemory.ForTurn(unit).RefusedSteps;
-            Func<Vector3, bool> clear = p => striking.All(s => !CombatMath.SwarmStrikes(s.swarm, s.area, unit, p, null, ctx.Allies)) &&
+            Func<Vector3, bool> clear = p => striking.All(s => !CombatMath.SwarmStrikes(s.swarm, s.area, unit, p, null, SwarmTargets(ctx))) &&
                                              (refused == null || refused.All(q => Vector3.Distance(p, q) > 0.5f));
+            var circles = SwarmExitCircles(ctx, striking);
             var distances = new List<(float distance, bool step)>();
             if (canStep && (refused == null || refused.Count < 3)) distances.Add((ctx.FiveFootRange * 0.9f, true));
             if (ctx.HasMove)
             {
                 float range = ctx.MoveRange > 0f ? ctx.MoveRange : unit.CurrentSpeedMps * 3f;
-                foreach (float d in new[] { 3f, 4.5f, 6f })
-                    if (d <= range) distances.Add((d, false));
+                if (circles != null) distances.Add((range, false));
+                else foreach (float d in new[] { 3f, 4.5f, 6f })
+                        if (d <= range) distances.Add((d, false));
             }
             string names = string.Join(", ", striking.Select(s => s.swarm.CharacterName).Distinct().Take(2));
             Candidate chosen = null;
             float bestSeen = float.NegativeInfinity;
             foreach (var (distance, step) in distances)
             {
-                var point = FindRetreatPoint(ctx, distance, clear);
+                var point = circles != null ? FindSwarmExitPoint(ctx, distance, step, circles, clear) : FindRetreatPoint(ctx, distance, clear);
                 if (!point.HasValue) continue;
                 var risk = MoveRisk(ctx, point.Value, ownSafetyCounted: true);
                 float dangerThere = IncomingDamage(ctx, unit, point.Value);
@@ -210,7 +221,7 @@ namespace CompanionAI_Pathfinder.Tactics
             }
             if (chosen != null) list.Add(chosen);
             else if (Main.VerboseOn && CombatMemory.FirstThisFight($"swarmstay|{unit.UniqueId}|{CombatMemory.Round}"))
-                Main.Verbose($"[Swarm] {unit.CharacterName}: struck by {names}'s round where it stands (danger here {dangerHere:0.#}); " +
+                Main.Verbose($"[Swarm] {unit.CharacterName}: struck by {names}'s swarm where it stands (danger here {dangerHere:0.#}); " +
                              (float.IsNegativeInfinity(bestSeen) ? "no free spot out of its space within a step or a short move"
                                                                   : $"the best way out is worth {bestSeen:0.#}, not enough"));
         }

@@ -27,8 +27,8 @@ namespace CompanionAI_Pathfinder.Tactics
     {
         private static readonly Dictionary<BlueprintAbilityAreaEffect, bool> s_SwarmTargetAreas =
             new Dictionary<BlueprintAbilityAreaEffect, bool>();
-        private static readonly Dictionary<UnitEntityData, Kingmaker.EntitySystem.Entities.AreaEffectEntityData> s_SwarmAreas =
-            new Dictionary<UnitEntityData, Kingmaker.EntitySystem.Entities.AreaEffectEntityData>();
+        private static readonly Dictionary<UnitEntityData, SwarmSpace> s_SwarmAreas = new Dictionary<UnitEntityData, SwarmSpace>();
+        private static readonly Dictionary<UnitEntityData, AreaEffectEntityData> s_SwarmLiveAreas = new Dictionary<UnitEntityData, AreaEffectEntityData>();
         private static readonly Dictionary<(UnitEntityData, UnitEntityData), float> s_SwarmRoundHp =
             new Dictionary<(UnitEntityData, UnitEntityData), float>();
         private static readonly Dictionary<UnitEntityData, float> s_SwarmMeanHp = new Dictionary<UnitEntityData, float>();
@@ -37,14 +37,39 @@ namespace CompanionAI_Pathfinder.Tactics
         private static int s_SwarmFrame = -1;
 
         /// <summary>
-        /// The live area whose units <paramref name="unit"/>'s swarm round strikes; null for a unit that is not a swarm (or
-        /// whose area is gone). The areas are read once a frame.
+        /// Native registered round area, or the verified near-contact Standard cast. Actor-dependent state is read once
+        /// per decision/frame; absence is cached too. Null means the bounded contracts do not describe this unit.
         /// </summary>
-        internal static Kingmaker.EntitySystem.Entities.AreaEffectEntityData SwarmAreaOf(UnitEntityData unit)
+        internal static SwarmSpace SwarmSpaceOf(UnitEntityData unit)
         {
-            if (unit == null) return null;
-            RefreshSwarms();
-            return s_SwarmAreas.Count > 0 && s_SwarmAreas.TryGetValue(unit, out var area) ? area : null;
+            if (unit?.View == null) return null;
+            try
+            {
+                RefreshSwarms();
+                var state = SwarmStateOf(unit);
+                if (state.SpaceRead) return s_SwarmAreas.TryGetValue(unit, out var ready) ? ready : null;
+                state.SpaceRead = true;
+                var space = state.Space;
+                space.Area = null;
+                var rounds = state.Facts.Rounds;
+                if (s_SwarmLiveAreas.TryGetValue(unit, out var area) && rounds.Count > 0)
+                {
+                    space.Area = area; space.Cast = null;
+                    bool? gated = null;
+                    foreach (var round in rounds) gated = BothGated(gated, StrikeWaitsForInnerCircle(round.Actions, false, 0));
+                    s_SwarmInnerCircle[unit] = gated ?? true;
+                }
+                else space.Cast = FindSwarmCast(unit, state);
+                if (space.Area == null && space.Cast == null) return null;
+                s_SwarmAreas[unit] = space;
+                return space;
+            }
+            catch (Exception ex)
+            {
+                if (CombatMemory.FirstThisFight("swarm-read|" + unit.UniqueId))
+                    Main.Verbose($"[Swarm] {unit.CharacterName}: unsupported live state ({ex.GetType().Name})");
+                return null;
+            }
         }
 
         private static void RefreshSwarms()
@@ -53,6 +78,7 @@ namespace CompanionAI_Pathfinder.Tactics
             if (frame == s_SwarmFrame) return;
             s_SwarmFrame = frame;
             s_SwarmAreas.Clear();
+            s_SwarmLiveAreas.Clear();
             s_SwarmInnerCircle.Clear();
             s_SwarmRoundHp.Clear();
             s_SwarmMeanHp.Clear();
@@ -66,19 +92,9 @@ namespace CompanionAI_Pathfinder.Tactics
                     if (!IsSwarmTargetArea(aoe.Blueprint)) continue;
                     var swarm = aoe.Context?.MaybeCaster;
                     if (swarm == null || swarm.Descriptor?.State?.IsDead != false) continue;
-                    // Two such areas on one swarm feed the same target list, both around it: the larger covers the other.
-                    if (s_SwarmAreas.TryGetValue(swarm, out var had))
-                    {
-                        if ((aoe.Blueprint?.Size.Meters ?? 0f) > (had.Blueprint?.Size.Meters ?? 0f)) s_SwarmAreas[swarm] = aoe;
-                        continue;
-                    }
-                    // An area that registers targets for a unit without a swarm round strikes nobody.
-                    var rounds = SourcesOf(swarm, false);
-                    if (rounds.Count == 0) continue;
-                    s_SwarmAreas[swarm] = aoe;
-                    bool? gated = null;
-                    foreach (var round in rounds) gated = BothGated(gated, StrikeWaitsForInnerCircle(round.Actions, false, 0));
-                    s_SwarmInnerCircle[swarm] = gated ?? true;
+                    // Preserve the existing registered-aura choice; cast-only units are discovered lazily per requested enemy.
+                    if (!s_SwarmLiveAreas.TryGetValue(swarm, out var had) ||
+                        (aoe.Blueprint?.Size.Meters ?? 0f) > (had.Blueprint?.Size.Meters ?? 0f)) s_SwarmLiveAreas[swarm] = aoe;
                 }
             }
             catch (Exception ex)
@@ -160,20 +176,23 @@ namespace CompanionAI_Pathfinder.Tactics
         /// or another of its targets in <paramref name="party"/> (each where <paramref name="positionOf"/> puts it) is in the
         /// swarm's inner circle.
         /// </summary>
-        internal static bool SwarmStrikes(UnitEntityData swarm, Kingmaker.EntitySystem.Entities.AreaEffectEntityData area,
+        internal static bool SwarmStrikes(UnitEntityData swarm, SwarmSpace space,
                                           UnitEntityData who, Vector3 at, Func<UnitEntityData, Vector3> positionOf,
                                           IEnumerable<UnitEntityData> party)
         {
-            if (swarm == null || area == null || who == null) return false;
+            if (swarm == null || space == null || who == null) return false;
             try
             {
+                if (space.Cast != null) return space.Cast.Covers(who, at, positionOf, party);
+                var area = space.Area;
                 if (!AoeDangerAnalyzer.CoversPoint(area, at, who.Corpulence)) return false;
                 if (!(s_SwarmInnerCircle.TryGetValue(swarm, out bool waits) && waits)) return true;
                 if (InSwarmInnerCircle(swarm, at, who.Corpulence)) return true;
-                if (party == null) return false;
-                foreach (var other in party)
+                var targets = swarm.Get<Kingmaker.UnitLogic.Parts.UnitPartSwarmAttack>()?.TargetsList;
+                if (targets == null) return false;
+                foreach (var other in targets)
                 {
-                    if (other == null || other == who || other.Descriptor?.State?.IsConscious != true) continue;
+                    if (other?.View == null || other == who) continue;
                     var p = positionOf != null ? positionOf(other) : other.Position;
                     if (InSwarmInnerCircle(swarm, p, other.Corpulence) && AoeDangerAnalyzer.CoversPoint(area, p, other.Corpulence))
                         return true;
@@ -189,11 +208,11 @@ namespace CompanionAI_Pathfinder.Tactics
 
         /// <summary>UnitPartSwarmAttack.HasEnemiesInInnerCircle for one body: closer than 1 m plus half of it.</summary>
         private static bool InSwarmInnerCircle(UnitEntityData swarm, Vector3 point, float corpulence) =>
-            TacticalEngine.HorizontalDistance(swarm.Position, point) < 1f + corpulence / 2f;
+            Owlcat.Runtime.Core.Utils.GeometryUtils.MechanicsDistance(swarm.Position, point) < 1f + corpulence / 2f;
 
         /// <summary>
-        /// What one round of <paramref name="swarm"/> is worth on <paramref name="victim"/>, in hit points (AfflictionHp:
-        /// its saves, immunities and scores), once a frame per pair.
+        /// What one native round or Standard cast is worth on <paramref name="victim"/>, in hit points, once per
+        /// decision/frame and pair. The cast uses normal native-context damage/saves/control, not the aura action walker.
         /// </summary>
         internal static float SwarmRoundHp(UnitEntityData swarm, UnitEntityData victim)
         {
@@ -201,7 +220,8 @@ namespace CompanionAI_Pathfinder.Tactics
             RefreshSwarms();
             var key = (swarm, victim);
             if (s_SwarmRoundHp.TryGetValue(key, out float hp)) return hp;
-            hp = AfflictionHp(SwarmRoundAffliction(swarm, victim), victim);
+            var space = SwarmSpaceOf(swarm);
+            hp = space?.Cast != null ? space.Cast.Consequence(victim).Harm : AfflictionHp(SwarmRoundAffliction(swarm, victim), victim);
             s_SwarmRoundHp[key] = hp;
             return hp;
         }
@@ -229,7 +249,10 @@ namespace CompanionAI_Pathfinder.Tactics
                 mean = count > 0 ? sum / count : 0f;
                 s_SwarmMeanHp[swarm] = mean;
             }
-            return ValueModel.SwarmVictimFactor(SwarmRoundHp(swarm, victim), mean);
+            float own = SwarmRoundHp(swarm, victim);
+            var cast = SwarmSpaceOf(swarm)?.Cast;
+            if (cast != null && !(own > 0f)) return cast.Consequence(victim).KnownHarm ? 0f : 1f;
+            return ValueModel.SwarmVictimFactor(own, mean);
         }
     }
 }

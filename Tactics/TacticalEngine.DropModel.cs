@@ -21,7 +21,7 @@ namespace CompanionAI_Pathfinder.Tactics
         {
             public UnitEntityData Enemy;
             public bool Skip;
-            public AreaEffectEntityData Swarm;
+            public CombatMath.SwarmSpace Swarm;
             public bool Ranged;
             public float Zone, Reach = -1f;
             /// <summary>Per ally: how easily this enemy hits it (ValueModel.HitWeight past concealment and mirror images).</summary>
@@ -74,7 +74,7 @@ namespace CompanionAI_Pathfinder.Tactics
                 // It attacks nobody before it acts again.
                 if (enemy == null || CombatMath.IsDisabled(enemy)) { row.Skip = true; continue; }
                 // ★ v0.3.28 test 15 (author-approved): a swarm strikes everyone in its space, it picks nobody.
-                row.Swarm = CombatMath.SwarmAreaOf(enemy);
+                row.Swarm = CombatMath.SwarmSpaceOf(enemy);
                 if (row.Swarm != null) continue;
                 int attack = 0;
                 try

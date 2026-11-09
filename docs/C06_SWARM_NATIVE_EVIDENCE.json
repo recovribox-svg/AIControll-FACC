@@ -1,0 +1,137 @@
+{
+  "reported_game_version": "Steam 2.7.0x",
+  "native_assembly_mvid": "90a9869c-2792-4c7b-bfb7-5a8b33da7c82",
+  "native_assembly_sha256": "2cb7160b7154d4ffacc77b9c51b1eb26199e1294300f04fdfc073367b2ef8953",
+  "graphs": [
+    {
+      "file": "Units/Units/Monsters/RatSwarm/CR6_CorruptedRatSwarm.jbp",
+      "asset_id": "09ad2df8a79833d4790689fc0f663ab9",
+      "sha256": "bf4936de5c7a570b535f5829d517b825431d59256c0aba717ac5a81a84c66d74",
+      "direct_facts": [
+        "!bp_5a04735fd0e952142bfc8ecf995e2361",
+        "!bp_3ccdcb9a6a9a436408743daa22e0ddd9",
+        "!bp_45a52ce762f637f4c80cc741c91f58b7",
+        "!bp_197306972c98bb843af738dc7529a7ac",
+        "!bp_e38072a56f47cb14e893e8a947d05ad5",
+        "!bp_52f8ef060a751a247964adae7fcb7e64"
+      ],
+      "brain": "!bp_cd5d47ec3b3c09440acb21b3dac90e47"
+    },
+    {
+      "file": "Units/Units/Monsters/Demon Kakuen-taka/CR12_BhogaSwarm_Small.jbp",
+      "asset_id": "efc632326e3543739a0d1d262ae85996",
+      "sha256": "a81d5a366e7dcdacd761106510b588ec6b877d95515284aa85748aebeacf01ae",
+      "direct_facts": [
+        "!bp_2e3e840ab458ce04c92064489f87ecc2",
+        "!bp_1093cb5cd3304b5eab1a20b8452e573d",
+        "!bp_45a52ce762f637f4c80cc741c91f58b7",
+        "!bp_52f8ef060a751a247964adae7fcb7e64",
+        "!bp_e2986f96fa1cd3b4f8d9dfd8a9907731",
+        "!bp_136fa0343d5b4b348bdaa05d83408db3",
+        "!bp_205205053a2915d4782cf48dc0cc3c09",
+        "!bp_7e3f3228be49cce49bda37f7901bf246",
+        "!bp_64e647c10eece1545b00a442330f49da",
+        "!bp_daf27e1f12e736d4294b525489e99de4",
+        "!bp_a5049e0d1b1a1454aa1a221a6e20b714",
+        "!bp_24700a71dd3dc844ea585345f6dd18f6",
+        "!bp_48aec80376d74a70931b3160fa1519b7",
+        "!bp_418105aa35ea49fd8dc0b7be06346924"
+      ],
+      "brain": "!bp_204604cee4ee4f29a4f8158398916670"
+    },
+    {
+      "file": "Units/Units/Monsters/Demon Kakuen-taka/CR14_BhogaSwarmDamageAbility.jbp",
+      "asset_id": "1093cb5cd3304b5eab1a20b8452e573d",
+      "sha256": "ef45dd31432e6b261862d45c126042efef6bfda11e1d5636a8afdc2169d845d1",
+      "action": "Standard",
+      "custom_range_feet": -6.0,
+      "effect_on_enemy": "None",
+      "target_selector": "AbilityTargetsAround on chosen unit anchor",
+      "aoe_radius_feet": 5.0
+    },
+    {
+      "file": "Units/Units/Monsters/DLC3_Mobs/DLC3_AnyTir_Swarms/DLC3_CR6_CorruptedRatSwarm.jbp",
+      "asset_id": "0ff93e682f964333ab078b7cad5fbbe9",
+      "sha256": "6be57296844e717775c67ea73ee103d2678921554b57a14012c3d90f2266e1ac",
+      "direct_facts": [
+        "!bp_5a04735fd0e952142bfc8ecf995e2361",
+        "!bp_3ccdcb9a6a9a436408743daa22e0ddd9",
+        "!bp_45a52ce762f637f4c80cc741c91f58b7",
+        "!bp_197306972c98bb843af738dc7529a7ac",
+        "!bp_e38072a56f47cb14e893e8a947d05ad5",
+        "!bp_52f8ef060a751a247964adae7fcb7e64"
+      ],
+      "brain": "!bp_cd5d47ec3b3c09440acb21b3dac90e47"
+    },
+    {
+      "file": "Units/Units/Monsters/RatSwarm/CurruptedRatSwarmAbilities/CorruptedRatSwarmBrain.jbp",
+      "asset_id": "cd5d47ec3b3c09440acb21b3dac90e47",
+      "sha256": "0a2f572e7a333b122851a5cddfe4bf62d59b25374617a5c26ac8ac2bd13a2a8a"
+    },
+    {
+      "file": "Units/Units/Monsters/RatSwarm/CurruptedRatSwarmAbilities/CorruptedRatSwarmDamageAIAction.jbp",
+      "asset_id": "da3d1f06c48fa304395b9cd7ff7550ad",
+      "sha256": "4cfde5413c41f1c0c954d2b75aadab50e4ac5828564b8b5df737277c349c6779"
+    },
+    {
+      "file": "Units/Units/Monsters/RatSwarm/CurruptedRatSwarmAbilities/CorruptedRatSwarmDamageAbility.jbp",
+      "asset_id": "3ccdcb9a6a9a436408743daa22e0ddd9",
+      "sha256": "bcd38f5e309d04d2bc7d8d47b0a38c7df37345bc75bc0e363964092f44b1bca1",
+      "action": "Standard",
+      "custom_range_feet": -6.0,
+      "effect_on_enemy": "Harmful",
+      "target_selector": "AbilityTargetsAround on chosen unit anchor",
+      "aoe_radius_feet": 5.0
+    },
+    {
+      "file": "Units/Units/Monsters/RatSwarm/CurruptedRatSwarmAbilities/CorruptedRatSwarmDamageBuff.jbp",
+      "asset_id": "214dafd7af22c3945955e74d663b49a6",
+      "sha256": "df4b96790f14949f218de5fe25f6f173983a158aed35ab423a29017cdcaf5d48"
+    },
+    {
+      "file": "Units/Units/Monsters/RatSwarm/CurruptedRatSwarmAbilities/CorruptedRatSwarmDamageArea.jbp",
+      "asset_id": "ae9ccef0ba8c6fd4d95ec9a2f7fc84b7",
+      "sha256": "21a6bf0ec46acf453da19a4925f8038d55afbdeeac7dba2aa70c1f95ef1d5677"
+    },
+    {
+      "file": "Units/Units/Monsters/Demon Kakuen-taka/Brains/CR14_BhogaSwarmDamageAiAction.jbp",
+      "asset_id": "ce1b56dc57fc4394a4164b4bdca8a99d",
+      "sha256": "2f434330035b947669ca556ef11920c3ec5ad2c5e2b9e21a5ca9e60ca85b2473"
+    },
+    {
+      "file": "Units/Units/Monsters/Demon Kakuen-taka/Brains/CR14_BhogaSwarmBrain.jbp",
+      "asset_id": "204604cee4ee4f29a4f8158398916670",
+      "sha256": "0874f1347aa2a47fd0f46f779ae1d0dd58f77b1e0e62e3729a328a6bd9541089"
+    },
+    {
+      "file": "Units/Units/Monsters/Demon Kakuen-taka/SecondState/CR21_BhogaSwarmDamageAbility.jbp",
+      "asset_id": "9b1a73974b1d4742a818dda7b0425440",
+      "sha256": "4c39b3bb34a30e79a00dadbd4cfce3806f99de2e23d18b5f94acfc53ca726abb",
+      "action": "Standard",
+      "custom_range_feet": -6.0,
+      "effect_on_enemy": "None",
+      "target_selector": "AbilityTargetsAround on chosen unit anchor",
+      "aoe_radius_feet": 5.0
+    },
+    {
+      "file": "Units/Units/Monsters/RatSwarm/SwarmTinyFeature.jbp",
+      "asset_id": "5a04735fd0e952142bfc8ecf995e2361",
+      "sha256": "5eed1649fa1ec17aa92ad9a9f72982571d1c42cceb64659be6c47831f6dbdbc7"
+    },
+    {
+      "file": "Units/Units/Monsters/RatSwarm/SwarmDiminutiveFeature.jbp",
+      "asset_id": "2e3e840ab458ce04c92064489f87ecc2",
+      "sha256": "eb1bd6e01b4eca78c2cbd5ff4be5b80d640aedbdb4ab94c558d58e943dabfceb"
+    }
+  ],
+  "native_rules": [
+    "AbilityTargetsAround.Select centres GetTargetsAround on the chosen unit EyePosition, then applies enemy/dead/untargetable/LOS filters.",
+    "GameHelper.IsUnitInRange compares MechanicsDistance with selector radius plus recipient Corpulence and checks native LOS.",
+    "AbilityData.GetApproachDistance uses actual custom range plus caster/target bodies for these casts.",
+    "UnitPartSwarmAttack.HasEnemiesInInnerCircle reads its registered TargetsList, including unconscious entries; count/activation is not a facts-manager generation."
+  ],
+  "limits": [
+    "Input graphs establish a supported native delivery gap, not the exact unavailable live actor/area state in the old log.",
+    "No game sources or raw JBP contents are reproduced."
+  ]
+}

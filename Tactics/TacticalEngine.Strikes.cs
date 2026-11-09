@@ -102,7 +102,7 @@ namespace CompanionAI_Pathfinder.Tactics
         /// free 5-foot step of it: StrikeShareAt); not for a ranged weapon, a disabled enemy or a swarm.</summary>
         private static bool FullStrikeLands(UnitEntityData enemy, UnitEntityData who, Vector3 at)
         {
-            if (CombatMath.IsDisabled(enemy) || CombatMath.SwarmAreaOf(enemy) != null) return false;
+            if (CombatMath.IsDisabled(enemy) || CombatMath.SwarmSpaceOf(enemy) != null) return false;
             try
             {
                 if (enemy.GetThreatHandMelee()?.Weapon == null) return false;

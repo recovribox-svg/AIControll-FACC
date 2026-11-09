@@ -31,8 +31,7 @@ namespace CompanionAI_Pathfinder.Tactics
                     foreach (var component in fact.Blueprint.ComponentsArray)
                         if (component is AddFactContextActions round && HasSwarmAttack(round.NewRound,0)) raw.Add(fact.Blueprint.name);
                 }
-                string key = unit.UniqueId + "|" + facts.Count + "|" + (unit.Body?.PrimaryHand?.MaybeWeapon?.UniqueId ?? "-");
-                int cached = s_RoundSources.TryGetValue(key,out var sources) ? sources.Count : -1;
+                int cached = s_SwarmStates.TryGetValue(unit,out var state) ? state.Facts.Rounds.Count : -1;
                 int owned = 0, recognized = 0, viewless = 0;
                 var areas = Game.Instance?.State?.AreaEffects;
                 if (areas != null)
@@ -44,7 +43,8 @@ namespace CompanionAI_Pathfinder.Tactics
                         if (area.View is null) viewless++;
                     }
                 bool selected = s_SwarmAreas.ContainsKey(unit), current = s_SwarmFrame == Time.frameCount;
-                string signature = $"swarm-audit|{unit.UniqueId}|{raw.Count}|{cached}|{owned}|{recognized}|{viewless}|{selected}|{current}";
+                string delivery = selected && s_SwarmAreas[unit].Cast != null ? "target-centred cast" : selected ? "registered aura" : "unread";
+                string signature = $"swarm-audit|{unit.UniqueId}|{raw.Count}|{cached}|{owned}|{recognized}|{viewless}|{selected}|{current}|{delivery}";
                 if (!CombatMemory.FirstThisFight(signature)) return;
                 // Blueprint-only delivery hints, without parameter calculation or availability checks.
                 var casts = new List<string>();
@@ -57,8 +57,8 @@ namespace CompanionAI_Pathfinder.Tactics
                 }
                 Main.Log($"[SwarmAudit] {unit.CharacterName}: active round facts={raw.Count} ({string.Join(",",raw.Take(3))}); " +
                     $"cached round sources={cached}; own live areas={owned}, registered-target areas={recognized}, viewless={viewless}; " +
-                    $"selected cached area={selected}, area cache current={current}; nearby-cast hints={string.Join(",",casts)}. " +
-                    "Passive coverage evidence; movement unchanged.");
+                    $"selected cached space={selected} ({delivery}), area cache current={current}; nearby-cast hints={string.Join(",",casts)}. " +
+                    "Passive coverage evidence.");
             }
             catch (Exception ex)
             {

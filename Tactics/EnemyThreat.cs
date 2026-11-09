@@ -316,6 +316,19 @@ namespace CompanionAI_Pathfinder.Tactics
                         a.AbilityStat = "swarm: " + DescribeAffliction(swarm);
                     }
                     a.Weapon += a.AbilityDamage;
+                    // Some native swarm casts have EffectOnEnemy=None. Read their verified delivery/damage contract,
+                    // rather than losing that Standard action to the generic harmful-label filter. It competes with
+                    // the weapon/aura action; it is never added as a second cast or a fictitious periodic tick.
+                    var cast = CombatMath.SwarmSpaceOf(enemy)?.Cast;
+                    if (cast != null)
+                    {
+                        var harm = cast.Consequence(victim);
+                        if (harm.Harm > a.Weapon)
+                        {
+                            a.Weapon = harm.Harm; a.AbilityDamage = harm.Extra;
+                            a.AbilityStat = "native swarm cast " + cast.Ability.Blueprint.name;
+                        }
+                    }
                     a.Spell = BestAbility(enemy, victim, party, usable, out a.SpellName, out a.EnergyType, out a.EnergyDamage,
                         out a.EnergyPerCast);
                 }

@@ -259,10 +259,10 @@ namespace CompanionAI_Pathfinder.Tactics
         {
             public ActionList Actions;
             public int Dc;
+            public Kingmaker.EntitySystem.EntityFact Fact;
         }
 
         private static readonly Dictionary<string, List<AfflictionSource>> s_HitSources = new Dictionary<string, List<AfflictionSource>>();
-        private static readonly Dictionary<string, List<AfflictionSource>> s_RoundSources = new Dictionary<string, List<AfflictionSource>>();
 
         /// <summary>
         /// The DC an attacker's fact gives its saves: the fact's own context (ContextCalculateAbilityParams), else the rule for
@@ -284,7 +284,8 @@ namespace CompanionAI_Pathfinder.Tactics
 
         private static List<AfflictionSource> SourcesOf(UnitEntityData unit, bool hits)
         {
-            var cache = hits ? s_HitSources : s_RoundSources;
+            if (!hits) return SwarmSourcesOf(unit);
+            var cache = s_HitSources;
             string key = unit.UniqueId + "|" + unit.Facts.List.Count + "|" + (unit.Body?.PrimaryHand?.MaybeWeapon?.UniqueId ?? "-");
             if (cache.TryGetValue(key, out var known)) return known;
             var list = new List<AfflictionSource>();
