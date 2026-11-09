@@ -1,0 +1,89 @@
+{
+  "task": "psionics-scope",
+  "checked_source_commit": "cc7d78859e1f28f22f0f8edaad5a9aadcfeb31b5",
+  "starting_commit": "ab810b364ff2f78243b123e42cde46374914056f",
+  "development_base": "1f58150b8e50f9a322ba0b8d3fcc095fe188420f",
+  "dependency_pr": 22,
+  "version": "0.3.30",
+  "reported_game_version": "Steam 2.7.0x (author report; not independently read from installation)",
+  "played_baseline_mvid": "641ff828-00b6-46aa-9f92-3748fae7f2f6",
+  "dll": {
+    "assembly": "CompanionAI_Pathfinder, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null",
+    "mvid": "f068b72f-e3b3-45a3-b1c4-869cb9a2a7db",
+    "sha256": "e9de8dd1116eff5ad49c9755fb4be374a834a0bd0575259896f21a327c9a94ad",
+    "size": 1244160
+  },
+  "unit_tests": {
+    "passed": 547,
+    "failed": 0,
+    "skipped": 0
+  },
+  "release_build": {
+    "references": "actual supplied native assemblies and UMM; existing Harmony 2.2.2 compile dependency",
+    "warnings": 0,
+    "errors": 0
+  },
+  "strict_native_compatible_audit": {
+    "status": "PASS",
+    "exit_code": 0,
+    "source_files": 44647,
+    "loaded_unique": 44637,
+    "failed": 0,
+    "allowed_load_failures": 0,
+    "ability_rows": 4807,
+    "reader_errors": 0,
+    "scope": "C06_NATIVE_COMPATIBLE_SCOPE.json",
+    "input_bytes_modified": false
+  },
+  "original_full_corpus": {
+    "source_files": 44648,
+    "strict_status": "INCOMPLETE",
+    "loaded_unique": 44637,
+    "failed": 1,
+    "strict_ability_verdicts": false,
+    "prior_diagnostic_status": "PARTIAL",
+    "reason": "One separately fingerprinted enum spelling mismatch; unchanged malformed input is not silently normalized or treated as a passing full-corpus audit."
+  },
+  "native_toggle_checks": {
+    "checks": 98,
+    "failures": 0,
+    "progression_shaped_kits": 6,
+    "judgment_graphs": 15,
+    "actor_setup": false,
+    "native_commands": false
+  },
+  "signature_check": {
+    "baseline_mvid": "641ff828-00b6-46aa-9f92-3748fae7f2f6",
+    "added_member_refs": 0,
+    "resolved_added_refs": 0,
+    "details": [
+      "VERIFIED_COUNT 0 EXPECTED 0"
+    ]
+  },
+  "native_assembly": {
+    "mvid": "90a9869c-2792-4c7b-bfb7-5a8b33da7c82",
+    "sha256": "2cb7160b7154d4ffacc77b9c51b1eb26199e1294300f04fdfc073367b2ef8953"
+  },
+  "source_identities": [
+    {
+      "file": "Tactics/TacticalEngine.Toggles.cs",
+      "sha256": "bf73cf07a589baec7a89ffdac0e67e6959e441eab8f4ef3df7114f5bf03706e3"
+    },
+    {
+      "file": "tests/ToggleCosts.Native/Program.cs",
+      "sha256": "8b7262745c8bc707a0a6f57c42906c73cd1a9afce46d21c55e63376c8c410fe1"
+    }
+  ],
+  "limits": [
+    "No author gameplay test of this candidate yet.",
+    "Offline scratch dependencies are rewritten only as documented by ProfileAudit; they are never deployable.",
+    "No matched Unity performance/allocation measurement or full mod/actor initialization certificate.",
+    "Movement, commitment, retreat, pathfinding and cancellation changes remain subject to explicit author approval."
+  ],
+  "psionics_scope": {
+    "additional_checks": 8,
+    "module_mvid": "0501ad1b-c557-4744-a473-b00b015a2fde",
+    "live_dictionary_rechecked": true,
+    "metadata_only_no_harmony_wrapper_application": true
+  }
+}

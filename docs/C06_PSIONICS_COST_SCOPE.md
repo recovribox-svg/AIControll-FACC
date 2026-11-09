@@ -9,3 +9,5 @@ Eight added native fixtures bring the existing 90 checks to 98: actual provider 
 Replay in both modes with the same installed mods, capture the detailed cost/fallback labels, native resource quantities, starts/stops and manual/restoration transitions. A newly named unknown patch needs its actual module before another contract can be recognized. Scope/ownership/acceptance/blocklist/native command paths remain unchanged.
 
 The strict audit receipt names its exact native-compatible input scope; the original expanded corpus's separately fingerprinted enum spelling error remains visible. No source input is rewritten. Gameplay and matched Unity latency/allocation measurements remain pending.
+
+Final verification receipt: [competence/C06_PSIONICS_SCOPE_CHECKS.json](competence/C06_PSIONICS_SCOPE_CHECKS.json), source `cc7d788`, MVID `f068b72f-e3b3-45a3-b1c4-869cb9a2a7db`. Unit tests 547/0 failed; Release build 0 warnings; strict explicit compatible scope 44,637 unique loaded / 0 failed and 4,807 ability rows / 0 reader errors; 98 toggle checks / 0 failed. This does not turn the original full-corpus INCOMPLETE result into a pass. Gameplay remains pending.

@@ -10,6 +10,8 @@ Keep `main` for author-authorized releases. Read [AGENTS.md](AGENTS.md) when coo
 
 **C06 playtest / Psionics cost scope (9 November 2026, Codex; review pending):** `codex/c06-psionics-cost-scope` starts at played C06 / PR #22 `ab810b3`, including development `1f58150` / `3443d94`. Read [docs/C06_PSIONICS_COST_SCOPE.md](docs/C06_PSIONICS_COST_SCOPE.md) and §131. All sampled paid performances had the old generic patch fallback; inspected Psionics 0.2.3 globally postfixes cost but only changes GUIDs in `MindBladeEnchantments.AbilityToggleCosts`. The exact module/member is recognized; the live map is checked each quote, mapped enchantments remain fallback, and unknown hooks now identify their method/type/module. Snapshot lifetime remains one decision. No C07/C08, movement, ownership or dispatch change; version 0.3.30.
 
+Verification receipt: [docs/competence/C06_PSIONICS_SCOPE_CHECKS.json](docs/competence/C06_PSIONICS_SCOPE_CHECKS.json). Exact checked source and DLL identity are recorded there; a later receipt-only commit does not replace that tested DLL.
+
 **Competence programme (8 November 2026): PR #20 integrated, read [docs/CLASS_COMPETENCE_CURRENT.md](docs/CLASS_COMPETENCE_CURRENT.md)
 first.** Codex's foundation (`codex/class-competence-foundation`, from 0.3.30 test 2 `71ca3de`) was reviewed against the
 author's programme text and merged into development (`452c761`). Review fixes: burn consequences read on real kineticist kits
