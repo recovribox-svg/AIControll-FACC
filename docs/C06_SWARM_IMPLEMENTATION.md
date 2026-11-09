@@ -37,3 +37,5 @@ Replay **TB and RT** with Corrupted Rat/Thin Bhoga and a registered aura swarm:
 5. Check repeated decisions, reinforcements, activation changes and ordinary fights without swarms. Compare decision-stage timings on the same fights; report whole-decision latency/heap separately from the zero-allocation helper checks.
 
 This implements the authorized detection/geometry/exit scope. Further changes to movement policy, commitment, retreat, paths or cancellation still require separate approval.
+
+Final checked source `20a7d5a`: [C06R2 ZIP](../test-builds/AI-Control-FACC-v0.3.30-dev-C06R2-20a7d5a-UMM-test.zip), [identity](../test-builds/AI-Control-FACC-v0.3.30-dev-C06R2-20a7d5a-UMM-test.identity.json), [checksums](../test-builds/AI-Control-FACC-v0.3.30-dev-C06R2-20a7d5a-UMM-test.sha256), [machine receipt](competence/C06_SWARM_CHECKS.json). Startup MVID `675da0f1-3cb6-4531-8724-70bc9ae2dedd`. 557 unit + 11 inventory tests pass; Release 0 warnings; 27 swarm / 98 toggle / 14 Tome / 6 viewless checks pass. Gameplay and matched Unity performance remain pending.

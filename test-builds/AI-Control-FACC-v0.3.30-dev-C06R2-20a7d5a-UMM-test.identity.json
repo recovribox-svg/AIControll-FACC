@@ -1,0 +1,38 @@
+{
+  "source_commit": "20a7d5ac05092d41dece947909e54a0f7c2f9b2b",
+  "source_branch": "codex/c06-swarm-coverage",
+  "starting_development": "1f58150b8e50f9a322ba0b8d3fcc095fe188420f",
+  "starting_c06r1": "758d7b1c9cd60e8afba7c57e119c92f6f8a7fb11",
+  "supersedes_mvid": "1a2a9e3e-dd56-4849-b49e-7144ad3b7ed5",
+  "label": "C06R2",
+  "version": "0.3.30",
+  "dll": {
+    "assembly": "CompanionAI_Pathfinder, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null",
+    "mvid": "675da0f1-3cb6-4531-8724-70bc9ae2dedd",
+    "sha256": "3274b52d538cdc7e68386ba54b1ea4a279c9fd0d30c6d3ea29bb6cc2fa355c4b",
+    "size": 1261568
+  },
+  "zip": {
+    "file": "AI-Control-FACC-v0.3.30-dev-C06R2-20a7d5a-UMM-test.zip",
+    "sha256": "1f2d126d5e57d17d3973482843c2b48b3e214b5fa402485a8bd63a07a86d7789",
+    "size": 496656
+  },
+  "info_sha256": "d6ee91e78dc5d4981ad51a1a1a85bb1e7fe3f0a87814697f2fd9ee1c20d35594",
+  "package_members": [
+    "CompanionAI_Pathfinder.dll",
+    "Info.json"
+  ],
+  "build_byte_check": true,
+  "verification_receipt": "docs/competence/C06_SWARM_CHECKS.json",
+  "unit_tests_passed": 557,
+  "inventory_tests_passed": 11,
+  "native_swarm_checks_passed": 27,
+  "native_toggle_checks_passed": 98,
+  "tome_provider_checks_passed": 14,
+  "native_view_checks_passed": 6,
+  "strict_audit": "PASS on explicit compatible scope; full original corpus INCOMPLETE (one named enum mismatch)",
+  "warm_helper_allocations": "zero bytes for 10000 boundary queries and 10000 unchanged native fact snapshots",
+  "gameplay": "pending",
+  "unity_performance": "pending",
+  "scope": "author-approved swarm detection/geometry/exit integration; other movement systems preserved"
+}
