@@ -4553,3 +4553,16 @@ and Profane Invocation was still repeated now and then.
   and the feature it came from (competence3b), so the next log says which.
 
 ProfileAudit REVEAL and CAST-BONUS; 531 unit tests.
+
+
+## 127. C06 played: drain threats, query failure, cost fallback, burn composite and swarms
+
+The author supplied three C06 AI logs plus native combat log, identifies current Steam as 2.7.0x, and confirms all AI captures are C06. The TB startup and Log 3 stack identify module `641ff828-00b6-46aa-9f92-3748fae7f2f6`; native module is `90a9869c-2792-4c7b-bfb7-5a8b33da7c82`. [Review and exact evidence](C06_PLAYTEST_REVIEW.md), [input hashes](C06_PLAYTEST_REVIEW_INPUTS.json), [swarm movement proposal](C06_SWARM_PROPOSAL.md). Raw logs are not committed.
+
+The 14-start, 1,249-decision captures reveal four repairable boundaries: native reach requires both views; the Psionics cost hook is globally registered but internally scoped; Tome replaces ordinary nonlethal burn with a composite even when its feat is unowned; and existing drain is omitted from the remaining death limit while large non-HP removal value is compressed through CR importance. Each repair is a separate task branch.
+
+The swarm encounters have no existing area/exit diagnostics. Native Corrupted Rat has a recognized registered-target graph, while Bhoga's repertoire also includes a nearby-cast damage ability. Log labels alone cannot determine valid exits or active-area connectivity. Passive `[SwarmAudit]` logging records current source/area coverage without warming dynamic tactical caches or changing decisions; its three-item display bound is not a tactical search cap. Source-cache active-state invalidation and actual delivery geometry are investigated in the approval-only proposal. No movement/commitment/retreat/pathfinding/cancellation change is made.
+
+Slow-decision samples place the largest positive heap deltas in ability appraisal, especially Tuvel; negative deltas and the 1,917 ms Orvath sample explicitly coincide with collection. They do not identify exact per-thread allocations or prove a C06 toggle-stage regression. Faerie Fire casts are ordinary ones, bombs have a small sample without a bomb bias warning, and Profane Invocation is absent. Hidden reveal and settle behavior cannot be marked tested from these logs. Melee Magus is present; held Spellstrike dispatch remains a separate native-factory/action/pricing boundary.
+
+For every new runtime build, retain all unit tests, real-reference 0-warning Release build, exact strict compatible-data scope plus the separately disclosed raw-corpus enum failure, signatures, unique source/MVID/checksum and native no-actor fixture limits. Replay positive/negative/state transitions in TB and RT; movement implementation waits for explicit author approval.

@@ -1,4 +1,4 @@
-﻿# CLAUDE.md
+# CLAUDE.md
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
@@ -7,6 +7,8 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 Read [CONTRIBUTING.md](CONTRIBUTING.md) for shared branch ownership, Codex pull requests, handovers, verification, and releases.
 Codex works on task branches and targets pull requests at `claude/dreamy-pasteur-b9h3rn`; Claude reviews and integrates them there.
 Keep `main` for author-authorized releases. Read [AGENTS.md](AGENTS.md) when coordinating agent work.
+
+**C06 playtest review (9 November 2026, interim Codex):** the author played C06 MVID `641ff828-00b6-46aa-9f92-3748fae7f2f6` on reported Steam 2.7.0x; four logs are fingerprinted in [docs/C06_PLAYTEST_REVIEW_INPUTS.json](docs/C06_PLAYTEST_REVIEW_INPUTS.json). Read [docs/C06_PLAYTEST_REVIEW.md](docs/C06_PLAYTEST_REVIEW.md) / §127. Separate native-view, Psionics cost-scope, Tome burn-property and drain-threat branches carry focused repairs. Passive SwarmAudit coverage logging and [docs/C06_SWARM_PROPOSAL.md](docs/C06_SWARM_PROPOSAL.md) collect the missing actor/area/cache evidence; do not implement swarm movement changes without author approval. Main/releases/version remain unchanged; Claude reviews all PRs later. Slow-row heap measurements are not exact allocations; hidden reveals/Profane Invocation/Judgment transitions are unexercised. C07 is now eligible but is a separate command/action/pricing contract.
 
 **Competence programme (8 November 2026): PR #20 integrated, read [docs/CLASS_COMPETENCE_CURRENT.md](docs/CLASS_COMPETENCE_CURRENT.md)
 first.** Codex's foundation (`codex/class-competence-foundation`, from 0.3.30 test 2 `71ca3de`) was reviewed against the

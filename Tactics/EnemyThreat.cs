@@ -327,6 +327,7 @@ namespace CompanionAI_Pathfinder.Tactics
             // deals none, and its prediction would wear away with every round it drained Strength).
             a.Offence = Math.Max(Math.Max(a.Spell, a.Heal),
                 ValueModel.ObservedOffence(dealt, rounds, a.Weapon - a.AbilityDamage) + a.AbilityDamage);
+            CombatMath.NoteSwarmCoverage(enemy);
         }
 
         /// <summary>

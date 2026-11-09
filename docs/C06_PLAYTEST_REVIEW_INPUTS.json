@@ -1,0 +1,85 @@
+{
+  "review_date": "2026-11-09",
+  "user_reported_game_version": "Latest Steam; subsequently identified by author as 2.7.0x",
+  "played_mod_version": "0.3.30",
+  "played_module_mvid": "641ff828-00b6-46aa-9f92-3748fae7f2f6",
+  "startup_marker": "TB Mode Log C06.txt line 3",
+  "provenance": "Author confirms all three AI logs are this C06 test build. Log 3 exception stack also embeds the same mod/native module IDs. Combat log has no startup MVID.",
+  "native_module_mvid": "90a9869c-2792-4c7b-bfb7-5a8b33da7c82",
+  "files": [
+    {
+      "file": "Log 2 (RT+TB).txt",
+      "sha256": "df3d7ef20badae593ff2ea89ff640ec29466b058f6a82972cd4100fc280f3ebd",
+      "size": 347275,
+      "lines": 1446,
+      "counts": {
+        "build": 0,
+        "burn_unknown": 1,
+        "slow": 56,
+        "stat_drain": 0,
+        "swarm": 130,
+        "exception": 4
+      }
+    },
+    {
+      "file": "TB Mode Log C06.txt",
+      "sha256": "87315e9076dea9fe0bb28e5f3828ca63e4aea8f9c01e2814b0ee302d8c0fc2d0",
+      "size": 652221,
+      "lines": 3585,
+      "counts": {
+        "build": 1,
+        "burn_unknown": 4,
+        "slow": 54,
+        "stat_drain": 4,
+        "swarm": 35,
+        "exception": 13
+      }
+    },
+    {
+      "file": "Log 3 RT+ TB.txt",
+      "sha256": "626c1315a043be23603aede5e59b856c9912ff57a7f0437934b996192bf2a8ae",
+      "size": 1107131,
+      "lines": 5980,
+      "counts": {
+        "build": 0,
+        "burn_unknown": 9,
+        "slow": 70,
+        "stat_drain": 0,
+        "swarm": 0,
+        "exception": 18
+      }
+    },
+    {
+      "file": "combatLog.txt",
+      "sha256": "ede150f18c5301474e672c91d2487bb69559db1682115fe328b7e6dac941f14f",
+      "size": 2431384,
+      "lines": 67149,
+      "counts": {
+        "build": 0,
+        "burn_unknown": 0,
+        "slow": 0,
+        "stat_drain": 5,
+        "swarm": 211,
+        "exception": 0
+      }
+    }
+  ],
+  "raw_logs_committed": false,
+  "ai_decision_rows": 1249,
+  "party_combat_start_markers": 14,
+  "native_combat_start_headers": 14,
+  "slow_decision_rows": 180,
+  "slow_rows_are_not_all_decision_timings": true,
+  "profane_invocation_mentions": 0,
+  "hidden_reveal_decision_markers": 0,
+  "ordinary_faerie_fire_selections": 11,
+  "bomb_selections_log3": 11,
+  "native_stat_damage_packets": 3,
+  "native_temporary_level_drain_packets": 7,
+  "data_notes": [
+    "Strip HTML before interpreting native combat text; raw searches miss tagged effect/number names.",
+    "Negative stage heap changes include garbage collection and are not negative allocated bytes.",
+    "Do not align per-file fight numbers without matching enemy/source rosters.",
+    "Other-mod OwnerBlueprint/ModMenu warnings are separate from the one AI query-failure episode."
+  ]
+}
