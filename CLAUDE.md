@@ -10,6 +10,8 @@ Keep `main` for author-authorized releases. Read [AGENTS.md](AGENTS.md) when coo
 
 **C06 playtest / Tome burn (9 November 2026, Codex; review pending):** `codex/c06-tome-burn-property` starts at played C06 / PR #22 `ab810b3`, including development `1f58150` / `3443d94`. Read [docs/C06_TOME_BURN_PROPERTY.md](docs/C06_TOME_BURN_PROPERTY.md) and §129. Orvath's named fallback matches the installed Tome Burn Resistance rewrite of `KineticNonLethalDamageProperty`, which uses TTT's composite getter even when the feat is not owned. The optional reader recognizes only the inspected module/layout/arithmetic, queries actual native feature ownership and preserves per-term float/floor arithmetic. Unknown shapes stay fallback. No mod getter/condition/setup is executed; 14 supplied-provider fixture cases pass without actor initialization. Manifest 0.3.30; movement/dispatch unchanged.
 
+Verification receipt: [docs/competence/C06_TOME_BURN_CHECKS.json](docs/competence/C06_TOME_BURN_CHECKS.json). Exact checked source and DLL identity are recorded there; a later receipt-only commit does not replace that tested DLL.
+
 **Competence programme (8 November 2026): PR #20 integrated, read [docs/CLASS_COMPETENCE_CURRENT.md](docs/CLASS_COMPETENCE_CURRENT.md)
 first.** Codex's foundation (`codex/class-competence-foundation`, from 0.3.30 test 2 `71ca3de`) was reviewed against the
 author's programme text and merged into development (`452c761`). Review fixes: burn consequences read on real kineticist kits
