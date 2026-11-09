@@ -313,11 +313,12 @@ namespace CompanionAI_Pathfinder.Tactics
         {
             public readonly bool Known, Ttt;
             public readonly FieldInfo PsionicCosts;
+            public readonly ToggleSpendOverride SpendOverride;
             public readonly string Unknown;
             public ToggleSpendPatchContract()
             {
-                Known = ReadToggleSpendPatches(out bool ttt, out var costs, out string unknown);
-                Ttt = ttt; PsionicCosts = costs; Unknown = unknown;
+                Known = ReadToggleSpendPatches(out bool ttt, out var costs, out var spendOverride, out string unknown);
+                Ttt = ttt; PsionicCosts = costs; SpendOverride = spendOverride; Unknown = unknown;
             }
         }
         private static readonly ConditionalWeakTable<TacticalContext, ToggleSpendPatchContract> ToggleSpendContracts =
@@ -328,12 +329,13 @@ namespace CompanionAI_Pathfinder.Tactics
             ToggleSpendContracts.GetValue(ctx, _ => new ToggleSpendPatchContract());
 
         private static bool KnownToggleSpendPatches(out bool ttt)
-            => ReadToggleSpendPatches(out ttt, out _, out _);
+            => ReadToggleSpendPatches(out ttt, out _, out _, out _);
 
-        private static bool ReadToggleSpendPatches(out bool ttt, out FieldInfo psionicCosts, out string unknown)
+        private static bool ReadToggleSpendPatches(out bool ttt, out FieldInfo psionicCosts, out ToggleSpendOverride spendOverride, out string unknown)
         {
             ttt = false;
             psionicCosts = null;
+            spendOverride = null;
             unknown = null;
             bool prefix = false, postfix = false;
             foreach (var method in ToggleSpendMethods)
@@ -347,6 +349,14 @@ namespace CompanionAI_Pathfinder.Tactics
                 {
                     var m = patch.PatchMethod;
                     bool isPrefix = patches.Prefixes.Contains(patch);
+                    if (method.Name == "SpendResource" && isPrefix && m?.DeclaringType?.FullName ==
+                        "ToyBox.BagOfPatches.Infinites+ActivatableAbilityResourceLogic_SpendResource_Patch")
+                    {
+                        var inspected = ToggleSpendOverride.Read(m);
+                        if (inspected == null) { unknown = "ToyBox spend predicate differs from inspected contract"; return false; }
+                        spendOverride = inspected;
+                        continue;
+                    }
                     // Psionics 0.2.3 overrides cost only for GUIDs in this live map. Its static constructor makes
                     // empty BCL collections only; no blueprint initializer or patch method is called by this reader.
                     if (method.Name == "CalcResourceCost" && !isPrefix && m?.Name == "CalcResourceCost_Postfix" &&
@@ -562,6 +572,14 @@ namespace CompanionAI_Pathfinder.Tactics
                         // admission boundary. Their event rate (and other manual spend logic) is not a round drain.
                         note = packedCrit ? $"TTT {cost}/crit; event fallback" : "event/manual spend fallback";
                         return false;
+                }
+                // This hook cancels ActivatableAbilityResourceLogic.SpendResource only. Judgment's independently read
+                // activation actions spend through another native API and retain their own price.
+                if (cost > 0 && cadence != ValueModel.ToggleSpendCadence.ExternalActivation && contract.SpendOverride != null)
+                {
+                    if (!contract.SpendOverride.TryRead(out bool skipsSpend))
+                    { note = "unread ToyBox spend switch fallback"; return false; }
+                    if (skipsSpend) cost = 0;
                 }
                 int counter = 0;
                 bool timed = cadence == ValueModel.ToggleSpendCadence.Minute || cadence == ValueModel.ToggleSpendCadence.TenMinutes || cadence == ValueModel.ToggleSpendCadence.Hour;

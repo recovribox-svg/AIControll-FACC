@@ -1,0 +1,55 @@
+{
+  "played_build_mvid": "675da0f1-3cb6-4531-8724-70bc9ae2dedd",
+  "played_source": "20a7d5ac05092d41dece947909e54a0f7c2f9b2b",
+  "starting_branch_commit": "ba5d5d3346b97598fb14aba5e073661dcc9a7a31",
+  "inputs": [
+    {
+      "file": "Log.txt",
+      "bytes": 791734,
+      "sha256": "9a8a1b44b5b7b68675fbe2ade81bfb5b430d2c0f65929522c629a3029e5e5d5d"
+    },
+    {
+      "file": "combatLog.txt",
+      "bytes": 529348,
+      "sha256": "2176b9d438cf1d4a02b6c868274e02a2f3ff5d3f0c3afe40526cf011be54566b"
+    },
+    {
+      "file": "ToyBox.dll",
+      "bytes": 8894976,
+      "sha256": "ed6fcc0d5f53cdd4100d13d238f284a367ae10e007c1ac1a6a2e102ac42df45f"
+    }
+  ],
+  "combat_starts": 23,
+  "logged_decision_summaries": 714,
+  "modes": {
+    "rt_fights": 8,
+    "tb_fights": 14,
+    "mixed_fights": 1
+  },
+  "ai_exceptions": 0,
+  "external_owner_blueprint_warnings": 2,
+  "slow_samples": 10,
+  "slow_samples_marked_gc": 5,
+  "native_strength_damage_packets": 1,
+  "native_constitution_damage_packets": 13,
+  "swarm_exit_orders": 12,
+  "short_exit_inspections_at_most_0_4m": 5,
+  "ordinary_faerie_selections": 5,
+  "hidden_reveal_markers": 0,
+  "bomb_selections": 0,
+  "profane_invocation_mentions": 0,
+  "toybox": {
+    "uploaded_assembly_version": "1.7.33.0",
+    "uploaded_mvid": "fa5b0826-3a00-42d9-9d74-1cfe530fd2cb",
+    "played_hook_mvid": "32f07445-d1d7-41fc-9cf3-dc7838a41a4f",
+    "same_binary_established": false,
+    "prefix_contract": "return !Main.Settings.toggleInfiniteAbilities, through an inspected trivial getter",
+    "runtime_acceptance": "complete prefix/getter IL, resolved fields and absence of patches on those functions; unknown forms remain fallback"
+  },
+  "limits": [
+    "Decision summaries include waits and end turns; RT driver invocation counts are separately logged.",
+    "Native consequence counts use HTML-stripped decoded text; normalized line numbers differ from the raw file.",
+    "Heap measurements are selected global deltas, not exact thread allocations; five pauses explicitly include GC.",
+    "Positions of the swarm/current enemy walk are not captured with every short exit, so a pursuit cause is not established."
+  ]
+}

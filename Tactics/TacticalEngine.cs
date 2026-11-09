@@ -173,6 +173,7 @@ namespace CompanionAI_Pathfinder.Tactics
         /// <summary>★ v0.3.9: party members down (unconscious, not dead): only heals are aimed at them.</summary>
         public List<UnitEntityData> DownedAllies = new List<UnitEntityData>();
         internal List<UnitEntityData> SwarmRecipients;
+        internal Dictionary<UnitEntityData, float> RevealCombatGains;
         public float ExpectedRounds;
         /// <summary>★ v0.3.18: the party's damage per round behind <see cref="ExpectedRounds"/> (ValueModel, prior blended with this fight).</summary>
         public float PartyDamagePerRound;
@@ -4099,12 +4100,14 @@ namespace CompanionAI_Pathfinder.Tactics
                     // for one that also does something the reader cannot value (★ audit review: Symbol of Vulnerability's
                     // -4 saves come with a lower spell resistance and damage reduction).
                     float share = strength;
-                    if (!isMark && profile.ControlStrength == ControlStrength.None)
+                    bool revealOnly = buffs.Count > 0 && buffs.All(OnlyRevealUtility);
+                    if (!revealOnly && !isMark && profile.ControlStrength == ControlStrength.None)
                     {
                         float byParts = DebuffShareOf(ctx, ability, enemy, buffs, out bool partial);
                         if (byParts >= 0f) share = partial ? Math.Max(byParts * repeat, strength) : byParts * repeat;
                     }
-                    float enemyValue = p * CombatMath.ControlWorth(enemy) * share * rounds;
+                    float enemyValue = revealOnly ? p * RevealCombatGain(ctx, enemy) * rounds * repeat
+                                                 : p * CombatMath.ControlWorth(enemy) * share * rounds;
                     // ★ v0.3.21: a poison's Constitution damage is lost hit points (CombatMath.PoisonHpLoss), valued like
                     // damage; with no other control it replaces the plain-debuff guess.
                     float poisonHp = buffs.Sum(b => CombatMath.PoisonHpLoss(ability, b, enemy, ctx.ExpectedRounds));

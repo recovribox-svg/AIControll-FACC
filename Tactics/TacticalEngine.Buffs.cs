@@ -808,6 +808,11 @@ namespace CompanionAI_Pathfinder.Tactics
         private static float DebuffShareOf(TacticalContext ctx, AbilityData ability, UnitEntityData enemy, List<BlueprintBuff> buffs,
                                            out bool partial)
         {
+            // An immutable empty parts list cannot gain numbers from a source context. Preserve the old unknown
+            // result without constructing a native context for each recipient (e.g. unread marks/debuff carriers).
+            bool anyParts = false;
+            foreach (var buff in buffs) if (BuffPartsReader.Read(buff).Parts.Count > 0) { anyParts = true; break; }
+            if (!anyParts) { partial = false; return -1f; }
             MechanicsContext abilityCtx = null;
             try { abilityCtx = CombatMath.CreateContext(ability, new Kingmaker.Utility.TargetWrapper(enemy)); } catch { }
             return DebuffShareIn(ctx, abilityCtx, enemy, buffs, out partial);
