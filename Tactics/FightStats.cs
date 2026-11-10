@@ -41,6 +41,7 @@ namespace CompanionAI_Pathfinder.Tactics
         /// and the damage the engine predicted for the party at the round's first decision.</summary>
         private static readonly Dictionary<int, float> PartyByRound = new Dictionary<int, float>();
         private static readonly Dictionary<int, float> EnemyByRound = new Dictionary<int, float>();
+        private static readonly Dictionary<int, float> AttachedByRound = new Dictionary<int, float>();
         private static readonly Dictionary<int, float> PredictedByRound = new Dictionary<int, float>();
         private static float _lastDangerScale = 1f, _lastPartyPerRound;
 
@@ -48,6 +49,7 @@ namespace CompanionAI_Pathfinder.Tactics
         public static float LastDangerScale => _lastDangerScale;
         /// <summary>★ v0.3.19 (test8): per party member, the damage it took in each round of this fight.</summary>
         private static readonly Dictionary<string, Dictionary<int, float>> TakenByRound = new Dictionary<string, Dictionary<int, float>>();
+        private static readonly Dictionary<string, Dictionary<int, float>> AttachedTakenByRound = new Dictionary<string, Dictionary<int, float>>();
 
         public static void Subscribe()
         {
@@ -76,8 +78,10 @@ namespace CompanionAI_Pathfinder.Tactics
             _partyDamage = _enemyDamage = 0;
             PartyByRound.Clear();
             EnemyByRound.Clear();
+            AttachedByRound.Clear();
             PredictedByRound.Clear();
             TakenByRound.Clear();
+            AttachedTakenByRound.Clear();
             _lastDangerScale = 1f;
             _lastPartyPerRound = 0f;
         }
@@ -115,7 +119,11 @@ namespace CompanionAI_Pathfinder.Tactics
             }
             if (roundsPredicted == 0) return;
             foreach (var pair in EnemyByRound)
-                if (pair.Key >= first && pair.Key < round) observed += pair.Value;
+                if (pair.Key >= first && pair.Key < round)
+                {
+                    AttachedByRound.TryGetValue(pair.Key, out float attached);
+                    observed += Math.Max(0f, pair.Value - attached);
+                }
         }
 
         /// <summary>
@@ -129,6 +137,23 @@ namespace CompanionAI_Pathfinder.Tactics
             float worst = 0f;
             foreach (var pair in taken)
                 if (pair.Key <= round && pair.Key > round - 3) worst = Math.Max(worst, pair.Value);
+            return worst;
+        }
+
+        // Keep total damage available to diagnostics, while the incoming model adds its independently read attached
+        // stream once. Removing the buff must not leave its old packet as a floor on present enemy attacks.
+        internal static float RecentWorstAttackTaken(UnitEntityData unit, int round)
+        {
+            if (unit == null || !TakenByRound.TryGetValue(unit.UniqueId, out var taken)) return 0f;
+            AttachedTakenByRound.TryGetValue(unit.UniqueId, out var attached);
+            float worst = 0f;
+            foreach (var pair in taken)
+                if (pair.Key <= round && pair.Key > round - 3)
+                {
+                    float tick = 0f;
+                    attached?.TryGetValue(pair.Key, out tick);
+                    worst = Math.Max(worst, Math.Max(0f, pair.Value - tick));
+                }
             return worst;
         }
 
@@ -247,13 +272,23 @@ namespace CompanionAI_Pathfinder.Tactics
                 else if (target.IsPlayerFaction)
                 {
                     _enemyDamage += dealt;
-                    EnemyThreat.NoteDealt(attacker, dealt, evt);   // ★ test1 fixes: retain native energy attribution too
+                    bool attached = CombatMath.IsAttachedDamagePacket(evt);
+                    if (!attached) EnemyThreat.NoteDealt(attacker, dealt, evt); // Attached harm is not a new action of the enemy.
                     EnemyByRound.TryGetValue(round, out float sum);
                     EnemyByRound[round] = sum + dealt;
                     if (!TakenByRound.TryGetValue(target.UniqueId, out var taken))
                         TakenByRound[target.UniqueId] = taken = new Dictionary<int, float>();
                     taken.TryGetValue(round, out float mine);
                     taken[round] = mine + dealt;
+                    if (attached)
+                    {
+                        AttachedByRound.TryGetValue(round, out float ticks);
+                        AttachedByRound[round] = ticks + dealt;
+                        if (!AttachedTakenByRound.TryGetValue(target.UniqueId, out var byRound))
+                            AttachedTakenByRound[target.UniqueId] = byRound = new Dictionary<int, float>();
+                        byRound.TryGetValue(round, out float own);
+                        byRound[round] = own + dealt;
+                    }
                 }
             }
             catch

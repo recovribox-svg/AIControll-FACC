@@ -1,0 +1,27 @@
+{
+  "game_version_report": "Steam 2.7.0x",
+  "assembly_mvid": "90a9869c-2792-4c7b-bfb7-5a8b33da7c82",
+  "assembly_sha256": "2cb7160b7154d4ffacc77b9c51b1eb26199e1294300f04fdfc073367b2ef8953",
+  "blueprints": [
+    { "name": "TickSwarmClingBuff", "guid": "2fea5f88e47e42b1a0037367dcb20470", "sha256": "62906f1c14926741c9c769814545a94ad197f75eca44af2b75314a717b877dba", "frequency": "Rounds" },
+    { "name": "DiseaseBubonicPlagueBuff", "guid": "103aac6bc1cfd454492cee1fd680db05", "sha256": "6b6a3af5c13facc57a53d17ef29a3d67a1be7d2ab592ef6a1bca87435e9f71be", "frequency": "Days" },
+    { "name": "Nauseated", "guid": "956331dba5125ef48afe41875a00ca0e", "sha256": "df3554dc8ecc011a6fd0a703eb9f1b6e565dfabb1d79743f43114e6aa060d109", "frequency": "Rounds" }
+  ],
+  "inspected_native_rules": [
+    "AddFactContextActions.ITickEachRound.OnNewRound: IFactContextOwner.RunActionInContext",
+    "Buff.TickMechanics: Active/IsEnabled, tick interval advancement",
+    "BuffCollection.TickBuff: due tick before equal-time expiry",
+    "BuffCollection.AddFact: Ignore returns held instance; Poison changes counters/DC; Replace reactivates",
+    "ContextValue.Calculate: Simple value and saved Rank index; other value sources withheld",
+    "ContextValueHelper.CalculateDiceValue: native maximize and integer-half empower",
+    "ContextActionSavingThrow.RunAction: saved/custom DC, Persistent, scoped ConditionalSaved branches",
+    "ContextActionDealDamage: HP/ability/energy-drain variants, native caster prerequisite and unsupported modifiers",
+    "BuffPoisonStatDamage.OnActivate/OnNewRound: activation dose, current counters, BonusDC and WeaknessForPoison",
+    "EntityFactComponentDelegate<T,TData>.ComponentRuntime.TryGetData: reads MaybeData without creating it",
+    "AddEnergyDamageTrigger.OnEventDidTrigger: EnergyDamage type and optional SourceAbility.IsSpell; no positive-result test",
+    "ContextActionRemoveSelf: owning buff removal",
+    "RuleDealDamage.OnTrigger: IsDot from Reason.Context.AssociatedBlueprint being BlueprintBuff"
+  ],
+  "actor_or_native_rule_execution_in_fixtures": false,
+  "source_blueprint_bytes_modified": false
+}

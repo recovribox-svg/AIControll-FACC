@@ -137,7 +137,8 @@ namespace CompanionAI_Pathfinder.Tactics
                 var drops = HeavyHitDrops(reaching, who, hp);
                 double stays = 1d;
                 for (int i = 0; i < drops.Length; i++) stays *= 1d - reaching[i].Item2 * drops[i];
-                return Math.Max(drop, (float)(1d - stays));
+                return Math.Max(drop, ValueModel.WithBackgroundDrop((float)(1d - stays),
+                    RiskMath.RoundDropChance(hp, CombatMath.AttachedDamageOf(ctx, who).NextRisk)));
             }
             catch (Exception ex)
             {

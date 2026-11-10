@@ -1840,7 +1840,7 @@ namespace CompanionAI_Pathfinder.Tactics
             return BuffsRemovedFrom(ability, target).Where(b => !IsHarmfulFor(b, target)).ToList();
         }
 
-        private IEnumerable<Kingmaker.UnitLogic.Buffs.Buff> BuffsRemovedFrom(AbilityData ability, UnitEntityData target)
+        internal IEnumerable<Kingmaker.UnitLogic.Buffs.Buff> BuffsRemovedFrom(AbilityData ability, UnitEntityData target, bool certainOnly = false)
         {
             var result = new List<Kingmaker.UnitLogic.Buffs.Buff>();
             if (target?.Buffs == null || m_Removals.Count == 0) return result;
@@ -1849,7 +1849,8 @@ namespace CompanionAI_Pathfinder.Tactics
                 var buffs = target.Buffs.Enumerable.ToList();
                 foreach (var removal in m_Removals)
                 {
-                    if (AppliesTo(removal, ability, target) == EffectApplies.No) continue;
+                    var applies = AppliesTo(removal, ability, target);
+                    if (applies == EffectApplies.No || certainOnly && applies != EffectApplies.Yes && applies != EffectApplies.Unconditional) continue;
                     foreach (var buff in buffs)
                     {
                         bool removed = removal is ContextActionRemoveBuff rb && rb.Buff == buff.Blueprint ||

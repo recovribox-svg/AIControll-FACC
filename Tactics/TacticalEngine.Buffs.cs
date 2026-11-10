@@ -623,7 +623,8 @@ namespace CompanionAI_Pathfinder.Tactics
             }
 
             float offenceValue = offencePerRound * rounds + invisibleOnce + onHitOnce;
-            float defenceValue = ValueModel.PreventionValue(keptPerRound, rounds, def.Hp, def.Incoming, def.Worth);
+            float defenceValue = ValueModel.PreventionValue(keptPerRound, rounds, def.Hp,
+                def.Incoming + CombatMath.AttachedDamageOf(ctx, ally).NextRisk, def.Worth);
             // A summon is temporary and replaceable: half (as everywhere, ValueModel.SummonFactor).
             result.Value = (offenceValue + defenceValue) * RoleWeight(ctx, "buff") * (IsSummon(ally) ? ValueModel.SummonFactor : 1f);
             result.Detail = $"{string.Join(", ", notes)} over {rounds:0.#} rd" +
@@ -1144,7 +1145,9 @@ namespace CompanionAI_Pathfinder.Tactics
             var def = new Defence();
             try
             {
-                def.Incoming = IncomingDamage(ctx, ally, ally.Position);
+                // Attached harm raises urgency, but is not an attack that armour, images or an enemy mark prevents.
+                // No new protection credit is guessed here; supported heals/cleanses use the complete danger stream.
+                def.Incoming = IncomingEnemyDamage(ctx, ally, ally.Position);
                 // Nothing reaches it this instant (the fight has not closed in yet): its share of what the enemies still
                 // fighting can deal, more for one that fights in melee - a buff cast now lasts into the rounds they meet.
                 if (def.Incoming <= 0f && ctx.Allies.Count > 0)

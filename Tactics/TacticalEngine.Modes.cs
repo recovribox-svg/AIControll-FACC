@@ -567,8 +567,9 @@ namespace CompanionAI_Pathfinder.Tactics
             if (Math.Abs(share) < 1e-4f) return 0f;
             float hp = Math.Max(1f, CombatMath.HpBeforeDown(unit));
             float dropBefore = RiskMath.RoundDropChance(hp, danger);
-            float dropAfter = RiskMath.RoundDropChance(hp, danger * (1f - share));
-            return ((dropBefore - dropAfter) * AllyWorth(ctx, unit) + danger * share * 0.3f) * RiskTolerance(ctx);
+            float dangerAfter = ValueModel.AfterEnemyProtection(danger, CombatMath.AttachedDamageOf(ctx, unit).NextRisk, share);
+            float dropAfter = RiskMath.RoundDropChance(hp, dangerAfter);
+            return ((dropBefore - dropAfter) * AllyWorth(ctx, unit) + (danger - dangerAfter) * 0.3f) * RiskTolerance(ctx);
         }
 
         /// <summary>

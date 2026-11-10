@@ -1,6 +1,6 @@
 # Proposed follow-up: damage already attached to a recipient
 
-**Proposal only.** The author approved native swarm-space/source/boundary work; the standing restriction still requires discussion before further movement/retreat/commitment/path/cancellation policy changes. This broader incoming-risk model is not silently introduced by the C06R2 log review.
+**Approved by the author on 10 November 2026; implemented separately in C06R4.** Read [the implementation, evidence, limits and replay](C06_ATTACHED_DAMAGE.md). The original proposal below was not part of C06R3. Existing movement/retreat/commitment/path/cancellation policies remain in place.
 
 The native TickSwarmClingBuff has target-owned NewRound actions: a Reflex save removes it; failure deals 4d6 physical damage, checks secondary effects and deals 1d4 Constitution damage. Fire, cold, electricity or acid damage can remove it via its native AddEnergyDamageTrigger/ContextActionRemoveSelf components. The native combat log explicitly attributes three damage packets to Cling. These actions do not consult the swarm's current position; separation alone does not remove them. Existing cast-space clearance prices avoidance of future casts, while existing attached harm needs its own position-independent stream. The logged short exits lack accompanying enemy walk/position data, so pursuit versus a changing collateral anchor is not attributed.
 

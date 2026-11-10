@@ -154,6 +154,9 @@ namespace CompanionAI_Pathfinder.Tactics
         {
             var buff = apply.Buff;
             if (buff == null || apply.ToCaster || BuffBlockedFor(victim, buff)) return;
+            // ★ v0.3.30 C06R4: an Ignore-stacking attached effect already on this victim adds no fresh ticks. Its existing
+            // instance is priced separately at every spot, including after the original attacker disappears.
+            if (AttachedApplicationHeld(victim, buff)) return;
             float rounds = AfflictionRounds;
             if (!apply.Permanent && apply.DurationValue != null && apply.DurationValue.Rate == Kingmaker.UnitLogic.Mechanics.DurationRate.Rounds)
             {

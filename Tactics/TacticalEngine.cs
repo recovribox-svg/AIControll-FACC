@@ -174,6 +174,7 @@ namespace CompanionAI_Pathfinder.Tactics
         public List<UnitEntityData> DownedAllies = new List<UnitEntityData>();
         internal List<UnitEntityData> SwarmRecipients;
         internal Dictionary<UnitEntityData, float> RevealCombatGains;
+        internal Dictionary<UnitEntityData, CombatMath.AttachedSnapshot> AttachedDamage;
         public float ExpectedRounds;
         /// <summary>★ v0.3.18: the party's damage per round behind <see cref="ExpectedRounds"/> (ValueModel, prior blended with this fight).</summary>
         public float PartyDamagePerRound;
@@ -1107,12 +1108,14 @@ namespace CompanionAI_Pathfinder.Tactics
         /// the enemies are hitting. Capped by the uncalibrated prediction there, so a hit from an enemy now dead or gone
         /// does not count.</remarks>
         private static float IncomingDamage(TacticalContext ctx, UnitEntityData ally, Vector3 at)
+            => IncomingEnemyDamage(ctx, ally, at) + CombatMath.AttachedDamageOf(ctx, ally).NextRisk;
+
+        private static float IncomingEnemyDamage(TacticalContext ctx, UnitEntityData ally, Vector3 at)
         {
             float raw = IncomingDamageRaw(ctx, ally, at);
-            float predicted = raw * ctx.DangerScale;
-            if (HorizontalDistance(at, ally.Position) > 2f) return predicted;
-            float seen = Math.Min(FightStats.RecentWorstTaken(ally, ctx.Round), raw);
-            return Math.Max(predicted, seen);
+            var attached = CombatMath.AttachedDamageOf(ctx, ally);
+            return ValueModel.IncomingWithAttached(raw, ctx.DangerScale, attached.RecentEnemy,
+                HorizontalDistance(at, ally.Position) <= 2f, 0f);
         }
 
         /// <summary>★ v0.3.18: the prediction itself, from the enemies' Threat (what FightStats compares with the damage dealt).</summary>
@@ -1345,7 +1348,8 @@ namespace CompanionAI_Pathfinder.Tactics
                     if (drops[i] > t.drop) threats[heavyAt[i]] = (t.chance, drops[i]);
                 }
             }
-            return ValueModel.CombinedDrop(threats);
+            return ValueModel.WithBackgroundDrop(ValueModel.CombinedDrop(threats),
+                RiskMath.RoundDropChance(hp, CombatMath.AttachedDamageOf(ctx, who).NextRisk));
         }
 
         /// <summary>
@@ -4365,7 +4369,8 @@ namespace CompanionAI_Pathfinder.Tactics
                 foreach (var ally in affectedAllies.Where(a => profile.WouldRemoveSomething(ability, a)))
                 {
                     bool fighting = (ally.CombatState?.IsEngaged ?? false) || ally == unit;
-                    cleanseValue += (2f + 2f * level) * Math.Min(ctx.ExpectedRounds, 3f) * (fighting ? 1f : 0.6f);
+                    float ordinary = (2f + 2f * level) * Math.Min(ctx.ExpectedRounds, 3f) * (fighting ? 1f : 0.6f);
+                    cleanseValue += Math.Max(ordinary, AttachedCleanseWorth(ctx, ability, profile, ally));
                 }
                 if (cleanseValue > 0f)
                 {

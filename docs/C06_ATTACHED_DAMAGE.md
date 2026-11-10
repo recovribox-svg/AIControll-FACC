@@ -1,0 +1,45 @@
+# C06R4: damage already attached to a companion
+
+Moving out of a swarm avoids new attacks, but it does not remove an existing Cling buff. This change keeps the damage that follows the companion in the danger estimate. Healing can then be judged against that continuing danger, and an ability that really removes the effect can receive credit for the damage it prevents.
+
+The author approved [the attached-damage proposal](C06R2_ATTACHED_DAMAGE_PROPOSAL.md) on 10 November 2026. Task branch `codex/c06-attached-damage` starts at C06R3 / PR #30 `b179597`, over current development `1f58150`. The original [23-fight review](C06R2_PLAYTEST_REVIEW.md) and [input fingerprints](C06R2_PLAYTEST_INPUTS.json) remain the gameplay evidence. C06R4 itself needs a new playtest; this is a development test, manifest 0.3.30.
+
+## Native evidence
+
+The supplied Assembly-CSharp module is `90a9869c-2792-4c7b-bfb7-5a8b33da7c82`. [Native evidence](C06_ATTACHED_DAMAGE_NATIVE.json) identifies the three actual blueprint inputs and inspected methods. No game code, input DLLs or verification stubs are included in the mod package.
+
+- `AddFactContextActions` runs NewRound in the owning buff's context. `Buff.TickMechanics` checks Active/IsEnabled; `BuffCollection.TickBuff` ticks before removing at an equal end timestamp. The reader uses the instance's actual next tick, tick interval, end time, suppression and stored context. It never resets an effect's duration or creates a context/fact/actor.
+- Tick Cling's Reflex success removes itself. Failure deals 4d6 physical damage, makes separate Fortitude checks for Nauseated and Bubonic Plague, and deals 1d4 Constitution damage. Success/failure branches and the chance of surviving into later ticks are read separately. Existing saved ranks, DC, ability/level damage immunities, native/observed reduction and supported metamagic are used. A dead caster is not a removed buff: a still-resolvable native caster/context is sufficient. A missing caster prevents the native direct damage actions and is left unsupported.
+- Bubonic Plague uses `BuffPoisonStatDamage` plus passive fatigue, with **Days** as its blueprint frequency. That component's OnActivate deals its initial stat dose and increments TicksPassed; NoEffectOnFirstTick applies to OnNewRound, not that activation dose. Active instances use actual TicksPassed, SavesSucceeded, BonusDC and stored dice. No fresh poison, save counter or DC is invented. WeaknessForPoison can make a successful save deal damage too; native save and tick limits still end it.
+- Native `ContextValueHelper.CalculateDiceValue` adds an integer half on Empower. The expected value includes that rounding without rolling dice. Constant and saved-rank values are supported; property/shared-value and unknown action contracts are rejected.
+- Cling's four `AddEnergyDamageTrigger` components inspect the incoming EnergyDamage type. They do not require positive post-resistance damage. SpellsOnly, when set, requires the event's native SourceAbility.IsSpell. This change validates those removal actions; it does not add deliberate damaging casts on companions.
+- Native Ignore stacking returns the existing buff. An already held supported Ignore effect no longer contributes a second set of future ticks to a hypothetical fresh affliction application. Existing Poison/Prolong/etc. applications do not receive a new activation dose; Replace and Stack retain their native distinction.
+
+## Integration
+
+`CombatMath.PeriodicPlan` caches immutable component/action contracts by blueprint. `CombatMath.AttachedDamage` builds one snapshot per recipient per decision, including an empty result. Position and the continued presence of the enemy in the enemy list are not cache keys. No source discovery, context creation, save query or damage preview is repeated for each movement spot.
+
+The shared incoming-damage estimate adds the next six seconds of supported attached damage **after** calibrating enemy attacks. It is neither divided among party members nor reduced by the fight's observed enemy-damage scale. Standing-drop and heavy-hit estimates retain the same background at every hypothetical position; heals, revives and burn-risk estimates consume the shared danger. Existing movement permissions, candidate competition, targets, paths and command/cancellation rules remain in place.
+
+Armour, mirror-image and enemy-specific protection estimates use the enemy stream, so they cannot claim to stop Cling. The complete background still informs the urgency of prevention. No new protection benefit against attached damage is guessed here; direct healing and verified removals receive the new damage information.
+
+A cleanse uses existing removal actions, native eligibility and a certain applicable branch. Only matching active instances contribute avoided damage over the existing bounded three-round horizon; the value is a floor on the existing cleanse appraisal, not a second additive reward. Current ability damage and conditions are not treated as cured by removing their source. Future control/overlap valuation stays with the existing condition/cleanse model. A new child buff contributes its understood activation stat dose; its later ticks are read from its own active instance when present.
+
+Completed, recognised native buff HP packets are kept in total fight statistics, but excluded from enemy offence calibration and the recent enemy-hit floor. Attribution requires the actual matching live buff context, a readable supported cadence and readable source values; unknown/removed instances keep the old accounting. This avoids counting the same recognised attached stream as a new enemy action and again as background damage. Buff removal is visible on the next decision.
+
+## Verification and limits
+
+The final receipt records the committed source, real-reference Release build, unit/inventory results, native fixtures, ProfileAudit scope, member resolution and exact C06R4 package identity. The original full-corpus enum mismatch remains separately INCOMPLETE; the compatible scope uses unmodified inputs.
+
+Native fixture checks use the actual Cling and secondary-disease graphs, native schedule properties and existing runtime poison data. They execute no actor constructor, Rulebook action, native command or mod initializer. Warm recipient-cache lookups are checked for 10,000 calls with zero allocations. This does not measure Unity frame time or establish gameplay correctness.
+
+Supported contracts are recipient-local NewRound actions and the inspected poison component. Spatial/unknown Conditional actions, unsupported component mixtures, conditional DC increases, FromBuff saves, borrowed save DC, shared/property dice, half-damage variants, added weapon/caster damage, subsecond cadences, Bolstered, shadow and Magic Hack remain outside the contract. Supported contexts use the existing shared save/reduction readers; mod-specific outcome changes still require gameplay evidence. New future child-state evolution is not simulated. This does not change the out-of-combat driver or make every swarm encounter safe.
+
+## Focused TB/RT replay
+
+1. Confirm the C06R4 startup MVID and capture full AI/native logs. With Cling active, compare `[Attached]` with the native damage reasons and actual saves. Move outside the swarm's cast space: new attacks may disappear, but the existing buff's damage remains until its own removal.
+2. Keep Cling on one companion while the caster dies and another enemy remains. Repeat after a successful Reflex save and after expiry/removal. The new stream should follow the active instance and disappear on the next decision when it is gone. An unresolved missing caster is a separate native limitation.
+3. Compare healing, a genuinely eligible cleanse, ordinary attacks and the existing escape options. No armour/image/enemy mark should gain credit for preventing the attached tick. Removing Cling must not claim to restore earlier Constitution damage or remove an already separate disease.
+4. Exercise native qualifying energy removal with/without resistance and with the applicable spell-source restriction. No automatic attack on a companion is added by this build.
+5. Test two attached sources, an active poison with one/two saves remaining, a dose near its tick limit, immunity, delayed expiry, an unconscious recipient and a no-legal-move case. A protected/immune new application and an already held Ignore effect must not add a second instance's future ticks.
+6. Compare matched party/encounter slow-decision samples in TB and RT. New snapshot work belongs once per recipient/decision; whole-decision Unity latency and allocations remain unmeasured until replay.
