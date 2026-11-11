@@ -36,9 +36,12 @@ namespace CompanionAI_Pathfinder.Tactics
             out KineticistBurnPropertyGetter basis, out bool composite, out int featureAdjustment)
         {
             basis = null; composite = false; featureAdjustment = 0;
-            if (getter == null || getter.Settings != null) return false;
+            if (getter == null) return false;
             if (getter.GetType() == typeof(KineticistBurnPropertyGetter))
             { basis = (KineticistBurnPropertyGetter)getter; return true; }
+            // Native settings are applied to native burn below the property and rank layers. The inspected
+            // optional composite contract still requires unchanged settings at every nested provider boundary.
+            if (getter.Settings != null) return false;
             if (ownsFeature == null) return false;
             var layout = Layouts.GetValue(getter.GetType(), t => new Layout(t));
             if (layout.Property == null || layout.Bonus == null || layout.Numerator == null || layout.Denominator == null ||

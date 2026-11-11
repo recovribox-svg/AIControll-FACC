@@ -4703,3 +4703,27 @@ compatible-scope ProfileAudit, inherited provider regressions, references and ex
 failure remains distinct. Offline metadata/flag checks do not establish live gameplay or matched Unity performance.
 General movement, target commitment, retreat, pathfinding and stuck cancellation are not retuned. Manifest 0.3.30;
 Claude reviews/integrates; no main/development push or release. C07 remains separate.
+
+## 138. Caster1 broad playtest review (11 November 2026)
+
+[Review and movement proposal](CASTER1_PLAYTEST_REVIEW.md), [input accounting](CASTER1_PLAYTEST_INPUTS.json) and
+[native contracts](competence/CASTER1_REVIEW_NATIVE.json) cover all three AI logs and the combat log: 13 fights,
+1,043 decision summaries, no observed AI exception. TB1 identifies caster1 exactly; subsequent captures have no
+independent startup. This task starts at caster1 packaging `f278114` over fetched development `1f58150` / PR #33.
+
+Scorching Ray's five 27–34-versus-15 checks expose a missing delivery count. Native simple-projectile arrays and
+their context ranks now repeat the per-payload damage after mitigation/bonuses, with no extra scoring context.
+Actual attack-roll identity separates multi-ray diagnostic samples; ricochet layers, cones and fusion keep their
+own delivery contracts. Orvath's rejected critical heals carried a native ignore-sight sticky source, while Pure
+Mage's final guard hardcoded sight. It now uses the native flag carried by the candidate; safe approaches and
+moved-recipient checks remain. BurnNumberProperty's non-null native settings no longer force legacy HP pricing:
+the actor-free native progression/negation/limits run before rank/stat arithmetic, with existing delta caching.
+
+Broader review includes stat damage/poison priorities, swarm casts and actual Tiny-swarm weapon damage, bombs,
+repeated control/buffs/heals, Faerie Fire, interruptions, external warnings and 87 slow rows (seven marked cleanups).
+Stage heap growth is not exact allocation; no matched Unity speedup is claimed. Twenty-five path refusals and
+repeated smoke exits produce a bounded proposal, with no movement/commitment/retreat/path/stuck policy changes.
+Magus automation and native combo continuation belong to the separate C07 change. Profane Invocation/fusion
+gameplay and the reported blank tooltip remain unverified. Final checked-source receipt/package identity records
+unit/native tests, actual-reference Release, compatible ProfileAudit and the original full-corpus enum failure
+separately. Manifest 0.3.30; Claude reviews/integrates, no main/development push or release.

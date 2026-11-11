@@ -1,0 +1,58 @@
+{
+  "native_assembly": {
+    "name": "Assembly-CSharp.dll",
+    "bytes": 11891712,
+    "sha256": "2cb7160b7154d4ffacc77b9c51b1eb26199e1294300f04fdfc073367b2ef8953",
+    "mvid": "90a9869c-2792-4c7b-bfb7-5a8b33da7c82"
+  },
+  "contracts": [
+    {
+      "member": "AbilityDeliverProjectile.Deliver",
+      "finding": "For Simple delivery, select referenceArrayProxy.Take(UseMaxProjectilesCount ? context[MaxProjectilesCountRank] : referenceArrayProxy.Length), deliver each projectile and apply its payload. Ordinary rays roll independently when no existing context attack roll is supplied. MagicHack can replace the array with a selected single projectile."
+    },
+    {
+      "member": "UnitUseAbility constructor",
+      "finding": "NeedLoS is true only when the actual ability blueprint lacks ILineOfSightIgnore. AbilityEffectStickyTouch implements that interface."
+    },
+    {
+      "member": "PropertyValueGetter.GetValue / PropertySettings.Apply",
+      "finding": "Native getter base value is transformed by settings, then the enclosing property/rank/stat layers. Apply is actor-free: progression, optional negation, lower then upper cap. Invalid arithmetic can throw and remains fallback."
+    },
+    {
+      "member": "UnitPartMagus / MagusController / UnitUseAbility.CreateCastCommand",
+      "finding": "Spellstrike and Spell Combat are separate native mechanics. The source spell queues native touch delivery. A matching held Magus touch with Spellstrike active can require a UnitAttack rather than a UnitUseAbility. A ranged touch ray does not leave a normal melee touch charge."
+    }
+  ],
+  "blueprint_fixtures": [
+    {
+      "path": "Spells/Spells/Level2/ScorchingRay.jbp",
+      "bytes": 15185,
+      "sha256": "fd2278ccf3f0fa85c39bdb45715ffeea6d1b3365d693dcacb587bab0feabcbfa"
+    },
+    {
+      "path": "Spells/Spells/Level1/MagicMissile.jbp",
+      "bytes": 13898,
+      "sha256": "0326550f75a77c81368a97513c8da1ab8620d05ab325313cbc80e296f67b56cd"
+    },
+    {
+      "path": "Spells/Spells/Level6/HellfireRay.jbp",
+      "bytes": 18720,
+      "sha256": "43921406c1e878cb6ba927904f5527529efe4db276ad5500c8ab97ee51e5dacb"
+    },
+    {
+      "path": "Spells/Spells/Level2/CureModerateWoundsCast.jbp",
+      "bytes": 10971,
+      "sha256": "6f4c7cb484003f5efaae4077dd1fee57ed3e72409199642cf5589a2c8f3ed5e5"
+    },
+    {
+      "path": "Classes/Classes/Kineticist/Burn/BurnNumberProperty.jbp",
+      "bytes": 627,
+      "sha256": "2df9344275a27aef7b5dbc63d92f5c0487d2e59104545333134d1180f1932b03"
+    },
+    {
+      "path": "Classes/Classes/Kineticist/Archetypes/Psychokineticist/PsychokineticistBurnBuff.jbp",
+      "bytes": 4335,
+      "sha256": "23244529b0406a0c8d7027cfb68fcfe5aae595ceafd4535555f163f2c964a9dc"
+    }
+  ]
+}

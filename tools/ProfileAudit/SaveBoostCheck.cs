@@ -72,6 +72,9 @@ namespace ProfileAudit
         }
 
         private static IEnumerable<MethodBase> CalledMethods(MethodInfo method)
+            => ReferencedMembers(method).OfType<MethodBase>();
+
+        internal static IEnumerable<MemberInfo> ReferencedMembers(MethodInfo method)
         {
             var bytes = method.GetMethodBody()?.GetILAsByteArray() ?? throw new InvalidOperationException("No IL body");
             var codes = typeof(OpCodes).GetFields(BindingFlags.Public | BindingFlags.Static)
@@ -84,6 +87,8 @@ namespace ProfileAudit
                 var op = codes[value];
                 if (op.OperandType == OperandType.InlineMethod)
                     yield return method.Module.ResolveMethod(BitConverter.ToInt32(bytes, offset));
+                else if (op.OperandType == OperandType.InlineField)
+                    yield return method.Module.ResolveField(BitConverter.ToInt32(bytes, offset));
                 switch (op.OperandType)
                 {
                     case OperandType.InlineNone: break;

@@ -271,6 +271,8 @@ namespace CompanionAI_Pathfinder.Tactics
             Kingmaker.UnitLogic.Abilities.Components.TargetType.Any;
         /// <summary>Native cone delivery; its recipients are queried from the game rather than a circle.</summary>
         public AbilityDeliverProjectile Cone { get; private set; }
+        /// <summary>Actual root's simple projectile delivery; child effect abilities do not repeat their parent.</summary>
+        public AbilityDeliverProjectile SimpleProjectiles { get; private set; }
         public bool IsProjectileCone => Cone != null;
         public bool IsAoE => AoERadius > 0.01f || IsProjectileCone;
         /// <summary>
@@ -780,6 +782,8 @@ namespace CompanionAI_Pathfinder.Tactics
             }
 
             var projectile = bp.GetComponent<AbilityDeliverProjectile>();
+            if (ReferenceEquals(bp, Blueprint) && projectile?.Type == AbilityProjectileType.Simple)
+                SimpleProjectiles = projectile;
             // Only the actual cast blueprint can provide this aim's cone. Referenced secondary abilities may have
             // different origins/delivery and must not turn their parent into a fabricated cone.
             if (ReferenceEquals(bp, Blueprint) && projectile?.Type == AbilityProjectileType.Cone)

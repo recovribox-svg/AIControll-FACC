@@ -94,8 +94,23 @@ namespace ProfileAudit
                         "source spell's attack comes from its actual sticky-touch delivery");
                     typeof(AbilityData).GetField("<MetamagicData>k__BackingField", BindingFlags.NonPublic | BindingFlags.Instance).SetValue(sourceCast, magic);
                     Check(SpellDelivery.IsReachTouch(sourceCast) && !SpellDelivery.IsPhysicalTouch(sourceCast), "Reach is recognized before casting the source touch spell");
+                    var cure = spells.FirstOrDefault(a => a.name == "CureModerateWoundsCast");
+                    Check(cure?.StickyTouch is Kingmaker.UnitLogic.Abilities.Components.TargetCheckers.ILineOfSightIgnore,
+                        "played heal's actual sticky-touch source has the native ignore-sight contract");
                 }
                 CheckSpells();
+
+                // The scene/physics call cannot be run offline. Check its compiled data route and retained safety
+                // guard instead; this proves metadata propagation, not a successful native heal or live path.
+                var issue = typeof(TacticalEngine).GetMethod("PureMageAllowsIssue", BindingFlags.NonPublic | BindingFlags.Static);
+                var evaluate = typeof(TacticalEngine).GetMethod("EvaluateAbility", BindingFlags.NonPublic | BindingFlags.Static);
+                var sight = typeof(Candidate).GetField("NeedLoS");
+                bool References(MethodInfo method, MemberInfo member) => SaveBoostCheck.ReferencedMembers(method).Any(m =>
+                    m.Module == member.Module && m.MetadataToken == member.MetadataToken);
+                Check(References(issue, sight), "final touch guard reads the priced native sight flag");
+                Check(References(evaluate, sight), "ability evaluation carries the native sight flag into its candidate");
+                Check(References(issue, typeof(TacticalEngine).GetMethod("SafeTouchCandidate", BindingFlags.NonPublic | BindingFlags.Static)),
+                    "out-of-range touch issue retains the original safe-approach guard");
 
                 var flags = typeof(TacticalEngine).GetMethod("SetAttackFlags", BindingFlags.NonPublic | BindingFlags.Static);
                 foreach (bool realTime in new[] { false, true })

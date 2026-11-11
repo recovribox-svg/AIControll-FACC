@@ -784,14 +784,15 @@ namespace CompanionAI_Pathfinder.Tactics
                                                                    UnitEntityData target, int layer)
         {
             float raw = EstimateAbilityDamageRaw(ability, profile, target, null,
-                action => profile.AppliesAtDeliveryLayer(action, ability, target, layer));
+                action => profile.AppliesAtDeliveryLayer(action, ability, target, layer), oneProjectile: true);
             // ★ v0.3.28 test 6: a jump reuses the first attack roll (RuleAttackRoll.CopyWithNewTarget), its critical too.
             return raw > 0f ? raw * AbilityDamageScale(ability, profile, target) : raw;
         }
 
         /// <summary>★ v0.3.20: the estimate before the learned share of a blast (DamageObserver checks against it).</summary>
         internal static float EstimateAbilityDamageRaw(AbilityData ability, AbilityProfile profile, UnitEntityData target, ItemEntityWeapon bladeWeapon,
-            Func<GameAction, EffectApplies> branch = null, bool? ignorePhysicalReduction = null, float extraWeaponDamage = 0f)
+            Func<GameAction, EffectApplies> branch = null, bool? ignorePhysicalReduction = null, float extraWeaponDamage = 0f,
+            bool oneProjectile = false)
         {
             if (profile.Damage.Count == 0) return 0f;
             DamageEstimates++;
@@ -862,7 +863,8 @@ namespace CompanionAI_Pathfinder.Tactics
                 }
             }
             RememberFusionDamageChance(ability, target, profile, parts, fusionFail, fusionEvasion, fusionImproved);
-            return SumAlternatives(profile, parts);
+            // Mitigation and per-roll bonuses above apply to every delivery separately, before their sum.
+            return SumAlternatives(profile, parts) * (oneProjectile ? 1 : ProjectileDeliveries(profile, ctx));
         }
 
         // ★ v0.3.28 test 11: one execution context per ability and frame for damage whose numbers the target cannot change.

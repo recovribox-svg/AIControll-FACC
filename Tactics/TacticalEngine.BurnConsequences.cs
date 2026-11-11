@@ -272,6 +272,15 @@ namespace CompanionAI_Pathfinder.Tactics
                         now = ValueModel.TomeBurnValue(model.Accepted, scale, stat.FeatureAdjustment);
                         next = ValueModel.TomeBurnValue(checked(model.Accepted + addedBurn), scale, stat.FeatureAdjustment);
                     }
+                    else if (stat.Burn.Settings != null)
+                    {
+                        // ★ caster1 review: PropertyValueGetter.GetValue applies these native, actor-free settings
+                        // after GetBaseValue. A serialized settings object is not itself unsupported arithmetic.
+                        // Preserve the exact native division/negation/cap order before ContextRankConfig. Malformed
+                        // settings still take the existing explicit fallback; never invoke a mod getter here.
+                        now = stat.Burn.Settings.Apply(now);
+                        next = stat.Burn.Settings.Apply(next);
+                    }
                     now = (int)RankApplyProgression.Invoke(stat.Rank, new object[] { now });
                     next = (int)RankApplyProgression.Invoke(stat.Rank, new object[] { next });
                     // Intensified-dependent configs were excluded. These pure caps do not consult a context.

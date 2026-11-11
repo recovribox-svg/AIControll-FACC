@@ -3370,6 +3370,8 @@ namespace CompanionAI_Pathfinder.Tactics
                     Target = wrapper.Unit,
                     Point = wrapper.Unit == null ? wrapper.Point : (Vector3?)null,
                     NeedsMove = needsMove,
+                    // ★ caster1 review: retain the native command's sight rule for the final Pure Mage touch check.
+                    NeedLoS = abilityNeedsLos ?? false,
                     GatherPower = gather,
                     Value = value,
                     InfusionNote = infusionNote,

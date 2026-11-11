@@ -90,7 +90,9 @@ namespace CompanionAI_Pathfinder.Tactics
             if (candidate.Offensive) return false;
             if (candidate.Target == null || candidate.Target == unit) return true;
             float range = ability.GetApproachDistance(candidate.Target);
-            if (InRangeNow(unit, candidate.Target.Position, range, true)) return true;
+            // ★ caster1 review: sticky-touch source commands ignore LoS. Requiring it here contradicted the
+            // priced native command and refused both heals after Orvath had already made the safe approach.
+            if (InRangeNow(unit, candidate.Target.Position, range, candidate.NeedLoS)) return true;
             // A moved recipient cannot turn an in-place support touch into an unpriced native auto-approach.
             return candidate.NeedsMove && SafeTouchCandidate(candidate, unit) &&
                 (!candidate.Target.Descriptor.State.IsConscious || CombatMath.HpPercent(candidate.Target) < settings.HealAtHPPercent / 100f) &&
