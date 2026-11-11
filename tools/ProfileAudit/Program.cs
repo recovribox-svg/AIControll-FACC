@@ -197,6 +197,10 @@ namespace ProfileAudit
             foreach (var line in attachedLines) Console.WriteLine(line);
             File.WriteAllText(output, string.Join(Environment.NewLine, attachedLines) + Environment.NewLine + Environment.NewLine + File.ReadAllText(output));
             blocklistFailures += attachedFailures;
+            var resistanceMemoLines = ResistanceMemoCheck.Run(loaded.Values, out int resistanceMemoFailures);
+            foreach (var line in resistanceMemoLines) Console.WriteLine(line);
+            File.WriteAllText(output, string.Join(Environment.NewLine, resistanceMemoLines) + Environment.NewLine + Environment.NewLine + File.ReadAllText(output));
+            blocklistFailures += resistanceMemoFailures;
             // ★ v0.3.30 test 2: facts whose bonus follows an ability score.
             var statLines = StatLinkCheck.Run(loaded.Values, out int statFailures);
             foreach (var line in statLines) Console.WriteLine(line);

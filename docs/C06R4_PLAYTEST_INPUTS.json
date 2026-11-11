@@ -1,0 +1,40 @@
+{
+  "played_build_mvid": "3705efbc-ad31-48e0-a8b7-c01ea9654b1d",
+  "played_source": "736358a86094e95b27fe90d13c296f5bee279327",
+  "starting_branch_commit": "ca12a28cac01d540c7a11997f196c5a46342ca9c",
+  "inputs": [
+    {
+      "file": "Log.txt",
+      "bytes": 2142926,
+      "sha256": "e6a06bac832c41aab39354897c66d6b224c4bee8de78f32535594aa750224f39"
+    },
+    {
+      "file": "combatLog.txt",
+      "bytes": 1401929,
+      "sha256": "31e2926225989b7ed62ad58e6ce4719e75dbf55d52400f2cfcc702252e825f97"
+    }
+  ],
+  "combat_starts": 19,
+  "logged_decision_summaries": 946,
+  "modes": {
+    "RT/TB": 1,
+    "TB": 11,
+    "RT": 7
+  },
+  "ai_exceptions": 0,
+  "external_wrathpatches_errors": 16,
+  "slow_samples": 178,
+  "slow_samples_marked_cleanup": 24,
+  "max_logged_slow_ms": 4034.0,
+  "positive_attached_notices": 4,
+  "unsupported_attached_notices": 257,
+  "unique_unsupported_periodic_blueprints": 29,
+  "chosen_faerie_fire": 0,
+  "swarm_exit_orders": 2,
+  "limits": [
+    "Logged summaries include waits/end turns and differ from driver invocation counts.",
+    "Memory clean-up ran is the explicit cleanup marker, not a literal GC token.",
+    "Heap KB are selected global deltas, not exact thread allocations.",
+    "Cling is absent; four positive notices exercise centipede/spider poison, not complete attached-effect acceptance."
+  ]
+}

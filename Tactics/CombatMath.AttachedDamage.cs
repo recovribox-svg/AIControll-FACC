@@ -32,6 +32,7 @@ namespace CompanionAI_Pathfinder.Tactics
         private static readonly PropertyInfo AttachedNextTick = HarmonyLib.AccessTools.Property(typeof(Buff), "NextTickTime");
         private static readonly PropertyInfo AttachedTickInterval = HarmonyLib.AccessTools.Property(typeof(Buff), "TickTime");
         private static readonly FieldInfo AttachedComponents = HarmonyLib.AccessTools.Field(typeof(EntityFact), "Components");
+        private static readonly HashSet<BlueprintBuff> ReportedPeriodicContracts = new HashSet<BlueprintBuff>();
 
         // A decision owns these snapshots, including empty/failed reads. Neither positions nor the caster's continued
         // presence are part of the key: a target-owned buff remains until its own native removal/expiry.
@@ -51,7 +52,7 @@ namespace CompanionAI_Pathfinder.Tactics
                 var plan = PeriodicPlanOf(buff.Blueprint);
                 if (plan == null || !plan.Supported)
                 {
-                    if (plan?.Unsupported != null && CombatMemory.FirstThisFight("attached-contract|" + buff.Blueprint.AssetGuid))
+                    if (plan?.Unsupported != null && ReportedPeriodicContracts.Add(buff.Blueprint))
                         Main.Verbose($"[Attached] {buff.Blueprint.name}: unsupported periodic contract ({plan.Unsupported})");
                     continue;
                 }

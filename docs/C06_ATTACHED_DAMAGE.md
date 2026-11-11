@@ -2,7 +2,7 @@
 
 Moving out of a swarm avoids new attacks, but it does not remove an existing Cling buff. This change keeps the damage that follows the companion in the danger estimate. Healing can then be judged against that continuing danger, and an ability that really removes the effect can receive credit for the damage it prevents.
 
-The author approved [the attached-damage proposal](C06R2_ATTACHED_DAMAGE_PROPOSAL.md) on 10 November 2026. Task branch `codex/c06-attached-damage` starts at C06R3 / PR #30 `b179597`, over current development `1f58150`. The original [23-fight review](C06R2_PLAYTEST_REVIEW.md) and [input fingerprints](C06R2_PLAYTEST_INPUTS.json) remain the gameplay evidence. C06R4 itself needs a new playtest; this is a development test, manifest 0.3.30.
+The author approved [the attached-damage proposal](C06R2_ATTACHED_DAMAGE_PROPOSAL.md) on 10 November 2026. Task branch `codex/c06-attached-damage` starts at C06R3 / PR #30 `b179597`, over current development `1f58150`. The original [23-fight review](C06R2_PLAYTEST_REVIEW.md) and [input fingerprints](C06R2_PLAYTEST_INPUTS.json) remain the gameplay evidence. The author has since supplied a C06R4 playtest: [review and bounded acceptance](C06R4_PLAYTEST_REVIEW.md). Poison paths are exercised; Cling acceptance remains open. This is a development test, manifest 0.3.30.
 
 ## Native evidence
 

@@ -229,6 +229,9 @@ namespace CompanionAI_Pathfinder.Tactics
             // ★ v0.3.28 test 6: a cast that only adds a rank to a feature another fact reads (Enveloping Winds, Shroud of
             // Water's upgrade): what that rank adds (TacticalEngine.RankTalents).
             AddRankIncrementParts(ctx, buffs, ally, parts);
+            // No source context can turn an empty/unread list into numerical parts. Equipment carriers are the two
+            // exceptions below: they can add parts from their enchantments, so retain their complete appraisal path.
+            if (!HasReadableParts(parts) && !BuffContextAddsEquipmentParts(profile, buffs)) return result;
             var abilityCtx = CombatMath.CreateContext(ability, new Kingmaker.Utility.TargetWrapper(ally));
             // ★ v0.3.21: the weapon enchantments it puts on the recipient's weapon (Magic Weapon, Keen Edge, oils, Holy
             // Sword): their parts, for the weapon each one goes on. A buff that only carries one (Keen Edge's is empty) is
@@ -633,6 +636,10 @@ namespace CompanionAI_Pathfinder.Tactics
             s_LastAppraisal[key] = $"{result.Value:0.#}: {result.Detail}";
             return result;
         }
+
+        internal static bool BuffContextAddsEquipmentParts(AbilityProfile profile, List<BlueprintBuff> buffs) =>
+            profile.WeaponEnchants.Count > 0 || buffs.Any(b =>
+                Kingmaker.Blueprints.BlueprintExtenstions.GetComponent<Kingmaker.UnitLogic.FactLogic.BuffEnchantArmor>(b) != null);
 
         /// <summary>
         /// The real duration in rounds the ability gives <paramref name="buff"/>: its DurationValue worked out with the

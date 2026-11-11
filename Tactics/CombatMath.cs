@@ -300,6 +300,7 @@ namespace CompanionAI_Pathfinder.Tactics
         /// <summary>★ v0.3.18: forget the attack routines read (a new decision, or a state changed for a preview).</summary>
         public static void ClearAttackCache()
         {
+            InvalidateResistanceMemo(); // State previews, including same-frame prone/infusion changes, invalidate open scopes.
             NewSwarmDecision(); // Dynamic source/availability snapshots must also expire between same-frame decisions.
             Routines.Clear();
             HitsOnTarget.Clear();   // ★ v0.3.20 (test3): read with the routines, forgotten with them
@@ -1940,15 +1941,19 @@ namespace CompanionAI_Pathfinder.Tactics
         public static float SpellResistancePass(UnitEntityData caster, UnitEntityData target, AbilityData ability)
         {
             if (target == null) return 1f;
+            if (TryResistanceMemo(caster, target, ability, out float value)) return value;
+            ResistanceReads++;
             try
             {
                 var sr = HitChanceCalculator.CalculateSpellResistance(caster, target, ability);
-                return sr.IsImmune ? 0f : Mathf.Clamp01(sr.PenetrationChance);
+                value = sr.IsImmune ? 0f : Mathf.Clamp01(sr.PenetrationChance);
             }
             catch
             {
-                return 1f;
+                value = 1f;
             }
+            StoreResistanceMemo(caster, target, ability, value);
+            return value;
         }
 
         private struct RollKey : IEquatable<RollKey>

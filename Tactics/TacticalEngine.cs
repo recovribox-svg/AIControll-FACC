@@ -3063,6 +3063,7 @@ namespace CompanionAI_Pathfinder.Tactics
                                                               UnitEntityData onlyTarget = null, bool valueActiveInfusions = true,
                                                               bool captureControlAims = false, bool ignorePolicy = false)
         {
+            using var resistanceReads = CombatMath.MemoizeResistance();
             var none = Enumerable.Empty<Candidate>();
             // ★ user-ability-blacklist: every caller (focus re-aims, kinetic recovery) gets nothing for a blocked ability;
             // ignorePolicy only for the price of a held charge kept for the player (ReserveBlockedCharge).
