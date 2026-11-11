@@ -34,7 +34,7 @@ Unsupported periodic-contract diagnostics are emitted once per blueprint per ses
 
 ## Verification and replay
 
-The task receipt records checked source, zero-warning real-reference Release build, all unit/inventory checks, native scope/equipment regressions, inherited C06 fixtures, signature resolution and exact C06R5 package identity. Strict compatible ProfileAudit and the original full-corpus enum failure remain separately reported; input bytes are not normalized.
+Checked source `6794275`, startup MVID `64cd2d32-7182-47c5-a7c5-fef817edf58d`. [C06R5 test ZIP](../test-builds/AI-Control-FACC-v0.3.30-dev-C06R5-6794275-UMM-test.zip) · [identity](../test-builds/AI-Control-FACC-v0.3.30-dev-C06R5-6794275-UMM-test.identity.json) · [receipt](competence/C06R4_REVIEW_CHECKS.json). All 594 unit and 11 inventory tests pass; actual-reference Release has 0 warnings/errors. All 18 native scope/equipment checks and inherited regressions pass. No foreign member reference was added against played C06R4. Strict compatible ProfileAudit and the original full-corpus enum failure remain separately reported; input bytes are not normalized.
 
 Native fixtures use uninitialized identity objects and injected numerical results, plus actual Death Ward, numerical and equipment graphs. They do not execute native resistance queries, actors or commands. Warm reference-memo reads are checked over 10,000 lookups with zero allocations. These checks prove lifecycle/identity boundaries, not complete Unity performance or gameplay.
 
