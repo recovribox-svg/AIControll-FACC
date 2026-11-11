@@ -196,6 +196,9 @@ namespace CompanionAI_Pathfinder.Tactics
         /// <summary>What <paramref name="boost"/> adds to <paramref name="main"/>, in its own value's points.</summary>
         private static float BoostGain(TacticalContext ctx, SpellBoost boost, Candidate main, out string note, Candidate second = null)
         {
+            // ★ Magic Deceiver: the ordinary single-blueprint gain cannot price two capped payloads with a shared save.
+            // Do not spend a speculative next-spell boost on this new path; the fusion itself remains usable.
+            if (main?.Ability?.MagicHackData != null) { note = null; return 0f; }
             note = NoSpellToBoost;
             if (main == null || main.Kind != CandidateKind.Ability || main.Ability == null || main.Ability.SourceItem != null ||
                 main.Ability.Blueprint.Type != AbilityType.Spell || main.Value < MinMainValue)

@@ -109,6 +109,9 @@ namespace CompanionAI_Pathfinder.Tactics
         internal Vector3 SeenPathFrom;
         /// <summary>★ v0.3.20 (test8): the attacks of opportunity of the real walk this option was re-priced with.</summary>
         internal List<UnitEntityData> PathAttackers;
+        // Present only for a Pure Mage's exceptional critical touch-heal walk.
+        internal List<UnitEntityData> TouchSafetyEnemies;
+        internal Vector3? TouchTargetAt;
 
         public override string ToString() => $"{Label}={Value:F1}";
     }
@@ -119,6 +122,7 @@ namespace CompanionAI_Pathfinder.Tactics
         public UnitEntityData Unit;
         public TurnController Turn;
         public CharacterSettings Settings;
+        internal bool PureMageWeapon = true;
         public ModSettings Global;
         internal List<TacticalEngine.InfusionHit> ScoredInfusionHits;
         internal readonly List<Candidate> InfusionProspects = new List<Candidate>();
@@ -382,6 +386,7 @@ namespace CompanionAI_Pathfinder.Tactics
             try { PriceBurn(ctx, candidates); AddKineticCandidates(ctx, candidates, preview); }
             catch (Exception ex) { Main.Error($"[Tactics] kineticist candidates: {ex}"); }
             timings?.Mark(DecisionStage.Kinetic);
+            if (PureMagePolicy.IsActive(ctx.Settings)) candidates.RemoveAll(c => !PureMageAllows(ctx, c));
             try { AddMovementCandidates(ctx, candidates); } catch (Exception ex) { Main.Error($"[Tactics] movement candidates: {ex}"); }
             // ★ v0.3.20 (test8): an option whose real walk provoked more than its straight line, at the real walk's price.
             try { RepriceRealPaths(ctx, candidates, memory); } catch (Exception ex) { Main.Error($"[Tactics] real path prices: {ex}"); }
@@ -393,7 +398,7 @@ namespace CompanionAI_Pathfinder.Tactics
             timings?.Mark(DecisionStage.Movement);
 
             var usable = candidates
-                .Where(c => c.Value > 0f && Affordable(ctx, c) && !memory.Failed.Contains(c.Key) && !SilentlyFailing(ctx, c) &&
+                .Where(c => PureMageAllows(ctx, c) && c.Value > 0f && Affordable(ctx, c) && !memory.Failed.Contains(c.Key) && !SilentlyFailing(ctx, c) &&
                             !PolicyBlocks(ctx, c) && !PointlessAgainstHelpless(ctx, c, preview))
                 .OrderByDescending(c => c.Value)
                 .ToList();
@@ -479,6 +484,8 @@ namespace CompanionAI_Pathfinder.Tactics
             // Not on a disabled enemy: there the bar keeps a sleeping or held enemy from being woken for a sliver.
             else chosen = usable.FirstOrDefault(c => c.Kind == CandidateKind.WeaponAttack && !c.NeedsMove && !c.MoveFirst &&
                                                      c.Value > 0.05f && c.Target != null && !CombatMath.IsDisabled(c.Target));
+            if (chosen == null && PureMagePolicy.IsActive(ctx.Settings))
+                chosen = usable.FirstOrDefault(PureMageCantripFallback);
             // ★ v0.3.19 (test11): restraint with buffs that take the turn's Standard or full-round action - the player's
             // wish: such a buff is cast over the best immediate main action only when clearly better
             // (ValueModel.BuffBeatsImmediate, 15 %); a near tie or a weaker case goes to the immediate action.
@@ -543,7 +550,9 @@ namespace CompanionAI_Pathfinder.Tactics
                          (ctx.LeaveNote != null ? $"; {ctx.LeaveNote}" : ""));
             // ★ v0.3.14 (test5): a turn-based unit with its actions unused and not a single option: say why.
             if (candidates.Count == 0 && ctx.HasStandard && !CombatMemory.IsRealTime)
-                Main.Log($"[Tactics] {unit.CharacterName}: no option at all - the game lists no weapon attack against " +
+                Main.Log(PureMagePolicy.IsActive(ctx.Settings)
+                    ? $"[Tactics] {unit.CharacterName}: Pure Mage - no useful permitted cast or support action; physical fallback withheld"
+                    : $"[Tactics] {unit.CharacterName}: no option at all - the game lists no weapon attack against " +
                          $"{ctx.NoAttackAgainst} of {ctx.Enemies.Count} enemies, no ability or move was usable" +
                          (ctx.Permissions.Notes.Length > 0 ? $" ({ctx.Permissions.Notes})" : ""));
             return chosen;
@@ -961,6 +970,7 @@ namespace CompanionAI_Pathfinder.Tactics
 
             var weapon = unit.Body?.PrimaryHand?.MaybeWeapon;
             ctx.HasRangedWeapon = weapon?.Blueprint?.IsRanged ?? false;
+            ctx.PureMageWeapon = PureMagePolicy.AllowsWeapon(unit, ctx.Settings);
             return ctx;
         }
 
@@ -2507,6 +2517,7 @@ namespace CompanionAI_Pathfinder.Tactics
 
         private static void AddWeaponCandidates(TacticalContext ctx, List<Candidate> list)
         {
+            if (!ctx.PureMageWeapon) return;
             var unit = ctx.Unit;
             // ★ v0.3.14: real time lists them during the action cooldown too (not affordable, so never chosen then): the
             // movement step needs to know an attack is possible from here once the cooldown ends.
@@ -2522,6 +2533,8 @@ namespace CompanionAI_Pathfinder.Tactics
                 // ★ v0.3.14 (test5): no attack against this enemy (the game lists none). It used to end the whole loop as
                 // "cannot attack at all": Seelah ended two full turns with no option at all against two enemies.
                 if (single == null) { ctx.NoAttackAgainst++; continue; }
+                if (PureMagePolicy.IsActive(ctx.Settings) &&
+                    (!single.IsRanged || single.Weapon != unit.Body?.PrimaryHand?.MaybeWeapon)) continue;
 
                 float reach = single.Reach;
                 bool inReach = InRangeNow(unit, enemy.Position, reach, needLos: true);
@@ -2546,7 +2559,7 @@ namespace CompanionAI_Pathfinder.Tactics
                 }
                 bool shotProvokes = single.IsRanged && weaponProvokes;
 
-                if (ctx.CanFullAttack && (inReach || fiveFootReach))
+                if (ctx.CanFullAttack && !PureMagePolicy.IsActive(ctx.Settings) && (inReach || fiveFootReach))
                 {
                     var full = CombatMath.EstimateWeaponAttack(unit, enemy, full: true);
                     if (full != null && full.Attacks > 1)
@@ -3070,6 +3083,18 @@ namespace CompanionAI_Pathfinder.Tactics
             if (!ignorePolicy && UserAbilityPolicy.SourceOf(ctx.Blocks, ability) != BlockSource.None) return none;
             var profile = AbilityProfile.Get(ability);
             if (profile == null) return none;
+            if (profile.FusionUnsupported != null)
+            {
+                AbilityDiscovery.ReportOnce("fusion-unsupported|" + AbilityDiscovery.Key(ability),
+                    () => $"[Fusion] {ability.Name}: {profile.FusionUnsupported}; unsupported forecast, cast withheld");
+                return none;
+            }
+            if (profile.Fusion != null)
+                AbilityDiscovery.ReportOnce("fusion-model|" + AbilityDiscovery.Key(ability),
+                    () => $"[Fusion] {ability.Name}: {profile.Fusion.Spell1.name} + {profile.Fusion.Spell2.name}; " +
+                          $"delivery {profile.Blueprint.name}, shared save {profile.Save}, native level {profile.Fusion.SpellLevel}");
+            if (!PureMagePolicy.AllowsAbility(ctx.Settings, ability, profile)) return none;
+            var targetingBlueprint = ability.GetDeliverBlueprint() ?? ability.Blueprint;
 
             float consumable = ConsumableFactor(ctx, ability, profile);
             if (consumable <= 0f) return none;
@@ -3107,23 +3132,23 @@ namespace CompanionAI_Pathfinder.Tactics
             {
                 // ★ v0.3.21 (verification audit): an area dispel aimed at the ground (Dispel Magic's area version) is aimed
                 // where an enemy stands, as harmful areas are; it was never offered.
-                if (!helpfulOnly && (ability.Blueprint.CanTargetEnemies ||
+                if (!helpfulOnly && (targetingBlueprint.CanTargetEnemies ||
                                      (ability.CanTargetPoint && (profile.HarmfulEffects || profile.DealsDamage || profile.Dispels))))
                     targets.AddRange(ctx.Enemies);
-                if (!harmfulOnly && (ability.Blueprint.CanTargetFriends || ability.Blueprint.CanTargetSelf))
-                    targets.AddRange(ctx.Allies.Where(a => a == ctx.Unit ? ability.Blueprint.CanTargetSelf : ability.Blueprint.CanTargetFriends));
+                if (!harmfulOnly && (targetingBlueprint.CanTargetFriends || targetingBlueprint.CanTargetSelf))
+                    targets.AddRange(ctx.Allies.Where(a => a == ctx.Unit ? targetingBlueprint.CanTargetSelf : targetingBlueprint.CanTargetFriends));
                 // ★ v0.3.21 (verification audit): a helpful area that can only be aimed at the ground (Rainbow Dome, Circle of
                 // Clarity) is aimed where an ally stands (AbilityProfile.TargetOn falls back to that point); it had no side
                 // to be aimed at and was never offered.
-                else if (!harmfulOnly && ability.CanTargetPoint && !ability.Blueprint.CanTargetEnemies && profile.IsAoE &&
+                else if (!harmfulOnly && ability.CanTargetPoint && !targetingBlueprint.CanTargetEnemies && profile.IsAoE &&
                          (profile.TargetBuffs.Count > 0 || profile.Heals.Count > 0 || profile.RemovesAnything))
                     targets.AddRange(ctx.Allies);
-                if (profile.Heals.Count > 0 && ability.Blueprint.CanTargetFriends)
+                if (profile.Heals.Count > 0 && targetingBlueprint.CanTargetFriends)
                     targets.AddRange(ctx.DownedAllies);
                 // ★ v0.3.21 (verification audit): a harmful area that can only be centred on the caster without being
                 // "personal" (Rolling Thunder, Explosive Fervor, Crushing Presence, Rousing Retort): aimed at the caster like
                 // a personal area; it reaches the enemies around. It was never offered.
-                if (harmfulOnly && profile.IsAoE && ability.Blueprint.CanTargetSelf && !ability.Blueprint.CanTargetEnemies && !ability.CanTargetPoint)
+                if (harmfulOnly && profile.IsAoE && targetingBlueprint.CanTargetSelf && !targetingBlueprint.CanTargetEnemies && !ability.CanTargetPoint)
                     targets.Add(ctx.Unit);
             }
 
@@ -3144,6 +3169,8 @@ namespace CompanionAI_Pathfinder.Tactics
             foreach (var target in targets.Distinct())
             {
                 if (onlyTarget != null && target != onlyTarget) continue;
+                bool guardedTouch = PureMagePolicy.IsActive(ctx.Settings) && SpellDelivery.IsPhysicalTouch(ability);
+                if (guardedTouch && ctx.Unit.IsEnemy(target)) continue;
                 var wrapper = summonPoint.HasValue ? new TargetWrapper(summonPoint.Value) : AbilityProfile.TargetOn(ability, target);
                 if (wrapper == null)
                 {
@@ -3163,6 +3190,7 @@ namespace CompanionAI_Pathfinder.Tactics
                     bool needLos = abilityNeedsLos ?? (abilityNeedsLos = new UnitUseAbility(ability, wrapper).NeedLoS).Value;
                     if (!InRangeNow(ctx.Unit, target.Position, range, needLos))
                     {
+                        if (guardedTouch && !CriticalTouchHeal(ctx, ability, profile, target)) continue;
                         // ★ v0.3.16 (test3): the game measures range flat unless the height difference is over 1.5 m, then
                         // by the larger of the flat distance and half the height (GeometryUtils.MechanicsDistance). Within
                         // reach on the ground but not by that rule, the target is over twice the reach above or below (a
@@ -3189,6 +3217,7 @@ namespace CompanionAI_Pathfinder.Tactics
                         // ★ v0.3.23 (build3 logs): real time, the walk's time and the enemies who step into it (RealTimeWalk).
                         walkFactor = RealTimeWalk(ctx, target, approach.Point, out var intercept);
                         risk = MergeRisk(approach.Risk?.Copy(), intercept);
+                        if (guardedTouch && !SafeTouchApproach(ctx, approach, risk)) continue;
                     }
                 }
 
@@ -3313,7 +3342,7 @@ namespace CompanionAI_Pathfinder.Tactics
                 value *= concentrationChance;
                 // ★ v0.3.1: an archer walking up to an enemy to touch it gives up its ranged attacks and invites
                 // attacks of opportunity (Lann walked 9 m for Aid Another).
-                bool archerTouch = needsMove && ctx.HasRangedWeapon && ability.Range == AbilityRange.Touch && ctx.Unit.IsEnemy(target);
+                bool archerTouch = needsMove && ctx.HasRangedWeapon && SpellDelivery.IsPhysicalTouch(ability) && ctx.Unit.IsEnemy(target);
                 if (archerTouch) value *= ValueModel.ArcherTouchFactor;
                 float preRisk = value;
                 if (risk != null) value = value * (1f - risk.StopChance) - risk.Cost;
@@ -3373,6 +3402,8 @@ namespace CompanionAI_Pathfinder.Tactics
                     CheckPath = needsMove && risk?.Area == null,
                     Risk = needsMove ? risk : null,
                     RiskAt = needsMove ? approach?.Point : null,
+                    TouchSafetyEnemies = guardedTouch && needsMove ? ctx.Enemies : null,
+                    TouchTargetAt = guardedTouch && needsMove ? target.Position : (Vector3?)null,
                     PreRiskValue = preRisk,
                     Key = $"abl:{CombatMemory.AbilityKey(ability)}{metamagic}:{target.UniqueId}"
                 };
@@ -3460,7 +3491,7 @@ namespace CompanionAI_Pathfinder.Tactics
                 cast = ProvokeRisk(ctx, at, 1f, spoiledByHit: 0f);
                 if (cast != null) loss = cast.Cost;
             }
-            if (profile != null && profile.RangedAttackRoll && target != null && ctx.Unit.IsEnemy(target) &&
+            if (SpellDelivery.HasRangedAttackRoll(ability, profile) && target != null && ctx.Unit.IsEnemy(target) &&
                 ProvokeObserver.AbilityProvokes(ctx.Unit, ability))
             {
                 roll = AttackRollProvokeRisk(ctx, at, 1);
@@ -3556,7 +3587,7 @@ namespace CompanionAI_Pathfinder.Tactics
         {
             infusionNote = null;
             geometryRecipients = null;
-            geometryChance = null;
+            geometryChance = profile.Fusion != null ? 0f : (float?)null;
             var unit = ctx.Unit;
             bool targetIsEnemy = unit.IsEnemy(target);
             int level = Math.Max(0, ability.SpellLevel);
@@ -3733,7 +3764,7 @@ namespace CompanionAI_Pathfinder.Tactics
                     float dmg = CombatMath.EstimateAbilityDamage(ability, profile, enemy);
                     float p = CombatMath.EffectChance(unit, enemy, ability, profile, damage: true);
                     float part = DamageValue(enemy, dmg * p, p, CombatMath.AbilityEndsRegeneration(profile, enemy)) * WakeFactor(enemy, dmg * p);
-                    float beneficialChance = part > 0f ? p : 0f;
+                    float beneficialChance = part > 0f ? p * CombatMath.FusionDamageChance(ability, enemy, profile) : 0f;
                     // ★ v0.3.18 (AA-1): a kill action (Isekai's Instakill, Power Word Kill) removes the enemy when it lands:
                     // on a failed save and through spell resistance. It subsumes the damage, so the better of the two.
                     if (CombatMath.KillApplies(ability, profile, enemy))
@@ -4494,7 +4525,8 @@ namespace CompanionAI_Pathfinder.Tactics
             if (ability.SourceItem == null && slotSensitive > 0f &&
                 (level > 0 && ability.Spellbook != null || profile.ThrowsDailyBomb && ability.Spellbook == null))
             {
-                float kept = slotSensitive * ValueModel.LimitedUseDiscount(ctx.Difficulty);
+                float kept = slotSensitive * ValueModel.OffensiveSlotDiscount(ctx.Difficulty,
+                    ctx.Settings.SpellPolicy == SpellResourcePolicy.Aggressive, ability.Spellbook != null, ability.SourceItem != null);
                 value -= kept;
                 if (profile.ThrowsDailyBomb && kept >= 0.05f) reasons.Add($"daily bomb -{kept:0.#}");
             }
@@ -4600,7 +4632,7 @@ namespace CompanionAI_Pathfinder.Tactics
                         keepsTarget = p => range(p) && ConeKeepsRecipients(ctx, castAbility, aim, p, counted);
                     }
                 }
-                if (ctx.HasRangedWeapon && !castsInMelee)
+                if (ctx.HasRangedWeapon && ctx.PureMageWeapon && !castsInMelee)
                 {
                     float shotRange = ctx.Enemies.Select(e => CombatMath.EstimateWeaponAttack(unit, e, false))
                                                  .FirstOrDefault(x => x != null && x.IsRanged)?.Reach ?? 0f;
@@ -4615,12 +4647,12 @@ namespace CompanionAI_Pathfinder.Tactics
                 ItemEntityWeapon shotWeapon = null;
                 if (castsInMelee)
                     followUp = stepCast.Value + stepCast.CastRiskCost;    // the spell without the risk of casting in melee
-                else if (ctx.HasRangedWeapon)
+                else if (ctx.HasRangedWeapon && ctx.PureMageWeapon)
                 {
                     followUp = 0f;
                     foreach (var e in ctx.Enemies)
                     {
-                        var est = CombatMath.EstimateWeaponAttack(unit, e, full: ctx.CanFullAttack);
+                        var est = CombatMath.EstimateWeaponAttack(unit, e, full: ctx.CanFullAttack && !PureMagePolicy.IsActive(ctx.Settings));
                         if (est == null || !est.IsRanged) continue;
                         // ★ v0.3.22 (fixes2 review, author-approved): a shot that would only wake a sleeper is no reason to step.
                         float shot = DamageValue(e, est) * RoleWeight(ctx, "damage") * WakeFactor(e, est.ExpectedDamage);
@@ -4749,7 +4781,7 @@ namespace CompanionAI_Pathfinder.Tactics
             // ★ v0.3.14 (test5): not while only movement is possible (nauseated): arriving, the unit could not attack and
             // would only stand there being hit (Camellia walked up to a Dretch and a Cambion, nauseated, in real time).
             var advanced = new HashSet<string>();
-            if (!anyAttackNow && !ctx.Permissions.MovementOnly)
+            if (!anyAttackNow && !ctx.Permissions.MovementOnly && ctx.PureMageWeapon)
             {
                 // ★ v0.3.18: the three best enemies to close on, each with its own approach. Only the best one was tried:
                 // Seelah ended nine turns idle (0.3.18 log 611fe6bf, R9-R17) because the approach to that enemy, lying
@@ -4788,7 +4820,7 @@ namespace CompanionAI_Pathfinder.Tactics
             // any option in place (a weak cantrip, Demoralize) no longer considered closing on a more important enemy
             // farther than a move; with it, the walk competes on the same scale (0.3.19 turn-based log, fight 3: the
             // refused walks were 13-16 m, and their double moves had put the units in reach for the next round).
-            if (ctx.TooFar.Count > 0 && !ctx.Permissions.MovementOnly)
+            if (ctx.TooFar.Count > 0 && !ctx.Permissions.MovementOnly && ctx.PureMageWeapon)
             {
                 foreach (var enemy in ctx.Enemies)
                 {
@@ -5203,6 +5235,11 @@ namespace CompanionAI_Pathfinder.Tactics
         {
             command = null;
             failure = null;
+            if (!PureMageAllowsIssue(unit, c))
+            {
+                failure = "Pure Mage: physical action withheld";
+                return false;
+            }
             // ★ user-ability-blacklist: checked again right before acting, before an infusion switch, an approach walk, a
             // touch approach, an attack's mode switches or a Gather Power is spent. Not a failed option (TacticalDriver).
             if (UserAbilityPolicy.Blocks(unit, c, out string blocked))
@@ -5238,11 +5275,7 @@ namespace CompanionAI_Pathfinder.Tactics
                     // The game would otherwise take full/single from the UI smart-cursor mode (TurnController.GetEnabledFullAttack).
                     // ★ v0.3.14: turn-based only. In real time the game makes a full attack whenever movement allows
                     // (UnitAttack.IsAttackFull); forcing a single attack there would throw away iterative attacks.
-                    if (!CombatMemory.IsRealTime)
-                    {
-                        if (c.FullAttack) attack.ForceFullAttack = true;
-                        else attack.IsSingleAttack = true;
-                    }
+                    SetAttackFlags(attack, c.FullAttack, CombatMemory.IsRealTime, PureMagePolicy.IsActive(unit));
                     command = attack;
                     break;
                 }
@@ -5261,8 +5294,7 @@ namespace CompanionAI_Pathfinder.Tactics
                     // dispatcher's path (stairs, around obstacles) ends where the touch can be made.
                     // ★ v0.3.18 (test10): real time too. Cast from afar, the game queues its own touch delivery and chases
                     // the target with the held charge: Orvath followed his moving Dretch that way for about 75 s.
-                    if (c.NeedsMove && c.Target != null && c.Ability.StickyTouch == null &&
-                        c.Ability.Blueprint.StickyTouch != null)
+                    if (TouchApproachFirst(c))
                     {
                         var approach = new UnitMoveTo(c.Target.Position, c.Ability.GetApproachDistance(c.Target) * 0.8f);
                         if (CommandDispatcher.Run(unit, approach, $"Approach to touch: {c.Label}", out failure, avoidAreas: c.CheckPath,

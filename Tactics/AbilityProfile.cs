@@ -58,7 +58,7 @@ namespace CompanionAI_Pathfinder.Tactics
         public bool OnCaster;
     }
 
-    public sealed class AbilityProfile
+    public sealed partial class AbilityProfile
     {
         public BlueprintAbility Blueprint { get; }
 
@@ -460,7 +460,7 @@ namespace CompanionAI_Pathfinder.Tactics
 
         public static AbilityProfile Get(AbilityData ability)
         {
-            return ability?.Blueprint == null ? null : Get(ability.Blueprint);
+            return ability?.Blueprint == null ? null : ability.MagicHackData != null ? GetFusion(ability) : Get(ability.Blueprint);
         }
 
         public static AbilityProfile Get(BlueprintAbility blueprint)
@@ -497,6 +497,8 @@ namespace CompanionAI_Pathfinder.Tactics
         public static void ClearCache()
         {
             Cache.Clear();
+            PureMagePolicy.ClearCache();
+            FusionCache = new System.Runtime.CompilerServices.ConditionalWeakTable<MagicHackData, FusionEntry>();
             ClearConditionCache();
         }
 
@@ -567,6 +569,7 @@ namespace CompanionAI_Pathfinder.Tactics
 
             // Control: the spell's own descriptor plus the descriptors / conditions of what it applies.
             SpellDescriptor descriptor = Blueprint.SpellDescriptor;
+            if (Fusion != null) descriptor = Fusion.Spell1.SpellDescriptor | Fusion.Spell2.SpellDescriptor;
             foreach (var buff in TargetBuffs)
             {
                 var comp = buff.GetComponent<SpellDescriptorComponent>();
@@ -592,6 +595,11 @@ namespace CompanionAI_Pathfinder.Tactics
             // dazzles the ally it empowers. Read as attacks, they were never offered.
             AppliesHarmfulBuffs = !HelpfulToAllies && Blueprint.Range != AbilityRange.Personal && !AimsAtFriendsOnly(Blueprint) &&
                                   TargetBuffs.Any(IsHarmfulBuff);
+            if (Fusion != null)
+            {
+                Save = Fusion.SavingThrowType;
+                if (UsesSharedHdBudget) FusionUnsupported = "shared Hit Dice selection";
+            }
         }
 
         /// <summary>
@@ -740,7 +748,10 @@ namespace CompanionAI_Pathfinder.Tactics
             if (bp == null || depth > 4 || !visited.Add(bp)) return;
 
             var run = bp.GetComponent<AbilityEffectRunAction>();
-            if (run != null)
+            bool fusionRoot = Fusion != null && ReferenceEquals(bp, Blueprint);
+            if (fusionRoot)
+                ReadFusionActions(visited, depth, subject);
+            else if (run != null)
             {
                 if (run.SavingThrowType != SavingThrowType.Unknown && Save == SavingThrowType.Unknown)
                     Save = run.SavingThrowType;
@@ -749,7 +760,7 @@ namespace CompanionAI_Pathfinder.Tactics
             // ★ v0.3.21 (gaps): actions run on the clicked unit or point besides the main effect
             // (AdditionalAbilityEffectRunActionOnClickedTarget.Apply): Haunting Mists' whole effect, the lingering areas of
             // Ice Storm, Obsidian Flow, Tar Pool, Volcanic Storm.
-            foreach (var extra in bp.GetComponents<AdditionalAbilityEffectRunActionOnClickedTarget>())
+            foreach (var extra in fusionRoot ? Enumerable.Empty<AdditionalAbilityEffectRunActionOnClickedTarget>() : bp.GetComponents<AdditionalAbilityEffectRunActionOnClickedTarget>())
                 Walk(extra.Action?.Actions, visited, depth, subject, 0, NoGuards);
 
             // ★ v0.3.18 (AA-1): an ability whose effect switches a buff on the caster on or off (Tabletop Tweaks'
@@ -792,7 +803,7 @@ namespace CompanionAI_Pathfinder.Tactics
             }
 
             var sticky = bp.StickyTouch;
-            if (sticky?.TouchDeliveryAbility != null)
+            if (!fusionRoot && sticky?.TouchDeliveryAbility != null)
             {
                 NeedsAttackRoll = true;
                 AnalyzeAbility(sticky.TouchDeliveryAbility, visited, depth + 1, subject);
@@ -1040,6 +1051,12 @@ namespace CompanionAI_Pathfinder.Tactics
                     // ★ v0.3.18 (review): full damage on a failed save and less on a passed one are one damage, not two
                     // added together: the failed branch is walked, and the passed one only stands for "half on a save".
                     case ContextActionConditionalSaved saved when HasDirectDamage(saved.Failed) && HasDirectDamage(saved.Succeed):
+                        if (Fusion != null)
+                        {
+                            Walk(saved.Failed?.Actions, visited, abilityDepth, subject, depth + 1, guards);
+                            Walk(saved.Succeed?.Actions, visited, abilityDepth, subject, depth + 1, guards);
+                            continue;
+                        }
                         Walk(saved.Failed?.Actions, visited, abilityDepth, subject, depth + 1, guards);
                         HalfOnSave = true;
                         continue;
@@ -1535,6 +1552,7 @@ namespace CompanionAI_Pathfinder.Tactics
             private readonly UnitEntityData caster, target, aimUnit;
             private readonly BlueprintAbility blueprint;
             private readonly object item, book;
+            private readonly AbilityProfile fusionProfile;
             private readonly int metamagic, heighten, x, z;
 
             internal CheckerKey(UnitEntityData caster, UnitEntityData target, AbilityData ability, TargetWrapper aim)
@@ -1544,6 +1562,7 @@ namespace CompanionAI_Pathfinder.Tactics
                 blueprint = ability.Blueprint;
                 item = ability.SourceItem;
                 book = ability.Spellbook?.Blueprint;
+                fusionProfile = ability.MagicHackData != null ? Get(ability) : null;
                 var data = ability.MetamagicData;
                 metamagic = data != null && (data.NotEmpty || data.HeightenLevel != 0) ? (int)data.MetamagicMask : 0;
                 heighten = data?.HeightenLevel ?? 0;
@@ -1553,7 +1572,7 @@ namespace CompanionAI_Pathfinder.Tactics
             }
 
             public bool Equals(CheckerKey o) => caster == o.caster && target == o.target && blueprint == o.blueprint &&
-                item == o.item && book == o.book && metamagic == o.metamagic && heighten == o.heighten &&
+                item == o.item && book == o.book && fusionProfile == o.fusionProfile && metamagic == o.metamagic && heighten == o.heighten &&
                 aimUnit == o.aimUnit && x == o.x && z == o.z;
             public override bool Equals(object obj) => obj is CheckerKey k && Equals(k);
             public override int GetHashCode()
@@ -1565,6 +1584,7 @@ namespace CompanionAI_Pathfinder.Tactics
                     h = h * 397 ^ (blueprint?.GetHashCode() ?? 0);
                     h = h * 397 ^ (item?.GetHashCode() ?? 0);
                     h = h * 397 ^ (book?.GetHashCode() ?? 0);
+                    h = h * 397 ^ (fusionProfile?.GetHashCode() ?? 0);
                     h = h * 397 ^ metamagic ^ heighten << 16;
                     h = h * 397 ^ (aimUnit?.GetHashCode() ?? 0);
                     return h * 397 ^ x ^ z << 12;

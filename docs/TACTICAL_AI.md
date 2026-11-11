@@ -4670,3 +4670,36 @@ The author supplied C06R4 MVID `3705efbc-ad31-48e0-a8b7-c01ea9654b1d`: 19 fights
 178 slow samples include 24 marked cleanups. Tuvel's large spell set repeats recipient SR/immunity forecasts hundreds of times across area aims (Slow 336, Scare 504 and Stinking Cloud 870 contexts). Exact caster/recipient/AbilityData results now have a synchronous per-EvaluateAbility scope. Full native context-based immunity/resistance logic remains; reference identity separates copies, nested scopes isolate results, state-preview epochs invalidate open scopes, and later evaluations start empty. Context objects are not shared. Slow telemetry reports SR wrapper reads and reuse.
 
 Non-numerical buff appraisal skips a source context only when no weapon/armour carrier can add parts; numerical Death Ward and both equipment paths remain. Unsupported periodic diagnostics are once per blueprint/session, preserving rejection logic. `codex/c06r4-playtest-review` starts at played PR #31 `ca12a28`, over development `1f58150`. Exact checked source/MVID/tests/native/reference/audit results and the C06R5 test identity are recorded in the receipt. Manifest 0.3.30; movement/commitment/retreat/path/dispatch/cancellation policy unchanged. C07 separate; review/integration belongs to Claude, and C06R5 gameplay/matched Unity performance remain pending.
+
+
+## 137. Caster discipline, spell modes and native Magic Fusion (11 November 2026)
+
+The author's v0.3.29 feedback describes ranged mages using staff/crossbow attacks and losing created Magic Fusion
+spells. `codex/ranged-pure-caster` starts at C06R5 / PR #32 `0f3061f`, over development `1f58150`.
+[Design, native findings, limits and TB/RT replay](CASTER_POLICIES.md) and [input/native identities](competence/CASTER_NATIVE_EVIDENCE.json)
+record the evidence and deviations from the supplied advisory plan.
+
+Ranged remains a preference for ordinary archers/non-casters. A separate default-off `PureMage` flag, active only
+under Ranged, removes physical attack/fallback/weapon-advance candidates before dependent choices and rechecks at issue.
+Native spell shots and verified active energy riders remain; one-shot riders get explicit single attacks in both modes.
+A reusable useful cantrip can replace the low-value weapon fallback. Offensive physical touches are refused; critical
+support touches may use existing safe approaches. Actual Reach resolves the native sticky delivery/ray weapon without
+polluting blueprint-cached flags. Native familiars have no verified touch command, so no delivery is fabricated.
+
+Conservative is the displayed old `Progressive = 1`; Standard stays 0 and Aggressive appends 2. Existing textual/numeric
+saves survive. Aggressive removes offensive book-slot thrift, preserving already-applied resistance/overkill and all
+other resource/risk rules. No invented CR bypass or spell-cycle counter. The shared backend owns the new features in TB/RT;
+ordinary characters keep their backend choice.
+
+Fusion profiles use actual `MagicHackData`: ordered source RunAction payloads, selected delivery/save and live native
+per-action dice caps. Empty slot targeting flags no longer erase the created spell. Shared-save branches and Evasion
+are weighted per damage action once; useful-outcome probability informs Conservative. Weak immutable metadata snapshots,
+configuration-aware discovery/cast/condition/context keys and synchronous scalar chance memos prevent stale reuse after edits
+or state previews. Unsupported extra/line/secondary/HD/nested-save/caster-side structures have named casting refusals;
+whole-list support and speculative next-spell boost spending are not claimed.
+
+[The final receipt](competence/CASTER_CHECKS.json) records the checked source, all tests, real-reference Release build,
+compatible-scope ProfileAudit, inherited provider regressions, references and exact test ZIP identity. Original full-corpus
+failure remains distinct. Offline metadata/flag checks do not establish live gameplay or matched Unity performance.
+General movement, target commitment, retreat, pathfinding and stuck cancellation are not retuned. Manifest 0.3.30;
+Claude reviews/integrates; no main/development push or release. C07 remains separate.

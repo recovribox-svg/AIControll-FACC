@@ -453,7 +453,7 @@ namespace CompanionAI_Pathfinder.Tactics
             if (bp == null) return "none";
             // ★ v0.3.25 (test2 logs): the GUID's text once per blueprint, not a new string for every lookup.
             if (!GuidTexts.TryGetValue(bp, out var text)) GuidTexts[bp] = text = bp.AssetGuid.ToString();
-            return text;
+            return ability.MagicHackData == null ? text : text + AbilityProfile.FusionIdentityOf(ability);
         }
 
         private static readonly Dictionary<Kingmaker.UnitLogic.Abilities.Blueprints.BlueprintAbility, string> GuidTexts =

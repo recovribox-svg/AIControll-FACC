@@ -1,0 +1,88 @@
+{
+  "task": "Ranged caster discipline, offensive spell-use modes and bounded native Magic Fusion forecasts",
+  "starting_source": "0f3061fbb5c6e49af298925f5f36462858778c9f",
+  "development_base": "1f58150b8e50f9a322ba0b8d3fcc095fe188420f",
+  "user_game_version": "Steam 2.7.0x (user report)",
+  "inputs": [
+    {
+      "name": "Architectural plan and master prompt.txt",
+      "bytes": 22950,
+      "sha256": "d807c0c1d5cae4c967012a11acb2469dc375dd2bbcae083c43486a6bd241f7f7",
+      "role": "advisory architecture"
+    },
+    {
+      "name": "Mod_Feedback_Response.docx",
+      "bytes": 39536,
+      "sha256": "7b6e30055906270eb5d3f8bd9806434fda08d2ce6b71d4103f21a85a35c16c51",
+      "role": "reported v0.3.29 symptoms"
+    },
+    {
+      "name": "Magical Deciever.txt",
+      "bytes": 34038,
+      "sha256": "d6b55a30289998346351ce51a8176aab7f23d2605bb3c4f0df0e1e58a1a183ae",
+      "role": "advisory archetype context; not authoritative rules"
+    }
+  ],
+  "native_assembly": {
+    "name": "Assembly-CSharp.dll",
+    "bytes": 11891712,
+    "sha256": "2cb7160b7154d4ffacc77b9c51b1eb26199e1294300f04fdfc073367b2ef8953",
+    "mvid": "90a9869c-2792-4c7b-bfb7-5a8b33da7c82"
+  },
+  "native_contracts": [
+    {
+      "member": "Kingmaker.UnitLogic.Abilities.AbilityData.HasMetamagic",
+      "finding": "Checks actual MetamagicData and UnitPartSpecialMetamagic; inventory ownership alone is not evidence of Reach."
+    },
+    {
+      "member": "Kingmaker.UnitLogic.Abilities.Components.AbilityDeliverTouch.Deliver",
+      "finding": "Reach uses SystemMechanics.RayWeapon; ordinary physical touch uses TouchWeapon. Sticky source spells delegate to their native touch-delivery ability."
+    },
+    {
+      "member": "Kingmaker.UnitLogic.Abilities.AbilityCastRateUtils.GetAvailableForCastCount",
+      "finding": "A negative count is unlimited after both charges and resource limits. The low-value Pure Mage fallback requires an actual unlimited level-zero book spell without an item or spent material."
+    },
+    {
+      "member": "Kingmaker.UnitLogic.Abilities.MagicHackData",
+      "finding": "Stores ordered Spell1/Spell2, selected delivery, save, school, target type, native level, touch and additional-area configuration. Metadata snapshots include all of these fields."
+    },
+    {
+      "member": "Kingmaker.UnitLogic.Abilities.Components.AbilityEffectRunAction.Apply",
+      "finding": "One selected shared save, then the ordered concatenated source RunAction payloads, with sticky-touch RunAction fallback. Source spells are not separately cast."
+    },
+    {
+      "member": "Kingmaker.UnitLogic.Abilities.AbilityData.GetDeliverBlueprint / CanTarget / Range",
+      "finding": "Use selected fusion delivery, with an optional separate additional-AoE path; empty default-slot targeting flags do not describe the created spell."
+    },
+    {
+      "member": "Kingmaker.UnitLogic.Mechanics.Actions.ContextActionSavingThrow.RunAction",
+      "finding": "Reuses the fusion shared save unless MakeSaveAlsoForMagicHack requests another save or the context has no save."
+    },
+    {
+      "member": "Kingmaker.UnitLogic.Mechanics.Actions.ContextActionDealDamage.GetDamageInfo / DrainEnergy",
+      "finding": "Damage/stat-damage dice use the live spellbook MagicHackSpellbookComponent cap. DrainEnergy builds its own dice from Value. Per-action HalfIfSaved and conditional-save branches determine outcomes."
+    },
+    {
+      "member": "Kingmaker.Blueprints.Classes.Spells.MagicHackSpellbookComponent.GetMaxDamageDicesForAction",
+      "finding": "Reads native per-level component data, rather than an AI cap table. Supplied MagicDeceiverSpellbook values are 5, 7, 10, 15, 20, 100; level six is not literally unlimited."
+    },
+    {
+      "member": "SpellbookMagicHackMixerVM.TryWriteNewSpell / Spellbook.GetAllCustomSpells",
+      "finding": "Native UI writes created fusions as custom spells; existing shared discovery already enumerates them. Identity and profile interpretation needed repair."
+    },
+    {
+      "member": "Kingmaker.UnitLogic.Mechanics.Components.AdditionalDiceOnAttack",
+      "finding": "Weapon restrictions, live active buff context and positive simple/rank energy dice are required. Unknown conditional/random/custom-value shapes do not authorize physical fallback."
+    },
+    {
+      "member": "Kingmaker.UnitLogic.FactLogic.AddFamiliar",
+      "finding": "The inspected native familiar contract spawns a visual familiar, not a controllable touch-delivery unit. No fabricated familiar cast or success probability added."
+    },
+    {
+      "member": "Kingmaker.Controllers.AbilityExecutionProcess.ProcessRoutine (iterator MoveNext)",
+      "finding": "Reads the selected delivery components and separately applies each source clicked-target secondary component. Those secondary payloads are explicitly outside the initial supported forecast; no unpriced secondary footprint is admitted."
+    }
+  ],
+  "blueprint_scope": "C06_NATIVE_COMPATIBLE_SCOPE.json; original full corpus retains its previously fingerprinted single enum failure",
+  "authority": "The direct user request and standing workflow govern this task. Attached plans/context are evidence and proposals; native game code governs mechanics."
+}

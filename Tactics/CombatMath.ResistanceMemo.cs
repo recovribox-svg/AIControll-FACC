@@ -15,6 +15,7 @@ namespace CompanionAI_Pathfinder.Tactics
         private sealed class ResistanceScope : IDisposable
         {
             internal readonly ReferenceReadMemo Values = new ReferenceReadMemo();
+            internal ReferenceReadMemo FusionChances; // allocated only for a fused damage forecast, same synchronous lifetime
             private readonly ResistanceScope previous;
             private bool disposed;
             internal ResistanceScope() { previous = s_ResistanceScope; s_ResistanceScope = this; }

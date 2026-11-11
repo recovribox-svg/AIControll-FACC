@@ -103,11 +103,7 @@ namespace CompanionAI_Pathfinder.Tactics
             if (c.Kind == CandidateKind.WeaponAttack)
             {
                 var attack = new UnitAttack(c.Target);
-                if (!CombatMemory.IsRealTime)
-                {
-                    if (c.FullAttack) attack.ForceFullAttack = true;
-                    else attack.IsSingleAttack = true;
-                }
+                SetAttackFlags(attack, c.FullAttack, CombatMemory.IsRealTime, PureMagePolicy.IsActive(ctx.Settings));
                 return attack;
             }
             if (c.Kind == CandidateKind.Ability && c.Ability != null)
@@ -123,6 +119,6 @@ namespace CompanionAI_Pathfinder.Tactics
         }
 
         private static bool TouchApproachFirst(Candidate c) => c.NeedsMove && c.Target != null && c.Ability != null &&
-            c.Ability.StickyTouch == null && c.Ability.Blueprint.StickyTouch != null;
+            c.Ability.StickyTouch == null && c.Ability.Blueprint.StickyTouch != null && SpellDelivery.IsPhysicalTouch(c.Ability);
     }
 }

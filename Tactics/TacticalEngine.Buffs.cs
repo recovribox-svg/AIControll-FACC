@@ -1102,9 +1102,12 @@ namespace CompanionAI_Pathfinder.Tactics
                 var enemy = ctx.Enemies.Where(e => !CombatMath.IsDisabled(e))
                                        .OrderBy(e => Vector3.Distance(e.Position, ally.Position)).FirstOrDefault()
                             ?? ctx.Enemies.FirstOrDefault();
-                if (enemy != null)
+                var recipientSettings = PureMagePolicy.SettingsFor(ally);
+                bool pureMage = PureMagePolicy.IsActive(recipientSettings);
+                bool weaponAllowed = !pureMage || (ally == ctx.Unit ? ctx.PureMageWeapon : PureMagePolicy.HasEnergyShot(ally));
+                if (enemy != null && weaponAllowed)
                 {
-                    var est = CombatMath.EstimateWeaponAttack(ally, enemy, full: true);
+                    var est = CombatMath.EstimateWeaponAttack(ally, enemy, full: !pureMage);
                     if (est != null && est.ExpectedDamage > 0f)
                     {
                         // ★ v0.3.28 test 3: the estimate is past the enemy's concealment; what is left of it (SeenPass).

@@ -34,6 +34,12 @@ namespace CompanionAI_Pathfinder.Tactics
             return 1f - Clamp(MinLimitedUseShare + (1f - MinLimitedUseShare) * difficulty, MinLimitedUseShare, 1f);
         }
 
+        /// <summary>★ caster policies: only the daily-slot price of an offensive book spell changes in Aggressive.
+        /// Its native expected effect has already accounted for resistance/overkill; do not multiply those a second time.
+        /// Bombs, items, heals and other class resources keep their existing prices.</summary>
+        public static float OffensiveSlotDiscount(float difficulty, bool aggressive, bool bookSpell, bool item) =>
+            aggressive && bookSpell && !item ? 0f : LimitedUseDiscount(difficulty);
+
         /// <summary>
         /// ★ v0.3.25 (test1 logs): a used-up healing item's worth - its HP-restoring part (<paramref name="restoring"/>) with
         /// the easy-fight restraint of <see cref="LimitedUseDiscount"/>, what else it does (<paramref name="other"/>: the

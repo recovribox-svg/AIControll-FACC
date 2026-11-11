@@ -367,7 +367,16 @@ namespace CompanionAI_Pathfinder.GameInterface
             {
                 // ★ v0.3.14: the turn-based tactical engine decides real time too (Tactics/RealTimeTactics); the old
                 // UnifiedDecisionEngine only when chosen in the settings.
-                if (Settings.ModSettings.Instance?.RealTimeLegacyEngine ?? false)
+                // ★ caster policies: the shared engine implements the new opt-in modes; leave the retired engine intact.
+                bool useLegacyCasterEngine = Settings.ModSettings.Instance?.RealTimeLegacyEngine ?? false;
+                if (useLegacyCasterEngine)
+                {
+                    var casterSettings = Tactics.PureMagePolicy.SettingsFor(unit);
+                    useLegacyCasterEngine = !Tactics.PureMagePolicy.IsActive(casterSettings) &&
+                        !unit.Spellbooks.Any(book => book.Blueprint.GetComponent<Kingmaker.Blueprints.Classes.Spells.MagicHackSpellbookComponent>() != null ||
+                            casterSettings?.SpellPolicy == Settings.SpellResourcePolicy.Aggressive && book.CasterLevel > 0);
+                }
+                if (useLegacyCasterEngine)
                     ExecuteAIDecision(unit);
                 else
                     Tactics.RealTimeTactics.Act(unit);

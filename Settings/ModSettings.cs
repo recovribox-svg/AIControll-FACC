@@ -62,6 +62,12 @@ namespace CompanionAI_Pathfinder.Settings
                 { Language.Korean, "실시간 모드에서 AI가 결정을 내리는 간격 (초)" }
             },
 
+            ["PureMage"] = new() { { Language.English, "Pure Mage (spells instead of physical attacks)" }, { Language.Korean, "순수 마법사 (물리 공격 대신 주문)" } },
+            ["PureMageDesc"] = new() {
+                { Language.English, "While Ranged: no ordinary weapon attacks or offensive melee touches. Spells, cantrips, native spell shots and verified energy buffs remain available. A critical touch heal may approach only through a safe route. With no useful cast, waits instead of attacking. Uses the shared tactical engine in both combat modes." },
+                { Language.Korean, "원거리 설정에서 일반 무기 공격과 공격용 근접 접촉 주문을 사용하지 않습니다. 주문, 캔트립, 실제 주문 사격 및 검증된 에너지 피해 강화는 허용됩니다. 위급한 접촉 치유는 안전한 경로로만 접근합니다. 유용한 주문이 없으면 공격 대신 대기합니다. 두 전투 모드 모두 공통 전술 엔진을 사용합니다." }
+            },
+
             // ★ v0.3.7: Progressive spell-resource policy
             ["SpellPolicy"] = new() { { Language.English, "Spell Use" }, { Language.Korean, "주문 사용" } },
             ["SpellPolicyDescHeader"] = new() {
@@ -69,7 +75,12 @@ namespace CompanionAI_Pathfinder.Settings
                 { Language.Korean, "피해/제어 주문에 주문 슬롯을 쓰는 방식" }
             },
             ["SpellPolicy_Standard"] = new() { { Language.English, "Standard" }, { Language.Korean, "기본" } },
-            ["SpellPolicy_Progressive"] = new() { { Language.English, "Progressive" }, { Language.Korean, "점진적" } },
+            ["SpellPolicy_Progressive"] = new() { { Language.English, "Conservative" }, { Language.Korean, "절약" } },
+            ["SpellPolicy_Aggressive"] = new() { { Language.English, "Aggressive" }, { Language.Korean, "적극적" } },
+            ["SpellPolicyDesc_Aggressive"] = new() {
+                { Language.English, "Chooses damage and control spells without saving spell slots for later fights. Still accounts for resistance, immunity, overkill, friendly fire and casting risks. Buffs, heals, items and non-spell resources keep their normal rules. Uses the shared tactical engine in both combat modes." },
+                { Language.Korean, "다음 전투를 위해 주문 슬롯을 아끼지 않고 피해/제어 주문을 선택합니다. 저항, 면역, 초과 피해, 아군 피해 및 시전 위험은 계속 고려합니다. 버프, 치유, 아이템 및 주문 외 자원은 기존 규칙을 따릅니다. 두 전투 모드 모두 공통 전술 엔진을 사용합니다." }
+            },
             ["SpellPolicyDesc_Standard"] = new() {
                 { Language.English, "Picks the most valuable spell, with a mild preference for weapons and cantrips in easy fights." },
                 { Language.Korean, "가장 가치 있는 주문을 선택합니다. 쉬운 전투에서는 무기와 캔트립을 약간 선호합니다." }
@@ -78,7 +89,7 @@ namespace CompanionAI_Pathfinder.Settings
                 { Language.English, "Uses the lowest spell level that has a damage or control spell with a real chance to work; higher levels only when lower ones cannot, or against bosses. Cantrips, buffs, heals and items are unaffected." },
                 { Language.Korean, "효과가 있을 가능성이 충분한 피해/제어 주문이 있는 가장 낮은 주문 레벨을 사용합니다. 높은 레벨은 낮은 레벨로 안 될 때나 보스에게만 사용합니다. 캔트립, 버프, 치유, 아이템은 영향받지 않습니다." }
             },
-            ["ProgressiveBossBypass"] = new() { { Language.English, "Progressive: allow higher spell levels against bosses" }, { Language.Korean, "점진적: 보스에게 높은 레벨 주문 허용" } },
+            ["ProgressiveBossBypass"] = new() { { Language.English, "Conservative: allow higher spell levels against bosses" }, { Language.Korean, "절약: 보스에게 높은 레벨 주문 허용" } },
             ["ProgressiveBossBypassDesc"] = new() {
                 { Language.English, "Only enemies the game itself marks as bosses; only spells that would hit the boss." },
                 { Language.Korean, "게임이 보스로 표시한 적에게만, 보스에게 닿는 주문에만 적용됩니다." }
@@ -291,8 +302,10 @@ namespace CompanionAI_Pathfinder.Settings
     /// <summary>★ v0.3.7: how a caster spends spell slots on offensive spells (orthogonal to role and range).</summary>
     public enum SpellResourcePolicy
     {
-        Standard,     // existing behaviour
-        Progressive   // lowest usable spell level first; higher levels for bosses or when lower ones cannot work
+        Standard = 0,
+        // Persisted numeric AND textual settings must keep working. The UI calls this Conservative.
+        Progressive = 1,
+        Aggressive = 2
     }
 
     /// <summary>
@@ -314,6 +327,8 @@ namespace CompanionAI_Pathfinder.Settings
         public string CharacterName { get; set; } = "";
         public bool EnableCustomAI { get; set; } = true;
         public RangePreference RangePreference { get; set; } = RangePreference.Mixed;
+        /// <summary>★ pure-mage: opt-in casting discipline, active only with the Ranged preference.</summary>
+        public bool PureMage { get; set; } = false;
         public AIRole Role { get; set; } = AIRole.DPS;
 
         // 전투 행동

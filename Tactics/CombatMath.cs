@@ -806,6 +806,11 @@ namespace CompanionAI_Pathfinder.Tactics
                  IgnoresPhysicalReduction(ability.Caster?.Unit, target));
             // ★ v0.3.20 (playtest 1): a swarm takes half again from area damage (SwarmAoeVulnerability).
             float swarmArea = SwarmAreaFactor(ability, target, false);
+            float fusionFail = profile.Fusion != null && target != null && profile.Save != SavingThrowType.Unknown
+                ? SaveFailChance(ability, profile.Save, target) : 1f;
+            bool fusionEvasion = false, fusionImproved = false;
+            if (profile.Fusion != null && target != null && profile.Damage.OfType<ContextActionDealDamage>().Any(d => d.HalfIfSaved))
+                EvasionOf(target, profile.Save, out fusionEvasion, out fusionImproved);
             foreach (var action in profile.Damage)
             {
                 // ★ v0.3.1: only the branch that runs for this target (Inflict Wounds heals undead, Cure harms them).
@@ -816,9 +821,12 @@ namespace CompanionAI_Pathfinder.Tactics
                     // life bars (CombatMath.Drain.cs), not hit-point damage of their dice through its resistances.
                     case ContextActionDealDamage drain when KindOf(drain) != DealKind.HitPoints:
                     {
-                        float amount = EvaluateDice(drain.Value, ctx, Math.Min(cl, 10), maximize, empower);
+                        float amount = KindOf(drain) == DealKind.EnergyDrain
+                            ? EvaluateDice(drain.Value, ctx, Math.Min(cl, 10), maximize, empower)
+                            : EvaluateDamageDice(ability, drain.Value, ctx, Math.Min(cl, 10), maximize, empower);
                         parts.Add(new KeyValuePair<GameAction, float>(drain,
-                            target != null ? DrainEquivalent(drain, KindOf(drain), amount, target) : amount));
+                            (target != null ? DrainEquivalent(drain, KindOf(drain), amount, target) : amount) *
+                            FusionDamageFactor(profile, drain, fusionFail, fusionEvasion, fusionImproved)));
                         break;
                     }
                     case ContextActionDealDamage dmg:
@@ -830,7 +838,7 @@ namespace CompanionAI_Pathfinder.Tactics
                             AbilityProfile.SharedValueRange(rolled.Ability, ctx, dmg.PreRolledSharedValue, out _, out int pre, out _);
                             avg = pre;
                         }
-                        else avg = EvaluateDice(dmg.Value, ctx, Math.Min(cl, 10), maximize, empower);
+                        else avg = EvaluateDamageDice(ability, dmg.Value, ctx, Math.Min(cl, 10), maximize, empower);
                         avg += KineticDamageBonus(ability, dmg, profile.NeedsAttackRoll || bladeWeapon != null, bladeWeapon);
                         // ★ v0.3.30 competence3: what the game adds at the roll (Throw Anything's cast-time buff, Point-Blank Shot).
                         avg += CastDamageBonus(ability, target);
@@ -841,16 +849,19 @@ namespace CompanionAI_Pathfinder.Tactics
                         avg *= ArcherBlastDecline(ability, dmg, target);
                         parts.Add(new KeyValuePair<GameAction, float>(dmg,
                             (physicalBypass && dmg.DamageType?.Type == Kingmaker.RuleSystem.Rules.Damage.DamageType.Physical
-                                ? avg : AfterTargetReduction(target, dmg, avg, ability)) * swarmArea));
+                                ? avg : AfterTargetReduction(target, dmg, avg, ability)) * swarmArea *
+                            FusionDamageFactor(profile, dmg, fusionFail, fusionEvasion, fusionImproved)));
                         break;
                     // A kill is valued apart (KillApplies): it lands on a failed save, not half on a passed one.
                     case ContextActionKill _:
                         break;
                     case IDealDamageProvider provider:
-                        if (target != null) parts.Add(new KeyValuePair<GameAction, float>(action, PreviewDamage(ability, ctx, provider, target)));
+                        if (target != null) parts.Add(new KeyValuePair<GameAction, float>(action, PreviewDamage(ability, ctx, provider, target) *
+                            FusionDamageFactor(profile, action, fusionFail, fusionEvasion, fusionImproved)));
                         break;
                 }
             }
+            RememberFusionDamageChance(ability, target, profile, parts, fusionFail, fusionEvasion, fusionImproved);
             return SumAlternatives(profile, parts);
         }
 
@@ -890,7 +901,10 @@ namespace CompanionAI_Pathfinder.Tactics
         internal static bool ContextIsTargetFree(Kingmaker.UnitLogic.Abilities.Blueprints.BlueprintAbility blueprint, AbilityProfile profile)
         {
             if (blueprint == null || profile == null) return false;
-            if (TargetFreeDamage.TryGetValue(blueprint, out bool free)) return free;
+            bool fusion = profile.Fusion != null;
+            if (fusion && profile.FusionTargetFreeContext.HasValue) return profile.FusionTargetFreeContext.Value;
+            if (!fusion && TargetFreeDamage.TryGetValue(blueprint, out bool cached)) return cached;
+            bool free;
             free = RankBaseType != null;
             try
             {
@@ -906,7 +920,8 @@ namespace CompanionAI_Pathfinder.Tactics
                     free &= DiceTargetFree(shared.Value);
             }
             catch { free = false; }
-            TargetFreeDamage[blueprint] = free;
+            if (fusion) profile.FusionTargetFreeContext = free;
+            else TargetFreeDamage[blueprint] = free;
             return free;
         }
 
@@ -1460,7 +1475,7 @@ namespace CompanionAI_Pathfinder.Tactics
         {
             float p = (resistancePass ?? SpellResistancePass(caster, enemy, ability)) * ShadowShare(ability, enemy);
             if (profile.NeedsAttackRoll) p *= SpellAttackHitChance(caster, enemy, ability);
-            if (profile.Save != SavingThrowType.Unknown)
+            if (profile.Save != SavingThrowType.Unknown && !(damage && profile.Fusion != null))
                 p *= SaveEffectFactor(ability, profile, enemy, damage);
             return p;
         }
@@ -2146,7 +2161,7 @@ namespace CompanionAI_Pathfinder.Tactics
             weapon = null;
             stat = null;
             attackType = null;
-            var bp = ability?.GetDeliverBlueprint() ?? ability?.Blueprint;
+            var bp = SpellDelivery.AttackBlueprint(ability);
             if (bp == null) return false;
             var projectile = Kingmaker.Blueprints.BlueprintExtenstions.GetComponent<Kingmaker.UnitLogic.Abilities.Components.AbilityDeliverProjectile>(bp);
             if (projectile != null && projectile.NeedAttackRoll && !projectile.IsHandOfTheApprentice &&
@@ -2168,7 +2183,9 @@ namespace CompanionAI_Pathfinder.Tactics
             var touch = Kingmaker.Blueprints.BlueprintExtenstions.GetComponent<Kingmaker.UnitLogic.Abilities.Components.AbilityDeliverTouch>(bp);
             if (touch?.TouchWeapon != null)
             {
-                weapon = Made(touch.TouchWeapon);
+                // AbilityDeliverTouch.Deliver uses the native ray weapon for an actually active Reach cast.
+                weapon = Made(SpellDelivery.IsReachTouch(ability)
+                    ? Kingmaker.Blueprints.Root.BlueprintRoot.Instance.SystemMechanics.RayWeapon : touch.TouchWeapon);
                 return weapon != null;
             }
             return false;
