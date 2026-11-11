@@ -1,0 +1,287 @@
+{
+  "task": "Caster policies and bounded native Magic Deceiver fusion forecasts",
+  "checked_source_commit": "d184c8e8c6c9a1bf7ce039e6dfb3cd3273861658",
+  "source_branch": "codex/ranged-pure-caster",
+  "starting_c06r5_commit": "0f3061fbb5c6e49af298925f5f36462858778c9f",
+  "dependency_pr": 32,
+  "development_base": "1f58150b8e50f9a322ba0b8d3fcc095fe188420f",
+  "version": "0.3.30",
+  "dll": {
+    "assembly": "CompanionAI_Pathfinder, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null",
+    "mvid": "35b96ebd-8929-4ce8-baa4-564d03bc454f",
+    "sha256": "e0ad27d680bf85aafacbccfcaf220fad6b3780a7fad2bb430e870b979109ead0",
+    "size": 1299968
+  },
+  "native_evidence": "CASTER_NATIVE_EVIDENCE.json",
+  "design_and_replay": "../CASTER_POLICIES.md",
+  "unit_tests": {
+    "passed": 599,
+    "failed": 0,
+    "skipped": 0,
+    "new_offensive_slot_policy_cases": 5
+  },
+  "inventory_tests": {
+    "passed": 11,
+    "failed": 0
+  },
+  "release_build": {
+    "actual_supplied_game_unity_umm_references": true,
+    "warnings": 0,
+    "errors": 0,
+    "source_committed_before_build": true,
+    "manifest_unchanged": true
+  },
+  "native_caster_policy": {
+    "checks": 32,
+    "failures": 0,
+    "old_numeric_and_textual_settings": true,
+    "ordinary_ranged_defaults": true,
+    "suspended_flag_retained": true,
+    "physical_and_compound_melee_admission": true,
+    "actual_touch_and_reach_metadata": true,
+    "native_tb_rt_attack_flags": true,
+    "unknown_custom_riders_withheld": true,
+    "actor_setup_or_command_execution": false
+  },
+  "native_fusion": {
+    "checks": 35,
+    "failures": 0,
+    "actual_payloads_and_delivery": true,
+    "sticky_source_fallback": true,
+    "shared_save_and_evasion_fields": true,
+    "native_spellbook_caps_all_six_levels": true,
+    "configuration_edits_do_not_mutate_snapshots": true,
+    "scoped_chance_identity_and_invalidation": true,
+    "unsupported_structures_named": true,
+    "actor_setup_rulebook_or_command_execution": false
+  },
+  "inactive_policy_microcheck": {
+    "lookups": 10000,
+    "allocated_bytes": 0,
+    "unity_decision_latency_and_performance": "not measured; matched gameplay pending"
+  },
+  "retained_native_checks": {
+    "resistance_memo": {
+      "checks": 18,
+      "failures": 0
+    },
+    "attached": {
+      "checks": 24,
+      "failures": 0
+    },
+    "swarm": {
+      "checks": 27,
+      "failures": 0
+    },
+    "toggle": {
+      "checks": 98,
+      "failures": 0
+    },
+    "tome_burn": {
+      "checks": 14,
+      "failures": 0
+    },
+    "toybox_reader": {
+      "checks": 10,
+      "failures": 0
+    },
+    "reveal_counter": {
+      "checks": 7,
+      "failures": 0
+    },
+    "viewless": {
+      "checks": 6,
+      "failures": 0
+    }
+  },
+  "strict_native_compatible_audit": {
+    "status": "PASS",
+    "exit_code": 0,
+    "scope": "C06_NATIVE_COMPATIBLE_SCOPE.json",
+    "source_files": 44647,
+    "loaded_unique": 44637,
+    "failed": 0,
+    "allowed_load_failures": 0,
+    "ability_rows": 4807,
+    "reader_errors": 0,
+    "input_bytes_modified": false
+  },
+  "original_full_corpus_audit": {
+    "status": "INCOMPLETE",
+    "exit_code": 1,
+    "source_files": 44648,
+    "loaded_unique": 44637,
+    "failed": 1,
+    "allowed_load_failures": 0,
+    "ability_verdicts_generated": false,
+    "failure": "Previously fingerprinted AchaekekSacredWeaponFeature SawtoothSaber vs native SawtoothSabre enum mismatch; parser error logging reaches offline engine dependency",
+    "input_sha256": "1fd534ef0fc9573520d101c721e5d2721812fdb5b8f8a13e29fcbc3acb06ac0f",
+    "input_bytes_modified": false
+  },
+  "added_foreign_member_references": {
+    "baseline": "C06R5 source 6794275 / package head 0f3061f",
+    "added": 28,
+    "resolved_exact": 28,
+    "unresolved": 0,
+    "scopes": {
+      "Assembly-CSharp": 26,
+      "UnityEngine.CoreModule": 1,
+      "UnityEngine.IMGUIModule": 1
+    },
+    "full_signature_overload_matching": true
+  },
+  "harness_limits": [
+    "Private runnable copies neutralize Unity/localization/instrumentation including ProfileScope.New; no stubs are deployed.",
+    "Native HasMetamagic metadata logic remains; no live rod, hit/save outcome, actor initialization or navigation is established.",
+    "Native command fixtures only set/read flags on uninitialized objects; no command is issued.",
+    "Provider fixtures do not call mod setup, getter or condition code."
+  ],
+  "behavior_limits": [
+    "General movement, retreat, commitment, pathfinding and stuck cancellation are not retuned.",
+    "No new long-range retreat priority or spell-only advance beyond the existing affordable approach.",
+    "Bounded Fusion excludes unpriced line/secondary/area/shared-HD/nested-save/caster-side/buff branches; manual native use remains.",
+    "No fabricated familiar delivery, spell-cycling mode or speculative fused next-spell boost spending."
+  ],
+  "gameplay": {
+    "status": "PENDING",
+    "tb_rt_playtest_required": true,
+    "matched_unity_performance_required": true
+  },
+  "task_source_files": [
+    {
+      "file": "Analysis/AbilityClassifier.cs",
+      "sha256": "e68d61577b5a14a6006f2c9abd41fde6ec5d73c3e401e314227ed01c7162af46"
+    },
+    {
+      "file": "Analysis/HitChanceCalculator.cs",
+      "sha256": "cb841662bbd6690e9726c887dfae024145b0e7767598e23c688bf7b40242e460"
+    },
+    {
+      "file": "GameInterface/RealTimeController.cs",
+      "sha256": "438f41b7f2c8dcf3dd5673f805d2f4cc5892e23be154289f94503fc069530ef9"
+    },
+    {
+      "file": "Settings/ModSettings.cs",
+      "sha256": "71840baa69cf680f1f5adaa2d0b3367239f9b521ee38bd28f19a90a1797f4494"
+    },
+    {
+      "file": "Tactics/AbilityDiscovery.cs",
+      "sha256": "a02843dfd910d40509ad66ed408a7b0b0b4ef31011f3d624897ababa1bcd4720"
+    },
+    {
+      "file": "Tactics/AbilityProfile.Fusion.cs",
+      "sha256": "1d6800e7836782c91ff0554b68188986b57e66240ad47011a4e161efda1a652e"
+    },
+    {
+      "file": "Tactics/AbilityProfile.cs",
+      "sha256": "b7d68a52c8c465ad5a1682eb96301c2f0d2938ac0e5f13b5dbf9a14cb8bdb63f"
+    },
+    {
+      "file": "Tactics/CombatMath.Fusion.cs",
+      "sha256": "0e591641632a4e036859c5e4580ff49531385ebcc7575c7b3b217f4c97a9953e"
+    },
+    {
+      "file": "Tactics/CombatMath.ResistanceMemo.cs",
+      "sha256": "a0c93e0a7673909175e45e26e9bc5106ba61356d3009f3fd6b1f20962f345cd9"
+    },
+    {
+      "file": "Tactics/CombatMath.cs",
+      "sha256": "673ce541a1bc2ef01bff263da6c0a0058c00aadd95ee543abef45e2d5a861e65"
+    },
+    {
+      "file": "Tactics/CombatMemory.cs",
+      "sha256": "fa27a2a78eb1dda8525afaf8133c73b67cb8a7af60007e91a2ab110e462b43bd"
+    },
+    {
+      "file": "Tactics/ProvokeObserver.cs",
+      "sha256": "940a8493b1b155e7415042f64d49834f2374c1e4fa5121097f7d64276a428bdc"
+    },
+    {
+      "file": "Tactics/PureMagePolicy.cs",
+      "sha256": "e91deb572985fab020a09001270d0e12dbab969e67024924a5865d758448b9ec"
+    },
+    {
+      "file": "Tactics/SpellDelivery.cs",
+      "sha256": "520f9d2f55a2a13ffc14336de6f91ecfba54a0298a7d3b4c6e770e5ba9a8aeec"
+    },
+    {
+      "file": "Tactics/TacticalEngine.ApproachValidation.cs",
+      "sha256": "1917a3771c17e2c39ea8de0e11c0b24ed35f952da01162886d623abe784f85c4"
+    },
+    {
+      "file": "Tactics/TacticalEngine.Boosters.cs",
+      "sha256": "f663eb3942b99c708a91bf00e7e83e0a1876996b9bb537ede66872de18de7f34"
+    },
+    {
+      "file": "Tactics/TacticalEngine.Buffs.cs",
+      "sha256": "56e0881e93213ebb4d4ef78fbfb93c9f094bf8f3bcb3b765f74546479b1e6c5d"
+    },
+    {
+      "file": "Tactics/TacticalEngine.PureMage.cs",
+      "sha256": "6c9193c88dfe6d27d8b62744fefc93add19698c3b4b7cf3198e73ce2f4a019c5"
+    },
+    {
+      "file": "Tactics/TacticalEngine.cs",
+      "sha256": "3d5f512f3786423ec38bad552e5e06b8153a44c55ea12587b532260e6f1f6fce"
+    },
+    {
+      "file": "Tactics/ValueModel.Resources.cs",
+      "sha256": "81093de1b57970b31b29e5e27941b1d5294fd4b1a720675824a8b144067090a1"
+    },
+    {
+      "file": "UI/MainUI.cs",
+      "sha256": "a489ebc1f94d65c5ea6614857838f9704702bbb600eba1acbbf233a13f660184"
+    },
+    {
+      "file": "tests/CompanionAI.Tests/LimitedUseDiscountTests.cs",
+      "sha256": "9c6c81b1af715d8f565bf1b35ac8506a2b2621f02e7ac88cd66e2a4005456d6a"
+    },
+    {
+      "file": "tools/ProfileAudit/CasterPolicyCheck.cs",
+      "sha256": "b436181330d04210f54c5053e4267b32e437c4315911fa477cddfe26b616e56b"
+    },
+    {
+      "file": "tools/ProfileAudit/FusionCheck.cs",
+      "sha256": "6858857e0389d55d8a4b8d92805f37c25fb4630446e363e97da72e92eeb25e07"
+    },
+    {
+      "file": "tools/ProfileAudit/Program.cs",
+      "sha256": "bed901fbcc47415b9b20f126d76cfe670d1eeba24d2ec4002c13533219fb6f96"
+    }
+  ],
+  "package": {
+    "file": "test-builds/AI-Control-FACC-v0.3.30-dev-caster1-d184c8e-UMM-test.zip",
+    "sha256": "6673b5b2b40b3ec04d01363073abe4da146dc770b31f6781dbe2cc7850d14eab",
+    "bytes": 514532,
+    "identity_file": "test-builds/AI-Control-FACC-v0.3.30-dev-caster1-d184c8e-UMM-test.identity.json",
+    "checksum_file": "test-builds/AI-Control-FACC-v0.3.30-dev-caster1-d184c8e-UMM-test.sha256",
+    "members": [
+      {
+        "file": "CompanionAI_Pathfinder/CompanionAI_Pathfinder.dll",
+        "bytes": 1299968,
+        "sha256": "e0ad27d680bf85aafacbccfcaf220fad6b3780a7fad2bb430e870b979109ead0"
+      },
+      {
+        "file": "CompanionAI_Pathfinder/Info.json",
+        "bytes": 379,
+        "sha256": "d6ee91e78dc5d4981ad51a1a1a85bb1e7fe3f0a87814697f2fd9ee1c20d35594"
+      },
+      {
+        "file": "CompanionAI_Pathfinder/BUILD_IDENTITY.json",
+        "bytes": 1068,
+        "sha256": "5b61ec7a632aeb87a0518e4f314b997e08d2ca07ca0e73b76f53a270bc56a8f5"
+      },
+      {
+        "file": "CompanionAI_Pathfinder/TEST_BUILD.txt",
+        "bytes": 753,
+        "sha256": "e635e0dcafbf32ffe1ac28736c16322cb0a888a70d1a3b7bb7b16b78fb238ea2"
+      }
+    ]
+  },
+  "workflow": {
+    "no_main_or_development_push": true,
+    "no_merge": true,
+    "no_release": true,
+    "claude_reviews_and_integrates": true
+  }
+}

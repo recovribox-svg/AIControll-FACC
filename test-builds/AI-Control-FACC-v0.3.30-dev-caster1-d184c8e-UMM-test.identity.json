@@ -1,0 +1,22 @@
+{
+  "build_label": "caster1",
+  "kind": "development-test",
+  "version": "0.3.30",
+  "source_branch": "codex/ranged-pure-caster",
+  "source_commit": "d184c8e8c6c9a1bf7ce039e6dfb3cd3273861658",
+  "starting_c06r5_commit": "0f3061fbb5c6e49af298925f5f36462858778c9f",
+  "development_base": "1f58150b8e50f9a322ba0b8d3fcc095fe188420f",
+  "dependency_pr": 32,
+  "dll": {
+    "assembly": "CompanionAI_Pathfinder, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null",
+    "mvid": "35b96ebd-8929-4ce8-baa4-564d03bc454f",
+    "sha256": "e0ad27d680bf85aafacbccfcaf220fad6b3780a7fad2bb430e870b979109ead0",
+    "size": 1299968
+  },
+  "manifest_sha256": "d6ee91e78dc5d4981ad51a1a1a85bb1e7fe3f0a87814697f2fd9ee1c20d35594",
+  "checks_receipt": "docs/competence/CASTER_CHECKS.json",
+  "gameplay_status": "not played",
+  "scope": "Default-off Pure Mage, actual Reach delivery, Conservative display, Aggressive offensive slot policy, bounded native Magic Fusion; includes C06R5",
+  "ordinary_ranged_noncasters": "unchanged unless Pure Mage is explicitly selected",
+  "release": false
+}
