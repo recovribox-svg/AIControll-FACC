@@ -4939,3 +4939,5 @@ Do not present stage snapshots as allocation counts or promise a measured speedu
 arrow-roll sampling and an explicitly authorized post-preflight advance fallback are separate follow-ups.
 No movement/commitment/retreat/pathfinder/stuck change in this PR. Full verification/package identities follow
 checked source; manifest 0.3.30, Claude reviews/integrates, no main/development push, merge or release.
+
+Checked source `a58de3e`, [receipt](competence/SHIFTER1_REVIEW_CHECKS.json) and [review3 test ZIP](../test-builds/AI-Control-FACC-v0.3.30-dev-review3-a58de3e-UMM-test.zip), startup MVID `d3873816-d1f0-4bc4-bc80-dc5e5e681a3b`. 647 unit + 11 inventory tests and native checks pass; actual-reference Release 0 warnings/errors; 0/0 added signatures resolve. Compatible/supplementary audit scopes pass; original full-corpus enum failure remains distinct. Gameplay/matched Unity timing pending.

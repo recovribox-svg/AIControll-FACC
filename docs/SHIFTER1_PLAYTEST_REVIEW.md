@@ -90,3 +90,5 @@ Test both TB/shared RT and retain the new startup MVID. Compare ordinary encount
 spawn/rest stress cases; include the matching combat log. Actual scene execution and matched Unity timing
 of this correction remain unplayed. Original raw-corpus enum loading remains separately incomplete;
 compatible/supplementary audit scopes are recorded distinctly in the receipt.
+
+Checked source `a58de3e`, [receipt](competence/SHIFTER1_REVIEW_CHECKS.json) and [review3 test ZIP](../test-builds/AI-Control-FACC-v0.3.30-dev-review3-a58de3e-UMM-test.zip), startup MVID `d3873816-d1f0-4bc4-bc80-dc5e5e681a3b`. 647 unit + 11 inventory tests and native checks pass; actual-reference Release 0 warnings/errors; 0/0 added signatures resolve. Compatible/supplementary audit scopes pass; original full-corpus enum failure remains distinct. Gameplay/matched Unity timing pending.

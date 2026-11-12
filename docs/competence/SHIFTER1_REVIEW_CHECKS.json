@@ -1,0 +1,256 @@
+{
+  "task": "Shifter1 mixed-mode review: unblock native campaign-flag form guards",
+  "checked_source_commit": "a58de3e617df38931a62cd5befe1c904ba29a4cf",
+  "starting_commit": "20137ba3b75f1eb539d4111982991cff0b1a4502",
+  "dependency_pr": 42,
+  "development_base": "1f58150b8e50f9a322ba0b8d3fcc095fe188420f",
+  "source_branch": "codex/shifter1-playtest-review",
+  "version": "0.3.30",
+  "author_approval": "User requested broad evidence-based review/bugfix of shifter1 TB+RT logs and reported spawn/rest interventions. Movement fallback approved separately in the same task.",
+  "dll": {
+    "assembly": "CompanionAI_Pathfinder, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null",
+    "mvid": "d3873816-d1f0-4bc4-bc80-dc5e5e681a3b",
+    "sha256": "6432822ba93f3d5c3a55ad79c00d94fc4e4da2031fac341962012a54f80ecc73",
+    "size": 1360896
+  },
+  "design_native_evidence_and_replay": "../SHIFTER1_PLAYTEST_REVIEW.md",
+  "unit_tests": {
+    "passed": 647,
+    "failed": 0,
+    "skipped": 0
+  },
+  "inventory_tests": {
+    "passed": 11,
+    "failed": 0
+  },
+  "release_build": {
+    "actual_supplied_game_unity_umm_references": true,
+    "warnings": 0,
+    "errors": 0,
+    "source_committed_before_build": true,
+    "manifest_unchanged": true
+  },
+  "native_step_approach": {
+    "checks": 13,
+    "failures": 0,
+    "actor_path_command_execution": false
+  },
+  "native_additions": {
+    "area_exit_routes_inherited": {
+      "checks": 28,
+      "failures": 0
+    },
+    "constant_debuff_inherited": {
+      "checks": 17,
+      "failures": 0
+    },
+    "area_bounds_inherited": {
+      "checks": 28,
+      "failures": 0
+    },
+    "treatment_inherited": {
+      "checks": 10,
+      "failures": 0
+    },
+    "eldritch_archer": {
+      "checks": 25,
+      "failures": 0,
+      "actual_exported_feature_and_spell_metadata": true,
+      "correlated_first_arrow_quote_and_miss": true,
+      "native_compiled_eligibility_delivery_cleanup_routes": true,
+      "actor_cast_attack_clock_or_unity_execution": false
+    },
+    "shifter": {
+      "checks": 48,
+      "failures": 0,
+      "actual_form_graph_layouts": 86,
+      "actual_aspect_selector_and_upkeep_exclusion": true,
+      "scalar_native_dice_table_and_branch_admission": true,
+      "native_layout_secondary_flag_variation": true,
+      "compiled_projection_guard_and_attempt_lifetime_routes": true,
+      "actor_or_unity_execution": false
+    },
+    "campaign_flags": {
+      "checks": 21,
+      "failures": 0,
+      "actual_griffon_guard_paths": true,
+      "native_flag_store_reads": true,
+      "game_player_actor_or_cast_execution": false
+    }
+  },
+  "inherited_native_checks": {
+    "magus_base": 32,
+    "magus_supplementary_including_base": 44,
+    "caster": 36,
+    "fusion": 35,
+    "projectile": 29,
+    "burn": 50,
+    "resistance": 18,
+    "attached": 24,
+    "swarm": 27,
+    "reveal": 7,
+    "viewless": 6,
+    "toggle": 98,
+    "tome": 14,
+    "toybox": 10,
+    "failures": 0
+  },
+  "strict_native_compatible_audit": {
+    "status": "PASS",
+    "exit_code": 0,
+    "scope": "C06_NATIVE_COMPATIBLE_SCOPE.json",
+    "source_files": 44647,
+    "loaded_unique": 44637,
+    "failed": 0,
+    "allowed_load_failures": 0,
+    "ability_rows": 4807,
+    "reader_errors": 0,
+    "input_bytes_modified": false
+  },
+  "strict_supplementary_stock_fixture_audit": {
+    "status": "PASS",
+    "exit_code": 0,
+    "source_files": 44651,
+    "loaded_unique": 44641,
+    "failed": 0,
+    "ability_rows": 4807,
+    "reader_errors": 0,
+    "installed_mod_state": false,
+    "original_uploaded_inputs_modified": false,
+    "fixture_provenance": "C07_MAGUS_NATIVE.json#supplementary_stock_hidden_buffs"
+  },
+  "original_full_corpus_audit": {
+    "status": "INCOMPLETE",
+    "exit_code": 1,
+    "source_files": 44648,
+    "loaded_unique": 44637,
+    "failed": 1,
+    "allowed_load_failures": 0,
+    "ability_verdicts_generated": false,
+    "failure": "Previously fingerprinted AchaekekSacredWeaponFeature SawtoothSaber vs native SawtoothSabre enum mismatch; parser error logging reaches offline engine dependency",
+    "input_sha256": "1fd534ef0fc9573520d101c721e5d2721812fdb5b8f8a13e29fcbc3acb06ac0f",
+    "input_bytes_modified": false
+  },
+  "added_foreign_member_references": {
+    "baseline_commit": "20137ba3b75f1eb539d4111982991cff0b1a4502",
+    "added": 0,
+    "resolved_exact": 0,
+    "unresolved": 0,
+    "full_signature_overload_matching": true
+  },
+  "harness_limits": [
+    "Private runnable copies neutralize Unity/localization/instrumentation including ProfileScope.New; no stubs are deployed.",
+    "Native HasMetamagic metadata logic remains; no live rod, hit/save outcome, actor initialization or navigation is established.",
+    "Native command fixtures only set/read flags on uninitialized objects; no command is issued.",
+    "Provider fixtures do not call mod setup, getter or condition code."
+  ],
+  "planning_bounds": {
+    "new_target_scans": 0,
+    "new_path_checks": 0,
+    "new_global_flag_state_cache": false,
+    "native_existing_per_frame_checker_cache_retained": true,
+    "form_note_rows": "one per ability/unit/fight using existing 256-entry fight ledger",
+    "extra_rules_contexts_or_forecasts_for_diagnostic": 0
+  },
+  "behavior_limits": [
+    "Played shifter1 has no form cast; corrected live native flag selection/casts still need TB/shared RT replay.",
+    "Original user report and present logs distinguish real runtime state from manual spawn/rest changes; exact interventions are not fully timestamped.",
+    "Largest slow spikes overlap global GC, not measured class-projection regressions; no matched Unity timing claim.",
+    "Correlated EA projectile sampling and user-approved lazy movement fallback are separate follow-ups.",
+    "Original raw-corpus enum failure remains separately incomplete; compatible/supplementary audits are distinct."
+  ],
+  "task_source_files": [
+    {
+      "file": "Tactics/AbilityProfile.cs",
+      "sha256": "acc68eb30fb5b9a81ac05a00f6042cd7de9a42f6d8a30fb15d0d8d4315591db3"
+    },
+    {
+      "file": "Tactics/TacticalEngine.Shifter.cs",
+      "sha256": "9c35bdcfbe422f04ad740508f900db23dd3f2de1fed5ab1374ae122d88f7b6ea"
+    },
+    {
+      "file": "tools/ProfileAudit/CampaignFlagCheck.cs",
+      "sha256": "6d08ae6d0444ea55c126af6b19bd6c861686df3ebac7c80314eb4fc2d94816ab"
+    },
+    {
+      "file": "tools/ProfileAudit/Program.cs",
+      "sha256": "81da8f389ca82404d101b84d8d8b3d57d15cbd257f890b299524b3bd213faf9b"
+    }
+  ],
+  "package": {
+    "file": "test-builds/AI-Control-FACC-v0.3.30-dev-review3-a58de3e-UMM-test.zip",
+    "sha256": "e0ff67606d45ec2de535e8af3ea7505d6f3d85ab0ec5b7c6ccc21c3dac975769",
+    "bytes": 540306,
+    "identity_file": "test-builds/AI-Control-FACC-v0.3.30-dev-review3-a58de3e-UMM-test.identity.json",
+    "checksum_file": "test-builds/AI-Control-FACC-v0.3.30-dev-review3-a58de3e-UMM-test.sha256",
+    "members": [
+      {
+        "file": "CompanionAI_Pathfinder/CompanionAI_Pathfinder.dll",
+        "bytes": 1360896,
+        "sha256": "6432822ba93f3d5c3a55ad79c00d94fc4e4da2031fac341962012a54f80ecc73"
+      },
+      {
+        "file": "CompanionAI_Pathfinder/Info.json",
+        "bytes": 379,
+        "sha256": "d6ee91e78dc5d4981ad51a1a1a85bb1e7fe3f0a87814697f2fd9ee1c20d35594"
+      },
+      {
+        "file": "CompanionAI_Pathfinder/BUILD_IDENTITY.json",
+        "bytes": 1284,
+        "sha256": "f9a83e240a377bbff2042740db24714d224e4f57f3b4ee85b6e2a0dbe854bb6d"
+      },
+      {
+        "file": "CompanionAI_Pathfinder/TEST_BUILD.txt",
+        "bytes": 723,
+        "sha256": "56e0f336dae7431cd031383ec15335ba66ddbdf598123571508fc72e5a280572"
+      }
+    ]
+  },
+  "gameplay": {
+    "status": "PENDING",
+    "tb_rt_playtest_required": true,
+    "matched_unity_performance_required": true
+  },
+  "private_verification_artifacts": [
+    {
+      "file": "release-final.log",
+      "bytes": 184,
+      "sha256": "2f21abb46c1ba287935ee7491d272549dc3521ac600df521abfc2a05814fb5fd"
+    },
+    {
+      "file": "unit-final.log",
+      "bytes": 522,
+      "sha256": "8f12baeb721bd200c955a33a663c5ce6599839a81bbe833c9244bb83a2368529"
+    },
+    {
+      "file": "verified-exact-refs.txt",
+      "bytes": 72,
+      "sha256": "9184efba5544f8737e7eebe2d43eacd5ba4b62e7aacbf1d0633abb22f0d75a0e"
+    },
+    {
+      "file": "strict-run.txt",
+      "bytes": 8783,
+      "sha256": "576e4fe5b672823b6f089ff0baa9f2b207e1e2ae2f9ad4415bbf9e425525e3d9"
+    },
+    {
+      "file": "supplementary-run.txt",
+      "bytes": 8663,
+      "sha256": "e2b5951ed8311b1b858e457dcedf487e3582eacf1853477f4d7fde63b6418991"
+    },
+    {
+      "file": "native-run.txt",
+      "bytes": 10752,
+      "sha256": "1fca0e7e89a95e38988085037f42f7c554a55598a70378e6ba19661f682eeaf7"
+    },
+    {
+      "file": "tome-native-run.txt",
+      "bytes": 8938,
+      "sha256": "80427c0fde1f0d38ab882a3580c20a5e487f725468e28571a150cbec0e7a2904"
+    },
+    {
+      "file": "toybox-run.txt",
+      "bytes": 8933,
+      "sha256": "bf5b57fac3777846bfdcfe1013a4856c8bfa79b38ffed7c181608f702de1b893"
+    }
+  ]
+}
