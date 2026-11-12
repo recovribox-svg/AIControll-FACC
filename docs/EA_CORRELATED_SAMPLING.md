@@ -36,3 +36,5 @@ a missed delivery arrow and a kinetic spell-like projectile. Weapon-delivered ra
 the ambiguous per-ray comparison; actual damage and learned target defenses must still be observed. This
 adds only constant-time event checks and no target scan, path query, persistent cache or extra forecast.
 Movement is a separate author-approved follow-up. No main/development push, merge, release or version bump.
+
+Checked source `3f66960`, [receipt](competence/EA_CORRELATED_SAMPLING_CHECKS.json) and [review4 test ZIP](../test-builds/AI-Control-FACC-v0.3.30-dev-review4-3f66960-UMM-test.zip), startup MVID `b7d068bd-340a-43b7-94fe-f12f51b0c74a`. 655 unit + 11 inventory tests and native checks pass; actual-reference Release 0 warnings/errors; 0/0 added signatures resolve. Compatible/supplementary audit scopes pass; original full-corpus enum failure remains distinct. Gameplay/matched Unity timing pending.

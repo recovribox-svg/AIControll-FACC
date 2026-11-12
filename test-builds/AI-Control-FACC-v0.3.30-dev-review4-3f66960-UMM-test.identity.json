@@ -1,0 +1,21 @@
+{
+  "build_label": "review4",
+  "kind": "development-test",
+  "version": "0.3.30",
+  "source_branch": "codex/ea-correlated-calibration",
+  "source_commit": "3f66960dfd66883fd9a8c6c79c85cc11735a0efb",
+  "starting_commit": "d144b80503f1f927ddcf3394171c19844526a7d5",
+  "development_base": "1f58150b8e50f9a322ba0b8d3fcc095fe188420f",
+  "dependency_pr": 43,
+  "dll": {
+    "assembly": "CompanionAI_Pathfinder, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null",
+    "mvid": "b7d068bd-340a-43b7-94fe-f12f51b0c74a",
+    "sha256": "1b968738a50bc83a938c2259a72fd3731de1315d64514b5815804931e8536e48",
+    "size": 1361408
+  },
+  "manifest_sha256": "d6ee91e78dc5d4981ad51a1a1a85bb1e7fe3f0a87814697f2fd9ee1c20d35594",
+  "checks_receipt": "docs/competence/EA_CORRELATED_SAMPLING_CHECKS.json",
+  "gameplay_status": "not played",
+  "scope": "Cumulative review3/Shifter/EA prerequisites. Excludes unidentifiable shared-arrow projectile Spell calibration samples using the actual actor and ranged event roll. Packet-defense observations remain before this gate; ordinary independent rays and spell-like kinetic samples remain. No actual damage, spell/weapon valuation, movement or command changes.",
+  "release": false
+}

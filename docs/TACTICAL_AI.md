@@ -4953,3 +4953,5 @@ changes, guessed packet division or learned non-kinetic multiplier. [Evidence an
 
 Eight unit boundaries and four compiled native-route additions cover identity and observation order. The check adds
 no forecast, scan or path work. Movement fallback is a separate authorized task; gameplay remains pending.
+
+Checked source `3f66960`, [receipt](competence/EA_CORRELATED_SAMPLING_CHECKS.json) and [review4 test ZIP](../test-builds/AI-Control-FACC-v0.3.30-dev-review4-3f66960-UMM-test.zip), startup MVID `b7d068bd-340a-43b7-94fe-f12f51b0c74a`. 655 unit + 11 inventory tests and native checks pass; actual-reference Release 0 warnings/errors; 0/0 added signatures resolve. Compatible/supplementary audit scopes pass; original full-corpus enum failure remains distinct. Gameplay/matched Unity timing pending.
