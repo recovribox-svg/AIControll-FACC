@@ -58,3 +58,5 @@ must not be called an original-full-corpus pass.
    key must not serialize those. Normal HP heals and damage focus fire remain eligible in parallel. Check TB too.
 4. Retain startup MVID and command/combat records. The new DLL is unplayed; native command timing and a modified
    treatment graph need live confirmation. No movement, target commitment, retreat, pathfinder or cancellation changes.
+
+Checked source `9464c2d`, [receipt](competence/TREATMENT_PENDING_CHECKS.json) and [review2 test ZIP](../test-builds/AI-Control-FACC-v0.3.30-dev-review2-9464c2d-UMM-test.zip), startup MVID `a21cbb58-f176-4d4a-8ec2-cf912910bc3e`. 629 unit + 11 inventory tests and native checks pass; actual-reference Release 0 warnings/errors; 0/0 added signatures resolve. Compatible/supplementary audit scopes pass; original full-corpus enum failure remains distinct. Gameplay/matched Unity timing pending.

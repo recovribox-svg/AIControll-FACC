@@ -1,5 +1,7 @@
 # Exit1 TB / real-time playtest review
 
+**Cumulative follow-ups:** the [native-bound exit repair](MOVEMENT_EXIT_BOUNDS.md) and [friendly treatment coordination](FRIENDLY_TREATMENT_COORDINATION.md) address the scoped follow-ups identified below. The original review findings and their gameplay limits remain recorded.
+
 12 November 2026. `codex/exit1-playtest-review` starts at played PR #37 head
 `dc5235f8dc8096d4db86ea6bbf819d940328846e`, containing fetched development `1f58150` and PR #33–#37
 prerequisites. Those unmerged PRs are not integrated into development by this task.
