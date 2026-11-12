@@ -25,7 +25,15 @@ namespace CompanionAI_Pathfinder.Tactics
             public readonly List<double> Ms = new List<double>();
             public double SlowestMs;
             public string Slowest;
+            // ★ summon control: the same decisions split by who decided - party members and pets, and summoned
+            // creatures; a summon's first decision of the fight apart (cold caches: its abilities are profiled then).
+            public readonly List<double> PartyMs = new List<double>();
+            public readonly List<double> SummonMs = new List<double>();
+            public readonly List<double> SummonFirstMs = new List<double>();
+            public double SummonSlowestMs;
+            public string SummonSlowest;
         }
+        private static readonly HashSet<string> SummonsTimed = new HashSet<string>();
 
         private static FightStats _instance;
         private static readonly Timing TurnBased = new Timing();
@@ -74,6 +82,12 @@ namespace CompanionAI_Pathfinder.Tactics
             RealTime.Ms.Clear();
             RealTime.SlowestMs = 0d;
             RealTime.Slowest = null;
+            foreach (var timing in new[] { TurnBased, RealTime })
+            {
+                timing.PartyMs.Clear(); timing.SummonMs.Clear(); timing.SummonFirstMs.Clear();
+                timing.SummonSlowestMs = 0d; timing.SummonSlowest = null;
+            }
+            SummonsTimed.Clear();
             _started = false;
             _partyDamage = _enemyDamage = 0;
             PartyByRound.Clear();
@@ -180,6 +194,19 @@ namespace CompanionAI_Pathfinder.Tactics
                 timing.SlowestMs = ms;
                 timing.Slowest = $"{unit?.CharacterName}: {chosen ?? "nothing"}";
             }
+            // ★ summon control: cohorts (the line above stays the fight's total, as before).
+            if (!GameInterface.SummonControl.IsOrdinarySummon(unit))
+            {
+                timing.PartyMs.Add(ms);
+                return;
+            }
+            if (unit.UniqueId != null && SummonsTimed.Add(unit.UniqueId)) timing.SummonFirstMs.Add(ms);
+            else timing.SummonMs.Add(ms);
+            if (ms > timing.SummonSlowestMs)
+            {
+                timing.SummonSlowestMs = ms;
+                timing.SummonSlowest = $"{unit.CharacterName}: {chosen ?? "nothing"}";
+            }
         }
 
         /// <summary>A decision's context: the first one of the fight sets the estimates, every one moves the last round.</summary>
@@ -246,6 +273,23 @@ namespace CompanionAI_Pathfinder.Tactics
             Main.Log($"[Perf] {mode}: {sorted.Count} decisions, median {Percentile(0.5):F1} ms, 95% {Percentile(0.95):F1} ms, " +
                      $"slowest {timing.SlowestMs:F1} ms ({timing.Slowest}), total {sorted.Sum():F0} ms" +
                      (quiet > 0 ? $"; {quiet} skipped while waiting for a cooldown" : ""));
+            // ★ summon control: only when a summoned creature decided in this mode - party members and pets, the
+            // summons' later decisions and their first ones (cold), and what the control checks cost outside Decide.
+            int summonDecisions = timing.SummonMs.Count + timing.SummonFirstMs.Count;
+            if (summonDecisions == 0) return;
+            Main.Log($"[Perf] {mode}, cohorts: party {Summary(timing.PartyMs)}; summons {Summary(timing.SummonMs)}; " +
+                     $"summons' first decisions {Summary(timing.SummonFirstMs)}; slowest summon decision " +
+                     $"{timing.SummonSlowestMs:F1} ms ({timing.SummonSlowest}); " +
+                     $"{GameInterface.SummonControl.AdoptedThisFight} summons driven this fight; " + GameInterface.SummonControl.GateCost());
+        }
+
+        /// <summary>"n decisions, median x ms, 95% y ms, total z ms" of one cohort.</summary>
+        private static string Summary(List<double> ms)
+        {
+            if (ms.Count == 0) return "0 decisions";
+            var sorted = ms.OrderBy(x => x).ToList();
+            double At(double q) => sorted[Math.Min(sorted.Count - 1, (int)Math.Floor(q * (sorted.Count - 1) + 0.5))];
+            return $"{sorted.Count} decisions, median {At(0.5):F1} ms, 95% {At(0.95):F1} ms, total {sorted.Sum():F0} ms";
         }
 
         public void OnEventAboutToTrigger(RuleDealDamage evt)
