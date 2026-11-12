@@ -533,7 +533,7 @@ namespace CompanionAI_Pathfinder.Analysis
         {
             float score = 0.5f; // 기본 점수
 
-            var settings = ModSettings.Instance?.GetOrCreateSettings(target.UniqueId, target.CharacterName);
+            var settings = GameInterface.SummonControl.SettingsFor(target);   // ★ summon control: no row for a summon
             var role = settings?.Role ?? AIRole.DPS;
             var rangePreference = settings?.RangePreference ?? RangePreference.Mixed;
 
@@ -615,7 +615,7 @@ namespace CompanionAI_Pathfinder.Analysis
         /// </summary>
         private static string GetTargetScoreReason(UnitEntityData target, BuffTargetAffinity affinity)
         {
-            var settings = ModSettings.Instance?.GetOrCreateSettings(target.UniqueId, target.CharacterName);
+            var settings = GameInterface.SummonControl.SettingsFor(target);   // ★ summon control: no row for a summon
             var role = settings?.Role ?? AIRole.DPS;
             var range = settings?.RangePreference ?? RangePreference.Mixed;
 

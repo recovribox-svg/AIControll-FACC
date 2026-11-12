@@ -89,7 +89,8 @@ namespace CompanionAI_Pathfinder.Tactics
 
         /// <summary>The lists that apply to this unit (shared + its own). Taken once per decision by the engine.</summary>
         public static BlockScope<BlueprintGuid> ScopeFor(UnitEntityData unit) =>
-            unit == null ? default : Current.For(unit.UniqueId);
+            // ★ summon control: a summoned creature uses the shared list and its summoner's (never an id of its own).
+            unit == null ? default : Current.For(GameInterface.SummonControl.BlockScopeId(unit));
 
         /// <summary>The same by the unit's id (the settings panel).</summary>
         public static BlockScope<BlueprintGuid> ScopeFor(string unitId) => Current.For(unitId);
@@ -198,6 +199,9 @@ namespace CompanionAI_Pathfinder.Tactics
         /// </summary>
         public static List<AbilityData> Allowed(BlockScope<BlueprintGuid> scope, UnitEntityData unit, List<AbilityData> abilities)
         {
+            // ★ summon control: what a summoned creature never uses (summoning spells, items, material components) is
+            // not offered either - one filter for every reader of the allowed list. The same list for any other unit.
+            abilities = GameInterface.SummonControl.Allowed(unit, abilities);
             if (scope.IsEmpty || abilities == null) return abilities;
             List<AbilityData> result = null;
             for (int i = 0; i < abilities.Count; i++)

@@ -27,6 +27,8 @@ namespace CompanionAI_Pathfinder.Tactics
 
         public static CharacterSettings SettingsFor(UnitEntityData unit)
         {
+            // ★ summon control: a summon's temporary view (Pure Mage is never on for it), not a row under its id.
+            if (GameInterface.SummonControl.IsOrdinarySummon(unit)) return GameInterface.SummonControl.SettingsFor(unit);
             if (unit?.UniqueId != null && ModSettings.Instance?.CharacterSettings != null &&
                 ModSettings.Instance.CharacterSettings.TryGetValue(unit.UniqueId, out var settings)) return settings;
             return null;
