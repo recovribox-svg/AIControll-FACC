@@ -1429,7 +1429,12 @@ namespace CompanionAI_Pathfinder.Tactics
             typeof(ContextConditionTargetCanSeeInvisible), typeof(ContextConditionIsMainTarget),
             typeof(ContextConditionDistanceToTarget), typeof(ContextConditionIsInCombat), typeof(ContextConditionBuffRank),
             typeof(ContextConditionHasBuffImmunityWithDescriptor), typeof(ContextConditionHasTouchSpellCharge),
-            typeof(ContextConditionGender), typeof(ContextConditionIsMainCharacter)
+            typeof(ContextConditionGender), typeof(ContextConditionIsMainCharacter),
+            // ★ v0.3.30 shifter1 playtest: Griffon Shape chooses its real form with a campaign flag. Native
+            // FlagUnlocked.CheckCondition only reads IsUnlocked/Value (ContainsKey/TryGetValue); it does not
+            // unlock flags or run actions. Retain the native specified-value/blacklist/Not semantics and live
+            // per-frame condition cache. Exact type only: mod subclasses are not implicitly safe.
+            typeof(Kingmaker.Designers.EventConditionActionSystem.Conditions.FlagUnlocked)
         };
 
         /// <summary>

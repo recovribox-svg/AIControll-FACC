@@ -49,24 +49,26 @@ namespace CompanionAI_Pathfinder.Tactics
             if (s_AppraiseWithout != null && PolymorphFacts.Form(s_AppraiseWithout.Blueprint as BlueprintBuff) != null)
                 return new BuffAppraisal { Detail = "removing an existing form retains the prior fallback appraisal" };
             var result = new BuffAppraisal { Modelled = true, Detail = "major form is not an automatic numerical buff" };
-            if (ally != ctx.Unit || PolymorphFacts.HasForm(ally) || PureMagePolicy.IsActive(ctx.Settings) ||
-                FurySelectionPresent(ally.Get<ShiftersFuryPart>())) return result;
+            if (ally != ctx.Unit) return result;
+            if (PolymorphFacts.HasForm(ally)) { result.Detail = "existing/suppressed form retained"; return FinishFormAppraisal(ctx, ability, ally, result); }
+            if (PureMagePolicy.IsActive(ctx.Settings)) { result.Detail = "Pure Mage: physical form preparation withheld"; return FinishFormAppraisal(ctx, ability, ally, result); }
+            if (FurySelectionPresent(ally.Get<ShiftersFuryPart>())) { result.Detail = "current/pending Fury selection retained"; return FinishFormAppraisal(ctx, ability, ally, result); }
             var forms = buffs.Where(b => PolymorphFacts.Form(b) != null &&
                 KnownFormBranch(profile.BuffAppliesTo(b, ability, ally))).Distinct().ToList();
             // A branch whose native condition cannot be evaluated is not permission to forecast all alternative forms.
-            if (forms.Count != 1) { result.Detail = "major form branch is not uniquely known"; return result; }
+            if (forms.Count != 1) { result.Detail = "major form branch is not uniquely known"; return FinishFormAppraisal(ctx, ability, ally, result); }
             var buff = forms[0];
             var form = PolymorphFacts.Form(buff);
-            if (!ShifterFormProjection.Supports(form)) { result.Detail = "form layout outside the supported natural-weapon projection"; return result; }
+            if (!ShifterFormProjection.Supports(form)) { result.Detail = "form layout outside the supported natural-weapon projection"; return FinishFormAppraisal(ctx, ability, ally, result); }
             var off = OffenceOf(ctx, ally);
-            if (off.Caster) { result.Detail = "spellcasting cost of a new form is not modelled"; return result; }
+            if (off.Caster) { result.Detail = "spellcasting cost of a new form is not modelled"; return FinishFormAppraisal(ctx, ability, ally, result); }
             var enemy = off.Enemy ?? ctx.Enemies.FirstOrDefault(e => e?.View != null && !CombatMath.IsDisabled(e));
-            if (enemy == null) return result;
+            if (enemy == null) { result.Detail = "no visible enemy for the native form quote"; return FinishFormAppraisal(ctx, ability, ally, result); }
             var decision = ShifterDecisions.GetValue(ctx, _ => new ShifterDecision());
             if (!decision.Forms.TryGetValue(buff, out var quote))
             {
                 // No cross-target search. Repeated duration/ability variants share one shape/nearest-enemy quote.
-                if (decision.Forms.Count >= 8) { result.Detail = "major form quote budget reached"; return result; }
+                if (decision.Forms.Count >= 8) { result.Detail = "major form quote budget reached"; return FinishFormAppraisal(ctx, ability, ally, result); }
                 quote = new FormQuote();
                 decision.Forms[buff] = quote;
                 try
@@ -77,14 +79,14 @@ namespace CompanionAI_Pathfinder.Tactics
                 }
                 catch (Exception ex) { Main.Verbose($"[Shifter] {buff.name}: {ex.Message}"); }
             }
-            if (!quote.Damage.HasValue) { result.Detail = "native form quote unavailable"; return result; }
+            if (!quote.Damage.HasValue) { result.Detail = "native form quote unavailable"; return FinishFormAppraisal(ctx, ability, ally, result); }
             var source = CombatMath.CreateContext(ability, new TargetWrapper(ally));
             float duration = EffectiveRounds(ability, profile, buff, source);
             float rounds = ValueModel.UsefulRounds(duration, ctx.ExpectedRounds, Math.Min(3f, ctx.ExpectedRounds));
             bool ranged = form.AdditionalLimbs.First().IsRanged;
             float damageGain = quote.Damage.Value * PreferenceWeight(ctx, ranged) - off.DamagePerRound * PreferenceWeight(ctx, off.Ranged);
             var def = DefenceOf(ctx, ally);
-            if (quote.Projection.HpLoss >= def.Hp) { result.Detail = "form would remove its remaining hit points"; return result; }
+            if (quote.Projection.HpLoss >= def.Hp) { result.Detail = "form would remove its remaining hit points"; return FinishFormAppraisal(ctx, ability, ally, result); }
             int ac = quote.Projection.ArmorChange;
             float kept = ValueModel.ArmorGain(def.Incoming, def.EnemyHitChance, ac) - def.Incoming * 0.025f * quote.Projection.SaveLoss;
             float protection = ValueModel.PreventionValue(kept, rounds, def.Hp,
@@ -96,7 +98,17 @@ namespace CompanionAI_Pathfinder.Tactics
             result.Value = (damageGain * rounds + protection - hpCost) * RoleWeight(ctx, "buff");
             result.Detail = $"form attacks {off.DamagePerRound:0.#}->{quote.Damage.Value:0.#} dmg/rd, AC {ac:+0;-0;0}, {rounds:0.#} rd; " +
                 "core natural attacks only; extra form facts uncredited";
+            return FinishFormAppraisal(ctx, ability, ally, result);
+        }
+
+        private static BuffAppraisal FinishFormAppraisal(TacticalContext ctx, AbilityData ability, UnitEntityData ally, BuffAppraisal result)
+        {
             s_LastAppraisal[AppraisalKey(ctx.Unit, ability, ally)] = $"{result.Value:0.#}: {result.Detail}";
+            // One row per ability/unit/fight, including a zero quote. Without it, a withheld branch/unsupported
+            // body and an unprofitable but successful quote both looked like "never uses the form". No new rules,
+            // contexts, target scans or extra forecast search; this uses the existing bounded combat note ledger.
+            if (CombatMemory.FirstThisFight($"form:{ctx.Unit.UniqueId}|{ability.Blueprint.AssetGuid}"))
+                Main.Log($"[Shifter] {ctx.Unit.CharacterName}: {ability.Name} form appraisal {result.Value:0.#}: {result.Detail}");
             return result;
         }
 

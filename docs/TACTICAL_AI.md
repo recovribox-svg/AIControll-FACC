@@ -4923,3 +4923,19 @@ Full checked identities/results follow the source commit; actual Ulbrig/Fury rep
 remain pending. Manifest 0.3.30; Claude reviews/integrates, no main/development push, merge or release.
 
 Checked source `f904c39`, [receipt](competence/SHIFTER_CHECKS.json) and [shifter1 test ZIP](../test-builds/AI-Control-FACC-v0.3.30-dev-shifter1-f904c39-UMM-test.zip), startup MVID `875cf339-de55-4d04-89f9-d5235ec7ecbe`. 647 unit + 11 inventory tests and native checks pass; actual-reference Release 0 warnings/errors; 73/73 added signatures resolve. Compatible/supplementary audit scopes pass; original full-corpus enum failure remains distinct. Gameplay/matched Unity timing pending.
+
+## 147. Shifter1 mixed-mode review: read native campaign-flag guards (12 November 2026)
+
+[Broad review/replay and authorized movement follow-up](SHIFTER1_PLAYTEST_REVIEW.md), [input ledger](competence/SHIFTER1_PLAYTEST_INPUTS.json).
+Nine fights / 465 TB+RT action/wait summaries, no logged AI exception, exact shifter1 startup MVID. The author
+reports spawn/rest interventions; do not infer resets from HP/resources alone. Actual level-8 Shifter Wenduag
+never uses her form: AI 428 shows the native FlagUnlocked branch unread; unique-form appraisal is withheld.
+Allow only that exact inspected read-only native predicate. Native Not/value-list logic and frame-scoped
+checks remain, no hard-coded flag value or quest action. Bounded zero/successful form appraisals now expose
+reasons without extra forecasts. 21 native metadata/store/route checks; scene casting remains pending.
+
+Three largest slow rows overlap GC/live-heap drops; form scoring itself is 4.3 ms on the 2008 ms decision.
+Do not present stage snapshots as allocation counts or promise a measured speedup. Scorching Ray's shared
+arrow-roll sampling and an explicitly authorized post-preflight advance fallback are separate follow-ups.
+No movement/commitment/retreat/pathfinder/stuck change in this PR. Full verification/package identities follow
+checked source; manifest 0.3.30, Claude reviews/integrates, no main/development push, merge or release.

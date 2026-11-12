@@ -1,0 +1,114 @@
+{
+  "ai": {
+    "file": "Log.txt",
+    "bytes": 800070,
+    "sha256": "b5f4cd36892e726f6ba5df5d13dac3db6125c6244bb4c9c7a22723cf498ff96f",
+    "lines": 4330
+  },
+  "combat": {
+    "file": "combatLog.txt",
+    "bytes": 862555,
+    "sha256": "2dc46b6d407bb7bee91df8bbe293ca2258536e23c7506ee151859e8d145259d8",
+    "lines": 23764
+  },
+  "build": {
+    "manifest": "0.3.30",
+    "startup_mvid": "875cf339-de55-4d04-89f9-d5235ec7ecbe",
+    "label": "shifter1",
+    "source": "f904c39233468458d51a049e13afb993abb4ca67",
+    "package_commit": "20137ba3b75f1eb539d4111982991cff0b1a4502"
+  },
+  "context": {
+    "user_reports_enemy_spawning_and_rest_during_combat": true,
+    "manual_interventions_fully_timestamped": false,
+    "mode": "both TB and shared RT",
+    "movement_fallback_authorized_in_task": true
+  },
+  "counts": {
+    "fights": 9,
+    "main_tactics_rows": 484,
+    "action_summaries": 465,
+    "TB_summaries": 246,
+    "RT_summaries": 219,
+    "verbose_summaries": 8,
+    "no_option_diagnostics": 27,
+    "AI_exception_rows": 0,
+    "slow_decisions_over_250ms": 45,
+    "GC_marked_slow_decisions": 3,
+    "form_casts": 0,
+    "fury_selections": 0,
+    "griffon_aspect_starts": 8
+  },
+  "findings": [
+    {
+      "kind": "confirmed_guard_gap",
+      "lines": [
+        414,
+        421,
+        428,
+        432,
+        433,
+        974
+      ],
+      "detail": "Griffon Shape native campaign flag not allowlisted; form model requires one known branch and returns zero; no form/Fury use recorded."
+    },
+    {
+      "kind": "confirmed_sampler_ambiguity",
+      "lines": [
+        2959
+      ],
+      "detail": "EA first arrow supplies a shared roll to its whole ray volley; sampler combines identical rolls but estimates one projectile; separate follow-up."
+    },
+    {
+      "kind": "movement_fallback_gap_authorized",
+      "lines": [
+        1359,
+        1360,
+        1361,
+        1362,
+        1364,
+        1365,
+        1471,
+        1475
+      ],
+      "detail": "All selected step/approach routes fail, unchecked approaches withheld, no advance after in-place assumption suppressed generation; separate authorized follow-up."
+    },
+    {
+      "kind": "GC_overlap_not_form_timing",
+      "lines": [
+        433,
+        2566,
+        3905
+      ],
+      "detail": "Top three slow decisions overlap collection and strongly negative live-heap snapshots. Griffon Shape scoring is 4.3ms in first 2008ms row."
+    },
+    {
+      "kind": "native_concentration_failure",
+      "lines": [
+        2706
+      ],
+      "detail": "arcan failed concentration 16 vs DC19; not a silent-cast bug."
+    },
+    {
+      "kind": "single_no_effect_unresolved",
+      "lines": [
+        3981
+      ],
+      "detail": "one fused-spell no-target-effect event (1/2); no automatic damage retuning or blanket exclusion justified."
+    },
+    {
+      "kind": "small_damage_sample_unresolved",
+      "lines": [
+        1042
+      ],
+      "detail": "Alchemists Fire 3 hits, mean7 vs estimate9.5; insufficient matched packet evidence for recalibration."
+    },
+    {
+      "kind": "external_blueprint_warning",
+      "lines": [
+        4044
+      ],
+      "detail": "WrathPatches reports ChannelPositiveHarm ContextRankConfig owner mismatch with Isekai; no AI blueprint mutation established."
+    }
+  ]
+}
