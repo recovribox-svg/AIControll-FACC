@@ -5127,3 +5127,5 @@ approved fallback's cap remain. Its existing small pricing pass can still run; t
 claimed to be capped at three. Four unit scheduling cases and four actual candidate checks (Idle Advance 27 total)
 cover the correction; form-reference 14 and all inherited checks remain. Native paths/gameplay/timing need replay.
 No general movement, commitment, retreat, pathfinder, stuck-cancellation, budget or value-model change.
+
+Checked source `3cb6422`, [receipt](competence/REVIEW5_RECOVERY_KEY_CHECKS.json) and [review7 test ZIP](../test-builds/AI-Control-FACC-v0.3.30-dev-review7-3cb6422-UMM-test.zip), startup MVID `6383a7b3-201b-4c76-a335-027ee5ef4f8e`. 668 unit + 27 inventory tests and native checks pass; actual-reference Release 0 warnings/errors; 0/0 added signatures resolve. Compatible/supplementary audit scopes pass; original full-corpus enum failure remains distinct. Gameplay/matched Unity timing pending.

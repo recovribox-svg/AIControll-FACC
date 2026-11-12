@@ -55,3 +55,5 @@ The same supplied native assembly and inspected path/endpoint contracts document
 commitment, retreat, stuck cancellation, hazard cost, movement budget or action value changes. No full-decision
 retry or per-turn/per-fight unreachable mark. The expected benefit is fewer redundant native issue/path attempts;
 matched gameplay timing remains pending. Manifest stays 0.3.30; Claude reviews/integrates, no main/release changes.
+
+Checked source `3cb6422`, [receipt](competence/REVIEW5_RECOVERY_KEY_CHECKS.json) and [review7 test ZIP](../test-builds/AI-Control-FACC-v0.3.30-dev-review7-3cb6422-UMM-test.zip), startup MVID `6383a7b3-201b-4c76-a335-027ee5ef4f8e`. 668 unit + 27 inventory tests and native checks pass; actual-reference Release 0 warnings/errors; 0/0 added signatures resolve. Compatible/supplementary audit scopes pass; original full-corpus enum failure remains distinct. Gameplay/matched Unity timing pending.
