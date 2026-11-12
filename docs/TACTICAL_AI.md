@@ -4941,3 +4941,15 @@ No movement/commitment/retreat/pathfinder/stuck change in this PR. Full verifica
 checked source; manifest 0.3.30, Claude reviews/integrates, no main/development push, merge or release.
 
 Checked source `a58de3e`, [receipt](competence/SHIFTER1_REVIEW_CHECKS.json) and [review3 test ZIP](../test-builds/AI-Control-FACC-v0.3.30-dev-review3-a58de3e-UMM-test.zip), startup MVID `d3873816-d1f0-4bc4-bc80-dc5e5e681a3b`. 647 unit + 11 inventory tests and native checks pass; actual-reference Release 0 warnings/errors; 0/0 added signatures resolve. Compatible/supplementary audit scopes pass; original full-corpus enum failure remains distinct. Gameplay/matched Unity timing pending.
+
+## 148. Shifter1 review: exclude ambiguous Eldritch Archer ray samples
+
+The mixed-mode shifter1 log reports Drow Magus Scorching Ray as 33.5 per hit against 15 estimated (AI 2959).
+Native ranged Spellstrike supplies the first physical arrow's roll to the spell's rays. The observer's roll-identity
+bucket can then merge multiple rays while quoting one projectile. It now withholds those unidentifiable projectile
+Spell samples using the actual EA actor and physical ranged event weapon. Independent ray rolls and spell-like
+kinetic samples retain their paths; defense observation precedes the gate. No spell/weapon value or actual damage
+changes, guessed packet division or learned non-kinetic multiplier. [Evidence and replay](EA_CORRELATED_SAMPLING.md).
+
+Eight unit boundaries and four compiled native-route additions cover identity and observation order. The check adds
+no forecast, scan or path work. Movement fallback is a separate authorized task; gameplay remains pending.

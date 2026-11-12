@@ -89,6 +89,18 @@ namespace CompanionAI.Tests
         public void PacketWithoutAttackRoll_IsASample(bool hitFlag) =>
             Assert.False(ObserverRules.SkipCalibrationSample(false, hitFlag));
 
+        [Theory]
+        [InlineData(true, true, true, true)]   // EA spell volley: one physical arrow roll for all rays
+        [InlineData(true, true, false, false)] // same EA actor, ordinary independent ray/touch rolls
+        [InlineData(true, false, true, false)] // no native EA contract established
+        [InlineData(true, false, false, false)]// ordinary spellcaster's ray
+        [InlineData(false, true, true, false)] // multiclass kinetic spell-like/composite shot retains learning
+        [InlineData(false, false, true, false)]// ordinary physical shot
+        [InlineData(false, true, false, false)]// non-projectile spell is not suppressed
+        [InlineData(false, false, false, false)]
+        public void CorrelatedVolley_DoesNotTeachSingleProjectileDamage(bool projectileSpell, bool ea, bool physicalRoll, bool skip) =>
+            Assert.Equal(skip, ObserverRules.SkipCorrelatedProjectileSample(projectileSpell, ea, physicalRoll));
+
         // AwaitDelivery(executed, executionEnded, watchTarget, targetReached, ageSeconds, limitSeconds)
 
         [Fact]

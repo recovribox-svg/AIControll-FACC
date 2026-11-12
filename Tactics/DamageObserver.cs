@@ -178,6 +178,14 @@ namespace CompanionAI_Pathfinder.Tactics
             var profile = AbilityProfile.Get(ability);
             if (profile == null || profile.Damage.Count == 0) return;
             bool projectileRolls = CombatMath.ObserveProjectileRolls(profile);
+            // Native ranged Spellstrike's rays all carry the arrow's same roll, even after its pending source/mode
+            // has cleared. Grouping by that identity would sum a volley against one ray's estimate (shifter1: 33.5
+            // versus 15). Recognize the actual physical ranged roll, not the current toggle or pending spell field.
+            // Spell-like kinetic archer blasts retain their existing composite/learning path.
+            if (projectileRolls && ability.Blueprint.Type == Kingmaker.UnitLogic.Abilities.Blueprints.AbilityType.Spell &&
+                ObserverRules.SkipCorrelatedProjectileSample(true,
+                    attacker.Get<Kingmaker.UnitLogic.Parts.UnitPartMagus>()?.EldritchArcher == true,
+                    evt.AttackRoll?.Weapon?.Blueprint?.AttackType == Kingmaker.RuleSystem.AttackType.Ranged)) return;
             string key = attacker.UniqueId + "|" + ability.Blueprint.AssetGuid;
             // ★ v0.3.20: the rolls of one cast (a composite blast's two damage actions, a spell's missiles) arrive over a
             // moment, not in one frame.

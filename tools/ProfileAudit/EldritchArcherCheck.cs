@@ -83,6 +83,19 @@ namespace ProfileAudit
                 Check(Calls(tick, "get_EldritchArcherSpellCastTime"), "native payload retention is time bounded");
                 var guard = typeof(TacticalEngine).GetMethod("ArmedRangedSpell", all);
                 Check(Calls(guard, "get_HasMotionThisTick") && Calls(guard, "get_EldritchArcherSpellCastTime"), "forecast preserves native motion/expiry gates");
+                var sample = typeof(DamageObserver).GetMethod("NoteEstimate", all);
+                Check(Calls(sample, "SkipCorrelatedProjectileSample"), "damage sampler excludes unidentifiable shared-arrow projectile groups");
+                var archerFlag = typeof(UnitPartMagus).GetField("EldritchArcher", all);
+                Check(SaveBoostCheck.ReferencedMembers(sample).Any(m => m.Module == archerFlag.Module && m.MetadataToken == archerFlag.MetadataToken) &&
+                    Calls(sample, "get_Weapon") && Calls(sample, "get_AttackType"),
+                    "sampler reads actual event weapon/actor contract");
+                Check(!Calls(sample, "get_EldritchArcherSpell") && !Calls(sample, "get_Spellstrike"),
+                    "sample identity does not depend on pending source or toggle still being on at impact");
+                var observe = typeof(DamageObserver).GetMethod("OnEventDidTrigger", all);
+                var observedMembers = SaveBoostCheck.ReferencedMembers(observe).ToList();
+                Check(Calls(observe, "NoteEstimate") && !Calls(observe, "SkipCorrelatedProjectileSample") &&
+                    observedMembers.FindIndex(m => m.Name == "ByUnit") < observedMembers.FindIndex(m => m.Name == "NoteEstimate"),
+                    "packet-defense observations precede sampling and are not skipped by the new gate");
             }
             catch (Exception ex) { bad++; lines.Add("ELDRITCH-ARCHER FAILED: " + ex.GetBaseException()); }
             failures = bad;
