@@ -18,6 +18,8 @@ author-approved movement repairs #29/#36/#37/#39/#45) and `d306f1e` (#21 invento
 - Inventory Python tests: 27 pass.
 - ProfileAudit: 20,088 loaded, the one known Achaekek failure, every check passes.
 - ToggleCosts.Native: 90 checks pass, 98 with the Psionics provider.
+- Follow-up with the author's Units export and ToyBox 1.7.34: 35,497 blueprints loaded; AFFLICTION 4, SWARM-COVERAGE 27
+  and ATTACHED 24 checks pass; TomeBurn.Native 14 and ToyBoxSpend.Native 10 checks pass (§150).
 
 Play `test-builds/AI-Control-FACC-v0.3.30-dev-review5-45c3b4d-UMM-test.zip` (MVID `b3359daf-c8e5-4bb6-9245-d6be013a4d15`, the
 integrated code). None of it is played yet; §150 lists what to confirm in game. `main` and releases are unchanged. The Codex handovers below describe each PR.

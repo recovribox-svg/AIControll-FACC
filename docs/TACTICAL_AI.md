@@ -5042,13 +5042,36 @@ code defect needed a change.
 **Limits of the inputs.** These are not regressions:
 - SHIFTER fails with a `NullReferenceException` in `BlueprintItemWeapon.IsNatural` when the weapon-type export
   (`bpz_Weapons`) is not loaded. With it loaded, all 48 checks pass.
-- Skipped for missing inputs:
-  - AFFLICTION: no creature blueprints;
-  - SWARM-COVERAGE: no Rat or Bhoga graphs;
-  - ATTACHED: Cling is out of scope.
-- Not run:
-  - `TomeBurn.Native`: needs an Isekai `DarkElementalistBurnFeature` export;
-  - `ToyBoxSpend.Native`: needs the ToyBox DLL.
+- AFFLICTION, SWARM-COVERAGE and ATTACHED skipped on the first run for lack of the creature exports. The
+  `TomeBurn.Native` and `ToyBoxSpend.Native` harnesses were not run then. Both gaps are closed by the follow-up below.
+- Correction to the first version of this note: `DarkElementalistBurnFeature` is a stock Kineticist archetype
+  blueprint. It is in the Classes and Kineticist exports, not an Isekai one, so the Tome harness only needs the TTT
+  Core and Tome DLLs.
+
+**Follow-up run (same day) with the author's exports.** The author supplied Units, Spells and Buffs exports, ToyBox
+1.7.34 and the Isekai mod. The supplied Spells and Buffs exports are byte-identical to the ones already used; Units is
+the new input. The run used the development build `e959652` (rebuilt from clean: 0 warnings) and 11 roots.
+
+ProfileAudit results:
+- 35,497 blueprints loaded, still only the one known Achaekek failure.
+- 4,022 abilities with 0 reader errors.
+- The checks that skipped before now run and pass:
+  - AFFLICTION: 4 checks (giant spider bite, Shadow touch, Mandragora swarm round).
+  - SWARM-COVERAGE: 27 checks (Corrupted Rat and both Bhoga swarm casts).
+  - ATTACHED: 24 checks (Tick Swarm Cling).
+- Every other named check passes, with AREA-EXIT at 28 checks.
+- SWARM-AREA reads 18 swarm spaces. 18 of their 19 carrier buffs strike each round. The one that does not,
+  `GenericSwarmBuff`, is expected: its area only marks swarm targets (`ContextActionSwarmTarget`, an empty
+  `SwarmTargetBuff`), and the swarm's damage is its own cast.
+
+Native harnesses on the same inputs:
+- `ToggleCosts.Native`: 98 checks with the Psionics 0.2.3 provider.
+- `TomeBurn.Native`: 14 checks. The TTT Core and Tome DLLs match the code's module pins `cdfed43f`/`6b63b5c2`.
+- `ToyBoxSpend.Native`: 10 checks with ToyBox 1.7.34. ToyBox is recognised by the shape of its spend getter, not by a
+  module pin.
+
+All harness checks pass with 0 failures, and these counts match Codex's receipts. The Isekai mod is not an input to
+any of these checks.
 
 All of these checks are offline: they run no actors, commands or Unity timing.
 
