@@ -1,0 +1,158 @@
+{
+  "task": "C07 native melee Magus combinations and free preparation",
+  "starting_source": "02d2c2a51ee920b20a0f9f50ab0c9d32911cd6c9",
+  "dependency_pr": 34,
+  "development_base": "1f58150b8e50f9a322ba0b8d3fcc095fe188420f",
+  "user_game_version": "Steam 2.7.0x (user report)",
+  "logs": "../CASTER1_PLAYTEST_INPUTS.json",
+  "native_assembly": {
+    "name": "Assembly-CSharp.dll",
+    "bytes": 11891712,
+    "sha256": "2cb7160b7154d4ffacc77b9c51b1eb26199e1294300f04fdfc073367b2ef8953",
+    "mvid": "90a9869c-2792-4c7b-bfb7-5a8b33da7c82"
+  },
+  "contracts": [
+    {
+      "member": "UnitPartMagus.Feature.Active / SetMagusFeatureActive.OnTurnOn",
+      "finding": "Native unlocked scalar feature; real Combat toggle resets two-handed grip preferences and raises native events. Preview touches only inspected scalars/current grip and restores; real switching uses existing native executor."
+    },
+    {
+      "member": "UnitPartMagus.CanUseSpellCombat / IsSpellFromMagusSpellList",
+      "finding": "Live native equipment/feature/spell-list predicates, including runtime patches. New casts can open a new opportunity; RT IsSpellCombatThisRoundAllowed checks an old clock even with checkTime false."
+    },
+    {
+      "member": "MagusController.HandleUnitCommandDidAct / HandleUnitCommandDidEnd",
+      "finding": "Eligible Standard casts record opportunity. Native follow-ups add native root buffs; native Spell Combat attack spends Move cooldown. Actual attack ends remove root combat/strike buffs. No AI cooldown write."
+    },
+    {
+      "member": "UnitEntityData.PreparedSpellCombat / PreparedSpellStrike",
+      "finding": "Recent own native cast after last attack, required equipment/movement or matching held charge. Used again at issue with AttackIgnoringCooldownBeforeTime finite native deadline."
+    },
+    {
+      "member": "AbilityEffectStickyTouch.Apply / UnitPartTouch.Init",
+      "finding": "Source creates held delivery and queues native CreateCastCommand; held data retains original source/spellbook/metamagic. Source is not recast to deliver it."
+    },
+    {
+      "member": "UnitUseAbility.CreateCastCommand",
+      "finding": "Enemy matching melee Magus touch with active Spellstrike uses UnitAttack when native weapon is eligible; ally touches retain UnitUseAbility. Unexpected weapon commands require weapon-candidate appraisal."
+    },
+    {
+      "member": "MagusController.OnEventDidTrigger(RuleAttackWithWeapon)",
+      "finding": "Successful eligible melee hit other than EmptyHand can discharge held touch when Spellstrike is active. Fired rays do not create normal melee charges. Helpful/blocked charges need protection before enemy weapon issue."
+    },
+    {
+      "member": "AbilityDeliverTouch.Deliver / ContextActionDealDamage.GetDamageInfo",
+      "finding": "Ordinary melee touch can reuse native weapon attack roll; Reach creates a separate ray roll. IsMagusSpell critical multiplier is x2. No repeated charge per iterative; native game owns consumption."
+    },
+    {
+      "member": "BuffExtraAttack.OnEventAboutToTrigger / RuleCalculateAttacksCount.AddExtraAttacks",
+      "finding": "Actual simple non-Haste/non-Penalized extra-attack count is projected on a read-only native rule result and enumerated with native UnitAttack attack/limb methods. Native controller applies actual buff."
+    },
+    {
+      "member": "AttackTypeAttackBonus / ContextActionApplyBuff / ContextConditionHasFact",
+      "finding": "Read actual replacement-stacking root graph: simple typed untyped-stackable penalty, permanent child buff and exact fact conditional. Depth/node/cycle bounds; unknown shapes withheld, active native child not counted twice."
+    },
+    {
+      "member": "TouchSpellsController.OnEventDidTrigger / OnEventAboutToTrigger / OnAbilityEffectApplied",
+      "finding": "Natural melee hits discharge a held touch independently of Magus Spellstrike; guard those enemy attacks even when Spellstrike is off or the actor is not a Magus. Non-item Spell/SpellLike casts replace a different charge; item casts can retain it. Applying the held ability removes it. Actual spell/weapon/native delivery owns consumption."
+    }
+  ],
+  "uploaded_blueprint_fixtures": [
+    {
+      "path": "Classes/Classes/Magus/SpellCombat/SpellCombatAbility.jbp",
+      "bytes": 2694,
+      "sha256": "6c948d36a759d28a42f7ecaf9bb3e6987a1a8ae0839e4df2803fac655f177f45"
+    },
+    {
+      "path": "Classes/Classes/Magus/SpellCombat/SpellCombatBuff.jbp",
+      "bytes": 1672,
+      "sha256": "500873b6edd0ff458706d74ac28a0d9858e2af7c0abb48b46a2c89e82582c210"
+    },
+    {
+      "path": "Classes/Classes/Magus/SpellStrike/SpellStrikeAbility.jbp",
+      "bytes": 1730,
+      "sha256": "d22ff9056a89db401c0b42a781277c43ad21a1851af422735ac32af9b21e9945"
+    },
+    {
+      "path": "Classes/Classes/Magus/SpellStrike/SpellStrikeBuff.jbp",
+      "bytes": 1637,
+      "sha256": "dad2ad2c74de85b43ba20c7580b4144f17220fc8e610878a0725ac87e20f54eb"
+    },
+    {
+      "path": "Spells/Spells/Level1/ShockingGraspCast.jbp",
+      "bytes": 7755,
+      "sha256": "dcb40c7a81eb21f5962dc72e64a4f521ea5b1c8f45f21cd022ff7fa12710f9d8"
+    },
+    {
+      "path": "Spells/Spells/Level1/ShockingGraspEffect.jbp",
+      "bytes": 10344,
+      "sha256": "e3c9c1d90d715e907d2030ef1f97ad2bb9346ac150ab299a45f5505efa8ff0d6"
+    },
+    {
+      "path": "Weapons/Weapons/Items/Standard/MartialOneHanded/StandardLongsword.jbp",
+      "bytes": 3476,
+      "sha256": "fa767a3e616aba7623d977a75492d3391bf4d5bcb711d72e8c3db919f96972d1"
+    },
+    {
+      "path": "Weapons/Weapons/Items/Standard/MartialRanged/StandardShortbow.jbp",
+      "bytes": 3194,
+      "sha256": "01412d1439c84b1190e804e32eb434c9e75355d486e68818cf01ad6f755ae5d9"
+    },
+    {
+      "path": "Weapons/Weapons/Items/Standard/NaturalWeapon/Claw1d4.jbp",
+      "bytes": 3506,
+      "sha256": "446c8c91e550bf1689064555067178905914fdd0929fd38ef04bc7a5529cc2ce"
+    },
+    {
+      "path": "Weapons/Weapons/Items/Standard/NaturalWeapon/Bite1d6.jbp",
+      "bytes": 3266,
+      "sha256": "33f3549cedda6f97ee0a8f28286eb667999caeb8c51e85193b4aedfc0b86e020"
+    }
+  ],
+  "supplementary_stock_hidden_buffs": {
+    "engine": "uploaded BubblePrints 2.1.0 BubbleprintEngine.dll; BPFile.Reader",
+    "engine_sha256": "adc967fc88cde5940af6ff30caf0b11aee2529ba88f9bbdeb39863c7c82765fa",
+    "database_file": "blueprints_raw_2.7.0x_0.binz",
+    "database_sha256": "03ba6e29782c0c14e0c0383cd739560358641f7b5842f1dcfb690246e73c9c6a",
+    "records_read": 236660,
+    "version_label": "2.7.0x",
+    "installed_mod_state": false,
+    "runtime_root_reference_was_not_exported": true,
+    "private_fixture_wrappers_only": true,
+    "records": [
+      {
+        "guid": "d0dbe21928d44f958e9612529c9ead43",
+        "name": "MagusEldritchArcherSpellCombatBuff",
+        "raw_sha256": "ed222d68d0480f58348c90423ed7e60ec798f7dace9a1ad702a3bd99ebeb32bf",
+        "jbp_sha256": "ec49cd2859108164c15b8f15c9049c1e6c5129ef09fd589e3a4f086a441e00c4"
+      },
+      {
+        "guid": "7b4cf64d3a49e3d45b1dbd2385f4eb6d",
+        "name": "MagusSpellCombatBuff",
+        "raw_sha256": "508ba19865cfe412d7e09aabbcaea8a43e5d3e56526ebf40fd47fb389a07d325",
+        "jbp_sha256": "4e3997072504f60dac6fa65454b11d8f3fc4185f05775259c852fc536d7b1501"
+      },
+      {
+        "guid": "110c5b1c50774865acecacd519ce3171",
+        "name": "MagusSpellCombatCheckerBuff",
+        "raw_sha256": "0e7af82a2acfdc0b0631b108d60d536aafa2f28209b54dafc74a465db36d2a43",
+        "jbp_sha256": "7560326c6fc4bdf2da77219f9ed334ca22ff43b1c58b4049678e7adf2fd25e25"
+      },
+      {
+        "guid": "191ceca2b6002a9459fe270c522ae2aa",
+        "name": "MagusSpellStrikeBuff",
+        "raw_sha256": "0d3797ad52e0cfde0dc7c5738e4de310f04f9b4825625db43751b59d51d2af97",
+        "jbp_sha256": "45b325d40e475bd7e598aa2f84590f1eb915751d2d6a2ae6870ba1958d8b3099"
+      }
+    ]
+  },
+  "optional_provider_review": {
+    "TabletopTweaks_Core_Base": "Installed inspected patches affect native Magus spellbook/list predicates; call the live predicates rather than class/name spell tables. No provider initialization is run offline."
+  },
+  "not_established": [
+    "Actor initialization, native scene commands, cast/hit/save outcomes or resource consumption",
+    "Matched Unity decision time or complete installed Harmony patch behaviour",
+    "Reported tooltip provenance",
+    "Automatic Eldritch Archer or Fusion combinations"
+  ]
+}

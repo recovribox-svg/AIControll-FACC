@@ -52,5 +52,11 @@ namespace CompanionAI_Pathfinder.Tactics
         /// samples; the defense observations of every packet are separate and unaffected.
         /// </summary>
         public static bool SkipCalibrationSample(bool hasAttackRoll, bool attackHit) => hasAttackRoll && !attackHit;
+
+        /// <summary>★ v0.3.30 shifter1 review: ranged Spellstrike reuses one physical arrow roll for every ray.
+        /// Attack-roll identity cannot distinguish those projectiles from multiple damage actions of one ray.
+        /// Withhold the per-projectile calibration sample; real packet-defense observations remain separate.</summary>
+        public static bool SkipCorrelatedProjectileSample(bool projectileSpell, bool eldritchArcher, bool physicalRangedRoll) =>
+            projectileSpell && eldritchArcher && physicalRangedRoll;
     }
 }

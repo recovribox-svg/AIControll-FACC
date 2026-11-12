@@ -4553,3 +4553,425 @@ and Profane Invocation was still repeated now and then.
   and the feature it came from (competence3b), so the next log says which.
 
 ProfileAudit REVEAL and CAST-BONUS; 531 unit tests.
+
+## 127. C06 played: drain threats, query failure, cost fallback, burn composite and swarms
+
+The author supplied three C06 AI logs plus native combat log, identifies current Steam as 2.7.0x, and confirms all AI captures are C06. The TB startup and Log 3 stack identify module `641ff828-00b6-46aa-9f92-3748fae7f2f6`; native module is `90a9869c-2792-4c7b-bfb7-5a8b33da7c82`. [Review and exact evidence](C06_PLAYTEST_REVIEW.md), [input hashes](C06_PLAYTEST_REVIEW_INPUTS.json), [swarm movement proposal](C06_SWARM_PROPOSAL.md). Raw logs are not committed.
+
+The 14-start, 1,249-decision captures reveal four repairable boundaries: native reach requires both views; the Psionics cost hook is globally registered but internally scoped; Tome replaces ordinary nonlethal burn with a composite even when its feat is unowned; and existing drain is omitted from the remaining death limit while large non-HP removal value is compressed through CR importance. Each repair is a separate task branch.
+
+The swarm encounters have no existing area/exit diagnostics. Native Corrupted Rat has a recognized registered-target graph, while Bhoga's repertoire also includes a nearby-cast damage ability. Log labels alone cannot determine valid exits or active-area connectivity. Passive `[SwarmAudit]` logging records current source/area coverage without warming dynamic tactical caches or changing decisions; its three-item display bound is not a tactical search cap. Source-cache active-state invalidation and actual delivery geometry are investigated in the approval-only proposal. No movement/commitment/retreat/pathfinding/cancellation change is made.
+
+Slow-decision samples place the largest positive heap deltas in ability appraisal, especially Tuvel; negative deltas and the 1,917 ms Orvath sample explicitly coincide with collection. They do not identify exact per-thread allocations or prove a C06 toggle-stage regression. Faerie Fire casts are ordinary ones, bombs have a small sample without a bomb bias warning, and Profane Invocation is absent. Hidden reveal and settle behavior cannot be marked tested from these logs. Melee Magus is present; held Spellstrike dispatch remains a separate native-factory/action/pricing boundary.
+
+For every new runtime build, retain all unit tests, real-reference 0-warning Release build, exact strict compatible-data scope plus the separately disclosed raw-corpus enum failure, signatures, unique source/MVID/checksum and native no-actor fixture limits. Replay positive/negative/state transitions in TB and RT; movement implementation waits for explicit author approval.
+
+## 128. C06 playtest: viewless reinforcement targets do not abort attack appraisal
+
+The author played the C06 review build (MVID `641ff828-00b6-46aa-9f92-3748fae7f2f6`); the startup marker is in `TB Mode Log C06.txt`, and the author confirms the other two AI logs use that build. In `Log 3 RT+ TB.txt` lines 91–110, immediately after RandomReinforcementsPerEncounter spawn messages, native `UnitAttack.GetApproachRadius` throws from `CombatMath.ReadRoutine`. Weapon candidates, two Aid Another appraisals and the movement stage encounter the same missing-view query.
+
+The supplied native assembly (`90a9869c-2792-4c7b-bfb7-5a8b33da7c82`) dereferences both executor and target views in this method; its target-view corpulence call is IL `002a`, matching the logged offset. A combat entity can appear in a candidate set before its view exists. `ReadRoutine` now returns no estimate for that pair until both views exist, before enumerating attacks or calling the native geometry method. Other valid targets continue through the existing candidate loop. It does not invent reach or construct a view.
+
+`ProfileAudit/NativeViewCheck` invokes the compiled private reader on six viewless/null actor pairs, single/full attack, without an entity constructor, attack rule or command. With the scratch-only frame-count bridge rewritten to zero, the original reader fails 6/6 with NullReferenceException and the corrected reader passes 6/6. The bridge only permits offline JIT/fixture execution; it is never shipped and does not measure frame invalidation or gameplay. Existing game-independent tests and a real-reference Release build are required; exact receipts accompany the completed branch. No movement/commitment/retreat/pathfinding/stuck-cancellation code is changed.
+
+**Replay, TB and RT:** spawn reinforcements as combat begins, keep valid visible enemies alongside newly spawned ones, and confirm ordinary attacks/Aid Another remain available, no `GetApproachRadius` null-reference line occurs, and the new target becomes eligible after its native view exists. This new fix is not yet played.
+
+## 129. C06 playtest: Tome's composite nonlethal burn property
+
+All three AI logs name Orvath's actual unknown shape: `BurnEffectBuff` ranks by `KineticNonLethalDamageProperty` (base 0, Sum, one `CompositeCustomPropertyGetter`) from `DarkElementalistBurnFeature`. That confirms the property §126 intentionally left unexplained; it is separate from DarkCodex's `BurnNumberProperty` replacement.
+
+The supplied TomeOfTheFirebird 1.4.18 `BurnResistance.Make` removes the native nonlethal getter from `ac8b7875fff5c0643ac499d404947fff` and adds TTT's composite Sum: character-level-multiplied accepted burn, plus `-2 * accepted burn` when its Burn Resistance feature is owned. The property rewrite precedes the setting that exposes the feat; ownership is still a native feature query. Inspected modules: TTT Core `cdfed43f-53a0-4186-a181-75496eecec8f`, Tome `6b63b5c2-ba69-4676-992f-ec22b4b92cb7`. This code matches the logged shape, but runtime recognition also checks the actual object fields rather than assuming every composite is that patch.
+
+`ModdedBurnProperties` reads that exact two-term shape by optional reflection, with settings absent, Sum mode, zero entry constants, denominator 1, numerators 1/-2, native burn getter flags and the inspected HasFeature wrapper. Actual ownership uses `unit.Progression.Features.HasFact`, matching the installed condition; the blueprint-only entry point remains unknown for this shape when ownership cannot be queried. No mod getter, condition or factory is called, and no mod binary is a compile/deployment dependency. Metadata bindings are weak type-keyed; mutable fields and ownership are read for each decision.
+
+The calculation preserves the provider's float conversion and separate floor for each term before sum, then the existing native rank progression/caps and current-modifier anchor. Overflow/unsupported arithmetic stays fallback. The ordinary native and Psychokineticist graphs remain supported, and the existing per-rest burn price remains for every part.
+
+Fourteen compiled fixtures use the supplied provider layouts on the real Dark Elementalist graph: feat absent/present, zero/one/two/repeated quotes and changed ownership; missing ownership, mode, constants, fractional scaling and missing feature reject. Original graph components are restored afterward. No provider initialization/getter/condition or actor/command executes. Two pure arithmetic regressions include the provider's float rounding. Final committed-source tests, build and audits are recorded with the branch.
+
+**Replay, TB and RT:** Orvath with the same installed modules; confirm the named legacy fallback disappears only when the actual shape matches, and one added burn's nonlethal change follows current character level, reduced by two only when Burn Resistance is owned. Check accepted-burn transitions and native HP/nonlethal values, Overflow/Adaptation, low-HP declines and day-resource restraint. Other composite shapes must still say unknown. Not yet played.
+
+## 130. C06 playtest: accumulated level drain and the value of removing draining enemies
+
+The logs already recognize some draining threats: TB log line 497 rates Mournful Shadow at x2 with 51.2 of 52.1 beyond HP; Log 2 line 57 rates Ghoul Huntmaster at x2 with 155.9 of 168.1 beyond HP, and line 371 later reads 294.4. This is not a missing class-name tag. `EnemyThreat` keeps that harm out of observed HP blending, but the normalized CR-based importance still caps at x2; `TargetWorth` and `ControlWorth` previously inherited only that capped magnitude and a bounded urgency bonus. Native combat also records Succubus level drain on Orvath (combat log lines 6062–6091) with existing negative-level penalties.
+
+Two repairs share that native drain contract. First, `UnitLifeController.ForceTickOnUnit` reads `UnitPartNegativeLevels.Count` and kills when its accumulated count reaches character level. The old drain equivalent/share used full character level even for an already-drained target. The readers now query the existing part (never Ensure/create it) and use the remaining level limit for new spell/on-hit drain. Immunity gates and the existing five-HP-per-level/consequence formulas remain. This is shared effect accuracy, including existing defensive callers; no movement, commitment, retreat, pathfinding or cancellation algorithm changes.
+
+Second, the already-assessed beyond-HP harm is a lower bound on the worth of removing/controlling its source. The existing x0.25 disabled discount still applies to that floor, and the existing urgency factor is retained. `CombatMath.Threat` and its incoming-HP calibration are not raised; ordinary enemies with zero/less non-HP harm retain their prior removal worth. There is no Shadow/Ghoul/Succubus name/GUID bonus, extra rule query, distance change or forced target. Costs, immunities, hit chances, feasibility and the other action values still compete normally.
+
+Game-independent regressions exercise accumulated drain transitions (level 20 with 19 negative levels: one more is lethal), ordinary/disabled/lesser harm cases, and the logged Ghoul estimate through damage-progress value after its CR share cap. Final real-reference/strict-scope reader checks and signature identities accompany the branch. This repair is not yet played.
+
+**Replay, TB and RT:** mixed normal/Shadow/Ghoul/Succubus/Spectre encounters; healthy versus already-drained victims; Death Ward/immunity; disabled draining enemies and targets that cannot be usefully hit. Compare named candidates, selected action and actual native outcome. A damaging action may still lose to a useful area control, a necessary heal or a more feasible attack. Record current scores/negative levels and competing values.
+
+## 131. C06 playtest: scope Psionics' global resource-cost postfix
+
+Every sampled resource performance in the three author-confirmed C06 logs reports `multiple/custom spend fallback`, including Inspired Rage, Inspire Courage, Battle Prowess and Song of Strength. This does not establish that each resource component is custom. The original C06 patch check rejected every unknown hook globally, so one confined modification disabled the bounded cost model for unrelated toggles.
+
+The supplied Psionics DLL/cache (`Psionics.merged`, MVID `0501ad1b-c557-4744-a473-b00b015a2fde`, SHA-256 `c31d64a001b79d3b5b49ced1324188c73ddadf8f58440dd46ef2758cec9f7aad`) defines `MindBladeEnchantPoolPatch.CalcResourceCost_Postfix`: it assigns `__result` only when the owning fact GUID appears in `MindBladeEnchantments.AbilityToggleCosts`. The map is static readonly with mutable contents, and its type initializer only constructs empty BCL collections. The availability postfix is left to native legality.
+
+The cost inspector recognizes that exact module/member/postfix placement and binds the readonly map field. Each quote reads its current contents; a mapped Mind Blade enchantment keeps the existing custom/event/pool fallback. Unmapped native toggles can use the native/inspected TTT cost window. Unknown module identities, callbacks, patch kinds, transpilers/finalizers and unavailable maps remain fallback. Diagnostics distinguish component count, patch identity and mapped cost. Cost metadata is still inspected once per decision, not per toggle; no actor facts, pool amounts or dictionary contents are retained in that snapshot.
+
+The reader also requires a runtime spending component only for an active, paid timed interval whose counter is actually needed. An inactive activation/round quote reads its unique blueprint component; it does not initialize runtime data or demand unrelated timer state. Native command/profile admission is unchanged.
+
+Compiled native fixtures load the supplied Psionics member as metadata, replace/restore serialized Harmony metadata, exercise map insertion/zero/update/removal within one decision, and reject the cost postfix on another callback. They do not install a method wrapper, call a provider blueprint initializer, create an actor or spend resources. Exact test/build/audit receipts accompany the completed branch.
+
+**Replay, TB and RT:** with the same installed mod set, expect supported Inspired Rage/Inspire Courage notes to show units/cadence/start/upcoming cost instead of the generic fallback if these are the only relevant patches. If another provider is active, retain its new named fallback line. Compare one-/two-unit costs, zero/free states, paid intervals and restoration; Mind Blade enchantment admission is unchanged. This fix is not yet played.
+
+
+## 132. C06R1 combined replay candidate
+
+The interim developer assembled the five separately reviewable C06 fixes/diagnostics on `codex/c06-playtest-candidate`, based on the permitted played C06 `ab810b3` over development `1f58150` / runtime `3443d94`. See [C06_PLAYTEST_CANDIDATE.md](C06_PLAYTEST_CANDIDATE.md) for expected behavior, exact validation boundaries and paired TB/RT replay steps. §§127–131 preserve the problem, native evidence and focused implementation. The packaging branch does not merge into development or main and does not publish a release.
+
+The source is committed before its zero-warning real-reference Release build. Unit tests, inventory tests, strict native-compatible ProfileAudit, 98 native toggle checks, 14 supplied Tome-layout checks, 6 viewless checks and signature/reference resolution are recorded in the final receipt; no new gameplay pass is claimed. The full raw corpus's fingerprinted enum spelling failure remains separately visible. The test ZIP contains only the mod DLL and unchanged Info.json, with a sidecar identity JSON/checksum and unique startup MVID. Manifest stays 0.3.30.
+
+The combined candidate changes drain valuation, scoped resource quotes, inspected burn consequences and a null-view query guard, and collects swarm evidence. No swarm movement/avoidance policy is implemented; the author's requested approval boundary remains in [C06_SWARM_PROPOSAL.md](C06_SWARM_PROPOSAL.md). Melee Magus presence now permits a separate C07 task, but its native weapon-command, action-budget, range and pricing contracts are not represented as repaired by a one-line dispatcher substitution.
+
+
+## 133. C06R2: approved swarm cast coverage, source invalidation and boundary exits
+
+The author approved §132's linked swarm proposal on 9 November, adding an explicit performance requirement. `codex/c06-swarm-coverage` starts at C06R1 `758d7b1` / PR #28, over permitted C06 and development `1f58150` / runtime `3443d94`. See [C06_SWARM_IMPLEMENTATION.md](C06_SWARM_IMPLEMENTATION.md) and [fingerprinted native evidence](C06_SWARM_NATIVE_EVIDENCE.json).
+
+The actual Rat/Bhoga unit/brain graphs use Standard near-contact damage casts with AbilityTargetsAround at the chosen target, without requiring the old registered aura. Bhoga's cast has EffectOnEnemy=None. The bounded reader uses native custom approach distance, body/target/LOS selection and ordinary native-context damage, saves, poison and control. It does not equate a cast with a periodic aura or stack the same Standard action twice. Unknown/ambiguous contracts remain generic. Registered aura gating now consults actual registered targets, including unconscious ones, without creating parts.
+
+Fact snapshots compare identity, Active and component-array identity, reusing buffers and refreshing mutable DC/availability at a new decision/frame. Same-count activation/deactivation/replacement and same-frame decision expiry are compiled regressions. These demonstrate a cache defect, not proof of which live condition failed in the old C06 log.
+
+Supported exits use the actual live native cylinder radius/centre and target-centred cast boundaries. A zero-allocation connected-union ray solver proposes at most twelve directions per step/move mode; native coverage and the existing legality/risk/opportunity-cost checks validate them. A useful attack may still win. No new world-unit scan, rule/parameter query per direction, search cap, forced target, general retreat/path/commitment/dispatcher/cancellation change is introduced. Warm boundary and unchanged-source helpers have explicit allocation regressions; gameplay/Unity timing acceptance remains pending.
+
+Final source/build/test/native-fixture/audit/reference results and the C06R2 UMM test identity are recorded in the task receipt. Strict native-compatible scope and the original full-corpus enum failure remain separately reported. Manifest stays 0.3.30; Claude reviews/integrates the PR later.
+
+
+## 134. C06R2 played: concealment utility, optional resource hook and attached-damage evidence
+
+The author supplied C06R2 MVID `675da0f1-3cb6-4531-8724-70bc9ae2dedd` logs: 23 fights, 714 logged summaries, no CompanionAI exception. The low-level five-member party is not a matched performance comparison with the previous high-level eleven-member capture. Read [C06R2_PLAYTEST_REVIEW.md](C06R2_PLAYTEST_REVIEW.md) and [input fingerprints](C06R2_PLAYTEST_INPUTS.json). Task branch `codex/c06r2-playtest-review` starts at PR #29 `ba5d5d3`, over permitted C06 and development `1f58150`.
+
+Five ordinary Faerie Fire selections expose the old generic debuff floor on a fully readable concealment-removal utility. Pure native-component contracts now earn recovered current reachable weapon damage using native before/after concealment passes. The existing native Disable counter is retained/released in finally, including on exceptions; no part/buff/actor is created. Unknown/mixed effects retain ordinary appraisal and the separate hidden-enemy reveal path is unchanged. Empty immutable buff parts avoid a pointless native context while preserving their previous unknown result. Values are cached per decision; no broad performance retuning.
+
+Paid performance fallback identifies ToyBox's global SpendResource prefix. The provided DLL differs from the played hook's MVID, so AI Control recognizes the complete tiny prefix/getter IL and resolved field contract at runtime, with patched/unknown functions rejected. It reads the current infinite-abilities flag without calling a mod getter/setup. Native spending remains when off; native SpendResource cost is zero when skipped. Independent Judgment activation actions keep their price; custom/event/unknown costs and unread settings remain fallback. The other mod is not modified.
+
+Swarm detection and twelve exit orders are now observed; five inspections are at most 0.4 m. Tick Cling has native recipient-owned damage that can survive separation; three damage reasons name it. This does not prove a path/cancellation defect or justify making every exit longer. [Attached-damage proposal](C06R2_ATTACHED_DAMAGE_PROPOSAL.md) separates that future work from existing geometry. No movement, retreat, commitment, pathfinding, dispatcher or cancellation change is made in this review.
+
+Final unit/native/provider/build/audit/reference results and C06R3 test identity are recorded in the task receipt. The full original-corpus enum failure remains separately INCOMPLETE, with no input normalization. Manifest 0.3.30; review/integration belongs to Claude and gameplay of the fixes is pending.
+
+
+## 135. C06R4: recipient-owned periodic damage (author approved, 10 November 2026)
+
+The author approved [the attached-damage proposal](C06R2_ATTACHED_DAMAGE_PROPOSAL.md). Branch `codex/c06-attached-damage` starts at C06R3 / PR #30 `b179597`, over development `1f58150`. [Implementation and TB/RT replay](C06_ATTACHED_DAMAGE.md) and [native evidence](C06_ATTACHED_DAMAGE_NATIVE.json) trace the actual Cling graph and native buff schedule, saves, poison counters, damage/reduction and removal rules.
+
+Supported active recipient-owned NewRound and poison damage is read once per recipient/decision. Actual next tick/end time, saved context/ranks/DC, suppression, immunity and removal chances determine the next six seconds of harm and a bounded cleanse horizon. This stream follows the companion at every hypothetical position, survives a still-resolvable caster's death and is added after enemy calibration. Existing Ignore effects do not contribute duplicate future ticks to a new application. Native energy removal checks packet type even when resistance absorbs damage; no deliberate damaging casts on companions are added.
+
+Shared healing/revive/burn and drop estimates consume the continuing danger. Verified removal branches can earn avoided future damage, without claiming to cure damage already suffered or a separate child buff. Armour/images/enemy marks do not receive fictitious prevention credit for attached harm; unknown protection benefits stay conservative. Recognised completed packets remain in total fight statistics but leave enemy offence/recent-hit calibration, with live-context/cadence/value checks. Unknown contracts keep old observed accounting.
+
+Metadata is cached per blueprint, snapshots per decision, and no action/context/fact/actor is created to read them. Native fixtures inspect actual Cling/secondary graphs, native timing and existing poison data; warm 10,000-query allocation checks are separate from Unity performance. The final receipt and C06R4 identity record exact source/build/audit/test/reference results. Full original-corpus enum failure remains separately INCOMPLETE. Gameplay and matched Unity performance are pending. Candidate competition, movement permissions, target commitment, retreat, paths, dispatch and cancellation are unchanged; manifest remains 0.3.30 and Claude reviews/integrates later.
+
+
+## 136. C06R4 played: repeated resistance forecasts and appraisal contexts
+
+The author supplied C06R4 MVID `3705efbc-ad31-48e0-a8b7-c01ea9654b1d`: 19 fights, 946 logged summaries, no AI exception. Four attached notices exercise centipede/spider poison; Cling is absent. Two chosen swarm exits, no selected ordinary Faerie Fire, and native drain-threat classification provide bounded evidence; remaining acceptance cases stay explicit. Sixteen external owner-blueprint errors are not attributed to AI Control. Read [C06R4 review](C06R4_PLAYTEST_REVIEW.md) and [input fingerprints](C06R4_PLAYTEST_INPUTS.json).
+
+178 slow samples include 24 marked cleanups. Tuvel's large spell set repeats recipient SR/immunity forecasts hundreds of times across area aims (Slow 336, Scare 504 and Stinking Cloud 870 contexts). Exact caster/recipient/AbilityData results now have a synchronous per-EvaluateAbility scope. Full native context-based immunity/resistance logic remains; reference identity separates copies, nested scopes isolate results, state-preview epochs invalidate open scopes, and later evaluations start empty. Context objects are not shared. Slow telemetry reports SR wrapper reads and reuse.
+
+Non-numerical buff appraisal skips a source context only when no weapon/armour carrier can add parts; numerical Death Ward and both equipment paths remain. Unsupported periodic diagnostics are once per blueprint/session, preserving rejection logic. `codex/c06r4-playtest-review` starts at played PR #31 `ca12a28`, over development `1f58150`. Exact checked source/MVID/tests/native/reference/audit results and the C06R5 test identity are recorded in the receipt. Manifest 0.3.30; movement/commitment/retreat/path/dispatch/cancellation policy unchanged. C07 separate; review/integration belongs to Claude, and C06R5 gameplay/matched Unity performance remain pending.
+
+
+## 137. Caster discipline, spell modes and native Magic Fusion (11 November 2026)
+
+The author's v0.3.29 feedback describes ranged mages using staff/crossbow attacks and losing created Magic Fusion
+spells. `codex/ranged-pure-caster` starts at C06R5 / PR #32 `0f3061f`, over development `1f58150`.
+[Design, native findings, limits and TB/RT replay](CASTER_POLICIES.md) and [input/native identities](competence/CASTER_NATIVE_EVIDENCE.json)
+record the evidence and deviations from the supplied advisory plan.
+
+Ranged remains a preference for ordinary archers/non-casters. A separate default-off `PureMage` flag, active only
+under Ranged, removes physical attack/fallback/weapon-advance candidates before dependent choices and rechecks at issue.
+Native spell shots and verified active energy riders remain; one-shot riders get explicit single attacks in both modes.
+A reusable useful cantrip can replace the low-value weapon fallback. Offensive physical touches are refused; critical
+support touches may use existing safe approaches. Actual Reach resolves the native sticky delivery/ray weapon without
+polluting blueprint-cached flags. Native familiars have no verified touch command, so no delivery is fabricated.
+
+Conservative is the displayed old `Progressive = 1`; Standard stays 0 and Aggressive appends 2. Existing textual/numeric
+saves survive. Aggressive removes offensive book-slot thrift, preserving already-applied resistance/overkill and all
+other resource/risk rules. No invented CR bypass or spell-cycle counter. The shared backend owns the new features in TB/RT;
+ordinary characters keep their backend choice.
+
+Fusion profiles use actual `MagicHackData`: ordered source RunAction payloads, selected delivery/save and live native
+per-action dice caps. Empty slot targeting flags no longer erase the created spell. Shared-save branches and Evasion
+are weighted per damage action once; useful-outcome probability informs Conservative. Weak immutable metadata snapshots,
+configuration-aware discovery/cast/condition/context keys and synchronous scalar chance memos prevent stale reuse after edits
+or state previews. Unsupported extra/line/secondary/HD/nested-save/caster-side structures have named casting refusals;
+whole-list support and speculative next-spell boost spending are not claimed.
+
+[The final receipt](competence/CASTER_CHECKS.json) records the checked source, all tests, real-reference Release build,
+compatible-scope ProfileAudit, inherited provider regressions, references and exact test ZIP identity. Original full-corpus
+failure remains distinct. Offline metadata/flag checks do not establish live gameplay or matched Unity performance.
+General movement, target commitment, retreat, pathfinding and stuck cancellation are not retuned. Manifest 0.3.30;
+Claude reviews/integrates; no main/development push or release. C07 remains separate.
+
+## 138. Caster1 broad playtest review (11 November 2026)
+
+[Review and movement proposal](CASTER1_PLAYTEST_REVIEW.md), [input accounting](CASTER1_PLAYTEST_INPUTS.json) and
+[native contracts](competence/CASTER1_REVIEW_NATIVE.json) cover all three AI logs and the combat log: 13 fights,
+1,043 decision summaries, no observed AI exception. TB1 identifies caster1 exactly; subsequent captures have no
+independent startup. This task starts at caster1 packaging `f278114` over fetched development `1f58150` / PR #33.
+
+Scorching Ray's five 27–34-versus-15 checks expose a missing delivery count. Native simple-projectile arrays and
+their context ranks now repeat the per-payload damage after mitigation/bonuses, with no extra scoring context.
+Actual attack-roll identity separates multi-ray diagnostic samples; ricochet layers, cones and fusion keep their
+own delivery contracts. Orvath's rejected critical heals carried a native ignore-sight sticky source, while Pure
+Mage's final guard hardcoded sight. It now uses the native flag carried by the candidate; safe approaches and
+moved-recipient checks remain. BurnNumberProperty's non-null native settings no longer force legacy HP pricing:
+the actor-free native progression/negation/limits run before rank/stat arithmetic, with existing delta caching.
+
+Broader review includes stat damage/poison priorities, swarm casts and actual Tiny-swarm weapon damage, bombs,
+repeated control/buffs/heals, Faerie Fire, interruptions, external warnings and 87 slow rows (seven marked cleanups).
+Stage heap growth is not exact allocation; no matched Unity speedup is claimed. Twenty-five path refusals and
+repeated smoke exits produce a bounded proposal, with no movement/commitment/retreat/path/stuck policy changes.
+Magus automation and native combo continuation belong to the separate C07 change. Profane Invocation/fusion
+gameplay and the reported blank tooltip remain unverified. Final checked-source receipt/package identity records
+unit/native tests, actual-reference Release, compatible ProfileAudit and the original full-corpus enum failure
+separately. Manifest 0.3.30; Claude reviews/integrates, no main/development push or release.
+
+## 139. C07 native melee Magus planning (12 November 2026)
+
+The caster1 logs explicitly leave both native Magus modes unsupported/off. [Implementation and replay](C07_MAGUS.md)
+and [native contracts](competence/C07_MAGUS_NATIVE.json) describe this separate task atop PR #34 `02d2c2a`, over
+fetched development `1f58150`. The broader [log review](CASTER1_PLAYTEST_REVIEW.md) and three caster2 repairs remain
+included; no selected melee touch in these captures proves an actual Spellstrike combination.
+
+Native component identity permits free Spell Combat/Spellstrike preparations through existing ownership,
+ability-list, switch-lock and restore rules. Four useful in-place casts and two future one-toggle states bound
+planning. Runtime native predicates and actual root hidden buffs govern equipment, typed penalties and extra
+attacks. A new Standard cast opens its opportunity; final follow-ups require the native prepared helpers and
+finite clock, with explicit full/single flags. Spellstrike-only free attacks cannot become free full routines.
+The game retains actual casts, buffs, cooldowns and charge delivery; no simulated attack or manual resource spend.
+
+First successful eligible weapon-hit probability prices one held payload, with the native Magus x2 critical and
+shared overkill value. Native command creation, helpful/blocked-charge guards, marginal charge-loss cost and
+already-paid slot handling repair delivery gaps. Scalar feature/grip previews restore on normal/nested/exception
+exits and invalidate dependent caches. Metadata is weakly cached; held payloads stay decision-local; distant
+pairs leave before attack calculations. An aggregate Magus entry supports matched performance checks. Pure Mage
+and ordinary Ranged contracts remain; fired rays are not melee Spellstrike charges. EA/Fusion and unknown
+compound effects are outside automatic combinations.
+
+Native TouchSpellsController delivers held touches on natural melee hits independently of Spellstrike. The
+helpful/blocked-charge guard covers that route for all units; switching Spellstrike off does not bypass it.
+Item casts that retain an old charge cannot earn a forbidden projected follow-up. Actual claw/bite/sword/bow
+fixtures distinguish these delivery paths.
+
+The final checked-source receipt/test identity records the unit/native fixtures, real-reference Release, strict
+compatible ProfileAudit and original full-corpus enum failure separately. Offline fixtures do not initialize actors
+or issue commands. The tooltip remains unproven. General movement, commitment, retreat, pathfinding, hazard geometry,
+stuck cancellation and legacy RT selection are unchanged. Manifest 0.3.30; Claude reviews/integrates;
+no main/development push, merge or release.
+
+C07 checked source `e2473e8`, [receipt](competence/C07_MAGUS_CHECKS.json) and [magus1 identity](../test-builds/AI-Control-FACC-v0.3.30-dev-magus1-e2473e8-UMM-test.identity.json): 607 unit + 11 inventory, Magus 32 / supplementary 44 and inherited checks pass; real-reference Release 0 warnings, 29/29 signatures resolve. Compatible/supplementary audits pass; original full-corpus failure remains separate.
+
+
+## 140. Approved movement: step/full-attack preflight (12 November 2026)
+
+[Evidence/replay](MOVEMENT_STEP_PREFLIGHT.md) documents the author-approved first proposal atop PR #35
+`aaf9b20` / development `1f58150`. Five-foot-step full routines lacked ordinary walking flags and bypassed
+selected-path preflight. Explicit step intent now enters that existing check without a normal Move-action
+requirement. Shared weak-weapon fallback eligibility covers low-value routines too. The existing three-plan
+budget, already-scored alternatives, boost ordering, no global unreachable claim and native final dispatcher
+checks remain. In-place routines add no paths; no all-enemy scan or retained path.
+
+Native range/sight/step rules come from the supplied game and existing dispatcher. Actual candidate/scheduler
+fixtures exercise classification, bounded failures, changed-decision retry and compiled flag wiring; no actors,
+paths or commands execute offline. Final receipt/test identity records all checks and real-reference Release.
+Area-exit geometry is separate; no commitment, retreat, pathfinder or stuck-cancellation change in this task.
+Manifest 0.3.30; Claude reviews/integrates; gameplay and matched Unity timing pending.
+
+Checked source `ee24df1`, [receipt](competence/MOVEMENT_STEP_CHECKS.json) and [step1 test ZIP](../test-builds/AI-Control-FACC-v0.3.30-dev-step1-ee24df1-UMM-test.zip), startup MVID `9523fbe4-edb2-46b5-9fbe-e430636c9634`. 607 unit + 11 inventory tests and native checks pass; actual-reference Release 0 warnings/errors; 0/0 added signatures resolve. Compatible/supplementary audit scopes pass; original full-corpus enum failure remains distinct. Gameplay/matched Unity timing pending.
+
+
+## 141. Approved movement: native reachable area exits (12 November 2026)
+
+[Design/replay](MOVEMENT_AREA_EXITS.md) and [native contracts](competence/MOVEMENT_EXIT_NATIVE.json) describe
+the second approved movement proposal atop PR #36 `ac7d0df` / development `1f58150`. The common exit search
+uses native nearest-surface and linecast endpoints, preserving connected-floor geometry and adding the existing
+0.15 m stopping radius to native body clearance. This addresses the confirmed requested-height/ground mismatch
+without claiming every repeated smoke exit has the same cause.
+
+Shared unmounted escapes carry a decision-local endpoint/actual-route-budget check through selected preflight
+and issue. Missing, invalid, still-inside or unaffordable routes cannot earn a verified escape; ordinary moves
+retain their fallback. The three-plan budget and 80 hints remain; one ground start is reused, with no full path
+per hint, actor/context factory or native action simulation. Mounted/legacy dispatch stays outside the new path
+constraint; the common search still supplies their projected destination. Native steering/area movement after
+issue needs live replay.
+
+Final receipt/test identity records unit/native checks, actual-reference Release and distinct compatible/full
+export audits. No general commitment, retreat, pathfinder, swarm exit geometry or stuck-cancellation retuning.
+Manifest 0.3.30; Claude reviews/integrates; gameplay/matched Unity performance pending.
+
+Checked source `e806f4d`, [receipt](competence/MOVEMENT_EXIT_CHECKS.json) and [exit1 test ZIP](../test-builds/AI-Control-FACC-v0.3.30-dev-exit1-e806f4d-UMM-test.zip), startup MVID `905bb172-799c-44cb-a46a-ff208a31dab4`. 607 unit + 11 inventory tests and native checks pass; actual-reference Release 0 warnings/errors; 4/4 added signatures resolve. Compatible/supplementary audit scopes pass; original full-corpus enum failure remains distinct. Gameplay/matched Unity timing pending.
+
+
+## 142. Exit1 broad review: constant debuff context cost (12 November 2026)
+
+[Review/evidence/replay](EXIT1_PLAYTEST_REVIEW.md), [input identities](EXIT1_PLAYTEST_INPUTS.json).
+The uploaded startup MVID is exit1 `905bb172`; eight fights / 900 summaries (376 TB, 524 RT), no AI exception
+observed. All 658 commands have end records; acted interruptions are distinct from 77 unacted interruptions.
+The step preflight is exercised and projected area exits now reach their inspected ground points, but repeated
+smoke leaves expose a separate native cylinder/box physics-bound membership contract, for the next scoped repair.
+
+`DebuffShareOf` now skips constructing a source context for fixed/simple parts when the actual caster is this
+decision's actor. Dynamic rank/shared/dice/pool/caster-level formulas still bind; recipient level/BAB and caster
+fact checks remain live. No actor simulation, context sharing or cross-decision recipient cache. Native checks
+cover real Bane/Crushing Despair parts, actual scalar evaluation and compiled lazy binding. Slow samples mainly
+identify ability scoring, but thresholded times/net stage heap do not establish total latency or Unity speedup.
+
+Fusion now has supported two-payload combat outcomes; Sleep combinations stay diagnosed. Drow Magus is an
+Eldritch Archer outside C07's melee scope. Four low 4d6 Scorching Ray samples are not a new damage defect.
+Swarms/stat-damage risks are read and swarm exits selected. Friendly in-flight Treat Affliction coordination
+remains a documented gap. No general movement/commitment/retreat/pathfinder/stuck change in this PR.
+Final receipt records real-reference Release, all tests and compatible/supplementary audits separately from
+the original full corpus's named enum load failure. TB/shared RT replay and matched Unity timing remain.
+
+Checked source `318b52f`, [receipt](competence/EXIT1_REVIEW_CHECKS.json) and [review1 test ZIP](../test-builds/AI-Control-FACC-v0.3.30-dev-review1-318b52f-UMM-test.zip), startup MVID `ffce03c5-bfe3-414f-b6bd-4a946d673dbf`. 607 unit + 11 inventory tests and native checks pass; actual-reference Release 0 warnings/errors; 0/0 added signatures resolve. Compatible/supplementary audit scopes pass; original full-corpus enum failure remains distinct. Gameplay/matched Unity timing pending.
+
+
+## 143. Approved exits: native entity-bound geometry (12 November 2026)
+
+[Design/native evidence/replay](MOVEMENT_EXIT_BOUNDS.md), [assembly contracts](competence/MOVEMENT_BOUNDS_NATIVE.json).
+Exit1's eight-fight capture demonstrates projected destinations but still repeated short smoke leaves. Native
+cylinder/box membership queries the entity-bounds physics scene, skipping shape Contains for those branches.
+The former forecast did not establish parity. The scoped repair reads actual sphere world bounds and centre
+offset; numerical sphere/capsule and sphere/oriented-box tests use the native query's world geometry, with
+the existing 0.15 m arrival clearance. Other shapes keep their native Contains branch.
+
+A search snapshots once for 80 bounded hints; selected preflight and issue refresh before validating endpoint
+and route budget. Three selected path checks remain. No overlap queries, extra world-area scan, actor/context
+simulation, collider mutation or cross-decision cache. A currently clear native footprint earns no new leave
+credit even when registered membership lags; membership/global risk remain native. Read-only diagnostics are
+bounded by actor/area/status and the existing per-fight cap.
+
+22 pure geometry cases and 28 native compiled volume/route checks cover real body versus Corpulence, rotated
+boxes, offsets, boundaries and unsafe data; inherited route/step/Magus/caster/Fusion/provider checks remain.
+Native Unity bounds/physics/navmesh and post-issue movement are not executed offline. Pursuing smoke can still
+recapture an actor; no claim that all repeated exits are fixed. General pursuit, commitment, retreat, swarm
+search, pathfinder and stuck cancellation are unchanged. Final receipt records exact tests/build/scopes.
+
+Checked source `9145404`, [receipt](competence/MOVEMENT_BOUNDS_CHECKS.json) and [exit2 test ZIP](../test-builds/AI-Control-FACC-v0.3.30-dev-exit2-9145404-UMM-test.zip), startup MVID `36d0bc00-2822-419e-a10a-d3a60bd536fa`. 629 unit + 11 inventory tests and native checks pass; actual-reference Release 0 warnings/errors; 17/17 added signatures resolve. Compatible/supplementary audit scopes pass; original full-corpus enum failure remains distinct. Gameplay/matched Unity timing pending.
+
+
+## 144. Exit1 follow-up: friendly treatment coordination (12 November 2026)
+
+[Evidence/replay](FRIENDLY_TREATMENT_COORDINATION.md), [stock fixture provenance](competence/TREATMENT_STOCK_INPUTS.json).
+AI 6722–6737 shows two allies beginning Treat Affliction on Seelah; arcan interrupts before acting. Stock
+2.7.0x data read with the supplied BubblePrints engine confirms LoreReligionUseAbility's skill-check removal,
+daily target marker and recipient-wide inverted native fact checker. The actual Classes archive has these graphs too; Data matches the stock cross-check without adding unique coverage.
+
+The unmodelled friendly dispel fallback now skips its +2 when another actor's same ability/recipient command
+is pending. It reuses CombatMemory's existing mode/identity/completion/expiry lifetime; other choices remain
+eligible, and failed/finished commands release the reservation. Recognized HP healing, modelled effects,
+hostile handling and other recipients are unchanged. No resource, context, actor, movement or global cache
+change; one existing pending lookup after a real eligible removal is found.
+
+Ten checks: four compiled lifetime/routes and six actual user-exported graph/checker checks; stock Data
+agrees independently, without adding unique coverage.
+full unit/native suite and real-reference Release recorded in the receipt. No two-actor clock/command race
+is executed offline. Replay shared RT concurrent treatment, interruption/retry, two different recipients,
+ordinary heals and TB. No claim of two consumed cures or a guaranteed skill-check success.
+
+Checked source `9464c2d`, [receipt](competence/TREATMENT_PENDING_CHECKS.json) and [review2 test ZIP](../test-builds/AI-Control-FACC-v0.3.30-dev-review2-9464c2d-UMM-test.zip), startup MVID `a21cbb58-f176-4d4a-8ec2-cf912910bc3e`. 629 unit + 11 inventory tests and native checks pass; actual-reference Release 0 warnings/errors; 0/0 added signatures resolve. Compatible/supplementary audit scopes pass; original full-corpus enum failure remains distinct. Gameplay/matched Unity timing pending.
+
+
+## 145. Requested Eldritch Archer support (12 November 2026)
+
+[Native design/replay and PR #38 trade-offs](ELDRITCH_ARCHER.md). Starts at review2 / PR #40 `8985e40` over
+fetched development `1f58150`. Drow Magus was explicitly outside C07's melee planner; native ranged features
+now join that bounded four-cast/two-state planner, with the same ownership/settings/lists/restore rules.
+
+Native ranged Spellstrike arms a spell and queues a weapon action. Its first arrow invokes/spends the payload
+even on a miss; the entire simple projectile spell reuses that roll. No first-successful-melee aggregation
+or payload per iterative/Manyshot. Correct bow AC/typed penalty, native extra attack, shared overkill and
+x2 spell critical; physical damage keeps its native multiplier. Actual prepared windows, finite deadlines
+and full/single flags govern continuations. Safe in-place native delivery and cleanup are checked at issue.
+Pending sources are not re-armed; casting over them loses marginal payload value. Arming alone cannot become
+a false no-effect/blacklist verdict. No fake actor, equipment/buff activation or command in forecasts.
+
+25 native exported/scalar/compiled-route checks plus inherited suites; exact receipt records final tests and
+actual-reference build. Standard ordinary simple-ray pairs are modelled; hard control, Fusion, controlled
+projectiles and caster-side combinations retain documented limits/off-state handling. Native Swift remains
+guarded without speculative full-routine credit. Pure Mage and ordinary ranged policies remain. Shared TB/RT
+only; legacy RT, general movement/commitment/retreat/pathfinder/stuck policies are not retuned. Gameplay and
+matched Unity timing pending. The requested Shifter/Ulbrig work is separate.
+
+Checked source `5ddcbca`, [receipt](competence/ELDRITCH_ARCHER_CHECKS.json) and [archer1 test ZIP](../test-builds/AI-Control-FACC-v0.3.30-dev-archer1-5ddcbca-UMM-test.zip), startup MVID `8e6a8470-b08a-41d6-9771-0b995ae18465`. 629 unit + 11 inventory tests and native checks pass; actual-reference Release 0 warnings/errors; 5/5 added signatures resolve. Compatible/supplementary audit scopes pass; original full-corpus enum failure remains distinct. Gameplay/matched Unity timing pending.
+
+## 146. Shifter forms, minor aspects and native Fury (12 November 2026)
+
+[Design/evidence/replay](SHIFTER_SUPPORT.md), [native input identities/contracts](competence/SHIFTER_NATIVE.json).
+Starts at PR #41 `a6c3f53` over fetched development `1f58150`; includes Eldritch Archer and review2 prerequisites.
+The Ulbrig report is v0.3.27, automatic self-buffing probably enabled (unconfirmed), without a scene log/MVID.
+Both stable and current upkeep lack an explicit form exclusion; this repairs an exposed path, not a claimed
+reproduction. Automatic OOC upkeep now excludes transformations; suppressed/current forms prevent new casts.
+
+Major Shifter forms compare core natural attacks and known stat/size/equipment losses against the current
+routine, using native calculation rules without actor/buff/equipment simulation. Absolute size, native dice
+base/override exceptions and PolymorphDamageTransfer are explicit. Known derived stat/HP/save losses count;
+new form facts/proc-only benefits remain uncredited. Existing aspect numeric appraisal, C06 spend timing and
+native group capacity are reused. Existing/player Fury selections remain; when off, four real generated
+weapon/hand choices can compete through native hand/limb counts and secondary/transfer inputs, with fresh
+identity/availability/list/ownership guards and original all-off restoration. No human-body Fury preparation
+pre-empts an already profitable major form. Automatic new forms on caster multiclasses are withheld.
+
+Eight unique form quotes/one existing enemy, four Fury choices, sixteen generated options/thirty-two attacks;
+extreme future BAB credits at most eight extra iteratives. Metadata and duplicate claws reuse reads; live
+transfer facts are decision-local. Ordinary hit memos cannot retain future secondary quotes. Shared TB/RT,
+normal native command/resource execution, no general movement/commitment/retreat/pathfinder/stuck change.
+86 exported form layouts and native/scalar/compiled checks are offline evidence, not all-mod gameplay proof.
+Full checked identities/results follow the source commit; actual Ulbrig/Fury replay and matched Unity timing
+remain pending. Manifest 0.3.30; Claude reviews/integrates, no main/development push, merge or release.
+
+Checked source `f904c39`, [receipt](competence/SHIFTER_CHECKS.json) and [shifter1 test ZIP](../test-builds/AI-Control-FACC-v0.3.30-dev-shifter1-f904c39-UMM-test.zip), startup MVID `875cf339-de55-4d04-89f9-d5235ec7ecbe`. 647 unit + 11 inventory tests and native checks pass; actual-reference Release 0 warnings/errors; 73/73 added signatures resolve. Compatible/supplementary audit scopes pass; original full-corpus enum failure remains distinct. Gameplay/matched Unity timing pending.
+
+## 147. Shifter1 mixed-mode review: read native campaign-flag guards (12 November 2026)
+
+[Broad review/replay and authorized movement follow-up](SHIFTER1_PLAYTEST_REVIEW.md), [input ledger](competence/SHIFTER1_PLAYTEST_INPUTS.json).
+Nine fights / 465 TB+RT action/wait summaries, no logged AI exception, exact shifter1 startup MVID. The author
+reports spawn/rest interventions; do not infer resets from HP/resources alone. Actual level-8 Shifter Wenduag
+never uses her form: AI 428 shows the native FlagUnlocked branch unread; unique-form appraisal is withheld.
+Allow only that exact inspected read-only native predicate. Native Not/value-list logic and frame-scoped
+checks remain, no hard-coded flag value or quest action. Bounded zero/successful form appraisals now expose
+reasons without extra forecasts. 21 native metadata/store/route checks; scene casting remains pending.
+
+Three largest slow rows overlap GC/live-heap drops; form scoring itself is 4.3 ms on the 2008 ms decision.
+Do not present stage snapshots as allocation counts or promise a measured speedup. Scorching Ray's shared
+arrow-roll sampling and an explicitly authorized post-preflight advance fallback are separate follow-ups.
+No movement/commitment/retreat/pathfinder/stuck change in this PR. Full verification/package identities follow
+checked source; manifest 0.3.30, Claude reviews/integrates, no main/development push, merge or release.
+
+Checked source `a58de3e`, [receipt](competence/SHIFTER1_REVIEW_CHECKS.json) and [review3 test ZIP](../test-builds/AI-Control-FACC-v0.3.30-dev-review3-a58de3e-UMM-test.zip), startup MVID `d3873816-d1f0-4bc4-bc80-dc5e5e681a3b`. 647 unit + 11 inventory tests and native checks pass; actual-reference Release 0 warnings/errors; 0/0 added signatures resolve. Compatible/supplementary audit scopes pass; original full-corpus enum failure remains distinct. Gameplay/matched Unity timing pending.
+
+## 148. Shifter1 review: exclude ambiguous Eldritch Archer ray samples
+
+The mixed-mode shifter1 log reports Drow Magus Scorching Ray as 33.5 per hit against 15 estimated (AI 2959).
+Native ranged Spellstrike supplies the first physical arrow's roll to the spell's rays. The observer's roll-identity
+bucket can then merge multiple rays while quoting one projectile. It now withholds those unidentifiable projectile
+Spell samples using the actual EA actor and physical ranged event weapon. Independent ray rolls and spell-like
+kinetic samples retain their paths; defense observation precedes the gate. No spell/weapon value or actual damage
+changes, guessed packet division or learned non-kinetic multiplier. [Evidence and replay](EA_CORRELATED_SAMPLING.md).
+
+Eight unit boundaries and four compiled native-route additions cover identity and observation order. The check adds
+no forecast, scan or path work. Movement fallback is a separate authorized task; gameplay remains pending.
+
+Checked source `3f66960`, [receipt](competence/EA_CORRELATED_SAMPLING_CHECKS.json) and [review4 test ZIP](../test-builds/AI-Control-FACC-v0.3.30-dev-review4-3f66960-UMM-test.zip), startup MVID `b7d068bd-340a-43b7-94fe-f12f51b0c74a`. 655 unit + 11 inventory tests and native checks pass; actual-reference Release 0 warnings/errors; 0/0 added signatures resolve. Compatible/supplementary audit scopes pass; original full-corpus enum failure remains distinct. Gameplay/matched Unity timing pending.
+
+## 149. Shifter1 review: authorized advance fallback after attack-path refusal
+
+Bandit ends R2/R3 idle after three selected approach checks fall short (R2 1.6–1.8 m; R3 0.1–2.8 m;
+AI 1359–1365, 1471–1475).
+A proposed step/full routine had suppressed advances before its native endpoint check; preserving existing plain
+moves could not preserve one never generated. The author explicitly approved the repair on 12 November 2026.
+
+After actual offensive-approach refusal, recover only when no useful main/quick/weak/cantrip action remains.
+Reuse the existing closing policy and real-path risk repricing once, at most three target approaches. A refused
+heal/plain move alone does not open recovery. Existing action/movement/status/Pure Mage gates, genuine RT
+in-place cooldown waiting and native dispatcher hazard/AoO/path validation remain. Three selected preflight checks
+still cap the decision; the new plain move is validated at issue, with no full-decision retry or reused rejected path.
+Useful existing actions win; no safe valuable route may still mean no move. [Evidence, limits and replay](REJECTED_APPROACH_ADVANCE.md).
+
+Offline scheduling and actual native-candidate/status checks cover the bounds, action preservation and compiled
+closing/repricing routes. Game paths, commands and Unity timing remain replay checks. General retreat, commitment,
+pathfinding and stuck-walk cancellation are unchanged.
+
+Checked source `45c3b4d`, [receipt](competence/REJECTED_APPROACH_ADVANCE_CHECKS.json) and [review5 test ZIP](../test-builds/AI-Control-FACC-v0.3.30-dev-review5-45c3b4d-UMM-test.zip), startup MVID `b3359daf-c8e5-4bb6-9245-d6be013a4d15`. 664 unit + 11 inventory tests and native checks pass; actual-reference Release 0 warnings/errors; 0/0 added signatures resolve. Compatible/supplementary audit scopes pass; original full-corpus enum failure remains distinct. Gameplay/matched Unity timing pending.

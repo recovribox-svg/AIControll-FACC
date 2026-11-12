@@ -1,0 +1,21 @@
+{
+  "build_label": "review1",
+  "kind": "development-test",
+  "version": "0.3.30",
+  "source_branch": "codex/exit1-playtest-review",
+  "source_commit": "318b52f8e3ec14ec21d6b2f0c70cc6136a57614b",
+  "starting_commit": "dc5235f8dc8096d4db86ea6bbf819d940328846e",
+  "development_base": "1f58150b8e50f9a322ba0b8d3fcc095fe188420f",
+  "dependency_pr": 37,
+  "dll": {
+    "assembly": "CompanionAI_Pathfinder, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null",
+    "mvid": "ffce03c5-bfe3-414f-b6bd-4a946d673dbf",
+    "sha256": "a0b5842d3ba18bae5cd3ef3858fdc57d590154d379604341b54680b3b507e8e9",
+    "size": 1328640
+  },
+  "manifest_sha256": "d6ee91e78dc5d4981ad51a1a1a85bb1e7fe3f0a87814697f2fd9ee1c20d35594",
+  "checks_receipt": "docs/competence/EXIT1_REVIEW_CHECKS.json",
+  "gameplay_status": "not played",
+  "scope": "Includes exit1/step1/magus1/caster2 prerequisites. Constant/simple numerical debuffs skip redundant native source contexts for the same caster; dynamic amounts keep binding and recipient stats remain live. No movement policy change. Review covers eight fights / 900 summaries; geometry and friendly affliction coordination follow separately.",
+  "release": false
+}

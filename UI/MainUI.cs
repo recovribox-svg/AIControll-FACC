@@ -557,6 +557,16 @@ namespace CompanionAI_Pathfinder.UI
             GUILayout.EndHorizontal();
             GUILayout.Space(5);
             GUILayout.Label($"<color=#D8D8D8><i>{Localization.GetRangeDescription(_editingSettings.RangePreference)}</i></color>", _descriptionStyle);
+            if (_editingSettings.RangePreference == RangePreference.Ranged)
+            {
+                bool pureMage = GUILayout.Toggle(_editingSettings.PureMage, L("PureMage"));
+                if (pureMage != _editingSettings.PureMage)
+                {
+                    _editingSettings.PureMage = pureMage;
+                    ModSettings.Save();
+                }
+                GUILayout.Label($"<color=#D8D8D8><i>{L("PureMageDesc")}</i></color>", _descriptionStyle);
+            }
         }
 
         private static List<CharacterInfo> GetPartyMembers()

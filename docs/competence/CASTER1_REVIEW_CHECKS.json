@@ -1,0 +1,248 @@
+{
+  "task": "Broad caster1 playtest review: native projectile counts, critical heal guard and burn settings",
+  "checked_source_commit": "281c67907df01d93ea210fa998f95222ef820eb6",
+  "source_branch": "codex/caster1-playtest-review",
+  "dependency_pr": 33,
+  "development_base": "1f58150b8e50f9a322ba0b8d3fcc095fe188420f",
+  "version": "0.3.30",
+  "dll": {
+    "assembly": "CompanionAI_Pathfinder, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null",
+    "mvid": "4902d9eb-2d73-4f6e-a9e4-813adba6d7ce",
+    "sha256": "e8a8dffdcb1e75eeb7fc6988dc062cf85ee542135afccee210018ee072dcff49",
+    "size": 1300992
+  },
+  "native_evidence": "CASTER1_REVIEW_NATIVE.json",
+  "design_and_replay": "../CASTER1_PLAYTEST_REVIEW.md",
+  "unit_tests": {
+    "passed": 599,
+    "failed": 0,
+    "skipped": 0
+  },
+  "inventory_tests": {
+    "passed": 11,
+    "failed": 0
+  },
+  "release_build": {
+    "actual_supplied_game_unity_umm_references": true,
+    "warnings": 0,
+    "errors": 0,
+    "source_committed_before_build": true,
+    "manifest_unchanged": true
+  },
+  "native_caster_policy": {
+    "checks": 36,
+    "failures": 0,
+    "old_numeric_and_textual_settings": true,
+    "ordinary_ranged_defaults": true,
+    "suspended_flag_retained": true,
+    "physical_and_compound_melee_admission": true,
+    "actual_touch_and_reach_metadata": true,
+    "native_tb_rt_attack_flags": true,
+    "unknown_custom_riders_withheld": true,
+    "actor_setup_or_command_execution": false
+  },
+  "native_fusion": {
+    "checks": 35,
+    "failures": 0,
+    "actual_payloads_and_delivery": true,
+    "sticky_source_fallback": true,
+    "shared_save_and_evasion_fields": true,
+    "native_spellbook_caps_all_six_levels": true,
+    "configuration_edits_do_not_mutate_snapshots": true,
+    "scoped_chance_identity_and_invalidation": true,
+    "unsupported_structures_named": true,
+    "actor_setup_rulebook_or_command_execution": false
+  },
+  "inactive_policy_microcheck": {
+    "lookups": 10000,
+    "allocated_bytes": 0,
+    "unity_decision_latency_and_performance": "not measured; matched gameplay pending"
+  },
+  "retained_native_checks": {
+    "resistance_memo": {
+      "checks": 18,
+      "failures": 0
+    },
+    "attached": {
+      "checks": 24,
+      "failures": 0
+    },
+    "swarm": {
+      "checks": 27,
+      "failures": 0
+    },
+    "toggle": {
+      "checks": 98,
+      "failures": 0
+    },
+    "tome_burn": {
+      "checks": 14,
+      "failures": 0
+    },
+    "toybox_reader": {
+      "checks": 10,
+      "failures": 0
+    },
+    "reveal_counter": {
+      "checks": 7,
+      "failures": 0
+    },
+    "viewless": {
+      "checks": 6,
+      "failures": 0
+    }
+  },
+  "strict_native_compatible_audit": {
+    "status": "PASS",
+    "exit_code": 0,
+    "scope": "C06_NATIVE_COMPATIBLE_SCOPE.json",
+    "source_files": 44647,
+    "loaded_unique": 44637,
+    "failed": 0,
+    "allowed_load_failures": 0,
+    "ability_rows": 4807,
+    "reader_errors": 0,
+    "input_bytes_modified": false
+  },
+  "original_full_corpus_audit": {
+    "status": "INCOMPLETE",
+    "exit_code": 1,
+    "source_files": 44648,
+    "loaded_unique": 44637,
+    "failed": 1,
+    "allowed_load_failures": 0,
+    "ability_verdicts_generated": false,
+    "failure": "Previously fingerprinted AchaekekSacredWeaponFeature SawtoothSaber vs native SawtoothSabre enum mismatch; parser error logging reaches offline engine dependency",
+    "input_sha256": "1fd534ef0fc9573520d101c721e5d2721812fdb5b8f8a13e29fcbc3acb06ac0f",
+    "input_bytes_modified": false
+  },
+  "added_foreign_member_references": {
+    "baseline": "caster1 source d184c8e / packaging f278114",
+    "added": 5,
+    "resolved_exact": 5,
+    "unresolved": 0,
+    "scopes": {
+      "Assembly-CSharp": 5
+    },
+    "full_signature_overload_matching": true,
+    "closed_generic_owner_checked": true
+  },
+  "harness_limits": [
+    "Private runnable copies neutralize Unity/localization/instrumentation including ProfileScope.New; no stubs are deployed.",
+    "Native HasMetamagic metadata logic remains; no live rod, hit/save outcome, actor initialization or navigation is established.",
+    "Native command fixtures only set/read flags on uninitialized objects; no command is issued.",
+    "Provider fixtures do not call mod setup, getter or condition code."
+  ],
+  "behavior_limits": [
+    "General movement, commitment, retreat, paths and stuck cancellation are unchanged; the movement findings are a proposal.",
+    "Magus automation/held-charge continuation remains the separate C07 task.",
+    "Reported tooltip origin and hidden final-enemy reveal remain unverified; Profane Invocation/fusion gameplay is unexercised.",
+    "Damage checks group ordinary independent rays by actual attack-roll identity. Shared-roll exotic delivery and native scene outcomes require gameplay validation."
+  ],
+  "gameplay": {
+    "status": "PENDING",
+    "tb_rt_playtest_required": true,
+    "matched_unity_performance_required": true
+  },
+  "task_source_files": [
+    {
+      "file": "Tactics/AbilityProfile.cs",
+      "sha256": "97001f550f6aa48a19ad926b512f474acaa105bc34d43eb7346c77647ce09d5b"
+    },
+    {
+      "file": "Tactics/CombatMath.Projectiles.cs",
+      "sha256": "944f31c95a6190787848d1893c560b5b1d19a22c8c43ce9267c1aa2579001dc1"
+    },
+    {
+      "file": "Tactics/CombatMath.cs",
+      "sha256": "d78252918c1176e92329655ebffb28369d96d81fb745e9ea1940e4982a6d0372"
+    },
+    {
+      "file": "Tactics/DamageObserver.cs",
+      "sha256": "56fa9aefccb2fbfdf09c4cd0e7dd0cbed35438cbd225695959e7a56e391f1052"
+    },
+    {
+      "file": "Tactics/ModdedBurnProperties.cs",
+      "sha256": "18478adff8cddd9bc18ce2bbe2e2ebee2971960efe98e73f0139b1b77bc924fd"
+    },
+    {
+      "file": "Tactics/TacticalEngine.BurnConsequences.cs",
+      "sha256": "280ed9b525f3895c844a4a1d2e76506330fa5206ae8d8624813103ecba78f77d"
+    },
+    {
+      "file": "Tactics/TacticalEngine.PureMage.cs",
+      "sha256": "d63b91907a73161c56cc42bed5265ed625d3d84b596654b86f7cf9e35c52285c"
+    },
+    {
+      "file": "Tactics/TacticalEngine.cs",
+      "sha256": "badc83e88d9737c2a85e8bfc5bb4d499204fd6d69b95c16cf3cb4187956c42a4"
+    },
+    {
+      "file": "tools/ProfileAudit/BurnConsequenceCheck.cs",
+      "sha256": "700e1f15cd76a69dec129470f9ae674fab77127b9962886c00ff090b811bc384"
+    },
+    {
+      "file": "tools/ProfileAudit/CasterPolicyCheck.cs",
+      "sha256": "f42c0c6733a149b3ced47d81ba8a84468d03fac71279a504769f0498a1c97090"
+    },
+    {
+      "file": "tools/ProfileAudit/Program.cs",
+      "sha256": "14da798f600b823a8a0c7a95477b5a3eccccdd42874fda5922a4e835bc39f168"
+    },
+    {
+      "file": "tools/ProfileAudit/ProjectileCheck.cs",
+      "sha256": "40ba44a4b883fe81fb8e53a9336268dde6c42037090f33ddd193cd94e34f7270"
+    },
+    {
+      "file": "tools/ProfileAudit/SaveBoostCheck.cs",
+      "sha256": "a382a2603e904b8c482d3f2e6c75af0278e084c037afe8d30137ff2702c30c72"
+    }
+  ],
+  "package": {
+    "file": "test-builds/AI-Control-FACC-v0.3.30-dev-caster2-281c679-UMM-test.zip",
+    "sha256": "205e4d42476bb4ba066c552f8b355cf987e16ab65ae7f716b22808a9dfb1619d",
+    "bytes": 515032,
+    "identity_file": "test-builds/AI-Control-FACC-v0.3.30-dev-caster2-281c679-UMM-test.identity.json",
+    "checksum_file": "test-builds/AI-Control-FACC-v0.3.30-dev-caster2-281c679-UMM-test.sha256",
+    "members": [
+      {
+        "file": "CompanionAI_Pathfinder/CompanionAI_Pathfinder.dll",
+        "bytes": 1300992,
+        "sha256": "e8a8dffdcb1e75eeb7fc6988dc062cf85ee542135afccee210018ee072dcff49"
+      },
+      {
+        "file": "CompanionAI_Pathfinder/Info.json",
+        "bytes": 379,
+        "sha256": "d6ee91e78dc5d4981ad51a1a1a85bb1e7fe3f0a87814697f2fd9ee1c20d35594"
+      },
+      {
+        "file": "CompanionAI_Pathfinder/BUILD_IDENTITY.json",
+        "bytes": 1040,
+        "sha256": "bc03b4f6586f3e24baf7fd46edf9fa659088b59ef5f58808a4483bdb091d71a6"
+      },
+      {
+        "file": "CompanionAI_Pathfinder/TEST_BUILD.txt",
+        "bytes": 503,
+        "sha256": "fd1c5e76c2a710243a732c08ceca26f5507db85106a110f00d905f0ccfdb3087"
+      }
+    ]
+  },
+  "workflow": {
+    "no_main_or_development_push": true,
+    "no_merge": true,
+    "no_release": true,
+    "claude_reviews_and_integrates": true
+  },
+  "starting_caster1_commit": "f278114f7cce873c7ac8c547e13e86f1ad7dfca6",
+  "native_projectiles": {
+    "checks": 29,
+    "failures": 0,
+    "actual_arrays_and_native_progression": true,
+    "actor_or_cast_execution": false
+  },
+  "native_burn_consequences": {
+    "checks": 50,
+    "failures": 0,
+    "new_settings_cases": 8
+  }
+}

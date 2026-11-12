@@ -7,6 +7,31 @@ namespace CompanionAI.Tests
     public class DrainTests
     {
         [Fact]
+        public void AccumulatedNegativeLevelsLeaveOnlyTheRemainingNativeDeathLimit()
+        {
+            Assert.Equal(4, ValueModel.LevelsBeforeDrainDeath(4, 0));
+            Assert.Equal(2, ValueModel.LevelsBeforeDrainDeath(4, 2));
+            Assert.Equal(1, ValueModel.LevelsBeforeDrainDeath(20, 19));
+            Assert.Equal(0, ValueModel.LevelsBeforeDrainDeath(4, 5));
+            Assert.Equal(40f, ValueModel.EnergyDrainEquivalent(1, ValueModel.LevelsBeforeDrainDeath(20, 19), 40));
+            Assert.True(ValueModel.EnergyDrainEquivalent(1, ValueModel.LevelsBeforeDrainDeath(4, 2), 40) >
+                        ValueModel.EnergyDrainEquivalent(1, ValueModel.LevelsBeforeDrainDeath(4, 0), 40));
+        }
+
+        [Fact]
+        public void DrainingSourcesKeepTheirReadHarmInTheRemovalValueAfterTheCrShareCap()
+        {
+            // Logged Ghoul Huntmaster: 155.9 of its 168.1 estimate is beyond hit points, while Share was capped at x2.
+            float ordinary = 12 * 2;
+            Assert.Equal(155.9f, ValueModel.NonHitPointRemovalWorth(ordinary, 155.9f, false));
+            Assert.Equal(ordinary, ValueModel.NonHitPointRemovalWorth(ordinary, 0, false));
+            Assert.Equal(155.9f * 0.25f, ValueModel.NonHitPointRemovalWorth(ordinary * 0.25f, 155.9f, true));
+            Assert.True(ValueModel.DamageValue(10, 100, ValueModel.NonHitPointRemovalWorth(ordinary, 155.9f, false), 0) >
+                        ValueModel.DamageValue(10, 100, ordinary, 0));
+            Assert.Equal(ordinary, ValueModel.NonHitPointRemovalWorth(ordinary, 1, false));
+        }
+
+        [Fact]
         public void AbilityDamage_IsTheScoreShareOfTheHitPointsLeft() =>
             // A Shadow's 1d6 Strength on a 16-Strength target with 30 hit points left.
             Assert.Equal(3.5f / 16f * 30f, ValueModel.AbilityDamageEquivalent(3.5f, 16, 30f), 3);

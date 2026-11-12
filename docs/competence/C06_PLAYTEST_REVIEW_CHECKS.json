@@ -1,0 +1,83 @@
+{
+  "task": "playtest-diagnostics",
+  "checked_source_commit": "aa8e5e23a2a123586c7348434b0d61e12ca2291f",
+  "starting_commit": "ab810b364ff2f78243b123e42cde46374914056f",
+  "development_base": "1f58150b8e50f9a322ba0b8d3fcc095fe188420f",
+  "dependency_pr": 22,
+  "version": "0.3.30",
+  "reported_game_version": "Steam 2.7.0x (author report; not independently read from installation)",
+  "played_baseline_mvid": "641ff828-00b6-46aa-9f92-3748fae7f2f6",
+  "dll": {
+    "assembly": "CompanionAI_Pathfinder, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null",
+    "mvid": "91c7e6d1-d4df-4524-8683-228ee22850d8",
+    "sha256": "8cdccc190f28a3be4108f0bb41c44a6e7bd13fb373fd986be0aef260520f7719",
+    "size": 1244160
+  },
+  "unit_tests": {
+    "passed": 547,
+    "failed": 0,
+    "skipped": 0
+  },
+  "release_build": {
+    "references": "actual supplied native assemblies and UMM; existing Harmony 2.2.2 compile dependency",
+    "warnings": 0,
+    "errors": 0
+  },
+  "strict_native_compatible_audit": {
+    "status": "PASS",
+    "exit_code": 0,
+    "source_files": 44647,
+    "loaded_unique": 44637,
+    "failed": 0,
+    "allowed_load_failures": 0,
+    "ability_rows": 4807,
+    "reader_errors": 0,
+    "scope": "C06_NATIVE_COMPATIBLE_SCOPE.json",
+    "input_bytes_modified": false
+  },
+  "original_full_corpus": {
+    "source_files": 44648,
+    "strict_status": "INCOMPLETE",
+    "loaded_unique": 44637,
+    "failed": 1,
+    "strict_ability_verdicts": false,
+    "prior_diagnostic_status": "PARTIAL",
+    "reason": "One separately fingerprinted enum spelling mismatch; unchanged malformed input is not silently normalized or treated as a passing full-corpus audit."
+  },
+  "native_toggle_checks": {
+    "checks": 90,
+    "failures": 0,
+    "progression_shaped_kits": 6,
+    "judgment_graphs": 15,
+    "actor_setup": false,
+    "native_commands": false
+  },
+  "signature_check": {
+    "baseline_mvid": "641ff828-00b6-46aa-9f92-3748fae7f2f6",
+    "added_member_refs": 0,
+    "resolved_added_refs": 0,
+    "details": [
+      "VERIFIED_COUNT 0 EXPECTED 0"
+    ]
+  },
+  "native_assembly": {
+    "mvid": "90a9869c-2792-4c7b-bfb7-5a8b33da7c82",
+    "sha256": "2cb7160b7154d4ffacc77b9c51b1eb26199e1294300f04fdfc073367b2ef8953"
+  },
+  "source_identities": [
+    {
+      "file": "Tactics/CombatMath.SwarmDiagnostics.cs",
+      "sha256": "735ce1c70be77a8816becbc62fd96594a30860ebe8e61e48a01efbc02e5cd87d"
+    },
+    {
+      "file": "Tactics/EnemyThreat.cs",
+      "sha256": "935dd01b4fbd730565041164306eca94ec31b5c0bf4f70495925598885a41532"
+    }
+  ],
+  "limits": [
+    "No author gameplay test of this candidate yet.",
+    "Offline scratch dependencies are rewritten only as documented by ProfileAudit; they are never deployable.",
+    "No matched Unity performance/allocation measurement or full mod/actor initialization certificate.",
+    "Movement, commitment, retreat, pathfinding and cancellation changes remain subject to explicit author approval."
+  ]
+}

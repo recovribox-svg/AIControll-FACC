@@ -1,0 +1,204 @@
+{
+  "task": "C06R1 combined playtest candidate",
+  "checked_source_commit": "a19fb54cc4f3a2a5a34d3b7be890873c1c1b933d",
+  "source_branch": "codex/c06-playtest-candidate",
+  "starting_played_c06": "ab810b364ff2f78243b123e42cde46374914056f",
+  "development_base": "1f58150b8e50f9a322ba0b8d3fcc095fe188420f",
+  "focused_prs": [
+    {
+      "pr": 23,
+      "branch": "codex/c06-native-query-guards",
+      "head": "57968e148c537fc33e12644125d842f47f4a3308"
+    },
+    {
+      "pr": 24,
+      "branch": "codex/c06-psionics-cost-scope",
+      "head": "f6ded4372a74e65df7b8d6015dc5e068620d8404"
+    },
+    {
+      "pr": 25,
+      "branch": "codex/c06-tome-burn-property",
+      "head": "5488befde9a0297428843bad897f335314647871"
+    },
+    {
+      "pr": 26,
+      "branch": "codex/c06-drain-threats",
+      "head": "35af879a72506791b160943d056cc06be2f674b5"
+    },
+    {
+      "pr": 27,
+      "branch": "codex/c06-playtest-review",
+      "head": "bd3c5bfa4e55e8018f378ca6d2864529bf8775c0"
+    }
+  ],
+  "reported_game_version": "Steam 2.7.0x (author report)",
+  "version": "0.3.30",
+  "dll": {
+    "assembly": "CompanionAI_Pathfinder, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null",
+    "mvid": "1a2a9e3e-dd56-4849-b49e-7144ad3b7ed5",
+    "sha256": "68064c906e159a5bcb117750e6a72ea0118811d09a0f919a94d4c73eaf899c2f",
+    "size": 1250816
+  },
+  "unit_tests": {
+    "passed": 551,
+    "failed": 0,
+    "skipped": 0
+  },
+  "inventory_tests": {
+    "passed": 11,
+    "failed": 0
+  },
+  "release_build": {
+    "real_game_and_umm_references": true,
+    "warnings": 0,
+    "errors": 0,
+    "source_committed_before_build": true
+  },
+  "strict_native_compatible_audit": {
+    "status": "PASS",
+    "exit_code": 0,
+    "scope": "C06_NATIVE_COMPATIBLE_SCOPE.json",
+    "source_files": 44647,
+    "loaded_unique": 44637,
+    "failed": 0,
+    "allowed_load_failures": 0,
+    "ability_rows": 4807,
+    "reader_errors": 0,
+    "input_bytes_modified": false
+  },
+  "original_full_corpus_audit": {
+    "status": "INCOMPLETE",
+    "exit_code": 1,
+    "source_files": 44648,
+    "loaded_unique": 44637,
+    "failed": 1,
+    "allowed_load_failures": 0,
+    "ability_verdicts_generated": false,
+    "failure": "AchaekekSacredWeaponFeature: SawtoothSaber enum spelling vs native SawtoothSabre; native parser logging reaches offline Unity ECall",
+    "excluded_input_sha256": "1fd534ef0fc9573520d101c721e5d2721812fdb5b8f8a13e29fcbc3acb06ac0f"
+  },
+  "native_toggle_checks": {
+    "checks": 98,
+    "failures": 0,
+    "progression_shaped_kits": 6,
+    "judgment_graphs": 15,
+    "psionics_scope_checks": 8,
+    "actor_setup": false,
+    "harmony_wrapper_application": false,
+    "native_commands": false
+  },
+  "native_view_checks": {
+    "checks": 6,
+    "failures": 0,
+    "exact_played_c06_before_failures": 6,
+    "scratch_frame_clock": 0,
+    "live_actor_or_frame_invalidation_tested": false
+  },
+  "tome_burn_checks": {
+    "checks": 14,
+    "failures": 0,
+    "actual_provider_layouts": true,
+    "ownership_cases": [
+      false,
+      true
+    ],
+    "mod_getter_condition_factory_executed": false
+  },
+  "signature_check": {
+    "baseline_mvid": "641ff828-00b6-46aa-9f92-3748fae7f2f6",
+    "added_member_refs": 2,
+    "resolved_added_refs": 2,
+    "details": [
+      "VERIFIED System.Int32 Kingmaker.UnitLogic.Parts.UnitPartNegativeLevels::get_Count()",
+      "VERIFIED T Kingmaker.Blueprints.BlueprintReference`1::Get()",
+      "VERIFIED_COUNT 2 EXPECTED 2"
+    ]
+  },
+  "native_assembly": {
+    "mvid": "90a9869c-2792-4c7b-bfb7-5a8b33da7c82",
+    "sha256": "2cb7160b7154d4ffacc77b9c51b1eb26199e1294300f04fdfc073367b2ef8953"
+  },
+  "gameplay": "pending",
+  "unity_latency_and_allocations": "not measured on candidate",
+  "movement_policy": "unchanged; swarm changes are proposal only and require author approval",
+  "c07": "Melee Magus present; held-charge command/action/range/pricing repair remains separate.",
+  "limits": [
+    "No full mod/actor initialization or successful native outcome certificate.",
+    "No raw logs, native/provider assemblies, decompiled sources or rewritten scratch dependencies are committed/packaged.",
+    "Standalone focused receipts describe their own DLLs; this receipt identifies the combined DLL."
+  ],
+  "source_identities": [
+    {
+      "file": "Tactics/CombatMath.Afflictions.cs",
+      "sha256": "fb831e29b545262b3fb37bc7963eec0721c74dc7f4bdc036091ffa87f6fec62a"
+    },
+    {
+      "file": "Tactics/CombatMath.Drain.cs",
+      "sha256": "a40a7d04e9a6fb61bd262a4d1793b443f79911ed752bb587b7bb1599e408a310"
+    },
+    {
+      "file": "Tactics/CombatMath.SwarmDiagnostics.cs",
+      "sha256": "735ce1c70be77a8816becbc62fd96594a30860ebe8e61e48a01efbc02e5cd87d"
+    },
+    {
+      "file": "Tactics/CombatMath.cs",
+      "sha256": "49ff08e9f348c78e55d12babf4f6481cd0657b537ea0a83c40e6e4ea3a4f42fc"
+    },
+    {
+      "file": "Tactics/EnemyThreat.cs",
+      "sha256": "501ef193a71a38e957e7de99b75396364216a8ac0b7810fec87bc093c5812f75"
+    },
+    {
+      "file": "Tactics/ModdedBurnProperties.cs",
+      "sha256": "c5f5794fa33a918e3aa7bf4e70bedf6c3574e67b1b394f8fcb1bec70e9cb2673"
+    },
+    {
+      "file": "Tactics/TacticalEngine.BurnConsequences.cs",
+      "sha256": "9e54b9a65d948b2647b1910d004b75c5e7f48a26dd4aa46315e0a4dad7db9d66"
+    },
+    {
+      "file": "Tactics/TacticalEngine.Toggles.cs",
+      "sha256": "bf73cf07a589baec7a89ffdac0e67e6959e441eab8f4ef3df7114f5bf03706e3"
+    },
+    {
+      "file": "Tactics/ValueModel.BurnConsequences.cs",
+      "sha256": "8d26bf0d96e35b5ea7a3a0ca7289012c3c7975aa9b9ea2fd1bcbb3c19d2ecec4"
+    },
+    {
+      "file": "Tactics/ValueModel.Drain.cs",
+      "sha256": "349eb99c71d1e2b338cbb153b62e2bfd3e1f143a7e3c2f06ab186e8789862347"
+    },
+    {
+      "file": "tests/CompanionAI.Tests/DrainTests.cs",
+      "sha256": "7d87af3597c1fe544660c0f245bca0d46c5690308e3a7895fe82c3b27d70c080"
+    },
+    {
+      "file": "tests/CompanionAI.Tests/TomeBurnTests.cs",
+      "sha256": "15bae0bcb9589c4289f6ab587b8678896a7a778d2ec97e0653ca9e8d1b69cfb7"
+    },
+    {
+      "file": "tests/ToggleCosts.Native/Program.cs",
+      "sha256": "8b7262745c8bc707a0a6f57c42906c73cd1a9afce46d21c55e63376c8c410fe1"
+    },
+    {
+      "file": "tests/TomeBurn.Native/Program.cs",
+      "sha256": "d4652c9d7b8eb2fc61e6740c28e1120d8d7bef8dc489060909d1c9469e6d5a47"
+    },
+    {
+      "file": "tests/TomeBurn.Native/TomeBurn.Native.csproj",
+      "sha256": "e0321cc912a8468e11e85bed76a9f6ffdb6b51e40e2e1aaf2eb4e201b7c95bae"
+    },
+    {
+      "file": "tools/ProfileAudit/NativeViewCheck.cs",
+      "sha256": "5c3f5735af5bc3ba62c3f3093b4d4cbc573c8dde2b5e5dcbeb321521cbb7fd94"
+    },
+    {
+      "file": "tools/ProfileAudit/Program.cs",
+      "sha256": "75738b8755609c008091b8508ccdb2570c75ee21a89d652d3528654d50e3da7d"
+    },
+    {
+      "file": "tools/ProfileAudit/run.sh",
+      "sha256": "323fb98b63dfbba5812b6ea6241825f968e4a32b438c32013c644419b0a73943"
+    }
+  ]
+}

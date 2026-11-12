@@ -1,0 +1,21 @@
+{
+  "build_label": "review3",
+  "kind": "development-test",
+  "version": "0.3.30",
+  "source_branch": "codex/shifter1-playtest-review",
+  "source_commit": "a58de3e617df38931a62cd5befe1c904ba29a4cf",
+  "starting_commit": "20137ba3b75f1eb539d4111982991cff0b1a4502",
+  "development_base": "1f58150b8e50f9a322ba0b8d3fcc095fe188420f",
+  "dependency_pr": 42,
+  "dll": {
+    "assembly": "CompanionAI_Pathfinder, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null",
+    "mvid": "d3873816-d1f0-4bc4-bc80-dc5e5e681a3b",
+    "sha256": "6432822ba93f3d5c3a55ad79c00d94fc4e4da2031fac341962012a54f80ecc73",
+    "size": 1360896
+  },
+  "manifest_sha256": "d6ee91e78dc5d4981ad51a1a1a85bb1e7fe3f0a87814697f2fd9ee1c20d35594",
+  "checks_receipt": "docs/competence/SHIFTER1_REVIEW_CHECKS.json",
+  "gameplay_status": "not played",
+  "scope": "Cumulative shifter1/EA prerequisites. Exact native read-only FlagUnlocked conditions enter the existing guard allowlist, allowing the actual Griffon form branch to be appraised. Bounded one-row-per-ability/unit/fight form reasons include zero quotes. Broad nine-fight review distinguishes spawn/rest/GC/native failures. Ranged sampling and explicitly authorized movement fallback are separate follow-ups; no movement change in this task.",
+  "release": false
+}

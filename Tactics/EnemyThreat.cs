@@ -165,6 +165,11 @@ namespace CompanionAI_Pathfinder.Tactics
         public static float Share(UnitEntityData enemy) =>
             enemy != null && Assessed.TryGetValue(enemy.UniqueId, out var a) ? a.Share : 1f;
 
+        /// <summary>The already assessed harm beyond HP (scores, negative levels, on-hit control), kept out of
+        /// observed HP calibration. A dictionary lookup only; unknown/unread sources add no removal floor.</summary>
+        internal static float NonHitPointHarm(UnitEntityData enemy) =>
+            enemy != null && Assessed.TryGetValue(enemy.UniqueId, out var a) ? a.AbilityDamage : 0f;
+
         /// <summary>
         /// What taking this enemy down or holding it gains from the ally it may drop this round (1..1.5): the chance that
         /// ally drops to its offence (scaled like all predicted damage by the fight's danger calibration) while within its
@@ -311,6 +316,19 @@ namespace CompanionAI_Pathfinder.Tactics
                         a.AbilityStat = "swarm: " + DescribeAffliction(swarm);
                     }
                     a.Weapon += a.AbilityDamage;
+                    // Some native swarm casts have EffectOnEnemy=None. Read their verified delivery/damage contract,
+                    // rather than losing that Standard action to the generic harmful-label filter. It competes with
+                    // the weapon/aura action; it is never added as a second cast or a fictitious periodic tick.
+                    var cast = CombatMath.SwarmSpaceOf(enemy)?.Cast;
+                    if (cast != null)
+                    {
+                        var harm = cast.Consequence(victim);
+                        if (harm.Harm > a.Weapon)
+                        {
+                            a.Weapon = harm.Harm; a.AbilityDamage = harm.Extra;
+                            a.AbilityStat = "native swarm cast " + cast.Ability.Blueprint.name;
+                        }
+                    }
                     a.Spell = BestAbility(enemy, victim, party, usable, out a.SpellName, out a.EnergyType, out a.EnergyDamage,
                         out a.EnergyPerCast);
                 }
@@ -327,6 +345,7 @@ namespace CompanionAI_Pathfinder.Tactics
             // deals none, and its prediction would wear away with every round it drained Strength).
             a.Offence = Math.Max(Math.Max(a.Spell, a.Heal),
                 ValueModel.ObservedOffence(dealt, rounds, a.Weapon - a.AbilityDamage) + a.AbilityDamage);
+            CombatMath.NoteSwarmCoverage(enemy);
         }
 
         /// <summary>

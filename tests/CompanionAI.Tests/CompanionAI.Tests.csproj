@@ -19,7 +19,13 @@
     <Compile Include="..\..\Tactics\ValueModel.Drain.cs" Link="ValueModel.Drain.cs" />
     <Compile Include="..\..\Tactics\ValueModel.Reach.cs" Link="ValueModel.Reach.cs" />
     <Compile Include="..\..\Tactics\ValueModel.Swarm.cs" Link="ValueModel.Swarm.cs" />
+    <Compile Include="..\..\Tactics\ValueModel.Reveal.cs" Link="ValueModel.Reveal.cs" />
+    <Compile Include="..\..\Tactics\ValueModel.Periodic.cs" Link="ValueModel.Periodic.cs" />
+    <Compile Include="..\..\Tactics\ReferenceReadMemo.cs" Link="ReferenceReadMemo.cs" />
+    <Compile Include="..\..\Tactics\SwarmGeometry.cs" Link="SwarmGeometry.cs" />
+    <Compile Include="..\..\Analysis\AreaExitGeometry.cs" Link="AreaExitGeometry.cs" />
     <Compile Include="..\..\Tactics\ValueModel.Resources.cs" Link="ValueModel.Resources.cs" />
+    <Compile Include="..\..\Tactics\ValueModel.Toggles.cs" Link="ValueModel.Toggles.cs" />
     <Compile Include="..\..\Tactics\ValueModel.Kinetic.cs" Link="ValueModel.Kinetic.cs" />
     <Compile Include="..\..\Tactics\ValueModel.Attacks.cs" Link="ValueModel.Attacks.cs" />
     <Compile Include="..\..\Tactics\ValueModel.Summons.cs" Link="ValueModel.Summons.cs" />
@@ -40,6 +46,8 @@
     <Compile Include="..\..\Tactics\RealTimePacing.cs" Link="RealTimePacing.cs" />
     <Compile Include="..\..\Tactics\WrathHandoff.cs" Link="WrathHandoff.cs" />
     <Compile Include="..\..\Tactics\ObserverRules.cs" Link="ObserverRules.cs" />
+    <Compile Include="..\..\Tactics\MagusChargeChance.cs" Link="MagusChargeChance.cs" />
+    <Compile Include="..\..\Tactics\ShifterRules.cs" Link="ShifterRules.cs" />
     <Compile Include="..\..\Tactics\OptionalApiBinding.cs" Link="OptionalApiBinding.cs" />
     <Compile Include="..\..\Tactics\UserAbilityRules.cs" Link="UserAbilityRules.cs" />
     <Compile Include="..\..\Tactics\HiddenRules.cs" Link="HiddenRules.cs" />

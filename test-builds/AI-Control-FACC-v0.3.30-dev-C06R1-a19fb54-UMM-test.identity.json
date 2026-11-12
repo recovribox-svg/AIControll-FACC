@@ -1,0 +1,35 @@
+{
+  "source_commit": "a19fb54cc4f3a2a5a34d3b7be890873c1c1b933d",
+  "source_branch": "codex/c06-playtest-candidate",
+  "starting_development": "1f58150b8e50f9a322ba0b8d3fcc095fe188420f",
+  "supersedes_played_mvid": "641ff828-00b6-46aa-9f92-3748fae7f2f6",
+  "label": "C06R1",
+  "version": "0.3.30",
+  "dll": {
+    "assembly": "CompanionAI_Pathfinder, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null",
+    "mvid": "1a2a9e3e-dd56-4849-b49e-7144ad3b7ed5",
+    "sha256": "68064c906e159a5bcb117750e6a72ea0118811d09a0f919a94d4c73eaf899c2f",
+    "size": 1250816
+  },
+  "zip": {
+    "file": "AI-Control-FACC-v0.3.30-dev-C06R1-a19fb54-UMM-test.zip",
+    "sha256": "4c365d16cd074ab7b4223c34f0ffb664bf27e50e743b5717a3d4f85ccedff406",
+    "size": 490992
+  },
+  "info_sha256": "d6ee91e78dc5d4981ad51a1a1a85bb1e7fe3f0a87814697f2fd9ee1c20d35594",
+  "package_members": [
+    "CompanionAI_Pathfinder.dll",
+    "Info.json"
+  ],
+  "build_byte_check": true,
+  "verification_receipt": "docs/competence/C06_COMBINED_CHECKS.json",
+  "unit_tests_passed": 551,
+  "inventory_tests_passed": 11,
+  "native_toggle_checks_passed": 98,
+  "tome_provider_checks_passed": 14,
+  "native_view_checks_passed": 6,
+  "strict_audit": "PASS on explicitly native-compatible scope; full original corpus INCOMPLETE (one fingerprinted enum mismatch)",
+  "gameplay": "pending",
+  "unity_performance": "pending",
+  "swarm_movement": "proposal only; unchanged in this candidate"
+}

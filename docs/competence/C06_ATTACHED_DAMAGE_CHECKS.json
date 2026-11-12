@@ -1,0 +1,244 @@
+{
+  "task": "Author-approved attached damage / C06R4",
+  "checked_source_commit": "736358a86094e95b27fe90d13c296f5bee279327",
+  "source_branch": "codex/c06-attached-damage",
+  "starting_c06r3_commit": "b17959773efe9c5247287a37dc7cc8505a3823c0",
+  "dependency_pr": 30,
+  "development_base": "1f58150b8e50f9a322ba0b8d3fcc095fe188420f",
+  "approval": "Author approved the attached-damage proposal in chat on 10 November 2026. Existing movement/commitment/retreat/path/dispatch/cancellation policies remain in place.",
+  "version": "0.3.30",
+  "dll": {
+    "assembly": "CompanionAI_Pathfinder, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null",
+    "mvid": "3705efbc-ad31-48e0-a8b7-c01ea9654b1d",
+    "sha256": "0ad2f91a01270af6c643fd6a8b0a1e02deb4e475070b99cb1c5ab2c979d80ba1",
+    "size": 1278976
+  },
+  "native_evidence": "docs/C06_ATTACHED_DAMAGE_NATIVE.json",
+  "gameplay_input_evidence": "docs/C06R2_PLAYTEST_INPUTS.json",
+  "unit_tests": {
+    "passed": 588,
+    "failed": 0,
+    "skipped": 0,
+    "new_periodic_cases": 30
+  },
+  "inventory_tests": {
+    "passed": 11,
+    "failed": 0
+  },
+  "release_build": {
+    "actual_game_and_umm_references": true,
+    "warnings": 0,
+    "errors": 0,
+    "source_committed_before_build": true
+  },
+  "strict_native_compatible_audit": {
+    "status": "PASS",
+    "exit_code": 0,
+    "scope": "C06_NATIVE_COMPATIBLE_SCOPE.json",
+    "source_files": 44647,
+    "loaded_unique": 44637,
+    "failed": 0,
+    "allowed_load_failures": 0,
+    "ability_rows": 4807,
+    "reader_errors": 0,
+    "input_bytes_modified": false
+  },
+  "original_full_corpus_audit": {
+    "status": "INCOMPLETE",
+    "exit_code": 1,
+    "source_files": 44648,
+    "loaded_unique": 44637,
+    "failed": 1,
+    "allowed_load_failures": 0,
+    "ability_verdicts_generated": false,
+    "failure": "AchaekekSacredWeaponFeature: SawtoothSaber string vs native SawtoothSabre enum; failed parser logging reaches offline Unity ECall",
+    "input_sha256": "1fd534ef0fc9573520d101c721e5d2721812fdb5b8f8a13e29fcbc3acb06ac0f",
+    "input_bytes_modified": false,
+    "harness": "same byte-verified prepared ProfileAudit harness, run with the fourteen original roots"
+  },
+  "native_attached_checks": {
+    "checks": 24,
+    "failures": 0,
+    "actual_cling_and_secondary_disease_graphs": true,
+    "native_schedule_equal_time_expiry": true,
+    "saved_and_nested_save_weights": true,
+    "existing_poison_runtime_data": true,
+    "missing_data_created": false,
+    "shared_spatial_unknown_contracts_rejected": true,
+    "subsecond_cadence_rejected": true,
+    "actor_setup": false,
+    "native_save_damage_or_command_execution": false
+  },
+  "warm_cache_performance": {
+    "lookups": 10000,
+    "allocated_bytes": 0,
+    "same_recipient_snapshot_reused": true,
+    "source_queries_in_spot_loop": 0,
+    "whole_decision_unity_latency_and_allocations": "pending matched gameplay; no frame-time speedup claimed"
+  },
+  "retained_checks": {
+    "reveal_counter": {
+      "checks": 7,
+      "failures": 0
+    },
+    "toybox_reader": {
+      "checks": 10,
+      "failures": 0
+    },
+    "swarm": {
+      "checks": 27,
+      "failures": 0
+    },
+    "toggle": {
+      "checks": 98,
+      "failures": 0,
+      "progression_shaped_kits": 6
+    },
+    "tome_burn": {
+      "checks": 14,
+      "failures": 0
+    },
+    "viewless": {
+      "checks": 6,
+      "failures": 0
+    }
+  },
+  "signature_check": {
+    "baseline_mvid": "8af1ad59-23ff-429e-9a1a-55033bb86e0a",
+    "added_member_refs": 26,
+    "resolved_added_refs": 26,
+    "details": [
+      "VERIFIED System.Boolean Kingmaker.EntitySystem.EntityFact::get_IsEnabled()",
+      "VERIFIED System.Boolean Kingmaker.UnitLogic.Buffs.Buff::get_IsSuppressed()",
+      "VERIFIED System.Boolean Kingmaker.RuleSystem.Rules.Damage.RuleDealDamage::get_IsDot()",
+      "VERIFIED System.Boolean Kingmaker.Designers.Mechanics.Buffs.BuffPoisonStatDamage::NoEffectOnFirstTick",
+      "VERIFIED System.Int32 Kingmaker.Designers.Mechanics.Buffs.BuffPoisonStatDamageData::TicksPassed",
+      "VERIFIED System.Int32 Kingmaker.Designers.Mechanics.Buffs.BuffPoisonStatDamageData::SavesSucceeded",
+      "VERIFIED Kingmaker.UnitLogic.Mechanics.ContextDiceValue Kingmaker.Designers.Mechanics.Buffs.BuffPoisonStatDamageData::ContextValue",
+      "VERIFIED System.Int32 Kingmaker.Designers.Mechanics.Buffs.BuffPoisonStatDamageData::BonusDC",
+      "VERIFIED Kingmaker.Blueprints.BlueprintBuffReference Kingmaker.Designers.Mechanics.Buffs.BuffPoisonStatDamage::WeaknessForPoison",
+      "VERIFIED System.TimeSpan Kingmaker.UnitLogic.Buffs.Buff::get_EndTime()",
+      "VERIFIED Kingmaker.Blueprints.BlueprintComponent Kingmaker.EntitySystem.EntityFactComponent::get_SourceBlueprintComponent()",
+      "VERIFIED Kingmaker.ElementsSystem.ActionList Kingmaker.UnitLogic.Mechanics.Components.AddFactContextActions::Dispose",
+      "VERIFIED Kingmaker.ElementsSystem.ActionList Kingmaker.UnitLogic.Mechanics.Components.AddEnergyDamageTrigger::Actions",
+      "VERIFIED Kingmaker.Enums.Damage.DamageEnergyType Kingmaker.UnitLogic.Mechanics.Components.AddEnergyDamageTrigger::DamageType",
+      "VERIFIED System.Boolean Kingmaker.UnitLogic.Mechanics.Components.AddEnergyDamageTrigger::SpellsOnly",
+      "VERIFIED System.Boolean Kingmaker.Designers.Mechanics.Buffs.BuffStatusCondition::SaveEachRound",
+      "VERIFIED System.Boolean Kingmaker.UnitLogic.Mechanics.Actions.ContextActionDealDamage::AddAdditionalDamage",
+      "VERIFIED System.Boolean Kingmaker.UnitLogic.Mechanics.Actions.ContextActionDealDamage::AddFavoredEnemyDamage",
+      "VERIFIED System.Boolean Kingmaker.UnitLogic.Mechanics.Actions.ContextActionDealDamage::IgnoreUnitModifiers",
+      "VERIFIED System.Boolean Kingmaker.UnitLogic.Mechanics.Actions.ContextActionDealDamage::UseMinHPAfterDamage",
+      "VERIFIED System.Boolean Kingmaker.UnitLogic.Mechanics.Actions.ContextActionDealDamage::WriteResultToSharedValue",
+      "VERIFIED System.Boolean Kingmaker.UnitLogic.Mechanics.Actions.ContextActionDealDamage::WriteRawResultToSharedValue",
+      "VERIFIED System.Boolean Kingmaker.UnitLogic.Mechanics.Actions.ContextActionDealDamage::WriteCriticalToSharedValue",
+      "VERIFIED System.Boolean Kingmaker.UnitLogic.Mechanics.Actions.ContextActionApplyBuff::AsChild",
+      "VERIFIED Kingmaker.ElementsSystem.ActionList Kingmaker.Designers.Mechanics.Facts.CombatStateTrigger::CombatEndActions",
+      "VERIFIED System.Reflection.PropertyInfo HarmonyLib.AccessTools::Property(System.Type,System.String)",
+      "VERIFIED_COUNT 26 EXPECTED 26"
+    ]
+  },
+  "native_assembly": {
+    "mvid": "90a9869c-2792-4c7b-bfb7-5a8b33da7c82",
+    "sha256": "2cb7160b7154d4ffacc77b9c51b1eb26199e1294300f04fdfc073367b2ef8953"
+  },
+  "source_identities": [
+    {
+      "file": "Tactics/AbilityProfile.cs",
+      "sha256": "ad318890d3c33a9634462722e2355fcc16c58622a62a65cfdff5dd70ce09f98a"
+    },
+    {
+      "file": "Tactics/CombatMath.Afflictions.cs",
+      "sha256": "0ef63f57ffd8cfc50744945d2a859f4caab3e5f5f0310fc62eb8084e72de2d04"
+    },
+    {
+      "file": "Tactics/CombatMath.AttachedDamage.cs",
+      "sha256": "a48c913795af3de4c3aef24442c79ee3ba9e661aaa34369574512bfc4bb61b14"
+    },
+    {
+      "file": "Tactics/CombatMath.PeriodicPlan.cs",
+      "sha256": "8d29358ec669f160dc49dfe784d5857db10dcea045e2fb7579f49991551d18c8"
+    },
+    {
+      "file": "Tactics/FightStats.cs",
+      "sha256": "f83f7cd33792bd323333b01f43c2e775a91f8c1d6f84296c935ee35234b07374"
+    },
+    {
+      "file": "Tactics/TacticalEngine.AttachedDamage.cs",
+      "sha256": "769a7b1e11d70c7f294825a22d649aa0c1f7a1ace0d627c7806e46bef0595d71"
+    },
+    {
+      "file": "Tactics/TacticalEngine.Buffs.cs",
+      "sha256": "128e8f61c0d9594526b1ce6837586f42b5051b1ab1596f207102b01be13f61db"
+    },
+    {
+      "file": "Tactics/TacticalEngine.Marks.cs",
+      "sha256": "e6b6a2c46a85c60415866cbd00ff08af6a06e39171a4bf70e1f90f03351eaaff"
+    },
+    {
+      "file": "Tactics/TacticalEngine.Modes.cs",
+      "sha256": "b1ddd964d479ad3c6b34f943a84e2e6a6275c8c55aecc36cb5fb884b9073b461"
+    },
+    {
+      "file": "Tactics/TacticalEngine.Strikes.cs",
+      "sha256": "bb4ef2183361aaa1fe8a2157b241b1c26fce068b6b48d664e0b5e73a400d3271"
+    },
+    {
+      "file": "Tactics/TacticalEngine.cs",
+      "sha256": "8d1760bdde3b6bc892486e2e71aaa8ff8c2ae75eb012880ad6b5bd4eb8583d08"
+    },
+    {
+      "file": "Tactics/ValueModel.Periodic.cs",
+      "sha256": "7e0fe9c9b853ab375b33dc1bfecf9ee8cb9da8ce21f4179d4cd2bc2bd970af0c"
+    },
+    {
+      "file": "tests/CompanionAI.Tests/CompanionAI.Tests.csproj",
+      "sha256": "6de665051c9a8dbb372289fc82279c9e9f95e10df880a1182778c1de37348384"
+    },
+    {
+      "file": "tests/CompanionAI.Tests/PeriodicDamageTests.cs",
+      "sha256": "1f229c78c3a78fbebdb6e2d0e08ff49438fd2007448548d8476d4127fe2da2c7"
+    },
+    {
+      "file": "tools/ProfileAudit/AttachedDamageCheck.cs",
+      "sha256": "301137e1b01286857c2e7cc01d25118ed438e32d7717947619a29ec1ba80c5c7"
+    },
+    {
+      "file": "tools/ProfileAudit/Program.cs",
+      "sha256": "6b86ab46edb5953429a7b8d7d979d55b1c2162fc1932563258a476a145dfa92f"
+    }
+  ],
+  "integration": {
+    "recipient_snapshot_per_decision": true,
+    "enemy_and_attached_calibration_separate": true,
+    "known_packet_attribution_requires_live_context_and_readable_cadence": true,
+    "armour_images_and_enemy_marks_do_not_prevent_attached_damage": true,
+    "heals_revives_burn_and_drop_use_shared_danger": true,
+    "cleanse_credit_requires_actual_removal_and_certain_branch": true,
+    "child_activation_stat_dose_only_before_active_instance_exists": true,
+    "energy_removal_uses_type_even_if_absorbed": true,
+    "automatic_damaging_casts_on_companions_added": false
+  },
+  "limits": [
+    "C06R4 gameplay and matched Unity performance pending.",
+    "Fixtures execute no actor constructors, Rulebook outcomes, commands or provider initializers.",
+    "Supported recipient-local NewRound/poison contracts; unknown/spatial/shared/half/conditional-DC, added caster damage, shadow/Magic Hack/Bolstered and subsecond variants remain outside the contract.",
+    "Existing enemy assessment cache still refreshes by round/enemy set; recipient snapshots refresh per decision.",
+    "New future child-state evolution and protection benefits against attached ticks are not guessed.",
+    "The out-of-combat driver and existing movement/commitment/retreat/path/dispatch/cancellation policies are unchanged."
+  ],
+  "reproduce": [
+    "dotnet test tests/CompanionAI.Tests -c Release",
+    "python3 -m unittest discover -s tools/BlueprintInventory -v",
+    "dotnet build CompanionAI_Pathfinder.csproj -c Release -p:ManagedPath=<actual Managed> -p:UmmPath=<actual UMM>",
+    "tools/ProfileAudit/run.sh <actual Managed> <checked DLL> <scratch harness> <report> <14 compatible roots from C06_NATIVE_COMPATIBLE_SCOPE.json>",
+    "Run ToggleCosts.Native with supplied Psionics; TomeBurn.Native with supplied TTT Core/Tome; ToyBoxSpend.Native with supplied ToyBox; copy only fixture startup files into the prepared harness.",
+    "Resolve SigDump member-reference delta against actual supplied assemblies."
+  ],
+  "boundaries": {
+    "native_actor_or_command_execution_in_fixtures": false,
+    "other_mods_modified": false,
+    "main_or_development_push": false,
+    "release": false,
+    "manifest_changed": false
+  }
+}

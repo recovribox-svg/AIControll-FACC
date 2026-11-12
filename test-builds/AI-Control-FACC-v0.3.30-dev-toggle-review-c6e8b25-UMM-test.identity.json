@@ -1,0 +1,37 @@
+{
+  "source_commit": "c6e8b25ac8ca1d5fec65e02b561ce5fd3aa8ae5e",
+  "source_branch": "codex/class-competence-toggle-costs",
+  "starting_development": "3443d94b960d14011f7a72e69af4d534eaecaf50",
+  "reconciled_development": "1f58150b8e50f9a322ba0b8d3fcc095fe188420f",
+  "supersedes": "AI-Control-FACC-v0.3.30-dev-toggle-costs-a861a2b-UMM-test.zip",
+  "version": "0.3.30",
+  "dll": {
+    "assembly": "CompanionAI_Pathfinder, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null",
+    "mvid": "641ff828-00b6-46aa-9f92-3748fae7f2f6",
+    "sha256": "b27f7c1c6c96a6f9e86fc5d85b788dd27ba9a6cee78ac8ee37f3185606d0ef9c",
+    "size": 1241600
+  },
+  "zip": {
+    "file": "AI-Control-FACC-v0.3.30-dev-toggle-review-c6e8b25-UMM-test.zip",
+    "sha256": "72009adbec07c01187995f2cfba7e245a05de06165098e96da5ccc2d589e42a9",
+    "size": 487440
+  },
+  "info_sha256": "d6ee91e78dc5d4981ad51a1a1a85bb1e7fe3f0a87814697f2fd9ee1c20d35594",
+  "package_members": [
+    "CompanionAI_Pathfinder.dll",
+    "Info.json"
+  ],
+  "build_byte_check": true,
+  "unit_tests_passed": 547,
+  "native_checks_passed": 90,
+  "progression_shaped_kits": 6,
+  "signature_comparison": {
+    "baseline_mvid": "740e7ec5-27f8-4575-9187-258b0f61f426",
+    "added": 19,
+    "resolved": 19
+  },
+  "strict_audit": "INCOMPLETE: 44637 loaded, same one known Unity-bound failure; no verdicts",
+  "diagnostic_audit": "PARTIAL: same failure allowed explicitly; 4807 rows, zero reader errors",
+  "gameplay": "pending",
+  "unity_performance": "pending"
+}

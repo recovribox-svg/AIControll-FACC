@@ -1,0 +1,21 @@
+{
+  "build_label": "caster2",
+  "kind": "development-test",
+  "version": "0.3.30",
+  "source_branch": "codex/caster1-playtest-review",
+  "source_commit": "281c67907df01d93ea210fa998f95222ef820eb6",
+  "starting_caster1_commit": "f278114f7cce873c7ac8c547e13e86f1ad7dfca6",
+  "development_base": "1f58150b8e50f9a322ba0b8d3fcc095fe188420f",
+  "dependency_pr": 33,
+  "dll": {
+    "assembly": "CompanionAI_Pathfinder, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null",
+    "mvid": "4902d9eb-2d73-4f6e-a9e4-813adba6d7ce",
+    "sha256": "e8a8dffdcb1e75eeb7fc6988dc062cf85ee542135afccee210018ee072dcff49",
+    "size": 1300992
+  },
+  "manifest_sha256": "d6ee91e78dc5d4981ad51a1a1a85bb1e7fe3f0a87814697f2fd9ee1c20d35594",
+  "checks_receipt": "docs/competence/CASTER1_REVIEW_CHECKS.json",
+  "gameplay_status": "not played",
+  "scope": "Includes caster1; native simple-projectile counts, critical Pure Mage heal sight flag, native burn getter settings. Magus automation remains the separate C07 task. Movement proposal only.",
+  "release": false
+}

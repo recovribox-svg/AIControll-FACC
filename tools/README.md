@@ -38,6 +38,9 @@ AI values it, guesses, values nothing or never offers it (docs/COVERAGE_AUDIT.md
 readers"). `RunnableStubs` is its helper: a Mono.Cecil rewriter that gives the game's engine-bound methods (Unity
 internal calls, `LocalizedString` lookups, `ScriptableObject` construction) empty bodies, so the game's blueprint
 loader runs on plain .NET. The rewritten copies go only into the harness's work folder, never into the game.
+The caster fixtures also neutralize `ProfileScope.New` in that private copy: its instrumentation needs the unprovided
+firstpass profiler. Native `HasMetamagic` logic remains intact; these checks validate metadata selection, not a live
+rod, attack roll, actor or cast. Native command fixtures set flags on uninitialized command objects and never issue them.
 ```
 tools/ProfileAudit/run.sh <Wrath_Data/Managed> <mod dll> <work dir> <out.txt> <dump folders...>
 ```

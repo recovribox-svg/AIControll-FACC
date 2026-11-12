@@ -1,0 +1,203 @@
+{
+  "task": "C06R2 approved swarm work",
+  "checked_source_commit": "20a7d5ac05092d41dece947909e54a0f7c2f9b2b",
+  "source_branch": "codex/c06-swarm-coverage",
+  "starting_c06r1_commit": "758d7b1c9cd60e8afba7c57e119c92f6f8a7fb11",
+  "dependency_pr": 28,
+  "development_base": "1f58150b8e50f9a322ba0b8d3fcc095fe188420f",
+  "approval": "Author approved the bounded swarm proposal in chat on 9 November 2026, explicitly requiring performance.",
+  "reported_game_version": "Steam 2.7.0x (author report)",
+  "version": "0.3.30",
+  "dll": {
+    "assembly": "CompanionAI_Pathfinder, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null",
+    "mvid": "675da0f1-3cb6-4531-8724-70bc9ae2dedd",
+    "sha256": "3274b52d538cdc7e68386ba54b1ea4a279c9fd0d30c6d3ea29bb6cc2fa355c4b",
+    "size": 1261568
+  },
+  "unit_tests": {
+    "passed": 557,
+    "failed": 0,
+    "skipped": 0,
+    "new_swarm_exit_cases": 6
+  },
+  "inventory_tests": {
+    "passed": 11,
+    "failed": 0
+  },
+  "release_build": {
+    "actual_game_and_umm_references": true,
+    "warnings": 0,
+    "errors": 0,
+    "source_committed_before_build": true
+  },
+  "strict_native_compatible_audit": {
+    "status": "PASS",
+    "exit_code": 0,
+    "scope": "C06_NATIVE_COMPATIBLE_SCOPE.json",
+    "source_files": 44647,
+    "loaded_unique": 44637,
+    "failed": 0,
+    "allowed_load_failures": 0,
+    "ability_rows": 4807,
+    "reader_errors": 0,
+    "input_bytes_modified": false
+  },
+  "original_full_corpus_audit": {
+    "status": "INCOMPLETE",
+    "exit_code": 1,
+    "source_files": 44648,
+    "loaded_unique": 44637,
+    "failed": 1,
+    "allowed_load_failures": 0,
+    "ability_verdicts_generated": false,
+    "failure": "AchaekekSacredWeaponFeature: SawtoothSaber string vs native SawtoothSabre enum; failed parser logging reaches offline Unity ECall",
+    "input_sha256": "1fd534ef0fc9573520d101c721e5d2721812fdb5b8f8a13e29fcbc3acb06ac0f"
+  },
+  "native_swarm_checks": {
+    "checks": 27,
+    "failures": 0,
+    "skipped": 0,
+    "actual_cast_graphs": [
+      "CorruptedRatSwarmDamageAbility",
+      "CR14_BhogaSwarmDamageAbility",
+      "CR21_BhogaSwarmDamageAbility"
+    ],
+    "native_body_features": 2,
+    "native_signed_command_distance_cases": 2,
+    "command_los_execution": false,
+    "cylinder": "actual fields/Contains signature bind; live Transform/Contains execution requires Unity",
+    "native_fact_snapshot_transitions": true,
+    "same_frame_decision_invalidation": true,
+    "actor_constructors": false,
+    "native_commands_executed": false
+  },
+  "native_toggle_checks": {
+    "checks": 98,
+    "failures": 0,
+    "progression_shaped_kits": 6,
+    "judgment_graphs": 15,
+    "harmony_wrapper_application": false
+  },
+  "tome_burn_checks": {
+    "checks": 14,
+    "failures": 0
+  },
+  "native_view_checks": {
+    "checks": 6,
+    "failures": 0,
+    "scratch_frame_clock": 0
+  },
+  "performance_regressions": {
+    "warm_boundary_queries": 10000,
+    "boundary_allocated_bytes": 0,
+    "unchanged_native_fact_snapshots": 10000,
+    "snapshot_allocated_bytes": 0,
+    "supported_exit_angular_directions": 12,
+    "maximum_supported_geometry_samples": 24,
+    "previous_maximum_ring_samples": 48,
+    "maximum_supported_move_risk_appraisals": 2,
+    "rulebook_parameter_queries_in_boundary_solver": 0,
+    "whole_decision_unity_latency_and_allocations": "pending matched gameplay; no frame-time speedup claimed"
+  },
+  "signature_check": {
+    "baseline_mvid": "1a2a9e3e-dd56-4849-b49e-7144ad3b7ed5",
+    "added_member_refs": 11,
+    "resolved_added_refs": 11,
+    "details": [
+      "VERIFIED Kingmaker.UnitLogic.Abilities.Components.Base.IAbilityTargetRestriction[] Kingmaker.UnitLogic.Abilities.Blueprints.BlueprintAbility::get_TargetRestrictions()",
+      "VERIFIED System.Collections.Generic.List`1<Kingmaker.EntitySystem.Entities.UnitEntityData> Kingmaker.UnitLogic.Parts.UnitPartSwarmAttack::TargetsList",
+      "VERIFIED System.Single Owlcat.Runtime.Core.Utils.GeometryUtils::MechanicsDistance(UnityEngine.Vector3,UnityEngine.Vector3)",
+      "VERIFIED UnityEngine.Vector3 UnityEngine.Transform::get_lossyScale()",
+      "VERIFIED UnityEngine.Vector3 UnityEngine.Transform::get_up()",
+      "VERIFIED UnityEngine.Vector3 Kingmaker.View.MapObjects.SriptZones.ScriptZoneCylinder::Center",
+      "VERIFIED UnityEngine.Vector3 UnityEngine.Transform::TransformPoint(UnityEngine.Vector3)",
+      "VERIFIED System.Single Kingmaker.View.MapObjects.SriptZones.ScriptZoneCylinder::Radius",
+      "VERIFIED Kingmaker.Utility.CountableFlag Kingmaker.UnitLogic.UnitMechanicFeatures::IsUntargetable",
+      "VERIFIED System.Boolean Kingmaker.EntitySystem.Entities.UnitEntityData::CanAttack(Kingmaker.EntitySystem.Entities.UnitEntityData)",
+      "VERIFIED System.Boolean Kingmaker.Designers.GameHelper::CheckLOS(UnityEngine.Vector3,UnityEngine.Vector3)",
+      "VERIFIED_COUNT 11 EXPECTED 11"
+    ]
+  },
+  "native_assembly": {
+    "mvid": "90a9869c-2792-4c7b-bfb7-5a8b33da7c82",
+    "sha256": "2cb7160b7154d4ffacc77b9c51b1eb26199e1294300f04fdfc073367b2ef8953"
+  },
+  "source_identities": [
+    {
+      "file": "Tactics/CombatMath.Afflictions.cs",
+      "sha256": "f99f526eaf5b4d4078b46d51427ed5719458ab3a8bbf3f196828bd92d9f19dcd"
+    },
+    {
+      "file": "Tactics/CombatMath.SwarmCasts.cs",
+      "sha256": "2d5ea673d6f7a974ed1e921fb82c9cd38312e8b49fd5c3737d443b20121f956e"
+    },
+    {
+      "file": "Tactics/CombatMath.SwarmDiagnostics.cs",
+      "sha256": "3c511b01f47ce2aae48bcb1c29b6895c6e82ae4c583e6d08e0ca0bccb94356db"
+    },
+    {
+      "file": "Tactics/CombatMath.SwarmSources.cs",
+      "sha256": "b3f5e5a31ff856d85555c2427bbc2f6bb7224831e04da20a0f18dc8851605bff"
+    },
+    {
+      "file": "Tactics/CombatMath.Swarms.cs",
+      "sha256": "a267e9d09615b242ded19eb156fb0467fe0dd0b0deaf5c11964781dcf39b6bef"
+    },
+    {
+      "file": "Tactics/CombatMath.cs",
+      "sha256": "bccc1590af40b83835a111368866c3bb8597a55cb4d1935e318774e0e4ef6be8"
+    },
+    {
+      "file": "Tactics/EnemyThreat.cs",
+      "sha256": "613ca7880308ea44a5f8be8171729c6fd2df4cfc797dc29efa70a4ec395c7319"
+    },
+    {
+      "file": "Tactics/SwarmGeometry.cs",
+      "sha256": "e46e79de933e06bf7836f893c282035b0634ecfca3f2a6d3a4ba7a5330e4c14b"
+    },
+    {
+      "file": "Tactics/TacticalEngine.DropModel.cs",
+      "sha256": "141c3200acf2049b36983904bcf8fbbd6be1a6d67245dd9fb9622e87a94aa44a"
+    },
+    {
+      "file": "Tactics/TacticalEngine.Strikes.cs",
+      "sha256": "88141b364fed71f95cd4178fc4301af4bc7e74b1e2cd2a21b71bc5476bcd2b05"
+    },
+    {
+      "file": "Tactics/TacticalEngine.SwarmExit.cs",
+      "sha256": "604d09e0fea6396ac7b5cdad31f54786bf1cf7571480afd1d97cbac9219f728c"
+    },
+    {
+      "file": "Tactics/TacticalEngine.Swarms.cs",
+      "sha256": "78d40beb08224ec9d9ec46187112ff909fa9be093d24bc4f6731b6b6c512b54c"
+    },
+    {
+      "file": "Tactics/TacticalEngine.cs",
+      "sha256": "6b27f46f217d4dbe8410b77ab65593a40057311bbe5d1b292b3e0b6d5b5d87b6"
+    },
+    {
+      "file": "tests/CompanionAI.Tests/CompanionAI.Tests.csproj",
+      "sha256": "e41d2f3af9ba8c173c11142d4802d140cc1ee742879688c21f91b7adc8630fde"
+    },
+    {
+      "file": "tests/CompanionAI.Tests/SwarmExitTests.cs",
+      "sha256": "3c37b38684388d27f92a6f3383f96b462c0fa4cd2083ab7ed267dc1affcc25de"
+    },
+    {
+      "file": "tools/ProfileAudit/Program.cs",
+      "sha256": "31f0a1c5383f917c7e972161dccfb73638b83dac28671151a4ad3714cb1a615f"
+    },
+    {
+      "file": "tools/ProfileAudit/SwarmCoverageCheck.cs",
+      "sha256": "a17c936db31da7c79b8abb14ad867d74359ea141e681ad6bee2a4111650ae51e"
+    }
+  ],
+  "gameplay": "pending",
+  "limits": [
+    "Native cast graph coverage and source regressions do not establish the exact unavailable live actor state behind every old C06 decision.",
+    "World transforms, LOS and successful commands require the paired TB/RT replay.",
+    "An attempted direct cylinder Contains call in the offline host threw Unity ECall; current fixture checks bindings only. Runtime hints correctly convert the native local-space geometry and retain the existing search for unsupported transforms.",
+    "General retreat, commitment, pathfinding, dispatcher and cancellation rules are unchanged.",
+    "The original full-corpus input failure is separately visible; no input normalization."
+  ]
+}

@@ -367,7 +367,16 @@ namespace CompanionAI_Pathfinder.GameInterface
             {
                 // ★ v0.3.14: the turn-based tactical engine decides real time too (Tactics/RealTimeTactics); the old
                 // UnifiedDecisionEngine only when chosen in the settings.
-                if (Settings.ModSettings.Instance?.RealTimeLegacyEngine ?? false)
+                // ★ caster policies: the shared engine implements the new opt-in modes; leave the retired engine intact.
+                bool useLegacyCasterEngine = Settings.ModSettings.Instance?.RealTimeLegacyEngine ?? false;
+                if (useLegacyCasterEngine)
+                {
+                    var casterSettings = Tactics.PureMagePolicy.SettingsFor(unit);
+                    useLegacyCasterEngine = !Tactics.PureMagePolicy.IsActive(casterSettings) &&
+                        !unit.Spellbooks.Any(book => book.Blueprint.GetComponent<Kingmaker.Blueprints.Classes.Spells.MagicHackSpellbookComponent>() != null ||
+                            casterSettings?.SpellPolicy == Settings.SpellResourcePolicy.Aggressive && book.CasterLevel > 0);
+                }
+                if (useLegacyCasterEngine)
                     ExecuteAIDecision(unit);
                 else
                     Tactics.RealTimeTactics.Act(unit);
@@ -1778,6 +1787,9 @@ namespace CompanionAI_Pathfinder.GameInterface
                 if (ability.SourceItem != null) return false;
                 var profile = Tactics.AbilityProfile.Get(ability);
                 if (profile == null || profile.IsToggle || profile.IsOneShot || profile.HealsBurn) return false;
+                // ★ v0.3.30: major forms are deliberate combat/pre-buff choices. A suppressed or expired transformation is
+                // never an instruction for the automatic out-of-combat upkeep loop to apply it again (Ulbrig report).
+                if (PolymorphFacts.GivesForm(profile)) return false;
                 if (profile.DealsDamage || profile.Heals.Count > 0 || profile.Summons || profile.HarmfulEffects) return false;   // ★ v0.3.12: HarmfulEffects
 
                 foreach (var buff in profile.CasterBuffs.Concat(profile.TargetBuffs).Distinct())

@@ -1341,11 +1341,12 @@ namespace CompanionAI_Pathfinder.Analysis
 
             try
             {
-                var blueprint = ability.Blueprint;
+                var blueprint = Tactics.SpellDelivery.AttackBlueprint(ability);
 
                 // 1. 공격 타입 확인 (Touch/Ranged Touch/Normal)
-                bool isTouch = blueprint.GetComponent<AbilityDeliverTouch>() != null;
-                bool isRangedTouch = blueprint.GetComponent<AbilityDeliverProjectile>() != null &&
+                bool reachTouch = Tactics.SpellDelivery.IsReachTouch(ability);
+                bool isTouch = blueprint.GetComponent<AbilityDeliverTouch>() != null && !reachTouch;
+                bool isRangedTouch = reachTouch || blueprint.GetComponent<AbilityDeliverProjectile>() != null &&
                                      IsRangedTouchAbility(blueprint);
 
                 // 2. AC 타입 결정

@@ -1,0 +1,21 @@
+{
+  "build_label": "review2",
+  "kind": "development-test",
+  "version": "0.3.30",
+  "source_branch": "codex/friendly-dispel-coordination",
+  "source_commit": "9464c2dd030e2d451ab14854e23abf5c3a00442f",
+  "starting_commit": "8886762396e840cac44a07ddb445b9167877d41c",
+  "development_base": "1f58150b8e50f9a322ba0b8d3fcc095fe188420f",
+  "dependency_pr": 39,
+  "dll": {
+    "assembly": "CompanionAI_Pathfinder, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null",
+    "mvid": "a21cbb58-f176-4d4a-8ec2-cf912910bc3e",
+    "sha256": "5cf2726537c99875ed8694b7a48d63c4e3b1626666f8cbc6fa79b7d2eb7f4051",
+    "size": 1334272
+  },
+  "manifest_sha256": "d6ee91e78dc5d4981ad51a1a1a85bb1e7fe3f0a87814697f2fd9ee1c20d35594",
+  "checks_receipt": "docs/competence/TREATMENT_PENDING_CHECKS.json",
+  "gameplay_status": "not played",
+  "scope": "Cumulative review2 includes review1/exit2/step1/magus1/caster2 prerequisites. Fixed debuffs skip redundant source contexts; approved area exits forecast actual native bounds. The unmodelled friendly dispel fallback does not gain utility while another actor casts the same ability on that recipient. Existing HP healing/modelled effects and native pending lifetime remain.",
+  "release": false
+}

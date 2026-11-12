@@ -91,6 +91,44 @@ namespace ProfileAudit
                         Check(!(bool)delta.Invoke(null, args), what + " cannot produce an authoritative zero cost");
                     }
                     Check(Modeled(Read(Graph().Feature, 3)), "unchanged native graph clone remains supported");
+                    // ★ caster1 review: the played native BurnNumberProperty has a non-null Settings object.
+                    // Exercise the shipped reader through cloned actual mental burn graphs. All transforms execute
+                    // the game's PropertySettings.Apply before its ContextRankConfig, without invoking a getter/actor.
+                    PropertySettings Settings(params (string Name, object Value)[] fields)
+                    {
+                        var settings = new PropertySettings();
+                        foreach (var field in fields)
+                        {
+                            var info = typeof(PropertySettings).GetField(field.Name, instance);
+                            info.SetValue(settings, info.FieldType.IsEnum ? Enum.Parse(info.FieldType, (string)field.Value) : field.Value);
+                        }
+                        return settings;
+                    }
+                    BlueprintFeature SettingsGraph(PropertySettings settings)
+                    {
+                        var graph = Graph();
+                        var rank = graph.Buff.GetComponent<ContextRankConfig>();
+                        var field = typeof(ContextRankConfig).GetField("m_CustomProperty", instance);
+                        var property = Clone(((BlueprintUnitPropertyReference)field.GetValue(rank)).Get());
+                        property.ComponentsArray = property.ComponentsArray.Select(Clone).ToArray();
+                        property.GetComponent<Kingmaker.UnitLogic.Class.Kineticist.Properties.KineticistBurnPropertyGetter>().Settings = settings;
+                        field.SetValue(rank, Reference<BlueprintUnitPropertyReference>(property));
+                        return graph.Feature;
+                    }
+                    var defaults = Read(SettingsGraph(Settings()), 3);
+                    Check(Modeled(defaults), "non-null default native burn settings are recognized");
+                    Delta(defaults, 1, 0, -2f / 3f, "default settings preserve mental Will consequence instead of HP fallback");
+                    var divided = SettingsGraph(Settings(("m_Progression", "Div2")));
+                    Delta(Read(divided, 2), 1, 0, 0, "native getter division plateau before doubled mental rank");
+                    var boundary = Read(divided, 3);
+                    Delta(boundary, 1, 0, -2f / 3f, "native getter division boundary before doubled mental rank");
+                    Delta(boundary, 1, 0, -2f / 3f, "native settings repeated quote remains cached and unchanged");
+                    var limited = SettingsGraph(Settings(("m_Negate", true), ("m_LimitType", "MinMax"), ("m_Min", -3), ("m_Max", 0)));
+                    Delta(Read(limited, 2), 1, 0, 2f / 3f, "native negation then limits then rank/stat multiplier");
+                    Delta(Read(limited, 3), 1, 0, 0, "native getter cap before rank keeps later burn at plateau");
+                    var malformed = Read(SettingsGraph(Settings(("m_Progression", "DivStep"), ("m_StepLevel", 0))), 3);
+                    var malformedArgs = new object[] { malformed, 1, 0, 0f };
+                    Check(!(bool)delta.Invoke(null, malformedArgs), "invalid native settings retain fallback rather than authoritative free burn");
                     var conditional = Graph();
                     conditional.Trigger.Action = new ActionList
                     {

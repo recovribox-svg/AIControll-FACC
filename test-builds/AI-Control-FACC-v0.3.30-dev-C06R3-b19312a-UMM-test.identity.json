@@ -1,0 +1,40 @@
+{
+  "source_commit": "b19312aa35ede504ab8e160bd42a63ab9792bcac",
+  "source_branch": "codex/c06r2-playtest-review",
+  "starting_development": "1f58150b8e50f9a322ba0b8d3fcc095fe188420f",
+  "starting_c06r2": "ba5d5d3346b97598fb14aba5e073661dcc9a7a31",
+  "supersedes_mvid": "675da0f1-3cb6-4531-8724-70bc9ae2dedd",
+  "label": "C06R3",
+  "version": "0.3.30",
+  "dll": {
+    "assembly": "CompanionAI_Pathfinder, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null",
+    "mvid": "8af1ad59-23ff-429e-9a1a-55033bb86e0a",
+    "sha256": "5d0f7a90efa46d428616376c5a54b63ff00a80403128966a6d3fc14472a7564e",
+    "size": 1265664
+  },
+  "zip": {
+    "file": "AI-Control-FACC-v0.3.30-dev-C06R3-b19312a-UMM-test.zip",
+    "sha256": "2f7846f8b199ca735a3c55a1714d183961d7c0fa9b55b7a6d462243549188e31",
+    "size": 496741
+  },
+  "info_sha256": "d6ee91e78dc5d4981ad51a1a1a85bb1e7fe3f0a87814697f2fd9ee1c20d35594",
+  "package_members": [
+    "CompanionAI_Pathfinder.dll",
+    "Info.json"
+  ],
+  "build_byte_check": true,
+  "startup_marker": "[Build] v0.3.30 module=8af1ad59-23ff-429e-9a1a-55033bb86e0a",
+  "verification_receipt": "docs/competence/C06R2_REVIEW_CHECKS.json",
+  "unit_tests_passed": 558,
+  "inventory_tests_passed": 11,
+  "native_reveal_value_checks_passed": 7,
+  "toybox_reader_checks_passed": 10,
+  "native_swarm_checks_passed": 27,
+  "native_toggle_checks_passed": 98,
+  "tome_provider_checks_passed": 14,
+  "native_view_checks_passed": 6,
+  "strict_audit": "PASS on explicit compatible scope; full original corpus INCOMPLETE (one named enum mismatch)",
+  "gameplay": "pending",
+  "unity_performance": "pending",
+  "scope": "AI Control concealment-utility valuation, exact optional spend-hook reader and empty-parts context avoidance; no movement or ToyBox modification"
+}

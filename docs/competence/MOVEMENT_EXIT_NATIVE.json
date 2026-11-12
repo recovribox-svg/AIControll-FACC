@@ -1,0 +1,56 @@
+{
+  "task": "Author-approved native reachable area exits",
+  "development_base": "1f58150b8e50f9a322ba0b8d3fcc095fe188420f",
+  "starting_commit": "ac7d0dff3c4715a881942bec417e21326a412055",
+  "dependency_pr": 36,
+  "user_approval": "12 November 2026: go ahead to both movement proposals",
+  "log_inputs": "../CASTER1_PLAYTEST_INPUTS.json",
+  "native_assemblies": [
+    {
+      "name": "Assembly-CSharp.dll",
+      "bytes": 11891712,
+      "sha256": "2cb7160b7154d4ffacc77b9c51b1eb26199e1294300f04fdfc073367b2ef8953",
+      "mvid": "90a9869c-2792-4c7b-bfb7-5a8b33da7c82"
+    },
+    {
+      "assembly": "AstarPathfindingProject, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null",
+      "mvid": "1b0cd104-d8d9-4f14-947e-872266f10ea6",
+      "sha256": "9cc4a4c6906ab9d48c18d03fdfb45b0ab36347a77b4314b972aee7f9bd6fcf54",
+      "size": 528384
+    }
+  ],
+  "contracts": [
+    {
+      "member": "ObstacleAnalyzer.IsPointInsideNavMesh",
+      "finding": "Nearest-node distance is compared in X/Z only; it does not establish a ground Y for the supplied point."
+    },
+    {
+      "member": "ObstacleAnalyzer.GetNearestNode",
+      "finding": "No-hint query returns native nearest surface. Mesh-node hint shortcut can use the input point unchanged, including Y; exit projection therefore does not use it."
+    },
+    {
+      "member": "ObstacleAnalyzer.TraceAlongNavmesh / NavmeshBase.Linecast",
+      "finding": "Native linecast starts from nearest navmesh node. Exit search uses the same operation with a shared ground start and tests returned endpoint. Connected graph/area guards bound floor changes."
+    },
+    {
+      "member": "AreaEffectView.Contains(UnitEntityData) / ScriptZoneCylinder.Contains",
+      "finding": "Actual position and native body feed the live shape. Cylinder inverse-transforms position, checks local height, then radial distance with body radius. Exit clearance also includes the existing command arrival radius."
+    },
+    {
+      "member": "UnitMoveTo / CommandDispatcher.CanPrepare and Run",
+      "finding": "Existing exit arrival is 0.15 m. Selected path data can end short or detour; check actual endpoint and already-read movement budget before crediting escape and again at issue. Native action/state/path-claim handling stays with the dispatcher."
+    }
+  ],
+  "blueprint_fixtures": [
+    {
+      "path": "Units/Units/Monsters/Demon Brimorak/Brimorak Brain/BrimorakSmokeBreathAreaEffect.jbp",
+      "bytes": 9367,
+      "sha256": "5deea2335b0e07e0340d12df5159829242c2347f7f951228307b80d782c746e0"
+    }
+  ],
+  "not_established": [
+    "Live scene transforms/navmesh projection or actual command execution",
+    "Every repeated smoke exit having one cause",
+    "Matched Unity latency/allocation or dynamic obstacle/area outcomes after issue"
+  ]
+}

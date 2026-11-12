@@ -18,6 +18,7 @@ namespace CompanionAI_Pathfinder.Tactics
         private long heapAtMark = System.GC.GetTotalMemory(false);
         private readonly long[] stageBytes = new long[9];
         private int activeCalls;
+        private readonly int resistanceAtStart = CombatMath.ResistanceReads, resistanceHitsAtStart = CombatMath.ResistanceMemoHits;
 
         internal DecisionTimings() { previous = started; }
         internal double ElapsedMilliseconds => Milliseconds(Stopwatch.GetTimestamp() - started);
@@ -96,6 +97,7 @@ namespace CompanionAI_Pathfinder.Tactics
             $"kinetic {stageBytes[3] / 1024}, movement {stageBytes[4] / 1024}, paths {stageBytes[5] / 1024}, boosts {stageBytes[6] / 1024}, " +
             $"infusions {stageBytes[7] / 1024}, finish {stageBytes[8] / 1024}" +
             $"; abilities scored={scored}, skipped unaffordable={skipped}" +
+            $"; SR forecasts={CombatMath.ResistanceReads - resistanceAtStart}, reused={CombatMath.ResistanceMemoHits - resistanceHitsAtStart}" +
             (costlyNames[0] == null ? "" : "; costliest: " + string.Join(", ", System.Linq.Enumerable.Range(0, 3)
                 .Where(i => costlyNames[i] != null)
                 .Select(i => $"{costlyNames[i]} {Milliseconds(costlyTicks[i]):F1} ms ({costlyCandidates[i]} options" +

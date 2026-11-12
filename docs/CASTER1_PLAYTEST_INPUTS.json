@@ -1,0 +1,100 @@
+{
+  "task": "Broad caster1 playtest review and native-rule bug fixes",
+  "starting_source": "f278114",
+  "development_base": "1f58150b8e50f9a322ba0b8d3fcc095fe188420f",
+  "inputs": [
+    {
+      "label": "tb1",
+      "name": "Turn Based Log 1.txt",
+      "bytes": 403696,
+      "sha256": "96bbbef31778e95ef52722e5ac8d34e3610c8b62f3c03a953ef43840bc70275f",
+      "lines": 2178
+    },
+    {
+      "label": "tb2",
+      "name": "Turn Based Log 2.txt",
+      "bytes": 794053,
+      "sha256": "e8712eb616e03a0b3f0a4b898bafe1035d2bfbaf4dabff8cc61badb5bbffc753",
+      "lines": 4627
+    },
+    {
+      "label": "rt",
+      "name": "Real Time Log.txt",
+      "bytes": 497952,
+      "sha256": "c7175bb718108ee6c803a4d5a31f08951d646119fca9dca6685d3f4ae90a916b",
+      "lines": 2604
+    },
+    {
+      "label": "combat",
+      "name": "combatLog.txt",
+      "bytes": 1954711,
+      "sha256": "0fc8e51aa490a72071915e0aeed7102a7f008220dbb961c4eb859764515e50aa",
+      "lines": 48058
+    },
+    {
+      "label": "notes",
+      "name": "Noticed during playtest..txt",
+      "bytes": 1186,
+      "sha256": "ed4644fef5afd04f165b0d48cc2bb1919ac341888c9bbfc02e2cd0ffa7eb937f",
+      "lines": 11
+    }
+  ],
+  "accounting": {
+    "tb1": {
+      "fights": 2,
+      "decisions": 194,
+      "slow_samples": 22,
+      "cleanup_samples": 4,
+      "slow_ms_max": 1266
+    },
+    "tb2": {
+      "fights": 6,
+      "decisions": 560,
+      "slow_samples": 32,
+      "cleanup_samples": 0,
+      "slow_ms_max": 407
+    },
+    "rt": {
+      "fights": 5,
+      "decisions": 289,
+      "slow_samples": 33,
+      "cleanup_samples": 3,
+      "slow_ms_max": 1406
+    }
+  },
+  "identity": {
+    "tb1": "Startup matches caster1 MVID 35b96ebd-8929-4ce8-baa4-564d03bc454f",
+    "tb2": "No independent startup marker",
+    "rt": "No independent startup marker"
+  },
+  "line_numbers": "Original LF-delimited AI log lines; combat references use HTML-stripped text while retaining LF boundaries. HTML entities can add logical lines, so universal-newline or splitlines counts are not interchangeable.",
+  "command_outcomes": {
+    "tb1": {
+      "UnitUseAbility Success True": 61,
+      "UnitMoveTo Success True": 18,
+      "UnitAttack Interrupt True": 46,
+      "UnitUseAbility Interrupt False": 1,
+      "UnitAttack Success True": 3,
+      "UnitMoveTo Interrupt False": 4,
+      "UnitAttack Interrupt False": 1
+    },
+    "tb2": {
+      "UnitUseAbility Success True": 183,
+      "UnitAttack Interrupt True": 116,
+      "UnitMoveTo Success True": 32,
+      "UnitActivateAbility Success True": 8,
+      "UnitMoveTo Interrupt False": 9
+    },
+    "rt": {
+      "UnitUseAbility Success True": 139,
+      "UnitAttack Interrupt False": 15,
+      "UnitMoveTo Interrupt False": 13,
+      "UnitAttack Success True": 67,
+      "UnitUseAbility Interrupt False": 17,
+      "UnitMoveTo Success True": 16,
+      "UnitAttack Interrupt True": 13,
+      "UnitActivateAbility Success True": 1,
+      "UnitUseAbility Fail True": 2
+    }
+  }
+}

@@ -48,6 +48,8 @@ namespace CompanionAI_Pathfinder.Tactics
         {
             public TimeSpan Time;
             public float Dealt, Estimated;
+            // A multi-ray spell rolls separately per projectile. Its component packets share this actual roll.
+            public Kingmaker.RuleSystem.Rules.RuleAttackRoll AttackRoll;
             /// <summary>Where it was counted; null once a roll of it turned out reduced (see <see cref="CleanRoll"/>).</summary>
             public Check Check, Session;
 
@@ -173,6 +175,17 @@ namespace CompanionAI_Pathfinder.Tactics
             if (evt.DamageBundle?.Weapon?.Blueprint != null &&
                 Kingmaker.Blueprints.BlueprintExtenstions.GetComponent<Kingmaker.UnitLogic.Class.Kineticist.WeaponKineticBlade>(evt.DamageBundle.Weapon.Blueprint) != null) return;
             if (!GameInterface.CustomBrainPatch.ShouldControlUnit(attacker)) return;
+            var profile = AbilityProfile.Get(ability);
+            if (profile == null || profile.Damage.Count == 0) return;
+            bool projectileRolls = CombatMath.ObserveProjectileRolls(profile);
+            // Native ranged Spellstrike's rays all carry the arrow's same roll, even after its pending source/mode
+            // has cleared. Grouping by that identity would sum a volley against one ray's estimate (shifter1: 33.5
+            // versus 15). Recognize the actual physical ranged roll, not the current toggle or pending spell field.
+            // Spell-like kinetic archer blasts retain their existing composite/learning path.
+            if (projectileRolls && ability.Blueprint.Type == Kingmaker.UnitLogic.Abilities.Blueprints.AbilityType.Spell &&
+                ObserverRules.SkipCorrelatedProjectileSample(true,
+                    attacker.Get<Kingmaker.UnitLogic.Parts.UnitPartMagus>()?.EldritchArcher == true,
+                    evt.AttackRoll?.Weapon?.Blueprint?.AttackType == Kingmaker.RuleSystem.AttackType.Ranged)) return;
             string key = attacker.UniqueId + "|" + ability.Blueprint.AssetGuid;
             // ★ v0.3.20: the rolls of one cast (a composite blast's two damage actions, a spell's missiles) arrive over a
             // moment, not in one frame.
@@ -187,7 +200,8 @@ namespace CompanionAI_Pathfinder.Tactics
             // after a flat reduction says nothing about the blast: Orvath's Fire Blast was reported at 0 % and its learned
             // share fell (0.3.20-test4 log). A hit with any reduced, declined, raised or resisted roll is left out whole.
             bool clean = CleanRoll(evt);
-            if (LastHit.TryGetValue(hitKey, out var open) && now - open.Time <= OneHit)
+            if (LastHit.TryGetValue(hitKey, out var open) && now - open.Time <= OneHit &&
+                (!projectileRolls || ReferenceEquals(open.AttackRoll, evt.AttackRoll)))
             {
                 if (open.Check == null && open.Session == null) return;
                 if (!clean)
@@ -205,14 +219,14 @@ namespace CompanionAI_Pathfinder.Tactics
             if (!clean)
             {
                 if (LastHit.Count > 512) LastHit.Clear();
-                LastHit[hitKey] = new OpenHit { Time = now };
+                LastHit[hitKey] = new OpenHit { Time = now, AttackRoll = evt.AttackRoll };
                 return;
             }
             Checks.TryGetValue(key, out var check);
-            var profile = AbilityProfile.Get(ability);
-            if (profile == null || profile.Damage.Count == 0) return;
             // The estimate before any learned share (it is what is being checked).
-            float estimate = CombatMath.EstimateAbilityDamageRaw(ability, profile, target, null);
+            // Compare each actual ray's roll with one payload, including multi-action Hellfire Ray. A missed sibling
+            // cannot make a landed ray look too weak; non-rolling missiles remain one complete-cast sample.
+            float estimate = CombatMath.EstimateAbilityDamageRaw(ability, profile, target, null, oneProjectile: projectileRolls);
             if (estimate <= 0f) return;
             if (check == null)
             {
@@ -222,7 +236,7 @@ namespace CompanionAI_Pathfinder.Tactics
             check.Hits++;
             check.Dealt += evt.Result;
             check.Estimated += estimate;
-            var hit = new OpenHit { Time = now, Dealt = evt.Result, Estimated = estimate, Check = check };
+            var hit = new OpenHit { Time = now, Dealt = evt.Result, Estimated = estimate, Check = check, AttackRoll = evt.AttackRoll };
             if (LastHit.Count > 512) LastHit.Clear();
             LastHit[hitKey] = hit;
             if (blast)

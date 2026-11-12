@@ -1,0 +1,22 @@
+{
+  "task": "Native entity-bound footprint for the approved area exit repair",
+  "date": "2026-11-12",
+  "game_version_report": "User reports latest Steam 2.7.0x; assembly fingerprints identify the supplied references, not proof of an identical installed patch.",
+  "assemblies": [
+    {"name": "Assembly-CSharp.dll", "sha256": "2cb7160b7154d4ffacc77b9c51b1eb26199e1294300f04fdfc073367b2ef8953", "bytes": 11891712, "mvid": "90a9869c-2792-4c7b-bfb7-5a8b33da7c82"},
+    {"name": "UnityEngine.CoreModule.dll", "sha256": "b040598ec99a249779661605123e1a09aeb845c2d7cf623940ab07a775440365", "bytes": 1167384},
+    {"name": "UnityEngine.PhysicsModule.dll", "sha256": "1af6cfa1ecd8c3e2b1fbcf453db55600becb08faf71d78469319a1c025415cff", "bytes": 107544}
+  ],
+  "inspected_contracts": [
+    {"type": "Kingmaker.EntitySystem.Entities.AreaEffectEntityData", "methods": ["UpdateUnits", "ShouldUnitBeInside"], "evidence": "UpdateUnits obtains EntityBoundsHelper.FindUnitsInShape results; ShouldUnitBeInside skips View.Contains for cylinder/box and retains other eligibility/LOS checks."},
+    {"type": "Kingmaker.Controllers.Optimization.EntityBoundsHelper", "methods": ["FindUnitsInShape", "OverlapCapsule", "OverlapBox"], "evidence": "Entity-bounds physics scene, unit-bound layer mask 8388608. Cylinder uses world centre, world-up Height times mean X/Z scale in each direction, Radius times that mean. Box uses world centre, componentwise scaled Bounds.extents and world rotation."},
+    {"type": "Kingmaker.Controllers.Optimization.EntityBoundsController", "methods": ["Tick", "TickEntity", "ScaleRadius", "SetupSphereBoundsCollider"], "evidence": "Inspected sphere creation and update paths. Unit collider radius/position maintained separately from actor state; new sphere objects are independent, initially centred on the view."},
+    {"type": "Kingmaker.View.MapObjects.SriptZones.ScriptZoneCylinder", "methods": ["Contains", "IScriptZoneShape.Center"], "evidence": "Contains inverse-transforms the point and expands its logical radius by supplied Corpulence; this differs from the native physics query. Interface Centre transforms the local centre."},
+    {"type": "Kingmaker.View.MapObjects.SriptZones.ScriptZoneBox", "methods": ["Contains", "Center"], "evidence": "Native shape Contains differs from sphere/OBB query; use the membership query footprint for exits."},
+    {"type": "Kingmaker.View.MapObjects.AreaEffectView", "methods": ["InitAtRuntime"], "evidence": "Native cylinder initialization uses blueprint radius and Height 100. A supposed short-cylinder height cause is not inferred from these captures."}
+  ],
+  "production_read_only_inputs": ["EntityViewBase.SphereBoundsCollider", "Collider.bounds", "SphereCollider.center", "Transform.TransformVector", "ScriptZoneCylinder.Height/Radius", "ScriptZoneBox.Bounds", "Transform.lossyScale/rotation", "IScriptZoneShape.Center"],
+  "runtime_geometry_queries_or_actor_mutation_in_offline_checks": false,
+  "game_or_decompiled_files_committed": false,
+  "limits": "Offline math/compiled references do not execute Unity bounds, physics, navmesh or commands. Forecast is geometric and conservative; native eligibility/LOS, update order and movement after issue remain native. Prior exit1 route checks did not establish cylinder/box membership parity."
+}

@@ -112,5 +112,99 @@ namespace CompanionAI.Tests
             Assert.DoesNotContain(low, result);
             Assert.Same(high, SelectPolicyMain(result));
         }
+
+        [Fact]
+        public void ThreeRefusalsRecoverOnePlainMoveWithoutFourthPreparation()
+        {
+            var walks = Enumerable.Range(0, 6).Select(i => new Plan("walk" + i, walks: true));
+            var advance = new Plan("advance", walks: true);
+            int checks = 0, builds = 0;
+            var result = SelectedApproachFilter.Apply(walks, SelectMain, NeedsCheck,
+                p => { checks++; return false; }, hasUsefulAction: p => p.Count != 0,
+                idleFallback: () => { builds++; return new[] { advance }; });
+            Assert.Equal(3, checks);
+            Assert.Equal(1, builds);
+            Assert.Same(advance, Assert.Single(result));
+        }
+
+        [Theory]
+        [InlineData("heal")]
+        [InlineData("in-place attack")]
+        [InlineData("weak weapon fallback")]
+        public void RefusedApproachPreservesUsefulExistingMain(string kind)
+        {
+            var action = new Plan(kind);
+            int builds = 0;
+            var result = SelectedApproachFilter.Apply(new[] { new Plan("bad", walks: true), action }, SelectMain,
+                NeedsCheck, p => false, hasUsefulAction: p => p.Contains(action),
+                idleFallback: () => { builds++; return new[] { new Plan("advance") }; });
+            Assert.Equal(0, builds);
+            Assert.Same(action, Assert.Single(result));
+        }
+
+        [Fact]
+        public void QuickActionSurvivesAllRefusedApproachesWithoutAdvance()
+        {
+            var quick = new Plan("quick heal", quick: true);
+            int builds = 0;
+            var plans = new[] { quick }.Concat(Enumerable.Range(0, 4).Select(i => new Plan(i.ToString(), walks: true)));
+            var result = SelectedApproachFilter.Apply(plans, SelectMain, NeedsCheck, p => false,
+                hasUsefulAction: p => p.Contains(quick),
+                idleFallback: () => { builds++; return new[] { new Plan("advance") }; });
+            Assert.Equal(0, builds);
+            Assert.Same(quick, Assert.Single(result));
+        }
+
+        [Fact]
+        public void AcceptedStepAfterRefusalDoesNotBuildAdvance()
+        {
+            var step = new Plan("valid step", walks: true, ready: true);
+            int builds = 0;
+            var result = SelectedApproachFilter.Apply(new[] { new Plan("bad", walks: true), step }, SelectMain,
+                NeedsCheck, p => p.Ready, hasUsefulAction: p => p.Contains(step),
+                idleFallback: () => { builds++; return new[] { new Plan("advance") }; });
+            Assert.Equal(0, builds);
+            Assert.Same(step, Assert.Single(result));
+        }
+
+        [Fact]
+        public void EmptyDecisionWithoutActualRefusalDoesNotInventAdvance()
+        {
+            int builds = 0;
+            var result = SelectedApproachFilter.Apply(new Plan[0], SelectMain, NeedsCheck, p => false,
+                hasUsefulAction: p => false,
+                idleFallback: () => { builds++; return new[] { new Plan("advance") }; });
+            Assert.Empty(result);
+            Assert.Equal(0, builds);
+        }
+
+        [Fact]
+        public void RecoveryDoesNotWaitForBudgetAndCannotBeHiddenBySubThresholdMain()
+        {
+            var bad = new Plan("bad", walks: true);
+            var weak = new Plan("below action bar");
+            var advance = new Plan("advance", walks: true);
+            int checks = 0;
+            Plan Eligible(IReadOnlyList<Plan> plans) => plans.FirstOrDefault(p => p != weak);
+            var result = SelectedApproachFilter.Apply(new[] { bad, weak }, Eligible, NeedsCheck,
+                p => { checks++; return false; }, hasUsefulAction: p => Eligible(p) != null,
+                idleFallback: () => new[] { advance });
+            Assert.Equal(1, checks);
+            Assert.Equal(new[] { advance, weak }, result);
+            Assert.Same(advance, SelectMain(result));
+        }
+
+        [Fact]
+        public void RecoveryIsDecisionLocalAndMayFindNoSafeMove()
+        {
+            var approach = new Plan("approach", walks: true);
+            int builds = 0;
+            List<Plan> Run() => SelectedApproachFilter.Apply(new[] { approach }, SelectMain, NeedsCheck, p => p.Ready,
+                hasUsefulAction: p => p.Count != 0, idleFallback: () => { builds++; return new Plan[0]; });
+            Assert.Empty(Run());
+            approach.Ready = true;
+            Assert.Same(approach, Assert.Single(Run()));
+            Assert.Equal(1, builds);
+        }
     }
 }

@@ -76,7 +76,7 @@ namespace CompanionAI_Pathfinder.Tactics
             if (part.Key == null) return 0f;
             float raw = parts.Sum(p => p.Value);
             if (raw <= 0f) return 0f;
-            float fromEnemy = IncomingDamage(ctx, ctx.Unit, ctx.Unit.Position) * part.Value / raw;
+            float fromEnemy = IncomingEnemyDamage(ctx, ctx.Unit, ctx.Unit.Position) * part.Value / raw;
             return fromEnemy * (mark.ArmorClass * 0.05f / 0.55f + mark.Saves * 0.05f * 0.5f);
         }
 

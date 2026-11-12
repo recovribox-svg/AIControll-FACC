@@ -1,5 +1,26 @@
 # Test builds
 
+## Task-branch candidate: v0.3.30 toggle self-review (c6e8b25) — review and gameplay pending
+
+[UMM test ZIP](AI-Control-FACC-v0.3.30-dev-toggle-review-c6e8b25-UMM-test.zip?raw=true) · [Identity](AI-Control-FACC-v0.3.30-dev-toggle-review-c6e8b25-UMM-test.identity.json) · [Changes and paired TB/RT replay](../docs/competence/C06_TOGGLE_COSTS.md)
+
+Source `c6e8b25ac8ca1d5fec65e02b561ce5fd3aa8ae5e`, branch `codex/class-competence-toggle-costs`; author-requested development base `3443d94`, packaging reconciled at `1f58150`. Includes Claude's competence3 fixes and named burn diagnostic. Manifest stays **0.3.30**; startup MVID `641ff828-00b6-46aa-9f92-3748fae7f2f6`. ZIP SHA-256 `72009adbec07c01187995f2cfba7e245a05de06165098e96da5ccc2d589e42a9`.
+
+Corrects the last Judgment use's watcher/availability boundary and shares Harmony patch-contract inspection within each decision, with a fresh check on the next context. Supported spend windows, already-paid time and existing ownership/acceptance/blocklist/restoration policies remain as documented. This supersedes the older `a861a2b` C06 candidate below.
+
+**547 unit tests, 90 compiled native checks / six progression-shaped kits, zero-warning real-reference Release build, 19/19 added references resolved against competence3b.** Strict audit: incomplete on the same one known Unity-bound input, no verdicts. Separate PARTIAL diagnostic: 4,807 rows / zero reader errors. Packed DLL/unchanged manifest equal the tested build bytes. **Unplayed; matched Unity performance remains pending.**
+
+
+## Superseded task-branch candidate: v0.3.30 toggle costs (a861a2b)
+
+[UMM test ZIP](AI-Control-FACC-v0.3.30-dev-toggle-costs-a861a2b-UMM-test.zip?raw=true) · [Identity](AI-Control-FACC-v0.3.30-dev-toggle-costs-a861a2b-UMM-test.identity.json) · [Changes and paired TB/RT replay](../docs/competence/C06_TOGGLE_COSTS.md)
+
+Source `a861a2b896dc14b47706f954dca8d6022f3a87b1`, branch `codex/class-competence-toggle-costs`; manifest remains 0.3.30. Startup MVID `4f92cc10-5f8d-469c-a3a6-3a257065775e`. Resource windows follow supported start/round/interval/Judgment costs and already-paid time; native event-dependent depletion and unknown contracts retain fallback. Existing ownership, acceptance, blocklists and restoration remain in place.
+
+537 unit tests, 85 compiled cost checks across six progression-shaped kits, zero-warning real-reference Release build and 17 resolved added references. Strict audit remains incomplete on one known offline Unity-bound input; the separate PARTIAL run has 4,807 rows and zero reader errors. ZIP bytes match the checked committed-source build; only the mod DLL and unchanged manifest are packed. **Unplayed candidate; no Unity performance claim.**
+
+
+
 ## Current test build: v0.3.30-dev-competence3b (3443d94) - competence3 plus a clearer burn line
 
 **[Download the UMM test ZIP (3443d94)](AI-Control-FACC-v0.3.30-dev-competence3b-3443d94-UMM-test.zip?raw=true)** · [Identity](AI-Control-FACC-v0.3.30-dev-competence3b-3443d94-UMM-test.identity.json) · [Checksums](SHA256SUMS.txt)
@@ -50,7 +71,7 @@ DLL SHA-256 `53227972f3d92685072605d8d6897daa98e8a8c0531d989c7cbf357e2646afc0`; 
   longer hide that. Every burn still pays its per-rest price, so it is not spent for nothing.
 - **Area buffs** (performances, auras) keep every distinct branch that can give a buff.
 - Checks: 522 unit + 11 inventory tests; real-DLL build 0 warnings; offline audit 4031 blueprints, 0 errors, 42 burn /
-  16 save-route / 14 area checks pass. **Not played yet.**
+  16 save-route / 14 area checks pass. **Played: author/§126 report 6 TB + 8 RT fights; see the newer competence3 fixes above.**
 - What to test (TB and RT): a level-6+ kineticist (no "burn consequences unknown" line, same burn choices as test 2); a
   Psychokineticist with and without an Adaptation talent at low HP (no low-HP burn refusals; Will drops 2 per burn);
   an Arcanist/next-spell DC booster on a half-damage spell against a target with Evasion; a Skald or Bard song.
@@ -1529,3 +1550,129 @@ metakinesis or form optimizer. Separate unacted Aid Another/no-reach ordering re
 Prior filenames/checksums remain unchanged for exact log-to-build matching.
 
 </details>
+
+
+## C06R1 playtest review candidate (9 November 2026, not played)
+
+[UMM test ZIP](AI-Control-FACC-v0.3.30-dev-C06R1-a19fb54-UMM-test.zip) · [identity](AI-Control-FACC-v0.3.30-dev-C06R1-a19fb54-UMM-test.identity.json) · [checksums](AI-Control-FACC-v0.3.30-dev-C06R1-a19fb54-UMM-test.sha256). Source `a19fb54`, startup MVID `1a2a9e3e-dd56-4849-b49e-7144ad3b7ed5`; manifest 0.3.30. ZIP SHA-256 `4c365d16cd074ab7b4223c34f0ffb664bf27e50e743b5717a3d4f85ccedff406`.
+
+Includes the five focused C06 fixes/diagnostics (PRs #23–#27) over the played C06 / PR #22. See [expected changes and TB/RT replay](../docs/C06_PLAYTEST_CANDIDATE.md) and [combined checks](../docs/competence/C06_COMBINED_CHECKS.json). 551 unit + 11 inventory tests; Release 0 warnings; strict compatible scope 44,637 unique / 0 failed, 4,807 rows / 0 reader errors; 98 toggle, 14 supplied-provider burn and 6 viewless checks pass. Original full corpus remains INCOMPLETE with the named enum failure. No movement/avoidance change; swarm proposal awaits author approval. Gameplay/Unity performance pending; development only, not a release.
+
+
+## C06R2 approved swarm candidate (played; superseded for replay by C06R3 below)
+
+[UMM test ZIP](AI-Control-FACC-v0.3.30-dev-C06R2-20a7d5a-UMM-test.zip) · [identity](AI-Control-FACC-v0.3.30-dev-C06R2-20a7d5a-UMM-test.identity.json) · [checksums](AI-Control-FACC-v0.3.30-dev-C06R2-20a7d5a-UMM-test.sha256). Supersedes C06R1 for replay; source `20a7d5a`, startup MVID `675da0f1-3cb6-4531-8724-70bc9ae2dedd`, manifest 0.3.30. ZIP SHA-256 `1f2d126d5e57d17d3973482843c2b48b3e214b5fa402485a8bd63a07a86d7789`.
+
+Includes all C06R1 fixes plus the approved swarm cast/source/boundary repair. [Evidence, performance limits and TB/RT checklist](../docs/C06_SWARM_IMPLEMENTATION.md) · [machine receipt](../docs/competence/C06_SWARM_CHECKS.json). 557 unit + 11 inventory tests; Release 0 warnings; 27 swarm / 98 toggle / 14 Tome / 6 viewless checks pass. Strict compatible scope passes; full original corpus still has the named enum failure. Warm helper allocation regressions pass. The author has since supplied C06R2 gameplay logs: [review and remaining Cling risk](../docs/C06R2_PLAYTEST_REVIEW.md); this does not certify every geometry/command/performance case. Development only; no release.
+
+
+## C06R3 playtest-review candidate (9 November 2026, not played)
+
+[UMM test ZIP](AI-Control-FACC-v0.3.30-dev-C06R3-b19312a-UMM-test.zip) · [identity](AI-Control-FACC-v0.3.30-dev-C06R3-b19312a-UMM-test.identity.json) · [checksums](AI-Control-FACC-v0.3.30-dev-C06R3-b19312a-UMM-test.sha256). Supersedes C06R2 for replay; checked source `b19312a`, startup MVID `8af1ad59-23ff-429e-9a1a-55033bb86e0a`, manifest 0.3.30. ZIP SHA-256 `2f7846f8b199ca735a3c55a1714d183961d7c0fa9b55b7a6d462243549188e31`.
+
+Includes C06R2 plus actual concealment-removal gain for pure reveal buffs, the exact optional ToyBox spend-hook contract in AI Control's reader, and context avoidance for empty immutable buff parts. ToyBox and all movement/retreat/commitment/path/cancellation policies are unchanged. [23-fight review and TB/RT replay](../docs/C06R2_PLAYTEST_REVIEW.md) · [final checks](../docs/competence/C06R2_REVIEW_CHECKS.json). 558 unit + 11 inventory; real-reference Release 0 warnings; 7 reveal/counter, 10 ToyBox reader, 27 swarm, 98 toggle, 14 Tome and 6 viewless checks pass. Compatible strict audit passes; the full original corpus retains its named enum failure. Tick Swarm Cling remains a separate [attached-damage proposal](../docs/C06R2_ATTACHED_DAMAGE_PROPOSAL.md), not a completed avoidance fix. Gameplay and matched Unity performance of C06R3 are pending. No release.
+
+
+## C06R4 attached-damage candidate (played; see C06R5 review below)
+
+[UMM test ZIP](AI-Control-FACC-v0.3.30-dev-C06R4-736358a-UMM-test.zip) · [identity](AI-Control-FACC-v0.3.30-dev-C06R4-736358a-UMM-test.identity.json) · [checksums](AI-Control-FACC-v0.3.30-dev-C06R4-736358a-UMM-test.sha256). Includes C06R3 and the newly approved attached-damage model. Source `736358a`, startup MVID `3705efbc-ad31-48e0-a8b7-c01ea9654b1d`, manifest 0.3.30. ZIP SHA-256 `6affa4de7e5fcf4f28bcf602a766d3c4792fc5bd2fdfe921fcd15689878b897f`.
+
+Existing Cling damage follows the companion after leaving the swarm, so shared danger/healing and verified cleanse values can account for it. Actual native schedules, saves, counters and supported damage rules are read once per recipient/decision. Existing movement/commitment/retreat/path/dispatch/cancellation policies remain in place. [Implementation, limits and TB/RT replay](../docs/C06_ATTACHED_DAMAGE.md) · [checked receipt](../docs/competence/C06_ATTACHED_DAMAGE_CHECKS.json). 588 unit + 11 inventory; real-reference Release 0 warnings; 24 attached, 27 swarm, 98 toggle, 14 Tome, 10 ToyBox, 7 reveal and 6 viewless checks pass. 10,000 warm snapshot lookups allocate zero bytes; actual Unity performance and C06R4 gameplay remain pending. Strict compatible scope passes; original full corpus retains its named enum failure. Development test only, no release.
+
+
+## C06R5 playtest-review candidate (not played)
+
+[UMM test ZIP](AI-Control-FACC-v0.3.30-dev-C06R5-6794275-UMM-test.zip) · [identity](AI-Control-FACC-v0.3.30-dev-C06R5-6794275-UMM-test.identity.json) · [checksums](AI-Control-FACC-v0.3.30-dev-C06R5-6794275-UMM-test.sha256). Includes C06R4 and performance fixes from its 19-fight capture. Source `6794275`, startup MVID `64cd2d32-7182-47c5-a7c5-fef817edf58d`, manifest 0.3.30. ZIP SHA-256 `144c46dec24d007f8d55073a5066110b9caab320c6029d7700ba2c75fa334dd3`.
+
+Reuses exact recipient resistance results within an ability evaluation, with state-preview invalidation and fresh later evaluations; native immunity/resistance rules and context isolation are preserved. Avoids pointless appraisal contexts while retaining numerical/equipment paths; deduplicates benign unsupported-periodic notices. [Review, limits and replay](../docs/C06R4_PLAYTEST_REVIEW.md) · [receipt](../docs/competence/C06R4_REVIEW_CHECKS.json). 594 unit + 11 inventory, Release 0 warnings, 18 new native memo/equipment checks plus inherited regressions pass. Warm 10,000 memo reads allocate zero bytes. Strict compatible scope passes; original full corpus retains the named enum failure. Movement/commitment/retreat/path/dispatch/cancellation policy unchanged. C06R5 gameplay and matched Unity performance pending; no release.
+
+
+## caster1: opt-in caster policies and native Magic Fusion (not played)
+
+[UMM test ZIP](AI-Control-FACC-v0.3.30-dev-caster1-d184c8e-UMM-test.zip) · [identity](AI-Control-FACC-v0.3.30-dev-caster1-d184c8e-UMM-test.identity.json) · [checksums](AI-Control-FACC-v0.3.30-dev-caster1-d184c8e-UMM-test.sha256). Source `d184c8e`, startup MVID `35b96ebd-8929-4ce8-baa4-564d03bc454f`, manifest 0.3.30. Includes C06R5. ZIP SHA-256 `6673b5b2b40b3ec04d01363073abe4da146dc770b31f6781dbe2cc7850d14eab`.
+
+Ordinary Ranged characters retain weapon attacks. Pure Mage is a separate default-off checkbox. Conservative retains old Progressive saves; Aggressive removes offensive spell-slot thrift. Native Reach and supported Magic Fusion payload/delivery/save/cap handling are repaired; unpriced fusion structures remain manual with a named diagnostic. [Design/limits/TB+RT checklist](../docs/CASTER_POLICIES.md) · [checks](../docs/competence/CASTER_CHECKS.json). 599 unit + 11 inventory, 32 caster / 35 fusion native checks and inherited regressions pass; real-reference Release 0 warnings, all 28 added foreign signatures resolve. Compatible scope passes; original full-corpus enum failure remains separate. Gameplay/performance pending, no release.
+
+
+## caster2: caster1 broad log-review fixes (not played)
+
+[UMM test ZIP](AI-Control-FACC-v0.3.30-dev-caster2-281c679-UMM-test.zip) · [identity](AI-Control-FACC-v0.3.30-dev-caster2-281c679-UMM-test.identity.json) · [checksums](AI-Control-FACC-v0.3.30-dev-caster2-281c679-UMM-test.sha256). Source `281c679`, startup MVID `4902d9eb-2d73-4f6e-a9e4-813adba6d7ce`, manifest 0.3.30. Includes caster1; Magus automation remains separate. ZIP SHA-256 `205e4d42476bb4ba066c552f8b355cf987e16ab65ae7f716b22808a9dfb1619d`.
+
+Repairs native simple-projectile damage counts, the refused critical Pure Mage heal and native burn getter settings. [Review/proposals/replay](../docs/CASTER1_PLAYTEST_REVIEW.md) · [receipt](../docs/competence/CASTER1_REVIEW_CHECKS.json). 599 unit + 11 inventory tests pass; native projectile 29, burn 50, caster 36, fusion 35 and inherited regressions pass; real-reference Release 0 warnings; all five added signatures resolve. Compatible ProfileAudit passes; original full-corpus enum failure remains separate. Gameplay/matched Unity performance pending.
+
+
+## magus1: native melee Magus and caster2 fixes (not played)
+
+[UMM test ZIP](AI-Control-FACC-v0.3.30-dev-magus1-e2473e8-UMM-test.zip) · [identity](AI-Control-FACC-v0.3.30-dev-magus1-e2473e8-UMM-test.identity.json) · [checksums](AI-Control-FACC-v0.3.30-dev-magus1-e2473e8-UMM-test.sha256). Source `e2473e8`, startup MVID `66d1bd9e-d6a8-4c0c-8b1b-7dbc99b2db72`, manifest 0.3.30. Includes caster2/PR #34 and its prerequisites. ZIP SHA-256 `8c4fa47a1ad6517d97269dffe9c04b53e3a06fc07786c8e5ca4ba982f2f6291d`.
+
+Bounded native Spell Combat/Spellstrike preparation, combined forecasts, finite follow-ups and held-touch protection, including natural melee delivery. Fired rays are not melee charges. [Design/replay](../docs/C07_MAGUS.md) · [receipt](../docs/competence/C07_MAGUS_CHECKS.json). 607 unit + 11 inventory; Magus 32 checks / 44 with supplementary stock hidden buffs, all inherited regressions pass; Release against real supplied references 0 warnings, all 29 added signatures resolve. Compatible ProfileAudit passes; original full corpus retains its separate enum failure. Gameplay/matched Unity timing pending.
+
+
+## step1: Selected-path validation for five-foot-step full attacks (not played)
+
+[UMM test ZIP](AI-Control-FACC-v0.3.30-dev-step1-ee24df1-UMM-test.zip) · [identity](AI-Control-FACC-v0.3.30-dev-step1-ee24df1-UMM-test.identity.json) · [checksums](AI-Control-FACC-v0.3.30-dev-step1-ee24df1-UMM-test.sha256). Source `ee24df1`, startup MVID `9523fbe4-edb2-46b5-9fbe-e430636c9634`, manifest 0.3.30. ZIP SHA-256 `ddcb876fffdd0e80e50c2d5e3fa895cc7078915254592c17ede0ae974e713653`.
+
+Includes magus1/caster2 and their prerequisites. Routes step-and-full-attack plans through the existing three-check selected preflight before boost spending, including weak weapon fallback. Native action economy/dispatcher remain authoritative. Area-exit changes are separate. [Design/replay](../docs/MOVEMENT_STEP_PREFLIGHT.md) · [receipt](../docs/competence/MOVEMENT_STEP_CHECKS.json). 607 unit + 11 inventory, native step 13 and inherited checks pass; real-reference Release 0 warnings; 0/0 added signatures resolve. Compatible/supplementary audits pass, original full-corpus enum failure remains separate. Gameplay/matched timing pending.
+
+
+## exit1: Native reachable endpoints and body clearance for area exits (not played)
+
+[UMM test ZIP](AI-Control-FACC-v0.3.30-dev-exit1-e806f4d-UMM-test.zip) · [identity](AI-Control-FACC-v0.3.30-dev-exit1-e806f4d-UMM-test.identity.json) · [checksums](AI-Control-FACC-v0.3.30-dev-exit1-e806f4d-UMM-test.sha256). Source `e806f4d`, startup MVID `905bb172-799c-44cb-a46a-ff208a31dab4`, manifest 0.3.30. ZIP SHA-256 `552b8f4062db2d5d41e330e5d6848a4d98f455f4fdf7f22e5838989dcf375de4`.
+
+Includes step1/magus1/caster2 and their prerequisites. Projects area-exit hints to native walkable endpoints with body/stopping clearance; shared unmounted escapes validate actual route endpoints and native movement budget before issue. Existing three-check budget and native movement handling remain. Native area-exit checks: 28. [Design/replay](../docs/MOVEMENT_AREA_EXITS.md) · [receipt](../docs/competence/MOVEMENT_EXIT_CHECKS.json). 607 unit + 11 inventory, native step 13 and inherited checks pass; real-reference Release 0 warnings; 4/4 added signatures resolve. Compatible/supplementary audits pass, original full-corpus enum failure remains separate. Gameplay/matched timing pending.
+
+
+## review1: Exit1 broad playtest review and constant debuff source-context cost (not played)
+
+[UMM test ZIP](AI-Control-FACC-v0.3.30-dev-review1-318b52f-UMM-test.zip) · [identity](AI-Control-FACC-v0.3.30-dev-review1-318b52f-UMM-test.identity.json) · [checksums](AI-Control-FACC-v0.3.30-dev-review1-318b52f-UMM-test.sha256). Source `318b52f`, startup MVID `ffce03c5-bfe3-414f-b6bd-4a946d673dbf`, manifest 0.3.30. ZIP SHA-256 `cb1fd6c4c9c92ad6b3b12b89b2fa34be83a675e6ee3495587d0b769974febd06`.
+
+Includes exit1/step1/magus1/caster2 prerequisites. Constant/simple numerical debuffs skip redundant native source contexts for the same caster; dynamic amounts keep binding and recipient stats remain live. No movement policy change. Review covers eight fights / 900 summaries; geometry and friendly affliction coordination follow separately. [Design/replay](../docs/EXIT1_PLAYTEST_REVIEW.md) · [receipt](../docs/competence/EXIT1_REVIEW_CHECKS.json). 607 unit + 11 inventory, native step 13 and inherited checks pass; real-reference Release 0 warnings; 0/0 added signatures resolve. Compatible/supplementary audits pass, original full-corpus enum failure remains separate. Gameplay/matched timing pending.
+
+
+## exit2: Approved area exits using actual native entity-bound geometry (not played)
+
+[UMM test ZIP](AI-Control-FACC-v0.3.30-dev-exit2-9145404-UMM-test.zip) · [identity](AI-Control-FACC-v0.3.30-dev-exit2-9145404-UMM-test.identity.json) · [checksums](AI-Control-FACC-v0.3.30-dev-exit2-9145404-UMM-test.sha256). Source `9145404`, startup MVID `36d0bc00-2822-419e-a10a-d3a60bd536fa`, manifest 0.3.30. ZIP SHA-256 `9f55900f3c02ae8712cc26183ab31c098afd7db29eda4e060f5ad0550258ecd1`.
+
+Includes review1/exit1/step1/magus1/caster2 prerequisites. Area exits use actual sphere bounds with native cylinder capsule/box query footprints, fresh selected checks and no leave credit for already-clear geometry. Same 80 hints/three route checks; read-only bounded diagnostic; no native overlap queries or actor/collider mutation. [Design/replay](../docs/MOVEMENT_EXIT_BOUNDS.md) · [receipt](../docs/competence/MOVEMENT_BOUNDS_CHECKS.json). 629 unit + 11 inventory, native step 13 and inherited checks pass; real-reference Release 0 warnings; 17/17 added signatures resolve. Compatible/supplementary audits pass, original full-corpus enum failure remains separate. Gameplay/matched timing pending.
+
+
+## review2: Coordinate an identical in-flight friendly removal fallback (not played)
+
+[UMM test ZIP](AI-Control-FACC-v0.3.30-dev-review2-9464c2d-UMM-test.zip) · [identity](AI-Control-FACC-v0.3.30-dev-review2-9464c2d-UMM-test.identity.json) · [checksums](AI-Control-FACC-v0.3.30-dev-review2-9464c2d-UMM-test.sha256). Source `9464c2d`, startup MVID `a21cbb58-f176-4d4a-8ec2-cf912910bc3e`, manifest 0.3.30. ZIP SHA-256 `3b9d70caf9dbca225fcb28f81de044d2f418342c3aa9bcd376008a8399a58dc7`.
+
+Cumulative review2 includes review1/exit2/step1/magus1/caster2 prerequisites. Fixed debuffs skip redundant source contexts; approved area exits forecast actual native bounds. The unmodelled friendly dispel fallback does not gain utility while another actor casts the same ability on that recipient. Existing HP healing/modelled effects and native pending lifetime remain. [Design/replay](../docs/FRIENDLY_TREATMENT_COORDINATION.md) · [receipt](../docs/competence/TREATMENT_PENDING_CHECKS.json). 629 unit + 11 inventory, native step 13 and inherited checks pass; real-reference Release 0 warnings; 0/0 added signatures resolve. Compatible/supplementary audits pass, original full-corpus enum failure remains separate. Gameplay/matched timing pending.
+
+
+## archer1: Native Eldritch Archer ranged Spell Combat and first-arrow Spellstrike support (not played)
+
+[UMM test ZIP](AI-Control-FACC-v0.3.30-dev-archer1-5ddcbca-UMM-test.zip) · [identity](AI-Control-FACC-v0.3.30-dev-archer1-5ddcbca-UMM-test.identity.json) · [checksums](AI-Control-FACC-v0.3.30-dev-archer1-5ddcbca-UMM-test.sha256). Source `5ddcbca`, startup MVID `8e6a8470-b08a-41d6-9771-0b995ae18465`, manifest 0.3.30. ZIP SHA-256 `3ca45d6b85eccac0fbcfaf385670fcddd39be75e7f1b98287fe35579f659ecf3`.
+
+Includes cumulative review2 prerequisites. Bounded native ranged Magus plans, actual bow delivery, correlated first-arrow spell roll/critical, finite native follow-ups, pending payload value/guards and no false no-effect on arming. Standard simple-ray automatic pairs; existing shared TB/RT policies and four-cast/two-state bound remain. Shifter is separate. [Design/replay](../docs/ELDRITCH_ARCHER.md) · [receipt](../docs/competence/ELDRITCH_ARCHER_CHECKS.json). 629 unit + 11 inventory, native step 13 and inherited checks pass; real-reference Release 0 warnings; 5/5 added signatures resolve. Compatible/supplementary audits pass, original full-corpus enum failure remains separate. Gameplay/matched timing pending.
+
+
+## shifter1: Shifter native combat forms, aspects, Fury and automatic post-combat form exclusion (not played)
+
+[UMM test ZIP](AI-Control-FACC-v0.3.30-dev-shifter1-f904c39-UMM-test.zip) · [identity](AI-Control-FACC-v0.3.30-dev-shifter1-f904c39-UMM-test.identity.json) · [checksums](AI-Control-FACC-v0.3.30-dev-shifter1-f904c39-UMM-test.sha256). Source `f904c39`, startup MVID `875cf339-de55-4d04-89f9-d5235ec7ecbe`, manifest 0.3.30. ZIP SHA-256 `ce14191d756151500d2ec12418395a90c32fd8e388d4bb624410b3aa6a2aa116`.
+
+Cumulative EA/review2 prerequisites included. Shared TB/RT Shifter core natural-attack/stat/absolute-size/equipment-loss appraisals, existing minor-aspect/C06 spend/group integration, bounded actual native Fury choices while off, original all-off restore and partial-activation rollback; current/player/suppressed forms and pending Fury selections retained. Automatic out-of-combat self-buff upkeep excludes transformations. Native execution/resources remain; no general movement change. [Design/replay](../docs/SHIFTER_SUPPORT.md) · [receipt](../docs/competence/SHIFTER_CHECKS.json). 647 unit + 11 inventory, native step 13 and inherited checks pass; real-reference Release 0 warnings; 73/73 added signatures resolve. Compatible/supplementary audits pass, original full-corpus enum failure remains separate. Gameplay/matched timing pending.
+
+
+## review3: Shifter1 mixed-mode review: unblock native campaign-flag form guards (not played)
+
+[UMM test ZIP](AI-Control-FACC-v0.3.30-dev-review3-a58de3e-UMM-test.zip) · [identity](AI-Control-FACC-v0.3.30-dev-review3-a58de3e-UMM-test.identity.json) · [checksums](AI-Control-FACC-v0.3.30-dev-review3-a58de3e-UMM-test.sha256). Source `a58de3e`, startup MVID `d3873816-d1f0-4bc4-bc80-dc5e5e681a3b`, manifest 0.3.30. ZIP SHA-256 `e0ff67606d45ec2de535e8af3ea7505d6f3d85ab0ec5b7c6ccc21c3dac975769`.
+
+Cumulative shifter1/EA prerequisites. Exact native read-only FlagUnlocked conditions enter the existing guard allowlist, allowing the actual Griffon form branch to be appraised. Bounded one-row-per-ability/unit/fight form reasons include zero quotes. Broad nine-fight review distinguishes spawn/rest/GC/native failures. Ranged sampling and explicitly authorized movement fallback are separate follow-ups; no movement change in this task. [Design/replay](../docs/SHIFTER1_PLAYTEST_REVIEW.md) · [receipt](../docs/competence/SHIFTER1_REVIEW_CHECKS.json). 647 unit + 11 inventory, native step 13 and inherited checks pass; real-reference Release 0 warnings; 0/0 added signatures resolve. Compatible/supplementary audits pass, original full-corpus enum failure remains separate. Gameplay/matched timing pending.
+
+
+## review4: Shifter1 review: withhold ambiguous Eldritch Archer ray samples (not played)
+
+[UMM test ZIP](AI-Control-FACC-v0.3.30-dev-review4-3f66960-UMM-test.zip) · [identity](AI-Control-FACC-v0.3.30-dev-review4-3f66960-UMM-test.identity.json) · [checksums](AI-Control-FACC-v0.3.30-dev-review4-3f66960-UMM-test.sha256). Source `3f66960`, startup MVID `b7d068bd-340a-43b7-94fe-f12f51b0c74a`, manifest 0.3.30. ZIP SHA-256 `06ffd9ae225e299447c79bc5f9b680f5941cec27716ecd3e9c6dca6c9ca997fb`.
+
+Cumulative review3/Shifter/EA prerequisites. Excludes unidentifiable shared-arrow projectile Spell calibration samples using the actual actor and ranged event roll. Packet-defense observations remain before this gate; ordinary independent rays and spell-like kinetic samples remain. No actual damage, spell/weapon valuation, movement or command changes. [Design/replay](../docs/EA_CORRELATED_SAMPLING.md) · [receipt](../docs/competence/EA_CORRELATED_SAMPLING_CHECKS.json). 655 unit + 11 inventory, native step 13 and inherited checks pass; real-reference Release 0 warnings; 0/0 added signatures resolve. Compatible/supplementary audits pass, original full-corpus enum failure remains separate. Gameplay/matched timing pending.
+
+
+## review5: Shifter1 review: recover ordinary advances after rejected attack approaches (not played)
+
+[UMM test ZIP](AI-Control-FACC-v0.3.30-dev-review5-45c3b4d-UMM-test.zip) · [identity](AI-Control-FACC-v0.3.30-dev-review5-45c3b4d-UMM-test.identity.json) · [checksums](AI-Control-FACC-v0.3.30-dev-review5-45c3b4d-UMM-test.sha256). Source `45c3b4d`, startup MVID `b3359daf-c8e5-4bb6-9245-d6be013a4d15`, manifest 0.3.30. ZIP SHA-256 `622b4e6ff234ce54691b303e4763f355ea04753de4cdda1954e8b92dab4dd866`.
+
+Cumulative review4/campaign-flag/Shifter/EA prerequisites. After an actual offensive-approach refusal leaves no useful action, lazily price ordinary advances through the existing three-target closing builder. Keep the three-check selected preparation cap, native dispatcher route/hazard/AoO checks, action/status/Pure Mage gates and genuine real-time in-place cooldown waiting. No full Decide retry, reused rejected path or general retreat/commitment/pathfinder/stuck change. [Design/replay](../docs/REJECTED_APPROACH_ADVANCE.md) · [receipt](../docs/competence/REJECTED_APPROACH_ADVANCE_CHECKS.json). 664 unit + 11 inventory, native step 13 and inherited checks pass; real-reference Release 0 warnings; 0/0 added signatures resolve. Compatible/supplementary audits pass, original full-corpus enum failure remains separate. Gameplay/matched timing pending.

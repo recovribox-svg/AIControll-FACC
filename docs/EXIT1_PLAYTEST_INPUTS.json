@@ -1,0 +1,16 @@
+{
+  "date": "2026-11-12",
+  "build_label": "exit1",
+  "startup_mvid": "905bb172-799c-44cb-a46a-ff208a31dab4",
+  "inputs": [
+    {"name": "TB + RT Log.txt", "bytes": 1296905, "sha256": "eebe8ed55f70b730e58e78c09bf00ae1ecb3c0383259b7db5d43c268c315de6e", "lf_lines": 6803},
+    {"name": "combatLog.txt", "bytes": 1168907, "sha256": "6b7893cd67b9b1348016ddc1524d4e64441245dee2e3af5ead4046b1d5fa66a8", "lf_lines": 28840}
+  ],
+  "fights": 8,
+  "decision_summaries": {"total": 900, "tb": 376, "rt": 524},
+  "commands": {"issued": 658, "ended": 658, "success_acted": 477, "interrupt_acted": 100, "interrupt_unacted": 77, "fail_acted": 4},
+  "slow_samples": {"count": 54, "median_ms": 338.5, "maximum_ms": 1356, "explicit_cleanup": 11},
+  "observed_companion_ai_exceptions": 0,
+  "raw_logs_committed": false,
+  "limits": "Thresholded samples; interruptions and area centres require outcomes. Offline checks are distinct from gameplay acceptance."
+}

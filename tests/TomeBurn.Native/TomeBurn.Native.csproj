@@ -1,0 +1,24 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!-- Real-reference reader checks. Input assemblies and exports remain external; never deploy the harness. -->
+  <PropertyGroup>
+    <OutputType>Exe</OutputType><TargetFramework>net8.0</TargetFramework>
+    <StartupObject>TomeBurnNative.Program</StartupObject>
+    <Nullable>disable</Nullable><ImplicitUsings>disable</ImplicitUsings>
+    <NoWarn>$(NoWarn);MSB3277;CS1701;CS1702</NoWarn>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="../../tools/ProfileAudit/*.cs" Link="ProfileAudit/%(Filename)%(Extension)" />
+    <PackageReference Include="Lib.Harmony" Version="2.3.3" />
+    <Reference Include="CompanionAI_Pathfinder"><HintPath>$(ModDll)</HintPath></Reference>
+    <Reference Include="$(ManagedPath)/Assembly-CSharp.dll" />
+    <Reference Include="$(ManagedPath)/Owlcat.Runtime.Core.dll" />
+    <Reference Include="$(ManagedPath)/Owlcat.Runtime.Validation.dll" />
+    <Reference Include="$(ManagedPath)/Owlcat.Runtime.UI.dll" />
+    <Reference Include="$(ManagedPath)/Owlcat.Runtime.Visual.dll" />
+    <Reference Include="$(ManagedPath)/Owlcat.SharedTypes.dll" />
+    <Reference Include="$(ManagedPath)/Newtonsoft.Json.dll" />
+    <Reference Include="$(ManagedPath)/UnityEngine.dll" />
+    <Reference Include="$(ManagedPath)/UnityEngine.CoreModule.dll" />
+    <Reference Include="$(ManagedPath)/UniRx.dll" />
+  </ItemGroup>
+</Project>

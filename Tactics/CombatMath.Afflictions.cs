@@ -154,6 +154,9 @@ namespace CompanionAI_Pathfinder.Tactics
         {
             var buff = apply.Buff;
             if (buff == null || apply.ToCaster || BuffBlockedFor(victim, buff)) return;
+            // ★ v0.3.30 C06R4: an Ignore-stacking attached effect already on this victim adds no fresh ticks. Its existing
+            // instance is priced separately at every spot, including after the original attacker disappears.
+            if (AttachedApplicationHeld(victim, buff)) return;
             float rounds = AfflictionRounds;
             if (!apply.Permanent && apply.DurationValue != null && apply.DurationValue.Rate == Kingmaker.UnitLogic.Mechanics.DurationRate.Rounds)
             {
@@ -238,7 +241,7 @@ namespace CompanionAI_Pathfinder.Tactics
                 if (!AbilityDamageImmune(victim, entry.Key, false))
                     drain += ValueModel.AbilityDamageEquivalent(entry.Value, AbilityScore(victim, entry.Key), hpLeft);
             if (affliction.NegativeLevels > 0f && !EnergyDrainImmune(victim))
-                drain += ValueModel.EnergyDrainEquivalent(affliction.NegativeLevels, level, hpLeft);
+                drain += ValueModel.EnergyDrainEquivalent(affliction.NegativeLevels, LevelsBeforeDrainDeath(victim), hpLeft);
             return ValueModel.AfflictionWorth(affliction.HitPoints, drain, affliction.Control, hpLeft, ValueModel.PerRound(level));
         }
 
@@ -252,17 +255,17 @@ namespace CompanionAI_Pathfinder.Tactics
                 if (!AbilityDamageImmune(victim, entry.Key, false))
                     share += ValueModel.AbilityDamageShare(entry.Value, AbilityScore(victim, entry.Key));
             float levels = affliction.NegativeLevels > 0f && !EnergyDrainImmune(victim) ? affliction.NegativeLevels : 0f;
-            return ValueModel.AfflictionShare(share, levels, Math.Max(1, victim.Descriptor?.Progression?.CharacterLevel ?? 1), affliction.Control);
+            return ValueModel.AfflictionShare(share, levels, levels > 0f ? LevelsBeforeDrainDeath(victim) : 1, affliction.Control);
         }
 
         private sealed class AfflictionSource
         {
             public ActionList Actions;
             public int Dc;
+            public Kingmaker.EntitySystem.EntityFact Fact;
         }
 
         private static readonly Dictionary<string, List<AfflictionSource>> s_HitSources = new Dictionary<string, List<AfflictionSource>>();
-        private static readonly Dictionary<string, List<AfflictionSource>> s_RoundSources = new Dictionary<string, List<AfflictionSource>>();
 
         /// <summary>
         /// The DC an attacker's fact gives its saves: the fact's own context (ContextCalculateAbilityParams), else the rule for
@@ -284,7 +287,8 @@ namespace CompanionAI_Pathfinder.Tactics
 
         private static List<AfflictionSource> SourcesOf(UnitEntityData unit, bool hits)
         {
-            var cache = hits ? s_HitSources : s_RoundSources;
+            if (!hits) return SwarmSourcesOf(unit);
+            var cache = s_HitSources;
             string key = unit.UniqueId + "|" + unit.Facts.List.Count + "|" + (unit.Body?.PrimaryHand?.MaybeWeapon?.UniqueId ?? "-");
             if (cache.TryGetValue(key, out var known)) return known;
             var list = new List<AfflictionSource>();

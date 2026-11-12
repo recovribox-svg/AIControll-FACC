@@ -1,0 +1,211 @@
+{
+  "task": "C06R4 playtest review / C06R5 scoped resistance reuse",
+  "checked_source_commit": "6794275c659b90ce47bc9542b930a23989d217ab",
+  "source_branch": "codex/c06r4-playtest-review",
+  "starting_c06r4_commit": "ca12a28cac01d540c7a11997f196c5a46342ca9c",
+  "dependency_pr": 31,
+  "development_base": "1f58150b8e50f9a322ba0b8d3fcc095fe188420f",
+  "version": "0.3.30",
+  "dll": {
+    "assembly": "CompanionAI_Pathfinder, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null",
+    "mvid": "64cd2d32-7182-47c5-a7c5-fef817edf58d",
+    "sha256": "fa24e749b5c627330a4412e865cbaa8d17df01a07263a212a909d018e65d6c79",
+    "size": 1281536
+  },
+  "review_inputs": "docs/C06R4_PLAYTEST_INPUTS.json",
+  "review_summary": {
+    "fights": 19,
+    "logged_decision_summaries": 946,
+    "ai_exceptions": 0,
+    "slow_samples": 178,
+    "slow_samples_marked_cleanup": 24,
+    "positive_attached_notices": 4,
+    "cling_exercised": false,
+    "selected_swarm_exits": 2,
+    "selected_faerie_fire": 0,
+    "external_owner_blueprint_errors": 16
+  },
+  "unit_tests": {
+    "passed": 594,
+    "failed": 0,
+    "skipped": 0,
+    "new_reference_memo_tests": 6
+  },
+  "inventory_tests": {
+    "passed": 11,
+    "failed": 0
+  },
+  "release_build": {
+    "actual_game_and_umm_references": true,
+    "warnings": 0,
+    "errors": 0,
+    "source_committed_before_build": true
+  },
+  "strict_native_compatible_audit": {
+    "status": "PASS",
+    "exit_code": 0,
+    "scope": "C06_NATIVE_COMPATIBLE_SCOPE.json",
+    "source_files": 44647,
+    "loaded_unique": 44637,
+    "failed": 0,
+    "allowed_load_failures": 0,
+    "ability_rows": 4807,
+    "reader_errors": 0,
+    "input_bytes_modified": false
+  },
+  "original_full_corpus_audit": {
+    "status": "INCOMPLETE",
+    "exit_code": 1,
+    "source_files": 44648,
+    "loaded_unique": 44637,
+    "failed": 1,
+    "allowed_load_failures": 0,
+    "ability_verdicts_generated": false,
+    "failure": "AchaekekSacredWeaponFeature: SawtoothSaber string vs native SawtoothSabre enum; failed parser logging reaches offline Unity ECall",
+    "input_sha256": "1fd534ef0fc9573520d101c721e5d2721812fdb5b8f8a13e29fcbc3acb06ac0f",
+    "input_bytes_modified": false,
+    "harness": "same byte-verified prepared harness; fourteen original roots"
+  },
+  "native_resistance_memo_checks": {
+    "checks": 18,
+    "failures": 0,
+    "native_identity_bindings": true,
+    "immune_zero_and_full_probability_preserved": true,
+    "distinct_ability_copies_and_actor_pairs": true,
+    "nested_scope_restore": true,
+    "preview_epoch_invalidation": true,
+    "fresh_same_frame_evaluation": true,
+    "actual_numerical_death_ward_retains_context": true,
+    "actual_weapon_and_armor_carriers_retain_context": true,
+    "actual_empty_appraisal_fixture": "CavalierChallengeBuffTarget",
+    "native_resistance_queries_executed": false,
+    "actor_or_native_command_execution": false
+  },
+  "warm_reference_memo": {
+    "lookups": 10000,
+    "allocated_bytes": 0,
+    "whole_decision_unity_latency_and_allocations": "pending matched gameplay; no measured speedup claimed"
+  },
+  "retained_checks": {
+    "attached": {
+      "checks": 24,
+      "failures": 0
+    },
+    "swarm": {
+      "checks": 27,
+      "failures": 0
+    },
+    "toggle": {
+      "checks": 98,
+      "failures": 0,
+      "progression_shaped_kits": 6
+    },
+    "tome_burn": {
+      "checks": 14,
+      "failures": 0
+    },
+    "toybox_reader": {
+      "checks": 10,
+      "failures": 0
+    },
+    "reveal_counter": {
+      "checks": 7,
+      "failures": 0
+    },
+    "viewless": {
+      "checks": 6,
+      "failures": 0
+    }
+  },
+  "signature_check": {
+    "baseline_mvid": "3705efbc-ad31-48e0-a8b7-c01ea9654b1d",
+    "added_member_refs": 0,
+    "resolved_added_refs": 0,
+    "details": [
+      "VERIFIED_COUNT 0 EXPECTED 0"
+    ]
+  },
+  "native_assembly": {
+    "mvid": "90a9869c-2792-4c7b-bfb7-5a8b33da7c82",
+    "sha256": "2cb7160b7154d4ffacc77b9c51b1eb26199e1294300f04fdfc073367b2ef8953"
+  },
+  "source_identities": [
+    {
+      "file": "Tactics/CombatMath.AttachedDamage.cs",
+      "sha256": "28f762890f0ac30d6d86eaaf5daed3b60575e7e438eb8031da15af26026f9d38"
+    },
+    {
+      "file": "Tactics/CombatMath.ResistanceMemo.cs",
+      "sha256": "2f4efa43f1e9bb99ebe5943acc468f2204c7bbf800521882307b9a6fb8988cf2"
+    },
+    {
+      "file": "Tactics/CombatMath.cs",
+      "sha256": "f5d20d0aac5712a07c6cce374e47e2cc27359791f75c47eb963a848035092692"
+    },
+    {
+      "file": "Tactics/DecisionTimings.cs",
+      "sha256": "c2982329f8362d1b19f0ca736687a1bb63a385b17895bf024503cf9431daaf30"
+    },
+    {
+      "file": "Tactics/ReferenceReadMemo.cs",
+      "sha256": "0923ebbc4408fff2330a06b129a671379ac7d19f090f32e19b80270187fc3997"
+    },
+    {
+      "file": "Tactics/TacticalEngine.Buffs.cs",
+      "sha256": "977d33dc628167110db29dffee0fa825d499b3439a7a5727bf772495a885831d"
+    },
+    {
+      "file": "Tactics/TacticalEngine.cs",
+      "sha256": "b8623d00df4e28c8687874a28ce6f8292ff6435e23847d56d286f8087735d928"
+    },
+    {
+      "file": "tests/CompanionAI.Tests/CompanionAI.Tests.csproj",
+      "sha256": "8f0e7d9e0c5ea80a5c4c2f85bc9fcd083788192d0a9dbde980f83c6f69350d2d"
+    },
+    {
+      "file": "tests/CompanionAI.Tests/ReferenceReadMemoTests.cs",
+      "sha256": "8a14e9f011708f5d0d8717769303df6cc9d1b4b20fee71c651f05b6f67acb253"
+    },
+    {
+      "file": "tools/ProfileAudit/Program.cs",
+      "sha256": "4d002aa088a821218629391a83d301bc23b14d951ca8d4607b1d41168048a61c"
+    },
+    {
+      "file": "tools/ProfileAudit/ResistanceMemoCheck.cs",
+      "sha256": "ca927a8c0520af5ba3df2576aa8351b39494d083ccdce33fe4e4a9f37128b800"
+    }
+  ],
+  "integration": {
+    "scope": "one synchronous EvaluateAbility call, exact reference-identity caster/target/AbilityData",
+    "context_objects_shared": false,
+    "native_resistance_helper_unchanged": true,
+    "excluded_bypass_source_queries_uncached": true,
+    "clear_attack_cache_invalidates_open_scopes": true,
+    "next_ability_evaluation_is_fresh": true,
+    "unscoped_queries_uncached": true,
+    "sr_wrapper_reads_and_reuse_diagnostics": true,
+    "equipment_and_numerical_appraisal_retained": true,
+    "unsupported_periodic_notices": "once per blueprint/session"
+  },
+  "limits": [
+    "C06R5 gameplay and matched Unity performance pending.",
+    "No native actor/resistance/command/provider-initializer execution in fixtures.",
+    "C06R4 positive poison notices do not certify absent Cling/caster-death/energy-removal scenarios.",
+    "Global heap deltas and cleanup samples are not exact per-thread allocations.",
+    "No movement/commitment/retreat/path/dispatch/cancellation or C07 implementation change."
+  ],
+  "reproduce": [
+    "dotnet test tests/CompanionAI.Tests -c Release",
+    "python3 -m unittest discover -s tools/BlueprintInventory -v",
+    "dotnet build CompanionAI_Pathfinder.csproj -c Release -p:ManagedPath=<actual Managed> -p:UmmPath=<actual UMM>",
+    "tools/ProfileAudit/run.sh <actual Managed> <checked DLL> <scratch harness> <report> <14 compatible roots from C06_NATIVE_COMPATIBLE_SCOPE.json>",
+    "Run inherited ToggleCosts.Native/Psionics, TomeBurn.Native/TTT Core+Tome, ToyBoxSpend.Native/supplied ToyBox against the prepared harness; copy only fixture startup files.",
+    "Compare SigDump to played C06R4; no new foreign member references."
+  ],
+  "boundaries": {
+    "other_mods_modified": false,
+    "main_or_development_push": false,
+    "release": false,
+    "manifest_changed": false
+  }
+}

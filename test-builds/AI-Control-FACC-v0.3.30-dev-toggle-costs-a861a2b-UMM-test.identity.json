@@ -1,0 +1,28 @@
+{
+  "source_commit": "a861a2b896dc14b47706f954dca8d6022f3a87b1",
+  "source_branch": "codex/class-competence-toggle-costs",
+  "starting_development": "fdc5e5e0906a4afc7a1af22cebbc29c0ed8d7e20",
+  "version": "0.3.30",
+  "dll": {
+    "assembly": "CompanionAI_Pathfinder, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null",
+    "mvid": "4f92cc10-5f8d-469c-a3a6-3a257065775e",
+    "sha256": "c31094e8dc315c3b9bbac3ec636d4d71e1035cd4bde7cc11f46f5e38169a3c06",
+    "size": 1226240
+  },
+  "zip": {
+    "file": "AI-Control-FACC-v0.3.30-dev-toggle-costs-a861a2b-UMM-test.zip",
+    "sha256": "e760a7fd53d765cea5b9e4e751456bf6b5c16aed81f0c24af7d9d73d5997e82c",
+    "size": 480591
+  },
+  "info_sha256": "d6ee91e78dc5d4981ad51a1a1a85bb1e7fe3f0a87814697f2fd9ee1c20d35594",
+  "package_members": [
+    "CompanionAI_Pathfinder.dll",
+    "Info.json"
+  ],
+  "build_byte_check": true,
+  "unit_tests_passed": 537,
+  "native_checks_passed": 85,
+  "progression_shaped_kits": 6,
+  "gameplay": "pending",
+  "unity_performance": "pending"
+}

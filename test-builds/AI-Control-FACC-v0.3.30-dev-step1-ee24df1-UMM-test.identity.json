@@ -1,0 +1,21 @@
+{
+  "build_label": "step1",
+  "kind": "development-test",
+  "version": "0.3.30",
+  "source_branch": "codex/step-attack-preflight",
+  "source_commit": "ee24df157c7b4b8e2e21929113dc273fad8f46d6",
+  "starting_commit": "aaf9b2074d2f1f3d8d65a9af130bbe557267a636",
+  "development_base": "1f58150b8e50f9a322ba0b8d3fcc095fe188420f",
+  "dependency_pr": 35,
+  "dll": {
+    "assembly": "CompanionAI_Pathfinder, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null",
+    "mvid": "9523fbe4-edb2-46b5-9fbe-e430636c9634",
+    "sha256": "6e3e96abcdaec4350171240d029d6888afff65af5b2b472275aec6d4d7276ac8",
+    "size": 1325568
+  },
+  "manifest_sha256": "d6ee91e78dc5d4981ad51a1a1a85bb1e7fe3f0a87814697f2fd9ee1c20d35594",
+  "checks_receipt": "docs/competence/MOVEMENT_STEP_CHECKS.json",
+  "gameplay_status": "not played",
+  "scope": "Includes magus1/caster2 and their prerequisites. Routes step-and-full-attack plans through the existing three-check selected preflight before boost spending, including weak weapon fallback. Native action economy/dispatcher remain authoritative. Area-exit changes are separate.",
+  "release": false
+}

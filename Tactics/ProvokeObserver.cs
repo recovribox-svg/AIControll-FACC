@@ -41,7 +41,7 @@ namespace CompanionAI_Pathfinder.Tactics
         }
 
         private static string WeaponKey(UnitEntityData unit, WeaponCategory category) => $"{unit.UniqueId}|w:{category}";
-        private static string AbilityKey(UnitEntityData unit, AbilityData ability) => $"{unit.UniqueId}|a:{ability.Blueprint.AssetGuid}";
+        private static string AbilityKey(UnitEntityData unit, AbilityData ability) => $"{unit.UniqueId}|a:{CombatMemory.AbilityKey(ability)}";
 
         /// <summary>A ranged attack with this weapon by <paramref name="unit"/> provokes (the last roll seen, else Point Blank Master).</summary>
         public static bool WeaponProvokes(UnitEntityData unit, ItemEntityWeapon weapon)

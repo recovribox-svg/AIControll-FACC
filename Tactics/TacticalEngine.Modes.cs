@@ -567,8 +567,9 @@ namespace CompanionAI_Pathfinder.Tactics
             if (Math.Abs(share) < 1e-4f) return 0f;
             float hp = Math.Max(1f, CombatMath.HpBeforeDown(unit));
             float dropBefore = RiskMath.RoundDropChance(hp, danger);
-            float dropAfter = RiskMath.RoundDropChance(hp, danger * (1f - share));
-            return ((dropBefore - dropAfter) * AllyWorth(ctx, unit) + danger * share * 0.3f) * RiskTolerance(ctx);
+            float dangerAfter = ValueModel.AfterEnemyProtection(danger, CombatMath.AttachedDamageOf(ctx, unit).NextRisk, share);
+            float dropAfter = RiskMath.RoundDropChance(hp, dangerAfter);
+            return ((dropBefore - dropAfter) * AllyWorth(ctx, unit) + (danger - dangerAfter) * 0.3f) * RiskTolerance(ctx);
         }
 
         /// <summary>
@@ -602,10 +603,12 @@ namespace CompanionAI_Pathfinder.Tactics
                         ab += sign * m.Attack(weapon, full);
                         dmg += sign * m.Damage(weapon);
                     }
+                    if (c.MagusFollowCombat && MagusMechanics.CombatPenalty(unit,
+                        Kingmaker.Blueprints.Root.BlueprintRoot.Instance.SystemMechanics.MagusSpellCombatBuff, weapon, out int penalty)) ab += penalty;
                     return new KeyValuePair<int, float>(ab, dmg);
                 });
                 int ac = modes.Sum(m => ((set.Contains(m) ? 1 : 0) - (m.InEstimate ? 1 : 0)) * m.AC);
-                return new KeyValuePair<float, float>(estimate == null ? -1f : DamageValue(c.Target, estimate), DefenseValue(ctx, at, ac));
+                return new KeyValuePair<float, float>(estimate == null ? -1f : DamageValue(c.Target, estimate) + MagusChargeValue(c, estimate), DefenseValue(ctx, at, ac));
             };
             var current = new HashSet<UnitMode>(modes.Where(m => m.On));
             var baseline = valueOf(current);

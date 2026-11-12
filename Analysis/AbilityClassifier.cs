@@ -970,8 +970,8 @@ namespace CompanionAI_Pathfinder.Analysis
                 Range = cached.Range,
                 IsMindAffecting = cached.IsMindAffecting,
                 IsDeathEffect = cached.IsDeathEffect,
-                IsTouch = cached.IsTouch,
-                IsRangedTouch = cached.IsRangedTouch,
+                IsTouch = (cached.IsTouch || Tactics.SpellDelivery.IsTouchAttack(ability)) && !Tactics.SpellDelivery.IsReachTouch(ability),
+                IsRangedTouch = cached.IsRangedTouch || Tactics.SpellDelivery.IsReachTouch(ability),
                 RequiredSave = cached.RequiredSave,
                 CommandActionType = cached.CommandActionType,
                 IsFullRoundAction = cached.IsFullRoundAction

@@ -47,6 +47,8 @@ namespace CompanionAI_Pathfinder.Tactics
         public float CritMultiplier = 2f;
         /// <summary>★ v0.3.18: chance at least one of the attacks hits (the kill chance, ValueModel.KillChance).</summary>
         public float AnyHitChance;
+        /// <summary>C07: first successful eligible melee hit discharges one held charge, once per routine.</summary>
+        public float TouchHitChance, TouchCritChance;
         /// <summary>★ v0.3.18 (review): the first attack's attack bonus and the target's AC against it (the rules' values).</summary>
         public int FirstAttackBonus, FirstArmorClass;
         /// <summary>★ v0.3.20 (playtest 1): what the target keeps of extra physical damage on the first weapon (0.5 for a
@@ -254,8 +256,12 @@ namespace CompanionAI_Pathfinder.Tactics
         /// </summary>
         public static WeaponAttackEstimate EstimateWeaponAttack(UnitEntityData unit, UnitEntityData target, bool full,
                                                                 Func<ItemEntityWeapon, int, KeyValuePair<int, float>> delta)
+            => EstimateWeaponAttackCore(unit, target, full, delta, 0);
+
+        private static WeaponAttackEstimate EstimateWeaponAttackCore(UnitEntityData unit, UnitEntityData target, bool full,
+            Func<ItemEntityWeapon, int, KeyValuePair<int, float>> delta, int magusExtra)
         {
-            var routine = ReadRoutine(unit, target, full);
+            var routine = ReadRoutineCore(unit, target, full, magusExtra);
             if (routine == null) return null;
 
             var result = new WeaponAttackEstimate { Attacks = routine.Attacks, Attacker = unit };
@@ -265,10 +271,16 @@ namespace CompanionAI_Pathfinder.Tactics
             // ★ v0.3.28 test 3: what reaches the target past its concealment and mirror images (LandsPastDefences).
             float lands = LandsPastDefences(unit, target);
             float noHit = 1f;
+            var touch = new MagusChargeChance();
+            bool trackTouch = unit.Get<Kingmaker.UnitLogic.Parts.UnitPartMagus>()?.Spellstrike.Active == true;
             foreach (var line in routine.Lines)
             {
                 var d = delta?.Invoke(line.Weapon, line.Index) ?? new KeyValuePair<int, float>(0, 0f);
                 float p = HitProbability(line.AttackBonus + d.Key, line.ArmorClass) * lands;
+                if (MagusMechanics.WeaponDeliversTouch(line.Weapon?.Blueprint, trackTouch, line.Weapon == unit.Body.EmptyHandWeapon))
+                {
+                    touch.Add(p, Math.Min(line.ThreatChance, p) * p);
+                }
                 if (line.Index == 0) result.FirstHitChance = p;
                 noHit *= 1f - p;
                 // ★ v0.3.19 (test5): a kinetic blade's blast lands with the hit and is multiplied by its critical
@@ -294,12 +306,16 @@ namespace CompanionAI_Pathfinder.Tactics
                 result.ExpectedDamage += p * (perHit + line.Sneak) + critExtra;
             }
             result.AnyHitChance = 1f - noHit;
+            result.TouchHitChance = touch.Hit;
+            result.TouchCritChance = touch.Critical;
             return result;
         }
 
         /// <summary>★ v0.3.18: forget the attack routines read (a new decision, or a state changed for a preview).</summary>
         public static void ClearAttackCache()
         {
+            InvalidateResistanceMemo(); // State previews, including same-frame prone/infusion changes, invalidate open scopes.
+            NewSwarmDecision(); // Dynamic source/availability snapshots must also expire between same-frame decisions.
             Routines.Clear();
             HitsOnTarget.Clear();   // ★ v0.3.20 (test3): read with the routines, forgotten with them
             ParamsCache.Clear();    // ★ v0.3.25 (test2 logs)
@@ -343,11 +359,18 @@ namespace CompanionAI_Pathfinder.Tactics
         }
 
         private static AttackRoutine ReadRoutine(UnitEntityData unit, UnitEntityData target, bool full)
+            => ReadRoutineCore(unit, target, full, 0);
+
+        private static AttackRoutine ReadRoutineCore(UnitEntityData unit, UnitEntityData target, bool full, int magusExtra)
         {
+            // C06 playtest: reinforcement entities can reach the decision before their view exists. The native
+            // GetApproachRadius dereferences both views; leave this pair unpriced until it has its native geometry.
+            if (unit?.View is null || target?.View is null) return null;
             int frame = Time.frameCount;
             string key = $"{unit.UniqueId}|{target.UniqueId}|{full}";
+            if (magusExtra > 0) key += $"|magus:{magusExtra}";
             if (Routines.TryGetValue(key, out var cached) && cached.Frame == frame) return cached;
-            var attacks = EnumerateAttacks(unit, target, full);
+            var attacks = magusExtra > 0 && full ? MagusProjectedAttacks(unit, magusExtra) : EnumerateAttacks(unit, target, full);
             if (attacks.Count == 0) return null;
             if (Routines.Count > 512) Routines.Clear();
 
@@ -440,12 +463,12 @@ namespace CompanionAI_Pathfinder.Tactics
             return ReadHitOnTarget(unit, target, weapon, stats).CritImmune;
         }
 
-        private static HitOnTarget ReadHitOnTarget(UnitEntityData unit, UnitEntityData target, ItemEntityWeapon weapon, RuleCalculateWeaponStats stats)
+        private static HitOnTarget ReadHitOnTarget(UnitEntityData unit, UnitEntityData target, ItemEntityWeapon weapon, RuleCalculateWeaponStats stats, bool cache = true)
         {
             int frame = Time.frameCount;
             string key = $"{unit.UniqueId}|{target.UniqueId}|{weapon.UniqueId}";
-            if (HitsOnTarget.TryGetValue(key, out var cached) && cached.Frame == frame) return cached;
-            if (HitsOnTarget.Count > 512) HitsOnTarget.Clear();
+            if (cache && HitsOnTarget.TryGetValue(key, out var cached) && cached.Frame == frame) return cached;
+            if (cache && HitsOnTarget.Count > 512) HitsOnTarget.Clear();
             var hit = new HitOnTarget { Frame = frame };
             try
             {
@@ -469,7 +492,7 @@ namespace CompanionAI_Pathfinder.Tactics
             {
                 Main.Verbose($"[Math] hit on target {unit.CharacterName}->{target.CharacterName}: {ex.Message}");
             }
-            HitsOnTarget[key] = hit;
+            if (cache) HitsOnTarget[key] = hit;
             return hit;
         }
 
@@ -732,7 +755,7 @@ namespace CompanionAI_Pathfinder.Tactics
             if (!DeliveryWeapon(caster, ability, out var weapon, out _, out _)) return false;
             CriticalOf(caster, weapon, out int range, out int weaponMultiplier);
             ability.IsMagusSpell(out bool magus, out bool eldritchArcher);
-            multiplier = magus || eldritchArcher ? 2 : weaponMultiplier;
+            multiplier = magus || eldritchArcher || TacticalEngine.NativeRangedStrike(caster, ability) ? 2 : weaponMultiplier;
             threat = Mathf.Clamp01(range / 20f);
             if (threat > 0f && CritImmune(caster, target, weapon)) threat = 0f;
             return true;
@@ -749,6 +772,7 @@ namespace CompanionAI_Pathfinder.Tactics
         /// </summary>
         internal static float AbilityCritFactor(AbilityData ability, AbilityProfile profile, UnitEntityData target)
         {
+            if (s_MagusRoll?.Matches(ability, target) == true) return s_MagusRoll.CriticalFactor;
             if (ability == null || profile == null || target == null || !profile.NeedsAttackRoll) return 1f;
             var caster = ability.Caster?.Unit;
             if (caster == null) return 1f;
@@ -779,14 +803,15 @@ namespace CompanionAI_Pathfinder.Tactics
                                                                    UnitEntityData target, int layer)
         {
             float raw = EstimateAbilityDamageRaw(ability, profile, target, null,
-                action => profile.AppliesAtDeliveryLayer(action, ability, target, layer));
+                action => profile.AppliesAtDeliveryLayer(action, ability, target, layer), oneProjectile: true);
             // ★ v0.3.28 test 6: a jump reuses the first attack roll (RuleAttackRoll.CopyWithNewTarget), its critical too.
             return raw > 0f ? raw * AbilityDamageScale(ability, profile, target) : raw;
         }
 
         /// <summary>★ v0.3.20: the estimate before the learned share of a blast (DamageObserver checks against it).</summary>
         internal static float EstimateAbilityDamageRaw(AbilityData ability, AbilityProfile profile, UnitEntityData target, ItemEntityWeapon bladeWeapon,
-            Func<GameAction, EffectApplies> branch = null, bool? ignorePhysicalReduction = null, float extraWeaponDamage = 0f)
+            Func<GameAction, EffectApplies> branch = null, bool? ignorePhysicalReduction = null, float extraWeaponDamage = 0f,
+            bool oneProjectile = false)
         {
             if (profile.Damage.Count == 0) return 0f;
             DamageEstimates++;
@@ -801,6 +826,11 @@ namespace CompanionAI_Pathfinder.Tactics
                  IgnoresPhysicalReduction(ability.Caster?.Unit, target));
             // ★ v0.3.20 (playtest 1): a swarm takes half again from area damage (SwarmAoeVulnerability).
             float swarmArea = SwarmAreaFactor(ability, target, false);
+            float fusionFail = profile.Fusion != null && target != null && profile.Save != SavingThrowType.Unknown
+                ? SaveFailChance(ability, profile.Save, target) : 1f;
+            bool fusionEvasion = false, fusionImproved = false;
+            if (profile.Fusion != null && target != null && profile.Damage.OfType<ContextActionDealDamage>().Any(d => d.HalfIfSaved))
+                EvasionOf(target, profile.Save, out fusionEvasion, out fusionImproved);
             foreach (var action in profile.Damage)
             {
                 // ★ v0.3.1: only the branch that runs for this target (Inflict Wounds heals undead, Cure harms them).
@@ -811,9 +841,12 @@ namespace CompanionAI_Pathfinder.Tactics
                     // life bars (CombatMath.Drain.cs), not hit-point damage of their dice through its resistances.
                     case ContextActionDealDamage drain when KindOf(drain) != DealKind.HitPoints:
                     {
-                        float amount = EvaluateDice(drain.Value, ctx, Math.Min(cl, 10), maximize, empower);
+                        float amount = KindOf(drain) == DealKind.EnergyDrain
+                            ? EvaluateDice(drain.Value, ctx, Math.Min(cl, 10), maximize, empower)
+                            : EvaluateDamageDice(ability, drain.Value, ctx, Math.Min(cl, 10), maximize, empower);
                         parts.Add(new KeyValuePair<GameAction, float>(drain,
-                            target != null ? DrainEquivalent(drain, KindOf(drain), amount, target) : amount));
+                            (target != null ? DrainEquivalent(drain, KindOf(drain), amount, target) : amount) *
+                            FusionDamageFactor(profile, drain, fusionFail, fusionEvasion, fusionImproved)));
                         break;
                     }
                     case ContextActionDealDamage dmg:
@@ -825,7 +858,7 @@ namespace CompanionAI_Pathfinder.Tactics
                             AbilityProfile.SharedValueRange(rolled.Ability, ctx, dmg.PreRolledSharedValue, out _, out int pre, out _);
                             avg = pre;
                         }
-                        else avg = EvaluateDice(dmg.Value, ctx, Math.Min(cl, 10), maximize, empower);
+                        else avg = EvaluateDamageDice(ability, dmg.Value, ctx, Math.Min(cl, 10), maximize, empower);
                         avg += KineticDamageBonus(ability, dmg, profile.NeedsAttackRoll || bladeWeapon != null, bladeWeapon);
                         // ★ v0.3.30 competence3: what the game adds at the roll (Throw Anything's cast-time buff, Point-Blank Shot).
                         avg += CastDamageBonus(ability, target);
@@ -836,17 +869,21 @@ namespace CompanionAI_Pathfinder.Tactics
                         avg *= ArcherBlastDecline(ability, dmg, target);
                         parts.Add(new KeyValuePair<GameAction, float>(dmg,
                             (physicalBypass && dmg.DamageType?.Type == Kingmaker.RuleSystem.Rules.Damage.DamageType.Physical
-                                ? avg : AfterTargetReduction(target, dmg, avg, ability)) * swarmArea));
+                                ? avg : AfterTargetReduction(target, dmg, avg, ability)) * swarmArea *
+                            FusionDamageFactor(profile, dmg, fusionFail, fusionEvasion, fusionImproved)));
                         break;
                     // A kill is valued apart (KillApplies): it lands on a failed save, not half on a passed one.
                     case ContextActionKill _:
                         break;
                     case IDealDamageProvider provider:
-                        if (target != null) parts.Add(new KeyValuePair<GameAction, float>(action, PreviewDamage(ability, ctx, provider, target)));
+                        if (target != null) parts.Add(new KeyValuePair<GameAction, float>(action, PreviewDamage(ability, ctx, provider, target) *
+                            FusionDamageFactor(profile, action, fusionFail, fusionEvasion, fusionImproved)));
                         break;
                 }
             }
-            return SumAlternatives(profile, parts);
+            RememberFusionDamageChance(ability, target, profile, parts, fusionFail, fusionEvasion, fusionImproved);
+            // Mitigation and per-roll bonuses above apply to every delivery separately, before their sum.
+            return SumAlternatives(profile, parts) * (oneProjectile ? 1 : ProjectileDeliveries(profile, ctx));
         }
 
         // ★ v0.3.28 test 11: one execution context per ability and frame for damage whose numbers the target cannot change.
@@ -885,7 +922,10 @@ namespace CompanionAI_Pathfinder.Tactics
         internal static bool ContextIsTargetFree(Kingmaker.UnitLogic.Abilities.Blueprints.BlueprintAbility blueprint, AbilityProfile profile)
         {
             if (blueprint == null || profile == null) return false;
-            if (TargetFreeDamage.TryGetValue(blueprint, out bool free)) return free;
+            bool fusion = profile.Fusion != null;
+            if (fusion && profile.FusionTargetFreeContext.HasValue) return profile.FusionTargetFreeContext.Value;
+            if (!fusion && TargetFreeDamage.TryGetValue(blueprint, out bool cached)) return cached;
+            bool free;
             free = RankBaseType != null;
             try
             {
@@ -901,7 +941,8 @@ namespace CompanionAI_Pathfinder.Tactics
                     free &= DiceTargetFree(shared.Value);
             }
             catch { free = false; }
-            TargetFreeDamage[blueprint] = free;
+            if (fusion) profile.FusionTargetFreeContext = free;
+            else TargetFreeDamage[blueprint] = free;
             return free;
         }
 
@@ -1455,7 +1496,7 @@ namespace CompanionAI_Pathfinder.Tactics
         {
             float p = (resistancePass ?? SpellResistancePass(caster, enemy, ability)) * ShadowShare(ability, enemy);
             if (profile.NeedsAttackRoll) p *= SpellAttackHitChance(caster, enemy, ability);
-            if (profile.Save != SavingThrowType.Unknown)
+            if (profile.Save != SavingThrowType.Unknown && !(damage && profile.Fusion != null))
                 p *= SaveEffectFactor(ability, profile, enemy, damage);
             return p;
         }
@@ -1936,15 +1977,19 @@ namespace CompanionAI_Pathfinder.Tactics
         public static float SpellResistancePass(UnitEntityData caster, UnitEntityData target, AbilityData ability)
         {
             if (target == null) return 1f;
+            if (TryResistanceMemo(caster, target, ability, out float value)) return value;
+            ResistanceReads++;
             try
             {
                 var sr = HitChanceCalculator.CalculateSpellResistance(caster, target, ability);
-                return sr.IsImmune ? 0f : Mathf.Clamp01(sr.PenetrationChance);
+                value = sr.IsImmune ? 0f : Mathf.Clamp01(sr.PenetrationChance);
             }
             catch
             {
-                return 1f;
+                value = 1f;
             }
+            StoreResistanceMemo(caster, target, ability, value);
+            return value;
         }
 
         private struct RollKey : IEquatable<RollKey>
@@ -2025,6 +2070,7 @@ namespace CompanionAI_Pathfinder.Tactics
         /// </summary>
         public static float SpellAttackHitChance(UnitEntityData caster, UnitEntityData target, AbilityData ability)
         {
+            if (s_MagusRoll?.Matches(ability, target) == true) return s_MagusRoll.Hit;
             try
             {
                 if (SpellAttackRoll(caster, target, ability, out int ab, out int ac, out float lands))
@@ -2137,7 +2183,12 @@ namespace CompanionAI_Pathfinder.Tactics
             weapon = null;
             stat = null;
             attackType = null;
-            var bp = ability?.GetDeliverBlueprint() ?? ability?.Blueprint;
+            if (TacticalEngine.NativeRangedStrike(caster, ability))
+            {
+                weapon = caster.GetFirstWeapon();
+                return weapon?.Blueprint.IsRanged == true;
+            }
+            var bp = SpellDelivery.AttackBlueprint(ability);
             if (bp == null) return false;
             var projectile = Kingmaker.Blueprints.BlueprintExtenstions.GetComponent<Kingmaker.UnitLogic.Abilities.Components.AbilityDeliverProjectile>(bp);
             if (projectile != null && projectile.NeedAttackRoll && !projectile.IsHandOfTheApprentice &&
@@ -2159,7 +2210,9 @@ namespace CompanionAI_Pathfinder.Tactics
             var touch = Kingmaker.Blueprints.BlueprintExtenstions.GetComponent<Kingmaker.UnitLogic.Abilities.Components.AbilityDeliverTouch>(bp);
             if (touch?.TouchWeapon != null)
             {
-                weapon = Made(touch.TouchWeapon);
+                // AbilityDeliverTouch.Deliver uses the native ray weapon for an actually active Reach cast.
+                weapon = Made(SpellDelivery.IsReachTouch(ability)
+                    ? Kingmaker.Blueprints.Root.BlueprintRoot.Instance.SystemMechanics.RayWeapon : touch.TouchWeapon);
                 return weapon != null;
             }
             return false;
@@ -2340,7 +2393,8 @@ namespace CompanionAI_Pathfinder.Tactics
         /// <see cref="Threat"/>, more while the ally it attacks may drop to it this round (EnemyThreat.Urgency, 1..1.5). Not
         /// for the danger it poses (incoming damage): the drop chance is already that danger's consequence.
         /// </summary>
-        public static float ControlWorth(UnitEntityData enemy) => Threat(enemy) * EnemyThreat.Urgency(enemy);
+        public static float ControlWorth(UnitEntityData enemy) =>
+            ValueModel.NonHitPointRemovalWorth(Threat(enemy), EnemyThreat.NonHitPointHarm(enemy), enemy != null && IsDisabled(enemy)) * EnemyThreat.Urgency(enemy);
 
         #endregion
     }

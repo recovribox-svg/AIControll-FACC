@@ -64,5 +64,31 @@ namespace CompanionAI.Tests
         [Fact]
         public void SpentHeal_HardFightUnchanged() =>
             Assert.Equal(15f, ValueModel.SpentHealValue(6f, 9f, 1.2f), 3);
+
+        [Theory]
+        [InlineData(0.1f)]
+        [InlineData(0.5f)]
+        [InlineData(1f)]
+        [InlineData(2f)]
+        public void Aggressive_ChangesOnlyOffensiveBookSlots(float difficulty)
+        {
+            float existing = ValueModel.LimitedUseDiscount(difficulty);
+            Assert.Equal(0f, ValueModel.OffensiveSlotDiscount(difficulty, true, true, false));
+            Assert.Equal(existing, ValueModel.OffensiveSlotDiscount(difficulty, false, true, false));
+            Assert.Equal(existing, ValueModel.OffensiveSlotDiscount(difficulty, true, false, false));
+            Assert.Equal(existing, ValueModel.OffensiveSlotDiscount(difficulty, true, true, true));
+            Assert.Equal(existing, ValueModel.OffensiveSlotDiscount(difficulty, true, false, true));
+        }
+
+        [Fact]
+        public void Aggressive_RemovesOnlyThePriceThatHidTheStrongerCast()
+        {
+            float effectAfterResistanceAndOverkill = 9.2f, cantrip = 8f;
+            float standard = effectAfterResistanceAndOverkill * (1f - ValueModel.OffensiveSlotDiscount(0.4f, false, true, false));
+            float aggressive = effectAfterResistanceAndOverkill * (1f - ValueModel.OffensiveSlotDiscount(0.4f, true, true, false));
+            Assert.True(standard < cantrip);
+            Assert.True(aggressive > cantrip);
+            Assert.Equal(effectAfterResistanceAndOverkill, aggressive);
+        }
     }
 }

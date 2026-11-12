@@ -19,27 +19,43 @@ namespace CompanionAI_Pathfinder.Tactics
         /// </summary>
         public static List<T> Apply<T>(IEnumerable<T> ordered, Func<IReadOnlyList<T>, T> selectMain,
             Func<T, bool> needsCheck, Func<T, bool> canPrepare, Action<T> rejected = null,
-            Action<int> budgetLimited = null, Func<T, bool> keepUnchecked = null) where T : class
+            Action<int> budgetLimited = null, Func<T, bool> keepUnchecked = null,
+            Func<IReadOnlyList<T>, bool> hasUsefulAction = null, Func<IEnumerable<T>> idleFallback = null) where T : class
         {
             var usable = ordered.ToList();
             var checkedPlans = new HashSet<T>();
             int checks = 0;
+            bool refused = false;
+            List<T> Finish()
+            {
+                // A plan needing a step can suppress advances before its path is tested. Recover only after an
+                // actual refusal leaves no useful action. The factory supplies plain moves, checked at issue;
+                // never restart selection/path preparation or spend a fourth selected-plan check here.
+                if (refused && idleFallback != null && hasUsefulAction != null && !hasUsefulAction(usable))
+                {
+                    var fallback = idleFallback();
+                    // Remaining sub-threshold plans must not hide a useful fallback from first-main selection.
+                    if (fallback != null) usable.InsertRange(0, fallback);
+                }
+                return usable;
+            }
             while (true)
             {
                 var main = selectMain(usable);
-                if (main == null || !needsCheck(main) || checkedPlans.Contains(main)) return usable;
+                if (main == null || !needsCheck(main) || checkedPlans.Contains(main)) return Finish();
                 if (checks >= MaxChecks)
                 {
                     int omitted = usable.RemoveAll(c => needsCheck(c) && !checkedPlans.Contains(c) &&
                                                         !(keepUnchecked?.Invoke(c) ?? false));
                     budgetLimited?.Invoke(omitted);
-                    return usable;
+                    return Finish();
                 }
                 checks++;
                 if (canPrepare(main)) checkedPlans.Add(main);
                 else
                 {
                     usable.Remove(main);
+                    refused = true;
                     rejected?.Invoke(main);
                 }
             }

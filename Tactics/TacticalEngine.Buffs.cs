@@ -217,6 +217,8 @@ namespace CompanionAI_Pathfinder.Tactics
         {
             var result = new BuffAppraisal();
             AppraisalFrame();
+            if (buffs.Any(b => PolymorphFacts.Form(b)?.AllowDamageTransfer == true))
+                return AppraiseShifterForm(ctx, ability, profile, buffs, ally);
             var parts = new List<BuffPart>();
             var unread = new HashSet<string>();
             var giver = ability.Caster?.Unit ?? ctx.Unit;
@@ -229,6 +231,9 @@ namespace CompanionAI_Pathfinder.Tactics
             // ★ v0.3.28 test 6: a cast that only adds a rank to a feature another fact reads (Enveloping Winds, Shroud of
             // Water's upgrade): what that rank adds (TacticalEngine.RankTalents).
             AddRankIncrementParts(ctx, buffs, ally, parts);
+            // No source context can turn an empty/unread list into numerical parts. Equipment carriers are the two
+            // exceptions below: they can add parts from their enchantments, so retain their complete appraisal path.
+            if (!HasReadableParts(parts) && !BuffContextAddsEquipmentParts(profile, buffs)) return result;
             var abilityCtx = CombatMath.CreateContext(ability, new Kingmaker.Utility.TargetWrapper(ally));
             // ★ v0.3.21: the weapon enchantments it puts on the recipient's weapon (Magic Weapon, Keen Edge, oils, Holy
             // Sword): their parts, for the weapon each one goes on. A buff that only carries one (Keen Edge's is empty) is
@@ -623,7 +628,8 @@ namespace CompanionAI_Pathfinder.Tactics
             }
 
             float offenceValue = offencePerRound * rounds + invisibleOnce + onHitOnce;
-            float defenceValue = ValueModel.PreventionValue(keptPerRound, rounds, def.Hp, def.Incoming, def.Worth);
+            float defenceValue = ValueModel.PreventionValue(keptPerRound, rounds, def.Hp,
+                def.Incoming + CombatMath.AttachedDamageOf(ctx, ally).NextRisk, def.Worth);
             // A summon is temporary and replaceable: half (as everywhere, ValueModel.SummonFactor).
             result.Value = (offenceValue + defenceValue) * RoleWeight(ctx, "buff") * (IsSummon(ally) ? ValueModel.SummonFactor : 1f);
             result.Detail = $"{string.Join(", ", notes)} over {rounds:0.#} rd" +
@@ -632,6 +638,10 @@ namespace CompanionAI_Pathfinder.Tactics
             s_LastAppraisal[key] = $"{result.Value:0.#}: {result.Detail}";
             return result;
         }
+
+        internal static bool BuffContextAddsEquipmentParts(AbilityProfile profile, List<BlueprintBuff> buffs) =>
+            profile.WeaponEnchants.Count > 0 || buffs.Any(b =>
+                Kingmaker.Blueprints.BlueprintExtenstions.GetComponent<Kingmaker.UnitLogic.FactLogic.BuffEnchantArmor>(b) != null);
 
         /// <summary>
         /// The real duration in rounds the ability gives <paramref name="buff"/>: its DurationValue worked out with the
@@ -808,10 +818,31 @@ namespace CompanionAI_Pathfinder.Tactics
         private static float DebuffShareOf(TacticalContext ctx, AbilityData ability, UnitEntityData enemy, List<BlueprintBuff> buffs,
                                            out bool partial)
         {
+            // An immutable empty parts list cannot gain numbers from a source context. Preserve the old unknown
+            // result without constructing a native context for each recipient (e.g. unread marks/debuff carriers).
+            bool anyParts = false, needsContext = false;
+            foreach (var buff in buffs)
+                foreach (var part in BuffPartsReader.Read(buff).Parts)
+                {
+                    anyParts = true;
+                    if (BuffAmountNeedsContext(part)) needsContext = true;
+                }
+            if (!anyParts) { partial = false; return -1f; }
             MechanicsContext abilityCtx = null;
-            try { abilityCtx = CombatMath.CreateContext(ability, new Kingmaker.Utility.TargetWrapper(enemy)); } catch { }
+            // Fixed/simple parts never read source ranks/parameters. Keep recipient stats and conditional weights
+            // live, and retain a source context when it is needed or the source caster differs from this decision.
+            try
+            {
+                if (needsContext || !ReferenceEquals(ability.Caster?.Unit, ctx.Unit))
+                    abilityCtx = CombatMath.CreateContext(ability, new Kingmaker.Utility.TargetWrapper(enemy));
+            }
+            catch { }
             return DebuffShareIn(ctx, abilityCtx, enemy, buffs, out partial);
         }
+
+        private static bool BuffAmountNeedsContext(BuffPart part) =>
+            part.Value != null && part.Value.ValueType != ContextValueType.Simple || part.Dice != null ||
+            part.Pool != null || part.FormulaBonusByCasterLevel;
 
         /// <summary>★ v0.3.21: the same with a given source context (a buff's on-hit debuff: the buff's context).</summary>
         private static float DebuffShareIn(TacticalContext ctx, MechanicsContext abilityCtx, UnitEntityData enemy, List<BlueprintBuff> buffs,
@@ -1089,9 +1120,12 @@ namespace CompanionAI_Pathfinder.Tactics
                 var enemy = ctx.Enemies.Where(e => !CombatMath.IsDisabled(e))
                                        .OrderBy(e => Vector3.Distance(e.Position, ally.Position)).FirstOrDefault()
                             ?? ctx.Enemies.FirstOrDefault();
-                if (enemy != null)
+                var recipientSettings = PureMagePolicy.SettingsFor(ally);
+                bool pureMage = PureMagePolicy.IsActive(recipientSettings);
+                bool weaponAllowed = !pureMage || (ally == ctx.Unit ? ctx.PureMageWeapon : PureMagePolicy.HasEnergyShot(ally));
+                if (enemy != null && weaponAllowed)
                 {
-                    var est = CombatMath.EstimateWeaponAttack(ally, enemy, full: true);
+                    var est = CombatMath.EstimateWeaponAttack(ally, enemy, full: !pureMage);
                     if (est != null && est.ExpectedDamage > 0f)
                     {
                         // ★ v0.3.28 test 3: the estimate is past the enemy's concealment; what is left of it (SeenPass).
@@ -1139,7 +1173,9 @@ namespace CompanionAI_Pathfinder.Tactics
             var def = new Defence();
             try
             {
-                def.Incoming = IncomingDamage(ctx, ally, ally.Position);
+                // Attached harm raises urgency, but is not an attack that armour, images or an enemy mark prevents.
+                // No new protection credit is guessed here; supported heals/cleanses use the complete danger stream.
+                def.Incoming = IncomingEnemyDamage(ctx, ally, ally.Position);
                 // Nothing reaches it this instant (the fight has not closed in yet): its share of what the enemies still
                 // fighting can deal, more for one that fights in melee - a buff cast now lasts into the rounds they meet.
                 if (def.Incoming <= 0f && ctx.Allies.Count > 0)

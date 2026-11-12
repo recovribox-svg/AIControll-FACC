@@ -189,11 +189,11 @@ namespace CompanionAI_Pathfinder.Tactics
         /// </summary>
         public static string Key(AbilityData a) =>
             $"{a.Blueprint.AssetGuid}|{a.Spellbook?.Blueprint?.AssetGuid}|{a.SourceItem?.UniqueId}|{MetamagicTag(a)}" +
-            (a.ConvertedFrom != null ? $"|conv{SafeLevel(a.ConvertedFrom)}" : "");
+            (a.ConvertedFrom != null ? $"|conv{SafeLevel(a.ConvertedFrom)}" : "") + AbilityProfile.FusionIdentityOf(a);
 
         /// <summary>★ v0.3.18: conversions of one spell from slots of one level are the same option.</summary>
         private static string ConversionKey(AbilityData a) =>
-            $"{a.Blueprint.AssetGuid}|{a.Spellbook?.Blueprint?.AssetGuid}|{MetamagicTag(a)}|{SafeLevel(a.ConvertedFrom ?? a)}";
+            $"{a.Blueprint.AssetGuid}|{a.Spellbook?.Blueprint?.AssetGuid}|{MetamagicTag(a)}|{SafeLevel(a.ConvertedFrom ?? a)}" + AbilityProfile.FusionIdentityOf(a);
 
         private static int SafeLevel(AbilityData a)
         {

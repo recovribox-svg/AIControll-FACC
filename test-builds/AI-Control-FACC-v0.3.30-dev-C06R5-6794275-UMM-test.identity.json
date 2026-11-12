@@ -1,0 +1,68 @@
+{
+  "source_commit": "6794275c659b90ce47bc9542b930a23989d217ab",
+  "source_branch": "codex/c06r4-playtest-review",
+  "starting_development": "1f58150b8e50f9a322ba0b8d3fcc095fe188420f",
+  "starting_c06r4": "ca12a28cac01d540c7a11997f196c5a46342ca9c",
+  "supersedes_mvid": "3705efbc-ad31-48e0-a8b7-c01ea9654b1d",
+  "label": "C06R5",
+  "version": "0.3.30",
+  "dll": {
+    "assembly": "CompanionAI_Pathfinder, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null",
+    "mvid": "64cd2d32-7182-47c5-a7c5-fef817edf58d",
+    "sha256": "fa24e749b5c627330a4412e865cbaa8d17df01a07263a212a909d018e65d6c79",
+    "size": 1281536
+  },
+  "zip": {
+    "file": "AI-Control-FACC-v0.3.30-dev-C06R5-6794275-UMM-test.zip",
+    "sha256": "144c46dec24d007f8d55073a5066110b9caab320c6029d7700ba2c75fa334dd3",
+    "size": 504818
+  },
+  "info_sha256": "d6ee91e78dc5d4981ad51a1a1a85bb1e7fe3f0a87814697f2fd9ee1c20d35594",
+  "package_members": [
+    "CompanionAI_Pathfinder.dll",
+    "Info.json"
+  ],
+  "build_byte_check": true,
+  "startup_marker": "[Build] v0.3.30 module=64cd2d32-7182-47c5-a7c5-fef817edf58d",
+  "verification_receipt": "docs/competence/C06R4_REVIEW_CHECKS.json",
+  "unit_tests_passed": 594,
+  "inventory_tests_passed": 11,
+  "native_resistance_memo_checks_passed": 18,
+  "warm_memo_lookups": 10000,
+  "warm_memo_allocated_bytes": 0,
+  "retained_checks": {
+    "attached": {
+      "checks": 24,
+      "failures": 0
+    },
+    "swarm": {
+      "checks": 27,
+      "failures": 0
+    },
+    "toggle": {
+      "checks": 98,
+      "failures": 0,
+      "progression_shaped_kits": 6
+    },
+    "tome_burn": {
+      "checks": 14,
+      "failures": 0
+    },
+    "toybox_reader": {
+      "checks": 10,
+      "failures": 0
+    },
+    "reveal_counter": {
+      "checks": 7,
+      "failures": 0
+    },
+    "viewless": {
+      "checks": 6,
+      "failures": 0
+    }
+  },
+  "strict_audit": "PASS on explicit compatible scope; original full corpus INCOMPLETE with named enum mismatch",
+  "gameplay": "pending",
+  "unity_performance": "pending",
+  "scope": "C06R4 review: scoped exact-identity resistance reuse, empty-appraisal context avoidance, periodic diagnostic deduplication; native valuation rules and movement policies retained"
+}

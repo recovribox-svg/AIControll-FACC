@@ -1,0 +1,43 @@
+{
+  "source_commit": "736358a86094e95b27fe90d13c296f5bee279327",
+  "source_branch": "codex/c06-attached-damage",
+  "starting_development": "1f58150b8e50f9a322ba0b8d3fcc095fe188420f",
+  "starting_c06r3": "b17959773efe9c5247287a37dc7cc8505a3823c0",
+  "supersedes_mvid": "8af1ad59-23ff-429e-9a1a-55033bb86e0a",
+  "label": "C06R4",
+  "version": "0.3.30",
+  "dll": {
+    "assembly": "CompanionAI_Pathfinder, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null",
+    "mvid": "3705efbc-ad31-48e0-a8b7-c01ea9654b1d",
+    "sha256": "0ad2f91a01270af6c643fd6a8b0a1e02deb4e475070b99cb1c5ab2c979d80ba1",
+    "size": 1278976
+  },
+  "zip": {
+    "file": "AI-Control-FACC-v0.3.30-dev-C06R4-736358a-UMM-test.zip",
+    "sha256": "6affa4de7e5fcf4f28bcf602a766d3c4792fc5bd2fdfe921fcd15689878b897f",
+    "size": 503860
+  },
+  "info_sha256": "d6ee91e78dc5d4981ad51a1a1a85bb1e7fe3f0a87814697f2fd9ee1c20d35594",
+  "package_members": [
+    "CompanionAI_Pathfinder.dll",
+    "Info.json"
+  ],
+  "build_byte_check": true,
+  "startup_marker": "[Build] v0.3.30 module=3705efbc-ad31-48e0-a8b7-c01ea9654b1d",
+  "verification_receipt": "docs/competence/C06_ATTACHED_DAMAGE_CHECKS.json",
+  "unit_tests_passed": 588,
+  "inventory_tests_passed": 11,
+  "native_attached_checks_passed": 24,
+  "warm_snapshot_lookups": 10000,
+  "warm_snapshot_allocated_bytes": 0,
+  "native_swarm_checks_passed": 27,
+  "native_toggle_checks_passed": 98,
+  "tome_provider_checks_passed": 14,
+  "toybox_reader_checks_passed": 10,
+  "native_reveal_checks_passed": 7,
+  "native_view_checks_passed": 6,
+  "strict_audit": "PASS on explicit compatible scope; original full corpus INCOMPLETE with named enum mismatch",
+  "gameplay": "pending",
+  "unity_performance": "pending",
+  "scope": "author-approved attached damage in shared risk and verified cleanse values; existing movement/commitment/retreat/path/dispatch/cancellation policy retained"
+}
