@@ -463,12 +463,12 @@ namespace CompanionAI_Pathfinder.Tactics
             return ReadHitOnTarget(unit, target, weapon, stats).CritImmune;
         }
 
-        private static HitOnTarget ReadHitOnTarget(UnitEntityData unit, UnitEntityData target, ItemEntityWeapon weapon, RuleCalculateWeaponStats stats)
+        private static HitOnTarget ReadHitOnTarget(UnitEntityData unit, UnitEntityData target, ItemEntityWeapon weapon, RuleCalculateWeaponStats stats, bool cache = true)
         {
             int frame = Time.frameCount;
             string key = $"{unit.UniqueId}|{target.UniqueId}|{weapon.UniqueId}";
-            if (HitsOnTarget.TryGetValue(key, out var cached) && cached.Frame == frame) return cached;
-            if (HitsOnTarget.Count > 512) HitsOnTarget.Clear();
+            if (cache && HitsOnTarget.TryGetValue(key, out var cached) && cached.Frame == frame) return cached;
+            if (cache && HitsOnTarget.Count > 512) HitsOnTarget.Clear();
             var hit = new HitOnTarget { Frame = frame };
             try
             {
@@ -492,7 +492,7 @@ namespace CompanionAI_Pathfinder.Tactics
             {
                 Main.Verbose($"[Math] hit on target {unit.CharacterName}->{target.CharacterName}: {ex.Message}");
             }
-            HitsOnTarget[key] = hit;
+            if (cache) HitsOnTarget[key] = hit;
             return hit;
         }
 

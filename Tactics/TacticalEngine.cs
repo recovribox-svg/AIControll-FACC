@@ -38,6 +38,7 @@ namespace CompanionAI_Pathfinder.Tactics
     public sealed class Candidate
     {
         public CandidateKind Kind;
+        internal bool ShifterFury;
         public ActionSlot Slot;
         public float Value;
         public UnitEntityData Target;
@@ -406,6 +407,7 @@ namespace CompanionAI_Pathfinder.Tactics
             try { RepriceRealPaths(ctx, candidates, memory); } catch (Exception ex) { Main.Error($"[Tactics] real path prices: {ex}"); }
             // ★ v0.3.18 (AA-2): after the others, so a toggle that forbids spells is priced against the best spell.
             try { AddToggleCandidates(ctx, candidates, preview); } catch (Exception ex) { Main.Error($"[Tactics] toggle candidates: {ex}"); }
+            try { AddShifterFuryCandidates(ctx, candidates); } catch (Exception ex) { Main.Error($"[Tactics] Shifter Fury candidates: {ex}"); }
             // ★ v0.3.18 (AA-3): Mobility before a move that would provoke.
             try { AddMobilityCandidate(ctx, candidates, memory); } catch (Exception ex) { Main.Error($"[Tactics] mobility: {ex}"); }
             try { PriceHeldCharge(ctx, candidates); } catch (Exception ex) { Main.Error($"[Tactics] held charge: {ex.Message}"); }
@@ -5282,6 +5284,7 @@ namespace CompanionAI_Pathfinder.Tactics
         {
             command = null;
             failure = null;
+            if (!ValidateShifterIssue(unit, c, out failure)) return false;
             if (!ValidateMagusIssue(unit, c, out failure)) return false;
             if (!PureMageAllowsIssue(unit, c))
             {
@@ -5316,6 +5319,7 @@ namespace CompanionAI_Pathfinder.Tactics
             switch (c.Kind)
             {
                 case CandidateKind.Toggle:
+                    if (c.ShifterFury) return ExecuteShifterFury(unit, c, out command, out failure);
                     return ExecuteToggle(unit, c, out command, out failure);
                 case CandidateKind.WeaponAttack:
                 {

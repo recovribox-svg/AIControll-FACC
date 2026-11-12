@@ -217,6 +217,8 @@ namespace CompanionAI_Pathfinder.Tactics
         {
             var result = new BuffAppraisal();
             AppraisalFrame();
+            if (buffs.Any(b => PolymorphFacts.Form(b)?.AllowDamageTransfer == true))
+                return AppraiseShifterForm(ctx, ability, profile, buffs, ally);
             var parts = new List<BuffPart>();
             var unread = new HashSet<string>();
             var giver = ability.Caster?.Unit ?? ctx.Unit;

@@ -4896,3 +4896,28 @@ only; legacy RT, general movement/commitment/retreat/pathfinder/stuck policies a
 matched Unity timing pending. The requested Shifter/Ulbrig work is separate.
 
 Checked source `5ddcbca`, [receipt](competence/ELDRITCH_ARCHER_CHECKS.json) and [archer1 test ZIP](../test-builds/AI-Control-FACC-v0.3.30-dev-archer1-5ddcbca-UMM-test.zip), startup MVID `8e6a8470-b08a-41d6-9771-0b995ae18465`. 629 unit + 11 inventory tests and native checks pass; actual-reference Release 0 warnings/errors; 5/5 added signatures resolve. Compatible/supplementary audit scopes pass; original full-corpus enum failure remains distinct. Gameplay/matched Unity timing pending.
+
+## 146. Shifter forms, minor aspects and native Fury (12 November 2026)
+
+[Design/evidence/replay](SHIFTER_SUPPORT.md), [native input identities/contracts](competence/SHIFTER_NATIVE.json).
+Starts at PR #41 `a6c3f53` over fetched development `1f58150`; includes Eldritch Archer and review2 prerequisites.
+The Ulbrig report is v0.3.27, automatic self-buffing probably enabled (unconfirmed), without a scene log/MVID.
+Both stable and current upkeep lack an explicit form exclusion; this repairs an exposed path, not a claimed
+reproduction. Automatic OOC upkeep now excludes transformations; suppressed/current forms prevent new casts.
+
+Major Shifter forms compare core natural attacks and known stat/size/equipment losses against the current
+routine, using native calculation rules without actor/buff/equipment simulation. Absolute size, native dice
+base/override exceptions and PolymorphDamageTransfer are explicit. Known derived stat/HP/save losses count;
+new form facts/proc-only benefits remain uncredited. Existing aspect numeric appraisal, C06 spend timing and
+native group capacity are reused. Existing/player Fury selections remain; when off, four real generated
+weapon/hand choices can compete through native hand/limb counts and secondary/transfer inputs, with fresh
+identity/availability/list/ownership guards and original all-off restoration. No human-body Fury preparation
+pre-empts an already profitable major form. Automatic new forms on caster multiclasses are withheld.
+
+Eight unique form quotes/one existing enemy, four Fury choices, sixteen generated options/thirty-two attacks;
+extreme future BAB credits at most eight extra iteratives. Metadata and duplicate claws reuse reads; live
+transfer facts are decision-local. Ordinary hit memos cannot retain future secondary quotes. Shared TB/RT,
+normal native command/resource execution, no general movement/commitment/retreat/pathfinder/stuck change.
+86 exported form layouts and native/scalar/compiled checks are offline evidence, not all-mod gameplay proof.
+Full checked identities/results follow the source commit; actual Ulbrig/Fury replay and matched Unity timing
+remain pending. Manifest 0.3.30; Claude reviews/integrates, no main/development push, merge or release.

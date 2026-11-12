@@ -1787,6 +1787,9 @@ namespace CompanionAI_Pathfinder.GameInterface
                 if (ability.SourceItem != null) return false;
                 var profile = Tactics.AbilityProfile.Get(ability);
                 if (profile == null || profile.IsToggle || profile.IsOneShot || profile.HealsBurn) return false;
+                // ★ v0.3.30: major forms are deliberate combat/pre-buff choices. A suppressed or expired transformation is
+                // never an instruction for the automatic out-of-combat upkeep loop to apply it again (Ulbrig report).
+                if (PolymorphFacts.GivesForm(profile)) return false;
                 if (profile.DealsDamage || profile.Heals.Count > 0 || profile.Summons || profile.HarmfulEffects) return false;   // ★ v0.3.12: HarmfulEffects
 
                 foreach (var buff in profile.CasterBuffs.Concat(profile.TargetBuffs).Distinct())

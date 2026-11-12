@@ -1,0 +1,1235 @@
+{
+  "date": "2026-11-12",
+  "task": "Shifter/Ulbrig core combat form, aspect integration, native Fury selection and automatic post-combat form exclusion",
+  "starting_commit": "a6c3f5308608d10587cc80575015fb7aa5eb059e",
+  "development_base": "1f58150b8e50f9a322ba0b8d3fcc095fe188420f",
+  "dependency_pr": 41,
+  "directive": {
+    "file": "Add mod support for these.txt",
+    "sha256": "06f7be541561d448a8c9cf7bdba06a4f2bf56cf734609609a5dde5127a66be09",
+    "interpretation": "User authorizes Eldritch Archer and Shifter support; guide URLs are context, native assemblies and actual blueprint graphs govern rules."
+  },
+  "reported_behavior": {
+    "unit": "Ulbrig",
+    "quote": "Ulbrig's kept shifting into his shape after battle But he never used it in battle",
+    "version": "0.3.27 stable",
+    "automatic_self_buff_recasting": "probably enabled by default; not confirmed",
+    "report_log_save_or_mvid_supplied": false,
+    "reproduced_actor_scene": false,
+    "local_release_commit": "a614b15",
+    "release_source_commit": "3f005b9"
+  },
+  "native_assembly": {
+    "file": "Assembly-CSharp.dll",
+    "sha256": "2cb7160b7154d4ffacc77b9c51b1eb26199e1294300f04fdfc073367b2ef8953",
+    "mvid": "90a9869c-2792-4c7b-bfb7-5a8b33da7c82",
+    "bytes": 11891712,
+    "proves_installed_game_byte_identity": false
+  },
+  "export_provenance": "User reports running modded game after initialization. Export omission of generated mod graphs remains a known scope limit; this task uses the supplied native class graphs.",
+  "exported_shifter_files": 781,
+  "form_graphs": [
+    {
+      "file": "Archetypes/ChildOfManticore/ShifterWildShapeManticoreBuff.jbp",
+      "asset_id": "91f12a442b374bd7bfdfb05f5ab80f4c",
+      "sha256": "43f1a314d07542e8b088f95c13b027efde6d032363fd5cee6426eacf76fe1f1f",
+      "size": "Large",
+      "keep_slots": false,
+      "allow_damage_transfer": true,
+      "use_size_as_dice_base": true,
+      "primary_limbs": 4,
+      "secondary_limbs": 0
+    },
+    {
+      "file": "Archetypes/ChildOfManticore/ShifterWildShapeManticoreBuff15.jbp",
+      "asset_id": "f5331d1b15ac4c4a833e2928ce3bf18d",
+      "sha256": "58d90b82dd43660af9793f7ddefcf1d3abf180fc436844f30dbeb81c40d36303",
+      "size": "Large",
+      "keep_slots": false,
+      "allow_damage_transfer": true,
+      "use_size_as_dice_base": true,
+      "primary_limbs": 4,
+      "secondary_limbs": 0
+    },
+    {
+      "file": "Archetypes/ChildOfManticore/ShifterWildShapeManticoreBuff8.jbp",
+      "asset_id": "28861899db294aa593ada213a8d1fd36",
+      "sha256": "f45f88990c2d817bf8eddf1da7c9ca5d25732be7ee0b5ac4b6d3615827bcf34e",
+      "size": "Large",
+      "keep_slots": false,
+      "allow_damage_transfer": true,
+      "use_size_as_dice_base": true,
+      "primary_limbs": 4,
+      "secondary_limbs": 0
+    },
+    {
+      "file": "Archetypes/DragonbloodShifter/DragonForm/ShifterDragonFormBlackBuff14.jbp",
+      "asset_id": "8fb6bf56c9174d5e8cf24069e6b0c965",
+      "sha256": "b390dcd8de2079363b85625a12e1801c4124c34aa5a1b44a8b7d2202fb6917d3",
+      "size": "Large",
+      "keep_slots": false,
+      "allow_damage_transfer": true,
+      "use_size_as_dice_base": true,
+      "primary_limbs": 4,
+      "secondary_limbs": 2
+    },
+    {
+      "file": "Archetypes/DragonbloodShifter/DragonForm/ShifterDragonFormBlackBuff20.jbp",
+      "asset_id": "2288af142a164f8799c4af47a1d59964",
+      "sha256": "10c90181ed657fd46519790bef52e725eadde1d9f46728f2fc12aa29d4c09a98",
+      "size": "Huge",
+      "keep_slots": false,
+      "allow_damage_transfer": true,
+      "use_size_as_dice_base": true,
+      "primary_limbs": 4,
+      "secondary_limbs": 2
+    },
+    {
+      "file": "Archetypes/DragonbloodShifter/DragonForm/ShifterDragonFormBlackBuff9.jbp",
+      "asset_id": "662bdcd3eef541fb91d88b9ee79d0d37",
+      "sha256": "946122b935a6769c275211175d2bbaaf97207b3581c3649803251ffd194b49b3",
+      "size": "Medium",
+      "keep_slots": false,
+      "allow_damage_transfer": true,
+      "use_size_as_dice_base": true,
+      "primary_limbs": 3,
+      "secondary_limbs": 2
+    },
+    {
+      "file": "Archetypes/DragonbloodShifter/DragonForm/ShifterDragonFormBlueBuff14.jbp",
+      "asset_id": "b9c75c14fe6d48e0962e1ce9f42d4c9e",
+      "sha256": "f4b7942c618a311e9ec7bba58abb18ab2760841c5239df547441e3d4e7d6364f",
+      "size": "Large",
+      "keep_slots": false,
+      "allow_damage_transfer": true,
+      "use_size_as_dice_base": true,
+      "primary_limbs": 4,
+      "secondary_limbs": 2
+    },
+    {
+      "file": "Archetypes/DragonbloodShifter/DragonForm/ShifterDragonFormBlueBuff20.jbp",
+      "asset_id": "3a046d0a7bec4740b55df562950ef8ef",
+      "sha256": "3628506331d4f8291ba9491d93fb3a84156cddc0a9170b1bd19d00bcae5af3e7",
+      "size": "Huge",
+      "keep_slots": false,
+      "allow_damage_transfer": true,
+      "use_size_as_dice_base": true,
+      "primary_limbs": 4,
+      "secondary_limbs": 2
+    },
+    {
+      "file": "Archetypes/DragonbloodShifter/DragonForm/ShifterDragonFormBlueBuff9.jbp",
+      "asset_id": "abaa7d56f843410e97c61ff2c87d39c6",
+      "sha256": "e9279ebf3659046109d6c37d8e48de68bfaeb6e3d353a0c56460c000fa11466a",
+      "size": "Medium",
+      "keep_slots": false,
+      "allow_damage_transfer": true,
+      "use_size_as_dice_base": true,
+      "primary_limbs": 3,
+      "secondary_limbs": 2
+    },
+    {
+      "file": "Archetypes/DragonbloodShifter/DragonForm/ShifterDragonFormBrassBuff14.jbp",
+      "asset_id": "445d70781c2848dc9c63d80718a6c26f",
+      "sha256": "cc85f226f866f396ac53ee61e3b7471ec7c8bfedde68c9a93b4115231cd7e54a",
+      "size": "Large",
+      "keep_slots": false,
+      "allow_damage_transfer": true,
+      "use_size_as_dice_base": true,
+      "primary_limbs": 4,
+      "secondary_limbs": 2
+    },
+    {
+      "file": "Archetypes/DragonbloodShifter/DragonForm/ShifterDragonFormBrassBuff20.jbp",
+      "asset_id": "6ccdc7596ec744a3aaf5c1ea87079277",
+      "sha256": "d7d90a2610bcd9f22c913faa8d615ec3ef988946dfabf8f226660892c18fc77e",
+      "size": "Huge",
+      "keep_slots": false,
+      "allow_damage_transfer": true,
+      "use_size_as_dice_base": true,
+      "primary_limbs": 4,
+      "secondary_limbs": 2
+    },
+    {
+      "file": "Archetypes/DragonbloodShifter/DragonForm/ShifterDragonFormBrassBuff9.jbp",
+      "asset_id": "205e7bae0d7c428b8f2a451f7934219a",
+      "sha256": "ff3719e7b0ae688e85dc091c50a3da72a9ff7ae1c05d5fb2bf40c0ca1d9d3180",
+      "size": "Medium",
+      "keep_slots": false,
+      "allow_damage_transfer": true,
+      "use_size_as_dice_base": true,
+      "primary_limbs": 3,
+      "secondary_limbs": 2
+    },
+    {
+      "file": "Archetypes/DragonbloodShifter/DragonForm/ShifterDragonFormBronzeBuff14.jbp",
+      "asset_id": "0ff1819f465140068e02aaf87c17ec2c",
+      "sha256": "269322c4b7a80ea76b4d9f1295ab4163af285642a043e59d471673fa841d25ae",
+      "size": "Large",
+      "keep_slots": false,
+      "allow_damage_transfer": true,
+      "use_size_as_dice_base": true,
+      "primary_limbs": 4,
+      "secondary_limbs": 2
+    },
+    {
+      "file": "Archetypes/DragonbloodShifter/DragonForm/ShifterDragonFormBronzeBuff20.jbp",
+      "asset_id": "3aa815d2677a4ed791abe20cb7e7a2e6",
+      "sha256": "73a10ea4e80ce0f6c8c9331ad5bee691f9ceacf831985ec82dfc32cedd09b410",
+      "size": "Huge",
+      "keep_slots": false,
+      "allow_damage_transfer": true,
+      "use_size_as_dice_base": true,
+      "primary_limbs": 4,
+      "secondary_limbs": 2
+    },
+    {
+      "file": "Archetypes/DragonbloodShifter/DragonForm/ShifterDragonFormBronzeBuff9.jbp",
+      "asset_id": "cd72e19154f143269e48caff753eab63",
+      "sha256": "9b8efc1779d26a43d5ba15c105a95991d34a125de479502e71073ed3b00a0062",
+      "size": "Medium",
+      "keep_slots": false,
+      "allow_damage_transfer": true,
+      "use_size_as_dice_base": true,
+      "primary_limbs": 3,
+      "secondary_limbs": 2
+    },
+    {
+      "file": "Archetypes/DragonbloodShifter/DragonForm/ShifterDragonFormCopperBuff14.jbp",
+      "asset_id": "e9736d47de3643009a5514668a48ffe0",
+      "sha256": "b8b1d6fd5f519addd7b893e5aaf852ed239fabc99c68b6176b72a96a30dc38f9",
+      "size": "Large",
+      "keep_slots": false,
+      "allow_damage_transfer": true,
+      "use_size_as_dice_base": true,
+      "primary_limbs": 4,
+      "secondary_limbs": 2
+    },
+    {
+      "file": "Archetypes/DragonbloodShifter/DragonForm/ShifterDragonFormCopperBuff20.jbp",
+      "asset_id": "42887e88445b48a6bcc90f293c8b6967",
+      "sha256": "c0a9c3b3bb7db160f859f9f32812302a0258e42f9f4decc1e7bff448478a80f1",
+      "size": "Huge",
+      "keep_slots": false,
+      "allow_damage_transfer": true,
+      "use_size_as_dice_base": true,
+      "primary_limbs": 4,
+      "secondary_limbs": 2
+    },
+    {
+      "file": "Archetypes/DragonbloodShifter/DragonForm/ShifterDragonFormCopperBuff9.jbp",
+      "asset_id": "3f5625345d0c481abec69c0241d50019",
+      "sha256": "cd4b89031c6158450bcd56a446c3d09ecac160922d6e9577a4bfd940af177b60",
+      "size": "Medium",
+      "keep_slots": false,
+      "allow_damage_transfer": true,
+      "use_size_as_dice_base": true,
+      "primary_limbs": 3,
+      "secondary_limbs": 2
+    },
+    {
+      "file": "Archetypes/DragonbloodShifter/DragonForm/ShifterDragonFormGoldBuff14.jbp",
+      "asset_id": "5a679cd137d64c629995c626616dbb17",
+      "sha256": "2d50245a54d6933512509bcb392290c13b89455e40f4e2176b905e56cc00fefe",
+      "size": "Large",
+      "keep_slots": false,
+      "allow_damage_transfer": true,
+      "use_size_as_dice_base": true,
+      "primary_limbs": 4,
+      "secondary_limbs": 2
+    },
+    {
+      "file": "Archetypes/DragonbloodShifter/DragonForm/ShifterDragonFormGoldBuff20.jbp",
+      "asset_id": "833873205d9b46e99217d02cd04a20d4",
+      "sha256": "d6e777a096f39fcbe9f9680a7a097521358cf80908df231d0e30584c258fd696",
+      "size": "Huge",
+      "keep_slots": false,
+      "allow_damage_transfer": true,
+      "use_size_as_dice_base": true,
+      "primary_limbs": 4,
+      "secondary_limbs": 2
+    },
+    {
+      "file": "Archetypes/DragonbloodShifter/DragonForm/ShifterDragonFormGoldBuff9.jbp",
+      "asset_id": "f5ac253cbee44744a7399f17765160d5",
+      "sha256": "fa90d881395e32f4f2665733226fcec3d7eb1f814e975c487a19046fc4a347dc",
+      "size": "Medium",
+      "keep_slots": false,
+      "allow_damage_transfer": true,
+      "use_size_as_dice_base": true,
+      "primary_limbs": 3,
+      "secondary_limbs": 2
+    },
+    {
+      "file": "Archetypes/DragonbloodShifter/DragonForm/ShifterDragonFormGreenBuff14.jbp",
+      "asset_id": "3d887a79a7384149bd38b4d9d97c44b5",
+      "sha256": "31024279eda33cdd7575be1e86aea5961bf8d22b70f6d1f266ef7b4023dcac24",
+      "size": "Large",
+      "keep_slots": false,
+      "allow_damage_transfer": true,
+      "use_size_as_dice_base": true,
+      "primary_limbs": 4,
+      "secondary_limbs": 2
+    },
+    {
+      "file": "Archetypes/DragonbloodShifter/DragonForm/ShifterDragonFormGreenBuff20.jbp",
+      "asset_id": "988155b6f04a49dabc1b6cb674b71f04",
+      "sha256": "4c90d95d6ec30780a57b5eaf68cbfbe0f1da66cdc08e5585cc84534bb5d4ad3c",
+      "size": "Huge",
+      "keep_slots": false,
+      "allow_damage_transfer": true,
+      "use_size_as_dice_base": true,
+      "primary_limbs": 4,
+      "secondary_limbs": 2
+    },
+    {
+      "file": "Archetypes/DragonbloodShifter/DragonForm/ShifterDragonFormGreenBuff9.jbp",
+      "asset_id": "ab25d91564a04b3fa0ae84d52b6407d5",
+      "sha256": "e3ff8aeae66ec7ccdac1004532ed6331f63ef69887da03767cfc50b51ead3595",
+      "size": "Medium",
+      "keep_slots": false,
+      "allow_damage_transfer": true,
+      "use_size_as_dice_base": true,
+      "primary_limbs": 3,
+      "secondary_limbs": 2
+    },
+    {
+      "file": "Archetypes/DragonbloodShifter/DragonForm/ShifterDragonFormRedBuff14.jbp",
+      "asset_id": "8242311f5c3c4cad90e67ef79cf5a6c2",
+      "sha256": "71d575d5e1df5a49d259510cb963db88990508e8dfe724b4b0e2a7986b041177",
+      "size": "Large",
+      "keep_slots": false,
+      "allow_damage_transfer": true,
+      "use_size_as_dice_base": true,
+      "primary_limbs": 4,
+      "secondary_limbs": 2
+    },
+    {
+      "file": "Archetypes/DragonbloodShifter/DragonForm/ShifterDragonFormRedBuff20.jbp",
+      "asset_id": "2ef361195bc048839608bac3950b1f23",
+      "sha256": "367f15bebcec79abf29b31fa776ee3dc689ef6881684e878486fa393df50269e",
+      "size": "Huge",
+      "keep_slots": false,
+      "allow_damage_transfer": true,
+      "use_size_as_dice_base": true,
+      "primary_limbs": 4,
+      "secondary_limbs": 2
+    },
+    {
+      "file": "Archetypes/DragonbloodShifter/DragonForm/ShifterDragonFormRedBuff9.jbp",
+      "asset_id": "a1f0de0190ce40e19d97c6967a9693c3",
+      "sha256": "4e9fffe43042b2073c410d60f23be8da856752dafea8e0a4ae40c43ddcaa54eb",
+      "size": "Medium",
+      "keep_slots": false,
+      "allow_damage_transfer": true,
+      "use_size_as_dice_base": true,
+      "primary_limbs": 3,
+      "secondary_limbs": 2
+    },
+    {
+      "file": "Archetypes/DragonbloodShifter/DragonForm/ShifterDragonFormSilverBuff14.jbp",
+      "asset_id": "2de04456ce2d4e79804f899498ab31cc",
+      "sha256": "25a56ed2b671ce59de56ec453b25fefb32f6aa3d14ae99a81d39c54b9915039b",
+      "size": "Large",
+      "keep_slots": false,
+      "allow_damage_transfer": true,
+      "use_size_as_dice_base": true,
+      "primary_limbs": 4,
+      "secondary_limbs": 2
+    },
+    {
+      "file": "Archetypes/DragonbloodShifter/DragonForm/ShifterDragonFormSilverBuff20.jbp",
+      "asset_id": "3be4d85d65a94960b4242522d0965633",
+      "sha256": "d4cc6d970570e20554f5dcad3e7c53ec0ffabd0ca8331d530e776c65279db7b6",
+      "size": "Huge",
+      "keep_slots": false,
+      "allow_damage_transfer": true,
+      "use_size_as_dice_base": true,
+      "primary_limbs": 4,
+      "secondary_limbs": 2
+    },
+    {
+      "file": "Archetypes/DragonbloodShifter/DragonForm/ShifterDragonFormSilverBuff9.jbp",
+      "asset_id": "3c4bf82676d345dca2718cac680f5906",
+      "sha256": "ab1fae1694e2f6c83758b43b84c89f5520588028ae1dfb0b2454f318c0eda2f1",
+      "size": "Medium",
+      "keep_slots": false,
+      "allow_damage_transfer": true,
+      "use_size_as_dice_base": true,
+      "primary_limbs": 3,
+      "secondary_limbs": 2
+    },
+    {
+      "file": "Archetypes/DragonbloodShifter/DragonForm/ShifterDragonFormWhiteBuff14.jbp",
+      "asset_id": "b9b1fbf0ec224ccfac3dc5451d00a26a",
+      "sha256": "a68fdb3cdddfb172a81e4c3944b7c4ca9c6eb58d3a75e5e5dbfe763b7ca8bb34",
+      "size": "Large",
+      "keep_slots": false,
+      "allow_damage_transfer": true,
+      "use_size_as_dice_base": true,
+      "primary_limbs": 4,
+      "secondary_limbs": 2
+    },
+    {
+      "file": "Archetypes/DragonbloodShifter/DragonForm/ShifterDragonFormWhiteBuff20.jbp",
+      "asset_id": "9d6996a50f6a4de289a44293420f75be",
+      "sha256": "6c17522ca71e78e205a5ec4017beb41d72d09678480d4ea569d322da3c7d73d6",
+      "size": "Huge",
+      "keep_slots": false,
+      "allow_damage_transfer": true,
+      "use_size_as_dice_base": true,
+      "primary_limbs": 4,
+      "secondary_limbs": 2
+    },
+    {
+      "file": "Archetypes/DragonbloodShifter/DragonForm/ShifterDragonFormWhiteBuff9.jbp",
+      "asset_id": "8b82ee0ca203452a952a25c0f867b2fe",
+      "sha256": "56bf75b81e62b3d23af20423b1eac97a33024a1dbbc5a6f8a1a6f28e3c57a2a3",
+      "size": "Medium",
+      "keep_slots": false,
+      "allow_damage_transfer": true,
+      "use_size_as_dice_base": true,
+      "primary_limbs": 3,
+      "secondary_limbs": 2
+    },
+    {
+      "file": "Archetypes/FeyformShifter/ShifterWildShapeFeyBuff.jbp",
+      "asset_id": "477259fe81a647ad9a38b47140e38de6",
+      "sha256": "726580badae78c92542172dfb143c66b66385f950abedc001655fc260c6708a2",
+      "size": "Large",
+      "keep_slots": false,
+      "allow_damage_transfer": true,
+      "use_size_as_dice_base": true,
+      "primary_limbs": 5,
+      "secondary_limbs": 0
+    },
+    {
+      "file": "Archetypes/FeyformShifter/ShifterWildShapeFeyBuff15.jbp",
+      "asset_id": "dee544177d0148edbaa7ca6a0aee03c0",
+      "sha256": "f49df4021f7d68c1c92a41925ac9bf99fa86e11db4854660dfd64236b121f250",
+      "size": "Large",
+      "keep_slots": false,
+      "allow_damage_transfer": true,
+      "use_size_as_dice_base": true,
+      "primary_limbs": 5,
+      "secondary_limbs": 0
+    },
+    {
+      "file": "Archetypes/FeyformShifter/ShifterWildShapeFeyBuff8.jbp",
+      "asset_id": "6fc7df0ddb9a466d976a3808a8f1437a",
+      "sha256": "5f7346c6d730088543e72ffad69e6781d189c1d858d24eeb6e9d81c0b7c913ca",
+      "size": "Large",
+      "keep_slots": false,
+      "allow_damage_transfer": true,
+      "use_size_as_dice_base": true,
+      "primary_limbs": 5,
+      "secondary_limbs": 0
+    },
+    {
+      "file": "Archetypes/GriffonheartShifter/ShifterWildShapeGriffonBuff.jbp",
+      "asset_id": "e76d475eb1f1470e9950a5fee99ddb40",
+      "sha256": "40f38af41958945aee54f242cec8ccd19cc8c7cdff886f5eab67fdb8a9fa20b0",
+      "size": "Large",
+      "keep_slots": false,
+      "allow_damage_transfer": true,
+      "use_size_as_dice_base": true,
+      "primary_limbs": 3,
+      "secondary_limbs": 0
+    },
+    {
+      "file": "Archetypes/GriffonheartShifter/ShifterWildShapeGriffonBuff14.jbp",
+      "asset_id": "821fa7f586ca44238a0894115824035c",
+      "sha256": "d8bac5df2efb0f2238cf760a386aac8c42e989b9113cfab04e837599387a4d01",
+      "size": "Large",
+      "keep_slots": false,
+      "allow_damage_transfer": true,
+      "use_size_as_dice_base": true,
+      "primary_limbs": 3,
+      "secondary_limbs": 0
+    },
+    {
+      "file": "Archetypes/GriffonheartShifter/ShifterWildShapeGriffonBuff9.jbp",
+      "asset_id": "3a7511f1b8a94b11bbb21245e150c0b6",
+      "sha256": "80f9361d463340fe5d164d5e97fb9a50a78e7ffa3e12698180f553321dddd58f",
+      "size": "Large",
+      "keep_slots": false,
+      "allow_damage_transfer": true,
+      "use_size_as_dice_base": true,
+      "primary_limbs": 3,
+      "secondary_limbs": 0
+    },
+    {
+      "file": "Archetypes/GriffonheartShifter/ShifterWildShapeGriffonBuff_Cutscene.jbp",
+      "asset_id": "af4af06317b94a39bd3fd80ebde86070",
+      "sha256": "86228eb9a61f6361230e003ada0806ac90c3ca266a8ab9177694fae81715dee0",
+      "size": "Large",
+      "keep_slots": false,
+      "allow_damage_transfer": true,
+      "use_size_as_dice_base": true,
+      "primary_limbs": 3,
+      "secondary_limbs": 0
+    },
+    {
+      "file": "Archetypes/GriffonheartShifter/ShifterWildShapeGriffonDemonBuff.jbp",
+      "asset_id": "6236b745b60a4a578c435c861df393f4",
+      "sha256": "20b61e7605e891786ced7045e54d63bdd55247fc46ec6fe4889d7b7e693199c4",
+      "size": "Large",
+      "keep_slots": false,
+      "allow_damage_transfer": true,
+      "use_size_as_dice_base": true,
+      "primary_limbs": 3,
+      "secondary_limbs": 0
+    },
+    {
+      "file": "Archetypes/GriffonheartShifter/ShifterWildShapeGriffonDemonBuff14.jbp",
+      "asset_id": "431ca9188d6f401f9f8df8079c526e59",
+      "sha256": "2ad3a9a71acb72841c99dedff9ce47020d63f5541f6b27f93340352ba5f26c98",
+      "size": "Large",
+      "keep_slots": false,
+      "allow_damage_transfer": true,
+      "use_size_as_dice_base": true,
+      "primary_limbs": 3,
+      "secondary_limbs": 0
+    },
+    {
+      "file": "Archetypes/GriffonheartShifter/ShifterWildShapeGriffonDemonBuff9.jbp",
+      "asset_id": "7d4798e5fe5f4a349b56686340008824",
+      "sha256": "2ecdac4661e703aa387b2248af239486f30e3735b2ce96a0435e738afe987381",
+      "size": "Large",
+      "keep_slots": false,
+      "allow_damage_transfer": true,
+      "use_size_as_dice_base": true,
+      "primary_limbs": 3,
+      "secondary_limbs": 0
+    },
+    {
+      "file": "Archetypes/GriffonheartShifter/ShifterWildShapeGriffonGodBuff.jbp",
+      "asset_id": "4b95ed9a351e4effbb2a83e246ee6334",
+      "sha256": "5f4fc88729ef7bc014968a899d8dc98401364e8bed15b1ba1ab90e355b718a18",
+      "size": "Large",
+      "keep_slots": false,
+      "allow_damage_transfer": true,
+      "use_size_as_dice_base": true,
+      "primary_limbs": 3,
+      "secondary_limbs": 0
+    },
+    {
+      "file": "Archetypes/GriffonheartShifter/ShifterWildShapeGriffonGodBuff14.jbp",
+      "asset_id": "10c913c645364bafbde759f83d103ce6",
+      "sha256": "47bb8c9886c86ca9d91b2e8a416ca9369983427bb4599cfe87cd6d4c7b76814f",
+      "size": "Large",
+      "keep_slots": false,
+      "allow_damage_transfer": true,
+      "use_size_as_dice_base": true,
+      "primary_limbs": 3,
+      "secondary_limbs": 0
+    },
+    {
+      "file": "Archetypes/GriffonheartShifter/ShifterWildShapeGriffonGodBuff9.jbp",
+      "asset_id": "d8b979bf19554b85bbed05e6369c0f63",
+      "sha256": "bdeb172d9c71b43762286a1aace91ef314eb970be07227650c38b50806390dd8",
+      "size": "Large",
+      "keep_slots": false,
+      "allow_damage_transfer": true,
+      "use_size_as_dice_base": true,
+      "primary_limbs": 3,
+      "secondary_limbs": 0
+    },
+    {
+      "file": "Archetypes/GriffonheartShifter/ShifterWildShapeGriffonGodBuff_Cutscene.jbp",
+      "asset_id": "78ee750ff66c47dc9cbf82d59013ae8f",
+      "sha256": "3b6b2c540b57ef6e0339d569dc0101b39641b5408ee7728d48ea165534cf6143",
+      "size": "Large",
+      "keep_slots": false,
+      "allow_damage_transfer": true,
+      "use_size_as_dice_base": true,
+      "primary_limbs": 3,
+      "secondary_limbs": 0
+    },
+    {
+      "file": "Archetypes/Weretouched/LycanthropicWildShape/WereTouchedMajorFormWererat/ShifterWildShapeWereRatBuff.jbp",
+      "asset_id": "90c1e1f586bd4e448a6190e50820726e",
+      "sha256": "cb4e31c8fa3257a54865fc3c75475867e778c39de5fd56d538fcc56941718490",
+      "size": "Medium",
+      "keep_slots": false,
+      "allow_damage_transfer": true,
+      "use_size_as_dice_base": true,
+      "primary_limbs": 3,
+      "secondary_limbs": 0
+    },
+    {
+      "file": "Archetypes/Weretouched/LycanthropicWildShape/WereTouchedMajorFormWererat/ShifterWildShapeWereRatBuff15.jbp",
+      "asset_id": "9261713e33624de599d6183d6b7cf2e4",
+      "sha256": "39740de7a5d50b9b030118d1e51d0169578e57dbb14c01e2a52b7942528afa35",
+      "size": "Medium",
+      "keep_slots": false,
+      "allow_damage_transfer": true,
+      "use_size_as_dice_base": true,
+      "primary_limbs": 3,
+      "secondary_limbs": 0
+    },
+    {
+      "file": "Archetypes/Weretouched/LycanthropicWildShape/WereTouchedMajorFormWererat/ShifterWildShapeWereRatBuff8.jbp",
+      "asset_id": "b112b566d38e45cb8c5b8d6310057d08",
+      "sha256": "9c8a7b6fe0d85dd0382db955b4dd4b75467bb039d33d2cce4da7b06b160a405c",
+      "size": "Medium",
+      "keep_slots": false,
+      "allow_damage_transfer": true,
+      "use_size_as_dice_base": true,
+      "primary_limbs": 3,
+      "secondary_limbs": 0
+    },
+    {
+      "file": "Archetypes/Weretouched/LycanthropicWildShape/WereTouchedMajorFormWeretiger/ShifterWildShapeWereTigerBuff.jbp",
+      "asset_id": "7ee57fd97181455a89ecf57421cccb74",
+      "sha256": "44abc8f7a96eddd6c4606c3fa5b564024d75effad6e06bfa4d7e0de12670b6fe",
+      "size": "Medium",
+      "keep_slots": false,
+      "allow_damage_transfer": true,
+      "use_size_as_dice_base": true,
+      "primary_limbs": 3,
+      "secondary_limbs": 0
+    },
+    {
+      "file": "Archetypes/Weretouched/LycanthropicWildShape/WereTouchedMajorFormWeretiger/ShifterWildShapeWereTigerBuff15.jbp",
+      "asset_id": "1bc5f96600c74a079c8a0c6dafeb3320",
+      "sha256": "756ec19633b5535ff7670f9747c92dd515e01b7847a79a59aaeecbea798c1483",
+      "size": "Medium",
+      "keep_slots": false,
+      "allow_damage_transfer": true,
+      "use_size_as_dice_base": true,
+      "primary_limbs": 3,
+      "secondary_limbs": 0
+    },
+    {
+      "file": "Archetypes/Weretouched/LycanthropicWildShape/WereTouchedMajorFormWeretiger/ShifterWildShapeWereTigerBuff8.jbp",
+      "asset_id": "072824894a1e4dce933febb58c3e67ea",
+      "sha256": "298c3d5a5cc0521189bcc0967be08c0a535bb925469d5d4564e8bcfdcffb3fe7",
+      "size": "Medium",
+      "keep_slots": false,
+      "allow_damage_transfer": true,
+      "use_size_as_dice_base": true,
+      "primary_limbs": 3,
+      "secondary_limbs": 0
+    },
+    {
+      "file": "Archetypes/Weretouched/LycanthropicWildShape/WereTouchedMajorFormWerewolf/ShifterWildShapeWereWolfBuff.jbp",
+      "asset_id": "93c43b7a806b410caaeed42eb0bf6a61",
+      "sha256": "5b6f296532d857c974c08b115d54d8f06fc6a28d3a912def080262b890dbf807",
+      "size": "Medium",
+      "keep_slots": false,
+      "allow_damage_transfer": true,
+      "use_size_as_dice_base": true,
+      "primary_limbs": 3,
+      "secondary_limbs": 0
+    },
+    {
+      "file": "Archetypes/Weretouched/LycanthropicWildShape/WereTouchedMajorFormWerewolf/ShifterWildShapeWereWolfBuff15.jbp",
+      "asset_id": "34273feba56448bc968dd5482cdfffc7",
+      "sha256": "064a4f4e0f7862bfafd91137c01fd79897e524993f5048f4a685dcffe2707d70",
+      "size": "Medium",
+      "keep_slots": false,
+      "allow_damage_transfer": true,
+      "use_size_as_dice_base": true,
+      "primary_limbs": 3,
+      "secondary_limbs": 0
+    },
+    {
+      "file": "Archetypes/Weretouched/LycanthropicWildShape/WereTouchedMajorFormWerewolf/ShifterWildShapeWereWolfBuff8.jbp",
+      "asset_id": "f7ddb0c090ae46c89774780c7a7968c7",
+      "sha256": "f4d1d6db193ea8376e6336e12d821788d2532df6236ad7c31635f93c8dc2f629",
+      "size": "Medium",
+      "keep_slots": false,
+      "allow_damage_transfer": true,
+      "use_size_as_dice_base": true,
+      "primary_limbs": 3,
+      "secondary_limbs": 0
+    },
+    {
+      "file": "ShifterMajorForms/Bear/ShifterWildShapeBearBuff.jbp",
+      "asset_id": "68ca4094f4e7488c8e869af833e153f1",
+      "sha256": "e774943e0a28c05621e4e72562a58b25bd0adc8b2dc6c915fe53270bbf59b1ee",
+      "size": "Large",
+      "keep_slots": false,
+      "allow_damage_transfer": true,
+      "use_size_as_dice_base": true,
+      "primary_limbs": 3,
+      "secondary_limbs": 0
+    },
+    {
+      "file": "ShifterMajorForms/Bear/ShifterWildShapeBearBuff15.jbp",
+      "asset_id": "5adecdc82eda4271b6dc4a7e6a921c89",
+      "sha256": "67613ccb7550e9224da3f4d5a4f647a35dffd75efb5e10c479a98c15e43c1912",
+      "size": "Large",
+      "keep_slots": false,
+      "allow_damage_transfer": true,
+      "use_size_as_dice_base": true,
+      "primary_limbs": 3,
+      "secondary_limbs": 0
+    },
+    {
+      "file": "ShifterMajorForms/Bear/ShifterWildShapeBearBuff8.jbp",
+      "asset_id": "9cc0eceb9cbc44e4b1ecc5e8b5f97c45",
+      "sha256": "16841ae1a632056fceef95749f7f490c8fdd8e0874dd3172c71ea5eee8cb7a19",
+      "size": "Large",
+      "keep_slots": false,
+      "allow_damage_transfer": true,
+      "use_size_as_dice_base": true,
+      "primary_limbs": 3,
+      "secondary_limbs": 0
+    },
+    {
+      "file": "ShifterMajorForms/Boar/ShifterWildShapeBoarBuff.jbp",
+      "asset_id": "c6b493bf01ec4478bbb7247f56d670f8",
+      "sha256": "d80670e37076cccc03f8139890a9336dc66207cec5dd80c4decbf84325a56ce1",
+      "size": "Large",
+      "keep_slots": false,
+      "allow_damage_transfer": true,
+      "use_size_as_dice_base": true,
+      "primary_limbs": 1,
+      "secondary_limbs": 0
+    },
+    {
+      "file": "ShifterMajorForms/Boar/ShifterWildShapeBoarBuff15.jbp",
+      "asset_id": "b8c0ad632442496aa20b96864dde4454",
+      "sha256": "241bbece119c8edbd0ca1dd4d7e3474cdd431e26d88c68274896e481434dd5cd",
+      "size": "Large",
+      "keep_slots": false,
+      "allow_damage_transfer": true,
+      "use_size_as_dice_base": true,
+      "primary_limbs": 1,
+      "secondary_limbs": 0
+    },
+    {
+      "file": "ShifterMajorForms/Boar/ShifterWildShapeBoarBuff8.jbp",
+      "asset_id": "ae71fed93f9f442cbce5b601e4aa1a23",
+      "sha256": "47f5107fc77a779a56c3c2b6396ba26e200d2e618c40ae4597450de100d08023",
+      "size": "Large",
+      "keep_slots": false,
+      "allow_damage_transfer": true,
+      "use_size_as_dice_base": true,
+      "primary_limbs": 1,
+      "secondary_limbs": 0
+    },
+    {
+      "file": "ShifterMajorForms/Dinosaur/ShifterWildShapeDinosaurBuff.jbp",
+      "asset_id": "bdbc24300ebd4fd6810172e4d4b1ab19",
+      "sha256": "dee6bbdcf0fa0088c31a512038d456397351890bafb2d391d8ba310e974a1e21",
+      "size": "Medium",
+      "keep_slots": false,
+      "allow_damage_transfer": true,
+      "use_size_as_dice_base": false,
+      "primary_limbs": 3,
+      "secondary_limbs": 0
+    },
+    {
+      "file": "ShifterMajorForms/Dinosaur/ShifterWildShapeDinosaurBuff15.jbp",
+      "asset_id": "ab0f757d55a74658b812829518566df4",
+      "sha256": "6c7b85ab7b59aa4888550d7c739ec4d8f22d1f5a8e47d02ec7e22671d9ecc4cd",
+      "size": "Medium",
+      "keep_slots": false,
+      "allow_damage_transfer": true,
+      "use_size_as_dice_base": false,
+      "primary_limbs": 3,
+      "secondary_limbs": 2
+    },
+    {
+      "file": "ShifterMajorForms/Dinosaur/ShifterWildShapeDinosaurBuff8.jbp",
+      "asset_id": "f6d0e7d4d96b4f7897557968a0706f74",
+      "sha256": "22da8ce19b4c6b718b7a4867ef81f4817df6155e484fec7264c96b331295d220",
+      "size": "Medium",
+      "keep_slots": false,
+      "allow_damage_transfer": true,
+      "use_size_as_dice_base": false,
+      "primary_limbs": 3,
+      "secondary_limbs": 2
+    },
+    {
+      "file": "ShifterMajorForms/Elephant/ShifterWildShapeElephantBuff.jbp",
+      "asset_id": "7e90cc7393624b13b6d319774bf6d812",
+      "sha256": "3ab062373c4b47eb148267f9fbf4002ed6a918fb12184af7ee119d7e5467dc62",
+      "size": "Large",
+      "keep_slots": false,
+      "allow_damage_transfer": true,
+      "use_size_as_dice_base": true,
+      "primary_limbs": 3,
+      "secondary_limbs": 0
+    },
+    {
+      "file": "ShifterMajorForms/Elephant/ShifterWildShapeElephantBuff15.jbp",
+      "asset_id": "fdb39ec525c2411aad43f6b12ad4b1c0",
+      "sha256": "a7286a834d6aff04533ed49278654db3d09f3720235cc9efff17d338e568b7c1",
+      "size": "Large",
+      "keep_slots": false,
+      "allow_damage_transfer": true,
+      "use_size_as_dice_base": true,
+      "primary_limbs": 3,
+      "secondary_limbs": 0
+    },
+    {
+      "file": "ShifterMajorForms/Elephant/ShifterWildShapeElephantBuff8.jbp",
+      "asset_id": "38f84f5a0da94b169131b863be81957b",
+      "sha256": "50acda8aabe38823070327daa3eba138fd0f8e7d3e5ba94494cbf5bf39560422",
+      "size": "Large",
+      "keep_slots": false,
+      "allow_damage_transfer": true,
+      "use_size_as_dice_base": true,
+      "primary_limbs": 3,
+      "secondary_limbs": 0
+    },
+    {
+      "file": "ShifterMajorForms/Horse/ShifterWildShapeHorseBuff.jbp",
+      "asset_id": "b3e5540f487d4a2b9aa50aad34c60ec3",
+      "sha256": "b192a1d7ac6842714dc974bbd0dd5fa9f77666c396f194cd77faa0f22efc3b31",
+      "size": "Large",
+      "keep_slots": false,
+      "allow_damage_transfer": true,
+      "use_size_as_dice_base": true,
+      "primary_limbs": 2,
+      "secondary_limbs": 0
+    },
+    {
+      "file": "ShifterMajorForms/Horse/ShifterWildShapeHorseBuff15.jbp",
+      "asset_id": "f493bc3e006d44fb8815267ffa49ec76",
+      "sha256": "05595cc7bff5e761bd7a1e59fea93ede4b597052cec36a8f8ebd5300813d239e",
+      "size": "Large",
+      "keep_slots": false,
+      "allow_damage_transfer": true,
+      "use_size_as_dice_base": true,
+      "primary_limbs": 2,
+      "secondary_limbs": 0
+    },
+    {
+      "file": "ShifterMajorForms/Horse/ShifterWildShapeHorseBuff8.jbp",
+      "asset_id": "4a5e4c66ca8d4657b281060a24886ad1",
+      "sha256": "9e83d20a956f9b236b87ae5ac53780b09f39db451f5fa0cb93a89c16894327f2",
+      "size": "Large",
+      "keep_slots": false,
+      "allow_damage_transfer": true,
+      "use_size_as_dice_base": true,
+      "primary_limbs": 2,
+      "secondary_limbs": 0
+    },
+    {
+      "file": "ShifterMajorForms/Lizard/ShifterWildShapeLizardBuff.jbp",
+      "asset_id": "0b15a8dce67746e1979dfc597f13827f",
+      "sha256": "1ea02b6ea2f39a5d08db37e85ac07bae37afb72dc9540ee5553130530ab94cae",
+      "size": "Large",
+      "keep_slots": false,
+      "allow_damage_transfer": true,
+      "use_size_as_dice_base": true,
+      "primary_limbs": 1,
+      "secondary_limbs": 0
+    },
+    {
+      "file": "ShifterMajorForms/Lizard/ShifterWildShapeLizardBuff15.jbp",
+      "asset_id": "ba5b0df349c94c91ad7a38309b042537",
+      "sha256": "44837900f9e9edd5eff5b8ac9726d61f1946d38b04292fab6cd723c254f133ab",
+      "size": "Large",
+      "keep_slots": false,
+      "allow_damage_transfer": true,
+      "use_size_as_dice_base": true,
+      "primary_limbs": 1,
+      "secondary_limbs": 0
+    },
+    {
+      "file": "ShifterMajorForms/Lizard/ShifterWildShapeLizardBuff8.jbp",
+      "asset_id": "f246e4e203f84f52bed2dc16e6d36087",
+      "sha256": "6e4684d103c0687f0dd09e96d89149afce95c95922683032eb0285b78bad156f",
+      "size": "Large",
+      "keep_slots": false,
+      "allow_damage_transfer": true,
+      "use_size_as_dice_base": true,
+      "primary_limbs": 1,
+      "secondary_limbs": 0
+    },
+    {
+      "file": "ShifterMajorForms/Spider/ShifterWildShapeSpiderBuff.jbp",
+      "asset_id": "58e7d688873242f38b6cc66a7ae3d794",
+      "sha256": "987523de03f5d034f3241b37b63365c4796b31c77f2c3280996bd1f6fd29add7",
+      "size": "Medium",
+      "keep_slots": false,
+      "allow_damage_transfer": true,
+      "use_size_as_dice_base": false,
+      "primary_limbs": 1,
+      "secondary_limbs": 0
+    },
+    {
+      "file": "ShifterMajorForms/Spider/ShifterWildShapeSpiderBuff15.jbp",
+      "asset_id": "d895c3b8663f4b73a3868e6369bba6d4",
+      "sha256": "4b76d92e892bb843c9a88bc2eb2a3f27f8cf58df37d7bf0e9d61d8755809a693",
+      "size": "Medium",
+      "keep_slots": false,
+      "allow_damage_transfer": true,
+      "use_size_as_dice_base": false,
+      "primary_limbs": 1,
+      "secondary_limbs": 0
+    },
+    {
+      "file": "ShifterMajorForms/Spider/ShifterWildShapeSpiderBuff8.jbp",
+      "asset_id": "c163b127ce354363a20946bb01967cac",
+      "sha256": "f7470c824b9c9e6edc1951c8ea2cb461c0b69a1e0ea0652ddb32d90c2af1d88d",
+      "size": "Medium",
+      "keep_slots": false,
+      "allow_damage_transfer": true,
+      "use_size_as_dice_base": false,
+      "primary_limbs": 1,
+      "secondary_limbs": 0
+    },
+    {
+      "file": "ShifterMajorForms/Tiger/ShifterWildShapeTigerBuff.jbp",
+      "asset_id": "7a5da4b80a494bf2b96fa7756d3f89cc",
+      "sha256": "6cd39c614c424d8092426012d056606f3680b9e36f5c368296795c00531e770d",
+      "size": "Large",
+      "keep_slots": false,
+      "allow_damage_transfer": true,
+      "use_size_as_dice_base": true,
+      "primary_limbs": 3,
+      "secondary_limbs": 0
+    },
+    {
+      "file": "ShifterMajorForms/Tiger/ShifterWildShapeTigerBuff15.jbp",
+      "asset_id": "f49109fdb0a24f75a4ab466bf95843af",
+      "sha256": "03d8f43033c2099e8cbeae3acf953028cb937ae160b46643bd605c499c6198cc",
+      "size": "Large",
+      "keep_slots": false,
+      "allow_damage_transfer": true,
+      "use_size_as_dice_base": true,
+      "primary_limbs": 3,
+      "secondary_limbs": 0
+    },
+    {
+      "file": "ShifterMajorForms/Tiger/ShifterWildShapeTigerBuff8.jbp",
+      "asset_id": "defa946808514ab0a1023192fa13ede3",
+      "sha256": "f02fe636c50372e8d70875d0c2439187ac37f92e7a9fd8eee7cfdaed9d5b7cf3",
+      "size": "Large",
+      "keep_slots": false,
+      "allow_damage_transfer": true,
+      "use_size_as_dice_base": true,
+      "primary_limbs": 3,
+      "secondary_limbs": 0
+    },
+    {
+      "file": "ShifterMajorForms/Wolf/ShifterWildShapeWolfBuff.jbp",
+      "asset_id": "fe61e45eb3d1441795179eb0bff1ef3b",
+      "sha256": "12920dcffb25fbae3a6c1e235b2c0f625d2a78e3fcded1d5ed09981e009d0d95",
+      "size": "Large",
+      "keep_slots": false,
+      "allow_damage_transfer": true,
+      "use_size_as_dice_base": true,
+      "primary_limbs": 1,
+      "secondary_limbs": 0
+    },
+    {
+      "file": "ShifterMajorForms/Wolf/ShifterWildShapeWolfBuff15.jbp",
+      "asset_id": "14bf6a8c9f9f40dba2f6fc41e6235270",
+      "sha256": "8a638a9467d087215c0fffdd420c2d80c01cc01150eb40e639195a105733839e",
+      "size": "Large",
+      "keep_slots": false,
+      "allow_damage_transfer": true,
+      "use_size_as_dice_base": true,
+      "primary_limbs": 1,
+      "secondary_limbs": 0
+    },
+    {
+      "file": "ShifterMajorForms/Wolf/ShifterWildShapeWolfBuff8.jbp",
+      "asset_id": "a983157daa464ab7a725ed5f53110a32",
+      "sha256": "b9b5643db21011e6f0d2ac3074e94b69b5a07d6572b5730e14073ec58157cd52",
+      "size": "Large",
+      "keep_slots": false,
+      "allow_damage_transfer": true,
+      "use_size_as_dice_base": true,
+      "primary_limbs": 1,
+      "secondary_limbs": 0
+    },
+    {
+      "file": "ShifterMajorForms/Wolverine/ShifterWildShapeWolverineBuff.jbp",
+      "asset_id": "350ba136f5d04e588f1a6e3ba22233cb",
+      "sha256": "77cdd8dfb8f18b77777f0747255037133927ee57872aae4daa554d478f6fba42",
+      "size": "Large",
+      "keep_slots": false,
+      "allow_damage_transfer": true,
+      "use_size_as_dice_base": true,
+      "primary_limbs": 3,
+      "secondary_limbs": 0
+    },
+    {
+      "file": "ShifterMajorForms/Wolverine/ShifterWildShapeWolverineBuff15.jbp",
+      "asset_id": "cd5f29d5f50a43f9a2d5f3debce86477",
+      "sha256": "754c5d5889b23b0d99ed79aefbd14141b6b3ed1572efa2d3aa55633e4ca76e4b",
+      "size": "Large",
+      "keep_slots": false,
+      "allow_damage_transfer": true,
+      "use_size_as_dice_base": true,
+      "primary_limbs": 3,
+      "secondary_limbs": 0
+    },
+    {
+      "file": "ShifterMajorForms/Wolverine/ShifterWildShapeWolverineBuff8.jbp",
+      "asset_id": "12272456258f4334a11b87610cf33abd",
+      "sha256": "e4147e16ba0a60272e76bfcce7d04517eb71af4ee412828e61e08d8863aabeed",
+      "size": "Large",
+      "keep_slots": false,
+      "allow_damage_transfer": true,
+      "use_size_as_dice_base": true,
+      "primary_limbs": 3,
+      "secondary_limbs": 0
+    }
+  ],
+  "focused_inputs": [
+    {
+      "file": "Archetypes/ChildOfManticore/ShifterWildShapeManticoreBuff.jbp",
+      "asset_id": "91f12a442b374bd7bfdfb05f5ab80f4c",
+      "sha256": "43f1a314d07542e8b088f95c13b027efde6d032363fd5cee6426eacf76fe1f1f",
+      "components": [
+        "Polymorph",
+        "SpellDescriptorComponent",
+        "ReplaceAsksList",
+        "BuffMovementSpeed",
+        "ReplaceSourceBone",
+        "ReplaceCastSource",
+        "AddFactContextActions",
+        "Blindsense",
+        "ReplaceSourceBone",
+        "SuppressBuffs"
+      ]
+    },
+    {
+      "file": "Archetypes/GriffonheartShifter/ShifterAspectGriffonAbility.jbp",
+      "asset_id": "482294ea23314b83a251eb36f0feff3c",
+      "sha256": "69d5d4391d1e105dc2cba1c30b83691aaafa64f430c6129fd8df3a92391cb24f",
+      "components": [
+        "ActivatableAbilityResourceLogic",
+        "AddTriggerOnActivationChanged"
+      ]
+    },
+    {
+      "file": "Archetypes/GriffonheartShifter/ShifterAspectGriffonBuff.jbp",
+      "asset_id": "7440316282184da7b909c8ee8e737730",
+      "sha256": "2d34395255284f25910975d4a3fdc9cff712d5eaddcb95defce4ed8b4b5b4681",
+      "components": [
+        "AddContextStatBonus",
+        "ContextRankConfig",
+        "AddContextStatBonus",
+        "AddFeatureOnClassLevel",
+        "AddFeatureOnClassLevel",
+        "ContextRankConfig",
+        "AddFacts"
+      ]
+    },
+    {
+      "file": "Archetypes/GriffonheartShifter/ShifterWildShapeGriffonAbillity.jbp",
+      "asset_id": "d1153efaf92f46499e9f9a8613a7274c",
+      "sha256": "dcceb5105fa4005bf064f13eb8c81d721943cbc6b14bc9e130a6d8b517d0fab8",
+      "components": [
+        "AbilityResourceLogic",
+        "SpellDescriptorComponent",
+        "AbilityTargetHasFact",
+        "AbilityExecuteActionOnCast",
+        "AbilityEffectRunAction"
+      ]
+    },
+    {
+      "file": "Archetypes/GriffonheartShifter/ShifterWildShapeGriffonAbillity14.jbp",
+      "asset_id": "68a1806916974686b8d6047eca33c939",
+      "sha256": "abe13c8d35a5642d5a08d8ab1c4cfd0cda3246d3c2294ad39db89a9890c9d417",
+      "components": [
+        "AbilityResourceLogic",
+        "SpellDescriptorComponent",
+        "AbilityTargetHasFact",
+        "AbilityExecuteActionOnCast",
+        "AbilityEffectRunAction"
+      ]
+    },
+    {
+      "file": "Archetypes/GriffonheartShifter/ShifterWildShapeGriffonAbillity9.jbp",
+      "asset_id": "f947a6695f094b8084efdd514cca32ee",
+      "sha256": "fe5af4e0aeb048eb61d2b5df962c12bd3e4d469833292cec532b075ea3c62279",
+      "components": [
+        "AbilityResourceLogic",
+        "SpellDescriptorComponent",
+        "AbilityTargetHasFact",
+        "AbilityExecuteActionOnCast",
+        "AbilityEffectRunAction"
+      ]
+    },
+    {
+      "file": "Archetypes/GriffonheartShifter/ShifterWildShapeGriffonBuff.jbp",
+      "asset_id": "e76d475eb1f1470e9950a5fee99ddb40",
+      "sha256": "40f38af41958945aee54f242cec8ccd19cc8c7cdff886f5eab67fdb8a9fa20b0",
+      "components": [
+        "Polymorph",
+        "SpellDescriptorComponent",
+        "ReplaceAsksList",
+        "BuffMovementSpeed",
+        "ReplaceSourceBone",
+        "ReplaceCastSource",
+        "AddFactContextActions",
+        "BuffDescriptorImmunity",
+        "SuppressBuffs",
+        "SuppressBuffInSafeZone",
+        "SpellImmunityToSpellDescriptor"
+      ]
+    },
+    {
+      "file": "Archetypes/GriffonheartShifter/ShifterWildShapeGriffonBuff14.jbp",
+      "asset_id": "821fa7f586ca44238a0894115824035c",
+      "sha256": "d8bac5df2efb0f2238cf760a386aac8c42e989b9113cfab04e837599387a4d01",
+      "components": [
+        "Polymorph",
+        "SpellDescriptorComponent",
+        "ReplaceAsksList",
+        "BuffMovementSpeed",
+        "ReplaceSourceBone",
+        "ReplaceCastSource",
+        "AddFactContextActions",
+        "IncreaseDiceSizeOnAttackCustomProgressions",
+        "AddMechanicsFeature",
+        "BuffDescriptorImmunity",
+        "SuppressBuffs",
+        "SuppressBuffInSafeZone",
+        "SpellImmunityToSpellDescriptor"
+      ]
+    },
+    {
+      "file": "Archetypes/GriffonheartShifter/ShifterWildShapeGriffonBuff9.jbp",
+      "asset_id": "3a7511f1b8a94b11bbb21245e150c0b6",
+      "sha256": "80f9361d463340fe5d164d5e97fb9a50a78e7ffa3e12698180f553321dddd58f",
+      "components": [
+        "Polymorph",
+        "SpellDescriptorComponent",
+        "ReplaceAsksList",
+        "BuffMovementSpeed",
+        "ReplaceSourceBone",
+        "ReplaceCastSource",
+        "AddFactContextActions",
+        "AddMechanicsFeature",
+        "IncreaseDiceSizeOnAttackCustomProgressions",
+        "BuffDescriptorImmunity",
+        "SuppressBuffs",
+        "SuppressBuffInSafeZone",
+        "SpellImmunityToSpellDescriptor"
+      ]
+    },
+    {
+      "file": "ShifterACBonusHalfBuff.jbp",
+      "asset_id": "571be0c75b714afaace65af1e3b4862d",
+      "sha256": "ca48bbc6e3f5dccb1f36d28ae2ea62a58f3248229e1187f26b0d0353ec45eacd",
+      "components": [
+        "ContextRankConfig",
+        "ContextRankConfig",
+        "AddContextStatBonus",
+        "AddContextStatBonus",
+        "RecalculateOnStatChange"
+      ]
+    },
+    {
+      "file": "ShifterACBonusUnlock.jbp",
+      "asset_id": "43295870ce5344ffa718d100b742438e",
+      "sha256": "8996b2908726b9de8c6ae5b2f9b51bd5917c4efa6297e03fb5f732d4575a247f",
+      "components": [
+        "MonkNoArmorFeatureUnlock",
+        "HasArmorFeatureUnlock"
+      ]
+    },
+    {
+      "file": "ShifterClaws/ShifterClawBuffLevel1.jbp",
+      "asset_id": "02070af90de345c6a82a8cf469a65080",
+      "sha256": "b49a8839563501466ae9cd036f794095b90c896a01f196394f91d04b913d9fc2",
+      "components": [
+        "EmptyHandWeaponOverride",
+        "PolymorphDamageTransfer",
+        "AddFactContextActions"
+      ]
+    },
+    {
+      "file": "ShifterFuryActivatableList.jbp",
+      "asset_id": "2d62be90202c41dc9a3618262b147f20",
+      "sha256": "9bf6ed84c5751f1d498f76838d52501a22d711ffdc424eae1795610eabc3d3d1",
+      "components": [
+        "ActivationDisable",
+        "ShiftersFury"
+      ]
+    },
+    {
+      "file": "ShifterFuryBuff.jbp",
+      "asset_id": "621bcb0994d74dd09db6931e8f53cc91",
+      "sha256": "f4ce30ea6365263f51b2832d9ba6d66ac5017233529d524db1f38560811830fc",
+      "components": [
+        "ShiftersFuryItemBuff"
+      ]
+    },
+    {
+      "file": "ShifterFuryWeaponList.jbp",
+      "asset_id": "b4f41266d30c41b3a176a486a211ee03",
+      "sha256": "d3c31a8dac8617513986d9ead4d0d3b1f7cd7bf724d0cc4236b350619bdf9deb",
+      "components": [
+        "ShiftersFuryItemAbility"
+      ]
+    },
+    {
+      "file": "ShifterMajorForms/Dinosaur/ShifterWildShapeDinosaurBuff.jbp",
+      "asset_id": "bdbc24300ebd4fd6810172e4d4b1ab19",
+      "sha256": "dee6bbdcf0fa0088c31a512038d456397351890bafb2d391d8ba310e974a1e21",
+      "components": [
+        "Polymorph",
+        "SpellDescriptorComponent",
+        "ReplaceAsksList",
+        "BuffMovementSpeed",
+        "ReplaceSourceBone",
+        "ReplaceCastSource",
+        "Blindsense",
+        "AddFactContextActions",
+        "SuppressBuffs"
+      ]
+    },
+    {
+      "file": "ShifterMajorForms/Spider/ShifterWildShapeSpiderBuff.jbp",
+      "asset_id": "58e7d688873242f38b6cc66a7ae3d794",
+      "sha256": "987523de03f5d034f3241b37b63365c4796b31c77f2c3280996bd1f6fd29add7",
+      "components": [
+        "Polymorph",
+        "SpellDescriptorComponent",
+        "ReplaceAsksList",
+        "ReplaceSourceBone",
+        "ReplaceCastSource",
+        "AddFactContextActions",
+        "SuppressBuffs"
+      ]
+    }
+  ],
+  "native_contracts": {
+    "Polymorph.OnActivate": "descriptor-typed physical scores; MasterShapeshifter +4 physical scores; NaturalArmorForm; absolute size; native body/facts apply",
+    "UnitPartSizeModifier.UpdateSize": "last active size fact wins absolute size; not a size delta added over Enlarge Person",
+    "UnitBody.ApplyPolymorphEffect": "replace slots deactivates physical armor/old shield; first AdditionalLimbs weapon promoted to otherwise empty primary hand; retained/secondary limbs follow native layout",
+    "RuleCalculateWeaponSizeBonus.GetBaseDiceSize": "UseSizeAsBaseForDamage chooses polymorph.Size; otherwise Medium",
+    "RuleCalculateWeaponSizeBonus.OnTrigger": "unmodified blueprint overridden dice can skip scaling on polymorphed non-default actors; modified dice use native scale table",
+    "ShiftersFuryItemBuff": "natural-only hand/limb counts; selected actual weapon/hand primary; other non-unarmed natural weapons secondary override, including AlwaysPrimary",
+    "ShiftersFuryPart": "actual per-weapon generated child activatable instances; regenerate on body/equipment changes; same child blueprint GUID across instances",
+    "PolymorphDamageTransfer": "better claw dice and source crit modifier; selected Fury weapon only unless native demon feature; native proc-only material/ignoreDR is not newly forecast",
+    "ActivatableAbility.OnDidTurnOn": "ActivateImmediately calls TryStart synchronously; TryStart reapplies native buff; failed/throwing native setter must retain original off-state bookkeeping and rollback",
+    "SuppressBuffInSafeZone": "capital-party mode asks native part to suppress the form until exit; suppression is not permission for automatic reapplication"
+  },
+  "forecast": {
+    "actor_simulation": false,
+    "actor_or_buff_data_mutation": false,
+    "fake_item_entities": "existing unowned Made cache supplies native natural weapon metadata; never equipped",
+    "rule_result_projection": true,
+    "rule_base_generic_dispatch": true,
+    "new_world_scans": 0,
+    "new_path_checks": 0,
+    "maximum_unique_form_quotes": 8,
+    "form_targets": "one existing offence-snapshot target, existing enemy fallback when current damage is zero",
+    "maximum_fury_choices": 4,
+    "maximum_fury_generated_options": 16,
+    "maximum_fury_routine_attacks": 32,
+    "maximum_extra_future_form_iteratives_credited": 8
+  },
+  "limits": [
+    "Actual scene transformation, Fury selection/spend/restore, TB/shared RT behavior and matched Unity performance remain untested.",
+    "Core future-form estimate omits new form facts/proc-only/retained-limb/haste/sneak/unarmored benefits; arbitrary mod body-conditioned handlers can differ.",
+    "Casting spellbooks and existing human-body Fury selections withhold automatic new major forms; other classes non-Shifter form appraisal retains prior path.",
+    "Existing/player Fury selection retained; original all-off state is the only automatic Fury restore contract.",
+    "Raw full-corpus enum mismatch remains separately incomplete; no input rewriting."
+  ]
+}

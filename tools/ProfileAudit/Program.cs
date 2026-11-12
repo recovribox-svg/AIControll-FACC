@@ -241,6 +241,10 @@ namespace ProfileAudit
             foreach (var line in archerLines) Console.WriteLine(line);
             File.WriteAllText(output, string.Join(Environment.NewLine, archerLines) + Environment.NewLine + Environment.NewLine + File.ReadAllText(output));
             blocklistFailures += archerFailures;
+            var shifterLines = ShifterCheck.Run(loaded.Values, out int shifterFailures);
+            foreach (var line in shifterLines) Console.WriteLine(line);
+            File.WriteAllText(output, string.Join(Environment.NewLine, shifterLines) + Environment.NewLine + Environment.NewLine + File.ReadAllText(output));
+            blocklistFailures += shifterFailures;
             // ★ v0.3.30 test 2: facts whose bonus follows an ability score.
             var statLines = StatLinkCheck.Run(loaded.Values, out int statFailures);
             foreach (var line in statLines) Console.WriteLine(line);

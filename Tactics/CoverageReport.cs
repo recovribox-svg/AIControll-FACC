@@ -203,6 +203,8 @@ namespace CompanionAI_Pathfinder.Tactics
             if (p.Intimidation != null) kinds.Add("intimidate check");   // ★ v0.3.18 (AA-4)
             foreach (var m in p.Maneuvers) kinds.Add($"maneuver {m.Type}");
             if (p.CasterBuffs.Count > 0) kinds.Add("self buff");
+            if (PolymorphFacts.GivesShifterForm(p))
+                kinds.Add("form: core natural-attack/defence forecast; existing forms retained; no automatic OOC upkeep");
             if (p.Summons) kinds.Add("summon");
             if (p.Dispels) kinds.Add("dispel");
             if (p.RemovesBuffs) kinds.Add("removal");
@@ -217,6 +219,10 @@ namespace CompanionAI_Pathfinder.Tactics
         {
             try
             {
+                if (TacticalEngine.IsShifterFury(toggle))
+                    return (Settings.ModSettings.Instance?.AiManagesToggles ?? true)
+                        ? "bounded native natural-weapon Fury selection while off; existing selection/player ownership retained"
+                        : "automatic switching off in settings; current native Fury selection retained";
                 if (MagusMechanics.Kind(toggle?.Blueprint) != MagusMechanics.Mode.None)
                 {
                     if (PureMagePolicy.IsActive(unit))
