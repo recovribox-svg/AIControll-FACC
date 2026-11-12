@@ -5111,3 +5111,6 @@ swarm bodies merely because Elemental Swarm created them; pre-fight automation r
 Showcase rankings are not code rules. Native full attacks already include hands and additional limbs. Recent
 mixed-party logs do not establish cheap summon decisions; matched mode/cohort/frame observations must judge cost.
 Claude owns implementation/integration; Codex continues reviews/interim coding. No release/version or game code change.
+
+Planning baseline checks: 664 unit + 27 inventory, real-reference Release 0 warnings/errors, compatible ProfileAudit and
+native toggle 98 checks pass ([receipt](competence/SUMMON_CONTROL_PLAN_CHECKS.json)). Feature code and gameplay remain unimplemented/untested.
