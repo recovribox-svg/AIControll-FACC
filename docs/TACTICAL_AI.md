@@ -4975,3 +4975,96 @@ closing/repricing routes. Game paths, commands and Unity timing remain replay ch
 pathfinding and stuck-walk cancellation are unchanged.
 
 Checked source `45c3b4d`, [receipt](competence/REJECTED_APPROACH_ADVANCE_CHECKS.json) and [review5 test ZIP](../test-builds/AI-Control-FACC-v0.3.30-dev-review5-45c3b4d-UMM-test.zip), startup MVID `b3359daf-c8e5-4bb6-9245-d6be013a4d15`. 664 unit + 11 inventory tests and native checks pass; actual-reference Release 0 warnings/errors; 0/0 added signatures resolve. Compatible/supplementary audit scopes pass; original full-corpus enum failure remains distinct. Gameplay/matched Unity timing pending.
+
+## 150. Integration review of Codex PR #21-#45 (12 November 2026, Claude)
+
+Codex worked as interim coder from development `1f58150` and opened **25** pull requests (#21-#45; the request said 24).
+All 25 were reviewed and merged into development only (`485339f` for the stack #22-#45, `d306f1e` for #21). `main`,
+releases and tags were not touched. The manifest stays 0.3.30.
+
+**Structure.** #21 (class/archetype inventory, mechanic catalogue, mapping tools; docs, data and tools only) stands
+alone. #22 is the base of the C06 stack, #23-#27 are its five siblings and #28 assembles them. #29-#45 are linear and
+cumulative, so the #45 head holds #22-#44. The two lines only overlap in `CLAUDE.md` (both handovers kept, #21's stale
+C07/C08 ownership line marked superseded) and `tools/README.md` (auto-merged). Every local PR head was checked against
+GitHub before merging.
+
+**Game rules checked against primary sources:**
+- Decompiled 2.7.0x game code:
+  - toggle costs: `ActivatableAbilityResourceLogic`;
+  - Magus: `MagusController`, `UnitPartMagus.AttackIgnoringCooldownBeforeTime`, `UnitUseAbility.CreateCastCommand`;
+  - area membership: `AreaEffectEntityData.ShouldUnitBeInside` skips `View.Contains` for cylinders and boxes, and
+    `EntityBoundsHelper.FindUnitsInShape` uses a world-up capsule (half-height Height x mean horizontal scale) or an
+    oriented box against the units' sphere colliders. That is exactly #39's `ReadExitSpace`;
+  - delivery: `AbilityData.GetDeliverBlueprint` does not follow sticky touch, so #33's `SpellDelivery.AttackBlueprint`
+    now reads the touch weapon and touch AC a held charge actually uses.
+- BubblePrints stock database `blueprints_raw_2.7.0x_0.binz` (SHA-256 `03ba6e29...c9c6a`, 236,660 records; stock data
+  only, without runtime mod patches or generated mod blueprints):
+  - Griffon Shape's `FlagUnlocked` guards (#43);
+  - Eldritch Archer Ranged Spellstrike as `AddMagusMechanicPart` Spellstrike (#41);
+  - Treat Affliction's `LoreReligionCooldown` marker (#40).
+- Tome of the Firebird 1.4.18 source: `BurnResistance.Make()` replaces `KineticNonLethalDamageProperty`'s getter with
+  TTT's composite, even with the feat disabled. That is the cause of Orvath's unknown burn (§126), now read exactly by
+  #25.
+
+**Default paths stay the same unless a feature is switched on:**
+- `IncomingWithAttached` without attached damage.
+- `OffensiveSlotDiscount` unless the Aggressive policy is chosen.
+- `SetAttackFlags` while Pure Mage is off (the default).
+- `pathConstraint` only on exit walks.
+- #38's debuff context, skipped only when no part needs one and the caster is the deciding unit.
+- #32's buff early return, taken only when no readable or equipment part can arise.
+- #45's `AddClosingCandidates`, an extraction with the same order and values.
+
+**Movement changes and their recorded approvals:**
+- #29 swarm danger and exits: `docs/C06_SWARM_PROPOSAL.md`.
+- #36 step/full-attack preflight and #37 area exits: `docs/MOVEMENT_STEP_PREFLIGHT.md`, `docs/MOVEMENT_AREA_EXITS.md`.
+- #39 native-bounds follow-up: `docs/MOVEMENT_EXIT_BOUNDS.md`.
+- #45 advance after rejected attack approaches: `docs/REJECTED_APPROACH_ADVANCE.md`, "explicitly authorized".
+
+No other target, retreat, pathfinding or stuck-cancellation change was found.
+
+**Correction made at integration.** #45's extraction of `AddClosingCandidates` had dropped the v0.3.18 (three
+approach targets, Seelah in Grease) and v0.3.28 (`AdvanceWorth` stay attack) history comments; they are restored. No
+code defect needed a change.
+
+**Automated verification of the merged head:**
+- Release build against the real game assemblies, rebuilt from clean: 0 warnings, 0 errors.
+- Unit tests: 664 of 664 pass.
+- `tools/BlueprintInventory` Python tests: 27 of 27 pass.
+- ProfileAudit on 10 export roots: 20,088 blueprints loaded; 1 known failure (`AchaekekSacredWeaponFeature`, an
+  engine-bound `SecurityException`, allowed); 3,507 abilities with 0 reader errors. Every named check passes:
+  - RANK-INCREMENT 10, REVEAL-VALUE 7, RESISTANCE-MEMO 18, CASTER-POLICY 36, FUSION 35, PROJECTILES 29;
+  - MAGUS 32, STEP-APPROACH 13, IDLE-ADVANCE 23, AREA-EXIT 27, STATIC-DEBUFF 17, AREA-BOUNDS 28;
+  - DISPEL-PENDING 10, ELDRITCH-ARCHER 29, SHIFTER 48, CAMPAIGN-FLAG 21, NATIVE-VIEW 6, REVEAL 3, CAST-BONUS 2;
+  - BURN-CONSEQUENCE, SWARM-AREA, DRAIN, DAMAGE-CONTEXT.
+- `ToggleCosts.Native`: 90 checks, 0 failures; 98 checks, 0 failures with the supplied Psionics 0.2.3 provider.
+
+**Limits of the inputs.** These are not regressions:
+- SHIFTER fails with a `NullReferenceException` in `BlueprintItemWeapon.IsNatural` when the weapon-type export
+  (`bpz_Weapons`) is not loaded. With it loaded, all 48 checks pass.
+- Skipped for missing inputs:
+  - AFFLICTION: no creature blueprints;
+  - SWARM-COVERAGE: no Rat or Bhoga graphs;
+  - ATTACHED: Cling is out of scope.
+- Not run:
+  - `TomeBurn.Native`: needs an Isekai `DarkElementalistBurnFeature` export;
+  - `ToyBoxSpend.Native`: needs the ToyBox DLL.
+
+All of these checks are offline: they run no actors, commands or Unity timing.
+
+**Test package.** The integrated code is the review5 source (`45c3b4d`) plus comments, so
+`test-builds/AI-Control-FACC-v0.3.30-dev-review5-45c3b4d-UMM-test.zip` (MVID `b3359daf-c8e5-4bb6-9245-d6be013a4d15`) is
+the package to play.
+
+**Still to confirm in game, in both modes:**
+- Magus and Eldritch Archer Spell Combat / Spellstrike (held charge, first-arrow payload).
+- Shifter forms and Fury (Ulbrig); Griffon flags.
+- Pure Mage and the Aggressive spell policy (both opt-in).
+- Magic Fusion.
+- Attached and periodic damage.
+- Swarm casts and exits.
+- Step/full-attack preflight, area exits at native bounds, and the advance after rejected approaches.
+- Treatment coordination in real time.
+- Tome burn on Orvath.
+- Toggle cost horizons.
+- Decision timings with the eleven-member party.

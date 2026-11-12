@@ -4854,6 +4854,9 @@ namespace CompanionAI_Pathfinder.Tactics
                                                  HashSet<string> advanced = null)
         {
             // Native attack routines are decision-cached. Only the three best closing options get geometry work.
+            // ★ v0.3.18: the three best enemies to close on, each with its own approach. Only the best one was tried:
+            // Seelah ended nine turns idle (0.3.18 log 611fe6bf, R9-R17) because the approach to that enemy, lying
+            // in Grease, walked into it, while other enemies stood clear of it.
             var unit = ctx.Unit;
             var estimated = ctx.Enemies
                 .Where(e => !ctx.Unreachable.Contains(e.UniqueId))
@@ -4862,6 +4865,8 @@ namespace CompanionAI_Pathfinder.Tactics
             var ranked = estimated
                 .OrderByDescending(x => DamageValue(x.Enemy, x.Est) / Math.Max(3f, ctx.Distance(x.Enemy)))
                 .Take(3).ToList();
+            // ★ v0.3.28 (v0.3.27 turn-based log, fight 3): the attack the unit can make next turn from where it stands -
+            // an advance that walks out of that enemy's reach gives it up (ValueModel.AdvanceWorth).
             var stay = estimated
                 .Where(x => InRangeNow(unit, x.Enemy.Position, x.Est.Reach, x.Est.IsRanged))
                 .OrderByDescending(x => DamageValue(x.Enemy, x.Est)).FirstOrDefault();
@@ -4871,6 +4876,7 @@ namespace CompanionAI_Pathfinder.Tactics
             ctx.StayNeedsLos = stay?.Est.IsRanged ?? false;
             for (int i = 0; i < ranked.Count; i++)
             {
+                // Within reach of the best one: no advance at all.
                 if (AddAdvanceCandidate(ctx, list, ranked[i].Enemy, ranked[i].Est, rangedStyle) && i == 0) return true;
                 advanced?.Add(ranked[i].Enemy.UniqueId);
             }
