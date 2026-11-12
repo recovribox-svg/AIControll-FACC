@@ -4727,3 +4727,31 @@ Magus automation and native combo continuation belong to the separate C07 change
 gameplay and the reported blank tooltip remain unverified. Final checked-source receipt/package identity records
 unit/native tests, actual-reference Release, compatible ProfileAudit and the original full-corpus enum failure
 separately. Manifest 0.3.30; Claude reviews/integrates, no main/development push or release.
+
+## 139. C07 native melee Magus planning (12 November 2026)
+
+The caster1 logs explicitly leave both native Magus modes unsupported/off. [Implementation and replay](C07_MAGUS.md)
+and [native contracts](competence/C07_MAGUS_NATIVE.json) describe this separate task atop PR #34 `02d2c2a`, over
+fetched development `1f58150`. The broader [log review](CASTER1_PLAYTEST_REVIEW.md) and three caster2 repairs remain
+included; no selected melee touch in these captures proves an actual Spellstrike combination.
+
+Native component identity permits free Spell Combat/Spellstrike preparations through existing ownership,
+ability-list, switch-lock and restore rules. Four useful in-place casts and two future one-toggle states bound
+planning. Runtime native predicates and actual root hidden buffs govern equipment, typed penalties and extra
+attacks. A new Standard cast opens its opportunity; final follow-ups require the native prepared helpers and
+finite clock, with explicit full/single flags. Spellstrike-only free attacks cannot become free full routines.
+The game retains actual casts, buffs, cooldowns and charge delivery; no simulated attack or manual resource spend.
+
+First successful eligible weapon-hit probability prices one held payload, with the native Magus x2 critical and
+shared overkill value. Native command creation, helpful/blocked-charge guards, marginal charge-loss cost and
+already-paid slot handling repair delivery gaps. Scalar feature/grip previews restore on normal/nested/exception
+exits and invalidate dependent caches. Metadata is weakly cached; held payloads stay decision-local; distant
+pairs leave before attack calculations. An aggregate Magus entry supports matched performance checks. Pure Mage
+and ordinary Ranged contracts remain; fired rays are not melee Spellstrike charges. EA/Fusion and unknown
+compound effects are outside automatic combinations.
+
+The final checked-source receipt/test identity records the unit/native fixtures, real-reference Release, strict
+compatible ProfileAudit and original full-corpus enum failure separately. Offline fixtures do not initialize actors
+or issue commands. The tooltip remains unproven. General movement, commitment, retreat, pathfinding, hazard geometry,
+stuck cancellation and legacy RT selection are unchanged. Manifest 0.3.30; Claude reviews/integrates;
+no main/development push, merge or release.

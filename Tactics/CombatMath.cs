@@ -47,6 +47,8 @@ namespace CompanionAI_Pathfinder.Tactics
         public float CritMultiplier = 2f;
         /// <summary>★ v0.3.18: chance at least one of the attacks hits (the kill chance, ValueModel.KillChance).</summary>
         public float AnyHitChance;
+        /// <summary>C07: first successful eligible melee hit discharges one held charge, once per routine.</summary>
+        public float TouchHitChance, TouchCritChance;
         /// <summary>★ v0.3.18 (review): the first attack's attack bonus and the target's AC against it (the rules' values).</summary>
         public int FirstAttackBonus, FirstArmorClass;
         /// <summary>★ v0.3.20 (playtest 1): what the target keeps of extra physical damage on the first weapon (0.5 for a
@@ -254,8 +256,12 @@ namespace CompanionAI_Pathfinder.Tactics
         /// </summary>
         public static WeaponAttackEstimate EstimateWeaponAttack(UnitEntityData unit, UnitEntityData target, bool full,
                                                                 Func<ItemEntityWeapon, int, KeyValuePair<int, float>> delta)
+            => EstimateWeaponAttackCore(unit, target, full, delta, 0);
+
+        private static WeaponAttackEstimate EstimateWeaponAttackCore(UnitEntityData unit, UnitEntityData target, bool full,
+            Func<ItemEntityWeapon, int, KeyValuePair<int, float>> delta, int magusExtra)
         {
-            var routine = ReadRoutine(unit, target, full);
+            var routine = ReadRoutineCore(unit, target, full, magusExtra);
             if (routine == null) return null;
 
             var result = new WeaponAttackEstimate { Attacks = routine.Attacks, Attacker = unit };
@@ -265,10 +271,16 @@ namespace CompanionAI_Pathfinder.Tactics
             // ★ v0.3.28 test 3: what reaches the target past its concealment and mirror images (LandsPastDefences).
             float lands = LandsPastDefences(unit, target);
             float noHit = 1f;
+            var touch = new MagusChargeChance();
+            bool trackTouch = unit.Get<Kingmaker.UnitLogic.Parts.UnitPartMagus>()?.Spellstrike.Active == true;
             foreach (var line in routine.Lines)
             {
                 var d = delta?.Invoke(line.Weapon, line.Index) ?? new KeyValuePair<int, float>(0, 0f);
                 float p = HitProbability(line.AttackBonus + d.Key, line.ArmorClass) * lands;
+                if (trackTouch && line.Weapon?.Blueprint?.IsMelee == true && line.Weapon != unit.Body.EmptyHandWeapon)
+                {
+                    touch.Add(p, Math.Min(line.ThreatChance, p) * p);
+                }
                 if (line.Index == 0) result.FirstHitChance = p;
                 noHit *= 1f - p;
                 // ★ v0.3.19 (test5): a kinetic blade's blast lands with the hit and is multiplied by its critical
@@ -294,6 +306,8 @@ namespace CompanionAI_Pathfinder.Tactics
                 result.ExpectedDamage += p * (perHit + line.Sneak) + critExtra;
             }
             result.AnyHitChance = 1f - noHit;
+            result.TouchHitChance = touch.Hit;
+            result.TouchCritChance = touch.Critical;
             return result;
         }
 
@@ -345,14 +359,18 @@ namespace CompanionAI_Pathfinder.Tactics
         }
 
         private static AttackRoutine ReadRoutine(UnitEntityData unit, UnitEntityData target, bool full)
+            => ReadRoutineCore(unit, target, full, 0);
+
+        private static AttackRoutine ReadRoutineCore(UnitEntityData unit, UnitEntityData target, bool full, int magusExtra)
         {
             // C06 playtest: reinforcement entities can reach the decision before their view exists. The native
             // GetApproachRadius dereferences both views; leave this pair unpriced until it has its native geometry.
             if (unit?.View is null || target?.View is null) return null;
             int frame = Time.frameCount;
             string key = $"{unit.UniqueId}|{target.UniqueId}|{full}";
+            if (magusExtra > 0) key += $"|magus:{magusExtra}";
             if (Routines.TryGetValue(key, out var cached) && cached.Frame == frame) return cached;
-            var attacks = EnumerateAttacks(unit, target, full);
+            var attacks = magusExtra > 0 && full ? MagusProjectedAttacks(unit, magusExtra) : EnumerateAttacks(unit, target, full);
             if (attacks.Count == 0) return null;
             if (Routines.Count > 512) Routines.Clear();
 
@@ -754,6 +772,7 @@ namespace CompanionAI_Pathfinder.Tactics
         /// </summary>
         internal static float AbilityCritFactor(AbilityData ability, AbilityProfile profile, UnitEntityData target)
         {
+            if (s_MagusRoll?.Matches(ability, target) == true) return s_MagusRoll.CriticalFactor;
             if (ability == null || profile == null || target == null || !profile.NeedsAttackRoll) return 1f;
             var caster = ability.Caster?.Unit;
             if (caster == null) return 1f;
@@ -2051,6 +2070,7 @@ namespace CompanionAI_Pathfinder.Tactics
         /// </summary>
         public static float SpellAttackHitChance(UnitEntityData caster, UnitEntityData target, AbilityData ability)
         {
+            if (s_MagusRoll?.Matches(ability, target) == true) return s_MagusRoll.Hit;
             try
             {
                 if (SpellAttackRoll(caster, target, ability, out int ab, out int ac, out float lands))

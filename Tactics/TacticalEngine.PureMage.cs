@@ -40,6 +40,7 @@ namespace CompanionAI_Pathfinder.Tactics
             if (candidate.Kind == CandidateKind.WeaponAttack)
                 return ctx.PureMageWeapon && !candidate.FullAttack;
             if (candidate.Kind != CandidateKind.Ability) return true;
+            if (NativeMagusWouldQueueWeapon(ctx.Unit, candidate.Ability, candidate.Target)) return false;
             if (!PureMagePolicy.AllowsAbility(ctx.Settings, candidate.Ability, AbilityProfile.Get(candidate.Ability))) return false;
             if (!SpellDelivery.IsPhysicalTouch(candidate.Ability)) return true;
             if (candidate.Offensive) return false;
@@ -83,6 +84,7 @@ namespace CompanionAI_Pathfinder.Tactics
             if (candidate.Kind == CandidateKind.WeaponAttack)
                 return !candidate.FullAttack && PureMagePolicy.AllowsWeapon(unit, settings);
             if (candidate.Kind != CandidateKind.Ability) return true;
+            if (NativeMagusWouldQueueWeapon(unit, candidate.Ability, candidate.Target)) return false;
             var ability = candidate.Ability;
             var profile = AbilityProfile.Get(ability);
             if (!PureMagePolicy.AllowsAbility(settings, ability, profile)) return false;

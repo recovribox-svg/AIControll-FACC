@@ -603,10 +603,12 @@ namespace CompanionAI_Pathfinder.Tactics
                         ab += sign * m.Attack(weapon, full);
                         dmg += sign * m.Damage(weapon);
                     }
+                    if (c.MagusFollowCombat && MagusMechanics.CombatPenalty(unit,
+                        Kingmaker.Blueprints.Root.BlueprintRoot.Instance.SystemMechanics.MagusSpellCombatBuff, weapon, out int penalty)) ab += penalty;
                     return new KeyValuePair<int, float>(ab, dmg);
                 });
                 int ac = modes.Sum(m => ((set.Contains(m) ? 1 : 0) - (m.InEstimate ? 1 : 0)) * m.AC);
-                return new KeyValuePair<float, float>(estimate == null ? -1f : DamageValue(c.Target, estimate), DefenseValue(ctx, at, ac));
+                return new KeyValuePair<float, float>(estimate == null ? -1f : DamageValue(c.Target, estimate) + MagusChargeValue(c, estimate), DefenseValue(ctx, at, ac));
             };
             var current = new HashSet<UnitMode>(modes.Where(m => m.On));
             var baseline = valueOf(current);

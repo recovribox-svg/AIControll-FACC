@@ -51,6 +51,9 @@ namespace CompanionAI_Pathfinder.Tactics
         public int GatherPower;
         public float ApproachRadius;
         public bool NeedLoS;
+        internal TacticalEngine.MagusPayload MagusCharge;
+        internal bool MagusFollowCombat, MagusFollowStrike, MagusPairedCast, MagusSourceStrike, MagusNeedsStrikeOff;
+        internal float MagusCompletionFactor;
         /// <summary>Damages or disables an enemy (as opposed to buffs, heals, utility).</summary>
         public bool Offensive;
         /// <summary>★ v0.3.19 (test11): an ability whose only value here is a helpful buff (the restraint rule in Decide).</summary>
@@ -132,6 +135,8 @@ namespace CompanionAI_Pathfinder.Tactics
         /// Discovery itself stays unfiltered; every choice and prediction of the unit's own actions reads this view.</summary>
         internal BlockScope<Kingmaker.Blueprints.BlueprintGuid> Blocks;
         internal List<AbilityData> AllowedAbilities;
+        internal Dictionary<(UnitEntityData, bool, bool), TacticalEngine.MagusPayload> MagusPayloads;
+        internal AbilityData MagusPayloadSource;
         /// <summary>★ user-ability-blacklist: what a held touch charge the lists block would be worth delivered: it is kept for
         /// the player, and casting another spell over it (which drops it) still pays for it (PriceHeldCharge).</summary>
         internal float ReservedChargeValue;
@@ -374,11 +379,13 @@ namespace CompanionAI_Pathfinder.Tactics
 
             var candidates = new List<Candidate>();
             try { AddWeaponCandidates(ctx, candidates); } catch (Exception ex) { Main.Error($"[Tactics] weapon candidates: {ex}"); }
+            try { AddMagusWeaponCandidates(ctx, candidates); } catch (Exception ex) { Main.Error($"[Magus] weapon candidates: {ex}"); }
             // ★ v0.3.18 (AA-3): each weapon option with its best attack modes.
             try { foreach (var c in candidates.Where(c => c.Kind == CandidateKind.WeaponAttack).ToList()) ChooseAttackModes(ctx, c); }
             catch (Exception ex) { Main.Error($"[Tactics] attack modes: {ex}"); }
             timings?.Mark(DecisionStage.Weapons);
             try { AddAbilityCandidates(ctx, candidates, captureControlAims: !preview); } catch (Exception ex) { Main.Error($"[Tactics] ability candidates: {ex}"); }
+            try { AddMagusCastPlans(ctx, candidates, preview); } catch (Exception ex) { Main.Error($"[Magus] cast plans: {ex}"); }
             // ★ v0.3.28 test 6: Deadly Aim and other attack modes on a kinetic archer's blasts (one bow attack each).
             try { ChooseBlastAttackModes(ctx, candidates); } catch (Exception ex) { Main.Error($"[Tactics] blast attack modes: {ex.Message}"); }
             timings?.Mark(DecisionStage.Abilities);
@@ -612,9 +619,10 @@ namespace CompanionAI_Pathfinder.Tactics
         {
             if (CastOutcome.HeldChargeOf(ctx.Unit) == null) return;
             var charges = candidates.Where(c => c.Kind == CandidateKind.Ability && c.Ability?.StickyTouch != null).ToList();
+            float magusHeld = MagusChargeReservation(ctx, candidates);
             // ★ user-ability-blacklist: a blocked charge is kept for the player and priced the same way.
-            if (charges.Count == 0 && ctx.ReservedChargeValue <= 0f) return;
-            float held = Math.Max(charges.Count > 0 ? charges.Max(c => c.Value) : 0f, ctx.ReservedChargeValue);
+            if (charges.Count == 0 && ctx.ReservedChargeValue <= 0f && magusHeld <= 0f) return;
+            float held = Math.Max(Math.Max(charges.Count > 0 ? charges.Max(c => c.Value) : 0f, ctx.ReservedChargeValue), magusHeld);
             if (held <= 0f) return;
             foreach (var c in candidates)
             {
@@ -769,6 +777,7 @@ namespace CompanionAI_Pathfinder.Tactics
 
         private static bool Affordable(TacticalContext ctx, Candidate c)
         {
+            if (c.MagusNeedsStrikeOff && ctx.Unit.Get<Kingmaker.UnitLogic.Parts.UnitPartMagus>()?.Spellstrike.Active == true) return false;
             // ★ v0.3.14: options the unit's statuses keep the game from starting (ActionRules): while nauseated only
             // plain movement starts, a staggered unit cannot walk and act, a webbed or held one cannot walk at all.
             // Orvath queued Gather Power while nauseated and stood 26 s in the Stinking Cloud waiting for it to start.
@@ -3081,6 +3090,9 @@ namespace CompanionAI_Pathfinder.Tactics
             // ★ user-ability-blacklist: every caller (focus re-aims, kinetic recovery) gets nothing for a blocked ability;
             // ignorePolicy only for the price of a held charge kept for the player (ReserveBlockedCharge).
             if (!ignorePolicy && UserAbilityPolicy.SourceOf(ctx.Blocks, ability) != BlockSource.None) return none;
+            var nativeMagus = ctx.Unit.Get<Kingmaker.UnitLogic.Parts.UnitPartMagus>();
+            bool nativeWeaponCharge = !ignorePolicy && nativeMagus?.Spellstrike.Active == true && !nativeMagus.EldritchArcher &&
+                ReferenceEquals(MagusMechanics.Held(ctx.Unit), ability) && MagusSpell(nativeMagus, ability);
             var profile = AbilityProfile.Get(ability);
             if (profile == null) return none;
             if (profile.FusionUnsupported != null)
@@ -3169,6 +3181,8 @@ namespace CompanionAI_Pathfinder.Tactics
             foreach (var target in targets.Distinct())
             {
                 if (onlyTarget != null && target != onlyTarget) continue;
+                // Native factory uses a weapon only for an enemy. Helpful held touches retain normal ally delivery.
+                if (nativeWeaponCharge && ctx.Unit.IsEnemy(target)) continue;
                 bool guardedTouch = PureMagePolicy.IsActive(ctx.Settings) && SpellDelivery.IsPhysicalTouch(ability);
                 if (guardedTouch && ctx.Unit.IsEnemy(target)) continue;
                 var wrapper = summonPoint.HasValue ? new TargetWrapper(summonPoint.Value) : AbilityProfile.TargetOn(ability, target);
@@ -3362,6 +3376,17 @@ namespace CompanionAI_Pathfinder.Tactics
                                (risk != null ? $", the walk x{1f - risk.StopChance:F2} -{risk.Cost:F1}{risk.Tag}" : "") + ")");
 
                 int gather = CombatMath.GatherPowerCount(ctx.Unit, ability);
+                bool strikeNeedsOff = false;
+                if (nativeMagus?.Spellstrike.Active == true && !nativeMagus.EldritchArcher && ctx.Unit.IsEnemy(target) &&
+                    ability.Blueprint.StickyTouch != null && MagusSpell(nativeMagus, ability))
+                {
+                    var weapon = CombatMath.EstimateWeaponAttack(ctx.Unit, target, false);
+                    // Reach plus Spellstrike adds a second native delivery roll. A bow/empty hand cannot deliver a
+                    // normal melee charge. Keep those casts available only after the separately priced native off.
+                    strikeNeedsOff = SpellDelivery.IsReachTouch(ability) || weapon?.IsRanged != false ||
+                        weapon.Weapon == ctx.Unit.Body.EmptyHandWeapon ||
+                        !needsMove && !InRangeNow(ctx.Unit, target.Position, weapon.Reach, true);
+                }
                 var candidate = new Candidate
                 {
                     Kind = CandidateKind.Ability,
@@ -3372,6 +3397,8 @@ namespace CompanionAI_Pathfinder.Tactics
                     NeedsMove = needsMove,
                     // ★ caster1 review: retain the native command's sight rule for the final Pure Mage touch check.
                     NeedLoS = abilityNeedsLos ?? false,
+                    MagusCompletionFactor = deliveryChance * concentrationChance * (1f - (provoke?.StopChance ?? 0f)),
+                    MagusNeedsStrikeOff = strikeNeedsOff,
                     GatherPower = gather,
                     Value = value,
                     InfusionNote = infusionNote,
@@ -4524,7 +4551,7 @@ namespace CompanionAI_Pathfinder.Tactics
             // ★ v0.3.23 (bombs task): an Alchemist's daily bombs are such a resource too (AbilityProfile.ThrowsDailyBomb), with
             // the same easy-fight restraint (ValueModel.LimitedUseDiscount): a bomb a little better than the crossbow in a
             // fight the party is winning easily stays in the bag; in a hard fight nothing is taken off.
-            if (ability.SourceItem == null && slotSensitive > 0f &&
+            if (ability.SourceItem == null && ability.StickyTouch == null && slotSensitive > 0f &&
                 (level > 0 && ability.Spellbook != null || profile.ThrowsDailyBomb && ability.Spellbook == null))
             {
                 float kept = slotSensitive * ValueModel.OffensiveSlotDiscount(ctx.Difficulty,
@@ -5237,6 +5264,7 @@ namespace CompanionAI_Pathfinder.Tactics
         {
             command = null;
             failure = null;
+            if (!ValidateMagusIssue(unit, c, out failure)) return false;
             if (!PureMageAllowsIssue(unit, c))
             {
                 failure = "Pure Mage: physical action withheld";
@@ -5278,6 +5306,11 @@ namespace CompanionAI_Pathfinder.Tactics
                     // ★ v0.3.14: turn-based only. In real time the game makes a full attack whenever movement allows
                     // (UnitAttack.IsAttackFull); forcing a single attack there would throw away iterative attacks.
                     SetAttackFlags(attack, c.FullAttack, CombatMemory.IsRealTime, PureMagePolicy.IsActive(unit));
+                    if (c.MagusFollowCombat || c.MagusFollowStrike)
+                    {
+                        var part = unit.Get<Kingmaker.UnitLogic.Parts.UnitPartMagus>();
+                        ConfigureMagusFollowup(attack, c.MagusFollowCombat, part.AttackIgnoringCooldownBeforeTime);
+                    }
                     command = attack;
                     break;
                 }
@@ -5309,7 +5342,13 @@ namespace CompanionAI_Pathfinder.Tactics
                         }
                         return false;
                     }
-                    command = new UnitUseAbility(c.Ability, wrapper);
+                    command = UnitUseAbility.CreateCastCommand(c.Ability, wrapper);
+                    if (command is UnitAttack)
+                    {
+                        failure = "native held touch requires a priced weapon-delivery candidate";
+                        command = null;
+                        return false;
+                    }
                     break;
                 }
                 case CandidateKind.Move:
@@ -5374,7 +5413,15 @@ namespace CompanionAI_Pathfinder.Tactics
             }
             else if (issued)
             {
-                CastOutcome.Forget(unit);   // its attacks must not count as the last ability's effect
+                if (c.MagusCharge != null)
+                {
+                    // Observe a weapon attempt separately from casting the source again. A missed weapon keeps its
+                    // native charge and must not blacklist the touch spell as a silent/target-specific failure.
+                    CastOutcome.Begin(unit, c.MagusCharge.Ability, c.Target, command, verifiable: false,
+                        watchTarget: true, blockOnNoReach: false);
+                    Main.Verbose($"[Magus] {unit.CharacterName}: native weapon delivery attempts held {c.MagusCharge.Ability.Name}");
+                }
+                else CastOutcome.Forget(unit);   // its attacks must not count as the last ability's effect
             }
             return issued;
         }

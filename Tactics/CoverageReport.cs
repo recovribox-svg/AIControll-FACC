@@ -217,6 +217,16 @@ namespace CompanionAI_Pathfinder.Tactics
         {
             try
             {
+                if (MagusMechanics.Kind(toggle?.Blueprint) != MagusMechanics.Mode.None)
+                {
+                    if (unit.Get<Kingmaker.UnitLogic.Parts.UnitPartMagus>()?.EldritchArcher == true)
+                        return "Eldritch Archer ranged Magus automation is outside C07's melee contract; native current state retained";
+                    if (PureMagePolicy.IsActive(unit))
+                        return "Pure Mage forbids physical Magus preparation and follow-ups; native current state retained";
+                    return (Settings.ModSettings.Instance?.AiManagesToggles ?? true)
+                        ? "native melee Magus preparation, paired cast and held-charge/follow-up plans (C07); player ownership and lists apply"
+                        : "automatic switching off in settings; current native Magus states still govern delivery";
+                }
                 string why = TacticalEngine.ToggleExclusion(unit, toggle);
                 if (why == null) return "may start it when worth it" + TacticalEngine.ToggleReading(toggle);
                 // ★ v0.3.18 (AA-3): attack modes and Mobility are decided with the attack or the move.
