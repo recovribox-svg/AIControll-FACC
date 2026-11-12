@@ -4762,3 +4762,19 @@ stuck cancellation and legacy RT selection are unchanged. Manifest 0.3.30; Claud
 no main/development push, merge or release.
 
 C07 checked source `e2473e8`, [receipt](competence/C07_MAGUS_CHECKS.json) and [magus1 identity](../test-builds/AI-Control-FACC-v0.3.30-dev-magus1-e2473e8-UMM-test.identity.json): 607 unit + 11 inventory, Magus 32 / supplementary 44 and inherited checks pass; real-reference Release 0 warnings, 29/29 signatures resolve. Compatible/supplementary audits pass; original full-corpus failure remains separate.
+
+
+## 140. Approved movement: step/full-attack preflight (12 November 2026)
+
+[Evidence/replay](MOVEMENT_STEP_PREFLIGHT.md) documents the author-approved first proposal atop PR #35
+`aaf9b20` / development `1f58150`. Five-foot-step full routines lacked ordinary walking flags and bypassed
+selected-path preflight. Explicit step intent now enters that existing check without a normal Move-action
+requirement. Shared weak-weapon fallback eligibility covers low-value routines too. The existing three-plan
+budget, already-scored alternatives, boost ordering, no global unreachable claim and native final dispatcher
+checks remain. In-place routines add no paths; no all-enemy scan or retained path.
+
+Native range/sight/step rules come from the supplied game and existing dispatcher. Actual candidate/scheduler
+fixtures exercise classification, bounded failures, changed-decision retry and compiled flag wiring; no actors,
+paths or commands execute offline. Final receipt/test identity records all checks and real-reference Release.
+Area-exit geometry is separate; no commitment, retreat, pathfinder or stuck-cancellation change in this task.
+Manifest 0.3.30; Claude reviews/integrates; gameplay and matched Unity timing pending.

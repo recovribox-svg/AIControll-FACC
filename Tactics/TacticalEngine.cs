@@ -46,6 +46,9 @@ namespace CompanionAI_Pathfinder.Tactics
         /// <summary>★ v0.3.30 competence3: a revealing area aimed where these hidden enemies vanished (HiddenEnemies.NoteTried).</summary>
         internal List<UnitEntityData> Reveals;
         public bool FullAttack;
+        // A full routine can approach by a native five-foot step without spending a normal Move action.
+        // Keep this separate from NeedsMove, which changes affordability and movement/ability handling.
+        internal bool FullAttackApproach;
         public bool NeedsMove;
         /// <summary>★ v0.3.19 (test5): times the game gathers power before this blast (CombatMath.GatherPowerCount).</summary>
         public int GatherPower;
@@ -489,8 +492,7 @@ namespace CompanionAI_Pathfinder.Tactics
             // enemy that is up - better than the action unused. Aeiluvetar ended round 7 with every action left beside
             // the last enemy, a Skeletal Champion Archer her arrows hardly hurt (0.49; 0.3.20 turn-based log, fight 3).
             // Not on a disabled enemy: there the bar keeps a sleeping or held enemy from being woken for a sliver.
-            else chosen = usable.FirstOrDefault(c => c.Kind == CandidateKind.WeaponAttack && !c.NeedsMove && !c.MoveFirst &&
-                                                     c.Value > 0.05f && c.Target != null && !CombatMath.IsDisabled(c.Target));
+            else chosen = usable.FirstOrDefault(WeakWeaponFallback);
             if (chosen == null && PureMagePolicy.IsActive(ctx.Settings))
                 chosen = usable.FirstOrDefault(PureMageCantripFallback);
             // ★ v0.3.19 (test11): restraint with buffs that take the turn's Standard or full-round action - the player's
@@ -2589,6 +2591,7 @@ namespace CompanionAI_Pathfinder.Tactics
                             Slot = ActionSlot.FullRound,
                             Target = enemy,
                             FullAttack = true,
+                            FullAttackApproach = fiveFootReach,
                             Value = fullValue,
                             ModeFactor = weight * (fiveFootReach ? 0.95f : 1f) * WakeFactor(enemy, full.ExpectedDamage) * (1f - (provoke?.StopChance ?? 0f)) *
                                          (1f - (stepRisk?.StopChance ?? 0f)),

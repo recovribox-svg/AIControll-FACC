@@ -30,6 +30,12 @@ namespace CompanionAI_Pathfinder.Tactics
 
         private static bool WalksBeforeActing(Candidate c) => c.MoveFirst || c.NeedsMove || c.Kind == CandidateKind.Move;
 
+        private static bool RequiresApproachValidation(Candidate c) => WalksBeforeActing(c) ||
+            c.Kind == CandidateKind.WeaponAttack && c.FullAttack && c.FullAttackApproach;
+
+        private static bool WeakWeaponFallback(Candidate c) => c.Kind == CandidateKind.WeaponAttack &&
+            !c.NeedsMove && !c.MoveFirst && c.Value > 0.05f && c.Target != null && !CombatMath.IsDisabled(c.Target);
+
         private static List<Candidate> PreflightMainCandidates(TacticalContext ctx, List<Candidate> usable, TurnMemory memory)
         {
             if (ctx?.Unit == null || !ctx.Unit.IsInCombat) return usable;
@@ -49,9 +55,11 @@ namespace CompanionAI_Pathfinder.Tactics
                     // the candidates' already calculated chances and recipient metadata, without native re-scoring.
                     var eligible = ctx.Settings.SpellPolicy == SpellResourcePolicy.Progressive
                         ? ApplyProgressive(ctx, list.ToList(), diagnostics: false) : list;
-                    return FollowUpMain(eligible, IsBoost);
+                    // Final selection also allows a weak weapon fallback below MinMainValue. A full routine
+                    // needing a step must pass the same path check even when it enters through that fallback.
+                    return FollowUpMain(eligible, IsBoost) ?? eligible.FirstOrDefault(WeakWeaponFallback);
                 },
-                c => !QuickAction(c) && !IsBoost(c) && WalksBeforeActing(c),
+                c => !QuickAction(c) && !IsBoost(c) && RequiresApproachValidation(c),
                 c =>
                 {
                     try
