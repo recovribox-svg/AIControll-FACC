@@ -62,8 +62,8 @@ namespace CompanionAI_Pathfinder.Tactics
             if (!ShifterFormProjection.Supports(form)) { result.Detail = "form layout outside the supported natural-weapon projection"; return FinishFormAppraisal(ctx, ability, ally, result); }
             var off = OffenceOf(ctx, ally);
             if (off.Caster) { result.Detail = "spellcasting cost of a new form is not modelled"; return FinishFormAppraisal(ctx, ability, ally, result); }
-            var enemy = off.Enemy ?? ctx.Enemies.FirstOrDefault(e => e?.View != null && !CombatMath.IsDisabled(e));
-            if (enemy == null) { result.Detail = "no visible enemy for the native form quote"; return FinishFormAppraisal(ctx, ability, ally, result); }
+            if (!TryShifterReference(off, out var enemy, out var baseline))
+            { result.Detail = "current native weapon quote unavailable; no paired form comparison"; return FinishFormAppraisal(ctx, ability, ally, result); }
             var decision = ShifterDecisions.GetValue(ctx, _ => new ShifterDecision());
             if (!decision.Forms.TryGetValue(buff, out var quote))
             {
@@ -84,7 +84,7 @@ namespace CompanionAI_Pathfinder.Tactics
             float duration = EffectiveRounds(ability, profile, buff, source);
             float rounds = ValueModel.UsefulRounds(duration, ctx.ExpectedRounds, Math.Min(3f, ctx.ExpectedRounds));
             bool ranged = form.AdditionalLimbs.First().IsRanged;
-            float damageGain = quote.Damage.Value * PreferenceWeight(ctx, ranged) - off.DamagePerRound * PreferenceWeight(ctx, off.Ranged);
+            float damageGain = quote.Damage.Value * PreferenceWeight(ctx, ranged) - baseline.ExpectedDamage * PreferenceWeight(ctx, baseline.IsRanged);
             var def = DefenceOf(ctx, ally);
             if (quote.Projection.HpLoss >= def.Hp) { result.Detail = "form would remove its remaining hit points"; return FinishFormAppraisal(ctx, ability, ally, result); }
             int ac = quote.Projection.ArmorChange;
@@ -96,9 +96,18 @@ namespace CompanionAI_Pathfinder.Tactics
                 RiskMath.RoundDropChance(def.Hp, risk)) * rounds) * def.Worth;
             result.Rounds = rounds;
             result.Value = (damageGain * rounds + protection - hpCost) * RoleWeight(ctx, "buff");
-            result.Detail = $"form attacks {off.DamagePerRound:0.#}->{quote.Damage.Value:0.#} dmg/rd, AC {ac:+0;-0;0}, {rounds:0.#} rd; " +
+            result.Detail = $"form attacks {baseline.ExpectedDamage:0.#}->{quote.Damage.Value:0.#} dmg/rd vs {enemy.CharacterName}, AC {ac:+0;-0;0}, {rounds:0.#} rd; " +
                 "core natural attacks only; extra form facts uncredited";
             return FinishFormAppraisal(ctx, ability, ally, result);
+        }
+
+        private static bool TryShifterReference(Offence off, out UnitEntityData target, out WeaponAttackEstimate baseline)
+        {
+            target = off?.WeaponTarget;
+            baseline = off?.WeaponQuote;
+            // Zero is a valid native result (e.g. immunity), not permission to switch to another enemy.
+            // An unreadable current routine stays unknown instead of becoming an invented zero baseline.
+            return !ReferenceEquals(target, null) && baseline != null;
         }
 
         private static BuffAppraisal FinishFormAppraisal(TacticalContext ctx, AbilityData ability, UnitEntityData ally, BuffAppraisal result)

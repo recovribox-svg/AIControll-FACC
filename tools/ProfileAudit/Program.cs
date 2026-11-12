@@ -249,6 +249,10 @@ namespace ProfileAudit
             foreach (var line in shifterLines) Console.WriteLine(line);
             File.WriteAllText(output, string.Join(Environment.NewLine, shifterLines) + Environment.NewLine + Environment.NewLine + File.ReadAllText(output));
             blocklistFailures += shifterFailures;
+            var formReferenceLines = ShifterReferenceCheck.Run(out int formReferenceFailures);
+            foreach (var line in formReferenceLines) Console.WriteLine(line);
+            File.WriteAllText(output, string.Join(Environment.NewLine, formReferenceLines) + Environment.NewLine + Environment.NewLine + File.ReadAllText(output));
+            blocklistFailures += formReferenceFailures;
             var campaignFlagLines = CampaignFlagCheck.Run(loaded.Values, out int campaignFlagFailures);
             foreach (var line in campaignFlagLines) Console.WriteLine(line);
             File.WriteAllText(output, string.Join(Environment.NewLine, campaignFlagLines) + Environment.NewLine + Environment.NewLine + File.ReadAllText(output));

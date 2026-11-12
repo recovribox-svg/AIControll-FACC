@@ -5091,3 +5091,22 @@ the package to play.
 - Tome burn on Orvath.
 - Toggle cost horizons.
 - Decision timings with the eleven-member party.
+
+## 152. Review5 playtest: matched current/form weapon reference
+
+[Review/replay](REVIEW5_PLAYTEST_REVIEW.md) · [input identities](REVIEW5_PLAYTEST_INPUTS.json).
+TB startup matches review5; RT lacks its own header and is identified by the author. Combat spawning/rests were
+confirmed. Five TB and six RT summaries contain no AI exception; Griffon form and Fury execution are now exercised.
+
+OffenceOf retained Enemy only for positive damage. New-form appraisal could then compare a zero current result
+against a projected form on a different first context enemy. Preserve the existing target/estimate pair even for
+zero, require it for form appraisal, and retain its native ranged flag. Missing baseline remains unknown. Current
+profitable-buff fields and Fury admission stay unchanged; form notes name the actual reference target. Old logs do
+not name that target, so not every zero-to-positive row can be attributed to this bug. Fourteen actor-free record,
+reference and compiled-route checks cover the corrected contract; native gameplay remains a replay requirement.
+
+The correction adds two references in the existing frame-scoped record, with no new forecast, native rule or
+search. Separate follow-up: recovery re-created a plain advance after that exact plan had already failed preflight
+(RT 2041–2051); dispatcher safety rejected it again. Other negative-value hazard standoffs are not forced to move.
+Known Death from Above/Release Grapple/Focused Shot and shared-HD Fusion gaps remain explicit. No general movement,
+retreat, commitment, pathfinder, stuck-cancellation or scoring-budget change. Manifest remains 0.3.30.

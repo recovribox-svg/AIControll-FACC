@@ -1,0 +1,266 @@
+{
+  "played_build": {
+    "label": "review5",
+    "source_commit": "45c3b4dbdeacabf6184329b8e6ce0f675f2de0ee",
+    "package_commit": "7f3c4a8bda7094a4643f5c7f3b7360bba4049073",
+    "mvid": "b3359daf-c8e5-4bb6-9245-d6be013a4d15",
+    "tb_startup_identity_confirmed": true,
+    "rt_startup_header_present": false,
+    "rt_build_identification": "User explicitly identifies both files as review5; no independent RT startup identity"
+  },
+  "development_base": "44b224f5af76dc5f5ae6086d6abbfbdeac790627",
+  "inputs": [
+    {
+      "label": "TB",
+      "filename": "TB Mode Log.txt",
+      "sha256": "1f192842760112e4e14650b493164717e2b7bcfd65cc80d2cec5eb292b9b7e15",
+      "bytes": 537439,
+      "lines": 2952,
+      "file_id": "file_00000000728482468a767abaeab8d0a7"
+    },
+    {
+      "label": "RT",
+      "filename": "RT Mode Log.txt",
+      "sha256": "e8b2963af84c7e7bdf20207b009ce68cf09a25f271a36b1b751b6a9e96993e6e",
+      "bytes": 562771,
+      "lines": 2840,
+      "file_id": "file_000000003ce081f4af7545afde5ae741"
+    },
+    {
+      "label": "combat",
+      "filename": "combatLog.txt",
+      "sha256": "745073af46f232a4f76265a85583eb836a14fde838a3b5d3364291198cf1b884",
+      "bytes": 1234707,
+      "lines": 33920,
+      "file_id": "file_00000000ed2881f4b76c863fd0d69d36"
+    }
+  ],
+  "interventions": "User confirmed combat enemy spawning or rests for these tests; exact moments not supplied. Isekai Dimensional Reinforcements also appears in RT.",
+  "summary": {
+    "TB": {
+      "lines": 2952,
+      "decisions": 351,
+      "actors": {
+        "Orvath": 47,
+        "Bandit": 23,
+        "Wenduag": 29,
+        "Camellia": 27,
+        "Aeiluvetar": 35,
+        "Drow Magus": 31,
+        "Bandit Alchemist": 31,
+        "arcan": 32,
+        "Seelah": 12,
+        "Lann": 34,
+        "Cambion Bard": 30,
+        "Tripper": 20
+      },
+      "waits_or_ends": 120,
+      "slow_rows": 35,
+      "slow_max_ms": 1390,
+      "gc_rows": 1,
+      "tags": {
+        "Build": 1,
+        "PetItems": 1,
+        "V": 1197,
+        "PreBuff": 2,
+        "Kinetic": 32,
+        "Cmd": 449,
+        "RT": 9,
+        "Threat": 13,
+        "Coverage": 168,
+        "Blocklist": 21,
+        "Profile": 45,
+        "Math": 120,
+        "HD": 1,
+        "AoeDanger": 31,
+        "Progressive": 57,
+        "Tactics": 368,
+        "Perf": 40,
+        "Modes": 24,
+        "Shifter": 5,
+        "Buff": 13,
+        "Toggle": 31,
+        "Info": 14,
+        "Warn": 23,
+        "Abilities": 2,
+        "Fusion": 10,
+        "CastChance": 26,
+        "AreaExit": 2,
+        "Approach": 10,
+        "CombatEventHandler": 5,
+        "Calib": 5,
+        "Save": 25,
+        "PendingActionTracker": 1,
+        "Potion of Mage Armor": 36,
+        "CSD": 20,
+        "Spawn": 38,
+        "Error": 1,
+        "Damage": 14,
+        "TBController": 7,
+        "SwarmAudit": 6,
+        "Swarm": 5
+      },
+      "sample_counts": {
+        "identity": 1,
+        "approach": 109,
+        "shifter": 33,
+        "boundaries": 14,
+        "calibration": 5,
+        "refused": 8
+      },
+      "fight_performance": [
+        {
+          "line": 775,
+          "count": 42,
+          "median_ms": 108.2,
+          "p95_ms": 386.8,
+          "max_ms": 1255.1
+        },
+        {
+          "line": 1496,
+          "count": 108,
+          "median_ms": 49.7,
+          "p95_ms": 298.8,
+          "max_ms": 585.7
+        },
+        {
+          "line": 2064,
+          "count": 90,
+          "median_ms": 72.0,
+          "p95_ms": 350.5,
+          "max_ms": 542.2
+        },
+        {
+          "line": 2421,
+          "count": 42,
+          "median_ms": 65.4,
+          "p95_ms": 299.5,
+          "max_ms": 461.9
+        },
+        {
+          "line": 2911,
+          "count": 69,
+          "median_ms": 84.8,
+          "p95_ms": 298.2,
+          "max_ms": 1390.3
+        }
+      ],
+      "measured_decisions": 351
+    },
+    "RT": {
+      "lines": 2840,
+      "decisions": 357,
+      "actors": {
+        "Orvath": 38,
+        "Aeiluvetar": 23,
+        "Camellia": 26,
+        "Lann": 22,
+        "Wenduag": 46,
+        "Bandit Alchemist": 22,
+        "Cambion Bard": 26,
+        "Drow Magus": 29,
+        "arcan": 42,
+        "Tripper": 25,
+        "Seelah": 30,
+        "Bandit": 28
+      },
+      "waits_or_ends": 26,
+      "slow_rows": 30,
+      "slow_max_ms": 1470,
+      "gc_rows": 3,
+      "tags": {
+        "V": 960,
+        "SwarmAudit": 13,
+        "Math": 144,
+        "Swarm": 10,
+        "Progressive": 75,
+        "Kinetic": 35,
+        "Tactics": 353,
+        "Cmd": 633,
+        "Spawn": 37,
+        "Threat": 18,
+        "Walk": 195,
+        "Toggle": 37,
+        "AoeDanger": 14,
+        "Coverage": 9,
+        "Shifter": 6,
+        "Perf": 36,
+        "RT": 36,
+        "RT-Tactics": 23,
+        "Damage": 19,
+        "Modes": 11,
+        "Buff": 16,
+        "CastChance": 4,
+        "Calib": 6,
+        "Save": 36,
+        "Info": 7,
+        "CSD": 25,
+        "Potion of Mage Armor": 24,
+        "HD-Aim": 2,
+        "Profile": 8,
+        "Dimensional Reinforcements": 1,
+        "Approach": 6
+      },
+      "sample_counts": {
+        "boundaries": 18,
+        "shifter": 35,
+        "calibration": 6,
+        "approach": 10,
+        "refused": 2
+      },
+      "fight_performance": [
+        {
+          "line": 644,
+          "count": 190,
+          "median_ms": 38.3,
+          "p95_ms": 195.7,
+          "max_ms": 1470.3
+        },
+        {
+          "line": 1137,
+          "count": 153,
+          "median_ms": 38.5,
+          "p95_ms": 186.9,
+          "max_ms": 1034.0
+        },
+        {
+          "line": 1821,
+          "count": 267,
+          "median_ms": 42.8,
+          "p95_ms": 211.6,
+          "max_ms": 452.6
+        },
+        {
+          "line": 2068,
+          "count": 47,
+          "median_ms": 36.7,
+          "p95_ms": 130.5,
+          "max_ms": 139.3
+        },
+        {
+          "line": 2432,
+          "count": 121,
+          "median_ms": 79.5,
+          "p95_ms": 236.0,
+          "max_ms": 1066.6
+        },
+        {
+          "line": 2812,
+          "count": 163,
+          "median_ms": 34.9,
+          "p95_ms": 226.3,
+          "max_ms": 326.7
+        }
+      ],
+      "measured_decisions": 941
+    },
+    "interventions": "User confirmed combat enemy spawns or rests for these runs; exact moments not supplied."
+  },
+  "combat_normalization": "Private rich-text-stripped derivative preserves all 33,920 original splitlines positions; raw input unchanged.",
+  "limits": [
+    "Not every native state/property/target identity is logged.",
+    "Fight-start counts and action/HP/resource changes may reflect manual spawning/rests.",
+    "No claim that all zero-baseline Shifter rows used different targets; old diagnostics omit the reference target.",
+    "Mode timing populations differ from retained decision summaries because repeated/quiet decisions are not all printed."
+  ]
+}
