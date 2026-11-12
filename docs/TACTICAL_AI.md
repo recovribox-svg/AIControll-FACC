@@ -5110,3 +5110,5 @@ search. Separate follow-up: recovery re-created a plain advance after that exact
 (RT 2041–2051); dispatcher safety rejected it again. Other negative-value hazard standoffs are not forced to move.
 Known Death from Above/Release Grapple/Focused Shot and shared-HD Fusion gaps remain explicit. No general movement,
 retreat, commitment, pathfinder, stuck-cancellation or scoring-budget change. Manifest remains 0.3.30.
+
+Checked source `4392e51`, [receipt](competence/REVIEW5_PLAYTEST_CHECKS.json) and [review6 test ZIP](../test-builds/AI-Control-FACC-v0.3.30-dev-review6-4392e51-UMM-test.zip), startup MVID `3f9c3355-3c65-4477-b059-dd370eb20d2b`. 664 unit + 27 inventory tests and native checks pass; actual-reference Release 0 warnings/errors; 0/0 added signatures resolve. Compatible/supplementary audit scopes pass; original full-corpus enum failure remains distinct. Gameplay/matched Unity timing pending.

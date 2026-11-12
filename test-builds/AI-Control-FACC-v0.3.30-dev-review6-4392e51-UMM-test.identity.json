@@ -1,0 +1,21 @@
+{
+  "build_label": "review6",
+  "kind": "development-test",
+  "version": "0.3.30",
+  "source_branch": "codex/review5-playtest-review",
+  "source_commit": "4392e513fbfc41b7a09a56a3cc4fdeefa28313fc",
+  "starting_commit": "44b224f5af76dc5f5ae6086d6abbfbdeac790627",
+  "development_base": "44b224f5af76dc5f5ae6086d6abbfbdeac790627",
+  "dependency_pr": 45,
+  "dll": {
+    "assembly": "CompanionAI_Pathfinder, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null",
+    "mvid": "3f9c3355-3c65-4477-b059-dd370eb20d2b",
+    "sha256": "3f905356c8357012408829b9c5a5668007413a2c59544c8623c505cb201bece0",
+    "size": 1364480
+  },
+  "manifest_sha256": "d6ee91e78dc5d4981ad51a1a1a85bb1e7fe3f0a87814697f2fd9ee1c20d35594",
+  "checks_receipt": "docs/competence/REVIEW5_PLAYTEST_CHECKS.json",
+  "gameplay_status": "not played",
+  "scope": "Integrated review5 prerequisites plus matched current/projected form reference. Retains the existing assessed target and weapon estimate even at zero, requires that pair for a new-form quote and preserves its ranged flag. Unknown baseline stays unknown; ordinary profitable-buff fields and Fury admission unchanged. Broad TB/RT review distinguishes native outcomes, manual spawns/rests and unsupported signatures. Redundant recovery reattempt is a separate focused follow-up.",
+  "release": false
+}

@@ -45,7 +45,7 @@ rules and target defenses (`CombatMath.ReadRoutineCore`, `ReadHitOnTarget`); the
 It stores two references in the existing frame-scoped appraisal record, makes no extra forecast/context/rule,
 and keeps the eight-form and existing Fury budgets. No actor/buff/equipment state mutation is added.
 
-Fourteen new actor-free `FORM-REFERENCE` checks use real estimate records and distinct reference identities:
+Fourteen new actor-free `FORM-REFERENCE` checks use the production estimate type with synthetic scalar values and distinct reference-only native identities:
 known zero/positive, ranged zero, missing current quote/target, no first-enemy substitution, producer ordering,
 form call route and unchanged Fury admission. They do not initialize actors, execute native rules/commands,
 or measure Unity timing. Existing Shifter/campaign-flag checks remain separate.
@@ -68,3 +68,5 @@ normal enemy, and (c) a temporarily unreadable/viewless enemy. Verify both befor
 known zeros remain zeros, unavailable bases withhold, and useful forms/Fury still execute. Regress both modes,
 current-form preservation, owner/player toggle restoration, buffs, weapon attacks and items. Native game replay and
 matched timing of the corrected build remain pending. Manifest stays 0.3.30; Claude reviews/integrates.
+
+Checked source `4392e51`, [receipt](competence/REVIEW5_PLAYTEST_CHECKS.json) and [review6 test ZIP](../test-builds/AI-Control-FACC-v0.3.30-dev-review6-4392e51-UMM-test.zip), startup MVID `3f9c3355-3c65-4477-b059-dd370eb20d2b`. 664 unit + 27 inventory tests and native checks pass; actual-reference Release 0 warnings/errors; 0/0 added signatures resolve. Compatible/supplementary audit scopes pass; original full-corpus enum failure remains distinct. Gameplay/matched Unity timing pending.
