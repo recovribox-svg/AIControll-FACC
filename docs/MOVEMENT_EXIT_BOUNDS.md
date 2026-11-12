@@ -86,3 +86,5 @@ again after a correct exit. No claim of eliminating every smoke repeat or improv
    sphere centre and actor position for update lag; a moving attached aura may still recapture the actor.
 5. Verify step/full attacks, ordinary ranged attacks/casts, existing swarm escapes and both combat modes.
    Compare the same party/fight/settings/warm-up for performance; thresholds and net heap are not exact timings.
+
+Checked source `9145404`, [receipt](competence/MOVEMENT_BOUNDS_CHECKS.json) and [exit2 test ZIP](../test-builds/AI-Control-FACC-v0.3.30-dev-exit2-9145404-UMM-test.zip), startup MVID `36d0bc00-2822-419e-a10a-d3a60bd536fa`. 629 unit + 11 inventory tests and native checks pass; actual-reference Release 0 warnings/errors; 17/17 added signatures resolve. Compatible/supplementary audit scopes pass; original full-corpus enum failure remains distinct. Gameplay/matched Unity timing pending.

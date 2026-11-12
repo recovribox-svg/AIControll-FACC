@@ -1,0 +1,21 @@
+{
+  "build_label": "exit2",
+  "kind": "development-test",
+  "version": "0.3.30",
+  "source_branch": "codex/area-exit-native-bounds",
+  "source_commit": "9145404370874c855eabfdddcacb3e469902e88c",
+  "starting_commit": "e1e31498a2d899a87c1dd593c68c6fb7a32817da",
+  "development_base": "1f58150b8e50f9a322ba0b8d3fcc095fe188420f",
+  "dependency_pr": 38,
+  "dll": {
+    "assembly": "CompanionAI_Pathfinder, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null",
+    "mvid": "36d0bc00-2822-419e-a10a-d3a60bd536fa",
+    "sha256": "9eda15afb38b141aaa34a7c06431c7c7181c0574b0fc292cd1ebb32fdab7f109",
+    "size": 1334272
+  },
+  "manifest_sha256": "d6ee91e78dc5d4981ad51a1a1a85bb1e7fe3f0a87814697f2fd9ee1c20d35594",
+  "checks_receipt": "docs/competence/MOVEMENT_BOUNDS_CHECKS.json",
+  "gameplay_status": "not played",
+  "scope": "Includes review1/exit1/step1/magus1/caster2 prerequisites. Area exits use actual sphere bounds with native cylinder capsule/box query footprints, fresh selected checks and no leave credit for already-clear geometry. Same 80 hints/three route checks; read-only bounded diagnostic; no native overlap queries or actor/collider mutation.",
+  "release": false
+}

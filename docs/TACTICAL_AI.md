@@ -4848,3 +4848,5 @@ boxes, offsets, boundaries and unsafe data; inherited route/step/Magus/caster/Fu
 Native Unity bounds/physics/navmesh and post-issue movement are not executed offline. Pursuing smoke can still
 recapture an actor; no claim that all repeated exits are fixed. General pursuit, commitment, retreat, swarm
 search, pathfinder and stuck cancellation are unchanged. Final receipt records exact tests/build/scopes.
+
+Checked source `9145404`, [receipt](competence/MOVEMENT_BOUNDS_CHECKS.json) and [exit2 test ZIP](../test-builds/AI-Control-FACC-v0.3.30-dev-exit2-9145404-UMM-test.zip), startup MVID `36d0bc00-2822-419e-a10a-d3a60bd536fa`. 629 unit + 11 inventory tests and native checks pass; actual-reference Release 0 warnings/errors; 17/17 added signatures resolve. Compatible/supplementary audit scopes pass; original full-corpus enum failure remains distinct. Gameplay/matched Unity timing pending.
