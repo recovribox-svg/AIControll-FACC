@@ -4955,3 +4955,21 @@ Eight unit boundaries and four compiled native-route additions cover identity an
 no forecast, scan or path work. Movement fallback is a separate authorized task; gameplay remains pending.
 
 Checked source `3f66960`, [receipt](competence/EA_CORRELATED_SAMPLING_CHECKS.json) and [review4 test ZIP](../test-builds/AI-Control-FACC-v0.3.30-dev-review4-3f66960-UMM-test.zip), startup MVID `b7d068bd-340a-43b7-94fe-f12f51b0c74a`. 655 unit + 11 inventory tests and native checks pass; actual-reference Release 0 warnings/errors; 0/0 added signatures resolve. Compatible/supplementary audit scopes pass; original full-corpus enum failure remains distinct. Gameplay/matched Unity timing pending.
+
+## 149. Shifter1 review: authorized advance fallback after attack-path refusal
+
+Bandit ends R2/R3 idle after three selected approach checks fall short (R2 1.6–1.8 m; R3 0.1–2.8 m;
+AI 1359–1365, 1471–1475).
+A proposed step/full routine had suppressed advances before its native endpoint check; preserving existing plain
+moves could not preserve one never generated. The author explicitly approved the repair on 12 November 2026.
+
+After actual offensive-approach refusal, recover only when no useful main/quick/weak/cantrip action remains.
+Reuse the existing closing policy and real-path risk repricing once, at most three target approaches. A refused
+heal/plain move alone does not open recovery. Existing action/movement/status/Pure Mage gates, genuine RT
+in-place cooldown waiting and native dispatcher hazard/AoO/path validation remain. Three selected preflight checks
+still cap the decision; the new plain move is validated at issue, with no full-decision retry or reused rejected path.
+Useful existing actions win; no safe valuable route may still mean no move. [Evidence, limits and replay](REJECTED_APPROACH_ADVANCE.md).
+
+Offline scheduling and actual native-candidate/status checks cover the bounds, action preservation and compiled
+closing/repricing routes. Game paths, commands and Unity timing remain replay checks. General retreat, commitment,
+pathfinding and stuck-walk cancellation are unchanged.

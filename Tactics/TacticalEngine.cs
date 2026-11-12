@@ -423,11 +423,11 @@ namespace CompanionAI_Pathfinder.Tactics
             // Preview remains a scoring read; actual issue revalidates through CommandDispatcher.Run.
             if (!preview)
             {
-                try { usable = PreflightMainCandidates(ctx, usable, memory); }
+                try { usable = PreflightMainCandidates(ctx, usable, memory, candidates); }
                 catch (Exception ex)
                 {
                     Main.Error($"[Approach] {unit.CharacterName}: preparation failed: {ex.Message}");
-                    usable = usable.Where(c => QuickAction(c) || !WalksBeforeActing(c)).ToList();
+                    usable = usable.Where(c => QuickAction(c) || !RequiresApproachValidation(c)).ToList();
                 }
             }
             // Run the final policy on feasible plans. Preparation uses silent policy views of the complete list,
@@ -4828,35 +4828,7 @@ namespace CompanionAI_Pathfinder.Tactics
             var advanced = new HashSet<string>();
             if (!anyAttackNow && !ctx.Permissions.MovementOnly && ctx.PureMageWeapon)
             {
-                // ★ v0.3.18: the three best enemies to close on, each with its own approach. Only the best one was tried:
-                // Seelah ended nine turns idle (0.3.18 log 611fe6bf, R9-R17) because the approach to that enemy, lying
-                // in Grease, walked into it, while other enemies stood clear of it.
-                var estimated = ctx.Enemies
-                    .Where(e => !ctx.Unreachable.Contains(e.UniqueId))
-                    .Select(e => new { Enemy = e, Est = CombatMath.EstimateWeaponAttack(unit, e, false) })
-                    .Where(x => x.Est != null)
-                    .ToList();
-                var ranked = estimated
-                    .OrderByDescending(x => DamageValue(x.Enemy, x.Est) / Math.Max(3f, ctx.Distance(x.Enemy)))
-                    .Take(3)
-                    .ToList();
-                // ★ v0.3.28 (v0.3.27 turn-based log, fight 3): the attack the unit can make next turn from where it stands -
-                // an advance that walks out of that enemy's reach gives it up (ValueModel.AdvanceWorth).
-                var stay = estimated
-                    .Where(x => InRangeNow(unit, x.Enemy.Position, x.Est.Reach, x.Est.IsRanged))
-                    .OrderByDescending(x => DamageValue(x.Enemy, x.Est))
-                    .FirstOrDefault();
-                ctx.StayEnemy = stay?.Enemy;
-                ctx.StayValue = stay != null ? DamageValue(stay.Enemy, stay.Est) : 0f;
-                ctx.StayReach = stay?.Est.Reach ?? 0f;
-                ctx.StayNeedsLos = stay?.Est.IsRanged ?? false;
-
-                for (int i = 0; i < ranked.Count; i++)
-                {
-                    // Within reach of the best one: no advance at all.
-                    if (AddAdvanceCandidate(ctx, list, ranked[i].Enemy, ranked[i].Est, rangedStyle) && i == 0) return;
-                    advanced.Add(ranked[i].Enemy.UniqueId);
-                }
+                if (AddClosingCandidates(ctx, list, rangedStyle, advanced)) return;
             }
 
             // ★ v0.3.20 (test3): an enemy this turn's walk-then-act could not reach in one move action (the path refused by
@@ -4875,6 +4847,34 @@ namespace CompanionAI_Pathfinder.Tactics
                     if (est != null) AddAdvanceCandidate(ctx, list, enemy, est, rangedStyle, refused);
                 }
             }
+        }
+
+        /// <summary>The existing three-target advance policy, also available lazily after selected-path refusal.</summary>
+        private static bool AddClosingCandidates(TacticalContext ctx, List<Candidate> list, bool rangedStyle,
+                                                 HashSet<string> advanced = null)
+        {
+            // Native attack routines are decision-cached. Only the three best closing options get geometry work.
+            var unit = ctx.Unit;
+            var estimated = ctx.Enemies
+                .Where(e => !ctx.Unreachable.Contains(e.UniqueId))
+                .Select(e => new { Enemy = e, Est = CombatMath.EstimateWeaponAttack(unit, e, false) })
+                .Where(x => x.Est != null).ToList();
+            var ranked = estimated
+                .OrderByDescending(x => DamageValue(x.Enemy, x.Est) / Math.Max(3f, ctx.Distance(x.Enemy)))
+                .Take(3).ToList();
+            var stay = estimated
+                .Where(x => InRangeNow(unit, x.Enemy.Position, x.Est.Reach, x.Est.IsRanged))
+                .OrderByDescending(x => DamageValue(x.Enemy, x.Est)).FirstOrDefault();
+            ctx.StayEnemy = stay?.Enemy;
+            ctx.StayValue = stay != null ? DamageValue(stay.Enemy, stay.Est) : 0f;
+            ctx.StayReach = stay?.Est.Reach ?? 0f;
+            ctx.StayNeedsLos = stay?.Est.IsRanged ?? false;
+            for (int i = 0; i < ranked.Count; i++)
+            {
+                if (AddAdvanceCandidate(ctx, list, ranked[i].Enemy, ranked[i].Est, rangedStyle) && i == 0) return true;
+                advanced?.Add(ranked[i].Enemy.UniqueId);
+            }
+            return false;
         }
 
         /// <summary>Share of an attack an advance towards its target is worth (the attack comes next turn, if at all).</summary>
