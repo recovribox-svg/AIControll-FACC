@@ -4824,3 +4824,5 @@ Swarms/stat-damage risks are read and swarm exits selected. Friendly in-flight T
 remains a documented gap. No general movement/commitment/retreat/pathfinder/stuck change in this PR.
 Final receipt records real-reference Release, all tests and compatible/supplementary audits separately from
 the original full corpus's named enum load failure. TB/shared RT replay and matched Unity timing remain.
+
+Checked source `318b52f`, [receipt](competence/EXIT1_REVIEW_CHECKS.json) and [review1 test ZIP](../test-builds/AI-Control-FACC-v0.3.30-dev-review1-318b52f-UMM-test.zip), startup MVID `ffce03c5-bfe3-414f-b6bd-4a946d673dbf`. 607 unit + 11 inventory tests and native checks pass; actual-reference Release 0 warnings/errors; 0/0 added signatures resolve. Compatible/supplementary audit scopes pass; original full-corpus enum failure remains distinct. Gameplay/matched Unity timing pending.

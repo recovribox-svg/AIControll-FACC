@@ -94,3 +94,5 @@ pass. Supplementary hidden Magus buffs come from supplied BubblePrints stock 2.7
    move record alone does not prove the area stopped affecting the actor.
 3. Retain startup MVID and combat log. C07 acceptance requires a melee Magus; Eldritch Archer needs a separate native
    ranged contract. Reveal/Profane Invocation acceptance still needs relevant casts.
+
+Checked source `318b52f`, [receipt](competence/EXIT1_REVIEW_CHECKS.json) and [review1 test ZIP](../test-builds/AI-Control-FACC-v0.3.30-dev-review1-318b52f-UMM-test.zip), startup MVID `ffce03c5-bfe3-414f-b6bd-4a946d673dbf`. 607 unit + 11 inventory tests and native checks pass; actual-reference Release 0 warnings/errors; 0/0 added signatures resolve. Compatible/supplementary audit scopes pass; original full-corpus enum failure remains distinct. Gameplay/matched Unity timing pending.
