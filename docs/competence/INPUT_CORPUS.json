@@ -1,0 +1,400 @@
+{
+  "schema_version": 1,
+  "user_export_provenance": "Running modded game after initialization (user-confirmed)",
+  "archives": [
+    {
+      "name": "MythicAbilities.zip",
+      "archive_sha256": "c980923d31ae299dd5caedf52af1ab0530acbcee0ad94febaf7a9345f6f76359",
+      "archive_bytes": 171857,
+      "files": 129,
+      "jbp": 129,
+      "dll": 0,
+      "extracted_bytes": 500889
+    },
+    {
+      "name": "Classes.zip",
+      "archive_sha256": "dd2ea1592edd3eb63aeb2a2e9c02c509efdb49a30df34b2568624344cee15f68",
+      "archive_bytes": 19412918,
+      "files": 12070,
+      "jbp": 12070,
+      "dll": 0,
+      "extracted_bytes": 63828038
+    },
+    {
+      "name": "Feats.zip",
+      "archive_sha256": "48d7ff9fcb125d0eef573269f3ab79dde8c4696cbd71a1ae3d66996b3755b2de",
+      "archive_bytes": 1359569,
+      "files": 789,
+      "jbp": 789,
+      "dll": 0,
+      "extracted_bytes": 3954534
+    },
+    {
+      "name": "DLC.zip",
+      "archive_sha256": "9aaa1bab96424a17dce2ddcf15a24d866e481798512733c6289e9b365337531d",
+      "archive_bytes": 38636,
+      "files": 37,
+      "jbp": 37,
+      "dll": 0,
+      "extracted_bytes": 83215
+    },
+    {
+      "name": "Equipment.zip",
+      "archive_sha256": "d5ceb6a7927224a013ee57dac695e38131f557a23aa6872d5e359a5a15ce5d8b",
+      "archive_bytes": 4681547,
+      "files": 4022,
+      "jbp": 4022,
+      "dll": 0,
+      "extracted_bytes": 11756598
+    },
+    {
+      "name": "Items.zip",
+      "archive_sha256": "a69e1992a5e3f09aa605cd6084b86a9d7d014feed20a67e8c567e942948af4cd",
+      "archive_bytes": 3506766,
+      "files": 2961,
+      "jbp": 2961,
+      "dll": 0,
+      "extracted_bytes": 10518003
+    },
+    {
+      "name": "Mythic.zip",
+      "archive_sha256": "56a65cc25c91844b2a7e32e19bffdeca34210c4bc0958bd67a4772d4d913a785",
+      "archive_bytes": 3388419,
+      "files": 2116,
+      "jbp": 2116,
+      "dll": 0,
+      "extracted_bytes": 13633132
+    },
+    {
+      "name": "Spells.zip",
+      "archive_sha256": "06dbb310397140bcbe4ede8a180e9aedf26a3e06f2598555228784f4dac7640b",
+      "archive_bytes": 4289593,
+      "files": 1912,
+      "jbp": 1912,
+      "dll": 0,
+      "extracted_bytes": 17095954
+    },
+    {
+      "name": "Weapons.zip",
+      "archive_sha256": "2a4f50ddec8fe30bebd9a6639992474019be2e2a8da7bf421f6eedd12bded5ee",
+      "archive_bytes": 5571754,
+      "files": 4019,
+      "jbp": 4019,
+      "dll": 0,
+      "extracted_bytes": 14973397
+    },
+    {
+      "name": "Units.zip",
+      "archive_sha256": "ce0ff758c79d30e163626c7ab4fb777e344a939f8d342d6bed803f1470ccc928",
+      "archive_bytes": 27434393,
+      "files": 15409,
+      "jbp": 15409,
+      "dll": 0,
+      "extracted_bytes": 80914603
+    },
+    {
+      "name": "Buffs.zip",
+      "archive_sha256": "9eee80e2663579d9ed10c9520afcb8bcc03dba16f855634e30411881dc7a57b6",
+      "archive_bytes": 897665,
+      "files": 623,
+      "jbp": 623,
+      "dll": 0,
+      "extracted_bytes": 3063567
+    },
+    {
+      "name": "CreatureAbilities.zip",
+      "archive_sha256": "d68200d45ccff5a6c055b2d13f04535252fc64166fe90d61644df98a957d9feb",
+      "archive_bytes": 665796,
+      "files": 540,
+      "jbp": 540,
+      "dll": 0,
+      "extracted_bytes": 1918340
+    },
+    {
+      "name": "CreatureWeapons.zip",
+      "archive_sha256": "7b6bf2f61ae53ece30127b115559c470fc7cec2fa2fcc843a7dddbda2e93a4bd",
+      "archive_bytes": 20052,
+      "files": 17,
+      "jbp": 17,
+      "dll": 0,
+      "extracted_bytes": 53752
+    },
+    {
+      "name": "Abilities.zip",
+      "archive_sha256": "1670dd8e3907642c2beb3a670fec8656aa49280782773de605ef438b918b02ad",
+      "archive_bytes": 6166,
+      "files": 4,
+      "jbp": 4,
+      "dll": 0,
+      "extracted_bytes": 18106
+    },
+    {
+      "name": "Mod Settings.zip",
+      "archive_sha256": "367268a56ed02e151358d4c0ff57534ae31f22c9df8ecc5d840b4a28c6812665",
+      "archive_bytes": 214799,
+      "files": 10,
+      "jbp": 0,
+      "dll": 0,
+      "extracted_bytes": 612726
+    },
+    {
+      "name": "Demonology.zip",
+      "archive_sha256": "d27a87e7b2663add094967ffce8ef650968972b132bab303de192ad0be04e0b5",
+      "archive_bytes": 82968,
+      "files": 3,
+      "jbp": 0,
+      "dll": 1,
+      "extracted_bytes": 221996
+    },
+    {
+      "name": "TomeOfTheFirebird.zip",
+      "archive_sha256": "221e500909613ca4bb597bde725a85d18ccacbc333f7a3787dcc60a345401185",
+      "archive_bytes": 2976168,
+      "files": 18,
+      "jbp": 0,
+      "dll": 1,
+      "extracted_bytes": 9571470
+    },
+    {
+      "name": "MysticalMayhem.zip",
+      "archive_sha256": "1dcf71ac901fdb602a6e7855fde95ab3018e95464f3b049357f63a0d7b5a2089",
+      "archive_bytes": 3357296,
+      "files": 10,
+      "jbp": 0,
+      "dll": 2,
+      "extracted_bytes": 9574375
+    },
+    {
+      "name": "DarkCodex.zip",
+      "archive_sha256": "d2b9cfff3a2236d76d677bd2a2a88dba65231dba0596a71ce1647f1a73393754",
+      "archive_bytes": 1341927,
+      "files": 46,
+      "jbp": 0,
+      "dll": 2,
+      "extracted_bytes": 2120852
+    },
+    {
+      "name": "TabletopTweaks-Core.zip",
+      "archive_sha256": "36a4447f44964bf76354201b9ddc849f66fa06e6d7805cb2aaab684249c01acc",
+      "archive_bytes": 1000087,
+      "files": 29,
+      "jbp": 0,
+      "dll": 1,
+      "extracted_bytes": 3846922
+    },
+    {
+      "name": "IsekaiMod.zip",
+      "archive_sha256": "4100c2e0ce6219482bd412fe49a3f27b83488f746e43c3893be0f4d0624beb27",
+      "archive_bytes": 4188160,
+      "files": 67,
+      "jbp": 0,
+      "dll": 1,
+      "extracted_bytes": 11663031
+    },
+    {
+      "name": "TabletopTweaks-Base.zip",
+      "archive_sha256": "2ee4a7f449881ea2d650a49b83c6e5ab5ab87304c1d549dd2ed0baeacd83de8a",
+      "archive_bytes": 2976756,
+      "files": 155,
+      "jbp": 0,
+      "dll": 1,
+      "extracted_bytes": 9308991
+    },
+    {
+      "name": "Psionics.zip",
+      "archive_sha256": "ddbbd99bc05397389188cf860fab9f882c756cff592848adfd1e0d2fb60a7cc5",
+      "archive_bytes": 2708554,
+      "files": 2,
+      "jbp": 0,
+      "dll": 1,
+      "extracted_bytes": 9937114
+    }
+  ],
+  "cache_files": [
+    {
+      "name": "IsekaiMod.dll.12940.cache",
+      "bytes": 7361024,
+      "format": "PE assembly",
+      "magic_hex": "4d5a900003000000",
+      "sha256": "5111d4d5540ba039b3472951993c49e64d604dcc12bfab0eff2df2a7a7d58fce"
+    },
+    {
+      "name": "DarkCodex.dll.59382.cache",
+      "bytes": 440832,
+      "format": "PE assembly",
+      "magic_hex": "4d5a900003000000",
+      "sha256": "8a82a017220a65ee00ae7e9182ecb30bf49b44a01c961e9897c379add648e147"
+    },
+    {
+      "name": "TabletopTweaks-Base.dll.65282.cache",
+      "bytes": 3058688,
+      "format": "PE assembly",
+      "magic_hex": "4d5a900003000000",
+      "sha256": "1704bcd6e77eee241db43c4f23c47e1b0f0acf7d7b386fca2d57c0748af546ef"
+    },
+    {
+      "name": "TabletopTweaks-Base.dll.65282.cache.pdb",
+      "bytes": 3700224,
+      "format": "Windows PDB (MSF)",
+      "magic_hex": "4d6963726f736f66",
+      "sha256": "5282e4846aa4f8ada4a45855586cb618b26aeb1cf14e5084b707d7d00fa6e207"
+    },
+    {
+      "name": "TabletopTweaks-Core.dll.58560.cache",
+      "bytes": 821248,
+      "format": "PE assembly",
+      "magic_hex": "4d5a900003000000",
+      "sha256": "aba06b62e8433febb57f9a703bfe5224ad1063676729fca8263644a3b3f535b0"
+    },
+    {
+      "name": "TabletopTweaks-Core.dll.58560.cache.pdb",
+      "bytes": 2860544,
+      "format": "Windows PDB (MSF)",
+      "magic_hex": "4d6963726f736f66",
+      "sha256": "014e642b98d912b5625fad3949723d73c7a11b1a8ad1e8a4f98ccef232702cae"
+    },
+    {
+      "name": "TomeOfTheFirebird.dll.46743.cache",
+      "bytes": 9313280,
+      "format": "PE assembly",
+      "magic_hex": "4d5a900003000000",
+      "sha256": "5afb76769ad7fc036c9d70ae8cdad9d0866b3a6306072b94498ecfe6088a0a86"
+    },
+    {
+      "name": "MysticalMayhem.dll.45840.cache.pdb",
+      "bytes": 96196,
+      "format": "Portable PDB metadata",
+      "magic_hex": "42534a4201000100",
+      "sha256": "72e8116676251da774f3fb09d1eb787d821b6e0f126f8efa14370ae49ce6aec4"
+    },
+    {
+      "name": "MysticalMayhem.dll.45840.cache",
+      "bytes": 2104320,
+      "format": "PE assembly",
+      "magic_hex": "4d5a900003000000",
+      "sha256": "d88f16cb253299d22eb43ac581c073fc17c9c25d37864d95878fd84c0f806d5d"
+    },
+    {
+      "name": "Demonology.dll.38295.cache.pdb",
+      "bytes": 52764,
+      "format": "Portable PDB metadata",
+      "magic_hex": "42534a4201000100",
+      "sha256": "a11886ae2024aa16f03c53f573815c7aefbbb7eeb143484c56e07aad0bd8951e"
+    },
+    {
+      "name": "Demonology.dll.38295.cache",
+      "bytes": 168960,
+      "format": "PE assembly",
+      "magic_hex": "4d5a900003000000",
+      "sha256": "041b54262f8d241b04d85f8ac682f45ccc68460b270fc81c03f55fa62b37ac5b"
+    },
+    {
+      "name": "Psionics.dll.30902.cache",
+      "bytes": 9936896,
+      "format": "PE assembly",
+      "sha256": "c31d64a001b79d3b5b49ced1324188c73ddadf8f58440dd46ef2758cec9f7aad"
+    }
+  ],
+  "pasted_task_source": "User-supplied next-tasks text; Task 1 docs/data only; Task 2 C06 separate PR after Task 1 PR opens.",
+  "raw_inputs_committed": false,
+  "additional_uploads": [
+    {
+      "label": "Blueprints-A.json",
+      "sha256": "5913395e7146ccd6755e9af5664d1cabfc214e3524e2914adca221be437efe0a",
+      "bytes": 7140,
+      "matches_existing": [
+        "Mod Settings/Mod Settings/Demonology Settings/UserSettings/Blueprints.json"
+      ],
+      "format": "JSON",
+      "keys": [
+        "OverrideIds",
+        "NewBlueprints",
+        "AutoGenerated",
+        "UnusedGUIDs"
+      ],
+      "entries": 4,
+      "new_blueprints": 109
+    },
+    {
+      "label": "AddedContent.json",
+      "sha256": "28acab978278485fde5df0dec0a77ecd1194151936637c26154237dde356b034",
+      "bytes": 4008,
+      "matches_existing": [
+        "IsekaiMod/IsekaiMod/Config/AddedContent.json"
+      ],
+      "format": "JSON",
+      "keys": [
+        "NewSettingsOffByDefault",
+        "ExcludeCompanionsFromIsekaiClass",
+        "AllowMainCharacterRetinue",
+        "RestrictExceptionalFeats",
+        "RestrictMythicOPAbility",
+        "RestrictMythicSpecialPower",
+        "MultipleMythicOPAbility",
+        "MultipleMythicSpecialPower",
+        "MergeIsekaiSpellList",
+        "IsekaiDefaultClothes",
+        "IsekaiSpellsKnownIncrement",
+        "EnableLevelUncapping"
+      ],
+      "entries": 35,
+      "new_blueprints": 0
+    },
+    {
+      "label": "Blueprints-B.json",
+      "sha256": "e0c4b79fe55d66e2cda2c7a9a30be17bb1950059dd3a1134d37b25167767e885",
+      "bytes": 317404,
+      "matches_existing": [
+        "IsekaiMod/IsekaiMod/Config/Blueprints.json"
+      ],
+      "format": "JSON",
+      "keys": [
+        "OverrideIds",
+        "NewBlueprints",
+        "AutoGenerated",
+        "UnusedGUIDs"
+      ],
+      "entries": 4,
+      "new_blueprints": 4097
+    },
+    {
+      "label": "BlueprintGuids.json",
+      "sha256": "0dbf297bcf5ad84cfbecc71339082ba3ac3367f647a6b104087c46603f494f7c",
+      "bytes": 60261,
+      "matches_existing": [
+        "MysticalMayhem/BlueprintGuids.json"
+      ],
+      "format": "JSON",
+      "keys": [
+        "AbjurationCL2",
+        "AbjurationDC2",
+        "AbundantArcaneSmite",
+        "AbundantSpellSynthesis",
+        "AcadamaeGraduate",
+        "ArcaneSmiteEvilAbility",
+        "ArcaneSmiteEvilAdditionalUse",
+        "ArcaneSmiteEvilBuff",
+        "ArcaneSmiteEvilFeature",
+        "ArcaneSmiteEvilResource",
+        "ArcaneTricksterDraconicWarlock",
+        "ArcaneTricksterWarlock"
+      ],
+      "entries": 906,
+      "new_blueprints": 0
+    },
+    {
+      "label": "Psionics.dll.30902.cache",
+      "sha256": "c31d64a001b79d3b5b49ced1324188c73ddadf8f58440dd46ef2758cec9f7aad",
+      "bytes": 9936896,
+      "matches_existing": [],
+      "format": "PE assembly",
+      "matches_supplied_psionics": true
+    }
+  ],
+  "supplementary_reference_archive": {
+    "name": "alterasc.github.io-main.zip",
+    "sha256": "88fdf3770299bddb91c401c2f0984db4b1425f3de6b0511f2ab5ef7265c172ec",
+    "archive_bytes": 2234973,
+    "files": 321
+  }
+}

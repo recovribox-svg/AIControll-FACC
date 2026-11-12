@@ -1,0 +1,197 @@
+{
+  "source": "User-supplied alterasc.github.io-main.zip",
+  "archive_sha256": "88fdf3770299bddb91c401c2f0984db4b1425f3de6b0511f2ab5ef7265c172ec",
+  "scope": "Supplementary automatically generated names/GUID/category listings. No JBP component/action/progression object graphs; matching version labels do not establish matching installed bytes, enabled patches or actor ownership. Binary tables are a little-endian count followed by 16-byte GUIDs.",
+  "mods": [
+    {
+      "mod": "IsekaiMod",
+      "index_version": "5.4.2",
+      "supplied_version": "6.5.0",
+      "same_manifest_version": false,
+      "guid_count": 690,
+      "guids_matching_supplied_registry": 689,
+      "guids_present_in_supplied_exports": 0,
+      "recognized_classes_archetypes": [
+        {
+          "kind": "class",
+          "title": "Isekai Protagonist",
+          "asset_id": "051cef8e29064217a6d5c8011b1d9f60",
+          "internal_name": "IsekaiProtagonistClass"
+        }
+      ]
+    },
+    {
+      "mod": "Psionics",
+      "index_version": "1.1.1",
+      "supplied_version": "0.2.3",
+      "same_manifest_version": false,
+      "guid_count": 575,
+      "guids_matching_supplied_registry": 0,
+      "guids_present_in_supplied_exports": 0,
+      "recognized_classes_archetypes": [
+        {
+          "kind": "class",
+          "title": "Psion",
+          "asset_id": "6ff3c4a7958e487fb0ebfdf20084c81b",
+          "internal_name": "PsionClass"
+        },
+        {
+          "kind": "class",
+          "title": "Soulknife",
+          "asset_id": "c8cf221eccd04a2b96c0261efd0c7e79",
+          "internal_name": "SoulknifeClass"
+        }
+      ]
+    },
+    {
+      "mod": "DarkCodex",
+      "index_version": "1.8.0",
+      "supplied_version": "1.9.6",
+      "same_manifest_version": false,
+      "guid_count": 265,
+      "guids_matching_supplied_registry": 0,
+      "guids_present_in_supplied_exports": 0,
+      "recognized_classes_archetypes": [
+        {
+          "kind": "archetype",
+          "title": "Elemental Ascetic (Kineticist)",
+          "asset_id": "33780145192140a38a72665b9f877328",
+          "internal_name": "ElementalAsceticArchetype"
+        },
+        {
+          "kind": "archetype",
+          "title": "Elemental Scion (Kineticist)",
+          "asset_id": "180c6e3574aa4c938e73952cb02d1535",
+          "internal_name": "ElementalScionArchetype"
+        },
+        {
+          "kind": "archetype",
+          "title": "Virtuous Bravo (Paladin)",
+          "asset_id": "cf73ad27ebb04d03aecab5d1930cbc2c",
+          "internal_name": "VirtuousBravoArchetype"
+        }
+      ]
+    },
+    {
+      "mod": "Demonology",
+      "index_version": "0.1.5",
+      "supplied_version": "0.1.5",
+      "same_manifest_version": true,
+      "guid_count": 109,
+      "guids_matching_supplied_registry": 109,
+      "guids_present_in_supplied_exports": 0,
+      "recognized_classes_archetypes": []
+    },
+    {
+      "mod": "MysticalMayhem",
+      "index_version": "0.6.6h",
+      "supplied_version": "0.7.0h",
+      "same_manifest_version": false,
+      "guid_count": 782,
+      "guids_matching_supplied_registry": 763,
+      "guids_present_in_supplied_exports": 0,
+      "recognized_classes_archetypes": [
+        {
+          "kind": "class",
+          "title": "Warlock",
+          "asset_id": "297c08b0201f43c0bd20f4aa483cf97e",
+          "internal_name": "WarlockClass"
+        },
+        {
+          "kind": "archetype",
+          "title": "Flagellant (Cleric)",
+          "asset_id": "651d952072064406a73944215c9a84a9",
+          "internal_name": "FlagellantArchetype"
+        },
+        {
+          "kind": "archetype",
+          "title": "Warsighted (Oracle)",
+          "asset_id": "7d94f6c301554edd899e3897b838765e",
+          "internal_name": "WarsightedArchetype"
+        },
+        {
+          "kind": "archetype",
+          "title": "Razmiran Priest (Sorcerer)",
+          "asset_id": "ae5ebed8a52748a6adef404a0e14151e",
+          "internal_name": "RazmiranPriestArchetype"
+        },
+        {
+          "kind": "archetype",
+          "title": "Gold-Robed Wizard (Wizard)",
+          "asset_id": "d50b1bd6039e4a40b241a8adee1b77d4",
+          "internal_name": "GoldWizardArchetype"
+        },
+        {
+          "kind": "archetype",
+          "title": "Pact Wizard (Wizard)",
+          "asset_id": "62e715923fdd41588690c6ca01127a8d",
+          "internal_name": "PactWizard"
+        }
+      ]
+    },
+    {
+      "mod": "TomeOfTheFirebird",
+      "index_version": "1.4.18",
+      "supplied_version": "1.4.18",
+      "same_manifest_version": true,
+      "guid_count": 256,
+      "guids_matching_supplied_registry": 0,
+      "guids_present_in_supplied_exports": 0,
+      "recognized_classes_archetypes": [
+        {
+          "kind": "archetype",
+          "title": "Eldritch Scion (Sage) (Magus)",
+          "asset_id": "f2ea4e4620b141aab5cc1077afee9f95",
+          "internal_name": "EldritchScionSageArchetype"
+        }
+      ]
+    },
+    {
+      "mod": "TabletopTweaks-Base",
+      "index_version": "2.6.18",
+      "supplied_version": "2.6.18",
+      "same_manifest_version": true,
+      "guid_count": 1436,
+      "guids_matching_supplied_registry": 1427,
+      "guids_present_in_supplied_exports": 0,
+      "recognized_classes_archetypes": [
+        {
+          "kind": "archetype",
+          "title": "Metamagic Rager (Bloodrager)",
+          "asset_id": "e4142305e74f438c90b9fe9a545a41af",
+          "internal_name": "MetamagicRagerArchetype"
+        },
+        {
+          "kind": "archetype",
+          "title": "Channeler of the Unknown (Cleric)",
+          "asset_id": "5cf66f5c604d4c8087fa0c86c712b8d3",
+          "internal_name": "ChannelerOfTheUnknownArchetype"
+        },
+        {
+          "kind": "archetype",
+          "title": "Nature Fang (Druid)",
+          "asset_id": "f50ef8e6ceda4277a6c672f8a7ba0ffb",
+          "internal_name": "NatureFangArcehtype"
+        },
+        {
+          "kind": "archetype",
+          "title": "Bladebound (TTT) (Magus)",
+          "asset_id": "525d2268ff374fb99e7611d18a1af027",
+          "internal_name": "BladeBoundArchetype"
+        },
+        {
+          "kind": "archetype",
+          "title": "Holy Beast (Shifter)",
+          "asset_id": "0aa6bd7be7fb4bcaabe38cbc82d296e1",
+          "internal_name": "HolyBeastArchetype"
+        },
+        {
+          "kind": "archetype",
+          "title": "Divine Commander (Warpriest)",
+          "asset_id": "5c714fa3a0ec4524a30b97af44e3e266",
+          "internal_name": "DivineCommanderArchetype"
+        }
+      ]
+    }
+  ]
+}

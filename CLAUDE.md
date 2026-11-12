@@ -63,6 +63,15 @@ Verification receipt: [docs/competence/C06_DRAIN_THREAT_CHECKS.json](docs/compet
 **C06 playtest / Psionics cost scope (9 November 2026, Codex; review pending):** `codex/c06-psionics-cost-scope` starts at played C06 / PR #22 `ab810b3`, including development `1f58150` / `3443d94`. Read [docs/C06_PSIONICS_COST_SCOPE.md](docs/C06_PSIONICS_COST_SCOPE.md) and §131. All sampled paid performances had the old generic patch fallback; inspected Psionics 0.2.3 globally postfixes cost but only changes GUIDs in `MindBladeEnchantments.AbilityToggleCosts`. The exact module/member is recognized; the live map is checked each quote, mapped enchantments remain fallback, and unknown hooks now identify their method/type/module. Snapshot lifetime remains one decision. No C07/C08, movement, ownership or dispatch change; version 0.3.30.
 
 Verification receipt: [docs/competence/C06_PSIONICS_SCOPE_CHECKS.json](docs/competence/C06_PSIONICS_SCOPE_CHECKS.json). Exact checked source and DLL identity are recorded there; a later receipt-only commit does not replace that tested DLL.
+**Phase B mapping task (8 November 2026, Codex; PR #21 review pending):** originally `fdc5e5e`; self-review based on author-requested `3443d94`, reconciled with packaging `1f58150`.
+Read [docs/CLASS_COMPETENCE_CURRENT.md](docs/CLASS_COMPETENCE_CURRENT.md) and
+[docs/competence/PHASE_B_VALIDATION.md](docs/competence/PHASE_B_VALIDATION.md): 74 exported class assets / 213 archetypes,
+9,426 per-feature rows and bounded selection-aware signatures; installed DLL/settings identities and eight byte-identical loader caches.
+No runtime/version/package change. Strict reader: 44,637 loaded / one known Unity-bound failure, no verdicts; separately allowed-one
+PARTIAL pass on competence3b: 4,807 rows / zero reader errors, 8/8 actor-shaped burn kits, reveal/cast-bonus checks; 27 Python + four static-assembly checks. Self-review corrected query/grant edges, value/action signatures and split-reader/scope citations: 13,576 nodes / 4,510 signatures / 56 missing / 767 frontier / 6,159 unclassified relations.
+Generated mod graphs remain absent despite post-initialization export provenance; DarkCodex settings enable Elemental Scion,
+whose `BurnNumberProperty` replacement is not present in the exported native property. This affects the Psychokineticist stat-penalty consumer; it does not explain Orvath's `KineticNonLethalDamageProperty` fallback (§126, diagnostic `3443d94`). Do not infer mod compatibility or full actor competence.
+**Ownership (superseded 12 November 2026):** the C06 stack, C07 Magus/Eldritch Archer (#35, #41) and C08 Shifter forms (#42) were later implemented by Codex as interim coder and integrated by Claude with PR #22-#45. Movement, acceptance, blocklist, release and version boundaries remain as below.
 
 **Competence programme (8 November 2026): PR #20 integrated, read [docs/CLASS_COMPETENCE_CURRENT.md](docs/CLASS_COMPETENCE_CURRENT.md)
 first.** Codex's foundation (`codex/class-competence-foundation`, from 0.3.30 test 2 `71ca3de`) was reviewed against the

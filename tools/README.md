@@ -97,3 +97,7 @@ The withdrawn kineticist engine's harness options (`--kinetic-checks`, the decis
 fixtures, the `Time.frameCount` stub) were removed with that engine (`docs/V0_3_22_POSTMORTEM.md`);
 `--kinetic-checks` now fails with that explanation. Documents describing those runs (`docs/DECISION_CONTEXT_PLAYTEST.md`,
 `docs/KINETICIST_*`, `docs/INTEGRATION_HANDOVER.md`) describe their own time.
+
+## Class/archetype mechanic mapping
+
+[BlueprintInventory/MECHANIC_MAP.md](BlueprintInventory/MECHANIC_MAP.md) documents the roster-backed graph mapper and read-only mod assembly construction index. Outputs are derived metadata; do not commit the input game/mod files, settings or decompiled code.
