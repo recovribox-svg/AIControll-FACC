@@ -4973,3 +4973,5 @@ Useful existing actions win; no safe valuable route may still mean no move. [Evi
 Offline scheduling and actual native-candidate/status checks cover the bounds, action preservation and compiled
 closing/repricing routes. Game paths, commands and Unity timing remain replay checks. General retreat, commitment,
 pathfinding and stuck-walk cancellation are unchanged.
+
+Checked source `45c3b4d`, [receipt](competence/REJECTED_APPROACH_ADVANCE_CHECKS.json) and [review5 test ZIP](../test-builds/AI-Control-FACC-v0.3.30-dev-review5-45c3b4d-UMM-test.zip), startup MVID `b3359daf-c8e5-4bb6-9245-d6be013a4d15`. 664 unit + 11 inventory tests and native checks pass; actual-reference Release 0 warnings/errors; 0/0 added signatures resolve. Compatible/supplementary audit scopes pass; original full-corpus enum failure remains distinct. Gameplay/matched Unity timing pending.

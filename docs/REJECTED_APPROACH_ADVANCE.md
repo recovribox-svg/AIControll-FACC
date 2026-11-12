@@ -57,3 +57,5 @@ turn, while native refusal stays a valid result. Regress shared RT in-place cool
 Matched party/fight timing and fresh logs are needed to confirm gameplay behavior and performance.
 
 Manifest remains 0.3.30. Claude reviews and integrates; no main/development push, merge or release.
+
+Checked source `45c3b4d`, [receipt](competence/REJECTED_APPROACH_ADVANCE_CHECKS.json) and [review5 test ZIP](../test-builds/AI-Control-FACC-v0.3.30-dev-review5-45c3b4d-UMM-test.zip), startup MVID `b3359daf-c8e5-4bb6-9245-d6be013a4d15`. 664 unit + 11 inventory tests and native checks pass; actual-reference Release 0 warnings/errors; 0/0 added signatures resolve. Compatible/supplementary audit scopes pass; original full-corpus enum failure remains distinct. Gameplay/matched Unity timing pending.

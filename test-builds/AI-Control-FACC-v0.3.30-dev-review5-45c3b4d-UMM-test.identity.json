@@ -1,0 +1,21 @@
+{
+  "build_label": "review5",
+  "kind": "development-test",
+  "version": "0.3.30",
+  "source_branch": "codex/rejected-approach-advance",
+  "source_commit": "45c3b4dbdeacabf6184329b8e6ce0f675f2de0ee",
+  "starting_commit": "fe2caa71d578a9d417814f9abeef74596ca0c61b",
+  "development_base": "1f58150b8e50f9a322ba0b8d3fcc095fe188420f",
+  "dependency_pr": 44,
+  "dll": {
+    "assembly": "CompanionAI_Pathfinder, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null",
+    "mvid": "b3359daf-c8e5-4bb6-9245-d6be013a4d15",
+    "sha256": "ca7032ac26787c7b6fd3cda8b050d66df87a618908f43d4668dd6827b87461e2",
+    "size": 1364480
+  },
+  "manifest_sha256": "d6ee91e78dc5d4981ad51a1a1a85bb1e7fe3f0a87814697f2fd9ee1c20d35594",
+  "checks_receipt": "docs/competence/REJECTED_APPROACH_ADVANCE_CHECKS.json",
+  "gameplay_status": "not played",
+  "scope": "Cumulative review4/campaign-flag/Shifter/EA prerequisites. After an actual offensive-approach refusal leaves no useful action, lazily price ordinary advances through the existing three-target closing builder. Keep the three-check selected preparation cap, native dispatcher route/hazard/AoO checks, action/status/Pure Mage gates and genuine real-time in-place cooldown waiting. No full Decide retry, reused rejected path or general retreat/commitment/pathfinder/stuck change.",
+  "release": false
+}
