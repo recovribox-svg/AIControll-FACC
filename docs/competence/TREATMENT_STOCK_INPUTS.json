@@ -1,0 +1,28 @@
+{
+  "source": "Uploaded BubblePrints engine and stock 2.7.0x database",
+  "database_sha256": "03ba6e29782c0c14e0c0383cd739560358641f7b5842f1dcfb690246e73c9c6a",
+  "engine_records_read": 236660,
+  "installed_mod_state": false,
+  "records": [
+    {
+      "guid": "4843cb4c23951f54290c5149a4907f54",
+      "name": "LoreReligionUseAbility",
+      "raw_sha256": "df630d3881fc7c61987b1d7bcf0d57978a396ba9b1fd8eda1eb34dc30111774c",
+      "jbp_sha256": "d1dd63e597760d2a00645090223549af1ac0451644d6f9e7a38f67a08bf5108f",
+      "user_export_file": "Classes/Classes/Basic/BasicActions/Skills/LoreReligionUseAbility.jbp",
+      "user_export_sha256": "8cae67fd65f3f53877a702e8bfb6e71c032849eaa31d8fd8574e41dd05265766",
+      "stock_and_export_data_equal_omitting_presentation_name": true
+    },
+    {
+      "guid": "b89dcf508d48da74f8dd5234e6a5eb84",
+      "name": "LoreReligionCooldown",
+      "raw_sha256": "f0834374e1cbded1836cb10cd0c41abd49786346fa272fcc0ba00d03b6279fd4",
+      "jbp_sha256": "070aff7aeeb0a73110bbc47ea2773633cc1ab6d26ceabd69adc26f5924bd0cea",
+      "user_export_file": "Classes/Classes/Basic/BasicActions/Skills/LoreReligionCooldown.jbp",
+      "user_export_sha256": "d5bbaa65c52def00a7bacb19b362018c9729913850754bc3239ea743de2ee83e",
+      "stock_and_export_data_equal_omitting_presentation_name": true
+    }
+  ],
+  "stock_duplicate_records_add_unique_coverage": false,
+  "description": "Ten compatible-scope checks use actual user-exported treatment/marker graphs. Independent stock duplicate Data agrees, without adding unique coverage."
+}

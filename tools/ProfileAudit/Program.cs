@@ -233,6 +233,10 @@ namespace ProfileAudit
             foreach (var line in boundsLines) Console.WriteLine(line);
             File.WriteAllText(output, string.Join(Environment.NewLine, boundsLines) + Environment.NewLine + Environment.NewLine + File.ReadAllText(output));
             blocklistFailures += boundsFailures;
+            var treatmentLines = TreatmentCheck.Run(loaded.Values, out int treatmentFailures);
+            foreach (var line in treatmentLines) Console.WriteLine(line);
+            File.WriteAllText(output, string.Join(Environment.NewLine, treatmentLines) + Environment.NewLine + Environment.NewLine + File.ReadAllText(output));
+            blocklistFailures += treatmentFailures;
             // ★ v0.3.30 test 2: facts whose bonus follows an ability score.
             var statLines = StatLinkCheck.Run(loaded.Values, out int statFailures);
             foreach (var line in statLines) Console.WriteLine(line);

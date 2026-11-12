@@ -4517,7 +4517,11 @@ namespace CompanionAI_Pathfinder.Tactics
                     {
                         // ★ v0.3.5: nothing to remove = nothing to gain; do not fall through to "utility" (Treat Affliction
                         // was offered as utility=1.0 on everyone in 0.3.4).
-                        if (HasSomethingToDispel(unit, target, profile))
+                        // Shared RT: another ally's identical treatment can still be in flight before its native
+                        // exclusion marker arrives. Only withhold this unmodelled removal fallback; healing and
+                        // independently valued effects retain their normal appraisal. Re-evaluate when it finishes.
+                        if (HasSomethingToDispel(unit, target, profile) &&
+                            (targetIsEnemy || !CombatMemory.CastPendingByOther(unit, ability, target)))
                         {
                             value += 2f;
                             reasons.Add("dispel");

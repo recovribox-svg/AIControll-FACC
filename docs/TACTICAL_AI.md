@@ -4850,3 +4850,23 @@ recapture an actor; no claim that all repeated exits are fixed. General pursuit,
 search, pathfinder and stuck cancellation are unchanged. Final receipt records exact tests/build/scopes.
 
 Checked source `9145404`, [receipt](competence/MOVEMENT_BOUNDS_CHECKS.json) and [exit2 test ZIP](../test-builds/AI-Control-FACC-v0.3.30-dev-exit2-9145404-UMM-test.zip), startup MVID `36d0bc00-2822-419e-a10a-d3a60bd536fa`. 629 unit + 11 inventory tests and native checks pass; actual-reference Release 0 warnings/errors; 17/17 added signatures resolve. Compatible/supplementary audit scopes pass; original full-corpus enum failure remains distinct. Gameplay/matched Unity timing pending.
+
+
+## 144. Exit1 follow-up: friendly treatment coordination (12 November 2026)
+
+[Evidence/replay](FRIENDLY_TREATMENT_COORDINATION.md), [stock fixture provenance](competence/TREATMENT_STOCK_INPUTS.json).
+AI 6722–6737 shows two allies beginning Treat Affliction on Seelah; arcan interrupts before acting. Stock
+2.7.0x data read with the supplied BubblePrints engine confirms LoreReligionUseAbility's skill-check removal,
+daily target marker and recipient-wide inverted native fact checker. The actual Classes archive has these graphs too; Data matches the stock cross-check without adding unique coverage.
+
+The unmodelled friendly dispel fallback now skips its +2 when another actor's same ability/recipient command
+is pending. It reuses CombatMemory's existing mode/identity/completion/expiry lifetime; other choices remain
+eligible, and failed/finished commands release the reservation. Recognized HP healing, modelled effects,
+hostile handling and other recipients are unchanged. No resource, context, actor, movement or global cache
+change; one existing pending lookup after a real eligible removal is found.
+
+Ten checks: four compiled lifetime/routes and six actual user-exported graph/checker checks; stock Data
+agrees independently, without adding unique coverage.
+full unit/native suite and real-reference Release recorded in the receipt. No two-actor clock/command race
+is executed offline. Replay shared RT concurrent treatment, interruption/retry, two different recipients,
+ordinary heals and TB. No claim of two consumed cures or a guaranteed skill-check success.
