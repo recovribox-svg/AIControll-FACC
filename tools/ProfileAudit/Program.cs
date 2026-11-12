@@ -225,6 +225,10 @@ namespace ProfileAudit
             foreach (var line in exitLines) Console.WriteLine(line);
             File.WriteAllText(output, string.Join(Environment.NewLine, exitLines) + Environment.NewLine + Environment.NewLine + File.ReadAllText(output));
             blocklistFailures += exitFailures;
+            var staticDebuffLines = StaticDebuffCheck.Run(loaded.Values, out int staticDebuffFailures);
+            foreach (var line in staticDebuffLines) Console.WriteLine(line);
+            File.WriteAllText(output, string.Join(Environment.NewLine, staticDebuffLines) + Environment.NewLine + Environment.NewLine + File.ReadAllText(output));
+            blocklistFailures += staticDebuffFailures;
             // ★ v0.3.30 test 2: facts whose bonus follows an ability score.
             var statLines = StatLinkCheck.Run(loaded.Values, out int statFailures);
             foreach (var line in statLines) Console.WriteLine(line);

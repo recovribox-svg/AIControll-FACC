@@ -818,13 +818,29 @@ namespace CompanionAI_Pathfinder.Tactics
         {
             // An immutable empty parts list cannot gain numbers from a source context. Preserve the old unknown
             // result without constructing a native context for each recipient (e.g. unread marks/debuff carriers).
-            bool anyParts = false;
-            foreach (var buff in buffs) if (BuffPartsReader.Read(buff).Parts.Count > 0) { anyParts = true; break; }
+            bool anyParts = false, needsContext = false;
+            foreach (var buff in buffs)
+                foreach (var part in BuffPartsReader.Read(buff).Parts)
+                {
+                    anyParts = true;
+                    if (BuffAmountNeedsContext(part)) needsContext = true;
+                }
             if (!anyParts) { partial = false; return -1f; }
             MechanicsContext abilityCtx = null;
-            try { abilityCtx = CombatMath.CreateContext(ability, new Kingmaker.Utility.TargetWrapper(enemy)); } catch { }
+            // Fixed/simple parts never read source ranks/parameters. Keep recipient stats and conditional weights
+            // live, and retain a source context when it is needed or the source caster differs from this decision.
+            try
+            {
+                if (needsContext || !ReferenceEquals(ability.Caster?.Unit, ctx.Unit))
+                    abilityCtx = CombatMath.CreateContext(ability, new Kingmaker.Utility.TargetWrapper(enemy));
+            }
+            catch { }
             return DebuffShareIn(ctx, abilityCtx, enemy, buffs, out partial);
         }
+
+        private static bool BuffAmountNeedsContext(BuffPart part) =>
+            part.Value != null && part.Value.ValueType != ContextValueType.Simple || part.Dice != null ||
+            part.Pool != null || part.FormulaBonusByCasterLevel;
 
         /// <summary>★ v0.3.21: the same with a given source context (a buff's on-hit debuff: the buff's context).</summary>
         private static float DebuffShareIn(TacticalContext ctx, MechanicsContext abilityCtx, UnitEntityData enemy, List<BlueprintBuff> buffs,

@@ -4802,3 +4802,25 @@ export audits. No general commitment, retreat, pathfinder, swarm exit geometry o
 Manifest 0.3.30; Claude reviews/integrates; gameplay/matched Unity performance pending.
 
 Checked source `e806f4d`, [receipt](competence/MOVEMENT_EXIT_CHECKS.json) and [exit1 test ZIP](../test-builds/AI-Control-FACC-v0.3.30-dev-exit1-e806f4d-UMM-test.zip), startup MVID `905bb172-799c-44cb-a46a-ff208a31dab4`. 607 unit + 11 inventory tests and native checks pass; actual-reference Release 0 warnings/errors; 4/4 added signatures resolve. Compatible/supplementary audit scopes pass; original full-corpus enum failure remains distinct. Gameplay/matched Unity timing pending.
+
+
+## 142. Exit1 broad review: constant debuff context cost (12 November 2026)
+
+[Review/evidence/replay](EXIT1_PLAYTEST_REVIEW.md), [input identities](EXIT1_PLAYTEST_INPUTS.json).
+The uploaded startup MVID is exit1 `905bb172`; eight fights / 900 summaries (376 TB, 524 RT), no AI exception
+observed. All 658 commands have end records; acted interruptions are distinct from 77 unacted interruptions.
+The step preflight is exercised and projected area exits now reach their inspected ground points, but repeated
+smoke leaves expose a separate native cylinder/box physics-bound membership contract, for the next scoped repair.
+
+`DebuffShareOf` now skips constructing a source context for fixed/simple parts when the actual caster is this
+decision's actor. Dynamic rank/shared/dice/pool/caster-level formulas still bind; recipient level/BAB and caster
+fact checks remain live. No actor simulation, context sharing or cross-decision recipient cache. Native checks
+cover real Bane/Crushing Despair parts, actual scalar evaluation and compiled lazy binding. Slow samples mainly
+identify ability scoring, but thresholded times/net stage heap do not establish total latency or Unity speedup.
+
+Fusion now has supported two-payload combat outcomes; Sleep combinations stay diagnosed. Drow Magus is an
+Eldritch Archer outside C07's melee scope. Four low 4d6 Scorching Ray samples are not a new damage defect.
+Swarms/stat-damage risks are read and swarm exits selected. Friendly in-flight Treat Affliction coordination
+remains a documented gap. No general movement/commitment/retreat/pathfinder/stuck change in this PR.
+Final receipt records real-reference Release, all tests and compatible/supplementary audits separately from
+the original full corpus's named enum load failure. TB/shared RT replay and matched Unity timing remain.
