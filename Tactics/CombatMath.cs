@@ -755,7 +755,7 @@ namespace CompanionAI_Pathfinder.Tactics
             if (!DeliveryWeapon(caster, ability, out var weapon, out _, out _)) return false;
             CriticalOf(caster, weapon, out int range, out int weaponMultiplier);
             ability.IsMagusSpell(out bool magus, out bool eldritchArcher);
-            multiplier = magus || eldritchArcher ? 2 : weaponMultiplier;
+            multiplier = magus || eldritchArcher || TacticalEngine.NativeRangedStrike(caster, ability) ? 2 : weaponMultiplier;
             threat = Mathf.Clamp01(range / 20f);
             if (threat > 0f && CritImmune(caster, target, weapon)) threat = 0f;
             return true;
@@ -2183,6 +2183,11 @@ namespace CompanionAI_Pathfinder.Tactics
             weapon = null;
             stat = null;
             attackType = null;
+            if (TacticalEngine.NativeRangedStrike(caster, ability))
+            {
+                weapon = caster.GetFirstWeapon();
+                return weapon?.Blueprint.IsRanged == true;
+            }
             var bp = SpellDelivery.AttackBlueprint(ability);
             if (bp == null) return false;
             var projectile = Kingmaker.Blueprints.BlueprintExtenstions.GetComponent<Kingmaker.UnitLogic.Abilities.Components.AbilityDeliverProjectile>(bp);

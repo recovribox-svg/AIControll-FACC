@@ -20,13 +20,17 @@ namespace CompanionAI_Pathfinder.Tactics
             private readonly UnitEntityData target;
             internal readonly float Hit, CriticalFactor;
             internal MagusRollScope(AbilityData ability, UnitEntityData target, WeaponAttackEstimate weapon, bool critical = true)
+                : this(ability, target, weapon?.TouchHitChance ?? 1f, weapon?.TouchCritChance ?? 0f, critical) { }
+            private MagusRollScope(AbilityData ability, UnitEntityData target, float hit, float criticalChance, bool critical)
             {
                 this.ability = ability; this.target = target;
-                Hit = weapon?.TouchHitChance ?? 1f;
+                Hit = hit;
                 // ContextActionDealDamage.GetDamageInfo caps a Magus spell's critical multiplier at x2.
-                CriticalFactor = !critical || weapon == null || Hit <= 0f ? 1f : 1f + weapon.TouchCritChance / Hit;
+                CriticalFactor = !critical || Hit <= 0f ? 1f : 1f + criticalChance / Hit;
                 previous = s_MagusRoll; s_MagusRoll = this;
             }
+            internal static MagusRollScope FirstArrow(AbilityData ability, UnitEntityData target, WeaponAttackEstimate weapon, bool critical) =>
+                new MagusRollScope(ability, target, weapon.FirstHitChance, weapon.FirstCritChance, critical);
             internal bool Matches(AbilityData a, UnitEntityData t) => ReferenceEquals(ability, a) && ReferenceEquals(target, t);
             public void Dispose() { s_MagusRoll = previous; }
         }

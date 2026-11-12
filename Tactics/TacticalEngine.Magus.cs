@@ -1,4 +1,4 @@
-// ★ C07: native melee Spellstrike/Spell Combat. At most four useful in-place casts are repriced per state;
+// Native melee/ranged Spellstrike and Spell Combat. At most four useful in-place casts are repriced per state;
 // the two native toggles compete as separate free preparations, with existing ownership and restore rules.
 using System;
 using System.Collections.Generic;
@@ -37,6 +37,7 @@ namespace CompanionAI_Pathfinder.Tactics
         {
             failure = null;
             var native = unit.Get<UnitPartMagus>();
+            if (!ValidateEldritchIssue(unit, candidate, out failure)) return false;
             if (candidate.MagusNeedsStrikeOff && native?.Spellstrike.Active == true)
                 failure = "native Spellstrike must be off for this priced delivery";
             if (candidate.MagusPairedCast && (candidate.MagusSourceStrike && native?.Spellstrike.Active != true ||
@@ -74,11 +75,11 @@ namespace CompanionAI_Pathfinder.Tactics
             internal bool Critical, EndsRegeneration;
         }
 
-        private static bool MeleeMagus(TacticalContext ctx, out UnitPartMagus part)
+        private static bool PlanningMagus(TacticalContext ctx, out UnitPartMagus part)
         {
             part = ctx.Unit.Get<UnitPartMagus>();
             return part != null && (part.SpellCombat.Unlocked || part.Spellstrike.Unlocked) &&
-                !part.EldritchArcher && !PureMagePolicy.IsActive(ctx.Settings);
+                !PureMagePolicy.IsActive(ctx.Settings) && (!part.EldritchArcher || ctx.Unit.GetFirstWeapon()?.Blueprint.IsRanged == true);
         }
         internal static void ConfigureMagusFollowup(UnitAttack attack, bool combat, TimeSpan window)
         {
@@ -98,7 +99,9 @@ namespace CompanionAI_Pathfinder.Tactics
             bool activeModes = true)
         {
             var first = ctx.Unit.GetFirstWeapon();
-            if (ctx.Unit.View == null || target?.View == null || first?.Blueprint?.IsMelee != true ||
+            bool ranged = ctx.Unit.Get<UnitPartMagus>()?.EldritchArcher == true;
+            if (ctx.Unit.View == null || target?.View == null || first == null ||
+                (ranged ? !first.Blueprint.IsRanged : !first.Blueprint.IsMelee) ||
                 !InRangeNow(ctx.Unit, target.Position, UnitAttack.GetApproachRadius(first, ctx.Unit, target), true)) return null;
             // All C07 projections are in place. Reject distant pairs before calculating attacks, AC or damage.
             var root = BlueprintRoot.Instance.SystemMechanics;
@@ -132,21 +135,23 @@ namespace CompanionAI_Pathfinder.Tactics
             var estimate = CombatMath.MagusWeaponAttack(ctx.Unit, target, full, Delta, extra);
             if (!known) AbilityDiscovery.ReportOnce("magus-combat|" + root.MagusSpellCombatBuff?.AssetGuid,
                 () => $"[Magus] {root.MagusSpellCombatBuff?.name ?? "missing combat buff"}: unsupported native attack-penalty graph; projected combo withheld");
-            return known && estimate?.IsRanged == false && ctx.Unit.CanAttack(estimate.Weapon) ? estimate : null;
+            return known && estimate != null && estimate.IsRanged == ranged && ctx.Unit.CanAttack(estimate.Weapon) ? estimate : null;
         }
 
-        private static MagusPayload ReadMagusPayload(TacticalContext ctx, AbilityData held, UnitEntityData target)
+        private static MagusPayload ReadMagusPayload(TacticalContext ctx, AbilityData held, UnitEntityData target, bool ranged = false)
         {
-            if (!ReferenceEquals(ctx.MagusPayloadSource, held))
+            if (!ReferenceEquals(ctx.MagusPayloadSource, held) || ctx.MagusPayloadIsRanged != ranged)
             {
                 ctx.MagusPayloadSource = held;
+                ctx.MagusPayloadIsRanged = ranged;
                 ctx.MagusPayloads = new Dictionary<(UnitEntityData, bool, bool), MagusPayload>();
             }
             var part = ctx.Unit.Get<UnitPartMagus>();
             var key = (target, part.SpellCombat.Active, part.Spellstrike.Active);
             if (ctx.MagusPayloads.TryGetValue(key, out var cached)) return cached;
             var profile = AbilityProfile.Get(held);
-            if (!MagusMechanics.PlainTouch(held, profile) || profile.CasterBuffs.Count > 0 || profile.CasterHeals.Count > 0 ||
+            if (!(ranged ? PlainRangedPayload(held, profile) : MagusMechanics.PlainTouch(held, profile)) ||
+                profile.CasterBuffs.Count > 0 || profile.CasterHeals.Count > 0 ||
                 !held.CanTarget(new TargetWrapper(target))) return ctx.MagusPayloads[key] = null;
             using (CombatMath.MemoizeResistance())
             using (new CombatMath.MagusRollScope(held, target, null))
@@ -166,6 +171,7 @@ namespace CompanionAI_Pathfinder.Tactics
 
         private static float MagusChargeValue(Candidate candidate, WeaponAttackEstimate attack)
         {
+            if (candidate.MagusRangedCharge != null) return RangedPayloadValue(candidate, attack);
             var payload = candidate.MagusCharge;
             if (payload == null || attack == null) return 0f;
             float landed = payload.Damage * (attack.TouchHitChance + (payload.Critical ? attack.TouchCritChance : 0f));
@@ -190,7 +196,7 @@ namespace CompanionAI_Pathfinder.Tactics
             var modes = AttackModes(ctx);
             foreach (var c in candidates)
             {
-                if (c.MagusCharge == null || c.Value <= 0f) continue;
+                if (c.MagusCharge == null && c.MagusRangedCharge == null || c.Value <= 0f) continue;
                 var attack = CombatMath.EstimateWeaponAttack(ctx.Unit, c.Target, c.FullAttack, (weapon, index) =>
                 {
                     int ab = 0; float damage = 0f;
@@ -216,10 +222,10 @@ namespace CompanionAI_Pathfinder.Tactics
 
         private static void AddMagusWeaponCandidates(TacticalContext ctx, List<Candidate> candidates)
         {
-            bool melee = MeleeMagus(ctx, out var part);
-            if (!melee && MagusMechanics.Held(ctx.Unit) == null) return;
-            bool combat = melee && ctx.Unit.PreparedSpellCombat();
-            bool strike = melee && !combat && ctx.Unit.PreparedSpellStrike();
+            bool plans = PlanningMagus(ctx, out var part);
+            if (!plans && MagusMechanics.Held(ctx.Unit) == null) return;
+            bool combat = plans && ctx.Unit.PreparedSpellCombat();
+            bool strike = plans && !combat && ctx.Unit.PreparedSpellStrike();
             if (combat || strike)
             {
                 // Native MagusController owns the free follow-up's shape. An ordinary ForceFullAttack candidate
@@ -229,7 +235,7 @@ namespace CompanionAI_Pathfinder.Tactics
                 {
                     var attack = MagusWeapon(ctx, target, combat, combat, false, activeModes: false);
                     if (attack == null || !InRangeNow(ctx.Unit, target.Position, attack.Reach, true)) continue;
-                    float weight = AttackWeight(ctx, target, false) * WakeFactor(target, attack.ExpectedDamage);
+                    float weight = AttackWeight(ctx, target, attack.IsRanged) * WakeFactor(target, attack.ExpectedDamage);
                     candidates.Add(new Candidate { Kind = CandidateKind.WeaponAttack, Target = target, Offensive = true,
                         Slot = combat ? ActionSlot.Move : ActionSlot.Free, FullAttack = combat,
                         MagusFollowCombat = combat, MagusFollowStrike = strike,
@@ -238,6 +244,7 @@ namespace CompanionAI_Pathfinder.Tactics
                         Key = $"magus-follow:{combat}:{target.UniqueId}" });
                 }
             }
+            if (part?.EldritchArcher == true) AddEldritchPayloads(ctx, candidates);
             var held = MagusMechanics.Held(ctx.Unit);
             if (held == null) return;
             foreach (var candidate in candidates.Where(c => c.Kind == CandidateKind.WeaponAttack && c.Target != null).ToList())
@@ -249,7 +256,7 @@ namespace CompanionAI_Pathfinder.Tactics
                 if (attack == null || attack.TouchHitChance <= 0f) continue;
                 // Remove it before generic attack-mode repricing, which would otherwise restore ordinary weapon value.
                 if (HeldChargeBlocked(ctx, held, candidate.Target)) { candidates.Remove(candidate); continue; }
-                if (!melee || !MagusSpell(part, held)) continue;
+                if (!plans || !MagusSpell(part, held)) continue;
                 var payload = ReadMagusPayload(ctx, held, candidate.Target);
                 if (payload == null) continue;
                 candidate.MagusCharge = payload;
@@ -260,6 +267,7 @@ namespace CompanionAI_Pathfinder.Tactics
 
         private static Candidate PriceMagusCast(TacticalContext ctx, UnitPartMagus part, Candidate source)
         {
+            if (part.EldritchArcher) return PriceEldritchCast(ctx, part, source);
             if (source.Ability == null || source.NeedsMove || source.MoveFirst || source.Target == null ||
                 source.Ability.RuntimeActionType != UnitCommand.CommandType.Standard || !MagusSpell(part, source.Ability)) return null;
             if (source.PureBuff && CombatMath.OnlyDisabledEnemiesLeft) return null;
@@ -317,7 +325,7 @@ namespace CompanionAI_Pathfinder.Tactics
 
         private static void AddMagusCastPlans(TacticalContext ctx, List<Candidate> candidates, bool preview)
         {
-            if (!MeleeMagus(ctx, out var part)) return;
+            if (!PlanningMagus(ctx, out var part)) return;
             if (ctx.Timings == null) { AddMagusCastPlansCore(ctx, candidates, preview, part); return; }
             long started = System.Diagnostics.Stopwatch.GetTimestamp(), heap = GC.GetTotalMemory(false);
             int before = candidates.Count, contexts = CombatMath.ContextsMade, estimates = CombatMath.DamageEstimates;
@@ -338,17 +346,22 @@ namespace CompanionAI_Pathfinder.Tactics
         {
             ReportOnce($"magus-state|{ctx.Unit.UniqueId}|{CombatMemory.Fight}", $"[Magus] {ctx.Unit.CharacterName}: " +
                 $"native Spell Combat {part.SpellCombat.Active}/{part.SpellCombat.Unlocked}, Spellstrike {part.Spellstrike.Active}/{part.Spellstrike.Unlocked}; " +
-                $"held {MagusMechanics.Held(ctx.Unit)?.Blueprint?.name ?? "none"}; native eligibility/clock owns follow-ups");
+                $"{(part.EldritchArcher ? "ranged armed " + (part.EldritchArcherSpell?.Blueprint?.name ?? "none") : "held " + (MagusMechanics.Held(ctx.Unit)?.Blueprint?.name ?? "none"))}; native eligibility/clock owns follow-ups");
             var available = candidates.Where(c => c.Kind == CandidateKind.Ability && c.Ability != null && c.Target != null &&
                 c.Slot == ActionSlot.Standard && !c.NeedsMove && !c.MoveFirst && c.Value > 0f &&
                 !PointlessAgainstHelpless(ctx, c, preview: true) && MagusSpell(part, c.Ability))
                 .OrderByDescending(c => c.Value).GroupBy(c => c.Ability).Select(g => g.First()).ToArray();
-            var touch = available.FirstOrDefault(c => MagusMechanics.PlainTouch(c.Ability, AbilityProfile.Get(c.Ability)));
+            var touch = available.FirstOrDefault(c => part.EldritchArcher
+                ? part.IsSuitableForEldritchArcherSpellStrike(c.Ability)
+                : MagusMechanics.PlainTouch(c.Ability, AbilityProfile.Get(c.Ability)));
             var sources = (touch == null ? available : new[] { touch }.Concat(available)).Distinct().Take(4).ToArray();
             foreach (var source in sources)
             {
                 var paired = PriceMagusCast(ctx, part, source);
-                if (paired != null && paired.Value > source.Value) { candidates.Remove(source); candidates.Add(paired); }
+                // An active ranged Spellstrike source cannot choose a standalone ray: the game queues an arrow.
+                bool mandatory = part.EldritchArcher && NativeRangedStrike(ctx.Unit, source.Ability);
+                if (paired != null && (paired.Value > source.Value || mandatory)) { candidates.Remove(source); candidates.Add(paired); }
+                else if (mandatory) source.MagusNeedsStrikeOff = true;
             }
             if (preview || !(ctx.Global?.AiManagesToggles ?? true) || ctx.Unit.PreparedSpellCombat() || ctx.Unit.PreparedSpellStrike()) return;
             float baseline = candidates.Where(c => c.Value > 0f && Affordable(ctx, c) && !QuickAction(c)).Select(c => c.Value).DefaultIfEmpty(0f).Max();
@@ -370,7 +383,9 @@ namespace CompanionAI_Pathfinder.Tactics
                 {
                     foreach (var source in sources)
                     {
-                        if (kind == MagusMechanics.Mode.Strike && !MagusMechanics.PlainTouch(source.Ability, AbilityProfile.Get(source.Ability))) continue;
+                        if (kind == MagusMechanics.Mode.Strike && !(part.EldritchArcher
+                            ? part.IsSuitableForEldritchArcherSpellStrike(source.Ability)
+                            : MagusMechanics.PlainTouch(source.Ability, AbilityProfile.Get(source.Ability)))) continue;
                         var option = PriceMagusCast(ctx, part, source) ?? EvaluateAbility(ctx, source.Ability, onlyTarget: source.Target).FirstOrDefault();
                         if (part.Spellstrike.Active && ReferenceEquals(source.Ability, MagusMechanics.Held(ctx.Unit)))
                         {
@@ -403,7 +418,7 @@ namespace CompanionAI_Pathfinder.Tactics
                         if (attack == null || !InRangeNow(ctx.Unit, target.Position, attack.Reach, true)) continue;
                         if (MagusMechanics.Held(ctx.Unit) is AbilityData held &&
                             attack.TouchHitChance > 0f && HeldChargeBlocked(ctx, held, target)) continue;
-                        float value = DamageValue(target, attack) * AttackWeight(ctx, target, false);
+                        float value = DamageValue(target, attack) * AttackWeight(ctx, target, attack.IsRanged);
                         if (value > future) { future = value; planned = "native weapon attack"; }
                     }
                 }

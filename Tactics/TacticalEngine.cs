@@ -57,6 +57,7 @@ namespace CompanionAI_Pathfinder.Tactics
         // Decision-local constraint for the native path of an area escape; never retained by a game command.
         internal Func<IList<Vector3>, string> PathConstraint;
         internal TacticalEngine.MagusPayload MagusCharge;
+        internal TacticalEngine.MagusPayload MagusRangedCharge;
         internal bool MagusFollowCombat, MagusFollowStrike, MagusPairedCast, MagusSourceStrike, MagusNeedsStrikeOff;
         internal float MagusCompletionFactor;
         /// <summary>Damages or disables an enemy (as opposed to buffs, heals, utility).</summary>
@@ -142,6 +143,7 @@ namespace CompanionAI_Pathfinder.Tactics
         internal List<AbilityData> AllowedAbilities;
         internal Dictionary<(UnitEntityData, bool, bool), TacticalEngine.MagusPayload> MagusPayloads;
         internal AbilityData MagusPayloadSource;
+        internal bool MagusPayloadIsRanged;
         /// <summary>★ user-ability-blacklist: what a held touch charge the lists block would be worth delivered: it is kept for
         /// the player, and casting another spell over it (which drops it) still pays for it (PriceHeldCharge).</summary>
         internal float ReservedChargeValue;
@@ -621,6 +623,7 @@ namespace CompanionAI_Pathfinder.Tactics
         /// </summary>
         private static void PriceHeldCharge(TacticalContext ctx, List<Candidate> candidates)
         {
+            PriceEldritchReservation(ctx, candidates);
             if (CastOutcome.HeldChargeOf(ctx.Unit) == null) return;
             var charges = candidates.Where(c => c.Kind == CandidateKind.Ability && c.Ability?.StickyTouch != null).ToList();
             float magusHeld = MagusChargeReservation(ctx, candidates);
@@ -3382,6 +3385,8 @@ namespace CompanionAI_Pathfinder.Tactics
 
                 int gather = CombatMath.GatherPowerCount(ctx.Unit, ability);
                 bool strikeNeedsOff = false;
+                if (NativeRangedStrike(ctx.Unit, ability))
+                    strikeNeedsOff = !SafeRangedSource(ctx.Unit, ability, target, profile);
                 if (nativeMagus?.Spellstrike.Active == true && !nativeMagus.EldritchArcher && ctx.Unit.IsEnemy(target) &&
                     ability.Blueprint.StickyTouch != null && MagusSpell(nativeMagus, ability))
                 {
@@ -5421,13 +5426,17 @@ namespace CompanionAI_Pathfinder.Tactics
                 bool watch = profile != null && !profile.SpawnedAreas.Any() && !profile.Summons && !profile.IsCharge;
                 bool ownLogic = Kingmaker.Blueprints.BlueprintExtenstions.GetComponent<Kingmaker.UnitLogic.Abilities.Components.Base.AbilityCustomLogic>(c.Ability.Blueprint) != null;
                 // Blocking also needs effects on the target itself: an ability aimed at an enemy may only buff its caster.
-                CastOutcome.Begin(unit, c.Ability, c.Target, command, IsVerifiable(profile), watchTarget: watch,
-                                  blockOnNoReach: !ownLogic && profile != null && profile.HasTargetEffects,
+                bool rangedArm = NativeRangedStrike(unit, c.Ability);
+                CastOutcome.Begin(unit, c.Ability, c.Target, command, !rangedArm && IsVerifiable(profile), watchTarget: watch && !rangedArm,
+                                  blockOnNoReach: !rangedArm && !ownLogic && profile != null && profile.HasTargetEffects,
                                   area: profile != null && profile.IsAoE, intendedBuffs: profile?.TargetBuffs);
             }
             else if (issued)
             {
-                if (c.MagusCharge != null)
+                if (c.MagusRangedCharge != null)
+                    CastOutcome.Begin(unit, c.MagusRangedCharge.Ability, c.Target, command, verifiable: false,
+                        watchTarget: true, blockOnNoReach: false);
+                else if (c.MagusCharge != null)
                 {
                     // Observe a weapon attempt separately from casting the source again. A missed weapon keeps its
                     // native charge and must not blacklist the touch spell as a silent/target-specific failure.

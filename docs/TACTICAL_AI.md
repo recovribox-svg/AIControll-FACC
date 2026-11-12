@@ -4872,3 +4872,25 @@ is executed offline. Replay shared RT concurrent treatment, interruption/retry, 
 ordinary heals and TB. No claim of two consumed cures or a guaranteed skill-check success.
 
 Checked source `9464c2d`, [receipt](competence/TREATMENT_PENDING_CHECKS.json) and [review2 test ZIP](../test-builds/AI-Control-FACC-v0.3.30-dev-review2-9464c2d-UMM-test.zip), startup MVID `a21cbb58-f176-4d4a-8ec2-cf912910bc3e`. 629 unit + 11 inventory tests and native checks pass; actual-reference Release 0 warnings/errors; 0/0 added signatures resolve. Compatible/supplementary audit scopes pass; original full-corpus enum failure remains distinct. Gameplay/matched Unity timing pending.
+
+
+## 145. Requested Eldritch Archer support (12 November 2026)
+
+[Native design/replay and PR #38 trade-offs](ELDRITCH_ARCHER.md). Starts at review2 / PR #40 `8985e40` over
+fetched development `1f58150`. Drow Magus was explicitly outside C07's melee planner; native ranged features
+now join that bounded four-cast/two-state planner, with the same ownership/settings/lists/restore rules.
+
+Native ranged Spellstrike arms a spell and queues a weapon action. Its first arrow invokes/spends the payload
+even on a miss; the entire simple projectile spell reuses that roll. No first-successful-melee aggregation
+or payload per iterative/Manyshot. Correct bow AC/typed penalty, native extra attack, shared overkill and
+x2 spell critical; physical damage keeps its native multiplier. Actual prepared windows, finite deadlines
+and full/single flags govern continuations. Safe in-place native delivery and cleanup are checked at issue.
+Pending sources are not re-armed; casting over them loses marginal payload value. Arming alone cannot become
+a false no-effect/blacklist verdict. No fake actor, equipment/buff activation or command in forecasts.
+
+25 native exported/scalar/compiled-route checks plus inherited suites; exact receipt records final tests and
+actual-reference build. Standard ordinary simple-ray pairs are modelled; hard control, Fusion, controlled
+projectiles and caster-side combinations retain documented limits/off-state handling. Native Swift remains
+guarded without speculative full-routine credit. Pure Mage and ordinary ranged policies remain. Shared TB/RT
+only; legacy RT, general movement/commitment/retreat/pathfinder/stuck policies are not retuned. Gameplay and
+matched Unity timing pending. The requested Shifter/Ulbrig work is separate.
