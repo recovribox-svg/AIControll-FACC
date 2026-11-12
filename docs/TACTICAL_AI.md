@@ -4780,3 +4780,23 @@ Area-exit geometry is separate; no commitment, retreat, pathfinder or stuck-canc
 Manifest 0.3.30; Claude reviews/integrates; gameplay and matched Unity timing pending.
 
 Checked source `ee24df1`, [receipt](competence/MOVEMENT_STEP_CHECKS.json) and [step1 test ZIP](../test-builds/AI-Control-FACC-v0.3.30-dev-step1-ee24df1-UMM-test.zip), startup MVID `9523fbe4-edb2-46b5-9fbe-e430636c9634`. 607 unit + 11 inventory tests and native checks pass; actual-reference Release 0 warnings/errors; 0/0 added signatures resolve. Compatible/supplementary audit scopes pass; original full-corpus enum failure remains distinct. Gameplay/matched Unity timing pending.
+
+
+## 141. Approved movement: native reachable area exits (12 November 2026)
+
+[Design/replay](MOVEMENT_AREA_EXITS.md) and [native contracts](competence/MOVEMENT_EXIT_NATIVE.json) describe
+the second approved movement proposal atop PR #36 `ac7d0df` / development `1f58150`. The common exit search
+uses native nearest-surface and linecast endpoints, preserving connected-floor geometry and adding the existing
+0.15 m stopping radius to native body clearance. This addresses the confirmed requested-height/ground mismatch
+without claiming every repeated smoke exit has the same cause.
+
+Shared unmounted escapes carry a decision-local endpoint/actual-route-budget check through selected preflight
+and issue. Missing, invalid, still-inside or unaffordable routes cannot earn a verified escape; ordinary moves
+retain their fallback. The three-plan budget and 80 hints remain; one ground start is reused, with no full path
+per hint, actor/context factory or native action simulation. Mounted/legacy dispatch stays outside the new path
+constraint; the common search still supplies their projected destination. Native steering/area movement after
+issue needs live replay.
+
+Final receipt/test identity records unit/native checks, actual-reference Release and distinct compatible/full
+export audits. No general commitment, retreat, pathfinder, swarm exit geometry or stuck-cancellation retuning.
+Manifest 0.3.30; Claude reviews/integrates; gameplay/matched Unity performance pending.

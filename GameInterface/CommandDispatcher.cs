@@ -110,7 +110,7 @@ namespace CompanionAI_Pathfinder.GameInterface
         /// ally or a corner can pass enemies the straight line did not.</param>
         public static bool Run(UnitEntityData unit, UnitCommand command, string label, out string failure, bool avoidAreas = false,
                                bool fiveFootOnly = false, Func<IList<Vector3>, List<UnitEntityData>> pathAttackers = null,
-                               int pricedAttacks = 0)
+                               int pricedAttacks = 0, Func<IList<Vector3>, string> pathConstraint = null)
         {
             failure = null;
             if (unit == null || command == null)
@@ -131,7 +131,7 @@ namespace CompanionAI_Pathfinder.GameInterface
             try
             {
                 if (!TryPrepare(unit, command, out float pathLength, out bool hasPath, out failure,
-                                avoidAreas, fiveFootOnly, pathAttackers, pricedAttacks, preflight: false))
+                                avoidAreas, fiveFootOnly, pathAttackers, pricedAttacks, preflight: false, pathConstraint: pathConstraint))
                 {
                     CommandTrace.LogRejected(unit, command, label, failure);
                     return false;
@@ -177,7 +177,7 @@ namespace CompanionAI_Pathfinder.GameInterface
         /// </summary>
         public static bool CanPrepare(UnitEntityData unit, UnitCommand command, out string failure, bool avoidAreas = false,
                                       bool fiveFootOnly = false, Func<IList<Vector3>, List<UnitEntityData>> pathAttackers = null,
-                                      int pricedAttacks = 0)
+                                      int pricedAttacks = 0, Func<IList<Vector3>, string> pathConstraint = null)
         {
             failure = null;
             try
@@ -192,7 +192,7 @@ namespace CompanionAI_Pathfinder.GameInterface
                         attack.PlannedAttack?.Hand?.Weapon ?? unit.GetFirstWeapon(), unit, attack.Target);
                 }
                 return TryPrepare(unit, command, out _, out _, out failure,
-                                  avoidAreas, fiveFootOnly, pathAttackers, pricedAttacks, preflight: true);
+                                  avoidAreas, fiveFootOnly, pathAttackers, pricedAttacks, preflight: true, pathConstraint: pathConstraint);
             }
             catch (Exception ex)
             {
@@ -214,7 +214,7 @@ namespace CompanionAI_Pathfinder.GameInterface
         private static bool TryPrepare(UnitEntityData unit, UnitCommand command, out float pathLength, out bool hasPath,
                                        out string failure, bool avoidAreas, bool fiveFootOnly,
                                        Func<IList<Vector3>, List<UnitEntityData>> pathAttackers, int pricedAttacks,
-                                       bool preflight)
+                                       bool preflight, Func<IList<Vector3>, string> pathConstraint)
         {
             pathLength = 0f;
             hasPath = false;
@@ -244,6 +244,11 @@ namespace CompanionAI_Pathfinder.GameInterface
 
                 if (!TryAttachPath(unit, command, out pathLength, out failure))
                 {
+                    return false;
+                }
+                if (pathConstraint != null && (failure = PathConstraintFailure(pathConstraint, command.ForcedPath?.vectorPath)) != null)
+                {
+                    command.ForcedPath = null;
                     return false;
                 }
 
@@ -352,12 +357,21 @@ namespace CompanionAI_Pathfinder.GameInterface
             // unit's seeker, which may be steering the unit right now) and only checked, never attached: the game
             // still walks its own path; a refused option makes the engine take the next best one.
             // ★ v0.3.20 (test8): and against attacks of opportunity, on the same walk (asked once for both checks).
-            else if ((avoidAreas || pathAttackers != null) && RealTimeWalkRefused(unit, command, avoidAreas, pathAttackers,
-                pricedAttacks, out failure, diagnostics: !preflight))
+            else if ((avoidAreas || pathAttackers != null || pathConstraint != null) && RealTimeWalkRefused(unit, command, avoidAreas, pathAttackers,
+                pricedAttacks, out failure, diagnostics: !preflight, pathConstraint: pathConstraint))
             {
                 return false;
             }
+            if (pathConstraint != null && !command.ShouldUnitApproach &&
+                (failure = PathConstraintFailure(pathConstraint, new[] { unit.Position })) != null) return false;
             return true;
+        }
+
+        private static string PathConstraintFailure(Func<IList<Vector3>, string> constraint, IList<Vector3> path)
+        {
+            if (constraint == null) return null;
+            try { return constraint(path); }
+            catch (Exception ex) { return "exit path validation unavailable: " + ex.GetType().Name; }
         }
 
         /// <summary>Convenience overload for call sites that only log failures.</summary>
@@ -441,7 +455,7 @@ namespace CompanionAI_Pathfinder.GameInterface
         /// </summary>
         private static bool RealTimeWalkRefused(UnitEntityData unit, UnitCommand command, bool avoidAreas,
                                                 Func<IList<Vector3>, List<UnitEntityData>> pathAttackers, int pricedAttacks,
-                                                out string failure, bool diagnostics)
+                                                out string failure, bool diagnostics, Func<IList<Vector3>, string> pathConstraint)
         {
             failure = null;
             if (CombatController.IsInTurnBasedCombat() || !unit.IsInCombat || unit.RiderPart != null) return false;
@@ -455,15 +469,18 @@ namespace CompanionAI_Pathfinder.GameInterface
                 float half = Vector3.Distance(start, goal) * 0.5f;
                 bool areaCheck = avoidAreas && Analysis.AoeDangerAnalyzer.HarmfulAreaNear(unit, middle, half + 3f);
                 bool attackCheck = pathAttackers != null && EnemyNear(unit, middle, half + 4f);
-                if (!areaCheck && !attackCheck)
+                if (!areaCheck && !attackCheck && pathConstraint == null)
                 {
                     if (diagnostics) LogWalkPath(unit, command, null, "nearby-risk gate skipped path query", areaCheck, attackCheck, pricedAttacks);
                     return false;
                 }
                 var walk = RealTimeWalk(start, goal);
-                if (diagnostics) LogWalkPath(unit, command, walk, walk == null ? "no native path answer; existing policy permits move" : "native path returned",
+                if (diagnostics) LogWalkPath(unit, command, walk, walk == null
+                    ? pathConstraint == null ? "no native path answer; existing policy permits move" : "no native path answer; exit cannot be validated"
+                    : "native path returned",
                     areaCheck, attackCheck, pricedAttacks);
-                if (walk == null) return false;   // no answer: the move is not refused for it
+                if (pathConstraint != null && (failure = PathConstraintFailure(pathConstraint, walk)) != null) return true;
+                if (walk == null) return false;   // Other moves retain their existing no-answer policy.
                 if (areaCheck && PathEntersArea(unit, walk, command, out string area))
                 {
                     failure = $"{WalksIntoAreaFailure} {area}";
@@ -473,9 +490,11 @@ namespace CompanionAI_Pathfinder.GameInterface
             }
             catch (Exception ex)
             {
-                Main.Verbose($"[Dispatch] {unit.CharacterName}: real-time path check skipped: {ex.Message}");
+                Main.Verbose($"[Dispatch] {unit.CharacterName}: real-time " +
+                    (pathConstraint == null ? "path check skipped: " : "exit validation unavailable: ") + ex.Message);
                 if (diagnostics) LogWalkPath(unit, command, null, "path check exception: " + ex.GetType().Name,
                     false, false, pricedAttacks);
+                if (pathConstraint != null) { failure = "exit path validation unavailable: " + ex.GetType().Name; return true; }
                 return false;
             }
         }

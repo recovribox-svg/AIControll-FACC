@@ -23,7 +23,7 @@ namespace CompanionAI_Pathfinder.Analysis
     /// - 이동 방해 효과 (Grease, Entangle, Web 등)
     /// - 지속 피해 지역 (Cloudkill, Blade Barrier 등)
     /// </summary>
-    public static class AoeDangerAnalyzer
+    public static partial class AoeDangerAnalyzer
     {
         #region Constants
 
@@ -479,6 +479,18 @@ namespace CompanionAI_Pathfinder.Analysis
             /// without the body sent Orvath out of a Stinking Cloud in three walks (3.3 m, 1.6 m, 1.0 m).
             /// </summary>
             public bool IsOutside(Vector3 point) => Areas.All(a => !Covers(a, point, Corpulence));
+
+            internal bool IsOutsideWithClearance(Vector3 point, float clearance)
+            {
+                foreach (var area in Areas)
+                {
+                    if (!IsLive(area)) continue;
+                    if (area.Blueprint?.Shape == AreaEffectShape.AllArea) return false;
+                    var shape = area.View?.Shape;
+                    if (shape == null || shape.Contains(point, Corpulence + clearance)) return false;
+                }
+                return true;
+            }
         }
 
         /// <summary>
@@ -783,16 +795,20 @@ namespace CompanionAI_Pathfinder.Analysis
             try
             {
                 var enemies = unit.CombatState?.EngagedBy?.Where(e => e != null).ToList() ?? new List<UnitEntityData>();
+                var start = ObstacleAnalyzer.GetNearestNode(unit.Position, null);
+                if (start.node == null) return null;
                 foreach (float ring in new[] { 1.5f, 3f, 4.5f, 6f, 9f })
                 {
                     if (ring > maxDistance) break;
                     for (int i = 0; i < 16; i++)
                     {
                         float angle = i * 22.5f * Mathf.Deg2Rad;
-                        var point = unit.Position + new Vector3(Mathf.Cos(angle), 0f, Mathf.Sin(angle)) * ring;
-                        if (!inside.IsOutside(point)) continue;
+                        // The native inside-navmesh test ignores Y. Sample this actor's walkable surface, then
+                        // test the projected/traced endpoint, rather than a point at its current visual height.
+                        var requested = new Vector3(unit.Position.x, start.position.y, unit.Position.z) +
+                            new Vector3(Mathf.Cos(angle), 0f, Mathf.Sin(angle)) * ring;
+                        if (!TryProjectExit(start, requested, maxDistance, inside, out var point)) continue;
                         if (EnteringDanger(unit, unit.Position, point, out _) > 0f) continue;
-                        if (!IsPositionValid(unit.Position, point)) continue;
                         bool keeps = prefer?.Invoke(point) ?? false;
                         // Shortest way out; away from whoever engages the unit as a tie-break.
                         float away = enemies.Count > 0 ? Math.Min(10f, enemies.Min(e => Vector3.Distance(point, e.Position))) : 0f;

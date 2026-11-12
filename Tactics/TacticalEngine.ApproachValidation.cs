@@ -68,7 +68,7 @@ namespace CompanionAI_Pathfinder.Tactics
                         var counter = c.RiskAt.HasValue ? RealPathCounter(ctx, c) : c.CountPathAttackers;
                         bool ready = CommandDispatcher.CanPrepare(ctx.Unit, command, out string failure,
                             avoidAreas: avoidAreas, fiveFootOnly: IsFiveFootStepKey(c.Key) && !CombatMemory.IsRealTime,
-                            pathAttackers: counter, pricedAttacks: PricedAttacks(c));
+                            pathAttackers: counter, pricedAttacks: PricedAttacks(c), pathConstraint: c.PathConstraint);
                         if (!ready) failures[c] = failure ?? "approach unavailable";
                         return ready;
                     }

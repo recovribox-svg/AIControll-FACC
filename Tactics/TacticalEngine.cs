@@ -54,6 +54,8 @@ namespace CompanionAI_Pathfinder.Tactics
         public int GatherPower;
         public float ApproachRadius;
         public bool NeedLoS;
+        // Decision-local constraint for the native path of an area escape; never retained by a game command.
+        internal Func<IList<Vector3>, string> PathConstraint;
         internal TacticalEngine.MagusPayload MagusCharge;
         internal bool MagusFollowCombat, MagusFollowStrike, MagusPairedCast, MagusSourceStrike, MagusNeedsStrikeOff;
         internal float MagusCompletionFactor;
@@ -4988,7 +4990,8 @@ namespace CompanionAI_Pathfinder.Tactics
                 if (ctx.Permissions.MovementOnly) ctx.LeaveNote = "not inside a harmful area (its effect outlasts it)";
                 return;
             }
-            float maxDistance = Math.Min(9f, ctx.HasMove ? ctx.MoveRange : unit.CurrentSpeedMps * 3f);
+            float moveBudget = ctx.HasMove ? ctx.MoveRange : unit.CurrentSpeedMps * 3f;
+            float maxDistance = Math.Min(9f, moveBudget);
             if (maxDistance < 1f)
             {
                 ctx.LeaveNote = $"in {inside.Name ?? "a harmful area"}, no movement left to leave it";
@@ -5059,7 +5062,8 @@ namespace CompanionAI_Pathfinder.Tactics
             list.Add(new Candidate
             {
                 // Close to the spot: it was chosen with the unit's body just outside the area.
-                Kind = CandidateKind.Move, Slot = ActionSlot.Move, Point = best, ApproachRadius = 0.15f,
+                Kind = CandidateKind.Move, Slot = ActionSlot.Move, Point = best, ApproachRadius = AoeDangerAnalyzer.ExitArrivalRadius,
+                PathConstraint = unit.RiderPart == null ? AoeDangerAnalyzer.ExitPathCheck(inside, moveBudget) : null,
                 Value = value,
                 Label = label, Key = "move:leave-area",
                 Risk = risk, RiskAt = best, PreRiskValue = preRisk   // ★ v0.3.20 (test8): its real walk is counted too
@@ -5371,7 +5375,8 @@ namespace CompanionAI_Pathfinder.Tactics
             // ★ v0.3.18 (test10): a 5-foot step must be one (CommandDispatcher refuses a longer path).
             bool issued = CommandDispatcher.Run(unit, command, c.Label, out failure, avoidAreas: c.CheckPath,
                                                 fiveFootOnly: IsFiveFootStepKey(c.Key) && !CombatMemory.IsRealTime,
-                                                pathAttackers: c.CountPathAttackers, pricedAttacks: PricedAttacks(c));
+                                                pathAttackers: c.CountPathAttackers, pricedAttacks: PricedAttacks(c),
+                                                pathConstraint: c.PathConstraint);
             // ★ v0.3.18 (AA-3, review): the attack's modes once the dispatcher has taken the attack - before, a refused
             // attack left them switched (and locked for the round) for whatever option came next. The attack rolls on
             // later ticks; Fighting Defensively starts on the attack itself (RuleAttackWithWeapon).

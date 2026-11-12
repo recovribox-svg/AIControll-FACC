@@ -221,6 +221,10 @@ namespace ProfileAudit
             foreach (var line in stepLines) Console.WriteLine(line);
             File.WriteAllText(output, string.Join(Environment.NewLine, stepLines) + Environment.NewLine + Environment.NewLine + File.ReadAllText(output));
             blocklistFailures += stepFailures;
+            var exitLines = AreaExitCheck.Run(loaded.Values, out int exitFailures);
+            foreach (var line in exitLines) Console.WriteLine(line);
+            File.WriteAllText(output, string.Join(Environment.NewLine, exitLines) + Environment.NewLine + Environment.NewLine + File.ReadAllText(output));
+            blocklistFailures += exitFailures;
             // ★ v0.3.30 test 2: facts whose bonus follows an ability score.
             var statLines = StatLinkCheck.Run(loaded.Values, out int statFailures);
             foreach (var line in statLines) Console.WriteLine(line);
