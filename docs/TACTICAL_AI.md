@@ -5091,3 +5091,26 @@ the package to play.
 - Tome burn on Orvath.
 - Toggle cost horizons.
 - Decision timings with the eleven-member party.
+## 151. Proposed owned-summon control: planning handoff (12 November 2026)
+
+This is a plan for Claude, checked against integrated development `44b224f`; no summon-control feature is implemented.
+[Plan](SUMMON_CONTROL_PLAN.md) · [native/blueprint/input evidence](competence/SUMMON_CONTROL_EVIDENCE.json).
+
+The supplied guide assumed `TickBrain` could not run in TB. Supplied native `TurnController.Prepare` / `Tick`
+call `AiBrainController.ForceTick`, which services the current non-controllable rider. The plan uses those natural
+AI callbacks plus a narrow post-Prepare initialization service, retaining existing drivers and bounded completion.
+It avoids a controllability getter or Status patch; phase, no-action, exception and disabled-mode replay are gates.
+
+The first slice is default-off combat control of directly owned, linked, non-swarm summons, with pets unchanged.
+Settings upserts also exist outside the control gate; temporary actor/recipient reads and owner blocklist scope are
+required. The combat view keeps Mixed/default role/Pure Mage off, inheriting owner safety/heal/spell policy only.
+Upkeep/pre-buff/UI exclusions, recognized summon-cast/item guards and weak RT pacing lifetime prevent auxiliary leaks.
+Existing path/target/retreat/stuck policies and frame budget are reused. Ordinary elemental actors are not native
+swarm bodies merely because Elemental Swarm created them; pre-fight automation remains outside scope.
+
+Showcase rankings are not code rules. Native full attacks already include hands and additional limbs. Recent
+mixed-party logs do not establish cheap summon decisions; matched mode/cohort/frame observations must judge cost.
+Claude owns implementation/integration; Codex continues reviews/interim coding. No release/version or game code change.
+
+Planning baseline checks: 664 unit + 27 inventory, real-reference Release 0 warnings/errors, compatible ProfileAudit and
+native toggle 98 checks pass ([receipt](competence/SUMMON_CONTROL_PLAN_CHECKS.json)). Feature code and gameplay remain unimplemented/untested.

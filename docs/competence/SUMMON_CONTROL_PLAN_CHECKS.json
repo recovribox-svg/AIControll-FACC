@@ -1,0 +1,63 @@
+{
+  "task": "Summon control planning handoff; no feature implementation",
+  "planning_baseline": "44b224f5af76dc5f5ae6086d6abbfbdeac790627",
+  "checked_plan_revision": "f85819124812443c99a915948fa1a911f65b0690",
+  "document_checks": {
+    "markdown_relative_links_verified": 46,
+    "required_plan_sections": 9,
+    "native_records": 8,
+    "original_blueprint_hashes_verified": 19,
+    "source_code_changes": 0,
+    "feature_runtime_checks": "not implemented / not run"
+  },
+  "checked_existing_code": {
+    "source_unchanged_from_planning_baseline": true,
+    "release_warning_count": 0,
+    "release_error_count": 0,
+    "unit_passed": 664,
+    "unit_failed": 0,
+    "unit_skipped": 0,
+    "inventory_passed": 27,
+    "inventory_failed": 0,
+    "profile_audit": {
+      "scope": "Existing native-compatible scope; not every possible installed mod graph",
+      "loaded": 44637,
+      "load_failures": 0,
+      "abilities": 4807,
+      "ability_errors": 0,
+      "affliction_checks": 4,
+      "swarm_cast_checks": 27,
+      "attached_damage_checks": 24,
+      "failures": 0,
+      "known_original_full_corpus_limit": "AchaekekSacredWeaponFeature enum mismatch remains outside this compatible scope; original full corpus not rerun in this planning task."
+    },
+    "toggle_native": {
+      "checks": 98,
+      "failures": 0,
+      "psionics_provider": true
+    },
+    "build_identity": {
+      "assembly": "CompanionAI_Pathfinder, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null",
+      "mvid": "95b31766-cdb8-44b2-8dd6-6732d61d595e",
+      "sha256": "1483d5f2cb7f069b84b7925e44426ba720307b1442d3385e31161e0e5ea91cd9",
+      "size": 1364480
+    }
+  },
+  "artifact_log_hashes": {
+    "unit.log": "0516bb84c2608aca581143dbf91d0355ceb3f3cc05c429a8bad3097885859864",
+    "inventory.log": "9a7dbc8f9cefa0950970a8beaad784b36dca75137a059629f1d64bea1f39f527",
+    "release.log": "43f7ac5282d900b99abf1854a8b0c213f23d63ec33cf78f4efdbbd2489fe3841",
+    "strict-run.txt": "5ede6305d0be4586d87f16d9659f8dd8393da6d9dc58b338ad20cd824e7180a0",
+    "native-run.txt": "6e9edfbfa370145adb116ab99c3b3707891c252ed5a6bd103635ce18370a44c0"
+  },
+  "feature_state": {
+    "code_implemented": false,
+    "native_actor_or_unity_gameplay_executed": false,
+    "feature_performance_measured": false,
+    "new_game_test_zip": false
+  },
+  "limits": [
+    "Existing-code checks are baseline regressions, not tests of the proposed feature.",
+    "All new feature eligibility/settings/lifecycle/native and gameplay checks in the plan are still to be implemented/run by Claude."
+  ]
+}
