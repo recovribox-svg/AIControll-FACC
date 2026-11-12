@@ -4826,3 +4826,25 @@ Final receipt records real-reference Release, all tests and compatible/supplemen
 the original full corpus's named enum load failure. TB/shared RT replay and matched Unity timing remain.
 
 Checked source `318b52f`, [receipt](competence/EXIT1_REVIEW_CHECKS.json) and [review1 test ZIP](../test-builds/AI-Control-FACC-v0.3.30-dev-review1-318b52f-UMM-test.zip), startup MVID `ffce03c5-bfe3-414f-b6bd-4a946d673dbf`. 607 unit + 11 inventory tests and native checks pass; actual-reference Release 0 warnings/errors; 0/0 added signatures resolve. Compatible/supplementary audit scopes pass; original full-corpus enum failure remains distinct. Gameplay/matched Unity timing pending.
+
+
+## 143. Approved exits: native entity-bound geometry (12 November 2026)
+
+[Design/native evidence/replay](MOVEMENT_EXIT_BOUNDS.md), [assembly contracts](competence/MOVEMENT_BOUNDS_NATIVE.json).
+Exit1's eight-fight capture demonstrates projected destinations but still repeated short smoke leaves. Native
+cylinder/box membership queries the entity-bounds physics scene, skipping shape Contains for those branches.
+The former forecast did not establish parity. The scoped repair reads actual sphere world bounds and centre
+offset; numerical sphere/capsule and sphere/oriented-box tests use the native query's world geometry, with
+the existing 0.15 m arrival clearance. Other shapes keep their native Contains branch.
+
+A search snapshots once for 80 bounded hints; selected preflight and issue refresh before validating endpoint
+and route budget. Three selected path checks remain. No overlap queries, extra world-area scan, actor/context
+simulation, collider mutation or cross-decision cache. A currently clear native footprint earns no new leave
+credit even when registered membership lags; membership/global risk remain native. Read-only diagnostics are
+bounded by actor/area/status and the existing per-fight cap.
+
+22 pure geometry cases and 28 native compiled volume/route checks cover real body versus Corpulence, rotated
+boxes, offsets, boundaries and unsafe data; inherited route/step/Magus/caster/Fusion/provider checks remain.
+Native Unity bounds/physics/navmesh and post-issue movement are not executed offline. Pursuing smoke can still
+recapture an actor; no claim that all repeated exits are fixed. General pursuit, commitment, retreat, swarm
+search, pathfinder and stuck cancellation are unchanged. Final receipt records exact tests/build/scopes.

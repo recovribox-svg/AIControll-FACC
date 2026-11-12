@@ -23,6 +23,7 @@
     <Compile Include="..\..\Tactics\ValueModel.Periodic.cs" Link="ValueModel.Periodic.cs" />
     <Compile Include="..\..\Tactics\ReferenceReadMemo.cs" Link="ReferenceReadMemo.cs" />
     <Compile Include="..\..\Tactics\SwarmGeometry.cs" Link="SwarmGeometry.cs" />
+    <Compile Include="..\..\Analysis\AreaExitGeometry.cs" Link="AreaExitGeometry.cs" />
     <Compile Include="..\..\Tactics\ValueModel.Resources.cs" Link="ValueModel.Resources.cs" />
     <Compile Include="..\..\Tactics\ValueModel.Toggles.cs" Link="ValueModel.Toggles.cs" />
     <Compile Include="..\..\Tactics\ValueModel.Kinetic.cs" Link="ValueModel.Kinetic.cs" />

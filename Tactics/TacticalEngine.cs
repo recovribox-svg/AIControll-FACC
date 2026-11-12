@@ -5013,7 +5013,9 @@ namespace CompanionAI_Pathfinder.Tactics
             var best = AoeDangerAnalyzer.FindExit(unit, inside, maxDistance, keepsTarget, out _);
             if (!best.HasValue)
             {
-                ctx.LeaveNote = $"in {inside.Name ?? "a harmful area"}, no way out within {maxDistance:F1} m";
+                ctx.LeaveNote = inside.ExitCurrentClear
+                    ? $"registered in {inside.Name ?? "a harmful area"}, native exit geometry is already clear; no leave credit"
+                    : $"in {inside.Name ?? "a harmful area"}, no way out within {maxDistance:F1} m";
                 return;
             }
             // ★ v0.3.19 (test7): an exit where the unit already stands is no walk: the game made a 0.0 m path of it and
@@ -5063,7 +5065,7 @@ namespace CompanionAI_Pathfinder.Tactics
             {
                 // Close to the spot: it was chosen with the unit's body just outside the area.
                 Kind = CandidateKind.Move, Slot = ActionSlot.Move, Point = best, ApproachRadius = AoeDangerAnalyzer.ExitArrivalRadius,
-                PathConstraint = unit.RiderPart == null ? AoeDangerAnalyzer.ExitPathCheck(inside, moveBudget) : null,
+                PathConstraint = unit.RiderPart == null ? AoeDangerAnalyzer.ExitPathCheck(unit, inside, moveBudget) : null,
                 Value = value,
                 Label = label, Key = "move:leave-area",
                 Risk = risk, RiskAt = best, PreRiskValue = preRisk   // ★ v0.3.20 (test8): its real walk is counted too

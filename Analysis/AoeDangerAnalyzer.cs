@@ -6,6 +6,7 @@ using System;
 using TurnBased.Controllers;
 using System.Collections.Generic;
 using System.Linq;
+using CompanionAI_Pathfinder.Tactics;
 using Kingmaker;
 using Kingmaker.Blueprints.Classes.Spells;
 using Kingmaker.EntitySystem.Entities;
@@ -470,27 +471,18 @@ namespace CompanionAI_Pathfinder.Analysis
             /// <summary>★ v0.3.18 (test10): the chance the worst area affects the unit.</summary>
             public float AffectChance;
 
-            /// <summary>The unit's body radius: the game counts a unit inside when its body overlaps the area.</summary>
+            /// <summary>Logical body radius for legacy shape forecasts; cylinder/box exits read the actual sphere collider.</summary>
             public float Corpulence;
 
             /// <summary>
-            /// The unit standing at <paramref name="point"/> would be outside every one of these areas, by the game's own
-            /// test (AreaEffectView.Contains: the area's shape against the unit's body). ★ test5: the centre distance
+            /// Legacy shape forecast against the logical body (AreaEffectView.Contains). Scoped exits instead use
+            /// ReadExitSpace: native cylinder/box membership comes from the physics-bound query. ★ test5: centre distance
             /// without the body sent Orvath out of a Stinking Cloud in three walks (3.3 m, 1.6 m, 1.0 m).
             /// </summary>
             public bool IsOutside(Vector3 point) => Areas.All(a => !Covers(a, point, Corpulence));
 
-            internal bool IsOutsideWithClearance(Vector3 point, float clearance)
-            {
-                foreach (var area in Areas)
-                {
-                    if (!IsLive(area)) continue;
-                    if (area.Blueprint?.Shape == AreaEffectShape.AllArea) return false;
-                    var shape = area.View?.Shape;
-                    if (shape == null || shape.Contains(point, Corpulence + clearance)) return false;
-                }
-                return true;
-            }
+            /// <summary>Registered area membership can lag a move. Only the scoped exit search sets this.</summary>
+            internal bool ExitCurrentClear;
         }
 
         /// <summary>
@@ -603,8 +595,9 @@ namespace CompanionAI_Pathfinder.Analysis
 
         /// <summary>
         /// ★ v0.3.14 (test5): a body of radius <paramref name="corpulence"/> standing at <paramref name="point"/> overlaps
-        /// the area: the game's own shape test (AreaEffectView.Contains uses Shape.Contains(position, corpulence)), which
-        /// also handles non-round areas. Falls back to the blueprint's radius.
+        /// the area: the legacy shape forecast (AreaEffectView.Contains uses Shape.Contains(position, corpulence)).
+        /// Cylinder/box native membership instead uses entity-bounds queries; scoped exit planning handles that separately.
+        /// Falls back to the blueprint's radius.
         /// </summary>
         private static bool Covers(AreaEffectEntityData aoe, Vector3 point, float corpulence)
         {
@@ -790,10 +783,22 @@ namespace CompanionAI_Pathfinder.Analysis
         {
             preferred = false;
             if (unit == null || inside == null || inside.Areas.Count == 0) return null;
+            inside.ExitCurrentClear = false;
             Vector3? best = null;
             float bestScore = float.MinValue;
             try
             {
+                var space = ReadExitSpace(unit, inside);
+                if (space == null)
+                {
+                    if (CombatMemory.FirstThisFight($"exit-bounds-unavailable:{unit.UniqueId}"))
+                        Main.Log($"[AreaExit] {unit.CharacterName}: complete native exit geometry unavailable; no escape credit");
+                    return null;
+                }
+                NoteExitBounds(unit, space);
+                // Do not price another leave action when the native geometry already places this body outside.
+                // Keep the game's registered membership/danger untouched; it may update later in this frame.
+                if (space.IsOutside(unit.Position, 0f)) { inside.ExitCurrentClear = true; return null; }
                 var enemies = unit.CombatState?.EngagedBy?.Where(e => e != null).ToList() ?? new List<UnitEntityData>();
                 var start = ObstacleAnalyzer.GetNearestNode(unit.Position, null);
                 if (start.node == null) return null;
@@ -807,7 +812,7 @@ namespace CompanionAI_Pathfinder.Analysis
                         // test the projected/traced endpoint, rather than a point at its current visual height.
                         var requested = new Vector3(unit.Position.x, start.position.y, unit.Position.z) +
                             new Vector3(Mathf.Cos(angle), 0f, Mathf.Sin(angle)) * ring;
-                        if (!TryProjectExit(start, requested, maxDistance, inside, out var point)) continue;
+                        if (!TryProjectExit(start, requested, maxDistance, space, out var point)) continue;
                         if (EnteringDanger(unit, unit.Position, point, out _) > 0f) continue;
                         bool keeps = prefer?.Invoke(point) ?? false;
                         // Shortest way out; away from whoever engages the unit as a tie-break.

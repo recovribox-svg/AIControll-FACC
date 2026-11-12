@@ -1,5 +1,7 @@
 # Native reachable endpoints for area escapes
 
+**Exit1 playtest follow-up:** ground projection was exercised, but cylinder/box membership uses native entity-bound physics queries. The later [native-bounds repair](MOVEMENT_EXIT_BOUNDS.md) corrects this forecast; the shape-Contains rationale below is incomplete for those two shapes.
+
 The author approved this second movement proposal on 12 November 2026. This branch starts at PR #36 / step1
 packaging `ac7d0df`, including magus1/caster2 and fetched development `1f58150`. Step/full-attack validation stays
 in its own prerequisite PR. Manifest 0.3.30; Claude reviews/integrates; no main/development push, merge or release.

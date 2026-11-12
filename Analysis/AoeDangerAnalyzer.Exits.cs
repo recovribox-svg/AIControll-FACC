@@ -14,7 +14,7 @@ namespace CompanionAI_Pathfinder.Analysis
         private static bool FiniteExitPoint(Vector3 p) => !float.IsNaN(p.x) && !float.IsNaN(p.y) && !float.IsNaN(p.z) &&
             !float.IsInfinity(p.x) && !float.IsInfinity(p.y) && !float.IsInfinity(p.z);
 
-        private static bool TryProjectExit(NNInfo start, Vector3 requested, float maximum, AreasInside inside, out Vector3 point)
+        private static bool TryProjectExit(NNInfo start, Vector3 requested, float maximum, ExitSpace space, out Vector3 point)
         {
             point = default;
             if (!FiniteExitPoint(requested)) return false;
@@ -24,19 +24,25 @@ namespace CompanionAI_Pathfinder.Analysis
                 !(start.node.Graph is NavmeshBase graph)) return false;
             var projected = end.position;
             var shift = projected - requested; shift.y = 0f;
-            if (!FiniteExitPoint(projected) || shift.sqrMagnitude > 4f || !inside.IsOutsideWithClearance(projected, ExitArrivalRadius)) return false;
+            if (!FiniteExitPoint(projected) || shift.sqrMagnitude > 4f || !space.IsOutside(projected, ExitArrivalRadius)) return false;
             // Same native linecast as ObstacleAnalyzer.TraceAlongNavmesh, reusing this search's ground start node.
             NavmeshBase.Linecast(graph, start.position, projected, start.node, out var hit, null);
             point = hit.point;
             if (!FiniteExitPoint(point) || Vector3.Distance(point, projected) > 1f ||
                 Vector3.Distance(start.position, point) > maximum + 0.05f) return false;
-            return inside.IsOutsideWithClearance(point, ExitArrivalRadius);
+            return space.IsOutside(point, ExitArrivalRadius);
         }
 
-        internal static Func<IList<Vector3>, string> ExitPathCheck(AreasInside inside, float maximum)
+        internal static Func<IList<Vector3>, string> ExitPathCheck(Kingmaker.EntitySystem.Entities.UnitEntityData unit, AreasInside inside, float maximum)
         {
-            Func<Vector3, bool> outside = p => inside.IsOutsideWithClearance(p, ExitArrivalRadius);
-            return path => ValidateExitPath(path, outside, maximum);
+            return path =>
+            {
+                // Fresh at both selected preflight and issue. No snapshot survives a decision or an issued command.
+                var space = ReadExitSpace(unit, inside);
+                if (space == null) return "exit area geometry unavailable";
+                if (space.IsOutside(unit.Position, 0f)) return "exit no longer needed; native geometry is clear";
+                return ValidateExitPath(path, p => space.IsOutside(p, ExitArrivalRadius), maximum);
+            };
         }
 
         internal static string ValidateExitPath(IList<Vector3> path, Func<Vector3, bool> outside, float maximum)
