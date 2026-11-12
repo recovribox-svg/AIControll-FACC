@@ -42,3 +42,5 @@ Use matched party/fight timings to judge performance.
 
 Commitment, retreat, route finding, hazard geometry and stuck cancellation remain outside this first repair.
 The second approved proposal is separate. Manifest 0.3.30; Claude reviews/integrates; gameplay pending.
+
+Checked source `ee24df1`, [receipt](competence/MOVEMENT_STEP_CHECKS.json) and [step1 test ZIP](../test-builds/AI-Control-FACC-v0.3.30-dev-step1-ee24df1-UMM-test.zip), startup MVID `9523fbe4-edb2-46b5-9fbe-e430636c9634`. 607 unit + 11 inventory tests and native checks pass; actual-reference Release 0 warnings/errors; 0/0 added signatures resolve. Compatible/supplementary audit scopes pass; original full-corpus enum failure remains distinct. Gameplay/matched Unity timing pending.

@@ -4778,3 +4778,5 @@ fixtures exercise classification, bounded failures, changed-decision retry and c
 paths or commands execute offline. Final receipt/test identity records all checks and real-reference Release.
 Area-exit geometry is separate; no commitment, retreat, pathfinder or stuck-cancellation change in this task.
 Manifest 0.3.30; Claude reviews/integrates; gameplay and matched Unity timing pending.
+
+Checked source `ee24df1`, [receipt](competence/MOVEMENT_STEP_CHECKS.json) and [step1 test ZIP](../test-builds/AI-Control-FACC-v0.3.30-dev-step1-ee24df1-UMM-test.zip), startup MVID `9523fbe4-edb2-46b5-9fbe-e430636c9634`. 607 unit + 11 inventory tests and native checks pass; actual-reference Release 0 warnings/errors; 0/0 added signatures resolve. Compatible/supplementary audit scopes pass; original full-corpus enum failure remains distinct. Gameplay/matched Unity timing pending.
