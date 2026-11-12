@@ -44,11 +44,12 @@ namespace CompanionAI_Pathfinder.Tactics
                     !native.CanUseSpellCombat))) failure = "native paired Magus action is no longer available";
             if (candidate.MagusFollowCombat && !unit.PreparedSpellCombat() || candidate.MagusFollowStrike && !unit.PreparedSpellStrike())
                 failure = "native Magus follow-up window/equipment no longer valid";
-            if (candidate.MagusCharge != null && (!ReferenceEquals(MagusMechanics.Held(unit), candidate.MagusCharge.Ability) ||
-                unit.Get<UnitPartMagus>()?.Spellstrike.Active != true)) failure = "native held Spellstrike charge changed";
-            if (candidate.Kind == CandidateKind.WeaponAttack && native?.Spellstrike.Active == true &&
-                MagusMechanics.Held(unit) is AbilityData held &&
-                (candidate.MagusCharge != null || CombatMath.EstimateWeaponAttack(unit, candidate.Target, candidate.FullAttack)?.TouchHitChance > 0f))
+            var held = MagusMechanics.Held(unit);
+            var delivery = candidate.Kind == CandidateKind.WeaponAttack && held != null
+                ? CombatMath.EstimateWeaponAttack(unit, candidate.Target, candidate.FullAttack) : null;
+            if (candidate.MagusCharge != null && (!ReferenceEquals(held, candidate.MagusCharge.Ability) || (delivery?.TouchHitChance ?? 0f) <= 0f))
+                failure = "native held touch or eligible weapon delivery changed";
+            if (held != null && delivery?.TouchHitChance > 0f)
             {
                 var scope = UserAbilityPolicy.ScopeFor(unit);
                 var profile = AbilityProfile.Get(held);
@@ -215,9 +216,10 @@ namespace CompanionAI_Pathfinder.Tactics
 
         private static void AddMagusWeaponCandidates(TacticalContext ctx, List<Candidate> candidates)
         {
-            if (!MeleeMagus(ctx, out var part)) return;
-            bool combat = ctx.Unit.PreparedSpellCombat();
-            bool strike = !combat && ctx.Unit.PreparedSpellStrike();
+            bool melee = MeleeMagus(ctx, out var part);
+            if (!melee && MagusMechanics.Held(ctx.Unit) == null) return;
+            bool combat = melee && ctx.Unit.PreparedSpellCombat();
+            bool strike = melee && !combat && ctx.Unit.PreparedSpellStrike();
             if (combat || strike)
             {
                 // Native MagusController owns the free follow-up's shape. An ordinary ForceFullAttack candidate
@@ -237,7 +239,7 @@ namespace CompanionAI_Pathfinder.Tactics
                 }
             }
             var held = MagusMechanics.Held(ctx.Unit);
-            if (!part.Spellstrike.Active || held == null) return;
+            if (held == null) return;
             foreach (var candidate in candidates.Where(c => c.Kind == CandidateKind.WeaponAttack && c.Target != null).ToList())
             {
                 // Use the native routine before attack-mode correction, matching the ordinary candidate baseline.
@@ -247,7 +249,7 @@ namespace CompanionAI_Pathfinder.Tactics
                 if (attack == null || attack.TouchHitChance <= 0f) continue;
                 // Remove it before generic attack-mode repricing, which would otherwise restore ordinary weapon value.
                 if (HeldChargeBlocked(ctx, held, candidate.Target)) { candidates.Remove(candidate); continue; }
-                if (!MagusSpell(part, held)) continue;
+                if (!melee || !MagusSpell(part, held)) continue;
                 var payload = ReadMagusPayload(ctx, held, candidate.Target);
                 if (payload == null) continue;
                 candidate.MagusCharge = payload;
@@ -278,6 +280,11 @@ namespace CompanionAI_Pathfinder.Tactics
             {
                 var attack = MagusWeapon(ctx, target, full, full, strike);
                 if (attack == null || !InRangeNow(ctx.Unit, target.Position, attack.Reach, true)) continue;
+                // Native item casts retain an existing charge unless they create another touch themselves.
+                // A follow-up must still be permitted to deliver that charge, including through natural attacks.
+                if (source.Ability.SourceItem != null && source.Ability.Blueprint.StickyTouch == null &&
+                    MagusMechanics.Held(ctx.Unit) is AbilityData retained && attack.TouchHitChance > 0f &&
+                    HeldChargeBlocked(ctx, retained, target)) continue;
                 float value = DamageValue(target, attack) * AttackWeight(ctx, target, false);
                 if (value > best) { best = value; weapon = attack; weaponTarget = target; }
             }
@@ -394,7 +401,7 @@ namespace CompanionAI_Pathfinder.Tactics
                     {
                         var attack = MagusWeapon(ctx, target, ctx.CanFullAttack, false, false);
                         if (attack == null || !InRangeNow(ctx.Unit, target.Position, attack.Reach, true)) continue;
-                        if (part.Spellstrike.Active && MagusMechanics.Held(ctx.Unit) is AbilityData held &&
+                        if (MagusMechanics.Held(ctx.Unit) is AbilityData held &&
                             attack.TouchHitChance > 0f && HeldChargeBlocked(ctx, held, target)) continue;
                         float value = DamageValue(target, attack) * AttackWeight(ctx, target, false);
                         if (value > future) { future = value; planned = "native weapon attack"; }

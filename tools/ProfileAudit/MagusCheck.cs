@@ -8,6 +8,7 @@ using System.Reflection;
 using System.Runtime.CompilerServices;
 using CompanionAI_Pathfinder.Tactics;
 using Kingmaker.Blueprints;
+using Kingmaker.Blueprints.Items.Weapons;
 using Kingmaker.EntitySystem.Entities;
 using Kingmaker.Items;
 using Kingmaker.UnitLogic.Abilities;
@@ -32,6 +33,16 @@ namespace ProfileAudit
                 var all = loaded.ToList();
                 var mechanics = typeof(TacticalEngine).Assembly.GetType("CompanionAI_Pathfinder.Tactics.MagusMechanics", true);
                 var kind = mechanics.GetMethod("Kind", Hidden);
+                var weaponDelivery = mechanics.GetMethod("WeaponDeliversTouch", Hidden);
+                foreach (var test in new[] { ("StandardLongsword", false, false, false), ("StandardLongsword", true, false, true),
+                    ("StandardLongsword", true, true, false), ("Claw1d4", false, false, true), ("Bite1d6", false, false, true),
+                    ("StandardShortbow", true, false, false) })
+                {
+                    var weapon = all.OfType<BlueprintItemWeapon>().FirstOrDefault(b => b.name == test.Item1);
+                    if (weapon == null) { lines.Add("MAGUS weapon fixture outside scope: " + test.Item1); continue; }
+                    Check((bool)weaponDelivery.Invoke(null, new object[] { weapon, test.Item2, test.Item3 }) == test.Item4,
+                        $"actual {test.Item1}: native held-touch delivery with Spellstrike={test.Item2}, empty hand={test.Item3}");
+                }
                 foreach (var pair in new[] { ("SpellCombatAbility", "Combat"), ("SpellStrikeAbility", "Strike") })
                 {
                     var bp = all.OfType<BlueprintActivatableAbility>().FirstOrDefault(b => b.name == pair.Item1);

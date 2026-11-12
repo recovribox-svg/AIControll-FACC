@@ -4750,6 +4750,11 @@ pairs leave before attack calculations. An aggregate Magus entry supports matche
 and ordinary Ranged contracts remain; fired rays are not melee Spellstrike charges. EA/Fusion and unknown
 compound effects are outside automatic combinations.
 
+Native TouchSpellsController delivers held touches on natural melee hits independently of Spellstrike. The
+helpful/blocked-charge guard covers that route for all units; switching Spellstrike off does not bypass it.
+Item casts that retain an old charge cannot earn a forbidden projected follow-up. Actual claw/bite/sword/bow
+fixtures distinguish these delivery paths.
+
 The final checked-source receipt/test identity records the unit/native fixtures, real-reference Release, strict
 compatible ProfileAudit and original full-corpus enum failure separately. Offline fixtures do not initialize actors
 or issue commands. The tooltip remains unproven. General movement, commitment, retreat, pathfinding, hazard geometry,

@@ -38,6 +38,9 @@ local 2.7.0x database. That database is not installed mod state. Runtime plannin
   an unexpected weapon command is refused for repricing. Helpful touches retain ally delivery. Enemy weapon
   candidates that would deliver a blocked/helpful charge are removed before attack-mode repricing and checked
   again before issue. Missed weapon attempts do not become silent source-cast failures or spend a second slot.
+  Native `TouchSpellsController` also discharges on natural melee hits without Spellstrike. Charge guards cover
+  that independent route for all units; switching Spellstrike off cannot authorize a blocked/helpful claw or bite.
+  A native item cast can retain the previous charge, so its projected follow-up checks that retained charge too.
 * Native `PreparedSpellCombat` / `PreparedSpellStrike` permit valid in-place follow-ups after the Standard is
   spent. Commands carry the finite native deadline and explicit full/single flags. Ordinary attack candidates
   cannot turn a Spellstrike-only free single into a free full routine, including with extra actions. Native
@@ -91,6 +94,7 @@ Replay the identified **magus1** UMM test in TB and shared-engine RT; retain its
    resistance/SR and actual damage.
 4. Block the held ability: retain it for the player. Hold a helpful touch beside an enemy: no weapon delivery to
    that enemy, ally delivery still available. Test both global and character lists.
+   Repeat with claws/bites and Spellstrike off, including a non-Magus; natural hits have their own delivery route.
 5. Click each mode during combat with Respect Player Toggles on, disable automatic switching, and end combat.
    Manual choices persist and AI-switched modes restore. Pure Mage must forbid physical combinations; ordinary
    Ranged archers retain attacks. Fired Scorching Ray must not become a held melee charge. Reach requires the

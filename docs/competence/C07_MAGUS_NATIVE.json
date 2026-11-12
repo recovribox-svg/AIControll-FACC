@@ -51,6 +51,10 @@
     {
       "member": "AttackTypeAttackBonus / ContextActionApplyBuff / ContextConditionHasFact",
       "finding": "Read actual replacement-stacking root graph: simple typed untyped-stackable penalty, permanent child buff and exact fact conditional. Depth/node/cycle bounds; unknown shapes withheld, active native child not counted twice."
+    },
+    {
+      "member": "TouchSpellsController.OnEventDidTrigger / OnEventAboutToTrigger / OnAbilityEffectApplied",
+      "finding": "Natural melee hits discharge a held touch independently of Magus Spellstrike; guard those enemy attacks even when Spellstrike is off or the actor is not a Magus. Non-item Spell/SpellLike casts replace a different charge; item casts can retain it. Applying the held ability removes it. Actual spell/weapon/native delivery owns consumption."
     }
   ],
   "uploaded_blueprint_fixtures": [
@@ -83,6 +87,26 @@
       "path": "Spells/Spells/Level1/ShockingGraspEffect.jbp",
       "bytes": 10344,
       "sha256": "e3c9c1d90d715e907d2030ef1f97ad2bb9346ac150ab299a45f5505efa8ff0d6"
+    },
+    {
+      "path": "Weapons/Weapons/Items/Standard/MartialOneHanded/StandardLongsword.jbp",
+      "bytes": 3476,
+      "sha256": "fa767a3e616aba7623d977a75492d3391bf4d5bcb711d72e8c3db919f96972d1"
+    },
+    {
+      "path": "Weapons/Weapons/Items/Standard/MartialRanged/StandardShortbow.jbp",
+      "bytes": 3194,
+      "sha256": "01412d1439c84b1190e804e32eb434c9e75355d486e68818cf01ad6f755ae5d9"
+    },
+    {
+      "path": "Weapons/Weapons/Items/Standard/NaturalWeapon/Claw1d4.jbp",
+      "bytes": 3506,
+      "sha256": "446c8c91e550bf1689064555067178905914fdd0929fd38ef04bc7a5529cc2ce"
+    },
+    {
+      "path": "Weapons/Weapons/Items/Standard/NaturalWeapon/Bite1d6.jbp",
+      "bytes": 3266,
+      "sha256": "33f3549cedda6f97ee0a8f28286eb667999caeb8c51e85193b4aedfc0b86e020"
     }
   ],
   "supplementary_stock_hidden_buffs": {

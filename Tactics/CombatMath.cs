@@ -277,7 +277,7 @@ namespace CompanionAI_Pathfinder.Tactics
             {
                 var d = delta?.Invoke(line.Weapon, line.Index) ?? new KeyValuePair<int, float>(0, 0f);
                 float p = HitProbability(line.AttackBonus + d.Key, line.ArmorClass) * lands;
-                if (trackTouch && line.Weapon?.Blueprint?.IsMelee == true && line.Weapon != unit.Body.EmptyHandWeapon)
+                if (MagusMechanics.WeaponDeliversTouch(line.Weapon?.Blueprint, trackTouch, line.Weapon == unit.Body.EmptyHandWeapon))
                 {
                     touch.Add(p, Math.Min(line.ThreatChance, p) * p);
                 }

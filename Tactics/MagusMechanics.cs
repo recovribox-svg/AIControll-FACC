@@ -7,6 +7,7 @@ using System.Runtime.CompilerServices;
 using HarmonyLib;
 using Kingmaker.Blueprints;
 using Kingmaker.Blueprints.Facts;
+using Kingmaker.Blueprints.Items.Weapons;
 using Kingmaker.Blueprints.Root;
 using Kingmaker.Designers.EventConditionActionSystem.Actions;
 using Kingmaker.Designers.Mechanics.Buffs;
@@ -50,6 +51,8 @@ namespace CompanionAI_Pathfinder.Tactics
         }
 
         internal static AbilityData Held(UnitEntityData unit) => unit?.Get<UnitPartTouch>()?.Ability?.Data;
+        internal static bool WeaponDeliversTouch(BlueprintItemWeapon weapon, bool strike, bool emptyHand) =>
+            weapon?.IsMelee == true && (weapon.IsNatural || strike && !emptyHand);
         internal static bool PlainTouch(AbilityData ability, AbilityProfile profile) => ability != null && profile != null &&
             profile.Fusion == null && !profile.IsAoE && profile.MeleeAttack == null && !profile.IsWeaponAttack && !profile.Summons &&
             SpellDelivery.IsPhysicalTouch(ability) && SpellDelivery.IsTouchAttack(ability);
