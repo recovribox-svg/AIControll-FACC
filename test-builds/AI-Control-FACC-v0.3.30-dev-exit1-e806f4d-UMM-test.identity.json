@@ -1,0 +1,21 @@
+{
+  "build_label": "exit1",
+  "kind": "development-test",
+  "version": "0.3.30",
+  "source_branch": "codex/area-exit-endpoints",
+  "source_commit": "e806f4d37d6f1638a65f121eb5fc826cbbf5384e",
+  "starting_commit": "ac7d0dff3c4715a881942bec417e21326a412055",
+  "development_base": "1f58150b8e50f9a322ba0b8d3fcc095fe188420f",
+  "dependency_pr": 36,
+  "dll": {
+    "assembly": "CompanionAI_Pathfinder, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null",
+    "mvid": "905bb172-799c-44cb-a46a-ff208a31dab4",
+    "sha256": "b5bdb9e69a28d48f6bb73d012d3746cc83ebea4d8711d9f7c05a52d196fd7bb9",
+    "size": 1328640
+  },
+  "manifest_sha256": "d6ee91e78dc5d4981ad51a1a1a85bb1e7fe3f0a87814697f2fd9ee1c20d35594",
+  "checks_receipt": "docs/competence/MOVEMENT_EXIT_CHECKS.json",
+  "gameplay_status": "not played",
+  "scope": "Includes step1/magus1/caster2 and their prerequisites. Projects area-exit hints to native walkable endpoints with body/stopping clearance; shared unmounted escapes validate actual route endpoints and native movement budget before issue. Existing three-check budget and native movement handling remain. Native area-exit checks: 28.",
+  "release": false
+}

@@ -71,3 +71,5 @@ Compare commanded and inspected ground coordinates in existing verbose walk logs
 and area membership to diagnose remaining repeats. Check expired/moving areas and effects that linger after leaving.
 Regress valid five-foot full attacks, native Magus, Pure Mage, Ranged martials and ordinary movement. Keep startup MVID
 and matched party/fight/spell setup with performance logs. Gameplay remains pending.
+
+Checked source `e806f4d`, [receipt](competence/MOVEMENT_EXIT_CHECKS.json) and [exit1 test ZIP](../test-builds/AI-Control-FACC-v0.3.30-dev-exit1-e806f4d-UMM-test.zip), startup MVID `905bb172-799c-44cb-a46a-ff208a31dab4`. 607 unit + 11 inventory tests and native checks pass; actual-reference Release 0 warnings/errors; 4/4 added signatures resolve. Compatible/supplementary audit scopes pass; original full-corpus enum failure remains distinct. Gameplay/matched Unity timing pending.

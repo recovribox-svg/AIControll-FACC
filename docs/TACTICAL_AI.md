@@ -4800,3 +4800,5 @@ issue needs live replay.
 Final receipt/test identity records unit/native checks, actual-reference Release and distinct compatible/full
 export audits. No general commitment, retreat, pathfinder, swarm exit geometry or stuck-cancellation retuning.
 Manifest 0.3.30; Claude reviews/integrates; gameplay/matched Unity performance pending.
+
+Checked source `e806f4d`, [receipt](competence/MOVEMENT_EXIT_CHECKS.json) and [exit1 test ZIP](../test-builds/AI-Control-FACC-v0.3.30-dev-exit1-e806f4d-UMM-test.zip), startup MVID `905bb172-799c-44cb-a46a-ff208a31dab4`. 607 unit + 11 inventory tests and native checks pass; actual-reference Release 0 warnings/errors; 4/4 added signatures resolve. Compatible/supplementary audit scopes pass; original full-corpus enum failure remains distinct. Gameplay/matched Unity timing pending.

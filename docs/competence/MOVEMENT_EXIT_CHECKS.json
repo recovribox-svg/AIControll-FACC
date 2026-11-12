@@ -1,0 +1,237 @@
+{
+  "task": "Native reachable endpoints and body clearance for area exits",
+  "checked_source_commit": "e806f4d37d6f1638a65f121eb5fc826cbbf5384e",
+  "starting_commit": "ac7d0dff3c4715a881942bec417e21326a412055",
+  "dependency_pr": 36,
+  "development_base": "1f58150b8e50f9a322ba0b8d3fcc095fe188420f",
+  "source_branch": "codex/area-exit-endpoints",
+  "version": "0.3.30",
+  "author_approval": "12 November 2026: author said go ahead to the two movement proposals; this PR implements the second.",
+  "dll": {
+    "assembly": "CompanionAI_Pathfinder, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null",
+    "mvid": "905bb172-799c-44cb-a46a-ff208a31dab4",
+    "sha256": "b5bdb9e69a28d48f6bb73d012d3746cc83ebea4d8711d9f7c05a52d196fd7bb9",
+    "size": 1328640
+  },
+  "design_native_evidence_and_replay": "../MOVEMENT_AREA_EXITS.md",
+  "unit_tests": {
+    "passed": 607,
+    "failed": 0,
+    "skipped": 0
+  },
+  "inventory_tests": {
+    "passed": 11,
+    "failed": 0
+  },
+  "release_build": {
+    "actual_supplied_game_unity_umm_references": true,
+    "warnings": 0,
+    "errors": 0,
+    "source_committed_before_build": true,
+    "manifest_unchanged": true
+  },
+  "native_step_approach": {
+    "checks": 13,
+    "failures": 0,
+    "actor_path_command_execution": false
+  },
+  "native_additions": {
+    "area_exit": {
+      "checks": 28,
+      "failures": 0,
+      "actual_smoke_blueprint": true,
+      "native_route_samples": true,
+      "compiled_projection_and_issue_routes": true,
+      "unknown_route_nonfinite_detour_and_callback_exception_cases": true,
+      "actor_navmesh_command_or_unity_performance_execution": false
+    }
+  },
+  "inherited_native_checks": {
+    "magus_base": 32,
+    "magus_supplementary_including_base": 44,
+    "caster": 36,
+    "fusion": 35,
+    "projectile": 29,
+    "burn": 50,
+    "resistance": 18,
+    "attached": 24,
+    "swarm": 27,
+    "reveal": 7,
+    "viewless": 6,
+    "toggle": 98,
+    "tome": 14,
+    "toybox": 10,
+    "failures": 0
+  },
+  "strict_native_compatible_audit": {
+    "status": "PASS",
+    "exit_code": 0,
+    "scope": "C06_NATIVE_COMPATIBLE_SCOPE.json",
+    "source_files": 44647,
+    "loaded_unique": 44637,
+    "failed": 0,
+    "allowed_load_failures": 0,
+    "ability_rows": 4807,
+    "reader_errors": 0,
+    "input_bytes_modified": false
+  },
+  "strict_supplementary_stock_fixture_audit": {
+    "status": "PASS",
+    "exit_code": 0,
+    "source_files": 44651,
+    "loaded_unique": 44641,
+    "failed": 0,
+    "ability_rows": 4807,
+    "reader_errors": 0,
+    "installed_mod_state": false,
+    "original_uploaded_inputs_modified": false,
+    "fixture_provenance": "C07_MAGUS_NATIVE.json#supplementary_stock_hidden_buffs"
+  },
+  "original_full_corpus_audit": {
+    "status": "INCOMPLETE",
+    "exit_code": 1,
+    "source_files": 44648,
+    "loaded_unique": 44637,
+    "failed": 1,
+    "allowed_load_failures": 0,
+    "ability_verdicts_generated": false,
+    "failure": "Previously fingerprinted AchaekekSacredWeaponFeature SawtoothSaber vs native SawtoothSabre enum mismatch; parser error logging reaches offline engine dependency",
+    "input_sha256": "1fd534ef0fc9573520d101c721e5d2721812fdb5b8f8a13e29fcbc3acb06ac0f",
+    "input_bytes_modified": false
+  },
+  "added_foreign_member_references": {
+    "baseline_commit": "ac7d0dff3c4715a881942bec417e21326a412055",
+    "added": 4,
+    "resolved_exact": 4,
+    "unresolved": 0,
+    "full_signature_overload_matching": true
+  },
+  "harness_limits": [
+    "Private runnable copies neutralize Unity/localization/instrumentation including ProfileScope.New; no stubs are deployed.",
+    "Native HasMetamagic metadata logic remains; no live rod, hit/save outcome, actor initialization or navigation is established.",
+    "Native command fixtures only set/read flags on uninitialized objects; no command is issued.",
+    "Provider fixtures do not call mod setup, getter or condition code."
+  ],
+  "planning_bounds": {
+    "exit_hints_maximum": 80,
+    "selected_path_checks_per_decision": 3,
+    "native_ground_start_reused": true,
+    "full_path_query_per_hint": false,
+    "ordinary_candidates_add_path_queries": false,
+    "constraint_lifetime": "one decision; native commands do not retain it",
+    "native_steering_and_pathfinder_retained": true
+  },
+  "behavior_limits": [
+    "Native scene transforms, navmesh projection, actor/command execution and matched performance need TB/shared RT gameplay.",
+    "Common search supplies projected destinations to legacy/mounted paths; new endpoint/route constraints apply only to shared unmounted escapes.",
+    "Dynamic obstacles, areas or interruptions after issue can change actual execution. The bounded search can still find no legal exit.",
+    "General target commitment, retreat scoring, native pathfinder, swarm-specific exit geometry and stuck cancellation remain outside this patch.",
+    "Original full-corpus enum mismatch remains a separately fingerprinted incomplete run, without verdicts."
+  ],
+  "task_source_files": [
+    {
+      "file": "Analysis/AoeDangerAnalyzer.Exits.cs",
+      "sha256": "becd9b5f39c77ee967822584068e80f3caaf0b757ed7e3588309c35a44e26398"
+    },
+    {
+      "file": "Analysis/AoeDangerAnalyzer.cs",
+      "sha256": "c01f7a36fc207b3bf075f1366bafc2e4148d8e14f79f138c08ebb303c5fbb86f"
+    },
+    {
+      "file": "GameInterface/CommandDispatcher.cs",
+      "sha256": "ef638795a5cdbca4f6db836c2e50e0e2d1cad7672dde1c1a78de6a2850d6701d"
+    },
+    {
+      "file": "Tactics/TacticalEngine.ApproachValidation.cs",
+      "sha256": "faec1d94ed5d5ec2e575d73b087d85720fa9f825b89190c29e75cd53dde434f3"
+    },
+    {
+      "file": "Tactics/TacticalEngine.cs",
+      "sha256": "4fe06771d9c1260f53c72c0611998604a103f3a0cf028619be0ebe6b08b8dede"
+    },
+    {
+      "file": "tools/ProfileAudit/AreaExitCheck.cs",
+      "sha256": "e0dc9891fbb10c137b5ca10e6d61a9b262a8d2cd5411c83d258d0298835631b0"
+    },
+    {
+      "file": "tools/ProfileAudit/Program.cs",
+      "sha256": "41d143dee3cfee0c5fc3d272f4340087c134f2babadae7f6dacbc9ac85c77cf3"
+    }
+  ],
+  "package": {
+    "file": "test-builds/AI-Control-FACC-v0.3.30-dev-exit1-e806f4d-UMM-test.zip",
+    "sha256": "552b8f4062db2d5d41e330e5d6848a4d98f455f4fdf7f22e5838989dcf375de4",
+    "bytes": 525969,
+    "identity_file": "test-builds/AI-Control-FACC-v0.3.30-dev-exit1-e806f4d-UMM-test.identity.json",
+    "checksum_file": "test-builds/AI-Control-FACC-v0.3.30-dev-exit1-e806f4d-UMM-test.sha256",
+    "members": [
+      {
+        "file": "CompanionAI_Pathfinder/CompanionAI_Pathfinder.dll",
+        "bytes": 1328640,
+        "sha256": "b5bdb9e69a28d48f6bb73d012d3746cc83ebea4d8711d9f7c05a52d196fd7bb9"
+      },
+      {
+        "file": "CompanionAI_Pathfinder/Info.json",
+        "bytes": 379,
+        "sha256": "d6ee91e78dc5d4981ad51a1a1a85bb1e7fe3f0a87814697f2fd9ee1c20d35594"
+      },
+      {
+        "file": "CompanionAI_Pathfinder/BUILD_IDENTITY.json",
+        "bytes": 1168,
+        "sha256": "1b5fcfb1dde05a35babc8913f673ba3edc7b9ad9ec1efe5d9cd677a5020fae69"
+      },
+      {
+        "file": "CompanionAI_Pathfinder/TEST_BUILD.txt",
+        "bytes": 609,
+        "sha256": "b40968492d74e7d8d7f1702cead9993fd63b30125b2a6ecda2df6c52e805ddb4"
+      }
+    ]
+  },
+  "gameplay": {
+    "status": "PENDING",
+    "tb_rt_playtest_required": true,
+    "matched_unity_performance_required": true
+  },
+  "private_verification_artifacts": [
+    {
+      "file": "release-final.log",
+      "bytes": 179,
+      "sha256": "54c21a04f446b8f7c281d68585f3f756c1bf723599d67b9236a0ba4c2cb45b99"
+    },
+    {
+      "file": "unit-final.log",
+      "bytes": 512,
+      "sha256": "bbf0e133311261c9706f288e4d6cb4c384d8776450f93501697c6ca09be2a494"
+    },
+    {
+      "file": "verified-exact-refs.txt",
+      "bytes": 686,
+      "sha256": "22f6aad6cf50b55d02ad4c32c56791497d398091d48503fd980ee59c2f8571b2"
+    },
+    {
+      "file": "strict-run.txt",
+      "bytes": 7724,
+      "sha256": "c3dc1a1be02679a09c049ce16b8efa962bf60e7edbd343b8516071a10dac48c6"
+    },
+    {
+      "file": "supplementary-run.txt",
+      "bytes": 7604,
+      "sha256": "c17a656d47cead59bd835eece5138aeaf5281831b0b8b527c0739d984ead49b9"
+    },
+    {
+      "file": "native-run.txt",
+      "bytes": 9693,
+      "sha256": "4e7a25a62d61d67f4911e136d892660dcb758076ff985f735e179d2af4b8b6ca"
+    },
+    {
+      "file": "tome-native-run.txt",
+      "bytes": 7879,
+      "sha256": "a179f6be5218542e65ac0acbbbb73db7ab95a028b0ab4c64df655c4a7e112404"
+    },
+    {
+      "file": "toybox-run.txt",
+      "bytes": 7874,
+      "sha256": "bcdd5e3888fd9824aac5d29ff27f6d95581b38dba1d7d3fa1b44ca1f282d240c"
+    }
+  ]
+}
