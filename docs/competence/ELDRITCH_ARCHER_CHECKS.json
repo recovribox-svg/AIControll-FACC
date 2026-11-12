@@ -1,0 +1,257 @@
+{
+  "task": "Native Eldritch Archer ranged Spell Combat and first-arrow Spellstrike support",
+  "checked_source_commit": "5ddcbcaa6a257a307fcbc5c1e584bb7e50b87111",
+  "starting_commit": "8985e402d58a1c47fb15b22f60083189f0726dc5",
+  "dependency_pr": 40,
+  "development_base": "1f58150b8e50f9a322ba0b8d3fcc095fe188420f",
+  "source_branch": "codex/eldritch-archer-support",
+  "version": "0.3.30",
+  "author_approval": "User explicitly requested tactical engine support for Eldritch Archer including Ranged Spellstrike and Ranged Spell Combat, plus a separate Shifter task.",
+  "dll": {
+    "assembly": "CompanionAI_Pathfinder, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null",
+    "mvid": "8e6a8470-b08a-41d6-9771-0b995ae18465",
+    "sha256": "08c41c39ad197c81e9d16473a6de127db013b4e8cb9ada0ac1d83f698d2318db",
+    "size": 1339392
+  },
+  "design_native_evidence_and_replay": "../ELDRITCH_ARCHER.md",
+  "unit_tests": {
+    "passed": 629,
+    "failed": 0,
+    "skipped": 0
+  },
+  "inventory_tests": {
+    "passed": 11,
+    "failed": 0
+  },
+  "release_build": {
+    "actual_supplied_game_unity_umm_references": true,
+    "warnings": 0,
+    "errors": 0,
+    "source_committed_before_build": true,
+    "manifest_unchanged": true
+  },
+  "native_step_approach": {
+    "checks": 13,
+    "failures": 0,
+    "actor_path_command_execution": false
+  },
+  "native_additions": {
+    "area_exit_routes_inherited": {
+      "checks": 28,
+      "failures": 0
+    },
+    "constant_debuff_inherited": {
+      "checks": 17,
+      "failures": 0
+    },
+    "area_bounds_inherited": {
+      "checks": 28,
+      "failures": 0
+    },
+    "treatment_inherited": {
+      "checks": 10,
+      "failures": 0
+    },
+    "eldritch_archer": {
+      "checks": 25,
+      "failures": 0,
+      "actual_exported_feature_and_spell_metadata": true,
+      "correlated_first_arrow_quote_and_miss": true,
+      "native_compiled_eligibility_delivery_cleanup_routes": true,
+      "actor_cast_attack_clock_or_unity_execution": false
+    }
+  },
+  "inherited_native_checks": {
+    "magus_base": 32,
+    "magus_supplementary_including_base": 44,
+    "caster": 36,
+    "fusion": 35,
+    "projectile": 29,
+    "burn": 50,
+    "resistance": 18,
+    "attached": 24,
+    "swarm": 27,
+    "reveal": 7,
+    "viewless": 6,
+    "toggle": 98,
+    "tome": 14,
+    "toybox": 10,
+    "failures": 0
+  },
+  "strict_native_compatible_audit": {
+    "status": "PASS",
+    "exit_code": 0,
+    "scope": "C06_NATIVE_COMPATIBLE_SCOPE.json",
+    "source_files": 44647,
+    "loaded_unique": 44637,
+    "failed": 0,
+    "allowed_load_failures": 0,
+    "ability_rows": 4807,
+    "reader_errors": 0,
+    "input_bytes_modified": false
+  },
+  "strict_supplementary_stock_fixture_audit": {
+    "status": "PASS",
+    "exit_code": 0,
+    "source_files": 44651,
+    "loaded_unique": 44641,
+    "failed": 0,
+    "ability_rows": 4807,
+    "reader_errors": 0,
+    "installed_mod_state": false,
+    "original_uploaded_inputs_modified": false,
+    "fixture_provenance": "C07_MAGUS_NATIVE.json#supplementary_stock_hidden_buffs"
+  },
+  "original_full_corpus_audit": {
+    "status": "INCOMPLETE",
+    "exit_code": 1,
+    "source_files": 44648,
+    "loaded_unique": 44637,
+    "failed": 1,
+    "allowed_load_failures": 0,
+    "ability_verdicts_generated": false,
+    "failure": "Previously fingerprinted AchaekekSacredWeaponFeature SawtoothSaber vs native SawtoothSabre enum mismatch; parser error logging reaches offline engine dependency",
+    "input_sha256": "1fd534ef0fc9573520d101c721e5d2721812fdb5b8f8a13e29fcbc3acb06ac0f",
+    "input_bytes_modified": false
+  },
+  "added_foreign_member_references": {
+    "baseline_commit": "8985e402d58a1c47fb15b22f60083189f0726dc5",
+    "added": 5,
+    "resolved_exact": 5,
+    "unresolved": 0,
+    "full_signature_overload_matching": true
+  },
+  "harness_limits": [
+    "Private runnable copies neutralize Unity/localization/instrumentation including ProfileScope.New; no stubs are deployed.",
+    "Native HasMetamagic metadata logic remains; no live rod, hit/save outcome, actor initialization or navigation is established.",
+    "Native command fixtures only set/read flags on uninitialized objects; no command is issued.",
+    "Provider fixtures do not call mod setup, getter or condition code."
+  ],
+  "planning_bounds": {
+    "in_place_source_casts_maximum": 4,
+    "one_toggle_future_states_maximum": 2,
+    "new_paths": 0,
+    "actor_simulation": false,
+    "global_rule_patches": false,
+    "existing_shared_cache_invalidations": true
+  },
+  "behavior_limits": [
+    "Native queue/spend/attack and matched Unity performance require TB/shared RT playtesting.",
+    "Standard simple single-target rays without hard control/caster-side payloads/Fusion/controlled projectiles are automatically paired. Unsafe shapes use evaluated off state.",
+    "Native Swift source delivery is guarded and uses bow roll; no speculative new full-routine credit.",
+    "Pure Mage excludes automatic physical preparations/follow-ups; ordinary Ranged retains attacks and existing intrinsic spell delivery.",
+    "Native target motion after issue can change queued execution; general movement/commitment/retreat/pathfinder/stuck policies are not retuned.",
+    "Shifter/Ulbrig form support is the separate authorized next task.",
+    "Original full-corpus enum load failure remains separately incomplete."
+  ],
+  "task_source_files": [
+    {
+      "file": "Tactics/CombatMath.Magus.cs",
+      "sha256": "c0613685d05227d6df2e8110df544d53d5a157351a9186d39e8f7c711f25636a"
+    },
+    {
+      "file": "Tactics/CombatMath.cs",
+      "sha256": "5eecc7b4a78d8a02297d58347dda1f20df7f41b84e5038c2f897e000ad4cae3d"
+    },
+    {
+      "file": "Tactics/CoverageReport.cs",
+      "sha256": "e3bf9bfad36f791ef549916b6c0d76ac9372c43ea9c2aac1ec307ce0ef6aef8f"
+    },
+    {
+      "file": "Tactics/TacticalEngine.EldritchArcher.cs",
+      "sha256": "89bcc549b5dd681ccab605c27df73c12a89e60c691a9069de5270e5bf3a078a3"
+    },
+    {
+      "file": "Tactics/TacticalEngine.Magus.cs",
+      "sha256": "38cab89e153e762892a78064d1907645b71a9c92ebed6edecb02053e2bbd5781"
+    },
+    {
+      "file": "Tactics/TacticalEngine.cs",
+      "sha256": "e837ce599ba436646684f11a1488dcb0e55bd60fafa2173ab515124af1d8239e"
+    },
+    {
+      "file": "tools/ProfileAudit/EldritchArcherCheck.cs",
+      "sha256": "810b3e2249b1127a61e9f3894062b2fb7f71bb77ab0675f93299856305730199"
+    },
+    {
+      "file": "tools/ProfileAudit/Program.cs",
+      "sha256": "3ff0cfaaea602b22a4a9b99d6bdd1b86a156313223148cdf31e7e774712837a7"
+    }
+  ],
+  "package": {
+    "file": "test-builds/AI-Control-FACC-v0.3.30-dev-archer1-5ddcbca-UMM-test.zip",
+    "sha256": "3ca45d6b85eccac0fbcfaf385670fcddd39be75e7f1b98287fe35579f659ecf3",
+    "bytes": 531272,
+    "identity_file": "test-builds/AI-Control-FACC-v0.3.30-dev-archer1-5ddcbca-UMM-test.identity.json",
+    "checksum_file": "test-builds/AI-Control-FACC-v0.3.30-dev-archer1-5ddcbca-UMM-test.sha256",
+    "members": [
+      {
+        "file": "CompanionAI_Pathfinder/CompanionAI_Pathfinder.dll",
+        "bytes": 1339392,
+        "sha256": "08c41c39ad197c81e9d16473a6de127db013b4e8cb9ada0ac1d83f698d2318db"
+      },
+      {
+        "file": "CompanionAI_Pathfinder/Info.json",
+        "bytes": 379,
+        "sha256": "d6ee91e78dc5d4981ad51a1a1a85bb1e7fe3f0a87814697f2fd9ee1c20d35594"
+      },
+      {
+        "file": "CompanionAI_Pathfinder/BUILD_IDENTITY.json",
+        "bytes": 1204,
+        "sha256": "9af72f443ac9d35ad3022ad848171a77fe632ba8e616ba6b971192246e6d28e5"
+      },
+      {
+        "file": "CompanionAI_Pathfinder/TEST_BUILD.txt",
+        "bytes": 635,
+        "sha256": "7a7855bc7e0c247c4c7fe848ea94f2bfb5e5d4970f81accec38956e91c1f1047"
+      }
+    ]
+  },
+  "gameplay": {
+    "status": "PENDING",
+    "tb_rt_playtest_required": true,
+    "matched_unity_performance_required": true
+  },
+  "private_verification_artifacts": [
+    {
+      "file": "release-final.log",
+      "bytes": 183,
+      "sha256": "64e212695fdd7a616a6e282d259b6d4960a9d912743057b57f320dc1d3c06e8a"
+    },
+    {
+      "file": "unit-final.log",
+      "bytes": 520,
+      "sha256": "1c4b8ccb61e69b49642416e89b22b6f8da693ebe70a0a0ee6d3d7ed82abc6dc1"
+    },
+    {
+      "file": "verified-exact-refs.txt",
+      "bytes": 826,
+      "sha256": "11edb26d71e0e60089b4e1f74cf0dde6eb5a7b87cbbafde400a8a00f34ee8179"
+    },
+    {
+      "file": "strict-run.txt",
+      "bytes": 8284,
+      "sha256": "754c18317f98f500c15004c666f5e1d8d7fd35c226fc1b70a8a57836ecdf4ad8"
+    },
+    {
+      "file": "supplementary-run.txt",
+      "bytes": 8164,
+      "sha256": "4efd22e7a677aebd64f3f573ab009ed31045da74740fba471989bda131677b96"
+    },
+    {
+      "file": "native-run.txt",
+      "bytes": 10253,
+      "sha256": "9a6b3bddb44068688ebdc49385cef94ccba47257c431ef2db2c8d1309d81dcba"
+    },
+    {
+      "file": "tome-native-run.txt",
+      "bytes": 8439,
+      "sha256": "5e5d186e67d3ec09e749a14b52825f0495eb5ac1a2e34f4efa3418e01d18a70f"
+    },
+    {
+      "file": "toybox-run.txt",
+      "bytes": 8434,
+      "sha256": "e902cce0f70280754b586775c2eb369cf81ac0bac429aa1e4b07bc34c94e27a5"
+    }
+  ]
+}

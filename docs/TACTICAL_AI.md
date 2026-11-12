@@ -4894,3 +4894,5 @@ projectiles and caster-side combinations retain documented limits/off-state hand
 guarded without speculative full-routine credit. Pure Mage and ordinary ranged policies remain. Shared TB/RT
 only; legacy RT, general movement/commitment/retreat/pathfinder/stuck policies are not retuned. Gameplay and
 matched Unity timing pending. The requested Shifter/Ulbrig work is separate.
+
+Checked source `5ddcbca`, [receipt](competence/ELDRITCH_ARCHER_CHECKS.json) and [archer1 test ZIP](../test-builds/AI-Control-FACC-v0.3.30-dev-archer1-5ddcbca-UMM-test.zip), startup MVID `8e6a8470-b08a-41d6-9771-0b995ae18465`. 629 unit + 11 inventory tests and native checks pass; actual-reference Release 0 warnings/errors; 5/5 added signatures resolve. Compatible/supplementary audit scopes pass; original full-corpus enum failure remains distinct. Gameplay/matched Unity timing pending.

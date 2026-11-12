@@ -84,3 +84,5 @@ data omitted by the optimization. Current rank/shared/dice/pool/caster-level pat
 recipient stats and same-caster fact filters remain live. Actual static scalar tests pass, but matched Unity
 performance and installed-mod gameplay are not established by those tests. No new correctness defect was
 found in the current supported static path, and this task does not change PR #38's implementation.
+
+Checked source `5ddcbca`, [receipt](competence/ELDRITCH_ARCHER_CHECKS.json) and [archer1 test ZIP](../test-builds/AI-Control-FACC-v0.3.30-dev-archer1-5ddcbca-UMM-test.zip), startup MVID `8e6a8470-b08a-41d6-9771-0b995ae18465`. 629 unit + 11 inventory tests and native checks pass; actual-reference Release 0 warnings/errors; 5/5 added signatures resolve. Compatible/supplementary audit scopes pass; original full-corpus enum failure remains distinct. Gameplay/matched Unity timing pending.

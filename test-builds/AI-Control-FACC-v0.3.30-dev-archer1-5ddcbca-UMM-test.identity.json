@@ -1,0 +1,21 @@
+{
+  "build_label": "archer1",
+  "kind": "development-test",
+  "version": "0.3.30",
+  "source_branch": "codex/eldritch-archer-support",
+  "source_commit": "5ddcbcaa6a257a307fcbc5c1e584bb7e50b87111",
+  "starting_commit": "8985e402d58a1c47fb15b22f60083189f0726dc5",
+  "development_base": "1f58150b8e50f9a322ba0b8d3fcc095fe188420f",
+  "dependency_pr": 40,
+  "dll": {
+    "assembly": "CompanionAI_Pathfinder, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null",
+    "mvid": "8e6a8470-b08a-41d6-9771-0b995ae18465",
+    "sha256": "08c41c39ad197c81e9d16473a6de127db013b4e8cb9ada0ac1d83f698d2318db",
+    "size": 1339392
+  },
+  "manifest_sha256": "d6ee91e78dc5d4981ad51a1a1a85bb1e7fe3f0a87814697f2fd9ee1c20d35594",
+  "checks_receipt": "docs/competence/ELDRITCH_ARCHER_CHECKS.json",
+  "gameplay_status": "not played",
+  "scope": "Includes cumulative review2 prerequisites. Bounded native ranged Magus plans, actual bow delivery, correlated first-arrow spell roll/critical, finite native follow-ups, pending payload value/guards and no false no-effect on arming. Standard simple-ray automatic pairs; existing shared TB/RT policies and four-cast/two-state bound remain. Shifter is separate.",
+  "release": false
+}
