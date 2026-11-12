@@ -4760,3 +4760,5 @@ compatible ProfileAudit and original full-corpus enum failure separately. Offlin
 or issue commands. The tooltip remains unproven. General movement, commitment, retreat, pathfinding, hazard geometry,
 stuck cancellation and legacy RT selection are unchanged. Manifest 0.3.30; Claude reviews/integrates;
 no main/development push, merge or release.
+
+C07 checked source `e2473e8`, [receipt](competence/C07_MAGUS_CHECKS.json) and [magus1 identity](../test-builds/AI-Control-FACC-v0.3.30-dev-magus1-e2473e8-UMM-test.identity.json): 607 unit + 11 inventory, Magus 32 / supplementary 44 and inherited checks pass; real-reference Release 0 warnings, 29/29 signatures resolve. Compatible/supplementary audits pass; original full-corpus failure remains separate.

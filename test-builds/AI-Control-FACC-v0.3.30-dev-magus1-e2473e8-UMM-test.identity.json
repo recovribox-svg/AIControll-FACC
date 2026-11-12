@@ -1,0 +1,21 @@
+{
+  "build_label": "magus1",
+  "kind": "development-test",
+  "version": "0.3.30",
+  "source_branch": "codex/magus-native-combat",
+  "source_commit": "e2473e8ce721192ab7472331280990401bf2f42c",
+  "starting_caster2_commit": "02d2c2a51ee920b20a0f9f50ab0c9d32911cd6c9",
+  "development_base": "1f58150b8e50f9a322ba0b8d3fcc095fe188420f",
+  "dependency_pr": 34,
+  "dll": {
+    "assembly": "CompanionAI_Pathfinder, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null",
+    "mvid": "66d1bd9e-d6a8-4c0c-8b1b-7dbc99b2db72",
+    "sha256": "e909d2f9c6821a9f6dcebc6a67c33f3ed3ae401e577ae5d3f4e8a416be941480",
+    "size": 1325056
+  },
+  "manifest_sha256": "d6ee91e78dc5d4981ad51a1a1a85bb1e7fe3f0a87814697f2fd9ee1c20d35594",
+  "checks_receipt": "docs/competence/C07_MAGUS_CHECKS.json",
+  "gameplay_status": "not played",
+  "release": false,
+  "scope": "Includes caster2/PR34 and its prerequisites; bounded native melee Magus preparation, cast combinations and held-touch follow-ups; natural-weapon helpful/blocked charge guard. Movement proposals remain separate."
+}

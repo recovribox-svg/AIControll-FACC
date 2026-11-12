@@ -105,3 +105,5 @@ Replay the identified **magus1** UMM test in TB and shared-engine RT; retain its
 
 Gameplay and matched Unity timing remain pending. Manifest 0.3.30; Claude reviews/integrates; no development/main
 push, merge or release is performed.
+
+Checked source `e2473e8`, startup MVID `66d1bd9e-d6a8-4c0c-8b1b-7dbc99b2db72`. [Magus1 ZIP](../test-builds/AI-Control-FACC-v0.3.30-dev-magus1-e2473e8-UMM-test.zip) · [identity](../test-builds/AI-Control-FACC-v0.3.30-dev-magus1-e2473e8-UMM-test.identity.json) · [receipt](competence/C07_MAGUS_CHECKS.json). 607 unit + 11 inventory, 32 native Magus checks / 44 including supplementary stock hidden buffs and inherited regressions pass. Real-reference Release has 0 warnings/errors; 29/29 added signatures resolve. Compatible ProfileAudit: 44,637 unique / 4,807 rows / zero errors; supplemental stock fixtures: 44,641 unique / same ability rows / zero errors. Original full corpus retains its separately fingerprinted one-file enum failure without verdicts. Gameplay/matched Unity timing pending.
