@@ -1,0 +1,21 @@
+{
+  "build_label": "shifter1",
+  "kind": "development-test",
+  "version": "0.3.30",
+  "source_branch": "codex/shifter-support",
+  "source_commit": "f904c39233468458d51a049e13afb993abb4ca67",
+  "starting_commit": "a6c3f5308608d10587cc80575015fb7aa5eb059e",
+  "development_base": "1f58150b8e50f9a322ba0b8d3fcc095fe188420f",
+  "dependency_pr": 41,
+  "dll": {
+    "assembly": "CompanionAI_Pathfinder, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null",
+    "mvid": "875cf339-de55-4d04-89f9-d5235ec7ecbe",
+    "sha256": "c675cc6bc575906f82d5d52225545a3f696c8d26a85d0d14ecb2347d8355392f",
+    "size": 1359872
+  },
+  "manifest_sha256": "d6ee91e78dc5d4981ad51a1a1a85bb1e7fe3f0a87814697f2fd9ee1c20d35594",
+  "checks_receipt": "docs/competence/SHIFTER_CHECKS.json",
+  "gameplay_status": "not played",
+  "scope": "Cumulative EA/review2 prerequisites included. Shared TB/RT Shifter core natural-attack/stat/absolute-size/equipment-loss appraisals, existing minor-aspect/C06 spend/group integration, bounded actual native Fury choices while off, original all-off restore and partial-activation rollback; current/player/suppressed forms and pending Fury selections retained. Automatic out-of-combat self-buff upkeep excludes transformations. Native execution/resources remain; no general movement change.",
+  "release": false
+}

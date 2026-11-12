@@ -126,3 +126,5 @@ Play **both turn-based and shared real-time**, retaining the package's startup M
 
 Supply the matching AI/combat logs if a form is repeatedly rejected or actual Fury behavior differs. No
 additional blueprint archive is currently required; the missing acceptance evidence is live actor execution.
+
+Checked source `f904c39`, [receipt](competence/SHIFTER_CHECKS.json) and [shifter1 test ZIP](../test-builds/AI-Control-FACC-v0.3.30-dev-shifter1-f904c39-UMM-test.zip), startup MVID `875cf339-de55-4d04-89f9-d5235ec7ecbe`. 647 unit + 11 inventory tests and native checks pass; actual-reference Release 0 warnings/errors; 73/73 added signatures resolve. Compatible/supplementary audit scopes pass; original full-corpus enum failure remains distinct. Gameplay/matched Unity timing pending.

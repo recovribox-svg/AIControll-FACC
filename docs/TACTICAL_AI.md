@@ -4921,3 +4921,5 @@ normal native command/resource execution, no general movement/commitment/retreat
 86 exported form layouts and native/scalar/compiled checks are offline evidence, not all-mod gameplay proof.
 Full checked identities/results follow the source commit; actual Ulbrig/Fury replay and matched Unity timing
 remain pending. Manifest 0.3.30; Claude reviews/integrates, no main/development push, merge or release.
+
+Checked source `f904c39`, [receipt](competence/SHIFTER_CHECKS.json) and [shifter1 test ZIP](../test-builds/AI-Control-FACC-v0.3.30-dev-shifter1-f904c39-UMM-test.zip), startup MVID `875cf339-de55-4d04-89f9-d5235ec7ecbe`. 647 unit + 11 inventory tests and native checks pass; actual-reference Release 0 warnings/errors; 73/73 added signatures resolve. Compatible/supplementary audit scopes pass; original full-corpus enum failure remains distinct. Gameplay/matched Unity timing pending.
