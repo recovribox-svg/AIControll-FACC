@@ -112,8 +112,11 @@ namespace CompanionAI_Pathfinder.Tactics
                         Main.Error($"[Approach] {ctx.Unit.CharacterName}: advance recovery unavailable: {ex.Message}");
                         return Enumerable.Empty<Candidate>(); // retain the already-filtered plans on a recovery error
                     }
-                });
+                }, recoveryKey: PlainMoveRecoveryKey);
         }
+
+        private static string PlainMoveRecoveryKey(Candidate c) =>
+            c.Kind == CandidateKind.Move && !c.NeedsMove && !c.MoveFirst ? c.Key : null;
 
         private static bool IsOffensiveApproach(Candidate c) =>
             c.Offensive && c.Kind != CandidateKind.Move && RequiresApproachValidation(c);

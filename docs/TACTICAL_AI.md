@@ -5112,3 +5112,18 @@ Known Death from Above/Release Grapple/Focused Shot and shared-HD Fusion gaps re
 retreat, commitment, pathfinder, stuck-cancellation or scoring-budget change. Manifest remains 0.3.30.
 
 Checked source `4392e51`, [receipt](competence/REVIEW5_PLAYTEST_CHECKS.json) and [review6 test ZIP](../test-builds/AI-Control-FACC-v0.3.30-dev-review6-4392e51-UMM-test.zip), startup MVID `3f9c3355-3c65-4477-b059-dd370eb20d2b`. 664 unit + 27 inventory tests and native checks pass; actual-reference Release 0 warnings/errors; 0/0 added signatures resolve. Compatible/supplementary audit scopes pass; original full-corpus enum failure remains distinct. Gameplay/matched Unity timing pending.
+
+## 153. Review5 playtest: recovery cannot repeat an actually refused plain move
+
+[Evidence/replay](REVIEW5_RECOVERY_KEYS.md). RT 2041–2051: Seelah's Advance was one of three rejected selected
+approaches, then a new fallback object with the same plan key was issued and rejected for the same Corrosive Bomb
+path. Safety held, but a native issue/path attempt was duplicated.
+
+SelectedApproachFilter now optionally records actual refused recovery keys, using a lazy ordinal set capped by
+three checks. The production selector uses existing plain-move keys; recovery objects with those keys are withheld.
+There is no persistent refusal, target ban, generated identity string or added native check. Unchecked options,
+different plans and future decisions stay eligible. Other actions, trigger/affordability/safety gates and the
+approved fallback's cap remain. Its existing small pricing pass can still run; total native queries are not
+claimed to be capped at three. Four unit scheduling cases and four actual candidate checks (Idle Advance 27 total)
+cover the correction; form-reference 14 and all inherited checks remain. Native paths/gameplay/timing need replay.
+No general movement, commitment, retreat, pathfinder, stuck-cancellation, budget or value-model change.
