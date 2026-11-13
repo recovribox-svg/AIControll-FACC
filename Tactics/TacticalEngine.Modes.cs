@@ -557,6 +557,10 @@ namespace CompanionAI_Pathfinder.Tactics
             float all = parts.Sum(p => p.Value), avoided = 0f;
             foreach (var part in parts)
             {
+                // ★ v0.3.52: recognized swarm casts/round effects bypass attack rolls. As in buff appraisal,
+                // retain their danger in the denominator/urgency, but give AC no protection against that share.
+                // The shared source snapshot is already read by IncomingParts; skip even a nominal weapon quote.
+                if (CombatMath.SwarmSpaceOf(part.Key) != null) continue;
                 var est = CombatMath.EstimateWeaponAttack(part.Key, unit, full: false);
                 if (est == null) continue;
                 float before = CombatMath.HitProbability(est.FirstAttackBonus, est.FirstArmorClass);

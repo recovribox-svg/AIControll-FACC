@@ -5474,6 +5474,8 @@ native Pounce/ability costs, 8 endpoints / 4 own-weapon quotes, <=32 mode sets, 
 availability/round locks/hysteresis and accepted-dispatch application. Combined charge-mode AC is priced from
 the same landing baseline, with equal AC totals memoized locally. Errors restore the original candidate.
 Positive charge AB/procs remain uncredited; no flight/path/actor preview or broad movement policy change.
+Shared mode/charge-AC defense now excludes recognized automatic swarm sources before nominal weapon quotes,
+matching the existing buff-defense contract. Total danger remains; ordinary attack mitigation is unchanged.
 
 Logging audit finds 261 identical SpellPen lines plus repeated Prone/no-enemy messages. Three diagnostic-only
 change memos retain <=128 string IDs/scalars each and reset by fight. First/changed/observed recurrence report;

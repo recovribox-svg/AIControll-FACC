@@ -84,6 +84,10 @@ namespace ProfileAudit
                     "shared chooser retains ordinary pricing and adds only the cached leap branch");
                 Check(generated.Any(m => m.Name == "Armor") && generated.Any(m => m.Name == "DefenseValue"),
                     "mode defense is priced at the landing including the actual charge armor delta");
+                var defense = SaveBoostCheck.ReferencedMembers(engine.GetMethod("DefenseValue", all)).ToArray();
+                Check(Array.FindIndex(defense, m => m.Name == "SwarmSpaceOf") >= 0 &&
+                    Array.FindIndex(defense, m => m.Name == "SwarmSpaceOf") < Array.FindIndex(defense, m => m.Name == "EstimateWeaponAttack"),
+                    "shared mode AC excludes recognized automatic swarm sources before nominal weapon quotes, retaining total danger");
                 var ownership = SaveBoostCheck.ReferencedMembers(engine.GetMethod("AttackModes", all)).ToArray();
                 Check(ownership.Any(m => m.Name == "get_AiManagesToggles") && ownership.Any(m => m.Name == "PlayerOwnsToggle") && ownership.Any(m => m.Name == "SourceOf"),
                     "existing management setting, manual ownership and blocklist gates remain in the shared route");

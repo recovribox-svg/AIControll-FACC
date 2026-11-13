@@ -50,7 +50,7 @@ new Magus/held-spell delivery plan.
 Mode defense uses the **landing** and **combined native charge-armor plus mode delta**. Marginal improvement
 is the difference between states at that same baseline, retaining the original charge cost. Equal AC totals
 are memoized within that candidate. Existing per-decision defensive routines/position caches remain. Ordinary
-weapon pricing is unchanged. The shared **at most 32 mode sets**, management setting, player ownership,
+weapon damage pricing is unchanged. The shared **at most 32 mode sets**, management setting, player ownership,
 blocklists, group constraints, within-round locks, availability and hysteresis remain. Existing ability-mode
 dispatch applies a chosen set only after the cast command is accepted; refused commands spend no toggle.
 
@@ -61,6 +61,18 @@ restores the original candidate and reports once rather than losing a valid nati
 
 The old 24.5/28.2 comparison motivates the correction; rounded log values do not prove the exact counterfactual
 winner. Actual leap/queued-attack completion still requires gameplay. This is not a promise to prioritize it.
+
+### Shared combat-mode AC and automatic swarm damage
+
+Static review found a remaining inconsistency: `DefenseValue`, used by combat modes and the leap's charge-AC
+cost, iterates total incoming parts and can use a swarm's nominal weapon quote to price AC. Recognized swarm
+casts/round effects deal damage directly, without an attack roll. The buff-defense reader already excludes
+those known sources from attack mitigation. Apply the same `SwarmSpaceOf` source exclusion before weapon
+quotes in the shared mode-defense loop. Total danger stays in the denominator and drop-risk baseline; ordinary
+attack shares retain their existing AC calculations. This also avoids a redundant nominal swarm weapon query.
+It is a native-contract consistency repair, not proof that a particular observed stance was wrong. Unknown
+graphs are not blanket-excluded by creature name/type. Regress both ordinary attacks and leap landings in
+pure/mixed swarm fights: AC-only modes must not claim to stop the known automatic share.
 
 ## Logging audit and optimizations
 
@@ -114,7 +126,7 @@ concealment/criticals/payloads, cache/query/ownership/dispatch routes and compil
 affliction/swarm/Cling/charge inputs remain mandatory; the raw enum-load failure remains separately named.
 The initial new logging audit exposed an offline verifier limitation: generic field/method tokens were resolved
 without their type/method arguments. `SaveBoostCheck.ReferencedMembers` now supplies the actual generic context;
-this repairs inspection of the compiled memo without changing the mod DLL or weakening the check.
+this repairs inspection of the compiled memo without changing gameplay source or weakening the check.
 Exact committed source/build/package results follow validation below.
 
 Replay both modes with the new MVID:

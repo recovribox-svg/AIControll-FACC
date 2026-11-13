@@ -37,6 +37,8 @@ blocklist/hysteresis/dispatch rules and query limits are retained. Mode repricin
 quote. Bounded diagnostic change memos reduce repeated SpellPen/blocked/empty-enemy messages; quiet discarded
 summaries and disabled verbose math avoid formatting. Idle-recovery state witnesses add no path query. Inspect and
 regress this implementation rather than implementing it again. No leap execution or measured speedup is claimed.
+Shared mode/charge-AC scoring also now excludes recognized automatic swarm sources before nominal weapon quotes,
+matching the existing buff-defense contract while keeping total danger and ordinary attack mitigation.
 
 **Current unresolved evidence:** safe leaps are admitted but none issued; Invocation 18 issues / 17 successes still
 needs marginal-utility review; several idle turns follow real path refusals; four no-effect Dazzling Display casts
