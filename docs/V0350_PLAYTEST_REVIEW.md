@@ -102,3 +102,5 @@ casts, attack rules, movement, Harmony turn lifecycles or Unity timing.
 New behavior and matched Unity timing are unplayed. The original full corpus still has its separately reported
 Achaekek `SawtoothSaber`/native `SawtoothSabre` load mismatch; originals are unchanged and not described as a full
 pass. The package is a development test, with no main/tag/stable release.
+
+Checked source `ae92697`, [receipt](competence/V0350_PLAYTEST_CHECKS.json) and [review1 test ZIP](../test-builds/AI-Control-FACC-v0.3.50-dev-review1-ae92697-UMM-test.zip), startup MVID `25818a75-297f-47de-aea3-5cf93d0a9d09`. 730 unit + 27 inventory tests and native checks pass; actual-reference Release 0 warnings/errors; 0/0 added signatures resolve. Compatible/supplementary audit scopes pass; original full-corpus enum failure remains distinct. Gameplay/matched Unity timing pending.
