@@ -206,5 +206,64 @@ namespace CompanionAI.Tests
             Assert.Same(approach, Assert.Single(Run()));
             Assert.Equal(1, builds);
         }
+
+        [Fact]
+        public void RecoveryCannotRecreateAPlainAdvanceAlreadyRefusedAmongThreeChecks()
+        {
+            var refused = new Plan("advance:A", walks: true);
+            var recreated = new Plan("advance:A", walks: true);
+            var other = new Plan("advance:B", walks: true);
+            var plans = new[] { new Plan("attack:1", walks: true), refused,
+                new Plan("attack:2", walks: true), new Plan("attack:3", walks: true) };
+            int checks = 0, builds = 0;
+            var result = SelectedApproachFilter.Apply(plans, SelectMain, NeedsCheck,
+                p => { checks++; return false; }, hasUsefulAction: p => p.Count != 0,
+                idleFallback: () => { builds++; return new[] { recreated, other }; },
+                recoveryKey: p => p.Key.StartsWith("advance:") ? p.Key : null);
+            Assert.Equal(3, checks);
+            Assert.Equal(1, builds);
+            Assert.Same(other, Assert.Single(result));
+        }
+
+        [Fact]
+        public void RecoveryDoesNotTreatABudgetOmissionAsAPathRefusal()
+        {
+            var plans = Enumerable.Range(0, 3).Select(i => new Plan("bad" + i, walks: true))
+                .Concat(new[] { new Plan("unchecked", walks: true) });
+            var recovered = new Plan("unchecked", walks: true);
+            int checks = 0;
+            var result = SelectedApproachFilter.Apply(plans, SelectMain, NeedsCheck,
+                p => { checks++; return false; }, hasUsefulAction: p => p.Count != 0,
+                idleFallback: () => new[] { recovered }, recoveryKey: p => p.Key);
+            Assert.Equal(3, checks);
+            Assert.Same(recovered, Assert.Single(result));
+        }
+
+        [Fact]
+        public void RefusedRecoveryIdentityIsNotRetainedIntoANewDecision()
+        {
+            var move = new Plan("advance:A", walks: true);
+            int builds = 0;
+            List<Plan> Run() => SelectedApproachFilter.Apply(new[] { move }, SelectMain, NeedsCheck, p => p.Ready,
+                hasUsefulAction: p => p.Count != 0,
+                idleFallback: () => { builds++; return new[] { new Plan("advance:A", walks: true) }; },
+                recoveryKey: p => p.Key);
+            Assert.Empty(Run());
+            move.Ready = true;
+            Assert.Same(move, Assert.Single(Run()));
+            Assert.Equal(1, builds);
+        }
+
+        [Fact]
+        public void RefusedAdvanceDoesNotSuppressADifferentPlanForThatTargetOrAnUnkeyedPlan()
+        {
+            var exit = new Plan("exit:A", walks: true);
+            var unknownIdentity = new Plan(null, walks: true);
+            var result = SelectedApproachFilter.Apply(new[] { new Plan("advance:A", walks: true) }, SelectMain,
+                NeedsCheck, p => false, hasUsefulAction: p => p.Count != 0,
+                idleFallback: () => new[] { new Plan("advance:A", walks: true), exit, unknownIdentity },
+                recoveryKey: p => p.Key);
+            Assert.Equal(new[] { exit, unknownIdentity }, result);
+        }
     }
 }

@@ -1,4 +1,4 @@
-// ★ summon control (docs/SUMMON_CONTROL_PLAN.md §4, docs/TACTICAL_AI.md §152): the turn-based entry for a summoned
+// ★ summon control (docs/SUMMON_CONTROL_PLAN.md §4, docs/TACTICAL_AI.md §156): the turn-based entry for a summoned
 // creature AI Control drives. An entry adapter only - every decision is taken by the existing turn-based driver
 // (Core/TurnBased/TurnBasedController.ProcessTurn) and every command goes through CommandDispatcher.Run.
 //

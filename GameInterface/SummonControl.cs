@@ -1,4 +1,4 @@
-// ★ summon control (docs/SUMMON_CONTROL_PLAN.md, docs/TACTICAL_AI.md §152): which summoned creatures AI Control drives,
+// ★ summon control (docs/SUMMON_CONTROL_PLAN.md, docs/TACTICAL_AI.md §156): which summoned creatures AI Control drives,
 // whose settings and blocklists they use, and which abilities they never use. Opt-in (ModSettings.ControlSummons, off by
 // default); the rules themselves are pure (Tactics/SummonRules.cs, unit-tested) - this file only reads the game.
 //

@@ -5115,7 +5115,93 @@ Claude owns implementation/integration; Codex continues reviews/interim coding. 
 Planning baseline checks: 664 unit + 27 inventory, real-reference Release 0 warnings/errors, compatible ProfileAudit and
 native toggle 98 checks pass ([receipt](competence/SUMMON_CONTROL_PLAN_CHECKS.json)). Feature code and gameplay remain unimplemented/untested.
 
-## 152. Summon control: implementation (13 November 2026, Claude; not played)
+
+## 152. Review5 playtest: matched current/form weapon reference
+
+[Review/replay](REVIEW5_PLAYTEST_REVIEW.md) · [input identities](REVIEW5_PLAYTEST_INPUTS.json).
+TB startup matches review5; RT lacks its own header and is identified by the author. Combat spawning/rests were
+confirmed. Five TB and six RT summaries contain no AI exception; Griffon form and Fury execution are now exercised.
+
+OffenceOf retained Enemy only for positive damage. New-form appraisal could then compare a zero current result
+against a projected form on a different first context enemy. Preserve the existing target/estimate pair even for
+zero, require it for form appraisal, and retain its native ranged flag. Missing baseline remains unknown. Current
+profitable-buff fields and Fury admission stay unchanged; form notes name the actual reference target. Old logs do
+not name that target, so not every zero-to-positive row can be attributed to this bug. Fourteen actor-free record,
+reference and compiled-route checks cover the corrected contract; native gameplay remains a replay requirement.
+
+The correction adds two references in the existing frame-scoped record, with no new forecast, native rule or
+search. Separate follow-up: recovery re-created a plain advance after that exact plan had already failed preflight
+(RT 2041–2051); dispatcher safety rejected it again. Other negative-value hazard standoffs are not forced to move.
+Known Death from Above/Release Grapple/Focused Shot and shared-HD Fusion gaps remain explicit. No general movement,
+retreat, commitment, pathfinder, stuck-cancellation or scoring-budget change. Manifest remains 0.3.30.
+
+Checked source `4392e51`, [receipt](competence/REVIEW5_PLAYTEST_CHECKS.json) and [review6 test ZIP](../test-builds/AI-Control-FACC-v0.3.30-dev-review6-4392e51-UMM-test.zip), startup MVID `3f9c3355-3c65-4477-b059-dd370eb20d2b`. 664 unit + 27 inventory tests and native checks pass; actual-reference Release 0 warnings/errors; 0/0 added signatures resolve. Compatible/supplementary audit scopes pass; original full-corpus enum failure remains distinct. Gameplay/matched Unity timing pending.
+
+## 153. Review5 playtest: recovery cannot repeat an actually refused plain move
+
+[Evidence/replay](REVIEW5_RECOVERY_KEYS.md). RT 2041–2051: Seelah's Advance was one of three rejected selected
+approaches, then a new fallback object with the same plan key was issued and rejected for the same Corrosive Bomb
+path. Safety held, but a native issue/path attempt was duplicated.
+
+SelectedApproachFilter now optionally records actual refused recovery keys, using a lazy ordinal set capped by
+three checks. The production selector uses existing plain-move keys; recovery objects with those keys are withheld.
+There is no persistent refusal, target ban, generated identity string or added native check. Unchecked options,
+different plans and future decisions stay eligible. Other actions, trigger/affordability/safety gates and the
+approved fallback's cap remain. Its existing small pricing pass can still run; total native queries are not
+claimed to be capped at three. Four unit scheduling cases and four actual candidate checks (Idle Advance 27 total)
+cover the correction; form-reference 14 and all inherited checks remain. Native paths/gameplay/timing need replay.
+No general movement, commitment, retreat, pathfinder, stuck-cancellation, budget or value-model change.
+
+Checked source `3cb6422`, [receipt](competence/REVIEW5_RECOVERY_KEY_CHECKS.json) and [review7 test ZIP](../test-builds/AI-Control-FACC-v0.3.30-dev-review7-3cb6422-UMM-test.zip), startup MVID `6383a7b3-201b-4c76-a335-027ee5ef4f8e`. 668 unit + 27 inventory tests and native checks pass; actual-reference Release 0 warnings/errors; 0/0 added signatures resolve. Compatible/supplementary audit scopes pass; original full-corpus enum failure remains distinct. Gameplay/matched Unity timing pending.
+
+## 154. Focused Shot: a before-cast damage buff and one ranged weapon attack
+
+The author approved the support expansion after review5 TB 244 showed Aeiluvetar's actual Focused Shot withheld.
+[Design/native rules/replay](FOCUSED_SHOT.md), [fixture identities](competence/FOCUSED_SHOT_NATIVE.json). Refreshed
+development is `44b224f`; PR #48 `4c0ef7d` (including #47) is a prerequisite, retaining the review7 corrections.
+
+Recognize the inspected structural graph in cached metadata, without name/GUID dispatch. The native cast applies
+a one-second self buff before making one ordinary ranged-hand attack. Reuse native stat-bonus calculation and the
+shared cached weapon-delta model; zero/negative modifiers, existing buffs, disabled bonuses and immunity remain.
+Require one attack and the actual ranged hand. Additional/derived/area/retargeting/automatic-hit effects and restricted
+bonuses stay unsupported. Pure Mage, ordinary non-caster Ranged preference, blocklists, native availability, action
+cost, approach and final dispatcher safety are preserved. No new actor/buff/weapon preview, native attack event,
+world/target scan or general movement/commitment/retreat/pathfinder/stuck policy.
+
+ProfileAudit checks actual exported positive/negative graphs, altered flags/payloads, native scalar values and
+compiled routes; no initialized actor, attack, buff application or Unity timing executes offline. The common
+weapon damage-delta/critical approximations remain. In TB/RT compare one shot versus full attacks, positive/zero/
+negative Intelligence, DR/immunity, existing buffs, provocation and native action use. Final receipt records
+all units/inventory, real-reference Release and distinct compatible/supplementary/full-export audit scopes.
+
+Checked source `b890309`, [receipt](competence/FOCUSED_SHOT_CHECKS.json) and [focused1 test ZIP](../test-builds/AI-Control-FACC-v0.3.30-dev-focused1-b890309-UMM-test.zip), startup MVID `22e24115-7500-4df6-828a-305f0075e591`. 668 unit + 27 inventory tests and native checks pass; actual-reference Release 0 warnings/errors; 10/10 added signatures resolve. Compatible/supplementary audit scopes pass; original full-corpus enum failure remains distinct. Gameplay/matched Unity timing pending.
+
+
+## 155. Spell boosts: jointly affordable activation costs
+
+The author approved this follow-up to Focused Shot. [Design/native semantics/replay](JOINT_SPELL_COSTS.md),
+[assembly and fixture identities](competence/JOINT_SPELL_COSTS_NATIVE.json). Refreshed development `44b224f`;
+PR #50 `4745033` is the prerequisite. Concurrent summon control PR #49 remains separate.
+
+Two individually available casts can share the last spontaneous slot, prepared conversion source or activation
+resource. Before valuing setup/main, read their known current native costs; a free eligible Quicken asks lazily
+for the best already-scored standard alternative whose three-action activation sequence is jointly affordable.
+Retain native root/slot cost, effective book/level, prepared equality/reverse order, per-day and explicit
+resource/override semantics. A per-pass identity quote memo and reusable pure scratch budget avoid repeated
+reads/allocations across alternatives. Limits 64 charges, 256 prepared slots, 16 conversion nodes. Unknown
+providers/prices stay unknown; failed setup/main quotes have named bounded verbose diagnostics, while unknown
+second alternatives are skipped. Ordinary actions remain available.
+
+No spell/resource/inventory mutation, native rule/context/actor preview, future refund, reservation, queue or
+all-pairs search. This does not simulate arbitrary future buff/fact changes or mod spend overrides. Existing
+DC/CL/Persistent/Quicken action/native eligibility, policies, movement and final native rechecks remain. Pure
+financial alias/order/overflow/unknown/reset cases and native scalar/metadata/compiled routes are checked;
+initialized caster, actual spending and matched Unity timing require the focused TB/RT replay.
+
+Checked source `7480e83`, [receipt](competence/JOINT_SPELL_COSTS_CHECKS.json) and [jointcost1 test ZIP](../test-builds/AI-Control-FACC-v0.3.30-dev-jointcost1-7480e83-UMM-test.zip), startup MVID `ff8df076-59e9-468b-81c2-8f2d39302458`. 692 unit + 27 inventory tests and native checks pass; actual-reference Release 0 warnings/errors; 13/13 added signatures resolve. Compatible/supplementary audit scopes pass; original full-corpus enum failure remains distinct. Gameplay/matched Unity timing pending.
+
+
+## 156. Summon control: implementation (13 November 2026, Claude; not played)
 
 Implements the plan of §151 ([plan](SUMMON_CONTROL_PLAN.md), [evidence](competence/SUMMON_CONTROL_EVIDENCE.json)) on
 development `44b224f`. **Opt-in and off by default**: one checkbox, "Control Summoned Creatures (experimental)"

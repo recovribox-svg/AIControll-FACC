@@ -1,0 +1,60 @@
+{
+  "development_base": "44b224f5af76dc5f5ae6086d6abbfbdeac790627",
+  "starting_commit": "47450331a6f19b09ab012e6d283d15e94240d824",
+  "dependency_pr": 50,
+  "author_request": "Go ahead with Focused Shot and then combined resource checks",
+  "assembly": {
+    "file": "Assembly-CSharp.dll",
+    "sha256": "2cb7160b7154d4ffacc77b9c51b1eb26199e1294300f04fdfc073367b2ef8953",
+    "mvid": "90a9869c-2792-4c7b-bfb7-5a8b33da7c82"
+  },
+  "fixtures": [
+    {
+      "file": "Classes/Classes/Arcanist/ArcanistArcaneReservoirCLAbility.jbp",
+      "asset_guid": "0b10e8506f321f54eb4a4b39dd18d959",
+      "sha256": "335ee3121d96947cd18d94bffeeed1a5aa27bb6eb5206bc64f0a4bc7c12ccf27"
+    },
+    {
+      "file": "Classes/Classes/Arcanist/ArcanistArcaneReservoirDCAbility.jbp",
+      "asset_guid": "36f81ca4bf1066e48a96866a32329c19",
+      "sha256": "3304ea2890b59b870f8a081a0b92b28622dabefba4af2e9473e18d6d01131a79"
+    },
+    {
+      "file": "Classes/Classes/Wizard/Universalist/UniversalistSchoolQuickenBuff.jbp",
+      "asset_guid": "0c4cfd981dc57b74fad29bd7839942e4",
+      "sha256": "2188d47afe32c651a79800071e47127900c96be9632138fa9162f9009d2cc2fe"
+    },
+    {
+      "file": "Classes/Classes/Magus/Arcanas/QuickenedArcana/QuickenedArcanaBuff.jbp",
+      "asset_guid": "5a62abe6d8de2e24b8834493438b3e23",
+      "sha256": "bfb862ffd0e3fdecfa855d3a5fe589d9f85c2f9919b09b06bc52ca7cd1b526c3"
+    }
+  ],
+  "native_contracts": [
+    "AbilityData.Spend: material/item then spellbook then resource spending",
+    "AbilityData.SpellSlotCost: (ConvertedFrom.SpellSlotCost or 1) + ExtraSpellSlotCost",
+    "AbilityData.SpendFromSpellbook / SpendOneSpellCharge: skip flags, repeated cost entries, actual conversion root",
+    "Spellbook.SpendInternal: effective level; level 0 free; spontaneous level pool; reverse available prepared slots and AbilityData.Equals(object)",
+    "AbilityCastRateUtils.SpendResources / SpendSpellResource: per-day usage, actual resource logic or override/conversion source",
+    "AbilityResourceLogic.IsAbilityRestrictionPassed / Spend / CalculateCost: base checked/debited resource identity, current fact-adjusted price",
+    "MetamagicOnNextSpell and RuleCalculateAbilityParams.AddMetamagic: metamagic added by native next-spell handler"
+  ],
+  "bounds": {
+    "maximum_charge_records_per_attempt": 64,
+    "maximum_prepared_slots_per_quote": 256,
+    "maximum_conversion_nodes": 16,
+    "lifetime": "one CoupleSpellBoosts invocation",
+    "native_rule_context_spend_or_refund_execution_added": false,
+    "new_world_target_or_all_pairs_spell_search": false,
+    "failed_attempt_scratch_resets": true,
+    "metadata_equality": "reference identity except native prepared-slot eligibility"
+  },
+  "coverage_limits": [
+    "Pure budget rules and native scalar getters/routes, not initialized caster or command execution.",
+    "Known current activation costs only; arbitrary future buff/fact/mod spending mutations are not simulated.",
+    "Custom or derived resource providers, item/material payments, held charges and toggle activation have no complete joint quote.",
+    "Probabilistic saving, refunds and unlimited-spending overrides are not credited.",
+    "Weapon follow-up quote excludes ammo/recurring/on-hit costs.",
+    "Original full-export enum mismatch remains outside compatible/supplementary scopes."
+  ]
+}

@@ -254,6 +254,18 @@ namespace ProfileAudit
             foreach (var line in summonLines) Console.WriteLine(line);
             File.WriteAllText(output, string.Join(Environment.NewLine, summonLines) + Environment.NewLine + Environment.NewLine + File.ReadAllText(output));
             blocklistFailures += summonFailures;
+            var formReferenceLines = ShifterReferenceCheck.Run(out int formReferenceFailures);
+            foreach (var line in formReferenceLines) Console.WriteLine(line);
+            File.WriteAllText(output, string.Join(Environment.NewLine, formReferenceLines) + Environment.NewLine + Environment.NewLine + File.ReadAllText(output));
+            blocklistFailures += formReferenceFailures;
+            var shotLines = FocusedShotCheck.Run(loaded.Values, out int shotFailures);
+            foreach (var line in shotLines) Console.WriteLine(line);
+            File.WriteAllText(output, string.Join(Environment.NewLine, shotLines) + Environment.NewLine + Environment.NewLine + File.ReadAllText(output));
+            blocklistFailures += shotFailures;
+            var jointCostLines = JointCostCheck.Run(loaded.Values, out int jointCostFailures);
+            foreach (var line in jointCostLines) Console.WriteLine(line);
+            File.WriteAllText(output, string.Join(Environment.NewLine, jointCostLines) + Environment.NewLine + Environment.NewLine + File.ReadAllText(output));
+            blocklistFailures += jointCostFailures;
             var campaignFlagLines = CampaignFlagCheck.Run(loaded.Values, out int campaignFlagFailures);
             foreach (var line in campaignFlagLines) Console.WriteLine(line);
             File.WriteAllText(output, string.Join(Environment.NewLine, campaignFlagLines) + Environment.NewLine + Environment.NewLine + File.ReadAllText(output));

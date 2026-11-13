@@ -1,0 +1,21 @@
+{
+  "build_label": "review7",
+  "kind": "development-test",
+  "version": "0.3.30",
+  "source_branch": "codex/review5-advance-recovery",
+  "source_commit": "3cb64228a038f5c4d97f7b324218a50ffa5bf2d8",
+  "starting_commit": "cee7d480474edaa985219cc3f700482af1f3c665",
+  "development_base": "44b224f5af76dc5f5ae6086d6abbfbdeac790627",
+  "dependency_pr": 47,
+  "dll": {
+    "assembly": "CompanionAI_Pathfinder, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null",
+    "mvid": "6383a7b3-201b-4c76-a335-027ee5ef4f8e",
+    "sha256": "515ade1f00eea1248e393b05d56a6d452f93febdb5e5eec9326f91e098180afa",
+    "size": 1364992
+  },
+  "manifest_sha256": "d6ee91e78dc5d4981ad51a1a1a85bb1e7fe3f0a87814697f2fd9ee1c20d35594",
+  "checks_receipt": "docs/competence/REVIEW5_RECOVERY_KEY_CHECKS.json",
+  "gameplay_status": "not played",
+  "scope": "Cumulative review7 includes PR #47 matched form-reference correction and broad review. After an actual plain-move refusal, withhold a recreated recovery plan with that same existing key for this invocation only. Untested plans, other moves and fresh decisions remain eligible. Preserves the approved bounded fallback, useful actions, native safety/status/cooldown gates and three selected-preparation checks. No new pursuit, target, retreat, pathfinder or stuck policy.",
+  "release": false
+}
