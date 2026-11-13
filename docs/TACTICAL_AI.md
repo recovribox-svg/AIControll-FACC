@@ -5129,3 +5129,23 @@ cover the correction; form-reference 14 and all inherited checks remain. Native 
 No general movement, commitment, retreat, pathfinder, stuck-cancellation, budget or value-model change.
 
 Checked source `3cb6422`, [receipt](competence/REVIEW5_RECOVERY_KEY_CHECKS.json) and [review7 test ZIP](../test-builds/AI-Control-FACC-v0.3.30-dev-review7-3cb6422-UMM-test.zip), startup MVID `6383a7b3-201b-4c76-a335-027ee5ef4f8e`. 668 unit + 27 inventory tests and native checks pass; actual-reference Release 0 warnings/errors; 0/0 added signatures resolve. Compatible/supplementary audit scopes pass; original full-corpus enum failure remains distinct. Gameplay/matched Unity timing pending.
+
+## 154. Focused Shot: a before-cast damage buff and one ranged weapon attack
+
+The author approved the support expansion after review5 TB 244 showed Aeiluvetar's actual Focused Shot withheld.
+[Design/native rules/replay](FOCUSED_SHOT.md), [fixture identities](competence/FOCUSED_SHOT_NATIVE.json). Refreshed
+development is `44b224f`; PR #48 `4c0ef7d` (including #47) is a prerequisite, retaining the review7 corrections.
+
+Recognize the inspected structural graph in cached metadata, without name/GUID dispatch. The native cast applies
+a one-second self buff before making one ordinary ranged-hand attack. Reuse native stat-bonus calculation and the
+shared cached weapon-delta model; zero/negative modifiers, existing buffs, disabled bonuses and immunity remain.
+Require one attack and the actual ranged hand. Additional/derived/area/retargeting/automatic-hit effects and restricted
+bonuses stay unsupported. Pure Mage, ordinary non-caster Ranged preference, blocklists, native availability, action
+cost, approach and final dispatcher safety are preserved. No new actor/buff/weapon preview, native attack event,
+world/target scan or general movement/commitment/retreat/pathfinder/stuck policy.
+
+ProfileAudit checks actual exported positive/negative graphs, altered flags/payloads, native scalar values and
+compiled routes; no initialized actor, attack, buff application or Unity timing executes offline. The common
+weapon damage-delta/critical approximations remain. In TB/RT compare one shot versus full attacks, positive/zero/
+negative Intelligence, DR/immunity, existing buffs, provocation and native action use. Final receipt records
+all units/inventory, real-reference Release and distinct compatible/supplementary/full-export audit scopes.

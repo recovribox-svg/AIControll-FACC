@@ -125,12 +125,28 @@ namespace CompanionAI_Pathfinder.Tactics
             }
             if (target == null || !ctx.Unit.IsEnemy(target)) { why = "not an enemy"; return 0f; }
             float value = profile.VitalStrike != null ? VitalStrikeValue(ctx, profile.VitalStrike, target)
+                        : profile.RangedShot != null ? RangedShotValue(ctx, ability, profile, target)
                         : profile.DevastatingBlow ? DevastatingBlowValue(ctx, target)
                         : profile.Cleave != null ? CleaveValue(ctx, profile.Cleave, target, out why)
                         : MeleeAttackValue(ctx, ability, profile, target, out why);
             if (value > 0f) ctx.AimCounted = true;
             else why = "nothing to gain";
             return Math.Max(0f, value);
+        }
+
+        private static float RangedShotValue(TacticalContext ctx, AbilityData ability, AbilityProfile profile, UnitEntityData target)
+        {
+            var estimate = CombatMath.EstimateRangedShot(ability, profile, target);
+            if (estimate == null) return 0f;
+            float value = DamageValue(target, estimate.ExpectedDamage, estimate.AnyHitChance) *
+                          AttackWeight(ctx, target, true) * WakeFactor(target, estimate.ExpectedDamage);
+            // Like ranged Vital Strike, this physical weapon action prices its weapon's attack provocation once.
+            if (ProvokeObserver.WeaponProvokes(ctx.Unit, estimate.Weapon))
+            {
+                var provoke = AttackRollProvokeRisk(ctx, ctx.Unit.Position, 1);
+                if (provoke != null) value = value * (1f - provoke.StopChance) - provoke.Cost;
+            }
+            return value;
         }
 
         private static float VitalStrikeValue(TacticalContext ctx, AbilityCustomVitalStrike vitalStrike, UnitEntityData target)

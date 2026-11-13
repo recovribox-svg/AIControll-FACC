@@ -264,7 +264,7 @@ namespace CompanionAI_Pathfinder.Tactics
         /// one more part of the ability's value.</summary>
         public bool OnlyMeleeAttack => MeleeAttack != null && Damage.Count == 0 && Heals.Count == 0 && TargetBuffs.Count == 0 &&
                                        Maneuvers.Count == 0 && !Summons && !Dispels && !RemovesBuffs;
-        public bool IsWeaponAttack => VitalStrike != null || Cleave != null || DevastatingBlow || OnlyMeleeAttack;
+        public bool IsWeaponAttack => VitalStrike != null || Cleave != null || DevastatingBlow || OnlyMeleeAttack || RangedShot != null;
 
         public float AoERadius { get; private set; }
         public Kingmaker.UnitLogic.Abilities.Components.TargetType AoETargets { get; private set; } =
@@ -537,6 +537,7 @@ namespace CompanionAI_Pathfinder.Tactics
             VitalStrike = Blueprint.GetComponent<AbilityCustomVitalStrike>();
             Cleave = Blueprint.GetComponent<AbilityCustomCleave>();
             DevastatingBlow = IsDevastatingBlow(Blueprint.GetComponent<AbilityCustomMeleeAttack>());
+            RangedShot = ReadRangedShot(Blueprint);
             CasterProvokes = FindCasterProvoke(Blueprint);
 
             var around = Blueprint.GetComponent<AbilityTargetsAround>();

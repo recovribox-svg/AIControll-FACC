@@ -1,0 +1,70 @@
+{
+  "development_base": "44b224f5af76dc5f5ae6086d6abbfbdeac790627",
+  "starting_commit": "4c0ef7d8ede85ea42f0eadff73ac51f9ab39463c",
+  "dependency_pr": 48,
+  "author_request": "Go ahead with Focused Shot first, then combined resource checks",
+  "assembly": {
+    "file": "Assembly-CSharp.dll",
+    "sha256": "2cb7160b7154d4ffacc77b9c51b1eb26199e1294300f04fdfc073367b2ef8953",
+    "mvid": "90a9869c-2792-4c7b-bfb7-5a8b33da7c82"
+  },
+  "fixtures": [
+    {
+      "file": "Feats/Feats/DLC5/FocusedShot.jbp",
+      "asset_guid": "f979ed68d1e74d21962edc66f0a1d169",
+      "sha256": "30606037c65bd7bb4dfd76a6274a3d757dc5a7c7ff5decb1470671e5b986243c"
+    },
+    {
+      "file": "Feats/Feats/DLC5/FocusedShotAction.jbp",
+      "asset_guid": "1dc6739a4d9543468d67d94a2bd4306e",
+      "sha256": "0d39744a0d8a1f21f40a351154cfd3a973cabfca049e950c545cb04c7f9946dd"
+    },
+    {
+      "file": "Feats/Feats/DLC5/FocusedShotBuff.jbp",
+      "asset_guid": "008be7892c994b7198e49567eace329c",
+      "sha256": "366b12d622cea32f15ca668f7dce6511299800c930ea45a06c7cf45bb2691497"
+    },
+    {
+      "file": "Classes/Classes/Hunter/Archetypes/TandemExecutioner/TandemExecutionerPenetratingCascadeAbility.jbp",
+      "asset_guid": "83e690c9f7ef4c64986c123e1db7af90",
+      "sha256": "30d95f73838273e898a86d0d52f0358cfce20d9486b8d91e184f724dd86a1e3f"
+    }
+  ],
+  "native_contracts": [
+    "Kingmaker.Controllers.AbilityExecutionProcess.PrepareCast / ProcessRoutine: OnCast before delivery",
+    "Kingmaker.UnitLogic.Abilities.Components.AbilityExecuteActionOnCast.OnCast: native self-buff application",
+    "Kingmaker.UnitLogic.Mechanics.Actions.ContextActionRangedAttack.RunAction / RunAttackRule: ranged threat hand, one attack for FullAttack=false",
+    "Kingmaker.UnitLogic.FactLogic.AddContextStatBonus.CalculateBaseValue / OnTurnOn: native value, multiplier, minimum and AdditionalDamage stat",
+    "Kingmaker.UnitLogic.FactLogic.AddStatBonus.CalculatePowerfulChangeBonus: attribute-only; AdditionalDamage excluded",
+    "Kingmaker.Designers.Mechanics.Facts.Restrictions.RestrictionCalculator.IsPassedInternal: null/empty property unrestricted"
+  ],
+  "played_evidence": {
+    "manifest": "../REVIEW5_PLAYTEST_INPUTS.json",
+    "file": "TB Mode Log.txt",
+    "line": 244,
+    "actor": "Aeiluvetar",
+    "finding": "Focused Shot explicitly not understood/not used"
+  },
+  "prevalence": {
+    "containing_assets_in_supplied_exports": 4,
+    "direct_ability_roots": 2,
+    "supported_root": "FocusedShotAction",
+    "unsupported_area_root": "TandemExecutionerPenetratingCascadeAbility",
+    "does_not_establish_generated_mod_asset_coverage": true
+  },
+  "bounds": {
+    "extra_target_scans": 0,
+    "extra_native_attacks": 0,
+    "extra_buff_applications": 0,
+    "read_only_contexts_per_target_appraisal": 1,
+    "weapon_routine_cache": "existing frame-scoped routine",
+    "profile_storage": "two metadata references"
+  },
+  "limits": [
+    "Actual actor Intelligence, action queue, buff lifetime, provocation and Unity timing require TB/RT gameplay replay.",
+    "Reuses existing shared weapon damage-delta and critical approximations.",
+    "Only the inspected simple structure is admitted; changed/derived/area/extra-attack/retargeting/restricted graphs remain unsupported.",
+    "Mixed or differently enumerated ranged hand is withheld.",
+    "Original full-export enum mismatch remains a separate audit-scope limit."
+  ]
+}
