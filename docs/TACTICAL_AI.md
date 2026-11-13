@@ -5337,3 +5337,5 @@ extra native attack, general movement/commitment/retreat/pathfinder/stuck policy
 Existing frame memo, native driver/dispatch/action checks and default-off summon setting remain. Native scalar
 and compiled-route/state-transition checks complement all combined regressions. Manifest becomes 0.3.50 under
 explicit author instruction; module/ZIP identities are distinct. Native gameplay and matched timing remain pending.
+
+Checked source `ebfac70`, [receipt](competence/V0350_INTEGRATION_CHECKS.json) and [integration1 test ZIP](../test-builds/AI-Control-FACC-v0.3.50-dev-integration1-ebfac70-UMM-test.zip), startup MVID `0b54fad9-fc28-483c-a87a-3f1e9f0efd62`. 705 unit + 27 inventory tests and native checks pass; actual-reference Release 0 warnings/errors; 27/27 added signatures resolve. Compatible/supplementary audit scopes pass; original full-corpus enum failure remains distinct. Gameplay/matched Unity timing pending.

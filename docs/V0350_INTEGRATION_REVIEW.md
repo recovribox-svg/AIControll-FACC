@@ -72,3 +72,5 @@ limits documented in [joint costs](JOINT_SPELL_COSTS.md) and [Focused Shot](FOCU
    attacks on a ranged non-caster; Quicken with one/two shared slots and a cheaper affordable alternative.
 5. Keep the startup MVID and label ToyBox spawn/rest interventions. All combined gameplay remains unplayed until
    this replay; the v0.3.50 version number does not turn test evidence into a stable-release claim.
+
+Checked source `ebfac70`, [receipt](competence/V0350_INTEGRATION_CHECKS.json) and [integration1 test ZIP](../test-builds/AI-Control-FACC-v0.3.50-dev-integration1-ebfac70-UMM-test.zip), startup MVID `0b54fad9-fc28-483c-a87a-3f1e9f0efd62`. 705 unit + 27 inventory tests and native checks pass; actual-reference Release 0 warnings/errors; 27/27 added signatures resolve. Compatible/supplementary audit scopes pass; original full-corpus enum failure remains distinct. Gameplay/matched Unity timing pending.
