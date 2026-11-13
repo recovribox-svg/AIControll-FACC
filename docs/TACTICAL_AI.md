@@ -5339,3 +5339,41 @@ and compiled-route/state-transition checks complement all combined regressions. 
 explicit author instruction; module/ZIP identities are distinct. Native gameplay and matched timing remain pending.
 
 Checked source `ebfac70`, [receipt](competence/V0350_INTEGRATION_CHECKS.json) and [integration1 test ZIP](../test-builds/AI-Control-FACC-v0.3.50-dev-integration1-ebfac70-UMM-test.zip), startup MVID `0b54fad9-fc28-483c-a87a-3f1e9f0efd62`. 705 unit + 27 inventory tests and native checks pass; actual-reference Release 0 warnings/errors; 27/27 added signatures resolve. Compatible/supplementary audit scopes pass; original full-corpus enum failure remains distinct. Gameplay/matched Unity timing pending.
+
+
+## 158. v0.3.50 integration1 playtest: Invocation replacement, swarm protection and discovery
+
+The author requested completion of the pending integration, then a broad review of `Log.txt`/`combatLog.txt`,
+with particular attention to Profane Invocation; ToyBox spawns/rests and necessary movement changes were
+authorized. PRs #46–#52 are merged at development `d466f384`; this follow-up starts there.
+[Evidence, native rules, implementation bounds and replay](V0350_PLAYTEST_REVIEW.md),
+[input identities/counts](V0350_PLAYTEST_INPUTS.json). Played integration1 MVID is exact.
+
+Twenty-two fights contain 666 measured TB / 3,378 RT decisions; no AI Control exception row. Invocation
+issues total 59 (57 acted successes, two unacted interrupts). Ten initial placements use distinct stat/tier
+buffs; the two native groups are independent, each variant removes only same-tier recipient siblings and
+UniqueBuff removes the caster's same-blueprint copy elsewhere. The correction settles the actual removed
+unique buff by its own source ability/cast ledger, also for sibling switches; preserves separate initial/tier
+placements and rollback. A narrow verified constant-stat route reprices held weapon loss from the same cached
+native routine, fixing the adding-at-cap asymmetry without an actor preview/second rule query. Complex, mixed-
+weapon and stale cases retain their earlier approximation. Held appraisal no longer overwrites the incoming
+note; ability identities disambiguate localized duplicate names.
+
+AI 5372–5374 prices Mirror Image 106.5 against an exit 26.1 while a Quickspider contributes automatic damage.
+Native images absorb through RuleAttackRoll; the recognized swarm graph deals damage directly. Existing
+exposure weights now split that known automatic share out of AC/miss/image protection. Total danger remains
+for HP/saves/DR/energy; ordinary-enemy approximations and existing movement competition stay. This does not
+predetermine the best action in that mixed fight.
+
+Warm non-GC slow decisions remain: Tuvel has 83 slow samples with zero new profiles, and 253 scored abilities
+in key examples. Costliest callbacks omit discovery/setup. A decision-local first-index conversion lookup
+replaces the quadratic rescan without changing keys, order or native availability replacement; new scalar
+setup timers name discovery/filter and pre-score checks (availability/profile times included). No kit pruning,
+cross-decision cache or promised millisecond speedup. Heap deltas are not allocations; matched Unity replay is
+pending. Faerie Fire/Focused Shot/forms/summon actions and 37 swarm exits execute; native interrupts with
+acted=True and intervention-driven state changes are not automatically bugs.
+
+New unit/native scalar/exported-graph/compiled-route checks cover the corrections. Final receipt/package are
+recorded below after checked source. Regress both modes, initial and near-cap Invocation placements, swarm-only
+and mixed threats, normal conversions/metamagic/items, and matched large-kit/summon timing. New fixes remain
+unplayed; manifest 0.3.50, no main/tag/release.

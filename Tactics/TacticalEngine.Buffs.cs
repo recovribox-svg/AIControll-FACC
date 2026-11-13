@@ -54,6 +54,7 @@ namespace CompanionAI_Pathfinder.Tactics
             // intentionally remain unset in that case; a new-form comparison still needs the exact reference pair.
             internal UnitEntityData WeaponTarget;
             internal WeaponAttackEstimate WeaponQuote;
+            internal bool WeaponFull;
             public float DamagePerRound, HitChance, PerHit, HitsPerRound, FirstAttack;
             /// <summary>★ v0.3.28 test 3: the share of its hits past the enemy's concealment (in the estimate already).</summary>
             public float SeenPass = 1f;
@@ -84,6 +85,8 @@ namespace CompanionAI_Pathfinder.Tactics
         private sealed class Defence
         {
             public float Incoming, EnemyHitChance = 0.6f, PerHit, Hp, Worth;
+            /// <summary>Incoming without recognised automatic swarm harm; ordinary-enemy approximation retained.</summary>
+            public float AttackIncoming, AttackPerHit, AttackHitChance = 0.6f;
             /// <summary>Nothing reaches it yet: <see cref="Incoming"/> is its expected share.</summary>
             public bool Expected;
             public readonly Dictionary<DamageEnergyType, float> EnergyShares = new Dictionary<DamageEnergyType, float>();
@@ -152,9 +155,18 @@ namespace CompanionAI_Pathfinder.Tactics
                                                        Kingmaker.EntitySystem.EntityFact held)
         {
             var previous = s_AppraiseWithout;
+            // ★ v0.3.50 review1: a counterfactual must not replace the incoming candidate's explanation with the
+            // removed sibling's stats (the same ability/recipient key when switching invocation variants).
+            string key = AppraisalKey(ctx.Unit, ability, holder);
+            bool hadNote = s_LastAppraisal.TryGetValue(key, out string note);
             s_AppraiseWithout = held;
             try { return AppraiseBuff(ctx, ability, profile, buffs, holder); }
-            finally { s_AppraiseWithout = previous; }
+            finally
+            {
+                s_AppraiseWithout = previous;
+                if (hadNote) s_LastAppraisal[key] = note;
+                else s_LastAppraisal.Remove(key);
+            }
         }
 
         private static readonly Dictionary<BlueprintBuff, bool> s_UniqueBuffs = new Dictionary<BlueprintBuff, bool>();
@@ -496,7 +508,11 @@ namespace CompanionAI_Pathfinder.Tactics
             {
                 float d = oneAttack ? off.FirstAttack : off.DamagePerRound;
                 float hits = oneAttack ? off.HitChance : off.HitsPerRound;
-                offencePerRound = ValueModel.AttackBonusGain(d, off.HitChance, attack) + ValueModel.DamageBonusGain(hits, damage * off.PhysicalFactor) +
+                float weaponGain = ValueModel.AttackBonusGain(d, off.HitChance, attack) +
+                                   ValueModel.DamageBonusGain(hits, damage * off.PhysicalFactor);
+                if (!oneAttack && TryAppraiseHeldWeaponLoss(ally, off, buffs, parts, out float heldWeaponLoss))
+                    weaponGain = heldWeaponLoss;
+                offencePerRound = weaponGain +
                                   ValueModel.DamageBonusGain(hits, energyDamage) + (oneAttack ? 0f : extraAttacks * off.FirstAttack) +
                                   d * damagePercent;   // ★ v0.3.21: a share more of what its attacks deal (Dragon Might)
                 if (damagePercent > 0f) notes.Add($"damage +{damagePercent:P0}");
@@ -561,13 +577,14 @@ namespace CompanionAI_Pathfinder.Tactics
             float total = rounds;
             if (def.Incoming > 0f)
             {
-                keptPerRound += ValueModel.ArmorGain(def.Incoming, def.EnemyHitChance, armor);
+                keptPerRound += ValueModel.ArmorGain(def.AttackIncoming, def.AttackHitChance, armor);
                 // ★ v0.3.21: invisibility's cover - one round for the kind its first attack ends.
                 float unseen = invisibleShare * 0.5f * (invisible != null && invisible.EndsOnAttack ? 1f / Math.Max(1f, total) : 1f);
-                keptPerRound += def.Incoming * Math.Max(Math.Max(concealment, miss), unseen);
+                keptPerRound += def.AttackIncoming * Math.Max(Math.Max(concealment, miss), unseen);
                 // ★ v0.3.21: immunities read as large save bonuses; together at most half of what comes at it.
                 keptPerRound += def.Incoming * 0.025f * Math.Min(saves, 20f);
                 float hitsOnIt = def.PerHit > 0f ? def.Incoming / def.PerHit : 1f;
+                float imageHits = def.AttackPerHit > 0f ? def.AttackIncoming / def.AttackPerHit : (def.AttackIncoming > 0f ? 1f : 0f);
                 // ★ v0.3.21: fast healing gives back what it loses, up to its rate, each round.
                 if (fastHealing > 0f) keptPerRound += Math.Min(def.Incoming, fastHealing);
                 if (physicalDr > 0f) keptPerRound += Math.Min(def.Incoming * 0.8f, physicalDr * hitsOnIt);
@@ -592,13 +609,16 @@ namespace CompanionAI_Pathfinder.Tactics
                     notes.Add($"{entry.Key} protection keeps {kept:0.#}/rd (matching {matching:0.#}/rd)");
                 }
                 float absorbed = ValueModel.TempHpAbsorbed(tempHp + conHp * 0.5f, def.Incoming, total) +
-                                 ValueModel.MirrorImagesAbsorbed(images, hitsOnIt, def.PerHit > 0f ? def.PerHit : def.Incoming, total);
+                                 ValueModel.MirrorImagesAbsorbed(images, imageHits, def.AttackPerHit > 0f ? def.AttackPerHit : def.AttackIncoming, total);
                 keptPerRound += absorbed / Math.Max(1f, total);
                 if (armor != 0f) notes.Add($"AC {armor:+0.#;-0.#}");
                 if (concealment > 0f || miss > 0f) notes.Add($"miss {Math.Max(concealment, miss):P0}");
                 if (saves != 0f) notes.Add($"saves {saves:+0.#;-0.#}");
                 if (tempHp > 0f) notes.Add($"{tempHp:0} temp HP");
                 if (images > 0f) notes.Add($"{images:0.#} images");
+                if ((armor != 0f || concealment > 0f || miss > 0f || unseen > 0f || images > 0f) &&
+                    def.AttackIncoming < def.Incoming)
+                    notes.Add($"attack defences use {def.AttackIncoming:0.#}/rd at {def.AttackHitChance:P0} (automatic swarm harm excluded)");
                 if (physicalDr > 0f) notes.Add(physicalDr >= 999f ? "immune to physical damage" : $"DR {physicalDr:0}");
                 if (keptPerRound != 0f) notes.Add($"({(def.Expected ? "expects" : "takes")} {def.Incoming:0.#}/rd, hit at {def.EnemyHitChance:P0})");
             }
@@ -1129,6 +1149,7 @@ namespace CompanionAI_Pathfinder.Tactics
                 bool weaponAllowed = !pureMage || (ally == ctx.Unit ? ctx.PureMageWeapon : PureMagePolicy.HasEnergyShot(ally));
                 if (enemy != null && weaponAllowed)
                 {
+                    off.WeaponFull = !pureMage;
                     var est = CombatMath.EstimateWeaponAttack(ally, enemy, full: !pureMage);
                     off.WeaponTarget = enemy;
                     off.WeaponQuote = est;
@@ -1186,16 +1207,39 @@ namespace CompanionAI_Pathfinder.Tactics
                 // fighting can deal, more for one that fights in melee - a buff cast now lasts into the rounds they meet.
                 if (def.Incoming <= 0f && ctx.Allies.Count > 0)
                 {
-                    float threat = ctx.Enemies.Where(e => !CombatMath.IsDisabled(e)).Sum(e => CombatMath.Threat(e)) * ctx.DangerScale;
+                    float threat = 0f, attackThreat = 0f;
+                    foreach (var enemy in ctx.Enemies)
+                    {
+                        if (CombatMath.IsDisabled(enemy)) continue;
+                        float part = Math.Max(0f, CombatMath.Threat(enemy));
+                        threat += part;
+                        if (CombatMath.SwarmSpaceOf(enemy) == null) attackThreat += part;
+                    }
                     bool melee = !(ally.Body?.PrimaryHand?.MaybeWeapon?.Blueprint?.IsRanged ?? false);
-                    def.Incoming = threat / ctx.Allies.Count * (melee ? 0.6f : 0.3f);
+                    def.Incoming = threat * ctx.DangerScale / ctx.Allies.Count * (melee ? 0.6f : 0.3f);
+                    def.AttackIncoming = ValueModel.AttackMitigationIncoming(def.Incoming, attackThreat, threat);
                     def.Expected = true;
                 }
                 def.Hp = Math.Max(1f, CombatMath.HpBeforeDown(ally));
                 def.Worth = AllyWorth(ctx, ally);
-                // The enemy that threatens it most: its hit chance and damage per hit against this ally.
+                // Known swarm casts/round actions deal damage directly, with no RuleAttackRoll. They cannot spend an
+                // image or be stopped by AC/concealment. Preserve their HP/DR/energy/save danger and split only attack
+                // defences, by the existing exposure weights; no additional enemy ability or battlefield scan.
                 var incoming = IncomingParts(ctx, ally, ally.Position);
-                var top = incoming.OrderByDescending(p => p.Value).FirstOrDefault();
+                float totalWeight = 0f, attackWeight = 0f;
+                KeyValuePair<UnitEntityData, float> top = default, attackTop = default;
+                foreach (var part in incoming)
+                {
+                    float partWeight = Math.Max(0f, part.Value);
+                    totalWeight += partWeight;
+                    if (partWeight > top.Value) top = part;
+                    if (CombatMath.SwarmSpaceOf(part.Key) != null) continue;
+                    attackWeight += partWeight;
+                    if (partWeight > attackTop.Value) attackTop = part;
+                }
+                if (!def.Expected)
+                    def.AttackIncoming = ValueModel.AttackMitigationIncoming(def.Incoming, attackWeight, totalWeight);
+                // Preserve the strongest total source's old packet approximation for physical DR and diagnostics.
                 if (top.Key != null)
                 {
                     var est = CombatMath.EstimateWeaponAttack(top.Key, ally, full: false);
@@ -1203,6 +1247,22 @@ namespace CompanionAI_Pathfinder.Tactics
                     {
                         def.EnemyHitChance = Mathf.Clamp(est.FirstHitChance, 0.05f, 0.95f);
                         def.PerHit = est.FirstPerHit;
+                    }
+                }
+                // Only the strongest remaining ordinary enemy supplies the attack-defence approximation. The weapon
+                // estimate is already cached per attacker/target; with no excluded source this is the same quote.
+                if (attackTop.Key == top.Key)
+                {
+                    def.AttackHitChance = def.EnemyHitChance;
+                    def.AttackPerHit = def.PerHit;
+                }
+                else if (attackTop.Key != null)
+                {
+                    var est = CombatMath.EstimateWeaponAttack(attackTop.Key, ally, full: false);
+                    if (est != null && est.FirstHitChance > 0f)
+                    {
+                        def.AttackHitChance = Mathf.Clamp(est.FirstHitChance, 0.05f, 0.95f);
+                        def.AttackPerHit = est.FirstPerHit;
                     }
                 }
                 // Reuse the already gathered threat parts. Before contact, the existing defensive fallback uses

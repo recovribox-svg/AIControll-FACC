@@ -64,5 +64,37 @@ namespace CompanionAI.Tests
             Assert.False(ValueModel.UniqueMoveAllowed(null, 0f));
             Assert.False(ValueModel.UniqueMoveAllowed(5, float.NaN));
         }
+
+        [Theory]
+        [InlineData(0, 20f, false)]
+        [InlineData(1, 4.4f, false)]
+        [InlineData(2, 1f, false)]
+        [InlineData(1, 5f, true)]
+        [InlineData(3, 1f, true)]
+        [InlineData(3, 0f, false)]
+        public void SiblingReplacement_SettlesTheRemovedBuff(int age, float gain, bool allowed) =>
+            Assert.Equal(allowed, ValueModel.UniqueReplacementAllowed(age, gain));
+
+        [Fact]
+        public void IncomingVariantHasNoCast_StillUsesTheHeldSiblingsPlacement()
+        {
+            var casts = new CastLedger();
+            casts.Record("Lann", "constitution-tier1", "Tuvel", 2);
+            casts.Confirm("Lann");
+            Assert.Null(casts.LastRound("Lann", "strength-tier1", "Tuvel"));
+            int? placed = casts.LastRound("Lann", "constitution-tier1", "Tuvel");
+            Assert.False(ValueModel.UniqueReplacementAllowed(3 - placed, 4.4f));
+            Assert.True(ValueModel.UniqueReplacementAllowed(null, 4.4f)); // independent second tier, no removed buff
+        }
+
+        [Fact]
+        public void UnperformedSiblingCast_DoesNotCreateASettleLock()
+        {
+            var casts = new CastLedger();
+            casts.Record("Lann", "constitution-tier1", "Tuvel", 2);
+            casts.TakeBack("Lann");
+            int? placed = casts.LastRound("Lann", "constitution-tier1", "Tuvel");
+            Assert.True(ValueModel.UniqueReplacementAllowed(3 - placed, 4.4f));
+        }
     }
 }

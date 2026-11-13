@@ -49,5 +49,13 @@ namespace CompanionAI_Pathfinder.Tactics
             if (!roundsSincePlaced.HasValue || roundsSincePlaced.Value >= UniqueSettleRounds) return true;
             return gain >= UniqueSettleOverride;
         }
+
+        /// <summary>
+        /// A same-recipient sibling replacement follows the same settling policy as moving a unique buff. Like the
+        /// existing move guard it cannot undo a placement in the very same round, even for a large estimated gain.
+        /// The age belongs to the removed buff's actual source cast, not the incoming variant's ability key.
+        /// </summary>
+        public static bool UniqueReplacementAllowed(int? roundsSincePlaced, float gain) =>
+            roundsSincePlaced != 0 && UniqueMoveAllowed(roundsSincePlaced, gain);
     }
 }

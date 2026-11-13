@@ -27,6 +27,9 @@ namespace CompanionAI_Pathfinder.Tactics
         {
             var seen = new HashSet<string>();
             var result = new List<AbilityData>();
+            // ★ v0.3.50: the first converted option with this same conversion key, within this Gather only. The former
+            // FindIndex rebuilt keys across the complete result for every conversion (quadratic on a large spellbook).
+            var conversionIndices = new Dictionary<string, int>(StringComparer.Ordinal);
             if (unit == null) return result;
             var internals = KineticBladeInternals(unit);
             var leftOut = new List<string>();
@@ -64,7 +67,7 @@ namespace CompanionAI_Pathfinder.Tactics
                     }
                     return;
                 }
-                if (seen.Add(Key(a))) result.Add(a);
+                AddOption(result, seen, conversionIndices, a);
                 if (withConversions) AddConversions(a);
             }
 
@@ -97,8 +100,7 @@ namespace CompanionAI_Pathfinder.Tactics
                         conv.Blueprint.GetComponent<AbilityConvertSpellLevelToResource>() != null) continue;
                     if (a.Spellbook == null && !conv.IsVisible()) { leftOut.Add(conv.Name); continue; }
                     string key = ConversionKey(conv);
-                    int index = result.FindIndex(x => x.ConvertedFrom != null && ConversionKey(x) == key);
-                    if (index >= 0)
+                    if (conversionIndices.TryGetValue(key, out int index))
                     {
                         if (!result[index].IsAvailable && conv.IsAvailable) result[index] = conv;
                         continue;
@@ -152,6 +154,19 @@ namespace CompanionAI_Pathfinder.Tactics
                            $"[Abilities] {unit.CharacterName}: left out {leftOut.Count} the game does not offer to the player: " +
                            string.Join(", ", leftOut.Distinct().Take(12)));
             return result;
+        }
+
+        // Every accepted converted option counts, including one reached directly through a variant/fact. Keep the
+        // first index exactly as FindIndex did; replacing its unavailable source does not reorder any option.
+        private static void AddOption(List<AbilityData> result, HashSet<string> seen,
+                                      Dictionary<string, int> conversionIndices, AbilityData ability)
+        {
+            if (!seen.Add(Key(ability))) return;
+            int index = result.Count;
+            result.Add(ability);
+            if (ability.ConvertedFrom == null) return;
+            string key = ConversionKey(ability);
+            if (!conversionIndices.ContainsKey(key)) conversionIndices.Add(key, index);
         }
 
         /// <summary>
