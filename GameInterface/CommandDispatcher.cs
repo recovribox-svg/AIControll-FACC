@@ -127,6 +127,21 @@ namespace CompanionAI_Pathfinder.GameInterface
                 CommandTrace.LogRejected(unit, command, label, failure);
                 return false;
             }
+            // ★ summon control: the last safeguard for a summoned creature - the control conditions hold at issue too
+            // (its summoner's AI switched off, the feature or the mode switched off since the decision), and it never
+            // casts a summoning spell or spends an item or a material component.
+            if (SummonControl.IsOrdinarySummon(unit))
+            {
+                if (!SummonControl.ShouldDrive(unit, out string notDriven))
+                    failure = "summon not driven: " + notDriven;
+                else if (command is UnitUseAbility cast)
+                    failure = SummonControl.AbilityRefusal(unit, cast.Ability);
+                if (failure != null)
+                {
+                    CommandTrace.LogRejected(unit, command, label, failure);
+                    return false;
+                }
+            }
 
             try
             {

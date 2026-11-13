@@ -48,6 +48,11 @@ namespace CompanionAI_Pathfinder.Settings
 
             // Combat Mode Settings
             ["CombatModeSettings"] = new() { { Language.English, "Combat Mode Settings" }, { Language.Korean, "전투 모드 설정" } },
+            ["ControlSummons"] = new() { { Language.English, "Control Summoned Creatures (experimental)" }, { Language.Korean, "소환수 제어 (실험적)" } },
+            ["ControlSummonsDesc"] = new() {
+                { Language.English, "In combat, AI Control also decides for the creatures summoned by characters it controls (not pets, not swarms, not a summon's own summons). They use their own abilities, their summoner's blocklist, friendly-fire rule and spell policy, and never the party's items. Real time needs the current engine: the old real-time engine does not drive summons. Off: the game's AI drives them, as before." },
+                { Language.Korean, "전투 중 AI Control이 제어하는 캐릭터가 소환한 크리처(펫, 스웜, 소환수의 소환수 제외)도 AI Control이 결정합니다. 소환수는 자신의 능력과 소환자의 차단 목록, 아군 오사 방지 규칙, 주문 정책을 사용하며 파티의 아이템은 사용하지 않습니다. 실시간에서는 현재 엔진이 필요합니다(이전 실시간 엔진은 소환수를 제어하지 않음). 끄면 기존처럼 게임 AI가 제어합니다." }
+            },
             ["EnableInTurnBased"] = new() { { Language.English, "Enable in Turn-Based Mode" }, { Language.Korean, "턴제 모드에서 활성화" } },
             ["EnableInRealTime"] = new() { { Language.English, "Enable in Real-Time Mode" }, { Language.Korean, "실시간 모드에서 활성화" } },
             // ★ v0.3.14
@@ -360,6 +365,11 @@ namespace CompanionAI_Pathfinder.Settings
         // 유닛 제어 설정
         public bool ControlMainCharacter { get; set; } = false;
         public bool ControlCompanions { get; set; } = true;
+        /// <summary>
+        /// ★ summon control: AI Control also drives the summoned creatures of the characters it drives (in combat, the
+        /// tactical engine). Off by default; a settings file without it loads off (GameInterface/SummonControl.cs).
+        /// </summary>
+        public bool ControlSummons { get; set; } = false;
 
         // 전투 모드 설정
         public bool EnableInTurnBased { get; set; } = true;
@@ -478,6 +488,14 @@ namespace CompanionAI_Pathfinder.Settings
                      (shared ? "for every character" : $"for {characterName ?? characterId}"));
             return true;
         }
+
+        /// <summary>
+        /// ★ summon control: the character's row when it has one - read only, nothing is created. For checks about a
+        /// unit that must not get a row of its own (a summon's summoner is looked up, a summon never is).
+        /// </summary>
+        public CharacterSettings PeekSettings(string characterId) =>
+            !string.IsNullOrEmpty(characterId) && CharacterSettings != null &&
+            CharacterSettings.TryGetValue(characterId, out var settings) ? settings : null;
 
         /// <summary>
         /// 캐릭터 설정 가져오기 (없으면 생성)

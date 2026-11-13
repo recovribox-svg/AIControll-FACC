@@ -73,6 +73,29 @@ namespace CompanionAI_Pathfinder.GameInterface
         // ★ v0.2.32: 처리 못한 유닛 대기열
         private readonly Queue<string> _pendingProcessUnits = new Queue<string>();
 
+        // ★ summon control: ids of summoned creatures that were given pacing entries (_lastDecisionTime,
+        // _unitPhaseOffsets). Those two are keyed by id and never emptied in production (ClearCache has no caller), so
+        // every summon of a session would stay in them; the entries of summons are dropped when a fight starts or ends.
+        private readonly HashSet<string> _summonPacingIds = new HashSet<string>();
+
+        /// <summary>
+        /// ★ summon control: a fight started or ended - forget the pacing entries of summoned creatures and the units
+        /// still waiting for service (a waiting entry is a request to decide later, not a command that was issued).
+        /// Party members and pets keep their entries: they also pace the out-of-combat upkeep.
+        /// </summary>
+        public void ForgetSummonPacing()
+        {
+            int removed = Tactics.SummonRules.Prune(_lastDecisionTime, _summonPacingIds);
+            Tactics.SummonRules.Prune(_unitPhaseOffsets, _summonPacingIds);
+            if (removed > 0 && Main.VerboseOn) Main.Verbose($"[RT] pacing entries of {removed} summoned creatures dropped");
+            _summonPacingIds.Clear();
+            _pendingProcessUnits.Clear();
+        }
+
+        /// <summary>Diagnostics/tests: pacing entries currently held, and those noted for summons.</summary>
+        internal int PacingEntries => _lastDecisionTime.Count + _unitPhaseOffsets.Count;
+        internal int SummonPacingIds => _summonPacingIds.Count;
+
         // v0.2.1: Ability cooldown tracking (prevent free ability spam)
         // Key: "unitId:abilityGuid", Value: last use time
         private readonly Dictionary<string, float> _abilityCooldowns = new Dictionary<string, float>();
@@ -149,6 +172,8 @@ namespace CompanionAI_Pathfinder.GameInterface
             string unitName = unit.Descriptor?.CharacterName ?? "Unknown";
             string unitId = unit.UniqueId;
             float currentTime = Time.time;
+            // ★ summon control: same pacing as everyone; its entries are dropped with the fight (ForgetSummonPacing).
+            if (unitId != null && SummonControl.IsOrdinarySummon(unit)) _summonPacingIds.Add(unitId);
 
             // ★ v0.2.32: 위상 분산 적용된 Decision throttling
             float phaseOffset = GetUnitPhaseOffset(unitId);

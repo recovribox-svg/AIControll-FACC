@@ -83,6 +83,7 @@ Open with **Ctrl+F10**. The defaults suit most players.
 |---|---|---|
 | Control Companions | On | The AI fights for your companions. |
 | Control Main Character | Off | The AI also fights for your main character. |
+| Control Summoned Creatures (experimental) | Off | In combat, the AI also decides for creatures summoned by the characters it controls (not pets, swarms or a summon's own summons). They use their own abilities, their summoner's blocklist, friendly-fire rule and spell policy, and never the party's items. Real time needs the current engine. |
 | Enable in Turn-Based / Real-Time Mode | On / On | Choose the combat modes the AI runs in. |
 | Per character: AI on/off | On | Switch the AI off for single characters in *Party Members*. |
 

@@ -249,6 +249,11 @@ namespace ProfileAudit
             foreach (var line in shifterLines) Console.WriteLine(line);
             File.WriteAllText(output, string.Join(Environment.NewLine, shifterLines) + Environment.NewLine + Environment.NewLine + File.ReadAllText(output));
             blocklistFailures += shifterFailures;
+            // ★ summon control: settings, compiled routes, native turn/summon contracts, spawn graphs.
+            var summonLines = SummonControlCheck.Run(loaded.Values, out int summonFailures);
+            foreach (var line in summonLines) Console.WriteLine(line);
+            File.WriteAllText(output, string.Join(Environment.NewLine, summonLines) + Environment.NewLine + Environment.NewLine + File.ReadAllText(output));
+            blocklistFailures += summonFailures;
             var campaignFlagLines = CampaignFlagCheck.Run(loaded.Values, out int campaignFlagFailures);
             foreach (var line in campaignFlagLines) Console.WriteLine(line);
             File.WriteAllText(output, string.Join(Environment.NewLine, campaignFlagLines) + Environment.NewLine + Environment.NewLine + File.ReadAllText(output));

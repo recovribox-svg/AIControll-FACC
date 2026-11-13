@@ -208,9 +208,16 @@ namespace CompanionAI_Pathfinder.UI
             bool prevControlCompanions = ModSettings.Instance.ControlCompanions;
             ModSettings.Instance.ControlCompanions = DrawCheckbox(ModSettings.Instance.ControlCompanions, L("ControlCompanions"));
             GUILayout.Label($"<color=#888888><size=11>{L("ControlCompanionsDesc")}</size></color>", _descriptionStyle);
+            GUILayout.Space(5);
+
+            // ★ summon control: one global switch, off by default; no per-summon rows.
+            bool prevControlSummons = ModSettings.Instance.ControlSummons;
+            ModSettings.Instance.ControlSummons = DrawCheckbox(ModSettings.Instance.ControlSummons, L("ControlSummons"));
+            GUILayout.Label($"<color=#888888><size=11>{L("ControlSummonsDesc")}</size></color>", _descriptionStyle);
 
             // 변경시 저장
             if (prevControlMain != ModSettings.Instance.ControlMainCharacter ||
+                prevControlSummons != ModSettings.Instance.ControlSummons ||
                 prevControlCompanions != ModSettings.Instance.ControlCompanions)
             {
                 ModSettings.Save();
@@ -586,6 +593,9 @@ namespace CompanionAI_Pathfinder.UI
                 {
                     var unit = unitRef.Value;
                     if (unit == null) continue;
+                    // ★ summon control: a summoned creature another mod lists as a party character gets no row here
+                    // (a row would be saved under its id); pets are listed below, as before.
+                    if (GameInterface.SummonControl.IsOrdinarySummon(unit)) continue;
 
                     string unitId = unit.UniqueId ?? "unknown";
                     if (addedIds.Contains(unitId)) continue;

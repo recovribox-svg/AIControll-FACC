@@ -422,6 +422,9 @@ namespace CompanionAI_Pathfinder.GameInterface
                     if (unit == null) continue;
                     if (!unit.IsPlayerFaction) continue;
                     if (unit.HPLeft <= 0) continue;
+                    // ★ summon control: a summoned creature (not a pet) is neither a pre-buff caster nor a recipient -
+                    // the routine is the party's out-of-combat upkeep, and a summon never gets a settings row.
+                    if (SummonControl.IsOrdinarySummon(unit)) continue;
 
                     // 펫/소환수 필터링 (선택적)
                     // if (unit.Master != null) continue;

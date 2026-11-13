@@ -1,5 +1,20 @@
 # Test builds
 
+## Task-branch candidate: v0.3.30 summon1 (bfaccc6) - summon control, opt-in, not played
+
+[UMM test ZIP](AI-Control-FACC-v0.3.30-dev-summon1-bfaccc6-UMM-test.zip?raw=true) · [Identity](AI-Control-FACC-v0.3.30-dev-summon1-bfaccc6-UMM-test.identity.json) · [Checksums](AI-Control-FACC-v0.3.30-dev-summon1-bfaccc6-UMM-test.sha256) · [Checks](../docs/competence/SUMMON_CONTROL_CHECKS.json) · [Notes and replay steps](../docs/TACTICAL_AI.md) (§152)
+
+Source `bfaccc6`, branch `claude/summon-control` (PR into development); manifest stays 0.3.30. Startup MVID `c72d459e-7d4f-417a-b030-6d90db7ba765`.
+
+Switch on **Control Summoned Creatures (experimental)** in the mod's settings: in combat, AI Control then decides for the creatures summoned by
+the characters it controls (not pets, swarms or a summon's own summons). With the switch off the game's AI drives summons as before.
+Test turn completion first (a summon's turn must start, act and end without a freeze), then behaviour, then a pack's performance, in
+turn-based and real time. Keep the startup MVID with the logs.
+
+677 unit tests, 27 inventory tests, zero-warning Release build against the real game assemblies, ProfileAudit (35,497 blueprints, the one
+known failure, SUMMON-CONTROL 62 checks) and the three native harnesses pass. None of these runs a turn in the game.
+
+
 ## Task-branch candidate: v0.3.30 toggle self-review (c6e8b25) — review and gameplay pending
 
 [UMM test ZIP](AI-Control-FACC-v0.3.30-dev-toggle-review-c6e8b25-UMM-test.zip?raw=true) · [Identity](AI-Control-FACC-v0.3.30-dev-toggle-review-c6e8b25-UMM-test.identity.json) · [Changes and paired TB/RT replay](../docs/competence/C06_TOGGLE_COSTS.md)

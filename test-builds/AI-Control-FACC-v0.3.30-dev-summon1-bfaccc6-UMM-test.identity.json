@@ -1,0 +1,20 @@
+{
+  "build_label": "summon1",
+  "kind": "development-test",
+  "version": "0.3.30",
+  "source_branch": "claude/summon-control",
+  "source_commit": "bfaccc6782e7cf0f572352d4ace135de2cd8da48",
+  "development_base": "44b224f5af76dc5f5ae6086d6abbfbdeac790627",
+  "plan_pr": 46,
+  "dll": {
+    "assembly": "CompanionAI_Pathfinder, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null",
+    "mvid": "c72d459e-7d4f-417a-b030-6d90db7ba765",
+    "sha256": "a27bafec3aa7a37b052ac950cf4f8fdad11a10f0471b815d77ffb924c5db56cc",
+    "size": 1380864
+  },
+  "manifest_sha256": "d6ee91e78dc5d4981ad51a1a1a85bb1e7fe3f0a87814697f2fd9ee1c20d35594",
+  "checks_receipt": "docs/competence/SUMMON_CONTROL_CHECKS.json",
+  "gameplay_status": "not played",
+  "scope": "Opt-in summon control (ModSettings.ControlSummons, off by default): in combat, both modes, AI Control drives linked summons of the characters it drives through the existing tactical engine, drivers and dispatcher. Turn-based entry on the game's own AI turn (TurnController.Prepare postfix, TickBrain prefix, Tick postfix); no status, controllability, faction or group write. Not pets, swarms, nested, unlinked or enemy summons; not with the old real-time engine. A summon uses its own abilities, its summoner's blocklist, friendly-fire rule, heal threshold and spell policy; no summoning spell, item or material component. With the switch off nothing changes except that a summon another mod makes clickable is no longer driven like a companion.",
+  "release": false
+}
