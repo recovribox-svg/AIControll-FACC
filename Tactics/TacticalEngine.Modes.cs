@@ -577,13 +577,26 @@ namespace CompanionAI_Pathfinder.Tactics
         /// game's own routine, AC by the damage avoided). Sets the candidate's modes and raises its value when the best set
         /// beats the current state by the hysteresis margin.
         /// </summary>
-        private static void ChooseAttackModes(TacticalContext ctx, Candidate c)
+        private static void ChooseAttackModes(TacticalContext ctx, Candidate c, WeaponAttackEstimate griffonQuote = null)
         {
             var modes = AttackModes(ctx);
-            if (modes.Count == 0 || c.Kind != CandidateKind.WeaponAttack || c.Target == null || c.ModeFactor <= 0f) return;
+            bool griffon = c.Kind == CandidateKind.Ability && c.Griffon != null && griffonQuote != null;
+            if (modes.Count == 0 || c.Kind != CandidateKind.WeaponAttack && !griffon || c.Target == null || c.ModeFactor <= 0f) return;
             var unit = ctx.Unit;
-            bool full = c.FullAttack;
+            bool full = griffon ? c.Griffon.Full : c.FullAttack;
             Vector3 at = c.ModeAt ?? unit.Position;
+            // ★ v0.3.52: the leap already pays its native charge AC penalty. Price mode changes from that same
+            // landing/penalty baseline, rather than adding independent nonlinear defense gains. Reuse equal AC
+            // totals across the existing <=32 mode sets; ordinary attack behavior is unchanged.
+            var landingDefence = griffon ? new Dictionary<int, float>() : null;
+            float Defence(int ac)
+            {
+                if (!griffon) return DefenseValue(ctx, at, ac);
+                ac += c.Griffon.Charge.Armor;
+                if (!landingDefence.TryGetValue(ac, out float value))
+                    landingDefence[ac] = value = DefenseValue(ctx, at, ac);
+                return value;
+            }
 
             // ★ v0.3.18 (review): every set is valued against the game's rules as they stand (the attack routine, the AC
             // the enemies roll against) - a mode's changes count by whether it will apply at this attack and whether it
@@ -591,7 +604,7 @@ namespace CompanionAI_Pathfinder.Tactics
             // started (it restarts on the attack) was missing its -4 there.
             Func<HashSet<UnitMode>, KeyValuePair<float, float>> valueOf = set =>
             {
-                var estimate = CombatMath.EstimateWeaponAttack(unit, c.Target, full, (weapon, index) =>
+                KeyValuePair<int, float> Delta(ItemEntityWeapon weapon, int index)
                 {
                     int ab = 0;
                     float dmg = 0f;
@@ -606,9 +619,12 @@ namespace CompanionAI_Pathfinder.Tactics
                     if (c.MagusFollowCombat && MagusMechanics.CombatPenalty(unit,
                         Kingmaker.Blueprints.Root.BlueprintRoot.Instance.SystemMechanics.MagusSpellCombatBuff, weapon, out int penalty)) ab += penalty;
                     return new KeyValuePair<int, float>(ab, dmg);
-                });
+                }
+                var estimate = griffon ? CombatMath.RepriceGriffonModes(unit, c.Target, full, griffonQuote, Delta)
+                                       : CombatMath.EstimateWeaponAttack(unit, c.Target, full, Delta);
                 int ac = modes.Sum(m => ((set.Contains(m) ? 1 : 0) - (m.InEstimate ? 1 : 0)) * m.AC);
-                return new KeyValuePair<float, float>(estimate == null ? -1f : DamageValue(c.Target, estimate) + MagusChargeValue(c, estimate), DefenseValue(ctx, at, ac));
+                return new KeyValuePair<float, float>(estimate == null ? -1f : DamageValue(c.Target, estimate) +
+                    (griffon ? 0f : MagusChargeValue(c, estimate)), Defence(ac));
             };
             var current = new HashSet<UnitMode>(modes.Where(m => m.On));
             var baseline = valueOf(current);

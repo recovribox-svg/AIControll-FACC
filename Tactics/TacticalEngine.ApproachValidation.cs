@@ -132,7 +132,10 @@ namespace CompanionAI_Pathfinder.Tactics
                                                                     TurnMemory memory)
         {
             if (!CanOfferIdleAdvance(ctx) || WaitingForInPlaceAttack(CombatMemory.IsRealTime, scored))
+            {
+                IdleAdvanceNote(ctx, "movement/action/policy or pending in-place attack gate");
                 return Enumerable.Empty<Candidate>();
+            }
             var advances = new List<Candidate>();
             bool rangedStyle = ctx.HasRangedWeapon || ctx.Settings.RangePreference == RangePreference.Ranged ||
                                ctx.Settings.Role == AIRole.Support;
@@ -148,7 +151,20 @@ namespace CompanionAI_Pathfinder.Tactics
                 ReportOnce($"idle-advance|{ctx.Unit.UniqueId}|{CombatMemory.Round}",
                     $"[Approach] {ctx.Unit.CharacterName}: rejected approaches left no useful action; " +
                     $"{usable.Count} plain advance options priced (walk checked at issue)");
+            else IdleAdvanceNote(ctx, advances.Count == 0 ? "no closing candidate" : "closing candidates failed ordinary value/policy guards");
             return usable;
+        }
+
+        private static void IdleAdvanceNote(TacticalContext ctx, string reason)
+        {
+            if (!Main.VerboseOn) return;
+            ReportOnce($"idle-advance-empty|{CombatMemory.Fight}|{ctx.Unit.UniqueId}|{reason}",
+                () => $"[Approach] {ctx.Unit.CharacterName}: idle advance unavailable ({reason}); " +
+                    $"move={ctx.HasMove}, standard={ctx.HasStandard}, walk={ctx.Permissions.CanWalk}, " +
+                    $"no movement={ctx.NoMovementLeft}, stepped={ctx.StepTaken}, move only={ctx.Permissions.MovementOnly}, " +
+                    $"weapon allowed={ctx.PureMageWeapon}, move range={ctx.MoveRange:0.##}m; " +
+                    $"ranged weapon={ctx.HasRangedWeapon}, range preference={ctx.Settings.RangePreference}, role={ctx.Settings.Role}, " +
+                    $"unreachable memory entries={ctx.Unreachable.Count}; existing state only, no extra path query");
         }
 
         /// <summary>Throwaway command matching Execute's approach/reach settings; never queued or retained.</summary>

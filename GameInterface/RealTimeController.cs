@@ -27,6 +27,16 @@ namespace CompanionAI_Pathfinder.GameInterface
     /// </summary>
     public class RealTimeController
     {
+        private static readonly DiagnosticChangeLog<string> ActionStateLog = new DiagnosticChangeLog<string>();
+
+        // ★ v0.3.52: report a blocked-state transition, not the same Prone line every decision interval.
+        // Callers retain native checks/throttles. Ready resets only diagnostic state, without emitting a line.
+        private static void NoteActionState(string unitId, string unitName, string reason)
+        {
+            if (Main.VerboseOn && ActionStateLog.Observe(Tactics.CombatMemory.Fight, unitId, reason) && reason != null)
+                Main.Verbose($"[RT] {unitName}: Cannot act - {reason}");
+        }
+
         #region Constants
 
         // Decision interval (seconds). ★ v0.3.12: the "Real-Time Decision Interval" setting (0.2-2 s, default 0.5), which
@@ -211,7 +221,7 @@ namespace CompanionAI_Pathfinder.GameInterface
             var state = unit.Descriptor?.State;
             if (state == null)
             {
-                Main.Verbose($"[RT] {unitName}: Cannot act - State=null");
+                NoteActionState(unitId, unitName, "State=null");
                 _lastDecisionTime[unitId] = currentTime;  // ★ v0.2.54: Throttle even on early return
                 return;
             }
@@ -221,7 +231,7 @@ namespace CompanionAI_Pathfinder.GameInterface
             string cannotActReason = GetCannotActReason(state);
             if (cannotActReason != null)
             {
-                Main.Verbose($"[RT] {unitName}: Cannot act - {cannotActReason}");
+                NoteActionState(unitId, unitName, cannotActReason);
                 _lastDecisionTime[unitId] = currentTime;  // Throttle even when can't act
                 return;
             }
@@ -230,11 +240,12 @@ namespace CompanionAI_Pathfinder.GameInterface
             // Decided then, every order ended "Interrupt" after 0.0 s: Aeiluvetar's Aid Another eight times, Seelah's three.
             if (unit.View?.IsGetUp ?? false)
             {
-                Main.Verbose($"[RT] {unitName}: Cannot act - getting up");
+                NoteActionState(unitId, unitName, "getting up");
                 _lastDecisionTime[unitId] = currentTime;
                 return;
             }
             // ★ v0.2.43: IsInExclusiveState는 체크하지 않음 - Commands.Empty 체크가 커버함
+            NoteActionState(unitId, unitName, null);
 
             // ★ v0.3.14: nauseated: the game still starts UnitMoveTo, nothing else (UnitCommandController.ShouldStartCommand).
             // It used to count as "cannot act" before the AoE escape below: Orvath stood 26 s in the Stinking Cloud that

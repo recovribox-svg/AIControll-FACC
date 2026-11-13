@@ -7,6 +7,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using CompanionAI_Pathfinder.Core;
 using Kingmaker.Blueprints;
 using Kingmaker.EntitySystem.Entities;
 using Kingmaker.EntitySystem.Stats;
@@ -332,7 +333,7 @@ namespace CompanionAI_Pathfinder.Analysis
                     result.AttackHitChances.Add(iterativeHit.HitChance);
                 }
 
-                Main.Verbose($"[HitChance] FullAttack: {attacker.CharacterName} vs {target.CharacterName} (BAB {bab}) - {result}");
+                if (Main.VerboseOn) Main.Verbose($"[HitChance] FullAttack: {attacker.CharacterName} vs {target.CharacterName} (BAB {bab}) - {result}");
             }
             catch (Exception ex)
             {
@@ -415,7 +416,7 @@ namespace CompanionAI_Pathfinder.Analysis
                 int needToFail = result.SpellDC - result.TargetSaveBonus;
                 result.FailureChance = CalculateSaveFailureProbability(needToFail);
 
-                Main.Verbose($"[HitChance] SaveDC: {ability.Name} {caster.CharacterName} vs {target.CharacterName} - {result}");
+                if (Main.VerboseOn) Main.Verbose($"[HitChance] SaveDC: {ability.Name} {caster.CharacterName} vs {target.CharacterName} - {result}");
             }
             catch (Exception ex)
             {
@@ -701,6 +702,8 @@ namespace CompanionAI_Pathfinder.Analysis
             }
         }
 
+        private static readonly DiagnosticChangeLog<int> PenetrationLog = new DiagnosticChangeLog<int>();
+
         /// <summary>
         /// ★ v0.3.14: the spell penetration the game adds to the caster's roll, from the components it uses for that
         /// (RuleSpellResistanceCheck handlers): SpellPenetrationBonus (Spell Penetration, Greater, items, buffs; typed
@@ -759,8 +762,10 @@ namespace CompanionAI_Pathfinder.Analysis
             }
 
             int bonus = stackable + typed.Values.Sum() + mythic + allied;
-            if (bonus > 0)
-                if (Main.VerboseOn) Main.Verbose($"[HitChance] SpellPen: {caster.CharacterName} has +{bonus} spell penetration");
+            // ★ v0.3.52: this same +4 line appeared 261 times in one supplied log. Observe only the computed
+            // result; still calculate every forecast normally. Silent zero permits a later positive change to log.
+            if (Main.VerboseOn && PenetrationLog.Observe(Tactics.CombatMemory.Fight, caster.UniqueId, bonus) && bonus > 0)
+                Main.Verbose($"[HitChance] SpellPen: {caster.CharacterName} has +{bonus} spell penetration");
             return bonus;
         }
 
@@ -927,7 +932,7 @@ namespace CompanionAI_Pathfinder.Analysis
                 {
                     result.IsImmune = true;
                     result.DamageEfficiency = 0f;
-                    Main.Verbose($"[HitChance] Energy: {target.CharacterName} is IMMUNE to {energyType}");
+                    if (Main.VerboseOn) Main.Verbose($"[HitChance] Energy: {target.CharacterName} is IMMUNE to {energyType}");
                     return result;
                 }
 
@@ -965,7 +970,7 @@ namespace CompanionAI_Pathfinder.Analysis
 
                 if (highestResistance > 0)
                 {
-                    Main.Verbose($"[HitChance] Energy: {target.CharacterName} has {result}");
+                    if (Main.VerboseOn) Main.Verbose($"[HitChance] Energy: {target.CharacterName} has {result}");
                 }
             }
             catch (Exception ex)
@@ -1319,7 +1324,7 @@ namespace CompanionAI_Pathfinder.Analysis
                 float critThreatChance = (21 - critRange) / 20f;
                 result.CriticalChance = result.HitChance * critThreatChance * result.HitChance; // 위협 * 확정
 
-                Main.Verbose($"[HitChance] Weapon: {attacker.CharacterName} vs {target.CharacterName} - {result}");
+                if (Main.VerboseOn) Main.Verbose($"[HitChance] Weapon: {attacker.CharacterName} vs {target.CharacterName} - {result}");
             }
             catch (Exception ex)
             {
@@ -1398,7 +1403,7 @@ namespace CompanionAI_Pathfinder.Analysis
                 // 7. 스펠 크리티컬 없음 (대부분)
                 result.CriticalChance = 0f;
 
-                Main.Verbose($"[HitChance] Ability({(isTouch ? "Touch" : "Ranged")}): {ability.Name} " +
+                if (Main.VerboseOn) Main.Verbose($"[HitChance] Ability({(isTouch ? "Touch" : "Ranged")}): {ability.Name} " +
                            $"{attacker.CharacterName} vs {target.CharacterName} - {result}");
             }
             catch (Exception ex)

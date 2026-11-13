@@ -80,18 +80,32 @@ namespace CompanionAI_Pathfinder.Tactics
                 if (!CombatMath.GriffonLandingReaches(unit, enemy, landing, attack.Reach))
                 { Refused(GriffonRefusal.WeaponReach, enemy, plan); continue; }
                 plan.Reach = attack.Reach;
-                float value = DamageValue(enemy, attack) * AttackWeight(ctx, enemy, false) * WakeFactor(enemy, attack.ExpectedDamage);
+                float factor = AttackWeight(ctx, enemy, false) * WakeFactor(enemy, attack.ExpectedDamage);
+                float value = DamageValue(enemy, attack) * factor;
                 // The native flight suppresses traversal AoOs. Its landing still risks the same exposure and loss
                 // of cover for allies as other relocations; the real charge child's temporary AC penalty is a cost.
                 float exposure = ExposureCost(ctx, landing);
                 float leaves = ValueModel.LeavesAlliesCost(PartyShift(ctx, landing), OwnFall(ctx, landing));
                 float armor = Math.Min(0f, DefenseValue(ctx, landing, charge.Armor));
                 value = value - exposure - leaves + armor;
-                candidates.Add(new Candidate { Kind = CandidateKind.Ability, Slot = slot, Ability = ability, Target = enemy,
+                var candidate = new Candidate { Kind = CandidateKind.Ability, Slot = slot, Ability = ability, Target = enemy,
                     Offensive = true, Value = value, Griffon = plan, ApproachRadius = radius, NeedLoS = needLos,
+                    ModeAt = landing, ModeFactor = factor,
                     Key = $"griffon:{CombatMemory.AbilityKey(ability)}:{enemy.UniqueId}",
                     Label = $"{ability.Name}->{enemy.CharacterName} (native leap, {(full ? attack.Attacks + " pounce attacks" : "one attack")}" +
-                        (exposure + leaves - armor > 0f ? $", landing cost {exposure + leaves - armor:0.#}" : "") + ")" });
+                        (exposure + leaves - armor > 0f ? $", landing cost {exposure + leaves - armor:0.#}" : "") + ")" };
+                // ★ v0.3.52: compare the same owned/allowed attack modes as an ordinary attack, while its exact
+                // routine is still cached. Mode sets reprice lines only; no extra node/path/own-weapon quote.
+                float originalValue = candidate.Value;
+                string originalLabel = candidate.Label;
+                try { ChooseAttackModes(ctx, candidate, attack); }
+                catch (Exception ex)
+                {
+                    candidate.Value = originalValue; candidate.Label = originalLabel; candidate.Modes = null;
+                    ReportOnce($"griffon-modes|{CombatMemory.Fight}|{unit.UniqueId}|{ex.GetType().Name}",
+                        () => $"[Griffon] {unit.CharacterName}: mode appraisal unavailable ({ex.GetType().Name}); retains current native attack estimate");
+                }
+                candidates.Add(candidate);
             }
             if (candidates.Count == 0)
             {

@@ -372,10 +372,11 @@ namespace CompanionAI_Pathfinder.Tactics
                         return reveal;
                     }
                 }
-                if (CombatMemory.IsRealTime) Main.Verbose($"[Tactics] {unit.CharacterName}: no reachable enemies - wait");
+                if (CombatMemory.IsRealTime) NoteEnemyAvailability(unit, false);
                 else Main.Log($"[Tactics] {unit.CharacterName}: no reachable enemies - end turn");
                 return null;
             }
+            if (!preview && CombatMemory.IsRealTime) NoteEnemyAvailability(unit, true);
 
             // ★ v0.3.15: judge the last ability this unit used before choosing again (did the game do anything with it?).
             // ★ v0.3.20 (audit LIF-001): and count it as cast only if its command acted.
@@ -817,9 +818,11 @@ namespace CompanionAI_Pathfinder.Tactics
 
         private static void LogDecision(TacticalContext ctx, List<Candidate> usable, Candidate chosen)
         {
-            var sb = new StringBuilder();
             // ★ v0.3.14: real-time decisions carry "RT" (rounds are six-second spans there).
             bool realTime = CombatMemory.IsRealTime;
+            // ★ v0.3.52: avoid formatting the summaries the existing quiet-wait policy discards.
+            if (!Core.DiagnosticLogPolicy.WriteDecision(realTime, chosen != null, usable.Count > 0, Main.VerboseOn)) return;
+            var sb = new StringBuilder();
             sb.Append($"[Tactics] {ctx.Unit.CharacterName} {(realTime ? "RT" : "R")}{ctx.Round} HP{ctx.HpPct * 100:F0}% ");
             // ★ v0.3.14: the unit's statuses and what they forbid ("{nauseated | nauseated: move only}").
             if (ctx.Status.Length > 0 || ctx.Permissions.Notes.Length > 0)
