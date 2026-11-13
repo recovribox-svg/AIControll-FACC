@@ -1,0 +1,21 @@
+{
+  "build_label": "review1",
+  "kind": "development-test",
+  "version": "0.3.50",
+  "source_branch": "codex/v0350-playtest-review",
+  "source_commit": "ae926971c4553797f8a521c4ae0907d0ecd3af34",
+  "starting_commit": "d466f384acbdca242b214a16afe552d55606411d",
+  "development_base": "d466f384acbdca242b214a16afe552d55606411d",
+  "dependency_pr": null,
+  "dll": {
+    "assembly": "CompanionAI_Pathfinder, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null",
+    "mvid": "25818a75-297f-47de-aea3-5cf93d0a9d09",
+    "sha256": "d44b57ca975898325390695f65bca6059034efb958ad4466dfa60c569a716f49",
+    "size": 1397248
+  },
+  "manifest_sha256": "70aff99f126b796db54d7c80e38b16bd5186e990d6cc2e3bb1d4780d75dc48c0",
+  "checks_receipt": "docs/competence/V0350_PLAYTEST_CHECKS.json",
+  "gameplay_status": "not played",
+  "scope": "Invocation replacements settle the actual removed unique source; narrow constant held weapon buffs use exact cached-routine losses near hit caps, with corrected incoming diagnostic detail and ability identity. Recognized automatic swarm harm no longer buys AC, concealment or image protection; total danger and ordinary-enemy approximations remain. Conversion discovery uses an order-preserving per-Gather first-index lookup and existing slow rows name setup timings. Manifest 0.3.50; optional summon control and all development integration1 fixes retained. No new kit cap, actor preview or movement-policy change. Corrected behavior and matched Unity performance remain unplayed.",
+  "release": false
+}

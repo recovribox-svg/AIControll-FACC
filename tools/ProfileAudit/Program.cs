@@ -140,6 +140,10 @@ namespace ProfileAudit
                 foreach (var line in blocklistLines) Console.WriteLine(line);
                 File.WriteAllText(output, string.Join(Environment.NewLine, blocklistLines) + Environment.NewLine + Environment.NewLine + File.ReadAllText(output));
             }
+            var uniqueReplacementLines = UniqueReplacementCheck.Run(loaded.Values, out int uniqueReplacementFailures);
+            foreach (var line in uniqueReplacementLines) Console.WriteLine(line);
+            File.WriteAllText(output, string.Join(Environment.NewLine, uniqueReplacementLines) + Environment.NewLine + Environment.NewLine + File.ReadAllText(output));
+            blocklistFailures += uniqueReplacementFailures;
             // ★ v0.3.28: on-hit ability damage (a Shadow's Strength touch) on these blueprints.
             var onHitLines = OnHitCheck.Run(loaded.Values, out int onHitFailures);
             foreach (var line in onHitLines) Console.WriteLine(line);
@@ -189,6 +193,10 @@ namespace ProfileAudit
             foreach (var line in swarmCoverage) Console.WriteLine(line);
             File.WriteAllText(output, string.Join(Environment.NewLine, swarmCoverage) + Environment.NewLine + Environment.NewLine + File.ReadAllText(output));
             blocklistFailures += swarmCoverageFailures;
+            var swarmProtection = SwarmProtectionCheck.Run(loaded.Values, out int swarmProtectionFailures);
+            foreach (var line in swarmProtection) Console.WriteLine(line);
+            File.WriteAllText(output, string.Join(Environment.NewLine, swarmProtection) + Environment.NewLine + Environment.NewLine + File.ReadAllText(output));
+            blocklistFailures += swarmProtectionFailures;
             var revealValueLines = RevealValueCheck.Run(loaded.Values, out int revealValueFailures);
             foreach (var line in revealValueLines) Console.WriteLine(line);
             File.WriteAllText(output, string.Join(Environment.NewLine, revealValueLines) + Environment.NewLine + Environment.NewLine + File.ReadAllText(output));
@@ -266,6 +274,10 @@ namespace ProfileAudit
             foreach (var line in jointCostLines) Console.WriteLine(line);
             File.WriteAllText(output, string.Join(Environment.NewLine, jointCostLines) + Environment.NewLine + Environment.NewLine + File.ReadAllText(output));
             blocklistFailures += jointCostFailures;
+            var discoveryLines = AbilityDiscoveryCheck.Run(loaded.Values, out int discoveryFailures);
+            foreach (var line in discoveryLines) Console.WriteLine(line);
+            File.WriteAllText(output, string.Join(Environment.NewLine, discoveryLines) + Environment.NewLine + Environment.NewLine + File.ReadAllText(output));
+            blocklistFailures += discoveryFailures;
             var campaignFlagLines = CampaignFlagCheck.Run(loaded.Values, out int campaignFlagFailures);
             foreach (var line in campaignFlagLines) Console.WriteLine(line);
             File.WriteAllText(output, string.Join(Environment.NewLine, campaignFlagLines) + Environment.NewLine + Environment.NewLine + File.ReadAllText(output));
@@ -304,6 +316,10 @@ namespace ProfileAudit
             foreach (var line in castBonusLines) Console.WriteLine(line);
             File.WriteAllText(output, string.Join(Environment.NewLine, castBonusLines) + Environment.NewLine + Environment.NewLine + File.ReadAllText(output));
             blocklistFailures += castBonusFailures;
+            var heldWeaponLines = HeldBuffWeaponCheck.Run(loaded.Values, out int heldWeaponFailures);
+            foreach (var line in heldWeaponLines) Console.WriteLine(line);
+            File.WriteAllText(output, string.Join(Environment.NewLine, heldWeaponLines) + Environment.NewLine + Environment.NewLine + File.ReadAllText(output));
+            blocklistFailures += heldWeaponFailures;
             if (failed > 0)
             {
                 string partial = $"PARTIAL: loaded {loaded.Count}, failed {failed}, allowed {options.AllowFailures}. Failed blueprints:";

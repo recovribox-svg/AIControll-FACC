@@ -616,7 +616,7 @@ namespace CompanionAI_Pathfinder.Tactics
         /// <summary>★ v0.3.19 (test11): the appraisal behind a buff candidate, for the log.</summary>
         private static string BuffNote(UnitEntityData unit, Candidate c) =>
             c.Kind == CandidateKind.Toggle ? LastToggleAppraisal(unit, c.Key) ?? "no appraisal" :
-            c.Ability == null ? "" : LastAppraisal(unit, c.Ability, c.Target ?? unit) ?? "no appraisal";
+            c.Ability == null ? "" : $"{LastAppraisal(unit, c.Ability, c.Target ?? unit) ?? "no appraisal"}; ability={CombatMemory.AbilityKey(c.Ability)}";
 
         /// <summary>
         /// ★ v0.3.15: casting another spell drops a held touch charge (TouchSpellsController: any spell or spell-like
@@ -2731,9 +2731,14 @@ namespace CompanionAI_Pathfinder.Tactics
             bool futureSpellsNeeded = (ctx.Global?.AiManagesToggles ?? true) &&
                 (ctx.Unit.ActivatableAbilities?.Enumerable?.Any(t =>
                     t?.Blueprint?.Buff?.GetComponent<Kingmaker.UnitLogic.FactLogic.ForbidSpellCasting>() != null) ?? false);
-            ctx.DiscoveredAbilities = AbilityDiscovery.Gather(ctx.Unit);
-            // ★ user-ability-blacklist: what the lists block is never appraised or offered (the same list when nothing is).
-            ctx.AllowedAbilities = UserAbilityPolicy.Allowed(ctx.Blocks, ctx.Unit, ctx.DiscoveredAbilities);
+            long discoveryStarted = ctx.Timings != null ? System.Diagnostics.Stopwatch.GetTimestamp() : 0;
+            try
+            {
+                ctx.DiscoveredAbilities = AbilityDiscovery.Gather(ctx.Unit);
+                // ★ user-ability-blacklist: what the lists block is never appraised or offered (the same list when nothing is).
+                ctx.AllowedAbilities = UserAbilityPolicy.Allowed(ctx.Blocks, ctx.Unit, ctx.DiscoveredAbilities);
+            }
+            finally { ctx.Timings?.NoteDiscovery(discoveryStarted, ctx.DiscoveredAbilities?.Count ?? 0, ctx.AllowedAbilities?.Count ?? 0); }
             if (!ReferenceEquals(ctx.AllowedAbilities, ctx.DiscoveredAbilities)) ReserveBlockedCharge(ctx);
             // ★ v0.3.25 (test1 logs, performance): an offence the unit cannot afford now is read by one consumer only - real
             // time's "can it hurt someone from here once the cooldown ends?" (AddMovementCandidates). Turn-based every reader
@@ -2743,15 +2748,23 @@ namespace CompanionAI_Pathfinder.Tactics
             bool attackFromHere = list.Any(c => ResolvesAttackFromHere(ctx, c));
             foreach (var ability in ctx.AllowedAbilities)   // ★ v0.3.14: shared with real time
             {
+                long checksStarted = ctx.Timings != null ? System.Diagnostics.Stopwatch.GetTimestamp() : 0;
                 try
                 {
-                    if (!ability.IsAvailable) continue;
+                    bool isAvailable;
+                    long availabilityStarted = ctx.Timings != null ? System.Diagnostics.Stopwatch.GetTimestamp() : 0;
+                    try { isAvailable = ability.IsAvailable; }
+                    finally { ctx.Timings?.NoteAvailability(availabilityStarted); }
+                    if (!isAvailable) continue;
                     if (AbilityClassifier.IsBlacklistedForCombat(ability, valuedByEffect: true)) continue;
                     var slot = SlotOf(ability);
                     bool available = slot == ActionSlot.Free || slot == ActionSlot.Swift && ctx.HasSwift ||
                         slot == ActionSlot.Move && (ctx.HasMove || ctx.HasStandard) ||
                         slot == ActionSlot.Standard && ctx.HasStandard || slot == ActionSlot.FullRound && ctx.HasFullRound;
-                    var profile = AbilityProfile.Get(ability);
+                    AbilityProfile profile;
+                    long profileStarted = ctx.Timings != null ? System.Diagnostics.Stopwatch.GetTimestamp() : 0;
+                    try { profile = AbilityProfile.Get(ability); }
+                    finally { ctx.Timings?.NoteProfileRead(profileStarted); }
                     bool futureOffence = profile != null && (profile.DealsDamage || profile.HarmfulEffects ||
                         profile.ControlStrength != ControlStrength.None || profile.Maneuvers.Count > 0 || profile.IsWeaponAttack);
                     bool spellOpportunity = futureSpellsNeeded && (ability.Blueprint.IsSpell || ability.SourceItem != null);
@@ -2763,6 +2776,7 @@ namespace CompanionAI_Pathfinder.Tactics
                         continue;
                     }
 
+                    if (checksStarted != 0) { ctx.Timings.NotePreScoreChecks(checksStarted); checksStarted = 0; }
                     long started = System.Diagnostics.Stopwatch.GetTimestamp();
                     long heap = ctx.Timings != null ? GC.GetTotalMemory(false) : 0;
                     int before = list.Count;
@@ -2787,6 +2801,7 @@ namespace CompanionAI_Pathfinder.Tactics
                     ReportOnce($"eval|{ability?.Blueprint?.AssetGuid}", $"[Tactics] {ability?.Name} ({ability?.Blueprint?.AssetGuid}): " +
                                $"not evaluated - {ex.GetType().Name}: {ex.Message}");
                 }
+                finally { if (checksStarted != 0) ctx.Timings.NotePreScoreChecks(checksStarted); }
             }
         }
 
@@ -2882,7 +2897,7 @@ namespace CompanionAI_Pathfinder.Tactics
         /// <summary>★ v0.3.30 test 1: once a fight per caster and ability, why a unique buff stays where it is.</summary>
         private static void UniqueKeptNote(UnitEntityData caster, AbilityData ability, UnitEntityData holder, string why) =>
             ReportOnce($"unique-kept|{CombatMemory.Fight}|{caster.UniqueId}|{CombatMemory.AbilityKey(ability)}",
-                () => $"[Buff] {caster.CharacterName}: {ability.Name} stays on {holder.CharacterName} (one recipient at a time: {why})");
+                () => $"[Buff] {caster.CharacterName}: {ability.Name} [{CombatMemory.AbilityKey(ability)}] stays on {holder.CharacterName} (unique buff: {why})");
 
         private static float BuffRounds(AbilityProfile profile, float expectedRounds) =>
             profile.BuffsLastOneRound || profile.BuffsSpentByRoll ? 1f
@@ -4367,7 +4382,8 @@ namespace CompanionAI_Pathfinder.Tactics
                     var held = UniqueBuffHeldElsewhere(ctx, unit, buffs, ally, out var holder);
                     if (held != null)
                     {
-                        if (CombatMemory.LastCastRound(unit, ability, holder) == ctx.Round)
+                        int? placed = UniqueBuffPlacedRound(unit, held, holder);
+                        if (placed == ctx.Round)
                         {
                             UniqueKeptNote(unit, ability, holder, $"put on {holder.CharacterName} this round");
                             continue;
@@ -4389,7 +4405,6 @@ namespace CompanionAI_Pathfinder.Tactics
                             continue;
                         }
                         // ★ v0.3.30 competence3: and it settles where it was put for a few rounds (ValueModel.UniqueMoveAllowed).
-                        int? placed = CombatMemory.LastCastRound(unit, ability, holder);
                         int? since = placed.HasValue ? ctx.Round - placed.Value : (int?)null;
                         if (!ValueModel.UniqueMoveAllowed(since, gain))
                         {
@@ -4398,6 +4413,15 @@ namespace CompanionAI_Pathfinder.Tactics
                         }
                         reasons.Add($"from {holder.CharacterName} -{kept:0.#}");
                         worth = gain;
+                    }
+                    // ★ v0.3.50 review1: another stat variant can remove a freshly placed unique sibling on this
+                    // recipient without moving that same buff elsewhere. Settle the actual removed buff too, using
+                    // its own source cast and the net gain after both losses. Unrelated tiers remain independent.
+                    int? replacedAge = NewestUniqueReplacementAge(unit, replaced, ally, ctx.Round);
+                    if (!ValueModel.UniqueReplacementAllowed(replacedAge, worth))
+                    {
+                        UniqueKeptNote(unit, ability, ally, $"its current buff was put there {replacedAge} round(s) ago; replacing it gains only {worth:0.#}");
+                        continue;
                     }
                     // ★ v0.3.19 (test9): a buff that makes the ally bigger can put it into a harmful area it stands beside
                     // (Enlarge Person put Seelah into Orvath's Grease). The cost is the ally's, in full.
