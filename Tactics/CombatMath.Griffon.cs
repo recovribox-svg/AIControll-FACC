@@ -1,6 +1,8 @@
 // ★ v0.3.50 review2: Read the native landing helper and quote the actual current weapons; never activate a buff or move an actor.
 using System;
+using System.Collections.Generic;
 using System.Reflection;
+using Kingmaker.Items;
 using Kingmaker.Blueprints.Root;
 using Kingmaker.EntitySystem.Entities;
 using Kingmaker.UnitLogic;
@@ -94,6 +96,38 @@ namespace CompanionAI_Pathfinder.Tactics
             // No guessed animation schedule, charge proc, new form, target relocation or attack event is executed.
             var result = EstimateWeaponAttack(unit, target, full);
             return result?.IsRanged == false ? result : null;
+        }
+
+        // ★ v0.3.52: mode alternatives reuse the exact already-priced routine. A stale/evicted quote is unavailable,
+        // never an excuse for another native attack query outside the leap's four-quote budget.
+        internal static WeaponAttackEstimate RepriceGriffonModes(UnitEntityData unit, UnitEntityData target, bool full,
+            WeaponAttackEstimate current, Func<ItemEntityWeapon, int, KeyValuePair<int, float>> delta)
+        {
+            if (unit == null || target == null || current == null || current.Attacker != unit || current.IsRanged) return null;
+            string key = $"{unit.UniqueId}|{target.UniqueId}|{full}";
+            if (!Routines.TryGetValue(key, out var routine) || routine.Frame != Time.frameCount ||
+                !ReferenceEquals(current.RoutineIdentity, routine)) return null;
+            return GriffonModeQuote(routine, current, delta);
+        }
+
+        private static WeaponAttackEstimate GriffonModeQuote(AttackRoutine routine, WeaponAttackEstimate current,
+            Func<ItemEntityWeapon, int, KeyValuePair<int, float>> delta)
+        {
+            if (routine == null || current == null || routine.Lines.Count == 0) return null;
+            // Only DamageValue's fields are needed: a leap cannot carry a held spell/Magus payload. Preserve raw
+            // native per-weapon lines, criticals, mitigation, separate blade damage and concealment from the quote.
+            var result = new WeaponAttackEstimate { Attacker = current.Attacker, Attacks = routine.Attacks,
+                Weapon = current.Weapon, Reach = current.Reach, EndsRegeneration = current.EndsRegeneration };
+            float noHit = 1f;
+            foreach (var line in routine.Lines)
+            {
+                var change = delta?.Invoke(line.Weapon, line.Index) ?? new KeyValuePair<int, float>(0, 0f);
+                result.ExpectedDamage += ExpectedWeaponLine(line, change.Key, change.Value, current.RoutineLands, out float hit, out _);
+                if (line.Index == 0) result.FirstHitChance = hit;
+                noHit *= 1f - hit;
+            }
+            result.AnyHitChance = 1f - noHit;
+            return result;
         }
     }
 }

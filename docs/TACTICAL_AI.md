@@ -5454,3 +5454,46 @@ summons, Invocation and paired grapple remain author priorities. New scalar and 
 cover forecast changes; final receipt/package identity follows committed-source validation below.
 
 Checked source `882c082`, [receipt](competence/V0351_PLAYTEST_CHECKS.json) and [v0.3.51 stable ZIP](../release/CompanionAI_Pathfinder_v0.3.51.zip), startup MVID `e31e626d-9c4b-4536-8b26-63433d3c7425`. 772 unit + 27 inventory tests and native checks pass; actual-reference Release 0 warnings/errors; 1/1 added signatures resolve. Compatible/supplementary audit scopes pass; original full-corpus enum failure remains distinct. Gameplay/matched Unity timing pending.
+
+
+## 161. v0.3.51 live review: leap modes, logging efficiency and v0.3.52 handoff
+
+[Review/native contracts/replay](V0352_PLAYTEST_REVIEW.md), [input accounting](V0352_PLAYTEST_INPUTS.json),
+[updated Claude master prompt](CLAUDE_MASTER_PROMPT_V0351.md), [short GitHub kickoff](CLAUDE_KICKOFF_PROMPT.md).
+Base `00ab4e52` includes merged PR #55; no open PR at start. Six fights, 205 TB / 746 RT measured decisions,
+343 issued/terminal pairs, no observed AI Control exception. Played stable v0.3.51 MVID `e31e626d` is exact.
+Author confirms swarm spawns during encounters and rests between them, adds logging optimization to scope,
+and explicitly selects **v0.3.52 stable**. Necessary improvements/development integration remain authorized;
+public main/tag/release publication is separate.
+
+Safe leap candidates now appear at 467/1501/2358; none is issued. At 2359 a walk gets Fighting Defensively off
++4.2, while the leap lacks the comparison. The strict leap route now invokes the existing attack-mode chooser
+at its landing using the exact cached native own-weapon quote. Mode sets reprice shared raw-line scalars;
+evicted/stale quotes get no new native query. Retain mitigation/critical/weapon/concealment/affliction pricing,
+native Pounce/ability costs, 8 endpoints / 4 own-weapon quotes, <=32 mode sets, mode ownership/blocklists/groups/
+availability/round locks/hysteresis and accepted-dispatch application. Combined charge-mode AC is priced from
+the same landing baseline, with equal AC totals memoized locally. Errors restore the original candidate.
+Positive charge AB/procs remain uncredited; no flight/path/actor preview or broad movement policy change.
+Shared mode/charge-AC defense now excludes recognized automatic swarm sources before nominal weapon quotes,
+matching the existing buff-defense contract. Total danger remains; ordinary attack mitigation is unchanged.
+
+Logging audit finds 261 identical SpellPen lines plus repeated Prone/no-enemy messages. Three diagnostic-only
+change memos retain <=128 string IDs/scalars each and reset by fight. First/changed/observed recurrence report;
+overflow does not clear old entries. Verbose-off does not populate them. Six math sites guard formatting;
+discarded quiet RT summaries return before StringBuilder/ranking. Keep command outcomes, errors/MVID,
+selected values, perf/calibration and native failure evidence. Idle-recovery witnesses are verbose, lazy,
+bounded per reason, using existing movement/step/policy/range/role/unreachable state; no path query is added.
+
+Invocation 18 issues/17 successes (one unacted rollback), independent tiers/within-fight transfers remain;
+no arbitrary cap. Faerie Fire successfully casts from a zero-visible-enemy decision, then one enemy is seen.
+Stat/negative-level threats are rated. Group heals reach multiple companions; full HP caster is not waste proof.
+Four no-effect Dazzling casts trigger existing two-failure backoff; native recipient/skill/immunity/event cause
+is unresolved. Eleven external WrathPatches OwnerBlueprint warnings retain provenance, no graph mutation.
+
+34 slow rows include six cleanup markers, with large negative heap deltas in several one-second stages.
+Warm scoring remains: Tuvel2881 649 ms / abilities585.4 /157 scored; setup11.8+5.1 included, heap+40,968 KB
+is live heap, not allocations. No exact timing/log-size improvement claim. Two summons in fight6 act in both
+modes; the shared 997-control-check/27.3ms total is printed in both summaries and must not be double counted.
+New unit/native scalar/compiled-route checks cover mode and logging changes; final source/identity follows.
+
+Checked source `30cfa2c`, [receipt](competence/V0352_PLAYTEST_CHECKS.json) and [v0.3.52 stable ZIP](../release/CompanionAI_Pathfinder_v0.3.52.zip), startup MVID `981a7b77-a654-4da1-9a22-68bc1c6a77bd`. 787 unit + 27 inventory tests and native checks pass; actual-reference Release 0 warnings/errors; 0/0 added signatures resolve. Compatible/supplementary audit scopes pass; original full-corpus enum failure remains distinct. Gameplay/matched Unity timing pending.

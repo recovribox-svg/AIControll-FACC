@@ -1,51 +1,61 @@
-# Claude master prompt: AI Control outstanding work after v0.3.51
+# Claude master prompt: AI Control outstanding work after the v0.3.52 review
 
 Continue development of **AI Control – Fully Autonomous Combat Companions** in
-<https://github.com/recovribox-svg/AIControll-FACC>. Independently review the current implementation and this
-evidence, then implement feasible improvements with carefully integrated, performant code. Priorities from
-the author are **summons competence**, **Profane Invocation decision quality**, and **grapple initiation,
-maintenance and release** so Grabber and comparable mechanics can be supported. Use your judgment about
-architecture and work order. The suggestions here are leads, not a mandatory implementation recipe.
+<https://github.com/recovribox-svg/AIControll-FACC>. Independently assess the current implementation and evidence,
+then implement feasible, integrated, performant improvements. The author's priorities remain **summons competence**,
+**Profane Invocation decision quality**, and **paired grapple initiation/maintenance/release** for Grabber and similar
+mechanics. Use your judgment about architecture and ordering; this is evidence and guidance, not a rigid recipe.
 
-Fetch the latest `claude/dreamy-pasteur-b9h3rn` and inspect open PRs before editing. The starting development
-revision for this review was `c92b607` (PR #54 integrated); v0.3.51 is the follow-up on
-`codex/v0351-playtest-review`. Use the final source commit/MVID in
-[the v0.3.51 identity](../release/CompanionAI_Pathfinder_v0.3.51.identity.json) and
-[validation receipt](competence/V0351_PLAYTEST_CHECKS.json), then reconcile later development. Do not rebuild
-from an old 0.3.30/C06 checkout or assume a packaging/merge commit identifies a different gameplay DLL.
+## Latest review takes precedence
 
-Checked v0.3.51 code is `882c082092f2212a6370b169ae117ed0c28f84fe`, startup MVID
-`e31e626d-9c4b-4536-8b26-63433d3c7425`; ZIP SHA-256
-`655e67e68c29ff10a6aa9b861b8f921f17e2cdbf1ff431f9f2a778e30c329b93`.
-The final metadata/handover commit can follow that checked code without changing its DLL.
+Fetch current `claude/dreamy-pasteur-b9h3rn` and inspect open PRs. This follow-up starts at `00ab4e52`, after merged
+PR #55, on `codex/v0351-live-review`. The author selected **v0.3.52 as the next stable package** and additionally
+requested a logging audit. The filename of this master prompt stays unchanged so earlier GitHub links keep working.
+Read `AGENTS.md`, `CONTRIBUTING.md`, the newest `CLAUDE.md` handover and `TACTICAL_AI.md` §161.
 
-## Evidence and status
+Validated v0.3.52 gameplay source is `30cfa2cb7e91e26de1f08418db5238a6a824c3ca`, startup MVID
+`981a7b77-a654-4da1-9a22-68bc1c6a77bd`; stable ZIP SHA-256
+`5adcff3ccd218f96d015f4ab882964708f816a7907d1a31c87bf243c6a2e5dbc`. Its metadata/merge commit may follow without changing this DLL.
 
-Read `AGENTS.md`, `CONTRIBUTING.md`, the **newest** `CLAUDE.md` handover, `docs/TACTICAL_AI.md` §160 and
-[the v0.3.51 review](V0351_PLAYTEST_REVIEW.md). Earlier handovers and class matrices are historical evidence;
-an old “unsupported” entry is not proof that a later implementation is absent. The old `LIVE_CODE_AUDIT.md`
-is orientation, not an up-to-date defect register.
+Current evidence and package:
 
-The two original uploads, `Log.txt` and `combatLog.txt`, are the **v0.3.50 stable** playtest, startup MVID
-`45ab748a-b0e9-4db9-b62a-3de2f4eff6fb`. Their hashes/row convention are in
-[V0351_PLAYTEST_INPUTS.json](V0351_PLAYTEST_INPUTS.json). **Rests were between encounters**, explicitly confirmed
-by the author. Do not explain within-fight transfers as rests. ToyBox spawning occurred in older tests;
-its exact use in these particular uploads was not separately reconfirmed. Ask only for missing evidence
-that materially affects a conclusion; continue independent work meanwhile.
+- [Latest broad review and replay](V0352_PLAYTEST_REVIEW.md).
+- [Latest inputs, hashes, physical-row convention and Invocation GUID trace](V0352_PLAYTEST_INPUTS.json).
+- [v0.3.52 identity](../release/CompanionAI_Pathfinder_v0.3.52.identity.json) and
+  [validation receipt](competence/V0352_PLAYTEST_CHECKS.json). Use its checked source/MVID; reconcile later development.
+- [Earlier v0.3.50 review / v0.3.51 fixes](V0351_PLAYTEST_REVIEW.md) and
+  [earlier native evidence](competence/V0351_NATIVE_REVIEW.json) remain historical context.
 
-Raw logs, game assemblies, mod binaries and full blueprint exports are private inputs, not committed source.
-If the two hashed logs are unavailable in your session, request those exact files for trace-level review.
-Check which native assemblies/BubblePrints data are actually present locally; Codex's private workspace paths
-are not portable. Source inspection and the documented native-contract work can proceed independently.
+The latest two uploads, `Log.txt` and `combatLog.txt`, are **played v0.3.51**, MVID
+`e31e626d-9c4b-4536-8b26-63433d3c7425`. The author confirms **swarm spawns during encounters and rests between
+encounters**. They contain six fights, 205 measured TB / 746 RT decisions, 343 issued commands with terminal rows,
+and no observed AI Control exception. Retained tactics summaries are fewer than measured decisions. These logs do
+not play v0.3.52. Raw logs, game assemblies/mod binaries and full exports are private inputs, not committed source:
+request the exact hashed files if unavailable, and check which native/BubblePrints resources actually exist locally.
+Codex's private workspace paths are not portable. Independent source/native work can proceed meanwhile.
 
-There are four fights, 203 measured TB / 839 measured RT decisions, and no observed AI Control exception.
-Only 324 RT tactics summaries were retained; quiet decisions are still included in the measured count.
-Compilation, static/metadata checks, native scalar harnesses and actual in-game acceptance are different
-levels of evidence. v0.3.51's corrected behavior is **not** played in these logs.
+**Changes already made for v0.3.52:** the strictly recognized native leap now uses the existing owned/allowed attack-
+mode chooser at its landing, from its exact cached quote. This closes the comparison asymmetry visible at AI 2359
+(walk gets Fighting Defensively off credit; leap does not). Combined charge/mode AC, existing management/ownership/
+blocklist/hysteresis/dispatch rules and query limits are retained. Mode repricing makes no extra native own-weapon
+quote. Bounded diagnostic change memos reduce repeated SpellPen/blocked/empty-enemy messages; quiet discarded
+summaries and disabled verbose math avoid formatting. Idle-recovery state witnesses add no path query. Inspect and
+regress this implementation rather than implementing it again. No leap execution or measured speedup is claimed.
+Shared mode/charge-AC scoring also now excludes recognized automatic swarm sources before nominal weapon quotes,
+matching the existing buff-defense contract while keeping total danger and ordinary attack mitigation.
 
-Use **confirmed** for observed log facts or directly inspected native/source contracts. Use **hypothesis**
-for proposed causes/solutions not demonstrated in a controlled replay. “Not exercised” means missing evidence,
-not working or broken. Every topic below is still open to some degree; none authorizes a speculative shortcut.
+**Current unresolved evidence:** safe leaps are admitted but none issued; Invocation 18 issues / 17 successes still
+needs marginal-utility review; several idle turns follow real path refusals; four no-effect Dazzling Display casts
+need native-selector/skill/immunity/event investigation. Six of 34 slow rows carry cleanup markers; other warm
+scoring is costly. Two summons are driven in the final mixed-mode fight; its shared 997-check/27.3ms control total
+is printed in both mode summaries and must not be counted twice. Group Channel healing affects multiple allies;
+full HP on its caster alone does not establish waste. Eleven external WrathPatches OwnerBlueprint warnings must
+retain foreign provenance; do not mutate other mods' graphs as a speculative repair.
+
+Use **confirmed** for observed facts or inspected native contracts; label unproved causes/solutions **hypotheses**.
+Missing execution/numerical samples establish neither working nor broken behavior. Older class matrices and
+`LIVE_CODE_AUDIT.md` are orientation, not current defect registers. Historical row numbers below are explicitly
+labelled; use the latest review/input receipt for the new logs. Do not mix the two playtest identities.
 
 ## Outstanding topics, ordered by estimated difficulty
 
@@ -55,9 +65,9 @@ or a much larger dependency. The author priorities above may justify starting wi
 | Rank | Topic | Estimated difficulty | Current limit |
 | --- | --- | --- | --- |
 | 1 | Complete reproducible audit inputs / provenance | Low–medium | One unchanged export cannot load against the supplied enum; stock and runtime-mod graphs must stay distinct. |
-| 2 | Death from Above landing admission and live execution | Medium investigation | No issued leap in the played logs; v0.3.51 adds refusal witnesses and corrects queued-Pounce pricing, but needs replay. |
+| 2 | Death from Above live execution and mode comparison acceptance | Medium investigation | v0.3.51 admits safe candidates; v0.3.52 fixes mode-comparison asymmetry. No issued leap yet. |
 | 3 | Refused approaches, idle recovery and move-only swarm decisions | Medium–high | A positive unvalidated option can end in no action; actual native movement/settings/known-HP state are missing. |
-| 4 | Specific unsupported effect/mode contracts | Medium–high, mechanism dependent | Several actual kit components remain outside readers; usefulness and full lifecycle must be established individually. |
+| 4 | Specific effect/mode contracts and no-effect Dazzling Display | Medium–high, mechanism dependent | New no-effect casts plus existing unread components need native mechanics/recipient evidence. |
 | 5 | Profane Invocation transfers and decision quality | Medium–high | Current model explains bursts, but does not establish all transfers improve actual combat outcomes. |
 | 6 | Dense-kit scoring cost and matched performance | High | Warm scoring still dominates some 0.4–1.1 s decisions; live-heap deltas are not allocation measurements. |
 | 7 | Expand summons tactical competence | High | Basic driving/actions played with three summons; diverse kits, richer policy and pack-scale acceptance remain. |
@@ -98,7 +108,12 @@ no “full corpus PASS” with an allowed/skipped file disguised as success.
 
 ### 2. Death from Above: admission, native attack and timing
 
-**Confirmed:** AI rows 534/1228/1954/3895 report endpoint attempts 2/0/8/0, with **zero weapon quotes**;
+**Latest v0.3.51 evidence:** AI 467/1501/2358 admit 3/1/1 safe candidates; other sampled refusals identify body,
+hazard, native-target or range/sight guards. AI 468/1503/2359 shows ordinary attacks winning. The mode-comparison
+gap at 2359 is corrected in v0.3.52 using the shared chooser and cached scalar quote. Preserve its query/cache,
+combined-AC and ownership/dispatch constraints. Actual leap/queued-attack completion remains unexercised.
+
+**Earlier v0.3.50 evidence:** AI rows 534/1228/1954/3895 report endpoint attempts 2/0/8/0, with **zero weapon quotes**;
 no Death from Above was issued. Native eligibility or landing guards rejected all sampled candidates.
 This does not prove which guard was too strict. The first guard can mask later possible refusals.
 
@@ -129,7 +144,13 @@ are correct in TB and RT; unsafe/changed endpoints are refused; ordinary movemen
 
 ### 3. Idle approaches and move-only swarm behavior
 
-**Confirmed:** Ulbrig AI 535–540 exhausts three selected path checks on five-foot full-attack candidates,
+**Latest evidence:** Aeiluvetar 4225–4227 ends after 13.2m paths exceed its 9.1m one-move budget; Abrikandilu
+4323–4327 has three endpoints 0.5m short. Valmot 4337–4342 gets an advance, but its native path goes nowhere.
+These are not proofs that unchecked alternatives are legal. v0.3.52 adds a verbose, bounded idle gate witness
+with existing movement/step/policy/range/role/unreachable state and no extra path query. Use it to distinguish
+native movement, settings/goal-radius behavior and remembered unreachable targets before changing policy.
+
+**Earlier v0.3.50 evidence:** Ulbrig AI 535–540 exhausts three selected path checks on five-foot full-attack candidates,
 each requiring 3.3 m of native path, then ends with SM/full movement flags displayed. Ten unchecked walking
 options were withheld; raw scores 56.8/37.3/29.3/20.7 are **not validated actions**. No lazy-recovery note appears.
 Bloodragers 1564–1569 is a separate case after an actual move and a sight refusal. By contrast 1353–1354
@@ -160,7 +181,17 @@ justify staying. Verify TB, RT, nauseated, five-foot-step and ranged noncaster s
 
 ### 4. Specific effect and mode support boundaries
 
-**Confirmed:** current coverage explicitly excludes Release Grapple (533, handled in topic 8), Greater Stunning
+**Latest additional problem:** Dazzling Display produces four no-effect observations, AI 1237/1332 and
+3931/4057, with current backoff after two per fight. Check actual native recipients/LoS, Intimidate outcome,
+existing buff/immunity filters and observer coverage. The current scorer already calls BuffImmune and
+HasCCImmunity: do not assume immunity handling is absent. Failed skill checks, selector differences and missing
+event evidence are competing hypotheses, not established causes. Avoid merely imposing another cast cap.
+
+The latest log also has eleven external WrathPatches OwnerBlueprint warnings for IncendiaryRunes,
+ExplosiveRunes and a ChannelPositiveHarm/Isekai context. Trace installed component ownership and actual patched
+graphs before a numerical claim. They are not AI Control exceptions; no speculative blueprint mutation is justified.
+
+**Earlier v0.3.50 examples (the same boundaries still appear in the latest coverage):** Release Grapple (533, handled in topic 8), Greater Stunning
 Barrier (`9e33ed477ddd4fad9d90fb64b1a6f732`, `ContextActionApplyBuffRanks`, 3703), Shadow Step
 (`f51451385b1545bebfcbbb36b7da0220`, custom teleport, 3704), and some Sword Saint/arcane weapon-property modes
 (AI 127/132–145). “Recognized carrier” does not mean every nested component is priced. Tooltips and localized
@@ -184,12 +215,19 @@ competition and normal cleanup in both modes. Unknown effects remain explicitly 
 
 ### 5. Profane Invocation: intentional bursts versus waste
 
-**Confirmed:** 28 issued casts, **27 acted successes + one unacted interrupt**, by fight **8/5/10/5**.
+**Latest v0.3.51 evidence:** 18 issues, 17 acted successes plus one unacted interrupt; per-fight 1/0/0/6/8/3.
+Use the GUID trace in V0352_PLAYTEST_INPUTS.json. Tier-1 Dexterity (`9d1b94bea3984ee3922d201ef49a9163`)
+goes to Lann in fight4 R1 (1773), then Tuvel R2 (2032); tier-2 Dexterity to Lann (2067) is independent.
+Tier-1 Strength (`4ff5f23901104b77a481eac095fc8967`) goes to Abrikandilu R4 (4166), then Bloodragers R5 (4284).
+Spawns during fights can change danger/opportunities; rests were between fights. Actual benefit still needs
+counterfactual review. v0.3.52 does not add a blanket cap or retune settling based on these counts.
+
+**Earlier v0.3.50 evidence:** 28 issued casts, **27 acted successes + one unacted interrupt**, by fight **8/5/10/5**.
 The native two independent six-stat tiers allow separate placements; variants remove same-tier siblings on
 the recipient, while `UniqueBuff` moves the caster's same-blueprint copy from another recipient. Duplicate
 localized names are different abilities. Use GUIDs/source context/caster/recipient identities.
 
-Key original rows:
+Earlier v0.3.50 rows (not the latest upload):
 
 - 84/92 and their following profiles: distinct Strength tier GUIDs `4ff5f23901104b77a481eac095fc8967`
   (tier 1) and `8ea302645ae341e9bcca4929d1822c77` (tier 2).
@@ -228,7 +266,19 @@ both tiers and both modes remain functional with no extra recipient/rule explosi
 
 ### 6. Warm dense-kit decision performance
 
-**Confirmed:** 43 slow rows, none with a GC marker. AI 3713: Tuvel 1084 ms, abilities 988.7 ms, 258 scored;
+**Latest v0.3.51 evidence:** 34 slow rows include six cleanup markers (396/2192/2902/3197/3449/3820).
+Large negative heap deltas accompany several roughly one-second pauses; do not attribute an entire sample to
+its named ability or discovery without separating GC time. Warm Tuvel 2881 remains 649ms, abilities585.4,
+157scored, setup11.8+5.1included, live heap+40,968KB. These are not exact allocation measurements.
+
+The author additionally requested logging optimization. v0.3.52 addresses 261 duplicate +4 SpellPen messages,
+blocked/empty-enemy repeats, six unguarded verbose math-formatting sites and discarded quiet-summary formatting.
+Three diagnostic-only memos have 128 IDs each, reset by fight, retain scalar/string state and suppress overflow
+without clearing/replaying old entries. Read V0352_PLAYTEST_REVIEW.md and regress debug off/on, real state changes,
+recovery/recurrence, chosen commands and native outcomes. No global logger replacement, action throttling or
+numerical performance improvement is asserted. Do not infer all dense-kit allocation/GC cost was logging.
+
+**Earlier v0.3.50 evidence:** 43 slow rows, none with a GC marker. AI 3713: Tuvel 1084 ms, abilities 988.7 ms, 258 scored;
 discovery/filter 28.9 ms, pre-score 9.0 ms; live heap +29,060 KB. Rows 3876/4217 retain scoring dominance.
 Stage heap KB is **not exact allocation data**. Setup timers are included, not extra total time. Existing
 first-index conversion discovery and per-decision native memoization are already implemented.
@@ -250,13 +300,18 @@ evidence where available. State tooling limits rather than inventing a numerical
 
 ### 7. Summons competence expansion
 
+**Latest evidence:** two summons in fight6; Abrikandilu Sunder Armor 4008/4009, Vermlek adoption4185 and
+mixed TB/RT service/end-turn traces. Abrikandilu4327 ends with refused native approaches, not an exception.
+The shared control total997checks/27.3ms appears twice (4590/4592); count it once. This supplements earlier
+three-summon evidence, not large-pack or diverse-kit acceptance. Native execution/ownership policies are unchanged.
+
 Read [SUMMON_CONTROL_PLAN.md](SUMMON_CONTROL_PLAN.md), its native evidence, §156–157, `SummonControl`,
 the TB summon driver and shared tactical engine. Basic support already exists and is **opt-in/default off**.
 Preserve direct linked-summon ownership, fresh final authority/fact rechecks, weak/temporary settings,
 player blocklists, no saved summon IDs, no party-item/material spending, and no recursive summoning. Pets and
 manual orders are separate policies. Do not redefine every friendly or ToyBox-controlled creature as eligible.
 
-**Confirmed:** Abrikandilu's TB Sunder Armor (1621–1623) and Vermlek's move/attack (1736–1738) are serviced;
+**Earlier v0.3.50 evidence:** Abrikandilu's TB Sunder Armor (1621–1623) and Vermlek's move/attack (1736–1738) are serviced;
 RT later-decision cohorts include 162 and 26 decisions. These are basic positive cases, not full diverse-kit
 competence or large-pack acceptance. AI 1742 releases a summon because the game prevents control; a status-
 driven handback is not automatically a bridge defect.
@@ -340,7 +395,7 @@ or oscillating grab/release cycle. Add graph/scalar tests and fresh gameplay evi
 - **Durable handover:** each PR adds a new `docs/TACTICAL_AI.md` section and updates the newest `CLAUDE.md`
   handover with problem, evidence, final behavior, query/cache bounds, checks, residual limits and focused
   TB/RT tests. Link the checked source and final package. Any ZIP needs identity JSON, SHA-256 and a unique
-  startup MVID; do not reuse a played package's identity. The next requested build in this task is 0.3.51;
+  startup MVID; do not reuse a played package's identity. The author-requested stable follow-up in this task is 0.3.52;
   coordinate later versions rather than silently overwriting it.
 
 Begin with a short evidence-backed assessment of what current development already fixes, which author

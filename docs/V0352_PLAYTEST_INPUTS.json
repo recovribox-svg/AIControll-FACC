@@ -1,0 +1,494 @@
+{
+  "task": "Stable v0.3.51 live playtest review; author-requested v0.3.52 stable follow-up",
+  "starting_development": "00ab4e52c968676154a754543d7c1fefa947b1cd",
+  "played_build": {
+    "version": "0.3.51",
+    "startup_mvid": "e31e626d-9c4b-4536-8b26-63433d3c7425",
+    "identity": "../release/CompanionAI_Pathfinder_v0.3.51.identity.json"
+  },
+  "author_context": {
+    "swarm_spawns": "during encounters",
+    "rests": "between encounters",
+    "next_stable_version": "0.3.52",
+    "logging_optimization_explicitly_requested": true,
+    "necessary_improvements_including_movement_authorized": true,
+    "stable_package_and_development_pr_integration_authorized": true
+  },
+  "line_convention": "1-based physical splitlines in each original upload; AI=Log.txt, combat=combatLog.txt",
+  "inputs": [
+    {
+      "file": "Log.txt",
+      "bytes": 937531,
+      "lines": 4608,
+      "sha256": "e661b9d82254fa8b2062a518eb4e27ddca1df461a5eb0b04ff49ec048bad7cbb"
+    },
+    {
+      "file": "combatLog.txt",
+      "bytes": 484524,
+      "lines": 13608,
+      "sha256": "27b6181613c183f1b4632af86d9fb68785f707264821f93e4b0adc2b999406f0"
+    }
+  ],
+  "counts": {
+    "fights": 6,
+    "measured_tb_decisions": 205,
+    "measured_rt_decisions": 746,
+    "retained_summaries": 499,
+    "retained_tb": 204,
+    "retained_rt": 295,
+    "issued_commands": 343,
+    "matched_terminal_rows": 343,
+    "observed_ai_control_exceptions": 0,
+    "external_owner_blueprint_warning_rows": 11,
+    "slow_rows": 34,
+    "slow_rows_with_cleanup_marker": 6,
+    "profane_invocation_issues": 18,
+    "profane_invocation_by_fight": [
+      1,
+      0,
+      0,
+      6,
+      8,
+      3
+    ],
+    "profane_acted_successes": 17,
+    "profane_unacted_interrupts": 1,
+    "death_from_above_issues": 0,
+    "griffon_shape_issues": 5,
+    "channel_heal_issues": 13,
+    "no_effect_dazzling_display_rows": 4,
+    "faerie_fire_hidden_only_reveal_issues": 1,
+    "area_exit_issues": 28,
+    "logging_category_rows_utf8_bytes": {
+      "other": [
+        34,
+        2269
+      ],
+      "[Build]": [
+        1,
+        84
+      ],
+      "[PetItems]": [
+        1,
+        98
+      ],
+      "[CombatEventHandler]": [
+        71,
+        5280
+      ],
+      "[PreBuff]": [
+        2,
+        142
+      ],
+      "[Abilities]": [
+        2,
+        546
+      ],
+      "[Blocklist]": [
+        23,
+        2747
+      ],
+      "[TBController]": [
+        20,
+        1889
+      ],
+      "[Save]": [
+        240,
+        29236
+      ],
+      "[Turn]": [
+        177,
+        18970
+      ],
+      "[Threat]": [
+        26,
+        4164
+      ],
+      "[Coverage]": [
+        150,
+        65370
+      ],
+      "[BuffEffectAnalyzer]": [
+        87,
+        16192
+      ],
+      "[Attached]": [
+        33,
+        4205
+      ],
+      "[Math]": [
+        132,
+        34816
+      ],
+      "[HitChance]": [
+        510,
+        54888
+      ],
+      "[Magus]": [
+        6,
+        1158
+      ],
+      "[Buff]": [
+        121,
+        30366
+      ],
+      "[Tactics]": [
+        705,
+        179636
+      ],
+      "[Perf]": [
+        43,
+        43264
+      ],
+      "[Cmd]": [
+        688,
+        104092
+      ],
+      "[Profile]": [
+        54,
+        17205
+      ],
+      "[BuffStackingAnalyzer]": [
+        10,
+        967
+      ],
+      "[Progressive]": [
+        95,
+        44296
+      ],
+      "[Toggle]": [
+        58,
+        7197
+      ],
+      "[Modes]": [
+        30,
+        4855
+      ],
+      "[TurnTick]": [
+        56,
+        5501
+      ],
+      "[Shifter]": [
+        5,
+        1002
+      ],
+      "[Dispatch]": [
+        17,
+        1823
+      ],
+      "[Approach]": [
+        129,
+        21577
+      ],
+      "[Griffon]": [
+        13,
+        3772
+      ],
+      "[Hidden]": [
+        4,
+        471
+      ],
+      "[SwarmAudit]": [
+        8,
+        2598
+      ],
+      "[Reach]": [
+        52,
+        35892
+      ],
+      "[Swarm]": [
+        9,
+        2211
+      ],
+      "[HD]": [
+        3,
+        373
+      ],
+      "[Kinetic]": [
+        29,
+        4105
+      ],
+      "[AbilityClassifier]": [
+        150,
+        16259
+      ],
+      "[RT]": [
+        191,
+        17933
+      ],
+      "[Interop]": [
+        1,
+        224
+      ],
+      "[Calib]": [
+        6,
+        1964
+      ],
+      "[CombatRulesAnalyzer]": [
+        6,
+        384
+      ],
+      "[PendingActionTracker]": [
+        1,
+        59
+      ],
+      "[PendingTracker]": [
+        6,
+        438
+      ],
+      "[CombatEnd]": [
+        6,
+        462
+      ],
+      "[Cast]": [
+        13,
+        1702
+      ],
+      "[Walk]": [
+        330,
+        99529
+      ],
+      "[HD-Aim]": [
+        3,
+        1456
+      ],
+      "[RT-Tactics]": [
+        38,
+        4784
+      ],
+      "[Damage]": [
+        2,
+        281
+      ],
+      "[AoeDanger]": [
+        19,
+        1989
+      ],
+      "[AreaExit]": [
+        20,
+        8866
+      ],
+      "[Summon]": [
+        4,
+        544
+      ],
+      "[SummonTurn]": [
+        12,
+        1294
+      ]
+    }
+  },
+  "invocation_identities": [
+    {
+      "line": 271,
+      "fight": 1,
+      "round": 0,
+      "ability": "cbcfe6f6242d4d588493cfca27fdee58",
+      "label": "Profane Invocation \u2014 Constitution->[unknown key: d2885ae4-c793-459e-9dcc-554576dc074b](from  -1.2+buff)"
+    },
+    {
+      "line": 1773,
+      "fight": 4,
+      "round": 1,
+      "ability": "9d1b94bea3984ee3922d201ef49a9163",
+      "label": "Profane Invocation \u2014 Dexterity->Lann(from Aeiluvetar -2.5+buff)"
+    },
+    {
+      "line": 1945,
+      "fight": 4,
+      "round": 1,
+      "ability": "4ff5f23901104b77a481eac095fc8967",
+      "label": "Profane Invocation \u2014 Strength->Valmot(from Tuvel -4.2+buff)"
+    },
+    {
+      "line": 2032,
+      "fight": 4,
+      "round": 2,
+      "ability": "9d1b94bea3984ee3922d201ef49a9163",
+      "label": "Profane Invocation \u2014 Dexterity->Tuvel(from Lann -7.9+buff)"
+    },
+    {
+      "line": 2067,
+      "fight": 4,
+      "round": 2,
+      "ability": "4d25cab4db9f4816a710265dfee532e4",
+      "label": "Profane Invocation \u2014 Dexterity->Lann(replaces ProfaneAscensionConstitutionBuff2 -1.2+from  -6.1+buff)"
+    },
+    {
+      "line": 2099,
+      "fight": 4,
+      "round": 2,
+      "ability": "74fde6f81db9434cb94c6f4c2eef9ecc",
+      "label": "Profane Invocation \u2014 Constitution->Bloodragers(buff)"
+    },
+    {
+      "line": 2487,
+      "fight": 4,
+      "round": 5,
+      "ability": "4ff5f23901104b77a481eac095fc8967",
+      "label": "Profane Invocation \u2014 Strength->Tuvel(replaces ProfaneAscensionDexterityBuff1 -0+from Valmot -0.4+buff)"
+    },
+    {
+      "line": 2648,
+      "fight": 5,
+      "round": 1,
+      "ability": "9d1b94bea3984ee3922d201ef49a9163",
+      "label": "Profane Invocation \u2014 Dexterity->Aeiluvetar(buff)"
+    },
+    {
+      "line": 2843,
+      "fight": 5,
+      "round": 1,
+      "ability": "6ba52e25e53d4c148ca4c1f780b4551f",
+      "label": "Profane Invocation \u2014 Wisdom->(replaces ProfaneAscensionConstitutionBuff1 -0.8+from Ulbrig -0.3+buff)"
+    },
+    {
+      "line": 2940,
+      "fight": 5,
+      "round": 1,
+      "ability": "9d1b94bea3984ee3922d201ef49a9163",
+      "label": "Profane Invocation \u2014 Dexterity->Seelah(buff)"
+    },
+    {
+      "line": 3098,
+      "fight": 5,
+      "round": 3,
+      "ability": "4ff5f23901104b77a481eac095fc8967",
+      "label": "Profane Invocation \u2014 Strength->Valmot(from Tuvel -2.7+buff)"
+    },
+    {
+      "line": 3132,
+      "fight": 5,
+      "round": 3,
+      "ability": "9d1b94bea3984ee3922d201ef49a9163",
+      "label": "Profane Invocation \u2014 Dexterity->Camellia(buff)"
+    },
+    {
+      "line": 3203,
+      "fight": 5,
+      "round": 4,
+      "ability": "4d25cab4db9f4816a710265dfee532e4",
+      "label": "Profane Invocation \u2014 Dexterity->Valmot(from Lann -1.9+buff)"
+    },
+    {
+      "line": 3267,
+      "fight": 5,
+      "round": 4,
+      "ability": "9d1b94bea3984ee3922d201ef49a9163",
+      "label": "Profane Invocation \u2014 Dexterity->Lann(buff)"
+    },
+    {
+      "line": 3674,
+      "fight": 5,
+      "round": 10,
+      "ability": "74fde6f81db9434cb94c6f4c2eef9ecc",
+      "label": "Profane Invocation \u2014 Constitution->Lann(from Bloodragers -0.3+buff)"
+    },
+    {
+      "line": 3837,
+      "fight": 6,
+      "round": 1,
+      "ability": "cbcfe6f6242d4d588493cfca27fdee58",
+      "label": "Profane Invocation \u2014 Constitution->(replaces ProfaneAscensionWisdomBuff1 -0.6+from [unknown key: d2885ae4-c793-459e-9dcc-554576dc074b] -0.6+buff)"
+    },
+    {
+      "line": 4166,
+      "fight": 6,
+      "round": 4,
+      "ability": "4ff5f23901104b77a481eac095fc8967",
+      "label": "Profane Invocation \u2014 Strength->Abrikandilu(from Valmot -1.6+buff)"
+    },
+    {
+      "line": 4284,
+      "fight": 6,
+      "round": 5,
+      "ability": "4ff5f23901104b77a481eac095fc8967",
+      "label": "Profane Invocation \u2014 Strength->Bloodragers(replaces ProfaneAscensionCharismaBuff1 -0.9+from Abrikandilu -1.7+buff)"
+    }
+  ],
+  "evidence": {
+    "safe_leap_admission_rows": [
+      467,
+      1501,
+      2358
+    ],
+    "leap_vs_mode_optimized_walk_rows": [
+      468,
+      1503,
+      2359,
+      2360
+    ],
+    "leap_refusal_rows": [
+      955,
+      1335,
+      1562,
+      1607,
+      2049,
+      2751,
+      3104,
+      4040,
+      4130,
+      4232
+    ],
+    "hidden_reveal_rows": [
+      998,
+      1001,
+      1002
+    ],
+    "idle_approach_rows": [
+      1322,
+      1325,
+      4225,
+      4226,
+      4227,
+      4323,
+      4324,
+      4325,
+      4326,
+      4327,
+      4337,
+      4338,
+      4342,
+      4356,
+      4357
+    ],
+    "dazzling_no_effect_rows": [
+      1237,
+      1332,
+      3931,
+      4057
+    ],
+    "slow_gc_rows": [
+      396,
+      2192,
+      2902,
+      3197,
+      3449,
+      3820
+    ],
+    "warm_scoring_row": 2881,
+    "drain_threat_rows": [
+      1745,
+      2019
+    ],
+    "summon_mode_cohort_rows": [
+      4590,
+      4592
+    ],
+    "channel_heal_combat_rows": [
+      5865,
+      5870,
+      5875,
+      5880,
+      5885
+    ]
+  },
+  "limits": [
+    "Six encounters and spawn interventions are not a matched before/after timing benchmark.",
+    "v0.3.51 admits safe leap candidates but no leap was issued; v0.3.52 mode changes need live execution evidence.",
+    "18 Invocation issues include both tiers; count is not a measure of waste.",
+    "A cleanup marker and stage heap drop do not measure exact allocation or prove an entire pause was collector time.",
+    "The two mode cohort rows repeat one shared 997-check/27.3ms control total; do not sum it twice.",
+    "External WrathPatches OwnerBlueprint warnings are not AI Control exceptions and are not repaired by mutating game/mod blueprints."
+  ]
+}
