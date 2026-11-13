@@ -36,6 +36,7 @@ namespace CompanionAI_Pathfinder.GameInterface
             public bool SwarmRead, Swarm;
             public CharacterSettings View;
             public bool AdoptionLogged;
+            public int AdoptionFight = -1;
             public string LastRefusalLogged;
         }
 
@@ -170,8 +171,10 @@ namespace CompanionAI_Pathfinder.GameInterface
             if (state.Refusal == null)
             {
                 state.LastRefusalLogged = null;
-                if (state.AdoptionLogged) return;
+                // Once per creature and fight (a long-lived summon is counted in each fight it is driven in).
+                if (state.AdoptionLogged && state.AdoptionFight == s_Fight) return;
                 state.AdoptionLogged = true;
+                state.AdoptionFight = s_Fight;
                 AdoptedThisFight++;
                 Main.Log($"[Summon] {unit.CharacterName}: AI Control drives it (summoned by {OwnerOf(unit)?.CharacterName}; " +
                          "its summoner's blocklist and spell policy, its own abilities)");
@@ -181,6 +184,8 @@ namespace CompanionAI_Pathfinder.GameInterface
             if (state.AdoptionLogged)
             {
                 state.AdoptionLogged = false;
+                // The fight ending is not news (every driven summon would say so).
+                if (state.Refusal == "not in combat") return;
                 Main.Log($"[Summon] {unit.CharacterName}: back with the game's AI - {state.Refusal}");
                 state.LastRefusalLogged = state.Refusal;
                 return;
@@ -192,7 +197,7 @@ namespace CompanionAI_Pathfinder.GameInterface
         }
 
         private static long s_GateTicks;
-        private static int s_GateChecks;
+        private static int s_GateChecks, s_Fight;
 
         /// <summary>What the control checks of summoned creatures cost in this fight (outside the decision timer).</summary>
         internal static string GateCost() =>
@@ -202,6 +207,7 @@ namespace CompanionAI_Pathfinder.GameInterface
         internal static void NewFight()
         {
             AdoptedThisFight = 0;
+            unchecked { s_Fight++; }
             s_GateTicks = 0;
             s_GateChecks = 0;
         }
