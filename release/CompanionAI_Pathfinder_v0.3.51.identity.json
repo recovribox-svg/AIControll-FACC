@@ -1,0 +1,22 @@
+{
+  "build_label": "v0.3.51 stable",
+  "kind": "stable-release-package",
+  "version": "0.3.51",
+  "source_branch": "codex/v0351-playtest-review",
+  "source_commit": "882c082092f2212a6370b169ae117ed0c28f84fe",
+  "starting_commit": "c92b607df59c8b19176e376fa7f356ec8a8c9733",
+  "development_base": "c92b607df59c8b19176e376fa7f356ec8a8c9733",
+  "dependency_pr": null,
+  "dll": {
+    "assembly": "CompanionAI_Pathfinder, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null",
+    "mvid": "e31e626d-9c4b-4536-8b26-63433d3c7425",
+    "sha256": "61b17eacf66a86c425e50682d00209fc7088fcef28299b95aac0dfd48448dac6",
+    "size": 1412608
+  },
+  "manifest_sha256": "359c11542733b7e9610c1cf984be3cbcf10494bac78493d11ef6942e0cdd0f19",
+  "checks_receipt": "docs/competence/V0351_PLAYTEST_CHECKS.json",
+  "gameplay_status": "not played",
+  "scope": "Stable v0.3.51 package requested by the author following the stable v0.3.50 playtest. Corrects native Death from Above queued-Pounce forecasting: TB ignored cooldown/surprise/restricted movement and RT recent movement use their actual native branches instead of ordinary full-round availability. Ability costs and 8-endpoint/4-weapon-quote safety limits remain. Adds lazy refusal/admission witnesses without additional geometry or attack queries. Includes a broad four-fight review and a ranked Claude master prompt for unresolved Invocation, movement/swarm, component, performance, summons and paired grapple work. No blanket Invocation cap or speculative movement-policy retune. New behavior and matched Unity performance await gameplay.",
+  "release": true,
+  "public_release_published": false
+}

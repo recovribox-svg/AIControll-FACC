@@ -40,6 +40,7 @@
     <Compile Include="..\..\Tactics\ValueModel.BurnConsequences.cs" Link="ValueModel.BurnConsequences.cs" />
     <Compile Include="..\..\Tactics\InfusionSearchBudget.cs" Link="InfusionSearchBudget.cs" />
     <Compile Include="..\..\Tactics\GriffonQueryBudget.cs" Link="GriffonQueryBudget.cs" />
+    <Compile Include="..\..\Tactics\GriffonAttackRules.cs" Link="GriffonAttackRules.cs" />
     <Compile Include="..\..\Tactics\AbilityScoringPolicy.cs" Link="AbilityScoringPolicy.cs" />
     <Compile Include="..\..\Tactics\CommittedApproachSafety.cs" Link="CommittedApproachSafety.cs" />
     <Compile Include="..\..\Tactics\SharedHdBudget.cs" Link="SharedHdBudget.cs" />

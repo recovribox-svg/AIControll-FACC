@@ -72,8 +72,17 @@ namespace CompanionAI_Pathfinder.Tactics
             return true;
         }
 
-        internal static bool GriffonCanPounce(UnitEntityData unit, bool fullAvailable) =>
-            fullAvailable && unit != null && unit.State.Features.Pounce && !unit.State.HasCondition(UnitCondition.Staggered);
+        // ★ v0.3.51: the native post-flight attack's restrictions differ from ordinary full-round affordability.
+        internal static bool GriffonCanPounce(UnitEntityData unit)
+        {
+            if (unit?.CombatState == null || !unit.State.Features.Pounce) return false;
+            bool turnBased = !CombatMemory.IsRealTime;
+            // The ability's own full-round/standard availability is checked separately. Read the native attack's
+            // restrictions here: ordinary HasFullRoundAction/UsedOneMoveAction do not describe its ignored cooldown.
+            return GriffonAttackRules.FullAttack(true, turnBased, turnBased && unit.IsSurprising(),
+                unit.State.HasCondition(UnitCondition.Staggered), turnBased && unit.IsMoveActionRestricted(),
+                !turnBased && unit.CombatState.IsFullAttackRestrictedBecauseOfMoveAction);
+        }
 
         internal static WeaponAttackEstimate EstimateGriffonAttack(UnitEntityData unit, UnitEntityData target, bool full,
                                                                     AbilityProfile.GriffonChargeEffect charge)

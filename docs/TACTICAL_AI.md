@@ -5419,3 +5419,38 @@ Unit/native scalar/actual graph/compiled route checks cover changes; source/ZIP/
 Stable package requested by author; corrected TB/RT behavior and matched Unity timing remain unplayed.
 
 Checked source `8efbb0e`, [receipt](competence/REVIEW1_SWARM_CHECKS.json) and [v0.3.50 stable ZIP](../release/CompanionAI_Pathfinder_v0.3.50.zip), startup MVID `45ab748a-b0e9-4db9-b62a-3de2f4eff6fb`. 760 unit + 27 inventory tests and native checks pass; actual-reference Release 0 warnings/errors; 16/16 added signatures resolve. Compatible/supplementary audit scopes pass; original full-corpus enum failure remains distinct. Gameplay/matched Unity timing pending.
+
+
+## 160. v0.3.50 stable playtest review, native queued-Pounce forecast and Claude backlog
+
+[Review/native rules/replay](V0351_PLAYTEST_REVIEW.md), [exact inputs](V0351_PLAYTEST_INPUTS.json),
+[native evidence](competence/V0351_NATIVE_REVIEW.json), and the requested
+[Claude master prompt ordered by estimated difficulty](CLAUDE_MASTER_PROMPT_V0351.md).
+Development base `c92b607` includes merged PR #54; no open PR at start. The two logs match stable 0.3.50 MVID
+`45ab748a`; the author confirms rests **between encounters** and requests next stable package **0.3.51**.
+Necessary improvements including movement and development integration are authorized; public main/tag/release
+publication remains separate. Four fights, 203 TB / 839 RT measured decisions; no observed AI exception.
+
+Invocation 28 issues / 27 acted successes includes both independent tiers and within-fight sibling/holder transfers.
+The existing gain>=5 settle override explains a 5.3 net transfer back to Ulbrig; current evidence does not prove
+all casts useful or waste. No arbitrary cap/valuation retune. Drain/stat danger is recognized; Faerie Fire and
+summon TB/RT actions execute. Twenty-two Gibber exits occur. Ulbrig 535–540 ends after three five-foot attack
+paths require 3.3 m; the raw positive alternatives are unvalidated. Move-only swarm danger 36 / exit 0 still needs
+source-specific HP/DR/status/movement evidence. Keep these investigation limits rather than guess movement policy.
+
+No Death from Above issued. Native `Deliver` queues an `IsCharge` attack with `IgnoreCooldown`; its full routine
+does not use ordinary `ctx.CanFullAttack`. Forecast now reads native TB surprise/restricted movement and RT
+recent movement, retaining Staggered rules, and uses the same adapter at final issue. Ability affordability
+remains native TB full-round / RT standard. No new attack/actor-state preview or prospective charge-AB/proc credit.
+8 endpoint / 4 quote bounds and body/hazard/swarm/reach checks remain. Lazy refusal witnesses distinguish native
+target/range/endpoint/body/area/swarm/weapon/reach failure; admission logging separates safe candidates from
+final selection. Reports use existing bounded memo and already-read results, never extra native queries.
+
+43 slow rows have no GC marker. Tuvel 3713: 1084 ms, abilities 988.7, 258 scored, setup 28.9+9.0 included;
+heap +29,060 KB is live heap, not allocations. Dense scoring needs matched profiling. Summon control
+7,593 checks / 102.8 ms outside decisions is not large-pack acceptance. Master prompt preserves eight
+ranked unresolved areas with confirmed evidence, hypotheses, minimal missing inputs and TB/RT acceptance;
+summons, Invocation and paired grapple remain author priorities. New scalar and compiled-native route checks
+cover forecast changes; final receipt/package identity follows committed-source validation below.
+
+Checked source `882c082`, [receipt](competence/V0351_PLAYTEST_CHECKS.json) and [v0.3.51 stable ZIP](../release/CompanionAI_Pathfinder_v0.3.51.zip), startup MVID `e31e626d-9c4b-4536-8b26-63433d3c7425`. 772 unit + 27 inventory tests and native checks pass; actual-reference Release 0 warnings/errors; 1/1 added signatures resolve. Compatible/supplementary audit scopes pass; original full-corpus enum failure remains distinct. Gameplay/matched Unity timing pending.

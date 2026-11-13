@@ -13,6 +13,8 @@ namespace CompanionAI_Pathfinder.Tactics
 {
     public static partial class TacticalEngine
     {
+        private enum GriffonRefusal { None, NativeTarget, RangeOrSight, Endpoint, Hazard, TargetBody, OtherBody, Swarm, Weapon, WeaponReach }
+
         internal sealed class GriffonPlan
         {
             internal Vector3 From, TargetAt, Landing;
@@ -44,26 +46,39 @@ namespace CompanionAI_Pathfinder.Tactics
                     () => $"[Griffon] {unit.CharacterName}: {ability.Name} withheld: native charge effect, current stealth/charge, mount or immunity state not supported");
                 return none;
             }
-            bool full = CombatMath.GriffonCanPounce(unit, ctx.CanFullAttack);
+            bool full = CombatMath.GriffonCanPounce(unit);
             var candidates = new List<Candidate>();
             bool needLos = new UnitUseAbility(ability, new Kingmaker.Utility.TargetWrapper(unit)).NeedLoS;
             var budget = new GriffonQueryBudget();
+            int nativeRefused = 0, rangeRefused = 0;
+            var firstRefusal = GriffonRefusal.None;
+            GriffonPlan witness = null;
+            UnitEntityData witnessTarget = null, witnessBlocker = null;
+            void Refused(GriffonRefusal reason, UnitEntityData enemy, GriffonPlan plan, UnitEntityData blocker = null)
+            {
+                if (firstRefusal != GriffonRefusal.None) return;
+                firstRefusal = reason; witnessTarget = enemy; witness = plan; witnessBlocker = blocker;
+            }
             var targets = onlyTarget == null ? ctx.Enemies.OrderBy(ctx.Distance) : Enumerable.Repeat(onlyTarget, 1);
             foreach (var enemy in targets)
             {
-                if (enemy?.View == null || !unit.IsEnemy(enemy) || !enemy.State.IsConscious ||
-                    !ability.CanTarget(new Kingmaker.Utility.TargetWrapper(enemy))) continue;
+                if (enemy?.View == null || !unit.IsEnemy(enemy) || !enemy.State.IsConscious) continue;
+                if (!ability.CanTarget(new Kingmaker.Utility.TargetWrapper(enemy))) { nativeRefused++; continue; }
                 float radius = ability.GetApproachDistance(enemy);
-                if (!InRangeNow(unit, enemy.Position, radius, needLos)) continue;
+                if (!InRangeNow(unit, enemy.Position, radius, needLos)) { rangeRefused++; continue; }
                 if (!budget.TryLanding()) break;
-                if (!CombatMath.TryGriffonLanding(unit, enemy, out var landing)) continue;
+                if (!CombatMath.TryGriffonLanding(unit, enemy, out var landing))
+                { Refused(GriffonRefusal.Endpoint, enemy, null); continue; }
                 var plan = new GriffonPlan { From = unit.Position, TargetAt = enemy.Position, Landing = landing, Charge = charge,
                     Full = full, RealTime = CombatMemory.IsRealTime, Bodies = BodiesFor(ctx), Enemies = ctx.Enemies,
                     SwarmRecipients = SwarmTargets(ctx) };
-                if (!GriffonLandingClear(unit, enemy, plan, freshBodies: false)) continue;
+                if (!GriffonLandingClear(unit, enemy, plan, freshBodies: false, out var refusal, out var blocker))
+                { Refused(refusal, enemy, plan, blocker); continue; }
                 if (!budget.TryWeaponQuote()) break;
                 var attack = CombatMath.EstimateGriffonAttack(unit, enemy, full, charge);
-                if (attack == null || !(attack.ExpectedDamage > 0f) || !CombatMath.GriffonLandingReaches(unit, enemy, landing, attack.Reach)) continue;
+                if (attack == null || !(attack.ExpectedDamage > 0f)) { Refused(GriffonRefusal.Weapon, enemy, plan); continue; }
+                if (!CombatMath.GriffonLandingReaches(unit, enemy, landing, attack.Reach))
+                { Refused(GriffonRefusal.WeaponReach, enemy, plan); continue; }
                 plan.Reach = attack.Reach;
                 float value = DamageValue(enemy, attack) * AttackWeight(ctx, enemy, false) * WakeFactor(enemy, attack.ExpectedDamage);
                 // The native flight suppresses traversal AoOs. Its landing still risks the same exposure and loss
@@ -79,22 +94,40 @@ namespace CompanionAI_Pathfinder.Tactics
                         (exposure + leaves - armor > 0f ? $", landing cost {exposure + leaves - armor:0.#}" : "") + ")" });
             }
             if (candidates.Count == 0)
-                ReportOnce($"griffon-no-landing|{CombatMemory.Fight}|{unit.UniqueId}|{CombatMemory.AbilityKey(ability)}",
-                    () => $"[Griffon] {unit.CharacterName}: {ability.Name} has no current eligible safe landing/weapon attack " +
+            {
+                if (firstRefusal == GriffonRefusal.None)
+                    firstRefusal = rangeRefused > 0 ? GriffonRefusal.RangeOrSight : GriffonRefusal.NativeTarget;
+                // Bounded shared ReportOnce memo; distinguish changed refusal stages within the fight. Build the
+                // witness text lazily from results already read. Never re-query a node, path, target or weapon for logs.
+                ReportOnce($"griffon-no-landing|{CombatMemory.Fight}|{unit.UniqueId}|{CombatMemory.AbilityKey(ability)}|{firstRefusal}",
+                    () => $"[Griffon] {unit.CharacterName}: {ability.Name} found no safe attack within budget; first refusal={firstRefusal}; " +
+                        $"native target refusals={nativeRefused}, range/sight refusals={rangeRefused}; " +
                         $"({budget.LandingAttempts}/{GriffonQueryBudget.MaxLandingAttempts} landings, " +
-                        $"{budget.WeaponQuotes}/{GriffonQueryBudget.MaxWeaponQuotes} native weapon quotes)");
+                        $"{budget.WeaponQuotes}/{GriffonQueryBudget.MaxWeaponQuotes} native weapon quotes); " +
+                        $"ability={CombatMemory.AbilityKey(ability)}, target={witnessTarget?.UniqueId ?? "none"}" +
+                        (witness == null ? "" : $", from={witness.From}, targetAt={witness.TargetAt}, landing={witness.Landing}") +
+                        (witnessBlocker == null ? "" : $", blocker={witnessBlocker.UniqueId}"));
+            }
+            else
+                ReportOnce($"griffon-admitted|{CombatMemory.Fight}|{unit.UniqueId}|{CombatMemory.AbilityKey(ability)}",
+                    () => $"[Griffon] {unit.CharacterName}: {ability.Name} admitted {candidates.Count} safe attack(s); " +
+                        $"sample={candidates[0].Label}, value={candidates[0].Value:0.#}; ability={CombatMemory.AbilityKey(ability)}");
             return candidates;
         }
 
-        private static bool GriffonLandingClear(UnitEntityData unit, UnitEntityData target, GriffonPlan plan, bool freshBodies)
+        private static bool GriffonLandingClear(UnitEntityData unit, UnitEntityData target, GriffonPlan plan, bool freshBodies,
+                                                out GriffonRefusal refusal, out UnitEntityData blocker)
         {
+            refusal = GriffonRefusal.None; blocker = null;
             var at = plan.Landing;
             // Check the endpoint only: neither a line across Grease nor a normal navmesh route is the custom flight.
-            if (AoeDangerAnalyzer.IsPositionDangerous(unit, at) || AoeDangerAnalyzer.EnteringDanger(unit, at, at, out _) > 0f) return false;
+            if (AoeDangerAnalyzer.IsPositionDangerous(unit, at) || AoeDangerAnalyzer.EnteringDanger(unit, at, at, out _) > 0f)
+            { refusal = GriffonRefusal.Hazard; return false; }
             // The native nearest-node snap can move its ideal body-touch landing inward. Weapon reach alone is
             // an upper distance bound; apply the same existing body-overlap rule to the actual target too.
             if (Math.Abs(target.Position.y - at.y) <= SpotRules.SameFloor &&
-                SpotRules.Takes(target.Position.x, target.Position.z, target.Corpulence, at.x, at.z, unit.Corpulence)) return false;
+                SpotRules.Takes(target.Position.x, target.Position.z, target.Corpulence, at.x, at.z, unit.Corpulence))
+            { refusal = GriffonRefusal.TargetBody; blocker = target; return false; }
             foreach (var body in plan.Bodies)
             {
                 var other = body.Unit;
@@ -102,13 +135,15 @@ namespace CompanionAI_Pathfinder.Tactics
                 Vector3 position = freshBodies ? (CombatMemory.IsRealTime ? WalkClaim(other) : null) ?? other.Position : body.At;
                 float radius = freshBodies ? other.Corpulence : body.Radius;
                 if (Math.Abs(position.y - at.y) <= SpotRules.SameFloor &&
-                    SpotRules.Takes(position.x, position.z, radius, at.x, at.z, unit.Corpulence)) return false;
+                    SpotRules.Takes(position.x, position.z, radius, at.x, at.z, unit.Corpulence))
+                { refusal = GriffonRefusal.OtherBody; blocker = other; return false; }
             }
             foreach (var enemy in plan.Enemies)
             {
                 if (enemy == null || CombatMath.IsDisabled(enemy)) continue;
                 var swarm = CombatMath.SwarmSpaceOf(enemy);
-                if (swarm != null && CombatMath.SwarmStrikes(enemy, swarm, unit, at, null, plan.SwarmRecipients)) return false;
+                if (swarm != null && CombatMath.SwarmStrikes(enemy, swarm, unit, at, null, plan.SwarmRecipients))
+                { refusal = GriffonRefusal.Swarm; blocker = enemy; return false; }
             }
             return true;
         }
@@ -131,11 +166,11 @@ namespace CompanionAI_Pathfinder.Tactics
             else if (unit.Position != plan.From || target.Position != plan.TargetAt ||
                 !InRangeNow(unit, target.Position, ability.GetApproachDistance(target), candidate.NeedLoS) ||
                 !CombatMath.TryGriffonLanding(unit, target, out var landing) || landing != plan.Landing ||
-                !CombatMath.GriffonLandingReaches(unit, target, landing, plan.Reach) || !GriffonLandingClear(unit, target, plan, freshBodies: true))
+                !CombatMath.GriffonLandingReaches(unit, target, landing, plan.Reach) || !GriffonLandingClear(unit, target, plan, freshBodies: true, out _, out _))
                 failure = "native leap landing changed, blocked, dangerous or outside the queued attack's reach";
             else if (!CombatMath.TryGriffonCharge(ability, out var charge) || charge.Buff != plan.Charge.Buff ||
                 charge.Attack != plan.Charge.Attack || charge.Armor != plan.Charge.Armor ||
-                plan.Full && !CombatMath.GriffonCanPounce(unit, unit.HasFullRoundAction() && !unit.UsedOneMoveAction() && !unit.IsMoveActionRestricted()))
+                plan.Full && !CombatMath.GriffonCanPounce(unit))
                 failure = "native charge effect or pounce state changed";
             return failure == null;
         }
