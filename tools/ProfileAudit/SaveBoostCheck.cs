@@ -77,6 +77,10 @@ namespace ProfileAudit
         internal static IEnumerable<MemberInfo> ReferencedMembers(MethodInfo method)
         {
             var bytes = method.GetMethodBody()?.GetILAsByteArray() ?? throw new InvalidOperationException("No IL body");
+            // ★ v0.3.52: a closed generic diagnostic memo still contains field/method tokens with !0/!!0.
+            // Resolve them in the inspected method's actual generic context, not as an uninstantiated module token.
+            var typeArguments = method.DeclaringType?.IsGenericType == true ? method.DeclaringType.GetGenericArguments() : null;
+            var methodArguments = method.IsGenericMethod ? method.GetGenericArguments() : null;
             var codes = typeof(OpCodes).GetFields(BindingFlags.Public | BindingFlags.Static)
                 .Where(f => f.FieldType == typeof(OpCode)).Select(f => (OpCode)f.GetValue(null))
                 .GroupBy(c => unchecked((ushort)c.Value)).ToDictionary(g => g.Key, g => g.First());
@@ -86,9 +90,9 @@ namespace ProfileAudit
                 if (value == 0xfe) value = (ushort)(0xfe00 | bytes[offset++]);
                 var op = codes[value];
                 if (op.OperandType == OperandType.InlineMethod)
-                    yield return method.Module.ResolveMethod(BitConverter.ToInt32(bytes, offset));
+                    yield return method.Module.ResolveMethod(BitConverter.ToInt32(bytes, offset), typeArguments, methodArguments);
                 else if (op.OperandType == OperandType.InlineField)
-                    yield return method.Module.ResolveField(BitConverter.ToInt32(bytes, offset));
+                    yield return method.Module.ResolveField(BitConverter.ToInt32(bytes, offset), typeArguments, methodArguments);
                 switch (op.OperandType)
                 {
                     case OperandType.InlineNone: break;

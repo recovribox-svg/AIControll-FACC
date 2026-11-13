@@ -112,6 +112,9 @@ Game-independent tests cover diagnostic transitions, resets, overflow and the qu
 audit fixtures exercise the actual compiled cached-routine mode kernel, mixed weapons/iteratives/caps/DR/
 concealment/criticals/payloads, cache/query/ownership/dispatch routes and compiled logging guards. Required
 affliction/swarm/Cling/charge inputs remain mandatory; the raw enum-load failure remains separately named.
+The initial new logging audit exposed an offline verifier limitation: generic field/method tokens were resolved
+without their type/method arguments. `SaveBoostCheck.ReferencedMembers` now supplies the actual generic context;
+this repairs inspection of the compiled memo without changing the mod DLL or weakening the check.
 Exact committed source/build/package results follow validation below.
 
 Replay both modes with the new MVID:
