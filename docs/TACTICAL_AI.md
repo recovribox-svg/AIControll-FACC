@@ -5149,3 +5149,5 @@ compiled routes; no initialized actor, attack, buff application or Unity timing 
 weapon damage-delta/critical approximations remain. In TB/RT compare one shot versus full attacks, positive/zero/
 negative Intelligence, DR/immunity, existing buffs, provocation and native action use. Final receipt records
 all units/inventory, real-reference Release and distinct compatible/supplementary/full-export audit scopes.
+
+Checked source `b890309`, [receipt](competence/FOCUSED_SHOT_CHECKS.json) and [focused1 test ZIP](../test-builds/AI-Control-FACC-v0.3.30-dev-focused1-b890309-UMM-test.zip), startup MVID `22e24115-7500-4df6-828a-305f0075e591`. 668 unit + 27 inventory tests and native checks pass; actual-reference Release 0 warnings/errors; 10/10 added signatures resolve. Compatible/supplementary audit scopes pass; original full-corpus enum failure remains distinct. Gameplay/matched Unity timing pending.

@@ -1,0 +1,21 @@
+{
+  "build_label": "focused1",
+  "kind": "development-test",
+  "version": "0.3.30",
+  "source_branch": "codex/focused-shot-support",
+  "source_commit": "b8903091ff8c365016de21b88c568434e739093b",
+  "starting_commit": "4c0ef7d8ede85ea42f0eadff73ac51f9ab39463c",
+  "development_base": "44b224f5af76dc5f5ae6086d6abbfbdeac790627",
+  "dependency_pr": 48,
+  "dll": {
+    "assembly": "CompanionAI_Pathfinder, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null",
+    "mvid": "22e24115-7500-4df6-828a-305f0075e591",
+    "sha256": "83fd99f6729be43ce873a3626485fa9f3f40d8563d981802db75d22516b5c153",
+    "size": 1368064
+  },
+  "manifest_sha256": "d6ee91e78dc5d4981ad51a1a1a85bb1e7fe3f0a87814697f2fd9ee1c20d35594",
+  "checks_receipt": "docs/competence/FOCUSED_SHOT_CHECKS.json",
+  "gameplay_status": "not played",
+  "scope": "Cumulative focused1 includes review7 and PRs #47/#48. Structural admission for the actual Focused Shot graph; native prospective AdditionalDamage value and existing cached weapon forecast. One native ranged hand/attack only, positive/zero/negative and active/disabled bonus handling, existing defenses/provoke/action/command paths. Unknown variants remain unsupported; no actor mutation or new movement policy.",
+  "release": false
+}
