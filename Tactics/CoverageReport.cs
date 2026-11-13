@@ -210,6 +210,7 @@ namespace CompanionAI_Pathfinder.Tactics
             if (p.RemovesBuffs) kinds.Add("removal");
             if (p.Enchants) kinds.Add("enchant");
             if (p.IsCharge) kinds.Add("charge");
+            if (p.GriffonAttack != null) kinds.Add("native leap+queued weapon attack");
             if (p.IsAoE) kinds.Add("area");
             return string.Join("+", kinds);
         }

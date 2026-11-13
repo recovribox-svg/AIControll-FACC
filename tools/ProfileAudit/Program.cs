@@ -140,6 +140,10 @@ namespace ProfileAudit
                 foreach (var line in blocklistLines) Console.WriteLine(line);
                 File.WriteAllText(output, string.Join(Environment.NewLine, blocklistLines) + Environment.NewLine + Environment.NewLine + File.ReadAllText(output));
             }
+            var buffDefenceLines = BuffDefenceCheck.Run(out int buffDefenceFailures);
+            foreach (var line in buffDefenceLines) Console.WriteLine(line);
+            File.WriteAllText(output, string.Join(Environment.NewLine, buffDefenceLines) + Environment.NewLine + Environment.NewLine + File.ReadAllText(output));
+            blocklistFailures += buffDefenceFailures;
             var uniqueReplacementLines = UniqueReplacementCheck.Run(loaded.Values, out int uniqueReplacementFailures);
             foreach (var line in uniqueReplacementLines) Console.WriteLine(line);
             File.WriteAllText(output, string.Join(Environment.NewLine, uniqueReplacementLines) + Environment.NewLine + Environment.NewLine + File.ReadAllText(output));
@@ -197,6 +201,10 @@ namespace ProfileAudit
             foreach (var line in swarmProtection) Console.WriteLine(line);
             File.WriteAllText(output, string.Join(Environment.NewLine, swarmProtection) + Environment.NewLine + Environment.NewLine + File.ReadAllText(output));
             blocklistFailures += swarmProtectionFailures;
+            var swarmEscape = SwarmEscapeCheck.Run(loaded.Values, out int swarmEscapeFailures);
+            foreach (var line in swarmEscape) Console.WriteLine(line);
+            File.WriteAllText(output, string.Join(Environment.NewLine, swarmEscape) + Environment.NewLine + Environment.NewLine + File.ReadAllText(output));
+            blocklistFailures += swarmEscapeFailures;
             var revealValueLines = RevealValueCheck.Run(loaded.Values, out int revealValueFailures);
             foreach (var line in revealValueLines) Console.WriteLine(line);
             File.WriteAllText(output, string.Join(Environment.NewLine, revealValueLines) + Environment.NewLine + Environment.NewLine + File.ReadAllText(output));
@@ -320,6 +328,10 @@ namespace ProfileAudit
             foreach (var line in heldWeaponLines) Console.WriteLine(line);
             File.WriteAllText(output, string.Join(Environment.NewLine, heldWeaponLines) + Environment.NewLine + Environment.NewLine + File.ReadAllText(output));
             blocklistFailures += heldWeaponFailures;
+            var griffonLines = GriffonAttackCheck.Run(loaded.Values, out int griffonFailures);
+            foreach (var line in griffonLines) Console.WriteLine(line);
+            File.WriteAllText(output, string.Join(Environment.NewLine, griffonLines) + Environment.NewLine + Environment.NewLine + File.ReadAllText(output));
+            blocklistFailures += griffonFailures;
             if (failed > 0)
             {
                 string partial = $"PARTIAL: loaded {loaded.Count}, failed {failed}, allowed {options.AllowFailures}. Failed blueprints:";

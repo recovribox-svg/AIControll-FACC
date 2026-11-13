@@ -243,6 +243,8 @@ namespace CompanionAI_Pathfinder.Tactics
             return incoming * delta / h;
         }
 
+        public const float HpReservePerPoint = 0.3f;
+
         /// <summary>
         /// Worth of damage kept off an ally: <paramref name="perRound"/> for <paramref name="rounds"/>, a third of a point per
         /// HP (HP someone would have to heal later, as a move's damage is priced) plus the lower chance to drop
@@ -255,7 +257,7 @@ namespace CompanionAI_Pathfinder.Tactics
             float before = RiskMath.RoundDropChance(hp, incoming);
             float after = RiskMath.RoundDropChance(hp, Math.Max(0f, incoming - perRound));
             float drop = Clamp((before - after) * rounds, -1f, 1f);
-            return 0.3f * perRound * rounds + drop * allyWorth;
+            return HpReservePerPoint * perRound * rounds + drop * allyWorth;
         }
 
         /// <summary>Damage temporary hit points can take before they run out or the window ends.</summary>

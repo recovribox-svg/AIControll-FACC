@@ -34,11 +34,40 @@ namespace CompanionAI_Pathfinder.Tactics
         private static float SwarmPart(TacticalContext ctx, UnitEntityData swarm, CombatMath.SwarmSpace area, UnitEntityData who,
                                        Vector3 at, float zone)
         {
+            float share = SwarmShareAt(ctx, swarm, area, who, at, zone);
+            if (!(share > 0f)) return 0f;
+            return CombatMath.Threat(swarm) * share * CombatMath.SwarmVictimFactor(swarm, who, ctx.Allies);
+        }
+
+        /// <summary>The same native coverage and existing outside-walk share for danger and direct-HP prevention.</summary>
+        private static float SwarmShareAt(TacticalContext ctx, UnitEntityData swarm, CombatMath.SwarmSpace area, UnitEntityData who,
+                                          Vector3 at, float zone)
+        {
             bool struck = CombatMath.SwarmStrikes(swarm, area, who, at, a => a == who ? at : a.Position, SwarmTargets(ctx));
             if (!struck && Vector3.Distance(swarm.Position, at) > zone + who.Corpulence) return 0f;
             int sharedBy = struck ? 1 : Math.Max(1, ctx.Allies.Count(a => Vector3.Distance(swarm.Position, a == who ? at : a.Position) <= zone + a.Corpulence));
-            return CombatMath.Threat(swarm) * ValueModel.SwarmShare(struck, true) *
-                   CombatMath.SwarmVictimFactor(swarm, who, ctx.Allies) / sharedBy;
+            return ValueModel.SwarmShare(struck, true) / sharedBy;
+        }
+
+        /// <summary>
+        /// Direct HP at this spot from all currently active, recognised cast-style swarms, reusing their native victim
+        /// quotes. Unlike IncomingDamage, no recipient-attached poison or HP-equivalent control/stat harm enters this
+        /// stream. Unsupported/aura sources retain the existing drop-only exit model.
+        /// </summary>
+        private static float SwarmDirectHpAt(TacticalContext ctx, Vector3 at)
+        {
+            float hp = 0f;
+            foreach (var enemy in ctx.Enemies)
+            {
+                if (CombatMath.IsDisabled(enemy)) continue;
+                var space = CombatMath.SwarmSpaceOf(enemy);
+                var cast = space?.Cast;
+                if (cast == null || !CombatMath.SwarmDirectHpGraph(cast.Profile)) continue;
+                float share = SwarmShareAt(ctx, enemy, space, ctx.Unit, at, SwarmZone(enemy));
+                if (!(share > 0f)) continue;
+                hp += share * CombatMath.KnownSwarmDirectHp(cast.Profile, cast.Consequence(ctx.Unit));
+            }
+            return hp * ctx.DangerScale;
         }
 
         /// <summary>
@@ -172,6 +201,7 @@ namespace CompanionAI_Pathfinder.Tactics
             if (!(dangerHere > 0f)) return;
             float pHere = SpotDrop(ctx, unit, unit.Position);   // ★ v0.3.29 test 2 (R3)
             float worth = AllyWorth(ctx, unit);
+            float directHpHere = SwarmDirectHpAt(ctx, unit.Position);
             float best = list.Where(c => c.Slot != ActionSlot.Free && c.Slot != ActionSlot.Swift && Affordable(ctx, c) && kept(c))
                              .Select(c => c.Value).DefaultIfEmpty(0f).Max();
             var refused = realTime ? null : CombatMemory.ForTurn(unit).RefusedSteps;
@@ -205,7 +235,11 @@ namespace CompanionAI_Pathfinder.Tactics
                 float dangerThere = IncomingDamage(ctx, unit, point.Value);
                 // By the role's tolerance, as walking in is priced (MoveRisk's exposure): a tank that walks into a swarm
                 // for an attack worth more than the discounted danger does not step straight back out.
-                float gain = (pHere - SpotDrop(ctx, unit, point.Value)) * worth * RiskTolerance(ctx);
+                // As PreventionValue and DisengageRisk already price HP separately from lost fight productivity,
+                // preventing known direct HP damage keeps that reserve even when the chance to drop is negligible.
+                // Both points include all recognised casts, so entering another one cancels the supposed HP saving.
+                float gain = ValueModel.SwarmEscapeGain(pHere, SpotDrop(ctx, unit, point.Value), worth,
+                    directHpHere, SwarmDirectHpAt(ctx, point.Value), RiskTolerance(ctx));
                 var p = point.Value;
                 float keeps = list.Where(c => c.Slot != ActionSlot.Free && c.Slot != ActionSlot.Swift && Affordable(ctx, c) && kept(c) &&
                                               (c.Kind != CandidateKind.WeaponAttack || ctx.HasRangedWeapon || ReachesFrom(unit, c.Target, p)) &&

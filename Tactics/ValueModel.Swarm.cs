@@ -30,5 +30,20 @@ namespace CompanionAI_Pathfinder.Tactics
             if (!(meanHp > 0f) || float.IsInfinity(meanHp) || float.IsNaN(victimHp)) return 1f;
             return Clamp(Math.Max(0f, victimHp) / meanHp, 0f, 3f);
         }
+
+        /// <summary>
+        /// One round of swarm escape: the original drop/productivity difference, once, plus the existing HP-reserve
+        /// price for known direct HP actually avoided. HP equivalents for control/stat/level/attached harm are excluded
+        /// by the caller's native quote contract. Stop, path/ally costs and lost offensive actions are priced afterwards.
+        /// </summary>
+        public static float SwarmEscapeGain(float dropHere, float dropThere, float worth,
+                                             float directHpHere, float directHpThere, float tolerance)
+        {
+            if (float.IsNaN(dropHere) || float.IsInfinity(dropHere) || float.IsNaN(dropThere) || float.IsInfinity(dropThere) ||
+                !(worth >= 0f) || float.IsInfinity(worth) || !(tolerance >= 0f) || float.IsInfinity(tolerance)) return 0f;
+            float reserve = directHpHere >= 0f && !float.IsInfinity(directHpHere) && directHpThere >= 0f && !float.IsInfinity(directHpThere)
+                ? Math.Max(0f, directHpHere - directHpThere) * HpReservePerPoint : 0f;
+            return ((dropHere - dropThere) * worth + reserve) * tolerance;
+        }
     }
 }
