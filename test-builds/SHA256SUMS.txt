@@ -66,3 +66,5 @@ e760a7fd53d765cea5b9e4e751456bf6b5c16aed81f0c24af7d9d73d5997e82c  AI-Control-FAC
 95a7ca1c353669f5340e53e132bbb2a3c5d02e244b398504a50a8f1104603835  AI-Control-FACC-v0.3.30-dev-C06R4-736358a-UMM-test.identity.json
 144c46dec24d007f8d55073a5066110b9caab320c6029d7700ba2c75fa334dd3  AI-Control-FACC-v0.3.30-dev-C06R5-6794275-UMM-test.zip
 1bc44e37bdf612a51f874981f8922ee251d726e905a729953116eb98653519a2  AI-Control-FACC-v0.3.30-dev-C06R5-6794275-UMM-test.identity.json
+1b062e2e2c5ae9d5f90718f653c7e3a09c94f28d2f60ff38a7efd6aaa8042368  AI-Control-FACC-v0.3.30-dev-summon1-bfaccc6-UMM-test.zip
+accb07df639533eefdab37c464b9e4563f4699fcf5ea51244819894dbf8bce4e  AI-Control-FACC-v0.3.30-dev-summon1-bfaccc6-UMM-test.identity.json

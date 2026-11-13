@@ -1,0 +1,94 @@
+{
+  "task": "Summon control implementation (plan: docs/SUMMON_CONTROL_PLAN.md, PR #46)",
+  "checked_source_commit": "bfaccc6782e7cf0f572352d4ace135de2cd8da48",
+  "source_branch": "claude/summon-control",
+  "development_base": "44b224f5af76dc5f5ae6086d6abbfbdeac790627",
+  "version": "0.3.30",
+  "feature_default": "off (ModSettings.ControlSummons = false; omitted in JSON loads false)",
+  "dll": {
+    "mvid": "c72d459e-7d4f-417a-b030-6d90db7ba765",
+    "sha256": "a27bafec3aa7a37b052ac950cf4f8fdad11a10f0471b815d77ffb924c5db56cc",
+    "size": 1380864,
+    "note": "The audited DLL is the packaged DLL (byte-identical). Builds are not byte-reproducible: a rebuild of the same source has another MVID."
+  },
+  "release_build": {
+    "configuration": "Release",
+    "real_game_assemblies": true,
+    "clean_rebuild": true,
+    "warnings": 0,
+    "errors": 0
+  },
+  "unit_tests": {
+    "passed": 677,
+    "failed": 0,
+    "new": 13,
+    "new_file": "tests/CompanionAI.Tests/SummonRulesTests.cs"
+  },
+  "inventory_python_tests": {
+    "passed": 27,
+    "failed": 0
+  },
+  "profile_audit": {
+    "export_roots": 11,
+    "includes_author_exports": [
+      "Units",
+      "Spells",
+      "Buffs"
+    ],
+    "loaded": 35497,
+    "failed": 1,
+    "known_failure": "AchaekekSacredWeaponFeature (SecurityException: engine-bound, unchanged)",
+    "abilities": 4022,
+    "reader_errors": 0,
+    "named_check_lines_passing": 33,
+    "skipped": 0,
+    "new_check": {
+      "name": "SUMMON-CONTROL",
+      "checks": 62,
+      "failures": 0,
+      "spawn_abilities_read_as_summoning": "157/157 (top-level ContextActionSpawnMonster)",
+      "covers": [
+        "settings default/JSON/non-insertion",
+        "temporary settings view",
+        "compiled routes of policy reads and guards",
+        "bridge adapters (no status/faction/group write)",
+        "native Prepare/Tick/ForceTick/TickBrain/CanEndTurn/ForceToEnd/ContinueActing IL contracts",
+        "RuleSummonUnit / ContextActionSpawnMonster / summon part"
+      ]
+    },
+    "unchanged_checks": "AFFLICTION 4, SWARM-COVERAGE 27, ATTACHED 24, SHIFTER 48, MAGUS 32, AREA-EXIT 28, AREA-BOUNDS 28 and the rest as in docs/TACTICAL_AI.md section 150"
+  },
+  "native_harnesses": {
+    "ToggleCosts.Native": {
+      "checks": 98,
+      "failures": 0,
+      "psionics_provider": true
+    },
+    "TomeBurn.Native": {
+      "checks": 14,
+      "failures": 0
+    },
+    "ToyBoxSpend.Native": {
+      "checks": 10,
+      "failures": 0
+    }
+  },
+  "signature_check": {
+    "new_foreign_members": 4,
+    "outside_game_assembly": 0,
+    "members": [
+      "Kingmaker.UnitLogic.Parts.UnitPartSaddled::get_Rider",
+      "Kingmaker.EntitySystem.Entities.UnitEntityData::get_IsPet",
+      "Kingmaker.UnitLogic.Parts.UnitPartSummonedMonster::get_IsLinkedToSummoner",
+      "Kingmaker.UnitLogic.UnitState::get_IsFinallyDead"
+    ],
+    "resolved_by": "the Release build against the real Assembly-CSharp.dll"
+  },
+  "limits": [
+    "No actor, Harmony patch application, command, turn or Unity timing was executed.",
+    "Turn completion, pack performance, Demonology linkage and ToyBox coexistence are gameplay checks (docs/TACTICAL_AI.md section 152)."
+  ],
+  "feature_actor_or_unity_tested": false,
+  "gameplay_status": "not played",
+  "test_package": "test-builds/AI-Control-FACC-v0.3.30-dev-summon1-bfaccc6-UMM-test.zip"
+}

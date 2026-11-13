@@ -8,9 +8,25 @@ Read [CONTRIBUTING.md](CONTRIBUTING.md) for shared branch ownership, Codex pull 
 Codex works on task branches and targets pull requests at `claude/dreamy-pasteur-b9h3rn`; Claude reviews and integrates them there.
 Keep `main` for author-authorized releases. Read [AGENTS.md](AGENTS.md) when coordinating agent work.
 
+**Current handover (13 November 2026, Claude): summon control is implemented on `claude/summon-control` (PR into development), see
+`docs/TACTICAL_AI.md` §152. Not played.** Opt-in, off by default ("Control Summoned Creatures (experimental)", `ModSettings.ControlSummons`). In combat,
+both modes, AI Control drives linked summons of the characters it drives - not pets, swarms, nested or enemy summons, and not with the old real-time
+engine. Rules: `Tactics/SummonRules.cs` (pure); game side `GameInterface/SummonControl.cs` (weak per-creature state, a temporary settings view that is
+never stored, the summoner's blocklist); turn-based entry `GameInterface/SummonTurnBridge.cs` (the game's own AI turn: `TurnController.Prepare` postfix,
+the `TickBrain` prefix and the `Tick` postfix forward to the existing `TurnBasedController.ProcessTurn`; no status, controllability, faction or group
+write). The game ends an AI unit's turn itself (0.2 s idle, no time left, 9 s command cap); `TurnBasedPatches.CompleteTurn` is the shared, bounded
+backstop. One behaviour change: a summon another mod makes clickable (ToyBox) is no longer driven like a companion unless the switch is on. Checks on
+source `bfaccc6`:
+- Release build: 0 warnings. Unit tests: 677 pass. Inventory tests: 27 pass.
+- ProfileAudit: 35,497 loaded, the one known Achaekek failure, every check passes, new SUMMON-CONTROL 62 checks.
+- Native harnesses: ToggleCosts 98, TomeBurn 14, ToyBoxSpend 10 checks pass.
+
+Play `test-builds/AI-Control-FACC-v0.3.30-dev-summon1-bfaccc6-UMM-test.zip` (MVID `c72d459e-7d4f-417a-b030-6d90db7ba765`) with the checkbox on; §152
+lists the tests, turn completion and pack performance first. `main` and releases are unchanged; manifest 0.3.30.
+
 **Summon control planning handoff (12 November 2026, Codex; no implementation):** [Implementation plan](docs/SUMMON_CONTROL_PLAN.md), [native/blueprint/input evidence](docs/competence/SUMMON_CONTROL_EVIDENCE.json), §151. Checked integrated development `44b224f`, manifest 0.3.30. Claude implements; Codex remains involved in review/interim fixes. The supplied guide's “no TickBrain in TB” premise is false: native Prepare/Acting force the brain for the current non-controllable rider. Plan uses a narrow Prepare postfix + existing brain/driver entries and shared bounded completion, with no direct-control getter or Status patch. Explicitly verify phase/termination in game before enabling TB. Direct linked owned non-swarm summons only, default off; weak temporary actor policy preserves owner safety/resource settings without inheriting Pure Mage/range/role or creating saved IDs. Owner blocklists, OOC/pre-buff/UI exclusions, recognized summon-cast/item guards, mode/legacy/coexistence and transient RT pacing lifetime are part of the slice. Recent party timings refute an assumed cheap summon budget; cohort/frame measurements and matched replay are required. Code, hooks, settings and Info.json are unchanged by this planning task. The plan has not been executed or played. Baseline checks: 664 unit + 27 inventory, Release 0 warnings/errors, compatible ProfileAudit and toggle-native 98 pass; [receipt](docs/competence/SUMMON_CONTROL_PLAN_CHECKS.json). These do not validate the proposed feature.
 
-**Current handover (12 November 2026, Claude): Codex's interim PRs #21-#45 (25 PRs) are reviewed and integrated into development,
+**Handover (12 November 2026, Claude): Codex's interim PRs #21-#45 (25 PRs) are reviewed and integrated into development,
 see `docs/TACTICAL_AI.md` §150.** Merge commits are `485339f` (stack #22-#45: C06 view guard, Psionics scope, Tome burn, drain, swarms, attached damage,
 resistance memo, caster policies (Pure Mage and the Aggressive policy are opt-in; Magic Fusion), C07 native Magus, Eldritch Archer, C08 Shifter/Fury, and the
 author-approved movement repairs #29/#36/#37/#39/#45) and `d306f1e` (#21 inventory). Game rules were checked against the decompiled game, the BubblePrints
