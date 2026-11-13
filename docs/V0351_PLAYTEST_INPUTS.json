@@ -1,0 +1,134 @@
+{
+  "task": "v0.3.50 stable playtest review; next stable package v0.3.51",
+  "starting_development": "c92b607df59c8b19176e376fa7f356ec8a8c9733",
+  "played_build": {
+    "version": "0.3.50",
+    "startup_mvid": "45ab748a-b0e9-4db9-b62a-3de2f4eff6fb",
+    "identity": "../release/CompanionAI_Pathfinder_v0.3.50.identity.json"
+  },
+  "author_context": {
+    "rests": "between encounters, explicitly confirmed",
+    "mid_combat_rest_in_these_logs": false,
+    "toybox_spawns_in_these_logs": "not separately reconfirmed; older playtests used spawns",
+    "next_build_version": "0.3.51",
+    "necessary_improvements_including_movement_authorized": true,
+    "stable_package_and_development_pr_integration_authorized": true
+  },
+  "line_convention": "1-based physical splitlines in each original upload; AI=Log.txt, combat=combatLog.txt",
+  "inputs": [
+    {
+      "file": "Log.txt",
+      "bytes": 918712,
+      "lines": 4323,
+      "sha256": "b54275edab9390413054a04fe09e6e4afb5368dbf4da09555e9eeb98ca9404c5"
+    },
+    {
+      "file": "combatLog.txt",
+      "bytes": 533176,
+      "lines": 15113,
+      "sha256": "cca3419d0b91f06e55b615ae3a2ef20854b9328b2a802339e9b6aa33e15bc3de"
+    }
+  ],
+  "counts": {
+    "combats": 4,
+    "ai_exceptions_observed": 0,
+    "retained_decision_summaries": 527,
+    "retained_tb": 203,
+    "retained_rt": 324,
+    "measured_tb_decisions": 203,
+    "measured_rt_decisions": 839,
+    "slow_decision_rows": 43,
+    "slow_rows_with_gc_marker": 0,
+    "issued_commands": 372,
+    "issued_by_type": {
+      "UnitUseAbility": 142,
+      "UnitAttack": 132,
+      "UnitMoveTo": 97,
+      "UnitActivateAbility": 1
+    },
+    "profane_invocation_issues": 28,
+    "profane_invocation_by_fight": {
+      "1": 8,
+      "2": 5,
+      "3": 10,
+      "4": 5
+    },
+    "profane_acted_successes": 27,
+    "profane_unacted_interrupts": 1,
+    "death_from_above_issues": 0,
+    "grabber_or_release_issues": 0,
+    "griffon_shape_issues": 4,
+    "gibber_area_exit_issues": 22,
+    "direct_swarm_exit_issues": 0
+  },
+  "evidence": {
+    "native_leap_rejection_rows": [
+      534,
+      1228,
+      1954,
+      3895
+    ],
+    "unresolved_idle_turn_rows": [
+      535,
+      536,
+      537,
+      538,
+      539,
+      540,
+      1353,
+      1568
+    ],
+    "invocation_two_tiers_and_source_identity_rows": [
+      84,
+      92,
+      95,
+      96,
+      2128,
+      2288,
+      2660,
+      2666,
+      2691,
+      2698
+    ],
+    "invocation_rollback_rows": [
+      1528,
+      1529,
+      1530,
+      1531
+    ],
+    "slow_scoring_rows": [
+      3713,
+      3876,
+      4217
+    ],
+    "summon_tb_activity_rows": [
+      1621,
+      1622,
+      1623,
+      1736,
+      1737,
+      1738
+    ],
+    "summon_control_check_summary_rows": [
+      1841,
+      2966,
+      4298
+    ],
+    "drain_threat_rows": [
+      1946,
+      3034,
+      3846,
+      3882,
+      3917
+    ],
+    "faerie_fire_issue_row": 2685,
+    "native_shape_armor_combat_row": 13357
+  },
+  "limits": [
+    "Measured RT includes quiet decisions without a retained tactics summary; do not equate 324 retained RT with 839 measured RT.",
+    "Command interrupts with acted=True are not proof of failure. One attack issue has no matching terminal row in the retained log.",
+    "No damage-check, bomb or grapple/leap execution sample establishes their numerical correctness.",
+    "Enemy spawns, rest resets and changing encounters prevent an uncontrolled before/after speed comparison.",
+    "No new v0.3.51 gameplay was played in these v0.3.50 logs."
+  ]
+}

@@ -129,6 +129,23 @@ namespace ProfileAudit
                 Check(nativeAttacks.Any(m => m.Name == "get_IsCharge") && nativeAttacks.Any(m => m.Name == "Pounce") &&
                     nativeAttacks.Any(m => m.Name == "IsFullAttackRestricted") && nativeFull.Any(m => m.Name == "get_IsIgnoreCooldown"),
                     "native charged Pounce chooses full attacks and its ignored cooldown bypasses the just-spent TB action restriction");
+                Check(nativeFull.Any(m => m.Name == "IsMoveActionRestricted") && nativeAttacks.Any(m => m.Name == "IsSurprising") &&
+                    nativeAttacks.Any(m => m.Name == "get_IsFullAttackRestrictedBecauseOfMoveAction"),
+                    "native queued routine distinguishes TB surprise/move restriction and RT recent movement");
+                var pounce = SaveBoostCheck.ReferencedMembers(math.GetMethod("GriffonCanPounce", all)).ToArray();
+                Check(pounce.Any(m => m.Name == "FullAttack") && pounce.Any(m => m.Name == "IsSurprising") &&
+                    pounce.Any(m => m.Name == "get_IsFullAttackRestrictedBecauseOfMoveAction") &&
+                    !pounce.Any(m => m.Name == "HasFullRoundAction" || m.Name == "UsedOneMoveAction"),
+                    "production queued-attack forecast reads native restrictions instead of ordinary full-round availability");
+                var scalar = math.Assembly.GetType("CompanionAI_Pathfinder.Tactics.GriffonAttackRules").GetMethod("FullAttack", all);
+                bool Full(bool tb, bool surprise, bool staggered, bool restricted, bool recent) =>
+                    (bool)scalar.Invoke(null, new object[] { true, tb, surprise, staggered, restricted, recent });
+                Check(Full(true, false, false, false, true) && !Full(true, false, false, true, false),
+                    "compiled TB scalar ignores spent-action history but retains restricted movement");
+                Check(Full(true, true, true, true, true) && !Full(false, true, true, false, false),
+                    "compiled native surprise exception is TB only and precedes staggered/movement restrictions");
+                Check(!Full(false, false, false, false, true) && Full(false, false, false, true, false),
+                    "compiled RT scalar preserves recent movement rather than the TB-only restriction");
                 var forecast = SaveBoostCheck.ReferencedMembers(math.GetMethod("EstimateGriffonAttack", all)).ToArray();
                 Check(forecast.Any(m => m.Name == "EstimateWeaponAttack") && !forecast.Any(m => m.Name == "TriggerRule" || m.Name == "AddBuff" || m.Name == "Translocate"),
                     "forecast reuses ordinary native-derived weapons without an attack event or mutation");
@@ -148,6 +165,8 @@ namespace ProfileAudit
                 Check(issue.Any(m => m.Name == "CanTarget") && issue.Any(m => m.Name == "get_IsAvailable") &&
                     issue.Any(m => m.Name == "TryGriffonLanding") && issue.Any(m => m.Name == "GriffonLandingClear"),
                     "final issue rechecks native availability, target and current safe landing");
+                Check(issue.Any(m => m.Name == "GriffonCanPounce") && evaluate.Any(m => m.Name == "GriffonCanPounce"),
+                    "pricing and final issue use the same native queued-Pounce restriction adapter");
                 var clear = SaveBoostCheck.ReferencedMembers(engine.GetMethod("GriffonLandingClear", all)).ToArray();
                 Check(clear.Count(m => m.Name == "Takes" && m.DeclaringType == typeof(SpotRules)) >= 2,
                     "actual target overlap and other body claims both gate the snapped native landing");

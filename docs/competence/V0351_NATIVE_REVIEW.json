@@ -1,0 +1,81 @@
+{
+  "game_assembly": {
+    "file": "Assembly-CSharp.dll",
+    "sha256": "2cb7160b7154d4ffacc77b9c51b1eb26199e1294300f04fdfc073367b2ef8953",
+    "mvid": "90a9869c-2792-4c7b-bfb7-5a8b33da7c82"
+  },
+  "inspected_contracts": [
+    {
+      "member": "AbilityGriffinAttack.Deliver / generated MoveNext",
+      "finding": "Native delivery constructs UnitAttack(target), sets IsCharge, IgnoreCooldown, Init(caster), AddToQueueFirst; does not set ForceFullAttack or IsSingleAttack."
+    },
+    {
+      "member": "UnitAttack constructor and Init",
+      "finding": "Default single/full flags remain false; Init invokes InitAttacks. OnlyForInspect guards animation setup."
+    },
+    {
+      "member": "UnitAttack.InitAttacks",
+      "finding": "Charge + Pounce + TB surprise selects full before ordinary restrictions; otherwise a non-single charge needs Pounce, no Staggered and IsFullAttackRestricted(false). The latter receives native CombatState.IsFullAttackRestrictedBecauseOfMoveAction."
+    },
+    {
+      "member": "UnitAttack.IsFullAttackRestricted",
+      "finding": "In TB combat, restricted movement refuses full before IgnoreCooldown bypasses spent action restriction; RT retains supplied recent-move restriction."
+    },
+    {
+      "member": "UnitCombatState.IsFullAttackRestrictedBecauseOfMoveAction",
+      "finding": "TB uses UsedOneMoveAction / current full-attack selection; RT compares LastUsageOfMoveActionTime + 3 seconds with native GameTime."
+    },
+    {
+      "member": "UnitEntityData.HasFullRoundAction",
+      "finding": "Ordinary availability requires neither UsedStandardAction nor UsedOneMoveAction. This is an ability affordability check, not the queued attack rule."
+    }
+  ],
+  "verification": "Native assembly IL plus compiled-route/scalar audit and unit tests. No actor, flight, queue, animation or attack executed offline. RT forecast keeps current recent-move restriction and gives no speculative credit for its expiry during flight.",
+  "private_native_il_files": [
+    {
+      "file": "HasFullRoundAction.il",
+      "bytes": 439,
+      "sha256": "1bcd3d7ae2f01b275f5fe00c0a786ed7f92ecb8ad05aff5ba9d55b7062c6e581"
+    },
+    {
+      "file": "InitAttacks.il",
+      "bytes": 6067,
+      "sha256": "0f77635ce229f32fad4b9fbe652d2ceb6c85d5269737df5dc51cf3864813a0c7"
+    },
+    {
+      "file": "IsFullAttackRestricted.il",
+      "bytes": 1012,
+      "sha256": "72b2520a4e8c28bc84b50e9ec3a9bd8a3c9e61c16b4f5f40cae5924576f4c377"
+    },
+    {
+      "file": "IsSurprising.il",
+      "bytes": 423,
+      "sha256": "09e8920b9719c45357010ba911f934f96b07e6f42cf885dfa99b915acbb723d7"
+    },
+    {
+      "file": "UnitAttackInit.il",
+      "bytes": 8086,
+      "sha256": "a6ab9345bb9c53ba3843e18e812f69853f58e22664842561b7e37f04eede0db9"
+    },
+    {
+      "file": "_ctor.il",
+      "bytes": 1541,
+      "sha256": "a7dd81cac7040a00d881771db3b0bac27fc742556c3b0019bfba16fd2636ce41"
+    },
+    {
+      "file": "get_ForceFullAttack.il",
+      "bytes": 250,
+      "sha256": "766cd518ddf1fac27a57b9f29e5a9dfc94734dbf364e39c08d1d9227411cf447"
+    },
+    {
+      "file": "get_IsFullAttackRestrictedBecauseOfMoveAction.il",
+      "bytes": 2290,
+      "sha256": "3340035f93f7b882660ff8f02454d797d7ee8be655cab66e06c3c5725f8704a9"
+    },
+    {
+      "file": "get_IsSingleAttack.il",
+      "bytes": 248,
+      "sha256": "eda825491008e9fe94e1bad4da68ffa9545fae28686a1ae565e1cee5ab797021"
+    }
+  ]
+}
