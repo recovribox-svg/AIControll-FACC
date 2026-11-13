@@ -40,7 +40,8 @@ namespace ProfileAudit
                 Check(action.Any(m => m.Name == "Observe") && enemies.Any(m => m.Name == "Observe") &&
                     action.Any(m => m.Name == "get_VerboseOn") && enemies.Any(m => m.Name == "get_VerboseOn"),
                     "blocked/empty-enemy states use diagnostic transition gates only in verbose mode");
-                foreach (var name in new[] { "CalculateFullAttackHitChance", "CalculateSaveDC", "CalculateEnergyResistance", "CalculateWeaponHitChance", "CalculateAbilityHitChance" })
+                // The public weapon/ability entry points forward to these internal formatting bodies.
+                foreach (var name in new[] { "CalculateFullAttackHitChance", "CalculateSaveDC", "CalculateEnergyResistance", "CalculateWeaponHitChanceInternal", "CalculateAbilityHitChanceInternal" })
                 {
                     var methods = typeof(HitChanceCalculator).GetMethods(all).Where(m => m.Name == name).ToArray();
                     Check(methods.Any(m => SaveBoostCheck.ReferencedMembers(m).Any(x => x.Name == "get_VerboseOn")), "native math logging guards formatting in " + name);
