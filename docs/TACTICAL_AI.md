@@ -5417,3 +5417,5 @@ Review1 setup diagnostics show discovery/profile reads are a small share of heav
 Heap deltas are not allocations and encounters are not matched. No new broad optimization/cap is justified.
 Unit/native scalar/actual graph/compiled route checks cover changes; source/ZIP/MVID receipt follows validation.
 Stable package requested by author; corrected TB/RT behavior and matched Unity timing remain unplayed.
+
+Checked source `8efbb0e`, [receipt](competence/REVIEW1_SWARM_CHECKS.json) and [v0.3.50 stable ZIP](../release/CompanionAI_Pathfinder_v0.3.50.zip), startup MVID `45ab748a-b0e9-4db9-b62a-3de2f4eff6fb`. 760 unit + 27 inventory tests and native checks pass; actual-reference Release 0 warnings/errors; 16/16 added signatures resolve. Compatible/supplementary audit scopes pass; original full-corpus enum failure remains distinct. Gameplay/matched Unity timing pending.
