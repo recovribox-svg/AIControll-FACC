@@ -5151,3 +5151,24 @@ negative Intelligence, DR/immunity, existing buffs, provocation and native actio
 all units/inventory, real-reference Release and distinct compatible/supplementary/full-export audit scopes.
 
 Checked source `b890309`, [receipt](competence/FOCUSED_SHOT_CHECKS.json) and [focused1 test ZIP](../test-builds/AI-Control-FACC-v0.3.30-dev-focused1-b890309-UMM-test.zip), startup MVID `22e24115-7500-4df6-828a-305f0075e591`. 668 unit + 27 inventory tests and native checks pass; actual-reference Release 0 warnings/errors; 10/10 added signatures resolve. Compatible/supplementary audit scopes pass; original full-corpus enum failure remains distinct. Gameplay/matched Unity timing pending.
+
+
+## 155. Spell boosts: jointly affordable activation costs
+
+The author approved this follow-up to Focused Shot. [Design/native semantics/replay](JOINT_SPELL_COSTS.md),
+[assembly and fixture identities](competence/JOINT_SPELL_COSTS_NATIVE.json). Refreshed development `44b224f`;
+PR #50 `4745033` is the prerequisite. Concurrent summon control PR #49 remains separate.
+
+Two individually available casts can share the last spontaneous slot, prepared conversion source or activation
+resource. Before valuing setup/main, read their known current native costs; a free eligible Quicken asks lazily
+for the best already-scored standard alternative whose three-action activation sequence is jointly affordable.
+Retain native root/slot cost, effective book/level, prepared equality/reverse order, per-day and explicit
+resource/override semantics. A per-pass identity quote memo and reusable pure scratch budget avoid repeated
+reads/allocations across alternatives. Limits 64 charges, 256 prepared slots, 16 conversion nodes. Unknown
+providers/prices stay unknown, with named bounded verbose diagnostics; ordinary actions remain available.
+
+No spell/resource/inventory mutation, native rule/context/actor preview, future refund, reservation, queue or
+all-pairs search. This does not simulate arbitrary future buff/fact changes or mod spend overrides. Existing
+DC/CL/Persistent/Quicken action/native eligibility, policies, movement and final native rechecks remain. Pure
+financial alias/order/overflow/unknown/reset cases and native scalar/metadata/compiled routes are checked;
+initialized caster, actual spending and matched Unity timing require the focused TB/RT replay.

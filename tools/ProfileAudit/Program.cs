@@ -257,6 +257,10 @@ namespace ProfileAudit
             foreach (var line in shotLines) Console.WriteLine(line);
             File.WriteAllText(output, string.Join(Environment.NewLine, shotLines) + Environment.NewLine + Environment.NewLine + File.ReadAllText(output));
             blocklistFailures += shotFailures;
+            var jointCostLines = JointCostCheck.Run(loaded.Values, out int jointCostFailures);
+            foreach (var line in jointCostLines) Console.WriteLine(line);
+            File.WriteAllText(output, string.Join(Environment.NewLine, jointCostLines) + Environment.NewLine + Environment.NewLine + File.ReadAllText(output));
+            blocklistFailures += jointCostFailures;
             var campaignFlagLines = CampaignFlagCheck.Run(loaded.Values, out int campaignFlagFailures);
             foreach (var line in campaignFlagLines) Console.WriteLine(line);
             File.WriteAllText(output, string.Join(Environment.NewLine, campaignFlagLines) + Environment.NewLine + Environment.NewLine + File.ReadAllText(output));
