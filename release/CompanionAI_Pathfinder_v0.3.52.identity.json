@@ -1,0 +1,22 @@
+{
+  "build_label": "v0.3.52 stable",
+  "kind": "stable-release-package",
+  "version": "0.3.52",
+  "source_branch": "codex/v0351-live-review",
+  "source_commit": "30cfa2cb7e91e26de1f08418db5238a6a824c3ca",
+  "starting_commit": "00ab4e52c968676154a754543d7c1fefa947b1cd",
+  "development_base": "00ab4e52c968676154a754543d7c1fefa947b1cd",
+  "dependency_pr": null,
+  "dll": {
+    "assembly": "CompanionAI_Pathfinder, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null",
+    "mvid": "981a7b77-a654-4da1-9a22-68bc1c6a77bd",
+    "sha256": "11d5828e618c6d5a5c03edef22e3453a87629b926db413748b36d702f6004aa7",
+    "size": 1417216
+  },
+  "manifest_sha256": "1876fd6fc56d03b28793f6c481fac47c9ea85eec3265d6859232deeab67523a3",
+  "checks_receipt": "docs/competence/V0352_PLAYTEST_CHECKS.json",
+  "gameplay_status": "not played",
+  "scope": "Stable v0.3.52 package requested by the author after the exact v0.3.51 playtest (six fights; swarms spawned during encounters, rests between encounters). Gives the strict native Death from Above route the shared owned/allowed attack-mode comparison using its exact cached own-weapon quote and landing/combined charge-mode AC. Keeps 8 endpoints/4 own-weapon quotes and all native action/safety/dispatch gates. Shared mode AC now excludes recognized automatic swarm harm consistently with buff appraisal, retaining total danger and ordinary attack mitigation. Reduces repeated SpellPen, blocked and empty-enemy verbose messages with bounded diagnostic-only transition memos; guards disabled verbose math and discarded quiet-summary formatting. Keeps command/error/build identity and useful failure evidence; adds no-query idle witnesses. Includes an updated ranked Claude master prompt and short GitHub kickoff. Corrected gameplay and matched Unity performance await replay.",
+  "release": true,
+  "public_release_published": false
+}

@@ -5495,3 +5495,5 @@ Warm scoring remains: Tuvel2881 649 ms / abilities585.4 /157 scored; setup11.8+5
 is live heap, not allocations. No exact timing/log-size improvement claim. Two summons in fight6 act in both
 modes; the shared 997-control-check/27.3ms total is printed in both summaries and must not be double counted.
 New unit/native scalar/compiled-route checks cover mode and logging changes; final source/identity follows.
+
+Checked source `30cfa2c`, [receipt](competence/V0352_PLAYTEST_CHECKS.json) and [v0.3.52 stable ZIP](../release/CompanionAI_Pathfinder_v0.3.52.zip), startup MVID `981a7b77-a654-4da1-9a22-68bc1c6a77bd`. 787 unit + 27 inventory tests and native checks pass; actual-reference Release 0 warnings/errors; 0/0 added signatures resolve. Compatible/supplementary audit scopes pass; original full-corpus enum failure remains distinct. Gameplay/matched Unity timing pending.

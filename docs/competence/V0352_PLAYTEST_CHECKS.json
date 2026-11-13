@@ -1,0 +1,482 @@
+{
+  "task": "Author-requested stable v0.3.52: leap attack modes, automatic-swarm AC consistency, efficient diagnostic logs and refreshed Claude handoff",
+  "checked_source_commit": "30cfa2cb7e91e26de1f08418db5238a6a824c3ca",
+  "starting_commit": "00ab4e52c968676154a754543d7c1fefa947b1cd",
+  "dependency_pr": null,
+  "development_base": "00ab4e52c968676154a754543d7c1fefa947b1cd",
+  "source_branch": "codex/v0351-live-review",
+  "version": "0.3.52",
+  "author_approval": "Author requests review/bugfix of v0.3.51, explicitly adds logging optimization and selects next stable package v0.3.52. Necessary improvements including movement and development PR integration are already authorized. Swarm spawns occurred during encounters; rests between encounters. No main/tag/public GitHub Release publication.",
+  "dll": {
+    "assembly": "CompanionAI_Pathfinder, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null",
+    "mvid": "981a7b77-a654-4da1-9a22-68bc1c6a77bd",
+    "sha256": "11d5828e618c6d5a5c03edef22e3453a87629b926db413748b36d702f6004aa7",
+    "size": 1417216
+  },
+  "design_native_evidence_and_replay": "../V0352_PLAYTEST_REVIEW.md",
+  "unit_tests": {
+    "passed": 787,
+    "failed": 0,
+    "skipped": 0
+  },
+  "inventory_tests": {
+    "passed": 27,
+    "failed": 0
+  },
+  "release_build": {
+    "actual_supplied_game_unity_umm_references": true,
+    "warnings": 0,
+    "errors": 0,
+    "source_committed_before_build": true,
+    "manifest_unchanged": false,
+    "manifest_version": "0.3.52",
+    "manifest_version_change_authorized": true
+  },
+  "native_step_approach": {
+    "checks": 13,
+    "failures": 0,
+    "actor_path_command_execution": false
+  },
+  "native_additions": {
+    "area_exit_routes_inherited": {
+      "checks": 28,
+      "failures": 0
+    },
+    "constant_debuff_inherited": {
+      "checks": 17,
+      "failures": 0
+    },
+    "area_bounds_inherited": {
+      "checks": 28,
+      "failures": 0
+    },
+    "treatment_inherited": {
+      "checks": 10,
+      "failures": 0
+    },
+    "eldritch_archer": {
+      "checks": 29,
+      "failures": 0,
+      "actual_exported_feature_and_spell_metadata": true,
+      "correlated_first_arrow_quote_and_miss": true,
+      "native_compiled_eligibility_delivery_cleanup_routes": true,
+      "actor_cast_attack_clock_or_unity_execution": false,
+      "actual_event_identity_and_defense_observation_order": true
+    },
+    "shifter": {
+      "checks": 48,
+      "failures": 0,
+      "actual_form_graph_layouts": 86,
+      "actual_aspect_selector_and_upkeep_exclusion": true,
+      "scalar_native_dice_table_and_branch_admission": true,
+      "native_layout_secondary_flag_variation": true,
+      "compiled_projection_guard_and_attempt_lifetime_routes": true,
+      "actor_or_unity_execution": false
+    },
+    "campaign_flags": {
+      "checks": 21,
+      "failures": 0,
+      "actual_griffon_guard_paths": true,
+      "native_flag_store_reads": true,
+      "game_player_actor_or_cast_execution": false
+    },
+    "idle_advance": {
+      "checks": 27,
+      "failures": 0,
+      "actual_candidate_and_status_guards": true,
+      "compiled_closing_and_repricing_routes": true,
+      "actor_native_path_command_clock_or_unity_execution": false,
+      "actual_plain_move_recovery_key_selector": true
+    },
+    "form_reference": {
+      "checks": 14,
+      "failures": 0,
+      "actual_mod_estimate_type_with_synthetic_scalar_values": true,
+      "distinct_native_actor_reference_identities_only": true,
+      "producer_and_form_compiled_routes": true,
+      "zero_and_unavailable_distinguished": true,
+      "ordinary_profitable_buff_fields_and_fury_unchanged": true,
+      "actor_setup_rules_commands_or_unity_execution": false
+    },
+    "focused_shot": {
+      "checks": 47,
+      "failures": 0,
+      "actual_exported_positive_and_area_negative": true,
+      "metadata_flag_and_payload_negatives": true,
+      "native_bonus_simple_scalar_values": true,
+      "reference_only_native_weapon_identities": true,
+      "compiled_production_routes": true,
+      "actor_live_intelligence_attack_buff_or_unity_execution": false
+    },
+    "joint_cost": {
+      "checks": 31,
+      "failures": 0,
+      "actual_native_recursive_slot_cost_and_source_getters": true,
+      "actual_spontaneous_slot_getter_with_injected_array": true,
+      "actual_exported_boost_resource_costs": true,
+      "compiled_read_only_adapter_and_lazy_selection_routes": true,
+      "initialized_actor_native_spending_cast_or_unity_execution": false
+    },
+    "summon_control": {
+      "checks": 70,
+      "failures": 0,
+      "default_off_settings_and_noninsertion": true,
+      "native_turn_creation_and_force_end_contracts": true,
+      "compiled_brain_driver_dispatch_settings_filter_routes": true,
+      "fresh_final_authority_and_fact_snapshot_routes": true,
+      "pure_metadata_adoption_state_sequence_checks": 5,
+      "top_level_spawn_graphs_recognized": 231,
+      "top_level_spawn_graphs_loaded": 231,
+      "actor_harmony_patch_command_turn_or_unity_execution": false
+    },
+    "unique_replacement": {
+      "checks": 57,
+      "failures": 0,
+      "actual_two_tier_invocation_graphs": 12,
+      "native_source_context_identity": true,
+      "performed_cast_ledger_and_compiled_route": true,
+      "actor_cast_or_unity_execution": false
+    },
+    "held_weapon": {
+      "checks": 46,
+      "failures": 0,
+      "actual_constant_profane_buff_graphs": 12,
+      "structural_negative_and_native_scalar_routine_fixtures": true,
+      "caps_iteratives_critical_dr_and_damage_multiplier": true,
+      "cached_same_routine_no_new_rule_route": true,
+      "actor_attack_buff_or_unity_execution": false
+    },
+    "swarm_protection": {
+      "checks": 14,
+      "failures": 0,
+      "actual_spider_automatic_damage_graph": true,
+      "calibrated_swarm_mixed_ordinary_split": true,
+      "production_defense_and_nested_energy_routes": true,
+      "actor_attack_buff_or_unity_execution": false
+    },
+    "ability_discovery": {
+      "checks": 19,
+      "failures": 0,
+      "production_first_index_and_native_scalar_identity": true,
+      "conversion_lookup_and_native_availability_replacement_route": true,
+      "initialized_actor_or_timing_execution": false
+    },
+    "buff_defence": {
+      "checks": 19,
+      "failures": 0,
+      "native_raw_roll_quote_scalars": true,
+      "symmetric_add_remove_prevention": true,
+      "compiled_no_new_actor_rule_or_context_query": true,
+      "live_actor_or_unity_execution": false
+    },
+    "swarm_escape": {
+      "checks": 29,
+      "failures": 0,
+      "actual_hp_only_native_graphs": true,
+      "known_cached_mitigated_hp_only": true,
+      "poison_control_stat_drain_and_attached_excluded": true,
+      "ordinary_path_opportunity_cost_routes_retained": true,
+      "live_actor_move_or_unity_execution": false
+    },
+    "griffon_attack": {
+      "checks": 47,
+      "failures": 0,
+      "actual_native_leap_and_current_charge_graphs": true,
+      "missing_only_stock_charge_supplement": 2,
+      "existing_user_graphs_retained": 3,
+      "native_private_landing_binding_and_queued_attack_contracts": true,
+      "strict_metadata_negatives_and_compiled_final_checks": true,
+      "live_actor_landing_cast_attack_or_unity_execution": false,
+      "native_queued_pounce_restriction_adapter": true,
+      "pricing_and_final_issue_use_same_adapter": true,
+      "scalar_tests_added": 12,
+      "bounded_diagnostic_existing_results_only": true
+    },
+    "griffon_modes": {
+      "checks": 20,
+      "failures": 0,
+      "actual_compiled_cached_routine_scalars": true,
+      "mixed_weapons_iteratives_caps_critical_dr_concealment_payloads": true,
+      "cache_guard_and_no_new_own_weapon_query_routes": true,
+      "landing_combined_charge_mode_armor": true,
+      "known_automatic_swarm_source_exclusion": true,
+      "shared_ownership_blocklists_and_accepted_dispatch_routes": true,
+      "actor_mode_switch_flight_attack_or_unity_timing_execution": false
+    },
+    "diagnostic_logging": {
+      "checks": 14,
+      "failures": 0,
+      "actual_mod_bounded_scalar_memo": true,
+      "quiet_summary_before_string_builder": true,
+      "six_math_formatting_sites_guarded": true,
+      "verbose_fight_transition_gates": true,
+      "bounded_existing_state_idle_witness": true,
+      "generic_inspection_contexts_preserved": true,
+      "actor_logging_sink_or_unity_timing_execution": false
+    }
+  },
+  "inherited_native_checks": {
+    "magus_base": 32,
+    "magus_supplementary_including_base": 44,
+    "caster": 36,
+    "fusion": 35,
+    "projectile": 29,
+    "burn": 50,
+    "resistance": 18,
+    "attached": 24,
+    "swarm": 27,
+    "reveal": 7,
+    "viewless": 6,
+    "toggle": 98,
+    "tome": 14,
+    "toybox": 10,
+    "failures": 0
+  },
+  "strict_native_compatible_audit": {
+    "status": "PASS",
+    "exit_code": 0,
+    "scope": "C06_NATIVE_COMPATIBLE_SCOPE.json plus REVIEW2_CHARGE_INPUTS.json missing-only stock fixtures",
+    "source_files": 44649,
+    "loaded_unique": 44639,
+    "failed": 0,
+    "allowed_load_failures": 0,
+    "ability_rows": 4807,
+    "reader_errors": 0,
+    "input_bytes_modified": false
+  },
+  "strict_supplementary_stock_fixture_audit": {
+    "status": "PASS",
+    "exit_code": 0,
+    "source_files": 44653,
+    "loaded_unique": 44643,
+    "failed": 0,
+    "ability_rows": 4807,
+    "reader_errors": 0,
+    "installed_mod_state": false,
+    "original_uploaded_inputs_modified": false,
+    "fixture_provenance": "C07_MAGUS_NATIVE.json#supplementary_stock_hidden_buffs; REVIEW2_CHARGE_INPUTS.json (two missing-only stock graphs)"
+  },
+  "original_full_corpus_audit": {
+    "status": "INCOMPLETE",
+    "exit_code": 1,
+    "source_files": 44648,
+    "loaded_unique": 44637,
+    "failed": 1,
+    "allowed_load_failures": 0,
+    "ability_verdicts_generated": false,
+    "failure": "Previously fingerprinted AchaekekSacredWeaponFeature SawtoothSaber vs native SawtoothSabre enum mismatch; parser error logging reaches offline engine dependency",
+    "input_sha256": "1fd534ef0fc9573520d101c721e5d2721812fdb5b8f8a13e29fcbc3acb06ac0f",
+    "input_bytes_modified": false
+  },
+  "added_foreign_member_references": {
+    "baseline_commit": "00ab4e52c968676154a754543d7c1fefa947b1cd",
+    "added": 0,
+    "resolved_exact": 0,
+    "unresolved": 0,
+    "full_signature_overload_matching": true
+  },
+  "harness_limits": [
+    "Private runnable copies neutralize Unity/localization/instrumentation including ProfileScope.New; no stubs are deployed.",
+    "Native HasMetamagic metadata logic remains; no live rod, hit/save outcome, actor initialization or navigation is established.",
+    "Native command fixtures only set/read flags on uninitialized objects; no command is issued.",
+    "Provider fixtures do not call mod setup, getter or condition code."
+  ],
+  "planning_bounds": {
+    "initial_development": "00ab4e52c968676154a754543d7c1fefa947b1cd",
+    "played_version": "0.3.51",
+    "played_startup_mvid": "e31e626d-9c4b-4536-8b26-63433d3c7425",
+    "interventions": "swarm spawns during encounters, rests between encounters, explicitly confirmed",
+    "griffon_native_endpoint_attempts": 8,
+    "griffon_own_weapon_quotes": 4,
+    "attack_mode_sets": 32,
+    "mode_quote": "exact cached native raw routine/frame/actor/target/full identity; no stale-query fallback",
+    "mode_defence": "landing, combined current charge/mode AC; identical AC totals memoized within candidate",
+    "automatic_swarm_ac": "recognized existing source reader; preserve total danger, exclude automatic share from AC before nominal weapon quote",
+    "diagnostic_memos": {
+      "instances": 3,
+      "max_ids_each": 128,
+      "stored": "string IDs and int/bool/string values only",
+      "lifetime": "reset at fight epoch, no clear/replay on overflow",
+      "populate_when_verbose_off": false
+    },
+    "logging_sink_or_command_action_throttle_changed": false,
+    "idle_witness": "verbose-only lazy existing-state report, existing bounded memo, no added path query",
+    "general_movement_path_or_target_commitment_policy_retune": false,
+    "new_grapple_support": false,
+    "blanket_invocation_cap_or_settling_retune": false,
+    "positive_charge_ab_or_proc_credit_added": false,
+    "actor_state_preview_or_direct_attack_event_added": false,
+    "main_or_tag_publication": false
+  },
+  "behavior_limits": [
+    "New v0.3.52 behavior and matched Unity timing remain unplayed; v0.3.51 logs cannot validate it.",
+    "Safe leap candidates are admitted but none was issued. Mode comparison corrects a demonstrated asymmetry; actual native leap/queued attack completion still needs gameplay.",
+    "Cached mode repricing preserves the existing forecast limits, including uncredited positive charge AB/procs and mid-flight state/timing changes.",
+    "Shared mode AC excludes only recognized automatic swarm sources; unknown graphs and other existing defense approximations are not declared solved.",
+    "Logging suppression observes current sampled states only. Real value/state changes, recovery and recurrence report; more than128 identities per memo/fight suppresses new diagnostic identities, without changing calculations or command outcomes.",
+    "No exact bytes/allocations/millisecond speedup is claimed. Six cleanup markers coincide with slow rows; native warm scoring still costs time.",
+    "Invocation18issues/17successes, independent tiers and within-fight transfers remain a utility investigation; no cap/settling retune.",
+    "Four no-effect Dazzling Display casts need native recipient/skill/immunity/event evidence. Existing backoff works; no speculative immunity bypass/blueprint mutation.",
+    "Idle cases have real native path refusals. Existing movement gates/budgets remain, with an additional verbose state witness.",
+    "External OwnerBlueprint warnings retain WrathPatches provenance; game/mod assets are not rewritten.",
+    "Summons remain opt-in/default off; basic two/three-creature evidence is not large-pack/diverse-kit/grapple acceptance.",
+    "Original raw corpus retains one named enum-load failure; compatible and supplementary stock fixture scopes remain labelled."
+  ],
+  "task_source_files": [
+    {
+      "file": "Analysis/HitChanceCalculator.cs",
+      "sha256": "9fb687120d068ce40a8dbba5b223ad2efd38ca0171da961dc6d0bf1076c0db12"
+    },
+    {
+      "file": "Core/DiagnosticChangeLog.cs",
+      "sha256": "a2dd7a9c03945a65f43051d01e1511ba9c09e94ef74ed004488627c056f6f21b"
+    },
+    {
+      "file": "GameInterface/RealTimeController.cs",
+      "sha256": "b04b19fae00941731a06f13ade135a012fbf4c828c1d19fe2139e9e1b9df3b0d"
+    },
+    {
+      "file": "Tactics/CombatMath.Griffon.cs",
+      "sha256": "154d0a21eba785a937644065918184de65883740b64569f2b650bb25544ca762"
+    },
+    {
+      "file": "Tactics/TacticalEngine.ApproachValidation.cs",
+      "sha256": "d3e7fe41815b2322ad52714d931a34d2247dba81fbbe8f0e49e5cfebcb7da83e"
+    },
+    {
+      "file": "Tactics/TacticalEngine.DiagnosticLog.cs",
+      "sha256": "071e49112b1bb64c1fd2c0645f3963ba43aff0b4744ca3ca1c4c18d47a577837"
+    },
+    {
+      "file": "Tactics/TacticalEngine.Griffon.cs",
+      "sha256": "163d9eb84cce68015c8aa035a683f500098fc61b04ccc059ee8f4690ee5a46cd"
+    },
+    {
+      "file": "Tactics/TacticalEngine.Modes.cs",
+      "sha256": "600b91270939e5bc3ed6269cd6c0363df3e4c9978c86546680dc2082eb3a9047"
+    },
+    {
+      "file": "Tactics/TacticalEngine.cs",
+      "sha256": "f6bd46773a3fd6aaad230b14a738d35606f75ea6300465311bd0f8a38d141130"
+    },
+    {
+      "file": "tests/CompanionAI.Tests/CompanionAI.Tests.csproj",
+      "sha256": "30bf5bcfccb4746d38ee5590e2d143149bba5387c4c883d739e4c6f86ef5c1d4"
+    },
+    {
+      "file": "tests/CompanionAI.Tests/DiagnosticLogTests.cs",
+      "sha256": "aa21202e3a9ef5d543a504fd6cc1bec907248648f4884e66d8d8cda36e20248c"
+    },
+    {
+      "file": "tools/ProfileAudit/DiagnosticLogCheck.cs",
+      "sha256": "f58cdf6611b163944977189de7e24de10933c271ddd3c559d67e5a27536d9021"
+    },
+    {
+      "file": "tools/ProfileAudit/GriffonModesCheck.cs",
+      "sha256": "1522e2a20332ef605767b130ef9b108394780951a39ec2708164c58428a7d8a7"
+    },
+    {
+      "file": "tools/ProfileAudit/Program.cs",
+      "sha256": "f4b6a4d396e08ebb6532ecefe0e5410b759ceb8437599dbf760723f5c2b0a17f"
+    },
+    {
+      "file": "tools/ProfileAudit/SaveBoostCheck.cs",
+      "sha256": "b55abd37ba6033227d8a9755d8472d7f2bef01580ad73144f4ab3dabbfc50af6"
+    }
+  ],
+  "package": {
+    "file": "release/CompanionAI_Pathfinder_v0.3.52.zip",
+    "sha256": "5adcff3ccd218f96d015f4ab882964708f816a7907d1a31c87bf243c6a2e5dbc",
+    "bytes": 563827,
+    "identity_file": "release/CompanionAI_Pathfinder_v0.3.52.identity.json",
+    "checksum_file": "release/CompanionAI_Pathfinder_v0.3.52.sha256",
+    "members": [
+      {
+        "file": "CompanionAI_Pathfinder.dll",
+        "bytes": 1417216,
+        "sha256": "11d5828e618c6d5a5c03edef22e3453a87629b926db413748b36d702f6004aa7"
+      },
+      {
+        "file": "Info.json",
+        "bytes": 379,
+        "sha256": "1876fd6fc56d03b28793f6c481fac47c9ea85eec3265d6859232deeab67523a3"
+      },
+      {
+        "file": "BUILD_IDENTITY.json",
+        "bytes": 1862,
+        "sha256": "7450afe06677b697a53753c1346683e905a092abafb818fe25794f73b54b26ac"
+      },
+      {
+        "file": "RELEASE_NOTES.txt",
+        "bytes": 1261,
+        "sha256": "82513dd1a91eb76ab67212bc0cd87efecf0e0143cabdbc97979d1e9ca56290fb"
+      }
+    ]
+  },
+  "gameplay": {
+    "status": "PENDING",
+    "tb_rt_playtest_required": true,
+    "matched_unity_performance_required": true
+  },
+  "reviewed_prs": [
+    {
+      "number": 53,
+      "head_sha": "593d6c63832e757a0ad355e52c2e174e6d9c5452",
+      "merge_sha": "19467862bc352eaffe9d80b375f14e5004ebfb3b",
+      "base": "claude/dreamy-pasteur-b9h3rn",
+      "new_five_log_playtest_identity_verified": true
+    }
+  ],
+  "package_kind": "stable-release-package",
+  "task_initial_development": "00ab4e52c968676154a754543d7c1fefa947b1cd",
+  "public_release_published": false,
+  "charge_fixture_provenance": "REVIEW2_CHARGE_INPUTS.json",
+  "version_authorization": "Author explicitly states: lets make the next stable package 0.3.52.",
+  "private_verification_artifacts": [
+    {
+      "file": "release-final.log",
+      "bytes": 177,
+      "sha256": "1f0dd2faccfc55848f0abe652ebdc416baee7a9eaa3a7df19086f1330105b8cb"
+    },
+    {
+      "file": "unit-final.log",
+      "bytes": 508,
+      "sha256": "1182061a392a3da3c5ca748d6f146d29b373e52bf75331c29d3b641de95209d5"
+    },
+    {
+      "file": "verified-exact-refs.txt",
+      "bytes": 72,
+      "sha256": "9184efba5544f8737e7eebe2d43eacd5ba4b62e7aacbf1d0633abb22f0d75a0e"
+    },
+    {
+      "file": "strict-run.txt",
+      "bytes": 11030,
+      "sha256": "13316f9914622fb971cc45a4525f0096ab3d768f4fe5fe08e116087e2a9d93ab"
+    },
+    {
+      "file": "supplementary-run.txt",
+      "bytes": 10910,
+      "sha256": "130a39fb128b3ab6aa112e7f040e186271580dfc0aba1781fa80b029b939b142"
+    },
+    {
+      "file": "native-run.txt",
+      "bytes": 12999,
+      "sha256": "63911e2fa0ee4a713777a4dbbfaf6ffb5c5aab0aaba62a9218bfac530f389ac2"
+    },
+    {
+      "file": "tome-native-run.txt",
+      "bytes": 11185,
+      "sha256": "975faff374f1b8bc0f1ac290178e4064dea83a0cae62173b931b5ac8006de450"
+    },
+    {
+      "file": "toybox-run.txt",
+      "bytes": 11180,
+      "sha256": "38fb468fcab55e866c46935258c02e81136cd3c629fc600ce6118c967a852aae"
+    }
+  ],
+  "verification_tooling_corrections": {
+    "generic_member_tokens": "Resolved with actual declaring-type and method generic arguments; no skipped/relaxed check.",
+    "formatting_routes": "Inspect the real CalculateWeaponHitChanceInternal / CalculateAbilityHitChanceInternal bodies instead of only forwarding public wrappers.",
+    "initial_offline_failures_retained_privately": true
+  }
+}

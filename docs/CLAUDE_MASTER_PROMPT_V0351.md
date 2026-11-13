@@ -13,6 +13,10 @@ PR #55, on `codex/v0351-live-review`. The author selected **v0.3.52 as the next 
 requested a logging audit. The filename of this master prompt stays unchanged so earlier GitHub links keep working.
 Read `AGENTS.md`, `CONTRIBUTING.md`, the newest `CLAUDE.md` handover and `TACTICAL_AI.md` §161.
 
+Validated v0.3.52 gameplay source is `30cfa2cb7e91e26de1f08418db5238a6a824c3ca`, startup MVID
+`981a7b77-a654-4da1-9a22-68bc1c6a77bd`; stable ZIP SHA-256
+`5adcff3ccd218f96d015f4ab882964708f816a7907d1a31c87bf243c6a2e5dbc`. Its metadata/merge commit may follow without changing this DLL.
+
 Current evidence and package:
 
 - [Latest broad review and replay](V0352_PLAYTEST_REVIEW.md).

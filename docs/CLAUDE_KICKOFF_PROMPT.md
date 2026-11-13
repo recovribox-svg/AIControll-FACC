@@ -24,3 +24,5 @@ Use focused PRs into development; complete all required tests, real-assembly zer
 documentation and handover. Packages need identity JSON, checksum and unique startup MVID; preserve played packages.
 Keep incomplete checks and gameplay limits explicit. Public main/tag/GitHub Release publication remains separate.
 Begin with a brief assessment, then proceed through implementation and validation.
+
+The validated v0.3.52 source is `30cfa2c`, startup MVID `981a7b77-a654-4da1-9a22-68bc1c6a77bd`; use its identity/receipt when comparing later builds.
