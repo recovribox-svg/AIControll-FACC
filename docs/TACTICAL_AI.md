@@ -5165,10 +5165,13 @@ for the best already-scored standard alternative whose three-action activation s
 Retain native root/slot cost, effective book/level, prepared equality/reverse order, per-day and explicit
 resource/override semantics. A per-pass identity quote memo and reusable pure scratch budget avoid repeated
 reads/allocations across alternatives. Limits 64 charges, 256 prepared slots, 16 conversion nodes. Unknown
-providers/prices stay unknown, with named bounded verbose diagnostics; ordinary actions remain available.
+providers/prices stay unknown; failed setup/main quotes have named bounded verbose diagnostics, while unknown
+second alternatives are skipped. Ordinary actions remain available.
 
 No spell/resource/inventory mutation, native rule/context/actor preview, future refund, reservation, queue or
 all-pairs search. This does not simulate arbitrary future buff/fact changes or mod spend overrides. Existing
 DC/CL/Persistent/Quicken action/native eligibility, policies, movement and final native rechecks remain. Pure
 financial alias/order/overflow/unknown/reset cases and native scalar/metadata/compiled routes are checked;
 initialized caster, actual spending and matched Unity timing require the focused TB/RT replay.
+
+Checked source `7480e83`, [receipt](competence/JOINT_SPELL_COSTS_CHECKS.json) and [jointcost1 test ZIP](../test-builds/AI-Control-FACC-v0.3.30-dev-jointcost1-7480e83-UMM-test.zip), startup MVID `ff8df076-59e9-468b-81c2-8f2d39302458`. 692 unit + 27 inventory tests and native checks pass; actual-reference Release 0 warnings/errors; 13/13 added signatures resolve. Compatible/supplementary audit scopes pass; original full-corpus enum failure remains distinct. Gameplay/matched Unity timing pending.

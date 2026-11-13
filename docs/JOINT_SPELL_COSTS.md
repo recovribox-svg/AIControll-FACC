@@ -45,8 +45,9 @@ of crediting the unaffordable best one or discarding every alternative. Existing
 metamagic gates and all DC/CL/Persistent formulas remain. The second action is prospective value, not a queued
 command: native availability and current costs are read again after each actual issued action.
 
-Unknown pair costs name the failed stage/provider in a verbose note, at most once per setup/main blueprint pair
-per fight through the existing 256-entry note ledger. No extra log or native cost query is made per target for
+Unknown setup/main costs name the failed stage/provider in a verbose note, at most once per setup/main blueprint pair
+per fight through the existing 256-entry note ledger. Second-action alternatives with unknown prices are skipped.
+No extra log or native cost query is made per target for
 an ability whose price was already read in this coupling pass.
 
 ## Limits and boundaries
@@ -76,3 +77,5 @@ spells/items/weapon attacks, both spell policies, Pure Mage and blocklists. Rest
 recorded separately. Keep the startup MVID in logs. Gameplay and matched Unity performance remain pending.
 
 Manifest stays 0.3.30; Claude reviews/integrates. No main/development push, merge or release.
+
+Checked source `7480e83`, [receipt](competence/JOINT_SPELL_COSTS_CHECKS.json) and [jointcost1 test ZIP](../test-builds/AI-Control-FACC-v0.3.30-dev-jointcost1-7480e83-UMM-test.zip), startup MVID `ff8df076-59e9-468b-81c2-8f2d39302458`. 692 unit + 27 inventory tests and native checks pass; actual-reference Release 0 warnings/errors; 13/13 added signatures resolve. Compatible/supplementary audit scopes pass; original full-corpus enum failure remains distinct. Gameplay/matched Unity timing pending.
