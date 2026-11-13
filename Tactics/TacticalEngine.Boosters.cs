@@ -161,16 +161,29 @@ namespace CompanionAI_Pathfinder.Tactics
 
             var main = FollowUpMain(usable, c => BoostOf(c) != null);
             // ★ v0.3.21 (gaps): what a quickened main spell leaves room for - the best other standard action.
-            var second = main == null ? null
+            var seconds = main == null ? new List<Candidate>()
                 : usable.Where(c => c != main && c.Slot == ActionSlot.Standard && BoostOf(c) == null && c.Ability != main.Ability &&
                                      c.Value > 0f && !WalksBeforeActing(c))
-                        .OrderByDescending(c => c.Value).FirstOrDefault();
+                        .OrderByDescending(c => c.Value).ToList();
             var result = new List<Candidate>(usable.Count);
+            SpellCostReader costs = null;
             foreach (var c in usable)
             {
                 var boost = BoostOf(c);
                 if (boost == null) { result.Add(c); continue; }
-                float gain = BoostGain(ctx, boost, main, out string note, c.Slot == ActionSlot.Free ? second : null);
+                if (main?.Ability != null && boost.AppliesTo(main.Ability))
+                {
+                    if (costs == null) costs = new SpellCostReader(ctx.Unit);
+                    if (!costs.CanPay(c, main))
+                    {
+                        if (Main.VerboseOn && CombatMemory.FirstThisFight($"joint-cost|{ctx.Unit.UniqueId}|{c.Ability.Blueprint.AssetGuid}|{main.Ability.Blueprint.AssetGuid}"))
+                            Main.Verbose($"[Tactics] {ctx.Unit.CharacterName}: {c.Ability.Name} = 0 (joint boost/cast cost: {costs.LastReason})");
+                        continue;
+                    }
+                }
+                // Only Quicken asks for the second action. Reuse quotes/budget scratch storage across alternatives.
+                Candidate Second() => costs == null ? null : seconds.FirstOrDefault(s => costs.CanPay(c, main, s));
+                float gain = BoostGain(ctx, boost, main, out string note, c.Slot == ActionSlot.Free ? (Func<Candidate>)Second : null);
                 // ★ v0.3.19 (release): only a boost that is worth something reaches the normal log (two lines a round
                 // for each of Orvath's reservoir abilities, nearly all "0.0 - no spell to boost next").
                 if (gain <= 0f)
@@ -194,7 +207,7 @@ namespace CompanionAI_Pathfinder.Tactics
         private const string NoSpellToBoost = "no spell to boost next";
 
         /// <summary>What <paramref name="boost"/> adds to <paramref name="main"/>, in its own value's points.</summary>
-        private static float BoostGain(TacticalContext ctx, SpellBoost boost, Candidate main, out string note, Candidate second = null)
+        private static float BoostGain(TacticalContext ctx, SpellBoost boost, Candidate main, out string note, Func<Candidate> second = null)
         {
             // ★ Magic Deceiver: the ordinary single-blueprint gain cannot price two capped payloads with a shared save.
             // Do not spend a speculative next-spell boost on this new path; the fusion itself remains usable.
@@ -314,14 +327,16 @@ namespace CompanionAI_Pathfinder.Tactics
         /// swift booster would take the swift action the quickened spell needs) while a swift action is left. Reach and
         /// Selective change nothing the value is made of.
         /// </summary>
-        private static float QuickenGain(TacticalContext ctx, SpellBoost boost, Candidate main, Candidate second, List<string> parts)
+        private static float QuickenGain(TacticalContext ctx, SpellBoost boost, Candidate main, Func<Candidate> second, List<string> parts)
         {
             if (second == null || !ctx.HasSwift || main.Slot != ActionSlot.Standard ||
-                WalksBeforeActing(main) || WalksBeforeActing(second)) return 0f;
+                WalksBeforeActing(main)) return 0f;
             if ((boost.MetamagicFor(main.Ability) & Kingmaker.UnitLogic.Abilities.Metamagic.Quicken) == 0 ||
                 main.Ability.HasMetamagic(Kingmaker.UnitLogic.Abilities.Metamagic.Quicken)) return 0f;
-            parts.Add($"quickened: leaves the standard action for {second.Ability?.Name ?? second.Label}");
-            return second.Value;
+            var followUp = second();
+            if (followUp == null || WalksBeforeActing(followUp)) return 0f;
+            parts.Add($"quickened: leaves the standard action for {followUp.Ability?.Name ?? followUp.Label}");
+            return followUp.Value;
         }
 
         private static readonly System.Reflection.FieldInfo RankBase =

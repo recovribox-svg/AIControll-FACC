@@ -50,6 +50,10 @@ namespace CompanionAI_Pathfinder.Tactics
         /// <summary>What the recipient's weapon attacks do now (per frame).</summary>
         private sealed class Offence
         {
+            // Keep the native quote's target even when its damage is zero. The profitable-offence fields below
+            // intentionally remain unset in that case; a new-form comparison still needs the exact reference pair.
+            internal UnitEntityData WeaponTarget;
+            internal WeaponAttackEstimate WeaponQuote;
             public float DamagePerRound, HitChance, PerHit, HitsPerRound, FirstAttack;
             /// <summary>★ v0.3.28 test 3: the share of its hits past the enemy's concealment (in the estimate already).</summary>
             public float SeenPass = 1f;
@@ -1126,6 +1130,8 @@ namespace CompanionAI_Pathfinder.Tactics
                 if (enemy != null && weaponAllowed)
                 {
                     var est = CombatMath.EstimateWeaponAttack(ally, enemy, full: !pureMage);
+                    off.WeaponTarget = enemy;
+                    off.WeaponQuote = est;
                     if (est != null && est.ExpectedDamage > 0f)
                     {
                         // ★ v0.3.28 test 3: the estimate is past the enemy's concealment; what is left of it (SeenPass).

@@ -73,6 +73,17 @@ namespace ProfileAudit
                 Check(Calls("IdleAdvanceCandidates", "CanOfferIdleAdvance") && Calls("IdleAdvanceCandidates", "WaitingForInPlaceAttack"),
                     "status and real-time wait guards reach the actual fallback factory");
                 Check(SelectedApproachFilter.MaxChecks == 3, "selected approach preparation budget remains three");
+                var recoveryKey = (Func<Candidate, string>)engine.GetMethod("PlainMoveRecoveryKey", flags)
+                    .CreateDelegate(typeof(Func<Candidate, string>));
+                Check(recoveryKey(new Candidate { Kind = CandidateKind.Move, Key = "move:adv:A" }) == "move:adv:A",
+                    "plain recovery uses its existing exact plan key");
+                Check(recoveryKey(new Candidate { Kind = CandidateKind.WeaponAttack, Key = "full:A", FullAttack = true }) == null,
+                    "attack refusal is not a plain-move recovery identity");
+                Check(recoveryKey(new Candidate { Kind = CandidateKind.Move, Key = "move:A", NeedsMove = true }) == null &&
+                    recoveryKey(new Candidate { Kind = CandidateKind.Move, Key = "move:A", MoveFirst = true }) == null,
+                    "walk-then-act shapes do not acquire plain-move identity");
+                Check(recoveryKey(new Candidate { Kind = CandidateKind.Move }) == null,
+                    "missing key stays unidentified instead of becoming a global refusal");
             }
             catch (Exception ex) { bad++; lines.Add("IDLE-ADVANCE FAILED: " + ex.GetBaseException()); }
             failures = bad;

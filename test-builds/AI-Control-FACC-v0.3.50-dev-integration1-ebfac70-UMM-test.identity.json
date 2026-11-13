@@ -1,0 +1,21 @@
+{
+  "build_label": "integration1",
+  "kind": "development-test",
+  "version": "0.3.50",
+  "source_branch": "codex/review-open-prs-v0350",
+  "source_commit": "ebfac70b55bbf2939495c0cd2226a16466f4413b",
+  "starting_commit": "44b224f5af76dc5f5ae6086d6abbfbdeac790627",
+  "development_base": "44b224f5af76dc5f5ae6086d6abbfbdeac790627",
+  "dependency_pr": null,
+  "dll": {
+    "assembly": "CompanionAI_Pathfinder, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null",
+    "mvid": "0b54fad9-fc28-483c-a87a-3f1e9f0efd62",
+    "sha256": "cdf24b49581120ab95a2a605bc4b2bb31f8a158f1af54333e55e83e955d8e343",
+    "size": 1391104
+  },
+  "manifest_sha256": "70aff99f126b796db54d7c80e38b16bd5186e990d6cc2e3bb1d4780d75dc48c0",
+  "checks_receipt": "docs/competence/V0350_INTEGRATION_CHECKS.json",
+  "gameplay_status": "not played",
+  "scope": "Combined v0.3.50 development test includes summon control (experimental, default off), review5 form/recovery fixes, Focused Shot and jointly affordable known spell-boost activation costs. Review corrections force fresh summon authority/facts at final issue, refresh active-fact swarm classification, keep unique adoption counts across reacquisition and short-circuit excluded actor scans. All original PR histories and native/test registrations retained. Manifest Version 0.3.50 explicitly requested by the author; no main/tag/stable release.",
+  "release": false
+}

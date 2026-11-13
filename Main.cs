@@ -249,6 +249,8 @@ namespace CompanionAI_Pathfinder
                             postfix: new HarmonyMethod(tickPostfix)
                         );
                         Log("  패치됨: TurnController.Tick");
+                        // ★ summon control: the turn-based bridge needs this patch, the brain prefix and Prepare.
+                        PatchTurnControllerPrepareManually();
                     }
                     else
                     {
@@ -263,6 +265,37 @@ namespace CompanionAI_Pathfinder
             catch (Exception ex)
             {
                 Error($"TurnController.Tick 패치 실패: {ex.Message}\n{ex.StackTrace}");
+            }
+        }
+
+        /// <summary>
+        /// ★ summon control: TurnController.Prepare() prefix + postfix (GameInterface/SummonTurnBridge). The game's
+        /// brain call for a unit that is not directly controllable happens inside Prepare, before the turn's status is
+        /// set; the postfix takes a driven summon's first decision once the turn is prepared. Bound only after the
+        /// brain prefix and the Tick postfix are: without all three no summon is claimed in turn-based combat and the
+        /// game's AI keeps it (SummonControl.TurnBridgeBound stays false).
+        /// </summary>
+        private static void PatchTurnControllerPrepareManually()
+        {
+            try
+            {
+                var prepare = AccessTools.Method(typeof(TurnController), "Prepare");
+                var prefix = AccessTools.Method(typeof(GameInterface.SummonTurnBridge), "Prepare_Prefix");
+                var postfix = AccessTools.Method(typeof(GameInterface.SummonTurnBridge), "Prepare_Postfix");
+                if (prepare == null || prefix == null || postfix == null)
+                {
+                    Error("TurnController.Prepare 패치 대상을 찾을 수 없습니다 - turn-based summon control stays off");
+                    return;
+                }
+                HarmonyInstance.Patch(prepare, prefix: new HarmonyMethod(prefix), postfix: new HarmonyMethod(postfix));
+                GameInterface.SummonControl.TurnBridgeBound = TickBrainPatched;
+                Log("  패치됨: TurnController.Prepare (summon turn bridge" +
+                    (GameInterface.SummonControl.TurnBridgeBound ? ")" : " - not bound: TickBrain patch missing)"));
+            }
+            catch (Exception ex)
+            {
+                GameInterface.SummonControl.TurnBridgeBound = false;
+                Error($"TurnController.Prepare 패치 실패 (turn-based summon control stays off): {ex.Message}\n{ex.StackTrace}");
             }
         }
 

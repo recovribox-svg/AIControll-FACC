@@ -1,0 +1,320 @@
+{
+  "status": "PLAN_ONLY_NOT_IMPLEMENTED",
+  "planning_baseline": "44b224f5af76dc5f5ae6086d6abbfbdeac790627",
+  "manifest_version": "0.3.30",
+  "attachments": [
+    {
+      "role": "request",
+      "file_id": "file_0000000002708243bda9425e8a9b6a65",
+      "file_name": "Pasted text.txt",
+      "bytes": 6520,
+      "sha256": "7ede61d7bbfb933c3260862200d89496dda87d306ea9a5a0684396a1f7d4666b"
+    },
+    {
+      "role": "guide",
+      "file_id": "file_00000000ef6c81f4a9e22d24c60ad6fc",
+      "file_name": "Plan guide AI Control drives summons.txt",
+      "bytes": 18958,
+      "sha256": "66c922c6934097655a5b783e3eb6d943fbcd371afc6a19bf80414b8e2a0d752a"
+    },
+    {
+      "role": "showcase",
+      "file_id": "file_00000000a8f881f4ac73b0dce2b813fe",
+      "file_name": "Summons showcase.txt",
+      "bytes": 9955,
+      "sha256": "d31fe4601d9a8e9fb26e2b2e0695303fb807b41e66a696821bc8b0e849c923ab"
+    }
+  ],
+  "authority": "Repository and supplied native assemblies/blueprints/logs support factual claims. Guide and showcase are hypotheses/context; user explicitly authorizes correcting their assumptions.",
+  "native_game": {
+    "file_name": "Assembly-CSharp.dll",
+    "mvid": "90a9869c-2792-4c7b-bfb7-5a8b33da7c82",
+    "sha256": "2cb7160b7154d4ffacc77b9c51b1eb26199e1294300f04fdfc073367b2ef8953",
+    "installed_steam_bytes_independently_matched": false
+  },
+  "demonology": {
+    "file_name": "Demonology.dll",
+    "assembly_version": "1.5.18.0",
+    "mvid": "b83fe54a-aca8-4ffe-baac-c36b874d1bdd",
+    "sha256": "041b54262f8d241b04d85f8ac682f45ccc68460b270fc81c03f55fa62b37ac5b"
+  },
+  "native_evidence": {
+    "N1": {
+      "methods": [
+        "TurnBased.Controllers.TurnController.Prepare",
+        "TurnBased.Controllers.TurnController.Tick",
+        "Kingmaker.AI.AiBrainController.ForceTick",
+        "Kingmaker.AI.AiBrainController.TickBrain"
+      ],
+      "findings": [
+        "Prepare resets actions/new-round state, calls ForceTick before assigning Preparing/Acting, then assigns Acting to a non-controllable rider.",
+        "Tick calls ForceTick for an idle non-controllable rider in Acting. ForceTick allows the current non-controllable combatant through during TB and calls TickBrain.",
+        "The regular AiBrainController.Tick scheduler skips TB; ForceTick and TickBrain do not."
+      ],
+      "inspection_kind": "Static decompilation/selective IL; no actor or gameplay execution",
+      "private_inspection_sha256": {
+        "TurnController.cs": "1928cba71337eaf4c5a06013281c939eed21ad03f28510a7534dde433cdd6019",
+        "AiBrainController.cs": "94ae5fd355429b99616cf3278bade874d1a8fe705ffc4050c1078eaf047ebb0f"
+      }
+    },
+    "N2": {
+      "methods": [
+        "TurnBased.Controllers.TurnController.CanEndTurn",
+        "TurnBased.Controllers.TurnController.CanEndTurnAndNoActing",
+        "TurnBased.Controllers.TurnController.ForceToEnd",
+        "TurnBased.Controllers.TurnController.ContinueActing"
+      ],
+      "findings": [
+        "CanEndTurn rejects a selected non-controllable unit, so the companion end guard cannot be reused unchanged.",
+        "ForceToEnd(bool) consumes remaining cooldowns and calls ToEnd without a controllability precondition.",
+        "Native idle/projectile continuation matters; proposed adapters must reuse the existing bounded mod completion wait."
+      ],
+      "inspection_kind": "Static decompilation/selective IL; no actor or gameplay execution",
+      "private_inspection_sha256": {
+        "TurnController.cs": "1928cba71337eaf4c5a06013281c939eed21ad03f28510a7534dde433cdd6019"
+      }
+    },
+    "N3": {
+      "methods": [
+        "Kingmaker.UnitLogic.Commands.UnitAttack.InitAttacks",
+        "Kingmaker.UnitLogic.Commands.UnitAttack.EnumerateFullAttack",
+        "Kingmaker.UnitLogic.Commands.UnitAttack.EnumerateAttacks",
+        "Kingmaker.UnitLogic.Commands.UnitAttack.EnumerateLimbsAttacks"
+      ],
+      "findings": [
+        "Full attack uses hands counts and RuleCalculateAttacksCountLimbs.",
+        "Native action/move/pounce restrictions select full versus single; an existing body needs no projected Shifter form."
+      ],
+      "inspection_kind": "Static decompilation/selective IL; no actor or gameplay execution",
+      "private_inspection_sha256": {
+        "UnitAttack.cs": "f9d9663b0a2ab089cfd0cacff3e0395a3ddd097c2aaa0f8cc18ec22e3d71a673"
+      }
+    },
+    "N4": {
+      "methods": [
+        "Kingmaker.UnitLogic.Parts.UnitPartSummonedMonster.Init",
+        "Kingmaker.RuleSystem.Rules.RuleSummonUnit.OnTrigger",
+        "Kingmaker.UnitLogic.Mechanics.Actions.ContextActionSpawnMonster.RunAction"
+      ],
+      "findings": [
+        "Summoner resolves private UnitReference m_Summoner.",
+        "RuleSummonUnit ensures the summon part and initializes it with the initiator, or self when DoNotLinkToCaster.",
+        "Native creation performs its faction/group linkage; the feature must not duplicate those writes.",
+        "ContextActionSpawnMonster triggers RuleSummonUnit and then AfterSpawn."
+      ],
+      "inspection_kind": "Static decompilation/selective IL; no actor or gameplay execution",
+      "private_inspection_sha256": {
+        "UnitPartSummonedMonster.cs": "c668f2ae32159da0f3aecaff487ad0efb3450441b79c3f6bd7df7e484b3ce69c",
+        "RuleSummonUnit.cs": "3eb3b3fda09560a3a86fa222bcf5b7ca392e7e59afe0d6d26930b95b43dd986f",
+        "ContextActionSpawnMonster.cs": "0fb413fbf09e9960559d683d3910c98526f2888caa34444997348a09a8fbb367"
+      }
+    },
+    "N5": {
+      "methods": [
+        "Kingmaker.EntitySystem.Entities.UnitEntityData.get_IsDirectlyControllable",
+        "Kingmaker.EntitySystem.Entities.UnitEntityData.get_IsPet",
+        "Kingmaker.UnitLogic.FactLogic.AddPet.TryUpdatePet"
+      ],
+      "findings": [
+        "The direct-control getter reads area/control/faction/death/panic/detachment, original summoned blueprint faction, and companion-state rules.",
+        "IsPet uses UnitPartPet or a preview original, rather than the summon part.",
+        "AddPet creates and SetMaster links its pet through the native pet path; arbitrary mods may combine parts, so pet precedence remains required."
+      ],
+      "inspection_kind": "Static decompilation/selective IL; no actor or gameplay execution",
+      "private_inspection_sha256": {
+        "DirectlyControllable.il": "2860d528ccfcc3335abe080bd3b571b493efbdb12881952f6cb2a314c781650c",
+        "Pet.il": "cdef1e33934cbf84751d1afb4434fc3de96824357e26f1dbb3dbd33891332a23",
+        "AddPet.cs": "29a4e80a1713b7d296ff85aefbe4aed5b50999ac503550788ab3c63e19a83384"
+      }
+    },
+    "N6": {
+      "methods": [
+        "Kingmaker.EntitySystem.Entities.UnitEntityData.WillTakeTurn"
+      ],
+      "findings": [
+        "WillTakeTurn checks status/helplessness/prone, without a blanket swarm-kind exclusion.",
+        "The mod already reads active SwarmDamageResistance and round ContextActionSwarmAttack components.",
+        "ElementalSwarmAir creates linked SummonedAirElementalLarge."
+      ],
+      "inspection_kind": "Static decompilation/selective IL; no actor or gameplay execution",
+      "private_inspection_sha256": {
+        "WillTakeTurn.il": "4733be504b63bc436cadc41b327397d3b8f4e712453bfadbe0a4b02618dba985"
+      }
+    },
+    "N7": {
+      "methods": [
+        "Demonology.NewSpellsAndFeatures.CreateRitualSpell1",
+        "Demonology.NewSpellsAndFeatures.CreateRitualSpell1d3",
+        "Demonology.NewSpellsAndFeatures.CreateRitualSpell1d4"
+      ],
+      "findings": [
+        "All three supplied DLL builders use copied native ContextActionSpawnMonster and change creature/count/duration/AfterSpawn metadata.",
+        "The RuleSummonUnit/part route applies. Final cloned linkage flags and live actor kits still require gameplay confirmation.",
+        "Archive label Demonology 0.1.5 and assembly version 1.5.18.0 are recorded separately."
+      ],
+      "inspection_kind": "Static decompilation/selective IL; no actor or gameplay execution",
+      "private_inspection_sha256": {
+        "Demonology.NewSpellsAndFeatures.cs": "af654e474d47bd55609571a026ac3a6c17afa3f40f0cc6095cb05aabdd431792"
+      }
+    },
+    "N8": {
+      "methods": [
+        "ToyBox.BagOfPatches.Summons.UnitEntityData_IsDirectlyControllable_Patch.Postfix"
+      ],
+      "findings": [
+        "The supplied ToyBox has a getter postfix checking toggleMakeSummmonsControllable, IsPartyOrPet, the summon part and life/control guards.",
+        "Its Summons class also patches Player.MoveCharacters and uses charm-related control. The proposed feature does not need those operations.",
+        "This is static inspection, not a live compatibility test."
+      ],
+      "inspection_kind": "Static decompilation/selective IL; no actor or gameplay execution",
+      "private_inspection_sha256": {
+        "ToyBoxSummons.cs": "b8ca41b5fec7023db040fc862d532ccf61a905fd833e3a5fd01d72c2610c94dd",
+        "ToyBox-control-patches.txt": "37a5165337b8431a6aecddda63b421f2f629c63e88ce90d8921d648af8cd6606"
+      }
+    }
+  },
+  "blueprint_fixtures": [
+    {
+      "name": "LeopardSummoned",
+      "asset_guid": "768275c9885dd954fb3c84ba69ac4281",
+      "export_path": "Units/Units/Monsters/Leopard/LeopardSummoned.jbp",
+      "sha256": "6f5bed4175c583b97b0fbb8ab947cfdff311c23aab05d9eac7fcd3abcc9f1a93"
+    },
+    {
+      "name": "AzataBralaniSummoned",
+      "asset_guid": "58574e8d1d4dc464c976f396d9115b1a",
+      "export_path": "Units/Units/NPC/Commoners/Azata Bralani/AzataBralaniSummoned.jbp",
+      "sha256": "11243d1f4268180df6bf0cc5805e93b6d7ca4b7a7db9c913edf39440fddfbe79"
+    },
+    {
+      "name": "AzataBralaniBrain_Summoned",
+      "asset_guid": "0f1539da3c18415faa73a31da54c13fb",
+      "export_path": "Units/Units/NPC/Commoners/Azata Bralani/AzataBralaniBrain/AzataBralaniBrain_Summoned.jbp",
+      "sha256": "3329836e41d0acd185fe8a25b45927be2c5904de1d5a92f67b6843df16f59347"
+    },
+    {
+      "name": "BralaniLightningBoltAiAction",
+      "asset_guid": "10014c7d6b3923a4499709d142c09b9d",
+      "export_path": "Units/Units/NPC/Commoners/Azata Bralani/AzataBralaniBrain/BralaniLightningBoltAiAction.jbp",
+      "sha256": "196824424fa6b93a8689d1bfce8a583a5df747814c24e340807bc1d901b6eea2"
+    },
+    {
+      "name": "BralanMirrorImageAiAction",
+      "asset_guid": "fd46f0f75324dcb418c2758cf3c582a9",
+      "export_path": "Units/Units/NPC/Commoners/Azata Bralani/AzataBralaniBrain/BralanMirrorImageAiAction.jbp",
+      "sha256": "3c09eb524f0158c93bce904d6de7efa1a2ebf482c74a48ac46229fa230269664"
+    },
+    {
+      "name": "MirrorImage",
+      "asset_guid": "3e4ab69ada402d145a5e0ad3ad4b8564",
+      "export_path": "Spells/Spells/Level2/MirrorImage.jbp",
+      "sha256": "0f3437e653b78106f5c304c953cec12faaa8f092dcc2bfc0d377a64b88892a5a"
+    },
+    {
+      "name": "LightningBolt",
+      "asset_guid": "d2cff9243a7ee804cb6d5be47af30c73",
+      "export_path": "Spells/Spells/Level3/LightningBolt.jbp",
+      "sha256": "00e6404d5b693a4a0fcae684addb53fbb3b48dfbd8009359d0ee941bbd7d8288"
+    },
+    {
+      "name": "CureSeriousWounds",
+      "asset_guid": "6e81a6679a0889a429dec9cedcf3729c",
+      "export_path": "Spells/Spells/Level3/CureSeriousWounds.jbp",
+      "sha256": "528c8bb386973a7e7eada63014c64a535a774cfc6372a2fb8b1c0c3216b961ca"
+    },
+    {
+      "name": "CR18_VavakiaStandard",
+      "asset_guid": "143bf780bdf425a4ca14ab0e5df20232",
+      "export_path": "Units/Units/Monsters/Demon Vavakia/CR18_VavakiaStandard.jbp",
+      "sha256": "6bf15b3bf0f101e23e8ebc4b635e134bda4c85867d311b808f14a2f1f779d25c"
+    },
+    {
+      "name": "CR17_LilituStandard",
+      "asset_guid": "d5d58c9aea545254f895226ba604f06b",
+      "export_path": "Units/Units/Monsters/Demon Lilitu/CR17_LilituStandard.jbp",
+      "sha256": "85ad7e777b570e35a4975aa34709c8940492ff134937650a2ca41f2aa223a0b5"
+    },
+    {
+      "name": "CR11_RetrieverStandard",
+      "asset_guid": "2f79139e8f8f3514d8f751975cca5a29",
+      "export_path": "Units/Units/Monsters/Retriever/CR11_RetrieverStandard.jbp",
+      "sha256": "819f57fb024635cd31313f7347ccf7cbef9bb3eca6e867f3481114224dc33f93"
+    },
+    {
+      "name": "DominateMonster",
+      "asset_guid": "3c17035ec4717674cae2e841a190e757",
+      "export_path": "Spells/Spells/Level9/DominateMonster.jbp",
+      "sha256": "37fe58c5ffc7afca2b949eea6a3683bfe3bc222870d1212817aa92e546a65320"
+    },
+    {
+      "name": "DominatePerson",
+      "asset_guid": "d7cbd2004ce66a042aeab2e95a3c5c61",
+      "export_path": "Spells/Spells/Level5/DominatePerson.jbp",
+      "sha256": "839d6846b6ed308a6b1b48fbccd5bb59672821eed65b80afc17f2d338b5e7a3b"
+    },
+    {
+      "name": "Vavakia_Ability_BreathWeapon",
+      "asset_guid": "55d4e184b76c111429c4a4493e60a97c",
+      "export_path": "Units/Units/Monsters/Demon Vavakia/VavakiaBrain/Vavakia_Ability_BreathWeapon.jbp",
+      "sha256": "5dc2c17147e42d9258a25571ac2b7c412046df3d32973c472ead99258c9c6e9a"
+    },
+    {
+      "name": "Enervation",
+      "asset_guid": "f34fb78eaaec141469079af124bcfa0f",
+      "export_path": "Spells/Spells/Level4/Enervation.jbp",
+      "sha256": "4534df8b5a4f166604f7a95de02baff8c8e9717e8e30f23936bc23208a65c609"
+    },
+    {
+      "name": "ElementalSwarm",
+      "asset_guid": "0340fe43f35e7a448981b646c638c83d",
+      "export_path": "Spells/Spells/Level9/ElementalSwarm.jbp",
+      "sha256": "f3875f6570cc0805939d996c05872d54278e400d0777f86b9b81ceed849b7124"
+    },
+    {
+      "name": "ElementalSwarmAir",
+      "asset_guid": "07e8f6479cbcc3f46a12696784805305",
+      "export_path": "Spells/Spells/Level9/ElementalSwarmAir.jbp",
+      "sha256": "1492ea8c99eccca0d52fa88a57246928a3f2f33a521c67ba30e2a9e8e80499a2"
+    },
+    {
+      "name": "SummonedAirElementalLarge",
+      "asset_guid": "3764b43791a00e1468257adbca43ce9b",
+      "export_path": "Units/Units/Monsters/AirElemental/SummonedAirElementalLarge.jbp",
+      "sha256": "18b3b25c4d62016103798efe1fdcbff0e7a921bed11d70ca5b7f0d7756369147"
+    },
+    {
+      "name": "CreepingDoom",
+      "asset_guid": "b974af13e45639a41a04843ce1c9aa12",
+      "export_path": "Spells/Spells/Level7/CreepingDoom.jbp",
+      "sha256": "4925bc8430ddda72b0fbc646d23fc02d76e1b567122f239b5670186c30588a04"
+    }
+  ],
+  "observed_existing_profile_reads": [
+    "DominateMonster: control Hard",
+    "DominatePerson: control Hard",
+    "Vavakia_Ability_BreathWeapon: damage, control Soft",
+    "LightningBolt: damage",
+    "Enervation: damage (+ guessed debuff (0.25 of worth))"
+  ],
+  "profile_observation_limit": "Existing actor-free ProfileAudit of exports; not in-game candidate values or final choices.",
+  "performance_log": {
+    "file_name": "Log.txt",
+    "played_build": "shifter1 f904c39, MVID 875cf339-de55-4d04-89f9-d5235ec7ecbe",
+    "sha256": "b5f4cd36892e726f6ba5df5d13dac3db6125c6244bb4c9c7a22723cf498ff96f",
+    "manual_context": "Enemy spawns and combat rests; exact intervention times unknown.",
+    "quoted_rows": [
+      {
+        "line": 1033,
+        "text": "[CompanionAI_Pathfinder] [Perf] turn-based: 67 decisions, median 95.6 ms, 95% 318.0 ms, slowest 2008.4 ms (Wenduag: Start Griffon Aspect (1 self, 11 units left, 1/Minute, start 1, upcoming 0)), total 9464 ms"
+      },
+      {
+        "line": 2951,
+        "text": "[CompanionAI_Pathfinder] [Perf] real-time: 180 decisions, median 30.2 ms, 95% 196.7 ms, slowest 1301.5 ms (arcan: Explosive Runes/Hideous Laughter->Hell Hound(dmg+cc)), total 10214 ms; 97 skipped while waiting for a cooldown"
+      }
+    ],
+    "limit": "Mode-wide mixed-party observations, not summon actor benchmarks.",
+    "native_baseline_timed_by_mod_perf": false
+  },
+  "feature_implemented": false,
+  "feature_actor_or_unity_tested": false
+}

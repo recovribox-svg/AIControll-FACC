@@ -22,7 +22,9 @@ namespace CompanionAI_Pathfinder.GameInterface
     /// ★ v0.2.113: 아키텍처 개선
     /// - 턴제: TurnControllerTick_Postfix만 사용 → TurnBasedController
     /// - 실시간: TickBrain_Prefix → RealTimeController
-    /// - TickBrain_Prefix는 턴제에서 호출 안 됨 (게임 로직)
+    /// - ★ summon control (corrected): in turn-based combat the game does call TickBrain - for the current combatant
+    ///   that is not directly controllable (TurnController.Prepare and Tick -> AiBrainController.ForceTick). Party
+    ///   members are directly controllable, so their turns are driven from TurnControllerTick_Postfix.
     /// </summary>
     public static class CustomBrainPatch
     {
@@ -33,12 +35,12 @@ namespace CompanionAI_Pathfinder.GameInterface
         /// AiBrainController.TickBrain() 패치
         /// ★ v0.2.113: 실시간 전투 전용
         ///
-        /// 게임 분석 결과:
-        /// - 턴제 전투: AiBrainController.Tick()에서 바로 return (ForceTick 안 함)
-        /// - 실시간 전투: Tick() → ForceTick() → TickBrain()
-        ///
-        /// 따라서 턴제에서는 이 메서드가 호출되지 않음!
-        /// 턴제 AI는 TurnControllerTick_Postfix에서 처리
+        /// From the game (★ summon control: corrected - the old note said turn-based combat never comes here):
+        /// - real time: AiBrainController.Tick() -> TickBrain() for every unit the game's AI drives;
+        /// - turn-based: the regular Tick() scheduler is skipped, but TurnController.Prepare() and Tick() call
+        ///   ForceTick(), which runs TickBrain() for the current combatant when it is not directly controllable.
+        /// Directly controllable party members never come here in turn-based combat (TurnControllerTick_Postfix drives
+        /// them); a summoned creature AI Control drives does (SummonTurnBridge).
         /// </summary>
         public static bool TickBrain_Prefix(UnitEntityData unit)
         {
@@ -72,9 +74,12 @@ namespace CompanionAI_Pathfinder.GameInterface
                 // ★ v0.2.113: 턴제/실시간 분기
                 if (CombatController.IsInTurnBasedCombat())
                 {
-                    // ★ 턴제 모드에서는 TurnControllerTick_Postfix가 처리
-                    // 이 코드는 실제로 호출되지 않아야 함 (게임이 턴제에서 TickBrain 안 함)
-                    // 혹시 호출되면 무시
+                    // ★ summon control: the game's brain call for the current, not directly controllable combatant. A
+                    // summon AI Control drives is decided by the turn-based driver here; the game's brain is held back.
+                    if (!unit.IsDirectlyControllable && SummonControl.IsOrdinarySummon(unit))
+                        return SummonTurnBridge.OnBrainTick(unit);
+                    // A directly controllable unit: TurnControllerTick_Postfix drives it (the game does not come here
+                    // for such a unit in turn-based combat).
                     Main.Verbose($"[TickBrain] {unitName}: 턴제 모드 - TurnControllerTick에서 처리");
                     return false;
                 }
@@ -140,6 +145,10 @@ namespace CompanionAI_Pathfinder.GameInterface
         {
             reason = null;
             if (unit == null) { reason = "no unit"; return false; }
+
+            // ★ summon control: a summoned creature that is not a pet is decided by SummonControl alone - also when
+            // another mod makes it clickable - and never gets a settings row. Off by default: it stays with the game.
+            if (SummonControl.IsOrdinarySummon(unit)) return SummonControl.ShouldDrive(unit, out reason);
 
             // 죽었거나 의식 없음
             // ★ v0.3.14: by the game's life state, not by HP. 0.3.13 refused any unit at 0 HP or less, but a unit that
@@ -339,6 +348,43 @@ namespace CompanionAI_Pathfinder.GameInterface
             }
         }
 
+        /// <summary>
+        /// The driver said "end the turn": end it the way the game ends its own units' turns, or clear a command that
+        /// never started so it can end next frame. Shared by party members (directly controllable: the game's
+        /// CanEndTurn gate) and by summons the game runs as AI units (★ summon control: CanEndTurn always refuses a unit
+        /// that is not directly controllable, so their gate is the turn still being in Acting; ForceToEnd itself has no
+        /// such requirement - the game calls it for these units too, TurnController.OnInterruptCommand).
+        /// </summary>
+        internal static void CompleteTurn(TurnController turn, UnitEntityData rider, string endReason, bool nativeRider)
+        {
+            string unitName = rider.Descriptor?.CharacterName ?? "Unknown";
+            bool canEnd = nativeRider ? turn.Status == TurnController.TurnStatus.Acting : turn.CanEndTurn();
+            if (!canEnd) return;
+            var mount = turn.Mount;
+            bool noCommands = rider.Commands.Empty && (mount == null || mount.Commands.Empty);
+            // CanEndTurn() accepts both Preparing and Acting for a directly-controllable unit.
+            if (noCommands)
+            {
+                // ★ v0.3.27 (author): ended the way the game ends its own units' turns - after the unit's projectiles
+                // have landed and it has stood idle for the game's idle pause. Ended at once, the rest of the
+                // animation and any projectile in flight played in the gap to the next turn, which the game runs
+                // at triple speed (CombatController.TimeScaleBetweenTurns): spells looked sped up, projectiles vanished.
+                if (!ReadyToEndTurn(turn, rider, endReason, out string reason, out float waited)) return;
+                // ★ v0.3.19 (release): the decision line already says "=> END TURN" when nothing is left to do.
+                // ★ v0.3.20: "Nothing worth doing" repeats the decision line's "=> END TURN".
+                if (reason != "Nothing worth doing") Main.Log($"[TurnTick] {unitName}: EndTurn - {reason}");
+                if (Main.VerboseOn) Main.Verbose($"[TurnTick] {unitName}: turn end waited {waited:0.00} s (projectiles, idle pause)");
+                turn.ForceToEnd(true);
+            }
+            else if (!rider.Commands.Empty && !rider.Commands.IsRunning())
+            {
+                // Leftover command that never started (e.g. after the wait timeout) would block
+                // CanEndTurnAndNoActing() forever; clear it so the turn can end next frame.
+                Main.Log($"[TurnTick] {unitName}: EndTurn blocked by idle command - interrupting it");
+                rider.Commands.InterruptAll();
+            }
+        }
+
         public static void TurnControllerTick_Postfix(TurnController __instance)
         {
             try
@@ -370,7 +416,13 @@ namespace CompanionAI_Pathfinder.GameInterface
                 if (!(ModSettings.Instance?.EnableInTurnBased ?? true)) return;
 
                 // IsDirectlyControllable 유닛만 (게임이 AI를 호출하지 않는 유닛)
-                if (!rider.IsDirectlyControllable) return;
+                // ★ summon control: a summon the game's turn treats as its own AI unit is served by the bridge (waits,
+                // timeouts and the end of its turn); it is never scored a second time here.
+                if (!rider.IsDirectlyControllable)
+                {
+                    SummonTurnBridge.OnTurnTick(__instance, rider);
+                    return;
+                }
 
                 var status = __instance.Status;
                 if (status != TurnController.TurnStatus.Preparing && status != TurnController.TurnStatus.Acting)
@@ -384,29 +436,7 @@ namespace CompanionAI_Pathfinder.GameInterface
                 var result = TurnBasedController.Instance.ProcessTurn(rider);
 
                 if (result != null && result.Type == Core.ResultType.EndTurn)
-                {
-                    // CanEndTurn() accepts both Preparing and Acting for a directly-controllable unit.
-                    if (__instance.CanEndTurnAndNoActing())
-                    {
-                        // ★ v0.3.27 (author): ended the way the game ends its own units' turns - after the unit's projectiles
-                        // have landed and it has stood idle for the game's idle pause. Ended at once, the rest of the
-                        // animation and any projectile in flight played in the gap to the next turn, which the game runs
-                        // at triple speed (CombatController.TimeScaleBetweenTurns): spells looked sped up, projectiles vanished.
-                        if (!ReadyToEndTurn(__instance, rider, result.Reason, out string reason, out float waited)) return;
-                        // ★ v0.3.19 (release): the decision line already says "=> END TURN" when nothing is left to do.
-                        // ★ v0.3.20: "Nothing worth doing" repeats the decision line's "=> END TURN".
-                        if (reason != "Nothing worth doing") Main.Log($"[TurnTick] {unitName}: EndTurn - {reason}");
-                        if (Main.VerboseOn) Main.Verbose($"[TurnTick] {unitName}: turn end waited {waited:0.00} s (projectiles, idle pause)");
-                        __instance.ForceToEnd(true);
-                    }
-                    else if (__instance.CanEndTurn() && !rider.Commands.Empty && !rider.Commands.IsRunning())
-                    {
-                        // Leftover command that never started (e.g. after the wait timeout) would block
-                        // CanEndTurnAndNoActing() forever; clear it so the turn can end next frame.
-                        Main.Log($"[TurnTick] {unitName}: EndTurn blocked by idle command - interrupting it");
-                        rider.Commands.InterruptAll();
-                    }
-                }
+                    CompleteTurn(__instance, rider, result.Reason, nativeRider: false);
                 // Waiting: nothing to do - a queued command moves the turn to Acting on the game's next Tick().
             }
             catch (Exception ex)
@@ -443,6 +473,10 @@ namespace CompanionAI_Pathfinder.GameInterface
             Tactics.RealTimeTactics.ClearQuiet();   // ★ v0.3.20 (audit PERF-001)
             RealTimeController.ClearWrathHandoff();   // ★ v0.3.21
             RealTimeController.ClearHarvestTries();   // ★ v0.3.28 test 12
+            // ★ summon control: per-fight state of driven summons (pacing entries, the served turn, the adoption count).
+            RealTimeController.Instance.ForgetSummonPacing();
+            SummonTurnBridge.Reset();
+            SummonControl.NewFight();
             Analysis.AoeDangerAnalyzer.ClearPending();
             CompanionAI_Pathfinder.Analysis.AbilityClassifier.ResetCombatReports();
             Tactics.CoverageReport.NewFight();
@@ -468,6 +502,11 @@ namespace CompanionAI_Pathfinder.GameInterface
             CompanionAI_Pathfinder.Analysis.CombatRulesAnalyzer.ClearCache();
             // ★ v0.3.18 (review): AI-started toggles the game keeps on out of combat (Mobility) go off first.
             Tactics.CombatMemory.SwitchOffAiToggles();
+            // ★ summon control: the fight's summons are gone or leave with it - their pacing entries, any unit still
+            // waiting for service and the served turn are forgotten (the toggle clean-up above stays as it is).
+            RealTimeController.Instance.ForgetSummonPacing();
+            SummonTurnBridge.Reset();
+            SummonControl.NewFight();
             // ★ v0.2.113: TurnBasedController 상태 초기화
             TurnBasedController.Instance.ResetAll();
 

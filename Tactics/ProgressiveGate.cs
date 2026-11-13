@@ -36,7 +36,8 @@ namespace CompanionAI_Pathfinder.Tactics
 
         public static bool IsEnabledFor(UnitEntityData unit)
         {
-            var settings = ModSettings.Instance?.GetOrCreateSettings(unit.UniqueId, unit.CharacterName);
+            // ★ summon control: a summon reads its summoner's policy through a temporary view (no stored row).
+            var settings = GameInterface.SummonControl.SettingsFor(unit);
             return settings != null && settings.SpellPolicy == SpellResourcePolicy.Progressive;
         }
 

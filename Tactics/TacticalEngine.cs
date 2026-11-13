@@ -869,7 +869,8 @@ namespace CompanionAI_Pathfinder.Tactics
                 Unit = unit,
                 Turn = Game.Instance?.TurnBasedCombatController?.CurrentTurn,
                 Global = ModSettings.Instance,
-                Settings = ModSettings.Instance?.GetOrCreateSettings(unit.UniqueId, unit.CharacterName) ?? new CharacterSettings(),
+                // ★ summon control: one read path; a summon gets a temporary view, never a stored row.
+                Settings = GameInterface.SummonControl.SettingsFor(unit),
                 Round = CombatMemory.Round,
                 HpPct = CombatMath.HpPercent(unit),
                 Blocks = UserAbilityPolicy.ScopeFor(unit)   // ★ user-ability-blacklist
@@ -5304,6 +5305,9 @@ namespace CompanionAI_Pathfinder.Tactics
                 failure = UserAbilityPolicy.Refusal(blocked);
                 return false;
             }
+            // ★ summon control: a stale option of a summoned creature (a summoning spell, an item, a material component)
+            // is refused before a walk or a boost is spent for it. A failed option: not offered again this turn.
+            if (c.Ability != null && (failure = GameInterface.SummonControl.AbilityRefusal(unit, c.Ability)) != null) return false;
             if (c.InfusionSwitch != null) return ExecuteInfusionSwitch(unit, c, out command, out failure);
             // ★ v0.3.17: an approach around a harmful area walks to the spot it was priced for, then acts on the next
             // decision (as touch spells do in turn-based). The plain path the game would pick to the target goes through

@@ -5091,3 +5091,251 @@ the package to play.
 - Tome burn on Orvath.
 - Toggle cost horizons.
 - Decision timings with the eleven-member party.
+## 151. Proposed owned-summon control: planning handoff (12 November 2026)
+
+This is a plan for Claude, checked against integrated development `44b224f`; no summon-control feature is implemented.
+[Plan](SUMMON_CONTROL_PLAN.md) · [native/blueprint/input evidence](competence/SUMMON_CONTROL_EVIDENCE.json).
+
+The supplied guide assumed `TickBrain` could not run in TB. Supplied native `TurnController.Prepare` / `Tick`
+call `AiBrainController.ForceTick`, which services the current non-controllable rider. The plan uses those natural
+AI callbacks plus a narrow post-Prepare initialization service, retaining existing drivers and bounded completion.
+It avoids a controllability getter or Status patch; phase, no-action, exception and disabled-mode replay are gates.
+
+The first slice is default-off combat control of directly owned, linked, non-swarm summons, with pets unchanged.
+Settings upserts also exist outside the control gate; temporary actor/recipient reads and owner blocklist scope are
+required. The combat view keeps Mixed/default role/Pure Mage off, inheriting owner safety/heal/spell policy only.
+Upkeep/pre-buff/UI exclusions, recognized summon-cast/item guards and weak RT pacing lifetime prevent auxiliary leaks.
+Existing path/target/retreat/stuck policies and frame budget are reused. Ordinary elemental actors are not native
+swarm bodies merely because Elemental Swarm created them; pre-fight automation remains outside scope.
+
+Showcase rankings are not code rules. Native full attacks already include hands and additional limbs. Recent
+mixed-party logs do not establish cheap summon decisions; matched mode/cohort/frame observations must judge cost.
+Claude owns implementation/integration; Codex continues reviews/interim coding. No release/version or game code change.
+
+Planning baseline checks: 664 unit + 27 inventory, real-reference Release 0 warnings/errors, compatible ProfileAudit and
+native toggle 98 checks pass ([receipt](competence/SUMMON_CONTROL_PLAN_CHECKS.json)). Feature code and gameplay remain unimplemented/untested.
+
+
+## 152. Review5 playtest: matched current/form weapon reference
+
+[Review/replay](REVIEW5_PLAYTEST_REVIEW.md) · [input identities](REVIEW5_PLAYTEST_INPUTS.json).
+TB startup matches review5; RT lacks its own header and is identified by the author. Combat spawning/rests were
+confirmed. Five TB and six RT summaries contain no AI exception; Griffon form and Fury execution are now exercised.
+
+OffenceOf retained Enemy only for positive damage. New-form appraisal could then compare a zero current result
+against a projected form on a different first context enemy. Preserve the existing target/estimate pair even for
+zero, require it for form appraisal, and retain its native ranged flag. Missing baseline remains unknown. Current
+profitable-buff fields and Fury admission stay unchanged; form notes name the actual reference target. Old logs do
+not name that target, so not every zero-to-positive row can be attributed to this bug. Fourteen actor-free record,
+reference and compiled-route checks cover the corrected contract; native gameplay remains a replay requirement.
+
+The correction adds two references in the existing frame-scoped record, with no new forecast, native rule or
+search. Separate follow-up: recovery re-created a plain advance after that exact plan had already failed preflight
+(RT 2041–2051); dispatcher safety rejected it again. Other negative-value hazard standoffs are not forced to move.
+Known Death from Above/Release Grapple/Focused Shot and shared-HD Fusion gaps remain explicit. No general movement,
+retreat, commitment, pathfinder, stuck-cancellation or scoring-budget change. Manifest remains 0.3.30.
+
+Checked source `4392e51`, [receipt](competence/REVIEW5_PLAYTEST_CHECKS.json) and [review6 test ZIP](../test-builds/AI-Control-FACC-v0.3.30-dev-review6-4392e51-UMM-test.zip), startup MVID `3f9c3355-3c65-4477-b059-dd370eb20d2b`. 664 unit + 27 inventory tests and native checks pass; actual-reference Release 0 warnings/errors; 0/0 added signatures resolve. Compatible/supplementary audit scopes pass; original full-corpus enum failure remains distinct. Gameplay/matched Unity timing pending.
+
+## 153. Review5 playtest: recovery cannot repeat an actually refused plain move
+
+[Evidence/replay](REVIEW5_RECOVERY_KEYS.md). RT 2041–2051: Seelah's Advance was one of three rejected selected
+approaches, then a new fallback object with the same plan key was issued and rejected for the same Corrosive Bomb
+path. Safety held, but a native issue/path attempt was duplicated.
+
+SelectedApproachFilter now optionally records actual refused recovery keys, using a lazy ordinal set capped by
+three checks. The production selector uses existing plain-move keys; recovery objects with those keys are withheld.
+There is no persistent refusal, target ban, generated identity string or added native check. Unchecked options,
+different plans and future decisions stay eligible. Other actions, trigger/affordability/safety gates and the
+approved fallback's cap remain. Its existing small pricing pass can still run; total native queries are not
+claimed to be capped at three. Four unit scheduling cases and four actual candidate checks (Idle Advance 27 total)
+cover the correction; form-reference 14 and all inherited checks remain. Native paths/gameplay/timing need replay.
+No general movement, commitment, retreat, pathfinder, stuck-cancellation, budget or value-model change.
+
+Checked source `3cb6422`, [receipt](competence/REVIEW5_RECOVERY_KEY_CHECKS.json) and [review7 test ZIP](../test-builds/AI-Control-FACC-v0.3.30-dev-review7-3cb6422-UMM-test.zip), startup MVID `6383a7b3-201b-4c76-a335-027ee5ef4f8e`. 668 unit + 27 inventory tests and native checks pass; actual-reference Release 0 warnings/errors; 0/0 added signatures resolve. Compatible/supplementary audit scopes pass; original full-corpus enum failure remains distinct. Gameplay/matched Unity timing pending.
+
+## 154. Focused Shot: a before-cast damage buff and one ranged weapon attack
+
+The author approved the support expansion after review5 TB 244 showed Aeiluvetar's actual Focused Shot withheld.
+[Design/native rules/replay](FOCUSED_SHOT.md), [fixture identities](competence/FOCUSED_SHOT_NATIVE.json). Refreshed
+development is `44b224f`; PR #48 `4c0ef7d` (including #47) is a prerequisite, retaining the review7 corrections.
+
+Recognize the inspected structural graph in cached metadata, without name/GUID dispatch. The native cast applies
+a one-second self buff before making one ordinary ranged-hand attack. Reuse native stat-bonus calculation and the
+shared cached weapon-delta model; zero/negative modifiers, existing buffs, disabled bonuses and immunity remain.
+Require one attack and the actual ranged hand. Additional/derived/area/retargeting/automatic-hit effects and restricted
+bonuses stay unsupported. Pure Mage, ordinary non-caster Ranged preference, blocklists, native availability, action
+cost, approach and final dispatcher safety are preserved. No new actor/buff/weapon preview, native attack event,
+world/target scan or general movement/commitment/retreat/pathfinder/stuck policy.
+
+ProfileAudit checks actual exported positive/negative graphs, altered flags/payloads, native scalar values and
+compiled routes; no initialized actor, attack, buff application or Unity timing executes offline. The common
+weapon damage-delta/critical approximations remain. In TB/RT compare one shot versus full attacks, positive/zero/
+negative Intelligence, DR/immunity, existing buffs, provocation and native action use. Final receipt records
+all units/inventory, real-reference Release and distinct compatible/supplementary/full-export audit scopes.
+
+Checked source `b890309`, [receipt](competence/FOCUSED_SHOT_CHECKS.json) and [focused1 test ZIP](../test-builds/AI-Control-FACC-v0.3.30-dev-focused1-b890309-UMM-test.zip), startup MVID `22e24115-7500-4df6-828a-305f0075e591`. 668 unit + 27 inventory tests and native checks pass; actual-reference Release 0 warnings/errors; 10/10 added signatures resolve. Compatible/supplementary audit scopes pass; original full-corpus enum failure remains distinct. Gameplay/matched Unity timing pending.
+
+
+## 155. Spell boosts: jointly affordable activation costs
+
+The author approved this follow-up to Focused Shot. [Design/native semantics/replay](JOINT_SPELL_COSTS.md),
+[assembly and fixture identities](competence/JOINT_SPELL_COSTS_NATIVE.json). Refreshed development `44b224f`;
+PR #50 `4745033` is the prerequisite. Concurrent summon control PR #49 remains separate.
+
+Two individually available casts can share the last spontaneous slot, prepared conversion source or activation
+resource. Before valuing setup/main, read their known current native costs; a free eligible Quicken asks lazily
+for the best already-scored standard alternative whose three-action activation sequence is jointly affordable.
+Retain native root/slot cost, effective book/level, prepared equality/reverse order, per-day and explicit
+resource/override semantics. A per-pass identity quote memo and reusable pure scratch budget avoid repeated
+reads/allocations across alternatives. Limits 64 charges, 256 prepared slots, 16 conversion nodes. Unknown
+providers/prices stay unknown; failed setup/main quotes have named bounded verbose diagnostics, while unknown
+second alternatives are skipped. Ordinary actions remain available.
+
+No spell/resource/inventory mutation, native rule/context/actor preview, future refund, reservation, queue or
+all-pairs search. This does not simulate arbitrary future buff/fact changes or mod spend overrides. Existing
+DC/CL/Persistent/Quicken action/native eligibility, policies, movement and final native rechecks remain. Pure
+financial alias/order/overflow/unknown/reset cases and native scalar/metadata/compiled routes are checked;
+initialized caster, actual spending and matched Unity timing require the focused TB/RT replay.
+
+Checked source `7480e83`, [receipt](competence/JOINT_SPELL_COSTS_CHECKS.json) and [jointcost1 test ZIP](../test-builds/AI-Control-FACC-v0.3.30-dev-jointcost1-7480e83-UMM-test.zip), startup MVID `ff8df076-59e9-468b-81c2-8f2d39302458`. 692 unit + 27 inventory tests and native checks pass; actual-reference Release 0 warnings/errors; 13/13 added signatures resolve. Compatible/supplementary audit scopes pass; original full-corpus enum failure remains distinct. Gameplay/matched Unity timing pending.
+
+
+## 156. Summon control: implementation (13 November 2026, Claude; not played)
+
+Implements the plan of §151 ([plan](SUMMON_CONTROL_PLAN.md), [evidence](competence/SUMMON_CONTROL_EVIDENCE.json)) on
+development `44b224f`. **Opt-in and off by default**: one checkbox, "Control Summoned Creatures (experimental)"
+(`ModSettings.ControlSummons`; a settings file without it loads it off). With it off, the game's AI drives every
+summon as before. Manifest stays 0.3.30. Nothing of it has been played: turn completion and pack performance are
+gameplay checks (listed at the end).
+
+**What it does.** In combat, in both modes, AI Control decides for a creature that carries the game's summon part
+(`UnitPartSummonedMonster`), is not a pet, and is linked to a summoner that is the main character or a current party
+member whose own AI Control is on. It uses the existing tactical engine, drivers and dispatcher. Refused, and left to
+the game's AI: enemy and neutral summons, unlinked (scripted) ones, a summon's own summons, swarms, ridden creatures,
+creatures the game drives itself (confused, panicked, detached, control prevented), army battles, and real time with
+the old real-time engine selected.
+
+### Plan assumptions checked against the game (decompiled 2.7.0x) and the code
+
+Confirmed as the plan states them:
+- N1: `TurnController.Prepare` and `Tick` call `AiBrainController.ForceTick`, which runs `TickBrain` for the current
+  combatant that is not directly controllable. The mod's old comments said turn-based combat never comes there; they
+  are corrected.
+- N2: `CanEndTurn` refuses a unit that is not directly controllable; `ForceToEnd(bool)` has no such requirement.
+- N4/N5: `RuleSummonUnit` gives the creature the part, the initiator's faction and group, and its summoner (itself
+  when not linked); `IsDirectlyControllable` is false for a summon whose blueprint faction is not controllable;
+  `IsPet` reads the pet part.
+- Settings rows were created outside the control gate: `BuildContext`, `ProgressiveGate.IsEnabledFor` and both
+  recipient reads of `PreBuffAnalyzer`.
+
+Found beyond the plan, and what the implementation does with it:
+
+| Finding (native code) | Consequence |
+|---|---|
+| The game ends an AI unit's turn by itself (`ContinueActing`): no time left (standard and move spent), idle for 0.2 s / the animation speed, or a walk without progress for 15 frames. A command running longer than 9 s is interrupted and the turn force-ended (`UnitCommand.Tick` → `OnInterruptCommand` → `ForceToEnd`). The brain may issue 50 commands a turn. | The game keeps owning the end of the turn. The mod's shared end-of-turn handling is a bounded backstop (its 4 s cap covers a projectile that never lands); it ends through `ForceToEnd`, which the game itself calls for these units. |
+| The first idle check runs in the same `Tick` as `Prepare`. With the game's brain held back and nothing issued, a slow frame (longer than 0.2 s / the animation speed) would end the turn before the summon acted. | The `Prepare` postfix is required, not optional: it takes the first decision in that frame, where the game's own brain issues its first command. |
+| `TurnBasedCombatController` ticks before `UnitCommandController` (`GameModesFactory`). | A command issued in `Tick` gets its first tick in the same frame, so the frame after a long decision does not read the unit as idle. |
+| When the brain call in `Tick` produces a command, the game resets its idle timer. | Later decisions are taken inside the game's brain call (the prefix), not only in the `Tick` postfix: the game then treats the command as its own brain's. |
+| With both main actions spent and nothing running, the game ends the turn at once (`GetRemainingTime` is 0; `HasExtraAction` is false for an AI unit). | A swift or free action after the last main action is cut for a summon. The engine's usual order (quick action first) is not affected. Known limit. |
+| `_lastDecisionTime` and `_unitPhaseOffsets` are keyed by id and `ClearCache` has no production caller. | Instead of a second, weak pacing store (the plan), summons use the same pacing code and their entries are dropped when a fight starts or ends, together with the pending-service queue. One pacing path; nothing grows over a session. |
+| `PreBuffAnalyzer` created a settings row for every player-faction recipient, summons included, before this feature. | Fixed with the feature off too: one read path (`SummonControl.SettingsFor`). Rows that older versions already saved under summon ids stay in the file; they are never read for a summon. |
+| A summon that another mod makes clickable (ToyBox) passed the old control test like a companion and got a saved row. | It is now decided by the summon rule alone: with the switch off it is the player's to command; with it on, the companion path drives it. This is the one behaviour change for existing users, and it follows the plan's ToyBox contract. |
+| `CommittedApproaches` (real time: a control area held back for an ally's committed walk) reads directly controllable allies only. | A driven summon's walk is not protected by that rule, as before for game-driven summons. Left as it is: changing it is a movement policy change. |
+
+Other choices: the summoner must be in game, conscious and in the party's faction (a summoner who is confused for a
+round does not hand the pack back and forth); a summon is offered no item ability and no cast that needs a material
+component (both come out of the party's inventory), and no summoning spell.
+
+### What changed
+
+- `Tactics/SummonRules.cs` (pure, unit-tested): eligibility with the reason, abilities a summon never uses, the
+  bridge's brain-call rule, pacing prune.
+- `GameInterface/SummonControl.cs`: reads the game; one answer a frame per creature, held weakly (never by id); the
+  temporary settings view - Mixed range, DPS role, no Pure Mage, with the summoner's friendly-fire rule, heal threshold
+  and spell policy; the summoner's blocklist scope (`UserAbilityPolicy.ScopeFor`).
+- `GameInterface/SummonTurnBridge.cs`: the turn-based entry.
+  1. The brain call inside `Prepare` is held back.
+  2. The `Prepare` postfix takes the first decision.
+  3. Each later brain call (Acting, no command) takes the next one, once a frame.
+  4. The `Tick` postfix serves waits and timeouts, and the shared end of the turn once the driver has ended it.
+
+  Every decision is `TurnBasedController.ProcessTurn`; every command goes through `CommandDispatcher.Run`. No status,
+  controllability, faction or group is written. The bridge is bound only when the brain prefix, the `Tick` postfix and
+  the `Prepare` patch all are; otherwise no summon is claimed in turn-based combat.
+- `CustomBrainPatch.ShouldControlUnit` decides an ordinary summon before the direct-control test and the per-character
+  row. `TurnBasedPatches.CompleteTurn` is the end-of-turn handling factored out for both kinds of unit.
+- Guards: `UserAbilityPolicy.Allowed` (not offered), `TacticalEngine.Execute` (before a walk or boost is spent) and
+  `CommandDispatcher.Run` (control conditions and the ability, at issue).
+- Exclusions: the pre-buff routine (casters and recipients), out-of-combat upkeep and quiver preparation (a summon is
+  driven in combat only), the character catalogue.
+- Diagnostics: `[Summon]` lines when a creature is taken over or released; verbose `[SummonTurn]` lines per served
+  turn; a `[Perf] <mode>, cohorts` line when a summon decided - party members and pets, summons, summons' first
+  decisions, the slowest summon decision, summons driven, and the cost of the control checks (outside the decision
+  timer).
+
+### Automated checks (source `bfaccc6`)
+
+- Release build against the real game assemblies, rebuilt from clean: 0 warnings, 0 errors.
+- Unit tests: 677 of 677 pass (13 new, `SummonRulesTests`). Inventory Python tests: 27 of 27 pass.
+- ProfileAudit on the 11 export roots (the author's Units, Spells and Buffs exports included): 35,497 blueprints
+  loaded, the one known failure (`AchaekekSacredWeaponFeature`), 4,022 abilities with 0 reader errors. Every earlier
+  named check passes unchanged. New: **SUMMON-CONTROL, 62 checks** - settings defaults and non-insertion, the temporary
+  view, the compiled route of every policy read and guard, the bridge's adapters, the native `Prepare` / `Tick` /
+  `ForceTick` / `ForceToEnd` and summon-part contracts from the game's IL, and 157 of 157 exported abilities with a
+  top-level spawn action read as summoning.
+- Native harnesses: ToggleCosts 98 (Psionics provider), TomeBurn 14, ToyBoxSpend 10 checks, 0 failures.
+- New foreign members: 4, all in the game assembly and bound by the build (`UnitPartSaddled.Rider`,
+  `UnitEntityData.IsPet`, `UnitPartSummonedMonster.IsLinkedToSummoner`, `UnitState.IsFinallyDead`); none outside it.
+
+These checks run no actor, patch, command, turn or Unity timing. They cannot show that a turn completes in the game.
+
+### Test package
+
+`test-builds/AI-Control-FACC-v0.3.30-dev-summon1-bfaccc6-UMM-test.zip`, startup MVID
+`c72d459e-7d4f-417a-b030-6d90db7ba765`; identity and checksums next to it.
+
+### Gameplay tests (switch the checkbox on; matched turn-based and real time)
+
+Turn completion first - stop and report if any of these fails:
+1. One Leopard (Summon Monster / Nature's Ally): its turn starts, it acts, and the turn ends without a pause or a
+   freeze; the log shows `[Summon] ... AI Control drives it` and, verbose, `[SummonTurn]` lines.
+2. A turn with nothing to do (no enemy in reach or sight) and a turn where every path is refused: the turn ends within
+   about half a second.
+3. A walk then an attack; a quick action then a main action; a natural full attack (claws and bite).
+4. Switch the checkbox off in the middle of a fight, then on again; switch turn-based mode off; switch the summoner's
+   AI off; let the summoner fall unconscious: the summon goes back to the game's AI and its turns still end.
+5. The summon expires or dies during its own turn.
+
+Then behaviour:
+6. One Bralani (Mirror Image, Lightning Bolt, Cure Serious Wounds): its choices and friendly fire.
+7. A summoner on Ranged + Pure Mage with a melee summon: the summon still attacks with its natural weapons.
+8. Block an ability in the summoner's list (for example Dominate on a mixed kit): the summon does not use it.
+9. A summon never casts a summoning spell and never uses the party's items.
+10. A Demonology ritual summon: is it linked and driven? Creeping Doom swarms and a summon's own summons are not.
+11. Pets and manual orders to party members behave as before.
+
+Performance:
+12. A melee pack (four to eight creatures) and one caster summon, with the checkbox off and on in the same fights:
+    compare the `[Perf]` lines, the cohorts line (party versus summons, first decisions, control-check cost) and how
+    the game feels at each summon's turn start and, in real time, when the pack decides.
+13. Repeated summon / expire / rest cycles: no summon ids appear in the saved settings file.
+
+ToyBox's clickable summons are untested: with the checkbox off they are the player's to command now.
+
+
+## 157. Author-authorized PR integration and v0.3.50 development build
+
+The author delegated review/merge of all six open PRs #46–#51 and requested the next build be 0.3.50.
+[Review, exact input heads, corrections and replay](V0350_INTEGRATION_REVIEW.md). Development base `44b224f`.
+Original histories and all native/audit/unit registrations are preserved; summon implementation is section 156.
+
+Review repairs final summon authority to bypass the per-frame eligibility memo, refreshes its active-fact swarm
+classification at issue through the shared snapshot, and counts unique adoptions once per creature/fight even
+after release/re-adoption. Excluded modes/factions/unusable actors avoid swarm/owner scans. No actor preview,
+extra native attack, general movement/commitment/retreat/pathfinder/stuck policy or controllability/status write.
+Existing frame memo, native driver/dispatch/action checks and default-off summon setting remain. Native scalar
+and compiled-route/state-transition checks complement all combined regressions. Manifest becomes 0.3.50 under
+explicit author instruction; module/ZIP identities are distinct. Native gameplay and matched timing remain pending.
+
+Checked source `ebfac70`, [receipt](competence/V0350_INTEGRATION_CHECKS.json) and [integration1 test ZIP](../test-builds/AI-Control-FACC-v0.3.50-dev-integration1-ebfac70-UMM-test.zip), startup MVID `0b54fad9-fc28-483c-a87a-3f1e9f0efd62`. 705 unit + 27 inventory tests and native checks pass; actual-reference Release 0 warnings/errors; 27/27 added signatures resolve. Compatible/supplementary audit scopes pass; original full-corpus enum failure remains distinct. Gameplay/matched Unity timing pending.

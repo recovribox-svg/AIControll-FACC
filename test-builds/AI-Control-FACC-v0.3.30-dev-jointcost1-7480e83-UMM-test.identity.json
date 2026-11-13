@@ -1,0 +1,21 @@
+{
+  "build_label": "jointcost1",
+  "kind": "development-test",
+  "version": "0.3.30",
+  "source_branch": "codex/joint-spell-costs",
+  "source_commit": "7480e839d42997b273c8b53bf57caa398cbe0bbb",
+  "starting_commit": "47450331a6f19b09ab012e6d283d15e94240d824",
+  "development_base": "44b224f5af76dc5f5ae6086d6abbfbdeac790627",
+  "dependency_pr": 50,
+  "dll": {
+    "assembly": "CompanionAI_Pathfinder, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null",
+    "mvid": "ff8df076-59e9-468b-81c2-8f2d39302458",
+    "sha256": "33e2e4027f8b95bf132f65bbb17ca1f5fa7a1bb134898f3e15aa577782ec1c5c",
+    "size": 1375744
+  },
+  "manifest_sha256": "d6ee91e78dc5d4981ad51a1a1a85bb1e7fe3f0a87814697f2fd9ee1c20d35594",
+  "checks_receipt": "docs/competence/JOINT_SPELL_COSTS_CHECKS.json",
+  "gameplay_status": "not played",
+  "scope": "Cumulative jointcost1 includes Focused Shot (PR #50) and review7 (#47/#48). Check the current known native activation costs of setup/main before valuing a boost; a qualifying free Quicken lazily selects the best already-scored jointly affordable second standard action. Preserve conversion source, slot cost/book/level/prepared identity/order and base per-day/resource/override spending. Per-pass identity quote memo and reusable pure financial budget, no live spend/refund/reservation or new movement policy. Unsupported prices stay unknown; ordinary actions remain.",
+  "release": false
+}

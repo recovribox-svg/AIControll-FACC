@@ -20,12 +20,14 @@ namespace CompanionAI_Pathfinder.Tactics
         public static List<T> Apply<T>(IEnumerable<T> ordered, Func<IReadOnlyList<T>, T> selectMain,
             Func<T, bool> needsCheck, Func<T, bool> canPrepare, Action<T> rejected = null,
             Action<int> budgetLimited = null, Func<T, bool> keepUnchecked = null,
-            Func<IReadOnlyList<T>, bool> hasUsefulAction = null, Func<IEnumerable<T>> idleFallback = null) where T : class
+            Func<IReadOnlyList<T>, bool> hasUsefulAction = null, Func<IEnumerable<T>> idleFallback = null,
+            Func<T, string> recoveryKey = null) where T : class
         {
             var usable = ordered.ToList();
             var checkedPlans = new HashSet<T>();
             int checks = 0;
             bool refused = false;
+            HashSet<string> refusedRecoveryKeys = null;
             List<T> Finish()
             {
                 // A plan needing a step can suppress advances before its path is tested. Recover only after an
@@ -35,7 +37,16 @@ namespace CompanionAI_Pathfinder.Tactics
                 {
                     var fallback = idleFallback();
                     // Remaining sub-threshold plans must not hide a useful fallback from first-main selection.
-                    if (fallback != null) usable.InsertRange(0, fallback);
+                    if (fallback != null)
+                    {
+                        if (refusedRecoveryKeys != null)
+                            fallback = fallback.Where(c =>
+                            {
+                                string key = recoveryKey(c);
+                                return string.IsNullOrEmpty(key) || !refusedRecoveryKeys.Contains(key);
+                            });
+                        usable.InsertRange(0, fallback);
+                    }
                 }
                 return usable;
             }
@@ -56,6 +67,14 @@ namespace CompanionAI_Pathfinder.Tactics
                 {
                     usable.Remove(main);
                     refused = true;
+                    // The factory may create a new object for a plain move already refused above. Retain only its
+                    // exact plan identity, for this invocation; untested plans and other moves remain eligible.
+                    string key = idleFallback != null ? recoveryKey?.Invoke(main) : null;
+                    if (!string.IsNullOrEmpty(key))
+                    {
+                        if (refusedRecoveryKeys == null) refusedRecoveryKeys = new HashSet<string>(StringComparer.Ordinal);
+                        refusedRecoveryKeys.Add(key);
+                    }
                     rejected?.Invoke(main);
                 }
             }

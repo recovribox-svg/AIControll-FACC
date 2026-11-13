@@ -1,5 +1,20 @@
 # Test builds
 
+## Task-branch candidate: v0.3.30 summon1 (bfaccc6) - summon control, opt-in, not played
+
+[UMM test ZIP](AI-Control-FACC-v0.3.30-dev-summon1-bfaccc6-UMM-test.zip?raw=true) · [Identity](AI-Control-FACC-v0.3.30-dev-summon1-bfaccc6-UMM-test.identity.json) · [Checksums](AI-Control-FACC-v0.3.30-dev-summon1-bfaccc6-UMM-test.sha256) · [Checks](../docs/competence/SUMMON_CONTROL_CHECKS.json) · [Notes and replay steps](../docs/TACTICAL_AI.md) (§152)
+
+Source `bfaccc6`, branch `claude/summon-control` (PR into development); manifest stays 0.3.30. Startup MVID `c72d459e-7d4f-417a-b030-6d90db7ba765`.
+
+Switch on **Control Summoned Creatures (experimental)** in the mod's settings: in combat, AI Control then decides for the creatures summoned by
+the characters it controls (not pets, swarms or a summon's own summons). With the switch off the game's AI drives summons as before.
+Test turn completion first (a summon's turn must start, act and end without a freeze), then behaviour, then a pack's performance, in
+turn-based and real time. Keep the startup MVID with the logs.
+
+677 unit tests, 27 inventory tests, zero-warning Release build against the real game assemblies, ProfileAudit (35,497 blueprints, the one
+known failure, SUMMON-CONTROL 62 checks) and the three native harnesses pass. None of these runs a turn in the game.
+
+
 ## Task-branch candidate: v0.3.30 toggle self-review (c6e8b25) — review and gameplay pending
 
 [UMM test ZIP](AI-Control-FACC-v0.3.30-dev-toggle-review-c6e8b25-UMM-test.zip?raw=true) · [Identity](AI-Control-FACC-v0.3.30-dev-toggle-review-c6e8b25-UMM-test.identity.json) · [Changes and paired TB/RT replay](../docs/competence/C06_TOGGLE_COSTS.md)
@@ -1676,3 +1691,38 @@ Cumulative review3/Shifter/EA prerequisites. Excludes unidentifiable shared-arro
 [UMM test ZIP](AI-Control-FACC-v0.3.30-dev-review5-45c3b4d-UMM-test.zip) · [identity](AI-Control-FACC-v0.3.30-dev-review5-45c3b4d-UMM-test.identity.json) · [checksums](AI-Control-FACC-v0.3.30-dev-review5-45c3b4d-UMM-test.sha256). Source `45c3b4d`, startup MVID `b3359daf-c8e5-4bb6-9245-d6be013a4d15`, manifest 0.3.30. ZIP SHA-256 `622b4e6ff234ce54691b303e4763f355ea04753de4cdda1954e8b92dab4dd866`.
 
 Cumulative review4/campaign-flag/Shifter/EA prerequisites. After an actual offensive-approach refusal leaves no useful action, lazily price ordinary advances through the existing three-target closing builder. Keep the three-check selected preparation cap, native dispatcher route/hazard/AoO checks, action/status/Pure Mage gates and genuine real-time in-place cooldown waiting. No full Decide retry, reused rejected path or general retreat/commitment/pathfinder/stuck change. [Design/replay](../docs/REJECTED_APPROACH_ADVANCE.md) · [receipt](../docs/competence/REJECTED_APPROACH_ADVANCE_CHECKS.json). 664 unit + 11 inventory, native step 13 and inherited checks pass; real-reference Release 0 warnings; 0/0 added signatures resolve. Compatible/supplementary audits pass, original full-corpus enum failure remains separate. Gameplay/matched timing pending.
+
+
+## review6: Review5 playtest: keep new-form quotes paired with the current assessed target (not played)
+
+[UMM test ZIP](AI-Control-FACC-v0.3.30-dev-review6-4392e51-UMM-test.zip) · [identity](AI-Control-FACC-v0.3.30-dev-review6-4392e51-UMM-test.identity.json) · [checksums](AI-Control-FACC-v0.3.30-dev-review6-4392e51-UMM-test.sha256). Source `4392e51`, startup MVID `3f9c3355-3c65-4477-b059-dd370eb20d2b`, manifest 0.3.30. ZIP SHA-256 `348343b4b5eb5a386648a5bd0b02209b2f91efb2de4b2033e87719c3cfb0981a`.
+
+Integrated review5 prerequisites plus matched current/projected form reference. Retains the existing assessed target and weapon estimate even at zero, requires that pair for a new-form quote and preserves its ranged flag. Unknown baseline stays unknown; ordinary profitable-buff fields and Fury admission unchanged. Broad TB/RT review distinguishes native outcomes, manual spawns/rests and unsupported signatures. Redundant recovery reattempt is a separate focused follow-up. [Design/replay](../docs/REVIEW5_PLAYTEST_REVIEW.md) · [receipt](../docs/competence/REVIEW5_PLAYTEST_CHECKS.json). 664 unit + 27 inventory, native step 13 and inherited checks pass; real-reference Release 0 warnings; 0/0 added signatures resolve. Compatible/supplementary audits pass, original full-corpus enum failure remains separate. Gameplay/matched timing pending.
+
+
+## review7: Review5 playtest: withhold recovery moves already refused in this decision (not played)
+
+[UMM test ZIP](AI-Control-FACC-v0.3.30-dev-review7-3cb6422-UMM-test.zip) · [identity](AI-Control-FACC-v0.3.30-dev-review7-3cb6422-UMM-test.identity.json) · [checksums](AI-Control-FACC-v0.3.30-dev-review7-3cb6422-UMM-test.sha256). Source `3cb6422`, startup MVID `6383a7b3-201b-4c76-a335-027ee5ef4f8e`, manifest 0.3.30. ZIP SHA-256 `5073b9a58f9695555c2acd33fb215ac35a1efb351a08a649f3677b58ee9f53a0`.
+
+Cumulative review7 includes PR #47 matched form-reference correction and broad review. After an actual plain-move refusal, withhold a recreated recovery plan with that same existing key for this invocation only. Untested plans, other moves and fresh decisions remain eligible. Preserves the approved bounded fallback, useful actions, native safety/status/cooldown gates and three selected-preparation checks. No new pursuit, target, retreat, pathfinder or stuck policy. [Design/replay](../docs/REVIEW5_RECOVERY_KEYS.md) · [receipt](../docs/competence/REVIEW5_RECOVERY_KEY_CHECKS.json). 668 unit + 27 inventory, native step 13 and inherited checks pass; real-reference Release 0 warnings; 0/0 added signatures resolve. Compatible/supplementary audits pass, original full-corpus enum failure remains separate. Gameplay/matched timing pending.
+
+
+## focused1: Focused Shot: value its before-cast damage buff and one native ranged attack (not played)
+
+[UMM test ZIP](AI-Control-FACC-v0.3.30-dev-focused1-b890309-UMM-test.zip) · [identity](AI-Control-FACC-v0.3.30-dev-focused1-b890309-UMM-test.identity.json) · [checksums](AI-Control-FACC-v0.3.30-dev-focused1-b890309-UMM-test.sha256). Source `b890309`, startup MVID `22e24115-7500-4df6-828a-305f0075e591`, manifest 0.3.30. ZIP SHA-256 `cbead1c75c5727c9001cd4b583cb3bf3e2cbdb5637142640abb73cd562b8ecc0`.
+
+Cumulative focused1 includes review7 and PRs #47/#48. Structural admission for the actual Focused Shot graph; native prospective AdditionalDamage value and existing cached weapon forecast. One native ranged hand/attack only, positive/zero/negative and active/disabled bonus handling, existing defenses/provoke/action/command paths. Unknown variants remain unsupported; no actor mutation or new movement policy. [Design/replay](../docs/FOCUSED_SHOT.md) · [receipt](../docs/competence/FOCUSED_SHOT_CHECKS.json). 668 unit + 27 inventory, native step 13 and inherited checks pass; real-reference Release 0 warnings; 10/10 added signatures resolve. Compatible/supplementary audits pass, original full-corpus enum failure remains separate. Gameplay/matched timing pending.
+
+
+## jointcost1: Spell boosts: require jointly affordable known activation costs (not played)
+
+[UMM test ZIP](AI-Control-FACC-v0.3.30-dev-jointcost1-7480e83-UMM-test.zip) · [identity](AI-Control-FACC-v0.3.30-dev-jointcost1-7480e83-UMM-test.identity.json) · [checksums](AI-Control-FACC-v0.3.30-dev-jointcost1-7480e83-UMM-test.sha256). Source `7480e83`, startup MVID `ff8df076-59e9-468b-81c2-8f2d39302458`, manifest 0.3.30. ZIP SHA-256 `e725718c38b6111c5359bb94f672650deca783c8e1186996026116ae0d4bf2c9`.
+
+Cumulative jointcost1 includes Focused Shot (PR #50) and review7 (#47/#48). Check the current known native activation costs of setup/main before valuing a boost; a qualifying free Quicken lazily selects the best already-scored jointly affordable second standard action. Preserve conversion source, slot cost/book/level/prepared identity/order and base per-day/resource/override spending. Per-pass identity quote memo and reusable pure financial budget, no live spend/refund/reservation or new movement policy. Unsupported prices stay unknown; ordinary actions remain. [Design/replay](../docs/JOINT_SPELL_COSTS.md) · [receipt](../docs/competence/JOINT_SPELL_COSTS_CHECKS.json). 692 unit + 27 inventory, native step 13 and inherited checks pass; real-reference Release 0 warnings; 13/13 added signatures resolve. Compatible/supplementary audits pass, original full-corpus enum failure remains separate. Gameplay/matched timing pending.
+
+
+## integration1: Author-authorized integration of open PRs 46–51 and v0.3.50 development build (not played)
+
+[UMM test ZIP](AI-Control-FACC-v0.3.50-dev-integration1-ebfac70-UMM-test.zip) · [identity](AI-Control-FACC-v0.3.50-dev-integration1-ebfac70-UMM-test.identity.json) · [checksums](AI-Control-FACC-v0.3.50-dev-integration1-ebfac70-UMM-test.sha256). Source `ebfac70`, startup MVID `0b54fad9-fc28-483c-a87a-3f1e9f0efd62`, manifest 0.3.50. ZIP SHA-256 `daa6f67b9f71e72d692af3779dae872a09faa916b6131318cc46a5accfdee62a`.
+
+Combined v0.3.50 development test includes summon control (experimental, default off), review5 form/recovery fixes, Focused Shot and jointly affordable known spell-boost activation costs. Review corrections force fresh summon authority/facts at final issue, refresh active-fact swarm classification, keep unique adoption counts across reacquisition and short-circuit excluded actor scans. All original PR histories and native/test registrations retained. Manifest Version 0.3.50 explicitly requested by the author; no main/tag/stable release. [Design/replay](../docs/V0350_INTEGRATION_REVIEW.md) · [receipt](../docs/competence/V0350_INTEGRATION_CHECKS.json). 705 unit + 27 inventory, native step 13 and inherited checks pass; real-reference Release 0 warnings; 27/27 added signatures resolve. Compatible/supplementary audits pass, original full-corpus enum failure remains separate. Gameplay/matched timing pending.

@@ -7,6 +7,7 @@
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="..\..\Tactics\SpellTierPolicy.cs" Link="SpellTierPolicy.cs" />
+    <Compile Include="..\..\Tactics\SummonRules.cs" Link="SummonRules.cs" />
     <Compile Include="..\..\Tactics\ActionRules.cs" Link="ActionRules.cs" />
     <Compile Include="..\..\Tactics\RiskMath.cs" Link="RiskMath.cs" />
     <Compile Include="..\..\Tactics\ArrivalRule.cs" Link="ArrivalRule.cs" />
@@ -47,6 +48,7 @@
     <Compile Include="..\..\Tactics\WrathHandoff.cs" Link="WrathHandoff.cs" />
     <Compile Include="..\..\Tactics\ObserverRules.cs" Link="ObserverRules.cs" />
     <Compile Include="..\..\Tactics\MagusChargeChance.cs" Link="MagusChargeChance.cs" />
+    <Compile Include="..\..\Tactics\JointCostBudget.cs" Link="JointCostBudget.cs" />
     <Compile Include="..\..\Tactics\ShifterRules.cs" Link="ShifterRules.cs" />
     <Compile Include="..\..\Tactics\OptionalApiBinding.cs" Link="OptionalApiBinding.cs" />
     <Compile Include="..\..\Tactics\UserAbilityRules.cs" Link="UserAbilityRules.cs" />
