@@ -111,3 +111,5 @@ Replay the packaged v0.3.51 in both modes, retaining startup MVID:
 
 New v0.3.51 behavior is not present in these v0.3.50 logs. Stable package preparation is author-requested;
 automated validation and author-confirmed corrected gameplay remain distinct.
+
+Checked source `882c082`, [receipt](competence/V0351_PLAYTEST_CHECKS.json) and [v0.3.51 stable ZIP](../release/CompanionAI_Pathfinder_v0.3.51.zip), startup MVID `e31e626d-9c4b-4536-8b26-63433d3c7425`. 772 unit + 27 inventory tests and native checks pass; actual-reference Release 0 warnings/errors; 1/1 added signatures resolve. Compatible/supplementary audit scopes pass; original full-corpus enum failure remains distinct. Gameplay/matched Unity timing pending.

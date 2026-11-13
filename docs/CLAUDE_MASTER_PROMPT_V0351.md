@@ -14,6 +14,11 @@ revision for this review was `c92b607` (PR #54 integrated); v0.3.51 is the follo
 [validation receipt](competence/V0351_PLAYTEST_CHECKS.json), then reconcile later development. Do not rebuild
 from an old 0.3.30/C06 checkout or assume a packaging/merge commit identifies a different gameplay DLL.
 
+Checked v0.3.51 code is `882c082092f2212a6370b169ae117ed0c28f84fe`, startup MVID
+`e31e626d-9c4b-4536-8b26-63433d3c7425`; ZIP SHA-256
+`655e67e68c29ff10a6aa9b861b8f921f17e2cdbf1ff431f9f2a778e30c329b93`.
+The final metadata/handover commit can follow that checked code without changing its DLL.
+
 ## Evidence and status
 
 Read `AGENTS.md`, `CONTRIBUTING.md`, the **newest** `CLAUDE.md` handover, `docs/TACTICAL_AI.md` §160 and
@@ -27,6 +32,11 @@ The two original uploads, `Log.txt` and `combatLog.txt`, are the **v0.3.50 stabl
 by the author. Do not explain within-fight transfers as rests. ToyBox spawning occurred in older tests;
 its exact use in these particular uploads was not separately reconfirmed. Ask only for missing evidence
 that materially affects a conclusion; continue independent work meanwhile.
+
+Raw logs, game assemblies, mod binaries and full blueprint exports are private inputs, not committed source.
+If the two hashed logs are unavailable in your session, request those exact files for trace-level review.
+Check which native assemblies/BubblePrints data are actually present locally; Codex's private workspace paths
+are not portable. Source inspection and the documented native-contract work can proceed independently.
 
 There are four fights, 203 measured TB / 839 measured RT decisions, and no observed AI Control exception.
 Only 324 RT tactics summaries were retained; quiet decisions are still included in the measured count.
@@ -195,6 +205,9 @@ three-round settling period and gain>=5 override; cached native held-weapon loss
 and removal urgency were corrected before this playtest. Inspect `TacticalEngine.BuffReplacement.cs`, buff
 scoring in `TacticalEngine.cs`, `TacticalEngine.Buffs.cs`, `CombatMath.HeldBuffs.cs`, `ValueModel.UniqueBuff.cs`
 and the performed-cast ledger. Do not replace this with a name blacklist or blanket one-cast-per-fight cap.
+Exact cached held-weapon repricing is limited to the inspected constant-stat, same-weapon/current-routine
+contract. Complex buffs, mixed weapons and stale/unavailable quotes retain the earlier approximation;
+the prior fixes did not remove all counterfactual/stat-link/defense-source limitations.
 
 **Next:** reconstruct each transfer by ability/buff tier, real recipient ID, incoming gross components,
 same-recipient sibling loss, remote holder loss, placed age and settling override. Log only the selected
