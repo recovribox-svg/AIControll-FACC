@@ -5497,3 +5497,57 @@ modes; the shared 997-control-check/27.3ms total is printed in both summaries an
 New unit/native scalar/compiled-route checks cover mode and logging changes; final source/identity follows.
 
 Checked source `30cfa2c`, [receipt](competence/V0352_PLAYTEST_CHECKS.json) and [v0.3.52 stable ZIP](../release/CompanionAI_Pathfinder_v0.3.52.zip), startup MVID `981a7b77-a654-4da1-9a22-68bc1c6a77bd`. 787 unit + 27 inventory tests and native checks pass; actual-reference Release 0 warnings/errors; 0/0 added signatures resolve. Compatible/supplementary audit scopes pass; original full-corpus enum failure remains distinct. Gameplay/matched Unity timing pending.
+
+## 162. Summon-kit inventory (S1): what a driven summon's kit asks of the engine
+
+13 November 2026, Claude. Tooling and documentation only; no gameplay source, manifest or package change.
+[Method, coverage, ranked gaps, limits and reproduction](SUMMON_KIT_INVENTORY.md),
+[detail rows](competence/SUMMON_KITS_DETAIL.txt), [receipt](competence/SUMMON_KITS_CHECKS.json).
+Branch `claude/summon-kit-inventory` from development `5138990`.
+
+**Problem.** Summon control (§156) had two played creatures as its whole evidence of kits. Which creatures can the
+loaded data summon, what do their blueprints give them, and what do the mod's readers make of it?
+
+**What was added.** ProfileAudit section `SUMMON-KITS` (`tools/ProfileAudit/SummonKitCheck.cs`): spawn sources by
+their `ContextActionSpawnMonster` elements, the unique creatures they name, each creature's static kit by the game's
+unit setup (ability components, facts, templates, race, class levels, selections, named spells, `AddFacts`,
+`AddFeatureOnClassLevel`, `AddFeatureIfHasFact`), body, brain casts and mechanism markers, and every active ability
+through the summon policy and the same reader verdicts as the report's ability rows (`Audit.VerdictOf`). New options:
+`--supplement <folder>` (missing-only fixtures: a dump folder's blueprint is never replaced), `--summon-unit-list
+<file>` (creature ids a code-built mod source summons) and `--summon-kit-report <file>` (the detail rows).
+`tools/ProfileAudit/summon_kit_supplement.py` writes the missing-only stock closure; it has three tests.
+
+**Coverage** (author's exports, 607 missing-only stock 2.7.0x fixtures, the Demonology creature list):
+
+- 323 sources hold 459 spawn references; 235 are party-plausible by static references.
+- 233 unique creatures from loaded sources (219 references repeat a creature), 191 linked by at least one source,
+  42 only unlinked; plus 20 that only Demonology's code-built abilities summon: 253 in all.
+- 165 are party-reachable and not swarms. All carry weapons, 157 are melee, 27 have no active ability.
+- 672 creature-ability pairs on those 165: read 502, read with a guessed part 48, guessed 31, unread 13, not offered
+  24, on by default 44, refused by the summon policy 10. 178 pairs are cast by the creature's own brain; 37 of those
+  are not fully read.
+- Missing: six creature ids and three kit references are absent from the stock data itself. Dynamic: 107 creatures
+  leave a part to the running game. The supplement supplies 6 sources, 1 creature and 2 kit abilities.
+
+**A reading is reader recognition, not tactical competence.** Nothing a live creature adds is seen. Calibration on the
+two played summons: their own kits match the live action bar exactly (5 of 5); the universal actions are incomplete
+(6 of 10 found).
+
+**Ranked gaps** (coverage first, then judgement): closing to melee (the shared approach-refusal topic: Abrikandilu
+ten refusals in the played log, four of nine decisions end the turn); position changes the readers do not understand
+(teleports, leaps: 9 abilities, 11 creatures); self-effects with a condition and a combat trigger (6 abilities,
+several on the author's Demonology creatures); on-hit riders (117 creatures, not classified in this slice);
+target-bound marks; Whirlwind; Burrow. No summonable stock creature grapples on a hit.
+
+**Bounds.** Offline tool only. The graph walk stays inside one blueprint; a kit's fact closure is capped at 4,000
+steps. No actor, spawn, cast, command or Unity execution, and nothing in the deployable DLL.
+
+**Checks.** `SUMMON-KITS` 8 checks; two runs byte-identical; the other 38 audit sections keep their 959 checks and
+report lines against a baseline build of development's tool. 787 unit + 27 inventory + 3 script tests; Release 0
+warnings; ToggleCosts 98, TomeBurn 14, ToyBoxSpend 10. Gameplay source, `Info.json` and `release/` unchanged.
+
+**Played logs.** `Log.txt` matches the v0.3.51 hash in `V0352_PLAYTEST_INPUTS.json`; the supplied `combatLog.txt`
+is the earlier v0.3.50 session's file (it matches `V0351_PLAYTEST_INPUTS.json`).
+
+**Next.** S2: approach end points, from the supplied log; then I1 (Invocation ledger, unblocked by `Log.txt`).
+

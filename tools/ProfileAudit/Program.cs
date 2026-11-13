@@ -72,7 +72,8 @@ namespace ProfileAudit
             if (!AuditOptions.TryParse(args, out var options, out var optionError))
             {
                 Console.Error.WriteLine(optionError);
-                Console.Error.WriteLine("Usage: ProfileAudit [--allow-failures N] [--optional-provider TabletopTweaks-Core.dll] [--blocklist-checks] <dump folders...> <report.txt>");
+                Console.Error.WriteLine("Usage: ProfileAudit [--allow-failures N] [--optional-provider TabletopTweaks-Core.dll] [--blocklist-checks] " +
+                                        "[--supplement <folder>]... [--summon-kit-report <file>] [--summon-unit-list <file>]... <dump folders...> <report.txt>");
                 return 2;
             }
             var output = options.Output;
@@ -117,6 +118,30 @@ namespace ProfileAudit
                     }
                     if (loaded.Count == 200) Console.WriteLine("200 loaded...");
                 }
+            // ★ summon-kit inventory: supplementary fixtures fill gaps only; a dump folder's blueprint is never replaced.
+            int supplementFiles = 0, supplementKept = 0;
+            foreach (var root in options.Supplements)
+                foreach (var file in Directory.EnumerateFiles(root, "*.jbp", SearchOption.AllDirectories))
+                {
+                    supplementFiles++;
+                    try
+                    {
+                        var w = BlueprintJsonWrapper.Load(file);
+                        if (w?.Data == null) throw new InvalidDataException("blueprint wrapper contains no data");
+                        if (loaded.ContainsKey(w.Data.AssetGuid)) continue;
+                        loaded[w.Data.AssetGuid] = w.Data;
+                        Audit.Paths[w.Data] = "supplement:" + Path.GetRelativePath(root, file);
+                        Audit.Supplement.Add(w.Data);
+                        supplementKept++;
+                    }
+                    catch (Exception ex)
+                    {
+                        failed++;
+                        loadErrors.Add($"{file}: {ex.GetType().Name}: {ex.Message}");
+                    }
+                }
+            if (options.Supplements.Count > 0)
+                Console.WriteLine($"supplement: {supplementKept} of {supplementFiles} files added (missing-only; dump folders keep every blueprint they supply)");
             Console.WriteLine($"loaded {loaded.Count}, failed {failed}");
             foreach (var e in loadErrors) Console.WriteLine("  " + e);
             // Explicit small allowances permit unrelated failures, but cannot turn an empty/mass-failed dump
@@ -270,6 +295,11 @@ namespace ProfileAudit
             foreach (var line in summonLines) Console.WriteLine(line);
             File.WriteAllText(output, string.Join(Environment.NewLine, summonLines) + Environment.NewLine + Environment.NewLine + File.ReadAllText(output));
             blocklistFailures += summonFailures;
+            // ★ summon-kit inventory (S1): spawn sources, spawned units and their kits through the mod's own readers.
+            var kitLines = SummonKitCheck.Run(loaded.Values, options.SummonKitReport, options.SummonUnitLists, out int kitFailures);
+            foreach (var line in kitLines) Console.WriteLine(line);
+            File.WriteAllText(output, string.Join(Environment.NewLine, kitLines) + Environment.NewLine + Environment.NewLine + File.ReadAllText(output));
+            blocklistFailures += kitFailures;
             var formReferenceLines = ShifterReferenceCheck.Run(out int formReferenceFailures);
             foreach (var line in formReferenceLines) Console.WriteLine(line);
             File.WriteAllText(output, string.Join(Environment.NewLine, formReferenceLines) + Environment.NewLine + Environment.NewLine + File.ReadAllText(output));
