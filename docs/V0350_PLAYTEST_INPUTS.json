@@ -1,0 +1,618 @@
+{
+  "task": "v0.3.50 integration1 broad playtest review",
+  "development_base": "d466f384acbdca242b214a16afe552d55606411d",
+  "played_build": {
+    "version": "0.3.50",
+    "label": "integration1",
+    "source_commit": "ebfac70b55bbf2939495c0cd2226a16466f4413b",
+    "mvid": "0b54fad9-fc28-483c-a87a-3f1e9f0efd62",
+    "startup_identity_row": 3,
+    "identity_confirmed": true
+  },
+  "inputs": [
+    {
+      "file": "Log.txt",
+      "sha256": "c42d524d977ecb243925b117dd2d6f1cd3941cb6388a8a54a03567a831f2bbfa",
+      "bytes": 3135936,
+      "lines": 15609
+    },
+    {
+      "file": "combatLog.txt",
+      "sha256": "32ed5bd1245049c7a5abd4a2a14f46e5605131d26fc63df34aba84f4df90c0d4",
+      "bytes": 2343645,
+      "lines": 65888
+    }
+  ],
+  "interventions": "Author confirms ToyBox enemy spawning and rests; exact timestamps unknown.",
+  "summary": {
+    "combat_starts": 22,
+    "combat_ends": 22,
+    "retained_decision_summaries": {
+      "TB": 656,
+      "RT": 1096,
+      "total": 1752
+    },
+    "measured_decisions": {
+      "TB": 666,
+      "RT": 3378,
+      "total": 4044
+    },
+    "slow_rows": 207,
+    "slow_rows_coinciding_with_gc": 28,
+    "ai_control_exception_error_rows": 0,
+    "profane_issued": 59,
+    "profane_success_acted": 57,
+    "profane_unacted_interrupts": 2,
+    "profane_unacted_interrupt_rows": [
+      8140,
+      15220
+    ],
+    "profane_issues_by_fight": {
+      "12": 10,
+      "13": 1,
+      "14": 6,
+      "15": 5,
+      "16": 7,
+      "17": 6,
+      "18": 8,
+      "19": 5,
+      "21": 3,
+      "22": 8
+    },
+    "focused_shot_issues": 22,
+    "focused_shot_successes": 18,
+    "faerie_fire_successes": 2,
+    "griffon_shape_acted": 4,
+    "explicit_swarm_exit_issues": {
+      "TB": 3,
+      "RT": 34
+    },
+    "rt_stuck_cancellations": 26,
+    "plain_path_dispatch_refusals": 3
+  },
+  "profane_trace": [
+    {
+      "issue_row": 6683,
+      "end_row": 6686,
+      "fight": 12,
+      "mode": "TB",
+      "round_or_rt_window": 1,
+      "result": "Success",
+      "acted": true
+    },
+    {
+      "issue_row": 6690,
+      "end_row": 6693,
+      "fight": 12,
+      "mode": "TB",
+      "round_or_rt_window": 1,
+      "result": "Success",
+      "acted": true
+    },
+    {
+      "issue_row": 6697,
+      "end_row": 6700,
+      "fight": 12,
+      "mode": "TB",
+      "round_or_rt_window": 1,
+      "result": "Success",
+      "acted": true
+    },
+    {
+      "issue_row": 6704,
+      "end_row": 6707,
+      "fight": 12,
+      "mode": "TB",
+      "round_or_rt_window": 1,
+      "result": "Success",
+      "acted": true
+    },
+    {
+      "issue_row": 6711,
+      "end_row": 6714,
+      "fight": 12,
+      "mode": "TB",
+      "round_or_rt_window": 1,
+      "result": "Success",
+      "acted": true
+    },
+    {
+      "issue_row": 6717,
+      "end_row": 6720,
+      "fight": 12,
+      "mode": "TB",
+      "round_or_rt_window": 1,
+      "result": "Success",
+      "acted": true
+    },
+    {
+      "issue_row": 6724,
+      "end_row": 6727,
+      "fight": 12,
+      "mode": "TB",
+      "round_or_rt_window": 1,
+      "result": "Success",
+      "acted": true
+    },
+    {
+      "issue_row": 6731,
+      "end_row": 6734,
+      "fight": 12,
+      "mode": "TB",
+      "round_or_rt_window": 1,
+      "result": "Success",
+      "acted": true
+    },
+    {
+      "issue_row": 6738,
+      "end_row": 6741,
+      "fight": 12,
+      "mode": "TB",
+      "round_or_rt_window": 1,
+      "result": "Success",
+      "acted": true
+    },
+    {
+      "issue_row": 6887,
+      "end_row": 6890,
+      "fight": 12,
+      "mode": "TB",
+      "round_or_rt_window": 2,
+      "result": "Success",
+      "acted": true
+    },
+    {
+      "issue_row": 7727,
+      "end_row": 7730,
+      "fight": 13,
+      "mode": "TB",
+      "round_or_rt_window": 2,
+      "result": "Success",
+      "acted": true
+    },
+    {
+      "issue_row": 8140,
+      "end_row": 8291,
+      "fight": 14,
+      "mode": "RT",
+      "round_or_rt_window": 1,
+      "result": "Interrupt",
+      "acted": false
+    },
+    {
+      "issue_row": 8334,
+      "end_row": 8339,
+      "fight": 14,
+      "mode": "RT",
+      "round_or_rt_window": 1,
+      "result": "Success",
+      "acted": true
+    },
+    {
+      "issue_row": 8343,
+      "end_row": 8346,
+      "fight": 14,
+      "mode": "RT",
+      "round_or_rt_window": 1,
+      "result": "Success",
+      "acted": true
+    },
+    {
+      "issue_row": 8361,
+      "end_row": 8362,
+      "fight": 14,
+      "mode": "RT",
+      "round_or_rt_window": 1,
+      "result": "Success",
+      "acted": true
+    },
+    {
+      "issue_row": 8416,
+      "end_row": 8417,
+      "fight": 14,
+      "mode": "RT",
+      "round_or_rt_window": 2,
+      "result": "Success",
+      "acted": true
+    },
+    {
+      "issue_row": 8494,
+      "end_row": 8495,
+      "fight": 14,
+      "mode": "RT",
+      "round_or_rt_window": 2,
+      "result": "Success",
+      "acted": true
+    },
+    {
+      "issue_row": 8787,
+      "end_row": 8901,
+      "fight": 15,
+      "mode": "RT",
+      "round_or_rt_window": 1,
+      "result": "Success",
+      "acted": true
+    },
+    {
+      "issue_row": 8904,
+      "end_row": 8905,
+      "fight": 15,
+      "mode": "RT",
+      "round_or_rt_window": 1,
+      "result": "Success",
+      "acted": true
+    },
+    {
+      "issue_row": 8920,
+      "end_row": 8921,
+      "fight": 15,
+      "mode": "RT",
+      "round_or_rt_window": 1,
+      "result": "Success",
+      "acted": true
+    },
+    {
+      "issue_row": 9003,
+      "end_row": 9004,
+      "fight": 15,
+      "mode": "RT",
+      "round_or_rt_window": 2,
+      "result": "Success",
+      "acted": true
+    },
+    {
+      "issue_row": 9027,
+      "end_row": 9028,
+      "fight": 15,
+      "mode": "RT",
+      "round_or_rt_window": 2,
+      "result": "Success",
+      "acted": true
+    },
+    {
+      "issue_row": 9501,
+      "end_row": 9502,
+      "fight": 16,
+      "mode": "RT",
+      "round_or_rt_window": 1,
+      "result": "Success",
+      "acted": true
+    },
+    {
+      "issue_row": 9543,
+      "end_row": 9544,
+      "fight": 16,
+      "mode": "RT",
+      "round_or_rt_window": 2,
+      "result": "Success",
+      "acted": true
+    },
+    {
+      "issue_row": 9551,
+      "end_row": 9552,
+      "fight": 16,
+      "mode": "RT",
+      "round_or_rt_window": 2,
+      "result": "Success",
+      "acted": true
+    },
+    {
+      "issue_row": 9568,
+      "end_row": 9569,
+      "fight": 16,
+      "mode": "RT",
+      "round_or_rt_window": 2,
+      "result": "Success",
+      "acted": true
+    },
+    {
+      "issue_row": 9605,
+      "end_row": 9606,
+      "fight": 16,
+      "mode": "RT",
+      "round_or_rt_window": 2,
+      "result": "Success",
+      "acted": true
+    },
+    {
+      "issue_row": 9699,
+      "end_row": 9700,
+      "fight": 16,
+      "mode": "RT",
+      "round_or_rt_window": 3,
+      "result": "Success",
+      "acted": true
+    },
+    {
+      "issue_row": 9792,
+      "end_row": 9793,
+      "fight": 16,
+      "mode": "RT",
+      "round_or_rt_window": 5,
+      "result": "Success",
+      "acted": true
+    },
+    {
+      "issue_row": 10230,
+      "end_row": 10231,
+      "fight": 17,
+      "mode": "RT",
+      "round_or_rt_window": 1,
+      "result": "Success",
+      "acted": true
+    },
+    {
+      "issue_row": 10236,
+      "end_row": 10237,
+      "fight": 17,
+      "mode": "RT",
+      "round_or_rt_window": 1,
+      "result": "Success",
+      "acted": true
+    },
+    {
+      "issue_row": 10245,
+      "end_row": 10246,
+      "fight": 17,
+      "mode": "RT",
+      "round_or_rt_window": 2,
+      "result": "Success",
+      "acted": true
+    },
+    {
+      "issue_row": 10272,
+      "end_row": 10273,
+      "fight": 17,
+      "mode": "RT",
+      "round_or_rt_window": 2,
+      "result": "Success",
+      "acted": true
+    },
+    {
+      "issue_row": 10503,
+      "end_row": 10504,
+      "fight": 17,
+      "mode": "RT",
+      "round_or_rt_window": 4,
+      "result": "Success",
+      "acted": true
+    },
+    {
+      "issue_row": 11102,
+      "end_row": 11105,
+      "fight": 17,
+      "mode": "RT",
+      "round_or_rt_window": 14,
+      "result": "Success",
+      "acted": true
+    },
+    {
+      "issue_row": 11336,
+      "end_row": 11458,
+      "fight": 18,
+      "mode": "RT",
+      "round_or_rt_window": 1,
+      "result": "Success",
+      "acted": true
+    },
+    {
+      "issue_row": 11461,
+      "end_row": 11462,
+      "fight": 18,
+      "mode": "RT",
+      "round_or_rt_window": 1,
+      "result": "Success",
+      "acted": true
+    },
+    {
+      "issue_row": 11574,
+      "end_row": 11575,
+      "fight": 18,
+      "mode": "RT",
+      "round_or_rt_window": 2,
+      "result": "Success",
+      "acted": true
+    },
+    {
+      "issue_row": 11674,
+      "end_row": 11675,
+      "fight": 18,
+      "mode": "RT",
+      "round_or_rt_window": 2,
+      "result": "Success",
+      "acted": true
+    },
+    {
+      "issue_row": 11705,
+      "end_row": 11706,
+      "fight": 18,
+      "mode": "RT",
+      "round_or_rt_window": 3,
+      "result": "Success",
+      "acted": true
+    },
+    {
+      "issue_row": 11774,
+      "end_row": 11775,
+      "fight": 18,
+      "mode": "RT",
+      "round_or_rt_window": 4,
+      "result": "Success",
+      "acted": true
+    },
+    {
+      "issue_row": 11839,
+      "end_row": 11840,
+      "fight": 18,
+      "mode": "RT",
+      "round_or_rt_window": 4,
+      "result": "Success",
+      "acted": true
+    },
+    {
+      "issue_row": 11855,
+      "end_row": 11856,
+      "fight": 18,
+      "mode": "RT",
+      "round_or_rt_window": 4,
+      "result": "Success",
+      "acted": true
+    },
+    {
+      "issue_row": 12064,
+      "end_row": 12150,
+      "fight": 19,
+      "mode": "RT",
+      "round_or_rt_window": 1,
+      "result": "Success",
+      "acted": true
+    },
+    {
+      "issue_row": 12153,
+      "end_row": 12154,
+      "fight": 19,
+      "mode": "RT",
+      "round_or_rt_window": 1,
+      "result": "Success",
+      "acted": true
+    },
+    {
+      "issue_row": 12343,
+      "end_row": 12344,
+      "fight": 19,
+      "mode": "RT",
+      "round_or_rt_window": 4,
+      "result": "Success",
+      "acted": true
+    },
+    {
+      "issue_row": 12351,
+      "end_row": 12352,
+      "fight": 19,
+      "mode": "RT",
+      "round_or_rt_window": 4,
+      "result": "Success",
+      "acted": true
+    },
+    {
+      "issue_row": 12401,
+      "end_row": 12402,
+      "fight": 19,
+      "mode": "RT",
+      "round_or_rt_window": 4,
+      "result": "Success",
+      "acted": true
+    },
+    {
+      "issue_row": 13556,
+      "end_row": 13557,
+      "fight": 21,
+      "mode": "TB",
+      "round_or_rt_window": 1,
+      "result": "Success",
+      "acted": true
+    },
+    {
+      "issue_row": 13560,
+      "end_row": 13561,
+      "fight": 21,
+      "mode": "TB",
+      "round_or_rt_window": 1,
+      "result": "Success",
+      "acted": true
+    },
+    {
+      "issue_row": 14150,
+      "end_row": 14151,
+      "fight": 21,
+      "mode": "RT",
+      "round_or_rt_window": 12,
+      "result": "Success",
+      "acted": true
+    },
+    {
+      "issue_row": 14431,
+      "end_row": 14432,
+      "fight": 22,
+      "mode": "RT",
+      "round_or_rt_window": 1,
+      "result": "Success",
+      "acted": true
+    },
+    {
+      "issue_row": 14450,
+      "end_row": 14451,
+      "fight": 22,
+      "mode": "RT",
+      "round_or_rt_window": 2,
+      "result": "Success",
+      "acted": true
+    },
+    {
+      "issue_row": 15209,
+      "end_row": 15210,
+      "fight": 22,
+      "mode": "RT",
+      "round_or_rt_window": 10,
+      "result": "Success",
+      "acted": true
+    },
+    {
+      "issue_row": 15220,
+      "end_row": 15221,
+      "fight": 22,
+      "mode": "RT",
+      "round_or_rt_window": 10,
+      "result": "Interrupt",
+      "acted": false
+    },
+    {
+      "issue_row": 15244,
+      "end_row": 15245,
+      "fight": 22,
+      "mode": "RT",
+      "round_or_rt_window": 10,
+      "result": "Success",
+      "acted": true
+    },
+    {
+      "issue_row": 15490,
+      "end_row": 15491,
+      "fight": 22,
+      "mode": "RT",
+      "round_or_rt_window": 13,
+      "result": "Success",
+      "acted": true
+    },
+    {
+      "issue_row": 15496,
+      "end_row": 15497,
+      "fight": 22,
+      "mode": "RT",
+      "round_or_rt_window": 13,
+      "result": "Success",
+      "acted": true
+    },
+    {
+      "issue_row": 15510,
+      "end_row": 15511,
+      "fight": 22,
+      "mode": "RT",
+      "round_or_rt_window": 13,
+      "result": "Success",
+      "acted": true
+    }
+  ],
+  "native_reference": {
+    "assembly": "Assembly-CSharp.dll",
+    "sha256": "2cb7160b7154d4ffacc77b9c51b1eb26199e1294300f04fdfc073367b2ef8953",
+    "mvid": "90a9869c-2792-4c7b-bfb7-5a8b33da7c82"
+  },
+  "limits": [
+    "AI issue and acted outcome are not independent numerical validation of every buff/reveal/damage effect.",
+    "ToyBox intervention timing is unknown; state resets/repeated placements can be external.",
+    "RTn windows are parsed separately from TB Rn; the trace uses the preceding Lann decision for each actual issue.",
+    "No matched Unity performance replay or new corrected-build gameplay has occurred.",
+    "Raw logs, game DLLs and native decompilations are not committed."
+  ]
+}

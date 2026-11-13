@@ -18,6 +18,10 @@ namespace CompanionAI_Pathfinder.Tactics
         private long heapAtMark = System.GC.GetTotalMemory(false);
         private readonly long[] stageBytes = new long[9];
         private int activeCalls;
+        // ★ v0.3.50: the ability callbacks omit discovery and the checks before each callback. Name that work without
+        // per-spell messages or another heap sample; native availability/profile times are subsets of pre-score checks.
+        private long discovery, preScoreChecks, availability, profiles;
+        private int gathered, allowed, availabilityChecks, profileReads;
         private readonly int resistanceAtStart = CombatMath.ResistanceReads, resistanceHitsAtStart = CombatMath.ResistanceMemoHits;
 
         internal DecisionTimings() { previous = started; }
@@ -81,6 +85,25 @@ namespace CompanionAI_Pathfinder.Tactics
 
         internal void NoteSkippedAbility() => skipped++;
 
+        internal void NoteDiscovery(long startedAt, int discoveredCount, int allowedCount)
+        {
+            discovery += Stopwatch.GetTimestamp() - startedAt;
+            gathered += discoveredCount;
+            allowed += allowedCount;
+        }
+
+        internal void NotePreScoreChecks(long startedAt) => preScoreChecks += Stopwatch.GetTimestamp() - startedAt;
+        internal void NoteAvailability(long startedAt)
+        {
+            availability += Stopwatch.GetTimestamp() - startedAt;
+            availabilityChecks++;
+        }
+        internal void NoteProfileRead(long startedAt)
+        {
+            profiles += Stopwatch.GetTimestamp() - startedAt;
+            profileReads++;
+        }
+
         internal void NoteActiveInfusion(long startedAt)
         {
             activeInfusions += Stopwatch.GetTimestamp() - startedAt;
@@ -97,6 +120,9 @@ namespace CompanionAI_Pathfinder.Tactics
             $"kinetic {stageBytes[3] / 1024}, movement {stageBytes[4] / 1024}, paths {stageBytes[5] / 1024}, boosts {stageBytes[6] / 1024}, " +
             $"infusions {stageBytes[7] / 1024}, finish {stageBytes[8] / 1024}" +
             $"; abilities scored={scored}, skipped unaffordable={skipped}" +
+            $"; ability setup ms: discovery/filter={Milliseconds(discovery):F1} ({gathered} gathered, {allowed} allowed), " +
+            $"pre-score checks={Milliseconds(preScoreChecks):F1} (native availability {Milliseconds(availability):F1}/{availabilityChecks} checks, " +
+            $"profile reads {Milliseconds(profiles):F1}/{profileReads}; both included in pre-score checks)" +
             $"; SR forecasts={CombatMath.ResistanceReads - resistanceAtStart}, reused={CombatMath.ResistanceMemoHits - resistanceHitsAtStart}" +
             (costlyNames[0] == null ? "" : "; costliest: " + string.Join(", ", System.Linq.Enumerable.Range(0, 3)
                 .Where(i => costlyNames[i] != null)

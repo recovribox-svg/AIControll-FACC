@@ -59,6 +59,10 @@ namespace CompanionAI_Pathfinder.Tactics
         public bool EndsRegeneration;
         /// <summary>★ v0.3.28 test 14: who attacks (its hits' afflictions: CombatMath.OnHitHp).</summary>
         public UnitEntityData Attacker;
+        // A held-buff comparison may reuse only this exact, still-cached native routine. These are transient quote
+        // identities, not another cache and not a request to read or simulate the actor again.
+        internal object RoutineIdentity;
+        internal float RoutineLands;
     }
 
     public static partial class CombatMath
@@ -270,28 +274,21 @@ namespace CompanionAI_Pathfinder.Tactics
             result.Reach = routine.Reach;
             // ★ v0.3.28 test 3: what reaches the target past its concealment and mirror images (LandsPastDefences).
             float lands = LandsPastDefences(unit, target);
+            result.RoutineIdentity = routine;
+            result.RoutineLands = lands;
             float noHit = 1f;
             var touch = new MagusChargeChance();
             bool trackTouch = unit.Get<Kingmaker.UnitLogic.Parts.UnitPartMagus>()?.Spellstrike.Active == true;
             foreach (var line in routine.Lines)
             {
                 var d = delta?.Invoke(line.Weapon, line.Index) ?? new KeyValuePair<int, float>(0, 0f);
-                float p = HitProbability(line.AttackBonus + d.Key, line.ArmorClass) * lands;
+                float lineDamage = ExpectedWeaponLine(line, d.Key, d.Value, lands, out float p, out float perHit);
                 if (MagusMechanics.WeaponDeliversTouch(line.Weapon?.Blueprint, trackTouch, line.Weapon == unit.Body.EmptyHandWeapon))
                 {
                     touch.Add(p, Math.Min(line.ThreatChance, p) * p);
                 }
                 if (line.Index == 0) result.FirstHitChance = p;
                 noHit *= 1f - p;
-                // ★ v0.3.19 (test5): a kinetic blade's blast lands with the hit and is multiplied by its critical
-                // (ContextActionDealDamage takes the weapon's critical multiplier from the attack roll).
-                // ★ v0.3.20 (playtest 1): the game's damage of a hit on this target; an attack mode's damage change counts
-                // past the damage reduction and at what the target keeps of physical damage.
-                float modeChange = Math.Max(0f, line.RawPerHit + d.Value - line.DamageReduction) - Math.Max(0f, line.RawPerHit - line.DamageReduction);
-                float perHit = Math.Max(0f, line.GameHit + modeChange * line.PhysicalFactor) + line.BladeBlast;
-                // ★ v0.3.28 test 6: a threat is a roll in the critical range that also hits, so never more likely than the
-                // hit itself (ValueModel.CritFactor, one rule with the abilities that roll to hit).
-                float critExtra = p * perHit * (ValueModel.CritFactor(line.ThreatChance, p, line.CritMultiplier) - 1f);
                 if (line.Index == 0)
                 {
                     result.FirstAttackBonus = line.AttackBonus + d.Key;
@@ -303,7 +300,7 @@ namespace CompanionAI_Pathfinder.Tactics
                     result.FirstPhysicalFactor = line.PhysicalFactor;
                 }
                 if (line.EndsRegeneration) result.EndsRegeneration = true;
-                result.ExpectedDamage += p * (perHit + line.Sneak) + critExtra;
+                result.ExpectedDamage += lineDamage;
             }
             result.AnyHitChance = 1f - noHit;
             result.TouchHitChance = touch.Hit;
