@@ -85,10 +85,12 @@ namespace CompanionAI_Pathfinder.Tactics
         /// ★ summon control: this creature is a swarm by its own active facts - a swarm body (SwarmDamageResistance) or a
         /// swarm round attack (ContextActionSwarmAttack on a new round). The same read as the swarm danger's; no name list.
         /// </summary>
-        internal static bool IsSwarmActor(UnitEntityData unit)
+        internal static bool IsSwarmActor(UnitEntityData unit, bool fresh = false)
         {
             if (unit?.Facts?.List == null) return false;
-            var facts = SwarmStateOf(unit).Facts;
+            var state = SwarmStateOf(unit);
+            if (fresh && state.Facts.Update(unit.Facts.List)) state.SpaceRead = state.DcRead = false;
+            var facts = state.Facts;
             return facts.Body || facts.Rounds.Count > 0;
         }
 

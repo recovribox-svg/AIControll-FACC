@@ -1,4 +1,4 @@
-// ★ summon control (docs/TACTICAL_AI.md §152): offline checks of the feature's contracts on the real assemblies -
+// ★ summon control (docs/TACTICAL_AI.md §156): offline checks of the feature's contracts on the real assemblies -
 // settings (off by default, no row for a summon), the temporary settings view, the compiled routes of every policy
 // read, and the native turn / summon contracts the turn-based bridge relies on. No actor, command, Harmony patch
 // application or Unity timing is executed: turn completion and pack performance are gameplay checks.
@@ -129,8 +129,40 @@ namespace ProfileAudit
                 Check(Calls(Body(typeof(TacticalEngine), "Execute"), summonControl, "AbilityRefusal"), "Execute refuses a summon's forbidden ability before side effects");
                 var dispatcher = mod.GetType("CompanionAI_Pathfinder.GameInterface.CommandDispatcher", true);
                 var run = dispatcher.GetMethods(All).Where(m => m.Name == "Run").SelectMany(m => SaveBoostCheck.ReferencedMembers(m)).ToList();
-                Check(Calls(run, summonControl, "ShouldDrive") && Calls(run, summonControl, "AbilityRefusal"),
-                    "the dispatcher rechecks control and the ability at issue");
+                Check(Calls(run, summonControl, "ShouldDriveForIssue") && Calls(run, summonControl, "AbilityRefusal"),
+                    "the dispatcher uses the fresh authority check and rechecks the ability at issue");
+                var finalGate = summonControl.GetMethod("ShouldDriveForIssue", All);
+                var finalIl = finalGate.GetMethodBody().GetILAsByteArray();
+                Check(Calls(Body(summonControl, "ShouldDriveForIssue"), summonControl, "ReadAuthority") &&
+                      finalIl.Length == 9 && finalIl[0] == 0x02 && finalIl[1] == 0x03 && finalIl[2] == 0x17 && finalIl[3] == 0x28 && finalIl[8] == 0x2a,
+                    "final issue passes literal fresh=true to the shared authority reader (Release IL)");
+                Check(Calls(Body(summonControl, "Read"), typeof(CombatMath), "IsSwarmActor") &&
+                      summonControl.GetNestedType("State", All).GetField("SwarmRead", All) == null,
+                    "active-fact swarm classification is not cached for the creature's lifetime");
+                Check(Body(typeof(CombatMath), "IsSwarmActor").Any(m => m.Name == "Update") &&
+                      Body(typeof(CombatMath), "IsSwarmActor").Any(m => m.Name == "SpaceRead"),
+                    "fresh swarm classification updates the shared fact snapshot and invalidates dependent geometry");
+                // Only the mod's BCL state is exercised; no entity is initialized or logged.
+                var stateType = summonControl.GetNestedType("State", All);
+                var record = summonControl.GetMethod("RecordAdoption", All);
+                var fightField = summonControl.GetField("s_Fight", All);
+                var countField = summonControl.GetField("AdoptedThisFight", All);
+                var oldFight = fightField.GetValue(null); var oldCount = countField.GetValue(null);
+                try
+                {
+                    var state = Activator.CreateInstance(stateType, true);
+                    fightField.SetValue(null, 17); countField.SetValue(null, 0);
+                    bool Adopt(object value) => (bool)record.Invoke(null, new[] { value });
+                    int Count() => (int)countField.GetValue(null);
+                    Check(Adopt(state) && Count() == 1, "first adoption counts the creature once");
+                    Check(!Adopt(state) && Count() == 1, "repeated service does not count another creature");
+                    stateType.GetField("AdoptionLogged", All).SetValue(state, false);
+                    Check(!Adopt(state) && Count() == 1, "release and reacquisition in one fight do not inflate cohort size");
+                    fightField.SetValue(null, 18); countField.SetValue(null, 0);
+                    Check(Adopt(state) && Count() == 1, "a persistent creature counts in its next fight");
+                    Check(Adopt(Activator.CreateInstance(stateType, true)) && Count() == 2, "a different creature counts separately");
+                }
+                finally { fightField.SetValue(null, oldFight); countField.SetValue(null, oldCount); }
                 var preBuff = mod.GetType("CompanionAI_Pathfinder.GameInterface.PreBuffController", true);
                 Check(Calls(Body(preBuff, "GetPartyMembers"), summonControl, "IsOrdinarySummon"), "the pre-buff routine leaves summons out (casters and recipients)");
                 var ui = mod.GetType("CompanionAI_Pathfinder.UI.MainUI", true);

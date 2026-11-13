@@ -132,7 +132,7 @@ namespace CompanionAI_Pathfinder.GameInterface
             // casts a summoning spell or spends an item or a material component.
             if (SummonControl.IsOrdinarySummon(unit))
             {
-                if (!SummonControl.ShouldDrive(unit, out string notDriven))
+                if (!SummonControl.ShouldDriveForIssue(unit, out string notDriven))
                     failure = "summon not driven: " + notDriven;
                 else if (command is UnitUseAbility cast)
                     failure = SummonControl.AbilityRefusal(unit, cast.Ability);

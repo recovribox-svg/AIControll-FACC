@@ -8,6 +8,8 @@ movement by what they will really do in this fight, and picks the best one. It w
 **Latest release: v0.3.29** — [download](https://github.com/recovribox-svg/AIControll-FACC/releases/latest) ·
 [release notes](release/CHANGELOG_v0.3.29.md)
 
+Development integration: **v0.3.50** ([review and playtest checklist](docs/V0350_INTEGRATION_REVIEW.md)); test ZIPs are under [test-builds/](test-builds/).
+
 ---
 
 ## Contents

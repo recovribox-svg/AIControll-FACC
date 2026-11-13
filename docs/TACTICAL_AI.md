@@ -5322,3 +5322,18 @@ Performance:
 13. Repeated summon / expire / rest cycles: no summon ids appear in the saved settings file.
 
 ToyBox's clickable summons are untested: with the checkbox off they are the player's to command now.
+
+
+## 157. Author-authorized PR integration and v0.3.50 development build
+
+The author delegated review/merge of all six open PRs #46–#51 and requested the next build be 0.3.50.
+[Review, exact input heads, corrections and replay](V0350_INTEGRATION_REVIEW.md). Development base `44b224f`.
+Original histories and all native/audit/unit registrations are preserved; summon implementation is section 156.
+
+Review repairs final summon authority to bypass the per-frame eligibility memo, refreshes its active-fact swarm
+classification at issue through the shared snapshot, and counts unique adoptions once per creature/fight even
+after release/re-adoption. Excluded modes/factions/unusable actors avoid swarm/owner scans. No actor preview,
+extra native attack, general movement/commitment/retreat/pathfinder/stuck policy or controllability/status write.
+Existing frame memo, native driver/dispatch/action checks and default-off summon setting remain. Native scalar
+and compiled-route/state-transition checks complement all combined regressions. Manifest becomes 0.3.50 under
+explicit author instruction; module/ZIP identities are distinct. Native gameplay and matched timing remain pending.

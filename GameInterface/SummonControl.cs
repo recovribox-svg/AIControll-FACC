@@ -33,7 +33,6 @@ namespace CompanionAI_Pathfinder.GameInterface
         {
             public int Frame = -1;
             public string Refusal;
-            public bool SwarmRead, Swarm;
             public CharacterSettings View;
             public bool AdoptionLogged;
             public int AdoptionFight = -1;
@@ -77,16 +76,23 @@ namespace CompanionAI_Pathfinder.GameInterface
         /// The answer is read once a frame per creature.
         /// </summary>
         public static bool ShouldDrive(UnitEntityData unit, out string reason)
+            => ReadAuthority(unit, out reason, fresh: false);
+
+        /// <summary>Final issue must observe switches, ownership and active facts changed since the frame's first query.</summary>
+        internal static bool ShouldDriveForIssue(UnitEntityData unit, out string reason)
+            => ReadAuthority(unit, out reason, fresh: true);
+
+        private static bool ReadAuthority(UnitEntityData unit, out string reason, bool fresh)
         {
             reason = "no unit";
             if (unit == null) return false;
             var state = States.GetValue(unit, _ => new State());
             int frame = Time.frameCount;
-            if (state.Frame != frame)
+            if (fresh || state.Frame != frame)
             {
                 state.Frame = frame;
                 long started = System.Diagnostics.Stopwatch.GetTimestamp();
-                try { state.Refusal = SummonRules.Refusal(Read(unit, state)); }
+                try { state.Refusal = SummonRules.Refusal(Read(unit, fresh)); }
                 catch (Exception ex) { state.Refusal = "not readable: " + ex.GetType().Name; }
                 // The control check runs outside the engine's decision timer: measured apart ([Perf] cohorts line).
                 s_GateTicks += System.Diagnostics.Stopwatch.GetTimestamp() - started;
@@ -99,7 +105,7 @@ namespace CompanionAI_Pathfinder.GameInterface
 
         public static bool ShouldDrive(UnitEntityData unit) => ShouldDrive(unit, out _);
 
-        private static SummonFacts Read(UnitEntityData unit, State state)
+        private static SummonFacts Read(UnitEntityData unit, bool fresh)
         {
             var settings = ModSettings.Instance;
             var f = new SummonFacts
@@ -121,6 +127,10 @@ namespace CompanionAI_Pathfinder.GameInterface
             f.InGame = unit.IsInGame;
             f.HasBodyAndBrain = unit.View != null && unit.Body != null && unit.Brain != null;
             f.PlayerFaction = unit.IsPlayerFaction;
+            // Excluded actors need no active-fact/owner scan. Preserve the pure rule's refusal order with the
+            // cheap preceding fields filled above; these guards also cover the common enemy-summon path.
+            if (f.ArmyBattle || !f.InCombat || !f.ModeOn || !f.InGame || !f.HasBodyAndBrain || !f.PlayerFaction ||
+                (!f.TurnBased && f.LegacyRealTime) || (f.TurnBased && !f.DirectlyControllable && !f.TurnBridgeBound)) return f;
             var unitState = unit.Descriptor?.State;
             f.Conscious = unitState?.IsConscious ?? false;
             f.FinallyDead = unitState?.IsFinallyDead ?? true;
@@ -129,13 +139,9 @@ namespace CompanionAI_Pathfinder.GameInterface
             f.PreventDirectControl = (bool)unit.PreventDirectControl;
             var confusion = unit.Get<UnitPartConfusion>();
             f.GameDrivesConfusion = confusion != null && confusion.State != ConfusionState.ActNormally;
-            // The body kind does not change: read once per creature (its active facts' components, no name list).
-            if (!state.SwarmRead)
-            {
-                state.Swarm = CombatMath.IsSwarmActor(unit);
-                state.SwarmRead = true;
-            }
-            f.Swarm = state.Swarm;
+            // Active facts can be added, suppressed or replaced. Reuse the shared frame/decision cache, with an
+            // explicit refresh at final issue; never freeze the first classification for the actor's lifetime.
+            f.Swarm = CombatMath.IsSwarmActor(unit, fresh);
             f.Ridden = unit.Get<UnitPartSaddled>()?.Rider != null;
 
             var part = unit.Get<UnitPartSummonedMonster>();
@@ -171,11 +177,9 @@ namespace CompanionAI_Pathfinder.GameInterface
             if (state.Refusal == null)
             {
                 state.LastRefusalLogged = null;
-                // Once per creature and fight (a long-lived summon is counted in each fight it is driven in).
+                // A transition may be logged again after release; unique cohort counts stay once per creature/fight.
                 if (state.AdoptionLogged && state.AdoptionFight == s_Fight) return;
-                state.AdoptionLogged = true;
-                state.AdoptionFight = s_Fight;
-                AdoptedThisFight++;
+                RecordAdoption(state);
                 Main.Log($"[Summon] {unit.CharacterName}: AI Control drives it (summoned by {OwnerOf(unit)?.CharacterName}; " +
                          "its summoner's blocklist and spell policy, its own abilities)");
                 return;
@@ -198,6 +202,15 @@ namespace CompanionAI_Pathfinder.GameInterface
 
         private static long s_GateTicks;
         private static int s_GateChecks, s_Fight;
+
+        private static bool RecordAdoption(State state)
+        {
+            bool first = state.AdoptionFight != s_Fight;
+            state.AdoptionLogged = true;
+            state.AdoptionFight = s_Fight;
+            if (first) AdoptedThisFight++;
+            return first;
+        }
 
         /// <summary>What the control checks of summoned creatures cost in this fight (outside the decision timer).</summary>
         internal static string GateCost() =>

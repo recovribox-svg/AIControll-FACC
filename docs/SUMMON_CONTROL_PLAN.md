@@ -1,5 +1,7 @@
 # Summon control: implementation plan for Claude
 
+**Integration status (13 November 2026):** implemented in PR #49 and reviewed with PRs #46–#51 for the author-requested v0.3.50 development build. See [the current integration review](V0350_INTEGRATION_REVIEW.md). The following is the original planning baseline; gameplay remains pending.
+
 **Plan only; no feature code is implemented here.** Checked development **`44b224f5af76dc5f5ae6086d6abbfbdeac790627`**, manifest **0.3.30**, after Claude integrated PRs #21–#45. Refresh development before implementation. Claude owns implementation/integration; Codex continues with focused reviews and interim fixes on separate task branches. Source evidence, input hashes and native-method identities are in [SUMMON_CONTROL_EVIDENCE.json](competence/SUMMON_CONTROL_EVIDENCE.json). `N1`–`N8` below refer to that file's native evidence records, not to hypothetical APIs.
 
 ## 1. Corrections to the supplied guide
