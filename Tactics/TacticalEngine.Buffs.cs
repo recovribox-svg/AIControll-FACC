@@ -87,6 +87,9 @@ namespace CompanionAI_Pathfinder.Tactics
             public float Incoming, EnemyHitChance = 0.6f, PerHit, Hp, Worth;
             /// <summary>Incoming without recognised automatic swarm harm; ordinary-enemy approximation retained.</summary>
             public float AttackIncoming, AttackPerHit, AttackHitChance = 0.6f;
+            // Retain the already-read ordinary enemy's uncapped attack/AC pair. A capped hit chance alone cannot
+            // distinguish a bonus that changes hits from one still beyond the natural d20 limits.
+            public WeaponAttackEstimate AttackQuote;
             /// <summary>Nothing reaches it yet: <see cref="Incoming"/> is its expected share.</summary>
             public bool Expected;
             public readonly Dictionary<DamageEnergyType, float> EnergyShares = new Dictionary<DamageEnergyType, float>();
@@ -577,7 +580,10 @@ namespace CompanionAI_Pathfinder.Tactics
             float total = rounds;
             if (def.Incoming > 0f)
             {
-                keptPerRound += ValueModel.ArmorGain(def.AttackIncoming, def.AttackHitChance, armor);
+                float armorProtection = ValueModel.ArmorGain(def.AttackIncoming, def.AttackHitChance, armor);
+                if (TryArmorProtectionFromQuote(def, armor, s_AppraiseWithout != null, out float fromRolls))
+                    armorProtection = fromRolls;
+                keptPerRound += armorProtection;
                 // ★ v0.3.21: invisibility's cover - one round for the kind its first attack ends.
                 float unseen = invisibleShare * 0.5f * (invisible != null && invisible.EndsOnAttack ? 1f / Math.Max(1f, total) : 1f);
                 keptPerRound += def.AttackIncoming * Math.Max(Math.Max(concealment, miss), unseen);
@@ -652,8 +658,12 @@ namespace CompanionAI_Pathfinder.Tactics
             }
 
             float offenceValue = offencePerRound * rounds + invisibleOnce + onHitOnce;
-            float defenceValue = ValueModel.PreventionValue(keptPerRound, rounds, def.Hp,
-                def.Incoming + CombatMath.AttachedDamageOf(ctx, ally).NextRisk, def.Worth);
+            float currentIncoming = def.Incoming + CombatMath.AttachedDamageOf(ctx, ally).NextRisk;
+            // ★ v0.3.50 review2: the holder already has this protection. Its removal raises current danger; do not
+            // value another reduction below the already-protected baseline, especially at a d20/HP floor.
+            float defenceValue = s_AppraiseWithout == null
+                ? ValueModel.PreventionValue(keptPerRound, rounds, def.Hp, currentIncoming, def.Worth)
+                : ValueModel.HeldPreventionLoss(keptPerRound, rounds, def.Hp, currentIncoming, def.Worth);
             // A summon is temporary and replaceable: half (as everywhere, ValueModel.SummonFactor).
             result.Value = (offenceValue + defenceValue) * RoleWeight(ctx, "buff") * (IsSummon(ally) ? ValueModel.SummonFactor : 1f);
             result.Detail = $"{string.Join(", ", notes)} over {rounds:0.#} rd" +
@@ -1240,11 +1250,13 @@ namespace CompanionAI_Pathfinder.Tactics
                 if (!def.Expected)
                     def.AttackIncoming = ValueModel.AttackMitigationIncoming(def.Incoming, attackWeight, totalWeight);
                 // Preserve the strongest total source's old packet approximation for physical DR and diagnostics.
+                WeaponAttackEstimate topQuote = null;
                 if (top.Key != null)
                 {
                     var est = CombatMath.EstimateWeaponAttack(top.Key, ally, full: false);
                     if (est != null && est.FirstHitChance > 0f)
                     {
+                        topQuote = est;
                         def.EnemyHitChance = Mathf.Clamp(est.FirstHitChance, 0.05f, 0.95f);
                         def.PerHit = est.FirstPerHit;
                     }
@@ -1253,6 +1265,7 @@ namespace CompanionAI_Pathfinder.Tactics
                 // estimate is already cached per attacker/target; with no excluded source this is the same quote.
                 if (attackTop.Key == top.Key)
                 {
+                    def.AttackQuote = topQuote;
                     def.AttackHitChance = def.EnemyHitChance;
                     def.AttackPerHit = def.PerHit;
                 }
@@ -1261,6 +1274,7 @@ namespace CompanionAI_Pathfinder.Tactics
                     var est = CombatMath.EstimateWeaponAttack(attackTop.Key, ally, full: false);
                     if (est != null && est.FirstHitChance > 0f)
                     {
+                        def.AttackQuote = est;
                         def.AttackHitChance = Mathf.Clamp(est.FirstHitChance, 0.05f, 0.95f);
                         def.AttackPerHit = est.FirstPerHit;
                     }

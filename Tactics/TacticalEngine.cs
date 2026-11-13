@@ -39,6 +39,7 @@ namespace CompanionAI_Pathfinder.Tactics
     {
         public CandidateKind Kind;
         internal bool ShifterFury;
+        internal TacticalEngine.GriffonPlan Griffon;
         public ActionSlot Slot;
         public float Value;
         public UnitEntityData Target;
@@ -3149,6 +3150,7 @@ namespace CompanionAI_Pathfinder.Tactics
                 var charge = EvaluateCharge(ctx, ability);
                 return charge != null ? new[] { charge } : none;
             }
+            if (profile.GriffonAttack != null) return EvaluateGriffonAttack(ctx, ability, profile, onlyTarget);
 
             bool progressive = ctx.Settings.SpellPolicy == SpellResourcePolicy.Progressive && ability.Spellbook != null &&
                                ability.SourceItem == null;
@@ -5301,7 +5303,7 @@ namespace CompanionAI_Pathfinder.Tactics
         /// </summary>
         private static bool IsVerifiable(AbilityProfile profile)
         {
-            if (profile == null || profile.Summons || profile.Enchants || profile.IsToggle || profile.SpawnedAreas.Any()) return false;
+            if (profile == null || profile.Summons || profile.Enchants || profile.IsToggle || profile.GriffonAttack != null || profile.SpawnedAreas.Any()) return false;
             if (profile.Maneuvers.Count > 0 || profile.IsWeaponAttack) return true;   // ★ v0.3.18 (AA-4): its roll is reported (CastOutcome)
             return profile.DealsDamage || profile.Heals.Count > 0 || (profile.TargetBuffs.Count > 0 && profile.HarmfulEffects);
         }
@@ -5317,6 +5319,7 @@ namespace CompanionAI_Pathfinder.Tactics
             failure = null;
             if (!ValidateShifterIssue(unit, c, out failure)) return false;
             if (!ValidateMagusIssue(unit, c, out failure)) return false;
+            if (!ValidateGriffonIssue(unit, c, out failure)) return false;
             if (!PureMageAllowsIssue(unit, c))
             {
                 failure = "Pure Mage: physical action withheld";
@@ -5420,6 +5423,17 @@ namespace CompanionAI_Pathfinder.Tactics
                 failure = "no command";
                 return false;
             }
+            if (c.Griffon != null)
+            {
+                // A custom leap must start here. The dispatcher retains its normal safety and acceptance rules;
+                // this guard prevents a stale leap from turning into an ordinary, unpriced approach/path.
+                command.Init(unit);
+                if (command.ShouldUnitApproach)
+                {
+                    failure = "native leap would require an unpriced walking approach";
+                    return false;
+                }
+            }
 
             // ★ v0.3.18 (test10): a 5-foot step must be one (CommandDispatcher refuses a longer path).
             bool issued = CommandDispatcher.Run(unit, command, c.Label, out failure, avoidAreas: c.CheckPath,
@@ -5461,7 +5475,7 @@ namespace CompanionAI_Pathfinder.Tactics
                 // saves come later, summons, or Charge, whose attack the game makes after the ability ends. Twice nothing
                 // on that enemy, it is not aimed there again this fight - unless the ability runs its own logic, whose
                 // effect may come later too (logged only).
-                bool watch = profile != null && !profile.SpawnedAreas.Any() && !profile.Summons && !profile.IsCharge;
+                bool watch = profile != null && !profile.SpawnedAreas.Any() && !profile.Summons && !profile.IsCharge && profile.GriffonAttack == null;
                 bool ownLogic = Kingmaker.Blueprints.BlueprintExtenstions.GetComponent<Kingmaker.UnitLogic.Abilities.Components.Base.AbilityCustomLogic>(c.Ability.Blueprint) != null;
                 // Blocking also needs effects on the target itself: an ability aimed at an enemy may only buff its caster.
                 bool rangedArm = NativeRangedStrike(unit, c.Ability);

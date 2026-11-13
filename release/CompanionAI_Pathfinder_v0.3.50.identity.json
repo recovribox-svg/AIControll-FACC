@@ -1,0 +1,22 @@
+{
+  "build_label": "v0.3.50 stable",
+  "kind": "stable-release-package",
+  "version": "0.3.50",
+  "source_branch": "codex/review1-swarm-playtest",
+  "source_commit": "8efbb0e867c62dbcf284a9e14071d85b78456209",
+  "starting_commit": "19467862bc352eaffe9d80b375f14e5004ebfb3b",
+  "development_base": "19467862bc352eaffe9d80b375f14e5004ebfb3b",
+  "dependency_pr": null,
+  "dll": {
+    "assembly": "CompanionAI_Pathfinder, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null",
+    "mvid": "45ab748a-b0e9-4db9-b62a-3de2f4eff6fb",
+    "sha256": "0033d9cab7f1d148f1d090dea4e7c6a7f226d2c5f6f5b468675ff30496e075f3",
+    "size": 1410560
+  },
+  "manifest_sha256": "70aff99f126b796db54d7c80e38b16bd5186e990d6cc2e3bb1d4780d75dc48c0",
+  "checks_receipt": "docs/competence/REVIEW1_SWARM_CHECKS.json",
+  "gameplay_status": "not played",
+  "scope": "Stable v0.3.50 package requested by the author. Corrects raw native AC thresholds and held-protection removal from current danger; adds strictly known direct-HP reserve value to swarm exits with existing path/risk/opportunity gates; supports the inspected native Death from Above leap and queued weapon attack with bounded endpoint/quote work and final issue checks. Prospective charge AB/proc damage is uncredited. Grabber remains unsupported pending a paired maintenance/release model. Includes merged PR53 and previous integrated development. New corrected behavior and matched Unity performance remain unplayed; automated validation is recorded separately.",
+  "release": true,
+  "public_release_published": false
+}

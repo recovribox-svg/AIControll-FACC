@@ -1,0 +1,68 @@
+{
+  "stock_version": "2.7.0x",
+  "records_scanned": 236660,
+  "program": "user-supplied BubblePrints engine, offline BPFile reader",
+  "scope": "only the two absent root/effect graphs are added; all duplicate GUIDs retain original user exports",
+  "assets": [
+    {
+      "guid": "f36da144a379d534cad8e21667079066",
+      "name": "ChargeBuff",
+      "raw_sha256": "7262e8531a7eadf2a49289184b6be7b2d86111fe70dab53d8a6e6b0198f4c678",
+      "jbp_sha256": "f392e6651d1052ae811ccaf10c1ad2e48e2ed56497c7ad90c828f9b346473039"
+    },
+    {
+      "guid": "61179501dfdfaa84d970d9ad2957b680",
+      "name": "CavalierChargeBuff",
+      "raw_sha256": "ed3c760c36b133e06919205896b6d55f1f6f97070460931d01ccfb3803b58e7a",
+      "jbp_sha256": "cc5582e9793fc699361a3e54a84718a4899d889ab379dcd305f4ca3b9414914a"
+    },
+    {
+      "guid": "4fb54a7eafb647d2a82347437a2b652d",
+      "name": "ChargeBuffEffect",
+      "raw_sha256": "3a67e90b2f9510e656c9ac9dcdb858fde5e902878933af6c5d136383d5e39b70",
+      "jbp_sha256": "e55b98a1978a5d81697a5ad0bb0e4d36784c39e66df370776d51549f57e66931"
+    },
+    {
+      "guid": "30da5120b692d0d4f8a6840dff777abf",
+      "name": "CavalierCharge",
+      "raw_sha256": "ebc06e245e34b486eec6123db8d28d193199d0e41b6e5ebba48c685532cb30f6",
+      "jbp_sha256": "d858345e79e2804b58ba0535ab520379f08d03596224f53ef4d1e96526dc4650"
+    },
+    {
+      "guid": "b2d13e8f3bb0f1d4c891d71b4d983cf7",
+      "name": "MountedBuff",
+      "raw_sha256": "ab89e161a57bc7beba33f6f3ebd7cbb46cefd7edc77fb70da6ea97e24bf19862",
+      "jbp_sha256": "56e686eea2f0ac0b510ceaa7bf7c87722bf6a73e95303eb8f90f2b443ddb03bf"
+    }
+  ],
+  "retained_user_duplicates": [
+    {
+      "guid": "61179501dfdfaa84d970d9ad2957b680",
+      "name": "CavalierChargeBuff",
+      "user_file_sha256": "33259002824ca82523f641e30e68d7f9238038191656f8ff5712e348459814ae",
+      "stock_raw_sha256": "ed3c760c36b133e06919205896b6d55f1f6f97070460931d01ccfb3803b58e7a",
+      "parsed_Data_matches_stock": true,
+      "audit_uses": "unchanged user export"
+    },
+    {
+      "guid": "30da5120b692d0d4f8a6840dff777abf",
+      "name": "CavalierCharge",
+      "user_file_sha256": "0151219c81d7870b3aa2767bafff31fd40ed736ab5afc0f06215800d680804b7",
+      "stock_raw_sha256": "ebc06e245e34b486eec6123db8d28d193199d0e41b6e5ebba48c685532cb30f6",
+      "parsed_Data_matches_stock": true,
+      "audit_uses": "unchanged user export"
+    },
+    {
+      "guid": "b2d13e8f3bb0f1d4c891d71b4d983cf7",
+      "name": "MountedBuff",
+      "user_file_sha256": "58bd6b4ef21fb60715123db421ac91330db8b132f971d779e3b89784f42311e2",
+      "stock_raw_sha256": "ab89e161a57bc7beba33f6f3ebd7cbb46cefd7edc77fb70da6ea97e24bf19862",
+      "parsed_Data_matches_stock": true,
+      "audit_uses": "unchanged user export"
+    }
+  ],
+  "added_names": [
+    "ChargeBuff",
+    "ChargeBuffEffect"
+  ]
+}

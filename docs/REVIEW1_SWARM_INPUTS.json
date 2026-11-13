@@ -1,0 +1,162 @@
+{
+  "task": "review1 swarm and mixed TB/RT playtest review",
+  "development_base": "d466f384acbdca242b214a16afe552d55606411d",
+  "played_dependency_pr": 53,
+  "played_dependency_head": "593d6c63832e757a0ad355e52c2e174e6d9c5452",
+  "task_dependency_merge": "ecdb7fd",
+  "played_build": {
+    "version": "0.3.50",
+    "label": "review1",
+    "source_commit": "ae926971c4553797f8a521c4ae0907d0ecd3af34",
+    "mvid": "25818a75-297f-47de-aea3-5cf93d0a9d09",
+    "identity_confirmed_all_five_ai_logs": true,
+    "startup_identity_row": 3
+  },
+  "inputs": [
+    {
+      "file": "RT Mode Swarm only Log.txt",
+      "bytes": 475548,
+      "lines": 2367,
+      "sha256": "47910169387dec741dc6d82e83340060ed33ababa38c31e5abb1158075067ab6",
+      "ai_exception_rows": 0,
+      "invocation_rows": 72,
+      "ulbrig_rows": 178,
+      "combat_starts": 3,
+      "combat_ends": 3
+    },
+    {
+      "file": "TB Mode Swarm only Log.txt",
+      "bytes": 284806,
+      "lines": 1376,
+      "sha256": "b23982ae230ddc2a10685c1cc1df23351f17ef0a1cbd639fdf6acaafcffacccc",
+      "ai_exception_rows": 0,
+      "invocation_rows": 86,
+      "ulbrig_rows": 62,
+      "combat_starts": 2,
+      "combat_ends": 2
+    },
+    {
+      "file": "RT Mode Mixed log.txt",
+      "bytes": 714540,
+      "lines": 3127,
+      "sha256": "dd95b857c9c45f458a0d42a11697605e485ffe5c60283c457dbb95561c3aaed9",
+      "ai_exception_rows": 0,
+      "invocation_rows": 181,
+      "ulbrig_rows": 281,
+      "combat_starts": 3,
+      "combat_ends": 3
+    },
+    {
+      "file": "TB Mode Mixed Log.txt",
+      "bytes": 75020,
+      "lines": 453,
+      "sha256": "111f3f982ad166c5026c2593bf015e27bac19e6d4d74aeff1927c78986d741e1",
+      "ai_exception_rows": 0,
+      "invocation_rows": 19,
+      "ulbrig_rows": 20,
+      "combat_starts": 1,
+      "combat_ends": 1
+    },
+    {
+      "file": "exra Log TB+RT.txt",
+      "bytes": 376401,
+      "lines": 1884,
+      "sha256": "8f4dc5c20bfd1aa4c3428ce9a145ec3e630e903ac62cf7c0e613e1d123cacb9b",
+      "ai_exception_rows": 0,
+      "invocation_rows": 81,
+      "ulbrig_rows": 161,
+      "combat_starts": 3,
+      "combat_ends": 3
+    },
+    {
+      "file": "combatLog.txt",
+      "bytes": 1165710,
+      "lines": 33324,
+      "sha256": "8f55f735f0caa2dbc42f983e9be446a513802cc4d8400ee0cc3ddb85d47c403f",
+      "ai_exception_rows": 0,
+      "invocation_rows": 0,
+      "ulbrig_rows": 179,
+      "combat_starts": 0,
+      "combat_ends": 0
+    },
+    {
+      "file": "Noticed during playtest..txt",
+      "bytes": 499,
+      "lines": 8,
+      "sha256": "1798a55ed7e7b70603dc77dab479a0460ee39c988ad32bb0ee5f80b52cbc3184",
+      "ai_exception_rows": 0,
+      "invocation_rows": 0,
+      "ulbrig_rows": 1,
+      "combat_starts": 0,
+      "combat_ends": 0
+    }
+  ],
+  "interventions": {
+    "user_confirmation": "I did use ToyBox for spawns and to rest in between combat encounters.",
+    "rests": "between combat encounters",
+    "spawns": "ToyBox confirmed; exact timing not supplied",
+    "mid_combat_rests": "not reported in this test"
+  },
+  "summary": {
+    "combat_starts": 12,
+    "combat_ends": 12,
+    "measured_decisions": {
+      "TB": 248,
+      "RT": 1507
+    },
+    "retained_decisions": {
+      "TB": 248,
+      "RT": 729
+    },
+    "slow_rows": 125,
+    "gc_overlap_rows": 10,
+    "ai_control_exception_rows": 0,
+    "explicit_swarm_exit_issues": 4,
+    "rt_stuck_cancellations": 2,
+    "plain_path_refusals_with_fallback": 1,
+    "death_from_above_issues": 0,
+    "grabber_or_release_issues": 0,
+    "mirror_image_issues": 0
+  },
+  "profane": {
+    "total_issued": 59,
+    "success_acted": 58,
+    "interrupted_unacted": 1,
+    "by_file_fight": {
+      "rt_swarm": {
+        "1": 2,
+        "3": 2
+      },
+      "tb_swarm": {
+        "1": 7,
+        "2": 4
+      },
+      "rt_mixed": {
+        "1": 5,
+        "2": 7,
+        "3": 21
+      },
+      "tb_mixed": {
+        "1": 1
+      },
+      "extra": {
+        "1": 6,
+        "2": 4
+      }
+    },
+    "manual_rests": "between encounters; cannot explain within-fight transfers",
+    "interpretation": "Source settling is visibly obeyed; large gains >=5 permit early transfers. Native AC caps and held-defense counterfactual remain faulty in played review1 and are corrected in review2; not every transfer is proven wasteful."
+  },
+  "native_assembly": {
+    "name": "Assembly-CSharp.dll",
+    "sha256": "2cb7160b7154d4ffacc77b9c51b1eb26199e1294300f04fdfc073367b2ef8953",
+    "mvid": "90a9869c-2792-4c7b-bfb7-5a8b33da7c82"
+  },
+  "limits": [
+    "Logs establish behavior of review1, not corrected build.",
+    "A native acted command does not establish every numerical forecast or reveal result.",
+    "HP percentages do not reconstruct absolute HP or every tactical alternative.",
+    "Valid initial placements and useful transfers remain; cast count alone is not spam.",
+    "Raw logs/game DLLs/native decompilations remain private."
+  ]
+}

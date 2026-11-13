@@ -52,3 +52,10 @@ Claude prepared the package and brought `main` to the release revision; the auth
 - [v0.3.23](CompanionAI_Pathfinder_v0.3.23.zip?raw=true) (tag `v0.3.23`, startup
   `[Build] v0.3.23 module=09a7ab12-2cc2-477c-a688-74765960ea97`, [notes](CHANGELOG_v0.3.23.md)).
 - [v0.3.22](CompanionAI_Pathfinder_v0.3.22.zip?raw=true) (tag `v0.3.22`, [notes](CHANGELOG_v0.3.22.md)).
+
+
+## v0.3.50 stable: Author-requested stable v0.3.50: review1 playtest corrections and native griffon leap (stable package; corrected gameplay not yet replayed)
+
+[UMM test ZIP](CompanionAI_Pathfinder_v0.3.50.zip) · [identity](CompanionAI_Pathfinder_v0.3.50.identity.json) · [checksums](CompanionAI_Pathfinder_v0.3.50.sha256). Source `8efbb0e`, startup MVID `45ab748a-b0e9-4db9-b62a-3de2f4eff6fb`, manifest 0.3.50. ZIP SHA-256 `b0ea48b87086f94479c4884c7416a658fd9634570e3da31f2ef96d80a9fbdb4d`.
+
+Stable v0.3.50 package requested by the author. Corrects raw native AC thresholds and held-protection removal from current danger; adds strictly known direct-HP reserve value to swarm exits with existing path/risk/opportunity gates; supports the inspected native Death from Above leap and queued weapon attack with bounded endpoint/quote work and final issue checks. Prospective charge AB/proc damage is uncredited. Grabber remains unsupported pending a paired maintenance/release model. Includes merged PR53 and previous integrated development. New corrected behavior and matched Unity performance remain unplayed; automated validation is recorded separately. [Design/replay](../docs/REVIEW1_SWARM_PLAYTEST.md) · [receipt](../docs/competence/REVIEW1_SWARM_CHECKS.json). 760 unit + 27 inventory, native step 13 and inherited checks pass; real-reference Release 0 warnings; 16/16 added signatures resolve. Compatible/supplementary audits pass, original full-corpus enum failure remains separate. Gameplay/matched timing pending.

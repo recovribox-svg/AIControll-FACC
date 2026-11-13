@@ -5379,3 +5379,43 @@ and mixed threats, normal conversions/metamagic/items, and matched large-kit/sum
 unplayed; manifest 0.3.50, no main/tag/release.
 
 Checked source `ae92697`, [receipt](competence/V0350_PLAYTEST_CHECKS.json) and [review1 test ZIP](../test-builds/AI-Control-FACC-v0.3.50-dev-review1-ae92697-UMM-test.zip), startup MVID `25818a75-297f-47de-aea3-5cf93d0a9d09`. 730 unit + 27 inventory tests and native checks pass; actual-reference Release 0 warnings/errors; 0/0 added signatures resolve. Compatible/supplementary audit scopes pass; original full-corpus enum failure remains distinct. Gameplay/matched Unity timing pending.
+
+
+## 159. Review1 swarm/mixed playtests and v0.3.50 stable package
+
+[Evidence/native contracts/replay](REVIEW1_SWARM_PLAYTEST.md), [input identities/counts](REVIEW1_SWARM_INPUTS.json).
+All five headers confirm review1 MVID `25818a75`; twelve combats,248 TB / 1,507 RT measured decisions, no AI exception.
+Author confirms ToyBox spawns and rests between encounters, then requests stable 0.3.50 packaging and permits
+open-PR integration. PR #53 merged at `1946786`; this follow-up includes its checked/played source.
+
+The previous automatic-swarm defense split is visible; no Mirror Image cast occurred, so image-specific live
+acceptance remains unproven. Valmot's nauseated move-only turn (TB swarm608–621) finds an exit worth0 at danger 62.9.
+Swarm exits now add the existing 0.3 HP reserve price for strictly known native direct HP avoided, once, alongside
+drop/productivity benefit. HP-equivalent poison/control/stat/drain/attached/unknown/aura effects are excluded;
+both positions include other eligible cast sources. Native shares/calibration, stop/path/ally/area/AoO costs,
+kept attacks/opportunity loss, geometry, arrival and dispatch budgets remain.
+
+Invocation 59 issues include 58 acted successes and 21 in RT mixed fight 3. Transfers follow the existing settling
+policy, including gain>=5 overrides; changing danger and distinct tiers prevent calling every cast spam.
+Remaining defense bugs: capped current probability loses native AB/AC thresholds, and held prevention is
+valued as a further improvement below current protected danger. Reuse the existing ordinary source quote for
+integer AC endpoints; reverse existing PreventionValue for loss from current danger. Attack-only prevention
+and total/attached urgency remain separate; no additional native actor/rule/context/target query. Fractional/
+missing quotes and other stat/source approximations stay explicit.
+
+Ulbrig has no Death from Above/Grabber/release issues in these logs; support gates are explicit. New leap
+route reads exact AbilityGriffinAttack/native requirements and live root charge branches; no guessed charge
+multiplier, unused griffon buff or actor preview. Maximum 8 native endpoints / 4 weapon quotes per evaluation,
+ordinary/native Pounce estimate, safe exact landing and body/reach/area/swarm checks, endpoint exposure/ally/AC
+costs, final native mode/action/target/position/charge checks, then normal dispatcher with no approach. Native
+queued attack is not judged ineffective before it executes. Positive charge AB is uncredited because its 6 s
+duration starts before flight; no guessed animation schedule/proc damage. Missing-only stock charge fixtures
+add 2 blueprints; existing 3 user graphs are retained. Grabber is deferred: native grapple costs Ulbrig standard
+actions/movement/AoOs, and needs an explicit paired maintenance/release model.
+
+Review1 setup diagnostics show discovery/profile reads are a small share of heavy scoring;125 slow rows / 10 GC.
+Heap deltas are not allocations and encounters are not matched. No new broad optimization/cap is justified.
+Unit/native scalar/actual graph/compiled route checks cover changes; source/ZIP/MVID receipt follows validation.
+Stable package requested by author; corrected TB/RT behavior and matched Unity timing remain unplayed.
+
+Checked source `8efbb0e`, [receipt](competence/REVIEW1_SWARM_CHECKS.json) and [v0.3.50 stable ZIP](../release/CompanionAI_Pathfinder_v0.3.50.zip), startup MVID `45ab748a-b0e9-4db9-b62a-3de2f4eff6fb`. 760 unit + 27 inventory tests and native checks pass; actual-reference Release 0 warnings/errors; 16/16 added signatures resolve. Compatible/supplementary audit scopes pass; original full-corpus enum failure remains distinct. Gameplay/matched Unity timing pending.
