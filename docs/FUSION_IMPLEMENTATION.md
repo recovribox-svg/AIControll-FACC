@@ -1,5 +1,11 @@
 # Magic Fusion implementation
 
+F0/F1 were reviewed and merged into development; see §167 and
+[Claude's integration receipt](competence/INTEGRATION_60_62_CHECKS.json). The original receipts omitted compiler
+versions. The dated [provenance supplement](competence/FUSION_BUILD_PROVENANCE.json) records SDK 8.0.426,
+Roslyn 4.11.0-3.25569.22 and successful local byte-for-byte replays using the original Source Link revisions.
+Historical receipts and the validated fusion1 package remain intact; this follow-up changes documentation only.
+
 ## F0: configuration coverage and rejection attribution
 
 Task `codex/fusion-coverage-audit`, based on development `6cf42818ade856814003ac0cab8872795d884ffd`.
