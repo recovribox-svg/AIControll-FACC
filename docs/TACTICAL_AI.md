@@ -5758,3 +5758,41 @@ unchanged profile admission (7,474 / 8,020). Warm resolver: 10,000 calls, zero a
 fusion1 ZIP packs the exact checked Release DLL, identity/checksum and distinct startup MVID; it is a test build. Live edge/body/LOS/Selective/moving/downed ally geometry, native execution and
 matched Unity performance remain gameplay acceptance; the offline harness creates no actor and issues no command.
 No payload exclusion, cost policy, movement, dispatcher or F2/F3 valuation is changed; stable release remains 0.3.52.
+
+## 167. Integration review: PRs #60, #61, #62 merged; PR #59 reviewed after its merge
+
+14 November 2026, Claude. [Receipt](competence/INTEGRATION_60_62_CHECKS.json). No release, tag or `main` change; manifest 0.3.52.
+
+**Reviews.** No material defect in any of the four.
+- **#59 (S2, §163), reviewed after it had already merged.** Every new branch is turn-based only, and real time keeps the
+  old values. The preflight checks the actual walk (`UnitMoveTo`, one move, ends on its cell). Turn-based walks only for
+  standard-action abilities. Reach comes from the native approach radius and `IsUnitCloseEnough`; `AllyBlocked` is the
+  native field the game's own path search and AI read. Development `e1ae334` carries exactly the checked source `49ffd46`.
+- **#60 (Fusion F0, §165).** Admission is unchanged: the last reason still wins, and a deduplicated list is added per
+  cached profile. The `SummonKitCheck` reorder leaves S1's detail file byte-identical on S1's inputs. Coverage reproduces
+  on these inputs: 60 sources, 3,540 pairs, 15,494 configurations, 7,474 admitted, 0 reader errors.
+- **#62 (Fusion F1, §166).** Natively, `AbilityData.GetDeliverBlueprint` returns the ability's own blueprint outside
+  fusions, so ordinary cones are unchanged. The per-score veto opens the existing six-angle re-aim; a turned aim that
+  still catches an ally is vetoed again, so it is never adopted. With Avoid Friendly Fire on, ordinary cones are now tried
+  turned past allies instead of dropped (as stated). All 1,180 admitted cone templates resolve their component.
+- **#61 (I1, §164).** Tooling and documentation only. The shared-document conflicts were resolved keeping every section
+  and handover, and the F0 handover's missing blank line was restored.
+
+**Package identity.** The fusion1 test ZIP's DLL matches its receipt (SHA-256 `d35fe730…`, MVID `2e2896c3…`). It is a
+build of `7a56bbb`, and development's code is exactly that source. A local SDK 8.0.131 rebuild has identical foreign
+references but different bytes; the decompiled differences are compiler lowering only. The Fusion receipts do not
+record the compiler version, so their bytes are not reproducible here.
+
+**Integrated checks** (the merged tree, code equal to `7a56bbb`):
+- Release build against the real assemblies: 0 warnings, 0 errors; no foreign member reference added or removed.
+- Tests: 811 unit, 27 inventory, 3 supplement-script and 11 ledger.
+- ProfileAudit on S1's full inputs: exit 0, two runs byte-identical. FUSION 38, FUSION-CONE 34, APPROACH-SPOT 28,
+  SUMMON-KITS 8 (detail identical). Against the S2 run, only the Fusion lines differ. Fusion coverage is PARTIAL here
+  only because of the known Achaekek load failure.
+- Native harnesses: 98, 14 and 10 checks.
+- Reused: Codex's zero-failure compatible scope, and the Magus 44-check supplementary scope (no Magus code changed).
+
+**Limits.** S2, F0 and F1 are unplayed. The raw corpus keeps its enum load failure.
+
+**Next.** Play the fusion1 package in turn-based and real time. Read the S2 replay in §163, the F1 replay in
+`FUSION_IMPLEMENTATION.md`, and include a grapple with AI Control on for the grappler. Then come Fusion F2 (plan §7) and G1.

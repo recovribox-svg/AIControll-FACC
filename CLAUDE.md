@@ -8,6 +8,23 @@ Read [CONTRIBUTING.md](CONTRIBUTING.md) for shared branch ownership, Codex pull 
 Codex works on task branches and targets pull requests at `claude/dreamy-pasteur-b9h3rn`; Claude reviews and integrates them there.
 Keep `main` for author-authorized releases. Read [AGENTS.md](AGENTS.md) when coordinating agent work.
 
+**Current handover (14 November 2026, Claude): PRs #60 (Fusion F0), #62 (Fusion F1) and #61 (I1) reviewed and merged into development;
+PR #59 (S2) reviewed after its merge.** Read `docs/TACTICAL_AI.md` §167 and the [receipt](docs/competence/INTEGRATION_60_62_CHECKS.json).
+No material defect in any of them; manifest 0.3.52, `main`, tags and releases unchanged.
+- #59: development `e1ae334` carries exactly the checked source `49ffd46`; real time unchanged; walk checks match the native contracts.
+- #60: admission unchanged (last reason kept, list added per cached profile); S1's SUMMON-KITS detail stays byte-identical on S1's inputs;
+  Fusion coverage reproduces (60 sources, 15,494 configurations, 7,474 admitted, 0 reader errors).
+- #62: ordinary cones' delivery unchanged natively (`GetDeliverBlueprint`); the friendly-fire veto opens the existing six-angle re-aim, also for
+  ordinary cones with Avoid Friendly Fire on; all 1,180 admitted cones resolve.
+- Package: `test-builds/AI-Control-FACC-v0.3.52-dev-fusion1-7a56bbb-UMM-test.zip` (MVID `2e2896c3-5f13-42e1-bb9b-9626f6157228`) is a build of
+  `7a56bbb`, which is development's exact code. A local SDK 8.0.131 rebuild differs only by compiler lowering; the Fusion receipts do not record
+  the compiler version.
+
+Integrated checks: Release 0 warnings/errors, 0 added references; 811 unit + 27 inventory + 3 script + 11 ledger tests; ProfileAudit exit 0, two runs
+identical (FUSION 38, FUSION-CONE 34, APPROACH-SPOT 28, SUMMON-KITS 8); native harnesses 98/14/10. Limits: S2, F0 and F1 are unplayed; the raw corpus
+keeps its Achaekek enum failure. **Next:** the author plays the fusion1 package in TB and RT: crowded melee approaches (§163 replay), cone fusions
+(`docs/FUSION_IMPLEMENTATION.md` replay) and a grapple with AI Control on for the grappler. Then Fusion F2 (plan §7) and G1 (grapple awareness).
+
 **Earlier handover (14 November 2026, Claude): Invocation transfer ledger (I1) on `claude/invocation-ledger`, PR into development. Tooling and
 documentation only: no gameplay source, manifest or package change; v0.3.52 stays the validated, unplayed stable package.** Read
 [docs/INVOCATION_LEDGER.md](docs/INVOCATION_LEDGER.md) and `docs/TACTICAL_AI.md` §164. `tools/InvocationLedger/invocation_ledger.py` (11 tests) lists
