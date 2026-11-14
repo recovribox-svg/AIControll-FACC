@@ -110,7 +110,7 @@ namespace CompanionAI_Pathfinder.GameInterface
         /// ally or a corner can pass enemies the straight line did not.</param>
         public static bool Run(UnitEntityData unit, UnitCommand command, string label, out string failure, bool avoidAreas = false,
                                bool fiveFootOnly = false, Func<IList<Vector3>, List<UnitEntityData>> pathAttackers = null,
-                               int pricedAttacks = 0, Func<IList<Vector3>, string> pathConstraint = null)
+                               int pricedAttacks = 0, Func<IList<Vector3>, string> pathConstraint = null, bool oneMoveWalk = false)
         {
             failure = null;
             if (unit == null || command == null)
@@ -146,7 +146,8 @@ namespace CompanionAI_Pathfinder.GameInterface
             try
             {
                 if (!TryPrepare(unit, command, out float pathLength, out bool hasPath, out failure,
-                                avoidAreas, fiveFootOnly, pathAttackers, pricedAttacks, preflight: false, pathConstraint: pathConstraint))
+                                avoidAreas, fiveFootOnly, pathAttackers, pricedAttacks, preflight: false, pathConstraint: pathConstraint,
+                                oneMoveWalk: oneMoveWalk))
                 {
                     CommandTrace.LogRejected(unit, command, label, failure);
                     return false;
@@ -192,7 +193,8 @@ namespace CompanionAI_Pathfinder.GameInterface
         /// </summary>
         public static bool CanPrepare(UnitEntityData unit, UnitCommand command, out string failure, bool avoidAreas = false,
                                       bool fiveFootOnly = false, Func<IList<Vector3>, List<UnitEntityData>> pathAttackers = null,
-                                      int pricedAttacks = 0, Func<IList<Vector3>, string> pathConstraint = null)
+                                      int pricedAttacks = 0, Func<IList<Vector3>, string> pathConstraint = null,
+                                      bool oneMoveWalk = false)
         {
             failure = null;
             try
@@ -207,7 +209,8 @@ namespace CompanionAI_Pathfinder.GameInterface
                         attack.PlannedAttack?.Hand?.Weapon ?? unit.GetFirstWeapon(), unit, attack.Target);
                 }
                 return TryPrepare(unit, command, out _, out _, out failure,
-                                  avoidAreas, fiveFootOnly, pathAttackers, pricedAttacks, preflight: true, pathConstraint: pathConstraint);
+                                  avoidAreas, fiveFootOnly, pathAttackers, pricedAttacks, preflight: true, pathConstraint: pathConstraint,
+                                  oneMoveWalk: oneMoveWalk);
             }
             catch (Exception ex)
             {
@@ -229,7 +232,7 @@ namespace CompanionAI_Pathfinder.GameInterface
         private static bool TryPrepare(UnitEntityData unit, UnitCommand command, out float pathLength, out bool hasPath,
                                        out string failure, bool avoidAreas, bool fiveFootOnly,
                                        Func<IList<Vector3>, List<UnitEntityData>> pathAttackers, int pricedAttacks,
-                                       bool preflight, Func<IList<Vector3>, string> pathConstraint)
+                                       bool preflight, Func<IList<Vector3>, string> pathConstraint, bool oneMoveWalk = false)
         {
             pathLength = 0f;
             hasPath = false;
@@ -257,7 +260,7 @@ namespace CompanionAI_Pathfinder.GameInterface
                     return false;
                 }
 
-                if (!TryAttachPath(unit, command, out pathLength, out failure))
+                if (!TryAttachPath(unit, command, out pathLength, out failure, out int trimmed))
                 {
                     return false;
                 }
@@ -273,7 +276,7 @@ namespace CompanionAI_Pathfinder.GameInterface
                 // Wizard from the door, one on the Cultist Archer, and the touch of a Cure Light Wounds for Camellia at
                 // 58 % HP), 0.0 m each. Refused here, the engine takes its next best option; the target counts as out
                 // of reach this turn (TacticalDriver.RecordRejected).
-                // Attacks and spells are refused at their path's end below (PathEndsInReach).
+                // Attacks and spells are refused at their path's end below (PathEndVerdict).
                 if (turn != null && command is UnitMoveTo && pathLength < NowhereWalk &&
                     FlatDistance(unit.Position, command.ApproachPoint) - command.ApproachRadius > NowhereWalk + 0.3f)
                 {
@@ -307,10 +310,13 @@ namespace CompanionAI_Pathfinder.GameInterface
                 // unstarted: Aeiluvetar (15.0 m), Lann (16.3 m), Orvath (15.7 m) and Camellia's Grease (13.0 m) lost
                 // their turns in one round of the turn-based log, the navmesh path being far longer than the line
                 // the option was priced on. Refused here, the engine takes its next best option.
-                if (turn != null && turn.Rider == unit && command.Type == UnitCommand.CommandType.Standard &&
+                // ★ S2: and a walk to a free side of a crowded target, whose action follows on the next decision
+                // (oneMoveWalk: TacticalEngine.OneMoveWalk) - the same split, asked for by the caller.
+                bool actsAfterWalk = command.Type == UnitCommand.CommandType.Standard &&
                     !(command is UnitAttack fullAttack && fullAttack.ForceFullAttack) &&
                     !(command is UnitUseAbility walkThenCast && (walkThenCast.Ability.RequireFullRoundAction ||
-                                                                  Analysis.AbilityClassifier.IsChargeAbility(walkThenCast.Ability))) &&
+                                                                  Analysis.AbilityClassifier.IsChargeAbility(walkThenCast.Ability)));
+                if (turn != null && turn.Rider == unit && (actsAfterWalk || oneMoveWalk && command is UnitMoveTo) &&
                     !(turn.HasFiveFootStep(unit) && pathLength <= turn.GetRemainingFiveFootStepRange(unit) + 0.05f))
                 {
                     float oneMove = turn.GetRemainingMovementTime(unit, false, true) * unit.CurrentSpeedMps;
@@ -325,13 +331,26 @@ namespace CompanionAI_Pathfinder.GameInterface
                 // ★ v0.3.10: the path must end within reach, as native AI checks (AiAction.ScorePath:
                 // UnitCommand.IsUnitCloseEnough on the last waypoint). A path trimmed short by an ally standing at its
                 // end left Seelah, Albedo and Camellia next to their target with the attack force-finished unstarted.
-                if (!(command is UnitMoveTo) && !PathEndsInReach(unit, command, out float shortBy))
+                // ★ S2: a walk to a free side of a crowded target is held to its spot the same way - a path that cannot get
+                // to that cell ends on another, and the action priced from the spot would not follow.
+                if (!(command is UnitMoveTo) || oneMoveWalk)
                 {
-                    command.ForcedPath = null;
-                    // ★ v0.3.20: within range at the end but no line of sight read "0.0m short".
-                    failure = shortBy < 0.05f && command.NeedLoS ? NoSightAtPathEndFailure
-                                                                 : $"{OutOfReachFailure} ({shortBy:F1}m short)";
-                    return false;
+                    var end = PathEndVerdict(unit, command, out float shortBy, out string witness);
+                    if (end != Tactics.SpotRules.PathEnd.InReach)
+                    {
+                        command.ForcedPath = null;
+                        // ★ v0.3.20: within range at the end but no line of sight read "0.0m short".
+                        // ★ S2: by the game's own distance (flat while the height differs little): the straight distance
+                        // read a sight failure on a slope as a shortfall.
+                        failure = end == Tactics.SpotRules.PathEnd.NoSight
+                            ? NoSightAtPathEndFailure : $"{OutOfReachFailure} ({Math.Max(0.1f, shortBy):F1}m short)";
+                        // What the next log needs to tell a crowded target from a blocked sight line; from values already
+                        // read, on a refusal only.
+                        if (Main.VerboseOn)
+                            Main.Verbose($"[Dispatch] {unit.CharacterName}: path end refused ({failure}) - {witness}, " +
+                                         $"{trimmed} ally-held end point(s) trimmed, {pathLength:F1}m path");
+                        return false;
+                    }
                 }
 
                 if (avoidAreas && PathEntersArea(unit, command, out string area))
@@ -405,31 +424,38 @@ namespace CompanionAI_Pathfinder.GameInterface
             failure = null;
             if (executor == null || command == null) return false;
             if (!NeedsPrecomputedPath(executor, command)) return false;
-            if (!TryAttachPath(executor, command, out pathLength, out failure)) return false;
+            if (!TryAttachPath(executor, command, out pathLength, out failure, out _)) return false;
             ApplyTurnBasedMovementLimit(executor, pathLength);
             return true;
         }
 
-        /// <summary>The command's own arrival test (UnitCommand.IsUnitCloseEnough) applied to the end of its ForcedPath.</summary>
-        private static bool PathEndsInReach(UnitEntityData unit, UnitCommand command, out float shortBy)
+        /// <summary>
+        /// ★ v0.3.10 / S2: what the path's last point is to the command, by the game's own test
+        /// (UnitCommand.IsUnitCloseEnough: its mechanics distance and, where the command needs it, eye-level sight).
+        /// </summary>
+        private static Tactics.SpotRules.PathEnd PathEndVerdict(UnitEntityData unit, UnitCommand command, out float shortBy, out string witness)
         {
             shortBy = 0f;
+            witness = "no path points";
             try
             {
                 var points = command.ForcedPath?.vectorPath;
-                if (points == null || points.Count == 0) return true;
+                if (points == null || points.Count == 0) return Tactics.SpotRules.PathEnd.InReach;
                 Vector3 end = points[points.Count - 1];
                 Vector3 eye = end + (unit.EyePosition - unit.Position);
-                if (UnitCommand.IsUnitCloseEnough(command.ApproachPoint, end, eye, command.ApproachRadius, command.NeedLoS,
-                                                  command.GetTargetLOSObjectFudgeRadius()))
-                    return true;
-                shortBy = Math.Max(0f, Vector3.Distance(end, command.ApproachPoint) - command.ApproachRadius);
-                return false;
+                bool close = UnitCommand.IsUnitCloseEnough(command.ApproachPoint, end, eye, command.ApproachRadius, command.NeedLoS,
+                                                           command.GetTargetLOSObjectFudgeRadius());
+                float distance = Owlcat.Runtime.Core.Utils.GeometryUtils.MechanicsDistance(command.ApproachPoint, end);
+                var verdict = Tactics.SpotRules.JudgePathEnd(close, distance, command.ApproachRadius, command.NeedLoS, out shortBy);
+                witness = $"end ({end.x:F1},{end.y:F1},{end.z:F1}) to goal ({command.ApproachPoint.x:F1},{command.ApproachPoint.y:F1}," +
+                          $"{command.ApproachPoint.z:F1}): {distance:F2}m by the game's distance, radius {command.ApproachRadius:F2}m, " +
+                          $"height apart {Math.Abs(end.y - command.ApproachPoint.y):F1}m, sight needed={command.NeedLoS}";
+                return verdict;
             }
             catch (Exception ex)
             {
                 Main.Verbose($"[Dispatch] {unit.CharacterName}: reach check skipped: {ex.Message}");
-                return true;
+                return Tactics.SpotRules.PathEnd.InReach;
             }
         }
 
@@ -752,10 +778,12 @@ namespace CompanionAI_Pathfinder.GameInterface
         /// Path-finds exactly like AiAction.ScorePath: UnitMovementAgent.FindPath(destination, cb, approachRadius, needLOS)
         /// followed by AstarPath.BlockUntilCalculated, then attaches it as the command's ForcedPath.
         /// </summary>
-        private static bool TryAttachPath(UnitEntityData unit, UnitCommand command, out float pathLength, out string failure)
+        private static bool TryAttachPath(UnitEntityData unit, UnitCommand command, out float pathLength, out string failure,
+                                          out int trimmed)
         {
             pathLength = 0f;
             failure = null;
+            trimmed = 0;
 
             var agent = unit.View?.AgentASP;
             if (agent == null)
@@ -788,7 +816,7 @@ namespace CompanionAI_Pathfinder.GameInterface
                 }
 
                 path = FixPathIfTooShort(unit, path, destination, approachRadius);
-                TrimAllyBlockedEnd(path);
+                trimmed = TrimAllyBlockedEnd(path);
 
                 if (path.vectorPath.Count == 0)
                 {
@@ -836,9 +864,10 @@ namespace CompanionAI_Pathfinder.GameInterface
         /// <summary>
         /// Native ScorePath never lets a unit end its move on an ally-occupied node; drop such trailing points.
         /// </summary>
-        private static void TrimAllyBlockedEnd(Path path)
+        private static int TrimAllyBlockedEnd(Path path)
         {
             var points = path.vectorPath;
+            int trimmed = 0;
             try
             {
                 while (points.Count > 1)
@@ -848,12 +877,14 @@ namespace CompanionAI_Pathfinder.GameInterface
                     var node = Analysis.BattlefieldGrid.CellAt(points[points.Count - 1]);
                     if (node == null || node.AllyBlocked <= 0) break;
                     points.RemoveAt(points.Count - 1);
+                    trimmed++;
                 }
             }
             catch (Exception ex)
             {
                 Main.Verbose($"[Dispatch] TrimAllyBlockedEnd skipped: {ex.Message}");
             }
+            return trimmed;
         }
 
         /// <summary>

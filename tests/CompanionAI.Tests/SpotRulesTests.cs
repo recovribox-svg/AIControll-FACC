@@ -55,12 +55,86 @@ namespace CompanionAI.Tests
         public void Takes_BrokenInput_TakesNothing() => Assert.False(SpotRules.Takes(float.NaN, 0f, 0.5f, 0f, 0f, 0.5f));
 
         [Fact]
-        public void Applies_OnlyInRealTime_ToContactApproaches()
+        public void Applies_ToContactApproaches_InBothModes()
         {
-            Assert.True(SpotRules.Applies(true, 1.6f, false));      // a melee attack
-            Assert.False(SpotRules.Applies(false, 1.6f, false));    // turn-based: the game's path does not stop on allies
-            Assert.False(SpotRules.Applies(true, 9f, false));       // a cast from range stands clear of the crowd
-            Assert.False(SpotRules.Applies(true, 1.6f, true));      // nothing left to move with
+            // ★ S2: turn-based too - the game's path search ends on the free cell nearest the target and tries no other side.
+            Assert.True(SpotRules.Applies(1.6f, false));            // a melee attack
+            Assert.True(SpotRules.Applies(SpotRules.ContactRange, false));
+            Assert.False(SpotRules.Applies(9f, false));             // a cast from range stands clear of the crowd
+            Assert.False(SpotRules.Applies(1.6f, true));            // nothing left to move with
+            Assert.False(SpotRules.Applies(0f, false));
+            Assert.False(SpotRules.Applies(float.NaN, false));
+        }
+
+        [Theory]
+        [InlineData(true, 0, true)]      // an empty walkable cell
+        [InlineData(true, 1, false)]     // an ally holds it: a turn-based walk cannot end there
+        [InlineData(true, 3, false)]     // several allies' bodies overlap it
+        [InlineData(false, 0, false)]    // not walkable (a wall, an enemy's body)
+        [InlineData(false, 2, false)]
+        public void CellFree_FollowsTheGamesRule(bool walkable, int allyBlocked, bool free) =>
+            Assert.Equal(free, SpotRules.CellFree(walkable, allyBlocked));
+
+        [Fact]
+        public void CellSpot_KeepsTheTargetInReachWhereTheWalkStops()
+        {
+            // The walk stops within CellArrival of the cell's centre; the reach test at the centre spares more than that.
+            Assert.True(SpotRules.CellReachMargin > SpotRules.CellArrival);
+            Assert.True(SpotRules.CellArrival > 0f);
+        }
+
+        [Theory]
+        [InlineData(true, true, false, true, true)]      // turn-based: walk to a free side, then the attack it was priced for
+        [InlineData(true, true, true, true, false)]      // real time has its own walk rules
+        [InlineData(true, false, false, true, false)]    // a walk round an area keeps its existing rule
+        [InlineData(false, true, false, true, false)]    // nothing walks first
+        [InlineData(true, true, false, false, false)]    // no standard action follows (a plain advance)
+        public void OneMoveWalk_HoldsOnlyTheTurnBasedFreeSideWalkBeforeAnAction(bool walksFirst, bool toFreeSide, bool realTime,
+                                                                                bool standardFollows, bool held) =>
+            Assert.Equal(held, SpotRules.OneMoveWalk(walksFirst, toFreeSide, realTime, standardFollows));
+
+        [Fact]
+        public void JudgePathEnd_CloseEnough_IsInReach()
+        {
+            Assert.Equal(SpotRules.PathEnd.InReach, SpotRules.JudgePathEnd(true, 1.2f, 1.6f, true, out float shortBy));
+            Assert.Equal(0f, shortBy);
+        }
+
+        [Fact]
+        public void JudgePathEnd_BeyondTheRadius_IsShortByTheGamesDistance()
+        {
+            // Abrikandilu, v0.3.51 log: three approaches ended 0.5 m outside its reach of a crowded target.
+            Assert.Equal(SpotRules.PathEnd.Short, SpotRules.JudgePathEnd(false, 2.7f, 2.2f, true, out float shortBy));
+            Assert.Equal(0.5f, shortBy, 3);
+        }
+
+        [Fact]
+        public void JudgePathEnd_InsideTheRadiusWithoutSight_IsNoSight_NotAShortfall()
+        {
+            // On a slope the straight distance exceeds the game's flat distance: 2.1 m flat is inside a 2.2 m radius although
+            // the end lies 2.5 m away in a straight line. The game's test can then only have failed on sight.
+            Assert.Equal(SpotRules.PathEnd.NoSight, SpotRules.JudgePathEnd(false, 2.1f, 2.2f, true, out float shortBy));
+            Assert.Equal(0f, shortBy);
+            Assert.Equal(SpotRules.PathEnd.NoSight, SpotRules.JudgePathEnd(false, 2.2f, 2.2f, true, out _));   // on the radius: inside
+        }
+
+        [Fact]
+        public void JudgePathEnd_NoSightNeeded_NeverBlamesSight()
+        {
+            Assert.Equal(SpotRules.PathEnd.Short, SpotRules.JudgePathEnd(false, 2.1f, 2.2f, false, out float shortBy));
+            Assert.Equal(0f, shortBy);
+        }
+
+        [Fact]
+        public void JudgePathEnd_BrokenInput_IsShort()
+        {
+            Assert.Equal(SpotRules.PathEnd.Short, SpotRules.JudgePathEnd(false, float.NaN, 2.2f, true, out float a));
+            Assert.Equal(0f, a);
+            Assert.Equal(SpotRules.PathEnd.Short, SpotRules.JudgePathEnd(false, 3f, float.NaN, true, out float b));
+            Assert.Equal(0f, b);
+            // A negative radius counts as none.
+            Assert.Equal(SpotRules.PathEnd.Short, SpotRules.JudgePathEnd(false, 1f, -2f, true, out float c));
+            Assert.Equal(1f, c, 3);
         }
         [Fact]
         public void WalkSteps_CountsTheStretchWalkedDuringTheCast()

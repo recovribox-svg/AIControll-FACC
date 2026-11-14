@@ -9,7 +9,7 @@ Codex works on task branches and targets pull requests at `claude/dreamy-pasteur
 Keep `main` for author-authorized releases. Read [AGENTS.md](AGENTS.md) when coordinating agent work.
 
 **Magic Fusion F0 (14 November 2026, Codex):** author authorized the [revised implementation plan](docs/MAGIC_FUSION_PLAN.md).
-`codex/fusion-coverage-audit` starts at `6cf4281`, no open PRs. [Status/usage](docs/FUSION_IMPLEMENTATION.md), §162,
+`codex/fusion-coverage-audit` started at `6cf4281`, no open PRs; reconciled with actual development `e1ae334` (S1/S2), preserving both. Initial tracking ref was stale; use an explicit development fetch refspec. [Status/usage](docs/FUSION_IMPLEMENTATION.md), §164,
 [baseline](docs/competence/FUSION_COVERAGE_BASELINE.json), [checks](docs/competence/FUSION_F0_CHECKS.json).
 Offline native UI template enumeration: 60 sources, 3,540 pairs, 15,494 configurations; 7,474 profile-admitted,
 8,020 withheld, zero reader errors. All known blockers/locations now survive cold profile construction; existing
@@ -18,6 +18,46 @@ the initial tooling-only sketch; no additional rule/target/path queries, actor c
 The 1,180 admitted cone templates still require F1's selected-delivery handoff repair; aim/value/actor availability
 remain unassessed. Keep F2/F3 shared math, real root-save correlation, one native clicked target and actual costs;
 do not add a second target/action or blanket blueprint/key replacements. 793 unit + 27 inventory pass; real-reference Release 0 warnings/errors; compatible/supplementary audits and native providers pass. Checked source `d1a8f46`, MVID `91caece1-5919-4070-9c24-92f926a5f35b`, zero new foreign signatures. Claude reviews/integrates; no gameplay claim.
+**Current handover (14 November 2026, Claude): approach end points (S2) on `claude/approach-end-points`, PR into development, stacked on the
+S1 PR. Source change, not played; manifest 0.3.52, packages and `release/` unchanged; v0.3.52 stays the validated, unplayed stable package.** Read
+`docs/TACTICAL_AI.md` §163 and the [receipt](docs/competence/APPROACH_SPOT_CHECKS.json).
+- Evidence (v0.3.51 `Log.txt`): 52 "path ends out of reach" and 35 "without line of sight" refusals, all in the two turn-based fights (47 + 26 in
+  fight 6 next to 61 issued commands); 40 of the 52 belong to party members and pets, 12 to summons.
+- The proposed cause (a summon-specific reach or body mismatch) is disproved: the radius is the game's own and everyone is refused alike.
+- Cause: the game's turn-based path search ends on its end node, the free cell nearest the target. With the near side crowded that cell is out
+  of reach and no other side is tried. Turn-based had no free-side logic (the v0.3.29 spot rules were real-time only).
+- Change: `SpotRules.Applies` in both modes. Turn-based, a taken straight spot (a body on it, or an ally on its cell) sends the unit to a free
+  grid cell in reach and sight of the target first (`TacticalEngine.CellSpot`, `Candidate.FreeSideWalk`, arrival 0.15 m); the action follows on
+  the next decision. The dispatcher holds that walk to one move action and to its cell (`oneMoveWalk`). No free cell: the straight approach stays
+  on offer, marked "(crowded, no free side found)". Real time is unchanged.
+- Label fix: the refusal text follows the game's test (`CommandDispatcher.PathEndVerdict`, `SpotRules.JudgePathEnd`: mechanics distance, then
+  sight). A verbose-only `[Dispatch] ... path end refused` line gives the end point, distance, radius, height and trimmed points.
+- Bounds: only when the straight spot is taken; 16 cell lookups and reach tests, four priced spots, no added path query, cache or game reference.
+- Limits: `FullAttack+5ft` still refused when crowded (3 of 52 rows); one ring of 16 samples; the 35 sight refusals are not addressed; the share
+  of refusals this removes is unknown until a replay.
+
+Checks: Release 0 warnings; 803 unit + 27 inventory + 3 script tests; ProfileAudit exit 0 with new `APPROACH-SPOT` 28 checks, every other report
+line identical to the S1 run; native harnesses 98/14/10; 0 added game member references. Checked source `49ffd46`; verification build only (DLL SHA-256
+`295591c8...`, MVID `f1f9895b-f92d-4287-bf92-0e47282d4ed2`), no package. Replay steps: §163. Next proposed: I1 (Invocation ledger from the supplied `Log.txt`).
+
+**Earlier handover (13 November 2026, Claude): summon-kit inventory (S1) on `claude/summon-kit-inventory`, PR into development. Tooling and
+documentation only: no gameplay source, manifest or package change; v0.3.52 stays the validated, unplayed stable package.** Read
+[docs/SUMMON_KIT_INVENTORY.md](docs/SUMMON_KIT_INVENTORY.md) and `docs/TACTICAL_AI.md` §164. ProfileAudit has a new section `SUMMON-KITS`
+(`tools/ProfileAudit/SummonKitCheck.cs`): spawn sources, the unique creatures they summon, each creature's static kit and every active ability
+through the summon policy and the mod's readers. A reading there is reader recognition, **not** tactical competence. Results on the author's exports
+plus 607 missing-only stock fixtures and the Demonology creature list:
+- 323 sources, 459 spawn references, 253 unique creatures (233 from loaded sources, 20 only from Demonology), 165 party-reachable non-swarm.
+- Of those 165: all carry weapons, 157 melee, 27 with no active ability; 672 creature-ability pairs, 502 read; 37 pairs the creature's own brain
+  casts are not fully read.
+- Missing: six creature ids and three kit references are absent from the stock data itself. 107 creatures leave a part to the running game.
+- The played summons (Demonology "Demonic Art") spawn stock creatures: their kits are read; the mod's own ability graphs and ritual buff are not.
+- Ranked gaps: closing to melee (shared approach refusals), teleports and leaps the readers do not understand, conditional self-effects, on-hit
+  riders (not classified here). No summonable stock creature grapples.
+
+Checks: `SUMMON-KITS` 8; other 38 audit sections unchanged (959 checks); 787 unit + 27 inventory + 3 script tests; Release 0 warnings; native
+harnesses 98/14/10; [receipt](docs/competence/SUMMON_KITS_CHECKS.json). The supplied `Log.txt` matches the v0.3.51 hash; the supplied
+`combatLog.txt` is the v0.3.50 session's file. Next proposed: S2 approach end points, then I1 (Invocation ledger; the redundant-cast sequence stays a
+hypothesis until the scores, stacking rules and state are checked).
 
 **Current v0.3.52 handover (13 November 2026, Codex; new behavior unplayed):** `codex/v0351-live-review` starts at development `00ab4e52` after merged PR #55; no open PR at start. Latest logs exactly match stable v0.3.51 MVID `e31e626d`; author confirms swarm spawns during encounters/rests between encounters, requests a logging audit and explicitly selects next stable **0.3.52**. Read [review/replay](docs/V0352_PLAYTEST_REVIEW.md), [inputs](docs/V0352_PLAYTEST_INPUTS.json), §161, [updated master prompt](docs/CLAUDE_MASTER_PROMPT_V0351.md) and [short GitHub kickoff](docs/CLAUDE_KICKOFF_PROMPT.md). Six fights, 205 measured TB / 746 RT decisions, 343/343 commands have terminal rows, no observed AI Control exception. Leap candidates are admitted (467/1501/2358) but no leap issued; 2359 exposes missing mode optimization against a walking attack. Strict leap now uses existing chooser from exact cached native quote, with landing/combined charge-mode AC and existing ownership/blocklist/availability/hysteresis/dispatch rules. No extra own-weapon quote beyond existing four; 8 endpoints, safety/native costs/Pounce remain; no positive charge-AB/proc credit. Shared mode/charge-AC defense excludes recognized automatic swarm sources before nominal weapon quotes, retaining total danger and ordinary attack mitigation. Logging uses three bounded diagnostic-only change memos (128 IDs each/fight, no actors/calculation caching), guards six verbose math sites and discarded quiet RT summary formatting. Commands/errors/MVID/selected actions/native failure evidence remain; idle witnesses use existing state, no extra path query/policy change. Invocation18/17 successes still needs marginal review, no cap/settling retune. Four no-effect Dazzling Display casts need native selector/skill/immunity/event evidence; existing fear/buff filters are present. Eleven external WrathPatches ownership warnings retain foreign provenance. Six of 34 slow rows carry cleanup markers; warm scoring remains costly, heap deltas are not allocations or a matched speedup. Summons/grapple/idle gaps remain ranked; mode6 control total is printed twice, count it once. Stable packaging/development integration remain author-authorized; public main/tag/GitHub Release publication is separate. Checked source `30cfa2c`, startup MVID `981a7b77-a654-4da1-9a22-68bc1c6a77bd`; [receipt](docs/competence/V0352_PLAYTEST_CHECKS.json) / [v0.3.52 stable identity](release/CompanionAI_Pathfinder_v0.3.52.identity.json). 787 unit + 27 inventory, step 13 and inherited checks pass; real-reference Release 0 warnings, 0/0 added signatures resolve. Compatible/supplementary audits with explicit stock charge fixtures pass; original raw enum failure remains distinct. Stable package requested by author; corrected gameplay remains unplayed.
 

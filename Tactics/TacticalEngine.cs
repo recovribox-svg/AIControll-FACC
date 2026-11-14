@@ -94,6 +94,9 @@ namespace CompanionAI_Pathfinder.Tactics
         public bool MoveFirst;
         /// <summary>★ v0.3.29 test 4: a weapon attack's walk to a free side of its target, ended once the target is in reach.</summary>
         public bool WalkEndsInReach;
+        /// <summary>★ S2: the walk goes to a free side of a crowded target first (Approach.Beside); the action follows on the next
+        /// decision. Turn-based that walk must fit one move action, or the action it was priced for is spent on walking.</summary>
+        public bool FreeSideWalk;
         public Vector3? MovePoint;
         /// <summary>★ v0.3.17: the move was priced as entering no harmful area: refuse a game path that walks into one.</summary>
         public bool CheckPath;
@@ -2143,6 +2146,9 @@ namespace CompanionAI_Pathfinder.Tactics
             public string Beside;
             /// <summary>★ v0.3.29 test 4: the straight spot is taken and no side of the target is free: why (log).</summary>
             public string NoFreeSide;
+            /// <summary>★ S2 (turn-based): the straight spot is taken and no free cell in reach of the target was found: why (log).
+            /// The straight approach stays offered - the game's own path search may still end on a free cell in reach.</summary>
+            public string Crowded;
             /// <summary>The unit walks to <see cref="Point"/> first and acts from there (a spot around an area or fewer attacks).</summary>
             public bool Detours => Around != null || AroundSwarm != null || AttacksBefore > 0 || Beside != null;
             /// <summary>For the decision log.</summary>
@@ -2186,14 +2192,24 @@ namespace CompanionAI_Pathfinder.Tactics
             // ★ v0.3.29 test 4 (author-approved, body blocking): real time, and when another body takes the spot the straight
             // approach ends on - a companion standing there, one walking there, an enemy beside the target - a free side of
             // the target instead. The game's real-time walk would push against that body (TacticalEngine.Spots.cs).
-            bool claims = SpotRules.Applies(CombatMemory.IsRealTime, range, ctx.NoMovementLeft);
+            // ★ S2 (docs/TACTICAL_AI.md §163): turn-based too. The game's turn-based path search ends on the free cell nearest
+            // the target; with the near side crowded that cell is out of reach and no other side is tried, so the approach
+            // was refused before issue ("path ends out of reach (0.5m short)") and the turn was lost. A free cell in reach
+            // on another side is walked to first, as in real time. Turn-based a spot is also taken when an ally holds its
+            // cell (the game's own rule: a walk cannot end there).
+            bool realTime = CombatMemory.IsRealTime;
+            bool claims = SpotRules.Applies(range, ctx.NoMovementLeft);
             var takenBy = claims ? TakenAt(ctx, direct, target) : null;
-            if ((plan.Risk?.Area == null && !provokes && directSwarm == null && takenBy == null) || ctx.NoMovementLeft) return plan;
+            string takenNote = takenBy.HasValue ? TakerNote(takenBy.Value)
+                             : claims && !realTime && !CellFreeAt(direct) ? "an ally holds the cell it would stand on" : null;
+            if ((plan.Risk?.Area == null && !provokes && directSwarm == null && takenNote == null) || ctx.NoMovementLeft) return plan;
             string directArea = plan.Risk?.Area;
             int directAttacks = plan.Risk?.Attacks ?? 0;
             // Only the spot is in question: the nearest free sides are priced, a few at most (SpotRules.PricedSpots).
-            bool onlyTaken = takenBy != null && directArea == null && directSwarm == null && !provokes;
-            if (takenBy != null) s_FreeSideSearches++;
+            bool onlyTaken = takenNote != null && directArea == null && directSwarm == null && !provokes;
+            // Real time reads other bodies' claims on every spot; turn-based only while it looks for a free side.
+            bool spotClaims = realTime ? claims : takenNote != null;
+            if (takenNote != null) s_FreeSideSearches++;
             try
             {
                 // ★ v0.3.18 (review): a spot around the area must be cheaper than walking straight through it (a mild
@@ -2203,10 +2219,11 @@ namespace CompanionAI_Pathfinder.Tactics
                 float best = Math.Max(plan.Risk?.Cost ?? 0f, directSwarm != null ? SwarmStayPrice(ctx, direct) : 0f) +
                              0.05f * Vector3.Distance(unit.Position, direct);
                 // ★ v0.3.29 test 4: a taken spot cannot be stood on: any free side beats it, at its own price.
-                if (takenBy != null) best = float.MaxValue;
+                if (takenNote != null) best = float.MaxValue;
                 int priced = 0;
                 float body = unit.Corpulence;
-                int far = 0, taken = 0, inArea = 0, inSwarm = 0, unwalkable = 0, noCloser = 0, dearer = 0;
+                int far = 0, taken = 0, inArea = 0, inSwarm = 0, unwalkable = 0, noCloser = 0, dearer = 0, noCell = 0;
+                Vector3 eye = unit.EyePosition - unit.Position;
                 var others = ctx.Allies.Concat(ctx.Enemies).Where(u => u != unit && u != target).ToList();
                 // Attacks only: one ring of spots in reach of the target (16) - efficient, and the spots that matter.
                 var rings = new List<float> { Math.Max(0.6f, range * 0.85f) };
@@ -2220,16 +2237,21 @@ namespace CompanionAI_Pathfinder.Tactics
                     // nearer than before (0.3.18-test2 turn-based log, R4-R5), and the turn ended there.
                     if (ring > range && distanceNow <= ring + 0.75f) { noCloser++; continue; }
                     var spots = RingSpots(target.Position, ring, unit.Position, nearestFirst: onlyTaken);
-                    foreach (var point in spots)
+                    // ★ S2: turn-based, a free side in reach is a grid cell: its centre, free by the game's rule, with the
+                    // target in reach and in sight from there by the game's test.
+                    bool cellSpots = !realTime && takenNote != null && ring <= range;
+                    foreach (var ringPoint in spots)
                     {
+                        var point = ringPoint;
+                        if (cellSpots && !CellSpot(target, range, eye, ref point)) { noCell++; continue; }
                         float walk = Vector3.Distance(unit.Position, point);
                         // ★ v0.3.18: an advance (no action follows) may aim beyond this turn's movement: the unit walks
                         // towards the spot, on a path checked to stay out of the area, and goes on next turn.
                         if (walk > ctx.MoveRange * 0.95f && !(orNearby && ctx.HasMove)) { far++; continue; }
                         // ★ v0.3.29 test 4: in real time a walking companion takes the spot its walk ends on, not the one it
                         // is passing (TakenAt); turn-based, everyone else stands still.
-                        if (claims ? TakenAt(ctx, point, target) != null
-                                   : others.Any(u => Vector3.Distance(u.Position, point) < (u.Corpulence + body) * 0.9f)) { taken++; continue; }
+                        if (spotClaims ? TakenAt(ctx, point, target) != null
+                                       : others.Any(u => Vector3.Distance(u.Position, point) < (u.Corpulence + body) * 0.9f)) { taken++; continue; }
                         if (onlyTaken && priced >= SpotRules.PricedSpots) { dearer++; continue; }
                         if (AoeDangerAnalyzer.EnteringDanger(unit, unit.Position, point, out _) > 0f) { inArea++; continue; }
                         if (!AoeDangerAnalyzer.IsPositionValid(unit.Position, point)) { unwalkable++; continue; }
@@ -2246,18 +2268,22 @@ namespace CompanionAI_Pathfinder.Tactics
                             Point = point, Risk = risk, Around = directArea, AroundSwarm = directSwarm,
                             // ★ v0.3.29 test 4: the attacks it saves only when they were why the search ran (they were then).
                             AttacksBefore = directArea == null && directSwarm == null && provokes ? directAttacks : 0,
-                            Beside = takenBy.HasValue ? TakerNote(takenBy.Value) : null,
-                            Arrival = ring < range ? Mathf.Clamp(range - ring, 0.1f, 0.3f) : 0.3f
+                            Beside = takenNote,
+                            Arrival = cellSpots ? SpotRules.CellArrival : ring < range ? Mathf.Clamp(range - ring, 0.1f, 0.3f) : 0.3f
                         };
                     }
                     if (plan.Detours) break;
                 }
                 // ★ v0.3.29 test 4: the straight spot is taken and no side of the target is free.
-                if (takenBy.HasValue && plan.Beside == null)
+                if (takenNote != null && plan.Beside == null)
                 {
                     s_NoFreeSide++;
-                    plan.NoFreeSide = $"{TakerNote(takenBy.Value)}; {taken} of the other spots taken, {far} beyond this move, " +
-                                      $"{inArea} in areas, {unwalkable} not walkable" + (dearer > 0 ? $", {dearer} not priced" : "");
+                    string why = $"{takenNote}; {taken} of the other spots taken, {far} beyond this move, " +
+                                 $"{inArea} in areas, {unwalkable} not walkable" + (dearer > 0 ? $", {dearer} not priced" : "");
+                    // ★ S2: turn-based keeps the straight approach on offer (the game's path search may still end on a free
+                    // cell in reach that the ring did not sample); real time has no such search and drops the walk.
+                    if (realTime) plan.NoFreeSide = why;
+                    else plan.Crowded = why + $", {noCell} with no free cell in reach and sight";
                 }
                 if (plan.Around == null && plan.AroundSwarm == null && (directArea != null || directSwarm != null))
                     plan.NoSpot = $"{inArea} in or through an area, " + (directSwarm != null ? $"{inSwarm} in {directSwarm}'s swarm, " : "") +
@@ -2670,12 +2696,14 @@ namespace CompanionAI_Pathfinder.Tactics
                         label += ProvokeTag(provoke);
                     }
                     if (approach.Detours) label += $" ({approach.Detour})";
+                    else if (approach.Crowded != null) label += " (crowded, no free side found)";
                     list.Add(new Candidate
                     {
                         Kind = CandidateKind.WeaponAttack,
                         Offensive = true,
                         Slot = ActionSlot.Standard,
                         NeedsMove = true,
+                        FreeSideWalk = approach.Beside != null,
                         Target = enemy,
                         Value = value,
                         ModeFactor = weight * 0.9f * walkFactor * WakeFactor(enemy, single.ExpectedDamage) * (1f - (risk?.StopChance ?? 0f)) *
@@ -3459,6 +3487,7 @@ namespace CompanionAI_Pathfinder.Tactics
                     CastRiskCost = provokeLoss,
                     AimAffected = aimAffected,
                     MoveFirst = approach?.Detours == true || coneWalk,
+                    FreeSideWalk = approach?.Beside != null,
                     MovePoint = approach?.Detours == true || coneWalk ? approach.Point : (Vector3?)null,
                     ApproachRadius = approach?.Arrival ?? 0f,
                     CheckPath = needsMove && risk?.Area == null,
@@ -5006,6 +5035,7 @@ namespace CompanionAI_Pathfinder.Tactics
             if (around && Vector3.Distance(unit.Position, approach.Point) < 0.5f) return false;
             if (around) label += $" ({approach.Detour})";
             else if (approach.NoSpot != null) label += $" (no spot around: {approach.NoSpot})";
+            else if (approach.Crowded != null) label += " (crowded, no free side found)";
             list.Add(new Candidate
             {
                 Kind = CandidateKind.Move, Slot = ActionSlot.Move, Target = enemy,
@@ -5346,7 +5376,8 @@ namespace CompanionAI_Pathfinder.Tactics
             {
                 var walk = new UnitMoveTo(c.MovePoint.Value, c.ApproachRadius > 0f ? c.ApproachRadius : 0.3f);
                 if (CommandDispatcher.Run(unit, walk, $"Approach: {c.Label}", out failure, avoidAreas: true,
-                                          pathAttackers: c.CountPathAttackers, pricedAttacks: PricedAttacks(c)))
+                                          pathAttackers: c.CountPathAttackers, pricedAttacks: PricedAttacks(c),
+                                          oneMoveWalk: OneMoveWalk(c)))
                 {
                     command = walk;
                     c.Kind = CandidateKind.Move;

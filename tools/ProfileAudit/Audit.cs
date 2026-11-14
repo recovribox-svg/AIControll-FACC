@@ -19,6 +19,33 @@ namespace ProfileAudit
         /// <summary>Where each blueprint was read from (relative to its dump folder).</summary>
         public static readonly Dictionary<SimpleBlueprint, string> Paths = new Dictionary<SimpleBlueprint, string>();
 
+        /// <summary>★ summon-kit inventory: blueprints read from a --supplement folder (not from a dump folder).</summary>
+        public static readonly HashSet<SimpleBlueprint> Supplement = new HashSet<SimpleBlueprint>();
+
+        /// <summary>
+        /// ★ summon-kit inventory: one ability's verdict by the same reading as the report's rows (the readers' result on
+        /// the blueprint alone; nothing a unit or a fight decides).
+        /// </summary>
+        internal static Row VerdictOf(BlueprintAbility bp)
+        {
+            var row = new Row { Name = bp.name, Bp = bp, Path = Paths.TryGetValue(bp, out var path) ? path : "?" };
+            try { Classify(bp, row); }
+            catch (Exception ex) { row.Verdict = "error"; row.Detail = $"{ex.GetType().Name}: {ex.Message}"; }
+            return row;
+        }
+
+        /// <summary>★ summon-kit inventory: one activatable ability's verdict, as in the report's rows.</summary>
+        internal static Row VerdictOf(Kingmaker.UnitLogic.ActivatableAbilities.BlueprintActivatableAbility bp)
+        {
+            var engine = typeof(TacticalEngine);
+            var modeOf = engine.GetMethod("ModeOf", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Static);
+            var profileOf = engine.GetMethod("ProfileOf", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Static);
+            var row = new Row { Name = bp.name, Path = Paths.TryGetValue(bp, out var path) ? path : "?" };
+            try { ClassifyToggle(bp, row, modeOf, profileOf); }
+            catch (Exception ex) { row.Verdict = "toggle error"; row.Detail = (ex.InnerException ?? ex).Message; }
+            return row;
+        }
+
         internal sealed class Row
         {
             public string Name, Path, Verdict, Detail;

@@ -24,9 +24,62 @@ namespace CompanionAI_Pathfinder.Tactics
         /// <summary>Bodies this far apart in height stand on different floors (a bridge, a stair) and take no spot of each other.</summary>
         public const float SameFloor = 2f;
 
-        /// <summary>Spot claims are read in real time, for approaches that end in body contact, while the unit can still move.</summary>
-        public static bool Applies(bool realTime, float range, bool noMovementLeft) =>
-            realTime && !noMovementLeft && range > 0f && range <= ContactRange;
+        /// <summary>
+        /// Spot claims are read for approaches that end in body contact, while the unit can still move.
+        /// ★ S2 (docs/TACTICAL_AI.md §163): in both modes. Turn-based was left to the game's path search, which stops on the
+        /// free cell nearest the target - on the crowded side that cell lies a few decimetres out of reach, and no other
+        /// side is tried (ABPathWithClearance: the search ends on its end node).
+        /// </summary>
+        public static bool Applies(float range, bool noMovementLeft) =>
+            !noMovementLeft && range > 0f && range <= ContactRange;
+
+        /// <summary>
+        /// ★ S2: a turn-based walk ends on a grid cell. This close to the cell's centre the game's path search ends on that
+        /// cell and no neighbour (LosPathConditionForGrid: a cell centre within the approach radius).
+        /// </summary>
+        public const float CellArrival = 0.15f;
+
+        /// <summary>★ S2: the target must be within reach from the cell's centre with this much to spare (the walk stops up to
+        /// <see cref="CellArrival"/> short of the centre).</summary>
+        public const float CellReachMargin = 0.2f;
+
+        /// <summary>★ S2: a turn-based walk may end on this cell by the game's rule: walkable, and no ally holds it.</summary>
+        public static bool CellFree(bool walkable, int allyBlocked) => walkable && allyBlocked <= 0;
+
+        /// <summary>
+        /// ★ S2: the walk to a free side must fit one move action - turn-based, when a standard action priced from that spot
+        /// follows it on the next decision of the same turn. A longer walk spends that action on walking.
+        /// </summary>
+        public static bool OneMoveWalk(bool walksFirst, bool toFreeSide, bool realTime, bool standardActionFollows) =>
+            walksFirst && toFreeSide && !realTime && standardActionFollows;
+
+        /// <summary>★ S2: what the end of an approach path is to the command that walks it.</summary>
+        public enum PathEnd
+        {
+            /// <summary>The game's own test passes there (UnitCommand.IsUnitCloseEnough).</summary>
+            InReach,
+            /// <summary>Within the approach radius by the game's distance, but its line of sight is blocked.</summary>
+            NoSight,
+            /// <summary>Further than the approach radius by the game's distance.</summary>
+            Short,
+        }
+
+        /// <summary>
+        /// ★ S2: why a path's end fails the game's test. <paramref name="mechanicsDistance"/> is the game's own distance
+        /// (GeometryUtils.MechanicsDistance: flat while the height differs by at most 1.5 m) from the end to the approach
+        /// point - the test's distance. The straight three-dimensional distance read a sight failure on a slope as
+        /// "0.3 m short". <paramref name="shortBy"/> is how far outside the radius the end lies (0 when it is inside).
+        /// </summary>
+        public static PathEnd JudgePathEnd(bool closeEnough, float mechanicsDistance, float radius, bool needsSight, out float shortBy)
+        {
+            shortBy = 0f;
+            if (closeEnough) return PathEnd.InReach;
+            if (float.IsNaN(mechanicsDistance) || float.IsNaN(radius)) return PathEnd.Short;
+            shortBy = Math.Max(0f, mechanicsDistance - Math.Max(0f, radius));
+            // Inside the radius the only thing the test can still fail on is sight.
+            if (shortBy <= 0f && needsSight) return PathEnd.NoSight;
+            return PathEnd.Short;
+        }
 
         /// <summary>
         /// A body of <paramref name="bodyRadius"/> at (<paramref name="bodyX"/>, <paramref name="bodyZ"/>) takes the spot

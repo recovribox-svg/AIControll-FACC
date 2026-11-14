@@ -1,0 +1,35 @@
+# Creature blueprint ids the Demonology mod (Demon Summoning) 0.1.5 summons with its "Demonic Art" abilities.
+# Read from the mod binary Demonology.dll, SHA-256 041b54262f8d241b04d85f8ac682f45ccc68460b270fc81c03f55fa62b37ac5b:
+# the id constants of its ritual class and every CreateRitualSpell1 / 1d3 / 1d4 call that names one.
+# The abilities are built in code when the game starts (a copied, linked ContextActionSpawnMonster whose
+# AfterSpawn applies the mod's own ritual buff); their graphs exist only in a running game with the mod.
+# Format: <creature blueprint id> <label: the abilities that summon it>.
+2d643696b0653b846bf95c62be792e85 Dretch (3 Demonic Art abilities)
+9125fbea5b02f4744a169091dec729b2 Cambion (3 Demonic Art abilities)
+0c1c73f377c8d19499b9fa384543b687 Quasit (3 Demonic Art abilities)
+35758d873d826214a8c95c526a401c90 Abricandilu (3 Demonic Art abilities)
+5abf050c62112ee46b3f4851c458c3da Vermlek (3 Demonic Art abilities)
+037acd3db7f5a7b489338c182820734a Schir (3 Demonic Art abilities)
+61e89e329440c0e46a4125d4667720ee Brimorak (3 Demonic Art abilities)
+b80f9014b742ea04ba27f897177bafc4 Babau (3 Demonic Art abilities)
+b9026a153df2a5a4e89a0cccb6e158ba Incubus (3 Demonic Art abilities)
+d4b8db4dd6e88754086a5bab18974422 ShadowDemon (3 Demonic Art abilities)
+c146d2de3b6f263429870795f5f1c071 Succubus (3 Demonic Art abilities)
+04a9f9082b5d1e8488088b61fceb2984 Nabasu (3 Demonic Art abilities)
+5440e7be8185f2d4eafbb89f5925feab Vrock (3 Demonic Art abilities)
+1f8c87fde2d7be342b90a58d0180884b Derakni (3 Demonic Art abilities)
+bd08faf0a5d8a9d4d97613b95c1f1cee Kalavakus (3 Demonic Art abilities)
+fc9479d70112ac14a8ebcd0fb9b208c1 Gibrileth (3 Demonic Art abilities)
+2f79139e8f8f3514d8f751975cca5a29 Retriever (3 Demonic Art abilities)
+d5a01b84a52ed0e4f88dc06828360e2d Coloxus (3 Demonic Art abilities)
+a3e9d5bc90bf6c548b297617e5d34ed1 Omox (3 Demonic Art abilities)
+d13545bd34bf2c3438f909417b9c5314 Glabrezu (3 Demonic Art abilities)
+ffb2176dbd27838438a9e0879f145c79 Olioodro (3 Demonic Art abilities)
+a8a88d3dfea41894597969cda1772f65 Nalfeshnee (3 Demonic Art abilities)
+300c4b7ef165f1b4bb4a59893ca952a8 Painajai (3 Demonic Art abilities)
+d5d58c9aea545254f895226ba604f06b Lilitu (3 Demonic Art abilities)
+4addf73a9a68c694f9919137f800be50 Marilith (3 Demonic Art abilities)
+143bf780bdf425a4ca14ab0e5df20232 Vavakia (3 Demonic Art abilities)
+eb0b4e6a01f6b30449f40cd03feb3c77 Balor (2 Demonic Art abilities)
+10f61e31619f18742aa868cd48995a25 Gallu (2 Demonic Art abilities)
+eda9ddab61fd61e4eb2a860315d317c5 Vrolikai (2 Demonic Art abilities)

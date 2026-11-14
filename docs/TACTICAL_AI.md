@@ -5497,7 +5497,176 @@ modes; the shared 997-control-check/27.3ms total is printed in both summaries an
 New unit/native scalar/compiled-route checks cover mode and logging changes; final source/identity follows.
 
 Checked source `30cfa2c`, [receipt](competence/V0352_PLAYTEST_CHECKS.json) and [v0.3.52 stable ZIP](../release/CompanionAI_Pathfinder_v0.3.52.zip), startup MVID `981a7b77-a654-4da1-9a22-68bc1c6a77bd`. 787 unit + 27 inventory tests and native checks pass; actual-reference Release 0 warnings/errors; 0/0 added signatures resolve. Compatible/supplementary audit scopes pass; original full-corpus enum failure remains distinct. Gameplay/matched Unity timing pending.
-## 162. Magic Fusion F0: native-template coverage and complete known blockers (14 November 2026)
+
+## 162. Summon-kit inventory (S1): what a driven summon's kit asks of the engine
+
+13 November 2026, Claude. Tooling and documentation only; no gameplay source, manifest or package change.
+[Method, coverage, ranked gaps, limits and reproduction](SUMMON_KIT_INVENTORY.md),
+[detail rows](competence/SUMMON_KITS_DETAIL.txt), [receipt](competence/SUMMON_KITS_CHECKS.json).
+Branch `claude/summon-kit-inventory` from development `5138990`.
+
+**Problem.** Summon control (§156) had two played creatures as its whole evidence of kits. Which creatures can the
+loaded data summon, what do their blueprints give them, and what do the mod's readers make of it?
+
+**What was added.** ProfileAudit section `SUMMON-KITS` (`tools/ProfileAudit/SummonKitCheck.cs`): spawn sources by
+their `ContextActionSpawnMonster` elements, the unique creatures they name, each creature's static kit by the game's
+unit setup (ability components, facts, templates, race, class levels, selections, named spells, `AddFacts`,
+`AddFeatureOnClassLevel`, `AddFeatureIfHasFact`), body, brain casts and mechanism markers, and every active ability
+through the summon policy and the same reader verdicts as the report's ability rows (`Audit.VerdictOf`). New options:
+`--supplement <folder>` (missing-only fixtures: a dump folder's blueprint is never replaced), `--summon-unit-list
+<file>` (creature ids a code-built mod source summons) and `--summon-kit-report <file>` (the detail rows).
+`tools/ProfileAudit/summon_kit_supplement.py` writes the missing-only stock closure; it has three tests.
+
+**Coverage** (author's exports, 607 missing-only stock 2.7.0x fixtures, the Demonology creature list):
+
+- 323 sources hold 459 spawn references; 235 are party-plausible by static references.
+- 233 unique creatures from loaded sources (219 references repeat a creature), 191 linked by at least one source,
+  42 only unlinked; plus 20 that only Demonology's code-built abilities summon: 253 in all.
+- 165 are party-reachable and not swarms. All carry weapons, 157 are melee, 27 have no active ability.
+- 672 creature-ability pairs on those 165: read 502, read with a guessed part 48, guessed 31, unread 13, not offered
+  24, on by default 44, refused by the summon policy 10. 178 pairs are cast by the creature's own brain; 37 of those
+  are not fully read.
+- Missing: six creature ids and three kit references are absent from the stock data itself. Dynamic: 107 creatures
+  leave a part to the running game. The supplement supplies 6 sources, 1 creature and 2 kit abilities.
+
+**A reading is reader recognition, not tactical competence.** Nothing a live creature adds is seen. Calibration on the
+two played summons: their own kits match the live action bar exactly (5 of 5); the universal actions are incomplete
+(6 of 10 found).
+
+**Ranked gaps** (coverage first, then judgement): closing to melee (the shared approach-refusal topic: Abrikandilu
+ten refusals in the played log, four of nine decisions end the turn); position changes the readers do not understand
+(teleports, leaps: 9 abilities, 11 creatures); self-effects with a condition and a combat trigger (6 abilities,
+several on the author's Demonology creatures); on-hit riders (117 creatures, not classified in this slice);
+target-bound marks; Whirlwind; Burrow. No summonable stock creature grapples on a hit.
+
+**Bounds.** Offline tool only. The graph walk stays inside one blueprint; a kit's fact closure is capped at 4,000
+steps. No actor, spawn, cast, command or Unity execution, and nothing in the deployable DLL.
+
+**Checks.** `SUMMON-KITS` 8 checks; two runs byte-identical; the other 38 audit sections keep their 959 checks and
+report lines against a baseline build of development's tool. 787 unit + 27 inventory + 3 script tests; Release 0
+warnings; ToggleCosts 98, TomeBurn 14, ToyBoxSpend 10. Gameplay source, `Info.json` and `release/` unchanged.
+
+**Played logs.** `Log.txt` matches the v0.3.51 hash in `V0352_PLAYTEST_INPUTS.json`; the supplied `combatLog.txt`
+is the earlier v0.3.50 session's file (it matches `V0351_PLAYTEST_INPUTS.json`).
+
+**Next.** S2: approach end points, from the supplied log; then I1 (Invocation ledger, unblocked by `Log.txt`).
+
+
+## 163. Approach end points (S2): turn-based walks to a free side of a crowded target
+
+14 November 2026, Claude. Author-approved slice S2 of the summon plan (a movement change in its scope). Source change
+on `claude/approach-end-points`; manifest, packages and `release/` unchanged; **not played**.
+[Receipt](competence/APPROACH_SPOT_CHECKS.json).
+
+**Problem.** In the played v0.3.51 log melee approaches were withheld before issue with "path ends out of reach
+(0.Xm short)", and units ended their turns next to a fight. The proposal named it the largest summon gap (Abrikandilu:
+ten refusals, four of nine decisions ended the turn).
+
+**Evidence (v0.3.51 `Log.txt`, six fights).**
+
+- 52 rows "path ends out of reach (N m short)" and 35 rows "path ends without line of sight to the target". All 87 are
+  in the two turn-based fights (fight 2: 5 + 9; fight 6: 47 + 26, next to 61 issued turn-based commands). The three
+  real-time fights have none. Five further rows carry the same prefix but are the separate "walk goes nowhere" rule.
+- By option: Move+Attack 18, Aid Another 26, Sunder Armor 4, Cat's Grace 1, FullAttack+5ft 3.
+- By unit: Abrikandilu 10, Valmot 9, the main character 9, Camellia 7, Tuvel 4, Ulbrig 3, Seelah 3, Lann 3, Vermlek 2,
+  Aeiluvetar 2. By target: Hand of Hosilla 27, Goblin Troublemonger 12, Neophyte Sharpshooter 7, Fiendish Large Earth
+  Elemental 5.
+- Shortfalls: 0.2-0.8 m in 38 rows, 1.2-2.9 m in 14. They grow as successive actors reach one target
+  (0.2, then 0.4, then 0.7 m).
+
+**The proposed cause is disproved.** The hypothesis was a summon-specific mismatch of reach or body size. The radius
+is the game's own (`UnitAttack.GetApproachRadius`, the command's `ApproachRadius`), and companions are refused exactly
+like summons: 40 of the 52 rows belong to party members and pets. Nothing in the path is specific to a summoned creature.
+
+**What the game does (decompiled, read-only).**
+
+- `UnitCommand.IsUnitCloseEnough` is `GeometryUtils.SqrMechanicsDistance <= radius²` and, when the command needs it,
+  eye-level sight. `MechanicsDistance` is flat while the heights differ by at most 1.5 m, else `max(flat, dy / 2)`.
+- The turn-based path search (`UnitMovementAgent.FindPath` -> `ABPathWithClearance`,
+  `LosPathConditionForGrid.TargetFound`) ends on the first cell whose centre is within the approach radius, with no
+  ally on it (`AllyBlocked == 0`) and sight - **or on its end node**, the free cell nearest the goal. With the near
+  side of a target crowded, every cell in reach on that side is held, the search ends on the end node a few decimetres
+  out of reach, and no other side is tried. Real-time `FindPath` ignores the radius and walks the whole way.
+- The game's own AI (`AiAction.ScorePath`) tolerates an end up to 0.5 m outside the range and simulates the walk. A
+  mod command has no such simulation: `TickApproaching` only follows `ForcedPath`, and a path that does not end in
+  reach leaves the command force-finished unstarted (why the dispatcher refuses, v0.3.10).
+
+**Two findings.**
+
+1. *Cause.* Near-side crowding plus a path search that ends on its end node. Turn-based had no free-side logic: the
+   spot rules of v0.3.29 test 4 (§116, body blocking fix 1) were real-time only.
+2. *Label defect.* The shortfall was the straight three-dimensional distance; the game's test is the mechanics
+   distance plus sight. A sight failure on a slope read as "0.3 m short", and a shortfall could print as "0.0m short".
+
+"Stop at the first valid point on the way" was considered and not built: the path's end already is the nearest free
+cell, so there is no earlier valid point on it.
+
+**Change.**
+
+- `SpotRules.Applies(range, noMovementLeft)`: spot claims in both modes (contact approaches, range <= 4 m).
+- `PlanApproach`, turn-based: the straight spot counts as taken when another body stands on it (`TakenAt`, as in real
+  time) or an ally holds its grid cell (`CellFreeAt`: the game's `Walkable` / `AllyBlocked`). Then the 16 ring spots
+  are read as grid cells (`CellSpot`): the cell's centre, free by the game's rule, with the target in reach and in
+  sight from the centre by `IsUnitCloseEnough` with 0.2 m to spare (`SpotRules.CellReachMargin`); at most four are
+  priced (`SpotRules.PricedSpots`), nearest first. The walk goes there first (`MoveFirst`, arrival 0.15 m,
+  `SpotRules.CellArrival`), and the action follows on the next decision of the same turn - the walk-first route area
+  detours already use.
+- No free cell found, turn-based: the straight approach **stays on offer** with the note "(crowded, no free side
+  found)" (`Approach.Crowded`); the game's search may still end in reach on a cell the ring did not sample. Real time
+  keeps its rule: no free side, no walk (`Approach.NoFreeSide`).
+- `Candidate.FreeSideWalk` / `SpotRules.OneMoveWalk`: turn-based, a free-side walk followed by a standard action must
+  fit one move action and must end on its cell. Both are checked by the dispatcher at preflight and at issue
+  (`CommandDispatcher.Run` / `CanPrepare` `oneMoveWalk`), so a walk that would spend the action it was priced for is
+  refused before anything is spent.
+- `CommandDispatcher.PathEndVerdict` + `SpotRules.JudgePathEnd`: the refusal text follows the game's test - "without
+  line of sight" when the end lies inside the radius by the mechanics distance, else "N m short" (at least 0.1). On a
+  refusal only, and only in the verbose log, one `[Dispatch] ... path end refused` line carries the end point, the
+  goal, the game's distance, the radius, the height difference, whether sight was needed, how many ally-held end
+  points were trimmed and the path length. It separates crowding from sight in the next log.
+
+**Unchanged.** Real-time behaviour (same claims, same `NoFreeSide` rule, same walk end). Turn-based when the straight
+spot is free. Reach, the approach radius, the three-check preflight budget, the path search itself, target choice,
+retreat, commitment and stuck rules. No `TurnController.Status` write; every command still goes through
+`CommandDispatcher.Run`.
+
+**Bounds.** The search runs only when the straight spot is taken: 16 grid-cell lookups and at most 16 native reach
+tests, four priced spots, no path query (the one path check is the existing preflight's). The witness line is built
+only on a refusal with the verbose log on. No cache, no state kept between decisions. No added game member reference.
+
+**Checks** (source of this branch; DLL identity in the receipt). Release build 0 warnings / 0 errors; 803 unit tests
+(787 + 16: both modes, the cell rule, the reach margin, the one-move rule, the five path-end verdicts); 27 inventory +
+3 script tests; ProfileAudit exit 0 (45,251 loaded, the one known Achaekek failure), new `APPROACH-SPOT` 28 checks
+(native IL contracts of the search's end rule, `IsUnitCloseEnough`, `AwaitMovementFinish`; native distance scalars;
+compiled routes; the pure rules), every other report line identical to the S1 run; ToggleCosts 98, TomeBurn 14,
+ToyBoxSpend 10. The offline checks run no actor, path search or command.
+
+**Limits.**
+
+- Not played. How often the new walk is chosen, and how many of the 52 refusals it removes, is unknown until a replay.
+- `FullAttack+5ft` does not go through `PlanApproach` (3 of the 52 rows): still refused when crowded.
+- 16 samples on one ring at 0.85 x range: a free cell between samples is missed (the straight approach then stays).
+- A free-side walk that is refused (longer than one move, or the path cannot end on the cell) leaves no straight
+  attempt on that target in the same decision. Where the game's search would have ended in reach beside a single
+  blocker, the old one-command approach is replaced by walk-then-act with the same action cost.
+- The 14 shortfalls of 1.2-2.9 m are larger than one cell; crowding is the likely cause (Hand of Hosilla, eleven party
+  members and summons), not a proven one. The witness line will tell.
+- The 35 sight refusals are not addressed: they may be legitimate (walls, height). Some old "short" rows on slopes
+  will now read as sight refusals.
+- Only contact approaches. Ranged and reach-weapon approaches beyond 4 m are unchanged.
+
+**Replay.** Turn-based, a large party (summon control on), enemies in a corridor or one strong enemy:
+
+1. A melee unit behind companions that surround a target: the log shows `Move+Attack->X (to a free side: ...)`, an
+   `Approach:` walk, then `Attack->X` in the same turn.
+2. A target with no free side: `(crowded, no free side found)`, then either the attack or a refusal with the new
+   `[Dispatch] ... path end refused` witness (verbose log on).
+3. Count "path ends out of reach" per fight against the 47 of fight 6.
+4. Real time: `[Walk] ... no free side` and free-side walks as before.
+
+**Next.** I1: Invocation ledger from the supplied `Log.txt` (the redundant-cast sequence stays a hypothesis until the
+scores, the stacking rules and the state are checked).
+
+## 164. Magic Fusion F0: native-template coverage and complete known blockers (14 November 2026)
 
 The author authorized the [revised plan](MAGIC_FUSION_PLAN.md). [Implementation/evidence](FUSION_IMPLEMENTATION.md)
 and [baseline](competence/FUSION_COVERAGE_BASELINE.json). This is coverage groundwork, not a valuation retune.

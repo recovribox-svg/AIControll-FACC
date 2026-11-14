@@ -3,6 +3,8 @@
 ## F0: configuration coverage and rejection attribution
 
 Task `codex/fusion-coverage-audit`, based on development `6cf42818ade856814003ac0cab8872795d884ffd`.
+Reconciled with integrated development `e1ae334` (S1 summon inventory and S2 approaches); those changes are retained.
+The initial fetch only updated the configured main tracking ref; the development ref is now explicitly fetched.
 The author authorized implementation of the [revised plan](MAGIC_FUSION_PLAN.md). No open PRs at task start.
 
 The offline audit now enumerates **15,494 declared-list configuration templates** from 60 levelled sources and
