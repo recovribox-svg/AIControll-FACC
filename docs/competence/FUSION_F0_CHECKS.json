@@ -1,0 +1,104 @@
+{
+  "task": "Magic Fusion F0: native configuration coverage and complete known rejection metadata",
+  "checked_source_commit": "d1a8f465545a42c3e2515872ec9c9ec7df69fd89",
+  "starting_development": "6cf42818ade856814003ac0cab8872795d884ffd",
+  "branch": "codex/fusion-coverage-audit",
+  "dll": {
+    "assembly": "CompanionAI_Pathfinder, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null",
+    "mvid": "91caece1-5919-4070-9c24-92f926a5f35b",
+    "sha256": "53c3e07d6188b10a766d2a937b62961b2773e6a44b78acaf3b9bd6d81d6328d8",
+    "size": 1418240
+  },
+  "manifest_unchanged": "0.3.52",
+  "package": "none; existing stable unchanged",
+  "release_build": {
+    "configuration": "Release",
+    "real_game_references": true,
+    "warnings": 0,
+    "errors": 0,
+    "native_assembly_sha256": "2cb7160b7154d4ffacc77b9c51b1eb26199e1294300f04fdfc073367b2ef8953"
+  },
+  "unit_tests": {
+    "passed": 793,
+    "failed": 0,
+    "skipped": 0
+  },
+  "inventory_tests": {
+    "passed": 27,
+    "failed": 0
+  },
+  "strict_compatible_profile_audit": {
+    "loaded": 44639,
+    "load_failures": 0,
+    "abilities": 4807,
+    "reader_errors": 0,
+    "scope": "C06_NATIVE_COMPATIBLE_SCOPE.json plus REVIEW2_CHARGE_INPUTS.json missing-only stock fixtures",
+    "fusion_checks": 38,
+    "step_checks": 13,
+    "magus_base": 32,
+    "caster": 36
+  },
+  "supplementary_audit": {
+    "loaded": 44643,
+    "load_failures": 0,
+    "abilities": 4807,
+    "reader_errors": 0,
+    "magus_checks": 44,
+    "scope": "same plus explicit stock hidden Magus buff fixtures"
+  },
+  "native_provider_checks": {
+    "toggle": 98,
+    "tome": 14,
+    "toybox": 10,
+    "failures": 0
+  },
+  "original_raw_inputs": {
+    "status": "INCOMPLETE, expected existing enum load failure retained",
+    "loaded": 44637,
+    "failed": 1,
+    "scope": "unchanged original exports; no normalization"
+  },
+  "coverage": {
+    "status": "PASS",
+    "orderedDistinctPairs": 3540,
+    "pairsWithoutConfiguration": 0,
+    "configurations": 15494,
+    "profileAccepted": 7474,
+    "profileWithheld": 8020,
+    "acceptedConeProfilesWithAimUnvalidated": 1180,
+    "readerErrors": 0
+  },
+  "full_generated_report": {
+    "bytes": 14001782,
+    "sha256": "8ca84f260dd39c385d034889382050eb409f6592b91b2fdcf6abc6a40a88f3f5",
+    "cases": 15494,
+    "committed": false
+  },
+  "new_foreign_signatures": {
+    "added": 0,
+    "unresolved": 0
+  },
+  "behavior": "cold metadata records all known reasons; primary refusal, commands, scoring, normal logs and policies unchanged",
+  "harness_limits": [
+    "Private engine-neutralized copies only; deployed DLL copied byte-identically and never rewritten.",
+    "No actor, live aim, Rulebook, native cast, command or Unity performance execution.",
+    "Templates are declared-list metadata, not all modded runtime or actual character combinations."
+  ],
+  "gameplay": "pending; no gameplay behavior change claimed",
+  "validation_logs": {
+    "supplementary.log": "6d1a24b1d96c6edd3f7444c9ed395003a61051f454c98da7143f1fb10b93f0a2",
+    "toggle-build.log": "8f50c9b1e60103e4618c528d277552df82fd704b3a9be659b04bd93d3ecafe10",
+    "tome.log": "106525b91e7a2dfe0c133bd003939f65dbbef07d6379265d6b75319a9f1029a9",
+    "raw.log": "59399a5731df2ca0a352726bb5857f2618ac7f2bf881aa07c789670ad5bd8149",
+    "toybox.log": "47bbe51e94b6157d42b590ed215ed96810f9aedfe444404c039eef5534f89ccf",
+    "refs.log": "899262540b3e6a0a678fb0c899cdfcefb2cc1695ab4439fdcb666d764617d4a1",
+    "audit-build.log": "8bb00c8e57f5bebaaa8f4ea185c5a7cfd94fec6bb7d052e30225f3dae8530781",
+    "tome-build.log": "8f9d4ac2007423386cc0d978ac030568feff877aec14a25cbc80732b96fb7963",
+    "strict.log": "116fe17412fd86e589711fd512b8d288fb4e665ddc427bb735e002482a454c3c",
+    "release.log": "041edc5d9f84bf2fd97b36205b0b58e390760c7cddea3e53b10ff28c8b6deed6",
+    "inventory.log": "09ad2fe8a00725d344e94e8e80b71c18c4cbb712fd436f659f3f8ab440b40798",
+    "toggle.log": "62c4af25b251531328e7e57a7d87e925940485ff4a9ea5bac73a8843024d6824",
+    "toybox-build.log": "e8fc2e266b137fabee2885cab3976c85a169d79dd086e04112c6856ad0e0606e",
+    "unit.log": "5035370c31aafe94531ae336231feba1d839f5205940ace4052ee77dfa7a5454"
+  }
+}
