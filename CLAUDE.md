@@ -53,7 +53,7 @@ line identical to the S1 run; native harnesses 98/14/10; 0 added game member ref
 
 **Earlier handover (13 November 2026, Claude): summon-kit inventory (S1) on `claude/summon-kit-inventory`, PR into development. Tooling and
 documentation only: no gameplay source, manifest or package change; v0.3.52 stays the validated, unplayed stable package.** Read
-[docs/SUMMON_KIT_INVENTORY.md](docs/SUMMON_KIT_INVENTORY.md) and `docs/TACTICAL_AI.md` §164. ProfileAudit has a new section `SUMMON-KITS`
+[docs/SUMMON_KIT_INVENTORY.md](docs/SUMMON_KIT_INVENTORY.md) and `docs/TACTICAL_AI.md` §162. ProfileAudit has a new section `SUMMON-KITS`
 (`tools/ProfileAudit/SummonKitCheck.cs`): spawn sources, the unique creatures they summon, each creature's static kit and every active ability
 through the summon policy and the mod's readers. A reading there is reader recognition, **not** tactical competence. Results on the author's exports
 plus 607 missing-only stock fixtures and the Demonology creature list:
