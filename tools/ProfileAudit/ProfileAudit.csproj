@@ -14,7 +14,8 @@
     <PackageReference Include="Lib.Harmony" Version="2.3.3" />
     <Reference Include="CompanionAI_Pathfinder"><HintPath>$(ModDll)</HintPath></Reference>
     <Reference Include="$(ManagedPath)\Assembly-CSharp.dll" />
-    <Reference Include="$(ManagedPath)\Assembly-CSharp-firstpass.dll" />
+    <!-- Optional for the offline harness; ProfileScope instrumentation is neutralized in its private copy. -->
+    <Reference Include="$(ManagedPath)\Assembly-CSharp-firstpass.dll" Condition="Exists('$(ManagedPath)\Assembly-CSharp-firstpass.dll')" />
     <Reference Include="$(ManagedPath)\Owlcat.Runtime.Core.dll" />
     <Reference Include="$(ManagedPath)\Owlcat.Runtime.Validation.dll" />
     <Reference Include="$(ManagedPath)\Owlcat.Runtime.UI.dll" />

@@ -5665,3 +5665,27 @@ ToyBoxSpend 10. The offline checks run no actor, path search or command.
 
 **Next.** I1: Invocation ledger from the supplied `Log.txt` (the redundant-cast sequence stays a hypothesis until the
 scores, the stacking rules and the state are checked).
+
+## 165. Magic Fusion F0: native-template coverage and complete known blockers (14 November 2026)
+
+The author authorized the [revised plan](MAGIC_FUSION_PLAN.md). [Implementation/evidence](FUSION_IMPLEMENTATION.md)
+and [baseline](competence/FUSION_COVERAGE_BASELINE.json). This is coverage groundwork, not a valuation retune.
+Native UI metadata utilities choose schools, saves and delivery sources for declared-list templates; the actual
+Fusion reader supplies admission and all known rejection reasons with locations. Its former single last-reason
+gate and normal logs retain their behavior. Extra metadata is built/cached with profiles, not recalculated per target.
+
+The supplied list yields 60 levelled sources, 3,540 ordered distinct pairs and 15,494 configurations: 7,474 admitted,
+8,020 withheld, no reader exceptions. Of the admitted profiles, 1,180 select a cone, whose actual aim remains
+unvalidated and subject to the separately identified holder/delivery bug. Counts are not mod-wide/live-character
+competence or successful casts. Sole-blocker and co-occurrence counts avoid adding overlapping exclusions.
+
+Requested offline coverage fails for absent list/book/slots/source closure, ambiguous levels or reader exceptions;
+partial input remains partial and stale outputs are replaced. Existing builds/audits, native fixtures and new
+diagnostic/CLI cases are recorded in [checks](competence/FUSION_F0_CHECKS.json). No AI command or native cast is issued; no live
+game state or installed game DLL is modified. The offline harness uses private engine-neutralized copies. Existing control/damage/save math, policy, movement,
+blocklists, versions and packages are unchanged. Claude reviews/integrates F0 before F1; no release or gameplay acceptance.
+
+The current development's S1/S2 are retained. S1's graph walk now skips scalar arrays before their namespace lookup:
+a nested UI enum array otherwise tries to load UnityEngine.UI solely to discover metadata it immediately discards.
+The walk's visited effects/classifications are unchanged; no UI assembly is introduced. The compatible Fusion audit
+prints S1's remaining missing-reference scope instead of claiming S1's separate stock-supplement completeness.

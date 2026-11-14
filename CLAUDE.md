@@ -8,6 +8,16 @@ Read [CONTRIBUTING.md](CONTRIBUTING.md) for shared branch ownership, Codex pull 
 Codex works on task branches and targets pull requests at `claude/dreamy-pasteur-b9h3rn`; Claude reviews and integrates them there.
 Keep `main` for author-authorized releases. Read [AGENTS.md](AGENTS.md) when coordinating agent work.
 
+**Magic Fusion F0 (14 November 2026, Codex):** author authorized the [revised implementation plan](docs/MAGIC_FUSION_PLAN.md).
+`codex/fusion-coverage-audit` started at `6cf4281`, no open PRs; reconciled with actual development `e1ae334` (S1/S2), preserving both. Initial tracking ref was stale; use an explicit development fetch refspec. [Status/usage](docs/FUSION_IMPLEMENTATION.md), §165,
+[baseline](docs/competence/FUSION_COVERAGE_BASELINE.json), [checks](docs/competence/FUSION_F0_CHECKS.json).
+Offline native UI template enumeration: 60 sources, 3,540 pairs, 15,494 configurations; 7,474 profile-admitted,
+8,020 withheld, zero reader errors. All known blockers/locations now survive cold profile construction; existing
+last-reason admission, decisions and normal log stay unchanged. This diagnostic metadata changes the DLL, unlike
+the initial tooling-only sketch; no additional rule/target/path queries, actor cache, settings/version or package change.
+The 1,180 admitted cone templates still require F1's selected-delivery handoff repair; aim/value/actor availability
+remain unassessed. Keep F2/F3 shared math, real root-save correlation, one native clicked target and actual costs;
+do not add a second target/action or blanket blueprint/key replacements. 811 unit + 27 inventory + 3 script tests pass; real-reference Release 0 warnings/errors; compatible/supplementary audits and native providers pass. Checked source `c000c83`, MVID `cd740a06-f1f3-4f50-9874-05d16b6da11c`, zero new foreign signatures. S1's input subset retains its explicit missing-reference report; it is not S1's full stock-supplement scope. Claude reviews/integrates; no gameplay claim.
 **Current handover (14 November 2026, Claude): approach end points (S2) on `claude/approach-end-points`, PR into development, stacked on the
 S1 PR. Source change, not played; manifest 0.3.52, packages and `release/` unchanged; v0.3.52 stays the validated, unplayed stable package.** Read
 `docs/TACTICAL_AI.md` §163 and the [receipt](docs/competence/APPROACH_SPOT_CHECKS.json).
