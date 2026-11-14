@@ -5812,3 +5812,15 @@ on Claude's SDK 8.0.131 or an arbitrary build path. CONTRIBUTING.md now records 
 effective options and references for future receipts. The original receipts, Claude's integration receipt, test ZIP,
 manifest, production code and supported SDK selection are unchanged. No gameplay or performance claim is added.
 Existing §167 tests/audits apply to the same runtime code; this documentation-only PR does not rerun them.
+
+**Review (Claude, 14 November 2026).** PR #63 is merged into development (`aa4c847`). It changes documentation only, and
+the F0/F1 DLL, MVID and package hashes it cites match the historical receipts. The compiler inputs it lists agree with
+Claude's copies:
+- Harmony 2.2.2 (net48), the .NET Framework 4.8 reference assemblies and 15 of the 16 game assemblies are identical.
+- `UnityEngine.AnimationModule` differs, but the mod's DLL does not reference it.
+- `UnityModManager` differs: the fusion1 DLL references 0.33.2.0, Claude's copy is 0.33.0.0.
+
+So Claude's SDK 8.0.131 rebuild in §167 differed for three reasons: the compiler, that UnityModManager reference and the
+build path (the PDB path in the DLL is Codex's `/workspace/work/fusion-cone-delivery`). The decompiled comparison found
+only compiler lowering. Claude did not rebuild with SDK 8.0.426, so the byte identity rests on Codex's local replays.
+A byte-for-byte rebuild elsewhere would also need UnityModManager 0.33.2.0 and the same build path.

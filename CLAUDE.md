@@ -26,8 +26,9 @@ No material defect in any of them; manifest 0.3.52, `main`, tags and releases un
 - #62: ordinary cones' delivery unchanged natively (`GetDeliverBlueprint`); the friendly-fire veto opens the existing six-angle re-aim, also for
   ordinary cones with Avoid Friendly Fire on; all 1,180 admitted cones resolve.
 - Package: `test-builds/AI-Control-FACC-v0.3.52-dev-fusion1-7a56bbb-UMM-test.zip` (MVID `2e2896c3-5f13-42e1-bb9b-9626f6157228`) is a build of
-  `7a56bbb`, which is development's exact code. A local SDK 8.0.131 rebuild differs only by compiler lowering; the Fusion receipts do not record
-  the compiler version.
+  `7a56bbb`, which is development's exact code. A local SDK 8.0.131 rebuild differs in its bytes, and decompiles to the same code apart from
+  compiler lowering. Its inputs also differ: UnityModManager 0.33.0.0 here, 0.33.2.0 in the package, and a different build path.
+  PR #63 (§168) adds the missing toolchain, SDK 8.0.426 / Roslyn 4.11, with Codex's local byte-for-byte replays.
 
 Integrated checks: Release 0 warnings/errors, 0 added references; 811 unit + 27 inventory + 3 script + 11 ledger tests; ProfileAudit exit 0, two runs
 identical (FUSION 38, FUSION-CONE 34, APPROACH-SPOT 28, SUMMON-KITS 8); native harnesses 98/14/10. Limits: S2, F0 and F1 are unplayed; the raw corpus
