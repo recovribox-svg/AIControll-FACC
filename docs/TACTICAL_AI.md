@@ -5665,3 +5665,49 @@ ToyBoxSpend 10. The offline checks run no actor, path search or command.
 
 **Next.** I1: Invocation ledger from the supplied `Log.txt` (the redundant-cast sequence stays a hypothesis until the
 scores, the stacking rules and the state are checked).
+
+## 164. Invocation transfer ledger (I1): no redundant casts, no joint assignment needed
+
+14 November 2026, Claude. Tooling and documentation only; no gameplay source, manifest or package change.
+[Ledger, rules, tables and limits](INVOCATION_LEDGER.md), [receipt](competence/INVOCATION_LEDGER_CHECKS.json).
+Branch `claude/invocation-ledger` from development `e1ae334`.
+
+**Question.** Does greedy, one-cast-at-a-time Profane Invocation placement waste casts? The planning checkpoint named
+v0.3.51 rows 2032 and 2067 as a redundant pair and proposed I2, a joint tier/recipient assignment, if confirmed.
+
+**Rules (exported Demonic Overlord graphs, decompiled game).** Twelve free actions with no resource. Each applies a
+permanent, death-surviving, unique buff: +2 Profane to one stat. Each removes the five other buffs of its tier from its
+target. `UnitPartUniqueBuffs.NewBuff` removes the caster's other copy of the same buff. Profane is not in
+`ModifierDescriptorHelper.DefaultStackingDescriptors`, so the same stat from both tiers does not stack.
+
+**Tool.** `tools/InvocationLedger/invocation_ledger.py` (eleven tests) reads the mod's own rows of a `Log.txt`. It keeps
+the twelve holders, changing a holder only on a cast that acted, and classifies every cast: first placement, sibling
+replacement, settled move, override, move under settle, holder unseen, not applied. It flags sibling removals, low
+holder loss, the last enemy and same-stat stacking. It checks cross-tier pairs against the one-cast alternative,
+using the holdings it knows. It also reports chains, returns and next-fight re-placements.
+
+**Result** (v0.3.51 `Log.txt`, six fights; v0.3.52 `Log.txt`, two fights):
+
+| issued | acted | first placement | settled move | override | holder unseen | not applied | under settle | same-stat | redundant pairs |
+|---|---|---|---|---|---|---|---|---|---|
+| 29 | 28 | 4 | 19 | 2 (net 9.6, 7.2) | 3 | 1 | 0 | 0 | 0 of 2 |
+
+- **The named pair is not redundant.** Tier-2 Dexterity straight onto Tuvel would have removed his tier-2 Charisma
+  (9.4 there) and netted about 2.1, against 9.6 for the tier-1 move. The other cross-tier pair is the same (Valmot's
+  tier-1 Strength).
+- **The three holder-unseen moves came off allies who were down.** A revive was considered for Seelah, and Camellia
+  made no decision until RT9. The engine's ally list leaves such allies out, so it priced no holder loss.
+- **Three chains (one buff moved twice within a round) each followed a change in the fight.** One end-of-fight
+  sibling removal (with one enemy left) was cast again in the next fight, on another recipient.
+- **25 of 28 acted casts took 0.0 s.** Lann's slow decisions carry the memory clean-up marker; Invocation scoring is
+  not shown to be a steady cost.
+
+**Decision.** I2 is not warranted, and no runtime change is made. Low priority: a display-name fallback for a unit with
+an empty name, which logs as nothing ("stays on  ").
+
+**Limits.** Two logs, eight fights, one caster; the values are the engine's estimates. The Intelligence buffs never
+reach a holder check (no positive worth), so their holders are unknown. "Holder unseen" is inferred from the rows.
+
+**Next.** G1, grapple state awareness. The v0.3.52 logs show six Ulbrig grapples, five successful, with Grabber
+switched on by the player. The turn-based grapple turns had AI Control off ("AI is off for this character"), and in
+real time Ulbrig made no AI Control decision from RT3 to RT15. G1 needs at least one grapple turn with AI Control on.

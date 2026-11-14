@@ -9,6 +9,14 @@ metadata, prerequisite links, input identities and reference-closure counts. It 
 without uploading the whole game. It never executes native code or changes exports; its inventory is not gameplay validation.
 `roster_summary.py` turns that report into the compact roster used by the competence matrix (`docs/competence/ROSTER.md`).
 
+## InvocationLedger
+[invocation_ledger.py](InvocationLedger/invocation_ledger.py) reads an AI Control `Log.txt` and lists every Profane
+Invocation the mod issued: recipient, holder before, the engine's net/gross and losses, outcome, and a class (first
+placement, sibling replacement, settled move, override, holder unseen, not applied), with cross-tier, chain, return and
+next-fight re-placement checks (docs/INVOCATION_LEDGER.md). It reads only the mod's rows and executes nothing.
+`python3 -I tools/InvocationLedger/invocation_ledger.py [--json] <Log.txt>`; tests: `python3 -I
+tools/InvocationLedger/test_invocation_ledger.py`.
+
 ## RefStubGen
 Generates **compile-only** reference stubs for game assemblies that are not available (Owlcat.*, AstarPathfindingProject,
 the game's Newtonsoft.Json, ...). It reconstructs them from the TypeRef/MemberRef metadata of `Assembly-CSharp.dll`,

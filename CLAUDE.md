@@ -8,8 +8,24 @@ Read [CONTRIBUTING.md](CONTRIBUTING.md) for shared branch ownership, Codex pull 
 Codex works on task branches and targets pull requests at `claude/dreamy-pasteur-b9h3rn`; Claude reviews and integrates them there.
 Keep `main` for author-authorized releases. Read [AGENTS.md](AGENTS.md) when coordinating agent work.
 
-**Current handover (14 November 2026, Claude): approach end points (S2) on `claude/approach-end-points`, PR into development, stacked on the
-S1 PR. Source change, not played; manifest 0.3.52, packages and `release/` unchanged; v0.3.52 stays the validated, unplayed stable package.** Read
+**Current handover (14 November 2026, Claude): Invocation transfer ledger (I1) on `claude/invocation-ledger`, PR into development. Tooling and
+documentation only: no gameplay source, manifest or package change; v0.3.52 stays the validated, unplayed stable package.** Read
+[docs/INVOCATION_LEDGER.md](docs/INVOCATION_LEDGER.md) and `docs/TACTICAL_AI.md` §164. `tools/InvocationLedger/invocation_ledger.py` (11 tests) lists
+every Profane Invocation in a `Log.txt` with recipient, holder, the engine's values, outcome and class.
+- Inputs: v0.3.51 `Log.txt` (`e661b9d8…`) and the author's new v0.3.52 `Log.txt` (`4a89f317…`, header MVID `981a7b77`, two fights) with its
+  `combatLog.txt` (`90e946ad…`).
+- Result: 29 issued, 28 acted. First placement 4, settled moves 19, overrides 2 (net 9.6 and 7.2), holder unseen 3 (holders down), 1 interrupted.
+  Moves under settle 0, same-stat stacking 0, redundant casts 0.
+- The named pair (v0.3.51 2032 -> 2067) is not redundant: tier-2 Dexterity straight onto Tuvel would have removed his tier-2 Charisma (9.4).
+- Decision: I2 (joint assignment) is not warranted on this evidence; no runtime change. Low priority: a display-name fallback for an empty unit name.
+- Grapple evidence for G1: the player switched Grabber on for Ulbrig, and the combat log shows six grapples (five succeeded). The turn-based grapple turns
+  had AI Control off; in real time Ulbrig made no AI Control decision from RT3 to RT15. G1 needs a grapple turn with AI Control on.
+
+Checks: 11 ledger + 27 inventory + 3 script tests; links resolve; tables regenerated from the deterministic tool output. No game build or ProfileAudit
+(no C#, project or manifest change). [Receipt](docs/competence/INVOCATION_LEDGER_CHECKS.json). Next proposed: G1 grapple state awareness.
+
+**Earlier handover (14 November 2026, Claude): approach end points (S2), merged into development by PR #59 (merge `e1ae334`; S1 by PR #58, merge
+`8ef707c`). Source change, not played; manifest 0.3.52, packages and `release/` unchanged; v0.3.52 stays the validated, unplayed stable package.** Read
 `docs/TACTICAL_AI.md` §163 and the [receipt](docs/competence/APPROACH_SPOT_CHECKS.json).
 - Evidence (v0.3.51 `Log.txt`): 52 "path ends out of reach" and 35 "without line of sight" refusals, all in the two turn-based fights (47 + 26 in
   fight 6 next to 61 issued commands); 40 of the 52 belong to party members and pets, 12 to summons.
@@ -30,7 +46,7 @@ Checks: Release 0 warnings; 803 unit + 27 inventory + 3 script tests; ProfileAud
 line identical to the S1 run; native harnesses 98/14/10; 0 added game member references. Checked source `49ffd46`; verification build only (DLL SHA-256
 `295591c8...`, MVID `f1f9895b-f92d-4287-bf92-0e47282d4ed2`), no package. Replay steps: §163. Next proposed: I1 (Invocation ledger from the supplied `Log.txt`).
 
-**Earlier handover (13 November 2026, Claude): summon-kit inventory (S1) on `claude/summon-kit-inventory`, PR into development. Tooling and
+**Earlier handover (13 November 2026, Claude): summon-kit inventory (S1) on `claude/summon-kit-inventory`, merged by PR #58. Tooling and
 documentation only: no gameplay source, manifest or package change; v0.3.52 stays the validated, unplayed stable package.** Read
 [docs/SUMMON_KIT_INVENTORY.md](docs/SUMMON_KIT_INVENTORY.md) and `docs/TACTICAL_AI.md` §162. ProfileAudit has a new section `SUMMON-KITS`
 (`tools/ProfileAudit/SummonKitCheck.cs`): spawn sources, the unique creatures they summon, each creature's static kit and every active ability
