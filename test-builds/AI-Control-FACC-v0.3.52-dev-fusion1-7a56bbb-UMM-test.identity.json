@@ -1,0 +1,26 @@
+{
+  "build_label": "fusion1",
+  "kind": "development-test",
+  "version": "0.3.52",
+  "source_branch": "codex/fusion-cone-delivery",
+  "source_commit": "7a56bbb942a71ae7b97104d024c3206a2eed2493",
+  "development_base": "e1ae3344f77c0606c30e2d223570bc806cb76a38",
+  "dependency_pr": 60,
+  "dll": {
+    "assembly": "CompanionAI_Pathfinder, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null",
+    "mvid": "2e2896c3-5f13-42e1-bb9b-9626f6157228",
+    "sha256": "d35fe730483cb6de8adbf7874aa7b365b074dc82e5a0aa1fdb24bc2abf8bb7fb",
+    "size": 1421312
+  },
+  "manifest_sha256": "1876fd6fc56d03b28793f6c481fac47c9ea85eec3265d6859232deeab67523a3",
+  "archive": "AI-Control-FACC-v0.3.52-dev-fusion1-7a56bbb-UMM-test.zip",
+  "zip_sha256": "40527da3e29f4435a3d0786faccf9f10e500f8cacbe2dd9d25bb758431125977",
+  "checks_receipt": "docs/competence/FUSION_F1_CHECKS.json",
+  "gameplay_status": "not played",
+  "scope": "Cumulative F0 coverage metadata and F1 selected cone delivery / hard-friendly-fire re-aim. Includes integrated S1/S2. Existing payload exclusions and valuation remain. Native geometry execution and matched Unity performance need TB/RT playtest.",
+  "archive_contents": [
+    "CompanionAI_Pathfinder.dll",
+    "Info.json"
+  ],
+  "release": false
+}

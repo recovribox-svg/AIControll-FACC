@@ -5705,7 +5705,10 @@ That route still tries at most six orientations from the current position, retai
 the chosen alternative. Ordinary cones receive this same correction. It is not the later useful-payload aim search.
 
 New native-slot/seven-source metadata fixtures, compiled handoff checks, warm component-allocation check and
-full admitted-cone matrix check document the offline contract. Full verification and exact build/package identity
-are recorded after validation. Live edge/body/LOS/Selective/moving/downed ally geometry, native execution and
+full admitted-cone matrix check document the offline contract. [F1 checks](competence/FUSION_F1_CHECKS.json):
+811 unit + 27 inventory + 3 script tests; real-reference Release 0 warnings/errors; all compatible/supplementary
+ProfileAudit sections and native providers pass. FUSION-CONE 34; all 1,180 admitted cone components resolve,
+unchanged profile admission (7,474 / 8,020). Warm resolver: 10,000 calls, zero allocated bytes. The cumulative
+fusion1 ZIP packs the exact checked Release DLL, identity/checksum and distinct startup MVID; it is a test build. Live edge/body/LOS/Selective/moving/downed ally geometry, native execution and
 matched Unity performance remain gameplay acceptance; the offline harness creates no actor and issues no command.
 No payload exclusion, cost policy, movement, dispatcher or F2/F3 valuation is changed; stable release remains 0.3.52.

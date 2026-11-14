@@ -82,7 +82,7 @@ friendly-fire refusal to find a previously missed safe aim; this shared fix is i
 compiled scorer/query handoffs and the existing six-turn bound. A warm metadata resolver microcheck measures its
 allocations. The full F0 matrix additionally verifies the selected component of every admitted cone template.
 These are metadata/compiled-contract checks: they do not execute native recipient geometry in Unity, commands or
-combat. See the F1 receipt for the exact checked source, DLL and results. No Unity speedup or gameplay success is
+combat. See the [F1 receipt](competence/FUSION_F1_CHECKS.json) for the exact checked source, DLL and results. No Unity speedup or gameplay success is
 claimed from the microcheck. The cumulative test ZIP has a distinct startup MVID and identity/checksum; it is not
 a new stable release and does not replace v0.3.52.
 

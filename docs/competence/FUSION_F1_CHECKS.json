@@ -1,0 +1,135 @@
+{
+  "task": "Magic Fusion F1: selected cone delivery and hard-friendly-fire re-aim",
+  "checked_source_commit": "7a56bbb942a71ae7b97104d024c3206a2eed2493",
+  "starting_development": "e1ae3344f77c0606c30e2d223570bc806cb76a38",
+  "branch": "codex/fusion-cone-delivery",
+  "dll": {
+    "assembly": "CompanionAI_Pathfinder, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null",
+    "mvid": "2e2896c3-5f13-42e1-bb9b-9626f6157228",
+    "sha256": "d35fe730483cb6de8adbf7874aa7b365b074dc82e5a0aa1fdb24bc2abf8bb7fb",
+    "size": 1421312
+  },
+  "manifest_unchanged": "0.3.52",
+  "package": {
+    "archive": "test-builds/AI-Control-FACC-v0.3.52-dev-fusion1-7a56bbb-UMM-test.zip",
+    "sha256": "40527da3e29f4435a3d0786faccf9f10e500f8cacbe2dd9d25bb758431125977",
+    "bytes": 563391,
+    "identity": "test-builds/AI-Control-FACC-v0.3.52-dev-fusion1-7a56bbb-UMM-test.identity.json",
+    "identity_sha256": "86dc4640e2daeef6c53f8bf453db7b13968bbafd4c72ace128b5bf3bd86cc863",
+    "manifest_unchanged": "0.3.52",
+    "packed_dll_equals_checked_release": true,
+    "native_dlls_or_stubs_packed": false,
+    "startup_mvid_unique_against_existing_package_identities": true
+  },
+  "release_build": {
+    "configuration": "Release",
+    "real_game_references": true,
+    "warnings": 0,
+    "errors": 0,
+    "native_assembly_sha256": "2cb7160b7154d4ffacc77b9c51b1eb26199e1294300f04fdfc073367b2ef8953"
+  },
+  "unit_tests": {
+    "passed": 811,
+    "failed": 0,
+    "skipped": 0
+  },
+  "inventory_tests": {
+    "passed": 27,
+    "failed": 0
+  },
+  "strict_compatible_profile_audit": {
+    "loaded": 44639,
+    "load_failures": 0,
+    "abilities": 4807,
+    "reader_errors": 0,
+    "scope": "C06_NATIVE_COMPATIBLE_SCOPE.json plus REVIEW2_CHARGE_INPUTS.json missing-only stock fixtures",
+    "fusion_checks": 38,
+    "step_checks": 13,
+    "magus_base": 32,
+    "caster": 36,
+    "approach_spot_checks": 28,
+    "summon_kit_checks": 7,
+    "summon_kit_scope": "Fusion input scope, no S1 stock supplement: 5 missing spawned-unit ids; 119 missing kit-reference ids; 95 unloaded brains. Not S1 full-stock coverage.",
+    "fusion_cone_checks": 34
+  },
+  "supplementary_audit": {
+    "loaded": 44643,
+    "load_failures": 0,
+    "abilities": 4807,
+    "reader_errors": 0,
+    "magus_checks": 44,
+    "scope": "same plus explicit stock hidden Magus buff fixtures"
+  },
+  "native_provider_checks": {
+    "toggle": 98,
+    "tome": 14,
+    "toybox": 10,
+    "failures": 0
+  },
+  "original_raw_inputs": {
+    "status": "INCOMPLETE, expected existing enum load failure retained",
+    "loaded": 44637,
+    "failed": 1,
+    "scope": "unchanged original exports; no normalization"
+  },
+  "coverage": {
+    "status": "PASS",
+    "orderedDistinctPairs": 3540,
+    "pairsWithoutConfiguration": 0,
+    "configurations": 15494,
+    "profileAccepted": 7474,
+    "profileWithheld": 8020,
+    "acceptedConeProfilesWithAimUnvalidated": 1180,
+    "readerErrors": 0,
+    "cone_components_resolved": 1180,
+    "cone_component_errors": 0,
+    "profile_admission_unchanged_from_F0": true
+  },
+  "full_generated_report": {
+    "bytes": 14575122,
+    "sha256": "40b2892d440bd1d1db7ef6dfd8361ff11dcca5ff07e7a9dc90ddb3c4c1967c8b",
+    "cases": 15494,
+    "committed": false
+  },
+  "new_foreign_signatures": {
+    "added": 0,
+    "unresolved": 0
+  },
+  "behavior": "Cone queries resolve the actual cast selected delivery. Hard friendly-fire refusals reach the existing six-angle current-position alternative search. Existing payload exclusions/values, native context, queries, dispatch, cost and movement behavior retained.",
+  "harness_limits": [
+    "Private engine-neutralized copies only; deployed DLL copied byte-identically and never rewritten.",
+    "No actor, live aim, Rulebook, native cast, command or Unity performance execution.",
+    "Templates are declared-list metadata, not all modded runtime or actual character combinations."
+  ],
+  "gameplay": "pending paired TB/RT cone checkpoint; no live geometry, cast, command or timing acceptance",
+  "validation_logs": {
+    "audit-build.log": "59f3e15e558b9a99f7ff27609d9ecc396b527ff11be009740904c840e7972118",
+    "inventory.log": "9a7dbc8f9cefa0950970a8beaad784b36dca75137a059629f1d64bea1f39f527",
+    "raw.log": "59399a5731df2ca0a352726bb5857f2618ac7f2bf881aa07c789670ad5bd8149",
+    "refs.log": "899262540b3e6a0a678fb0c899cdfcefb2cc1695ab4439fdcb666d764617d4a1",
+    "release.log": "be2fae29f125206074360632d9f7412a1f5244df9145e55b77f039a507bc4727",
+    "strict.log": "611cde60dfb5cc3e7daf164123ac1a1169d436f9153aefb4a6c86ec213f435ef",
+    "supplement-scripts.log": "edb4e2159c923ea45a32656078835cdf531c3d7b414c670dd786978875cb0678",
+    "supplementary.log": "4323a4b04a3f86f01f1cf087ddd3bb270f9579eadcfbaf14333411b0ecb4c166",
+    "toggle-build.log": "4497c1b2f71141688ba317e3632fbd0e431bbb772dcee630563c5b9645e6931a",
+    "toggle.log": "c865356593e6f919549e268658249d598579f21fe913a719986adbf5b3ecb1e4",
+    "tome-build.log": "42da1e6f29ebc938e25d84a193f7f61a5b37234b550ccaf22b3c910eb792a375",
+    "tome.log": "b4bcda26a1e4954f65e06ab630dde11a8cafa860aec708def3ff40127989e4ed",
+    "toybox-build.log": "0ce767eefc1a8337f10cc546ff03ae9dec579795d8a95bd1c3877c4e64113161",
+    "toybox.log": "070b844a5f3bdc9fec25c2be3f21448373be20741b041ce1d4038fb5d909f425",
+    "unit.log": "a241703d2a66316c7ba01cc7865b20f9955f3fa1edf97ad044c8a6272cd5b982"
+  },
+  "integrated_development": "e1ae3344f77c0606c30e2d223570bc806cb76a38",
+  "supplement_script_tests": {
+    "passed": 3,
+    "failed": 0
+  },
+  "dependency_pr": 60,
+  "performance_microcheck": {
+    "operation": "warm selected-delivery component resolution, metadata only",
+    "calls": 10000,
+    "allocated_bytes": 0,
+    "method": "GC.GetAllocatedBytesForCurrentThread, after 256 warmup calls",
+    "limits": "Not a whole-decision benchmark, Unity geometry measurement or speedup claim."
+  }
+}
