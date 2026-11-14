@@ -1,13 +1,13 @@
 {
   "task": "Magic Fusion F0: native configuration coverage and complete known rejection metadata",
-  "checked_source_commit": "d1a8f465545a42c3e2515872ec9c9ec7df69fd89",
+  "checked_source_commit": "c000c836d6949fc31886738b25d20558ea494826",
   "starting_development": "6cf42818ade856814003ac0cab8872795d884ffd",
   "branch": "codex/fusion-coverage-audit",
   "dll": {
     "assembly": "CompanionAI_Pathfinder, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null",
-    "mvid": "91caece1-5919-4070-9c24-92f926a5f35b",
-    "sha256": "53c3e07d6188b10a766d2a937b62961b2773e6a44b78acaf3b9bd6d81d6328d8",
-    "size": 1418240
+    "mvid": "cd740a06-f1f3-4f50-9874-05d16b6da11c",
+    "sha256": "e18ef04a8d190b9828975510d8702529856268925bd6a79b631053f4fada4564",
+    "size": 1420800
   },
   "manifest_unchanged": "0.3.52",
   "package": "none; existing stable unchanged",
@@ -19,7 +19,7 @@
     "native_assembly_sha256": "2cb7160b7154d4ffacc77b9c51b1eb26199e1294300f04fdfc073367b2ef8953"
   },
   "unit_tests": {
-    "passed": 793,
+    "passed": 811,
     "failed": 0,
     "skipped": 0
   },
@@ -36,7 +36,10 @@
     "fusion_checks": 38,
     "step_checks": 13,
     "magus_base": 32,
-    "caster": 36
+    "caster": 36,
+    "approach_spot_checks": 28,
+    "summon_kit_checks": 7,
+    "summon_kit_scope": "Fusion input scope, no S1 stock supplement: 5 missing spawned-unit ids; 119 missing kit-reference ids; 95 unloaded brains. Not S1 full-stock coverage."
   },
   "supplementary_audit": {
     "loaded": 44643,
@@ -86,19 +89,31 @@
   ],
   "gameplay": "pending; no gameplay behavior change claimed",
   "validation_logs": {
-    "supplementary.log": "6d1a24b1d96c6edd3f7444c9ed395003a61051f454c98da7143f1fb10b93f0a2",
-    "toggle-build.log": "8f50c9b1e60103e4618c528d277552df82fd704b3a9be659b04bd93d3ecafe10",
-    "tome.log": "106525b91e7a2dfe0c133bd003939f65dbbef07d6379265d6b75319a9f1029a9",
+    "audit-build.log": "a75cec18940ba686b2b20392d820921a94f5be546edc186d34162bea6e54177b",
+    "inventory.log": "98045e4923f7c33a54e334afebf091341c01fe5b4001cf2fd46b883f5bf5516e",
     "raw.log": "59399a5731df2ca0a352726bb5857f2618ac7f2bf881aa07c789670ad5bd8149",
-    "toybox.log": "47bbe51e94b6157d42b590ed215ed96810f9aedfe444404c039eef5534f89ccf",
     "refs.log": "899262540b3e6a0a678fb0c899cdfcefb2cc1695ab4439fdcb666d764617d4a1",
-    "audit-build.log": "8bb00c8e57f5bebaaa8f4ea185c5a7cfd94fec6bb7d052e30225f3dae8530781",
-    "tome-build.log": "8f9d4ac2007423386cc0d978ac030568feff877aec14a25cbc80732b96fb7963",
-    "strict.log": "116fe17412fd86e589711fd512b8d288fb4e665ddc427bb735e002482a454c3c",
-    "release.log": "041edc5d9f84bf2fd97b36205b0b58e390760c7cddea3e53b10ff28c8b6deed6",
-    "inventory.log": "09ad2fe8a00725d344e94e8e80b71c18c4cbb712fd436f659f3f8ab440b40798",
-    "toggle.log": "62c4af25b251531328e7e57a7d87e925940485ff4a9ea5bac73a8843024d6824",
-    "toybox-build.log": "e8fc2e266b137fabee2885cab3976c85a169d79dd086e04112c6856ad0e0606e",
-    "unit.log": "5035370c31aafe94531ae336231feba1d839f5205940ace4052ee77dfa7a5454"
+    "release.log": "22d2833319c0e4a747757cfc092dbc4fa288513451cd033b7f95eed67eaef2e4",
+    "strict.log": "4844aa6c5b9398c39e37170f905326b51d58df5c6b65c4979343dcefb512adf0",
+    "supplement-scripts.log": "edb4e2159c923ea45a32656078835cdf531c3d7b414c670dd786978875cb0678",
+    "supplementary.log": "1c36a7bf87364005ac2668694aa881ae933b40e06f5467851c0eddf17254a897",
+    "toggle-build.log": "356e4ee29b342a360768a695f9c51647c5f93cf821a8a5b7122a0ad15ce3b828",
+    "toggle.log": "4d8bc7d2d7d67f83d56b853f8499f272bd281583650058a23fffb658b971dc14",
+    "tome-build.log": "69a18d1643a5e54837fe43de12c01f2bd3fac70dd500d36ceb199579974ab0c4",
+    "tome.log": "0f5daf7f297eeb370061ebc0a961b862ee2383e97b78a77b2bd803e1a2739a0f",
+    "toybox-build.log": "7531aea628d46cb9cb5d9066c8f8033c3642132fcfb2468969e7813e27c52f1c",
+    "toybox.log": "02a5216849e77a86dc72fdafee817ffc8f717a7fd5055563bc447b9d14f6c516",
+    "unit.log": "a10503e317498167d40c98a738f48c5d3a065e9604e76290770a4fe97ebc382f"
+  },
+  "integrated_development": "e1ae3344f77c0606c30e2d223570bc806cb76a38",
+  "initial_tracking_ref_note": "Started on stale 6cf4281 tracking ref; merged actual development e1ae334 without discarding S1/S2 and reran all checks.",
+  "supplement_script_tests": {
+    "passed": 3,
+    "failed": 0
+  },
+  "prior_validation": {
+    "source": "d1a8f465545a42c3e2515872ec9c9ec7df69fd89",
+    "unit_tests": 793,
+    "superseded_reason": "Reconciled current S1/S2 and reran on c000c83."
   }
 }
