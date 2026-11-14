@@ -8,6 +8,39 @@ Read [CONTRIBUTING.md](CONTRIBUTING.md) for shared branch ownership, Codex pull 
 Codex works on task branches and targets pull requests at `claude/dreamy-pasteur-b9h3rn`; Claude reviews and integrates them there.
 Keep `main` for author-authorized releases. Read [AGENTS.md](AGENTS.md) when coordinating agent work.
 
+**Current handover (14 November 2026, Claude): PRs #60 (Fusion F0), #62 (Fusion F1) and #61 (I1) reviewed and merged into development;
+PR #59 (S2) reviewed after its merge.** Read `docs/TACTICAL_AI.md` §167 and the [receipt](docs/competence/INTEGRATION_60_62_CHECKS.json).
+No material defect in any of them; manifest 0.3.52, `main`, tags and releases unchanged.
+- #59: development `e1ae334` carries exactly the checked source `49ffd46`; real time unchanged; walk checks match the native contracts.
+- #60: admission unchanged (last reason kept, list added per cached profile); S1's SUMMON-KITS detail stays byte-identical on S1's inputs;
+  Fusion coverage reproduces (60 sources, 15,494 configurations, 7,474 admitted, 0 reader errors).
+- #62: ordinary cones' delivery unchanged natively (`GetDeliverBlueprint`); the friendly-fire veto opens the existing six-angle re-aim, also for
+  ordinary cones with Avoid Friendly Fire on; all 1,180 admitted cones resolve.
+- Package: `test-builds/AI-Control-FACC-v0.3.52-dev-fusion1-7a56bbb-UMM-test.zip` (MVID `2e2896c3-5f13-42e1-bb9b-9626f6157228`) is a build of
+  `7a56bbb`, which is development's exact code. A local SDK 8.0.131 rebuild differs only by compiler lowering; the Fusion receipts do not record
+  the compiler version.
+
+Integrated checks: Release 0 warnings/errors, 0 added references; 811 unit + 27 inventory + 3 script + 11 ledger tests; ProfileAudit exit 0, two runs
+identical (FUSION 38, FUSION-CONE 34, APPROACH-SPOT 28, SUMMON-KITS 8); native harnesses 98/14/10. Limits: S2, F0 and F1 are unplayed; the raw corpus
+keeps its Achaekek enum failure. **Next:** the author plays the fusion1 package in TB and RT: crowded melee approaches (§163 replay), cone fusions
+(`docs/FUSION_IMPLEMENTATION.md` replay) and a grapple with AI Control on for the grappler. Then Fusion F2 (plan §7) and G1 (grapple awareness).
+
+**Earlier handover (14 November 2026, Claude): Invocation transfer ledger (I1) on `claude/invocation-ledger`, PR into development. Tooling and
+documentation only: no gameplay source, manifest or package change; v0.3.52 stays the validated, unplayed stable package.** Read
+[docs/INVOCATION_LEDGER.md](docs/INVOCATION_LEDGER.md) and `docs/TACTICAL_AI.md` §164. `tools/InvocationLedger/invocation_ledger.py` (11 tests) lists
+every Profane Invocation in a `Log.txt` with recipient, holder, the engine's values, outcome and class.
+- Inputs: v0.3.51 `Log.txt` (`e661b9d8…`) and the author's new v0.3.52 `Log.txt` (`4a89f317…`, header MVID `981a7b77`, two fights) with its
+  `combatLog.txt` (`90e946ad…`).
+- Result: 29 issued, 28 acted. First placement 4, settled moves 19, overrides 2 (net 9.6 and 7.2), holder unseen 3 (holders down), 1 interrupted.
+  Moves under settle 0, same-stat stacking 0, redundant casts 0.
+- The named pair (v0.3.51 2032 -> 2067) is not redundant: tier-2 Dexterity straight onto Tuvel would have removed his tier-2 Charisma (9.4).
+- Decision: I2 (joint assignment) is not warranted on this evidence; no runtime change. Low priority: a display-name fallback for an empty unit name.
+- Grapple evidence for G1: the player switched Grabber on for Ulbrig, and the combat log shows six grapples (five succeeded). The turn-based grapple turns
+  had AI Control off; in real time Ulbrig made no AI Control decision from RT3 to RT15. G1 needs a grapple turn with AI Control on.
+
+Checks: 11 ledger + 27 inventory + 3 script tests; links resolve; tables regenerated from the deterministic tool output. No game build or ProfileAudit
+(no C#, project or manifest change). [Receipt](docs/competence/INVOCATION_LEDGER_CHECKS.json). Next proposed: G1 grapple state awareness.
+
 **Magic Fusion F1 (14 November 2026, Codex; unplayed):** `codex/fusion-cone-delivery` stacks on F0 / PR #60,
 including integrated development `e1ae334` (S1/S2). Review F0 first. [Implementation / replay](docs/FUSION_IMPLEMENTATION.md#f1-selected-cone-delivery-and-friendly-fire-re-aim), §166.
 Resolve the selected native delivery component in the existing cone adapter; retain the actual slot/context, native
@@ -33,8 +66,9 @@ the initial tooling-only sketch; no additional rule/target/path queries, actor c
 The 1,180 admitted cone templates still require F1's selected-delivery handoff repair; aim/value/actor availability
 remain unassessed. Keep F2/F3 shared math, real root-save correlation, one native clicked target and actual costs;
 do not add a second target/action or blanket blueprint/key replacements. 811 unit + 27 inventory + 3 script tests pass; real-reference Release 0 warnings/errors; compatible/supplementary audits and native providers pass. Checked source `c000c83`, MVID `cd740a06-f1f3-4f50-9874-05d16b6da11c`, zero new foreign signatures. S1's input subset retains its explicit missing-reference report; it is not S1's full stock-supplement scope. Claude reviews/integrates; no gameplay claim.
-**Current handover (14 November 2026, Claude): approach end points (S2) on `claude/approach-end-points`, PR into development, stacked on the
-S1 PR. Source change, not played; manifest 0.3.52, packages and `release/` unchanged; v0.3.52 stays the validated, unplayed stable package.** Read
+
+**Earlier handover (14 November 2026, Claude): approach end points (S2), merged into development by PR #59 (merge `e1ae334`; S1 by PR #58, merge
+`8ef707c`). Source change, not played; manifest 0.3.52, packages and `release/` unchanged; v0.3.52 stays the validated, unplayed stable package.** Read
 `docs/TACTICAL_AI.md` §163 and the [receipt](docs/competence/APPROACH_SPOT_CHECKS.json).
 - Evidence (v0.3.51 `Log.txt`): 52 "path ends out of reach" and 35 "without line of sight" refusals, all in the two turn-based fights (47 + 26 in
   fight 6 next to 61 issued commands); 40 of the 52 belong to party members and pets, 12 to summons.
@@ -55,7 +89,7 @@ Checks: Release 0 warnings; 803 unit + 27 inventory + 3 script tests; ProfileAud
 line identical to the S1 run; native harnesses 98/14/10; 0 added game member references. Checked source `49ffd46`; verification build only (DLL SHA-256
 `295591c8...`, MVID `f1f9895b-f92d-4287-bf92-0e47282d4ed2`), no package. Replay steps: §163. Next proposed: I1 (Invocation ledger from the supplied `Log.txt`).
 
-**Earlier handover (13 November 2026, Claude): summon-kit inventory (S1) on `claude/summon-kit-inventory`, PR into development. Tooling and
+**Earlier handover (13 November 2026, Claude): summon-kit inventory (S1) on `claude/summon-kit-inventory`, merged by PR #58. Tooling and
 documentation only: no gameplay source, manifest or package change; v0.3.52 stays the validated, unplayed stable package.** Read
 [docs/SUMMON_KIT_INVENTORY.md](docs/SUMMON_KIT_INVENTORY.md) and `docs/TACTICAL_AI.md` §162. ProfileAudit has a new section `SUMMON-KITS`
 (`tools/ProfileAudit/SummonKitCheck.cs`): spawn sources, the unique creatures they summon, each creature's static kit and every active ability

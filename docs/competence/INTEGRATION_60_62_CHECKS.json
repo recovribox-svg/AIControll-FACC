@@ -1,0 +1,157 @@
+{
+ "task": "Review and integrate PR #60 (Fusion F0), PR #62 (Fusion F1) and PR #61 (I1 Invocation ledger); post-merge review of PR #59 (S2)",
+ "date": "2026-11-14",
+ "development_before": "e1ae3344f77c0606c30e2d223570bc806cb76a38",
+ "merges": {
+  "PR #60": "4dd6d95e5b3268de261f5f295eebfa8a60ae28b2",
+  "PR #62": "c9ccd9aad779d57214f592d97ece284c2deb95b9",
+  "PR #61": "merged after this receipt's commit; its branch carries the conflict resolution d7ceb581b03b3867235b765c00d475e1a185dd7e"
+ },
+ "reviews": {
+  "PR #59": {
+   "merged_before_review": true,
+   "material_defects": 0,
+   "checked": [
+    "turn-based gating of every new branch; real time reduces to the old values",
+    "preflight builds the actual UnitMoveTo for a walk-first candidate, with oneMoveWalk",
+    "turn-based walks only for standard-action abilities (no full-round walk-first)",
+    "CellSpot reach uses UnitAttack.GetApproachRadius / GetApproachDistance with native IsUnitCloseEnough (fudge 0: stricter)",
+    "AllyBlocked is the field the native turn-based path search and AI use to forbid ending on a cell"
+   ],
+   "development_code_equals_checked_source": "e1ae334 vs 49ffd46: 0 C#/project lines differ"
+  },
+  "PR #60": {
+   "material_defects": 0,
+   "checked": [
+    "LimitFusion keeps last-reason admission identical and adds a deduplicated list per cached profile",
+    "SummonKitCheck scalar-array reorder: S1 detail byte-identical on S1's inputs (65f39e54...)",
+    "FusionCoverage runs only on request and fails closed on a missing graph or reader exception"
+   ],
+   "receipt_checked_source": "c000c83; head 2618d83 adds no code",
+   "provenance_gap": "the receipt does not record the compiler/SDK version, so its DLL bytes (MVID cd740a06) are not reproducible here"
+  },
+  "PR #62": {
+   "material_defects": 0,
+   "checked": [
+    "native AbilityData.GetDeliverBlueprint returns Blueprint unless MagicHackData is set: ordinary cones unchanged",
+    "the cone query keeps the fusion's own context and the custom/controlled-projectile refusals",
+    "FriendlyFireVeto is reset per scoring call and read immediately; a turned aim that still catches an ally is vetoed again",
+    "geometry recipients are assigned before either veto returns",
+    "behaviour change also for ordinary cones with Avoid Friendly Fire on: tried turned past allies instead of dropped (stated in the PR)"
+   ],
+   "receipt_checked_source": "7a56bbb; head f265d28 adds no code",
+   "package": {
+    "file": "test-builds/AI-Control-FACC-v0.3.52-dev-fusion1-7a56bbb-UMM-test.zip",
+    "sha256": "40527da3e29f4435a3d0786faccf9f10e500f8cacbe2dd9d25bb758431125977",
+    "dll_sha256": "d35fe730483cb6de8adbf7874aa7b365b074dc82e5a0aa1fdb24bc2abf8bb7fb",
+    "dll_mvid": "2e2896c3-5f13-42e1-bb9b-9626f6157228",
+    "matches_receipt": true,
+    "local_rebuild_of_7a56bbb": "SDK 8.0.131: 0 warnings, foreign references identical, bytes differ (1,421,312 vs 1,422,848)",
+    "decompiled_difference": "compiler lowering only (GetValueOrDefault / == true / ?? forms and renumbered locals); no semantic difference found",
+    "provenance_gap": "the receipt does not record the compiler/SDK version"
+   }
+  },
+  "PR #61": {
+   "author": "Claude",
+   "kind": "tooling and documentation only",
+   "conflicts": "CLAUDE.md and TACTICAL_AI.md, resolved keeping every section and handover"
+  }
+ },
+ "integrated_validation": {
+  "tree": "development + #60 + #62 + #61 with resolved documents; identical to the merged branch tree d7ceb58 (0 differing lines)",
+  "code_equals": "7a56bbb (PR #62's checked source): 0 C#/project/manifest lines differ",
+  "release_build": {
+   "sdk": "8.0.131",
+   "references": "actual supplied game/Unity/UMM assemblies (Assembly-CSharp 2cb7160b...)",
+   "warnings": 0,
+   "errors": 0,
+   "dll_sha256": "5734ed33484650b3f2d61247822f273ef4b4b9b62362df87f9b5ccdb3f12ddcd",
+   "dll_mvid": "45191522-9208-4241-aad5-a92156a84d8a",
+   "note": "verification build only, not a package; the PDB source-link commit changes the debug directory per commit"
+  },
+  "foreign_member_references": {
+   "added": 0,
+   "removed": 0,
+   "against": "the S2 verification build (295591c8...)"
+  },
+  "tests": {
+   "unit": 811,
+   "inventory": 27,
+   "summon_kit_supplement": 3,
+   "invocation_ledger": 11,
+   "failed": 0
+  },
+  "profile_audit": {
+   "exit_code": 0,
+   "allow_failures": 1,
+   "loaded": 45251,
+   "failed": 1,
+   "known_failure": "AchaekekSacredWeaponFeature enum (raw corpus limitation retained)",
+   "abilities": 4845,
+   "reader_errors": 0,
+   "two_runs_byte_identical": true,
+   "report_sha256": "47d3a7fa810c1e04ce36c61044327f0da60fef25e72488cc8dfac774c70a3ba2",
+   "inputs": "S1's 20 dump folders, its 607 missing-only stock fixtures and the Demonology list (SUMMON_KITS_CHECKS.json)",
+   "sections": {
+    "FUSION": 38,
+    "FUSION-CONE": 34,
+    "APPROACH-SPOT": 28,
+    "SUMMON-KITS": 8,
+    "STEP-APPROACH": 13,
+    "MAGUS": 32
+   },
+   "summon_kit_detail_identical_to_S1": true,
+   "against_S2_run": "only FUSION 35->38 and the new FUSION-CONE and FUSION-COVERAGE lines differ",
+   "fusion_coverage": {
+    "status": "PARTIAL (the one known load failure)",
+    "sources": 60,
+    "ordered_pairs": 3540,
+    "configurations": 15494,
+    "accepted": 7474,
+    "withheld": 8020,
+    "reader_errors": 0,
+    "accepted_cones": 1180,
+    "cones_resolved": 1180,
+    "cone_errors": 0,
+    "json_sha256": "a5b78f32d069b9407b44bba6280b1a1b07f64e26deeaddfe13e5493721414c92",
+    "committed": false
+   }
+  },
+  "native_harnesses": {
+   "toggle_cost": 98,
+   "tome_burn": 14,
+   "toybox_spend": 10,
+   "failures": 0,
+   "rebuilt_against_integrated_dll": true
+  },
+  "reused_unchanged_results": [
+   "Codex's compatible-scope audit (44,639 loaded, 0 load failures)",
+   "Codex's Magus supplementary scope (44 checks): no Magus code changed"
+  ],
+  "private_artifacts": [
+   {
+    "file": "integrun/pa/console.txt",
+    "sha256": "5fa9f93cdf9943845467c6c9714e593d3344c363bd01a291ab89925afe34b09f"
+   },
+   {
+    "file": "integrun/pa/toggle_console.txt",
+    "sha256": "bbd2612ce4c689957e07a96979e4977f7a4ee34d3d5b0df81ed0683110219e9d"
+   },
+   {
+    "file": "integrun/pa/tome_console.txt",
+    "sha256": "4d132771728ce057b95a640bd54bae2d269fc60ac4cc943241ab6ed56c8393ea"
+   },
+   {
+    "file": "integrun/pa/toybox_console.txt",
+    "sha256": "7cbb4911b0b7e46164a91203e63ca2b137a2d4df2bd1fe5bd9048f87cafddaf5"
+   }
+  ]
+ },
+ "limits": [
+  "S2, F0 and F1 are unplayed; offline checks run no actor, path search, cast, command or Unity timing.",
+  "The raw corpus keeps its Achaekek enum load failure; the integrated audit is PARTIAL with that one allowed failure.",
+  "Fusion receipts record no compiler version; their DLL bytes are not reproducible with SDK 8.0.131."
+ ],
+ "next": "Play the fusion1 package (development's exact code) in TB and RT; then Fusion F2 and G1 with an AI-driven grapple log.",
+ "main_tag_or_release_publication": false
+}

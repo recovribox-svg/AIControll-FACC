@@ -1,0 +1,189 @@
+{
+ "task": "I1 Profane Invocation transfer ledger: tool, tests and documentation",
+ "date": "2026-11-14",
+ "source_branch": "claude/invocation-ledger",
+ "development_base": "e1ae3344f77c0606c30e2d223570bc806cb76a38",
+ "kind": "tooling and documentation only",
+ "author_request": "Proceed with I1 ... If evidence disproves the proposed fix, explain the finding and recommend the appropriate bounded change instead of forcing an implementation.",
+ "unchanged_against_development_base": {
+  "gameplay_source_files_changed": 0,
+  "csproj_changed": false,
+  "info_json_changed": false,
+  "release_and_test_build_folders_changed": false,
+  "manifest_version": "0.3.52",
+  "v0352_stable_zip_sha256": "5adcff3ccd218f96d015f4ab882964708f816a7907d1a31c87bf243c6a2e5dbc",
+  "package_built_or_published": false
+ },
+ "game_build_or_profile_audit": {
+  "run": false,
+  "reason": "no C#, project or manifest change; the deployable DLL is unchanged"
+ },
+ "tests": {
+  "invocation_ledger": {
+   "file": "tools/InvocationLedger/test_invocation_ledger.py",
+   "passed": 11,
+   "failed": 0
+  },
+  "blueprint_inventory": {
+   "passed": 27,
+   "failed": 0
+  },
+  "summon_kit_supplement": {
+   "passed": 3,
+   "failed": 0
+  }
+ },
+ "document_checks": {
+  "relative_links_resolve": [
+   "docs/INVOCATION_LEDGER.md",
+   "docs/TACTICAL_AI.md section 164",
+   "tools/README.md"
+  ],
+  "tables_regenerated_from_tool_output": true,
+  "tool_output_deterministic": true,
+  "class_totals_cross_checked_against_json": true
+ },
+ "inputs": {
+  "played_logs": [
+   {
+    "file": "Log.txt",
+    "session": "v0.3.51 stable, MVID e31e626d, six fights",
+    "bytes": 937531,
+    "lines": 4608,
+    "sha256": "e661b9d82254fa8b2062a518eb4e27ddca1df461a5eb0b04ff49ec048bad7cbb",
+    "matches_V0352_PLAYTEST_INPUTS": true
+   },
+   {
+    "file": "Log.txt",
+    "session": "v0.3.52 stable, header MVID 981a7b77-a654-4da1-9a22-68bc1c6a77bd, two fights (TB 1, RT 1)",
+    "bytes": 488015,
+    "lines": 2318,
+    "sha256": "4a89f31702a23792f6b53498bf2f006d225279cd331acff50c69ea2bd7ba2f61",
+    "matches_release_identity_mvid": true
+   },
+   {
+    "file": "combatLog.txt",
+    "session": "the game's own log of the same v0.3.52 session, two combats",
+    "bytes": 317218,
+    "lines": 8033,
+    "sha256": "90e946ad48684332117ea24f3f161f3c7588370c666ed60c50e5b3154768ae04"
+   }
+  ],
+  "author_note": "v0.3.52 logs include Grabber use in TB and RT",
+  "blueprints": {
+   "folder": "Mythic/Demon/DemonQuestReward/DemonicOverlord (the author's export)",
+   "files": 26,
+   "concatenated_sha256": "08411aecaa624689046f9ccbd36233a1ccd35649eb56ee006b69b70625f62619",
+   "DemonicOverlord_sha256": "8dbb9bba913a0ceda70a84de0ffab0d03163efcbc4d2e2a94b5838f98f078451"
+  },
+  "game_assembly": {
+   "file": "Assembly-CSharp.dll",
+   "sha256": "2cb7160b7154d4ffacc77b9c51b1eb26199e1294300f04fdfc073367b2ef8953",
+   "read": [
+    "Kingmaker.Enums.ModifierDescriptorHelper",
+    "Kingmaker.UnitLogic.Parts.UnitPartUniqueBuffs"
+   ]
+  },
+  "committed": "none of the inputs; derived tables only"
+ },
+ "native_rules": {
+  "abilities": "12 (two parents, six stats each), free action, no resource component, Medium range, friends and self",
+  "buffs": "12, AddContextStatBonus +2 Profane, UniqueBuff, StayOnDeath, applied Permanent",
+  "siblings": "each ability removes the five other buffs of its own tier from its target",
+  "unique": "UnitPartUniqueBuffs.NewBuff removes the caster's previous copy of the same buff",
+  "stacking": "Profane is not in ModifierDescriptorHelper.DefaultStackingDescriptors"
+ },
+ "ledger": {
+  "v0351": {
+   "fights": 6,
+   "issued": 18,
+   "acted": 17,
+   "classes": {
+    "move-settled": 11,
+    "move-override": 2,
+    "first-placement": 2,
+    "holder-unseen": 2,
+    "not-applied": 1
+   },
+   "flags": {
+    "sibling": 5,
+    "last-enemy": 3,
+    "low-loss": 2
+   },
+   "markdown_sha256": "ee15e86cee5a5e27014674be84bf077240fec7035680a5b79ff2e9e49a0e41d8",
+   "json_sha256": "a0e79f74e0b12e0b325e2f5469020d36d07d1ac24c8af811c5cfa86f5e3a8c55"
+  },
+  "v0352": {
+   "fights": 2,
+   "issued": 11,
+   "acted": 11,
+   "classes": {
+    "move-settled": 8,
+    "first-placement": 2,
+    "holder-unseen": 1
+   },
+   "flags": {
+    "sibling": 2,
+    "low-loss": 2
+   },
+   "markdown_sha256": "0612868e7e0f8a3ffe366d91e212850ac98c3972982ea0ba7a673bbbad6f7748",
+   "json_sha256": "992442f338312d777a16bb5da8c1abc92dbf36eae9d40fb5d12774cad96ee71f"
+  },
+  "both": {
+   "issued": 29,
+   "acted": 28,
+   "first_placement": 4,
+   "move_settled": 19,
+   "move_override": 2,
+   "holder_unseen": 3,
+   "not_applied": 1,
+   "move_under_settle": 0,
+   "same_stat": 0,
+   "cross_tier_pairs": 2,
+   "redundant": 0,
+   "chains": 3,
+   "returns": 1,
+   "re_placed_next_fight": 1,
+   "acted_casts_ending_at_0s": 25
+  },
+  "named_pair": {
+   "rows": "v0.3.51 2032 -> 2067",
+   "verdict": "not redundant: Tuvel held tier-2 Charisma (9.4), which tier-2 Dexterity on Tuvel would have removed; the shortcut nets about 2.1 against 9.6"
+  },
+  "holder_unseen_evidence": "Seelah: revive considered at RT3; Camellia: no decision RT3-RT9 (back at 2 % HP); Ulbrig (v0.3.52): last decision RT2 at 34 % HP"
+ },
+ "decision": {
+  "I2_joint_assignment": "not warranted on this evidence",
+  "runtime_change": "none",
+  "low_priority_follow_up": "display-name fallback for an empty unit name in the unique-buff notes"
+ },
+ "limits": [
+  "Two logs, eight fights, one caster; values are the engine's estimates, not measured outcomes.",
+  "The Intelligence buffs never reach a holder check (no positive worth); their holders are unknown.",
+  "Holder unseen is inferred from the rows; unconscious and out of combat are not distinguished.",
+  "Cross-tier pairs are judged on the holdings the ledger knows; a joint optimum is not computed."
+ ],
+ "grapple_evidence_for_G1": {
+  "grabber_switched_on_by_player": "Log.txt row 769",
+  "grapple_maneuvers_in_combat_log": 6,
+  "successful": 5,
+  "turn_based": "grapple turns had AI Control off (rows 742-1103, 'AI is off for this character' until R6)",
+  "real_time": "no AI Control decision for Ulbrig from RT3 to RT15; who drove the grapples is not established",
+  "needed": "at least one grapple turn with AI Control on"
+ },
+ "task_source_files": [
+  {
+   "file": "tools/InvocationLedger/invocation_ledger.py",
+   "sha256": "8d8ec8ef96cd1b6c87d4a1537a1a1b6e7e08c3c3efbd7e2756d338f15079d78a"
+  },
+  {
+   "file": "tools/InvocationLedger/test_invocation_ledger.py",
+   "sha256": "b16bfc56c6ef2e72df28cf44ffc96e74ca33e7f8d69184466e4a8ebf799a913a"
+  }
+ ],
+ "gameplay": {
+  "status": "NOT APPLICABLE",
+  "reason": "no behaviour change"
+ },
+ "main_tag_or_release_publication": false
+}

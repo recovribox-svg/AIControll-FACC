@@ -5666,6 +5666,52 @@ ToyBoxSpend 10. The offline checks run no actor, path search or command.
 **Next.** I1: Invocation ledger from the supplied `Log.txt` (the redundant-cast sequence stays a hypothesis until the
 scores, the stacking rules and the state are checked).
 
+## 164. Invocation transfer ledger (I1): no redundant casts, no joint assignment needed
+
+14 November 2026, Claude. Tooling and documentation only; no gameplay source, manifest or package change.
+[Ledger, rules, tables and limits](INVOCATION_LEDGER.md), [receipt](competence/INVOCATION_LEDGER_CHECKS.json).
+Branch `claude/invocation-ledger` from development `e1ae334`.
+
+**Question.** Does greedy, one-cast-at-a-time Profane Invocation placement waste casts? The planning checkpoint named
+v0.3.51 rows 2032 and 2067 as a redundant pair and proposed I2, a joint tier/recipient assignment, if confirmed.
+
+**Rules (exported Demonic Overlord graphs, decompiled game).** Twelve free actions with no resource. Each applies a
+permanent, death-surviving, unique buff: +2 Profane to one stat. Each removes the five other buffs of its tier from its
+target. `UnitPartUniqueBuffs.NewBuff` removes the caster's other copy of the same buff. Profane is not in
+`ModifierDescriptorHelper.DefaultStackingDescriptors`, so the same stat from both tiers does not stack.
+
+**Tool.** `tools/InvocationLedger/invocation_ledger.py` (eleven tests) reads the mod's own rows of a `Log.txt`. It keeps
+the twelve holders, changing a holder only on a cast that acted, and classifies every cast: first placement, sibling
+replacement, settled move, override, move under settle, holder unseen, not applied. It flags sibling removals, low
+holder loss, the last enemy and same-stat stacking. It checks cross-tier pairs against the one-cast alternative,
+using the holdings it knows. It also reports chains, returns and next-fight re-placements.
+
+**Result** (v0.3.51 `Log.txt`, six fights; v0.3.52 `Log.txt`, two fights):
+
+| issued | acted | first placement | settled move | override | holder unseen | not applied | under settle | same-stat | redundant pairs |
+|---|---|---|---|---|---|---|---|---|---|
+| 29 | 28 | 4 | 19 | 2 (net 9.6, 7.2) | 3 | 1 | 0 | 0 | 0 of 2 |
+
+- **The named pair is not redundant.** Tier-2 Dexterity straight onto Tuvel would have removed his tier-2 Charisma
+  (9.4 there) and netted about 2.1, against 9.6 for the tier-1 move. The other cross-tier pair is the same (Valmot's
+  tier-1 Strength).
+- **The three holder-unseen moves came off allies who were down.** A revive was considered for Seelah, and Camellia
+  made no decision until RT9. The engine's ally list leaves such allies out, so it priced no holder loss.
+- **Three chains (one buff moved twice within a round) each followed a change in the fight.** One end-of-fight
+  sibling removal (with one enemy left) was cast again in the next fight, on another recipient.
+- **25 of 28 acted casts took 0.0 s.** Lann's slow decisions carry the memory clean-up marker; Invocation scoring is
+  not shown to be a steady cost.
+
+**Decision.** I2 is not warranted, and no runtime change is made. Low priority: a display-name fallback for a unit with
+an empty name, which logs as nothing ("stays on  ").
+
+**Limits.** Two logs, eight fights, one caster; the values are the engine's estimates. The Intelligence buffs never
+reach a holder check (no positive worth), so their holders are unknown. "Holder unseen" is inferred from the rows.
+
+**Next.** G1, grapple state awareness. The v0.3.52 logs show six Ulbrig grapples, five successful, with Grabber
+switched on by the player. The turn-based grapple turns had AI Control off ("AI is off for this character"), and in
+real time Ulbrig made no AI Control decision from RT3 to RT15. G1 needs at least one grapple turn with AI Control on.
+
 ## 165. Magic Fusion F0: native-template coverage and complete known blockers (14 November 2026)
 
 The author authorized the [revised plan](MAGIC_FUSION_PLAN.md). [Implementation/evidence](FUSION_IMPLEMENTATION.md)
@@ -5712,3 +5758,41 @@ unchanged profile admission (7,474 / 8,020). Warm resolver: 10,000 calls, zero a
 fusion1 ZIP packs the exact checked Release DLL, identity/checksum and distinct startup MVID; it is a test build. Live edge/body/LOS/Selective/moving/downed ally geometry, native execution and
 matched Unity performance remain gameplay acceptance; the offline harness creates no actor and issues no command.
 No payload exclusion, cost policy, movement, dispatcher or F2/F3 valuation is changed; stable release remains 0.3.52.
+
+## 167. Integration review: PRs #60, #61, #62 merged; PR #59 reviewed after its merge
+
+14 November 2026, Claude. [Receipt](competence/INTEGRATION_60_62_CHECKS.json). No release, tag or `main` change; manifest 0.3.52.
+
+**Reviews.** No material defect in any of the four.
+- **#59 (S2, §163), reviewed after it had already merged.** Every new branch is turn-based only, and real time keeps the
+  old values. The preflight checks the actual walk (`UnitMoveTo`, one move, ends on its cell). Turn-based walks only for
+  standard-action abilities. Reach comes from the native approach radius and `IsUnitCloseEnough`; `AllyBlocked` is the
+  native field the game's own path search and AI read. Development `e1ae334` carries exactly the checked source `49ffd46`.
+- **#60 (Fusion F0, §165).** Admission is unchanged: the last reason still wins, and a deduplicated list is added per
+  cached profile. The `SummonKitCheck` reorder leaves S1's detail file byte-identical on S1's inputs. Coverage reproduces
+  on these inputs: 60 sources, 3,540 pairs, 15,494 configurations, 7,474 admitted, 0 reader errors.
+- **#62 (Fusion F1, §166).** Natively, `AbilityData.GetDeliverBlueprint` returns the ability's own blueprint outside
+  fusions, so ordinary cones are unchanged. The per-score veto opens the existing six-angle re-aim; a turned aim that
+  still catches an ally is vetoed again, so it is never adopted. With Avoid Friendly Fire on, ordinary cones are now tried
+  turned past allies instead of dropped (as stated). All 1,180 admitted cone templates resolve their component.
+- **#61 (I1, §164).** Tooling and documentation only. The shared-document conflicts were resolved keeping every section
+  and handover, and the F0 handover's missing blank line was restored.
+
+**Package identity.** The fusion1 test ZIP's DLL matches its receipt (SHA-256 `d35fe730…`, MVID `2e2896c3…`). It is a
+build of `7a56bbb`, and development's code is exactly that source. A local SDK 8.0.131 rebuild has identical foreign
+references but different bytes; the decompiled differences are compiler lowering only. The Fusion receipts do not
+record the compiler version, so their bytes are not reproducible here.
+
+**Integrated checks** (the merged tree, code equal to `7a56bbb`):
+- Release build against the real assemblies: 0 warnings, 0 errors; no foreign member reference added or removed.
+- Tests: 811 unit, 27 inventory, 3 supplement-script and 11 ledger.
+- ProfileAudit on S1's full inputs: exit 0, two runs byte-identical. FUSION 38, FUSION-CONE 34, APPROACH-SPOT 28,
+  SUMMON-KITS 8 (detail identical). Against the S2 run, only the Fusion lines differ. Fusion coverage is PARTIAL here
+  only because of the known Achaekek load failure.
+- Native harnesses: 98, 14 and 10 checks.
+- Reused: Codex's zero-failure compatible scope, and the Magus 44-check supplementary scope (no Magus code changed).
+
+**Limits.** S2, F0 and F1 are unplayed. The raw corpus keeps its enum load failure.
+
+**Next.** Play the fusion1 package in turn-based and real time. Read the S2 replay in §163, the F1 replay in
+`FUSION_IMPLEMENTATION.md`, and include a grapple with AI Control on for the grappler. Then come Fusion F2 (plan §7) and G1.
