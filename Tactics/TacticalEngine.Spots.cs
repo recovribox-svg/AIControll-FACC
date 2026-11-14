@@ -110,6 +110,49 @@ namespace CompanionAI_Pathfinder.Tactics
             return spots;
         }
 
+        /// <summary>
+        /// ★ S2 (turn-based): a walk may end on the grid cell at <paramref name="point"/> by the game's own rule - the cell
+        /// is walkable and no ally holds it (GraphNode.AllyBlocked, which the game's path search and its AI read:
+        /// LosPathConditionForGrid, AiAction.ScorePath). Unknown (no grid): free, as before.
+        /// </summary>
+        private static bool CellFreeAt(Vector3 point)
+        {
+            try
+            {
+                var cell = Analysis.BattlefieldGrid.CellAt(point);
+                return cell == null || SpotRules.CellFree(cell.Walkable, cell.AllyBlocked);
+            }
+            catch { return true; }
+        }
+
+        /// <summary>
+        /// ★ S2 (turn-based): the free side at <paramref name="point"/> as a place a walk can end - the centre of its grid
+        /// cell, when that cell is free by the game's rule and <paramref name="target"/> is in reach and in sight from the
+        /// centre by the game's test (UnitCommand.IsUnitCloseEnough, with SpotRules.CellReachMargin to spare: the walk
+        /// stops up to SpotRules.CellArrival short of the centre).
+        /// </summary>
+        private static bool CellSpot(UnitEntityData target, float range, Vector3 eye, ref Vector3 point)
+        {
+            try
+            {
+                var cell = Analysis.BattlefieldGrid.CellAt(point);
+                if (cell == null || !SpotRules.CellFree(cell.Walkable, cell.AllyBlocked)) return false;
+                var centre = (Vector3)cell.position;
+                float reach = range - SpotRules.CellReachMargin;
+                if (!(reach > 0f) || !Kingmaker.UnitLogic.Commands.Base.UnitCommand.IsUnitCloseEnough(target.Position, centre, centre + eye, reach, true, 0f)) return false;
+                point = centre;
+                return true;
+            }
+            catch { return false; }
+        }
+
+        /// <summary>
+        /// ★ S2: the walk to a free side must fit one move action in turn-based combat - the action it was priced for
+        /// follows on the next decision of the same turn (CommandDispatcher: the one-move rule of a walk-then-act command).
+        /// </summary>
+        private static bool OneMoveWalk(Candidate c) =>
+            SpotRules.OneMoveWalk(c.MoveFirst, c.FreeSideWalk, CombatMemory.IsRealTime, c.Slot == ActionSlot.Standard);
+
         /// <summary>For the decision log: who takes the straight approach's spot.</summary>
         private static string TakerNote(Body body) =>
             body.Walking ? $"{body.Unit.CharacterName} walks to where it would stand" : $"{body.Unit.CharacterName} stands where it would";

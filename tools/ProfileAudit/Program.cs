@@ -262,6 +262,11 @@ namespace ProfileAudit
             foreach (var line in stepLines) Console.WriteLine(line);
             File.WriteAllText(output, string.Join(Environment.NewLine, stepLines) + Environment.NewLine + Environment.NewLine + File.ReadAllText(output));
             blocklistFailures += stepFailures;
+            // ★ S2: turn-based free-side approaches - native path-end contracts and the change's compiled routes.
+            var approachSpotLines = ApproachSpotCheck.Run(out int approachSpotFailures);
+            foreach (var line in approachSpotLines) Console.WriteLine(line);
+            File.WriteAllText(output, string.Join(Environment.NewLine, approachSpotLines) + Environment.NewLine + Environment.NewLine + File.ReadAllText(output));
+            blocklistFailures += approachSpotFailures;
             var idleAdvanceLines = IdleAdvanceCheck.Run(out int idleAdvanceFailures);
             foreach (var line in idleAdvanceLines) Console.WriteLine(line);
             File.WriteAllText(output, string.Join(Environment.NewLine, idleAdvanceLines) + Environment.NewLine + Environment.NewLine + File.ReadAllText(output));
