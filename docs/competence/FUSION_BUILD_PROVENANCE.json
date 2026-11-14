@@ -1,0 +1,268 @@
+{
+  "task": "Retrospective Fusion F0/F1 compiler provenance and local byte-identity replay",
+  "recorded_at_utc": "2026-11-14T20:06:26.932761+00:00",
+  "branch": "codex/fusion-build-provenance",
+  "development_base": "9c03c3dd0a1448ab3b15f9896c954b76b810e0cf",
+  "kind": "documentation and provenance only; no source, build-system or package change",
+  "historical_receipts": [
+    "docs/competence/FUSION_F0_CHECKS.json",
+    "docs/competence/FUSION_F1_CHECKS.json",
+    "docs/competence/INTEGRATION_60_62_CHECKS.json"
+  ],
+  "evidence_status": "Recovered after the original builds. Original receipts omitted the compiler; they remain unchanged. Fresh local replays match both original DLLs exactly.",
+  "toolchain": {
+    "dotnet_sdk": "8.0.426",
+    "sdk_commit": "a021cd4eac",
+    "msbuild": "17.11.69+4d6a29faa",
+    "csharp_compiler": "4.11.0-3.25569.22 (3fb752d4)",
+    "compiler_source": "the selected SDK Roslyn/bincore/csc.dll; no CscToolPath/CscToolExe override",
+    "dotnet_host": "8.0.32",
+    "os": "Debian GNU/Linux 13",
+    "rid": "linux-x64",
+    "global_json": null,
+    "sdk_pin_added": false,
+    "components_sha256": {
+      "Roslyn/bincore/csc.dll": "54be6ebef9464fb8e517bbfd9d73329bb8297de2d0951cb479dd5e43e81c9641",
+      "Roslyn/bincore/Microsoft.CodeAnalysis.dll": "7200225d3bc6018dee6ce03453aa29f2eab2962ffb5889c3d1180a316ed6b385",
+      "Roslyn/bincore/Microsoft.CodeAnalysis.CSharp.dll": "fd579168c19ea0e77bed1337c564debfaa475adb14b993217f35a95a4bac71c7",
+      "MSBuild.dll": "73d8951b8ac179cda36dad58cff37dd09106ae86dc40c360ec8b44da9d202a26"
+    }
+  },
+  "effective_release_properties": {
+    "Configuration": "Release",
+    "TargetFramework": "net48",
+    "LangVersion": "latest",
+    "Deterministic": "true",
+    "ContinuousIntegrationBuild": "",
+    "DebugType": "portable",
+    "Optimize": "true",
+    "PathMap": "",
+    "CscToolPath": "",
+    "CscToolExe": "",
+    "RoslynTargetsPath": "$(selected SDK)/Roslyn",
+    "MSBuildVersion": "17.11.69",
+    "NETCoreSdkVersion": "8.0.426",
+    "DefineConstants": "TRACE;RELEASE;NETFRAMEWORK;NET48;",
+    "Nullable": "disable",
+    "AllowUnsafeBlocks": "true",
+    "GenerateAssemblyInfo": "false",
+    "CheckForOverflowUnderflow": "false",
+    "PlatformTarget": ""
+  },
+  "resolved_packages": {
+    "Lib.Harmony/2.2.2": {
+      "type": "package",
+      "sha512": "70KvWz+DiUELxafsYL/LHxA/jH3PDWeApLo/VwtnrpTvRWQ/eUdPfS/l5funmhZWOy41QXw6UjVv+6C57Nx77A=="
+    },
+    "Microsoft.NETFramework.ReferenceAssemblies/1.0.3": {
+      "type": "package",
+      "sha512": "vUc9Npcs14QsyOD01tnv/m8sQUnGTGOw1BCmKcv77LBJY7OxhJ+zJF7UD/sCL3lYNFuqmQEVlkfS4Quif6FyYg=="
+    },
+    "Microsoft.NETFramework.ReferenceAssemblies.net48/1.0.3": {
+      "type": "package",
+      "sha512": "zMk4D+9zyiEWByyQ7oPImPN/Jhpj166Ky0Nlla4eXlNL8hI/BtSJsgR8Inldd4NNpIAH3oh8yym0W2DrhXdSLQ=="
+    }
+  },
+  "resolved_compiler_references": [
+    {
+      "name": "0Harmony.dll",
+      "sha256": "0de0118c8f1d4408de389ca33b46d2ff7778f3a8541b430cae729ec913d899c7"
+    },
+    {
+      "name": "Assembly-CSharp.dll",
+      "sha256": "2cb7160b7154d4ffacc77b9c51b1eb26199e1294300f04fdfc073367b2ef8953"
+    },
+    {
+      "name": "AstarPathfindingProject.dll",
+      "sha256": "9cc4a4c6906ab9d48c18d03fdfb45b0ab36347a77b4314b972aee7f9bd6fcf54"
+    },
+    {
+      "name": "Newtonsoft.Json.dll",
+      "sha256": "4b3266c9f61eee8b832813c7203ac7c5e3cb97131e723abbba515c176e93d155"
+    },
+    {
+      "name": "Owlcat.Runtime.Core.dll",
+      "sha256": "76fcef053707ba99b9760496f1e71e3d254bab203fb9b28e04427d8da4f6a996"
+    },
+    {
+      "name": "Owlcat.Runtime.UI.dll",
+      "sha256": "c7ec072d6591382bb8ceeb9fabac4e3440ef19bdcbf322c1ebaed3771e27634b"
+    },
+    {
+      "name": "Owlcat.Runtime.Validation.dll",
+      "sha256": "3a3e913f56ba647a4efd2463282823ace7b507939b7b6b767a8f91982fed54e0"
+    },
+    {
+      "name": "Owlcat.Runtime.Visual.dll",
+      "sha256": "391b971a24d837554e8b5c6aa4f0154b4e7cae32264ae55ba7113ef3d0ef06e7"
+    },
+    {
+      "name": "Owlcat.SharedTypes.dll",
+      "sha256": "d1567493401788679bc01b741b64bb26497f906108cbe4fbe812807d745a9a37"
+    },
+    {
+      "name": "System.Core.dll",
+      "sha256": "94a1fc97eb0d36f13acd209bb7207da504c8be10caf7e5096b2c46e671dc6fe2"
+    },
+    {
+      "name": "System.Data.dll",
+      "sha256": "31812365198b0707ad98005e19e38a3d354b13fb5cdc272d5000bfe4b82a9b97"
+    },
+    {
+      "name": "System.Drawing.dll",
+      "sha256": "65a42d3e5bd4508e3c75133cd1967301a84b5dae6698f300cd831ff79c54b611"
+    },
+    {
+      "name": "System.IO.Compression.FileSystem.dll",
+      "sha256": "fe0f7dbdc68cc5668ffa8d20bac687fd9ea7bb113017218bbd6c1ef494f81037"
+    },
+    {
+      "name": "System.Numerics.dll",
+      "sha256": "795bb8521f5fc76d64deb55ab3e608cf177e67217f16a10e825e3e6544862ebb"
+    },
+    {
+      "name": "System.Runtime.Serialization.dll",
+      "sha256": "1077172f8d9d1356b162c1407c8d4eeda4edf698b247311b06fed63e8c314fcd"
+    },
+    {
+      "name": "System.Xml.Linq.dll",
+      "sha256": "39e51b600362a070fbc231272d167072ecf74b2bbf0fd80bb8b37287683b29ac"
+    },
+    {
+      "name": "System.Xml.dll",
+      "sha256": "00208e20e3d1d520c233e7ffc10e4e56f9e6b3920bf4a971faee864268c7e5a5"
+    },
+    {
+      "name": "System.dll",
+      "sha256": "2fe343569f794f2ca92ee14a41875571a9f21bf92637b8f8ee86306534209cca"
+    },
+    {
+      "name": "UniRx.dll",
+      "sha256": "4146baaab262f585be431f8c6db4ee084de678f03ce4db57a55e1f9d6019bf25"
+    },
+    {
+      "name": "UnityEngine.AIModule.dll",
+      "sha256": "e50b5a2b8621a88a1af0b9b45fe2590d975020e28c7719f70fbe8d9c6dfe5b0b"
+    },
+    {
+      "name": "UnityEngine.AnimationModule.dll",
+      "sha256": "deb1b739c1844571c8fd365757fdd51218d79fad38e7087f2f411dffef500c74"
+    },
+    {
+      "name": "UnityEngine.CoreModule.dll",
+      "sha256": "b040598ec99a249779661605123e1a09aeb845c2d7cf623940ab07a775440365"
+    },
+    {
+      "name": "UnityEngine.IMGUIModule.dll",
+      "sha256": "2e627374d56a04cb8021b4adaa124c8ace1f43f7907cdaa68e11c965ab0f017f"
+    },
+    {
+      "name": "UnityEngine.PhysicsModule.dll",
+      "sha256": "1af6cfa1ecd8c3e2b1fbcf453db55600becb08faf71d78469319a1c025415cff"
+    },
+    {
+      "name": "UnityEngine.TextRenderingModule.dll",
+      "sha256": "a1fecfdfc8f6f40a7274549c26f04529842ae7a1f6fe6ee5d540cfb1dac424ea"
+    },
+    {
+      "name": "UnityEngine.dll",
+      "sha256": "b44ec9eb6fd93a3c2d3953f9653ee7c6f141dade60505dea015db78868f85f5e"
+    },
+    {
+      "name": "UnityModManager.dll",
+      "sha256": "f6f7e18aff88910b01d23e3ce0829f3b4188c6784b0fcea56f9b3af8aa14d0a9"
+    },
+    {
+      "name": "mscorlib.dll",
+      "sha256": "6b35530467b914b0b195146ca1d1485ddd219afaad6461103f16f54e952f75a9"
+    }
+  ],
+  "original_build_command": "dotnet build CompanionAI_Pathfinder.csproj -c Release --no-restore -p:ManagedPath=<real supplied Managed directory>",
+  "local_replay_method": [
+    "Use the preserved original worktree, SDK, reference files, source paths and source bytes; compare all C#/project/manifest files to the checked source commit.",
+    "Worktree HEADs include later documentation-only commits. Those normally change generated Source Link metadata, so the controlled replay supplies the original checked revision in the Source Link JSON.",
+    "Run MSBuild Clean, then a fresh Release compile. EnableSourceLink=false only stops regeneration from the later HEAD; SourceLink still points to the original-revision JSON at its original relative path.",
+    "Compare the raw compiler-emitted DLL bytes with the frozen checked DLL. No assembly rewriting, native harness stub, manual MVID override or replacement package is used."
+  ],
+  "replay_build_command": "dotnet build CompanionAI_Pathfinder.csproj -c Release --no-restore -p:ManagedPath=<real supplied Managed directory> -p:EnableSourceLink=false -p:SourceLink=obj/Release/CompanionAI_Pathfinder.sourcelink.json -bl:<private binary log>",
+  "local_replays": [
+    {
+      "label": "F0",
+      "original_build_root": "/workspace/work/fusion-coverage-audit",
+      "original_mvid": "cd740a06-f1f3-4f50-9874-05d16b6da11c",
+      "source": "c000c836d6949fc31886738b25d20558ea494826",
+      "worktree_code_equal_to_source": true,
+      "worktree_head": "2618d832594fee96dbc6f900e6a17342ded6b702",
+      "original_dll_sha256": "e18ef04a8d190b9828975510d8702529856268925bd6a79b631053f4fada4564",
+      "rebuilt_dll_sha256": "e18ef04a8d190b9828975510d8702529856268925bd6a79b631053f4fada4564",
+      "byte_identical": true,
+      "source_link_commit": "c000c836d6949fc31886738b25d20558ea494826",
+      "source_link_generated_for_original_commit": true,
+      "compiler_output_unmodified": true,
+      "warnings": 0,
+      "errors": 0
+    },
+    {
+      "label": "F1",
+      "original_build_root": "/workspace/work/fusion-cone-delivery",
+      "original_mvid": "2e2896c3-5f13-42e1-bb9b-9626f6157228",
+      "source": "7a56bbb942a71ae7b97104d024c3206a2eed2493",
+      "worktree_code_equal_to_source": true,
+      "worktree_head": "f265d28b2f0e9215958a3697ffb13a99a32c5df4",
+      "original_dll_sha256": "d35fe730483cb6de8adbf7874aa7b365b074dc82e5a0aa1fdb24bc2abf8bb7fb",
+      "rebuilt_dll_sha256": "d35fe730483cb6de8adbf7874aa7b365b074dc82e5a0aa1fdb24bc2abf8bb7fb",
+      "byte_identical": true,
+      "source_link_commit": "7a56bbb942a71ae7b97104d024c3206a2eed2493",
+      "source_link_generated_for_original_commit": true,
+      "compiler_output_unmodified": true,
+      "warnings": 0,
+      "errors": 0
+    }
+  ],
+  "later_head_control_rebuild": {
+    "source_code_commit": "7a56bbb942a71ae7b97104d024c3206a2eed2493",
+    "replay_worktree_head": "f265d28b2f0e9215958a3697ffb13a99a32c5df4",
+    "original_checked_dll_sha256": "d35fe730483cb6de8adbf7874aa7b365b074dc82e5a0aa1fdb24bc2abf8bb7fb",
+    "replay_dll_sha256": "66600a5f91961f0feaddb0671467dd5f13cc761f4442de4335d2f2f494cb05a5",
+    "replay_byte_identical": false,
+    "build_exit": 0,
+    "warnings": 0,
+    "errors": 0
+  },
+  "existing_package": {
+    "file": "test-builds/AI-Control-FACC-v0.3.52-dev-fusion1-7a56bbb-UMM-test.zip",
+    "sha256": "40527da3e29f4435a3d0786faccf9f10e500f8cacbe2dd9d25bb758431125977",
+    "unchanged": true,
+    "new_package_produced": false
+  },
+  "verification": {
+    "fresh_real_reference_builds": 2,
+    "warnings_each": 0,
+    "errors_each": 0,
+    "byte_identity_matches": 2,
+    "historical_inputs_and_packages_unchanged": true,
+    "unit_tests_and_profile_audit": "Not rerun for documentation-only changes. The same runtime source is covered by INTEGRATION_60_62_CHECKS.json: 811 unit, 27 inventory, 3 supplement-script, 11 ledger; ProfileAudit and native providers pass with its stated input scope.",
+    "gameplay": "Not run; this adds no gameplay change or acceptance."
+  },
+  "limits": [
+    "These are retrospective toolchain observations validated by successful local rebuilds, not a contemporaneous original compiler log.",
+    "This does not promise byte identity under SDK 8.0.131, a different source root/line endings, changed references, different debug/source metadata or new compiler options.",
+    "No cross-machine byte-for-byte reproduction is claimed. Claude's compiler-lowering assessment remains the independent integration review.",
+    "The runtime targets .NET Framework 4.8; the build SDK/host versions are not a request to change the player's game runtime."
+  ],
+  "private_evidence_sha256": {
+    "dotnet-info.txt": "51bc47d3c11ab9e945eda33670a6ce4cb46ef9f2e4b2c63bc1a858298beaca79",
+    "compiler-version.txt": "dbd23e22a48ac094761f720b5008a675daf9837cf31767ddda50b3112aa0a9ac",
+    "properties.json": "13bbf601f85a85723576892a6327fd88bbb0f5677dece33adecf854ac8c3d7fc",
+    "resolved-reference-paths.json": "b387a3641652aba87a94a3d438db11359472cf841d805b8bffbcbdc62bf2ea04",
+    "reference-hashes.json": "d957f4fb9e1d36f1a37be49e54ba0df6a14019eaa52bc471e7907331be2c4f18",
+    "fixed-source-link.binlog": "4a3e125083a9691aaa63a9edd58d4950592448798985ba96498231f453f50576",
+    "fixed-source-link-build.log": "1f414964e67333ce232aa949fef43af59fa786aef566c8d016787736431d9ad4",
+    "f0-fixed-source-link.binlog": "a69b77338bba931ce12631dd766fcc869e2bef00708782ce79ed46651f719d77",
+    "f0-fixed-source-link-build.log": "617790bdddb671662d6c23843e16b26e0121142e2851018209ff79d394922fe8",
+    "original-source-link.json": "2f43ce4fa0a1cd3a9906feffb3d2171f5858de9a769185168771b5dd73e43e24",
+    "f0-original-source-link.json": "c82f3fb2aefc7868ae42d6959899eeae8bbeebaea96bded4d3812c076a926898",
+    "replay.binlog": "0a19114e31ce675bf677016bb2ef8993d415deaf46bd6ecf5ff09c65582e7577",
+    "replay-build.log": "848c4733a9ece74254fc46d16176b0504180c8b1546177756380889f7ed4d898"
+  }
+}

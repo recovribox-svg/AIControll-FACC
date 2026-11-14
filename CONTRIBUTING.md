@@ -56,6 +56,14 @@ For a full mod build, follow the current README and `Build.ps1` instructions. Ga
 
 For gameplay changes, supply a focused checklist covering the changed behavior and relevant turn-based and real-time regressions. Record the tested commit and package identity (ideally a SHA-256 checksum), since test builds may share a version number. Compilation or offline tests alone do not establish gameplay stability. Documentation-only changes do not need a game build or gameplay test.
 
+Build receipts must also identify the toolchain and compiler inputs:
+- Record the selected .NET SDK, MSBuild and host/OS versions (`dotnet --info`), the actual C# compiler version (`dotnet <selected-sdk>/Roslyn/bincore/csc.dll -version`, or the overridden compiler), and compiler hashes. Record any SDK pin or compiler override.
+- Record the exact checked source commit, worktree HEAD/dirty state, effective build properties (including language version, target framework, optimization, deterministic/debug settings, CI and path mapping), and Source Link revision. A later documentation-only commit can change debug metadata and DLL identity despite identical C#.
+- Record resolved package versions and reference-assembly hashes, build commands and the checked DLL/MVID/package hashes. Retain a private binary log when diagnosing reproducibility; cite its hash rather than committing it.
+- Distinguish source/behavior equivalence from byte identity. The same compiler alone does not guarantee identical bytes across different source paths, line endings, debug metadata or references. Preserve validated packages; add a clearly dated supplement for missing historical provenance instead of rewriting prior evidence or substituting a new DLL.
+
+The Fusion [provenance supplement](docs/competence/FUSION_BUILD_PROVENANCE.json) records SDK 8.0.426 / Roslyn 4.11 and successful local byte-for-byte replays. It does not pin or change the repository's supported SDKs.
+
 ## Releasing
 
 1. MonsieurAndroid authorizes a release after the relevant in-game tests pass.

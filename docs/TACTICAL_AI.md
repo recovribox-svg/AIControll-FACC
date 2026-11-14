@@ -5796,3 +5796,19 @@ record the compiler version, so their bytes are not reproducible here.
 
 **Next.** Play the fusion1 package in turn-based and real time. Read the S2 replay in §163, the F1 replay in
 `FUSION_IMPLEMENTATION.md`, and include a grapple with AI Control on for the grappler. Then come Fusion F2 (plan §7) and G1.
+
+## 168. Fusion compiler provenance supplement (14 November 2026)
+
+Claude's §167 review correctly identified that F0/F1 receipts omitted compiler versions. The author relayed the
+finding. [Retrospective supplement](competence/FUSION_BUILD_PROVENANCE.json): preserved SDK **8.0.426**, MSBuild
+**17.11.69**, Roslyn **4.11.0-3.25569.22 (3fb752d4)**, compiler/reference/package hashes and effective options.
+Fresh Release builds against the real supplied assemblies reproduce F0 (`e18ef04a…`, source `c000c83`) and
+fusion1 (`d35fe730…`, source `7a56bbb`) byte-for-byte with their original Source Link revisions. Both have zero
+warnings/errors; compiler output was compared directly, without patching a DLL or MVID. An ordinary rebuild at
+a later documentation-only HEAD uses different Source Link metadata and differs in hash even with this compiler.
+
+This provides local reproduction evidence and the missing toolchain identity; it does not establish byte identity
+on Claude's SDK 8.0.131 or an arbitrary build path. CONTRIBUTING.md now records compiler/SDK, source/debug metadata,
+effective options and references for future receipts. The original receipts, Claude's integration receipt, test ZIP,
+manifest, production code and supported SDK selection are unchanged. No gameplay or performance claim is added.
+Existing §167 tests/audits apply to the same runtime code; this documentation-only PR does not rerun them.

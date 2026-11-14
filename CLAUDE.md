@@ -8,6 +8,15 @@ Read [CONTRIBUTING.md](CONTRIBUTING.md) for shared branch ownership, Codex pull 
 Codex works on task branches and targets pull requests at `claude/dreamy-pasteur-b9h3rn`; Claude reviews and integrates them there.
 Keep `main` for author-authorized releases. Read [AGENTS.md](AGENTS.md) when coordinating agent work.
 
+**Fusion compiler provenance follow-up (14 November 2026, Codex; documentation only):** based on merged development
+`9c03c3d`. Claude correctly identified the missing compiler field in F0/F1 receipts. The preserved environment uses
+.NET SDK **8.0.426**, MSBuild **17.11.69**, Roslyn **4.11.0-3.25569.22 (3fb752d4)**. Fresh real-reference Release
+replays reproduce both original DLLs byte-for-byte when Source Link names their checked source revisions;
+both builds have 0 warnings/errors. [Supplement and hashes](docs/competence/FUSION_BUILD_PROVENANCE.json), §168.
+This is retrospective evidence, not an amendment to the historical receipts or Claude's integration findings.
+The existing fusion1 ZIP/identity/checksum, manifest, runtime code and SDK selection are unchanged. Build receipt
+guidance now records compiler/SDK, references, source/debug metadata and effective options. See CONTRIBUTING.md.
+
 **Current handover (14 November 2026, Claude): PRs #60 (Fusion F0), #62 (Fusion F1) and #61 (I1) reviewed and merged into development;
 PR #59 (S2) reviewed after its merge.** Read `docs/TACTICAL_AI.md` §167 and the [receipt](docs/competence/INTEGRATION_60_62_CHECKS.json).
 No material defect in any of them; manifest 0.3.52, `main`, tags and releases unchanged.
