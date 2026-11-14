@@ -17,7 +17,7 @@ last-reason admission, decisions and normal log stay unchanged. This diagnostic 
 the initial tooling-only sketch; no additional rule/target/path queries, actor cache, settings/version or package change.
 The 1,180 admitted cone templates still require F1's selected-delivery handoff repair; aim/value/actor availability
 remain unassessed. Keep F2/F3 shared math, real root-save correlation, one native clicked target and actual costs;
-do not add a second target/action or blanket blueprint/key replacements. 793 unit + 27 inventory pass; real-reference Release 0 warnings/errors; compatible/supplementary audits and native providers pass. Checked source `d1a8f46`, MVID `91caece1-5919-4070-9c24-92f926a5f35b`, zero new foreign signatures. Claude reviews/integrates; no gameplay claim.
+do not add a second target/action or blanket blueprint/key replacements. 811 unit + 27 inventory + 3 script tests pass; real-reference Release 0 warnings/errors; compatible/supplementary audits and native providers pass. Checked source `c000c83`, MVID `cd740a06-f1f3-4f50-9874-05d16b6da11c`, zero new foreign signatures. S1's input subset retains its explicit missing-reference report; it is not S1's full stock-supplement scope. Claude reviews/integrates; no gameplay claim.
 **Current handover (14 November 2026, Claude): approach end points (S2) on `claude/approach-end-points`, PR into development, stacked on the
 S1 PR. Source change, not played; manifest 0.3.52, packages and `release/` unchanged; v0.3.52 stays the validated, unplayed stable package.** Read
 `docs/TACTICAL_AI.md` §163 and the [receipt](docs/competence/APPROACH_SPOT_CHECKS.json).
