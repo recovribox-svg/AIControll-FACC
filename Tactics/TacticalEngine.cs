@@ -221,6 +221,8 @@ namespace CompanionAI_Pathfinder.Tactics
         /// shown on the option's decision label; null when it catches none.
         /// </summary>
         public string FriendlyFireNote;
+        // F1: a hard veto must still allow the existing bounded cone re-aim, without formatting a penalty note.
+        public bool FriendlyFireVeto;
         /// <summary>
         /// ★ v0.3.28 test 11: the revive reading of the heal valued last for (ability, ally) this decision, printed with the
         /// revive's value line (one line instead of two each round; test 10: 172 revive lines while Seelah was down).
@@ -3311,7 +3313,7 @@ namespace CompanionAI_Pathfinder.Tactics
                 string turnedNote = null;
                 // ★ v0.3.28 test 12: a cone that catches allies, cast from where the caster stands, is also tried turned past
                 // them (aimed at a point, TacticalEngine.ConeAim.cs); the better of the two aims is offered.
-                if (friendlyFire != null && !needsMove && profile.IsProjectileCone)
+                if ((friendlyFire != null || ctx.FriendlyFireVeto) && !needsMove && profile.IsProjectileCone)
                 {
                     var turned = ConeAimPastAllies(ctx, ability, profile, target, geometryRecipients, out turnedNote);
                     if (turned != null)
@@ -3686,6 +3688,7 @@ namespace CompanionAI_Pathfinder.Tactics
             float slotSensitive = 0f;   // ★ v0.3.17: the damage and control parts (spell-slot discount)
             ctx.AimCounted = false;
             ctx.FriendlyFireNote = null;
+            ctx.FriendlyFireVeto = false;
             var reasons = new List<string>();
 
             // ★ v0.3.18 (test10): real time - an ally is casting this very ability on this enemy right now.
@@ -3918,7 +3921,8 @@ namespace CompanionAI_Pathfinder.Tactics
                         allyCost += a.HPLeft <= 0 ? AllyWorth(ctx, a) : Math.Min(dmg, a.HPLeft) * 2f;
                         (caughtNames ?? (caughtNames = new List<string>())).Add(a.CharacterName + WalkingInTag(walkingIn, a));
                     }
-                    if (ctx.Settings.AvoidFriendlyFire && allyCost > 0f) { why = "friendly fire"; return 0f; }
+                    if (ctx.Settings.AvoidFriendlyFire && allyCost > 0f)
+                    { ctx.FriendlyFireVeto = true; why = "friendly fire"; return 0f; }
                     if (allyCost > 0f) ctx.FriendlyFireNote = $"catches {string.Join(", ", caughtNames)} -{allyCost:F0}";
                     dmgValue -= allyCost;
                 }
@@ -4141,7 +4145,8 @@ namespace CompanionAI_Pathfinder.Tactics
                 var caughtAllies = !harmfulArea ? new List<UnitEntityData>() : affectedAllies.Where(wouldBeCaught).ToList();
                 if (caughtAllies.Count > 0)
                 {
-                    if (ctx.Settings.AvoidFriendlyFire) { why = "friendly fire"; return 0f; }
+                    if (ctx.Settings.AvoidFriendlyFire)
+                    { ctx.FriendlyFireVeto = true; why = "friendly fire"; return 0f; }
                     allyControlCost = caughtAllies.Sum(a => ValueModel.PerRound(Level(a)) * strength * effectRounds);
                     // ★ v0.3.28 test 12: shown on the decision label, and a cone that catches them is tried turned past them.
                     string controlNote = $"{(profile.ControlStrength == ControlStrength.Hard ? "controls" : "debuffs")} " +

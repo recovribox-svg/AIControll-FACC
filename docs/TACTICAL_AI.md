@@ -5689,3 +5689,26 @@ The current development's S1/S2 are retained. S1's graph walk now skips scalar a
 a nested UI enum array otherwise tries to load UnityEngine.UI solely to discover metadata it immediately discards.
 The walk's visited effects/classifications are unchanged; no UI assembly is introduced. The compatible Fusion audit
 prints S1's remaining missing-reference scope instead of claiming S1's separate stock-supplement completeness.
+
+## 166. Magic Fusion F1: selected cone component and hard-veto re-aim (14 November 2026)
+
+The author authorized implementation of the revised Fusion plan. This slice stacks on F0 / PR #60 and preserves
+integrated S1/S2. [Evidence, scope and paired TB/RT replay](FUSION_IMPLEMENTATION.md#f1-selected-cone-delivery-and-friendly-fire-re-aim).
+The profile reader sees a selected cone, but its recipient adapter previously queried the empty native slot.
+`ProjectileCone.DeliveryComponent` now resolves the actual cast's selected native delivery and returns the same
+cached component an ordinary cast uses. `TryCreate` retains the slot's context and all existing native range,
+origin, recipient, obstacle, Selective and failure checks. A delivery edit cannot retain the old component.
+
+`ScoreAbility` now records hard friendly-fire vetoes in a per-score boolean as well as returning zero; previously
+the early return left the note empty and the caller never attempted the already-existing turned-cone route.
+That route still tries at most six orientations from the current position, retains the aimed enemy and rescores
+the chosen alternative. Ordinary cones receive this same correction. It is not the later useful-payload aim search.
+
+New native-slot/seven-source metadata fixtures, compiled handoff checks, warm component-allocation check and
+full admitted-cone matrix check document the offline contract. [F1 checks](competence/FUSION_F1_CHECKS.json):
+811 unit + 27 inventory + 3 script tests; real-reference Release 0 warnings/errors; all compatible/supplementary
+ProfileAudit sections and native providers pass. FUSION-CONE 34; all 1,180 admitted cone components resolve,
+unchanged profile admission (7,474 / 8,020). Warm resolver: 10,000 calls, zero allocated bytes. The cumulative
+fusion1 ZIP packs the exact checked Release DLL, identity/checksum and distinct startup MVID; it is a test build. Live edge/body/LOS/Selective/moving/downed ally geometry, native execution and
+matched Unity performance remain gameplay acceptance; the offline harness creates no actor and issues no command.
+No payload exclusion, cost policy, movement, dispatcher or F2/F3 valuation is changed; stable release remains 0.3.52.

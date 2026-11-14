@@ -1,5 +1,18 @@
 # Test builds
 
+## Task-branch candidate: v0.3.52 fusion1 (7a56bbb) — unplayed
+
+[UMM test ZIP](AI-Control-FACC-v0.3.52-dev-fusion1-7a56bbb-UMM-test.zip?raw=true) · [Identity](AI-Control-FACC-v0.3.52-dev-fusion1-7a56bbb-UMM-test.identity.json) · [Checksum](AI-Control-FACC-v0.3.52-dev-fusion1-7a56bbb-UMM-test.sha256) · [Checks](../docs/competence/FUSION_F1_CHECKS.json) · [TB/RT replay](../docs/FUSION_IMPLEMENTATION.md#verification-and-gameplay-checkpoint)
+
+Cumulative F0/F1 on integrated development `e1ae334` (S1/S2); review PR #60 first. Fused cones use their selected
+native delivery; a hard friendly-fire veto can try the existing six safe turned aims. Other Fusion exclusions
+and valuation remain. Broader judgment improvements are still pending. Manifest stays **0.3.52**; stable ZIP unchanged.
+Startup MVID `2e2896c3-5f13-42e1-bb9b-9626f6157228`. Source `7a56bbb942a71ae7b97104d024c3206a2eed2493`.
+
+811 unit + 27 inventory + 3 script tests, zero-warning real-reference Release, scoped ProfileAudit and native
+providers pass; all 1,180 admitted cone templates resolve their selected component. The warm resolver microcheck
+is not Unity performance acceptance. Supply AI and matching combat logs from both modes for gameplay validation.
+
 ## Task-branch candidate: v0.3.30 summon1 (bfaccc6) - summon control, opt-in, not played
 
 [UMM test ZIP](AI-Control-FACC-v0.3.30-dev-summon1-bfaccc6-UMM-test.zip?raw=true) · [Identity](AI-Control-FACC-v0.3.30-dev-summon1-bfaccc6-UMM-test.identity.json) · [Checksums](AI-Control-FACC-v0.3.30-dev-summon1-bfaccc6-UMM-test.sha256) · [Checks](../docs/competence/SUMMON_CONTROL_CHECKS.json) · [Notes and replay steps](../docs/TACTICAL_AI.md) (§152)
