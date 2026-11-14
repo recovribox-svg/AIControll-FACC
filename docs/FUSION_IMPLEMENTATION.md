@@ -51,3 +51,55 @@ This slice is not a test release. Stable v0.3.52 and its ZIP remain unchanged. N
 
 Next: F1 selected cone delivery with existing native geometry and bounded turned aims; then F2/F3 valuation.
 Additional areas share the native clicked target; do not add a speculative second aim or action.
+
+## F1: selected cone delivery and friendly-fire re-aim
+
+Task `codex/fusion-cone-delivery` builds on F0 / PR #60 and includes development `e1ae334` (S1/S2).
+Review F0 first; both PRs target development. This is a narrow geometry/handoff repair, not F2/F3 valuation.
+
+The native cast owns a slot blueprint and `MagicHackData` selects its delivery blueprint. The existing profile
+reader already uses the latter, but `ProjectileCone.TryCreate` looked for the projectile component on the empty
+slot. It now resolves `AbilityData.GetDeliverBlueprint()` and uses that exact cone component through the existing
+native range, recipient, obstacle, body and Selective queries. The actual cast/context remains the slot cast; no
+source is independently cast, no extra touch roll is invented, and no actor/context is kept in the component cache.
+Ordinary cone resolution is identical. A changed delivery is read on each call, so its previous cone is not reused.
+
+A second confirmed handoff gap affected all cones: hard friendly-fire refusals returned before filling the penalty
+note that admitted the existing turned-aim search. A per-score boolean now carries that veto to the same search.
+It resets on every score and adds no formatting or query. The existing six orientations, current casting position,
+target retention, native legality/recipient checks and full rescoring remain. The best existing alternative is
+still chosen by fewer allies / then enemy count, not the later F2/F3 useful-payload model. Moving allies remain in
+the final scorer's safety check; a rejected alternative does not authorize an unsafe cast.
+
+All current Fusion payload exclusions remain. In particular, selecting a cone does not make shared-HD Color Spray,
+nested saves or additional/clicked payloads supported. Policy, native costs, blocklists, final dispatcher checks,
+movement and S2's approach work retain their behavior. The added boolean can cause an ordinary cone with a hard
+friendly-fire refusal to find a previously missed safe aim; this shared fix is intentional.
+
+### Verification and gameplay checkpoint
+
+`FUSION-CONE` uses the real empty slot and seven real cone-source graphs, ordinary/fused/edited deliveries, the
+compiled scorer/query handoffs and the existing six-turn bound. A warm metadata resolver microcheck measures its
+allocations. The full F0 matrix additionally verifies the selected component of every admitted cone template.
+These are metadata/compiled-contract checks: they do not execute native recipient geometry in Unity, commands or
+combat. See the F1 receipt for the exact checked source, DLL and results. No Unity speedup or gameplay success is
+claimed from the microcheck. The cumulative test ZIP has a distinct startup MVID and identity/checksum; it is not
+a new stable release and does not replace v0.3.52.
+
+Play both turn-based and real time with a Magical Deceiver whose created fusion has a supported cone delivery
+(for example Burning Hands + Snowball, if available in that character's book). Keep the fused spell unblocked,
+slots available and spell policy permitting it; alternatives still compete on existing utility.
+
+1. Compare straight fused and ordinary cone casts with enemies in range. Check the chosen fused identity, recipients,
+   native cast outcome and paired combat damage/control evidence; admission alone is insufficient.
+2. Put an ally near an edge, then where a turned aim could spare it. With Avoid Friendly Fire enabled, verify a safe
+   turned cone or refusal. With no safe turned aim, no harmful cast should be issued. Repeat with the setting off.
+3. Repeat with a downed ally, an ally walking into the cone (real time), a wall and Selective if available. A native
+   geometry/query failure must omit the aim rather than assume safety.
+4. Change the created spell's selected delivery between fights, including a non-cone source. Its footprint must
+   follow the new choice. Check ordinary cones, ranged weapons and a cone requiring approach as regressions.
+5. Include a named refused complex Fusion configuration and confirm it stays withheld. Record settings, source
+   pair/delivery/save, startup MVID, AI log and the matching combat log. Compare warm decision timing separately
+   from cold profile creation; no full-performance acceptance exists yet.
+
+Next remains F2 effect-level useful control and F3 correlated outcome utility; F1 alone does not fix those judgements.

@@ -8,6 +8,17 @@ Read [CONTRIBUTING.md](CONTRIBUTING.md) for shared branch ownership, Codex pull 
 Codex works on task branches and targets pull requests at `claude/dreamy-pasteur-b9h3rn`; Claude reviews and integrates them there.
 Keep `main` for author-authorized releases. Read [AGENTS.md](AGENTS.md) when coordinating agent work.
 
+**Magic Fusion F1 (14 November 2026, Codex; unplayed):** `codex/fusion-cone-delivery` stacks on F0 / PR #60,
+including integrated development `e1ae334` (S1/S2). Review F0 first. [Implementation / replay](docs/FUSION_IMPLEMENTATION.md#f1-selected-cone-delivery-and-friendly-fire-re-aim), §165.
+Resolve the selected native delivery component in the existing cone adapter; retain the actual slot/context, native
+range/recipient/Selective/obstacle queries and fail-closed behavior. Per-score hard-friendly-fire veto now admits
+the existing six-angle re-aim even without a formatted penalty note; ordinary cones receive that shared fix too.
+No movement, new search scope, scoring weights, resource policy or payload exclusion changes. Source edits are
+read afresh; cache contains components, not actors/contexts. F2/F3 judgment and complex support remain outstanding.
+Real slot/source fixtures, full admitted-cone matrix and warm resolver allocation check are added; native gameplay
+and matched Unity timing remain pending. Validation receipt/test-package identity follow after checks; manifest
+0.3.52 and stable release unchanged. Claude reviews/integrates; do not treat this checkpoint as gameplay acceptance.
+
 **Magic Fusion F0 (14 November 2026, Codex):** author authorized the [revised implementation plan](docs/MAGIC_FUSION_PLAN.md).
 `codex/fusion-coverage-audit` started at `6cf4281`, no open PRs; reconciled with actual development `e1ae334` (S1/S2), preserving both. Initial tracking ref was stale; use an explicit development fetch refspec. [Status/usage](docs/FUSION_IMPLEMENTATION.md), §164,
 [baseline](docs/competence/FUSION_COVERAGE_BASELINE.json), [checks](docs/competence/FUSION_F0_CHECKS.json).

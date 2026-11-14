@@ -56,12 +56,15 @@ namespace ProfileAudit
                 var unsupported = typeof(AbilityProfile).GetProperty("FusionUnsupported", Hidden);
                 var limitations = typeof(AbilityProfile).GetProperty("FusionLimitations", Hidden);
                 if (unsupported == null || limitations == null) throw new MissingMemberException("Fusion diagnostic reader contract missing");
+                var coneResolver = typeof(CombatMath).Assembly.GetType("CompanionAI_Pathfinder.Tactics.ProjectileCone", true)
+                    .GetMethod("DeliveryComponent", BindingFlags.Static | BindingFlags.NonPublic);
+                if (coneResolver == null) throw new MissingMemberException("selected cone resolver missing");
                 var schools = new List<SpellSchool>(); var saves = new List<SavingThrowType>();
                 var shapes = new List<SpellTargetType>(); var deliveries = new Dictionary<SpellTargetType, BlueprintAbility>();
                 var rows = new List<object>(); var anyReasons = new SortedDictionary<string, int>(StringComparer.Ordinal);
                 var soleReasons = new SortedDictionary<string, int>(StringComparer.Ordinal);
                 var combinations = new SortedDictionary<string, int>(StringComparer.Ordinal);
-                int pairs = 0, noConfiguration = 0, accepted = 0, readerErrors = 0, conesAccepted = 0;
+                int pairs = 0, noConfiguration = 0, accepted = 0, readerErrors = 0, conesAccepted = 0, conesResolved = 0, coneErrors = 0;
                 foreach (var first in sources)
                 foreach (var second in sources)
                 {
@@ -100,7 +103,21 @@ namespace ProfileAudit
                         if ((primary == null) != (reasons.Count == 0) || primary != null && !reasons.Contains(primary))
                             throw new InvalidDataException("primary admission and complete rejection reasons disagree");
                         if (reasons.Any(r => r.StartsWith("profile reader ", StringComparison.Ordinal))) readerErrors++;
-                        if (primary == null) { accepted++; if (profile.IsProjectileCone) conesAccepted++; }
+                        bool? coneComponentResolved = null;
+                        if (primary == null)
+                        {
+                            accepted++;
+                            if (profile.IsProjectileCone)
+                            {
+                                conesAccepted++;
+                                object[] args = { ability, null };
+                                var expectedCone = delivery.GetComponent<AbilityDeliverProjectile>();
+                                coneComponentResolved = expectedCone?.Type == AbilityProjectileType.Cone &&
+                                                        ReferenceEquals(coneResolver.Invoke(null, args), expectedCone) &&
+                                                        ReferenceEquals(args[1], delivery);
+                                if (coneComponentResolved.Value) conesResolved++; else coneErrors++;
+                            }
+                        }
                         foreach (string reason in reasons) Increment(anyReasons, reason);
                         if (reasons.Count == 1) Increment(soleReasons, reasons[0]);
                         reasons.Sort(StringComparer.Ordinal);
@@ -111,6 +128,7 @@ namespace ProfileAudit
                             level = ability.MagicHackData.SpellLevel, school = school.ToString(), save = save.ToString(), shape = shape.ToString(),
                             delivery = delivery.AssetGuid.ToString(), additional = extra?.AssetGuid.ToString(), touch,
                             profileAccepted = primary == null, primaryReason = primary, limitations = details,
+                            coneComponentResolved,
                             damageActions = profile.Damage.Count, targetBuffs = profile.TargetBuffs.Count,
                             casterBuffs = profile.CasterBuffs.Count, heals = profile.Heals.Count, casterHeals = profile.CasterHeals.Count,
                             hasDetectableEffect = profile.HasDetectableEffect,
@@ -118,7 +136,7 @@ namespace ProfileAudit
                         });
                     }
                 }
-                failures = readerErrors;
+                failures = readerErrors + coneErrors;
                 var status = failures > 0 ? "FAILED" : failedLoads > 0 ? "PARTIAL" : "PASS";
                 File.WriteAllText(output, JsonSerializer.Serialize(new {
                     status, scope = "declared-list native UI configuration templates; not actor availability, aim, utility or gameplay acceptance",
@@ -126,6 +144,7 @@ namespace ProfileAudit
                     sources = sources.Select(s => new { guid = s.Spell.AssetGuid.ToString(), name = s.Spell.name, level = s.Level }),
                     orderedDistinctPairs = pairs, pairsWithoutConfiguration = noConfiguration, configurations = rows.Count,
                     profileAccepted = accepted, profileWithheld = rows.Count - accepted, acceptedConeProfilesWithAimUnvalidated = conesAccepted,
+                    coneComponentsResolved = conesResolved, coneComponentErrors = coneErrors,
                     readerErrors, blockersPresent = anyReasons, soleBlockers = soleReasons, blockerCooccurrence = combinations,
                     cases = rows
                 }, new JsonSerializerOptions { WriteIndented = true }));
