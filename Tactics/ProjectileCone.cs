@@ -53,6 +53,13 @@ namespace CompanionAI_Pathfinder.Tactics
 
         public static bool IsCone(BlueprintAbility blueprint) => Component(blueprint) != null;
 
+        // F1: native slots own the cast; the selected delivery owns its footprint. Cache components, never actors.
+        internal static AbilityDeliverProjectile DeliveryComponent(AbilityData ability, out BlueprintAbility blueprint)
+        {
+            blueprint = ability?.GetDeliverBlueprint() ?? ability?.Blueprint;
+            return Component(blueprint);
+        }
+
         private static AbilityDeliverProjectile Component(BlueprintAbility blueprint)
         {
             if (blueprint == null) return null;
@@ -100,10 +107,10 @@ namespace CompanionAI_Pathfinder.Tactics
         public static bool TryCreate(AbilityData ability, TargetWrapper actualAim, Vector3 plannedGroundOrigin, out Query query)
         {
             query = null;
-            var blueprint = ability?.Blueprint;
+            BlueprintAbility blueprint = null;
             try
             {
-                var component = Component(blueprint);
+                var component = DeliveryComponent(ability, out blueprint);
                 if (component == null || actualAim == null || ability.Caster?.Unit == null || !BindQueries()) return false;
                 // Controlled projectiles can launch from their existing projectile, and subclasses may replace the
                 // ordinary unit selector. Neither can safely be approximated by an ordinary caster-origin cone.

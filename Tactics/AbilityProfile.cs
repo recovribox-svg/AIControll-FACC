@@ -602,7 +602,7 @@ namespace CompanionAI_Pathfinder.Tactics
             if (Fusion != null)
             {
                 Save = Fusion.SavingThrowType;
-                if (UsesSharedHdBudget) FusionUnsupported = "shared Hit Dice selection";
+                if (UsesSharedHdBudget) LimitFusion("shared Hit Dice selection", "profile/shared-hd");
             }
         }
 

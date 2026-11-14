@@ -8,7 +8,7 @@ Read [CONTRIBUTING.md](CONTRIBUTING.md) for shared branch ownership, Codex pull 
 Codex works on task branches and targets pull requests at `claude/dreamy-pasteur-b9h3rn`; Claude reviews and integrates them there.
 Keep `main` for author-authorized releases. Read [AGENTS.md](AGENTS.md) when coordinating agent work.
 
-**Current handover (14 November 2026, Claude): Invocation transfer ledger (I1) on `claude/invocation-ledger`, PR into development. Tooling and
+**Earlier handover (14 November 2026, Claude): Invocation transfer ledger (I1) on `claude/invocation-ledger`, PR into development. Tooling and
 documentation only: no gameplay source, manifest or package change; v0.3.52 stays the validated, unplayed stable package.** Read
 [docs/INVOCATION_LEDGER.md](docs/INVOCATION_LEDGER.md) and `docs/TACTICAL_AI.md` §164. `tools/InvocationLedger/invocation_ledger.py` (11 tests) lists
 every Profane Invocation in a `Log.txt` with recipient, holder, the engine's values, outcome and class.
@@ -23,6 +23,32 @@ every Profane Invocation in a `Log.txt` with recipient, holder, the engine's val
 
 Checks: 11 ledger + 27 inventory + 3 script tests; links resolve; tables regenerated from the deterministic tool output. No game build or ProfileAudit
 (no C#, project or manifest change). [Receipt](docs/competence/INVOCATION_LEDGER_CHECKS.json). Next proposed: G1 grapple state awareness.
+
+**Magic Fusion F1 (14 November 2026, Codex; unplayed):** `codex/fusion-cone-delivery` stacks on F0 / PR #60,
+including integrated development `e1ae334` (S1/S2). Review F0 first. [Implementation / replay](docs/FUSION_IMPLEMENTATION.md#f1-selected-cone-delivery-and-friendly-fire-re-aim), §166.
+Resolve the selected native delivery component in the existing cone adapter; retain the actual slot/context, native
+range/recipient/Selective/obstacle queries and fail-closed behavior. Per-score hard-friendly-fire veto now admits
+the existing six-angle re-aim even without a formatted penalty note; ordinary cones receive that shared fix too.
+No movement, new search scope, scoring weights, resource policy or payload exclusion changes. Source edits are
+read afresh; cache contains components, not actors/contexts. F2/F3 judgment and complex support remain outstanding.
+Real slot/source fixtures, full admitted-cone matrix and warm resolver allocation check are added; native gameplay
+and matched Unity timing remain pending. 811 unit + 27 inventory + 3 script tests pass; real-reference Release
+0 warnings/errors; compatible/supplementary ProfileAudit and native providers 98/14/10 pass. FUSION-CONE 34,
+all 1,180 admitted cone components resolve; 10,000 warm resolver calls allocate 0 bytes (not Unity timing).
+[Checks](docs/competence/FUSION_F1_CHECKS.json), [fusion1 ZIP](test-builds/AI-Control-FACC-v0.3.52-dev-fusion1-7a56bbb-UMM-test.zip),
+[identity](test-builds/AI-Control-FACC-v0.3.52-dev-fusion1-7a56bbb-UMM-test.identity.json); checked source `7a56bbb`, MVID `2e2896c3-5f13-42e1-bb9b-9626f6157228`;
+0 new foreign signatures. Manifest 0.3.52 and stable release unchanged. Claude reviews/integrates; no gameplay acceptance.
+
+**Magic Fusion F0 (14 November 2026, Codex):** author authorized the [revised implementation plan](docs/MAGIC_FUSION_PLAN.md).
+`codex/fusion-coverage-audit` started at `6cf4281`, no open PRs; reconciled with actual development `e1ae334` (S1/S2), preserving both. Initial tracking ref was stale; use an explicit development fetch refspec. [Status/usage](docs/FUSION_IMPLEMENTATION.md), §165,
+[baseline](docs/competence/FUSION_COVERAGE_BASELINE.json), [checks](docs/competence/FUSION_F0_CHECKS.json).
+Offline native UI template enumeration: 60 sources, 3,540 pairs, 15,494 configurations; 7,474 profile-admitted,
+8,020 withheld, zero reader errors. All known blockers/locations now survive cold profile construction; existing
+last-reason admission, decisions and normal log stay unchanged. This diagnostic metadata changes the DLL, unlike
+the initial tooling-only sketch; no additional rule/target/path queries, actor cache, settings/version or package change.
+The 1,180 admitted cone templates still require F1's selected-delivery handoff repair; aim/value/actor availability
+remain unassessed. Keep F2/F3 shared math, real root-save correlation, one native clicked target and actual costs;
+do not add a second target/action or blanket blueprint/key replacements. 811 unit + 27 inventory + 3 script tests pass; real-reference Release 0 warnings/errors; compatible/supplementary audits and native providers pass. Checked source `c000c83`, MVID `cd740a06-f1f3-4f50-9874-05d16b6da11c`, zero new foreign signatures. S1's input subset retains its explicit missing-reference report; it is not S1's full stock-supplement scope. Claude reviews/integrates; no gameplay claim.
 
 **Earlier handover (14 November 2026, Claude): approach end points (S2), merged into development by PR #59 (merge `e1ae334`; S1 by PR #58, merge
 `8ef707c`). Source change, not played; manifest 0.3.52, packages and `release/` unchanged; v0.3.52 stays the validated, unplayed stable package.** Read

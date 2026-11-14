@@ -5711,3 +5711,50 @@ reach a holder check (no positive worth), so their holders are unknown. "Holder 
 **Next.** G1, grapple state awareness. The v0.3.52 logs show six Ulbrig grapples, five successful, with Grabber
 switched on by the player. The turn-based grapple turns had AI Control off ("AI is off for this character"), and in
 real time Ulbrig made no AI Control decision from RT3 to RT15. G1 needs at least one grapple turn with AI Control on.
+
+## 165. Magic Fusion F0: native-template coverage and complete known blockers (14 November 2026)
+
+The author authorized the [revised plan](MAGIC_FUSION_PLAN.md). [Implementation/evidence](FUSION_IMPLEMENTATION.md)
+and [baseline](competence/FUSION_COVERAGE_BASELINE.json). This is coverage groundwork, not a valuation retune.
+Native UI metadata utilities choose schools, saves and delivery sources for declared-list templates; the actual
+Fusion reader supplies admission and all known rejection reasons with locations. Its former single last-reason
+gate and normal logs retain their behavior. Extra metadata is built/cached with profiles, not recalculated per target.
+
+The supplied list yields 60 levelled sources, 3,540 ordered distinct pairs and 15,494 configurations: 7,474 admitted,
+8,020 withheld, no reader exceptions. Of the admitted profiles, 1,180 select a cone, whose actual aim remains
+unvalidated and subject to the separately identified holder/delivery bug. Counts are not mod-wide/live-character
+competence or successful casts. Sole-blocker and co-occurrence counts avoid adding overlapping exclusions.
+
+Requested offline coverage fails for absent list/book/slots/source closure, ambiguous levels or reader exceptions;
+partial input remains partial and stale outputs are replaced. Existing builds/audits, native fixtures and new
+diagnostic/CLI cases are recorded in [checks](competence/FUSION_F0_CHECKS.json). No AI command or native cast is issued; no live
+game state or installed game DLL is modified. The offline harness uses private engine-neutralized copies. Existing control/damage/save math, policy, movement,
+blocklists, versions and packages are unchanged. Claude reviews/integrates F0 before F1; no release or gameplay acceptance.
+
+The current development's S1/S2 are retained. S1's graph walk now skips scalar arrays before their namespace lookup:
+a nested UI enum array otherwise tries to load UnityEngine.UI solely to discover metadata it immediately discards.
+The walk's visited effects/classifications are unchanged; no UI assembly is introduced. The compatible Fusion audit
+prints S1's remaining missing-reference scope instead of claiming S1's separate stock-supplement completeness.
+
+## 166. Magic Fusion F1: selected cone component and hard-veto re-aim (14 November 2026)
+
+The author authorized implementation of the revised Fusion plan. This slice stacks on F0 / PR #60 and preserves
+integrated S1/S2. [Evidence, scope and paired TB/RT replay](FUSION_IMPLEMENTATION.md#f1-selected-cone-delivery-and-friendly-fire-re-aim).
+The profile reader sees a selected cone, but its recipient adapter previously queried the empty native slot.
+`ProjectileCone.DeliveryComponent` now resolves the actual cast's selected native delivery and returns the same
+cached component an ordinary cast uses. `TryCreate` retains the slot's context and all existing native range,
+origin, recipient, obstacle, Selective and failure checks. A delivery edit cannot retain the old component.
+
+`ScoreAbility` now records hard friendly-fire vetoes in a per-score boolean as well as returning zero; previously
+the early return left the note empty and the caller never attempted the already-existing turned-cone route.
+That route still tries at most six orientations from the current position, retains the aimed enemy and rescores
+the chosen alternative. Ordinary cones receive this same correction. It is not the later useful-payload aim search.
+
+New native-slot/seven-source metadata fixtures, compiled handoff checks, warm component-allocation check and
+full admitted-cone matrix check document the offline contract. [F1 checks](competence/FUSION_F1_CHECKS.json):
+811 unit + 27 inventory + 3 script tests; real-reference Release 0 warnings/errors; all compatible/supplementary
+ProfileAudit sections and native providers pass. FUSION-CONE 34; all 1,180 admitted cone components resolve,
+unchanged profile admission (7,474 / 8,020). Warm resolver: 10,000 calls, zero allocated bytes. The cumulative
+fusion1 ZIP packs the exact checked Release DLL, identity/checksum and distinct startup MVID; it is a test build. Live edge/body/LOS/Selective/moving/downed ally geometry, native execution and
+matched Unity performance remain gameplay acceptance; the offline harness creates no actor and issues no command.
+No payload exclusion, cost policy, movement, dispatcher or F2/F3 valuation is changed; stable release remains 0.3.52.
