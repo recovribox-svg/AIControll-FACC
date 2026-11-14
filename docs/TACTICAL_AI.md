@@ -5666,7 +5666,7 @@ ToyBoxSpend 10. The offline checks run no actor, path search or command.
 **Next.** I1: Invocation ledger from the supplied `Log.txt` (the redundant-cast sequence stays a hypothesis until the
 scores, the stacking rules and the state are checked).
 
-## 164. Magic Fusion F0: native-template coverage and complete known blockers (14 November 2026)
+## 165. Magic Fusion F0: native-template coverage and complete known blockers (14 November 2026)
 
 The author authorized the [revised plan](MAGIC_FUSION_PLAN.md). [Implementation/evidence](FUSION_IMPLEMENTATION.md)
 and [baseline](competence/FUSION_COVERAGE_BASELINE.json). This is coverage groundwork, not a valuation retune.

@@ -24,7 +24,7 @@ all 1,180 admitted cone components resolve; 10,000 warm resolver calls allocate 
 0 new foreign signatures. Manifest 0.3.52 and stable release unchanged. Claude reviews/integrates; no gameplay acceptance.
 
 **Magic Fusion F0 (14 November 2026, Codex):** author authorized the [revised implementation plan](docs/MAGIC_FUSION_PLAN.md).
-`codex/fusion-coverage-audit` started at `6cf4281`, no open PRs; reconciled with actual development `e1ae334` (S1/S2), preserving both. Initial tracking ref was stale; use an explicit development fetch refspec. [Status/usage](docs/FUSION_IMPLEMENTATION.md), §164,
+`codex/fusion-coverage-audit` started at `6cf4281`, no open PRs; reconciled with actual development `e1ae334` (S1/S2), preserving both. Initial tracking ref was stale; use an explicit development fetch refspec. [Status/usage](docs/FUSION_IMPLEMENTATION.md), §165,
 [baseline](docs/competence/FUSION_COVERAGE_BASELINE.json), [checks](docs/competence/FUSION_F0_CHECKS.json).
 Offline native UI template enumeration: 60 sources, 3,540 pairs, 15,494 configurations; 7,474 profile-admitted,
 8,020 withheld, zero reader errors. All known blockers/locations now survive cold profile construction; existing
