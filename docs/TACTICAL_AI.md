@@ -5690,7 +5690,7 @@ a nested UI enum array otherwise tries to load UnityEngine.UI solely to discover
 The walk's visited effects/classifications are unchanged; no UI assembly is introduced. The compatible Fusion audit
 prints S1's remaining missing-reference scope instead of claiming S1's separate stock-supplement completeness.
 
-## 165. Magic Fusion F1: selected cone component and hard-veto re-aim (14 November 2026)
+## 166. Magic Fusion F1: selected cone component and hard-veto re-aim (14 November 2026)
 
 The author authorized implementation of the revised Fusion plan. This slice stacks on F0 / PR #60 and preserves
 integrated S1/S2. [Evidence, scope and paired TB/RT replay](FUSION_IMPLEMENTATION.md#f1-selected-cone-delivery-and-friendly-fire-re-aim).

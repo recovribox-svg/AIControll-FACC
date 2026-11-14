@@ -9,7 +9,7 @@ Codex works on task branches and targets pull requests at `claude/dreamy-pasteur
 Keep `main` for author-authorized releases. Read [AGENTS.md](AGENTS.md) when coordinating agent work.
 
 **Magic Fusion F1 (14 November 2026, Codex; unplayed):** `codex/fusion-cone-delivery` stacks on F0 / PR #60,
-including integrated development `e1ae334` (S1/S2). Review F0 first. [Implementation / replay](docs/FUSION_IMPLEMENTATION.md#f1-selected-cone-delivery-and-friendly-fire-re-aim), §165.
+including integrated development `e1ae334` (S1/S2). Review F0 first. [Implementation / replay](docs/FUSION_IMPLEMENTATION.md#f1-selected-cone-delivery-and-friendly-fire-re-aim), §166.
 Resolve the selected native delivery component in the existing cone adapter; retain the actual slot/context, native
 range/recipient/Selective/obstacle queries and fail-closed behavior. Per-score hard-friendly-fire veto now admits
 the existing six-angle re-aim even without a formatted penalty note; ordinary cones receive that shared fix too.
