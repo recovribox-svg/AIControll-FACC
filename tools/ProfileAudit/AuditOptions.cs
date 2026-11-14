@@ -1,6 +1,7 @@
 // ★ v0.3.22: explicit partial-load allowance; empty and predominantly failed loads never produce coverage verdicts.
 using System;
 using System.Collections.Generic;
+using System.IO;
 namespace ProfileAudit
 {
     public sealed class AuditOptions
@@ -9,6 +10,7 @@ namespace ProfileAudit
         public readonly List<string> Roots = new List<string>();
         public int AllowFailures;
         public string OptionalProvider;
+        public string FusionCoverageOutput;
         /// <summary>★ user-ability-blacklist: run the blocklist matching on the loaded blueprints (BlocklistCheck).</summary>
         public bool BlocklistChecks;
         public static bool TryParse(string[] args, out AuditOptions options, out string error)
@@ -36,12 +38,28 @@ namespace ProfileAudit
                     options.OptionalProvider = args[i];
                 }
                 else if (args[i] == "--blocklist-checks") options.BlocklistChecks = true;
+                else if (args[i] == "--fusion-coverage")
+                {
+                    if (options.FusionCoverageOutput != null || ++i >= args.Length - 1 || string.IsNullOrWhiteSpace(args[i]) || args[i].StartsWith("--", StringComparison.Ordinal))
+                    { error = "--fusion-coverage requires one JSON output path"; return false; }
+                    options.FusionCoverageOutput = args[i];
+                }
                 else if (args[i].StartsWith("--", StringComparison.Ordinal))
                 { error = "unknown option: " + args[i]; return false; }
                 else options.Roots.Add(args[i]);
             }
             // A provider-only run needs no dumps.
             if (options.Roots.Count == 0 && options.OptionalProvider == null) { error = "no blueprint dump folders supplied"; return false; }
+            if (options.FusionCoverageOutput != null)
+            {
+                if (options.Roots.Count == 0) { error = "--fusion-coverage requires blueprint dump folders"; return false; }
+                try
+                {
+                    if (string.Equals(Path.GetFullPath(options.FusionCoverageOutput), Path.GetFullPath(options.Output), StringComparison.OrdinalIgnoreCase))
+                    { error = "fusion JSON output and audit report must differ"; return false; }
+                }
+                catch (ArgumentException) { error = "invalid fusion JSON output path"; return false; }
+            }
             return true;
         }
         public bool CanAudit(int loaded, int failed) => loaded > 0 && failed <= AllowFailures && (failed == 0 || loaded > failed);

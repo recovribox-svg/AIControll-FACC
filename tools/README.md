@@ -41,6 +41,14 @@ loader runs on plain .NET. The rewritten copies go only into the harness's work 
 The caster fixtures also neutralize `ProfileScope.New` in that private copy: its instrumentation needs the unprovided
 firstpass profiler. Native `HasMetamagic` logic remains intact; these checks validate metadata selection, not a live
 rod, attack roll, actor or cast. Native command fixtures set flags on uninitialized command objects and never issue them.
+
+`--fusion-coverage <fusion.json>` additionally enumerates the supplied Magic Deceiver list's levelled,
+distinct ordered source-pair templates through native UI metadata utilities and the mod's actual Fusion reader.
+It writes configurations, all known rejection reasons/locations, blocker co-occurrence and sole-blocker counts.
+It requires the list/book/default/touch slots and resolved source closure; missing prerequisites fail instead of
+silently skipping. This is metadata coverage, **not** a live aim/availability/utility/execution check. Allowed load
+failures remain labelled PARTIAL; a failed load replaces any stale JSON with INCOMPLETE. See
+[`docs/FUSION_IMPLEMENTATION.md`](../docs/FUSION_IMPLEMENTATION.md). The option is offline only, never a game/UI tick.
 ```
 tools/ProfileAudit/run.sh <Wrath_Data/Managed> <mod dll> <work dir> <out.txt> <dump folders...>
 ```

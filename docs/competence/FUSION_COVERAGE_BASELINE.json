@@ -1,0 +1,384 @@
+{
+  "status": "PASS",
+  "scope": "declared-list native UI configuration templates; not actor availability, aim, utility or gameplay acceptance",
+  "sourceList": "cf20c10b131344c1a61b75e9cc4a4c13",
+  "spellbook": "587066af76a74f47a904bb017697ba08",
+  "failedBlueprintLoads": 0,
+  "sources": [
+    {
+      "guid": "12fb4a4c22549c74d949e2916a2f0b6a",
+      "name": "PhantasmalWeb",
+      "level": 4
+    },
+    {
+      "guid": "143775c49ae6b7446b805d3b2e702298",
+      "name": "DispelMagicTarget",
+      "level": 3
+    },
+    {
+      "guid": "1626dbd11c4143b2a5641da8f227b78c",
+      "name": "IncendiaryRunes",
+      "level": 1
+    },
+    {
+      "guid": "1cde0691195feae45bab5b83ea3f221e",
+      "name": "WrackingRay",
+      "level": 5
+    },
+    {
+      "guid": "1d06e3306677431e846e6e6afdcc2138",
+      "name": "PeerThroughAvoidance",
+      "level": 5
+    },
+    {
+      "guid": "1f2e6019ece86d64baa5effa15e81ecc",
+      "name": "PhantasmalPutrefaction",
+      "level": 6
+    },
+    {
+      "guid": "249c0abba99e4d6f82437b83db57f52c",
+      "name": "PeerThroughSpellResistance",
+      "level": 6
+    },
+    {
+      "guid": "255ae2be713947ad9162fc207457035c",
+      "name": "PeerThroughMind",
+      "level": 3
+    },
+    {
+      "guid": "2d81362af43aeac4387a3d4fced489c3",
+      "name": "Fireball",
+      "level": 3
+    },
+    {
+      "guid": "3105d6e9febdc3f41a08d2b7dda1fe74",
+      "name": "BalefulPolymorph",
+      "level": 5
+    },
+    {
+      "guid": "41e8a952da7a5c247b3ec1c2dbb73018",
+      "name": "HoldMonster",
+      "level": 5
+    },
+    {
+      "guid": "42a65895ba0cb3a42b6019039dd2bff1",
+      "name": "MoltenOrb",
+      "level": 2
+    },
+    {
+      "guid": "444eed6e26f773a40ab6e4d160c67faa",
+      "name": "Feeblemind",
+      "level": 5
+    },
+    {
+      "guid": "448aa456600749d18c14ad979cc88a67",
+      "name": "ExcruciatingDeformation",
+      "level": 2
+    },
+    {
+      "guid": "46fd02ad56c35224c9c91c88cd457791",
+      "name": "Blindness",
+      "level": 2
+    },
+    {
+      "guid": "4783c3709a74a794dbe7c8e7e0b1b038",
+      "name": "BurningHands",
+      "level": 1
+    },
+    {
+      "guid": "4aa7942c3e62a164387a73184bca3fc1",
+      "name": "Disintegrate",
+      "level": 6
+    },
+    {
+      "guid": "4b8265132f9c8174f87ce7fa6d0fe47b",
+      "name": "RainbowPattern",
+      "level": 3
+    },
+    {
+      "guid": "4e0e9aba6447d514f88eff1464cc4763",
+      "name": "ReducePerson",
+      "level": 1
+    },
+    {
+      "guid": "5c8cde7f0dcec4e49bfa2632dfe2ecc0",
+      "name": "KiShout",
+      "level": 6
+    },
+    {
+      "guid": "645558d63604747428d55f0dd3a4cb58",
+      "name": "ChainLightning",
+      "level": 6
+    },
+    {
+      "guid": "6717dbaef00c0eb4897a1c908a75dfe5",
+      "name": "PhantasmalKiller",
+      "level": 5
+    },
+    {
+      "guid": "6d490c80598f1d34bb277735b52d52c1",
+      "name": "DispelMagicGreaterTarget",
+      "level": 6
+    },
+    {
+      "guid": "768b18138fb44b70b686c23119e66e02",
+      "name": "PeerThroughReflexes",
+      "level": 2
+    },
+    {
+      "guid": "84ccca10da2a4484c89a837fbea2a829",
+      "name": "TouchOfSlimeCast",
+      "level": 4
+    },
+    {
+      "guid": "8a28a811ca5d20d49a863e832c31cce1",
+      "name": "VampiricTouchCast",
+      "level": 3
+    },
+    {
+      "guid": "8c29e953190cc67429dc9c701b16b7c2",
+      "name": "CausticEruption",
+      "level": 6
+    },
+    {
+      "guid": "8eead52509987034ea9025d60cc05985",
+      "name": "RayOfExhaustion",
+      "level": 3
+    },
+    {
+      "guid": "91da41b9793a4624797921f221db653c",
+      "name": "ColorSpray",
+      "level": 1
+    },
+    {
+      "guid": "95810d2829895724f950c8c4086056e7",
+      "name": "CorrosiveTouchCast",
+      "level": 1
+    },
+    {
+      "guid": "9a46dfd390f943647ab4395fc997936d",
+      "name": "AcidArrow",
+      "level": 2
+    },
+    {
+      "guid": "9efb34c2990349c58e1f3b599c7c4d6b",
+      "name": "PeerThroughResistance",
+      "level": 1
+    },
+    {
+      "guid": "9f0f0233dc0d43239afa77dbb3f3b948",
+      "name": "PeerThroughEndurance",
+      "level": 4
+    },
+    {
+      "guid": "9f10909f0be1f5141bf1c102041f93d9",
+      "name": "Snowball",
+      "level": 1
+    },
+    {
+      "guid": "a89dcbbab8f40e44e920cc60636097cf",
+      "name": "CircleOfDeath",
+      "level": 6
+    },
+    {
+      "guid": "ab395d2335d3f384e99dddee8562978f",
+      "name": "ShockingGraspCast",
+      "level": 1
+    },
+    {
+      "guid": "b0ffc8eaff404f2e9e0a3ee9f4c35486",
+      "name": "SilverDarts",
+      "level": 3
+    },
+    {
+      "guid": "b5f4ea77492d4f23ad3a6f429cbfa35e",
+      "name": "ArcanaTheft",
+      "level": 5
+    },
+    {
+      "guid": "b6010dda6333bcf4093ce20f0063cd41",
+      "name": "FrigidTouchCast",
+      "level": 2
+    },
+    {
+      "guid": "b7731c2b4fa1c9844a092329177be4c3",
+      "name": "Boneshaker",
+      "level": 2
+    },
+    {
+      "guid": "bb7ecad2d3d2c8247a38f44855c99061",
+      "name": "Sleep",
+      "level": 1
+    },
+    {
+      "guid": "c0c2ef5955cb415ca482597f1bfc4eca",
+      "name": "CurseOfMagicNegation",
+      "level": 4
+    },
+    {
+      "guid": "c543eef6d725b184ea8669dd09b3894c",
+      "name": "AcidicSpray",
+      "level": 5
+    },
+    {
+      "guid": "c7104f7526c4c524f91474614054547e",
+      "name": "HoldPerson",
+      "level": 3
+    },
+    {
+      "guid": "cf6c901fb7acc904e85c63b342e9c949",
+      "name": "ConfusionSpell",
+      "level": 4
+    },
+    {
+      "guid": "d2aeac47450c76347aebbc02e4f463e0",
+      "name": "Fear",
+      "level": 4
+    },
+    {
+      "guid": "d2cff9243a7ee804cb6d5be47af30c73",
+      "name": "LightningBolt",
+      "level": 3
+    },
+    {
+      "guid": "d316d3d94d20c674db2c24d7de96f6a7",
+      "name": "Serenity",
+      "level": 6
+    },
+    {
+      "guid": "d42c6d3f29e07b6409d670792d72bc82",
+      "name": "BansheeBlast",
+      "level": 6
+    },
+    {
+      "guid": "e48638596c955a74c8a32dbc90b518c1",
+      "name": "ObsidianFlow",
+      "level": 4
+    },
+    {
+      "guid": "e7c530f8137630f4d9d7ee1aa7b1edc0",
+      "name": "ConeOfCold",
+      "level": 5
+    },
+    {
+      "guid": "ebade19998e1f8542a1b55bd4da766b3",
+      "name": "FireSnake",
+      "level": 5
+    },
+    {
+      "guid": "ed22aa8751c049fa915dabfa29712c08",
+      "name": "HauntingMists",
+      "level": 2
+    },
+    {
+      "guid": "f09453607e683784c8fca646eec49162",
+      "name": "Shout",
+      "level": 4
+    },
+    {
+      "guid": "f2f1efac32ea2884e84ecaf14657298b",
+      "name": "Boneshatter",
+      "level": 4
+    },
+    {
+      "guid": "f34fb78eaaec141469079af124bcfa0f",
+      "name": "Enervation",
+      "level": 4
+    },
+    {
+      "guid": "f492622e473d34747806bdb39356eb89",
+      "name": "Slow",
+      "level": 3
+    },
+    {
+      "guid": "fa3078b9976a5b24caf92e20ee9c0f54",
+      "name": "RayOfSickening",
+      "level": 1
+    },
+    {
+      "guid": "fd4d9fd7f87575d47aafe2a64a6e2d8d",
+      "name": "HideousLaughter",
+      "level": 2
+    },
+    {
+      "guid": "ff652882623d43f184eb6abef741e20e",
+      "name": "ExplosiveRunes",
+      "level": 2
+    }
+  ],
+  "orderedDistinctPairs": 3540,
+  "pairsWithoutConfiguration": 0,
+  "configurations": 15494,
+  "profileAccepted": 7474,
+  "profileWithheld": 8020,
+  "acceptedConeProfilesWithAimUnvalidated": 1180,
+  "readerErrors": 0,
+  "blockersPresent": {
+    "additional area delivery": 462,
+    "buff outside the shared failed-save branch": 3392,
+    "clicked-target secondary payload": 1030,
+    "healing or caster-side payload": 310,
+    "independent nested saving throw": 1112,
+    "line delivery geometry": 1052,
+    "nested shared-save branch": 1112,
+    "secondary spell payload": 482,
+    "shared Hit Dice selection": 1754,
+    "source spell without a native RunAction payload": 402
+  },
+  "soleBlockers": {
+    "buff outside the shared failed-save branch": 2706,
+    "clicked-target secondary payload": 260,
+    "healing or caster-side payload": 230,
+    "line delivery geometry": 746,
+    "secondary spell payload": 322,
+    "shared Hit Dice selection": 1304
+  },
+  "blockerCooccurrence": {
+    "additional area delivery | buff outside the shared failed-save branch | clicked-target secondary payload": 38,
+    "additional area delivery | buff outside the shared failed-save branch | clicked-target secondary payload | source spell without a native RunAction payload": 16,
+    "additional area delivery | clicked-target secondary payload": 204,
+    "additional area delivery | clicked-target secondary payload | healing or caster-side payload": 4,
+    "additional area delivery | clicked-target secondary payload | healing or caster-side payload | source spell without a native RunAction payload": 4,
+    "additional area delivery | clicked-target secondary payload | independent nested saving throw | nested shared-save branch": 12,
+    "additional area delivery | clicked-target secondary payload | independent nested saving throw | nested shared-save branch | source spell without a native RunAction payload": 6,
+    "additional area delivery | clicked-target secondary payload | line delivery geometry": 12,
+    "additional area delivery | clicked-target secondary payload | line delivery geometry | source spell without a native RunAction payload": 12,
+    "additional area delivery | clicked-target secondary payload | secondary spell payload": 8,
+    "additional area delivery | clicked-target secondary payload | secondary spell payload | source spell without a native RunAction payload": 4,
+    "additional area delivery | clicked-target secondary payload | source spell without a native RunAction payload": 142,
+    "buff outside the shared failed-save branch": 2706,
+    "buff outside the shared failed-save branch | clicked-target secondary payload": 42,
+    "buff outside the shared failed-save branch | clicked-target secondary payload | source spell without a native RunAction payload": 20,
+    "buff outside the shared failed-save branch | healing or caster-side payload": 20,
+    "buff outside the shared failed-save branch | independent nested saving throw | nested shared-save branch": 124,
+    "buff outside the shared failed-save branch | line delivery geometry": 138,
+    "buff outside the shared failed-save branch | secondary spell payload": 60,
+    "buff outside the shared failed-save branch | shared Hit Dice selection": 228,
+    "clicked-target secondary payload": 260,
+    "clicked-target secondary payload | healing or caster-side payload": 4,
+    "clicked-target secondary payload | healing or caster-side payload | source spell without a native RunAction payload": 4,
+    "clicked-target secondary payload | independent nested saving throw | nested shared-save branch": 12,
+    "clicked-target secondary payload | independent nested saving throw | nested shared-save branch | source spell without a native RunAction payload": 6,
+    "clicked-target secondary payload | secondary spell payload": 8,
+    "clicked-target secondary payload | secondary spell payload | source spell without a native RunAction payload": 4,
+    "clicked-target secondary payload | shared Hit Dice selection": 24,
+    "clicked-target secondary payload | shared Hit Dice selection | source spell without a native RunAction payload": 10,
+    "clicked-target secondary payload | source spell without a native RunAction payload": 174,
+    "healing or caster-side payload": 230,
+    "healing or caster-side payload | independent nested saving throw | nested shared-save branch": 8,
+    "healing or caster-side payload | line delivery geometry": 12,
+    "healing or caster-side payload | secondary spell payload": 4,
+    "healing or caster-side payload | shared Hit Dice selection": 20,
+    "independent nested saving throw | line delivery geometry | nested shared-save branch": 36,
+    "independent nested saving throw | nested shared-save branch": 820,
+    "independent nested saving throw | nested shared-save branch | secondary spell payload": 20,
+    "independent nested saving throw | nested shared-save branch | shared Hit Dice selection": 68,
+    "line delivery geometry": 746,
+    "line delivery geometry | secondary spell payload": 24,
+    "line delivery geometry | shared Hit Dice selection": 72,
+    "secondary spell payload": 322,
+    "secondary spell payload | shared Hit Dice selection": 28,
+    "shared Hit Dice selection": 1304
+  },
+  "case_report": "Generated by --fusion-coverage; 15,494 case rows retained as a local validation artifact, not game graphs."
+}

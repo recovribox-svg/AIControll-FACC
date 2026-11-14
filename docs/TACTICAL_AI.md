@@ -5497,3 +5497,21 @@ modes; the shared 997-control-check/27.3ms total is printed in both summaries an
 New unit/native scalar/compiled-route checks cover mode and logging changes; final source/identity follows.
 
 Checked source `30cfa2c`, [receipt](competence/V0352_PLAYTEST_CHECKS.json) and [v0.3.52 stable ZIP](../release/CompanionAI_Pathfinder_v0.3.52.zip), startup MVID `981a7b77-a654-4da1-9a22-68bc1c6a77bd`. 787 unit + 27 inventory tests and native checks pass; actual-reference Release 0 warnings/errors; 0/0 added signatures resolve. Compatible/supplementary audit scopes pass; original full-corpus enum failure remains distinct. Gameplay/matched Unity timing pending.
+## 162. Magic Fusion F0: native-template coverage and complete known blockers (14 November 2026)
+
+The author authorized the [revised plan](MAGIC_FUSION_PLAN.md). [Implementation/evidence](FUSION_IMPLEMENTATION.md)
+and [baseline](competence/FUSION_COVERAGE_BASELINE.json). This is coverage groundwork, not a valuation retune.
+Native UI metadata utilities choose schools, saves and delivery sources for declared-list templates; the actual
+Fusion reader supplies admission and all known rejection reasons with locations. Its former single last-reason
+gate and normal logs retain their behavior. Extra metadata is built/cached with profiles, not recalculated per target.
+
+The supplied list yields 60 levelled sources, 3,540 ordered distinct pairs and 15,494 configurations: 7,474 admitted,
+8,020 withheld, no reader exceptions. Of the admitted profiles, 1,180 select a cone, whose actual aim remains
+unvalidated and subject to the separately identified holder/delivery bug. Counts are not mod-wide/live-character
+competence or successful casts. Sole-blocker and co-occurrence counts avoid adding overlapping exclusions.
+
+Requested offline coverage fails for absent list/book/slots/source closure, ambiguous levels or reader exceptions;
+partial input remains partial and stale outputs are replaced. Existing builds/audits, native fixtures and new
+diagnostic/CLI cases are recorded in [checks](competence/FUSION_F0_CHECKS.json). No AI command or native cast is issued; no live
+game state or installed game DLL is modified. The offline harness uses private engine-neutralized copies. Existing control/damage/save math, policy, movement,
+blocklists, versions and packages are unchanged. Claude reviews/integrates F0 before F1; no release or gameplay acceptance.

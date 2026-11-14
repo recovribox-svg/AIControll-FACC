@@ -72,11 +72,13 @@ namespace ProfileAudit
             if (!AuditOptions.TryParse(args, out var options, out var optionError))
             {
                 Console.Error.WriteLine(optionError);
-                Console.Error.WriteLine("Usage: ProfileAudit [--allow-failures N] [--optional-provider TabletopTweaks-Core.dll] [--blocklist-checks] <dump folders...> <report.txt>");
+                Console.Error.WriteLine("Usage: ProfileAudit [--allow-failures N] [--optional-provider TabletopTweaks-Core.dll] [--blocklist-checks] [--fusion-coverage report.json] <dump folders...> <report.txt>");
                 return 2;
             }
             var output = options.Output;
             var roots = options.Roots;
+            if (options.FusionCoverageOutput != null)
+                File.WriteAllText(options.FusionCoverageOutput, "{\"status\":\"INCOMPLETE\",\"reason\":\"blueprint load/audit has not completed\"}");
             RegisterTypes();
             var providerLines = new List<string>();
             if (options.OptionalProvider != null)
@@ -340,6 +342,13 @@ namespace ProfileAudit
             foreach (var line in diagnosticLines) Console.WriteLine(line);
             File.WriteAllText(output, string.Join(Environment.NewLine, diagnosticLines) + Environment.NewLine + Environment.NewLine + File.ReadAllText(output));
             blocklistFailures += diagnosticFailures;
+            if (options.FusionCoverageOutput != null)
+            {
+                var coverageLines = FusionCoverage.Run(loaded.Values, options.FusionCoverageOutput, failed, out int coverageFailures);
+                foreach (var line in coverageLines) Console.WriteLine(line);
+                File.WriteAllText(output, string.Join(Environment.NewLine, coverageLines) + Environment.NewLine + File.ReadAllText(output));
+                blocklistFailures += coverageFailures;
+            }
             if (failed > 0)
             {
                 string partial = $"PARTIAL: loaded {loaded.Count}, failed {failed}, allowed {options.AllowFailures}. Failed blueprints:";

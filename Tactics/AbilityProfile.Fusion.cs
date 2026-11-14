@@ -18,6 +18,23 @@ namespace CompanionAI_Pathfinder.Tactics
         internal MagicHackData Fusion { get; private set; }
         internal string FusionUnsupported { get; private set; }
         internal string FusionIdentity { get; private set; }
+        // F0: cold metadata diagnostics only. Keep the original last-reason admission rule and normal log unchanged.
+        internal sealed class FusionLimitation
+        {
+            public readonly string Reason, Location;
+            internal FusionLimitation(string reason, string location) { Reason = reason; Location = location; }
+        }
+        private List<FusionLimitation> fusionLimitations;
+        internal IReadOnlyList<FusionLimitation> FusionLimitations =>
+            (IReadOnlyList<FusionLimitation>)fusionLimitations ?? Array.Empty<FusionLimitation>();
+        private void LimitFusion(string reason, string location)
+        {
+            FusionUnsupported = reason;
+            if (fusionLimitations == null) fusionLimitations = new List<FusionLimitation>();
+            foreach (var old in fusionLimitations)
+                if (old.Reason == reason && old.Location == location) return;
+            fusionLimitations.Add(new FusionLimitation(reason, location));
+        }
         internal bool? FusionTargetFreeContext;
         internal static string FusionIdentityOf(AbilityData ability) => ability?.MagicHackData == null ? "" : GetFusion(ability).FusionIdentity;
         internal enum FusionSavePath { Both, Failed, Passed }
@@ -55,19 +72,19 @@ namespace CompanionAI_Pathfinder.Tactics
             try
             {
                 if (snapshot.DeliverBlueprint == null || snapshot.Spell1 == null || snapshot.Spell2 == null)
-                    profile.FusionUnsupported = "incomplete native fusion data";
+                    profile.LimitFusion("incomplete native fusion data", "configuration");
                 else
                 {
                     profile.Analyze();
                     if (snapshot.IsTouch) profile.NeedsAttackRoll = true;
                     if (snapshot.DeliverBlueprint.GetComponent<AbilityDeliverProjectile>()?.Type == AbilityProjectileType.Line)
-                        profile.FusionUnsupported = "line delivery geometry";
-                    if (snapshot.AdditionalAoeBlueprint != null) profile.FusionUnsupported = "additional area delivery";
+                        profile.LimitFusion("line delivery geometry", "delivery");
+                    if (snapshot.AdditionalAoeBlueprint != null) profile.LimitFusion("additional area delivery", "delivery/additional");
                     if (profile.Heals.Count > 0 || profile.CasterHeals.Count > 0 || profile.CasterBuffs.Count > 0)
-                        profile.FusionUnsupported = "healing or caster-side payload";
+                        profile.LimitFusion("healing or caster-side payload", "profile/subjects");
                 }
             }
-            catch (Exception ex) { profile.FusionUnsupported = "profile reader " + ex.GetType().Name; }
+            catch (Exception ex) { profile.LimitFusion("profile reader " + ex.GetType().Name, "profile"); }
             FusionCache.Remove(data);
             FusionCache.Add(data, new FusionEntry { Holder = ability.Blueprint, Snapshot = snapshot, Profile = profile });
             _built++;
@@ -78,55 +95,61 @@ namespace CompanionAI_Pathfinder.Tactics
         /// delivery only when that component is absent. It does not cast the two source spells separately.</summary>
         private void ReadFusionActions(HashSet<Kingmaker.UnitLogic.Abilities.Blueprints.BlueprintAbility> visited, int depth, EffectSubject subject)
         {
+            int sourceIndex = 0;
             foreach (var spell in new[] { Fusion.Spell1, Fusion.Spell2 })
             {
+                string source = "source" + (++sourceIndex);
                 if (spell.GetComponent<AdditionalAbilityEffectRunActionOnClickedTarget>() != null)
-                    FusionUnsupported = "clicked-target secondary payload";
+                    LimitFusion("clicked-target secondary payload", source + "/clicked-target");
                 var run = spell.GetComponent<AbilityEffectRunAction>() ??
                           spell.GetComponent<AbilityEffectStickyTouch>()?.TouchDeliveryAbility?.GetComponent<AbilityEffectRunAction>();
-                if (run == null) { FusionUnsupported = "source spell without a native RunAction payload"; continue; }
-                InspectFusionPaths(run.Actions?.Actions, FusionSavePath.Both, 0);
+                if (run == null) { LimitFusion("source spell without a native RunAction payload", source); continue; }
+                InspectFusionPaths(run.Actions?.Actions, FusionSavePath.Both, 0, source);
                 // Separate visited sets preserve both applications when the two payloads reference a common child.
                 Walk(run.Actions?.Actions, new HashSet<Kingmaker.UnitLogic.Abilities.Blueprints.BlueprintAbility>(visited),
                      depth, subject, 0, NoGuards);
             }
         }
 
-        private void InspectFusionPaths(GameAction[] actions, FusionSavePath path, int depth)
+        private void InspectFusionPaths(GameAction[] actions, FusionSavePath path, int depth, string location)
         {
             if (actions == null) return;
-            if (depth > 12) { FusionUnsupported = "payload recursion limit"; return; }
-            foreach (var action in actions)
+            if (depth > 12) { LimitFusion("payload recursion limit", location); return; }
+            for (int index = 0; index < actions.Length; index++)
             {
+                var action = actions[index];
                 if (action == null) continue;
+                string at = location + "/" + index + ":" + action.GetType().Name;
                 if (action is ContextActionConditionalSaved saved)
                 {
-                    if (path != FusionSavePath.Both) FusionUnsupported = "nested shared-save branch";
+                    if (path != FusionSavePath.Both) LimitFusion("nested shared-save branch", at);
                     // Repeated branches on the same native shared save cannot have opposite outcomes.
-                    if (path != FusionSavePath.Passed) InspectFusionPaths(saved.Failed?.Actions, FusionSavePath.Failed, depth + 1);
-                    if (path != FusionSavePath.Failed) InspectFusionPaths(saved.Succeed?.Actions, FusionSavePath.Passed, depth + 1);
+                    if (path != FusionSavePath.Passed) InspectFusionPaths(saved.Failed?.Actions, FusionSavePath.Failed, depth + 1, at + "/failed");
+                    if (path != FusionSavePath.Failed) InspectFusionPaths(saved.Succeed?.Actions, FusionSavePath.Passed, depth + 1, at + "/passed");
                     continue;
                 }
                 if (action is ContextActionSavingThrow saving &&
                     (saving.MakeSaveAlsoForMagicHack || Fusion.SavingThrowType == SavingThrowType.Unknown))
-                    FusionUnsupported = "independent nested saving throw";
+                    LimitFusion("independent nested saving throw", at);
                 if (action is ContextActionSpawnAreaEffect || action is ContextActionSpawnMonster)
-                    FusionUnsupported = "spawned area or creature payload";
+                    LimitFusion("spawned area or creature payload", at);
                 foreach (var referenced in ReferencedAbilities(action))
-                    if (referenced != null) FusionUnsupported = "secondary spell payload";
+                    if (referenced != null) LimitFusion("secondary spell payload", at);
                 if (action is ContextActionApplyBuff applied && !applied.ToCaster && path != FusionSavePath.Failed &&
                     Fusion.SavingThrowType != SavingThrowType.Unknown)
-                    FusionUnsupported = "buff outside the shared failed-save branch";
+                    LimitFusion("buff outside the shared failed-save branch", at);
                 if (action is ContextActionKill && path != FusionSavePath.Failed && Fusion.SavingThrowType != SavingThrowType.Unknown)
-                    FusionUnsupported = "kill outside the shared failed-save branch";
+                    LimitFusion("kill outside the shared failed-save branch", at);
                 if (action is ContextActionDealDamage || action is IDealDamageProvider)
                 {
                     if (FusionDamagePaths == null) FusionDamagePaths = new Dictionary<GameAction, FusionSavePath>();
                     if (FusionDamagePaths.TryGetValue(action, out var previous) && previous != path)
-                        FusionUnsupported = "shared damage action on different save branches";
+                        LimitFusion("shared damage action on different save branches", at);
                     else FusionDamagePaths[action] = path;
                 }
-                foreach (var child in ChildActionLists(action)) InspectFusionPaths(child, path, depth + 1);
+                int childIndex = 0;
+                foreach (var child in ChildActionLists(action))
+                    InspectFusionPaths(child, path, depth + 1, at + "/child" + childIndex++);
             }
         }
     }

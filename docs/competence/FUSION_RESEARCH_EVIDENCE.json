@@ -1,0 +1,2092 @@
+{
+  "task": "Magic Fusion research and planning only",
+  "date_utc": "2026-11-14",
+  "repository": "recovribox-svg/AIControll-FACC",
+  "main_and_development_revision": "6cf42818ade856814003ac0cab8872795d884ffd",
+  "open_prs_at_start": [],
+  "no_runtime_or_repository_changes": true,
+  "research_methods": [
+    "direct static source tracing",
+    "Cecil IL inspection of supplied real assembly",
+    "targeted decompilation where successful",
+    "JSON structural inspection of supplied JBP exports",
+    "per-file log parsing and package identity matching"
+  ],
+  "not_performed": [
+    "new game session",
+    "native Rulebook execution or casts",
+    "new full unit/build/ProfileAudit run",
+    "complete legal-combination executable inventory"
+  ],
+  "proposal": {
+    "name": "Fusion Spells judgement improvement proposal.txt",
+    "bytes": 5602,
+    "sha256": "ddbcc867d90caccf598e03578ce4b51f400b6e06cddc585bdd1738886d8688bf",
+    "role": "advisory proposal; not authoritative instructions or rules"
+  },
+  "native_assembly": {
+    "name": "Assembly-CSharp.dll",
+    "bytes": 11891712,
+    "mvid": "90a9869c-2792-4c7b-bfb7-5a8b33da7c82",
+    "sha256": "2cb7160b7154d4ffacc77b9c51b1eb26199e1294300f04fdfc073367b2ef8953"
+  },
+  "logs": [
+    {
+      "name": "Real Time Log.txt",
+      "bytes": 497952,
+      "sha256": "c7175bb718108ee6c803a4d5a31f08951d646119fca9dca6685d3f4ae90a916b",
+      "lines": 2604,
+      "modules": [],
+      "build_labels": [],
+      "tested_sources": [],
+      "identity_status": "startup absent; no exact-build inference",
+      "fusion_diagnostics": [],
+      "named_fused_cast_counts": [],
+      "named_fused_outcome_notes": [],
+      "arcan_slow_decisions": []
+    },
+    {
+      "name": "TB + RT Log.txt",
+      "bytes": 1296905,
+      "sha256": "eebe8ed55f70b730e58e78c09bf00ae1ecb3c0383259b7db5d43c268c315de6e",
+      "lines": 6803,
+      "modules": [
+        "905bb172-799c-44cb-a46a-ff208a31dab4"
+      ],
+      "build_labels": [
+        "exit1"
+      ],
+      "tested_sources": [
+        "e806f4d37d6f1638a65f121eb5fc826cbbf5384e"
+      ],
+      "identity_status": "startup matched to repository identity receipt",
+      "fusion_diagnostics": [
+        [
+          404,
+          "Incindiary Runes / SnowB: IncendiaryRunes + Snowball; delivery IncendiaryRunes, shared save Reflex, native level 1"
+        ],
+        [
+          405,
+          "Snowball / Sleep: shared Hit Dice selection; unsupported forecast, cast withheld"
+        ],
+        [
+          406,
+          "Incendiary Runes/Color Spray: IncendiaryRunes + ColorSpray; delivery IncendiaryRunes, shared save Will, native level 1"
+        ],
+        [
+          408,
+          "Snowball/Shocking Grasp: Snowball + ShockingGraspCast; delivery Snowball, shared save Fortitude, native level 1"
+        ],
+        [
+          409,
+          "Explosive Runes/Blindness: ExplosiveRunes + Blindness; delivery ExplosiveRunes, shared save Fortitude, native level 2"
+        ],
+        [
+          410,
+          "Explosive Runes/Frigid Touch: ExplosiveRunes + FrigidTouchCast; delivery ExplosiveRunes, shared save Unknown, native level 2"
+        ],
+        [
+          411,
+          "Explosive Runes/Hideous Laughter: ExplosiveRunes + HideousLaughter; delivery ExplosiveRunes, shared save Will, native level 2"
+        ],
+        [
+          413,
+          "Explosive Runes/Sleep: shared Hit Dice selection; unsupported forecast, cast withheld"
+        ],
+        [
+          414,
+          "Explosive Runes/Color Spray: ExplosiveRunes + ColorSpray; delivery ExplosiveRunes, shared save Will, native level 2"
+        ],
+        [
+          416,
+          "Explosive Runes/Excruciating Deformation: ExplosiveRunes + ExcruciatingDeformation; delivery ExplosiveRunes, shared save Fortitude, native level 2"
+        ]
+      ],
+      "named_fused_cast_counts": [
+        {
+          "spell": "Explosive Runes/Hideous Laughter",
+          "status": "ISSUED",
+          "count": 9
+        },
+        {
+          "spell": "Explosive Runes/Hideous Laughter",
+          "status": "Success/acted",
+          "count": 5
+        },
+        {
+          "spell": "Incindiary Runes / SnowB",
+          "status": "ISSUED",
+          "count": 5
+        },
+        {
+          "spell": "Incindiary Runes / SnowB",
+          "status": "Success/acted",
+          "count": 5
+        },
+        {
+          "spell": "Snowball/Shocking Grasp",
+          "status": "ISSUED",
+          "count": 11
+        },
+        {
+          "spell": "Snowball/Shocking Grasp",
+          "status": "Success/acted",
+          "count": 8
+        },
+        {
+          "spell": "Explosive Runes/Hideous Laughter",
+          "status": "unacted",
+          "count": 4
+        },
+        {
+          "spell": "Incendiary Runes/Color Spray",
+          "status": "ISSUED",
+          "count": 2
+        },
+        {
+          "spell": "Incendiary Runes/Color Spray",
+          "status": "Success/acted",
+          "count": 2
+        },
+        {
+          "spell": "Snowball/Shocking Grasp",
+          "status": "unacted",
+          "count": 3
+        }
+      ],
+      "named_fused_outcome_notes": [
+        {
+          "line": 3086,
+          "text": "[CompanionAI_Pathfinder] [V] [Cast] arcan: Explosive Runes/Hideous Laughter ended before it was cast (Interrupt) - not counted"
+        },
+        {
+          "line": 3384,
+          "text": "[CompanionAI_Pathfinder] [V] [Cast] arcan: Explosive Runes/Hideous Laughter ended before it was cast (Interrupt) - not counted"
+        },
+        {
+          "line": 3500,
+          "text": "[CompanionAI_Pathfinder] [V] [Cast] arcan: Explosive Runes/Hideous Laughter ended before it was cast (Interrupt) - not counted"
+        },
+        {
+          "line": 4085,
+          "text": "[CompanionAI_Pathfinder] [Cast] arcan: Explosive Runes/Hideous Laughter did nothing to its target Large Earth Elemental (level 8) - no attack roll, save, spell resistance, damage or effect on it (1/2)"
+        },
+        {
+          "line": 4996,
+          "text": "[CompanionAI_Pathfinder] [V] [Cast] arcan: Explosive Runes/Hideous Laughter ended before it was cast (Interrupt) - not counted"
+        },
+        {
+          "line": 5981,
+          "text": "[CompanionAI_Pathfinder] [V] [Cast] arcan: Snowball/Shocking Grasp ended before it was cast (Interrupt) - not counted"
+        },
+        {
+          "line": 6098,
+          "text": "[CompanionAI_Pathfinder] [V] [Cast] arcan: Snowball/Shocking Grasp ended before it was cast (Interrupt) - not counted"
+        },
+        {
+          "line": 6478,
+          "text": "[CompanionAI_Pathfinder] [Cast] arcan: Explosive Runes/Hideous Laughter did nothing to its target Hell Hound (level 7) - no attack roll, save, spell resistance, damage or effect on it (1/2)"
+        },
+        {
+          "line": 6638,
+          "text": "[CompanionAI_Pathfinder] [V] [Cast] arcan: Snowball/Shocking Grasp ended before it was cast (Interrupt) - not counted"
+        }
+      ],
+      "arcan_slow_decisions": [
+        [
+          420,
+          " 272 ms - arcan R1: Explosive Runes/Hideous Laughter->Nightmare(dmg+cc) (new ability profiles built this decision: 25; enemy attacks read fo"
+        ],
+        [
+          3040,
+          " 366 ms - arcan R1: Explosive Runes/Hideous Laughter->Brimorak(dmg+cc) [intercepted 1] [exposed] (new ability profiles built this decision: "
+        ],
+        [
+          3090,
+          " 292 ms - arcan R1: Explosive Runes/Hideous Laughter->Cambion(dmg+cc) (new ability profiles built this decision: 0; heap +14624 KB); stage m"
+        ],
+        [
+          4879,
+          " 277 ms - arcan R1: Explosive Runes/Hideous Laughter->Large Water Elemental(dmg+cc) [exposed] (new ability profiles built this decision: 0; "
+        ],
+        [
+          5000,
+          " 315 ms - arcan R1: Explosive Runes/Hideous Laughter->Greedy Roaming Brewer(dmg+cc) [AoO 1] (new ability profiles built this decision: 0; en"
+        ],
+        [
+          6355,
+          " 262 ms - arcan R1: Explosive Runes/Hideous Laughter->Hell Hound(dmg+cc) [intercepted 4] (new ability profiles built this decision: 0; enemy"
+        ]
+      ]
+    },
+    {
+      "name": "TB Mode Mixed Log.txt",
+      "bytes": 75020,
+      "sha256": "111f3f982ad166c5026c2593bf015e27bac19e6d4d74aeff1927c78986d741e1",
+      "lines": 453,
+      "modules": [
+        "25818a75-297f-47de-aea3-5cf93d0a9d09"
+      ],
+      "build_labels": [
+        "v0.3.50-dev-review1"
+      ],
+      "tested_sources": [
+        "ae92697"
+      ],
+      "identity_status": "startup matched to repository identity receipt",
+      "fusion_diagnostics": [],
+      "named_fused_cast_counts": [],
+      "named_fused_outcome_notes": [],
+      "arcan_slow_decisions": []
+    },
+    {
+      "name": "exra Log TB+RT.txt",
+      "bytes": 376401,
+      "sha256": "8f4dc5c20bfd1aa4c3428ce9a145ec3e630e903ac62cf7c0e613e1d123cacb9b",
+      "lines": 1884,
+      "modules": [
+        "25818a75-297f-47de-aea3-5cf93d0a9d09"
+      ],
+      "build_labels": [
+        "v0.3.50-dev-review1"
+      ],
+      "tested_sources": [
+        "ae92697"
+      ],
+      "identity_status": "startup matched to repository identity receipt",
+      "fusion_diagnostics": [],
+      "named_fused_cast_counts": [],
+      "named_fused_outcome_notes": [],
+      "arcan_slow_decisions": []
+    },
+    {
+      "name": "TB Mode Log.txt",
+      "bytes": 537439,
+      "sha256": "1f192842760112e4e14650b493164717e2b7bcfd65cc80d2cec5eb292b9b7e15",
+      "lines": 2952,
+      "modules": [
+        "b3359daf-c8e5-4bb6-9245-d6be013a4d15"
+      ],
+      "build_labels": [
+        "review5"
+      ],
+      "tested_sources": [
+        "45c3b4dbdeacabf6184329b8e6ce0f675f2de0ee"
+      ],
+      "identity_status": "startup matched to repository identity receipt",
+      "fusion_diagnostics": [
+        [
+          393,
+          "Incindiary Runes / SnowB: IncendiaryRunes + Snowball; delivery IncendiaryRunes, shared save Reflex, native level 1"
+        ],
+        [
+          394,
+          "Snowball / Sleep: shared Hit Dice selection; unsupported forecast, cast withheld"
+        ],
+        [
+          395,
+          "Incendiary Runes/Color Spray: IncendiaryRunes + ColorSpray; delivery IncendiaryRunes, shared save Will, native level 1"
+        ],
+        [
+          398,
+          "Snowball/Shocking Grasp: Snowball + ShockingGraspCast; delivery Snowball, shared save Fortitude, native level 1"
+        ],
+        [
+          399,
+          "Explosive Runes/Blindness: ExplosiveRunes + Blindness; delivery ExplosiveRunes, shared save Fortitude, native level 2"
+        ],
+        [
+          400,
+          "Explosive Runes/Frigid Touch: ExplosiveRunes + FrigidTouchCast; delivery ExplosiveRunes, shared save Unknown, native level 2"
+        ],
+        [
+          401,
+          "Explosive Runes/Hideous Laughter: ExplosiveRunes + HideousLaughter; delivery ExplosiveRunes, shared save Will, native level 2"
+        ],
+        [
+          404,
+          "Explosive Runes/Sleep: shared Hit Dice selection; unsupported forecast, cast withheld"
+        ],
+        [
+          405,
+          "Explosive Runes/Color Spray: ExplosiveRunes + ColorSpray; delivery ExplosiveRunes, shared save Will, native level 2"
+        ],
+        [
+          408,
+          "Explosive Runes/Excruciating Deformation: ExplosiveRunes + ExcruciatingDeformation; delivery ExplosiveRunes, shared save Fortitude, native level 2"
+        ]
+      ],
+      "named_fused_cast_counts": [
+        {
+          "spell": "Snowball/Shocking Grasp",
+          "status": "ISSUED",
+          "count": 8
+        },
+        {
+          "spell": "Snowball/Shocking Grasp",
+          "status": "Success/acted",
+          "count": 8
+        },
+        {
+          "spell": "Incendiary Runes/Color Spray",
+          "status": "ISSUED",
+          "count": 1
+        },
+        {
+          "spell": "Incendiary Runes/Color Spray",
+          "status": "Success/acted",
+          "count": 1
+        },
+        {
+          "spell": "Incindiary Runes / SnowB",
+          "status": "ISSUED",
+          "count": 2
+        },
+        {
+          "spell": "Incindiary Runes / SnowB",
+          "status": "Success/acted",
+          "count": 2
+        },
+        {
+          "spell": "Explosive Runes/Hideous Laughter",
+          "status": "ISSUED",
+          "count": 1
+        },
+        {
+          "spell": "Explosive Runes/Hideous Laughter",
+          "status": "Success/acted",
+          "count": 1
+        }
+      ],
+      "named_fused_outcome_notes": [],
+      "arcan_slow_decisions": [
+        [
+          416,
+          " 390 ms - arcan R1: Reduce Person->Bandit(buff) (new ability profiles built this decision: 25; heap +14612 KB); stage ms: context/threat=31."
+        ],
+        [
+          960,
+          " 411 ms - arcan R1: Start Acrobatics (Mobility) before 'Explosive Runes/Hideous Laughter->Ferocious Schir(dmg+cc) [AoO 1] [exposed] (from a "
+        ],
+        [
+          963,
+          " 287 ms - arcan R1: Incendiary Runes/Color Spray->Ferocious Schir(dmg+cc) [AoO 1] [exposed] (from a spot that provokes 1, not 1) (new abilit"
+        ],
+        [
+          967,
+          " 346 ms - arcan R1: Incendiary Runes/Color Spray->Ferocious Schir(dmg+cc) (new ability profiles built this decision: 0; heap +6172 KB); stag"
+        ],
+        [
+          1694,
+          " 542 ms - arcan R1: Snowball/Shocking Grasp->Scythe Tree Sprout(dmg+debuff) (new ability profiles built this decision: 0; enemy attacks read"
+        ],
+        [
+          1886,
+          " 255 ms - arcan R3: Incindiary Runes / SnowB->Ferocious Schir(dmg+debuff) (new ability profiles built this decision: 0; enemy attacks read f"
+        ],
+        [
+          2566,
+          " 258 ms - arcan R1: Snowball/Shocking Grasp->Manticore(dmg+debuff) (new ability profiles built this decision: 0; enemy attacks read for the "
+        ]
+      ]
+    },
+    {
+      "name": "RT Mode Swarm only Log.txt",
+      "bytes": 475548,
+      "sha256": "47910169387dec741dc6d82e83340060ed33ababa38c31e5abb1158075067ab6",
+      "lines": 2367,
+      "modules": [
+        "25818a75-297f-47de-aea3-5cf93d0a9d09"
+      ],
+      "build_labels": [
+        "v0.3.50-dev-review1"
+      ],
+      "tested_sources": [
+        "ae92697"
+      ],
+      "identity_status": "startup matched to repository identity receipt",
+      "fusion_diagnostics": [],
+      "named_fused_cast_counts": [],
+      "named_fused_outcome_notes": [],
+      "arcan_slow_decisions": []
+    },
+    {
+      "name": "RT Mode Mixed log.txt",
+      "bytes": 714540,
+      "sha256": "dd95b857c9c45f458a0d42a11697605e485ffe5c60283c457dbb95561c3aaed9",
+      "lines": 3127,
+      "modules": [
+        "25818a75-297f-47de-aea3-5cf93d0a9d09"
+      ],
+      "build_labels": [
+        "v0.3.50-dev-review1"
+      ],
+      "tested_sources": [
+        "ae92697"
+      ],
+      "identity_status": "startup matched to repository identity receipt",
+      "fusion_diagnostics": [],
+      "named_fused_cast_counts": [],
+      "named_fused_outcome_notes": [],
+      "arcan_slow_decisions": []
+    },
+    {
+      "name": "TB Mode Swarm only Log.txt",
+      "bytes": 284806,
+      "sha256": "b23982ae230ddc2a10685c1cc1df23351f17ef0a1cbd639fdf6acaafcffacccc",
+      "lines": 1376,
+      "modules": [
+        "25818a75-297f-47de-aea3-5cf93d0a9d09"
+      ],
+      "build_labels": [
+        "v0.3.50-dev-review1"
+      ],
+      "tested_sources": [
+        "ae92697"
+      ],
+      "identity_status": "startup matched to repository identity receipt",
+      "fusion_diagnostics": [],
+      "named_fused_cast_counts": [],
+      "named_fused_outcome_notes": [],
+      "arcan_slow_decisions": []
+    },
+    {
+      "name": "RT Mode Log2.txt",
+      "bytes": 562771,
+      "sha256": "e8b2963af84c7e7bdf20207b009ce68cf09a25f271a36b1b751b6a9e96993e6e",
+      "lines": 2840,
+      "modules": [],
+      "build_labels": [],
+      "tested_sources": [],
+      "identity_status": "startup absent; no exact-build inference",
+      "fusion_diagnostics": [],
+      "named_fused_cast_counts": [
+        {
+          "spell": "Incendiary Runes/Color Spray",
+          "status": "ISSUED",
+          "count": 2
+        },
+        {
+          "spell": "Incendiary Runes/Color Spray",
+          "status": "Success/acted",
+          "count": 2
+        },
+        {
+          "spell": "Snowball/Shocking Grasp",
+          "status": "ISSUED",
+          "count": 11
+        },
+        {
+          "spell": "Snowball/Shocking Grasp",
+          "status": "Success/acted",
+          "count": 10
+        },
+        {
+          "spell": "Snowball/Shocking Grasp",
+          "status": "unacted",
+          "count": 1
+        },
+        {
+          "spell": "Incindiary Runes / SnowB",
+          "status": "ISSUED",
+          "count": 3
+        },
+        {
+          "spell": "Incindiary Runes / SnowB",
+          "status": "Success/acted",
+          "count": 3
+        }
+      ],
+      "named_fused_outcome_notes": [
+        {
+          "line": 459,
+          "text": "[CompanionAI_Pathfinder] [V] [Cast] arcan: Snowball/Shocking Grasp ended before it was cast (Interrupt) - not counted"
+        }
+      ],
+      "arcan_slow_decisions": [
+        [
+          150,
+          " 1470 ms - arcan R1: Incendiary Runes/Color Spray->Vescavor Swarm(dmg+cc) (new ability profiles built this decision: 0; memory clean-up ran;"
+        ],
+        [
+          821,
+          " 370 ms - arcan R1: Incindiary Runes / SnowB->Hell Hound(dmg+debuff) [intercepted 4] [exposed] (new ability profiles built this decision: 0;"
+        ],
+        [
+          1315,
+          " 287 ms - arcan R1: Snowball/Shocking Grasp->Greater Monitor Lizard(dmg+debuff) (new ability profiles built this decision: 0; enemy attacks "
+        ],
+        [
+          1477,
+          " 256 ms - arcan R3: Snowball/Shocking Grasp->Greater Monitor Lizard(dmg+debuff) (new ability profiles built this decision: 0; enemies assess"
+        ],
+        [
+          2615,
+          " 317 ms - arcan R3: Reduce Person->Bandit(buff) (new ability profiles built this decision: 0; enemies assessed; enemy attacks read for the d"
+        ]
+      ]
+    },
+    {
+      "name": "Log v0.3.5 test.txt",
+      "bytes": 1594544,
+      "sha256": "05f781591c7bf7be01f90f93c8787d283a9ca53b908c6a3eb8856134cebb2181",
+      "lines": 16685,
+      "modules": [
+        "25818a75-297f-47de-aea3-5cf93d0a9d09"
+      ],
+      "build_labels": [
+        "v0.3.50-dev-review1"
+      ],
+      "tested_sources": [
+        "ae92697"
+      ],
+      "identity_status": "startup matched to repository identity receipt",
+      "fusion_diagnostics": [],
+      "named_fused_cast_counts": [],
+      "named_fused_outcome_notes": [],
+      "arcan_slow_decisions": []
+    },
+    {
+      "name": "0.3.52 Log.txt",
+      "bytes": 488015,
+      "sha256": "4a89f31702a23792f6b53498bf2f006d225279cd331acff50c69ea2bd7ba2f61",
+      "lines": 2318,
+      "modules": [
+        "981a7b77-a654-4da1-9a22-68bc1c6a77bd"
+      ],
+      "build_labels": [
+        "v0.3.52"
+      ],
+      "tested_sources": [
+        "30cfa2cb7e91e26de1f08418db5238a6a824c3ca"
+      ],
+      "identity_status": "startup matched to repository identity receipt",
+      "fusion_diagnostics": [],
+      "named_fused_cast_counts": [],
+      "named_fused_outcome_notes": [],
+      "arcan_slow_decisions": []
+    }
+  ],
+  "source_spell_scope": {
+    "name": "MagicDeceiverSpellList.jbp",
+    "guid": "cf20c10b131344c1a61b75e9cc4a4c13",
+    "sha256": "8582c9765a4f1c5f9f9998f9660b3adfabbd294ddc05942badc68e45c1a58a54",
+    "levelled_sources": 60,
+    "cantrips_excluded": 6,
+    "ordered_distinct_source_pairs_before_school_save_delivery_choices": 3540,
+    "not_a_complete_modded_live_spell_list": true,
+    "inventory_method": "JSON structure only; not native profile or candidate acceptance results",
+    "sources": [
+      {
+        "name": "Sleep",
+        "guid": "bb7ecad2d3d2c8247a38f44855c99061",
+        "level": 1,
+        "sha256": "2dcc883969de631f25ca120058d01439ee845aecef1c2c8245fecf5f1688e81d",
+        "components": [
+          "SpellComponent",
+          "ContextCalculateSharedValue",
+          "AbilityTargetsAround",
+          "SpellListComponent",
+          "SpellListComponent",
+          "ContextRankConfig",
+          "SpellDescriptorComponent",
+          "AbilitySpawnFx",
+          "SpellListComponent",
+          "SpellListComponent",
+          "AbilityEffectRunAction",
+          "SpellListComponent",
+          "SpellListComponent",
+          "SpellListComponent",
+          "SpellListComponent",
+          "SpellListComponent",
+          "CraftInfoComponent"
+        ]
+      },
+      {
+        "name": "CorrosiveTouchCast",
+        "guid": "95810d2829895724f950c8c4086056e7",
+        "level": 1,
+        "sha256": "626e1a81ee3f9cdc644a6c45bb4850cad937a7d05cb7ee7c6152ede45d2bdd9e",
+        "components": [
+          "SpellComponent",
+          "SpellListComponent",
+          "AbilityEffectStickyTouch",
+          "SpellDescriptorComponent",
+          "SpellListComponent",
+          "SpellListComponent",
+          "RecommendationNoFeatFromGroup",
+          "SpellListComponent",
+          "CraftInfoComponent",
+          "RecommendationNoFeatFromGroup"
+        ]
+      },
+      {
+        "name": "Snowball",
+        "guid": "9f10909f0be1f5141bf1c102041f93d9",
+        "level": 1,
+        "sha256": "6ab72ffc32c90a91a171193a035d3dff416881bad52cbbd8bec419660fef2878",
+        "components": [
+          "SpellComponent",
+          "SpellListComponent",
+          "AbilityDeliverProjectile",
+          "AbilityEffectRunAction",
+          "ContextRankConfig",
+          "SpellDescriptorComponent",
+          "SpellListComponent",
+          "SpellListComponent",
+          "SpellListComponent",
+          "SpellListComponent",
+          "SpellListComponent",
+          "SpellListComponent",
+          "RecommendationNoFeatFromGroup",
+          "SpellListComponent",
+          "RecommendationNoFeatFromGroup",
+          "SpellListComponent",
+          "SpellListComponent",
+          "CraftInfoComponent",
+          "RecommendationNoFeatFromGroup"
+        ]
+      },
+      {
+        "name": "IncendiaryRunes",
+        "guid": "1626dbd11c4143b2a5641da8f227b78c",
+        "level": 1,
+        "sha256": "9ebaa94b2684915ac985adf9c3b4604ad046d89e2913f23e31964e33676f1a09",
+        "components": [
+          "AbilityTargetsAround",
+          "AbilityEffectRunAction",
+          "SpellComponent",
+          "SpellDescriptorComponent",
+          "DlcCondition",
+          "SpellListComponent",
+          "SpellListComponent",
+          "SpellListComponent",
+          "AbilitySpawnFx"
+        ]
+      },
+      {
+        "name": "PeerThroughResistance",
+        "guid": "9efb34c2990349c58e1f3b599c7c4d6b",
+        "level": 1,
+        "sha256": "298de5538cdb27b97d35d2ab4b69c1e1d4ae901354073b6a43a72bd22a3a2c78",
+        "components": [
+          "AbilityEffectRunAction",
+          "SpellComponent",
+          "SpellDescriptorComponent",
+          "AbilityTargetIsAlly",
+          "DlcCondition",
+          "SpellListComponent"
+        ]
+      },
+      {
+        "name": "BurningHands",
+        "guid": "4783c3709a74a794dbe7c8e7e0b1b038",
+        "level": 1,
+        "sha256": "9af9f2449ad87c5a8803bfc98bfdce1fec3bd24f6fc38c398718288a6a7b6c7e",
+        "components": [
+          "SpellComponent",
+          "AbilityEffectRunAction",
+          "SpellListComponent",
+          "AbilityDeliverProjectile",
+          "ContextRankConfig",
+          "SpellListComponent",
+          "SpellListComponent",
+          "SpellDescriptorComponent",
+          "SpellListComponent",
+          "SpellListComponent",
+          "SpellListComponent",
+          "SpellListComponent",
+          "RecommendationNoFeatFromGroup",
+          "SpellListComponent",
+          "CraftInfoComponent",
+          "RecommendationNoFeatFromGroup",
+          "RecommendationNoFeatFromGroup"
+        ]
+      },
+      {
+        "name": "ShockingGraspCast",
+        "guid": "ab395d2335d3f384e99dddee8562978f",
+        "level": 1,
+        "sha256": "dcb40c7a81eb21f5962dc72e64a4f521ea5b1c8f45f21cd022ff7fa12710f9d8",
+        "components": [
+          "SpellComponent",
+          "SpellListComponent",
+          "AbilityEffectStickyTouch",
+          "SpellDescriptorComponent",
+          "SpellListComponent",
+          "SpellListComponent",
+          "SpellListComponent",
+          "SpellListComponent",
+          "RecommendationNoFeatFromGroup",
+          "SpellListComponent",
+          "CraftInfoComponent"
+        ]
+      },
+      {
+        "name": "ColorSpray",
+        "guid": "91da41b9793a4624797921f221db653c",
+        "level": 1,
+        "sha256": "f6eabb8cb34fe40b9f008a5c43150a3abb2badb71bf0b2e49db5e0329d0433db",
+        "components": [
+          "SpellComponent",
+          "AbilityEffectRunAction",
+          "SpellListComponent",
+          "AbilityDeliverProjectile",
+          "ContextCalculateSharedValue",
+          "ContextCalculateSharedValue",
+          "SpellListComponent",
+          "SpellDescriptorComponent",
+          "SpellListComponent",
+          "SpellListComponent",
+          "SpellListComponent",
+          "RecommendationNoFeatFromGroup",
+          "CraftInfoComponent"
+        ]
+      },
+      {
+        "name": "RayOfSickening",
+        "guid": "fa3078b9976a5b24caf92e20ee9c0f54",
+        "level": 1,
+        "sha256": "13ab63dd51c874786b45e6589fac0b80309bfabc4726dc65b01cc5e65953e089",
+        "components": [
+          "SpellComponent",
+          "SpellListComponent",
+          "AbilityDeliverProjectile",
+          "AbilityEffectRunAction",
+          "SpellListComponent",
+          "ContextRankConfig",
+          "SpellListComponent",
+          "SpellListComponent",
+          "SpellListComponent",
+          "SpellListComponent",
+          "SpellListComponent",
+          "SpellListComponent",
+          "SpellListComponent",
+          "SpellListComponent",
+          "CraftInfoComponent"
+        ]
+      },
+      {
+        "name": "ReducePerson",
+        "guid": "4e0e9aba6447d514f88eff1464cc4763",
+        "level": 1,
+        "sha256": "314557e70b21cd3c405d4b157388de01a5221e1c7b92127d755b0046811bf437",
+        "components": [
+          "SpellComponent",
+          "SpellListComponent",
+          "AbilityEffectRunAction",
+          "SpellListComponent",
+          "SpellListComponent",
+          "AbilitySpawnFx",
+          "AbilityTargetHasFact",
+          "SpellListComponent",
+          "SpellListComponent",
+          "SpellListComponent",
+          "CraftInfoComponent"
+        ]
+      },
+      {
+        "name": "ExplosiveRunes",
+        "guid": "ff652882623d43f184eb6abef741e20e",
+        "level": 2,
+        "sha256": "72ab92b9a12e5dee7b064110fd1bdaad997b0b4a864bba47cecc01b41127316d",
+        "components": [
+          "AbilityTargetsAround",
+          "AbilityEffectRunAction",
+          "SpellComponent",
+          "SpellDescriptorComponent",
+          "DlcCondition",
+          "SpellListComponent",
+          "SpellListComponent",
+          "SpellListComponent",
+          "AbilityDeliverDelay",
+          "AbilitySpawnFx"
+        ]
+      },
+      {
+        "name": "AcidArrow",
+        "guid": "9a46dfd390f943647ab4395fc997936d",
+        "level": 2,
+        "sha256": "f7c3651676efe55f824f1904e3322f3945094ac33fd09c2fe6e51ffcfd74e1e9",
+        "components": [
+          "SpellComponent",
+          "SpellListComponent",
+          "AbilityDeliverProjectile",
+          "AbilityEffectRunAction",
+          "ContextRankConfig",
+          "SpellDescriptorComponent",
+          "SpellListComponent",
+          "SpellListComponent",
+          "SpellListComponent",
+          "SpellListComponent",
+          "RecommendationNoFeatFromGroup",
+          "SpellListComponent",
+          "CraftInfoComponent"
+        ]
+      },
+      {
+        "name": "PeerThroughReflexes",
+        "guid": "768b18138fb44b70b686c23119e66e02",
+        "level": 2,
+        "sha256": "647a8660d748cda2f6e0a6086627f3086230c64d2daa2a601c5097405430570d",
+        "components": [
+          "AbilityEffectRunAction",
+          "SpellComponent",
+          "SpellDescriptorComponent",
+          "AbilityTargetIsAlly",
+          "DlcCondition",
+          "SpellListComponent"
+        ]
+      },
+      {
+        "name": "HideousLaughter",
+        "guid": "fd4d9fd7f87575d47aafe2a64a6e2d8d",
+        "level": 2,
+        "sha256": "00a054d2493e61f9a1a6ae0a2c6f6b36b8ef573e1b0a5d1caab93e366be58891",
+        "components": [
+          "SpellListComponent",
+          "SpellComponent",
+          "AbilityEffectRunAction",
+          "AbilityTargetStatCondition",
+          "SpellListComponent",
+          "SpellDescriptorComponent",
+          "AbilityTargetHasNoFactUnless",
+          "AbilityTargetHasFact",
+          "SpellListComponent",
+          "RecommendationNoFeatFromGroup",
+          "RecommendationNoFeatFromGroup",
+          "SpellListComponent",
+          "RecommendationNoFeatFromGroup",
+          "SpellListComponent",
+          "CraftInfoComponent"
+        ]
+      },
+      {
+        "name": "FrigidTouchCast",
+        "guid": "b6010dda6333bcf4093ce20f0063cd41",
+        "level": 2,
+        "sha256": "a951403b5d1b379419bc1832053fb8e01b04f607b96238559586c0b04affcae4",
+        "components": [
+          "SpellComponent",
+          "SpellDescriptorComponent",
+          "SpellListComponent",
+          "AbilityEffectStickyTouch",
+          "SpellListComponent",
+          "SpellListComponent",
+          "SpellListComponent",
+          "SpellListComponent",
+          "SpellListComponent",
+          "SpellListComponent",
+          "CraftInfoComponent",
+          "RecommendationNoFeatFromGroup"
+        ]
+      },
+      {
+        "name": "MoltenOrb",
+        "guid": "42a65895ba0cb3a42b6019039dd2bff1",
+        "level": 2,
+        "sha256": "4eed1b6befc40c0228908537e566590f9dd70854194ac3da576628960e40a7a2",
+        "components": [
+          "AbilityDeliverProjectile",
+          "AbilityEffectRunAction",
+          "AbilityTargetsAround",
+          "SpellComponent",
+          "SpellDescriptorComponent",
+          "SpellListComponent",
+          "SpellListComponent",
+          "SpellListComponent",
+          "SpellListComponent",
+          "SpellListComponent",
+          "SpellListComponent",
+          "CraftInfoComponent"
+        ]
+      },
+      {
+        "name": "Boneshaker",
+        "guid": "b7731c2b4fa1c9844a092329177be4c3",
+        "level": 2,
+        "sha256": "c45002028288d87771f20560b44ed6a93b904042e2e6db4f7cfce5eb8e873634",
+        "components": [
+          "SpellComponent",
+          "AbilityEffectRunAction",
+          "ContextRankConfig",
+          "SpellListComponent",
+          "SpellListComponent",
+          "SpellListComponent",
+          "SpellListComponent",
+          "AbilitySpawnFx",
+          "AbilityTargetHasFact",
+          "SpellListComponent",
+          "SpellListComponent",
+          "SpellListComponent",
+          "SpellListComponent",
+          "CraftInfoComponent"
+        ]
+      },
+      {
+        "name": "Blindness",
+        "guid": "46fd02ad56c35224c9c91c88cd457791",
+        "level": 2,
+        "sha256": "bd45ea3164481fe72619743e53df51cf4e52d7a38523ea686cb800e83b96e8ba",
+        "components": [
+          "SpellListComponent",
+          "SpellComponent",
+          "SpellListComponent",
+          "AbilityEffectRunAction",
+          "SpellListComponent",
+          "SpellDescriptorComponent",
+          "AbilityTargetHasFact",
+          "SpellListComponent",
+          "SpellListComponent",
+          "SpellListComponent",
+          "SpellListComponent",
+          "SpellListComponent",
+          "CraftInfoComponent"
+        ]
+      },
+      {
+        "name": "ExcruciatingDeformation",
+        "guid": "448aa456600749d18c14ad979cc88a67",
+        "level": 2,
+        "sha256": "dc9977633cd53d29d84f7f1c8e59974cdf132d1aa15201d72600ea5885e17552",
+        "components": [
+          "SpellDescriptorComponent",
+          "SpellComponent",
+          "AbilityEffectRunAction",
+          "ContextRankConfig",
+          "DlcCondition",
+          "SpellListComponent",
+          "SpellListComponent",
+          "SpellListComponent",
+          "SpellListComponent",
+          "SpellListComponent"
+        ]
+      },
+      {
+        "name": "HauntingMists",
+        "guid": "ed22aa8751c049fa915dabfa29712c08",
+        "level": 2,
+        "sha256": "2feddda2f165bce340dc29d28466ac4c76e4b501a166d26d7cb87d699dd5f829",
+        "components": [
+          "ContextRankConfig",
+          "SpellDescriptorComponent",
+          "SpellComponent",
+          "AbilityAoERadius",
+          "DlcCondition",
+          "SpellListComponent",
+          "SpellListComponent",
+          "SpellListComponent",
+          "SpellListComponent",
+          "SpellListComponent",
+          "AdditionalAbilityEffectRunActionOnClickedTarget",
+          "AdditionalAoeForMagicHack"
+        ]
+      },
+      {
+        "name": "DispelMagicTarget",
+        "guid": "143775c49ae6b7446b805d3b2e702298",
+        "level": 3,
+        "sha256": "9366092a63b3a4f65f2e570c73b95b43f5e2466ad1acbd063ede68b12bc165d2",
+        "components": [
+          "SpellComponent",
+          "AbilityEffectRunAction",
+          "AbilitySpawnFx",
+          "CraftInfoComponent"
+        ]
+      },
+      {
+        "name": "SilverDarts",
+        "guid": "b0ffc8eaff404f2e9e0a3ee9f4c35486",
+        "level": 3,
+        "sha256": "05f36712eb0fc67128039d75d38d10da7d4696409c4b42774c68a918e046a6df",
+        "components": [
+          "ContextRankConfig",
+          "CraftInfoComponent",
+          "AbilityEffectRunAction",
+          "AbilityDeliverProjectile",
+          "SpellComponent",
+          "SpellDescriptorComponent",
+          "DlcCondition",
+          "SpellListComponent",
+          "SpellListComponent",
+          "SpellListComponent",
+          "SpellListComponent",
+          "SpellListComponent",
+          "SpellListComponent"
+        ]
+      },
+      {
+        "name": "PeerThroughMind",
+        "guid": "255ae2be713947ad9162fc207457035c",
+        "level": 3,
+        "sha256": "04b6a5fa19cd0a329046550485f1ef6dc6b1ccce56f85a06dc3e260a26fbd724",
+        "components": [
+          "AbilityEffectRunAction",
+          "SpellComponent",
+          "SpellDescriptorComponent",
+          "AbilityTargetIsAlly",
+          "DlcCondition",
+          "SpellListComponent"
+        ]
+      },
+      {
+        "name": "HoldPerson",
+        "guid": "c7104f7526c4c524f91474614054547e",
+        "level": 3,
+        "sha256": "e254bb1b404b9fa46c633ccfdf6c4cf66a8157cad4ef44c3a93e97d0089a88c8",
+        "components": [
+          "SpellListComponent",
+          "SpellComponent",
+          "SpellListComponent",
+          "AbilityEffectRunAction",
+          "SpellListComponent",
+          "SpellListComponent",
+          "AbilityTargetHasNoFactUnless",
+          "AbilityTargetHasFact",
+          "SpellDescriptorComponent",
+          "AbilityTargetHasNoFactUnless",
+          "RecommendationNoFeatFromGroup",
+          "SpellListComponent",
+          "SpellListComponent",
+          "SpellListComponent",
+          "RecommendationNoFeatFromGroup",
+          "SpellListComponent",
+          "SpellListComponent",
+          "RecommendationNoFeatFromGroup",
+          "SpellListComponent",
+          "SpellListComponent",
+          "SpellListComponent",
+          "CraftInfoComponent"
+        ]
+      },
+      {
+        "name": "Fireball",
+        "guid": "2d81362af43aeac4387a3d4fced489c3",
+        "level": 3,
+        "sha256": "23a42d0664f2b38712ba06d5b60346777a1c2584f8ec7add3739f75995c3b954",
+        "components": [
+          "SpellComponent",
+          "SpellListComponent",
+          "AbilityDeliverProjectile",
+          "AbilityEffectRunAction",
+          "AbilityTargetsAround",
+          "ContextRankConfig",
+          "SpellDescriptorComponent",
+          "SpellListComponent",
+          "SpellListComponent",
+          "SpellListComponent",
+          "SpellListComponent",
+          "RecommendationNoFeatFromGroup",
+          "RecommendationNoFeatFromGroup",
+          "SpellListComponent",
+          "CraftInfoComponent",
+          "RecommendationNoFeatFromGroup"
+        ]
+      },
+      {
+        "name": "LightningBolt",
+        "guid": "d2cff9243a7ee804cb6d5be47af30c73",
+        "level": 3,
+        "sha256": "00e6404d5b693a4a0fcae684addb53fbb3b48dfbd8009359d0ee941bbd7d8288",
+        "components": [
+          "SpellComponent",
+          "AbilityEffectRunAction",
+          "SpellListComponent",
+          "AbilityDeliverProjectile",
+          "ContextRankConfig",
+          "SpellListComponent",
+          "SpellDescriptorComponent",
+          "SpellListComponent",
+          "SpellListComponent",
+          "SpellListComponent",
+          "RecommendationNoFeatFromGroup",
+          "SpellListComponent",
+          "CraftInfoComponent",
+          "RecommendationNoFeatFromGroup"
+        ]
+      },
+      {
+        "name": "RainbowPattern",
+        "guid": "4b8265132f9c8174f87ce7fa6d0fe47b",
+        "level": 3,
+        "sha256": "2526492a669f14bc82672c681f04980d5a0526103dc6f1ad93afcc7e2e0d0854",
+        "components": [
+          "SpellComponent",
+          "ContextCalculateSharedValue",
+          "AbilityTargetsAround",
+          "SpellDescriptorComponent",
+          "SpellListComponent",
+          "SpellListComponent",
+          "ContextRankConfig",
+          "SpellListComponent",
+          "AbilityEffectRunAction",
+          "AbilitySpawnFx",
+          "SpellListComponent",
+          "CraftInfoComponent",
+          "SpellListComponent"
+        ]
+      },
+      {
+        "name": "RayOfExhaustion",
+        "guid": "8eead52509987034ea9025d60cc05985",
+        "level": 3,
+        "sha256": "74fdf2eeaa69844cfe92a62a158e1e503025316078920e1b13ff830987ec8934",
+        "components": [
+          "SpellComponent",
+          "SpellListComponent",
+          "AbilityDeliverProjectile",
+          "AbilityEffectRunAction",
+          "SpellDescriptorComponent",
+          "SpellListComponent",
+          "SpellListComponent",
+          "ContextRankConfig",
+          "CraftInfoComponent"
+        ]
+      },
+      {
+        "name": "VampiricTouchCast",
+        "guid": "8a28a811ca5d20d49a863e832c31cce1",
+        "level": 3,
+        "sha256": "8e5fc2924f8ffb6ed199f103b3efaaaa41a186972ad9e0643223deeb459c0bd4",
+        "components": [
+          "SpellComponent",
+          "SpellListComponent",
+          "AbilityEffectStickyTouch",
+          "SpellListComponent",
+          "SpellListComponent",
+          "SpellListComponent",
+          "RecommendationNoFeatFromGroup",
+          "SpellListComponent",
+          "SpellListComponent",
+          "RecommendationNoFeatFromGroup",
+          "SpellListComponent",
+          "SpellListComponent",
+          "CraftInfoComponent"
+        ]
+      },
+      {
+        "name": "Slow",
+        "guid": "f492622e473d34747806bdb39356eb89",
+        "level": 3,
+        "sha256": "357b78c34b31186e860c42343190168f2fb37d2e568d8bcab075d0348fde805d",
+        "components": [
+          "SpellComponent",
+          "SpellListComponent",
+          "AbilityTargetsAround",
+          "AbilityEffectRunAction",
+          "AbilitySpawnFx",
+          "SpellListComponent",
+          "SpellListComponent",
+          "SpellListComponent",
+          "SpellListComponent",
+          "CraftInfoComponent"
+        ]
+      },
+      {
+        "name": "CurseOfMagicNegation",
+        "guid": "c0c2ef5955cb415ca482597f1bfc4eca",
+        "level": 4,
+        "sha256": "db097c8a8e9a9f8e7cb4d1e6c56b758aac1ccab2bd231c8ba3ef9fdb786fb92e",
+        "components": [
+          "AbilityTargetIsAlly",
+          "SpellComponent",
+          "SpellDescriptorComponent",
+          "SpellListComponent",
+          "SpellListComponent",
+          "SpellListComponent",
+          "SpellListComponent",
+          "SpellListComponent",
+          "SpellListComponent",
+          "AbilityEffectRunAction",
+          "ContextRankConfig",
+          "DlcCondition",
+          "SpellListComponent"
+        ]
+      },
+      {
+        "name": "TouchOfSlimeCast",
+        "guid": "84ccca10da2a4484c89a837fbea2a829",
+        "level": 4,
+        "sha256": "b8b37ae97f9b951992963ce2d695fba30b12fd84fb22a2ad362ff90e1e62ad2f",
+        "components": [
+          "SpellComponent",
+          "SpellDescriptorComponent",
+          "AbilityEffectStickyTouch",
+          "SpellListComponent",
+          "SpellListComponent",
+          "SpellListComponent",
+          "SpellListComponent",
+          "SpellListComponent",
+          "RecommendationNoFeatFromGroup",
+          "SpellListComponent",
+          "SpellListComponent",
+          "CraftInfoComponent"
+        ]
+      },
+      {
+        "name": "PeerThroughEndurance",
+        "guid": "9f0f0233dc0d43239afa77dbb3f3b948",
+        "level": 4,
+        "sha256": "89c093ee05343324e8b7662bbe5e8fe55f58bb6c3eb1e2708947ece4ef0cab77",
+        "components": [
+          "AbilityEffectRunAction",
+          "SpellComponent",
+          "SpellDescriptorComponent",
+          "AbilityTargetIsAlly",
+          "DlcCondition",
+          "SpellListComponent"
+        ]
+      },
+      {
+        "name": "ConfusionSpell",
+        "guid": "cf6c901fb7acc904e85c63b342e9c949",
+        "level": 4,
+        "sha256": "0c7a7c097989db6e85420d3c16aaec321d391c204ebc78ff1dd4b356d0aa54c0",
+        "components": [
+          "AbilityEffectRunAction",
+          "SpellComponent",
+          "AbilitySpawnFx",
+          "SpellDescriptorComponent",
+          "SpellListComponent",
+          "SpellListComponent",
+          "SpellListComponent",
+          "SpellListComponent",
+          "AbilityTargetsAround",
+          "SpellListComponent",
+          "RecommendationNoFeatFromGroup",
+          "RecommendationNoFeatFromGroup",
+          "RecommendationNoFeatFromGroup",
+          "RecommendationNoFeatFromGroup",
+          "SpellListComponent",
+          "CraftInfoComponent",
+          "SpellListComponent"
+        ]
+      },
+      {
+        "name": "Shout",
+        "guid": "f09453607e683784c8fca646eec49162",
+        "level": 4,
+        "sha256": "b86fed4ac635f1d3dce8069cb55e7164bd754f39012ea0de3fb5ca9afe7e58e8",
+        "components": [
+          "SpellComponent",
+          "SpellListComponent",
+          "SpellDescriptorComponent",
+          "SpellListComponent",
+          "AbilityEffectRunAction",
+          "AbilitySpawnFx",
+          "AbilityDeliverProjectile",
+          "SpellListComponent",
+          "SpellListComponent",
+          "SpellListComponent",
+          "RecommendationNoFeatFromGroup",
+          "SpellListComponent",
+          "SpellListComponent",
+          "CraftInfoComponent"
+        ]
+      },
+      {
+        "name": "PhantasmalWeb",
+        "guid": "12fb4a4c22549c74d949e2916a2f0b6a",
+        "level": 4,
+        "sha256": "231c1f5bed1412ef09d117594853288599c267e741e4cdd742bce0e51e197904",
+        "components": [
+          "SpellComponent",
+          "AbilityTargetsAround",
+          "AbilityEffectRunAction",
+          "AbilitySpawnFx",
+          "SpellListComponent",
+          "SpellListComponent",
+          "SpellDescriptorComponent",
+          "ContextRankConfig",
+          "SpellListComponent",
+          "SpellListComponent",
+          "RecommendationNoFeatFromGroup",
+          "CraftInfoComponent"
+        ]
+      },
+      {
+        "name": "Boneshatter",
+        "guid": "f2f1efac32ea2884e84ecaf14657298b",
+        "level": 4,
+        "sha256": "a2d86f6873e5f8565610ba2c0f78b74b0af198060916659486bc8f5e5546c9e1",
+        "components": [
+          "SpellComponent",
+          "AbilityEffectRunAction",
+          "ContextRankConfig",
+          "SpellListComponent",
+          "SpellListComponent",
+          "SpellListComponent",
+          "AbilitySpawnFx",
+          "SpellListComponent",
+          "CraftInfoComponent",
+          "ContextRankConfig"
+        ]
+      },
+      {
+        "name": "Enervation",
+        "guid": "f34fb78eaaec141469079af124bcfa0f",
+        "level": 4,
+        "sha256": "4534df8b5a4f166604f7a95de02baff8c8e9717e8e30f23936bc23208a65c609",
+        "components": [
+          "SpellComponent",
+          "SpellListComponent",
+          "AbilityDeliverProjectile",
+          "AbilityEffectRunAction",
+          "ContextRankConfig",
+          "SpellListComponent",
+          "SpellListComponent",
+          "SpellListComponent",
+          "SpellListComponent",
+          "RecommendationNoFeatFromGroup",
+          "SpellListComponent",
+          "SpellListComponent",
+          "CraftInfoComponent",
+          "SpellDescriptorComponent"
+        ]
+      },
+      {
+        "name": "ObsidianFlow",
+        "guid": "e48638596c955a74c8a32dbc90b518c1",
+        "level": 4,
+        "sha256": "0abed877aa49c6324a2236a18ed2ffd2b890032582b2b28b5bde2cfd088cdfb7",
+        "components": [
+          "SpellListComponent",
+          "SpellComponent",
+          "AbilityEffectRunAction",
+          "SpellListComponent",
+          "SpellDescriptorComponent",
+          "ContextRankConfig",
+          "AbilityTargetsAround",
+          "AdditionalAbilityEffectRunActionOnClickedTarget",
+          "SpellListComponent",
+          "SpellListComponent",
+          "CraftInfoComponent",
+          "AdditionalAoeForMagicHack"
+        ]
+      },
+      {
+        "name": "Fear",
+        "guid": "d2aeac47450c76347aebbc02e4f463e0",
+        "level": 4,
+        "sha256": "084eebee11823fc538ed116273f52eaae1d8cf8182c642398f80acb9c3576195",
+        "components": [
+          "SpellComponent",
+          "AbilityEffectRunAction",
+          "ContextRankConfig",
+          "AbilityDeliverProjectile",
+          "SpellListComponent",
+          "SpellDescriptorComponent",
+          "SpellListComponent",
+          "SpellListComponent",
+          "SpellListComponent",
+          "RecommendationNoFeatFromGroup",
+          "SpellListComponent",
+          "SpellListComponent",
+          "SpellListComponent",
+          "SpellListComponent",
+          "RecommendationNoFeatFromGroup",
+          "SpellListComponent",
+          "SpellListComponent",
+          "CraftInfoComponent",
+          "RecommendationNoFeatFromGroup"
+        ]
+      },
+      {
+        "name": "ArcanaTheft",
+        "guid": "b5f4ea77492d4f23ad3a6f429cbfa35e",
+        "level": 5,
+        "sha256": "2aa803b6b9d17ffb80d1f9d8e820bd9d3bfb28970227c061a4fd2a39e1fe68c8",
+        "components": [
+          "SpellListComponent",
+          "SpellComponent",
+          "AbilityEffectStickyTouch",
+          "AbilityTargetIsAlly",
+          "SpellDescriptorComponent",
+          "DlcCondition",
+          "SpellListComponent"
+        ]
+      },
+      {
+        "name": "AcidicSpray",
+        "guid": "c543eef6d725b184ea8669dd09b3894c",
+        "level": 5,
+        "sha256": "1923acead93d24a5e9f7b093b1886ef4246f74663c12f6ab5b8ea9bcb06a40f1",
+        "components": [
+          "SpellComponent",
+          "AbilityEffectRunAction",
+          "SpellListComponent",
+          "AbilityDeliverProjectile",
+          "ContextRankConfig",
+          "SpellListComponent",
+          "SpellListComponent",
+          "SpellListComponent",
+          "SpellDescriptorComponent",
+          "CraftInfoComponent",
+          "RecommendationNoFeatFromGroup"
+        ]
+      },
+      {
+        "name": "PeerThroughAvoidance",
+        "guid": "1d06e3306677431e846e6e6afdcc2138",
+        "level": 5,
+        "sha256": "a5638e834a6bb314cdb61987f9ae47fef278d99f1f384db4d97958d5ad3dae59",
+        "components": [
+          "AbilityEffectRunAction",
+          "SpellComponent",
+          "SpellDescriptorComponent",
+          "AbilityTargetIsAlly",
+          "DlcCondition",
+          "SpellListComponent"
+        ]
+      },
+      {
+        "name": "Feeblemind",
+        "guid": "444eed6e26f773a40ab6e4d160c67faa",
+        "level": 5,
+        "sha256": "5ed5038ff822e2bd034bf51d42116bcdf09226e47a1169b40c3dfb887c77e859",
+        "components": [
+          "AbilityEffectRunAction",
+          "SpellComponent",
+          "AbilitySpawnFx",
+          "SpellDescriptorComponent",
+          "SpellListComponent",
+          "SpellListComponent",
+          "AbilitySpawnFx",
+          "SpellListComponent",
+          "SpellListComponent",
+          "SpellListComponent",
+          "SpellListComponent",
+          "SpellListComponent",
+          "CraftInfoComponent"
+        ]
+      },
+      {
+        "name": "FireSnake",
+        "guid": "ebade19998e1f8542a1b55bd4da766b3",
+        "level": 5,
+        "sha256": "3c51207b46880dd34edad41abafe505895cad6d66d5ff0b212eaa066c8303056",
+        "components": [
+          "SpellComponent",
+          "AbilityEffectRunAction",
+          "SpellListComponent",
+          "AbilityDeliverProjectile",
+          "ContextRankConfig",
+          "SpellListComponent",
+          "SpellListComponent",
+          "SpellDescriptorComponent",
+          "SpellListComponent",
+          "CraftInfoComponent"
+        ]
+      },
+      {
+        "name": "ConeOfCold",
+        "guid": "e7c530f8137630f4d9d7ee1aa7b1edc0",
+        "level": 5,
+        "sha256": "1473a5d117a94b8ff99327fd8eadf587f72a9c59b5dff09f330649d95dd58b41",
+        "components": [
+          "SpellComponent",
+          "AbilityEffectRunAction",
+          "ContextRankConfig",
+          "AbilityDeliverProjectile",
+          "SpellListComponent",
+          "SpellDescriptorComponent",
+          "SpellListComponent",
+          "SpellListComponent",
+          "SpellListComponent",
+          "SpellListComponent",
+          "SpellListComponent",
+          "CraftInfoComponent",
+          "SpellListComponent",
+          "SpellListComponent"
+        ]
+      },
+      {
+        "name": "PhantasmalKiller",
+        "guid": "6717dbaef00c0eb4897a1c908a75dfe5",
+        "level": 5,
+        "sha256": "c4314d8bbd4caf5df57467fa7a83c6d91e672329c900f3c424e6f3f4d777e200",
+        "components": [
+          "SpellComponent",
+          "AbilityEffectRunAction",
+          "SpellListComponent",
+          "SpellDescriptorComponent",
+          "SpellListComponent",
+          "AbilitySpawnFx",
+          "SpellListComponent",
+          "AbilityTargetHasNoFactUnless",
+          "AbilityTargetHasFact",
+          "SpellListComponent",
+          "SpellListComponent",
+          "SpellListComponent",
+          "CraftInfoComponent"
+        ]
+      },
+      {
+        "name": "WrackingRay",
+        "guid": "1cde0691195feae45bab5b83ea3f221e",
+        "level": 5,
+        "sha256": "aaf0ed9fe1972180cffac4120144142ec0d973c473dcbf81d7eaf7985b792411",
+        "components": [
+          "SpellComponent",
+          "AbilityDeliverProjectile",
+          "AbilityEffectRunAction",
+          "SpellDescriptorComponent",
+          "ContextRankConfig",
+          "SpellListComponent",
+          "SpellListComponent",
+          "SpellListComponent",
+          "CraftInfoComponent",
+          "SpellListComponent"
+        ]
+      },
+      {
+        "name": "BalefulPolymorph",
+        "guid": "3105d6e9febdc3f41a08d2b7dda1fe74",
+        "level": 5,
+        "sha256": "a714bfffbd748156bdb8327229f7539bf54ce29dbd1afc53438f527c237551ad",
+        "components": [
+          "AbilityEffectRunAction",
+          "SpellComponent",
+          "AbilitySpawnFx",
+          "SpellListComponent",
+          "SpellListComponent",
+          "SpellListComponent",
+          "SpellDescriptorComponent",
+          "AbilityTargetHasFact",
+          "SpellListComponent",
+          "SpellListComponent",
+          "SpellListComponent",
+          "SpellListComponent",
+          "CraftInfoComponent"
+        ]
+      },
+      {
+        "name": "HoldMonster",
+        "guid": "41e8a952da7a5c247b3ec1c2dbb73018",
+        "level": 5,
+        "sha256": "df6eb724e7895f7658236fed30c16f281968af77b16449291ce94e9796e78c36",
+        "components": [
+          "SpellListComponent",
+          "SpellComponent",
+          "AbilityEffectRunAction",
+          "SpellListComponent",
+          "SpellListComponent",
+          "AbilityTargetHasNoFactUnless",
+          "AbilityTargetHasFact",
+          "SpellDescriptorComponent",
+          "AbilityTargetHasNoFactUnless",
+          "SpellListComponent",
+          "SpellListComponent",
+          "SpellListComponent",
+          "SpellListComponent",
+          "CraftInfoComponent",
+          "RecommendationNoFeatFromGroup"
+        ]
+      },
+      {
+        "name": "DispelMagicGreaterTarget",
+        "guid": "6d490c80598f1d34bb277735b52d52c1",
+        "level": 6,
+        "sha256": "315c2095b27374c50b27dfde3be66c37259e366f39c707101b7da8b706e4e8ce",
+        "components": [
+          "SpellComponent",
+          "AbilityEffectRunAction",
+          "AbilitySpawnFx",
+          "CraftInfoComponent",
+          "ContextRankConfig"
+        ]
+      },
+      {
+        "name": "CausticEruption",
+        "guid": "8c29e953190cc67429dc9c701b16b7c2",
+        "level": 6,
+        "sha256": "cea09527808239a602a5b3b8e1a8c13183f91c1d711ac7b1344ec1d37b251c38",
+        "components": [
+          "SpellComponent",
+          "AbilityEffectRunAction",
+          "SpellListComponent",
+          "ContextRankConfig",
+          "SpellDescriptorComponent",
+          "AbilityTargetsAround",
+          "AbilitySpawnFx",
+          "RecommendationNoFeatFromGroup",
+          "CraftInfoComponent",
+          "RecommendationNoFeatFromGroup"
+        ]
+      },
+      {
+        "name": "PeerThroughSpellResistance",
+        "guid": "249c0abba99e4d6f82437b83db57f52c",
+        "level": 6,
+        "sha256": "d59a925842aeb2a6e9cc950b53483b3e1f2bf8249257cbb32d408eaea0a2ffc9",
+        "components": [
+          "AbilityEffectRunAction",
+          "SpellComponent",
+          "SpellDescriptorComponent",
+          "AbilityTargetIsAlly",
+          "DlcCondition",
+          "SpellListComponent"
+        ]
+      },
+      {
+        "name": "Serenity",
+        "guid": "d316d3d94d20c674db2c24d7de96f6a7",
+        "level": 6,
+        "sha256": "c7971498d49928e48148eaa9f285baa08cbddc6180076e704748ebc0db561ce4",
+        "components": [
+          "SpellComponent",
+          "AbilityTargetsAround",
+          "AbilityEffectRunAction",
+          "AbilitySpawnFx",
+          "SpellListComponent",
+          "SpellListComponent",
+          "SpellListComponent",
+          "SpellDescriptorComponent",
+          "ContextRankConfig",
+          "SpellListComponent",
+          "RecommendationNoFeatFromGroup",
+          "RecommendationNoFeatFromGroup",
+          "SpellListComponent",
+          "SpellListComponent",
+          "CraftInfoComponent"
+        ]
+      },
+      {
+        "name": "KiShout",
+        "guid": "5c8cde7f0dcec4e49bfa2632dfe2ecc0",
+        "level": 6,
+        "sha256": "e290805a5f02d600accabcbe298e740ba163d8288b930dcddf6ba831bb0c831f",
+        "components": [
+          "SpellComponent",
+          "SpellListComponent",
+          "ContextRankConfig",
+          "SpellDescriptorComponent",
+          "SpellListComponent",
+          "AbilityEffectRunAction",
+          "AbilityTargetHasFact",
+          "AbilitySpawnFx",
+          "CraftInfoComponent"
+        ]
+      },
+      {
+        "name": "PhantasmalPutrefaction",
+        "guid": "1f2e6019ece86d64baa5effa15e81ecc",
+        "level": 6,
+        "sha256": "81f2a8bea938d07292b80a791608e0008d45e640d97ef8006b6403396baa6d43",
+        "components": [
+          "SpellComponent",
+          "AbilitySpawnFx",
+          "SpellDescriptorComponent",
+          "SpellListComponent",
+          "AbilityTargetsAround",
+          "AbilityEffectRunAction",
+          "SpellListComponent",
+          "SpellListComponent",
+          "RecommendationNoFeatFromGroup",
+          "CraftInfoComponent",
+          "SpellDescriptorComponent"
+        ]
+      },
+      {
+        "name": "BansheeBlast",
+        "guid": "d42c6d3f29e07b6409d670792d72bc82",
+        "level": 6,
+        "sha256": "6151b50a2f832efbe261ffed2551460282f1f06ec3929cbcbc98e78a75b728e1",
+        "components": [
+          "SpellComponent",
+          "AbilityEffectRunAction",
+          "ContextRankConfig",
+          "AbilityDeliverProjectile",
+          "SpellListComponent",
+          "SpellDescriptorComponent",
+          "SpellListComponent",
+          "SpellListComponent",
+          "SpellListComponent",
+          "CraftInfoComponent"
+        ]
+      },
+      {
+        "name": "CircleOfDeath",
+        "guid": "a89dcbbab8f40e44e920cc60636097cf",
+        "level": 6,
+        "sha256": "68458a160d006eabc693d32bed3579ec56486988c7fcc9d10b6b7bdd737be2a1",
+        "components": [
+          "SpellComponent",
+          "AbilityEffectRunAction",
+          "ContextCalculateSharedValue",
+          "AbilityTargetsAround",
+          "AbilitySpawnFx",
+          "SpellListComponent",
+          "SpellListComponent",
+          "ContextRankConfig",
+          "SpellDescriptorComponent",
+          "SpellListComponent",
+          "SpellListComponent",
+          "SpellListComponent",
+          "CraftInfoComponent",
+          "RecommendationNoFeatFromGroup"
+        ]
+      },
+      {
+        "name": "Disintegrate",
+        "guid": "4aa7942c3e62a164387a73184bca3fc1",
+        "level": 6,
+        "sha256": "97174be55a4cf02fcca5095c1bca2b28aa490be5d29e5fc652175547f330ea38",
+        "components": [
+          "SpellComponent",
+          "SpellListComponent",
+          "AbilityDeliverProjectile",
+          "AbilityEffectRunAction",
+          "ContextRankConfig",
+          "SpellListComponent",
+          "SpellListComponent",
+          "SpellListComponent",
+          "SpellListComponent",
+          "SpellListComponent",
+          "CraftInfoComponent"
+        ]
+      },
+      {
+        "name": "ChainLightning",
+        "guid": "645558d63604747428d55f0dd3a4cb58",
+        "level": 6,
+        "sha256": "b0312a1c8ea15eda21b401874df832a11dcc1dfa6d76061fafb3294748ac1afc",
+        "components": [
+          "SpellComponent",
+          "SpellListComponent",
+          "ContextRankConfig",
+          "AbilityEffectRunAction",
+          "ContextRankConfig",
+          "AbilityDeliverChain",
+          "SpellDescriptorComponent",
+          "SpellListComponent",
+          "SpellListComponent",
+          "SpellListComponent",
+          "CraftInfoComponent",
+          "ContextRankConfig"
+        ]
+      }
+    ]
+  },
+  "native_contracts": [
+    {
+      "id": "N1",
+      "members": "AbilityEffectRunAction.Apply",
+      "finding": "Chosen root save is rolled before concatenated Spell1/Spell2 RunAction actions; sticky fallback; no two separate casts."
+    },
+    {
+      "id": "N2",
+      "members": "ContextActionSavingThrow.RunAction",
+      "finding": "Reuses root save for MagicHack unless MakeSaveAlsoForMagicHack or no root SavingThrow; nested explicit saves are real exceptions."
+    },
+    {
+      "id": "N3",
+      "members": "MagicHackData; AbilityData.get_SpellSchool/get_SpellDescriptor",
+      "finding": "Chosen school; AbilityData descriptors are the union of sources. Context and buff immunity descriptor domains must be checked separately."
+    },
+    {
+      "id": "N4",
+      "members": "SpellbookMagicHackMixerVM.UpdateResult/TrySelectSpell1/TrySelectSpell2/ReactiveData.SetSpell1/SetSpell2",
+      "finding": "Source selectors exclude level-zero/fused sources; ordinary selection swaps conflicting choices; slot level=max(native source levels), chosen source delivery, additional-area marker from other source."
+    },
+    {
+      "id": "N5",
+      "members": "SpellbookMagicHackUtility.FetchTargetTypes/FetchThrowTypes/FetchSchools",
+      "finding": "Native metadata selection including delivery source preference: chain, non-SR and shape/range criteria; enumerate legal UI outputs rather than arbitrary geometry."
+    },
+    {
+      "id": "N6",
+      "members": "MagicHackSpellbookComponent.GetMaxDamageDicesForAction; ContextActionDealDamage.GetDamageInfo",
+      "finding": "Live per-action cap; exported spellbook levels 1..6:5,7,10,15,20,100; not literal infinity. Energy drain has separate calculation."
+    },
+    {
+      "id": "N7",
+      "members": "AbilityExecutionContext constructor; MechanicsContext constructor/RecalculateRanks",
+      "finding": "Actual fused context is rooted at slot blueprint; constructor initializes ranks from CL; source RunAction reuse does not recreate both ordinary source contexts."
+    },
+    {
+      "id": "N8",
+      "members": "AbilityDeliverProjectile.WouldTargetUnitCone/WouldTargetUnitLine/GetProjectileRange",
+      "finding": "Native cone and line recipient/range predicates exist; binding and calling shape-correct read-only queries is feasible."
+    },
+    {
+      "id": "N9",
+      "members": "AbilityData.GetDeliverBlueprint(bool); AbilityExecutionProcess.ProcessRoutine",
+      "finding": "GetDeliverBlueprint(true) exposes optional area metadata. ProcessRoutine uses selected primary delivery and separately invokes source clicked-target actions with the existing context. AdditionalClicked.Apply uses MainTarget, which AbilityExecutionContext maps to ClickedTarget; this does not establish a second independently chosen aim or action payment. Application multiplicity/overlap must follow actual source actions."
+    },
+    {
+      "id": "N10",
+      "members": "AbilityDeliverChain.Deliver/SelectNextTargetByMinDistance/CheckTarget",
+      "finding": "Selects subsequent units relative to original clicked target; CheckTarget includes filters and can roll for Blinking, so must not execute it indiscriminately during forecasts."
+    },
+    {
+      "id": "N11",
+      "members": "SwarmAoeVulnerability.OnEventAboutToTrigger",
+      "finding": "Uses selected non-simple projectile OR AbilityTargetsAround on AbilityData.Blueprint, or actual BlueprintArea context. Replacing every holder-blueprint check with delivery would change the native swarm rule."
+    },
+    {
+      "id": "N12",
+      "members": "UnitPartSpellResistance.CanApply; BuffDescriptorImmunity.IsImmune",
+      "finding": "Delivery, AbilityData descriptors and context descriptors have distinct roles. Native context-based checks are not interchangeable with independent ordinary-source immunity checks."
+    }
+  ],
+  "claims": [
+    {
+      "id": "C1",
+      "status": "confirmed static path",
+      "finding": "Native cone fusion profiles can reach cone scoring, whose TryCreate reads the empty slot blueprint instead of selected delivery and returns false.",
+      "refs": [
+        "cone_delivery_bug",
+        "fusion_metadata_and_blockers",
+        "recipient_and_damage_scoring"
+      ]
+    },
+    {
+      "id": "C2",
+      "status": "confirmed current code; gameplay magnitude unmeasured",
+      "finding": "Any already-present buff in filtered fusion buff list skips the whole recipient control contribution.",
+      "refs": [
+        "control_scoring"
+      ]
+    },
+    {
+      "id": "C3",
+      "status": "confirmed current code; gameplay magnitude unmeasured",
+      "finding": "Aggregate ControlStrength/CC flags and aggregate duration are used after per-buff eligibility; weaker surviving effect can inherit stronger or longer labels.",
+      "refs": [
+        "control_scoring",
+        "control_strength_and_duration"
+      ]
+    },
+    {
+      "id": "C4",
+      "status": "confirmed model limitation; synthetic counterexample",
+      "finding": "Save-weighted mean damage goes to nonlinear kill value and independent additive control. Need per-outcome utility to preserve correlation and surviving marginal control.",
+      "refs": [
+        "recipient_and_damage_scoring",
+        "nonlinear_damage_scoring",
+        "fusion_damage_and_shared_save"
+      ]
+    },
+    {
+      "id": "C5",
+      "status": "confirmed explicit exclusions",
+      "finding": "Lines, extra delivery, shared-HD, independent nested saves, caster/heal and certain buff/kill paths are withheld; current 35 Fusion checks are not a full combination or judgment audit.",
+      "refs": [
+        "fusion_metadata_and_blockers",
+        "profile_audit",
+        "shared_hd_exclusion"
+      ]
+    },
+    {
+      "id": "C6",
+      "status": "confirmed identity coverage gap; no log proof it caused current feedback",
+      "finding": "Discovery/CombatMemory/profile identity include fusion configuration, but failure/area misses, learned saves and cast-bonus cache still use blueprint identity in identified locations.",
+      "refs": [
+        "failure_observation_identity",
+        "save_observation_identity",
+        "cast_bonus_identity"
+      ]
+    },
+    {
+      "id": "C7",
+      "status": "confirmed scope limitation",
+      "finding": "No identifiable fusion diagnostic, named fused cast or arcan line appears in supplied v0.3.52 log. Historical fusion sessions cannot quantify current v0.3.52 decision quality.",
+      "refs": []
+    }
+  ],
+  "code_references": {
+    "discovery": "https://github.com/recovribox-svg/AIControll-FACC/blob/6cf42818ade856814003ac0cab8872795d884ffd/Tactics/AbilityDiscovery.cs#L138",
+    "fusion_metadata_and_blockers": "https://github.com/recovribox-svg/AIControll-FACC/blob/6cf42818ade856814003ac0cab8872795d884ffd/Tactics/AbilityProfile.Fusion.cs#L45",
+    "fusion_damage_and_shared_save": "https://github.com/recovribox-svg/AIControll-FACC/blob/6cf42818ade856814003ac0cab8872795d884ffd/Tactics/CombatMath.Fusion.cs#L16",
+    "admission_and_targets": "https://github.com/recovribox-svg/AIControll-FACC/blob/6cf42818ade856814003ac0cab8872795d884ffd/Tactics/TacticalEngine.cs#L3114",
+    "recipient_and_damage_scoring": "https://github.com/recovribox-svg/AIControll-FACC/blob/6cf42818ade856814003ac0cab8872795d884ffd/Tactics/TacticalEngine.cs#L3644",
+    "control_scoring": "https://github.com/recovribox-svg/AIControll-FACC/blob/6cf42818ade856814003ac0cab8872795d884ffd/Tactics/TacticalEngine.cs#L4161",
+    "cone_delivery_bug": "https://github.com/recovribox-svg/AIControll-FACC/blob/6cf42818ade856814003ac0cab8872795d884ffd/Tactics/ProjectileCone.cs#L100",
+    "control_strength_and_duration": "https://github.com/recovribox-svg/AIControll-FACC/blob/6cf42818ade856814003ac0cab8872795d884ffd/Tactics/AbilityProfile.cs#L1354",
+    "nonlinear_damage_scoring": "https://github.com/recovribox-svg/AIControll-FACC/blob/6cf42818ade856814003ac0cab8872795d884ffd/Tactics/TacticalEngine.cs#L2354",
+    "save_observation_identity": "https://github.com/recovribox-svg/AIControll-FACC/blob/6cf42818ade856814003ac0cab8872795d884ffd/Tactics/SaveObserver.cs#L108",
+    "failure_observation_identity": "https://github.com/recovribox-svg/AIControll-FACC/blob/6cf42818ade856814003ac0cab8872795d884ffd/Tactics/CastOutcome.cs#L125",
+    "cast_bonus_identity": "https://github.com/recovribox-svg/AIControll-FACC/blob/6cf42818ade856814003ac0cab8872795d884ffd/Tactics/CombatMath.CastBonus.cs#L48",
+    "pending_casts": "https://github.com/recovribox-svg/AIControll-FACC/blob/6cf42818ade856814003ac0cab8872795d884ffd/Tactics/CombatMemory.cs#L216",
+    "boost_gate": "https://github.com/recovribox-svg/AIControll-FACC/blob/6cf42818ade856814003ac0cab8872795d884ffd/Tactics/TacticalEngine.Boosters.cs#L210",
+    "shared_hd_exclusion": "https://github.com/recovribox-svg/AIControll-FACC/blob/6cf42818ade856814003ac0cab8872795d884ffd/Tactics/SharedHdControl.cs#L140",
+    "profile_audit": "https://github.com/recovribox-svg/AIControll-FACC/blob/6cf42818ade856814003ac0cab8872795d884ffd/tools/ProfileAudit/FusionCheck.cs#L26",
+    "existing_design": "https://github.com/recovribox-svg/AIControll-FACC/blob/6cf42818ade856814003ac0cab8872795d884ffd/docs/CASTER_POLICIES.md",
+    "historical_native_evidence": "https://github.com/recovribox-svg/AIControll-FACC/blob/6cf42818ade856814003ac0cab8872795d884ffd/docs/competence/CASTER_NATIVE_EVIDENCE.json"
+  },
+  "limits": [
+    "Headerless logs are not assigned a build by filename or chronology.",
+    "Same-named previous uploads had identical hashes; each current named input counted once.",
+    "No pooled cast/fight total across headerless or potentially overlapping sessions.",
+    "Command Success/acted is not proof that both payloads affected every intended target.",
+    "Static JBP export and stock BubblePrints data do not establish all runtime mod patches.",
+    "No new gameplay or performance improvement is claimed."
+  ],
+  "document_revision": 2,
+  "independent_review": {
+    "name": "Review of Magic Fusion plan.txt",
+    "bytes": 20786,
+    "lines": 196,
+    "sha256": "164365bdc92b7d1cf6e1548d8ae14ae6a3884ee4ceee75deaa0090e1fc946ecd",
+    "role": "advisory critique; claims independently checked",
+    "reviewer_reported_input_scope": "truncated before native contracts and F4–F8",
+    "complete_original_plan": {
+      "bytes": 45850,
+      "sha256": "1f807e1f5f8a700bf6460d5e4ad56ff377b664aa2edd1cca048271d524b0de52"
+    },
+    "rechecked_revision": "6cf42818ade856814003ac0cab8872795d884ffd",
+    "no_new_game_execution_tests_or_build": true,
+    "assessment_document": "AI_Control_Magic_Fusion_Review_Assessment.md"
+  },
+  "review_verified_native_contracts": [
+    {
+      "id": "RN1",
+      "members": "AdditionalAbilityEffectRunActionOnClickedTarget.Apply; AbilityExecutionContext.get_MainTarget; AbilityExecutionProcess.ProcessRoutine",
+      "finding": "The inspected clicked-target path uses the same cast ClickedTarget/context; it does not ask for a second target or construct another command/payment."
+    },
+    {
+      "id": "RN2",
+      "members": "AbilityData.HasMetamagic",
+      "finding": "Checks actual MetamagicData then CasterUnitPartSpecialMetamagic.GetMetamagic(ability). The actual cast object, rather than a fabricated custom blueprint, carries the relevant state."
+    }
+  ],
+  "review_dispositions": [
+    {
+      "item": "2.1",
+      "decision": "accept refinement",
+      "finding": "Make shared numerical primitives/native-only orchestration boundary explicit; targeted regression parity with documented intentional common fixes."
+    },
+    {
+      "item": "2.2",
+      "decision": "already covered; improve sequencing",
+      "finding": "Original F8 included support; add explicit F4S for qualified simple support mechanisms actually present, with subject/multiplicity/stacking."
+    },
+    {
+      "item": "2.3 second aim/action",
+      "decision": "reject mechanical claim",
+      "finding": "Same native clicked target and cast context; no invented two-aim search, extra command or universal deduplication."
+    },
+    {
+      "item": "2.3 mechanism separation",
+      "decision": "accept clarification",
+      "finding": "Geometry, ordering, allocation, dependency and execution multiplicity are separate capabilities. Correct footprint does not unlock HD/nested support."
+    },
+    {
+      "item": "2.4",
+      "decision": "accept refinement",
+      "finding": "Decision-local time-based marginal control coverage; shared existing facts/pending lifecycle, no persistent current-round certainty flag."
+    },
+    {
+      "item": "2.5",
+      "decision": "reject current-bug allegation; retain tests",
+      "finding": "FusionDamageFactor already returns 1 for unrestricted non-HalfIfSaved damage, with existing native-shaped fixtures. MakeSaveAlsoForMagicHack governs explicit nested saving actions."
+    },
+    {
+      "item": "2.6",
+      "decision": "reject missing-path allegation; strengthen tests",
+      "finding": "DamageMetamagic reads native AbilityData.HasMetamagic; count cap precedes dice result. Test actual allowed/active states without assuming manual slot UI support."
+    },
+    {
+      "item": "2.7 universal FusionKey",
+      "decision": "adapt, no blanket replacement",
+      "finding": "Some observer keys need configuration. Existing resistance exact-reference/epoch keys and cached identity strings are correct in their domains; proposed structural config omits other cast distinctions."
+    },
+    {
+      "item": "2.7 replace all blueprint reads",
+      "decision": "reject overbroad rule",
+      "finding": "Produce field-use domain inventory. Some holder reads, including native swarm area rule, are intentional."
+    },
+    {
+      "item": "2.8",
+      "decision": "accept only dependency-safe optimizations",
+      "finding": "Hoist proven invariant raw amounts; save memo keyed by distinct node/DC/state; preserve viable/boss/safety/support candidates; diagnostic aggregates only."
+    },
+    {
+      "item": "2.9",
+      "decision": "already covered; add attribution detail",
+      "finding": "All reasons already planned. Add blocker co-occurrence/sole-blocker counts, actual-player denominators and not-assessed states; no UI combat sweeps."
+    },
+    {
+      "item": "2.10 smoke checkpoint",
+      "decision": "accept early gameplay qualification",
+      "finding": "Observe natural in-game casts in both modes. Preparation can continue offline; gameplay acceptance remains unclaimed while unplayed."
+    },
+    {
+      "item": "2.10 shadow table",
+      "decision": "adapt to bounded passive trace",
+      "finding": "No second Decide, unbounded table, extra rule/context/path work or parallel shadow AI."
+    },
+    {
+      "item": "section 3 outcome vector",
+      "decision": "accept with mathematical/cost clarification",
+      "finding": "Preserve outcomes for nonlinear utility; linear correlated expectations can be added. Ordinary recipient saves remain local; charge cast-level costs once."
+    }
+  ],
+  "revision_2_refinements": [
+    "shared numerical helper and ordinary-regression boundary",
+    "time-based marginal control coverage and pending probability/lifecycle",
+    "explicit F4S support slice",
+    "one-aim secondary application semantics and execution count",
+    "configuration versus cast/source/cache identity domains",
+    "safe raw-value hoisting, distinct save-node memos, role-preserving pruning",
+    "blocker co-occurrence and sole-blocker attribution",
+    "early natural-play checkpoint and bounded passive decision capture",
+    "per-recipient outcome versus shared-state/cast-cost separation"
+  ],
+  "review_current_code_evidence": [
+    {
+      "finding": "Save-independent default path returns 1; HalfIfSaved reduction is distinct from branch eligibility",
+      "path": "Tactics/CombatMath.Fusion.cs",
+      "lines": [
+        32,
+        41
+      ],
+      "verification": "static source and existing fixtures; not newly executed"
+    },
+    {
+      "finding": "Existing fixtures assert touch-source damage and unconditional negative levels remain unrestricted",
+      "path": "tools/ProfileAudit/FusionCheck.cs",
+      "lines": [
+        84,
+        89
+      ],
+      "verification": "fixture inspection; not newly executed"
+    },
+    {
+      "finding": "Actual ability metamagic is acquired before damage evaluation",
+      "path": "Tactics/CombatMath.cs",
+      "lines": [
+        651,
+        656,
+        657,
+        819
+      ],
+      "verification": "static source plus native HasMetamagic IL"
+    },
+    {
+      "finding": "Exact-reference resistance memo already includes state epoch; config string suffix cached on profile rebuild",
+      "path": "Tactics/ReferenceReadMemo.cs; Tactics/CombatMath.ResistanceMemo.cs; Tactics/AbilityProfile.Fusion.cs",
+      "verification": "static inspection"
+    }
+  ],
+  "artifacts": {
+    "AI_Control_Magic_Fusion_Research_and_Plan.md": {
+      "bytes": 59717,
+      "sha256": "f10ce95b16e3bcb46fb70daa22c3fa7c1457047bb828ecec57bd951d068bc381",
+      "lines": 397
+    },
+    "AI_Control_Magic_Fusion_Review_Assessment.md": {
+      "bytes": 13670,
+      "sha256": "5336725b548908f001a2697fe5e239d5f466889c2027177c126a0dab0aaf0540",
+      "lines": 49
+    },
+    "AI_Control_Magic_Fusion_Source_Inventory.csv": {
+      "bytes": 24281,
+      "sha256": "97ac9a226e63f25c5bc3dccfbe2e3743deee1464d0171ec5cf44a85bbf8a8140",
+      "lines": 61
+    }
+  },
+  "plan_end_marker": "END OF FUSION PLAN — REVISION 2",
+  "repository_copy_note": "Research artifact hashes refer to the original standalone files; the repository plan/assessment rebases relative links and adds implementation status. See docs/MAGIC_FUSION_PLAN.md and docs/FUSION_IMPLEMENTATION.md."
+}
