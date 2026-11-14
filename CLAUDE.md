@@ -27,8 +27,8 @@ S1 PR. Source change, not played; manifest 0.3.52, packages and `release/` uncha
   of refusals this removes is unknown until a replay.
 
 Checks: Release 0 warnings; 803 unit + 27 inventory + 3 script tests; ProfileAudit exit 0 with new `APPROACH-SPOT` 28 checks, every other report
-line identical to the S1 run; native harnesses 98/14/10; 0 added game member references. Verification build only (DLL SHA-256 `477ba939...`, MVID
-`2ef704f2-c840-484f-9028-c7e7cb73760a`), no package. Replay steps: §163. Next proposed: I1 (Invocation ledger from the supplied `Log.txt`).
+line identical to the S1 run; native harnesses 98/14/10; 0 added game member references. Checked source `49ffd46`; verification build only (DLL SHA-256
+`295591c8...`, MVID `f1f9895b-f92d-4287-bf92-0e47282d4ed2`), no package. Replay steps: §163. Next proposed: I1 (Invocation ledger from the supplied `Log.txt`).
 
 **Earlier handover (13 November 2026, Claude): summon-kit inventory (S1) on `claude/summon-kit-inventory`, PR into development. Tooling and
 documentation only: no gameplay source, manifest or package change; v0.3.52 stays the validated, unplayed stable package.** Read
