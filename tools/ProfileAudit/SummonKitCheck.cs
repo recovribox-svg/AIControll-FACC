@@ -78,10 +78,13 @@ namespace ProfileAudit
                 if (o is SimpleBlueprint && !ReferenceEquals(o, root)) continue;      // another blueprint: not this graph
                 if (!ReferenceEquals(o, root)) visit(o);
                 if (o is BlueprintReferenceBase) continue;                             // visited, not followed
-                if (type.Namespace != null && type.Namespace.StartsWith("UnityEngine", StringComparison.Ordinal)) continue;
+                // Namespace can resolve an array element's enclosing UI type. Scalar arrays cannot hold actions or
+                // blueprint references: discard them before that metadata query (no Unity UI dependency is needed).
+                if (type.IsArray && (type.GetElementType().IsPrimitive || type.GetElementType().IsEnum || type.GetElementType() == typeof(string))) continue;
+                string space = type.Namespace;
+                if (space != null && space.StartsWith("UnityEngine", StringComparison.Ordinal)) continue;
                 if (o is IEnumerable sequence && !(o is IDictionary))
                 {
-                    if (type.IsArray && (type.GetElementType().IsPrimitive || type.GetElementType().IsEnum || type.GetElementType() == typeof(string))) continue;
                     IEnumerator items;
                     try { items = sequence.GetEnumerator(); } catch { items = null; }
                     if (items != null)

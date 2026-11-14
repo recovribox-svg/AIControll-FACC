@@ -5684,3 +5684,8 @@ partial input remains partial and stale outputs are replaced. Existing builds/au
 diagnostic/CLI cases are recorded in [checks](competence/FUSION_F0_CHECKS.json). No AI command or native cast is issued; no live
 game state or installed game DLL is modified. The offline harness uses private engine-neutralized copies. Existing control/damage/save math, policy, movement,
 blocklists, versions and packages are unchanged. Claude reviews/integrates F0 before F1; no release or gameplay acceptance.
+
+The current development's S1/S2 are retained. S1's graph walk now skips scalar arrays before their namespace lookup:
+a nested UI enum array otherwise tries to load UnityEngine.UI solely to discover metadata it immediately discards.
+The walk's visited effects/classifications are unchanged; no UI assembly is introduced. The compatible Fusion audit
+prints S1's remaining missing-reference scope instead of claiming S1's separate stock-supplement completeness.

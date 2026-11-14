@@ -41,6 +41,11 @@ Missing required list/book/slot/source graphs, ambiguous source levels or reader
 coverage check. An incomplete load replaces stale JSON with an explicit INCOMPLETE record; an allowed partial
 load remains PARTIAL. Full case rows stay generated artifacts; no game graphs or assemblies are committed.
 
+Integration with S1 exposed a metadata-only audit dependency: asking for a nested UI enum array's namespace can
+resolve UnityEngine.UI before the walk discards the array. Scalar arrays now exit before that query, retaining the
+same graph traversal and classifications. No game/UI dependency is added. The Fusion validation scope retains the
+explicit missing-reference counts in the summon inventory; it does not substitute for S1's broader stock supplement.
+
 Validation and exact source/DLL identity are recorded in [F0 checks](competence/FUSION_F0_CHECKS.json).
 This slice is not a test release. Stable v0.3.52 and its ZIP remain unchanged. No new in-game acceptance is claimed.
 
