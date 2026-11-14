@@ -223,6 +223,9 @@ namespace CompanionAI_Pathfinder.Tactics
         public string FriendlyFireNote;
         // F1: a hard veto must still allow the existing bounded cone re-aim, without formatting a penalty note.
         public bool FriendlyFireVeto;
+        internal CombatMath.FusionDamageRead FusionDamageScratch;
+        internal ValueModel.ControlEnvelope FusionControlScratch;
+        internal List<Kingmaker.UnitLogic.Buffs.Blueprints.BlueprintBuff> FusionBuffScratch;
         /// <summary>
         /// ★ v0.3.28 test 11: the revive reading of the heal valued last for (ability, ally) this decision, printed with the
         /// revive's value line (one line instead of two each round; test 10: 172 revive lines while Seelah was down).
@@ -3164,7 +3167,8 @@ namespace CompanionAI_Pathfinder.Tactics
             if (profile.Fusion != null)
                 AbilityDiscovery.ReportOnce("fusion-model|" + AbilityDiscovery.Key(ability),
                     () => $"[Fusion] {ability.Name}: {profile.Fusion.Spell1.name} + {profile.Fusion.Spell2.name}; " +
-                          $"delivery {profile.Blueprint.name}, shared save {profile.Save}, native level {profile.Fusion.SpellLevel}");
+                          $"delivery {profile.Blueprint.name}, shared save {profile.Save}, native level {profile.Fusion.SpellLevel}, " +
+                          $"school {profile.Fusion.SpellSchool}, shape {profile.Fusion.SpellTargetType}");
             if (!PureMagePolicy.AllowsAbility(ctx.Settings, ability, profile)) return none;
             var targetingBlueprint = ability.GetDeliverBlueprint() ?? ability.Blueprint;
 
@@ -3690,6 +3694,9 @@ namespace CompanionAI_Pathfinder.Tactics
             ctx.FriendlyFireNote = null;
             ctx.FriendlyFireVeto = false;
             var reasons = new List<string>();
+            bool fusionOutcomes = FusionOutcomeModel(ability, profile);
+            if (profile.Fusion != null && !fusionOutcomes) FusionValueFallback(ability, profile);
+            Dictionary<UnitEntityData, float> fusionControl = null;
 
             // ★ v0.3.18 (test10): real time - an ally is casting this very ability on this enemy right now.
             // Only outcomes that do not add up (a debuff, control, a mark, Coup de Grace): two allies' damage on one enemy is
@@ -3855,9 +3862,25 @@ namespace CompanionAI_Pathfinder.Tactics
                 // first, with its own rules (no penetration, immunity only for spells that allow spell resistance).
                 foreach (var enemy in affectedEnemies)
                 {
-                    float dmg = CombatMath.EstimateAbilityDamage(ability, profile, enemy);
+                    var fusionRead = fusionOutcomes ? ctx.FusionDamageScratch ??
+                        (ctx.FusionDamageScratch = new CombatMath.FusionDamageRead()) : null;
+                    float dmg = fusionRead != null ? CombatMath.EstimateFusionDamage(ability, profile, enemy, fusionRead)
+                                                  : CombatMath.EstimateAbilityDamage(ability, profile, enemy);
                     float p = CombatMath.EffectChance(unit, enemy, ability, profile, damage: true);
-                    float part = DamageValue(enemy, dmg * p, p, CombatMath.AbilityEndsRegeneration(profile, enemy)) * WakeFactor(enemy, dmg * p);
+                    float part;
+                    if (fusionRead != null && TryFusionValues(ctx, ability, profile, enemy, fusionRead, p, out float jointDamage, out float jointControl))
+                    {
+                        part = jointDamage * WakeFactor(enemy, dmg * p);
+                        if (profile.TargetBuffs.Count > 0)
+                            (fusionControl ?? (fusionControl = new Dictionary<UnitEntityData, float>()))[enemy] = jointControl;
+                        if (geometryChance.HasValue && jointControl > 0f)
+                            geometryChance = Math.Max(geometryChance.Value, p * fusionRead.FailChance);
+                    }
+                    else
+                    {
+                        part = DamageValue(enemy, dmg * p, p, CombatMath.AbilityEndsRegeneration(profile, enemy)) * WakeFactor(enemy, dmg * p);
+                        if (profile.Fusion != null) FusionValueFallback(ability, profile);
+                    }
                     float beneficialChance = part > 0f ? p * CombatMath.FusionDamageChance(ability, enemy, profile) : 0f;
                     // ★ v0.3.18 (AA-1): a kill action (Isekai's Instakill, Power Word Kill) removes the enemy when it lands:
                     // on a failed save and through spell resistance. It subsumes the damage, so the better of the two.
@@ -4138,6 +4161,7 @@ namespace CompanionAI_Pathfinder.Tactics
                                    !profile.SelectiveSparesAllies(ability);
                 // ★ v0.3.21: an ally that would fall into the pit is caught too.
                 Func<UnitEntityData, bool> wouldBeCaught = a =>
+                    fusionOutcomes ? FusionControlCatches(ctx, ability, profile, a) :
                     profile.PitHolds(a) ||
                     profile.TargetBuffs.Any(b => (ForecastApplies(b, a, friendly: true) ?? profile.BuffAppliesTo(b, ability, a)) != EffectApplies.No && !a.Buffs.HasFact(b) &&
                                                  !CombatMath.BuffImmune(a, b, ability)) &&
@@ -4194,7 +4218,27 @@ namespace CompanionAI_Pathfinder.Tactics
                 }
                 foreach (var enemy in affectedEnemies)
                 {
+                    if (fusionControl != null && fusionControl.TryGetValue(enemy, out float jointControl))
+                    {
+                        controlValue += jointControl;
+                        if (enemy == target && jointControl > 0f) ctx.AimCounted = true;
+                        continue;
+                    }
+                    if (fusionOutcomes && !profile.DealsDamage &&
+                        TryFusionControlRounds(ctx, ability, profile, enemy, false, out float ownControlRounds))
+                    {
+                        float ownChance = CombatMath.EffectChance(unit, enemy, ability, profile, damage: false);
+                        float ownControl = ownChance *
+                                           CombatMath.ControlWorth(enemy) * ownControlRounds;
+                        if (ownControl > 0f && profile.IsAoE && profile.InOwnSideArea(unit, enemy)) ownControl = 0f;
+                        controlValue += ownControl;
+                        if (enemy == target && ownControl > 0f) ctx.AimCounted = true;
+                        if (geometryChance.HasValue && ownControl > 0f)
+                            geometryChance = Math.Max(geometryChance.Value, ownChance);
+                        continue;
+                    }
                     // ★ v0.3.18 (C2): the game's buff immunities (descriptor, specific buff) too.
+                    if (fusionOutcomes && !profile.DealsDamage) FusionValueFallback(ability, profile);
                     var buffs = profile.TargetBuffs.Where(b => (ForecastApplies(b, enemy) ?? profile.BuffAppliesTo(b, ability, enemy)) != EffectApplies.No &&
                                                                !CombatMath.BuffImmune(enemy, b, ability)).ToList();
                     // ★ v0.3.21: a pit holds by itself, with or without a buff.

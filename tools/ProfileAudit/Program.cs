@@ -256,6 +256,10 @@ namespace ProfileAudit
             foreach (var line in fusionConeLines) Console.WriteLine(line);
             File.WriteAllText(output, string.Join(Environment.NewLine, fusionConeLines) + Environment.NewLine + File.ReadAllText(output));
             blocklistFailures += fusionConeFailures;
+            var fusionValueLines = FusionValueCheck.Run(loaded.Values, out int fusionValueFailures);
+            foreach (var line in fusionValueLines) Console.WriteLine(line);
+            File.WriteAllText(output, string.Join(Environment.NewLine, fusionValueLines) + Environment.NewLine + File.ReadAllText(output));
+            blocklistFailures += fusionValueFailures;
             var projectileLines = ProjectileCheck.Run(loaded.Values, out int projectileFailures);
             foreach (var line in projectileLines) Console.WriteLine(line);
             File.WriteAllText(output, string.Join(Environment.NewLine, projectileLines) + Environment.NewLine + Environment.NewLine + File.ReadAllText(output));

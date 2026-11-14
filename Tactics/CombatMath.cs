@@ -808,12 +808,13 @@ namespace CompanionAI_Pathfinder.Tactics
         /// <summary>★ v0.3.20: the estimate before the learned share of a blast (DamageObserver checks against it).</summary>
         internal static float EstimateAbilityDamageRaw(AbilityData ability, AbilityProfile profile, UnitEntityData target, ItemEntityWeapon bladeWeapon,
             Func<GameAction, EffectApplies> branch = null, bool? ignorePhysicalReduction = null, float extraWeaponDamage = 0f,
-            bool oneProjectile = false)
+            bool oneProjectile = false, FusionDamageRead fusionRead = null)
         {
-            if (profile.Damage.Count == 0) return 0f;
+            if (profile.Damage.Count == 0) { if (fusionRead != null) fusionRead.Known = false; return 0f; }
             DamageEstimates++;
             EffectApplies Applies(GameAction action) => branch?.Invoke(action) ?? profile.AppliesTo(action, ability, target);
-            if (target != null && profile.Damage.All(d => Applies(d) == EffectApplies.No)) return 0f;
+            if (target != null && profile.Damage.All(d => Applies(d) == EffectApplies.No))
+            { if (fusionRead != null) fusionRead.Known = false; return 0f; }
             var ctx = DamageContext(ability, profile, target);
             int cl = Math.Max(1, ParamsOf(ability)?.CasterLevel ?? 1);
             DamageMetamagic(ability, out bool maximize, out bool empower);
@@ -831,7 +832,10 @@ namespace CompanionAI_Pathfinder.Tactics
             foreach (var action in profile.Damage)
             {
                 // ★ v0.3.1: only the branch that runs for this target (Inflict Wounds heals undead, Cure harms them).
-                if (target != null && Applies(action) == EffectApplies.No) continue;
+                var applies = target != null ? Applies(action) : EffectApplies.Unconditional;
+                if (applies == EffectApplies.No) continue;
+                if (fusionRead != null && (applies == EffectApplies.Unknown ||
+                    !(action is ContextActionDealDamage direct) || KindOf(direct) != DealKind.HitPoints)) fusionRead.Known = false;
                 switch (action)
                 {
                     // ★ v0.3.28 test 13: ability damage and negative levels are worth what they take of the target's two other
@@ -880,7 +884,9 @@ namespace CompanionAI_Pathfinder.Tactics
             }
             RememberFusionDamageChance(ability, target, profile, parts, fusionFail, fusionEvasion, fusionImproved);
             // Mitigation and per-roll bonuses above apply to every delivery separately, before their sum.
-            return SumAlternatives(profile, parts) * (oneProjectile ? 1 : ProjectileDeliveries(profile, ctx));
+            int deliveries = oneProjectile ? 1 : ProjectileDeliveries(profile, ctx);
+            ReadFusionDamageOutcomes(profile, parts, fusionFail, fusionEvasion, fusionImproved, deliveries, fusionRead);
+            return SumAlternatives(profile, parts) * deliveries;
         }
 
         // ★ v0.3.28 test 11: one execution context per ability and frame for damage whose numbers the target cannot change.

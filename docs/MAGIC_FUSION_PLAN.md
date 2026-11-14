@@ -394,4 +394,12 @@ Open questions to resolve in F0/F4–F8 include exact context descriptor propaga
 
 The practical goal is broader **verified** coverage and better decisions among useful casts. A fusion whose native effects cannot help the current targets should be recognized and declined. A fusion with an unknown harmful consequence should remain visibly unsupported until that mechanism is understood.
 
-END OF FUSION PLAN — REVISION 2
+## Implementation checkpoint: Fusion2
+
+F0/F1 and their review/provenance follow-up are merged. The author's fusion1 playtests are reviewed in
+[FUSION2_PLAYTEST_REVIEW.md](FUSION2_PLAYTEST_REVIEW.md), with input hashes and focused next scenarios. The qualified
+F2/early-F3 core uses occurrence-local control and shared outcomes; it does not claim complete refresh/stacking,
+arbitrary state projection or any later support/delivery mechanism. Unknown coupled cases retain explicit boundaries.
+The played created spells used Runes or Snowball delivery, so selected-cone Fusion gameplay acceptance remains open.
+
+END OF FUSION PLAN — REVISION 2 (implementation checkpoint appended)

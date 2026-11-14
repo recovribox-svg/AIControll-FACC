@@ -5824,3 +5824,41 @@ So Claude's SDK 8.0.131 rebuild in §167 differed for three reasons: the compile
 build path (the PDB path in the DLL is Codex's `/workspace/work/fusion-cone-delivery`). The decompiled comparison found
 only compiler lowering. Claude did not rebuild with SDK 8.0.426, so the byte identity rests on Codex's local replays.
 A byte-for-byte rebuild elsewhere would also need UnityModManager 0.33.2.0 and the same build path.
+
+## 169. Fusion2: played fusion1 review, local control and shared-outcome value (14 November 2026)
+
+The author supplied two fusion1-MVID AI logs and their combat history, and authorized continued development.
+[Review, evidence and replay](FUSION2_PLAYTEST_REVIEW.md), [input identity](competence/FUSION2_PLAYTEST_INPUTS.json).
+Eight encounters measure 258 TB / 1,475 RT decisions. Spawns and rests between encounters are confirmed, as is
+manual Grabber with AI Control enabled. No AI Control exception appears; external OwnerBlueprint errors remain
+attributed to WrathPatches. Command terminals reconcile apart from the final OOC command at the upload cutoff.
+
+The old Fusion control value borrowed aggregate strength/duration and discarded all control when any one buff was
+present. The native Runes Burning carrier lasts a minute; Snowball stagger and high-HD Color Spray stun last one
+round. A longer carrier cannot extend those controls. Cache each native application's action/order/guards/conditions
+and duration, filter per recipient and form a bounded maximum-denial envelope. Condition immunity is read natively
+per condition. Burning's narrow inspected periodic-damage/remove-self graph gets no generic control value; periodic
+HP benefit is omitted and harmful-carrier ally checks remain conservative. No guessed stacking/refresh benefit.
+
+For qualified direct-HP/control graphs, collect failed/passed-root-save damage from the same mitigated action parts;
+apply HP caps/kill utility to the outcomes before averaging, and control only to surviving failed-save outcomes.
+Existing root save, native delivery chance, regeneration discount, damage calibration and role policy remain.
+Native ConditionalSaved runs neither branch without a save: saved-result configurations without a declared root
+save are withheld; independent saves retain their existing refusal.
+Unknown/coupled guards, post-effect state changes, composite damage, support and damage/sleep dependencies keep
+legacy forecasts or the existing F0 refusal. Qualification is distinct from profile admission and is reported by
+the full metadata audit. This implements the qualified core of F2/early F3, not all planned mechanisms.
+
+Scratch: at most 32 scalar intervals; metadata/condition references cached per configuration; GUID comparisons do
+not load unrelated facts. Own dynamic durations are memoized as scalars by cast/recipient/application in the existing
+synchronous scope and invalidation version. No second damage estimate, extra native roll, world/target/path search,
+actor mutation or persistent context cache. One qualified witness and one fallback witness per configuration;
+existing Fusion metadata additionally names school/shape. Native input and scalar tests cover the new contracts;
+exact source, toolchain, results and test-package identity are recorded after validation. Unity timing/gameplay
+remain acceptance checks; existing movement, dispatch and ordinary control behavior are retained.
+
+Grapples: the native helpers/Griffon graphs maintain the pair, pin and queue their natural damage-only attack.
+Holding an enemy can make an end turn useful; the played real-time restrictions agree with that mechanism.
+Automatic Grabber initiation and comparative Release remain a separate G1 slice. No timeout or automatic release
+is added here. The existing selected-cone Fusion route still needs a cone-delivery gameplay case; the played created
+spells used Runes or Snowball delivery, with an ordinary turned Color Spray cast observed.

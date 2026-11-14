@@ -59,12 +59,17 @@ namespace ProfileAudit
                 var coneResolver = typeof(CombatMath).Assembly.GetType("CompanionAI_Pathfinder.Tactics.ProjectileCone", true)
                     .GetMethod("DeliveryComponent", BindingFlags.Static | BindingFlags.NonPublic);
                 if (coneResolver == null) throw new MissingMemberException("selected cone resolver missing");
+                var jointModel = typeof(TacticalEngine).GetMethod("FusionOutcomeModel", BindingFlags.Static | BindingFlags.NonPublic);
+                if (jointModel == null) throw new MissingMemberException("Fusion joint-value qualification missing");
+                var jointReason = typeof(AbilityProfile).GetField("FusionOutcomeMetadataReason", Hidden);
+                if (jointReason == null) throw new MissingMemberException("Fusion joint-value qualification reason missing");
                 var schools = new List<SpellSchool>(); var saves = new List<SavingThrowType>();
                 var shapes = new List<SpellTargetType>(); var deliveries = new Dictionary<SpellTargetType, BlueprintAbility>();
                 var rows = new List<object>(); var anyReasons = new SortedDictionary<string, int>(StringComparer.Ordinal);
                 var soleReasons = new SortedDictionary<string, int>(StringComparer.Ordinal);
                 var combinations = new SortedDictionary<string, int>(StringComparer.Ordinal);
-                int pairs = 0, noConfiguration = 0, accepted = 0, readerErrors = 0, conesAccepted = 0, conesResolved = 0, coneErrors = 0;
+                var jointFallbacks = new SortedDictionary<string, int>(StringComparer.Ordinal);
+                int pairs = 0, noConfiguration = 0, accepted = 0, readerErrors = 0, conesAccepted = 0, conesResolved = 0, coneErrors = 0, jointMetadata = 0;
                 foreach (var first in sources)
                 foreach (var second in sources)
                 {
@@ -104,6 +109,10 @@ namespace ProfileAudit
                             throw new InvalidDataException("primary admission and complete rejection reasons disagree");
                         if (reasons.Any(r => r.StartsWith("profile reader ", StringComparison.Ordinal))) readerErrors++;
                         bool? coneComponentResolved = null;
+                        bool jointOutcomeMetadataQualified = primary == null && (bool)jointModel.Invoke(null, new object[] { ability, profile });
+                        if (jointOutcomeMetadataQualified) jointMetadata++;
+                        string jointOutcomeMetadataReason = primary ?? (string)jointReason.GetValue(profile);
+                        if (primary == null && !jointOutcomeMetadataQualified) Increment(jointFallbacks, jointOutcomeMetadataReason ?? "not qualified");
                         if (primary == null)
                         {
                             accepted++;
@@ -129,6 +138,8 @@ namespace ProfileAudit
                             delivery = delivery.AssetGuid.ToString(), additional = extra?.AssetGuid.ToString(), touch,
                             profileAccepted = primary == null, primaryReason = primary, limitations = details,
                             coneComponentResolved,
+                            jointOutcomeMetadataQualified,
+                            jointOutcomeMetadataReason,
                             damageActions = profile.Damage.Count, targetBuffs = profile.TargetBuffs.Count,
                             casterBuffs = profile.CasterBuffs.Count, heals = profile.Heals.Count, casterHeals = profile.CasterHeals.Count,
                             hasDetectableEffect = profile.HasDetectableEffect,
@@ -145,6 +156,9 @@ namespace ProfileAudit
                     orderedDistinctPairs = pairs, pairsWithoutConfiguration = noConfiguration, configurations = rows.Count,
                     profileAccepted = accepted, profileWithheld = rows.Count - accepted, acceptedConeProfilesWithAimUnvalidated = conesAccepted,
                     coneComponentsResolved = conesResolved, coneComponentErrors = coneErrors,
+                    jointOutcomeMetadataQualified = jointMetadata,
+                    jointOutcomeMetadataFallbacks = jointFallbacks,
+                    jointValueScope = "metadata gate only; live recipient applicability, duration, damage outcomes and useful value remain unassessed",
                     readerErrors, blockersPresent = anyReasons, soleBlockers = soleReasons, blockerCooccurrence = combinations,
                     cases = rows
                 }, new JsonSerializerOptions { WriteIndented = true }));

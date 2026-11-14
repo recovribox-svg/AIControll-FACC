@@ -1,5 +1,10 @@
 # Magic Fusion implementation
 
+The next slice is the [fusion1 playtest review and Fusion2 qualified valuation core](FUSION2_PLAYTEST_REVIEW.md)
+(§169). It gives each supported control application its own eligibility/duration, removes fake Burning control
+and keeps shared-save damage outcomes through nonlinear value. Full planned support/state/refresh work remains
+staged; G1 grapple release is separate. Exact new checks/package identity accompany that review after validation.
+
 F0/F1 were reviewed and merged into development; see §167 and
 [Claude's integration receipt](competence/INTEGRATION_60_62_CHECKS.json). The original receipts omitted compiler
 versions. The dated [provenance supplement](competence/FUSION_BUILD_PROVENANCE.json) records SDK 8.0.426,

@@ -8,6 +8,28 @@ Read [CONTRIBUTING.md](CONTRIBUTING.md) for shared branch ownership, Codex pull 
 Codex works on task branches and targets pull requests at `claude/dreamy-pasteur-b9h3rn`; Claude reviews and integrates them there.
 Keep `main` for author-authorized releases. Read [AGENTS.md](AGENTS.md) when coordinating agent work.
 
+**Fusion2 playtest review / qualified F2–F3 core (14 November 2026, Codex; new valuation unplayed):**
+`codex/fusion1-playtest-review` starts at merged development `ab1b6a7`, no open PRs. The two supplied AI logs identify
+fusion1 MVID `2e2896c3`; eight encounters, 258 TB / 1,475 RT measured decisions. ToyBox spawns, rests between fights,
+manual Grabber with AI Control on confirmed. [Review / native contracts / next replay](docs/FUSION2_PLAYTEST_REVIEW.md),
+[input hashes](docs/competence/FUSION2_PLAYTEST_INPUTS.json), §169. No observed AI Control exception; 14 OwnerBlueprint
+warnings retain WrathPatches provenance. The lone missing terminal is the final OOC buff command at the file cutoff.
+
+Fix qualified Fusion control to use each application/condition/duration and fresh component, with a 32-interval
+overlap envelope. Burning's inspected damage/remove-self carrier gets no fake control or inherited duration; its
+periodic HP benefit remains unpriced and ally safety is retained. Preserve shared-save outcomes through nonlinear
+HP/kill utility and residual surviving control, without another damage estimate or save. Saved-result configurations
+without a declared root save are withheld, matching native early return; independent saves keep their F0 refusal.
+Metadata and GUID dependency checks are cached;
+scalar duration memo uses the existing synchronous scope/version; no new world/path scan or persistent actor/context
+cache. First-only qualified/fallback witnesses and school/shape metadata aid the next replay. Unknown/composite,
+state-dependent, support, refresh/stacking and sleep/damage cases retain the stated legacy/refusal boundaries.
+
+Other profile admission, policies/slots, ordinary spells and movement stay on the existing paths. New build/check identity
+will be recorded after validation. This is a development test, manifest 0.3.52; no stable release, main push or merge.
+G1 comparative grapple release/initiation remains separate: automatic native maintenance is observed, and cannot
+be judged as a broken idle turn. Read the review before proposing a timeout or counterfactual release mutation.
+
 **Fusion compiler provenance follow-up (14 November 2026, Codex; documentation only):** based on merged development
 `9c03c3d`. Claude correctly identified the missing compiler field in F0/F1 receipts. The preserved environment uses
 .NET SDK **8.0.426**, MSBuild **17.11.69**, Roslyn **4.11.0-3.25569.22 (3fb752d4)**. Fresh real-reference Release
