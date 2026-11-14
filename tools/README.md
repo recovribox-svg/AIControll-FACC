@@ -45,6 +45,13 @@ rod, attack roll, actor or cast. Native command fixtures set flags on uninitiali
 tools/ProfileAudit/run.sh <Wrath_Data/Managed> <mod dll> <work dir> <out.txt> <dump folders...>
 ```
 
+The `SUMMON-KITS` section (docs/SUMMON_KIT_INVENTORY.md) inventories what the loaded graphs can summon and reads
+each creature's kit through the same readers. Three options serve it: `--supplement <folder>` loads fixtures for
+blueprints no dump folder supplies (missing-only: a dump folder's blueprint is never replaced; make the folder with
+`tools/ProfileAudit/summon_kit_supplement.py`, tests in `test_summon_kit_supplement.py`), `--summon-unit-list <file>`
+names creature ids a code-built mod source summons, and `--summon-kit-report <file>` writes the detail rows. A reading
+there is reader recognition, not tactical competence.
+
 ProfileAudit is strict by default: a failed/empty load returns 1 and replaces any stale report with INCOMPLETE.
 For a known small number of unrelated failures, pass `--allow-failures N` among the dump arguments (for example,
 `--allow-failures 1 <dump folders...>`). Every failure is listed; an allowed run returns 0 and prefixes
