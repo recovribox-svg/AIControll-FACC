@@ -8,7 +8,29 @@ Read [CONTRIBUTING.md](CONTRIBUTING.md) for shared branch ownership, Codex pull 
 Codex works on task branches and targets pull requests at `claude/dreamy-pasteur-b9h3rn`; Claude reviews and integrates them there.
 Keep `main` for author-authorized releases. Read [AGENTS.md](AGENTS.md) when coordinating agent work.
 
-**Current handover (13 November 2026, Claude): summon-kit inventory (S1) on `claude/summon-kit-inventory`, PR into development. Tooling and
+**Current handover (14 November 2026, Claude): approach end points (S2) on `claude/approach-end-points`, PR into development, stacked on the
+S1 PR. Source change, not played; manifest 0.3.52, packages and `release/` unchanged; v0.3.52 stays the validated, unplayed stable package.** Read
+`docs/TACTICAL_AI.md` §163 and the [receipt](docs/competence/APPROACH_SPOT_CHECKS.json).
+- Evidence (v0.3.51 `Log.txt`): 52 "path ends out of reach" and 35 "without line of sight" refusals, all in the two turn-based fights (47 + 26 in
+  fight 6 next to 61 issued commands); 40 of the 52 belong to party members and pets, 12 to summons.
+- The proposed cause (a summon-specific reach or body mismatch) is disproved: the radius is the game's own and everyone is refused alike.
+- Cause: the game's turn-based path search ends on its end node, the free cell nearest the target. With the near side crowded that cell is out
+  of reach and no other side is tried. Turn-based had no free-side logic (the v0.3.29 spot rules were real-time only).
+- Change: `SpotRules.Applies` in both modes. Turn-based, a taken straight spot (a body on it, or an ally on its cell) sends the unit to a free
+  grid cell in reach and sight of the target first (`TacticalEngine.CellSpot`, `Candidate.FreeSideWalk`, arrival 0.15 m); the action follows on
+  the next decision. The dispatcher holds that walk to one move action and to its cell (`oneMoveWalk`). No free cell: the straight approach stays
+  on offer, marked "(crowded, no free side found)". Real time is unchanged.
+- Label fix: the refusal text follows the game's test (`CommandDispatcher.PathEndVerdict`, `SpotRules.JudgePathEnd`: mechanics distance, then
+  sight). A verbose-only `[Dispatch] ... path end refused` line gives the end point, distance, radius, height and trimmed points.
+- Bounds: only when the straight spot is taken; 16 cell lookups and reach tests, four priced spots, no added path query, cache or game reference.
+- Limits: `FullAttack+5ft` still refused when crowded (3 of 52 rows); one ring of 16 samples; the 35 sight refusals are not addressed; the share
+  of refusals this removes is unknown until a replay.
+
+Checks: Release 0 warnings; 803 unit + 27 inventory + 3 script tests; ProfileAudit exit 0 with new `APPROACH-SPOT` 28 checks, every other report
+line identical to the S1 run; native harnesses 98/14/10; 0 added game member references. Checked source `49ffd46`; verification build only (DLL SHA-256
+`295591c8...`, MVID `f1f9895b-f92d-4287-bf92-0e47282d4ed2`), no package. Replay steps: §163. Next proposed: I1 (Invocation ledger from the supplied `Log.txt`).
+
+**Earlier handover (13 November 2026, Claude): summon-kit inventory (S1) on `claude/summon-kit-inventory`, PR into development. Tooling and
 documentation only: no gameplay source, manifest or package change; v0.3.52 stays the validated, unplayed stable package.** Read
 [docs/SUMMON_KIT_INVENTORY.md](docs/SUMMON_KIT_INVENTORY.md) and `docs/TACTICAL_AI.md` §162. ProfileAudit has a new section `SUMMON-KITS`
 (`tools/ProfileAudit/SummonKitCheck.cs`): spawn sources, the unique creatures they summon, each creature's static kit and every active ability

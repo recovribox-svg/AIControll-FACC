@@ -1,0 +1,238 @@
+{
+ "task": "S2 approach end points: turn-based walks to a free side of a crowded target; path-end refusal by the game's own test",
+ "date": "2026-11-14",
+ "source_branch": "claude/approach-end-points",
+ "stacked_on": "claude/summon-kit-inventory (S1, 08c5fac)",
+ "development_base": "6cf42818ade856814003ac0cab8872795d884ffd",
+ "checked_source_commit": "49ffd46498b0255902d52d4637211ea73b4e3d14",
+ "kind": "gameplay source change (movement, author-approved slice S2), offline checks only; NOT PLAYED",
+ "author_request": "Proceed with S2 as recommended ... carry this slice through implementation, self-review, required validation, documentation and a PR into development.",
+ "unchanged_against_development_base": {
+  "info_json_changed": false,
+  "manifest_version": "0.3.52",
+  "release_and_test_build_folders_changed": false,
+  "v0352_stable_zip_sha256": "5adcff3ccd218f96d015f4ab882964708f816a7907d1a31c87bf243c6a2e5dbc",
+  "package_built_or_published": false,
+  "real_time_behaviour_changed": false
+ },
+ "verification_build": {
+  "purpose": "Release build of the checked source, used as the audit's and harnesses' mod reference; not a package and never deployed",
+  "actual_supplied_game_unity_umm_references": true,
+  "non_incremental": true,
+  "warnings": 0,
+  "errors": 0,
+  "dll_sha256": "295591c86ca97dae553aad63bfc68a7440069764f5146504835ba9eb858dc35d",
+  "dll_mvid": "f1f9895b-f92d-4287-bf92-0e47282d4ed2",
+  "two_builds_identical": true,
+  "note": "The portable PDB's source-link record carries the HEAD commit, so the DLL's debug directory (72 bytes) changes with every commit while the IL stays identical. A build of the same source before commit 49ffd46 (DLL 477ba939..., MVID 2ef704f2-c840-484f-9028-c7e7cb73760a) gave a byte-identical audit report. A later receipt-only commit does not replace this tested DLL."
+ },
+ "unit_tests": {
+  "passed": 803,
+  "failed": 0,
+  "skipped": 0,
+  "new": 16,
+  "new_cases": [
+   "Applies_ToContactApproaches_InBothModes",
+   "CellFree_FollowsTheGamesRule (theory)",
+   "CellSpot_KeepsTheTargetInReachWhereTheWalkStops",
+   "OneMoveWalk_HoldsOnlyTheTurnBasedFreeSideWalkBeforeAnAction (theory)",
+   "JudgePathEnd_CloseEnough_IsInReach",
+   "JudgePathEnd_BeyondTheRadius_IsShortByTheGamesDistance",
+   "JudgePathEnd_InsideTheRadiusWithoutSight_IsNoSight_NotAShortfall",
+   "JudgePathEnd_NoSightNeeded_NeverBlamesSight",
+   "JudgePathEnd_BrokenInput_IsShort"
+  ]
+ },
+ "inventory_tests": {
+  "passed": 27,
+  "failed": 0
+ },
+ "supplement_script_tests": {
+  "passed": 3,
+  "failed": 0
+ },
+ "added_foreign_member_references_in_the_mod": {
+  "added": 0,
+  "removed": 0,
+  "method": "SigDump of the S1 verification build (39e50d9f..., unchanged development source) against this build: identical"
+ },
+ "profile_audit": {
+  "status": "PASS (PARTIAL load: one allowed failure)",
+  "exit_code": 0,
+  "allow_failures": 1,
+  "loaded_unique": 45251,
+  "failed": 1,
+  "known_load_failure": "AchaekekSacredWeaponFeature: serialized SawtoothSaber against the native SawtoothSabre enum value",
+  "ability_rows": 4845,
+  "reader_errors": 0,
+  "failed_check_lines": 0,
+  "inputs": "the 20 dump folders, the 607 missing-only stock 2.7.0x fixtures and the Demonology creature list of the S1 receipt (SUMMON_KITS_CHECKS.json)",
+  "report_sha256": "3c195f922edf7d1962f33cf667b1d19c7a052f46b2310570394755e53ebc84da",
+  "two_runs_byte_identical": true,
+  "summon_kit_detail_unchanged": true,
+  "sections": 39,
+  "section_checks": 945,
+  "new_section": {
+   "name": "APPROACH-SPOT",
+   "checks": 28,
+   "failures": 0,
+   "covers": [
+    "native IL contracts: ABPathWithClearance / LosPathConditionForGrid end rule, UnitCommand.IsUnitCloseEnough (mechanics distance + sight), AwaitMovementFinish of UnitAttack/UnitUseAbility",
+    "native distance scalars: GeometryUtils.MechanicsDistance flat within 1.5 m height, max(flat, dy/2) beyond",
+    "compiled routes: PlanApproach -> CellSpot/CellFreeAt, Execute and preflight pass oneMoveWalk, TryPrepare -> PathEndVerdict",
+    "the pure rules through the compiled mod: Applies, CellFree, OneMoveWalk, JudgePathEnd"
+   ],
+   "not_run": "no actor, path search, command or Unity execution"
+  },
+  "against_s1_run": "every other report line identical (diff: the new section's line and one blank line)"
+ },
+ "inherited_native_harnesses": {
+  "rebuilt_against_this_dll": true,
+  "toggle_cost": {
+   "checks": 98,
+   "failures": 0,
+   "psionics_provider": true
+  },
+  "tome_burn": {
+   "checks": 14,
+   "failures": 0
+  },
+  "toybox_spend": {
+   "checks": 10,
+   "failures": 0
+  }
+ },
+ "played_log_evidence": {
+  "file": "Log.txt of the v0.3.51 session",
+  "sha256": "e661b9d82254fa8b2062a518eb4e27ddca1df461a5eb0b04ff49ec048bad7cbb",
+  "matches_V0352_PLAYTEST_INPUTS": true,
+  "fights": 6,
+  "turn_based_fights": 2,
+  "out_of_reach_rows": 52,
+  "without_sight_rows": 35,
+  "walk_goes_nowhere_rows_same_prefix": 5,
+  "by_fight": {
+   "fight_2": {
+    "out_of_reach": 5,
+    "without_sight": 9
+   },
+   "fight_6": {
+    "out_of_reach": 47,
+    "without_sight": 26,
+    "issued_turn_based_commands": 61
+   },
+   "real_time_fights": 0
+  },
+  "by_option": {
+   "Move+Attack": 18,
+   "Aid Another": 26,
+   "Sunder Armor": 4,
+   "Cat's Grace": 1,
+   "FullAttack+5ft": 3
+  },
+  "by_unit": {
+   "Abrikandilu (summon)": 10,
+   "Valmot": 9,
+   "main character": 9,
+   "Camellia": 7,
+   "Tuvel": 4,
+   "Ulbrig": 3,
+   "Seelah": 3,
+   "Lann": 3,
+   "Vermlek (summon)": 2,
+   "Aeiluvetar": 2
+  },
+  "party_and_pets": 40,
+  "summons": 12,
+  "by_target": {
+   "Hand of Hosilla": 27,
+   "Goblin Troublemonger": 12,
+   "Neophyte Sharpshooter": 7,
+   "Fiendish Large Earth Elemental": 5,
+   "unparsed": 1
+  },
+  "shortfalls_m": {
+   "0.2-0.8": 38,
+   "1.2-2.9": 14
+  }
+ },
+ "findings": {
+  "proposed_cause_summon_specific_reach_or_body": "DISPROVED: the radius is the game's own (UnitAttack.GetApproachRadius) and party members are refused alike",
+  "cause": "the game's turn-based path search ends on its end node, the free cell nearest the goal; with the near side crowded that cell is out of reach and no other side is tried; turn-based had no free-side logic",
+  "label_defect": "the shortfall used the straight 3-D distance; the game's test is the mechanics distance plus sight",
+  "considered_not_built": "stop at the first valid point on the way: the path's end already is the nearest free cell"
+ },
+ "bounds": {
+  "runs_only_when": "the straight spot is taken (contact approaches, range <= 4 m, movement left)",
+  "per_search": "16 grid-cell lookups and at most 16 native reach tests, 4 priced spots, no added path query",
+  "witness_line": "verbose log only, on a refusal only, from values already read",
+  "cache_or_state_between_decisions": "none"
+ },
+ "limits": [
+  "Not played: how often the free-side walk is chosen and how many refusals it removes is unknown until a replay.",
+  "FullAttack+5ft does not go through PlanApproach (3 of 52 rows) and is still refused when crowded.",
+  "One ring of 16 samples at 0.85 x range: a free cell between samples is missed (the straight approach then stays on offer).",
+  "A refused free-side walk leaves no straight attempt on that target in the same decision.",
+  "The 14 shortfalls of 1.2-2.9 m are attributed to crowding as the likely, not proven, cause; the verbose witness line will tell.",
+  "The 35 sight refusals are not addressed; some former 'short' rows on slopes will now read as sight refusals.",
+  "Only contact approaches; ranged and long-reach approaches are unchanged.",
+  "The ProfileAudit load is PARTIAL (one known, named failure)."
+ ],
+ "task_source_files": [
+  {
+   "file": "Tactics/SpotRules.cs",
+   "sha256": "6946b91375f8e6fccb9923cd2d61a0a5679a34e51f5a406c62e5337e816c1ced"
+  },
+  {
+   "file": "Tactics/TacticalEngine.cs",
+   "sha256": "1737ec84c94e72638ac0c381a1d91f609b74d8d65126ab7701e6441396c10352"
+  },
+  {
+   "file": "Tactics/TacticalEngine.Spots.cs",
+   "sha256": "3c5fce3b5adf18308e5cc0e77ab368421a8fdc913c83ff08e6d926aa95a4b614"
+  },
+  {
+   "file": "Tactics/TacticalEngine.ApproachValidation.cs",
+   "sha256": "57be5458657cbb85ca512858ad3a4a3ca44a151b4bef5e46e0283a2e132352c9"
+  },
+  {
+   "file": "GameInterface/CommandDispatcher.cs",
+   "sha256": "5b899fb75711789443d5e30ac5da0a79a8352bca3cbbbd3eae8a56b9ddf54df7"
+  },
+  {
+   "file": "tests/CompanionAI.Tests/SpotRulesTests.cs",
+   "sha256": "fc52884418000f4aa45d703f3a22ccd9affab98349ffb29cdb100339eeaed2a7"
+  },
+  {
+   "file": "tools/ProfileAudit/ApproachSpotCheck.cs",
+   "sha256": "327089b1aa3ee5c0c99d1ba942f9aba3fbdb7a32c7038f139176efa6bb63baa7"
+  },
+  {
+   "file": "tools/ProfileAudit/Program.cs",
+   "sha256": "1da072ff50a54c54a2a02652101b1e1132f72e3f93f2c49335e6c610452a7158"
+  }
+ ],
+ "private_verification_artifacts": [
+  {
+   "file": "pacommit/console.txt",
+   "sha256": "235221cfbbf994404334837317e4ec9c4dc6680b0f737eaf47f8a9b838457761"
+  },
+  {
+   "file": "pacommit/toggle_console.txt",
+   "sha256": "54c6e4646bf2db63d6bdc6349e500ebbcb625dd0b4771fe3800aa0fd6e826085"
+  },
+  {
+   "file": "pacommit/tome_console.txt",
+   "sha256": "18ccdd7bac5aa924b7102789362df0d8939f1ed2b0d5fdcc720f2cbfe83b0620"
+  },
+  {
+   "file": "pacommit/toybox_console.txt",
+   "sha256": "d6d5216a2ec031607c0a80ec81c311aba49e229ba66939fa25b060f5007faec7"
+  }
+ ],
+ "gameplay": {
+  "status": "NOT PLAYED",
+  "replay": "docs/TACTICAL_AI.md section 163"
+ },
+ "main_tag_or_release_publication": false
+}
