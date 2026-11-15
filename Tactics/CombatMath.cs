@@ -297,12 +297,7 @@ namespace CompanionAI_Pathfinder.Tactics
             {
                 var d = delta?.Invoke(line.Weapon, line.Index) ?? new KeyValuePair<int, float>(0, 0f);
                 float lineDamage = ExpectedWeaponLine(line, d.Key, d.Value, lands, out float p, out float perHit);
-                if (grapple != null)
-                {
-                    lineDamage *= run.Next(p, grapple.Trigger.Suits(line.Weapon), grapple.Success);
-                    // The free attack: damage only, a natural weapon (UnitGrappleInitiatorAttack.IsSuitableWeapon).
-                    if (line.Weapon?.Blueprint?.IsNatural == true) { freeDamage += line.GameHit; natural++; }
-                }
+                if (grapple != null) lineDamage = PriceGrabLine(line, grapple, lineDamage, p, ref run, ref freeDamage, ref natural);
                 if (MagusMechanics.WeaponDeliversTouch(line.Weapon?.Blueprint, trackTouch, line.Weapon == unit.Body.EmptyHandWeapon))
                 {
                     touch.Add(p, Math.Min(line.ThreatChance, p) * p);
@@ -325,13 +320,7 @@ namespace CompanionAI_Pathfinder.Tactics
             result.AnyHitChance = 1f - noHit;   // a grapple follows a hit: the chance of at least one hit is unchanged
             result.TouchHitChance = touch.Hit;
             result.TouchCritChance = touch.Critical;
-            if (grapple != null && run.Starts > 0f)
-            {
-                result.GrappleChance = run.Starts;
-                result.Grapple = grapple;
-                result.ExpectedAttacks = run.Attacks;
-                result.GrappleFreeDamage = natural > 0 ? freeDamage / natural : 0f;
-            }
+            if (grapple != null) FinishGrabQuote(result, grapple, run, freeDamage, natural);
             return result;
         }
 

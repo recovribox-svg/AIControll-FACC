@@ -6132,3 +6132,24 @@ record the matrix comparison: 7,306/15,494 admitted, 1,166 admitted cone compone
 profiles. Only the two Frigid ability verdicts gain Soft control. Original raw enum failure remains separate.
 No intermediate ZIP; the follow-up leap task supplies a cumulative test. Manifest remains 0.3.52, unplayed.
 No movement, commitment, retreat, pathfinding or stuck-cancellation change.
+
+## 177. Leap Grabber modes retain grapple truncation and hold value (15 November 2026, Codex)
+
+[Implementation, source finding, bounds and replay](LEAP_GRAB_MODES.md). Continue #69 `2e86342` on
+`codex/leap-grab-modes`, retaining #65-68, development `6b9be42`. The older fusion2g1b log contains no issued leap;
+this repair has native/source and cached-routine evidence, not a played leap counterfactual.
+
+The old cached mode quote walked the full routine and omitted its grapple fields even though the candidate's initial
+quote already priced a grab cutting it short. Share the original ordinary `PriceGrabLine` / `FinishGrabQuote` kernel,
+retaining initiation, expected attacks and free-damage/hold fields. After exact routine/frame validation, read the
+assumed grab through the existing maneuver cache. Expose Grabber to the existing <=32-set chooser with ownership,
+blocklist, availability, once-per-round and hysteresis rules. No-grab paths bypass the helper.
+
+Native own-weapon quotes remain capped at four and landing attempts at eight. No extra own-weapon quote or mechanics context/path/world scan,
+new landing or safety policy. Charge-adjusted landing defence, captured concealment, existing CMB/CMD cache, final
+issue checks and accepted-dispatch mode application remain. A newly considered grab may need the same maneuver
+calculations as an ordinary mode alternative. Holder opportunity/safety and monster-victim support remain separate.
+
+The native-layout fixtures now check concrete grab/off/impossible/accuracy/concealment outcomes and both callers'
+connection to the shared kernel. Final checks/source/compiler and cumulative test identity follow in
+`docs/competence/LEAP_GRAB_CHECKS.json`. Manifest remains 0.3.52; no actor flight/gameplay acceptance or release.
