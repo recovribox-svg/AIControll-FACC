@@ -8,6 +8,22 @@ Read [CONTRIBUTING.md](CONTRIBUTING.md) for shared branch ownership, Codex pull 
 Codex works on task branches and targets pull requests at `claude/dreamy-pasteur-b9h3rn`; Claude reviews and integrates them there.
 Keep `main` for author-authorized releases. Read [AGENTS.md](AGENTS.md) when coordinating agent work.
 
+**Current handover (15 November 2026, Claude): PR #64 (Fusion F2/F3 core) reviewed and merged into development (`6b9be42`);
+G1 grapple state awareness on `claude/grapple-awareness`, PR into development. Not played.** Read `docs/TACTICAL_AI.md`
+§170, [docs/GRAPPLE_G1.md](docs/GRAPPLE_G1.md) and the [receipt](docs/competence/G1_GRAPPLE_CHECKS.json).
+- PR #64: no material defect. Rerun on its head: 821 unit tests, ProfileAudit exit 0, native harnesses 98/14/10.
+  Its package DLL decompiles to the same code as a local build apart from compiler lowering.
+- G1 evidence (fusion1 logs): with Grabber on, every full attack that grappled ended after one claw. The native
+  `CantUseStandardActions` stops the routine, and the engine priced all of it.
+- G1 change (both modes, shared weapon value): it reads the native grab trigger and cuts the forecast routine at the
+  expected grapple. It values the hold: the victim held then pinned, against the holder's lost turns, plus the free
+  natural attack each maintained round. The header names the pair, and one `[Grapple]` row is logged per fight and pair.
+- Not done: Release Grapple (no played case; proposed G2), and spells cast by a party member a monster holds.
+- Checks: Release 0 warnings; 832 unit + 27 + 3 + 11 tests; ProfileAudit GRAPPLE 32 checks, every other report line
+  unchanged; native harnesses 98/14/10. Manifest 0.3.52; no package, `main`, tag or release change.
+- **Next:** the author plays a grab-capable form against a dangerous and a weak target in TB and RT (replay in
+  GRAPPLE_G1.md), with the fusion2 checks (`docs/FUSION2_PLAYTEST_REVIEW.md`).
+
 **Fusion2 playtest review / qualified F2–F3 core (14 November 2026, Codex; new valuation unplayed):**
 `codex/fusion1-playtest-review` starts at merged development `ab1b6a7`, no open PRs. The two supplied AI logs identify
 fusion1 MVID `2e2896c3`; eight encounters, 258 TB / 1,475 RT measured decisions. ToyBox spawns, rests between fights,

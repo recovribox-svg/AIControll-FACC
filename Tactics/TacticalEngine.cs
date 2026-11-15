@@ -993,6 +993,7 @@ namespace CompanionAI_Pathfinder.Tactics
             FightStats.PartyObserved(ctx.Round, out float partyDealt, out int roundsSeen);
             ctx.PartyDamagePerRound = ValueModel.PartyDamagePerRound(partyLevels, partyDealt, roundsSeen);
             ctx.ExpectedRounds = ValueModel.ExpectedRounds(enemyHp, ctx.PartyDamagePerRound);
+            s_GrappleHorizon = Math.Min(ctx.ExpectedRounds, 3f);   // ★ G1: as the control horizon (effectRounds)
             ctx.Difficulty = Mathf.Clamp(enemyThreat / Math.Max(1f, partyPower), 0.1f, 2f);
             // ★ v0.3.18 (N5): the enemies' real damage to the party against the engine's prediction for the same rounds.
             FightStats.DangerObserved(ctx.Round, out float enemyDealt, out float predicted, out int roundsPredicted);
@@ -2401,10 +2402,42 @@ namespace CompanionAI_Pathfinder.Tactics
         /// <summary>★ v0.3.18: a weapon attack estimate's damage value (<paramref name="factor"/>: a bonus on the damage, Charge).</summary>
         /// <remarks>★ v0.3.28 test 14: and what its hits carry beyond their damage (a poisoned or draining weapon:
         /// CombatMath.OnHitHp), for the hits it is expected to land.</remarks>
+        /// <remarks>★ G1: and the grapple a hit of it may start (Grabber and its kin, <see cref="GrappleHold"/>): the attacks
+        /// after it are already cut from the estimate, its hold is valued here.</remarks>
         private static float DamageValue(UnitEntityData enemy, WeaponAttackEstimate est, float factor = 1f) =>
             est == null ? 0f : DamageValue(enemy, est.ExpectedDamage * factor +
-                                           CombatMath.OnHitHp(est.Attacker, enemy, est.Attacks * est.FirstHitChance),
-                                           est.AnyHitChance, est.EndsRegeneration);
+                                           CombatMath.OnHitHp(est.Attacker, enemy,
+                                               (est.GrappleChance > 0f ? est.ExpectedAttacks : est.Attacks) * est.FirstHitChance),
+                                           est.AnyHitChance, est.EndsRegeneration) + GrappleHold(enemy, est);
+
+        /// <summary>★ G1: the control horizon of this decision (min(expected rounds, 3), as for control effects).</summary>
+        private static float s_GrappleHorizon = 3f;
+
+        /// <summary>
+        /// ★ G1 (docs/TACTICAL_AI.md §170): what the grapple a hit of <paramref name="est"/> may start is worth: its chance
+        /// times the hold's value (ValueModel.GrappleHoldValue). The victim's side is its control worth, held then pinned
+        /// at the shared soft and hard control shares (x0.4 when it is already disabled, as for control); the holder's side
+        /// is its worth per round at the hard share, as an ally caught by our own control is priced, less the free natural
+        /// attack each maintained round. Negative when the hold costs the holder more than the victim loses.
+        /// </summary>
+        private static float GrappleHold(UnitEntityData enemy, WeaponAttackEstimate est)
+        {
+            if (est == null || est.GrappleChance <= 0f || est.Grapple == null || est.Attacker == null) return 0f;
+            float persist = ValueModel.GrapplePersists(est.Grapple.Maintain, est.Grapple.BreakFree);
+            float victim = CombatMath.ControlWorth(enemy) * (CombatMath.IsDisabled(enemy) ? 0.4f : 1f);
+            float holder = ValueModel.PerRound(Level(est.Attacker));
+            float hold = ValueModel.GrappleHoldValue(persist, s_GrappleHorizon, victim, holder, est.GrappleFreeDamage,
+                ControlShare(ControlStrength.Soft, false, false), ControlShare(ControlStrength.Hard, false, false));
+            float value = est.GrappleChance * hold;
+            AbilityDiscovery.ReportOnce($"grapple|{CombatMemory.Fight}|{est.Attacker.UniqueId}|{enemy.UniqueId}|{est.Attacks}",
+                () => $"[Grapple] {est.Attacker.CharacterName} -> {enemy.CharacterName}: a hit grapples {est.GrappleChance:P0} " +
+                      $"({est.Attacks} attack(s), {est.ExpectedAttacks:F1} expected before the grapple stops the routine); hold " +
+                      $"{hold:+0.0;-0.0} if it starts = {value:+0.0;-0.0} (lasts {persist:P0}/round: maintain {est.Grapple.Maintain:P0}, " +
+                      $"escape {est.Grapple.BreakFree:P0}; victim {victim:F1}, holder {holder:F1} per round, free natural hit " +
+                      $"{est.GrappleFreeDamage:F1}, {ValueModel.GrappleHeldRounds(persist, s_GrappleHorizon):F2} pinned rounds in " +
+                      $"{s_GrappleHorizon:F1}); first per fight and pair");
+            return value;
+        }
 
         private static float RoleWeight(TacticalContext ctx, string category)
         {
