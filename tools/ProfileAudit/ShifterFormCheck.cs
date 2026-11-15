@@ -47,17 +47,26 @@ namespace ProfileAudit
                         "actual Griffon Shape tier is a Standard-action shift: " + name);
                 }
 
-                // 2. Minor aspects survive the shift and stack with the form: the shape removes only buffs carrying its
-                //    own removal descriptor (Polymorph), and no aspect buff carries it.
-                var griffon = forms.FirstOrDefault(b => b.name == "ShifterWildShapeGriffonAbillity");
-                var removed = griffon?.GetComponents<AbilityExecuteActionOnCast>()
-                    .SelectMany(c => c.Actions?.Actions ?? Array.Empty<Kingmaker.ElementsSystem.GameAction>())
-                    .OfType<ContextActionRemoveBuffsByDescriptor>().Select(a => a.SpellDescriptor.Value)
-                    .Aggregate(SpellDescriptor.None, (x, y) => x | y) ?? SpellDescriptor.None;
-                Check(removed != SpellDescriptor.None, "Griffon Shape removes buffs by a descriptor before applying the form");
+                // 2. All three playable tiers remove Polymorph buffs on cast AND consume Shifter's Rush explicitly.
+                //    Neither removes a minor aspect. Remaining numerical bonuses obey the usual native stacking rules.
+                var rush = blueprints.OfType<BlueprintBuff>().FirstOrDefault(b => b.name == "ShiftersRushBuff");
+                Check(rush != null, "actual temporary Shifter's Rush buff is present");
+                foreach (var name in new[] { "ShifterWildShapeGriffonAbillity", "ShifterWildShapeGriffonAbillity9", "ShifterWildShapeGriffonAbillity14" })
+                {
+                    var bp = forms.FirstOrDefault(b => b.name == name);
+                    var onCast = bp?.GetComponents<AbilityExecuteActionOnCast>()
+                        .SelectMany(c => c.Actions?.Actions ?? Array.Empty<Kingmaker.ElementsSystem.GameAction>()).ToArray();
+                    Check(onCast?.Length == 1 && onCast[0] is ContextActionRemoveBuffsByDescriptor removal &&
+                        removal.SpellDescriptor.Value == SpellDescriptor.Polymorph,
+                        "actual playable tier's on-cast removal is exactly Polymorph: " + name);
+                    var profile = bp == null ? null : AbilityProfile.Get(bp);
+                    var explicitRemovals = profile?.RemovedBuffs.Concat(profile.CasterRemovedBuffs).Distinct().ToArray();
+                    Check(rush != null && explicitRemovals?.Length == 1 && explicitRemovals[0] == rush,
+                        "actual playable tier explicitly consumes only Shifter's Rush, not an aspect: " + name);
+                }
                 var aspects = blueprints.OfType<BlueprintBuff>()
                     .Where(b => b.name.StartsWith("ShifterAspect", StringComparison.Ordinal) && b.name.EndsWith("Buff", StringComparison.Ordinal)).ToList();
-                var lost = aspects.Where(b => ((b.GetComponent<SpellDescriptorComponent>()?.Descriptor.Value ?? SpellDescriptor.None) & removed) != SpellDescriptor.None).ToList();
+                var lost = aspects.Where(b => ((b.GetComponent<SpellDescriptorComponent>()?.Descriptor.Value ?? SpellDescriptor.None) & SpellDescriptor.Polymorph) != SpellDescriptor.None || b == rush).ToList();
                 lines.Add($"SHIFTER-FORMS aspects: {aspects.Count} aspect buffs, {lost.Count} removed by a shift" +
                           (lost.Count > 0 ? ": " + string.Join(", ", lost.Select(b => b.name)) : ""));
                 Check(aspects.Count > 0 && aspects.Any(b => b.name == "ShifterAspectGriffonBuff"), "actual aspect buffs present, Griffon among them");
@@ -77,7 +86,8 @@ namespace ProfileAudit
                     "the Fury hold adds no rule, context or forecast");
                 Check(engine.GetMethods(all).Where(m => m.Name == "Decide").Any(m => Calls(m, "HoldFuryForForm")), "Decide applies the Fury hold to the turn's quick action");
                 var finish = engine.GetMethod("FinishFormAppraisal", all);
-                Check(Calls(finish, "FormNoteChanged") && !Calls(finish, "Trigger") && !Calls(finish, "CreateContext") && !Calls(finish, "ShifterFormDamage"),
+                var note = mod.GetType("CompanionAI_Pathfinder.Tactics.ShifterRules+FormNoteLog").GetMethod("Observe", all);
+                Check(Calls(finish, "Observe") && Calls(note, "FormNoteChanged") && !Calls(finish, "Trigger") && !Calls(finish, "CreateContext") && !Calls(finish, "ShifterFormDamage"),
                     "form appraisal rows are bounded and add no calculation");
 
                 // 4. The shared rules on the played numbers (fusion2g1b).

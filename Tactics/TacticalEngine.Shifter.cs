@@ -127,25 +127,17 @@ namespace CompanionAI_Pathfinder.Tactics
             // moves materially (ShifterRules.FormNoteChanged). fusion2g1b RT1: Griffon Shape was the best option at 34.9,
             // then vanished from the next decision's list after Griffon Aspect, and the log could not say why.
             string key = $"{ctx.Unit.UniqueId}|{ability.Blueprint.AssetGuid}";
-            if (!FormNotes.TryGetValue(key, out var note) || note.Fight != CombatMemory.Fight)
+            if (FormNotes.Observe(CombatMemory.Fight, key, result.Value, out bool first, out float previous))
             {
-                if (FormNotes.Count > 64) FormNotes.Clear();
-                FormNotes[key] = new FormNote { Fight = CombatMemory.Fight, Value = result.Value };
-                Main.Log($"[Shifter] {ctx.Unit.CharacterName}: {ability.Name} form appraisal {result.Value:0.#}: {result.Detail}");
-            }
-            else if (note.Repeats < ShifterRules.MaxFormNoteRepeats && ShifterRules.FormNoteChanged(note.Value, result.Value))
-            {
-                Main.Log($"[Shifter] {ctx.Unit.CharacterName}: {ability.Name} form appraisal now {result.Value:0.#} (was {note.Value:0.#}, " +
-                         $"round {CombatMemory.Round}): {result.Detail}");
-                note.Value = result.Value;
-                note.Repeats++;
+                if (first) Main.Log($"[Shifter] {ctx.Unit.CharacterName}: {ability.Name} form appraisal {result.Value:0.#}: {result.Detail}");
+                else Main.Log($"[Shifter] {ctx.Unit.CharacterName}: {ability.Name} form appraisal now {result.Value:0.#} (was {previous:0.#}, " +
+                              $"round {CombatMemory.Round}): {result.Detail}");
             }
             return result;
         }
 
         /// <summary>★ shifter-forms (§174): the last logged form appraisal per unit and form ability, for this fight only.</summary>
-        private sealed class FormNote { internal int Fight; internal float Value; internal int Repeats; }
-        private static readonly Dictionary<string, FormNote> FormNotes = new Dictionary<string, FormNote>();
+        private static readonly ShifterRules.FormNoteLog FormNotes = new ShifterRules.FormNoteLog();
 
         /// <summary>★ shifter-forms (§174): a candidate that casts a new Shifter-style major form.</summary>
         private static bool IsNewShifterForm(Candidate c) => c != null && c.Kind == CandidateKind.Ability && c.Ability != null &&
@@ -162,12 +154,13 @@ namespace CompanionAI_Pathfinder.Tactics
         /// </summary>
         private static Candidate HoldFuryForForm(TacticalContext ctx, List<Candidate> usable, Candidate fury, Candidate main, bool preview)
         {
-            if (fury == null || !fury.ShifterFury || ctx.Unit.Body.IsPolymorphed || !IsNewShifterForm(main)) return fury;
+            if (fury == null || !fury.ShifterFury || ctx.Unit.Body.IsPolymorphed || main == null ||
+                main.Value < MinMainValue || !IsNewShifterForm(main)) return fury;
             var immediate = usable.FirstOrDefault(c => c != main && !c.PureBuff && !QuickAction(c) && c.Value >= MinMainValue);
             float furyRound = fury.Value / Math.Max(1f, ctx.ExpectedRounds);
             if (!ValueModel.HoldFuryForForm(main.Value, immediate?.Value ?? 0f, furyRound)) return fury;
             if (!preview)
-                ReportOnce($"furyhold|{ctx.Unit.UniqueId}|{CombatMemory.Round}",
+                ReportOnce($"furyhold|{CombatMemory.Fight}|{ctx.Unit.UniqueId}|{CombatMemory.Round}",
                            $"[Shifter] {ctx.Unit.CharacterName}: {fury.Label} waits - {main.Label} ({main.Value:0.#}) is this turn's main action " +
                            $"over {(immediate?.Label ?? "no immediate action")} ({(immediate?.Value ?? 0f):0.#}) and the Fury's {furyRound:0.#} this round");
             return usable.FirstOrDefault(c => c != fury && !c.ShifterFury && QuickAction(c) && c.Value >= QuickBar(c));

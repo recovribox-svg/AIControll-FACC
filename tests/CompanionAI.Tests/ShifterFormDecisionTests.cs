@@ -47,5 +47,36 @@ namespace CompanionAI.Tests
         [InlineData(0.2f, 0.4f, false)]   // both not paying
         public void FormAppraisalIsLoggedAgainOnlyWhenItTurnsOrMovesMaterially(float logged, float now, bool expected)
             => Assert.Equal(expected, ShifterRules.FormNoteChanged(logged, now));
+
+        [Fact]
+        public void FullNoteLedgerKeepsItsExistingRepeatLimit()
+        {
+            var notes = new ShifterRules.FormNoteLog(1);
+            Assert.True(notes.Observe(1, "form", 40, out bool first, out _)); Assert.True(first);
+            for (int i = 0; i < ShifterRules.MaxFormNoteRepeats; i++)
+                Assert.True(notes.Observe(1, "form", i % 2 == 0 ? 0 : 40, out _, out _));
+            for (int i = 0; i < 100; i++)
+                Assert.False(notes.Observe(1, "other-" + i, 40, out _, out _));
+            Assert.False(notes.Observe(1, "form", 0, out _, out _));
+        }
+
+        [Fact]
+        public void NewFightRestoresNoteCapacityAndFirstObservation()
+        {
+            var notes = new ShifterRules.FormNoteLog(1);
+            Assert.True(notes.Observe(1, "old-form", 40, out _, out _));
+            Assert.True(notes.Observe(2, "new-form", 40, out bool first, out _)); Assert.True(first);
+            Assert.True(notes.Observe(2, "new-form", 0, out first, out float previous));
+            Assert.False(first); Assert.Equal(40, previous);
+        }
+
+        [Fact]
+        public void SmallChangesAccumulateAgainstTheLastLoggedValue()
+        {
+            var notes = new ShifterRules.FormNoteLog();
+            Assert.True(notes.Observe(1, "form", 40, out _, out _));
+            Assert.False(notes.Observe(1, "form", 35, out _, out _));
+            Assert.True(notes.Observe(1, "form", 29, out _, out float previous)); Assert.Equal(40, previous);
+        }
     }
 }

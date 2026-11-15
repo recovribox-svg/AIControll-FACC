@@ -8,7 +8,25 @@ Read [CONTRIBUTING.md](CONTRIBUTING.md) for shared branch ownership, Codex pull 
 Codex works on task branches and targets pull requests at `claude/dreamy-pasteur-b9h3rn`; Claude reviews and integrates them there.
 Keep `main` for author-authorized releases. Read [AGENTS.md](AGENTS.md) when coordinating agent work.
 
-**Current handover (15 November 2026, Claude): Shifter form decisions refined on `claude/shifter-forms`, stacked on
+**Current handover (15 November 2026, Codex): Shifter form verification on `codex/shifter-form-validation`, continuing
+Claude's `730c6b6`, stacked on #67 `830d777` -> #66 -> #65; development base `6b9be42`. New behavior unplayed.**
+Read [form design, corrections and replay](docs/SHIFTER_FORM_DECISIONS.md), §174-175. Real supplied game references
+and exports are retained here; no re-upload is needed. SDK 8.0.426 / Roslyn 4.11. Gameplay/audit builds have zero
+warnings; the preliminary native audit passes SHIFTER-FORMS 21 and CAMPAIGN-FLAG 21. All other stdout/report lines
+match a fresh #67 build on identical inputs (only new section/output paths normalized).
+
+Retain Claude's Fury/form scheduling and next-round attack horizon. Correct the note ledger's mid-fight capacity
+clear (preserve at most 64 identities/fight and four repeats), guard Fury holding with the main-action minimum,
+and scope the Fury wait note by fight. Three extra scalar-ledger tests join Claude's 15. Actual playable Griffon
+tiers are Standard; each also consumes Shifter's Rush, besides Polymorph descriptor removal. None of the 26
+supplied aspect buffs is removed; numerical stacking remains native. Rush can make the shift free and SlotOf reads
+the actual RuntimeActionType. No movement/commitment/retreat/path/stuck policy or new form-fact projection.
+
+Final source/compiler/reference receipt and frozen UMM test identity follow validation in
+`docs/competence/SHIFTER_FORMS_CHECKS.json`. Manifest stays 0.3.52; no main/development push, tag, merge or release.
+The author next plays the form replay with Grabber left to the engine, plus GRABBER_G2.md and fusion2 checks.
+
+**Earlier handover (15 November 2026, Claude): Shifter form decisions refined on `claude/shifter-forms`, stacked on
 PR #67 (no PR yet). Build, audit and package pending; not played.** Read [docs/SHIFTER_FORM_DECISIONS.md](docs/SHIFTER_FORM_DECISIONS.md)
 and `docs/TACTICAL_AI.md` §174. The author asked for the form decisions (when to shift, which form) to be checked and
 refined, with a general proposal as ideas.

@@ -3,11 +3,13 @@
 The author asked for the engine's Shifter form decisions to be checked and refined: when to take a major form, which one,
 and how the minor aspects fit. They supplied a general proposal as a source of ideas; it is not specific to this mod.
 This page records the evidence, how each idea maps onto the engine, the three changes made, and what is left open.
-`docs/TACTICAL_AI.md` §174. Branch `claude/shifter-forms`, stacked on PR #67.
+`docs/TACTICAL_AI.md` §174-175. Claude's `claude/shifter-forms` at `730c6b6` is continued on
+`codex/shifter-form-validation`, stacked on PR #67 (`830d777`), then #66 and #65. Development remains `6b9be42`.
 
-**Status.** The unit tests pass (852, 15 new). The Release build, ProfileAudit and test package are still to do. The
-session's machine was replaced, which removed the uploaded game assemblies and blueprint exports; they are needed again
-(see Verification).
+**Status.** Claude's implementation had 852 passing unit tests but no real-reference build. Codex's retained inputs
+include the actual assemblies and exports, so no re-upload is required here. Both the gameplay source and audit tool
+compile with zero warnings. Final checks, receipt and package identity are recorded under Verification after validation.
+The new behavior remains unplayed.
 
 ## How the engine decides today (unchanged parts)
 
@@ -54,7 +56,7 @@ These figures come from the fusion2g1b review (§172). The raw log is private an
 |---|---|---|
 | Master Shapeshifter: keep the form for good | Native: permanent, no resource. The engine never ends or recasts a form; the projection includes Master Shapeshifter's +4. | None. A pre-combat shift stays off (the out-of-combat exclusion); that is a policy for the author. |
 | Spend a charge only when the threat is high | The 15 % restraint already asks for a clear gain. | Not added. A form outlasts the fight (it carries into later fights until it lapses), and the log shows too few shifts, not too many. |
-| Minor aspects are swift and stack with the form | Swift quick action, valued by its stats. | New audit check: the shape removes only buffs carrying its removal descriptor, and no aspect buff carries it. |
+| Minor aspects are swift and stack with the form | Swift quick action, valued by its stats. | Audit all three playable Griffon tiers: on-cast removal is Polymorph; the payload also explicitly consumes Shifter's Rush. Neither removes an aspect. Numerical bonuses still follow native descriptor stacking. |
 | Shifting costs a whole turn of attacks | The appraisal counted the casting round as a round of form attacks. | **Fixed (2).** |
 | Pick the form by role (Pounce to close, grab against casters, tank forms when hurt, elementals against hazards) | Every form is priced against the same enemy and routine: damage, Armor Class against the incoming danger, hit points. A tanking form wins when the danger is high. | Not added: Pounce, grab, rend, damage reduction, immunities and energized damage are form facts not credited before the cast (limits). |
 | A 3-round lock against form thrashing | Stronger already: an existing form is never recast or swapped in a fight. | None. |
@@ -73,7 +75,7 @@ These figures come from the fusion2g1b review (§172). The raw log is private an
    - **What it does now.**
      - The Fury candidates are always built (at most four quotes, as before).
      - In `Decide`, `TacticalEngine.HoldFuryForForm` holds a Fury quick action back only while a new form is the turn's
-       main action, and only if that form beats, by the 15 % margin, the best immediate main action plus the Fury's own
+     main action above its minimum value, and only if that form beats, by the 15 % margin, the best immediate main action plus the Fury's own
        gain this round (`ValueModel.HoldFuryForForm`).
      - When the Fury waits, the next quick action is taken instead, and one `[Shifter] X: ... waits` row is logged a
        round.
@@ -90,14 +92,31 @@ These figures come from the fusion2g1b review (§172). The raw log is private an
 3. **The form appraisal is logged again when it changes.**
    - After the first row of a fight, a new row is written when the value turns between paying and not paying, or moves
      by more than a quarter and at least 3 points (`ShifterRules.FormNoteChanged`).
-   - At most 4 extra rows per fight, unit and form.
+   - At most 4 extra rows per fight, unit and form, within a 64-identity ledger. It clears at a new fight, never at
+     capacity within the same fight; new identities wait until the next fight rather than restarting old allowances.
    - It adds no rule, context or forecast. The RT1 case above becomes readable.
 
 ## Cost
 
 - No new rule, context, path query, actor cache or game reference.
 - The Fury candidates are now also built while a form is positive, within their existing four-quote bound.
-- The note store keeps one entry per unit and form and is cleared above 64 entries.
+- The note store keeps at most 64 unit/form identities per fight, containing strings and scalar values only.
+- Codex corrected the original mid-fight capacity clear, which could restart repeat allowances and cause message bursts.
+  Three additional unit tests exercise the cap, fight reset and changes measured against the last logged value.
+- Fury's wait diagnostic includes the fight identity, so a matching round number in a later fight is not suppressed.
+
+## Blueprint clarification
+
+The three **playable** Griffon Shape tiers are Standard actions in the supplied exports; cutscene-only free variants
+are outside that claim. All three remove Polymorph buffs on cast and explicitly remove `ShiftersRushBuff` in their
+payload. Thus the original statement that they remove buffs *only* by descriptor was inaccurate. The 26 supplied
+`ShifterAspect*Buff` assets contain neither that descriptor nor the Rush identity, so this removal does not strip them.
+That establishes survival, not universal stacking of every numerical modifier.
+
+The temporary Rush buff lists all three tiers through native `FreeActionSpell` components. `SlotOf` already reads
+`AbilityData.RequireFullRoundAction` and `RuntimeActionType`, rather than the blueprint's default action type; the
+timing rule therefore preserves this round's attacks for a genuinely free shift. No ability, buff or action cost is
+mutated to preview it. Unknown/native mod overrides remain subject to the existing projection limits.
 
 ## Limits and next steps
 
@@ -114,14 +133,13 @@ These figures come from the fusion2g1b review (§172). The raw log is private an
 
 ## Verification
 
-- **Done:** 852 unit tests (15 new in `ShifterFormDecisionTests`).
-- **Pending (needs the game's `Wrath_Data\Managed` assemblies, `UnityModManager.dll`, `Classes.zip` and
-  `MythicAbilities.zip` again):**
-  - the real-reference Release build and SigDump;
-  - ProfileAudit, with the new SHIFTER-FORMS section (form shift actions, aspects against the shape's removal
-    descriptor, compiled routes, the played numbers) and the updated CAMPAIGN-FLAG route check;
-  - the native harnesses;
-  - the test package and receipt.
+- Full validation uses SDK 8.0.426 / Roslyn 4.11, the real supplied game references, and the same compatible blueprint
+  scope for the PR #67 baseline and this branch. SHIFTER-FORMS must pass, CAMPAIGN-FLAG must remain passing, and the
+  ability report and all other audit lines must be unchanged (apart from output file paths).
+- Unit, script, native-provider, reference, source/compiler and test-package results will be recorded in
+  `docs/competence/SHIFTER_FORMS_CHECKS.json`. The original raw Achaekek enum-load failure remains a separate negative
+  input check; no raw dump is silently normalized or committed. Neither offline checks nor compilation establish
+  actor execution or a Unity performance improvement.
 
 ## Replay
 
@@ -130,11 +148,15 @@ Play a Shifter with Fury (level 6+) and a major form, Grabber left to the engine
 1. **A fight where the full attack beats the form:**
    - the Fury is selected in round 1 (`[Shifter] X: Shifter's Fury: ...`);
    - from then on the form shows `current/pending Fury selection retained`.
-2. **A fight where the form clearly wins** (enemies far, or a strong form):
-   - `[Shifter] X: Shifter's Fury: ... waits - Griffon Shape ... is this turn's main action`;
+2. **A fight where the form clearly wins:**
+   - when a human-body Fury candidate is available (its target is in reach), expect
+     `[Shifter] X: Shifter's Fury: ... waits - Griffon Shape ... is this turn's main action`;
+   - with only distant enemies there may be no Fury candidate, so no wait row is required;
    - then the shift;
    - then a Fury selection for a form weapon.
 3. **The appraisal rows:**
-   - each now ends with `for N rd from next round`;
+   - a Standard/full-round shift reports attacks `for N rd from next round`; a native free shift does not;
    - a `form appraisal now X (was Y, round R)` row appears when the value changes during the fight.
 4. **Aspects** stay on after the shift (the buff remains, and the decision header keeps its bonus).
+5. **Shifter's Rush**, if owned and activated: the shift is free, the temporary Rush buff is consumed, and the remaining
+   normal action is available. Compare its attack horizon with the same form's Standard-action shift.

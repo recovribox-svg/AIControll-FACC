@@ -6076,3 +6076,26 @@ proposal as ideas. The proposal mapped idea by idea onto the engine, the evidenc
 **Checks.** 852 unit tests (15 new). The Release build, SigDump, ProfileAudit (new SHIFTER-FORMS section, updated
 CAMPAIGN-FLAG route check), native harnesses and package are pending the re-upload of the game assemblies and
 exports. Unplayed.
+
+## 175. Shifter form takeover: native removal contracts and bounded diagnostics (15 November 2026, Codex)
+
+Continue Claude's `730c6b6` on `codex/shifter-form-validation`, preserving the #65 -> #66 -> #67 stack, current
+dependency `830d777`, development `6b9be42`. Read [form evidence and replay](SHIFTER_FORM_DECISIONS.md). The retained
+actual game references and blueprint exports are available here; no re-upload is needed. Movement, commitment,
+retreat, pathfinding and stuck cancellation are not changed.
+
+The playable Griffon tiers are Standard actions, but the original "only descriptor removals" claim is false: each
+also explicitly consumes Shifter's Rush. All three on-cast removal lists contain only Polymorph; none of the 26
+supplied `ShifterAspect*Buff` assets matches that descriptor or the explicit removal. Audit the real removal paths
+instead of treating survival as a claim that every stat bonus stacks. Runtime action overrides remain native:
+`SlotOf` reads RequireFullRoundAction/RuntimeActionType, including a Rush-enabled free shift.
+
+Correct the new appraisal ledger's capacity behavior: clearing above 64 could reset the four-repeat allowance
+within a fight. A scalar/string-only ledger preserves existing entries at capacity, clears at the next fight, and
+is unit-tested for repeat limits, epoch reset and cumulative changes. Fury is not held for a form below the main
+action's minimum value, and the wait-note key includes the fight so later fights can report the same round again.
+No extra quote, context, native roll, path query or persistent actor reference is introduced by these corrections.
+
+The new SHIFTER-FORMS and adjusted CAMPAIGN-FLAG routes are checked against a fresh #67 build with the same SDK and
+inputs. Exact checked source, compiler/reference identities, audit comparison and frozen development-test package
+will be recorded in `docs/competence/SHIFTER_FORMS_CHECKS.json`; manifest remains 0.3.52. New gameplay is unplayed.
