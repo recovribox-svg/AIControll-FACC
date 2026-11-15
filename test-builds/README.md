@@ -16,7 +16,8 @@ Checked source **`96108ba`**, startup MVID **`9ce04a64-f9a0-43ce-8275-5f1b0c7bbe
 native equality reference resolves. [Compiler/reference provenance](../docs/competence/GAPS1_PLAYTEST_BUILD_PROVENANCE.json):
 SDK 8.0.426 / Roslyn 4.11, UMM 0.33.2.0. Manifest stays **0.3.52**, development test; frozen checked DLL.
 
-In TB/RT, leave Grabber to the engine. Test negative/positive holds, actual Release Grapple and native action recovery,
+In TB/RT, leave Grabber to the engine. Test negative/positive holds, actual Release Grapple and recovered permissions
+within the remaining native action budget (no refund of spent actions/cooldowns),
 plus actual leaps, ordinary/no-save Frigid, forms and Fury. The played gaps1 log confirms forecasts/ordinary grabs,
 **not execution of a leap, release or Frigid Touch**. Keep paired AI/combat logs and startup identity. Holder
 alternative/safety, monster responses and saved Frigid control retain the documented limits; warm ability scoring

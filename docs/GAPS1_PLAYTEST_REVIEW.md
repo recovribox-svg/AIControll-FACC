@@ -114,7 +114,8 @@ Play TB and RT with Grabber left to the engine:
 
 1. Make a grab on a weak living victim while dangerous enemies remain. Observe a **release offer**, then an actual
    Release Grapple ISSUED/ENDED if the offer wins; no `not evaluated` exception. Healing can legitimately win first.
-   Confirm native parts/conditions are removed and ordinary actions become available after the free release.
+   Confirm native parts/conditions are removed and action permissions recover **within the remaining native budget**.
+   A free release does not refund an already-spent standard action or bypass an existing cooldown.
    Watch for repeated release/re-grab without useful control between them: this unplayed possibility would require
    checking the existing first-held-turn credit against native turn timing, not assuming the full round was denied.
 2. Retain a valuable caster/attacker: a positive keep value should not cause a gratuitous release. Look for the

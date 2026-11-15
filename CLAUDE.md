@@ -36,7 +36,8 @@ projectiles launch before their ranged roll queues AoOs, not a proven pre-delive
 collections; warm ability/context workload remains material. No performance improvement is claimed by this repair.
 Retain #69's saved-Frigid boundary (168 withheld), leap bounds, holder generic-cost/safety, monster and form limits.
 No additional upload needed. Next: TB/RT replay with Grabber left to the engine; negative/positive holds, actual
-release and restored actions/headers, actual leap, ordinary/no-save Frigid; paired logs and startup identity.
+release and recovered permissions/headers (respect spent actions/cooldowns), actual leap, ordinary/no-save Frigid;
+paired logs and startup identity.
 
 **Earlier handover (15 November 2026, Codex): cached leap Grabber modes on `codex/leap-grab-modes`, stacked on
 #69 `2e86342` -> #68 -> #67 -> #66 -> #65, development `6b9be42`; unplayed.** Read [leap implementation/replay](docs/LEAP_GRAB_MODES.md),
