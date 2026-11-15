@@ -16,7 +16,7 @@ buff for one minute or one round. The existing conditional walk was not the miss
 common fixed minimum; retain the longer/refresh risk for allies, native immunity/delivery and existing policies.
 Do not guess critical rates or inject CC from a descriptor. Lazy per-profile metadata; empty ordinary safety fast path.
 Checked source **`fad03c4`**, MVID **`b0da0523-bbc9-4044-8228-18ed4c118bfa`**: 855 unit + 27 inventory + 3 script
-+ 11 ledger tests; real-reference Release 0 warnings/errors; ProfileAudit 44,639 loaded / 4,807 abilities, no load/
+and 11 ledger tests; real-reference Release 0 warnings/errors; ProfileAudit 44,639 loaded / 4,807 abilities, no load/
 reader failures or prerequisite skips; VALUE-SELECTION 24, inherited checks and native providers 98/14/10 pass.
 Two added native flag references resolve. [Receipt](docs/competence/FRIGID_SELECTION_CHECKS.json),
 [compiler/reference provenance](docs/competence/FRIGID_SELECTION_BUILD_PROVENANCE.json),
