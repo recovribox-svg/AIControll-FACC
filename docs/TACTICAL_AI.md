@@ -6042,3 +6042,37 @@ the checked DLL unchanged. Unplayed.
 
 **Next.** The author plays the g2 package with Grabber left to the engine: the G2 replay, a swarm in melee, and the
 fusion2 and G1 checks.
+
+## 174. Shifter forms: Fury no longer blocked, form attacks from the next round (15 November 2026, Claude)
+
+The author asked for the Shifter form decisions (when to shift, which form) to be checked and refined, with a general
+proposal as ideas. The proposal mapped idea by idea onto the engine, the evidence and the replay:
+[SHIFTER_FORM_DECISIONS.md](SHIFTER_FORM_DECISIONS.md).
+
+**Evidence (fusion2g1b, Wenduag).**
+- No Griffon Shape in 9 fights.
+- TB fight 3 R1: the full attack (28.4) beat the form (22.8), but the positive form kept Shifter's Fury out of the
+  candidates, so she attacked without it. The Fury was worth 51-173 in her other fights.
+- RT1: the form was best at 34.9. After Griffon Aspect it left the decision's list, and the once-a-fight appraisal row
+  could not say why.
+
+**Change (both modes).**
+1. `AddShifterFuryCandidates` no longer stops on a positive form. `TacticalEngine.HoldFuryForForm` holds a human-body
+   Fury quick action back only while a new form is the turn's main action and beats the best immediate action plus the
+   Fury's gain this round by the buff margin (`ValueModel.HoldFuryForForm`). A Fury chosen in a human body still
+   withholds a new form for that fight.
+2. A Standard or full-round shift's form attacks count from the next round (`ValueModel.FormAttackRounds`). The attack
+   it gives up this turn is the competing candidate; its defence counts from now.
+3. The appraisal row is repeated, at most 4 times a fight, when its value turns or moves materially
+   (`ShifterRules.FormNoteChanged`).
+
+**Not changed, with reasons in the page:**
+- the resource gate;
+- the 3-round lock (an existing form is already never swapped);
+- the caster lockout, the equipment pricing and Master Shapeshifter permanence (already in place);
+- pre-combat shifts (out-of-combat transformations stay excluded);
+- Pounce, grab, rend and other form facts before the cast (proposed).
+
+**Checks.** 852 unit tests (15 new). The Release build, SigDump, ProfileAudit (new SHIFTER-FORMS section, updated
+CAMPAIGN-FLAG route check), native harnesses and package are pending the re-upload of the game assemblies and
+exports. Unplayed.

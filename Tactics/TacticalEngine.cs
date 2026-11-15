@@ -501,6 +501,10 @@ namespace CompanionAI_Pathfinder.Tactics
                 }
             }
 
+            // ★ shifter-forms (§174): Shifter's Fury in a human body waits only while a new major form is this turn's main
+            // action; otherwise it is taken now (a positive form that loses to the main action no longer keeps it off).
+            if (quick != null && quick.ShifterFury) quick = HoldFuryForForm(ctx, usable, quick, main, preview);
+
             Candidate chosen = null;
             if (quick != null) chosen = quick;
             else if (main != null && main.Value >= MinMainValue) chosen = main;

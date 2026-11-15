@@ -8,7 +8,26 @@ Read [CONTRIBUTING.md](CONTRIBUTING.md) for shared branch ownership, Codex pull 
 Codex works on task branches and targets pull requests at `claude/dreamy-pasteur-b9h3rn`; Claude reviews and integrates them there.
 Keep `main` for author-authorized releases. Read [AGENTS.md](AGENTS.md) when coordinating agent work.
 
-**Current handover (15 November 2026, Claude): fusion2g1b played and reviewed; maneuver immunity and G2 (the engine
+**Current handover (15 November 2026, Claude): Shifter form decisions refined on `claude/shifter-forms`, stacked on
+PR #67 (no PR yet). Build, audit and package pending; not played.** Read [docs/SHIFTER_FORM_DECISIONS.md](docs/SHIFTER_FORM_DECISIONS.md)
+and `docs/TACTICAL_AI.md` §174. The author asked for the form decisions (when to shift, which form) to be checked and
+refined, with a general proposal as ideas.
+- **Evidence (fusion2g1b, Wenduag).** No Griffon Shape in 9 fights. In TB fight 3 R1 a positive but losing form kept
+  Shifter's Fury out of the candidates. In RT1 the best form (34.9) vanished after Griffon Aspect, and the once-a-fight
+  row could not say why.
+- **Changes (both modes).**
+  1. Fury waits only while a new form is the turn's main action and beats the immediate action plus the Fury's round,
+     by the buff margin (`HoldFuryForForm`).
+  2. A Standard or full-round shift's attacks count from the next round (`ValueModel.FormAttackRounds`).
+  3. The appraisal row is repeated on a material change, at most 4 times a fight (`ShifterRules.FormNoteChanged`).
+- **Not changed:** the resource gate, the 3-round lock, the caster lockout, the equipment pricing, Master Shapeshifter
+  permanence and pre-combat shifts. Pounce and other form facts are proposed, not done. The page gives the reasons.
+- **Checks:** 852 unit tests (15 new). The container was replaced and the uploaded game assemblies and exports are gone,
+  so the Release build, SigDump, ProfileAudit (new SHIFTER-FORMS, updated CAMPAIGN-FLAG) and native harnesses are
+  pending. They need `Wrath_Data\Managed`, `UnityModManager.dll`, `Classes.zip` and `MythicAbilities.zip` again.
+- **Next:** build and verify, package, open the PR. Then the author plays it (replay in the page).
+
+**Earlier handover (15 November 2026, Claude): fusion2g1b played and reviewed; maneuver immunity and G2 (the engine
 decides Grabber and Release Grapple, at the author's request) on `claude/maneuver-immunity`, PR #67 into development,
 stacked on PR #66 and #65 (review #65, then #66). Not played.** Read [docs/GRABBER_G2.md](docs/GRABBER_G2.md),
 [docs/FUSION2G1B_PLAYTEST_REVIEW.md](docs/FUSION2G1B_PLAYTEST_REVIEW.md), `docs/TACTICAL_AI.md` §172-173 and the
