@@ -5854,7 +5854,13 @@ not load unrelated facts. Own dynamic durations are memoized as scalars by cast/
 synchronous scope and invalidation version. No second damage estimate, extra native roll, world/target/path search,
 actor mutation or persistent context cache. One qualified witness and one fallback witness per configuration;
 existing Fusion metadata additionally names school/shape. Native input and scalar tests cover the new contracts;
-exact source, toolchain, results and test-package identity are recorded after validation. Unity timing/gameplay
+exact source, toolchain, results and test-package identity are in the [receipt](competence/FUSION2_CHECKS.json).
+Source `6638404`: 821 unit + 27 inventory + 3 script + 11 ledger tests, real-reference Release 0 warnings/errors,
+compatible ProfileAudit 44,639 loaded / 4,807 abilities without load/reader failure or prerequisite skip;
+FUSION 38, CONE 34, VALUE 15; supplemental Magus 44; native providers 98/14/10. Four added GUID signatures resolve.
+Admission stays 7,474/15,494, cones 1,180; 3,230 pass the new metadata gate. The original raw enum failure is retained.
+Fusion2 test ZIP startup MVID `e6257b91-248c-47bd-b717-dc588dee5987`; SDK/compiler/reference and Source Link inputs
+are recorded, and the checked DLL is frozen across later receipt commits. Unity timing/gameplay
 remain acceptance checks; existing movement, dispatch and ordinary control behavior are retained.
 
 Grapples: the native helpers/Griffon graphs maintain the pair, pin and queue their natural damage-only attack.

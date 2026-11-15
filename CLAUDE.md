@@ -25,8 +25,19 @@ scalar duration memo uses the existing synchronous scope/version; no new world/p
 cache. First-only qualified/fallback witnesses and school/shape metadata aid the next replay. Unknown/composite,
 state-dependent, support, refresh/stacking and sleep/damage cases retain the stated legacy/refusal boundaries.
 
-Other profile admission, policies/slots, ordinary spells and movement stay on the existing paths. New build/check identity
-will be recorded after validation. This is a development test, manifest 0.3.52; no stable release, main push or merge.
+Checked source `6638404`: **821 unit + 27 inventory + 3 script + 11 ledger tests**, real-reference Release
+0 warnings/errors; compatible ProfileAudit 44,639 loaded / 4,807 abilities, no load/reader failures or prerequisite
+skips; FUSION 38, CONE 34, VALUE 15; supplemental Magus 44; native providers 98/14/10. Four new GUID references
+resolve. The raw archive retains its documented Achaekek enum failure. [Receipt](docs/competence/FUSION2_CHECKS.json),
+[compiler/reference provenance](docs/competence/FUSION2_BUILD_PROVENANCE.json). The matrix still admits 7,474/15,494
+templates, 1,180 cone components resolve; 3,230 pass the new metadata gate, not a live-recipient guarantee.
+
+[Fusion2 UMM test ZIP](test-builds/AI-Control-FACC-v0.3.52-dev-fusion2-6638404-UMM-test.zip), startup MVID
+`e6257b91-248c-47bd-b717-dc588dee5987`, SHA-256 `8248fbc28f9e1189f0ad98bcb3445965429c3247c1781839b27766804e7e4aad`.
+SDK 8.0.426 / Roslyn 4.11, UMM reference 0.33.2.0; Source Link names the checked commit. The frozen DLL is not
+rebuilt after receipt-only commits. Scalar scratch microchecks allocate zero bytes; Unity speed/gameplay are unplayed.
+Other profile admission, policies/slots, ordinary spells and movement stay on the existing paths.
+This is a development test, manifest 0.3.52; no stable release, main push or merge.
 G1 comparative grapple release/initiation remains separate: automatic native maintenance is observed, and cannot
 be judged as a broken idle turn. Read the review before proposing a timeout or counterfactual release mutation.
 

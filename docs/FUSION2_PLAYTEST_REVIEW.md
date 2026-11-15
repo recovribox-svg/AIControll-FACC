@@ -113,8 +113,27 @@ separately from admission and still labels live aim/value/execution unassessed.
 
 ## Checks and next playtest
 
-Exact source, toolchain, test results and DLL/package identity are in the accompanying Fusion2 receipt. The package
-is a development test of new valuation; the manifest stays 0.3.52. Compilation/offline fixtures do not establish
+Checked source **`6638404d825754a970c6ff3f9a94766895c92673`** passes 821 unit tests (10 new), 27 inventory,
+3 audit-script and 11 Invocation-ledger tests. Release against the real supplied game references has zero warnings
+and errors. Compatible ProfileAudit loads 44,639 blueprints / reads 4,807 abilities without load/reader failures or
+prerequisite skips; FUSION 38, CONE 34 and VALUE 15 pass. Supplemental Magus 44 and native provider 98/14/10 checks
+pass, including the supplied Psionics provider. Four added GUID signatures resolve against the real assembly.
+The unmodified raw archive still returns its explicit Achaekek enum-load failure; see the input-scope receipt.
+
+[Full results and hashes](competence/FUSION2_CHECKS.json), [compiler/reference/source provenance](competence/FUSION2_BUILD_PROVENANCE.json),
+[configuration summary](competence/FUSION2_COVERAGE.json). The declared-list matrix still admits 7,474 of 15,494
+configurations, with 1,180 selected-cone components resolved. Of the admitted configurations, **3,230** qualify for
+the new metadata model and **4,244** retain the legacy forecast; actual recipient qualification remains separate.
+The remaining 8,020 configurations remain explicit profile refusals. The injected missing-root negative contract
+does not change that native-UI template denominator.
+
+[Fusion2 test ZIP](../test-builds/AI-Control-FACC-v0.3.52-dev-fusion2-6638404-UMM-test.zip),
+[identity](../test-builds/AI-Control-FACC-v0.3.52-dev-fusion2-6638404-UMM-test.identity.json),
+[checksum](../test-builds/AI-Control-FACC-v0.3.52-dev-fusion2-6638404-UMM-test.sha256).
+Startup MVID **`e6257b91-248c-47bd-b717-dc588dee5987`**. The frozen DLL is from the checked source, built with
+SDK 8.0.426 / Roslyn 4.11; subsequent receipt/documentation commits are not rebuilt into this package.
+
+The package is a development test of new valuation; the manifest stays 0.3.52. Compilation/offline fixtures do not establish
 gameplay acceptance or a Unity speedup. The original fusion1 ZIP and historical receipts remain intact.
 
 In both modes, keep the startup MVID and supply the AI log plus matching combat log:
