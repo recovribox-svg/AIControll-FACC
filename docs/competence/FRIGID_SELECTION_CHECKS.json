@@ -1,0 +1,163 @@
+{
+  "task": "Frigid Touch common-buff selector and assessment of five grapple gaps",
+  "recorded_at_utc": "2026-11-15T14:23:22.587582+00:00",
+  "branch": "codex/grapple-gap-review",
+  "development_base": "6b9be4214989f7ba4a56dad54f0b8c9056c2789d",
+  "stacked_on": {
+    "pr": 68,
+    "head": "342dc27bc8b5f909ea690107dbcf943a9c916f9f"
+  },
+  "checked_source_commit": "fad03c4c9a68d5b438b0719827cc6c8ecaab3241",
+  "worktree_clean_at_build": true,
+  "dll": {
+    "assembly": "CompanionAI_Pathfinder, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null",
+    "mvid": "b0da0523-bbc9-4044-8228-18ed4c118bfa",
+    "sha256": "c5967539a6e2dbbdad81ddc80252fa5b7c2a98b04c5f38f51c1b377022658699",
+    "size": 1460736
+  },
+  "manifest_unchanged": "0.3.52",
+  "release_build": {
+    "real_game_references": true,
+    "warnings": 0,
+    "errors": 0
+  },
+  "toolchain": {
+    "dotnet_sdk": "8.0.426",
+    "csharp_compiler": "4.11.0-3.25569.22 (3fb752d4)",
+    "provenance": "docs/competence/FRIGID_SELECTION_BUILD_PROVENANCE.json",
+    "sha256": "76083cc8f81663c3737472608928fdc13b364328595e3b033e93074a3c53024c"
+  },
+  "unit_tests": {
+    "passed": 855,
+    "failed": 0,
+    "skipped": 0,
+    "new_game_specific_cases": "24 native-input selector checks; no new game-independent numerical formula"
+  },
+  "script_tests": {
+    "inventory": 27,
+    "audit_supplement": 3,
+    "invocation_ledger": 11,
+    "failures": 0
+  },
+  "compatible_profile_audit": {
+    "loaded": 44639,
+    "failed": 0,
+    "abilities": 4807,
+    "reader_errors": 0,
+    "value_selection_checks": 24,
+    "fusion_value_checks": 23,
+    "grapple_checks": 55,
+    "shifter_form_checks": 21,
+    "campaign_flag_checks": 21,
+    "prerequisite_skips": 0,
+    "scope": "C06_NATIVE_COMPATIBLE_SCOPE.json plus REVIEW2_CHARGE_INPUTS.json missing-only stock fixtures",
+    "summon_inventory_limits": "5 absent spawned-unit IDs, 119 absent kit-reference IDs and 95 unloaded brains remain explicit; not the S1 full-stock supplement."
+  },
+  "native_checks": {
+    "toggle_with_psionics": 98,
+    "tome": 14,
+    "toybox": 10,
+    "failures": 0,
+    "prerequisite_skips": 0
+  },
+  "supplementary_audit": {
+    "loaded": 44643,
+    "failed": 0,
+    "abilities": 4807,
+    "errors": 0,
+    "magus_checks": 44
+  },
+  "foreign_references": {
+    "added": 2,
+    "unresolved": 0,
+    "baseline": "PR #68 checked DLL f00f4a6, same SDK/references",
+    "members": [
+      "ContextActionApplyBuff.IsNotDispelable",
+      "ContextActionApplyBuff.NotLinkToAreaEffect"
+    ]
+  },
+  "coverage": {
+    "status": "PASS",
+    "orderedDistinctPairs": 3540,
+    "configurations": 15494,
+    "profileAccepted": 7306,
+    "profileWithheld": 8188,
+    "coneComponentsResolved": 1166,
+    "acceptedConeProfilesWithAimUnvalidated": 1166,
+    "coneComponentErrors": 0,
+    "readerErrors": 0,
+    "jointOutcomeMetadataQualified": 3118,
+    "jointOutcomeMetadataFallbacks": {
+      "composite or non-HP damage": 736,
+      "dispel/enchantment/extension dependency": 660,
+      "dynamic removal dependency": 350,
+      "earlier application changes a guard fact 187f88d96a0ef464280706b63635f2af": 8,
+      "support/reveal/fact-grant/form/faction/poison carrier": 2434
+    },
+    "jointValueScope": "metadata gate only; live recipient applicability, duration, damage outcomes and useful value remain unassessed",
+    "comparison": {
+      "baseline_source": "f00f4a62de50ac6328b71babf062ad2e64a91143",
+      "baseline_profile_admitted": 7474,
+      "baseline_joint_metadata": 3230,
+      "newly_withheld": 168,
+      "reason": "Newly visible Frigid Touch unconditional control outside the existing shared failed-save model",
+      "other_source_admission_and_qualification_unchanged": true
+    },
+    "full_generated_report": {
+      "sha256": "a534457fcba277851a1e2ddcd412b926fd44ce9a8dadc1c21dad10bfbbdebc90",
+      "bytes": 16410020,
+      "cases": 15494,
+      "committed": false
+    }
+  },
+  "ability_report_changes": [
+    "FrigidTouch and FrigidTouchCast move from valued damage to valued damage/control Soft",
+    "Damage-only count 679 -> 677; damage/control Soft 108 -> 110",
+    "No other ability verdict changes; new VALUE-SELECTION section and template coverage totals recorded separately."
+  ],
+  "raw_archive_negative_check": {
+    "exit": 1,
+    "loaded": 44637,
+    "failed": 1,
+    "asset": "AchaekekSacredWeaponFeature",
+    "reason": "Preserved enum spelling mismatch and offline Unity logger ECall; no normalization or ability verdicts."
+  },
+  "performance_microcheck": {
+    "operation": "ordinary empty-selector ally-safety fast path",
+    "warm_calls": 10000,
+    "allocated_bytes": 0,
+    "limits": "No actor, Unity timing or whole-decision speedup measurement."
+  },
+  "metadata_limits": [
+    "Exact native Greatest selector, 2-8 alternatives, Simple/Shared values",
+    "Same harmful buff, subject/flags/Extend behavior; fixed positive round/minute duration and zero fixed dice count",
+    "Minimum enemy effect only; longer critical outcome unpriced",
+    "Ally longer-duration/refresh risk retained; unfamiliar components cannot establish immunity safety",
+    "Unknown selectors remain unread; no Calculate, RunAction or synthetic crit roll"
+  ],
+  "inputs": "docs/competence/FRIGID_SELECTION_INPUTS.json",
+  "input_receipt_sha256": "e4a5c952427bd0e648e6e6c4d8f5b013682511696fe505de42b818df79799ef4",
+  "package": null,
+  "package_note": "This checked source is preserved privately. A cumulative installable package follows in the separate leap-mode task, rather than another intermediate test ZIP.",
+  "gameplay": "Unplayed. Supplied logs predate G2/#68 and match the already-reviewed pair.",
+  "handover": "docs/GRAPPLE_GAP_ASSESSMENT.md",
+  "validation_logs_sha256": {
+    "audit-build.log": "20a0ea3a4d67b118533ccdf416ab93ae930a4142a4f0cad1c57d3950c3833da4",
+    "inventory.log": "09ad2fe8a00725d344e94e8e80b71c18c4cbb712fd436f659f3f8ab440b40798",
+    "invocation-ledger.log": "4c3b3b2f85f7f81206f2731efca1a5c61f58b2f6c54d820b4003b988757b84ec",
+    "raw.log": "59399a5731df2ca0a352726bb5857f2618ac7f2bf881aa07c789670ad5bd8149",
+    "refs.log": "cd8517c3144b8bde172a1f8c173085e48ff2deff8143986aad7b0a50eeabdde5",
+    "release.log": "8d33da7ef936743cc3e793a098610c7435210187bc7185fe9a57dfd3e4a9d53e",
+    "strict.log": "cd682dcf67fcbf0e18f09516977f4247b17adebb73fd8e010224bdb8f15e912d",
+    "supplement-scripts.log": "edb4e2159c923ea45a32656078835cdf531c3d7b414c670dd786978875cb0678",
+    "supplementary.log": "da6ddb22dc7a11cc59eb9071a4b03c1caa16cba7f88c031c14a68a62f09bbab5",
+    "toggle-build.log": "20ad017c9a01ff35d533d2227d4fb3233886b80a44eca5f09e3b93a6e9f09eb3",
+    "toggle.log": "978f8221121f235308c2f8a4edbae4304446dbbe5c878bd468158fe426c0c8f9",
+    "tome-build.log": "dd4820260f42ff88aad554a8c915075b0f2b3eb2101e248c744729a26911e7da",
+    "tome.log": "7bc6b5af8bed21847eaef69cf3a8da9af8614eabe41f4d9d24e05e438693f342",
+    "toybox-build.log": "e22b1d93e5e7fb0aa5c887256861188b3bb83792b5de0a867326aa69c866abf7",
+    "toybox.log": "e5323a855aa8aa7a6dd4bcc7eda9cc7af717e00b5c1212f4640b72002a1e289c",
+    "unit.log": "95d0229c368bb7b23d31bf17fd484adfa4a3cfa5970fee30ef0da89e56ce7a4d"
+  },
+  "source_freeze": "Later receipt/docs-only commits retain identical C# and checked DLL identity."
+}

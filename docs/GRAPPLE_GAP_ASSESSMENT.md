@@ -84,9 +84,19 @@ One configuration-level diagnostic states the minimum/longer-outcome boundary. U
 
 ## Verification and next replay
 
-The final receipt records the checked source, compiler/reference hashes, native selector fixtures, negative cases,
-full template comparison, report differences and provider regressions. Raw logs, game assemblies and graphs stay
-private. Original raw Achaekek enum-load failure remains separate. Manifest stays 0.3.52; new behavior is unplayed.
+Checked source **`fad03c4c9a68d5b438b0719827cc6c8ecaab3241`**, MVID **`b0da0523-bbc9-4044-8228-18ed4c118bfa`**:
+855 unit, 27 inventory, 3 audit-script and 11 ledger tests pass. Real-reference Release has **0 warnings/errors**;
+two added native flag references resolve. ProfileAudit: 44,639 loaded / 4,807 abilities without load/reader failures
+or prerequisite skips; **VALUE-SELECTION 24** and inherited checks pass. Supplementary Magus 44 and native providers
+98/14/10 pass. The only ability-verdict changes are FrigidTouch and FrigidTouchCast gaining Soft control.
+
+[Receipt](competence/FRIGID_SELECTION_CHECKS.json), [compiler/reference/source provenance](competence/FRIGID_SELECTION_BUILD_PROVENANCE.json),
+[input hashes](competence/FRIGID_SELECTION_INPUTS.json), [coverage summary](competence/FRIGID_SELECTION_COVERAGE.json).
+The native-UI matrix has 15,494 templates: 7,306 admitted, 8,188 withheld, 1,166 admitted cone components resolved,
+3,118 metadata-qualified joint profiles. Against #68, only Frigid configurations change admission/qualification.
+This reports metadata, not live casting success. No intermediate ZIP is produced; a cumulative test package follows
+with the separate leap-mode repair. Raw logs, game assemblies and graphs stay private. Original raw Achaekek
+enum-load failure remains separate. Manifest stays 0.3.52; new behavior is unplayed.
 
 In TB and RT, include ordinary Frigid Touch, its Spellstrike/held-charge route if available, and Explosive Runes/Frigid
 Touch. Check that fresh targets gain a one-round stagger forecast, immunity/already-present copies are handled,

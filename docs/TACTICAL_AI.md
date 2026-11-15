@@ -6125,5 +6125,10 @@ Holder alternatives/safety need a consistent, bounded counterfactual model, with
 double-counted danger or fictional restored actions. Monster victim concentration uses the actual target handler:
 10 + holder CMB + spell level, not CMD; native automatic escape already exists. A separate cached-quote leap-mode
 repair is feasible without widening landing/path budgets. The assessment ranks and scopes these follow-ups.
-Final real-reference checks and compiler/source identity follow in `docs/competence/FRIGID_SELECTION_CHECKS.json`;
-manifest remains 0.3.52. No movement, commitment, retreat, pathfinding or stuck-cancellation change.
+Checked source `fad03c4`, MVID `b0da0523-bbc9-4044-8228-18ed4c118bfa`: 855 + 27 + 3 + 11 tests; real-reference
+Release 0 warnings/errors; VALUE-SELECTION 24 and inherited native checks pass, providers 98/14/10. Two added
+native flag references resolve. [Receipt](competence/FRIGID_SELECTION_CHECKS.json) / compiler and input hashes
+record the matrix comparison: 7,306/15,494 admitted, 1,166 admitted cone components resolved, 3,118 joint metadata
+profiles. Only the two Frigid ability verdicts gain Soft control. Original raw enum failure remains separate.
+No intermediate ZIP; the follow-up leap task supplies a cumulative test. Manifest remains 0.3.52, unplayed.
+No movement, commitment, retreat, pathfinding or stuck-cancellation change.

@@ -15,7 +15,14 @@ the old fusion2g1b pair for #67; no G2/#68 acceptance claimed. Native Frigid sel
 buff for one minute or one round. The existing conditional walk was not the missing mechanism. Read only a verified
 common fixed minimum; retain the longer/refresh risk for allies, native immunity/delivery and existing policies.
 Do not guess critical rates or inject CC from a descriptor. Lazy per-profile metadata; empty ordinary safety fast path.
-Full-source checks/compiler/input identity follow in `docs/competence/FRIGID_SELECTION_CHECKS.json`.
+Checked source **`fad03c4`**, MVID **`b0da0523-bbc9-4044-8228-18ed4c118bfa`**: 855 unit + 27 inventory + 3 script
++ 11 ledger tests; real-reference Release 0 warnings/errors; ProfileAudit 44,639 loaded / 4,807 abilities, no load/
+reader failures or prerequisite skips; VALUE-SELECTION 24, inherited checks and native providers 98/14/10 pass.
+Two added native flag references resolve. [Receipt](docs/competence/FRIGID_SELECTION_CHECKS.json),
+[compiler/reference provenance](docs/competence/FRIGID_SELECTION_BUILD_PROVENANCE.json),
+[input hashes](docs/competence/FRIGID_SELECTION_INPUTS.json). Ordinary empty-selector safety: 10,000 warm calls,
+zero bytes, not Unity timing. Only the two Frigid ability verdicts gain Soft control. No intermediate ZIP; a
+cumulative package follows with the separate leap-mode repair. Manifest 0.3.52; source-frozen DLL retained.
 168 saved Frigid templates now expose the existing unsupported unconditional-control boundary and are withheld;
 the played no-save Runes combination gains stagger. General per-outcome control remains a Fusion follow-up.
 Leaps have a feasible separate cached-quote repair; holder cost/safety and monster help need the bounded native model

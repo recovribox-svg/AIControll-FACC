@@ -1,0 +1,188 @@
+{
+  "recorded_at_utc": "2026-11-15T14:22:29.018225+00:00",
+  "checked_source_commit": "fad03c4c9a68d5b438b0719827cc6c8ecaab3241",
+  "worktree_head_at_build": "fad03c4c9a68d5b438b0719827cc6c8ecaab3241",
+  "worktree_dirty_at_build": false,
+  "source_directory": "/workspace/work/grapple-gap-review",
+  "toolchain": {
+    "dotnet_sdk": "8.0.426",
+    "dotnet_info": ".NET SDK:\n Version:           8.0.426\n Commit:            a021cd4eac\n Workload version:  8.0.400-manifests.1f030c1a\n MSBuild version:   17.11.69+4d6a29faa\n\nRuntime Environment:\n OS Name:     debian\n OS Version:  13\n OS Platform: Linux\n RID:         linux-x64\n Base Path:   /workspace/.dotnet/sdk/8.0.426/\n\n.NET workloads installed:\nConfigured to use loose manifests when installing new manifests.\nThere are no installed workloads to display.\n\nHost:\n  Version:      8.0.32\n  Architecture: x64\n  Commit:       b9a49e4a6d\n\n.NET SDKs installed:\n  8.0.426 [/workspace/.dotnet/sdk]\n\n.NET runtimes installed:\n  Microsoft.AspNetCore.App 8.0.32 [/workspace/.dotnet/shared/Microsoft.AspNetCore.App]\n  Microsoft.NETCore.App 8.0.32 [/workspace/.dotnet/shared/Microsoft.NETCore.App]\n\nOther architectures found:\n  None\n\nEnvironment variables:\n  DOTNET_ROOT       [/workspace/.dotnet]\n\nglobal.json file:\n  Not found\n\nLearn more:\n  https://aka.ms/dotnet/info\n\nDownload .NET:\n  https://aka.ms/dotnet/download",
+    "csharp_compiler": "4.11.0-3.25569.22 (3fb752d4)",
+    "components_sha256": {
+      "Roslyn/bincore/csc.dll": "54be6ebef9464fb8e517bbfd9d73329bb8297de2d0951cb479dd5e43e81c9641",
+      "Roslyn/bincore/Microsoft.CodeAnalysis.dll": "7200225d3bc6018dee6ce03453aa29f2eab2962ffb5889c3d1180a316ed6b385",
+      "Roslyn/bincore/Microsoft.CodeAnalysis.CSharp.dll": "fd579168c19ea0e77bed1337c564debfaa475adb14b993217f35a95a4bac71c7",
+      "MSBuild.dll": "73d8951b8ac179cda36dad58cff37dd09106ae86dc40c360ec8b44da9d202a26"
+    },
+    "global_json": null,
+    "compiler_override": false,
+    "sdk_pin_added": false
+  },
+  "effective_release_properties": {
+    "Configuration": "Release",
+    "TargetFramework": "net48",
+    "LangVersion": "latest",
+    "Deterministic": "true",
+    "ContinuousIntegrationBuild": "",
+    "DebugType": "portable",
+    "Optimize": "true",
+    "PathMap": "",
+    "CscToolPath": "",
+    "CscToolExe": "",
+    "RoslynTargetsPath": "/workspace/.dotnet/sdk/8.0.426/Roslyn",
+    "MSBuildVersion": "17.11.69",
+    "NETCoreSdkVersion": "8.0.426",
+    "DefineConstants": "TRACE;RELEASE;NETFRAMEWORK;NET48;",
+    "Nullable": "disable",
+    "AllowUnsafeBlocks": "true",
+    "GenerateAssemblyInfo": "false",
+    "CheckForOverflowUnderflow": "false",
+    "PlatformTarget": ""
+  },
+  "source_link": {
+    "documents": {
+      "/workspace/work/grapple-gap-review/*": "https://raw.githubusercontent.com/recovribox-svg/AIControll-FACC/fad03c4c9a68d5b438b0719827cc6c8ecaab3241/*"
+    }
+  },
+  "resolved_packages": {
+    "Lib.Harmony/2.2.2": {
+      "type": "package",
+      "sha512": "70KvWz+DiUELxafsYL/LHxA/jH3PDWeApLo/VwtnrpTvRWQ/eUdPfS/l5funmhZWOy41QXw6UjVv+6C57Nx77A=="
+    },
+    "Microsoft.NETFramework.ReferenceAssemblies/1.0.3": {
+      "type": "package",
+      "sha512": "vUc9Npcs14QsyOD01tnv/m8sQUnGTGOw1BCmKcv77LBJY7OxhJ+zJF7UD/sCL3lYNFuqmQEVlkfS4Quif6FyYg=="
+    },
+    "Microsoft.NETFramework.ReferenceAssemblies.net48/1.0.3": {
+      "type": "package",
+      "sha512": "zMk4D+9zyiEWByyQ7oPImPN/Jhpj166Ky0Nlla4eXlNL8hI/BtSJsgR8Inldd4NNpIAH3oh8yym0W2DrhXdSLQ=="
+    }
+  },
+  "resolved_compiler_references": [
+    {
+      "name": "0Harmony.dll",
+      "sha256": "0de0118c8f1d4408de389ca33b46d2ff7778f3a8541b430cae729ec913d899c7"
+    },
+    {
+      "name": "Assembly-CSharp.dll",
+      "sha256": "2cb7160b7154d4ffacc77b9c51b1eb26199e1294300f04fdfc073367b2ef8953"
+    },
+    {
+      "name": "AstarPathfindingProject.dll",
+      "sha256": "9cc4a4c6906ab9d48c18d03fdfb45b0ab36347a77b4314b972aee7f9bd6fcf54"
+    },
+    {
+      "name": "Newtonsoft.Json.dll",
+      "sha256": "4b3266c9f61eee8b832813c7203ac7c5e3cb97131e723abbba515c176e93d155"
+    },
+    {
+      "name": "Owlcat.Runtime.Core.dll",
+      "sha256": "76fcef053707ba99b9760496f1e71e3d254bab203fb9b28e04427d8da4f6a996"
+    },
+    {
+      "name": "Owlcat.Runtime.UI.dll",
+      "sha256": "c7ec072d6591382bb8ceeb9fabac4e3440ef19bdcbf322c1ebaed3771e27634b"
+    },
+    {
+      "name": "Owlcat.Runtime.Validation.dll",
+      "sha256": "3a3e913f56ba647a4efd2463282823ace7b507939b7b6b767a8f91982fed54e0"
+    },
+    {
+      "name": "Owlcat.Runtime.Visual.dll",
+      "sha256": "391b971a24d837554e8b5c6aa4f0154b4e7cae32264ae55ba7113ef3d0ef06e7"
+    },
+    {
+      "name": "Owlcat.SharedTypes.dll",
+      "sha256": "d1567493401788679bc01b741b64bb26497f906108cbe4fbe812807d745a9a37"
+    },
+    {
+      "name": "System.Core.dll",
+      "sha256": "94a1fc97eb0d36f13acd209bb7207da504c8be10caf7e5096b2c46e671dc6fe2"
+    },
+    {
+      "name": "System.Data.dll",
+      "sha256": "31812365198b0707ad98005e19e38a3d354b13fb5cdc272d5000bfe4b82a9b97"
+    },
+    {
+      "name": "System.Drawing.dll",
+      "sha256": "65a42d3e5bd4508e3c75133cd1967301a84b5dae6698f300cd831ff79c54b611"
+    },
+    {
+      "name": "System.IO.Compression.FileSystem.dll",
+      "sha256": "fe0f7dbdc68cc5668ffa8d20bac687fd9ea7bb113017218bbd6c1ef494f81037"
+    },
+    {
+      "name": "System.Numerics.dll",
+      "sha256": "795bb8521f5fc76d64deb55ab3e608cf177e67217f16a10e825e3e6544862ebb"
+    },
+    {
+      "name": "System.Runtime.Serialization.dll",
+      "sha256": "1077172f8d9d1356b162c1407c8d4eeda4edf698b247311b06fed63e8c314fcd"
+    },
+    {
+      "name": "System.Xml.Linq.dll",
+      "sha256": "39e51b600362a070fbc231272d167072ecf74b2bbf0fd80bb8b37287683b29ac"
+    },
+    {
+      "name": "System.Xml.dll",
+      "sha256": "00208e20e3d1d520c233e7ffc10e4e56f9e6b3920bf4a971faee864268c7e5a5"
+    },
+    {
+      "name": "System.dll",
+      "sha256": "2fe343569f794f2ca92ee14a41875571a9f21bf92637b8f8ee86306534209cca"
+    },
+    {
+      "name": "UniRx.dll",
+      "sha256": "4146baaab262f585be431f8c6db4ee084de678f03ce4db57a55e1f9d6019bf25"
+    },
+    {
+      "name": "UnityEngine.AIModule.dll",
+      "sha256": "e50b5a2b8621a88a1af0b9b45fe2590d975020e28c7719f70fbe8d9c6dfe5b0b"
+    },
+    {
+      "name": "UnityEngine.AnimationModule.dll",
+      "sha256": "deb1b739c1844571c8fd365757fdd51218d79fad38e7087f2f411dffef500c74"
+    },
+    {
+      "name": "UnityEngine.CoreModule.dll",
+      "sha256": "b040598ec99a249779661605123e1a09aeb845c2d7cf623940ab07a775440365"
+    },
+    {
+      "name": "UnityEngine.IMGUIModule.dll",
+      "sha256": "2e627374d56a04cb8021b4adaa124c8ace1f43f7907cdaa68e11c965ab0f017f"
+    },
+    {
+      "name": "UnityEngine.PhysicsModule.dll",
+      "sha256": "1af6cfa1ecd8c3e2b1fbcf453db55600becb08faf71d78469319a1c025415cff"
+    },
+    {
+      "name": "UnityEngine.TextRenderingModule.dll",
+      "sha256": "a1fecfdfc8f6f40a7274549c26f04529842ae7a1f6fe6ee5d540cfb1dac424ea"
+    },
+    {
+      "name": "UnityEngine.dll",
+      "sha256": "b44ec9eb6fd93a3c2d3953f9653ee7c6f141dade60505dea015db78868f85f5e"
+    },
+    {
+      "name": "UnityModManager.dll",
+      "sha256": "f6f7e18aff88910b01d23e3ce0829f3b4188c6784b0fcea56f9b3af8aa14d0a9"
+    },
+    {
+      "name": "mscorlib.dll",
+      "sha256": "6b35530467b914b0b195146ca1d1485ddd219afaad6461103f16f54e952f75a9"
+    }
+  ],
+  "native_game_identity": {
+    "assembly": "Assembly-CSharp, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null",
+    "mvid": "90a9869c-2792-4c7b-bfb7-5a8b33da7c82",
+    "sha256": "2cb7160b7154d4ffacc77b9c51b1eb26199e1294300f04fdfc073367b2ef8953",
+    "size": 11891712
+  },
+  "unity_mod_manager_identity": {
+    "assembly": "UnityModManager, Version=0.33.2.0, Culture=neutral, PublicKeyToken=null",
+    "mvid": "914c93ba-b0bd-409f-9d38-84e575289dc2",
+    "sha256": "f6f7e18aff88910b01d23e3ce0829f3b4188c6784b0fcea56f9b3af8aa14d0a9",
+    "size": 204800
+  },
+  "reproduction_limit": "Compiler, source path/line endings, debug/Source Link metadata and reference bytes affect DLL identity. No cross-environment byte-identity claim. The checked DLL is frozen across later documentation/receipt commits."
+}
