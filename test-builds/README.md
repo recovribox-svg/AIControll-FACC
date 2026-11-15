@@ -1,5 +1,23 @@
 # Test builds
 
+## Task-branch candidate: v0.3.52 Shifter forms (f00f4a6) — unplayed
+
+[UMM test ZIP](AI-Control-FACC-v0.3.52-dev-shifterforms-f00f4a6-UMM-test.zip?raw=true) · [Identity](AI-Control-FACC-v0.3.52-dev-shifterforms-f00f4a6-UMM-test.identity.json) · [Checksum](AI-Control-FACC-v0.3.52-dev-shifterforms-f00f4a6-UMM-test.sha256) · [Checks](../docs/competence/SHIFTER_FORMS_CHECKS.json) · [Form decisions and replay](../docs/SHIFTER_FORM_DECISIONS.md)
+
+Continues Claude's Shifter task `730c6b6`, including the #65 -> #66 -> #67 stack. A losing form no longer suppresses
+Fury; a Standard/full-round shift counts its attacks from next round. Material appraisal changes have bounded notes.
+Codex corrected the note-ledger capacity reset and verified all playable Griffon tiers' removal paths, including
+Shifter's Rush consumption and survival of the 26 supplied aspects. New behavior remains unplayed.
+
+Startup MVID **`3a7db475-3b13-4362-a4dc-0fd20613e2c9`**; checked source **`f00f4a6`**. ZIP SHA-256
+`9ac10ab46b0431ed4edd87a93bea3516a1754752c40a69e94df604a531eb28ea`.
+855 unit + 27 inventory + 3 script + 11 ledger tests, zero-warning real-reference Release and native checks pass.
+SHIFTER-FORMS 21, CAMPAIGN-FLAG 21; other audit/report rows unchanged relative to a fresh #67 baseline.
+[Compiler/reference provenance](../docs/competence/SHIFTER_FORMS_BUILD_PROVENANCE.json): SDK 8.0.426 / Roslyn 4.11,
+UMM reference 0.33.2.0. No byte-identity claim with the older g2 package; it is preserved below. Manifest remains
+**0.3.52**, stable packages unchanged. Play the form replay in TB/RT with **Grabber left to the engine**, plus
+[G2](../docs/GRABBER_G2.md) and [fusion2](../docs/FUSION2_PLAYTEST_REVIEW.md); supply paired AI/combat logs and MVID.
+
 ## Task-branch candidate: v0.3.52 g2 (33fa9b3) — unplayed
 
 [UMM test ZIP](AI-Control-FACC-v0.3.52-dev-g2-33fa9b3-UMM-test.zip?raw=true) · [Identity](AI-Control-FACC-v0.3.52-dev-g2-33fa9b3-UMM-test.identity.json) · [Checksum](AI-Control-FACC-v0.3.52-dev-g2-33fa9b3-UMM-test.sha256) · [Checks](../docs/competence/G2_GRABBER_CHECKS.json) · [G2 design and replay](../docs/GRABBER_G2.md) · [fusion2g1b review](../docs/FUSION2G1B_PLAYTEST_REVIEW.md)

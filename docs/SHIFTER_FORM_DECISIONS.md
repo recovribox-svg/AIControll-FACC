@@ -8,7 +8,7 @@ This page records the evidence, how each idea maps onto the engine, the three ch
 
 **Status.** Claude's implementation had 852 passing unit tests but no real-reference build. Codex's retained inputs
 include the actual assemblies and exports, so no re-upload is required here. Both the gameplay source and audit tool
-compile with zero warnings. Final checks, receipt and package identity are recorded under Verification after validation.
+compile with zero warnings. Final checks, receipt and package identity are recorded under Verification below.
 The new behavior remains unplayed.
 
 ## How the engine decides today (unchanged parts)
@@ -98,7 +98,8 @@ These figures come from the fusion2g1b review (§172). The raw log is private an
 
 ## Cost
 
-- No new rule, context, path query, actor cache or game reference.
+- The hold decision, horizon adjustment and diagnostics add no rule/context/path query or actor cache. SigDump adds
+  no external reference relative to #67.
 - The Fury candidates are now also built while a form is positive, within their existing four-quote bound.
 - The note store keeps at most 64 unit/form identities per fight, containing strings and scalar values only.
 - Codex corrected the original mid-fight capacity clear, which could restart repeat allowances and cause message bursts.
@@ -136,10 +137,25 @@ mutated to preview it. Unknown/native mod overrides remain subject to the existi
 - Full validation uses SDK 8.0.426 / Roslyn 4.11, the real supplied game references, and the same compatible blueprint
   scope for the PR #67 baseline and this branch. SHIFTER-FORMS must pass, CAMPAIGN-FLAG must remain passing, and the
   ability report and all other audit lines must be unchanged (apart from output file paths).
-- Unit, script, native-provider, reference, source/compiler and test-package results will be recorded in
-  `docs/competence/SHIFTER_FORMS_CHECKS.json`. The original raw Achaekek enum-load failure remains a separate negative
+- Checked source **`f00f4a62de50ac6328b71babf062ad2e64a91143`**: **855 unit tests** (Claude's 15 new cases and 3 new
+  ledger regressions), 27 inventory, 3 audit-script and 11 ledger-script tests pass. Real-reference Release:
+  **0 warnings/errors**; SigDump adds no external signature relative to the fresh #67 baseline `830d777`.
+- Compatible ProfileAudit: 44,639 loaded / 4,807 abilities, no load/reader failures or prerequisite skips;
+  **SHIFTER-FORMS 21**, **CAMPAIGN-FLAG 21**, GRAPPLE 55, FUSION-VALUE 23. The ability report and all other audit rows
+  match the baseline after removing the new section and output path/separator differences. Supplementary Magus 44
+  and native harnesses **98/14/10** pass, including the supplied Psionics provider.
+- [Receipt](competence/SHIFTER_FORMS_CHECKS.json), [compiler/reference/source provenance](competence/SHIFTER_FORMS_BUILD_PROVENANCE.json),
+  [blueprint hashes](competence/SHIFTER_FORMS_INPUTS.json). The original raw Achaekek enum-load failure remains a separate negative
   input check; no raw dump is silently normalized or committed. Neither offline checks nor compilation establish
   actor execution or a Unity performance improvement.
+
+[UMM test ZIP](../test-builds/AI-Control-FACC-v0.3.52-dev-shifterforms-f00f4a6-UMM-test.zip),
+[identity](../test-builds/AI-Control-FACC-v0.3.52-dev-shifterforms-f00f4a6-UMM-test.identity.json),
+[checksum](../test-builds/AI-Control-FACC-v0.3.52-dev-shifterforms-f00f4a6-UMM-test.sha256).
+Startup MVID **`3a7db475-3b13-4362-a4dc-0fd20613e2c9`**; manifest remains **0.3.52**. The archive includes the #65-67
+stack and the Shifter changes, built with SDK 8.0.426 / Roslyn 4.11 against UMM 0.33.2.0. Its checked DLL is frozen
+across subsequent receipt/documentation commits. The old g2 package used different compiler/UMM inputs and remains
+intact. This package is unplayed and is not a stable release.
 
 ## Replay
 

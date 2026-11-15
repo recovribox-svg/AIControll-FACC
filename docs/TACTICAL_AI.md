@@ -6097,5 +6097,11 @@ action's minimum value, and the wait-note key includes the fight so later fights
 No extra quote, context, native roll, path query or persistent actor reference is introduced by these corrections.
 
 The new SHIFTER-FORMS and adjusted CAMPAIGN-FLAG routes are checked against a fresh #67 build with the same SDK and
-inputs. Exact checked source, compiler/reference identities, audit comparison and frozen development-test package
-will be recorded in `docs/competence/SHIFTER_FORMS_CHECKS.json`; manifest remains 0.3.52. New gameplay is unplayed.
+inputs. Checked source `f00f4a6`: **855 unit + 27 inventory + 3 script + 11 ledger tests**; real-reference Release
+**0 warnings/errors**; SigDump **0 new references**. Compatible ProfileAudit: **44,639 loaded / 4,807 abilities**,
+no load/reader failures or prerequisite skips; **SHIFTER-FORMS 21, CAMPAIGN-FLAG 21**. Other audit rows and ability
+report unchanged outside the new section/path/separators. Supplementary Magus 44 and native harnesses 98/14/10 pass.
+The original raw enum-load failure remains separate. [Receipt](competence/SHIFTER_FORMS_CHECKS.json) records the
+same-input #67 comparison; [compiler/reference/source provenance](competence/SHIFTER_FORMS_BUILD_PROVENANCE.json).
+Frozen Shifter forms test ZIP MVID **`3a7db475-3b13-4362-a4dc-0fd20613e2c9`**; SDK 8.0.426 / Roslyn 4.11,
+UMM 0.33.2.0. Manifest remains 0.3.52. New gameplay/Unity performance is unplayed; no release or merge.

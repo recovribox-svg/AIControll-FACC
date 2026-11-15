@@ -11,8 +11,10 @@ Keep `main` for author-authorized releases. Read [AGENTS.md](AGENTS.md) when coo
 **Current handover (15 November 2026, Codex): Shifter form verification on `codex/shifter-form-validation`, continuing
 Claude's `730c6b6`, stacked on #67 `830d777` -> #66 -> #65; development base `6b9be42`. New behavior unplayed.**
 Read [form design, corrections and replay](docs/SHIFTER_FORM_DECISIONS.md), §174-175. Real supplied game references
-and exports are retained here; no re-upload is needed. SDK 8.0.426 / Roslyn 4.11. Gameplay/audit builds have zero
-warnings; the preliminary native audit passes SHIFTER-FORMS 21 and CAMPAIGN-FLAG 21. All other stdout/report lines
+and exports are retained here; no re-upload is needed. SDK 8.0.426 / Roslyn 4.11. Checked source **`f00f4a6`**:
+**855 unit + 27 inventory + 3 script + 11 ledger tests**, real-reference Release 0 warnings/errors;
+ProfileAudit 44,639 loaded / 4,807 abilities without load/reader failures or prerequisite skips. SHIFTER-FORMS 21,
+CAMPAIGN-FLAG 21, GRAPPLE 55, FUSION-VALUE 23; supplementary Magus 44; native harnesses 98/14/10. All other stdout/report lines
 match a fresh #67 build on identical inputs (only new section/output paths normalized).
 
 Retain Claude's Fury/form scheduling and next-round attack horizon. Correct the note ledger's mid-fight capacity
@@ -22,8 +24,15 @@ tiers are Standard; each also consumes Shifter's Rush, besides Polymorph descrip
 supplied aspect buffs is removed; numerical stacking remains native. Rush can make the shift free and SlotOf reads
 the actual RuntimeActionType. No movement/commitment/retreat/path/stuck policy or new form-fact projection.
 
-Final source/compiler/reference receipt and frozen UMM test identity follow validation in
-`docs/competence/SHIFTER_FORMS_CHECKS.json`. Manifest stays 0.3.52; no main/development push, tag, merge or release.
+[Receipt](docs/competence/SHIFTER_FORMS_CHECKS.json), [compiler/reference provenance](docs/competence/SHIFTER_FORMS_BUILD_PROVENANCE.json),
+[input hashes](docs/competence/SHIFTER_FORMS_INPUTS.json). SigDump: no new external signatures relative to #67.
+The original raw Achaekek enum failure remains explicit. UMM reference is 0.33.2.0; the historical #67 package's
+SDK 8.0.131 / UMM 0.33.0.0 inputs differ, and byte identity with it is not claimed.
+[Shifter forms UMM test ZIP](test-builds/AI-Control-FACC-v0.3.52-dev-shifterforms-f00f4a6-UMM-test.zip), startup MVID
+**`3a7db475-3b13-4362-a4dc-0fd20613e2c9`**, ZIP SHA-256
+`9ac10ab46b0431ed4edd87a93bea3516a1754752c40a69e94df604a531eb28ea`.
+The source-frozen checked DLL is retained across later receipt-only commits. Manifest stays 0.3.52;
+no main/development push, tag, merge or release. No gameplay/Unity performance acceptance is claimed.
 The author next plays the form replay with Grabber left to the engine, plus GRABBER_G2.md and fusion2 checks.
 
 **Earlier handover (15 November 2026, Claude): Shifter form decisions refined on `claude/shifter-forms`, stacked on
