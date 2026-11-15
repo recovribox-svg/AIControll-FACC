@@ -5928,7 +5928,8 @@ maneuver forecast, as before.
 **Checks.** Release 0 warnings/errors. 832 unit tests (11 new) plus 27 + 3 + 11 tool tests. ProfileAudit exit 0 with the new
 GRAPPLE section (32 checks). Every other report line is identical to the PR #64 run, and the native harnesses give
 98/14/10. Thirteen added foreign member references, all resolved against the real assembly.
-Receipt: [G1_GRAPPLE_CHECKS.json](competence/G1_GRAPPLE_CHECKS.json). Unplayed.
+Receipt: [G1_GRAPPLE_CHECKS.json](competence/G1_GRAPPLE_CHECKS.json). Package (fusion2 + G1):
+`test-builds/AI-Control-FACC-v0.3.52-dev-fusion2g1-883bc9d-UMM-test.zip`, startup MVID `e4cb4df9-ad46-409a-a800-b96382c68a10`, the checked DLL unchanged. Unplayed.
 
 **Next.** The author plays a grab-capable form against a dangerous and a weak target in both modes (GRAPPLE_G1.md replay).
 Then G2 (release with a positive reason), if a played hold shows the need.

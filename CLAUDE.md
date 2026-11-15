@@ -20,9 +20,11 @@ G1 grapple state awareness on `claude/grapple-awareness`, PR into development. N
   natural attack each maintained round. The header names the pair, and one `[Grapple]` row is logged per fight and pair.
 - Not done: Release Grapple (no played case; proposed G2), and spells cast by a party member a monster holds.
 - Checks: Release 0 warnings; 832 unit + 27 + 3 + 11 tests; ProfileAudit GRAPPLE 32 checks, every other report line
-  unchanged; native harnesses 98/14/10. Manifest 0.3.52; no package, `main`, tag or release change.
-- **Next:** the author plays a grab-capable form against a dangerous and a weak target in TB and RT (replay in
-  GRAPPLE_G1.md), with the fusion2 checks (`docs/FUSION2_PLAYTEST_REVIEW.md`).
+  unchanged; native harnesses 98/14/10. Manifest 0.3.52; no `main`, tag or release change.
+- Package (fusion2 + G1): `test-builds/AI-Control-FACC-v0.3.52-dev-fusion2g1-883bc9d-UMM-test.zip`, startup MVID `e4cb4df9-ad46-409a-a800-b96382c68a10`,
+  ZIP SHA-256 `9130236430df…`. It is the checked DLL `4f46132d…` unchanged.
+- **Next:** the author plays the fusion2g1 package. Test a grab-capable form against a dangerous and a weak target in TB
+  and RT (replay in GRAPPLE_G1.md), with the fusion2 checks (`docs/FUSION2_PLAYTEST_REVIEW.md`).
 
 **Fusion2 playtest review / qualified F2–F3 core (14 November 2026, Codex; new valuation unplayed):**
 `codex/fusion1-playtest-review` starts at merged development `ab1b6a7`, no open PRs. The two supplied AI logs identify

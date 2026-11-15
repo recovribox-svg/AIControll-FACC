@@ -87,7 +87,7 @@
    "dll_sha256": "4f46132d0f838b4fd721237b1c0b390f599a0dd484ddff8557b856c87b67ae13",
    "mvid": "e4cb4df9-ad46-409a-a800-b96382c68a10",
    "source_link_commit": "883bc9d",
-   "note": "verification build of the checked commit; no package"
+   "note": "verification build of the checked commit; packaged unchanged as the fusion2g1 test ZIP"
   },
   "foreign_member_references": {
    "added": 13,
@@ -157,5 +157,17 @@
   "CMBBonusForManeuver on the attacker's other facts is still missed by the maneuver forecast (existing limitation).",
   "The raw corpus keeps its Achaekek enum load failure."
  ],
- "main_tag_or_release_publication": false
+ "main_tag_or_release_publication": false,
+ "package": {
+  "file": "test-builds/AI-Control-FACC-v0.3.52-dev-fusion2g1-883bc9d-UMM-test.zip",
+  "zip_sha256": "9130236430dff865fcab71153e164b8a27964861173a2b09b8bc5fbc79dd7eda",
+  "dll_sha256": "4f46132d0f838b4fd721237b1c0b390f599a0dd484ddff8557b856c87b67ae13",
+  "mvid": "e4cb4df9-ad46-409a-a800-b96382c68a10",
+  "contents": [
+   "CompanionAI_Pathfinder.dll",
+   "Info.json (0.3.52)"
+  ],
+  "contains": "development 6b9be42 (fusion2) plus G1 (883bc9d)",
+  "gameplay_status": "not played"
+ }
 }
