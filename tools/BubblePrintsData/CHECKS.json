@@ -1,0 +1,82 @@
+{
+  "task": "Author-requested BubblePrints stock-data storage on development",
+  "date": "2026-11-15",
+  "starting_development_commit": "6b9be4214989f7ba4a56dad54f0b8c9056c2789d",
+  "branch": "codex/bubbleprints-handover",
+  "authorization": "Author explicitly requested these files be saved in the development branch repository after chat downloads failed. Storage exception applies to this exact published stock database.",
+  "source_url": "https://github.com/factubsio/BubblePrintsData/releases/download/2.7.0x_0/blueprints_raw_2.7.0x_0.binz",
+  "database": {
+    "filename": "blueprints_raw_2.7.0x_0.binz",
+    "bytes": 136905792,
+    "sha256": "03ba6e29782c0c14e0c0383cd739560358641f7b5842f1dcfb690246e73c9c6a",
+    "record_count": 236660
+  },
+  "archives": {
+    "count": 5,
+    "total_bytes": 113588815,
+    "all_under_30_MB": true,
+    "manifest": "DATABASE_PARTS.json",
+    "checksums": "data/SHA256SUMS.txt",
+    "ordinary_git_blobs": true
+  },
+  "assembler": {
+    "fresh_assembly": "pass; exact final bytes/hash verified",
+    "smoke_checks": {
+      "verify_only": "pass",
+      "reuse": "pass",
+      "missing_archive_refused": "pass",
+      "corrupt_archive_refused": "pass",
+      "different_output_preserved": "pass"
+    },
+    "stdlib_only": true,
+    "new_network_requests": false,
+    "intermediate_plaintext_parts_written": false,
+    "output_ignored_by_git": true
+  },
+  "headless_reader": {
+    "dotnet_sdk": "8.0.426",
+    "build_exit": 0,
+    "warnings": 1,
+    "errors": 0,
+    "warning": "MSB3277 from supplied viewer metadata dependencies; separate from the deployable mod build.",
+    "run_exit": 0,
+    "run": {
+      "version": "2.7.0x",
+      "expected": 236660,
+      "total": 236660,
+      "requested": 1,
+      "found": [
+        {
+          "guid": "d69715dc0de8f8b44ac9f20188c7c22e",
+          "name": "TrueJudgmentAbility",
+          "type": "Kingmaker.UnitLogic.Abilities.Blueprints.BlueprintAbility",
+          "supplied": "TrueJudgmentAbility"
+        }
+      ],
+      "missing": []
+    },
+    "selected_record_matches_previous_data": true,
+    "game_mod_or_gui_initialization": false,
+    "third_party_dlls_committed": false,
+    "source_hashes": {
+      "Reader/Program.cs": "d0f5e3e04b0e2b4a2ca5f3ef1fb4bd7924865b9647d292ae9a8038caf6172b80",
+      "Reader/BubblePrintsReader.csproj": "4ac72461619b10635a95a28cfa6a6be13eadbdcf0e7874e1bf21978f5f85fe6e",
+      "Reader/targets.example.json": "ad3d04106223e20e5e5ee1180f0322bd31498ec261bc1233b282a3ae3ecbc0be",
+      "assemble_database.py": "04dc4c839672999deacebc869de4528461ea464e1e0d373a96e17bf2e6c7b0e2"
+    }
+  },
+  "integration": {
+    "game_code_or_manifest_changed": false,
+    "mod_compile_items": 220,
+    "reader_in_mod_compile_graph": false,
+    "umm_dll_or_package_rebuilt_or_replaced": false,
+    "unit_mod_build_profile_audit": "Not rerun: this stores offline input/tooling only, with no mod source/project/manifest change. Actual assembler and reader checks are recorded above.",
+    "older_gameplay_prs_included": false
+  },
+  "earlier_evidence": "../../docs/competence/BUBBLEPRINTS_CHECK.json",
+  "limits": [
+    "Stock 2.7.0x metadata does not prove installed runtime mod patches or actor state.",
+    "Reader still needs the viewer libraries from the already supplied bubbleprints-release.zip.",
+    "No newly played game behavior, Unity performance or runtime-profile audit acceptance."
+  ]
+}

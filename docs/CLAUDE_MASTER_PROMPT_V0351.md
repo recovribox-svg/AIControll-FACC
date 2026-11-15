@@ -91,10 +91,14 @@ request the exact asset/GUID and its referenced closure. For the enum mismatch, 
 and the actual installed assemblies before changing the loader or declaring a gameplay mismatch. A safe
 loader diagnostic may be feasible; changing game enums or deleting failed evidence is not a correction.
 
-The author supplied the **BubblePrints program ZIP**, which includes a stock 2.7.0x database. It is useful
-for GUID lookup, graph references, exact native fields and exporting small missing stock closures. The
-wrath.bubbleprints.dev website is not needed. BubblePrints stock graphs do not prove installed mod mutations
-or current actor state. Keep copyrighted game DLLs/full graphs/decompiled sources out of commits/packages.
+The author supplied the **BubblePrints program ZIP**; Codex downloaded the stock 2.7.0x database **separately**.
+At the author's explicit request on 15 November 2026, that exact database is now stored as five ordinary Git
+archives in [tools/BubblePrintsData](../tools/BubblePrintsData/README.md), with checksums, an offline assembler
+and the headless reader source. Run `python3 tools/BubblePrintsData/assemble_database.py` from the repository
+root; no external download is needed. This is a scoped storage exception for those stock-data archives.
+It supports GUID/reference lookup and labelled missing stock fixtures; it does not establish runtime mod
+patches or actor state. Other game DLLs, private/live full dumps and decompiled sources stay outside commits
+and runtime packages. The viewer libraries still come from the author's supplied program ZIP.
 
 Read [INSTALLED_MODS.md](competence/INSTALLED_MODS.md) / JSON for installed versions/settings, rather than
 substituting old public mod source. DarkCodex is 1.9.6, Mind Shield disabled. The supplied `.dll.*.cache`
