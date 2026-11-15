@@ -218,6 +218,39 @@ namespace CompanionAI_Pathfinder.Tactics
         {
             UnitGrabs.Clear();
             Openings.Clear();
+            ManeuverImmunities.Clear();
+        }
+
+        private static readonly Dictionary<UnitEntityData, KeyValuePair<int, int>> ManeuverImmunities =
+            new Dictionary<UnitEntityData, KeyValuePair<int, int>>();
+
+        /// <summary>
+        /// ★ fusion2g1b review: whether a <paramref name="type"/> maneuver against <paramref name="target"/> fails by the
+        /// game's rule. RuleCombatManeuver.OnTrigger cancels it "because of immunity" on the ImmuneToCombatManeuvers
+        /// condition or on AutoFailure, which every turned-on ManeuverImmunity component of that type (or of None) sets.
+        /// Swarms carry ten of them (SwarmTinyFeature, SwarmDiminutiveFeature: Grapple, Trip, Bull Rush...), and no
+        /// condition. Read once a frame per unit (cleared with the attack cache): the facts' runtime components, no roll.
+        /// </summary>
+        internal static bool ImmuneToManeuver(UnitEntityData target, CombatManeuver type)
+        {
+            if (target == null) return false;
+            if (target.Descriptor.State.HasCondition(UnitCondition.ImmuneToCombatManeuvers)) return true;
+            int frame = Time.frameCount;
+            if (!ManeuverImmunities.TryGetValue(target, out var known) || known.Key != frame)
+            {
+                int mask = 0;
+                try
+                {
+                    foreach (var fact in target.Facts.List)
+                        foreach (var component in fact.Components)
+                            if (component.IsTurnedOn && component.SourceBlueprintComponent is ManeuverImmunity immunity)
+                                mask |= ValueModel.ManeuverImmunityBit((int)immunity.Type);
+                }
+                catch (Exception ex) { Main.Verbose($"[Maneuver] {target.CharacterName}: immunities unreadable: {ex.Message}"); }
+                if (ManeuverImmunities.Count > 256) ManeuverImmunities.Clear();
+                ManeuverImmunities[target] = known = new KeyValuePair<int, int>(frame, mask);
+            }
+            return ValueModel.ManeuverBlocked(known.Value, (int)type);
         }
         private static readonly AbilityProfile.ManeuverEffect GrappleManeuver =
             new AbilityProfile.ManeuverEffect { Type = CombatManeuver.Grapple };
@@ -238,7 +271,8 @@ namespace CompanionAI_Pathfinder.Tactics
             var opening = new GrappleOpening { Frame = frame, Trigger = grab };
             try
             {
-                if (target.Descriptor.State.HasCondition(UnitCondition.ImmuneToCombatManeuvers)) return null;
+                // A swarm's ManeuverImmunity makes the grab fail: no hold and no routine cut short (fusion2g1b review).
+                if (ImmuneToManeuver(target, CombatManeuver.Grapple)) return null;
                 ManeuverOdds(unit, target, null, GrappleManeuver, out opening.Success, out _);
                 // The holder's roll each round: the same rule with the holder buff's bonus (RuleCombatManeuver adds it).
                 ManeuverValues(unit, target, null, GrappleManeuver, out int cmb, out int cmd);

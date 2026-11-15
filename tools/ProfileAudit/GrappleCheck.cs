@@ -9,6 +9,7 @@ using Kingmaker.Blueprints;
 using Kingmaker.Blueprints.Items.Weapons;
 using Kingmaker.ElementsSystem;
 using Kingmaker.Controllers.Units;
+using Kingmaker.Designers.Mechanics.Facts;
 using Kingmaker.EntitySystem.Entities;
 using Kingmaker.RuleSystem.Rules;
 using Kingmaker.UnitLogic;
@@ -85,6 +86,12 @@ namespace ProfileAudit
                       "ContextActionGrapple refuses a holder that holds and a victim already held");
                 Check(Body(typeof(ContextActionCombatManeuverCustom), "RunAction").Any(m => m is ConstructorInfo c && c.DeclaringType == typeof(RuleCombatManeuver)),
                       "the grab's maneuver is the game's RuleCombatManeuver");
+                // ★ fusion2g1b review: a swarm's maneuver immunity is a component, not the condition.
+                var maneuverRule = Body(typeof(RuleCombatManeuver), "OnTrigger");
+                Check(maneuverRule.Any(m => m.Name == "get_AutoFailure") && Calls(maneuverRule, typeof(UnitState), "HasCondition"),
+                      "RuleCombatManeuver.OnTrigger cancels the maneuver on AutoFailure or the ImmuneToCombatManeuvers condition");
+                Check(Body(typeof(ManeuverImmunity), "OnEventAboutToTrigger").Any(m => m.Name == "set_AutoFailure"),
+                      "ManeuverImmunity sets AutoFailure for its maneuver type (or every type for None)");
 
                 // --- the reader on the real blueprints ---
                 var reasons = new Dictionary<string, int>();
@@ -156,6 +163,25 @@ namespace ProfileAudit
                       "the grapple odds use the existing maneuver reading (refactored, not copied)");
                 Check(CallsMod(typeof(CombatMath), "ActiveGrab", typeof(UnitEntityData), "get_IsPlayerFaction"),
                       "only party units' grabs are valued (an enemy's routine keeps the old forecast)");
+                Check(CallsMod(typeof(CombatMath), "GrappleOpeningOn", typeof(CombatMath), "ImmuneToManeuver") &&
+                      CallsMod(typeof(CombatMath), "ManeuverOdds", typeof(CombatMath), "ImmuneToManeuver") &&
+                      CallsMod(typeof(CombatMath), "TripOnHitChance", typeof(CombatMath), "ImmuneToManeuver"),
+                      "the grapple opening, the maneuver odds and the trip-on-hit forecast share the native immunity reading");
+                var immune = Body(typeof(CombatMath), "ImmuneToManeuver");
+                Check(immune.Any(m => m.Name == "get_IsTurnedOn") && immune.Any(m => m.Name == "get_SourceBlueprintComponent") &&
+                      immune.Any(m => m.DeclaringType == typeof(ManeuverImmunity) && m.Name == "Type") &&
+                      Calls(immune, typeof(UnitState), "HasCondition"),
+                      "... which reads the condition and every turned-on ManeuverImmunity component by its type");
+
+                // --- the immunity on the real swarm blueprints ---
+                var immuneFacts = loaded.OfType<BlueprintScriptableObject>()
+                    .Where(b => b.ComponentsArray != null && b.ComponentsArray.OfType<ManeuverImmunity>().Any(m => m.Type == CombatManeuver.Grapple))
+                    .Select(b => b.name).OrderBy(n => n).ToList();
+                lines.Add($"GRAPPLE maneuver immunity: {immuneFacts.Count} facts make a grapple fail (" + string.Join(", ", immuneFacts.Take(8)) + ")");
+                foreach (var swarm in new[] { "SwarmTinyFeature", "SwarmDiminutiveFeature" })
+                    Check(immuneFacts.Contains(swarm) && loaded.OfType<BlueprintScriptableObject>().First(b => b.name == swarm)
+                          .ComponentsArray.OfType<ManeuverImmunity>().Any(m => m.Type == CombatManeuver.Trip),
+                          swarm + " makes grapples and trips fail (ManeuverImmunity), with no ImmuneToCombatManeuvers condition");
 
                 // --- the scalar rules through the compiled mod ---
                 Check(Math.Abs(ValueModel.GrappleHoldValue(0.8f, 3f, 30f, 30f, 10f, 0.4f, 1f) - 26.4f) < 1e-3f,
@@ -164,6 +190,10 @@ namespace ProfileAudit
                 var run = ValueModel.GrappleRun.Begin();
                 run.Next(0.8f, true, 0.9f); run.Next(0.8f, true, 0.9f); run.Next(0.7f, false, 0.9f);
                 Check(Math.Abs(run.Attacks - 1.3584f) < 1e-3f, "claw, claw, bite at 80% / 90%: 1.36 of 3 attacks expected");
+                int swarmMask = ValueModel.ManeuverImmunityBit((int)CombatManeuver.Grapple) | ValueModel.ManeuverImmunityBit((int)CombatManeuver.Trip);
+                Check(ValueModel.ManeuverBlocked(swarmMask, (int)CombatManeuver.Grapple) && !ValueModel.ManeuverBlocked(swarmMask, (int)CombatManeuver.BullRush) &&
+                      ValueModel.ManeuverBlocked(ValueModel.ManeuverImmunityBit((int)CombatManeuver.None), (int)CombatManeuver.PullToPointSpell),
+                      "an immunity blocks its own maneuver type; one of type None blocks every type");
             }
             catch (Exception ex)
             {

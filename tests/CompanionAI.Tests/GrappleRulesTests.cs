@@ -89,5 +89,22 @@ namespace CompanionAI.Tests
             Assert.Equal(0f, ValueModel.SkillCheckChance(0, 40));
             Assert.Equal(1f, ValueModel.SkillCheckChance(30, 10));
         }
+
+        // CombatManeuver values: None 0, Trip 1, Overrun 2, Disarm 3, Grapple 4, BullRush 5.
+        [Fact] public void ManeuverImmunityBlocksItsOwnTypeOnly()
+        {
+            int swarm = ValueModel.ManeuverImmunityBit(4) | ValueModel.ManeuverImmunityBit(1);   // Grapple + Trip
+            Assert.True(ValueModel.ManeuverBlocked(swarm, 4));
+            Assert.True(ValueModel.ManeuverBlocked(swarm, 1));
+            Assert.False(ValueModel.ManeuverBlocked(swarm, 5));
+            Assert.False(ValueModel.ManeuverBlocked(0, 4));                                        // no immunity
+        }
+
+        [Fact] public void ManeuverImmunityOfTypeNoneBlocksEveryManeuver()
+        {
+            int all = ValueModel.ManeuverImmunityBit(0);
+            for (int type = 1; type <= 12; type++) Assert.True(ValueModel.ManeuverBlocked(all, type));
+            Assert.True(ValueModel.ManeuverBlocked(ValueModel.ManeuverImmunityBit(99), 4));        // unknown type: read as all
+        }
     }
 }

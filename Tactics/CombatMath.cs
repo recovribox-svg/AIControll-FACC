@@ -1654,7 +1654,8 @@ namespace CompanionAI_Pathfinder.Tactics
             if (caster == null || target == null || maneuver == null) return;
             try
             {
-                if (target.Descriptor.State.HasCondition(UnitCondition.ImmuneToCombatManeuvers)) { chance = 0f; return; }
+                // ★ fusion2g1b review: the condition and the type's ManeuverImmunity (swarms), as RuleCombatManeuver.
+                if (ImmuneToManeuver(target, maneuver.Type)) { chance = 0f; return; }
                 ManeuverValues(caster, target, ability, maneuver, out int cmb, out int cmd);
                 bool alwaysChance = caster.Descriptor.State.Features.AlwaysChance;
                 int successes = 0;
@@ -1763,7 +1764,7 @@ namespace CompanionAI_Pathfinder.Tactics
                     TripTriggers[key] = trips;
                 }
                 if (!trips) return 0f;
-                if (unit.Descriptor.State.HasCondition(UnitCondition.ImmuneToCombatManeuvers)) return 0f;
+                if (ImmuneToManeuver(unit, CombatManeuver.Trip)) return 0f;   // ★ fusion2g1b review: ManeuverImmunity too
                 int margin = FrameCached($"trip|{enemy.UniqueId}|{unit.UniqueId}", () =>
                     Rulebook.Trigger(new RuleCalculateCMB(enemy, unit, CombatManeuver.Trip)).Result -
                     Rulebook.Trigger(new RuleCalculateCMD(enemy, unit, CombatManeuver.Trip)).Result);
