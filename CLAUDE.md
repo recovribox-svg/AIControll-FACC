@@ -8,7 +8,37 @@ Read [CONTRIBUTING.md](CONTRIBUTING.md) for shared branch ownership, Codex pull 
 Codex works on task branches and targets pull requests at `claude/dreamy-pasteur-b9h3rn`; Claude reviews and integrates them there.
 Keep `main` for author-authorized releases. Read [AGENTS.md](AGENTS.md) when coordinating agent work.
 
-**Current handover (15 November 2026, Codex): cached leap Grabber modes on `codex/leap-grab-modes`, stacked on
+**Current handover (15 November 2026, Codex): gaps1 playtest review / Release Grapple repair on
+`codex/gaps1-playtest-review`, stacked on #70 `d5a1207` -> #69 -> #68 -> #67 -> #66 -> #65,
+development `6b9be42`; repaired gaps2 is unplayed.** Read [review/evidence/replay](docs/GAPS1_PLAYTEST_REVIEW.md),
+[input hashes/context](docs/competence/GAPS1_PLAYTEST_INPUTS.json), §178. Supplied logs match gaps1 MVID `9aea0261`;
+author confirms ToyBox spawns, rests between fights, Grabber left to the engine. All 572 issues have matching terminals.
+AI rows 2812-2813 value releasing Hydra at 23.8, then discard Release Grapple: its null reason crashes candidate
+pure-buff classification. The score now has a reason; the classifier guards null/empty. A bounded appraisal says
+"release offer", not that a release already executed. Header reciprocity now uses native UnitReference ID equality
+instead of another proxy resolution. The missing played hold conditions/headers still need a replay, not an invented
+permission/movement rule. No new world/path/rule forecasts, actor mutation, movement or commitment policy.
+
+Checked source **`96108ba`**, MVID **`9ce04a64-f9a0-43ce-8275-5f1b0c7bbe73`**: **861 unit + 27 inventory + 3 script + 11 ledger tests**,
+real-reference Release **0 warnings/errors**; ProfileAudit 44,639 loaded / 4,807 abilities,
+no load/reader failure or prerequisite skip. **GRAPPLE 58 (3 new)**, SHIFTER-FORMS 21, GRIFFON-MODES 29, selector 24
+and inherited checks pass; supplementary Magus 44 and native providers 98/14/10 pass. **One added native equality
+reference resolves**; reports otherwise match #70, raw enum mismatch remains a separate expected negative check.
+[Receipt](docs/competence/GAPS1_PLAYTEST_CHECKS.json), [compiler/reference provenance](docs/competence/GAPS1_PLAYTEST_BUILD_PROVENANCE.json).
+[Cumulative gaps2 UMM test ZIP](test-builds/AI-Control-FACC-v0.3.52-dev-gaps2-96108ba-UMM-test.zip), SHA-256
+`bf5e955f32cd91512495656e30528cc1afad11733af108bc523012527cd681fa`. SDK 8.0.426 / Roslyn 4.11, UMM 0.33.2.0,
+manifest 0.3.52; frozen checked DLL across receipt/docs-only commits. No merge, main/development push or release.
+
+Played: engine Grabber on/off and actual grabs in TB/RT, native maintenance/free hit, three RT shapes and Fury.
+Frigid now forecasts the one-round minimum; a Grabber-valued leap is offered. **No Frigid, leap or release is issued**;
+no invocation/reveal acceptance. The suicidal-looking bomb price needs a controlled recipient/value check: native
+projectiles launch before their ranged roll queues AoOs, not a proven pre-delivery loss. Nine slow rows coincide with
+collections; warm ability/context workload remains material. No performance improvement is claimed by this repair.
+Retain #69's saved-Frigid boundary (168 withheld), leap bounds, holder generic-cost/safety, monster and form limits.
+No additional upload needed. Next: TB/RT replay with Grabber left to the engine; negative/positive holds, actual
+release and restored actions/headers, actual leap, ordinary/no-save Frigid; paired logs and startup identity.
+
+**Earlier handover (15 November 2026, Codex): cached leap Grabber modes on `codex/leap-grab-modes`, stacked on
 #69 `2e86342` -> #68 -> #67 -> #66 -> #65, development `6b9be42`; unplayed.** Read [leap implementation/replay](docs/LEAP_GRAB_MODES.md),
 [five-gap assessment](docs/GRAPPLE_GAP_ASSESSMENT.md), §177. Mode repricing previously ignored grapple truncation/hold
 despite the initial leap quote including it. Both quote paths now share the ordinary line/summary kernel and cached

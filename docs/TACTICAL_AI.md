@@ -6182,6 +6182,12 @@ projectiles launch before their ranged roll queues AoOs, so the down forecast al
 Seventy slow rows include nine with collections; warm ability scoring/context counts remain a performance follow-up,
 without interpreting signed heap deltas as allocations or claiming a Unity speedup.
 
-The checked-source receipt, compiler/reference provenance and unplayed cumulative package will record validation
-separately from this gaps1 gameplay. Manifest remains 0.3.52. Holder best-alternative/safety, monster victims, extra
-form facts, saved Frigid control, and actual leap/release execution retain the preceding documented boundaries.
+Checked source **`96108ba`**, MVID **`9ce04a64-f9a0-43ce-8275-5f1b0c7bbe73`**: **861 + 27 + 3 + 11 tests**, real-reference
+Release **0 warnings/errors**. ProfileAudit 44,639 loaded / 4,807 abilities without load/reader failure or prerequisite
+skip; **GRAPPLE 58 (3 new)**, inherited checks, supplementary Magus 44 and native providers 98/14/10 pass.
+One native UnitReference equality signature is added and resolves. Reports match #70 outside the grapple check count
+and output/optional coverage paths. The original raw archive's enum mismatch remains a separate negative check.
+[Receipt](competence/GAPS1_PLAYTEST_CHECKS.json), [compiler/reference provenance](competence/GAPS1_PLAYTEST_BUILD_PROVENANCE.json).
+The cumulative **gaps2** package keeps the frozen checked DLL; it is unplayed, manifest 0.3.52. Holder
+best-alternative/safety, monster victims, extra form facts, saved Frigid control, and actual leap/release execution
+retain the preceding documented boundaries. No merge, release or Unity speedup acceptance.

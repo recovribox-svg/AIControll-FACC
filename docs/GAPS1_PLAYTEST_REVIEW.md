@@ -75,7 +75,7 @@ nonempty ordinary pure-buff classification is unchanged. No measured Unity speed
 ## Performance and follow-ups
 
 There are **70 slow-decision rows** (threshold ~250 ms), median of that subset **329.5 ms**, maximum **1,190 ms**.
-The worst ten are heavily affected by collections; at row **3639**, Camellia's 1,190 ms decision reports a collection
+All nine slow rows that report a collection are the nine longest pauses; at row **3639**, Camellia's 1,190 ms decision reports a collection
 and an abilities-stage heap delta of **-258,460 KB**. It would be incorrect to call that number an allocation total,
 or to attribute the whole pause to the named Resistance operation. Ordinary warm slow rows still deserve work:
 Orvath 2825 spends 328.9 ms in abilities (93 scored); arcan 3631 spends 354.8 ms there (44 scored), and its Rune/Color
@@ -96,15 +96,27 @@ they are **open questions**, not established reasons to mutate native conditions
 
 ## Validation and next replay
 
-Validation and frozen package identity are recorded after the checked source commit in
-`docs/competence/GAPS1_PLAYTEST_CHECKS.json` and `GAPS1_PLAYTEST_BUILD_PROVENANCE.json`. Compilation/offline checks
-must remain separate from the supplied **gaps1** gameplay and the **unplayed** repaired package.
+Source **`96108ba`** passes **861 unit + 27 inventory + 3 audit-script + 11 ledger tests**, real-reference Release
+**0 warnings/errors**, compatible ProfileAudit 44,639 loaded / 4,807 abilities with no load/reader failures or
+prerequisite skips. **GRAPPLE 58** includes the three added native checks; inherited checks, supplementary Magus 44
+and native providers **98/14/10** pass. One added native UnitReference equality signature resolves. Report rows match
+#70 apart from the grapple check count/output/optional coverage paths. The raw archive's known enum mismatch remains
+an expected separate failing-input check, not hidden acceptance of that input.
+
+[Receipt](competence/GAPS1_PLAYTEST_CHECKS.json) and [compiler/reference provenance](competence/GAPS1_PLAYTEST_BUILD_PROVENANCE.json)
+record the output and reference hashes. The [cumulative gaps2 UMM test ZIP](../test-builds/AI-Control-FACC-v0.3.52-dev-gaps2-96108ba-UMM-test.zip)
+has startup MVID **`9ce04a64-f9a0-43ce-8275-5f1b0c7bbe73`**, ZIP SHA-256
+`bf5e955f32cd91512495656e30528cc1afad11733af108bc523012527cd681fa` and identity/checksum sidecars.
+It is the exact frozen checked DLL, SDK 8.0.426 / Roslyn 4.11, UMM reference 0.33.2.0; manifest remains 0.3.52.
+Compilation/offline checks remain separate from the supplied **gaps1** gameplay and the **unplayed** repaired package.
 
 Play TB and RT with Grabber left to the engine:
 
 1. Make a grab on a weak living victim while dangerous enemies remain. Observe a **release offer**, then an actual
    Release Grapple ISSUED/ENDED if the offer wins; no `not evaluated` exception. Healing can legitimately win first.
    Confirm native parts/conditions are removed and ordinary actions become available after the free release.
+   Watch for repeated release/re-grab without useful control between them: this unplayed possibility would require
+   checking the existing first-held-turn credit against native turn timing, not assuming the full round was denied.
 2. Retain a valuable caster/attacker: a positive keep value should not cause a gratuitous release. Look for the
    reciprocal `holds` / `held by` header and actual held/pinned restrictions, not just an appraisal label.
 3. In open ground, let an actual leap compete with ordinary attacks. Confirm Grabber mode, landing and native grab;
