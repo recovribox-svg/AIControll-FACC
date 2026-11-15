@@ -1,0 +1,50 @@
+{
+  "database": "blueprints_raw_2.7.0x_0.binz",
+  "bytes": 136905792,
+  "sha256": "03ba6e29782c0c14e0c0383cd739560358641f7b5842f1dcfb690246e73c9c6a",
+  "parts": [
+    {
+      "name": "blueprints_raw_2.7.0x_0.binz.part01",
+      "bytes": 29360128,
+      "sha256": "3ce50fad9e67315329ba2cb5b2541626fc4c761883422877f45e24558c712629",
+      "archive": "BubblePrints-data-part-1-of-5.zip",
+      "archive_bytes": 23870403,
+      "archive_sha256": "62fc556911eb7259a83aa773dd5d42e97e97a1d354777c24d8e534bf5da5f6d6"
+    },
+    {
+      "name": "blueprints_raw_2.7.0x_0.binz.part02",
+      "bytes": 29360128,
+      "sha256": "a86a6196845772944420118446ad09ade943d233bc667f5bbe1dc66f822ff49d",
+      "archive": "BubblePrints-data-part-2-of-5.zip",
+      "archive_bytes": 23871451,
+      "archive_sha256": "5960b418eb414fb21705fa035cd22b14a453a49fa2e76fed0b1b27b9349a462a"
+    },
+    {
+      "name": "blueprints_raw_2.7.0x_0.binz.part03",
+      "bytes": 29360128,
+      "sha256": "62cc93baccb718ddc773cbcf8b9b13dff5fc7945cfc3addaa670f0b5c1579b9c",
+      "archive": "BubblePrints-data-part-3-of-5.zip",
+      "archive_bytes": 24305610,
+      "archive_sha256": "4b4640cc2c483ba28dadcbb7875d9bf585b4337e0888a7448e479aa30904ccc7"
+    },
+    {
+      "name": "blueprints_raw_2.7.0x_0.binz.part04",
+      "bytes": 29360128,
+      "sha256": "4d7fde8905498b2435b3f456b955d5076976cb3b71f17decd3f60d1ddbd358b3",
+      "archive": "BubblePrints-data-part-4-of-5.zip",
+      "archive_bytes": 24535585,
+      "archive_sha256": "a100d649abc52dbc03883638dbf2a8a43ab12504382a58352a336ccfc53919a0"
+    },
+    {
+      "name": "blueprints_raw_2.7.0x_0.binz.part05",
+      "bytes": 19465280,
+      "sha256": "c1edbdda55e019bac9433c595672b123e02ceec32120259b6b79b2dfb65a9bf5",
+      "archive": "BubblePrints-data-part-5-of-5.zip",
+      "archive_bytes": 17005766,
+      "archive_sha256": "9951c5d7f9304bfe4903e07b955a4fd5022542313d2d498cf1a0e8e09c7e6f8d"
+    }
+  ],
+  "version": "2.7.0x_0",
+  "source_url": "https://github.com/factubsio/BubblePrintsData/releases/download/2.7.0x_0/blueprints_raw_2.7.0x_0.binz",
+  "records_expected": 236660
+}

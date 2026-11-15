@@ -593,6 +593,15 @@ Historical handovers, superseded by the one above: [v0.3.22 release preparation]
   regeneration, spellcasting boosts, on-hit effects, Quicken / Extend boosters, shadow spells, caster-only granted facts - `docs/TACTICAL_AI.md` §53-64; `release/CHANGELOG_v0.3.21.md`)
 
 ## Reference Resources
+- **BubblePrints input handover (15 November 2026, Codex; author-authorized repository storage):**
+  [tools/BubblePrintsData/README.md](tools/BubblePrintsData/README.md) contains five versioned stock-data archives,
+  checksums, an offline assembler and headless reader source. Run `python3 tools/BubblePrintsData/assemble_database.py`
+  to reconstruct the exact 2.7.0x database under the ignored `.local` directory, without external downloads.
+  The original viewer ZIP did **not** include the database; Codex downloaded it separately. This scoped stock-input
+  exception does not permit committing private/live dumps, game/viewer DLLs or decompiles. Reader libraries still
+  come from the supplied viewer ZIP; stock data does not prove runtime mod patches. The author requested this
+  handover be integrated into development. It changes no game code/manifest; no mod DLL or UMM package was rebuilt
+  or replaced. See its checks receipt for assembly/reader verification, not new mod-build or gameplay acceptance.
 - **Rogue Trader CompanionAI v3.5.7**: `C:\Users\veria\Downloads\CompanionAI_v3-master - v3.5.7`
   - Reference for complete AI replacement architecture
   - Key patterns: Behaviour Tree replacement, single decision point, no basic attacks

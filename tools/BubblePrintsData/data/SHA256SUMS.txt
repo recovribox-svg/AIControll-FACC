@@ -1,0 +1,5 @@
+62fc556911eb7259a83aa773dd5d42e97e97a1d354777c24d8e534bf5da5f6d6  BubblePrints-data-part-1-of-5.zip
+5960b418eb414fb21705fa035cd22b14a453a49fa2e76fed0b1b27b9349a462a  BubblePrints-data-part-2-of-5.zip
+4b4640cc2c483ba28dadcbb7875d9bf585b4337e0888a7448e479aa30904ccc7  BubblePrints-data-part-3-of-5.zip
+a100d649abc52dbc03883638dbf2a8a43ab12504382a58352a336ccfc53919a0  BubblePrints-data-part-4-of-5.zip
+9951c5d7f9304bfe4903e07b955a4fd5022542313d2d498cf1a0e8e09c7e6f8d  BubblePrints-data-part-5-of-5.zip

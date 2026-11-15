@@ -17,6 +17,14 @@ next-fight re-placement checks (docs/INVOCATION_LEDGER.md). It reads only the mo
 `python3 -I tools/InvocationLedger/invocation_ledger.py [--json] <Log.txt>`; tests: `python3 -I
 tools/InvocationLedger/test_invocation_ledger.py`.
 
+## BubblePrintsData
+
+[BubblePrintsData](BubblePrintsData/README.md) stores the exact 2.7.0x stock database used for earlier checks,
+at the author's explicit request so a repository-only network proxy can access it. Five ordinary Git archives,
+checksums and `assemble_database.py` reconstruct it offline into an ignored local directory. The optional .NET 8
+reader uses the already supplied viewer ZIP's libraries. This stock-data storage exception is specific to those
+archives; private/live dumps, game DLLs and decompiles remain outside the repository and runtime packages.
+
 ## RefStubGen
 Generates **compile-only** reference stubs for game assemblies that are not available (Owlcat.*, AstarPathfindingProject,
 the game's Newtonsoft.Json, ...). It reconstructs them from the TypeRef/MemberRef metadata of `Assembly-CSharp.dll`,

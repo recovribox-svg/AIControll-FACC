@@ -1,0 +1,7 @@
+/.local/
+/Reader/bin/
+/Reader/obj/
+__pycache__/
+*.binz
+*.raw.json
+*.jbp

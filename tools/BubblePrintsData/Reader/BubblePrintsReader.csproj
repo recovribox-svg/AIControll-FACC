@@ -1,0 +1,26 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net8.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <AssemblyName>BubblePrintsReader</AssemblyName>
+  </PropertyGroup>
+  <ItemGroup>
+    <Reference Include="BubbleprintEngine">
+      <HintPath>$(BubblePrintsPath)/BubbleprintEngine.dll</HintPath>
+    </Reference>
+    <Reference Include="BinzFactory">
+      <HintPath>$(BubblePrintsPath)/BinzFactory.dll</HintPath>
+    </Reference>
+    <Reference Include="K4os.Compression.LZ4">
+      <HintPath>$(BubblePrintsPath)/K4os.Compression.LZ4.dll</HintPath>
+    </Reference>
+    <Reference Include="System.Collections.Immutable">
+      <HintPath>$(BubblePrintsPath)/System.Collections.Immutable.dll</HintPath>
+    </Reference>
+  </ItemGroup>
+  <Target Name="CheckBubblePrintsPath" BeforeTargets="ResolveAssemblyReferences">
+    <Error Condition="!Exists('$(BubblePrintsPath)/BubbleprintEngine.dll')" Text="Set BubblePrintsPath to the extracted viewer folder containing BubbleprintEngine.dll, BinzFactory.dll and K4os.Compression.LZ4.dll." />
+  </Target>
+</Project>
