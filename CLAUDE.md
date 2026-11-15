@@ -16,7 +16,16 @@ leap repricing reads the assumed grab only after exact routine/frame validation.
 chooser; native own-weapon/landing caps remain 4/8, with no new geometry or movement policy. Existing G2 ownership,
 blocklist/once-per-round, safety, defence and final dispatch rules remain. Holder cost/safety and monster support
 remain scoped in the assessment; their missing native/alternative views are not replaced with guesses.
-Final receipt/compiler/source and cumulative test package follow validation in `docs/competence/LEAP_GRAB_CHECKS.json`.
+Checked source **`351b709`**, MVID **`9aea0261-f5a3-4c3e-a025-502de27a716d`**: **855 unit + 27 inventory + 3 script
+and 11 ledger tests**, real-reference Release **0 warnings/errors**; ProfileAudit 44,639 loaded / 4,807 abilities,
+no load/reader failures or prerequisite skips; **GRIFFON-MODES 29**, VALUE-SELECTION 24 and inherited checks pass.
+Supplementary Magus 44, native providers 98/14/10; **0 new references** relative to #69. Audit/report unchanged
+outside the leap check count/optional coverage/output paths. Original raw enum failure remains separate.
+[Receipt](docs/competence/LEAP_GRAB_CHECKS.json), [compiler/reference provenance](docs/competence/LEAP_GRAB_BUILD_PROVENANCE.json).
+[Cumulative gaps1 UMM test ZIP](test-builds/AI-Control-FACC-v0.3.52-dev-gaps1-351b709-UMM-test.zip), SHA-256
+`841c40650338f78d7c16999660e430a4e46d92011be9a447ee45b95d09359084`; includes #65-69 and leap modes.
+SDK 8.0.426 / Roslyn 4.11, UMM 0.33.2.0, manifest 0.3.52. The checked DLL is frozen across receipt-only commits;
+no live actor/flight, gameplay or Unity speedup acceptance. No merge, main/development push or release.
 Retain the #69 Frigid minimum/saved-profile boundary and #68 form/Fury work. No new uploads are needed for these
 slices. Next: TB/RT replay with Grabber left to the engine, actual leaps plus G2 release and Frigid checks.
 

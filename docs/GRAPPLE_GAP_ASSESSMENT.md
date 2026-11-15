@@ -98,6 +98,10 @@ This reports metadata, not live casting success. No intermediate ZIP is produced
 with the separate leap-mode repair. Raw logs, game assemblies and graphs stay private. Original raw Achaekek
 enum-load failure remains separate. Manifest stays 0.3.52; new behavior is unplayed.
 
+The [leap follow-up](LEAP_GRAB_MODES.md) now supplies the cumulative gaps1 test package (checked source `351b709`,
+MVID `9aea0261-f5a3-4c3e-a025-502de27a716d`), including this reader and #65-68. Its independent receipt and replay
+are linked there. No newer gameplay is claimed for the supplied older logs.
+
 In TB and RT, include ordinary Frigid Touch, its Spellstrike/held-charge route if available, and Explosive Runes/Frigid
 Touch. Check that fresh targets gain a one-round stagger forecast, immunity/already-present copies are handled,
 and a damage-immune target can still have a useful non-immune stagger. A real critical hit may last a minute without

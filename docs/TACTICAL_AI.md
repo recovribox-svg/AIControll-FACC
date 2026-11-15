@@ -6151,5 +6151,10 @@ issue checks and accepted-dispatch mode application remain. A newly considered g
 calculations as an ordinary mode alternative. Holder opportunity/safety and monster-victim support remain separate.
 
 The native-layout fixtures now check concrete grab/off/impossible/accuracy/concealment outcomes and both callers'
-connection to the shared kernel. Final checks/source/compiler and cumulative test identity follow in
-`docs/competence/LEAP_GRAB_CHECKS.json`. Manifest remains 0.3.52; no actor flight/gameplay acceptance or release.
+connection to the shared kernel. Source `351b709`: **855 + 27 + 3 + 11 tests**, real-reference Release **0 warnings/errors**,
+**GRIFFON-MODES 29** (9 new), inherited checks and native providers 98/14/10 pass. ProfileAudit 44,639 loaded /
+4,807 abilities without load/reader failure or prerequisite skip; **0 added external references** relative to #69.
+Audit/report unchanged outside the mode check count/optional coverage/output paths. Original raw enum failure remains.
+[Receipt](competence/LEAP_GRAB_CHECKS.json), compiler/reference/source provenance and cumulative **gaps1** test identity:
+MVID **`9aea0261-f5a3-4c3e-a025-502de27a716d`**. SDK 8.0.426 / Roslyn 4.11; manifest remains 0.3.52.
+No actor flight/gameplay or Unity timing acceptance, merge or release.

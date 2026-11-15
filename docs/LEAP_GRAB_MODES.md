@@ -53,9 +53,23 @@ transform, mode switch, path or flight. Compiled checks connect both callers to 
 before reading a grab, retain ownership/defence/dispatch guards, and ensure the fixed-mode predicate no longer excludes
 Grabber specially on leaps. Native source inspection, compilation and fixtures are separate from live execution.
 
-The final receipt records source/compiler/reference identity, the compatible/supplementary audits, unit/script and
-provider regressions, report comparison and cumulative UMM package. Manifest stays 0.3.52. The Frigid template
+Checked source **`351b709179ab3f9caba3083c07b1337e334760d2`** passes **855 unit tests**, 27 inventory, 3 audit-script
+and 11 ledger tests. Real-reference Release: **0 warnings/errors**; SigDump: **0 new external references** relative
+to #69. Compatible ProfileAudit: 44,639 blueprints / 4,807 abilities without load/reader failure or prerequisite skip;
+**GRIFFON-MODES 29** (9 new), VALUE-SELECTION 24 and inherited checks pass. Supplementary Magus 44 and providers
+98/14/10 pass. Other audit rows and the ability report match #69, apart from the changed mode-check count and
+optional coverage/output-path/separator rows. Original raw Achaekek enum-load failure remains separate.
+
+[Receipt](competence/LEAP_GRAB_CHECKS.json), [compiler/reference/source provenance](competence/LEAP_GRAB_BUILD_PROVENANCE.json).
+Manifest stays 0.3.52. The Frigid template
 coverage is reused from #69 because the reader/joint-outcome model is unchanged; it is not a new gameplay claim.
+
+[Cumulative gaps1 test ZIP](../test-builds/AI-Control-FACC-v0.3.52-dev-gaps1-351b709-UMM-test.zip),
+[identity](../test-builds/AI-Control-FACC-v0.3.52-dev-gaps1-351b709-UMM-test.identity.json),
+[checksum](../test-builds/AI-Control-FACC-v0.3.52-dev-gaps1-351b709-UMM-test.sha256).
+Startup MVID **`9aea0261-f5a3-4c3e-a025-502de27a716d`**. It includes #65-69 and the leap repair, built with
+SDK 8.0.426 / Roslyn 4.11 against UMM 0.33.2.0. The exact checked DLL is preserved across later receipt/docs commits.
+It is unplayed and is not a stable release; all earlier packages and receipts remain intact.
 
 ## Replay
 
