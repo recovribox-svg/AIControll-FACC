@@ -218,6 +218,13 @@ namespace CompanionAI_Pathfinder.Tactics
                 var action = actions[index];
                 if (action == null) continue;
                 string at = location + "/" + index + ":" + action.GetType().Name;
+                if (action is ContextActionSelectByValue selection)
+                {
+                    var floor = ReadValueSelection(selection);
+                    if (floor.Application == null) LimitFusion("unread value-selected payload: " + floor.Refusal, at);
+                    else InspectFusionPaths(floor.Actions, path, depth + 1, at + "/common-buff-minimum");
+                    continue;
+                }
                 if (action is ContextActionConditionalSaved saved)
                 {
                     fusionRequiresSavedResult = true;

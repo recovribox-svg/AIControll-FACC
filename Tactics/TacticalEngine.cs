@@ -3265,6 +3265,10 @@ namespace CompanionAI_Pathfinder.Tactics
                     () => $"[Fusion] {ability.Name}: {profile.Fusion.Spell1.name} + {profile.Fusion.Spell2.name}; " +
                           $"delivery {profile.Blueprint.name}, shared save {profile.Save}, native level {profile.Fusion.SpellLevel}, " +
                           $"school {profile.Fusion.SpellSchool}, shape {profile.Fusion.SpellTargetType}");
+            if (profile.SelectedBuffFloors.Count > 0)
+                AbilityDiscovery.ReportOnce("value-selection|" + AbilityDiscovery.Key(ability),
+                    () => $"[ValueSelection] {ability.Name}: common buff/fixed minimum duration only; longer selected outcome unpriced; " +
+                          "ally checks retain the longer duration and possible refresh (first per configuration)");
             if (!PureMagePolicy.AllowsAbility(ctx.Settings, ability, profile)) return none;
             var targetingBlueprint = ability.GetDeliverBlueprint() ?? ability.Blueprint;
 
@@ -4261,6 +4265,7 @@ namespace CompanionAI_Pathfinder.Tactics
                 // ★ v0.3.21: an ally that would fall into the pit is caught too.
                 Func<UnitEntityData, bool> wouldBeCaught = a =>
                     fusionOutcomes ? FusionControlCatches(ctx, ability, profile, a) :
+                    SelectedBuffAllyRounds(ctx, ability, profile, a) > 0f ||
                     profile.PitHolds(a) ||
                     profile.TargetBuffs.Any(b => (ForecastApplies(b, a, friendly: true) ?? profile.BuffAppliesTo(b, ability, a)) != EffectApplies.No && !a.Buffs.HasFact(b) &&
                                                  !CombatMath.BuffImmune(a, b, ability)) &&
@@ -4270,7 +4275,8 @@ namespace CompanionAI_Pathfinder.Tactics
                 {
                     if (ctx.Settings.AvoidFriendlyFire)
                     { ctx.FriendlyFireVeto = true; why = "friendly fire"; return 0f; }
-                    allyControlCost = caughtAllies.Sum(a => ValueModel.PerRound(Level(a)) * strength * effectRounds);
+                    allyControlCost = caughtAllies.Sum(a => ValueModel.PerRound(Level(a)) * strength *
+                        Math.Max(effectRounds, SelectedBuffAllyRounds(ctx, ability, profile, a)));
                     // ★ v0.3.28 test 12: shown on the decision label, and a cone that catches them is tried turned past them.
                     string controlNote = $"{(profile.ControlStrength == ControlStrength.Hard ? "controls" : "debuffs")} " +
                                          $"{string.Join(", ", caughtAllies.Select(a => a.CharacterName + WalkingInTag(walkingIn, a)))} -{allyControlCost:F0}";
@@ -4303,7 +4309,8 @@ namespace CompanionAI_Pathfinder.Tactics
                         .Where(a => a != unit && !affectedAllies.Contains(a) && !UsesRangedWeapon(a) &&
                                     (Vector3.Distance(a.Position, target.Position) <= profile.AoERadius + 2.5f + a.Corpulence || headsInto(a)) &&
                                     wouldBeCaught(a))
-                        .Sum(a => 0.5f * ValueModel.PerRound(Level(a)) * strength * effectRounds);
+                        .Sum(a => 0.5f * ValueModel.PerRound(Level(a)) * strength *
+                            Math.Max(effectRounds, SelectedBuffAllyRounds(ctx, ability, profile, a)));
                     // ★ v0.3.19 (test7): a downed ally lying where the area lands - whoever brings it back has to walk
                     // in (a save, then a fall or worse), and in real time a fall keeps the walker down while it stands
                     // there. Half of what reviving it is worth. Orvath's Grease went down on the unconscious Camellia
