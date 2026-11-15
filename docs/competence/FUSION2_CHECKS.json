@@ -1,0 +1,179 @@
+{
+  "task": "Fusion1 playtest review and Fusion2 qualified control/shared-outcome valuation",
+  "recorded_at_utc": "2026-11-15T00:03:11.678114+00:00",
+  "branch": "codex/fusion1-playtest-review",
+  "starting_development": "ab1b6a7e0d29da712383f6d4e3863de7d77e0643",
+  "checked_source_commit": "6638404d825754a970c6ff3f9a94766895c92673",
+  "worktree_dirty_at_build": false,
+  "dll": {
+    "assembly": "CompanionAI_Pathfinder, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null",
+    "mvid": "e6257b91-248c-47bd-b717-dc588dee5987",
+    "sha256": "2b47375af237555e26b4ded643c040f5ca70ec15526bfe6490a42bfae33f3d4f",
+    "size": 1435648
+  },
+  "manifest_unchanged": "0.3.52",
+  "toolchain": {
+    "dotnet_sdk": "8.0.426",
+    "csharp_compiler": "4.11.0-3.25569.22 (3fb752d4)",
+    "msbuild": "17.11.69",
+    "provenance": "docs/competence/FUSION2_BUILD_PROVENANCE.json",
+    "provenance_sha256": "a9cea0c958756043abd63c49ea0a68fecf09872512abee975df4706ff8e63e9c"
+  },
+  "package": {
+    "archive": "test-builds/AI-Control-FACC-v0.3.52-dev-fusion2-6638404-UMM-test.zip",
+    "sha256": "8248fbc28f9e1189f0ad98bcb3445965429c3247c1781839b27766804e7e4aad",
+    "bytes": 567667,
+    "identity": "test-builds/AI-Control-FACC-v0.3.52-dev-fusion2-6638404-UMM-test.identity.json",
+    "identity_sha256": "7b159a14cf549704bf5b12d1885826fecea6fe69ebae1b45f4613415f94093af",
+    "packed_dll_equals_checked_release": true,
+    "startup_mvid_unique_against_existing_package_identities": true,
+    "native_dlls_or_stubs_packed": false
+  },
+  "release_build": {
+    "configuration": "Release",
+    "real_game_references": true,
+    "warnings": 0,
+    "errors": 0,
+    "native_assembly_sha256": "2cb7160b7154d4ffacc77b9c51b1eb26199e1294300f04fdfc073367b2ef8953"
+  },
+  "unit_tests": {
+    "passed": 821,
+    "failed": 0,
+    "skipped": 0,
+    "added": 10
+  },
+  "script_tests": {
+    "blueprint_inventory": 27,
+    "audit_supplement": 3,
+    "invocation_ledger": 11,
+    "failures": 0
+  },
+  "strict_compatible_profile_audit": {
+    "loaded": 44639,
+    "load_failures": 0,
+    "abilities": 4807,
+    "reader_errors": 0,
+    "scope": "C06_NATIVE_COMPATIBLE_SCOPE.json plus REVIEW2_CHARGE_INPUTS.json missing-only stock fixtures",
+    "checks": {
+      "fusion": 38,
+      "fusion_cone": 34,
+      "fusion_value": 15,
+      "approach_spot": 28,
+      "summon_kits": 7
+    },
+    "prerequisite_checks_skipped": 0,
+    "summon_kit_input_limits": "5 missing spawned-unit ids; 119 missing kit-reference ids; 95 unloaded brains. This Fusion scope is not S1 full-stock coverage."
+  },
+  "supplementary_profile_audit": {
+    "loaded": 44643,
+    "load_failures": 0,
+    "abilities": 4807,
+    "reader_errors": 0,
+    "magus_checks": 44,
+    "scope": "compatible scope plus explicit stock hidden Magus buff fixtures"
+  },
+  "native_provider_checks": {
+    "toggle_with_supplied_psionics": 98,
+    "tome": 14,
+    "toybox": 10,
+    "failures": 0,
+    "prerequisite_checks_skipped": 0,
+    "initial_toggle_probe": "90 checks with the optional provider absent; superseded by the final 98-check Psionics run."
+  },
+  "coverage": {
+    "status": "PASS",
+    "orderedDistinctPairs": 3540,
+    "configurations": 15494,
+    "profileAccepted": 7474,
+    "profileWithheld": 8020,
+    "acceptedConeProfilesWithAimUnvalidated": 1180,
+    "coneComponentsResolved": 1180,
+    "coneComponentErrors": 0,
+    "readerErrors": 0,
+    "jointOutcomeMetadataQualified": 3230,
+    "jointOutcomeMetadataFallbacks": {
+      "composite or non-HP damage": 366,
+      "dispel/enchantment/extension dependency": 636,
+      "dynamic removal dependency": 338,
+      "earlier application changes a guard fact 187f88d96a0ef464280706b63635f2af": 8,
+      "mutable/unread guard ContextConditionCasterHasFact": 422,
+      "support/reveal/fact-grant/form/faction/poison carrier": 2474
+    },
+    "jointValueScope": "metadata gate only; live recipient applicability, duration, damage outcomes and useful value remain unassessed"
+  },
+  "coverage_summary": "docs/competence/FUSION2_COVERAGE.json",
+  "original_raw_inputs": {
+    "status": "INCOMPLETE: expected pre-existing enum-load failure retained",
+    "loaded": 44637,
+    "failed": 1,
+    "asset": "AchaekekSacredWeaponFeature",
+    "reason": "SawtoothSaber serialized value differs from native SawtoothSabre; native logger ECall fails in the offline host. No normalization; the raw negative run returns 1 and generates no ability verdicts."
+  },
+  "foreign_signatures_added": {
+    "count": 4,
+    "unresolved": 0,
+    "members": [
+      "BlueprintReferenceBase.Guid",
+      "BlueprintGuid.Empty",
+      "BlueprintGuid.op_Equality",
+      "BlueprintGuid.op_Inequality"
+    ]
+  },
+  "performance_microchecks": [
+    {
+      "operation": "bounded control envelope",
+      "calls": 10000,
+      "allocated_bytes": 0,
+      "limits": "Scalar scratch only; not Unity timing or whole-decision allocations."
+    },
+    {
+      "operation": "warm selected-cone delivery resolution",
+      "calls": 10000,
+      "allocated_bytes": 0,
+      "limits": "Metadata resolver only; not geometry or Unity performance."
+    }
+  ],
+  "validation_commands": [
+    "dotnet build CompanionAI_Pathfinder.csproj -c Release --no-restore -p:ManagedPath=<supplied-real-managed>",
+    "dotnet test tests/CompanionAI.Tests -c Release --no-restore",
+    "python3 -m unittest discover -s tools/BlueprintInventory -p test_*.py",
+    "python3 -m unittest discover -s tools/ProfileAudit -p test_*.py",
+    "python3 -m unittest discover -s tools/InvocationLedger -p test_*.py",
+    "dotnet ProfileAudit.dll --fusion-coverage <private-full-report> <compatible-scope-roots> <charge-fixtures> <report>",
+    "dotnet ToggleCosts.Native.dll --psionics-provider <supplied-Psionics.dll> <same-roots> <report>",
+    "dotnet TomeBurn.Native.dll <supplied-TTT-Core.dll> <supplied-Tome.dll> <same-roots> <report>",
+    "dotnet ToyBoxSpend.Native.dll <supplied-ToyBox.dll> <same-roots> <report>",
+    "dotnet ProfileAudit.dll <compatible-scope-roots> <charge-fixtures> <Magus-fixtures> <report>",
+    "dotnet ProfileAudit.dll <unmodified-raw-roots> <negative-report> # expected exit 1",
+    "Inspect.dll --verify-refs <checked-dll> <added-signatures>"
+  ],
+  "harness_limits": [
+    "Engine-neutralized copies live only in the private verification harness. The deployable mod DLL is unmodified.",
+    "No actor creation, Rulebook roll, native cast/command, grapple release, live geometry or Unity timing was executed.",
+    "Configuration counts use the supplied declared list; they are not complete mod-generated or actor-availability coverage.",
+    "Metadata qualification is not recipient qualification or gameplay success.",
+    "No local or cross-environment byte-identity replay is claimed for this new build. Exact compiler, reference hashes and source/debug metadata are recorded."
+  ],
+  "gameplay": "Fusion1 played logs reviewed; new Fusion2 valuation unplayed. Focused TB/RT replay in docs/FUSION2_PLAYTEST_REVIEW.md.",
+  "source_freeze": "The package retains the checked source DLL. Later receipt/documentation/package-only commits are not rebuilt.",
+  "validation_logs_sha256": {
+    "audit-build.log": "d407d4f0a71b504a916fc0158b85a11d1c713aaca2ffe2eb71f3f92eef551f6a",
+    "inventory.log": "6ef6f1be79a41ae28318124d4325a3988feaa684a68197d354ce98238c426a4d",
+    "invocation-ledger.log": "34a82a30511a2175a5286cff0751874e9220ce5fb08cab87b09cc04e220f6b31",
+    "raw.log": "59399a5731df2ca0a352726bb5857f2618ac7f2bf881aa07c789670ad5bd8149",
+    "refs.log": "a4320db72a5df8dda31ba44c9a28d748a1d76f3fe415b96bf21f00571808e2d6",
+    "release.log": "af4e3c8be716fe8588687c92010c5acce45c5bda7233edf89d5669bd9d6604e2",
+    "strict.log": "20721eca4c49b3c407201f68126adca26715ab66ef2d125c90064f3ee32d396d",
+    "supplement-scripts.log": "edb4e2159c923ea45a32656078835cdf531c3d7b414c670dd786978875cb0678",
+    "supplementary.log": "b09680c3bfbcdac545071cbb7fb0b523513622cf600b1b2794637ffb057281bf",
+    "toggle-build.log": "50afa93fce546e867ac1c7d9456dc2fa2b470655682131fbad1b4341715e39c0",
+    "toggle-psionics.log": "a103e3a1cc4f85d9b6cdc4d43bf90d8868d71aca376823a0236daa0214b5f194",
+    "toggle.log": "b42e1687803578dc4e52a19ad3c666286ce09af1597b4787d285065559dc4515",
+    "tome-build.log": "304b4875a537ee8233ddb6b674871d1030bb3f6b3bf4def7baa8d06b50d1dacd",
+    "tome.log": "398e2cf015c49e3cb81611c1561eef989e47a30c9e6a537797b94e9f27ad8e9e",
+    "toybox-build.log": "1475e2a73947d1124fc58b54607161e842808a6eead8649f7d9781d62ce78cba",
+    "toybox.log": "7bfbbd3abb944517daea88bdda8a45c2e0a41231c57084b772e14ad0453476f3",
+    "unit.log": "2d5beef0e5de11b27f15df79fc43fae5634f436668aa783e820866b134a7df32"
+  },
+  "input_receipt": "docs/competence/FUSION2_PLAYTEST_INPUTS.json"
+}

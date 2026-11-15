@@ -1,0 +1,127 @@
+{
+  "task": "fusion1 playtest review and qualified per-effect/shared-outcome valuation",
+  "development_base": "ab1b6a7e0d29da712383f6d4e3863de7d77e0643",
+  "reported_build": "v0.3.52-dev-fusion1-7a56bbb",
+  "startup_mvid": "2e2896c3-5f13-42e1-bb9b-9626f6157228",
+  "inputs": [
+    {
+      "label": "log1",
+      "name": "Log 1_v0.3.52-dev-fusion1-7a56bbblog- Grapple-no fusion spells.txt",
+      "bytes": 958115,
+      "sha256": "89b097f0a7ddb204d101c2a4ca660217817089d043b341cf87726aa7f7175de1",
+      "lines": 4401
+    },
+    {
+      "label": "log2",
+      "name": "Log 2 _v0.3.52-dev-fusion1-7a56bbblog- Grapple-fusion spells.txt",
+      "bytes": 589637,
+      "sha256": "08a982b14c700a0ae6b49f38c690bd08299657387d64a0849d0ae67a312bb57d",
+      "lines": 2631
+    },
+    {
+      "label": "combat",
+      "name": "combatLog.txt",
+      "bytes": 1327245,
+      "sha256": "294c22d9fdc6150da6c5389514ecd9005e656c3b9a95b03dd9493c238fb6dbf7",
+      "lines": 36781
+    }
+  ],
+  "author_context": {
+    "toybox_spawns": true,
+    "rests": "between encounters",
+    "Grabber": "manually enabled while AI Control stayed enabled for Ulbrig"
+  },
+  "observations": {
+    "log1": {
+      "fight_starts": 5,
+      "issues": 400,
+      "terminals": 400,
+      "refusals": 18,
+      "slow_decisions": 37,
+      "cone_native_query_warnings": 0,
+      "foreign_owner_warnings": 13,
+      "arcan_issued_abilities": {},
+      "measured_decisions": {
+        "turn-based": 186,
+        "real-time": 746
+      },
+      "slow_row_classification": {
+        "cleanup": 16,
+        "new_profiles_positive": 4,
+        "no_new_profiles": 33
+      }
+    },
+    "log2": {
+      "fight_starts": 3,
+      "issues": 303,
+      "terminals": 302,
+      "refusals": 1,
+      "slow_decisions": 37,
+      "cone_native_query_warnings": 0,
+      "foreign_owner_warnings": 1,
+      "arcan_issued_abilities": {
+        "Incindiary Runes / SnowB->Bandit Conjurer(dmg+debuff)": [
+          124
+        ],
+        "Snowball/Shocking Grasp->Bandit Conjurer(dmg+debuff)": [
+          422
+        ],
+        "Reduce Person->Bandit(buff)": [
+          556
+        ],
+        "Boneshaker->Bandit Conjurer(dmg)": [
+          671
+        ],
+        "Incendiary Runes/Color Spray->Locust Swarm(dmg+cc)": [
+          962
+        ],
+        "Incendiary Runes/Color Spray->Venomwolf of the Hungry Moon(dmg+cc)": [
+          1105
+        ],
+        "Snowball/Shocking Grasp->Fiendish Greater Monitor Lizard(dmg+debuff)": [
+          1117
+        ],
+        "Color Spray->Fiendish Greater Monitor Lizard(cc) [casting provokes 1] [turned +24 deg past Orvath]": [
+          1210
+        ],
+        "Boneshaker->Fiendish Greater Monitor Lizard(dmg) [casting provokes 1]": [
+          1281
+        ],
+        "Flare->Fiendish Greater Monitor Lizard(debuff)": [
+          1453
+        ],
+        "Incendiary Runes/Color Spray->Cultist Conjurer(dmg+cc) [into Corrosive Bomb] [casting provokes 1]": [
+          1709
+        ],
+        "Flare->Bandit(debuff) [casting provokes 3]": [
+          1765
+        ],
+        "Item:Cure Critical Wounds->arcan(heal)": [
+          1787
+        ],
+        "Item:Cure Serious Wounds->arcan(heal)": [
+          1805
+        ]
+      },
+      "measured_decisions": {
+        "turn-based": 72,
+        "real-time": 729
+      },
+      "slow_row_classification": {
+        "cleanup": 1,
+        "new_profiles_positive": 2,
+        "no_new_profiles": 35
+      }
+    }
+  },
+  "scope_notes": [
+    "Combat log fights 1-5 align with Log 1; fights 6-8 with Log 2 by party/enemy composition and named casts. No exact real-time timestamp alignment is claimed.",
+    "The only unmatched command is Log 2 row 2629: out-of-combat ApplyPermanentBuffsOutOfCombat at the end of the uploaded file.",
+    "No AI Control exception is observed. Fourteen OwnerBlueprint warnings are emitted by WrathPatches and retain external provenance.",
+    "The played created fusions use Incendiary/Explosive Runes area delivery or Snowball delivery. They do not qualify the selected-cone Fusion route. Ordinary Color Spray re-aim is observed."
+  ],
+  "total_measured_decisions": {
+    "turn-based": 258,
+    "real-time": 1475
+  }
+}

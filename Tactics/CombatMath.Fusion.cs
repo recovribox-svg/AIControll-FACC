@@ -5,6 +5,7 @@ using Kingmaker.Blueprints;
 using Kingmaker.Blueprints.Classes.Spells;
 using Kingmaker.ElementsSystem;
 using Kingmaker.EntitySystem.Entities;
+using Kingmaker.EntitySystem.Stats;
 using Kingmaker.RuleSystem;
 using Kingmaker.UnitLogic.Abilities;
 using Kingmaker.UnitLogic.Mechanics;
@@ -14,6 +15,51 @@ namespace CompanionAI_Pathfinder.Tactics
 {
     public static partial class CombatMath
     {
+        internal static bool IsHitPointDamage(ContextActionDealDamage action) => KindOf(action) == DealKind.HitPoints;
+        // F2/F3: caller-owned synchronous scratch. No actor/context is retained and normal estimates allocate none.
+        internal sealed class FusionDamageRead
+        {
+            internal float Failed, Passed, FailChance;
+            internal bool Known;
+            internal void Reset() { Failed = Passed = 0f; FailChance = 1f; Known = true; }
+        }
+
+        internal static float EstimateFusionDamage(AbilityData ability, AbilityProfile profile, UnitEntityData target,
+            FusionDamageRead read)
+        {
+            read.Reset();
+            long heap = HeapMark();
+            try
+            {
+                float raw = EstimateAbilityDamageRaw(ability, profile, target, null, fusionRead: read);
+                float scale = raw > 0f ? AbilityDamageScale(ability, profile, target) : 1f;
+                read.Failed *= scale; read.Passed *= scale;
+                return raw * scale;
+            }
+            finally { HeapSince(heap, ref EstimateBytes); }
+        }
+
+        private static void ReadFusionDamageOutcomes(AbilityProfile profile, List<KeyValuePair<GameAction, float>> parts,
+            float fail, bool evasion, bool improved, float deliveries, FusionDamageRead read)
+        {
+            if (read == null || !read.Known) return;
+            read.FailChance = fail;
+            if (parts.Count > ValueModel.ControlEnvelope.Capacity) { read.Known = false; return; }
+            for (int i = 0; i < parts.Count; i++)
+            {
+                var part = parts[i];
+                for (int j = 0; j < i; j++)
+                    if (profile.Exclusive(part.Key, parts[j].Key)) { read.Known = false; return; }
+                float factor = FusionDamageFactor(profile, part.Key, fail, evasion, improved);
+                if (factor <= 0f) continue; // any omitted outcome has probability zero under this forecast
+                float unweighted = part.Value / factor;
+                read.Failed += unweighted * FusionDamageFactor(profile, part.Key, 1f, evasion, improved) * deliveries;
+                read.Passed += unweighted * FusionDamageFactor(profile, part.Key, 0f, evasion, improved) * deliveries;
+            }
+            read.Known = !(float.IsNaN(read.Failed) || float.IsInfinity(read.Failed) ||
+                           float.IsNaN(read.Passed) || float.IsInfinity(read.Passed));
+        }
+
         private static float EvaluateDamageDice(AbilityData ability, ContextDiceValue value, MechanicsContext context,
                                                 int fallbackLevel, bool maximize, bool empower)
         {

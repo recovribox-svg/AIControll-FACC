@@ -16,6 +16,7 @@ namespace CompanionAI_Pathfinder.Tactics
         {
             internal readonly ReferenceReadMemo Values = new ReferenceReadMemo();
             internal ReferenceReadMemo FusionChances; // allocated only for a fused damage forecast, same synchronous lifetime
+            internal ReferenceReadMemo FusionDurations; // scalar per-application/recipient durations, same scope/version
             private readonly ResistanceScope previous;
             private bool disposed;
             internal ResistanceScope() { previous = s_ResistanceScope; s_ResistanceScope = this; }
@@ -34,5 +35,17 @@ namespace CompanionAI_Pathfinder.Tactics
         }
         internal static void StoreResistanceMemo(UnitEntityData caster, UnitEntityData target, AbilityData ability, float value)
             => s_ResistanceScope?.Values.Store(caster, target, ability, s_ResistanceVersion, value);
+        internal static bool TryFusionDuration(AbilityData ability, object application, UnitEntityData target, out float value)
+        {
+            value = 0f;
+            return s_ResistanceScope?.FusionDurations != null &&
+                s_ResistanceScope.FusionDurations.TryGet(ability, target, application, s_ResistanceVersion, out value);
+        }
+        internal static void StoreFusionDuration(AbilityData ability, object application, UnitEntityData target, float value)
+        {
+            if (s_ResistanceScope == null) return;
+            if (s_ResistanceScope.FusionDurations == null) s_ResistanceScope.FusionDurations = new ReferenceReadMemo();
+            s_ResistanceScope.FusionDurations.Store(ability, target, application, s_ResistanceVersion, value);
+        }
     }
 }

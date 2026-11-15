@@ -2,14 +2,20 @@
 // Profiles contain immutable blueprint metadata only. Nothing here creates a spell, edits a blueprint or runs an action.
 using System;
 using System.Collections.Generic;
+using System.Linq;
+using System.Reflection;
 using System.Runtime.CompilerServices;
 using Kingmaker.Blueprints;
+using Kingmaker.Blueprints.Classes.Spells;
 using Kingmaker.Designers.EventConditionActionSystem.Actions;
 using Kingmaker.ElementsSystem;
 using Kingmaker.EntitySystem.Stats;
 using Kingmaker.UnitLogic.Abilities;
 using Kingmaker.UnitLogic.Abilities.Components;
+using Kingmaker.UnitLogic.Buffs.Blueprints;
+using Kingmaker.UnitLogic.Buffs.Components;
 using Kingmaker.UnitLogic.Mechanics.Actions;
+using Kingmaker.UnitLogic.Mechanics.Conditions;
 
 namespace CompanionAI_Pathfinder.Tactics
 {
@@ -39,6 +45,91 @@ namespace CompanionAI_Pathfinder.Tactics
         internal static string FusionIdentityOf(AbilityData ability) => ability?.MagicHackData == null ? "" : GetFusion(ability).FusionIdentity;
         internal enum FusionSavePath { Both, Failed, Passed }
         private Dictionary<GameAction, FusionSavePath> FusionDamagePaths;
+        private Dictionary<GameAction, FusionSavePath> fusionBuffPaths;
+        internal bool FusionBuffPathsConsistent { get; private set; } = true;
+        internal FusionSavePath FusionBuffPath(GameAction action) =>
+            fusionBuffPaths != null && fusionBuffPaths.TryGetValue(action, out var path) ? path : FusionSavePath.Both;
+        internal bool FusionValueFallbackReported;
+        internal bool FusionValueQualifiedReported;
+        internal bool? FusionOutcomeMetadataQualified;
+        internal string FusionOutcomeMetadataReason;
+        internal string FusionGuardRefusal;
+        private bool fusionRequiresSavedResult, fusionHasIndependentSave;
+        private int fusionSourceOrdinal;
+        private int fusionActionOrdinal;
+        private bool? fusionIndependentGuards;
+        private static readonly Dictionary<Type, FieldInfo[]> FusionConditionReferences = new Dictionary<Type, FieldInfo[]>();
+
+        // F2/F3 does not project a changed target into a later payload's checker. Qualify stable inputs once.
+        internal bool FusionIndependentGuards
+        {
+            get
+            {
+                if (fusionIndependentGuards.HasValue) return fusionIndependentGuards.Value;
+                bool supported = BuffApplications.All(a => StableFusionGuards(a.Guards)) &&
+                    Damage.All(a => !m_Guards.TryGetValue(a, out var guards) || StableFusionGuards(guards));
+                fusionIndependentGuards = supported;
+                return supported;
+            }
+        }
+
+        private bool StableFusionGuards(EffectGuard[] guards)
+        {
+            foreach (var guard in guards)
+            {
+                if (guard.Checker?.Conditions == null) { FusionGuardRefusal = "roll-dependent guard"; return false; }
+                foreach (var condition in guard.Checker.Conditions)
+                {
+                    if (condition == null) continue;
+                    var type = condition.GetType();
+                    if (type != typeof(ContextConditionHitDice) && type != typeof(ContextConditionHasFact) &&
+                        type != typeof(ContextConditionHasBuff) && type != typeof(ContextConditionHasBuffFromCaster) &&
+                        type != typeof(ContextConditionAlignment) && type != typeof(ContextConditionIsAlly) &&
+                        type != typeof(ContextConditionIsEnemy) && type != typeof(ContextConditionIsCaster))
+                    { FusionGuardRefusal = "mutable/unread guard " + type.Name; return false; }
+                    if (!FusionConditionReferences.TryGetValue(type, out var fields))
+                    {
+                        var found = new List<FieldInfo>();
+                        for (var level = type; level != null; level = level.BaseType)
+                            found.AddRange(level.GetFields(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.DeclaredOnly)
+                                .Where(f => typeof(BlueprintReferenceBase).IsAssignableFrom(f.FieldType)));
+                        FusionConditionReferences[type] = fields = found.ToArray();
+                    }
+                    foreach (var field in fields)
+                    {
+                        var reference = field.GetValue(condition) as BlueprintReferenceBase;
+                        if (reference == null) continue;
+                        // Comparing immutable ids needs no resolution/load of unrelated race or creature-type facts.
+                        if (reference.Guid != BlueprintGuid.Empty && BuffApplications.Any(prior =>
+                            prior.ActionOrdinal < guard.ReadOrdinal && prior.Buff.AssetGuid == reference.Guid))
+                        { FusionGuardRefusal = "earlier application changes a guard fact " + reference.Guid; return false; }
+                    }
+                }
+            }
+            return true;
+        }
+
+        // Native Burning's unlabelled carrier damages its bearer each round, then may remove itself. It is not CC.
+        // Only this narrow graph qualifies for omitted (never invented) periodic benefit; no callbacks are executed.
+        private static bool IsSimplePeriodicDamageCarrier(BlueprintBuff buff)
+        {
+            var components = buff.ComponentsArray;
+            if (components == null || components.Any(c => c != null && c.GetType() != typeof(AddBuffActions) &&
+                c.GetType() != typeof(SpellDescriptorComponent))) return false;
+            var ticks = buff.GetComponents<AddBuffActions>().ToArray();
+            if (ticks.Length != 1) return false;
+            var tick = ticks[0];
+            bool Empty(ActionList list) => list?.Actions == null || list.Actions.Length == 0;
+            if (!Empty(tick.Activated) || !Empty(tick.Deactivated) || !Empty(tick.Dispose)) return false;
+            var actions = tick.NewRound?.Actions;
+            if (actions == null || actions.Length != 2 || !(actions[0] is ContextActionDealDamage damage) ||
+                !CombatMath.IsHitPointDamage(damage) || damage.ReadPreRolledFromSharedValue || damage.Drain ||
+                damage.Value?.DiceCountValue?.IsValueSimple != true || damage.Value.BonusValue?.IsValueSimple != true ||
+                damage.Value.DiceCountValue.Value < 0 || damage.Value.BonusValue.Value < 0) return false;
+            if (!(actions[1] is ContextActionSavingThrow save) || save.Actions?.Actions?.Length != 1 ||
+                !(save.Actions.Actions[0] is ContextActionConditionalSaved saved)) return false;
+            return Empty(saved.Failed) && saved.Succeed?.Actions?.Length == 1 && saved.Succeed.Actions[0] is ContextActionRemoveSelf;
+        }
         internal FusionSavePath FusionPath(GameAction action) =>
             FusionDamagePaths != null && FusionDamagePaths.TryGetValue(action, out var path) ? path : FusionSavePath.Both;
 
@@ -82,6 +173,8 @@ namespace CompanionAI_Pathfinder.Tactics
                     if (snapshot.AdditionalAoeBlueprint != null) profile.LimitFusion("additional area delivery", "delivery/additional");
                     if (profile.Heals.Count > 0 || profile.CasterHeals.Count > 0 || profile.CasterBuffs.Count > 0)
                         profile.LimitFusion("healing or caster-side payload", "profile/subjects");
+                    if (profile.Save == SavingThrowType.Unknown && profile.fusionRequiresSavedResult && !profile.fusionHasIndependentSave)
+                        profile.LimitFusion("saved-result branch without a declared root save", "profile/save");
                 }
             }
             catch (Exception ex) { profile.LimitFusion("profile reader " + ex.GetType().Name, "profile"); }
@@ -99,6 +192,7 @@ namespace CompanionAI_Pathfinder.Tactics
             foreach (var spell in new[] { Fusion.Spell1, Fusion.Spell2 })
             {
                 string source = "source" + (++sourceIndex);
+                fusionSourceOrdinal = sourceIndex;
                 if (spell.GetComponent<AdditionalAbilityEffectRunActionOnClickedTarget>() != null)
                     LimitFusion("clicked-target secondary payload", source + "/clicked-target");
                 var run = spell.GetComponent<AbilityEffectRunAction>() ??
@@ -122,6 +216,7 @@ namespace CompanionAI_Pathfinder.Tactics
                 string at = location + "/" + index + ":" + action.GetType().Name;
                 if (action is ContextActionConditionalSaved saved)
                 {
+                    fusionRequiresSavedResult = true;
                     if (path != FusionSavePath.Both) LimitFusion("nested shared-save branch", at);
                     // Repeated branches on the same native shared save cannot have opposite outcomes.
                     if (path != FusionSavePath.Passed) InspectFusionPaths(saved.Failed?.Actions, FusionSavePath.Failed, depth + 1, at + "/failed");
@@ -130,7 +225,10 @@ namespace CompanionAI_Pathfinder.Tactics
                 }
                 if (action is ContextActionSavingThrow saving &&
                     (saving.MakeSaveAlsoForMagicHack || Fusion.SavingThrowType == SavingThrowType.Unknown))
+                {
+                    fusionHasIndependentSave = true;
                     LimitFusion("independent nested saving throw", at);
+                }
                 if (action is ContextActionSpawnAreaEffect || action is ContextActionSpawnMonster)
                     LimitFusion("spawned area or creature payload", at);
                 foreach (var referenced in ReferencedAbilities(action))
@@ -138,6 +236,12 @@ namespace CompanionAI_Pathfinder.Tactics
                 if (action is ContextActionApplyBuff applied && !applied.ToCaster && path != FusionSavePath.Failed &&
                     Fusion.SavingThrowType != SavingThrowType.Unknown)
                     LimitFusion("buff outside the shared failed-save branch", at);
+                if (action is ContextActionApplyBuff application)
+                {
+                    if (fusionBuffPaths == null) fusionBuffPaths = new Dictionary<GameAction, FusionSavePath>();
+                    if (fusionBuffPaths.TryGetValue(action, out var prior) && prior != path) FusionBuffPathsConsistent = false;
+                    else fusionBuffPaths[action] = path;
+                }
                 if (action is ContextActionKill && path != FusionSavePath.Failed && Fusion.SavingThrowType != SavingThrowType.Unknown)
                     LimitFusion("kill outside the shared failed-save branch", at);
                 if (action is ContextActionDealDamage || action is IDealDamageProvider)

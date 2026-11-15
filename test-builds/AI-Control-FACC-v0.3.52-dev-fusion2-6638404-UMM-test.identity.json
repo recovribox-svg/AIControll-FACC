@@ -1,0 +1,31 @@
+{
+  "build_label": "fusion2",
+  "kind": "development-test",
+  "version": "0.3.52",
+  "source_branch": "codex/fusion1-playtest-review",
+  "source_commit": "6638404d825754a970c6ff3f9a94766895c92673",
+  "development_base": "ab1b6a7e0d29da712383f6d4e3863de7d77e0643",
+  "dll": {
+    "assembly": "CompanionAI_Pathfinder, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null",
+    "mvid": "e6257b91-248c-47bd-b717-dc588dee5987",
+    "sha256": "2b47375af237555e26b4ded643c040f5ca70ec15526bfe6490a42bfae33f3d4f",
+    "size": 1435648
+  },
+  "manifest_sha256": "1876fd6fc56d03b28793f6c481fac47c9ea85eec3265d6859232deeab67523a3",
+  "archive": "AI-Control-FACC-v0.3.52-dev-fusion2-6638404-UMM-test.zip",
+  "zip_sha256": "8248fbc28f9e1189f0ad98bcb3445965429c3247c1781839b27766804e7e4aad",
+  "checks_receipt": "docs/competence/FUSION2_CHECKS.json",
+  "build_provenance": "docs/competence/FUSION2_BUILD_PROVENANCE.json",
+  "build_provenance_sha256": "a9cea0c958756043abd63c49ea0a68fecf09872512abee975df4706ff8e63e9c",
+  "toolchain": {
+    "dotnet_sdk": "8.0.426",
+    "csharp_compiler": "4.11.0-3.25569.22 (3fb752d4)"
+  },
+  "gameplay_status": "not played",
+  "scope": "Qualified Fusion occurrence-local control and joint shared-save direct HP/control valuation. Legacy/refusal boundaries remain for unqualified graphs. Existing F0/F1, summon and Invocation work retained. Automatic grapple release/initiation remains separate.",
+  "archive_contents": [
+    "CompanionAI_Pathfinder.dll",
+    "Info.json"
+  ],
+  "release": false
+}

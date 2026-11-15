@@ -1,6 +1,24 @@
 # Test builds
 
-## Task-branch candidate: v0.3.52 fusion1 (7a56bbb) — unplayed
+## Task-branch candidate: v0.3.52 fusion2 (6638404) — unplayed
+
+[UMM test ZIP](AI-Control-FACC-v0.3.52-dev-fusion2-6638404-UMM-test.zip?raw=true) · [Identity](AI-Control-FACC-v0.3.52-dev-fusion2-6638404-UMM-test.identity.json) · [Checksum](AI-Control-FACC-v0.3.52-dev-fusion2-6638404-UMM-test.sha256) · [Checks](../docs/competence/FUSION2_CHECKS.json) · [Review and TB/RT replay](../docs/FUSION2_PLAYTEST_REVIEW.md)
+
+Builds on merged F0/F1, Invocation and summon work at development `ab1b6a7`. Qualified Fusion effects keep their own
+duration and immunity; the damage/control forecast shares the native save before applying HP/kill value. Burning
+gets no generic control credit. Complex cases keep the documented legacy/refusal boundaries. Grapple release remains
+separate. Manifest stays **0.3.52**; this is a development test. Stable packages are unchanged.
+
+Startup MVID **`e6257b91-248c-47bd-b717-dc588dee5987`**; checked source `6638404d825754a970c6ff3f9a94766895c92673`.
+821 unit + 27 inventory + 3 script + 11 ledger tests, zero-warning real-reference Release, scoped ProfileAudit and
+native providers pass. [Compiler/reference/source provenance](../docs/competence/FUSION2_BUILD_PROVENANCE.json).
+No new Unity timing or gameplay acceptance is claimed. Supply paired AI/combat logs from both modes; the review
+lists Runes/Snowball, Runes/Color Spray, partial immunity, low-HP and selected-cone Fusion cases.
+
+## Earlier candidate: v0.3.52 fusion1 (7a56bbb) — playtest reviewed
+
+The author's two fusion1 AI logs and matching combat log are reviewed in the [Fusion2 investigation](../docs/FUSION2_PLAYTEST_REVIEW.md).
+The package and its historical identity/receipt are preserved below.
 
 [UMM test ZIP](AI-Control-FACC-v0.3.52-dev-fusion1-7a56bbb-UMM-test.zip?raw=true) · [Identity](AI-Control-FACC-v0.3.52-dev-fusion1-7a56bbb-UMM-test.identity.json) · [Checksum](AI-Control-FACC-v0.3.52-dev-fusion1-7a56bbb-UMM-test.sha256) · [Checks](../docs/competence/FUSION_F1_CHECKS.json) · [TB/RT replay](../docs/FUSION_IMPLEMENTATION.md#verification-and-gameplay-checkpoint)
 

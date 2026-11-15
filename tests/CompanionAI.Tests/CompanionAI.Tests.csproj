@@ -15,6 +15,7 @@
     <Compile Include="..\..\Tactics\ArrivalRule.cs" Link="ArrivalRule.cs" />
     <Compile Include="..\..\Tactics\SpotRules.cs" Link="SpotRules.cs" />
     <Compile Include="..\..\Tactics\ValueModel.cs" Link="ValueModel.cs" />
+    <Compile Include="..\..\Tactics\ValueModel.Fusion.cs" Link="ValueModel.Fusion.cs" />
     <Compile Include="..\..\Tactics\ValueModel.Energy.cs" Link="ValueModel.Energy.cs" />
     <Compile Include="..\..\Tactics\ValueModel.Defence.cs" Link="ValueModel.Defence.cs" />
     <Compile Include="..\..\Tactics\ValueModel.Infusions.cs" Link="ValueModel.Infusions.cs" />

@@ -56,6 +56,7 @@ namespace CompanionAI_Pathfinder.Tactics
         public bool Branch;
         /// <summary>The game evaluates this checker against the caster (Conditional inside ContextActionOnContextCaster).</summary>
         public bool OnCaster;
+        internal int ReadOrdinal; // Fusion metadata only: where the native checker is reached in the ordered payload
     }
 
     public sealed partial class AbilityProfile
@@ -825,13 +826,15 @@ namespace CompanionAI_Pathfinder.Tactics
             foreach (var action in actions)
             {
                 if (action == null) continue;
+                if (Fusion != null) fusionActionOrdinal++;
                 m_ActionTypes.Add(action.GetType().Name);
 
                 // Conditional: each branch's effects only happen when the condition has that outcome for the target.
                 if (action is Conditional conditional)
                 {
-                    Walk(conditional.IfTrue?.Actions, visited, abilityDepth, subject, depth + 1, With(guards, conditional.ConditionsChecker, true, toCaster));
-                    Walk(conditional.IfFalse?.Actions, visited, abilityDepth, subject, depth + 1, With(guards, conditional.ConditionsChecker, false, toCaster));
+                    int readOrdinal = Fusion != null ? fusionActionOrdinal : 0;
+                    Walk(conditional.IfTrue?.Actions, visited, abilityDepth, subject, depth + 1, With(guards, conditional.ConditionsChecker, true, toCaster, readOrdinal));
+                    Walk(conditional.IfFalse?.Actions, visited, abilityDepth, subject, depth + 1, With(guards, conditional.ConditionsChecker, false, toCaster, readOrdinal));
                     continue;
                 }
 
@@ -907,7 +910,16 @@ namespace CompanionAI_Pathfinder.Tactics
                         if (!(toCaster || apply.ToCaster) && !m_InArea)
                             m_BuffApplications.Add(new BuffApplication
                             {
-                                Buff = apply.Buff, Guards = guards, Rounds = ExpectedRounds(apply),
+                                Action = apply, Buff = apply.Buff, Guards = guards, Rounds = ExpectedRounds(apply),
+                                SourceOrdinal = Fusion != null ? fusionSourceOrdinal : 0,
+                                ActionOrdinal = Fusion != null ? fusionActionOrdinal : 0,
+                                Conditions = Fusion != null ? ConditionsOf(apply.Buff).ToArray() : null,
+                                DescriptorStrength = Fusion != null ? DescriptorControl(apply.Buff.GetComponent<SpellDescriptorComponent>()?.Descriptor.Value ?? SpellDescriptor.None) : ControlStrength.None,
+                                DescriptorControl = Fusion != null ? AbilityClassifier.AnalyzeCCTypeFromDescriptor(
+                                    (apply.Buff.GetComponent<SpellDescriptorComponent>()?.Descriptor.Value ?? SpellDescriptor.None) & ~SpellDescriptor.Compulsion) : CCType.None,
+                                FixedControl = Fusion != null && (apply.Buff.GetComponent<ChangeFaction>() != null ||
+                                    apply.Buff.GetComponent<SetFleeOrApproachLogic>() != null) ? ControlStrength.Hard : ControlStrength.None,
+                                PeriodicDamageOnly = Fusion != null && IsSimplePeriodicDamageCarrier(apply.Buff),
                                 Extendable = !apply.Permanent && !apply.SameDuration && !apply.UseDurationSeconds &&
                                              apply.DurationValue != null && apply.DurationValue.IsExtendable
                             });
@@ -1181,12 +1193,12 @@ namespace CompanionAI_Pathfinder.Tactics
             return result;
         }
 
-        private static EffectGuard[] With(EffectGuard[] guards, ConditionsChecker checker, bool branch, bool onCaster)
+        private static EffectGuard[] With(EffectGuard[] guards, ConditionsChecker checker, bool branch, bool onCaster, int readOrdinal = 0)
         {
             if (checker == null) return guards;
             var result = new EffectGuard[guards.Length + 1];
             guards.CopyTo(result, 0);
-            result[guards.Length] = new EffectGuard { Checker = checker, Branch = branch, OnCaster = onCaster };
+            result[guards.Length] = new EffectGuard { Checker = checker, Branch = branch, OnCaster = onCaster, ReadOrdinal = readOrdinal };
             return result;
         }
 
@@ -1300,17 +1312,27 @@ namespace CompanionAI_Pathfinder.Tactics
             }
         }
 
-        private sealed class BuffApplication
+        internal sealed class BuffApplication
         {
+            internal ContextActionApplyBuff Action;
+            internal int SourceOrdinal;
+            internal int ActionOrdinal;
+            internal UnitCondition[] Conditions;
+            internal ControlStrength DescriptorStrength;
+            internal CCType DescriptorControl;
+            internal ControlStrength FixedControl;
+            internal bool PeriodicDamageOnly;
             public BlueprintBuff Buff;
             public EffectGuard[] Guards;
             /// <summary>Expected rounds, or a negative value when the duration depends on values only the cast knows.</summary>
             public float Rounds;
             /// <summary>★ v0.3.18 (AA-4): Extend doubles it (ContextDurationValue.IsExtendable).</summary>
             public bool Extendable;
+            internal EffectApplies Applies(AbilityData ability, UnitEntityData target) => Evaluate(Guards, ability, target);
         }
 
         private readonly List<BuffApplication> m_BuffApplications = new List<BuffApplication>();
+        internal IReadOnlyList<BuffApplication> BuffApplications => m_BuffApplications;
         private readonly Dictionary<BlueprintBuff, ContextActionApplyBuff> m_Applications = new Dictionary<BlueprintBuff, ContextActionApplyBuff>();
 
         /// <summary>★ v0.3.19 (test11): the action that applies <paramref name="buff"/> (the first one), or null.</summary>
@@ -2277,6 +2299,29 @@ namespace CompanionAI_Pathfinder.Tactics
             {
                 var s = ClassifyCondition(condition);
                 if (s > strength) strength = s;
+            }
+            return strength;
+        }
+
+        // F2: a surviving application keeps its own conditions; immunity to one component cannot erase another buff.
+        internal static ControlStrength BuffControlOn(BuffApplication occurrence, UnitEntityData target, out bool immuneConditions)
+        {
+            immuneConditions = false;
+            if (occurrence.FixedControl != ControlStrength.None) return occurrence.FixedControl;
+            bool any = false;
+            var strength = ControlStrength.None;
+            foreach (var condition in occurrence.Conditions ?? Array.Empty<UnitCondition>())
+            {
+                var part = ClassifyCondition(condition);
+                if (part == ControlStrength.None) continue;
+                any = true;
+                if (!target.Descriptor.State.HasConditionImmunity(condition) && part > strength) strength = part;
+            }
+            immuneConditions = any && strength == ControlStrength.None;
+            if (!any && occurrence.DescriptorStrength != ControlStrength.None)
+            {
+                immuneConditions = AbilityClassifier.HasCCImmunity(target, occurrence.DescriptorControl);
+                if (!immuneConditions) return occurrence.DescriptorStrength;
             }
             return strength;
         }
