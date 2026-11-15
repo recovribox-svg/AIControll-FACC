@@ -1,0 +1,157 @@
+{
+ "task": "fusion2g1b playtest review (maneuver immunity) and G2: engine-driven Grabber and Release Grapple",
+ "date": "2026-11-15",
+ "branch": "claude/maneuver-immunity",
+ "pull_request": "recovribox-svg/AIControll-FACC#67",
+ "stacks_on": "PR #66 (claude/fusion-caster-fact, 94d2832), itself on PR #65",
+ "development_base": "6b9be4214989f7ba4a56dad54f0b8c9056c2789d",
+ "checked_source": "33fa9b3",
+ "commits": {
+  "maneuver_immunity": "93b425b",
+  "g2": "33fa9b3"
+ },
+ "inputs": {
+  "note": "raw logs are not committed",
+  "log_sha256": "fb2033f84c4bc55abeae54fb3e31c3deb42055a2f3d6f9f70578343930d9d363",
+  "log_lines": 6029,
+  "combat_sha256": "4aa2fc9652021ab58ae9ea93e74aca84e2f23c45341cd9b5ba682f05415454b9",
+  "combat_lines": 33913,
+  "startup_mvid": "e4f231af-1782-4e64-9697-3a3b2455e1a2",
+  "package_played": "fusion2g1b (checked source 981299e)",
+  "author_guide": "Grabber when and when not to use proposal (12 lines, author-supplied; summarised in docs/GRABBER_G2.md, not committed verbatim)"
+ },
+ "evidence": {
+  "fights": 9,
+  "commands_issued": 646,
+  "commands_with_terminal_row": 646,
+  "turn_based_commands": 217,
+  "ended_interrupt": 185,
+  "ended_fail": 3,
+  "ai_control_exceptions": 0,
+  "foreign_errors": {
+   "wrathpatches_ownerblueprint": 154,
+   "at_startup_collation": 151,
+   "toybox_warnings": 5
+  },
+  "slow_rows": 69,
+  "slow_median_ms": 327,
+  "slow_over_1200ms_with_gc": 4,
+  "runes_fusions_qualified": "6 of 7 ([FusionValue] L513-527); Explosive Runes/Excruciating Deformation keeps its support/fact-grant/poison carrier refusal",
+  "swarm_grapple": {
+   "rows": [
+    "L2731 Vescavor Swarm hold +11.8 -> +10.6",
+    "L2890 Vescavor Swarm hold +10.0"
+   ],
+   "walk_back": "L3066 Leave VescavorSwarmGibberAreaEffect 73.4; L3094 Move+Attack->Vescavor Swarm [into the area] 4.5 after a movement price of 68.5",
+   "combat_log": "15456 and 15674: claw hits on CR5_VescavorSwarm with no grapple after them",
+   "native": "SwarmTinyFeature: ManeuverImmunity x10 (Trip, Overrun, Disarm, Grapple, BullRush, SunderArmor, DirtyTrick x3, Pull), no ImmuneToCombatManeuvers condition"
+  },
+  "g1": {
+   "grapple_rows": 152,
+   "wenduag_grapple_maneuvers": 21,
+   "against_summons": 0,
+   "escapes_failed": 3,
+   "holding_decisions": "L2425 END TURN"
+  },
+  "open_gap": "ContextActionSelectByValue variants are not walked (Frigid Touch's stagger; 3 blueprints in the exports; Frigid Touch a candidate once)"
+ },
+ "native_contracts": [
+  "RuleCombatManeuver.OnTrigger cancels on AutoFailure or ImmuneToCombatManeuvers; ManeuverImmunity.OnEventAboutToTrigger sets AutoFailure for its type (None: every type)",
+  "the six Grabber toggles: ActivationType Immediately, DeactivateImmediately, no group, command or resource; SetIsOn -> OnDidTurnOn -> TryStart; TurnOffImmediately -> SetIsOn(false) + Stop",
+  "Release Grapple (six forms): free, self, ContextActionReleaseGrapple -> UnitHelper.ReleaseGrapple removes UnitPartGrappleInitiator and UnitPartGrappleTarget; the initiator part's OnDispose removes CantMove, CantUseStandardActions and DisableAttacksOfOpportunity",
+  "CMBBonusForManeuver is a RuleCombatManeuver handler (never in RuleCalculateCMB); ShifterGrabBuffBase.OnTurnOn adds the Dexterity change as a live stat modifier",
+  "Tiger and Smilodon Grabber buffs carry two grab triggers (claw and bite weapon types) into the same holder buff"
+ ],
+ "toolchain": {
+  "dotnet_sdk": "8.0.131",
+  "msbuild": "17.8.49.61608",
+  "unitymodmanager_version": "0.33.0.0"
+ },
+ "validation": {
+  "release_build": {
+   "warnings": 0,
+   "errors": 0,
+   "dll_sha256": "7831cef81c471e5929486179b85df45c9bebab3a635c73b8513f78a5ce54bf86",
+   "mvid": "4b94e879-4a5c-4ec3-9b57-8b45d4eaabcc",
+   "size": 1456128,
+   "source_link_commit": "33fa9b38c9939de0b11cfa8765a98c1b6e976e3e"
+  },
+  "foreign_member_references": {
+   "added": 5,
+   "removed": 0,
+   "against": "the fusion2g1b build 981299e",
+   "added_list": [
+    "EntityFact::Components",
+    "ManeuverImmunity::Type",
+    "EntityFactComponent::get_IsTurnedOn",
+    "UnitReference::op_Inequality",
+    "BlueprintActivatableAbility::get_ActivateImmediately"
+   ],
+   "resolve": "all, compiled against the real Assembly-CSharp"
+  },
+  "tests": {
+   "unit": 837,
+   "new_unit": 5,
+   "inventory": 27,
+   "supplement_script": 3,
+   "ledger": 11,
+   "failed": 0
+  },
+  "profile_audit": {
+   "exit_code": 0,
+   "loaded": 45251,
+   "failed": 1,
+   "allowed_failures": 1,
+   "abilities": 4845,
+   "reader_errors": 0,
+   "report_sha256": "66941911be95d0190c6e3c59425bb3fe5a05d1e89fd50ac08c942bf8a2da38b4",
+   "GRAPPLE": {
+    "checks": 55,
+    "new": 23,
+    "failures": 0,
+    "switched_by_the_engine": [
+     "BearGrabActivatableAbility",
+     "GriffonGrabActivatableAbility",
+     "LizardGrabActivatableAbility",
+     "ShamblingMoundGrabActivatableAbility",
+     "SmilodonGrabActivatableAbility",
+     "TigerGrabActivatableAbility"
+    ],
+    "facts_that_make_a_grapple_fail": 14
+   },
+   "coverage_changes_vs_fusion2g1b_run": {
+    "grabbers_to_toggle_valued_grab": 6,
+    "releases_to_valued": 6,
+    "other_lines": "identical"
+   },
+   "inputs": "S1's 20 dump folders, its 607 missing-only stock fixtures and the Demonology list (as G1_GRAPPLE_CHECKS.json)"
+  },
+  "native_harnesses": {
+   "toggle_cost": 98,
+   "tome_burn": 14,
+   "toybox_spend": 10,
+   "failures": 0
+  }
+ },
+ "limits": [
+  "Unplayed. Offline checks run no actor, Rulebook roll, toggle switch, command or Unity timing.",
+  "The holder's lost turn is the engine's generic worth per round for its level (as in G1), not its actual best alternative.",
+  "A Death from Above leap keeps the grab its native quote was read with.",
+  "Danger to a holder that cannot move is not priced; a party member held by a monster has no special handling.",
+  "Frigid Touch's stagger (ContextActionSelectByValue) stays unread.",
+  "The raw corpus keeps its Achaekek enum load failure."
+ ],
+ "main_tag_or_release_publication": false,
+ "package": {
+  "file": "test-builds/AI-Control-FACC-v0.3.52-dev-g2-33fa9b3-UMM-test.zip",
+  "zip_sha256": "a6fee56bae2880f95a2fa055f8a46da944b23d49daf9838d1a8b044725e04120",
+  "dll_sha256": "7831cef81c471e5929486179b85df45c9bebab3a635c73b8513f78a5ce54bf86",
+  "mvid": "4b94e879-4a5c-4ec3-9b57-8b45d4eaabcc",
+  "contents": [
+   "CompanionAI_Pathfinder.dll",
+   "Info.json (0.3.52)"
+  ],
+  "contains": "development 6b9be42 plus G1 (PR #65), the caster-fact fix (PR #66), maneuver immunity and G2 (PR #67)",
+  "gameplay_status": "not played"
+ }
+}

@@ -1,6 +1,24 @@
 # Test builds
 
-## Task-branch candidate: v0.3.52 fusion2 + G1 + caster-fact guard (981299e) — unplayed
+## Task-branch candidate: v0.3.52 g2 (33fa9b3) — unplayed
+
+[UMM test ZIP](AI-Control-FACC-v0.3.52-dev-g2-33fa9b3-UMM-test.zip?raw=true) · [Identity](AI-Control-FACC-v0.3.52-dev-g2-33fa9b3-UMM-test.identity.json) · [Checksum](AI-Control-FACC-v0.3.52-dev-g2-33fa9b3-UMM-test.sha256) · [Checks](../docs/competence/G2_GRABBER_CHECKS.json) · [G2 design and replay](../docs/GRABBER_G2.md) · [fusion2g1b review](../docs/FUSION2G1B_PLAYTEST_REVIEW.md)
+
+fusion2g1b plus PR #67, stacked on PR #66 and #65:
+- **Grabber.** The engine switches it on or off for each weapon attack by the hold's value, and lets go with Release
+  Grapple when the hold no longer pays.
+- **Tiger and Smilodon** grab with both natural weapons.
+- **Maneuver immunity.** A grapple-immune target (swarms, Freedom of Movement) is no longer valued as grappled.
+
+Leave Grabber alone during fights: a click during a fight hands that toggle back to you for the rest of it. Manifest
+stays **0.3.52**; this is a development test. Stable packages are unchanged.
+
+Startup MVID **`4b94e879-4a5c-4ec3-9b57-8b45d4eaabcc`**; checked source `33fa9b3`. ZIP SHA-256 `a6fee56bae2880f95a2fa055f8a46da944b23d49daf9838d1a8b044725e04120`.
+It is the DLL the receipt names (SHA-256 `7831cef8…`), built with SDK 8.0.131 against UnityModManager 0.33.0.0.
+837 unit + 27 inventory + 3 script + 11 ledger tests, zero-warning real-reference Release, ProfileAudit (GRAPPLE 55
+checks) and native providers 98/14/10 pass. Supply paired AI and combat logs with the startup MVID from both modes.
+
+## Task-branch candidate: v0.3.52 fusion2 + G1 + caster-fact guard (981299e) — played (review: [FUSION2G1B_PLAYTEST_REVIEW.md](../docs/FUSION2G1B_PLAYTEST_REVIEW.md))
 
 [UMM test ZIP](AI-Control-FACC-v0.3.52-dev-fusion2g1b-981299e-UMM-test.zip?raw=true) · [Identity](AI-Control-FACC-v0.3.52-dev-fusion2g1b-981299e-UMM-test.identity.json) · [Checksum](AI-Control-FACC-v0.3.52-dev-fusion2g1b-981299e-UMM-test.sha256) · [Checks](../docs/competence/FUSION2G1_REVIEW_CHECKS.json) · [Review and replay](../docs/FUSION2G1_PLAYTEST_REVIEW.md)
 
