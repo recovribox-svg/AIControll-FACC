@@ -1,0 +1,161 @@
+{
+ "task": "G1 grapple state awareness; review and merge of PR #64 (Fusion F2/F3 core)",
+ "date": "2026-11-15",
+ "branch": "claude/grapple-awareness",
+ "development_base": "6b9be4214989f7ba4a56dad54f0b8c9056c2789d",
+ "checked_source": "883bc9d",
+ "pr64": {
+  "merged": "6b9be4214989f7ba4a56dad54f0b8c9056c2789d",
+  "head_reviewed": "164f8cc98e5a5353c21ed356f697d5be959591f2",
+  "code_equals": "6638404 (0 C#/project/manifest lines differ)",
+  "material_defects": 0,
+  "native_contracts": [
+   "ContextActionConditionalSaved.RunAction runs neither branch when no saving throw was rolled",
+   "AbilityEffectRunAction rolls the one fused save only when MagicHackData.SavingThrowType is set",
+   "EffectChance(damage) excludes the save for a Fusion, so delivery and the shared save are paid once",
+   "ReadFusionDamageOutcomes divides each part by its own factor: exact on the existing per-part forecast"
+  ],
+  "rerun": {
+   "release_warnings": 0,
+   "unit": 821,
+   "inventory": 27,
+   "supplement_script": 3,
+   "ledger": 11,
+   "profile_audit_exit": 0,
+   "sections": {
+    "FUSION": 38,
+    "FUSION-VALUE": 15,
+    "FUSION-CONE": 34
+   },
+   "other_report_lines_vs_integration": "identical",
+   "native_harnesses": [
+    98,
+    14,
+    10
+   ]
+  },
+  "package": {
+   "zip_sha256": "8248fbc28f9e1189f0ad98bcb3445965429c3247c1781839b27766804e7e4aad",
+   "dll_sha256": "2b47375af237555e26b4ded643c040f5ca70ec15526bfe6490a42bfae33f3d4f",
+   "mvid": "e6257b91-248c-47bd-b717-dc588dee5987",
+   "decompiled_vs_local_build": "compiler lowering and local names only"
+  },
+  "noted_inconsistency": "Fusions cap each save outcome at the target's HP before weighting; ordinary spells still cap the averaged damage"
+ },
+ "inputs": {
+  "note": "the same three files as docs/competence/FUSION2_PLAYTEST_INPUTS.json; raw logs are not committed",
+  "log1_sha256": "89b097f0a7ddb204d101c2a4ca660217817089d043b341cf87726aa7f7175de1",
+  "log2_sha256": "08a982b14c700a0ae6b49f38c690bd08299657387d64a0849d0ae67a312bb57d",
+  "combat_sha256": "294c22d9fdc6150da6c5389514ecd9005e656c3b9a95b03dd9493c238fb6dbf7",
+  "startup_mvid": "2e2896c3-5f13-42e1-bb9b-9626f6157228"
+ },
+ "evidence": {
+  "grapple_attempts_on_own_hits": 18,
+  "started": 17,
+  "maintenance_rolls": 5,
+  "maintenance_kept": 5,
+  "escape_maneuvers": 6,
+  "escape_maneuvers_succeeded": 1,
+  "escape_skill_checks_succeeded_at_least": 1,
+  "attack_commands_with_grabber_on": 25,
+  "ended_interrupt": 16,
+  "routines_cut_by_a_grapple": [
+   "L1 821-823 TB R2 Ulbrig FullAttack(3)",
+   "L1 933-936 TB R3 Ulbrig FullAttack(3)+5ft",
+   "L1 1576-1578 TB R2 Ulbrig FullAttack(3) (fight 2)",
+   "L2 1837-1854 RT2 Wenduag FullAttack(4)",
+   "L2 1962-1974 RT4 Wenduag FullAttack(4)",
+   "L2 2034-2042 RT5 Wenduag FullAttack(4)",
+   "L2 2088-2096 RT7 Wenduag FullAttack(5)"
+  ],
+  "while_holding": "L2 2059 RT6 Wenduag {cantmove, cantusestandardactions}: swift Shifter's Fury; no TB turn began with a hold in place",
+  "release_need": "none shown"
+ },
+ "toolchain": {
+  "dotnet_sdk": "8.0.131",
+  "msbuild": "17.8.49.61608",
+  "csharp_compiler": "4.8.0-7.25569.25 (38896ab4)",
+  "csc_sha256": "ad02669eab4d8751ca9611d57d1db52b25b4d14b268d08b49bd462e2f72d1543",
+  "assembly_csharp_sha256": "2cb7160b7154d4ffacc77b9c51b1eb26199e1294300f04fdfc073367b2ef8953",
+  "unitymodmanager_sha256": "63e5baf7b1738e4091b5fd17ccb738ecdb4d1dbf246061dfd55dc52835d52691",
+  "unitymodmanager_version": "0.33.0.0"
+ },
+ "validation": {
+  "release_build": {
+   "warnings": 0,
+   "errors": 0,
+   "dll_sha256": "4f46132d0f838b4fd721237b1c0b390f599a0dd484ddff8557b856c87b67ae13",
+   "mvid": "e4cb4df9-ad46-409a-a800-b96382c68a10",
+   "source_link_commit": "883bc9d",
+   "note": "verification build of the checked commit; no package"
+  },
+  "foreign_member_references": {
+   "added": 13,
+   "removed": 0,
+   "against": "the PR #64 head build",
+   "resolve": "all, compiled against the real Assembly-CSharp"
+  },
+  "tests": {
+   "unit": 832,
+   "new_unit": 11,
+   "inventory": 27,
+   "supplement_script": 3,
+   "ledger": 11,
+   "failed": 0
+  },
+  "profile_audit": {
+   "exit_code": 0,
+   "loaded": 45251,
+   "failed": 1,
+   "allowed_failures": 1,
+   "known_failure": "AchaekekSacredWeaponFeature enum (raw corpus limitation retained)",
+   "abilities": 4845,
+   "reader_errors": 0,
+   "report_sha256": "e539d171699094fb8fb7cba9b53c33b18ad374210af657776d52151c53490263",
+   "GRAPPLE": {
+    "checks": 32,
+    "failures": 0,
+    "triggers_read": 8,
+    "refused": {
+     "grapple behind a branch other than an empty caster-fact gate": [
+      "BalorWhipEntangle",
+      "NightcrawlerFeature"
+     ],
+     "grapple through ContextActionCombatManeuver": [
+      "FafnheirGrappleFeature",
+      "GolemAutumnGrabFeature"
+     ],
+     "grapple maneuver with other success or failure actions": [
+      "MimicOozeGrabFeature"
+     ]
+    },
+    "other_triggers": 959,
+    "read": [
+     "BearGrappleBuff",
+     "GriffonGrappleBuff",
+     "LizardGrappleBuff",
+     "ShamblingMoundGrappleBuff",
+     "SmilodonGrappleBuff x2",
+     "TigerGrappleBuff x2"
+    ]
+   },
+   "other_report_lines_vs_pr64_run": "identical",
+   "inputs": "S1's 20 dump folders, its 607 missing-only stock fixtures and the Demonology list (as INTEGRATION_60_62_CHECKS.json)"
+  },
+  "native_harnesses": {
+   "toggle_cost": 98,
+   "tome_burn": 14,
+   "toybox_spend": 10,
+   "failures": 0
+  }
+ },
+ "limits": [
+  "Unplayed. Offline checks run no actor, Rulebook roll, command, path query or Unity timing.",
+  "Release Grapple stays unsupported: no played hold should have ended; proposed G2.",
+  "Party members held by monsters: their spells' concentration check is not priced.",
+  "The hold's shares and horizon are the engine's existing control conventions, not measured grapple outcomes.",
+  "CMBBonusForManeuver on the attacker's other facts is still missed by the maneuver forecast (existing limitation).",
+  "The raw corpus keeps its Achaekek enum load failure."
+ ],
+ "main_tag_or_release_publication": false
+}
