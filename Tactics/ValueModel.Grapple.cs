@@ -123,6 +123,17 @@ namespace CompanionAI_Pathfinder.Tactics
             return now + Math.Max(0f, later);
         }
 
+        /// <summary>
+        /// The free release's offer and reason from the hold's price. Keep the existing half-point margin. A positive
+        /// offer must carry a reason: it passes through ordinary ability classification before either mode can issue it.
+        /// </summary>
+        public static float GrappleReleaseValue(float keep, out string reason)
+        {
+            if (keep >= -0.5f) { reason = "the hold still pays"; return 0f; }
+            reason = "release";
+            return -keep;
+        }
+
         /// <summary>d20 + <paramref name="bonus"/> against <paramref name="dc"/> for a skill check (no automatic 1 or 20).</summary>
         public static float SkillCheckChance(int bonus, int dc) => Clamp((21f + bonus - dc) / 20f, 0f, 1f);
 

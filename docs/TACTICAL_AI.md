@@ -6158,3 +6158,30 @@ Audit/report unchanged outside the mode check count/optional coverage/output pat
 [Receipt](competence/LEAP_GRAB_CHECKS.json), compiler/reference/source provenance and cumulative **gaps1** test identity:
 MVID **`9aea0261-f5a3-4c3e-a025-502de27a716d`**. SDK 8.0.426 / Roslyn 4.11; manifest remains 0.3.52.
 No actor flight/gameplay or Unity timing acceptance, merge or release.
+
+## 178. gaps1 playtest: Release Grapple candidate repair (15 November 2026, Codex)
+
+[Review, cited evidence, limits and replay](GAPS1_PLAYTEST_REVIEW.md),
+[input identities](competence/GAPS1_PLAYTEST_INPUTS.json). The supplied pair matches played gaps1 `351b709`,
+MVID `9aea0261-f5a3-4c3e-a025-502de27a716d`; ToyBox spawns, rests between fights, Grabber left to the engine.
+Continue #70 `d5a1207` on `codex/gaps1-playtest-review`, retaining #65-69, development `6b9be42`.
+
+All 572 command issues reconcile with their terminal actor/type/label. At AI rows 2812-2813, Wenduag's Hydra hold
+is priced at -23.8, but the positive Release Grapple score has a null reason; candidate pure-buff classification
+throws and discards it. Return the same release price/margin with an explicit reason and guard pure-buff
+classification against missing reasons. The appraisal now says "release offer"; it never establishes execution.
+The reciprocal header checks now compare the native UnitReference IDs directly, avoiding the nullable expression's
+reverse proxy resolution. This diagnostic repair does not establish why the played conditions/headers were absent.
+No movement, permission, target, retreat, pathfinding or stuck-cancellation policy change; no extra combat forecasts.
+
+Grabber on/off choice and native successful grabs are played in both modes. A later +5 maintenance roll and natural
+damage are present in combat. Frigid's one-round control forecast and a Grabber-valued leap offer are now visible,
+but neither is issued. No Release Grapple or invocation is issued. Three RT shapes and subsequent Fury choices are
+observed; no TB shape execution. The high-risk bomb choice requires a controlled recipient/value replay: native
+projectiles launch before their ranged roll queues AoOs, so the down forecast alone does not establish a lost cast.
+Seventy slow rows include nine with collections; warm ability scoring/context counts remain a performance follow-up,
+without interpreting signed heap deltas as allocations or claiming a Unity speedup.
+
+The checked-source receipt, compiler/reference provenance and unplayed cumulative package will record validation
+separately from this gaps1 gameplay. Manifest remains 0.3.52. Holder best-alternative/safety, monster victims, extra
+form facts, saved Frigid control, and actual leap/release execution retain the preceding documented boundaries.
