@@ -46,12 +46,25 @@ namespace CompanionAI_Pathfinder.Tactics
         public int MaintainBonus;
         /// <summary>The holder buff's Dexterity change (ShifterGrabBuffBase: -4), which lowers the holder's CMD while it holds.</summary>
         public int HolderDexterity;
+        /// <summary>★ G2: the buff's other open grab triggers into the same hold (the Tiger and Smilodon grab with claw and
+        /// bite: one trigger per weapon type). Null for a buff with one.</summary>
+        public GrabTrigger[] Also;
 
         /// <summary>A hit with <paramref name="weapon"/> runs the trigger (AbstractWeaponTrigger.IsSuitable for the flags read).</summary>
         public bool Suits(ItemEntityWeapon weapon) => Suits(weapon?.Blueprint);
 
-        /// <summary>The same test on the weapon's blueprint (the native range test reads only its attack type).</summary>
+        /// <summary>The same test on the weapon's blueprint (the native range test reads only its attack type), for this
+        /// trigger or any other of its buff (<see cref="Also"/>).</summary>
         public bool Suits(BlueprintItemWeapon blueprint)
+        {
+            if (SuitsOwn(blueprint)) return true;
+            if (Also != null)
+                foreach (var other in Also)
+                    if (other.SuitsOwn(blueprint)) return true;
+            return false;
+        }
+
+        private bool SuitsOwn(BlueprintItemWeapon blueprint)
         {
             if (blueprint == null) return false;
             if (WeaponType != null && WeaponType != blueprint.Type) return false;
@@ -127,18 +140,7 @@ namespace CompanionAI_Pathfinder.Tactics
                 t.AllNaturalAndUnarmed || t.DuelistWeapon || t.NotExtraAttack || t.OnCharge || t.ActionsOnInitiator)
             { refusal = "trigger flags beyond hit, weapon type, category and range"; return null; }
             var holder = grapple.CasterBuff;
-            if (holder == null || holder.GetComponent<ShifterGrabInitiatorBuff>() == null)
-            { refusal = "holder buff without the native maintenance (ShifterGrabInitiatorBuff)"; return null; }
-            int bonus = 0;
-            foreach (var cmb in holder.GetComponents<CMBBonusForManeuver>())
-            {
-                if (cmb.Maneuvers == null || !cmb.Maneuvers.Contains(CombatManeuver.Grapple)) continue;
-                if (cmb.CheckFact || cmb.Value == null || !cmb.Value.IsValueSimple) { refusal = "holder buff with a conditional or computed grapple bonus"; return null; }
-                bonus += cmb.Value.Value;
-            }
-            int dexterity = 0;
-            var grab = holder.GetComponent<ShifterGrabInitiatorBuff>();
-            if (GrabDexterity != null && GrabDexterity.GetValue(grab) is int dex) dexterity = dex;
+            if (!HolderTerms(holder, out int bonus, out int dexterity, out refusal)) return null;
             return new GrabTrigger
             {
                 Component = t,
@@ -156,6 +158,124 @@ namespace CompanionAI_Pathfinder.Tactics
 
         private static readonly System.Reflection.FieldInfo GrabDexterity =
             HarmonyLib.AccessTools.Field(typeof(ShifterGrabBuffBase), "m_DexterityBonus");
+
+        /// <summary>
+        /// The holder buff's terms: the simple grapple CMB bonus of its CMBBonusForManeuver (a RuleCombatManeuver handler,
+        /// so never in RuleCalculateCMB: it is added by hand, also while it is on) and its Dexterity change (a live stat
+        /// modifier while it is on). False with <paramref name="refusal"/> for a buff without the native maintenance or
+        /// with a conditional or computed bonus.
+        /// </summary>
+        private static bool HolderTerms(BlueprintBuff holder, out int bonus, out int dexterity, out string refusal)
+        {
+            bonus = 0; dexterity = 0; refusal = null;
+            if (holder == null || holder.GetComponent<ShifterGrabInitiatorBuff>() == null)
+            { refusal = "holder buff without the native maintenance (ShifterGrabInitiatorBuff)"; return false; }
+            foreach (var cmb in holder.GetComponents<CMBBonusForManeuver>())
+            {
+                if (cmb.Maneuvers == null || !cmb.Maneuvers.Contains(CombatManeuver.Grapple)) continue;
+                if (cmb.CheckFact || cmb.Value == null || !cmb.Value.IsValueSimple) { refusal = "holder buff with a conditional or computed grapple bonus"; return false; }
+                bonus += cmb.Value.Value;
+            }
+            var grab = holder.GetComponent<ShifterGrabInitiatorBuff>();
+            if (GrabDexterity != null && GrabDexterity.GetValue(grab) is int dex) dexterity = dex;
+            return true;
+        }
+
+        private static readonly Dictionary<BlueprintBuff, GrabTrigger[]> BuffGrabs = new Dictionary<BlueprintBuff, GrabTrigger[]>();
+        private static readonly Dictionary<KeyValuePair<BlueprintBuff, int>, GrabTrigger> GrabSets =
+            new Dictionary<KeyValuePair<BlueprintBuff, int>, GrabTrigger>();
+
+        /// <summary>
+        /// ★ G2: what <paramref name="buff"/> grabs with for <paramref name="unit"/> (the toggle's buff of a Grabber, on or
+        /// not yet on): its recognised grab triggers whose gate is open, into one hold, or null when none would run. Only a
+        /// buff whose grab triggers all lead to the same holder buff is combined; otherwise the first open one alone.
+        /// Blueprint metadata is cached per buff, the combination per buff and set of open gates (a stable identity).
+        /// </summary>
+        internal static GrabTrigger GrabOf(BlueprintBuff buff, UnitEntityData unit)
+        {
+            if (buff?.ComponentsArray == null || unit == null) return null;
+            var triggers = GrabTriggersOf(buff);
+            int open = 0;
+            for (int i = 0; i < triggers.Length && i < 30; i++)
+                if (GateOpen(triggers[i].Gate, unit)) open |= 1 << i;
+            return ComposeGrab(buff, open);
+        }
+
+        private static readonly GrabTrigger[] NoGrabs = new GrabTrigger[0];
+
+        /// <summary>The buff's recognised grab triggers, in component order (blueprint metadata, cached; most buffs share
+        /// one empty array).</summary>
+        public static GrabTrigger[] GrabTriggersOf(BlueprintBuff buff)
+        {
+            if (buff?.ComponentsArray == null) return NoGrabs;
+            if (!BuffGrabs.TryGetValue(buff, out var triggers))
+            {
+                triggers = buff.ComponentsArray.OfType<AddInitiatorAttackWithWeaponTrigger>()
+                               .Select(t => ReadGrabTrigger(t, out _)).Where(g => g != null).ToArray();
+                if (triggers.Length == 0) triggers = NoGrabs;
+                BuffGrabs[buff] = triggers;
+            }
+            return triggers;
+        }
+
+        /// <summary>The hold the triggers of <paramref name="buff"/> named by <paramref name="open"/> (bit i: trigger i's gate
+        /// is open) grab into; null when none is open.</summary>
+        public static GrabTrigger ComposeGrab(BlueprintBuff buff, int open)
+        {
+            var triggers = GrabTriggersOf(buff);
+            if (triggers.Length == 0) return null;
+            open &= triggers.Length >= 30 ? ~0 : (1 << triggers.Length) - 1;
+            if (open == 0) return null;
+            var key = new KeyValuePair<BlueprintBuff, int>(buff, open);
+            if (GrabSets.TryGetValue(key, out var set)) return set;
+            var chosen = triggers.Where((t, i) => (open & (1 << i)) != 0).ToList();
+            var first = chosen[0];
+            if (chosen.Count == 1 || chosen.Any(t => t.HolderBuff != first.HolderBuff || t.MaintainBonus != first.MaintainBonus))
+                set = first;
+            else
+                set = new GrabTrigger
+                {
+                    Component = first.Component, WeaponType = first.WeaponType, CheckCategory = first.CheckCategory,
+                    Category = first.Category, CheckRange = first.CheckRange, RangeType = first.RangeType, Gate = first.Gate,
+                    HolderBuff = first.HolderBuff, MaintainBonus = first.MaintainBonus, HolderDexterity = first.HolderDexterity,
+                    Also = chosen.Skip(1).ToArray()
+                };
+            GrabSets[key] = set;
+            return set;
+        }
+
+        /// <summary>★ G2: the buff only grabs: every component a grab trigger the reader reads (the six forms' Grabber
+        /// buffs). Such a toggle's only effect is the hold, so the attack-mode chooser can price it whole.</summary>
+        public static bool IsGrabBuff(BlueprintBuff buff)
+        {
+            var components = buff?.ComponentsArray;
+            if (components == null || components.Length == 0) return false;
+            foreach (var component in components)
+                if (!(component is AddInitiatorAttackWithWeaponTrigger trigger) || ReadGrabTrigger(trigger, out _) == null) return false;
+            return true;
+        }
+
+        private static UnitEntityData s_AssumedGrabUnit;
+        private static GrabTrigger s_AssumedGrab;
+
+        /// <summary>★ G2: a scope in which <see cref="ActiveGrab"/> answers <paramref name="grab"/> (null: none) for
+        /// <paramref name="unit"/>: the attack-mode chooser prices one attack with the Grabber on and off. Nothing changes in
+        /// the game; the grapple odds' frame cache already checks which trigger it was read for.</summary>
+        internal static GrabAssumption AssumeGrab(UnitEntityData unit, GrabTrigger grab)
+        {
+            var previous = new GrabAssumption(s_AssumedGrabUnit, s_AssumedGrab);
+            s_AssumedGrabUnit = unit;
+            s_AssumedGrab = grab;
+            return previous;
+        }
+
+        internal struct GrabAssumption : IDisposable
+        {
+            private readonly UnitEntityData m_Unit;
+            private readonly GrabTrigger m_Grab;
+            internal GrabAssumption(UnitEntityData unit, GrabTrigger grab) { m_Unit = unit; m_Grab = grab; }
+            public void Dispose() { s_AssumedGrabUnit = m_Unit; s_AssumedGrab = m_Grab; }
+        }
 
         private static bool GrappleIn(ActionList list) => list?.Actions != null && list.Actions.Any(a =>
             a is ContextActionGrapple || a is ContextActionCombatManeuverCustom m && m.Type == CombatManeuver.Grapple && GrappleIn(m.Success) ||
@@ -188,20 +308,17 @@ namespace CompanionAI_Pathfinder.Tactics
         internal static GrabTrigger ActiveGrab(UnitEntityData unit)
         {
             if (unit == null || !unit.IsPlayerFaction) return null;
+            if (unit == s_AssumedGrabUnit) return s_AssumedGrab;   // ★ G2: an attack priced with the Grabber on or off
             int frame = Time.frameCount;
             if (UnitGrabs.TryGetValue(unit, out var known) && known.Key == frame) return known.Value;
             GrabTrigger found = null;
             try
             {
+                // ★ G2: every open grab trigger of the buff into one hold (claw and bite of the Tiger and Smilodon).
                 foreach (var buff in unit.Buffs)
                 {
                     if (buff?.Blueprint?.ComponentsArray == null || !buff.Active) continue;
-                    foreach (var component in buff.Blueprint.ComponentsArray)
-                    {
-                        if (!(component is AddInitiatorAttackWithWeaponTrigger trigger)) continue;
-                        var grab = ReadGrabTrigger(trigger, out _);
-                        if (grab != null && GateOpen(grab.Gate, unit)) { found = grab; break; }
-                    }
+                    found = GrabOf(buff.Blueprint, unit);
                     if (found != null) break;
                 }
             }
@@ -278,7 +395,7 @@ namespace CompanionAI_Pathfinder.Tactics
                 ManeuverValues(unit, target, null, GrappleManeuver, out int cmb, out int cmd);
                 opening.Maintain = ValueModel.ManeuverRollChance(cmb + grab.MaintainBonus, cmd, unit.Descriptor.State.Features.AlwaysChance) *
                                    ManeuverConcealmentShare(unit, target);
-                opening.BreakFree = BreakFreeChance(target, unit, grab);
+                opening.BreakFree = BreakFreeChance(target, unit, grab.HolderDexterity);
             }
             catch (Exception ex)
             {
@@ -290,16 +407,74 @@ namespace CompanionAI_Pathfinder.Tactics
             return opening;
         }
 
+        /// <summary>★ G2: the hold a unit keeps now, as the game's parts and its holder buff give it.</summary>
+        internal sealed class HeldGrapple
+        {
+            public UnitEntityData Victim;
+            public bool Pinned;
+            /// <summary>The holder's roll at the next round's start (ShifterGrabInitiatorBuff.HandleNewRound).</summary>
+            public float Maintain;
+            /// <summary>The victim's own try to break free in that round.</summary>
+            public float BreakFree;
+            /// <summary>The free damage-only natural attack each maintained round (UnitGrappleInitiatorAttack).</summary>
+            public float FreeDamage;
+        }
+
+        /// <summary>
+        /// ★ G2: the grapple <paramref name="holder"/> holds now, or null: no pair the controller keeps, or a holder buff the
+        /// G1 reader does not know (the old forecast stays). The odds are the native rules as the grab's: the holder buff's
+        /// CMBBonusForManeuver added by hand (a RuleCombatManeuver handler), its Dexterity change already in the holder's
+        /// Dexterity (a live modifier now). Read once a decision by the release appraisal; no roll and no change.
+        /// </summary>
+        internal static HeldGrapple ReadHold(UnitEntityData holder)
+        {
+            try
+            {
+                var victim = holder?.Get<UnitPartGrappleInitiator>()?.Target.Value;
+                var held = victim?.Get<UnitPartGrappleTarget>();
+                if (held == null || held.Initiator != holder || !victim.Descriptor.State.IsConscious) return null;
+                BlueprintBuff holderBuff = null;
+                foreach (var buff in holder.Buffs)
+                    if (buff?.Blueprint != null && buff.Active && buff.Blueprint.GetComponent<ShifterGrabInitiatorBuff>() != null)
+                    { holderBuff = buff.Blueprint; break; }
+                if (!HolderTerms(holderBuff, out int bonus, out _, out _)) return null;
+                ManeuverValues(holder, victim, null, GrappleManeuver, out int cmb, out int cmd);
+                var result = new HeldGrapple
+                {
+                    Victim = victim,
+                    Pinned = held.IsPinned,
+                    Maintain = ValueModel.ManeuverRollChance(cmb + bonus, cmd, holder.Descriptor.State.Features.AlwaysChance) *
+                               ManeuverConcealmentShare(holder, victim),
+                    BreakFree = BreakFreeChance(victim, holder, 0)
+                };
+                var routine = ReadRoutineCore(holder, victim, true, 0);
+                if (routine != null)
+                {
+                    float free = 0f;
+                    int natural = 0;
+                    foreach (var line in routine.Lines)
+                        if (line.Weapon?.Blueprint?.IsNatural == true) { free += line.GameHit; natural++; }
+                    result.FreeDamage = natural > 0 ? free / natural : 0f;
+                }
+                return result;
+            }
+            catch (Exception ex)
+            {
+                Main.Verbose($"[Grapple] {holder?.CharacterName}: hold unreadable: {ex.Message}");
+                return null;
+            }
+        }
+
         /// <summary>
         /// The victim's try to break free (UnitHelper.TryBreakFree with BreakFreeFlags.Default, as UnitGrappleController calls
         /// it): against the holder's CMD, by a grapple maneuver when its CMB beats its Mobility and Athletics, else by the better
         /// of those skills. The holder's CMD while it holds: the holder buff's Dexterity change taken into its Dexterity bonus.
         /// </summary>
-        private static float BreakFreeChance(UnitEntityData victim, UnitEntityData holder, GrabTrigger grab)
+        private static float BreakFreeChance(UnitEntityData victim, UnitEntityData holder, int holderDexterityChange)
         {
             ManeuverValues(victim, holder, null, GrappleManeuver, out int cmb, out int cmd);
             int dexterity = holder.Stats.Dexterity.ModifiedValue;
-            cmd += DexterityBonus(dexterity + grab.HolderDexterity) - DexterityBonus(dexterity);
+            cmd += DexterityBonus(dexterity + holderDexterityChange) - DexterityBonus(dexterity);
             int skill = Math.Max((int)victim.Stats.SkillMobility, (int)victim.Stats.SkillAthletics);
             if (skill < cmb)
                 return ValueModel.ManeuverRollChance(cmb, cmd, victim.Descriptor.State.Features.AlwaysChance) *

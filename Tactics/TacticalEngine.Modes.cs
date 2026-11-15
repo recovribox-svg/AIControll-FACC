@@ -43,7 +43,8 @@ namespace CompanionAI_Pathfinder.Tactics
 {
     public static partial class TacticalEngine
     {
-        internal enum ModeKind { Attack, Mobility }
+        /// <summary>★ G2: Grab - a Grabber toggle (CombatMath.IsGrabBuff), priced by the attack with the hold on and off.</summary>
+        internal enum ModeKind { Attack, Mobility, Grab }
 
         private sealed class ModeProfile
         {
@@ -136,6 +137,15 @@ namespace CompanionAI_Pathfinder.Tactics
             {
                 var buff = bp.Buff;
                 if (buff == null) p.Excluded = "no buff";
+                // ★ G2: a Grabber (its buff only grabs): switched on and off at once for free (ActivationType Immediately,
+                // DeactivateImmediately, no command or resource), so the chooser can switch it for each attack.
+                else if (CombatMath.IsGrabBuff(buff))
+                {
+                    p.Kind = ModeKind.Grab;
+                    if (!bp.ActivateImmediately || !bp.DeactivateImmediately) p.Excluded = "a grab that does not switch at once";
+                    else if (bp.GetComponent<ActivatableAbilityUnitCommand>() != null) p.Excluded = "spends an action every round";
+                    else if (bp.GetComponent<ActivatableAbilityResourceLogic>() != null) p.Excluded = "spends a resource";
+                }
                 else
                 {
                     bool mobility = false;
@@ -358,7 +368,14 @@ namespace CompanionAI_Pathfinder.Tactics
             public ActivatableAbilityGroup Group => Toggle.Blueprint.Group;
             /// <summary>★ user-ability-blacklist: on a list - the AI never switches it, its current state stays in the estimate.</summary>
             public bool Blocked;
+            /// <summary>★ G2: a Grabber's grab (ModeKind.Grab): no attack, damage or AC part; each set is priced with this
+            /// grab assumed on or off (CombatMath.AssumeGrab).</summary>
+            public GrabTrigger Grab;
         }
+
+        private static readonly Func<ItemEntityWeapon, bool, int> NoModeAttack = (weapon, full) => 0;
+        private static readonly Func<ItemEntityWeapon, float> NoModeDamage = weapon => 0f;
+        private static readonly Func<ItemEntityWeapon, int> NoModeTyped = weapon => 0;
 
         private static readonly List<UnitMode> NoModes = new List<UnitMode>();
 
@@ -375,8 +392,24 @@ namespace CompanionAI_Pathfinder.Tactics
                 // ★ v0.3.19: switched by the player during this fight - its state stays as part of the game's rules.
                 if (CombatMemory.PlayerOwnsToggle(unit, toggle)) continue;
                 var p = ModeOf(toggle.Blueprint);
-                if (p.Kind != ModeKind.Attack) continue;
+                if (p.Kind != ModeKind.Attack && p.Kind != ModeKind.Grab) continue;
                 if (!toggle.IsOn && !toggle.IsAvailable) continue;
+                if (p.Kind == ModeKind.Grab)
+                {
+                    // ★ G2: what its buff would grab with now (its gate open): none, and switching changes nothing.
+                    var grab = CombatMath.GrabOf(toggle.Blueprint.Buff, unit);
+                    if (grab == null) continue;
+                    modes.Add(new UnitMode
+                    {
+                        Toggle = toggle, On = toggle.IsOn || toggle.IsStarted, Active = toggle.IsStarted, InEstimate = toggle.IsStarted,
+                        Attack = NoModeAttack, FullAttackOnly = NoModeAttack, Damage = NoModeDamage, Typed = NoModeTyped, Grab = grab,
+                        Blocked = UserAbilityPolicy.SourceOf(ctx.Blocks, toggle) != BlockSource.None
+                    });
+                    ReportOnce($"modevalues|{unit.UniqueId}|{toggle.Blueprint.AssetGuid}", () =>
+                               $"[Modes] {unit.CharacterName}: {toggle.Name} = a grapple on a suitable hit, switched for each attack by its " +
+                               "hold (the routine it cuts short, the victim held and pinned, the holder's lost turns)");
+                    continue;
+                }
                 try
                 {
                     var mode = ReadMode(unit, toggle, p);
@@ -589,6 +622,8 @@ namespace CompanionAI_Pathfinder.Tactics
             var unit = ctx.Unit;
             bool full = griffon ? c.Griffon.Full : c.FullAttack;
             Vector3 at = c.ModeAt ?? unit.Position;
+            // ★ G2: at most one Grabber is on the bar at a time (one per form); its set is priced with its grab assumed.
+            var grabMode = modes.FirstOrDefault(m => m.Grab != null);
             // ★ v0.3.52: the leap already pays its native charge AC penalty. Price mode changes from that same
             // landing/penalty baseline, rather than adding independent nonlinear defense gains. Reuse equal AC
             // totals across the existing <=32 mode sets; ordinary attack behavior is unchanged.
@@ -624,11 +659,19 @@ namespace CompanionAI_Pathfinder.Tactics
                         Kingmaker.Blueprints.Root.BlueprintRoot.Instance.SystemMechanics.MagusSpellCombatBuff, weapon, out int penalty)) ab += penalty;
                     return new KeyValuePair<int, float>(ab, dmg);
                 }
-                var estimate = griffon ? CombatMath.RepriceGriffonModes(unit, c.Target, full, griffonQuote, Delta)
-                                       : CombatMath.EstimateWeaponAttack(unit, c.Target, full, Delta);
-                int ac = modes.Sum(m => ((set.Contains(m) ? 1 : 0) - (m.InEstimate ? 1 : 0)) * m.AC);
-                return new KeyValuePair<float, float>(estimate == null ? -1f : DamageValue(c.Target, estimate) +
-                    (griffon ? 0f : MagusChargeValue(c, estimate)), Defence(ac));
+                // ★ G2: a Grabber changes the routine itself (the grapple cuts it short) and adds the hold: the set is priced
+                // with its grab on or off. The leap's quote keeps the grab it was read with (fixed below).
+                var assumed = grabMode != null && !griffon
+                    ? CombatMath.AssumeGrab(unit, set.Contains(grabMode) ? grabMode.Grab : null) : (CombatMath.GrabAssumption?)null;
+                try
+                {
+                    var estimate = griffon ? CombatMath.RepriceGriffonModes(unit, c.Target, full, griffonQuote, Delta)
+                                           : CombatMath.EstimateWeaponAttack(unit, c.Target, full, Delta);
+                    int ac = modes.Sum(m => ((set.Contains(m) ? 1 : 0) - (m.InEstimate ? 1 : 0)) * m.AC);
+                    return new KeyValuePair<float, float>(estimate == null ? -1f : DamageValue(c.Target, estimate) +
+                        (griffon ? 0f : MagusChargeValue(c, estimate)), Defence(ac));
+                }
+                finally { assumed?.Dispose(); }
             };
             var current = new HashSet<UnitMode>(modes.Where(m => m.On));
             var baseline = valueOf(current);
@@ -655,8 +698,10 @@ namespace CompanionAI_Pathfinder.Tactics
             // 32 sets, the groups left out keep their current state (they were left out as "off").
             // ★ user-ability-blacklist: a mode on a list is left as it is, and so is its group while it is on (switching another
             // of the group on would switch it off). It still counts as it stands in every set valued below.
-            var fixedModes = !modes.Any(m => m.Blocked) ? NoModes
-                : modes.Where(m => m.Blocked || m.Group != ActivatableAbilityGroup.None &&
+            // ★ G2: and a Grabber on a leap stays as it is (the leap's native quote is read with the grab as it stands).
+            Func<UnitMode, bool> kept0 = m => m.Blocked || griffon && m.Grab != null;
+            var fixedModes = !modes.Any(kept0) ? NoModes
+                : modes.Where(m => kept0(m) || m.Group != ActivatableAbilityGroup.None &&
                                    modes.Any(b => b.Blocked && b.On && b.Group == m.Group)).ToList();
             foreach (var m in fixedModes)
                 if (m.Blocked && !m.On) UserAbilityPolicy.NoteSkipped(unit, m.Toggle.Blueprint.AssetGuid, m.Name, UserAbilityPolicy.SourceOf(ctx.Blocks, m.Toggle));

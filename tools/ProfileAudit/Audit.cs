@@ -308,7 +308,9 @@ namespace ProfileAudit
 
             row.Detail = (parts.Count > 0 ? "parts: " + string.Join("; ", parts.Distinct().Take(8)) + " | " : "") +
                          $"sides: {(enemies ? "enemy " : "")}{(allies ? "ally " : "")}{(self ? "self" : "")}";
-            if (modelled.Count > 0)
+            if (p.ReleasesGrapple)   // ★ G2: valued in combat by the hold it ends (TacticalEngine.GrappleReleaseValue)
+                row.Verdict = "valued: lets go of a grapple (by the hold it ends)";
+            else if (modelled.Count > 0)
                 row.Verdict = "valued: " + string.Join(", ", modelled.Distinct()) + (guessed.Count > 0 ? " (+ guessed " + string.Join(", ", guessed) + ")" : "");
             else if (guessed.Count > 0)
                 row.Verdict = "GUESSED: " + string.Join(", ", guessed.Distinct());

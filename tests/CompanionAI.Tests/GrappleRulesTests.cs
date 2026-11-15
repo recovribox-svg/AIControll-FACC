@@ -90,6 +90,36 @@ namespace CompanionAI.Tests
             Assert.Equal(1f, ValueModel.SkillCheckChance(30, 10));
         }
 
+        // ★ G2: a holder that can let go keeps a hold only while each pinned round pays.
+        [Fact] public void AHolderThatCanLetGoKeepsOnlyTheRoundsThatPay()
+        {
+            // a weak victim (5) against a holder worth 34: each pinned round costs 34 - 5 - 8 = -21
+            float bound = ValueModel.GrappleHoldValue(0.9f, 3f, 5f, 34f, 8f, 0.4f, 1f);
+            float free = ValueModel.GrappleHoldValue(0.9f, 3f, 5f, 34f, 8f, 0.4f, 1f, true);
+            Assert.True(bound < 0f);
+            Assert.Equal(2f, free, 5);                       // only the victim's first, held turn: 5 x 0.4
+            // a hold that pays is the same either way
+            Assert.Equal(ValueModel.GrappleHoldValue(0.8f, 3f, 30f, 30f, 10f, 0.4f, 1f),
+                         ValueModel.GrappleHoldValue(0.8f, 3f, 30f, 30f, 10f, 0.4f, 1f, true), 5);
+        }
+
+        [Fact] public void APinnedRoundWeighsTheVictimsTurnAndTheFreeHitAgainstTheHoldersTurn()
+        {
+            Assert.Equal(10f, ValueModel.GrappleRoundNet(30f, 30f, 10f, 1f), 5);
+            Assert.Equal(-21f, ValueModel.GrappleRoundNet(5f, 34f, 8f, 1f), 5);
+        }
+
+        [Fact] public void KeepingAHoldIsWorthThisRoundAndLaterRoundsOnlyWhileTheyPay()
+        {
+            // pinned caster (40) held by a holder worth 28: this round 40 - 28, then 1.44 rounds of +24
+            Assert.Equal(12f + 1.44f * 24f, ValueModel.GrappleKeepValue(0.8f, 3f, 40f, 28f, 12f, 1f, 1f), 4);
+            // a pinned trash mob (10): this round 10 - 28 = -18, later rounds would cost too and are not counted: let go
+            Assert.Equal(-18f, ValueModel.GrappleKeepValue(0.9f, 3f, 10f, 28f, 6f, 1f, 1f), 4);
+            // held, not yet pinned (soft share): 40 x 0.4 - 28 = -12, but the later rounds pay: keep
+            Assert.True(ValueModel.GrappleKeepValue(0.9f, 3f, 40f, 28f, 12f, 0.4f, 1f) > 0f);
+            Assert.Equal(0f, ValueModel.GrappleKeepValue(0.9f, 0f, 40f, 28f, 12f, 1f, 1f));
+        }
+
         // CombatManeuver values: None 0, Trip 1, Overrun 2, Disarm 3, Grapple 4, BullRush 5.
         [Fact] public void ManeuverImmunityBlocksItsOwnTypeOnly()
         {
