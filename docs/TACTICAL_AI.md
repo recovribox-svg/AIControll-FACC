@@ -6132,3 +6132,29 @@ record the matrix comparison: 7,306/15,494 admitted, 1,166 admitted cone compone
 profiles. Only the two Frigid ability verdicts gain Soft control. Original raw enum failure remains separate.
 No intermediate ZIP; the follow-up leap task supplies a cumulative test. Manifest remains 0.3.52, unplayed.
 No movement, commitment, retreat, pathfinding or stuck-cancellation change.
+
+## 177. Leap Grabber modes retain grapple truncation and hold value (15 November 2026, Codex)
+
+[Implementation, source finding, bounds and replay](LEAP_GRAB_MODES.md). Continue #69 `2e86342` on
+`codex/leap-grab-modes`, retaining #65-68, development `6b9be42`. The older fusion2g1b log contains no issued leap;
+this repair has native/source and cached-routine evidence, not a played leap counterfactual.
+
+The old cached mode quote walked the full routine and omitted its grapple fields even though the candidate's initial
+quote already priced a grab cutting it short. Share the original ordinary `PriceGrabLine` / `FinishGrabQuote` kernel,
+retaining initiation, expected attacks and free-damage/hold fields. After exact routine/frame validation, read the
+assumed grab through the existing maneuver cache. Expose Grabber to the existing <=32-set chooser with ownership,
+blocklist, availability, once-per-round and hysteresis rules. No-grab paths bypass the helper.
+
+Native own-weapon quotes remain capped at four and landing attempts at eight. No extra own-weapon quote or mechanics context/path/world scan,
+new landing or safety policy. Charge-adjusted landing defence, captured concealment, existing CMB/CMD cache, final
+issue checks and accepted-dispatch mode application remain. A newly considered grab may need the same maneuver
+calculations as an ordinary mode alternative. Holder opportunity/safety and monster-victim support remain separate.
+
+The native-layout fixtures now check concrete grab/off/impossible/accuracy/concealment outcomes and both callers'
+connection to the shared kernel. Source `351b709`: **855 + 27 + 3 + 11 tests**, real-reference Release **0 warnings/errors**,
+**GRIFFON-MODES 29** (9 new), inherited checks and native providers 98/14/10 pass. ProfileAudit 44,639 loaded /
+4,807 abilities without load/reader failure or prerequisite skip; **0 added external references** relative to #69.
+Audit/report unchanged outside the mode check count/optional coverage/output paths. Original raw enum failure remains.
+[Receipt](competence/LEAP_GRAB_CHECKS.json), compiler/reference/source provenance and cumulative **gaps1** test identity:
+MVID **`9aea0261-f5a3-4c3e-a025-502de27a716d`**. SDK 8.0.426 / Roslyn 4.11; manifest remains 0.3.52.
+No actor flight/gameplay or Unity timing acceptance, merge or release.

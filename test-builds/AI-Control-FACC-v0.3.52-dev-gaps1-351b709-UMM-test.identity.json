@@ -1,0 +1,42 @@
+{
+  "build_label": "gaps1",
+  "kind": "development-test",
+  "version": "0.3.52",
+  "source_branch": "codex/leap-grab-modes",
+  "source_commit": "351b709179ab3f9caba3083c07b1337e334760d2",
+  "development_base": "6b9be4214989f7ba4a56dad54f0b8c9056c2789d",
+  "stacked_on": {
+    "pr": 69,
+    "head": "2e863425239c788dd844263f8e89c2b365049f2e",
+    "also_includes": [
+      65,
+      66,
+      67,
+      68
+    ]
+  },
+  "dll": {
+    "assembly": "CompanionAI_Pathfinder, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null",
+    "mvid": "9aea0261-f5a3-4c3e-a025-502de27a716d",
+    "sha256": "8b3637ebcbfef210c4639969b3d21f41e3797bcce188673fe8154dda0d05eefb",
+    "size": 1461248
+  },
+  "manifest_sha256": "1876fd6fc56d03b28793f6c481fac47c9ea85eec3265d6859232deeab67523a3",
+  "archive": "AI-Control-FACC-v0.3.52-dev-gaps1-351b709-UMM-test.zip",
+  "zip_sha256": "841c40650338f78d7c16999660e430a4e46d92011be9a447ee45b95d09359084",
+  "checks_receipt": "docs/competence/LEAP_GRAB_CHECKS.json",
+  "frigid_checks_receipt": "docs/competence/FRIGID_SELECTION_CHECKS.json",
+  "build_provenance": "docs/competence/LEAP_GRAB_BUILD_PROVENANCE.json",
+  "build_provenance_sha256": "6e2c271bbf8bfb94aa0fbf9cdcf1cddace4f4063f051ce6bad5110647cd2d746",
+  "toolchain": {
+    "dotnet_sdk": "8.0.426",
+    "csharp_compiler": "4.11.0-3.25569.22 (3fb752d4)"
+  },
+  "scope": "Cumulative #65-69, including Shifter forms and Frigid common-buff minimum, plus shared cached leap Grabber mode pricing. Holder best-alternative/safety and monster-victim models remain deferred.",
+  "gameplay_status": "not played",
+  "archive_contents": [
+    "CompanionAI_Pathfinder.dll",
+    "Info.json"
+  ],
+  "release": false
+}

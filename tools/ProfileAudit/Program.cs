@@ -391,7 +391,7 @@ namespace ProfileAudit
             foreach (var line in griffonLines) Console.WriteLine(line);
             File.WriteAllText(output, string.Join(Environment.NewLine, griffonLines) + Environment.NewLine + Environment.NewLine + File.ReadAllText(output));
             blocklistFailures += griffonFailures;
-            var griffonModeLines = GriffonModesCheck.Run(out int griffonModeFailures);
+            var griffonModeLines = GriffonModesCheck.Run(loaded.Values, out int griffonModeFailures);
             foreach (var line in griffonModeLines) Console.WriteLine(line);
             File.WriteAllText(output, string.Join(Environment.NewLine, griffonModeLines) + Environment.NewLine + Environment.NewLine + File.ReadAllText(output));
             blocklistFailures += griffonModeFailures;

@@ -660,8 +660,8 @@ namespace CompanionAI_Pathfinder.Tactics
                     return new KeyValuePair<int, float>(ab, dmg);
                 }
                 // ★ G2: a Grabber changes the routine itself (the grapple cuts it short) and adds the hold: the set is priced
-                // with its grab on or off. The leap's quote keeps the grab it was read with (fixed below).
-                var assumed = grabMode != null && !griffon
+                // with its grab on or off. Leap alternatives reuse the cached native routine through the same kernel.
+                var assumed = grabMode != null
                     ? CombatMath.AssumeGrab(unit, set.Contains(grabMode) ? grabMode.Grab : null) : (CombatMath.GrabAssumption?)null;
                 try
                 {
@@ -698,8 +698,7 @@ namespace CompanionAI_Pathfinder.Tactics
             // 32 sets, the groups left out keep their current state (they were left out as "off").
             // ★ user-ability-blacklist: a mode on a list is left as it is, and so is its group while it is on (switching another
             // of the group on would switch it off). It still counts as it stands in every set valued below.
-            // ★ G2: and a Grabber on a leap stays as it is (the leap's native quote is read with the grab as it stands).
-            Func<UnitMode, bool> kept0 = m => m.Blocked || griffon && m.Grab != null;
+            Func<UnitMode, bool> kept0 = m => m.Blocked;
             var fixedModes = !modes.Any(kept0) ? NoModes
                 : modes.Where(m => kept0(m) || m.Group != ActivatableAbilityGroup.None &&
                                    modes.Any(b => b.Blocked && b.On && b.Group == m.Group)).ToList();

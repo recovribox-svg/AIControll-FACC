@@ -66,7 +66,8 @@ the native mechanics, the decisions the engine now makes, how they follow the gu
 
 - **The holder's lost turn** uses the engine's generic worth per round for its level, as G1 does, not its actual best
   alternative this turn.
-- **A Death from Above leap** keeps the grab as it stands: its native quote is read once.
+- **A Death from Above leap** originally kept its grab fixed. The [cached mode follow-up](LEAP_GRAB_MODES.md) now
+  compares it through the shared ordinary grapple kernel, without another native own-weapon quote. It is unplayed.
 - **Danger to a holder** that cannot move is not priced.
 - **A party member held by a monster** gets no special handling (G1's limit).
 - **Grab mode with other modes.** Grabber takes part in the existing 32-set mode budget; a unit with many attack modes

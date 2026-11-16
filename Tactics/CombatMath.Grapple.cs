@@ -89,6 +89,26 @@ namespace CompanionAI_Pathfinder.Tactics
 
     public static partial class CombatMath
     {
+        // Same post-quote kernel for ordinary attacks and cached leap mode alternatives. No actor/rule preview.
+        private static float PriceGrabLine(AttackLine line, GrappleOpening grapple, float damage, float hit,
+            ref ValueModel.GrappleRun run, ref float freeDamage, ref int natural)
+        {
+            if (grapple == null) return damage;
+            damage *= run.Next(hit, grapple.Trigger.Suits(line.Weapon), grapple.Success);
+            if (line.Weapon?.Blueprint?.IsNatural == true) { freeDamage += line.GameHit; natural++; }
+            return damage;
+        }
+
+        private static void FinishGrabQuote(WeaponAttackEstimate result, GrappleOpening grapple,
+            ValueModel.GrappleRun run, float freeDamage, int natural)
+        {
+            if (grapple == null || run.Starts <= 0f) return;
+            result.GrappleChance = run.Starts;
+            result.Grapple = grapple;
+            result.ExpectedAttacks = run.Attacks;
+            result.GrappleFreeDamage = natural > 0 ? freeDamage / natural : 0f;
+        }
+
         private static readonly Dictionary<AddInitiatorAttackWithWeaponTrigger, GrabTrigger> GrabTriggers =
             new Dictionary<AddInitiatorAttackWithWeaponTrigger, GrabTrigger>();
         private static readonly Dictionary<AddInitiatorAttackWithWeaponTrigger, string> GrabRefusals =

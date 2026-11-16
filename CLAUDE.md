@@ -8,7 +8,28 @@ Read [CONTRIBUTING.md](CONTRIBUTING.md) for shared branch ownership, Codex pull 
 Codex works on task branches and targets pull requests at `claude/dreamy-pasteur-b9h3rn`; Claude reviews and integrates them there.
 Keep `main` for author-authorized releases. Read [AGENTS.md](AGENTS.md) when coordinating agent work.
 
-**Current handover (15 November 2026, Codex): grapple-gap assessment and Frigid common-buff reader on
+**Current handover (15 November 2026, Codex): cached leap Grabber modes on `codex/leap-grab-modes`, stacked on
+#69 `2e86342` -> #68 -> #67 -> #66 -> #65, development `6b9be42`; unplayed.** Read [leap implementation/replay](docs/LEAP_GRAB_MODES.md),
+[five-gap assessment](docs/GRAPPLE_GAP_ASSESSMENT.md), §177. Mode repricing previously ignored grapple truncation/hold
+despite the initial leap quote including it. Both quote paths now share the ordinary line/summary kernel and cached
+leap repricing reads the assumed grab only after exact routine/frame validation. Grabber joins the existing 32-set
+chooser; native own-weapon/landing caps remain 4/8, with no new geometry or movement policy. Existing G2 ownership,
+blocklist/once-per-round, safety, defence and final dispatch rules remain. Holder cost/safety and monster support
+remain scoped in the assessment; their missing native/alternative views are not replaced with guesses.
+Checked source **`351b709`**, MVID **`9aea0261-f5a3-4c3e-a025-502de27a716d`**: **855 unit + 27 inventory + 3 script
+and 11 ledger tests**, real-reference Release **0 warnings/errors**; ProfileAudit 44,639 loaded / 4,807 abilities,
+no load/reader failures or prerequisite skips; **GRIFFON-MODES 29**, VALUE-SELECTION 24 and inherited checks pass.
+Supplementary Magus 44, native providers 98/14/10; **0 new references** relative to #69. Audit/report unchanged
+outside the leap check count/optional coverage/output paths. Original raw enum failure remains separate.
+[Receipt](docs/competence/LEAP_GRAB_CHECKS.json), [compiler/reference provenance](docs/competence/LEAP_GRAB_BUILD_PROVENANCE.json).
+[Cumulative gaps1 UMM test ZIP](test-builds/AI-Control-FACC-v0.3.52-dev-gaps1-351b709-UMM-test.zip), SHA-256
+`841c40650338f78d7c16999660e430a4e46d92011be9a447ee45b95d09359084`; includes #65-69 and leap modes.
+SDK 8.0.426 / Roslyn 4.11, UMM 0.33.2.0, manifest 0.3.52. The checked DLL is frozen across receipt-only commits;
+no live actor/flight, gameplay or Unity speedup acceptance. No merge, main/development push or release.
+Retain the #69 Frigid minimum/saved-profile boundary and #68 form/Fury work. No new uploads are needed for these
+slices. Next: TB/RT replay with Grabber left to the engine, actual leaps plus G2 release and Frigid checks.
+
+**Earlier handover (15 November 2026, Codex): grapple-gap assessment and Frigid common-buff reader on
 `codex/grapple-gap-review`, stacked on #68 `342dc27` -> #67 -> #66 -> #65, development `6b9be42`; unplayed.**
 Read [assessment/proposal verification/replay](docs/GRAPPLE_GAP_ASSESSMENT.md), §176. Latest supplied logs hash-match
 the old fusion2g1b pair for #67; no G2/#68 acceptance claimed. Native Frigid selector alternatives apply the same

@@ -1,5 +1,25 @@
 # Test builds
 
+## Task-branch candidate: v0.3.52 gaps1 — Frigid Touch and leap Grabber (351b709), unplayed
+
+[UMM test ZIP](AI-Control-FACC-v0.3.52-dev-gaps1-351b709-UMM-test.zip?raw=true) · [Identity](AI-Control-FACC-v0.3.52-dev-gaps1-351b709-UMM-test.identity.json) · [Checksum](AI-Control-FACC-v0.3.52-dev-gaps1-351b709-UMM-test.sha256) · [Checks](../docs/competence/LEAP_GRAB_CHECKS.json) · [Five-gap assessment / Frigid replay](../docs/GRAPPLE_GAP_ASSESSMENT.md) · [Leap replay](../docs/LEAP_GRAB_MODES.md)
+
+Includes the #65 -> #66 -> #67 -> #68 -> #69 stack plus cached leap mode pricing. Frigid Touch's common one-round
+stagger is read without a guessed critical chance; ally safety retains longer/refresh risk. Saved Frigid templates
+outside the existing model are explicitly withheld. Leaps compare Grabber using the same truncation/hold kernel as
+ordinary attacks, retaining native quote/landing bounds and safety. Holder opportunity/safety and monster responses
+remain scoped follow-ups, not new automatic behavior.
+
+Checked source **`351b709`**, startup MVID **`9aea0261-f5a3-4c3e-a025-502de27a716d`**. ZIP SHA-256
+`841c40650338f78d7c16999660e430a4e46d92011be9a447ee45b95d09359084`.
+855 unit + 27 inventory + 3 script + 11 ledger tests, 24 selector / 29 leap-mode checks and native providers
+98/14/10 pass; real-reference Release **0 warnings/errors**. [Compiler/reference provenance](../docs/competence/LEAP_GRAB_BUILD_PROVENANCE.json):
+SDK 8.0.426 / Roslyn 4.11, UMM reference 0.33.2.0. Manifest stays **0.3.52**; this is a development test.
+
+Play TB and RT with **Grabber left to the engine**, including actual Griffon leaps, G2 releases, the form/Fury replay
+and Frigid/fusion2 cases. Supply paired AI/combat logs and startup identity. No Unity speedup or gameplay acceptance
+is claimed. Stable and earlier test packages are unchanged.
+
 ## Task-branch candidate: v0.3.52 Shifter forms (f00f4a6) — unplayed
 
 [UMM test ZIP](AI-Control-FACC-v0.3.52-dev-shifterforms-f00f4a6-UMM-test.zip?raw=true) · [Identity](AI-Control-FACC-v0.3.52-dev-shifterforms-f00f4a6-UMM-test.identity.json) · [Checksum](AI-Control-FACC-v0.3.52-dev-shifterforms-f00f4a6-UMM-test.sha256) · [Checks](../docs/competence/SHIFTER_FORMS_CHECKS.json) · [Form decisions and replay](../docs/SHIFTER_FORM_DECISIONS.md)

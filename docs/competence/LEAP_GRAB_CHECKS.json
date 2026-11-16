@@ -1,0 +1,178 @@
+{
+  "task": "Cached leap Grabber pricing through the shared ordinary grapple kernel",
+  "recorded_at_utc": "2026-11-15T14:46:00.814311+00:00",
+  "branch": "codex/leap-grab-modes",
+  "development_base": "6b9be4214989f7ba4a56dad54f0b8c9056c2789d",
+  "stacked_on": {
+    "pr": 69,
+    "head": "2e863425239c788dd844263f8e89c2b365049f2e",
+    "also_includes": [
+      65,
+      66,
+      67,
+      68
+    ]
+  },
+  "checked_source_commit": "351b709179ab3f9caba3083c07b1337e334760d2",
+  "worktree_clean_at_build": true,
+  "dll": {
+    "assembly": "CompanionAI_Pathfinder, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null",
+    "mvid": "9aea0261-f5a3-4c3e-a025-502de27a716d",
+    "sha256": "8b3637ebcbfef210c4639969b3d21f41e3797bcce188673fe8154dda0d05eefb",
+    "size": 1461248
+  },
+  "manifest_unchanged": "0.3.52",
+  "release_build": {
+    "real_game_references": true,
+    "warnings": 0,
+    "errors": 0
+  },
+  "toolchain": {
+    "dotnet_sdk": "8.0.426",
+    "csharp_compiler": "4.11.0-3.25569.22 (3fb752d4)",
+    "provenance": "docs/competence/LEAP_GRAB_BUILD_PROVENANCE.json",
+    "provenance_sha256": "6e2c271bbf8bfb94aa0fbf9cdcf1cddace4f4063f051ce6bad5110647cd2d746",
+    "umm_reference": "0.33.2.0"
+  },
+  "unit_tests": {
+    "passed": 855,
+    "failed": 0,
+    "skipped": 0,
+    "new_native_fixtures": 9,
+    "note": "No new game-independent formula: both callers share the existing GrappleRun, already covered by G1 tests."
+  },
+  "script_tests": {
+    "inventory": 27,
+    "audit_supplement": 3,
+    "invocation_ledger": 11,
+    "failures": 0
+  },
+  "compatible_profile_audit": {
+    "loaded": 44639,
+    "failed": 0,
+    "abilities": 4807,
+    "reader_errors": 0,
+    "prerequisite_skips": 0,
+    "griffon_modes": 29,
+    "value_selection": 24,
+    "grapple": 55,
+    "shifter_forms": 21,
+    "campaign_flag": 21,
+    "scope": "C06_NATIVE_COMPATIBLE_SCOPE.json plus REVIEW2_CHARGE_INPUTS.json missing-only stock fixtures",
+    "summon_inventory_limits": "5 missing spawned-unit IDs, 119 kit-reference IDs and 95 unloaded brains remain explicit; not the S1 full-stock supplement."
+  },
+  "native_harnesses": {
+    "toggle_with_psionics": 98,
+    "tome": 14,
+    "toybox": 10,
+    "failures": 0,
+    "prerequisite_skips": 0
+  },
+  "supplementary_audit": {
+    "loaded": 44643,
+    "failed": 0,
+    "abilities": 4807,
+    "errors": 0,
+    "magus_checks": 44
+  },
+  "foreign_references": {
+    "added": 0,
+    "unresolved": 0,
+    "baseline": "PR #69 checked DLL fad03c4"
+  },
+  "report_comparison": {
+    "strict.log": {
+      "baseline_sha256": "cd682dcf67fcbf0e18f09516977f4247b17adebb73fd8e010224bdb8f15e912d",
+      "new_sha256": "b862d0aa2a5a818f8cf84ea5dc97052e4a3745ff9fe759edc3714c6a085e7449",
+      "unchanged_outside_griffon_check_count": true,
+      "normalization": "Exclude GRIFFON-MODES and optional FUSION-COVERAGE rows; normalize output path/blank separators."
+    },
+    "strict.txt": {
+      "baseline_sha256": "fe6b4777f9acdb410ae8e3cfcedc7ae9481c1f1724b6fcf962fc11b3c23a76a3",
+      "new_sha256": "cdcc38aea247d18bca99ee68fb36610d5c8c19dd6a7fe0c5eb3d973bddeeed8b",
+      "unchanged_outside_griffon_check_count": true,
+      "normalization": "Exclude GRIFFON-MODES and optional FUSION-COVERAGE rows; normalize output path/blank separators."
+    }
+  },
+  "fusion_coverage": {
+    "kind": "reused from independently checked PR #69 source fad03c4; not rerun for this quote-only change",
+    "receipt": "docs/competence/FRIGID_SELECTION_CHECKS.json",
+    "summary": "docs/competence/FRIGID_SELECTION_COVERAGE.json",
+    "reader_joint_model_files_unchanged_from_pr69": true,
+    "admitted": 7306,
+    "withheld": 8188,
+    "configurations": 15494,
+    "cones_resolved": 1166,
+    "joint_metadata_qualified": 3118,
+    "scope": "declared-list metadata, not live availability/aim/value/execution"
+  },
+  "raw_archive_negative_check": {
+    "exit": 1,
+    "loaded": 44637,
+    "failed": 1,
+    "asset": "AchaekekSacredWeaponFeature",
+    "reason": "Preserved serialized enum spelling mismatch and offline Unity logger ECall; no input normalization or raw ability verdicts."
+  },
+  "bounds": {
+    "native_own_weapon_quotes": 4,
+    "landing_attempts": 8,
+    "mode_sets": 32,
+    "new_own_weapon_quotes_or_paths_for_mode_repricing": 0,
+    "maneuver_reading": "Existing pair/frame/trigger cache; a newly considered grab may need ordinary CMB/CMD calculation rules. No maneuver/crit roll.",
+    "actor_mutation_for_forecast": false,
+    "no_grab_helper_fast_path": "Both callers skip the shared grappling helper when there is no opening."
+  },
+  "native_fixtures": [
+    "Original no-grab line/AB/DR/crit/concealment/weapon metadata cases retained",
+    "Claw/claw/other at 50% hit, certain maneuver: 8.75 damage, 1.75 expected attacks, 75% start, 10 free damage",
+    "Grabber off: 15 damage and no hold",
+    "+4 AB: 9.73 damage, 1.39 expected attacks, 91% start",
+    "Zero maneuver success: no hold/truncation",
+    "Captured concealment: 5.78125 damage, 43.75% start",
+    "Same line/summary kernel used by ordinary and leap callers",
+    "Cache validation before maneuver read; no extra native own-weapon query",
+    "Chooser fixed-mode predicate has no leap-specific Grabber exclusion"
+  ],
+  "package": {
+    "archive": "test-builds/AI-Control-FACC-v0.3.52-dev-gaps1-351b709-UMM-test.zip",
+    "sha256": "841c40650338f78d7c16999660e430a4e46d92011be9a447ee45b95d09359084",
+    "bytes": 578512,
+    "identity": "test-builds/AI-Control-FACC-v0.3.52-dev-gaps1-351b709-UMM-test.identity.json",
+    "identity_sha256": "49473aeec1a076ac614646e69292bf7126d79f2dd35ec8deec1909a44b591ad2",
+    "packed_dll_equals_checked_release": true,
+    "startup_mvid_unique_against_existing_identities": true,
+    "native_dlls_or_stubs_packed": false
+  },
+  "limits": [
+    "New cumulative code is unplayed; no actor flight, mode switch, live cast/command, path or Unity timing was executed.",
+    "Holder alternatives/safety and monster-victim help remain separate; generic G1 hold terms are unchanged.",
+    "Queries use current live-state inputs; no speculative future landing/proc simulation.",
+    "Frigid critical extension/general selector/per-save unconditional control remain bounded as in #69; 168 saved templates explicitly withheld.",
+    "Only private engine-neutralized verification copies are rewritten; deployment DLL is untouched."
+  ],
+  "handover": [
+    "docs/LEAP_GRAB_MODES.md",
+    "docs/GRAPPLE_GAP_ASSESSMENT.md",
+    "docs/SHIFTER_FORM_DECISIONS.md",
+    "docs/GRABBER_G2.md"
+  ],
+  "source_freeze": "Later receipt/package/docs-only commits retain the exact checked DLL without rebuilding it.",
+  "validation_logs_sha256": {
+    "audit-build.log": "60b583a80747bbdad76822c90421dda82a66d479a11a9c90404fe799fcdfb09d",
+    "inventory.log": "09ad2fe8a00725d344e94e8e80b71c18c4cbb712fd436f659f3f8ab440b40798",
+    "invocation-ledger.log": "34a82a30511a2175a5286cff0751874e9220ce5fb08cab87b09cc04e220f6b31",
+    "raw.log": "59399a5731df2ca0a352726bb5857f2618ac7f2bf881aa07c789670ad5bd8149",
+    "refs.log": "899262540b3e6a0a678fb0c899cdfcefb2cc1695ab4439fdcb666d764617d4a1",
+    "release.log": "84fc66222699f7355191ee2ddab82533c0fd27a0a1fa560ccfcaac376bd8258a",
+    "strict.log": "b862d0aa2a5a818f8cf84ea5dc97052e4a3745ff9fe759edc3714c6a085e7449",
+    "supplement-scripts.log": "edb4e2159c923ea45a32656078835cdf531c3d7b414c670dd786978875cb0678",
+    "supplementary.log": "4e62310c3ea4adf83474e4d6cd76060dd6dcab7e5371899a4d43998f20375eca",
+    "toggle-build.log": "0900f9be0dccc5af66aefeda63f6025e9ff35d74feef79ba22e0cfebb9729869",
+    "toggle.log": "e1bb8816277f0ad755e030d1c4a286e052526aefb7225c8490ab0e8e5d298fd2",
+    "tome-build.log": "cdc763949675253e7097ea7da63c7f956387e4392ee310a3afcf2a99746ace46",
+    "tome.log": "06f5651c4bf1773529cce81e0a30bd423798dfc79b27d226f36ad762a58a561f",
+    "toybox-build.log": "5fb1f168e964fb4fdb9cbf513e9942d1cf96bbae3438a6b174f6a414d093aa07",
+    "toybox.log": "51a7d0ee8fd018a41e9f81bd277cacf46a3821a398bb3cdef5dc446a4c921f6e",
+    "unit.log": "d170161b9ea8dabf8b07fb0b9436d47e4c6b3de578d0f829e42c68e6d4654453"
+  }
+}
