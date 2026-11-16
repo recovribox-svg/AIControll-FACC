@@ -8,8 +8,28 @@ Read [CONTRIBUTING.md](CONTRIBUTING.md) for shared branch ownership, Codex pull 
 Codex works on task branches and targets pull requests at `claude/dreamy-pasteur-b9h3rn`; Claude reviews and integrates them there.
 Keep `main` for author-authorized releases. Read [AGENTS.md](AGENTS.md) when coordinating agent work.
 
-**Current handover (15 November 2026, Claude): PR #64 (Fusion F2/F3 core) reviewed and merged into development (`6b9be42`);
-G1 grapple state awareness on `claude/grapple-awareness`, PR into development. Not played.** Read `docs/TACTICAL_AI.md`
+**Current handover (15 November 2026, Claude): fusion2g1 played and reviewed; Fusion caster-fact guard fix on
+`claude/fusion-caster-fact`, PR #66 into development, stacked on PR #65 (review #65 first). Not played.** Read
+[docs/FUSION2G1_PLAYTEST_REVIEW.md](docs/FUSION2G1_PLAYTEST_REVIEW.md), `docs/TACTICAL_AI.md` §171 and the
+[receipt](docs/competence/FUSION2G1_REVIEW_CHECKS.json).
+- Log: fusion2g1 module `e4cb4df9`, 10 fights, 370/370 command terminals, no AI Control exception. The author
+  interrupted often in real time.
+- G1 works as intended:
+  - holds valued positive against casters and negative (at most +0.9) against summoned wolves and dogs;
+  - only swift, free or move actions while holding, and no move;
+  - 33 grapple maneuvers by Wenduag, 11 failed escapes.
+- Defect: all seven Runes fusions fell back ("mutable/unread guard ContextConditionCasterHasFact"). Mystical Mayhem's
+  Cyphermage patch adds a caster-fact gated Rune Master damage to both Runes; the exports lack it.
+- Fix: `StableFusionGuards` accepts `ContextConditionCasterHasFact`. Caster-side payloads are already refused, and the
+  ordinal check still refuses a fact an earlier application gives.
+- Checks on `981299e`: Release 0 warnings, 832 + 27 + 3 + 11 tests, FUSION-VALUE 23 (8 new), other report lines
+  unchanged, native harnesses 98/14/10. The stock qualified count stays 3,230.
+- Package: `test-builds/AI-Control-FACC-v0.3.52-dev-fusion2g1b-981299e-UMM-test.zip`, MVID
+  `e4f231af-1782-4e64-9697-3a3b2455e1a2`. Manifest 0.3.52; no `main`, tag or release change.
+- **Next:** the author plays fusion2g1b. Runes fusions should log `[FusionValue]`; repeat the G1 and fusion2 checks.
+
+**Earlier handover (15 November 2026, Claude): PR #64 (Fusion F2/F3 core) reviewed and merged into development (`6b9be42`);
+G1 grapple state awareness on `claude/grapple-awareness`, PR #65 into development. Played as fusion2g1 (above).** Read `docs/TACTICAL_AI.md`
 §170, [docs/GRAPPLE_G1.md](docs/GRAPPLE_G1.md) and the [receipt](docs/competence/G1_GRAPPLE_CHECKS.json).
 - PR #64: no material defect. Rerun on its head: 821 unit tests, ProfileAudit exit 0, native harnesses 98/14/10.
   Its package DLL decompiles to the same code as a local build apart from compiler lowering.

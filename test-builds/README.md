@@ -1,6 +1,20 @@
 # Test builds
 
-## Task-branch candidate: v0.3.52 fusion2 + G1 (883bc9d) — unplayed
+## Task-branch candidate: v0.3.52 fusion2 + G1 + caster-fact guard (981299e) — unplayed
+
+[UMM test ZIP](AI-Control-FACC-v0.3.52-dev-fusion2g1b-981299e-UMM-test.zip?raw=true) · [Identity](AI-Control-FACC-v0.3.52-dev-fusion2g1b-981299e-UMM-test.identity.json) · [Checksum](AI-Control-FACC-v0.3.52-dev-fusion2g1b-981299e-UMM-test.sha256) · [Checks](../docs/competence/FUSION2G1_REVIEW_CHECKS.json) · [Review and replay](../docs/FUSION2G1_PLAYTEST_REVIEW.md)
+
+fusion2g1 plus one fix from its playtest (PR #66, stacked on PR #65). A Fusion payload guarded by
+`ContextConditionCasterHasFact` now reaches the joint outcome model. In play this is Mystical Mayhem's Rune Master damage
+on Incendiary and Explosive Runes: every Runes fusion fell back to the old forecast. Manifest stays **0.3.52**; this is a
+development test. Stable packages are unchanged.
+
+Startup MVID **`e4f231af-1782-4e64-9697-3a3b2455e1a2`**; checked source `981299e`. ZIP SHA-256 `83ff31bc5b3ff3c4a7fd8cbadffe57b48c70abaa61f6ce35a28304267facbbc1`.
+It is the DLL the receipt names (SHA-256 `ed81d0dc…`), built with SDK 8.0.131 against UnityModManager 0.33.0.0.
+832 unit + 27 inventory + 3 script + 11 ledger tests, zero-warning real-reference Release, ProfileAudit (FUSION-VALUE 23
+checks) and native providers 98/14/10 pass. Supply paired AI and combat logs with the startup MVID from both modes.
+
+## Task-branch candidate: v0.3.52 fusion2 + G1 (883bc9d) — played (review: [FUSION2G1_PLAYTEST_REVIEW.md](../docs/FUSION2G1_PLAYTEST_REVIEW.md))
 
 [UMM test ZIP](AI-Control-FACC-v0.3.52-dev-fusion2g1-883bc9d-UMM-test.zip?raw=true) · [Identity](AI-Control-FACC-v0.3.52-dev-fusion2g1-883bc9d-UMM-test.identity.json) · [Checksum](AI-Control-FACC-v0.3.52-dev-fusion2g1-883bc9d-UMM-test.sha256) · [Checks](../docs/competence/G1_GRAPPLE_CHECKS.json) · [G1 evidence and TB/RT replay](../docs/GRAPPLE_G1.md) · [Fusion2 replay](../docs/FUSION2_PLAYTEST_REVIEW.md)
 

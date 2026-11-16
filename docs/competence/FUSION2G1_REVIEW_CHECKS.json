@@ -1,0 +1,170 @@
+{
+ "task": "fusion2g1 playtest review; Fusion caster-fact guard fix",
+ "date": "2026-11-15",
+ "branch": "claude/fusion-caster-fact",
+ "stacks_on": "claude/grapple-awareness (PR #65, head 96ce5bd)",
+ "development_base": "6b9be4214989f7ba4a56dad54f0b8c9056c2789d",
+ "checked_source": "981299e",
+ "inputs": {
+  "note": "raw logs are not committed",
+  "log_sha256": "19a19912b9cefeb3e8040d4f95dafcccdba573614fbfca44f3d5d833623b7ee9",
+  "log_lines": 4181,
+  "combat_sha256": "752434d811362c71850e4179baf39aa40d743a28aeae1c832fc2be51a5918ea3",
+  "combat_lines": 21634,
+  "startup_mvid": "e4cb4df9-ad46-409a-a800-b96382c68a10",
+  "package_played": "fusion2g1 (checked source 883bc9d)"
+ },
+ "evidence": {
+  "fights": 10,
+  "commands_issued": 370,
+  "commands_with_terminal_row": 370,
+  "ended_interrupt": 121,
+  "interrupts": "the author reports frequent manual interrupts in this session",
+  "slow_rows": 31,
+  "ai_control_exceptions": 0,
+  "g1": {
+   "grapple_rows": 118,
+   "wolf_rows": {
+    "total": 25,
+    "negative": 21,
+    "positive_at_most": 0.9
+   },
+   "dog_rows_negative": "6 of 6",
+   "combat_log_grapple_maneuvers_by_wenduag": {
+    "succeeded": 33,
+    "critical_failures": 1
+   },
+   "victim_escapes": {
+    "failed": 11,
+    "critical_success": 1
+   },
+   "while_holding": [
+    "L251 Griffon Aspect",
+    "L318 Griffon Aspect",
+    "L399 END TURN",
+    "L3901 Cure Critical Wounds potion"
+   ],
+   "moves_while_holding": 0,
+   "not_g1_choices": [
+    "combat log 1930 and 2136: claw hits that grappled a WolfSummon; not attacks of opportunity, no AI Control command targeted a wolf",
+    "L560 FullAttack(3) on a Summoned Dog decided before the player switched Grabber on (L561)"
+   ],
+   "release_need": "none shown"
+  },
+  "fusion": {
+   "runes_fallbacks": 7,
+   "lines": "1221, 1224, 1228, 1230, 1232, 1235, 1237",
+   "reason": "mutable/unread guard ContextConditionCasterHasFact",
+   "qualified_in_play": [
+    "Snowball/Shocking Grasp (L1226)"
+   ],
+   "runes_cast_on_old_forecast": "Incendiary Runes/Color Spray scored 302.3 and succeeded twice (L1682-1850, L2590-2649)",
+   "cause": "MysticalMayhem.BlueprintPatches.Cyphermage.Patch appends Conditional(ContextConditionCasterHasFact CyphermageRuneMaster 4a75ac0b-6059-4f19-bcec-d2e82e4ca6be) -> ContextActionDealDamage 1d4 magic per Cyphermage level (rank DamageDice) to the AbilityEffectRunAction of IncendiaryRunes and ExplosiveRunes",
+   "mystical_mayhem": {
+    "version": "0.7.0h",
+    "dll_sha256": "d88f16cb253299d22eb43ac581c073fc17c9c25d37864d95878fd84c0f806d5d",
+    "source": "the author's earlier mod upload, decompiled locally (not committed)"
+   },
+   "exports": "no caster-fact guard on either Runes blueprint in the BubblePrints stock or the author's exports"
+  }
+ },
+ "native_contracts": [
+  "ContextConditionCasterHasFact.CheckCondition returns Context.MaybeCaster.Descriptor.HasFact(Fact); its m_Fact is a BlueprintUnitFactReference",
+  "GetFusion refuses any fused payload with CasterBuffs (LimitFusion 'healing or caster-side payload')",
+  "StableFusionGuards' ordinal check compares the guard's BlueprintReferenceBase.Guid with every earlier BuffApplication"
+ ],
+ "change": "AbilityProfile.StableFusionGuards accepts ContextConditionCasterHasFact; nothing else",
+ "offline_coverage": {
+  "qualified_before": 3230,
+  "qualified_after": 3230,
+  "caster_fact_refusals_before": 422,
+  "moved_to": {
+   "composite or non-HP damage": 382,
+   "dispel/enchantment/extension dependency": 24,
+   "dynamic removal dependency": 16
+  },
+  "all_pairs": "Phantasmal Putrefaction (nested Conditional with ContextConditionCasterHasFact)"
+ },
+ "toolchain": {
+  "dotnet_sdk": "8.0.131",
+  "msbuild": "17.8.49.61608",
+  "unitymodmanager_version": "0.33.0.0"
+ },
+ "validation": {
+  "release_build": {
+   "warnings": 0,
+   "errors": 0,
+   "dll_sha256": "ed81d0dcf4914597da781bc259672fad1021f7a2f3b66e4f3a9c6655797af8e6",
+   "mvid": "e4f231af-1782-4e64-9697-3a3b2455e1a2",
+   "size": 1446912,
+   "source_link_commit": "981299e06d3e169e678ff796da29179525574536"
+  },
+  "foreign_member_references": {
+   "added": 0,
+   "removed": 0,
+   "against": "the G1 build 883bc9d"
+  },
+  "tests": {
+   "unit": 832,
+   "inventory": 27,
+   "supplement_script": 3,
+   "ledger": 11,
+   "failed": 0
+  },
+  "profile_audit": {
+   "exit_code": 0,
+   "loaded": 45251,
+   "failed": 1,
+   "allowed_failures": 1,
+   "abilities": 4845,
+   "reader_errors": 0,
+   "report_sha256": "2be96b8a41a5d50ef81d629cd008b7e3197b7a9d48e85448e8d69f1cb39902dd",
+   "FUSION-VALUE": {
+    "checks": 23,
+    "new": 8,
+    "failures": 0,
+    "new_checks": [
+     "Incendiary Runes/Snowball and Explosive Runes/Color Spray with Mystical Mayhem's shape rebuilt in memory: the guarded Rune Master damage is read (in Damage, with the caster-fact guard)",
+     "the same two qualify for the joint outcome model with no guard refusal",
+     "a caster-fact guard on Incendiary Runes' own Burning buff (e69fd2eb...) is refused with 'earlier application changes a guard fact'",
+     "the stock action lists are restored after each in-memory patch (3 checks)"
+    ]
+   },
+   "other_sections": {
+    "FUSION": 38,
+    "FUSION-CONE": 34,
+    "GRAPPLE": 32
+   },
+   "other_report_lines_vs_g1_run": "identical",
+   "inputs": "S1's 20 dump folders, its 607 missing-only stock fixtures and the Demonology list (as G1_GRAPPLE_CHECKS.json)"
+  },
+  "native_harnesses": {
+   "toggle_cost": 98,
+   "tome_burn": 14,
+   "toybox_spend": 10,
+   "failures": 0
+  }
+ },
+ "not_changed": [
+  "[Grapple] rows stay one per fight, pair and attack count: same-name enemies carry different numbers (two Marauders +38.1 and +1.4)",
+  "Snowball/Sleep and Explosive Runes/Sleep stay withheld (shared Hit Dice selection), the F2 boundary"
+ ],
+ "limits": [
+  "Unplayed. The fixture rebuilds Mystical Mayhem's shape from its decompiled patch; no live Mystical Mayhem load, actor, Rulebook roll or cast is run.",
+  "Whether a caster with Rune Master gets the extra damage in the joint value is not exercised offline (the guard needs a live caster).",
+  "The raw corpus keeps its Achaekek enum load failure."
+ ],
+ "main_tag_or_release_publication": false,
+ "package": {
+  "file": "test-builds/AI-Control-FACC-v0.3.52-dev-fusion2g1b-981299e-UMM-test.zip",
+  "zip_sha256": "83ff31bc5b3ff3c4a7fd8cbadffe57b48c70abaa61f6ce35a28304267facbbc1",
+  "dll_sha256": "ed81d0dcf4914597da781bc259672fad1021f7a2f3b66e4f3a9c6655797af8e6",
+  "mvid": "e4f231af-1782-4e64-9697-3a3b2455e1a2",
+  "contents": [
+   "CompanionAI_Pathfinder.dll",
+   "Info.json (0.3.52)"
+  ],
+  "contains": "development 6b9be42 (fusion2) plus G1 (PR #65) plus the caster-fact guard fix (981299e)",
+  "gameplay_status": "not played"
+ }
+}

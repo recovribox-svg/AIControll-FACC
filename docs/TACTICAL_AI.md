@@ -5929,7 +5929,51 @@ maneuver forecast, as before.
 GRAPPLE section (32 checks). Every other report line is identical to the PR #64 run, and the native harnesses give
 98/14/10. Thirteen added foreign member references, all resolved against the real assembly.
 Receipt: [G1_GRAPPLE_CHECKS.json](competence/G1_GRAPPLE_CHECKS.json). Package (fusion2 + G1):
-`test-builds/AI-Control-FACC-v0.3.52-dev-fusion2g1-883bc9d-UMM-test.zip`, startup MVID `e4cb4df9-ad46-409a-a800-b96382c68a10`, the checked DLL unchanged. Unplayed.
+`test-builds/AI-Control-FACC-v0.3.52-dev-fusion2g1-883bc9d-UMM-test.zip`, startup MVID `e4cb4df9-ad46-409a-a800-b96382c68a10`, the checked DLL unchanged. Played: §171.
 
 **Next.** The author plays a grab-capable form against a dangerous and a weak target in both modes (GRAPPLE_G1.md replay).
 Then G2 (release with a positive reason), if a played hold shows the need.
+
+## 171. Fusion2g1 played: caster-fact guards in Fusion payloads (15 November 2026, Claude)
+
+**Inputs.** One AI log and its combat log from the fusion2g1 package (module `e4cb4df9`). Hashes and full review:
+[FUSION2G1_PLAYTEST_REVIEW.md](FUSION2G1_PLAYTEST_REVIEW.md). 10 fights, 370 of 370 commands have a terminal row, 31 slow
+rows, no AI Control exception. The author interrupted often in real time; those interrupts are the player's orders.
+
+**G1 works as intended.**
+- **Targets.** Hold values are positive against casters and dangerous melee (Marauder +34.4) and negative or near zero
+  against summoned wolves and dogs. Wenduag's attacks went to casters and demons.
+- **While holding.** Every decision with "holds X" in its header took only swift, free or move actions (Griffon Aspect,
+  END TURN, a healing potion). No move was issued while holding.
+- **The hold.** The combat log has 33 successful grapple maneuvers by her and 11 failed escapes; one victim broke free
+  on a critical.
+- **Not G1 choices.** Two grapples on a wolf came from no AI Control command. One dog attack was decided before the
+  player switched Grabber on.
+
+**Defect.** All seven Runes fusions fell back to the old forecast ("mutable/unread guard
+ContextConditionCasterHasFact"). Only Snowball/Shocking Grasp reached the joint model. Mystical Mayhem's Cyphermage patch
+appends `Conditional(ContextConditionCasterHasFact CyphermageRuneMaster) -> 1d4 magic damage per Cyphermage level` to
+both Runes. The exports lack it, so PR #64's offline checks passed on unpatched blueprints.
+
+**Change.** `AbilityProfile.StableFusionGuards` accepts `ContextConditionCasterHasFact`. Why it is stable in a fused payload:
+- The native check reads only the caster's facts (`Context.MaybeCaster.Descriptor.HasFact`).
+- Caster-side payloads are already refused.
+- The ordinal check still refuses a guard on a buff an earlier application gives.
+- The guarded damage keeps the existing per-caster guard evaluation, so a caster without the fact gets no extra damage.
+
+Stock exports: the 422 Phantasmal Putrefaction configurations that stopped at this guard now stop at their next existing
+refusal. The qualified count stays 3,230.
+
+**Checks** on source `981299e`:
+- Release 0 warnings/errors, 0 added or removed game references.
+- 832 unit + 27 + 3 + 11 tool tests.
+- ProfileAudit exit 0; FUSION-VALUE 23 checks (8 new: Mystical Mayhem's shape rebuilt in memory on both Runes, the
+  ordinal refusal, the stock lists restored). Every other report line is identical to the G1 run.
+- Native harnesses 98/14/10.
+
+PR #66, stacked on PR #65. Receipt: [FUSION2G1_REVIEW_CHECKS.json](competence/FUSION2G1_REVIEW_CHECKS.json). Package
+`test-builds/AI-Control-FACC-v0.3.52-dev-fusion2g1b-981299e-UMM-test.zip`, startup MVID
+`e4f231af-1782-4e64-9697-3a3b2455e1a2`, the checked DLL unchanged. Unplayed.
+
+**Next.** Replay arcan's Runes fusions in both modes. Each should log `[FusionValue]` instead of the caster-fact fallback.
+Repeat the G1 and fusion2 checks.
