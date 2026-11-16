@@ -55,6 +55,59 @@ namespace CompanionAI.Tests
             ValueModel.FusionValue(1, 0, 100, 50, 20, 40, 40, 3, false, false, out float damage, out float control);
             Assert.Equal(0, damage); Assert.Equal(0, control);
         }
+        // ★ Fusion F4 (docs/FUSION_OUTCOME_EFFECTS_PLAN.md): control on a passed root save, or on both outcomes.
+        [Theory]
+        [InlineData(0.2f, 1f, 100f, 0f, 15f, 40f, 40f, 3f)]
+        [InlineData(0.25f, 0.4f, 10f, 0f, 1000f, 0f, 30f, 2f)]
+        [InlineData(0.4f, 1f, 0f, 0f, 100f, 40f, 30f, 2f)]
+        [InlineData(1f, 0.2f, 100f, 100f, 15f, 0f, 0f, 0f)]
+        [InlineData(0.55f, 0.8f, 21f, 21f, 60f, 35f, 28f, 1.2f)]
+        public void WithoutAPassedOutcomeEffectTheValueIsTheEarlierOne(float fail, float delivery, float failed, float passed,
+            float hp, float worth, float controlWorth, float rounds)
+        {
+            ValueModel.FusionValue(fail, delivery, failed, passed, hp, worth, controlWorth, rounds, false, false, out float d0, out float c0);
+            ValueModel.FusionValue(fail, delivery, failed, passed, hp, worth, controlWorth, rounds, 0f, false, false, out float d1, out float c1);
+            Assert.Equal(d0, d1); Assert.Equal(c0, c1);   // exact: no rounding drift for admitted fusions
+        }
+        [Fact] public void PassOnlyControlIsWeightedByThePassedSave()
+        {
+            // Fear's shaken round against a target that fails 30% of the time; no damage.
+            ValueModel.FusionValue(0.3f, 0.8f, 0, 0, 100, 0, 30, 0, 1, false, false, out float damage, out float control);
+            Assert.Equal(0, damage); Assert.Equal(0.8f * 0.7f * 30f, control, 4);
+        }
+        [Fact] public void ControlOnBothOutcomesDoesNotDependOnTheSave()
+        {
+            // Frigid Touch's stagger: the same envelope whatever the save does.
+            ValueModel.FusionValue(0.1f, 1, 0, 0, 100, 0, 30, 0.4f, 0.4f, false, false, out _, out float unlikely);
+            ValueModel.FusionValue(0.9f, 1, 0, 0, 100, 0, 30, 0.4f, 0.4f, false, false, out _, out float likely);
+            Assert.Equal(12f, unlikely, 4); Assert.Equal(12f, likely, 4);
+        }
+        [Fact] public void EachOutcomeKeepsItsOwnEnvelope()
+        {
+            // Fear: three frightened rounds on a failed save, one shaken round (a fifth of a turn) on a passed one.
+            ValueModel.FusionValue(0.6f, 1, 0, 0, 100, 0, 30, 3f, 0.2f, false, false, out _, out float control);
+            Assert.Equal(30f * (0.6f * 3f + 0.4f * 0.2f), control, 4);
+        }
+        [Fact] public void ATargetKilledOnThePassedOutcomeLosesNoFurtherTurns()
+        {
+            // Half damage on a pass still kills: its passed-outcome control is worth nothing more.
+            ValueModel.FusionValue(0.5f, 1, 200, 100, 10, 40, 30, 0, 2, false, false, out _, out float dead);
+            ValueModel.FusionValue(0.5f, 1, 20, 0, 1000, 40, 30, 0, 2, false, false, out _, out float alive);
+            Assert.Equal(0f, dead, 4); Assert.Equal(0.5f * 30f * 2f, alive, 4);
+        }
+        [Fact] public void AnUndeliveredCastLeavesNoPassedOutcomeControl()
+        {
+            ValueModel.FusionValue(0.5f, 0, 0, 0, 100, 0, 30, 1, 1, false, false, out _, out float control);
+            Assert.Equal(0, control);
+        }
+        [Theory]
+        [InlineData(0.3f, true, false, 0.3f)]
+        [InlineData(0.3f, false, true, 0.7f)]
+        [InlineData(0.3f, true, true, 1f)]
+        [InlineData(0.3f, false, false, 0f)]
+        [InlineData(1.4f, false, true, 0f)]
+        public void TheOutcomeShareCountsOnlyOutcomesThatCarryAnEffect(float fail, bool onFailure, bool onPass, float expected) =>
+            Assert.Equal(expected, ValueModel.FusionOutcomeShare(fail, onFailure, onPass), 5);
         [Fact] public void RegenerationKeepsItsExistingRemovalDiscount()
         {
             ValueModel.FusionValue(1, 1, 100, 0, 15, 40, 40, 3, true, false, out float regenerating, out _);

@@ -63,6 +63,12 @@ namespace ProfileAudit
                 if (jointModel == null) throw new MissingMemberException("Fusion joint-value qualification missing");
                 var jointReason = typeof(AbilityProfile).GetField("FusionOutcomeMetadataReason", Hidden);
                 if (jointReason == null) throw new MissingMemberException("Fusion joint-value qualification reason missing");
+                // ★ Fusion F4: the engine's own admission rule and the recorded passed/either-outcome application.
+                var withheld = typeof(TacticalEngine).GetMethod("FusionWithheld", BindingFlags.Static | BindingFlags.NonPublic);
+                var outcomeLocation = typeof(AbilityProfile).GetProperty("FusionOutcomeEffectLocation", Hidden);
+                if (withheld == null || outcomeLocation == null) throw new MissingMemberException("Fusion outcome admission contract missing");
+                int outcomeProfiles = 0, outcomeAdmitted = 0;
+                var outcomeWithheld = new SortedDictionary<string, int>(StringComparer.Ordinal);
                 var schools = new List<SpellSchool>(); var saves = new List<SavingThrowType>();
                 var shapes = new List<SpellTargetType>(); var deliveries = new Dictionary<SpellTargetType, BlueprintAbility>();
                 var rows = new List<object>(); var anyReasons = new SortedDictionary<string, int>(StringComparer.Ordinal);
@@ -95,7 +101,8 @@ namespace ProfileAudit
                             SpellSchool = school, SpellTargetType = shape, IsTouch = touch
                         };
                         var profile = AbilityProfile.Get(ability);
-                        string primary = (string)unsupported.GetValue(profile);
+                        string structural = (string)unsupported.GetValue(profile);
+                        string primary = (string)withheld.Invoke(null, new object[] { ability, profile });
                         var reasons = new List<string>(); var details = new List<object>();
                         foreach (var issue in (IEnumerable)limitations.GetValue(profile))
                         {
@@ -105,13 +112,29 @@ namespace ProfileAudit
                             if (!reasons.Contains(reason)) reasons.Add(reason);
                             details.Add(new { reason, location });
                         }
-                        if ((primary == null) != (reasons.Count == 0) || primary != null && !reasons.Contains(primary))
+                        if ((structural == null) != (reasons.Count == 0) || structural != null && !reasons.Contains(structural))
                             throw new InvalidDataException("primary admission and complete rejection reasons disagree");
                         if (reasons.Any(r => r.StartsWith("profile reader ", StringComparison.Ordinal))) readerErrors++;
                         bool? coneComponentResolved = null;
-                        bool jointOutcomeMetadataQualified = primary == null && (bool)jointModel.Invoke(null, new object[] { ability, profile });
+                        bool jointOutcomeMetadataQualified = structural == null && (bool)jointModel.Invoke(null, new object[] { ability, profile });
                         if (jointOutcomeMetadataQualified) jointMetadata++;
-                        string jointOutcomeMetadataReason = primary ?? (string)jointReason.GetValue(profile);
+                        string jointOutcomeMetadataReason = structural ?? (string)jointReason.GetValue(profile);
+                        string outcomeAt = (string)outcomeLocation.GetValue(profile);
+                        if (outcomeAt != null)
+                        {
+                            outcomeProfiles++;
+                            const string outside = "effect outside the failed-save branch; joint value ";
+                            if (structural != null) reasons.Add(outside + "not assessed");
+                            else if (!jointOutcomeMetadataQualified)
+                            {
+                                reasons.Add(outside + "not qualified");
+                                Increment(outcomeWithheld, jointOutcomeMetadataReason ?? "not qualified");
+                            }
+                            else outcomeAdmitted++;
+                            details.Add(new { reason = "effect outside the failed-save branch", location = outcomeAt });
+                        }
+                        if ((primary == null) != (reasons.Count == 0) || structural != null && primary != structural)
+                            throw new InvalidDataException("engine admission and audit reasons disagree");
                         if (primary == null && !jointOutcomeMetadataQualified) Increment(jointFallbacks, jointOutcomeMetadataReason ?? "not qualified");
                         if (primary == null)
                         {
@@ -159,6 +182,8 @@ namespace ProfileAudit
                     jointOutcomeMetadataQualified = jointMetadata,
                     jointOutcomeMetadataFallbacks = jointFallbacks,
                     jointValueScope = "metadata gate only; live recipient applicability, duration, damage outcomes and useful value remain unassessed",
+                    outcomeEffectProfiles = outcomeProfiles, outcomeEffectAdmitted = outcomeAdmitted,
+                    outcomeEffectWithheldByJointReason = outcomeWithheld,
                     readerErrors, blockersPresent = anyReasons, soleBlockers = soleReasons, blockerCooccurrence = combinations,
                     cases = rows
                 }, new JsonSerializerOptions { WriteIndented = true }));

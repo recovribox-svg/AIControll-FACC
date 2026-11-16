@@ -225,6 +225,7 @@ namespace CompanionAI_Pathfinder.Tactics
         public bool FriendlyFireVeto;
         internal CombatMath.FusionDamageRead FusionDamageScratch;
         internal ValueModel.ControlEnvelope FusionControlScratch;
+        internal ValueModel.ControlEnvelope FusionControlPassScratch; // ★ Fusion F4: the passed-save outcome
         internal List<Kingmaker.UnitLogic.Buffs.Blueprints.BlueprintBuff> FusionBuffScratch;
         /// <summary>
         /// ★ v0.3.28 test 11: the revive reading of the heal valued last for (ability, ally) this decision, printed with the
@@ -3254,10 +3255,15 @@ namespace CompanionAI_Pathfinder.Tactics
                 ReferenceEquals(MagusMechanics.Held(ctx.Unit), ability) && MagusSpell(nativeMagus, ability);
             var profile = AbilityProfile.Get(ability);
             if (profile == null) return none;
-            if (profile.FusionUnsupported != null)
+            // ★ Fusion F4: one admission rule (FusionWithheld), also read by the coverage audit.
+            string fusionWithheld = FusionWithheld(ability, profile);
+            if (fusionWithheld != null)
             {
                 AbilityDiscovery.ReportOnce("fusion-unsupported|" + AbilityDiscovery.Key(ability),
-                    () => $"[Fusion] {ability.Name}: {profile.FusionUnsupported}; unsupported forecast, cast withheld");
+                    () => profile.FusionUnsupported != null
+                        ? $"[Fusion] {ability.Name}: {profile.FusionUnsupported}; unsupported forecast, cast withheld"
+                        : $"[Fusion] {ability.Name}: {fusionWithheld} " +
+                          $"({profile.FusionOutcomeMetadataReason ?? (ability.ShadowSpellSettings != null ? "shadow copy" : "unknown")}); cast withheld");
                 return none;
             }
             if (profile.Fusion != null)
@@ -3975,13 +3981,14 @@ namespace CompanionAI_Pathfinder.Tactics
                                                   : CombatMath.EstimateAbilityDamage(ability, profile, enemy);
                     float p = CombatMath.EffectChance(unit, enemy, ability, profile, damage: true);
                     float part;
-                    if (fusionRead != null && TryFusionValues(ctx, ability, profile, enemy, fusionRead, p, out float jointDamage, out float jointControl))
+                    if (fusionRead != null && TryFusionValues(ctx, ability, profile, enemy, fusionRead, p, out float jointDamage,
+                                                              out float jointControl, out float jointShare))
                     {
                         part = jointDamage * WakeFactor(enemy, dmg * p);
                         if (profile.TargetBuffs.Count > 0)
                             (fusionControl ?? (fusionControl = new Dictionary<UnitEntityData, float>()))[enemy] = jointControl;
                         if (geometryChance.HasValue && jointControl > 0f)
-                            geometryChance = Math.Max(geometryChance.Value, p * fusionRead.FailChance);
+                            geometryChance = Math.Max(geometryChance.Value, p * jointShare);
                     }
                     else
                     {
@@ -4335,11 +4342,20 @@ namespace CompanionAI_Pathfinder.Tactics
                         continue;
                     }
                     if (fusionOutcomes && !profile.DealsDamage &&
-                        TryFusionControlRounds(ctx, ability, profile, enemy, false, out float ownControlRounds))
+                        TryFusionControlRounds(ctx, ability, profile, enemy, false, out float ownControlRounds, out float ownPassRounds))
                     {
                         float ownChance = CombatMath.EffectChance(unit, enemy, ability, profile, damage: false);
                         float ownControl = ownChance *
                                            CombatMath.ControlWorth(enemy) * ownControlRounds;
+                        // ★ Fusion F4: control the cast leaves on a passed root save. For a fusion the damage-side
+                        // chance is the delivery alone (EffectChanceCore), the save is weighted here.
+                        if (ownPassRounds > 0f && profile.Save != Kingmaker.EntitySystem.Stats.SavingThrowType.Unknown)
+                        {
+                            float delivered = CombatMath.EffectChance(unit, enemy, ability, profile, damage: true);
+                            float passChance = 1f - CombatMath.SaveFailChance(ability, profile.Save, enemy);
+                            ownControl += delivered * passChance * CombatMath.ControlWorth(enemy) * ownPassRounds;
+                            ownChance = ownControlRounds > 0f ? delivered : delivered * passChance;
+                        }
                         if (ownControl > 0f && profile.IsAoE && profile.InOwnSideArea(unit, enemy)) ownControl = 0f;
                         controlValue += ownControl;
                         if (enemy == target && ownControl > 0f) ctx.AimCounted = true;
@@ -4349,6 +4365,9 @@ namespace CompanionAI_Pathfinder.Tactics
                     }
                     // ★ v0.3.18 (C2): the game's buff immunities (descriptor, specific buff) too.
                     if (fusionOutcomes && !profile.DealsDamage) FusionValueFallback(ability, profile);
+                    // ★ Fusion F4: the forecast below weights every buff by the fail chance. A fusion with an effect on a
+                    // passed save or on both outcomes gets no control credit for a recipient the joint value cannot price.
+                    if (profile.FusionOutcomeEffectLocation != null) continue;
                     var buffs = profile.TargetBuffs.Where(b => (ForecastApplies(b, enemy) ?? profile.BuffAppliesTo(b, ability, enemy)) != EffectApplies.No &&
                                                                !CombatMath.BuffImmune(enemy, b, ability)).ToList();
                     // ★ v0.3.21: a pit holds by itself, with or without a buff.

@@ -21,8 +21,24 @@ namespace CompanionAI_Pathfinder.Tactics
         {
             if (profile.Fusion == null || profile.FusionValueFallbackReported) return;
             profile.FusionValueFallbackReported = true;
-            Main.Log($"[Fusion] {ability.Name}: joint outcome value not qualified for this recipient; existing forecast retained " +
+            Main.Log($"[Fusion] {ability.Name}: joint outcome value not qualified for this recipient; " +
+                (profile.FusionOutcomeEffectLocation != null ? "its control is not credited " : "existing forecast retained ") +
                 $"({profile.FusionOutcomeMetadataReason ?? (ability.ShadowSpellSettings != null ? "shadow copy" : "recipient guard/duration/outcome or damage-wake/removal dependency")})");
+        }
+
+        internal const string FusionOutcomeGate = "effect on a passed or either save outcome; joint value not qualified";
+
+        /// <summary>
+        /// ★ Fusion F4: the one admission rule, shared by EvaluateAbility and the coverage audit. Null when the fused
+        /// spell is offered. A fusion with an effect outside the failed-save branch needs the joint outcome value: the
+        /// older forecast multiplies every control by the fail chance and cannot represent it.
+        /// </summary>
+        internal static string FusionWithheld(AbilityData ability, AbilityProfile profile)
+        {
+            if (profile?.Fusion == null) return null;
+            if (profile.FusionUnsupported != null) return profile.FusionUnsupported;
+            if (profile.FusionOutcomeEffectLocation != null && !FusionOutcomeModel(ability, profile)) return FusionOutcomeGate;
+            return null;
         }
 
         private static bool FusionOutcomeModel(AbilityData ability, AbilityProfile profile)
@@ -53,22 +69,33 @@ namespace CompanionAI_Pathfinder.Tactics
             return reason == null;
         }
 
+        /// <summary>
+        /// Control round-equivalents on a failed and on a passed root save. ★ Fusion F4: an application on the passed
+        /// branch enters the passed envelope, one outside any saved branch enters both. Without a root save the cast
+        /// has one outcome, carried as "failed" with a fail chance of 1.
+        /// </summary>
         private static bool TryFusionControlRounds(TacticalContext ctx, AbilityData ability, AbilityProfile profile,
-            UnitEntityData recipient, bool friendly, out float rounds)
+            UnitEntityData recipient, bool friendly, out float rounds, out float passRounds)
         {
-            rounds = 0f;
+            rounds = passRounds = 0f;
             if (profile.RemovedBuffs.Any(recipient.Buffs.HasFact)) return false;
             if (profile.BuffApplications.Count == 0) return true;
             var envelope = ctx.FusionControlScratch ?? (ctx.FusionControlScratch = new ValueModel.ControlEnvelope());
             envelope.Clear();
+            ValueModel.ControlEnvelope passEnvelope = null;
             MechanicsContext durationContext = null;
             var single = ctx.FusionBuffScratch ?? (ctx.FusionBuffScratch = new List<BlueprintBuff>(1));
             float repeat = CombatMemory.TimesUsed(ctx.Unit, ability) >= 2 ? 0.3f : 1f;
             foreach (var occurrence in profile.BuffApplications)
             {
                 var savePath = profile.FusionBuffPath(occurrence.Action);
-                if (savePath == AbilityProfile.FusionSavePath.Passed ||
-                    profile.Save == SavingThrowType.Unknown && savePath != AbilityProfile.FusionSavePath.Both) continue;
+                bool rootSave = profile.Save != SavingThrowType.Unknown;
+                if (!rootSave && savePath != AbilityProfile.FusionSavePath.Both) continue;
+                bool onFailure = savePath != AbilityProfile.FusionSavePath.Passed;
+                // Only a profile whose graph was seen to apply something outside the failed branch has a passed outcome
+                // to price; every other fusion keeps exactly its earlier single envelope.
+                bool onPass = rootSave && profile.FusionOutcomeEffectLocation != null &&
+                              savePath != AbilityProfile.FusionSavePath.Failed;
                 var buff = occurrence.Buff;
                 if (occurrence.PeriodicDamageOnly) continue; // omitted DOT benefit must not become generic lost turns
                 if (recipient.Buffs.HasFact(buff)) continue; // no new stacking or speculative refresh credit
@@ -112,10 +139,20 @@ namespace CompanionAI_Pathfinder.Tactics
                 float horizon = Math.Min(Math.Min(ctx.ExpectedRounds, 3f), duration);
                 if (sleeping && s_ActiveEnemies != null && s_ActiveEnemies.All(e => e == recipient) && ctx.Allies.Any(a => a != ctx.Unit))
                     horizon = Math.Min(horizon, 1f);
-                if (!envelope.Add(share, horizon)) return false;
+                if (onFailure && !envelope.Add(share, horizon)) return false;
+                if (onPass)
+                {
+                    if (passEnvelope == null)
+                    {
+                        passEnvelope = ctx.FusionControlPassScratch ?? (ctx.FusionControlPassScratch = new ValueModel.ControlEnvelope());
+                        passEnvelope.Clear();
+                    }
+                    if (!passEnvelope.Add(share, horizon)) return false;
+                }
             }
             rounds = envelope.Rounds();
-            if (!friendly && CombatMath.IsDisabled(recipient)) rounds *= 0.4f;
+            if (passEnvelope != null) passRounds = passEnvelope.Rounds();
+            if (!friendly && CombatMath.IsDisabled(recipient)) { rounds *= 0.4f; passRounds *= 0.4f; }
             return true;
         }
 
@@ -125,7 +162,8 @@ namespace CompanionAI_Pathfinder.Tactics
             if (profile.RemovedBuffs.Any(ally.Buffs.HasFact)) return true;
             if (profile.BuffApplications.Any(a => a.PeriodicDamageOnly && !ally.Buffs.HasFact(a.Buff) &&
                 a.Applies(ability, ally) != EffectApplies.No && !CombatMath.BuffImmune(ally, a.Buff, ability))) return true;
-            if (TryFusionControlRounds(ctx, ability, profile, ally, true, out float rounds)) return rounds > 0f;
+            if (TryFusionControlRounds(ctx, ability, profile, ally, true, out float rounds, out float passRounds))
+                return rounds > 0f || passRounds > 0f; // ★ Fusion F4: the ally is harmed on either save outcome
             // Unknown guard/duration/other harm cannot establish friendly-fire safety.
             return profile.TargetBuffs.Any(b => profile.BuffAppliesTo(b, ability, ally) != EffectApplies.No &&
                 !ally.Buffs.HasFact(b) && !CombatMath.BuffImmune(ally, b, ability));
@@ -133,20 +171,25 @@ namespace CompanionAI_Pathfinder.Tactics
 
         private static bool TryFusionValues(TacticalContext ctx, AbilityData ability, AbilityProfile profile,
             UnitEntityData enemy, CombatMath.FusionDamageRead damageRead, float deliveryChance,
-            out float damage, out float control)
+            out float damage, out float control, out float controlShare)
         {
-            damage = control = 0f;
+            damage = control = controlShare = 0f;
             if (deliveryChance <= 0f) return true; // whole-cast immunity/no delivery cannot be revived by a surviving buff
-            if (!damageRead.Known || !TryFusionControlRounds(ctx, ability, profile, enemy, false, out float controlRounds)) return false;
-            if (controlRounds > 0f && profile.IsAoE && profile.InOwnSideArea(ctx.Unit, enemy)) controlRounds = 0f;
+            if (!damageRead.Known ||
+                !TryFusionControlRounds(ctx, ability, profile, enemy, false, out float controlRounds, out float passRounds)) return false;
+            if ((controlRounds > 0f || passRounds > 0f) && profile.IsAoE && profile.InOwnSideArea(ctx.Unit, enemy))
+                controlRounds = passRounds = 0f;
             ValueModel.FusionValue(damageRead.FailChance, deliveryChance, damageRead.Failed, damageRead.Passed,
-                Math.Max(1f, enemy.HPLeft), CombatMath.TargetWorth(enemy), CombatMath.ControlWorth(enemy), controlRounds,
+                Math.Max(1f, enemy.HPLeft), CombatMath.TargetWorth(enemy), CombatMath.ControlWorth(enemy), controlRounds, passRounds,
                 RegenerationRuns(enemy), CombatMath.AbilityEndsRegeneration(profile, enemy), out damage, out control);
+            // The share of delivered casts that leave some control behind: the failed outcome, the passed one or both.
+            controlShare = ValueModel.FusionOutcomeShare(damageRead.FailChance, controlRounds > 0f, passRounds > 0f);
             if (!profile.FusionValueQualifiedReported)
             {
                 profile.FusionValueQualifiedReported = true;
                 Main.Log($"[FusionValue] {ability.Name} -> {enemy.CharacterName}: forecast shared-save fail {damageRead.FailChance:P0}, " +
-                    $"conditional damage fail/pass {damageRead.Failed:F1}/{damageRead.Passed:F1}, control envelope {controlRounds:F2} round-equivalents; " +
+                    $"conditional damage fail/pass {damageRead.Failed:F1}/{damageRead.Passed:F1}, control envelope {controlRounds:F2} round-equivalents" +
+                    (profile.FusionOutcomeEffectLocation != null ? $" on a failed save, {passRounds:F2} on a passed save" : "") + "; " +
                     "per-application eligibility and surviving failed-save outcomes (first qualified recipient per configuration)");
             }
             return true;
