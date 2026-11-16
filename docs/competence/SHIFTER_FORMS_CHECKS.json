@@ -1,0 +1,197 @@
+{
+  "task": "Shifter form decision takeover, native validation and test package",
+  "recorded_at_utc": "2026-11-15T13:29:59.684354+00:00",
+  "branch": "codex/shifter-form-validation",
+  "development_base": "6b9be4214989f7ba4a56dad54f0b8c9056c2789d",
+  "continued_claude_task": "730c6b6954ab29d2b31eb6ea01fd02221e442170",
+  "dependency_stack": {
+    "pr": 67,
+    "head": "830d777cdfbf20becd4340f558f087b59790208a",
+    "also_includes": [
+      65,
+      66
+    ]
+  },
+  "checked_source_commit": "f00f4a62de50ac6328b71babf062ad2e64a91143",
+  "worktree_clean_at_build": true,
+  "dll": {
+    "assembly": "CompanionAI_Pathfinder, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null",
+    "mvid": "3a7db475-3b13-4362-a4dc-0fd20613e2c9",
+    "sha256": "c4a5d0531423e648f79df384c00bda5250a54f6cf6f8fccd4b230c7b6cb6c633",
+    "size": 1456640
+  },
+  "manifest_unchanged": "0.3.52",
+  "toolchain": {
+    "dotnet_sdk": "8.0.426",
+    "csharp_compiler": "4.11.0-3.25569.22 (3fb752d4)",
+    "msbuild": "17.11.69",
+    "build_provenance": "docs/competence/SHIFTER_FORMS_BUILD_PROVENANCE.json",
+    "provenance_sha256": "22d21442a2f755c315ee7a66c8e99b95b1d30138d999ce398cbd023300a56b59",
+    "umm_reference_version": "0.33.2.0",
+    "note": "The historical G2 package used SDK 8.0.131 and UMM 0.33.0.0. It is preserved. Comparison here rebuilds G2 with the same supplied references/SDK as the new build; byte identity with the historical package is not claimed."
+  },
+  "release_build": {
+    "real_game_references": true,
+    "configuration": "Release",
+    "warnings": 0,
+    "errors": 0
+  },
+  "unit_tests": {
+    "passed": 855,
+    "failed": 0,
+    "skipped": 0,
+    "new_claude_form_tests": 15,
+    "new_codex_ledger_tests": 3,
+    "pr67_baseline_count": 837
+  },
+  "script_tests": {
+    "inventory": 27,
+    "audit_supplement": 3,
+    "invocation_ledger": 11,
+    "failures": 0
+  },
+  "compatible_profile_audit": {
+    "loaded": 44639,
+    "load_failures": 0,
+    "abilities": 4807,
+    "reader_errors": 0,
+    "prerequisite_checks_skipped": 0,
+    "shifter_forms_checks": 21,
+    "campaign_flag_checks": 21,
+    "grapple_checks": 55,
+    "fusion_value_checks": 23,
+    "scope": "C06_NATIVE_COMPATIBLE_SCOPE.json plus REVIEW2_CHARGE_INPUTS.json missing-only stock fixtures",
+    "summon_inventory_limits": "This Fusion/Shifter scope is not the S1 full-stock supplement: 5 missing spawned-unit IDs, 119 missing kit-reference IDs and 95 unloaded brains remain explicit in inventory output."
+  },
+  "blueprint_facts": {
+    "form_abilities": 83,
+    "by_default_action": {
+      "Free": 3,
+      "Standard": 71,
+      "Swift": 9
+    },
+    "all_three_playable_griffon_tiers_standard": true,
+    "cutscene_variants_excluded_from_playable_tier_claim": true,
+    "on_cast_removal_exactly_polymorph": true,
+    "payload_additionally_removes": "ShiftersRushBuff, c3365d5a75294b9b879c587668620bd4",
+    "aspect_buffs_checked": 26,
+    "aspects_removed": 0,
+    "rush_free_action_links": "All three playable tiers appear on native FreeActionSpell components in ShiftersRushBuff; runtime cast action is read by existing SlotOf. No live actor/cast is simulated.",
+    "inputs": "docs/competence/SHIFTER_FORMS_INPUTS.json",
+    "input_receipt_sha256": "be998aaa255bf486648dfb6c3f475cc21f0658cf5995f4e1c02d738ec2cdf145",
+    "numerical_stacking": "Buff survival is established; bonuses still obey native modifier descriptors."
+  },
+  "pr67_comparison": {
+    "baseline_source": "830d777cdfbf20becd4340f558f087b59790208a",
+    "baseline_dll": {
+      "assembly": "CompanionAI_Pathfinder, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null",
+      "mvid": "15754a93-30b7-4a19-9f8b-60eb278ff989",
+      "sha256": "57a58737b98bea7be4a0f384b459c1b87a8614dcf6de7fdc0f0e21f1c7e6fda4",
+      "size": 1454080
+    },
+    "baseline_release_warnings": 0,
+    "baseline_release_errors": 0,
+    "same_sdk_references_and_blueprint_scope": true,
+    "reports": {
+      "strict.log": {
+        "unchanged_outside_new_section": true,
+        "baseline_sha256": "011208cdc98284cea529a25e80da0b7d609f3f8e89b6def7ccaaa3bc76072119",
+        "new_sha256": "be1d01087cc4eabf2e0d2f0dc6682a8a65a1a3fe5aad44dd9de141ae6a2a7d57",
+        "normalized_content_sha256": "de41ece63494b8936f53dc04629b7f4f160e90372794805191a34b71e9225465",
+        "normalization": "Remove SHIFTER-FORMS rows; stdout strips the ability output path; report ignores empty section separators."
+      },
+      "strict.txt": {
+        "unchanged_outside_new_section": true,
+        "baseline_sha256": "715a89902aa1865c069e539972f516b867c8a4b9e93986450e8728f28a5479b3",
+        "new_sha256": "2f0dda84eb34f6c9da70bf284258c9c171c5fc71141746c85a8fc4ec03accb40",
+        "normalized_content_sha256": "bd0a752dde078f0ebd5c4a38e4674469bf7ba8880a94a38963b67c5184454251",
+        "normalization": "Remove SHIFTER-FORMS rows; stdout strips the ability output path; report ignores empty section separators."
+      }
+    }
+  },
+  "sig_dump": {
+    "against": "fresh PR #67 baseline above",
+    "new_foreign_signatures": 0,
+    "unresolved": 0
+  },
+  "supplementary_audit": {
+    "loaded": 44643,
+    "load_failures": 0,
+    "abilities": 4807,
+    "reader_errors": 0,
+    "magus_checks": 44
+  },
+  "native_harnesses": {
+    "toggle_with_psionics": 98,
+    "tome_burn": 14,
+    "toybox_spend": 10,
+    "failures": 0,
+    "prerequisite_checks_skipped": 0
+  },
+  "raw_archive_negative_check": {
+    "exit": 1,
+    "loaded": 44637,
+    "failed": 1,
+    "asset": "AchaekekSacredWeaponFeature",
+    "reason": "Existing serialized SawtoothSaber versus native SawtoothSabre enum mismatch reaches Unity logger ECall in the offline host. Original input not normalized; no raw ability verdicts generated."
+  },
+  "codex_corrections": [
+    "Preserve the bounded form-note ledger at capacity instead of clearing and restarting repeat allowances in the same fight.",
+    "Fury is not held for a form below the main-action minimum; its wait diagnostic includes the fight.",
+    "Check all three playable Griffon tiers, their Polymorph on-cast removal AND explicit Rush consumption; correct the overly broad descriptor-only claim."
+  ],
+  "native_validation_commands": [
+    "dotnet build CompanionAI_Pathfinder.csproj -c Release --no-restore -p:ManagedPath=<real-managed>",
+    "dotnet test tests/CompanionAI.Tests -c Release --no-restore",
+    "python3 -m unittest discover -s tools/BlueprintInventory -p test_*.py",
+    "python3 -m unittest discover -s tools/ProfileAudit -p test_*.py",
+    "python3 -m unittest discover -s tools/InvocationLedger -p test_*.py",
+    "dotnet ProfileAudit.dll <compatible roots> <charge fixtures> <report>",
+    "dotnet ToggleCosts.Native.dll --psionics-provider <supplied Psionics.dll> <same roots> <report>",
+    "dotnet TomeBurn.Native.dll <supplied TTT Core.dll> <supplied Tome.dll> <same roots> <report>",
+    "dotnet ToyBoxSpend.Native.dll <supplied ToyBox.dll> <same roots> <report>",
+    "dotnet ProfileAudit.dll <same roots> <Magus fixtures> <report>",
+    "dotnet ProfileAudit.dll <original raw roots> <report> # expected exit 1",
+    "SigDump on baseline/new DLL; Inspect --verify-refs on their added signatures"
+  ],
+  "package": {
+    "archive": "test-builds/AI-Control-FACC-v0.3.52-dev-shifterforms-f00f4a6-UMM-test.zip",
+    "sha256": "9ac10ab46b0431ed4edd87a93bea3516a1754752c40a69e94df604a531eb28ea",
+    "bytes": 576477,
+    "identity": "test-builds/AI-Control-FACC-v0.3.52-dev-shifterforms-f00f4a6-UMM-test.identity.json",
+    "identity_sha256": "fe6e14455683c49ab43eb93aea013cd34312ceceddd2e490d5e27715f45a5429",
+    "packed_dll_equals_checked_release": true,
+    "startup_mvid_unique_against_existing_identities": true,
+    "native_dlls_or_stubs_packed": false
+  },
+  "limits": [
+    "New form/G2 behavior remains unplayed; offline builds/blueprint/scalar/compiled-route checks establish no live actor/cast or Unity timing acceptance.",
+    "Pounce, Grabber, rend, energized damage, DR/immunities before transformation, KeepSlots forms and precombat shifting remain outside this task.",
+    "The reported fusion2g1b RT1 form disappearance remains unexplained; new material-change rows aid the next replay.",
+    "Only private engine-neutralized harness copies are rewritten; deployable mod DLL is never rewritten."
+  ],
+  "gameplay_handover": [
+    "docs/SHIFTER_FORM_DECISIONS.md replay, TB and RT",
+    "Leave Grabber to the engine; docs/GRABBER_G2.md replay",
+    "Retain fusion2 checks and paired AI/combat logs with the startup MVID"
+  ],
+  "source_freeze": "Later receipt/package/handover-only commits retain the checked DLL without rebuilding it.",
+  "validation_logs_sha256": {
+    "audit-build.log": "53a91f13c5de5485b6a469bfe2666ccb0ff7d62027b8372563b0b7e994c648b7",
+    "inventory.log": "09ad2fe8a00725d344e94e8e80b71c18c4cbb712fd436f659f3f8ab440b40798",
+    "invocation-ledger.log": "4c3b3b2f85f7f81206f2731efca1a5c61f58b2f6c54d820b4003b988757b84ec",
+    "raw.log": "59399a5731df2ca0a352726bb5857f2618ac7f2bf881aa07c789670ad5bd8149",
+    "refs.log": "899262540b3e6a0a678fb0c899cdfcefb2cc1695ab4439fdcb666d764617d4a1",
+    "release.log": "39f88376801701886605473d4b8249b44fcc8859bbfeb6a7eafe546c88cef2b1",
+    "strict.log": "be1d01087cc4eabf2e0d2f0dc6682a8a65a1a3fe5aad44dd9de141ae6a2a7d57",
+    "supplement-scripts.log": "199ba496f288116d36c62f29346d4fbf0bd75745a1c893abfcbdaa4c6d5b1033",
+    "supplementary.log": "6909e1eeb7028f6282e948e6c31513f50f7d2606682afb86d64066e73004e883",
+    "toggle-build.log": "b0ca3127930dd49ab9e2dea7aff9ef314a6b621f35d334a6672cbdb7440d3fcd",
+    "toggle.log": "89af51fe3958a205cc062f90c1870d3f9c7cbbab76d3f87cd11e55ef7c9712e3",
+    "tome-build.log": "cb3164f21de8e071a20287e54f0657741b46d89249d8288c92a655780f1dc451",
+    "tome.log": "95151e0dc87b0711495acb784997d8e188602bee285caedd93e7fdd1546a1bd8",
+    "toybox-build.log": "3c1a21dfd11e3b9f67564319def3657c5d5f54f85b1792877e3cb5dd4fc713a9",
+    "toybox.log": "a27390ef5b4e12f7782b4570532d1da26c001491141f53fc364f3b2ccc9c5113",
+    "unit.log": "c69027b76bdf8ee6525ad25d6fd3e80bcf8d44ac616f3369cfbe5621de2964e0"
+  }
+}

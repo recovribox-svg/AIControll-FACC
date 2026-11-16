@@ -340,6 +340,11 @@ namespace ProfileAudit
             foreach (var line in campaignFlagLines) Console.WriteLine(line);
             File.WriteAllText(output, string.Join(Environment.NewLine, campaignFlagLines) + Environment.NewLine + Environment.NewLine + File.ReadAllText(output));
             blocklistFailures += campaignFlagFailures;
+            // ★ shifter-forms (§174)
+            var shifterFormLines = ShifterFormCheck.Run(loaded.Values, out int shifterFormFailures);
+            foreach (var line in shifterFormLines) Console.WriteLine(line);
+            File.WriteAllText(output, string.Join(Environment.NewLine, shifterFormLines) + Environment.NewLine + Environment.NewLine + File.ReadAllText(output));
+            blocklistFailures += shifterFormFailures;
             // ★ v0.3.30 test 2: facts whose bonus follows an ability score.
             var statLines = StatLinkCheck.Run(loaded.Values, out int statFailures);
             foreach (var line in statLines) Console.WriteLine(line);

@@ -1,0 +1,190 @@
+{
+  "blueprints": [
+    {
+      "asset_id": "5a21b25be7bb43e0b94646511afadfc6",
+      "name": "ShifterAspectManticoreBuff",
+      "relative_path": "Classes/Classes/Shifter/Archetypes/ChildOfManticore/ShifterAspectManticoreBuff.jbp",
+      "sha256": "86192ec24ac236151e6e0a34d8579557347382aa9ab2324f63ddf79616ec8e37"
+    },
+    {
+      "asset_id": "1fa33a2ad2da46dc899dcedd2755b201",
+      "name": "ShifterAspectManticoreDamageBuff",
+      "relative_path": "Classes/Classes/Shifter/Archetypes/ChildOfManticore/ShifterAspectManticoreDamageBuff.jbp",
+      "sha256": "7dbd3ae013d989e452520d9b4151be10398bda86c379e0dc4c4eaf5f7c90b146"
+    },
+    {
+      "asset_id": "727381f8a2ee46a19ab96eedfe1d9daa",
+      "name": "ShifterAspectFeyBuff",
+      "relative_path": "Classes/Classes/Shifter/Archetypes/FeyformShifter/ShifterAspectFeyBuff.jbp",
+      "sha256": "4aabf03ef9a8b57c11117a98e90fb48f9550bed3eb3e107597a3496a3d6bf138"
+    },
+    {
+      "asset_id": "3862387b2f20497a8d82436657d0749b",
+      "name": "ShifterAspectFiendBuff",
+      "relative_path": "Classes/Classes/Shifter/Archetypes/FiendfleshShifter/ShifterAspectFiendBuff.jbp",
+      "sha256": "e7eaa61251668d3eaa0ea1084f098fe3a18bab4ba6f9c331e06dca78b7d884cd"
+    },
+    {
+      "asset_id": "7440316282184da7b909c8ee8e737730",
+      "name": "ShifterAspectGriffonBuff",
+      "relative_path": "Classes/Classes/Shifter/Archetypes/GriffonheartShifter/ShifterAspectGriffonBuff.jbp",
+      "sha256": "2d34395255284f25910975d4a3fdc9cff712d5eaddcb95defce4ed8b4b5b4681"
+    },
+    {
+      "asset_id": "d1153efaf92f46499e9f9a8613a7274c",
+      "name": "ShifterWildShapeGriffonAbillity",
+      "relative_path": "Classes/Classes/Shifter/Archetypes/GriffonheartShifter/ShifterWildShapeGriffonAbillity.jbp",
+      "sha256": "dcceb5105fa4005bf064f13eb8c81d721943cbc6b14bc9e130a6d8b517d0fab8"
+    },
+    {
+      "asset_id": "68a1806916974686b8d6047eca33c939",
+      "name": "ShifterWildShapeGriffonAbillity14",
+      "relative_path": "Classes/Classes/Shifter/Archetypes/GriffonheartShifter/ShifterWildShapeGriffonAbillity14.jbp",
+      "sha256": "abe13c8d35a5642d5a08d8ab1c4cfd0cda3246d3c2294ad39db89a9890c9d417"
+    },
+    {
+      "asset_id": "f947a6695f094b8084efdd514cca32ee",
+      "name": "ShifterWildShapeGriffonAbillity9",
+      "relative_path": "Classes/Classes/Shifter/Archetypes/GriffonheartShifter/ShifterWildShapeGriffonAbillity9.jbp",
+      "sha256": "fe5af4e0aeb048eb61d2b5df962c12bd3e4d469833292cec532b075ea3c62279"
+    },
+    {
+      "asset_id": "20433fe89d654779a3eb44cdc9feacee",
+      "name": "ShifterAspectWereTouchedBuff",
+      "relative_path": "Classes/Classes/Shifter/Archetypes/Weretouched/LycanthropicAspect/ShifterAspectWereTouchedBuff.jbp",
+      "sha256": "fcc77ca2843d9e16d19a0b2e7c78e4e43affa2dc8502dd1d43166d15d9516d09"
+    },
+    {
+      "asset_id": "993d1b4af8be4facbc3b33b0edda6f15",
+      "name": "ShifterAspectChimeraBearBuff",
+      "relative_path": "Classes/Classes/Shifter/ChimeraAspect/ShifterAspectChimeraBearBuff.jbp",
+      "sha256": "3fc35adcbfa3edae33ce9fdb6e8dd0db35f1cc4e1e8651c2df7dce7034b1a4c6"
+    },
+    {
+      "asset_id": "c2064f27d8344547a77268a521dc7f46",
+      "name": "ShifterAspectChimeraBoarBuff",
+      "relative_path": "Classes/Classes/Shifter/ChimeraAspect/ShifterAspectChimeraBoarBuff.jbp",
+      "sha256": "51065e8cf8dd522e9d75faa2fb934d2f0e821cbbe3ada0ef28a935f027a5e2ac"
+    },
+    {
+      "asset_id": "bd270a64d8c94ec380a35bb74f6c172c",
+      "name": "ShifterAspectChimeraDinosaurBuff",
+      "relative_path": "Classes/Classes/Shifter/ChimeraAspect/ShifterAspectChimeraDinosaurBuff.jbp",
+      "sha256": "10dfd759838040e03514ac9d303c5e2a6c0f38ad566f477de504cd6e5c9d8bf4"
+    },
+    {
+      "asset_id": "e4400d93f35e4b5abc9a969c55fad327",
+      "name": "ShifterAspectChimeraElephantBuff",
+      "relative_path": "Classes/Classes/Shifter/ChimeraAspect/ShifterAspectChimeraElephantBuff.jbp",
+      "sha256": "34e542774bd463c4894fa1313aadcdf1edfe1465c5ddf76e4eb0329bf37d5aed"
+    },
+    {
+      "asset_id": "6d27c2bb84534a7e819dc093550cebf5",
+      "name": "ShifterAspectChimeraHorseBuff",
+      "relative_path": "Classes/Classes/Shifter/ChimeraAspect/ShifterAspectChimeraHorseBuff.jbp",
+      "sha256": "ed23666206ecbe540647701b74ee528bf87bde1e8479b6c0adc8cea113a8752f"
+    },
+    {
+      "asset_id": "dc3f3ec0246b432f8551cedec87bc00a",
+      "name": "ShifterAspectChimeraLizardBuff",
+      "relative_path": "Classes/Classes/Shifter/ChimeraAspect/ShifterAspectChimeraLizardBuff.jbp",
+      "sha256": "d09fe2d1368cd679f99759c70e7111481fd3754c47bdeaa6fefafa38d47b35af"
+    },
+    {
+      "asset_id": "2afb147d0f9f48ee8b003a96b501d7e3",
+      "name": "ShifterAspectChimeraSpiderBuff",
+      "relative_path": "Classes/Classes/Shifter/ChimeraAspect/ShifterAspectChimeraSpiderBuff.jbp",
+      "sha256": "65d97327bed64a4095934136e3641e00485e7f5f95a9594a84b4c346c018b5e4"
+    },
+    {
+      "asset_id": "3175faaa2bcc47048bd69dfc92448b9e",
+      "name": "ShifterAspectChimeraTigerBuff",
+      "relative_path": "Classes/Classes/Shifter/ChimeraAspect/ShifterAspectChimeraTigerBuff.jbp",
+      "sha256": "7ab970c427af4b1224588710983db4312b2bc83de45e7df824e86762fbae43d9"
+    },
+    {
+      "asset_id": "6868d3f93a724f1b8a1eb1adf32a97b7",
+      "name": "ShifterAspectChimeraWolfBuff",
+      "relative_path": "Classes/Classes/Shifter/ChimeraAspect/ShifterAspectChimeraWolfBuff.jbp",
+      "sha256": "a58d5a9b8f4ffbc3c62bc50922505c15dba85d650505525a9e0998687a6ad91a"
+    },
+    {
+      "asset_id": "b6cfc6cc443c40318062490ff20cefb7",
+      "name": "ShifterAspectChimeraWolverineBuff",
+      "relative_path": "Classes/Classes/Shifter/ChimeraAspect/ShifterAspectChimeraWolverineBuff.jbp",
+      "sha256": "cc8e3dbef3b20a490d892d5a7fafd8e9f7b83e281f9419fb039e6ea86fefaf88"
+    },
+    {
+      "asset_id": "a237792fc2644a4ebc6eefa2d325f181",
+      "name": "ShifterAspectBearBuff",
+      "relative_path": "Classes/Classes/Shifter/ShifterAspects/ShifterAspectBearBuff.jbp",
+      "sha256": "a82287c377877cfb9844cf74698fe3c41df2bc55856dd4245956578f74094d10"
+    },
+    {
+      "asset_id": "0fdc579eafbf4fceae649beed8188a5c",
+      "name": "ShifterAspectBoarBuff",
+      "relative_path": "Classes/Classes/Shifter/ShifterAspects/ShifterAspectBoarBuff.jbp",
+      "sha256": "b71503d373223092d327642365ebad9ef3614b53e8dc176a8192f0a5e89106c5"
+    },
+    {
+      "asset_id": "4a981c46dc60474cad17549a2b9f7f65",
+      "name": "ShifterAspectDinosaurBuff",
+      "relative_path": "Classes/Classes/Shifter/ShifterAspects/ShifterAspectDinosaurBuff.jbp",
+      "sha256": "c70343de23a277bc9a0d10a58fdf55ca94ad59273b07611b31f55a2fec02b4c0"
+    },
+    {
+      "asset_id": "c4c39e7078224b6caaf3c8a02032b5cb",
+      "name": "ShifterAspectElephantBuff",
+      "relative_path": "Classes/Classes/Shifter/ShifterAspects/ShifterAspectElephantBuff.jbp",
+      "sha256": "fba19f81a1c16dfdf12b19969f99ccad7c313565ae8d1a4964e03b2d43bf020a"
+    },
+    {
+      "asset_id": "0bdfd34b7e5a4639bf6b716fa2ac0098",
+      "name": "ShifterAspectHorseBuff",
+      "relative_path": "Classes/Classes/Shifter/ShifterAspects/ShifterAspectHorseBuff.jbp",
+      "sha256": "2ee41249af33ba26fdf95eeb87a693421765f165a6619f87fc62d005dce1c8cf"
+    },
+    {
+      "asset_id": "29c0e16558b043278f061b128b9d180c",
+      "name": "ShifterAspectLizardBuff",
+      "relative_path": "Classes/Classes/Shifter/ShifterAspects/ShifterAspectLizardBuff.jbp",
+      "sha256": "06792e175ca8900a1f71fda12928676c2c9edf2e8968755e700c33736bc2ecfe"
+    },
+    {
+      "asset_id": "49e196492d2c4aa588bafffea6db8c43",
+      "name": "ShifterAspectSpiderBuff",
+      "relative_path": "Classes/Classes/Shifter/ShifterAspects/ShifterAspectSpiderBuff.jbp",
+      "sha256": "12b2bf63be2dd02ef2402ee69c34263e2fd7666c1b33a824ea665e1ba9aaed8c"
+    },
+    {
+      "asset_id": "0555960c7ab8431d86de4e7db0c22160",
+      "name": "ShifterAspectTigerBuff",
+      "relative_path": "Classes/Classes/Shifter/ShifterAspects/ShifterAspectTigerBuff.jbp",
+      "sha256": "781ca22c8365dcabb719c0ec3a08e4252763e75ddb3500b3572fc39ac92eeeaf"
+    },
+    {
+      "asset_id": "d61bd26255d4425d929d73e57ef0e6dd",
+      "name": "ShifterAspectWolfBuff",
+      "relative_path": "Classes/Classes/Shifter/ShifterAspects/ShifterAspectWolfBuff.jbp",
+      "sha256": "3396fa3a1db4455fcfb71542645df3fca119e4acc76e41d70d66c8d1bac4a63d"
+    },
+    {
+      "asset_id": "e0b35a32cf234381ab13c831106937f1",
+      "name": "ShifterAspectWolverineBuff",
+      "relative_path": "Classes/Classes/Shifter/ShifterAspects/ShifterAspectWolverineBuff.jbp",
+      "sha256": "c9e64abbc9f78a43403a2ab930324ca8e41186cd4a95cc44c943a1a12a2a9352"
+    },
+    {
+      "asset_id": "c3365d5a75294b9b879c587668620bd4",
+      "name": "ShiftersRushBuff",
+      "relative_path": "Feats/Feats/ShiftersRush/ShiftersRushBuff.jbp",
+      "sha256": "20008bcc095569ba012bf9455f10feb9af81042f1757f917b1b6e2e29249a0eb"
+    }
+  ],
+  "scope_receipts": [
+    "docs/competence/C06_NATIVE_COMPATIBLE_SCOPE.json",
+    "docs/competence/REVIEW2_CHARGE_INPUTS.json"
+  ],
+  "reported_log_evidence": "Claude documentation at 730c6b6 and the original FUSION2G1B review receipt; no fresh raw-log replay claimed in this task.",
+  "raw_blueprints_committed": false
+}

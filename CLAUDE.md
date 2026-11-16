@@ -8,7 +8,53 @@ Read [CONTRIBUTING.md](CONTRIBUTING.md) for shared branch ownership, Codex pull 
 Codex works on task branches and targets pull requests at `claude/dreamy-pasteur-b9h3rn`; Claude reviews and integrates them there.
 Keep `main` for author-authorized releases. Read [AGENTS.md](AGENTS.md) when coordinating agent work.
 
-**Current handover (15 November 2026, Claude): fusion2g1b played and reviewed; maneuver immunity and G2 (the engine
+**Current handover (15 November 2026, Codex): Shifter form verification on `codex/shifter-form-validation`, continuing
+Claude's `730c6b6`, stacked on #67 `830d777` -> #66 -> #65; development base `6b9be42`. New behavior unplayed.**
+Read [form design, corrections and replay](docs/SHIFTER_FORM_DECISIONS.md), §174-175. Real supplied game references
+and exports are retained here; no re-upload is needed. SDK 8.0.426 / Roslyn 4.11. Checked source **`f00f4a6`**:
+**855 unit + 27 inventory + 3 script + 11 ledger tests**, real-reference Release 0 warnings/errors;
+ProfileAudit 44,639 loaded / 4,807 abilities without load/reader failures or prerequisite skips. SHIFTER-FORMS 21,
+CAMPAIGN-FLAG 21, GRAPPLE 55, FUSION-VALUE 23; supplementary Magus 44; native harnesses 98/14/10. All other stdout/report lines
+match a fresh #67 build on identical inputs (only new section/output paths normalized).
+
+Retain Claude's Fury/form scheduling and next-round attack horizon. Correct the note ledger's mid-fight capacity
+clear (preserve at most 64 identities/fight and four repeats), guard Fury holding with the main-action minimum,
+and scope the Fury wait note by fight. Three extra scalar-ledger tests join Claude's 15. Actual playable Griffon
+tiers are Standard; each also consumes Shifter's Rush, besides Polymorph descriptor removal. None of the 26
+supplied aspect buffs is removed; numerical stacking remains native. Rush can make the shift free and SlotOf reads
+the actual RuntimeActionType. No movement/commitment/retreat/path/stuck policy or new form-fact projection.
+
+[Receipt](docs/competence/SHIFTER_FORMS_CHECKS.json), [compiler/reference provenance](docs/competence/SHIFTER_FORMS_BUILD_PROVENANCE.json),
+[input hashes](docs/competence/SHIFTER_FORMS_INPUTS.json). SigDump: no new external signatures relative to #67.
+The original raw Achaekek enum failure remains explicit. UMM reference is 0.33.2.0; the historical #67 package's
+SDK 8.0.131 / UMM 0.33.0.0 inputs differ, and byte identity with it is not claimed.
+[Shifter forms UMM test ZIP](test-builds/AI-Control-FACC-v0.3.52-dev-shifterforms-f00f4a6-UMM-test.zip), startup MVID
+**`3a7db475-3b13-4362-a4dc-0fd20613e2c9`**, ZIP SHA-256
+`9ac10ab46b0431ed4edd87a93bea3516a1754752c40a69e94df604a531eb28ea`.
+The source-frozen checked DLL is retained across later receipt-only commits. Manifest stays 0.3.52;
+no main/development push, tag, merge or release. No gameplay/Unity performance acceptance is claimed.
+The author next plays the form replay with Grabber left to the engine, plus GRABBER_G2.md and fusion2 checks.
+
+**Earlier handover (15 November 2026, Claude): Shifter form decisions refined on `claude/shifter-forms`, stacked on
+PR #67 (no PR yet). Build, audit and package pending; not played.** Read [docs/SHIFTER_FORM_DECISIONS.md](docs/SHIFTER_FORM_DECISIONS.md)
+and `docs/TACTICAL_AI.md` §174. The author asked for the form decisions (when to shift, which form) to be checked and
+refined, with a general proposal as ideas.
+- **Evidence (fusion2g1b, Wenduag).** No Griffon Shape in 9 fights. In TB fight 3 R1 a positive but losing form kept
+  Shifter's Fury out of the candidates. In RT1 the best form (34.9) vanished after Griffon Aspect, and the once-a-fight
+  row could not say why.
+- **Changes (both modes).**
+  1. Fury waits only while a new form is the turn's main action and beats the immediate action plus the Fury's round,
+     by the buff margin (`HoldFuryForForm`).
+  2. A Standard or full-round shift's attacks count from the next round (`ValueModel.FormAttackRounds`).
+  3. The appraisal row is repeated on a material change, at most 4 times a fight (`ShifterRules.FormNoteChanged`).
+- **Not changed:** the resource gate, the 3-round lock, the caster lockout, the equipment pricing, Master Shapeshifter
+  permanence and pre-combat shifts. Pounce and other form facts are proposed, not done. The page gives the reasons.
+- **Checks:** 852 unit tests (15 new). The container was replaced and the uploaded game assemblies and exports are gone,
+  so the Release build, SigDump, ProfileAudit (new SHIFTER-FORMS, updated CAMPAIGN-FLAG) and native harnesses are
+  pending. They need `Wrath_Data\Managed`, `UnityModManager.dll`, `Classes.zip` and `MythicAbilities.zip` again.
+- **Next:** build and verify, package, open the PR. Then the author plays it (replay in the page).
+
+**Earlier handover (15 November 2026, Claude): fusion2g1b played and reviewed; maneuver immunity and G2 (the engine
 decides Grabber and Release Grapple, at the author's request) on `claude/maneuver-immunity`, PR #67 into development,
 stacked on PR #66 and #65 (review #65, then #66). Not played.** Read [docs/GRABBER_G2.md](docs/GRABBER_G2.md),
 [docs/FUSION2G1B_PLAYTEST_REVIEW.md](docs/FUSION2G1B_PLAYTEST_REVIEW.md), `docs/TACTICAL_AI.md` §172-173 and the
