@@ -6,13 +6,16 @@ using System.Linq;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 using CompanionAI_Pathfinder.Tactics;
+using Kingmaker.Blueprints;
+using Kingmaker.Blueprints.Items.Weapons;
+using Kingmaker.Enums;
 using Kingmaker.Items;
 
 namespace ProfileAudit
 {
     internal static class GriffonModesCheck
     {
-        internal static List<string> Run(out int failures)
+        internal static List<string> Run(IEnumerable<SimpleBlueprint> loaded, out int failures)
         {
             int checks = 0, bad = 0; var lines = new List<string>();
             void Check(bool ok, string why) { checks++; if (!ok) { bad++; lines.Add("GRIFFON-MODES FAILED: " + why); } }
@@ -37,10 +40,10 @@ namespace ProfileAudit
                 var price = math.GetMethod("GriffonModeQuote", all);
                 var quote = new WeaponAttackEstimate { Weapon = weapon, Reach = 3.7f, EndsRegeneration = true };
                 typeof(WeaponAttackEstimate).GetField("RoutineLands", all).SetValue(quote, 1f);
-                WeaponAttackEstimate Price(Func<ItemEntityWeapon, int, KeyValuePair<int, float>> delta)
+                WeaponAttackEstimate Price(Func<ItemEntityWeapon, int, KeyValuePair<int, float>> delta, GrappleOpening grab = null)
                 {
                     rt.GetField("Attacks", all).SetValue(routine, entries.Count);
-                    return (WeaponAttackEstimate)price.Invoke(null, new object[] { routine, quote, delta });
+                    return (WeaponAttackEstimate)price.Invoke(null, new object[] { routine, quote, delta, grab });
                 }
                 entries.Add(Line(weapon)); var unchanged = Price(null);
                 Check(Near(unchanged.ExpectedDamage, 5f) && Near(unchanged.AnyHitChance, 0.5f), "unchanged native line retains current damage and hit chance");
@@ -65,14 +68,52 @@ namespace ProfileAudit
                 Check(Near(Price((w, i) => new KeyValuePair<int, float>(0, 2f)).ExpectedDamage, 7f), "physical factor, sneak and separate blade payload are not counted twice");
                 entries.Clear(); Check(Price(null) == null, "empty routine is unavailable, not an invented useful attack");
 
+                // Blueprint-backed uninitialized items only: no item constructor, actor, inventory, attack or roll.
+                var weapons = loaded.OfType<BlueprintItemWeapon>().ToArray();
+                var claw = weapons.First(w => w.IsNatural && w.Category == WeaponCategory.Claw);
+                var manufactured = weapons.First(w => !w.IsNatural && !w.IsRanged && w.Type != claw.Type);
+                var blueprintField = typeof(ItemEntity).GetField("m_Blueprint", all);
+                blueprintField.SetValue(weapon, claw); blueprintField.SetValue(other, manufactured);
+                var grab = new GrappleOpening { Trigger = new GrabTrigger { WeaponType = claw.Type }, Success = 1f, Maintain = 0.9f, BreakFree = 0.1f };
+                var grappleField = typeof(WeaponAttackEstimate).GetField("Grapple", all);
+                entries.Clear(); entries.Add(Line(weapon)); entries.Add(Line(weapon, index: 1)); entries.Add(Line(other, index: 2));
+                var grabbing = Price(null, grab);
+                Check(Near(grabbing.ExpectedDamage, 8.75f) && Near(grabbing.ExpectedAttacks, 1.75f) && Near(grabbing.GrappleChance, 0.75f),
+                    "cached claw/claw/other routine stops at the expected grab instead of crediting all three attacks");
+                Check(ReferenceEquals(grappleField.GetValue(grabbing), grab) && Near(grabbing.GrappleFreeDamage, 10f) && Near(grabbing.AnyHitChance, 0.875f),
+                    "hold data/free damage are retained and a post-hit grab does not lower the chance of any hit");
+                var notGrabbing = Price(null);
+                Check(Near(notGrabbing.ExpectedDamage, 15f) && grappleField.GetValue(notGrabbing) == null && notGrabbing.GrappleChance == 0f,
+                    "Grabber off restores the cached routine without a phantom hold");
+                var accurateGrab = Price((w, index) => new KeyValuePair<int, float>(4, 0f), grab);
+                Check(Near(accurateGrab.ExpectedDamage, 9.73f) && Near(accurateGrab.GrappleChance, 0.91f) && Near(accurateGrab.ExpectedAttacks, 1.39f),
+                    "an attack-mode accuracy change also reprices the chance of the grab cutting the routine short");
+                grab.Success = 0f;
+                var impossible = Price(null, grab);
+                Check(Near(impossible.ExpectedDamage, 15f) && impossible.GrappleChance == 0f && grappleField.GetValue(impossible) == null,
+                    "a failed/immune grab cannot truncate the routine or earn a hold");
+                grab.Success = 1f;
+                typeof(WeaponAttackEstimate).GetField("RoutineLands", all).SetValue(quote, 0.5f);
+                var obscuredGrab = Price(null, grab);
+                Check(Near(obscuredGrab.ExpectedDamage, 5.78125f) && Near(obscuredGrab.GrappleChance, 0.4375f),
+                    "the captured concealment share also feeds grab initiation without another native query");
+                typeof(WeaponAttackEstimate).GetField("RoutineLands", all).SetValue(quote, 1f);
+
                 var guard = SaveBoostCheck.ReferencedMembers(math.GetMethod("RepriceGriffonModes", all)).ToArray();
                 Check(guard.Any(m => m.Name == "RoutineIdentity") && guard.Any(m => m.Name == "Frame") && guard.Any(m => m.Name == "TryGetValue"),
                     "production requires the exact current frame/cached routine identity");
                 Check(!guard.Any(m => m.Name == "ReadRoutineCore" || m.Name == "EstimateWeaponAttack" || m.Name == "LandsPastDefences" || m.Name == "Trigger"),
                     "stale quote never triggers an extra native own-weapon calculation");
+                Check(guard.Any(m => m.Name == "GrappleOpeningOn") &&
+                    Array.FindIndex(guard, m => m.Name == "GrappleOpeningOn") > Array.FindIndex(guard, m => m.Name == "TryGetValue"),
+                    "cached routine validation precedes reading the current assumed grab's cached maneuver quote");
                 var scalar = SaveBoostCheck.ReferencedMembers(price).ToArray();
                 Check(scalar.Any(m => m.Name == "ExpectedWeaponLine") && !scalar.Any(m => m.Name == "Get" || m.Name == "Trigger" || m.Name == "AddBuff"),
                     "compiled mode quote is the shared scalar kernel, with no actor/rule/state preview");
+                var ordinary = SaveBoostCheck.ReferencedMembers(math.GetMethod("EstimateWeaponAttackCore", all)).ToArray();
+                Check(new[] { "PriceGrabLine", "FinishGrabQuote" }.All(name => scalar.Any(m => m.Name == name) && ordinary.Any(m => m.Name == name)) &&
+                    SaveBoostCheck.ReferencedMembers(math.GetMethod("PriceGrabLine", all)).Any(m => m.Name == "Next" && m.DeclaringType == typeof(ValueModel.GrappleRun)),
+                    "ordinary and leap forecasts share the exact same grappling line and summary kernel");
                 var evaluate = SaveBoostCheck.ReferencedMembers(engine.GetMethod("EvaluateGriffonAttack", all)).ToArray();
                 Check(evaluate.Any(m => m.Name == "ChooseAttackModes") && evaluate.Any(m => m.Name == "ModeAt") && evaluate.Any(m => m.Name == "ModeFactor"),
                     "safe leap candidate supplies landing and offense factor to shared mode comparison");
@@ -82,6 +123,10 @@ namespace ProfileAudit
                     .SelectMany(SaveBoostCheck.ReferencedMembers).ToArray();
                 Check(generated.Any(m => m.Name == "RepriceGriffonModes") && generated.Any(m => m.Name == "EstimateWeaponAttack"),
                     "shared chooser retains ordinary pricing and adds only the cached leap branch");
+                Check(SaveBoostCheck.ReferencedMembers(engine.GetMethod("ChooseAttackModes", all)).OfType<MethodInfo>()
+                    .Where(m => m.Name.Contains("<ChooseAttackModes>"))
+                    .Any(m => { var refs = SaveBoostCheck.ReferencedMembers(m).ToArray(); return refs.Length == 1 && refs[0].Name == "Blocked"; }),
+                    "the chooser's fixed-mode predicate is blocklist-only, with no leap-specific Grabber exclusion");
                 Check(generated.Any(m => m.Name == "Armor") && generated.Any(m => m.Name == "DefenseValue"),
                     "mode defense is priced at the landing including the actual charge armor delta");
                 var defense = SaveBoostCheck.ReferencedMembers(engine.GetMethod("DefenseValue", all)).ToArray();

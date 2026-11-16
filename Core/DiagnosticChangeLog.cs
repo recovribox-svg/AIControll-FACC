@@ -37,6 +37,11 @@ namespace CompanionAI_Pathfinder.Core
 
     internal static class DiagnosticLogPolicy
     {
+        // Round numbers and ability/recipient keys recur after combat ends. A session-wide once cache must also
+        // include the fight, or an earlier cast hides the next fight's appraisal (gaps2 Invocation replay).
+        internal static string RoundNoteKey(string family, int fight, string unit, int round, string option) =>
+            $"{family}|{fight}|{unit}|{round}|{option}";
+
         internal static bool WriteDecision(bool realTime, bool chosen, bool hasOptions, bool verbose) =>
             !realTime || chosen || hasOptions && verbose;
     }

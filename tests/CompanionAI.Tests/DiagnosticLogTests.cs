@@ -6,6 +6,28 @@ namespace CompanionAI.Tests
     public class DiagnosticLogTests
     {
         [Fact]
+        public void ARepeatedRoundOneCastReportsAgainInTheNextFight()
+        {
+            var reported = new System.Collections.Generic.HashSet<string>();
+            string Key(int fight) => DiagnosticLogPolicy.RoundNoteKey("buffwhy", fight, "Lann", 1, "Dexterity2:Lann");
+            Assert.True(reported.Add(Key(1)));
+            Assert.False(reported.Add(Key(1)));
+            Assert.True(reported.Add(Key(7))); // the gaps2 RT1 cast was hidden by the initial TB R1 placement
+            Assert.False(reported.Add(Key(7)));
+        }
+
+        [Theory]
+        [InlineData("restraint", 1, "Lann", 1, "Dexterity2:Lann")]
+        [InlineData("buffwhy", 1, "other caster", 1, "Dexterity2:Lann")]
+        [InlineData("buffwhy", 1, "Lann", 2, "Dexterity2:Lann")]
+        [InlineData("buffwhy", 1, "Lann", 1, "Dexterity2:Tripper")]
+        public void RoundNotesKeepDifferentKindsActorsRoundsAndRecipientsSeparate(string family, int fight, string unit, int round, string option)
+        {
+            Assert.NotEqual(DiagnosticLogPolicy.RoundNoteKey("buffwhy", 1, "Lann", 1, "Dexterity2:Lann"),
+                            DiagnosticLogPolicy.RoundNoteKey(family, fight, unit, round, option));
+        }
+
+        [Fact]
         public void RepeatedComputedBonusIsQuietButChangedBonusRemainsVisible()
         {
             var gate = new DiagnosticChangeLog<int>();

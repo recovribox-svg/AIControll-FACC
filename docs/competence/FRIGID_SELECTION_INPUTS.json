@@ -1,0 +1,56 @@
+{
+  "uploads": [
+    {
+      "name": "fusion2g1b Log.txt",
+      "local_label": "log.txt",
+      "sha256": "fb2033f84c4bc55abeae54fb3e31c3deb42055a2f3d6f9f70578343930d9d363",
+      "bytes": 1299860,
+      "lines": 6029
+    },
+    {
+      "name": "combatLog.txt",
+      "local_label": "combat.txt",
+      "sha256": "4aa2fc9652021ab58ae9ea93e74aca84e2f23c45341cd9b5ba682f05415454b9",
+      "bytes": 1394257,
+      "lines": 38547
+    },
+    {
+      "name": "Frigid touch and related proposal.txt",
+      "kind": "unverified proposal assessed against native code",
+      "sha256": "4336d94677effb9f5e4711d24f8189e6c613e8009f4e145deeba6e714e14c9f8"
+    }
+  ],
+  "reported_build": {
+    "mvid": "e4f231af-1782-4e64-9697-3a3b2455e1a2",
+    "checked_source": "981299e",
+    "same_pair_already_reviewed_in": "docs/competence/G2_GRABBER_CHECKS.json",
+    "not_gameplay_of_new_code": true
+  },
+  "blueprints": [
+    {
+      "relative_path": "Spells/Spells/Level2/FrigidTouch.jbp",
+      "asset_id": "c83447189aabc72489164dfc246f3a36",
+      "sha256": "290ade5cdc44e460370d54ec11cabff8e7337f81e0f15d8668868f4594f935e7"
+    },
+    {
+      "relative_path": "Spells/Spells/Level2/FrigidTouchCast.jbp",
+      "asset_id": "b6010dda6333bcf4093ce20f0063cd41",
+      "sha256": "a951403b5d1b379419bc1832053fb8e01b04f607b96238559586c0b04affcae4"
+    },
+    {
+      "relative_path": "Buffs/Buffs/Staggered.jbp",
+      "asset_id": "df3950af5a783bd4d91ab73eb8fa0fd3",
+      "sha256": "04b1096dc87c54823ac07390d7a0a2ccdc1ae7423f1b6ed548d607ecf0c43446"
+    },
+    {
+      "relative_path": "Spells/Spells/Level6/SiroccoArea.jbp",
+      "asset_id": "b21bc337e2beaa74b8823570cd45d6dd",
+      "sha256": "3cee054970c910ce14d3fa6c851ab443bc0610080d358807aacbca36ad45b0ef"
+    },
+    {
+      "relative_path": "Spells/Spells/Level6/ElementalAssessor.jbp",
+      "asset_id": "6303b404df12b0f4793fa0763b21dd2c",
+      "sha256": "5780de69808b4294a048d8979c2cca333adf7d524cedcc8e37c45c6e1c44c38b"
+    }
+  ]
+}

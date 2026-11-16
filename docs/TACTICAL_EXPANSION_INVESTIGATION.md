@@ -25,9 +25,10 @@ project, and permits a better-supported choice.
 
 ## Scope and evidence
 
-Research branch: codex/tactical-expansion-investigation, from development **96dabaa**. The more recent candidate
+Research branch: codex/tactical-expansion-investigation, initially from development **96dabaa**. The candidate
 source inspected is **9a02565**, handover head **6efc13c**, in [PR #73](https://github.com/recovribox-svg/AIControll-FACC/pull/73).
-Its prerequisite gameplay stack is not silently integrated into development by this research branch.
+Before publication, Claude integrated #65–73 into development. This task branch is reconciled with **980cf26**;
+its gameplay source equals the inspected candidate (no C#/project difference). The task adds no gameplay edits.
 The supplied gaps2 gameplay used **96108ba**, MVID **9ce04a64-f9a0-43ce-8275-5f1b0c7bbe73**.
 
 Evidence levels used below:
@@ -329,7 +330,7 @@ caps on native quotes/destinations and invalidation after state changes. No pers
 repeated full Decide calls, new exhaustive path search or arbitrary candidate pruning. Measure the affected stage
 and total decisions in TB and RT, with a mixed kit and a 4–8 summon pack; signed heap deltas are not allocation totals.
 
-This branch changes research, planning prompt and handover documentation only. No game behavior, movement policy,
+Relative to reconciled development, this branch changes research, planning prompt and handover documentation only. No game behavior, movement policy,
 build/package, version or binary changes. Static evidence and log counts were checked; third-party runtime and
 new gameplay acceptance are not claimed. Implementation must use current development, inspect the open stack,
 follow CONTRIBUTING/CLAUDE/AGENTS, keep changes on task branches and provide the normal native build/audit,

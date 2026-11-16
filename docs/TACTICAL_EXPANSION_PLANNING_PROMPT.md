@@ -11,8 +11,8 @@ Plan a worthwhile next feature for AI Control in recovribox-svg/AIControll-FACC.
 Read CONTRIBUTING.md, AGENTS.md, the current CLAUDE.md handover, then
 docs/TACTICAL_EXPANSION_INVESTIGATION.md and its evidence receipt
 docs/competence/TACTICAL_EXPANSION_RESEARCH.json. Check current development
-claude/dreamy-pasteur-b9h3rn and open PRs before choosing a base. The research inspected development 96dabaa and
-the later candidate in PR #73; do not assume its prerequisite stack has merged.
+claude/dreamy-pasteur-b9h3rn and open PRs before choosing a base. The research was reconciled with development
+980cf26 after Claude merged #65–73; its gameplay source equals the inspected #73 candidate. Check for later work.
 
 The goal is to improve AI Control itself. WorldCrawl and Rogue Trader's CompanionAI v3 are design references,
 not compatibility targets or architectures to port. Verify the research's claims against current code and native

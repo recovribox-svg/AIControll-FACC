@@ -8,7 +8,6 @@
     "pr": 73,
     "head": "6efc13c6e6a349b7cfbe3ebe80bce2a80fef36fc",
     "runtime_checked_source": "9a025654a52a978b3d3dadf7052095f392c4686b",
-    "separately_open_stack_not_integrated_by_this_branch": true,
     "selected_file_sha256": {
       "Tactics/EnemyThreat.cs": "613ca7880308ea44a5f8be8171729c6fd2df4cfc797dc29efa70a4ec395c7319",
       "Tactics/ValueModel.cs": "01b54a134edc1da10c79dd17e6d67296e62be92e637d361f5df99a60569ec3e1",
@@ -28,7 +27,9 @@
       "Core/TeamBlackboard.cs": "24276463f0773af2c4ef6d5533008629aa2c98605f1fbf957589834af0b7d43d",
       "tools/ProfileAudit/Audit.cs": "9c412753550acc16584d7f0e1e15e83ddbb8cbcb671bb7705c6df39078657bf2",
       "docs/SUMMON_KIT_INVENTORY.md": "98a484eed26bee41c85ca66f274ed19d6a818cb67882b98c3a7bb06440a20b48"
-    }
+    },
+    "integration_status": "Claude merged #65-73 before publication; task branch reconciled with 980cf26",
+    "development_code_equivalent": true
   },
   "author_scope": "Use WorldCrawl and CompanionAI v3 as design inspiration for refined AI Control functionality; not compatibility or installing/porting either mod",
   "uploads": [
@@ -355,13 +356,14 @@
     "Candidate impact/complexity are engineering judgments, not measured playtest gains.",
     "No ranged Coup is issued in gaps2; no runtime fix implemented.",
     "Third-party descriptions and comments are not native rules or performance proof.",
-    "Current development and separately inspected PR stack are distinct.",
-    "Raw logs, DLLs, decompiles, third-party source and raw blueprint data are not committed."
+    "Raw logs, DLLs, decompiles, third-party source and raw blueprint data are not committed.",
+    "Initial base 96dabaa is historical; reconciled development 980cf26 includes Claude integration and equals the inspected gameplay source."
   ],
   "handover": [
     "docs/TACTICAL_EXPANSION_INVESTIGATION.md",
     "docs/TACTICAL_EXPANSION_PLANNING_PROMPT.md",
     "CLAUDE.md"
   ],
-  "no_gameplay_implementation_merge_release_or_new_package": true
+  "no_gameplay_implementation_merge_release_or_new_package": true,
+  "reconciled_development": "980cf26827e23e5b0c78696fe530edecd7156162"
 }

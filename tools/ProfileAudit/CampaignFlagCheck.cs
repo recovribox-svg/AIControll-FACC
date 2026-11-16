@@ -69,7 +69,10 @@ namespace ProfileAudit
                 var run = typeof(AbilityProfile).GetMethod("Run", all);
                 Check(Calls(run, "Check"), "production keeps native Condition.Check including Not instead of copying flag predicates");
                 var finish = typeof(TacticalEngine).GetMethod("FinishFormAppraisal", all);
-                Check(Calls(finish, "FirstThisFight"), "zero/profitable form diagnostic uses bounded existing fight ledger");
+                // ★ shifter-forms (§174): the per-fight first row plus at most ShifterRules.MaxFormNoteRepeats rows on a
+                // material change replaces the single FirstThisFight row; still bounded per fight, unit and form.
+                var note = typeof(TacticalEngine).Assembly.GetType("CompanionAI_Pathfinder.Tactics.ShifterRules+FormNoteLog").GetMethod("Observe", all);
+                Check(Calls(finish, "get_Fight") && Calls(finish, "Observe") && Calls(note, "FormNoteChanged"), "zero/profitable form diagnostic is bounded per fight, unit and form");
                 Check(!SaveBoostCheck.ReferencedMembers(finish).Any(m => m.Name == "Trigger" || m.Name == "CreateContext" || m.Name == "ShifterFormDamage"),
                     "form diagnostic adds no rule/context/forecast calculation");
             }

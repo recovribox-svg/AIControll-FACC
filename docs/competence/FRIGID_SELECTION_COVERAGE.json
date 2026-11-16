@@ -1,0 +1,34 @@
+{
+  "status": "PASS",
+  "orderedDistinctPairs": 3540,
+  "configurations": 15494,
+  "profileAccepted": 7306,
+  "profileWithheld": 8188,
+  "coneComponentsResolved": 1166,
+  "acceptedConeProfilesWithAimUnvalidated": 1166,
+  "coneComponentErrors": 0,
+  "readerErrors": 0,
+  "jointOutcomeMetadataQualified": 3118,
+  "jointOutcomeMetadataFallbacks": {
+    "composite or non-HP damage": 736,
+    "dispel/enchantment/extension dependency": 660,
+    "dynamic removal dependency": 350,
+    "earlier application changes a guard fact 187f88d96a0ef464280706b63635f2af": 8,
+    "support/reveal/fact-grant/form/faction/poison carrier": 2434
+  },
+  "jointValueScope": "metadata gate only; live recipient applicability, duration, damage outcomes and useful value remain unassessed",
+  "comparison": {
+    "baseline_source": "f00f4a62de50ac6328b71babf062ad2e64a91143",
+    "baseline_profile_admitted": 7474,
+    "baseline_joint_metadata": 3230,
+    "newly_withheld": 168,
+    "reason": "Newly visible Frigid Touch unconditional control outside the existing shared failed-save model",
+    "other_source_admission_and_qualification_unchanged": true
+  },
+  "full_generated_report": {
+    "sha256": "a534457fcba277851a1e2ddcd412b926fd44ce9a8dadc1c21dad10bfbbdebc90",
+    "bytes": 16410020,
+    "cases": 15494,
+    "committed": false
+  }
+}

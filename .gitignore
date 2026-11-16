@@ -22,3 +22,7 @@ Thumbs.db
 .DS_Store
 nul
 testbuilds/
+
+# Python bytecode from the tool tests
+__pycache__/
+*.pyc

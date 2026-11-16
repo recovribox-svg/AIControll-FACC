@@ -1,0 +1,81 @@
+{
+  "task": "Review and merge all open PRs (#65, #66, #67, #68, #69, #70, #71, #73) into development, at the author's request",
+  "date": "2026-11-16",
+  "reviewer": "Claude",
+  "development_before": "96dabaaeb938ee4829cd8c0f021e1b1f2ea432af",
+  "stack": "linear: #65 -> #66 -> #67 -> #68 -> #69 -> #70 -> #71 -> #73; #73 had already merged development 96dabaa (#72)",
+  "merges": {
+    "65": {"head": "96ce5bde2ec488499565f1c1a8a51de4610d714e", "merge": "3e8e6323fd9882e02da5c9e0a6f54ea670a93823", "author": "Claude"},
+    "66": {"head": "94d2832aa9fd20c920a5a8b6569dc1f9ac8086f0", "merge": "bc445d970b4fa9ae34ad495494597bce22d8c1dd", "author": "Claude"},
+    "67": {"head": "830d777cdfbf20becd4340f558f087b59790208a", "merge": "89e537997acdcfcb0999d1e2df4283fd39054eef", "author": "Claude"},
+    "68": {"head": "342dc27bc8b5f909ea690107dbcf943a9c916f9f", "merge": "002b06eebea22226c062db87d4a9fa4fbad7d77d", "author": "Claude 730c6b6 + Codex"},
+    "69": {"head": "2e863425239c788dd844263f8e89c2b365049f2e", "merge": "1001f0a159bfef08ac5357cdcea15f423933d957", "author": "Codex"},
+    "70": {"head": "d5a120756a9d67f2de0c8167da44b2d3c92a0751", "merge": "f6335db42f339915b2902447f1509591b6909120", "author": "Codex"},
+    "71": {"head": "3664663cb4b88caab62037847d3851bfa3233704", "merge": "cad877da8c2b37a03496cc3fd61648d86fa261d1", "author": "Codex"},
+    "73": {"head": "6efc13c6e6a349b7cfbe3ebe80bce2a80fef36fc", "merge": "ea91688c24ad19278d6b3a7640d0b400d57ed7ff", "author": "Codex"}
+  },
+  "integrated_tree": {
+    "development_after_merges": "ea91688c24ad19278d6b3a7640d0b400d57ed7ff",
+    "tree": "ec7bad1344c01dc2b20269ce8aa1481f0e37e641",
+    "equals_verified_head_6efc13c_tree": true,
+    "code_equals_gaps3_checked_source_9a02565": "9a02565..6efc13c changes only docs/, test-builds/ and CLAUDE.md"
+  },
+  "review_findings": {
+    "68": "Sound. FormNoteLog keeps tracked identities at capacity instead of a mid-fight clear that reset the repeat limit; the Fury hold ignores a form below the main-action minimum; the wait note's key carries the fight. SHIFTER-FORMS now requires each Griffon tier's on-cast removal to be exactly Polymorph and its explicit removal exactly Shifter's Rush.",
+    "69": "Sound. Native ContextActionSelectByValue.RunAction aggregates the variants and runs exactly one (Greatest; the later on a tie), decompiled from the supplied Assembly-CSharp. Crediting only a buff common to every variant at its shortest fixed duration (enemy side) and keeping the longest for allies is safe whichever variant runs.",
+    "70": "Sound. The cached leap repricing reuses the ordinary grab line/summary kernel; GrappleOpeningOn reads ActiveGrab (the assumed grab) and its per-frame opening cache checks the trigger identity, so grab-on and grab-off sets do not share an opening.",
+    "71": "Sound; fixes a defect in Claude's G2 (#67): a positive Release Grapple score returned a null reason, candidate construction called why.Split and dropped the ability, so no release was issued (gaps1 AI rows 2812-2813). The reason is now always set and the pure-buff classifier tolerates a missing reason. gaps2 then shows five Success/acted releases in real time.",
+    "73": "Sound. The buffwhy and restraint notes are deduplicated by fight as well as round (an earlier fight's round-1 note hid the next fight's), and formatted lazily. The rest is Invocation ledger tooling and tests.",
+    "65_67": "Claude's own PRs, reviewed at the time; the only defect found since is the #71 one."
+  },
+  "validation_on_integrated_tree": {
+    "toolchain": "SDK 8.0.428 (this machine; the receipts' 8.0.426 environment was lost with the container), real supplied game/Unity/UMM references",
+    "release_build": {"warnings": 0, "errors": 0, "non_incremental": true,
+      "dll_sha256": "ff16d127be09041380a9ce9628c83141ad8a89178991772387e0e73d88e90970",
+      "mvid": "274d2e41-f4d2-453c-a1d6-5a3d4cc13073",
+      "note": "verification build only, not packaged; its byte identity with the gaps3 package DLL (MVID 48ece05d) is not claimed (different SDK and build path)"},
+    "unit_tests": {"passed": 866, "failed": 0},
+    "script_tests": {"inventory": 27, "summon_kit_supplement": 3, "invocation_ledger": 18, "failures": 0},
+    "added_game_references_vs_g2_package_dll_7831cef8": {
+      "count": 3,
+      "members": ["ContextActionApplyBuff::IsNotDispelable (field)", "ContextActionApplyBuff::NotLinkToAreaEffect (field)",
+                  "UnitReference::op_Equality(UnitReference, UnitEntityData)"],
+      "all_exist_in_supplied_assembly": true,
+      "matches_codex_receipts": "two flag fields (#69), one native equality (#71)"
+    },
+    "gaps3_package": {
+      "file": "test-builds/AI-Control-FACC-v0.3.52-dev-gaps3-9a02565-UMM-test.zip",
+      "zip_sha256": "e97222e507007a321f1b97334a1158a796c22fe90ba9a569809a805573b62ca6",
+      "sha256_file_matches": true,
+      "dll_sha256": "348cc6ef9ccfbd04249f5f62afb7e5518132c89e1ffcf3cb00297a43706128e1",
+      "mvid": "48ece05d-5895-46e3-896c-d87cb5a60b29",
+      "external_references_identical_to_local_integrated_build": true
+    },
+    "profile_audit": {
+      "inputs": "14 of the author's export folders (44,638 blueprints; S1 used 20 folders, 44,645) + 607 missing-only stock fixtures from the BubblePrints 2.7.0x database (#72, checksum-verified) + the Demonology unit list",
+      "supplement": {"passes": 2, "seed_ids": 42, "closure": 14063, "written_missing_only": 607,
+        "manifest_sha256": "b53d18553529dafaac14f3434798ecc2a4ca8e3117d5c2f49f8d0084d5405555",
+        "manifest_equals_S1": true,
+        "stock_line_export_sha256": "770361cc83087f49a90bf01a800d72fa3bb136d0166dd477179fa57643765e3e",
+        "line_export_note": "differs from S1's line export hash (formatting of the JSON lines); the 607 fixtures are byte-identical by manifest"},
+      "exit_code": 0,
+      "status": "PARTIAL: loaded 45,244, failed 1, allowed 1",
+      "known_failure": "AchaekekSacredWeaponFeature; on this runtime it reports 'SecurityException: ECall methods must be packaged into a system module' instead of the enum message",
+      "abilities": 4849, "reader_errors": 0, "failed_check_lines": 0,
+      "two_runs_byte_identical": true,
+      "report_sha256": "599f53012476a9c3b408124d3c7728947c78c93c35eb8847b308b7734f46d0d4",
+      "summon_kit_detail_sha256": "b7b94434cdc4797437f9fd74c9f5c3ab34c48787d6578a24eaf249a67f3e9f4d",
+      "sections": {"SHIFTER-FORMS": 21, "CAMPAIGN-FLAG": 21, "GRAPPLE": 58, "GRIFFON-MODES": 29, "GRIFFON-ATTACK": 47,
+                   "VALUE-SELECTION": 24, "DIAGNOSTIC-LOG": 16, "FORM-REFERENCE": 14, "SUMMON-KITS": 8, "failures": 0},
+      "diff_vs_shifter_forms_730c6b6_run_on_identical_inputs": "only the check counts of SHIFTER-FORMS (15->21), GRAPPLE (55->58), GRIFFON-MODES (20->29), DIAGNOSTIC-LOG (14->16), the new VALUE-SELECTION section, and exactly three abilities moving from 'damage' to 'damage, control Soft' (FrigidTouch, FrigidTouchCast, FrigidTouchCastTiefling); every other line identical",
+      "shifter_forms_shift_actions": "83 form abilities: Standard 71, Swift 9, Free 3; 26 aspect buffs, none removed by a shift"
+    },
+    "native_harnesses": {"toggle_with_psionics_0_2_3": 98, "tome_1_4_18": 14, "toybox_1_7_34": 10, "failures": 0}
+  },
+  "unchanged": {"manifest_version": "0.3.52", "main_tag_or_release": false, "new_package": false},
+  "limits": [
+    "Unplayed: TB Release Grapple, an actual Death from Above leap, ordinary and fused Frigid Touch, and the Shifter form/Fury scheduling.",
+    "The audit's 14 export folders cover 44,638 of S1's 44,645 blueprints; the fixtures are identical to S1's.",
+    "Offline checks run no actor, roll, command or Unity timing."
+  ]
+}

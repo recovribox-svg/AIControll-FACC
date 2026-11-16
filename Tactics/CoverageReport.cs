@@ -190,6 +190,7 @@ namespace CompanionAI_Pathfinder.Tactics
         private static string Kinds(AbilityProfile p)
         {
             var kinds = new List<string>();
+            if (p.ReleasesGrapple) return "lets go of a grapple when the hold no longer pays";   // ★ G2
             if (p.DealsDamage)
             {
                 // ★ v0.3.28 test 13: ability damage and negative levels are valued as such (CombatMath.Drain.cs).

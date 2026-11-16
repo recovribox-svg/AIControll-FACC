@@ -332,6 +332,12 @@ namespace CompanionAI_Pathfinder.Analysis
                 result.Reason = "lasts one round, attack, roll or cast";
                 return PreBuffPriority.Skip;
             }
+            // ★ G2: Release Grapple (the legacy classifier calls it a pre-combat buff) only lets go of a hold, in combat.
+            if (profile != null && profile.ReleasesGrapple)
+            {
+                result.Reason = "releases a grapple";
+                return PreBuffPriority.Skip;
+            }
 
             if (result.CombatValue < 0.2f)
             {
