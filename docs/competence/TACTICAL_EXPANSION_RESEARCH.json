@@ -1,0 +1,367 @@
+{
+  "date": "2026-11-16",
+  "recorded_at_utc": "2026-11-16T04:05:18.460794+00:00",
+  "task": "Design inspiration and tactical expansion investigation; no WorldCrawl compatibility work",
+  "branch": "codex/tactical-expansion-investigation",
+  "development_base": "96dabaaeb938ee4829cd8c0f021e1b1f2ea432af",
+  "inspected_later_candidate": {
+    "pr": 73,
+    "head": "6efc13c6e6a349b7cfbe3ebe80bce2a80fef36fc",
+    "runtime_checked_source": "9a025654a52a978b3d3dadf7052095f392c4686b",
+    "separately_open_stack_not_integrated_by_this_branch": true,
+    "selected_file_sha256": {
+      "Tactics/EnemyThreat.cs": "613ca7880308ea44a5f8be8171729c6fd2df4cfc797dc29efa70a4ec395c7319",
+      "Tactics/ValueModel.cs": "01b54a134edc1da10c79dd17e6d67296e62be92e637d361f5df99a60569ec3e1",
+      "Tactics/CombatMath.Defences.cs": "bb94dac286aa43e5ec0c9ac535247a90231fa9fbf8df5ea1c0bcc8564a730f09",
+      "Tactics/AbilityProfile.cs": "ef71bd6da6b7fe1ccc462aef7c86fd554b7db9898d99dc6415c95d0ee0a9a664",
+      "Tactics/TacticalEngine.cs": "11f2e5bd408b9d60c39f41a743bac195c843b2367d725d41d4cdc9824ee2e871",
+      "Tactics/CombatMath.cs": "fed04ce85b8d21183d41582157c98ea805b3bd4ba4594e3bc36e3197421215ee",
+      "Tactics/CombatMath.Afflictions.cs": "0ef63f57ffd8cfc50744945d2a859f4caab3e5f5f0310fc62eb8084e72de2d04",
+      "Tactics/CombatMath.PeriodicPlan.cs": "8d29358ec669f160dc49dfe784d5857db10dcea045e2fb7579f49991551d18c8",
+      "Tactics/AbilityDiscovery.cs": "656cb44bcc42970622091ea6fb99702230e53a2b7a68c266118d20b53c55ed0b",
+      "Tactics/ProgressiveGate.cs": "a02615f6404834d81d04157b70cf1f201949d52a75bdb160231844e99e5ed075",
+      "Tactics/CombatMemory.cs": "fa27a2a78eb1dda8525afaf8133c73b67cb8a7af60007e91a2ab110e462b43bd",
+      "GameInterface/CommandDispatcher.cs": "5b899fb75711789443d5e30ac5da0a79a8352bca3cbbbd3eae8a56b9ddf54df7",
+      "GameInterface/SummonControl.cs": "d44067aef19393c1903b44350ed72145aff89985e71c8698adcb42227fd943f0",
+      "Analysis/CombatRulesAnalyzer.cs": "3ffc4caa492bc5bfec8de94e7f285edb18df650d499f76ec4606b6b2a656bce8",
+      "Analysis/TargetImmunityChecker.cs": "8ae8cb37527edd36658785d134c88ccad8b4f692c06d90c9e8dfb731f7395721",
+      "Core/TeamBlackboard.cs": "24276463f0773af2c4ef6d5533008629aa2c98605f1fbf957589834af0b7d43d",
+      "tools/ProfileAudit/Audit.cs": "9c412753550acc16584d7f0e1e15e83ddbb8cbcb671bb7705c6df39078657bf2",
+      "docs/SUMMON_KIT_INVENTORY.md": "98a484eed26bee41c85ca66f274ed19d6a818cb67882b98c3a7bb06440a20b48"
+    }
+  },
+  "author_scope": "Use WorldCrawl and CompanionAI v3 as design inspiration for refined AI Control functionality; not compatibility or installing/porting either mod",
+  "uploads": [
+    {
+      "name": "WorldCrawl_AIControl_Investigation.md",
+      "bytes": 16207,
+      "sha256": "6aecb000301cd1f78800e28b4aff2e43aa00ebb59db78ee1e3fe47dcd436a1c4",
+      "role": "Unverified proposal; claims independently assessed"
+    },
+    {
+      "name": "Copy of Worldcrawl Summary.md",
+      "bytes": 551962,
+      "sha256": "c4950d2d68b0ed31be90a9f93df906c555dfc47520f0181f8963f89b7de5cee7",
+      "role": "Descriptions; not execution rules"
+    },
+    {
+      "name": "WorldCrawl.zip",
+      "bytes": 1193964,
+      "sha256": "d1bd86f05e7f01887a8d38be07cfa5ed0c589d18fcefdbe72d5ea7b906676888",
+      "role": "Uploaded reference mod; not a compatibility target"
+    },
+    {
+      "name": "CompanionAI_v3-master (1).zip",
+      "bytes": 1336184,
+      "sha256": "875f8aee114e9cd34f278918f3ec0de0423dbe3b2754be418d6c18055bd0aea0",
+      "role": "Rogue Trader source reference; no build or runtime test"
+    }
+  ],
+  "worldcrawl": {
+    "manifest_version": "0.594",
+    "manifest_game_version": "2.5.0n",
+    "dll_bytes": 2015744,
+    "dll_sha256": "b49903848f051b595408f97adb5213bb6ed7c2201f484d9e3f40529d47516178",
+    "dll_mvid": "ce7941bf-5543-45b6-8970-180c0fbac90e",
+    "packaged_cache_identical": true,
+    "decompiled_cs_file_count": 185,
+    "all_types_decompiled_but_only_relevant_routes_inspected": true,
+    "selected_types_and_members": {
+      "WorldCrawl.AIActionSeries": [
+        "CreateSeriesAction",
+        "GeneralAIActionEdits",
+        "CreateWCHoldSeries",
+        "CreateWCHealSeries",
+        "CreateWCDispelGreaterSeries"
+      ],
+      "WorldCrawl.FeaturePackReplacement": [
+        "CreateFeaturePackWithActions",
+        "CreateFeyTemplates"
+      ],
+      "WorldCrawl.MainReplacements": [
+        "AddFeaturePackWithActionsToUnit"
+      ],
+      "WorldCrawl.AIBrains": [
+        "NewBrainCreation",
+        "EditUnitBrains"
+      ],
+      "WorldCrawl.AIActionHandling": [
+        "HandleAIActions (empty in supplied binary)"
+      ],
+      "WorldCrawl.NewConsiderations": [
+        "CreateNewConsiderations (empty in supplied binary)"
+      ],
+      "WorldCrawl.OnMissDamageByLevel": [
+        "OnEventDidTrigger"
+      ],
+      "WorldCrawl.ItemModifications": [
+        "WildHunt weapon enchantment edits"
+      ],
+      "WorldCrawl.FeatureReplacement": [
+        "CreateAlwaysDamageSeries"
+      ]
+    },
+    "runtime_loaded_or_built": false,
+    "upstream_source_public_availability_assessed": false
+  },
+  "companionai_v3": {
+    "game": "Warhammer 40,000: Rogue Trader",
+    "manifest_version": "3.123.1",
+    "archive_members": 237,
+    "cs_files": 142,
+    "selected_file_sha256": {
+      "Planning/TurnStrategyPlanner.cs": "a380586530cf939563729412df248ddb51477113b9464ff2fd62ee9bd1d7a2e9",
+      "Planning/TacticalOptionEvaluator.cs": "96c03fbe8d369f64507a07b0f48bc9382d9c916a7100a16ae647e61218211a09",
+      "Analysis/KillSimulator.cs": "1fa81aa70efce465f0357dcc7f9a94ff818efa43078fa0d15781b568cb17f541",
+      "Analysis/PredictedEnemyMoves.cs": "727bae9a5c7ed7bb23f322c3c0006b6bdf113531d8aec1339bdaea4bdd40a33b",
+      "Analysis/EnemyTargetingMap.cs": "02d1792320e7834fa4be6ae1640a8af5362e8bbe9e2063a1bf784fa9fbc1a6b8",
+      "Core/TurnOrchestrator.cs": "c324089d0b5b3d883900600b6f14f0c84ed942323a9bbf33a8d3ae47bf5201ad",
+      "Core/APBudget.cs": "2347d4be34295057abec92740fcee2a1bad4e38ef58b300d8c4d0fa776610ef0",
+      "Core/PlannedAction.cs": "a3dc71c8eedabc3dbd1ec1bcb0cc3db277b223849282af02beb72fa3500882b0",
+      "Execution/ActionExecutor.cs": "98c1a8cdd5f74e2498d3157769002d14e3f9115dd058daa50d2c1537b57f1a05",
+      "GameInterface/CombatCache.cs": "e2aa0469b44518cd518705ca26c3ba1d2acd396831a9c08e46a7e5c571e12bab",
+      "Planning/Plans/BasePlan.PostValidation.cs": "1d9e44662e4eebaa37980853adf5d2866f7ec293ada3d67890bb5430704e12c1",
+      "Planning/LLM/LLMCommander.cs": "240437b64dccceaa72b4aa7eedc2bb3ec5ab091da470b938b5bc63313ef8b345",
+      "Planning/LLM/LLMScorer.cs": "5bff89023fbea26988be5dd373fda9de74f063ec276d31d4d68c7e0acd7097d2",
+      "Diagnostics/IssueDetector.cs": "10b99b4ff05c2cb18ff7639389052cdd2d624031c3d5b54dabef3097a0ea8ff4"
+    },
+    "runtime_or_build_tested": false,
+    "comment_performance_claims_adopted": false
+  },
+  "native_reference": {
+    "assembly": "Assembly-CSharp.dll",
+    "mvid": "90a9869c-2792-4c7b-bfb7-5a8b33da7c82",
+    "sha256": "2cb7160b7154d4ffacc77b9c51b1eb26199e1294300f04fdfc073367b2ef8953",
+    "il_or_decompiled_contracts": [
+      "AbilityData.GetApproachDistance",
+      "UnitDescriptor.GetWeaponRange",
+      "UnitHelper.GetThreatHand / GetThreatHandMelee / IsThreatHand",
+      "ContextActionMeleeAttack.RunAction / SelectTarget",
+      "AiAction.IsActorValidInternal",
+      "BlueprintAiCastSpell.IsAvailable / CreateCommand",
+      "AbilityCustomTeleportation.Deliver / CreateSettings / target restriction",
+      "AbilityCustomDimensionDoor.GetTargets / AddMounts / placement / target restriction"
+    ],
+    "ttt_core_sha256": "aba06b62e8433febb57f9a703bfe5224ad1063676729fca8263644a3b3f535b0",
+    "ttt_base_sha256": "1704bcd6e77eee241db43c4f23c47e1b0f0acf7d7b386fca2d57c0748af546ef",
+    "ttt_contracts": [
+      "CoupDeGraceTTT.Deliver",
+      "BaseAbilities FixCoupDeGrace patch body"
+    ],
+    "abilitydata_full_type_decompile_failed": "ILSpy stack overflow; used Mono.Cecil method IL instead. No mod/game execution."
+  },
+  "stock_database": {
+    "version": "2.7.0x_0",
+    "records_scanned_per_lookup": 236660,
+    "sha256": "03ba6e29782c0c14e0c0383cd739560358641f7b5842f1dcfb690246e73c9c6a",
+    "reader": "BubblePrints 2.1.0 BPFile.Reader, retained console reader",
+    "selected_found": 19,
+    "selected_requested": 19,
+    "selected": [
+      {
+        "guid": "8e6f34026b34c3d4ba831bb94548904a",
+        "name": "AoE_AvoidFriends",
+        "sha256": "f3f6266e76d271be22a3ba6114f86f7ae436a6e427c819ed671c5f7187877d69"
+      },
+      {
+        "guid": "b2490b137b8b53a4e950c1d79d1c5c1d",
+        "name": "AoE_ChooseMoreEnemies",
+        "sha256": "8c8e5f0dd80a277317a249aaa2fcf923f27c1b911a1b3b8544525a1c2c301f9e"
+      },
+      {
+        "guid": "7a2b25dcc09cd244db261ce0a70cca84",
+        "name": "AttackTargetsPriority",
+        "sha256": "cbce6133d09ab990a59c6f903d93345aa330b9f6e990b72b1f4cf330aacee7c9"
+      },
+      {
+        "guid": "4309796864c63624ca5b7cce059cc4e2",
+        "name": "Caster",
+        "sha256": "85c44cf150626e511b269c3373504fe1d795dbb80239a654f1a79f0edb562c2e"
+      },
+      {
+        "guid": "aad346ba597e8aa45bb4b589d9f9d0ea",
+        "name": "ChaoticBehaviour",
+        "sha256": "1d6155a8b82a6896113bf176fa6ef78e4ab8a9f06b43acf704b23e7936244e4a"
+      },
+      {
+        "guid": "42f6f6935bfe36246b64a4b7a249b602",
+        "name": "InjuryCritical",
+        "sha256": "a9db225f896ef7ebed850955db8e7426fd2c5970b6b19c55eab399feccc954a7"
+      },
+      {
+        "guid": "ce325ec9fa497f841a74d79b2002b04b",
+        "name": "NoThreateningUnitsConsideration",
+        "sha256": "b36d37f2ee4dce5344315fc8bd3a49b37afc61c11f4438c52e5be034b68b5899"
+      },
+      {
+        "guid": "c2b7d2f9a5cb8d04d9e1aa4bf3d3c598",
+        "name": "SwiftActionOffCooldown",
+        "sha256": "527a561bf9d66f8d8d86155e1ce37a2a9e2f63e0a944e918060d7af782c60b7a"
+      },
+      {
+        "guid": "32280b137ca642c45be17e2d92898758",
+        "name": "CoupDeGraceAbility",
+        "sha256": "5cd532c2433cb2e36b30adbd2d6adb2ecb86f69efa5df45dd7186eeb42768afb"
+      },
+      {
+        "guid": "0e8d7aca50028e4479b360c381a20d47",
+        "name": "Gallu_Consideration_NoFullAttack",
+        "sha256": "6a4d930913201e681143e813d3203bef1dbac040f0ee5c2073638c5df420f2e9"
+      },
+      {
+        "guid": "16d45be25a7cb894d958772bc8f74f6d",
+        "name": "NotImpatient",
+        "sha256": "f6942c90a44538c1ebd73d13f2dae35b57589a84a5a23b0cb7b3634546de619e"
+      },
+      {
+        "guid": "da2c75bc93165b749b18654b21759ea3",
+        "name": "StandStill",
+        "sha256": "8bcbfbf423e7477e0719b270c06cf56c914e4dd43b7fbb5e5e4ddcd7f537530e"
+      },
+      {
+        "guid": "bf033da33480da84f8265f5f8bcdd467",
+        "name": "UnconsciousPenalty",
+        "sha256": "72cccb554b2b625672f7f72e7da01ad276584a1277b6096f5eb3a6a282cd2276"
+      },
+      {
+        "guid": "aec23b4820f2efc48beca7acfb0c8883",
+        "name": "FixedObsessionEnchantment",
+        "sha256": "dc9c6f4f021c1879390b16c663113df609939c05939843e53c1458de61a0012c"
+      },
+      {
+        "guid": "7e19f1b0ccf5e6148a7eb83839cd232e",
+        "name": "FixedObsessionBuff",
+        "sha256": "ca53728725a7bf576e889758a9e4207ecd7dab9b702cabe5c6e36126bca51723"
+      },
+      {
+        "guid": "fa3f73e69f4849842b8109ce72394aac",
+        "name": "WildHuntLongbow",
+        "sha256": "25165ec84a1a355c6ca33415886d147070c1d8bc895d512a5ab9cd2bc8906b0d"
+      },
+      {
+        "guid": "67154e0d348b24f4a8d408d2bc4b98ca",
+        "name": "WildHuntScimitar",
+        "sha256": "62dab5de16ae7156b9eb54413b7f96accda7cd09ac8a1ad42e32637aa6ef28c1"
+      },
+      {
+        "guid": "b1eb8017cadea224cb0f09d96199f7b9",
+        "name": "WildHunt_MonarchGlaive",
+        "sha256": "982cc6a89e77560facabf946b794b96dfc71b6479ffe42e630f6384f25a5e02d"
+      },
+      {
+        "guid": "ca131c71f4fefcb48b30b5991520e01d",
+        "name": "ThrowingAxe",
+        "sha256": "a3c494fc625579ddf5a804e267ac38a2d6e77e9e944d28d1a5e7241cecc408ec"
+      }
+    ],
+    "not_live_modded_blueprint_acceptance": true
+  },
+  "selected_uploaded_graphs": [
+    {
+      "path_in_uploaded_folders": "Mythic/Mythic/Demon/DemonSpells/DemonTeleport.jbp",
+      "guid": "b3e8e307811b2a24387c2c9226fb4c10",
+      "sha256": "53b108055b5f62b93bc99d8504a6fa6f88da915f8a83f0a1d53e74e4eebd4fd9"
+    },
+    {
+      "path_in_uploaded_folders": "Spells/Spells/Level4/DimensionDoorCasterOnly.jbp",
+      "guid": "a9b8be9b87865744382f7c64e599aeb2",
+      "sha256": "7da25b80668306f6b4793ffa82c02292e591a6d00d03179051050ba4b4e70b30"
+    },
+    {
+      "path_in_uploaded_folders": "Spells/Spells/Level4/DimensionDoorHell.jbp",
+      "guid": "637e9c2a9d121584fb8b3f3ec799eb1e",
+      "sha256": "5b85d364dbb99ccac0987908d64e4cf102be5d8515918755ccdae3b117a99312"
+    },
+    {
+      "path_in_uploaded_folders": "Units/Units/Monsters/Demon Vrock/VrockBrain/Vrock_Ability_GreaterTeleport.jbp",
+      "guid": "c9a902658593a2b4d9c24b1d108a0ccc",
+      "sha256": "a647d5d90d22f3d053ef422d169f596c9f898e19c4f53c33304e8d27f3e001c1"
+    },
+    {
+      "path_in_uploaded_folders": "Units/Units/Monsters/Demon Vrock/VrockBrain/VrockStunningScreechAbility.jbp",
+      "guid": "5ec140170c71f8c4c98b6dc600df6bb7",
+      "sha256": "2d3b559b1cf6e44f32f590486e4fa27ef83567861e2c64ff1045944906bc84f9"
+    },
+    {
+      "path_in_uploaded_folders": "Units/Units/Monsters/Demon Derakni/DerakniBrain/DerakniDroneAbility.jbp",
+      "guid": "30e1b50180b115840a94c611599de01e",
+      "sha256": "0dd34acbdfa9f558dcee873557de53d712a8bc9beec16c49808edc74e6bcf392"
+    },
+    {
+      "path_in_uploaded_folders": "Units/Units/Monsters/Demon Nalfeshnee/NalfeshneeBrain/Nalfeshnee_Ability_UnholyNimbusCast.jbp",
+      "guid": "c5b6fdcee6ff4e843a02dabc247210ca",
+      "sha256": "8aebec9eb845ae2c3ef863c82c06e555ac2427b934eb713ba1da5529f011c642"
+    },
+    {
+      "path_in_uploaded_folders": "Units/Units/Monsters/Demon Nalfeshnee/NalfeshneeBrain/Nalfeshnee_Buff_UnholyNimbusDelay.jbp",
+      "guid": "ec14c8e821c460b42bb925a2320ddf0c",
+      "sha256": "4b4c8fafb54a3625aca5225df3f6de445000de2e72638eea34cfa1a559ceb89d"
+    },
+    {
+      "path_in_uploaded_folders": "Mythic/Mythic/Feats/DestructiveShockwaveMythicFeat.jbp",
+      "guid": "263a65c1e92dd964192ba7d41a76b4e3",
+      "sha256": "457b4ee76218efaadf8af135a8fa7bfbce5da0b066dd8d43940ff6cb49c2b8b2"
+    },
+    {
+      "path_in_uploaded_folders": "Mythic/Mythic/Feats/DestructiveShockwaveMythicBuff.jbp",
+      "guid": "3c5955958e11410faed20101a62530d4",
+      "sha256": "e9eff960a7ba931fc916beb646db7198c6c4cf4337a9933ab392545d60eb9da5"
+    }
+  ],
+  "gaps2_log_review": {
+    "played_source": "96108ba9af7c5564c7d7029715102076d159a7b7",
+    "mvid": "9ce04a64-f9a0-43ce-8275-5f1b0c7bbe73",
+    "ai_log_bytes": 1213344,
+    "ai_log_sha256": "c1a46472612dbca759b6147c61951a3893ca1fcbd035cc99a79dbcc062688dac",
+    "combat_log_bytes": 1259071,
+    "combat_log_sha256": "a9f4432bcf37bb95229ca9662189a3a5ebe5d138fde6b9326a347fbf4ab59946",
+    "coup_mentions": 27,
+    "coup_issues": 0,
+    "recorded_summon_takeovers": 0,
+    "combat_coup_events": 0,
+    "row_convention": "LF-separated, not bare CR",
+    "author_context": {
+      "toybox_spawns": true,
+      "rests": "between fights",
+      "grabber": "left under engine control"
+    },
+    "reported_ranged_coup_reproduced": false,
+    "native_first_weapon_vs_melee_delivery_mismatch": "Source-verified possible cause to test; not established cause of reported episode"
+  },
+  "research_findings": {
+    "recommendation": "Plan bounded native tactical mobility, with verified weapon-outcome forecasting the strongest alternative",
+    "personal_aoe_inventory_warning": "Audit.Classify personal-area enemy-side test omits ControlStrength; ScoreAbility has independent recipient/control scoring. Old guessed labels do not prove absent runtime control.",
+    "nimbus": "Delay buff Deactivated action casts the blast; generic immediate carrier-buff score does not forecast this timing",
+    "worldcrawl_miss_damage": "Attacked-recipient miss handler, not a proximity aura",
+    "fixed_obsession": "Self-stacking buff, no same-target condition in selected graph; ThrowingAxe filter retained, so advertised effect on edited WildHunt weapons not established"
+  },
+  "validation": {
+    "method": "Static source/IL/selected graph inspection and direct raw log counts; documentation checks recorded after writing files",
+    "new_unit_tests": "Not applicable: documentation-only research",
+    "full_mod_build": "Not rerun; no deployable code/project/version changes",
+    "profile_audit": "Existing gaps2 strict report inspected, not a new audit run",
+    "third_party_gameplay": "Not run",
+    "unity_performance": "Not measured",
+    "new_test_package": null,
+    "documentation_checks": {
+      "passed": true,
+      "new_document_local_links": "all resolve",
+      "json": "parsed",
+      "git_diff_check": "passed",
+      "tracked_and_new_changes": "Exactly five documentation files; no .cs, .csproj, manifest, binary, ZIP or raw inputs changed"
+    }
+  },
+  "limits": [
+    "Candidate impact/complexity are engineering judgments, not measured playtest gains.",
+    "No ranged Coup is issued in gaps2; no runtime fix implemented.",
+    "Third-party descriptions and comments are not native rules or performance proof.",
+    "Current development and separately inspected PR stack are distinct.",
+    "Raw logs, DLLs, decompiles, third-party source and raw blueprint data are not committed."
+  ],
+  "handover": [
+    "docs/TACTICAL_EXPANSION_INVESTIGATION.md",
+    "docs/TACTICAL_EXPANSION_PLANNING_PROMPT.md",
+    "CLAUDE.md"
+  ],
+  "no_gameplay_implementation_merge_release_or_new_package": true
+}

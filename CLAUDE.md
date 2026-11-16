@@ -8,6 +8,33 @@ Read [CONTRIBUTING.md](CONTRIBUTING.md) for shared branch ownership, Codex pull 
 Codex works on task branches and targets pull requests at `claude/dreamy-pasteur-b9h3rn`; Claude reviews and integrates them there.
 Keep `main` for author-authorized releases. Read [AGENTS.md](AGENTS.md) when coordinating agent work.
 
+**Current handover (16 November 2026, Codex): tactical expansion research, documentation only.**
+Branch codex/tactical-expansion-investigation starts at development **96dabaa**. Read
+[investigation](docs/TACTICAL_EXPANSION_INVESTIGATION.md),
+[advanced-model planning prompt](docs/TACTICAL_EXPANSION_PLANNING_PROMPT.md) and
+[input/inspection receipt](docs/competence/TACTICAL_EXPANSION_RESEARCH.json).
+The author clarified that WorldCrawl and Rogue Trader CompanionAI v3 are **design references, not compatibility
+targets**. No third-party dependency, handler adapter, NPC quota, random casting or runtime LLM is proposed.
+
+The report distinguishes development from the later #73 candidate source **9a02565**, head **6efc13c**.
+It does not merge the #65–73 gameplay stack. Several claims in the uploaded investigation are historical or
+refer to legacy paths: present threat, observed-DPR, concealment, immunity and buff/area forecasts already exist.
+The S1 personal-AoE label can also disagree with runtime control scoring (Screech/Drone); verify before rewriting.
+Stronger planning candidates are bounded native tactical mobility, verified hit/miss/proc forecasts, and timed
+summon signature effects. The research ranks benefits/complexity and gives native contracts and acceptance checks.
+Movement implementation still needs the author's specific approval; planning is authorized.
+
+Gaps2 has **zero issued Coup de Grace** and no recorded summon takeovers, so the reported ranged execution is not
+reproduced. Stock Weapon range reads the first weapon, whereas the native/TTT delivery and current damage estimate
+may use different hands. A shared melee weapon/reach contract is proposed and scoped; no live fix is claimed.
+Leaps and supported ordinary/no-save Frigid should be left to the engine for acceptance testing; #69's withheld
+saved configurations remain a separate Fusion limit.
+
+No runtime/project/manifest/binary/package changes, no new build or gameplay acceptance, no main/development push,
+merge, tag or release. Static source/IL, selected stock graphs and log counts were checked. Third-party runtime
+and performance claims were not adopted. The next step is for the advanced coder to select and write one
+implementation-ready plan with a bounded first slice, not to port either architecture.
+
 **Fusion2 playtest review / qualified F2–F3 core (14 November 2026, Codex; new valuation unplayed):**
 `codex/fusion1-playtest-review` starts at merged development `ab1b6a7`, no open PRs. The two supplied AI logs identify
 fusion1 MVID `2e2896c3`; eight encounters, 258 TB / 1,475 RT measured decisions. ToyBox spawns, rests between fights,

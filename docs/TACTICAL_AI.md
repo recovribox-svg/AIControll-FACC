@@ -5868,3 +5868,23 @@ Holding an enemy can make an end turn useful; the played real-time restrictions 
 Automatic Grabber initiation and comparative Release remain a separate G1 slice. No timeout or automatic release
 is added here. The existing selected-cone Fusion route still needs a cone-delivery gameplay case; the played created
 spells used Runes or Snowball delivery, with an ordinary turned Color Spray cast observed.
+
+## Tactical expansion research (16 November 2026; no gameplay change)
+
+[Investigation](TACTICAL_EXPANSION_INVESTIGATION.md), [planning prompt](TACTICAL_EXPANSION_PLANNING_PROMPT.md),
+[input/inspection receipt](competence/TACTICAL_EXPANSION_RESEARCH.json). The author supplied WorldCrawl 0.594 and
+Rogue Trader CompanionAI v3 3.123.1 for design inspiration, explicitly not compatibility work.
+Research starts at development 96dabaa and separately inspects the later #73 candidate; it does not integrate
+that gameplay stack. Native curated casting, kit/action pairing, bounded sequences, issue-time validation and
+attack outcomes supply useful ideas. Existing tactical threat, observed-DPR, concealment, immunity and resource
+logic invalidate several claims in the attached investigation.
+
+Ranked candidates: native tactical mobility shared by companions/summons; verified weapon miss/proc outcomes;
+timed summon effects; then bounded marginal alternative/team models. The personal-AoE inventory label can disagree
+with runtime control scoring, so Screech/Drone must not be treated as wholly unsupported on that label alone.
+No runtime model call, random NPC casting, new role weights or automatic brain quota is proposed.
+
+Gaps2 contains no issued Coup or recorded summon takeover. The native first-weapon range and actual
+native/TTT melee delivery expose a mismatch to test; the report proposes a shared contract and focused replay,
+not a claimed reproduced fix. No movement policy, runtime code, version, binary or package change. No fresh
+build/gameplay acceptance is claimed; the advanced coder next produces one evidence-based implementation plan.
