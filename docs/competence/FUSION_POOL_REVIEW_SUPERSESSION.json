@@ -1,0 +1,13 @@
+{
+  "date": "2026-11-16",
+  "superseded_source": "f8788d7f274a8558783372302f7b7c8e1271b6e7",
+  "superseded_receipts": [
+    "FUSION_POOL_SAFETY_CHECKS.json",
+    "FUSION_POOL_SAFETY_BUILD_PROVENANCE.json"
+  ],
+  "withdrawn": "Extra friendly-Sleep upper-map/veto, following author clarification; no played incident established",
+  "retained": "Native-verified effective shared-pool metamagic correction",
+  "development_merge_or_package_of_superseded_candidate": false,
+  "current_document": "docs/FUSION_POOL_METAMAGIC.md",
+  "earlier_receipts_preserved_as_historical_evidence": true
+}

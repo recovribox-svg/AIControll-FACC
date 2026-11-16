@@ -11,6 +11,18 @@ namespace CompanionAI_Pathfinder.Tactics
         public const int MaxRecipients = 128;
         public const int MaxEvaluations = 8192;
 
+        // Native: bonus before Empower's integer half; ContextCalculateSharedValue's modifier afterwards.
+        internal static int PoolTotal(int roll, int bonus, double modifier, bool empowerable, bool empowered)
+        {
+            checked
+            {
+                int total = roll + bonus;
+                if (empowerable && empowered) total += total / 2;
+                if (double.IsNaN(modifier) || double.IsInfinity(modifier)) throw new ArgumentOutOfRangeException(nameof(modifier));
+                return (int)(total * modifier);
+            }
+        }
+
         public readonly struct Visit
         {
             public readonly bool ReachesEffect;

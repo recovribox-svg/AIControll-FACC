@@ -49,6 +49,7 @@ namespace CompanionAI_Pathfinder.Tactics
                 return Supported && recipient != null && m_Eligibility != null && m_Eligibility.TryGetValue(recipient, out var p)
                     ? p : 0f;
             }
+
         }
 
         private sealed class Plan
@@ -334,6 +335,11 @@ namespace CompanionAI_Pathfinder.Tactics
             internal int MaximizedBudget;
             internal int[] Budgets;        // ascending
             internal float[] Chances;
+            internal bool Empowerable; // Native tests die type, even with zero dice.
+            internal int[] EmpoweredBudgets;
+            internal float[] EmpoweredChances;
+            internal int EmpoweredMaximizedBudget;
+            internal string EmpoweredFailure;
         }
 
         /// <summary>Null when the fused pool can be forecast from metadata; else why not. Cached on the profile.</summary>
@@ -460,21 +466,28 @@ namespace CompanionAI_Pathfinder.Tactics
                 }
                 sums = next;
             }
-            var byBudget = new SortedDictionary<int, double>();
-            for (int s = 0; s < sums.Length; s++)
-            {
-                if (sums[s] <= 0.0) continue;
-                int budget = (int)((s + bonus) * modifier);
-                if (budget < 0 || budget > SharedHdBudget.MaxBudget) throw new InvalidOperationException("pool is outside the forecast bound");
-                byBudget.TryGetValue(budget, out double p);
-                byBudget[budget] = p + sums[s];
-            }
-            plan.Budgets = byBudget.Keys.ToArray();
-            plan.Chances = byBudget.Values.Select(p => (float)p).ToArray();
             plan.Rolled = sides > 1 && count > 0;
-            plan.MaximizedBudget = (int)((count * Math.Max(0, sides) + bonus) * modifier);
-            if (plan.MaximizedBudget < 0 || plan.MaximizedBudget > SharedHdBudget.MaxBudget)
-                throw new InvalidOperationException("pool is outside the forecast bound");
+            plan.Empowerable = sides > 1;
+            void Read(bool empowered, out int[] budgets, out float[] chances, out int maximized)
+            {
+                var byBudget = new SortedDictionary<int, double>();
+                for (int s = 0; s < sums.Length; s++)
+                {
+                    if (sums[s] <= 0.0) continue;
+                    int budget = SharedHdBudget.PoolTotal(s, bonus, modifier, plan.Empowerable, empowered);
+                    if (budget < 0 || budget > SharedHdBudget.MaxBudget) throw new InvalidOperationException("pool is outside the forecast bound");
+                    byBudget.TryGetValue(budget, out double p);
+                    byBudget[budget] = p + sums[s];
+                }
+                budgets = byBudget.Keys.ToArray(); chances = byBudget.Values.Select(p => (float)p).ToArray();
+                maximized = SharedHdBudget.PoolTotal(count * Math.Max(0, sides), bonus, modifier, plan.Empowerable, empowered);
+                if (maximized < 0 || maximized > SharedHdBudget.MaxBudget) throw new InvalidOperationException("pool is outside the forecast bound");
+            }
+            Read(false, out plan.Budgets, out plan.Chances, out plan.MaximizedBudget);
+            // An unsupported Empower bound must not withhold an ordinary supported configuration.
+            try { Read(true, out plan.EmpoweredBudgets, out plan.EmpoweredChances, out plan.EmpoweredMaximizedBudget); }
+            catch (Exception ex) when (ex is InvalidOperationException || ex is OverflowException || ex is ArgumentException)
+            { plan.EmpoweredFailure = "empowered " + ex.Message; }
         }
 
         private static bool TryForFusedAim(AbilityData ability, AbilityProfile profile, TargetWrapper aim,
@@ -505,8 +518,14 @@ namespace CompanionAI_Pathfinder.Tactics
                         if (aim.Unit == null) return FailFused(ability, plan, "no clicked recipient");
                         selected = new List<UnitEntityData> { aim.Unit };
                     }
-                    bool maximized = plan.Rolled && ability.HasMetamagic(Kingmaker.UnitLogic.Abilities.Metamagic.Maximize);
-                    int top = maximized ? plan.MaximizedBudget : plan.Budgets[plan.Budgets.Length - 1];
+                    // Use effective params, including automatic metamagic. This context already exists.
+                    bool empowered = plan.Empowerable && context.HasMetamagic(Kingmaker.UnitLogic.Abilities.Metamagic.Empower);
+                    bool maximized = plan.Rolled && context.HasMetamagic(Kingmaker.UnitLogic.Abilities.Metamagic.Maximize);
+                    if (empowered && plan.EmpoweredFailure != null) return FailFused(ability, plan, plan.EmpoweredFailure);
+                    var budgets = empowered ? plan.EmpoweredBudgets : plan.Budgets;
+                    var chances = empowered ? plan.EmpoweredChances : plan.Chances;
+                    int maximum = empowered ? plan.EmpoweredMaximizedBudget : plan.MaximizedBudget;
+                    int top = maximized ? maximum : budgets[budgets.Length - 1];
                     var recipients = new List<SharedHdBudget.Recipient>(selected.Count);
                     foreach (var unit in selected)
                     {
@@ -549,11 +568,11 @@ namespace CompanionAI_Pathfinder.Tactics
                     }
                     else
                     {
-                        for (int k = 0; k < plan.Budgets.Length; k++)
+                        for (int k = 0; k < budgets.Length; k++)
                         {
-                            if (!SharedHdBudget.TryForecast(plan.Budgets[k], recipients, out var eligibility))
+                            if (!SharedHdBudget.TryForecast(budgets[k], recipients, out var eligibility))
                                 return FailFused(ability, plan, "unsupported shared-budget transition or work bound");
-                            for (int i = 0; i < total.Length; i++) total[i] += plan.Chances[k] * eligibility[i];
+                            for (int i = 0; i < total.Length; i++) total[i] += chances[k] * eligibility[i];
                         }
                     }
                     var values = new Dictionary<UnitEntityData, float>();

@@ -6412,3 +6412,21 @@ real-reference Release 0 warnings/errors; ProfileAudit DIAGNOSTIC-LOG 22 and inh
 native providers 98/14/10 pass. Zero new native signatures. All other audit rows equal the checked gaps3 baseline
 on identical augmented inputs. The checked DLL is frozen; combined-package identity follows the separately
 requested review/integration rather than being attributed to the older outcome1 playtest.
+
+## 185. F7 review: effective pool metamagic (16 November 2026, Codex)
+
+[Correction/replay](FUSION_POOL_METAMAGIC.md), [checks](competence/FUSION_POOL_METAMAGIC_CHECKS.json),
+[provenance](competence/FUSION_POOL_METAMAGIC_BUILD_PROVENANCE.json). Native shared dice calculation empowers the
+bonus-inclusive total, then applies the modifier. The forecast now uses effective context params and immutable
+normal/Empowered distributions, including Maximize+Empower; it does not grant prohibited UI/rod metamagic. No new
+context/rule/selector/path pass or world scan; ordinary Sleep and normal admission are unchanged.
+
+The initially proposed extra friendly-Sleep restriction was withdrawn after the author's targeting clarification;
+no such incident was established by the logs and no candidate package was supplied/merged. Ordinary Sleep and
+enemy-only fused delivery have native graph regression checks. Existing fusion damage safety is unchanged.
+The historical 905-test/32-audit candidate receipts are superseded, not evidence for the final narrowed source.
+
+Narrowed checked source `097ff32`, MVID `cfcce6de-fbc9-428b-9247-15a89d9934f2`: 899 unit + 27/3/18 tests;
+real-reference Release 0 warnings/errors, FUSION-POOL 31 / FUSION-OUTCOME 34, inherited audits, supplementary Magus 44
+and providers 98/14/10 pass. Zero new native signatures; 8,709/15,494 normal templates admitted, 498 shared pool,
+zero reader/cone errors. Execution remains a native cast, preserving native Sleep/ally/faction behavior.
