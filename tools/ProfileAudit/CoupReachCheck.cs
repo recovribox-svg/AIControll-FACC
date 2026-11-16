@@ -99,7 +99,8 @@ namespace ProfileAudit
                 int cap = Array.FindIndex(refs, m => m.DeclaringType == delivery && m.Name == "TryPrepare");
                 Check(Array.FindIndex(refs, m => m.Name == "Init") < cap && cap < Array.FindIndex(refs, m => m.Name == "NeedsPrecomputedPath"),
                     "shared preview/issue cap is after Init and before any path preparation");
-                var runCommand = typeof(CommandDispatcher).GetMethods(all).Single(m => m.Name == "Run" && m.GetParameters()[1].ParameterType == typeof(Kingmaker.UnitLogic.Commands.Base.UnitCommand));
+                var runCommand = typeof(CommandDispatcher).GetMethods(all).Single(m => m.Name == "Run" && m.GetParameters().Length > 3 &&
+                    m.GetParameters()[1].ParameterType == typeof(Kingmaker.UnitLogic.Commands.Base.UnitCommand));
                 Check(Calls(typeof(CommandDispatcher).GetMethod("CanPrepare", all), "TryPrepare") && Calls(runCommand, "TryPrepare") &&
                       Calls(runCommand, "NoteIssued"), "preview and final issue share preparation, with diagnostics only after command acceptance");
                 Check(Calls(typeof(TacticalEngine).GetMethod("EvaluateAbility", all), "TryWeapon") &&
