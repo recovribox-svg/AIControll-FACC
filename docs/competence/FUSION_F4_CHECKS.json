@@ -1,0 +1,175 @@
+{
+  "task": "Fusion F4 slices A and B: value and admit fused spells with an effect on a passed root save or on both outcomes",
+  "date": "2026-11-16",
+  "author": "Claude",
+  "authorization": "the author agreed to the plan's choice and asked to begin",
+  "plan": "docs/FUSION_OUTCOME_EFFECTS_PLAN.md",
+  "implementation": "docs/FUSION_OUTCOME_EFFECTS.md",
+  "branch": "claude/fusion-outcome-effects",
+  "development_base": "980cf26827e23e5b0c78696fe530edecd7156162",
+  "checked_source": "f5ccb400c97cc9802a946f9249a8f2ba58284bdd",
+  "worktree": "clean at the checked source; bin and obj removed before the build",
+  "toolchain": {
+    "dotnet_sdk": "8.0.428",
+    "msbuild": "17.11.71.50904",
+    "csharp_compiler": "4.11.0-3.25569.22 (3fb752d4)",
+    "references": "the supplied Wrath_Data/Managed assemblies (Assembly-CSharp SHA-256 2cb7160b7154d4ffacc77b9c51b1eb26199e1294300f04fdfc073367b2ef8953) and UnityModManager 0.33.3"
+  },
+  "release_build": {
+    "warnings": 0,
+    "errors": 0,
+    "dll_sha256": "0728e3aa88b021898f33c4fce76282ec7b47666d34d100199e34a7e103d9aa1e",
+    "mvid": "fbc220a5-e4af-42eb-b386-e72ec1b61247",
+    "source_link_commit": "f5ccb400c97cc9802a946f9249a8f2ba58284bdd"
+  },
+  "unit_tests": {
+    "passed": 881,
+    "failed": 0,
+    "new": 15
+  },
+  "script_tests": {
+    "inventory": 27,
+    "summon_kit_supplement": 3,
+    "invocation_ledger": 18,
+    "failures": 0
+  },
+  "added_game_references_vs_integrated_build_ff16d127": {
+    "added": 0,
+    "removed": 0
+  },
+  "profile_audit": {
+    "inputs": "14 export folders + 607 missing-only stock fixtures + the Demonology unit list, as in INTEGRATION_65_73_CHECKS.json",
+    "exit_code": 0,
+    "status": "PARTIAL: loaded 45,244, failed 1, allowed 1 (AchaekekSacredWeaponFeature)",
+    "failed_check_lines": 0,
+    "two_runs_byte_identical": true,
+    "report_sha256": "c98e2e4f01a0a8a535b8d110441f5df1eea74ad701a6e7740b5afbc85f96cb6c",
+    "new_section": {
+      "FUSION-OUTCOME": 34
+    },
+    "changed_check": "VALUE-SELECTION (24, same count): 'saved Frigid configuration is admitted only through the outcome model' replaces 'retains the existing unsupported boundary'",
+    "diff_vs_integrated_baseline_599f5301": "0 lines apart from FUSION-OUTCOME and the FUSION-COVERAGE summary line",
+    "summon_kit_detail": "byte-identical to the baseline (b7b94434...)"
+  },
+  "fusion_coverage": {
+    "configurations": 15494,
+    "reader_errors": 0,
+    "two_runs_byte_identical": true,
+    "case_report_sha256": "77979c29c0ab24fe55a80ddde8b93c400cdd15b8032d850f4588612b0698f14e",
+    "profile_accepted": {
+      "before": 7306,
+      "after": 8211
+    },
+    "profile_withheld": {
+      "before": 8188,
+      "after": 7283
+    },
+    "joint_outcome_metadata_qualified": {
+      "before": 3118,
+      "after": 4023
+    },
+    "cone_components_resolved": {
+      "before": 1166,
+      "after": 1416,
+      "errors": 0
+    },
+    "newly_admitted": 905,
+    "lost_admission": 0,
+    "previously_admitted_with_changed_gate_result": 0,
+    "newly_admitted_by_source_overlapping": {
+      "Fear": 276,
+      "Boneshatter": 267,
+      "RayOfExhaustion": 267,
+      "FrigidTouchCast": 128
+    },
+    "profiles_with_an_effect_outside_the_failed_branch": 3616,
+    "of_those": {
+      "admitted": 905,
+      "withheld_by_the_outcome_gate": 1969,
+      "behind_another_structural_blocker": 742
+    },
+    "withheld_by_the_outcome_gate_by_joint_reason": {
+      "support/reveal/fact-grant/form/faction/poison carrier": 672,
+      "mutable/unread guard ContextConditionIsMainTarget": 512,
+      "mutable/unread guard ContextConditionCompareTargetHP": 418,
+      "composite or non-HP damage": 280,
+      "dispel/enchantment/extension dependency": 48,
+      "dynamic removal dependency": 38,
+      "earlier application changes a guard fact e6f2fc5d73d88064583cb828801212f4 (Fatigued)": 1
+    },
+    "plan_prediction": "638 for slice A alone (what-if run, first remaining refusal); slice B adds 267 Ray of Exhaustion configurations"
+  },
+  "native_harnesses": {
+    "toggle_with_psionics_0_2_3": 98,
+    "tome_1_4_18": 14,
+    "toybox_1_7_34": 10,
+    "failures": 0
+  },
+  "package": {
+    "file": "test-builds/AI-Control-FACC-v0.3.52-dev-outcome1-f5ccb40-UMM-test.zip",
+    "zip_sha256": "f961ea2b2983c6f109e062359a94bee15f511691cf49229568544a057d4b1c58",
+    "contents": [
+      "CompanionAI_Pathfinder.dll",
+      "Info.json"
+    ],
+    "dll_is_the_checked_dll": true,
+    "manifest_version": "0.3.52"
+  },
+  "played_log_inputs": {
+    "private": "logs are not committed",
+    "Log.txt": {
+      "bytes": 749339,
+      "lines": 3482,
+      "sha256": "065a85976fb0f685b46d1b492b72ad4a65e727b83b920c2461095682d9490228",
+      "build_row": "v0.3.52 module=48ece05d-5895-46e3-896c-d87cb5a60b29 (the gaps3 package)"
+    },
+    "combatLog.txt": {
+      "bytes": 574017,
+      "lines": 14218,
+      "sha256": "dccf8634ece13facddb46288bfc4226507b730d2a36dda32255211a8ea1fe0aa"
+    },
+    "read_for": "arcan's fusion rows and slow-decision baseline; not a full playtest review",
+    "combats": 3,
+    "commands_issued": 354,
+    "commands_ended": 354,
+    "arcan_fusions": {
+      "joint_value": [
+        "Incindiary Runes / SnowB (IncendiaryRunes + Snowball, Reflex)",
+        "Incendiary Runes/Color Spray (Will)",
+        "Snowball/Shocking Grasp (Fortitude)",
+        "Explosive Runes/Blindness (Fortitude)",
+        "Explosive Runes/Frigid Touch (no save)",
+        "Explosive Runes/Hideous Laughter (Will)",
+        "Explosive Runes/Color Spray (Will)"
+      ],
+      "older_forecast": [
+        "Explosive Runes/Excruciating Deformation (support/poison carrier)"
+      ],
+      "withheld": [
+        "Snowball / Sleep (shared Hit Dice selection)",
+        "Explosive Runes/Sleep (shared Hit Dice selection)"
+      ],
+      "blocked_by_the_rule_removed_here": 0
+    },
+    "arcan_slow_decisions": {
+      "rows": 8,
+      "min_ms": 286,
+      "max_ms": 539,
+      "mean_ms": 368,
+      "mean_abilities_stage_ms": 356,
+      "all_slow_rows_in_log": 43
+    },
+    "also_seen": "a turn-based Release Grapple by Wenduag issued and ended Success/acted (rows 1010-1012); Death from Above offered no safe attack three times; no Frigid Touch cast"
+  },
+  "unchanged": {
+    "manifest_version": "0.3.52",
+    "main_tag_or_release": false,
+    "movement_policy": false
+  },
+  "limits": [
+    "Not played. Offline checks run no actor, roll, cast, command or Unity timing.",
+    "Coverage numbers are native UI configuration templates, not a character's created spells.",
+    "The gate result is metadata only; live recipients, durations, aim and value are assessed only in play.",
+    "PR #75 (Coup de Grace reach) is not included."
+  ]
+}

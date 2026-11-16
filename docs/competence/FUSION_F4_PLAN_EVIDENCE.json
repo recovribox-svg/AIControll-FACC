@@ -1,0 +1,123 @@
+{
+  "task": "Plan one next feature for AI Control; verify docs/TACTICAL_EXPANSION_INVESTIGATION.md (PR #74) against current code and native mechanics",
+  "date": "2026-11-16",
+  "author": "Claude",
+  "plan": "docs/FUSION_OUTCOME_EFFECTS_PLAN.md",
+  "scope": "planning and verification only; no gameplay source, manifest, package, merge, main push or release",
+  "base": {
+    "development": "980cf26827e23e5b0c78696fe530edecd7156162",
+    "open_prs_at_check": {
+      "74": {"head": "cc8f6dca7815d280c915add272d706d0a8acf2ad", "kind": "research, documentation only"},
+      "75": {"head": "4110c7002b724f197a92433fbd3f243545a3a038", "kind": "Coup de Grace reach fix by Codex; not reviewed in this task; does not touch the Fusion files"}
+    }
+  },
+  "inputs": {
+    "game_assembly_sha256": "2cb7160b7154d4ffacc77b9c51b1eb26199e1294300f04fdfc073367b2ef8953",
+    "game_assembly_sha256_source": "computed on the supplied file in this task; equals the hash PR #75 records",
+    "blueprints": "the author's 14 export folders plus 607 missing-only stock fixtures (manifest b53d1855..., identical to S1), as in INTEGRATION_65_73_CHECKS.json",
+    "decompiler": "ilspycmd 8.2.0.7535",
+    "private": "assemblies, exports, decompiled text and case reports are not committed"
+  },
+  "native_contracts_decompiled": {
+    "AbilityEffectRunAction.Apply": "fused cast: one root save of MagicHackData.SavingThrowType (Persistent reroll), then ActionList(spell1 actions, spell2 actions).Run() under that SavingThrowData",
+    "ContextActionConditionalSaved.RunAction": "reads Context.SavingThrow; IsPassed runs Succeed, else Failed; null logs an error and runs neither",
+    "ContextActionSavingThrow.RunAction": "rolls only when MagicHackData is null, MakeSaveAlsoForMagicHack is set or the context has no save; otherwise runs its actions under the root save",
+    "ContextActionApplyBuff": "no reference to a saving throw: applies on both outcomes outside a saved branch",
+    "AbilityCustomTeleportation": "caster only; point target, or an offset in front of a unit target; navmesh and fog-of-war restriction; delegates to AbilityCustomDimensionDoor.Deliver",
+    "AbilityCustomDimensionDoor": "caster plus caster.Group members within Radius + corpulences when Radius > 0, and mounts; relaxed placement; sets PreventAttacksOfOpporunityNextFrame; short system buff",
+    "AbilityData.GetApproachDistance": "Range Weapon uses Caster.Unit.GetFirstWeapon().AttackRange plus both corpulences",
+    "ContextActionMeleeAttack.RunAction": "attacks with GetThreatHandMelee"
+  },
+  "fusion_coverage_current_980cf26": {
+    "sources": 60, "ordered_pairs": 3540, "configurations": 15494,
+    "profile_accepted": 7306, "profile_withheld": 8188, "joint_outcome_metadata_qualified": 3118, "reader_errors": 0,
+    "blocker_buff_outside_failed_branch": {"present": 3616, "sole": 2874},
+    "sole_cases_by_source_spell_overlapping": {
+      "RayOfExhaustion": 824, "MoltenOrb": 528, "Fear": 480, "Disintegrate": 418, "Boneshatter": 412,
+      "ReducePerson": 214, "AcidArrow": 214, "Enervation": 208, "FrigidTouchCast": 192
+    },
+    "note_by_source": "a configuration with two such sources is counted under both; the later table counts each configuration once",
+    "case_report_sha256": "cef05fe3c4dee9056d384506868ffd6b38fa17b0e0b7100fe17b65e1c61e7820"
+  },
+  "what_if_measurement": {
+    "method": "throwaway detached worktree at 980cf26 with only the three-line LimitFusion(\"buff outside the shared failed-save branch\") call removed; real-reference Release build (0 warnings, 0 errors); ProfileAudit --fusion-coverage on identical inputs; worktree deleted afterwards, nothing committed",
+    "purpose": "count how many of the blocked configurations the existing FusionOutcomeModel metadata gate would already qualify; not a proposed implementation",
+    "profile_accepted": 10180, "joint_outcome_metadata_qualified": 3756, "reader_errors": 0,
+    "newly_accepted": 2874,
+    "previously_accepted_with_changed_gate_result": 0,
+    "newly_accepted_by_first_gate_result": {
+      "qualified": 638,
+      "support/reveal/fact-grant/form/faction/poison carrier": 584,
+      "mutable/unread guard ContextConditionIsMainTarget": 496,
+      "mutable/unread guard ContextConditionCompareTargetHP": 416,
+      "earlier application changes a guard fact 46d1b9cc3d0fd36469a471b047d773a2 (Exhausted)": 409,
+      "earlier application changes a guard fact e6f2fc5d73d88064583cb828801212f4 (Fatigued)": 1,
+      "composite or non-HP damage": 260,
+      "dispel/enchantment/extension dependency": 36,
+      "dynamic removal dependency": 34
+    },
+    "qualified_638": {
+      "by_blocking_source_overlapping": {"Fear": 268, "Boneshatter": 266, "FrigidTouchCast": 124},
+      "by_root_save_and_shape": {
+        "Fortitude/SingleTarget": 142, "Will/SingleTarget": 136, "Will/Cone": 116, "Reflex/SingleTarget": 56, "Reflex/Cone": 52,
+        "Will/Burst": 48, "Fortitude/Cone": 42, "Fortitude/Burst": 24, "Reflex/Burst": 22
+      },
+      "by_native_level": {"2": 40, "3": 30, "4": 434, "5": 86, "6": 48},
+      "example_pairs_counted": {
+        "Fireball+Fear": 16, "ConeOfCold+Fear": 8, "HoldPerson+Boneshatter": 8, "Slow+FrigidTouchCast": 8,
+        "IncendiaryRunes+Fear": 16, "IncendiaryRunes+Boneshatter": 16, "IncendiaryRunes+FrigidTouchCast": 8,
+        "ExplosiveRunes+Fear": 8, "ExplosiveRunes+Boneshatter": 8
+      }
+    },
+    "slice_mapping": {
+      "A": 638, "B_exclusive_branch_guards": 410, "C_main_target_guard": 496, "D_death_marker": 416,
+      "E_non_control_carriers": 844, "not_assigned_to_a_slice": 70
+    },
+    "expected_failed_check_in_what_if": "VALUE-SELECTION: newly exposed saved-cast side effect retains the existing unsupported boundary (1 line); every other section passed",
+    "case_report_sha256": "8ed8004662b8cd6489d7d05baf04de4c93e98f2917e0d3a5e4025585b00b10c9"
+  },
+  "teleport_inventory": {
+    "method": "component scan of the 14 export folders",
+    "AbilityCustomDimensionDoor": 38, "AbilityCustomTeleportation": 13, "AbilityCustomDimensionDoorTargets": 7,
+    "AbilityCustomFlashStep": 1, "AbilityCustomDweomerLeap": 1, "AbilityCustomDimensionDoorSwap": 1,
+    "player_self_only_point_radius_0": [
+      "ArcanistExploitDimensionalSlideAbility e81570b9df7758e4195346340231e6e3 (Move)",
+      "TravelDomainGreaterAbility 867e6fd88d089c442be7cdd49f05a88e (Move)",
+      "TravelDomainGreaterAbilitySeparatist e1ab78418e2e4f7d8b1d96b46716ac00 (Move)",
+      "TravelBlessingMajorAbility 17b3102eb33b8d14ba882ef8ba74fadd (Move)",
+      "ConjurationDimensionalStepsAbility ec7a2151c5a3fd145810da51c0e82041 (Move)",
+      "KiAbudantStep 336a841704b7e2341b51f89fc9491f54 (Move)",
+      "DrunkenKiAbudantStep 21798e57e41a464b820715113f99895d (Move)",
+      "ScaledFistAbudantStep 838b3be2249b33e4d96a0392132d1604 (Standard)",
+      "DimensionalRideAbility 0ba39a85cda2441e95d9022413699cd2 (Move)",
+      "HermitRevelationReclusesStride10Ability 76a51b9f9f33c8b46bf411f607cac485 (Move)",
+      "WalkThroughSpaceBuffAbility 25c6b6c131ce00b4b972bdc66160407d (Move)",
+      "SpellDanceDimensionDoorCasterOnly d8807cf4dcc3af143bf7c5f3a1e11469 (Swift)",
+      "WitchOfTheVeilShroudedStepAbility8 5713b048d3a24959b7a27eac48e69943 (Swift)",
+      "CloakOfMortaAbility 7633d9742b854c30bae4160c9b83663b (Swift)",
+      "DimensionDoorCasterOnly a9b8be9b87865744382f7c64e599aeb2 (Standard)"
+    ],
+    "teleportation_component_player": [
+      "DemonTeleport b3e8e307811b2a24387c2c9226fb4c10 (Move)",
+      "UncertanityPrincipleTeleport 66bbb0079b595874f8c698451be2329c (Swift)"
+    ],
+    "summonable_creatures_with_a_position_ability": {
+      "VrockSummon / CR9_VrockStandard": "Vrock_Ability_GreaterTeleport c9a902658593a2b4d9c24b1d108a0ccc: enemy target only, radius 5 ft",
+      "CR10_DerakniStandard": "DimensionDoorHell 637e9c2a9d121584fb8b3f3ec799eb1e: radius 10 ft",
+      "CR12_OmoxStandard / CR13_OmoxAdvanced": "Omox_Ability_LiquidLeap ed35b1f1c6809c54b9ab29ae8393afd3: not inspected",
+      "CR15_BabauSpecial_RE": "DemonTeleport; the Demonology Babau id b80f9014b742ea04ba27f897177bafc4 is CR6_BabauStandard, a different unit"
+    },
+    "played_owner_verified": false
+  },
+  "other_checks": {
+    "destructive_shockwave": "DestructiveShockwaveMythicFeat 263a65c1e92dd964192ba7d41a76b4e3: AddInitiatorAttackWithWeaponTrigger OnMiss, melee; 1-second buff 3c595595... whose Activated action deals physical damage equal to the caster's Strength bonus (IgnoreCritical), then removes itself",
+    "audit_personal_area_branch": "tools/ProfileAudit/Audit.cs Classify: for a personal area the enemy side requires HarmfulEffects, DealsDamage, a maneuver or a weapon attack; control strength is not tested",
+    "runtime_value_of_screech_and_drone": "not re-traced in this task"
+  },
+  "limits": [
+    "Template counts are native UI configuration templates from the declared source list, not a character's created spells.",
+    "The what-if gate result is metadata only: live recipients, durations, aim, value and execution are unassessed.",
+    "The raw playtest logs were lost with the earlier container; play evidence is taken from the committed reviews.",
+    "No unit test suite, native harness or package was run or produced for this planning task."
+  ]
+}

@@ -37,10 +37,25 @@ namespace CompanionAI_Pathfinder.Tactics
             }
         }
 
+        /// <summary>★ Fusion F4: the chance, among delivered casts, of the outcomes that carry an effect.</summary>
+        internal static float FusionOutcomeShare(float failChance, bool onFailure, bool onPass)
+        {
+            float fail = Clamp(failChance, 0f, 1f);
+            return (onFailure ? fail : 0f) + (onPass ? 1f - fail : 0f);
+        }
+
         // F3: branch before applying nonlinear HP/kill utility. The root save is shared, not a second delivery roll.
         internal static void FusionValue(float failChance, float deliveryChance, float failedDamage, float passedDamage,
             float hp, float damageWorth, float controlWorth, float controlRoundsOnFailure, bool regenerating,
-            bool endsRegeneration, out float damage, out float control)
+            bool endsRegeneration, out float damage, out float control) =>
+            FusionValue(failChance, deliveryChance, failedDamage, passedDamage, hp, damageWorth, controlWorth,
+                controlRoundsOnFailure, 0f, regenerating, endsRegeneration, out damage, out control);
+
+        // ★ Fusion F4: control the native cast applies on a passed root save (Fear's shaken round, Boneshatter's
+        // fatigue) or on both outcomes (Frigid Touch's stagger) is weighted by that outcome's chance.
+        internal static void FusionValue(float failChance, float deliveryChance, float failedDamage, float passedDamage,
+            float hp, float damageWorth, float controlWorth, float controlRoundsOnFailure, float controlRoundsOnPass,
+            bool regenerating, bool endsRegeneration, out float damage, out float control)
         {
             float fail = Clamp(failChance, 0f, 1f), delivery = Clamp(deliveryChance, 0f, 1f);
             float failedKill = KillChance(1f, failedDamage, hp), passedKill = KillChance(1f, passedDamage, hp);
@@ -50,6 +65,9 @@ namespace CompanionAI_Pathfinder.Tactics
                                      RegeneratingKill(passedKill, regenerating, endsRegeneration)));
             // A recipient downed by this outcome cannot also lose the same future actions to its failed-save control.
             control = delivery * fail * (1f - failedKill) * Math.Max(0f, controlWorth) * Math.Max(0f, controlRoundsOnFailure);
+            // Added only when present, so a fusion without such an effect keeps its value to the last bit.
+            if (controlRoundsOnPass > 0f)
+                control += delivery * (1f - fail) * (1f - passedKill) * Math.Max(0f, controlWorth) * controlRoundsOnPass;
         }
     }
 }

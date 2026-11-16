@@ -111,8 +111,14 @@ namespace ProfileAudit
                     "played no-save Runes/Frigid fusion reads the common stagger without adding another touch roll");
                 Check((bool)typeof(TacticalEngine).GetMethod("FusionOutcomeModel", All).Invoke(null, new object[] { fused, fusedProfile }),
                     "played no-save fusion retains joint-outcome qualification");
-                Check((string)typeof(AbilityProfile).GetProperty("FusionUnsupported", All).GetValue(AbilityProfile.Get(Fuse("Fireball", SavingThrowType.Reflex))) ==
-                    "buff outside the shared failed-save branch", "newly exposed saved-cast side effect retains the existing unsupported boundary");
+                // ★ Fusion F4: the saved configuration is no longer refused outright; it is offered only through the joint
+                // outcome value, which prices the stagger on both save outcomes (FUSION-OUTCOME checks the routes).
+                var saved = Fuse("Fireball", SavingThrowType.Reflex); var savedProfile = AbilityProfile.Get(saved);
+                Check(typeof(AbilityProfile).GetProperty("FusionUnsupported", All).GetValue(savedProfile) == null &&
+                      typeof(AbilityProfile).GetProperty("FusionOutcomeEffectLocation", All).GetValue(savedProfile) != null &&
+                      typeof(TacticalEngine).GetMethod("FusionWithheld", All).Invoke(null, new object[] { saved, savedProfile }) == null &&
+                      (bool)typeof(TacticalEngine).GetMethod("FusionOutcomeModel", All).Invoke(null, new object[] { saved, savedProfile }),
+                    "saved Frigid configuration is admitted only through the outcome model");
                 var ally = typeof(TacticalEngine).GetMethod("SelectedBuffAllyRounds", All);
                 var members = SaveBoostCheck.ReferencedMembers(ally).ToArray();
                 Check(members.Any(m => m.Name == "MaximumRounds") && members.Any(m => m.Name == "HasConditionImmunity") && !members.Any(m => m.Name == "HasFact"),

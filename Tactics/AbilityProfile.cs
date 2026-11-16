@@ -57,6 +57,7 @@ namespace CompanionAI_Pathfinder.Tactics
         /// <summary>The game evaluates this checker against the caster (Conditional inside ContextActionOnContextCaster).</summary>
         public bool OnCaster;
         internal int ReadOrdinal; // Fusion metadata only: where the native checker is reached in the ordered payload
+        internal int SourceOrdinal; // Fusion metadata only: which source spell's payload reads it (1 or 2)
     }
 
     public sealed partial class AbilityProfile
@@ -851,8 +852,9 @@ namespace CompanionAI_Pathfinder.Tactics
                 if (action is Conditional conditional)
                 {
                     int readOrdinal = Fusion != null ? fusionActionOrdinal : 0;
-                    Walk(conditional.IfTrue?.Actions, visited, abilityDepth, subject, depth + 1, With(guards, conditional.ConditionsChecker, true, toCaster, readOrdinal));
-                    Walk(conditional.IfFalse?.Actions, visited, abilityDepth, subject, depth + 1, With(guards, conditional.ConditionsChecker, false, toCaster, readOrdinal));
+                    int readSource = Fusion != null ? fusionSourceOrdinal : 0;
+                    Walk(conditional.IfTrue?.Actions, visited, abilityDepth, subject, depth + 1, With(guards, conditional.ConditionsChecker, true, toCaster, readOrdinal, readSource));
+                    Walk(conditional.IfFalse?.Actions, visited, abilityDepth, subject, depth + 1, With(guards, conditional.ConditionsChecker, false, toCaster, readOrdinal, readSource));
                     continue;
                 }
 
@@ -1211,12 +1213,14 @@ namespace CompanionAI_Pathfinder.Tactics
             return result;
         }
 
-        private static EffectGuard[] With(EffectGuard[] guards, ConditionsChecker checker, bool branch, bool onCaster, int readOrdinal = 0)
+        private static EffectGuard[] With(EffectGuard[] guards, ConditionsChecker checker, bool branch, bool onCaster, int readOrdinal = 0,
+                                          int sourceOrdinal = 0)
         {
             if (checker == null) return guards;
             var result = new EffectGuard[guards.Length + 1];
             guards.CopyTo(result, 0);
-            result[guards.Length] = new EffectGuard { Checker = checker, Branch = branch, OnCaster = onCaster, ReadOrdinal = readOrdinal };
+            result[guards.Length] = new EffectGuard { Checker = checker, Branch = branch, OnCaster = onCaster, ReadOrdinal = readOrdinal,
+                                                      SourceOrdinal = sourceOrdinal };
             return result;
         }
 

@@ -47,6 +47,10 @@ namespace CompanionAI_Pathfinder.Tactics
         private Dictionary<GameAction, FusionSavePath> FusionDamagePaths;
         private Dictionary<GameAction, FusionSavePath> fusionBuffPaths;
         internal bool FusionBuffPathsConsistent { get; private set; } = true;
+        /// <summary>★ Fusion F4 (docs/FUSION_OUTCOME_EFFECTS_PLAN.md): the first target buff application that the native
+        /// cast runs on a passed root save or on both outcomes. Such a fusion is offered only through the joint outcome
+        /// value (TacticalEngine.FusionWithheld); the older forecast multiplies control by the fail chance.</summary>
+        internal string FusionOutcomeEffectLocation { get; private set; }
         internal FusionSavePath FusionBuffPath(GameAction action) =>
             fusionBuffPaths != null && fusionBuffPaths.TryGetValue(action, out var path) ? path : FusionSavePath.Both;
         internal bool FusionValueFallbackReported;
@@ -105,12 +109,30 @@ namespace CompanionAI_Pathfinder.Tactics
                         if (reference == null) continue;
                         // Comparing immutable ids needs no resolution/load of unrelated race or creature-type facts.
                         if (reference.Guid != BlueprintGuid.Empty && BuffApplications.Any(prior =>
-                            prior.ActionOrdinal < guard.ReadOrdinal && prior.Buff.AssetGuid == reference.Guid))
+                            prior.ActionOrdinal < guard.ReadOrdinal && prior.Buff.AssetGuid == reference.Guid &&
+                            !OppositeBranchOfOneRead(prior, guards)))
                         { FusionGuardRefusal = "earlier application changes a guard fact " + reference.Guid; return false; }
                     }
                 }
             }
             return true;
+        }
+
+        // ★ Fusion F4 (slice B): an earlier application in the opposite branch of a Conditional that this same source
+        // payload read once cannot have run when the guard is reached. Ray of Exhaustion: "already fatigued -> exhausted",
+        // else "already exhausted -> nothing", else the save. The same checker read by the other source payload, or
+        // read again, is a second native evaluation and stays a dependency.
+        private static bool OppositeBranchOfOneRead(BuffApplication prior, EffectGuard[] chain)
+        {
+            foreach (var mine in chain)
+            {
+                if (mine.Checker == null || mine.SourceOrdinal == 0 || mine.SourceOrdinal != prior.SourceOrdinal) continue;
+                foreach (var theirs in prior.Guards)
+                    if (ReferenceEquals(theirs.Checker, mine.Checker) && theirs.OnCaster == mine.OnCaster &&
+                        theirs.ReadOrdinal == mine.ReadOrdinal && theirs.SourceOrdinal == mine.SourceOrdinal &&
+                        theirs.Branch != mine.Branch) return true;
+            }
+            return false;
         }
 
         // Native Burning's unlabelled carrier damages its bearer each round, then may remove itself. It is not CC.
@@ -244,9 +266,11 @@ namespace CompanionAI_Pathfinder.Tactics
                     LimitFusion("spawned area or creature payload", at);
                 foreach (var referenced in ReferencedAbilities(action))
                     if (referenced != null) LimitFusion("secondary spell payload", at);
+                // ★ Fusion F4: recorded, no longer a refusal. AbilityEffectRunAction rolls one root save and
+                // ContextActionApplyBuff has no save test, so the application runs on exactly the path labelled below.
                 if (action is ContextActionApplyBuff applied && !applied.ToCaster && path != FusionSavePath.Failed &&
-                    Fusion.SavingThrowType != SavingThrowType.Unknown)
-                    LimitFusion("buff outside the shared failed-save branch", at);
+                    Fusion.SavingThrowType != SavingThrowType.Unknown && FusionOutcomeEffectLocation == null)
+                    FusionOutcomeEffectLocation = at;
                 if (action is ContextActionApplyBuff application)
                 {
                     if (fusionBuffPaths == null) fusionBuffPaths = new Dictionary<GameAction, FusionSavePath>();

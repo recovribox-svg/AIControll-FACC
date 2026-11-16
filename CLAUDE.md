@@ -8,6 +8,28 @@ Read [CONTRIBUTING.md](CONTRIBUTING.md) for shared branch ownership, Codex pull 
 Codex works on task branches and targets pull requests at `claude/dreamy-pasteur-b9h3rn`; Claude reviews and integrates them there.
 Keep `main` for author-authorized releases. Read [AGENTS.md](AGENTS.md) when coordinating agent work.
 
+**Current handover (16 November 2026, Claude): Fusion F4 slices A and B on `claude/fusion-outcome-effects` (no PR yet),
+based on development `980cf26`. Not played.** Read [docs/FUSION_OUTCOME_EFFECTS.md](docs/FUSION_OUTCOME_EFFECTS.md),
+`docs/TACTICAL_AI.md` §182 and the [receipt](docs/competence/FUSION_F4_CHECKS.json). The plan and the comparison with
+tactical mobility are in [docs/FUSION_OUTCOME_EFFECTS_PLAN.md](docs/FUSION_OUTCOME_EFFECTS_PLAN.md).
+- **Why.** After Codex's research (PR #74) the author asked for one plan, agreed with "Fusion first" and said to begin.
+- **Change (both modes).** A fused spell with an effect on a passed save or on both outcomes was always withheld. It is
+  now offered through the joint outcome value, which keeps one control envelope per save outcome
+  (`TacticalEngine.FusionWithheld`, `TryFusionControlRounds`, `ValueModel.FusionValue`). Slice B lets Ray of
+  Exhaustion's own exclusive branches pass the guard check.
+- **Result.** 8,211 of 15,494 templates admitted (7,306 before): Fear, Boneshatter, Frigid Touch, Ray of Exhaustion.
+  None lost; admitted fusions keep their values. 1,969 stay withheld by the new outcome gate.
+- **The author's gaps3 log.** arcan's ten fusions: none was blocked by this rule; two Sleep fusions are withheld for
+  "shared Hit Dice selection" (Fusion plan F7). He gains saved Frigid Touch fusions. He knows Molten Orb, Acid Arrow
+  and Reduce Person (plan slices C and E).
+- **Checks** on `f5ccb40`: Release 0 warnings; 881 unit + 27 + 3 + 18 tests; 0 added references; ProfileAudit exit 0,
+  two runs identical, `FUSION-OUTCOME` 34, other lines equal to the §180 baseline; native harnesses 98/14/10.
+- **Package:** `test-builds/AI-Control-FACC-v0.3.52-dev-outcome1-f5ccb40-UMM-test.zip`, MVID
+  `fbc220a5-e4af-42eb-b386-e72ec1b61247`. It does not include PR #75. Manifest 0.3.52; no `main`, tag or release change.
+- **Open:** PR #74 (research) and PR #75 (Coup de Grace reach) from Codex, not reviewed here.
+- **Next:** the author plays outcome1 with a saved Frigid Touch fusion (replay in the page), then decides between the
+  Sleep slice (F7), Molten Orb / Acid Arrow (C, E) and tactical mobility.
+
 **Current handover (16 November 2026, Codex): AI Coup de Grace delivering-hand reach on
 `codex/coup-de-grace-reach`, based on development `980cf26`; unplayed.** The author explicitly approved this fix.
 Read [evidence/contract/TB-RT replay](docs/COUP_DE_GRACE_REACH.md), §181,
