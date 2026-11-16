@@ -399,6 +399,10 @@ namespace ProfileAudit
             foreach (var line in diagnosticLines) Console.WriteLine(line);
             File.WriteAllText(output, string.Join(Environment.NewLine, diagnosticLines) + Environment.NewLine + Environment.NewLine + File.ReadAllText(output));
             blocklistFailures += diagnosticFailures;
+            var coupLines = CoupReachCheck.Run(loaded.Values, options.OptionalProvider, out int coupFailures);
+            foreach (var line in coupLines) Console.WriteLine(line);
+            File.WriteAllText(output, string.Join(Environment.NewLine, coupLines) + Environment.NewLine + Environment.NewLine + File.ReadAllText(output));
+            blocklistFailures += coupFailures;
             if (options.FusionCoverageOutput != null)
             {
                 var coverageLines = FusionCoverage.Run(loaded.Values, options.FusionCoverageOutput, failed, out int coverageFailures);

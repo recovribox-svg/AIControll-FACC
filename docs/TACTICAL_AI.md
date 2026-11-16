@@ -6258,3 +6258,24 @@ package's checked source `9a02565`. Receipt: [INTEGRATION_65_73_CHECKS.json](com
 
 The gaps3 package is development's code; no new package was built. Unplayed: TB release, an actual leap, Frigid Touch
 in play, and the form/Fury scheduling.
+
+## 181. Coup de Grace uses its delivering hand (16 November 2026, Codex)
+
+The author approved implementing the range inconsistency identified in the preceding tactical-expansion research.
+[Evidence, implementation and TB/RT replay](COUP_DE_GRACE_REACH.md). Native Weapon ability range uses `GetFirstWeapon`,
+while stock Coup delivers through `GetThreatHandMelee`; TTT's replacement uses `GetThreatHand`. Explicit-target
+execution does not add a distance check. A ranged range supplier and melee delivering limb can disagree; gaps2
+contains no issued Coup and cannot confirm the reported summon episode.
+
+AI Control now recognizes those exact stock/TTT delivery shapes, selects their actual native hand, and requires
+that hand to be melee. Appraisal, damage estimate, sleeper preservation and final initialized command radius use
+the delivering weapon. Radius is bounded by both the native ability and native weapon radius, including both
+bodies, without extending a stricter limit. Shared preview/final preparation rechecks the current hand and native
+target legality before path preparation. Unknown/ambiguous routes and TTT selecting a ranged Snap Shot hand are
+withheld by the AI. Native/manual commands are not patched. Existing action economy, full-round, LoS/height,
+pathfinding and approach/commitment policies remain authoritative. No new path/world/rule/context forecast or
+persistent actor cache; one lazy accepted-command reach witness per fight/caster/weapon.
+
+See [checks](competence/COUP_REACH_CHECKS.json), [toolchain/reference provenance](competence/COUP_REACH_BUILD_PROVENANCE.json)
+and the coup1 entry in `test-builds/README.md` for exact checked source/package. Offline validation is separate
+from gameplay: the new correction needs the focused TB/RT replay. Manifest stays 0.3.52, no release/main change.

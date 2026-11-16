@@ -1050,8 +1050,9 @@ namespace CompanionAI_Pathfinder.Tactics
         {
             public UnitEntityData Unit;
             public Vector3 Position;
-            public float Corpulence;
             public float Reach;
+            public AbilityData Ability;
+            public ItemEntityWeapon Weapon;
             private readonly Dictionary<UnitEntityData, bool> m_Reaches = new Dictionary<UnitEntityData, bool>();
 
             /// <summary>
@@ -1065,7 +1066,8 @@ namespace CompanionAI_Pathfinder.Tactics
             public bool Reaches(UnitEntityData enemy)
             {
                 if (m_Reaches.TryGetValue(enemy, out bool known)) return known;
-                bool reaches = Vector3.Distance(Position, enemy.Position) - Corpulence - enemy.Corpulence <= Reach;
+                bool reaches = CoupDeGraceDelivery.TryRadius(Unit, Ability, enemy, Weapon, out float radius) &&
+                    Vector3.Distance(Position, enemy.Position) <= Reach + radius;
                 if (reaches)
                 {
                     try { reaches = AoeDangerAnalyzer.EnteringDanger(Unit, Position, enemy.Position, out _) <= 0f; }
@@ -1076,8 +1078,8 @@ namespace CompanionAI_Pathfinder.Tactics
             }
         }
 
-        /// <summary>★ v0.3.23: conscious party members able to act and move, wielding a melee weapon (an empty hand is
-        /// one: the game's unarmed strike), with Coup de Grace; null when enemies are still acting.</summary>
+        /// <summary>Conscious party members able to act and move, with an unblocked Coup whose actual delivery
+        /// selects a melee weapon. Native threat-hand rules include natural/unarmed eligibility.</summary>
         private static List<CoupDeGraceAlly> s_CoupDeGraceAllies;
 
         private static List<CoupDeGraceAlly> CoupDeGraceAllies(TacticalContext ctx)
@@ -1090,14 +1092,14 @@ namespace CompanionAI_Pathfinder.Tactics
                 {
                     var state = ally.Descriptor.State;
                     if (!state.IsConscious || !state.CanAct || !state.CanMove) continue;
-                    var weapon = ally.Body?.PrimaryHand?.MaybeWeapon;
-                    if (weapon == null || weapon.Blueprint.IsRanged) continue;
                     // ★ user-ability-blacklist: an ally AI Control drives with Coup de Grace blocked will not do it.
-                    if (!ally.Abilities.Enumerable.Any(a => IsCoupDeGrace(a.Data) && !UserAbilityPolicy.BlocksAiUse(ally, a.Data))) continue;
+                    var ability = ally.Abilities.Enumerable.Select(a => a.Data).FirstOrDefault(a =>
+                        IsCoupDeGrace(a) && !UserAbilityPolicy.BlocksAiUse(ally, a));
+                    if (ability == null || !CoupDeGraceDelivery.TryWeapon(ally, ability, out var weapon, out _)) continue;
                     result.Add(new CoupDeGraceAlly
                     {
-                        Unit = ally, Position = ally.Position, Corpulence = ally.Corpulence,
-                        Reach = ally.CurrentSpeedMps * walkSeconds + 2f   // + a melee weapon's reach, as Threat's zone
+                        Unit = ally, Position = ally.Position,
+                        Reach = ally.CurrentSpeedMps * walkSeconds, Ability = ability, Weapon = weapon
                     });
                 }
                 catch { }
@@ -1127,7 +1129,8 @@ namespace CompanionAI_Pathfinder.Tactics
         {
             why = "dmg:cdg";   // "dmg" marks it offensive, like other damaging options
             if (!ctx.Unit.IsEnemy(target)) return 0f;
-            if (!CombatMath.EstimateCoupDeGrace(ctx.Unit, target, out float damage, out float kill)) return 0f;
+            if (!CoupDeGraceDelivery.TryWeapon(ctx.Unit, ability, out var weapon, out _) ||
+                !CombatMath.EstimateCoupDeGrace(ctx.Unit, target, weapon, out float damage, out float kill)) return 0f;
             float value = kill * (Math.Max(1, target.HPLeft) + CombatMath.TargetWorth(target)) + (1f - kill) * DamageValue(target, damage, 0f);
             value *= RoleWeight(ctx, "damage");
             // ★ v0.3.18: when it provokes (Tabletop Tweaks' version makes the caster provoke: AbilityProfile.CasterProvokes)
@@ -3254,6 +3257,14 @@ namespace CompanionAI_Pathfinder.Tactics
                 ReferenceEquals(MagusMechanics.Held(ctx.Unit), ability) && MagusSpell(nativeMagus, ability);
             var profile = AbilityProfile.Get(ability);
             if (profile == null) return none;
+            bool coup = IsCoupDeGrace(ability);
+            ItemEntityWeapon coupWeapon = null;
+            if (coup && !CoupDeGraceDelivery.TryWeapon(ctx.Unit, ability, out coupWeapon, out var coupFailure))
+            {
+                AbilityDiscovery.ReportOnce("coup-delivery|" + AbilityDiscovery.Key(ability),
+                    () => $"[CoupReach] {ability.Name}: {coupFailure}; AI cast withheld");
+                return none;
+            }
             if (profile.FusionUnsupported != null)
             {
                 AbilityDiscovery.ReportOnce("fusion-unsupported|" + AbilityDiscovery.Key(ability),
@@ -3363,7 +3374,12 @@ namespace CompanionAI_Pathfinder.Tactics
                 float walkFactor = 1f;
                 if (target != ctx.Unit && !summonPoint.HasValue)
                 {
-                    float range = ability.GetApproachDistance(wrapper.Unit);
+                    float range;
+                    if (coup)
+                    {
+                        if (!CoupDeGraceDelivery.TryRadius(ctx.Unit, ability, wrapper.Unit, coupWeapon, out range)) continue;
+                    }
+                    else range = ability.GetApproachDistance(wrapper.Unit);
                     // ★ v0.3.25 (test2 logs): the command's own rule (UnitUseAbility: no ILineOfSightIgnore component), read
                     // once per ability - a command was built for every target only to read it.
                     bool needLos = abilityNeedsLos ?? (abilityNeedsLos = new UnitUseAbility(ability, wrapper).NeedLoS).Value;
