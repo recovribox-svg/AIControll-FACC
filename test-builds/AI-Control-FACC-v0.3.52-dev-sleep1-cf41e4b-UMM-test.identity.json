@@ -1,0 +1,48 @@
+{
+  "build_label": "sleep1",
+  "kind": "development-test",
+  "version": "0.3.52",
+  "source_branch": "claude/fusion-sleep-pool",
+  "source_commit": "cf41e4b9855ad22c87e5d08f6b7664711432ad06",
+  "pull_request": null,
+  "stacked_on": "recovribox-svg/AIControll-FACC#76 (claude/fusion-outcome-effects, a02102a)",
+  "development_base": "980cf26827e23e5b0c78696fe530edecd7156162",
+  "contains": [
+    "development 980cf26: PRs #65-#73 (the gaps3 package's code)",
+    "Fusion F4 slices A and B (PR #76): effects on a passed save or on both outcomes",
+    "Fusion F7: Sleep fusions through the fused cast's own shared Hit Dice pool (docs/FUSION_SLEEP_POOL.md)"
+  ],
+  "does_not_contain": [
+    "PR #75 (Coup de Grace reach, open)"
+  ],
+  "dll": {
+    "assembly": "CompanionAI_Pathfinder, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null",
+    "mvid": "61f28efb-85ea-4900-97d6-e9f1328da60e",
+    "sha256": "5d947ac2b973e25c638db2bc23593960091791665d568246ef57eca573e7075d",
+    "size": 1474048,
+    "source_link_commit": "cf41e4b9855ad22c87e5d08f6b7664711432ad06",
+    "unitymodmanager_reference": "0.33.3 (the supplied UnityModManager.dll)"
+  },
+  "manifest_sha256": "1876fd6fc56d03b28793f6c481fac47c9ea85eec3265d6859232deeab67523a3",
+  "archive": "AI-Control-FACC-v0.3.52-dev-sleep1-cf41e4b-UMM-test.zip",
+  "zip_sha256": "0ab7c18b6852d932ae2f41c6e314892e115db1e6e5543c55b1ac865497edabef",
+  "zip_size": 583649,
+  "checks_receipt": "docs/competence/FUSION_F7_CHECKS.json",
+  "toolchain": {
+    "dotnet_sdk": "8.0.428",
+    "msbuild": "17.11.71.50904",
+    "csharp_compiler": "4.11.0-3.25569.22 (3fb752d4)"
+  },
+  "build": {
+    "configuration": "Release",
+    "clean": "bin and obj removed; worktree clean at the source commit",
+    "note": "byte identity with a build on another machine or SDK patch is not claimed"
+  },
+  "gameplay_status": "not played",
+  "scope": "outcome1 plus: a Magic Deceiver's Sleep fusions are offered and valued by the fused cast's own rolled Hit Dice pool.",
+  "archive_contents": [
+    "CompanionAI_Pathfinder.dll",
+    "Info.json"
+  ],
+  "release": false
+}

@@ -1,0 +1,156 @@
+{
+  "task": "Fusion F7: forecast and admit fused spells that spend a shared Hit Dice pool (Sleep fusions)",
+  "date": "2026-11-16",
+  "author": "Claude",
+  "authorization": "the author asked for the Sleep fusions next",
+  "implementation": "docs/FUSION_SLEEP_POOL.md",
+  "branch": "claude/fusion-sleep-pool",
+  "stacked_on": "claude/fusion-outcome-effects a02102a (PR #76)",
+  "development_base": "980cf26827e23e5b0c78696fe530edecd7156162",
+  "checked_source": "cf41e4b9855ad22c87e5d08f6b7664711432ad06",
+  "worktree": "clean at the checked source; bin and obj removed before the build",
+  "toolchain": {
+    "dotnet_sdk": "8.0.428",
+    "msbuild": "17.11.71.50904",
+    "csharp_compiler": "4.11.0-3.25569.22 (3fb752d4)",
+    "references": "the supplied Wrath_Data/Managed assemblies (Assembly-CSharp SHA-256 2cb7160b7154d4ffacc77b9c51b1eb26199e1294300f04fdfc073367b2ef8953) and UnityModManager 0.33.3"
+  },
+  "native_contracts_decompiled": {
+    "AbilityExecutionContext..ctor": "base(caster, null, ability.Blueprint): a fused cast's context is associated with the holder ability",
+    "MechanicsContext.RecalculateSharedValues": "reads AssociatedBlueprint.GetComponents<ContextCalculateSharedValue>()",
+    "ContextValueHelper.CalculateDiceValue": "rolls the dice once (RuleRollDice); with Maximize and a die above d1 it takes the maximum",
+    "ContextConditionHitDice": "with AddSharedValue: character level <= HitDice + context[SharedValue]",
+    "ContextActionChangeSharedValue SubHD": "context[SharedValue] -= the target's character level",
+    "ContextActionSavingThrow.RunAction": "in a fused cast with a root save and without MakeSaveAlsoForMagicHack it rolls nothing and runs its actions under the root save",
+    "AbilityExecutionProcess": "recipients from the deliver blueprint's AbilityTargetsAround, else the delivery target; the holder's AbilityEffectRunAction applies both source payloads per recipient",
+    "AbilityEffectRunAction.Apply": "a fused cast reads IgnoreCaster from the deliver blueprint"
+  },
+  "blueprints_read": {
+    "Sleep bb7ecad2d3d2c8247a38f44855c99061": "own pool ContextCalculateSharedValue Damage = 4; AbilityTargetsAround 10 ft Enemy; nested Will save, failed branch applies the sleep buff, then ChangeSharedValue SubHD",
+    "MagicHackDefaultSlot1..10": "each one ContextCalculateSharedValue Damage = 2d6 (also Heal, Duration, DurationSecond 2d6)",
+    "MagicHackTouchSlot1..10": "no ContextCalculateSharedValue",
+    "ExplosiveRunes ff652882623d43f184eb6abef741e20e": "no save; damage; AbilityTargetsAround 10 ft Any; AbilityDeliverDelay",
+    "Snowball 9f10909f0be1f5141bf1c102041f93d9": "Fortitude; damage; stagger on a failed save; one simple projectile"
+  },
+  "release_build": {
+    "warnings": 0,
+    "errors": 0,
+    "dll_sha256": "5d947ac2b973e25c638db2bc23593960091791665d568246ef57eca573e7075d",
+    "mvid": "61f28efb-85ea-4900-97d6-e9f1328da60e",
+    "source_link_commit": "cf41e4b9855ad22c87e5d08f6b7664711432ad06"
+  },
+  "unit_tests": {
+    "passed": 887,
+    "failed": 0,
+    "new": 6
+  },
+  "script_tests": {
+    "inventory": 27,
+    "summon_kit_supplement": 3,
+    "invocation_ledger": 18,
+    "failures": 0
+  },
+  "added_game_references_vs_F4_build_0728e3aa": {
+    "added": 0,
+    "removed": 0
+  },
+  "profile_audit": {
+    "inputs": "as in FUSION_F4_CHECKS.json",
+    "exit_code": 0,
+    "status": "PARTIAL: loaded 45,244, failed 1, allowed 1 (AchaekekSacredWeaponFeature)",
+    "failed_check_lines": 0,
+    "two_runs_byte_identical": true,
+    "report_sha256": "30a7497d56d72229eccefe122df7ef15ccff3c3c1f9e3a79fcf6f2fc6ab58bf1",
+    "new_section": {
+      "FUSION-POOL": 25
+    },
+    "changed_check": "FUSION-OUTCOME (34, same count): the unrelated structural refusal it shows is now a line delivery, since Snowball/Sleep is admitted",
+    "diff_vs_F4_run_c98e2e4f": "0 lines apart from FUSION-POOL and the FUSION-COVERAGE summary line",
+    "summon_kit_detail": "byte-identical to the baseline"
+  },
+  "fusion_coverage": {
+    "configurations": 15494,
+    "reader_errors": 0,
+    "two_runs_byte_identical": true,
+    "case_report_sha256": "d2a0f23b8ff3aa7a27ceeaa59159abf45c560bef65fb2a6c3f13a29877b97119",
+    "profile_accepted": {
+      "before_F4": 7306,
+      "after_F4": 8211,
+      "after_F7": 8709
+    },
+    "profile_withheld": {
+      "after_F4": 7283,
+      "after_F7": 6785
+    },
+    "joint_outcome_metadata_qualified": {
+      "after_F4": 4023,
+      "after_F7": 4663
+    },
+    "newly_admitted": 498,
+    "newly_admitted_by_pool_spell": {
+      "Sleep": 242,
+      "RainbowPattern": 256
+    },
+    "lost_admission": 0,
+    "previously_admitted_with_changed_gate_result": 0,
+    "pooled_profiles": 1754,
+    "of_those": {
+      "admitted": 498,
+      "withheld_by_the_pool_gate": 1034,
+      "behind_another_structural_blocker": 222
+    },
+    "withheld_by_the_pool_gate_by_reason": {
+      "unsupported save outcomes": 472,
+      "support/reveal/fact-grant/form/faction/poison carrier": 166,
+      "cone, line, chain or repeated delivery is outside this forecast": 94,
+      "touch or additional-area delivery is outside this forecast": 68,
+      "composite or non-HP damage": 54,
+      "dispel/enchantment/extension dependency": 40,
+      "dynamic removal dependency": 32,
+      "mutable/unread guard ContextConditionCompareTargetHP": 32,
+      "requires exactly one source spell that reads or writes a shared value": 32,
+      "mutable/unread guard ContextConditionIsMainTarget": 16,
+      "spread delivery is outside this forecast": 16,
+      "custom or repeated delivery is outside this forecast": 12
+    },
+    "played_pairs_admitted": [
+      "ExplosiveRunes+Sleep (Will, Burst), both orders",
+      "Snowball+Sleep (Will or Fortitude; SingleTarget or Burst), both orders"
+    ],
+    "outcome_effect_admitted": {
+      "after_F4": 905,
+      "after_F7": 1001,
+      "note": "96 pooled configurations also carry an F4 outcome effect"
+    }
+  },
+  "native_harnesses": {
+    "toggle_with_psionics_0_2_3": 98,
+    "tome_1_4_18": 14,
+    "toybox_1_7_34": 10,
+    "failures": 0
+  },
+  "package": {
+    "file": "test-builds/AI-Control-FACC-v0.3.52-dev-sleep1-cf41e4b-UMM-test.zip",
+    "zip_sha256": "0ab7c18b6852d932ae2f41c6e314892e115db1e6e5543c55b1ac865497edabef",
+    "contents": [
+      "CompanionAI_Pathfinder.dll",
+      "Info.json"
+    ],
+    "dll_is_the_checked_dll": true,
+    "manifest_version": "0.3.52"
+  },
+  "played_evidence": "the gaps3 log (FUSION_F4_CHECKS.json played_log_inputs): 'Snowball / Sleep' and 'Explosive Runes/Sleep' withheld for 'shared Hit Dice selection'",
+  "unchanged": {
+    "manifest_version": "0.3.52",
+    "main_tag_or_release": false,
+    "movement_policy": false,
+    "ordinary_sleep": true
+  },
+  "limits": [
+    "Not played. Offline checks run no actor, context, native selection, roll, cast, command or Unity timing; the per-aim forecast itself is exercised only in the game.",
+    "The forecast assumes a recipient is still standing when the pool spell checks it.",
+    "Rainbow Pattern fusions are admitted by the same reader on graph shape; no played case.",
+    "Coverage numbers are native UI configuration templates, not a character's created spells.",
+    "PR #75 (Coup de Grace reach) is not included."
+  ]
+}

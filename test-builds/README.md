@@ -1,5 +1,14 @@
 # Test builds
 
+## Task-branch candidate: v0.3.52 sleep1 — Sleep fusions through the fused cast's own Hit Dice pool (cf41e4b), unplayed
+
+[UMM test ZIP](AI-Control-FACC-v0.3.52-dev-sleep1-cf41e4b-UMM-test.zip?raw=true) · [Identity](AI-Control-FACC-v0.3.52-dev-sleep1-cf41e4b-UMM-test.identity.json) · [Checksum](AI-Control-FACC-v0.3.52-dev-sleep1-cf41e4b-UMM-test.sha256) · [Checks](../docs/competence/FUSION_F7_CHECKS.json) · [What changed and replay](../docs/FUSION_SLEEP_POOL.md)
+
+Cumulative: outcome1 (PR #76) plus Fusion F7. A Magic Deceiver's Sleep fusions (Snowball/Sleep, Explosive Runes/Sleep)
+are now offered. The engine reads the pool the game really uses in a fused cast: the fusion slot's own 2d6 roll, not
+Sleep's fixed 4 Hit Dice. Startup MVID `61f28efb-85ea-4900-97d6-e9f1328da60e`. Does not include PR #75. No runtime
+blueprint data or private logs are packed.
+
 ## Task-branch candidate: v0.3.52 outcome1 — fused spells with effects on a passed save or on both outcomes (f5ccb40), unplayed
 
 [UMM test ZIP](AI-Control-FACC-v0.3.52-dev-outcome1-f5ccb40-UMM-test.zip?raw=true) · [Identity](AI-Control-FACC-v0.3.52-dev-outcome1-f5ccb40-UMM-test.identity.json) · [Checksum](AI-Control-FACC-v0.3.52-dev-outcome1-f5ccb40-UMM-test.sha256) · [Checks](../docs/competence/FUSION_F4_CHECKS.json) · [What changed and replay](../docs/FUSION_OUTCOME_EFFECTS.md)

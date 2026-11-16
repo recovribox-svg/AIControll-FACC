@@ -6300,3 +6300,41 @@ native harnesses 98/14/10. Package `test-builds/AI-Control-FACC-v0.3.52-dev-outc
 
 **Not changed.** Movement, target commitment, retreat, pathfinding, stuck handling, ordinary spells, spell policies,
 the blocklist, the cone re-aim.
+
+## 183. Fusion F7: Sleep fusions and the fused shared Hit Dice pool (16 November 2026, Claude)
+
+Branch `claude/fusion-sleep-pool`, stacked on §182 (PR #76). Author-requested. Page:
+[FUSION_SLEEP_POOL.md](FUSION_SLEEP_POOL.md). Receipt: [FUSION_F7_CHECKS.json](competence/FUSION_F7_CHECKS.json). Not played.
+
+**The refusal.** Every fused spell with a pool spell was withheld ("shared Hit Dice selection"). The author's gaps3
+log shows it for arcan's Snowball/Sleep and Explosive Runes/Sleep.
+
+**The game's rule.** A fused cast's context is built on the holder ability (`AbilityExecutionContext`), and
+`MechanicsContext.RecalculateSharedValues` reads that blueprint. The pool is the holder's `ContextCalculateSharedValue`
+for the key: 2d6 rolled once per cast on all ten ordinary slots, not Sleep's fixed 4. The deliver blueprint supplies
+the recipients; per recipient the first source's actions run, then the second's. With a root save, Sleep's nested save
+rolls nothing.
+
+**Changes.**
+
+- `SharedHdControl`: a fused plan from metadata (one pool source spell, the holder's exact dice distribution, the
+  deliver blueprint's around-selector or a single recipient) and the existing ordered forecast averaged over the rolls.
+  Visits are read once per recipient and pool value.
+- `TacticalEngine.FusionWithheld`: a pooled fusion is offered only when the plan is supported and
+  `FusionOutcomeModel` qualifies. `StableFusionGuards` accepts a pooled application's "is unconscious" test, which is
+  the kill dependency the joint value already carries.
+- `TryFusionControlRounds`: the pooled sleep joins the envelope with the forecast chance
+  (`ValueModel.PooledRounds`). It is credited only when the cast's own damage belongs to the earlier source spell
+  (`AbilityProfile.FusionDamageBefore`), and for one round beside a periodic damage carrier.
+- The older forecast never credits a pooled fusion's control.
+
+**Result.** 498 more templates admitted (8,709 of 15,494): Sleep 242, Rainbow Pattern 256. None lost; no admitted
+fusion changed. 1,034 pooled templates stay withheld by the gate, each with a reason.
+
+**Checks** on `cf41e4b`: Release 0 warnings; 887 unit tests (6 new) + 27 + 3 + 18; 0 added game references against
+§182; ProfileAudit exit 0, two runs identical, `FUSION-POOL` 25 checks, every other line equal to the §182 run; native
+harnesses 98/14/10. Package `test-builds/AI-Control-FACC-v0.3.52-dev-sleep1-cf41e4b-UMM-test.zip`, MVID
+`61f28efb-85ea-4900-97d6-e9f1328da60e`. Manifest 0.3.52.
+
+**Not changed.** Ordinary Sleep, movement, target commitment, retreat, pathfinding, stuck handling, spell policies, the
+blocklist.
