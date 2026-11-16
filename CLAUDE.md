@@ -8,7 +8,21 @@ Read [CONTRIBUTING.md](CONTRIBUTING.md) for shared branch ownership, Codex pull 
 Codex works on task branches and targets pull requests at `claude/dreamy-pasteur-b9h3rn`; Claude reviews and integrates them there.
 Keep `main` for author-authorized releases. Read [AGENTS.md](AGENTS.md) when coordinating agent work.
 
-**Current handover (16 November 2026, Claude): all open PRs (#65, #66, #67, #68, #69, #70, #71, #73) reviewed and
+**Planning handover (16 November 2026, Claude): next-feature plan on `claude/fusion-outcome-plan` (no PR), based on
+development `980cf26`. Planning only: no code, build, package, merge or release.** Read
+[docs/FUSION_OUTCOME_EFFECTS_PLAN.md](docs/FUSION_OUTCOME_EFFECTS_PLAN.md) and its
+[evidence](docs/competence/FUSION_F4_PLAN_EVIDENCE.json).
+- The author asked for one implementation-ready plan, after checking Codex's research (PR #74).
+- Chosen: Magic Fusion F4. Fused spells with an effect on a passed save or on both outcomes are refused today
+  ("buff outside the shared failed-save branch"): the only blocker in 2,874 of 15,494 configurations.
+- A what-if run (not committed) shows the existing outcome model already prices 638 of them (Fear, Boneshatter,
+  Frigid Touch). Slice A covers those.
+- Tactical mobility is second: no party member or played summon is verified to own a self-only teleport, and it
+  needs the author's movement approval. The plan lists the 15 abilities that share one native delivery.
+- The Coup de Grace correction is already Codex's PR #75 (open, not reviewed here).
+- **Next:** the author decides. A fresh `Log.txt` with arcan's `[Fusion]` rows shows which fusions are withheld.
+
+**Earlier handover (16 November 2026, Claude): all open PRs (#65, #66, #67, #68, #69, #70, #71, #73) reviewed and
 merged into development at the author's request; development `ea91688`.** Read `docs/TACTICAL_AI.md` §180 and the
 [receipt](docs/competence/INTEGRATION_65_73_CHECKS.json).
 - The stack merged in order. Development's tree equals the verified head `6efc13c`, whose code is the gaps3 package's
