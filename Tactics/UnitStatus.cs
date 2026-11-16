@@ -41,6 +41,9 @@ namespace CompanionAI_Pathfinder.Tactics
                 if (state.Prone.Active && !state.HasCondition(UnitCondition.Prone))
                     parts.Add(CanStandUpOnCommand(unit) ? "lying down (can stand up)" : "lying down");
                 if (state.IsPanicked) parts.Add("panicked");
+                // ★ G1: the grapple pair it is in (the source of a CantMove / CantUseStandardActions above).
+                var grapple = GrappleState.Describe(unit);
+                if (grapple != null) parts.Add(grapple);
                 if (unit.View != null && unit.View.IsGetUp) parts.Add("getting up");
                 if (!state.CanAct && parts.Count == 0) parts.Add("busy (animation)");
             }

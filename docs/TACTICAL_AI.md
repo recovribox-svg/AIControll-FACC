@@ -5868,3 +5868,68 @@ Holding an enemy can make an end turn useful; the played real-time restrictions 
 Automatic Grabber initiation and comparative Release remain a separate G1 slice. No timeout or automatic release
 is added here. The existing selected-cone Fusion route still needs a cone-delivery gameplay case; the played created
 spells used Runes or Snowball delivery, with an ordinary turned Color Spray cast observed.
+
+## 170. G1: grapple state awareness (15 November 2026, Claude)
+
+**PR #64 review.** PR #64 is merged into development (`6b9be42`). Its native contracts hold:
+- `ContextActionConditionalSaved` runs neither branch without a rolled save.
+- `AbilityEffectRunAction` rolls the one fused save only when `MagicHackData.SavingThrowType` is set.
+- A Fusion's damage chance excludes the save, so delivery and the shared save are each paid once.
+- The failed/passed split is exact on the existing per-part forecast.
+- Ordinary abilities take none of the new paths.
+
+Rerun on head `164f8cc` (code `6638404`): Release 0 warnings, 821 unit + 27 + 3 + 11 tests, ProfileAudit exit 0
+(FUSION 38, FUSION-VALUE 15, FUSION-CONE 34). Every other report line matches the last integration run, and the native
+harnesses give 98/14/10. The fusion2 package DLL decompiles to the same code as a local build apart from compiler lowering.
+
+One inconsistency, not a defect: a Fusion now caps each save outcome at the target's HP before weighting it. Ordinary
+spells still cap the averaged damage (`TacticalEngine.DamageValue`), which values them slightly higher when the chance
+is low and the damage exceeds the HP.
+
+**Evidence.** Inputs are the fusion1 logs; their hashes are in `FUSION2_PLAYTEST_INPUTS.json`. Full evidence, native
+contracts and replay steps: [GRAPPLE_G1.md](GRAPPLE_G1.md). With Grabber on, a claw hit that grapples gives the attacker
+`CantUseStandardActions`, and `UnitAttack.TryStartNextAttack` starts no further attack. Every full attack that grappled
+ended `Interrupt` after one claw:
+- turn-based: Ulbrig R2 and R3 in fight 1, R2 in fight 2;
+- real time: Wenduag RT2, RT4, RT5 and RT7.
+
+The engine priced all three to five attacks. The combat log shows 17 grapple starts in 18 attempts, 5 kept holds and
+at least 2 escapes; one escape was the Hag's Athletics check. While holding, AI Control already followed the native
+conditions: Wenduag RT6 used a swift Shifter's Fury. No turn-based turn began with a hold still in place, and no case
+shows a hold that should have been released.
+
+**Change** (both modes, the shared weapon value):
+- **Grab reader** (`CombatMath.Grapple.cs`). It recognises the inspected shape: on hit, a weapon filter, an optional
+  empty caster-fact gate, a custom Grapple maneuver whose only success action is `ContextActionGrapple`, and a holder
+  buff with `ShifterGrabInitiatorBuff`. On the real blueprints it reads 8 triggers: Griffon, Bear, Lizard, Tiger x2,
+  Smilodon x2 and Shambling Mound. It refuses 5 monster variants. Only party units are modelled.
+- **Attacks cut short** (`EstimateWeaponAttackCore`, `ValueModel.GrappleRun`). Each attack counts by the chance the
+  routine is still running. The chance of at least one hit is unchanged.
+- **Hold value** (`TacticalEngine.GrappleHold`, `ValueModel.GrappleHoldValue`). It is the chance the grapple starts times
+  the hold value over min(expected rounds, 3):
+  - victim: its control worth, soft share (0.4) on its first turn, hard share (1.0) on each later pinned turn;
+  - holder: its worth per round at the hard share on those turns, as for an ally caught by our own control, plus the
+    free natural hit;
+  - persistence: the maintenance chance (the existing maneuver reading plus the holder buff's +5) times the chance the
+    victim fails to escape (its CMB or better skill against the holder's CMD, with the holder buff's Dexterity change).
+- **Refactor.** `ManeuverOdds` now shares `ManeuverValues` and `ManeuverConcealmentShare`; its reads and their order are
+  unchanged.
+- **Log.** The decision header names the pair ("holds X", "held by X (pinned)"). One `[Grapple]` row per fight and pair
+  gives the numbers.
+
+Bounds: one buff scan per unit and frame, one CMB/CMD reading per pair and frame, both cleared with the attack cache.
+No new candidate, command, path query or actor/context cache. Nothing rolls, previews, releases or moves.
+
+**Not done.** Release Grapple: there is no played case, and it needs the holder's options after release without a fake
+state (proposed G2). A party member held by a monster: the concentration check for its spells is unpriced. Freeing our
+holder by killing its victim is not counted. `CMBBonusForManeuver` on the attacker's other facts is still missed by the
+maneuver forecast, as before.
+
+**Checks.** Release 0 warnings/errors. 832 unit tests (11 new) plus 27 + 3 + 11 tool tests. ProfileAudit exit 0 with the new
+GRAPPLE section (32 checks). Every other report line is identical to the PR #64 run, and the native harnesses give
+98/14/10. Thirteen added foreign member references, all resolved against the real assembly.
+Receipt: [G1_GRAPPLE_CHECKS.json](competence/G1_GRAPPLE_CHECKS.json). Package (fusion2 + G1):
+`test-builds/AI-Control-FACC-v0.3.52-dev-fusion2g1-883bc9d-UMM-test.zip`, startup MVID `e4cb4df9-ad46-409a-a800-b96382c68a10`, the checked DLL unchanged. Unplayed.
+
+**Next.** The author plays a grab-capable form against a dangerous and a weak target in both modes (GRAPPLE_G1.md replay).
+Then G2 (release with a positive reason), if a played hold shows the need.

@@ -1,5 +1,21 @@
 # Test builds
 
+## Task-branch candidate: v0.3.52 fusion2 + G1 (883bc9d) — unplayed
+
+[UMM test ZIP](AI-Control-FACC-v0.3.52-dev-fusion2g1-883bc9d-UMM-test.zip?raw=true) · [Identity](AI-Control-FACC-v0.3.52-dev-fusion2g1-883bc9d-UMM-test.identity.json) · [Checksum](AI-Control-FACC-v0.3.52-dev-fusion2g1-883bc9d-UMM-test.sha256) · [Checks](../docs/competence/G1_GRAPPLE_CHECKS.json) · [G1 evidence and TB/RT replay](../docs/GRAPPLE_G1.md) · [Fusion2 replay](../docs/FUSION2_PLAYTEST_REVIEW.md)
+
+Development `6b9be42` (fusion2, PR #64 merged) plus G1 grapple state awareness (PR #65). With Grabber and its kin, a
+hit that grapples cuts the forecast attack routine. The hold is valued: the victim held then pinned, against the
+holder's lost turns, plus the free natural attack each maintained round. The decision header names the grapple pair,
+and one `[Grapple]` row is logged per fight and pair. Release Grapple stays unsupported. Manifest stays **0.3.52**; this
+is a development test. Stable packages are unchanged.
+
+Startup MVID **`e4cb4df9-ad46-409a-a800-b96382c68a10`**; checked source `883bc9d`. ZIP SHA-256 `9130236430dff865fcab71153e164b8a27964861173a2b09b8bc5fbc79dd7eda`.
+It is the DLL the receipt names (SHA-256 `4f46132d…`), built with SDK 8.0.131 against UnityModManager 0.33.0.0, the
+same reference as the played v0.3.29 release. 832 unit + 27 inventory + 3 script + 11 ledger tests, zero-warning
+real-reference Release, ProfileAudit (GRAPPLE 32 checks) and native providers 98/14/10 pass. Supply paired AI and
+combat logs with the startup MVID from both modes; the two replay documents list the cases.
+
 ## Task-branch candidate: v0.3.52 fusion2 (6638404) — unplayed
 
 [UMM test ZIP](AI-Control-FACC-v0.3.52-dev-fusion2-6638404-UMM-test.zip?raw=true) · [Identity](AI-Control-FACC-v0.3.52-dev-fusion2-6638404-UMM-test.identity.json) · [Checksum](AI-Control-FACC-v0.3.52-dev-fusion2-6638404-UMM-test.sha256) · [Checks](../docs/competence/FUSION2_CHECKS.json) · [Review and TB/RT replay](../docs/FUSION2_PLAYTEST_REVIEW.md)

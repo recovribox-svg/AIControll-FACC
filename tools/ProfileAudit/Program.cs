@@ -260,6 +260,11 @@ namespace ProfileAudit
             foreach (var line in fusionValueLines) Console.WriteLine(line);
             File.WriteAllText(output, string.Join(Environment.NewLine, fusionValueLines) + Environment.NewLine + File.ReadAllText(output));
             blocklistFailures += fusionValueFailures;
+            // ★ G1: a grapple a weapon hit starts - native contracts, the grab reader on real blueprints, compiled routes.
+            var grappleLines = GrappleCheck.Run(loaded.Values, out int grappleFailures);
+            foreach (var line in grappleLines) Console.WriteLine(line);
+            File.WriteAllText(output, string.Join(Environment.NewLine, grappleLines) + Environment.NewLine + File.ReadAllText(output));
+            blocklistFailures += grappleFailures;
             var projectileLines = ProjectileCheck.Run(loaded.Values, out int projectileFailures);
             foreach (var line in projectileLines) Console.WriteLine(line);
             File.WriteAllText(output, string.Join(Environment.NewLine, projectileLines) + Environment.NewLine + Environment.NewLine + File.ReadAllText(output));
