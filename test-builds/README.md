@@ -1,5 +1,24 @@
 # Test builds
 
+## Task-branch candidate: v0.3.52 coup1 — delivering-weapon Coup reach (f029d8e), unplayed
+
+[UMM test ZIP](AI-Control-FACC-v0.3.52-dev-coup1-f029d8e-UMM-test.zip?raw=true) · [Identity](AI-Control-FACC-v0.3.52-dev-coup1-f029d8e-UMM-test.identity.json) · [Checksum](AI-Control-FACC-v0.3.52-dev-coup1-f029d8e-UMM-test.sha256) · [Checks](../docs/competence/COUP_REACH_CHECKS.json) · [Evidence / TB-RT replay](../docs/COUP_DE_GRACE_REACH.md)
+
+Cumulative development `980cf26` plus the actual stock/TTT delivering-hand contract for AI Coup de Grace.
+Range appraisal, damage, sleeper preservation and shared preflight/final dispatch use the selected melee weapon;
+no borrowed bow range. Native body size, weapon reach, stricter ability limits, full-round/target/LoS/path rules
+remain. Unknown replacements and TTT selecting a ranged Snap Shot hand are withheld by AI Control; manual native
+commands are not patched. Corrected reach can require the existing approach/path preparation; no additional
+search pass or rule/world forecast. Gaps2 did not issue a Coup; this candidate needs gameplay.
+
+Checked source **`f029d8e`**, startup MVID **`626629a3-5185-418c-bea4-dc6e22f5d3e5`**. ZIP SHA-256
+`da0e1aaab488fd2b3f84949c2aa3a33fe7ee33bb7899a1ce23b34a22600e4c12`.
+**885 unit + 27 inventory + 3 script + 18 ledger tests**; real-reference Release **0 warnings/errors**;
+ProfileAudit **COUP-REACH 32**, inherited checks, supplementary Magus 44, native providers **98/14/10** pass.
+**4 added signatures resolve**; other audit rows unchanged on identical inputs. Hot identity guard: **10,000 warm
+calls / 0 bytes** in the actor-free harness, no Unity speedup claim. [Compiler/reference provenance](../docs/competence/COUP_REACH_BUILD_PROVENANCE.json):
+SDK 8.0.426 / Roslyn 4.11, UMM 0.33.2.0. Manifest stays **0.3.52**, development test, frozen checked DLL.
+
 ## Task-branch candidate: v0.3.52 gaps3 — current buff evidence (9a02565), unplayed
 
 [UMM test ZIP](AI-Control-FACC-v0.3.52-dev-gaps3-9a02565-UMM-test.zip?raw=true) · [Identity](AI-Control-FACC-v0.3.52-dev-gaps3-9a02565-UMM-test.identity.json) · [Checksum](AI-Control-FACC-v0.3.52-dev-gaps3-9a02565-UMM-test.sha256) · [Checks](../docs/competence/GAPS2_PLAYTEST_CHECKS.json) · [Review / Invocation judgment / replay](../docs/GAPS2_PLAYTEST_REVIEW.md)

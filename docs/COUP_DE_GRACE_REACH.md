@@ -65,7 +65,9 @@ checks and per-decision target memoization remain.
 An accepted command emits `[CoupReach]` once per fight/caster/weapon through the existing bounded lazy reporter:
 provider, weapon blueprint, native ability radius and capped command radius. It says **issued**, not delivered;
 use the normal `CommandTrace` terminal and combat log to verify the outcome. Preview calculations do not emit an
-issue note. The change adds no path search, world scan, rule/context forecast or persistent actor/context cache.
+issue note. The change adds no path search pass, world scan, rule/context forecast or persistent actor/context cache.
+A corrected radius can require the existing approach and path preparation where the old code treated the target
+as in range.
 Route inspection is a small component walk only for Coup; final native targeting is rechecked only for Coup.
 The hot identity guard compares native blueprint GUID values directly: it no longer formats a GUID string for
 every unrelated ability checked. The audit separately measures its warmed, actor-free allocation count.
