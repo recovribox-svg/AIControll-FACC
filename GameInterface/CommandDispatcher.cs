@@ -335,7 +335,7 @@ namespace CompanionAI_Pathfinder.GameInterface
                 // to that cell ends on another, and the action priced from the spot would not follow.
                 if (!(command is UnitMoveTo) || oneMoveWalk)
                 {
-                    var end = PathEndVerdict(unit, command, out float shortBy, out string witness);
+                    var end = PathEndVerdict(unit, command, out float shortBy, out var witness);
                     if (end != Tactics.SpotRules.PathEnd.InReach)
                     {
                         command.ForcedPath = null;
@@ -346,9 +346,7 @@ namespace CompanionAI_Pathfinder.GameInterface
                             ? NoSightAtPathEndFailure : $"{OutOfReachFailure} ({Math.Max(0.1f, shortBy):F1}m short)";
                         // What the next log needs to tell a crowded target from a blocked sight line; from values already
                         // read, on a refusal only.
-                        if (Main.VerboseOn)
-                            Main.Verbose($"[Dispatch] {unit.CharacterName}: path end refused ({failure}) - {witness}, " +
-                                         $"{trimmed} ally-held end point(s) trimmed, {pathLength:F1}m path");
+                        LogPathEndRefusal(unit, end, witness, trimmed, pathLength, failure);
                         return false;
                     }
                 }
@@ -433,31 +431,64 @@ namespace CompanionAI_Pathfinder.GameInterface
         /// ★ v0.3.10 / S2: what the path's last point is to the command, by the game's own test
         /// (UnitCommand.IsUnitCloseEnough: its mechanics distance and, where the command needs it, eye-level sight).
         /// </summary>
-        private static Tactics.SpotRules.PathEnd PathEndVerdict(UnitEntityData unit, UnitCommand command, out float shortBy, out string witness)
+        private static Tactics.SpotRules.PathEnd PathEndVerdict(UnitEntityData unit, UnitCommand command, out float shortBy,
+                                                              out Core.PathEndDiagnosticLog.Snapshot witness)
         {
             shortBy = 0f;
-            witness = "no path points";
+            witness = default;
             try
             {
                 var points = command.ForcedPath?.vectorPath;
                 if (points == null || points.Count == 0) return Tactics.SpotRules.PathEnd.InReach;
                 Vector3 end = points[points.Count - 1];
                 Vector3 eye = end + (unit.EyePosition - unit.Position);
-                bool close = UnitCommand.IsUnitCloseEnough(command.ApproachPoint, end, eye, command.ApproachRadius, command.NeedLoS,
+                Vector3 goal = command.ApproachPoint;
+                float radius = command.ApproachRadius;
+                bool needSight = command.NeedLoS;
+                bool close = UnitCommand.IsUnitCloseEnough(goal, end, eye, radius, needSight,
                                                            command.GetTargetLOSObjectFudgeRadius());
-                float distance = Owlcat.Runtime.Core.Utils.GeometryUtils.MechanicsDistance(command.ApproachPoint, end);
-                var verdict = Tactics.SpotRules.JudgePathEnd(close, distance, command.ApproachRadius, command.NeedLoS, out shortBy);
-                witness = $"end ({end.x:F1},{end.y:F1},{end.z:F1}) to goal ({command.ApproachPoint.x:F1},{command.ApproachPoint.y:F1}," +
-                          $"{command.ApproachPoint.z:F1}): {distance:F2}m by the game's distance, radius {command.ApproachRadius:F2}m, " +
-                          $"height apart {Math.Abs(end.y - command.ApproachPoint.y):F1}m, sight needed={command.NeedLoS}";
+                float distance = Owlcat.Runtime.Core.Utils.GeometryUtils.MechanicsDistance(goal, end);
+                var verdict = Tactics.SpotRules.JudgePathEnd(close, distance, radius, needSight, out shortBy);
+                witness = new Core.PathEndDiagnosticLog.Snapshot
+                {
+                    EndX = end.x, EndY = end.y, EndZ = end.z, GoalX = goal.x, GoalY = goal.y, GoalZ = goal.z,
+                    Distance = distance, Radius = radius, NeedSight = needSight
+                };
                 return verdict;
             }
             catch (Exception ex)
             {
-                Main.Verbose($"[Dispatch] {unit.CharacterName}: reach check skipped: {ex.Message}");
+                LogPathEndError(unit, ex);
                 return Tactics.SpotRules.PathEnd.InReach;
             }
         }
+
+        private static void LogPathEndError(UnitEntityData unit, Exception ex)
+        {
+            if (Main.VerboseOn) Main.Verbose($"[Dispatch] {unit.CharacterName}: reach check skipped: {ex.Message}");
+        }
+
+        private static readonly Core.PathEndDiagnosticLog PathEndNotes = new Core.PathEndDiagnosticLog();
+
+        private static void LogPathEndRefusal(UnitEntityData unit, Tactics.SpotRules.PathEnd reason,
+            Core.PathEndDiagnosticLog.Snapshot witness, int trimmed, float pathLength, string failure)
+        {
+            if (!Main.VerboseOn) return;
+            // Only the detailed witness is bounded. Do not change native checks, failure text, retries or dispatch.
+            try
+            {
+                witness.Reason = (int)reason; witness.Trimmed = trimmed; witness.PathLength = pathLength;
+                if (!PathEndNotes.Observe(Tactics.CombatMemory.Fight, unit.UniqueId, witness)) return;
+                Main.Verbose($"[Dispatch] {unit.CharacterName}: path end refused ({failure}) - {FormatPathEnd(witness)}, " +
+                    $"{trimmed} ally-held end point(s) trimmed, {pathLength:F1}m path (detail bounded per fight/unit/query)");
+            }
+            catch { } // Diagnostic state cannot turn a native refusal into an accepted command or exception.
+        }
+
+        private static string FormatPathEnd(Core.PathEndDiagnosticLog.Snapshot s) =>
+            $"end ({s.EndX:F1},{s.EndY:F1},{s.EndZ:F1}) to goal ({s.GoalX:F1},{s.GoalY:F1},{s.GoalZ:F1}): " +
+            $"{s.Distance:F2}m by the game's distance, radius {s.Radius:F2}m, " +
+            $"height apart {Math.Abs(s.EndY - s.GoalY):F1}m, sight needed={s.NeedSight}";
 
         /// <summary>
         /// ★ v0.3.17: the command's ForcedPath, up to where the unit arrives (its own approach radius), walks into a

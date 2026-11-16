@@ -6258,3 +6258,21 @@ package's checked source `9a02565`. Receipt: [INTEGRATION_65_73_CHECKS.json](com
 
 The gaps3 package is development's code; no new package was built. Unplayed: TB release, an actual leap, Frigid Touch
 in play, and the form/Fury scheduling.
+
+## 184. outcome1 playtest: bounded path refusal details (16 November 2026, Codex)
+
+[Review/evidence/replay](OUTCOME1_PLAYTEST_REVIEW.md), [input identity](competence/OUTCOME1_PLAYTEST_INPUTS.json),
+[Invocation ledger](competence/OUTCOME1_INVOCATION_LEDGER.json), [checks](competence/OUTCOME1_PLAYTEST_CHECKS.json).
+Played module `fbc220a5` matches PR #76's outcome1; spawns and rests between fights confirmed. Nine encounters,
+666 issued/666 terminal commands, no recorded AI Control exception. Saved Frigid Touch is recognized/valued but
+never issued; F4 delivery and unplayed F7 need separate acceptance. Six Coups act; Cambion Bard's 13.2 m radius
+pairs with a 2-damage Claw/DC 12, supporting PR #75's weapon mismatch without establishing actual separation.
+Three successful RT grapple releases; 68 Invocation issues/66 DidAct with no identified settle/stacking violation.
+
+1,060 verbose native path-end refusals share one elevated goal. The path verdict previously formatted its witness
+even for success/quiet mode. It now returns scalars; a bounded verbose-only first/change gate precedes formatting.
+128 caster IDs, 16 query identities/caster, five details/query/fight; no actors, contexts, paths or rule results
+cached. The native check/refusal, failure text, actual rejection/terminal log, retries, movement/commitment and stuck
+policies remain. Rounded-field offline replay retains 33 details, not a native performance claim. Warm ability
+work remains significant, and stage heap deltas are not precise allocation measurements. The author's subsequent
+PR-review/merge authorization is tracked separately; manifest remains 0.3.52.

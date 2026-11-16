@@ -60,6 +60,32 @@ namespace ProfileAudit
                 Check(idle.Any(m => m.Name == "get_VerboseOn") && idle.Any(m => m.Name == "ReportOnce") &&
                     !idle.Any(m => m.Name == "CanPrepare" || m.Name == "ReadRoutineCore" || m.Name == "EstimateWeaponAttack" || m.Name == "FindPath"),
                     "new idle witness uses bounded lazy reporting, without path/weapon queries");
+                var pathLog = assembly.GetType("CompanionAI_Pathfinder.Core.PathEndDiagnosticLog", true);
+                var snapshot = pathLog.GetNestedType("Snapshot", all); var pathMemo = Activator.CreateInstance(pathLog, true);
+                var observePath = pathLog.GetMethod("Observe", all); object state = Activator.CreateInstance(snapshot);
+                void Set(string field, object value) => snapshot.GetField(field, all).SetValue(state, value);
+                Set("GoalX", 93.6f); Set("GoalY", 45.1f); Set("Radius", 16.24f); Set("NeedSight", true);
+                bool Path(int fight, string unit) => (bool)observePath.Invoke(pathMemo, new object[] { fight, unit, state });
+                Check(Path(1, "caster") && !Path(1, "caster") && Path(1, "other"), "actual path witness memo suppresses duplicates without sharing actors");
+                Set("EndX", 1f); Check(Path(1, "caster") && !Path(1, "caster") && Path(2, "caster"),
+                    "actual path memo preserves material change and first witness of the next fight");
+                Check((int)pathLog.GetField("MaxUnits", all).GetRawConstantValue() == 128 &&
+                      (int)pathLog.GetField("MaxQueriesPerUnit", all).GetRawConstantValue() == 16 &&
+                      (int)pathLog.GetField("MaxReportsPerQuery", all).GetRawConstantValue() == 5,
+                    "path witness identities/repeats have hard per-fight bounds");
+                var reachRefs = SaveBoostCheck.ReferencedMembers(typeof(CommandDispatcher).GetMethod("PathEndVerdict", all)).ToArray();
+                Check(reachRefs.Any(m => m.Name == "IsUnitCloseEnough") && reachRefs.Any(m => m.Name == "MechanicsDistance") &&
+                      reachRefs.Any(m => m.Name == "JudgePathEnd") && !reachRefs.Any(m => m.DeclaringType == typeof(string)),
+                    "native path verdict remains authoritative and formats no success/quiet witness strings");
+                var pathNote = SaveBoostCheck.ReferencedMembers(typeof(CommandDispatcher).GetMethod("LogPathEndRefusal", all)).ToArray();
+                Check(Array.FindIndex(pathNote, m => m.Name == "get_VerboseOn") < Array.FindIndex(pathNote, m => m.Name == "Observe") &&
+                      Array.FindIndex(pathNote, m => m.Name == "Observe") < Array.FindIndex(pathNote, m => m.Name == "FormatPathEnd"),
+                    "production verbosity and bounded change gate precede all path witness formatting");
+                Check(!pathNote.Any(m => m.Name == "FindPath" || m.Name == "CanPrepare" || m.Name == "Trigger" ||
+                      m.Name == "IsUnitCloseEnough" || m.Name == "set_ForcedPath") &&
+                      !SaveBoostCheck.ReferencedMembers(observePath).Any(m => m.DeclaringType?.Namespace?.StartsWith("Kingmaker") == true ||
+                        m.DeclaringType?.Namespace?.StartsWith("UnityEngine") == true),
+                    "diagnostic suppression has no path/rule/command mutation or game dependency");
             }
             catch (Exception ex) { bad++; lines.Add("DIAGNOSTIC-LOG FAILED: " + ex.GetBaseException()); }
             failures = bad; lines.Insert(0, $"DIAGNOSTIC-LOG {checks} checks, failures {bad}; actual bounded memo and compiled guards; no actor, logger, command or Unity timing execution");
