@@ -1,6 +1,29 @@
 # Test builds
 
-## Task-branch candidate: v0.3.52 gaps1 — Frigid Touch and leap Grabber (351b709), unplayed
+## Task-branch candidate: v0.3.52 gaps2 — Release Grapple repair (96108ba), unplayed
+
+[UMM test ZIP](AI-Control-FACC-v0.3.52-dev-gaps2-96108ba-UMM-test.zip?raw=true) · [Identity](AI-Control-FACC-v0.3.52-dev-gaps2-96108ba-UMM-test.identity.json) · [Checksum](AI-Control-FACC-v0.3.52-dev-gaps2-96108ba-UMM-test.sha256) · [Checks](../docs/competence/GAPS1_PLAYTEST_CHECKS.json) · [Review and replay](../docs/GAPS1_PLAYTEST_REVIEW.md)
+
+Includes #65 -> #66 -> #67 -> #68 -> #69 -> #70, plus the gaps1 playtest repair. A negative hold now produces a
+usable Release Grapple candidate; its missing reason previously threw and discarded it. The appraisal says
+"release offer" until an actual command is issued. Reciprocal header checks use native reference IDs. Existing
+hold prices, native slot/availability, ownership/lists, movement and leap safety remain in force.
+
+Checked source **`96108ba`**, startup MVID **`9ce04a64-f9a0-43ce-8275-5f1b0c7bbe73`**. ZIP SHA-256
+`bf5e955f32cd91512495656e30528cc1afad11733af108bc523012527cd681fa`.
+**861 unit + 27 inventory + 3 script + 11 ledger tests**, real-reference Release **0 warnings/errors**, ProfileAudit
+**GRAPPLE 58** and inherited checks, supplementary Magus 44 and native providers 98/14/10 pass. The single added
+native equality reference resolves. [Compiler/reference provenance](../docs/competence/GAPS1_PLAYTEST_BUILD_PROVENANCE.json):
+SDK 8.0.426 / Roslyn 4.11, UMM 0.33.2.0. Manifest stays **0.3.52**, development test; frozen checked DLL.
+
+In TB/RT, leave Grabber to the engine. Test negative/positive holds, actual Release Grapple and recovered permissions
+within the remaining native action budget (no refund of spent actions/cooldowns),
+plus actual leaps, ordinary/no-save Frigid, forms and Fury. The played gaps1 log confirms forecasts/ordinary grabs,
+**not execution of a leap, release or Frigid Touch**. Keep paired AI/combat logs and startup identity. Holder
+alternative/safety, monster responses and saved Frigid control retain the documented limits; warm ability scoring
+and the high-risk bomb utility remain follow-ups. No new gameplay or Unity speedup acceptance is claimed.
+
+## Task-branch candidate: v0.3.52 gaps1 — Frigid Touch and leap Grabber (351b709), played ([review](../docs/GAPS1_PLAYTEST_REVIEW.md))
 
 [UMM test ZIP](AI-Control-FACC-v0.3.52-dev-gaps1-351b709-UMM-test.zip?raw=true) · [Identity](AI-Control-FACC-v0.3.52-dev-gaps1-351b709-UMM-test.identity.json) · [Checksum](AI-Control-FACC-v0.3.52-dev-gaps1-351b709-UMM-test.sha256) · [Checks](../docs/competence/LEAP_GRAB_CHECKS.json) · [Five-gap assessment / Frigid replay](../docs/GRAPPLE_GAP_ASSESSMENT.md) · [Leap replay](../docs/LEAP_GRAB_MODES.md)
 

@@ -232,8 +232,21 @@ namespace ProfileAudit
                 Check(CallsMod(typeof(TacticalEngine), "ScoreAbility", typeof(TacticalEngine), "GrappleReleaseValue") &&
                       CallsMod(typeof(TacticalEngine), "GrappleReleaseValue", typeof(CombatMath), "ReadHold") &&
                       CallsMod(typeof(TacticalEngine), "GrappleReleaseValue", typeof(ValueModel), "GrappleKeepValue") &&
+                      CallsMod(typeof(TacticalEngine), "GrappleReleaseValue", typeof(ValueModel), "GrappleReleaseValue") &&
                       CallsMod(typeof(TacticalEngine), "GrappleHold", typeof(TacticalEngine), "CanReleaseGrapple"),
                       "Release Grapple is valued by the hold it ends, and the grab's hold counts the release option (both modes)");
+                float releaseOffer = ValueModel.GrappleReleaseValue(-23.8f, out string releaseReason);
+                var offensive = typeof(TacticalEngine).GetMethod("IsOffensive", Hidden);
+                var pureBuff = typeof(TacticalEngine).GetMethod("IsPureBuff", Hidden);
+                bool PureBuff(string reason) => (bool)pureBuff.Invoke(null, new object[] { reason });
+                Check(Math.Abs(releaseOffer - 23.8f) < 1e-4f && !string.IsNullOrEmpty(releaseReason) &&
+                      !PureBuff(releaseReason) && !(bool)offensive.Invoke(null, new object[] { releaseReason }),
+                      "the played negative Hydra hold yields a release offer with a usable reason, neither offence nor a pure buff");
+                Check(!PureBuff(null) && !PureBuff("") && !PureBuff("buff+cc") && !PureBuff("grows into Griffon") &&
+                      PureBuff("buff") && PureBuff("buff+grows into Griffon") && PureBuff("regains psionic focus"),
+                      "ability buff classification tolerates a missing reason and preserves the buff/form/held-state policy");
+                Check(Body(typeof(GrappleState), "Describe").Count(m => m.DeclaringType == typeof(UnitReference) && m.Name == "op_Equality") == 2,
+                      "grapple headers check both reciprocal IDs through native UnitReference equality, without resolving the reverse proxy");
                 Check(CallsMod(typeof(PreBuffAnalyzer), "AnalyzeBuff", typeof(AbilityProfile), "get_ReleasesGrapple") ||
                       typeof(PreBuffAnalyzer).GetMethods(Hidden).Any(m => SaveBoostCheck.ReferencedMembers(m).Any(r => r.Name == "get_ReleasesGrapple")),
                       "the out-of-combat buff routine never casts it");

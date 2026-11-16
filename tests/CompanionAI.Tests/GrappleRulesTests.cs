@@ -120,6 +120,32 @@ namespace CompanionAI.Tests
             Assert.Equal(0f, ValueModel.GrappleKeepValue(0.9f, 0f, 40f, 28f, 12f, 1f, 1f));
         }
 
+        [Fact] public void ThePlayedHydraReleaseHasAValueAndACandidateReason()
+        {
+            // gaps1 AI row 2812 priced releasing at 23.8, then discarded the ability on a null reason (row 2813).
+            float value = ValueModel.GrappleReleaseValue(-23.8f, out string reason);
+            Assert.Equal(23.8f, value, 5);
+            Assert.Equal("release", reason);
+        }
+
+        [Theory]
+        [InlineData(29.4f)]
+        [InlineData(19.7f)]
+        [InlineData(0f)]
+        [InlineData(-0.5f)]
+        public void AHoldThatPaysOrMissesTheReleaseMarginIsNotOffered(float keep)
+        {
+            Assert.Equal(0f, ValueModel.GrappleReleaseValue(keep, out string reason));
+            Assert.False(string.IsNullOrEmpty(reason));
+        }
+
+        [Fact] public void ReleaseClearsTheExistingMarginWithoutDiscountingItsBenefit()
+        {
+            float keep = -0.5001f;
+            Assert.Equal(-keep, ValueModel.GrappleReleaseValue(keep, out string reason));
+            Assert.Equal("release", reason);
+        }
+
         // CombatManeuver values: None 0, Trip 1, Overrun 2, Disarm 3, Grapple 4, BullRush 5.
         [Fact] public void ManeuverImmunityBlocksItsOwnTypeOnly()
         {

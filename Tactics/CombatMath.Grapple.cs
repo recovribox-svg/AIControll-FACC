@@ -518,11 +518,15 @@ namespace CompanionAI_Pathfinder.Tactics
             {
                 var holds = unit?.Get<UnitPartGrappleInitiator>();
                 var victim = holds?.Target.Value;
-                if (victim != null && victim.Get<UnitPartGrappleTarget>()?.Initiator == unit && victim.Descriptor.State.IsConscious)
+                var victimPart = victim?.Get<UnitPartGrappleTarget>();
+                // Compare the reciprocal UnitReference directly, as the native controller and ReadHold do. The nullable
+                // expression instead converts it back to an entity for equality, requiring another proxy resolution.
+                if (victim != null && victimPart != null && victimPart.Initiator == unit && victim.Descriptor.State.IsConscious)
                     return "holds " + victim.CharacterName;
                 var held = unit?.Get<UnitPartGrappleTarget>();
                 var holder = held?.Initiator.Value;
-                if (holder != null && holder.Get<UnitPartGrappleInitiator>()?.Target == unit && holder.Descriptor.State.IsConscious)
+                var holderPart = holder?.Get<UnitPartGrappleInitiator>();
+                if (holder != null && holderPart != null && holderPart.Target == unit && holder.Descriptor.State.IsConscious)
                     return "held by " + holder.CharacterName + (held.IsPinned ? " (pinned)" : "");
             }
             catch { }

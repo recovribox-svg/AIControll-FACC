@@ -1,0 +1,180 @@
+{
+  "task": "gaps1 playtest review and Release Grapple candidate repair",
+  "recorded_at_utc": "2026-11-15T16:51:04.490743+00:00",
+  "branch": "codex/gaps1-playtest-review",
+  "development_base": "6b9be4214989f7ba4a56dad54f0b8c9056c2789d",
+  "stacked_on": {
+    "pr": 70,
+    "head": "d5a120756a9d67f2de0c8167da44b2d3c92a0751",
+    "also_includes": [
+      65,
+      66,
+      67,
+      68,
+      69
+    ]
+  },
+  "checked_source_commit": "96108ba9af7c5564c7d7029715102076d159a7b7",
+  "worktree_clean_at_build": true,
+  "dll": {
+    "assembly": "CompanionAI_Pathfinder, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null",
+    "mvid": "9ce04a64-f9a0-43ce-8275-5f1b0c7bbe73",
+    "sha256": "b1e5599846d4c9c1a611ff18cce69c7cb020a1d25ef92f6eaa434dd7e1d4f468",
+    "size": 1461248
+  },
+  "manifest_unchanged": "0.3.52",
+  "release_build": {
+    "real_game_references": true,
+    "warnings": 0,
+    "errors": 0
+  },
+  "toolchain": {
+    "dotnet_sdk": "8.0.426",
+    "csharp_compiler": "4.11.0-3.25569.22 (3fb752d4)",
+    "provenance": "docs/competence/GAPS1_PLAYTEST_BUILD_PROVENANCE.json",
+    "provenance_sha256": "ecbc9660440bf7ece6f376d1576c404e862f108d41125dd3b714971707b5db6f",
+    "umm_reference": "0.33.2.0"
+  },
+  "played_input_receipt": "docs/competence/GAPS1_PLAYTEST_INPUTS.json",
+  "unit_tests": {
+    "passed": 861,
+    "failed": 0,
+    "skipped": 0,
+    "new_cases": 6
+  },
+  "script_tests": {
+    "inventory": 27,
+    "audit_supplement": 3,
+    "invocation_ledger": 11,
+    "failures": 0
+  },
+  "compatible_profile_audit": {
+    "loaded": 44639,
+    "failed": 0,
+    "abilities": 4807,
+    "reader_errors": 0,
+    "prerequisite_skips": 0,
+    "grapple": 58,
+    "new_grapple_checks": 3,
+    "griffon_modes": 29,
+    "value_selection": 24,
+    "shifter_forms": 21,
+    "campaign_flag": 21,
+    "fusion_value": 23,
+    "scope": "C06_NATIVE_COMPATIBLE_SCOPE.json plus REVIEW2_CHARGE_INPUTS.json missing-only stock fixtures",
+    "summon_inventory_limits": "5 missing spawned-unit IDs, 119 kit-reference IDs and 95 unloaded brains remain explicit; not the S1 full-stock supplement."
+  },
+  "native_harnesses": {
+    "toggle_with_psionics": 98,
+    "tome": 14,
+    "toybox": 10,
+    "failures": 0,
+    "prerequisite_skips": 0
+  },
+  "supplementary_audit": {
+    "loaded": 44643,
+    "failed": 0,
+    "abilities": 4807,
+    "errors": 0,
+    "magus_checks": 44
+  },
+  "foreign_references": {
+    "added": 1,
+    "unresolved": 0,
+    "baseline": "PR #70 checked DLL 351b709",
+    "signatures": [
+      "Assembly-CSharp M valuetype System.Boolean Kingmaker.EntitySystem.Entities.UnitReference::op_Equality(valuetype Kingmaker.EntitySystem.Entities.UnitReference,class Kingmaker.EntitySystem.Entities.UnitEntityData) this=False"
+    ]
+  },
+  "report_comparison": {
+    "strict.log": {
+      "baseline_sha256": "b862d0aa2a5a818f8cf84ea5dc97052e4a3745ff9fe759edc3714c6a085e7449",
+      "new_sha256": "db161f3b28b1298c14a27ea784a5c5b967b049bce5f213e475a0040e957b3480",
+      "unchanged_outside_grapple_check_count": true,
+      "normalization": "Exclude only GRAPPLE check-count and optional FUSION-COVERAGE rows; normalize output path/blank separators."
+    },
+    "strict.txt": {
+      "baseline_sha256": "cdcc38aea247d18bca99ee68fb36610d5c8c19dd6a7fe0c5eb3d973bddeeed8b",
+      "new_sha256": "2aaed410fb447be435f290e74e175cbd21c34a52aa88ffc09beee7d2a7d78c44",
+      "unchanged_outside_grapple_check_count": true,
+      "normalization": "Exclude only GRAPPLE check-count and optional FUSION-COVERAGE rows; normalize output path/blank separators."
+    }
+  },
+  "fusion_coverage": {
+    "kind": "Inherited from independently checked PR #69 source fad03c4; not rerun for the reason/diagnostic repair",
+    "receipt": "docs/competence/FRIGID_SELECTION_CHECKS.json",
+    "summary": "docs/competence/FRIGID_SELECTION_COVERAGE.json",
+    "admitted": 7306,
+    "withheld": 8188,
+    "configurations": 15494,
+    "cones_resolved": 1166,
+    "joint_metadata_qualified": 3118,
+    "reader_joint_model_files_unchanged": true,
+    "scope": "Metadata admission, not live availability/aim/value/execution."
+  },
+  "raw_archive_negative_check": {
+    "exit": 1,
+    "loaded": 44637,
+    "failed": 1,
+    "asset": "AchaekekSacredWeaponFeature",
+    "reason": "Preserved serialized enum spelling mismatch and offline Unity logger ECall. No normalization or use of raw verdicts as acceptance."
+  },
+  "new_regressions": [
+    "Observed negative Hydra hold gives 23.8 release value and an explicit reason",
+    "Positive keep values and the existing half-point release margin yield no release offer",
+    "Actual pure-buff/offensive classification accepts the release reason without treating it as a spell offence or pure buff",
+    "Actual pure-buff classifier handles null/empty while preserving buff/form/held-state behavior",
+    "Both grapple headers use native reciprocal UnitReference ID comparisons"
+  ],
+  "performance_boundary": {
+    "new_world_scans": 0,
+    "new_rule_forecasts": 0,
+    "new_path_or_landing_queries": 0,
+    "new_long_lived_actor_context_cache": false,
+    "movement_or_permission_policy_changed": false,
+    "measured_unity_speedup_claimed": false
+  },
+  "package": {
+    "archive": "test-builds/AI-Control-FACC-v0.3.52-dev-gaps2-96108ba-UMM-test.zip",
+    "sha256": "bf5e955f32cd91512495656e30528cc1afad11733af108bc523012527cd681fa",
+    "bytes": 578494,
+    "identity": "test-builds/AI-Control-FACC-v0.3.52-dev-gaps2-96108ba-UMM-test.identity.json",
+    "identity_sha256": "c947606c3e9dae308f1110d42b396c1cf95b952ea5e539ec41610c3a8564bc79",
+    "packed_dll_equals_checked_release": true,
+    "startup_mvid_unique_against_existing_identities": true,
+    "native_dlls_or_stubs_packed": false
+  },
+  "limits": [
+    "Repaired gaps2 package is unplayed; the supplied logs played gaps1, not this output.",
+    "No actual Release Grapple, leap or Frigid Touch was issued in the played AI log.",
+    "Native hold conditions/header discrepancy and high-risk bomb utility remain replay questions; do not invent movement/permission changes.",
+    "Generic holder cost, immobility safety, monster-held ally support, form extra facts and saved Frigid control retain prior boundaries.",
+    "Native audits use private engine-neutralized verification copies; the deployable DLL is untouched."
+  ],
+  "handover": [
+    "docs/GAPS1_PLAYTEST_REVIEW.md",
+    "docs/GRAPPLE_GAP_ASSESSMENT.md",
+    "docs/LEAP_GRAB_MODES.md",
+    "docs/SHIFTER_FORM_DECISIONS.md",
+    "docs/GRABBER_G2.md"
+  ],
+  "source_freeze": "The exact checked DLL is retained across subsequent receipt/package/documentation-only commits; no rebuild after those commits.",
+  "validation_logs_sha256": {
+    "audit-build.log": "f3b78c8ec6a48b28137992e7ac3c0db6a81a3c2d705b9cdbadd50c830ccd19d5",
+    "inventory.log": "6ef6f1be79a41ae28318124d4325a3988feaa684a68197d354ce98238c426a4d",
+    "invocation-ledger.log": "34a82a30511a2175a5286cff0751874e9220ce5fb08cab87b09cc04e220f6b31",
+    "raw.log": "59399a5731df2ca0a352726bb5857f2618ac7f2bf881aa07c789670ad5bd8149",
+    "refs.log": "28d69214859069971e6685a4a81e87556dc4bed537a945c3fb641f27e580e651",
+    "release.log": "d02d8e754ef98756f8888ead817cd8bbcda48823bb1cfe5deda301de756da7dd",
+    "strict.log": "db161f3b28b1298c14a27ea784a5c5b967b049bce5f213e475a0040e957b3480",
+    "supplement-scripts.log": "199ba496f288116d36c62f29346d4fbf0bd75745a1c893abfcbdaa4c6d5b1033",
+    "supplementary.log": "084498208e5b37bd642ff4e7d8a091de5b41461cb1bd48e30a45b9ca2e269067",
+    "toggle-build.log": "360d458a8b0b63f33be1c9331724f1e50a6c5db3145143799ac3cd8909e55105",
+    "toggle.log": "e80dfe39bc03aa50fe0d85d2e9f326a615dc11bfc9af0f5d03a68faa9676e26d",
+    "tome-build.log": "bbcf3c98271f98b02f2d5e116a500fa77ba67f20b1e59e89ba0ee62d558dda56",
+    "tome.log": "c1ce4f42dee8e31e2a19779be248e25e6950df9a67c4d5c078db998c5bf18f8e",
+    "toybox-build.log": "e1dad16f989dba10ad39eb75b0bbab89ff7fb8234b85ab12fd4bd3a40fe5f82f",
+    "toybox.log": "3767441a967356740ea7fc143ed0ab4c4da67c8b082633ef3c773c4ea1941e39",
+    "unit.log": "70c1364bced6dddd1a2aade178baeb84aaf2416d514b9f8ca80716cef2a821e3"
+  }
+}

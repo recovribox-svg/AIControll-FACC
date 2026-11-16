@@ -1,0 +1,56 @@
+{
+  "date": "2026-11-15",
+  "timezone": "Europe/London",
+  "playedBuild": {
+    "manifestVersion": "0.3.52",
+    "label": "gaps1",
+    "checkedSource": "351b709179ab3f9caba3083c07b1337e334760d2",
+    "startupMvid": "9aea0261-f5a3-4c3e-a025-502de27a716d",
+    "packageSha256": "841c40650338f78d7c16999660e430a4e46d92011be9a447ee45b95d09359084"
+  },
+  "authorContext": {
+    "toyboxSpawns": true,
+    "rests": "between fights",
+    "grabber": "left under engine control"
+  },
+  "files": [
+    {
+      "name": "gaps1-test Log.txt",
+      "sha256": "8e368ca7adf5468ba15b20f5e69fe3f9bf4ef3a64aef46db7e85184599f374b0",
+      "bytes": 1174092,
+      "lfCount": 5624,
+      "crCount": 5624
+    },
+    {
+      "name": "combatLog.txt",
+      "sha256": "f2a43bb7cf21c32b001484efe09c12550f285b744bbe84123f4633f153a5ab21",
+      "bytes": 1499459,
+      "lfCount": 36695,
+      "crCount": 41730
+    }
+  ],
+  "rowConvention": "One-based rows separated by LF; bare CR characters do not increment cited row numbers.",
+  "review": {
+    "encounters": 9,
+    "measuredDecisions": {"turnBased": 261, "realTime": 1455},
+    "issuedCommands": {"total": 572, "turnBased": 159, "realTime": 413},
+    "matchingTerminals": 572,
+    "unmatchedIssues": 0,
+    "mismatchedActorTypeOrLabel": 0,
+    "terminals": {"successActed": 421, "interruptActed": 76, "interruptNotActed": 75, "fail": 0},
+    "aiExceptionsRecorded": [{"row": 2813, "ability": "Release Grapple", "exception": "NullReferenceException"}],
+    "externalOwnerBlueprintErrorRows": [2718, 4818],
+    "invocationLedger": {"fights": 9, "issued": 0, "acted": 0, "flags": []},
+    "slowDecisionRows": {"count": 70, "medianMsOfSlowSubset": 329.5, "maxMs": 1190},
+    "frigidIssued": 0,
+    "leapsIssued": 0,
+    "releaseGrappleIssued": 0,
+    "griffonShapeIssued": 3
+  },
+  "limits": [
+    "Once-only exception reporting does not count all failed evaluation attempts.",
+    "Spawned encounters/rests and different states do not establish a controlled performance comparison.",
+    "Recognition/forecast observations do not establish Frigid or leap gameplay execution.",
+    "The repaired build is separate from this played package. Raw logs remain private."
+  ]
+}

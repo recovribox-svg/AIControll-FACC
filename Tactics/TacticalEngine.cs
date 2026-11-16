@@ -2495,11 +2495,11 @@ namespace CompanionAI_Pathfinder.Tactics
             float net = ValueModel.GrappleRoundNet(worth, holder, held.FreeDamage, pinnedShare);
             string detail = $"{victim.CharacterName} {(held.Pinned ? "pinned" : "held")}, keep {keep:+0.0;-0.0} (victim {worth:F1}, holder " +
                             $"{holder:F1} per round, free natural hit {held.FreeDamage:F1}, a later round {net:+0.0;-0.0}, lasts {persist:P0}/round)";
+            float release = ValueModel.GrappleReleaseValue(keep, out why);
             AbilityDiscovery.ReportOnce($"grapplekeep|{CombatMemory.Fight}|{unit.UniqueId}|{victim.UniqueId}|{(keep < -0.5f ? 1 : 0)}",
-                () => $"[Grapple] {unit.CharacterName}: {(keep < -0.5f ? "lets go of" : "keeps")} {detail}");
-            if (keep >= -0.5f) { why = "the hold still pays: " + detail; return 0f; }
-            why = null;
-            return -keep;
+                () => $"[Grapple] {unit.CharacterName}: {(release > 0f ? $"release offer {release:F1}:" : "keeping the hold is preferred:")} {detail}");
+            if (release == 0f) why += ": " + detail;
+            return release;
         }
 
         private static float RoleWeight(TacticalContext ctx, string category)
@@ -3579,8 +3579,7 @@ namespace CompanionAI_Pathfinder.Tactics
                     ControlAims = controlAims,
                     Offensive = IsOffensive(why),
                     // ★ v0.3.25: getting a held state back (psionic focus) is a buff for the restraint rule too.
-                    PureBuff = why.Split('+').All(r => r == "buff" || r.StartsWith("grows into") || r.StartsWith("regains ")) &&
-                               (why.Contains("buff") || why.StartsWith("regains ") || why.Contains("+regains ")),
+                    PureBuff = IsPureBuff(why),
                     Label = $"{(ability.SourceItem != null ? "Item:" : "")}{ability.Name}{metamagic}->{(summonPoint.HasValue ? "a spot near the fight" : target.CharacterName)}({why}){risk?.Tag}" +
                             (approach?.Detours == true ? $" ({approach.Detour})" : "") +
                             (provoke != null ? $" [casting provokes {provoke.Attacks}{(provoke.DropChance >= 0.1f ? $", {provoke.DropChance:P0} down" : "")}]" : "") +
@@ -3712,6 +3711,11 @@ namespace CompanionAI_Pathfinder.Tactics
             }
             return false;
         }
+
+        /// <summary>A missing reason is not a pure buff (as with IsOffensive), and must not discard a valued ability.</summary>
+        private static bool IsPureBuff(string why) => !string.IsNullOrEmpty(why) &&
+            why.Split('+').All(r => r == "buff" || r.StartsWith("grows into") || r.StartsWith("regains ")) &&
+            (why.Contains("buff") || why.StartsWith("regains ") || why.Contains("+regains "));
 
         private static string MetamagicTag(AbilityData ability) => AbilityDiscovery.MetamagicTag(ability);
 
