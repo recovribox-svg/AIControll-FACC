@@ -6351,3 +6351,8 @@ The initially proposed extra friendly-Sleep restriction was withdrawn after the 
 no such incident was established by the logs and no candidate package was supplied/merged. Ordinary Sleep and
 enemy-only fused delivery have native graph regression checks. Existing fusion damage safety is unchanged.
 The historical 905-test/32-audit candidate receipts are superseded, not evidence for the final narrowed source.
+
+Narrowed checked source `097ff32`, MVID `cfcce6de-fbc9-428b-9247-15a89d9934f2`: 899 unit + 27/3/18 tests;
+real-reference Release 0 warnings/errors, FUSION-POOL 31 / FUSION-OUTCOME 34, inherited audits, supplementary Magus 44
+and providers 98/14/10 pass. Zero new native signatures; 8,709/15,494 normal templates admitted, 498 shared pool,
+zero reader/cone errors. Execution remains a native cast, preserving native Sleep/ally/faction behavior.

@@ -1,0 +1,124 @@
+{
+  "task": "Narrowed pre-integration F7 review correction: effective native pool metamagic; no added friendly-Sleep restriction",
+  "development_base": "980cf26827e23e5b0c78696fe530edecd7156162",
+  "stacked_on_prs": [
+    76,
+    77
+  ],
+  "stacked_on_head": "452d8a3",
+  "checked_source_commit": "097ff32f2f8320925ca2883ebd8c17af38d8afa1",
+  "dll": {
+    "assembly": "CompanionAI_Pathfinder, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null",
+    "mvid": "cfcce6de-fbc9-428b-9247-15a89d9934f2",
+    "sha256": "a84e53fdbf4952790157849e9bc27b032b666a05cd2c733b85815a3dd3af8348",
+    "size": 1475072
+  },
+  "release": {
+    "real_game_references": true,
+    "warnings": 0,
+    "errors": 0
+  },
+  "unit_tests": {
+    "passed": 899,
+    "new": 12,
+    "failed": 0,
+    "skipped": 0
+  },
+  "script_tests": {
+    "inventory": 27,
+    "audit_supplement": 3,
+    "invocation_ledger": 18,
+    "failures": 0
+  },
+  "profile_audit": {
+    "loaded": 44640,
+    "failed": 0,
+    "abilities": 4808,
+    "reader_errors": 0,
+    "prerequisite_skips": 0,
+    "fusion_outcome": 34,
+    "fusion_pool": 31,
+    "new_pool_checks": 6,
+    "diagnostic_log": 16
+  },
+  "native_harnesses": {
+    "toggle": 98,
+    "tome": 14,
+    "toybox": 10,
+    "failures": 0
+  },
+  "supplementary_magus": 44,
+  "foreign_signatures": {
+    "added": 0,
+    "unresolved": 0
+  },
+  "fusion_coverage": {
+    "configurations": 15494,
+    "profileAccepted": 8709,
+    "profileWithheld": 6785,
+    "sharedPoolProfiles": 1754,
+    "sharedPoolAdmitted": 498,
+    "jointOutcomeMetadataQualified": 4663,
+    "coneComponentsResolved": 1416,
+    "coneComponentErrors": 0,
+    "readerErrors": 0
+  },
+  "native_cases": "Native calculator on inert params-only maximized contexts confirms 12/18/zero-count bonus4; native ordinary Sleep and Sleep-delivered fused targeting remain enemy-only. No actor/selector/cast/RNG execution.",
+  "withdrawn_candidate": "FUSION_POOL_REVIEW_SUPERSESSION.json; no extra friendly upper map/veto remains and no superseded candidate package/merge occurred.",
+  "execution": "AI Control continues issuing native fused casts; no native Sleep target/effect or ally/faction rule is modified. Existing damage safety is unchanged.",
+  "author_references": [
+    "https://steamcommunity.com/sharedfiles/filedetails/?id=3262599717",
+    "https://pathfinderkingmaker.fandom.com/wiki/Magic_Deceiver_spells"
+  ],
+  "reference_limits": "Community descriptions are context; exact native per-effect behavior in a broader fusion is not established by the outcome1 logs. No new Sleep-friendly restriction is inferred.",
+  "bounds": "Immutable normal/Empowered metadata, existing per-aim context/selector/visit cache only. No extra rule/context/path/world pass or actor cache.",
+  "raw_archive_negative_check": {
+    "expected_exit": 1,
+    "loaded": 44637,
+    "failed": 1,
+    "reason": "Unchanged original Achaekek enum spelling/offline logger mismatch; not a passing raw audit."
+  },
+  "toolchain": {
+    "sdk": "8.0.426",
+    "csharp_compiler": "4.11.0-3.25569.22 (3fb752d4)",
+    "umm_reference": "0.33.2.0",
+    "provenance": "docs/competence/FUSION_POOL_METAMAGIC_BUILD_PROVENANCE.json",
+    "provenance_sha256": "b6907ce40586698f36f27f3eaed782a7044030455439e66e5cc946037e49cfb5"
+  },
+  "manifest": "0.3.52",
+  "gameplay": "New correction unplayed. Older outcome1 predates F7.",
+  "package": "Combined candidate follows authorized integration; checked DLL remains frozen across docs-only commits.",
+  "private_validation_artifact_sha256": {
+    "supplementary.log": "628c4d3fea95f303692d45db50bd4472460c24844b9bac2ff8e3eae392c483d6",
+    "provenance.json": "b6907ce40586698f36f27f3eaed782a7044030455439e66e5cc946037e49cfb5",
+    "supplement-scripts.log": "edb4e2159c923ea45a32656078835cdf531c3d7b414c670dd786978875cb0678",
+    "summary.json": "7f52c25129656a19435f44548abcfcfaabc71c8ed5a895d3d64ac386019ce2d9",
+    "toggle-build.log": "c48117e300eb70fac5306fbfe6978d52b1ebcd2a3765c10c79c0cb5ca78d051f",
+    "tome.log": "4b8e1b2a5358196c408a33825161b1dc149e1e5524240b8a275cc404360bdc48",
+    "identity.json": "1745aca0131affc6c522659dd964b9a747a6ce696e7152c9da4590c3529e266d",
+    "raw.log": "59399a5731df2ca0a352726bb5857f2618ac7f2bf881aa07c789670ad5bd8149",
+    "toybox.log": "8dfd77230efff805c45f0230b79639177d264a851c0d29bf1f76ca1295a3af0a",
+    "strict.txt": "701fbbf3b15d985e63666e6bd859baf4ff8dcb84d70db552410055ffd9df4bd0",
+    "coverage.json": "298c29b1b290e904699f6500432261f1b0603df0646ad7c3205c7fbd61d5dc12",
+    "refs.log": "899262540b3e6a0a678fb0c899cdfcefb2cc1695ab4439fdcb666d764617d4a1",
+    "audit-build.log": "58b2b2814e4ec0950e4e16f3cb0f14649607aaa761c53fe3e24b08f8754e97f9",
+    "toggle.txt": "05b0accb8a67f698a17a492e01a1a6679f01b1d8803d1659eecdc44593db19c1",
+    "tome-build.log": "868e5384455783ae579f04b64a7fecf8ee72daf169ee3ce1244b33c06e08f369",
+    "strict.log": "bffcf951b5dc16fccaf824063e82768e1006bed01cfb13a9bacca458cdbb2e1e",
+    "tome.txt": "1257f250028c7936f0cb29ad0f3cacdfd4c2d82111a7e813a04819e519d7f824",
+    "toggle-restore.log": "40d104602671164ab3958225da3e1c8cabd55f0251d6df6bc911d9d5a24f44ce",
+    "release.log": "1a41249b8c478e2612fdeffb9eff95d208ddbd8f198e7f396bdc0487c44576bd",
+    "supplementary.txt": "0559ca9bdd171b9e04af78ce5b4f41210a6bdbe4c2ab6b2772e5412d9b5d4f02",
+    "toybox-restore.log": "40d104602671164ab3958225da3e1c8cabd55f0251d6df6bc911d9d5a24f44ce",
+    "tome-restore.log": "40d104602671164ab3958225da3e1c8cabd55f0251d6df6bc911d9d5a24f44ce",
+    "raw.txt": "533659eaa5c2c9baa1fded5b8021cb157c428b29c83b591f273f27e47a340e91",
+    "added-refs.txt": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "inventory.log": "09ad2fe8a00725d344e94e8e80b71c18c4cbb712fd436f659f3f8ab440b40798",
+    "invocation-ledger.log": "3f56dc2d2b62a4e6a4cedbffe44e114c3b721e5b4321a5d0b2f42d56f5b30c1b",
+    "toggle.log": "389ba985e441e712922e53bce68c5a913bd7c9a8fb251d6b0b1b5fb6bec28193",
+    "toybox-build.log": "b947cb5752fe4a6282206e95837712e7f536bf40a4c85e7709c24d21aa872c75",
+    "unit.log": "95690cead8fef8a343919fbe6fb55fd1163735da5e3625bd74cd4fbd721046e8",
+    "audit-restore.log": "40d104602671164ab3958225da3e1c8cabd55f0251d6df6bc911d9d5a24f44ce",
+    "toybox.txt": "b23a55aa0ac65e9a8a8e2db27ce8cfd01a34acc4433dd96923113a9c2a4b1136"
+  }
+}

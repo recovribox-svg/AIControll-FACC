@@ -13,7 +13,12 @@ Keep `main` for author-authorized releases. Read [AGENTS.md](AGENTS.md) when coo
 The extra friendly-Sleep veto/map was withdrawn after the author clarified ally targeting; no such incident was
 shown in outcome1 and no candidate ZIP was supplied/merged. Existing damage safety remains. Earlier `f8788d7`
 905-test/32-check receipts describe the superseded broader candidate, not the narrowed final source. Final checked
-source/provenance and combined package follow current validation. Ordinary Sleep's enemy-only selector and an
+source **`097ff32`**, MVID **`cfcce6de-fbc9-428b-9247-15a89d9934f2`**: **899 unit + 27/3/18 script tests**,
+real-reference Release **0 warnings/errors**, FUSION-POOL **31** / FUSION-OUTCOME **34**, inherited checks,
+supplementary Magus 44 and providers **98/14/10** pass. Zero added native signatures; normal matrix remains
+**8,709 / 15,494** admitted (498 shared-pool), zero reader/cone errors.
+[Final checks](docs/competence/FUSION_POOL_METAMAGIC_CHECKS.json),
+[final provenance](docs/competence/FUSION_POOL_METAMAGIC_BUILD_PROVENANCE.json). The combined package follows integration. Ordinary Sleep's enemy-only selector and an
 enemy-only fusion delivery have explicit regression checks. No normal admission, movement or targeting policy change.
 
 **Current handover (16 November 2026, Claude): Fusion F7 (Sleep fusions) on `claude/fusion-sleep-pool`, stacked on
