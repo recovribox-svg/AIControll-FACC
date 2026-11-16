@@ -6258,3 +6258,45 @@ package's checked source `9a02565`. Receipt: [INTEGRATION_65_73_CHECKS.json](com
 
 The gaps3 package is development's code; no new package was built. Unplayed: TB release, an actual leap, Frigid Touch
 in play, and the form/Fury scheduling.
+
+## 182. Fusion F4: effects on a passed save or on both outcomes (16 November 2026, Claude)
+
+Section 181 is reserved for PR #75 (Coup de Grace reach), which is open and not part of this branch.
+
+Branch `claude/fusion-outcome-effects`, development base `980cf26`. Author-approved after the plan in
+[FUSION_OUTCOME_EFFECTS_PLAN.md](FUSION_OUTCOME_EFFECTS_PLAN.md). Page: [FUSION_OUTCOME_EFFECTS.md](FUSION_OUTCOME_EFFECTS.md).
+Receipt: [FUSION_F4_CHECKS.json](competence/FUSION_F4_CHECKS.json). Not played.
+
+**The refusal.** A fused spell with a target buff outside the shared failed-save branch was withheld ("buff outside the
+shared failed-save branch"): the only blocker in 2,874 of 15,494 native configuration templates.
+
+**The game's rule.** `AbilityEffectRunAction.Apply` rolls one root save and runs both spells' actions under it.
+`ContextActionConditionalSaved` picks its branch from that result, and `ContextActionApplyBuff` has no save test. So an
+application runs on the failed outcome, the passed outcome or both, and nothing else is rolled.
+
+**Changes.**
+
+- The refusal is now a recorded fact on the profile (`FusionOutcomeEffectLocation`).
+- `TacticalEngine.FusionWithheld` is the one admission rule, for the engine and the coverage audit. Such a fusion is
+  offered only when `FusionOutcomeModel` qualifies it; it never uses the older fail-chance forecast.
+- `TryFusionControlRounds` fills one envelope per outcome. `ValueModel.FusionValue` adds
+  `delivery × worth × (1 − fail) × (1 − killed on a pass) × rounds on a pass`, only when present.
+- `FusionControlCatches` counts an ally caught on either outcome.
+- Slice B: `StableFusionGuards` no longer treats an application in the opposite branch of one `Conditional`, read once
+  by the same source spell, as a guard dependency (Ray of Exhaustion).
+
+**Result.** 905 more templates admitted (8,211 of 15,494): Fear 276, Boneshatter 267, Ray of Exhaustion 267, Frigid
+Touch 128, overlapping. None lost; no admitted fusion changed its gate result or its value. 1,969 stay withheld by the
+outcome gate (Molten Orb, Disintegrate, Reduce Person, Acid Arrow, Enervation and smaller groups).
+
+**The author's log** (gaps3, module `48ece05d`): arcan has ten fusions, seven on the joint value, one on the older
+forecast, two withheld for "shared Hit Dice selection" (Sleep). None was blocked by this rule. He gains saved Frigid
+Touch fusions now.
+
+**Checks** on `f5ccb40`: Release 0 warnings; 881 unit tests (15 new) + 27 + 3 + 18; 0 added game references;
+ProfileAudit exit 0, two runs identical, `FUSION-OUTCOME` 34 checks, every other line equal to the §180 baseline;
+native harnesses 98/14/10. Package `test-builds/AI-Control-FACC-v0.3.52-dev-outcome1-f5ccb40-UMM-test.zip`, MVID
+`fbc220a5-e4af-42eb-b386-e72ec1b61247`. Manifest 0.3.52.
+
+**Not changed.** Movement, target commitment, retreat, pathfinding, stuck handling, ordinary spells, spell policies,
+the blocklist, the cone re-aim.

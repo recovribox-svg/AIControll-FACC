@@ -1,0 +1,46 @@
+{
+  "build_label": "outcome1",
+  "kind": "development-test",
+  "version": "0.3.52",
+  "source_branch": "claude/fusion-outcome-effects",
+  "source_commit": "f5ccb400c97cc9802a946f9249a8f2ba58284bdd",
+  "pull_request": null,
+  "development_base": "980cf26827e23e5b0c78696fe530edecd7156162",
+  "contains": [
+    "development 980cf26: PRs #65-#73 (the gaps3 package's code)",
+    "Fusion F4 slices A and B: effects on a passed save or on both outcomes (docs/FUSION_OUTCOME_EFFECTS.md)"
+  ],
+  "does_not_contain": [
+    "PR #75 (Coup de Grace reach, open)"
+  ],
+  "dll": {
+    "assembly": "CompanionAI_Pathfinder, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null",
+    "mvid": "fbc220a5-e4af-42eb-b386-e72ec1b61247",
+    "sha256": "0728e3aa88b021898f33c4fce76282ec7b47666d34d100199e34a7e103d9aa1e",
+    "size": 1464832,
+    "source_link_commit": "f5ccb400c97cc9802a946f9249a8f2ba58284bdd",
+    "unitymodmanager_reference": "0.33.3 (the supplied UnityModManager.dll)"
+  },
+  "manifest_sha256": "1876fd6fc56d03b28793f6c481fac47c9ea85eec3265d6859232deeab67523a3",
+  "archive": "AI-Control-FACC-v0.3.52-dev-outcome1-f5ccb40-UMM-test.zip",
+  "zip_sha256": "f961ea2b2983c6f109e062359a94bee15f511691cf49229568544a057d4b1c58",
+  "zip_size": 580120,
+  "checks_receipt": "docs/competence/FUSION_F4_CHECKS.json",
+  "toolchain": {
+    "dotnet_sdk": "8.0.428",
+    "msbuild": "17.11.71.50904",
+    "csharp_compiler": "4.11.0-3.25569.22 (3fb752d4)"
+  },
+  "build": {
+    "configuration": "Release",
+    "clean": "bin and obj removed; worktree clean at the source commit",
+    "note": "byte identity with a build on another machine or SDK patch is not claimed"
+  },
+  "gameplay_status": "not played",
+  "scope": "gaps3 plus: a Magic Deceiver's fused spell with an effect on a passed save or on both outcomes (Fear, Boneshatter, Frigid Touch, Ray of Exhaustion) is offered and valued per save outcome.",
+  "archive_contents": [
+    "CompanionAI_Pathfinder.dll",
+    "Info.json"
+  ],
+  "release": false
+}

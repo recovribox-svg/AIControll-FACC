@@ -1,5 +1,14 @@
 # Test builds
 
+## Task-branch candidate: v0.3.52 outcome1 — fused spells with effects on a passed save or on both outcomes (f5ccb40), unplayed
+
+[UMM test ZIP](AI-Control-FACC-v0.3.52-dev-outcome1-f5ccb40-UMM-test.zip?raw=true) · [Identity](AI-Control-FACC-v0.3.52-dev-outcome1-f5ccb40-UMM-test.identity.json) · [Checksum](AI-Control-FACC-v0.3.52-dev-outcome1-f5ccb40-UMM-test.sha256) · [Checks](../docs/competence/FUSION_F4_CHECKS.json) · [What changed and replay](../docs/FUSION_OUTCOME_EFFECTS.md)
+
+The gaps3 code plus Fusion F4 slices A and B. A Magic Deceiver's fused spell that carries Fear, Boneshatter, Frigid
+Touch or Ray of Exhaustion under a root save is now offered and valued per save outcome; it was always withheld before.
+Startup MVID `fbc220a5-e4af-42eb-b386-e72ec1b61247`. Already-admitted fusions keep their values. Does not include
+PR #75. No runtime blueprint data or private logs are packed.
+
 ## Task-branch candidate: v0.3.52 gaps3 — current buff evidence (9a02565), unplayed
 
 [UMM test ZIP](AI-Control-FACC-v0.3.52-dev-gaps3-9a02565-UMM-test.zip?raw=true) · [Identity](AI-Control-FACC-v0.3.52-dev-gaps3-9a02565-UMM-test.identity.json) · [Checksum](AI-Control-FACC-v0.3.52-dev-gaps3-9a02565-UMM-test.sha256) · [Checks](../docs/competence/GAPS2_PLAYTEST_CHECKS.json) · [Review / Invocation judgment / replay](../docs/GAPS2_PLAYTEST_REVIEW.md)

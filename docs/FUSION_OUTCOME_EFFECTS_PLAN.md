@@ -1,7 +1,9 @@
 # Next feature plan: fused spells whose effects land on every save outcome (Fusion F4)
 
-16 November 2026, Claude. **Planning only.** No gameplay code, movement policy, build, package, merge, `main` push or
-release is part of this document. Base checked: development `980cf26` (`claude/dreamy-pasteur-b9h3rn`).
+16 November 2026, Claude. **Status: slices A and B are implemented** on `claude/fusion-outcome-effects`, see
+[FUSION_OUTCOME_EFFECTS.md](FUSION_OUTCOME_EFFECTS.md); the author's gaps3 log answered missing input 1 there.
+This document itself is the plan: no gameplay code, movement policy, build, package, merge, `main` push or
+release is part of it. Base checked: development `980cf26` (`claude/dreamy-pasteur-b9h3rn`).
 Evidence receipt: [FUSION_F4_PLAN_EVIDENCE.json](competence/FUSION_F4_PLAN_EVIDENCE.json).
 
 Evidence levels used below:
