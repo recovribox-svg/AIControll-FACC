@@ -8,6 +8,34 @@ Read [CONTRIBUTING.md](CONTRIBUTING.md) for shared branch ownership, Codex pull 
 Codex works on task branches and targets pull requests at `claude/dreamy-pasteur-b9h3rn`; Claude reviews and integrates them there.
 Keep `main` for author-authorized releases. Read [AGENTS.md](AGENTS.md) when coordinating agent work.
 
+**Current handover (16 November 2026, Codex): outcome1 playtest review and diagnostic correction on
+`codex/outcome1-playtest-review`, base development `980cf26`.** The author supplied outcome1 module `fbc220a5`,
+confirmed spawns/rests between fights, and separately authorized reviewing/merging satisfactory open PRs next.
+Read [review/evidence/replay](docs/OUTCOME1_PLAYTEST_REVIEW.md), §184,
+[input receipt](docs/competence/OUTCOME1_PLAYTEST_INPUTS.json),
+[Invocation ledger](docs/competence/OUTCOME1_INVOCATION_LEDGER.json),
+[checks](docs/competence/OUTCOME1_PLAYTEST_CHECKS.json) and
+[compiler/reference provenance](docs/competence/OUTCOME1_PLAYTEST_BUILD_PROVENANCE.json).
+Nine encounters, 666 issued/666 terminal commands, no recorded exception. Saved Frigid Touch is admitted/valued
+but never cast; F4 delivery and F7 are not gameplay-accepted. Six Coups act; Cambion Bard's 13.2 m radius pairs
+with Claw damage/DC 12 (actual separation unknown), supporting #75's hand mismatch. Three RT grapple releases
+act. Invocation: 68 issues/66 DidAct, no identified settle/stacking violation; no new cap or selection rule.
+
+1,060 repeated native path refusal details share one elevated goal. Verdicts now return scalar witnesses; verbose
+first/material-change diagnostics are bounded (128 caster IDs × 16 exact queries × five reports/fight), with no
+actor/context/path/result cache. Native checks, failure strings, dispatch/retry/target/movement/stuck rules stay.
+Rounded-log replay retains 33 details, not a live Unity speedup. Warm ability work remains substantial.
+Checked clean source **`3a951dc`**, MVID **`264dc5eb-3552-48fa-8f9c-cfac958f5dc6`**: **883 unit + 27 + 3 + 18 tests**,
+real-reference Release **0 warnings/errors**, compatible ProfileAudit **44,640 / 4,808**, no load/reader failure or
+prerequisite skip; **DIAGNOSTIC-LOG 22**, inherited checks, supplementary Magus 44, native providers **98/14/10** pass.
+**0 new native signatures**; other audit rows identical on the same augmented inputs. SDK 8.0.426 / Roslyn 4.11,
+UMM 0.33.2.0; manifest 0.3.52. Checked DLL frozen across receipt-only commits. No standalone ZIP: the author wants
+subsequent PR review/integration, then one validated combined candidate. New diagnostics are unplayed.
+
+PR #77 review has found native-metamagic and pooled friendly-safety questions to resolve separately before
+integration; do not treat outcome1 (which predates #77) as evidence of those issues occurring in play. Keep the
+F4/F7, Coup, TB grapple and leap replays separate. No main/tag/release action is authorized by the integration request.
+
 **Current handover (16 November 2026, Claude): Fusion F7 (Sleep fusions) on `claude/fusion-sleep-pool`, stacked on
 Fusion F4 (PR #76, `claude/fusion-outcome-effects`); development base `980cf26`. Not played.** Read
 [docs/FUSION_SLEEP_POOL.md](docs/FUSION_SLEEP_POOL.md), `docs/TACTICAL_AI.md` §183 and the

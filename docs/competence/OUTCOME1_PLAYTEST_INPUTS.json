@@ -1,0 +1,93 @@
+{
+  "recorded_at_utc": "2026-11-16T21:08:26.710637+00:00",
+  "played_build": "v0.3.52 dev-outcome1",
+  "module": "fbc220a5-e4af-42eb-b386-e72ec1b61247",
+  "checked_source": "f5ccb400c97cc9802a946f9249a8f2ba58284bdd",
+  "receipt": "docs/competence/FUSION_F4_CHECKS.json in PR #76",
+  "files": {
+    "log.txt": {
+      "sha256": "2eeb29b470e927711bc692a8310d2d7fa163c4c910bf53a783714756b1f30538",
+      "bytes": 1829491,
+      "physical_lf_lines": 8131
+    },
+    "combat.txt": {
+      "sha256": "bb020d86ff8f97e57051f24ade83b08939d898e350b609de5666acae6d877f5e",
+      "bytes": 1397591,
+      "physical_lf_lines": 34223
+    }
+  },
+  "author_context": {
+    "spawns": true,
+    "rests_between_fights": true,
+    "rests_during_combat": false
+  },
+  "command_counts": {
+    "encounters": 9,
+    "issued": 666,
+    "ended": 666,
+    "TB": 225,
+    "RT": 441,
+    "exceptions_recorded": 0,
+    "pre_act_interruptions": 102
+  },
+  "invocation": {
+    "issued": 68,
+    "acted": 66,
+    "not_applied": 2,
+    "classes": {
+      "first-placement": 17,
+      "move-settled": 31,
+      "move-override": 8,
+      "holder-unseen": 10,
+      "not-applied": 2
+    },
+    "flags": {
+      "low-loss": 8,
+      "sibling": 8,
+      "last-enemy": 2
+    }
+  },
+  "rounded_log_diagnostic_replay": {
+    "scope": "Replay of rounded logged witness fields and actor display names; not Unity execution or full-precision native inputs",
+    "oldRows": 1060,
+    "newRows": 33,
+    "oldBytes": 309919,
+    "retainedOldTextBytes": 9532,
+    "retained": [
+      5085,
+      5137,
+      5147,
+      5153,
+      5182,
+      5201,
+      5315,
+      5399,
+      5510,
+      5571,
+      5599,
+      5649,
+      5839,
+      5958,
+      6035,
+      6264,
+      6266,
+      6284,
+      6299,
+      6301,
+      6487,
+      6765,
+      6793,
+      6818,
+      6820,
+      6939,
+      6943,
+      6945,
+      7032,
+      7034,
+      7065,
+      7067,
+      7248
+    ]
+  },
+  "new_code_gameplay_acceptance": false
+}

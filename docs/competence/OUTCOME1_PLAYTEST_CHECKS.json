@@ -1,0 +1,170 @@
+{
+  "task": "outcome1 log review and bounded path-refusal diagnostics",
+  "development_base": "980cf26827e23e5b0c78696fe530edecd7156162",
+  "checked_source_commit": "3a951dc17f405c884e3d6007c004c5acf1321063",
+  "dll": {
+    "assembly": "CompanionAI_Pathfinder, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null",
+    "mvid": "264dc5eb-3552-48fa-8f9c-cfac958f5dc6",
+    "sha256": "d711fcd48fadd03c8e22383a8251f8798b45a42391fbd7eeef2c1f1ad0b44c0c",
+    "size": 1464320
+  },
+  "release": {
+    "real_game_references": true,
+    "warnings": 0,
+    "errors": 0
+  },
+  "unit_tests": {
+    "passed": 883,
+    "new": 17,
+    "failed": 0,
+    "skipped": 0
+  },
+  "script_tests": {
+    "inventory": 27,
+    "audit_supplement": 3,
+    "invocation_ledger": 18,
+    "failures": 0
+  },
+  "profile_audit": {
+    "loaded": 44640,
+    "failed": 0,
+    "abilities": 4808,
+    "reader_errors": 0,
+    "prerequisite_skips": 0,
+    "diagnostic_log_checks": 22,
+    "new_diagnostic_checks": 6
+  },
+  "native_harnesses": {
+    "toggle_costs": 98,
+    "tome_burn": 14,
+    "toybox_spend": 10,
+    "failures": 0,
+    "prerequisite_skips": 0
+  },
+  "supplementary_magus": 44,
+  "foreign_signatures": {
+    "added": 0,
+    "unresolved": 0
+  },
+  "report_comparison": {
+    "strict.log": {
+      "baseline_sha256": "1dcb06a9b7169d287184cef149c814b116a77991c8f6e227697774310ca70718",
+      "new_sha256": "8a09145b28446afaaed6bc45135553c814a3671ef0b8aa2522ac172415e5d023",
+      "other_rows_identical": true,
+      "normalization": "DIAGNOSTIC-LOG count row, blank separators and output path only; identical augmented inputs and optional TTT provider."
+    },
+    "strict.txt": {
+      "baseline_sha256": "43f3eafe9a53968c60de42e08148ce452880b2e0a39b9b9c66b759bdb4b741dd",
+      "new_sha256": "9b81ed7503d84914e79c1353847c645f13dd9d9a1bb738f8b4360b4627a668c3",
+      "other_rows_identical": true,
+      "normalization": "DIAGNOSTIC-LOG count row, blank separators and output path only; identical augmented inputs and optional TTT provider."
+    }
+  },
+  "toolchain": {
+    "sdk": "8.0.426",
+    "csharp_compiler": "4.11.0-3.25569.22 (3fb752d4)",
+    "umm_reference": "0.33.2.0",
+    "provenance": "docs/competence/OUTCOME1_PLAYTEST_BUILD_PROVENANCE.json",
+    "provenance_sha256": "0bca4df80997b5577c88319d30fbd062caf26862e215da45525e985e75151357"
+  },
+  "input_receipt": "docs/competence/OUTCOME1_PLAYTEST_INPUTS.json",
+  "invocation_ledger": "docs/competence/OUTCOME1_INVOCATION_LEDGER.json",
+  "diagnostic_replay": {
+    "scope": "Replay of rounded logged witness fields and actor display names; not Unity execution or full-precision native inputs",
+    "oldRows": 1060,
+    "newRows": 33,
+    "oldBytes": 309919,
+    "retainedOldTextBytes": 9532,
+    "retained": [
+      5085,
+      5137,
+      5147,
+      5153,
+      5182,
+      5201,
+      5315,
+      5399,
+      5510,
+      5571,
+      5599,
+      5649,
+      5839,
+      5958,
+      6035,
+      6264,
+      6266,
+      6284,
+      6299,
+      6301,
+      6487,
+      6765,
+      6793,
+      6818,
+      6820,
+      6939,
+      6943,
+      6945,
+      7032,
+      7034,
+      7065,
+      7067,
+      7248
+    ]
+  },
+  "bounds": {
+    "casters": 128,
+    "queries_per_caster": 16,
+    "reports_per_query_per_fight": 5,
+    "actor_or_context_or_path_references_stored": false,
+    "game_rule_results_cached": false,
+    "native_checks_still_run_when_details_suppressed": true,
+    "rules_movement_targeting_retry_or_cancellation_changed": false,
+    "warmed_pure_repeat_checks": 10000,
+    "warmed_pure_repeat_allocated_bytes": 0,
+    "unity_speedup_claimed": false
+  },
+  "raw_archive_negative_check": {
+    "expected_exit": 1,
+    "loaded": 44637,
+    "failed": 1,
+    "asset": "AchaekekSacredWeaponFeature",
+    "reason": "Unchanged original enum spelling mismatch/offline logger ECall; not accepted as a passing raw-corpus run."
+  },
+  "manifest": "0.3.52",
+  "gameplay_status": "New diagnostic code unplayed; input outcome1 build is a different source/DLL",
+  "package": "No standalone package; user authorized subsequent PR review/integration and one combined candidate follows that validation",
+  "source_vs_receipt_commits": "Checked DLL frozen across following documentation/receipt changes",
+  "workflow": "Task branch PR targets development; user separately authorized later review and merge of satisfactory open PRs. No main/tag/release authorization implied.",
+  "private_validation_artifact_sha256": {
+    "supplementary.log": "ed1851507aaf0e601c419a8114a2b92808bd82e7de1568c380dd9c28e5282578",
+    "provenance.json": "0bca4df80997b5577c88319d30fbd062caf26862e215da45525e985e75151357",
+    "supplement-scripts.log": "edb4e2159c923ea45a32656078835cdf531c3d7b414c670dd786978875cb0678",
+    "summary.json": "b3edd2fb3d7f2ad6ca246710b4003f88897812db31a1b7229a662cb6702e3c4c",
+    "toggle-build.log": "ebb63cbd5ce8ecad8917510bc54ed543f35bf8560cca83d5a28cc01f52e25595",
+    "tome.log": "08161e69d8e6e7d66c3797fa4d08368acd7ce6eb34b0a79e5a5aabb22b43695a",
+    "identity.json": "949fc194751842d36e9568d530d09e8e70893fbbfc829e7a7a241eb198c3bb60",
+    "raw.log": "59399a5731df2ca0a352726bb5857f2618ac7f2bf881aa07c789670ad5bd8149",
+    "toybox.log": "8798e70980e463caa782bc6eb7a7855159edf0b580a6cb71f54eeac8f42cf276",
+    "strict.txt": "9b81ed7503d84914e79c1353847c645f13dd9d9a1bb738f8b4360b4627a668c3",
+    "refs.log": "899262540b3e6a0a678fb0c899cdfcefb2cc1695ab4439fdcb666d764617d4a1",
+    "audit-build.log": "7895117ec604b8e2a7ee71484ce0f390ad713deedf0817c677605b87215b85bb",
+    "toggle.txt": "8761b2bb38c9d4706568d9ba8babba93f3150616fb4c115571d41a31d725755b",
+    "tome-build.log": "4c2a983de9c2d551c722bf958a8dd5a1bad3ba20f56905753c01b827f8c502bb",
+    "strict.log": "8a09145b28446afaaed6bc45135553c814a3671ef0b8aa2522ac172415e5d023",
+    "tome.txt": "8beeffb37c873461ebbd891bc1611ab202dd99944ffd976eeba3c3f9392925f5",
+    "toggle-restore.log": "74b1f9e810b2f79c74018af36e805ab67c56b2459d4476fbfc66e778100d3f1c",
+    "release.log": "fb04498de8af9fa2992349524d8e61c01ea064d012bda25b3d4bddd8c1fa170f",
+    "supplementary.txt": "1b60c34b6b59fb3ab715055b66f8ea8ce729f24e895250bc3b08c2d8d5059d51",
+    "toybox-restore.log": "1dbcbb996147b1d53c0123bb8e4bfd691aae32dfb66a0d4decf74c31c44673d5",
+    "tome-restore.log": "2070dd9fa5fce91064b6f687a1c0a62093f4aea4691c025ed5cf20feb2b72e46",
+    "raw.txt": "533659eaa5c2c9baa1fded5b8021cb157c428b29c83b591f273f27e47a340e91",
+    "added-refs.txt": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "inventory.log": "09ad2fe8a00725d344e94e8e80b71c18c4cbb712fd436f659f3f8ab440b40798",
+    "invocation-ledger.log": "3f56dc2d2b62a4e6a4cedbffe44e114c3b721e5b4321a5d0b2f42d56f5b30c1b",
+    "toggle.log": "95f26120307b6a2548572475e3997d817065f8d7ace7c71fff5b055b7015ab40",
+    "toybox-build.log": "1248a5c6cacd1677040d670f45236c89b15475de66c4857b46c9bdfb12899b04",
+    "unit.log": "44163501e37f66ab68fda7824fd4661be7402fc013ff9163664a5a35259589b3",
+    "audit-restore.log": "b053a9a1948ac0f16649935ae0c773b96b1ad3f63531a9dda057d20259301d23",
+    "toybox.txt": "258621772cba7b23f2a7557311c95a6c77e8bff834aca84c00af4c711095748c"
+  }
+}

@@ -8,6 +8,7 @@
   <ItemGroup>
     <Compile Include="..\..\tools\ProfileAudit\AuditOptions.cs" Link="AuditOptions.cs" />
     <Compile Include="..\..\Core\DiagnosticChangeLog.cs" Link="DiagnosticChangeLog.cs" />
+    <Compile Include="..\..\Core\PathEndDiagnosticLog.cs" Link="PathEndDiagnosticLog.cs" />
     <Compile Include="..\..\Tactics\SpellTierPolicy.cs" Link="SpellTierPolicy.cs" />
     <Compile Include="..\..\Tactics\SummonRules.cs" Link="SummonRules.cs" />
     <Compile Include="..\..\Tactics\ActionRules.cs" Link="ActionRules.cs" />
