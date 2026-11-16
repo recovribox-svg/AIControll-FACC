@@ -1,0 +1,189 @@
+{
+  "task": "Outcome1 playtest review and author-authorized integration of all six open PRs",
+  "recorded_at_utc": "2026-11-16T22:18:41.745439+00:00",
+  "integration_branch": "codex/open-prs-outcome1-integration",
+  "target_branch": "claude/dreamy-pasteur-b9h3rn",
+  "development_base": "980cf26827e23e5b0c78696fe530edecd7156162",
+  "checked_source_commit": "04a7b9ff49a2d37f12ce35df97b758e7b5959148",
+  "worktree_clean_at_build": true,
+  "reviewed_pr_heads": {
+    "74": "cc8f6dca7815d280c915add272d706d0a8acf2ad",
+    "75": "4110c7002b724f197a92433fbd3f243545a3a038",
+    "76": "a02102a98292571ba9eeeade5d9e97f4e34f0490",
+    "77": "452d8a33cffbe4135316317831c65d5ffc0d4e13",
+    "78": "f80ad4c13c5eeb680ccc6dfcda8fd200eb8ae2ab",
+    "79": "42ca39df12207c747957e406605309f52f30f9ea"
+  },
+  "merge_commits": [
+    "04a7b9ff49a2d37f12ce35df97b758e7b5959148 Merge PR #79: use effective native metamagic for fused pool estimates",
+    "9a86798ea9b49e7a22fd403f80911dc80af927b8 Merge PR #78: outcome1 review and bounded path-refusal diagnostics",
+    "943af3ac81d487cf2217c32fdcfa0b2eead7a58c Merge PR #77: forecast native fused shared Hit Dice selection",
+    "0d98e686b58e62fd198be509c89abe4132933187 Merge PR #76: value fused control separately for each native save outcome",
+    "839b3c532bf5ed08b8dfbab842b9700c478dbecf Merge PR #75: align Coup de Grace reach and delivering weapon",
+    "9dba9e7103f41a0f56b2c157cf56541ca8ae5556 Merge PR #74: evidence-based tactical expansion research"
+  ],
+  "review": "docs/OUTCOME1_INTEGRATION.md",
+  "playtest_review": "docs/OUTCOME1_PLAYTEST_REVIEW.md",
+  "dll": {
+    "assembly": "CompanionAI_Pathfinder, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null",
+    "mvid": "2f9ef9ef-8d7a-4574-9b98-fc8383b45bee",
+    "sha256": "4f9ce6aad72c6ef3cde353527b06debf2d3905ca40f9ee87efa2f95b6f3048da",
+    "size": 1480704
+  },
+  "manifest_unchanged": "0.3.52",
+  "release_build": {
+    "real_game_references": true,
+    "warnings": 0,
+    "errors": 0,
+    "command": "dotnet build CompanionAI_Pathfinder.csproj -c Release --no-restore -p:ManagedPath=<real Managed folder>"
+  },
+  "toolchain": {
+    "dotnet_sdk": "8.0.426",
+    "csharp_compiler": "4.11.0-3.25569.22 (3fb752d4)",
+    "umm_reference": "0.33.2.0",
+    "provenance": "docs/competence/OUTCOME1_INTEGRATION_BUILD_PROVENANCE.json",
+    "provenance_sha256": "91c2f6a03182581ae01f854ecf99f31e07f40b75c09cccde9498d3398380d974"
+  },
+  "unit_tests": {
+    "passed": 935,
+    "failed": 0,
+    "skipped": 0
+  },
+  "script_tests": {
+    "inventory": 27,
+    "audit_supplement": 3,
+    "invocation_ledger": 18,
+    "failures": 0
+  },
+  "compatible_profile_audit": {
+    "exit": 0,
+    "loaded": 44640,
+    "failed": 0,
+    "abilities": 4808,
+    "reader_errors": 0,
+    "prerequisite_skips": 0,
+    "fusion_outcome": 34,
+    "fusion_pool": 31,
+    "coup_reach": 32,
+    "diagnostic_log": 22,
+    "grapple": 58,
+    "griffon_modes": 29,
+    "shifter_forms": 21,
+    "campaign_flag": 21,
+    "value_selection": 24,
+    "fusion_value": 23,
+    "scope": "Existing C06 compatible corpus plus the missing-only stock charge and Coup fixtures, with the supplied TTT optional provider. Not the complete S1 stock summon supplement."
+  },
+  "fusion_coverage": {
+    "configurations": 15494,
+    "profileAccepted": 8709,
+    "profileWithheld": 6785,
+    "sharedPoolProfiles": 1754,
+    "sharedPoolAdmitted": 498,
+    "jointOutcomeMetadataQualified": 4663,
+    "coneComponentsResolved": 1416,
+    "coneComponentErrors": 0,
+    "readerErrors": 0
+  },
+  "native_harnesses": {
+    "toggle_with_psionics": 98,
+    "tome": 14,
+    "toybox": 10,
+    "failures": 0,
+    "prerequisite_skips": 0
+  },
+  "supplementary_audit": {
+    "exit": 0,
+    "loaded": 44644,
+    "failed": 0,
+    "abilities": 4808,
+    "reader_errors": 0,
+    "magus_checks": 44
+  },
+  "foreign_references": {
+    "added": 4,
+    "unresolved": 0,
+    "baseline": "Checked gaps3 DLL from 9a02565, equal C# to development base",
+    "added_signatures": [
+      "Assembly-CSharp F valuetype System.Boolean Kingmaker.UnitLogic.Mechanics.Actions.ContextActionMeleeAttack::AutoCritConfirmation",
+      "Assembly-CSharp F valuetype System.Boolean Kingmaker.UnitLogic.Mechanics.Actions.ContextActionMeleeAttack::ExtraAttack",
+      "Assembly-CSharp F valuetype System.Boolean Kingmaker.UnitLogic.Mechanics.Actions.ContextActionMeleeAttack::IgnoreStatBonus",
+      "Assembly-CSharp M valuetype Kingmaker.Blueprints.BlueprintGuid Kingmaker.Blueprints.BlueprintGuid::Parse(class System.String) this=False"
+    ]
+  },
+  "report_comparison": {
+    "all_other_rows_unchanged_on_identical_inputs": true,
+    "normalization": "Exclude only COUP-REACH, DIAGNOSTIC-LOG, FUSION-OUTCOME, FUSION-POOL, FUSION-COVERAGE, blank separators and output path.",
+    "baseline_log_sha256": "1dcb06a9b7169d287184cef149c814b116a77991c8f6e227697774310ca70718",
+    "baseline_report_sha256": "43f3eafe9a53968c60de42e08148ce452880b2e0a39b9b9c66b759bdb4b741dd",
+    "comparison_sha256": "8071e9e70374beb8ad899b493f7952c3ea41a4d251458b00e8a4e38091cc980a"
+  },
+  "merge_resolution": {
+    "documentation": "Preserved all task histories and numbered sections 181-185; research note remains separate.",
+    "runtime": "EvaluateAbility retains both the actual Coup weapon guard and shared FusionWithheld/FusionWithheldDetail admission, after the existing user blocklist. Shared dispatcher retains Coup preparation and bounded diagnostic witness independently.",
+    "policy": "No extra friendly-Sleep restriction, native effect/faction patch, movement, pathfinding, commitment, retreat or stuck-cancellation policy change."
+  },
+  "raw_archive_negative_check": {
+    "expected_exit": 1,
+    "loaded": 44637,
+    "failed": 1,
+    "asset": "AchaekekSacredWeaponFeature",
+    "reason": "Unchanged original enum spelling/offline ECall mismatch; separate expected negative input, not a passing raw corpus."
+  },
+  "gameplay": "New combined candidate unplayed; earlier outcome1 demonstrates F4 discovery/forecast, not an actual saved-Frigid cast, F7 or corrected Coup gameplay.",
+  "package": {
+    "path": "test-builds/AI-Control-FACC-v0.3.52-dev-outcome2-04a7b9f-UMM-test.zip",
+    "sha256": "9c84960e25ff22925462b53ee6ac1ec2dcaa42ff6544d637e0a2d77b8f517486",
+    "identity": "test-builds/AI-Control-FACC-v0.3.52-dev-outcome2-04a7b9f-UMM-test.identity.json",
+    "dll_frozen_across_later_receipt_docs_commits": true,
+    "native_or_verification_dependencies_in_zip": false
+  },
+  "remaining_limits": [
+    "Saved Frigid delivery/stagger-on-pass, F7 pool ordering and corrected Coup need paired TB/RT acceptance logs.",
+    "Exact native per-effect Sleep ally protection under broader fusion delivery remains a source/gameplay reconciliation item; native execution is preserved.",
+    "Fusion pool current-standing/current-order approximation remains; no live automatic metamagic case yet.",
+    "Substantial warm ability workload and obstructed ledge approach remain; diagnostic reduction is not a Unity timing claim.",
+    "Holder alternative/safety, monster-grapple support, TB release and actual leap retain their recorded limits."
+  ],
+  "workflow": {
+    "authorization": "Author explicitly delegated reviewing and merging satisfactory open PRs into development.",
+    "integration": "All exact reviewed heads preserved as merge ancestors; fast-forward development push follows successful final package/doc checks.",
+    "main_updated": false,
+    "tag": false,
+    "release": false
+  },
+  "validation_artifact_sha256": {
+    "supplementary.log": "5b5d50680c754cd73dd3336cde80bdf0cbf9d82b4a43b6d7df4f13c98fd1dd01",
+    "provenance.json": "91c2f6a03182581ae01f854ecf99f31e07f40b75c09cccde9498d3398380d974",
+    "supplement-scripts.log": "edb4e2159c923ea45a32656078835cdf531c3d7b414c670dd786978875cb0678",
+    "summary.json": "8c5aebcd2787397b3d9452c5c9ca0d55c4349d145cae2c1ef63c13d9b405bb09",
+    "toggle-build.log": "7f9561f9c605feda135625882d857e40ed887d149c3db57975092c9d37e5a01b",
+    "tome.log": "40c407a71afd88a0f5c78a0dcb5de75039387e1f25e657b3c08a9d80a788fc30",
+    "inherited-report-comparison.json": "8071e9e70374beb8ad899b493f7952c3ea41a4d251458b00e8a4e38091cc980a",
+    "identity.json": "9545f49fc300de9026e9e86391f5a0689d20585debf321ee5d0bc9af7007a0ad",
+    "raw.log": "59399a5731df2ca0a352726bb5857f2618ac7f2bf881aa07c789670ad5bd8149",
+    "toybox.log": "2be0932a9b157e3a2ada9097a8595c5ea85483e0993a7ecea5c5f69ea38742ee",
+    "strict.txt": "27ebea49896c6921a852ecd848bf1ac6834d8f672a96aade5bf372f38c62fac9",
+    "coverage.json": "298c29b1b290e904699f6500432261f1b0603df0646ad7c3205c7fbd61d5dc12",
+    "refs.log": "3ad2adf939f0b8febb504858876ebb71d70494ecdb862bab34823f4838116442",
+    "audit-build.log": "5b77276e6b0b1598abf851d7f693dbf0c0e7c2df3f7230b6f296dbdfd7b423d3",
+    "toggle.txt": "c0ddd64c38401aa4e7623b52f7ab41f7f75984894fca2c521742ce76e49d42dd",
+    "tome-build.log": "a7c75cbcfbb0ffad038f9a8fc7eeee440c23f73123170beae4fd3b2b94524864",
+    "strict.log": "74cc3666edf31db31c70b0d4d81b18b4197805acd5b32ef91c65278d3772121f",
+    "tome.txt": "fe538cf6daa9f40e77a8cf30ec95fc0555852d4bb0b300b6c568ea02f7ebe3d7",
+    "toggle-restore.log": "40d104602671164ab3958225da3e1c8cabd55f0251d6df6bc911d9d5a24f44ce",
+    "release.log": "5eef21aae945c498efe12e7908f389a6daa43b2588eaa3a63ddf5ce38fb88980",
+    "supplementary.txt": "c306024aebf96f10a08a7803a4ebcf4f8fec2e0f77c6cb0b52a62deab066088b",
+    "toybox-restore.log": "40d104602671164ab3958225da3e1c8cabd55f0251d6df6bc911d9d5a24f44ce",
+    "tome-restore.log": "40d104602671164ab3958225da3e1c8cabd55f0251d6df6bc911d9d5a24f44ce",
+    "raw.txt": "533659eaa5c2c9baa1fded5b8021cb157c428b29c83b591f273f27e47a340e91",
+    "added-refs.txt": "850c6da462ce85e185c83ee3fd8d3e35f17c291ef3575ffab872b25b3fa78924",
+    "inventory.log": "9a7dbc8f9cefa0950970a8beaad784b36dca75137a059629f1d64bea1f39f527",
+    "invocation-ledger.log": "3f56dc2d2b62a4e6a4cedbffe44e114c3b721e5b4321a5d0b2f42d56f5b30c1b",
+    "toggle.log": "e772ae6bef66192c722c4299a69bafe8e1a7172f1b2f9065d84367476dcf9ead",
+    "toybox-build.log": "33ad6b6cb9b91f352372618e255672d24a99e8ad35ea55baa7574b4a5a52af50",
+    "unit.log": "9f8d5a000ada952ab98d8c9605ea76c4dee759729568c97f8ac2da379ca1bc85",
+    "audit-restore.log": "40d104602671164ab3958225da3e1c8cabd55f0251d6df6bc911d9d5a24f44ce",
+    "toybox.txt": "b06ec6fc53fbe8d66ab9fba1b13025d3a3d262ea4fb28fae57be188da736ca8b"
+  }
+}

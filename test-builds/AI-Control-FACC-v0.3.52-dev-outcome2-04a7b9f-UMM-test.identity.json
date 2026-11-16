@@ -1,0 +1,40 @@
+{
+  "build_label": "outcome2",
+  "kind": "development-test",
+  "version": "0.3.52",
+  "source_branch": "codex/open-prs-outcome1-integration",
+  "target_branch": "claude/dreamy-pasteur-b9h3rn",
+  "source_commit": "04a7b9ff49a2d37f12ce35df97b758e7b5959148",
+  "development_base": "980cf26827e23e5b0c78696fe530edecd7156162",
+  "reviewed_pr_heads": {
+    "74": "cc8f6dca7815d280c915add272d706d0a8acf2ad",
+    "75": "4110c7002b724f197a92433fbd3f243545a3a038",
+    "76": "a02102a98292571ba9eeeade5d9e97f4e34f0490",
+    "77": "452d8a33cffbe4135316317831c65d5ffc0d4e13",
+    "78": "f80ad4c13c5eeb680ccc6dfcda8fd200eb8ae2ab",
+    "79": "42ca39df12207c747957e406605309f52f30f9ea"
+  },
+  "dll": {
+    "assembly": "CompanionAI_Pathfinder, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null",
+    "mvid": "2f9ef9ef-8d7a-4574-9b98-fc8383b45bee",
+    "sha256": "4f9ce6aad72c6ef3cde353527b06debf2d3905ca40f9ee87efa2f95b6f3048da",
+    "size": 1480704
+  },
+  "manifest_sha256": "1876fd6fc56d03b28793f6c481fac47c9ea85eec3265d6859232deeab67523a3",
+  "archive": "AI-Control-FACC-v0.3.52-dev-outcome2-04a7b9f-UMM-test.zip",
+  "zip_sha256": "9c84960e25ff22925462b53ee6ac1ec2dcaa42ff6544d637e0a2d77b8f517486",
+  "checks_receipt": "docs/competence/OUTCOME1_INTEGRATION_CHECKS.json",
+  "build_provenance": "docs/competence/OUTCOME1_INTEGRATION_BUILD_PROVENANCE.json",
+  "build_provenance_sha256": "91c2f6a03182581ae01f854ecf99f31e07f40b75c09cccde9498d3398380d974",
+  "toolchain": {
+    "dotnet_sdk": "8.0.426",
+    "csharp_compiler": "4.11.0-3.25569.22 (3fb752d4)"
+  },
+  "scope": "Cumulative PRs #74-79: tactical research, actual-weapon Coup reach, per-save fusion control outcomes, native fused Hit Dice pool, effective pool metamagic and bounded path-refusal details. No extra friendly-Sleep veto.",
+  "gameplay_status": "New combined candidate unplayed. The supplied outcome1 log played only F4 on the earlier development base.",
+  "archive_contents": [
+    "CompanionAI_Pathfinder.dll",
+    "Info.json"
+  ],
+  "release": false
+}

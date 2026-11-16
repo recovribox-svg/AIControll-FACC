@@ -6430,3 +6430,24 @@ Narrowed checked source `097ff32`, MVID `cfcce6de-fbc9-428b-9247-15a89d9934f2`: 
 real-reference Release 0 warnings/errors, FUSION-POOL 31 / FUSION-OUTCOME 34, inherited audits, supplementary Magus 44
 and providers 98/14/10 pass. Zero new native signatures; 8,709/15,494 normal templates admitted, 498 shared pool,
 zero reader/cone errors. Execution remains a native cast, preserving native Sleep/ally/faction behavior.
+
+## 186. outcome1 review and integration of PRs #74-79 (16 November 2026, Codex)
+
+The author delegated review/merge into development. [Conclusions and replay](OUTCOME1_INTEGRATION.md),
+[checks](competence/OUTCOME1_INTEGRATION_CHECKS.json), [compiler/reference provenance](competence/OUTCOME1_INTEGRATION_BUILD_PROVENANCE.json).
+The exact six reviewed heads are merge ancestors. Documentation history/sections 181-185 are preserved; the one
+runtime conflict retains both Coup delivering-hand verification and shared FusionWithheld/FusionWithheldDetail
+admission after the blocklist. No extra friendly-Sleep restriction or native spell/faction/movement policy change.
+
+Clean checked source **`04a7b9f`**, MVID **`2f9ef9ef-8d7a-4574-9b98-fc8383b45bee`**: **935 unit + 27/3/18 script tests**;
+real-reference Release **0 warnings/errors**. ProfileAudit **44,640 / 4,808**, no load/reader failure or prerequisite
+skip; **FUSION-OUTCOME 34 / FUSION-POOL 31 / COUP-REACH 32 / DIAGNOSTIC-LOG 22**, inherited rows unchanged on
+identical inputs. Magus **44**, providers **98/14/10**, all **4** new native signatures resolve. Fusion templates
+**8,709 / 15,494** admitted, **498** pooled, zero reader/cone errors. Original raw enum mismatch is a separate
+expected negative input; no complete S1 supplement claim. The cumulative **outcome2** UMM test ZIP has identity,
+checksum and compiler provenance; manifest stays **0.3.52**, no main/tag/release. New combined code is unplayed.
+
+Keep the outcome1 review's evidence limits: no saved-Frigid cast, F7 or corrected Coup acceptance; no exact range
+of the Cambion hit; no identified Invocation settling violation; diagnostics do not resolve the ledge or warm work.
+Next replay: companion/summon Coup, pooled fusions, actual saved Frigid, first/changed path details, TB release
+and actual leap. Native ally targeting is preserved; mixed-delivery Sleep protection needs a matched native case.

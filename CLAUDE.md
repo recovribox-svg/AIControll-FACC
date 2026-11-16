@@ -8,7 +8,31 @@ Read [CONTRIBUTING.md](CONTRIBUTING.md) for shared branch ownership, Codex pull 
 Codex works on task branches and targets pull requests at `claude/dreamy-pasteur-b9h3rn`; Claude reviews and integrates them there.
 Keep `main` for author-authorized releases. Read [AGENTS.md](AGENTS.md) when coordinating agent work.
 
-**Current handover (16 November 2026, Codex): F7 review correction narrowed to effective metamagic on
+**Current handover (16 November 2026, Codex): outcome1 review and author-authorized integration of all
+six open PRs #74-79 into development.** Read [review/integration/replay](docs/OUTCOME1_INTEGRATION.md),
+[playtest findings](docs/OUTCOME1_PLAYTEST_REVIEW.md), [checks](docs/competence/OUTCOME1_INTEGRATION_CHECKS.json), §186.
+Exact reviewed heads are merge ancestors; clean checked source **`04a7b9f`**, MVID
+**`2f9ef9ef-8d7a-4574-9b98-fc8383b45bee`**. **935 unit + 27/3/18 script tests**, real-reference Release **0 warnings/errors**;
+ProfileAudit 44,640 loaded / 4,808 abilities, no reader/load failures or prerequisite skips. **FUSION-OUTCOME 34,
+FUSION-POOL 31, COUP-REACH 32, DIAGNOSTIC-LOG 22**, inherited rows unchanged, supplementary Magus 44,
+providers **98/14/10**, all **4** added native signatures resolve. Coverage **8,709 / 15,494** admitted (498 pooled),
+zero reader/cone errors. [Compiler/reference provenance](docs/competence/OUTCOME1_INTEGRATION_BUILD_PROVENANCE.json):
+SDK 8.0.426 / Roslyn 4.11, supplied UMM 0.33.2.0.
+
+[Cumulative outcome2 UMM test ZIP](test-builds/AI-Control-FACC-v0.3.52-dev-outcome2-04a7b9f-UMM-test.zip), SHA-256
+`9c84960e25ff22925462b53ee6ac1ec2dcaa42ff6544d637e0a2d77b8f517486`; identity/checksum sidecars, unchanged manifest **0.3.52**. Frozen checked DLL across later docs/receipt commits.
+No main, tag or release change. #79 keeps only effective pool metamagic; the speculative friendly-Sleep veto/map was
+withdrawn, and earlier broader receipts are explicitly superseded. Native Sleep targeting/effects and damage safety
+remain. Mixed-delivery per-effect protection is a controlled-native-baseline reconciliation item, not a reproduced bug.
+The runtime merge preserves Coup hand verification plus shared fusion admission after the user blocklist.
+
+Outcome1: nine fights, 666/666 issue-terminal matches, no AI exception; 66 Invocation DidAct without identified
+settling/same-stat error. Cambion 13.2 m radius/Claw confirms a hand inconsistency, not distance of the hit. New
+corrected Coup, F7, diagnostics and metamagic are **unplayed**. Next: paired TB/RT Coup and pooled-fusion replays,
+actual saved Frigid including a passed save, bounded refusal details, TB release/actual leap with Grabber left to AI.
+Warm ability work, ledge approach and prior holder/monster limits remain; no Unity speedup/stable acceptance claim.
+
+**Earlier handover (16 November 2026, Codex): F7 review correction narrowed to effective metamagic on
 `codex/fusion-pool-safety`, stacked on PR #77/#76.** Read [current correction](docs/FUSION_POOL_METAMAGIC.md), §185.
 The extra friendly-Sleep veto/map was withdrawn after the author clarified ally targeting; no such incident was
 shown in outcome1 and no candidate ZIP was supplied/merged. Existing damage safety remains. Earlier `f8788d7`
@@ -21,7 +45,7 @@ supplementary Magus 44 and providers **98/14/10** pass. Zero added native signat
 [final provenance](docs/competence/FUSION_POOL_METAMAGIC_BUILD_PROVENANCE.json). The combined package follows integration. Ordinary Sleep's enemy-only selector and an
 enemy-only fusion delivery have explicit regression checks. No normal admission, movement or targeting policy change.
 
-**Current handover (16 November 2026, Codex): outcome1 playtest review and diagnostic correction on
+**Earlier handover (16 November 2026, Codex): outcome1 playtest review and diagnostic correction on
 `codex/outcome1-playtest-review`, base development `980cf26`.** The author supplied outcome1 module `fbc220a5`,
 confirmed spawns/rests between fights, and separately authorized reviewing/merging satisfactory open PRs next.
 Read [review/evidence/replay](docs/OUTCOME1_PLAYTEST_REVIEW.md), §184,
@@ -49,7 +73,7 @@ PR #77 review has found native-metamagic and pooled friendly-safety questions to
 integration; do not treat outcome1 (which predates #77) as evidence of those issues occurring in play. Keep the
 F4/F7, Coup, TB grapple and leap replays separate. No main/tag/release action is authorized by the integration request.
 
-**Current handover (16 November 2026, Claude): Fusion F7 (Sleep fusions) on `claude/fusion-sleep-pool`, stacked on
+**Earlier handover (16 November 2026, Claude): Fusion F7 (Sleep fusions) on `claude/fusion-sleep-pool`, stacked on
 Fusion F4 (PR #76, `claude/fusion-outcome-effects`); development base `980cf26`. Not played.** Read
 [docs/FUSION_SLEEP_POOL.md](docs/FUSION_SLEEP_POOL.md), `docs/TACTICAL_AI.md` §183 and the
 [receipt](docs/competence/FUSION_F7_CHECKS.json). Review PR #76 first.
@@ -94,7 +118,7 @@ tactical mobility are in [docs/FUSION_OUTCOME_EFFECTS_PLAN.md](docs/FUSION_OUTCO
 - **Next:** the author plays outcome1 with a saved Frigid Touch fusion (replay in the page), then decides between the
   Sleep slice (F7), Molten Orb / Acid Arrow (C, E) and tactical mobility.
 
-**Current handover (16 November 2026, Codex): AI Coup de Grace delivering-hand reach on
+**Earlier handover (16 November 2026, Codex): AI Coup de Grace delivering-hand reach on
 `codex/coup-de-grace-reach`, based on development `980cf26`; unplayed.** The author explicitly approved this fix.
 Read [evidence/contract/TB-RT replay](docs/COUP_DE_GRACE_REACH.md), §181,
 [checks](docs/competence/COUP_REACH_CHECKS.json) and
@@ -126,7 +150,7 @@ Equipment/form/provider changes **after acceptance but before native delivery** 
 contract; require an actual trace before considering a delivery-time patch. Keep the earlier gaps3/grapple/form/
 Frigid/fusion replay requirements as well.
 
-**Current handover (16 November 2026, Codex): tactical expansion research, documentation only.**
+**Earlier handover (16 November 2026, Codex): tactical expansion research, documentation only.**
 Branch codex/tactical-expansion-investigation started at development **96dabaa** and is reconciled with
 **980cf26**, after Claude integrated #65–73. Read
 [investigation](docs/TACTICAL_EXPANSION_INVESTIGATION.md),
@@ -432,7 +456,7 @@ This is retrospective evidence, not an amendment to the historical receipts or C
 The existing fusion1 ZIP/identity/checksum, manifest, runtime code and SDK selection are unchanged. Build receipt
 guidance now records compiler/SDK, references, source/debug metadata and effective options. See CONTRIBUTING.md.
 
-**Current handover (14 November 2026, Claude): PRs #60 (Fusion F0), #62 (Fusion F1) and #61 (I1) reviewed and merged into development;
+**Earlier handover (14 November 2026, Claude): PRs #60 (Fusion F0), #62 (Fusion F1) and #61 (I1) reviewed and merged into development;
 PR #59 (S2) reviewed after its merge.** Read `docs/TACTICAL_AI.md` §167 and the [receipt](docs/competence/INTEGRATION_60_62_CHECKS.json).
 No material defect in any of them; manifest 0.3.52, `main`, tags and releases unchanged.
 - #59: development `e1ae334` carries exactly the checked source `49ffd46`; real time unchanged; walk checks match the native contracts.
@@ -543,7 +567,7 @@ hypothesis until the scores, stacking rules and state are checked).
 
 **Current integration handover (13 November 2026, Codex; v0.3.50, unplayed):** The author explicitly authorized review/merge of all open PRs #46–#51 and requested v0.3.50. [Review/findings/replay](docs/V0350_INTEGRATION_REVIEW.md), §157. This supersedes the older handovers' build-selection and integration status. All six original heads are preserved. The combined build includes optional/default-off summon control, paired form references, bounded recovery identity, Focused Shot and joint known activation costs. Review fixes: fresh summon authority/facts at final issue, no lifetime swarm classification, unique adoption counts across re-adoption, cheap excluded-actor gate exits; all audit/test registrations preserved. Summon implementation section is 156, keeping 152–155 intact. Checked source `ebfac70`, startup MVID `0b54fad9-fc28-483c-a87a-3f1e9f0efd62`; [receipt](docs/competence/V0350_INTEGRATION_CHECKS.json) / [integration1 identity](test-builds/AI-Control-FACC-v0.3.50-dev-integration1-ebfac70-UMM-test.identity.json). 705 unit + 27 inventory, step 13 and inherited checks pass; real-reference Release 0 warnings, 27/27 added signatures resolve. Compatible/supplementary audits pass; original full-corpus enum failure remains distinct. Native turns, casts and matched Unity performance remain pending. This task authorizes development integration and manifest 0.3.50, not a stable main/tag/release.
 
-**Current handover (13 November 2026, Claude): summon control is implemented on `claude/summon-control` (PR into development), see
+**Earlier handover (13 November 2026, Claude): summon control is implemented on `claude/summon-control` (PR into development), see
 `docs/TACTICAL_AI.md` §156. Not played.** Opt-in, off by default ("Control Summoned Creatures (experimental)", `ModSettings.ControlSummons`). In combat,
 both modes, AI Control drives linked summons of the characters it drives - not pets, swarms, nested or enemy summons, and not with the old real-time
 engine. Rules: `Tactics/SummonRules.cs` (pure); game side `GameInterface/SummonControl.cs` (weak per-creature state, a temporary settings view that is
@@ -569,7 +593,7 @@ lists the tests, turn completion and pack performance first. `main` and releases
 
 **Review5 playtest / matched form reference (12 November 2026, Codex; fix unplayed):** `codex/review5-playtest-review` starts at integrated development `44b224f`; PR #46 planning is separate. [Broad review/replay](docs/REVIEW5_PLAYTEST_REVIEW.md), [input identities](docs/REVIEW5_PLAYTEST_INPUTS.json), §152. TB confirms review5 MVID; RT identified by author without header; combat spawns/rests confirmed. Five TB/six RT summaries, no AI exception; form and Fury now execute. Confirmed code bug: Offence loses Enemy for a zero weapon estimate, so a new-form appraisal can fall back to another context enemy. Retain the actual assessed target/estimate independently, pair both quotes and use its ranged flag; unavailable baseline stays unknown. Existing profitable-buff fields and Fury admission unchanged; note now names target. No new scan/forecast/native rule or movement policy; FORM-REFERENCE 14 actor-free checks. Lazy recovery reattempt of an already-refused move is a separate approved-scope follow-up. Checked source `4392e51`, startup MVID `3f9c3355-3c65-4477-b059-dd370eb20d2b`; [receipt](docs/competence/REVIEW5_PLAYTEST_CHECKS.json) / [review6 identity](test-builds/AI-Control-FACC-v0.3.30-dev-review6-4392e51-UMM-test.identity.json). 664 unit + 27 inventory, step 13 and inherited checks pass; real-reference Release 0 warnings, 0/0 added signatures resolve. Compatible/supplementary audits pass; original full-corpus enum failure remains distinct. Manifest 0.3.30; no main/development push, merge or release.
 
-**Current handover (12 November 2026, Claude): Codex's interim PRs #21-#45 (25 PRs) are reviewed and integrated into development,
+**Earlier handover (12 November 2026, Claude): Codex's interim PRs #21-#45 (25 PRs) are reviewed and integrated into development,
 see `docs/TACTICAL_AI.md` §150.** Merge commits are `485339f` (stack #22-#45: C06 view guard, Psionics scope, Tome burn, drain, swarms, attached damage,
 resistance memo, caster policies (Pure Mage and the Aggressive policy are opt-in; Magic Fusion), C07 native Magus, Eldritch Archer, C08 Shifter/Fury, and the
 author-approved movement repairs #29/#36/#37/#39/#45) and `d306f1e` (#21 inventory). Game rules were checked against the decompiled game, the BubblePrints
@@ -670,7 +694,7 @@ Throw Anything bombs were valued at a third). Orvath's burn stays on the older m
 Test ZIP `AI-Control-FACC-v0.3.30-dev-competence3-cfd8f0a-UMM-test.zip` (MVID `97bdfced-0fac-49d9-9673-2138acc373f2`), then
 `AI-Control-FACC-v0.3.30-dev-competence3b-3443d94-UMM-test.zip` (MVID `740e7ec5-27f8-4575-9187-258b0f61f426`, the named burn line); 531 tests.
 
-**Current handover (29 October 2026, Claude): read [docs/INTEGRATION_0322_FOLLOWUPS.md](docs/INTEGRATION_0322_FOLLOWUPS.md)
+**Earlier handover (29 October 2026, Claude): read [docs/INTEGRATION_0322_FOLLOWUPS.md](docs/INTEGRATION_0322_FOLLOWUPS.md)
 before resuming.** With the author's authorization, Claude reviewed and merged PR #13, #14 and #15 into development
 (merge commits `f0a44df`, `1d49979`, `ecabeb4`) and fast-forwarded `main` to the same reviewed revision. The integrated
 test package was `test-builds/AI-Control-FACC-dev-integrated-ecabeb4-UMM-test.zip` (MVID

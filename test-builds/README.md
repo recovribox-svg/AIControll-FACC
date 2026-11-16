@@ -1,5 +1,25 @@
 # Test builds
 
+## Combined development candidate: v0.3.52 outcome2 — PRs #74-79 (04a7b9f), unplayed
+
+[UMM test ZIP](AI-Control-FACC-v0.3.52-dev-outcome2-04a7b9f-UMM-test.zip?raw=true) · [Identity](AI-Control-FACC-v0.3.52-dev-outcome2-04a7b9f-UMM-test.identity.json) · [Checksum](AI-Control-FACC-v0.3.52-dev-outcome2-04a7b9f-UMM-test.sha256) · [Checks](../docs/competence/OUTCOME1_INTEGRATION_CHECKS.json) · [Review and replay](../docs/OUTCOME1_INTEGRATION.md)
+
+Use this cumulative candidate for the next test. It combines corrected Coup delivering-weapon reach, F4 per-save
+fusion control, F7 native shared Hit Dice selection, effective pool metamagic and bounded path-refusal details.
+No additional friendly-Sleep veto or native spell/faction patch; damage friendly-fire safety remains.
+
+Checked source **`04a7b9f`**, startup MVID **`2f9ef9ef-8d7a-4574-9b98-fc8383b45bee`**. ZIP SHA-256
+`9c84960e25ff22925462b53ee6ac1ec2dcaa42ff6544d637e0a2d77b8f517486`. **935 unit + 27/3/18 script tests**, real-reference Release **0 warnings/errors**;
+ProfileAudit **FUSION-OUTCOME 34 / FUSION-POOL 31 / COUP-REACH 32 / DIAGNOSTIC-LOG 22**, inherited checks,
+Magus 44 and providers **98/14/10** pass; all four new native signatures resolve. [Compiler/reference provenance](../docs/competence/OUTCOME1_INTEGRATION_BUILD_PROVENANCE.json):
+SDK 8.0.426 / Roslyn 4.11, UMM 0.33.2.0. Manifest remains **0.3.52**. ZIP contains only the mod DLL and Info.json;
+the checked DLL is frozen across later handover/receipt edits. This is a development test, not a stable release.
+
+Test both modes with paired logs/startup identity: actual saved Frigid and pooled Sleep fusions, companion/summon
+Coup with bow plus melee limbs, and bounded refusal detail at a blocked target. Retain TB release/actual leap
+acceptance with Grabber under AI control. Warm decision costs, the ledge obstruction and earlier holder/monster
+limits remain. [outcome1](../docs/OUTCOME1_PLAYTEST_REVIEW.md) is played; this combined candidate is not.
+
 ## Task-branch candidate: v0.3.52 sleep1 — Sleep fusions through the fused cast's own Hit Dice pool (cf41e4b), unplayed
 
 [UMM test ZIP](AI-Control-FACC-v0.3.52-dev-sleep1-cf41e4b-UMM-test.zip?raw=true) · [Identity](AI-Control-FACC-v0.3.52-dev-sleep1-cf41e4b-UMM-test.identity.json) · [Checksum](AI-Control-FACC-v0.3.52-dev-sleep1-cf41e4b-UMM-test.sha256) · [Checks](../docs/competence/FUSION_F7_CHECKS.json) · [What changed and replay](../docs/FUSION_SLEEP_POOL.md)
@@ -9,7 +29,7 @@ are now offered. The engine reads the pool the game really uses in a fused cast:
 Sleep's fixed 4 Hit Dice. Startup MVID `61f28efb-85ea-4900-97d6-e9f1328da60e`. Does not include PR #75. No runtime
 blueprint data or private logs are packed.
 
-## Task-branch candidate: v0.3.52 outcome1 — fused spells with effects on a passed save or on both outcomes (f5ccb40), unplayed
+## Earlier candidate: v0.3.52 outcome1 — fused save outcomes (f5ccb40), played ([review](../docs/OUTCOME1_PLAYTEST_REVIEW.md))
 
 [UMM test ZIP](AI-Control-FACC-v0.3.52-dev-outcome1-f5ccb40-UMM-test.zip?raw=true) · [Identity](AI-Control-FACC-v0.3.52-dev-outcome1-f5ccb40-UMM-test.identity.json) · [Checksum](AI-Control-FACC-v0.3.52-dev-outcome1-f5ccb40-UMM-test.sha256) · [Checks](../docs/competence/FUSION_F4_CHECKS.json) · [What changed and replay](../docs/FUSION_OUTCOME_EFFECTS.md)
 
