@@ -67,6 +67,8 @@ provider, weapon blueprint, native ability radius and capped command radius. It 
 use the normal `CommandTrace` terminal and combat log to verify the outcome. Preview calculations do not emit an
 issue note. The change adds no path search, world scan, rule/context forecast or persistent actor/context cache.
 Route inspection is a small component walk only for Coup; final native targeting is rechecked only for Coup.
+The hot identity guard compares native blueprint GUID values directly: it no longer formats a GUID string for
+every unrelated ability checked. The audit separately measures its warmed, actor-free allocation count.
 
 ## Checks and replay
 

@@ -1111,13 +1111,13 @@ namespace CompanionAI_Pathfinder.Tactics
         private static List<UnitEntityData> s_ActiveEnemies;
 
         /// <summary>Vanilla Coup de Grace (Tabletop Tweaks keeps the blueprint and replaces its effect component).</summary>
-        private static readonly string CoupDeGraceGuid = "32280b137ca642c45be17e2d92898758";
+        private static readonly BlueprintGuid CoupDeGraceGuid = BlueprintGuid.Parse("32280b137ca642c45be17e2d92898758");
 
         /// <summary>★ v0.3.19 (review): the per-target key a stuck real-time walk is remembered under.</summary>
         internal static string StuckTargetKey(UnitEntityData target) => "target:" + target.UniqueId;
 
         internal static bool IsCoupDeGrace(AbilityData ability) =>
-            string.Equals(ability?.Blueprint?.AssetGuid.ToString(), CoupDeGraceGuid, StringComparison.OrdinalIgnoreCase);
+            ability?.Blueprint != null && ability.Blueprint.AssetGuid == CoupDeGraceGuid;
 
         /// <summary>
         /// ★ v0.3.9: Coup de Grace was "utility 1.0" (its effect is a custom component); Seelah hit a sleeping wizard for

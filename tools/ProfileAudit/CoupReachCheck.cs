@@ -36,6 +36,21 @@ namespace ProfileAudit
                       actual.ActionType == Kingmaker.UnitLogic.Commands.Base.UnitCommand.CommandType.Standard,
                     "stock ability is Weapon range and Standard/full-round");
                 Check(actual != null && Route(actual) == "Native", "actual stock action list is the recognized native melee delivery");
+                var predicate = (Func<AbilityData, bool>)Delegate.CreateDelegate(typeof(Func<AbilityData, bool>), typeof(TacticalEngine).GetMethod("IsCoupDeGrace", all));
+                AbilityData Data(BlueprintAbility bp)
+                {
+                    var data = (AbilityData)RuntimeHelpers.GetUninitializedObject(typeof(AbilityData));
+                    typeof(AbilityData).GetField("Blueprint", all).SetValue(data, bp); return data;
+                }
+                var actualData = Data(actual); var otherData = Data(new BlueprintAbility()); var emptyData = Data(null);
+                Check(predicate(actualData) && !predicate(otherData) && !predicate(emptyData) && !predicate(null),
+                    "actual Coup identity is recognized; unrelated/null abilities are unaffected");
+                for (int i = 0; i < 100; i++) { predicate(actualData); predicate(otherData); }
+                long before = GC.GetAllocatedBytesForCurrentThread(); int hits = 0;
+                for (int i = 0; i < 10000; i++) if (predicate((i & 1) == 0 ? actualData : otherData)) hits++;
+                long allocated = GC.GetAllocatedBytesForCurrentThread() - before;
+                Check(hits == 5000 && allocated == 0, "hot Coup identity guard allocates no GUID strings");
+                lines.Add($"COUP-REACH identity guard: 10000 warm calls, {allocated} bytes; inert ability wrappers, no actor");
 
                 var attack = new ContextActionMeleeAttack { AutoHit = true, AutoCritThreat = true, AutoCritConfirmation = true, ExtraAttack = true };
                 var run = new AbilityEffectRunAction { Actions = new ActionList { Actions = new GameAction[] { attack } } };
