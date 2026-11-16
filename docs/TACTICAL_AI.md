@@ -6276,3 +6276,9 @@ cached. The native check/refusal, failure text, actual rejection/terminal log, r
 policies remain. Rounded-field offline replay retains 33 details, not a native performance claim. Warm ability
 work remains significant, and stage heap deltas are not precise allocation measurements. The author's subsequent
 PR-review/merge authorization is tracked separately; manifest remains 0.3.52.
+
+Checked source `3a951dc`, MVID `264dc5eb-3552-48fa-8f9c-cfac958f5dc6`: 883 unit + 27/3/18 script tests,
+real-reference Release 0 warnings/errors; ProfileAudit DIAGNOSTIC-LOG 22 and inherited checks, supplementary Magus 44,
+native providers 98/14/10 pass. Zero new native signatures. All other audit rows equal the checked gaps3 baseline
+on identical augmented inputs. The checked DLL is frozen; combined-package identity follows the separately
+requested review/integration rather than being attributed to the older outcome1 playtest.
