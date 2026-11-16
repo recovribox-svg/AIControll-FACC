@@ -91,6 +91,13 @@ namespace ProfileAudit
                       Of<AbilityTargetsAround>(plan, "Selector") == Spell("ExplosiveRunes").GetComponent<AbilityTargetsAround>() &&
                       Of<AbilitySharedValue>(plan, "SharedValue") == AbilitySharedValue.Damage,
                     "Explosive Runes/Sleep: recipients by the deliver blueprint's own around-selector (" + (Refusal(runes) ?? "ok") + ")");
+                Check(Spell("Sleep").GetComponent<AbilityTargetsAround>().Targets == TargetType.Enemy &&
+                      Spell("ExplosiveRunes").GetComponent<AbilityTargetsAround>().Targets == TargetType.Any,
+                    "ordinary Sleep is enemy-only; Explosive Runes has a broader damage-area selector");
+                var enemyDelivery = Fuse("ExplosiveRunes", "Sleep", "Sleep", SavingThrowType.Will);
+                Check(Refusal(enemyDelivery) == null && Of<AbilityTargetsAround>(Plan(enemyDelivery), "Selector").Targets == TargetType.Enemy &&
+                      AbilityProfile.Get(enemyDelivery).AoETargets == TargetType.Enemy,
+                    "a fused cast delivered through Sleep retains its enemy-only selector; no ally restriction is added");
                 var budgets = plan == null ? null : Of<int[]>(plan, "Budgets"); var chances = plan == null ? null : Of<float[]>(plan, "Chances");
                 Check(budgets != null && budgets.SequenceEqual(Enumerable.Range(2, 11)) && Math.Abs(chances.Sum() - 1f) < 1e-5f &&
                       Math.Abs(chances[0] - 1f / 36f) < 1e-6f && Math.Abs(chances[5] - 6f / 36f) < 1e-6f && Math.Abs(chances[10] - 1f / 36f) < 1e-6f &&
@@ -175,19 +182,6 @@ namespace ProfileAudit
                 var rounds = engine.GetMethod("TryFusionControlRounds", Hidden);
                 Check(Calls(rounds, "Eligibility") && Calls(rounds, "PooledRounds") && Calls(rounds, "FusionDamageBefore"),
                     "the control reader weighs the pooled sleep by the forecast and by the cast's own damage order");
-                var friendly = engine.GetMethod("FusionControlCatches", Hidden);
-                var friendlyCalls = SaveBoostCheck.ReferencedMembers(friendly).ToArray();
-                Check(Array.FindIndex(friendlyCalls, m => m.Name == "MayCatchFriendly") <
-                      Array.FindIndex(friendlyCalls, m => m.Name == "TryFusionControlRounds"),
-                    "friendly upper/unknown safety precedes current ordered depletion");
-                var forecast = control.GetNestedType("Forecast", Hidden);
-                Check(Calls(forecast.GetMethod("MayCatchFriendly", Hidden), "FriendlyPoolCanReach") &&
-                      Calls(fused, "IsEnemy") && Calls(fused, "Evaluate"),
-                    "ally upper bound uses existing bounded visit reads; it never trusts a missing actor as safe");
-                var safety = (Func<bool, bool, bool, bool>)Delegate.CreateDelegate(typeof(Func<bool, bool, bool, bool>),
-                    typeof(SharedHdBudget).GetMethod("FriendlyPoolCanReach", Hidden));
-                Check(!safety(true, true, false) && safety(true, false, false) && safety(false, true, false) && safety(true, true, true),
-                    "compiled safety only clears a supported, known, intrinsically unreachable recipient");
                 var share = (Func<float, float, float, float>)Delegate.CreateDelegate(typeof(Func<float, float, float, float>),
                     typeof(ValueModel).GetMethod("PooledRounds", Hidden));
                 Check(Math.Abs(share(1f, 3f, 0.4f) - 1.8f) < 1e-5f && share(1f, 3f, 0f) == 1f && share(1f, 3f, 1f) == 3f,

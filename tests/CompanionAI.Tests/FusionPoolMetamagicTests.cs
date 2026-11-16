@@ -4,7 +4,7 @@ using Xunit;
 
 namespace CompanionAI.Tests
 {
-    public class FusionPoolSafetyTests
+    public class FusionPoolMetamagicTests
     {
         [Theory]
         [InlineData(2, 0, 1.0, true, true, 3)]
@@ -43,24 +43,5 @@ namespace CompanionAI.Tests
             Assert.Equal(0f, ordinary); Assert.Equal(10f / 36f, empowered, 5);
         }
 
-        [Fact]
-        public void KillingAnEarlierSpenderCanExposeAnAllyTheOrderedForecastCallsUncovered()
-        {
-            SharedHdBudget.Recipient Unit(bool alive) => new SharedHdBudget.Recipient(1f, remaining =>
-                new SharedHdBudget.Visit(alive && remaining >= 4, alive && remaining >= 4, 4));
-            Assert.True(SharedHdBudget.TryForecast(4, new[] { Unit(true), Unit(true) }, out var standing));
-            Assert.True(SharedHdBudget.TryForecast(4, new[] { Unit(false), Unit(true) }, out var killed));
-            Assert.Equal(0f, standing[1]); Assert.Equal(1f, killed[1]);
-            Assert.True(SharedHdBudget.FriendlyPoolCanReach(true, true, true));
-        }
-
-        [Theory]
-        [InlineData(false, false, false, true)]
-        [InlineData(false, true, false, true)]
-        [InlineData(true, false, false, true)] // Ally entering the future area is absent from the current selector.
-        [InlineData(true, true, true, true)]
-        [InlineData(true, true, false, false)] // Proven no reach at any remaining budget.
-        public void FriendlySafetyNeedsAProvenNoReach(bool supported, bool known, bool reaches, bool expected)
-            => Assert.Equal(expected, SharedHdBudget.FriendlyPoolCanReach(supported, known, reaches));
     }
 }

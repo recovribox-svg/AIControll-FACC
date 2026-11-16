@@ -23,10 +23,6 @@ namespace CompanionAI_Pathfinder.Tactics
             }
         }
 
-        // Ordered depletion is an enemy-value estimate, not proof that a later/moving ally is safe.
-        internal static bool FriendlyPoolCanReach(bool supported, bool recipientKnown, bool reachesWithoutEarlierSpending) =>
-            !supported || !recipientKnown || reachesWithoutEarlierSpending;
-
         public readonly struct Visit
         {
             public readonly bool ReachesEffect;

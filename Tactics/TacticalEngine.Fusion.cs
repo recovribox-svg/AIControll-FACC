@@ -236,12 +236,6 @@ namespace CompanionAI_Pathfinder.Tactics
 
         private static bool FusionControlCatches(TacticalContext ctx, AbilityData ability, AbilityProfile profile, UnitEntityData ally)
         {
-            // Earlier fused damage or a moving recipient can leave more pool than current-state depletion predicts.
-            // Missing/unsupported forecasts cannot prove safety. Ordinary enemy values still use ordered eligibility.
-            if (profile.FusionSharedHd)
-                foreach (var buff in profile.SharedHdBuffs)
-                    if (!ally.Buffs.HasFact(buff) && !CombatMath.BuffImmune(ally, buff, ability) &&
-                        (ctx.FusionSharedHd?.MayCatchFriendly(ally, buff) ?? true)) return true;
             if (SelectedBuffAllyRounds(ctx, ability, profile, ally) > 0f) return true;
             if (profile.RemovedBuffs.Any(ally.Buffs.HasFact)) return true;
             if (profile.BuffApplications.Any(a => a.PeriodicDamageOnly && !ally.Buffs.HasFact(a.Buff) &&

@@ -29,15 +29,13 @@ namespace CompanionAI_Pathfinder.Tactics
             internal readonly bool Supported;
             private readonly HashSet<BlueprintBuff> m_Controlled;
             private readonly Dictionary<UnitEntityData, float> m_Eligibility;
-            private readonly Dictionary<UnitEntityData, bool> m_FriendlyUpper;
 
             internal Forecast(bool supported, IEnumerable<BlueprintBuff> controlled,
-                Dictionary<UnitEntityData, float> eligibility = null, Dictionary<UnitEntityData, bool> friendlyUpper = null)
+                Dictionary<UnitEntityData, float> eligibility = null)
             {
                 Supported = supported;
                 m_Controlled = new HashSet<BlueprintBuff>(controlled ?? Enumerable.Empty<BlueprintBuff>());
                 m_Eligibility = eligibility;
-                m_FriendlyUpper = friendlyUpper;
             }
 
             internal bool Controls(BlueprintBuff buff) => buff != null && m_Controlled.Contains(buff);
@@ -52,14 +50,6 @@ namespace CompanionAI_Pathfinder.Tactics
                     ? p : 0f;
             }
 
-            internal bool MayCatchFriendly(UnitEntityData recipient, BlueprintBuff buff)
-            {
-                if (!Controls(buff)) return true;
-                bool reaches = false;
-                bool known = Supported && recipient != null && m_FriendlyUpper != null &&
-                    m_FriendlyUpper.TryGetValue(recipient, out reaches);
-                return SharedHdBudget.FriendlyPoolCanReach(Supported, known, reaches);
-            }
         }
 
         private sealed class Plan
@@ -587,20 +577,7 @@ namespace CompanionAI_Pathfinder.Tactics
                     }
                     var values = new Dictionary<UnitEntityData, float>();
                     for (int i = 0; i < selected.Count; i++) values.Add(selected[i], Math.Min(1f, total[i]));
-                    // A predecessor can die to source 1 or leave before source 2. For friendly safety, test every
-                    // remaining budget, reusing seen[]. Native guard reads stay <= recipients * (top + 1).
-                    var friendlyUpper = new Dictionary<UnitEntityData, bool>();
-                    for (int i = 0; i < selected.Count; i++)
-                    {
-                        if (ability.Caster.Unit.IsEnemy(selected[i])) continue;
-                        bool reaches = false;
-                        for (int remaining = 0; remaining <= top && !reaches; remaining++)
-                            reaches = recipients[i].Evaluate(remaining).ReachesEffect;
-                        friendlyUpper.Add(selected[i], reaches);
-                    }
-                    if (plan.IgnoreCaster) friendlyUpper[ability.Caster.Unit] = false;
-                    // An ally walking into the future burst is absent from the current selector: unknown, not safe.
-                    forecast = new Forecast(true, controlled, values, friendlyUpper);
+                    forecast = new Forecast(true, controlled, values);
                     return true;
                 }
                 finally { context[plan.SharedValue] = previous; }
