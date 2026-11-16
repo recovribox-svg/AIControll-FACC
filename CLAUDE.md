@@ -8,7 +8,27 @@ Read [CONTRIBUTING.md](CONTRIBUTING.md) for shared branch ownership, Codex pull 
 Codex works on task branches and targets pull requests at `claude/dreamy-pasteur-b9h3rn`; Claude reviews and integrates them there.
 Keep `main` for author-authorized releases. Read [AGENTS.md](AGENTS.md) when coordinating agent work.
 
-**Current handover (16 November 2026, Codex): gaps2 review / Invocation evidence on `codex/gaps2-playtest-review`,
+**Current handover (16 November 2026, Claude): all open PRs (#65, #66, #67, #68, #69, #70, #71, #73) reviewed and
+merged into development at the author's request; development `ea91688`.** Read `docs/TACTICAL_AI.md` §180 and the
+[receipt](docs/competence/INTEGRATION_65_73_CHECKS.json).
+- The stack merged in order. Development's tree equals the verified head `6efc13c`, whose code is the gaps3 package's
+  checked source `9a02565`. The play package is
+  `test-builds/AI-Control-FACC-v0.3.52-dev-gaps3-9a02565-UMM-test.zip` (MVID `48ece05d`). No new package was built.
+- Review: no change needed.
+  - #71 fixes a defect in Claude's G2 (#67): a release that paid had a null reason and was dropped.
+  - #69 matches the native selector, which runs one variant.
+  - #68 and #70 tighten the Shifter and leap-grab work.
+- Checks on the integrated tree:
+  - Release 0 warnings; 866 unit + 27 + 3 + 18 tests.
+  - 3 added game references, all present.
+  - ProfileAudit exit 0, two runs identical, with 14 export folders and the 607 stock fixtures (identical to S1's,
+    rebuilt from the #72 database).
+  - Native harnesses 98/14/10.
+- Manifest 0.3.52; no `main`, tag or release change.
+- **Next:** the author plays gaps3. Codex's replay in `docs/GAPS2_PLAYTEST_REVIEW.md` covers TB release, an actual
+  leap and Frigid Touch; the form replay is in `docs/SHIFTER_FORM_DECISIONS.md`.
+
+**Earlier handover (16 November 2026, Codex): gaps2 review / Invocation evidence on `codex/gaps2-playtest-review`,
 stacked on #71 `3664663` -> #70 -> #69 -> #68 -> #67 -> #66 -> #65, development `96dabaa` (#72).**
 Read [review/judgment/replay](docs/GAPS2_PLAYTEST_REVIEW.md), [inputs](docs/competence/GAPS2_PLAYTEST_INPUTS.json),
 [derived ledger](docs/competence/GAPS2_INVOCATION_LEDGER.json), §179. Supplied gaps2 MVID `9ce04a64` matches `96108ba`;

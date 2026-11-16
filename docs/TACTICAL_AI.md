@@ -6225,3 +6225,36 @@ providers 98/14/10 pass; **0 new external signatures**. Other report rows match 
 The **gaps3** diagnostic test package retains the frozen checked DLL; new code is unplayed. Workspace-full interrupted
 a provider build; remaining checks resumed after generated-output cleanup on unchanged source/DLL and pass.
 Manifest remains 0.3.52; holder/form/saved-Frigid and actual leap/TB release limits remain. No merge or release.
+
+## 180. PRs #65-#73 reviewed and merged into development (16 November 2026, Claude)
+
+At the author's request, all eight open PRs were reviewed and merged, in stack order (#65 → #66 → #67 → #68 → #69 →
+#70 → #71 → #73). Development `ea91688` has exactly the tree of the verified head `6efc13c`, whose code is the gaps3
+package's checked source `9a02565`. Receipt: [INTEGRATION_65_73_CHECKS.json](competence/INTEGRATION_65_73_CHECKS.json).
+
+**Review.**
+- **#68 (Shifter forms):**
+  - the note ledger no longer clears itself mid-fight;
+  - the Fury hold ignores a form below the main-action minimum;
+  - the wait note is keyed by fight;
+  - SHIFTER-FORMS checks each Griffon tier's exact removals.
+- **#69 (Frigid Touch):** the native `ContextActionSelectByValue` runs one variant (the greatest value, the later one
+  on a tie). Crediting the common buff at its shortest duration, and keeping the longest for allies, is safe.
+- **#70 (leap Grabber):** the cached leap quote reuses the ordinary grab kernel, and the assumed grab reaches it
+  through `ActiveGrab`.
+- **#71 fixes a defect in #67 (G2).** A positive Release Grapple score carried a null reason. Candidate construction
+  then dropped the ability, so no release was ever issued (gaps1 rows 2812-2813). gaps2 shows five successful releases
+  in real time.
+- **#73:** buff-choice and restraint notes are deduplicated per fight as well as per round.
+
+**Checks on the integrated tree:**
+- Release build: 0 warnings, 0 errors.
+- Tests: 866 unit, 27 inventory, 3 supplement-script, 18 ledger.
+- Added game references: 3 against the g2 package, all present in the supplied assembly.
+- ProfileAudit: exit 0, two byte-identical runs. Inputs are 14 export folders plus the 607 missing-only stock fixtures,
+  identical to S1's and rebuilt from the #72 database. Against the Shifter-branch run on the same inputs, only the
+  extended sections' counts change, and exactly the three Frigid Touch abilities gain Soft control.
+- Native harnesses: 98/14/10.
+
+The gaps3 package is development's code; no new package was built. Unplayed: TB release, an actual leap, Frigid Touch
+in play, and the form/Fury scheduling.
