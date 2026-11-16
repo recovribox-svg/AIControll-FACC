@@ -1,0 +1,148 @@
+{
+  "task": "Pre-integration review corrections to PR #77: effective native pool metamagic and conservative friendly safety",
+  "development_base": "980cf26827e23e5b0c78696fe530edecd7156162",
+  "stacked_on_pr": 77,
+  "stacked_on_head": "452d8a3",
+  "also_includes_pr": 76,
+  "checked_source_commit": "f8788d7f274a8558783372302f7b7c8e1271b6e7",
+  "dll": {
+    "assembly": "CompanionAI_Pathfinder, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null",
+    "mvid": "598bc517-2a2c-45d5-b0ea-56122a65e83b",
+    "sha256": "2240416886495380d75c5ba9d85154f1a7f198063a63689accf43c5aa7849bd7",
+    "size": 1475584
+  },
+  "release": {
+    "real_game_references": true,
+    "warnings": 0,
+    "errors": 0
+  },
+  "unit_tests": {
+    "passed": 905,
+    "new": 18,
+    "failed": 0,
+    "skipped": 0
+  },
+  "script_tests": {
+    "inventory": 27,
+    "audit_supplement": 3,
+    "invocation_ledger": 18,
+    "failures": 0
+  },
+  "profile_audit": {
+    "loaded": 44640,
+    "failed": 0,
+    "abilities": 4808,
+    "reader_errors": 0,
+    "prerequisite_skips": 0,
+    "fusion_outcome": 34,
+    "fusion_pool": 32,
+    "new_pool_checks": 7,
+    "diagnostic_log": 16
+  },
+  "native_harnesses": {
+    "toggle": 98,
+    "tome": 14,
+    "toybox": 10,
+    "failures": 0
+  },
+  "supplementary_magus": 44,
+  "foreign_signatures": {
+    "added": 0,
+    "unresolved": 0
+  },
+  "fusion_coverage": {
+    "configurations": 15494,
+    "profileAccepted": 8709,
+    "profileWithheld": 6785,
+    "sharedPoolProfiles": 1754,
+    "sharedPoolAdmitted": 498,
+    "jointOutcomeMetadataQualified": 4663,
+    "coneComponentsResolved": 1416,
+    "coneComponentErrors": 0,
+    "readerErrors": 0
+  },
+  "native_evidence": {
+    "game_sha256": "2cb7160b7154d4ffacc77b9c51b1eb26199e1294300f04fdfc073367b2ef8953",
+    "methods": [
+      "ContextValueHelper.CalculateDiceValue",
+      "ContextCalculateSharedValue.Calculate",
+      "MechanicsContext.HasMetamagic",
+      "AutoMetamagic.OnEventAboutToTrigger(RuleCalculateAbilityParams)",
+      "ContextConditionIsUnconscious.CheckCondition",
+      "ContextActionChangeSharedValue.RunAction",
+      "AbilityEffectRunAction.Apply"
+    ],
+    "sleep_graph": "Native Sleep OR guard skips an unconscious target and its SubHD debit; fused source payloads run in order.",
+    "automatic_empower_example": {
+      "asset": "0b06a41777524044bf36e9f43b6a6e03",
+      "name": "EmpoweredCold",
+      "proof_limit": "Native source example; not evidence that this player currently owns it or may use ordinary metamagic rods on fused holders."
+    },
+    "actual_native_calculator_executed": "Maximized inert params-only contexts: 2d6=12, Maximize+Empower=18; zero d6 plus bonus3 with both flags=4. No actor, random roll or Rulebook setup."
+  },
+  "bounds": {
+    "native_guard_reads": "recipients * (effective highest pool + 1), existing per-budget cache reused",
+    "normal_2d6_highest": 12,
+    "empowered_2d6_highest": 18,
+    "new_context_or_rule_or_selector_or_path_pass": false,
+    "new_world_scan": false,
+    "new_native_reads": "Faction relation per current selected recipient; friendly budgets not needed by enemy valuation can now be checked, each at most once.",
+    "new_persistent_actor_cache": false,
+    "friendly_forecast_scope": "Per-aim upper dictionary only; missing/unsupported recipient unsafe; IgnoreCaster retained",
+    "unity_speedup_claimed": false
+  },
+  "raw_archive_negative_check": {
+    "expected_exit": 1,
+    "loaded": 44637,
+    "failed": 1,
+    "reason": "Unchanged original Achaekek enum spelling/offline logger mismatch; not a passing raw audit."
+  },
+  "toolchain": {
+    "sdk": "8.0.426",
+    "csharp_compiler": "4.11.0-3.25569.22 (3fb752d4)",
+    "umm_reference": "0.33.2.0",
+    "provenance": "docs/competence/FUSION_POOL_SAFETY_BUILD_PROVENANCE.json",
+    "provenance_sha256": "026d3e3ca1bf654340a9db72c3a7d4e6f3af80ee13b90ebfa9bc5d7625f37b9c"
+  },
+  "manifest": "0.3.52",
+  "gameplay": "Unplayed. Findings are static review of #77, not observations in the older outcome1 module.",
+  "package": "Combined package follows authorized integration; no replacement of the original outcome1/sleep1 packages.",
+  "limits": [
+    "Enemy pool valuation retains current-standing/current-order approximation.",
+    "Current intrinsic receiver guards and standard dice assumptions remain; arbitrary future facts/custom dice callbacks are not simulated.",
+    "Friendly upper bounds can conservatively reject a cast that one realized depletion sequence would spare."
+  ],
+  "private_validation_artifact_sha256": {
+    "supplementary.log": "5bb650a721e596510036a683bcf94a6a72d32eb498d4ce7c1c6e300c162c707e",
+    "provenance.json": "026d3e3ca1bf654340a9db72c3a7d4e6f3af80ee13b90ebfa9bc5d7625f37b9c",
+    "supplement-scripts.log": "edb4e2159c923ea45a32656078835cdf531c3d7b414c670dd786978875cb0678",
+    "summary.json": "8f35aac88524ab015fe1282336704b2b5f0669f30338f151d6c05f01aae5ba8b",
+    "toggle-build.log": "1b68e832282a0c8fc603a979015ad6e8dba9fee27f530652967bc3f502d1284f",
+    "tome.log": "fc91275e0b8a381a7f851d5450ac0c1cd3ad2ed7f8d853c477e64203c977f4bc",
+    "identity.json": "d187cc7fc40f20fedc795fcff68b20f07938d7fabb462dfa6778afb8b52c7b5b",
+    "raw.log": "59399a5731df2ca0a352726bb5857f2618ac7f2bf881aa07c789670ad5bd8149",
+    "toybox.log": "38d58d81fc1a1e9fc82d06ec096bc96dd786bb0d3a6febe5d1ba35331497942d",
+    "strict.txt": "a3e4e30eb7e14f311fafa313a95269a9acf65757a47ffbce11b6e846252210de",
+    "coverage.json": "298c29b1b290e904699f6500432261f1b0603df0646ad7c3205c7fbd61d5dc12",
+    "refs.log": "899262540b3e6a0a678fb0c899cdfcefb2cc1695ab4439fdcb666d764617d4a1",
+    "audit-build.log": "6540f8913168a8493fef64a36b212fd453e55f521a4f7d73c704067d71aff691",
+    "toggle.txt": "7aeb9716e5d7ffad56d000608ab7b92c2d8b8466444046796764eb2637821ce3",
+    "tome-build.log": "a8b4011ef84c5f7ad0a20bcca89fe7eedfdd8661c6c0538819987608fcb0f04a",
+    "strict.log": "7359cd50e96cacf74fb241f5ca3cb953bc7ea11326480e1dcb5c5217e1fea50d",
+    "tome.txt": "bcd21dec27d16ca777655e7d7cedd1662f1bc04efe4c71e0be144895904cbcab",
+    "toggle-restore.log": "40d104602671164ab3958225da3e1c8cabd55f0251d6df6bc911d9d5a24f44ce",
+    "release.log": "6c14c0ff765d8d998a4ddc4d0f0cc2ed1c5a4fbdda982d07bb9aaa25ab19471c",
+    "supplementary.txt": "a93a0f87717eb37de3c549a5c9817e5a8b9f55d756fa9c62a66026b814b8f35a",
+    "toybox-restore.log": "40d104602671164ab3958225da3e1c8cabd55f0251d6df6bc911d9d5a24f44ce",
+    "tome-restore.log": "40d104602671164ab3958225da3e1c8cabd55f0251d6df6bc911d9d5a24f44ce",
+    "raw.txt": "533659eaa5c2c9baa1fded5b8021cb157c428b29c83b591f273f27e47a340e91",
+    "added-refs.txt": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "inventory.log": "09ad2fe8a00725d344e94e8e80b71c18c4cbb712fd436f659f3f8ab440b40798",
+    "invocation-ledger.log": "f6a7ca1bb8354dd4a96ce5b18e6ef9a20fa2a4585a46b6c12a17980ea1dc4087",
+    "toggle.log": "a15dd5e2bccc76d259db0e7be2a8a01d27f44e98e09cff5c6c576efdb670b934",
+    "toybox-build.log": "bbd97adab38dc8fd6843f716a8d514e3d8a812043982926a836b6e667cc17553",
+    "unit.log": "9e3911d30b42c29212e4222b1a3c62ceb12aeede1df184a0b6dd4e7d3f92671f",
+    "audit-restore.log": "40d104602671164ab3958225da3e1c8cabd55f0251d6df6bc911d9d5a24f44ce",
+    "toybox.txt": "0869826f7f4f3a11021ad24a513c857ac70aefb9d28a9bda335abdf4bd667c2b"
+  }
+}

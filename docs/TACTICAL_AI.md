@@ -6353,3 +6353,9 @@ native-guard upper bound, reusing the existing bounded visit memo; unknown/absen
 IgnoreCaster is retained. Enemy probabilities, ordinary Sleep and the metadata admission set are unchanged.
 Additional ally states may be read, within recipients × (top+1); no extra context, rule/selector/path pass or world
 scan. These new corrections need the integrated TB/RT replay; no live safety/performance acceptance is claimed.
+
+Checked source `f8788d7`, MVID `598bc517-2a2c-45d5-b0ea-56122a65e83b`: 905 unit + 27/3/18 script tests,
+real-reference Release 0 warnings/errors, FUSION-OUTCOME 34 / FUSION-POOL 32, inherited checks, supplementary Magus 44
+and native providers 98/14/10 pass. Zero added native signatures; 8,709/15,494 admitted, 498 shared-pool configurations,
+0 reader/cone errors. Effective-meta native calculator cases run on inert params-only contexts. New behavior needs
+the integrated replay; the older outcome1 module cannot accept these review-found corrections.

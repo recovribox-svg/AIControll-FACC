@@ -23,7 +23,7 @@ normal/Empowered distributions in immutable plan metadata, and handles Maximize 
 bonus, whereas d1/zero-die expressions cannot. Normal supported configurations remain supported if an empowered
 variant exceeds the existing bound; that runtime variant instead withholds pool credit conservatively.
 
-The public unit-independent math follows the native order. Native audit cases call the **actual supplied native
+The unit-independent math follows the native order. Native audit cases call the **actual supplied native
 calculator** on inert params-only contexts, always maximized so no random/actor/Rulebook execution is needed.
 
 ### Ordered depletion does not establish friendly safety

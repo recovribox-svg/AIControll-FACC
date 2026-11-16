@@ -8,6 +8,29 @@ Read [CONTRIBUTING.md](CONTRIBUTING.md) for shared branch ownership, Codex pull 
 Codex works on task branches and targets pull requests at `claude/dreamy-pasteur-b9h3rn`; Claude reviews and integrates them there.
 Keep `main` for author-authorized releases. Read [AGENTS.md](AGENTS.md) when coordinating agent work.
 
+**Current handover (16 November 2026, Codex): PR #77 review corrections on `codex/fusion-pool-safety`,
+stacked on #77 `452d8a3` and #76, base development `980cf26`; unplayed.** The author authorized reviewing/merging
+satisfactory open PRs after the outcome1 review (#78). Read [corrections/replay](docs/FUSION_POOL_SAFETY.md), §185,
+[checks](docs/competence/FUSION_POOL_SAFETY_CHECKS.json),
+[compiler/reference provenance](docs/competence/FUSION_POOL_SAFETY_BUILD_PROVENANCE.json).
+Native effective params can add Empower/Maximize not present in raw AbilityData; shared pool distributions now
+follow the native bonus/Empower/modifier order. This does not enable prohibited UI/rod metamagic. Earlier fused
+damage can remove a spender, and a walking-in ally is absent from current selection: current ordered depletion
+cannot prove friendly safety. A bounded any-budget native-guard upper map now handles selected allies; unknown/
+absent recipients stay unsafe and IgnoreCaster remains. Enemy probabilities and ordinary Sleep are unchanged.
+Same per-visit cache bounds native reads; additional friendly states may be read, no extra context/rule/selector/
+path pass or world scan. No permanent actor cache. Static review findings, not incidents witnessed in outcome1.
+
+Checked source **`f8788d7`**, MVID **`598bc517-2a2c-45d5-b0ea-56122a65e83b`**: **905 unit + 27 + 3 + 18 tests**,
+real-reference Release **0 warnings/errors**; ProfileAudit **44,640 / 4,808**, no load/reader failure or prerequisite
+skip; **FUSION-OUTCOME 34 / FUSION-POOL 32**, inherited checks, supplementary Magus 44, providers **98/14/10** pass.
+Native Max/Empower calculator exercised on inert params-only contexts. **Zero added native signatures**. Matrix
+**8,709 / 15,494** admitted, shared pool **498**, 0 reader/cone errors, preserving #77's ordinary admission count.
+SDK 8.0.426 / Roslyn 4.11, UMM 0.33.2.0; manifest 0.3.52. Frozen checked DLL across receipts-only commits; no standalone
+package, combined candidate follows authorized integration. Enemy current-standing approximation, intrinsic
+current-state guards and arbitrary dice-rule callbacks remain limits. Play pooled ally safety (including walking
+in), native effective-meta cases if available, ordinary Sleep and the F4/Coup/grapple replays after integration.
+
 **Current handover (16 November 2026, Claude): Fusion F7 (Sleep fusions) on `claude/fusion-sleep-pool`, stacked on
 Fusion F4 (PR #76, `claude/fusion-outcome-effects`); development base `980cf26`. Not played.** Read
 [docs/FUSION_SLEEP_POOL.md](docs/FUSION_SLEEP_POOL.md), `docs/TACTICAL_AI.md` §183 and the
