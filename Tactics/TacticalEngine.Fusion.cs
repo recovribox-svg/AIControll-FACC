@@ -30,6 +30,15 @@ namespace CompanionAI_Pathfinder.Tactics
         internal const string FusionSharedHdGate = "shared Hit Dice selection";
 
         /// <summary>
+        /// An ordinary Hit Dice pool keeps its native current-position selection. A fused cast also carries an
+        /// independent payload: its existing walking-in ally safety must remain, without adding those allies to the
+        /// pool forecast or changing its native order. The caller is already in the ordinary area branch.
+        /// </summary>
+        internal static bool ForecastWalkingAreaAllies(AbilityProfile profile, bool supportedPool) =>
+            profile != null && profile.AoETargets != Kingmaker.UnitLogic.Abilities.Components.TargetType.Enemy &&
+            (!supportedPool || profile.Fusion != null);
+
+        /// <summary>
         /// ★ Fusion F4: the one admission rule, shared by EvaluateAbility and the coverage audit. Null when the fused
         /// spell is offered. A fusion with an effect outside the failed-save branch needs the joint outcome value: the
         /// older forecast multiplies every control by the fail chance and cannot represent it.

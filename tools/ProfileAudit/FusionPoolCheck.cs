@@ -98,6 +98,24 @@ namespace ProfileAudit
                 Check(Refusal(enemyDelivery) == null && Of<AbilityTargetsAround>(Plan(enemyDelivery), "Selector").Targets == TargetType.Enemy &&
                       AbilityProfile.Get(enemyDelivery).AoETargets == TargetType.Enemy,
                     "a fused cast delivered through Sleep retains its enemy-only selector; no ally restriction is added");
+                // outcome2: pooled control cannot disable the other payload's existing walking-in damage safety.
+                // Invoke the production policy on the actual profiles; no actor walk or future pool is simulated.
+                var walkingMethod = engine.GetMethod("ForecastWalkingAreaAllies", Hidden);
+                Check(walkingMethod != null, "production walking-in area policy is independently callable");
+                var walking = (Func<AbilityProfile, bool, bool>)Delegate.CreateDelegate(
+                    typeof(Func<AbilityProfile, bool, bool>), walkingMethod);
+                Check(walking(AbilityProfile.Get(runes), true),
+                    "supported Explosive Runes/Sleep keeps walking-in ally safety for its independent damage");
+                Check(!walking(AbilityProfile.Get(CasterPolicyCheck.Data(Spell("Sleep"))), true),
+                    "ordinary Sleep keeps its current-position enemy pool selection");
+                Check(!walking(AbilityProfile.Get(enemyDelivery), true),
+                    "a Sleep-delivered enemy-only fusion adds no walking-in allies");
+                Check(walking(AbilityProfile.Get(runes), false),
+                    "an unsupported fused pool cannot suppress ordinary area ally safety");
+                Check(walking(AbilityProfile.Get(CasterPolicyCheck.Data(Spell("ExplosiveRunes"))), false),
+                    "ordinary Explosive Runes keeps its existing walking-in ally safety");
+                Check(walking(AbilityProfile.Get(Fuse("IncendiaryRunes", "FrigidTouchCast", "IncendiaryRunes", SavingThrowType.Reflex)), false),
+                    "a saved Frigid fusion without a shared pool keeps the same walking-in policy");
                 var budgets = plan == null ? null : Of<int[]>(plan, "Budgets"); var chances = plan == null ? null : Of<float[]>(plan, "Chances");
                 Check(budgets != null && budgets.SequenceEqual(Enumerable.Range(2, 11)) && Math.Abs(chances.Sum() - 1f) < 1e-5f &&
                       Math.Abs(chances[0] - 1f / 36f) < 1e-6f && Math.Abs(chances[5] - 6f / 36f) < 1e-6f && Math.Abs(chances[10] - 1f / 36f) < 1e-6f &&
@@ -171,6 +189,9 @@ namespace ProfileAudit
 
                 // 6. Compiled routes.
                 bool Calls(MethodInfo m, string name) => m != null && SaveBoostCheck.ReferencedMembers(m).Any(x => x.Name == name);
+                Check(engine.GetMethods(Hidden).Any(m => m.Name == "ScoreAbility" &&
+                          Calls(m, "ForecastWalkingAreaAllies") && Calls(m, "AlliesWalkingInto")),
+                    "shared TB/RT scoring uses the production gate and existing walking-in reader");
                 Check(Calls(control.GetMethod("TryForAim", Hidden), "TryForFusedAim"), "a fused aim is forecast by the fused pool reader, not refused");
                 var fused = control.GetMethod("TryForFusedAim", Hidden);
                 Check(SaveBoostCheck.ReferencedMembers(fused).Count(m => m.DeclaringType == typeof(MechanicsContext) && m.Name == "HasMetamagic") == 2 &&

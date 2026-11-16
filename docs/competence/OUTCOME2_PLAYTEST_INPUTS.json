@@ -1,0 +1,204 @@
+{
+  "task": "outcome2 review and pooled-fusion area safety",
+  "development_base": "acb100326b40f60600178a733d6b832b97d2fead",
+  "played_source": "04a7b9ff49a2d37f12ce35df97b758e7b5959148",
+  "played_mvid": "2f9ef9ef-8d7a-4574-9b98-fc8383b45bee",
+  "played_package_sha256": "9c84960e25ff22925462b53ee6ac1ec2dcaa42ff6544d637e0a2d77b8f517486",
+  "inputs": {
+    "ai": {
+      "sha256": "8ace6bdf2abf74b990b7161b77c939b5241578df692fddc533c2b898e40f1e6a",
+      "bytes": 1706512,
+      "physical_lf_lines": 8023
+    },
+    "combat": {
+      "sha256": "eda412bffc9248c19c387fa9272b842123f15b65852d9f1c79b796ae53192c4b",
+      "bytes": 1364022,
+      "physical_lf_lines": 33799
+    }
+  },
+  "author_context": {
+    "spawns": true,
+    "rest_timing": "between fights",
+    "grabber": "left to the engine",
+    "modes": "TB and RT"
+  },
+  "row_convention": "Physical LF lines; embedded CR retained, trailing empty split row excluded.",
+  "fights": [
+    {
+      "fight": 1,
+      "start": 52,
+      "end": 710
+    },
+    {
+      "fight": 2,
+      "start": 730,
+      "end": 1233
+    },
+    {
+      "fight": 3,
+      "start": 1288,
+      "end": 1757
+    },
+    {
+      "fight": 4,
+      "start": 1808,
+      "end": 2715
+    },
+    {
+      "fight": 5,
+      "start": 2773,
+      "end": 3439
+    },
+    {
+      "fight": 6,
+      "start": 3495,
+      "end": 4320
+    },
+    {
+      "fight": 7,
+      "start": 4389,
+      "end": 5555
+    },
+    {
+      "fight": 8,
+      "start": 5607,
+      "end": 6363
+    },
+    {
+      "fight": 9,
+      "start": 6425,
+      "end": 7315
+    },
+    {
+      "fight": 10,
+      "start": 7363,
+      "end": 7592
+    },
+    {
+      "fight": 11,
+      "start": 7644,
+      "end": 7993
+    }
+  ],
+  "commands": {
+    "issued": 740,
+    "terminals": 735,
+    "unmatched_terminals": 0,
+    "in_combat_issued": 728,
+    "in_combat_terminals": 724,
+    "pending": [
+      {
+        "row": 8021,
+        "unit": "Orvath",
+        "type": "UnitUseAbility",
+        "label": "RT ApplyPermanentBuffsOutOfCombat",
+        "mode": "RT",
+        "fight": 11,
+        "in_combat": false
+      },
+      {
+        "row": 2204,
+        "unit": "Vermlek",
+        "type": "UnitAttack",
+        "label": "FullAttack(3)->Large Water Elemental",
+        "mode": "RT",
+        "fight": 4,
+        "in_combat": true
+      },
+      {
+        "row": 2224,
+        "unit": "Vermlek",
+        "type": "UnitAttack",
+        "label": "FullAttack(3)->Distorted Mythic Dretch [Fighting Defensively on +0.7]",
+        "mode": "RT",
+        "fight": 4,
+        "in_combat": true
+      },
+      {
+        "row": 4822,
+        "unit": "Dretch",
+        "type": "UnitUseAbility",
+        "label": "Cause Fear->Distorted Mythic Dretch(cc) [exposed]",
+        "mode": "RT",
+        "fight": 7,
+        "in_combat": true
+      },
+      {
+        "row": 7244,
+        "unit": "Schir",
+        "type": "UnitAttack",
+        "label": "FullAttack(2)->Drow Fencer [Power Attack off +2.2]",
+        "mode": "RT",
+        "fight": 9,
+        "in_combat": true
+      }
+    ],
+    "pending_limit": "Four summon traces have no observed terminal near leave-combat activity; one out-of-combat Soul Power trace is at EOF. No invented result."
+  },
+  "fusion": {
+    "issued": 30,
+    "did_act": 18,
+    "sleep_single_did_act": 3,
+    "sleep_burst_did_act": 1,
+    "frigid_no_root_save_did_act": 2,
+    "saved_frigid_cast": false,
+    "coup_issue": false,
+    "actual_leap": false
+  },
+  "summons": {
+    "labels": [
+      "Brimorak",
+      "Babau",
+      "Schir",
+      "Quasit",
+      "Incubus",
+      "Cambion",
+      "Dretch",
+      "Vermlek"
+    ],
+    "issued": 181,
+    "did_act": 131
+  },
+  "invocation": {
+    "issued": 52,
+    "acted": 50,
+    "counts": {
+      "first-placement": 18,
+      "move-settled": 21,
+      "not-applied": 2,
+      "holder-unseen": 8,
+      "move-override": 2,
+      "sibling-replacement": 1
+    },
+    "flags": {
+      "low-loss": 6,
+      "sibling": 8
+    }
+  },
+  "rt_release_grapple": [
+    {
+      "issue": 2462,
+      "terminal": 2464
+    },
+    {
+      "issue": 2516,
+      "terminal": 2517
+    },
+    {
+      "issue": 5983,
+      "terminal": 5985
+    },
+    {
+      "issue": 6201,
+      "terminal": 6202
+    },
+    {
+      "issue": 6228,
+      "terminal": 6229
+    }
+  ],
+  "slow_decisions": 89,
+  "exceptions_recorded": 0,
+  "raw_logs_committed": false,
+  "evidence_limits": "See OUTCOME2_PLAYTEST_REVIEW.md for actual friendly damage, source-level F7 regression, moving-target limitation, native failures and observer discrepancy."
+}

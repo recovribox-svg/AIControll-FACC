@@ -3890,9 +3890,9 @@ namespace CompanionAI_Pathfinder.Tactics
                 affectedAllies = sharedHd?.Supported == true
                     ? ctx.Allies.Where(sharedHd.Selects).ToList()
                     : affectedAllies.Where(u => profile.AreaReaches(ability, u)).ToList();
-                // ★ v0.3.29 test 5: real time, and the allies walking into it by the time it lands - the same distance rule
-                // (UnitsAround). Not for a Hit Dice pool (its selection is the game's own, by where units stand).
-                if (targetsType != Kingmaker.UnitLogic.Abilities.Components.TargetType.Enemy && sharedHd?.Supported != true)
+                // ★ outcome2: a pool's selection is current-position only, but a fusion's other payload still
+                // reaches walking allies. Keep the existing area safety without predicting future pool consumption.
+                if (ForecastWalkingAreaAllies(profile, sharedHd?.Supported == true))
                 {
                     Vector3 center = target.Position;
                     float radius = profile.AoERadius;

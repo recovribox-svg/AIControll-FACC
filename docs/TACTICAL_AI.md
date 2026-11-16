@@ -6451,3 +6451,26 @@ Keep the outcome1 review's evidence limits: no saved-Frigid cast, F7 or correcte
 of the Cambion hit; no identified Invocation settling violation; diagnostics do not resolve the ledge or warm work.
 Next replay: companion/summon Coup, pooled fusions, actual saved Frigid, first/changed path details, TB release
 and actual leap. Native ally targeting is preserved; mixed-delivery Sleep protection needs a matched native case.
+
+## 187. outcome2 review: pooled fusion keeps walking-in area safety (16 November 2026, Codex)
+
+[Evidence, correction, limitations and replay](OUTCOME2_PLAYTEST_REVIEW.md),
+[input identities/accounting](competence/OUTCOME2_PLAYTEST_INPUTS.json),
+[Invocation ledger](competence/OUTCOME2_INVOCATION_LEDGER.json). Played outcome2 MVID `2f9ef9ef`; author confirms
+spawns, rests between fights and Grabber left to the engine. Eleven fights, 740 issues / 735 terminals; four
+summon traces lack ends near departure and the log ends on one OOC cast. No recorded AI exception. Thirty fusion
+issues / 18 DidAct include pooled Sleep and no-root-save Frigid; no saved Frigid, Coup or leap issue. Five RT
+releases act; 181 summon issues / 131 DidAct. Invocation 52 issues / 50 DidAct, no established settling violation.
+
+Combat records damage to allies from fusion bursts. F7's successful pool forecast also bypassed the ordinary
+walking-in ally reader. `ForecastWalkingAreaAllies` restores it for broad-targeted fusions' independent payload,
+without predicting future pool debits/control or altering native Sleep's target/effect rules. Ordinary pool and
+enemy-only delivery retain selection. Both modes share scoring; the existing walking reader is RT-only. No new
+path, rule, context or world pass, persistent actor cache, movement/cancellation policy or scoring constant.
+Eight added real-profile/compiled-route audit checks; full validation and frozen package identity follow.
+
+This is a confirmed source regression, not a replay of all recorded geometry. A unit-targeted burst may follow a
+moving enemy into stationary allies after selection. Keep that as a separate native phase/anchor/coordination
+project; do not interrupt paid casts or blacklist moving targets on a guessed refund/path. The no-reach observer
+message at AI 1646 conflicts with apparent target damage in the combat log; retain the controlled replay item.
+New repair is unplayed; manifest remains 0.3.52, no main/tag/release. Warm ability work remains material.
