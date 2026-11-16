@@ -84,9 +84,9 @@ Specific judgment checks:
   holder loss 0.5. Then 4844 moves Dexterity 1 from Bandit to Alchemist for net 6.3, gross 16.8, loss 10.5. The same
   final Dexterity coverage could use tier 1 straight onto Tripper, but that does not show the earlier cast was waste.
   At the first decision Bandit's held Dexterity is worth **7.3** (4688). Tripper's printed net/loss imply roughly
-  3.3 before that loss, subject to rounding/other delivery terms. That shortcut does not clear the native model's
-  1.25x move margin then; the actual tier-2 move does. By the second decision the alchemist's forecast incoming
-  damage is 34.2/round and there are 11 enemies instead of 10. Equal eventual coverage is not an earlier-value
+  3.3 before that loss, subject to rounding/other delivery terms. That shortcut does not clear the engine's existing
+  1.25x move margin then; the actual tier-2 move does. By the second decision the alchemist's forecast incoming damage
+  is 34.2/round and there are 11 enemies instead of 10. Equal eventual coverage is not an earlier-value
   counterfactual, especially with combat spawning. The tool now labels it a **coverage alternative requiring review**.
 - **Sibling replacement:** 2063 replaces Wenduag's tier-1 Wisdom worth 0.1 with Strength, net 3.0; 5253 replaces
   Bandit's tier-1 Wisdom worth 0.1 while moving Dexterity, chosen net 5.9. Their own lost buff is not ignored.
@@ -133,8 +133,19 @@ and missing/manual/runtime events remain observational limits. Cross-tier final 
 
 ## Verification and replay
 
-The checked-source [receipt](competence/GAPS2_PLAYTEST_CHECKS.json), compiler/reference provenance and cumulative
-test package will be recorded separately from this **played gaps2** pair. New diagnostic code is unplayed.
+Source **`9a02565`**, MVID **`48ece05d-5895-46e3-896c-d87cb5a60b29`** passes **866 unit + 27 inventory + 3 audit-script + 18 ledger tests**,
+real-reference Release **0 warnings/errors**, compatible ProfileAudit 44,639 loaded / 4,807
+abilities with no load/reader failure or prerequisite skip. **DIAGNOSTIC-LOG 16** adds two native checks; inherited
+checks, supplementary Magus 44 and native providers 98/14/10 pass. **No new external signature** is added. Reports
+match #71 outside the diagnostic check count/output/optional coverage paths. The raw archive's known enum mismatch
+remains a separate expected negative-input check. A provider build was interrupted by workspace-full; after cleaning
+only generated duplicates, remaining checks resumed on the exact unchanged source/DLL. No code/check failure remains.
+
+[Receipt](competence/GAPS2_PLAYTEST_CHECKS.json), [compiler/reference provenance](competence/GAPS2_PLAYTEST_BUILD_PROVENANCE.json)
+and [cumulative gaps3 test ZIP](../test-builds/AI-Control-FACC-v0.3.52-dev-gaps3-9a02565-UMM-test.zip) identify the
+frozen output. ZIP SHA-256 `e97222e507007a321f1b97334a1158a796c22fe90ba9a569809a805573b62ca6`; identity/checksum
+sidecars accompany it. SDK 8.0.426 / Roslyn 4.11, UMM 0.33.2.0; manifest 0.3.52. The supplied pair is **played gaps2**;
+the new diagnostic **gaps3 code is unplayed**. Scoring/transfer policy is preserved, not newly tuned.
 
 In TB/RT, leave Grabber to the engine and include an actual TB release, open-ground leap and ordinary/no-save
 Frigid cast if feasible. For invocation evidence, repeat early-round recipients across multiple fights: each

@@ -1,6 +1,29 @@
 # Test builds
 
-## Task-branch candidate: v0.3.52 gaps2 — Release Grapple repair (96108ba), unplayed
+## Task-branch candidate: v0.3.52 gaps3 — current buff evidence (9a02565), unplayed
+
+[UMM test ZIP](AI-Control-FACC-v0.3.52-dev-gaps3-9a02565-UMM-test.zip?raw=true) · [Identity](AI-Control-FACC-v0.3.52-dev-gaps3-9a02565-UMM-test.identity.json) · [Checksum](AI-Control-FACC-v0.3.52-dev-gaps3-9a02565-UMM-test.sha256) · [Checks](../docs/competence/GAPS2_PLAYTEST_CHECKS.json) · [Review / Invocation judgment / replay](../docs/GAPS2_PLAYTEST_REVIEW.md)
+
+Cumulative #65 -> #71 code, with the selected-buff/restraint diagnostic keys scoped to each fight and lazy message
+formatting. A repeated round/recipient previously lost its current appraisal; the offline ledger could then reuse
+stale values or flag stacking from incomplete holdings. The ledger now marks direct/inferred/unknown identities,
+is caster-scoped and treats final coverage alternatives as requiring earlier-value review. **Invocation selection,
+scoring, transfer/settling and movement policies are unchanged.** No runtime blueprint data or private logs are packed.
+
+Checked source **`9a02565`**, startup MVID **`48ece05d-5895-46e3-896c-d87cb5a60b29`**. ZIP SHA-256
+`e97222e507007a321f1b97334a1158a796c22fe90ba9a569809a805573b62ca6`.
+**866 unit + 27 inventory + 3 script + 18 ledger tests**, real-reference Release **0 warnings/errors**, ProfileAudit
+**DIAGNOSTIC-LOG 16** and inherited checks, supplementary Magus 44 and providers 98/14/10 pass. **0 added external
+signatures.** [Compiler/reference provenance](../docs/competence/GAPS2_PLAYTEST_BUILD_PROVENANCE.json): SDK 8.0.426 /
+Roslyn 4.11, UMM 0.33.2.0. Manifest stays **0.3.52**, development test; frozen checked DLL.
+
+The gaps2 replay confirms five actual RT releases and 32 completed invocations; no identified settling violation
+or known same-stat error after correcting the ledger, with one cast tier still unknown. New diagnostics are unplayed.
+Replay repeated early-round buff recipients across fights, plus TB release, open-ground leap and ordinary/no-save
+Frigid if feasible. Keep Grabber under the engine and supply paired AI/combat logs and startup identity. No new
+gameplay/Unity speedup or blanket Invocation-utility acceptance is claimed.
+
+## Task-branch candidate: v0.3.52 gaps2 — Release Grapple repair (96108ba), played ([review](../docs/GAPS2_PLAYTEST_REVIEW.md))
 
 [UMM test ZIP](AI-Control-FACC-v0.3.52-dev-gaps2-96108ba-UMM-test.zip?raw=true) · [Identity](AI-Control-FACC-v0.3.52-dev-gaps2-96108ba-UMM-test.identity.json) · [Checksum](AI-Control-FACC-v0.3.52-dev-gaps2-96108ba-UMM-test.sha256) · [Checks](../docs/competence/GAPS1_PLAYTEST_CHECKS.json) · [Review and replay](../docs/GAPS1_PLAYTEST_REVIEW.md)
 

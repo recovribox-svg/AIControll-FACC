@@ -6217,5 +6217,11 @@ uses only a chosen decision and an unambiguous holder witness for labelled infer
 Equal final stat coverage becomes a coverage alternative requiring earlier-value review, not a waste verdict.
 No targeting, movement, permission, scoring, resource or settling policy change; no new world/rule/path query or
 actor cache. The 62 slow rows (nine with collections) still show material warm ability work; no Lann slow row or
-Unity speedup claim. The checked-source receipt and diagnostic test package will distinguish offline validation
-from the supplied gameplay. Manifest remains 0.3.52; holder/form/saved-Frigid and actual leap/TB release limits remain.
+Unity speedup claim. Checked source **`9a02565`**, MVID **`48ece05d-5895-46e3-896c-d87cb5a60b29`**: **866 + 27 + 3 + 18 tests**,
+real-reference Release **0 warnings/errors**, strict compatible ProfileAudit 44,639 loaded / 4,807 abilities, no
+load/reader failures or prerequisite skips. **DIAGNOSTIC-LOG 16**, inherited checks, supplementary Magus 44 and native
+providers 98/14/10 pass; **0 new external signatures**. Other report rows match #71; raw enum failure remains separate.
+[Checks](competence/GAPS2_PLAYTEST_CHECKS.json), [compiler/reference provenance](competence/GAPS2_PLAYTEST_BUILD_PROVENANCE.json).
+The **gaps3** diagnostic test package retains the frozen checked DLL; new code is unplayed. Workspace-full interrupted
+a provider build; remaining checks resumed after generated-output cleanup on unchanged source/DLL and pass.
+Manifest remains 0.3.52; holder/form/saved-Frigid and actual leap/TB release limits remain. No merge or release.

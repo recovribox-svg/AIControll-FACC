@@ -1,0 +1,43 @@
+{
+  "build_label": "gaps3",
+  "kind": "development-test",
+  "version": "0.3.52",
+  "source_branch": "codex/gaps2-playtest-review",
+  "source_commit": "9a025654a52a978b3d3dadf7052095f392c4686b",
+  "development_base": "96dabaaeb938ee4829cd8c0f021e1b1f2ea432af",
+  "stacked_on": {
+    "pr": 71,
+    "head": "3664663cb4b88caab62037847d3851bfa3233704",
+    "also_includes": [
+      65,
+      66,
+      67,
+      68,
+      69,
+      70
+    ]
+  },
+  "dll": {
+    "assembly": "CompanionAI_Pathfinder, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null",
+    "mvid": "48ece05d-5895-46e3-896c-d87cb5a60b29",
+    "sha256": "348cc6ef9ccfbd04249f5f62afb7e5518132c89e1ffcf3cb00297a43706128e1",
+    "size": 1462272
+  },
+  "manifest_sha256": "1876fd6fc56d03b28793f6c481fac47c9ea85eec3265d6859232deeab67523a3",
+  "archive": "AI-Control-FACC-v0.3.52-dev-gaps3-9a02565-UMM-test.zip",
+  "zip_sha256": "e97222e507007a321f1b97334a1158a796c22fe90ba9a569809a805573b62ca6",
+  "checks_receipt": "docs/competence/GAPS2_PLAYTEST_CHECKS.json",
+  "build_provenance": "docs/competence/GAPS2_PLAYTEST_BUILD_PROVENANCE.json",
+  "build_provenance_sha256": "a4f727b447241c83903f06f6707434d91db1bf99076be70239a718f12e2f7a80",
+  "toolchain": {
+    "dotnet_sdk": "8.0.426",
+    "csharp_compiler": "4.11.0-3.25569.22 (3fb752d4)"
+  },
+  "scope": "Cumulative #65-71 with per-fight buff appraisal and restraint diagnostic identities plus lazy formatting. Invocation selection, transfer margins and gameplay policies are unchanged. Offline ledger correction accompanies the source.",
+  "gameplay_status": "not played",
+  "archive_contents": [
+    "CompanionAI_Pathfinder.dll",
+    "Info.json"
+  ],
+  "release": false
+}
