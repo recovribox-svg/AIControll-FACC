@@ -835,6 +835,18 @@ namespace CompanionAI_Pathfinder.Tactics
                 if (Fusion != null) fusionActionOrdinal++;
                 m_ActionTypes.Add(action.GetType().Name);
 
+                if (action is ContextActionSelectByValue selection)
+                {
+                    var floor = ReadValueSelection(selection);
+                    if (floor.Application != null)
+                    {
+                        if (selectedBuffFloors == null) selectedBuffFloors = new List<SelectedBuffFloor>(1);
+                        if (!selectedBuffFloors.Contains(floor)) selectedBuffFloors.Add(floor);
+                        Walk(floor.Actions, visited, abilityDepth, subject, depth + 1, guards);
+                    }
+                    continue;
+                }
+
                 // Conditional: each branch's effects only happen when the condition has that outcome for the target.
                 if (action is Conditional conditional)
                 {

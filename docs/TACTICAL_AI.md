@@ -6105,3 +6105,30 @@ The original raw enum-load failure remains separate. [Receipt](competence/SHIFTE
 same-input #67 comparison; [compiler/reference/source provenance](competence/SHIFTER_FORMS_BUILD_PROVENANCE.json).
 Frozen Shifter forms test ZIP MVID **`3a7db475-3b13-4362-a4dc-0fd20613e2c9`**; SDK 8.0.426 / Roslyn 4.11,
 UMM 0.33.2.0. Manifest remains 0.3.52. New gameplay/Unity performance is unplayed; no release or merge.
+
+## 176. Grapple-gap assessment and Frigid Touch common-buff selection (15 November 2026, Codex)
+
+[Assessment, native evidence, proposal review and replay](GRAPPLE_GAP_ASSESSMENT.md). Continue #68 `342dc27` on
+`codex/grapple-gap-review`, preserving #65-67, development `6b9be42`. The supplied logs are the same fusion2g1b
+inputs used for #67, module `e4f231af`, before G2/#68. Rows 501/521-522 and 4938 confirm the unread stagger; no Frigid
+or leap is issued and no AI victim header occurs. Do not present this as a new-package replay.
+
+The parser already walks ordinary conditionals. Frigid Touch instead selects one greatest-value array variant,
+last on ties, applying the same Staggered buff for one minute or one round. Read the common fixed-duration minimum
+only for a bounded exact native shape, without calculating a selector input or guessing a critical rate. Reuse native
+delivery/save/immunity/marginality/resource paths; preserve an upper-duration/refresh check for ally safety. No CC
+is fabricated from descriptors. Other selectors (SiroccoArea/ElementalAssessor) remain outside this common pattern.
+The newly visible buff exposes 168 Frigid saved configurations outside the existing failed-save-control boundary;
+they are explicitly withheld. The played no-save Runes/Frigid combination gains its actual stagger.
+
+Holder alternatives/safety need a consistent, bounded counterfactual model, without candidate-value feedback,
+double-counted danger or fictional restored actions. Monster victim concentration uses the actual target handler:
+10 + holder CMB + spell level, not CMD; native automatic escape already exists. A separate cached-quote leap-mode
+repair is feasible without widening landing/path budgets. The assessment ranks and scopes these follow-ups.
+Checked source `fad03c4`, MVID `b0da0523-bbc9-4044-8228-18ed4c118bfa`: 855 + 27 + 3 + 11 tests; real-reference
+Release 0 warnings/errors; VALUE-SELECTION 24 and inherited native checks pass, providers 98/14/10. Two added
+native flag references resolve. [Receipt](competence/FRIGID_SELECTION_CHECKS.json) / compiler and input hashes
+record the matrix comparison: 7,306/15,494 admitted, 1,166 admitted cone components resolved, 3,118 joint metadata
+profiles. Only the two Frigid ability verdicts gain Soft control. Original raw enum failure remains separate.
+No intermediate ZIP; the follow-up leap task supplies a cumulative test. Manifest remains 0.3.52, unplayed.
+No movement, commitment, retreat, pathfinding or stuck-cancellation change.

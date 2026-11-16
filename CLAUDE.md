@@ -8,7 +8,27 @@ Read [CONTRIBUTING.md](CONTRIBUTING.md) for shared branch ownership, Codex pull 
 Codex works on task branches and targets pull requests at `claude/dreamy-pasteur-b9h3rn`; Claude reviews and integrates them there.
 Keep `main` for author-authorized releases. Read [AGENTS.md](AGENTS.md) when coordinating agent work.
 
-**Current handover (15 November 2026, Codex): Shifter form verification on `codex/shifter-form-validation`, continuing
+**Current handover (15 November 2026, Codex): grapple-gap assessment and Frigid common-buff reader on
+`codex/grapple-gap-review`, stacked on #68 `342dc27` -> #67 -> #66 -> #65, development `6b9be42`; unplayed.**
+Read [assessment/proposal verification/replay](docs/GRAPPLE_GAP_ASSESSMENT.md), §176. Latest supplied logs hash-match
+the old fusion2g1b pair for #67; no G2/#68 acceptance claimed. Native Frigid selector alternatives apply the same
+buff for one minute or one round. The existing conditional walk was not the missing mechanism. Read only a verified
+common fixed minimum; retain the longer/refresh risk for allies, native immunity/delivery and existing policies.
+Do not guess critical rates or inject CC from a descriptor. Lazy per-profile metadata; empty ordinary safety fast path.
+Checked source **`fad03c4`**, MVID **`b0da0523-bbc9-4044-8228-18ed4c118bfa`**: 855 unit + 27 inventory + 3 script
+and 11 ledger tests; real-reference Release 0 warnings/errors; ProfileAudit 44,639 loaded / 4,807 abilities, no load/
+reader failures or prerequisite skips; VALUE-SELECTION 24, inherited checks and native providers 98/14/10 pass.
+Two added native flag references resolve. [Receipt](docs/competence/FRIGID_SELECTION_CHECKS.json),
+[compiler/reference provenance](docs/competence/FRIGID_SELECTION_BUILD_PROVENANCE.json),
+[input hashes](docs/competence/FRIGID_SELECTION_INPUTS.json). Ordinary empty-selector safety: 10,000 warm calls,
+zero bytes, not Unity timing. Only the two Frigid ability verdicts gain Soft control. No intermediate ZIP; a
+cumulative package follows with the separate leap-mode repair. Manifest 0.3.52; source-frozen DLL retained.
+168 saved Frigid templates now expose the existing unsupported unconditional-control boundary and are withheld;
+the played no-save Runes combination gains stagger. General per-outcome control remains a Fusion follow-up.
+Leaps have a feasible separate cached-quote repair; holder cost/safety and monster help need the bounded native model
+and next-play evidence set out in the assessment. No additional files needed for this slice. No movement or release.
+
+**Earlier handover (15 November 2026, Codex): Shifter form verification on `codex/shifter-form-validation`, continuing
 Claude's `730c6b6`, stacked on #67 `830d777` -> #66 -> #65; development base `6b9be42`. New behavior unplayed.**
 Read [form design, corrections and replay](docs/SHIFTER_FORM_DECISIONS.md), §174-175. Real supplied game references
 and exports are retained here; no re-upload is needed. SDK 8.0.426 / Roslyn 4.11. Checked source **`f00f4a6`**:

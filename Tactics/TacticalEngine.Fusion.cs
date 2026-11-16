@@ -121,6 +121,7 @@ namespace CompanionAI_Pathfinder.Tactics
 
         private static bool FusionControlCatches(TacticalContext ctx, AbilityData ability, AbilityProfile profile, UnitEntityData ally)
         {
+            if (SelectedBuffAllyRounds(ctx, ability, profile, ally) > 0f) return true;
             if (profile.RemovedBuffs.Any(ally.Buffs.HasFact)) return true;
             if (profile.BuffApplications.Any(a => a.PeriodicDamageOnly && !ally.Buffs.HasFact(a.Buff) &&
                 a.Applies(ability, ally) != EffectApplies.No && !CombatMath.BuffImmune(ally, a.Buff, ability))) return true;
