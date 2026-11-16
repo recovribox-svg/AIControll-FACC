@@ -226,6 +226,7 @@ namespace CompanionAI_Pathfinder.Tactics
         internal CombatMath.FusionDamageRead FusionDamageScratch;
         internal ValueModel.ControlEnvelope FusionControlScratch;
         internal ValueModel.ControlEnvelope FusionControlPassScratch; // ★ Fusion F4: the passed-save outcome
+        internal SharedHdControl.Forecast FusionSharedHd; // ★ Fusion F7: this aim's pool forecast, for one ScoreAbility call
         internal List<Kingmaker.UnitLogic.Buffs.Blueprints.BlueprintBuff> FusionBuffScratch;
         /// <summary>
         /// ★ v0.3.28 test 11: the revive reading of the heal valued last for (ability, ally) this decision, printed with the
@@ -3262,8 +3263,7 @@ namespace CompanionAI_Pathfinder.Tactics
                 AbilityDiscovery.ReportOnce("fusion-unsupported|" + AbilityDiscovery.Key(ability),
                     () => profile.FusionUnsupported != null
                         ? $"[Fusion] {ability.Name}: {profile.FusionUnsupported}; unsupported forecast, cast withheld"
-                        : $"[Fusion] {ability.Name}: {fusionWithheld} " +
-                          $"({profile.FusionOutcomeMetadataReason ?? (ability.ShadowSpellSettings != null ? "shadow copy" : "unknown")}); cast withheld");
+                        : $"[Fusion] {ability.Name}: {fusionWithheld} ({FusionWithheldDetail(ability, profile) ?? "unknown"}); cast withheld");
                 return none;
             }
             if (profile.Fusion != null)
@@ -3831,6 +3831,7 @@ namespace CompanionAI_Pathfinder.Tactics
             // ★ v0.3.29 test 5: allies counted because their walk takes them into the area while it is cast (AlliesWalkingInto).
             List<UnitEntityData> walkingIn = null;
             SharedHdControl.TryForAim(ability, profile, actualAim, out var sharedHd);
+            ctx.FusionSharedHd = profile.Fusion != null ? sharedHd : null; // ★ Fusion F7: read by TryFusionControlRounds
             EffectApplies? ForecastApplies(Kingmaker.UnitLogic.Buffs.Blueprints.BlueprintBuff buff, UnitEntityData recipient,
                                           bool friendly = false)
             {
@@ -3888,7 +3889,8 @@ namespace CompanionAI_Pathfinder.Tactics
                 ? affectedAllies.Where(ctx.DownedAllies.Contains).ToList()
                 : UnitsAround(ctx.DownedAllies, target.Position, profile.AoERadius)
                     .Where(u => profile.AreaReaches(ability, u)).ToList();
-            if (sharedHd?.Supported == true && !profile.IsProjectileCone)
+            // ★ Fusion F7: not for a fused pool - its other payload reaches every recipient, covered or not.
+            if (sharedHd?.Supported == true && !profile.IsProjectileCone && profile.Fusion == null)
             {
                 // Progressive viability and boss bypass use the same reachable-control recipients as valuation.
                 geometryChance = 0f;
@@ -4367,7 +4369,9 @@ namespace CompanionAI_Pathfinder.Tactics
                     if (fusionOutcomes && !profile.DealsDamage) FusionValueFallback(ability, profile);
                     // ★ Fusion F4: the forecast below weights every buff by the fail chance. A fusion with an effect on a
                     // passed save or on both outcomes gets no control credit for a recipient the joint value cannot price.
-                    if (profile.FusionOutcomeEffectLocation != null) continue;
+                    // ★ Fusion F7: nor for a pooled fusion - the forecast below would credit a sleep that the cast's own later
+                    // damage wakes.
+                    if (profile.FusionOutcomeEffectLocation != null || profile.FusionSharedHd) continue;
                     var buffs = profile.TargetBuffs.Where(b => (ForecastApplies(b, enemy) ?? profile.BuffAppliesTo(b, ability, enemy)) != EffectApplies.No &&
                                                                !CombatMath.BuffImmune(enemy, b, ability)).ToList();
                     // ★ v0.3.21: a pit holds by itself, with or without a buff.

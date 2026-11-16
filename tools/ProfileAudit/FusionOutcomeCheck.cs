@@ -102,9 +102,9 @@ namespace ProfileAudit
                 Gate("Fireball", "Disintegrate", SavingThrowType.Reflex, "ContextConditionCompareTargetHP");
                 Gate("Fireball", "ReducePerson", SavingThrowType.Reflex, "carrier");
                 Gate("Fireball", "Enervation", SavingThrowType.Reflex, "non-HP damage");
-                var sleep = Fuse("Snowball", "Sleep", SavingThrowType.Will);
-                Check((string)unsupported.GetValue(AbilityProfile.Get(sleep)) == "shared Hit Dice selection" && Withheld(sleep) == "shared Hit Dice selection",
-                    "an unrelated structural refusal (played Snowball/Sleep) is unchanged and reported as itself");
+                var line = Fuse("LightningBolt", "Fireball", SavingThrowType.Reflex);
+                Check((string)unsupported.GetValue(AbilityProfile.Get(line)) == "line delivery geometry" && Withheld(line) == "line delivery geometry",
+                    "an unrelated structural refusal (line delivery) is unchanged and reported as itself");
 
                 // 4. Unchanged: a fusion with failed-branch control only carries no outcome requirement.
                 foreach (var a in new[] { Fuse("Slow", "ConfusionSpell", SavingThrowType.Will), Fuse("IncendiaryRunes", "Snowball", SavingThrowType.Reflex),

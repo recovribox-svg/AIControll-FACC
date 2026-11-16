@@ -120,6 +120,7 @@ namespace CompanionAI_Pathfinder.Tactics
             internal readonly HashSet<BlueprintBuff> Buffs = new HashSet<BlueprintBuff>();
             internal SavingThrowType SaveType;
             internal ContextActionApplyBuff Application;
+            internal bool Fused; // ★ Fusion F7: under a root save the nested save rolls nothing (ContextActionSavingThrow)
         }
 
         private static readonly Dictionary<BlueprintAbility, Plan> Plans = new Dictionary<BlueprintAbility, Plan>();
@@ -144,8 +145,9 @@ namespace CompanionAI_Pathfinder.Tactics
             var controlled = profile.SharedHdBuffs;
             if (controlled.Count == 0) return false; // This adapter prices dependent control buffs, not shared-HD damage.
             forecast = new Forecast(false, controlled);
-            if (aim == null || ability.ShadowSpellSettings != null || ability.MagicHackData != null)
+            if (aim == null || ability.ShadowSpellSettings != null)
                 return Fail(ability, "unsupported aim or substituted delivery");
+            if (ability.MagicHackData != null) return TryForFusedAim(ability, profile, aim, controlled, ref forecast);
             if (!Plans.TryGetValue(ability.Blueprint, out var plan))
                 Plans[ability.Blueprint] = plan = Build(ability.Blueprint, profile);
             if (plan.Failure != null) return Fail(ability, plan.Failure);
@@ -276,7 +278,7 @@ namespace CompanionAI_Pathfinder.Tactics
                 else if (type == typeof(ContextActionSavingThrow))
                 {
                     var save = (ContextActionSavingThrow)action;
-                    if (save.Type != builder.SaveType || save.Type == SavingThrowType.Unknown || save.FromBuff ||
+                    if ((!builder.Fused && (save.Type != builder.SaveType || save.Type == SavingThrowType.Unknown)) || save.FromBuff ||
                         save.HasCustomDC || save.UseDCFromContextSavingThrow || save.MakeSaveAlsoForMagicHack ||
                         SaveAdjustments == null || (SaveAdjustments.GetValue(save) as Array)?.Length > 0)
                         throw new InvalidOperationException("unsupported control save");
@@ -308,6 +310,270 @@ namespace CompanionAI_Pathfinder.Tactics
             if (nodes.Count == 1 && nodes[0] is Branch) return nodes[0];
             if (nodes.Count == 2 && nodes[0] is Save && nodes[1] is Debit) return new SaveThenDebit();
             throw new InvalidOperationException("requires a save followed by unconditional shared-HD debit");
+        }
+
+        // ---------------------------------------------------------------------------------------------------------
+        // ★ Fusion F7 (docs/FUSION_SLEEP_POOL.md): the same forecast for a fused cast.
+        // Native facts (decompiled): AbilityExecutionContext is built on the HOLDER ability (ability.Blueprint), and
+        // MechanicsContext.RecalculateSharedValues reads that blueprint's ContextCalculateSharedValue components. The
+        // pool is therefore the holder's own roll (stock slots: 2d6), not the source spell's number (Sleep: 4). The
+        // deliver blueprint supplies the recipients (AbilityExecutionProcess: its AbilityTargetsAround, else the one
+        // delivery target), and both source payloads run for each recipient under one root save.
+        private enum FusedDelivery { Around, Single }
+
+        private sealed class FusedPlan
+        {
+            internal string Failure;
+            internal bool Reported;
+            internal FusedDelivery Delivery;
+            internal AbilityTargetsAround Selector;
+            internal AbilitySharedValue SharedValue;
+            internal Node Root;
+            internal bool IgnoreCaster;
+            internal bool Rolled;          // the game maximizes only a die above d1 (ContextValueHelper.CalculateDiceValue)
+            internal int MaximizedBudget;
+            internal int[] Budgets;        // ascending
+            internal float[] Chances;
+        }
+
+        /// <summary>Null when the fused pool can be forecast from metadata; else why not. Cached on the profile.</summary>
+        internal static string FusedRefusal(AbilityData ability, AbilityProfile profile)
+        {
+            if (ability?.Blueprint == null || profile?.Fusion == null || !profile.FusionSharedHd) return null;
+            if (ability.ShadowSpellSettings != null) return "shadow copy";
+            return FusedPlanOf(ability, profile).Failure;
+        }
+
+        // The profile is specific to one holder and one configuration (AbilityProfile.FusionEntry.Matches).
+        private static FusedPlan FusedPlanOf(AbilityData ability, AbilityProfile profile)
+        {
+            if (profile.FusionSharedHdPlan is FusedPlan plan) return plan;
+            profile.FusionSharedHdPlan = plan = BuildFused(ability.Blueprint, profile);
+            return plan;
+        }
+
+        private static AbilityEffectRunAction PayloadOf(BlueprintAbility spell) =>
+            spell?.GetComponent<AbilityEffectRunAction>() ??
+            spell?.GetComponent<AbilityEffectStickyTouch>()?.TouchDeliveryAbility?.GetComponent<AbilityEffectRunAction>();
+
+        private static bool UsesPool(GameAction[] actions, int depth)
+        {
+            if (actions == null) return false;
+            if (depth > 12) throw new InvalidOperationException("shared graph is too deep");
+            foreach (var action in actions)
+            {
+                if (action == null) continue;
+                if (action is ContextActionChangeSharedValue) return true;
+                if (action is Conditional branch && branch.ConditionsChecker?.Conditions?.Any(c =>
+                        c is ContextConditionHitDice hd && hd.AddSharedValue) == true) return true;
+                // A damage action that stores its result would overwrite the pool between recipients.
+                if (action is ContextActionDealDamage deal && (deal.WriteResultToSharedValue ||
+                        deal.WriteRawResultToSharedValue || deal.WriteCriticalToSharedValue)) return true;
+                foreach (var child in AbilityProfile.ChildActionLists(action))
+                    if (UsesPool(child, depth + 1)) return true;
+            }
+            return false;
+        }
+
+        private static FusedPlan BuildFused(BlueprintAbility holder, AbilityProfile profile)
+        {
+            var plan = new FusedPlan();
+            try
+            {
+                var hack = profile.Fusion;
+                if (profile.Save == SavingThrowType.Unknown)
+                    throw new InvalidOperationException("no root save: the pool spell's own save would be a second roll");
+                if (hack.IsTouch || hack.AdditionalAoeBlueprint != null)
+                    throw new InvalidOperationException("touch or additional-area delivery is outside this forecast");
+                var payloads = new[] { PayloadOf(hack.Spell1), PayloadOf(hack.Spell2) };
+                if (payloads.Any(p => p == null)) throw new InvalidOperationException("source spell without a native RunAction payload");
+                var pooled = payloads.Where(p => UsesPool(p.Actions?.Actions, 0)).ToArray();
+                if (pooled.Length != 1)
+                    throw new InvalidOperationException("requires exactly one source spell that reads or writes a shared value");
+                var builder = new Builder { SaveType = profile.Save, Fused = true };
+                plan.Root = ReadSequence(pooled[0].Actions, builder, 0);
+                if (builder.Conditions.Count != 1 || builder.Debits.Count != 1 ||
+                    !builder.Conditions.SetEquals(builder.Debits) || builder.Buffs.Count != 1 ||
+                    !builder.Buffs.SetEquals(profile.SharedHdBuffs))
+                    throw new InvalidOperationException("requires one shared key and one dependent target buff");
+                plan.SharedValue = builder.Conditions.Single();
+
+                var calculators = holder.GetComponents<ContextCalculateSharedValue>().Where(v => v.ValueType == plan.SharedValue).ToArray();
+                if (calculators.Length != 1 || calculators[0].GetType() != typeof(ContextCalculateSharedValue))
+                    throw new InvalidOperationException("the holder ability has no single native source for the pool");
+                var value = calculators[0].Value;
+                if (value?.DiceCountValue == null || value.BonusValue == null ||
+                    value.GetType() != typeof(ContextDiceValue) ||
+                    value.DiceCountValue.ValueType != ContextValueType.Simple || value.BonusValue.ValueType != ContextValueType.Simple)
+                    throw new InvalidOperationException("the holder's pool is not a fixed dice expression");
+                Distribution(plan, value.DiceCountValue.Value, (int)value.DiceType, value.BonusValue.Value, calculators[0].Modifier);
+
+                var delivery = hack.DeliverBlueprint;
+                // AbilityEffectRunAction.Apply: a fused cast takes IgnoreCaster from the deliver blueprint.
+                plan.IgnoreCaster = delivery.GetComponent<AbilityEffectRunAction>()?.IgnoreCaster ?? false;
+                if (delivery.GetComponents<AbilityCustomLogic>().Any())
+                    throw new InvalidOperationException("custom delivery is outside this forecast");
+                var selectors = delivery.GetComponents<AbilitySelectTarget>().ToArray();
+                var deliveries = delivery.GetComponents<AbilityDeliverEffect>().ToArray();
+                if (selectors.Length == 1 && selectors[0].GetType() == typeof(AbilityTargetsAround))
+                {
+                    if (profile.NeedsAttackRoll || deliveries.Length > 1 || deliveries.Any(d => d.GetType() != typeof(AbilityDeliverDelay)))
+                        throw new InvalidOperationException("custom or repeated delivery is outside this forecast");
+                    plan.Selector = (AbilityTargetsAround)selectors[0];
+                    var selection = new Builder();
+                    if (SelectorCondition == null || !SafeChecker(SelectorCondition.GetValue(plan.Selector) as ConditionsChecker, selection) ||
+                        selection.Conditions.Count != 0)
+                        throw new InvalidOperationException("unsupported native selector condition");
+                    if (plan.Selector.GetSpreadSpeed().Meters != 0f)
+                        throw new InvalidOperationException("spread delivery is outside this forecast");
+                    plan.Delivery = FusedDelivery.Around;
+                }
+                else if (selectors.Length == 0)
+                {
+                    // One clicked recipient, reached directly or by exactly one simple projectile.
+                    if (deliveries.Length > 1 || deliveries.Length == 1 && !(deliveries[0] is AbilityDeliverProjectile shot &&
+                            shot.GetType() == typeof(AbilityDeliverProjectile) && shot.Type == AbilityProjectileType.Simple &&
+                            !shot.UseMaxProjectilesCount && shot.Projectiles.Length == 1))
+                        throw new InvalidOperationException("cone, line, chain or repeated delivery is outside this forecast");
+                    plan.Delivery = FusedDelivery.Single;
+                }
+                else throw new InvalidOperationException("unsupported native recipient selection");
+            }
+            catch (Exception ex) { plan.Failure = ex is InvalidOperationException ? ex.Message : "pool reader " + ex.GetType().Name; }
+            return plan;
+        }
+
+        // Exact distribution of (count d sides + bonus) * modifier, truncated as the game does.
+        private static void Distribution(FusedPlan plan, int count, int sides, int bonus, double modifier)
+        {
+            if (count < 0 || count > 16 || sides < 0 || sides > 20) throw new InvalidOperationException("pool dice are outside the forecast bound");
+            int faces = sides >= 1 ? sides : 0, dice = faces == 0 ? 0 : count;
+            var sums = new double[dice * faces + 1];
+            sums[0] = 1.0;
+            for (int d = 0; d < dice; d++)
+            {
+                var next = new double[sums.Length];
+                for (int s = 0; s <= d * faces; s++)
+                {
+                    if (sums[s] == 0.0) continue;
+                    for (int f = 1; f <= faces; f++) next[s + f] += sums[s] / faces;
+                }
+                sums = next;
+            }
+            var byBudget = new SortedDictionary<int, double>();
+            for (int s = 0; s < sums.Length; s++)
+            {
+                if (sums[s] <= 0.0) continue;
+                int budget = (int)((s + bonus) * modifier);
+                if (budget < 0 || budget > SharedHdBudget.MaxBudget) throw new InvalidOperationException("pool is outside the forecast bound");
+                byBudget.TryGetValue(budget, out double p);
+                byBudget[budget] = p + sums[s];
+            }
+            plan.Budgets = byBudget.Keys.ToArray();
+            plan.Chances = byBudget.Values.Select(p => (float)p).ToArray();
+            plan.Rolled = sides > 1 && count > 0;
+            plan.MaximizedBudget = (int)((count * Math.Max(0, sides) + bonus) * modifier);
+            if (plan.MaximizedBudget < 0 || plan.MaximizedBudget > SharedHdBudget.MaxBudget)
+                throw new InvalidOperationException("pool is outside the forecast bound");
+        }
+
+        private static bool TryForFusedAim(AbilityData ability, AbilityProfile profile, TargetWrapper aim,
+            IReadOnlyCollection<BlueprintBuff> controlled, ref Forecast forecast)
+        {
+            var plan = FusedPlanOf(ability, profile);
+            if (plan.Failure != null) return FailFused(ability, plan, plan.Failure);
+            try
+            {
+                // One actual-aim context on the holder ability, as the game builds it; never activated or cached.
+                var context = CombatMath.CreateContext(ability, aim);
+                if (context == null) return FailFused(ability, plan, "no read-only cast context");
+                int previous = context[plan.SharedValue];
+                try
+                {
+                    List<UnitEntityData> selected;
+                    if (plan.Delivery == FusedDelivery.Around)
+                    {
+                        using (context.GetDataScope(aim))
+                            selected = plan.Selector.Select(context, aim).Select(t => t?.Unit)
+                                .Take(SharedHdBudget.MaxRecipients + 1).ToList();
+                        if (selected.Count > SharedHdBudget.MaxRecipients || selected.Any(u => u == null) ||
+                            selected.Distinct().Count() != selected.Count)
+                            return FailFused(ability, plan, "unsupported native recipient set");
+                    }
+                    else
+                    {
+                        if (aim.Unit == null) return FailFused(ability, plan, "no clicked recipient");
+                        selected = new List<UnitEntityData> { aim.Unit };
+                    }
+                    bool maximized = plan.Rolled && ability.HasMetamagic(Kingmaker.UnitLogic.Abilities.Metamagic.Maximize);
+                    int top = maximized ? plan.MaximizedBudget : plan.Budgets[plan.Budgets.Length - 1];
+                    var recipients = new List<SharedHdBudget.Recipient>(selected.Count);
+                    foreach (var unit in selected)
+                    {
+                        var recipient = unit;
+                        int cost = recipient.Descriptor.Progression.CharacterLevel;
+                        float pass = recipient == ability.Caster.Unit ? 1f
+                            : CombatMath.SpellResistancePass(ability.Caster.Unit, recipient, ability);
+                        // A visit depends only on the recipient and the pool left: read once, reused by every pool roll.
+                        var seen = new SharedHdBudget.Visit?[top + 1];
+                        recipients.Add(new SharedHdBudget.Recipient(pass, remaining =>
+                        {
+                            if (remaining < 0 || remaining > top) throw new InvalidOperationException("pool state out of range");
+                            if (seen[remaining].HasValue) return seen[remaining].Value;
+                            SharedHdBudget.Visit visit;
+                            if (plan.IgnoreCaster && recipient == ability.Caster.Unit) visit = new SharedHdBudget.Visit(false, false, cost);
+                            else
+                            {
+                                int saved = context[plan.SharedValue];
+                                try
+                                {
+                                    context[plan.SharedValue] = remaining;
+                                    var state = new ReadState { Context = context, SharedValue = plan.SharedValue, Cost = cost };
+                                    using (context.GetDataScope(new TargetWrapper(recipient))) plan.Root.Read(state);
+                                    if (state.Debits > 1 || state.ReachesBuff != (state.Debits == 1))
+                                        throw new InvalidOperationException("shared debit is not paired with the control save");
+                                    visit = new SharedHdBudget.Visit(state.ReachesBuff, state.Debits == 1, cost);
+                                }
+                                finally { context[plan.SharedValue] = saved; }
+                            }
+                            seen[remaining] = visit;
+                            return visit;
+                        }));
+                    }
+                    var total = new float[selected.Count];
+                    if (maximized)
+                    {
+                        if (!SharedHdBudget.TryForecast(top, recipients, out var certain))
+                            return FailFused(ability, plan, "unsupported shared-budget transition or work bound");
+                        certain.CopyTo(total, 0);
+                    }
+                    else
+                    {
+                        for (int k = 0; k < plan.Budgets.Length; k++)
+                        {
+                            if (!SharedHdBudget.TryForecast(plan.Budgets[k], recipients, out var eligibility))
+                                return FailFused(ability, plan, "unsupported shared-budget transition or work bound");
+                            for (int i = 0; i < total.Length; i++) total[i] += plan.Chances[k] * eligibility[i];
+                        }
+                    }
+                    var values = new Dictionary<UnitEntityData, float>();
+                    for (int i = 0; i < selected.Count; i++) values.Add(selected[i], Math.Min(1f, total[i]));
+                    forecast = new Forecast(true, controlled, values);
+                    return true;
+                }
+                finally { context[plan.SharedValue] = previous; }
+            }
+            catch (Exception ex) { return FailFused(ability, plan, "native budget query failed: " + ex.GetType().Name); }
+        }
+
+        private static bool FailFused(AbilityData ability, FusedPlan plan, string reason)
+        {
+            if (!plan.Reported)
+            {
+                plan.Reported = true;
+                Main.Log($"[HD] {ability.Name}: fused shared-HD control credit withheld ({reason})");
+            }
+            return true;
         }
 
         private static bool SafeChecker(ConditionsChecker checker, Builder builder)
