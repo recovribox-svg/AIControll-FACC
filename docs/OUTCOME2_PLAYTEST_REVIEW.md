@@ -50,9 +50,9 @@ recipient debits, metamagic, source order and native Sleep target/effect rules a
 recipients are not inserted into the native pool or assigned future control credit. Existing damage valuation,
 immunities, Selective behavior and Avoid Friendly Fire decide the harm normally.
 
-Both modes use the same score path; the existing walking reader returns immediately in TB. This adds no path
-search, world scan, rule/context forecast or persistent actor cache. It reuses the existing per-decision body/command
-snapshot and bounded walk sampling on the newly restored F7 path. It is an additional safety check, not a claim of
+Both modes use the same score path; the existing walking reader returns immediately in TB. This adds no independent path/world/forecast pass or persistent actor cache. It reuses the existing per-decision
+body/command snapshot and bounded walk sampling on the newly restored F7 path. Newly recognized walking
+recipients undergo the existing damage/immunity valuation and can add those per-recipient forecasts. It is an additional safety check, not a claim of
 zero extra work or a measured Unity speedup. Eight ProfileAudit checks invoke the actual policy on real profiles and
 verify the compiled route; they do not pretend to execute native actors or walks.
 
@@ -80,7 +80,7 @@ verify the compiled route; they do not pretend to execute native actors or walks
 ## Replay and next work
 
 The checked successor package/receipt is recorded in the latest `test-builds/README.md` entry and
-`docs/competence/OUTCOME2_PLAYTEST_CHECKS.json`; manifest remains 0.3.52. New repair requires gameplay testing.
+`docs/competence/OUTCOME2_PLAYTEST_CHECKS.json`; manifest is author-requested 0.3.60. New repair requires gameplay testing.
 
 1. RT: with Avoid Friendly Fire on, aim a broad damaging Sleep fusion where an ally already has a walk through
    its burst. Expect another aim or no cast, as for the equivalent non-pool damaging area. The corrected branch

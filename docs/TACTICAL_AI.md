@@ -6466,11 +6466,12 @@ Combat records damage to allies from fusion bursts. F7's successful pool forecas
 walking-in ally reader. `ForecastWalkingAreaAllies` restores it for broad-targeted fusions' independent payload,
 without predicting future pool debits/control or altering native Sleep's target/effect rules. Ordinary pool and
 enemy-only delivery retain selection. Both modes share scoring; the existing walking reader is RT-only. No new
-path, rule, context or world pass, persistent actor cache, movement/cancellation policy or scoring constant.
+independent path/world/forecast pass, persistent actor cache, movement/cancellation policy or scoring constant.
+Newly recognized walking recipients use the existing per-recipient damage/immunity valuation.
 Eight added real-profile/compiled-route audit checks; full validation and frozen package identity follow.
 
 This is a confirmed source regression, not a replay of all recorded geometry. A unit-targeted burst may follow a
 moving enemy into stationary allies after selection. Keep that as a separate native phase/anchor/coordination
 project; do not interrupt paid casts or blacklist moving targets on a guessed refund/path. The no-reach observer
 message at AI 1646 conflicts with apparent target damage in the combat log; retain the controlled replay item.
-New repair is unplayed; manifest remains 0.3.52, no main/tag/release. Warm ability work remains material.
+New repair is unplayed; manifest is author-requested 0.3.60, no main/tag/release. Warm ability work remains material.

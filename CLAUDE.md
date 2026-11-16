@@ -20,12 +20,12 @@ settle/stacking violation; no new cap or assignment policy.
 
 Friendly fusion damage is recorded. F7 wrongly disabled existing walking-in ally safety whenever a pool forecast
 succeeded. A broad fused area now retains that check for its independent payload. Native pool/order/eligibility,
-Sleep targeting, Selective/immunity/damage policy remain. No new path/rule/context/world pass, persistent actor cache,
+Sleep targeting, Selective/immunity/damage policy remain. No new independent path/world/forecast pass or persistent actor cache,
 movement or cancellation policy. Eight production-profile/route audit checks cover the correction. Moving burst
 centres after selection are a separate material limitation; do not promise this repairs every recorded friendly hit.
 A no-reach message and combat damage to the apparent target also need a controlled observer replay, not a guessed
 blocking change. Warm ability costs, missing summon trace terminals and prior unplayed replays remain documented.
-Validation/package receipt and checked identity follow; manifest stays 0.3.52. No main/tag/release.
+Validation/package receipt and checked identity follow; manifest stays 0.3.60. No main/tag/release.
 
 **Earlier handover (16 November 2026, Codex): outcome1 review and author-authorized integration of all
 six open PRs #74-79 into development.** Read [review/integration/replay](docs/OUTCOME1_INTEGRATION.md),
