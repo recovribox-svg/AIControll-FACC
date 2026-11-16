@@ -1,0 +1,123 @@
+{
+  "date": "2026-11-16",
+  "timezone": "Europe/London",
+  "played_build": {
+    "build_label": "gaps2",
+    "version": "0.3.52",
+    "source_commit": "96108ba9af7c5564c7d7029715102076d159a7b7",
+    "dll": {
+      "assembly": "CompanionAI_Pathfinder, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null",
+      "mvid": "9ce04a64-f9a0-43ce-8275-5f1b0c7bbe73",
+      "sha256": "b1e5599846d4c9c1a611ff18cce69c7cb020a1d25ef92f6eaa434dd7e1d4f468",
+      "size": 1461248
+    },
+    "zip_sha256": "bf5e955f32cd91512495656e30528cc1afad11733af108bc523012527cd681fa"
+  },
+  "author_context": {
+    "toybox_spawns": true,
+    "rests": "between fights",
+    "grabber": "left under engine control"
+  },
+  "files": [
+    {
+      "name": "Log.txt",
+      "bytes": 1213344,
+      "sha256": "c1a46472612dbca759b6147c61951a3893ca1fcbd035cc99a79dbcc062688dac",
+      "lf_count": 5748,
+      "cr_count": 5748
+    },
+    {
+      "name": "combatLog.txt",
+      "bytes": 1259071,
+      "sha256": "a9f4432bcf37bb95229ca9662189a3a5ebe5d138fde6b9326a347fbf4ab59946",
+      "lf_count": 31003,
+      "cr_count": 35074
+    }
+  ],
+  "row_convention": "One-based LF-separated rows; bare CR does not increment cited combat rows.",
+  "encounters": 10,
+  "measured_decisions": {
+    "turn_based": 240,
+    "real_time": 1278
+  },
+  "commands": {
+    "issued": 572,
+    "ended": 572,
+    "turn_based": 145,
+    "real_time": 427,
+    "success_acted": 433,
+    "interrupt_acted": 83,
+    "interrupt_not_acted": 56,
+    "fail": 0,
+    "unmatched_or_superseded": 0
+  },
+  "ai_exceptions_recorded": 0,
+  "external_owner_blueprint_error_rows": [
+    1569,
+    4786
+  ],
+  "release_grapple": {
+    "issues": 5,
+    "success_acted": 5,
+    "mode": "RT",
+    "issue_rows": [
+      2961,
+      3523,
+      3606,
+      4967,
+      5059
+    ],
+    "turn_based_release_exercised": false
+  },
+  "invocation": {
+    "issues": 32,
+    "success_acted": 32,
+    "identity_evidence_counts": {
+      "ability-id": 27,
+      "holder-inferred": 4,
+      "unread": 1
+    },
+    "classes": {
+      "first-placement": 13,
+      "move-settled": 14,
+      "move-override": 2,
+      "unread": 1,
+      "holder-unseen": 2
+    },
+    "flags": {
+      "low-loss": 3,
+      "sibling": 2
+    },
+    "inferred_rows": [
+      3889,
+      4699,
+      5253,
+      5346
+    ],
+    "unread_rows": [
+      4387
+    ],
+    "slow_lann_rows": 0
+  },
+  "slow_decisions": {
+    "rows": 62,
+    "median_ms_of_slow_subset": 349,
+    "maximum_ms": 1730,
+    "with_collection_marker": 9
+  },
+  "execution_gaps": {
+    "griffon_shape_issues": 2,
+    "griffon_shape_modes": "RT only",
+    "leap_issues": 0,
+    "frigid_touch_issues": 0,
+    "faerie_fire_issues": 0,
+    "monster_held_ally_witness": false
+  },
+  "limits": [
+    "ToyBox spawns/rests and changing party/enemy states are not a controlled before/after performance comparison.",
+    "Ledger values are engine forecasts; four tiers are explicitly holder-inferred and one remains unidentified.",
+    "Logged issue rounds may differ from actual placement rounds when commands wait.",
+    "No source mutation, debug actor setup or Unity execution was performed by the offline ledger.",
+    "Raw logs remain private."
+  ]
+}

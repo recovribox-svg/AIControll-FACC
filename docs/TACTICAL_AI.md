@@ -6191,3 +6191,31 @@ and output/optional coverage paths. The original raw archive's enum mismatch rem
 The cumulative **gaps2** package keeps the frozen checked DLL; it is unplayed, manifest 0.3.52. Holder
 best-alternative/safety, monster victims, extra form facts, saved Frigid control, and actual leap/release execution
 retain the preceding documented boundaries. No merge, release or Unity speedup acceptance.
+
+## 179. gaps2 playtest: fight-scoped buff evidence and Invocation ledger (16 November 2026, Codex)
+
+[Review/evidence/replay](GAPS2_PLAYTEST_REVIEW.md), [input hashes](competence/GAPS2_PLAYTEST_INPUTS.json),
+[derived Invocation ledger](competence/GAPS2_INVOCATION_LEDGER.json). Continue the #71 -> #65 stack on current
+development `96dabaa` (#72 stock-data handover) in `codex/gaps2-playtest-review`; this task does not integrate the gameplay stack.
+The author confirms ToyBox spawns, rests between fights, Grabber left to the engine. Supplied gaps2 startup MVID
+`9ce04a64-f9a0-43ce-8275-5f1b0c7bbe73` matches source `96108ba`. Ten encounters, 240 TB / 1,278 RT measured decisions;
+all 572 command issues reconcile. No recorded AI Control exception. Five Release Grapple commands complete
+Success/acted in RT, with held restrictions and later recovered permissions, respecting spent actions/cooldowns.
+Independent Stun Bomb changes explain two release valuations. No actual TB release, leap or Frigid cast is observed.
+
+Invocation: 32 completed casts, ten initial distinct free placements. The old ledger loses four source IDs and
+silently reuses a fifth earlier-fight appraisal (7.1 instead of the current chosen 8.8). Its stale state falsely
+flags same-stat stacking. Correct analysis has 27 current direct IDs, four explicitly holder-inferred tiers and one
+unidentified tier; 13 first placements, 14 settled moves, two overrides, two holder-unseen, one unread. No identified
+move is below settling. The apparent cross-tier shortcut has the same eventual coverage, but would not clear the
+earlier holder's loss/move margin. Changes in targets/danger and combat spawning must not be replaced with hindsight.
+No new cast cap, scoring penalty or joint-assignment model is supported by this pair.
+
+Repair `buffwhy`/restraint diagnostic identities to include the fight as well as unit/round/option, with the same
+once-per-key bounded reporting and lazy formatting. Offline ledger state is caster-scoped, rejects stale appraisals,
+uses only a chosen decision and an unambiguous holder witness for labelled inference, and preserves uncertainty.
+Equal final stat coverage becomes a coverage alternative requiring earlier-value review, not a waste verdict.
+No targeting, movement, permission, scoring, resource or settling policy change; no new world/rule/path query or
+actor cache. The 62 slow rows (nine with collections) still show material warm ability work; no Lann slow row or
+Unity speedup claim. The checked-source receipt and diagnostic test package will distinguish offline validation
+from the supplied gameplay. Manifest remains 0.3.52; holder/form/saved-Frigid and actual leap/TB release limits remain.

@@ -27,7 +27,17 @@ namespace ProfileAudit
                 var refs = SaveBoostCheck.ReferencedMembers(observe).ToArray();
                 Check(!refs.Any(m => m.DeclaringType?.Namespace?.StartsWith("Kingmaker") == true || m.DeclaringType?.Namespace?.StartsWith("UnityEngine") == true),
                     "bounded memo has no game/Unity dependency or actor query");
+                var policy = assembly.GetType("CompanionAI_Pathfinder.Core.DiagnosticLogPolicy");
+                var roundNote = policy.GetMethod("RoundNoteKey", all);
+                string Key(int fight) => (string)roundNote.Invoke(null, new object[] { "buffwhy", fight, "Lann", 1, "Dexterity2:Lann" });
+                Check(Key(1) == Key(1) && Key(1) != Key(7),
+                    "the actual round-note identity repeats within a fight and is fresh for the next fight's same cast");
                 var engine = typeof(TacticalEngine);
+                var choose = engine.GetMethods(all).Single(m => m.Name == "Decide" && m.GetParameters().Any(p => p.ParameterType == typeof(bool)));
+                var chooseRefs = SaveBoostCheck.ReferencedMembers(choose).ToArray();
+                Check(chooseRefs.Count(m => m.DeclaringType == policy && m.Name == "RoundNoteKey") == 2 &&
+                      chooseRefs.Any(m => m.DeclaringType == typeof(CombatMemory) && m.Name == "get_Fight"),
+                    "both selected-buff and restraint diagnostics use the fight-scoped round identity in production");
                 var decision = SaveBoostCheck.ReferencedMembers(engine.GetMethod("LogDecision", all)).ToArray();
                 Check(Array.FindIndex(decision, m => m.Name == "WriteDecision") < Array.FindIndex(decision, m => m.Name == ".ctor" && m.DeclaringType == typeof(System.Text.StringBuilder)),
                     "production quiet-decision policy runs before StringBuilder construction");
