@@ -6338,3 +6338,18 @@ harnesses 98/14/10. Package `test-builds/AI-Control-FACC-v0.3.52-dev-sleep1-cf41
 
 **Not changed.** Ordinary Sleep, movement, target commitment, retreat, pathfinding, stuck handling, spell policies, the
 blocklist.
+
+## 185. F7 review: effective pool metamagic and friendly upper bound (16 November 2026, Codex)
+
+[Review/correction/replay](FUSION_POOL_SAFETY.md), [checks](competence/FUSION_POOL_SAFETY_CHECKS.json),
+[provenance](competence/FUSION_POOL_SAFETY_BUILD_PROVENANCE.json). Static review of #77 found two gaps; they are not
+observations from the older outcome1 build. Native dice calculation empowers the bonus-inclusive total, then applies
+the shared-value modifier. Pool forecasts now read effective context params, retain immutable normal/Empowered
+distributions and support native Maximize+Empower; they do not enable forbidden UI metamagic.
+
+Earlier fused damage can drop a pool spender, and a walking-in ally is absent from the current selector. Ordered
+current-state depletion therefore cannot establish friendly safety. Selected allies get a conservative any-budget
+native-guard upper bound, reusing the existing bounded visit memo; unknown/absent recipients are unsafe, native
+IgnoreCaster is retained. Enemy probabilities, ordinary Sleep and the metadata admission set are unchanged.
+Additional ally states may be read, within recipients × (top+1); no extra context, rule/selector/path pass or world
+scan. These new corrections need the integrated TB/RT replay; no live safety/performance acceptance is claimed.

@@ -6,6 +6,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
+using System.Runtime.CompilerServices;
 using CompanionAI_Pathfinder.Tactics;
 using Kingmaker.Blueprints;
 using Kingmaker.Blueprints.Classes.Spells;
@@ -96,6 +97,25 @@ namespace ProfileAudit
                       Math.Abs(budgets.Zip(chances, (b, c) => b * c).Sum() - 7f) < 1e-4f,
                     "the pool is the exact 2d6 distribution: 2 to 12, mean 7");
                 Check(plan != null && Of<bool>(plan, "Rolled") && Of<int>(plan, "MaximizedBudget") == 12, "a maximized cast reads the full 12, as the game does");
+                var empoweredBudgets = Of<int[]>(plan, "EmpoweredBudgets"); var empoweredChances = Of<float[]>(plan, "EmpoweredChances");
+                Check(empoweredBudgets.SequenceEqual(new[] { 3, 4, 6, 7, 9, 10, 12, 13, 15, 16, 18 }) &&
+                      empoweredChances.SequenceEqual(chances) && Of<int>(plan, "EmpoweredMaximizedBudget") == 18,
+                    "Empower uses the native integer-half distribution and Maximize plus Empower yields 18");
+                // Actual native calculator, maximized to avoid RNG/Rulebook/actors; params can contain automatic flags.
+                int Native(Metamagic meta, int count, int bonus)
+                {
+                    var contextFixture = (MechanicsContext)RuntimeHelpers.GetUninitializedObject(typeof(MechanicsContext));
+                    var parameters = (AbilityParams)RuntimeHelpers.GetUninitializedObject(typeof(AbilityParams));
+                    typeof(AbilityParams).GetField("<Metamagic>k__BackingField", Hidden).SetValue(parameters, meta);
+                    typeof(MechanicsContext).GetField("m_Params", Hidden).SetValue(contextFixture, parameters);
+                    return ContextValueHelper.CalculateDiceValue(Kingmaker.RuleSystem.DiceType.D6,
+                        new ContextValue { ValueType = ContextValueType.Simple, Value = count },
+                        new ContextValue { ValueType = ContextValueType.Simple, Value = bonus }, contextFixture);
+                }
+                Check(Native(Metamagic.Maximize, 2, 0) == 12 && Native(Metamagic.Maximize | Metamagic.Empower, 2, 0) == 18,
+                    "real native calculator confirms Maximize/Empower from effective context params without a caster or random roll");
+                Check(Native(Metamagic.Maximize | Metamagic.Empower, 0, 3) == 4,
+                    "real native d6 context empowers its bonus even when the dice count is zero");
                 foreach (var save in new[] { SavingThrowType.Will, SavingThrowType.Fortitude })
                 {
                     var snow = Fuse("Snowball", "Sleep", "Snowball", save);
@@ -146,12 +166,28 @@ namespace ProfileAudit
                 bool Calls(MethodInfo m, string name) => m != null && SaveBoostCheck.ReferencedMembers(m).Any(x => x.Name == name);
                 Check(Calls(control.GetMethod("TryForAim", Hidden), "TryForFusedAim"), "a fused aim is forecast by the fused pool reader, not refused");
                 var fused = control.GetMethod("TryForFusedAim", Hidden);
+                Check(SaveBoostCheck.ReferencedMembers(fused).Count(m => m.DeclaringType == typeof(MechanicsContext) && m.Name == "HasMetamagic") == 2 &&
+                      !SaveBoostCheck.ReferencedMembers(fused).Any(m => m.DeclaringType == typeof(AbilityData) && m.Name == "HasMetamagic"),
+                    "fused pool uses effective context Empower/Maximize rather than raw ability flags");
                 Check(Calls(fused, "TryForecast") && Calls(fused, "CreateContext") && Calls(fused, "Select") && !Calls(fused, "Trigger") && !Calls(fused, "Run"),
                     "the fused forecast reads one context and the native selector; it runs no action or rule");
                 Check(Calls(withheld, "FusedRefusal") && Calls(withheld, "FusionOutcomeModel"), "admission needs the pool plan and the joint value");
                 var rounds = engine.GetMethod("TryFusionControlRounds", Hidden);
                 Check(Calls(rounds, "Eligibility") && Calls(rounds, "PooledRounds") && Calls(rounds, "FusionDamageBefore"),
                     "the control reader weighs the pooled sleep by the forecast and by the cast's own damage order");
+                var friendly = engine.GetMethod("FusionControlCatches", Hidden);
+                var friendlyCalls = SaveBoostCheck.ReferencedMembers(friendly).ToArray();
+                Check(Array.FindIndex(friendlyCalls, m => m.Name == "MayCatchFriendly") <
+                      Array.FindIndex(friendlyCalls, m => m.Name == "TryFusionControlRounds"),
+                    "friendly upper/unknown safety precedes current ordered depletion");
+                var forecast = control.GetNestedType("Forecast", Hidden);
+                Check(Calls(forecast.GetMethod("MayCatchFriendly", Hidden), "FriendlyPoolCanReach") &&
+                      Calls(fused, "IsEnemy") && Calls(fused, "Evaluate"),
+                    "ally upper bound uses existing bounded visit reads; it never trusts a missing actor as safe");
+                var safety = (Func<bool, bool, bool, bool>)Delegate.CreateDelegate(typeof(Func<bool, bool, bool, bool>),
+                    typeof(SharedHdBudget).GetMethod("FriendlyPoolCanReach", Hidden));
+                Check(!safety(true, true, false) && safety(true, false, false) && safety(false, true, false) && safety(true, true, true),
+                    "compiled safety only clears a supported, known, intrinsically unreachable recipient");
                 var share = (Func<float, float, float, float>)Delegate.CreateDelegate(typeof(Func<float, float, float, float>),
                     typeof(ValueModel).GetMethod("PooledRounds", Hidden));
                 Check(Math.Abs(share(1f, 3f, 0.4f) - 1.8f) < 1e-5f && share(1f, 3f, 0f) == 1f && share(1f, 3f, 1f) == 3f,
@@ -159,7 +195,7 @@ namespace ProfileAudit
             }
             catch (Exception ex) { bad++; lines.Add("FUSION-POOL FAILED: " + ex.GetBaseException()); }
             failures = bad;
-            lines.Insert(0, $"FUSION-POOL {checks} checks, failures {bad}; actual holder/source/delivery graphs, pool plan metadata and compiled routes; no actor, context, selection, cast or Unity timing");
+            lines.Insert(0, $"FUSION-POOL {checks} checks, failures {bad}; graphs, metadata, compiled routes and native Max/Empower on inert params-only contexts; no actor, selection, cast or Unity timing");
             return lines;
         }
     }
