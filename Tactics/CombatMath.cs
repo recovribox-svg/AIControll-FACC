@@ -580,11 +580,14 @@ namespace CompanionAI_Pathfinder.Tactics
         /// and without Tabletop Tweaks (which replaces the vanilla implementation).
         /// </summary>
         public static bool EstimateCoupDeGrace(UnitEntityData unit, UnitEntityData target, out float damage, out float killChance)
+            => EstimateCoupDeGrace(unit, target, unit?.GetThreatHandMelee()?.MaybeWeapon, out damage, out killChance);
+
+        internal static bool EstimateCoupDeGrace(UnitEntityData unit, UnitEntityData target, ItemEntityWeapon weapon,
+                                                out float damage, out float killChance)
         {
             damage = 0f;
             killChance = 0f;
-            var weapon = unit?.Body?.PrimaryHand?.MaybeWeapon;
-            if (weapon == null || target == null) return false;
+            if (unit == null || weapon?.Blueprint?.IsMelee != true || target == null) return false;
             try
             {
                 var stats = Rulebook.Trigger(new RuleCalculateWeaponStats(unit, weapon));

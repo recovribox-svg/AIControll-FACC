@@ -177,6 +177,7 @@ namespace CompanionAI_Pathfinder.GameInterface
                 }
 
                 CommandTrace.Track(unit, command, label, hasPath ? pathLength : (float?)null);
+                Tactics.CoupDeGraceDelivery.NoteIssued(unit, command);
                 return true;
             }
             catch (Exception ex)
@@ -246,6 +247,8 @@ namespace CompanionAI_Pathfinder.GameInterface
             // ApproachRadius (UnitAttack/UnitUseAbility.Init), which we need before path-finding.
             if (command.Executor == null)
                 command.Init(unit);
+
+            if (!Tactics.CoupDeGraceDelivery.TryPrepare(unit, command, out failure)) return false;
 
             if (NeedsPrecomputedPath(unit, command) || (preflight && NeedsTemporaryApproachPath(unit, command)))
             {

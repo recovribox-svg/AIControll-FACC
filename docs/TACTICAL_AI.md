@@ -6279,3 +6279,32 @@ Gaps2 contains no issued Coup or recorded summon takeover. The native first-weap
 native/TTT melee delivery expose a mismatch to test; the report proposes a shared contract and focused replay,
 not a claimed reproduced fix. No movement policy, runtime code, version, binary or package change. No fresh
 build/gameplay acceptance is claimed; the advanced coder next produces one evidence-based implementation plan.
+
+## 181. Coup de Grace uses its delivering hand (16 November 2026, Codex)
+
+The author approved implementing the range inconsistency identified in the preceding tactical-expansion research.
+[Evidence, implementation and TB/RT replay](COUP_DE_GRACE_REACH.md). Native Weapon ability range uses `GetFirstWeapon`,
+while stock Coup delivers through `GetThreatHandMelee`; TTT's replacement uses `GetThreatHand`. Explicit-target
+execution does not add a distance check. A ranged range supplier and melee delivering limb can disagree; gaps2
+contains no issued Coup and cannot confirm the reported summon episode.
+
+AI Control now recognizes those exact stock/TTT delivery shapes, selects their actual native hand, and requires
+that hand to be melee. Appraisal, damage estimate, sleeper preservation and final initialized command radius use
+the delivering weapon. Radius is bounded by both the native ability and native weapon radius, including both
+bodies, without extending a stricter limit. Shared preview/final preparation rechecks the current hand and native
+target legality before path preparation. Unknown/ambiguous routes and TTT selecting a ranged Snap Shot hand are
+withheld by the AI. Native/manual commands are not patched. Existing action economy, full-round, LoS/height,
+pathfinding and approach/commitment policies remain authoritative. Corrected reach can require an existing
+approach/path preparation, with no additional search pass, world scan, rule/context forecast or persistent actor cache; one lazy accepted-command reach witness per fight/caster/weapon.
+
+See [checks](competence/COUP_REACH_CHECKS.json), [toolchain/reference provenance](competence/COUP_REACH_BUILD_PROVENANCE.json)
+and the coup1 entry in `test-builds/README.md` for exact checked source/package. Offline validation is separate
+from gameplay: the new correction needs the focused TB/RT replay. Manifest stays 0.3.52, no release/main change.
+
+Checked source **`f029d8e`**, startup MVID **`626629a3-5185-418c-bea4-dc6e22f5d3e5`**: **885 unit + 27 inventory + 3 script
++ 18 ledger tests**, real-reference Release **0 warnings/errors**. Compatible ProfileAudit **44,640 loaded / 4,808
+abilities**, no load/reader failures or prerequisite skips; **COUP-REACH 32**, supplied TTT provider, inherited checks,
+supplementary Magus 44 and native providers **98/14/10** pass. **4 added native signatures resolve**. Other audit rows
+match the checked gaps3 DLL on identical augmented inputs. Actual hot GUID guard: **0 bytes / 10,000 warmed calls**
+on inert native wrappers; no Unity speedup claim. Cumulative **coup1** test ZIP retains this frozen DLL and has
+identity/checksum sidecars. Neither the reported incident nor the corrected behavior has new gameplay confirmation.

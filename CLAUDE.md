@@ -8,6 +8,38 @@ Read [CONTRIBUTING.md](CONTRIBUTING.md) for shared branch ownership, Codex pull 
 Codex works on task branches and targets pull requests at `claude/dreamy-pasteur-b9h3rn`; Claude reviews and integrates them there.
 Keep `main` for author-authorized releases. Read [AGENTS.md](AGENTS.md) when coordinating agent work.
 
+**Current handover (16 November 2026, Codex): AI Coup de Grace delivering-hand reach on
+`codex/coup-de-grace-reach`, based on development `980cf26`; unplayed.** The author explicitly approved this fix.
+Read [evidence/contract/TB-RT replay](docs/COUP_DE_GRACE_REACH.md), §181,
+[checks](docs/competence/COUP_REACH_CHECKS.json) and
+[compiler/reference provenance](docs/competence/COUP_REACH_BUILD_PROVENANCE.json).
+Native Weapon ability range uses `GetFirstWeapon`; stock delivery uses `GetThreatHandMelee`, TTT uses `GetThreatHand`.
+Appraisal, damage, sleeper preservation and shared preflight/final command radius now use the actual selected
+melee weapon. The radius is bounded by both native ability and weapon radii (both bodies included); target legality
+is rechecked after Init and before existing path preparation. Unknown/ambiguous delivery and TTT selecting a ranged
+Snap Shot hand are withheld only by AI Control. Native/manual commands are not patched. Existing action economy,
+full-round, LoS/height, pathfinding, movement and commitment policy remain. Gaps2 has **zero issued Coup commands**;
+this is a verified source inconsistency, not a reproduced explanation of the reported episode.
+
+Checked source **`f029d8e`**, startup MVID **`626629a3-5185-418c-bea4-dc6e22f5d3e5`**, DLL SHA-256
+`eb9cd272ba74483c27a26b5233e1045f445b86a3dca1a5a83fe30615b4c9e22d`. **885 unit + 27 inventory + 3 script + 18 ledger tests**,
+real-reference Release **0 warnings/errors**. Strict ProfileAudit **44,640 loaded / 4,808 abilities**, no load/reader
+failure or prerequisite skip; **COUP-REACH 32**, real supplied TTT provider, inherited checks, supplementary Magus 44
+and native providers **98/14/10** pass. All other audit rows match the existing checked gaps3 DLL on the identical
+augmented inputs. **4 added external signatures resolve.** The actual identity guard allocates **0 bytes / 10,000
+warm inert-wrapper calls**; no Unity timing/speedup claim. No additional path search pass, world scan, rule/context forecast or persistent actor
+cache. A newly out-of-reach target uses existing approach/path preparation. Accepted-command reach notes are lazy and bounded per fight/caster/weapon.
+
+[Test ZIP](test-builds/AI-Control-FACC-v0.3.52-dev-coup1-f029d8e-UMM-test.zip), SHA-256
+`da0e1aaab488fd2b3f84949c2aa3a33fe7ee33bb7899a1ce23b34a22600e4c12`; identity/checksum sidecars and compiler provenance included in the branch.
+SDK **8.0.426 / Roslyn 4.11**, UMM **0.33.2.0**, manifest **0.3.52**. Frozen checked DLL across later receipt/docs-only
+commits. No merge, main/development push, tag or release. PR #74 is the independent research predecessor; its broader
+feature proposals are not included. No new input files needed. Next: the focused companion/summon TB/RT Coup replay,
+especially mixed bow/melee limbs, legal reach/natural/unarmed cases, TTT on/off and native target/LoS/path restrictions.
+Equipment/form/provider changes **after acceptance but before native delivery** remain outside this dispatch-time
+contract; require an actual trace before considering a delivery-time patch. Keep the earlier gaps3/grapple/form/
+Frigid/fusion replay requirements as well.
+
 **Current handover (16 November 2026, Codex): tactical expansion research, documentation only.**
 Branch codex/tactical-expansion-investigation started at development **96dabaa** and is reconciled with
 **980cf26**, after Claude integrated #65–73. Read
@@ -36,7 +68,7 @@ merge, tag or release. Static source/IL, selected stock graphs and log counts we
 and performance claims were not adopted. The next step is for the advanced coder to select and write one
 implementation-ready plan with a bounded first slice, not to port either architecture.
 
-**Integration handover (16 November 2026, Claude): all open PRs (#65, #66, #67, #68, #69, #70, #71, #73) reviewed and
+**Earlier handover (16 November 2026, Claude): all open PRs (#65, #66, #67, #68, #69, #70, #71, #73) reviewed and
 merged into development at the author's request; development `ea91688`.** Read `docs/TACTICAL_AI.md` §180 and the
 [receipt](docs/competence/INTEGRATION_65_73_CHECKS.json).
 - The stack merged in order. Development's tree equals the verified head `6efc13c`, whose code is the gaps3 package's

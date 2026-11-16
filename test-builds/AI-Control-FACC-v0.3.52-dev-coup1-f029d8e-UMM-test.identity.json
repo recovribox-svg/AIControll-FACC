@@ -1,0 +1,31 @@
+{
+  "build_label": "coup1",
+  "kind": "development-test",
+  "version": "0.3.52",
+  "source_branch": "codex/coup-de-grace-reach",
+  "source_commit": "f029d8edfe200f87230374e5cb86291cb6632b4a",
+  "development_base": "980cf26827e23e5b0c78696fe530edecd7156162",
+  "dll": {
+    "assembly": "CompanionAI_Pathfinder, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null",
+    "mvid": "626629a3-5185-418c-bea4-dc6e22f5d3e5",
+    "sha256": "eb9cd272ba74483c27a26b5233e1045f445b86a3dca1a5a83fe30615b4c9e22d",
+    "size": 1466368
+  },
+  "manifest_sha256": "1876fd6fc56d03b28793f6c481fac47c9ea85eec3265d6859232deeab67523a3",
+  "archive": "AI-Control-FACC-v0.3.52-dev-coup1-f029d8e-UMM-test.zip",
+  "zip_sha256": "da0e1aaab488fd2b3f84949c2aa3a33fe7ee33bb7899a1ce23b34a22600e4c12",
+  "checks_receipt": "docs/competence/COUP_REACH_CHECKS.json",
+  "build_provenance": "docs/competence/COUP_REACH_BUILD_PROVENANCE.json",
+  "build_provenance_sha256": "247b8a60c23ad23ecc705b5b05d69f573bbe5246d0f5bcb38872322194ef0165",
+  "toolchain": {
+    "dotnet_sdk": "8.0.426",
+    "csharp_compiler": "4.11.0-3.25569.22 (3fb752d4)"
+  },
+  "scope": "Cumulative development plus native/TTT delivering-hand Coup appraisal, native melee reach cap in shared preflight/dispatch, sleeper preservation consistency and allocation-free identity guard.",
+  "gameplay_status": "not played",
+  "archive_contents": [
+    "CompanionAI_Pathfinder.dll",
+    "Info.json"
+  ],
+  "release": false
+}
