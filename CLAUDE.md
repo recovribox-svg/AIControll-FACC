@@ -8,8 +8,32 @@ Read [CONTRIBUTING.md](CONTRIBUTING.md) for shared branch ownership, Codex pull 
 Codex works on task branches and targets pull requests at `claude/dreamy-pasteur-b9h3rn`; Claude reviews and integrates them there.
 Keep `main` for author-authorized releases. Read [AGENTS.md](AGENTS.md) when coordinating agent work.
 
-**Current handover (15 November 2026, Claude): fusion2g1 played and reviewed; Fusion caster-fact guard fix on
-`claude/fusion-caster-fact`, PR #66 into development, stacked on PR #65 (review #65 first). Not played.** Read
+**Current handover (15 November 2026, Claude): fusion2g1b played and reviewed; maneuver immunity and G2 (the engine
+decides Grabber and Release Grapple, at the author's request) on `claude/maneuver-immunity`, PR #67 into development,
+stacked on PR #66 and #65 (review #65, then #66). Not played.** Read [docs/GRABBER_G2.md](docs/GRABBER_G2.md),
+[docs/FUSION2G1B_PLAYTEST_REVIEW.md](docs/FUSION2G1B_PLAYTEST_REVIEW.md), `docs/TACTICAL_AI.md` §172-173 and the
+[receipt](docs/competence/G2_GRABBER_CHECKS.json).
+- **Log.** fusion2g1b module `e4f231af`: 9 fights, 646/646 command terminals, no AI Control exception. Six of the seven
+  Runes fusions now reach `[FusionValue]`.
+- **Defect.** G1 valued holds on a grapple-immune Vescavor Swarm and walked Wenduag back into its gibber area. The fix,
+  `CombatMath.ImmuneToManeuver`, reads `ManeuverImmunity` (swarms, Freedom of Movement) as well as the condition, in
+  the grapple opening, `ManeuverOdds` and the trip forecast.
+- **G2.** The six Grabber toggles switch at once for free.
+  - The engine prices each weapon attack with the grab assumed on and off (`ModeKind.Grab`, `CombatMath.AssumeGrab`)
+    and switches it through `ApplyModes`.
+  - Release Grapple is scored from the live hold (`ReadHold`, `GrappleKeepValue`) and used when keeping is clearly
+    negative.
+  - The grab's hold counts the release option. Tiger and Smilodon grab with claw and bite.
+- **Left open.** `ContextActionSelectByValue` (Frigid Touch's stagger, 3 blueprints in the exports) stays unread.
+- **Checks** on `33fa9b3`: Release 0 warnings, 5 added references; 837 + 27 + 3 + 11 tests; GRAPPLE 55 (23 new). The
+  coverage moves only the 6 Grabbers and 6 releases; native harnesses 98/14/10.
+- **Package:** `test-builds/AI-Control-FACC-v0.3.52-dev-g2-33fa9b3-UMM-test.zip`, MVID
+  `4b94e879-4a5c-4ec3-9b57-8b45d4eaabcc`. Manifest 0.3.52; no `main`, tag or release change.
+- **Next:** the author plays g2 with Grabber left to the engine (GRABBER_G2.md replay), a swarm in melee, and the
+  fusion2 and G1 checks.
+
+**Earlier handover (15 November 2026, Claude): fusion2g1 played and reviewed; Fusion caster-fact guard fix on
+`claude/fusion-caster-fact`, PR #66 into development, stacked on PR #65 (review #65 first). Played as fusion2g1b (above).** Read
 [docs/FUSION2G1_PLAYTEST_REVIEW.md](docs/FUSION2G1_PLAYTEST_REVIEW.md), `docs/TACTICAL_AI.md` §171 and the
 [receipt](docs/competence/FUSION2G1_REVIEW_CHECKS.json).
 - Log: fusion2g1 module `e4cb4df9`, 10 fights, 370/370 command terminals, no AI Control exception. The author

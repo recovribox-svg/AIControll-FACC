@@ -5973,7 +5973,72 @@ refusal. The qualified count stays 3,230.
 
 PR #66, stacked on PR #65. Receipt: [FUSION2G1_REVIEW_CHECKS.json](competence/FUSION2G1_REVIEW_CHECKS.json). Package
 `test-builds/AI-Control-FACC-v0.3.52-dev-fusion2g1b-981299e-UMM-test.zip`, startup MVID
-`e4f231af-1782-4e64-9697-3a3b2455e1a2`, the checked DLL unchanged. Unplayed.
+`e4f231af-1782-4e64-9697-3a3b2455e1a2`, the checked DLL unchanged. Played: §172.
 
 **Next.** Replay arcan's Runes fusions in both modes. Each should log `[FusionValue]` instead of the caster-fact fallback.
 Repeat the G1 and fusion2 checks.
+
+## 172. Fusion2g1b played: maneuver immunity (15 November 2026, Claude)
+
+**Inputs.** One AI log and its combat log from the fusion2g1b package (module `e4f231af`). Hashes and full review:
+[FUSION2G1B_PLAYTEST_REVIEW.md](FUSION2G1B_PLAYTEST_REVIEW.md). 9 fights; 646 of 646 commands have a terminal row (217
+turn-based); no AI Control exception. The 69 slow rows are mostly arcan's 44-ability decisions; the four over 1.2 s ran
+a garbage collection. Six of the seven Runes fusions now log `[FusionValue]` (§171 confirmed).
+
+**Defect.** G1 priced holds on a Vescavor Swarm (+10.6, +10.0) and cut full attacks against swarms at the expected grab.
+At line 3094 Wenduag walked back into the swarm's gibber area she had just left: Move+Attack 4.5 net of a 68.5 movement
+price, about −6 without the false hold. The combat log shows both claw hits with no grapple after them.
+`RuleCombatManeuver.OnTrigger` cancels a maneuver on the `ImmuneToCombatManeuvers` condition or on `AutoFailure`. Every
+turned-on `ManeuverImmunity` of that type (None: every type) sets `AutoFailure`. The swarm features carry ten of them,
+and Freedom of Movement carries the Grapple one (14 facts in the exports). The mod read only the condition.
+
+**Change.** `CombatMath.ImmuneToManeuver` reads both, once a frame per unit, from the facts' turned-on runtime
+components (pure mask rule in `ValueModel.Grapple.cs`). It is used by the G1 grapple opening, the shared `ManeuverOdds`
+and the trip-on-hit forecast.
+
+**Left open.** `ContextActionSelectByValue` variants are not walked by the profile reader, so Frigid Touch's stagger is
+unvalued. Three blueprints in the exports use it; a faithful reading needs the critical chance.
+
+## 173. G2: the engine decides Grabber and Release Grapple (15 November 2026, Claude)
+
+**Request.** The author asked for the engine, not the player, to decide when to grab and when to let go, with a guide
+of principles. Design, native evidence, the guide mapped to the model, and replay steps: [GRABBER_G2.md](GRABBER_G2.md).
+
+**Native.**
+- The six Grabber toggles switch at once for free: `ActivationType Immediately` and `DeactivateImmediately`, with
+  `SetIsOn` → `OnDidTurnOn` → `TryStart`, and `TurnOffImmediately` → `Stop`. No command or resource.
+- Release Grapple is a free self action: `ContextActionReleaseGrapple` → `UnitHelper.ReleaseGrapple`, which removes both
+  parts and the holder's conditions.
+- The holder buff's grapple bonus is a maneuver-roll handler, added by hand. Its Dexterity −4 is live while it holds.
+
+**Change.**
+- **Grab per attack.** The Grabber is an attack mode of its own kind (`ModeKind.Grab`, `CombatMath.IsGrabBuff`). Each
+  weapon attack's mode sets are priced with the grab assumed on and off (`CombatMath.AssumeGrab`): G1's cut-short
+  routine and hold value decide. The chooser's hysteresis, once-a-round, blocklist and player-ownership rules apply,
+  and `ApplyModes` switches it at Execute. A leap keeps its quote's grab.
+- **Release.** `AbilityProfile.ReleasesGrapple` recognises the release ability. `TacticalEngine.GrappleReleaseValue`
+  scores it from the live hold (`CombatMath.ReadHold`, `ValueModel.GrappleKeepValue`) and offers it when keeping is
+  below −0.5. It is never a fallback, and the out-of-combat routine skips it.
+- **Consistency.** A holder that can let go values a grab with only the rounds that pay (`GrappleHoldValue(...,
+  canRelease)`), so grab and release agree.
+- **Tiger and Smilodon.** Both triggers (claw and bite) now join one hold (`GrabOf`, `ComposeGrab`). G1 read only the
+  first.
+
+Both modes share these paths. No new candidate kind, command type, path query or actor cache.
+
+**Checks** on source `33fa9b3`:
+- Release 0 warnings, 5 added game references across §172 and §173, all resolved against the real assembly.
+- 837 unit tests (5 new) plus 27 + 3 + 11 tool tests.
+- ProfileAudit exit 0. GRAPPLE has 55 checks (23 new): the native switch, start, stop, release and immunity contracts;
+  the six Grabbers and six releases; both Tiger and Smilodon triggers; the swarm features; compiled routes; scalar
+  rules.
+- The coverage report moves exactly the 6 Grabbers to valued toggles and the 6 releases to valued; every other line is
+  unchanged.
+- Native harnesses 98/14/10.
+
+Receipt: [G2_GRABBER_CHECKS.json](competence/G2_GRABBER_CHECKS.json). PR #67, stacked on PR #66. Package
+`test-builds/AI-Control-FACC-v0.3.52-dev-g2-33fa9b3-UMM-test.zip`, startup MVID `4b94e879-4a5c-4ec3-9b57-8b45d4eaabcc`,
+the checked DLL unchanged. Unplayed.
+
+**Next.** The author plays the g2 package with Grabber left to the engine: the G2 replay, a swarm in melee, and the
+fusion2 and G1 checks.

@@ -81,12 +81,46 @@ namespace CompanionAI_Pathfinder.Tactics
         /// </summary>
         public static float GrappleHoldValue(float persist, float horizon, float victimWorth, float holderWorth,
                                              float freeDamage, float heldShare, float pinnedShare)
+            => GrappleHoldValue(persist, horizon, victimWorth, holderWorth, freeDamage, heldShare, pinnedShare, false);
+
+        /// <summary>
+        /// ★ G2: the same, for a holder that can let go as a free action (its form's Release Grapple): it keeps a hold only
+        /// while each pinned round pays (<see cref="GrappleRoundNet"/>), so a hold that would cost it leaves only the
+        /// victim's first, held turn. The engine lets go by the same test (<see cref="GrappleKeepValue"/>).
+        /// </summary>
+        public static float GrappleHoldValue(float persist, float horizon, float victimWorth, float holderWorth,
+                                             float freeDamage, float heldShare, float pinnedShare, bool canRelease)
         {
             if (horizon <= 0f) return 0f;
             float held = GrappleHeldRounds(persist, horizon);
             float first = Math.Max(0f, victimWorth) * Clamp(heldShare, 0f, 1f) * Math.Min(1f, horizon);
-            return first + held * (Math.Max(0f, victimWorth) * Clamp(pinnedShare, 0f, 1f) + Math.Max(0f, freeDamage) -
-                                   Math.Max(0f, holderWorth) * Clamp(pinnedShare, 0f, 1f));
+            float later = held * GrappleRoundNet(victimWorth, holderWorth, freeDamage, pinnedShare);
+            return first + (canRelease ? Math.Max(0f, later) : later);
+        }
+
+        /// <summary>
+        /// ★ G2: what one more pinned round of a hold is worth: the victim's lost turn (hard control share) and the free
+        /// natural attack, less the holder's own lost turn (its standard actions and movement, at the same share).
+        /// </summary>
+        public static float GrappleRoundNet(float victimWorth, float holderWorth, float freeDamage, float pinnedShare) =>
+            Math.Max(0f, victimWorth) * Clamp(pinnedShare, 0f, 1f) + Math.Max(0f, freeDamage) -
+            Math.Max(0f, holderWorth) * Clamp(pinnedShare, 0f, 1f);
+
+        /// <summary>
+        /// ★ G2: what keeping a hold the holder has now is worth over <paramref name="horizon"/> rounds, against letting go
+        /// this turn (a free action that gives the holder this turn's standard actions and movement back). This round: the
+        /// victim stays held or pinned (<paramref name="nowShare"/>) and the holder gives up its turn; each later round the
+        /// hold lasts (<see cref="GrappleHeldRounds"/>) is worth <see cref="GrappleRoundNet"/>, and only while that pays,
+        /// since the holder can let go then too. Negative: let go now.
+        /// </summary>
+        public static float GrappleKeepValue(float persist, float horizon, float victimWorth, float holderWorth, float freeDamage,
+                                             float nowShare, float pinnedShare)
+        {
+            if (horizon <= 0f) return 0f;
+            float now = (Math.Max(0f, victimWorth) * Clamp(nowShare, 0f, 1f) - Math.Max(0f, holderWorth) * Clamp(pinnedShare, 0f, 1f)) *
+                        Math.Min(1f, horizon);
+            float later = GrappleHeldRounds(persist, horizon) * GrappleRoundNet(victimWorth, holderWorth, freeDamage, pinnedShare);
+            return now + Math.Max(0f, later);
         }
 
         /// <summary>d20 + <paramref name="bonus"/> against <paramref name="dc"/> for a skill check (no automatic 1 or 20).</summary>
@@ -103,5 +137,17 @@ namespace CompanionAI_Pathfinder.Tactics
                 if (d20 == 20 || ((d20 != 1 || alwaysChance) && d20 + cmb >= cmd)) successes++;
             return successes / 20f;
         }
+
+        /// <summary>
+        /// ★ fusion2g1b review: the bit one ManeuverImmunity of <paramref name="type"/> (a CombatManeuver value) adds to a
+        /// unit's mask. Type None (0) is immune to every maneuver (ManeuverImmunity.OnEventAboutToTrigger); a value outside
+        /// the mask is read the same way, so an immunity never goes unseen.
+        /// </summary>
+        public static int ManeuverImmunityBit(int type) => type <= 0 || type > 30 ? 1 : 1 << type;
+
+        /// <summary>Whether a mask built by <see cref="ManeuverImmunityBit"/> makes <paramref name="type"/> fail
+        /// automatically (RuleCombatManeuver.AutoFailure).</summary>
+        public static bool ManeuverBlocked(int mask, int type) =>
+            (mask & 1) != 0 || (type > 0 && type <= 30 && (mask & (1 << type)) != 0);
     }
 }

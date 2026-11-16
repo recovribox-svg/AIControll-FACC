@@ -2426,8 +2426,10 @@ namespace CompanionAI_Pathfinder.Tactics
             float persist = ValueModel.GrapplePersists(est.Grapple.Maintain, est.Grapple.BreakFree);
             float victim = CombatMath.ControlWorth(enemy) * (CombatMath.IsDisabled(enemy) ? 0.4f : 1f);
             float holder = ValueModel.PerRound(Level(est.Attacker));
+            // ★ G2: a holder that can let go keeps the hold only while it pays (GrappleReleaseValue lets go by the same test).
+            bool release = CanReleaseGrapple(est.Attacker);
             float hold = ValueModel.GrappleHoldValue(persist, s_GrappleHorizon, victim, holder, est.GrappleFreeDamage,
-                ControlShare(ControlStrength.Soft, false, false), ControlShare(ControlStrength.Hard, false, false));
+                ControlShare(ControlStrength.Soft, false, false), ControlShare(ControlStrength.Hard, false, false), release);
             float value = est.GrappleChance * hold;
             AbilityDiscovery.ReportOnce($"grapple|{CombatMemory.Fight}|{est.Attacker.UniqueId}|{enemy.UniqueId}|{est.Attacks}",
                 () => $"[Grapple] {est.Attacker.CharacterName} -> {enemy.CharacterName}: a hit grapples {est.GrappleChance:P0} " +
@@ -2435,8 +2437,65 @@ namespace CompanionAI_Pathfinder.Tactics
                       $"{hold:+0.0;-0.0} if it starts = {value:+0.0;-0.0} (lasts {persist:P0}/round: maintain {est.Grapple.Maintain:P0}, " +
                       $"escape {est.Grapple.BreakFree:P0}; victim {victim:F1}, holder {holder:F1} per round, free natural hit " +
                       $"{est.GrappleFreeDamage:F1}, {ValueModel.GrappleHeldRounds(persist, s_GrappleHorizon):F2} pinned rounds in " +
-                      $"{s_GrappleHorizon:F1}); first per fight and pair");
+                      $"{s_GrappleHorizon:F1}{(release ? "; lets go when a round stops paying" : "")}); first per fight and pair");
             return value;
+        }
+
+        private static readonly Dictionary<UnitEntityData, KeyValuePair<int, AbilityData>> ReleaseAbilities =
+            new Dictionary<UnitEntityData, KeyValuePair<int, AbilityData>>();
+
+        /// <summary>★ G2: the unit's own Release Grapple (AbilityProfile.ReleasesGrapple), unless a list blocks it; once a frame.</summary>
+        private static AbilityData ReleaseAbility(UnitEntityData unit)
+        {
+            if (unit == null) return null;
+            int frame = Time.frameCount;
+            if (ReleaseAbilities.TryGetValue(unit, out var known) && known.Key == frame) return known.Value;
+            AbilityData found = null;
+            try
+            {
+                foreach (var fact in unit.Abilities.Enumerable)
+                {
+                    var data = fact?.Data;
+                    if (data?.Blueprint == null || !(AbilityProfile.Get(data.Blueprint)?.ReleasesGrapple ?? false)) continue;
+                    if (UserAbilityPolicy.Blocks(unit, data)) continue;
+                    found = data;
+                    break;
+                }
+            }
+            catch (Exception ex) { Main.Verbose($"[Grapple] {unit.CharacterName}: release ability unreadable: {ex.Message}"); }
+            if (ReleaseAbilities.Count > 64) ReleaseAbilities.Clear();
+            ReleaseAbilities[unit] = new KeyValuePair<int, AbilityData>(frame, found);
+            return found;
+        }
+
+        internal static bool CanReleaseGrapple(UnitEntityData unit) => ReleaseAbility(unit) != null;
+
+        /// <summary>
+        /// ★ G2: Release Grapple's worth now: the hold it ends, priced as the grab was (GrappleHold), from the hold as the
+        /// game keeps it (CombatMath.ReadHold). Keeping is worth the victim's next turn held or pinned plus each later round
+        /// while it pays, less the holder's own turn (ValueModel.GrappleKeepValue); letting go is worth that loss when it
+        /// is clearly negative. Zero otherwise ("not useful now", no fallback): a hold that pays stays.
+        /// </summary>
+        private static float GrappleReleaseValue(TacticalContext ctx, AbilityData ability, out string why)
+        {
+            var unit = ctx.Unit;
+            var held = CombatMath.ReadHold(unit);
+            if (held == null) { why = "holds nothing it reads"; return 0f; }
+            var victim = held.Victim;
+            float persist = ValueModel.GrapplePersists(held.Maintain, held.BreakFree);
+            float worth = CombatMath.ControlWorth(victim) * (CombatMath.IsDisabled(victim) && !held.Pinned ? 0.4f : 1f);
+            float holder = ValueModel.PerRound(Level(unit));
+            float pinnedShare = ControlShare(ControlStrength.Hard, false, false);
+            float nowShare = held.Pinned ? pinnedShare : ControlShare(ControlStrength.Soft, false, false);
+            float keep = ValueModel.GrappleKeepValue(persist, s_GrappleHorizon, worth, holder, held.FreeDamage, nowShare, pinnedShare);
+            float net = ValueModel.GrappleRoundNet(worth, holder, held.FreeDamage, pinnedShare);
+            string detail = $"{victim.CharacterName} {(held.Pinned ? "pinned" : "held")}, keep {keep:+0.0;-0.0} (victim {worth:F1}, holder " +
+                            $"{holder:F1} per round, free natural hit {held.FreeDamage:F1}, a later round {net:+0.0;-0.0}, lasts {persist:P0}/round)";
+            AbilityDiscovery.ReportOnce($"grapplekeep|{CombatMemory.Fight}|{unit.UniqueId}|{victim.UniqueId}|{(keep < -0.5f ? 1 : 0)}",
+                () => $"[Grapple] {unit.CharacterName}: {(keep < -0.5f ? "lets go of" : "keeps")} {detail}");
+            if (keep >= -0.5f) { why = "the hold still pays: " + detail; return 0f; }
+            why = null;
+            return -keep;
         }
 
         private static float RoleWeight(TacticalContext ctx, string category)
@@ -3742,6 +3801,9 @@ namespace CompanionAI_Pathfinder.Tactics
             }
             if (IsCoupDeGrace(ability))
                 return CoupDeGraceValue(ctx, ability, target, out why);
+            // ★ G2: letting go of a grapple is worth the hold it ends, when that hold no longer pays.
+            if (profile.ReleasesGrapple)
+                return GrappleReleaseValue(ctx, ability, out why);
             // ★ v0.3.18 (AA-4): Vital Strike and Cleave are weapon attacks (TacticalEngine.Martial.cs).
             if (profile.IsWeaponAttack)
                 return WeaponAbilityValue(ctx, ability, profile, target, out why);

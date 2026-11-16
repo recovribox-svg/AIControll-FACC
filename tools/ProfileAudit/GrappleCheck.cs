@@ -4,14 +4,20 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
+using CompanionAI_Pathfinder.Analysis;
 using CompanionAI_Pathfinder.Tactics;
 using Kingmaker.Blueprints;
 using Kingmaker.Blueprints.Items.Weapons;
 using Kingmaker.ElementsSystem;
 using Kingmaker.Controllers.Units;
+using Kingmaker.Designers.Mechanics.Facts;
 using Kingmaker.EntitySystem.Entities;
+using Kingmaker.PubSubSystem;
 using Kingmaker.RuleSystem.Rules;
 using Kingmaker.UnitLogic;
+using Kingmaker.UnitLogic.ActivatableAbilities;
+using Kingmaker.UnitLogic.Abilities.Blueprints;
+using Kingmaker.UnitLogic.Buffs.Blueprints;
 using Kingmaker.UnitLogic.Commands;
 using Kingmaker.UnitLogic.FactLogic;
 using Kingmaker.UnitLogic.Mechanics.Actions;
@@ -85,6 +91,12 @@ namespace ProfileAudit
                       "ContextActionGrapple refuses a holder that holds and a victim already held");
                 Check(Body(typeof(ContextActionCombatManeuverCustom), "RunAction").Any(m => m is ConstructorInfo c && c.DeclaringType == typeof(RuleCombatManeuver)),
                       "the grab's maneuver is the game's RuleCombatManeuver");
+                // ★ fusion2g1b review: a swarm's maneuver immunity is a component, not the condition.
+                var maneuverRule = Body(typeof(RuleCombatManeuver), "OnTrigger");
+                Check(maneuverRule.Any(m => m.Name == "get_AutoFailure") && Calls(maneuverRule, typeof(UnitState), "HasCondition"),
+                      "RuleCombatManeuver.OnTrigger cancels the maneuver on AutoFailure or the ImmuneToCombatManeuvers condition");
+                Check(Body(typeof(ManeuverImmunity), "OnEventAboutToTrigger").Any(m => m.Name == "set_AutoFailure"),
+                      "ManeuverImmunity sets AutoFailure for its maneuver type (or every type for None)");
 
                 // --- the reader on the real blueprints ---
                 var reasons = new Dictionary<string, int>();
@@ -156,6 +168,89 @@ namespace ProfileAudit
                       "the grapple odds use the existing maneuver reading (refactored, not copied)");
                 Check(CallsMod(typeof(CombatMath), "ActiveGrab", typeof(UnitEntityData), "get_IsPlayerFaction"),
                       "only party units' grabs are valued (an enemy's routine keeps the old forecast)");
+                Check(CallsMod(typeof(CombatMath), "GrappleOpeningOn", typeof(CombatMath), "ImmuneToManeuver") &&
+                      CallsMod(typeof(CombatMath), "ManeuverOdds", typeof(CombatMath), "ImmuneToManeuver") &&
+                      CallsMod(typeof(CombatMath), "TripOnHitChance", typeof(CombatMath), "ImmuneToManeuver"),
+                      "the grapple opening, the maneuver odds and the trip-on-hit forecast share the native immunity reading");
+                var immune = Body(typeof(CombatMath), "ImmuneToManeuver");
+                Check(immune.Any(m => m.Name == "get_IsTurnedOn") && immune.Any(m => m.Name == "get_SourceBlueprintComponent") &&
+                      immune.Any(m => m.DeclaringType == typeof(ManeuverImmunity) && m.Name == "Type") &&
+                      Calls(immune, typeof(UnitState), "HasCondition"),
+                      "... which reads the condition and every turned-on ManeuverImmunity component by its type");
+
+                // --- ★ G2: the engine switches the Grabber and lets go of a hold ---
+                var turnOff = Body(typeof(ActivatableAbility), "TurnOffImmediately");
+                Check(turnOff.Any(m => m.Name == "Stop") && turnOff.Any(m => m.Name == "SetIsOn"),
+                      "a toggle switched off at once stops and drops its buff (ActivatableAbility.TurnOffImmediately)");
+                var turnOn = Body(typeof(ActivatableAbility), "OnDidTurnOn");
+                Check(Body(typeof(ActivatableAbility), "SetIsOn").Any(m => m.Name == "OnDidTurnOn") &&
+                      turnOn.Any(m => m.Name == "get_ActivateImmediately") && turnOn.Any(m => m.Name == "TryStart"),
+                      "an Immediately toggle starts its buff when switched on, with no command (SetIsOn -> OnDidTurnOn -> TryStart)");
+                var release = Body(typeof(UnitHelper), "ReleaseGrapple");
+                Check(release.OfType<MethodInfo>().Any(m => m.Name == "Remove" && m.IsGenericMethod && m.GetGenericArguments()[0] == typeof(UnitPartGrappleInitiator)) &&
+                      release.OfType<MethodInfo>().Any(m => m.Name == "Remove" && m.IsGenericMethod && m.GetGenericArguments()[0] == typeof(UnitPartGrappleTarget)),
+                      "Release Grapple removes both parts of the pair (UnitHelper.ReleaseGrapple)");
+                Check(Body(typeof(UnitPartGrappleInitiator), "OnDispose").Count(m => m.Name == "RemoveCondition") >= 3,
+                      "... and the holder's conditions go with its part (CantMove, CantUseStandardActions, no AoO)");
+                Check(typeof(IRulebookHandler<RuleCombatManeuver>).IsAssignableFrom(typeof(CMBBonusForManeuver)) &&
+                      !typeof(IRulebookHandler<RuleCalculateCMB>).IsAssignableFrom(typeof(CMBBonusForManeuver)),
+                      "the holder buff's grapple bonus is a maneuver-roll handler, never in RuleCalculateCMB (added by hand while it holds)");
+                Check(Body(typeof(ShifterGrabBuffBase), "OnTurnOn").Any(m => m.Name == "AddModifier"),
+                      "the holder buff's Dexterity change is a live stat modifier while it holds (not added again)");
+                var toggles = loaded.OfType<BlueprintActivatableAbility>().Where(a => a.name.EndsWith("GrabActivatableAbility")).ToList();
+                var modeOf = typeof(TacticalEngine).GetMethod("ModeOf", BindingFlags.Static | BindingFlags.NonPublic);
+                object Field(object o, string name) => o?.GetType().GetField(name, BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic)?.GetValue(o);
+                var grabModes = toggles.Where(t => modeOf != null && Field(modeOf.Invoke(null, new object[] { t }), "Kind")?.ToString() == "Grab" &&
+                                                   Field(modeOf.Invoke(null, new object[] { t }), "Excluded") == null).Select(t => t.name).ToList();
+                lines.Add("GRAPPLE switched by the engine: " + string.Join(", ", grabModes.OrderBy(n => n)));
+                Check(toggles.Count == 6 && grabModes.Count == 6,
+                      $"the six Grabbers (Griffon, Bear, Lizard, Tiger, Smilodon, Shambling Mound) are attack modes of their own kind ({grabModes.Count}/{toggles.Count})");
+                Check(toggles.All(t => CombatMath.IsGrabBuff(t.Buff) && t.ActivateImmediately && t.DeactivateImmediately),
+                      "... whose buffs only grab and switch at once for free");
+                foreach (var name in new[] { "TigerGrappleBuff", "SmilodonGrappleBuff" })
+                {
+                    var buff = loaded.OfType<BlueprintBuff>().First(b => b.name == name);
+                    var both = CombatMath.ComposeGrab(buff, 3);
+                    var triggers = CombatMath.GrabTriggersOf(buff);
+                    Check(triggers.Length == 2 && triggers[0].WeaponType != triggers[1].WeaponType && both?.Also?.Length == 1 &&
+                          loaded.OfType<BlueprintItemWeapon>().Where(w => w.Type == triggers[1].WeaponType).Take(3).All(w => both.Suits(w)) &&
+                          CombatMath.ComposeGrab(buff, 1) == triggers[0],
+                          name + ": both natural weapons grab into one hold (the second trigger was missed before G2)");
+                }
+                var releases = loaded.OfType<BlueprintAbility>().Where(a => a.name.EndsWith("ReleaseGrappleAbility")).ToList();
+                Check(releases.Count == 6 && releases.All(r => AbilityProfile.Get(r).ReleasesGrapple && AbilityProfile.Get(r).HasDetectableEffect),
+                      $"the six Release Grapple abilities are read as letting go and nothing else ({releases.Count})");
+                Check(!loaded.OfType<BlueprintAbility>().Where(a => a.name == "Fireball" || a.name == "CureLightWoundsCast")
+                             .Any(a => AbilityProfile.Get(a).ReleasesGrapple),
+                      "... and no other ability is (Fireball, Cure Light Wounds)");
+                // The set's price is a lambda in ChooseAttackModes: its compiled closure holds the call.
+                Check(typeof(TacticalEngine).GetNestedTypes(BindingFlags.NonPublic).SelectMany(t => t.GetMethods(Hidden))
+                          .Where(m => m.Name.Contains("<ChooseAttackModes>"))
+                          .Any(m => SaveBoostCheck.ReferencedMembers(m).Any(r => r.DeclaringType == typeof(CombatMath) && r.Name == "AssumeGrab")) &&
+                      CallsMod(typeof(CombatMath), "ActiveGrab", typeof(CombatMath), "GrabOf"),
+                      "each attack-mode set is priced with the Grabber's grab on or off; the live grab reads every trigger of its buff");
+                Check(CallsMod(typeof(TacticalEngine), "ScoreAbility", typeof(TacticalEngine), "GrappleReleaseValue") &&
+                      CallsMod(typeof(TacticalEngine), "GrappleReleaseValue", typeof(CombatMath), "ReadHold") &&
+                      CallsMod(typeof(TacticalEngine), "GrappleReleaseValue", typeof(ValueModel), "GrappleKeepValue") &&
+                      CallsMod(typeof(TacticalEngine), "GrappleHold", typeof(TacticalEngine), "CanReleaseGrapple"),
+                      "Release Grapple is valued by the hold it ends, and the grab's hold counts the release option (both modes)");
+                Check(CallsMod(typeof(PreBuffAnalyzer), "AnalyzeBuff", typeof(AbilityProfile), "get_ReleasesGrapple") ||
+                      typeof(PreBuffAnalyzer).GetMethods(Hidden).Any(m => SaveBoostCheck.ReferencedMembers(m).Any(r => r.Name == "get_ReleasesGrapple")),
+                      "the out-of-combat buff routine never casts it");
+                Check(Math.Abs(ValueModel.GrappleHoldValue(0.9f, 3f, 5f, 34f, 8f, 0.4f, 1f, true) - 2f) < 1e-4f &&
+                      ValueModel.GrappleKeepValue(0.9f, 3f, 10f, 28f, 6f, 1f, 1f) < -0.5f &&
+                      ValueModel.GrappleKeepValue(0.8f, 3f, 40f, 28f, 12f, 1f, 1f) > 0f,
+                      "scalar rules: a weak victim's hold keeps only its first turn; a pinned trash mob is let go; a pinned caster is kept");
+
+                // --- the immunity on the real swarm blueprints ---
+                var immuneFacts = loaded.OfType<BlueprintScriptableObject>()
+                    .Where(b => b.ComponentsArray != null && b.ComponentsArray.OfType<ManeuverImmunity>().Any(m => m.Type == CombatManeuver.Grapple))
+                    .Select(b => b.name).OrderBy(n => n).ToList();
+                lines.Add($"GRAPPLE maneuver immunity: {immuneFacts.Count} facts make a grapple fail (" + string.Join(", ", immuneFacts.Take(8)) + ")");
+                foreach (var swarm in new[] { "SwarmTinyFeature", "SwarmDiminutiveFeature" })
+                    Check(immuneFacts.Contains(swarm) && loaded.OfType<BlueprintScriptableObject>().First(b => b.name == swarm)
+                          .ComponentsArray.OfType<ManeuverImmunity>().Any(m => m.Type == CombatManeuver.Trip),
+                          swarm + " makes grapples and trips fail (ManeuverImmunity), with no ImmuneToCombatManeuvers condition");
 
                 // --- the scalar rules through the compiled mod ---
                 Check(Math.Abs(ValueModel.GrappleHoldValue(0.8f, 3f, 30f, 30f, 10f, 0.4f, 1f) - 26.4f) < 1e-3f,
@@ -164,6 +259,10 @@ namespace ProfileAudit
                 var run = ValueModel.GrappleRun.Begin();
                 run.Next(0.8f, true, 0.9f); run.Next(0.8f, true, 0.9f); run.Next(0.7f, false, 0.9f);
                 Check(Math.Abs(run.Attacks - 1.3584f) < 1e-3f, "claw, claw, bite at 80% / 90%: 1.36 of 3 attacks expected");
+                int swarmMask = ValueModel.ManeuverImmunityBit((int)CombatManeuver.Grapple) | ValueModel.ManeuverImmunityBit((int)CombatManeuver.Trip);
+                Check(ValueModel.ManeuverBlocked(swarmMask, (int)CombatManeuver.Grapple) && !ValueModel.ManeuverBlocked(swarmMask, (int)CombatManeuver.BullRush) &&
+                      ValueModel.ManeuverBlocked(ValueModel.ManeuverImmunityBit((int)CombatManeuver.None), (int)CombatManeuver.PullToPointSpell),
+                      "an immunity blocks its own maneuver type; one of type None blocks every type");
             }
             catch (Exception ex)
             {
