@@ -8,7 +8,30 @@ Read [CONTRIBUTING.md](CONTRIBUTING.md) for shared branch ownership, Codex pull 
 Codex works on task branches and targets pull requests at `claude/dreamy-pasteur-b9h3rn`; Claude reviews and integrates them there.
 Keep `main` for author-authorized releases. Read [AGENTS.md](AGENTS.md) when coordinating agent work.
 
-**Current handover (16 November 2026, Claude): Fusion F4 slices A and B on `claude/fusion-outcome-effects` (no PR yet),
+**Current handover (16 November 2026, Claude): Fusion F7 (Sleep fusions) on `claude/fusion-sleep-pool`, stacked on
+Fusion F4 (PR #76, `claude/fusion-outcome-effects`); development base `980cf26`. Not played.** Read
+[docs/FUSION_SLEEP_POOL.md](docs/FUSION_SLEEP_POOL.md), `docs/TACTICAL_AI.md` §183 and the
+[receipt](docs/competence/FUSION_F7_CHECKS.json). Review PR #76 first.
+- **Why.** The author's gaps3 log shows arcan's Snowball/Sleep and Explosive Runes/Sleep withheld ("shared Hit Dice
+  selection"); the author asked for the Sleep fusions next.
+- **Native finding.** A fused cast's context is the holder ability's. Its pool is the holder slot's own 2d6 roll, not
+  Sleep's fixed 4 Hit Dice. Touch slots carry no pool.
+- **Change (both modes).** `SharedHdControl` forecasts the fused pool: one pool source spell, the holder's exact dice
+  distribution, the deliver spell's recipients in the game's order. `TacticalEngine.FusionWithheld` offers the fusion
+  when that plan and the joint outcome value qualify. The sleep is credited with the forecast chance, and only when the
+  cast's own damage comes before it.
+- **Result.** 8,709 of 15,494 templates admitted (8,211 after F4): Sleep and Rainbow Pattern fusions. None lost.
+  1,034 pooled templates stay withheld, each with a logged reason.
+- **Checks** on `cf41e4b`: Release 0 warnings; 887 unit + 27 + 3 + 18 tests; 0 added references; ProfileAudit exit 0,
+  two runs identical, `FUSION-POOL` 25, other lines equal to the F4 run; native harnesses 98/14/10.
+- **Package:** `test-builds/AI-Control-FACC-v0.3.52-dev-sleep1-cf41e4b-UMM-test.zip`, MVID
+  `61f28efb-85ea-4900-97d6-e9f1328da60e`. It contains F4 too, and not PR #75. Manifest 0.3.52; no `main`, tag or
+  release change.
+- **Open:** PR #74 (research) and PR #75 (Coup de Grace reach) from Codex, not reviewed here.
+- **Next:** the author plays sleep1 (replay in the page). The order of the two spells in each fusion matters: with Sleep
+  first, the damage wakes the sleepers and the sleep gets no credit.
+
+**Earlier handover (16 November 2026, Claude): Fusion F4 slices A and B on `claude/fusion-outcome-effects` (no PR yet),
 based on development `980cf26`. Not played.** Read [docs/FUSION_OUTCOME_EFFECTS.md](docs/FUSION_OUTCOME_EFFECTS.md),
 `docs/TACTICAL_AI.md` §182 and the [receipt](docs/competence/FUSION_F4_CHECKS.json). The plan and the comparison with
 tactical mobility are in [docs/FUSION_OUTCOME_EFFECTS_PLAN.md](docs/FUSION_OUTCOME_EFFECTS_PLAN.md).

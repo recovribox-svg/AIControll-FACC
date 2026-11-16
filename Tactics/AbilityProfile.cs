@@ -610,7 +610,10 @@ namespace CompanionAI_Pathfinder.Tactics
             if (Fusion != null)
             {
                 Save = Fusion.SavingThrowType;
-                if (UsesSharedHdBudget) LimitFusion("shared Hit Dice selection", "profile/shared-hd");
+                // ★ Fusion F7 (docs/FUSION_SLEEP_POOL.md): recorded, no longer a refusal by itself. The fused cast's
+                // pool is the holder ability's own shared value, read by SharedHdControl; TacticalEngine.FusionWithheld
+                // offers the spell only when that forecast and the joint outcome value both qualify.
+                if (UsesSharedHdBudget) FusionSharedHd = true;
             }
         }
 
@@ -2208,7 +2211,7 @@ namespace CompanionAI_Pathfinder.Tactics
             return false;
         }
 
-        private static IEnumerable<GameAction[]> ChildActionLists(GameAction action)
+        internal static IEnumerable<GameAction[]> ChildActionLists(GameAction action)
         {
             var type = action.GetType();
             if (!ActionFields.TryGetValue(type, out var fields))

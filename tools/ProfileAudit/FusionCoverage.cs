@@ -68,6 +68,12 @@ namespace ProfileAudit
                 var outcomeLocation = typeof(AbilityProfile).GetProperty("FusionOutcomeEffectLocation", Hidden);
                 if (withheld == null || outcomeLocation == null) throw new MissingMemberException("Fusion outcome admission contract missing");
                 int outcomeProfiles = 0, outcomeAdmitted = 0;
+                // ★ Fusion F7: a shared Hit Dice pool is admitted by the pool reader plus the joint outcome value.
+                var sharedHd = typeof(AbilityProfile).GetProperty("FusionSharedHd", Hidden);
+                var withheldDetail = typeof(TacticalEngine).GetMethod("FusionWithheldDetail", BindingFlags.Static | BindingFlags.NonPublic);
+                if (sharedHd == null || withheldDetail == null) throw new MissingMemberException("Fusion shared-pool admission contract missing");
+                int poolProfiles = 0, poolAdmitted = 0;
+                var poolWithheld = new SortedDictionary<string, int>(StringComparer.Ordinal);
                 var outcomeWithheld = new SortedDictionary<string, int>(StringComparer.Ordinal);
                 var schools = new List<SpellSchool>(); var saves = new List<SavingThrowType>();
                 var shapes = new List<SpellTargetType>(); var deliveries = new Dictionary<SpellTargetType, BlueprintAbility>();
@@ -119,6 +125,19 @@ namespace ProfileAudit
                         bool jointOutcomeMetadataQualified = structural == null && (bool)jointModel.Invoke(null, new object[] { ability, profile });
                         if (jointOutcomeMetadataQualified) jointMetadata++;
                         string jointOutcomeMetadataReason = structural ?? (string)jointReason.GetValue(profile);
+                        if ((bool)sharedHd.GetValue(profile))
+                        {
+                            poolProfiles++;
+                            const string pool = "shared Hit Dice selection";
+                            if (structural != null) reasons.Add(pool + "; pool forecast not assessed");
+                            else if (primary == pool)
+                            {
+                                reasons.Add(pool);
+                                Increment(poolWithheld, (string)withheldDetail.Invoke(null, new object[] { ability, profile }) ?? "not qualified");
+                            }
+                            else poolAdmitted++;
+                            details.Add(new { reason = "shared Hit Dice pool", location = "profile/shared-hd" });
+                        }
                         string outcomeAt = (string)outcomeLocation.GetValue(profile);
                         if (outcomeAt != null)
                         {
@@ -184,6 +203,7 @@ namespace ProfileAudit
                     jointValueScope = "metadata gate only; live recipient applicability, duration, damage outcomes and useful value remain unassessed",
                     outcomeEffectProfiles = outcomeProfiles, outcomeEffectAdmitted = outcomeAdmitted,
                     outcomeEffectWithheldByJointReason = outcomeWithheld,
+                    sharedPoolProfiles = poolProfiles, sharedPoolAdmitted = poolAdmitted, sharedPoolWithheldByReason = poolWithheld,
                     readerErrors, blockersPresent = anyReasons, soleBlockers = soleReasons, blockerCooccurrence = combinations,
                     cases = rows
                 }, new JsonSerializerOptions { WriteIndented = true }));

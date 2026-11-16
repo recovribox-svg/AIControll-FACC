@@ -51,6 +51,15 @@ namespace CompanionAI_Pathfinder.Tactics
         /// cast runs on a passed root save or on both outcomes. Such a fusion is offered only through the joint outcome
         /// value (TacticalEngine.FusionWithheld); the older forecast multiplies control by the fail chance.</summary>
         internal string FusionOutcomeEffectLocation { get; private set; }
+        /// <summary>★ Fusion F7: one source spell spends a shared Hit Dice pool (Sleep). See SharedHdControl.</summary>
+        internal bool FusionSharedHd { get; private set; }
+        /// <summary>Immutable plan metadata for that pool, built once by SharedHdControl; no actor or context.</summary>
+        internal object FusionSharedHdPlan;
+        private int fusionLastDamageSource;
+        /// <summary>★ Fusion F7: every direct damage action belongs to an earlier source spell than this application, so
+        /// the cast's own damage is dealt before the buff exists (ActionList(spell 1, spell 2) runs in order).</summary>
+        internal bool FusionDamageBefore(BuffApplication application) =>
+            application != null && fusionLastDamageSource < application.SourceOrdinal;
         internal FusionSavePath FusionBuffPath(GameAction action) =>
             fusionBuffPaths != null && fusionBuffPaths.TryGetValue(action, out var path) ? path : FusionSavePath.Both;
         internal bool FusionValueFallbackReported;
@@ -70,14 +79,14 @@ namespace CompanionAI_Pathfinder.Tactics
             get
             {
                 if (fusionIndependentGuards.HasValue) return fusionIndependentGuards.Value;
-                bool supported = BuffApplications.All(a => StableFusionGuards(a.Guards)) &&
-                    Damage.All(a => !m_Guards.TryGetValue(a, out var guards) || StableFusionGuards(guards));
+                bool supported = BuffApplications.All(a => StableFusionGuards(a.Guards, FusionSharedHd && SharedHdBuffs.Contains(a.Buff))) &&
+                    Damage.All(a => !m_Guards.TryGetValue(a, out var guards) || StableFusionGuards(guards, false));
                 fusionIndependentGuards = supported;
                 return supported;
             }
         }
 
-        private bool StableFusionGuards(EffectGuard[] guards)
+        private bool StableFusionGuards(EffectGuard[] guards, bool pooled)
         {
             foreach (var guard in guards)
             {
@@ -93,7 +102,10 @@ namespace CompanionAI_Pathfinder.Tactics
                         type != typeof(ContextConditionHasBuff) && type != typeof(ContextConditionHasBuffFromCaster) &&
                         type != typeof(ContextConditionAlignment) && type != typeof(ContextConditionIsAlly) &&
                         type != typeof(ContextConditionIsEnemy) && type != typeof(ContextConditionIsCaster) &&
-                        type != typeof(ContextConditionCasterHasFact))
+                        type != typeof(ContextConditionCasterHasFact) &&
+                        // ★ Fusion F7: a pooled application's "is unconscious" test is the kill dependency the joint
+                        // value already carries (no control for a recipient the cast's damage drops).
+                        !(pooled && type == typeof(ContextConditionIsUnconscious)))
                     { FusionGuardRefusal = "mutable/unread guard " + type.Name; return false; }
                     if (!FusionConditionReferences.TryGetValue(type, out var fields))
                     {
@@ -281,6 +293,7 @@ namespace CompanionAI_Pathfinder.Tactics
                     LimitFusion("kill outside the shared failed-save branch", at);
                 if (action is ContextActionDealDamage || action is IDealDamageProvider)
                 {
+                    fusionLastDamageSource = Math.Max(fusionLastDamageSource, fusionSourceOrdinal);
                     if (FusionDamagePaths == null) FusionDamagePaths = new Dictionary<GameAction, FusionSavePath>();
                     if (FusionDamagePaths.TryGetValue(action, out var previous) && previous != path)
                         LimitFusion("shared damage action on different save branches", at);

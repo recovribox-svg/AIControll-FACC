@@ -22,11 +22,12 @@ namespace CompanionAI_Pathfinder.Tactics
             if (profile.Fusion == null || profile.FusionValueFallbackReported) return;
             profile.FusionValueFallbackReported = true;
             Main.Log($"[Fusion] {ability.Name}: joint outcome value not qualified for this recipient; " +
-                (profile.FusionOutcomeEffectLocation != null ? "its control is not credited " : "existing forecast retained ") +
+                (profile.FusionOutcomeEffectLocation != null || profile.FusionSharedHd ? "its control is not credited " : "existing forecast retained ") +
                 $"({profile.FusionOutcomeMetadataReason ?? (ability.ShadowSpellSettings != null ? "shadow copy" : "recipient guard/duration/outcome or damage-wake/removal dependency")})");
         }
 
         internal const string FusionOutcomeGate = "effect on a passed or either save outcome; joint value not qualified";
+        internal const string FusionSharedHdGate = "shared Hit Dice selection";
 
         /// <summary>
         /// ★ Fusion F4: the one admission rule, shared by EvaluateAbility and the coverage audit. Null when the fused
@@ -37,7 +38,22 @@ namespace CompanionAI_Pathfinder.Tactics
         {
             if (profile?.Fusion == null) return null;
             if (profile.FusionUnsupported != null) return profile.FusionUnsupported;
+            // ★ Fusion F7: a shared Hit Dice pool is offered only when the pool forecast reads the fused cast's native
+            // pool and delivery, and the joint outcome value prices the result.
+            if (profile.FusionSharedHd &&
+                (SharedHdControl.FusedRefusal(ability, profile) != null || !FusionOutcomeModel(ability, profile))) return FusionSharedHdGate;
             if (profile.FusionOutcomeEffectLocation != null && !FusionOutcomeModel(ability, profile)) return FusionOutcomeGate;
+            return null;
+        }
+
+        /// <summary>Why a gate withheld the fused spell: the pool reader's reason, else the joint value's.</summary>
+        internal static string FusionWithheldDetail(AbilityData ability, AbilityProfile profile)
+        {
+            if (profile?.Fusion == null || profile.FusionUnsupported != null) return null;
+            string pool = profile.FusionSharedHd ? SharedHdControl.FusedRefusal(ability, profile) : null;
+            if (pool != null) return pool;
+            if (!FusionOutcomeModel(ability, profile))
+                return profile.FusionOutcomeMetadataReason ?? (ability.ShadowSpellSettings != null ? "shadow copy" : "unknown");
             return null;
         }
 
@@ -83,6 +99,11 @@ namespace CompanionAI_Pathfinder.Tactics
             var envelope = ctx.FusionControlScratch ?? (ctx.FusionControlScratch = new ValueModel.ControlEnvelope());
             envelope.Clear();
             ValueModel.ControlEnvelope passEnvelope = null;
+            // ★ Fusion F7: the one application a shared Hit Dice pool gates (Sleep). It joins the envelopes with the
+            // forecast chance that the pool still covers this recipient (SharedHdControl), blended after the loop.
+            var pool = profile.FusionSharedHd ? ctx.FusionSharedHd : null;
+            bool pooledSeen = false, pooledOnFailure = false, pooledOnPass = false;
+            float pooledChance = 0f, pooledShare = 0f, pooledHorizon = 0f;
             MechanicsContext durationContext = null;
             var single = ctx.FusionBuffScratch ?? (ctx.FusionBuffScratch = new List<BlueprintBuff>(1));
             float repeat = CombatMemory.TimesUsed(ctx.Unit, ability) >= 2 ? 0.3f : 1f;
@@ -99,13 +120,33 @@ namespace CompanionAI_Pathfinder.Tactics
                 var buff = occurrence.Buff;
                 if (occurrence.PeriodicDamageOnly) continue; // omitted DOT benefit must not become generic lost turns
                 if (recipient.Buffs.HasFact(buff)) continue; // no new stacking or speculative refresh credit
-                var applies = occurrence.Applies(ability, recipient);
-                if (applies == EffectApplies.No || CombatMath.BuffImmune(recipient, buff, ability)) continue;
-                if (applies == EffectApplies.Unknown) return false;
+                bool pooled = profile.FusionSharedHd && profile.SharedHdBuffs.Contains(buff);
+                float reach = 1f;
+                if (pooled)
+                {
+                    // The pool spell's exclusive branches apply one buff with one duration (SharedHdControl's plan):
+                    // the first stands for the application, and the forecast has read all of its native guards.
+                    if (pooledSeen) continue;
+                    pooledSeen = true;
+                    if (pool == null || !pool.Supported)
+                    {
+                        if (friendly) return false; // an unread pool cannot establish an ally's safety
+                        continue;
+                    }
+                    reach = pool.Eligibility(recipient, buff);
+                    if (reach <= 0f || CombatMath.BuffImmune(recipient, buff, ability)) continue;
+                }
+                else
+                {
+                    var applies = occurrence.Applies(ability, recipient);
+                    if (applies == EffectApplies.No || CombatMath.BuffImmune(recipient, buff, ability)) continue;
+                    if (applies == EffectApplies.Unknown) return false;
+                }
                 // A low-HD sleep branch may wake from a companion payload; an inapplicable sleep branch must not
                 // suppress the independent high-HD stun branch of Color Spray.
                 bool sleeping = occurrence.Conditions?.Contains(Kingmaker.UnitLogic.UnitCondition.Sleeping) == true;
-                if (sleeping && profile.DealsDamage) return false;
+                // ★ Fusion F7: a pooled sleep that the game applies after all of the cast's own damage is not woken by it.
+                if (sleeping && profile.DealsDamage && !(pooled && profile.FusionDamageBefore(occurrence))) return false;
                 var strength = AbilityProfile.BuffControlOn(occurrence, recipient, out bool immuneConditions);
                 float share = immuneConditions ? 0f : ControlShare(strength, false, false);
                 if (strength <= ControlStrength.Minor)
@@ -139,6 +180,14 @@ namespace CompanionAI_Pathfinder.Tactics
                 float horizon = Math.Min(Math.Min(ctx.ExpectedRounds, 3f), duration);
                 if (sleeping && s_ActiveEnemies != null && s_ActiveEnemies.All(e => e == recipient) && ctx.Allies.Any(a => a != ctx.Unit))
                     horizon = Math.Min(horizon, 1f);
+                if (pooled)
+                {
+                    // A periodic damage carrier from the same cast (burning) wakes the sleeper at its next tick.
+                    if (sleeping && profile.BuffApplications.Any(a => a.PeriodicDamageOnly)) horizon = Math.Min(horizon, 1f);
+                    pooledChance = reach; pooledShare = share; pooledHorizon = horizon;
+                    pooledOnFailure = onFailure; pooledOnPass = onPass;
+                    continue;
+                }
                 if (onFailure && !envelope.Add(share, horizon)) return false;
                 if (onPass)
                 {
@@ -152,8 +201,37 @@ namespace CompanionAI_Pathfinder.Tactics
             }
             rounds = envelope.Rounds();
             if (passEnvelope != null) passRounds = passEnvelope.Rounds();
+            if (pooledChance > 0f && pooledShare > 0f)
+            {
+                // Expected envelope: with the forecast chance the pooled control overlaps the others, else it is absent.
+                if (pooledOnFailure)
+                {
+                    if (!envelope.Add(pooledShare, pooledHorizon)) return false;
+                    rounds = ValueModel.PooledRounds(rounds, envelope.Rounds(), pooledChance);
+                }
+                if (pooledOnPass)
+                {
+                    if (passEnvelope == null)
+                    {
+                        passEnvelope = ctx.FusionControlPassScratch ?? (ctx.FusionControlPassScratch = new ValueModel.ControlEnvelope());
+                        passEnvelope.Clear();
+                    }
+                    if (!passEnvelope.Add(pooledShare, pooledHorizon)) return false;
+                    passRounds = ValueModel.PooledRounds(passRounds, passEnvelope.Rounds(), pooledChance);
+                }
+            }
             if (!friendly && CombatMath.IsDisabled(recipient)) { rounds *= 0.4f; passRounds *= 0.4f; }
             return true;
+        }
+
+        // ★ Fusion F7: diagnostic only (first qualified recipient per configuration).
+        private static float FusionPoolChance(TacticalContext ctx, AbilityProfile profile, UnitEntityData recipient)
+        {
+            var pool = ctx.FusionSharedHd;
+            if (pool == null || !pool.Supported) return 0f;
+            float chance = 0f;
+            foreach (var buff in profile.SharedHdBuffs) chance = Math.Max(chance, pool.Eligibility(recipient, buff));
+            return chance;
         }
 
         private static bool FusionControlCatches(TacticalContext ctx, AbilityData ability, AbilityProfile profile, UnitEntityData ally)
@@ -189,7 +267,8 @@ namespace CompanionAI_Pathfinder.Tactics
                 profile.FusionValueQualifiedReported = true;
                 Main.Log($"[FusionValue] {ability.Name} -> {enemy.CharacterName}: forecast shared-save fail {damageRead.FailChance:P0}, " +
                     $"conditional damage fail/pass {damageRead.Failed:F1}/{damageRead.Passed:F1}, control envelope {controlRounds:F2} round-equivalents" +
-                    (profile.FusionOutcomeEffectLocation != null ? $" on a failed save, {passRounds:F2} on a passed save" : "") + "; " +
+                    (profile.FusionOutcomeEffectLocation != null ? $" on a failed save, {passRounds:F2} on a passed save" : "") +
+                    (profile.FusionSharedHd ? $", rolled Hit Dice pool covers this recipient {FusionPoolChance(ctx, profile, enemy):P0}" : "") + "; " +
                     "per-application eligibility and surviving failed-save outcomes (first qualified recipient per configuration)");
             }
             return true;

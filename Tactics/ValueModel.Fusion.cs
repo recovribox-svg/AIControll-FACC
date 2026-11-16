@@ -37,6 +37,13 @@ namespace CompanionAI_Pathfinder.Tactics
             }
         }
 
+        /// <summary>★ Fusion F7: expected control rounds when one more control joins with the given chance.</summary>
+        internal static float PooledRounds(float without, float with, float chance)
+        {
+            float p = Clamp(chance, 0f, 1f);
+            return (1f - p) * Math.Max(0f, without) + p * Math.Max(0f, with);
+        }
+
         /// <summary>★ Fusion F4: the chance, among delivered casts, of the outcomes that carry an effect.</summary>
         internal static float FusionOutcomeShare(float failChance, bool onFailure, bool onPass)
         {

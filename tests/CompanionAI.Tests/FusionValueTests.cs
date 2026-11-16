@@ -108,6 +108,33 @@ namespace CompanionAI.Tests
         [InlineData(1.4f, false, true, 0f)]
         public void TheOutcomeShareCountsOnlyOutcomesThatCarryAnEffect(float fail, bool onFailure, bool onPass, float expected) =>
             Assert.Equal(expected, ValueModel.FusionOutcomeShare(fail, onFailure, onPass), 5);
+        // ★ Fusion F7 (docs/FUSION_SLEEP_POOL.md): a control gated by a rolled shared Hit Dice pool.
+        [Theory]
+        [InlineData(0.4f, 3f, 0f, 1.2f)]      // nothing else: three rounds with the pool's chance
+        [InlineData(0.4f, 3f, 1f, 1.8f)]      // beside a one-round control: the two envelopes blended, not summed
+        [InlineData(1f, 3f, 1f, 3f)]
+        [InlineData(0f, 3f, 1f, 1f)]
+        [InlineData(1.7f, 3f, 1f, 3f)]
+        public void APooledControlJoinsWithItsChance(float chance, float with, float without, float expected) =>
+            Assert.Equal(expected, ValueModel.PooledRounds(without, with, chance), 5);
+        [Fact] public void ARolledPoolAveragesTheOrderedForecastOverItsRolls()
+        {
+            // Two recipients of 4 and 5 Hit Dice, the first spends when it is covered. Pool 2d6.
+            var recipients = new[] { Recipient(4), Recipient(5) };
+            float first = 0f, second = 0f;
+            for (int a = 1; a <= 6; a++)
+                for (int b = 1; b <= 6; b++)
+                {
+                    Assert.True(SharedHdBudget.TryForecast(a + b, recipients, out var e));
+                    first += e[0] / 36f; second += e[1] / 36f;
+                }
+            Assert.Equal(33f / 36f, first, 5);           // a 2d6 pool covers 4 Hit Dice unless it rolls 2 or 3
+            Assert.Equal(10f / 36f, second, 5);          // 5 more are left only on a roll of 9 or more
+            Assert.True(SharedHdBudget.TryForecast(4, recipients, out var fixedPool));
+            Assert.Equal(1f, fixedPool[0]); Assert.Equal(0f, fixedPool[1]);   // Sleep's own fixed 4 would never reach the second
+        }
+        private static SharedHdBudget.Recipient Recipient(int hitDice) => new SharedHdBudget.Recipient(1f,
+            remaining => new SharedHdBudget.Visit(hitDice <= remaining, hitDice <= remaining, hitDice));
         [Fact] public void RegenerationKeepsItsExistingRemovalDiscount()
         {
             ValueModel.FusionValue(1, 1, 100, 0, 15, 40, 40, 3, true, false, out float regenerating, out _);
