@@ -501,6 +501,10 @@ namespace CompanionAI_Pathfinder.Tactics
                 }
             }
 
+            // ★ shifter-forms (§174): Shifter's Fury in a human body waits only while a new major form is this turn's main
+            // action; otherwise it is taken now (a positive form that loses to the main action no longer keeps it off).
+            if (quick != null && quick.ShifterFury) quick = HoldFuryForForm(ctx, usable, quick, main, preview);
+
             Candidate chosen = null;
             if (quick != null) chosen = quick;
             else if (main != null && main.Value >= MinMainValue) chosen = main;
@@ -993,6 +997,7 @@ namespace CompanionAI_Pathfinder.Tactics
             FightStats.PartyObserved(ctx.Round, out float partyDealt, out int roundsSeen);
             ctx.PartyDamagePerRound = ValueModel.PartyDamagePerRound(partyLevels, partyDealt, roundsSeen);
             ctx.ExpectedRounds = ValueModel.ExpectedRounds(enemyHp, ctx.PartyDamagePerRound);
+            s_GrappleHorizon = Math.Min(ctx.ExpectedRounds, 3f);   // ★ G1: as the control horizon (effectRounds)
             ctx.Difficulty = Mathf.Clamp(enemyThreat / Math.Max(1f, partyPower), 0.1f, 2f);
             // ★ v0.3.18 (N5): the enemies' real damage to the party against the engine's prediction for the same rounds.
             FightStats.DangerObserved(ctx.Round, out float enemyDealt, out float predicted, out int roundsPredicted);
@@ -2401,10 +2406,101 @@ namespace CompanionAI_Pathfinder.Tactics
         /// <summary>★ v0.3.18: a weapon attack estimate's damage value (<paramref name="factor"/>: a bonus on the damage, Charge).</summary>
         /// <remarks>★ v0.3.28 test 14: and what its hits carry beyond their damage (a poisoned or draining weapon:
         /// CombatMath.OnHitHp), for the hits it is expected to land.</remarks>
+        /// <remarks>★ G1: and the grapple a hit of it may start (Grabber and its kin, <see cref="GrappleHold"/>): the attacks
+        /// after it are already cut from the estimate, its hold is valued here.</remarks>
         private static float DamageValue(UnitEntityData enemy, WeaponAttackEstimate est, float factor = 1f) =>
             est == null ? 0f : DamageValue(enemy, est.ExpectedDamage * factor +
-                                           CombatMath.OnHitHp(est.Attacker, enemy, est.Attacks * est.FirstHitChance),
-                                           est.AnyHitChance, est.EndsRegeneration);
+                                           CombatMath.OnHitHp(est.Attacker, enemy,
+                                               (est.GrappleChance > 0f ? est.ExpectedAttacks : est.Attacks) * est.FirstHitChance),
+                                           est.AnyHitChance, est.EndsRegeneration) + GrappleHold(enemy, est);
+
+        /// <summary>★ G1: the control horizon of this decision (min(expected rounds, 3), as for control effects).</summary>
+        private static float s_GrappleHorizon = 3f;
+
+        /// <summary>
+        /// ★ G1 (docs/TACTICAL_AI.md §170): what the grapple a hit of <paramref name="est"/> may start is worth: its chance
+        /// times the hold's value (ValueModel.GrappleHoldValue). The victim's side is its control worth, held then pinned
+        /// at the shared soft and hard control shares (x0.4 when it is already disabled, as for control); the holder's side
+        /// is its worth per round at the hard share, as an ally caught by our own control is priced, less the free natural
+        /// attack each maintained round. Negative when the hold costs the holder more than the victim loses.
+        /// </summary>
+        private static float GrappleHold(UnitEntityData enemy, WeaponAttackEstimate est)
+        {
+            if (est == null || est.GrappleChance <= 0f || est.Grapple == null || est.Attacker == null) return 0f;
+            float persist = ValueModel.GrapplePersists(est.Grapple.Maintain, est.Grapple.BreakFree);
+            float victim = CombatMath.ControlWorth(enemy) * (CombatMath.IsDisabled(enemy) ? 0.4f : 1f);
+            float holder = ValueModel.PerRound(Level(est.Attacker));
+            // ★ G2: a holder that can let go keeps the hold only while it pays (GrappleReleaseValue lets go by the same test).
+            bool release = CanReleaseGrapple(est.Attacker);
+            float hold = ValueModel.GrappleHoldValue(persist, s_GrappleHorizon, victim, holder, est.GrappleFreeDamage,
+                ControlShare(ControlStrength.Soft, false, false), ControlShare(ControlStrength.Hard, false, false), release);
+            float value = est.GrappleChance * hold;
+            AbilityDiscovery.ReportOnce($"grapple|{CombatMemory.Fight}|{est.Attacker.UniqueId}|{enemy.UniqueId}|{est.Attacks}",
+                () => $"[Grapple] {est.Attacker.CharacterName} -> {enemy.CharacterName}: a hit grapples {est.GrappleChance:P0} " +
+                      $"({est.Attacks} attack(s), {est.ExpectedAttacks:F1} expected before the grapple stops the routine); hold " +
+                      $"{hold:+0.0;-0.0} if it starts = {value:+0.0;-0.0} (lasts {persist:P0}/round: maintain {est.Grapple.Maintain:P0}, " +
+                      $"escape {est.Grapple.BreakFree:P0}; victim {victim:F1}, holder {holder:F1} per round, free natural hit " +
+                      $"{est.GrappleFreeDamage:F1}, {ValueModel.GrappleHeldRounds(persist, s_GrappleHorizon):F2} pinned rounds in " +
+                      $"{s_GrappleHorizon:F1}{(release ? "; lets go when a round stops paying" : "")}); first per fight and pair");
+            return value;
+        }
+
+        private static readonly Dictionary<UnitEntityData, KeyValuePair<int, AbilityData>> ReleaseAbilities =
+            new Dictionary<UnitEntityData, KeyValuePair<int, AbilityData>>();
+
+        /// <summary>★ G2: the unit's own Release Grapple (AbilityProfile.ReleasesGrapple), unless a list blocks it; once a frame.</summary>
+        private static AbilityData ReleaseAbility(UnitEntityData unit)
+        {
+            if (unit == null) return null;
+            int frame = Time.frameCount;
+            if (ReleaseAbilities.TryGetValue(unit, out var known) && known.Key == frame) return known.Value;
+            AbilityData found = null;
+            try
+            {
+                foreach (var fact in unit.Abilities.Enumerable)
+                {
+                    var data = fact?.Data;
+                    if (data?.Blueprint == null || !(AbilityProfile.Get(data.Blueprint)?.ReleasesGrapple ?? false)) continue;
+                    if (UserAbilityPolicy.Blocks(unit, data)) continue;
+                    found = data;
+                    break;
+                }
+            }
+            catch (Exception ex) { Main.Verbose($"[Grapple] {unit.CharacterName}: release ability unreadable: {ex.Message}"); }
+            if (ReleaseAbilities.Count > 64) ReleaseAbilities.Clear();
+            ReleaseAbilities[unit] = new KeyValuePair<int, AbilityData>(frame, found);
+            return found;
+        }
+
+        internal static bool CanReleaseGrapple(UnitEntityData unit) => ReleaseAbility(unit) != null;
+
+        /// <summary>
+        /// ★ G2: Release Grapple's worth now: the hold it ends, priced as the grab was (GrappleHold), from the hold as the
+        /// game keeps it (CombatMath.ReadHold). Keeping is worth the victim's next turn held or pinned plus each later round
+        /// while it pays, less the holder's own turn (ValueModel.GrappleKeepValue); letting go is worth that loss when it
+        /// is clearly negative. Zero otherwise ("not useful now", no fallback): a hold that pays stays.
+        /// </summary>
+        private static float GrappleReleaseValue(TacticalContext ctx, AbilityData ability, out string why)
+        {
+            var unit = ctx.Unit;
+            var held = CombatMath.ReadHold(unit);
+            if (held == null) { why = "holds nothing it reads"; return 0f; }
+            var victim = held.Victim;
+            float persist = ValueModel.GrapplePersists(held.Maintain, held.BreakFree);
+            float worth = CombatMath.ControlWorth(victim) * (CombatMath.IsDisabled(victim) && !held.Pinned ? 0.4f : 1f);
+            float holder = ValueModel.PerRound(Level(unit));
+            float pinnedShare = ControlShare(ControlStrength.Hard, false, false);
+            float nowShare = held.Pinned ? pinnedShare : ControlShare(ControlStrength.Soft, false, false);
+            float keep = ValueModel.GrappleKeepValue(persist, s_GrappleHorizon, worth, holder, held.FreeDamage, nowShare, pinnedShare);
+            float net = ValueModel.GrappleRoundNet(worth, holder, held.FreeDamage, pinnedShare);
+            string detail = $"{victim.CharacterName} {(held.Pinned ? "pinned" : "held")}, keep {keep:+0.0;-0.0} (victim {worth:F1}, holder " +
+                            $"{holder:F1} per round, free natural hit {held.FreeDamage:F1}, a later round {net:+0.0;-0.0}, lasts {persist:P0}/round)";
+            float release = ValueModel.GrappleReleaseValue(keep, out why);
+            AbilityDiscovery.ReportOnce($"grapplekeep|{CombatMemory.Fight}|{unit.UniqueId}|{victim.UniqueId}|{(keep < -0.5f ? 1 : 0)}",
+                () => $"[Grapple] {unit.CharacterName}: {(release > 0f ? $"release offer {release:F1}:" : "keeping the hold is preferred:")} {detail}");
+            if (release == 0f) why += ": " + detail;
+            return release;
+        }
 
         private static float RoleWeight(TacticalContext ctx, string category)
         {
@@ -3169,6 +3265,10 @@ namespace CompanionAI_Pathfinder.Tactics
                     () => $"[Fusion] {ability.Name}: {profile.Fusion.Spell1.name} + {profile.Fusion.Spell2.name}; " +
                           $"delivery {profile.Blueprint.name}, shared save {profile.Save}, native level {profile.Fusion.SpellLevel}, " +
                           $"school {profile.Fusion.SpellSchool}, shape {profile.Fusion.SpellTargetType}");
+            if (profile.SelectedBuffFloors.Count > 0)
+                AbilityDiscovery.ReportOnce("value-selection|" + AbilityDiscovery.Key(ability),
+                    () => $"[ValueSelection] {ability.Name}: common buff/fixed minimum duration only; longer selected outcome unpriced; " +
+                          "ally checks retain the longer duration and possible refresh (first per configuration)");
             if (!PureMagePolicy.AllowsAbility(ctx.Settings, ability, profile)) return none;
             var targetingBlueprint = ability.GetDeliverBlueprint() ?? ability.Blueprint;
 
@@ -3479,8 +3579,7 @@ namespace CompanionAI_Pathfinder.Tactics
                     ControlAims = controlAims,
                     Offensive = IsOffensive(why),
                     // ★ v0.3.25: getting a held state back (psionic focus) is a buff for the restraint rule too.
-                    PureBuff = why.Split('+').All(r => r == "buff" || r.StartsWith("grows into") || r.StartsWith("regains ")) &&
-                               (why.Contains("buff") || why.StartsWith("regains ") || why.Contains("+regains ")),
+                    PureBuff = IsPureBuff(why),
                     Label = $"{(ability.SourceItem != null ? "Item:" : "")}{ability.Name}{metamagic}->{(summonPoint.HasValue ? "a spot near the fight" : target.CharacterName)}({why}){risk?.Tag}" +
                             (approach?.Detours == true ? $" ({approach.Detour})" : "") +
                             (provoke != null ? $" [casting provokes {provoke.Attacks}{(provoke.DropChance >= 0.1f ? $", {provoke.DropChance:P0} down" : "")}]" : "") +
@@ -3613,6 +3712,11 @@ namespace CompanionAI_Pathfinder.Tactics
             return false;
         }
 
+        /// <summary>A missing reason is not a pure buff (as with IsOffensive), and must not discard a valued ability.</summary>
+        private static bool IsPureBuff(string why) => !string.IsNullOrEmpty(why) &&
+            why.Split('+').All(r => r == "buff" || r.StartsWith("grows into") || r.StartsWith("regains ")) &&
+            (why.Contains("buff") || why.StartsWith("regains ") || why.Contains("+regains "));
+
         private static string MetamagicTag(AbilityData ability) => AbilityDiscovery.MetamagicTag(ability);
 
         /// <summary>
@@ -3709,6 +3813,9 @@ namespace CompanionAI_Pathfinder.Tactics
             }
             if (IsCoupDeGrace(ability))
                 return CoupDeGraceValue(ctx, ability, target, out why);
+            // ★ G2: letting go of a grapple is worth the hold it ends, when that hold no longer pays.
+            if (profile.ReleasesGrapple)
+                return GrappleReleaseValue(ctx, ability, out why);
             // ★ v0.3.18 (AA-4): Vital Strike and Cleave are weapon attacks (TacticalEngine.Martial.cs).
             if (profile.IsWeaponAttack)
                 return WeaponAbilityValue(ctx, ability, profile, target, out why);
@@ -4162,6 +4269,7 @@ namespace CompanionAI_Pathfinder.Tactics
                 // ★ v0.3.21: an ally that would fall into the pit is caught too.
                 Func<UnitEntityData, bool> wouldBeCaught = a =>
                     fusionOutcomes ? FusionControlCatches(ctx, ability, profile, a) :
+                    SelectedBuffAllyRounds(ctx, ability, profile, a) > 0f ||
                     profile.PitHolds(a) ||
                     profile.TargetBuffs.Any(b => (ForecastApplies(b, a, friendly: true) ?? profile.BuffAppliesTo(b, ability, a)) != EffectApplies.No && !a.Buffs.HasFact(b) &&
                                                  !CombatMath.BuffImmune(a, b, ability)) &&
@@ -4171,7 +4279,8 @@ namespace CompanionAI_Pathfinder.Tactics
                 {
                     if (ctx.Settings.AvoidFriendlyFire)
                     { ctx.FriendlyFireVeto = true; why = "friendly fire"; return 0f; }
-                    allyControlCost = caughtAllies.Sum(a => ValueModel.PerRound(Level(a)) * strength * effectRounds);
+                    allyControlCost = caughtAllies.Sum(a => ValueModel.PerRound(Level(a)) * strength *
+                        Math.Max(effectRounds, SelectedBuffAllyRounds(ctx, ability, profile, a)));
                     // ★ v0.3.28 test 12: shown on the decision label, and a cone that catches them is tried turned past them.
                     string controlNote = $"{(profile.ControlStrength == ControlStrength.Hard ? "controls" : "debuffs")} " +
                                          $"{string.Join(", ", caughtAllies.Select(a => a.CharacterName + WalkingInTag(walkingIn, a)))} -{allyControlCost:F0}";
@@ -4204,7 +4313,8 @@ namespace CompanionAI_Pathfinder.Tactics
                         .Where(a => a != unit && !affectedAllies.Contains(a) && !UsesRangedWeapon(a) &&
                                     (Vector3.Distance(a.Position, target.Position) <= profile.AoERadius + 2.5f + a.Corpulence || headsInto(a)) &&
                                     wouldBeCaught(a))
-                        .Sum(a => 0.5f * ValueModel.PerRound(Level(a)) * strength * effectRounds);
+                        .Sum(a => 0.5f * ValueModel.PerRound(Level(a)) * strength *
+                            Math.Max(effectRounds, SelectedBuffAllyRounds(ctx, ability, profile, a)));
                     // ★ v0.3.19 (test7): a downed ally lying where the area lands - whoever brings it back has to walk
                     // in (a save, then a fall or worse), and in real time a fall keeps the walker down while it stands
                     // there. Half of what reviving it is worth. Orvath's Grease went down on the unconscious Camellia

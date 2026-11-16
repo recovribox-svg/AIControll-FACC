@@ -388,7 +388,13 @@ namespace CompanionAI_Pathfinder.Tactics
 
         public bool HasDetectableEffect =>
             Damage.Count > 0 || Heals.Count > 0 || CasterHeals.Count > 0 || TargetBuffs.Count > 0 || CasterBuffs.Count > 0 ||
-            Summons || Dispels || RemovesBuffs || Enchants || Maneuvers.Count > 0 || IsWeaponAttack || Extensions.Count > 0;
+            Summons || Dispels || RemovesBuffs || Enchants || Maneuvers.Count > 0 || IsWeaponAttack || Extensions.Count > 0 ||
+            ReleasesGrapple;
+
+        /// <summary>★ G2: the caster lets go of the grapple it holds, and nothing else (each grab form's Release Grapple: a free
+        /// action whose only action is ContextActionReleaseGrapple, UnitHelper.ReleaseGrapple on the caster). Valued by the
+        /// hold it ends (TacticalEngine.GrappleReleaseValue), never by a fallback.</summary>
+        public bool ReleasesGrapple => m_ActionTypes.Count == 1 && m_ActionTypes.Contains(nameof(ContextActionReleaseGrapple));
 
         /// <summary>★ v0.3.19 (class audit B2): buffs it lengthens on its targets, and by how much (Cackle, Chant).</summary>
         public readonly List<KeyValuePair<BlueprintBuff, ContextDurationValue>> Extensions = new List<KeyValuePair<BlueprintBuff, ContextDurationValue>>();
@@ -828,6 +834,18 @@ namespace CompanionAI_Pathfinder.Tactics
                 if (action == null) continue;
                 if (Fusion != null) fusionActionOrdinal++;
                 m_ActionTypes.Add(action.GetType().Name);
+
+                if (action is ContextActionSelectByValue selection)
+                {
+                    var floor = ReadValueSelection(selection);
+                    if (floor.Application != null)
+                    {
+                        if (selectedBuffFloors == null) selectedBuffFloors = new List<SelectedBuffFloor>(1);
+                        if (!selectedBuffFloors.Contains(floor)) selectedBuffFloors.Add(floor);
+                        Walk(floor.Actions, visited, abilityDepth, subject, depth + 1, guards);
+                    }
+                    continue;
+                }
 
                 // Conditional: each branch's effects only happen when the condition has that outcome for the target.
                 if (action is Conditional conditional)

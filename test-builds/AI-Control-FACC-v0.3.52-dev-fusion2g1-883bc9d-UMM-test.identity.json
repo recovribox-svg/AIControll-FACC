@@ -1,0 +1,37 @@
+{
+  "build_label": "fusion2g1",
+  "kind": "development-test",
+  "version": "0.3.52",
+  "source_branch": "claude/grapple-awareness",
+  "source_commit": "883bc9d",
+  "pull_request": "recovribox-svg/AIControll-FACC#65",
+  "development_base": "6b9be4214989f7ba4a56dad54f0b8c9056c2789d",
+  "contains": [
+    "development 6b9be42: Fusion F0/F1/F2-F3 core (PR #60, #62, #64), S1/S2, I1, summon control",
+    "G1 grapple state awareness (PR #65)"
+  ],
+  "dll": {
+    "assembly": "CompanionAI_Pathfinder, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null",
+    "mvid": "e4cb4df9-ad46-409a-a800-b96382c68a10",
+    "sha256": "4f46132d0f838b4fd721237b1c0b390f599a0dd484ddff8557b856c87b67ae13",
+    "size": 1446912,
+    "source_link_commit": "883bc9d",
+    "unitymodmanager_reference": "0.33.0.0 (as the played v0.3.29 release)"
+  },
+  "manifest_sha256": "1876fd6fc56d03b28793f6c481fac47c9ea85eec3265d6859232deeab67523a3",
+  "archive": "AI-Control-FACC-v0.3.52-dev-fusion2g1-883bc9d-UMM-test.zip",
+  "zip_sha256": "9130236430dff865fcab71153e164b8a27964861173a2b09b8bc5fbc79dd7eda",
+  "checks_receipt": "docs/competence/G1_GRAPPLE_CHECKS.json",
+  "toolchain": {
+    "dotnet_sdk": "8.0.131",
+    "msbuild": "17.8.49.61608",
+    "csharp_compiler": "4.8.0-7.25569.25 (38896ab4)"
+  },
+  "gameplay_status": "not played",
+  "scope": "fusion2 (qualified Fusion control by each effect's own duration and immunity; shared-save damage/control value) plus G1 (a grab that grapples cuts the forecast attack routine; the hold is valued: victim held then pinned against the holder's lost turns, plus the free natural attack; the header names the grapple pair). Release Grapple stays unsupported.",
+  "archive_contents": [
+    "CompanionAI_Pathfinder.dll",
+    "Info.json"
+  ],
+  "release": false
+}

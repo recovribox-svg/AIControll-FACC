@@ -8,6 +8,186 @@ Read [CONTRIBUTING.md](CONTRIBUTING.md) for shared branch ownership, Codex pull 
 Codex works on task branches and targets pull requests at `claude/dreamy-pasteur-b9h3rn`; Claude reviews and integrates them there.
 Keep `main` for author-authorized releases. Read [AGENTS.md](AGENTS.md) when coordinating agent work.
 
+**Current handover (15 November 2026, Codex): gaps1 playtest review / Release Grapple repair on
+`codex/gaps1-playtest-review`, stacked on #70 `d5a1207` -> #69 -> #68 -> #67 -> #66 -> #65,
+development `6b9be42`; repaired gaps2 is unplayed.** Read [review/evidence/replay](docs/GAPS1_PLAYTEST_REVIEW.md),
+[input hashes/context](docs/competence/GAPS1_PLAYTEST_INPUTS.json), §178. Supplied logs match gaps1 MVID `9aea0261`;
+author confirms ToyBox spawns, rests between fights, Grabber left to the engine. All 572 issues have matching terminals.
+AI rows 2812-2813 value releasing Hydra at 23.8, then discard Release Grapple: its null reason crashes candidate
+pure-buff classification. The score now has a reason; the classifier guards null/empty. A bounded appraisal says
+"release offer", not that a release already executed. Header reciprocity now uses native UnitReference ID equality
+instead of another proxy resolution. The missing played hold conditions/headers still need a replay, not an invented
+permission/movement rule. No new world/path/rule forecasts, actor mutation, movement or commitment policy.
+
+Checked source **`96108ba`**, MVID **`9ce04a64-f9a0-43ce-8275-5f1b0c7bbe73`**: **861 unit + 27 inventory + 3 script + 11 ledger tests**,
+real-reference Release **0 warnings/errors**; ProfileAudit 44,639 loaded / 4,807 abilities,
+no load/reader failure or prerequisite skip. **GRAPPLE 58 (3 new)**, SHIFTER-FORMS 21, GRIFFON-MODES 29, selector 24
+and inherited checks pass; supplementary Magus 44 and native providers 98/14/10 pass. **One added native equality
+reference resolves**; reports otherwise match #70, raw enum mismatch remains a separate expected negative check.
+[Receipt](docs/competence/GAPS1_PLAYTEST_CHECKS.json), [compiler/reference provenance](docs/competence/GAPS1_PLAYTEST_BUILD_PROVENANCE.json).
+[Cumulative gaps2 UMM test ZIP](test-builds/AI-Control-FACC-v0.3.52-dev-gaps2-96108ba-UMM-test.zip), SHA-256
+`bf5e955f32cd91512495656e30528cc1afad11733af108bc523012527cd681fa`. SDK 8.0.426 / Roslyn 4.11, UMM 0.33.2.0,
+manifest 0.3.52; frozen checked DLL across receipt/docs-only commits. No merge, main/development push or release.
+
+Played: engine Grabber on/off and actual grabs in TB/RT, native maintenance/free hit, three RT shapes and Fury.
+Frigid now forecasts the one-round minimum; a Grabber-valued leap is offered. **No Frigid, leap or release is issued**;
+no invocation/reveal acceptance. The suicidal-looking bomb price needs a controlled recipient/value check: native
+projectiles launch before their ranged roll queues AoOs, not a proven pre-delivery loss. Nine slow rows coincide with
+collections; warm ability/context workload remains material. No performance improvement is claimed by this repair.
+Retain #69's saved-Frigid boundary (168 withheld), leap bounds, holder generic-cost/safety, monster and form limits.
+No additional upload needed. Next: TB/RT replay with Grabber left to the engine; negative/positive holds, actual
+release and recovered permissions/headers (respect spent actions/cooldowns), actual leap, ordinary/no-save Frigid;
+paired logs and startup identity.
+
+**Earlier handover (15 November 2026, Codex): cached leap Grabber modes on `codex/leap-grab-modes`, stacked on
+#69 `2e86342` -> #68 -> #67 -> #66 -> #65, development `6b9be42`; unplayed.** Read [leap implementation/replay](docs/LEAP_GRAB_MODES.md),
+[five-gap assessment](docs/GRAPPLE_GAP_ASSESSMENT.md), §177. Mode repricing previously ignored grapple truncation/hold
+despite the initial leap quote including it. Both quote paths now share the ordinary line/summary kernel and cached
+leap repricing reads the assumed grab only after exact routine/frame validation. Grabber joins the existing 32-set
+chooser; native own-weapon/landing caps remain 4/8, with no new geometry or movement policy. Existing G2 ownership,
+blocklist/once-per-round, safety, defence and final dispatch rules remain. Holder cost/safety and monster support
+remain scoped in the assessment; their missing native/alternative views are not replaced with guesses.
+Checked source **`351b709`**, MVID **`9aea0261-f5a3-4c3e-a025-502de27a716d`**: **855 unit + 27 inventory + 3 script
+and 11 ledger tests**, real-reference Release **0 warnings/errors**; ProfileAudit 44,639 loaded / 4,807 abilities,
+no load/reader failures or prerequisite skips; **GRIFFON-MODES 29**, VALUE-SELECTION 24 and inherited checks pass.
+Supplementary Magus 44, native providers 98/14/10; **0 new references** relative to #69. Audit/report unchanged
+outside the leap check count/optional coverage/output paths. Original raw enum failure remains separate.
+[Receipt](docs/competence/LEAP_GRAB_CHECKS.json), [compiler/reference provenance](docs/competence/LEAP_GRAB_BUILD_PROVENANCE.json).
+[Cumulative gaps1 UMM test ZIP](test-builds/AI-Control-FACC-v0.3.52-dev-gaps1-351b709-UMM-test.zip), SHA-256
+`841c40650338f78d7c16999660e430a4e46d92011be9a447ee45b95d09359084`; includes #65-69 and leap modes.
+SDK 8.0.426 / Roslyn 4.11, UMM 0.33.2.0, manifest 0.3.52. The checked DLL is frozen across receipt-only commits;
+no live actor/flight, gameplay or Unity speedup acceptance. No merge, main/development push or release.
+Retain the #69 Frigid minimum/saved-profile boundary and #68 form/Fury work. No new uploads are needed for these
+slices. Next: TB/RT replay with Grabber left to the engine, actual leaps plus G2 release and Frigid checks.
+
+**Earlier handover (15 November 2026, Codex): grapple-gap assessment and Frigid common-buff reader on
+`codex/grapple-gap-review`, stacked on #68 `342dc27` -> #67 -> #66 -> #65, development `6b9be42`; unplayed.**
+Read [assessment/proposal verification/replay](docs/GRAPPLE_GAP_ASSESSMENT.md), §176. Latest supplied logs hash-match
+the old fusion2g1b pair for #67; no G2/#68 acceptance claimed. Native Frigid selector alternatives apply the same
+buff for one minute or one round. The existing conditional walk was not the missing mechanism. Read only a verified
+common fixed minimum; retain the longer/refresh risk for allies, native immunity/delivery and existing policies.
+Do not guess critical rates or inject CC from a descriptor. Lazy per-profile metadata; empty ordinary safety fast path.
+Checked source **`fad03c4`**, MVID **`b0da0523-bbc9-4044-8228-18ed4c118bfa`**: 855 unit + 27 inventory + 3 script
+and 11 ledger tests; real-reference Release 0 warnings/errors; ProfileAudit 44,639 loaded / 4,807 abilities, no load/
+reader failures or prerequisite skips; VALUE-SELECTION 24, inherited checks and native providers 98/14/10 pass.
+Two added native flag references resolve. [Receipt](docs/competence/FRIGID_SELECTION_CHECKS.json),
+[compiler/reference provenance](docs/competence/FRIGID_SELECTION_BUILD_PROVENANCE.json),
+[input hashes](docs/competence/FRIGID_SELECTION_INPUTS.json). Ordinary empty-selector safety: 10,000 warm calls,
+zero bytes, not Unity timing. Only the two Frigid ability verdicts gain Soft control. No intermediate ZIP; a
+cumulative package follows with the separate leap-mode repair. Manifest 0.3.52; source-frozen DLL retained.
+168 saved Frigid templates now expose the existing unsupported unconditional-control boundary and are withheld;
+the played no-save Runes combination gains stagger. General per-outcome control remains a Fusion follow-up.
+Leaps have a feasible separate cached-quote repair; holder cost/safety and monster help need the bounded native model
+and next-play evidence set out in the assessment. No additional files needed for this slice. No movement or release.
+
+**Earlier handover (15 November 2026, Codex): Shifter form verification on `codex/shifter-form-validation`, continuing
+Claude's `730c6b6`, stacked on #67 `830d777` -> #66 -> #65; development base `6b9be42`. New behavior unplayed.**
+Read [form design, corrections and replay](docs/SHIFTER_FORM_DECISIONS.md), §174-175. Real supplied game references
+and exports are retained here; no re-upload is needed. SDK 8.0.426 / Roslyn 4.11. Checked source **`f00f4a6`**:
+**855 unit + 27 inventory + 3 script + 11 ledger tests**, real-reference Release 0 warnings/errors;
+ProfileAudit 44,639 loaded / 4,807 abilities without load/reader failures or prerequisite skips. SHIFTER-FORMS 21,
+CAMPAIGN-FLAG 21, GRAPPLE 55, FUSION-VALUE 23; supplementary Magus 44; native harnesses 98/14/10. All other stdout/report lines
+match a fresh #67 build on identical inputs (only new section/output paths normalized).
+
+Retain Claude's Fury/form scheduling and next-round attack horizon. Correct the note ledger's mid-fight capacity
+clear (preserve at most 64 identities/fight and four repeats), guard Fury holding with the main-action minimum,
+and scope the Fury wait note by fight. Three extra scalar-ledger tests join Claude's 15. Actual playable Griffon
+tiers are Standard; each also consumes Shifter's Rush, besides Polymorph descriptor removal. None of the 26
+supplied aspect buffs is removed; numerical stacking remains native. Rush can make the shift free and SlotOf reads
+the actual RuntimeActionType. No movement/commitment/retreat/path/stuck policy or new form-fact projection.
+
+[Receipt](docs/competence/SHIFTER_FORMS_CHECKS.json), [compiler/reference provenance](docs/competence/SHIFTER_FORMS_BUILD_PROVENANCE.json),
+[input hashes](docs/competence/SHIFTER_FORMS_INPUTS.json). SigDump: no new external signatures relative to #67.
+The original raw Achaekek enum failure remains explicit. UMM reference is 0.33.2.0; the historical #67 package's
+SDK 8.0.131 / UMM 0.33.0.0 inputs differ, and byte identity with it is not claimed.
+[Shifter forms UMM test ZIP](test-builds/AI-Control-FACC-v0.3.52-dev-shifterforms-f00f4a6-UMM-test.zip), startup MVID
+**`3a7db475-3b13-4362-a4dc-0fd20613e2c9`**, ZIP SHA-256
+`9ac10ab46b0431ed4edd87a93bea3516a1754752c40a69e94df604a531eb28ea`.
+The source-frozen checked DLL is retained across later receipt-only commits. Manifest stays 0.3.52;
+no main/development push, tag, merge or release. No gameplay/Unity performance acceptance is claimed.
+The author next plays the form replay with Grabber left to the engine, plus GRABBER_G2.md and fusion2 checks.
+
+**Earlier handover (15 November 2026, Claude): Shifter form decisions refined on `claude/shifter-forms`, stacked on
+PR #67 (no PR yet). Build, audit and package pending; not played.** Read [docs/SHIFTER_FORM_DECISIONS.md](docs/SHIFTER_FORM_DECISIONS.md)
+and `docs/TACTICAL_AI.md` §174. The author asked for the form decisions (when to shift, which form) to be checked and
+refined, with a general proposal as ideas.
+- **Evidence (fusion2g1b, Wenduag).** No Griffon Shape in 9 fights. In TB fight 3 R1 a positive but losing form kept
+  Shifter's Fury out of the candidates. In RT1 the best form (34.9) vanished after Griffon Aspect, and the once-a-fight
+  row could not say why.
+- **Changes (both modes).**
+  1. Fury waits only while a new form is the turn's main action and beats the immediate action plus the Fury's round,
+     by the buff margin (`HoldFuryForForm`).
+  2. A Standard or full-round shift's attacks count from the next round (`ValueModel.FormAttackRounds`).
+  3. The appraisal row is repeated on a material change, at most 4 times a fight (`ShifterRules.FormNoteChanged`).
+- **Not changed:** the resource gate, the 3-round lock, the caster lockout, the equipment pricing, Master Shapeshifter
+  permanence and pre-combat shifts. Pounce and other form facts are proposed, not done. The page gives the reasons.
+- **Checks:** 852 unit tests (15 new). The container was replaced and the uploaded game assemblies and exports are gone,
+  so the Release build, SigDump, ProfileAudit (new SHIFTER-FORMS, updated CAMPAIGN-FLAG) and native harnesses are
+  pending. They need `Wrath_Data\Managed`, `UnityModManager.dll`, `Classes.zip` and `MythicAbilities.zip` again.
+- **Next:** build and verify, package, open the PR. Then the author plays it (replay in the page).
+
+**Earlier handover (15 November 2026, Claude): fusion2g1b played and reviewed; maneuver immunity and G2 (the engine
+decides Grabber and Release Grapple, at the author's request) on `claude/maneuver-immunity`, PR #67 into development,
+stacked on PR #66 and #65 (review #65, then #66). Not played.** Read [docs/GRABBER_G2.md](docs/GRABBER_G2.md),
+[docs/FUSION2G1B_PLAYTEST_REVIEW.md](docs/FUSION2G1B_PLAYTEST_REVIEW.md), `docs/TACTICAL_AI.md` §172-173 and the
+[receipt](docs/competence/G2_GRABBER_CHECKS.json).
+- **Log.** fusion2g1b module `e4f231af`: 9 fights, 646/646 command terminals, no AI Control exception. Six of the seven
+  Runes fusions now reach `[FusionValue]`.
+- **Defect.** G1 valued holds on a grapple-immune Vescavor Swarm and walked Wenduag back into its gibber area. The fix,
+  `CombatMath.ImmuneToManeuver`, reads `ManeuverImmunity` (swarms, Freedom of Movement) as well as the condition, in
+  the grapple opening, `ManeuverOdds` and the trip forecast.
+- **G2.** The six Grabber toggles switch at once for free.
+  - The engine prices each weapon attack with the grab assumed on and off (`ModeKind.Grab`, `CombatMath.AssumeGrab`)
+    and switches it through `ApplyModes`.
+  - Release Grapple is scored from the live hold (`ReadHold`, `GrappleKeepValue`) and used when keeping is clearly
+    negative.
+  - The grab's hold counts the release option. Tiger and Smilodon grab with claw and bite.
+- **Left open.** `ContextActionSelectByValue` (Frigid Touch's stagger, 3 blueprints in the exports) stays unread.
+- **Checks** on `33fa9b3`: Release 0 warnings, 5 added references; 837 + 27 + 3 + 11 tests; GRAPPLE 55 (23 new). The
+  coverage moves only the 6 Grabbers and 6 releases; native harnesses 98/14/10.
+- **Package:** `test-builds/AI-Control-FACC-v0.3.52-dev-g2-33fa9b3-UMM-test.zip`, MVID
+  `4b94e879-4a5c-4ec3-9b57-8b45d4eaabcc`. Manifest 0.3.52; no `main`, tag or release change.
+- **Next:** the author plays g2 with Grabber left to the engine (GRABBER_G2.md replay), a swarm in melee, and the
+  fusion2 and G1 checks.
+
+**Earlier handover (15 November 2026, Claude): fusion2g1 played and reviewed; Fusion caster-fact guard fix on
+`claude/fusion-caster-fact`, PR #66 into development, stacked on PR #65 (review #65 first). Played as fusion2g1b (above).** Read
+[docs/FUSION2G1_PLAYTEST_REVIEW.md](docs/FUSION2G1_PLAYTEST_REVIEW.md), `docs/TACTICAL_AI.md` §171 and the
+[receipt](docs/competence/FUSION2G1_REVIEW_CHECKS.json).
+- Log: fusion2g1 module `e4cb4df9`, 10 fights, 370/370 command terminals, no AI Control exception. The author
+  interrupted often in real time.
+- G1 works as intended:
+  - holds valued positive against casters and negative (at most +0.9) against summoned wolves and dogs;
+  - only swift, free or move actions while holding, and no move;
+  - 33 grapple maneuvers by Wenduag, 11 failed escapes.
+- Defect: all seven Runes fusions fell back ("mutable/unread guard ContextConditionCasterHasFact"). Mystical Mayhem's
+  Cyphermage patch adds a caster-fact gated Rune Master damage to both Runes; the exports lack it.
+- Fix: `StableFusionGuards` accepts `ContextConditionCasterHasFact`. Caster-side payloads are already refused, and the
+  ordinal check still refuses a fact an earlier application gives.
+- Checks on `981299e`: Release 0 warnings, 832 + 27 + 3 + 11 tests, FUSION-VALUE 23 (8 new), other report lines
+  unchanged, native harnesses 98/14/10. The stock qualified count stays 3,230.
+- Package: `test-builds/AI-Control-FACC-v0.3.52-dev-fusion2g1b-981299e-UMM-test.zip`, MVID
+  `e4f231af-1782-4e64-9697-3a3b2455e1a2`. Manifest 0.3.52; no `main`, tag or release change.
+- **Next:** the author plays fusion2g1b. Runes fusions should log `[FusionValue]`; repeat the G1 and fusion2 checks.
+
+**Earlier handover (15 November 2026, Claude): PR #64 (Fusion F2/F3 core) reviewed and merged into development (`6b9be42`);
+G1 grapple state awareness on `claude/grapple-awareness`, PR #65 into development. Played as fusion2g1 (above).** Read `docs/TACTICAL_AI.md`
+§170, [docs/GRAPPLE_G1.md](docs/GRAPPLE_G1.md) and the [receipt](docs/competence/G1_GRAPPLE_CHECKS.json).
+- PR #64: no material defect. Rerun on its head: 821 unit tests, ProfileAudit exit 0, native harnesses 98/14/10.
+  Its package DLL decompiles to the same code as a local build apart from compiler lowering.
+- G1 evidence (fusion1 logs): with Grabber on, every full attack that grappled ended after one claw. The native
+  `CantUseStandardActions` stops the routine, and the engine priced all of it.
+- G1 change (both modes, shared weapon value): it reads the native grab trigger and cuts the forecast routine at the
+  expected grapple. It values the hold: the victim held then pinned, against the holder's lost turns, plus the free
+  natural attack each maintained round. The header names the pair, and one `[Grapple]` row is logged per fight and pair.
+- Not done: Release Grapple (no played case; proposed G2), and spells cast by a party member a monster holds.
+- Checks: Release 0 warnings; 832 unit + 27 + 3 + 11 tests; ProfileAudit GRAPPLE 32 checks, every other report line
+  unchanged; native harnesses 98/14/10. Manifest 0.3.52; no `main`, tag or release change.
+- Package (fusion2 + G1): `test-builds/AI-Control-FACC-v0.3.52-dev-fusion2g1-883bc9d-UMM-test.zip`, startup MVID `e4cb4df9-ad46-409a-a800-b96382c68a10`,
+  ZIP SHA-256 `9130236430df…`. It is the checked DLL `4f46132d…` unchanged.
+- **Next:** the author plays the fusion2g1 package. Test a grab-capable form against a dangerous and a weak target in TB
+  and RT (replay in GRAPPLE_G1.md), with the fusion2 checks (`docs/FUSION2_PLAYTEST_REVIEW.md`).
+
 **Fusion2 playtest review / qualified F2–F3 core (14 November 2026, Codex; new valuation unplayed):**
 `codex/fusion1-playtest-review` starts at merged development `ab1b6a7`, no open PRs. The two supplied AI logs identify
 fusion1 MVID `2e2896c3`; eight encounters, 258 TB / 1,475 RT measured decisions. ToyBox spawns, rests between fights,

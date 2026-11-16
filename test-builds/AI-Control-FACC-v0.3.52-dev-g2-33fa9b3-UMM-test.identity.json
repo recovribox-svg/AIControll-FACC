@@ -1,0 +1,39 @@
+{
+  "build_label": "g2",
+  "kind": "development-test",
+  "version": "0.3.52",
+  "source_branch": "claude/maneuver-immunity",
+  "source_commit": "33fa9b3",
+  "pull_request": "recovribox-svg/AIControll-FACC#67",
+  "development_base": "6b9be4214989f7ba4a56dad54f0b8c9056c2789d",
+  "contains": [
+    "development 6b9be42: Fusion F0/F1/F2-F3 core (PR #60, #62, #64), S1/S2, I1, summon control",
+    "G1 grapple state awareness (PR #65)",
+    "Fusion caster-fact guard fix (PR #66)",
+    "maneuver immunity and G2 engine-driven Grabber / Release Grapple (PR #67)"
+  ],
+  "dll": {
+    "assembly": "CompanionAI_Pathfinder, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null",
+    "mvid": "4b94e879-4a5c-4ec3-9b57-8b45d4eaabcc",
+    "sha256": "7831cef81c471e5929486179b85df45c9bebab3a635c73b8513f78a5ce54bf86",
+    "size": 1456128,
+    "source_link_commit": "33fa9b3",
+    "unitymodmanager_reference": "0.33.0.0 (as the played v0.3.29 release)"
+  },
+  "manifest_sha256": "1876fd6fc56d03b28793f6c481fac47c9ea85eec3265d6859232deeab67523a3",
+  "archive": "AI-Control-FACC-v0.3.52-dev-g2-33fa9b3-UMM-test.zip",
+  "zip_sha256": "a6fee56bae2880f95a2fa055f8a46da944b23d49daf9838d1a8b044725e04120",
+  "checks_receipt": "docs/competence/G2_GRABBER_CHECKS.json",
+  "toolchain": {
+    "dotnet_sdk": "8.0.131",
+    "msbuild": "17.8.49.61608",
+    "csharp_compiler": "4.8.0-7.25569.25 (38896ab4)"
+  },
+  "gameplay_status": "not played",
+  "scope": "fusion2g1b plus: a target's ManeuverImmunity makes a grapple (or any maneuver) fail; the engine switches Grabber per attack by the hold's value and lets go with Release Grapple when the hold no longer pays; Tiger and Smilodon grab with both natural weapons.",
+  "archive_contents": [
+    "CompanionAI_Pathfinder.dll",
+    "Info.json"
+  ],
+  "release": false
+}

@@ -1,5 +1,114 @@
 # Test builds
 
+## Task-branch candidate: v0.3.52 gaps2 — Release Grapple repair (96108ba), unplayed
+
+[UMM test ZIP](AI-Control-FACC-v0.3.52-dev-gaps2-96108ba-UMM-test.zip?raw=true) · [Identity](AI-Control-FACC-v0.3.52-dev-gaps2-96108ba-UMM-test.identity.json) · [Checksum](AI-Control-FACC-v0.3.52-dev-gaps2-96108ba-UMM-test.sha256) · [Checks](../docs/competence/GAPS1_PLAYTEST_CHECKS.json) · [Review and replay](../docs/GAPS1_PLAYTEST_REVIEW.md)
+
+Includes #65 -> #66 -> #67 -> #68 -> #69 -> #70, plus the gaps1 playtest repair. A negative hold now produces a
+usable Release Grapple candidate; its missing reason previously threw and discarded it. The appraisal says
+"release offer" until an actual command is issued. Reciprocal header checks use native reference IDs. Existing
+hold prices, native slot/availability, ownership/lists, movement and leap safety remain in force.
+
+Checked source **`96108ba`**, startup MVID **`9ce04a64-f9a0-43ce-8275-5f1b0c7bbe73`**. ZIP SHA-256
+`bf5e955f32cd91512495656e30528cc1afad11733af108bc523012527cd681fa`.
+**861 unit + 27 inventory + 3 script + 11 ledger tests**, real-reference Release **0 warnings/errors**, ProfileAudit
+**GRAPPLE 58** and inherited checks, supplementary Magus 44 and native providers 98/14/10 pass. The single added
+native equality reference resolves. [Compiler/reference provenance](../docs/competence/GAPS1_PLAYTEST_BUILD_PROVENANCE.json):
+SDK 8.0.426 / Roslyn 4.11, UMM 0.33.2.0. Manifest stays **0.3.52**, development test; frozen checked DLL.
+
+In TB/RT, leave Grabber to the engine. Test negative/positive holds, actual Release Grapple and recovered permissions
+within the remaining native action budget (no refund of spent actions/cooldowns),
+plus actual leaps, ordinary/no-save Frigid, forms and Fury. The played gaps1 log confirms forecasts/ordinary grabs,
+**not execution of a leap, release or Frigid Touch**. Keep paired AI/combat logs and startup identity. Holder
+alternative/safety, monster responses and saved Frigid control retain the documented limits; warm ability scoring
+and the high-risk bomb utility remain follow-ups. No new gameplay or Unity speedup acceptance is claimed.
+
+## Task-branch candidate: v0.3.52 gaps1 — Frigid Touch and leap Grabber (351b709), played ([review](../docs/GAPS1_PLAYTEST_REVIEW.md))
+
+[UMM test ZIP](AI-Control-FACC-v0.3.52-dev-gaps1-351b709-UMM-test.zip?raw=true) · [Identity](AI-Control-FACC-v0.3.52-dev-gaps1-351b709-UMM-test.identity.json) · [Checksum](AI-Control-FACC-v0.3.52-dev-gaps1-351b709-UMM-test.sha256) · [Checks](../docs/competence/LEAP_GRAB_CHECKS.json) · [Five-gap assessment / Frigid replay](../docs/GRAPPLE_GAP_ASSESSMENT.md) · [Leap replay](../docs/LEAP_GRAB_MODES.md)
+
+Includes the #65 -> #66 -> #67 -> #68 -> #69 stack plus cached leap mode pricing. Frigid Touch's common one-round
+stagger is read without a guessed critical chance; ally safety retains longer/refresh risk. Saved Frigid templates
+outside the existing model are explicitly withheld. Leaps compare Grabber using the same truncation/hold kernel as
+ordinary attacks, retaining native quote/landing bounds and safety. Holder opportunity/safety and monster responses
+remain scoped follow-ups, not new automatic behavior.
+
+Checked source **`351b709`**, startup MVID **`9aea0261-f5a3-4c3e-a025-502de27a716d`**. ZIP SHA-256
+`841c40650338f78d7c16999660e430a4e46d92011be9a447ee45b95d09359084`.
+855 unit + 27 inventory + 3 script + 11 ledger tests, 24 selector / 29 leap-mode checks and native providers
+98/14/10 pass; real-reference Release **0 warnings/errors**. [Compiler/reference provenance](../docs/competence/LEAP_GRAB_BUILD_PROVENANCE.json):
+SDK 8.0.426 / Roslyn 4.11, UMM reference 0.33.2.0. Manifest stays **0.3.52**; this is a development test.
+
+Play TB and RT with **Grabber left to the engine**, including actual Griffon leaps, G2 releases, the form/Fury replay
+and Frigid/fusion2 cases. Supply paired AI/combat logs and startup identity. No Unity speedup or gameplay acceptance
+is claimed. Stable and earlier test packages are unchanged.
+
+## Task-branch candidate: v0.3.52 Shifter forms (f00f4a6) — unplayed
+
+[UMM test ZIP](AI-Control-FACC-v0.3.52-dev-shifterforms-f00f4a6-UMM-test.zip?raw=true) · [Identity](AI-Control-FACC-v0.3.52-dev-shifterforms-f00f4a6-UMM-test.identity.json) · [Checksum](AI-Control-FACC-v0.3.52-dev-shifterforms-f00f4a6-UMM-test.sha256) · [Checks](../docs/competence/SHIFTER_FORMS_CHECKS.json) · [Form decisions and replay](../docs/SHIFTER_FORM_DECISIONS.md)
+
+Continues Claude's Shifter task `730c6b6`, including the #65 -> #66 -> #67 stack. A losing form no longer suppresses
+Fury; a Standard/full-round shift counts its attacks from next round. Material appraisal changes have bounded notes.
+Codex corrected the note-ledger capacity reset and verified all playable Griffon tiers' removal paths, including
+Shifter's Rush consumption and survival of the 26 supplied aspects. New behavior remains unplayed.
+
+Startup MVID **`3a7db475-3b13-4362-a4dc-0fd20613e2c9`**; checked source **`f00f4a6`**. ZIP SHA-256
+`9ac10ab46b0431ed4edd87a93bea3516a1754752c40a69e94df604a531eb28ea`.
+855 unit + 27 inventory + 3 script + 11 ledger tests, zero-warning real-reference Release and native checks pass.
+SHIFTER-FORMS 21, CAMPAIGN-FLAG 21; other audit/report rows unchanged relative to a fresh #67 baseline.
+[Compiler/reference provenance](../docs/competence/SHIFTER_FORMS_BUILD_PROVENANCE.json): SDK 8.0.426 / Roslyn 4.11,
+UMM reference 0.33.2.0. No byte-identity claim with the older g2 package; it is preserved below. Manifest remains
+**0.3.52**, stable packages unchanged. Play the form replay in TB/RT with **Grabber left to the engine**, plus
+[G2](../docs/GRABBER_G2.md) and [fusion2](../docs/FUSION2_PLAYTEST_REVIEW.md); supply paired AI/combat logs and MVID.
+
+## Task-branch candidate: v0.3.52 g2 (33fa9b3) — unplayed
+
+[UMM test ZIP](AI-Control-FACC-v0.3.52-dev-g2-33fa9b3-UMM-test.zip?raw=true) · [Identity](AI-Control-FACC-v0.3.52-dev-g2-33fa9b3-UMM-test.identity.json) · [Checksum](AI-Control-FACC-v0.3.52-dev-g2-33fa9b3-UMM-test.sha256) · [Checks](../docs/competence/G2_GRABBER_CHECKS.json) · [G2 design and replay](../docs/GRABBER_G2.md) · [fusion2g1b review](../docs/FUSION2G1B_PLAYTEST_REVIEW.md)
+
+fusion2g1b plus PR #67, stacked on PR #66 and #65:
+- **Grabber.** The engine switches it on or off for each weapon attack by the hold's value, and lets go with Release
+  Grapple when the hold no longer pays.
+- **Tiger and Smilodon** grab with both natural weapons.
+- **Maneuver immunity.** A grapple-immune target (swarms, Freedom of Movement) is no longer valued as grappled.
+
+Leave Grabber alone during fights: a click during a fight hands that toggle back to you for the rest of it. Manifest
+stays **0.3.52**; this is a development test. Stable packages are unchanged.
+
+Startup MVID **`4b94e879-4a5c-4ec3-9b57-8b45d4eaabcc`**; checked source `33fa9b3`. ZIP SHA-256 `a6fee56bae2880f95a2fa055f8a46da944b23d49daf9838d1a8b044725e04120`.
+It is the DLL the receipt names (SHA-256 `7831cef8…`), built with SDK 8.0.131 against UnityModManager 0.33.0.0.
+837 unit + 27 inventory + 3 script + 11 ledger tests, zero-warning real-reference Release, ProfileAudit (GRAPPLE 55
+checks) and native providers 98/14/10 pass. Supply paired AI and combat logs with the startup MVID from both modes.
+
+## Task-branch candidate: v0.3.52 fusion2 + G1 + caster-fact guard (981299e) — played (review: [FUSION2G1B_PLAYTEST_REVIEW.md](../docs/FUSION2G1B_PLAYTEST_REVIEW.md))
+
+[UMM test ZIP](AI-Control-FACC-v0.3.52-dev-fusion2g1b-981299e-UMM-test.zip?raw=true) · [Identity](AI-Control-FACC-v0.3.52-dev-fusion2g1b-981299e-UMM-test.identity.json) · [Checksum](AI-Control-FACC-v0.3.52-dev-fusion2g1b-981299e-UMM-test.sha256) · [Checks](../docs/competence/FUSION2G1_REVIEW_CHECKS.json) · [Review and replay](../docs/FUSION2G1_PLAYTEST_REVIEW.md)
+
+fusion2g1 plus one fix from its playtest (PR #66, stacked on PR #65). A Fusion payload guarded by
+`ContextConditionCasterHasFact` now reaches the joint outcome model. In play this is Mystical Mayhem's Rune Master damage
+on Incendiary and Explosive Runes: every Runes fusion fell back to the old forecast. Manifest stays **0.3.52**; this is a
+development test. Stable packages are unchanged.
+
+Startup MVID **`e4f231af-1782-4e64-9697-3a3b2455e1a2`**; checked source `981299e`. ZIP SHA-256 `83ff31bc5b3ff3c4a7fd8cbadffe57b48c70abaa61f6ce35a28304267facbbc1`.
+It is the DLL the receipt names (SHA-256 `ed81d0dc…`), built with SDK 8.0.131 against UnityModManager 0.33.0.0.
+832 unit + 27 inventory + 3 script + 11 ledger tests, zero-warning real-reference Release, ProfileAudit (FUSION-VALUE 23
+checks) and native providers 98/14/10 pass. Supply paired AI and combat logs with the startup MVID from both modes.
+
+## Task-branch candidate: v0.3.52 fusion2 + G1 (883bc9d) — played (review: [FUSION2G1_PLAYTEST_REVIEW.md](../docs/FUSION2G1_PLAYTEST_REVIEW.md))
+
+[UMM test ZIP](AI-Control-FACC-v0.3.52-dev-fusion2g1-883bc9d-UMM-test.zip?raw=true) · [Identity](AI-Control-FACC-v0.3.52-dev-fusion2g1-883bc9d-UMM-test.identity.json) · [Checksum](AI-Control-FACC-v0.3.52-dev-fusion2g1-883bc9d-UMM-test.sha256) · [Checks](../docs/competence/G1_GRAPPLE_CHECKS.json) · [G1 evidence and TB/RT replay](../docs/GRAPPLE_G1.md) · [Fusion2 replay](../docs/FUSION2_PLAYTEST_REVIEW.md)
+
+Development `6b9be42` (fusion2, PR #64 merged) plus G1 grapple state awareness (PR #65). With Grabber and its kin, a
+hit that grapples cuts the forecast attack routine. The hold is valued: the victim held then pinned, against the
+holder's lost turns, plus the free natural attack each maintained round. The decision header names the grapple pair,
+and one `[Grapple]` row is logged per fight and pair. Release Grapple stays unsupported. Manifest stays **0.3.52**; this
+is a development test. Stable packages are unchanged.
+
+Startup MVID **`e4cb4df9-ad46-409a-a800-b96382c68a10`**; checked source `883bc9d`. ZIP SHA-256 `9130236430dff865fcab71153e164b8a27964861173a2b09b8bc5fbc79dd7eda`.
+It is the DLL the receipt names (SHA-256 `4f46132d…`), built with SDK 8.0.131 against UnityModManager 0.33.0.0, the
+same reference as the played v0.3.29 release. 832 unit + 27 inventory + 3 script + 11 ledger tests, zero-warning
+real-reference Release, ProfileAudit (GRAPPLE 32 checks) and native providers 98/14/10 pass. Supply paired AI and
+combat logs with the startup MVID from both modes; the two replay documents list the cases.
+
 ## Task-branch candidate: v0.3.52 fusion2 (6638404) — unplayed
 
 [UMM test ZIP](AI-Control-FACC-v0.3.52-dev-fusion2-6638404-UMM-test.zip?raw=true) · [Identity](AI-Control-FACC-v0.3.52-dev-fusion2-6638404-UMM-test.identity.json) · [Checksum](AI-Control-FACC-v0.3.52-dev-fusion2-6638404-UMM-test.sha256) · [Checks](../docs/competence/FUSION2_CHECKS.json) · [Review and TB/RT replay](../docs/FUSION2_PLAYTEST_REVIEW.md)

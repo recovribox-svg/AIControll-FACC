@@ -63,6 +63,14 @@ namespace CompanionAI_Pathfinder.Tactics
         // identities, not another cache and not a request to read or simulate the actor again.
         internal object RoutineIdentity;
         internal float RoutineLands;
+        /// <summary>★ G1: chance a hit of this routine starts a grapple (Grabber and its kin: the rest of the routine is
+        /// then lost), 0 without a recognised grab. <see cref="Grapple"/> holds what that grapple would do.</summary>
+        public float GrappleChance;
+        internal GrappleOpening Grapple;
+        /// <summary>★ G1: the free damage-only natural attack each maintained round (UnitGrappleInitiatorAttack).</summary>
+        public float GrappleFreeDamage;
+        /// <summary>★ G1: attacks the routine is expected to make, when a grapple can cut it short.</summary>
+        public float ExpectedAttacks;
     }
 
     public static partial class CombatMath
@@ -279,10 +287,17 @@ namespace CompanionAI_Pathfinder.Tactics
             float noHit = 1f;
             var touch = new MagusChargeChance();
             bool trackTouch = unit.Get<Kingmaker.UnitLogic.Parts.UnitPartMagus>()?.Spellstrike.Active == true;
+            // ★ G1: a hit that starts a grapple forbids the holder standard actions, and UnitAttack starts no further attack
+            // (TryStartNextAttack): each attack counts by the chance the routine is still running when it comes.
+            var grapple = GrappleOpeningOn(unit, target);
+            var run = ValueModel.GrappleRun.Begin();
+            float freeDamage = 0f;
+            int natural = 0;
             foreach (var line in routine.Lines)
             {
                 var d = delta?.Invoke(line.Weapon, line.Index) ?? new KeyValuePair<int, float>(0, 0f);
                 float lineDamage = ExpectedWeaponLine(line, d.Key, d.Value, lands, out float p, out float perHit);
+                if (grapple != null) lineDamage = PriceGrabLine(line, grapple, lineDamage, p, ref run, ref freeDamage, ref natural);
                 if (MagusMechanics.WeaponDeliversTouch(line.Weapon?.Blueprint, trackTouch, line.Weapon == unit.Body.EmptyHandWeapon))
                 {
                     touch.Add(p, Math.Min(line.ThreatChance, p) * p);
@@ -302,9 +317,10 @@ namespace CompanionAI_Pathfinder.Tactics
                 if (line.EndsRegeneration) result.EndsRegeneration = true;
                 result.ExpectedDamage += lineDamage;
             }
-            result.AnyHitChance = 1f - noHit;
+            result.AnyHitChance = 1f - noHit;   // a grapple follows a hit: the chance of at least one hit is unchanged
             result.TouchHitChance = touch.Hit;
             result.TouchCritChance = touch.Critical;
+            if (grapple != null) FinishGrabQuote(result, grapple, run, freeDamage, natural);
             return result;
         }
 
@@ -314,6 +330,7 @@ namespace CompanionAI_Pathfinder.Tactics
             InvalidateResistanceMemo(); // State previews, including same-frame prone/infusion changes, invalidate open scopes.
             NewSwarmDecision(); // Dynamic source/availability snapshots must also expire between same-frame decisions.
             Routines.Clear();
+            ClearGrappleReads();    // ★ G1: the grab and its odds are read with the routines, forgotten with them
             HitsOnTarget.Clear();   // ★ v0.3.20 (test3): read with the routines, forgotten with them
             ParamsCache.Clear();    // ★ v0.3.25 (test2 logs)
             // ★ v0.3.28 test 6: the attack rolls and critical factors read with them (a preview changes prone in-frame).
@@ -1626,39 +1643,9 @@ namespace CompanionAI_Pathfinder.Tactics
             if (caster == null || target == null || maneuver == null) return;
             try
             {
-                if (target.Descriptor.State.HasCondition(UnitCondition.ImmuneToCombatManeuvers)) { chance = 0f; return; }
-                var cmbRule = new RuleCalculateCMB(caster, target, maneuver.Type);
-                if (maneuver.Action is ContextActionCombatManeuver action && action.ReplaceStat)
-                {
-                    var stat = action.NewStat;
-                    if (action.UseKineticistMainStat)
-                        stat = caster.Get<Kingmaker.UnitLogic.Class.Kineticist.UnitPartKineticist>()?.MainStatType ?? stat;
-                    if (action.UseCastingStat) stat = ability?.Spellbook?.Blueprint.CastingAttribute ?? StatType.Charisma;
-                    if (action.UseCasterLevelAsBaseAttack && ability != null) cmbRule.ReplaceBAB = ParamsOf(ability).CasterLevel;
-                    if (action.UseBestMentalStat)
-                    {
-                        var st = caster.Stats;
-                        stat = st.Charisma.ModifiedValue >= st.Intelligence.ModifiedValue && st.Charisma.ModifiedValue >= st.Wisdom.ModifiedValue
-                            ? StatType.Charisma
-                            : st.Wisdom.ModifiedValue > st.Intelligence.ModifiedValue ? StatType.Wisdom : StatType.Intelligence;
-                    }
-                    cmbRule.ReplaceStrength = stat;
-                }
-                // ★ v0.3.18 (review): as RuleCombatManeuver does, the attack bonuses that are not a stat (flanking, the
-                // difficulty bonus, what handlers add to the attack rule) of an empty-hand attack go into the CMB.
-                var hand = caster.Body?.EmptyHandWeapon;
-                if (hand != null)
-                {
-                    var attackRule = Rulebook.Trigger(new RuleCalculateAttackBonus(caster, target, hand, 0));
-                    foreach (var bonus in attackRule.AllBonuses)
-                        if (bonus.Stat == StatType.Unknown) cmbRule.AddModifierCopy(bonus);
-                }
-                int cmb = Rulebook.Trigger(cmbRule).Result;
-                // ★ v0.3.18 (review): an enemy that strikes back at this maneuver does so from inside the CMD rule
-                // (CounterAttackOfOpportunityOnCombatManeuver forces a real attack of opportunity): its CMD is asked for no
-                // particular maneuver then, losing only its bonuses against this one.
-                var cmdType = CountersManeuver(target, maneuver.Type) ? CombatManeuver.None : maneuver.Type;
-                int cmd = Rulebook.Trigger(new RuleCalculateCMD(caster, target, cmdType)).Result;
+                // ★ fusion2g1b review: the condition and the type's ManeuverImmunity (swarms), as RuleCombatManeuver.
+                if (ImmuneToManeuver(target, maneuver.Type)) { chance = 0f; return; }
+                ManeuverValues(caster, target, ability, maneuver, out int cmb, out int cmd);
                 bool alwaysChance = caster.Descriptor.State.Features.AlwaysChance;
                 int successes = 0;
                 float sum = 0f;
@@ -1675,16 +1662,62 @@ namespace CompanionAI_Pathfinder.Tactics
                 rounds = successes > 0 ? sum / successes : 1f;
                 // ★ v0.3.18 (review): concealment is checked first unless the action ignores it (RuleCombatManeuver).
                 if (!(maneuver.Action is ContextActionCombatManeuver cm && cm.IgnoreConcealment))
-                {
-                    var concealment = Kingmaker.UnitLogic.Parts.UnitPartConcealment.Calculate(caster, target);
-                    if (concealment == Kingmaker.Enums.Concealment.Total) chance *= 0.5f;
-                    else if (concealment == Kingmaker.Enums.Concealment.Partial) chance *= 0.8f;
-                }
+                    chance *= ManeuverConcealmentShare(caster, target);
             }
             catch (Exception ex)
             {
                 Main.Verbose($"[Math] maneuver {caster.CharacterName}->{target.CharacterName}: {ex.Message}");
             }
+        }
+
+        /// <summary>
+        /// ★ G1: the CMB and CMD of a maneuver as <see cref="ManeuverOdds"/> reads them (moved here unchanged, shared with
+        /// the grapple a hit starts: CombatMath.Grapple.cs). Throws what the rules throw; callers catch.
+        /// </summary>
+        internal static void ManeuverValues(UnitEntityData caster, UnitEntityData target, AbilityData ability,
+                                            AbilityProfile.ManeuverEffect maneuver, out int cmb, out int cmd)
+        {
+            var cmbRule = new RuleCalculateCMB(caster, target, maneuver.Type);
+            if (maneuver.Action is ContextActionCombatManeuver action && action.ReplaceStat)
+            {
+                var stat = action.NewStat;
+                if (action.UseKineticistMainStat)
+                    stat = caster.Get<Kingmaker.UnitLogic.Class.Kineticist.UnitPartKineticist>()?.MainStatType ?? stat;
+                if (action.UseCastingStat) stat = ability?.Spellbook?.Blueprint.CastingAttribute ?? StatType.Charisma;
+                if (action.UseCasterLevelAsBaseAttack && ability != null) cmbRule.ReplaceBAB = ParamsOf(ability).CasterLevel;
+                if (action.UseBestMentalStat)
+                {
+                    var st = caster.Stats;
+                    stat = st.Charisma.ModifiedValue >= st.Intelligence.ModifiedValue && st.Charisma.ModifiedValue >= st.Wisdom.ModifiedValue
+                        ? StatType.Charisma
+                        : st.Wisdom.ModifiedValue > st.Intelligence.ModifiedValue ? StatType.Wisdom : StatType.Intelligence;
+                }
+                cmbRule.ReplaceStrength = stat;
+            }
+            // ★ v0.3.18 (review): as RuleCombatManeuver does, the attack bonuses that are not a stat (flanking, the
+            // difficulty bonus, what handlers add to the attack rule) of an empty-hand attack go into the CMB.
+            var hand = caster.Body?.EmptyHandWeapon;
+            if (hand != null)
+            {
+                var attackRule = Rulebook.Trigger(new RuleCalculateAttackBonus(caster, target, hand, 0));
+                foreach (var bonus in attackRule.AllBonuses)
+                    if (bonus.Stat == StatType.Unknown) cmbRule.AddModifierCopy(bonus);
+            }
+            cmb = Rulebook.Trigger(cmbRule).Result;
+            // ★ v0.3.18 (review): an enemy that strikes back at this maneuver does so from inside the CMD rule
+            // (CounterAttackOfOpportunityOnCombatManeuver forces a real attack of opportunity): its CMD is asked for no
+            // particular maneuver then, losing only its bonuses against this one.
+            var cmdType = CountersManeuver(target, maneuver.Type) ? CombatManeuver.None : maneuver.Type;
+            cmd = Rulebook.Trigger(new RuleCalculateCMD(caster, target, cmdType)).Result;
+        }
+
+        /// <summary>★ G1: what of a maneuver gets past the target's concealment (RuleCombatManeuver checks it first),
+        /// moved here unchanged from <see cref="ManeuverOdds"/>.</summary>
+        internal static float ManeuverConcealmentShare(UnitEntityData caster, UnitEntityData target)
+        {
+            var concealment = Kingmaker.UnitLogic.Parts.UnitPartConcealment.Calculate(caster, target);
+            return concealment == Kingmaker.Enums.Concealment.Total ? 0.5f :
+                   concealment == Kingmaker.Enums.Concealment.Partial ? 0.8f : 1f;
         }
 
         private static readonly Dictionary<string, bool> TripTriggers = new Dictionary<string, bool>();
@@ -1720,7 +1753,7 @@ namespace CompanionAI_Pathfinder.Tactics
                     TripTriggers[key] = trips;
                 }
                 if (!trips) return 0f;
-                if (unit.Descriptor.State.HasCondition(UnitCondition.ImmuneToCombatManeuvers)) return 0f;
+                if (ImmuneToManeuver(unit, CombatManeuver.Trip)) return 0f;   // ★ fusion2g1b review: ManeuverImmunity too
                 int margin = FrameCached($"trip|{enemy.UniqueId}|{unit.UniqueId}", () =>
                     Rulebook.Trigger(new RuleCalculateCMB(enemy, unit, CombatManeuver.Trip)).Result -
                     Rulebook.Trigger(new RuleCalculateCMD(enemy, unit, CombatManeuver.Trip)).Result);

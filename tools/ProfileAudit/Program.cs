@@ -260,6 +260,11 @@ namespace ProfileAudit
             foreach (var line in fusionValueLines) Console.WriteLine(line);
             File.WriteAllText(output, string.Join(Environment.NewLine, fusionValueLines) + Environment.NewLine + File.ReadAllText(output));
             blocklistFailures += fusionValueFailures;
+            // ★ G1: a grapple a weapon hit starts - native contracts, the grab reader on real blueprints, compiled routes.
+            var grappleLines = GrappleCheck.Run(loaded.Values, out int grappleFailures);
+            foreach (var line in grappleLines) Console.WriteLine(line);
+            File.WriteAllText(output, string.Join(Environment.NewLine, grappleLines) + Environment.NewLine + File.ReadAllText(output));
+            blocklistFailures += grappleFailures;
             var projectileLines = ProjectileCheck.Run(loaded.Values, out int projectileFailures);
             foreach (var line in projectileLines) Console.WriteLine(line);
             File.WriteAllText(output, string.Join(Environment.NewLine, projectileLines) + Environment.NewLine + Environment.NewLine + File.ReadAllText(output));
@@ -335,6 +340,15 @@ namespace ProfileAudit
             foreach (var line in campaignFlagLines) Console.WriteLine(line);
             File.WriteAllText(output, string.Join(Environment.NewLine, campaignFlagLines) + Environment.NewLine + Environment.NewLine + File.ReadAllText(output));
             blocklistFailures += campaignFlagFailures;
+            // ★ shifter-forms (§174)
+            var shifterFormLines = ShifterFormCheck.Run(loaded.Values, out int shifterFormFailures);
+            foreach (var line in shifterFormLines) Console.WriteLine(line);
+            File.WriteAllText(output, string.Join(Environment.NewLine, shifterFormLines) + Environment.NewLine + Environment.NewLine + File.ReadAllText(output));
+            blocklistFailures += shifterFormFailures;
+            var valueSelectionLines = ValueSelectionCheck.Run(loaded.Values, out int valueSelectionFailures);
+            foreach (var line in valueSelectionLines) Console.WriteLine(line);
+            File.WriteAllText(output, string.Join(Environment.NewLine, valueSelectionLines) + Environment.NewLine + Environment.NewLine + File.ReadAllText(output));
+            blocklistFailures += valueSelectionFailures;
             // ★ v0.3.30 test 2: facts whose bonus follows an ability score.
             var statLines = StatLinkCheck.Run(loaded.Values, out int statFailures);
             foreach (var line in statLines) Console.WriteLine(line);
@@ -377,7 +391,7 @@ namespace ProfileAudit
             foreach (var line in griffonLines) Console.WriteLine(line);
             File.WriteAllText(output, string.Join(Environment.NewLine, griffonLines) + Environment.NewLine + Environment.NewLine + File.ReadAllText(output));
             blocklistFailures += griffonFailures;
-            var griffonModeLines = GriffonModesCheck.Run(out int griffonModeFailures);
+            var griffonModeLines = GriffonModesCheck.Run(loaded.Values, out int griffonModeFailures);
             foreach (var line in griffonModeLines) Console.WriteLine(line);
             File.WriteAllText(output, string.Join(Environment.NewLine, griffonModeLines) + Environment.NewLine + Environment.NewLine + File.ReadAllText(output));
             blocklistFailures += griffonModeFailures;

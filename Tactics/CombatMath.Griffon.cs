@@ -107,26 +107,33 @@ namespace CompanionAI_Pathfinder.Tactics
             string key = $"{unit.UniqueId}|{target.UniqueId}|{full}";
             if (!Routines.TryGetValue(key, out var routine) || routine.Frame != Time.frameCount ||
                 !ReferenceEquals(current.RoutineIdentity, routine)) return null;
-            return GriffonModeQuote(routine, current, delta);
+            return GriffonModeQuote(routine, current, delta, GrappleOpeningOn(unit, target));
         }
 
         private static WeaponAttackEstimate GriffonModeQuote(AttackRoutine routine, WeaponAttackEstimate current,
-            Func<ItemEntityWeapon, int, KeyValuePair<int, float>> delta)
+            Func<ItemEntityWeapon, int, KeyValuePair<int, float>> delta, GrappleOpening grapple)
         {
             if (routine == null || current == null || routine.Lines.Count == 0) return null;
             // Only DamageValue's fields are needed: a leap cannot carry a held spell/Magus payload. Preserve raw
             // native per-weapon lines, criticals, mitigation, separate blade damage and concealment from the quote.
             var result = new WeaponAttackEstimate { Attacker = current.Attacker, Attacks = routine.Attacks,
-                Weapon = current.Weapon, Reach = current.Reach, EndsRegeneration = current.EndsRegeneration };
+                Weapon = current.Weapon, Reach = current.Reach, EndsRegeneration = current.EndsRegeneration,
+                RoutineIdentity = routine, RoutineLands = current.RoutineLands };
             float noHit = 1f;
+            var run = ValueModel.GrappleRun.Begin();
+            float freeDamage = 0f;
+            int natural = 0;
             foreach (var line in routine.Lines)
             {
                 var change = delta?.Invoke(line.Weapon, line.Index) ?? new KeyValuePair<int, float>(0, 0f);
-                result.ExpectedDamage += ExpectedWeaponLine(line, change.Key, change.Value, current.RoutineLands, out float hit, out _);
+                float damage = ExpectedWeaponLine(line, change.Key, change.Value, current.RoutineLands, out float hit, out _);
+                if (grapple != null) damage = PriceGrabLine(line, grapple, damage, hit, ref run, ref freeDamage, ref natural);
+                result.ExpectedDamage += damage;
                 if (line.Index == 0) result.FirstHitChance = hit;
                 noHit *= 1f - hit;
             }
             result.AnyHitChance = 1f - noHit;
+            if (grapple != null) FinishGrabQuote(result, grapple, run, freeDamage, natural);
             return result;
         }
     }

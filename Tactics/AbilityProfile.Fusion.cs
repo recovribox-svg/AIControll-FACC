@@ -82,10 +82,14 @@ namespace CompanionAI_Pathfinder.Tactics
                 {
                     if (condition == null) continue;
                     var type = condition.GetType();
+                    // ★ fusion2g1 review: CasterHasFact reads the caster's facts. A caster-side payload is already refused
+                    // (LimitFusion "healing or caster-side payload"), and the ordinal check below still refuses one an
+                    // earlier application could grant. Mystical Mayhem's Cyphermage patch guards both Runes this way.
                     if (type != typeof(ContextConditionHitDice) && type != typeof(ContextConditionHasFact) &&
                         type != typeof(ContextConditionHasBuff) && type != typeof(ContextConditionHasBuffFromCaster) &&
                         type != typeof(ContextConditionAlignment) && type != typeof(ContextConditionIsAlly) &&
-                        type != typeof(ContextConditionIsEnemy) && type != typeof(ContextConditionIsCaster))
+                        type != typeof(ContextConditionIsEnemy) && type != typeof(ContextConditionIsCaster) &&
+                        type != typeof(ContextConditionCasterHasFact))
                     { FusionGuardRefusal = "mutable/unread guard " + type.Name; return false; }
                     if (!FusionConditionReferences.TryGetValue(type, out var fields))
                     {
@@ -214,6 +218,13 @@ namespace CompanionAI_Pathfinder.Tactics
                 var action = actions[index];
                 if (action == null) continue;
                 string at = location + "/" + index + ":" + action.GetType().Name;
+                if (action is ContextActionSelectByValue selection)
+                {
+                    var floor = ReadValueSelection(selection);
+                    if (floor.Application == null) LimitFusion("unread value-selected payload: " + floor.Refusal, at);
+                    else InspectFusionPaths(floor.Actions, path, depth + 1, at + "/common-buff-minimum");
+                    continue;
+                }
                 if (action is ContextActionConditionalSaved saved)
                 {
                     fusionRequiresSavedResult = true;

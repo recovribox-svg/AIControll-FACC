@@ -83,6 +83,12 @@ namespace CompanionAI_Pathfinder.Tactics
             var source = CombatMath.CreateContext(ability, new TargetWrapper(ally));
             float duration = EffectiveRounds(ability, profile, buff, source);
             float rounds = ValueModel.UsefulRounds(duration, ctx.ExpectedRounds, Math.Min(3f, ctx.ExpectedRounds));
+            // ★ shifter-forms (§174): a shift that takes the turn's Standard or full-round action leaves no attack this
+            // round, so the form's attacks begin next round; its defence counts from now. The best main action it gives
+            // up this turn is the competing candidate itself.
+            var slot = SlotOf(ability);
+            bool takesTurnAttack = slot == ActionSlot.Standard || slot == ActionSlot.FullRound;
+            float attackRounds = ValueModel.FormAttackRounds(rounds, takesTurnAttack);
             bool ranged = form.AdditionalLimbs.First().IsRanged;
             float damageGain = quote.Damage.Value * PreferenceWeight(ctx, ranged) - baseline.ExpectedDamage * PreferenceWeight(ctx, baseline.IsRanged);
             var def = DefenceOf(ctx, ally);
@@ -95,8 +101,9 @@ namespace CompanionAI_Pathfinder.Tactics
             float hpCost = Math.Min(1f, Math.Max(0f, RiskMath.RoundDropChance(def.Hp - quote.Projection.HpLoss, risk) -
                 RiskMath.RoundDropChance(def.Hp, risk)) * rounds) * def.Worth;
             result.Rounds = rounds;
-            result.Value = (damageGain * rounds + protection - hpCost) * RoleWeight(ctx, "buff");
-            result.Detail = $"form attacks {baseline.ExpectedDamage:0.#}->{quote.Damage.Value:0.#} dmg/rd vs {enemy.CharacterName}, AC {ac:+0;-0;0}, {rounds:0.#} rd; " +
+            result.Value = (damageGain * attackRounds + protection - hpCost) * RoleWeight(ctx, "buff");
+            result.Detail = $"form attacks {baseline.ExpectedDamage:0.#}->{quote.Damage.Value:0.#} dmg/rd vs {enemy.CharacterName} for " +
+                $"{attackRounds:0.#} rd{(takesTurnAttack ? " from next round" : "")}, AC {ac:+0;-0;0} for {rounds:0.#} rd; " +
                 "core natural attacks only; extra form facts uncredited";
             return FinishFormAppraisal(ctx, ability, ally, result);
         }
@@ -115,10 +122,48 @@ namespace CompanionAI_Pathfinder.Tactics
             s_LastAppraisal[AppraisalKey(ctx.Unit, ability, ally)] = $"{result.Value:0.#}: {result.Detail}";
             // One row per ability/unit/fight, including a zero quote. Without it, a withheld branch/unsupported
             // body and an unprofitable but successful quote both looked like "never uses the form". No new rules,
-            // contexts, target scans or extra forecast search; this uses the existing bounded combat note ledger.
-            if (CombatMemory.FirstThisFight($"form:{ctx.Unit.UniqueId}|{ability.Blueprint.AssetGuid}"))
-                Main.Log($"[Shifter] {ctx.Unit.CharacterName}: {ability.Name} form appraisal {result.Value:0.#}: {result.Detail}");
+            // contexts, target scans or extra forecast search.
+            // ★ shifter-forms (§174): and again, at most MaxFormNoteRepeats times a fight, when the appraisal turns or
+            // moves materially (ShifterRules.FormNoteChanged). fusion2g1b RT1: Griffon Shape was the best option at 34.9,
+            // then vanished from the next decision's list after Griffon Aspect, and the log could not say why.
+            string key = $"{ctx.Unit.UniqueId}|{ability.Blueprint.AssetGuid}";
+            if (FormNotes.Observe(CombatMemory.Fight, key, result.Value, out bool first, out float previous))
+            {
+                if (first) Main.Log($"[Shifter] {ctx.Unit.CharacterName}: {ability.Name} form appraisal {result.Value:0.#}: {result.Detail}");
+                else Main.Log($"[Shifter] {ctx.Unit.CharacterName}: {ability.Name} form appraisal now {result.Value:0.#} (was {previous:0.#}, " +
+                              $"round {CombatMemory.Round}): {result.Detail}");
+            }
             return result;
+        }
+
+        /// <summary>★ shifter-forms (§174): the last logged form appraisal per unit and form ability, for this fight only.</summary>
+        private static readonly ShifterRules.FormNoteLog FormNotes = new ShifterRules.FormNoteLog();
+
+        /// <summary>★ shifter-forms (§174): a candidate that casts a new Shifter-style major form.</summary>
+        private static bool IsNewShifterForm(Candidate c) => c != null && c.Kind == CandidateKind.Ability && c.Ability != null &&
+            PolymorphFacts.GivesShifterForm(AbilityProfile.Get(c.Ability));
+
+        /// <summary>
+        /// ★ shifter-forms (§174): the turn's quick action when it is a Shifter's Fury selection in a human body. Choosing
+        /// the Fury there withholds a new major form for the rest of the fight (AppraiseShifterForm), so the Fury waits
+        /// only while the form is this turn's main action and beats the immediate action plus the Fury's own gain this
+        /// round (ValueModel.HoldFuryForForm); the next quick action, if any, is taken instead. Before, any positive form
+        /// kept the Fury off, even one that lost to the full attack: fusion2g1b fight 3 R1, Griffon Shape (22.8) lost to the
+        /// full attack on the Large Air Elemental in reach (28.4, then 35.9 after Griffon Aspect) and Wenduag attacked
+        /// without the Fury, which was worth 51-173 in her other fights. She selected no Fury in that fight.
+        /// </summary>
+        private static Candidate HoldFuryForForm(TacticalContext ctx, List<Candidate> usable, Candidate fury, Candidate main, bool preview)
+        {
+            if (fury == null || !fury.ShifterFury || ctx.Unit.Body.IsPolymorphed || main == null ||
+                main.Value < MinMainValue || !IsNewShifterForm(main)) return fury;
+            var immediate = usable.FirstOrDefault(c => c != main && !c.PureBuff && !QuickAction(c) && c.Value >= MinMainValue);
+            float furyRound = fury.Value / Math.Max(1f, ctx.ExpectedRounds);
+            if (!ValueModel.HoldFuryForForm(main.Value, immediate?.Value ?? 0f, furyRound)) return fury;
+            if (!preview)
+                ReportOnce($"furyhold|{CombatMemory.Fight}|{ctx.Unit.UniqueId}|{CombatMemory.Round}",
+                           $"[Shifter] {ctx.Unit.CharacterName}: {fury.Label} waits - {main.Label} ({main.Value:0.#}) is this turn's main action " +
+                           $"over {(immediate?.Label ?? "no immediate action")} ({(immediate?.Value ?? 0f):0.#}) and the Fury's {furyRound:0.#} this round");
+            return usable.FirstOrDefault(c => c != fury && !c.ShifterFury && QuickAction(c) && c.Value >= QuickBar(c));
         }
 
         private static void PriceLostFormLinks(UnitEntityData unit, ShifterFormProjection form)
@@ -185,8 +230,8 @@ namespace CompanionAI_Pathfinder.Tactics
             // selections: the existing GUID-level lock/restore turns all generated children back off, never guesses
             // which of the same-GUID weapon instances was previously selected.
             if (part == null || part.AppliedFacts.Count == 0 || FurySelectionPresent(part)) return;
-            if (!unit.Body.IsPolymorphed && list.Any(c => c.Ability != null && c.Value > 0f &&
-                PolymorphFacts.GivesShifterForm(AbilityProfile.Get(c.Ability)))) return;
+            // ★ shifter-forms (§174): a positive major form no longer keeps the Fury off here. Decide holds the Fury only
+            // while the form is the turn's main action (HoldFuryForForm).
             var off = OffenceOf(ctx, unit);
             var enemy = off.Enemy;
             if (enemy?.View == null || off.Weapon == null || unit.View == null ||

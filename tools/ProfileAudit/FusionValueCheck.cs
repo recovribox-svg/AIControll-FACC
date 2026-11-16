@@ -11,6 +11,14 @@ using Kingmaker.EntitySystem.Stats;
 using Kingmaker.UnitLogic.Abilities;
 using Kingmaker.UnitLogic.Abilities.Blueprints;
 using Kingmaker.UnitLogic.Mechanics.Actions;
+using Kingmaker.Designers.EventConditionActionSystem.Actions;
+using Kingmaker.Enums;
+using Kingmaker.Enums.Damage;
+using Kingmaker.RuleSystem;
+using Kingmaker.RuleSystem.Rules.Damage;
+using Kingmaker.UnitLogic.Abilities.Components;
+using Kingmaker.UnitLogic.Mechanics;
+using Kingmaker.UnitLogic.Mechanics.Conditions;
 
 namespace ProfileAudit
 {
@@ -73,6 +81,7 @@ namespace ProfileAudit
                 }
                 Check(colourQualified,
                     "played Incendiary Runes/Color Spray qualifies before recipient-specific guards");
+                CasterFactGuards(Spell, Fuse, classify, Check);
                 var readType = typeof(CombatMath).GetNestedType("FusionDamageRead", Hidden);
                 var capture = typeof(CombatMath).GetMethod("ReadFusionDamageOutcomes", Hidden);
                 var fire = Fuse("Fireball", "LightningBolt", SavingThrowType.Reflex); var profile = AbilityProfile.Get(fire);
@@ -115,6 +124,75 @@ namespace ProfileAudit
             }
             catch(Exception ex) { bad++;lines.Add("FUSION-VALUE FAILED: "+ex.GetBaseException()); }
             failures=bad;lines.Insert(0,$"FUSION-VALUE {checks} checks, failures {bad}; actual source/apply metadata, native save contracts and compiled routes; no actor, Rulebook, cast, command or Unity timing");return lines;
+        }
+
+        // fusion2g1 review: in play every Runes fusion fell back with "mutable/unread guard ContextConditionCasterHasFact".
+        // Mystical Mayhem's Cyphermage patch (installed there, absent from the exports) appends Conditional(CasterHasFact
+        // RuneMaster) -> d4 magic damage per Cyphermage level to both Runes. Rebuild that exact shape in memory, check the
+        // qualification, then restore the stock action list so later sections and the coverage report see the export.
+        private const string RuneMaster = "4a75ac0b60594f19bcecd2e82e4ca6be";     // MysticalMayhem GUIDs.CyphermageRuneMaster
+        private const string IncendiaryBurning = "e69fd2ebb67749968f79519f6dc5a5f1"; // the buff Incendiary Runes' failed save applies
+        private static void CasterFactGuards(Func<string, BlueprintAbility> spell, Func<string, string, SavingThrowType, AbilityData> fuse,
+            MethodInfo classify, Action<bool, string> check)
+        {
+            var refusal = typeof(AbilityProfile).GetField("FusionGuardRefusal", Hidden);
+            var guardsField = typeof(AbilityProfile).GetField("m_Guards", Hidden);
+            Conditional Gate(string factGuid, out ContextConditionCasterHasFact condition, out ContextActionDealDamage damage)
+            {
+                var fact = new BlueprintUnitFactReference(); fact.ReadGuidFromJson(factGuid);
+                condition = new ContextConditionCasterHasFact();
+                typeof(ContextConditionCasterHasFact).GetField("m_Fact", Hidden).SetValue(condition, fact);
+                damage = new ContextActionDealDamage
+                {
+                    DamageType = new DamageTypeDescription { Type = DamageType.Energy, Energy = DamageEnergyType.Magic },
+                    Value = new ContextDiceValue
+                    {
+                        DiceType = DiceType.D4,
+                        DiceCountValue = new ContextValue { ValueType = ContextValueType.Rank, ValueRank = AbilityRankType.DamageDice },
+                        BonusValue = new ContextValue()
+                    },
+                    Duration = new ContextDurationValue()
+                };
+                return new Conditional
+                {
+                    ConditionsChecker = new ConditionsChecker { Conditions = new Condition[] { condition } },
+                    IfTrue = new ActionList { Actions = new GameAction[] { damage } },
+                    IfFalse = new ActionList()
+                };
+            }
+            void Patched(string source, string factGuid, Action<ContextConditionCasterHasFact, ContextActionDealDamage> body)
+            {
+                var run = spell(source).GetComponent<AbilityEffectRunAction>();
+                var stock = run.Actions.Actions;
+                run.Actions.Actions = stock.Concat(new GameAction[] { Gate(factGuid, out var condition, out var damage) }).ToArray();
+                try { body(condition, damage); }
+                finally { run.Actions.Actions = stock; }
+                check(ReferenceEquals(run.Actions.Actions, stock), source + " stock action list restored after the in-memory patch");
+            }
+            void Qualifies(string a, string b, SavingThrowType save, string label)
+            {
+                Patched(a, RuneMaster, (condition, damage) =>
+                {
+                    var data = fuse(a, b, save); var profile = AbilityProfile.Get(data);
+                    var guards = (IDictionary)guardsField.GetValue(profile);
+                    var guard = guards.Contains(damage) ? ((Array)guards[damage]).Cast<object>().FirstOrDefault() : null;
+                    var checker = guard?.GetType().GetField("Checker", Hidden)?.GetValue(guard) as ConditionsChecker;
+                    check(profile.Damage.Contains(damage) && checker?.Conditions?.Contains(condition) == true,
+                        label + ": the Rune Master damage is read as a caster-fact guarded HP part, not dropped");
+                    check((bool)classify.Invoke(null, new object[] { data, profile }) && refusal.GetValue(profile) == null,
+                        label + " with Mystical Mayhem's caster-fact guard qualifies for the joint outcome model");
+                });
+            }
+            Qualifies("IncendiaryRunes", "Snowball", SavingThrowType.Reflex, "played Incendiary Runes/Snowball");
+            Qualifies("ExplosiveRunes", "ColorSpray", SavingThrowType.Will, "played Explosive Runes/Color Spray");
+            // The ordinal check still covers the new type: a caster fact an earlier application grants is refused.
+            Patched("IncendiaryRunes", IncendiaryBurning, (condition, damage) =>
+            {
+                var data = fuse("IncendiaryRunes", "Snowball", SavingThrowType.Reflex); var profile = AbilityProfile.Get(data);
+                check(!(bool)classify.Invoke(null, new object[] { data, profile }) &&
+                    (refusal.GetValue(profile) as string)?.StartsWith("earlier application changes a guard fact e69fd2eb", StringComparison.Ordinal) == true,
+                    "a caster-fact guard on a buff an earlier application gives is still refused");
+            });
         }
     }
 }
