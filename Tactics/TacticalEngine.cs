@@ -525,22 +525,22 @@ namespace CompanionAI_Pathfinder.Tactics
                 if (immediate != null && !ValueModel.BuffBeatsImmediate(main.Value, immediate.Value))
                 {
                     if (!preview)
-                        ReportOnce($"restraint|{unit.UniqueId}|{CombatMemory.Round}|{main.Key}",
-                                   $"[Buff] {unit.CharacterName}: {main.Label} ({main.Value:0.#}) not cast - {immediate.Label} " +
+                        ReportOnce(Core.DiagnosticLogPolicy.RoundNoteKey("restraint", CombatMemory.Fight, unit.UniqueId, ctx.Round, main.Key),
+                                   () => $"[Buff] {unit.CharacterName}: {main.Label} ({main.Value:0.#}) not cast - {immediate.Label} " +
                                    $"({immediate.Value:0.#}) is within {ValueModel.BuffMargin:P0}; {BuffNote(unit, main)}");
                     chosen = immediate;
                     main = immediate;
                 }
             }
-            // ★ v0.3.19 (test11): why a buff was chosen, once a round per cast and recipient.
+            // ★ gaps2: once per fight/round, cast and recipient. Format the appraisal only when that key is new.
             if (!preview && chosen != null &&
                 (chosen.Kind == CandidateKind.Ability && (chosen.PureBuff || chosen.Label.Contains("(buff") || chosen.Label.Contains("+buff")) ||
                  chosen.Kind == CandidateKind.Toggle && chosen.PureBuff))
             {
                 var other = usable.FirstOrDefault(c => c != chosen && !c.PureBuff && (c.Slot == ActionSlot.Free || c.Slot == ActionSlot.Swift) ==
                                                                      (chosen.Slot == ActionSlot.Free || chosen.Slot == ActionSlot.Swift));
-                ReportOnce($"buffwhy|{unit.UniqueId}|{CombatMemory.Round}|{chosen.Key}",
-                           $"[Buff] {unit.CharacterName}: {chosen.Label} = {chosen.Value:0.#} ({chosen.Slot}) - {BuffNote(unit, chosen)}" +
+                ReportOnce(Core.DiagnosticLogPolicy.RoundNoteKey("buffwhy", CombatMemory.Fight, unit.UniqueId, ctx.Round, chosen.Key),
+                           () => $"[Buff] {unit.CharacterName}: {chosen.Label} = {chosen.Value:0.#} ({chosen.Slot}) - {BuffNote(unit, chosen)}" +
                            (other != null ? $"; best other: {other.Label} = {other.Value:0.#}" : ""));
             }
 

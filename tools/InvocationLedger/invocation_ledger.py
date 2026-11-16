@@ -5,6 +5,11 @@ Reads an AI Control Log.txt and lists every Profane Invocation the mod issued: w
 what the engine counted, whether the cast acted, and how the cast classifies. It reads only the mod's own log rows;
 it executes nothing and needs no game files.
 
+gaps2 follow-up: holders, ages and sequences are per caster. Detailed appraisal evidence is scoped to the current
+fight/decision. If it is absent, a current chosen decision and one unambiguous logged source holder can identify
+a tier; output marks this holder-inferred and leaves gross/slot unknown. An unresolved acted cast makes older
+state for that stat uncertain. Equal final coverage alone is not proof that an earlier shortcut was worthwhile.
+
     invocation_ledger.py [--json] <Log.txt>
 
 The game's rules the classification rests on (Demonic Overlord's Profane Ascension, read from the exported blueprints):
@@ -27,8 +32,8 @@ ModifierDescriptorHelper.IsStackable leaves Profane out).
 
 Sequence findings, per fight:
 - cross-tier: tier a of a stat left ally P and tier b of the same stat came onto P within one round. The one-cast
-  alternative is tier b straight onto the tier-a recipient Q. It is redundant only when Q held no tier-b buff of
-  another stat (the alternative would remove it); the ledger says which.
+  alternative is tier b straight onto the tier-a recipient Q. Another tier-b buff on Q blocks equivalence. Otherwise
+  it is only a coverage alternative: earlier values and timing still need review before calling either cast waste.
 - chain: the same buff moved twice within one round (P -> Q -> R).
 - return: a buff came back to an ally that held it earlier in the same fight.
 - re-placed: a sibling removed while one enemy or none was left, and the next fight cast that buff again.
@@ -68,6 +73,7 @@ RE_LABEL = re.compile(r'^(?P<stat>\w+)->(?P<recipient>.*?)\((?P<reasons>.*)\)$')
 RE_FROM = re.compile(r'from (?P<holder>.*?) -(?P<loss>[\d.]+)')
 RE_REPLACES = re.compile(r'replaces ProfaneAscension(?P<stat>\w+?)Buff(?P<tier>\d) -(?P<loss>[\d.]+)')
 RE_UNKNOWN_NAME = re.compile(r'\[unknown key: [0-9a-f-]+\]')
+RE_SELECTED = re.compile(r'^Profane Invocation — (?P<label>\w+->.*) =(?P<net>-?[\d.]+)(?: \(#\d+\))?$')
 
 
 def name(raw):
@@ -86,14 +92,19 @@ def round_number(label):
 def parse(lines):
     """One pass over the log: fights, decisions, notes and the issued casts with their outcomes."""
     fight = 0
-    holders = {}            # (stat, tier) -> unit name, the ledger's view
-    placed = {}             # (stat, tier) -> (fight, round number) of this caster's last placement
-    held_before = {}        # (stat, tier) -> set of units that held it in this fight
+    holders = {}            # caster -> {(stat, tier): unit name}; native uniqueness is per caster
+    holder_lines = {}       # caster -> {(stat, tier): latest observed state row}
+    unread_stats = {}       # caster -> {stat: latest acted unidentified cast}; older state is uncertain
+    placed = {}             # caster -> {(stat, tier): (fight, round number)}
+    held_before = {}        # caster -> {(stat, tier): holders in this fight}
     last_decision = {}      # unit -> (line, round label, hp)
     decisions = []          # (line, fight, unit, round, hp)
     revives = []            # (line, fight, reviver, target)
     caster_decision = {}    # caster -> (round label, enemies, rounds) of its latest decision
-    chosen = {}             # label -> chosen [Buff] row
+    previous_decision_line = {}
+    decision_lines = {}
+    selected = {}           # caster -> current chosen invocation label/net (not an option in the top five)
+    chosen = {}             # (caster, label) -> detailed [Buff] row, scoped to this fight/decision
     pending = []            # issued casts waiting for their ENDED row
     casts = []
     fight_start_holders = {}
@@ -101,8 +112,13 @@ def parse(lines):
         if RE_FIGHT.search(text):
             fight += 1
             placed = {}
-            held_before = {k: ({v} if v else set()) for k, v in holders.items()}
+            held_before = {c: {k: ({v} if v else set()) for k, v in own.items()} for c, own in holders.items()}
             fight_start_holders[fight] = {}
+            caster_decision.clear()
+            previous_decision_line.clear()
+            decision_lines.clear()
+            selected.clear()
+            chosen.clear()
             continue
         m = RE_DECISION.match(text)
         if m:
@@ -112,6 +128,10 @@ def parse(lines):
             enemies = re.search(r'enemies=(\d+) rounds~([\d.]+)', m.group('rest'))
             caster_decision[unit] = (m.group('round'), int(enemies.group(1)) if enemies else None,
                                      float(enemies.group(2)) if enemies else None)
+            previous_decision_line[unit] = decision_lines.get(unit, 0)
+            decision_lines[unit] = number
+            pick = RE_SELECTED.fullmatch(m.group('rest').rsplit(' => ', 1)[-1])
+            selected[unit] = dict(label=pick.group('label'), net=float(pick.group('net')), line=number) if pick else None
             continue
         m = RE_REVIVE.match(text)
         if m:
@@ -121,21 +141,27 @@ def parse(lines):
         if m:
             key = ABILITY_TIER.get(m.group('guid'))
             if key:
-                holders[key] = name(m.group('holder'))
-                held_before.setdefault(key, set()).add(holders[key])
-                fight_start_holders.setdefault(fight, {}).setdefault(key, holders[key])
+                caster = name(m.group('caster'))
+                own = holders.setdefault(caster, {})
+                own[key] = name(m.group('holder'))
+                holder_lines.setdefault(caster, {})[key] = number
+                held_before.setdefault(caster, {}).setdefault(key, set()).add(own[key])
+                fight_start_holders.setdefault(fight, {}).setdefault((caster, *key), own[key])
             continue
         m = RE_CHOSEN.match(text)
         if m:
-            chosen[m.group('label')] = dict(line=number, net=float(m.group('net')), gross=float(m.group('gross')),
-                                            slot=m.group('slot'), key=ABILITY_TIER.get(m.group('guid')))
+            chosen[(name(m.group('caster')), m.group('label'))] = dict(
+                line=number, fight=fight, net=float(m.group('net')), gross=float(m.group('gross')),
+                slot=m.group('slot'), key=ABILITY_TIER.get(m.group('guid')), guid=m.group('guid'))
             continue
         m = RE_ISSUED.match(text)
         if m:
             caster = name(m.group('caster'))
             label = m.group('label')
             lm = RE_LABEL.match(label)
-            row = chosen.get(label, {})
+            row = chosen.get((caster, label), {})
+            if row.get('fight') != fight or row.get('line', 0) <= previous_decision_line.get(caster, 0):
+                row = {}  # an older decision/fight's identical label is not current appraisal evidence
             decision = caster_decision.get(caster, (None, None, None))
             reasons = lm.group('reasons') if lm else ''
             frm, rep = RE_FROM.search(reasons), RE_REPLACES.search(reasons)
@@ -148,6 +174,26 @@ def parse(lines):
                         sibling=(rep.group('stat'), int(rep.group('tier'))) if rep else None,
                         sibling_loss=float(rep.group('loss')) if rep else None,
                         result=None, acted=None, seconds=None)
+            cast['identity_source'] = 'ability-id' if cast['key'] else 'unread'
+            cast['identity_evidence'] = ''
+            pick = selected.get(caster)
+            if not row and pick and pick['label'] == label:
+                cast['net'] = pick['net']  # directly printed chosen value; do not reconstruct gross or invent a slot
+                cast['value_source'] = 'chosen-decision'
+                own = holders.get(caster, {})
+                witnesses = holder_lines.get(caster, {})
+                unknown_after = unread_stats.get(caster, {}).get(cast['stat'], 0)
+                possible = [k for k, v in own.items() if k[0] == cast['stat'] and
+                            cast['engine_holder'] is not None and v == cast['engine_holder'] and
+                            witnesses.get(k, 0) > unknown_after]
+                if len(possible) == 1 and (not cast['sibling'] or cast['sibling'][1] == possible[0][1]):
+                    cast['key'] = possible[0]
+                    cast['identity_source'] = 'holder-inferred'
+                    cast['identity_evidence'] = (f"tier inferred from {cast['engine_holder']}'s single logged "
+                                                 f"{cast['stat']} holder at row {witnesses[possible[0]]}; "
+                                                 "chosen-decision net, no direct cast ID/gross")
+            else:
+                cast['value_source'] = 'appraisal' if row else 'unread'
             pending.append(cast)
             casts.append(cast)
             continue
@@ -160,20 +206,36 @@ def parse(lines):
             cast.update(result=m.group('result'), acted=m.group('acted') == 'True', seconds=float(m.group('secs')),
                         ended_line=number)
             key = cast['key']
-            cast['known_holder'] = holders.get(key) if key else None
-            cast['holdings'] = dict(holders)
-            cast['held_before'] = sorted(held_before.get(key, set())) if key else []
-            if key and key in placed and placed[key][0] == cast['fight']:
-                cast['rounds_since_placed'] = round_number(cast['round']) - placed[key][1]
+            caster = cast['caster']
+            own = holders.setdefault(caster, {})
+            witnesses = holder_lines.setdefault(caster, {})
+            uncertain = unread_stats.setdefault(caster, {})
+            current = {k: v for k, v in own.items() if witnesses.get(k, 0) > uncertain.get(k[0], 0)}
+            ages = placed.setdefault(caster, {})
+            history = held_before.setdefault(caster, {})
+            cast['known_holder'] = current.get(key) if key else None
+            cast['holdings'] = dict(current)
+            cast['prior_unknown'] = bool(key and uncertain.get(key[0], 0) and key not in current)
+            cast['held_before'] = sorted(history.get(key, set())) if key and not cast['prior_unknown'] else []
+            if key and key in ages and ages[key][0] == cast['fight'] and not cast['prior_unknown']:
+                cast['rounds_since_placed'] = round_number(cast['round']) - ages[key][1]
             else:
                 cast['rounds_since_placed'] = None
-            if not cast['acted'] or not key:
+            if not cast['acted']:
                 continue
-            holders[key] = cast['recipient']
-            placed[key] = (cast['fight'], round_number(cast['round']))
-            held_before.setdefault(key, set()).add(cast['recipient'])
-            if cast['sibling'] and holders.get(cast['sibling']) == cast['recipient']:
-                holders[cast['sibling']] = None
+            if not key:
+                uncertain[cast['stat']] = number  # do not let an unclassified transfer leave falsely certain state
+                if cast['sibling'] and own.get(cast['sibling']) == cast['recipient']:
+                    own[cast['sibling']] = None
+                    witnesses[cast['sibling']] = number
+                continue
+            own[key] = cast['recipient']
+            witnesses[key] = number
+            ages[key] = (cast['fight'], round_number(cast['round']))
+            history.setdefault(key, set()).add(cast['recipient'])
+            if cast['sibling'] and own.get(cast['sibling']) == cast['recipient']:
+                own[cast['sibling']] = None
+                witnesses[cast['sibling']] = number
     return dict(casts=casts, decisions=decisions, revives=revives, fight_start_holders=fight_start_holders, fights=fight)
 
 
@@ -199,7 +261,7 @@ def classify(cast, decisions, revives):
     if not cast['acted']:
         return 'not-applied', f"{cast['result']} after {cast['seconds']} s"
     if not cast['key']:
-        return 'unread', 'no chosen [Buff] row with an ability id before the ISSUED row'
+        return 'unread', 'no current ability ID or unambiguous logged-holder/selected-decision evidence'
     flags = []
     if cast['sibling']:
         flags.append('sibling')
@@ -217,6 +279,9 @@ def classify(cast, decisions, revives):
         if since is not None and since < SETTLE_ROUNDS:
             kind = 'move-override' if gain >= SETTLE_OVERRIDE else 'move-under-settle'
             evidence = f'placed {since} round(s) ago, net {gain}'
+        elif cast.get('prior_unknown'):
+            kind = 'move-age-unknown'
+            evidence = 'an earlier unread cast makes the placement age uncertain'
         else:
             kind = 'move-settled'
     elif cast['known_holder'] and cast['known_holder'] != cast['recipient']:
@@ -224,8 +289,12 @@ def classify(cast, decisions, revives):
         evidence = f"ledger holder {cast['known_holder']}: " + holder_evidence(cast, decisions, revives)
     elif cast['sibling']:
         kind = 'sibling-replacement'
+    elif cast.get('prior_unknown'):
+        kind = 'holder-unknown'
     else:
         kind = 'first-placement'
+    if cast.get('identity_evidence'):
+        evidence = '; '.join(x for x in [evidence, cast['identity_evidence']] if x)
     return kind + (' [' + ', '.join(flags) + ']' if flags else ''), evidence
 
 
@@ -239,7 +308,7 @@ def sequences(casts):
         if not source:
             continue
         for b in acted[i + 1:]:
-            if b['fight'] != a['fight'] or b['key'] != (stat, 3 - tier) or b['recipient'] != source:
+            if b['caster'] != a['caster'] or b['fight'] != a['fight'] or b['key'] != (stat, 3 - tier) or b['recipient'] != source:
                 continue
             if round_number(b['round']) - round_number(a['round']) > 1:
                 break
@@ -249,13 +318,14 @@ def sequences(casts):
                 verdict = (f"not redundant: {q} held {q_other[0][0]} tier {q_other[0][1]}, which tier-{3 - tier} "
                            f"{stat} on {q} would have removed")
             else:
-                verdict = (f"redundant: tier-{3 - tier} {stat} straight onto {q} gives the same {stat} coverage with "
-                           f"one cast fewer" + (f" and keeps {source}'s {b['sibling'][0]} tier {b['sibling'][1]}"
+                verdict = (f"coverage alternative: tier-{3 - tier} {stat} straight onto {q} gives the same final {stat} coverage with "
+                           f"one cast fewer; earlier recipient values/timing must be checked before calling this waste" +
+                           (f" and it keeps {source}'s {b['sibling'][0]} tier {b['sibling'][1]}"
                                                 if b['sibling'] else ''))
             found.append(dict(kind='cross-tier', first=a['line'], second=b['line'], fight=a['fight'], verdict=verdict))
             break
     for i, a in enumerate(acted):
-        b = next((x for x in acted[i + 1:] if x['key'] == a['key']), None)
+        b = next((x for x in acted[i + 1:] if x['caster'] == a['caster'] and x['key'] == a['key']), None)
         if b and b['fight'] == a['fight'] and round_number(b['round']) - round_number(a['round']) <= 1 and \
                 b['recipient'] != (a['engine_holder'] or a['known_holder']):
             found.append(dict(kind='chain', first=a['line'], second=b['line'], fight=a['fight'],
@@ -266,7 +336,7 @@ def sequences(casts):
     for a in acted:
         if not a['sibling'] or a['enemies'] is None or a['enemies'] > 1:
             continue
-        again = next((x for x in acted if x['fight'] == a['fight'] + 1 and x['key'] == a['sibling']), None)
+        again = next((x for x in acted if x['caster'] == a['caster'] and x['fight'] == a['fight'] + 1 and x['key'] == a['sibling']), None)
         if again:
             found.append(dict(kind='re-placed', first=a['line'], second=again['line'], fight=a['fight'],
                               verdict=f"{a['sibling'][0]} {a['sibling'][1]} removed from {a['recipient']} with one enemy "
@@ -286,12 +356,13 @@ def build(lines):
     for c in data['casts']:
         kind, evidence = classify(c, data['decisions'], data['revives'])
         c['kind'] = kind
-        rows.append(dict(line=c['line'], fight=c['fight'], mode=c['mode'], round=c['round'], enemies=c['enemies'],
+        rows.append(dict(line=c['line'], fight=c['fight'], caster=c['caster'], mode=c['mode'], round=c['round'], enemies=c['enemies'],
                          buff=f"{c['key'][0]} {c['key'][1]}" if c['key'] else c['stat'], recipient=c['recipient'],
                          net=c['net'], gross=c['gross'], engine_holder=c['engine_holder'], holder_loss=c['holder_loss'],
                          sibling=f'{c["sibling"][0]} {c["sibling"][1]}' if c['sibling'] else None,
                          sibling_loss=c['sibling_loss'], result=c['result'], seconds=c['seconds'],
-                         rounds_since_placed=c.get('rounds_since_placed'), kind=kind, evidence=evidence))
+                         rounds_since_placed=c.get('rounds_since_placed'), identity_source=c['identity_source'],
+                         value_source=c['value_source'], kind=kind, evidence=evidence))
     flags = {}
     for r in rows:
         for flag in re.findall(r'\[(.*?)\]', r['kind'])[:1]:
@@ -303,7 +374,7 @@ def build(lines):
         counts[base] = counts.get(base, 0) + 1
     return dict(fights=data['fights'], issued=len(rows), acted=sum(1 for c in data['casts'] if c.get('acted')),
                 counts=counts, flags=flags, rows=rows, sequences=sequences(data['casts']),
-                fight_start_holders={f: {f'{k[0]} {k[1]}': v for k, v in h.items()}
+                fight_start_holders={f: {f'{k[0]}: {k[1]} {k[2]}': v for k, v in h.items()}
                                      for f, h in data['fight_start_holders'].items()})
 
 

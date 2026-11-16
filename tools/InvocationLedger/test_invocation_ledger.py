@@ -22,6 +22,11 @@ def decide(unit, rnd, enemies=5, hp=100):
     return [P + f'[Tactics] {unit} {rnd} HP{hp}% [SMWF-] enemies={enemies} rounds~3.0 diff=0.50 :: Attack->Goblin=4.0 => x']
 
 
+def select(unit, rnd, stat, recipient, reasons, net):
+    label = f'Profane Invocation — {stat}->{recipient}({reasons})'
+    return [decide(unit, rnd)[0].replace('=> x', f'=> {label} ={net} (#15)')]
+
+
 def kept(stat, tier, holder):
     return [P + f'[Buff] Lann: Profane Invocation — {stat} [{GUID[(stat, tier)]}] stays on {holder} '
                 f'(unique buff: Seelah 1.0 is not clearly better than 5.0 there)']
@@ -82,7 +87,7 @@ class LedgerTests(unittest.TestCase):
         self.assertIn('last decision R1 at 40% HP', row['evidence'])
         self.assertIn('revive considered', row['evidence'])
 
-    def test_cross_tier_is_redundant_only_without_another_tier_b_buff_on_the_recipient(self):
+    def test_cross_tier_alternative_checks_siblings_and_does_not_claim_earlier_value(self):
         def run(tuvel_holds_charisma_2):
             log = fight() + kept('Dexterity', 1, 'Lann') + kept('Dexterity', 2, 'Orvath')
             if tuvel_holds_charisma_2:
@@ -95,7 +100,8 @@ class LedgerTests(unittest.TestCase):
         self.assertEqual(len(held), 1)
         self.assertTrue(held[0]['verdict'].startswith('not redundant: Tuvel held Charisma tier 2'))
         free = run(False)
-        self.assertTrue(free[0]['verdict'].startswith('redundant: tier-2 Dexterity straight onto Tuvel'))
+        self.assertTrue(free[0]['verdict'].startswith('coverage alternative: tier-2 Dexterity straight onto Tuvel'))
+        self.assertIn('earlier recipient values/timing must be checked', free[0]['verdict'])
         self.assertIn("keeps Lann's Constitution tier 2", free[0]['verdict'])
 
     def test_same_stat_flag_when_the_other_tier_is_already_there(self):
@@ -139,12 +145,84 @@ class LedgerTests(unittest.TestCase):
         self.assertEqual(rows[1]['recipient'], '(unnamed ally)')
         self.assertEqual((rows[1]['kind'], rows[1]['seconds']), ('first-placement', 2.5))
 
-    def test_cast_without_its_decision_row_is_unread_and_moves_nothing(self):
+    def test_unread_acted_cast_makes_old_holder_age_uncertain(self):
         rows = cast('Dexterity', 1, 'Seelah', mode='RT')[1:]          # ISSUED and ENDED only
         log = fight() + kept('Dexterity', 1, 'Aeiluvetar') + decide('Lann', 'RT1') + rows + \
             cast('Dexterity', 1, 'Camellia', 'from Aeiluvetar -2.0+buff', mode='RT')
         result = ledger.build(log)
-        self.assertEqual(kinds(result), ['unread', 'move-settled'])
+        self.assertEqual(kinds(result), ['unread', 'move-age-unknown'])
+
+    def test_missing_appraisal_uses_selected_value_and_one_caster_scoped_holder_witness(self):
+        reason = 'from Caster -0.5+buff'
+        log = (fight() + kept('Dexterity', 1, 'Archer') + kept('Dexterity', 2, 'Caster') +
+               select('Lann', 'RT1', 'Dexterity', 'Fighter', reason, 2.8) +
+               cast('Dexterity', 2, 'Fighter', reason, mode='RT')[1:] +
+               decide('Lann', 'RT2') + cast('Dexterity', 1, 'Caster', 'from Archer -10.5+buff', 6.3, 16.8, mode='RT'))
+        result = ledger.build(log)
+        first, second = result['rows']
+        self.assertEqual((first['buff'], first['net'], first['gross']), ('Dexterity 2', 2.8, None))
+        self.assertEqual((first['identity_source'], first['value_source']), ('holder-inferred', 'chosen-decision'))
+        self.assertIn('tier inferred', first['evidence'])
+        self.assertNotIn('same-stat', second['kind'])
+
+    def test_ambiguous_holder_does_not_guess_a_tier_or_keep_a_false_stacking_flag(self):
+        reason = 'from Caster -0.5+buff'
+        log = (fight() + kept('Dexterity', 1, 'Caster') + kept('Dexterity', 2, 'Caster') +
+               select('Lann', 'RT1', 'Dexterity', 'Fighter', reason, 2.0) +
+               cast('Dexterity', 2, 'Fighter', reason, mode='RT')[1:] +
+               decide('Lann', 'RT2') + cast('Dexterity', 1, 'Caster', mode='RT'))
+        result = ledger.build(log)
+        self.assertEqual(result['rows'][0]['kind'], 'unread')
+        self.assertEqual(result['rows'][0]['net'], 2.0)
+        self.assertEqual(result['rows'][1]['kind'], 'holder-unknown')
+        self.assertNotIn('same-stat', result['flags'])
+
+    def test_an_option_not_selected_in_the_decision_is_not_identity_evidence(self):
+        reason = 'from Caster -0.5+buff'
+        decision = select('Lann', 'RT1', 'Dexterity', 'Fighter', reason, 2.0)[0]
+        decision = decision.split(' => ')[0] + ' | Profane Invocation — Dexterity->Fighter(from Caster -0.5+buff)=2 => Attack->Goblin =4'
+        result = ledger.build(fight() + kept('Dexterity', 2, 'Caster') + [decision] +
+                              cast('Dexterity', 2, 'Fighter', reason, mode='RT')[1:])
+        self.assertEqual(result['rows'][0]['kind'], 'unread')
+
+    def test_previous_fight_appraisal_is_not_reused_for_the_same_label(self):
+        rows = cast('Strength', 2, 'Archer', net=7.1, gross=7.1, mode='RT')
+        log = (fight() + decide('Lann', 'R1') + rows + fight() +
+               select('Lann', 'RT1', 'Strength', 'Archer', 'buff', 8.8) + rows[1:])
+        row = ledger.build(log)['rows'][-1]
+        self.assertEqual(row['kind'], 'unread')
+        self.assertEqual((row['net'], row['gross']), (8.8, None))
+
+    def test_earlier_actual_decision_appraisal_is_not_reused(self):
+        rows = cast('Strength', 2, 'Archer', net=7.1, gross=7.1, mode='RT')
+        log = (fight() + rows[:1] + select('Lann', 'RT1', 'Strength', 'Archer', 'buff', 7.1) + rows[1:] +
+               select('Lann', 'RT2', 'Strength', 'Archer', 'buff', 8.8) + rows[1:])
+        row = ledger.build(log)['rows'][-1]
+        self.assertEqual(row['kind'], 'unread')
+        self.assertEqual((row['net'], row['gross']), (8.8, None))
+
+    def test_holder_and_placement_age_are_separate_for_two_casters(self):
+        log = (fight() + kept('Dexterity', 1, 'Archer') +
+               [s.replace('Lann', 'Other caster') for s in kept('Dexterity', 1, 'Fighter')] +
+               decide('Lann', 'R1') + cast('Dexterity', 1, 'Alchemist', 'from Archer -1.0+buff') +
+               decide('Other caster', 'R1') +
+               [s.replace('Lann', 'Other caster') for s in cast('Dexterity', 1, 'Rogue', 'from Fighter -1.0+buff')])
+        rows = ledger.build(log)['rows']
+        self.assertEqual([r['kind'] for r in rows], ['move-settled', 'move-settled'])
+        self.assertEqual([r['caster'] for r in rows], ['Lann', 'Other caster'])
+        self.assertEqual([r['rounds_since_placed'] for r in rows], [None, None])
+        self.assertFalse(ledger.build(log)['sequences'])
+
+    def test_inferred_interrupted_cast_does_not_move_the_holder(self):
+        reason = 'from Caster -0.5+buff'
+        log = (fight() + kept('Dexterity', 2, 'Caster') +
+               select('Lann', 'RT1', 'Dexterity', 'Fighter', reason, 2.0) +
+               cast('Dexterity', 2, 'Fighter', reason, mode='RT', result='Interrupt', acted=False)[1:] +
+               decide('Lann', 'RT2') + cast('Dexterity', 2, 'Archer', reason, mode='RT'))
+        rows = ledger.build(log)['rows']
+        self.assertEqual(rows[0]['kind'], 'not-applied')
+        self.assertEqual(rows[1]['engine_holder'], 'Caster')
+        self.assertEqual(rows[1]['rounds_since_placed'], None)
 
     def test_verbose_prefix_and_markdown(self):
         log = fight() + [P + '[V] ' + decide('Lann', 'RT1')[0][len(P):]] + cast('Charisma', 2, 'Tuvel', mode='RT')

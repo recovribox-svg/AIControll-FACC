@@ -1,0 +1,196 @@
+{
+  "task": "gaps2 playtest review, fight-scoped buff diagnostics and Invocation evidence",
+  "date": "2026-11-16",
+  "timezone": "Europe/London",
+  "recorded_at_utc": "2026-11-16T00:55:41.009869+00:00",
+  "branch": "codex/gaps2-playtest-review",
+  "development_base": "96dabaaeb938ee4829cd8c0f021e1b1f2ea432af",
+  "stacked_on": {
+    "pr": 71,
+    "head": "3664663cb4b88caab62037847d3851bfa3233704",
+    "also_includes": [
+      65,
+      66,
+      67,
+      68,
+      69,
+      70
+    ]
+  },
+  "checked_source_commit": "9a025654a52a978b3d3dadf7052095f392c4686b",
+  "worktree_clean_at_build": true,
+  "dll": {
+    "assembly": "CompanionAI_Pathfinder, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null",
+    "mvid": "48ece05d-5895-46e3-896c-d87cb5a60b29",
+    "sha256": "348cc6ef9ccfbd04249f5f62afb7e5518132c89e1ffcf3cb00297a43706128e1",
+    "size": 1462272
+  },
+  "manifest_unchanged": "0.3.52",
+  "release_build": {
+    "real_game_references": true,
+    "warnings": 0,
+    "errors": 0
+  },
+  "toolchain": {
+    "dotnet_sdk": "8.0.426",
+    "csharp_compiler": "4.11.0-3.25569.22 (3fb752d4)",
+    "provenance": "docs/competence/GAPS2_PLAYTEST_BUILD_PROVENANCE.json",
+    "provenance_sha256": "a4f727b447241c83903f06f6707434d91db1bf99076be70239a718f12e2f7a80",
+    "umm_reference": "0.33.2.0"
+  },
+  "input_receipt": "docs/competence/GAPS2_PLAYTEST_INPUTS.json",
+  "invocation_ledger": "docs/competence/GAPS2_INVOCATION_LEDGER.json",
+  "unit_tests": {
+    "passed": 866,
+    "failed": 0,
+    "skipped": 0,
+    "new_cases": 5
+  },
+  "script_tests": {
+    "inventory": 27,
+    "audit_supplement": 3,
+    "invocation_ledger": 18,
+    "new_ledger_cases": 7,
+    "failures": 0
+  },
+  "compatible_profile_audit": {
+    "loaded": 44639,
+    "failed": 0,
+    "abilities": 4807,
+    "reader_errors": 0,
+    "prerequisite_skips": 0,
+    "diagnostic_log": 16,
+    "new_diagnostic_checks": 2,
+    "grapple": 58,
+    "griffon_modes": 29,
+    "shifter_forms": 21,
+    "campaign_flag": 21,
+    "value_selection": 24,
+    "fusion_value": 23,
+    "scope": "C06_NATIVE_COMPATIBLE_SCOPE.json plus REVIEW2_CHARGE_INPUTS.json missing-only stock fixtures",
+    "summon_inventory_limits": "5 missing spawned-unit IDs, 119 kit-reference IDs and 95 unloaded brains remain explicit; not the S1 full-stock supplement."
+  },
+  "native_harnesses": {
+    "toggle_with_psionics": 98,
+    "tome": 14,
+    "toybox": 10,
+    "failures": 0,
+    "prerequisite_skips": 0
+  },
+  "supplementary_audit": {
+    "loaded": 44643,
+    "failed": 0,
+    "abilities": 4807,
+    "errors": 0,
+    "magus_checks": 44
+  },
+  "foreign_references": {
+    "added": 0,
+    "unresolved": 0,
+    "baseline": "PR #71 checked DLL 96108ba"
+  },
+  "report_comparison": {
+    "strict.log": {
+      "baseline_sha256": "db161f3b28b1298c14a27ea784a5c5b967b049bce5f213e475a0040e957b3480",
+      "new_sha256": "9872f58af046fb4fae1e0b2b460f853bc77096b42eb6c9ec9d06f24ed0ca9759",
+      "unchanged_outside_diagnostic_check_count": true,
+      "normalization": "Exclude only DIAGNOSTIC-LOG check-count and optional FUSION-COVERAGE rows; normalize output path/blank separators."
+    },
+    "strict.txt": {
+      "baseline_sha256": "2aaed410fb447be435f290e74e175cbd21c34a52aa88ffc09beee7d2a7d78c44",
+      "new_sha256": "ac4684ea60a6059f4b1ef51b00aa5d5fbb2d5464a86f77de56d23aff9ebc4008",
+      "unchanged_outside_diagnostic_check_count": true,
+      "normalization": "Exclude only DIAGNOSTIC-LOG check-count and optional FUSION-COVERAGE rows; normalize output path/blank separators."
+    }
+  },
+  "fusion_coverage": {
+    "kind": "Reused PR #69 metadata matrix; not rerun for diagnostic-only runtime changes",
+    "receipt": "docs/competence/FRIGID_SELECTION_CHECKS.json",
+    "configurations": 15494,
+    "admitted": 7306,
+    "withheld": 8188,
+    "cones_resolved": 1166,
+    "joint_metadata_qualified": 3118,
+    "reader_joint_model_files_unchanged": true,
+    "scope": "Metadata, not live execution/aim/value coverage."
+  },
+  "raw_archive_negative_check": {
+    "exit": 1,
+    "loaded": 44637,
+    "failed": 1,
+    "asset": "AchaekekSacredWeaponFeature",
+    "reason": "Preserved original enum spelling mismatch/offline logger ECall; separate negative-input check, no normalization or raw verdict acceptance."
+  },
+  "diagnostic_bounds": {
+    "same_key_within_fight_still_suppressed": true,
+    "round_scope_now_includes_fight": true,
+    "message_formatting": "existing synchronous lazy ReportOnce overload",
+    "report_cache_bound": "existing 1024-entry reset policy retained",
+    "new_world_scans": 0,
+    "new_rule_forecasts": 0,
+    "new_path_queries": 0,
+    "new_actor_or_context_cache": false,
+    "scoring_resource_settling_movement_or_target_policy_changed": false,
+    "unity_speedup_claimed": false
+  },
+  "played_gaps2_findings": {
+    "release_success_acted": 5,
+    "all_in_rt": true,
+    "invocations_success_acted": 32,
+    "invocation_identity_sources": {
+      "current_ability_id": 27,
+      "holder_inferred": 4,
+      "unknown": 1
+    },
+    "identified_same_stat_flags": 0,
+    "identified_under_settle": 0,
+    "unplayed_cases": [
+      "TB release",
+      "actual leap",
+      "actual ordinary/fused Frigid Touch",
+      "monster-held ally response"
+    ]
+  },
+  "package": {
+    "archive": "test-builds/AI-Control-FACC-v0.3.52-dev-gaps3-9a02565-UMM-test.zip",
+    "sha256": "e97222e507007a321f1b97334a1158a796c22fe90ba9a569809a805573b62ca6",
+    "bytes": 578783,
+    "identity": "test-builds/AI-Control-FACC-v0.3.52-dev-gaps3-9a02565-UMM-test.identity.json",
+    "identity_sha256": "69418db29a279dc8bc0c17340780a596f6b7ea67fc7eb7a2f79709c5ced20a46",
+    "packed_dll_equals_checked_release": true,
+    "startup_mvid_unique_against_existing_identities": true,
+    "native_dlls_stubs_logs_or_blueprint_data_packed": false
+  },
+  "verification_interruption": "Native provider build initially hit workspace-full. Removed only generated duplicate verification outputs; resumed remaining checks on the unchanged clean source and exact already-passed Release DLL. No unresolved check failures.",
+  "limits": [
+    "gaps3 is unplayed; supplied gaps2 logs are a different DLL.",
+    "Invocation forecasts are not measured realized stat benefits; four identities are explicitly inferred and one remains unknown.",
+    "Equal final cross-tier coverage is not an earlier-value/timing waste verdict.",
+    "Generic holder alternative/safety, monster help, extra form facts, saved Frigid control and warm decision workload retain prior boundaries.",
+    "Native audits execute no live game actor/command/Unity timing; only private verification copies are engine-neutralized."
+  ],
+  "handover": [
+    "docs/GAPS2_PLAYTEST_REVIEW.md",
+    "docs/INVOCATION_LEDGER.md",
+    "docs/GRAPPLE_GAP_ASSESSMENT.md"
+  ],
+  "source_freeze": "Later receipt/package/documentation-only commits retain this exact checked DLL without rebuilding it.",
+  "validation_logs_sha256": {
+    "audit-build.log": "7b4474bcee7d17a6ace544e14c86d9e57ae0fbd3f9112166e0827278d93fe553",
+    "inventory.log": "6ef6f1be79a41ae28318124d4325a3988feaa684a68197d354ce98238c426a4d",
+    "invocation-ledger.log": "7bc83929f79c8678737a5724da0d7fb69194a01ca52394499c61abcb93823e0b",
+    "raw.log": "59399a5731df2ca0a352726bb5857f2618ac7f2bf881aa07c789670ad5bd8149",
+    "refs.log": "899262540b3e6a0a678fb0c899cdfcefb2cc1695ab4439fdcb666d764617d4a1",
+    "release.log": "54deae89e49a67949a6bf33ce98ea747db506fb91f81dbd948313f133530112e",
+    "strict.log": "9872f58af046fb4fae1e0b2b460f853bc77096b42eb6c9ec9d06f24ed0ca9759",
+    "supplement-scripts.log": "199ba496f288116d36c62f29346d4fbf0bd75745a1c893abfcbdaa4c6d5b1033",
+    "supplementary.log": "9910cb5cad2c1ee7c4c19b2ef67785db3722ac475a108b939fc6a23a4af038a8",
+    "toggle-build.log": "ffb116b1895558dcf65a835c26a7b1156c31cb8c3b8a4e775b5f6c3d01d22d5a",
+    "toggle.log": "4a73f0599e8b6fc938ed8456fc3c6760f3f0d6eb21334ff3ccf4edca3b42965c",
+    "tome-build.log": "f61cabe4039f4974a699adee70f277dd4edf581cf7babef5f85b6b64d0a2a30f",
+    "tome.log": "7e16c78e50b5dbd0736c40db1e192051790546c24b708b780fc7a567d5414bdf",
+    "toybox-build.log": "3e48b7f2db770f3ef8eee15f102b96bab39294a8432911f754eeb124ece9ad37",
+    "toybox.log": "8970a533c4e70042ac5693807914195af0dc59ad15e72b2033e400b113d4d0f9",
+    "unit.log": "216ef7c51ea76c98491a6aee32326da6f99558dbd6b496af4cb933c0ec01cb03"
+  }
+}

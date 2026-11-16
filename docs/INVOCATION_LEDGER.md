@@ -1,5 +1,16 @@
 # Profane Invocation transfer ledger (I1)
 
+**16 November 2026, Codex: gaps2 evidence follow-up.** See [the new review](GAPS2_PLAYTEST_REVIEW.md) for the supplied
+gaps2 pair and all 32 completed invocations. The original tables below remain historical I1 evidence; their
+receipts are not rewritten. The updated tool has 18 tests, scopes state by caster and appraisals by fight/decision,
+and distinguishes direct ability IDs from explicitly marked holder inference. It will not reuse an earlier fight's
+identical label/value. A missing detailed row can use the current **chosen** decision's net and one unique logged
+source holder to infer the tier; gross and slot remain unknown. An ambiguous tier stays unread, and older state
+for that stat becomes uncertain. JSON rows include `caster`, `identity_source` and `value_source`; the
+`fight_start_holders` keys now also name their caster. Cross-tier equal final coverage is labelled a **coverage
+alternative**, requiring earlier values/timing, not automatically a wasted cast. In gaps2 the apparent shortcut's
+earlier holder loss makes it unattractive before the later recipient's value rises.
+
 14 November 2026, Claude. Tooling and documentation only: no gameplay source, manifest or package change. Section 164
 of `docs/TACTICAL_AI.md` summarises it; the receipt is `docs/competence/INVOCATION_LEDGER_CHECKS.json`.
 

@@ -8,7 +8,43 @@ Read [CONTRIBUTING.md](CONTRIBUTING.md) for shared branch ownership, Codex pull 
 Codex works on task branches and targets pull requests at `claude/dreamy-pasteur-b9h3rn`; Claude reviews and integrates them there.
 Keep `main` for author-authorized releases. Read [AGENTS.md](AGENTS.md) when coordinating agent work.
 
-**Current handover (15 November 2026, Codex): gaps1 playtest review / Release Grapple repair on
+**Current handover (16 November 2026, Codex): gaps2 review / Invocation evidence on `codex/gaps2-playtest-review`,
+stacked on #71 `3664663` -> #70 -> #69 -> #68 -> #67 -> #66 -> #65, development `96dabaa` (#72).**
+Read [review/judgment/replay](docs/GAPS2_PLAYTEST_REVIEW.md), [inputs](docs/competence/GAPS2_PLAYTEST_INPUTS.json),
+[derived ledger](docs/competence/GAPS2_INVOCATION_LEDGER.json), §179. Supplied gaps2 MVID `9ce04a64` matches `96108ba`;
+author confirms combat spawning, rests between fights, Grabber left to the engine. Ten encounters, all 572 command
+issues have matching terminals, no recorded AI Control exception. **Five Release Grapple commands succeed in RT**,
+with held restrictions and later recovered permissions; no refund of spent actions/cooldowns. TB release, actual
+leap and ordinary/fused Frigid remain unplayed. Independent Stun Bomb state explains two release value changes.
+
+Invocation: **32 completed casts**, ten distinct initial free placements. **27 current direct ability IDs,
+4 explicitly holder-inferred tiers, 1 unidentified tier**. Classes: 13 first placements, 14 settled moves,
+2 overrides, 2 holder-unseen, 1 unread; no identified under-settle or known same-stat error. One supposed coverage
+shortcut would not clear the earlier holder loss/margin. No new cast cap, scoring/recipient/settling change or
+joint-assignment model is warranted. See the review's exact rows and the limitations of logged issue timing.
+
+The session-wide buffwhy/restraint keys omitted fight. Repeated early-round recipients lost their current ID/gross
+appraisal, and the old ledger even reused an earlier 7.1 where the actual chosen value is 8.8. Both notes now use
+a fight-scoped key and lazy formatting, preserving normal duplicate suppression. Ledger state is caster-scoped,
+rejects stale appraisals and marks identity/value sources; an equal eventual coverage is not an earlier waste verdict.
+No movement, targeting, forecasts, rule/path/world queries or actor/context cache changes. Warm ability work remains
+material; Lann has no slow-decision row. No Unity speedup claim.
+
+Checked source **`9a02565`**, MVID **`48ece05d-5895-46e3-896c-d87cb5a60b29`**: **866 unit + 27 inventory + 3 script + 18 ledger tests**,
+real-reference Release **0 warnings/errors**; ProfileAudit 44,639 loaded / 4,807 abilities, no load/reader failures
+or prerequisite skips. **DIAGNOSTIC-LOG 16 (2 new)** and inherited checks, supplementary Magus 44, providers 98/14/10
+pass; **0 added external signatures**. Reports otherwise match #71; raw enum mismatch remains a separate expected
+negative-input check. Workspace-full interrupted a provider build; duplicate generated outputs were removed and
+remaining checks resumed on the exact unchanged checked source/DLL. No unresolved check failures.
+[Receipt](docs/competence/GAPS2_PLAYTEST_CHECKS.json), [compiler/reference provenance](docs/competence/GAPS2_PLAYTEST_BUILD_PROVENANCE.json).
+[Cumulative gaps3 UMM test ZIP](test-builds/AI-Control-FACC-v0.3.52-dev-gaps3-9a02565-UMM-test.zip), SHA-256
+`e97222e507007a321f1b97334a1158a796c22fe90ba9a569809a805573b62ca6`. SDK 8.0.426 / Roslyn 4.11, UMM 0.33.2.0,
+manifest 0.3.52. Diagnostic code is unplayed; the checked DLL stays frozen across receipt/docs-only commits.
+No gameplay stack integration, main/development push, tag or release. Keep holder opportunity/safety, monster,
+form-fact and saved-Frigid boundaries. No additional files needed. Next: repeated early-round buff recipients across
+fights with current appraisals, TB release, actual leap and Frigid if feasible; paired logs and startup identity.
+
+**Earlier handover (15 November 2026, Codex): gaps1 playtest review / Release Grapple repair on
 `codex/gaps1-playtest-review`, stacked on #70 `d5a1207` -> #69 -> #68 -> #67 -> #66 -> #65,
 development `6b9be42`; repaired gaps2 is unplayed.** Read [review/evidence/replay](docs/GAPS1_PLAYTEST_REVIEW.md),
 [input hashes/context](docs/competence/GAPS1_PLAYTEST_INPUTS.json), §178. Supplied logs match gaps1 MVID `9aea0261`;
