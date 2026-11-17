@@ -1,0 +1,132 @@
+// ★ sneak attack refinements (17 November 2026; docs/BURST_AIM_AND_TACTICS_PLAN.md §6, slice D): the game side of
+// fortification and of the flanking a second attacker creates. Pure rules: SneakRules. Read only: engagement sets, the
+// fortification part and the native threat hand; no rule is triggered here beyond the partner's ordinary routine read.
+using System;
+using Kingmaker.EntitySystem.Entities;
+using Kingmaker.Items;
+using Kingmaker.UnitLogic;
+using Kingmaker.UnitLogic.Parts;
+
+namespace CompanionAI_Pathfinder.Tactics
+{
+    public static partial class CombatMath
+    {
+        /// <summary>D1: the target's fortification chance, as RuleAttackRoll reads it (the highest of its values).</summary>
+        internal static int FortificationChance(UnitEntityData target)
+        {
+            try { return target?.Get<UnitPartFortification>()?.Value ?? 0; }
+            catch { return 0; }
+        }
+
+        /// <summary>
+        /// D1: a critical factor (1 + the critical share of the damage) after the target's fortification roll, which
+        /// negates a confirmed critical of any attack roll (RuleAttackRoll).
+        /// </summary>
+        internal static float FortifiedCritFactor(float factor, UnitEntityData target) =>
+            factor > 1f ? 1f + (factor - 1f) * SneakRules.FortificationKeep(FortificationChance(target)) : factor;
+
+        /// <summary>
+        /// D2: the units besides <paramref name="attacker"/> that count as engaging <paramref name="target"/> for
+        /// UnitCombatState.IsFlanked - turn-based every engager, real time those whose command targets it - and the one of
+        /// them when there is exactly one.
+        /// </summary>
+        internal static int OtherEngagers(UnitEntityData target, UnitEntityData attacker, out UnitEntityData sole)
+        {
+            sole = null;
+            int count = 0;
+            try
+            {
+                var state = target?.CombatState;
+                if (state == null) return 0;
+                // Native order: the turn-based count applies to a target in combat; otherwise the command rule.
+                bool turnBased = TurnBased.Controllers.CombatController.IsInTurnBasedCombat() && target.IsInCombat;
+                foreach (var engager in state.EngagedBy)
+                {
+                    if (engager == null || engager == attacker) continue;
+                    if (!turnBased && !engager.Commands.AnyCommandTargets(target)) continue;
+                    count++;
+                    sole = count == 1 ? engager : null;
+                }
+            }
+            catch
+            {
+                sole = null;
+                return 0;
+            }
+            return count;
+        }
+
+        /// <summary>
+        /// D2: a melee attack with <paramref name="weapon"/> makes <paramref name="unit"/> an engager of its target: the unit
+        /// has a native threat hand with a threat range (UnitCombatEngagementController.TickUnit), and the attack lands in
+        /// reach. Ranged attacks leave flanking to the native state.
+        /// </summary>
+        internal static bool AttackerEngages(UnitEntityData unit, ItemEntityWeapon weapon)
+        {
+            try
+            {
+                if (unit == null || weapon?.Blueprint == null || !weapon.Blueprint.IsMelee) return false;
+                if (!unit.Descriptor.State.CanAct) return false;
+                var hand = unit.GetThreatHand();
+                return hand != null && unit.GetThreatRange(hand).HasValue;
+            }
+            catch
+            {
+                return false;
+            }
+        }
+
+        /// <summary>
+        /// D2: whether <paramref name="target"/> will be flanked when <paramref name="unit"/>'s attack with
+        /// <paramref name="weapon"/> lands, and whether that is new (this attack is the second engager).
+        /// </summary>
+        private static bool PredictFlank(UnitEntityData unit, UnitEntityData target, ItemEntityWeapon weapon,
+                                         out bool bySecond, out UnitEntityData partner)
+        {
+            bySecond = false;
+            partner = null;
+            bool native = target.CombatState?.IsFlanked ?? false;
+            if (native) return true;
+            bool cannot;
+            try { cannot = target.Descriptor.State.Features.CannotBeFlanked; }
+            catch { cannot = true; }
+            if (cannot || !AttackerEngages(unit, weapon)) return false;
+            int others = OtherEngagers(target, unit, out partner);
+            bySecond = SneakRules.PredictsFlank(false, cannot, true, others);
+            if (!bySecond) partner = null;
+            return bySecond;
+        }
+
+        /// <summary>
+        /// D2: what <paramref name="partner"/> gains for a round once <paramref name="target"/> is flanked: +2 on its melee
+        /// attacks and its sneak dice where they did not apply yet, through the target's fortification. Its own routine is
+        /// read as usual (cached for the frame); 0 when the target is flanked for it already.
+        /// </summary>
+        internal static float FlankPartnerGain(UnitEntityData partner, UnitEntityData target)
+        {
+            try
+            {
+                var routine = ReadRoutine(partner, target, full: true);
+                if (routine == null || routine.Flanked || routine.Lines.Count == 0) return 0f;
+                int dice = SafeStat(partner.Stats.SneakAttack);
+                bool sneaks = dice > 0 && !ImmuneToPrecision(target);
+                float lands = LandsPastDefences(partner, target);
+                float gain = 0f;
+                foreach (var line in routine.Lines)
+                {
+                    bool melee = line.Weapon?.Blueprint?.IsMelee == true;
+                    float now = HitProbability(line.AttackBonus, line.ArmorClass) * lands;
+                    float flanked = melee ? HitProbability(line.AttackBonus + SneakRules.FlankingBonus, line.ArmorClass) * lands : now;
+                    float newSneak = sneaks && line.Sneak <= 0f ? 3.5f * dice * line.PhysicalFactor : 0f;
+                    gain += SneakRules.PartnerLineGain(now, flanked, line.GameHit + line.BladeBlast, newSneak, line.Keep);
+                }
+                return gain;
+            }
+            catch (Exception ex)
+            {
+                Main.Verbose($"[Math] flank partner {partner?.CharacterName}->{target?.CharacterName}: {ex.Message}");
+                return 0f;
+            }
+        }
+    }
+}

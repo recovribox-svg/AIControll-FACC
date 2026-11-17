@@ -19,7 +19,8 @@ namespace CompanionAI_Pathfinder.Tactics
                                Math.Max(0f, line.RawPerHit - line.DamageReduction);
             perHit = Math.Max(0f, line.GameHit + modeChange * line.PhysicalFactor) + line.BladeBlast;
             float critExtra = hit * perHit * (ValueModel.CritFactor(line.ThreatChance, hit, line.CritMultiplier) - 1f);
-            return hit * (perHit + line.Sneak) + critExtra;
+            // ★ sneak attack (slice D1): the target's fortification negates sneak dice and critical extra together.
+            return SneakRules.LineDamage(hit, perHit, line.Sneak, critExtra, line.Keep);
         }
 
         /// <summary>
