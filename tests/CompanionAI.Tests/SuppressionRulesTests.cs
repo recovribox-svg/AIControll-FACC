@@ -69,5 +69,14 @@ namespace CompanionAI.Tests
             Assert.Equal(1f, SuppressionRules.ActiveShare(true, float.NaN, 10f, 3f));
             Assert.Equal(1f, SuppressionRules.ActiveShare(true, 10f, float.NaN, 3f));   // no suppressor found
         }
+
+        [Theory]
+        [InlineData(0f, 3f)]
+        [InlineData(-1f, 3f)]
+        [InlineData(5f, 0f)]
+        public void UnknownSuppressionCannotReviveAnEndedBuffOrHorizon(float left, float horizon)
+        {
+            Assert.Equal(0f, SuppressionRules.ActiveShare(true, left, float.NaN, horizon));
+        }
     }
 }

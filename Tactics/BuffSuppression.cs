@@ -217,6 +217,7 @@ namespace CompanionAI_Pathfinder.Tactics
             try
             {
                 float left = buff.IsPermanent ? float.PositiveInfinity : (float)buff.TimeLeft.TotalSeconds / 6f;
+                if (left <= 0f || horizon <= 0f) return 0f;
                 return SuppressionRules.ActiveShare(true, left, SuppressedSeconds(buff) / 6f, horizon);
             }
             catch

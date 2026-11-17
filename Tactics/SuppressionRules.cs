@@ -24,7 +24,10 @@ namespace CompanionAI_Pathfinder.Tactics
         /// </summary>
         public static float ActiveShare(bool suppressed, float roundsLeft, float suppressedRounds, float horizon)
         {
-            if (!suppressed || float.IsNaN(roundsLeft) || float.IsNaN(suppressedRounds)) return 1f;
+            if (!suppressed) return 1f;
+            // Unknown suppression cannot create future active time after the buff (or scoring horizon) has ended.
+            if (roundsLeft <= 0f || horizon <= 0f) return 0f;
+            if (float.IsNaN(roundsLeft) || float.IsNaN(suppressedRounds)) return 1f;
             float rounds = Math.Min(horizon, roundsLeft);
             if (!(rounds > 0f)) return 0f;
             return ActiveRounds(roundsLeft, suppressedRounds, horizon) / rounds;
