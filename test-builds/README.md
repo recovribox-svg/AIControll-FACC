@@ -1,5 +1,27 @@
 # Test builds
 
+## Task-branch candidate: v0.3.60 outcome3 — pooled-fusion walking-in safety (faf867c), unplayed
+
+[UMM test ZIP](AI-Control-FACC-v0.3.60-dev-outcome3-faf867c-UMM-test.zip?raw=true) · [Identity](AI-Control-FACC-v0.3.60-dev-outcome3-faf867c-UMM-test.identity.json) · [Checksum](AI-Control-FACC-v0.3.60-dev-outcome3-faf867c-UMM-test.sha256) · [Checks](../docs/competence/OUTCOME2_PLAYTEST_CHECKS.json) · [Review/replay](../docs/OUTCOME2_PLAYTEST_REVIEW.md)
+
+Cumulative development `acb1003` plus restored walking-in ally safety for a pooled fusion's independent payload.
+Ordinary Sleep, native pool ordering/debits and enemy-only delivery remain. This corrects a specific F7 regression;
+it does not guarantee safety when a burst centre or allies move after selection. No native Sleep effect/faction,
+movement/path/commitment/cancellation policy or scoring-constant change.
+
+**UMM shows v0.3.60**, as the author requested. Runtime source **`faf867c`**, startup module
+**`56f51d96-d662-449f-af2b-7222e5d11aed`**; ZIP SHA-256 `1bfd4ebe048814e2b0fd04745b602076705a929e89992bcc25665cf2eb6ccf2a`.
+**935 unit + 27/3/18 script tests**, real-reference Release **0 warnings/errors**, FUSION-POOL **39 (8 new)**,
+all inherited checks, Magus 44 and providers **98/14/10** pass; **0 new native signatures**. Full Fusion metadata
+coverage is unchanged. [Compiler/reference provenance](../docs/competence/OUTCOME2_PLAYTEST_BUILD_PROVENANCE.json):
+SDK 8.0.426 / Roslyn 4.11, UMM 0.33.2.0. Info.json version metadata commit `082216f` follows runtime
+checks without changing C#/project; the unique validated DLL is frozen. ZIP contains only it and Info.json.
+This is a development test, not a stable release.
+
+Replay RT with an ally already walking into a damaging pooled burst; retain TB/ordinary Sleep regressions.
+Moving-target burst coordination, observer discrepancy, warm ability cost, TB release, actual leap, saved Frigid
+and Coup acceptance remain documented. Supply paired logs/startup module and spawn/rest context.
+
 ## Combined development candidate: v0.3.52 outcome2 — PRs #74-79 (04a7b9f), unplayed
 
 [UMM test ZIP](AI-Control-FACC-v0.3.52-dev-outcome2-04a7b9f-UMM-test.zip?raw=true) · [Identity](AI-Control-FACC-v0.3.52-dev-outcome2-04a7b9f-UMM-test.identity.json) · [Checksum](AI-Control-FACC-v0.3.52-dev-outcome2-04a7b9f-UMM-test.sha256) · [Checks](../docs/competence/OUTCOME1_INTEGRATION_CHECKS.json) · [Review and replay](../docs/OUTCOME1_INTEGRATION.md)

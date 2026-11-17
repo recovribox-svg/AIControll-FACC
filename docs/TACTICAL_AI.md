@@ -6451,3 +6451,33 @@ Keep the outcome1 review's evidence limits: no saved-Frigid cast, F7 or correcte
 of the Cambion hit; no identified Invocation settling violation; diagnostics do not resolve the ledge or warm work.
 Next replay: companion/summon Coup, pooled fusions, actual saved Frigid, first/changed path details, TB release
 and actual leap. Native ally targeting is preserved; mixed-delivery Sleep protection needs a matched native case.
+
+## 187. outcome2 review: pooled fusion keeps walking-in area safety (16 November 2026, Codex)
+
+[Evidence, correction, limitations and replay](OUTCOME2_PLAYTEST_REVIEW.md),
+[input identities/accounting](competence/OUTCOME2_PLAYTEST_INPUTS.json),
+[Invocation ledger](competence/OUTCOME2_INVOCATION_LEDGER.json). Played outcome2 MVID `2f9ef9ef`; author confirms
+spawns, rests between fights and Grabber left to the engine. Eleven fights, 740 issues / 735 terminals; four
+summon traces lack ends near departure and the log ends on one OOC cast. No recorded AI exception. Thirty fusion
+issues / 18 DidAct include pooled Sleep and no-root-save Frigid; no saved Frigid, Coup or leap issue. Five RT
+releases act; 181 summon issues / 131 DidAct. Invocation 52 issues / 50 DidAct, no established settling violation.
+
+Combat records damage to allies from fusion bursts. F7's successful pool forecast also bypassed the ordinary
+walking-in ally reader. `ForecastWalkingAreaAllies` restores it for broad-targeted fusions' independent payload,
+without predicting future pool debits/control or altering native Sleep's target/effect rules. Ordinary pool and
+enemy-only delivery retain selection. Both modes share scoring; the existing walking reader is RT-only. No new
+independent path/world/forecast pass, persistent actor cache, movement/cancellation policy or scoring constant.
+Newly recognized walking recipients use the existing per-recipient damage/immunity valuation.
+Eight added real-profile/compiled-route audit checks pass: FUSION-POOL **39**. Checked source **`faf867c`**,
+MVID **`56f51d96-d662-449f-af2b-7222e5d11aed`**; 935 unit + 27/3/18 scripts, zero-warning/error real-reference Release,
+ProfileAudit/inherited checks, Magus 44 and providers 98/14/10 pass. No added native signatures; full Fusion matrix
+byte-identical (8,709/15,494 admitted). [Receipt](competence/OUTCOME2_PLAYTEST_CHECKS.json),
+[provenance](competence/OUTCOME2_PLAYTEST_BUILD_PROVENANCE.json), cumulative outcome3 package in test-builds.
+The author requested **UMM v0.3.60** after these checks; Info.json supplies the menu/startup version, while the
+checked runtime DLL stays frozen. Version metadata commit `082216f` changes no C#/project.
+
+This is a confirmed source regression, not a replay of all recorded geometry. A unit-targeted burst may follow a
+moving enemy into stationary allies after selection. Keep that as a separate native phase/anchor/coordination
+project; do not interrupt paid casts or blacklist moving targets on a guessed refund/path. The no-reach observer
+message at AI 1646 conflicts with apparent target damage in the combat log; retain the controlled replay item.
+New repair is unplayed; manifest is author-requested 0.3.60, no main/tag/release. Warm ability work remains material.

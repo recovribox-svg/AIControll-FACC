@@ -1,0 +1,161 @@
+{
+  "task": "outcome2 review and pooled-fusion walking-in area safety",
+  "recorded_at_utc": "2026-11-16T23:59:20.294849+00:00",
+  "branch": "codex/outcome2-playtest-review",
+  "development_base": "acb100326b40f60600178a733d6b832b97d2fead",
+  "checked_source_commit": "faf867c74554f5d7a677b3a6aec279a870d4332c",
+  "worktree_clean_at_build": true,
+  "manifest_source_commit": "082216faeab8b4e52ed51d3b156c6fd1c0ff0bee",
+  "author_requested_umm_version": "0.3.60",
+  "version_metadata_note": "Author requested UMM 0.3.60 after runtime validation. Only Info.json supplies the UMM/startup version; compiled code/project unchanged. The validated unique DLL is frozen, not rebuilt or relabelled as different source.",
+  "dll": {
+    "assembly": "CompanionAI_Pathfinder, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null",
+    "mvid": "56f51d96-d662-449f-af2b-7222e5d11aed",
+    "sha256": "19ae6f80545357ee0a3c5182b439fe11d59e5ec62d764226d013b4e56fbca6fa",
+    "size": 1480704
+  },
+  "release_build": {
+    "real_game_references": true,
+    "warnings": 0,
+    "errors": 0,
+    "command": "dotnet build CompanionAI_Pathfinder.csproj -c Release --no-restore -p:ManagedPath=<real Managed folder>"
+  },
+  "unit_tests": {
+    "passed": 935,
+    "failed": 0,
+    "skipped": 0
+  },
+  "script_tests": {
+    "inventory": 27,
+    "audit_supplement": 3,
+    "invocation_ledger": 18,
+    "failures": 0
+  },
+  "profile_audit": {
+    "loaded": 44640,
+    "failed": 0,
+    "abilities": 4808,
+    "reader_errors": 0,
+    "prerequisite_skips": 0,
+    "fusion_pool": 39,
+    "new_fusion_pool_checks": 8,
+    "fusion_outcome": 34,
+    "fusion_value": 23,
+    "fusion_cone": 34,
+    "diagnostic_log": 22,
+    "coup_reach_with_supplied_ttt": 32,
+    "grapple": 58,
+    "griffon_modes": 29,
+    "shifter_forms": 21,
+    "campaign_flag": 21,
+    "value_selection": 24
+  },
+  "native_harnesses": {
+    "toggle_with_psionics": 98,
+    "tome": 14,
+    "toybox": 10,
+    "failures": 0,
+    "prerequisite_skips": 0
+  },
+  "supplementary_magus": {
+    "loaded": 44644,
+    "abilities": 4808,
+    "checks": 44,
+    "failures": 0,
+    "reader_errors": 0
+  },
+  "foreign_references": {
+    "added": 0,
+    "unresolved": 0,
+    "baseline": "Frozen outcome2 DLL 04a7b9f / 2f9ef9ef"
+  },
+  "fusion_coverage": {
+    "configurations": 15494,
+    "profileAccepted": 8709,
+    "profileWithheld": 6785,
+    "sharedPoolProfiles": 1754,
+    "sharedPoolAdmitted": 498,
+    "jointOutcomeMetadataQualified": 4663,
+    "coneComponentsResolved": 1416,
+    "coneComponentErrors": 0,
+    "readerErrors": 0
+  },
+  "comparison": {
+    "baseline": "OUTCOME1_INTEGRATION_CHECKS.json, identical augmented native inputs and optional TTT provider",
+    "all_report_rows_unchanged_except_pool_check_count_and_output_path": true,
+    "full_fusion_coverage_json_byte_identical": true,
+    "comparison_sha256": "6e50769d847dac94fc90c898fa4f7a51b205e395ef6b92c1f9788dabba8654a1"
+  },
+  "raw_archive_negative_check": {
+    "expected_exit": 1,
+    "loaded": 44637,
+    "failed": 1,
+    "reason": "Original Achaekek enum spelling/offline ECall mismatch remains separate; not a passing raw corpus."
+  },
+  "scope": "Existing compatible corpus and missing-only stock charge/Coup fixtures; not the complete S1 stock summon supplement.",
+  "toolchain": {
+    "sdk": "8.0.426",
+    "csharp_compiler": "4.11.0-3.25569.22 (3fb752d4)",
+    "umm_reference": "0.33.2.0",
+    "provenance": "docs/competence/OUTCOME2_PLAYTEST_BUILD_PROVENANCE.json",
+    "provenance_sha256": "4d81032013a49814794f260d9dd2c5c3da3f944499099ee8f957674d74bcd1fe"
+  },
+  "performance": "No new independent path/world/forecast pass or persistent actor cache. Reuses existing body snapshots/walk sampling. Newly caught walking recipients undergo ordinary damage/immunity valuation and may add those per-recipient forecasts. No Unity timing claim.",
+  "gameplay": "Played outcome2 identified damage and the source regression; new repair unplayed. Recorded moving-target hits are not established as reproduced/fixed by the walking-ally gate.",
+  "limits": [
+    "A moving burst centre/new orders after selection can still change safety; no mid-cast cancellation or guessed refund.",
+    "An apparent target-damage/no-reach observer discrepancy needs controlled event/identity evidence.",
+    "Four summon command traces lack terminals; do not infer their outcomes.",
+    "Saved Frigid, TB release, actual leap, corrected Coup and effective automatic metamagic retain acceptance gaps.",
+    "Warm ability work, holder alternative/safety and monster-grapple modeling remain."
+  ],
+  "package": {
+    "path": "test-builds/AI-Control-FACC-v0.3.60-dev-outcome3-faf867c-UMM-test.zip",
+    "identity": "test-builds/AI-Control-FACC-v0.3.60-dev-outcome3-faf867c-UMM-test.identity.json",
+    "sha256": "1bfd4ebe048814e2b0fd04745b602076705a929e89992bcc25665cf2eb6ccf2a",
+    "only_mod_dll_and_manifest": true,
+    "validated_dll_frozen_across_packaging_and_docs_commits": true
+  },
+  "workflow": {
+    "target": "claude/dreamy-pasteur-b9h3rn",
+    "merge": false,
+    "main_updated": false,
+    "tag": false,
+    "release": false
+  },
+  "private_validation_artifact_sha256": {
+    "supplementary.log": "9ebf8a01afcd69a9c7af00f3913f58728e00e7d86a97065f21779ce76e6d38f7",
+    "provenance.json": "4d81032013a49814794f260d9dd2c5c3da3f944499099ee8f957674d74bcd1fe",
+    "supplement-scripts.log": "edb4e2159c923ea45a32656078835cdf531c3d7b414c670dd786978875cb0678",
+    "comparison.json": "6e50769d847dac94fc90c898fa4f7a51b205e395ef6b92c1f9788dabba8654a1",
+    "summary.json": "0e8116a5f1747baf6d2d6bee7066a87fcfe475e2c5a4284dc78e5581019d1402",
+    "toggle-build.log": "1b74999024f0a36dd7cd4c3164798b37f82cf5f7fb939e568d4f08bd44270ef7",
+    "tome.log": "5e88ac191781eda07166aa0c5065c71670b75f203dcd1e8a95192344469ed17e",
+    "identity.json": "0eedf1619aa67a4a83531f15407549dabafed8bb915ebb3f6b6e7d24684d435d",
+    "raw.log": "59399a5731df2ca0a352726bb5857f2618ac7f2bf881aa07c789670ad5bd8149",
+    "toybox.log": "ca93eb3fe403f76c90fe4e2bc7818349fe27b1d88193bcb29a0d01ef4d519362",
+    "strict.txt": "8bd02c2e49e4bb40c762addae905d6ef6af487abca2655bb23afc5a27cb6e1e6",
+    "coverage.json": "298c29b1b290e904699f6500432261f1b0603df0646ad7c3205c7fbd61d5dc12",
+    "refs.log": "899262540b3e6a0a678fb0c899cdfcefb2cc1695ab4439fdcb666d764617d4a1",
+    "audit-build.log": "52c93d74d68235bf1e1bc46eb9b6d80c788bd9c6bf7cd7e6f55a9344df0ff29e",
+    "toggle.txt": "2a7b710bd91f4a7d79f4cf73dc1444d37563179a600f4860ab7a6b9d63445a4a",
+    "tome-build.log": "6d4800a07662570490eb9d9074c215b15b60e903b4029b565bb032f5ece31005",
+    "strict.log": "eb5b8cc0935ac07f5e4e19767a031063902de526df74486410206c04a6fbbae1",
+    "tome.txt": "fa091dbd072a9afc702293aea8d3628d92e3093bc7fa074620c08425fb9bc070",
+    "toggle-restore.log": "40d104602671164ab3958225da3e1c8cabd55f0251d6df6bc911d9d5a24f44ce",
+    "release.log": "378b9561a389900bf36c0a3b35f41e23c8e6a962f4878c55b70a532bfa709378",
+    "supplementary.txt": "55f9ddc4d13c740f69f14a025be013e14dfa39286cacd1bed19d853bcbf85fa7",
+    "toybox-restore.log": "40d104602671164ab3958225da3e1c8cabd55f0251d6df6bc911d9d5a24f44ce",
+    "tome-restore.log": "40d104602671164ab3958225da3e1c8cabd55f0251d6df6bc911d9d5a24f44ce",
+    "raw.txt": "533659eaa5c2c9baa1fded5b8021cb157c428b29c83b591f273f27e47a340e91",
+    "added-refs.txt": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "inventory.log": "6ef6f1be79a41ae28318124d4325a3988feaa684a68197d354ce98238c426a4d",
+    "invocation-ledger.log": "3f56dc2d2b62a4e6a4cedbffe44e114c3b721e5b4321a5d0b2f42d56f5b30c1b",
+    "toggle.log": "f35d1eccc6eb994c73cdcb2c5f534f8fe73d66a241aad56a73c524c761af0b23",
+    "toybox-build.log": "59ef0700c7013f23fa40d634c17cc70e59f20849355287cefbe3c4f6db0a7a8a",
+    "unit.log": "f63c2d7dacf810c31782c503c7e7f684e699da5211bc1436f3b24b7e8a2c71fe",
+    "audit-restore.log": "40d104602671164ab3958225da3e1c8cabd55f0251d6df6bc911d9d5a24f44ce",
+    "toybox.txt": "304cd7f6453f28923d92787d370aa65d5040f1b18403976cf4b68104ce064e11"
+  },
+  "manifest_version_at_runtime_build": "0.3.52"
+}

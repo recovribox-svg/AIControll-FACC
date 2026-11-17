@@ -8,7 +8,39 @@ Read [CONTRIBUTING.md](CONTRIBUTING.md) for shared branch ownership, Codex pull 
 Codex works on task branches and targets pull requests at `claude/dreamy-pasteur-b9h3rn`; Claude reviews and integrates them there.
 Keep `main` for author-authorized releases. Read [AGENTS.md](AGENTS.md) when coordinating agent work.
 
-**Current handover (16 November 2026, Codex): outcome1 review and author-authorized integration of all
+**Current handover (16 November 2026, Codex): outcome2 playtest review and restored pooled-fusion area safety on
+`codex/outcome2-playtest-review`, development base `acb1003`.** Read
+[findings/correction/replay](docs/OUTCOME2_PLAYTEST_REVIEW.md), [input accounting](docs/competence/OUTCOME2_PLAYTEST_INPUTS.json),
+[Invocation ledger](docs/competence/OUTCOME2_INVOCATION_LEDGER.json), §187. New repair is unplayed.
+The played MVID matches outcome2; author confirms spawns, rests between fights and engine-controlled Grabber.
+Eleven fights, 740 issues / 735 terminals: four missing summon terminals near departure plus one trailing OOC cast,
+not fabricated failures. Thirty fusion issues / 18 DidAct; pooled Sleep is issued, saved Frigid still is not.
+Five RT grapple releases act. Summons have 181 issues / 131 DidAct. Invocation 52 issues / 50 DidAct, no established
+settle/stacking violation; no new cap or assignment policy.
+
+Friendly fusion damage is recorded. F7 wrongly disabled existing walking-in ally safety whenever a pool forecast
+succeeded. A broad fused area now retains that check for its independent payload. Native pool/order/eligibility,
+Sleep targeting, Selective/immunity/damage policy remain. No new independent path/world/forecast pass or persistent actor cache,
+movement or cancellation policy. Eight production-profile/route audit checks cover the correction. Moving burst
+centres after selection are a separate material limitation; do not promise this repairs every recorded friendly hit.
+A no-reach message and combat damage to the apparent target also need a controlled observer replay, not a guessed
+blocking change. Warm ability costs, missing summon trace terminals and prior unplayed replays remain documented.
+Checked runtime source **`faf867c`**, MVID **`56f51d96-d662-449f-af2b-7222e5d11aed`**: **935 unit + 27/3/18 script tests**,
+real-reference Release **0 warnings/errors**. ProfileAudit 44,640 loaded / 4,808 abilities, no load/reader failure
+or prerequisite skips; **FUSION-POOL 39 (8 new)**, FUSION-OUTCOME 34, DIAGNOSTIC-LOG 22, COUP-REACH 32 with the
+supplied TTT provider and inherited checks pass. Magus 44, providers **98/14/10**, **0 new native signatures**.
+Other report rows and the full **8,709 / 15,494** fusion coverage are unchanged on identical inputs.
+[Checks](docs/competence/OUTCOME2_PLAYTEST_CHECKS.json),
+[compiler/reference provenance](docs/competence/OUTCOME2_PLAYTEST_BUILD_PROVENANCE.json): SDK 8.0.426 / Roslyn 4.11,
+UMM 0.33.2.0. [Cumulative outcome3 UMM test ZIP](test-builds/AI-Control-FACC-v0.3.60-dev-outcome3-faf867c-UMM-test.zip), SHA-256
+`1bfd4ebe048814e2b0fd04745b602076705a929e89992bcc25665cf2eb6ccf2a`, identity/checksum sidecars. **The author requested UMM v0.3.60** after runtime validation:
+Info.json metadata commit `082216f` supplies that menu/startup version; C#/project and validated DLL
+remain unchanged. No stable release/main/tag, no merge. New correction unplayed; moving-target burst safety and
+the other replay limits above remain. Newly recognized walking recipients use existing ordinary valuation;
+no new independent path/world/forecast pass or persistent cache, no measured Unity speedup.
+
+
+**Earlier handover (16 November 2026, Codex): outcome1 review and author-authorized integration of all
 six open PRs #74-79 into development.** Read [review/integration/replay](docs/OUTCOME1_INTEGRATION.md),
 [playtest findings](docs/OUTCOME1_PLAYTEST_REVIEW.md), [checks](docs/competence/OUTCOME1_INTEGRATION_CHECKS.json), §186.
 Exact reviewed heads are merge ancestors; clean checked source **`04a7b9f`**, MVID
