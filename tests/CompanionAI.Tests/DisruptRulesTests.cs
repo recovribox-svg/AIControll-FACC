@@ -102,6 +102,17 @@ namespace CompanionAI.Tests
         }
 
         [Fact]
+        public void ALateIterativesLowerChanceLeavesMoreWorkForTheNextAlly()
+        {
+            // A near-certain concentration failure on hit. Reusing an earlier 90% attack for a pending 40% iterative
+            // would suppress this ally's useful response: 5 points instead of 30 on a stakes-100 cast.
+            float late = DisruptRules.StillCasting(1f, 0.4f, 1f);
+            float earlier = DisruptRules.StillCasting(1f, 0.9f, 1f);
+            Assert.Equal(30f, DisruptRules.MarginalValue(0.5f, late, 100f), 4);
+            Assert.Equal(5f, DisruptRules.MarginalValue(0.5f, earlier, 100f), 4);
+        }
+
+        [Fact]
         public void AbilityHitsLandAfterTheirOwnCast()
         {
             Assert.Equal(2.1f, DisruptRules.AbilityHitSeconds(0f, 2f, 0f), 4);    // too slow for a 2 s cast

@@ -2,9 +2,11 @@
 // concentration check. Native contracts on the real assembly, which real blueprints the rule covers, and the compiled
 // routes into the scoring. Actor-free: no Game/Player, context, damage, roll, command or Unity timing.
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
+using System.Runtime.CompilerServices;
 using CompanionAI_Pathfinder.Tactics;
 using Kingmaker.Blueprints;
 using Kingmaker.Controllers;
@@ -110,6 +112,52 @@ namespace ProfileAudit
                       "production disruption rejects a hit inside the cast's final timing margin");
                 Check(Math.Abs(Quote(0.4f, 11f, 0.7f, 0.4f) - 7.84f) < 1e-4,
                       "production disruption combines two timely hits without counting a cast break twice");
+
+                // Pending commands may have delivered their first two attacks already, or reordered their hands for an
+                // animation sequence. Exercise the production cache reader on that layout, not another selector copy.
+                var math = typeof(CombatMath);
+                var routineType = math.GetNestedType("AttackRoutine", Hidden);
+                var lineType = math.GetNestedType("AttackLine", Hidden);
+                var routine = Activator.CreateInstance(routineType, true);
+                routineType.GetField("Frame", Hidden).SetValue(routine, UnityEngine.Time.frameCount);
+                var linesInRoutine = (IList)routineType.GetField("Lines", Hidden).GetValue(routine);
+                var weaponA = (Kingmaker.Items.ItemEntityWeapon)RuntimeHelpers.GetUninitializedObject(typeof(Kingmaker.Items.ItemEntityWeapon));
+                var weaponB = (Kingmaker.Items.ItemEntityWeapon)RuntimeHelpers.GetUninitializedObject(typeof(Kingmaker.Items.ItemEntityWeapon));
+                void Line(Kingmaker.Items.ItemEntityWeapon weapon, int penalty, int ab, float damage)
+                {
+                    var line = Activator.CreateInstance(lineType, true);
+                    void SetLine(string field, object value) => lineType.GetField(field, Hidden).SetValue(line, value);
+                    SetLine("Weapon", weapon); SetLine("AttackBonusPenalty", penalty); SetLine("AttackBonus", ab);
+                    SetLine("ArmorClass", 20); SetLine("RawPerHit", damage); SetLine("GameHit", damage);
+                    linesInRoutine.Add(line);
+                }
+                Line(weaponA, 0, 17, 12f); Line(weaponA, -5, 12, 12f); Line(weaponA, -10, 7, 12f);
+                Line(weaponB, 0, 15, 30f);
+                var estimate = new WeaponAttackEstimate();
+                typeof(WeaponAttackEstimate).GetField("RoutineIdentity", Hidden).SetValue(estimate, routine);
+                typeof(WeaponAttackEstimate).GetField("RoutineLands", Hidden).SetValue(estimate, 1f);
+                var orderedHit = math.GetMethod("TryOrderedHit", Hidden);
+                object[] hitArgs;
+                bool Ordered(Kingmaker.Items.ItemEntityWeapon weapon, int penalty)
+                {
+                    hitArgs = new object[] { estimate, weapon, penalty, 0f, 0f };
+                    return (bool)orderedHit.Invoke(null, hitArgs);
+                }
+                hitArgs = null;
+                Check(Ordered(weaponA, -10) && Math.Abs((float)hitArgs[3] - 0.4f) < 1e-4 && (float)hitArgs[4] == 12f,
+                      "pending third iterative uses its own penalty/hit chance, not the cached second attack");
+                Check(Ordered(weaponB, 0) && Math.Abs((float)hitArgs[3] - 0.8f) < 1e-4 && (float)hitArgs[4] == 30f,
+                      "a reordered pending off-hand uses its own weapon's damage and chance");
+                Check(!Ordered(weaponA, -15) && (float)hitArgs[3] == 0f && (float)hitArgs[4] == 0f,
+                      "an unquoted pending line is unknown; no earlier attack's damage or chance is substituted");
+                typeof(WeaponAttackEstimate).GetField("RoutineLands", Hidden).SetValue(estimate, 0.5f);
+                Check(Ordered(weaponA, -10) && Math.Abs((float)hitArgs[3] - 0.2f) < 1e-4,
+                      "pending-hit lookup preserves the routine's concealment/image pass");
+                routineType.GetField("Frame", Hidden).SetValue(routine, UnityEngine.Time.frameCount + 1);
+                Check(!Ordered(weaponA, -10), "a stale-frame routine cannot supply a pending hit");
+                var orderedRoute = Body(engine, "OthersStill");
+                Check(Calls(orderedRoute, math, "TryOrderedHit") && orderedRoute.Any(m => m.Name.Contains("AttackBonusPenalty")),
+                      "the pending-attack production route matches each native command line by its iterative penalty");
 
                 // ★ review follow-up F2: the native attack schedule and allied hits already ordered.
                 var tick = Body(typeof(UnitAttack), "OnTick");

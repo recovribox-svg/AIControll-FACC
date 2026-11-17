@@ -219,7 +219,7 @@ namespace CompanionAI_Pathfinder.Tactics
                     if (!(ally.Commands?.Standard is UnitAttack attack) || attack.IsFinished || attack.TargetUnit != enemy) continue;
                     var est = CombatMath.EstimateWeaponAttack(ally, enemy, attack.IsAttackFull);
                     if (est == null) continue;
-                    int attacks = attack.AllAttacks.Count > 0 ? attack.AllAttacks.Count : est.Attacks;
+                    int attacks = attack.AllAttacks.Count;
                     bool chained = ChainedAttacks(ally, est.Weapon);
                     float spacing = DisruptRules.SwingSpacing(attacks, chained);
                     float distance = HorizontalDistance(ally.Position, enemy.Position);
@@ -227,12 +227,13 @@ namespace CompanionAI_Pathfinder.Tactics
                     float walk = attack.IsStarted ? 0f : BurstRules.WalkSeconds(distance, est.Reach, ally.CurrentSpeedMps);
                     for (int k = next, counted = 0; k < attacks && counted < DisruptRules.MaxHits; k++, counted++)
                     {
+                        var pending = attack.AllAttacks[k];
+                        if (pending == null || !CombatMath.TryOrderedHit(est, pending.Weapon, pending.AttackBonusPenalty,
+                                                                         out float hit, out float damage)) continue;
                         float at = attack.IsStarted
                             ? DisruptRules.RunningHitSeconds(k, next, spacing, attack.TimeSinceStart, chained, est.IsRanged, distance)
                             : DisruptRules.WeaponHitSeconds(k, walk, est.IsRanged, distance, spacing) - DisruptRules.CommandLatencySeconds;
                         if (!DisruptRules.InTime(at, cast.SecondsLeft)) continue;
-                        float hit = k == 0 ? est.FirstHitChance : est.SecondHitChance;
-                        float damage = k == 0 ? est.FirstPerHit : est.SecondPerHit;
                         if (!(hit > 0f)) continue;
                         still = DisruptRules.StillCasting(still, hit, DisruptRules.FailChance(cast.SpellLevel, damage, cast.Concentration));
                         hits++;
