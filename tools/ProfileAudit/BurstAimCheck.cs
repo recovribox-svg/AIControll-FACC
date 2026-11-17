@@ -271,7 +271,7 @@ namespace ProfileAudit
                 var readRoute = Body(engine, "ReadRoute");
                 var addPath = Body(engine, "AddNativePath");
                 Check(Calls(readRoute, engine, "WalkingCommand") && Calls(readRoute, engine, "AddNativePath") &&
-                      Calls(readRoute, typeof(WalkRoute), "StopWithin") && Calls(readRoute, typeof(SpotRules), "WalkEnd") &&
+                      Calls(readRoute, engine, "StopRouteAtApproachDistance") && Calls(readRoute, typeof(SpotRules), "WalkEnd") &&
                       addPath.Any(m => m.Name == "get_AgentASP") && addPath.Any(m => m.Name == "get_Path") && addPath.Contains(vectorPath),
                       "A-R1: ReadRoute follows the agent's path to the command's stop, else the straight walk");
                 // Execute the production request matcher with real ABPath/XPath layouts, without PathPool/Seeker,
@@ -301,6 +301,29 @@ namespace ProfileAudit
                 Check(Calls(addPath, engine, "NativePathMatchesAim") &&
                       Body(engine, "NativePathMatchesAim").Any(m => m.Name == "originalEndPoint"),
                       "the production route validates the original path request before reading its waypoints");
+                var stopRoute = engine.GetMethod("StopRouteAtApproachDistance", Hidden);
+                var nativeStop = new WalkRoute();
+                nativeStop.Start(0f, 0f, 0f, 2f); nativeStop.Add(10f, 0f, 0f);
+                stopRoute.Invoke(null, new object[] { nativeStop, new UnityEngine.Vector3(10f, 0f, 0f), 2f });
+                Check(Math.Abs(nativeStop.EndX - 8f) < 1e-4,
+                      "the production native-path distance stop uses the full command radius, not WalkEndShare's extra travel");
+                var descending = new WalkRoute();
+                descending.Start(0f, 8f, 0f, 2f); descending.Add(10f, 8f, 0f); descending.Add(11f, 0f, 0f);
+                var destination = new UnityEngine.Vector3(11f, 0f, 0f);
+                stopRoute.Invoke(null, new object[] { descending, destination, 2f });
+                var stopPoint = new UnityEngine.Vector3(descending.EndX, descending.EndY, descending.EndZ);
+                Check(Math.Abs(descending.EndX - 10.5f) < 1e-4 &&
+                      Owlcat.Runtime.Core.Utils.GeometryUtils.SqrMechanicsDistance(stopPoint, destination) <= 4f &&
+                      Owlcat.Runtime.Core.Utils.GeometryUtils.SqrMechanicsDistance(new UnityEngine.Vector3(10.4f, 4.8f, 0f), destination) > 4f,
+                      "the production stop intersects the native height/planar contract; earlier horizontal overlap is not arrival");
+                var lowPath = new WalkRoute();
+                lowPath.Start(0f, 1f, 0f, 2f); lowPath.Add(10f, 1f, 0f);
+                var lowDestination = new UnityEngine.Vector3(10f, 0f, 0f);
+                stopRoute.Invoke(null, new object[] { lowPath, lowDestination, 1f });
+                Check(Math.Abs(lowPath.EndX - 9f) < 1e-4 &&
+                      Owlcat.Runtime.Core.Utils.GeometryUtils.SqrMechanicsDistance(
+                          new UnityEngine.Vector3(lowPath.EndX, lowPath.EndY, lowPath.EndZ), lowDestination) == 1f,
+                      "the production stop preserves native height forgiveness rather than replacing mechanics distance with 3D distance");
                 var searches = new[] { "PathTo", "FindPath", "StartPath", "StartPathWithClerance", "Linecast", "Raycast", "HasObstacle" };
                 bool SceneUnits(MemberInfo m) => m.Name == "Units" && m.DeclaringType == typeof(Kingmaker.EntitySystem.PersistentState);
                 Check(!readRoute.Concat(addPath).Any(m => searches.Contains(m.Name) || SceneUnits(m)),

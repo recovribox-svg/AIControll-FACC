@@ -37,18 +37,18 @@ namespace CompanionAI.Tests
         {
             // The command's point at the end of the path, radius 2 m: the walk ends 2 m short, on the path.
             var straight = Route(3f, 0f, 0f, 10f, 0f);
-            straight.StopWithin(10f, 0f, 2f);
+            straight.StopWithin(10f, 0f, 0f, 2f);
             Assert.Equal(8f, straight.EndX, 4);
             Assert.Equal(8f, straight.Length, 4);
             // Round a corner: (0,0) -> (0,10) -> (10,10), point (10,10), radius 3: it stops at (7,10).
             var bend = Route(3f, 0f, 0f, 0f, 10f, 10f, 10f);
-            bend.StopWithin(10f, 10f, 3f);
+            bend.StopWithin(10f, 0f, 10f, 3f);
             Assert.Equal(7f, bend.EndX, 4);
             Assert.Equal(10f, bend.EndZ, 4);
             Assert.Equal(17f, bend.Length, 4);
             // The first time the path comes close enough counts, even when it would go on: the command starts there.
             var past = Route(3f, 0f, 0f, 10f, 0f, 10f, 10f);
-            past.StopWithin(6f, 1f, 2f);
+            past.StopWithin(6f, 0f, 1f, 2f);
             Assert.Equal(2, past.Count);
             Assert.True(past.EndX < 6f && past.EndX > 4f);
         }
@@ -57,7 +57,7 @@ namespace CompanionAI.Tests
         public void AWalkThatStartsCloseEnoughIsNoWalk()
         {
             var route = Route(3f, 0f, 0f, 10f, 0f);
-            route.StopWithin(1f, 0f, 2f);
+            route.StopWithin(1f, 0f, 0f, 2f);
             Assert.Equal(1, route.Count);
             route.At(5f, out float x, out _, out float z);
             Assert.Equal(0f, x);
@@ -107,6 +107,48 @@ namespace CompanionAI.Tests
             Assert.Equal(WalkRoute.MaxPoints, route.Count);
             Assert.False(route.Add(1000f, 0f, 0f));
             Assert.Equal(WalkRoute.MaxPoints - 1, route.Length, 3);
+        }
+
+        [Fact]
+        public void HorizontalOverlapOnAnotherFloorIsNotAnApproachStop()
+        {
+            var route = new WalkRoute();
+            route.Start(0f, 8f, 0f, 2f);
+            route.Add(10f, 8f, 0f);
+            route.StopWithin(10f, 0f, 0f, 2f);
+            Assert.Equal(10f, route.EndX);
+            Assert.Equal(8f, route.EndY);   // no distance-eligible point on this path
+        }
+
+        [Fact]
+        public void ADescendingRouteStopsAtTheNativeHeightBoundary()
+        {
+            var route = new WalkRoute();
+            route.Start(0f, 8f, 0f, 2f);
+            route.Add(10f, 8f, 0f);
+            route.Add(11f, 0f, 0f);
+            route.StopWithin(11f, 0f, 0f, 2f);
+            Assert.Equal(10.5f, route.EndX, 4);
+            Assert.Equal(4f, route.EndY, 4); // mechanics distance uses Y² / 4 above 1.5 m
+        }
+
+        [Fact]
+        public void SmallHeightDifferencesUseNativePlanarDistance()
+        {
+            var route = new WalkRoute();
+            route.Start(0f, 1f, 0f, 2f);
+            route.Add(10f, 1f, 0f);
+            route.StopWithin(10f, 0f, 0f, 1f);
+            Assert.Equal(9f, route.EndX, 4);
+            Assert.Equal(1f, route.EndY, 4); // native threshold ignores this height, unlike Euclidean distance
+        }
+
+        [Fact]
+        public void ASmallStopRadiusSurvivesALongPathSegment()
+        {
+            var route = Route(3f, 0f, 0f, 10000f, 0f);
+            route.StopWithin(10000f, 0f, 0f, 0.1f);
+            Assert.Equal(9999.9f, route.EndX, 3); // float-only discriminant cancellation used to lose the radius
         }
 
         [Fact]
