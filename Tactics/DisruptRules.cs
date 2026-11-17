@@ -30,8 +30,8 @@ namespace CompanionAI_Pathfinder.Tactics
         public const float RoutineWindowSeconds = 6f;
 
         /// <summary>Seconds between two attacks of an <paramref name="attacks"/>-attack routine, by the native schedule.</summary>
-        public static float SwingSpacing(int attacks, bool chained) =>
-            chained || attacks <= 1 ? NextSwingSeconds : RoutineWindowSeconds / attacks;
+        public static float SwingSpacing(int attacks, bool chained, float window = RoutineWindowSeconds) =>
+            chained || attacks <= 1 ? NextSwingSeconds : window / attacks;
 
         /// <summary>The speed of an arrow or bolt in flight, in m/s (an estimate).</summary>
         public const float MissileSpeed = 30f;

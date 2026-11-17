@@ -171,7 +171,7 @@ namespace ProfileAudit
                       Calls(Body(typeof(UnitCommand), "Start"), typeof(UnitCommand), "set_IsStarted"),
                       "F2: a command's time counts from its start, after any approach");
                 var value = Body(engine, "WeaponDisruptValue");
-                Check(Calls(value, typeof(DisruptRules), "SwingSpacing") && Calls(value, engine, "ChainedAttacks") &&
+                Check(Calls(value, typeof(DisruptRules), "SwingSpacing") && Calls(value, engine, "ProspectiveChainedAttacks") &&
                       Calls(value, engine, "AfterOrderedHits") && Calls(Body(engine, "AbilityDisruptBonus"), engine, "AfterOrderedHits"),
                       "F2: weapon and ability disruption use the native spacing and the allied hits already ordered");
                 var others = Body(engine, "OthersStill");
@@ -180,11 +180,42 @@ namespace ProfileAudit
                       Calls(others, typeof(UnitCommand), "get_IsStarted") && Calls(others, typeof(DisruptRules), "RunningHitSeconds") &&
                       Calls(others, typeof(DisruptRules), "InTime") && Calls(others, typeof(DisruptRules), "FailChance"),
                       "F2: allies' running or approaching attacks on the caster are read from their commands, on the same rules");
-                var chainedBody = Body(engine, "ChainedAttacks");
-                Check(Calls(chainedBody, typeof(Kingmaker.Items.ItemEntityWeapon), "GetAnimationStyle") &&
-                      chainedBody.Any(m => m.Name == "get_Sequences") && chainedBody.Any(m => m.Name == "get_AnimationSet") &&
-                      chainedBody.Any(m => m.Name == "get_AnimationManager"),
-                      "F2: bow style and animation sequences are read as the native schedule reads them (all references resolve)");
+                var chainedBody = Body(engine, "OrderedChainedAttacks");
+                Check(chainedBody.Any(m => m.Name == "get_IsSequential") && chainedBody.Any(m => m.Name == "get_IsReleased") &&
+                      Calls(chainedBody, engine, "ProspectiveChainedAttacks") &&
+                      !Body(engine, "ProspectiveChainedAttacks").Any(m => m.Name == "get_Sequences"),
+                      "F2: issued sequences use selected adjacent attacks and release state; future sequence tables prove nothing");
+                var issued = (UnitAttack)RuntimeHelpers.GetUninitializedObject(typeof(UnitAttack));
+                var preceding = (AttackHandInfo)RuntimeHelpers.GetUninitializedObject(typeof(AttackHandInfo));
+                var following = (AttackHandInfo)RuntimeHelpers.GetUninitializedObject(typeof(AttackHandInfo));
+                typeof(UnitAttack).GetField("m_AllAttacks", Hidden).SetValue(issued, new List<AttackHandInfo> { preceding, following });
+                var chainReader = engine.GetMethod("OrderedChainedAttacks", Hidden);
+                bool Chain() => (bool)chainReader.Invoke(null, new object[] { issued, 1 });
+                Check(!Chain(), "an issued attack without a selected sequence does not get sequence timing");
+                var selectedField = typeof(AttackHandInfo).GetField("<IsSequential>k__BackingField", Hidden);
+                selectedField.SetValue(preceding, true); selectedField.SetValue(following, true);
+                var handle = (Kingmaker.Visual.Animation.Kingmaker.UnitAnimationActionHandle)RuntimeHelpers.GetUninitializedObject(
+                    typeof(Kingmaker.Visual.Animation.Kingmaker.UnitAnimationActionHandle));
+                typeof(AttackHandInfo).GetField("<AnimationHandle>k__BackingField", Hidden).SetValue(preceding, handle);
+                Check(!Chain(), "selected adjacent attacks alone cannot bypass the native previous-animation release gate");
+                typeof(Kingmaker.Visual.Animation.Actions.AnimationActionHandle).GetField("<IsReleased>k__BackingField", Hidden)
+                    .SetValue(handle, true);
+                Check(Chain(), "selected adjacent attacks with the previous animation released use the native shortcut");
+                selectedField.SetValue(following, false);
+                Check(!Chain(), "a sequence boundary does not chain a following unselected attack");
+                var windowReader = engine.GetMethod("TryAttackWindow", Hidden);
+                var windowField = typeof(UnitAttack).GetField("m_AnimationsDuration", Hidden);
+                windowField.SetValue(issued, 3f);
+                object[] windowArgs = { issued, 0f };
+                Check((bool)windowReader.Invoke(null, windowArgs) && (float)windowArgs[1] == 3f,
+                      "issued IgnoreCooldown timing reads the command's configured three-second window, not a copied six");
+                windowField.SetValue(issued, 0f);
+                Check(!(bool)windowReader.Invoke(null, windowArgs), "an uninitialised window proves no allied hit timing");
+                var reorder = Body(typeof(UnitAttack), "TryToReorder");
+                Check(reorder.Any(m => m.Name == "Probability") && Calls(reorder, typeof(UnityEngine.Random), "Range"),
+                      "native animation sequence selection is probabilistic; forecasting must not roll it during scoring");
+                Check(Calls(others, engine, "TryAttackWindow") && Calls(others, engine, "OrderedChainedAttacks"),
+                      "pending-hit quotes use their actual configured window and per-transition native shortcut");
                 Check(Body(engine, "ReadCasting").Any(m => m.Name == "OthersRead"),
                       "F2: the allied hits are read again at every decision");
                 var after = engine.GetMethod("AfterOrderedHits", Hidden);

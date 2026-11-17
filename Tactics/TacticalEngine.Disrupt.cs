@@ -45,6 +45,25 @@ namespace CompanionAI_Pathfinder.Tactics
         private static int s_DisruptFight = int.MinValue, s_DisruptLines;
         private const int MaxDisruptLinesPerFight = 64;
 
+        // ConfigureAnimations can shorten this for IsIgnoreCooldown. Read the window actually stored on the issued
+        // command, without configuring animations (which mutates the view and draws a sequence-selection random roll).
+        private static readonly HarmonyLib.AccessTools.FieldRef<UnitAttack, float> AttackWindowRef = ReadAttackWindowRef();
+
+        private static HarmonyLib.AccessTools.FieldRef<UnitAttack, float> ReadAttackWindowRef()
+        {
+            try { return HarmonyLib.AccessTools.FieldRefAccess<UnitAttack, float>("m_AnimationsDuration"); }
+            catch { return null; }
+        }
+
+        private static bool TryAttackWindow(UnitAttack attack, out float window)
+        {
+            window = 0f;
+            if (attack == null || AttackWindowRef == null) return false;
+            try { window = AttackWindowRef(attack); }
+            catch { return false; }
+            return window > 0f && !float.IsInfinity(window);
+        }
+
         /// <summary>The cast <paramref name="enemy"/> is making that damage can break, or null (real time only).</summary>
         internal static CastInfo CastingFor(TacticalContext ctx, UnitEntityData enemy)
         {
@@ -176,7 +195,7 @@ namespace CompanionAI_Pathfinder.Tactics
             if (cast == null || est == null) return 0f;
             float distance = ctx.Distance(enemy);
             // ★ F2: the second attack follows on the native schedule (6 s / N apart unless chained), not a fixed swing.
-            float spacing = DisruptRules.SwingSpacing(est.Attacks, ChainedAttacks(ctx.Unit, est.Weapon));
+            float spacing = DisruptRules.SwingSpacing(est.Attacks, ProspectiveChainedAttacks(est.Weapon));
             float at1 = DisruptRules.WeaponHitSeconds(0, walkSeconds, est.IsRanged, distance, spacing);
             float at2 = DisruptRules.WeaponHitSeconds(1, walkSeconds, est.IsRanged, distance, spacing);
             float own = DisruptBonus(cast, est.FirstHitChance, est.FirstPerHit, at1,
@@ -217,11 +236,10 @@ namespace CompanionAI_Pathfinder.Tactics
                 try
                 {
                     if (!(ally.Commands?.Standard is UnitAttack attack) || attack.IsFinished || attack.TargetUnit != enemy) continue;
+                    if (!TryAttackWindow(attack, out float window)) continue;   // no timing proof: do not discount our response
                     var est = CombatMath.EstimateWeaponAttack(ally, enemy, attack.IsAttackFull);
                     if (est == null) continue;
                     int attacks = attack.AllAttacks.Count;
-                    bool chained = ChainedAttacks(ally, est.Weapon);
-                    float spacing = DisruptRules.SwingSpacing(attacks, chained);
                     float distance = HorizontalDistance(ally.Position, enemy.Position);
                     int next = attack.IsStarted ? attack.GetAttackIndex() : 0;
                     float walk = attack.IsStarted ? 0f : BurstRules.WalkSeconds(distance, est.Reach, ally.CurrentSpeedMps);
@@ -230,6 +248,8 @@ namespace CompanionAI_Pathfinder.Tactics
                         var pending = attack.AllAttacks[k];
                         if (pending == null || !CombatMath.TryOrderedHit(est, pending.Weapon, pending.AttackBonusPenalty,
                                                                          out float hit, out float damage)) continue;
+                        bool chained = OrderedChainedAttacks(attack, k);
+                        float spacing = DisruptRules.SwingSpacing(attacks, chained, window);
                         float at = attack.IsStarted
                             ? DisruptRules.RunningHitSeconds(k, next, spacing, attack.TimeSinceStart, chained, est.IsRanged, distance)
                             : DisruptRules.WeaponHitSeconds(k, walk, est.IsRanged, distance, spacing) - DisruptRules.CommandLatencySeconds;
@@ -250,21 +270,31 @@ namespace CompanionAI_Pathfinder.Tactics
         }
 
         /// <summary>
-        /// ★ F2: attacks that start as soon as the previous one acts (UnitAttack.OnTick): a bow-style weapon, or a unit whose
-        /// animation set has attack sequences. Others follow the 6 s / N schedule.
+        /// Before an attack command exists, only the bow shortcut is known. A sequence table is not a selected sequence:
+        /// TryToReorder checks matching actions/styles/count and draws a random acceptance roll. Do not probe that roll.
+        /// Other prospective attacks keep the ordinary native window as an explicit timing estimate.
         /// </summary>
-        private static bool ChainedAttacks(UnitEntityData unit, Kingmaker.Items.ItemEntityWeapon weapon)
+        private static bool ProspectiveChainedAttacks(Kingmaker.Items.ItemEntityWeapon weapon)
         {
             try
             {
-                if (weapon != null && weapon.GetAnimationStyle() == WeaponAnimationStyle.Bow) return true;
-                var sequences = unit?.View?.AnimationManager?.AnimationSet?.Sequences;
-                return sequences != null && sequences.Count > 0;
+                return weapon != null && weapon.GetAnimationStyle() == WeaponAnimationStyle.Bow;
             }
-            catch
-            {
-                return true;   // unknown: keep the shorter, older spacing
-            }
+            catch { return false; }
+        }
+
+        /// <summary>The actual OnTick shortcut at this read: bow, or both adjacent attacks selected as sequential with
+        /// the previous animation released. Merely having sequences, or one selected attack, is insufficient.</summary>
+        private static bool OrderedChainedAttacks(UnitAttack attack, int index)
+        {
+            var attacks = attack.AllAttacks;
+            if (index < 0 || index >= attacks.Count) return false;
+            var current = attacks[index];
+            if (current == null) return false;
+            if (ProspectiveChainedAttacks(current.Hand?.Weapon)) return true;
+            if (index == 0 || !current.IsSequential) return false;
+            var previous = attacks[index - 1];
+            return previous != null && previous.IsSequential && previous.AnimationHandle?.IsReleased == true;
         }
 
         /// <summary>

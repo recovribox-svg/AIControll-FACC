@@ -79,6 +79,19 @@ namespace CompanionAI.Tests
         }
 
         [Fact]
+        public void AnIssuedIgnoreCooldownRoutineUsesItsConfiguredWindow()
+        {
+            // Native ConfigureAnimations may store a 3 s window. Treating it as 6 s misses an allied hit and overprices
+            // this unit's response. The production reader is checked on a native command layout in ProfileAudit.
+            float configured = DisruptRules.SwingSpacing(3, false, 3f);
+            Assert.Equal(1f, configured);
+            float timely = DisruptRules.RunningHitSeconds(1, 1, configured, 0.2f, false, false, 0f);
+            float late = DisruptRules.RunningHitSeconds(1, 1, DisruptRules.SwingSpacing(3, false), 0.2f, false, false, 0f);
+            Assert.True(DisruptRules.InTime(timely, 2f));
+            Assert.False(DisruptRules.InTime(late, 2f));
+        }
+
+        [Fact]
         public void AnAllysRunningAttackLandsOnItsSchedule()
         {
             // 3-attack routine, 1 s into the command, next attack index 1: it starts at 2 s, lands 0.6 s later
