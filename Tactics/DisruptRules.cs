@@ -92,6 +92,10 @@ namespace CompanionAI_Pathfinder.Tactics
             return t + Flight(ranged, distance);
         }
 
+        /// <summary>A queued attack may approach while its action cooldown runs. It can start after both finish.</summary>
+        public static float OrderedStartSeconds(float walkSeconds, float cooldownSeconds) =>
+            Math.Max(Math.Max(0f, walkSeconds), Math.Max(0f, cooldownSeconds));
+
         private static float Flight(bool ranged, float distance) =>
             ranged && distance > 0f && !float.IsInfinity(distance) ? distance / MissileSpeed : 0f;
 

@@ -92,6 +92,18 @@ namespace CompanionAI.Tests
         }
 
         [Fact]
+        public void AnOrderedAttackWaitsForReadinessWhileApproaching()
+        {
+            // Standing beside the caster is not enough when this ally's standard action is still cooling down.
+            float wait = DisruptRules.OrderedStartSeconds(0f, 3f);
+            Assert.False(DisruptRules.InTime(DisruptRules.WeaponHitSeconds(0, wait, false, 0f, 2f), 2f));
+            // Movement and cooldown overlap, rather than being added and incorrectly hiding a timely allied hit.
+            Assert.Equal(2f, DisruptRules.OrderedStartSeconds(2f, 1f));
+            Assert.Equal(2f, DisruptRules.OrderedStartSeconds(1f, 2f));
+            Assert.True(DisruptRules.InTime(DisruptRules.WeaponHitSeconds(0, 2f, false, 0f, 2f), 3f));
+        }
+
+        [Fact]
         public void AnAllysRunningAttackLandsOnItsSchedule()
         {
             // 3-attack routine, 1 s into the command, next attack index 1: it starts at 2 s, lands 0.6 s later

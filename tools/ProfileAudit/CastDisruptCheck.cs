@@ -216,6 +216,15 @@ namespace ProfileAudit
                       "native animation sequence selection is probabilistic; forecasting must not roll it during scoring");
                 Check(Calls(others, engine, "TryAttackWindow") && Calls(others, engine, "OrderedChainedAttacks"),
                       "pending-hit quotes use their actual configured window and per-transition native shortcut");
+                var readiness = Body(engine, "TryOrderedDelay");
+                var nativeStart = Body(typeof(UnitCommandController), "CanStart");
+                Check(nativeStart.Any(m => m.Name == "HasCooldownForCommand") && nativeStart.Any(m => m.Name == "get_CanActInCombat") &&
+                      readiness.Any(m => m.Name == "HasCooldownForCommand") && readiness.Any(m => m.Name == "get_CanStart") &&
+                      readiness.Any(m => m.Name == "get_StandardAction" || m.Name == "StandardAction"),
+                      "ordered-hit readiness follows native command gates and the actual remaining standard cooldown");
+                Check(Calls(others, engine, "TryOrderedDelay") && Calls(others, typeof(DisruptRules), "OrderedStartSeconds") &&
+                      DisruptRules.OrderedStartSeconds(2f, 1f) == 2f && DisruptRules.OrderedStartSeconds(1f, 2f) == 2f,
+                      "a queued approach overlaps cooldown; the issued-hit quote cannot treat a cooling ally as ready now");
                 Check(Body(engine, "ReadCasting").Any(m => m.Name == "OthersRead"),
                       "F2: the allied hits are read again at every decision");
                 var after = engine.GetMethod("AfterOrderedHits", Hidden);

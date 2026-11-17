@@ -9,6 +9,7 @@ using System;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using Kingmaker.EntitySystem.Entities;
+using Kingmaker.UnitLogic;
 using Kingmaker.UnitLogic.Abilities;
 using Kingmaker.UnitLogic.Commands;
 using Kingmaker.UnitLogic.Commands.Base;
@@ -236,13 +237,15 @@ namespace CompanionAI_Pathfinder.Tactics
                 try
                 {
                     if (!(ally.Commands?.Standard is UnitAttack attack) || attack.IsFinished || attack.TargetUnit != enemy) continue;
+                    if (!TryOrderedDelay(ally, attack, out float cooldown)) continue;
                     if (!TryAttackWindow(attack, out float window)) continue;   // no timing proof: do not discount our response
                     var est = CombatMath.EstimateWeaponAttack(ally, enemy, attack.IsAttackFull);
                     if (est == null) continue;
                     int attacks = attack.AllAttacks.Count;
                     float distance = HorizontalDistance(ally.Position, enemy.Position);
                     int next = attack.IsStarted ? attack.GetAttackIndex() : 0;
-                    float walk = attack.IsStarted ? 0f : BurstRules.WalkSeconds(distance, est.Reach, ally.CurrentSpeedMps);
+                    float walk = attack.IsStarted ? 0f : DisruptRules.OrderedStartSeconds(
+                        BurstRules.WalkSeconds(distance, est.Reach, ally.CurrentSpeedMps), cooldown);
                     for (int k = next, counted = 0; k < attacks && counted < DisruptRules.MaxHits; k++, counted++)
                     {
                         var pending = attack.AllAttacks[k];
@@ -267,6 +270,26 @@ namespace CompanionAI_Pathfinder.Tactics
             cast.OthersStill = still;
             cast.OthersHits = hits;
             return still;
+        }
+
+        /// <summary>Native CanStart gates for a queued attack, with the ordinary standard cooldown allowed to elapse
+        /// during its approach. A running routine has paid its action: its own cooldown must not delay later iteratives.
+        /// Unknown blockers (including a separate running move) prove no timely allied hit.</summary>
+        private static bool TryOrderedDelay(UnitEntityData ally, UnitAttack attack, out float delay)
+        {
+            delay = 0f;
+            if (!ally.Descriptor.State.CanAct) return false;
+            if (attack.IsStarted) return true;
+            if (!attack.CanStart || ally.Descriptor.State.HasCondition(UnitCondition.Nauseated)) return false;
+            if (attack.Type == UnitCommand.CommandType.Standard &&
+                ally.Descriptor.State.HasCondition(UnitCondition.CantUseStandardActions)) return false;
+            if (!ally.IsInCombat || attack.IsIgnoreCooldown) return true;
+            var state = ally.CombatState;
+            if (state == null || !state.CanActInCombat) return false;
+            if (!state.HasCooldownForCommand(attack)) return true;
+            if (ally.Commands.GetCommand(UnitCommand.CommandType.Move)?.IsRunning == true) return false;
+            delay = state.Cooldown.StandardAction;
+            return delay > 0f && !float.IsInfinity(delay);
         }
 
         /// <summary>
