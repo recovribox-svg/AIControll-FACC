@@ -6660,3 +6660,24 @@ Play every A–D replay and review witness before integration; review the separa
   - 1 added reference.
 - **Package** `test-builds/AI-Control-FACC-v0.3.60-dev-engage1-7f749bb-UMM-test.zip`, MVID `ac0cde8e`. It includes
   A–D and the PR #85 corrections.
+
+## 195. F2 cast disruption after allies' ordered hits, on the native attack schedule (17 November 2026, Claude; not played)
+
+[Design and replay](DISRUPT_MARGINAL.md), [plan](REVIEW_FOLLOWUPS_PLAN.md), [receipt](competence/DISRUPT_F2_CHECKS.json),
+[provenance](competence/DISRUPT_F2_BUILD_PROVENANCE.json). Real time, valuation only. Stacked on F1 (PR #86).
+
+- **Allies' ordered hits (B-R1).** Once per casting enemy per decision, the engine reads allies' running or approaching
+  `UnitAttack` on that enemy. Each is placed on its native schedule and priced from the ally's cached routine. The
+  result is the chance the cast survives them. This unit's disruption value becomes
+  `others-survive × own-break × stakes` (`DisruptRules.MarginalValue`). Breaks are independent, so the party no longer
+  counts one break several times. Nothing is reserved for actions not yet chosen.
+- **Native spacing (part of B-R2).** `UnitAttack.OnTick` starts attack *k* of *N* at *k* × 6 / *N* s; bow-style and
+  sequenced attacks chain. The second hit used a fixed 0.7 s. A three-attack routine's second hit now misses a 2 s cast.
+- **Checks** on `bcb46df`:
+  - Release 0 warnings and errors.
+  - 1,017 unit tests (9 new) and 27 + 18 + 3 script tests.
+  - ProfileAudit `CAST-DISRUPT` 28 (9 new, including a production run of the aggregator); every other line is unchanged.
+  - Native harnesses 98/14/10.
+  - 6 added references, all resolved.
+- **Package** `test-builds/AI-Control-FACC-v0.3.60-dev-disrupt2-bcb46df-UMM-test.zip`, MVID `9a4d8a66`. It includes A–D,
+  the PR #85 corrections and F1.

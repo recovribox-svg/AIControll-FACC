@@ -8,7 +8,23 @@ Read [CONTRIBUTING.md](CONTRIBUTING.md) for shared branch ownership, Codex pull 
 Codex works on task branches and targets pull requests at `claude/dreamy-pasteur-b9h3rn`; Claude reviews and integrates them there.
 Keep `main` for author-authorized releases. Read [AGENTS.md](AGENTS.md) when coordinating agent work.
 
-**Current handover (17 November 2026, Claude): review follow-ups planned; F1 done on `claude/flank-engagement`, stacked on
+**Current handover (17 November 2026, Claude): review follow-up F2 on `claude/disrupt-marginal`, stacked on F1 (draft
+PR #86) and PR #85 (#81 → #86 all unmerged). Not played.** Read [docs/DISRUPT_MARGINAL.md](docs/DISRUPT_MARGINAL.md),
+`docs/TACTICAL_AI.md` §195, the [receipt](docs/competence/DISRUPT_F2_CHECKS.json) and
+[provenance](docs/competence/DISRUPT_F2_BUILD_PROVENANCE.json). Real time, valuation only.
+- **Allies' ordered hits.** Each ally's attack on a casting enemy was credited with the full break chance. Now, allies'
+  running or approaching attacks on that caster are read once per decision, and this unit's value is
+  `others-survive × own-break × stakes`. Nothing is reserved.
+- **Native spacing.** A routine's second hit lands 6 s / N after the first (`UnitAttack.OnTick`) instead of 0.7 s;
+  bow-style and sequenced attacks chain.
+- **Checks** on `bcb46df`: Release 0 warnings/errors, 1,017 unit + 27/18/3 script tests, ProfileAudit `CAST-DISRUPT` 28
+  with every other line unchanged, harnesses 98/14/10, 6 added references (all resolved).
+- **Package** `test-builds/AI-Control-FACC-v0.3.60-dev-disrupt2-bcb46df-UMM-test.zip`, MVID `9a4d8a66` (A–D + #85 + F1 + F2):
+  the one to play.
+- **Next:** F3 (horizon-aware cleanse) is low priority. The geometry quote, path forecast and watch overflow await the
+  author. Merge order when cleared: #81 → #86, then this PR. No merge, `main`, tag or release.
+
+**Earlier handover (17 November 2026, Claude): review follow-ups planned; F1 done on `claude/flank-engagement`, stacked on
 PR #85 (#81 → #85 all unmerged). Not played.** Read [docs/REVIEW_FOLLOWUPS_PLAN.md](docs/REVIEW_FOLLOWUPS_PLAN.md),
 [docs/FLANK_ENGAGEMENT.md](docs/FLANK_ENGAGEMENT.md), `docs/TACTICAL_AI.md` §194, the
 [receipt](docs/competence/ENGAGE_F1_CHECKS.json) and [provenance](docs/competence/ENGAGE_F1_BUILD_PROVENANCE.json).

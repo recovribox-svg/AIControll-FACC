@@ -1,0 +1,31 @@
+{
+  "build_label": "disrupt2",
+  "kind": "development-test",
+  "version": "0.3.60",
+  "source_branch": "claude/disrupt-marginal",
+  "source_commit": "bcb46df591bec6dd24b266072c6dda64fc64a062",
+  "stacked_on": "claude/flank-engagement 227e018 (PR #86, F1), on PR #85 -> #84 -> #83 -> #82 -> #81",
+  "development_base": "ad63ee8690ad47e74bfad54ba65c13810e4b5316",
+  "dll": {
+    "assembly": "CompanionAI_Pathfinder, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null",
+    "mvid": "9a4d8a66-96f1-4613-8357-34d8743df828",
+    "sha256": "d329c7ee7031ed364a95e103095fe55ce437e11a8c931fa95236d281b7ccf72e",
+    "size": 1517056
+  },
+  "archive": "AI-Control-FACC-v0.3.60-dev-disrupt2-bcb46df-UMM-test.zip",
+  "zip_sha256": "2d70cc07a49344e5244d0f5cc1d2ac01d911f3a9ca2985dd1807d0343fb1f008",
+  "manifest_sha256": "63ad9f152d4bacb44f021428193efad46aaf0d13380bb5691ebca1d935f2b5bf",
+  "checks_receipt": "docs/competence/DISRUPT_F2_CHECKS.json",
+  "build_provenance": "docs/competence/DISRUPT_F2_BUILD_PROVENANCE.json",
+  "toolchain": {
+    "dotnet_sdk": "8.0.428",
+    "csharp_compiler": "4.11.0-3.25569.22 (3fb752d4)"
+  },
+  "scope": "Slices A-D, the PR #85 corrections, F1 (engagement) and F2: cast disruption after allies' ordered hits and on the native attack schedule.",
+  "gameplay_status": "unplayed",
+  "archive_contents": [
+    "CompanionAI_Pathfinder.dll",
+    "Info.json"
+  ],
+  "release": false
+}

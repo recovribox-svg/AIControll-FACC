@@ -1,0 +1,64 @@
+{
+  "task": "Review follow-up F2: cast disruption after allies' ordered hits and on the native attack schedule (B-R1 and part of B-R2 of REVIEW_81_84.md; real time, valuation only)",
+  "date": "2026-11-17",
+  "author": "Claude",
+  "branch": "claude/disrupt-marginal",
+  "stacked_on": "PR #86 (F1), on PR #85 -> #84 -> #83 -> #82 -> #81; nothing merged",
+  "checked_source": "bcb46df591bec6dd24b266072c6dda64fc64a062",
+  "audit_tool_head": "b0d5f8689e9860a64eb108c66d8d52e95642c7ef",
+  "development_base": "ad63ee8690ad47e74bfad54ba65c13810e4b5316",
+  "toolchain": {
+    "dotnet_sdk": "8.0.428",
+    "csharp_compiler": "4.11.0-3.25569.22 (3fb752d4)",
+    "provenance": "docs/competence/DISRUPT_F2_BUILD_PROVENANCE.json"
+  },
+  "release_build": "0 warnings, 0 errors",
+  "unit_tests": "1,017 pass (9 new in DisruptRulesTests: native swing spacing, late second hit, an ally's running attack, marginal value)",
+  "script_tests": {
+    "BlueprintInventory": 27,
+    "InvocationLedger": 18,
+    "ProfileAudit supplement": 3
+  },
+  "profileaudit": {
+    "exit": 0,
+    "cast_disrupt": "28 checks, 0 failures (9 new: native schedule, attack window, command time, routes, reference resolution, production aggregator, late second hit)",
+    "sneak": "32 checks, 0 failures (F1)",
+    "other_lines": "identical to the F1 run, and through it to the PR #85 baseline, on the same inputs",
+    "fusion_coverage": "byte-identical; 8,709 / 15,494",
+    "summon_kit_detail": "byte-identical",
+    "report_sha256": "2507a39b9c5584f70061904d0e70531c9ee5239befc0b00361fd26ef537b5ff2"
+  },
+  "native_harnesses": {
+    "ToggleCosts": 98,
+    "TomeBurn": 14,
+    "ToyBoxSpend": 10
+  },
+  "not_run": [
+    "Supplementary Magus 44 corpus run: inputs not in this environment; F2 does not touch Magus code"
+  ],
+  "added_game_references": {
+    "relative_to": "F1 (7f749bb)",
+    "count": 6,
+    "members": [
+      "UnitAttack.get_IsAttackFull",
+      "UnitAttack.GetAttackIndex",
+      "ItemEntityWeapon.GetAnimationStyle(bool)",
+      "UnitEntityView.get_AnimationManager",
+      "AnimationManager.get_AnimationSet",
+      "AnimationSet.get_Sequences"
+    ],
+    "removed": 0,
+    "resolve": "yes: the CAST-DISRUPT route checks resolve each from the compiled methods against the real assembly"
+  },
+  "package": {
+    "zip": "test-builds/AI-Control-FACC-v0.3.60-dev-disrupt2-bcb46df-UMM-test.zip",
+    "identity": "test-builds/AI-Control-FACC-v0.3.60-dev-disrupt2-bcb46df-UMM-test.identity.json",
+    "mvid": "9a4d8a66-96f1-4613-8357-34d8743df828"
+  },
+  "manifest": "0.3.60, unchanged; no main, tag or release change; nothing merged",
+  "not_tested": [
+    "Gameplay: unplayed. Offline checks create no unit, command, attack, animation or Unity timing.",
+    "The first swing's 0.6 s and a chained attack's 0.7 s remain estimates for the replay to measure.",
+    "Allied damaging spells already cast at the caster are not counted as ordered hits (weapon attacks only)."
+  ]
+}
