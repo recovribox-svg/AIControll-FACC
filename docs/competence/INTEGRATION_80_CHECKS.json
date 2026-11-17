@@ -1,0 +1,38 @@
+{
+  "task": "Assess Codex's review and merge of PRs #74-79, then review and merge PR #80 (outcome2 review, pooled-fusion walking-in ally safety), at the author's request",
+  "date": "2026-11-17",
+  "reviewer": "Claude",
+  "pr80": {
+    "head": "5fe5771",
+    "checked_runtime_source": "faf867c",
+    "merge": "b218c28362a7bceca0e7bb2892b06379f460dbe0",
+    "development_tree_equals_pr_head": true
+  },
+  "assessment_74_79": {
+    "agree": true,
+    "notes": [
+      "#78 path-end diagnostics: diagnostic-only, bounded memo (128 casters x 16 queries x 5 reports a fight); native checks, failure strings and dispatch unchanged.",
+      "#79 effective metamagic: matches native ContextValueHelper.CalculateDiceValue (Maximize and Empower only for real dice, Empower adds half of roll + bonus, shared-value Modifier after) and reads the cast context's effective Params, including automatic metamagic. It corrects a gap in Claude's F7.",
+      "#79 withdrawal of the extra friendly-Sleep veto: reasonable. The native around-selector has no friendly filter, so a fused Sleep can reach allies, but the F7 forecast already counts allies in the pool order and no played incident was shown.",
+      "Not re-checked here: Codex's outcome1/outcome2 log counts. The logs were not supplied to Claude in this task."
+    ]
+  },
+  "pr80_review": {
+    "change": "TacticalEngine.ForecastWalkingAreaAllies: a supported shared-pool forecast no longer switches off the existing real-time walking-in ally reader for a fused cast with a broad area; enemy-only delivery and ordinary pooled Sleep keep the earlier selection.",
+    "finding": "Correct. F7 (Claude) had made a successful pool forecast skip the walking-in ally check for the whole cast, so the fusion's independent damage payload went unpriced for allies walking into the burst.",
+    "native_references": "The diff uses only members the mod already references (AbilityProfile.AoETargets, TargetType.Enemy, AbilityProfile.Fusion).",
+    "package": "test-builds/AI-Control-FACC-v0.3.60-dev-outcome3-faf867c-UMM-test.zip; packaged DLL SHA-256 begins 19ae6f80545357ee; a local build of faf867c differs in bytes and decompiles to identical code (ilspycmd, every type).",
+    "manifest": "0.3.60, at the author's request (Info.json only); no main, tag or release change"
+  },
+  "checks_on_development_b218c28": {
+    "release_build": "0 warnings, 0 errors (real game references, supplied UnityModManager 0.33.2.0, SDK 8.0.428)",
+    "unit_tests": "935 pass",
+    "script_tests": "BlueprintInventory 27, InvocationLedger 18, ProfileAudit supplement 3 pass",
+    "profileaudit": "exit 0, allowed one known failure; FUSION-POOL 39 checks (31 before), every other report line equal to the pre-merge development run on the same inputs",
+    "native_harnesses": "ToggleCosts 98, TomeBurn 14, ToyBoxSpend 10 pass"
+  },
+  "not_tested": [
+    "Gameplay: outcome3 is unplayed. Offline checks run no actor, selection, cast or Unity timing.",
+    "A burst delivered later on a moving target (Explosive Runes waits 2 s, then delivers on the main target) is a separate limit; this change does not cover it."
+  ]
+}

@@ -6481,3 +6481,22 @@ moving enemy into stationary allies after selection. Keep that as a separate nat
 project; do not interrupt paid casts or blacklist moving targets on a guessed refund/path. The no-reach observer
 message at AI 1646 conflicts with apparent target damage in the combat log; retain the controlled replay item.
 New repair is unplayed; manifest is author-requested 0.3.60, no main/tag/release. Warm ability work remains material.
+
+## 188. PR #74-79 assessment and PR #80 merged (17 November 2026, Claude)
+
+At the author's request Claude assessed Codex's review and merge of PRs #74-79 and reviewed PR #80.
+[Receipt](competence/INTEGRATION_80_CHECKS.json).
+
+- **#74-79: agreed.** #78 is diagnostic only and bounded. #79 matches the game's dice rule
+  (`ContextValueHelper.CalculateDiceValue`) and reads the cast's effective metamagic; this fixes a gap in Claude's F7.
+  Withdrawing the extra friendly-Sleep veto is reasonable: the F7 forecast already counts allies in the pool's order,
+  and no played case was shown. Codex's log counts were not re-checked (the logs were not supplied in this task).
+- **#80: merged** (`b218c28`, tree equal to head `5fe5771`). F7 had switched off the real-time walking-in ally check
+  for every fused cast whose pool forecast succeeded, so allies walking into the burst were not priced against the
+  cast's damage. `ForecastWalkingAreaAllies` keeps the check for broad-area fusions; enemy-only delivery and ordinary
+  Sleep are unchanged.
+- **Checks on development:** Release 0 warnings and errors; 935 unit tests + 27/18/3 script tests; ProfileAudit
+  exit 0, FUSION-POOL 39, every other report line unchanged; native harnesses 98/14/10. The outcome3 package's DLL
+  decompiles to the same code as a local build of `faf867c`.
+- **Still open:** outcome3 is unplayed. A burst that the game delivers later on its main target (Explosive Runes:
+  2 s) moves with that target and can still catch allies; this change does not cover it.

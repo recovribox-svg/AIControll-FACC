@@ -8,7 +8,15 @@ Read [CONTRIBUTING.md](CONTRIBUTING.md) for shared branch ownership, Codex pull 
 Codex works on task branches and targets pull requests at `claude/dreamy-pasteur-b9h3rn`; Claude reviews and integrates them there.
 Keep `main` for author-authorized releases. Read [AGENTS.md](AGENTS.md) when coordinating agent work.
 
-**Current handover (16 November 2026, Codex): outcome2 playtest review and restored pooled-fusion area safety on
+**Current handover (17 November 2026, Claude): PR #80 reviewed and merged into development (`b218c28`); Codex's
+review and merge of PRs #74-79 assessed and agreed with.** Read `docs/TACTICAL_AI.md` §188 and the
+[receipt](docs/competence/INTEGRATION_80_CHECKS.json). Development's tree equals PR #80's head `5fe5771`; the play
+package is still the outcome3 ZIP below (v0.3.60, MVID `56f51d96`), unplayed. Checks on development: Release 0 warnings
+and errors, 935 unit + 27/18/3 script tests, ProfileAudit FUSION-POOL 39 with every other line unchanged, native harnesses
+98/14/10. Codex's log counts were not re-checked. Next: the author plays outcome3; delayed bursts that follow a moving
+target (Explosive Runes) remain an open friendly-fire limit whose fix would touch aiming, so it needs the author's approval.
+
+**Earlier handover (16 November 2026, Codex): outcome2 playtest review and restored pooled-fusion area safety on
 `codex/outcome2-playtest-review`, development base `acb1003`.** Read
 [findings/correction/replay](docs/OUTCOME2_PLAYTEST_REVIEW.md), [input accounting](docs/competence/OUTCOME2_PLAYTEST_INPUTS.json),
 [Invocation ledger](docs/competence/OUTCOME2_INVOCATION_LEDGER.json), §187. New repair is unplayed.
