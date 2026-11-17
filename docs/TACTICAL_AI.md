@@ -6583,3 +6583,26 @@ their orders and hit four allies.
   - 10 added references, all exercised on the real assembly.
 - **Package** `test-builds/AI-Control-FACC-v0.3.60-dev-suppress1-3e70345-UMM-test.zip`, MVID `00a9466f`. It includes
   slices A and B.
+
+## 192. Sneak attack: fortification and flanking, slice D (17 November 2026, Claude; not played)
+
+[Design and replay](SNEAK_FLANKING.md), [plan](BURST_AIM_AND_TACTICS_PLAN.md) §6,
+[receipt](competence/SNEAK_FLANKING_CHECKS.json). Both modes, valuation only.
+
+- **D1, fortification.** One d100 against the target's highest fortification negates a sneak attack, a confirmed
+  critical and a precise strike together (`RuleAttackRoll`). Each attack line's sneak and critical extra
+  (`ExpectedWeaponLine`), the estimate's critical chances, attack-roll abilities' criticals (`AbilityCritFactor`) and archer
+  blast modes now pass `1 − chance / 100`. Coup de Grace makes no fortification roll natively and is unchanged.
+- **D2, flanking.** Native flanking counts engagers, not positions (`UnitCombatState.IsFlanked`). A melee attack makes its
+  attacker an engager, so every routine is priced flanked (+2, sneak dice) when one other unit counts as engaging the
+  target by the mode's rule (`CombatMath.PredictFlank`). An attack that creates the flank adds the other engager's round
+  of gain (`TacticalEngine.FlankPartnerBonus`), tagged `[flanks with <ally> +N]`.
+- **Code.** Pure rules: `SneakRules`. Game side: `CombatMath.Flanking.cs`, `TacticalEngine.Flanking.cs`.
+- **Checks** on `86f8e82`:
+  - Release 0 warnings and errors.
+  - 998 unit tests (16 new) and 27 + 18 + 3 script tests.
+  - ProfileAudit exit 0, `SNEAK` 20, with 42 fortification facts in the exports. Every other line is unchanged.
+  - Native harnesses 98/14/10.
+  - 3 added references.
+- **Package** `test-builds/AI-Control-FACC-v0.3.60-dev-sneak1-86f8e82-UMM-test.zip`, MVID `e432cb9a`. It includes
+  slices A, B and C.

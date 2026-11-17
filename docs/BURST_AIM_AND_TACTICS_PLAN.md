@@ -430,6 +430,16 @@ allies.
 **Replay.** A rogue and a front-liner on one enemy, in both modes. The routine line shows "flanked (second
 attacker)", plus the partner's term.
 
+**As built (17 November 2026, [SNEAK_FLANKING.md](SNEAK_FLANKING.md)).**
+- D1 also covers the estimate's critical chances (Magus touch delivery), attack-roll abilities, archer blast modes and
+  auto-threat attacks, through the same factor.
+- D2 needs no cache-key change: the prediction is made inside the routine read from the attacker and target in that
+  frame.
+- The partner's term also counts the +2 on its melee attacks, not only its sneak dice. A partner without sneak dice
+  still gains the bonus, and the attacker's own routine already counted its +2.
+- The candidate tag is `[flanks]` or `[flanks with <ally> +N]`.
+- D4 is not done.
+
 ## 7. Native sources read
 
 | Fact | Source |
