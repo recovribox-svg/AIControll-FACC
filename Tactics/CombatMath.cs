@@ -38,6 +38,8 @@ namespace CompanionAI_Pathfinder.Tactics
         public bool IsRanged;
         public ItemEntityWeapon Weapon;
         public float FirstHitChance;
+        /// <summary>★ cast disruption: the routine's second attack - its hit chance and a hit's damage (0 without one).</summary>
+        public float SecondHitChance, SecondPerHit;
         /// <summary>★ v0.3.14 (test5): average damage of one hit of the first attack (after damage reduction).</summary>
         public float FirstPerHit;
         /// <summary>★ test5: chance the first attack is a critical hit (threat range × hit chance).</summary>
@@ -303,6 +305,7 @@ namespace CompanionAI_Pathfinder.Tactics
                     touch.Add(p, Math.Min(line.ThreatChance, p) * p);
                 }
                 if (line.Index == 0) result.FirstHitChance = p;
+                else if (line.Index == 1) { result.SecondHitChance = p; result.SecondPerHit = perHit; }   // ★ cast disruption
                 noHit *= 1f - p;
                 if (line.Index == 0)
                 {

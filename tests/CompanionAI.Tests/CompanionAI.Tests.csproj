@@ -17,6 +17,7 @@
     <Compile Include="..\..\Tactics\ArrivalRule.cs" Link="ArrivalRule.cs" />
     <Compile Include="..\..\Tactics\SpotRules.cs" Link="SpotRules.cs" />
     <Compile Include="..\..\Tactics\BurstRules.cs" Link="BurstRules.cs" />
+    <Compile Include="..\..\Tactics\DisruptRules.cs" Link="DisruptRules.cs" />
     <Compile Include="..\..\Tactics\ValueModel.cs" Link="ValueModel.cs" />
     <Compile Include="..\..\Tactics\ValueModel.Fusion.cs" Link="ValueModel.Fusion.cs" />
     <Compile Include="..\..\Tactics\ValueModel.Grapple.cs" Link="ValueModel.Grapple.cs" />

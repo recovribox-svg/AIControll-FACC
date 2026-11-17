@@ -415,31 +415,8 @@ namespace CompanionAI_Pathfinder.Tactics
                 {
                     var profile = AbilityProfile.Get(ability);
                     if (profile == null) continue;
-                    float value = 0f;
-                    float damage = 0f;
-                    float damageIfLands = 0f;
-                    if (profile.DealsDamage)
-                    {
-                        damageIfLands = CombatMath.EstimateAbilityDamage(ability, profile, victim);
-                        value += damage = damageIfLands * CombatMath.EffectChance(enemy, victim, ability, profile, true);
-                    }
-                    // ★ v0.3.28 test 13: a poison it applies (BuffPoisonStatDamage), in the hit points its doses are worth on the
-                    // victim within three rounds (CombatMath.PoisonHpLoss: any score, a score taken below 1 kills).
-                    float poison = 0f;
-                    foreach (var buff in profile.TargetBuffs) poison += CombatMath.PoisonHpLoss(ability, buff, victim, 3f);
-                    if (poison > 0f) value += poison * CombatMath.EffectChance(enemy, victim, ability, profile, false);
-                    float control = profile.ControlStrength == ControlStrength.Hard ? 1f : profile.ControlStrength == ControlStrength.Soft ? 0.4f : 0f;
-                    if (control > 0f && !Analysis.AbilityClassifier.HasCCImmunity(victim, profile.Control))
-                    {
-                        float rounds = Mathf.Clamp(profile.EffectRoundsOn(ability, victim), 1f, 2f);
-                        int level = Math.Max(1, victim.Descriptor?.Progression?.CharacterLevel ?? 1);
-                        value += control * ValueModel.PerRound(level) * rounds * CombatMath.EffectChance(enemy, victim, ability, profile, false);
-                    }
+                    float value = AbilityHarm(enemy, victim, party, ability, profile, out float damage, out float damageIfLands, out float area);
                     if (value <= 0f) continue;
-                    float area = profile.IsAoE
-                        ? 1f + 0.5f * party.Count(p => p != victim && Vector3.Distance(p.Position, victim.Position) <= profile.AoERadius)
-                        : 1f;
-                    value *= area;
                     if (value > best)
                     {
                         best = value;
@@ -457,6 +434,73 @@ namespace CompanionAI_Pathfinder.Tactics
                 }
             }
             return best;
+        }
+
+        /// <summary>
+        /// What one harmful <paramref name="ability"/> of <paramref name="enemy"/> does to <paramref name="victim"/>: damage times
+        /// the chance it lands; a poison's doses; control as the victim's worth a round for up to two rounds, times the chance;
+        /// x(1 + half the other party members in its area) (<paramref name="area"/>). 0 when it does none of these.
+        /// </summary>
+        private static float AbilityHarm(UnitEntityData enemy, UnitEntityData victim, List<UnitEntityData> party, AbilityData ability,
+                                         AbilityProfile profile, out float damage, out float damageIfLands, out float area)
+        {
+            float value = 0f;
+            damage = 0f;
+            damageIfLands = 0f;
+            area = 1f;
+            if (profile.DealsDamage)
+            {
+                damageIfLands = CombatMath.EstimateAbilityDamage(ability, profile, victim);
+                value += damage = damageIfLands * CombatMath.EffectChance(enemy, victim, ability, profile, true);
+            }
+            // ★ v0.3.28 test 13: a poison it applies (BuffPoisonStatDamage), in the hit points its doses are worth on the
+            // victim within three rounds (CombatMath.PoisonHpLoss: any score, a score taken below 1 kills).
+            float poison = 0f;
+            foreach (var buff in profile.TargetBuffs) poison += CombatMath.PoisonHpLoss(ability, buff, victim, 3f);
+            if (poison > 0f) value += poison * CombatMath.EffectChance(enemy, victim, ability, profile, false);
+            float control = profile.ControlStrength == ControlStrength.Hard ? 1f : profile.ControlStrength == ControlStrength.Soft ? 0.4f : 0f;
+            if (control > 0f && !Analysis.AbilityClassifier.HasCCImmunity(victim, profile.Control))
+            {
+                float rounds = Mathf.Clamp(profile.EffectRoundsOn(ability, victim), 1f, 2f);
+                int level = Math.Max(1, victim.Descriptor?.Progression?.CharacterLevel ?? 1);
+                value += control * ValueModel.PerRound(level) * rounds * CombatMath.EffectChance(enemy, victim, ability, profile, false);
+            }
+            if (value <= 0f) return 0f;
+            area = profile.IsAoE
+                ? 1f + 0.5f * party.Count(p => p != victim && Vector3.Distance(p.Position, victim.Position) <= profile.AoERadius)
+                : 1f;
+            return value * area;
+        }
+
+        /// <summary>
+        /// ★ cast disruption: what the spell <paramref name="enemy"/> is casting would do to the party if it went off, by the
+        /// same reading as its threat (AbilityHarm), on its actual victim; 0 when the spell is not a harmful one the engine reads
+        /// or has no party victim. The caller falls back to <see cref="RoundWorth"/>.
+        /// </summary>
+        internal static float CastHarm(UnitEntityData enemy, AbilityData ability, UnitEntityData victim, List<UnitEntityData> party)
+        {
+            if (enemy == null || ability?.Blueprint == null || victim == null) return 0f;
+            try
+            {
+                if (!IsHarmful(ability)) return 0f;
+                var profile = AbilityProfile.Get(ability);
+                return profile == null ? 0f : AbilityHarm(enemy, victim, party, ability, profile, out _, out _, out _);
+            }
+            catch (Exception ex)
+            {
+                Main.Verbose($"[Threat] {enemy.CharacterName}'s cast {ability.Name}: {ex.Message}");
+                return 0f;
+            }
+        }
+
+        /// <summary>★ cast disruption: the enemy's worth for a round (ValueModel.PerRound of its CR), as its assessment has it.</summary>
+        internal static float RoundWorth(UnitEntityData enemy)
+        {
+            if (enemy == null) return 0f;
+            if (Assessed.TryGetValue(enemy.UniqueId, out var a) && a.Worth > 0f) return a.Worth;
+            float cr = 1f;
+            try { cr = Math.Max(1, enemy.Blueprint?.CR ?? 1); } catch { }
+            return ValueModel.PerRound(cr);
         }
 
         /// <summary>Only known, single-energy native damage is attributed before observation; mixed/custom stays unknown.</summary>
