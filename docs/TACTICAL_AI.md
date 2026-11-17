@@ -6634,3 +6634,29 @@ and full **8,709/15,494** Fusion coverage equal untouched #84 on the same inputs
 matches; the complete old corpus is not claimed (three extra graph files unavailable). **0 added/removed native refs**.
 Frozen [review1 ZIP](../test-builds/AI-Control-FACC-v0.3.60-dev-review1-2d8a9b5-UMM-test.zip?raw=true), UMM **0.3.60**, SHA-256 `8989b793a43cbd40652b4d8e645d6c6c71414c7ff2317de09d324c9879621f4a`.
 Play every A–D replay and review witness before integration; review the separately described remaining risks first.
+
+## 194. Review follow-ups planned; F1 flank prediction from the game's engagement rules (17 November 2026, Claude; not played)
+
+[Plan](REVIEW_FOLLOWUPS_PLAN.md), [F1 design and replay](FLANK_ENGAGEMENT.md), [receipt](competence/ENGAGE_F1_CHECKS.json),
+[provenance](competence/ENGAGE_F1_BUILD_PROVENANCE.json). Stacked on PR #85 (#81–85 unmerged).
+
+- **Assessment of §193's open items.**
+  - Selected: F1 (D-R1, engagement), then F2 (B-R1, marginal disruption against friendly hits already issued).
+  - Low priority: F3 (C-R1, horizon-aware cleanse).
+  - Need approval: the origin-aware geometry quote, the path-based burst forecast and the watch overflow behaviour.
+  - Need evidence first: timing calibration (replay) and the TTT fortification provider.
+- **F1 (both modes, valuation only).** A melee attacker becomes an engager when the attack lands if either:
+  - the game says it engages the target now (`UnitCombatState.IsEngage`); or
+  - its threat range covers the attacking weapon's range (`GetApproachRadius` against threat reach), and the target is
+    not totally concealed from it now. `UnitPartConcealment.Calculate` never grows closer in.
+
+  `SneakRules.WillEngage` is pure. It removes false flank credit against invisible targets and from beyond threat
+  reach, in party attacks and enemy danger alike. No geometry, path, raycast or cache is added.
+- **Checks** on `7f749bb`:
+  - Release 0 warnings and errors.
+  - 1,008 unit tests (8 new) and 27 + 18 + 3 script tests.
+  - ProfileAudit `SNEAK` 32 (7 new); every other line equals the PR #85 baseline, and the Fusion coverage is identical.
+  - Native harnesses 98/14/10.
+  - 1 added reference.
+- **Package** `test-builds/AI-Control-FACC-v0.3.60-dev-engage1-7f749bb-UMM-test.zip`, MVID `ac0cde8e`. It includes
+  A–D and the PR #85 corrections.

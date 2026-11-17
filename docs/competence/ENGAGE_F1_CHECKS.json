@@ -1,0 +1,59 @@
+{
+  "task": "Review follow-up F1: engagement predicted from the game's own conditions (D-R1 of REVIEW_81_84.md; both modes, valuation only)",
+  "date": "2026-11-17",
+  "author": "Claude",
+  "branch": "claude/flank-engagement",
+  "stacked_on": "PR #85 (codex/review-81-84 27e4196), on #84 -> #83 -> #82 -> #81; nothing merged",
+  "checked_source": "7f749bb51da98c25e299cde7473332803dd8b335",
+  "development_base": "ad63ee8690ad47e74bfad54ba65c13810e4b5316",
+  "baseline": "a build of PR #85's head on the same inputs and toolchain (audit A33/B19/C33/D25, matching Codex's receipt)",
+  "toolchain": {
+    "dotnet_sdk": "8.0.428",
+    "csharp_compiler": "4.11.0-3.25569.22 (3fb752d4)",
+    "note": "Codex's PR #85 receipt used SDK 8.0.426 with the same Roslyn build; the native Assembly-CSharp identity (MVID 90a9869c) is the same",
+    "provenance": "docs/competence/ENGAGE_F1_BUILD_PROVENANCE.json"
+  },
+  "release_build": "0 warnings, 0 errors",
+  "unit_tests": "1,008 pass (8 new: SneakRulesTests.EngagementFollowsTheNativeConditions)",
+  "script_tests": {
+    "BlueprintInventory": 27,
+    "InvocationLedger": 18,
+    "ProfileAudit supplement": 3
+  },
+  "profileaudit": {
+    "exit": 0,
+    "loaded": "45,244 blueprints (this environment's corpus; 4 fewer than Codex's 45,248, same inputs for both runs here)",
+    "sneak": "32 checks, 0 failures (7 new: engagement chain, reach, approach radius, concealment structure, compiled route, pure rule)",
+    "other_lines": "identical to the PR #85 baseline on the same inputs (A33, B19, C33 and every other row)",
+    "fusion_coverage": "byte-identical; 8,709 / 15,494",
+    "summon_kit_detail": "byte-identical",
+    "report_sha256": "6687623ec4cc0c2ce3604381b3fdbc1009aa7031f8aa18502764c2b65270a0fc"
+  },
+  "native_harnesses": {
+    "ToggleCosts": 98,
+    "TomeBurn": 14,
+    "ToyBoxSpend": 10
+  },
+  "not_run": [
+    "Supplementary Magus 44 corpus run: its inputs are not in this environment; F1 does not touch Magus code"
+  ],
+  "added_game_references": {
+    "relative_to": "PR #85 head",
+    "count": 1,
+    "members": [
+      "UnitCombatState.IsEngage"
+    ],
+    "removed": 0,
+    "resolve": "yes: the SNEAK route check resolves it from the compiled method against the real assembly"
+  },
+  "package": {
+    "zip": "test-builds/AI-Control-FACC-v0.3.60-dev-engage1-7f749bb-UMM-test.zip",
+    "identity": "test-builds/AI-Control-FACC-v0.3.60-dev-engage1-7f749bb-UMM-test.identity.json",
+    "mvid": "ac0cde8e-a80a-4b29-a3d7-fc093836b517"
+  },
+  "manifest": "0.3.60, unchanged; no main, tag or release change; nothing merged",
+  "not_tested": [
+    "Gameplay: unplayed. Offline checks create no unit, engagement, attack or Unity timing.",
+    "Line of sight and height at a future arrival point are taken from the attack being possible there, not re-proved."
+  ]
+}

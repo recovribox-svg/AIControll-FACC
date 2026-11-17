@@ -30,6 +30,8 @@ as target commitment, it is self-contained and can be dropped without touching F
 
 ## F1: engagement from the game's own facts (D-R1, both modes, valuation only)
 
+**Done** on `claude/flank-engagement` (`7f749bb`): [FLANK_ENGAGEMENT.md](FLANK_ENGAGEMENT.md), [receipt](competence/ENGAGE_F1_CHECKS.json), package engage1 (MVID `ac0cde8e`).
+
 **Problem.** `AttackerEngages` assumes that a melee attacker with a threat hand becomes an engager of its target. The
 native engagement test (`UnitCombatEngagementController.TickUnit` → `UnitEngagementExtension.IsEngage`) also requires:
 - `UnitHelper.IsAttackOfOpportunityReach`: 3D distance under both bodies plus the threat range, and line of sight;

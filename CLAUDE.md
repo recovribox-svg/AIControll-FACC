@@ -8,7 +8,22 @@ Read [CONTRIBUTING.md](CONTRIBUTING.md) for shared branch ownership, Codex pull 
 Codex works on task branches and targets pull requests at `claude/dreamy-pasteur-b9h3rn`; Claude reviews and integrates them there.
 Keep `main` for author-authorized releases. Read [AGENTS.md](AGENTS.md) when coordinating agent work.
 
-**Current handover (17 November 2026, Codex): critical review of open stacked PRs #81–84 on
+**Current handover (17 November 2026, Claude): review follow-ups planned; F1 done on `claude/flank-engagement`, stacked on
+PR #85 (#81 → #85 all unmerged). Not played.** Read [docs/REVIEW_FOLLOWUPS_PLAN.md](docs/REVIEW_FOLLOWUPS_PLAN.md),
+[docs/FLANK_ENGAGEMENT.md](docs/FLANK_ENGAGEMENT.md), `docs/TACTICAL_AI.md` §194, the
+[receipt](docs/competence/ENGAGE_F1_CHECKS.json) and [provenance](docs/competence/ENGAGE_F1_BUILD_PROVENANCE.json).
+- **Assessment of Codex's open items.** Selected: F1 (D-R1) and F2 (B-R1, marginal disruption against friendly hits already
+  issued). F3 (C-R1) is low priority. The origin-aware geometry quote, the path-based burst forecast and the watch overflow
+  need approval; timing calibration and the TTT fortification provider need evidence.
+- **F1 (both modes, valuation only).** A melee attacker becomes an engager when the game says it engages the target now
+  (`UnitCombatState.IsEngage`), or when its threat range covers the attacking weapon's range and the target is not totally
+  concealed from it now. Concealment never grows closer in. No geometry, path, raycast or cache.
+- **Checks** on `7f749bb`: Release 0 warnings/errors, 1,008 unit + 27/18/3 script tests, ProfileAudit `SNEAK` 32 with every
+  other line equal to a PR #85 build on the same inputs, harnesses 98/14/10, 1 added reference. SDK 8.0.428 / Roslyn 4.11.
+- **Package** `test-builds/AI-Control-FACC-v0.3.60-dev-engage1-7f749bb-UMM-test.zip`, MVID `ac0cde8e` (A–D + #85 + F1).
+- **Next:** F2. Merge order when cleared: #81 → #85, then this PR. No merge, `main`, tag or release.
+
+**Earlier handover (17 November 2026, Codex): critical review of open stacked PRs #81–84 on
 `codex/review-81-84`, based on #84 `53e793f`; nothing merged.** Read
 [docs/REVIEW_81_84.md](docs/REVIEW_81_84.md), §193,
 [checks](docs/competence/REVIEW_81_84_CHECKS.json) and

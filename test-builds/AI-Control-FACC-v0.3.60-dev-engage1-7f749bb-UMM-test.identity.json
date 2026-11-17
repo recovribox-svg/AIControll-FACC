@@ -1,0 +1,31 @@
+{
+  "build_label": "engage1",
+  "kind": "development-test",
+  "version": "0.3.60",
+  "source_branch": "claude/flank-engagement",
+  "source_commit": "7f749bb51da98c25e299cde7473332803dd8b335",
+  "stacked_on": "codex/review-81-84 27e4196 (PR #85, checked source 2d8a9b5), on #84 -> #83 -> #82 -> #81",
+  "development_base": "ad63ee8690ad47e74bfad54ba65c13810e4b5316",
+  "dll": {
+    "assembly": "CompanionAI_Pathfinder, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null",
+    "mvid": "ac0cde8e-a80a-4b29-a3d7-fc093836b517",
+    "sha256": "e71471395c4f8a71480896a7fda7f6297f72a9a9e5119bcbd6b3c0af49bd3dbe",
+    "size": 1514496
+  },
+  "archive": "AI-Control-FACC-v0.3.60-dev-engage1-7f749bb-UMM-test.zip",
+  "zip_sha256": "83bfa1557c20d49c4833fbb2c51ee9c360800855dfc6e15a5da7a19e9f093166",
+  "manifest_sha256": "63ad9f152d4bacb44f021428193efad46aaf0d13380bb5691ebca1d935f2b5bf",
+  "checks_receipt": "docs/competence/ENGAGE_F1_CHECKS.json",
+  "build_provenance": "docs/competence/ENGAGE_F1_BUILD_PROVENANCE.json",
+  "toolchain": {
+    "dotnet_sdk": "8.0.428",
+    "csharp_compiler": "4.11.0-3.25569.22 (3fb752d4)"
+  },
+  "scope": "Slices A-D, the PR #85 review corrections, and review follow-up F1: flank prediction from the game's engagement conditions.",
+  "gameplay_status": "unplayed",
+  "archive_contents": [
+    "CompanionAI_Pathfinder.dll",
+    "Info.json"
+  ],
+  "release": false
+}
