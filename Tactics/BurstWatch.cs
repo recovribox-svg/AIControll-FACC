@@ -4,6 +4,10 @@
 // the game spends the spell and the action only when the cast goes off (UnitUseAbility.OnAction, UnitCommandController),
 // so the cancel is free. Once it has gone off, the time it lands is kept: the other AI units' walks avoid the spot until
 // then (AoeDangerAnalyzer), and a turn-based turn waits for it (CustomBrainPatch.ReadyToEndTurn).
+// ★ review follow-ups A-R1/A3/A-P1 (author-approved; docs/BURST_PATH_FORECAST.md): walks are read along the game's own
+// path (TacticalEngine.ReadRoute); an ally that walks in is priced by its damage and by the decision's own friendly-control
+// price (BurstPlan.AllyControl), its damage estimated once per watch; the units are read once per frame for every watch;
+// a watch whose cast has not gone off is never dropped to make room, and each fight's peak counts are logged.
 using System;
 using System.Collections.Generic;
 using Kingmaker;
@@ -28,6 +32,8 @@ namespace CompanionAI_Pathfinder.Tactics
             public bool StartSeen;
             public double LandsAt = double.NaN;
             public bool LimitNoted;
+            /// <summary>Each ally's damage estimate, read once for this watch (A-P1: not again at every re-check).</summary>
+            public Dictionary<UnitEntityData, float> Damage;
         }
 
         private struct Refusal
@@ -45,7 +51,12 @@ namespace CompanionAI_Pathfinder.Tactics
             public double At;
         }
 
-        private const int MaxEntries = 32;
+        /// <summary>
+        /// A memory guard, not a working limit: each AI unit has at most one cast that has not gone off, and a burst that
+        /// has gone off is kept only until it lands. Past it, bursts that have gone off make room first; a watch whose cast
+        /// has not gone off is never dropped, and a new burst then goes unwatched with a logged line (A-P1).
+        /// </summary>
+        private const int MaxEntries = 64;
         private const int MaxLinesPerFight = 64;
 
         private static BurstWatch s_Instance;
@@ -53,6 +64,18 @@ namespace CompanionAI_Pathfinder.Tactics
         private static readonly List<Refusal> Refusals = new List<Refusal>();
         private static readonly List<Cancel> Cancels = new List<Cancel>();
         private static int s_Lines;
+
+        // A-P1: this fight's counts, logged when it ends - bursts watched, the most at once, the most units read for a
+        // re-check, re-checks, and bursts that made room or went unwatched.
+        private static int s_Watched, s_PeakWatches, s_PeakRoster, s_Rechecks, s_Evicted, s_Unwatched;
+        private static int s_RoutesOnPathAtStart, s_RoutesStraightAtStart;
+
+        // A-P1: the units a re-check reads, once per frame for every watch (in the game, alive, in combat).
+        private static readonly List<UnitEntityData> Roster = new List<UnitEntityData>();
+        private static int s_RosterFrame = -1;
+
+        // A-R1: a walk read for a re-check (one at a time; the main thread only).
+        private static readonly WalkRoute Route = new WalkRoute();
 
         // The native cast time of a running cast (UnitUseAbility.m_CastTime); read only, falls back to the plan's.
         private static readonly HarmonyLib.AccessTools.FieldRef<UnitUseAbility, float> CastTimeRef = ReadCastTimeRef();
@@ -88,13 +111,33 @@ namespace CompanionAI_Pathfinder.Tactics
             Clear();
         }
 
-        /// <summary>A new fight: nothing carries over.</summary>
+        /// <summary>A new fight: nothing carries over (the counts of a fight that raised no end are reported first).</summary>
         public static void Clear()
         {
+            ReportFight();
             Entries.Clear();
             Refusals.Clear();
             Cancels.Clear();
+            Roster.Clear();
+            s_RosterFrame = -1;
             s_Lines = 0;
+        }
+
+        /// <summary>
+        /// A-P1: one line of this fight's counts when it watched a burst - the evidence for the watch's capacity and the
+        /// re-check's cost. The counts restart.
+        /// </summary>
+        public static void ReportFight()
+        {
+            if (s_Watched > 0)
+                Main.Log($"[Burst] fight summary: {s_Watched} burst(s) watched, at most {s_PeakWatches} at once; {s_Rechecks} re-check(s) " +
+                         $"reading at most {s_PeakRoster} unit(s); walks read along the game's path " +
+                         $"{TacticalEngine.RoutesOnPath - s_RoutesOnPathAtStart}, straight {TacticalEngine.RoutesStraight - s_RoutesStraightAtStart}" +
+                         (s_Evicted > 0 ? $"; {s_Evicted} landed burst(s) made room" : "") +
+                         (s_Unwatched > 0 ? $"; {s_Unwatched} burst(s) not watched (all {MaxEntries} watches live)" : ""));
+            s_Watched = s_PeakWatches = s_PeakRoster = s_Rechecks = s_Evicted = s_Unwatched = 0;
+            s_RoutesOnPathAtStart = TacticalEngine.RoutesOnPath;
+            s_RoutesStraightAtStart = TacticalEngine.RoutesStraight;
         }
 
         private static void Log(string line)
@@ -111,8 +154,16 @@ namespace CompanionAI_Pathfinder.Tactics
             try
             {
                 Prune();
-                if (Entries.Count >= MaxEntries) Entries.RemoveAt(0);
+                if (Entries.Count >= MaxEntries && !MakeRoom())
+                {
+                    if (s_Unwatched++ == 0)
+                        Log($"[Burst] {unit.CharacterName}: {plan.Ability.Name} not watched - all {MaxEntries} watches are casts " +
+                            "that have not gone off; it keeps the checks of its decision");
+                    return;
+                }
                 Entries.Add(new Entry { Unit = unit, Command = command, Plan = plan, NextCheck = Now + BurstRules.RecheckSeconds });
+                s_Watched++;
+                if (Entries.Count > s_PeakWatches) s_PeakWatches = Entries.Count;
                 var profile = AbilityProfile.Get(plan.Ability);
                 if (plan.RealTime && profile != null)
                     Analysis.AoeDangerAnalyzer.RegisterPendingBurst(plan.Point, plan.Radius, plan.Ability.Name, profile.DealsDamage,
@@ -124,6 +175,25 @@ namespace CompanionAI_Pathfinder.Tactics
             {
                 Main.Verbose($"[Burst] track {unit.CharacterName}: {ex.Message}");
             }
+        }
+
+        /// <summary>
+        /// A-P1: room for one more watch. Only a burst that has gone off makes room - the one landing first; its landing spot
+        /// stays with AoeDangerAnalyzer until it lands. A watch whose cast has not gone off is never dropped.
+        /// </summary>
+        private static bool MakeRoom()
+        {
+            int first = -1;
+            for (int i = 0; i < Entries.Count; i++)
+            {
+                var e = Entries[i];
+                if (double.IsNaN(e.LandsAt)) continue;
+                if (first < 0 || e.LandsAt < Entries[first].LandsAt) first = i;
+            }
+            if (first < 0) return false;
+            Entries.RemoveAt(first);
+            if (s_Evicted++ == 0) Log($"[Burst] {MaxEntries} watches: a burst that has gone off made room for a new one");
+            return true;
         }
 
         public void HandleUnitCommandDidAct(UnitCommand command)
@@ -278,10 +348,16 @@ namespace CompanionAI_Pathfinder.Tactics
 
             float newCost = 0f;
             List<string> caught = null;
-            foreach (var u in Game.Instance.State.Units)
+            var roster = RosterNow();
+            s_Rechecks++;
+            if (roster.Count > s_PeakRoster) s_PeakRoster = roster.Count;
+            bool casterRead = false;
+            for (int i = 0; i <= roster.Count; i++)
             {
-                if (u == null || !u.IsInGame || u.Descriptor?.State == null || u.Descriptor.State.IsDead) continue;
-                if (u != unit && !(u.CombatState?.IsInCombat ?? false)) continue;
+                // The roster, then the caster when it was not in it (a caster that is not in combat yet).
+                var u = i < roster.Count ? roster[i] : casterRead ? null : unit;
+                if (u == null || u.Descriptor.State.IsDead) continue;   // the roster is this frame's; a unit can die in it
+                if (u == unit) casterRead = true;
                 float reach = plan.Radius + u.Corpulence;
                 if (unit.IsEnemy(u))
                 {
@@ -295,21 +371,18 @@ namespace CompanionAI_Pathfinder.Tactics
                 if (!u.IsPlayerFaction && u != unit) continue;
                 if (plan.Allies.Contains(u)) continue;
                 bool inside;
-                var walk = u.Descriptor.State.IsConscious ? TacticalEngine.WalkClaim(u) : null;
-                if (walk.HasValue)
-                {
-                    var from = u.Position;
-                    inside = BurstRules.WalkMayBeInside(from.x, from.z, walk.Value.x, walk.Value.z, u.CurrentSpeedMps,
-                                                        plan.Point.x, plan.Point.z, reach, remaining);
-                }
+                var route = u.Descriptor.State.IsConscious ? TacticalEngine.ReadRoute(u, Route) : null;
+                if (route != null) inside = route.MayBeInside(plan.Point.x, plan.Point.z, reach, remaining);
                 else inside = Vector3.Distance(u.Position, plan.Point) <= reach;
                 if (!inside || !profile.AreaReaches(plan.Ability, u)) continue;
-                float damage = plan.Damage;
-                try { damage = CombatMath.EstimateAbilityDamage(plan.Ability, profile, u); }
-                catch { }
-                if (!(damage > 0f)) continue;
+                // ★ A3: its damage, and what the burst's control would cost it by the decision's own rule (AllyControl).
+                float damage = DamageTo(e, u, profile);
+                float control = 0f;
+                if (plan.AllyControl != null) plan.AllyControl.TryGetValue(u, out control);
+                if (!(damage > 0f) && !(control > 0f)) continue;
                 newAllies++;
-                newCost += u.HPLeft <= 0 ? Math.Max(0f, plan.Value) + 1f : BurstRules.AllyCost(damage, u.HPLeft);
+                if (damage > 0f) newCost += u.HPLeft <= 0 ? Math.Max(0f, plan.Value) + 1f : BurstRules.AllyCost(damage, u.HPLeft);
+                newCost += control;
                 (caught ?? (caught = new List<string>())).Add(u.CharacterName);
             }
             if (caught != null) names = string.Join(", ", caught);
@@ -317,15 +390,44 @@ namespace CompanionAI_Pathfinder.Tactics
             return BurstRules.Judge(plan.AvoidFriendlyFire, newAllies, newCost, plan.Value, plan.Enemies > 0 ? enemies : 1);
         }
 
+        /// <summary>A3/A-P1: an ally's damage from this burst, estimated once per watch.</summary>
+        private static float DamageTo(Entry e, UnitEntityData ally, AbilityProfile profile)
+        {
+            var cache = e.Damage ?? (e.Damage = new Dictionary<UnitEntityData, float>());
+            if (cache.TryGetValue(ally, out float damage)) return damage;
+            damage = e.Plan.Damage;
+            try { damage = CombatMath.EstimateAbilityDamage(e.Plan.Ability, profile, ally); }
+            catch { }
+            cache[ally] = damage;
+            return damage;
+        }
+
+        /// <summary>
+        /// A-P1: the units a re-check reads - in the game, alive and in combat - gathered once per frame for every watch.
+        /// </summary>
+        private static List<UnitEntityData> RosterNow()
+        {
+            int frame = Time.frameCount;
+            if (frame == s_RosterFrame) return Roster;
+            s_RosterFrame = frame;
+            Roster.Clear();
+            foreach (var u in Game.Instance.State.Units)
+            {
+                if (u == null || !u.IsInGame || u.Descriptor?.State == null || u.Descriptor.State.IsDead) continue;
+                if (!(u.CombatState?.IsInCombat ?? false)) continue;
+                Roster.Add(u);
+            }
+            return Roster;
+        }
+
         /// <summary>Where <paramref name="unit"/> will be in <paramref name="seconds"/> on its own walk, and whether it walks.</summary>
         private static Vector3 Predict(UnitEntityData unit, float seconds, out bool walking)
         {
-            var from = unit.Position;
-            var walk = TacticalEngine.WalkClaim(unit);
-            walking = walk.HasValue;
-            if (!walking) return from;
-            BurstRules.At(from.x, from.z, walk.Value.x, walk.Value.z, unit.CurrentSpeedMps, seconds, out float x, out float z);
-            return new Vector3(x, from.y, z);
+            var route = TacticalEngine.ReadRoute(unit, Route);   // ★ A-R1: along its own path
+            walking = route != null;
+            if (!walking) return unit.Position;
+            route.At(seconds, out float x, out float y, out float z);
+            return new Vector3(x, y, z);
         }
 
         /// <summary>Drops entries whose cast ended without going off, or whose burst has landed.</summary>
