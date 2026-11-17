@@ -8,7 +8,38 @@ Read [CONTRIBUTING.md](CONTRIBUTING.md) for shared branch ownership, Codex pull 
 Codex works on task branches and targets pull requests at `claude/dreamy-pasteur-b9h3rn`; Claude reviews and integrates them there.
 Keep `main` for author-authorized releases. Read [AGENTS.md](AGENTS.md) when coordinating agent work.
 
-**Current handover (17 November 2026, Claude): F3 on `claude/cleanse-horizon`, stacked on the burst follow-ups (draft PR
+**Current handover (17 November 2026, Codex): critical review of draft PRs #86–89 on
+`codex/review-86-89`, stacked on #89 `32943a6`. Nothing merged or played.** Read
+[docs/REVIEW_86_89.md](docs/REVIEW_86_89.md), `docs/TACTICAL_AI.md` §198,
+[checks](docs/competence/REVIEW_86_89_CHECKS.json) and
+[compiler/reference provenance](docs/competence/REVIEW_86_89_BUILD_PROVENANCE.json).
+
+- **F2 corrections:** match each pending native hand/iterative to the cached routine; read an issued command's actual
+  animation window and adjacent selected/released sequence flags; do not infer a sequence from its table. Respect cheap
+  native readiness gates and overlapping cooldown/approach, per-hand delivery and the issued approach radius. No RNG,
+  native command execution, reservation or commitment change.
+- **Burst corrections:** match ABPath/XPath's original request; trim the forecast at the full native approach distance
+  with native height handling; revalidate retained roster references. Future LOS and repaths are not proved. No movement
+  order, path search, retreat or stuck-policy change.
+- **F1/F3:** remove unsupported range slack and qualify the incomplete engagement proof; a known expired suppressed
+  debuff/horizon wins over unknown suppression. Ordinary F3 relative normalization stays unchanged.
+- **Open decisions:** R1 origin-aware 3D/LOS/concealment quotes and cache identity remain high priority; watch overflow
+  can still remove TB landing metadata or bypass new pending-danger registration. Cached ally effects/freshness,
+  candidate-time control preparation, animation/projectile timing and relative cleanse valuation have explicit
+  proposals in the review. Do not label them fixed or silently broaden movement/commitment policy.
+- **Checked source `f0b6097`**, startup MVID **`0c600255-e6b8-4788-a5bc-4e0a9ad5f7e9`**. Release **0 warnings/errors**, **1,044 unit**,
+  **27/18/3 scripts**, audit **A61/B48/C35/D34**, native **98/14/10** with Psionics, Magus **44** pass. All unrelated
+  report rows, both **8,709/15,494** Fusion matrices and full summon-kit detail equal untouched #89 on identical inputs.
+  **7 added / 3 removed signatures**, all resolved. Full corpus **45,248**, no prerequisite skips; raw Achaekek enum
+  mismatch retained as an expected negative input test. SDK **8.0.426 / Roslyn 4.11**, 28 reference hashes recorded.
+- **One package to play:** [review2](test-builds/AI-Control-FACC-v0.3.60-dev-review2-f0b6097-UMM-test.zip), UMM **0.3.60**,
+  SHA-256 `3e8e46b97994ad21281e7e06ef67096a4b21021a13689284316f75ee7bad9b4b`; identity/checksum sidecars. Frozen checked DLL across later docs commits. This replaces cleanse1
+  as the next test, not a stable release. Follow the review's TB/RT replay; send **Log.txt + combatLog.txt**, startup
+  module and spawn/rest/manual-order context.
+- Draft correction PR targets **development**, merge only after author clearance and **#81 → #82 → #83 → #84 → #85 →
+  #86 → #87 → #88 → #89**. No merge, Claude-branch/development/main push, tag or release; no PR polling/reminders.
+
+**Earlier handover (17 November 2026, Claude): F3 on `claude/cleanse-horizon`, stacked on the burst follow-ups (draft PR
 #88) → F2 (#87) → F1 (#86) → #85 → #81, all unmerged. Not played.** Read [docs/CLEANSE_HORIZON.md](docs/CLEANSE_HORIZON.md),
 `docs/TACTICAL_AI.md` §197, the [receipt](docs/competence/CLEANSE_F3_CHECKS.json) and
 [provenance](docs/competence/CLEANSE_F3_BUILD_PROVENANCE.json). Both modes, valuation only.

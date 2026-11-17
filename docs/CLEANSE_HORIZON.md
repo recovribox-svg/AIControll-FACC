@@ -1,5 +1,11 @@
 # A suppressed debuff's cleanse, valued within the fight horizon (review follow-up F3)
 
+**Codex review correction (17 November 2026):** known zero/negative life or horizon now wins over an unknown
+suppression time for a suppressed buff. Positive-life unknowns and unsuppressed legacy value remain unchanged. This
+relative share is not an absolute-active-time equivalent of DispelValue; that larger normalization is a design choice.
+See [REVIEW_86_89.md](REVIEW_86_89.md) (F3-D1/R7). **Review2 replaces cleanse1 as the package to play**; historical
+receipts below remain unchanged.
+
 17 November 2026, Claude. This is follow-up F3 of [REVIEW_FOLLOWUPS_PLAN.md](REVIEW_FOLLOWUPS_PLAN.md). It answers C-R1
 in [REVIEW_81_84.md](REVIEW_81_84.md). Both modes, valuation only. The author asked for it on 17 November.
 
