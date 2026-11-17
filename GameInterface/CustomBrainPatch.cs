@@ -325,18 +325,22 @@ namespace CompanionAI_Pathfinder.GameInterface
                 waited = s_EndWaited;
                 var mount = turn.Mount;
                 bool projectile = Game.Instance.ProjectileController.HasLaunchedProjectile(rider.Descriptor, mount?.Descriptor);
+                // ★ burst aim (A5, author-approved): the unit's own delayed burst has gone off and not landed yet (Explosive
+                // Runes waits 2 s, AbilityDeliverDelay). The next unit's turn would start before it lands.
+                bool burst = Tactics.BurstWatch.PendingLanding(rider);
                 bool gettingUp = rider.View?.IsGetUp ?? false;
                 bool moving = (rider.View?.AgentASP?.IsReallyMoving ?? false) || (mount?.View?.AgentASP?.IsReallyMoving ?? false);
-                if (projectile || gettingUp || moving) s_EndIdle = 0f;
+                if (projectile || burst || gettingUp || moving) s_EndIdle = 0f;
                 else s_EndIdle += dt;
                 float pause = 0.2f / Math.Max(0.01f, Game.Instance.Player.UISettings.TimeScaleAverage) * time.PlayerTimeScale * time.DebugTimeScale;
-                if (!projectile && !gettingUp && s_EndIdle > Math.Max(pause, time.DeltaTime)) return true;
+                if (!projectile && !burst && !gettingUp && s_EndIdle > Math.Max(pause, time.DeltaTime)) return true;
                 if (s_EndWaited <= MaxTurnEndWait) return false;
                 if (!s_EndCapLogged)
                 {
                     s_EndCapLogged = true;
                     Main.Log($"[TurnTick] {rider.CharacterName}: turn ended after {MaxTurnEndWait:0} s although " +
-                             (projectile ? "a projectile is still in flight" : gettingUp ? "it is still getting up" : "it is still moving"));
+                             (projectile ? "a projectile is still in flight" : burst ? "its burst has not landed yet" :
+                              gettingUp ? "it is still getting up" : "it is still moving"));
                 }
                 return true;
             }
@@ -478,6 +482,7 @@ namespace CompanionAI_Pathfinder.GameInterface
             SummonTurnBridge.Reset();
             SummonControl.NewFight();
             Analysis.AoeDangerAnalyzer.ClearPending();
+            Tactics.BurstWatch.Clear();   // ★ burst aim
             CompanionAI_Pathfinder.Analysis.AbilityClassifier.ResetCombatReports();
             Tactics.CoverageReport.NewFight();
         }

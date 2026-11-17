@@ -302,6 +302,17 @@ namespace CompanionAI_Pathfinder.GameInterface
                 // ★ v0.3.21: Wrath Tactics first - a unit with a command starts a new handoff when it is idle again.
                 if (_wrathHandoff.Count > 0) NoteCommandForHandoff(unit, unitName);
 
+                // ★ burst aim (A3, author-approved): a ground-aimed burst whose landing spot now catches an ally the decision
+                // did not count, or no enemy any more, is cancelled before its cast goes off - nothing is spent before then
+                // (UnitUseAbility.OnAction, UnitCommandController) - and the unit decides again (Tactics.BurstWatch).
+                if (!legacy && Tactics.BurstWatch.ShouldCancel(unit, out var burstCommand, out string burstWhy))
+                {
+                    Main.Log($"[Burst] {unitName}: {burstWhy} - deciding again");
+                    burstCommand.Interrupt();
+                    _lastDecisionTime[unitId] = currentTime;
+                    return;
+                }
+
                 // ★ v0.3.14 (test5): a command chosen at full health that has not started yet (still walking to its target,
                 // waiting for a cooldown) is dropped when the unit has since lost a lot of HP, so the engine can heal or
                 // withdraw now. Seelah went from 100 % to 9 % while a Smite Evil waited 5 s to start.

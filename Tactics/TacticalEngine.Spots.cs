@@ -51,7 +51,7 @@ namespace CompanionAI_Pathfinder.Tactics
         /// its target by the game's own test (UnitCommand.IsUnitCloseEnough) - a walk to a spot, or to a target it stops
         /// short of by the command's approach radius, on the straight line (SpotRules.WalkEnd). Null when it is not walking.
         /// </summary>
-        private static Vector3? WalkClaim(UnitEntityData ally)
+        internal static Vector3? WalkClaim(UnitEntityData ally)
         {
             try
             {

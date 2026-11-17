@@ -268,6 +268,11 @@ namespace ProfileAudit
             foreach (var line in fusionPoolLines) Console.WriteLine(line);
             File.WriteAllText(output, string.Join(Environment.NewLine, fusionPoolLines) + Environment.NewLine + File.ReadAllText(output));
             blocklistFailures += fusionPoolFailures;
+            // ★ burst aim: delayed bursts aimed at the ground where their anchor will be (docs/BURST_AIM_AND_TACTICS_PLAN.md §3).
+            var burstLines = BurstAimCheck.Run(loaded.Values, out int burstFailures);
+            foreach (var line in burstLines) Console.WriteLine(line);
+            File.WriteAllText(output, string.Join(Environment.NewLine, burstLines) + Environment.NewLine + File.ReadAllText(output));
+            blocklistFailures += burstFailures;
             // ★ G1: a grapple a weapon hit starts - native contracts, the grab reader on real blueprints, compiled routes.
             var grappleLines = GrappleCheck.Run(loaded.Values, out int grappleFailures);
             foreach (var line in grappleLines) Console.WriteLine(line);

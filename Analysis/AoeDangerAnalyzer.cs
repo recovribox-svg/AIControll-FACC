@@ -256,10 +256,10 @@ namespace CompanionAI_Pathfinder.Analysis
             {
                 // The save is not known yet: half the danger and half a stop chance, as for an even save.
                 worst = pending.Danger * 0.5f;
-                name = pending.Name + " (being cast)";
+                name = pending.Name + (pending.Burst ? " (about to land)" : " (being cast)");
                 Vector3 end = to - pending.Point; end.y = 0f;
                 endsInside = end.magnitude <= pending.Radius + unit.Corpulence;
-                roundsLeft = 10f;
+                roundsLeft = pending.Burst ? 1f : 10f;   // ★ burst aim: a burst strikes once
                 movementOnly = pending.MovementOnly;
                 affectChance = 0.5f;
                 if (pending.MovementOnly) stopChance = 1f - (1f - stopChance) * 0.5f;
@@ -363,6 +363,9 @@ namespace CompanionAI_Pathfinder.Analysis
             public bool MovementOnly;
             public Kingmaker.UnitLogic.Commands.Base.UnitCommand Command;
             public double Until;
+            /// <summary>★ burst aim: a burst that lands after its cast goes off - kept until it lands, not until the
+            /// command ends (TacticalEngine.Burst.cs, BurstWatch); it strikes once.</summary>
+            public bool Burst;
         }
 
         private static readonly List<PendingArea> Pending = new List<PendingArea>();
@@ -380,6 +383,38 @@ namespace CompanionAI_Pathfinder.Analysis
                 Danger = Math.Max(0.3f, (damaging ? 0.6f : 0f) + (controls ? 0.4f : 0f)),
                 MovementOnly = movementOnly && !damaging
             });
+        }
+
+        /// <summary>
+        /// ★ burst aim (A4, author-approved): a burst an AI unit has been ordered to cast, which can hurt allies and lands
+        /// <paramref name="seconds"/> from now at <paramref name="point"/> (its walk, cast, delay and flight). The other AI
+        /// units' walks price it as an area about to land (PendingOnWay) until it has landed. Real time only.
+        /// </summary>
+        public static void RegisterPendingBurst(Vector3 point, float radius, string name, bool damaging, bool controls,
+                                                Kingmaker.UnitLogic.Commands.Base.UnitCommand command, float seconds)
+        {
+            if (command == null || radius <= 0f || CombatController.IsInTurnBasedCombat()) return;
+            Prune();
+            float keep = Math.Min(CompanionAI_Pathfinder.Tactics.BurstRules.MaxPendingSeconds,
+                                  Math.Max(0f, seconds) + CompanionAI_Pathfinder.Tactics.BurstRules.LandingMarginSeconds);
+            Pending.Add(new PendingArea
+            {
+                Point = point, Radius = radius, Name = name, Command = command, Until = Now + keep, Burst = true,
+                Danger = Math.Max(0.3f, (damaging ? 0.6f : 0f) + (controls ? 0.4f : 0f)), MovementOnly = false
+            });
+        }
+
+        /// <summary>★ burst aim: the burst of <paramref name="command"/> went off and lands <paramref name="seconds"/> from now.</summary>
+        /// <returns>False when no pending burst of <paramref name="command"/> is kept any more (the caller registers it again).</returns>
+        public static bool PendingBurstLandsIn(Kingmaker.UnitLogic.Commands.Base.UnitCommand command, float seconds)
+        {
+            if (command == null) return true;
+            double until = Now + Math.Min(CompanionAI_Pathfinder.Tactics.BurstRules.MaxPendingSeconds,
+                                          Math.Max(0f, seconds) + CompanionAI_Pathfinder.Tactics.BurstRules.LandingMarginSeconds);
+            bool found = false;
+            foreach (var p in Pending)
+                if (p.Burst && ReferenceEquals(p.Command, command)) { p.Until = until; found = true; }
+            return found;
         }
 
         public static void ClearPending() => Pending.Clear();
@@ -416,7 +451,9 @@ namespace CompanionAI_Pathfinder.Analysis
         private static void Prune()
         {
             double now = Now;
-            Pending.RemoveAll(p => p.Command == null || p.Command.IsFinished || now > p.Until);
+            // ★ burst aim: a burst's command ends when it goes off; its burst stays pending until it lands. One that ended
+            // without going off (cancelled, failed) is dropped.
+            Pending.RemoveAll(p => p.Command == null || now > p.Until || p.Command.IsFinished && !(p.Burst && p.Command.IsActed));
         }
 
         /// <summary>The pending area <paramref name="from"/> → <paramref name="to"/> walks into (real time), or null.</summary>
