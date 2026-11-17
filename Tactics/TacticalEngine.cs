@@ -2736,6 +2736,8 @@ namespace CompanionAI_Pathfinder.Tactics
                         // ★ cast disruption (real time): its first attacks may break the enemy's cast (TacticalEngine.Disrupt.cs).
                         fullValue += WeaponDisruptBonus(ctx, enemy, full, true,
                             fiveFootReach ? BurstRules.WalkSeconds(dist, reach, unit.CurrentSpeedMps) : 0f, out string fullDisruptTag);
+                        // ★ sneak attack (slice D2): as the target's second engager it is flanked for the other one too.
+                        fullValue += FlankPartnerBonus(enemy, full, out string fullFlankTag) * weight;
                         // After a 5-foot step the unit shoots from about 1.5 m nearer its target; priced where it stands.
                         var provoke = shotProvokes ? AttackRollProvokeRisk(ctx, unit.Position, full.Attacks) : null;
                         if (provoke != null) fullValue = fullValue * (1f - provoke.StopChance) - provoke.Cost;
@@ -2754,7 +2756,7 @@ namespace CompanionAI_Pathfinder.Tactics
                             Value = fullValue,
                             ModeFactor = weight * (fiveFootReach ? 0.95f : 1f) * WakeFactor(enemy, full.ExpectedDamage) * (1f - (provoke?.StopChance ?? 0f)) *
                                          (1f - (stepRisk?.StopChance ?? 0f)),
-                            Label = $"FullAttack({full.Attacks})->{enemy.CharacterName}{(fiveFootReach ? "+5ft" : "")}{ProvokeTag(provoke)}{stepRisk?.Tag}{fullCarnageTag}{fullDisruptTag}",
+                            Label = $"FullAttack({full.Attacks})->{enemy.CharacterName}{(fiveFootReach ? "+5ft" : "")}{ProvokeTag(provoke)}{stepRisk?.Tag}{fullCarnageTag}{fullDisruptTag}{fullFlankTag}",
                             Key = $"full:{enemy.UniqueId}",
                             CheckPath = fiveFootReach && stepRisk?.Area == null
                         });
@@ -2769,6 +2771,7 @@ namespace CompanionAI_Pathfinder.Tactics
                     float singleCarnage = KillDisplayCredit(killDisplay, enemy, single, unit.Position, out string singleCarnageTag);
                     float singleValue = (DamageValue(enemy, single) + singleCarnage) * weight * WakeFactor(enemy, single.ExpectedDamage);
                     singleValue += WeaponDisruptBonus(ctx, enemy, single, false, 0f, out string singleDisruptTag);   // ★ cast disruption
+                    singleValue += FlankPartnerBonus(enemy, single, out string singleFlankTag) * weight;               // ★ slice D2
                     if (provoke != null) singleValue = singleValue * (1f - provoke.StopChance) - provoke.Cost;
                     list.Add(new Candidate
                     {
@@ -2778,7 +2781,7 @@ namespace CompanionAI_Pathfinder.Tactics
                         Target = enemy,
                         Value = singleValue,
                         ModeFactor = weight * WakeFactor(enemy, single.ExpectedDamage) * (1f - (provoke?.StopChance ?? 0f)),
-                        Label = $"Attack->{enemy.CharacterName}{ProvokeTag(provoke)}{singleCarnageTag}{singleDisruptTag}",
+                        Label = $"Attack->{enemy.CharacterName}{ProvokeTag(provoke)}{singleCarnageTag}{singleDisruptTag}{singleFlankTag}",
                         Key = $"atk:{enemy.UniqueId}"
                     });
                 }
@@ -2788,8 +2791,9 @@ namespace CompanionAI_Pathfinder.Tactics
                     // ★ cast disruption (real time): a walk and one attack can still break a long cast.
                     value += WeaponDisruptBonus(ctx, enemy, single, false, BurstRules.WalkSeconds(dist, reach, unit.CurrentSpeedMps),
                                                 out string moveDisruptTag);
+                    value += FlankPartnerBonus(enemy, single, out string moveFlankTag) * weight * 0.9f;   // ★ slice D2
                     float preRisk = value;
-                    string label = $"Move+Attack->{enemy.CharacterName}{moveDisruptTag}";
+                    string label = $"Move+Attack->{enemy.CharacterName}{moveDisruptTag}{moveFlankTag}";
                     // ★ v0.3.13: walking out of an enemy's reach provokes (melee and ranged alike).
                     // ★ v0.3.17: around a harmful area when the straight approach walks into it (PlanApproach).
                     var approach = PlanApproach(ctx, enemy, reach);

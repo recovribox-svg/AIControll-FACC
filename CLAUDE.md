@@ -8,7 +8,20 @@ Read [CONTRIBUTING.md](CONTRIBUTING.md) for shared branch ownership, Codex pull 
 Codex works on task branches and targets pull requests at `claude/dreamy-pasteur-b9h3rn`; Claude reviews and integrates them there.
 Keep `main` for author-authorized releases. Read [AGENTS.md](AGENTS.md) when coordinating agent work.
 
-**Current handover (17 November 2026, Claude): suppressed buffs, slice C, on `claude/buff-suppression`, stacked on
+**Current handover (17 November 2026, Claude): sneak attack fortification and flanking, slice D, on
+`claude/sneak-flanking`, stacked on slice C (`claude/buff-suppression`), slice B and PR #81 (slice A); no PR yet. Not
+played.** Read [docs/SNEAK_FLANKING.md](docs/SNEAK_FLANKING.md), `docs/TACTICAL_AI.md` §192 and the
+[receipt](docs/competence/SNEAK_FLANKING_CHECKS.json). Both modes, valuation only. D1: one fortification roll negates
+sneak dice, a confirmed critical and a precise strike (`RuleAttackRoll`); attack lines, critical chances, attack-roll
+abilities and archer blast modes pass `1 − chance / 100`. D2: native flanking counts engagers, not positions; a melee
+attack makes its attacker an engager, so routines are priced flanked (+2, sneak) when one other unit counts as engaging
+the target by the mode's rule, and an attack that creates the flank adds the other engager's round of gain
+(`[flanks with <ally> +N]`). Checks on `86f8e82`: Release 0 warnings/errors, 998 unit + 27/18/3 script tests,
+ProfileAudit `SNEAK` 20 (42 fortification facts) with every other line unchanged, harnesses 98/14/10, 3 added
+references. Package `test-builds/AI-Control-FACC-v0.3.60-dev-sneak1-86f8e82-UMM-test.zip`, MVID `e432cb9a` (includes
+slices A-C). The plan's four slices are done; next: the author plays the A-D replays, then PRs for B-D after PR #81.
+
+**Earlier handover (17 November 2026, Claude): suppressed buffs, slice C, on `claude/buff-suppression`, stacked on
 slice B (`claude/cast-disruption`) and PR #81 (slice A); no PR yet. Not played.** Read [docs/BUFF_SUPPRESSION.md](docs/BUFF_SUPPRESSION.md),
 `docs/TACTICAL_AI.md` §191 and the [receipt](docs/competence/BUFF_SUPPRESSION_CHECKS.json). Both modes, valuation only.
 C1: a buff the recipient's form or hex would suppress on arrival (`UnitPartBuffSuppress`: Enlarge Person or Haste on a

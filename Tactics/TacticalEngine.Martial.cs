@@ -194,7 +194,9 @@ namespace CompanionAI_Pathfinder.Tactics
             // chance) instead of min(threat, hit) (ValueModel.CritFactor, in the estimate already): the difference.
             float threat = est.FirstThreatChance;
             if (threat <= 0f) return est.ExpectedDamage;
-            return est.ExpectedDamage + p * Math.Max(0f, p - Math.Min(Mathf.Clamp01(threat), p)) * (est.CritMultiplier - 1) * est.FirstPerHit;
+            // ★ sneak attack (slice D1): the extra criticals pass the target's fortification like any other.
+            return est.ExpectedDamage + p * Math.Max(0f, p - Math.Min(Mathf.Clamp01(threat), p)) * (est.CritMultiplier - 1) * est.FirstPerHit *
+                   est.CritKeep;
         }
 
         /// <summary>

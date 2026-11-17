@@ -65,6 +65,13 @@ namespace CompanionAI_Pathfinder.Tactics
         // identities, not another cache and not a request to read or simulate the actor again.
         internal object RoutineIdentity;
         internal float RoutineLands;
+        /// <summary>★ sneak attack (slice D2): this attack makes the target flanked, as its second engager, with
+        /// <see cref="FlankPartner"/> (the one other unit that counts as engaging it).</summary>
+        public bool FlankedBySecond;
+        public UnitEntityData FlankPartner;
+        /// <summary>★ sneak attack (slice D1): the share of critical and sneak extra the target's fortification lets
+        /// through (1 without fortification).</summary>
+        public float CritKeep = 1f;
         /// <summary>★ G1: chance a hit of this routine starts a grapple (Grabber and its kin: the rest of the routine is
         /// then lost), 0 without a recognised grab. <see cref="Grapple"/> holds what that grapple would do.</summary>
         public float GrappleChance;
@@ -249,6 +256,9 @@ namespace CompanionAI_Pathfinder.Tactics
             public float ThreatChance;
             public int CritMultiplier;
             public bool EndsRegeneration;
+            /// <summary>★ sneak attack (slice D1): the share of sneak and critical extra damage the target's fortification
+            /// lets through (SneakRules.FortificationKeep).</summary>
+            public float Keep = 1f;
         }
 
         private sealed class AttackRoutine
@@ -258,6 +268,10 @@ namespace CompanionAI_Pathfinder.Tactics
             public ItemEntityWeapon FirstWeapon;
             public float Reach;
             public readonly List<AttackLine> Lines = new List<AttackLine>();
+            /// <summary>★ sneak attack (slice D2): the target is flanked when the routine lands; newly, by this attacker
+            /// becoming the second engager, with the one other engager.</summary>
+            public bool Flanked, FlankedBySecond;
+            public UnitEntityData FlankPartner;
         }
 
         /// <summary>Attack routines read this frame: the attack-mode variants of one attack reuse the rules' results.</summary>
@@ -286,6 +300,8 @@ namespace CompanionAI_Pathfinder.Tactics
             float lands = LandsPastDefences(unit, target);
             result.RoutineIdentity = routine;
             result.RoutineLands = lands;
+            result.FlankedBySecond = routine.FlankedBySecond;   // ★ slice D2
+            result.FlankPartner = routine.FlankPartner;
             float noHit = 1f;
             var touch = new MagusChargeChance();
             bool trackTouch = unit.Get<Kingmaker.UnitLogic.Parts.UnitPartMagus>()?.Spellstrike.Active == true;
@@ -302,7 +318,7 @@ namespace CompanionAI_Pathfinder.Tactics
                 if (grapple != null) lineDamage = PriceGrabLine(line, grapple, lineDamage, p, ref run, ref freeDamage, ref natural);
                 if (MagusMechanics.WeaponDeliversTouch(line.Weapon?.Blueprint, trackTouch, line.Weapon == unit.Body.EmptyHandWeapon))
                 {
-                    touch.Add(p, Math.Min(line.ThreatChance, p) * p);
+                    touch.Add(p, Math.Min(line.ThreatChance, p) * p * line.Keep);   // ★ slice D1: fortification
                 }
                 if (line.Index == 0) result.FirstHitChance = p;
                 else if (line.Index == 1) { result.SecondHitChance = p; result.SecondPerHit = perHit; }   // ★ cast disruption
@@ -312,10 +328,12 @@ namespace CompanionAI_Pathfinder.Tactics
                     result.FirstAttackBonus = line.AttackBonus + d.Key;
                     result.FirstArmorClass = line.ArmorClass;
                     result.FirstPerHit = perHit;
-                    result.FirstCritChance = Math.Min(line.ThreatChance, p) * p;     // a threat that hits, then the confirmation roll
+                    // a threat that hits, then the confirmation roll; ★ slice D1: and past the target's fortification
+                    result.FirstCritChance = Math.Min(line.ThreatChance, p) * p * line.Keep;
                     result.FirstThreatChance = line.ThreatChance;
                     result.CritMultiplier = Math.Max(1, line.CritMultiplier);
                     result.FirstPhysicalFactor = line.PhysicalFactor;
+                    result.CritKeep = line.Keep;   // ★ slice D1
                 }
                 if (line.EndsRegeneration) result.EndsRegeneration = true;
                 result.ExpectedDamage += lineDamage;
@@ -394,8 +412,15 @@ namespace CompanionAI_Pathfinder.Tactics
             var routine = new AttackRoutine { Frame = frame, Attacks = attacks.Count, FirstWeapon = attacks[0].Weapon };
             routine.Reach = UnitAttack.GetApproachRadius(routine.FirstWeapon, unit, target);
 
-            bool flanked = target.CombatState?.IsFlanked ?? false;
+            // ★ sneak attack (slice D2): native flanking counts engagers, not positions. A melee attack makes this unit an
+            // engager, so the target is flanked when it lands if one other unit counts as engaging it (CombatMath.Flanking.cs).
+            bool flanked = PredictFlank(unit, target, routine.FirstWeapon, out bool bySecond, out var partner);
+            routine.Flanked = flanked;
+            routine.FlankedBySecond = bySecond;
+            routine.FlankPartner = partner;
             int sneakDice = SafeStat(unit.Stats.SneakAttack);
+            // ★ sneak attack (slice D1): one fortification read per routine (per target and frame).
+            float keep = SneakRules.FortificationKeep(FortificationChance(target));
 
             for (int i = 0; i < attacks.Count; i++)
             {
@@ -438,7 +463,8 @@ namespace CompanionAI_Pathfinder.Tactics
                                            EndsRegenerationOf(target, stats.DamageDescription.Select(x => x.TypeDescription),
                                                               stats.EnhancementTotal > 0 || weapon.EnchantmentValue > 0, WeaponAlignments(weapon)),
                         Sneak = sneakDice > 0 && (flanked || acRule.IsTargetFlatFooted) && !ImmuneToPrecision(target)
-                            ? 3.5f * sneakDice * (hit.Read ? hit.PhysicalFactor : 1f) : 0f
+                            ? 3.5f * sneakDice * (hit.Read ? hit.PhysicalFactor : 1f) : 0f,
+                        Keep = keep
                     });
                 }
                 catch (Exception ex)
@@ -807,6 +833,7 @@ namespace CompanionAI_Pathfinder.Tactics
                     if (action is ContextActionDealDamage dmg && !dmg.IgnoreCritical) { any = true; break; }
                 if (any && CritParts(caster, ability, target, out float threat, out int multiplier))
                     factor = ValueModel.CritFactor(threat, SpellAttackHitChance(caster, target, ability), multiplier);
+                factor = FortifiedCritFactor(factor, target);   // ★ sneak attack (slice D1)
             }
             catch (Exception ex)
             {

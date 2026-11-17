@@ -18,6 +18,7 @@
     <Compile Include="..\..\Tactics\SpotRules.cs" Link="SpotRules.cs" />
     <Compile Include="..\..\Tactics\BurstRules.cs" Link="BurstRules.cs" />
     <Compile Include="..\..\Tactics\DisruptRules.cs" Link="DisruptRules.cs" />
+    <Compile Include="..\..\Tactics\SneakRules.cs" Link="SneakRules.cs" />
     <Compile Include="..\..\Tactics\SuppressionRules.cs" Link="SuppressionRules.cs" />
     <Compile Include="..\..\Tactics\ValueModel.cs" Link="ValueModel.cs" />
     <Compile Include="..\..\Tactics\ValueModel.Fusion.cs" Link="ValueModel.Fusion.cs" />

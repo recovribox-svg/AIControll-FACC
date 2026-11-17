@@ -1,0 +1,30 @@
+{
+  "build_label": "sneak1",
+  "kind": "development-test",
+  "version": "0.3.60",
+  "source_branch": "claude/sneak-flanking",
+  "source_commit": "86f8e82ba1dd01868a977841b1b4db1faed0ea6c",
+  "stacked_on": "claude/buff-suppression 755ba56 (slice C), on claude/cast-disruption (slice B) and claude/burst-ground-aim (PR #81)",
+  "development_base": "ad63ee8690ad47e74bfad54ba65c13810e4b5316",
+  "dll": {
+    "assembly": "CompanionAI_Pathfinder, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null",
+    "mvid": "e432cb9a-6656-4b8c-9789-28d8c3a4e4dd",
+    "sha256": "99a7ee08bb1c00541423c267e8590b8a10076da74f5cdaa7cc12ce434b547c73",
+    "size": 1512448
+  },
+  "archive": "AI-Control-FACC-v0.3.60-dev-sneak1-86f8e82-UMM-test.zip",
+  "zip_sha256": "a8beb2ae513c2de7da7d4037d4932ade7c1c14972a1aa8bc3d72fdddbe89eae9",
+  "manifest_sha256": "63ad9f152d4bacb44f021428193efad46aaf0d13380bb5691ebca1d935f2b5bf",
+  "checks_receipt": "docs/competence/SNEAK_FLANKING_CHECKS.json",
+  "toolchain": {
+    "dotnet_sdk": "8.0.428",
+    "csharp_compiler": "4.11.0-3.25569.22 (3fb752d4)"
+  },
+  "scope": "Slices A, B and C plus slice D: fortification against sneak attack and criticals; the flanking a second engager creates.",
+  "gameplay_status": "unplayed",
+  "archive_contents": [
+    "CompanionAI_Pathfinder.dll",
+    "Info.json"
+  ],
+  "release": false
+}

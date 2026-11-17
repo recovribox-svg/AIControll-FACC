@@ -24,7 +24,7 @@ namespace ProfileAudit
         private const BindingFlags Hidden = BindingFlags.Static | BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic |
                                             BindingFlags.DeclaredOnly;
 
-        private static MethodInfo Method(Type type, string name, params Type[] args)
+        internal static MethodInfo Method(Type type, string name, params Type[] args)
         {
             var found = type.GetMethods(Hidden).Where(m => m.Name == name &&
                             (args.Length == 0 || m.GetParameters().Select(p => p.ParameterType).SequenceEqual(args))).ToList();
@@ -35,7 +35,7 @@ namespace ProfileAudit
         private static List<MemberInfo> Body(MethodBase method) => SaveBoostCheck.ReferencedMembers(method).ToList();
 
         /// <summary>A method's body and the bodies of its lambdas and local functions (compiler-generated, named after it).</summary>
-        private static List<MemberInfo> BodyWithLambdas(Type type, string name)
+        internal static List<MemberInfo> BodyWithLambdas(Type type, string name)
         {
             var members = Body(Method(type, name));
             string prefix = "<" + name + ">";

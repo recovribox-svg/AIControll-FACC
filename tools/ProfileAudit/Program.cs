@@ -283,6 +283,11 @@ namespace ProfileAudit
             foreach (var line in suppressLines) Console.WriteLine(line);
             File.WriteAllText(output, string.Join(Environment.NewLine, suppressLines) + Environment.NewLine + File.ReadAllText(output));
             blocklistFailures += suppressFailures;
+            // ★ sneak attack: fortification and the flanking a second engager creates (plan §6).
+            var sneakLines = SneakCheck.Run(loaded.Values, out int sneakFailures);
+            foreach (var line in sneakLines) Console.WriteLine(line);
+            File.WriteAllText(output, string.Join(Environment.NewLine, sneakLines) + Environment.NewLine + File.ReadAllText(output));
+            blocklistFailures += sneakFailures;
             // ★ G1: a grapple a weapon hit starts - native contracts, the grab reader on real blueprints, compiled routes.
             var grappleLines = GrappleCheck.Run(loaded.Values, out int grappleFailures);
             foreach (var line in grappleLines) Console.WriteLine(line);

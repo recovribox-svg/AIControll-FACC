@@ -1,0 +1,58 @@
+{
+  "task": "Sneak attack refinements, slice D of docs/BURST_AIM_AND_TACTICS_PLAN.md (both modes, valuation only)",
+  "date": "2026-11-17",
+  "author": "Claude",
+  "branch": "claude/sneak-flanking",
+  "stacked_on": "claude/buff-suppression (slice C), on claude/cast-disruption (slice B) and PR #81 (claude/burst-ground-aim)",
+  "checked_source": "86f8e82ba1dd01868a977841b1b4db1faed0ea6c",
+  "development_base": "ad63ee8690ad47e74bfad54ba65c13810e4b5316",
+  "toolchain": {
+    "dotnet_sdk": "8.0.428",
+    "csharp_compiler": "4.11.0-3.25569.22 (3fb752d4)",
+    "references": "real game Wrath_Data/Managed, supplied UnityModManager 0.33.2.0"
+  },
+  "release_build": "0 warnings, 0 errors",
+  "unit_tests": "998 pass (16 new: SneakRulesTests)",
+  "script_tests": {
+    "BlueprintInventory": 27,
+    "InvocationLedger": 18,
+    "ProfileAudit supplement": 3
+  },
+  "profileaudit": {
+    "exit": 0,
+    "sneak": "20 checks, 0 failures",
+    "exports": "42 fortification facts (40 fixed: 25% x11, 50% x15, 60% x1, 75% x10, 100% x3; 2 by context value); 44 precision-immunity facts",
+    "buff_suppress": "25 checks, 0 failures",
+    "cast_disrupt": "15 checks, 0 failures",
+    "burst_aim": "28 checks, 0 failures",
+    "other_lines": "identical to slice C's run on the same inputs (path lines and the new section excluded)",
+    "fusion_coverage": "byte-identical; 8,709 / 15,494 admitted",
+    "summon_kit_detail": "byte-identical",
+    "report_sha256": "b4b4f6325621e615f2ca6a8445d5a2de640fe48a19b479b374e607140c729c30"
+  },
+  "native_harnesses": {
+    "ToggleCosts": 98,
+    "TomeBurn": 14,
+    "ToyBoxSpend": 10
+  },
+  "added_game_references": {
+    "relative_to": "slice C (3e70345)",
+    "count": 3,
+    "members": [
+      "UnitHelper.GetThreatRange",
+      "UnitCommands.AnyCommandTargets",
+      "UnitPartFortification.get_Value"
+    ],
+    "removed": 0,
+    "resolve": "yes: the audit resolves each from the mod's compiled methods against the real assembly"
+  },
+  "package": {
+    "zip": "test-builds/AI-Control-FACC-v0.3.60-dev-sneak1-86f8e82-UMM-test.zip",
+    "identity": "test-builds/AI-Control-FACC-v0.3.60-dev-sneak1-86f8e82-UMM-test.identity.json"
+  },
+  "manifest": "0.3.60, unchanged; no main, tag or release change",
+  "not_tested": [
+    "Gameplay: unplayed. Offline checks run no actor, engagement, attack roll or Unity timing.",
+    "The engagement prediction assumes a melee attacker is in its threat hand's reach and has sight when it attacks."
+  ]
+}

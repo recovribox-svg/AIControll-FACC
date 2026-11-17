@@ -1,0 +1,65 @@
+using CompanionAI_Pathfinder.Tactics;
+using Xunit;
+
+namespace CompanionAI.Tests
+{
+    // ★ sneak attack refinements: fortification and the flanking a second attacker creates (docs/BURST_AIM_AND_TACTICS_PLAN.md §6).
+    public class SneakRulesTests
+    {
+        [Theory]
+        [InlineData(0, 1f)]
+        [InlineData(25, 0.75f)]     // light fortification
+        [InlineData(75, 0.25f)]     // heavy fortification
+        [InlineData(100, 0f)]
+        [InlineData(150, 0f)]       // clamped
+        [InlineData(-10, 1f)]
+        public void FortificationKeepsTheRestOfTheRoll(int chance, float keep)
+        {
+            Assert.Equal(keep, SneakRules.FortificationKeep(chance), 4);
+        }
+
+        [Fact]
+        public void FortificationTakesSneakAndCriticalButNotTheHit()
+        {
+            // 60 % to hit for 10, 7 sneak per hit, 2 critical extra in expectation
+            Assert.Equal(0.6f * 10f + 0.6f * 7f + 2f, SneakRules.LineDamage(0.6f, 10f, 7f, 2f, 1f), 4);
+            Assert.Equal(0.6f * 10f + 0.25f * (0.6f * 7f + 2f), SneakRules.LineDamage(0.6f, 10f, 7f, 2f, 0.25f), 4);
+            Assert.Equal(0.6f * 10f, SneakRules.LineDamage(0.6f, 10f, 7f, 2f, 0f), 4);
+        }
+
+        [Theory]
+        // native flanked, cannot be flanked, attacker engages, other engagers -> flanked when the attack lands
+        [InlineData(true, false, false, 0, true)]      // flanked already
+        [InlineData(false, false, true, 1, true)]      // the second engager
+        [InlineData(false, false, true, 2, true)]
+        [InlineData(false, false, true, 0, false)]     // the only engager
+        [InlineData(false, false, false, 1, false)]    // a ranged attack does not engage
+        [InlineData(false, true, true, 3, false)]      // CannotBeFlanked
+        [InlineData(true, true, false, 0, false)]
+        public void FlankingCountsEngagersNotPositions(bool native, bool cannot, bool engages, int others, bool expected)
+        {
+            Assert.Equal(expected, SneakRules.PredictsFlank(native, cannot, engages, others));
+        }
+
+        [Fact]
+        public void APartnerGainsTheFlankingBonusAndItsSneakDice()
+        {
+            // 50 % to hit, 60 % flanked (+2), 12 per hit, 10.5 new sneak (3d6), no fortification
+            Assert.Equal(0.1f * 12f + 0.6f * 10.5f, SneakRules.PartnerLineGain(0.5f, 0.6f, 12f, 10.5f, 1f), 4);
+            // heavy fortification keeps a quarter of the sneak dice, all of the extra hits
+            Assert.Equal(0.1f * 12f + 0.6f * 10.5f * 0.25f, SneakRules.PartnerLineGain(0.5f, 0.6f, 12f, 10.5f, 0.25f), 4);
+            // no sneak dice: only the bonus; already sneaking: newSneak 0
+            Assert.Equal(0.1f * 12f, SneakRules.PartnerLineGain(0.5f, 0.6f, 12f, 0f, 1f), 4);
+            // a ranged line (no bonus) gains only the sneak dice
+            Assert.Equal(0.5f * 10.5f, SneakRules.PartnerLineGain(0.5f, 0.5f, 12f, 10.5f, 1f), 4);
+        }
+
+        [Fact]
+        public void BadInputsGainNothingNegative()
+        {
+            Assert.Equal(0f, SneakRules.PartnerLineGain(0.6f, 0.5f, 12f, 0f, 1f), 4);     // never a loss
+            Assert.Equal(0f, SneakRules.PartnerLineGain(0.5f, 0.5f, -3f, -2f, 1f), 4);
+            Assert.Equal(SneakRules.FlankingBonus, 2);
+        }
+    }
+}

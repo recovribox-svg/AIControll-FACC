@@ -797,6 +797,8 @@ namespace CompanionAI_Pathfinder.Tactics
             // Spell resistance, a shadow's share, the save: the rest of the blast's chance, which no mode changes.
             float rest = CombatMath.EffectChance(unit, target, c.Ability, profile, damage: true) / pNow;
             bool crits = CombatMath.CritParts(unit, c.Ability, target, out float threat, out int multiplier);
+            // ★ sneak attack (slice D1): a confirmed critical passes the target's fortification roll first (read once).
+            float critKeep = crits ? SneakRules.FortificationKeep(CombatMath.FortificationChance(target)) : 1f;
             float scale = DamageObserver.BlastFactor(unit, c.Ability.Blueprint);
             bool endsRegeneration = CombatMath.AbilityEndsRegeneration(profile, target);
             float weight = RoleWeight(ctx, "damage");
@@ -807,7 +809,7 @@ namespace CompanionAI_Pathfinder.Tactics
                 foreach (var m in set) { dab += m.Attack(bow, false); ddmg += m.Damage(bow); }
                 float p = Mathf.Clamp(CombatMath.HitProbability(ab + dab, ac), 0.05f, 0.95f) * lands;
                 float raw = CombatMath.EstimateAbilityDamageRaw(c.Ability, profile, target, null, extraWeaponDamage: ddmg);
-                float perHit = raw * scale * (crits ? ValueModel.CritFactor(threat, p, multiplier) : 1f);
+                float perHit = raw * scale * (crits ? 1f + (ValueModel.CritFactor(threat, p, multiplier) - 1f) * critKeep : 1f);
                 float land = p * rest;
                 float expected = perHit * land;
                 return DamageValue(target, expected, land, endsRegeneration) * WakeFactor(target, expected) * weight;
