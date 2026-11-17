@@ -1,7 +1,8 @@
 // ★ burst aim (docs/BURST_AIM_AND_TACTICS_PLAN.md §3): bursts that land after their cast goes off are aimed at the
 // ground where their anchor will be. Native contracts on the real assembly, the A1 classification on the real
 // exported blueprints (and a fusion built on Explosive Runes), and the compiled routes of A2-A5.
-// Actor-free: no Game/Player, context, selection, command, cast or Unity timing.
+// Inert path/entity layouts and the production scalar readers are exercised; no live Game/Player, actor setup, navmesh,
+// native command/cast execution or Unity timing.
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -382,8 +383,8 @@ namespace ProfileAudit
             {
                 Check(false, $"{ex.GetType().Name}: {ex.Message}");
             }
-            lines.Insert(0, $"BURST-AIM {checks} checks, failures {bad}; native contracts, real blueprints and compiled routes; " +
-                            "no actor, selection, command, cast or Unity timing");
+            lines.Insert(0, $"BURST-AIM {checks} checks, failures {bad}; native contracts, real blueprints, production/layout fixtures and compiled routes; " +
+                            "no live actor, navmesh, native command/cast execution or Unity timing");
             failures = bad;
             return lines;
         }

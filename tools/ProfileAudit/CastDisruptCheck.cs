@@ -1,6 +1,7 @@
 // ★ cast disruption (docs/BURST_AIM_AND_TACTICS_PLAN.md §4, slice B): a hit on an enemy whose spell has not gone off forces a
 // concentration check. Native contracts on the real assembly, which real blueprints the rule covers, and the compiled
-// routes into the scoring. Actor-free: no Game/Player, context, damage, roll, command or Unity timing.
+// routes into the scoring. Inert command/routine layouts are executed; no live Game/Player, actor setup, native command
+// execution, damage, dice roll or Unity timing.
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -258,8 +259,8 @@ namespace ProfileAudit
             {
                 Check(false, $"{ex.GetType().Name}: {ex.Message}");
             }
-            lines.Insert(0, $"CAST-DISRUPT {checks} checks, failures {bad}; native contracts, real blueprints and compiled routes; " +
-                            "no actor, damage, roll, command or Unity timing");
+            lines.Insert(0, $"CAST-DISRUPT {checks} checks, failures {bad}; native contracts, real blueprints, production/layout fixtures and compiled routes; " +
+                            "no live actor, native command execution, damage, dice roll or Unity timing");
             failures = bad;
             return lines;
         }
