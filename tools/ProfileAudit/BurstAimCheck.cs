@@ -6,6 +6,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
+using System.Runtime.CompilerServices;
 using CompanionAI_Pathfinder.Tactics;
 using Kingmaker.Blueprints;
 using Kingmaker.Blueprints.Classes.Spells;
@@ -273,6 +274,33 @@ namespace ProfileAudit
                       Calls(readRoute, typeof(WalkRoute), "StopWithin") && Calls(readRoute, typeof(SpotRules), "WalkEnd") &&
                       addPath.Any(m => m.Name == "get_AgentASP") && addPath.Any(m => m.Name == "get_Path") && addPath.Contains(vectorPath),
                       "A-R1: ReadRoute follows the agent's path to the command's stop, else the straight walk");
+                // Execute the production request matcher with real ABPath/XPath layouts, without PathPool/Seeker,
+                // navmesh, commands or units. A terminal near the new aim is not proof of the old path's requested aim.
+                var pathAssembly = pathProperty.PropertyType.Assembly;
+                var abType = pathAssembly.GetType("Pathfinding.ABPath", true);
+                var xpathType = pathAssembly.GetType("Pathfinding.XPath", true);
+                var originalEnd = abType.GetField("originalEndPoint");
+                var matchPath = engine.GetMethod("NativePathMatchesAim", Hidden);
+                var aimPoint = new UnityEngine.Vector3(10f, 0f, 10f);
+                bool Matches(Type type, UnityEngine.Vector3 requested, UnityEngine.Vector3 end, float radius = 2f)
+                {
+                    var path = RuntimeHelpers.GetUninitializedObject(type);
+                    originalEnd.SetValue(path, requested);
+                    vectorPath.SetValue(path, new List<UnityEngine.Vector3> { UnityEngine.Vector3.zero, end });
+                    return (bool)matchPath.Invoke(null, new object[] { path, aimPoint, radius });
+                }
+                Check(!Matches(abType, new UnityEngine.Vector3(0f, 0f, 10f), new UnityEngine.Vector3(10f, 0f, 9f)),
+                      "an unrelated path ending inside the new command's radius cannot supply its burst forecast");
+                Check(Matches(abType, aimPoint, aimPoint), "the native ABPath with this requested endpoint is accepted");
+                Check(Matches(xpathType, aimPoint, new UnityEngine.Vector3(9f, 0f, 10f)),
+                      "an XPath may stop short while retaining the matching original endpoint");
+                Check(!Matches(abType, aimPoint, UnityEngine.Vector3.zero),
+                      "a partial terminal outside native approach distance is not treated as arrival");
+                Check(Matches(abType, aimPoint, new UnityEngine.Vector3(10f, 4f, 10f), 2.5f),
+                      "path admission uses native mechanics distance including its height rule, not an arbitrary horizontal tolerance");
+                Check(Calls(addPath, engine, "NativePathMatchesAim") &&
+                      Body(engine, "NativePathMatchesAim").Any(m => m.Name == "originalEndPoint"),
+                      "the production route validates the original path request before reading its waypoints");
                 var searches = new[] { "PathTo", "FindPath", "StartPath", "StartPathWithClerance", "Linecast", "Raycast", "HasObstacle" };
                 bool SceneUnits(MemberInfo m) => m.Name == "Units" && m.DeclaringType == typeof(Kingmaker.EntitySystem.PersistentState);
                 Check(!readRoute.Concat(addPath).Any(m => searches.Contains(m.Name) || SceneUnits(m)),
