@@ -81,6 +81,8 @@ possible there, as the dispatcher's path-end check already requires. They are no
 
 ## F2: marginal cast disruption after friendly hits already issued (B-R1, real time)
 
+**Done** on `claude/disrupt-marginal` (`bcb46df`): [DISRUPT_MARGINAL.md](DISRUPT_MARGINAL.md), [receipt](competence/DISRUPT_F2_CHECKS.json), package disrupt2 (MVID `9a4d8a66`). It also takes the second hit's timing from the native attack schedule (`UnitAttack.OnTick`: attack k at k × 6 s / N), part of B-R2.
+
 **Problem.** Each ally's attack on a casting enemy is credited with the full chance of breaking the cast, even while
 other allies' attacks on it are already under way. Breaks combine as `1 − Π(1 − p)`, so separate credits overcount.
 
