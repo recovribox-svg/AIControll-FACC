@@ -132,6 +132,11 @@ namespace ProfileAudit
                       Calls(others, typeof(UnitCommand), "get_IsStarted") && Calls(others, typeof(DisruptRules), "RunningHitSeconds") &&
                       Calls(others, typeof(DisruptRules), "InTime") && Calls(others, typeof(DisruptRules), "FailChance"),
                       "F2: allies' running or approaching attacks on the caster are read from their commands, on the same rules");
+                var chainedBody = Body(engine, "ChainedAttacks");
+                Check(Calls(chainedBody, typeof(Kingmaker.Items.ItemEntityWeapon), "GetAnimationStyle") &&
+                      chainedBody.Any(m => m.Name == "get_Sequences") && chainedBody.Any(m => m.Name == "get_AnimationSet") &&
+                      chainedBody.Any(m => m.Name == "get_AnimationManager"),
+                      "F2: bow style and animation sequences are read as the native schedule reads them (all references resolve)");
                 Check(Body(engine, "ReadCasting").Any(m => m.Name == "OthersRead"),
                       "F2: the allied hits are read again at every decision");
                 var after = engine.GetMethod("AfterOrderedHits", Hidden);
