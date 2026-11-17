@@ -1,0 +1,30 @@
+{
+  "build_label": "disrupt1",
+  "kind": "development-test",
+  "version": "0.3.60",
+  "source_branch": "claude/cast-disruption",
+  "source_commit": "6845b83cea3545d62cd667523ad3b1106a6b979f",
+  "stacked_on": "claude/burst-ground-aim 37151935ef378cc30d7373040647ed345c4ffd57 (PR #81)",
+  "development_base": "ad63ee8690ad47e74bfad54ba65c13810e4b5316",
+  "dll": {
+    "assembly": "CompanionAI_Pathfinder, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null",
+    "mvid": "549869b4-4b34-4e97-91e4-6acc4657e53d",
+    "sha256": "0e331f770fa99cb03a53d7f641ca7288e22e17c3bbedc394c827058e04f7b32b",
+    "size": 1503232
+  },
+  "archive": "AI-Control-FACC-v0.3.60-dev-disrupt1-6845b83-UMM-test.zip",
+  "zip_sha256": "fdb7977d72a9f779b7aef02606dc241ed92835bb8ba3f9fbf30cfc6daee162d7",
+  "manifest_sha256": "63ad9f152d4bacb44f021428193efad46aaf0d13380bb5691ebca1d935f2b5bf",
+  "checks_receipt": "docs/competence/CAST_DISRUPTION_CHECKS.json",
+  "toolchain": {
+    "dotnet_sdk": "8.0.428",
+    "csharp_compiler": "4.11.0-3.25569.22 (3fb752d4)"
+  },
+  "scope": "Slice A (burst ground aim) plus slice B: real-time value of hits that can break an enemy's cast before it goes off.",
+  "gameplay_status": "unplayed",
+  "archive_contents": [
+    "CompanionAI_Pathfinder.dll",
+    "Info.json"
+  ],
+  "release": false
+}

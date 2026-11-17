@@ -65,6 +65,14 @@ namespace CompanionAI_Pathfinder.Tactics
 
         private static double Now => Game.Instance?.TimeController?.GameTime.TotalSeconds ?? 0d;
 
+        /// <summary>The native cast time of a running cast (UnitUseAbility.m_CastTime), or <paramref name="fallback"/>.</summary>
+        internal static float NativeCastTime(UnitUseAbility use, float fallback)
+        {
+            if (use == null || CastTimeRef == null) return fallback;
+            try { return CastTimeRef(use); }
+            catch { return fallback; }
+        }
+
         public static void Subscribe()
         {
             if (s_Instance != null) return;
@@ -259,11 +267,7 @@ namespace CompanionAI_Pathfinder.Tactics
             float remaining;
             if (cmd.IsStarted)
             {
-                float cast = plan.Cast;
-                if (CastTimeRef != null && cmd is UnitUseAbility use)
-                {
-                    try { cast = CastTimeRef(use); } catch { }
-                }
+                float cast = cmd is UnitUseAbility use ? NativeCastTime(use, plan.Cast) : plan.Cast;
                 remaining = Math.Max(0f, cast - cmd.TimeSinceStart) + plan.Delay + flight;
             }
             else

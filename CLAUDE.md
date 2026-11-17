@@ -8,7 +8,18 @@ Read [CONTRIBUTING.md](CONTRIBUTING.md) for shared branch ownership, Codex pull 
 Codex works on task branches and targets pull requests at `claude/dreamy-pasteur-b9h3rn`; Claude reviews and integrates them there.
 Keep `main` for author-authorized releases. Read [AGENTS.md](AGENTS.md) when coordinating agent work.
 
-**Current handover (17 November 2026, Claude): burst ground aim, slice A (A1-A5, author-approved) on
+**Current handover (17 November 2026, Claude): cast disruption, slice B, on `claude/cast-disruption`, stacked on
+PR #81 (slice A, `claude/burst-ground-aim`); no PR yet. Not played.** Read [docs/CAST_DISRUPTION.md](docs/CAST_DISRUPTION.md),
+`docs/TACTICAL_AI.md` §190 and the [receipt](docs/competence/CAST_DISRUPTION_CHECKS.json). Real time, valuation only:
+a hit before an enemy's cast goes off forces the native concentration check (10 + spell level + damage / 2), and a
+failure spends the spell. Weapon attacks (first one or two attacks) and damaging abilities that can land in time gain
+the chance they break the cast times its stakes. The stakes are the spell's harm on its victim (shared `EnemyThreat.AbilityHarm`,
+identical threat results), else the caster's worth for a round. Checks on `6845b83`: Release 0 warnings/errors,
+965 unit + 27/18/3 script tests, ProfileAudit `CAST-DISRUPT` 15 and `BURST-AIM` 28 with every other line unchanged,
+harnesses 98/14/10, 1 added reference. Package `test-builds/AI-Control-FACC-v0.3.60-dev-disrupt1-6845b83-UMM-test.zip`,
+MVID `549869b4` (includes slice A). Next: review PR #81 first; the author plays both replays; then slice C.
+
+**Earlier handover (17 November 2026, Claude): burst ground aim, slice A (A1-A5, author-approved) on
 `claude/burst-ground-aim`, stacked on the plan branch over development `ad63ee8` (no PR yet). Not played.** Read
 [docs/BURST_GROUND_AIM.md](docs/BURST_GROUND_AIM.md), `docs/TACTICAL_AI.md` §189 and the
 [receipt](docs/competence/BURST_AIM_CHECKS.json). Bursts that can hurt allies and land after their cast goes off

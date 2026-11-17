@@ -1,0 +1,53 @@
+{
+  "task": "Cast disruption, slice B of docs/BURST_AIM_AND_TACTICS_PLAN.md (real time, valuation only)",
+  "date": "2026-11-17",
+  "author": "Claude",
+  "branch": "claude/cast-disruption",
+  "stacked_on": "PR #81 (claude/burst-ground-aim)",
+  "checked_source": "6845b83cea3545d62cd667523ad3b1106a6b979f",
+  "development_base": "ad63ee8690ad47e74bfad54ba65c13810e4b5316",
+  "toolchain": {
+    "dotnet_sdk": "8.0.428",
+    "csharp_compiler": "4.11.0-3.25569.22 (3fb752d4)",
+    "references": "real game Wrath_Data/Managed, supplied UnityModManager 0.33.2.0"
+  },
+  "release_build": "0 warnings, 0 errors",
+  "unit_tests": "965 pass (12 new: DisruptRulesTests)",
+  "script_tests": {
+    "BlueprintInventory": 27,
+    "InvocationLedger": 18,
+    "ProfileAudit supplement": 3
+  },
+  "profileaudit": {
+    "exit": 0,
+    "cast_disrupt": "15 checks, 0 failures",
+    "burst_aim": "28 checks, 0 failures",
+    "export_pass": "1,892 of 1,892 spell blueprints breakable by damage from a spellbook",
+    "other_lines": "identical to slice A's run on the same inputs (path/elapsed lines and the new section excluded)",
+    "fusion_coverage": "byte-identical; 8,709 / 15,494 admitted",
+    "report_sha256": "cc2f1ed87ef3a25ea530f96b84f07deaa95c9525e77521a3908166b0d373c2d7"
+  },
+  "enemy_threat_refactor": "BestAbility and CastHarm share AbilityHarm; the extracted body is the same computation, so assessments are unchanged",
+  "native_harnesses": {
+    "ToggleCosts": 98,
+    "TomeBurn": 14,
+    "ToyBoxSpend": 10
+  },
+  "added_game_references": {
+    "relative_to": "slice A (d7534ed)",
+    "count": 1,
+    "members": [
+      "UnitCommands.get_Standard"
+    ],
+    "resolve": "yes"
+  },
+  "package": {
+    "zip": "test-builds/AI-Control-FACC-v0.3.60-dev-disrupt1-6845b83-UMM-test.zip",
+    "identity": "test-builds/AI-Control-FACC-v0.3.60-dev-disrupt1-6845b83-UMM-test.identity.json"
+  },
+  "manifest": "0.3.60, unchanged; no main, tag or release change",
+  "not_tested": [
+    "Gameplay: unplayed. Offline checks run no actor, damage, roll, command or Unity timing.",
+    "The swing and flight times are estimates for the replay to measure."
+  ]
+}
