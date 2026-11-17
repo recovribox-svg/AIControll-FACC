@@ -59,6 +59,10 @@ namespace CompanionAI_Pathfinder.Tactics
         // Decision-local constraint for the native path of an area escape; never retained by a game command.
         internal Func<IList<Vector3>, string> PathConstraint;
         internal TacticalEngine.MagusPayload MagusCharge;
+        /// <summary>★ burst aim: a burst aimed at the ground where its anchor will be when it lands (TacticalEngine.Burst.cs).</summary>
+        internal TacticalEngine.BurstPlan Burst;
+        /// <summary>★ burst aim: the unit the option is aimed at - its target, or a ground-aimed burst's anchor enemy.</summary>
+        internal UnitEntityData Aimed => Target ?? Burst?.Anchor;
         internal TacticalEngine.MagusPayload MagusRangedCharge;
         internal bool MagusFollowCombat, MagusFollowStrike, MagusPairedCast, MagusSourceStrike, MagusNeedsStrikeOff;
         internal float MagusCompletionFactor;
@@ -237,6 +241,10 @@ namespace CompanionAI_Pathfinder.Tactics
         internal readonly Dictionary<string, TacticalEngine.Approach> Approaches = new Dictionary<string, TacticalEngine.Approach>();
         /// <summary>★ v0.3.29 test 4: the other units' bodies - or, walking, where their walks end - read once (TacticalEngine.Spots.cs).</summary>
         internal List<TacticalEngine.Body> Bodies;
+        /// <summary>★ burst aim: the ground-aimed burst being scored (TacticalEngine.Burst.cs), set around one ScoreAbility call.</summary>
+        internal TacticalEngine.BurstPlan Burst;
+        /// <summary>★ burst aim: where each unit's own walk ends, read once per decision (TacticalEngine.TryWalkOf).</summary>
+        internal Dictionary<UnitEntityData, Vector3?> BurstWalks;
         /// <summary>★ v0.3.18: provoked attacks priced in this decision (TacticalEngine.ProvokeRisk), by place and chance.</summary>
         internal readonly Dictionary<string, TacticalEngine.Disengage> Provoked = new Dictionary<string, TacticalEngine.Disengage>();
         /// <summary>★ v0.3.18 (AA-3): the unit's attack modes, read once per decision (TacticalEngine.Modes.cs).</summary>
@@ -696,11 +704,13 @@ namespace CompanionAI_Pathfinder.Tactics
             if (BoxedInWalk(ctx, c)) return true;
             // ★ v0.3.19 (test9): real time - an enemy the unit could not get sight of from here (any option on it walks the
             // same way), while neither has moved.
-            if (c.Target != null && c.Target != ctx.Unit && ctx.Unit.IsEnemy(c.Target) && CombatMemory.StillNoSight(ctx.Unit, c.Target)) return true;
+            // ★ burst aim: a ground-aimed burst answers for its anchor enemy (Candidate.Aimed), as a unit aim did.
+            var aimed = c.Aimed;
+            if (aimed != null && aimed != ctx.Unit && ctx.Unit.IsEnemy(aimed) && CombatMemory.StillNoSight(ctx.Unit, aimed)) return true;
             // ★ v0.3.24 (build1 logs, author-approved): a target the game's path does not lead to, found by any party member.
             if (c.Target != null && ctx.Unit.IsEnemy(c.Target) && CombatMemory.OutOfWalkingReach(c.Target) && WalksIntoMelee(ctx, c)) return true;
             if (c.Kind != CandidateKind.Ability || c.Ability == null) return false;
-            return CastOutcome.IsBlocked(ctx.Unit, c.Ability, c.Target) || CastOutcome.WouldReplaceHeldCharge(ctx.Unit, c.Ability, c.Target);
+            return CastOutcome.IsBlocked(ctx.Unit, c.Ability, aimed) || CastOutcome.WouldReplaceHeldCharge(ctx.Unit, c.Ability, c.Target);
         }
 
         /// <summary>★ v0.3.24: the option has to walk into melee or touch reach of its target: a weapon attack of a unit
@@ -752,7 +762,7 @@ namespace CompanionAI_Pathfinder.Tactics
             bool attacks = main != null && main.Target != null && ctx.Unit.IsEnemy(main.Target) &&
                            (main.Kind == CandidateKind.WeaponAttack || main.Kind == CandidateKind.Move ||
                             (main.Kind == CandidateKind.Ability && abilityAttack(main)));
-            var focus = attacks ? main.Target : null;
+            var focus = attacks ? main.Aimed : null;   // ★ burst aim: a ground-aimed burst's anchor
 
             var result = new List<Candidate>(usable.Count);
             var reaimed = new HashSet<string>();
@@ -3373,6 +3383,23 @@ namespace CompanionAI_Pathfinder.Tactics
                     controlAims?.Record(target, null, "no native target wrapper");
                     continue;
                 }
+                // ★ burst aim (A1-A2): a burst that can hurt allies and lands after the cast goes off is aimed at the ground
+                // where this enemy will be when it lands (TacticalEngine.Burst.cs). The native point check decides.
+                BurstPlan burst = null;
+                if (!summonPoint.HasValue && wrapper.Unit != null && target != ctx.Unit && ctx.Unit.IsEnemy(target) &&
+                    GroundAimBurst(ability, profile))
+                {
+                    bool burstLos = abilityNeedsLos ?? (abilityNeedsLos = new UnitUseAbility(ability, wrapper).NeedLoS).Value;
+                    burst = PlanBurst(ctx, ability, profile, target, burstLos);
+                    var ground = new TargetWrapper(burst.Point);
+                    if (ability.CanTarget(ground)) wrapper = ground;
+                    else burst = null;
+                    if (burst != null && BurstWatch.Refused(ctx.Unit, ability, burst.Point))
+                    {
+                        controlAims?.Record(target, null, "burst cancelled at this spot moments ago");
+                        continue;
+                    }
+                }
 
                 bool needsMove = false;
                 Disengage risk = null;
@@ -3389,7 +3416,9 @@ namespace CompanionAI_Pathfinder.Tactics
                     // ★ v0.3.25 (test2 logs): the command's own rule (UnitUseAbility: no ILineOfSightIgnore component), read
                     // once per ability - a command was built for every target only to read it.
                     bool needLos = abilityNeedsLos ?? (abilityNeedsLos = new UnitUseAbility(ability, wrapper).NeedLoS).Value;
-                    if (!InRangeNow(ctx.Unit, target.Position, range, needLos))
+                    // ★ burst aim: a led ground point is where the cast is aimed; every other aim is at the target's spot.
+                    Vector3 aimAt = burst != null ? burst.Point : target.Position;
+                    if (!InRangeNow(ctx.Unit, aimAt, range, needLos))
                     {
                         if (guardedTouch && !CriticalTouchHeal(ctx, ability, profile, target)) continue;
                         // ★ v0.3.16 (test3): the game measures range flat unless the height difference is over 1.5 m, then
@@ -3422,6 +3451,10 @@ namespace CompanionAI_Pathfinder.Tactics
                     }
                 }
 
+                // ★ burst aim: a cast that walks first lands that much later (real time; turn-based counts no walk time).
+                if (burst != null && needsMove && burst.RealTime)
+                    burst.Walk = BurstRules.WalkSeconds(ctx.Distance(target), burst.Range, ctx.Unit.CurrentSpeedMps);
+
                 // ★ v0.3.18 (test10): no consumables on a summon - temporary, and worth half (Orvath used a Cure Light
                 // Wounds item on his Dretch).
                 if (ability.SourceItem != null && target != ctx.Unit && !ctx.Unit.IsEnemy(target) && IsSummon(target)) continue;
@@ -3432,9 +3465,14 @@ namespace CompanionAI_Pathfinder.Tactics
                 float? geometryChance;
                 ctx.ScoredInfusionHits = IsOwnBlast(ctx.Unit.Get<Kingmaker.UnitLogic.Class.Kineticist.UnitPartKineticist>(), ability)
                     ? new List<InfusionHit>() : null;
-                using (AbilityProfile.AimedAt(wrapper))   // ★ v0.3.18 (test10): conditions see the real main target
-                    value = ScoreAbility(ctx, ability, profile, slot, target, wrapper, approach?.Point ?? ctx.Unit.Position,
-                        out why, out infusionNote, out geometryRecipients, out geometryChance, valueActiveInfusions);
+                ctx.Burst = burst;   // ★ burst aim: the forecast reads it (BurstFor); one ScoreAbility call only
+                try
+                {
+                    using (AbilityProfile.AimedAt(wrapper))   // ★ v0.3.18 (test10): conditions see the real main target
+                        value = ScoreAbility(ctx, ability, profile, slot, target, wrapper, approach?.Point ?? ctx.Unit.Position,
+                            out why, out infusionNote, out geometryRecipients, out geometryChance, valueActiveInfusions);
+                }
+                finally { ctx.Burst = null; }
                 string friendlyFire = ctx.FriendlyFireNote;
                 string turnedNote = null;
                 // ★ v0.3.28 test 12: a cone that catches allies, cast from where the caster stands, is also tried turned past
@@ -3610,7 +3648,9 @@ namespace CompanionAI_Pathfinder.Tactics
                             (infusionNote != null ? $" [infusion {infusionNote}]" : "") +
                             (turnedNote != null ? $" [{turnedNote}]" : "") +
                             (friendlyFire != null ? $" [{friendlyFire}]" : "") +
-                            (coneWalk && approach.Detours != true ? " [walks to its casting spot first]" : ""),
+                            (coneWalk && approach.Detours != true ? " [walks to its casting spot first]" : "") +
+                            (burst != null ? $" [ground{(burst.Lead >= BurstRules.MinLeadMeters ? $" +{burst.Lead:F1} m" : "")}, lands in {burst.Landing:F1} s]" : ""),
+                    Burst = burst,
                     CastRiskCost = provokeLoss,
                     AimAffected = aimAffected,
                     MoveFirst = approach?.Detours == true || coneWalk,
@@ -3625,6 +3665,7 @@ namespace CompanionAI_Pathfinder.Tactics
                     PreRiskValue = preRisk,
                     Key = $"abl:{CombatMemory.AbilityKey(ability)}{metamagic}:{target.UniqueId}"
                 };
+                if (burst != null) burst.Value = candidate.Value;   // ★ burst aim: what a re-check weighs new allies against
                 controlAims?.Record(target, value, why, geometryRecipients, needsMove, provokeLoss,
                     concentrationChance, risk?.StopChance ?? 0f, risk?.Cost ?? 0f);
                 if (Better(candidate, best)) best = candidate;
@@ -3846,6 +3887,8 @@ namespace CompanionAI_Pathfinder.Tactics
             List<UnitEntityData> affectedAllies = targetIsEnemy ? new List<UnitEntityData>() : new List<UnitEntityData> { target };
             // ★ v0.3.29 test 5: allies counted because their walk takes them into the area while it is cast (AlliesWalkingInto).
             List<UnitEntityData> walkingIn = null;
+            var burst = BurstFor(ctx, ability);    // ★ burst aim: a ground-aimed burst's plan, or null
+            Vector3 areaCenter = target.Position;
             SharedHdControl.TryForAim(ability, profile, actualAim, out var sharedHd);
             ctx.FusionSharedHd = profile.Fusion != null ? sharedHd : null; // ★ Fusion F7: read by TryFusionControlRounds
             EffectApplies? ForecastApplies(Kingmaker.UnitLogic.Buffs.Blueprints.BlueprintBuff buff, UnitEntityData recipient,
@@ -3879,20 +3922,31 @@ namespace CompanionAI_Pathfinder.Tactics
             else if (profile.IsAoE)
             {
                 var targetsType = profile.AoETargets;
+                // ★ burst aim (A2): a ground-aimed burst lands at its point; the enemies counted are those surely inside
+                // when it lands, the allies those standing inside or whose walk may take them there (TacticalEngine.Burst.cs).
+                if (burst != null) areaCenter = burst.Point;
+                var burstInside = burst != null ? BurstEnemiesInside(ctx, burst) : null;
                 affectedEnemies = targetsType == Kingmaker.UnitLogic.Abilities.Components.TargetType.Ally
-                    ? new List<UnitEntityData>() : UnitsAround(ctx.Enemies, target.Position, profile.AoERadius);
+                    ? new List<UnitEntityData>() : burstInside ?? UnitsAround(ctx.Enemies, target.Position, profile.AoERadius);
                 affectedAllies = targetsType == Kingmaker.UnitLogic.Abilities.Components.TargetType.Enemy
-                    ? new List<UnitEntityData>() : UnitsAround(ctx.Allies, target.Position, profile.AoERadius);
+                    ? new List<UnitEntityData>()
+                    : UnitsAround(burst != null ? ctx.Allies.Where(a => a != unit).ToList() : ctx.Allies, areaCenter, profile.AoERadius);
                 // ★ v0.3.8: who the area can affect at all (Sleep: creatures with few hit dice).
                 affectedEnemies = sharedHd?.Supported == true
-                    ? ctx.Enemies.Where(u => sharedHd.Selects(u) && !CastOutcome.AreaSkips(unit, ability, u)).ToList()
+                    ? ctx.Enemies.Where(u => sharedHd.Selects(u) && (burstInside == null || burstInside.Contains(u)) &&
+                                             !CastOutcome.AreaSkips(unit, ability, u)).ToList()
                     : affectedEnemies.Where(u => profile.AreaReaches(ability, u) && !CastOutcome.AreaSkips(unit, ability, u)).ToList();
                 affectedAllies = sharedHd?.Supported == true
-                    ? ctx.Allies.Where(sharedHd.Selects).ToList()
+                    ? ctx.Allies.Where(u => sharedHd.Selects(u) && (burst == null || u != unit)).ToList()
                     : affectedAllies.Where(u => profile.AreaReaches(ability, u)).ToList();
+                if (burst != null)
+                {
+                    walkingIn = BurstWalkingAllies(ctx, burst, affectedAllies, castOrigin, ally => profile.AreaReaches(ability, ally));
+                    if (walkingIn != null) affectedAllies.AddRange(walkingIn);
+                }
                 // ★ outcome2: a pool's selection is current-position only, but a fusion's other payload still
                 // reaches walking allies. Keep the existing area safety without predicting future pool consumption.
-                if (ForecastWalkingAreaAllies(profile, sharedHd?.Supported == true))
+                else if (ForecastWalkingAreaAllies(profile, sharedHd?.Supported == true))
                 {
                     Vector3 center = target.Position;
                     float radius = profile.AoERadius;
@@ -3903,8 +3957,16 @@ namespace CompanionAI_Pathfinder.Tactics
             }
             List<UnitEntityData> DownedRecipients() => profile.IsProjectileCone
                 ? affectedAllies.Where(ctx.DownedAllies.Contains).ToList()
-                : UnitsAround(ctx.DownedAllies, target.Position, profile.AoERadius)
+                : UnitsAround(ctx.DownedAllies, areaCenter, profile.AoERadius)
                     .Where(u => profile.AreaReaches(ability, u)).ToList();
+            if (burst != null)
+            {
+                // ★ burst aim: what the decision counted, for the re-check before the cast goes off (BurstWatch).
+                burst.Allies.Clear();
+                foreach (var a in affectedAllies) burst.Allies.Add(a);
+                foreach (var a in DownedRecipients()) burst.Allies.Add(a);
+                burst.Enemies = affectedEnemies.Count;
+            }
             // ★ Fusion F7: not for a fused pool - its other payload reaches every recipient, covered or not.
             if (sharedHd?.Supported == true && !profile.IsProjectileCone && profile.Fusion == null)
             {
@@ -3997,6 +4059,7 @@ namespace CompanionAI_Pathfinder.Tactics
                         (ctx.FusionDamageScratch = new CombatMath.FusionDamageRead()) : null;
                     float dmg = fusionRead != null ? CombatMath.EstimateFusionDamage(ability, profile, enemy, fusionRead)
                                                   : CombatMath.EstimateAbilityDamage(ability, profile, enemy);
+                    if (burst != null && dmg > burst.Damage) burst.Damage = dmg;   // ★ burst aim: the re-check's fallback
                     float p = CombatMath.EffectChance(unit, enemy, ability, profile, damage: true);
                     float part;
                     if (fusionRead != null && TryFusionValues(ctx, ability, profile, enemy, fusionRead, p, out float jointDamage,
@@ -4895,7 +4958,7 @@ namespace CompanionAI_Pathfinder.Tactics
             Func<Candidate, bool> provokingCast = c => c != null && c.Kind == CandidateKind.Ability &&
                                 c.Ability.RuntimeActionType == UnitCommand.CommandType.Standard &&
                                 (c.Ability.ProvokeAttackOfOpportunity || c.CastRiskCost > 0f) &&
-                                !(c.Target != null && ctx.Engagers.Contains(c.Target));
+                                !(c.Aimed != null && ctx.Engagers.Contains(c.Aimed));
             var stepCast = list.Where(c => c.Slot != ActionSlot.Free && c.Slot != ActionSlot.Swift && !c.NeedsMove && Affordable(ctx, c) &&
                                            (c.GatherPower == 0 || CombatMemory.IsRealTime) && provokingCast(c) && kept(c))
                                .OrderByDescending(c => c.Value + c.CastRiskCost).FirstOrDefault();
@@ -5682,8 +5745,11 @@ namespace CompanionAI_Pathfinder.Tactics
             if (issued && c.Reveals != null) HiddenEnemies.NoteTried(c.Reveals);   // ★ v0.3.30 competence3: once per vanishing
             if (issued && c.Kind == CandidateKind.Ability)
             {
-                CombatMemory.RecordCast(unit, c.Ability, c.Target, command);
-                CombatMemory.NotePendingCast(unit, c.Ability, c.Target, command);   // ★ v0.3.18 (test10): real time
+                // ★ burst aim: a ground-aimed burst keeps its anchor enemy in the cast bookkeeping, as a unit aim did.
+                var aimed = c.Target ?? c.Burst?.Anchor;
+                CombatMemory.RecordCast(unit, c.Ability, aimed, command);
+                CombatMemory.NotePendingCast(unit, c.Ability, aimed, command);   // ★ v0.3.18 (test10): real time
+                if (c.Burst != null) BurstWatch.Track(unit, command, c.Burst);   // ★ burst aim (A3-A5)
                 var profile = AbilityProfile.Get(c.Ability);
                 NoteEndedByAi(unit, c.Ability, profile, c.Target ?? unit);   // ★ v0.3.25: a trance ended with the focus
                 if (profile != null && profile.HealsBurn)
@@ -5711,7 +5777,7 @@ namespace CompanionAI_Pathfinder.Tactics
                 bool ownLogic = Kingmaker.Blueprints.BlueprintExtenstions.GetComponent<Kingmaker.UnitLogic.Abilities.Components.Base.AbilityCustomLogic>(c.Ability.Blueprint) != null;
                 // Blocking also needs effects on the target itself: an ability aimed at an enemy may only buff its caster.
                 bool rangedArm = NativeRangedStrike(unit, c.Ability);
-                CastOutcome.Begin(unit, c.Ability, c.Target, command, !rangedArm && IsVerifiable(profile), watchTarget: watch && !rangedArm,
+                CastOutcome.Begin(unit, c.Ability, aimed, command, !rangedArm && IsVerifiable(profile), watchTarget: watch && !rangedArm,
                                   blockOnNoReach: !rangedArm && !ownLogic && profile != null && profile.HasTargetEffects,
                                   area: profile != null && profile.IsAoE, intendedBuffs: profile?.TargetBuffs);
             }

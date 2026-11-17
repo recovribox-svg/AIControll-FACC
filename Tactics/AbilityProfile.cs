@@ -284,6 +284,22 @@ namespace CompanionAI_Pathfinder.Tactics
         /// </summary>
         public bool SelectsTargets { get; private set; }
 
+        /// <summary>
+        /// ★ burst aim: the selector is an around-selector (AbilityTargetsAround) on the cast's own delivery blueprint (the
+        /// deliver spell for a fusion), which picks its victims when the burst lands, around its anchor at that moment.
+        /// </summary>
+        public bool SelectsAround { get; private set; }
+
+        /// <summary>★ burst aim: the native AbilityDeliverDelay of that blueprint, in seconds (Explosive Runes: 2.0); 0 if none.</summary>
+        public float DeliverDelaySeconds { get; private set; }
+
+        /// <summary>★ burst aim: the first projectile of a simple projectile delivery (speed in m/s; 0 if none) and its minimum flight.</summary>
+        public float ProjectileSpeed { get; private set; }
+        public float ProjectileMinTime { get; private set; }
+
+        /// <summary>★ burst aim: the burst lands later than the cast goes off (a delay or a projectile's flight).</summary>
+        public bool HasDeliveryLag => DeliverDelaySeconds > 0f || ProjectileSpeed > 0f;
+
         public CCType Control { get; private set; }
 
         /// <summary>★ v0.3.21 (gaps): a buff the ability applies that carries an aura (AddAreaEffect) around its bearer.</summary>
@@ -551,6 +567,28 @@ namespace CompanionAI_Pathfinder.Tactics
 
             var around = Blueprint.GetComponent<AbilityTargetsAround>();
             SelectsTargets = around != null || IsProjectileCone;
+            SelectsAround = around != null && !IsProjectileCone;
+            // ★ burst aim: when the burst lands after the cast goes off (TacticalEngine.Burst.cs, BurstRules). Read from the
+            // blueprint whose delivery the game runs: the cast's own, or the deliver spell of a fusion (GetDeliverBlueprint).
+            try
+            {
+                var delay = Blueprint.GetComponent<AbilityDeliverDelay>();
+                if (delay != null && delay.DelaySeconds > 0f) DeliverDelaySeconds = delay.DelaySeconds;
+                var flight = Blueprint.GetComponent<AbilityDeliverProjectile>();
+                if (flight != null && flight.Type == AbilityProjectileType.Simple && flight.Projectiles.Length > 0)
+                {
+                    var first = flight.Projectiles[0];
+                    if (first != null && first.Speed > 0f)
+                    {
+                        ProjectileSpeed = first.Speed;
+                        ProjectileMinTime = Math.Max(0f, first.MinTime);
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                Main.Verbose($"[Profile] {Blueprint.name} delivery lag: {ex.Message}");
+            }
             if (around != null)
             {
                 AoERadius = around.AoERadius.Meters;

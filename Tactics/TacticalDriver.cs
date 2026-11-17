@@ -93,14 +93,16 @@ namespace CompanionAI_Pathfinder.Tactics
             // ★ v0.3.11: no path gets within reach of this enemy: an advance towards it this turn is wasted
             // (Albedo spent his 5-foot step walking 1.6 m towards an archer he could not reach, three rounds running).
             // ★ v0.3.20: also when the path ends in range without sight (it read "0.0m short" until 0.3.20-test2).
-            if (candidate.Target != null && failure != null &&
+            // ★ burst aim: a ground-aimed burst answers for its anchor enemy (Candidate.Aimed).
+            var aimed = candidate.Aimed;
+            if (aimed != null && failure != null &&
                 (failure.StartsWith(GameInterface.CommandDispatcher.OutOfReachFailure) ||
                  failure.StartsWith(GameInterface.CommandDispatcher.NoSightAtPathEndFailure)))
-                memory.Unreachable.Add(candidate.Target.UniqueId);
+                memory.Unreachable.Add(aimed.UniqueId);
             // ★ v0.3.20 (test3): the target is farther than this turn's walk-then-act allows - an advance towards it is
             // offered next to whatever can be done from here (TacticalEngine.AddMovementCandidates).
-            if (candidate.Target != null && failure != null && failure.Contains(GameInterface.CommandDispatcher.LongerThanOneMoveFailure))
-                memory.NoteTooFar(candidate.Target.UniqueId, candidate.Value);
+            if (aimed != null && failure != null && failure.Contains(GameInterface.CommandDispatcher.LongerThanOneMoveFailure))
+                memory.NoteTooFar(aimed.UniqueId, candidate.Value);
         }
 
         /// <summary>Did the command that just ended use the action it was chosen for?</summary>

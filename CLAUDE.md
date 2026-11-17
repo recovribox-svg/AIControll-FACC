@@ -8,7 +8,26 @@ Read [CONTRIBUTING.md](CONTRIBUTING.md) for shared branch ownership, Codex pull 
 Codex works on task branches and targets pull requests at `claude/dreamy-pasteur-b9h3rn`; Claude reviews and integrates them there.
 Keep `main` for author-authorized releases. Read [AGENTS.md](AGENTS.md) when coordinating agent work.
 
-**Current handover (17 November 2026, Claude): PR #80 reviewed and merged into development (`b218c28`); Codex's
+**Current handover (17 November 2026, Claude): burst ground aim, slice A (A1-A5, author-approved) on
+`claude/burst-ground-aim`, stacked on the plan branch over development `ad63ee8` (no PR yet). Not played.** Read
+[docs/BURST_GROUND_AIM.md](docs/BURST_GROUND_AIM.md), `docs/TACTICAL_AI.md` §189 and the
+[receipt](docs/competence/BURST_AIM_CHECKS.json). Bursts that can hurt allies and land after their cast goes off
+(Explosive Runes and its fusions, Wail, Ice Storm, Flame Strike, Fireball-like projectiles) are aimed at the ground where
+the enemy will be when they land; real time re-checks the cast until it goes off and cancels it for free, shares the
+landing spot with the other AI units' walks, and a turn-based turn waits for the landing. Enemy-only, Selective,
+attack-roll and lag-free bursts keep unit aim. Checks on `d7534ed`: Release 0 warnings/errors, 953 unit + 27/18/3
+script tests, ProfileAudit `BURST-AIM` 28 with every other line and the Fusion coverage unchanged, harnesses 98/14/10,
+9 added references all resolve. Package `test-builds/AI-Control-FACC-v0.3.60-dev-burst1-d7534ed-UMM-test.zip`, MVID
+`bc92b339`; manifest 0.3.60, no `main`, tag or release. Next: the author plays the replay in the page; then slice B.
+
+**Earlier handover (17 November 2026, Claude): plan only, on `claude/burst-aim-tactics-plan` (no PR yet).** Read
+[docs/BURST_AIM_AND_TACTICS_PLAN.md](docs/BURST_AIM_AND_TACTICS_PLAN.md). It covers four slices:
+A, delayed bursts aimed at the ground (the author chose ground aim; A3 pre-cast cancel, A4 landing-spot avoidance and
+A5 turn-based wait need approval); B, real-time disruption of enemy casts by the native concentration rule; C, buffs
+suppressed on arrival; D, fortification and second-attacker flanking for sneak attack. The supplied feature document
+targets the old engine and several of its rules are not this game's (section 2). No code, manifest or package change.
+
+**Earlier handover (17 November 2026, Claude): PR #80 reviewed and merged into development (`b218c28`); Codex's
 review and merge of PRs #74-79 assessed and agreed with.** Read `docs/TACTICAL_AI.md` §188 and the
 [receipt](docs/competence/INTEGRATION_80_CHECKS.json). Development's tree equals PR #80's head `5fe5771`; the play
 package is still the outcome3 ZIP below (v0.3.60, MVID `56f51d96`), unplayed. Checks on development: Release 0 warnings

@@ -1,0 +1,29 @@
+{
+  "build_label": "burst1",
+  "kind": "development-test",
+  "version": "0.3.60",
+  "source_branch": "claude/burst-ground-aim",
+  "source_commit": "d7534ed46f7a978a697d5aea1e84ee9670d607a5",
+  "development_base": "ad63ee8690ad47e74bfad54ba65c13810e4b5316",
+  "dll": {
+    "assembly": "CompanionAI_Pathfinder, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null",
+    "mvid": "bc92b339-5bf5-4981-b7af-f641071cbb06",
+    "sha256": "4e548c2803e3534c8e60814c378c0c57907c576021b9f406bd23b047bb0c9bbe",
+    "size": 1498112
+  },
+  "archive": "AI-Control-FACC-v0.3.60-dev-burst1-d7534ed-UMM-test.zip",
+  "zip_sha256": "36846ad67b5468f4825b717f9a35932744fd679660a4a96a427867557e127d2c",
+  "manifest_sha256": "63ad9f152d4bacb44f021428193efad46aaf0d13380bb5691ebca1d935f2b5bf",
+  "checks_receipt": "docs/competence/BURST_AIM_CHECKS.json",
+  "toolchain": {
+    "dotnet_sdk": "8.0.428",
+    "csharp_compiler": "4.11.0-3.25569.22 (3fb752d4)"
+  },
+  "scope": "Development plus slice A: delayed bursts that can hurt allies aimed at the ground where their target will be, pre-cast re-check, shared landing spot, turn-based wait.",
+  "gameplay_status": "unplayed",
+  "archive_contents": [
+    "CompanionAI_Pathfinder.dll",
+    "Info.json"
+  ],
+  "release": false
+}
