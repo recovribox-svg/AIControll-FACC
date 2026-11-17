@@ -414,8 +414,8 @@ namespace CompanionAI_Pathfinder.Tactics
             var routine = new AttackRoutine { Frame = frame, Attacks = attacks.Count, FirstWeapon = attacks[0].Weapon };
             routine.Reach = UnitAttack.GetApproachRadius(routine.FirstWeapon, unit, target);
 
-            // ★ sneak attack (slice D2): native flanking counts engagers, not positions. A melee attack makes this unit an
-            // engager, so the target is flanked when it lands if one other unit counts as engaging it (CombatMath.Flanking.cs).
+            // ★ sneak attack (slice D2): prospective flank under AttackerEngages' documented reach/sight assumption.
+            // This shared routine is also used by threat/defence quotes; see REVIEW_81_84.md D-R1 before widening it.
             bool flanked = PredictFlank(unit, target, routine.FirstWeapon, out bool bySecond, out var partner);
             routine.Flanked = flanked;
             routine.FlankedBySecond = bySecond;

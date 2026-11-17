@@ -19,7 +19,8 @@ Checks: [SNEAK_FLANKING_CHECKS.json](competence/SNEAK_FLANKING_CHECKS.json). Pac
 - **Flanking.**
   - In this game flanking does not depend on where units stand. An enemy is flanked when two or more units are engaging
     it in melee.
-  - In real time, only units that are currently attacking or casting at it count.
+  - In real time, only engagers with a command slot targeting it count (`AnyCommandTargets` checks any non-null slot;
+    it does not require an attack, cast or running command).
   - The AI now sees that a melee attack on an enemy one ally is already fighting makes that enemy flanked. Its own attack
     then gets the +2 flanking bonus and, for a rogue, the sneak dice.
   - The ally gets the same for a round. The AI counts that too, so a rogue and a fighter tend to end up on the same enemy.
@@ -63,10 +64,11 @@ is a rule of this game, so neither is added (plan §2).
 The routine records which case applies. Only the second makes the attack "flanks as the second engager", and only then
 is the other engager named.
 
-**The partner's term.** The partner is the single other engager, if it is not hostile to the attacker. For one round
-of its full attack it gains:
-- the +2 flanking bonus on its melee attacks (the extra hits times one hit's damage);
-- its sneak dice where they did not apply yet, through fortification, and not against precision immunity.
+**The partner's term.** The partner is the single other engager, if it is not hostile to the attacker. Review correction:
+its native `RuleCalculateAttackBonus(TargetIsFlanked = true)` is compared with its ordinary routine through the shared
+line kernel, including existing sneak and critical damage. Newly enabled sneak dice are added through fortification,
+never against precision immunity. The result is cached only on the existing frame/decision routine. This avoids a copied
+bonus table when mods patch the rule. It is still a one-round forecast, not a simulation of the partner's next turn.
 
 The term is valued as damage without a kill bonus, weighted like the attacker's own damage on that target.
 
@@ -74,7 +76,8 @@ The term is valued as damage without a kill bonus, weighted like the attacker's 
 - One fortification read per routine (per attacker, target and frame).
 - One prediction per routine: the native flag, the threat hand, and one pass over the target's engagers.
 - The partner's routine is the ordinary cached routine read, and only where this attack creates the flank.
-- No position search: native flanking has no geometry.
+- No position search. Native flanking does not require opposite sides, but **engagement does require reach and sight**.
+  The current prospective assumption does not establish those; see [REVIEW_81_84.md](REVIEW_81_84.md#d-r1-proposed-origin-aware-engagement-quote).
 
 ## Checks
 

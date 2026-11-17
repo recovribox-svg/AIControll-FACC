@@ -4,8 +4,9 @@
 // - RuleAttackRoll: on a rolled attack that is a sneak attack, a confirmed critical or a precise strike, one d100 against
 //   UnitPartFortification.Value (the highest fortification) negates all three when it is at or under the value;
 // - UnitCombatState.IsFlanked: turn-based, more than one unit engages the target; real time, more than one engaging unit
-//   whose command targets it; never with CannotBeFlanked. Engagement is having a threat hand and the target in its reach
-//   (UnitCombatEngagementController.TickUnit), so a melee attack always makes its attacker an engager;
+//   whose command targets it; never with CannotBeFlanked. Engagement also needs threat reach, sight and no total
+//   concealment (UnitCombatEngagementController.TickUnit / UnitEngagementExtension.IsEngage). PredictsFlank consumes
+//   the caller's prospective engagement assumption; it cannot prove those conditions;
 // - RuleCalculateAttackBonus: +2 flanking on a melee weapon when the target is flanked or TargetIsFlanked is set.
 using System;
 

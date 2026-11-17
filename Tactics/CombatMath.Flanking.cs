@@ -1,6 +1,7 @@
 // ★ sneak attack refinements (17 November 2026; docs/BURST_AIM_AND_TACTICS_PLAN.md §6, slice D): the game side of
 // fortification and of the flanking a second attacker creates. Pure rules: SneakRules. Read only: engagement sets, the
-// fortification part and the native threat hand; no rule is triggered here beyond the partner's ordinary routine read.
+// fortification part and the native threat hand. Partner counterfactuals trigger the native attack-bonus rule once per
+// line of the cached routine; actors and engagement are never changed.
 using System;
 using Kingmaker.EntitySystem.Entities;
 using Kingmaker.Items;
@@ -59,9 +60,9 @@ namespace CompanionAI_Pathfinder.Tactics
         }
 
         /// <summary>
-        /// D2: a melee attack with <paramref name="weapon"/> makes <paramref name="unit"/> an engager of its target: the unit
-        /// has a native threat hand with a threat range (UnitCombatEngagementController.TickUnit), and the attack lands in
-        /// reach. Ranged attacks leave flanking to the native state.
+        /// D2's prospective engagement assumption: a melee attacker can act and has a native threat hand/range. This does
+        /// not prove the target is within that threat range, visible or free of total concealment at the future origin.
+        /// See REVIEW_81_84.md D-R1 for the proposed origin-aware quote; ranged attacks use only the native state.
         /// </summary>
         internal static bool AttackerEngages(UnitEntityData unit, ItemEntityWeapon weapon)
         {
