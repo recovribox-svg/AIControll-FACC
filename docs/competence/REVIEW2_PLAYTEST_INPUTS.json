@@ -1,0 +1,112 @@
+{
+  "task": "Review2 playtest review and bugfix",
+  "played_build": {
+    "source_commit": "f0b609715427ed9d1422df484d234993545640f8",
+    "manifest_version": "0.3.60",
+    "mvid": "0c600255-e6b8-4788-a5bc-4e0a9ad5f7e9",
+    "archive_sha256": "3e8e46b97994ad21281e7e06ef67096a4b21021a13689284316f75ee7bad9b4b"
+  },
+  "author_context": {
+    "toybox_spawns": true,
+    "rests": "between fights",
+    "grabber": "engine controlled",
+    "death_from_above": "author reported success; native hit/grapple evidence also present"
+  },
+  "files": [
+    {
+      "name": "Log.txt",
+      "sha256": "e6c259985dcd12a4ffc87e69cab9e79c3e5f92c9cfedcd265550ac01d3c78692",
+      "bytes": 2043462,
+      "physical_LF_rows": 9644
+    },
+    {
+      "name": "combatLog.txt",
+      "sha256": "aeb0582359a92cb895e6a8979087c5ad7b8aa4e6ea768f8014d95bc59fafafca",
+      "bytes": 1880716,
+      "physical_LF_rows": 45388
+    }
+  ],
+  "summary": {
+    "observed_fights": 13,
+    "explicit_start_markers": 12,
+    "initial_fight_missing_start_marker": true,
+    "mode_decisions": {
+      "TB": 643,
+      "RT": 669
+    },
+    "ai_exception_rows": 0,
+    "external_blueprint_owner_warnings": 8,
+    "slow_rows": 149,
+    "slow_median_ms": 346,
+    "slow_max_ms": 1799,
+    "slow_with_stage_heap_drop_over_10MB": 14,
+    "heap_measurement_limit": "Heap deltas are not allocations. Negative deltas are consistent with collection; they do not establish the full cause or duration of a pause.",
+    "invocation": {
+      "issued": 62,
+      "acted": 61,
+      "counts": {
+        "first-placement": 15,
+        "move-settled": 27,
+        "holder-unseen": 16,
+        "move-override": 3,
+        "not-applied": 1
+      },
+      "flags": {
+        "low-loss": 11,
+        "sibling": 5
+      }
+    },
+    "burst": {
+      "tracked": 6,
+      "cancelled_for_walk_in_allies": 2,
+      "rechecks": 16,
+      "peak_watches": 1,
+      "native_routes": 52,
+      "straight_routes": 7,
+      "overflow_observed": false
+    },
+    "leap": {
+      "issued": 1,
+      "acted_success": 1,
+      "mode": "TB",
+      "actor": "Wenduag",
+      "target": "Nightmare",
+      "moved_meters": 8.9,
+      "command_seconds": 2.4,
+      "log_rows": [
+        9250,
+        9251,
+        9252,
+        9253
+      ],
+      "combat_rows": [
+        43406,
+        43429,
+        43440
+      ]
+    },
+    "release_grapple_issued": 7,
+    "coup_ability_issued": 4,
+    "coup_approach_issued": 2,
+    "death_bursts": {
+      "fight": 13,
+      "first_enemy_blueprint": "61cabd2ab6bf4699905407cf9e13a6eb",
+      "first_enemy_instance_suffix": "37FD8",
+      "first_damage_to_party": 339,
+      "second_enemy_instance_suffix": "37FAB",
+      "second_damage_to_party": 146,
+      "sum": 485,
+      "fight_enemy_damage_to_party": 501,
+      "first_combat_rows": [
+        43160,
+        43302
+      ],
+      "second_combat_rows": [
+        44935,
+        45060
+      ],
+      "log_end_threat_row": 9626
+    }
+  },
+  "not_included": "No raw logs, actor snapshots, blueprint dumps or decompiled text. Row references count LF-separated physical file rows."
+}

@@ -1,5 +1,8 @@
 # Review of PRs #86–89
 
+**Playtest update:** review2 has now been played; see [REVIEW2_PLAYTEST.md](REVIEW2_PLAYTEST.md) for results and the
+review2fix1 package. The original review/receipt below remains the historical pre-playtest record.
+
 17 November 2026, Codex. The four follow-ups and their inherited stack were reviewed against the supplied native
 assemblies. **Corrections are implemented; nothing is merged or played.** The new review2 package below is the one to
 play. It supersedes cleanse1 for this review; historical packages and receipts have not been replaced.

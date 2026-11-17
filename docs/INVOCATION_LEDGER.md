@@ -1,5 +1,10 @@
 # Profane Invocation transfer ledger (I1)
 
+**Review2 accounting update (17 November 2026):** a log beginning inside combat can have an initial fight without a
+start marker. The tool counts that observed fragment, labels its retained scope id **0**, and then counts later explicit
+starts. Startup/OOC messages and an unmatched completion do not invent a fight or cast. Transfer classification is
+unchanged; see [REVIEW2_PLAYTEST.md](REVIEW2_PLAYTEST.md).
+
 **16 November 2026, Codex: gaps2 evidence follow-up.** See [the new review](GAPS2_PLAYTEST_REVIEW.md) for the supplied
 gaps2 pair and all 32 completed invocations. The original tables below remain historical I1 evidence; their
 receipts are not rewritten. The updated tool has 18 tests, scopes state by caster and appraisals by fight/decision,
