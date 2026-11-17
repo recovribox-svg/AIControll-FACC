@@ -151,9 +151,9 @@ fusion):
 **Who is hit.** All terms are counted with the existing per-recipient damage, immunity and save valuation; only the
 positions change.
 
-- Enemies: their predicted position at `T`. An enemy counts fully within `R − u`, not at all beyond `R + u`, and
-  linearly between. `R` is the radius plus the enemy's body; `u = 0.25 × its speed × T`, the growing uncertainty of a
-  prediction.
+- Enemies: their predicted position at `T`. An enemy counts as hit only within `R − u` (surely inside). `R` is the
+  radius plus the enemy's body; `u = 0.25 × its speed × T`, the growing uncertainty of a prediction. (Implemented as
+  this yes/no rule, so the existing per-recipient valuation is unchanged; see [BURST_GROUND_AIM.md](BURST_GROUND_AIM.md).)
 - Allies: counted if any of five samples in `[T − 0.5 s, T + 0.5 s]` falls within `R + u`. This replaces the fixed
   2-second `AlliesWalkingInto` window for these bursts and keeps its conservative "passing through counts".
 - Downed allies: where they lie.

@@ -1,0 +1,57 @@
+{
+  "task": "Burst ground aim, slice A (A1-A5) of docs/BURST_AIM_AND_TACTICS_PLAN.md, author-approved",
+  "date": "2026-11-17",
+  "author": "Claude",
+  "branch": "claude/burst-ground-aim",
+  "checked_source": "d7534ed46f7a978a697d5aea1e84ee9670d607a5",
+  "development_base": "ad63ee8690ad47e74bfad54ba65c13810e4b5316",
+  "toolchain": {
+    "dotnet_sdk": "8.0.428",
+    "csharp_compiler": "4.11.0-3.25569.22 (3fb752d4)",
+    "references": "real game Wrath_Data/Managed, supplied UnityModManager 0.33.2.0"
+  },
+  "release_build": "0 warnings, 0 errors",
+  "unit_tests": "953 pass (18 new: BurstRulesTests)",
+  "script_tests": {
+    "BlueprintInventory": 27,
+    "InvocationLedger": 18,
+    "ProfileAudit supplement": 3
+  },
+  "profileaudit": {
+    "exit": 0,
+    "burst_aim": "28 checks, 0 failures",
+    "export_pass": "27 around-bursts with a delay; 93 with a simple projectile (8 unresolved projectile blueprints in these exports); 19 enemy-only; 40 get ground aim",
+    "other_lines": "identical to the PR #80 run on the same inputs (path/elapsed lines and the new section excluded)",
+    "fusion_coverage": "byte-identical to the PR #80 run (sha256 d2a0f23b8ff3aa7a27ceeaa59159abf45c560bef65fb2a6c3f13a29877b97119); 8,709 / 15,494 admitted",
+    "report_sha256": "918ded453617e1f21465257a8716ea9746fbe7c0ceaad1ac4072fd460f1b817d"
+  },
+  "native_harnesses": {
+    "ToggleCosts": 98,
+    "TomeBurn": 14,
+    "ToyBoxSpend": 10
+  },
+  "added_game_references": {
+    "count": 9,
+    "resolve": "all (compiled against the real assemblies; the audit loads the types)",
+    "members": [
+      "BlueprintAbility.Animation",
+      "BlueprintProjectile.Speed",
+      "BlueprintProjectile.MinTime",
+      "AbilityDeliverDelay.DelaySeconds",
+      "ReferenceArrayProxy<BlueprintProjectile,BlueprintProjectileReference>.get_Item",
+      "UnitCommand.get_TimeSinceStart",
+      "UnityEngine.Mathf.Lerp",
+      "HarmonyLib.AccessTools.FieldRefAccess",
+      "AccessTools.FieldRef<UnitUseAbility,float>.Invoke"
+    ]
+  },
+  "package": {
+    "zip": "test-builds/AI-Control-FACC-v0.3.60-dev-burst1-d7534ed-UMM-test.zip",
+    "identity": "test-builds/AI-Control-FACC-v0.3.60-dev-burst1-d7534ed-UMM-test.identity.json"
+  },
+  "manifest": "0.3.60, unchanged; no main, tag or release change",
+  "not_tested": [
+    "Gameplay: unplayed. Offline checks run no actor, selection, command, cast or Unity timing.",
+    "Straight-line walk prediction against the game's real paths; player orders after the cast goes off."
+  ]
+}

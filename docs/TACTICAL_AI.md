@@ -6500,3 +6500,37 @@ At the author's request Claude assessed Codex's review and merge of PRs #74-79 a
   decompiles to the same code as a local build of `faf867c`.
 - **Still open:** outcome3 is unplayed. A burst that the game delivers later on its main target (Explosive Runes:
   2 s) moves with that target and can still catch allies; this change does not cover it.
+
+## 189. Burst ground aim, slice A (17 November 2026, Claude; author-approved, not played)
+
+[Design and replay](BURST_GROUND_AIM.md), [plan](BURST_AIM_AND_TACTICS_PLAN.md) §3,
+[receipt](competence/BURST_AIM_CHECKS.json). A burst that can hurt allies and lands after its cast goes off (a delay,
+such as Explosive Runes' 2 s, or a projectile's flight) was aimed at the enemy unit, and the game picks its victims
+around that unit when it lands (`AbilityTargetsAround.Select`). Outcome2's Explosive Runes fusions went off 4-9 s after
+their orders and hit four allies.
+
+- **A1-A2 (both modes).** Such bursts (around-selector, selector Any, not Selective, no attack roll, point-capable) are
+  aimed at a point:
+  - real time: where the enemy will be when the burst lands, from its own walk, when the caster can cast there without
+    walking;
+  - otherwise, and always in turn-based mode: where it stands.
+
+  Enemies count when surely inside at landing; allies when they may be. The candidate's anchor enemy (`Candidate.Aimed`)
+  keeps the unit aim's bookkeeping.
+- **A3 (real time).** `BurstWatch` re-checks the cast until it goes off and cancels it for free (nothing is spent before
+  then) for:
+  - a newly caught ally with Avoid Friendly Fire on;
+  - newly caught allies costing more than the cast is worth;
+  - no enemy left.
+
+  At most 2 cancels per 6 s per ability; the spot is refused for 1.5 s.
+- **A4 (real time).** The landing spot is a pending area for the other AI units' walks until it lands.
+- **A5 (turn-based).** The turn waits for its own burst to land (4 s cap).
+- **Checks** on `d7534ed`:
+  - Release 0 warnings and errors.
+  - 953 unit tests (18 new) and 27 + 18 + 3 script tests.
+  - ProfileAudit exit 0, `BURST-AIM` 28; every other line unchanged on the same inputs; Fusion coverage identical.
+  - Native harnesses 98/14/10.
+  - 9 added game references, all resolve.
+- **Package** `test-builds/AI-Control-FACC-v0.3.60-dev-burst1-d7534ed-UMM-test.zip`, MVID `bc92b339`. Manifest 0.3.60;
+  no `main`, tag or release change.
