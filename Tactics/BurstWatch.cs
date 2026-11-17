@@ -356,7 +356,8 @@ namespace CompanionAI_Pathfinder.Tactics
             {
                 // The roster, then the caster when it was not in it (a caster that is not in combat yet).
                 var u = i < roster.Count ? roster[i] : casterRead ? null : unit;
-                if (u == null || u.Descriptor.State.IsDead) continue;   // the roster is this frame's; a unit can die in it
+                // Roster membership is cached, live state is not: a summon can leave or be torn down later in this frame.
+                if (!CanReadRosterUnit(u, unit)) continue;
                 if (u == unit) casterRead = true;
                 float reach = plan.Radius + u.Corpulence;
                 if (unit.IsEnemy(u))
@@ -418,6 +419,14 @@ namespace CompanionAI_Pathfinder.Tactics
                 Roster.Add(u);
             }
             return Roster;
+        }
+
+        /// <summary>Revalidate retained references without another scene scan. The caster is also considered when it is
+        /// not in combat yet; removed or incompletely initialised units cannot supply geometry/condition reads.</summary>
+        private static bool CanReadRosterUnit(UnitEntityData unit, UnitEntityData caster)
+        {
+            if (unit == null || !unit.IsInGame || unit.Descriptor?.State == null || unit.Descriptor.State.IsDead) return false;
+            return ReferenceEquals(unit, caster) || unit.CombatState?.IsInCombat == true;
         }
 
         /// <summary>Where <paramref name="unit"/> will be in <paramref name="seconds"/> on its own walk, and whether it walks.</summary>

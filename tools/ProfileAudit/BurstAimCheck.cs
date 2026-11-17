@@ -345,6 +345,19 @@ namespace ProfileAudit
                       !evaluateWatch.Any(SceneUnits) && Body(typeof(BurstWatch), "RosterNow").Any(SceneUnits) &&
                       Body(typeof(BurstWatch), "RosterNow").Any(m => m.Name == "get_frameCount"),
                       "A-P1: a re-check reads the units gathered once per frame");
+                var rosterReader = typeof(BurstWatch).GetMethod("CanReadRosterUnit", Hidden);
+                Check(!(bool)rosterReader.Invoke(null, new object[] { null, null }),
+                      "a missing snapshot reference cannot enter burst geometry reads");
+                var tornDown = (UnitEntityData)RuntimeHelpers.GetUninitializedObject(typeof(UnitEntityData));
+                Check(!(bool)rosterReader.Invoke(null, new object[] { tornDown, tornDown }),
+                      "an out-of-game reference retained by the frame roster is rejected");
+                typeof(Kingmaker.EntitySystem.EntityDataBase).GetField("m_IsInGame", Hidden).SetValue(tornDown, true);
+                Check(!(bool)rosterReader.Invoke(null, new object[] { tornDown, tornDown }),
+                      "a retained reference without its descriptor/state is rejected without dereferencing it");
+                Check(Calls(evaluateWatch, typeof(BurstWatch), "CanReadRosterUnit") &&
+                      Body(typeof(BurstWatch), "CanReadRosterUnit").Any(m => m.Name == "get_IsInGame") &&
+                      !Body(typeof(BurstWatch), "CanReadRosterUnit").Any(SceneUnits),
+                      "the re-check validates retained actors live without rescanning the scene");
                 var track = Body(typeof(BurstWatch), "Track");
                 Check(Calls(track, typeof(BurstWatch), "MakeRoom") && !track.Any(m => m.Name == "RemoveAt"),
                       "A-P1: Track makes room only through MakeRoom");
