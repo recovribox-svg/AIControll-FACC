@@ -103,6 +103,10 @@ namespace CompanionAI_Pathfinder.Tactics
                         type != typeof(ContextConditionAlignment) && type != typeof(ContextConditionIsAlly) &&
                         type != typeof(ContextConditionIsEnemy) && type != typeof(ContextConditionIsCaster) &&
                         type != typeof(ContextConditionCasterHasFact) &&
+                        // ★ Fusion coverage C1: the main target is the cast's clicked target (AbilityExecutionContext.MainTarget),
+                        // fixed for the whole cast and read against the scored aim (AbilityProfile.AimedAt). Molten Orb's
+                        // direct hit against its splash; a ground aim has no main target.
+                        type != typeof(ContextConditionIsMainTarget) &&
                         // ★ Fusion F7: a pooled application's "is unconscious" test is the kill dependency the joint
                         // value already carries (no control for a recipient the cast's damage drops).
                         !(pooled && type == typeof(ContextConditionIsUnconscious)))
@@ -147,27 +151,6 @@ namespace CompanionAI_Pathfinder.Tactics
             return false;
         }
 
-        // Native Burning's unlabelled carrier damages its bearer each round, then may remove itself. It is not CC.
-        // Only this narrow graph qualifies for omitted (never invented) periodic benefit; no callbacks are executed.
-        private static bool IsSimplePeriodicDamageCarrier(BlueprintBuff buff)
-        {
-            var components = buff.ComponentsArray;
-            if (components == null || components.Any(c => c != null && c.GetType() != typeof(AddBuffActions) &&
-                c.GetType() != typeof(SpellDescriptorComponent))) return false;
-            var ticks = buff.GetComponents<AddBuffActions>().ToArray();
-            if (ticks.Length != 1) return false;
-            var tick = ticks[0];
-            bool Empty(ActionList list) => list?.Actions == null || list.Actions.Length == 0;
-            if (!Empty(tick.Activated) || !Empty(tick.Deactivated) || !Empty(tick.Dispose)) return false;
-            var actions = tick.NewRound?.Actions;
-            if (actions == null || actions.Length != 2 || !(actions[0] is ContextActionDealDamage damage) ||
-                !CombatMath.IsHitPointDamage(damage) || damage.ReadPreRolledFromSharedValue || damage.Drain ||
-                damage.Value?.DiceCountValue?.IsValueSimple != true || damage.Value.BonusValue?.IsValueSimple != true ||
-                damage.Value.DiceCountValue.Value < 0 || damage.Value.BonusValue.Value < 0) return false;
-            if (!(actions[1] is ContextActionSavingThrow save) || save.Actions?.Actions?.Length != 1 ||
-                !(save.Actions.Actions[0] is ContextActionConditionalSaved saved)) return false;
-            return Empty(saved.Failed) && saved.Succeed?.Actions?.Length == 1 && saved.Succeed.Actions[0] is ContextActionRemoveSelf;
-        }
         internal FusionSavePath FusionPath(GameAction action) =>
             FusionDamagePaths != null && FusionDamagePaths.TryGetValue(action, out var path) ? path : FusionSavePath.Both;
 

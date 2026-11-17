@@ -98,7 +98,7 @@ namespace ProfileAudit
                           ((string)reason.GetValue(profile) ?? "").Contains(expected),
                         $"{a}/{b} ({save}) stays withheld by the outcome gate for '{expected}' (withheld: {why ?? "no"}, reason: {reason.GetValue(profile) ?? "none"})");
                 }
-                Gate("Fireball", "MoltenOrb", SavingThrowType.Reflex, "ContextConditionIsMainTarget");
+                // ★ Fusion coverage C1: Molten Orb's main-target guard is read now; FUSION-DOT checks it is offered.
                 Gate("Fireball", "Disintegrate", SavingThrowType.Reflex, "ContextConditionCompareTargetHP");
                 Gate("Fireball", "ReducePerson", SavingThrowType.Reflex, "carrier");
                 Gate("Fireball", "Enervation", SavingThrowType.Reflex, "non-HP damage");

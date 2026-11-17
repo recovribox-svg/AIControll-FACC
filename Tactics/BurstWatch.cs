@@ -17,6 +17,7 @@ using Kingmaker.UnitLogic.Abilities;
 using Kingmaker.UnitLogic.Abilities.Blueprints;
 using Kingmaker.UnitLogic.Commands;
 using Kingmaker.UnitLogic.Commands.Base;
+using Kingmaker.Utility;
 using UnityEngine;
 
 namespace CompanionAI_Pathfinder.Tactics
@@ -397,7 +398,15 @@ namespace CompanionAI_Pathfinder.Tactics
             var cache = e.Damage ?? (e.Damage = new Dictionary<UnitEntityData, float>());
             if (cache.TryGetValue(ally, out float damage)) return damage;
             damage = e.Plan.Damage;
-            try { damage = CombatMath.EstimateAbilityDamage(e.Plan.Ability, profile, ally); }
+            try
+            {
+                // ★ Fusion coverage C1: as the cast has it - aimed at the ground. A ground aim is the main target of no unit
+                // unless the unit stands exactly on it with facing 0 (TargetWrapper.Equals). Plus the damage over time it
+                // leaves on the ally.
+                using (AbilityProfile.AimedAt(new TargetWrapper(e.Plan.Point)))
+                    damage = CombatMath.EstimateAbilityDamage(e.Plan.Ability, profile, ally) +
+                             TacticalEngine.FusionPeriodicAllyDamage(e.Plan.Ability, profile, ally, CombatMath.AfflictionRounds);
+            }
             catch { }
             cache[ally] = damage;
             return damage;
