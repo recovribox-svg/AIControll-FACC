@@ -282,9 +282,10 @@ namespace CompanionAI_Pathfinder.Tactics
         private static bool TryOrderedDelay(UnitEntityData ally, UnitAttack attack, out float delay)
         {
             delay = 0f;
-            if (!ally.Descriptor.State.CanAct) return false;
+            if (!ally.IsInGame || ally.Descriptor?.State == null || !ally.Descriptor.State.CanAct) return false;
             if (attack.IsStarted) return true;
             if (!attack.CanStart || ally.Descriptor.State.HasCondition(UnitCondition.Nauseated)) return false;
+            if (Kingmaker.Game.Instance.HandsEquipmentController.IsUpdateScheduledFor(ally)) return false;
             if (attack.Type == UnitCommand.CommandType.Standard &&
                 ally.Descriptor.State.HasCondition(UnitCondition.CantUseStandardActions)) return false;
             if (!ally.IsInCombat || attack.IsIgnoreCooldown) return true;
