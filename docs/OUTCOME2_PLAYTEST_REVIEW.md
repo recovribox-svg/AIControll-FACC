@@ -79,8 +79,17 @@ verify the compiled route; they do not pretend to execute native actors or walks
 
 ## Replay and next work
 
-The checked successor package/receipt is recorded in the latest `test-builds/README.md` entry and
-`docs/competence/OUTCOME2_PLAYTEST_CHECKS.json`; manifest is author-requested 0.3.60. New repair requires gameplay testing.
+[outcome3 UMM test ZIP](../test-builds/AI-Control-FACC-v0.3.60-dev-outcome3-faf867c-UMM-test.zip?raw=true),
+[identity](../test-builds/AI-Control-FACC-v0.3.60-dev-outcome3-faf867c-UMM-test.identity.json),
+[checksum](../test-builds/AI-Control-FACC-v0.3.60-dev-outcome3-faf867c-UMM-test.sha256),
+[checks](competence/OUTCOME2_PLAYTEST_CHECKS.json),
+[compiler/reference provenance](competence/OUTCOME2_PLAYTEST_BUILD_PROVENANCE.json).
+Checked runtime source **`faf867c`**, MVID **`56f51d96-d662-449f-af2b-7222e5d11aed`**; **935 unit + 27/3/18 script tests**,
+real-reference Release **0 warnings/errors**; FUSION-POOL **39**, all inherited checks, Magus 44 and native harnesses
+**98/14/10** pass. No added native references. Fusion metadata coverage and inherited report rows are unchanged.
+ZIP SHA-256 `1bfd4ebe048814e2b0fd04745b602076705a929e89992bcc25665cf2eb6ccf2a`. The author requested **UMM v0.3.60** after runtime validation:
+the updated Info.json supplies the menu and startup version; the unique checked DLL remains frozen, with no C#/
+project change in version metadata commit `082216f`. New repair requires gameplay testing.
 
 1. RT: with Avoid Friendly Fire on, aim a broad damaging Sleep fusion where an ally already has a walk through
    its burst. Expect another aim or no cast, as for the equivalent non-pool damaging area. The corrected branch

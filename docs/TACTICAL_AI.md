@@ -6468,7 +6468,13 @@ without predicting future pool debits/control or altering native Sleep's target/
 enemy-only delivery retain selection. Both modes share scoring; the existing walking reader is RT-only. No new
 independent path/world/forecast pass, persistent actor cache, movement/cancellation policy or scoring constant.
 Newly recognized walking recipients use the existing per-recipient damage/immunity valuation.
-Eight added real-profile/compiled-route audit checks; full validation and frozen package identity follow.
+Eight added real-profile/compiled-route audit checks pass: FUSION-POOL **39**. Checked source **`faf867c`**,
+MVID **`56f51d96-d662-449f-af2b-7222e5d11aed`**; 935 unit + 27/3/18 scripts, zero-warning/error real-reference Release,
+ProfileAudit/inherited checks, Magus 44 and providers 98/14/10 pass. No added native signatures; full Fusion matrix
+byte-identical (8,709/15,494 admitted). [Receipt](competence/OUTCOME2_PLAYTEST_CHECKS.json),
+[provenance](competence/OUTCOME2_PLAYTEST_BUILD_PROVENANCE.json), cumulative outcome3 package in test-builds.
+The author requested **UMM v0.3.60** after these checks; Info.json supplies the menu/startup version, while the
+checked runtime DLL stays frozen. Version metadata commit `082216f` changes no C#/project.
 
 This is a confirmed source regression, not a replay of all recorded geometry. A unit-targeted burst may follow a
 moving enemy into stationary allies after selection. Keep that as a separate native phase/anchor/coordination

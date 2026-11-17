@@ -1,0 +1,33 @@
+{
+  "build_label": "outcome3",
+  "kind": "development-test",
+  "version": "0.3.60",
+  "source_branch": "codex/outcome2-playtest-review",
+  "source_commit": "faf867c74554f5d7a677b3a6aec279a870d4332c",
+  "manifest_source_commit": "082216faeab8b4e52ed51d3b156c6fd1c0ff0bee",
+  "development_base": "acb100326b40f60600178a733d6b832b97d2fead",
+  "dll": {
+    "assembly": "CompanionAI_Pathfinder, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null",
+    "mvid": "56f51d96-d662-449f-af2b-7222e5d11aed",
+    "sha256": "19ae6f80545357ee0a3c5182b439fe11d59e5ec62d764226d013b4e56fbca6fa",
+    "size": 1480704
+  },
+  "archive": "AI-Control-FACC-v0.3.60-dev-outcome3-faf867c-UMM-test.zip",
+  "zip_sha256": "1bfd4ebe048814e2b0fd04745b602076705a929e89992bcc25665cf2eb6ccf2a",
+  "manifest_sha256": "63ad9f152d4bacb44f021428193efad46aaf0d13380bb5691ebca1d935f2b5bf",
+  "checks_receipt": "docs/competence/OUTCOME2_PLAYTEST_CHECKS.json",
+  "build_provenance": "docs/competence/OUTCOME2_PLAYTEST_BUILD_PROVENANCE.json",
+  "build_provenance_sha256": "4d81032013a49814794f260d9dd2c5c3da3f944499099ee8f957674d74bcd1fe",
+  "toolchain": {
+    "dotnet_sdk": "8.0.426",
+    "csharp_compiler": "4.11.0-3.25569.22 (3fb752d4)"
+  },
+  "scope": "Cumulative outcome2/development code plus restored walking-in ally safety for a pooled fusion independent payload.",
+  "manifest_note": "Author requested UMM 0.3.60 after runtime validation. Only Info.json supplies the UMM/startup version; compiled code/project unchanged. The validated unique DLL is frozen, not rebuilt or relabelled as different source.",
+  "gameplay_status": "new correction unplayed",
+  "archive_contents": [
+    "CompanionAI_Pathfinder.dll",
+    "Info.json"
+  ],
+  "release": false
+}
