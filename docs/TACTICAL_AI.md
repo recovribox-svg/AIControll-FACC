@@ -6534,3 +6534,27 @@ their orders and hit four allies.
   - 9 added game references, all resolve.
 - **Package** `test-builds/AI-Control-FACC-v0.3.60-dev-burst1-d7534ed-UMM-test.zip`, MVID `bc92b339`. Manifest 0.3.60;
   no `main`, tag or release change.
+
+## 190. Cast disruption, slice B (17 November 2026, Claude; not played)
+
+[Design and replay](CAST_DISRUPTION.md), [plan](BURST_AIM_AND_TACTICS_PLAN.md) §4,
+[receipt](competence/CAST_DISRUPTION_CHECKS.json). Real time only, valuation only.
+
+- **The game's rule.** A hit on an enemy whose Standard cast has started and not gone off forces a concentration check:
+  d20 + concentration against 10 + spell level + damage / 2. A failure spends the spell
+  (`UnitConcentrationController`, `RuleCheckConcentration`).
+- **The bonus.** Weapon attacks (their first one or two attacks) and damaging abilities that can land in time gain the
+  chance they break the cast times its stakes:
+  - the stakes are the spell's harm on its victim, using the enemy-threat reading (`EnemyThreat.CastHarm`, sharing
+    `AbilityHarm` with `BestAbility`);
+  - an unread spell is valued at the caster's worth for a round.
+- **Detection.** Casting enemies are read once per decision, and each cast once (`TacticalEngine.Disrupt.cs`). Pure
+  rules: `DisruptRules`.
+- **Checks** on `6845b83`:
+  - Release 0 warnings and errors.
+  - 965 unit tests (12 new) and 27 + 18 + 3 script tests.
+  - ProfileAudit exit 0, `CAST-DISRUPT` 15, `BURST-AIM` 28; every other line unchanged.
+  - Native harnesses 98/14/10.
+  - 1 added game reference, which resolves.
+- **Package** `test-builds/AI-Control-FACC-v0.3.60-dev-disrupt1-6845b83-UMM-test.zip`, MVID `549869b4`. It includes
+  slice A.
