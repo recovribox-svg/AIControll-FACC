@@ -8,7 +8,14 @@ Read [CONTRIBUTING.md](CONTRIBUTING.md) for shared branch ownership, Codex pull 
 Codex works on task branches and targets pull requests at `claude/dreamy-pasteur-b9h3rn`; Claude reviews and integrates them there.
 Keep `main` for author-authorized releases. Read [AGENTS.md](AGENTS.md) when coordinating agent work.
 
-**Current handover (17 November 2026, Claude): PR #80 reviewed and merged into development (`b218c28`); Codex's
+**Current handover (17 November 2026, Claude): plan only, on `claude/burst-aim-tactics-plan` (no PR yet).** Read
+[docs/BURST_AIM_AND_TACTICS_PLAN.md](docs/BURST_AIM_AND_TACTICS_PLAN.md). It covers four slices:
+A, delayed bursts aimed at the ground (the author chose ground aim; A3 pre-cast cancel, A4 landing-spot avoidance and
+A5 turn-based wait need approval); B, real-time disruption of enemy casts by the native concentration rule; C, buffs
+suppressed on arrival; D, fortification and second-attacker flanking for sneak attack. The supplied feature document
+targets the old engine and several of its rules are not this game's (section 2). No code, manifest or package change.
+
+**Earlier handover (17 November 2026, Claude): PR #80 reviewed and merged into development (`b218c28`); Codex's
 review and merge of PRs #74-79 assessed and agreed with.** Read `docs/TACTICAL_AI.md` §188 and the
 [receipt](docs/competence/INTEGRATION_80_CHECKS.json). Development's tree equals PR #80's head `5fe5771`; the play
 package is still the outcome3 ZIP below (v0.3.60, MVID `56f51d96`), unplayed. Checks on development: Release 0 warnings
