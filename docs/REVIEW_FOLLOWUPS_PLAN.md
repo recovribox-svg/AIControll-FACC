@@ -14,7 +14,7 @@ it, with a PR into `claude/dreamy-pasteur-b9h3rn` that is merged only after #85.
 | **D-R1** engagement assumed without reach, sight or concealment | Valid | High: the flank prediction runs in every attack routine, including enemy danger | Native, verified below | Low: native facts only, no geometry | **F1, selected, implemented first** |
 | D-R1, Codex's full origin-aware geometry quote | Partly superseded by F1 | Medium: only the cases F1 leaves | Needs a projected arrival point | Geometry at projected points, which needs approval | Kept as a proposal |
 | **B-R1** several allies each credited with breaking one cast | Valid; the overcount is certain whenever two allies decide while one is already attacking | Medium to high in real-time fights against casters | Arithmetic (independent breaks) | Medium: reads already-issued friendly commands | **F2, selected, after F1** |
-| C-R1 cleanse eligibility ignores the fight horizon | Valid | Low: needs a party-side Ameliorating hex or a form-suppressed debuff | Native durations | Low | F3, low priority |
+| C-R1 cleanse eligibility ignores the fight horizon | Valid | Low: needs a party-side Ameliorating hex or a form-suppressed debuff | Native durations | Low | **F3, done** (the author asked for it) |
 | A-R1 straight-line burst prediction, and the HP-only re-check (A3) | Valid limit | Medium | Native path contract verified ([BURST_PATH_FORECAST.md](BURST_PATH_FORECAST.md)) | Low: reads the agent's existing path, no search | **Approved 17 November; done** (burst follow-ups) |
 | A-P1 scene scan and the 32-watch cap | Valid in principle | Low: a party rarely has more than a few pending bursts | Needs a live count | Low | **Approved; done**, with the counts logged per fight |
 | B-R2 swing and flight timing estimates | Valid limit | Medium | Needs measured hit times | Calibration needs logs | Replay first |
@@ -103,9 +103,12 @@ one's attack is issued.
 
 ## F3: horizon-aware cleanse of suppressed debuffs (C-R1, low priority)
 
-A suppressed debuff counts for a cleanse only if it acts again within the fight horizon:
-`SuppressionRules.ActiveRounds > 0`, instead of "outlasts its suppressor". This is the same horizon the dispel worth
-already uses. The arrival rule (C1) stays conservative. To be done after F2 if it still warrants the work.
+**Done** on `claude/cleanse-horizon` (`02163d7`): [CLEANSE_HORIZON.md](CLEANSE_HORIZON.md),
+[receipt](competence/CLEANSE_F3_CHECKS.json), package cleanse1 (MVID `2799ef2d`), the one to play.
+
+A suppressed debuff's cleanse earns the share of its rounds left within the horizon that it acts after its suppressor ends
+(`SuppressionRules.ActiveShare`), the rounds the dispel worth already uses. An unsuppressed debuff keeps its full value.
+The arrival rule (C1) stays conservative.
 
 ## Burst follow-ups: A-R1, A3, A-P1 (real time)
 
@@ -126,4 +129,4 @@ already uses. The arrival rule (C1) stays conservative. To be done after F2 if i
   predicted flank failing at the arrival point.
 - **Timing calibration (B-R2) and the TTT fortification provider (D-R2)** need replay evidence or a provider design
   first. The disrupt2 and burstpath1 replays collect the timings.
-- **F3** stays low priority; it is the next permitted slice if the author wants it before playing.
+- Every selected follow-up is done. Codex reviews the stack next, then the author plays cleanse1.

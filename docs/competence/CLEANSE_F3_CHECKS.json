@@ -1,0 +1,56 @@
+{
+ "task": "Review follow-up F3 (C-R1 of REVIEW_81_84.md): a suppressed debuff's cleanse valued by the rounds it acts within the horizon; both modes, valuation only",
+ "date": "2026-11-17",
+ "author": "Claude",
+ "branch": "claude/cleanse-horizon",
+ "stacked_on": "PR #88 (burst follow-ups), on PR #87 (F2) -> #86 (F1) -> #85 -> #84 -> #83 -> #82 -> #81; nothing merged",
+ "checked_source": "02163d7a2fdd1a7174d2745ada35fe2f6de4fe00",
+ "development_base": "ad63ee8690ad47e74bfad54ba65c13810e4b5316",
+ "toolchain": {
+  "dotnet_sdk": "8.0.428",
+  "csharp_compiler": "4.11.0-3.25569.22 (3fb752d4)",
+  "provenance": "docs/competence/CLEANSE_F3_BUILD_PROVENANCE.json"
+ },
+ "release_build": "0 warnings, 0 errors",
+ "unit_tests": "1,032 pass (SuppressionRulesTests: the eligibility tests replaced by share tests, including Codex's C-R1 example)",
+ "script_tests": {
+  "BlueprintInventory": 27,
+  "InvocationLedger": 18,
+  "ProfileAudit supplement": 3
+ },
+ "profileaudit": {
+  "exit": 0,
+  "buff_suppress": "34 checks, 0 failures (the pure rule and C-R1 case; RemovedActiveShare in ScoreAbility; the dispel fallback; the game side defers to the rule)",
+  "other_lines": "identical to the burst follow-up run on the same inputs",
+  "fusion_coverage": "byte-identical; 8,709 / 15,494",
+  "summon_kit_detail": "byte-identical",
+  "report_sha256": "85e5853c4753c6bf097559c54ed55bb70952895cc2240f9a7f2c585b6931e4ef"
+ },
+ "native_harnesses": {
+  "ToggleCosts": 98,
+  "TomeBurn": 14,
+  "ToyBoxSpend": 10
+ },
+ "not_run": [
+  "Supplementary Magus 44 corpus run: inputs not in this environment; no Magus code is touched"
+ ],
+ "signatures": {
+  "relative_to": "burst follow-ups (62dede5)",
+  "added": 0,
+  "removed": 0
+ },
+ "package": {
+  "zip": "test-builds/AI-Control-FACC-v0.3.60-dev-cleanse1-02163d7-UMM-test.zip",
+  "identity": "test-builds/AI-Control-FACC-v0.3.60-dev-cleanse1-02163d7-UMM-test.identity.json",
+  "sha256": "test-builds/AI-Control-FACC-v0.3.60-dev-cleanse1-02163d7-UMM-test.sha256",
+  "mvid": "2799ef2d-f330-4e9f-b654-af448b5bac4d",
+  "zip_sha256": "b179769ea86c1143ad7be5ddace3cdfe4718a0ce4c61b690589dc755e211fbf9",
+  "dll_sha256": "49c010008febf33e88db6b5591de65fb2c768480bc0c6a855cea6a1240d30334"
+ },
+ "manifest": "0.3.60, unchanged; no main, tag or release change; nothing merged",
+ "not_tested": [
+  "Gameplay: unplayed. Offline checks create no unit, buff or suppression.",
+  "The arrival rule (C1) stays conservative: a buff suppressed on arrival is still worth 0.",
+  "An action that removes the suppressor but not the debuff (so the debuff resumes) is not priced."
+ ]
+}

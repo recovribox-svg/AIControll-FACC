@@ -60,7 +60,8 @@ Haste and Slow do not suppress each other: they remove each other, which the eng
 - C1 drops the suppressed buffs from a recipient's list. A recipient left with none gives the cast no value, so a plain
   buff does not fall through to the fallback for unread effects.
 - C2, cleanses: a suppressed harmful buff counts only if it would outlast its longest suppressor. A permanent suppressor
-  (a feature) means never.
+  (a feature) means never. Follow-up F3 ([CLEANSE_HORIZON.md](CLEANSE_HORIZON.md)) values it by the rounds it acts within
+  the horizon instead.
 - C2, dispels: the worth counts `min(horizon, rounds left) − min(horizon, rounds suppressed)`.
 - A suppressed buff whose suppressor cannot be found keeps its old value.
 - The Shifter form appraisal is unchanged. It already counts the buffs a form switches off (`ShifterFormProjection`).
