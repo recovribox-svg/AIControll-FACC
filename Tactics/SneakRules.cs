@@ -5,8 +5,9 @@
 //   UnitPartFortification.Value (the highest fortification) negates all three when it is at or under the value;
 // - UnitCombatState.IsFlanked: turn-based, more than one unit engages the target; real time, more than one engaging unit
 //   whose command targets it; never with CannotBeFlanked. Engagement also needs threat reach, sight and no total
-//   concealment (UnitCombatEngagementController.TickUnit / UnitEngagementExtension.IsEngage). PredictsFlank consumes
-//   the caller's prospective engagement assumption; it cannot prove those conditions;
+//   concealment (UnitCombatEngagementController.TickUnit / UnitEngagementExtension.IsEngage). WillEngage decides the
+//   attacker's side from the native engagement state or, for an attack still to come, from threat reach covering the
+//   attacking weapon and the absence of total concealment (review follow-up F1); PredictsFlank consumes that answer;
 // - RuleCalculateAttackBonus: +2 flanking on a melee weapon when the target is flanked or TargetIsFlanked is set.
 using System;
 
@@ -30,6 +31,21 @@ namespace CompanionAI_Pathfinder.Tactics
         /// </summary>
         public static bool PredictsFlank(bool nativeFlanked, bool cannotBeFlanked, bool attackerEngages, int otherEngagers) =>
             !cannotBeFlanked && (nativeFlanked || attackerEngages && otherEngagers >= 1);
+
+        /// <summary>
+        /// ★ review follow-up F1 (docs/REVIEW_FOLLOWUPS_PLAN.md, D-R1): a melee attacker becomes an engager of its target when
+        /// the attack lands. The game's own engagement state answers it when the attacker engages the target already
+        /// (reach, sight and concealment proven by UnitCombatEngagementController). Otherwise the attack lands inside its
+        /// approach radius (bodies + weapon range), which is inside engagement reach (bodies + threat range) only when the
+        /// threat range covers the weapon's; and total concealment absent now stays absent closer in (it only falls with
+        /// distance in UnitPartConcealment.Calculate). Present now, it may lift on arrival: no credit, conservatively.
+        /// </summary>
+        public static bool WillEngage(bool engagedNow, bool canEngage, float threatRange, float attackRange, bool totallyConcealedNow) =>
+            engagedNow || canEngage && !totallyConcealedNow && !float.IsNaN(threatRange) && !float.IsNaN(attackRange) &&
+            threatRange + ReachTolerance >= attackRange;
+
+        /// <summary>Metres: float noise between two ranges read from the same Feet values.</summary>
+        public const float ReachTolerance = 0.01f;
 
         /// <summary>
         /// What one of a partner's attack lines gains once the target is flanked: the difference between native-derived

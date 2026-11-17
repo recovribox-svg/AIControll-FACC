@@ -41,6 +41,22 @@ namespace CompanionAI.Tests
             Assert.Equal(expected, SneakRules.PredictsFlank(native, cannot, engages, others));
         }
 
+        [Theory]
+        // engaged now, can engage, threat range, attack range, totally concealed now -> engages when the attack lands
+        [InlineData(true, false, 0f, 3f, true, true)]          // the game's own engagement answers it
+        [InlineData(false, true, 1.5f, 1.5f, false, true)]     // same hand: its reach covers the attack
+        [InlineData(false, true, 3f, 1.5f, false, true)]       // longer threat reach
+        [InlineData(false, true, 1.5f, 3f, false, false)]      // reach weapon beyond the threat hand: no engagement
+        [InlineData(false, true, 1.5f, 1.5f, true, false)]     // invisible target, no See Invisibility
+        [InlineData(false, false, 1.5f, 1.5f, false, false)]   // cannot act or no threat hand
+        [InlineData(false, true, 1.495f, 1.5f, false, true)]   // within float tolerance
+        [InlineData(false, true, float.NaN, 1.5f, false, false)]
+        public void EngagementFollowsTheNativeConditions(bool engagedNow, bool canEngage, float threat, float attack,
+                                                         bool concealed, bool expected)
+        {
+            Assert.Equal(expected, SneakRules.WillEngage(engagedNow, canEngage, threat, attack, concealed));
+        }
+
         [Fact]
         public void APartnerGainsTheFlankingBonusAndItsSneakDice()
         {
