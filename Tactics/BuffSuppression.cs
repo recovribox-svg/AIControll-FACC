@@ -207,20 +207,21 @@ namespace CompanionAI_Pathfinder.Tactics
         }
 
         /// <summary>
-        /// C2: a harmful <paramref name="buff"/> on its bearer is worth removing now: it is not suppressed, or it would outlast
-        /// what suppresses it. A suppressed one with no suppressor found counts as before (unknown).
+        /// C2 / F3: the share of removing a harmful <paramref name="buff"/> that falls within <paramref name="horizon"/>
+        /// rounds (SuppressionRules.ActiveShare): 1 when it is not suppressed, the rounds it acts after its suppressor ends
+        /// otherwise. A suppressed one with no suppressor found keeps all of it (unknown, as before).
         /// </summary>
-        internal static bool StillMatters(Buff buff)
+        internal static float ActiveShare(Buff buff, float horizon)
         {
-            if (buff == null || !buff.IsSuppressed) return true;
+            if (buff == null || !buff.IsSuppressed) return 1f;
             try
             {
-                float left = buff.IsPermanent ? float.PositiveInfinity : (float)buff.TimeLeft.TotalSeconds;
-                return SuppressionRules.StillMatters(true, left, SuppressedSeconds(buff));
+                float left = buff.IsPermanent ? float.PositiveInfinity : (float)buff.TimeLeft.TotalSeconds / 6f;
+                return SuppressionRules.ActiveShare(true, left, SuppressedSeconds(buff) / 6f, horizon);
             }
             catch
             {
-                return true;
+                return 1f;
             }
         }
 

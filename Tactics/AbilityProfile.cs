@@ -1945,11 +1945,22 @@ namespace CompanionAI_Pathfinder.Tactics
         /// good buff is not a cleanse: Orvath's "Shift Form: Mortal Guise" removes the Overlord form and was valued as a
         /// cleanse, so he switched forms back and forth every turn.
         /// </summary>
-        public bool WouldRemoveSomething(AbilityData ability, UnitEntityData target)
+        /// <remarks>
+        /// ★ review follow-up F3 (C-R1): the share of the cleanse's worth the removal earns within <paramref name="horizon"/>
+        /// rounds - 1 when a harmful buff it removes acts now, else the best share of a suppressed one after its suppressor
+        /// ends (BuffSuppression.ActiveShare); 0 when it removes nothing harmful that acts within the horizon. A buff
+        /// suppressed until after it ends (an Ameliorating hex, a form) does nothing; removing it gains nothing.
+        /// </remarks>
+        public float RemovedActiveShare(AbilityData ability, UnitEntityData target, float horizon)
         {
-            // ★ suppressed buffs (slice C2): a harmful buff suppressed until after it ends (an Ameliorating hex, a form)
-            // does nothing; removing it now gains nothing.
-            return BuffsRemovedFrom(ability, target).Any(b => IsHarmfulFor(b, target) && BuffSuppression.StillMatters(b));
+            float share = 0f;
+            foreach (var buff in BuffsRemovedFrom(ability, target))
+            {
+                if (!IsHarmfulFor(buff, target)) continue;
+                share = Math.Max(share, BuffSuppression.ActiveShare(buff, horizon));
+                if (share >= 1f) return 1f;
+            }
+            return share;
         }
 
         /// <summary>Good buffs on the target this ability would remove (a mode switch such as Overlord ↔ Mortal Guise).</summary>

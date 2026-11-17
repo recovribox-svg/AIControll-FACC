@@ -16,15 +16,18 @@ namespace CompanionAI_Pathfinder.Tactics
             !excluded && (listed || descriptorSuppressed || schoolSuppressed);
 
         /// <summary>
-        /// A suppressed harmful buff does nothing while it is suppressed: removing it is worth something only when it would
-        /// outlast what suppresses it (seconds; <see cref="float.PositiveInfinity"/> for a permanent fact).
+        /// ★ review follow-up F3 (C-R1): the share of what removing a harmful buff is worth that falls within the horizon.
+        /// A buff that is not suppressed keeps all of it (the cleanse's value as before). A suppressed one does nothing
+        /// until its suppressor ends: its share is the rounds it acts after that, within the horizon and before it ends,
+        /// over its rounds left within the horizon. Rounds; <see cref="float.PositiveInfinity"/> for a permanent buff or
+        /// suppressor; an unknown time (NaN) keeps all of it, as before.
         /// </summary>
-        public static bool StillMatters(bool suppressed, float buffSecondsLeft, float suppressorSecondsLeft)
+        public static float ActiveShare(bool suppressed, float roundsLeft, float suppressedRounds, float horizon)
         {
-            if (!suppressed) return true;
-            if (float.IsNaN(buffSecondsLeft) || float.IsNaN(suppressorSecondsLeft)) return true;   // unknown: as before
-            if (float.IsPositiveInfinity(suppressorSecondsLeft)) return false;
-            return buffSecondsLeft > suppressorSecondsLeft;
+            if (!suppressed || float.IsNaN(roundsLeft) || float.IsNaN(suppressedRounds)) return 1f;
+            float rounds = Math.Min(horizon, roundsLeft);
+            if (!(rounds > 0f)) return 0f;
+            return ActiveRounds(roundsLeft, suppressedRounds, horizon) / rounds;
         }
 
         /// <summary>

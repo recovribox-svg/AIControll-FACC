@@ -20,26 +20,33 @@ namespace CompanionAI.Tests
         }
 
         [Fact]
-        public void AnActiveBuffAlwaysMatters()
+        public void AnActiveBuffKeepsAllItsWorth()
         {
-            Assert.True(SuppressionRules.StillMatters(false, 6f, 600f));
-            Assert.True(SuppressionRules.StillMatters(false, float.NaN, float.NaN));
+            Assert.Equal(1f, SuppressionRules.ActiveShare(false, 1f, 600f, 3f));
+            Assert.Equal(1f, SuppressionRules.ActiveShare(false, float.NaN, float.NaN, 3f));
         }
 
-        [Fact]
-        public void ASuppressedBuffMattersOnlyIfItOutlastsItsSuppressor()
+        [Theory]
+        // rounds left, suppressed rounds, horizon -> share of the cleanse's worth
+        [InlineData(2f, 10f, 3f, 0f)]                 // ends while suppressed
+        [InlineData(10f, 10f, 3f, 0f)]                // ends with it
+        [InlineData(20f, 10f, 30f, 0.5f)]             // comes back for half its time (a long fight)
+        [InlineData(20f, 10f, 3f, 0f)]                // ... but not within a three-round horizon
+        [InlineData(10.1667f, 10f, 3f, 0f)]           // Codex's C-R1 example: 61 s left under 60 s, an 18 s horizon
+        [InlineData(10f, 1f, 3f, 2f / 3f)]            // suppressed for the first round of three
+        [InlineData(2f, 1f, 3f, 0.5f)]                // one of its two rounds left
+        [InlineData(float.PositiveInfinity, 2f, 3f, 1f / 3f)]   // a permanent curse under a hex with two rounds left
+        public void ASuppressedBuffCountsOnlyTheRoundsItActsWithinTheHorizon(float left, float suppressed, float horizon, float expected)
         {
-            Assert.False(SuppressionRules.StillMatters(true, 12f, 60f));    // ends while suppressed
-            Assert.False(SuppressionRules.StillMatters(true, 60f, 60f));    // ends with it
-            Assert.True(SuppressionRules.StillMatters(true, 120f, 60f));    // comes back for a minute
+            Assert.Equal(expected, SuppressionRules.ActiveShare(true, left, suppressed, horizon), 4);
         }
 
         [Fact]
         public void PermanentSuppressorsAndBuffs()
         {
-            Assert.False(SuppressionRules.StillMatters(true, 600f, float.PositiveInfinity));                   // a feature's suppression
-            Assert.False(SuppressionRules.StillMatters(true, float.PositiveInfinity, float.PositiveInfinity));
-            Assert.True(SuppressionRules.StillMatters(true, float.PositiveInfinity, 60f));                     // a permanent curse outlasts a hex
+            Assert.Equal(0f, SuppressionRules.ActiveShare(true, 100f, float.PositiveInfinity, 3f));                  // a feature's suppression
+            Assert.Equal(0f, SuppressionRules.ActiveShare(true, float.PositiveInfinity, float.PositiveInfinity, 3f));
+            Assert.Equal(0f, SuppressionRules.ActiveShare(true, 0f, 1f, 3f));                                        // nothing left
         }
 
         [Theory]
@@ -59,8 +66,8 @@ namespace CompanionAI.Tests
         [Fact]
         public void UnknownTimesKeepTheOldValuation()
         {
-            Assert.True(SuppressionRules.StillMatters(true, float.NaN, 60f));
-            Assert.True(SuppressionRules.StillMatters(true, 60f, float.NaN));   // no suppressor found
+            Assert.Equal(1f, SuppressionRules.ActiveShare(true, float.NaN, 10f, 3f));
+            Assert.Equal(1f, SuppressionRules.ActiveShare(true, 10f, float.NaN, 3f));   // no suppressor found
         }
     }
 }

@@ -3135,7 +3135,7 @@ namespace CompanionAI_Pathfinder.Tactics
         /// ★ v0.3.4: the "dispel" fallback needs a target: an enemy with a spell buff to strip (Dispel Magic), or an ally with
         /// a harmful effect. Treat Affliction kept a 2.0 "dispel" option on Orvath with nothing to treat in 0.3.3.
         /// </summary>
-        private static bool HasSomethingToDispel(UnitEntityData caster, UnitEntityData target, AbilityProfile profile)
+        private static bool HasSomethingToDispel(UnitEntityData caster, UnitEntityData target, AbilityProfile profile, float horizon)
         {
             if (target?.Buffs == null) return false;
             try
@@ -3143,8 +3143,8 @@ namespace CompanionAI_Pathfinder.Tactics
                 bool enemy = caster.IsEnemy(target);
                 foreach (var buff in target.Buffs.Enumerable)
                 {
-                    // ★ suppressed buffs (slice C2): what is suppressed for the rest of its time does nothing.
-                    if (!BuffSuppression.StillMatters(buff)) continue;
+                    // ★ suppressed buffs (slice C2, follow-up F3): what is suppressed for the rest of the horizon does nothing.
+                    if (!(BuffSuppression.ActiveShare(buff, horizon) > 0f)) continue;
                     bool harmful = buff.Blueprint.Harmful ||
                                    (buff.MaybeContext?.MaybeCaster != null && buff.MaybeContext.MaybeCaster.IsEnemy(target));
                     // ★ v0.3.24 (v0.3.23 logs): only what this ability can take off. Any harmful buff counted, so Treat
@@ -4814,16 +4814,23 @@ namespace CompanionAI_Pathfinder.Tactics
             if (profile.RemovesAnything && affectedAllies.Count > 0)
             {
                 float cleanseValue = 0f;
-                foreach (var ally in affectedAllies.Where(a => profile.WouldRemoveSomething(ability, a)))
+                float horizon = Math.Min(ctx.ExpectedRounds, 3f);
+                float partial = 1f;   // the smallest share below 1, for the label
+                foreach (var ally in affectedAllies)
                 {
+                    // ★ review follow-up F3 (C-R1): a suppressed debuff counts for the rounds it acts within the horizon
+                    // after its suppressor ends, not the whole horizon (the dispel worth's rule, DispelValue).
+                    float share = profile.RemovedActiveShare(ability, ally, horizon);
+                    if (!(share > 0f)) continue;
+                    if (share < partial) partial = share;
                     bool fighting = (ally.CombatState?.IsEngaged ?? false) || ally == unit;
-                    float ordinary = (2f + 2f * level) * Math.Min(ctx.ExpectedRounds, 3f) * (fighting ? 1f : 0.6f);
+                    float ordinary = (2f + 2f * level) * horizon * (fighting ? 1f : 0.6f) * share;
                     cleanseValue += Math.Max(ordinary, AttachedCleanseWorth(ctx, ability, profile, ally));
                 }
                 if (cleanseValue > 0f)
                 {
                     value += cleanseValue * RoleWeight(ctx, "heal");
-                    reasons.Add("cleanse");
+                    reasons.Add(partial < 1f ? $"cleanse ({partial:P0} after suppression)" : "cleanse");
                 }
             }
 
@@ -4902,7 +4909,7 @@ namespace CompanionAI_Pathfinder.Tactics
                         // Shared RT: another ally's identical treatment can still be in flight before its native
                         // exclusion marker arrives. Only withhold this unmodelled removal fallback; healing and
                         // independently valued effects retain their normal appraisal. Re-evaluate when it finishes.
-                        if (HasSomethingToDispel(unit, target, profile) &&
+                        if (HasSomethingToDispel(unit, target, profile, Math.Min(ctx.ExpectedRounds, 3f)) &&
                             (targetIsEnemy || !CombatMemory.CastPendingByOther(unit, ability, target)))
                         {
                             value += 2f;
