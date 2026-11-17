@@ -1,11 +1,13 @@
 // ★ burst aim (docs/BURST_AIM_AND_TACTICS_PLAN.md §3): bursts that land after their cast goes off are aimed at the
 // ground where their anchor will be. Native contracts on the real assembly, the A1 classification on the real
 // exported blueprints (and a fusion built on Explosive Runes), and the compiled routes of A2-A5.
-// Actor-free: no Game/Player, context, selection, command, cast or Unity timing.
+// Inert path/entity layouts and the production scalar readers are exercised; no live Game/Player, actor setup, navmesh,
+// native command/cast execution or Unity timing.
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
+using System.Runtime.CompilerServices;
 using CompanionAI_Pathfinder.Tactics;
 using Kingmaker.Blueprints;
 using Kingmaker.Blueprints.Classes.Spells;
@@ -270,9 +272,59 @@ namespace ProfileAudit
                 var readRoute = Body(engine, "ReadRoute");
                 var addPath = Body(engine, "AddNativePath");
                 Check(Calls(readRoute, engine, "WalkingCommand") && Calls(readRoute, engine, "AddNativePath") &&
-                      Calls(readRoute, typeof(WalkRoute), "StopWithin") && Calls(readRoute, typeof(SpotRules), "WalkEnd") &&
+                      Calls(readRoute, engine, "StopRouteAtApproachDistance") && Calls(readRoute, typeof(SpotRules), "WalkEnd") &&
                       addPath.Any(m => m.Name == "get_AgentASP") && addPath.Any(m => m.Name == "get_Path") && addPath.Contains(vectorPath),
                       "A-R1: ReadRoute follows the agent's path to the command's stop, else the straight walk");
+                // Execute the production request matcher with real ABPath/XPath layouts, without PathPool/Seeker,
+                // navmesh, commands or units. A terminal near the new aim is not proof of the old path's requested aim.
+                var pathAssembly = pathProperty.PropertyType.Assembly;
+                var abType = pathAssembly.GetType("Pathfinding.ABPath", true);
+                var xpathType = pathAssembly.GetType("Pathfinding.XPath", true);
+                var originalEnd = abType.GetField("originalEndPoint");
+                var matchPath = engine.GetMethod("NativePathMatchesAim", Hidden);
+                var aimPoint = new UnityEngine.Vector3(10f, 0f, 10f);
+                bool Matches(Type type, UnityEngine.Vector3 requested, UnityEngine.Vector3 end, float radius = 2f)
+                {
+                    var path = RuntimeHelpers.GetUninitializedObject(type);
+                    originalEnd.SetValue(path, requested);
+                    vectorPath.SetValue(path, new List<UnityEngine.Vector3> { UnityEngine.Vector3.zero, end });
+                    return (bool)matchPath.Invoke(null, new object[] { path, aimPoint, radius });
+                }
+                Check(!Matches(abType, new UnityEngine.Vector3(0f, 0f, 10f), new UnityEngine.Vector3(10f, 0f, 9f)),
+                      "an unrelated path ending inside the new command's radius cannot supply its burst forecast");
+                Check(Matches(abType, aimPoint, aimPoint), "the native ABPath with this requested endpoint is accepted");
+                Check(Matches(xpathType, aimPoint, new UnityEngine.Vector3(9f, 0f, 10f)),
+                      "an XPath may stop short while retaining the matching original endpoint");
+                Check(!Matches(abType, aimPoint, UnityEngine.Vector3.zero),
+                      "a partial terminal outside native approach distance is not treated as arrival");
+                Check(Matches(abType, aimPoint, new UnityEngine.Vector3(10f, 4f, 10f), 2.5f),
+                      "path admission uses native mechanics distance including its height rule, not an arbitrary horizontal tolerance");
+                Check(Calls(addPath, engine, "NativePathMatchesAim") &&
+                      Body(engine, "NativePathMatchesAim").Any(m => m.Name == "originalEndPoint"),
+                      "the production route validates the original path request before reading its waypoints");
+                var stopRoute = engine.GetMethod("StopRouteAtApproachDistance", Hidden);
+                var nativeStop = new WalkRoute();
+                nativeStop.Start(0f, 0f, 0f, 2f); nativeStop.Add(10f, 0f, 0f);
+                stopRoute.Invoke(null, new object[] { nativeStop, new UnityEngine.Vector3(10f, 0f, 0f), 2f });
+                Check(Math.Abs(nativeStop.EndX - 8f) < 1e-4,
+                      "the production native-path distance stop uses the full command radius, not WalkEndShare's extra travel");
+                var descending = new WalkRoute();
+                descending.Start(0f, 8f, 0f, 2f); descending.Add(10f, 8f, 0f); descending.Add(11f, 0f, 0f);
+                var destination = new UnityEngine.Vector3(11f, 0f, 0f);
+                stopRoute.Invoke(null, new object[] { descending, destination, 2f });
+                var stopPoint = new UnityEngine.Vector3(descending.EndX, descending.EndY, descending.EndZ);
+                Check(Math.Abs(descending.EndX - 10.5f) < 1e-4 &&
+                      Owlcat.Runtime.Core.Utils.GeometryUtils.SqrMechanicsDistance(stopPoint, destination) <= 4f &&
+                      Owlcat.Runtime.Core.Utils.GeometryUtils.SqrMechanicsDistance(new UnityEngine.Vector3(10.4f, 4.8f, 0f), destination) > 4f,
+                      "the production stop intersects the native height/planar contract; earlier horizontal overlap is not arrival");
+                var lowPath = new WalkRoute();
+                lowPath.Start(0f, 1f, 0f, 2f); lowPath.Add(10f, 1f, 0f);
+                var lowDestination = new UnityEngine.Vector3(10f, 0f, 0f);
+                stopRoute.Invoke(null, new object[] { lowPath, lowDestination, 1f });
+                Check(Math.Abs(lowPath.EndX - 9f) < 1e-4 &&
+                      Owlcat.Runtime.Core.Utils.GeometryUtils.SqrMechanicsDistance(
+                          new UnityEngine.Vector3(lowPath.EndX, lowPath.EndY, lowPath.EndZ), lowDestination) == 1f,
+                      "the production stop preserves native height forgiveness rather than replacing mechanics distance with 3D distance");
                 var searches = new[] { "PathTo", "FindPath", "StartPath", "StartPathWithClerance", "Linecast", "Raycast", "HasObstacle" };
                 bool SceneUnits(MemberInfo m) => m.Name == "Units" && m.DeclaringType == typeof(Kingmaker.EntitySystem.PersistentState);
                 Check(!readRoute.Concat(addPath).Any(m => searches.Contains(m.Name) || SceneUnits(m)),
@@ -294,6 +346,19 @@ namespace ProfileAudit
                       !evaluateWatch.Any(SceneUnits) && Body(typeof(BurstWatch), "RosterNow").Any(SceneUnits) &&
                       Body(typeof(BurstWatch), "RosterNow").Any(m => m.Name == "get_frameCount"),
                       "A-P1: a re-check reads the units gathered once per frame");
+                var rosterReader = typeof(BurstWatch).GetMethod("CanReadRosterUnit", Hidden);
+                Check(!(bool)rosterReader.Invoke(null, new object[] { null, null }),
+                      "a missing snapshot reference cannot enter burst geometry reads");
+                var tornDown = (UnitEntityData)RuntimeHelpers.GetUninitializedObject(typeof(UnitEntityData));
+                Check(!(bool)rosterReader.Invoke(null, new object[] { tornDown, tornDown }),
+                      "an out-of-game reference retained by the frame roster is rejected");
+                typeof(Kingmaker.EntitySystem.EntityDataBase).GetField("m_IsInGame", Hidden).SetValue(tornDown, true);
+                Check(!(bool)rosterReader.Invoke(null, new object[] { tornDown, tornDown }),
+                      "a retained reference without its descriptor/state is rejected without dereferencing it");
+                Check(Calls(evaluateWatch, typeof(BurstWatch), "CanReadRosterUnit") &&
+                      Body(typeof(BurstWatch), "CanReadRosterUnit").Any(m => m.Name == "get_IsInGame") &&
+                      !Body(typeof(BurstWatch), "CanReadRosterUnit").Any(SceneUnits),
+                      "the re-check validates retained actors live without rescanning the scene");
                 var track = Body(typeof(BurstWatch), "Track");
                 Check(Calls(track, typeof(BurstWatch), "MakeRoom") && !track.Any(m => m.Name == "RemoveAt"),
                       "A-P1: Track makes room only through MakeRoom");
@@ -318,8 +383,8 @@ namespace ProfileAudit
             {
                 Check(false, $"{ex.GetType().Name}: {ex.Message}");
             }
-            lines.Insert(0, $"BURST-AIM {checks} checks, failures {bad}; native contracts, real blueprints and compiled routes; " +
-                            "no actor, selection, command, cast or Unity timing");
+            lines.Insert(0, $"BURST-AIM {checks} checks, failures {bad}; native contracts, real blueprints, production/layout fixtures and compiled routes; " +
+                            "no live actor, navmesh, native command/cast execution or Unity timing");
             failures = bad;
             return lines;
         }

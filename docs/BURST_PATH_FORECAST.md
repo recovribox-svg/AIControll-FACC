@@ -1,5 +1,13 @@
 # Burst forecast along the game's paths, control on walk-in allies, and the watch's capacity (review follow-ups A-R1, A3, A-P1)
 
+**Codex review correction (17 November 2026):** proximity of the path end is not ownership. The current
+correction matches ABPath/XPath's original request and uses full native approach distance with height handling;
+future LOS is not proved. Retained roster members are revalidated. The approved capacity policy can still discard
+TB landing metadata or bypass registration of a new unwatched RT burst at saturation, so “TB unaffected” below is
+qualified. Damage/control snapshot freshness and candidate-table cost remain proposals. See
+[REVIEW_86_89.md](REVIEW_86_89.md) (A-D1–D3/R2–R6). Use its **review2** package/replay, not burstpath1; receipts below
+describe the original PR.
+
 17 November 2026, Claude. These are the burst follow-ups of [REVIEW_FOLLOWUPS_PLAN.md](REVIEW_FOLLOWUPS_PLAN.md). They
 answer A-R1 and A-P1 in [REVIEW_81_84.md](REVIEW_81_84.md); A-R1 includes the re-check's HP-only gap (A3). The author
 approved them on 17 November ("You have my approval for any further work that needs it"). Real time only.

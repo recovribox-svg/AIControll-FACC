@@ -4,8 +4,8 @@
 // - UnitCommand.TickApproaching asks the unit's movement agent for a walk to the command's approach point
 //   (UnitEntityView.MoveTo → UnitMovementAgent.PathTo); the agent follows the path it got back (Path.vectorPath), one
 //   waypoint after the other (m_NextPointIndex), at its MaxSpeed (the unit's CurrentSpeedMps);
-// - the command stops the walk once the unit is within its approach radius of the approach point
-//   (UnitCommand.IsUnitCloseEnough), which can be before the path's last point.
+// - the command stops once native mechanics distance is within the approach radius AND required LOS is clear
+//   (UnitCommand.IsUnitCloseEnough). This route's geometric stop models the distance half, not a future LOS query.
 // The straight walk the burst forecast used before (BurstRules.At, WalkMayBeInside, removed) is the two-point route.
 using System;
 
@@ -80,37 +80,52 @@ namespace CompanionAI_Pathfinder.Tactics
         }
 
         /// <summary>
-        /// The walk ends where it first comes within <paramref name="radius"/> of (<paramref name="cx"/>, <paramref name="cz"/>)
-        /// (the command's approach test); a route that starts within it is no walk.
+        /// Earliest distance-eligible stop under native SqrMechanicsDistance: horizontal radius, and above 1.5 m of height
+        /// difference, half-height at most the radius. LOS can delay the real stop; this geometric forecast does not query it.
         /// </summary>
-        public void StopWithin(float cx, float cz, float radius)
+        public void StopWithin(float cx, float cy, float cz, float radius)
         {
             if (Count == 0 || float.IsNaN(radius)) return;
-            float r = Math.Max(0f, radius);
-            float sx = m_X[0] - cx, sz = m_Z[0] - cz;
-            if (sx * sx + sz * sz <= r * r)
+            double r = Math.Max(0f, radius);
+            // Native GeometryUtils.SqrMechanicsDistance ignores height through 1.5 m, then uses max(XZ², Y² / 4).
+            double height = Math.Max(1.5, 2 * r);
+            double sx = m_X[0] - cx, sz = m_Z[0] - cz;
+            if (sx * sx + sz * sz <= r * r && Math.Abs(m_Y[0] - cy) <= height)
             {
                 Count = 1;
                 return;
             }
             for (int i = 0; i + 1 < Count; i++)
             {
-                float ax = m_X[i], az = m_Z[i];
-                float dx = m_X[i + 1] - ax, dz = m_Z[i + 1] - az;
-                float fx = ax - cx, fz = az - cz;
-                float a = dx * dx + dz * dz;
+                double ax = m_X[i], az = m_Z[i];
+                double dx = m_X[i + 1] - ax, dz = m_Z[i + 1] - az;
+                double fx = ax - cx, fz = az - cz;
+                double a = dx * dx + dz * dz;
                 if (!(a > 0f)) continue;
-                float b = 2f * (fx * dx + fz * dz);
-                float c = fx * fx + fz * fz - r * r;
-                float disc = b * b - 4f * a * c;
+                double b = 2 * (fx * dx + fz * dz);
+                double c = fx * fx + fz * fz - r * r;
+                double disc = b * b - 4 * a * c;
                 if (disc < 0f) continue;
-                float t = (-b - (float)Math.Sqrt(disc)) / (2f * a);   // the first crossing; the start is outside
-                if (t < 0f || t > 1f) continue;
-                float y = m_Y[i] + (m_Y[i + 1] - m_Y[i]) * t;
-                m_X[i + 1] = ax + dx * t;
+                double root = Math.Sqrt(disc);
+                double enter = Math.Max(0, (-b - root) / (2 * a));
+                double exit = Math.Min(1, (-b + root) / (2 * a));
+                double fy = m_Y[i] - cy, dy = m_Y[i + 1] - m_Y[i];
+                if (dy == 0)
+                {
+                    if (Math.Abs(fy) > height) continue;
+                }
+                else
+                {
+                    double y1 = (-height - fy) / dy, y2 = (height - fy) / dy;
+                    enter = Math.Max(enter, Math.Min(y1, y2));
+                    exit = Math.Min(exit, Math.Max(y1, y2));
+                }
+                if (enter > exit) continue;
+                float y = (float)(m_Y[i] + dy * enter);
+                m_X[i + 1] = (float)(ax + dx * enter);
                 m_Y[i + 1] = y;
-                m_Z[i + 1] = az + dz * t;
-                m_Along[i + 1] = m_Along[i] + (float)Math.Sqrt(a) * t;
+                m_Z[i + 1] = (float)(az + dz * enter);
+                m_Along[i + 1] = m_Along[i] + (float)(Math.Sqrt(a) * enter);
                 Count = i + 2;
                 return;
             }

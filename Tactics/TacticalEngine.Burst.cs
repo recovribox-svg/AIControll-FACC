@@ -154,12 +154,6 @@ namespace CompanionAI_Pathfinder.Tactics
             return route;
         }
 
-        /// <summary>
-        /// Metres between the end of the unit's native path and its command's approach point, beyond the approach radius,
-        /// within which the path is taken to be that command's walk (as RealTimeController.NativePathFallsShort).
-        /// </summary>
-        private const float PathEndToleranceMeters = 1f;
-
         // The agent's next waypoint (UnitMovementAgent.m_NextPointIndex, private): read only; null leaves the straight walk.
         private static readonly HarmonyLib.AccessTools.FieldRef<Kingmaker.View.UnitMovementAgent, int> NextPointRef = ReadNextPointRef();
 
@@ -175,8 +169,8 @@ namespace CompanionAI_Pathfinder.Tactics
         /// <summary>
         /// ★ review follow-up A-R1 (author-approved): where <paramref name="unit"/>'s own walk takes it, as the game plans it.
         /// The command it walks for (WalkingCommand) is followed along the movement agent's current path from its next
-        /// waypoint (UnitMovementAgent.Path, m_NextPointIndex) and stops within the command's approach radius of its point,
-        /// as the command does (UnitCommand.IsUnitCloseEnough; SpotRules.WalkEnd's share). Without a usable path of that
+        /// waypoint (UnitMovementAgent.Path, m_NextPointIndex). The stop uses native mechanics distance and the actual
+        /// approach radius; future LOS can delay the true stop and is not proved here. Without a usable path of that
         /// walk (none yet, another walk's, longer than WalkRoute.MaxPoints) the straight walk to SpotRules.WalkEnd. Reads
         /// the agent's existing path only: no path search, raycast or world query. Null when the unit is not walking.
         /// </summary>
@@ -192,7 +186,7 @@ namespace CompanionAI_Pathfinder.Tactics
                 route.Start(from.x, from.y, from.z, unit.CurrentSpeedMps);
                 if (AddNativePath(unit, command, route))
                 {
-                    route.StopWithin(to.x, to.z, command.ApproachRadius * SpotRules.WalkEndShare);
+                    StopRouteAtApproachDistance(route, to, command.ApproachRadius);
                     route.Native = true;
                     RoutesOnPath++;
                     return route;
@@ -207,20 +201,20 @@ namespace CompanionAI_Pathfinder.Tactics
         }
 
         /// <summary>
-        /// The rest of the agent's current path, from its next waypoint, when it is the walk of <paramref name="command"/>
-        /// (it ends within the command's approach radius of its point, with <see cref="PathEndToleranceMeters"/>).
+        /// The rest of the agent's current path, from its next waypoint, when its original request matches this command's
+        /// point and the terminal is distance-eligible. Endpoint proximity alone cannot identify a path's request.
         /// </summary>
         private static bool AddNativePath(UnitEntityData unit, Kingmaker.UnitLogic.Commands.Base.UnitCommand command, WalkRoute route)
         {
             if (NextPointRef == null) return false;
             var agent = unit.View?.AgentASP;
-            var points = agent?.Path?.vectorPath;
+            var path = agent?.Path;
+            var points = path?.vectorPath;
             if (points == null || points.Count < 2) return false;
             int next = NextPointRef(agent);
             if (next < 1 || next >= points.Count) return false;   // not following it yet (PathFailed) or past its end
             if (points.Count - next + 1 > WalkRoute.MaxPoints) return false;
-            if (HorizontalDistance(points[points.Count - 1], command.ApproachPoint) > command.ApproachRadius + PathEndToleranceMeters)
-                return false;
+            if (!NativePathMatchesAim(path, command.ApproachPoint, command.ApproachRadius)) return false;
             for (int i = next; i < points.Count; i++)
             {
                 var p = points[i];
@@ -228,6 +222,22 @@ namespace CompanionAI_Pathfinder.Tactics
             }
             return route.Count > 1;
         }
+
+        /// <summary>ABPath/XPath retain the original requested endpoint even when their vector path ends sooner or is
+        /// postprocessed. Match that request using the same Vector3 equality as native PathTo; validate its terminal with
+        /// the command's native mechanics-distance rule. Forced/unknown paths retain the straight fallback.</summary>
+        private static bool NativePathMatchesAim(Pathfinding.Path path, Vector3 point, float radius)
+        {
+            if (!(path is Pathfinding.ABPath request) || request.originalEndPoint != point) return false;
+            var points = path.vectorPath;
+            return points != null && points.Count > 0 &&
+                Owlcat.Runtime.Core.Utils.GeometryUtils.SqrMechanicsDistance(points[points.Count - 1], point) <= radius * radius;
+        }
+
+        /// <summary>Use the actual native approach radius for the distance stop, not SpotRules' conservative straight-
+        /// endpoint share. Native sight can delay the stop; resolving future sight remains a separate design question.</summary>
+        private static void StopRouteAtApproachDistance(WalkRoute route, Vector3 point, float radius) =>
+            route.StopWithin(point.x, point.y, point.z, radius);
 
         /// <summary>Where <paramref name="unit"/> will be in <paramref name="seconds"/>, and whether it walks.</summary>
         private static Vector3 PredictedAt(TacticalContext ctx, UnitEntityData unit, float seconds, out bool walking)

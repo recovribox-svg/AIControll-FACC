@@ -1,5 +1,11 @@
 # Flank prediction from the game's engagement rules (review follow-up F1)
 
+**Codex review correction (17 November 2026):** this page records the original F1 implementation/receipt.
+Range compatibility does not prove native 3D engagement; native attack readiness uses a different distance metric plus
+sight. The concealment monotonicity claim assumes fixed facts and weapon context. The unsupported 0.01 m slack is now
+removed, and the origin-aware replacement remains a proposal. See [REVIEW_86_89.md](REVIEW_86_89.md) (F1-D1/R1).
+Use its **review2** package/replay, not engage1. Historical checks below are preserved.
+
 17 November 2026, Claude. This is follow-up F1 of [REVIEW_FOLLOWUPS_PLAN.md](REVIEW_FOLLOWUPS_PLAN.md) and answers D-R1
 in [REVIEW_81_84.md](REVIEW_81_84.md). It changes valuation only, in both modes. Branch `claude/flank-engagement` is
 stacked on PR #85, which is stacked on #84 → #83 → #82 → #81; nothing is merged. **Not played.** UMM stays 0.3.60.

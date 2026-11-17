@@ -204,6 +204,10 @@ namespace ProfileAudit
                       "pure rule (F3): a suppressed buff counts the share of its rounds it acts within the horizon; unknown keeps the old value");
                 Check(SuppressionRules.ActiveShare(true, 61f / 6f, 60f / 6f, 3f) == 0f,
                       "F3: Codex's C-R1 case - 61 s left under 60 s of suppression earns nothing within an 18 s horizon");
+                Check(SuppressionRules.ActiveShare(true, 0f, float.NaN, 3f) == 0f &&
+                      SuppressionRules.ActiveShare(true, 5f, float.NaN, 0f) == 0f &&
+                      SuppressionRules.ActiveShare(true, 5f, float.NaN, 3f) == 1f,
+                      "F3: unknown suppression retains value only when there is still a positive buff lifetime and horizon");
                 Check(SuppressionRules.ActiveRounds(10f, 4f, 6f) == 2f && SuppressionRules.ActiveRounds(10f, float.PositiveInfinity, 6f) == 0f &&
                       SuppressionRules.ActiveRounds(3f, 0f, 6f) == 3f,
                       "pure rule: the rounds a buff acts are its rounds left in the horizon less the suppressed ones");

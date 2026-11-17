@@ -79,6 +79,42 @@ namespace CompanionAI.Tests
         }
 
         [Fact]
+        public void AnIssuedIgnoreCooldownRoutineUsesItsConfiguredWindow()
+        {
+            // Native ConfigureAnimations may store a 3 s window. Treating it as 6 s misses an allied hit and overprices
+            // this unit's response. The production reader is checked on a native command layout in ProfileAudit.
+            float configured = DisruptRules.SwingSpacing(3, false, 3f);
+            Assert.Equal(1f, configured);
+            float timely = DisruptRules.RunningHitSeconds(1, 1, configured, 0.2f, false, false, 0f);
+            float late = DisruptRules.RunningHitSeconds(1, 1, DisruptRules.SwingSpacing(3, false), 0.2f, false, false, 0f);
+            Assert.True(DisruptRules.InTime(timely, 2f));
+            Assert.False(DisruptRules.InTime(late, 2f));
+        }
+
+        [Fact]
+        public void AnOrderedAttackWaitsForReadinessWhileApproaching()
+        {
+            // Standing beside the caster is not enough when this ally's standard action is still cooling down.
+            float wait = DisruptRules.OrderedStartSeconds(0f, 3f);
+            Assert.False(DisruptRules.InTime(DisruptRules.WeaponHitSeconds(0, wait, false, 0f, 2f), 2f));
+            // Movement and cooldown overlap, rather than being added and incorrectly hiding a timely allied hit.
+            Assert.Equal(2f, DisruptRules.OrderedStartSeconds(2f, 1f));
+            Assert.Equal(2f, DisruptRules.OrderedStartSeconds(1f, 2f));
+            Assert.True(DisruptRules.InTime(DisruptRules.WeaponHitSeconds(0, 2f, false, 0f, 2f), 3f));
+        }
+
+        [Fact]
+        public void APendingRangedHandCannotBorrowAMeleeHandsDeliveryTime()
+        {
+            // A mixed/reordered routine: the pending weapon has 30 m of flight. Reusing the first hand's melee flag
+            // would count a break before a 1.2 s cast even though this pending projectile cannot get there.
+            float melee = DisruptRules.RunningHitSeconds(1, 1, 2f, 2f, false, false, 30f);
+            float ranged = DisruptRules.RunningHitSeconds(1, 1, 2f, 2f, false, true, 30f);
+            Assert.True(DisruptRules.InTime(melee, 1.2f));
+            Assert.False(DisruptRules.InTime(ranged, 1.2f));
+        }
+
+        [Fact]
         public void AnAllysRunningAttackLandsOnItsSchedule()
         {
             // 3-attack routine, 1 s into the command, next attack index 1: it starts at 2 s, lands 0.6 s later
@@ -99,6 +135,17 @@ namespace CompanionAI.Tests
             // the others surely break it: nothing to add
             Assert.Equal(0f, DisruptRules.MarginalValue(0.2f, 0f, 100f), 4);
             Assert.Equal(0f, DisruptRules.MarginalValue(float.NaN, 0.5f, 100f), 4);
+        }
+
+        [Fact]
+        public void ALateIterativesLowerChanceLeavesMoreWorkForTheNextAlly()
+        {
+            // A near-certain concentration failure on hit. Reusing an earlier 90% attack for a pending 40% iterative
+            // would suppress this ally's useful response: 5 points instead of 30 on a stakes-100 cast.
+            float late = DisruptRules.StillCasting(1f, 0.4f, 1f);
+            float earlier = DisruptRules.StillCasting(1f, 0.9f, 1f);
+            Assert.Equal(30f, DisruptRules.MarginalValue(0.5f, late, 100f), 4);
+            Assert.Equal(5f, DisruptRules.MarginalValue(0.5f, earlier, 100f), 4);
         }
 
         [Fact]

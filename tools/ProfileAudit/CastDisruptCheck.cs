@@ -1,13 +1,17 @@
 // ★ cast disruption (docs/BURST_AIM_AND_TACTICS_PLAN.md §4, slice B): a hit on an enemy whose spell has not gone off forces a
 // concentration check. Native contracts on the real assembly, which real blueprints the rule covers, and the compiled
-// routes into the scoring. Actor-free: no Game/Player, context, damage, roll, command or Unity timing.
+// routes into the scoring. Inert command/routine layouts are executed; no live Game/Player, actor setup, native command
+// execution, damage, dice roll or Unity timing.
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
+using System.Runtime.CompilerServices;
 using CompanionAI_Pathfinder.Tactics;
 using Kingmaker.Blueprints;
 using Kingmaker.Controllers;
+using Kingmaker.Controllers.Units;
 using Kingmaker.RuleSystem.Rules.Abilities;
 using Kingmaker.RuleSystem.Rules.Damage;
 using Kingmaker.UnitLogic.Abilities;
@@ -111,6 +115,58 @@ namespace ProfileAudit
                 Check(Math.Abs(Quote(0.4f, 11f, 0.7f, 0.4f) - 7.84f) < 1e-4,
                       "production disruption combines two timely hits without counting a cast break twice");
 
+                // Pending commands may have delivered their first two attacks already, or reordered their hands for an
+                // animation sequence. Exercise the production cache reader on that layout, not another selector copy.
+                var math = typeof(CombatMath);
+                var routineType = math.GetNestedType("AttackRoutine", Hidden);
+                var lineType = math.GetNestedType("AttackLine", Hidden);
+                var routine = Activator.CreateInstance(routineType, true);
+                routineType.GetField("Frame", Hidden).SetValue(routine, UnityEngine.Time.frameCount);
+                var linesInRoutine = (IList)routineType.GetField("Lines", Hidden).GetValue(routine);
+                var weaponA = (Kingmaker.Items.ItemEntityWeapon)RuntimeHelpers.GetUninitializedObject(typeof(Kingmaker.Items.ItemEntityWeapon));
+                var weaponB = (Kingmaker.Items.ItemEntityWeapon)RuntimeHelpers.GetUninitializedObject(typeof(Kingmaker.Items.ItemEntityWeapon));
+                void Line(Kingmaker.Items.ItemEntityWeapon weapon, int penalty, int ab, float damage)
+                {
+                    var line = Activator.CreateInstance(lineType, true);
+                    void SetLine(string field, object value) => lineType.GetField(field, Hidden).SetValue(line, value);
+                    SetLine("Weapon", weapon); SetLine("AttackBonusPenalty", penalty); SetLine("AttackBonus", ab);
+                    SetLine("ArmorClass", 20); SetLine("RawPerHit", damage); SetLine("GameHit", damage);
+                    linesInRoutine.Add(line);
+                }
+                Line(weaponA, 0, 17, 12f); Line(weaponA, -5, 12, 12f); Line(weaponA, -10, 7, 12f);
+                Line(weaponB, 0, 15, 30f);
+                var estimate = new WeaponAttackEstimate();
+                typeof(WeaponAttackEstimate).GetField("RoutineIdentity", Hidden).SetValue(estimate, routine);
+                typeof(WeaponAttackEstimate).GetField("RoutineLands", Hidden).SetValue(estimate, 1f);
+                var orderedHit = math.GetMethod("TryOrderedHit", Hidden);
+                object[] hitArgs;
+                bool Ordered(Kingmaker.Items.ItemEntityWeapon weapon, int penalty)
+                {
+                    hitArgs = new object[] { estimate, weapon, penalty, 0f, 0f };
+                    return (bool)orderedHit.Invoke(null, hitArgs);
+                }
+                hitArgs = null;
+                Check(Ordered(weaponA, -10) && Math.Abs((float)hitArgs[3] - 0.4f) < 1e-4 && (float)hitArgs[4] == 12f,
+                      "pending third iterative uses its own penalty/hit chance, not the cached second attack");
+                Check(Ordered(weaponB, 0) && Math.Abs((float)hitArgs[3] - 0.8f) < 1e-4 && (float)hitArgs[4] == 30f,
+                      "a reordered pending off-hand uses its own weapon's damage and chance");
+                Check(!Ordered(weaponA, -15) && (float)hitArgs[3] == 0f && (float)hitArgs[4] == 0f,
+                      "an unquoted pending line is unknown; no earlier attack's damage or chance is substituted");
+                typeof(WeaponAttackEstimate).GetField("RoutineLands", Hidden).SetValue(estimate, 0.5f);
+                Check(Ordered(weaponA, -10) && Math.Abs((float)hitArgs[3] - 0.2f) < 1e-4,
+                      "pending-hit lookup preserves the routine's concealment/image pass");
+                routineType.GetField("Frame", Hidden).SetValue(routine, UnityEngine.Time.frameCount + 1);
+                Check(!Ordered(weaponA, -10), "a stale-frame routine cannot supply a pending hit");
+                var orderedRoute = Body(engine, "OthersStill");
+                Check(Calls(orderedRoute, math, "TryOrderedHit") && orderedRoute.Any(m => m.Name.Contains("AttackBonusPenalty")),
+                      "the pending-attack production route matches each native command line by its iterative penalty");
+                Check(orderedRoute.Any(m => m.Name == "get_ApproachRadius") && orderedRoute.Any(m => m.Name == "get_IsRanged") &&
+                      !orderedRoute.Any(m => m.DeclaringType == typeof(WeaponAttackEstimate) && (m.Name == "IsRanged" || m.Name == "Reach")),
+                      "ordered delivery uses the pending hand's range type and the issued command's approach radius");
+                Check(Body(math, "EstimateWeaponAttackCore").Any(m => m.Name == "SecondWeapon") &&
+                      Body(engine, "WeaponDisruptValue").Any(m => m.Name == "SecondWeapon"),
+                      "a prospective mixed routine carries its second weapon into that hit's timing, instead of borrowing the first hand");
+
                 // ★ review follow-up F2: the native attack schedule and allied hits already ordered.
                 var tick = Body(typeof(UnitAttack), "OnTick");
                 Check(tick.Any(m => m.Name == "m_AnimationsDuration") && tick.Any(m => m.Name == "m_AttackIndex") &&
@@ -123,7 +179,7 @@ namespace ProfileAudit
                       Calls(Body(typeof(UnitCommand), "Start"), typeof(UnitCommand), "set_IsStarted"),
                       "F2: a command's time counts from its start, after any approach");
                 var value = Body(engine, "WeaponDisruptValue");
-                Check(Calls(value, typeof(DisruptRules), "SwingSpacing") && Calls(value, engine, "ChainedAttacks") &&
+                Check(Calls(value, typeof(DisruptRules), "SwingSpacing") && Calls(value, engine, "ProspectiveChainedAttacks") &&
                       Calls(value, engine, "AfterOrderedHits") && Calls(Body(engine, "AbilityDisruptBonus"), engine, "AfterOrderedHits"),
                       "F2: weapon and ability disruption use the native spacing and the allied hits already ordered");
                 var others = Body(engine, "OthersStill");
@@ -132,11 +188,56 @@ namespace ProfileAudit
                       Calls(others, typeof(UnitCommand), "get_IsStarted") && Calls(others, typeof(DisruptRules), "RunningHitSeconds") &&
                       Calls(others, typeof(DisruptRules), "InTime") && Calls(others, typeof(DisruptRules), "FailChance"),
                       "F2: allies' running or approaching attacks on the caster are read from their commands, on the same rules");
-                var chainedBody = Body(engine, "ChainedAttacks");
-                Check(Calls(chainedBody, typeof(Kingmaker.Items.ItemEntityWeapon), "GetAnimationStyle") &&
-                      chainedBody.Any(m => m.Name == "get_Sequences") && chainedBody.Any(m => m.Name == "get_AnimationSet") &&
-                      chainedBody.Any(m => m.Name == "get_AnimationManager"),
-                      "F2: bow style and animation sequences are read as the native schedule reads them (all references resolve)");
+                var chainedBody = Body(engine, "OrderedChainedAttacks");
+                Check(chainedBody.Any(m => m.Name == "get_IsSequential") && chainedBody.Any(m => m.Name == "get_IsReleased") &&
+                      Calls(chainedBody, engine, "ProspectiveChainedAttacks") &&
+                      !Body(engine, "ProspectiveChainedAttacks").Any(m => m.Name == "get_Sequences"),
+                      "F2: issued sequences use selected adjacent attacks and release state; future sequence tables prove nothing");
+                var issued = (UnitAttack)RuntimeHelpers.GetUninitializedObject(typeof(UnitAttack));
+                var preceding = (AttackHandInfo)RuntimeHelpers.GetUninitializedObject(typeof(AttackHandInfo));
+                var following = (AttackHandInfo)RuntimeHelpers.GetUninitializedObject(typeof(AttackHandInfo));
+                typeof(UnitAttack).GetField("m_AllAttacks", Hidden).SetValue(issued, new List<AttackHandInfo> { preceding, following });
+                var chainReader = engine.GetMethod("OrderedChainedAttacks", Hidden);
+                bool Chain() => (bool)chainReader.Invoke(null, new object[] { issued, 1 });
+                Check(!Chain(), "an issued attack without a selected sequence does not get sequence timing");
+                var selectedField = typeof(AttackHandInfo).GetField("<IsSequential>k__BackingField", Hidden);
+                selectedField.SetValue(preceding, true); selectedField.SetValue(following, true);
+                var handle = (Kingmaker.Visual.Animation.Kingmaker.UnitAnimationActionHandle)RuntimeHelpers.GetUninitializedObject(
+                    typeof(Kingmaker.Visual.Animation.Kingmaker.UnitAnimationActionHandle));
+                typeof(AttackHandInfo).GetField("<AnimationHandle>k__BackingField", Hidden).SetValue(preceding, handle);
+                Check(!Chain(), "selected adjacent attacks alone cannot bypass the native previous-animation release gate");
+                typeof(Kingmaker.Visual.Animation.Actions.AnimationActionHandle).GetField("<IsReleased>k__BackingField", Hidden)
+                    .SetValue(handle, true);
+                Check(Chain(), "selected adjacent attacks with the previous animation released use the native shortcut");
+                selectedField.SetValue(following, false);
+                Check(!Chain(), "a sequence boundary does not chain a following unselected attack");
+                var windowReader = engine.GetMethod("TryAttackWindow", Hidden);
+                var windowField = typeof(UnitAttack).GetField("m_AnimationsDuration", Hidden);
+                windowField.SetValue(issued, 3f);
+                object[] windowArgs = { issued, 0f };
+                Check((bool)windowReader.Invoke(null, windowArgs) && (float)windowArgs[1] == 3f,
+                      "issued IgnoreCooldown timing reads the command's configured three-second window, not a copied six");
+                windowField.SetValue(issued, 0f);
+                Check(!(bool)windowReader.Invoke(null, windowArgs), "an uninitialised window proves no allied hit timing");
+                var reorder = Body(typeof(UnitAttack), "TryToReorder");
+                Check(reorder.Any(m => m.Name == "Probability") && Calls(reorder, typeof(UnityEngine.Random), "Range"),
+                      "native animation sequence selection is probabilistic; forecasting must not roll it during scoring");
+                Check(Calls(others, engine, "TryAttackWindow") && Calls(others, engine, "OrderedChainedAttacks"),
+                      "pending-hit quotes use their actual configured window and per-transition native shortcut");
+                var readiness = Body(engine, "TryOrderedDelay");
+                var nativeStart = Body(typeof(UnitCommandController), "ShouldStartCommand");
+                Check(nativeStart.Any(m => m.Name == "HasCooldownForCommand") && nativeStart.Any(m => m.Name == "get_CanActInCombat") &&
+                      readiness.Any(m => m.Name == "HasCooldownForCommand") && readiness.Any(m => m.Name == "get_CanStart") &&
+                      readiness.Any(m => m.Name == "get_StandardAction" || m.Name == "StandardAction"),
+                      "ordered-hit readiness follows native command gates and the actual remaining standard cooldown");
+                Check(nativeStart.Any(m => m.Name == "IsUpdateScheduledFor") && readiness.Any(m => m.Name == "IsUpdateScheduledFor"),
+                      "an issued but unstarted attack cannot claim a timely hit while native equipment updating blocks its start");
+                Check(new[] { "get_AreHandsBusyWithAnimation", "get_DontWaitForHands", "get_AwaitMovementFinish", "get_IsReallyMoving" }
+                    .All(name => nativeStart.Any(m => m.Name == name) && readiness.Any(m => m.Name == name)),
+                      "queued attacks retain the native hand-animation and movement-finish gates without starting or probing a command");
+                Check(Calls(others, engine, "TryOrderedDelay") && Calls(others, typeof(DisruptRules), "OrderedStartSeconds") &&
+                      DisruptRules.OrderedStartSeconds(2f, 1f) == 2f && DisruptRules.OrderedStartSeconds(1f, 2f) == 2f,
+                      "a queued approach overlaps cooldown; the issued-hit quote cannot treat a cooling ally as ready now");
                 Check(Body(engine, "ReadCasting").Any(m => m.Name == "OthersRead"),
                       "F2: the allied hits are read again at every decision");
                 var after = engine.GetMethod("AfterOrderedHits", Hidden);
@@ -162,8 +263,8 @@ namespace ProfileAudit
             {
                 Check(false, $"{ex.GetType().Name}: {ex.Message}");
             }
-            lines.Insert(0, $"CAST-DISRUPT {checks} checks, failures {bad}; native contracts, real blueprints and compiled routes; " +
-                            "no actor, damage, roll, command or Unity timing");
+            lines.Insert(0, $"CAST-DISRUPT {checks} checks, failures {bad}; native contracts, real blueprints, production/layout fixtures and compiled routes; " +
+                            "no live actor, native command execution, damage, dice roll or Unity timing");
             failures = bad;
             return lines;
         }

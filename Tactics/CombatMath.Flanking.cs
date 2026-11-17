@@ -61,11 +61,10 @@ namespace CompanionAI_Pathfinder.Tactics
 
         /// <summary>
         /// D2 / F1 (docs/REVIEW_FOLLOWUPS_PLAN.md, D-R1): <paramref name="unit"/>'s melee attack with <paramref name="weapon"/>
-        /// makes it an engager of <paramref name="target"/> when it lands. The native engagement state when the unit engages
-        /// the target already; otherwise its threat range must cover the weapon's and the target must not be totally
-        /// concealed from it now (SneakRules.WillEngage). Line of sight and height at a future arrival point are taken from
-        /// the attack being possible there (the dispatcher's path-end check), not re-proved. Ranged attacks use only the
-        /// native state.
+        /// projects engagement at the attack: native engagement now, else range compatibility and no total concealment
+        /// now (SneakRules.WillEngage). This fallback is an assumption, not proof: native attack readiness uses mechanics
+        /// distance/LOS and engagement uses 3D reach. A successful dispatcher attack check does not establish both.
+        /// The origin-aware replacement remains a proposal; ranged attacks use only the native state.
         /// </summary>
         internal static bool AttackerEngages(UnitEntityData unit, UnitEntityData target, ItemEntityWeapon weapon)
         {

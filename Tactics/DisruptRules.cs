@@ -30,8 +30,8 @@ namespace CompanionAI_Pathfinder.Tactics
         public const float RoutineWindowSeconds = 6f;
 
         /// <summary>Seconds between two attacks of an <paramref name="attacks"/>-attack routine, by the native schedule.</summary>
-        public static float SwingSpacing(int attacks, bool chained) =>
-            chained || attacks <= 1 ? NextSwingSeconds : RoutineWindowSeconds / attacks;
+        public static float SwingSpacing(int attacks, bool chained, float window = RoutineWindowSeconds) =>
+            chained || attacks <= 1 ? NextSwingSeconds : window / attacks;
 
         /// <summary>The speed of an arrow or bolt in flight, in m/s (an estimate).</summary>
         public const float MissileSpeed = 30f;
@@ -91,6 +91,10 @@ namespace CompanionAI_Pathfinder.Tactics
                 : Math.Max(0f, index * Math.Max(0f, spacing) + FirstSwingSeconds - Math.Max(0f, elapsed));
             return t + Flight(ranged, distance);
         }
+
+        /// <summary>A queued attack may approach while its action cooldown runs. It can start after both finish.</summary>
+        public static float OrderedStartSeconds(float walkSeconds, float cooldownSeconds) =>
+            Math.Max(Math.Max(0f, walkSeconds), Math.Max(0f, cooldownSeconds));
 
         private static float Flight(bool ranged, float distance) =>
             ranged && distance > 0f && !float.IsInfinity(distance) ? distance / MissileSpeed : 0f;

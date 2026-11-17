@@ -61,6 +61,9 @@ namespace ProfileAudit
                 Check(Calls(isEngage, typeof(UnitHelper), "IsAttackOfOpportunityReach") &&
                       Calls(isEngage, typeof(Kingmaker.UnitLogic.Parts.UnitPartConcealment), "Calculate"),
                       "engagement needs threat reach (with sight) and no total concealment");
+                var nativeEngages = Body(typeof(UnitCombatState), "IsEngage");
+                Check(nativeEngages.Any(m => m.Name == "m_EngagedUnits") && !nativeEngages.Any(m => m.Name == "m_EngagedBy"),
+                      "IsEngage(target) means this unit engages target, not that target engages this unit");
                 var aooReach = Body(typeof(UnitHelper), "IsAttackOfOpportunityReach");
                 Check(aooReach.Any(m => m.Name == "get_Corpulence") && aooReach.Any(m => m.Name == "HasLOS"),
                       "threat reach is both bodies plus the threat range, with line of sight");
@@ -68,12 +71,16 @@ namespace ProfileAudit
                     "GetApproachRadius", typeof(Kingmaker.Items.ItemEntityWeapon), typeof(Kingmaker.EntitySystem.Entities.UnitEntityData),
                     typeof(Kingmaker.EntitySystem.Entities.UnitEntityData))).ToList();
                 Check(Calls(approach, typeof(Kingmaker.Items.ItemEntityWeapon), "get_AttackRange") && approach.Any(m => m.Name == "get_Corpulence"),
-                      "an attack lands inside both bodies plus its weapon's range: a threat range covering that range engages");
+                      "the native approach radius sums both view bodies and weapon range; this alone does not prove 3D threat reach");
+                var low = new UnityEngine.Vector3(0f, 0f, 0f);
+                var high = new UnityEngine.Vector3(0f, 4f, 0f);
+                Check(Owlcat.Runtime.Core.Utils.GeometryUtils.SqrMechanicsDistance(low, high) <= 2.5f * 2.5f &&
+                      (high - low).sqrMagnitude > 2.5f * 2.5f,
+                      "native scalar witness: attack-readiness mechanics distance can pass where equal 3D threat reach fails");
                 var conceal = BuffSuppressCheck.BodyWithLambdas(typeof(Kingmaker.UnitLogic.Parts.UnitPartConcealment), "Calculate");
                 Check(conceal.Any(m => m.Name == "DistanceGreater") && conceal.Any(m => m.Name == "m_BlindsightRanges") &&
                       conceal.Any(m => m.Name == "IsConcealedFor") && conceal.Any(m => m.Name == "DistanceTo"),
-                      "total concealment comes from position-independent sources or from distance gates that close in removes " +
-                      "(DistanceGreater entries, blindsight): absent now, absent on arrival");
+                      "native concealment reads DistanceGreater, blindsight and targeted sources; stable future facts are an assumption");
 
                 // --- the exports ---
                 var facts = loaded.OfType<BlueprintScriptableObject>()
@@ -123,8 +130,9 @@ namespace ProfileAudit
                       Calls(engages, typeof(SneakRules), "WillEngage"),
                       "F1: the game's engagement when it stands; else threat reach covering the weapon and no total concealment");
                 Check(SneakRules.WillEngage(true, false, 0f, 3f, true) && SneakRules.WillEngage(false, true, 1.5f, 1.5f, false) &&
-                      !SneakRules.WillEngage(false, true, 1.5f, 3f, false) && !SneakRules.WillEngage(false, true, 1.5f, 1.5f, true),
-                      "pure rule: native engagement wins; a longer weapon than the threat hand or total concealment gives none");
+                      !SneakRules.WillEngage(false, true, 1.5f, 3f, false) && !SneakRules.WillEngage(false, true, 1.5f, 1.5f, true) &&
+                      !SneakRules.WillEngage(false, true, 1.495f, 1.5f, false),
+                      "range projection: native engagement wins; shorter reach or total concealment gives none, without an invented tolerance");
                 Check(Calls(Body(math, "ExpectedWeaponLine"), typeof(SneakRules), "LineDamage"),
                       "each attack line's sneak and critical extra pass the fortification factor");
                 Check(Calls(Body(math, "AbilityCritFactor"), math, "FortifiedCritFactor"),

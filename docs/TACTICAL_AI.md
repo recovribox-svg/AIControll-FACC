@@ -6734,3 +6734,39 @@ A-P1. Stacked on F2 (PR #87).
   - No signature change.
 - **Package** `test-builds/AI-Control-FACC-v0.3.60-dev-cleanse1-02163d7-UMM-test.zip`, MVID `2799ef2d`. It includes
   everything in the open stack: A–D, the PR #85 corrections, F1, F2, the burst follow-ups and F3.
+
+
+## 198. Critical review of follow-up PRs #86–89 (17 November 2026, Codex; not played)
+
+[Ranked findings, native evidence, proposals and TB/RT replay](REVIEW_86_89.md),
+[checks](competence/REVIEW_86_89_CHECKS.json), [provenance](competence/REVIEW_86_89_BUILD_PROVENANCE.json).
+Task branch `codex/review-86-89` starts at #89 `32943a6`; development remains `ad63ee8`. **No merge.**
+
+- **§195 correction (F2):** a pending third/later iterative or reordered hand uses its own cached attack line; unknown
+  lines supply no allied-break credit. Native sequence selection is probabilistic: a nonempty sequence table is not a
+  selected sequence. Issued commands use their stored animation window and adjacent sequential/released flags;
+  prospective commands know only the bow shortcut. Cheap native readiness gates, overlapping cooldown/approach, native
+  approach radius and each hand's delivery are respected. No command probe, RNG, reservation or commitment.
+- **§196 correction (burst):** endpoint proximity does not identify a request. ABPath/XPath's original endpoint must
+  match, with a distance-eligible terminal. Stop forecasts use the full approach radius and native mechanics height;
+  future LOS may delay the actual stop. Retained scene-roster references are revalidated without another scan. Native
+  command execution, pathfinding and movement orders are unchanged. The straight fallback remains an estimate.
+- **§194 correction (F1):** `IsEngage(target)` has the correct direction. The extra 0.01 m range slack is removed.
+  Range compatibility/current concealment do **not** prove 3D engagement. A native mechanics-versus-3D witness pins that
+  difference. The origin-aware replacement across party/enemy-danger/defence/held/leap quotes is still a proposal.
+- **§197 correction (F3):** known zero life/horizon beats unknown suppression; unsuppressed legacy value and positive
+  unknown fallback remain. Relative cleanse share differs intentionally from absolute active-time dispel value.
+- **Retained limits:** saturation can drop a TB landing wait and skip registration of a new unwatched RT burst;
+  decision-time control/per-watch damage can stale. Larger capacity/freshness/performance changes are proposed in the
+  review. “TB unaffected” and “no live watch dropped” must not be read as unlimited safety guarantees.
+
+Checked source **`f0b6097`**, MVID **`0c600255-e6b8-4788-a5bc-4e0a9ad5f7e9`**: real-reference Release **0 warnings/errors**, **1,044 unit**,
+**27/18/3 scripts**, audit **A61/B48/C35/D34**, native **98/14/10**, Magus **44**. Against untouched #89 on identical inputs,
+only the four A–D audit header counts/scope change; every other report row, both complete Fusion matrices and summon-kit
+detail are identical. **7 added / 3 removed native signatures**, all resolved against their corresponding DLLs.
+Full corpus **45,248** graphs / **4,849** abilities, no reader errors/skips; raw Achaekek enum mismatch is an expected
+negative test, not hidden. SDK **8.0.426 / Roslyn 4.11**, full hashes in provenance.
+
+**Play [review2](../test-builds/AI-Control-FACC-v0.3.60-dev-review2-f0b6097-UMM-test.zip?raw=true)**, UMM **0.3.60**,
+SHA-256 `3e8e46b97994ad21281e7e06ef67096a4b21021a13689284316f75ee7bad9b4b`. Identity/checksum sidecars; frozen DLL through later documentation commits. Nothing merged,
+tagged or released. Follow the review's both-mode replay, then author clearance; merge correction after #81–89 only.

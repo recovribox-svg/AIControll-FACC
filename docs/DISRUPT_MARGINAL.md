@@ -1,5 +1,12 @@
 # Cast disruption after allies' ordered hits, on the native attack schedule (review follow-up F2)
 
+**Codex review correction (17 November 2026):** the sequence table alone does not establish native chaining;
+selection includes matching and RNG, and the issued shortcut requires adjacent sequential/released flags. The checked
+correction reads issued windows, quotes each pending hand/iterative, respects cheap start/cooldown gates and preserves
+per-hand delivery. Timing still has explicit animation/projectile/approach approximations. See
+[REVIEW_86_89.md](REVIEW_86_89.md) (F2-D1–D3/R4). Use its **review2** package/replay, not disrupt2; receipts below are
+historical, and natural attacks must not all be presumed sequenced.
+
 17 November 2026, Claude. This is follow-up F2 of [REVIEW_FOLLOWUPS_PLAN.md](REVIEW_FOLLOWUPS_PLAN.md). It answers B-R1
 and part of B-R2 in [REVIEW_81_84.md](REVIEW_81_84.md). Real time only, valuation only. Branch `claude/disrupt-marginal`
 is stacked on F1 (PR #86), which is stacked on PR #85 → #84 → #83 → #82 → #81. Nothing is merged. **Not played.**
