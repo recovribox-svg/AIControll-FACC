@@ -11,6 +11,7 @@ using System.Runtime.CompilerServices;
 using CompanionAI_Pathfinder.Tactics;
 using Kingmaker.Blueprints;
 using Kingmaker.Controllers;
+using Kingmaker.Controllers.Units;
 using Kingmaker.RuleSystem.Rules.Abilities;
 using Kingmaker.RuleSystem.Rules.Damage;
 using Kingmaker.UnitLogic.Abilities;
