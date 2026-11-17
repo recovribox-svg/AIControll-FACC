@@ -109,7 +109,14 @@ namespace ProfileAudit
                       "a weapon attack that creates the flank counts the other engager's round of gain");
                 Check(Calls(Body(math, "FlankPartnerGain"), typeof(SneakRules), "PartnerLineGain") &&
                       Calls(Body(math, "FlankPartnerGain"), math, "ImmuneToPrecision"),
-                      "the partner's gain: +2 on melee attacks and its sneak dice, never against precision immunity");
+                      "the partner's gain includes newly enabled sneak dice, never against precision immunity");
+                var partner = Body(math, "FlankPartnerGain");
+                Check(Calls(partner, typeof(RuleCalculateAttackBonus), "set_TargetIsFlanked") &&
+                      partner.Any(m => m.DeclaringType == typeof(RuleCalculateAttackBonus) && m.Name == ".ctor") &&
+                      partner.Count(m => m.DeclaringType == math && m.Name == "ExpectedWeaponLine") == 2,
+                      "partner counterfactuals ask the native attack rule and compare the shared line kernel, including criticals and existing sneak");
+                Check(partner.Count(m => m.Name == "PartnerFlankGain") >= 2,
+                      "the counterfactual partner gain is cached on its existing per-frame routine");
             }
             catch (Exception ex)
             {

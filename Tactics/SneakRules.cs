@@ -13,9 +13,6 @@ namespace CompanionAI_Pathfinder.Tactics
 {
     public static class SneakRules
     {
-        /// <summary>The native flanking bonus on a melee attack (RuleCalculateAttackBonus).</summary>
-        public const int FlankingBonus = 2;
-
         /// <summary>The share of sneak attack and critical extra damage that survives fortification (percent).</summary>
         public static float FortificationKeep(int chance) => 1f - Math.Max(0, Math.Min(100, chance)) / 100f;
 
@@ -34,10 +31,11 @@ namespace CompanionAI_Pathfinder.Tactics
             !cannotBeFlanked && (nativeFlanked || attackerEngages && otherEngagers >= 1);
 
         /// <summary>
-        /// What one of a partner's attack lines gains for a round once the target is flanked: the flanking bonus's extra hits
-        /// (melee only) and the sneak dice the flank opens (<paramref name="newSneak"/>: 0 when they applied already).
+        /// What one of a partner's attack lines gains once the target is flanked: the difference between native-derived
+        /// expected line damage, plus newly enabled sneak dice (0 when they applied already). The two line quotes already
+        /// include existing sneak dice, criticals and fortification; do not apply fortification to that difference again.
         /// </summary>
-        public static float PartnerLineGain(float hitNow, float hitFlanked, float perHit, float newSneak, float keep) =>
-            Math.Max(0f, hitFlanked - hitNow) * Math.Max(0f, perHit) + Math.Max(0f, hitFlanked) * Math.Max(0f, newSneak) * keep;
+        public static float PartnerLineGain(float before, float after, float hitFlanked, float newSneak, float keep) =>
+            Math.Max(0f, after - before) + Math.Max(0f, hitFlanked) * Math.Max(0f, newSneak) * keep;
     }
 }
