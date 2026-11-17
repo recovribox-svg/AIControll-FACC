@@ -268,6 +268,11 @@ namespace ProfileAudit
             foreach (var line in fusionPoolLines) Console.WriteLine(line);
             File.WriteAllText(output, string.Join(Environment.NewLine, fusionPoolLines) + Environment.NewLine + File.ReadAllText(output));
             blocklistFailures += fusionPoolFailures;
+            // ★ Fusion coverage C1: Molten Orb's main target and the damage over time a fused cast leaves.
+            var fusionDotLines = FusionDotCheck.Run(loaded.Values, out int fusionDotFailures);
+            foreach (var line in fusionDotLines) Console.WriteLine(line);
+            File.WriteAllText(output, string.Join(Environment.NewLine, fusionDotLines) + Environment.NewLine + File.ReadAllText(output));
+            blocklistFailures += fusionDotFailures;
             // ★ burst aim: delayed bursts aimed at the ground where their anchor will be (docs/BURST_AIM_AND_TACTICS_PLAN.md §3).
             var burstLines = BurstAimCheck.Run(loaded.Values, out int burstFailures);
             foreach (var line in burstLines) Console.WriteLine(line);
