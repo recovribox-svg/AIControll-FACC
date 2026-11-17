@@ -117,6 +117,30 @@ namespace ProfileAudit
                       "partner counterfactuals ask the native attack rule and compare the shared line kernel, including criticals and existing sneak");
                 Check(partner.Count(m => m.Name == "PartnerFlankGain") >= 2,
                       "the counterfactual partner gain is cached on its existing per-frame routine");
+
+                // Run the production line kernel with cached native-layout scalars. The attack-bonus delta is a fixture,
+                // not a replacement for the native rule above; no unit, engagement or attack roll is constructed.
+                const BindingFlags hidden = BindingFlags.Instance | BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic;
+                var lineType = math.GetNestedType("AttackLine", hidden);
+                var line = Activator.CreateInstance(lineType, true);
+                void Set(string name, object value) => lineType.GetField(name, hidden).SetValue(line, value);
+                Set("AttackBonus", 10); Set("ArmorClass", 21); Set("RawPerHit", 12f); Set("GameHit", 12f);
+                Set("ThreatChance", 0.1f); Set("CritMultiplier", 2);
+                var kernel = BuffSuppressCheck.Method(math, "ExpectedWeaponLine");
+                float Gain(float keep, float existingSneak, float newSneak)
+                {
+                    Set("Keep", keep); Set("Sneak", existingSneak);
+                    float before = (float)kernel.Invoke(null, new object[] { line, 0, 0f, 1f, 0f, 0f });
+                    object[] args = { line, 2, 0f, 1f, 0f, 0f };
+                    float after = (float)kernel.Invoke(null, args);
+                    return SneakRules.PartnerLineGain(before, after, (float)args[4], newSneak, keep);
+                }
+                Check(Math.Abs(Gain(0.25f, 10.5f, 0f) - 1.4925f) < 1e-4,
+                      "production partner lines count extra hits carrying existing sneak and criticals, with heavy fortification once");
+                Check(Math.Abs(Gain(0f, 10.5f, 0f) - 1.2f) < 1e-4,
+                      "production partner lines preserve ordinary extra-hit damage under complete fortification");
+                Check(Math.Abs(Gain(0.25f, 0f, 10.5f) - 2.805f) < 1e-4,
+                      "production partner lines add newly enabled sneak once, after the critical/hit comparison");
             }
             catch (Exception ex)
             {
