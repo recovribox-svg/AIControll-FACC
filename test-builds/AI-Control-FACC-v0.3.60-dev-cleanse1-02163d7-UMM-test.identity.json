@@ -1,0 +1,31 @@
+{
+  "build_label": "cleanse1",
+  "kind": "development-test",
+  "version": "0.3.60",
+  "source_branch": "claude/cleanse-horizon",
+  "source_commit": "02163d7a2fdd1a7174d2745ada35fe2f6de4fe00",
+  "stacked_on": "claude/burst-path-forecast b5a471f (PR #88), on PR #87 (F2) -> #86 (F1) -> #85 -> #84 -> #83 -> #82 -> #81",
+  "development_base": "ad63ee8690ad47e74bfad54ba65c13810e4b5316",
+  "dll": {
+    "assembly": "CompanionAI_Pathfinder, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null",
+    "mvid": "2799ef2d-f330-4e9f-b654-af448b5bac4d",
+    "sha256": "49c010008febf33e88db6b5591de65fb2c768480bc0c6a855cea6a1240d30334",
+    "size": 1522176
+  },
+  "archive": "AI-Control-FACC-v0.3.60-dev-cleanse1-02163d7-UMM-test.zip",
+  "zip_sha256": "b179769ea86c1143ad7be5ddace3cdfe4718a0ce4c61b690589dc755e211fbf9",
+  "manifest_sha256": "63ad9f152d4bacb44f021428193efad46aaf0d13380bb5691ebca1d935f2b5bf",
+  "checks_receipt": "docs/competence/CLEANSE_F3_CHECKS.json",
+  "build_provenance": "docs/competence/CLEANSE_F3_BUILD_PROVENANCE.json",
+  "toolchain": {
+    "dotnet_sdk": "8.0.428",
+    "csharp_compiler": "4.11.0-3.25569.22 (3fb752d4)"
+  },
+  "scope": "Everything in the open stack: slices A-D, the PR #85 corrections, F1, F2, the burst follow-ups (A-R1, A3, A-P1) and F3 (a suppressed debuff's cleanse valued by the rounds it acts within the horizon).",
+  "gameplay_status": "unplayed",
+  "archive_contents": [
+    "CompanionAI_Pathfinder.dll",
+    "Info.json"
+  ],
+  "release": false
+}

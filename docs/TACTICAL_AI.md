@@ -6712,3 +6712,25 @@ A-P1. Stacked on F2 (PR #87).
   - 1 added signature (the next-waypoint field read), resolved; `Mathf.Lerp` removed.
 - **Package** `test-builds/AI-Control-FACC-v0.3.60-dev-burstpath1-62dede5-UMM-test.zip`, MVID `1b3df06e`. It includes
   A–D, the PR #85 corrections, F1 and F2.
+
+## 197. F3 a suppressed debuff's cleanse within the fight horizon (17 November 2026, Claude; not played)
+
+[Design and replay](CLEANSE_HORIZON.md), [plan](REVIEW_FOLLOWUPS_PLAN.md), [receipt](competence/CLEANSE_F3_CHECKS.json),
+[provenance](competence/CLEANSE_F3_BUILD_PROVENANCE.json). Both modes, valuation only. Stacked on the burst follow-ups
+(PR #88).
+
+- **C-R1.** A suppressed debuff counted for a cleanse whenever it outlasted its suppressor, and the cleanse then earned the
+  whole horizon. It now earns the share of its rounds left within the horizon that it acts after its suppressor ends
+  (`SuppressionRules.ActiveShare`, from the rounds `DispelValue` already uses).
+  - `AbilityProfile.RemovedActiveShare` replaces `WouldRemoveSomething` and gives an unsuppressed debuff a share of 1, so
+    nothing else changes.
+  - The dispel fallback skips a buff suppressed for the rest of the horizon.
+  - Attached-hazard removal and the arrival rule (C1) are unchanged.
+- **Checks** on `02163d7`:
+  - Release 0 warnings and errors.
+  - 1,032 unit tests and 27 + 18 + 3 script tests.
+  - ProfileAudit `BUFF-SUPPRESS` 34; every other line is unchanged.
+  - Native harnesses 98/14/10.
+  - No signature change.
+- **Package** `test-builds/AI-Control-FACC-v0.3.60-dev-cleanse1-02163d7-UMM-test.zip`, MVID `2799ef2d`. It includes
+  everything in the open stack: A–D, the PR #85 corrections, F1, F2, the burst follow-ups and F3.

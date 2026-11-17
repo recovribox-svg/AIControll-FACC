@@ -8,7 +8,22 @@ Read [CONTRIBUTING.md](CONTRIBUTING.md) for shared branch ownership, Codex pull 
 Codex works on task branches and targets pull requests at `claude/dreamy-pasteur-b9h3rn`; Claude reviews and integrates them there.
 Keep `main` for author-authorized releases. Read [AGENTS.md](AGENTS.md) when coordinating agent work.
 
-**Current handover (17 November 2026, Claude): burst follow-ups A-R1, A3 and A-P1 (author-approved) on
+**Current handover (17 November 2026, Claude): F3 on `claude/cleanse-horizon`, stacked on the burst follow-ups (draft PR
+#88) → F2 (#87) → F1 (#86) → #85 → #81, all unmerged. Not played.** Read [docs/CLEANSE_HORIZON.md](docs/CLEANSE_HORIZON.md),
+`docs/TACTICAL_AI.md` §197, the [receipt](docs/competence/CLEANSE_F3_CHECKS.json) and
+[provenance](docs/competence/CLEANSE_F3_BUILD_PROVENANCE.json). Both modes, valuation only.
+- **F3 (C-R1).** A suppressed debuff's cleanse earns the share of its rounds left within the horizon that it acts after its
+  suppressor ends (`SuppressionRules.ActiveShare`, `AbilityProfile.RemovedActiveShare`). An unsuppressed one keeps its
+  full value; the dispel fallback skips a buff suppressed for the rest of the horizon.
+- **Checks** on `02163d7`: Release 0 warnings/errors, 1,032 unit + 27/18/3 script tests, ProfileAudit `BUFF-SUPPRESS` 34
+  with every other line unchanged, harnesses 98/14/10, no signature change.
+- **Package** `test-builds/AI-Control-FACC-v0.3.60-dev-cleanse1-02163d7-UMM-test.zip`, MVID `2799ef2d`: everything in the
+  open stack (A–D + #85 + F1 + F2 + burst follow-ups + F3), the one to play.
+- **Next:** Codex reviews the Claude stack (#86–#89) and corrects what needs it; then the author plays cleanse1. Every
+  selected follow-up is done; the full geometry quote stays not selected. Merge order when cleared: #81 → #88, then this
+  PR. No merge, `main`, tag or release.
+
+**Earlier handover (17 November 2026, Claude): burst follow-ups A-R1, A3 and A-P1 (author-approved) on
 `claude/burst-path-forecast`, stacked on F2 (draft PR #87) → F1 (#86) → #85 → #81, all unmerged. Not played.** Read
 [docs/BURST_PATH_FORECAST.md](docs/BURST_PATH_FORECAST.md), `docs/TACTICAL_AI.md` §196, the
 [receipt](docs/competence/BURST_PATH_CHECKS.json) and [provenance](docs/competence/BURST_PATH_BUILD_PROVENANCE.json).
@@ -24,7 +39,7 @@ Real time.
   with every other line unchanged, harnesses 98/14/10. 1 added signature (the next-waypoint field read, resolved);
   `Mathf.Lerp` removed.
 - **Package** `test-builds/AI-Control-FACC-v0.3.60-dev-burstpath1-62dede5-UMM-test.zip`, MVID `1b3df06e` (A–D + #85 + F1 +
-  F2 + these): the one to play.
+  F2 + these).
 - **Next:** the author plays (replay in the page; send the fight-summary lines). F3 stays low priority. The full
   geometry quote is approved but not selected (reasons in the plan). Merge order when cleared: #81 → #87, then this PR.
   No merge, `main`, tag or release.

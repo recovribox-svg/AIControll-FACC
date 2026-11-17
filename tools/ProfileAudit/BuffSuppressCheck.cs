@@ -198,10 +198,12 @@ namespace ProfileAudit
                 // --- the rule ---
                 Check(SuppressionRules.Suppressed(true, true, true, true) == false && SuppressionRules.Suppressed(false, false, true, false),
                       "pure rule: the exclusion list wins; any one of list, descriptor or school suppresses");
-                Check(!SuppressionRules.StillMatters(true, 30f, 60f) && SuppressionRules.StillMatters(true, 90f, 60f) &&
-                      !SuppressionRules.StillMatters(true, float.PositiveInfinity, float.PositiveInfinity) &&
-                      SuppressionRules.StillMatters(true, float.NaN, 60f),
-                      "pure rule: a suppressed buff matters only if it outlasts its suppressor; unknown keeps the old value");
+                Check(SuppressionRules.ActiveShare(true, 5f, 10f, 3f) == 0f && SuppressionRules.ActiveShare(true, 20f, 10f, 30f) == 0.5f &&
+                      SuppressionRules.ActiveShare(true, float.PositiveInfinity, float.PositiveInfinity, 3f) == 0f &&
+                      SuppressionRules.ActiveShare(true, float.NaN, 10f, 3f) == 1f && SuppressionRules.ActiveShare(false, 1f, 10f, 3f) == 1f,
+                      "pure rule (F3): a suppressed buff counts the share of its rounds it acts within the horizon; unknown keeps the old value");
+                Check(SuppressionRules.ActiveShare(true, 61f / 6f, 60f / 6f, 3f) == 0f,
+                      "F3: Codex's C-R1 case - 61 s left under 60 s of suppression earns nothing within an 18 s horizon");
                 Check(SuppressionRules.ActiveRounds(10f, 4f, 6f) == 2f && SuppressionRules.ActiveRounds(10f, float.PositiveInfinity, 6f) == 0f &&
                       SuppressionRules.ActiveRounds(3f, 0f, 6f) == 3f,
                       "pure rule: the rounds a buff acts are its rounds left in the horizon less the suppressed ones");
@@ -232,14 +234,16 @@ namespace ProfileAudit
                       "a plain grant can be suppressed solely by its inherited context; an empty parent changes the answer");
                 Check(Calls(Body(Method(typeof(RealTimeController), "IsWorthKeepingUp")), reader, "OnArrival"),
                       "C1: no out-of-combat upkeep for a buff the unit would suppress");
-                Check(Calls(BodyWithLambdas(typeof(AbilityProfile), "WouldRemoveSomething"), reader, "StillMatters"),
-                      "C2: a cleanse gains nothing from a harmful buff suppressed for the rest of its time");
-                Check(Calls(Body(Method(engine, "HasSomethingToDispel")), reader, "StillMatters"),
-                      "C2: the dispel fallback skips buffs suppressed for the rest of their time");
+                Check(Calls(BodyWithLambdas(typeof(AbilityProfile), "RemovedActiveShare"), reader, "ActiveShare") &&
+                      Calls(BodyWithLambdas(engine, "ScoreAbility"), typeof(AbilityProfile), "RemovedActiveShare"),
+                      "C2/F3: a cleanse earns the share of the horizon a removed harmful buff acts after its suppressor ends");
+                Check(Calls(Body(Method(engine, "HasSomethingToDispel")), reader, "ActiveShare"),
+                      "C2/F3: the dispel fallback skips buffs suppressed for the rest of the horizon");
                 var dispelValue = Body(Method(engine, "DispelValue"));
                 Check(Calls(dispelValue, reader, "SuppressedSeconds") && Calls(dispelValue, typeof(SuppressionRules), "ActiveRounds"),
                       "C2: a dispel's worth counts only the rounds a buff acts after its suppressor ends");
-                Check(Calls(Body(Method(reader, "StillMatters")), typeof(SuppressionRules), "StillMatters") &&
+                Check(Calls(Body(Method(reader, "ActiveShare")), typeof(SuppressionRules), "ActiveShare") &&
+                      Calls(Body(Method(reader, "ActiveShare")), reader, "SuppressedSeconds") &&
                       Calls(Body(suppresses), typeof(SuppressionRules), "Suppressed"),
                       "the game side defers to the unit-tested rule");
             }
