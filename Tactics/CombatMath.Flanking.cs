@@ -60,18 +60,25 @@ namespace CompanionAI_Pathfinder.Tactics
         }
 
         /// <summary>
-        /// D2's prospective engagement assumption: a melee attacker can act and has a native threat hand/range. This does
-        /// not prove the target is within that threat range, visible or free of total concealment at the future origin.
-        /// See REVIEW_81_84.md D-R1 for the proposed origin-aware quote; ranged attacks use only the native state.
+        /// D2 / F1 (docs/REVIEW_FOLLOWUPS_PLAN.md, D-R1): <paramref name="unit"/>'s melee attack with <paramref name="weapon"/>
+        /// makes it an engager of <paramref name="target"/> when it lands. The native engagement state when the unit engages
+        /// the target already; otherwise its threat range must cover the weapon's and the target must not be totally
+        /// concealed from it now (SneakRules.WillEngage). Line of sight and height at a future arrival point are taken from
+        /// the attack being possible there (the dispatcher's path-end check), not re-proved. Ranged attacks use only the
+        /// native state.
         /// </summary>
-        internal static bool AttackerEngages(UnitEntityData unit, ItemEntityWeapon weapon)
+        internal static bool AttackerEngages(UnitEntityData unit, UnitEntityData target, ItemEntityWeapon weapon)
         {
             try
             {
-                if (unit == null || weapon?.Blueprint == null || !weapon.Blueprint.IsMelee) return false;
-                if (!unit.Descriptor.State.CanAct) return false;
-                var hand = unit.GetThreatHand();
-                return hand != null && unit.GetThreatRange(hand).HasValue;
+                if (unit == null || target == null || weapon?.Blueprint == null || !weapon.Blueprint.IsMelee) return false;
+                if (unit.CombatState?.IsEngage(target) == true) return true;   // the controller's own answer
+                bool canAct = unit.Descriptor.State.CanAct;
+                var hand = canAct ? unit.GetThreatHand() : null;
+                float? threat = hand != null ? unit.GetThreatRange(hand) : null;
+                if (!threat.HasValue) return false;
+                bool total = UnitPartConcealment.Calculate(unit, target) == Kingmaker.Enums.Concealment.Total;
+                return SneakRules.WillEngage(false, canAct, threat.Value, weapon.AttackRange.Meters, total);
             }
             catch
             {
@@ -93,7 +100,7 @@ namespace CompanionAI_Pathfinder.Tactics
             bool cannot;
             try { cannot = target.Descriptor.State.Features.CannotBeFlanked; }
             catch { cannot = true; }
-            if (cannot || !AttackerEngages(unit, weapon)) return false;
+            if (cannot || !AttackerEngages(unit, target, weapon)) return false;
             int others = OtherEngagers(target, unit, out partner);
             bySecond = SneakRules.PredictsFlank(false, cannot, true, others);
             if (!bySecond) partner = null;
