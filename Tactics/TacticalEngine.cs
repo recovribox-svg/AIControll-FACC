@@ -3947,7 +3947,7 @@ namespace CompanionAI_Pathfinder.Tactics
                     ? new List<UnitEntityData>()
                     : UnitsAround(burst != null ? ctx.Allies.Where(a => a != unit).ToList() : ctx.Allies, areaCenter, profile.AoERadius);
                 // ★ v0.3.8: who the area can affect at all (Sleep: creatures with few hit dice).
-                affectedEnemies = sharedHd?.Supported == true
+                affectedEnemies = UseCurrentPoolRecipients(profile, sharedHd?.Supported == true, burst != null)
                     ? ctx.Enemies.Where(u => sharedHd.Selects(u) && (burstInside == null || burstInside.Contains(u)) &&
                                              !CastOutcome.AreaSkips(unit, ability, u)).ToList()
                     : affectedEnemies.Where(u => profile.AreaReaches(ability, u) && !CastOutcome.AreaSkips(unit, ability, u)).ToList();
