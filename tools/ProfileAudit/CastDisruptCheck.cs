@@ -225,13 +225,16 @@ namespace ProfileAudit
                 Check(Calls(others, engine, "TryAttackWindow") && Calls(others, engine, "OrderedChainedAttacks"),
                       "pending-hit quotes use their actual configured window and per-transition native shortcut");
                 var readiness = Body(engine, "TryOrderedDelay");
-                var nativeStart = Body(typeof(UnitCommandController), "CanStart");
+                var nativeStart = Body(typeof(UnitCommandController), "ShouldStartCommand");
                 Check(nativeStart.Any(m => m.Name == "HasCooldownForCommand") && nativeStart.Any(m => m.Name == "get_CanActInCombat") &&
                       readiness.Any(m => m.Name == "HasCooldownForCommand") && readiness.Any(m => m.Name == "get_CanStart") &&
                       readiness.Any(m => m.Name == "get_StandardAction" || m.Name == "StandardAction"),
                       "ordered-hit readiness follows native command gates and the actual remaining standard cooldown");
                 Check(nativeStart.Any(m => m.Name == "IsUpdateScheduledFor") && readiness.Any(m => m.Name == "IsUpdateScheduledFor"),
                       "an issued but unstarted attack cannot claim a timely hit while native equipment updating blocks its start");
+                Check(new[] { "get_AreHandsBusyWithAnimation", "get_DontWaitForHands", "get_AwaitMovementFinish", "get_IsReallyMoving" }
+                    .All(name => nativeStart.Any(m => m.Name == name) && readiness.Any(m => m.Name == name)),
+                      "queued attacks retain the native hand-animation and movement-finish gates without starting or probing a command");
                 Check(Calls(others, engine, "TryOrderedDelay") && Calls(others, typeof(DisruptRules), "OrderedStartSeconds") &&
                       DisruptRules.OrderedStartSeconds(2f, 1f) == 2f && DisruptRules.OrderedStartSeconds(1f, 2f) == 2f,
                       "a queued approach overlaps cooldown; the issued-hit quote cannot treat a cooling ally as ready now");

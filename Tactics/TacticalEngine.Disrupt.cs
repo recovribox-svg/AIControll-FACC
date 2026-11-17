@@ -276,7 +276,7 @@ namespace CompanionAI_Pathfinder.Tactics
             return still;
         }
 
-        /// <summary>Native CanStart gates for a queued attack, with the ordinary standard cooldown allowed to elapse
+        /// <summary>Cheap read-only native start gates for a queued attack, with the ordinary standard cooldown allowed to elapse
         /// during its approach. A running routine has paid its action: its own cooldown must not delay later iteratives.
         /// Unknown blockers (including a separate running move) prove no timely allied hit.</summary>
         private static bool TryOrderedDelay(UnitEntityData ally, UnitAttack attack, out float delay)
@@ -285,6 +285,8 @@ namespace CompanionAI_Pathfinder.Tactics
             if (!ally.IsInGame || ally.Descriptor?.State == null || !ally.Descriptor.State.CanAct) return false;
             if (attack.IsStarted) return true;
             if (!attack.CanStart || ally.Descriptor.State.HasCondition(UnitCondition.Nauseated)) return false;
+            if (ally.AreHandsBusyWithAnimation && !attack.DontWaitForHands) return false;
+            if (attack.AwaitMovementFinish && ally.View.MovementAgent.IsReallyMoving) return false;
             if (Kingmaker.Game.Instance.HandsEquipmentController.IsUpdateScheduledFor(ally)) return false;
             if (attack.Type == UnitCommand.CommandType.Standard &&
                 ally.Descriptor.State.HasCondition(UnitCondition.CantUseStandardActions)) return false;
