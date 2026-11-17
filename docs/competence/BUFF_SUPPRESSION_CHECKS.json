@@ -1,0 +1,64 @@
+{
+  "task": "Suppressed buffs, slice C of docs/BURST_AIM_AND_TACTICS_PLAN.md (both modes, valuation only)",
+  "date": "2026-11-17",
+  "author": "Claude",
+  "branch": "claude/buff-suppression",
+  "stacked_on": "claude/cast-disruption (slice B), on PR #81 (claude/burst-ground-aim)",
+  "checked_source": "3e703457974b9861823cb4c819b969350e4d0148",
+  "development_base": "ad63ee8690ad47e74bfad54ba65c13810e4b5316",
+  "toolchain": {
+    "dotnet_sdk": "8.0.428",
+    "csharp_compiler": "4.11.0-3.25569.22 (3fb752d4)",
+    "references": "real game Wrath_Data/Managed, supplied UnityModManager 0.33.2.0"
+  },
+  "release_build": "0 warnings, 0 errors",
+  "unit_tests": "982 pass (17 new: SuppressionRulesTests)",
+  "script_tests": {
+    "BlueprintInventory": 27,
+    "InvocationLedger": 18,
+    "ProfileAudit supplement": 3
+  },
+  "profileaudit": {
+    "exit": 0,
+    "buff_suppress": "25 checks, 0 failures",
+    "export_pass": "337 suppressors; 695/695 named buffs, 2/2 exclusions, 19/19 descriptor suppressors read as the game does",
+    "cast_disrupt": "15 checks, 0 failures",
+    "burst_aim": "28 checks, 0 failures",
+    "other_lines": "identical to slice B's run on the same inputs (path lines and the new section excluded)",
+    "fusion_coverage": "byte-identical; 8,709 / 15,494 admitted",
+    "summon_kit_detail": "byte-identical",
+    "report_sha256": "2d74f54ede901c60f80b8ce1b16e143a4552acc36f9ebbd30e41b14785650687"
+  },
+  "native_harnesses": {
+    "ToggleCosts": 98,
+    "TomeBurn": 14,
+    "ToyBoxSpend": 10
+  },
+  "added_game_references": {
+    "relative_to": "slice B (6845b83)",
+    "count": 10,
+    "members": [
+      "SpellComponent.School",
+      "AddSpellSchool.School",
+      "SuppressBuffs.get_Buffs",
+      "SuppressBuffs.get_ExcludedBuffs",
+      "MultiSet<SpellDescriptor>.Contains",
+      "MultiSet<SpellSchool>.Contains",
+      "MultiSet<BlueprintBuff>.Contains",
+      "AccessTools.FieldRef<UnitPartBuffSuppress, MultiSet<SpellDescriptor>>.Invoke",
+      "AccessTools.FieldRef<UnitPartBuffSuppress, MultiSet<SpellSchool>>.Invoke",
+      "AccessTools.FieldRef<UnitPartBuffSuppress, MultiSet<BlueprintBuff>>.Invoke"
+    ],
+    "removed": 0,
+    "resolve": "yes: the audit runs the reader and the four field references on the real assembly"
+  },
+  "package": {
+    "zip": "test-builds/AI-Control-FACC-v0.3.60-dev-suppress1-3e70345-UMM-test.zip",
+    "identity": "test-builds/AI-Control-FACC-v0.3.60-dev-suppress1-3e70345-UMM-test.identity.json"
+  },
+  "manifest": "0.3.60, unchanged; no main, tag or release change",
+  "not_tested": [
+    "Gameplay: unplayed. Offline checks fill a real UnitPartBuffSuppress from each exported suppressor; no unit, buff instance or context is created.",
+    "The diagnostic suppressor name and the suppressor time read live facts; not exercised offline."
+  ]
+}
