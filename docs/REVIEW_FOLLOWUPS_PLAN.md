@@ -15,8 +15,8 @@ it, with a PR into `claude/dreamy-pasteur-b9h3rn` that is merged only after #85.
 | D-R1, Codex's full origin-aware geometry quote | Partly superseded by F1 | Medium: only the cases F1 leaves | Needs a projected arrival point | Geometry at projected points, which needs approval | Kept as a proposal |
 | **B-R1** several allies each credited with breaking one cast | Valid; the overcount is certain whenever two allies decide while one is already attacking | Medium to high in real-time fights against casters | Arithmetic (independent breaks) | Medium: reads already-issued friendly commands | **F2, selected, after F1** |
 | C-R1 cleanse eligibility ignores the fight horizon | Valid | Low: needs a party-side Ameliorating hex or a form-suppressed debuff | Native durations | Low | F3, low priority |
-| A-R1 straight-line burst prediction | Valid limit | Medium | Needs curved-path replays | Path-based forecast, which needs approval | Proposal only |
-| A-P1 scene scan and the 32-watch cap | Valid in principle | Low: a party rarely has more than a few pending bursts | Needs a live count | Low | Measure in play first |
+| A-R1 straight-line burst prediction, and the HP-only re-check (A3) | Valid limit | Medium | Native path contract verified ([BURST_PATH_FORECAST.md](BURST_PATH_FORECAST.md)) | Low: reads the agent's existing path, no search | **Approved 17 November; done** (burst follow-ups) |
+| A-P1 scene scan and the 32-watch cap | Valid in principle | Low: a party rarely has more than a few pending bursts | Needs a live count | Low | **Approved; done**, with the counts logged per fight |
 | B-R2 swing and flight timing estimates | Valid limit | Medium | Needs measured hit times | Calibration needs logs | Replay first |
 | D-R2 Tabletop Tweaks fortification rerolls | Valid limit | Low: needs a supported reroll component in play | Native and TTT | High: needs a non-rolling provider | Documented limit |
 | C-P2 repeated suppressor scans | Valid in principle | Low: only buffs the game already marks suppressed are scanned | No profile | Low | Not selected |
@@ -107,8 +107,23 @@ A suppressed debuff counts for a cleanse only if it acts again within the fight 
 `SuppressionRules.ActiveRounds > 0`, instead of "outlasts its suppressor". This is the same horizon the dispel worth
 already uses. The arrival rule (C1) stays conservative. To be done after F2 if it still warrants the work.
 
+## Burst follow-ups: A-R1, A3, A-P1 (real time)
+
+**Done** on `claude/burst-path-forecast` (`62dede5`), after the author's approval of 17 November:
+[BURST_PATH_FORECAST.md](BURST_PATH_FORECAST.md), [receipt](competence/BURST_PATH_CHECKS.json), package burstpath1
+(MVID `1b3df06e`).
+- Walks are forecast along the movement agent's current path, read once per decision with no path search, else the
+  straight walk.
+- An ally that walks in is priced by the decision's own friendly-control rule as well as its damage.
+- The re-check reads one roster per frame and never drops a watch whose cast has not gone off; each fight logs its
+  counts.
+
 ## Not selected
 
-- The origin-aware geometry quote (D-R1, full), path-based burst prediction (A-R1) and the burst watch overflow
-  behaviour (A-P1) wait for the author's decision.
-- Timing calibration (B-R2) and the TTT fortification provider (D-R2) need replay evidence or a provider design first.
+- **The origin-aware geometry quote (D-R1, full).** Approved, but not worth its cost now. After F1, it would only add
+  line of sight and height at a future arrival point. The dispatcher's path-end check already requires the attack to be
+  possible there. It would add geometry queries at projected points in every routine read. Revisit if a replay shows a
+  predicted flank failing at the arrival point.
+- **Timing calibration (B-R2) and the TTT fortification provider (D-R2)** need replay evidence or a provider design
+  first. The disrupt2 and burstpath1 replays collect the timings.
+- **F3** stays low priority; it is the next permitted slice if the author wants it before playing.

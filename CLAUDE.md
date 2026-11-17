@@ -8,7 +8,28 @@ Read [CONTRIBUTING.md](CONTRIBUTING.md) for shared branch ownership, Codex pull 
 Codex works on task branches and targets pull requests at `claude/dreamy-pasteur-b9h3rn`; Claude reviews and integrates them there.
 Keep `main` for author-authorized releases. Read [AGENTS.md](AGENTS.md) when coordinating agent work.
 
-**Current handover (17 November 2026, Claude): review follow-up F2 on `claude/disrupt-marginal`, stacked on F1 (draft
+**Current handover (17 November 2026, Claude): burst follow-ups A-R1, A3 and A-P1 (author-approved) on
+`claude/burst-path-forecast`, stacked on F2 (draft PR #87) → F1 (#86) → #85 → #81, all unmerged. Not played.** Read
+[docs/BURST_PATH_FORECAST.md](docs/BURST_PATH_FORECAST.md), `docs/TACTICAL_AI.md` §196, the
+[receipt](docs/competence/BURST_PATH_CHECKS.json) and [provenance](docs/competence/BURST_PATH_BUILD_PROVENANCE.json).
+Real time.
+- **A-R1, walks along the game's path.** The burst lead, the enemies inside, the walking allies and the re-check follow
+  each walking unit's movement-agent path (`ReadRoute`, `WalkRoute`), once per decision, at most 64 points, no path
+  search. Otherwise they use the straight walk.
+- **A3.** An ally walking in is priced by the decision's own friendly-control rule (`BurstPlan.AllyControl`) as well as
+  by its damage.
+- **A-P1.** One roster per frame; damage estimated once per watch; a watch whose cast has not gone off is never dropped
+  (cap 64); a `[Burst] fight summary` line per fight.
+- **Checks** on `62dede5`: Release 0 warnings/errors, 1,025 unit + 27/18/3 script tests, ProfileAudit `BURST-AIM` 48
+  with every other line unchanged, harnesses 98/14/10. 1 added signature (the next-waypoint field read, resolved);
+  `Mathf.Lerp` removed.
+- **Package** `test-builds/AI-Control-FACC-v0.3.60-dev-burstpath1-62dede5-UMM-test.zip`, MVID `1b3df06e` (A–D + #85 + F1 +
+  F2 + these): the one to play.
+- **Next:** the author plays (replay in the page; send the fight-summary lines). F3 stays low priority. The full
+  geometry quote is approved but not selected (reasons in the plan). Merge order when cleared: #81 → #87, then this PR.
+  No merge, `main`, tag or release.
+
+**Earlier handover (17 November 2026, Claude): review follow-up F2 on `claude/disrupt-marginal`, stacked on F1 (draft
 PR #86) and PR #85 (#81 → #86 all unmerged). Not played.** Read [docs/DISRUPT_MARGINAL.md](docs/DISRUPT_MARGINAL.md),
 `docs/TACTICAL_AI.md` §195, the [receipt](docs/competence/DISRUPT_F2_CHECKS.json) and
 [provenance](docs/competence/DISRUPT_F2_BUILD_PROVENANCE.json). Real time, valuation only.
@@ -19,8 +40,7 @@ PR #86) and PR #85 (#81 → #86 all unmerged). Not played.** Read [docs/DISRUPT_
   bow-style and sequenced attacks chain.
 - **Checks** on `bcb46df`: Release 0 warnings/errors, 1,017 unit + 27/18/3 script tests, ProfileAudit `CAST-DISRUPT` 28
   with every other line unchanged, harnesses 98/14/10, 6 added references (all resolved).
-- **Package** `test-builds/AI-Control-FACC-v0.3.60-dev-disrupt2-bcb46df-UMM-test.zip`, MVID `9a4d8a66` (A–D + #85 + F1 + F2):
-  the one to play.
+- **Package** `test-builds/AI-Control-FACC-v0.3.60-dev-disrupt2-bcb46df-UMM-test.zip`, MVID `9a4d8a66` (A–D + #85 + F1 + F2).
 - **Next:** F3 (horizon-aware cleanse) is low priority. The geometry quote, path forecast and watch overflow await the
   author. Merge order when cleared: #81 → #86, then this PR. No merge, `main`, tag or release.
 
