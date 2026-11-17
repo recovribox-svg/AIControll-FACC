@@ -4,7 +4,7 @@
 
 [UMM test ZIP](AI-Control-FACC-v0.3.60-dev-review1-2d8a9b5-UMM-test.zip?raw=true) · [Identity](AI-Control-FACC-v0.3.60-dev-review1-2d8a9b5-UMM-test.identity.json) · [Checksum](AI-Control-FACC-v0.3.60-dev-review1-2d8a9b5-UMM-test.sha256) · [Review and A–D replay](../docs/REVIEW_81_84.md) · [Checks](../docs/competence/REVIEW_81_84_CHECKS.json)
 
-Includes all four unmerged Claude slices and five runtime corrections: future fused damage recipients, disruption
+[Draft correction PR #85](https://github.com/recovribox-svg/AIControll-FACC/pull/85); no merge. Includes all four unmerged Claude slices and five runtime corrections: future fused damage recipients, disruption
 repricing for attack modes, efficient suppression filtering, inherited aura context, and native/comprehensive partner
 flank damage. No additional movement policy. **Read the remaining engagement/TTT/coordination limits before testing;
 this is not an endorsement to merge the stack.**

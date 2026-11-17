@@ -29,7 +29,8 @@ whose extra graph files are unavailable. No hidden prerequisite skips. **0 added
 #84. SDK 8.0.426 / Roslyn 4.11, all compiler/reference hashes recorded. The test ZIP
 [test-builds/AI-Control-FACC-v0.3.60-dev-review1-2d8a9b5-UMM-test.zip](test-builds/AI-Control-FACC-v0.3.60-dev-review1-2d8a9b5-UMM-test.zip)
 is **unplayed**, UMM **0.3.60** unchanged, SHA-256 `8989b793a43cbd40652b4d8e645d6c6c71414c7ff2317de09d324c9879621f4a`; identity/checksum sidecars. The checked DLL is frozen across
-this later documentation commit. Correction PR must target development and merge **after #81 → #82 → #83 → #84**.
+this later documentation commit. Correction [PR #85](https://github.com/recovribox-svg/AIControll-FACC/pull/85) targets development and is **draft**; integrate only after author clearance,
+**after #81 → #82 → #83 → #84**.
 No Claude-branch/development/main update, tag or release. Author next: replay A–D plus review witnesses with paired logs
 and startup module; decide the separately proposed geometry/coordination slices. No PR polling/reminders.
 

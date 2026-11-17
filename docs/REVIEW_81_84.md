@@ -1,6 +1,7 @@
 # Review of PRs #81–84
 
 17 November 2026, Codex. **Five runtime findings corrected; the stack remains unmerged and unplayed.**
+[Draft correction PR #85](https://github.com/recovribox-svg/AIControll-FACC/pull/85) targets development and must follow #81–84.
 This is a correction branch over #84, not an endorsement of every forecast as a native simulation.
 The most important remaining decision is D-R1: whether to commission the origin-aware engagement quote before integration.
 
