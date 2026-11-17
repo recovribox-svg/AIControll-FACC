@@ -206,6 +206,23 @@ namespace ProfileAudit
                       Calls(BodyWithLambdas(engine, "ScoreAbility"), reader, "SuppressorName"),
                       "C1: an ally buff is not valued on a recipient that would suppress it, and the reason is logged");
                 Check(Calls(BodyWithLambdas(engine, "ToggleValue"), reader, "OnArrival"), "C1: a toggle's grants are not valued on a suppressing bearer");
+                var toggleValue = BodyWithLambdas(engine, "ToggleValue");
+                Check(Calls(toggleValue, reader, "ContextDescriptor") && Calls(toggleValue, reader, "ContextSchool") &&
+                      Calls(toggleValue, typeof(MechanicsContext), "get_SpellDescriptor") &&
+                      Calls(toggleValue, typeof(MechanicsContext), "get_SpellSchool"),
+                      "C1: aura grants inherit the toggle context through the area instead of assuming an empty parent");
+                var areaSpawn = Body(Method(typeof(Kingmaker.Controllers.AreaEffectsController), "Spawn",
+                    typeof(MechanicsContext), typeof(Kingmaker.UnitLogic.Abilities.Blueprints.BlueprintAbilityAreaEffect),
+                    typeof(Kingmaker.Utility.TargetWrapper), typeof(TimeSpan?), typeof(bool)));
+                Check(Calls(areaSpawn, typeof(MechanicsContext), "CloneFor"),
+                      "native area spawning clones its supplied buff context for the area blueprint");
+                var plainGrant = buffs.First(b => b.GetComponent<SpellDescriptorComponent>() == null &&
+                    b.GetComponent<SpellComponent>() == null && b.GetComponent<Kingmaker.UnitLogic.Buffs.Components.AddSpellSchool>() == null);
+                var inheritedPart = new UnitPartBuffSuppress();
+                inheritedPart.PrepareForSuppression(SpellDescriptor.MindAffecting);
+                Check(!Reads(inheritedPart, plainGrant, SpellDescriptor.None, SpellSchool.None) &&
+                      Reads(inheritedPart, plainGrant, SpellDescriptor.MindAffecting, SpellSchool.None),
+                      "a plain grant can be suppressed solely by its inherited context; an empty parent changes the answer");
                 Check(Calls(Body(Method(typeof(RealTimeController), "IsWorthKeepingUp")), reader, "OnArrival"),
                       "C1: no out-of-combat upkeep for a buff the unit would suppress");
                 Check(Calls(BodyWithLambdas(typeof(AbilityProfile), "WouldRemoveSomething"), reader, "StillMatters"),

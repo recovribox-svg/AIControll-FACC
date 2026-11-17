@@ -644,6 +644,15 @@ namespace CompanionAI_Pathfinder.Tactics
             }
             catch { }
 
+            // AddAreaEffect -> AreaEffectsController.Spawn clones the self-buff context for the area. Its grants then
+            // inherit that area's descriptor and school. A toggle's own buff has no parent; do not add its metadata twice.
+            var grantDescriptor = p.Area != null ? BuffSuppression.ContextDescriptor(p.Area,
+                toggleCtx?.SpellDescriptor ?? Kingmaker.Blueprints.Classes.Spells.SpellDescriptor.None)
+                : Kingmaker.Blueprints.Classes.Spells.SpellDescriptor.None;
+            var grantSchool = p.Area != null ? BuffSuppression.ContextSchool(p.Area,
+                toggleCtx?.SpellSchool ?? Kingmaker.Blueprints.Classes.Spells.SpellSchool.None)
+                : Kingmaker.Blueprints.Classes.Spells.SpellSchool.None;
+
             float modelled = 0f, legacy = 0f;
             int helped = 0;
             var details = new List<string>();
@@ -662,8 +671,7 @@ namespace CompanionAI_Pathfinder.Tactics
                 var useful = reaching.Where(r => r.Buff != null && !AbilityProfile.IsHarmfulBuff(r.Buff) && !ally.Buffs.HasFact(r.Buff) &&
                                                  BuffStackingAnalyzer.Analyze(r.Buff, ally).IsEffective &&
                                                  // ★ suppressed buffs (slice C1): a grant the bearer's form suppresses does nothing.
-                                                 !BuffSuppression.OnArrival(r.Buff, ally, Kingmaker.Blueprints.Classes.Spells.SpellDescriptor.None,
-                                                                              Kingmaker.Blueprints.Classes.Spells.SpellSchool.None)).ToList();
+                                                 !BuffSuppression.OnArrival(r.Buff, ally, grantDescriptor, grantSchool)).ToList();
                 if (useful.Count == 0) continue;
                 float weight = useful.Max(r => r.Weight);
                 var appraisal = toggleCtx != null

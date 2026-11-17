@@ -144,14 +144,14 @@ namespace CompanionAI_Pathfinder.Tactics
         }
 
         /// <summary>The buff context's descriptor: the parent's plus the buff's own component (MechanicsContext).</summary>
-        private static SpellDescriptor ContextDescriptor(BlueprintBuff buff, SpellDescriptor parent)
+        internal static SpellDescriptor ContextDescriptor(BlueprintScriptableObject buff, SpellDescriptor parent)
         {
             var own = buff.GetComponent<SpellDescriptorComponent>();
             return own != null ? parent | own.Descriptor.Value : parent;
         }
 
         /// <summary>The buff context's school: its SpellComponent, else the parent's, else its AddSpellSchool (MechanicsContext).</summary>
-        private static SpellSchool ContextSchool(BlueprintBuff buff, SpellSchool parent)
+        internal static SpellSchool ContextSchool(BlueprintScriptableObject buff, SpellSchool parent)
         {
             var spell = buff.GetComponent<SpellComponent>();
             SpellSchool school = spell != null ? spell.School : parent;
