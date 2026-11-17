@@ -1,0 +1,69 @@
+{
+ "task": "Burst review follow-ups A-R1 (walks along the game's path), A3 (walk-in control priced by the decision's own rule) and A-P1 (one roster per frame, no live watch dropped, fight counts) of REVIEW_81_84.md; real time; author-approved 17 November 2026",
+ "date": "2026-11-17",
+ "author": "Claude",
+ "branch": "claude/burst-path-forecast",
+ "stacked_on": "PR #87 (F2), on PR #86 (F1) -> PR #85 -> #84 -> #83 -> #82 -> #81; nothing merged",
+ "checked_source": "62dede5daa1571351a18657d8244d9db47d43358",
+ "development_base": "ad63ee8690ad47e74bfad54ba65c13810e4b5316",
+ "toolchain": {
+  "dotnet_sdk": "8.0.428",
+  "csharp_compiler": "4.11.0-3.25569.22 (3fb752d4)",
+  "provenance": "docs/competence/BURST_PATH_BUILD_PROVENANCE.json"
+ },
+ "release_build": "0 warnings, 0 errors",
+ "unit_tests": "1,025 pass (8 new in WalkRouteTests: a path round a corner, the command's stop, a walk that starts close enough, an ally caught round an obstacle where the straight line misses it, an enemy led along its path, height, the point cap, reuse; the straight-walk tests in BurstRulesTests now run on the two-point route)",
+ "script_tests": {
+  "BlueprintInventory": 27,
+  "InvocationLedger": 18,
+  "ProfileAudit supplement": 3
+ },
+ "profileaudit": {
+  "exit": 0,
+  "burst_aim": "48 checks, 0 failures (15 new: TickApproaching -> MoveTo -> PathTo; SetWaypoint reads vectorPath and sets m_NextPointIndex; the Path type; the agent's speed; the close-enough test; the route read and its fallback; no path search, raycast or unit scan in it; the next-waypoint read resolves; decision routes; AllyControl stored and read; the per-frame roster; Track makes room only through MakeRoom; a production run of MakeRoom; fight counts at combat end; a walk round a wall)",
+  "other_lines": "identical to the F2 run on the same inputs (and through it to F1 and the PR #85 baseline)",
+  "fusion_coverage": "byte-identical; 8,709 / 15,494",
+  "summon_kit_detail": "byte-identical",
+  "report_sha256": "092ce0fc3ab6b9e433eeacfe6e9cf099b364b76b22ecf10d84ff9e56fd172109"
+ },
+ "native_harnesses": {
+  "ToggleCosts": 98,
+  "TomeBurn": 14,
+  "ToyBoxSpend": 10
+ },
+ "not_run": [
+  "Supplementary Magus 44 corpus run: inputs not in this environment; no Magus code is touched"
+ ],
+ "signatures": {
+  "relative_to": "F2 (bcb46df)",
+  "added": [
+   "0Harmony AccessTools.FieldRef<UnitMovementAgent, int>.Invoke (the agent's next waypoint, m_NextPointIndex)"
+  ],
+  "added_game_members": 0,
+  "removed": [
+   "UnityEngine.Mathf.Lerp"
+  ],
+  "resolve": "yes: BURST-AIM resolves the field read on the supplied assembly (ReadNextPointRef) and checks the field's type and its use in SetWaypoint"
+ },
+ "work_bounds": {
+  "route_read": "per walking unit, at most 64 points of the agent's existing path; once per decision, once per re-check",
+  "control_prices": "one wouldBeCaught test per ally not counted, per ground-aimed burst scored in real time whose area can harm allies",
+  "recheck": "one scene pass per frame shared by every watch; one damage estimate per ally per watch",
+  "not_added": "no path search, raycast or unit scan in the route read; the walking-command test is the pre-existing WalkClaim test (the game's IsUnitCloseEnough, with its own sight test for commands that need it)"
+ },
+ "package": {
+  "zip": "test-builds/AI-Control-FACC-v0.3.60-dev-burstpath1-62dede5-UMM-test.zip",
+  "identity": "test-builds/AI-Control-FACC-v0.3.60-dev-burstpath1-62dede5-UMM-test.identity.json",
+  "sha256": "test-builds/AI-Control-FACC-v0.3.60-dev-burstpath1-62dede5-UMM-test.sha256",
+  "mvid": "1b3df06e-9d10-41ec-bf9e-8783f7787a50",
+  "zip_sha256": "33ef0a19f77a557cfd742608a47512c23adb4eeb7e7bfdb2912da30d7d930a8c",
+  "dll_sha256": "9298d6b50038be162379de8631c5bbd348b54ec8a89a7bab7591461feb21d57f"
+ },
+ "manifest": "0.3.60, unchanged; no main, tag or release change; nothing merged",
+ "not_tested": [
+  "Gameplay: unplayed. Offline checks create no unit, path, command or Unity timing.",
+  "The route is the agent's path at the time of reading; a later order or repath changes it (the re-check reads it again).",
+  "Acceleration, avoidance steering and warm-up delay are not modelled; the walk uses the unit's speed, as before.",
+  "The per-fight counts are new evidence to collect, not yet measured."
+ ]
+}

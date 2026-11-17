@@ -10,6 +10,7 @@ using System;
 using System.Collections.Generic;
 using Kingmaker.EntitySystem.Entities;
 using Kingmaker.UnitLogic.Commands;
+using Kingmaker.UnitLogic.Commands.Base;
 using UnityEngine;
 
 namespace CompanionAI_Pathfinder.Tactics
@@ -55,19 +56,35 @@ namespace CompanionAI_Pathfinder.Tactics
         {
             try
             {
-                var raw = ally.Commands?.Raw;
+                var command = WalkingCommand(ally);
+                if (command == null) return null;
+                var to = command.ApproachPoint;
+                var from = ally.Position;
+                SpotRules.WalkEnd(from.x, from.z, to.x, to.z, command.ApproachRadius, out float x, out float z);
+                return new Vector3(x, to.y, z);
+            }
+            catch { }
+            return null;
+        }
+
+        /// <summary>
+        /// The command <paramref name="unit"/> walks for: its own walk, attack or cast that has not started and is not yet
+        /// close enough to its target by the game's own test (UnitCommand.IsUnitCloseEnough). Null when it is not walking.
+        /// </summary>
+        internal static UnitCommand WalkingCommand(UnitEntityData unit)
+        {
+            try
+            {
+                var raw = unit?.Commands?.Raw;
                 if (raw == null) return null;
                 int seen = 0;
                 foreach (var command in raw)
                 {
                     if (++seen > 8) break;   // the game's command slots are few; no unbounded custom queue is scanned
-                    if (command == null || command.IsFinished || command.IsStarted || command.Executor != ally) continue;
+                    if (command == null || command.IsFinished || command.IsStarted || command.Executor != unit) continue;
                     if (!(command is UnitMoveTo) && !(command is UnitAttack) && !(command is UnitUseAbility)) continue;
                     if (command.IsUnitCloseEnough()) continue;   // there already: it stands where it is
-                    var to = command.ApproachPoint;
-                    var from = ally.Position;
-                    SpotRules.WalkEnd(from.x, from.z, to.x, to.z, command.ApproachRadius, out float x, out float z);
-                    return new Vector3(x, to.y, z);
+                    return command;
                 }
             }
             catch { }

@@ -131,7 +131,8 @@ Regression:
 ## Limits
 
 - **Not played.** Offline checks run no actor, selection, command, cast or Unity timing.
-- Predictions follow a straight walk to its end, as `WalkClaim` does; the game's path can curve.
+- Predictions follow a straight walk to its end, as `WalkClaim` does; the game's path can curve. Follow-up A-R1
+  ([BURST_PATH_FORECAST.md](BURST_PATH_FORECAST.md)) reads the game's path instead.
 - A player's new order after the cast has gone off can still walk an ally into the burst. A4 covers only the AI units.
 - An enemy that changes course after the cast has gone off makes the burst land where it would have been. That costs
   value, not allies.

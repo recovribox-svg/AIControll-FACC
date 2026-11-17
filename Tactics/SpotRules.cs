@@ -135,6 +135,9 @@ namespace CompanionAI_Pathfinder.Tactics
             return distanceFromSpot <= BoxedInRadius && secondsSinceLast <= BoxedInWindow ? previous + 1 : 1;
         }
 
+        /// <summary>The share of a command's approach radius a walk is taken to stop short of its point (WalkEnd).</summary>
+        public const float WalkEndShare = 0.9f;
+
         /// <summary>
         /// Where a straight walk from (<paramref name="fromX"/>, <paramref name="fromZ"/>) to within
         /// <paramref name="radius"/> of (<paramref name="toX"/>, <paramref name="toZ"/>) stops: on the line between them, 90 %
@@ -150,7 +153,7 @@ namespace CompanionAI_Pathfinder.Tactics
                 endZ = toZ;
                 return;
             }
-            float keep = Math.Min(distance, Math.Max(0f, radius) * 0.9f) / distance;
+            float keep = Math.Min(distance, Math.Max(0f, radius) * WalkEndShare) / distance;
             endX = toX + dx * keep;
             endZ = toZ + dz * keep;
         }

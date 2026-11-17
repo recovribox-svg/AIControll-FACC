@@ -56,16 +56,24 @@ namespace CompanionAI.Tests
             Assert.Equal(3f, BurstRules.Travel(10f, 0f, 2f));   // slowest walk 1.5 m/s
         }
 
+        private static WalkRoute Straight(float fx, float fz, float tx, float tz, float speed)
+        {
+            var route = new WalkRoute();
+            route.Start(fx, 0f, fz, speed);
+            route.Add(tx, 0f, tz);
+            return route;
+        }
+
         [Fact]
         public void AtLeadsAlongTheStraightWalk()
         {
-            BurstRules.At(0f, 0f, 10f, 0f, 2f, 3f, out float x, out float z);
+            Straight(0f, 0f, 10f, 0f, 2f).At(3f, out float x, out _, out float z);
             Assert.Equal(6f, x, 4);
             Assert.Equal(0f, z, 4);
-            BurstRules.At(0f, 0f, 3f, 4f, 10f, 3f, out x, out z);   // stops at the end (5 m)
+            Straight(0f, 0f, 3f, 4f, 10f).At(3f, out x, out _, out z);   // stops at the end (5 m)
             Assert.Equal(3f, x, 4);
             Assert.Equal(4f, z, 4);
-            BurstRules.At(1f, 1f, 1f, 1f, 3f, 3f, out x, out z);    // no walk
+            Straight(1f, 1f, 1f, 1f, 3f).At(3f, out x, out _, out z);    // no walk
             Assert.Equal(1f, x);
             Assert.Equal(1f, z);
         }
@@ -96,16 +104,17 @@ namespace CompanionAI.Tests
         {
             // Ally walks from (0,0) to (20,0) at 2 m/s; burst at (8,0), reach 1.5 m.
             // It passes the point at 4 s: caught for a landing at 4 s, not at 1 s or 9 s.
-            Assert.True(BurstRules.WalkMayBeInside(0f, 0f, 20f, 0f, 2f, 8f, 0f, 1.5f, 4f));
-            Assert.False(BurstRules.WalkMayBeInside(0f, 0f, 20f, 0f, 2f, 8f, 0f, 1.5f, 1f));
-            Assert.False(BurstRules.WalkMayBeInside(0f, 0f, 20f, 0f, 2f, 8f, 0f, 1.5f, 9f));
+            var walk = Straight(0f, 0f, 20f, 0f, 2f);
+            Assert.True(walk.MayBeInside(8f, 0f, 1.5f, 4f));
+            Assert.False(walk.MayBeInside(8f, 0f, 1.5f, 1f));
+            Assert.False(walk.MayBeInside(8f, 0f, 1.5f, 9f));
         }
 
         [Fact]
         public void WalkingAllyThatStopsInsideIsCaught()
         {
             // An ally that walks to an enemy at the landing point and stops there (its walk ends at 9 m).
-            Assert.True(BurstRules.WalkMayBeInside(0f, 0f, 9f, 0f, 3f, 10f, 0f, 1.5f, 6f));
+            Assert.True(Straight(0f, 0f, 9f, 0f, 3f).MayBeInside(10f, 0f, 1.5f, 6f));
         }
 
         [Fact]

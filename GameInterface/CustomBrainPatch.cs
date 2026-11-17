@@ -502,6 +502,7 @@ namespace CompanionAI_Pathfinder.GameInterface
             Tactics.SaveObserver.ReportFight();
             Tactics.DamageObserver.ReportFight();
             Tactics.EnemyThreat.ReportFight();   // ★ v0.3.20 (test4)
+            Tactics.BurstWatch.ReportFight();   // ★ burst follow-up A-P1: watch counts for the fight
             Tactics.EnemyThreat.Clear();
             // ★ v0.3.17: analysis caches of this fight's units (they are per frame now; this only frees them)
             CompanionAI_Pathfinder.Analysis.CombatRulesAnalyzer.ClearCache();

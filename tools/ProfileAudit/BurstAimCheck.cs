@@ -39,6 +39,39 @@ namespace ProfileAudit
         private static bool Calls(IEnumerable<MemberInfo> body, Type type, string name) =>
             body.Any(m => m.DeclaringType == type && m.Name == name);
 
+        /// <summary>
+        /// The production overflow rule on a full list: with only casts that have not gone off it makes no room; with one
+        /// burst that has gone off among them, that one goes. The list is restored empty.
+        /// </summary>
+        private static bool MakeRoomKeepsLiveWatches()
+        {
+            var watch = typeof(BurstWatch);
+            var entries = (System.Collections.IList)watch.GetField("Entries", Hidden).GetValue(null);
+            var entryType = watch.GetNestedType("Entry", BindingFlags.NonPublic);
+            var max = (int)watch.GetField("MaxEntries", Hidden).GetValue(null);
+            var makeRoom = watch.GetMethod("MakeRoom", Hidden);
+            var landsAt = entryType.GetField("LandsAt");
+            object Entry(double at)
+            {
+                var e = Activator.CreateInstance(entryType, true);
+                landsAt.SetValue(e, at);
+                return e;
+            }
+            try
+            {
+                entries.Clear();
+                for (int i = 0; i < max; i++) entries.Add(Entry(double.NaN));
+                bool live = !(bool)makeRoom.Invoke(null, null) && entries.Count == max;
+                entries[max / 2] = Entry(20d);
+                entries[max - 1] = Entry(10d);
+                bool room = (bool)makeRoom.Invoke(null, null) && entries.Count == max - 1 &&
+                            entries.Cast<object>().Count(e => !double.IsNaN((double)landsAt.GetValue(e))) == 1 &&
+                            entries.Cast<object>().Any(e => (double)landsAt.GetValue(e) == 20d);
+                return live && room;
+            }
+            finally { BurstWatch.Clear(); }
+        }
+
         internal static List<string> Run(IEnumerable<SimpleBlueprint> loaded, out int failures)
         {
             int checks = 0, bad = 0;
@@ -210,6 +243,76 @@ namespace ProfileAudit
                 Check(engine.Assembly.GetTypes().SelectMany(t => t.GetMethods(Hidden)).Where(m => m.Name == "OnToggle" || m.Name == "Load")
                           .Any(m => SaveBoostCheck.ReferencedMembers(m).Any(r => r.DeclaringType == typeof(BurstWatch) && r.Name == "Subscribe")),
                       "the mod subscribes BurstWatch when it loads or is switched on");
+
+                // --- ★ review follow-ups A-R1, A3, A-P1 (docs/BURST_PATH_FORECAST.md) ---
+                // Native: a command's walk is the movement agent's path, followed waypoint by waypoint at the unit's speed,
+                // and it stops once the command is close enough.
+                var agent = typeof(Kingmaker.View.UnitMovementAgent);
+                var view = typeof(Kingmaker.View.UnitEntityView);
+                Check(Calls(Body(typeof(UnitCommand), "TickApproaching"), view, "MoveTo") && Calls(Body(view, "MoveTo"), agent, "PathTo"),
+                      "A-R1: an approaching command walks through the movement agent (TickApproaching -> MoveTo -> PathTo)");
+                var nextField = agent.GetField("m_NextPointIndex", Hidden);
+                var waypoint = Body(agent, "SetWaypoint");
+                Check(nextField?.FieldType == typeof(int) && waypoint.Contains(nextField) && waypoint.Any(m => m.Name == "vectorPath"),
+                      "A-R1: the agent follows Path.vectorPath from its next waypoint (m_NextPointIndex, int)");
+                var pathProperty = typeof(Kingmaker.View.UnitMovementAgentBase).GetProperty("Path", Hidden);
+                var vectorPath = pathProperty?.PropertyType.GetField("vectorPath");
+                Check(pathProperty?.PropertyType.FullName == "Pathfinding.Path" &&
+                      vectorPath?.FieldType == typeof(List<UnityEngine.Vector3>),
+                      "A-R1: the agent's Path is a Pathfinding.Path whose vectorPath is a list of points");
+                Check(Getter(typeof(Kingmaker.View.UnitMovementAgentBase), "MaxSpeed").Any(m => m.Name == "get_CurrentSpeedMps"),
+                      "A-R1: the agent walks at the unit's CurrentSpeedMps (MaxSpeed)");
+                var close = typeof(UnitCommand).GetMethods(Hidden).First(m => m.Name == "IsUnitCloseEnough" && m.GetParameters().Length == 0);
+                var closeBody = SaveBoostCheck.ReferencedMembers(close).ToList();
+                Check(Calls(closeBody, typeof(UnitCommand), "get_ApproachPoint") && Calls(closeBody, typeof(UnitCommand), "get_ApproachRadius"),
+                      "A-R1: a command is close enough within its approach radius of its approach point (the walk's stop)");
+                // Routes: the forecast reads the agent's existing path; no path search, raycast or world query.
+                var readRoute = Body(engine, "ReadRoute");
+                var addPath = Body(engine, "AddNativePath");
+                Check(Calls(readRoute, engine, "WalkingCommand") && Calls(readRoute, engine, "AddNativePath") &&
+                      Calls(readRoute, typeof(WalkRoute), "StopWithin") && Calls(readRoute, typeof(SpotRules), "WalkEnd") &&
+                      addPath.Any(m => m.Name == "get_AgentASP") && addPath.Any(m => m.Name == "get_Path") && addPath.Contains(vectorPath),
+                      "A-R1: ReadRoute follows the agent's path to the command's stop, else the straight walk");
+                var searches = new[] { "PathTo", "FindPath", "StartPath", "StartPathWithClerance", "Linecast", "Raycast", "HasObstacle" };
+                bool SceneUnits(MemberInfo m) => m.Name == "Units" && m.DeclaringType == typeof(Kingmaker.EntitySystem.PersistentState);
+                Check(!readRoute.Concat(addPath).Any(m => searches.Contains(m.Name) || SceneUnits(m)),
+                      "A-R1: the route read starts no path search, raycast or unit scan");
+                Check(engine.GetMethod("ReadNextPointRef", Hidden)?.Invoke(null, null) != null,
+                      "A-R1: the next-waypoint read resolves on the supplied assembly");
+                Check(Calls(Body(engine, "RouteOf"), engine, "ReadRoute") && Calls(Body(engine, "PlanBurst"), engine, "RouteOf") &&
+                      Calls(Body(engine, "PredictedAt"), engine, "RouteOf") && Calls(Body(engine, "BurstWalkingAllies"), engine, "RouteOf") &&
+                      Calls(Body(engine, "BurstWalkingAllies"), typeof(WalkRoute), "MayBeInside"),
+                      "A-R1: the lead, the enemies inside and the walking allies are read along each unit's route, once per decision");
+                // A3: the decision prices walk-in allies by its own control rule, and the re-check adds that price.
+                var allyControl = engine.GetNestedType("BurstPlan", BindingFlags.NonPublic)?.GetField("AllyControl", Hidden);
+                var evaluateWatch = Body(typeof(BurstWatch), "Evaluate");
+                Check(allyControl != null && score.Contains(allyControl) && evaluateWatch.Contains(allyControl) &&
+                      Calls(evaluateWatch, typeof(BurstWatch), "DamageTo"),
+                      "A3: ScoreAbility keeps each walk-in ally's control price; the re-check adds it to the damage it estimates once");
+                // A-P1: one roster per frame, no live watch dropped.
+                Check(Calls(evaluateWatch, typeof(BurstWatch), "RosterNow") && Calls(evaluateWatch, engine, "ReadRoute") &&
+                      !evaluateWatch.Any(SceneUnits) && Body(typeof(BurstWatch), "RosterNow").Any(SceneUnits) &&
+                      Body(typeof(BurstWatch), "RosterNow").Any(m => m.Name == "get_frameCount"),
+                      "A-P1: a re-check reads the units gathered once per frame");
+                var track = Body(typeof(BurstWatch), "Track");
+                Check(Calls(track, typeof(BurstWatch), "MakeRoom") && !track.Any(m => m.Name == "RemoveAt"),
+                      "A-P1: Track makes room only through MakeRoom");
+                Check(MakeRoomKeepsLiveWatches(), "A-P1: a full watch list drops the burst landing first, never a cast that has not gone off");
+                var combatEnd = engine.Assembly.GetTypes().SelectMany(t => t.GetMethods(Hidden)).FirstOrDefault(m => m.Name == "OnPartyCombatEnd");
+                Check(combatEnd != null && SaveBoostCheck.ReferencedMembers(combatEnd).Any(m => m.DeclaringType == typeof(BurstWatch) && m.Name == "ReportFight") &&
+                      Calls(Body(typeof(BurstWatch), "Clear"), typeof(BurstWatch), "ReportFight"),
+                      "A-P1: each fight's watch counts are logged when it ends (or when the next one starts without an end)");
+                // The route itself: a walk round a wall is caught on its path and missed by the straight line.
+                var round = new WalkRoute();
+                round.Start(0f, 0f, 0f, 2f);
+                round.Add(0f, 0f, 8f);
+                round.Add(10f, 0f, 8f);
+                round.Add(10f, 0f, 0f);
+                var line = new WalkRoute();
+                line.Start(0f, 0f, 0f, 2f);
+                line.Add(10f, 0f, 0f);
+                Check(round.MayBeInside(5f, 8f, 1.5f, 6.5f) && !line.MayBeInside(5f, 8f, 1.5f, 6.5f),
+                      "A-R1: a walk round a wall is caught along its path, where the straight line misses it");
             }
             catch (Exception ex)
             {

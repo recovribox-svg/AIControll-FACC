@@ -245,8 +245,8 @@ namespace CompanionAI_Pathfinder.Tactics
         internal List<TacticalEngine.Body> Bodies;
         /// <summary>★ burst aim: the ground-aimed burst being scored (TacticalEngine.Burst.cs), set around one ScoreAbility call.</summary>
         internal TacticalEngine.BurstPlan Burst;
-        /// <summary>★ burst aim: where each unit's own walk ends, read once per decision (TacticalEngine.TryWalkOf).</summary>
-        internal Dictionary<UnitEntityData, Vector3?> BurstWalks;
+        /// <summary>★ burst aim: each unit's own walk, read once per decision (TacticalEngine.RouteOf; null: not walking).</summary>
+        internal Dictionary<UnitEntityData, WalkRoute> BurstRoutes;
         /// <summary>★ cast disruption: the enemies casting a spell that damage can break, read once per decision (real time).</summary>
         internal Dictionary<UnitEntityData, TacticalEngine.CastInfo> Casting;
         /// <summary>★ v0.3.18: provoked attacks priced in this decision (TacticalEngine.ProvokeRisk), by place and chance.</summary>
@@ -3985,6 +3985,7 @@ namespace CompanionAI_Pathfinder.Tactics
             {
                 // ★ burst aim: what the decision counted, for the re-check before the cast goes off (BurstWatch).
                 burst.Allies.Clear();
+                burst.AllyControl = null;   // filled by the control part below, for this scoring only
                 foreach (var a in affectedAllies) burst.Allies.Add(a);
                 foreach (var a in DownedRecipients()) burst.Allies.Add(a);
                 burst.Enemies = affectedEnemies.Count;
@@ -4403,6 +4404,19 @@ namespace CompanionAI_Pathfinder.Tactics
                     string controlNote = $"{(profile.ControlStrength == ControlStrength.Hard ? "controls" : "debuffs")} " +
                                          $"{string.Join(", ", caughtAllies.Select(a => a.CharacterName + WalkingInTag(walkingIn, a)))} -{allyControlCost:F0}";
                     ctx.FriendlyFireNote = ctx.FriendlyFireNote == null ? controlNote : ctx.FriendlyFireNote + "; " + controlNote;
+                }
+                // ★ review follow-up A3 (author-approved): a ground-aimed burst is re-checked before its cast goes off
+                // (BurstWatch). An ally that walks in after this decision is priced by the same rule and price as one caught
+                // now: the recipient, guard, immunity and pool rules of wouldBeCaught. One test per ally not counted, real time.
+                if (burst != null && burst.RealTime && harmfulArea)
+                {
+                    foreach (var a in ctx.Allies)
+                    {
+                        if (a == null || affectedAllies.Contains(a) || !wouldBeCaught(a)) continue;
+                        float cost = ValueModel.PerRound(Level(a)) * strength *
+                                     Math.Max(effectRounds, SelectedBuffAllyRounds(ctx, ability, profile, a));
+                        if (cost > 0f) (burst.AllyControl ?? (burst.AllyControl = new Dictionary<UnitEntityData, float>()))[a] = cost;
+                    }
                 }
                 // Test[4], author-approved: protect an already accepted attack approach from a new lasting circle.
                 // This reads the current command/range only; uncertain shapes keep the existing appraisal below.

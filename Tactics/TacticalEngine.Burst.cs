@@ -44,11 +44,19 @@ namespace CompanionAI_Pathfinder.Tactics
             /// <summary>The allies (standing, walking in, downed, the caster) the decision counted.</summary>
             public HashSet<UnitEntityData> Allies = new HashSet<UnitEntityData>();
             public int Enemies;
+            /// <summary>The lead follows the anchor's own path (the game's planned walk), not the straight line to its end.</summary>
+            public bool OnPath;
+            /// <summary>
+            /// ★ review follow-up A-R1/A3: what the burst's control would cost each ally the decision did not count, if it
+            /// walked in: the decision's own friendly-control rule and price, kept for the re-check. Null when none would be.
+            /// </summary>
+            public Dictionary<UnitEntityData, float> AllyControl;
 
             public string Describe()
             {
                 string anchor = Anchor?.CharacterName ?? "?";
-                string where = Lead >= BurstRules.MinLeadMeters ? $"{Lead:F1} m ahead of {anchor}" : $"where {anchor} stands";
+                string where = Lead >= BurstRules.MinLeadMeters
+                    ? $"{Lead:F1} m ahead of {anchor}{(OnPath ? " along its path" : "")}" : $"where {anchor} stands";
                 return $"ground {where}, lands in {Landing:F1} s (walk {Walk:F1} + cast {Cast:F1} + delay {Delay:F1} + flight {Flight:F1})";
             }
         }
@@ -106,16 +114,17 @@ namespace CompanionAI_Pathfinder.Tactics
                 AvoidFriendlyFire = ctx.Settings?.AvoidFriendlyFire ?? true
             };
             var eye = ctx.Unit.EyePosition;
-            if (realTime && TryWalkOf(ctx, target, out var to))
+            var route = realTime ? RouteOf(ctx, target) : null;
+            if (route != null)
             {
                 float seconds = plan.Cast + plan.Delay + FlightSecondsTo(profile, eye, target.Position);
-                var from = target.Position;
-                BurstRules.At(from.x, from.z, to.x, to.z, target.CurrentSpeedMps, seconds, out float x, out float z);
-                float walked = HorizontalDistance(from, to);
-                float share = walked > 0f ? HorizontalDistance(from, new Vector3(x, from.y, z)) / walked : 0f;
-                var lead = new Vector3(x, Mathf.Lerp(from.y, to.y, share), z);   // the height along its walk
-                if (HorizontalDistance(from, lead) >= BurstRules.MinLeadMeters && InRangeNow(ctx.Unit, lead, plan.Range, needLos))
+                route.At(seconds, out float x, out float y, out float z);   // the height along its walk too
+                var lead = new Vector3(x, y, z);
+                if (HorizontalDistance(target.Position, lead) >= BurstRules.MinLeadMeters && InRangeNow(ctx.Unit, lead, plan.Range, needLos))
+                {
                     plan.Point = lead;
+                    plan.OnPath = route.Native;
+                }
             }
             plan.Lead = HorizontalDistance(target.Position, plan.Point);
             plan.Flight = FlightSecondsTo(profile, eye, plan.Point);
@@ -134,27 +143,100 @@ namespace CompanionAI_Pathfinder.Tactics
             supportedPool && (!plannedBurst || profile?.Fusion == null);
 
         /// <summary>
-        /// Where <paramref name="unit"/>'s own walk ends (TacticalEngine.WalkClaim), read once per decision; real time only.
+        /// ★ review follow-up A-R1: <paramref name="unit"/>'s own walk (<see cref="ReadRoute"/>), read once per decision; real
+        /// time only. Null when it is not walking.
         /// </summary>
-        private static bool TryWalkOf(TacticalContext ctx, UnitEntityData unit, out Vector3 to)
+        private static WalkRoute RouteOf(TacticalContext ctx, UnitEntityData unit)
         {
-            to = default(Vector3);
-            if (!CombatMemory.IsRealTime || unit == null) return false;
-            var cache = ctx.BurstWalks ?? (ctx.BurstWalks = new Dictionary<UnitEntityData, Vector3?>());
-            if (!cache.TryGetValue(unit, out var claim)) cache[unit] = claim = WalkClaim(unit);
-            if (!claim.HasValue) return false;
-            to = claim.Value;
-            return true;
+            if (!CombatMemory.IsRealTime || unit == null) return null;
+            var cache = ctx.BurstRoutes ?? (ctx.BurstRoutes = new Dictionary<UnitEntityData, WalkRoute>());
+            if (!cache.TryGetValue(unit, out var route)) cache[unit] = route = ReadRoute(unit, null);
+            return route;
+        }
+
+        /// <summary>
+        /// Metres between the end of the unit's native path and its command's approach point, beyond the approach radius,
+        /// within which the path is taken to be that command's walk (as RealTimeController.NativePathFallsShort).
+        /// </summary>
+        private const float PathEndToleranceMeters = 1f;
+
+        // The agent's next waypoint (UnitMovementAgent.m_NextPointIndex, private): read only; null leaves the straight walk.
+        private static readonly HarmonyLib.AccessTools.FieldRef<Kingmaker.View.UnitMovementAgent, int> NextPointRef = ReadNextPointRef();
+
+        private static HarmonyLib.AccessTools.FieldRef<Kingmaker.View.UnitMovementAgent, int> ReadNextPointRef()
+        {
+            try { return HarmonyLib.AccessTools.FieldRefAccess<Kingmaker.View.UnitMovementAgent, int>("m_NextPointIndex"); }
+            catch { return null; }
+        }
+
+        /// <summary>Walks read this session along the game's path, and walks that fell back to the straight line.</summary>
+        internal static int RoutesOnPath, RoutesStraight;
+
+        /// <summary>
+        /// ★ review follow-up A-R1 (author-approved): where <paramref name="unit"/>'s own walk takes it, as the game plans it.
+        /// The command it walks for (WalkingCommand) is followed along the movement agent's current path from its next
+        /// waypoint (UnitMovementAgent.Path, m_NextPointIndex) and stops within the command's approach radius of its point,
+        /// as the command does (UnitCommand.IsUnitCloseEnough; SpotRules.WalkEnd's share). Without a usable path of that
+        /// walk (none yet, another walk's, longer than WalkRoute.MaxPoints) the straight walk to SpotRules.WalkEnd. Reads
+        /// the agent's existing path only: no path search, raycast or world query. Null when the unit is not walking.
+        /// </summary>
+        internal static WalkRoute ReadRoute(UnitEntityData unit, WalkRoute into)
+        {
+            try
+            {
+                var command = WalkingCommand(unit);
+                if (command == null) return null;
+                var route = into ?? new WalkRoute();
+                var from = unit.Position;
+                var to = command.ApproachPoint;
+                route.Start(from.x, from.y, from.z, unit.CurrentSpeedMps);
+                if (AddNativePath(unit, command, route))
+                {
+                    route.StopWithin(to.x, to.z, command.ApproachRadius * SpotRules.WalkEndShare);
+                    route.Native = true;
+                    RoutesOnPath++;
+                    return route;
+                }
+                route.Start(from.x, from.y, from.z, unit.CurrentSpeedMps);
+                SpotRules.WalkEnd(from.x, from.z, to.x, to.z, command.ApproachRadius, out float x, out float z);
+                route.Add(x, to.y, z);
+                RoutesStraight++;
+                return route;
+            }
+            catch { return null; }
+        }
+
+        /// <summary>
+        /// The rest of the agent's current path, from its next waypoint, when it is the walk of <paramref name="command"/>
+        /// (it ends within the command's approach radius of its point, with <see cref="PathEndToleranceMeters"/>).
+        /// </summary>
+        private static bool AddNativePath(UnitEntityData unit, Kingmaker.UnitLogic.Commands.Base.UnitCommand command, WalkRoute route)
+        {
+            if (NextPointRef == null) return false;
+            var agent = unit.View?.AgentASP;
+            var points = agent?.Path?.vectorPath;
+            if (points == null || points.Count < 2) return false;
+            int next = NextPointRef(agent);
+            if (next < 1 || next >= points.Count) return false;   // not following it yet (PathFailed) or past its end
+            if (points.Count - next + 1 > WalkRoute.MaxPoints) return false;
+            if (HorizontalDistance(points[points.Count - 1], command.ApproachPoint) > command.ApproachRadius + PathEndToleranceMeters)
+                return false;
+            for (int i = next; i < points.Count; i++)
+            {
+                var p = points[i];
+                if (!route.Add(p.x, p.y, p.z)) return false;
+            }
+            return route.Count > 1;
         }
 
         /// <summary>Where <paramref name="unit"/> will be in <paramref name="seconds"/>, and whether it walks.</summary>
         private static Vector3 PredictedAt(TacticalContext ctx, UnitEntityData unit, float seconds, out bool walking)
         {
-            var from = unit.Position;
-            walking = TryWalkOf(ctx, unit, out var to);
-            if (!walking) return from;
-            BurstRules.At(from.x, from.z, to.x, to.z, unit.CurrentSpeedMps, seconds, out float x, out float z);
-            return new Vector3(x, from.y, z);
+            var route = RouteOf(ctx, unit);
+            walking = route != null;
+            if (!walking) return unit.Position;
+            route.At(seconds, out float x, out float y, out float z);
+            return new Vector3(x, y, z);
         }
 
         /// <summary>
@@ -177,7 +259,7 @@ namespace CompanionAI_Pathfinder.Tactics
 
         /// <summary>
         /// The allies the burst may catch, beyond <paramref name="counted"/> (those standing inside now): an ally whose own
-        /// walk may take it inside around the landing time (BurstRules.WalkMayBeInside), and the caster where its walk to
+        /// walk may take it inside around the landing time (WalkRoute.MayBeInside), and the caster where its walk to
         /// cast ends (<paramref name="castOrigin"/>). Real time only; turn-based, nobody else moves during the turn.
         /// </summary>
         private static List<UnitEntityData> BurstWalkingAllies(TacticalContext ctx, BurstPlan plan, List<UnitEntityData> counted,
@@ -192,13 +274,12 @@ namespace CompanionAI_Pathfinder.Tactics
                     (found = new List<UnitEntityData>()).Add(caster);
                 if (!plan.RealTime) return found;
                 float landing = plan.Landing;
-                foreach (var body in BodiesFor(ctx))
+                foreach (var ally in ctx.Allies)
                 {
-                    var ally = body.Unit;
-                    if (!body.Walking || ally == caster || counted.Contains(ally) || !ctx.Allies.Contains(ally) || !reaches(ally)) continue;
-                    var from = ally.Position;
-                    if (!BurstRules.WalkMayBeInside(from.x, from.z, body.At.x, body.At.z, ally.CurrentSpeedMps, plan.Point.x, plan.Point.z,
-                                                    plan.Radius + ally.Corpulence, landing)) continue;
+                    if (ally == null || ally == caster || counted.Contains(ally)) continue;
+                    var route = RouteOf(ctx, ally);   // ★ A-R1: along its own path
+                    if (route == null || !route.MayBeInside(plan.Point.x, plan.Point.z, plan.Radius + ally.Corpulence, landing) ||
+                        !reaches(ally)) continue;
                     (found ?? (found = new List<UnitEntityData>())).Add(ally);
                 }
             }

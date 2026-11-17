@@ -6681,3 +6681,34 @@ Play every A–D replay and review witness before integration; review the separa
   - 6 added references, all resolved.
 - **Package** `test-builds/AI-Control-FACC-v0.3.60-dev-disrupt2-bcb46df-UMM-test.zip`, MVID `9a4d8a66`. It includes A–D,
   the PR #85 corrections and F1.
+
+## 196. Burst forecast along the game's paths, control on walk-in allies, the watch's capacity (17 November 2026, Claude; not played)
+
+[Design and replay](BURST_PATH_FORECAST.md), [plan](REVIEW_FOLLOWUPS_PLAN.md), [receipt](competence/BURST_PATH_CHECKS.json),
+[provenance](competence/BURST_PATH_BUILD_PROVENANCE.json). Real time. Author-approved review follow-ups A-R1, A3 and
+A-P1. Stacked on F2 (PR #87).
+
+- **A-R1, walks along the game's path.**
+  - `ReadRoute` follows the walking command along the movement agent's current path (`Path.vectorPath` from
+    `m_NextPointIndex`). The walk stops where the command is close enough (`WalkRoute.StopWithin`, the `WalkEnd` share).
+  - It is read once per decision, at most 64 points, with no path search. Without a usable path of that walk, the
+    straight walk as before.
+  - It is used for the lead point, the enemies inside, the walking allies and the re-check. `WalkRoute` (pure) replaces
+    `BurstRules.At` and `WalkMayBeInside`.
+- **A3, control on walk-in allies.** When a ground-aimed burst is scored, `wouldBeCaught` prices every ally the decision
+  did not count, with the decision's own rule and price, and keeps the price on the plan (`BurstPlan.AllyControl`). The
+  re-check adds it to the damage cost, so a control payload on an ally its damage does not hurt is no longer let
+  through. No second control model; pool rules such as Sleep's stay the pool's.
+- **A-P1, the watch.**
+  - One roster per frame for every watch, and each ally's damage estimated once per watch.
+  - A watch whose cast has not gone off is never dropped. The cap is 64; a burst that has gone off makes room first,
+    otherwise the new burst is logged as unwatched.
+  - Each fight logs its counts (`[Burst] fight summary`).
+- **Checks** on `62dede5`:
+  - Release 0 warnings and errors.
+  - 1,025 unit tests (8 new) and 27 + 18 + 3 script tests.
+  - ProfileAudit `BURST-AIM` 48 (15 new, including a production run of `MakeRoom`); every other line is unchanged.
+  - Native harnesses 98/14/10.
+  - 1 added signature (the next-waypoint field read), resolved; `Mathf.Lerp` removed.
+- **Package** `test-builds/AI-Control-FACC-v0.3.60-dev-burstpath1-62dede5-UMM-test.zip`, MVID `1b3df06e`. It includes
+  A–D, the PR #85 corrections, F1 and F2.

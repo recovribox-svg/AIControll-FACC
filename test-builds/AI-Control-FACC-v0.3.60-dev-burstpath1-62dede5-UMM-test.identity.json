@@ -1,0 +1,31 @@
+{
+  "build_label": "burstpath1",
+  "kind": "development-test",
+  "version": "0.3.60",
+  "source_branch": "claude/burst-path-forecast",
+  "source_commit": "62dede5daa1571351a18657d8244d9db47d43358",
+  "stacked_on": "claude/disrupt-marginal 686af0a (PR #87, F2), on PR #86 (F1) -> PR #85 -> #84 -> #83 -> #82 -> #81",
+  "development_base": "ad63ee8690ad47e74bfad54ba65c13810e4b5316",
+  "dll": {
+    "assembly": "CompanionAI_Pathfinder, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null",
+    "mvid": "1b3df06e-9d10-41ec-bf9e-8783f7787a50",
+    "sha256": "9298d6b50038be162379de8631c5bbd348b54ec8a89a7bab7591461feb21d57f",
+    "size": 1522176
+  },
+  "archive": "AI-Control-FACC-v0.3.60-dev-burstpath1-62dede5-UMM-test.zip",
+  "zip_sha256": "33ef0a19f77a557cfd742608a47512c23adb4eeb7e7bfdb2912da30d7d930a8c",
+  "manifest_sha256": "63ad9f152d4bacb44f021428193efad46aaf0d13380bb5691ebca1d935f2b5bf",
+  "checks_receipt": "docs/competence/BURST_PATH_CHECKS.json",
+  "build_provenance": "docs/competence/BURST_PATH_BUILD_PROVENANCE.json",
+  "toolchain": {
+    "dotnet_sdk": "8.0.428",
+    "csharp_compiler": "4.11.0-3.25569.22 (3fb752d4)"
+  },
+  "scope": "Slices A-D, the PR #85 corrections, F1, F2, and the burst follow-ups A-R1 (walks along the game's path), A3 (walk-in control priced by the decision's rule) and A-P1 (one roster per frame, no live watch dropped, fight counts logged).",
+  "gameplay_status": "unplayed",
+  "archive_contents": [
+    "CompanionAI_Pathfinder.dll",
+    "Info.json"
+  ],
+  "release": false
+}

@@ -103,46 +103,6 @@ namespace CompanionAI_Pathfinder.Tactics
         /// <summary>An ally counts as caught when it may be inside: within the reach plus the uncertainty.</summary>
         public static bool MaybeInside(float distance, float reach, float uncertainty) => distance <= reach + Math.Max(0f, uncertainty);
 
-        /// <summary>
-        /// Where a unit walking from (fx, fz) to (tx, tz) at <paramref name="speed"/> is after <paramref name="seconds"/>, on the
-        /// straight line, stopping at the end of its walk.
-        /// </summary>
-        public static void At(float fx, float fz, float tx, float tz, float speed, float seconds, out float x, out float z)
-        {
-            float dx = tx - fx, dz = tz - fz;
-            float length = (float)Math.Sqrt(dx * dx + dz * dz);
-            float travel = Travel(length, speed, seconds);
-            if (!(length > 0f) || !(travel > 0f))
-            {
-                x = fx;
-                z = fz;
-                return;
-            }
-            float share = travel / length;
-            x = fx + dx * share;
-            z = fz + dz * share;
-        }
-
-        /// <summary>
-        /// A unit walking from (fx, fz) to (tx, tz) may be within <paramref name="reach"/> of (cx, cz) when the burst lands:
-        /// at any of <see cref="WindowSamples"/> moments in the window of <see cref="WindowHalfSeconds"/> around
-        /// <paramref name="landing"/>, with the uncertainty of its predicted position.
-        /// </summary>
-        public static bool WalkMayBeInside(float fx, float fz, float tx, float tz, float speed, float cx, float cz, float reach,
-                                           float landing)
-        {
-            float from = Math.Max(0f, landing - WindowHalfSeconds);
-            float to = Math.Max(from, landing + WindowHalfSeconds);
-            for (int i = 0; i < WindowSamples; i++)
-            {
-                float t = WindowSamples == 1 ? landing : from + (to - from) * i / (WindowSamples - 1);
-                At(fx, fz, tx, tz, speed, t, out float x, out float z);
-                float dx = x - cx, dz = z - cz;
-                if (MaybeInside((float)Math.Sqrt(dx * dx + dz * dz), reach, Uncertainty(true, speed, t))) return true;
-            }
-            return false;
-        }
-
         /// <summary>The outcome of a re-check before the cast goes off.</summary>
         public enum Verdict
         {
