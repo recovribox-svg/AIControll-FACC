@@ -196,11 +196,12 @@ namespace CompanionAI_Pathfinder.Tactics
             if (cast == null || est == null) return 0f;
             float distance = ctx.Distance(enemy);
             // ★ F2: the second attack follows on the native schedule (6 s / N apart unless chained), not a fixed swing.
-            float spacing = DisruptRules.SwingSpacing(est.Attacks, ProspectiveChainedAttacks(est.Weapon));
+            float spacing = DisruptRules.SwingSpacing(est.Attacks, ProspectiveChainedAttacks(est.SecondWeapon));
             float at1 = DisruptRules.WeaponHitSeconds(0, walkSeconds, est.IsRanged, distance, spacing);
-            float at2 = DisruptRules.WeaponHitSeconds(1, walkSeconds, est.IsRanged, distance, spacing);
+            bool hasSecond = full && est.Attacks > 1 && est.SecondWeapon?.Blueprint != null;
+            float at2 = DisruptRules.WeaponHitSeconds(1, walkSeconds, est.SecondWeapon?.Blueprint?.IsRanged == true, distance, spacing);
             float own = DisruptBonus(cast, est.FirstHitChance, est.FirstPerHit, at1,
-                                     full && est.Attacks > 1 ? est.SecondHitChance : 0f, est.SecondPerHit, at2, out chance);
+                                     hasSecond ? est.SecondHitChance : 0f, est.SecondPerHit, at2, out chance);
             return AfterOrderedHits(ctx, enemy, cast, own, ref chance);
         }
 
@@ -242,20 +243,23 @@ namespace CompanionAI_Pathfinder.Tactics
                     var est = CombatMath.EstimateWeaponAttack(ally, enemy, attack.IsAttackFull);
                     if (est == null) continue;
                     int attacks = attack.AllAttacks.Count;
-                    float distance = HorizontalDistance(ally.Position, enemy.Position);
+                    float distance = Vector3.Distance(ally.Position, enemy.Position);
                     int next = attack.IsStarted ? attack.GetAttackIndex() : 0;
                     float walk = attack.IsStarted ? 0f : DisruptRules.OrderedStartSeconds(
-                        BurstRules.WalkSeconds(distance, est.Reach, ally.CurrentSpeedMps), cooldown);
+                        BurstRules.WalkSeconds(HorizontalDistance(ally.Position, enemy.Position), attack.ApproachRadius,
+                                               ally.CurrentSpeedMps), cooldown);
                     for (int k = next, counted = 0; k < attacks && counted < DisruptRules.MaxHits; k++, counted++)
                     {
                         var pending = attack.AllAttacks[k];
-                        if (pending == null || !CombatMath.TryOrderedHit(est, pending.Weapon, pending.AttackBonusPenalty,
+                        var pendingWeapon = pending?.Weapon;
+                        if (pending == null || !CombatMath.TryOrderedHit(est, pendingWeapon, pending.AttackBonusPenalty,
                                                                          out float hit, out float damage)) continue;
+                        bool ranged = pendingWeapon.Blueprint.IsRanged;
                         bool chained = OrderedChainedAttacks(attack, k);
                         float spacing = DisruptRules.SwingSpacing(attacks, chained, window);
                         float at = attack.IsStarted
-                            ? DisruptRules.RunningHitSeconds(k, next, spacing, attack.TimeSinceStart, chained, est.IsRanged, distance)
-                            : DisruptRules.WeaponHitSeconds(k, walk, est.IsRanged, distance, spacing) - DisruptRules.CommandLatencySeconds;
+                            ? DisruptRules.RunningHitSeconds(k, next, spacing, attack.TimeSinceStart, chained, ranged, distance)
+                            : DisruptRules.WeaponHitSeconds(k, walk, ranged, distance, spacing) - DisruptRules.CommandLatencySeconds;
                         if (!DisruptRules.InTime(at, cast.SecondsLeft)) continue;
                         if (!(hit > 0f)) continue;
                         still = DisruptRules.StillCasting(still, hit, DisruptRules.FailChance(cast.SpellLevel, damage, cast.Concentration));

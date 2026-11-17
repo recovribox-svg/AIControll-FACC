@@ -104,6 +104,17 @@ namespace CompanionAI.Tests
         }
 
         [Fact]
+        public void APendingRangedHandCannotBorrowAMeleeHandsDeliveryTime()
+        {
+            // A mixed/reordered routine: the pending weapon has 30 m of flight. Reusing the first hand's melee flag
+            // would count a break before a 1.2 s cast even though this pending projectile cannot get there.
+            float melee = DisruptRules.RunningHitSeconds(1, 1, 2f, 2f, false, false, 30f);
+            float ranged = DisruptRules.RunningHitSeconds(1, 1, 2f, 2f, false, true, 30f);
+            Assert.True(DisruptRules.InTime(melee, 1.2f));
+            Assert.False(DisruptRules.InTime(ranged, 1.2f));
+        }
+
+        [Fact]
         public void AnAllysRunningAttackLandsOnItsSchedule()
         {
             // 3-attack routine, 1 s into the command, next attack index 1: it starts at 2 s, lands 0.6 s later

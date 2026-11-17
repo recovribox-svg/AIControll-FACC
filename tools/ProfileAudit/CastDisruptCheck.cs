@@ -158,6 +158,12 @@ namespace ProfileAudit
                 var orderedRoute = Body(engine, "OthersStill");
                 Check(Calls(orderedRoute, math, "TryOrderedHit") && orderedRoute.Any(m => m.Name.Contains("AttackBonusPenalty")),
                       "the pending-attack production route matches each native command line by its iterative penalty");
+                Check(orderedRoute.Any(m => m.Name == "get_ApproachRadius") && orderedRoute.Any(m => m.Name == "get_IsRanged") &&
+                      !orderedRoute.Any(m => m.DeclaringType == typeof(WeaponAttackEstimate) && (m.Name == "IsRanged" || m.Name == "Reach")),
+                      "ordered delivery uses the pending hand's range type and the issued command's approach radius");
+                Check(Body(math, "EstimateWeaponAttackCore").Any(m => m.Name == "SecondWeapon") &&
+                      Body(engine, "WeaponDisruptValue").Any(m => m.Name == "SecondWeapon"),
+                      "a prospective mixed routine carries its second weapon into that hit's timing, instead of borrowing the first hand");
 
                 // ★ review follow-up F2: the native attack schedule and allied hits already ordered.
                 var tick = Body(typeof(UnitAttack), "OnTick");
