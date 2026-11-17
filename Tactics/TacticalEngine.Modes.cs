@@ -668,8 +668,12 @@ namespace CompanionAI_Pathfinder.Tactics
                     var estimate = griffon ? CombatMath.RepriceGriffonModes(unit, c.Target, full, griffonQuote, Delta)
                                            : CombatMath.EstimateWeaponAttack(unit, c.Target, full, Delta);
                     int ac = modes.Sum(m => ((set.Contains(m) ? 1 : 0) - (m.InEstimate ? 1 : 0)) * m.AC);
+                    // Disruption depends on this set's hit chances, damage and (Grabber) routine length. It has its own
+                    // survival/walk weight: ModeFactor also includes damage-role and wake weights that do not apply here.
+                    float disrupt = !griffon && c.DisruptFactor > 0f
+                        ? WeaponDisruptValue(ctx, c.Target, estimate, full, c.DisruptWalkSeconds, out _) * c.DisruptFactor : 0f;
                     return new KeyValuePair<float, float>(estimate == null ? -1f : DamageValue(c.Target, estimate) +
-                        (griffon ? 0f : MagusChargeValue(c, estimate)), Defence(ac));
+                        (griffon ? 0f : MagusChargeValue(c, estimate)), Defence(ac) + disrupt);
                 }
                 finally { assumed?.Dispose(); }
             };

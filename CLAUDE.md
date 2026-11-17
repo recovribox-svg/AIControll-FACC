@@ -8,7 +8,33 @@ Read [CONTRIBUTING.md](CONTRIBUTING.md) for shared branch ownership, Codex pull 
 Codex works on task branches and targets pull requests at `claude/dreamy-pasteur-b9h3rn`; Claude reviews and integrates them there.
 Keep `main` for author-authorized releases. Read [AGENTS.md](AGENTS.md) when coordinating agent work.
 
-**Current handover (17 November 2026, Claude): sneak attack fortification and flanking, slice D, on
+**Current handover (17 November 2026, Codex): critical review of open stacked PRs #81–84 on
+`codex/review-81-84`, based on #84 `53e793f`; nothing merged.** Read
+[docs/REVIEW_81_84.md](docs/REVIEW_81_84.md), §193,
+[checks](docs/competence/REVIEW_81_84_CHECKS.json) and
+[compiler/reference provenance](docs/competence/REVIEW_81_84_BUILD_PROVENANCE.json).
+Five runtime corrections: future independent fusion damage no longer intersects today's pool selection; attack modes
+reprice disruption with their own timing/survival scale; suppression filtering reads each recipient once and carries
+native aura context; partner-flank gain asks the native AB rule and includes existing sneak/critical damage, cached per
+routine. Blueprint descriptor inheritance was checked and retained. Native engagement still needs reach/LOS/concealment:
+the prospective all-routine assumption remains a **high-priority proposal requiring author approval**, not a verified
+native fact. Conditional TTT fortification, marginal multi-ally disruption, forecast/capacity and future-cleanse limits
+are explicit in the review. Do not merge the stack before author playtesting/decisions.
+
+Checked source **`2d8a9b5`**, startup MVID **`9d4c4d08-9419-41da-b4e1-81c60270fc45`**; **1,000 unit + 27/18/3 script tests**,
+real-reference Release **0 warnings/errors**, audit **A33/B19/C33/D25**, native **98/14/10**, Magus **44** pass.
+Other report rows and the complete **8,709/15,494** Fusion matrix are identical to an untouched #84 build on identical
+inputs. The exact historical 607-stock manifest was recovered; full audit loads 45,248, three fewer than the old receipt
+whose extra graph files are unavailable. No hidden prerequisite skips. **0 added / 0 removed native signatures** versus
+#84. SDK 8.0.426 / Roslyn 4.11, all compiler/reference hashes recorded. The test ZIP
+[test-builds/AI-Control-FACC-v0.3.60-dev-review1-2d8a9b5-UMM-test.zip](test-builds/AI-Control-FACC-v0.3.60-dev-review1-2d8a9b5-UMM-test.zip)
+is **unplayed**, UMM **0.3.60** unchanged, SHA-256 `8989b793a43cbd40652b4d8e645d6c6c71414c7ff2317de09d324c9879621f4a`; identity/checksum sidecars. The checked DLL is frozen across
+this later documentation commit. Correction [PR #85](https://github.com/recovribox-svg/AIControll-FACC/pull/85) targets development and is **draft**; integrate only after author clearance,
+**after #81 → #82 → #83 → #84**.
+No Claude-branch/development/main update, tag or release. Author next: replay A–D plus review witnesses with paired logs
+and startup module; decide the separately proposed geometry/coordination slices. No PR polling/reminders.
+
+**Earlier handover (17 November 2026, Claude): sneak attack fortification and flanking, slice D, on
 `claude/sneak-flanking`, stacked on slice C (`claude/buff-suppression`), slice B and PR #81 (slice A); no PR yet. Not
 played.** Read [docs/SNEAK_FLANKING.md](docs/SNEAK_FLANKING.md), `docs/TACTICAL_AI.md` §192 and the
 [receipt](docs/competence/SNEAK_FLANKING_CHECKS.json). Both modes, valuation only. D1: one fortification roll negates

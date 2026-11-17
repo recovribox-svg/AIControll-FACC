@@ -114,6 +114,8 @@ namespace CompanionAI_Pathfinder.Tactics
         /// <summary>★ v0.3.18 (AA-3): how much of a change in the attack's damage value reaches this option's value (its
         /// weights and risks); 0 for options that are not weapon attacks.</summary>
         public float ModeFactor;
+        /// <summary>Cast-disruption timing and survival weight used by this weapon option, also for its mode alternatives.</summary>
+        internal float DisruptWalkSeconds, DisruptFactor;
         /// <summary>★ v0.3.18 (AA-3): where the attack is made from (a move's end), for the AC a mode adds there.</summary>
         public Vector3? ModeAt;
         /// <summary>★ v0.3.18 (AA-3): the move's risk, where it ends, and the option's value before it (Mobility).</summary>
@@ -2756,6 +2758,8 @@ namespace CompanionAI_Pathfinder.Tactics
                             Value = fullValue,
                             ModeFactor = weight * (fiveFootReach ? 0.95f : 1f) * WakeFactor(enemy, full.ExpectedDamage) * (1f - (provoke?.StopChance ?? 0f)) *
                                          (1f - (stepRisk?.StopChance ?? 0f)),
+                            DisruptWalkSeconds = fiveFootReach ? BurstRules.WalkSeconds(dist, reach, unit.CurrentSpeedMps) : 0f,
+                            DisruptFactor = (1f - (provoke?.StopChance ?? 0f)) * (1f - (stepRisk?.StopChance ?? 0f)),
                             Label = $"FullAttack({full.Attacks})->{enemy.CharacterName}{(fiveFootReach ? "+5ft" : "")}{ProvokeTag(provoke)}{stepRisk?.Tag}{fullCarnageTag}{fullDisruptTag}{fullFlankTag}",
                             Key = $"full:{enemy.UniqueId}",
                             CheckPath = fiveFootReach && stepRisk?.Area == null
@@ -2781,6 +2785,7 @@ namespace CompanionAI_Pathfinder.Tactics
                         Target = enemy,
                         Value = singleValue,
                         ModeFactor = weight * WakeFactor(enemy, single.ExpectedDamage) * (1f - (provoke?.StopChance ?? 0f)),
+                        DisruptFactor = 1f - (provoke?.StopChance ?? 0f),
                         Label = $"Attack->{enemy.CharacterName}{ProvokeTag(provoke)}{singleCarnageTag}{singleDisruptTag}{singleFlankTag}",
                         Key = $"atk:{enemy.UniqueId}"
                     });
@@ -2837,6 +2842,8 @@ namespace CompanionAI_Pathfinder.Tactics
                         Value = value,
                         ModeFactor = weight * 0.9f * walkFactor * WakeFactor(enemy, single.ExpectedDamage) * (1f - (risk?.StopChance ?? 0f)) *
                                      (1f - (provoke?.StopChance ?? 0f)),
+                        DisruptWalkSeconds = BurstRules.WalkSeconds(dist, reach, unit.CurrentSpeedMps),
+                        DisruptFactor = walkFactor * (1f - (risk?.StopChance ?? 0f)) * (1f - (provoke?.StopChance ?? 0f)),
                         ModeAt = approach.Point,
                         Risk = risk,
                         RiskAt = approach.Point,
@@ -3947,7 +3954,7 @@ namespace CompanionAI_Pathfinder.Tactics
                     ? new List<UnitEntityData>()
                     : UnitsAround(burst != null ? ctx.Allies.Where(a => a != unit).ToList() : ctx.Allies, areaCenter, profile.AoERadius);
                 // ★ v0.3.8: who the area can affect at all (Sleep: creatures with few hit dice).
-                affectedEnemies = sharedHd?.Supported == true
+                affectedEnemies = UseCurrentPoolRecipients(profile, sharedHd?.Supported == true, burst != null)
                     ? ctx.Enemies.Where(u => sharedHd.Selects(u) && (burstInside == null || burstInside.Contains(u)) &&
                                              !CastOutcome.AreaSkips(unit, ability, u)).ToList()
                     : affectedEnemies.Where(u => profile.AreaReaches(ability, u) && !CastOutcome.AreaSkips(unit, ability, u)).ToList();
@@ -4631,17 +4638,13 @@ namespace CompanionAI_Pathfinder.Tactics
                     // ★ suppressed buffs (slice C1): a buff the recipient's form or another effect suppresses the moment it
                     // arrives does nothing (Buff.OnAttach asks UnitPartBuffSuppress): Enlarge Person or Haste on a wild-shaped
                     // or Shifter-formed ally, Mirror Image under Elemental Body.
-                    if (BuffSuppression.Readable && buffs.Any(b => BuffSuppression.OnArrival(ability, b, ally)))
+                    buffs = BuffSuppression.FilterOnArrival(ability, buffs, ally, out var suppressed);
+                    if (buffs.Count == 0)
                     {
-                        var suppressed = buffs.FirstOrDefault(b => BuffSuppression.OnArrival(ability, b, ally));
-                        buffs = buffs.Where(b => !BuffSuppression.OnArrival(ability, b, ally)).ToList();
-                        if (buffs.Count == 0)
-                        {
-                            ReportOnce($"suppressed|{CombatMemory.Fight}|{ability.Blueprint.AssetGuid}|{ally.UniqueId}",
-                                () => $"[Buff] {unit.CharacterName}: {ability.Name} on {ally.CharacterName} withheld: {suppressed.name} " +
-                                      $"would be suppressed by {BuffSuppression.SuppressorName(ability, suppressed, ally)}");
-                            continue;
-                        }
+                        ReportOnce($"suppressed|{CombatMemory.Fight}|{ability.Blueprint.AssetGuid}|{ally.UniqueId}",
+                            () => $"[Buff] {unit.CharacterName}: {ability.Name} on {ally.CharacterName} withheld: {suppressed.name} " +
+                                  $"would be suppressed by {BuffSuppression.SuppressorName(ability, suppressed, ally)}");
+                        continue;
                     }
                     if (buffs.Any(b => ally.Buffs.HasFact(b))) continue;                    // already active
                     // ★ v0.3.8: an enchanting ability whose enchantment is still on the weapon.

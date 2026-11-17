@@ -77,5 +77,20 @@ namespace CompanionAI.Tests
             Assert.Equal(0f, DisruptRules.Value(1f, 20f));
             Assert.Equal(0f, DisruptRules.Value(0.5f, -3f));
         }
+
+        [Fact]
+        public void ModeWithLessPhysicalDamageCanBeBetterAtBreakingTheCast()
+        {
+            // A level-2 cast with +14 concentration cannot fail against a 5-damage hit (DC 14).
+            // An 11-damage hit forces DC 17: rolls 1-2 fail. The less accurate mode can therefore win.
+            float ordinary = 0.9f * 5f;
+            float power = 0.4f * 11f;
+            Assert.True(ordinary > power);
+            float before = DisruptRules.Value(DisruptRules.StillCasting(1f, 0.9f, DisruptRules.FailChance(2, 5f, 14)), 100f);
+            float after = DisruptRules.Value(DisruptRules.StillCasting(1f, 0.4f, DisruptRules.FailChance(2, 11f, 14)), 100f);
+            Assert.Equal(0f, before);
+            Assert.Equal(4f, after, 4);
+            Assert.True(power + after > ordinary + before);
+        }
     }
 }

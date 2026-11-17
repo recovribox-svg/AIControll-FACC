@@ -6606,3 +6606,31 @@ their orders and hit four allies.
   - 3 added references.
 - **Package** `test-builds/AI-Control-FACC-v0.3.60-dev-sneak1-86f8e82-UMM-test.zip`, MVID `e432cb9a`. It includes
   slices A, B and C.
+
+
+## 193. Critical review of stacked PRs #81–84 (17 November 2026, Codex; not played)
+
+[Findings, native evidence, proposals and all A–D replays](REVIEW_81_84.md),
+[checks](competence/REVIEW_81_84_CHECKS.json), [provenance](competence/REVIEW_81_84_BUILD_PROVENANCE.json).
+Task branch `codex/review-81-84` starts at #84 `53e793f`; development remains `ad63ee8`. **No merge.**
+
+- **A:** retain predicted landing recipients for a fused burst's independent damage; the current pool's control budget
+  stays conservative. Ordinary/non-planned pool selection is retained.
+- **B:** attack-mode alternatives reprice disruption from their own hit/damage/routine length; keep the original walk
+  and survival multipliers, without applying damage-role/wake weights to disruption. No new native mode probe.
+- **C:** one arrival filter per recipient with lazy list copying; aura grants inherit the native carrier/area context.
+  The ability-blueprint descriptor matches the supplied native context constructor, including fusions; it is retained.
+- **D:** partner gain uses native `RuleCalculateAttackBonus(TargetIsFlanked=true)`, original iterative penalties and the
+  shared damage kernel, including existing sneak and criticals. Cache on the existing frame/decision routine.
+  **Correction to §192:** native engagement also requires threat reach, LOS and no total concealment. The current
+  prospective predicate does not prove these, and affects enemy threat/defence/held/leap quotes too. The origin-aware
+  replacement is a proposal requiring author approval. TTT's conditional fortification/rerolls remain an explicit limit.
+- **Tests:** actual production disruption and partner-line scalar fixtures supplement route checks. They do not create
+  actors, paths, commands or Harmony combat. No movement/path/target-commitment/retreat/stuck-policy change is added.
+
+Checked source **`2d8a9b5`**, MVID **`9d4c4d08-9419-41da-b4e1-81c60270fc45`**: Release **0 warnings/errors**, **1,000 unit**,
+**27/18/3 scripts**, ProfileAudit **A33/B19/C33/D25**, native **98/14/10**, Magus **44** pass. All unrelated report rows
+and full **8,709/15,494** Fusion coverage equal untouched #84 on the same inputs. The historical 607-stock manifest
+matches; the complete old corpus is not claimed (three extra graph files unavailable). **0 added/removed native refs**.
+Frozen [review1 ZIP](../test-builds/AI-Control-FACC-v0.3.60-dev-review1-2d8a9b5-UMM-test.zip?raw=true), UMM **0.3.60**, SHA-256 `8989b793a43cbd40652b4d8e645d6c6c71414c7ff2317de09d324c9879621f4a`.
+Play every A–D replay and review witness before integration; review the separately described remaining risks first.

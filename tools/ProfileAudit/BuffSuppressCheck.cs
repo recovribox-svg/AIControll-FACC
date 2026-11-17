@@ -77,9 +77,15 @@ namespace ProfileAudit
                       contextInit.Any(m => m is MethodInfo mi && mi.IsGenericMethod && mi.Name == "GetComponent" &&
                                            mi.GetGenericArguments()[0] == typeof(Kingmaker.UnitLogic.Buffs.Components.AddSpellSchool)),
                       "a context's descriptor adds its blueprint's component to the parent's; its school falls back to AddSpellSchool");
-                Check(Calls(Body(typeof(AbilityExecutionContext).GetConstructors(BindingFlags.Instance | BindingFlags.Public)
-                                     .Single(c => c.GetParameters().Length == 5)), typeof(AbilityData), "get_SpellSchool"),
+                var abilityInit = Body(typeof(AbilityExecutionContext).GetConstructors(BindingFlags.Instance | BindingFlags.Public)
+                    .Single(c => c.GetParameters().Length == 5));
+                Check(Calls(abilityInit, typeof(AbilityData), "get_SpellSchool"),
                       "an ability's context takes the ability's school (a fusion's own)");
+                Check(abilityInit.Any(m => m is FieldInfo && m.DeclaringType == typeof(AbilityData) && m.Name == "Blueprint") &&
+                      abilityInit.Any(m => m is ConstructorInfo && m.DeclaringType == typeof(MechanicsContext)) &&
+                      !Calls(abilityInit, typeof(AbilityData), "get_SpellDescriptor") &&
+                      !Calls(abilityInit, typeof(MechanicsContext), "set_SpellDescriptor"),
+                      "native casts inherit the blueprint descriptor; they do not replace it with AbilityData's fused descriptor union");
 
                 // --- the reader on real suppressors ---
                 var reader = typeof(TacticalEngine).Assembly.GetType("CompanionAI_Pathfinder.Tactics.BuffSuppression") ??
@@ -161,6 +167,28 @@ namespace ProfileAudit
                       "Beast Shape I suppresses Enlarge Person (C1: not cast on a wild-shaped ally)");
                 Check(beastShape != null && haste != null && !Reads(Fill(beastShape), haste, SpellDescriptor.None, SpellSchool.Transmutation),
                       "Beast Shape I leaves Haste alone");
+                var filter = Method(reader, "Filter");
+                List<BlueprintBuff> Filter(UnitPartBuffSuppress part, List<BlueprintBuff> source, out BlueprintBuff first)
+                {
+                    object[] args = { part, source, SpellDescriptor.None, SpellSchool.Transmutation, null };
+                    var result = (List<BlueprintBuff>)filter.Invoke(null, args);
+                    first = (BlueprintBuff)args[4];
+                    return result;
+                }
+                var shapePart = Fill(beastShape);
+                var unchanged = new List<BlueprintBuff> { haste };
+                Check(ReferenceEquals(Filter(shapePart, unchanged, out var none), unchanged) && none == null,
+                      "C1 list filter retains the original list when nothing is suppressed");
+                var mixed = new List<BlueprintBuff> { haste, enlarge, haste, enlarge };
+                var filtered = Filter(shapePart, mixed, out var first);
+                Check(first == enlarge && filtered.SequenceEqual(new[] { haste, haste }) && mixed.Count == 4,
+                      "C1 list filter removes every suppressed buff, preserves order and leaves its input untouched");
+                Check(Filter(shapePart, new List<BlueprintBuff> { enlarge, enlarge }, out first).Count == 0 && first == enlarge,
+                      "C1 list filter identifies an entirely suppressed cast and its first reason");
+                shapePart.PrepareExceptionForSuppression(enlarge);
+                var exempt = new List<BlueprintBuff> { enlarge, haste };
+                Check(ReferenceEquals(Filter(shapePart, exempt, out first), exempt) && first == null,
+                      "C1 list filter honors native global exclusions without allocating a copy");
                 var poisonHex = Named("WitchHexMajorAmelioratingPoisonSuppressBuff");
                 var poison = buffs.FirstOrDefault(b => ((b.GetComponent<SpellDescriptorComponent>()?.Descriptor.Value ?? SpellDescriptor.None) &
                                                         SpellDescriptor.Poison) != 0);
@@ -180,10 +208,28 @@ namespace ProfileAudit
 
                 // --- compiled routes ---
                 var engine = typeof(TacticalEngine);
-                Check(Calls(BodyWithLambdas(engine, "ScoreAbility"), reader, "OnArrival") &&
+                Check(Calls(BodyWithLambdas(engine, "ScoreAbility"), reader, "FilterOnArrival") &&
                       Calls(BodyWithLambdas(engine, "ScoreAbility"), reader, "SuppressorName"),
                       "C1: an ally buff is not valued on a recipient that would suppress it, and the reason is logged");
                 Check(Calls(BodyWithLambdas(engine, "ToggleValue"), reader, "OnArrival"), "C1: a toggle's grants are not valued on a suppressing bearer");
+                var toggleValue = BodyWithLambdas(engine, "ToggleValue");
+                Check(Calls(toggleValue, reader, "ContextDescriptor") && Calls(toggleValue, reader, "ContextSchool") &&
+                      Calls(toggleValue, typeof(MechanicsContext), "get_SpellDescriptor") &&
+                      Calls(toggleValue, typeof(MechanicsContext), "get_SpellSchool"),
+                      "C1: aura grants inherit the toggle context through the area instead of assuming an empty parent");
+                // AreaEffectsController.Spawn's CloneFor call was inspected in the supplied native IL. Reflecting its
+                // entire body also resolves unrelated scene types from firstpass, which these inputs do not include.
+                // Test the child-context contract directly; do not turn an absent optional scene assembly into a skip.
+                Check(Body(Method(typeof(MechanicsContext), "CloneFor")).Any(m =>
+                          m is ConstructorInfo && m.DeclaringType == typeof(MechanicsContext)),
+                      "native context cloning constructs a child context for the supplied blueprint");
+                var plainGrant = buffs.First(b => b.GetComponent<SpellDescriptorComponent>() == null &&
+                    b.GetComponent<SpellComponent>() == null && b.GetComponent<Kingmaker.UnitLogic.Buffs.Components.AddSpellSchool>() == null);
+                var inheritedPart = new UnitPartBuffSuppress();
+                inheritedPart.PrepareForSuppression(SpellDescriptor.MindAffecting);
+                Check(!Reads(inheritedPart, plainGrant, SpellDescriptor.None, SpellSchool.None) &&
+                      Reads(inheritedPart, plainGrant, SpellDescriptor.MindAffecting, SpellSchool.None),
+                      "a plain grant can be suppressed solely by its inherited context; an empty parent changes the answer");
                 Check(Calls(Body(Method(typeof(RealTimeController), "IsWorthKeepingUp")), reader, "OnArrival"),
                       "C1: no out-of-combat upkeep for a buff the unit would suppress");
                 Check(Calls(BodyWithLambdas(typeof(AbilityProfile), "WouldRemoveSomething"), reader, "StillMatters"),

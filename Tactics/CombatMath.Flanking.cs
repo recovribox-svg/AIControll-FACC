@@ -1,9 +1,12 @@
 // ★ sneak attack refinements (17 November 2026; docs/BURST_AIM_AND_TACTICS_PLAN.md §6, slice D): the game side of
 // fortification and of the flanking a second attacker creates. Pure rules: SneakRules. Read only: engagement sets, the
-// fortification part and the native threat hand; no rule is triggered here beyond the partner's ordinary routine read.
+// fortification part and the native threat hand. Partner counterfactuals trigger the native attack-bonus rule once per
+// line of the cached routine; actors and engagement are never changed.
 using System;
 using Kingmaker.EntitySystem.Entities;
 using Kingmaker.Items;
+using Kingmaker.RuleSystem;
+using Kingmaker.RuleSystem.Rules;
 using Kingmaker.UnitLogic;
 using Kingmaker.UnitLogic.Parts;
 
@@ -57,9 +60,9 @@ namespace CompanionAI_Pathfinder.Tactics
         }
 
         /// <summary>
-        /// D2: a melee attack with <paramref name="weapon"/> makes <paramref name="unit"/> an engager of its target: the unit
-        /// has a native threat hand with a threat range (UnitCombatEngagementController.TickUnit), and the attack lands in
-        /// reach. Ranged attacks leave flanking to the native state.
+        /// D2's prospective engagement assumption: a melee attacker can act and has a native threat hand/range. This does
+        /// not prove the target is within that threat range, visible or free of total concealment at the future origin.
+        /// See REVIEW_81_84.md D-R1 for the proposed origin-aware quote; ranged attacks use only the native state.
         /// </summary>
         internal static bool AttackerEngages(UnitEntityData unit, ItemEntityWeapon weapon)
         {
@@ -98,9 +101,9 @@ namespace CompanionAI_Pathfinder.Tactics
         }
 
         /// <summary>
-        /// D2: what <paramref name="partner"/> gains for a round once <paramref name="target"/> is flanked: +2 on its melee
-        /// attacks and its sneak dice where they did not apply yet, through the target's fortification. Its own routine is
-        /// read as usual (cached for the frame); 0 when the target is flanked for it already.
+        /// D2: what <paramref name="partner"/> gains for a round once <paramref name="target"/> is flanked: the native attack
+        /// bonus with TargetIsFlanked, and sneak dice where they did not apply yet. Reuse the ordinary line kernel, including
+        /// its existing sneak and critical damage. Read at most once per cached routine; never change either actor's state.
         /// </summary>
         internal static float FlankPartnerGain(UnitEntityData partner, UnitEntityData target)
         {
@@ -108,18 +111,23 @@ namespace CompanionAI_Pathfinder.Tactics
             {
                 var routine = ReadRoutine(partner, target, full: true);
                 if (routine == null || routine.Flanked || routine.Lines.Count == 0) return 0f;
+                if (routine.PartnerFlankGain.HasValue) return routine.PartnerFlankGain.Value;
                 int dice = SafeStat(partner.Stats.SneakAttack);
                 bool sneaks = dice > 0 && !ImmuneToPrecision(target);
                 float lands = LandsPastDefences(partner, target);
                 float gain = 0f;
                 foreach (var line in routine.Lines)
                 {
-                    bool melee = line.Weapon?.Blueprint?.IsMelee == true;
-                    float now = HitProbability(line.AttackBonus, line.ArmorClass) * lands;
-                    float flanked = melee ? HitProbability(line.AttackBonus + SneakRules.FlankingBonus, line.ArmorClass) * lands : now;
+                    int flankedBonus = Rulebook.Trigger(new RuleCalculateAttackBonus(partner, target, line.Weapon, line.AttackBonusPenalty)
+                    {
+                        TargetIsFlanked = true
+                    }).Result;
+                    float before = ExpectedWeaponLine(line, 0, 0f, lands, out _, out _);
+                    float after = ExpectedWeaponLine(line, flankedBonus - line.AttackBonus, 0f, lands, out float hit, out _);
                     float newSneak = sneaks && line.Sneak <= 0f ? 3.5f * dice * line.PhysicalFactor : 0f;
-                    gain += SneakRules.PartnerLineGain(now, flanked, line.GameHit + line.BladeBlast, newSneak, line.Keep);
+                    gain += SneakRules.PartnerLineGain(before, after, hit, newSneak, line.Keep);
                 }
+                routine.PartnerFlankGain = gain;
                 return gain;
             }
             catch (Exception ex)

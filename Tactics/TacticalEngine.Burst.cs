@@ -127,6 +127,13 @@ namespace CompanionAI_Pathfinder.Tactics
             ctx.Burst != null && ReferenceEquals(ctx.Burst.Ability, ability) ? ctx.Burst : null;
 
         /// <summary>
+        /// A pool selects current recipients, not the independent payload of a future fused burst. Keep the pool's
+        /// current-position control forecast, while letting the burst's other payload use its predicted recipients.
+        /// </summary>
+        internal static bool UseCurrentPoolRecipients(AbilityProfile profile, bool supportedPool, bool plannedBurst) =>
+            supportedPool && (!plannedBurst || profile?.Fusion == null);
+
+        /// <summary>
         /// Where <paramref name="unit"/>'s own walk ends (TacticalEngine.WalkClaim), read once per decision; real time only.
         /// </summary>
         private static bool TryWalkOf(TacticalContext ctx, UnitEntityData unit, out Vector3 to)

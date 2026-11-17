@@ -45,21 +45,29 @@ namespace CompanionAI.Tests
         public void APartnerGainsTheFlankingBonusAndItsSneakDice()
         {
             // 50 % to hit, 60 % flanked (+2), 12 per hit, 10.5 new sneak (3d6), no fortification
-            Assert.Equal(0.1f * 12f + 0.6f * 10.5f, SneakRules.PartnerLineGain(0.5f, 0.6f, 12f, 10.5f, 1f), 4);
+            Assert.Equal(0.1f * 12f + 0.6f * 10.5f, SneakRules.PartnerLineGain(6f, 7.2f, 0.6f, 10.5f, 1f), 4);
             // heavy fortification keeps a quarter of the sneak dice, all of the extra hits
-            Assert.Equal(0.1f * 12f + 0.6f * 10.5f * 0.25f, SneakRules.PartnerLineGain(0.5f, 0.6f, 12f, 10.5f, 0.25f), 4);
+            Assert.Equal(0.1f * 12f + 0.6f * 10.5f * 0.25f, SneakRules.PartnerLineGain(6f, 7.2f, 0.6f, 10.5f, 0.25f), 4);
             // no sneak dice: only the bonus; already sneaking: newSneak 0
-            Assert.Equal(0.1f * 12f, SneakRules.PartnerLineGain(0.5f, 0.6f, 12f, 0f, 1f), 4);
+            Assert.Equal(0.1f * 12f, SneakRules.PartnerLineGain(6f, 7.2f, 0.6f, 0f, 1f), 4);
             // a ranged line (no bonus) gains only the sneak dice
-            Assert.Equal(0.5f * 10.5f, SneakRules.PartnerLineGain(0.5f, 0.5f, 12f, 10.5f, 1f), 4);
+            Assert.Equal(0.5f * 10.5f, SneakRules.PartnerLineGain(6f, 6f, 0.5f, 10.5f, 1f), 4);
         }
 
         [Fact]
         public void BadInputsGainNothingNegative()
         {
-            Assert.Equal(0f, SneakRules.PartnerLineGain(0.6f, 0.5f, 12f, 0f, 1f), 4);     // never a loss
-            Assert.Equal(0f, SneakRules.PartnerLineGain(0.5f, 0.5f, -3f, -2f, 1f), 4);
-            Assert.Equal(SneakRules.FlankingBonus, 2);
+            Assert.Equal(0f, SneakRules.PartnerLineGain(6f, 5f, 0.5f, 0f, 1f), 4);     // never a loss
+            Assert.Equal(0f, SneakRules.PartnerLineGain(5f, 5f, -3f, -2f, 1f), 4);
+        }
+
+        [Fact]
+        public void PartnerExtraHitsIncludeExistingSneakAndCriticalsOnce()
+        {
+            // Already flat-footed: 10.5 sneak applies before the flank. Better AB still adds hits and confirmations.
+            float before = SneakRules.LineDamage(0.5f, 12f, 10.5f, 2f, 0.25f);
+            float after = SneakRules.LineDamage(0.6f, 12f, 10.5f, 3f, 0.25f);
+            Assert.Equal(1.2f + 0.25f * (1.05f + 1f), SneakRules.PartnerLineGain(before, after, 0.6f, 0f, 0.25f), 4);
         }
     }
 }

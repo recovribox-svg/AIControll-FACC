@@ -1,0 +1,420 @@
+{
+  "task": "Critical review and correction of open stacked PRs #81-84",
+  "date": "2026-11-17",
+  "branch": "codex/review-81-84",
+  "checked_source_commit": "2d8a9b561591f5f174a31a83243858a0de896822",
+  "worktree_clean_at_build": true,
+  "development_base": "ad63ee8690ad47e74bfad54ba65c13810e4b5316",
+  "reviewed_pr_heads": {
+    "81": "37151935ef378cc30d7373040647ed345c4ffd57",
+    "82": "f5a511d332ba888f4bf5564679bae9934abf0c4c",
+    "83": "755ba563eebd93fa72c14fece1d8671da39de755",
+    "84": "53e793f507b35fa6467fe4d33145787dc874b771"
+  },
+  "baseline_build": {
+    "source": "53e793f507b35fa6467fe4d33145787dc874b771",
+    "dll": {
+      "assembly": "CompanionAI_Pathfinder, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null",
+      "mvid": "937e5a89-3b6f-45f7-a63a-11dfaa962db4",
+      "sha256": "c5cc48f89193e80bf636c9f4265d85a5786015fee0951eb7785f5905bad77fab",
+      "size": 1512448
+    },
+    "unit_tests": 998,
+    "foreign_signatures": 23,
+    "all_checks_passed": true,
+    "raw_expected_input_failure": true
+  },
+  "dll": {
+    "assembly": "CompanionAI_Pathfinder, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null",
+    "mvid": "9d4c4d08-9419-41da-b4e1-81c60270fc45",
+    "sha256": "4ef182bb6d304132a7ce19c0b9fbcc600497fd2509aff3d68c4dfa5c8dc8e19c",
+    "size": 1514496
+  },
+  "manifest_version": "0.3.60",
+  "manifest_unchanged": true,
+  "release_build": {
+    "status": "pass",
+    "actual_game_references": true,
+    "warnings": 0,
+    "errors": 0,
+    "command": "dotnet build CompanionAI_Pathfinder.csproj -c Release --no-restore -p:ManagedPath=<real Managed folder>"
+  },
+  "unit_tests": {
+    "status": "pass",
+    "passed": 1000,
+    "failed": 0,
+    "skipped": 0,
+    "command": "dotnet test tests/CompanionAI.Tests -c Release --no-restore"
+  },
+  "script_tests": {
+    "BlueprintInventory": 27,
+    "InvocationLedger": 18,
+    "ProfileAudit_supplement": 3,
+    "failures": 0,
+    "commands": "python3 -B -m unittest discover -s tools/<tool> -p test_*.py"
+  },
+  "profile_audit": {
+    "exit_code": 0,
+    "status": "pass on both explicitly scoped corpora",
+    "sections": {
+      "BURST-AIM": 33,
+      "CAST-DISRUPT": 19,
+      "BUFF-SUPPRESS": 33,
+      "SNEAK": 25
+    },
+    "added_checks": {
+      "A": 5,
+      "B": 4,
+      "C": 8,
+      "D": 5
+    },
+    "failed_checks": 0,
+    "prerequisite_skips": 0,
+    "existing_corpus": {
+      "loaded": 44640,
+      "load_failures": 0,
+      "abilities": 4808,
+      "reader_errors": 0,
+      "purpose": "existing compatible exports plus missing stock charge/Coup fixtures; identical baseline/final inputs"
+    },
+    "full_stock_corpus": {
+      "loaded": 45248,
+      "load_failures": 0,
+      "abilities": 4849,
+      "reader_errors": 0,
+      "purpose": "same compatible export roots plus four native Magus fixtures and historical missing-only 607 stock fixtures",
+      "ground_aim_abilities": 40,
+      "delayed_around_abilities": 27,
+      "simple_projectile_abilities": 93,
+      "unresolved_projectiles": 8,
+      "enemy_only_bursts": 19,
+      "spell_blueprints": 1892
+    },
+    "compiled_host": "private runnable Unity/formatting shims per tools/ProfileAudit/run.sh; never deployed; no actor/combat/Harmony/Unity timing execution",
+    "command": "dotnet ProfileAudit.dll --optional-provider <TTT Core dll> [--supplement <607-stock-folder> --summon-unit-list docs/competence/SUMMON_KITS_DEMONOLOGY_UNITS.txt] --fusion-coverage <coverage.json> <same scoped folders> <report.txt>"
+  },
+  "comparison": {
+    "strict.txt": {
+      "baseline_sha256": "9b92666039b5565c7af59565a4fef45d97f2eb1351bad5d1cd1f466c6173321d",
+      "final_sha256": "49497a4d965335c3c39c9d0939771416ddb3f9deb494fb472916993abc8c02f3",
+      "unrelated_rows_identical": true,
+      "differing_headers": [
+        {
+          "before": "SNEAK 20 checks, failures 0; native contracts, fortification facts and compiled routes; no actor, rule, roll or Unity object",
+          "after": "SNEAK 25 checks, failures 0; native contracts, fortification facts and compiled routes; no actor, rule, roll or Unity object"
+        },
+        {
+          "before": "BUFF-SUPPRESS 25 checks, failures 0; native contracts, the reader on real suppressors and compiled routes; no actor, buff instance, context or Unity object",
+          "after": "BUFF-SUPPRESS 33 checks, failures 0; native contracts, the reader on real suppressors and compiled routes; no actor, buff instance, context or Unity object"
+        },
+        {
+          "before": "CAST-DISRUPT 15 checks, failures 0; native contracts, real blueprints and compiled routes; no actor, damage, roll, command or Unity timing",
+          "after": "CAST-DISRUPT 19 checks, failures 0; native contracts, real blueprints and compiled routes; no actor, damage, roll, command or Unity timing"
+        },
+        {
+          "before": "BURST-AIM 28 checks, failures 0; native contracts, real blueprints and compiled routes; no actor, selection, command, cast or Unity timing",
+          "after": "BURST-AIM 33 checks, failures 0; native contracts, real blueprints and compiled routes; no actor, selection, command, cast or Unity timing"
+        }
+      ]
+    },
+    "full-stock.txt": {
+      "baseline_sha256": "fe6b637c50ac3a0fdac9e2df932fcb8537bdf5693c7ae895495487f88c91f061",
+      "final_sha256": "1564835c545e49457133391236815c606c5a5848acb0a79bc2cb5fe19167f257",
+      "unrelated_rows_identical": true,
+      "differing_headers": [
+        {
+          "before": "SNEAK 20 checks, failures 0; native contracts, fortification facts and compiled routes; no actor, rule, roll or Unity object",
+          "after": "SNEAK 25 checks, failures 0; native contracts, fortification facts and compiled routes; no actor, rule, roll or Unity object"
+        },
+        {
+          "before": "BUFF-SUPPRESS 25 checks, failures 0; native contracts, the reader on real suppressors and compiled routes; no actor, buff instance, context or Unity object",
+          "after": "BUFF-SUPPRESS 33 checks, failures 0; native contracts, the reader on real suppressors and compiled routes; no actor, buff instance, context or Unity object"
+        },
+        {
+          "before": "CAST-DISRUPT 15 checks, failures 0; native contracts, real blueprints and compiled routes; no actor, damage, roll, command or Unity timing",
+          "after": "CAST-DISRUPT 19 checks, failures 0; native contracts, real blueprints and compiled routes; no actor, damage, roll, command or Unity timing"
+        },
+        {
+          "before": "BURST-AIM 28 checks, failures 0; native contracts, real blueprints and compiled routes; no actor, selection, command, cast or Unity timing",
+          "after": "BURST-AIM 33 checks, failures 0; native contracts, real blueprints and compiled routes; no actor, selection, command, cast or Unity timing"
+        }
+      ]
+    },
+    "coverage.json": {
+      "byte_identical": true,
+      "sha256": "298c29b1b290e904699f6500432261f1b0603df0646ad7c3205c7fbd61d5dc12"
+    },
+    "full-coverage.json": {
+      "byte_identical": true,
+      "sha256": "298c29b1b290e904699f6500432261f1b0603df0646ad7c3205c7fbd61d5dc12"
+    }
+  },
+  "native_harnesses": {
+    "status": "pass",
+    "ToggleCosts_with_Psionics": 98,
+    "TomeBurn": 14,
+    "ToyBoxSpend": 10,
+    "failed_checks": 0,
+    "skipped_checks": 0
+  },
+  "supplementary_magus": {
+    "checks": 44,
+    "failures": 0,
+    "loaded": 44644,
+    "abilities": 4808,
+    "reader_errors": 0
+  },
+  "raw_input_negative_test": {
+    "expected_exit": 1,
+    "actual_exit": 1,
+    "loaded": 44637,
+    "failed": 1,
+    "reason": "AchaekekSacredWeaponFeature: serialized SawtoothSaber versus supplied native SawtoothSabre; retained unmodified input failure, no audit verdict fabricated"
+  },
+  "inputs": {
+    "native_game": {
+      "assembly": "Assembly-CSharp, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null",
+      "mvid": "90a9869c-2792-4c7b-bfb7-5a8b33da7c82",
+      "sha256": "2cb7160b7154d4ffacc77b9c51b1eb26199e1294300f04fdfc073367b2ef8953",
+      "size": 11891712
+    },
+    "unity_mod_manager": {
+      "assembly": "UnityModManager, Version=0.33.2.0, Culture=neutral, PublicKeyToken=null",
+      "mvid": "914c93ba-b0bd-409f-9d38-84e575289dc2",
+      "sha256": "f6f7e18aff88910b01d23e3ce0829f3b4188c6784b0fcea56f9b3af8aa14d0a9",
+      "size": 204800
+    },
+    "stock_database": {
+      "name": "blueprints_raw_2.7.0x_0.binz",
+      "records": 236660,
+      "sha256": "03ba6e29782c0c14e0c0383cd739560358641f7b5842f1dcfb690246e73c9c6a"
+    },
+    "stock_supplement": {
+      "blueprints": 607,
+      "manifest_sha256": "b53d18553529dafaac14f3434798ecc2a4ca8e3117d5c2f49f8d0084d5405555",
+      "matches_SUMMON_KITS_CHECKS_manifest": true,
+      "closure": 13998,
+      "seed_ids": 38,
+      "missing_only": true,
+      "dump_blueprints_replaced": 0,
+      "reconstruction": "Stream the supplied BubblePrints BPFile reader, index references, apply summon_kit_supplement.py depth/leaf/drop rules, then seed the first-pass unloaded kit references plus Demonology 29 and the two universal roots. The resulting 607 guid/name/type/raw-SHA manifest exactly matches the historical receipt. No full stock JSONL export or game/mod initialization.",
+      "known_bad_enum_input": "Achaekek is present in the original export set; the compatible corpus excludes it. It was not added to the missing-only stock supplement."
+    },
+    "exact_legacy_complete_corpus": {
+      "status": "not run",
+      "reason": "Historical receipts report 45,251 loaded graphs, but the identities/files of three additional graphs outside the recovered 607 stock supplement are unavailable. Current full corpus loads 45,248. The untouched stack and reviewed build are compared on identical available inputs. No claim to reproduce the historical entire report or Fusion JSON hash."
+    },
+    "mod_assembly_sha256": {
+      "MysticalMayhem.dll": "d88f16cb253299d22eb43ac581c073fc17c9c25d37864d95878fd84c0f806d5d",
+      "Psionics.dll": "c31d64a001b79d3b5b49ced1324188c73ddadf8f58440dd46ef2758cec9f7aad",
+      "Demonology.dll": "041b54262f8d241b04d85f8ac682f45ccc68460b270fc81c03f55fa62b37ac5b",
+      "KRXLib.dll": "3bd9600042a98f11816eb200e4df525c1db66892463674085b809d3ccd4dc608",
+      "IsekaiMod.dll": "5111d4d5540ba039b3472951993c49e64d604dcc12bfab0eff2df2a7a7d58fce",
+      "CodexLib.dll": "ca58622cf85ea9c28711ad0a031ad8df86237d837db6093f24eddff1ba8a0313",
+      "TabletopTweaks-Base.dll": "1704bcd6e77eee241db43c4f23c47e1b0f0acf7d7b386fca2d57c0748af546ef",
+      "TabletopTweaks-Core.dll": "aba06b62e8433febb57f9a703bfe5224ad1063676729fca8263644a3b3f535b0",
+      "TomeOfTheFirebird.dll": "5afb76769ad7fc036c9d70ae8cdad9d0866b3a6306072b94498ecfe6088a0a86",
+      "DarkCodex.dll": "8a82a017220a65ee00ae7e9182ecb30bf49b44a01c961e9897c379add648e147"
+    }
+  },
+  "sig_dump": {
+    "against_reviewed_stack_head": {
+      "source": "53e793f507b35fa6467fe4d33145787dc874b771",
+      "added": [],
+      "removed": [],
+      "unresolved": 0,
+      "added_and_removed_lists_verified": true
+    },
+    "inherited_stack_vs_pre_stack_runtime": {
+      "added_count": 23,
+      "added": [
+        "0Harmony M !1& HarmonyLib.AccessTools/FieldRef`2<Kingmaker.UnitLogic.Commands.UnitUseAbility,System.Single>::Invoke(class !0) this=True",
+        "0Harmony M !1& HarmonyLib.AccessTools/FieldRef`2<Kingmaker.UnitLogic.Parts.UnitPartBuffSuppress,Kingmaker.Utility.MultiSet`1<Kingmaker.Blueprints.Classes.Spells.SpellDescriptor>>::Invoke(class !0) this=True",
+        "0Harmony M !1& HarmonyLib.AccessTools/FieldRef`2<Kingmaker.UnitLogic.Parts.UnitPartBuffSuppress,Kingmaker.Utility.MultiSet`1<Kingmaker.Blueprints.Classes.Spells.SpellSchool>>::Invoke(class !0) this=True",
+        "0Harmony M !1& HarmonyLib.AccessTools/FieldRef`2<Kingmaker.UnitLogic.Parts.UnitPartBuffSuppress,Kingmaker.Utility.MultiSet`1<Kingmaker.UnitLogic.Buffs.Blueprints.BlueprintBuff>>::Invoke(class !0) this=True",
+        "0Harmony M HarmonyLib.AccessTools/FieldRef`2<!!0,!!1> HarmonyLib.AccessTools::FieldRefAccess(class System.String) this=False",
+        "Assembly-CSharp F valuetype Kingmaker.Blueprints.Classes.Spells.SpellSchool Kingmaker.Blueprints.Classes.Spells.SpellComponent::School",
+        "Assembly-CSharp F valuetype Kingmaker.Blueprints.Classes.Spells.SpellSchool Kingmaker.UnitLogic.Buffs.Components.AddSpellSchool::School",
+        "Assembly-CSharp F valuetype Kingmaker.Visual.Animation.Kingmaker.Actions.UnitAnimationActionCastSpell/CastAnimationStyle Kingmaker.UnitLogic.Abilities.Blueprints.BlueprintAbility::Animation",
+        "Assembly-CSharp F valuetype System.Single Kingmaker.Blueprints.BlueprintProjectile::MinTime",
+        "Assembly-CSharp F valuetype System.Single Kingmaker.Blueprints.BlueprintProjectile::Speed",
+        "Assembly-CSharp F valuetype System.Single Kingmaker.UnitLogic.Abilities.Components.AbilityDeliverDelay::DelaySeconds",
+        "Assembly-CSharp M Kingmaker.Blueprints.ReferenceArrayProxy`2<Kingmaker.UnitLogic.Buffs.Blueprints.BlueprintBuff,Kingmaker.Blueprints.BlueprintBuffReference> Kingmaker.UnitLogic.FactLogic.SuppressBuffs::get_Buffs() this=True",
+        "Assembly-CSharp M Kingmaker.Blueprints.ReferenceArrayProxy`2<Kingmaker.UnitLogic.Buffs.Blueprints.BlueprintBuff,Kingmaker.Blueprints.BlueprintBuffReference> Kingmaker.UnitLogic.FactLogic.SuppressBuffs::get_ExcludedBuffs() this=True",
+        "Assembly-CSharp M System.Nullable`1<System.Single> Kingmaker.UnitLogic.UnitHelper::GetThreatRange(class Kingmaker.EntitySystem.Entities.UnitEntityData,class Kingmaker.Items.Slots.WeaponSlot) this=False",
+        "Assembly-CSharp M class !0 Kingmaker.Blueprints.ReferenceArrayProxy`2<Kingmaker.Blueprints.BlueprintProjectile,Kingmaker.Blueprints.BlueprintProjectileReference>::get_Item(valuetype System.Int32) this=True",
+        "Assembly-CSharp M class Kingmaker.UnitLogic.Commands.Base.UnitCommand Kingmaker.UnitLogic.Commands.UnitCommands::get_Standard() this=True",
+        "Assembly-CSharp M valuetype System.Boolean Kingmaker.UnitLogic.Commands.UnitCommands::AnyCommandTargets(class Kingmaker.EntitySystem.Entities.UnitEntityData) this=True",
+        "Assembly-CSharp M valuetype System.Boolean Kingmaker.Utility.MultiSet`1<Kingmaker.Blueprints.Classes.Spells.SpellDescriptor>::Contains(class !0) this=True",
+        "Assembly-CSharp M valuetype System.Boolean Kingmaker.Utility.MultiSet`1<Kingmaker.Blueprints.Classes.Spells.SpellSchool>::Contains(class !0) this=True",
+        "Assembly-CSharp M valuetype System.Boolean Kingmaker.Utility.MultiSet`1<Kingmaker.UnitLogic.Buffs.Blueprints.BlueprintBuff>::Contains(class !0) this=True",
+        "Assembly-CSharp M valuetype System.Int32 Kingmaker.UnitLogic.Parts.UnitPartFortification::get_Value() this=True",
+        "Assembly-CSharp M valuetype System.Single Kingmaker.UnitLogic.Commands.Base.UnitCommand::get_TimeSinceStart() this=True",
+        "UnityEngine.CoreModule M valuetype System.Single UnityEngine.Mathf::Lerp(valuetype System.Single,valuetype System.Single,valuetype System.Single) this=False"
+      ],
+      "all_resolve": true,
+      "reference_source": "Frozen faf867c runtime; its C#/project source equals development ad63ee8",
+      "verification_log_sha256": "0b1760a46a2d26c7879d76f362da8cbae695aefceddc773548adb29fc816fefe"
+    }
+  },
+  "native_manual_review": {
+    "assembly_identity": {
+      "assembly": "Assembly-CSharp, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null",
+      "mvid": "90a9869c-2792-4c7b-bfb7-5a8b33da7c82",
+      "sha256": "2cb7160b7154d4ffacc77b9c51b1eb26199e1294300f04fdfc073367b2ef8953",
+      "size": 11891712
+    },
+    "sources": [
+      "AbilityTargetsAround.Select",
+      "AbilityDeliverDelay.Deliver",
+      "UnitUseAbility.Init/OnAction/MakeConcentrationCheck/FailIfConcentrationCheckFailed",
+      "UnitCommand.IsInterruptible/Interrupt",
+      "UnitCommandController.TickCommand",
+      "UnitConcentrationController",
+      "RuleCheckConcentration.OnTrigger",
+      "UnitPartBuffSuppress.IsSuppressed/ApplyChanges",
+      "SuppressBuffs.OnActivate/OnDeactivate",
+      "Buff.OnAttach/IsEnabled",
+      "MechanicsContext constructor/CloneFor",
+      "AbilityExecutionContext constructor",
+      "AddAreaEffect.OnActivate",
+      "AreaEffectsController.Spawn/SpawnAttachedToTarget",
+      "RuleAttackRoll.OnTrigger",
+      "UnitCombatState.IsFlanked",
+      "UnitCommands.AnyCommandTargets",
+      "RuleCalculateAttackBonus.OnTrigger",
+      "UnitCombatEngagementController.TickUnit",
+      "UnitEngagementExtension.IsEngage",
+      "UnitHelper.IsAttackOfOpportunityReach"
+    ],
+    "native_IL_or_decompile_sha256": {
+      "TickEngagement.il.txt": "1c0475d997bab21db7c3cd2a16d1e358d12b67d1cd4295c48eb4b020688de2cb",
+      "UnitCombatState.cs": "751dddc94f6ff585c50d505b982509b08511ddbe4ea95ab36387a94d3b46af8f",
+      "AbilityExecutionContext-ctor.il.txt": "2458c59ec453af478d1ba42f3c005562c36ad1c74a13744043ab1bcfb4d21162",
+      "AreaSpawn.il.txt": "e7e0308faeed193dbf3c9279926a29174ea17fa56c2571d46413a9428df1f188",
+      "UnitCombatEngagementController.cs": "d76da8de3ad2ee660f04c3d4d3ec41c92cf1069cae0e4ca7e85e90550dd4a484",
+      "UnitConcentrationController.cs": "f5456a3a19970f2925444824cfb07db97b4d8c5ea3e5aed78b7d0cce2e32f561",
+      "AbilityData-descriptor.il.txt": "fa950e6ecf0441074b2a18bb87df77791efafe061214307325cc25b58922bdab",
+      "SuppressBuffs.cs": "40b7d1c260e0810711c6b2a5a885a5a71b8b63eb31972fa75ea41d4cd0435608",
+      "AreaEffect-all.il.txt": "33347fd66e174450ae02b452e018c2525358bcfc672f449899d30bbed03fba8b",
+      "UnitUseAbility.cs": "924da0e556eae4f96737f581221f921c546a2f7da642621d5215dd1d379e394b",
+      "AreaEffect-ctor.il.txt": "9b3dbf99ee7db06c7e7f40cc6f9f6b7de3e6c34fcaa9cbe34ac4d2683d3913a1",
+      "IsEngage.il.txt": "902667079bbbbbd522ace524ffd3083b0d6d870e0798156cadacfe79f30be43b",
+      "TTT-Fortification.il.txt": "a81008eb3417cb7bf30e04145571816ab6bf9c15c39d46753caa6b012f5bee39",
+      "AoOReach.il.txt": "0b65d6c27e80968e75697f5b5dd98c8988e1677f0222ac4f9cc49477487d6e58",
+      "AbilityTargetsAround.cs": "493dd0d21ff5ce0cab1b47fc3a6382106ce05c7f919fe61a37592800ef655549",
+      "AnyCommandTargets.il.txt": "6dfeaa8d2ce895046f9a32ed910de83e1704e68bd2abe1805212a96cecde704e",
+      "AddAreaEffect.il.txt": "09d8e51b40a50a01b51965ad060da15619dee1ad336eb150fc4b1430628e4151",
+      "AbilityDeliverDelay.cs": "3397b381f76c17d236c985b8234510395ad340cb39ca4205a450daadd3f28ba6",
+      "Interrupt.il.txt": "e9ad81083bd0315e366ed048556d607c0e57014df0cf13150a9978df3e7fdda0",
+      "RuleAttackRoll.cs": "a7f8b521c239fed345c4aef7f7c541a77350311e2278fa0c8b124eb5ed0aaf23",
+      "RuleCheckConcentration.cs": "da21e249aa9e476156705e779b0bd1a5e4174b51bb1f3cacd88180d8ed3ba4ce",
+      "RuleCalculateAttackBonus.cs": "2403693f8f808e7e157179f990d97df3399aa1c22eafa5528a05aadd93c7f797",
+      "MechanicsContext-ctor.il.txt": "baeba8630516e8159c044a43dccb5050d7080454fadf4e908a3315f0918cb27b",
+      "UnitPartBuffSuppress.cs": "6f6566f67f88350dc8c7d611d272cd767cab8c0d116595d150b985ce87b8151d",
+      "UnitCommandController.cs": "56fd2446aa973036b1a6d45e3e5cd9f265e3605f86030880b44b3c48dd300ddf"
+    },
+    "TTT_fortification": "Installed Core has RuleFortificationCheck and reason-dependent RerollFortification; no-roll probability provider not implemented. Stock part-only forecast is not a full TTT prediction."
+  },
+  "findings": {
+    "runtime_fixed": {
+      "A-D1": "d68bfd5",
+      "B-D1": "c2eff66",
+      "C-P1": "d0425e6",
+      "C-D1": "5391939",
+      "D-D1": "73d34f7"
+    },
+    "native_claim_correction": "c0f82a4",
+    "test_gap_fixes": {
+      "C": "34542f8",
+      "B": "f4e5697",
+      "D": "2d8a9b5"
+    },
+    "proposals_or_limits_left": [
+      "D-R1 origin/threat-reach/LOS/concealment quote requires approval; no movement policy implemented",
+      "D-R2 conditional TTT fortification needs optional no-roll provider",
+      "B-R1 marginal disruption coordination ledger requires design/approval",
+      "B-R2 timing/damage variance, kill overlap and pre-mode diagnostic tag",
+      "A-R1 chord/path error and HP-only pre-act safety re-check",
+      "A-P1 repeated scene reads and finite watch overflow",
+      "C-R1 binary future cleanse/arrival value and joint removal effects",
+      "C-P2 live suppressor-scan repetition"
+    ]
+  },
+  "not_run": {
+    "live_gameplay": "Author must play the packaged A-D/review replays; offline tests cannot validate command timing, native paths, engagement or patched combat.",
+    "exact_legacy_complete_input_set": "Three extra historical graph files are unavailable; see inputs accounting.",
+    "cross_machine_byte_reproduction": "No such claim. Full compiler/path/reference/Source Link provenance is recorded; validated DLL is preserved."
+  },
+  "package": {
+    "path": "test-builds/AI-Control-FACC-v0.3.60-dev-review1-2d8a9b5-UMM-test.zip",
+    "identity": "test-builds/AI-Control-FACC-v0.3.60-dev-review1-2d8a9b5-UMM-test.identity.json",
+    "checksum": "test-builds/AI-Control-FACC-v0.3.60-dev-review1-2d8a9b5-UMM-test.sha256",
+    "zip_sha256": "8989b793a43cbd40652b4d8e645d6c6c71414c7ff2317de09d324c9879621f4a",
+    "contents": [
+      "CompanionAI_Pathfinder.dll",
+      "Info.json"
+    ],
+    "frozen_validated_dll": true
+  },
+  "workflow": {
+    "target": "claude/dreamy-pasteur-b9h3rn",
+    "stacked_on_pr": 84,
+    "merge_after": [
+      81,
+      82,
+      83,
+      84
+    ],
+    "merged": false,
+    "claude_branches_changed": false,
+    "development_changed": false,
+    "main_changed": false,
+    "tag_or_release_created": false,
+    "pull_request": {
+      "number": 85,
+      "url": "https://github.com/recovribox-svg/AIControll-FACC/pull/85",
+      "draft": true,
+      "merged": false
+    }
+  },
+  "private_validation_artifact_sha256": {
+    "full-stock.log": "26f525eea98813765d6fe49d7050c9d511793b29723b52c715d19b5cf0e99bf4",
+    "removed-refs.txt": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "supplementary.log": "7b70f691b1158b7af953cd1be8ef9fae1d5a0cce9c38b0d0a6cc2c1e970b9fb5",
+    "provenance.json": "b7a438dca20ca2b548ec84f8c27b927a825fd659a4d0eb1bbffb0cac277791e5",
+    "supplement-scripts.log": "edb4e2159c923ea45a32656078835cdf531c3d7b414c670dd786978875cb0678",
+    "comparison.json": "141afd388aedcca4051444b996122bd70ea54f523d1d9f9a04252e4c6083d188",
+    "summary.json": "d3484f9a54179df541ee98992395586d29cfedc96dc6165306470760eb04f6cc",
+    "toggle-build.log": "d5eb2d47aaf83a957595bc30568f50e14e0cba61c793e12d369358f5b240f20d",
+    "tome.log": "ce87bd2f310cc7f9941b848a69cd82b759eb35e4db491c0c808d997f36c22397",
+    "full-coverage.json": "298c29b1b290e904699f6500432261f1b0603df0646ad7c3205c7fbd61d5dc12",
+    "identity.json": "40556f7d8eecab0c3da27d3fa266002becb39896cff53cfcf0b4afde531ac9c9",
+    "full-stock.txt": "1564835c545e49457133391236815c606c5a5848acb0a79bc2cb5fe19167f257",
+    "raw.log": "59399a5731df2ca0a352726bb5857f2618ac7f2bf881aa07c789670ad5bd8149",
+    "toybox.log": "a030b5d514e2aebaf7ba327f24d05f8b26f4493cd23a9bea8870d90d1c6ab4a5",
+    "strict.txt": "49497a4d965335c3c39c9d0939771416ddb3f9deb494fb472916993abc8c02f3",
+    "coverage.json": "298c29b1b290e904699f6500432261f1b0603df0646ad7c3205c7fbd61d5dc12",
+    "refs.log": "899262540b3e6a0a678fb0c899cdfcefb2cc1695ab4439fdcb666d764617d4a1",
+    "audit-build.log": "0119c9161e707f6fcac6afc4623a8ef01dea8f23093f38427b4690420c85928b",
+    "toggle.txt": "dc9b57090caf941ba7226e99433fb8b69ba194a97de8a9df15641d04cbb21357",
+    "tome-build.log": "28425ae6be9350252be1da8bb1ba62f534da54c2fea88de37746bf2e672f6bdd",
+    "removed-refs-verified.log": "899262540b3e6a0a678fb0c899cdfcefb2cc1695ab4439fdcb666d764617d4a1",
+    "strict.log": "7a0dd6be3e8ead636b15ae826beaea852871d3834870e6423595b23c37d78220",
+    "tome.txt": "5f5a782c93156c038495d5aa5f96f7a06c2d5829ad59afd9484cc62e709cba72",
+    "toggle-restore.log": "40d104602671164ab3958225da3e1c8cabd55f0251d6df6bc911d9d5a24f44ce",
+    "release.log": "6c14c0ff765d8d998a4ddc4d0f0cc2ed1c5a4fbdda982d07bb9aaa25ab19471c",
+    "supplementary.txt": "5769fe3a4db4b05701baeff6b7cabaa2488873bd4d3366c2b57c261a0f03c25a",
+    "toybox-restore.log": "40d104602671164ab3958225da3e1c8cabd55f0251d6df6bc911d9d5a24f44ce",
+    "tome-restore.log": "40d104602671164ab3958225da3e1c8cabd55f0251d6df6bc911d9d5a24f44ce",
+    "raw.txt": "533659eaa5c2c9baa1fded5b8021cb157c428b29c83b591f273f27e47a340e91",
+    "added-refs.txt": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "inventory.log": "6ef6f1be79a41ae28318124d4325a3988feaa684a68197d354ce98238c426a4d",
+    "invocation-ledger.log": "3f56dc2d2b62a4e6a4cedbffe44e114c3b721e5b4321a5d0b2f42d56f5b30c1b",
+    "toggle.log": "64730c12819a9478a3588e1be9a776c3d16be323cb099b38581fa071000ff57d",
+    "toybox-build.log": "884e7057c6db2f78a1af0778785fe2233fd9f3f92e0af6464e5015bf938862a0",
+    "unit.log": "3e453fb8184021bb1d26b90dcb8f189baefe95219cab44322618e475beb3d75c",
+    "audit-restore.log": "40d104602671164ab3958225da3e1c8cabd55f0251d6df6bc911d9d5a24f44ce",
+    "toybox.txt": "659c102f341f78261d64ee197daba5e1df45e2e7f46f1235427e8c201b34ce49"
+  }
+}

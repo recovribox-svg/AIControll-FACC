@@ -76,6 +76,10 @@ namespace ProfileAudit
                 bool Ground(AbilityData a) => (bool)groundAim.Invoke(null, new object[] { a, AbilityProfile.Get(a) });
                 AbilityData Data(BlueprintAbility b) => CasterPolicyCheck.Data(b);
 
+                var poolRecipients = typeof(TacticalEngine).GetMethod("UseCurrentPoolRecipients", Hidden);
+                var currentPool = (Func<AbilityProfile, bool, bool, bool>)Delegate.CreateDelegate(
+                    typeof(Func<AbilityProfile, bool, bool, bool>), poolRecipients);
+
                 var runes = Spell("ExplosiveRunes");
                 var runesProfile = runes != null ? AbilityProfile.Get(runes) : null;
                 Check(runesProfile != null && runesProfile.SelectsAround && Math.Abs(runesProfile.DeliverDelaySeconds - 2f) < 0.001f &&
@@ -125,6 +129,24 @@ namespace ProfileAudit
                     }
                 }
                 else Check(false, "the fusion holder slot, Explosive Runes and Sleep are loaded");
+
+                // A future damaging fused burst must not be intersected with today's pool selector. Pool control
+                // remains independently conservative; no future recipient is inserted into its budget.
+                var poolHolder = all.First(b => b.name.StartsWith("MagicHackDefaultSlot", StringComparison.Ordinal));
+                var pooledCast = Data(poolHolder);
+                pooledCast.MagicHackData = new MagicHackData
+                {
+                    Spell1 = Spell("ExplosiveRunes"), Spell2 = Spell("Sleep"), DeliverBlueprint = Spell("ExplosiveRunes"),
+                    SavingThrowType = Kingmaker.EntitySystem.Stats.SavingThrowType.Will, SpellLevel = 2,
+                    SpellSchool = SpellSchool.Enchantment
+                };
+                var pooledProfile = AbilityProfile.Get(pooledCast);
+                Check(!currentPool(pooledProfile, true, true), "a planned pooled fusion uses future recipients for its independent payload");
+                Check(currentPool(pooledProfile, true, false), "a non-planned pooled fusion retains its current native recipient set");
+                Check(currentPool(AbilityProfile.Get(Data(Spell("Sleep"))), true, true), "an ordinary pool retains current selection");
+                Check(!currentPool(pooledProfile, false, true), "an unsupported pool cannot discard a burst's other recipients");
+                Check(Body(typeof(TacticalEngine), "ScoreAbility").Any(m => m.Name == "UseCurrentPoolRecipients"),
+                    "the shared score path uses the independent-payload recipient policy");
 
                 // The whole export: which abilities qualify, and why projectile bursts may not resolve offline.
                 int delayed = 0, projectile = 0, unresolved = 0, enemyOnly = 0, grounded = 0;

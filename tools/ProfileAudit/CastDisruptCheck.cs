@@ -82,10 +82,34 @@ namespace ProfileAudit
                 Check(Calls(Body(engine, "AddWeaponCandidates"), engine, "WeaponDisruptBonus"),
                       "weapon attacks (full, single, walk and attack) gain the disruption bonus");
                 Check(Calls(Body(engine, "ScoreAbility"), engine, "AbilityDisruptBonus"), "damaging abilities gain it per enemy they hit");
+                var modeBodies = engine.GetNestedTypes(Hidden).SelectMany(t => t.GetMethods(Hidden))
+                    .Where(m => m.Name.Contains("<ChooseAttackModes>")).SelectMany(SaveBoostCheck.ReferencedMembers).ToList();
+                Check(Calls(modeBodies, engine, "WeaponDisruptValue") &&
+                      modeBodies.Any(m => m.DeclaringType == typeof(Candidate) && m.Name == "DisruptWalkSeconds") &&
+                      modeBodies.Any(m => m.DeclaringType == typeof(Candidate) && m.Name == "DisruptFactor"),
+                      "weapon mode sets reprice disruption with their own routine and the candidate's timing and survival weight");
                 var bonus = Body(engine, "DisruptBonus");
                 Check(Calls(bonus, typeof(DisruptRules), "FailChance") && Calls(bonus, typeof(DisruptRules), "InTime") &&
                       Calls(bonus, typeof(DisruptRules), "StillCasting"),
                       "the bonus counts only hits in time, each by the concentration rule");
+
+                // Execute the production aggregator, not another copy of the pure formula or just its IL route.
+                var castType = engine.GetNestedType("CastInfo", Hidden);
+                var cast = Activator.CreateInstance(castType, true);
+                void Set(string name, object value) => castType.GetField(name, Hidden).SetValue(cast, value);
+                Set("SpellLevel", 2); Set("Concentration", 14); Set("Stakes", 100f); Set("SecondsLeft", 2f);
+                var quote = engine.GetMethod("DisruptBonus", Hidden);
+                float Quote(float hit, float damage, float at, float second = 0f)
+                {
+                    object[] args = { cast, hit, damage, at, second, damage, at + 0.7f, 0f };
+                    return (float)quote.Invoke(null, args);
+                }
+                Check(Math.Abs(Quote(0.9f, 5f, 0.7f)) < 1e-4 && Math.Abs(Quote(0.4f, 11f, 0.7f) - 4f) < 1e-4,
+                      "production disruption changes when a mode trades hit chance for damage across a native DC threshold");
+                Check(Math.Abs(Quote(0.4f, 11f, 1.8f)) < 1e-4,
+                      "production disruption rejects a hit inside the cast's final timing margin");
+                Check(Math.Abs(Quote(0.4f, 11f, 0.7f, 0.4f) - 7.84f) < 1e-4,
+                      "production disruption combines two timely hits without counting a cast break twice");
             }
             catch (Exception ex)
             {

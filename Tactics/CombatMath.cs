@@ -245,7 +245,7 @@ namespace CompanionAI_Pathfinder.Tactics
         {
             public ItemEntityWeapon Weapon;
             public int Index;
-            public int AttackBonus, ArmorClass;
+            public int AttackBonus, ArmorClass, AttackBonusPenalty;
             public float RawPerHit, Sneak;
             /// <summary>★ v0.3.20 (playtest 1): one hit as the game's damage rule gives it against the target (see
             /// ReadHitOnTarget), and what the target keeps of extra physical damage.</summary>
@@ -272,6 +272,8 @@ namespace CompanionAI_Pathfinder.Tactics
             /// becoming the second engager, with the one other engager.</summary>
             public bool Flanked, FlankedBySecond;
             public UnitEntityData FlankPartner;
+            /// <summary>Native counterfactual partner quote, shared only by this frame/decision's routine.</summary>
+            public float? PartnerFlankGain;
         }
 
         /// <summary>Attack routines read this frame: the attack-mode variants of one attack reuse the rules' results.</summary>
@@ -412,8 +414,8 @@ namespace CompanionAI_Pathfinder.Tactics
             var routine = new AttackRoutine { Frame = frame, Attacks = attacks.Count, FirstWeapon = attacks[0].Weapon };
             routine.Reach = UnitAttack.GetApproachRadius(routine.FirstWeapon, unit, target);
 
-            // ★ sneak attack (slice D2): native flanking counts engagers, not positions. A melee attack makes this unit an
-            // engager, so the target is flanked when it lands if one other unit counts as engaging it (CombatMath.Flanking.cs).
+            // ★ sneak attack (slice D2): prospective flank under AttackerEngages' documented reach/sight assumption.
+            // This shared routine is also used by threat/defence quotes; see REVIEW_81_84.md D-R1 before widening it.
             bool flanked = PredictFlank(unit, target, routine.FirstWeapon, out bool bySecond, out var partner);
             routine.Flanked = flanked;
             routine.FlankedBySecond = bySecond;
@@ -451,6 +453,7 @@ namespace CompanionAI_Pathfinder.Tactics
                         Weapon = weapon,
                         Index = i,
                         AttackBonus = ab,
+                        AttackBonusPenalty = attacks[i].AttackBonusPenalty,
                         ArmorClass = acRule.Result,
                         RawPerHit = perHit,
                         GameHit = hit.Read ? hit.Damage : Math.Max(0f, perHit - reduction),

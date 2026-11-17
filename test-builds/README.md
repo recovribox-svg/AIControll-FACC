@@ -1,5 +1,24 @@
 # Test builds
 
+## Review candidate: v0.3.60 review1 — corrections over PRs #81–84 (2d8a9b5), unplayed
+
+[UMM test ZIP](AI-Control-FACC-v0.3.60-dev-review1-2d8a9b5-UMM-test.zip?raw=true) · [Identity](AI-Control-FACC-v0.3.60-dev-review1-2d8a9b5-UMM-test.identity.json) · [Checksum](AI-Control-FACC-v0.3.60-dev-review1-2d8a9b5-UMM-test.sha256) · [Review and A–D replay](../docs/REVIEW_81_84.md) · [Checks](../docs/competence/REVIEW_81_84_CHECKS.json)
+
+[Draft correction PR #85](https://github.com/recovribox-svg/AIControll-FACC/pull/85); no merge. Includes all four unmerged Claude slices and five runtime corrections: future fused damage recipients, disruption
+repricing for attack modes, efficient suppression filtering, inherited aura context, and native/comprehensive partner
+flank damage. No additional movement policy. **Read the remaining engagement/TTT/coordination limits before testing;
+this is not an endorsement to merge the stack.**
+
+**UMM 0.3.60**, checked source **`2d8a9b5`**, startup module **`9d4c4d08-9419-41da-b4e1-81c60270fc45`**.
+ZIP SHA-256 `8989b793a43cbd40652b4d8e645d6c6c71414c7ff2317de09d324c9879621f4a`. SDK 8.0.426 / Roslyn 4.11; full
+[compiler/reference provenance](../docs/competence/REVIEW_81_84_BUILD_PROVENANCE.json).
+**1,000 unit + 27/18/3 scripts**, zero-warning/error real-reference Release, audit **A33/B19/C33/D25**, native **98/14/10**,
+Magus **44** pass. Other audit rows and Fusion matrix unchanged versus untouched #84 on identical inputs.
+The ZIP contains only the frozen checked mod DLL and unchanged Info.json; no native game/mod dependencies or shims.
+
+Replay every slice in TB/RT as applicable, plus the new witnesses in the review. Supply **Log.txt and combatLog.txt**,
+startup module and spawn/rest/manual-order context. No merge, main update, tag or release is made here.
+
 ## Task-branch candidate: v0.3.60 outcome3 — pooled-fusion walking-in safety (faf867c), unplayed
 
 [UMM test ZIP](AI-Control-FACC-v0.3.60-dev-outcome3-faf867c-UMM-test.zip?raw=true) · [Identity](AI-Control-FACC-v0.3.60-dev-outcome3-faf867c-UMM-test.identity.json) · [Checksum](AI-Control-FACC-v0.3.60-dev-outcome3-faf867c-UMM-test.sha256) · [Checks](../docs/competence/OUTCOME2_PLAYTEST_CHECKS.json) · [Review/replay](../docs/OUTCOME2_PLAYTEST_REVIEW.md)
