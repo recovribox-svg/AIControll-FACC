@@ -1,5 +1,7 @@
 # Review2 playtest: findings and corrections
 
+[Draft correction PR #91](https://github.com/recovribox-svg/AIControll-FACC/pull/91), stacked after #81–90; nothing merged.
+
 17 November 2026, Codex. Played **v0.3.60 review2-f0b6097**, module
 `0c600255-e6b8-4788-a5bc-4e0a9ad5f7e9`. The author used ToyBox spawns and rested **between** fights, left Grabber to the
 engine, and reported Wenduag's successful Death from Above. This review checks the wider session, not just that ability.

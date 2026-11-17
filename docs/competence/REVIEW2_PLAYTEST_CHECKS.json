@@ -282,7 +282,12 @@
     "merged": false,
     "development_or_main_changed": false,
     "claude_branches_changed": false,
-    "tag_or_release": false
+    "tag_or_release": false,
+    "pull_request": {
+      "number": 91,
+      "url": "https://github.com/recovribox-svg/AIControll-FACC/pull/91",
+      "draft": true
+    }
   },
   "private_validation_artifact_sha256": {
     "added-refs.txt": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",

@@ -36,7 +36,7 @@ PR #90 `29cfc4e`. Nothing merged.** Read [docs/REVIEW2_PLAYTEST.md](docs/REVIEW2
   `e2a3d3922c62c0dcc3415a0254facc3bbc15a661957b852f064326824216905e`; frozen checked DLL through later docs commits, identity/checksum sidecars. New package unplayed. Replay
   ordinary TB/RT invocations and timed/equipment buffs, then the earlier targeted cases. Send **Log.txt + combatLog.txt**,
   startup module and spawn/rest/manual-order context. Death explosions and REVIEW_86_89 R1–R7 limits remain.
-- Draft correction PR targets development and follows **#81 → … → #90**, after author clearance. No merge,
+- [Draft PR #91](https://github.com/recovribox-svg/AIControll-FACC/pull/91) targets development and follows **#81 → … → #90**, after author clearance. No merge,
   Claude-branch/development/main push, tag or release; no PR polling/reminders.
 
 **Earlier handover (17 November 2026, Codex): critical review of draft PRs #86–89 on
