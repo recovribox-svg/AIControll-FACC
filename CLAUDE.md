@@ -8,7 +8,18 @@ Read [CONTRIBUTING.md](CONTRIBUTING.md) for shared branch ownership, Codex pull 
 Codex works on task branches and targets pull requests at `claude/dreamy-pasteur-b9h3rn`; Claude reviews and integrates them there.
 Keep `main` for author-authorized releases. Read [AGENTS.md](AGENTS.md) when coordinating agent work.
 
-**Current handover (17 November 2026, Codex): review2 playtest review on `codex/review2-playtest`, stacked on
+**Current handover (17 November 2026, Claude): PRs #81–#91 reviewed and merged into development (`2f77d02`) at the
+author's request.** Read `docs/TACTICAL_AI.md` §200 and the [receipt](docs/competence/INTEGRATION_81_91_CHECKS.json).
+- Merged in stack order; development's tree equals the checked #91 head `a0311d1`. Codex's #90 and #91 were re-read
+  against the supplied assembly, and no defect was found.
+- Checks on `a0311d1`: Release 0 warnings/errors, 1,044 unit + 27/21/3 script tests, ProfileAudit A61/B48/C35/D34 and
+  `BUFF-CONTEXT` 39 with every other line, the Fusion coverage and the summon detail unchanged, harnesses 98/14/10.
+- The play package for development is **review2fix1** (`d669ec1`, MVID `e1aa77fe`), unplayed. Manifest 0.3.60; no
+  `main`, tag or release.
+- **Open:** the death-trigger proposal and REVIEW_86_89's R1–R7. **Next:** the Magic Fusion coverage programme, starting
+  with Molten Orb and Acid Arrow (author request).
+
+**Earlier handover (17 November 2026, Codex): review2 playtest review on `codex/review2-playtest`, stacked on
 PR #90 `29cfc4e`. Nothing merged.** Read [docs/REVIEW2_PLAYTEST.md](docs/REVIEW2_PLAYTEST.md), §199,
 [inputs](docs/competence/REVIEW2_PLAYTEST_INPUTS.json), [checks](docs/competence/REVIEW2_PLAYTEST_CHECKS.json) and
 [compiler/reference provenance](docs/competence/REVIEW2_PLAYTEST_BUILD_PROVENANCE.json).

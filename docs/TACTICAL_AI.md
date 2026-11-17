@@ -6807,3 +6807,28 @@ Achaekek enum mismatch remains a known negative input test.
 SHA-256 `e2a3d3922c62c0dcc3415a0254facc3bbc15a661957b852f064326824216905e`. Identity/checksum sidecars; frozen DLL through later docs commits. New package unplayed. Follow
 the review's TB/RT replay; inherited R1–R7 and the death-trigger proposal remain. No merge, main/development push, tag or
 release. Draft task PR follows #81–90 only after author clearance.
+
+## 200. PRs #81–#91 reviewed and merged into development (17 November 2026, Claude)
+
+[Receipt](competence/INTEGRATION_81_91_CHECKS.json). At the author's request, after the review2 playtest.
+
+- **Merged in stack order** with merge commits: #81 → #91, development `ad63ee8` → `2f77d02`. Development's tree equals
+  the checked #91 head `a0311d1`.
+- **Review of Codex's #90** (corrections to #86–#89). Re-read against the supplied assembly; no defect found:
+  - F2 quotes each pending hand from its own routine line and reads the issued attack window and sequence flags,
+    readiness, cooldown overlap and approach radius;
+  - burst routes match the path's original request (`ABPath.originalEndPoint`) and stop by the native mechanics distance
+    (height ignored through 1.5 m, then `max(XZ², Y²/4)`, checked in `Owlcat.Runtime.Core`);
+  - the frame roster revalidates its units; F1 loses its range slack; F3 lets a known end win over unknown suppression.
+- **Review of Codex's #91.** `CanSkipBuffContext` skips the preview context only for completely read, permanent,
+  constant stat parts without enchantments; every later use of the context is skipped or null-safe for that shape. The
+  ledger counts the opening fight. No defect found.
+- **Checks** on `a0311d1` here:
+  - Release 0 warnings and errors; 1,044 unit tests; 27 + 21 + 3 script tests.
+  - ProfileAudit `BURST-AIM` 61, `CAST-DISRUPT` 48, `BUFF-SUPPRESS` 35, `SNEAK` 34, `BUFF-CONTEXT` 39; every other line,
+    the Fusion coverage and the summon detail are identical to the #89 run.
+  - Native harnesses 98/14/10; 7 added and 3 removed references, as Codex recorded.
+  - The Magus corpus was not run here (Codex: 44).
+- **Play package:** review2fix1 (`d669ec1`, MVID `e1aa77fe`), whose code equals development.
+- **Open:** the death-trigger proposal (`DEATH_TRIGGER_SAFETY_PROPOSAL.md`) and REVIEW_86_89's R1–R7 need decisions.
+

@@ -1,0 +1,70 @@
+{
+ "task": "Author-authorized review and integration of the open stack #81-#91 into development (the author played review2-f0b6097; Codex reviewed #86-89 in #90 and the playtest in #91)",
+ "date": "2026-11-17",
+ "author": "Claude",
+ "development_before": "ad63ee8690ad47e74bfad54ba65c13810e4b5316",
+ "development_after": "2f77d023cb5ef7e18c308eb16915da65c78f1e31",
+ "merge_order_and_commits": {
+  "#81": "e1e2591",
+  "#82": "699582d",
+  "#83": "8ce61ee",
+  "#84": "51334d8",
+  "#85": "afeacaf",
+  "#86": "227631e",
+  "#87": "5c830ef",
+  "#88": "ba7296b",
+  "#89": "e1daa08",
+  "#90": "5ea5829",
+  "#91": "2f77d02"
+ },
+ "tree_identity": "development 2f77d02 has exactly the tree of the checked #91 head a0311d1 (git diff empty)",
+ "review": {
+  "#90": "Codex's corrections to Claude's #86-89 re-read against the supplied assembly: per-hand ordered-hit quotes from the cached routine line; issued command window (m_AnimationsDuration) and selected/released sequence flags; native readiness, cooldown overlap, per-hand delivery and issued approach radius; ABPath original-request match; native SqrMechanicsDistance stop (height ignored through 1.5 m, then max(XZ^2, Y^2/4), verified in Owlcat.Runtime.Core); roster revalidation; F1 tolerance removed; F3 known end before unknown suppression. No defect found; the remaining R1-R7 are proposals.",
+  "#91": "CanSkipBuffContext omits the context only for completely read permanent constant stat parts with no weapon/armour enchantment; every later use (EnchantParts, ArmorEnchantParts, EffectiveRounds, casterLevel, PartAmount) is skipped or null-tolerant for that shape. InvocationLedger counts the opening fight fragment. No defect found."
+ },
+ "checks_on_a0311d1_here": {
+  "toolchain": {
+   "dotnet_sdk": "8.0.428",
+   "csharp_compiler": "4.11.0-3.25569.22 (3fb752d4)"
+  },
+  "release_build": "0 warnings, 0 errors",
+  "unit_tests": 1044,
+  "script_tests": {
+   "BlueprintInventory": 27,
+   "InvocationLedger": 21,
+   "ProfileAudit supplement": 3
+  },
+  "profileaudit": {
+   "exit": 0,
+   "loaded": 45244,
+   "burst_aim": 61,
+   "cast_disrupt": 48,
+   "buff_suppress": 35,
+   "sneak": 34,
+   "buff_context": 39,
+   "other_lines": "identical to Claude's F3 (#89) run on the same inputs",
+   "fusion_coverage": "byte-identical; 8,709 / 15,494",
+   "summon_kit_detail": "byte-identical",
+   "report_sha256": "0c3ce7710c81008f888dff9ad771b4846cbc19b9549f4c8a880a0ccbfe9e75b9"
+  },
+  "native_harnesses": {
+   "ToggleCosts": 98,
+   "TomeBurn": 14,
+   "ToyBoxSpend": 10
+  },
+  "signatures_vs_89": "7 added / 3 removed, as Codex's receipt states",
+  "not_run_here": [
+   "Supplementary Magus 44 corpus (inputs not in this environment); Codex's receipt records 44 passing"
+  ]
+ },
+ "play_package": {
+  "zip": "test-builds/AI-Control-FACC-v0.3.60-dev-review2fix1-d669ec1-UMM-test.zip",
+  "mvid": "e1aa77fe-fef8-4496-aae9-9c751d2974ec",
+  "note": "Codex's frozen build of d669ec1, whose code equals development. Not rebuilt here; a local rebuild differs in bytes (Source Link, SDK)."
+ },
+ "manifest": "0.3.60, unchanged; no main, tag or release change",
+ "open_after_integration": [
+  "Death-trigger safety (docs/DEATH_TRIGGER_SAFETY_PROPOSAL.md): proposal, needs the author's decision",
+  "REVIEW_86_89 R1-R7: origin-aware engagement quote, watch overflow and TB landing metadata, snapshot freshness, attack timing, path limits, per-candidate control table cost, relative cleanse share"
+ ]
+}
