@@ -167,9 +167,26 @@ namespace CompanionAI_Pathfinder.Tactics
             if (buff == null || !buff.IsSuppressed) return true;
             try
             {
-                var unit = buff.Owner?.Unit;
-                if (unit == null) return true;
                 float left = buff.IsPermanent ? float.PositiveInfinity : (float)buff.TimeLeft.TotalSeconds;
+                return SuppressionRules.StillMatters(true, left, SuppressedSeconds(buff));
+            }
+            catch
+            {
+                return true;
+            }
+        }
+
+        /// <summary>
+        /// How long <paramref name="buff"/> stays suppressed: 0 when it is not, the longest time left of the facts that
+        /// suppress it (<see cref="float.PositiveInfinity"/> for a permanent one), NaN when none is found.
+        /// </summary>
+        internal static float SuppressedSeconds(Buff buff)
+        {
+            if (buff == null || !buff.IsSuppressed) return 0f;
+            try
+            {
+                var unit = buff.Owner?.Unit;
+                if (unit == null) return float.NaN;
                 float suppressor = float.NaN;
                 foreach (var fact in Suppressors(unit, buff.Blueprint, buff.Context?.SpellDescriptor ?? SpellDescriptor.None,
                                                  buff.Context?.SpellSchool ?? SpellSchool.None))
@@ -177,11 +194,11 @@ namespace CompanionAI_Pathfinder.Tactics
                     float lasts = fact is Buff b && !b.IsPermanent ? (float)b.TimeLeft.TotalSeconds : float.PositiveInfinity;
                     suppressor = float.IsNaN(suppressor) ? lasts : Math.Max(suppressor, lasts);
                 }
-                return SuppressionRules.StillMatters(true, left, suppressor);
+                return suppressor;
             }
             catch
             {
-                return true;
+                return float.NaN;
             }
         }
     }

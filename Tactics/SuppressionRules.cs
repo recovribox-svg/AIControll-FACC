@@ -26,5 +26,17 @@ namespace CompanionAI_Pathfinder.Tactics
             if (float.IsPositiveInfinity(suppressorSecondsLeft)) return false;
             return buffSecondsLeft > suppressorSecondsLeft;
         }
+
+        /// <summary>
+        /// The rounds a buff acts within the horizon: its rounds left less those its suppressor still holds it
+        /// (<paramref name="suppressedRounds"/>: 0 when it is not suppressed, NaN when unknown, which keeps all of them).
+        /// </summary>
+        public static float ActiveRounds(float roundsLeft, float suppressedRounds, float horizon)
+        {
+            float rounds = Math.Min(horizon, roundsLeft);
+            if (!(rounds > 0f)) return 0f;
+            if (float.IsNaN(suppressedRounds) || !(suppressedRounds > 0f)) return rounds;
+            return Math.Max(0f, rounds - Math.Min(horizon, suppressedRounds));
+        }
     }
 }

@@ -42,6 +42,20 @@ namespace CompanionAI.Tests
             Assert.True(SuppressionRules.StillMatters(true, float.PositiveInfinity, 60f));                     // a permanent curse outlasts a hex
         }
 
+        [Theory]
+        // rounds left, suppressed rounds, horizon -> rounds it acts
+        [InlineData(10f, 0f, 6f, 6f)]       // not suppressed: the horizon
+        [InlineData(10f, 4f, 6f, 2f)]       // comes back after 4 rounds
+        [InlineData(3f, 4f, 6f, 0f)]        // ends while suppressed
+        [InlineData(10f, 8f, 6f, 0f)]       // suppressed past the horizon
+        [InlineData(6f, float.PositiveInfinity, 6f, 0f)]   // a permanent suppressor
+        [InlineData(6f, float.NaN, 6f, 6f)] // no suppressor found: as before
+        [InlineData(0f, 0f, 6f, 0f)]
+        public void ActiveRoundsSubtractTheSuppressedOnes(float left, float suppressed, float horizon, float expected)
+        {
+            Assert.Equal(expected, SuppressionRules.ActiveRounds(left, suppressed, horizon), 4);
+        }
+
         [Fact]
         public void UnknownTimesKeepTheOldValuation()
         {

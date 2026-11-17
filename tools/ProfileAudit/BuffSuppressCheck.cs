@@ -174,6 +174,9 @@ namespace ProfileAudit
                       !SuppressionRules.StillMatters(true, float.PositiveInfinity, float.PositiveInfinity) &&
                       SuppressionRules.StillMatters(true, float.NaN, 60f),
                       "pure rule: a suppressed buff matters only if it outlasts its suppressor; unknown keeps the old value");
+                Check(SuppressionRules.ActiveRounds(10f, 4f, 6f) == 2f && SuppressionRules.ActiveRounds(10f, float.PositiveInfinity, 6f) == 0f &&
+                      SuppressionRules.ActiveRounds(3f, 0f, 6f) == 3f,
+                      "pure rule: the rounds a buff acts are its rounds left in the horizon less the suppressed ones");
 
                 // --- compiled routes ---
                 var engine = typeof(TacticalEngine);
@@ -185,9 +188,11 @@ namespace ProfileAudit
                       "C1: no out-of-combat upkeep for a buff the unit would suppress");
                 Check(Calls(BodyWithLambdas(typeof(AbilityProfile), "WouldRemoveSomething"), reader, "StillMatters"),
                       "C2: a cleanse gains nothing from a harmful buff suppressed for the rest of its time");
-                Check(Calls(Body(Method(engine, "HasSomethingToDispel")), reader, "StillMatters") &&
-                      Calls(Body(Method(engine, "DispelValue")), reader, "StillMatters"),
-                      "C2: dispels skip buffs suppressed for the rest of their time");
+                Check(Calls(Body(Method(engine, "HasSomethingToDispel")), reader, "StillMatters"),
+                      "C2: the dispel fallback skips buffs suppressed for the rest of their time");
+                var dispelValue = Body(Method(engine, "DispelValue"));
+                Check(Calls(dispelValue, reader, "SuppressedSeconds") && Calls(dispelValue, typeof(SuppressionRules), "ActiveRounds"),
+                      "C2: a dispel's worth counts only the rounds a buff acts after its suppressor ends");
                 Check(Calls(Body(Method(reader, "StillMatters")), typeof(SuppressionRules), "StillMatters") &&
                       Calls(Body(suppresses), typeof(SuppressionRules), "Suppressed"),
                       "the game side defers to the unit-tested rule");
