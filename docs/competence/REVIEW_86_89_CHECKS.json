@@ -434,7 +434,12 @@
     "claude_branches_changed": false,
     "development_changed": false,
     "main_changed": false,
-    "tag_or_release_created": false
+    "tag_or_release_created": false,
+    "pull_request": {
+      "number": 90,
+      "url": "https://github.com/recovribox-svg/AIControll-FACC/pull/90",
+      "draft": true
+    }
   },
   "private_validation_artifact_sha256": {
     "added-refs.txt": "233fb2646cef467d5162a4b3962834db1b30c944bb11d76590956b75302db475",

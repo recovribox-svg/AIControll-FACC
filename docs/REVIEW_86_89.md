@@ -3,6 +3,7 @@
 17 November 2026, Codex. The four follow-ups and their inherited stack were reviewed against the supplied native
 assemblies. **Corrections are implemented; nothing is merged or played.** The new review2 package below is the one to
 play. It supersedes cleanse1 for this review; historical packages and receipts have not been replaced.
+[Draft correction PR #90](https://github.com/recovribox-svg/AIControll-FACC/pull/90) targets development and follows #81–89.
 
 The largest remaining issue is F1's prospective engagement assumption. A legal attack does not establish native 3D
 engagement. That replacement, watch-capacity policy and other larger changes are proposals, not silently added policy.

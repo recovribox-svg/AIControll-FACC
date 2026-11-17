@@ -36,7 +36,7 @@ Keep `main` for author-authorized releases. Read [AGENTS.md](AGENTS.md) when coo
   SHA-256 `3e8e46b97994ad21281e7e06ef67096a4b21021a13689284316f75ee7bad9b4b`; identity/checksum sidecars. Frozen checked DLL across later docs commits. This replaces cleanse1
   as the next test, not a stable release. Follow the review's TB/RT replay; send **Log.txt + combatLog.txt**, startup
   module and spawn/rest/manual-order context.
-- Draft correction PR targets **development**, merge only after author clearance and **#81 → #82 → #83 → #84 → #85 →
+- [Draft correction PR #90](https://github.com/recovribox-svg/AIControll-FACC/pull/90) targets **development**, merge only after author clearance and **#81 → #82 → #83 → #84 → #85 →
   #86 → #87 → #88 → #89**. No merge, Claude-branch/development/main push, tag or release; no PR polling/reminders.
 
 **Earlier handover (17 November 2026, Claude): F3 on `claude/cleanse-horizon`, stacked on the burst follow-ups (draft PR
