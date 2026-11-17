@@ -1,0 +1,30 @@
+{
+  "build_label": "suppress1",
+  "kind": "development-test",
+  "version": "0.3.60",
+  "source_branch": "claude/buff-suppression",
+  "source_commit": "3e703457974b9861823cb4c819b969350e4d0148",
+  "stacked_on": "claude/cast-disruption f5a511d (slice B), on claude/burst-ground-aim 3715193 (PR #81)",
+  "development_base": "ad63ee8690ad47e74bfad54ba65c13810e4b5316",
+  "dll": {
+    "assembly": "CompanionAI_Pathfinder, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null",
+    "mvid": "00a9466f-e43d-49c8-baef-d00f502399e0",
+    "sha256": "85180686bdde366ca3d94ec97b082101a5d081d0953352b1024652f46510b536",
+    "size": 1509376
+  },
+  "archive": "AI-Control-FACC-v0.3.60-dev-suppress1-3e70345-UMM-test.zip",
+  "zip_sha256": "cd4e5a5890301494f3426c9c3f160640c70e19b7e40b7efb8de9b92e2953d634",
+  "manifest_sha256": "63ad9f152d4bacb44f021428193efad46aaf0d13380bb5691ebca1d935f2b5bf",
+  "checks_receipt": "docs/competence/BUFF_SUPPRESSION_CHECKS.json",
+  "toolchain": {
+    "dotnet_sdk": "8.0.428",
+    "csharp_compiler": "4.11.0-3.25569.22 (3fb752d4)"
+  },
+  "scope": "Slices A and B plus slice C: buffs a recipient would suppress on arrival are not valued; suppressed harmful buffs are not urgent to remove.",
+  "gameplay_status": "unplayed",
+  "archive_contents": [
+    "CompanionAI_Pathfinder.dll",
+    "Info.json"
+  ],
+  "release": false
+}

@@ -1844,6 +1844,8 @@ namespace CompanionAI_Pathfinder.GameInterface
                     if (!profile.IsPersistent(buff)) continue;
                     if (unit.Buffs.HasFact(buff)) continue;
                     if (profile.BuffAppliesTo(buff, ability, unit) == Tactics.EffectApplies.No) continue;
+                    // ★ suppressed buffs (slice C1): no upkeep for a buff the unit's form would suppress on arrival.
+                    if (Tactics.BuffSuppression.OnArrival(ability, buff, unit)) continue;
                     // ★ v0.3.25 (Psionics): a held state the unit depends on (psionic focus: the feats that work only while
                     // it is held, the trance and the maneuvers that require it), though it has no effect of its own.
                     if (Tactics.TacticalEngine.RestoresHeldState(unit, profile, buff)) return true;

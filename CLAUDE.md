@@ -8,7 +8,19 @@ Read [CONTRIBUTING.md](CONTRIBUTING.md) for shared branch ownership, Codex pull 
 Codex works on task branches and targets pull requests at `claude/dreamy-pasteur-b9h3rn`; Claude reviews and integrates them there.
 Keep `main` for author-authorized releases. Read [AGENTS.md](AGENTS.md) when coordinating agent work.
 
-**Current handover (17 November 2026, Claude): cast disruption, slice B, on `claude/cast-disruption`, stacked on
+**Current handover (17 November 2026, Claude): suppressed buffs, slice C, on `claude/buff-suppression`, stacked on
+slice B (`claude/cast-disruption`) and PR #81 (slice A); no PR yet. Not played.** Read [docs/BUFF_SUPPRESSION.md](docs/BUFF_SUPPRESSION.md),
+`docs/TACTICAL_AI.md` §191 and the [receipt](docs/competence/BUFF_SUPPRESSION_CHECKS.json). Both modes, valuation only.
+C1: a buff the recipient's form or hex would suppress on arrival (`UnitPartBuffSuppress`: Enlarge Person or Haste on a
+formed ally) is worth 0 for spells, toggle grants and out-of-combat upkeep, with one logged reason per fight and recipient.
+C2: a suppressed harmful buff counts for a cleanse only if it outlasts its suppressor; a dispel counts only its
+unsuppressed rounds. Checks on `3e70345`: Release 0 warnings/errors, 982 unit + 27/18/3 script tests, ProfileAudit
+`BUFF-SUPPRESS` 25 (reader matches the game on all 337 exported suppressors) with every other line unchanged, harnesses
+98/14/10, 10 added references. Package `test-builds/AI-Control-FACC-v0.3.60-dev-suppress1-3e70345-UMM-test.zip`, MVID
+`00a9466f` (includes slices A and B). Next: slice D (sneak attack: fortification, second-attacker flanking); the author
+plays the A/B/C replays.
+
+**Earlier handover (17 November 2026, Claude): cast disruption, slice B, on `claude/cast-disruption`, stacked on
 PR #81 (slice A, `claude/burst-ground-aim`); no PR yet. Not played.** Read [docs/CAST_DISRUPTION.md](docs/CAST_DISRUPTION.md),
 `docs/TACTICAL_AI.md` §190 and the [receipt](docs/competence/CAST_DISRUPTION_CHECKS.json). Real time, valuation only:
 a hit before an enemy's cast goes off forces the native concentration check (10 + spell level + damage / 2), and a

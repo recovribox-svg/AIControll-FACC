@@ -99,6 +99,9 @@ namespace CompanionAI_Pathfinder.Tactics
                 int dc = check == RuleDispelMagic.CheckType.DC ? context.Params.DC : 11 + context.Params.CasterLevel;
                 float chance = ValueModel.DispelChance(dc - casterLevel - bonus);
                 float rounds = buff.IsPermanent ? horizon : Math.Min(horizon, (float)buff.TimeLeft.TotalSeconds / 6f);
+                // ★ suppressed buffs (slice C2): only the rounds it acts after its suppressor ends (an enemy's Haste under
+                // its own polymorph, a curse under an Ameliorating hex) are worth taking off.
+                if (buff.IsSuppressed) rounds = SuppressionRules.ActiveRounds(rounds, BuffSuppression.SuppressedSeconds(buff) / 6f, horizon);
                 if (!(rounds > 0f)) continue;
                 bool ours = giver != null && giver.IsEnemy(target);
                 float share = ours ? -OwnDebuffShare(ctx, buff, target) : EnemyBuffShare(buff, target);

@@ -278,6 +278,11 @@ namespace ProfileAudit
             foreach (var line in disruptLines) Console.WriteLine(line);
             File.WriteAllText(output, string.Join(Environment.NewLine, disruptLines) + Environment.NewLine + File.ReadAllText(output));
             blocklistFailures += disruptFailures;
+            // ★ suppressed buffs: a buff the bearer's form or another effect suppresses does nothing (plan §5).
+            var suppressLines = BuffSuppressCheck.Run(loaded.Values, out int suppressFailures);
+            foreach (var line in suppressLines) Console.WriteLine(line);
+            File.WriteAllText(output, string.Join(Environment.NewLine, suppressLines) + Environment.NewLine + File.ReadAllText(output));
+            blocklistFailures += suppressFailures;
             // ★ G1: a grapple a weapon hit starts - native contracts, the grab reader on real blueprints, compiled routes.
             var grappleLines = GrappleCheck.Run(loaded.Values, out int grappleFailures);
             foreach (var line in grappleLines) Console.WriteLine(line);

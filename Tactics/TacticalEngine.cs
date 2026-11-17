@@ -3132,6 +3132,8 @@ namespace CompanionAI_Pathfinder.Tactics
                 bool enemy = caster.IsEnemy(target);
                 foreach (var buff in target.Buffs.Enumerable)
                 {
+                    // ★ suppressed buffs (slice C2): what is suppressed for the rest of its time does nothing.
+                    if (!BuffSuppression.StillMatters(buff)) continue;
                     bool harmful = buff.Blueprint.Harmful ||
                                    (buff.MaybeContext?.MaybeCaster != null && buff.MaybeContext.MaybeCaster.IsEnemy(target));
                     // ★ v0.3.24 (v0.3.23 logs): only what this ability can take off. Any harmful buff counted, so Treat
@@ -4622,6 +4624,21 @@ namespace CompanionAI_Pathfinder.Tactics
                     // ★ v0.3.25 (Psionics): a held state the caster gets back is worth what depends on it (RegainValue, below).
                     if (ally == unit && ability.SourceItem == null && AppliesMarkerState(profile, buffs)) buffs = buffs.Where(b => !RegainsHeldState(unit, profile, b)).ToList();
                     if (buffs.Count == 0) continue;
+                    // ★ suppressed buffs (slice C1): a buff the recipient's form or another effect suppresses the moment it
+                    // arrives does nothing (Buff.OnAttach asks UnitPartBuffSuppress): Enlarge Person or Haste on a wild-shaped
+                    // or Shifter-formed ally, Mirror Image under Elemental Body.
+                    if (BuffSuppression.Readable && buffs.Any(b => BuffSuppression.OnArrival(ability, b, ally)))
+                    {
+                        var suppressed = buffs.FirstOrDefault(b => BuffSuppression.OnArrival(ability, b, ally));
+                        buffs = buffs.Where(b => !BuffSuppression.OnArrival(ability, b, ally)).ToList();
+                        if (buffs.Count == 0)
+                        {
+                            ReportOnce($"suppressed|{CombatMemory.Fight}|{ability.Blueprint.AssetGuid}|{ally.UniqueId}",
+                                () => $"[Buff] {unit.CharacterName}: {ability.Name} on {ally.CharacterName} withheld: {suppressed.name} " +
+                                      $"would be suppressed by {BuffSuppression.SuppressorName(ability, suppressed, ally)}");
+                            continue;
+                        }
+                    }
                     if (buffs.Any(b => ally.Buffs.HasFact(b))) continue;                    // already active
                     // ★ v0.3.8: an enchanting ability whose enchantment is still on the weapon.
                     if (profile.Enchants && profile.EnchantmentsPresent(unit, ally) == true) continue;

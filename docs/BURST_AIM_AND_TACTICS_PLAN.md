@@ -378,6 +378,14 @@ that do nothing.
 
 **Replay.** Cast Haste with Wenduag in a form. She should be skipped, with a logged reason.
 
+**As built (17 November 2026, [BUFF_SUPPRESSION.md](BUFF_SUPPRESSION.md)).**
+- C1 drops suppressed buffs from each recipient's list in `ScoreAbility` rather than inside `AppraiseBuff`. It has the
+  same effect: no value, and no fallback for a plain buff. It also covers toggle grants and out-of-combat upkeep.
+- The school follows the native context: the buff's own, else the ability's, else the buff's `AddSpellSchool`.
+- C2: a cleanse counts a suppressed buff only if it outlasts its suppressor. A cleanse's value is flat per ally, so
+  there is no time share to take. The dispel worth subtracts the suppressed rounds, as planned.
+- The exports hold 337 suppressors (336 counted when planning).
+
 ## 6. Slice D: sneak attack refinements (Feature 2)
 
 **D1. Fortification.** On a sneak attack, a confirmed critical or precise strike, the game rolls d100 against

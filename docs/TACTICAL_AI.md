@@ -6558,3 +6558,28 @@ their orders and hit four allies.
   - 1 added game reference, which resolves.
 - **Package** `test-builds/AI-Control-FACC-v0.3.60-dev-disrupt1-6845b83-UMM-test.zip`, MVID `549869b4`. It includes
   slice A.
+
+## 191. Suppressed buffs, slice C (17 November 2026, Claude; not played)
+
+[Design and replay](BUFF_SUPPRESSION.md), [plan](BURST_AIM_AND_TACTICS_PLAN.md) §5,
+[receipt](competence/BUFF_SUPPRESSION_CHECKS.json). Both modes, valuation only.
+
+- **The game's rule.** Forms and some hexes switch other buffs off while they last (`UnitPartBuffSuppress`). A buff is
+  tested as it is attached, and the game switches it back on when its suppressor ends.
+- **C1.** A buff the recipient would switch off on arrival is worth 0: spells and abilities (`ScoreAbility`), toggle
+  grants (`ToggleValue`) and out-of-combat upkeep (`IsWorthKeepingUp`). One `[Buff] ... withheld` line per fight and
+  recipient names the suppressor.
+- **C2.** A suppressed harmful buff counts for a cleanse only if it outlasts its suppressor
+  (`AbilityProfile.WouldRemoveSomething`, `HasSomethingToDispel`). A dispel counts only its unsuppressed rounds
+  (`DispelValue`).
+- **Code.** Pure rules: `SuppressionRules`. Game side: `BuffSuppression`, which reads the part's four sets through
+  cached field references.
+- **Checks** on `3e70345`:
+  - Release 0 warnings and errors.
+  - 982 unit tests (17 new) and 27 + 18 + 3 script tests.
+  - ProfileAudit exit 0, `BUFF-SUPPRESS` 25. The reader matches the game on all 337 exported suppressors. Every other
+    line is unchanged.
+  - Native harnesses 98/14/10.
+  - 10 added references, all exercised on the real assembly.
+- **Package** `test-builds/AI-Control-FACC-v0.3.60-dev-suppress1-3e70345-UMM-test.zip`, MVID `00a9466f`. It includes
+  slices A and B.
