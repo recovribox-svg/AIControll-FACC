@@ -4638,17 +4638,13 @@ namespace CompanionAI_Pathfinder.Tactics
                     // ★ suppressed buffs (slice C1): a buff the recipient's form or another effect suppresses the moment it
                     // arrives does nothing (Buff.OnAttach asks UnitPartBuffSuppress): Enlarge Person or Haste on a wild-shaped
                     // or Shifter-formed ally, Mirror Image under Elemental Body.
-                    if (BuffSuppression.Readable && buffs.Any(b => BuffSuppression.OnArrival(ability, b, ally)))
+                    buffs = BuffSuppression.FilterOnArrival(ability, buffs, ally, out var suppressed);
+                    if (buffs.Count == 0)
                     {
-                        var suppressed = buffs.FirstOrDefault(b => BuffSuppression.OnArrival(ability, b, ally));
-                        buffs = buffs.Where(b => !BuffSuppression.OnArrival(ability, b, ally)).ToList();
-                        if (buffs.Count == 0)
-                        {
-                            ReportOnce($"suppressed|{CombatMemory.Fight}|{ability.Blueprint.AssetGuid}|{ally.UniqueId}",
-                                () => $"[Buff] {unit.CharacterName}: {ability.Name} on {ally.CharacterName} withheld: {suppressed.name} " +
-                                      $"would be suppressed by {BuffSuppression.SuppressorName(ability, suppressed, ally)}");
-                            continue;
-                        }
+                        ReportOnce($"suppressed|{CombatMemory.Fight}|{ability.Blueprint.AssetGuid}|{ally.UniqueId}",
+                            () => $"[Buff] {unit.CharacterName}: {ability.Name} on {ally.CharacterName} withheld: {suppressed.name} " +
+                                  $"would be suppressed by {BuffSuppression.SuppressorName(ability, suppressed, ally)}");
+                        continue;
                     }
                     if (buffs.Any(b => ally.Buffs.HasFact(b))) continue;                    // already active
                     // ★ v0.3.8: an enchanting ability whose enchantment is still on the weapon.

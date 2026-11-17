@@ -45,6 +45,62 @@ namespace CompanionAI_Pathfinder.Tactics
 
         private static bool s_UnreadableNoted;
 
+        /// <summary>C1 for a recipient's whole buff list: read its part and the cast metadata once. Keep the original
+        /// list when nothing is suppressed; allocate a replacement only at the first suppressed buff.</summary>
+        internal static List<BlueprintBuff> FilterOnArrival(AbilityData ability, List<BlueprintBuff> buffs,
+                                                           UnitEntityData recipient, out BlueprintBuff firstSuppressed)
+        {
+            firstSuppressed = null;
+            if (buffs == null || buffs.Count == 0 || recipient == null) return buffs;
+            try
+            {
+                var part = recipient.Get<UnitPartBuffSuppress>();
+                if (part == null || !CanRead()) return buffs;
+                return Filter(part, buffs, ability?.Blueprint?.SpellDescriptor ?? SpellDescriptor.None,
+                              ability?.SpellSchool ?? SpellSchool.None, out firstSuppressed);
+            }
+            catch (Exception ex)
+            {
+                firstSuppressed = null;
+                Main.Verbose($"[Buff] suppression on {recipient.CharacterName}: {ex.Message}");
+                return buffs;
+            }
+        }
+
+        // Also exercised by the actor-free audit with a part filled through the native PrepareForSuppression API.
+        private static List<BlueprintBuff> Filter(UnitPartBuffSuppress part, List<BlueprintBuff> buffs,
+                                                  SpellDescriptor parent, SpellSchool school, out BlueprintBuff first)
+        {
+            first = null;
+            List<BlueprintBuff> kept = null;
+            for (int i = 0; i < buffs.Count; i++)
+            {
+                var buff = buffs[i];
+                if (buff != null && Suppresses(part, buff, ContextDescriptor(buff, parent), ContextSchool(buff, school)))
+                {
+                    if (kept == null)
+                    {
+                        first = buff;
+                        kept = new List<BlueprintBuff>(buffs.Count - 1);
+                        for (int j = 0; j < i; j++) kept.Add(buffs[j]);
+                    }
+                }
+                else kept?.Add(buff);
+            }
+            return kept ?? buffs;
+        }
+
+        private static bool CanRead()
+        {
+            if (Readable) return true;
+            if (!s_UnreadableNoted)
+            {
+                s_UnreadableNoted = true;
+                Main.Log("[Buff] the game's buff suppression part could not be read; suppressed buffs are not recognized");
+            }
+            return false;
+        }
+
         /// <summary>
         /// C1: <paramref name="buff"/>, applied by <paramref name="ability"/>, would be suppressed on <paramref name="recipient"/>
         /// the moment it is attached (Buff.OnAttach asks the part). Its context takes the ability's descriptor plus its own, and
@@ -75,15 +131,7 @@ namespace CompanionAI_Pathfinder.Tactics
             try { part = recipient.Get<UnitPartBuffSuppress>(); }
             catch { return false; }
             if (part == null) return false;
-            if (!Readable)
-            {
-                if (!s_UnreadableNoted)
-                {
-                    s_UnreadableNoted = true;
-                    Main.Log("[Buff] the game's buff suppression part could not be read; suppressed buffs are not recognized");
-                }
-                return false;
-            }
+            if (!CanRead()) return false;
             try
             {
                 return Suppresses(part, buff, ContextDescriptor(buff, parentDescriptor), ContextSchool(buff, parentSchool));
