@@ -82,6 +82,12 @@ namespace ProfileAudit
                 Check(Calls(Body(engine, "AddWeaponCandidates"), engine, "WeaponDisruptBonus"),
                       "weapon attacks (full, single, walk and attack) gain the disruption bonus");
                 Check(Calls(Body(engine, "ScoreAbility"), engine, "AbilityDisruptBonus"), "damaging abilities gain it per enemy they hit");
+                var modeBodies = engine.GetNestedTypes(Hidden).SelectMany(t => t.GetMethods(Hidden))
+                    .Where(m => m.Name.Contains("<ChooseAttackModes>")).SelectMany(SaveBoostCheck.ReferencedMembers).ToList();
+                Check(Calls(modeBodies, engine, "WeaponDisruptValue") &&
+                      modeBodies.Any(m => m.DeclaringType == typeof(Candidate) && m.Name == "DisruptWalkSeconds") &&
+                      modeBodies.Any(m => m.DeclaringType == typeof(Candidate) && m.Name == "DisruptFactor"),
+                      "weapon mode sets reprice disruption with their own routine and the candidate's timing and survival weight");
                 var bonus = Body(engine, "DisruptBonus");
                 Check(Calls(bonus, typeof(DisruptRules), "FailChance") && Calls(bonus, typeof(DisruptRules), "InTime") &&
                       Calls(bonus, typeof(DisruptRules), "StillCasting"),

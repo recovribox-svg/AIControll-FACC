@@ -148,15 +148,23 @@ namespace CompanionAI_Pathfinder.Tactics
                                                 float walkSeconds, out string tag)
         {
             tag = "";
+            float bonus = WeaponDisruptValue(ctx, enemy, est, full, walkSeconds, out float chance);
+            if (bonus > 0f) tag = $" [breaks {CastingFor(ctx, enemy).Spell.Name} {chance:P0}]";
+            return bonus;
+        }
+
+        /// <summary>The same quote without formatting a label for every attack-mode alternative.</summary>
+        private static float WeaponDisruptValue(TacticalContext ctx, UnitEntityData enemy, WeaponAttackEstimate est, bool full,
+                                                float walkSeconds, out float chance)
+        {
+            chance = 0f;
             var cast = CastingFor(ctx, enemy);
             if (cast == null || est == null) return 0f;
             float distance = ctx.Distance(enemy);
             float at1 = DisruptRules.WeaponHitSeconds(0, walkSeconds, est.IsRanged, distance);
             float at2 = DisruptRules.WeaponHitSeconds(1, walkSeconds, est.IsRanged, distance);
-            float bonus = DisruptBonus(cast, est.FirstHitChance, est.FirstPerHit, at1,
-                                       full && est.Attacks > 1 ? est.SecondHitChance : 0f, est.SecondPerHit, at2, out float chance);
-            if (bonus > 0f) tag = $" [breaks {cast.Spell.Name} {chance:P0}]";
-            return bonus;
+            return DisruptBonus(cast, est.FirstHitChance, est.FirstPerHit, at1,
+                                full && est.Attacks > 1 ? est.SecondHitChance : 0f, est.SecondPerHit, at2, out chance);
         }
 
         /// <summary>
