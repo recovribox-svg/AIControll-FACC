@@ -93,6 +93,8 @@ namespace CompanionAI_Pathfinder.Tactics
             {
                 var context = buff?.Context;
                 if (context == null || !DispelCanTake(dispel, buff)) continue;
+                // ★ suppressed buffs (slice C2): a buff suppressed for the rest of its time is not worth dispelling.
+                if (!BuffSuppression.StillMatters(buff)) continue;
                 if (levelCap && context.SpellLevel > cap) continue;
                 var giver = context.MaybeCaster;
                 if (dispel.OnlyTargetEnemyBuffs && (giver == null || !giver.IsEnemy(ctx.Unit))) continue;

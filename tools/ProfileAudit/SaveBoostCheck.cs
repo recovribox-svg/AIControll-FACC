@@ -74,7 +74,7 @@ namespace ProfileAudit
         private static IEnumerable<MethodBase> CalledMethods(MethodInfo method)
             => ReferencedMembers(method).OfType<MethodBase>();
 
-        internal static IEnumerable<MemberInfo> ReferencedMembers(MethodInfo method)
+        internal static IEnumerable<MemberInfo> ReferencedMembers(MethodBase method)
         {
             var bytes = method.GetMethodBody()?.GetILAsByteArray() ?? throw new InvalidOperationException("No IL body");
             // ★ v0.3.52: a closed generic diagnostic memo still contains field/method tokens with !0/!!0.

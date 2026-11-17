@@ -1947,7 +1947,9 @@ namespace CompanionAI_Pathfinder.Tactics
         /// </summary>
         public bool WouldRemoveSomething(AbilityData ability, UnitEntityData target)
         {
-            return BuffsRemovedFrom(ability, target).Any(b => IsHarmfulFor(b, target));
+            // ★ suppressed buffs (slice C2): a harmful buff suppressed until after it ends (an Ameliorating hex, a form)
+            // does nothing; removing it now gains nothing.
+            return BuffsRemovedFrom(ability, target).Any(b => IsHarmfulFor(b, target) && BuffSuppression.StillMatters(b));
         }
 
         /// <summary>Good buffs on the target this ability would remove (a mode switch such as Overlord ↔ Mortal Guise).</summary>

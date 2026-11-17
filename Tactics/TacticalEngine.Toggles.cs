@@ -660,7 +660,10 @@ namespace CompanionAI_Pathfinder.Tactics
                     }
                 // ★ v0.3.21 (audit review): harmful by what it does too (AbilityProfile.IsHarmfulBuff), not only the flag.
                 var useful = reaching.Where(r => r.Buff != null && !AbilityProfile.IsHarmfulBuff(r.Buff) && !ally.Buffs.HasFact(r.Buff) &&
-                                                 BuffStackingAnalyzer.Analyze(r.Buff, ally).IsEffective).ToList();
+                                                 BuffStackingAnalyzer.Analyze(r.Buff, ally).IsEffective &&
+                                                 // ★ suppressed buffs (slice C1): a grant the bearer's form suppresses does nothing.
+                                                 !BuffSuppression.OnArrival(r.Buff, ally, Kingmaker.Blueprints.Classes.Spells.SpellDescriptor.None,
+                                                                              Kingmaker.Blueprints.Classes.Spells.SpellSchool.None)).ToList();
                 if (useful.Count == 0) continue;
                 float weight = useful.Max(r => r.Weight);
                 var appraisal = toggleCtx != null
