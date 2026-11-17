@@ -415,6 +415,10 @@ namespace ProfileAudit
             foreach (var line in heldWeaponLines) Console.WriteLine(line);
             File.WriteAllText(output, string.Join(Environment.NewLine, heldWeaponLines) + Environment.NewLine + Environment.NewLine + File.ReadAllText(output));
             blocklistFailures += heldWeaponFailures;
+            var buffContextLines = BuffContextCheck.Run(loaded.Values, out int buffContextFailures);
+            foreach (var line in buffContextLines) Console.WriteLine(line);
+            File.WriteAllText(output, string.Join(Environment.NewLine, buffContextLines) + Environment.NewLine + Environment.NewLine + File.ReadAllText(output));
+            blocklistFailures += buffContextFailures;
             var griffonLines = GriffonAttackCheck.Run(loaded.Values, out int griffonFailures);
             foreach (var line in griffonLines) Console.WriteLine(line);
             File.WriteAllText(output, string.Join(Environment.NewLine, griffonLines) + Environment.NewLine + Environment.NewLine + File.ReadAllText(output));

@@ -1,0 +1,33 @@
+{
+  "build_label": "review2fix1",
+  "kind": "development-test",
+  "version": "0.3.60",
+  "source_branch": "codex/review2-playtest",
+  "source_commit": "d669ec1bb0af2b0a7d5df872e19db9c1cbe6ae93",
+  "stack_head": "29cfc4ef6cda16d803fc31e6869d8c75834abfcb",
+  "development_base": "ad63ee8690ad47e74bfad54ba65c13810e4b5316",
+  "dll": {
+    "assembly": "CompanionAI_Pathfinder, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null",
+    "mvid": "e1aa77fe-fef8-4496-aae9-9c751d2974ec",
+    "sha256": "481374d702065512f0bf7b605a4133050f8471064061c57a41ecbe0ebfaa8bda",
+    "size": 1525248
+  },
+  "archive": "AI-Control-FACC-v0.3.60-dev-review2fix1-d669ec1-UMM-test.zip",
+  "zip_sha256": "e2a3d3922c62c0dcc3415a0254facc3bbc15a661957b852f064326824216905e",
+  "manifest_sha256": "63ad9f152d4bacb44f021428193efad46aaf0d13380bb5691ebca1d935f2b5bf",
+  "checks_receipt": "docs/competence/REVIEW2_PLAYTEST_CHECKS.json",
+  "build_provenance": "docs/competence/REVIEW2_PLAYTEST_BUILD_PROVENANCE.json",
+  "build_provenance_sha256": "4b555c721ee588d5df044096f330696cbb4281f2c88f24c3ed1a13c52ea02e34",
+  "toolchain": {
+    "dotnet_sdk": "8.0.426",
+    "csharp_compiler": "4.11.0-3.25569.22 (3fb752d4)"
+  },
+  "scope": "Cumulative PRs #81-90 plus behavior-preserving constant-stat context elision and initial-fight ledger accounting. Death-trigger risk remains a proposal.",
+  "gameplay_status": "new package unplayed; review2-f0b6097 playtest reviewed",
+  "release": false,
+  "archive_contents": [
+    "CompanionAI_Pathfinder.dll",
+    "Info.json"
+  ],
+  "identity_note": "Checked DLL is frozen across later documentation commits. No cross-machine byte identity or measured Unity speed-up claimed."
+}

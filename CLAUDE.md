@@ -8,7 +8,38 @@ Read [CONTRIBUTING.md](CONTRIBUTING.md) for shared branch ownership, Codex pull 
 Codex works on task branches and targets pull requests at `claude/dreamy-pasteur-b9h3rn`; Claude reviews and integrates them there.
 Keep `main` for author-authorized releases. Read [AGENTS.md](AGENTS.md) when coordinating agent work.
 
-**Current handover (17 November 2026, Codex): critical review of draft PRs #86–89 on
+**Current handover (17 November 2026, Codex): review2 playtest review on `codex/review2-playtest`, stacked on
+PR #90 `29cfc4e`. Nothing merged.** Read [docs/REVIEW2_PLAYTEST.md](docs/REVIEW2_PLAYTEST.md), §199,
+[inputs](docs/competence/REVIEW2_PLAYTEST_INPUTS.json), [checks](docs/competence/REVIEW2_PLAYTEST_CHECKS.json) and
+[compiler/reference provenance](docs/competence/REVIEW2_PLAYTEST_BUILD_PROVENANCE.json).
+
+- Played **review2-f0b6097**, module **`0c600255`**: **13 fights, 643 TB / 669 RT decisions**. ToyBox spawns, rests between
+  fights, Grabber left to the engine. One successful TB Death from Above (hit and grapple), seven grapple releases,
+  two walk-in burst cancellations. No AI exception. Invocation **62 issues / 61 acted**, with contextual transfers;
+  no arbitrary cap or stronger settling policy is added. The RT form case retains the form option; healing wins at 4% HP.
+- **New high-impact gap:** two Risen Follower death sequences cause **485 of 501** party damage in the final fight.
+  Native `DeathActions`/cast chains and actual payloads confirmed. See
+  [death-trigger safety proposal](docs/DEATH_TRIGGER_SAFETY_PROPOSAL.md). Not implemented: flat kill penalties can stop
+  progress; complete policy, terminal outcomes and any movement need design/author approval. No additional files needed
+  for the initial scoped investigation. Do not call this gap fixed by the new ZIP.
+- **Implemented performance correction:** completely read permanent constant stat buffs omit an unused preview context,
+  with all twelve invocations checked. Same appraisal/stacking/holder/sibling/settling rules; unknown/ranked/timed/
+  equipment effects retain context. No actor cache, scoring weights, extra rule/world query or movement change. The
+  warm eligibility predicate allocates zero bytes in the offline host; no Unity speed-up claim.
+- **Tool correction:** InvocationLedger counts the initial combat fragment (scope 0) as well as twelve later starts;
+  casts/classifications/sequences unchanged. **21 ledger tests** (three new).
+- Checked source **`d669ec1`**, startup MVID **`e1aa77fe-fef8-4496-aae9-9c751d2974ec`**. Release **0 warnings/errors**, **1,044 unit + 27/21/3 scripts**,
+  new **BUFF-CONTEXT 39**, inherited **A61/B48/C35/D34**, native **98/14/10** with Psionics, Magus **44** pass. All previous
+  audit rows, both **8,709/15,494** Fusion matrices and summon-kit detail equal the frozen played review2 on identical
+  inputs. **0 added/removed native signatures**. Raw Achaekek enum failure remains an explicit negative test.
+- Next package: [review2fix1](test-builds/AI-Control-FACC-v0.3.60-dev-review2fix1-d669ec1-UMM-test.zip), **UMM 0.3.60**, SHA-256
+  `e2a3d3922c62c0dcc3415a0254facc3bbc15a661957b852f064326824216905e`; frozen checked DLL through later docs commits, identity/checksum sidecars. New package unplayed. Replay
+  ordinary TB/RT invocations and timed/equipment buffs, then the earlier targeted cases. Send **Log.txt + combatLog.txt**,
+  startup module and spawn/rest/manual-order context. Death explosions and REVIEW_86_89 R1–R7 limits remain.
+- [Draft PR #91](https://github.com/recovribox-svg/AIControll-FACC/pull/91) targets development and follows **#81 → … → #90**, after author clearance. No merge,
+  Claude-branch/development/main push, tag or release; no PR polling/reminders.
+
+**Earlier handover (17 November 2026, Codex): critical review of draft PRs #86–89 on
 `codex/review-86-89`, stacked on #89 `32943a6`. Nothing merged or played.** Read
 [docs/REVIEW_86_89.md](docs/REVIEW_86_89.md), `docs/TACTICAL_AI.md` §198,
 [checks](docs/competence/REVIEW_86_89_CHECKS.json) and

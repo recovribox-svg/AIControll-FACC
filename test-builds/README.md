@@ -1,5 +1,23 @@
 # Test builds
 
+## Next review candidate: v0.3.60 review2fix1 — permanent stat preview work (d669ec1), unplayed
+
+[UMM test ZIP](AI-Control-FACC-v0.3.60-dev-review2fix1-d669ec1-UMM-test.zip?raw=true) · [Identity](AI-Control-FACC-v0.3.60-dev-review2fix1-d669ec1-UMM-test.identity.json) · [Checksum](AI-Control-FACC-v0.3.60-dev-review2fix1-d669ec1-UMM-test.sha256) · [Review/replay](../docs/REVIEW2_PLAYTEST.md) · [Checks](../docs/competence/REVIEW2_PLAYTEST_CHECKS.json)
+
+Complete #81–90 stack plus a behavior-preserving optimization: completely read permanent constant stat appraisals
+(including all twelve invocations) omit unused preview contexts. No invocation cap or scoring/movement change. The
+offline ledger now counts the missing opening fight. **Enemy death explosions remain unpriced**; see the review and
+[proposal](../docs/DEATH_TRIGGER_SAFETY_PROPOSAL.md), alongside inherited engagement/watch/timing limits.
+
+UMM **0.3.60**, checked source **`d669ec1`**, startup module **`e1aa77fe-fef8-4496-aae9-9c751d2974ec`**.
+ZIP SHA-256 `e2a3d3922c62c0dcc3415a0254facc3bbc15a661957b852f064326824216905e`. Real-reference Release **0 warnings/errors**, **1,044 unit + 27/21/3 scripts**,
+**BUFF-CONTEXT 39**, native **98/14/10**, Magus **44** pass. All existing report rows, Fusion matrices and summon-kit
+detail equal the played review2 on identical inputs. [Provenance](../docs/competence/REVIEW2_PLAYTEST_BUILD_PROVENANCE.json).
+
+Only the frozen mod DLL and unchanged Info.json are included. Replay ordinary TB/RT invocations and timed/equipment
+buffs; send both logs with startup module and spawn/rest/manual-order context. No measured Unity speed-up, merge or
+stable release is claimed. Earlier entries retain their own historical package identities.
+
 ## Next review candidate: v0.3.60 review2 — corrections over PRs #81–89 (f0b6097), unplayed
 
 [UMM test ZIP](AI-Control-FACC-v0.3.60-dev-review2-f0b6097-UMM-test.zip?raw=true) · [Identity](AI-Control-FACC-v0.3.60-dev-review2-f0b6097-UMM-test.identity.json) · [Checksum](AI-Control-FACC-v0.3.60-dev-review2-f0b6097-UMM-test.sha256) · [Review and replay](../docs/REVIEW_86_89.md) · [Checks](../docs/competence/REVIEW_86_89_CHECKS.json)

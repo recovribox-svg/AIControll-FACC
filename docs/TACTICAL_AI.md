@@ -6770,3 +6770,40 @@ negative test, not hidden. SDK **8.0.426 / Roslyn 4.11**, full hashes in provena
 **Play [review2](../test-builds/AI-Control-FACC-v0.3.60-dev-review2-f0b6097-UMM-test.zip?raw=true)**, UMM **0.3.60**,
 SHA-256 `3e8e46b97994ad21281e7e06ef67096a4b21021a13689284316f75ee7bad9b4b`. Identity/checksum sidecars; frozen DLL through later documentation commits. Nothing merged,
 tagged or released. Follow the review's both-mode replay, then author clearance; merge correction after #81–89 only.
+
+
+## 199. Review2 playtest and constant-stat preview work (17 November 2026, Codex)
+
+[Review/replay](REVIEW2_PLAYTEST.md), [inputs](competence/REVIEW2_PLAYTEST_INPUTS.json),
+[checks](competence/REVIEW2_PLAYTEST_CHECKS.json), [provenance](competence/REVIEW2_PLAYTEST_BUILD_PROVENANCE.json).
+Played review2 `f0b6097` / module `0c600255`; **13 fights, 643 TB / 669 RT ordinary decisions**. Spawns and between-fight
+rests, Grabber left to the engine. No AI exception. The opening fight lacks its start marker; the ledger now counts it
+without changing its scope 0 or cast/transfer evidence.
+
+- One Wenduag TB leap acts and hits/grapples; two RT burst casts cancel for walk-in allies. The 91.1 RT form remains
+  offered at 85.3 after Aspect; healing at 4% HP wins, and later horizon/attacks change the value. This does not prove
+  every older form or timing case. Watch peak is one; overflow and the marginal ordered-hit disruption tag are unexercised.
+- Invocation **62 issues / 61 acted** has first placements, settled/override moves and unseen-holder cases. A cross-tier
+  shortcut is not equivalent because it would remove Intelligence from Drow Magus. No blanket spam cap or retuning.
+- Ability-stage work is material in 149 slow rows. `AppraiseBuff` now skips an unused execution context only for
+  completely read, permanent, constant stat parts and exact native application actions. Rank/dice/pool/context-dependent,
+  timed, unknown and equipment paths retain context. Same appraisal kernel, stacking, holder/sibling losses, settling and
+  roles. No actor cache or extra world/rule work. Concrete metadata enumeration removes the boxed LINQ iterator.
+- New **BUFF-CONTEXT 39** checks execute eligibility and production +2/permanent duration on all twelve variants, reject
+  unsupported paths and measure **0 bytes / 10,000 warm predicate calls** offline. They do not benchmark Unity or a full
+  appraisal. Three new ledger tests cover the missing opening start; suite **21**.
+- **Unpriced terminal harm:** final-fight Risen Followers deal **485 of 501** enemy party damage after death. Their
+  actual buffs/abilities and native death callbacks are confirmed. [Concrete proposal](DEATH_TRIGGER_SAFETY_PROPOSAL.md)
+  includes activation/ownership, native damage/save/dispel reuse, bounded shared reads and a mandatory progress policy.
+  No death-risk score or movement response is implemented; arbitrary kill penalties can stall the last enemy.
+
+New checked source **`d669ec1`**, MVID **`e1aa77fe-fef8-4496-aae9-9c751d2974ec`**: real-reference Release **0 warnings/errors**, **1,044 unit**,
+**27/21/3 scripts**, ProfileAudit **BUFF-CONTEXT 39 + A61/B48/C35/D34**, native **98/14/10** with Psionics, supplementary
+**Magus 44**. All existing report rows, full Fusion matrices and summon-kit detail are byte-identical to the played
+review2 baseline on the same inputs. **0 added/removed native signatures**. Compiler/reference hashes recorded; raw
+Achaekek enum mismatch remains a known negative input test.
+
+[review2fix1 UMM test ZIP](../test-builds/AI-Control-FACC-v0.3.60-dev-review2fix1-d669ec1-UMM-test.zip?raw=true), UMM **0.3.60**,
+SHA-256 `e2a3d3922c62c0dcc3415a0254facc3bbc15a661957b852f064326824216905e`. Identity/checksum sidecars; frozen DLL through later docs commits. New package unplayed. Follow
+the review's TB/RT replay; inherited R1–R7 and the death-trigger proposal remain. No merge, main/development push, tag or
+release. Draft task PR follows #81–90 only after author clearance.

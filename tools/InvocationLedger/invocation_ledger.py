@@ -92,6 +92,7 @@ def round_number(label):
 def parse(lines):
     """One pass over the log: fights, decisions, notes and the issued casts with their outcomes."""
     fight = 0
+    initial_fight_without_start = False
     holders = {}            # caster -> {(stat, tier): unit name}; native uniqueness is per caster
     holder_lines = {}       # caster -> {(stat, tier): latest observed state row}
     unread_stats = {}       # caster -> {stat: latest acted unidentified cast}; older state is uncertain
@@ -120,6 +121,12 @@ def parse(lines):
             selected.clear()
             chosen.clear()
             continue
+        # A log can begin while the party is already fighting (review2). Preserve its existing scope id 0 and all
+        # transfer evidence; count that observed combat fragment as well as later explicit start markers. Startup and
+        # out-of-combat permanent-buff messages alone do not establish a fight. Never infer an unlogged cast.
+        if fight == 0 and not initial_fight_without_start and any(pattern.match(text) for pattern in
+                (RE_DECISION, RE_REVIVE, RE_KEPT, RE_CHOSEN, RE_ISSUED)):
+            initial_fight_without_start = True
         m = RE_DECISION.match(text)
         if m:
             unit = name(m.group('unit'))
@@ -236,7 +243,8 @@ def parse(lines):
             if cast['sibling'] and own.get(cast['sibling']) == cast['recipient']:
                 own[cast['sibling']] = None
                 witnesses[cast['sibling']] = number
-    return dict(casts=casts, decisions=decisions, revives=revives, fight_start_holders=fight_start_holders, fights=fight)
+    return dict(casts=casts, decisions=decisions, revives=revives, fight_start_holders=fight_start_holders,
+                fights=fight + int(initial_fight_without_start), initial_fight_without_start=initial_fight_without_start)
 
 
 def holder_evidence(cast, decisions, revives):
@@ -372,7 +380,8 @@ def build(lines):
     for r in rows:
         base = r['kind'].split(' ')[0]
         counts[base] = counts.get(base, 0) + 1
-    return dict(fights=data['fights'], issued=len(rows), acted=sum(1 for c in data['casts'] if c.get('acted')),
+    return dict(fights=data['fights'], initial_fight_without_start=data['initial_fight_without_start'],
+                issued=len(rows), acted=sum(1 for c in data['casts'] if c.get('acted')),
                 counts=counts, flags=flags, rows=rows, sequences=sequences(data['casts']),
                 fight_start_holders={f: {f'{k[0]}: {k[1]} {k[2]}': v for k, v in h.items()}
                                      for f, h in data['fight_start_holders'].items()})
@@ -384,6 +393,8 @@ def markdown(ledger):
            (', '.join(f'{k} {v}' for k, v in sorted(ledger['flags'].items())) or 'none'), '',
            '| line | fight | mode | round | enemies | buff | recipient | net | gross | engine holder (loss) | sibling (loss) | outcome | class | evidence |',
            '|---|---|---|---|---|---|---|---|---|---|---|---|---|---|']
+    if ledger.get('initial_fight_without_start'):
+        out[1:1] = ['Initial combat fragment has no start marker; its existing fight id is 0 and is included in the count.', '']
     for r in ledger['rows']:
         holder = f"{r['engine_holder']} ({r['holder_loss']})" if r['engine_holder'] else ''
         sibling = f"{r['sibling']} ({r['sibling_loss']})" if r['sibling'] else ''
