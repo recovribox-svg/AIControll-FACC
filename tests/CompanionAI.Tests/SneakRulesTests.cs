@@ -49,9 +49,10 @@ namespace CompanionAI.Tests
         [InlineData(false, true, 1.5f, 3f, false, false)]      // reach weapon beyond the threat hand: no engagement
         [InlineData(false, true, 1.5f, 1.5f, true, false)]     // invisible target, no See Invisibility
         [InlineData(false, false, 1.5f, 1.5f, false, false)]   // cannot act or no threat hand
-        [InlineData(false, true, 1.495f, 1.5f, false, true)]   // within float tolerance
+        [InlineData(false, true, 1.495f, 1.5f, false, false)]  // genuinely shorter; native ranges do not gain an extra centimetre
+        [InlineData(false, true, 1.499999f, 1.5f, false, false)]
         [InlineData(false, true, float.NaN, 1.5f, false, false)]
-        public void EngagementFollowsTheNativeConditions(bool engagedNow, bool canEngage, float threat, float attack,
+        public void EngagementProjectionChecksNativeStateAndRangeCompatibility(bool engagedNow, bool canEngage, float threat, float attack,
                                                          bool concealed, bool expected)
         {
             Assert.Equal(expected, SneakRules.WillEngage(engagedNow, canEngage, threat, attack, concealed));

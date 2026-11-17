@@ -35,17 +35,14 @@ namespace CompanionAI_Pathfinder.Tactics
         /// <summary>
         /// ★ review follow-up F1 (docs/REVIEW_FOLLOWUPS_PLAN.md, D-R1): a melee attacker becomes an engager of its target when
         /// the attack lands. The game's own engagement state answers it when the attacker engages the target already
-        /// (reach, sight and concealment proven by UnitCombatEngagementController). Otherwise the attack lands inside its
-        /// approach radius (bodies + weapon range), which is inside engagement reach (bodies + threat range) only when the
-        /// threat range covers the weapon's; and total concealment absent now stays absent closer in (it only falls with
-        /// distance in UnitPartConcealment.Calculate). Present now, it may lift on arrival: no credit, conservatively.
+        /// (reach, sight and concealment checked by UnitCombatEngagementController). Otherwise this checks only range
+        /// compatibility and current concealment. Native attack readiness uses mechanics distance plus LOS, while threat
+        /// reach uses 3D distance: a range comparison alone cannot prove future engagement. With fixed facts/weapon,
+        /// the stock distance gates remove concealment when closing; later fact/weapon changes are not forecast here.
         /// </summary>
         public static bool WillEngage(bool engagedNow, bool canEngage, float threatRange, float attackRange, bool totallyConcealedNow) =>
             engagedNow || canEngage && !totallyConcealedNow && !float.IsNaN(threatRange) && !float.IsNaN(attackRange) &&
-            threatRange + ReachTolerance >= attackRange;
-
-        /// <summary>Metres: float noise between two ranges read from the same Feet values.</summary>
-        public const float ReachTolerance = 0.01f;
+            threatRange >= attackRange;
 
         /// <summary>
         /// What one of a partner's attack lines gains once the target is flanked: the difference between native-derived
