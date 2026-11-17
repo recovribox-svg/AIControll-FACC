@@ -110,6 +110,48 @@ namespace ProfileAudit
                       "production disruption rejects a hit inside the cast's final timing margin");
                 Check(Math.Abs(Quote(0.4f, 11f, 0.7f, 0.4f) - 7.84f) < 1e-4,
                       "production disruption combines two timely hits without counting a cast break twice");
+
+                // ★ review follow-up F2: the native attack schedule and allied hits already ordered.
+                var tick = Body(typeof(UnitAttack), "OnTick");
+                Check(tick.Any(m => m.Name == "m_AnimationsDuration") && tick.Any(m => m.Name == "m_AttackIndex") &&
+                      tick.Any(m => m.Name == "GetAnimationStyle") && tick.Any(m => m.Name == "get_IsSequential") &&
+                      Calls(tick, typeof(UnitCommand), "get_TimeSinceStart"),
+                      "F2: real time, attack k starts k x window / N into the command; bow-style and sequenced attacks chain");
+                Check(Body(typeof(UnitAttack), "Init").Any(m => m.Name == "m_AnimationsDuration"),
+                      "F2: the attack window is set when the command is initialised (6 s)");
+                Check(Calls(Body(typeof(UnitCommand), "Tick"), typeof(UnitCommand), "set_TimeSinceStart") &&
+                      Calls(Body(typeof(UnitCommand), "Start"), typeof(UnitCommand), "set_IsStarted"),
+                      "F2: a command's time counts from its start, after any approach");
+                var value = Body(engine, "WeaponDisruptValue");
+                Check(Calls(value, typeof(DisruptRules), "SwingSpacing") && Calls(value, engine, "ChainedAttacks") &&
+                      Calls(value, engine, "AfterOrderedHits") && Calls(Body(engine, "AbilityDisruptBonus"), engine, "AfterOrderedHits"),
+                      "F2: weapon and ability disruption use the native spacing and the allied hits already ordered");
+                var others = Body(engine, "OthersStill");
+                Check(others.Any(m => m.Name == "get_Standard") && Calls(others, typeof(UnitAttack), "get_IsAttackFull") &&
+                      Calls(others, typeof(UnitAttack), "GetAttackIndex") && Calls(others, typeof(UnitCommand), "get_TimeSinceStart") &&
+                      Calls(others, typeof(UnitCommand), "get_IsStarted") && Calls(others, typeof(DisruptRules), "RunningHitSeconds") &&
+                      Calls(others, typeof(DisruptRules), "InTime") && Calls(others, typeof(DisruptRules), "FailChance"),
+                      "F2: allies' running or approaching attacks on the caster are read from their commands, on the same rules");
+                Check(Body(engine, "ReadCasting").Any(m => m.Name == "OthersRead"),
+                      "F2: the allied hits are read again at every decision");
+                var after = engine.GetMethod("AfterOrderedHits", Hidden);
+                float After(float othersStill, float own, float chance0, out float chance1)
+                {
+                    Set("OthersRead", true); Set("OthersStill", othersStill);
+                    object[] args = { null, null, cast, own, chance0 };
+                    float v = (float)after.Invoke(null, args);
+                    chance1 = (float)args[4];
+                    return v;
+                }
+                float soloValue = Quote(0.4f, 11f, 0.7f);
+                float shared = After(0.5f, soloValue, 0.04f, out float sharedChance);
+                float alone = After(1f, soloValue, 0.04f, out float aloneChance);
+                Check(Math.Abs(shared - 2f) < 1e-4 && Math.Abs(sharedChance - 0.02f) < 1e-5 &&
+                      Math.Abs(alone - soloValue) < 1e-4 && Math.Abs(aloneChance - 0.04f) < 1e-5,
+                      "F2: production aggregator: an ally's ordered hit surviving half the time halves this hit's break value");
+                Check(DisruptRules.SwingSpacing(3, false) == 2f && DisruptRules.SwingSpacing(3, true) == DisruptRules.NextSwingSeconds &&
+                      !DisruptRules.InTime(DisruptRules.WeaponHitSeconds(1, 0f, false, 2f, DisruptRules.SwingSpacing(3, false)), 2f),
+                      "F2: a 3-attack routine's second hit lands too late for a 2 s cast");
             }
             catch (Exception ex)
             {

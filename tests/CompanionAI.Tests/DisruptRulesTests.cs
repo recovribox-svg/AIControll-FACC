@@ -48,10 +48,57 @@ namespace CompanionAI.Tests
         [Fact]
         public void WeaponHitsLandAfterLatencyWalkSwingsAndFlight()
         {
-            Assert.Equal(0.7f, DisruptRules.WeaponHitSeconds(0, 0f, false, 2f), 4);
-            Assert.Equal(1.4f, DisruptRules.WeaponHitSeconds(1, 0f, false, 2f), 4);
-            Assert.Equal(1.2f, DisruptRules.WeaponHitSeconds(0, 0f, true, 15f), 4);   // + 15 m / 30 m/s
-            Assert.Equal(2.7f, DisruptRules.WeaponHitSeconds(0, 2f, false, 2f), 4);
+            float chained = DisruptRules.NextSwingSeconds;
+            Assert.Equal(0.7f, DisruptRules.WeaponHitSeconds(0, 0f, false, 2f, chained), 4);
+            Assert.Equal(1.4f, DisruptRules.WeaponHitSeconds(1, 0f, false, 2f, chained), 4);
+            Assert.Equal(1.2f, DisruptRules.WeaponHitSeconds(0, 0f, true, 15f, chained), 4);   // + 15 m / 30 m/s
+            Assert.Equal(2.7f, DisruptRules.WeaponHitSeconds(0, 2f, false, 2f, chained), 4);
+        }
+
+        [Theory]
+        // attacks in the routine, chained (bow / animation sequence) -> seconds between two attacks (UnitAttack.OnTick)
+        [InlineData(1, false, 0.7f)]
+        [InlineData(2, false, 3f)]
+        [InlineData(3, false, 2f)]
+        [InlineData(4, false, 1.5f)]
+        [InlineData(6, false, 1f)]
+        [InlineData(3, true, 0.7f)]
+        public void AttacksFollowTheNativeSchedule(int attacks, bool chained, float spacing)
+        {
+            Assert.Equal(spacing, DisruptRules.SwingSpacing(attacks, chained), 4);
+        }
+
+        [Fact]
+        public void AFullAttacksSecondHitUsuallyMissesAShortCast()
+        {
+            // Three iterative attacks: the second starts 2 s in, too late for a standard 2 s cast. A fixed 0.7 s swing said in time.
+            float spacing = DisruptRules.SwingSpacing(3, false);
+            Assert.False(DisruptRules.InTime(DisruptRules.WeaponHitSeconds(1, 0f, false, 2f, spacing), 2f));
+            Assert.True(DisruptRules.InTime(DisruptRules.WeaponHitSeconds(1, 0f, false, 2f, DisruptRules.NextSwingSeconds), 2f));
+            Assert.True(DisruptRules.InTime(DisruptRules.WeaponHitSeconds(0, 0f, false, 2f, spacing), 2f));   // the first still counts
+        }
+
+        [Fact]
+        public void AnAllysRunningAttackLandsOnItsSchedule()
+        {
+            // 3-attack routine, 1 s into the command, next attack index 1: it starts at 2 s, lands 0.6 s later
+            Assert.Equal(1.6f, DisruptRules.RunningHitSeconds(1, 1, 2f, 1f, false, false, 2f), 4);
+            Assert.Equal(0f, DisruptRules.RunningHitSeconds(0, 0, 2f, 1f, false, false, 2f), 4);          // under way: lands now
+            Assert.Equal(1.3f, DisruptRules.RunningHitSeconds(2, 1, 0.7f, 5f, true, false, 2f), 4);        // chained: one after the next
+            Assert.Equal(1.1f, DisruptRules.RunningHitSeconds(0, 0, 0.7f, 0f, true, true, 15f), 4);        // + 15 m / 30 m/s flight
+        }
+
+        [Fact]
+        public void APendingAlliedHitLeavesOnlyTheMarginalBreak()
+        {
+            // no other hits ordered: the full value
+            Assert.Equal(DisruptRules.Value(0.5f, 100f), DisruptRules.MarginalValue(0.5f, 1f, 100f), 4);
+            // an ally's hit already breaks it half the time: this one adds 25, so both together are worth 75, not 100
+            Assert.Equal(25f, DisruptRules.MarginalValue(0.5f, 0.5f, 100f), 4);
+            Assert.Equal(75f, DisruptRules.Value(0.5f, 100f) + DisruptRules.MarginalValue(0.5f, 0.5f, 100f), 4);
+            // the others surely break it: nothing to add
+            Assert.Equal(0f, DisruptRules.MarginalValue(0.2f, 0f, 100f), 4);
+            Assert.Equal(0f, DisruptRules.MarginalValue(float.NaN, 0.5f, 100f), 4);
         }
 
         [Fact]

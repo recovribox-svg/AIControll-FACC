@@ -19,8 +19,19 @@ namespace CompanionAI_Pathfinder.Tactics
         /// <summary>From a weapon attack starting to its first hit (an estimate; the replay measures it).</summary>
         public const float FirstSwingSeconds = 0.6f;
 
-        /// <summary>Between two attacks of one routine (an estimate; the replay measures it).</summary>
+        /// <summary>Between two attacks that follow each other at once: a bow's, or an animation sequence's (an estimate).</summary>
         public const float NextSwingSeconds = 0.7f;
+
+        /// <summary>
+        /// ★ review follow-up F2: real time, UnitAttack spreads a routine's attacks over its 6 s animation window
+        /// (m_AnimationsDuration): the k-th starts k × 6 / N seconds into the command (UnitAttack.OnTick). Bow-style attacks
+        /// and an animation sequence start as soon as the previous one acts instead.
+        /// </summary>
+        public const float RoutineWindowSeconds = 6f;
+
+        /// <summary>Seconds between two attacks of an <paramref name="attacks"/>-attack routine, by the native schedule.</summary>
+        public static float SwingSpacing(int attacks, bool chained) =>
+            chained || attacks <= 1 ? NextSwingSeconds : RoutineWindowSeconds / attacks;
 
         /// <summary>The speed of an arrow or bolt in flight, in m/s (an estimate).</summary>
         public const float MissileSpeed = 30f;
@@ -59,14 +70,30 @@ namespace CompanionAI_Pathfinder.Tactics
 
         /// <summary>
         /// When the <paramref name="index"/>-th attack of a weapon routine lands, from the decision: the command starting, the
-        /// walk, the swings before it and, for a missile, its flight over <paramref name="distance"/>.
+        /// walk, the attacks before it (<paramref name="spacing"/> apart, <see cref="SwingSpacing"/>) and, for a missile, its
+        /// flight over <paramref name="distance"/>.
         /// </summary>
-        public static float WeaponHitSeconds(int index, float walkSeconds, bool ranged, float distance)
+        public static float WeaponHitSeconds(int index, float walkSeconds, bool ranged, float distance, float spacing)
         {
-            float t = CommandLatencySeconds + Math.Max(0f, walkSeconds) + FirstSwingSeconds + Math.Max(0, index) * NextSwingSeconds;
-            if (ranged && distance > 0f && !float.IsInfinity(distance)) t += distance / MissileSpeed;
-            return t;
+            float t = CommandLatencySeconds + Math.Max(0f, walkSeconds) + FirstSwingSeconds + Math.Max(0, index) * Math.Max(0f, spacing);
+            return t + Flight(ranged, distance);
         }
+
+        /// <summary>
+        /// ★ F2: when attack <paramref name="index"/> of an ally's routine that is already running lands, from now. On the
+        /// native schedule it starts index × spacing into the command; a chained attack (bow, animation sequence) starts as
+        /// the one before it acts, taken as now for the next one.
+        /// </summary>
+        public static float RunningHitSeconds(int index, int nextIndex, float spacing, float elapsed, bool chained, bool ranged, float distance)
+        {
+            float t = chained
+                ? FirstSwingSeconds + Math.Max(0, index - nextIndex) * Math.Max(0f, spacing)
+                : Math.Max(0f, index * Math.Max(0f, spacing) + FirstSwingSeconds - Math.Max(0f, elapsed));
+            return t + Flight(ranged, distance);
+        }
+
+        private static float Flight(bool ranged, float distance) =>
+            ranged && distance > 0f && !float.IsInfinity(distance) ? distance / MissileSpeed : 0f;
 
         /// <summary>When an ability lands: the command starting, the walk, its own cast time and its delivery lag.</summary>
         public static float AbilityHitSeconds(float walkSeconds, float castSeconds, float lagSeconds) =>
@@ -80,6 +107,16 @@ namespace CompanionAI_Pathfinder.Tactics
 
         /// <summary>The value of breaking the cast: the chance it is broken times what it would cost.</summary>
         public static float Value(float stillCasting, float stakes) => (1f - Clamp01(stillCasting)) * Math.Max(0f, stakes);
+
+        /// <summary>
+        /// ★ F2: what this action adds when allies' hits already ordered leave the cast going with <paramref name="othersStill"/>.
+        /// Breaks are independent, so P(broken by anyone) − P(broken by the others alone) = othersStill × (1 − ourStill),
+        /// whichever lands first. With no other hits pending it is <see cref="Value"/>.
+        /// </summary>
+        public static float MarginalValue(float ourStill, float othersStill, float stakes) =>
+            (float.IsNaN(othersStill) ? 1f : Clamp01(othersStill)) *     // unknown others: as if none were ordered
+            (1f - (float.IsNaN(ourStill) ? 1f : Clamp01(ourStill))) *    // unknown own chance: no break claimed
+            Math.Max(0f, stakes);
 
         private static float Clamp01(float v) => v < 0f ? 0f : v > 1f ? 1f : float.IsNaN(v) ? 0f : v;
     }

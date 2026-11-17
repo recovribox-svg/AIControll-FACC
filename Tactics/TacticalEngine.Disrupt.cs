@@ -12,6 +12,7 @@ using Kingmaker.EntitySystem.Entities;
 using Kingmaker.UnitLogic.Abilities;
 using Kingmaker.UnitLogic.Commands;
 using Kingmaker.UnitLogic.Commands.Base;
+using Kingmaker.View.Animation;
 using UnityEngine;
 
 namespace CompanionAI_Pathfinder.Tactics
@@ -30,6 +31,13 @@ namespace CompanionAI_Pathfinder.Tactics
             public string Victim;
             /// <summary>Seconds until the cast goes off, at this decision.</summary>
             public float SecondsLeft;
+            /// <summary>
+            /// ★ review follow-up F2: the chance the cast survives the hits allies have already been ordered to make on the
+            /// caster, and how many of them land in time. Read lazily once per decision (reset in ReadCasting).
+            /// </summary>
+            public float OthersStill = 1f;
+            public int OthersHits;
+            public bool OthersRead;
         }
 
         // Per running cast: its spell, parameters and stakes are read once (weak: the command goes when it ends).
@@ -68,6 +76,7 @@ namespace CompanionAI_Pathfinder.Tactics
                         CastInfos.Add(use, info);
                     }
                     info.SecondsLeft = left;
+                    info.OthersRead = false;   // allies' orders change between decisions
                     map[enemy] = info;
                     if (fresh) NoteCast(enemy, info);
                 }
@@ -149,7 +158,12 @@ namespace CompanionAI_Pathfinder.Tactics
         {
             tag = "";
             float bonus = WeaponDisruptValue(ctx, enemy, est, full, walkSeconds, out float chance);
-            if (bonus > 0f) tag = $" [breaks {CastingFor(ctx, enemy).Spell.Name} {chance:P0}]";
+            if (bonus > 0f)
+            {
+                var cast = CastingFor(ctx, enemy);
+                tag = $" [breaks {cast.Spell.Name} {chance:P0}" +
+                      (cast.OthersHits > 0 ? $" more, after {cast.OthersHits} allied hit{(cast.OthersHits == 1 ? "" : "s")} already ordered]" : "]");
+            }
             return bonus;
         }
 
@@ -161,10 +175,95 @@ namespace CompanionAI_Pathfinder.Tactics
             var cast = CastingFor(ctx, enemy);
             if (cast == null || est == null) return 0f;
             float distance = ctx.Distance(enemy);
-            float at1 = DisruptRules.WeaponHitSeconds(0, walkSeconds, est.IsRanged, distance);
-            float at2 = DisruptRules.WeaponHitSeconds(1, walkSeconds, est.IsRanged, distance);
-            return DisruptBonus(cast, est.FirstHitChance, est.FirstPerHit, at1,
-                                full && est.Attacks > 1 ? est.SecondHitChance : 0f, est.SecondPerHit, at2, out chance);
+            // ★ F2: the second attack follows on the native schedule (6 s / N apart unless chained), not a fixed swing.
+            float spacing = DisruptRules.SwingSpacing(est.Attacks, ChainedAttacks(ctx.Unit, est.Weapon));
+            float at1 = DisruptRules.WeaponHitSeconds(0, walkSeconds, est.IsRanged, distance, spacing);
+            float at2 = DisruptRules.WeaponHitSeconds(1, walkSeconds, est.IsRanged, distance, spacing);
+            float own = DisruptBonus(cast, est.FirstHitChance, est.FirstPerHit, at1,
+                                     full && est.Attacks > 1 ? est.SecondHitChance : 0f, est.SecondPerHit, at2, out chance);
+            return AfterOrderedHits(ctx, enemy, cast, own, ref chance);
+        }
+
+        /// <summary>
+        /// ★ F2 (docs/REVIEW_FOLLOWUPS_PLAN.md, B-R1): this action's own break value, given the hits allies have already been
+        /// ordered to make on the caster. Breaks are independent, so it adds others-survive × our-break-chance × stakes
+        /// (DisruptRules.MarginalValue); <paramref name="chance"/> becomes that added chance. Nothing is reserved for actions
+        /// not yet chosen.
+        /// </summary>
+        private static float AfterOrderedHits(TacticalContext ctx, UnitEntityData enemy, CastInfo cast, float own, ref float chance)
+        {
+            if (!(own > 0f)) return own;
+            float others = OthersStill(ctx, enemy, cast);
+            if (others >= 1f) return own;
+            float value = DisruptRules.MarginalValue(1f - chance, others, cast.Stakes);
+            chance *= others;
+            return value;
+        }
+
+        /// <summary>
+        /// ★ F2: the chance <paramref name="enemy"/>'s cast survives the weapon hits allies have already been ordered to make on
+        /// it - their running or approaching UnitAttack - each by its routine estimate, the concentration rule and the
+        /// native attack schedule, counting only hits in time (at most two per ally). Once per cast and decision.
+        /// </summary>
+        private static float OthersStill(TacticalContext ctx, UnitEntityData enemy, CastInfo cast)
+        {
+            if (cast.OthersRead) return cast.OthersStill;
+            cast.OthersRead = true;
+            float still = 1f;
+            int hits = 0;
+            foreach (var ally in ctx.Allies)
+            {
+                if (ally == null || ally == ctx.Unit) continue;
+                try
+                {
+                    if (!(ally.Commands?.Standard is UnitAttack attack) || attack.IsFinished || attack.TargetUnit != enemy) continue;
+                    var est = CombatMath.EstimateWeaponAttack(ally, enemy, attack.IsAttackFull);
+                    if (est == null) continue;
+                    int attacks = attack.AllAttacks.Count > 0 ? attack.AllAttacks.Count : est.Attacks;
+                    bool chained = ChainedAttacks(ally, est.Weapon);
+                    float spacing = DisruptRules.SwingSpacing(attacks, chained);
+                    float distance = HorizontalDistance(ally.Position, enemy.Position);
+                    int next = attack.IsStarted ? attack.GetAttackIndex() : 0;
+                    float walk = attack.IsStarted ? 0f : BurstRules.WalkSeconds(distance, est.Reach, ally.CurrentSpeedMps);
+                    for (int k = next, counted = 0; k < attacks && counted < DisruptRules.MaxHits; k++, counted++)
+                    {
+                        float at = attack.IsStarted
+                            ? DisruptRules.RunningHitSeconds(k, next, spacing, attack.TimeSinceStart, chained, est.IsRanged, distance)
+                            : DisruptRules.WeaponHitSeconds(k, walk, est.IsRanged, distance, spacing) - DisruptRules.CommandLatencySeconds;
+                        if (!DisruptRules.InTime(at, cast.SecondsLeft)) continue;
+                        float hit = k == 0 ? est.FirstHitChance : est.SecondHitChance;
+                        float damage = k == 0 ? est.FirstPerHit : est.SecondPerHit;
+                        if (!(hit > 0f)) continue;
+                        still = DisruptRules.StillCasting(still, hit, DisruptRules.FailChance(cast.SpellLevel, damage, cast.Concentration));
+                        hits++;
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Main.Verbose($"[Disrupt] reading {ally.CharacterName}'s ordered attack: {ex.Message}");
+                }
+            }
+            cast.OthersStill = still;
+            cast.OthersHits = hits;
+            return still;
+        }
+
+        /// <summary>
+        /// ★ F2: attacks that start as soon as the previous one acts (UnitAttack.OnTick): a bow-style weapon, or a unit whose
+        /// animation set has attack sequences. Others follow the 6 s / N schedule.
+        /// </summary>
+        private static bool ChainedAttacks(UnitEntityData unit, Kingmaker.Items.ItemEntityWeapon weapon)
+        {
+            try
+            {
+                if (weapon != null && weapon.GetAnimationStyle() == WeaponAnimationStyle.Bow) return true;
+                var sequences = unit?.View?.AnimationManager?.AnimationSet?.Sequences;
+                return sequences != null && sequences.Count > 0;
+            }
+            catch
+            {
+                return true;   // unknown: keep the shorter, older spacing
+            }
         }
 
         /// <summary>
@@ -179,7 +278,8 @@ namespace CompanionAI_Pathfinder.Tactics
             float walk = HorizontalDistance(ctx.Unit.Position, castOrigin) / Math.Max(BurstRules.MinWalkSpeed, ctx.Unit.CurrentSpeedMps);
             float lag = profile.DeliverDelaySeconds + FlightSecondsTo(profile, castOrigin, enemy.Position);
             float at = DisruptRules.AbilityHitSeconds(walk, CastSecondsOf(ability, true), lag);
-            return DisruptBonus(cast, hitChance, damage, at, 0f, 0f, float.MaxValue, out _);
+            float own = DisruptBonus(cast, hitChance, damage, at, 0f, 0f, float.MaxValue, out float chance);
+            return AfterOrderedHits(ctx, enemy, cast, own, ref chance);   // ★ F2
         }
     }
 }
