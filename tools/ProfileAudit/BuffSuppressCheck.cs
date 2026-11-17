@@ -77,9 +77,15 @@ namespace ProfileAudit
                       contextInit.Any(m => m is MethodInfo mi && mi.IsGenericMethod && mi.Name == "GetComponent" &&
                                            mi.GetGenericArguments()[0] == typeof(Kingmaker.UnitLogic.Buffs.Components.AddSpellSchool)),
                       "a context's descriptor adds its blueprint's component to the parent's; its school falls back to AddSpellSchool");
-                Check(Calls(Body(typeof(AbilityExecutionContext).GetConstructors(BindingFlags.Instance | BindingFlags.Public)
-                                     .Single(c => c.GetParameters().Length == 5)), typeof(AbilityData), "get_SpellSchool"),
+                var abilityInit = Body(typeof(AbilityExecutionContext).GetConstructors(BindingFlags.Instance | BindingFlags.Public)
+                    .Single(c => c.GetParameters().Length == 5));
+                Check(Calls(abilityInit, typeof(AbilityData), "get_SpellSchool"),
                       "an ability's context takes the ability's school (a fusion's own)");
+                Check(abilityInit.Any(m => m is FieldInfo && m.DeclaringType == typeof(AbilityData) && m.Name == "Blueprint") &&
+                      abilityInit.Any(m => m is ConstructorInfo && m.DeclaringType == typeof(MechanicsContext)) &&
+                      !Calls(abilityInit, typeof(AbilityData), "get_SpellDescriptor") &&
+                      !Calls(abilityInit, typeof(MechanicsContext), "set_SpellDescriptor"),
+                      "native casts inherit the blueprint descriptor; they do not replace it with AbilityData's fused descriptor union");
 
                 // --- the reader on real suppressors ---
                 var reader = typeof(TacticalEngine).Assembly.GetType("CompanionAI_Pathfinder.Tactics.BuffSuppression") ??
@@ -211,11 +217,12 @@ namespace ProfileAudit
                       Calls(toggleValue, typeof(MechanicsContext), "get_SpellDescriptor") &&
                       Calls(toggleValue, typeof(MechanicsContext), "get_SpellSchool"),
                       "C1: aura grants inherit the toggle context through the area instead of assuming an empty parent");
-                var areaSpawn = Body(Method(typeof(Kingmaker.Controllers.AreaEffectsController), "Spawn",
-                    typeof(MechanicsContext), typeof(Kingmaker.UnitLogic.Abilities.Blueprints.BlueprintAbilityAreaEffect),
-                    typeof(Kingmaker.Utility.TargetWrapper), typeof(TimeSpan?), typeof(bool)));
-                Check(Calls(areaSpawn, typeof(MechanicsContext), "CloneFor"),
-                      "native area spawning clones its supplied buff context for the area blueprint");
+                // AreaEffectsController.Spawn's CloneFor call was inspected in the supplied native IL. Reflecting its
+                // entire body also resolves unrelated scene types from firstpass, which these inputs do not include.
+                // Test the child-context contract directly; do not turn an absent optional scene assembly into a skip.
+                Check(Body(Method(typeof(MechanicsContext), "CloneFor")).Any(m =>
+                          m is ConstructorInfo && m.DeclaringType == typeof(MechanicsContext)),
+                      "native context cloning constructs a child context for the supplied blueprint");
                 var plainGrant = buffs.First(b => b.GetComponent<SpellDescriptorComponent>() == null &&
                     b.GetComponent<SpellComponent>() == null && b.GetComponent<Kingmaker.UnitLogic.Buffs.Components.AddSpellSchool>() == null);
                 var inheritedPart = new UnitPartBuffSuppress();
