@@ -253,7 +253,10 @@ namespace CompanionAI_Pathfinder.Tactics
             // No source context can turn an empty/unread list into numerical parts. Equipment carriers are the two
             // exceptions below: they can add parts from their enchantments, so retain their complete appraisal path.
             if (!HasReadableParts(parts) && !BuffContextAddsEquipmentParts(profile, buffs)) return result;
-            var abilityCtx = CombatMath.CreateContext(ability, new Kingmaker.Utility.TargetWrapper(ally));
+            // Permanent constant stat parts use neither the context nor caster level. Keep the same appraisal kernel,
+            // stacking, held/sibling losses and recipient rules; skip only the unused native context construction.
+            var abilityCtx = CanSkipBuffContext(profile, buffs, parts, unread) ? null :
+                CombatMath.CreateContext(ability, new Kingmaker.Utility.TargetWrapper(ally));
             // ★ v0.3.21: the weapon enchantments it puts on the recipient's weapon (Magic Weapon, Keen Edge, oils, Holy
             // Sword): their parts, for the weapon each one goes on. A buff that only carries one (Keen Edge's is empty) is
             // valued by the enchantment.
@@ -673,9 +676,15 @@ namespace CompanionAI_Pathfinder.Tactics
             return result;
         }
 
-        internal static bool BuffContextAddsEquipmentParts(AbilityProfile profile, List<BlueprintBuff> buffs) =>
-            profile.WeaponEnchants.Count > 0 || buffs.Any(b =>
-                Kingmaker.Blueprints.BlueprintExtenstions.GetComponent<Kingmaker.UnitLogic.FactLogic.BuffEnchantArmor>(b) != null);
+        internal static bool BuffContextAddsEquipmentParts(AbilityProfile profile, List<BlueprintBuff> buffs)
+        {
+            if (profile.WeaponEnchants.Count > 0) return true;
+            // List's concrete enumerator avoids the boxed LINQ enumeration in this now-hot metadata predicate.
+            foreach (var buff in buffs)
+                if (Kingmaker.Blueprints.BlueprintExtenstions.GetComponent<Kingmaker.UnitLogic.FactLogic.BuffEnchantArmor>(buff) != null)
+                    return true;
+            return false;
+        }
 
         /// <summary>
         /// The real duration in rounds the ability gives <paramref name="buff"/>: its DurationValue worked out with the

@@ -49,6 +49,31 @@ def kinds(result):
 
 
 class LedgerTests(unittest.TestCase):
+    def test_initial_combat_fragment_counts_without_renumbering_transfer_scopes(self):
+        log = (decide('Lann', 'R1') + cast('Strength', 1, 'Archer') +
+               [P + '★★★ Party combat ended ★★★'] + fight() + decide('Lann', 'R1') +
+               cast('Strength', 1, 'Fighter', 'from Archer -1.0+buff'))
+        result = ledger.build(log)
+        self.assertEqual(result['fights'], 2)
+        self.assertTrue(result['initial_fight_without_start'])
+        self.assertEqual([r['fight'] for r in result['rows']], [0, 1])
+        self.assertEqual(kinds(result), ['first-placement', 'move-settled'])
+        self.assertIn('fight id is 0', ledger.markdown(result))
+
+    def test_startup_and_out_of_combat_rows_do_not_invent_a_fight(self):
+        startup = [P + '[Build] v0.3.60 module=example',
+                   P + '[RT] Lann: Out-of-combat permanent buff (example)']
+        empty = ledger.build(startup)
+        self.assertEqual(empty['fights'], 0)
+        self.assertFalse(empty['initial_fight_without_start'])
+        started = ledger.build(startup + fight() + decide('Lann', 'RT1'))
+        self.assertEqual(started['fights'], 1)
+        self.assertFalse(started['initial_fight_without_start'])
+
+    def test_unmatched_completion_is_not_evidence_of_an_issued_cast_or_fight(self):
+        result = ledger.build(cast('Strength', 1, 'Archer')[-1:])
+        self.assertEqual((result['fights'], result['issued'], result['acted']), (0, 0, 0))
+
     def test_first_placement_sibling_and_settled_move(self):
         log = (fight() + kept('Dexterity', 1, 'Aeiluvetar') + decide('Lann', 'R1') +
                cast('Charisma', 1, 'Camellia') +
