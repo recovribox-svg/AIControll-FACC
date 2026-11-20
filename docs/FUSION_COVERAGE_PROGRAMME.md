@@ -100,7 +100,7 @@ ten. **Verified** against the coverage report.
 | Snowball / Shocking Grasp | 4 of 4 | yes | — |
 | Explosive Runes / Blindness | 8 of 8 | yes | — |
 | Explosive Runes / Frigid Touch | 8 of 8 | yes | — |
-| Explosive Runes / Hideous Laughter | **0 of 8** | — | withheld: the Best Jokes recast (C2) |
+| Explosive Runes / Hideous Laughter | **0 of 8** | — | withheld: the Best Jokes recast (C2). **Offered 8 of 8 with the joint value since C2.** |
 | Explosive Runes / Sleep | 4 of 4 | yes | — |
 | Explosive Runes / Color Spray | 8 of 8 | yes | — |
 
@@ -138,7 +138,15 @@ risk.
 - **Expected coverage (verified by the audit run, see the slice page).** Molten Orb and Acid Arrow configurations
   offered with the joint value. The burning of arcan's Incendiary Runes fusions is priced.
 
-### C2. Hideous Laughter's Best Jokes recast (426; arcan's Explosive Runes / Hideous Laughter)
+### C2. Hideous Laughter's Best Jokes recast (426; arcan's Explosive Runes / Hideous Laughter) — **implemented**
+
+**Done (20 November 2026, [COVERAGE2_BUILD.md](COVERAGE2_BUILD.md)):**
+- The proposal below was simplified: whether or not the caster has the fact, the recast gets no credit and no ally cost,
+  so no caster check is needed.
+- Only a selector whose every action is a spell cast, and that keeps only the caster's enemies, qualifies
+  (`AbilityProfile.IsEnemyOnlyRecast`). The fused profile does not read the recast.
+- Offered 9,209 → 9,587; joint value 5,039 → 5,321.
+
 
 - **Native contract (verified).** On a failed save Hideous Laughter applies its laughter buff. If the caster has the
   fact `ec739ff2` (Best Jokes), it also casts Hideous Laughter itself on one random enemy around that is not already
@@ -151,7 +159,12 @@ risk.
     enemy, weighted by `1 / eligible enemies`.
 - **Acceptance.** Explosive Runes / Hideous Laughter offered, with the joint value, for a caster without the fact.
 
-### C3. Disintegrate's "below this HP" marker (418)
+### C3. Disintegrate's "below this HP" marker (418) — **waits for the author**
+
+The marker (`DisintegrateBuff`) kills a creature below 0 HP at its next round tick. On an enemy that is only a kill that
+the damage already prices, except where regeneration would otherwise only knock it out. On an ally caught by a fused
+area, it turns a knockout into a permanent death. How heavily to weigh that is a policy decision for the author.
+
 
 - **Native contract (verified).** After each damage action, `Conditional(ContextConditionCompareTargetHP Less)` applies a
   permanent buff (`f7a6a7d2`, the dust). The guard reads the HP left after the damage.
@@ -165,7 +178,14 @@ risk.
   Selective) shared by fusions and ordinary lines. Aim it like the cone adapter (`TacticalEngine.ConeAim.cs`), with a
   bounded set of turns past allies. This needs the native line query read from the assembly first.
 
-### C5. Non-HP damage in the joint value (280 withheld, 736 on the simpler value)
+### C5. Non-HP damage in the joint value (280 withheld, 736 on the simpler value) — **implemented**
+
+**Done (20 November 2026):**
+- Ability damage and negative levels join the shared-save outcomes as their HP equivalent (`DrainEquivalent`); a provider
+  or a kill stays out.
+- Joint value 5,321 → 5,651, mostly Wracking Ray.
+- Enervation stays withheld: its undead branch grants temporary HP.
+
 
 - **Proposal.** Carry drain and ability damage through `FusionDamageRead` per outcome, using the existing
   `DrainEquivalent`. Enervation's undead branch heals: it already reads per recipient. The value of a passed save keeps
@@ -206,7 +226,7 @@ risk.
 - **Proposal.** Fusion F4S: Vampiric Touch's temporary HP on the caster through the existing buff appraisal, never more
   than its marginal worth.
 
-### Cross-cutting: damage over time on ordinary spells
+### Cross-cutting: damage over time on ordinary spells — **implemented** ([PERIODIC_DAMAGE.md](PERIODIC_DAMAGE.md))
 
 - **Proposal.** Use C1's periodic carrier pricing for ordinary spells too (Acid Arrow, Molten Orb and the like cast
   unfused). It changes ordinary spell values broadly, so it is its own slice, with a before/after table of affected

@@ -6860,3 +6860,35 @@ valuation only. Not played.
   - Native harnesses 98/14/10; 1 reference added, 1 removed.
 - **Package** `test-builds/AI-Control-FACC-v0.3.60-dev-fusiondot1-83ac4c1-UMM-test.zip`, MVID `add36407`.
 - **Next:** C2, Hideous Laughter's Best Jokes recast (arcan's Explosive Runes / Hideous Laughter).
+
+## 202. coverage2: R1–R7 decided, R2/R5, evidence logging, Fusion C2/C5, ordinary damage over time (20 November 2026, Claude)
+
+[Assessment](R_ITEMS_PLAN.md), [build page](COVERAGE2_BUILD.md), [receipt](competence/COVERAGE2_CHECKS.json). At the author's
+request: decide which of Codex's R1–R7 are worth doing; do now what needs no playtest; collect the evidence for the rest.
+The death-trigger proposal is set aside.
+
+- **R2.** The landing spot is registered for every real-time burst before admission. Only re-checks are capped (64), and
+  in-flight bursts have a memory guard (256). Nothing is dropped to make room, so a turn-based landing wait is never lost.
+- **R5.** For the burst forecast only, a started attack that keeps chasing its target counts as walking: native
+  `UnitCommandController.TickCommand` calls `TickApproaching` when `CanMoveAfterStart`. `WalkingCommand` and the spot
+  rules are unchanged.
+- **Evidence** (read only, one line per fight):
+  - `[Burst]`: cast time error, anchor at landing, ally walk-ins with no control price.
+  - `[Timing]` (`TimelineObserver`): swing timing; break forecasts against the actual first attack and cast end.
+  - `[Flank]`: the forecast against `TargetIsFlanked` / `IsFlanked` at the roll.
+- **R1, R3, R4** wait for that evidence. **R6 and R7** are not worth doing yet.
+- **Fusion C2.** Hideous Laughter's enemy-only random recast gets no credit and no ally harm, and the fused profile skips
+  it.
+- **Fusion C5.** Ability damage and negative levels join the joint value by their HP equivalent.
+- **Ordinary damage over time.** Carriers outside a save branch are priced as damage for six ordinary abilities, including
+  Acid Arrow, Molten Orb, Alchemist's Fire and Vrock Spores; the guessed debuff goes.
+- **Coverage:** offered 9,655 and joint 5,651, none lost. All eight fusions on arcan's bar are offered with the joint
+  value.
+- **Checks** on `72acfd1`:
+  - Release 0 warnings; 1,052 unit + 27/21/3 script tests.
+  - ProfileAudit sections: `BURST-AIM` 67, `EVIDENCE` 13, `FUSION-RECAST` 12, `FUSION-DOT` 42, `PERIODIC` 8 and
+    `FUSION-OUTCOME` 33. Every other line is unchanged, apart from the audit's own classification of the six ordinary
+    carrier abilities and the Vrock Spores summon line.
+  - Native harnesses 98/14/10; 4 references added, all present.
+- **Package** `test-builds/AI-Control-FACC-v0.3.60-dev-coverage2-72acfd1-UMM-test.zip`, MVID `5cfd7765`.
+- **Waits for the author:** C3 (Disintegrate, ally death policy).
