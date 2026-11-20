@@ -483,6 +483,7 @@ namespace CompanionAI_Pathfinder.GameInterface
             SummonControl.NewFight();
             Analysis.AoeDangerAnalyzer.ClearPending();
             Tactics.BurstWatch.Clear();   // ★ burst aim
+            Tactics.TimelineObserver.Clear();   // ★ evidence (docs/R_ITEMS_PLAN.md)
             CompanionAI_Pathfinder.Analysis.AbilityClassifier.ResetCombatReports();
             Tactics.CoverageReport.NewFight();
         }
@@ -503,6 +504,7 @@ namespace CompanionAI_Pathfinder.GameInterface
             Tactics.DamageObserver.ReportFight();
             Tactics.EnemyThreat.ReportFight();   // ★ v0.3.20 (test4)
             Tactics.BurstWatch.ReportFight();   // ★ burst follow-up A-P1: watch counts for the fight
+            Tactics.TimelineObserver.ReportFight();   // ★ evidence (docs/R_ITEMS_PLAN.md): timing, breaks and flanks
             Tactics.EnemyThreat.Clear();
             // ★ v0.3.17: analysis caches of this fight's units (they are per frame now; this only frees them)
             CompanionAI_Pathfinder.Analysis.CombatRulesAnalyzer.ClearCache();

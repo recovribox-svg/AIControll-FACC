@@ -1,0 +1,90 @@
+{
+ "task": "coverage2: R2/R5 and evidence logging (docs/R_ITEMS_PLAN.md), Fusion coverage C2 and C5, damage over time on ordinary spells; on top of Fusion C1 (PR #92)",
+ "date": "2026-11-20",
+ "author": "Claude",
+ "branches": {
+  "C1": "claude/fusion-coverage-programme @ 09b1315",
+  "R items": "claude/review-r-items @ 816c136",
+  "C2/C5/ordinary DoT": "claude/fusion-coverage-c2-c5 @ 72acfd1"
+ },
+ "development_base": "0019856805605c9b74e27ffbdfa6b8dd9c20b0f2",
+ "checked_source": "72acfd173f92db7708fb60a0b5f5e0620b5868f0",
+ "toolchain": {
+  "dotnet_sdk": "8.0.428",
+  "csharp_compiler": "4.11.0-3.25569.22 (3fb752d4)",
+  "provenance": "docs/competence/COVERAGE2_BUILD_PROVENANCE.json"
+ },
+ "release_build": "0 warnings, 0 errors (real game references)",
+ "unit_tests": "1,052 pass (no pure rule added in this build beyond C1's)",
+ "script_tests": {
+  "BlueprintInventory": 27,
+  "InvocationLedger": 21,
+  "ProfileAudit supplement": 3
+ },
+ "profileaudit": {
+  "exit": 0,
+  "new_or_changed_sections": {
+   "BURST-AIM": "67 checks (was 61): R2 capacity rule run on a full production list, R5 native and route checks, evidence routes",
+   "EVIDENCE": "13 checks (new): native events TimelineObserver reads, its routes, read-only",
+   "FUSION-RECAST": "12 checks (new): Hideous Laughter's enemy-only recast, arcan's Explosive Runes / Hideous Laughter",
+   "FUSION-DOT": "42 checks (was 39): C5 Wracking Ray joint value, Enervation still withheld by its undead branch",
+   "PERIODIC": "8 checks (new): ordinary damage over time; 6 ordinary abilities priced, 5 with a carrier behind a save keep the older rule",
+   "FUSION-OUTCOME": "33 checks: the Enervation gate now names its remaining reason (carrier)"
+  },
+  "other_lines": "unchanged except the audit's own classification of the six ordinary carrier abilities (guessed debuff -> damage over time)",
+  "summon_kit_detail": "two lines change: Vrock Spores (VrockSummon, CR9_VrockStandard) is now valued with its damage over time",
+  "report_sha256": "149dd435d3995147c4f955a020d49d89bb2b0bcad72e9a8144f784d92d29c362",
+  "coverage_sha256": "4b8a648f1e4a5d5ac8e8f14a80df9644001a3590db549b3a73dc78af3acdfc7f"
+ },
+ "fusion_coverage": {
+  "configurations": 15494,
+  "offered": {
+   "development": 8709,
+   "C1": 9209,
+   "C2": 9587,
+   "C5": 9655,
+   "lost": 0
+  },
+  "joint_value": {
+   "development": 4521,
+   "C1": 5039,
+   "C2": 5321,
+   "C5": 5651,
+   "lost": 0
+  },
+  "arcan_bar": "8 of 8 fusions offered with the joint value (Explosive Runes / Hideous Laughter added by C2)"
+ },
+ "native_harnesses": {
+  "ToggleCosts": 98,
+  "TomeBurn": 14,
+  "ToyBoxSpend": 10
+ },
+ "signatures": {
+  "relative_to": "C1 build (83ac4c1)",
+  "removed": [],
+  "added": [
+   "ContextActionOnRandomTargetsAround::Actions",
+   "ContextActionOnRandomTargetsAround::OnEnemies",
+   "RuleAttackRoll::get_TargetIsFlanked",
+   "UnitCommand::get_CanMoveAfterStart"
+  ],
+  "note": "all present in the supplied Assembly-CSharp"
+ },
+ "not_run": [
+  "Supplementary Magus 44 corpus: inputs not in this environment; no Magus code is touched"
+ ],
+ "package": {
+  "zip": "test-builds/AI-Control-FACC-v0.3.60-dev-coverage2-72acfd1-UMM-test.zip",
+  "identity": "test-builds/AI-Control-FACC-v0.3.60-dev-coverage2-72acfd1-UMM-test.identity.json",
+  "sha256": "test-builds/AI-Control-FACC-v0.3.60-dev-coverage2-72acfd1-UMM-test.sha256",
+  "mvid": "5cfd7765-2f1c-487d-8945-dde2c78a643b",
+  "zip_sha256": "52094aad69a59587c55f20aeaad10eed7febd6967af3e5195f5ba27b9c7be3ff",
+  "dll_sha256": "0171a2ad2511c177593dfde40710f68ebeb044fc31d5c6cfe9f5cb6421d57c5b"
+ },
+ "manifest": "0.3.60, unchanged; no main, tag or release change; nothing merged",
+ "not_tested": [
+  "Gameplay: unplayed. Offline checks create no unit, command, cast, tick or roll.",
+  "The evidence lines are diagnostics: their counts come only from play.",
+  "C3 (Disintegrate) is not done: pricing a permanent ally death needs the author's policy."
+ ]
+}

@@ -245,7 +245,12 @@ namespace ProfileAudit
                 if (p.Maneuvers.Count > 0) modelled.Add("maneuver");
                 if (p.IsWeaponAttack) modelled.Add("weapon attack");
                 if (p.MeleeAttack != null && !p.OnlyMeleeAttack) modelled.Add("melee attack");
-                if (p.TargetBuffs.Count > 0 || p.Pit != null)
+                // ★ damage over time (docs/PERIODIC_DAMAGE.md): every target buff a priced damage carrier - no control to guess.
+                bool carriersOnly = (bool)typeof(CompanionAI_Pathfinder.Tactics.TacticalEngine)
+                    .GetMethod("CarriersOnly", System.Reflection.BindingFlags.Static | System.Reflection.BindingFlags.NonPublic)
+                    .Invoke(null, new object[] { p });
+                if (carriersOnly) modelled.Add("damage over time");
+                else if (p.TargetBuffs.Count > 0 || p.Pit != null)
                 {
                     bool mark = !p.HarmfulEffects && p.ControlStrength == ControlStrength.None;
                     if (mark && p.IsAoE) { }

@@ -2406,13 +2406,16 @@ namespace CompanionAI_Pathfinder.Tactics
         /// </summary>
         /// ★ v0.3.21 (gaps): against a regenerating enemy whose regeneration runs, a kill is only a knock-down unless
         /// <paramref name="endsRegeneration"/> (ValueModel.RegeneratingKill).
-        private static float DamageValue(UnitEntityData enemy, float expectedDamage, float landChance, bool endsRegeneration = false)
+        private static float DamageValue(UnitEntityData enemy, float expectedDamage, float landChance, bool endsRegeneration = false,
+                                         float laterDamage = 0f)
         {
-            if (expectedDamage <= 0f) return 0f;
+            // ★ damage over time (docs/PERIODIC_DAMAGE.md): later ticks count for HP and progress, capped at the HP left; the
+            // chance to kill now stays with the immediate damage. Without them the value is unchanged.
+            if (expectedDamage <= 0f && !(laterDamage > 0f)) return 0f;
             float hp = Math.Max(1, enemy.HPLeft);
-            float kill = landChance > 0f ? ValueModel.KillChance(landChance, expectedDamage / landChance, hp) : 0f;
+            float kill = landChance > 0f && expectedDamage > 0f ? ValueModel.KillChance(landChance, expectedDamage / landChance, hp) : 0f;
             kill = ValueModel.RegeneratingKill(kill, RegenerationRuns(enemy), endsRegeneration);
-            return ValueModel.DamageValue(expectedDamage, hp, CombatMath.TargetWorth(enemy), kill);
+            return ValueModel.DamageValue(expectedDamage + Math.Max(0f, laterDamage), hp, CombatMath.TargetWorth(enemy), kill);
         }
 
         /// <summary>★ v0.3.21 (gaps): its regeneration keeps it alive now (not stopped this round by fire, acid...).</summary>
@@ -4070,7 +4073,9 @@ namespace CompanionAI_Pathfinder.Tactics
             }
 
             // --- damage ---
-            if (profile.DealsDamage && affectedEnemies.Count > 0)
+            // ★ damage over time (docs/PERIODIC_DAMAGE.md): a spell whose only payload is a burning or acid buff is damage too.
+            bool periodic = HasPeriodicCarrier(profile);
+            if ((profile.DealsDamage || periodic) && affectedEnemies.Count > 0)
             {
                 float dmgValue = 0f;
                 float disrupt = 0f;   // ★ cast disruption: kept apart from the damage the friendly-fire rule weighs
@@ -4097,7 +4102,9 @@ namespace CompanionAI_Pathfinder.Tactics
                     }
                     else
                     {
-                        part = DamageValue(enemy, dmg * p, p, CombatMath.AbilityEndsRegeneration(profile, enemy)) * WakeFactor(enemy, dmg * p);
+                        // ★ damage over time: the ticks it leaves, when it lands - HP and progress, not a kill now.
+                        float later = periodic ? p * PeriodicExpected(ability, profile, enemy, PeriodicHorizon(ctx), false) : 0f;
+                        part = DamageValue(enemy, dmg * p, p, CombatMath.AbilityEndsRegeneration(profile, enemy), later) * WakeFactor(enemy, dmg * p);
                         if (profile.Fusion != null) FusionValueFallback(ability, profile);
                     }
                     float beneficialChance = part > 0f ? p * CombatMath.FusionDamageChance(ability, enemy, profile) : 0f;
@@ -4161,6 +4168,8 @@ namespace CompanionAI_Pathfinder.Tactics
                     foreach (var a in hurt)
                     {
                         float dmg = CombatMath.EstimateAbilityDamage(ability, profile, a);
+                        // ★ Fusion coverage C1: and the damage over time the cast leaves on it (burning, acid).
+                        dmg += PeriodicAllyDamage(ability, profile, a, PeriodicHorizon(ctx));
                         if (dmg <= 0f) continue;
                         allyCost += a.HPLeft <= 0 ? AllyWorth(ctx, a) : Math.Min(dmg, a.HPLeft) * 2f;
                         (caughtNames ?? (caughtNames = new List<string>())).Add(a.CharacterName + WalkingInTag(walkingIn, a));
@@ -4297,7 +4306,8 @@ namespace CompanionAI_Pathfinder.Tactics
             // --- control / debuffs / marks on enemies ---
             // Harmful buffs are debuffs or crowd control; a non-harmful buff placed on an enemy is a "mark" that helps
             // us against it (Smite Evil, judgements, studied target...) and is worth less than a real debuff.
-            if ((profile.TargetBuffs.Count > 0 || profile.Pit != null) && affectedEnemies.Count > 0)
+            // ★ damage over time: a cast whose every target buff is a priced damage carrier has no control to value here.
+            if ((profile.TargetBuffs.Count > 0 || profile.Pit != null) && affectedEnemies.Count > 0 && !CarriersOnly(profile))
             {
                 float controlValue = 0f;
                 // ★ v0.3.21 (audit review): what it applies counts too (HarmfulEffects): Crushing Despair, Prayer's enemy half,
@@ -5858,6 +5868,7 @@ namespace CompanionAI_Pathfinder.Tactics
                 }
                 else CastOutcome.Forget(unit);   // its attacks must not count as the last ability's effect
             }
+            if (issued) TimelineObserver.NoteIssued(unit, c, command);   // ★ evidence (docs/R_ITEMS_PLAN.md): read only
             return issued;
         }
 

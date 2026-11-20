@@ -98,10 +98,11 @@ namespace ProfileAudit
                           ((string)reason.GetValue(profile) ?? "").Contains(expected),
                         $"{a}/{b} ({save}) stays withheld by the outcome gate for '{expected}' (withheld: {why ?? "no"}, reason: {reason.GetValue(profile) ?? "none"})");
                 }
-                Gate("Fireball", "MoltenOrb", SavingThrowType.Reflex, "ContextConditionIsMainTarget");
+                // ★ Fusion coverage C1: Molten Orb's main-target guard is read now; FUSION-DOT checks it is offered.
                 Gate("Fireball", "Disintegrate", SavingThrowType.Reflex, "ContextConditionCompareTargetHP");
                 Gate("Fireball", "ReducePerson", SavingThrowType.Reflex, "carrier");
-                Gate("Fireball", "Enervation", SavingThrowType.Reflex, "non-HP damage");
+                // ★ Fusion coverage C5: its negative levels are read now; its undead branch (temporary HP) still withholds it.
+                Gate("Fireball", "Enervation", SavingThrowType.Reflex, "carrier");
                 var line = Fuse("LightningBolt", "Fireball", SavingThrowType.Reflex);
                 Check((string)unsupported.GetValue(AbilityProfile.Get(line)) == "line delivery geometry" && Withheld(line) == "line delivery geometry",
                     "an unrelated structural refusal (line delivery) is unchanged and reported as itself");

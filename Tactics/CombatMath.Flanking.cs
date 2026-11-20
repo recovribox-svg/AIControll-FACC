@@ -86,6 +86,17 @@ namespace CompanionAI_Pathfinder.Tactics
         }
 
         /// <summary>
+        /// ★ evidence (docs/R_ITEMS_PLAN.md, R1): the same forecast for an issued attack, compared with the game's answer at the
+        /// roll (TimelineObserver). <paramref name="bySecond"/>: the forecast rests on this attack being the second engager.
+        /// </summary>
+        internal static bool ForecastFlank(UnitEntityData unit, UnitEntityData target, ItemEntityWeapon weapon, out bool bySecond)
+        {
+            bySecond = false;
+            try { return unit != null && target != null && PredictFlank(unit, target, weapon, out bySecond, out _); }
+            catch { return false; }
+        }
+
+        /// <summary>
         /// D2: whether <paramref name="target"/> will be flanked when <paramref name="unit"/>'s attack with
         /// <paramref name="weapon"/> lands, and whether that is new (this attack is the second engager).
         /// </summary>

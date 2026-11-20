@@ -103,6 +103,10 @@ namespace CompanionAI_Pathfinder.Tactics
                         type != typeof(ContextConditionAlignment) && type != typeof(ContextConditionIsAlly) &&
                         type != typeof(ContextConditionIsEnemy) && type != typeof(ContextConditionIsCaster) &&
                         type != typeof(ContextConditionCasterHasFact) &&
+                        // ★ Fusion coverage C1: the main target is the cast's clicked target (AbilityExecutionContext.MainTarget),
+                        // fixed for the whole cast and read against the scored aim (AbilityProfile.AimedAt). Molten Orb's
+                        // direct hit against its splash; a ground aim has no main target.
+                        type != typeof(ContextConditionIsMainTarget) &&
                         // ★ Fusion F7: a pooled application's "is unconscious" test is the kill dependency the joint
                         // value already carries (no control for a recipient the cast's damage drops).
                         !(pooled && type == typeof(ContextConditionIsUnconscious)))
@@ -147,27 +151,23 @@ namespace CompanionAI_Pathfinder.Tactics
             return false;
         }
 
-        // Native Burning's unlabelled carrier damages its bearer each round, then may remove itself. It is not CC.
-        // Only this narrow graph qualifies for omitted (never invented) periodic benefit; no callbacks are executed.
-        private static bool IsSimplePeriodicDamageCarrier(BlueprintBuff buff)
+        /// <summary>★ Fusion coverage C2: where a recast on random enemies was read (no credit, no harm), else null.</summary>
+        internal string FusionEnemyRecastLocation { get; private set; }
+
+        /// <summary>
+        /// ★ Fusion coverage C2: a selector that keeps only the caster's enemies (native RunAction removes every unit that is
+        /// not an enemy of the caster) and whose every action is a spell cast with no other effect of its own.
+        /// </summary>
+        internal static bool IsEnemyOnlyRecast(ContextActionOnRandomTargetsAround random)
         {
-            var components = buff.ComponentsArray;
-            if (components == null || components.Any(c => c != null && c.GetType() != typeof(AddBuffActions) &&
-                c.GetType() != typeof(SpellDescriptorComponent))) return false;
-            var ticks = buff.GetComponents<AddBuffActions>().ToArray();
-            if (ticks.Length != 1) return false;
-            var tick = ticks[0];
-            bool Empty(ActionList list) => list?.Actions == null || list.Actions.Length == 0;
-            if (!Empty(tick.Activated) || !Empty(tick.Deactivated) || !Empty(tick.Dispose)) return false;
-            var actions = tick.NewRound?.Actions;
-            if (actions == null || actions.Length != 2 || !(actions[0] is ContextActionDealDamage damage) ||
-                !CombatMath.IsHitPointDamage(damage) || damage.ReadPreRolledFromSharedValue || damage.Drain ||
-                damage.Value?.DiceCountValue?.IsValueSimple != true || damage.Value.BonusValue?.IsValueSimple != true ||
-                damage.Value.DiceCountValue.Value < 0 || damage.Value.BonusValue.Value < 0) return false;
-            if (!(actions[1] is ContextActionSavingThrow save) || save.Actions?.Actions?.Length != 1 ||
-                !(save.Actions.Actions[0] is ContextActionConditionalSaved saved)) return false;
-            return Empty(saved.Failed) && saved.Succeed?.Actions?.Length == 1 && saved.Succeed.Actions[0] is ContextActionRemoveSelf;
+            var actions = random?.Actions?.Actions;
+            if (random == null || !random.OnEnemies || actions == null || actions.Length == 0) return false;
+            foreach (var action in actions)
+                if (!(action is ContextActionCastSpell cast) || cast.Spell == null || ChildActionLists(action).Any(list => list != null && list.Length > 0))
+                    return false;
+            return true;
         }
+
         internal FusionSavePath FusionPath(GameAction action) =>
             FusionDamagePaths != null && FusionDamagePaths.TryGetValue(action, out var path) ? path : FusionSavePath.Both;
 
@@ -276,6 +276,16 @@ namespace CompanionAI_Pathfinder.Tactics
                 }
                 if (action is ContextActionSpawnAreaEffect || action is ContextActionSpawnMonster)
                     LimitFusion("spawned area or creature payload", at);
+                // ★ Fusion coverage C2 (docs/FUSION_COVERAGE_PROGRAMME.md): Hideous Laughter's Best Jokes branch casts the spell
+                // again on one random enemy around (ContextActionOnRandomTargetsAround with OnEnemies keeps only the caster's
+                // enemies; ContextActionCastSpell). It never reaches an ally, and its own save and target are random: no
+                // credit, no ally harm, and the fused profile does not read the recast (Walk). Only a selector whose every
+                // action is such a cast qualifies; any other secondary payload stays withheld.
+                if (action is ContextActionOnRandomTargetsAround random && IsEnemyOnlyRecast(random))
+                {
+                    FusionEnemyRecastLocation = FusionEnemyRecastLocation ?? at;
+                    continue;
+                }
                 foreach (var referenced in ReferencedAbilities(action))
                     if (referenced != null) LimitFusion("secondary spell payload", at);
                 // ★ Fusion F4: recorded, no longer a refusal. AbilityEffectRunAction rolls one root save and

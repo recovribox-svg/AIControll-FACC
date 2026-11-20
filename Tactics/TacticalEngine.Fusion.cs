@@ -80,7 +80,8 @@ namespace CompanionAI_Pathfinder.Tactics
             else if (profile.RemovedDescriptors != SpellDescriptor.None ||
                 profile.RemovesBuffs && profile.RemovedBuffs.Count == 0) reason = "dynamic removal dependency";
             else if (!profile.DealsDamage && profile.BuffApplications.Count == 0) reason = "no direct HP/control payload";
-            else if (!profile.Damage.All(a => a is ContextActionDealDamage d && CombatMath.IsHitPointDamage(d))) reason = "composite or non-HP damage";
+            // ★ Fusion coverage C5: ability damage and negative levels are read by their HP equivalent (CombatMath.DrainEquivalent).
+            else if (!profile.Damage.All(a => a is ContextActionDealDamage)) reason = "composite damage (a provider or a kill)";
             else if (profile.BuffApplications.Count > ValueModel.ControlEnvelope.Capacity) reason = "control occurrence bound";
             else if (!profile.TargetBuffs.All(b => profile.BuffApplications.Any(a => a.Buff == b))) reason = "control without a direct apply occurrence";
             else if (profile.TargetBuffs.Any(b => (!AbilityProfile.IsHarmfulBuff(b) &&
@@ -167,25 +168,7 @@ namespace CompanionAI_Pathfinder.Tactics
                 }
                 if (friendly && immuneConditions && share <= 0f && BuffPartsReader.Read(buff).Unread.Count > 0) return false;
                 if (share <= 0f) continue;
-                var action = occurrence.Action;
-                float duration = occurrence.Rounds;
-                if (duration > 0f)
-                {
-                    if (occurrence.Extendable && ability.HasMetamagic(Metamagic.Extend)) duration *= 2f;
-                }
-                else
-                {
-                    if (action == null || action.SameDuration) return false;
-                    if (!CombatMath.TryFusionDuration(ability, action, recipient, out duration))
-                    {
-                        if (durationContext == null) durationContext = CombatMath.CreateContext(ability, new TargetWrapper(recipient));
-                        if (durationContext == null) return false;
-                        duration = action.Permanent ? 100f : action.UseDurationSeconds ? Math.Max(1f, action.DurationSeconds / 6f)
-                                                                                     : DurationRounds(action.DurationValue, ability, durationContext);
-                        CombatMath.StoreFusionDuration(ability, action, recipient, duration);
-                    }
-                    if (duration <= 0f) return false;
-                }
+                if (!TryFusionApplicationRounds(ability, occurrence, recipient, ref durationContext, out float duration)) return false;
                 float horizon = Math.Min(Math.Min(ctx.ExpectedRounds, 3f), duration);
                 if (sleeping && s_ActiveEnemies != null && s_ActiveEnemies.All(e => e == recipient) && ctx.Allies.Any(a => a != ctx.Unit))
                     horizon = Math.Min(horizon, 1f);
@@ -264,9 +247,12 @@ namespace CompanionAI_Pathfinder.Tactics
             if (deliveryChance <= 0f) return true; // whole-cast immunity/no delivery cannot be revived by a surviving buff
             if (!damageRead.Known ||
                 !TryFusionControlRounds(ctx, ability, profile, enemy, false, out float controlRounds, out float passRounds)) return false;
+            // ★ Fusion coverage C1: damage over time the cast leaves on each outcome (burning, acid).
+            if (!TryPeriodicDamage(ability, profile, enemy, PeriodicHorizon(ctx), false,
+                    out float laterFailed, out float laterPassed)) return false;
             if ((controlRounds > 0f || passRounds > 0f) && profile.IsAoE && profile.InOwnSideArea(ctx.Unit, enemy))
                 controlRounds = passRounds = 0f;
-            ValueModel.FusionValue(damageRead.FailChance, deliveryChance, damageRead.Failed, damageRead.Passed,
+            ValueModel.FusionValue(damageRead.FailChance, deliveryChance, damageRead.Failed, damageRead.Passed, laterFailed, laterPassed,
                 Math.Max(1f, enemy.HPLeft), CombatMath.TargetWorth(enemy), CombatMath.ControlWorth(enemy), controlRounds, passRounds,
                 RegenerationRuns(enemy), CombatMath.AbilityEndsRegeneration(profile, enemy), out damage, out control);
             // The share of delivered casts that leave some control behind: the failed outcome, the passed one or both.
@@ -275,7 +261,9 @@ namespace CompanionAI_Pathfinder.Tactics
             {
                 profile.FusionValueQualifiedReported = true;
                 Main.Log($"[FusionValue] {ability.Name} -> {enemy.CharacterName}: forecast shared-save fail {damageRead.FailChance:P0}, " +
-                    $"conditional damage fail/pass {damageRead.Failed:F1}/{damageRead.Passed:F1}, control envelope {controlRounds:F2} round-equivalents" +
+                    $"conditional damage fail/pass {damageRead.Failed:F1}/{damageRead.Passed:F1}" +
+                    (laterFailed > 0f || laterPassed > 0f ? $", damage over time fail/pass {laterFailed:F1}/{laterPassed:F1}" : "") +
+                    $", control envelope {controlRounds:F2} round-equivalents" +
                     (profile.FusionOutcomeEffectLocation != null ? $" on a failed save, {passRounds:F2} on a passed save" : "") +
                     (profile.FusionSharedHd ? $", rolled Hit Dice pool covers this recipient {FusionPoolChance(ctx, profile, enemy):P0}" : "") + "; " +
                     "per-application eligibility and surviving failed-save outcomes (first qualified recipient per configuration)");

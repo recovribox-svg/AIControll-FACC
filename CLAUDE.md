@@ -8,7 +8,54 @@ Read [CONTRIBUTING.md](CONTRIBUTING.md) for shared branch ownership, Codex pull 
 Codex works on task branches and targets pull requests at `claude/dreamy-pasteur-b9h3rn`; Claude reviews and integrates them there.
 Keep `main` for author-authorized releases. Read [AGENTS.md](AGENTS.md) when coordinating agent work.
 
-**Current handover (17 November 2026, Claude): PRs #81–#91 reviewed and merged into development (`2f77d02`) at the
+**Current handover (20 November 2026, Claude): coverage2 - R1–R7 decided, R2/R5, evidence logging, Fusion C2/C5 and
+damage over time on ordinary spells. Three stacked branches, not played, nothing merged.** Read
+[docs/COVERAGE2_BUILD.md](docs/COVERAGE2_BUILD.md), [docs/R_ITEMS_PLAN.md](docs/R_ITEMS_PLAN.md),
+[docs/PERIODIC_DAMAGE.md](docs/PERIODIC_DAMAGE.md), `docs/TACTICAL_AI.md` §202 and the
+[receipt](docs/competence/COVERAGE2_CHECKS.json). The death-trigger proposal is set aside (author).
+
+- **Branches:** `claude/fusion-coverage-programme` (C1, draft PR #92) → `claude/review-r-items` (R2, R5, evidence) →
+  `claude/fusion-coverage-c2-c5` (C2, C5, ordinary damage over time).
+- **R items:**
+  - R2 and R5 are done.
+  - R1, R3 and R4 wait for the evidence lines `[Flank]`, `[Burst]` and `[Timing] fight summary`
+    (`TimelineObserver`, read only).
+  - R6 and R7 are not worth doing yet.
+- **Coverage:** offered 9,655 and joint 5,651 of 15,494, none lost. All eight fusions on arcan's bar are offered with the
+  joint value.
+- **Checks** on `72acfd1`:
+  - Release 0 warnings; 1,052 unit + 27/21/3 script tests.
+  - ProfileAudit: `BURST-AIM` 67, `EVIDENCE` 13, `FUSION-RECAST` 12, `FUSION-DOT` 42, `PERIODIC` 8.
+  - Native harnesses 98/14/10; 4 references added.
+- **Package:** `test-builds/AI-Control-FACC-v0.3.60-dev-coverage2-72acfd1-UMM-test.zip`, MVID `5cfd7765`. Manifest
+  0.3.60; no `main`, tag or release.
+- **Next:**
+  1. The author plays coverage2 and sends logs with the summary lines.
+  2. Calibrate R4 and decide R1 and R3 from them.
+  3. C3 needs the author's policy on a permanent ally death.
+
+**Earlier handover (17 November 2026, Claude): Magic Fusion coverage programme and its first slice C1 on
+`claude/fusion-coverage-programme` (from development `0019856`), draft PR into development. Not played.** Read
+[docs/FUSION_COVERAGE_PROGRAMME.md](docs/FUSION_COVERAGE_PROGRAMME.md), [docs/FUSION_MAIN_TARGET_DOT.md](docs/FUSION_MAIN_TARGET_DOT.md),
+`docs/TACTICAL_AI.md` §201 and the [receipt](docs/competence/FUSION_C1_CHECKS.json). Both modes, valuation only.
+- **Programme:** coverage = offered + joint value + every effect priced. 15,494 configurations: 8,709 offered, 4,521 joint
+  before C1. arcan's bar: 7 of 8 fully offered; Explosive Runes / Hideous Laughter withheld (C2). Slices C1–C11 are ordered
+  by the author's bar, then gain × use × risk.
+- **C1:** "is the main target" is a stable fusion guard (Molten Orb). A buff whose whole effect is HP damage each round
+  (`CombatMath.IsPeriodicDamageCarrier`: Molten Orb's and Incendiary Runes' burning, Acid Arrow's acid) is priced in the
+  joint value by save outcome (`TryFusionPeriodicDamage`). The ticks also join the friendly-fire cost and the burst
+  re-check. The periodic reader accepts `IgnoreUnitModifiers` and `UseDCFromContextSavingThrow` (both exact for ticks).
+- **Coverage:** offered 9,209 and joint 5,039, none lost. Molten Orb 0 → 338; Acid Arrow 38 → 208.
+- **Checks** on `83ac4c1`:
+  - Release 0 warnings; 1,052 unit + 27/21/3 script tests.
+  - ProfileAudit `FUSION-DOT` 39 and `FUSION-OUTCOME` 33; every other line is unchanged.
+  - Native harnesses 98/14/10; 1 reference added, 1 removed.
+- **Package** `test-builds/AI-Control-FACC-v0.3.60-dev-fusiondot1-83ac4c1-UMM-test.zip`, MVID `add36407`. Manifest 0.3.60;
+  no `main`, tag or release.
+- **Next:** the author plays fusiondot1 (replay in the slice page); then C2 (Hideous Laughter's Best Jokes recast). Open
+  from before: the death-trigger proposal and REVIEW_86_89's R1–R7.
+
+**Earlier handover (17 November 2026, Claude): PRs #81–#91 reviewed and merged into development (`2f77d02`) at the
 author's request.** Read `docs/TACTICAL_AI.md` §200 and the [receipt](docs/competence/INTEGRATION_81_91_CHECKS.json).
 - Merged in stack order; development's tree equals the checked #91 head `a0311d1`. Codex's #90 and #91 were re-read
   against the supplied assembly, and no defect was found.

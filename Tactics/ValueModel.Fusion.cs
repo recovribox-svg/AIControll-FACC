@@ -62,13 +62,27 @@ namespace CompanionAI_Pathfinder.Tactics
         // fatigue) or on both outcomes (Frigid Touch's stagger) is weighted by that outcome's chance.
         internal static void FusionValue(float failChance, float deliveryChance, float failedDamage, float passedDamage,
             float hp, float damageWorth, float controlWorth, float controlRoundsOnFailure, float controlRoundsOnPass,
-            bool regenerating, bool endsRegeneration, out float damage, out float control)
+            bool regenerating, bool endsRegeneration, out float damage, out float control) =>
+            FusionValue(failChance, deliveryChance, failedDamage, passedDamage, 0f, 0f, hp, damageWorth, controlWorth,
+                controlRoundsOnFailure, controlRoundsOnPass, regenerating, endsRegeneration, out damage, out control);
+
+        /// <summary>
+        /// ★ Fusion coverage C1 (docs/FUSION_MAIN_TARGET_DOT.md): <paramref name="laterOnFailure"/> and
+        /// <paramref name="laterOnPass"/> are the expected damage over time the cast leaves on each outcome (a burning or
+        /// acid buff's ticks within the horizon). They count as HP and progress towards a kill, capped at the HP left with
+        /// the immediate damage; the chance to kill now, and the control that a kill now cancels, stay with the immediate
+        /// damage. Without them the value is unchanged to the last bit.
+        /// </summary>
+        internal static void FusionValue(float failChance, float deliveryChance, float failedDamage, float passedDamage,
+            float laterOnFailure, float laterOnPass, float hp, float damageWorth, float controlWorth,
+            float controlRoundsOnFailure, float controlRoundsOnPass, bool regenerating, bool endsRegeneration,
+            out float damage, out float control)
         {
             float fail = Clamp(failChance, 0f, 1f), delivery = Clamp(deliveryChance, 0f, 1f);
             float failedKill = KillChance(1f, failedDamage, hp), passedKill = KillChance(1f, passedDamage, hp);
-            damage = delivery * (fail * DamageValue(failedDamage, hp, damageWorth,
+            damage = delivery * (fail * DamageValue(failedDamage + Math.Max(0f, laterOnFailure), hp, damageWorth,
                                      RegeneratingKill(failedKill, regenerating, endsRegeneration)) +
-                                (1f - fail) * DamageValue(passedDamage, hp, damageWorth,
+                                (1f - fail) * DamageValue(passedDamage + Math.Max(0f, laterOnPass), hp, damageWorth,
                                      RegeneratingKill(passedKill, regenerating, endsRegeneration)));
             // A recipient downed by this outcome cannot also lose the same future actions to its failed-save control.
             control = delivery * fail * (1f - failedKill) * Math.Max(0f, controlWorth) * Math.Max(0f, controlRoundsOnFailure);
