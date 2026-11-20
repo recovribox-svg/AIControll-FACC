@@ -4,6 +4,8 @@ using System.Collections.Generic;
 using System.Linq;
 using CompanionAI_Pathfinder.GameInterface;
 using CompanionAI_Pathfinder.Settings;
+using Kingmaker.EntitySystem.Entities;
+using Kingmaker.UnitLogic.Abilities;
 using Kingmaker.UnitLogic.Commands;
 using Kingmaker.UnitLogic.Commands.Base;
 using Kingmaker.Utility;
@@ -193,6 +195,29 @@ namespace CompanionAI_Pathfinder.Tactics
             if (c.Kind == CandidateKind.Move)
                 return new UnitMoveTo(c.Point ?? ctx.Unit.Position, c.ApproachRadius) { NeedLoS = c.NeedLoS };
             throw new InvalidOperationException("no movement command for this candidate");
+        }
+
+        private static bool TouchFromHere(TacticalContext ctx, AbilityData ability, UnitEntityData target, float range, bool needLos)
+        {
+            // ★ coverage2 review (docs/COVERAGE2_REVIEW.md, finding 2): real time, a walk to deliver this touch to this
+            // recipient has just ended in the game's reach (RealTimeTactics.ShouldEndArrivedWalk). The recipient has moved a
+            // step out of it since; walking again chased it round in circles. Cast from here instead: the game queues the
+            // touch's own delivery after the cast, which walks the last step (UnitUseAbility, StickyTouch). Only within one
+            // 5-foot step beyond the reach, by the game's own distance and sight test, and only right after that walk.
+            if (!CombatMemory.IsRealTime || ability?.Blueprint?.StickyTouch == null || ability.StickyTouch != null || target == null)
+                return false;
+            try
+            {
+                if (!SpellDelivery.IsPhysicalTouch(ability) || !CombatMemory.TouchJustArrived(ctx.Unit, ability.Blueprint, target))
+                    return false;
+                if (!InRangeNow(ctx.Unit, target.Position, range + CombatMemory.TouchArrivalSlackMeters, needLos)) return false;
+                ReportOnce($"touch-from-here|{CombatMemory.Fight}|{ctx.Unit.UniqueId}|{target.UniqueId}",
+                    () => $"[Walk] {ctx.Unit.CharacterName}: casts {ability.Name} on {target.CharacterName} from here - its walk " +
+                          $"ended in reach and {target.CharacterName} has stepped out of it since; the touch's own delivery " +
+                          "walks the last step (first per fight and recipient)");
+                return true;
+            }
+            catch { return false; }
         }
 
         private static bool TouchApproachFirst(Candidate c) => c.NeedsMove && c.Target != null && c.Ability != null &&

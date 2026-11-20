@@ -16,11 +16,28 @@ namespace CompanionAI_Pathfinder.Tactics
         /// <summary>From a decision to its command starting (the next ticks of the real-time controller).</summary>
         public const float CommandLatencySeconds = 0.1f;
 
-        /// <summary>From a weapon attack starting to its first hit (an estimate; the replay measures it).</summary>
-        public const float FirstSwingSeconds = 0.6f;
+        /// <summary>
+        /// From a melee weapon attack starting to its first hit. ★ coverage2 review (R4, docs/COVERAGE2_REVIEW.md): measured
+        /// 0.70 s on average over 72 first swings in nine real-time fights (fight means 0.59-1.00 s); the estimate was 0.6 s.
+        /// </summary>
+        public const float FirstSwingSeconds = 0.7f;
 
-        /// <summary>Between two attacks that follow each other at once: a bow's, or an animation sequence's (an estimate).</summary>
+        /// <summary>
+        /// From a ranged weapon attack starting to its first shot. Kept at the old estimate: the 51 measured first shots fall
+        /// in two groups (about 0.07 s and about 1.3 s), so their mean (0.52 s) describes neither.
+        /// </summary>
+        public const float FirstRangedSwingSeconds = 0.6f;
+
+        /// <summary>Between two attacks of an animation sequence, which follow each other at once (an estimate; not measured).</summary>
         public const float NextSwingSeconds = 0.7f;
+
+        /// <summary>
+        /// ★ coverage2 review (R4): between two shots of a bow-style routine. The next shot starts as the one before it acts
+        /// (UnitAttack.OnTick, WeaponAnimationStyle.Bow), so the gap is one shot's animation: measured 1.81 s on average over
+        /// 34 gaps in nine real-time fights (fight means 1.46-2.28 s); the estimate was 0.7 s. The animations of a routine
+        /// longer than its window are sped up to fit it (SpellSpeedScale), so the gap is at most window / attacks.
+        /// </summary>
+        public const float BowSwingSeconds = 1.8f;
 
         /// <summary>
         /// ★ review follow-up F2: real time, UnitAttack spreads a routine's attacks over its 6 s animation window
@@ -29,9 +46,16 @@ namespace CompanionAI_Pathfinder.Tactics
         /// </summary>
         public const float RoutineWindowSeconds = 6f;
 
-        /// <summary>Seconds between two attacks of an <paramref name="attacks"/>-attack routine, by the native schedule.</summary>
-        public static float SwingSpacing(int attacks, bool chained, float window = RoutineWindowSeconds) =>
-            chained || attacks <= 1 ? NextSwingSeconds : window / attacks;
+        /// <summary>Seconds between two attacks of an <paramref name="attacks"/>-attack routine, by the native schedule.
+        /// ★ coverage2 review (R4): a bow's shots one animation apart, sped up to fit the window.</summary>
+        public static float SwingSpacing(int attacks, bool chained, float window = RoutineWindowSeconds, bool bow = false)
+        {
+            if (bow) return attacks > 1 ? Math.Min(BowSwingSeconds, window / attacks) : BowSwingSeconds;
+            return chained || attacks <= 1 ? NextSwingSeconds : window / attacks;
+        }
+
+        /// <summary>From a weapon attack starting to its first hit, by kind.</summary>
+        public static float FirstHitSeconds(bool ranged) => ranged ? FirstRangedSwingSeconds : FirstSwingSeconds;
 
         /// <summary>The speed of an arrow or bolt in flight, in m/s (an estimate).</summary>
         public const float MissileSpeed = 30f;
@@ -75,7 +99,7 @@ namespace CompanionAI_Pathfinder.Tactics
         /// </summary>
         public static float WeaponHitSeconds(int index, float walkSeconds, bool ranged, float distance, float spacing)
         {
-            float t = CommandLatencySeconds + Math.Max(0f, walkSeconds) + FirstSwingSeconds + Math.Max(0, index) * Math.Max(0f, spacing);
+            float t = CommandLatencySeconds + Math.Max(0f, walkSeconds) + FirstHitSeconds(ranged) + Math.Max(0, index) * Math.Max(0f, spacing);
             return t + Flight(ranged, distance);
         }
 
@@ -86,9 +110,10 @@ namespace CompanionAI_Pathfinder.Tactics
         /// </summary>
         public static float RunningHitSeconds(int index, int nextIndex, float spacing, float elapsed, bool chained, bool ranged, float distance)
         {
+            float first = FirstHitSeconds(ranged);
             float t = chained
-                ? FirstSwingSeconds + Math.Max(0, index - nextIndex) * Math.Max(0f, spacing)
-                : Math.Max(0f, index * Math.Max(0f, spacing) + FirstSwingSeconds - Math.Max(0f, elapsed));
+                ? first + Math.Max(0, index - nextIndex) * Math.Max(0f, spacing)
+                : Math.Max(0f, index * Math.Max(0f, spacing) + first - Math.Max(0f, elapsed));
             return t + Flight(ranged, distance);
         }
 
