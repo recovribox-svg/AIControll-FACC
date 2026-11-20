@@ -35,6 +35,15 @@ namespace CompanionAI_Pathfinder.Tactics
             public bool LimitNoted;
             /// <summary>Each ally's damage estimate, read once for this watch (A-P1: not again at every re-check).</summary>
             public Dictionary<UnitEntityData, float> Damage;
+            /// <summary>★ R2: re-checked before its cast goes off (real time, within the re-check cap). Every entry keeps its
+            /// act and landing, whatever this says.</summary>
+            public bool Recheck;
+            /// <summary>★ evidence: when the decision expected the cast to go off (game seconds), and whether its landing was
+            /// read.</summary>
+            public double PredictedActAt = double.NaN;
+            public bool LandingSeen;
+            /// <summary>★ evidence (R3): allies that walked in with no control price from the decision, counted once.</summary>
+            public HashSet<UnitEntityData> Unpriced;
         }
 
         private struct Refusal
@@ -53,11 +62,18 @@ namespace CompanionAI_Pathfinder.Tactics
         }
 
         /// <summary>
-        /// A memory guard, not a working limit: each AI unit has at most one cast that has not gone off, and a burst that
-        /// has gone off is kept only until it lands. Past it, bursts that have gone off make room first; a watch whose cast
-        /// has not gone off is never dropped, and a new burst then goes unwatched with a logged line (A-P1).
+        /// ★ R2 (docs/R_ITEMS_PLAN.md): the casts re-checked before they go off, at most. Each AI unit has at most one cast
+        /// that has not gone off, so this is a bound on work, not a working limit. A burst past it keeps the checks of its
+        /// decision; it is still tracked, so its landing spot is shared and a turn-based turn still waits for it.
         /// </summary>
-        private const int MaxEntries = 64;
+        private const int MaxRechecked = 64;
+
+        /// <summary>
+        /// ★ R2: a memory guard on tracked bursts. An entry lives until its cast ends without going off or its burst lands,
+        /// so the count is the bursts in flight. Nothing is ever dropped to make room; past this a burst is not tracked, and
+        /// its landing spot is still shared (registered before admission).
+        /// </summary>
+        private const int MaxTracked = 256;
         private const int MaxLinesPerFight = 64;
 
         private static BurstWatch s_Instance;
@@ -68,8 +84,15 @@ namespace CompanionAI_Pathfinder.Tactics
 
         // A-P1: this fight's counts, logged when it ends - bursts watched, the most at once, the most units read for a
         // re-check, re-checks, and bursts that made room or went unwatched.
-        private static int s_Watched, s_PeakWatches, s_PeakRoster, s_Rechecks, s_Evicted, s_Unwatched;
-        private static int s_RoutesOnPathAtStart, s_RoutesStraightAtStart;
+        private static int s_Watched, s_PeakWatches, s_PeakRoster, s_Rechecks, s_NotRechecked, s_Untracked;
+        private static int s_RoutesOnPathAtStart, s_RoutesStraightAtStart, s_RoutesPursuingAtStart;
+
+        // ★ evidence for the next playtest (docs/R_ITEMS_PLAN.md): how far off the decision's cast time was, where the anchor
+        // stood when the burst landed, and allies that walked in with no control price from the decision (R3).
+        private static int s_ActSamples, s_ActLate, s_Landings, s_AnchorInside, s_LandingsLate, s_UnpricedControl;
+        private static double s_ActErrorSum, s_ActErrorAbsMax, s_AnchorDistanceSum;
+        /// <summary>A landing read later than this after it landed is not used for the anchor's position.</summary>
+        private const double LandingReadSeconds = 0.5d;
 
         // A-P1: the units a re-check reads, once per frame for every watch (in the game, alive, in combat).
         private static readonly List<UnitEntityData> Roster = new List<UnitEntityData>();
@@ -130,15 +153,36 @@ namespace CompanionAI_Pathfinder.Tactics
         /// </summary>
         public static void ReportFight()
         {
-            if (s_Watched > 0)
+            if (s_Watched > 0 || s_Untracked > 0)
                 Main.Log($"[Burst] fight summary: {s_Watched} burst(s) watched, at most {s_PeakWatches} at once; {s_Rechecks} re-check(s) " +
                          $"reading at most {s_PeakRoster} unit(s); walks read along the game's path " +
                          $"{TacticalEngine.RoutesOnPath - s_RoutesOnPathAtStart}, straight {TacticalEngine.RoutesStraight - s_RoutesStraightAtStart}" +
-                         (s_Evicted > 0 ? $"; {s_Evicted} landed burst(s) made room" : "") +
-                         (s_Unwatched > 0 ? $"; {s_Unwatched} burst(s) not watched (all {MaxEntries} watches live)" : ""));
-            s_Watched = s_PeakWatches = s_PeakRoster = s_Rechecks = s_Evicted = s_Unwatched = 0;
+                         $" (of them, started attacks chasing their target {TacticalEngine.RoutesPursuing - s_RoutesPursuingAtStart})" +
+                         (s_NotRechecked > 0 ? $"; {s_NotRechecked} burst(s) not re-checked (all {MaxRechecked} re-checks live)" : "") +
+                         (s_Untracked > 0 ? $"; {s_Untracked} burst(s) not tracked ({MaxTracked} in flight)" : "") +
+                         EvidenceSummary());
+            s_Watched = s_PeakWatches = s_PeakRoster = s_Rechecks = s_NotRechecked = s_Untracked = 0;
+            s_ActSamples = s_ActLate = s_Landings = s_AnchorInside = s_LandingsLate = s_UnpricedControl = 0;
+            s_ActErrorSum = s_ActErrorAbsMax = s_AnchorDistanceSum = 0d;
             s_RoutesOnPathAtStart = TacticalEngine.RoutesOnPath;
             s_RoutesStraightAtStart = TacticalEngine.RoutesStraight;
+            s_RoutesPursuingAtStart = TacticalEngine.RoutesPursuing;
+        }
+
+        /// <summary>★ evidence: the forecast against what happened, for the next playtest's calibration.</summary>
+        private static string EvidenceSummary()
+        {
+            var text = new System.Text.StringBuilder();
+            if (s_ActSamples > 0)
+                text.Append($"; cast went off {s_ActErrorSum / s_ActSamples:+0.0;-0.0} s from the decision's forecast on average " +
+                            $"(worst {s_ActErrorAbsMax:0.0} s, {s_ActLate} of {s_ActSamples} later)");
+            if (s_Landings > 0)
+                text.Append($"; anchor inside where it landed {s_AnchorInside} of {s_Landings}, " +
+                            $"{s_AnchorDistanceSum / s_Landings:0.0} m from the point on average");
+            if (s_LandingsLate > 0) text.Append($" ({s_LandingsLate} landing(s) read too late to place the anchor)");
+            if (s_UnpricedControl > 0)
+                text.Append($"; {s_UnpricedControl} ally walk-in(s) had no control price from the decision");
+            return text.ToString();
         }
 
         private static void Log(string line)
@@ -155,20 +199,30 @@ namespace CompanionAI_Pathfinder.Tactics
             try
             {
                 Prune();
-                if (Entries.Count >= MaxEntries && !MakeRoom())
-                {
-                    if (s_Unwatched++ == 0)
-                        Log($"[Burst] {unit.CharacterName}: {plan.Ability.Name} not watched - all {MaxEntries} watches are casts " +
-                            "that have not gone off; it keeps the checks of its decision");
-                    return;
-                }
-                Entries.Add(new Entry { Unit = unit, Command = command, Plan = plan, NextCheck = Now + BurstRules.RecheckSeconds });
-                s_Watched++;
-                if (Entries.Count > s_PeakWatches) s_PeakWatches = Entries.Count;
+                // ★ R2: the landing spot is shared with the other AI units' walks whether or not the burst is tracked.
                 var profile = AbilityProfile.Get(plan.Ability);
                 if (plan.RealTime && profile != null)
                     Analysis.AoeDangerAnalyzer.RegisterPendingBurst(plan.Point, plan.Radius, plan.Ability.Name, profile.DealsDamage,
                         profile.ControlStrength != ControlStrength.None, command, plan.Landing);
+                if (Entries.Count >= MaxTracked)
+                {
+                    if (s_Untracked++ == 0)
+                        Log($"[Burst] {unit.CharacterName}: {plan.Ability.Name} not tracked - {MaxTracked} bursts in flight; " +
+                            "it keeps the checks of its decision and its landing spot is shared");
+                    return;
+                }
+                // ★ R2: only the re-checks are capped; a burst past the cap keeps its act, landing and turn-based wait.
+                bool recheck = plan.RealTime && Rechecked() < MaxRechecked;
+                if (plan.RealTime && !recheck && s_NotRechecked++ == 0)
+                    Log($"[Burst] {unit.CharacterName}: {plan.Ability.Name} not re-checked - all {MaxRechecked} re-checks are casts " +
+                        "that have not gone off; it keeps the checks of its decision");
+                Entries.Add(new Entry
+                {
+                    Unit = unit, Command = command, Plan = plan, NextCheck = Now + BurstRules.RecheckSeconds, Recheck = recheck,
+                    PredictedActAt = plan.RealTime ? Now + plan.Walk + plan.Cast : double.NaN
+                });
+                s_Watched++;
+                if (Entries.Count > s_PeakWatches) s_PeakWatches = Entries.Count;
                 Log($"[Burst] {unit.CharacterName}: {plan.Ability.Name} aimed at the {plan.Describe()}; counted {plan.Enemies} " +
                     $"enem{(plan.Enemies == 1 ? "y" : "ies")}, {plan.Allies.Count} all{(plan.Allies.Count == 1 ? "y" : "ies")}");
             }
@@ -178,23 +232,13 @@ namespace CompanionAI_Pathfinder.Tactics
             }
         }
 
-        /// <summary>
-        /// A-P1: room for one more watch. Only a burst that has gone off makes room - the one landing first; its landing spot
-        /// stays with AoeDangerAnalyzer until it lands. A watch whose cast has not gone off is never dropped.
-        /// </summary>
-        private static bool MakeRoom()
+        /// <summary>★ R2: the casts re-checked now - real time, not gone off yet.</summary>
+        private static int Rechecked()
         {
-            int first = -1;
-            for (int i = 0; i < Entries.Count; i++)
-            {
-                var e = Entries[i];
-                if (double.IsNaN(e.LandsAt)) continue;
-                if (first < 0 || e.LandsAt < Entries[first].LandsAt) first = i;
-            }
-            if (first < 0) return false;
-            Entries.RemoveAt(first);
-            if (s_Evicted++ == 0) Log($"[Burst] {MaxEntries} watches: a burst that has gone off made room for a new one");
-            return true;
+            int count = 0;
+            foreach (var e in Entries)
+                if (e.Recheck && double.IsNaN(e.LandsAt)) count++;
+            return count;
         }
 
         public void HandleUnitCommandDidAct(UnitCommand command)
@@ -209,8 +253,18 @@ namespace CompanionAI_Pathfinder.Tactics
                     if (command.Result == UnitCommand.ResultType.Fail)
                     {
                         e.LandsAt = Now;
+                        e.LandingSeen = true;   // ★ evidence: nothing landed to place the anchor against
                         Analysis.AoeDangerAnalyzer.PendingBurstLandsIn(command, 0f);
                         return;
+                    }
+                    // ★ evidence: when the cast went off, against the decision's forecast (walk and cast time).
+                    if (!double.IsNaN(e.PredictedActAt))
+                    {
+                        double error = Now - e.PredictedActAt;
+                        s_ActSamples++;
+                        s_ActErrorSum += error;
+                        if (error > 0d) s_ActLate++;
+                        if (Math.Abs(error) > s_ActErrorAbsMax) s_ActErrorAbsMax = Math.Abs(error);
                     }
                     var profile = AbilityProfile.Get(e.Plan.Ability);
                     float flight = profile != null ? TacticalEngine.FlightSecondsTo(profile, e.Unit.EyePosition, e.Plan.Point) : 0f;
@@ -235,7 +289,13 @@ namespace CompanionAI_Pathfinder.Tactics
         public static bool PendingLanding(UnitEntityData unit)
         {
             if (unit == null || Entries.Count == 0) return false;
-            double now = Now;
+            ObserveLandings();   // ★ evidence: turn-based landings are read while the turn waits
+            return LandingPendingFor(unit, Now);
+        }
+
+        /// <summary>A burst of <paramref name="unit"/>'s that has gone off and lands after <paramref name="now"/>.</summary>
+        internal static bool LandingPendingFor(UnitEntityData unit, double now)
+        {
             foreach (var e in Entries)
                 if (e.Unit == unit && !double.IsNaN(e.LandsAt) && now < e.LandsAt) return true;
             return false;
@@ -267,7 +327,7 @@ namespace CompanionAI_Pathfinder.Tactics
             for (int i = 0; i < Entries.Count; i++)
             {
                 var e = Entries[i];
-                if (e.Unit != unit) continue;
+                if (e.Unit != unit || !e.Recheck) continue;   // ★ R2: past the cap, the decision's checks only
                 var cmd = e.Command;
                 if (cmd.IsFinished || cmd.IsActed) continue;
                 bool started = cmd.IsStarted;
@@ -380,7 +440,11 @@ namespace CompanionAI_Pathfinder.Tactics
                 // ★ A3: its damage, and what the burst's control would cost it by the decision's own rule (AllyControl).
                 float damage = DamageTo(e, u, profile);
                 float control = 0f;
-                if (plan.AllyControl != null) plan.AllyControl.TryGetValue(u, out control);
+                bool priced = plan.AllyControl != null && plan.AllyControl.TryGetValue(u, out control);
+                // ★ evidence (R3): an ally the decision did not price, for example one created since, walking into a burst
+                // that applies a buff. Counted once per watch and ally; nothing about the verdict changes.
+                if (!priced && profile.TargetBuffs.Count > 0 && (e.Unpriced ?? (e.Unpriced = new HashSet<UnitEntityData>())).Add(u))
+                    s_UnpricedControl++;
                 if (!(damage > 0f) && !(control > 0f)) continue;
                 newAllies++;
                 if (damage > 0f) newCost += u.HPLeft <= 0 ? Math.Max(0f, plan.Value) + 1f : BurstRules.AllyCost(damage, u.HPLeft);
@@ -448,13 +512,38 @@ namespace CompanionAI_Pathfinder.Tactics
             return new Vector3(x, y, z);
         }
 
-        /// <summary>Drops entries whose cast ended without going off, or whose burst has landed.</summary>
+        /// <summary>
+        /// Drops entries whose cast ended without its act being seen (it did not go off, or its act was missed), or whose
+        /// burst has landed. ★ R2: nothing else ever removes an entry.
+        /// </summary>
         private static void Prune()
         {
+            ObserveLandings();
             double now = Now;
             Entries.RemoveAll(e => e.Command == null ||
-                                   e.Command.IsFinished && !e.Command.IsActed ||
+                                   e.Command.IsFinished && double.IsNaN(e.LandsAt) ||
                                    !double.IsNaN(e.LandsAt) && now > e.LandsAt + BurstRules.LandingMarginSeconds);
+        }
+
+        /// <summary>
+        /// ★ evidence: where each burst's anchor stood when it landed - inside the area (its radius and the anchor's body) or
+        /// not, and how far from the point. Read once, only while the landing is fresh.
+        /// </summary>
+        private static void ObserveLandings()
+        {
+            if (Entries.Count == 0) return;
+            double now = Now;
+            foreach (var e in Entries)
+            {
+                if (e.LandingSeen || double.IsNaN(e.LandsAt) || now < e.LandsAt) continue;
+                e.LandingSeen = true;
+                var anchor = e.Plan.Anchor;
+                if (now - e.LandsAt > LandingReadSeconds || anchor == null || !anchor.IsInGame) { s_LandingsLate++; continue; }
+                float distance = TacticalEngine.HorizontalDistance(anchor.Position, e.Plan.Point);
+                s_Landings++;
+                s_AnchorDistanceSum += distance;
+                if (distance <= e.Plan.Radius + anchor.Corpulence) s_AnchorInside++;
+            }
         }
     }
 }
