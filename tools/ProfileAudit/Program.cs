@@ -268,6 +268,11 @@ namespace ProfileAudit
             foreach (var line in fusionPoolLines) Console.WriteLine(line);
             File.WriteAllText(output, string.Join(Environment.NewLine, fusionPoolLines) + Environment.NewLine + File.ReadAllText(output));
             blocklistFailures += fusionPoolFailures;
+            // ★ Fusion coverage C2: Hideous Laughter's Best Jokes recast on a random enemy.
+            var fusionRecastLines = FusionRecastCheck.Run(loaded.Values, out int fusionRecastFailures);
+            foreach (var line in fusionRecastLines) Console.WriteLine(line);
+            File.WriteAllText(output, string.Join(Environment.NewLine, fusionRecastLines) + Environment.NewLine + File.ReadAllText(output));
+            blocklistFailures += fusionRecastFailures;
             // ★ Fusion coverage C1: Molten Orb's main target and the damage over time a fused cast leaves.
             var fusionDotLines = FusionDotCheck.Run(loaded.Values, out int fusionDotFailures);
             foreach (var line in fusionDotLines) Console.WriteLine(line);

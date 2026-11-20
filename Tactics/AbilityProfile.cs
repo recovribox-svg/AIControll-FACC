@@ -1141,6 +1141,10 @@ namespace CompanionAI_Pathfinder.Tactics
                         continue;
                 }
 
+                // ★ Fusion coverage C2: a fused cast's recast on random enemies (InspectFusionPaths) is neither credited nor
+                // read as the target's: the fused profile skips it whole.
+                if (Fusion != null && action is ContextActionOnRandomTargetsAround recast && IsEnemyOnlyRecast(recast)) continue;
+
                 var childSubject = ChildSubject(subject, action);
                 foreach (var child in ChildActionLists(action))
                     Walk(child, visited, abilityDepth, childSubject, depth + 1, guards);
