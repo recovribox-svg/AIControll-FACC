@@ -4161,6 +4161,8 @@ namespace CompanionAI_Pathfinder.Tactics
                     foreach (var a in hurt)
                     {
                         float dmg = CombatMath.EstimateAbilityDamage(ability, profile, a);
+                        // ★ Fusion coverage C1: and the damage over time the cast leaves on it (burning, acid).
+                        if (profile.Fusion != null) dmg += FusionPeriodicAllyDamage(ability, profile, a, FusionPeriodicHorizon(ctx));
                         if (dmg <= 0f) continue;
                         allyCost += a.HPLeft <= 0 ? AllyWorth(ctx, a) : Math.Min(dmg, a.HPLeft) * 2f;
                         (caughtNames ?? (caughtNames = new List<string>())).Add(a.CharacterName + WalkingInTag(walkingIn, a));
@@ -5858,6 +5860,7 @@ namespace CompanionAI_Pathfinder.Tactics
                 }
                 else CastOutcome.Forget(unit);   // its attacks must not count as the last ability's effect
             }
+            if (issued) TimelineObserver.NoteIssued(unit, c, command);   // ★ evidence (docs/R_ITEMS_PLAN.md): read only
             return issued;
         }
 

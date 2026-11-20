@@ -1,0 +1,95 @@
+{
+ "task": "Fusion coverage C1 (docs/FUSION_COVERAGE_PROGRAMME.md): Molten Orb's main-target guard and the damage over time a fused cast leaves (Molten Orb, Incendiary Runes, Acid Arrow); both modes, valuation only",
+ "date": "2026-11-17",
+ "author": "Claude",
+ "branch": "claude/fusion-coverage-programme",
+ "development_base": "0019856805605c9b74e27ffbdfa6b8dd9c20b0f2",
+ "checked_source": "83ac4c17826fadb535a3288de75ca14b1db61124",
+ "toolchain": {
+  "dotnet_sdk": "8.0.428",
+  "csharp_compiler": "4.11.0-3.25569.22 (3fb752d4)",
+  "provenance": "docs/competence/FUSION_C1_BUILD_PROVENANCE.json"
+ },
+ "release_build": "0 warnings, 0 errors (real game references)",
+ "unit_tests": "1,052 pass (8 new: FusionPeriodicValueTests)",
+ "script_tests": {
+  "BlueprintInventory": 27,
+  "InvocationLedger": 21,
+  "ProfileAudit supplement": 3
+ },
+ "profileaudit": {
+  "exit": 0,
+  "fusion_dot": "39 checks, 0 failures: native contracts (main target = clicked target, TargetWrapper.Equals, save scope, fused dice cap via the context root, IgnoreModifiers, first tick, AddBuffActions); the actual burning and acid buffs read as carriers; synthetic non-carriers; the production tick reader on Incendiary Runes' burning; six actual fusions offered with the joint value; compiled routes",
+  "fusion_outcome": "33 checks, 0 failures (the Molten Orb 'stays withheld' expectation is removed: C1 offers it; FUSION-DOT checks it)",
+  "other_lines": "identical to the #91 run on the same inputs, apart from the coverage summary line",
+  "summon_kit_detail": "byte-identical to the #91 run",
+  "report_sha256": "95fc08fe6c19f904f8c409d2331baeeffb9486c82e62589d3c9f011e14c56395",
+  "coverage_sha256": "b134ef0fe0b0e2fd4c0a63dfb323ad4a9e2406c87335db5aad96a797e17d2c31"
+ },
+ "fusion_coverage": {
+  "configurations": 15494,
+  "offered": {
+   "before": 8709,
+   "after": 9209,
+   "gained": 500,
+   "lost": 0
+  },
+  "joint_value": {
+   "before": 4521,
+   "after": 5039,
+   "gained": 518,
+   "lost": 0,
+   "already_offered_on_the_simpler_value": 18
+  },
+  "gained_from": {
+   "unread guard ContextConditionIsMainTarget": 322,
+   "support/reveal/fact-grant/form/faction/poison carrier": 146,
+   "shared Hit Dice selection (pool now priced with the joint value)": 32
+  },
+  "molten_orb": {
+   "configurations": 616,
+   "offered_before": 0,
+   "offered_after": 338,
+   "joint_after": 338
+  },
+  "acid_arrow": {
+   "configurations": 322,
+   "offered_before": 38,
+   "offered_after": 208,
+   "joint_before": 0,
+   "joint_after": 188
+  },
+  "arcan_bar": "unchanged admission (7 of 8 fusions fully offered; Explosive Runes / Hideous Laughter withheld for C2); Incendiary Runes / Frigid Touch now prices its burning"
+ },
+ "native_harnesses": {
+  "ToggleCosts": 98,
+  "TomeBurn": 14,
+  "ToyBoxSpend": 10
+ },
+ "signatures": {
+  "relative_to": "#91 build (a0311d1)",
+  "added": [
+   "BlueprintBuff::get_TickTime (present in the supplied assembly)"
+  ],
+  "removed": [
+   "ContextActionDealDamage::IgnoreUnitModifiers field read"
+  ]
+ },
+ "not_run": [
+  "Supplementary Magus 44 corpus: inputs not in this environment; no Magus code is touched"
+ ],
+ "package": {
+  "zip": "test-builds/AI-Control-FACC-v0.3.60-dev-fusiondot1-83ac4c1-UMM-test.zip",
+  "identity": "test-builds/AI-Control-FACC-v0.3.60-dev-fusiondot1-83ac4c1-UMM-test.identity.json",
+  "sha256": "test-builds/AI-Control-FACC-v0.3.60-dev-fusiondot1-83ac4c1-UMM-test.sha256",
+  "mvid": "add36407-e766-45d7-a720-fa140c7a1f53",
+  "zip_sha256": "27e90be72af40cd71bbf0f905d42ffc96a38f752c8481babb0fbb11576e647a3",
+  "dll_sha256": "6fc501109d78f16ca0d3f719fdf6c174c39142e2f00469aa63dbeb9538431df3"
+ },
+ "manifest": "0.3.60, unchanged; no main, tag or release change; nothing merged",
+ "not_tested": [
+  "Gameplay: unplayed. Offline checks create no unit, buff, cast or tick.",
+  "Values of a recipient (resistance, saves, guards on a live context) are exercised only in play; the pure value formula is unit-tested.",
+  "A carrier the recipient already has earns no refresh credit; a ground-aimed Molten Orb fusion gives up the direct hit and is not compared with a unit aim."
+ ]
+}

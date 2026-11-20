@@ -6832,3 +6832,31 @@ release. Draft task PR follows #81–90 only after author clearance.
 - **Play package:** review2fix1 (`d669ec1`, MVID `e1aa77fe`), whose code equals development.
 - **Open:** the death-trigger proposal (`DEATH_TRIGGER_SAFETY_PROPOSAL.md`) and REVIEW_86_89's R1–R7 need decisions.
 
+
+## 201. Magic Fusion coverage programme and slice C1: Molten Orb's main target, damage over time (17 November 2026, Claude)
+
+[Programme](FUSION_COVERAGE_PROGRAMME.md), [slice page](FUSION_MAIN_TARGET_DOT.md),
+[receipt](competence/FUSION_C1_CHECKS.json). At the author's request, after the #81–#91 integration. Both modes,
+valuation only. Not played.
+
+- **Programme.** It defines coverage: offered, valued by the joint model, and every effect priced. It records where
+  coverage stands (15,494 configurations; 8,709 offered; 4,521 with the joint value) and arcan's bar (7 of 8 fusions
+  fully offered; Explosive Runes / Hideous Laughter withheld). Slices C1–C11 follow, each with its native contract.
+  Damage over time on ordinary spells is a separate cross-cutting slice.
+- **C1.**
+  - "Is the main target" is a stable fusion guard, read against the scored aim.
+  - A buff whose whole effect is HP damage each round is a periodic damage carrier (`CombatMath.IsPeriodicDamageCarrier`).
+    Examples are Molten Orb's and Incendiary Runes' burning and Acid Arrow's acid.
+  - Its expected ticks within the horizon join the joint value on the outcome that applies it
+    (`TryFusionPeriodicDamage`, `ValueModel.FusionValue` with later damage). They also join the friendly-fire cost and
+    the burst re-check, which now prices allies under the ground aim.
+  - The shared periodic reader accepts `IgnoreUnitModifiers` and `UseDCFromContextSavingThrow`, both exact for round
+    ticks.
+- **Coverage:** offered 8,709 → 9,209, joint 4,521 → 5,039, none lost. Molten Orb 0 → 338; Acid Arrow 38 → 208 (188
+  joint).
+- **Checks** on `83ac4c1`:
+  - Release 0 warnings; 1,052 unit tests; 27 + 21 + 3 script tests.
+  - ProfileAudit `FUSION-DOT` 39 and `FUSION-OUTCOME` 33; every other line is unchanged.
+  - Native harnesses 98/14/10; 1 reference added, 1 removed.
+- **Package** `test-builds/AI-Control-FACC-v0.3.60-dev-fusiondot1-83ac4c1-UMM-test.zip`, MVID `add36407`.
+- **Next:** C2, Hideous Laughter's Best Jokes recast (arcan's Explosive Runes / Hideous Laughter).

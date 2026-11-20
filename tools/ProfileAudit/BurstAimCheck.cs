@@ -42,34 +42,35 @@ namespace ProfileAudit
             body.Any(m => m.DeclaringType == type && m.Name == name);
 
         /// <summary>
-        /// The production overflow rule on a full list: with only casts that have not gone off it makes no room; with one
-        /// burst that has gone off among them, that one goes. The list is restored empty.
+        /// ★ R2 (docs/R_ITEMS_PLAN.md): the production capacity rule on a full list. With every re-check live, a new burst is
+        /// not re-checked, and nothing is dropped: a burst that has gone off keeps its turn-based landing wait. The list is
+        /// restored empty.
         /// </summary>
-        private static bool MakeRoomKeepsLiveWatches()
+        private static bool CapKeepsLandings()
         {
             var watch = typeof(BurstWatch);
             var entries = (System.Collections.IList)watch.GetField("Entries", Hidden).GetValue(null);
             var entryType = watch.GetNestedType("Entry", BindingFlags.NonPublic);
-            var max = (int)watch.GetField("MaxEntries", Hidden).GetValue(null);
-            var makeRoom = watch.GetMethod("MakeRoom", Hidden);
-            var landsAt = entryType.GetField("LandsAt");
-            object Entry(double at)
+            int max = (int)watch.GetField("MaxRechecked", Hidden).GetValue(null);
+            var rechecked = watch.GetMethod("Rechecked", Hidden);
+            object Entry(double at, bool recheck, UnitEntityData unit)
             {
                 var e = Activator.CreateInstance(entryType, true);
-                landsAt.SetValue(e, at);
+                entryType.GetField("LandsAt").SetValue(e, at);
+                entryType.GetField("Recheck").SetValue(e, recheck);
+                entryType.GetField("Unit").SetValue(e, unit);
                 return e;
             }
+            var caster = (UnitEntityData)RuntimeHelpers.GetUninitializedObject(typeof(UnitEntityData));
             try
             {
                 entries.Clear();
-                for (int i = 0; i < max; i++) entries.Add(Entry(double.NaN));
-                bool live = !(bool)makeRoom.Invoke(null, null) && entries.Count == max;
-                entries[max / 2] = Entry(20d);
-                entries[max - 1] = Entry(10d);
-                bool room = (bool)makeRoom.Invoke(null, null) && entries.Count == max - 1 &&
-                            entries.Cast<object>().Count(e => !double.IsNaN((double)landsAt.GetValue(e))) == 1 &&
-                            entries.Cast<object>().Any(e => (double)landsAt.GetValue(e) == 20d);
-                return live && room;
+                for (int i = 0; i < max; i++) entries.Add(Entry(double.NaN, true, null));
+                entries.Add(Entry(10d, false, caster));   // gone off, lands at 10 s (the offline clock reads 0)
+                bool full = (int)rechecked.Invoke(null, null) == max;
+                bool waits = (bool)watch.GetMethod("LandingPendingFor", Hidden).Invoke(null, new object[] { caster, 0d }) &&
+                             entries.Count == max + 1;
+                return full && waits;
             }
             finally { BurstWatch.Clear(); }
         }
@@ -359,10 +360,40 @@ namespace ProfileAudit
                       Body(typeof(BurstWatch), "CanReadRosterUnit").Any(m => m.Name == "get_IsInGame") &&
                       !Body(typeof(BurstWatch), "CanReadRosterUnit").Any(SceneUnits),
                       "the re-check validates retained actors live without rescanning the scene");
+                // ★ R2: nothing is dropped to make room; only re-checks are capped, and the landing spot is shared first.
                 var track = Body(typeof(BurstWatch), "Track");
-                Check(Calls(track, typeof(BurstWatch), "MakeRoom") && !track.Any(m => m.Name == "RemoveAt"),
-                      "A-P1: Track makes room only through MakeRoom");
-                Check(MakeRoomKeepsLiveWatches(), "A-P1: a full watch list drops the burst landing first, never a cast that has not gone off");
+                Check(!track.Any(m => m.Name == "RemoveAt") && typeof(BurstWatch).GetMethod("MakeRoom", Hidden) == null &&
+                      Calls(track, typeof(BurstWatch), "Rechecked") &&
+                      (int)typeof(BurstWatch).GetField("MaxRechecked", Hidden).GetValue(null) == 64 &&
+                      (int)typeof(BurstWatch).GetField("MaxTracked", Hidden).GetValue(null) == 256,
+                      "R2: Track never drops an entry; it caps only the re-checks (64) and the bursts in flight (256)");
+                Check(Calls(track, typeof(CompanionAI_Pathfinder.Analysis.AoeDangerAnalyzer), "RegisterPendingBurst") &&
+                      Body(typeof(BurstWatch), "ShouldCancel").Any(m => m.Name == "Recheck"),
+                      "R2: the landing spot is registered for every real-time burst; the re-check skips one past the cap");
+                Check(CapKeepsLandings(), "R2: with every re-check live, a burst that has gone off keeps its turn-based landing wait");
+                Check(Body(typeof(BurstWatch), "Prune").Any(m => m.Name == "RemoveAll") &&
+                      Calls(Body(typeof(BurstWatch), "Prune"), typeof(BurstWatch), "ObserveLandings"),
+                      "R2: entries leave only when their cast ends unseen or their burst lands");
+                // ★ R5: a started attack that chases its target is read as a walk, for the burst forecast only.
+                Check(Body(typeof(UnitCommandController), "TickCommand").Any(m => m.Name == "get_CanMoveAfterStart") &&
+                      Body(typeof(UnitCommandController), "TickCommand").Any(m => m.Name == "TickApproaching") &&
+                      (bool)typeof(UnitAttack).GetProperty("CanMoveAfterStart").GetValue(RuntimeHelpers.GetUninitializedObject(typeof(UnitAttack))),
+                      "R5 native: a started attack keeps approaching its target (UnitCommandController.TickCommand, UnitAttack.CanMoveAfterStart)");
+                var pursuing = Body(engine, "PursuingAttack");
+                Check(Calls(Body(engine, "ReadRoute"), engine, "PursuingAttack") &&
+                      pursuing.Any(m => m.Name == "get_IsStarted") && pursuing.Any(m => m.Name == "get_CanMoveAfterStart") &&
+                      pursuing.Any(m => m.Name == "IsUnitCloseEnough") && pursuing.Any(m => m.Name == "get_CanMove"),
+                      "R5: the burst route reads a started attack that is not close enough and can move");
+                Check(Body(engine, "WalkingCommand").Any(m => m.Name == "get_IsStarted") &&
+                      !Calls(Body(engine, "WalkClaim"), engine, "PursuingAttack"),
+                      "R5: the shared walk claim of the spot rules is unchanged");
+                // ★ evidence for the next playtest (docs/R_ITEMS_PLAN.md).
+                Check(Calls(Body(typeof(BurstWatch), "ReportFight"), typeof(BurstWatch), "EvidenceSummary") &&
+                      Body(typeof(BurstWatch), "HandleUnitCommandDidAct").Any(m => m.Name == "PredictedActAt") &&
+                      Calls(Body(typeof(BurstWatch), "PendingLanding"), typeof(BurstWatch), "ObserveLandings") &&
+                      Calls(Body(typeof(BurstWatch), "PendingLanding"), typeof(BurstWatch), "LandingPendingFor") &&
+                      Body(typeof(BurstWatch), "Evaluate").Any(m => m.Name == "Unpriced"),
+                      "evidence: cast time, anchor at landing and unpriced walk-in allies reach the fight summary");
                 var combatEnd = engine.Assembly.GetTypes().SelectMany(t => t.GetMethods(Hidden)).FirstOrDefault(m => m.Name == "OnPartyCombatEnd");
                 Check(combatEnd != null && SaveBoostCheck.ReferencedMembers(combatEnd).Any(m => m.DeclaringType == typeof(BurstWatch) && m.Name == "ReportFight") &&
                       Calls(Body(typeof(BurstWatch), "Clear"), typeof(BurstWatch), "ReportFight"),

@@ -268,11 +268,21 @@ namespace ProfileAudit
             foreach (var line in fusionPoolLines) Console.WriteLine(line);
             File.WriteAllText(output, string.Join(Environment.NewLine, fusionPoolLines) + Environment.NewLine + File.ReadAllText(output));
             blocklistFailures += fusionPoolFailures;
+            // ★ Fusion coverage C1: Molten Orb's main target and the damage over time a fused cast leaves.
+            var fusionDotLines = FusionDotCheck.Run(loaded.Values, out int fusionDotFailures);
+            foreach (var line in fusionDotLines) Console.WriteLine(line);
+            File.WriteAllText(output, string.Join(Environment.NewLine, fusionDotLines) + Environment.NewLine + File.ReadAllText(output));
+            blocklistFailures += fusionDotFailures;
             // ★ burst aim: delayed bursts aimed at the ground where their anchor will be (docs/BURST_AIM_AND_TACTICS_PLAN.md §3).
             var burstLines = BurstAimCheck.Run(loaded.Values, out int burstFailures);
             foreach (var line in burstLines) Console.WriteLine(line);
             File.WriteAllText(output, string.Join(Environment.NewLine, burstLines) + Environment.NewLine + File.ReadAllText(output));
             blocklistFailures += burstFailures;
+            // ★ evidence for the next playtest (docs/R_ITEMS_PLAN.md): what TimelineObserver reads, and that it only reads.
+            var evidenceLines = EvidenceCheck.Run(loaded.Values, out int evidenceFailures);
+            foreach (var line in evidenceLines) Console.WriteLine(line);
+            File.WriteAllText(output, string.Join(Environment.NewLine, evidenceLines) + Environment.NewLine + File.ReadAllText(output));
+            blocklistFailures += evidenceFailures;
             // ★ cast disruption: a hit before an enemy's cast goes off forces a concentration check (plan §4).
             var disruptLines = CastDisruptCheck.Run(loaded.Values, out int disruptFailures);
             foreach (var line in disruptLines) Console.WriteLine(line);
