@@ -1,0 +1,69 @@
+{
+ "task": "coverage2 playtest review: findings and fixes (docs/COVERAGE2_REVIEW.md)",
+ "date": "2026-11-20",
+ "author": "Claude",
+ "inputs": {
+  "Log.txt": {
+   "sha256": "d0c040e8428d6f954a8b6d126acc467535992771d720444451aed598ce887a18",
+   "lines": 7214,
+   "startup_mvid": "5cfd7765-2f1c-487d-8945-dde2c78a643b (coverage2)"
+  },
+  "combatLog.txt": {
+   "sha256": "69e5d9f404dabb149fb194ab150c7f99155eeb3876f6ca1530e143be7123063d",
+   "lines": 38530
+  },
+  "note": "private; not committed"
+ },
+ "branch": "claude/coverage2-review @ 1ed420b, stacked on claude/fusion-coverage-c2-c5 @ 994c6e2",
+ "development_base": "0019856805605c9b74e27ffbdfa6b8dd9c20b0f2",
+ "checked_source": "1ed420b755b15ff10e5d464fc0857fa842797cd6",
+ "toolchain": {
+  "dotnet_sdk": "8.0.428",
+  "csharp_compiler": "4.11.0-3.25569.22 (3fb752d4)",
+  "provenance": "docs/competence/COVERAGE3_BUILD_PROVENANCE.json"
+ },
+ "release_build": "0 warnings, 0 errors (real game references)",
+ "unit_tests": "1,059 pass (7 new: real-time cast lag, bow shot gap x5 cases, a bow's second shot against a 2 s cast; 3 updated to the measured first swing)",
+ "script_tests": {
+  "BlueprintInventory": 27,
+  "InvocationLedger": 21,
+  "ProfileAudit supplement": 3
+ },
+ "profileaudit": {
+  "exit": 0,
+  "new_or_changed_sections": {
+   "BURST-AIM": "73 checks (was 67): Incendiary Runes and its Frigid Touch fusion get ground aim in real time only; Explosive Runes in both modes; enemy-only and attack-roll bursts keep unit aim; 83 exported around-bursts with neither delay nor flight now get ground aim in real time",
+   "EVIDENCE": "14 checks (was 13): the start of a fight resets without a line; flank misses logged with engagers at the decision and the roll",
+   "CAST-DISRUPT": "50 checks (was 48): the measured first swing and bow gap, and allies' ordered bow shots spaced by it"
+  },
+  "other_lines": "unchanged against the coverage2 audit on the same inputs (only the three section lines and one new export line differ)",
+  "fusion_coverage": "byte-identical (15,494 configurations: 9,655 offered, 5,651 with the joint value)",
+  "summon_kit_detail": "byte-identical",
+  "report_sha256": "0d23a8b8d195623a95889c3a89a1bc133fe26fea206e53b778e8efe0b82b41ed",
+  "coverage_sha256": "4b8a648f1e4a5d5ac8e8f14a80df9644001a3590db549b3a73dc78af3acdfc7f"
+ },
+ "native_harnesses": {
+  "ToggleCosts": 98,
+  "TomeBurn": 14,
+  "ToyBoxSpend": 10
+ },
+ "signatures": {
+  "relative_to": "coverage2 (72acfd1)",
+  "added": [],
+  "removed": [],
+  "count": 2050
+ },
+ "not_run": [
+  "Supplementary Magus 44 corpus: inputs not in this environment; no Magus code is touched"
+ ],
+ "package": {
+  "zip": "test-builds/AI-Control-FACC-v0.3.60-dev-coverage3-1ed420b-UMM-test.zip",
+  "identity": "test-builds/AI-Control-FACC-v0.3.60-dev-coverage3-1ed420b-UMM-test.identity.json",
+  "sha256": "test-builds/AI-Control-FACC-v0.3.60-dev-coverage3-1ed420b-UMM-test.sha256",
+  "mvid": "60673199-52d7-4e60-8078-c91096ac9242",
+  "zip_sha256": "c4ca9372bcf238b4ef7c0b4af93259fd013c2e709612eba094c615aa33d9432c",
+  "dll_sha256": "c20d1bff5e8b9dacaddcf5a2ab9e9d93c3843aeb5fb2b394ff7efe6ea641ebbd",
+  "manifest": "0.3.60 (unchanged)"
+ },
+ "gameplay": "unplayed; no main, tag or release"
+}

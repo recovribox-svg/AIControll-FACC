@@ -309,6 +309,38 @@ namespace CompanionAI_Pathfinder.Tactics
             return GameSeconds <= spot.BoxedUntil && Vector3.Distance(unit.Position, spot.At) <= SpotRules.BoxedInRadius;
         }
 
+        /// <summary>
+        /// ★ coverage2 review (docs/COVERAGE2_REVIEW.md, finding 2): unit → the touch it walked to deliver, the recipient and
+        /// until when. A real-time walk to touch range ends as soon as the game's reach test reaches the recipient
+        /// (RealTimeTactics.ShouldEndArrivedWalk); a moving recipient (a fighting summon) was out of that reach again at the
+        /// next decision, which walked again: ten such walks ended "in reach" in the coverage2 log, and Seelah went round three
+        /// times for one Cure Light Wounds on her Schir without ever casting it.
+        /// </summary>
+        private static readonly Dictionary<string, (Kingmaker.UnitLogic.Abilities.Blueprints.BlueprintAbility Touch, string Recipient, double Until)> TouchArrivals =
+            new Dictionary<string, (Kingmaker.UnitLogic.Abilities.Blueprints.BlueprintAbility, string, double)>();
+
+        /// <summary>How long the arrival counts for the next decision (the recipient keeps moving).</summary>
+        public const double TouchArrivalSeconds = 1.5d;
+
+        /// <summary>The slack beyond the touch's reach in which the cast is made from where it stands: one 5-foot step that the
+        /// game's own touch delivery walks (UnitUseAbility queues it after the cast).</summary>
+        public const float TouchArrivalSlackMeters = 1.5f;
+
+        public static void NoteTouchArrived(UnitEntityData unit, Kingmaker.UnitLogic.Abilities.Blueprints.BlueprintAbility touch, UnitEntityData recipient)
+        {
+            if (!IsRealTime || unit == null || touch == null || recipient == null) return;
+            TouchArrivals[unit.UniqueId] = (touch, recipient.UniqueId, GameSeconds + TouchArrivalSeconds);
+        }
+
+        /// <summary>Whether <paramref name="unit"/>'s walk to deliver <paramref name="touch"/> to <paramref name="recipient"/>
+        /// has just ended in reach.</summary>
+        public static bool TouchJustArrived(UnitEntityData unit, Kingmaker.UnitLogic.Abilities.Blueprints.BlueprintAbility touch, UnitEntityData recipient)
+        {
+            if (!IsRealTime || TouchArrivals.Count == 0 || unit == null || touch == null || recipient == null) return false;
+            return TouchArrivals.TryGetValue(unit.UniqueId, out var noted) && GameSeconds <= noted.Until &&
+                   ReferenceEquals(noted.Touch, touch) && noted.Recipient == recipient.UniqueId;
+        }
+
         /// <summary>★ v0.3.24 (build1 logs): target → where it stood when a party member's walk to it got stuck because the
         /// game's own path ends short of it (a ledge), and until when that counts.</summary>
         private static readonly Dictionary<string, KeyValuePair<Vector3, double>> OutOfWalkingReachTargets =
@@ -427,6 +459,7 @@ namespace CompanionAI_Pathfinder.Tactics
             RefusedWalks.Clear();
             StuckSpots.Clear();   // ★ v0.3.29 test 6
             OutOfWalkingReachTargets.Clear();
+            TouchArrivals.Clear();   // ★ coverage2 review
             NoSights.Clear();
             HiddenEnemies.Reset();   // ★ v0.3.30 competence3
             CombatMath.OnlyDisabledEnemiesLeft = false;

@@ -67,6 +67,57 @@ namespace CompanionAI_Pathfinder.Tactics
             return plan;
         }
 
+        private static readonly Dictionary<BlueprintBuff, bool> s_DamageCarriers = new Dictionary<BlueprintBuff, bool>();
+
+        /// <summary>
+        /// ★ Fusion coverage C1 (docs/FUSION_MAIN_TARGET_DOT.md): a buff whose whole effect is hit-point damage each
+        /// round, possibly ended by a save (Incendiary Runes' and Molten Orb's burning, Acid Arrow's acid). Only its round
+        /// actions and spell descriptors; fixed dice; no child buff, poison or activation. Metadata only, once per buff.
+        /// </summary>
+        internal static bool IsPeriodicDamageCarrier(BlueprintBuff buff)
+        {
+            if (buff == null) return false;
+            if (s_DamageCarriers.TryGetValue(buff, out bool known)) return known;
+            bool carrier = false;
+            try
+            {
+                var plan = PeriodicPlanOf(buff);
+                carrier = plan != null && plan.Supported && plan.Round != null && plan.Poison == null &&
+                          plan.EnergyRemovals.Count == 0 && plan.HitPoints &&
+                          buff.ComponentsArray.All(c => c is AddFactContextActions || c is SpellDescriptorComponent) &&
+                          buff.TickTime.TotalSeconds >= 1d && buff.TickTime < TimeSpan.MaxValue &&
+                          DamageOnlyTick(plan.Round, 0);
+            }
+            catch { carrier = false; }
+            s_DamageCarriers[buff] = carrier;
+            return carrier;
+        }
+
+        private static bool DamageOnlyTick(ActionList list, int depth)
+        {
+            if (depth > 8) return false;
+            foreach (var action in list?.Actions ?? Array.Empty<GameAction>())
+            {
+                if (action is ContextActionRemoveSelf) continue;
+                if (action is ContextActionDealDamage deal)
+                {
+                    if (KindOf(deal) != DealKind.HitPoints || deal.Value.DiceCountValue.ValueType != ContextValueType.Simple ||
+                        deal.Value.BonusValue.ValueType != ContextValueType.Simple || deal.Value.DiceCountValue.Value < 0 ||
+                        deal.Value.BonusValue.Value < 0) return false;
+                    continue;
+                }
+                if (action is ContextActionSavingThrow save)
+                {
+                    if (save.HasCustomDC && save.CustomDC.ValueType != ContextValueType.Simple) return false;
+                    var saved = (ContextActionConditionalSaved)save.Actions.Actions[0];
+                    if (!DamageOnlyTick(saved.Failed, depth + 1) || !DamageOnlyTick(saved.Succeed, depth + 1)) return false;
+                    continue;
+                }
+                return false; // a child buff or anything else is more than damage
+            }
+            return true;
+        }
+
         private static bool Empty(ActionList actions) => actions?.Actions == null || actions.Actions.Length == 0;
         private static bool RemovesSelfOnly(ActionList actions) => actions?.Actions?.Length == 1 && actions.Actions[0]?.GetType() == typeof(ContextActionRemoveSelf);
         private static bool PeriodicValue(ContextValue value) => value != null &&
@@ -86,8 +137,10 @@ namespace CompanionAI_Pathfinder.Tactics
                 if (action.GetType() == typeof(ContextActionDealDamage))
                 {
                     var deal = (ContextActionDealDamage)action;
+                    // ★ Fusion coverage C1: IgnoreUnitModifiers only stops flat damage bonuses being added
+                    // (BaseDamage.AddModifier); resistance and immunity still apply. No estimate here adds those bonuses.
                     if (!PeriodicDice(deal.Value) || deal.Half || deal.HalfIfSaved || deal.ReadPreRolledFromSharedValue ||
-                        deal.AddAdditionalDamage || deal.AddFavoredEnemyDamage || deal.IgnoreUnitModifiers ||
+                        deal.AddAdditionalDamage || deal.AddFavoredEnemyDamage ||
                         deal.UseWeaponDamageModifiers || deal.UseMinHPAfterDamage || deal.WriteResultToSharedValue ||
                         deal.WriteRawResultToSharedValue || deal.WriteCriticalToSharedValue || deal.Drain || deal.IsAoE) return false;
                     if (KindOf(deal) == DealKind.HitPoints)
@@ -101,7 +154,10 @@ namespace CompanionAI_Pathfinder.Tactics
                 if (action.GetType() == typeof(ContextActionSavingThrow))
                 {
                     var save = (ContextActionSavingThrow)action;
-                    if (save.FromBuff || save.UseDCFromContextSavingThrow || save.Type == SavingThrowType.Unknown ||
+                    // ★ Fusion coverage C1: a round tick runs outside any saving-throw scope (MechanicsContext.SavingThrow
+                    // reads ContextData<SavingThrowData>.Current), so UseDCFromContextSavingThrow falls back to the
+                    // context's own DC there, and the tick rolls its own save, fused cast or not (ContextActionSavingThrow).
+                    if (save.FromBuff || save.Type == SavingThrowType.Unknown ||
                         save.HasCustomDC && !PeriodicValue(save.CustomDC) || PeriodicSaveIncreases == null ||
                         (PeriodicSaveIncreases.GetValue(save) is Array increases && increases.Length > 0) ||
                         save.Actions?.Actions?.Length != 1 || !(save.Actions.Actions[0] is ContextActionConditionalSaved) ||

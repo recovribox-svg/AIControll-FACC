@@ -71,6 +71,14 @@ namespace CompanionAI_Pathfinder.Tactics
             return Math.Max(Math.Max(0f, minTime), distance / speed);
         }
 
+        /// <summary>
+        /// ★ coverage2 review (finding 1): a burst lands after its cast goes off when it has a delay or a flight; in real
+        /// time also when its cast takes time (<paramref name="realTimeCastSeconds"/>), since its victims are picked around
+        /// the anchor when the cast goes off. Turn-based, nobody else moves during the caster's turn.
+        /// </summary>
+        public static bool LandsLater(bool deliveryLag, bool realTime, float realTimeCastSeconds) =>
+            deliveryLag || realTime && realTimeCastSeconds > 0f;
+
         /// <summary>From the decision to the burst landing: the walk, the cast, the delay and the flight.</summary>
         public static float LandingSeconds(float walk, float cast, float delay, float flight) =>
             Math.Max(0f, walk) + Math.Max(0f, cast) + Math.Max(0f, delay) + Math.Max(0f, flight);

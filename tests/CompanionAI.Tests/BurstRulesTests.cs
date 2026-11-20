@@ -137,6 +137,22 @@ namespace CompanionAI.Tests
         }
 
         [Fact]
+        public void RealTimeCastTimeIsALagToo()
+        {
+            // coverage2 review, finding 1: a delay or a flight lands later in both modes.
+            Assert.True(BurstRules.LandsLater(true, false, 0f));
+            Assert.True(BurstRules.LandsLater(true, true, 0f));
+            // Real time, a 2 s cast picks its victims 2 s later (Incendiary Runes and its fusions).
+            float cast = BurstRules.CastSeconds(true, false, false, false, false);
+            Assert.Equal(BurstRules.StandardCastSeconds, cast);
+            Assert.True(BurstRules.LandsLater(false, true, cast));
+            // A wand or an Immediate animation goes off at once; turn-based, nobody moves during the cast.
+            Assert.False(BurstRules.LandsLater(false, true, BurstRules.CastSeconds(true, false, true, true, false)));
+            Assert.False(BurstRules.LandsLater(false, true, BurstRules.CastSeconds(true, false, false, false, true)));
+            Assert.False(BurstRules.LandsLater(false, false, BurstRules.CastSeconds(false, false, false, false, false)));
+        }
+
+        [Fact]
         public void AllyCostMatchesTheScoring()
         {
             Assert.Equal(20f, BurstRules.AllyCost(10f, 30f));
