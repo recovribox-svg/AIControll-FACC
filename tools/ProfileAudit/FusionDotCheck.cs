@@ -187,12 +187,27 @@ namespace ProfileAudit
                 Check(moltenProfile.Damage.OfType<ContextActionDealDamage>().Count() >= 3,
                     "Molten Orb's direct hit and splash are both read, each behind its own branch");
 
+                // ★ Fusion coverage C5: ability damage and negative levels join the joint value by their HP equivalent.
+                foreach (var (a, b, save) in new[] { ("Fireball", "WrackingRay", SavingThrowType.Reflex),
+                                                    ("WrackingRay", "ColorSpray", SavingThrowType.Will) })
+                {
+                    var fused = Fuse(a, b, save);
+                    var profile = AbilityProfile.Get(fused);
+                    var kindOf = math.GetMethod("KindOf", Hidden);
+                    bool drains = profile.Damage.OfType<ContextActionDealDamage>().Any(d => kindOf.Invoke(null, new object[] { d }).ToString() != "HitPoints");
+                    Check(drains && Withheld(fused) == null && Qualified(fused),
+                        $"C5: actual {a}/{b} ({save}) with ability damage is valued by the joint model (reason: {reason.GetValue(profile) ?? "none"})");
+                }
+                var enervation = Fuse("Fireball", "Enervation", SavingThrowType.Reflex);
+                Check(!((string)reason.GetValue(AbilityProfile.Get(enervation)) ?? "").Contains("non-HP") && !Qualified(enervation),
+                    "C5: Enervation's negative levels are read; its undead branch (temporary HP) still keeps it off the joint value");
+
                 // --- 3. compiled routes ---
                 var values = Body(engine, "TryFusionValues");
-                Check(Calls(values, engine, "TryFusionPeriodicDamage") && Calls(values, engine, "FusionPeriodicHorizon") &&
+                Check(Calls(values, engine, "TryPeriodicDamage") && Calls(values, engine, "PeriodicHorizon") &&
                       values.Any(m => m is MethodInfo mi && mi.DeclaringType == typeof(ValueModel) && mi.Name == "FusionValue" && mi.GetParameters().Length == 15),
                     "the joint value takes each outcome's damage over time");
-                var periodic = Body(engine, "TryFusionPeriodicDamage");
+                var periodic = Body(engine, "TryPeriodicDamage");
                 Check(Calls(periodic, engine, "TryFusionApplicationRounds") && Calls(periodic, engine, "PeriodicCarrierDamage") &&
                       CallsNamed(periodic, "BuffImmune") && CallsNamed(periodic, "HasFact"),
                     "damage over time reads the native duration, immunity, and gives no refresh credit");
@@ -204,10 +219,10 @@ namespace ProfileAudit
                       Calls(carrierDamage, math, "ReadPeriodicTick") && Calls(carrierDamage, math, "SaveFailChance") &&
                       !Calls(carrierDamage, math, "CreateContext"),
                     "a carrier's ticks: fused dice cap, the recipient's resistance, the native schedule and save, no context");
-                Check(Calls(Body(engine, "ScoreAbility"), engine, "FusionPeriodicAllyDamage"),
+                Check(Calls(Body(engine, "ScoreAbility"), engine, "PeriodicAllyDamage"),
                     "the friendly-fire cost counts the damage over time the cast leaves on allies");
                 var damageTo = Body(typeof(BurstWatch), "DamageTo");
-                Check(Calls(damageTo, typeof(AbilityProfile), "AimedAt") && Calls(damageTo, engine, "FusionPeriodicAllyDamage"),
+                Check(Calls(damageTo, typeof(AbilityProfile), "AimedAt") && Calls(damageTo, engine, "PeriodicAllyDamage"),
                     "the burst re-check prices a walking-in ally as the ground-aimed cast has it, damage over time included");
                 Check(Calls(Body(math, "EvaluateDamageDice"), math, "FusedDiceCount"), "the cast's own damage keeps the same dice cap");
             }

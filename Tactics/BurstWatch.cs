@@ -469,7 +469,7 @@ namespace CompanionAI_Pathfinder.Tactics
                 // leaves on the ally.
                 using (AbilityProfile.AimedAt(new TargetWrapper(e.Plan.Point)))
                     damage = CombatMath.EstimateAbilityDamage(e.Plan.Ability, profile, ally) +
-                             TacticalEngine.FusionPeriodicAllyDamage(e.Plan.Ability, profile, ally, CombatMath.AfflictionRounds);
+                             TacticalEngine.PeriodicAllyDamage(e.Plan.Ability, profile, ally, CombatMath.AfflictionRounds);
             }
             catch { }
             cache[ally] = damage;

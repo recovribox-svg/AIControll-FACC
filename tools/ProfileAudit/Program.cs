@@ -268,6 +268,11 @@ namespace ProfileAudit
             foreach (var line in fusionPoolLines) Console.WriteLine(line);
             File.WriteAllText(output, string.Join(Environment.NewLine, fusionPoolLines) + Environment.NewLine + File.ReadAllText(output));
             blocklistFailures += fusionPoolFailures;
+            // ★ damage over time on ordinary spells (docs/PERIODIC_DAMAGE.md).
+            var periodicLines = PeriodicCheck.Run(loaded.Values, out int periodicFailures);
+            foreach (var line in periodicLines) Console.WriteLine(line);
+            File.WriteAllText(output, string.Join(Environment.NewLine, periodicLines) + Environment.NewLine + File.ReadAllText(output));
+            blocklistFailures += periodicFailures;
             // ★ Fusion coverage C2: Hideous Laughter's Best Jokes recast on a random enemy.
             var fusionRecastLines = FusionRecastCheck.Run(loaded.Values, out int fusionRecastFailures);
             foreach (var line in fusionRecastLines) Console.WriteLine(line);
