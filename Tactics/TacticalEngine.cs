@@ -972,9 +972,13 @@ namespace CompanionAI_Pathfinder.Tactics
                     // them because downed allies were not in any list.
                     // ★ v0.3.11: only companions and pets go unconscious; a summon at 0 HP is gone (Camellia healed a
                     // dropped Dretch at 37 % HP instead of herself, then went down).
-                    if (other != unit && !unit.IsEnemy(other) && IsRevivable(other) &&
+                    bool turned = other != unit && IsTurnedAlly(other);
+                    if (other != unit && (!unit.IsEnemy(other) || turned) && IsRevivable(other) &&
                         Vector3.Distance(unit.Position, other.Position) < 30f)
-                        ctx.DownedAllies.Add(other);
+                    {
+                        if (turned) { ctx.TurnedAllies.Add(other); NoteTurnedAlly(ctx, other); }
+                        else ctx.DownedAllies.Add(other);
+                    }
                     // ★ v0.3.21 (gaps): a regenerating enemy at 0 HP is only down - it heals and stands up again - until damage
                     // that stops its regeneration (a troll: fire or acid) finishes it (UnitLifeController). It stays a target;
                     // its kill is a knock-down for other damage (ValueModel.RegeneratingKill).
@@ -4008,7 +4012,7 @@ namespace CompanionAI_Pathfinder.Tactics
                 // rather than silently making a harmful cone look safe. No actor is moved to preview the origin.
                 // ★ Fusion coverage C4: a line the same way, by the native line query (ProjectileLine).
                 if (!ProjectileArea.TryCreate(profile, ability, actualAim, castOrigin, out var cone) ||
-                    !cone.TryRecipients(ctx.Enemies.Concat(ctx.Allies).Concat(ctx.DownedAllies), out var recipients))
+                    !cone.TryRecipients(ctx.Enemies.Concat(ctx.Allies).Concat(ctx.DownedAllies).Concat(ctx.TurnedAllies), out var recipients))
                 {
                     why = profile.IsProjectileLine ? "native line geometry unavailable" : "native cone geometry unavailable";
                     return 0f;
@@ -4060,6 +4064,7 @@ namespace CompanionAI_Pathfinder.Tactics
                     if (walkingIn != null) affectedAllies.AddRange(walkingIn);
                 }
             }
+            IncludeDownedTurnedRecipients(ctx, ability, profile, areaCenter, geometryRecipients, affectedEnemies);
             List<UnitEntityData> DownedRecipients() => profile.IsProjectileArea
                 ? affectedAllies.Where(ctx.DownedAllies.Contains).ToList()
                 : UnitsAround(ctx.DownedAllies, areaCenter, profile.AoERadius)
@@ -4071,6 +4076,7 @@ namespace CompanionAI_Pathfinder.Tactics
                 burst.AllyControl = null;   // filled by the control part below, for this scoring only
                 foreach (var a in affectedAllies) burst.Allies.Add(a);
                 foreach (var a in DownedRecipients()) burst.Allies.Add(a);
+                foreach (var a in affectedEnemies) if (ctx.TurnedAllies.Contains(a)) burst.Allies.Add(a);
                 burst.Enemies = affectedEnemies.Count;
             }
             // ★ Fusion F7: not for a fused pool - its other payload reaches every recipient, covered or not.
@@ -4185,6 +4191,7 @@ namespace CompanionAI_Pathfinder.Tactics
             // --- damage ---
             // ★ damage over time (docs/PERIODIC_DAMAGE.md): a spell whose only payload is a burning or acid buff is damage too.
             bool periodic = HasPeriodicCarrier(profile);
+            bool hasDrainDamage = profile.Damage.Any(a => a is Kingmaker.UnitLogic.Mechanics.Actions.ContextActionDealDamage d && !CombatMath.IsHitPointDamage(d));
             if ((profile.DealsDamage || periodic) && affectedEnemies.Count > 0)
             {
                 float dmgValue = 0f;
@@ -4212,23 +4219,29 @@ namespace CompanionAI_Pathfinder.Tactics
                     if (fusionRead == null && profile.Fusion == null) dmg = Math.Max(0f, dmg - CarrierBenefitExpected(ability, profile, enemy));
                     if (burst != null && dmg > burst.Damage) burst.Damage = dmg;   // ★ burst aim: the re-check's fallback
                     float p = CombatMath.EffectChance(unit, enemy, ability, profile, damage: true);
+                    float immediateHp = fusionRead != null && fusionRead.Known
+                        ? fusionRead.FailChance * fusionRead.FailedHitPoints + (1f - fusionRead.FailChance) * fusionRead.PassedHitPoints
+                        : hasDrainDamage ? 0f : dmg;
                     // ★ coverage3 review: an ally under an enemy's control - its damage is friendly fire, never a gain; a
                     // likely knock-out costs its worth (TacticalEngine.TurnedAllies.cs).
                     if (ctx.TurnedAllies.Count > 0 && ctx.TurnedAllies.Contains(enemy))
                     {
-                        float expected = dmg * p;
+                        float later = periodic ? PeriodicExpected(ability, profile, enemy, PeriodicHorizon(ctx), true) : 0f;
+                        float expected = (dmg + later) * p;
+                        // ★ Fusion coverage C8: a pool's payload lands when the pool still covers this unit; a fused cast's other
+                        // spell either way.
                         if (poolDamage)
                         {
                             float covered;
                             using (AbilityProfile.PoolOutcome(ability, true))
                                 covered = CombatMath.KillApplies(ability, profile, enemy) ? Math.Max(1, enemy.HPLeft)
                                     : profile.Fusion == null ? dmg : CombatMath.EstimateAbilityDamage(ability, profile, enemy);
-                            expected = p * (poolReach * covered + (1f - poolReach) * (profile.Fusion == null ? 0f : dmg));
+                            expected = p * (poolReach * covered + (1f - poolReach) * (profile.Fusion == null ? 0f : dmg) + later);
                         }
                         if (expected > 0f)
                         {
                             turnedCost += Math.Min(expected, Math.Max(0f, enemy.HPLeft)) * 2f +
-                                          (expected >= enemy.HPLeft ? AllyWorth(ctx, enemy) : 0f);
+                                          ((immediateHp + later) * p >= enemy.HPLeft ? AllyWorth(ctx, enemy) : 0f);
                             (turnedHurt ?? (turnedHurt = new List<string>())).Add(enemy.CharacterName);
                         }
                         continue;
@@ -4275,7 +4288,8 @@ namespace CompanionAI_Pathfinder.Tactics
                     if (geometryChance.HasValue) geometryChance = Math.Max(geometryChance.Value, beneficialChance);
                     dmgValue += part;
                     // ★ cast disruption (real time): this enemy's cast may break under the damage (TacticalEngine.Disrupt.cs).
-                    if (CombatMemory.IsRealTime) disrupt += AbilityDisruptBonus(ctx, ability, profile, enemy, castOrigin, p, dmg);
+                    // Only lethal HP packets trigger damage concentration checks; DrainEquivalent and future ticks do not.
+                    if (CombatMemory.IsRealTime) disrupt += AbilityDisruptBonus(ctx, ability, profile, enemy, castOrigin, p, immediateHp);
                     // Reuse this recipient's delivery estimate. Infusion effects join the shared scale before target
                     // choice and casting/walking risk; the native cost is charged later by PriceBurn.
                     if (valueActiveInfusions)
@@ -5019,7 +5033,7 @@ namespace CompanionAI_Pathfinder.Tactics
                     bool fighting = (ally.CombatState?.IsEngaged ?? false) || ally == unit;
                     float ordinary = (2f + 2f * level) * horizon * (fighting ? 1f : 0.6f) * share;
                     // ★ coverage5: or what the removed effects cost the ally (confusion, fear, a hold), when that is more.
-                    cleanseValue += Math.Max(Math.Max(ordinary, RemovalRelief(ctx, profile, ally, horizon)),
+                    cleanseValue += Math.Max(Math.Max(ordinary, RemovalRelief(ctx, ability, profile, ally, horizon)),
                                              AttachedCleanseWorth(ctx, ability, profile, ally));
                 }
                 if (cleanseValue > 0f)
@@ -5033,7 +5047,7 @@ namespace CompanionAI_Pathfinder.Tactics
             if (ctx.TurnedAllies.Count > 0 && (profile.DispelActions.Count > 0 || profile.RemovesAnything || SuppressesOnRecipient(profile)))
             {
                 float freedValue = FreeingValue(ctx, ability, profile, target, affectedEnemies, out string freedNote);
-                if (freedValue > 0f)
+                if (freedValue != 0f)
                 {
                     value += freedValue;
                     reasons.Add(freedNote);
@@ -5044,7 +5058,7 @@ namespace CompanionAI_Pathfinder.Tactics
             // ally's harmful effects, and the party's own buffs a dispel would take first (TacticalEngine.Relief.cs) ---
             bool dispelPriced = false;
             if (profile.DispelActions.Count > 0 &&
-                TryDispelValue(ctx, ability, profile, target, affectedEnemies, affectedAllies, out float dispelWorth, out string dispelNote))
+                TryDispelValue(ctx, ability, profile, actualAim, affectedEnemies, affectedAllies, out float dispelWorth, out string dispelNote))
             {
                 dispelPriced = true;
                 if (dispelWorth != 0f)

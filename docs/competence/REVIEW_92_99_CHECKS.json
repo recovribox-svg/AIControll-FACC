@@ -1,0 +1,532 @@
+{
+  "recorded_at_utc": "2026-11-21T18:59:03.675536+00:00",
+  "scope": "Critical review/corrections of eight open stacked PRs, no integration",
+  "source_commit": "131309f620c6adcb495c58200dd214de7ff78283",
+  "source_branch": "codex/review-92-99",
+  "development_base": "0019856805605c9b74e27ffbdfa6b8dd9c20b0f2",
+  "stack_head": "22ded8a802b39275f0f805d47d17c12db125f4a1",
+  "reviewed_prs": [
+    {
+      "number": 92,
+      "head": "claude/fusion-coverage-programme",
+      "head_sha": "09b131501158dba49cd28ba702a8f239d5296c07",
+      "base": "claude/dreamy-pasteur-b9h3rn",
+      "base_sha": "0019856805605c9b74e27ffbdfa6b8dd9c20b0f2",
+      "state": "open",
+      "draft": true,
+      "merged": false
+    },
+    {
+      "number": 93,
+      "head": "claude/review-r-items",
+      "head_sha": "816c1363cc389b8d2ca2c4f6c92d5a5f453709d5",
+      "base": "claude/dreamy-pasteur-b9h3rn",
+      "base_sha": "0019856805605c9b74e27ffbdfa6b8dd9c20b0f2",
+      "state": "open",
+      "draft": true,
+      "merged": false
+    },
+    {
+      "number": 94,
+      "head": "claude/fusion-coverage-c2-c5",
+      "head_sha": "994c6e2a87f3da6e378f88aa08aa42f374c2308d",
+      "base": "claude/dreamy-pasteur-b9h3rn",
+      "base_sha": "0019856805605c9b74e27ffbdfa6b8dd9c20b0f2",
+      "state": "open",
+      "draft": true,
+      "merged": false
+    },
+    {
+      "number": 95,
+      "head": "claude/coverage2-review",
+      "head_sha": "5a80e54c0b1a12549a2ca0b483f1225c49081200",
+      "base": "claude/dreamy-pasteur-b9h3rn",
+      "base_sha": "0019856805605c9b74e27ffbdfa6b8dd9c20b0f2",
+      "state": "open",
+      "draft": true,
+      "merged": false
+    },
+    {
+      "number": 96,
+      "head": "claude/coverage3-review",
+      "head_sha": "392b273cd8b2d018fcfc49512d9a2b734c340606",
+      "base": "claude/dreamy-pasteur-b9h3rn",
+      "base_sha": "0019856805605c9b74e27ffbdfa6b8dd9c20b0f2",
+      "state": "open",
+      "draft": true,
+      "merged": false
+    },
+    {
+      "number": 97,
+      "head": "claude/coverage4-followups",
+      "head_sha": "cc862b9ef4ed979cd2f42b02f3053ae0073f013e",
+      "base": "claude/dreamy-pasteur-b9h3rn",
+      "base_sha": "0019856805605c9b74e27ffbdfa6b8dd9c20b0f2",
+      "state": "open",
+      "draft": true,
+      "merged": false
+    },
+    {
+      "number": 98,
+      "head": "claude/relief-spells",
+      "head_sha": "c0b1c594ff25379b51dee57dfa9c14b10008ce0c",
+      "base": "claude/dreamy-pasteur-b9h3rn",
+      "base_sha": "0019856805605c9b74e27ffbdfa6b8dd9c20b0f2",
+      "state": "open",
+      "draft": true,
+      "merged": false
+    },
+    {
+      "number": 99,
+      "head": "claude/fusion-coverage-rest",
+      "head_sha": "22ded8a802b39275f0f805d47d17c12db125f4a1",
+      "base": "claude/dreamy-pasteur-b9h3rn",
+      "base_sha": "0019856805605c9b74e27ffbdfa6b8dd9c20b0f2",
+      "state": "open",
+      "draft": true,
+      "merged": false
+    }
+  ],
+  "baseline": {
+    "source": "22ded8a802b39275f0f805d47d17c12db125f4a1",
+    "dll": {
+      "assembly": "CompanionAI_Pathfinder, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null",
+      "mvid": "60bd8254-5d98-4382-a60e-c131ce246dff",
+      "sha256": "f59059b433b3a6de763d3d9f471129d87b75cc77f65fcd5bfcb22a4470fc9f89",
+      "size": 1594368
+    },
+    "unit_tests": 1072,
+    "foreign_signatures": 24,
+    "all_checks_passed": true,
+    "raw_expected_input_failure": true
+  },
+  "result": {
+    "source": "131309f620c6adcb495c58200dd214de7ff78283",
+    "dll": {
+      "assembly": "CompanionAI_Pathfinder, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null",
+      "mvid": "7ad87f85-5833-4798-baa5-4a5c9f0a9ffc",
+      "sha256": "9ce5dae82b6e3632d0a85d562c2ee1ead6bee8c825b41a90076a2281511f78a3",
+      "size": 1602048
+    },
+    "unit_tests": 1096,
+    "foreign_signatures": 4,
+    "all_checks_passed": true,
+    "raw_expected_input_failure": true,
+    "reference_verification": "exact full normalized signatures; legacy name-prefix verifier overmatched an unchanged Any overload"
+  },
+  "checks": {
+    "release": {
+      "warnings": 0,
+      "errors": 0,
+      "real_game_references": true
+    },
+    "unit_tests": 1096,
+    "scripts": {
+      "inventory": 27,
+      "invocation_ledger": 21,
+      "supplement": 3
+    },
+    "profile_audit": {
+      "strict": {
+        "exit": 0,
+        "loaded": 44814,
+        "failed_loads": 0,
+        "abilities": 4808,
+        "reader_errors": 0
+      },
+      "full_stock": {
+        "exit": 0,
+        "loaded": 45295,
+        "failed_loads": 0,
+        "abilities": 4849,
+        "reader_errors": 0
+      },
+      "sections": {
+        "BUFF-DEFENCE": {
+          "checks": 19,
+          "failures": 0
+        },
+        "UNIQUE-REPLACEMENT": {
+          "checks": 57,
+          "failures": 0
+        },
+        "RANK-INCREMENT": {
+          "checks": 10,
+          "failures": 0
+        },
+        "SWARM-COVERAGE": {
+          "checks": 27,
+          "failures": 0
+        },
+        "SWARM-PROTECTION": {
+          "checks": 14,
+          "failures": 0
+        },
+        "SWARM-ESCAPE": {
+          "checks": 32,
+          "failures": 0
+        },
+        "REVEAL-VALUE": {
+          "checks": 7,
+          "failures": 0
+        },
+        "ATTACHED": {
+          "checks": 24,
+          "failures": 0
+        },
+        "RESISTANCE-MEMO": {
+          "checks": 18,
+          "failures": 0
+        },
+        "CASTER-POLICY": {
+          "checks": 36,
+          "failures": 0
+        },
+        "FUSION": {
+          "checks": 39,
+          "failures": 0
+        },
+        "FUSION-CONE": {
+          "checks": 34,
+          "failures": 0
+        },
+        "FUSION-VALUE": {
+          "checks": 23,
+          "failures": 0
+        },
+        "FUSION-OUTCOME": {
+          "checks": 33,
+          "failures": 0
+        },
+        "FUSION-POOL": {
+          "checks": 39,
+          "failures": 0
+        },
+        "PERIODIC": {
+          "checks": 8,
+          "failures": 0
+        },
+        "LINE": {
+          "checks": 22,
+          "failures": 0
+        },
+        "FUSION-REST": {
+          "checks": 27,
+          "failures": 0
+        },
+        "RELIEF": {
+          "checks": 24,
+          "failures": 0
+        },
+        "FREEING": {
+          "checks": 12,
+          "failures": 0
+        },
+        "PERMADEATH": {
+          "checks": 35,
+          "failures": 0
+        },
+        "FUSION-RECAST": {
+          "checks": 14,
+          "failures": 0
+        },
+        "FUSION-DOT": {
+          "checks": 52,
+          "failures": 0
+        },
+        "BURST-AIM": {
+          "checks": 79,
+          "failures": 0
+        },
+        "EVIDENCE": {
+          "checks": 16,
+          "failures": 0
+        },
+        "CAST-DISRUPT": {
+          "checks": 50,
+          "failures": 0
+        },
+        "BUFF-SUPPRESS": {
+          "checks": 35,
+          "failures": 0
+        },
+        "SNEAK": {
+          "checks": 36,
+          "failures": 0
+        },
+        "GRAPPLE": {
+          "checks": 58,
+          "failures": 0
+        },
+        "PROJECTILES": {
+          "checks": 29,
+          "failures": 0
+        },
+        "MAGUS": {
+          "checks": 44,
+          "failures": 0
+        },
+        "STEP-APPROACH": {
+          "checks": 13,
+          "failures": 0
+        },
+        "APPROACH-SPOT": {
+          "checks": 28,
+          "failures": 0
+        },
+        "IDLE-ADVANCE": {
+          "checks": 27,
+          "failures": 0
+        },
+        "AREA-EXIT": {
+          "checks": 28,
+          "failures": 0
+        },
+        "STATIC-DEBUFF": {
+          "checks": 17,
+          "failures": 0
+        },
+        "AREA-BOUNDS": {
+          "checks": 28,
+          "failures": 0
+        },
+        "DISPEL-PENDING": {
+          "checks": 10,
+          "failures": 0
+        },
+        "ELDRITCH-ARCHER": {
+          "checks": 29,
+          "failures": 0
+        },
+        "SHIFTER": {
+          "checks": 48,
+          "failures": 0
+        },
+        "SUMMON-CONTROL": {
+          "checks": 70,
+          "failures": 0
+        },
+        "SUMMON-KITS": {
+          "checks": 8,
+          "failures": 0
+        },
+        "FORM-REFERENCE": {
+          "checks": 14,
+          "failures": 0
+        },
+        "FOCUSED-SHOT": {
+          "checks": 47,
+          "failures": 0
+        },
+        "JOINT-COST": {
+          "checks": 31,
+          "failures": 0
+        },
+        "ABILITY-DISCOVERY": {
+          "checks": 19,
+          "failures": 0
+        },
+        "CAMPAIGN-FLAG": {
+          "checks": 21,
+          "failures": 0
+        },
+        "SHIFTER-FORMS": {
+          "checks": 21,
+          "failures": 0
+        },
+        "VALUE-SELECTION": {
+          "checks": 24,
+          "failures": 0
+        },
+        "NATIVE-VIEW": {
+          "checks": 6,
+          "failures": 0
+        },
+        "REVEAL": {
+          "checks": 3,
+          "failures": 0
+        },
+        "CAST-BONUS": {
+          "checks": 2,
+          "failures": 0
+        },
+        "HELD-WEAPON": {
+          "checks": 46,
+          "failures": 0
+        },
+        "BUFF-CONTEXT": {
+          "checks": 39,
+          "failures": 0
+        },
+        "GRIFFON-ATTACK": {
+          "checks": 47,
+          "failures": 0
+        },
+        "GRIFFON-MODES": {
+          "checks": 29,
+          "failures": 0
+        },
+        "DIAGNOSTIC-LOG": {
+          "checks": 22,
+          "failures": 0
+        },
+        "COUP-REACH": {
+          "checks": 32,
+          "failures": 0
+        }
+      },
+      "failed_or_skipped_sections": 0
+    },
+    "native": {
+      "ToggleCosts": 98,
+      "TomeBurn": 14,
+      "ToyBoxSpend": 10,
+      "psionics_provider": true
+    },
+    "supplementary_Magus": 44,
+    "raw_export_negative_control": {
+      "exit": 1,
+      "failed_loads": 1,
+      "reason": "Known supplied Achaekek weapon-category enum incompatible with supplied native references; not a code failure"
+    }
+  },
+  "coverage": {
+    "configurations": 15494,
+    "admitted": 13197,
+    "admitted_with_joint": 8635,
+    "metadata_qualified_including_withheld": 8887,
+    "reader_errors": 0,
+    "strict_matrix_equal_to_baseline": true,
+    "full_matrix_equal_to_baseline": true,
+    "summon_kit_detail_byte_identical": true,
+    "other_full_report_rows_identical": true,
+    "report_changes": {
+      "BURST-AIM": {
+        "before": 78,
+        "after": 79
+      },
+      "EVIDENCE": {
+        "before": 15,
+        "after": 16
+      },
+      "FUSION-DOT": {
+        "before": 47,
+        "after": 52
+      },
+      "FUSION-RECAST": {
+        "before": 12,
+        "after": 14
+      },
+      "LINE": {
+        "before": 21,
+        "after": 22
+      },
+      "PERMADEATH": {
+        "before": 24,
+        "after": 35
+      },
+      "RELIEF": {
+        "before": 16,
+        "after": 24
+      }
+    }
+  },
+  "projectile_supplement": {
+    "source": "Retained BubblePrints 2.7.0x database through uploaded viewer libraries; missing-only stock fixtures",
+    "database_sha256": "03ba6e29782c0c14e0c0383cd739560358641f7b5842f1dcfb690246e73c9c6a",
+    "requested": 194,
+    "found": 194,
+    "strict_missing_added": 174,
+    "guid_manifest": "docs/competence/REVIEW_92_99_PROJECTILE_TARGETS.json",
+    "initial_incomplete_input_failure": "Six #99 line/fusion checks failed without these records, passed on identical unmodified code after supplementing inputs",
+    "reader_receipt_sha256": "1ac7d38121010a0401473b25d2c4c3c52f201bbfb928e46df4f4dfc6d3ae765a"
+  },
+  "signatures": {
+    "baseline": "Fresh #99 build on 22ded8a",
+    "added": [
+      "Assembly-CSharp F class Kingmaker.RuleSystem.Rules.Damage.RuleDealDamage Kingmaker.RuleSystem.Rules.Abilities.RuleCheckConcentration::Damage",
+      "Assembly-CSharp F valuetype System.Boolean Kingmaker.UnitLogic.Mechanics.Actions.ContextActionDealDamage::IgnoreUnitModifiers",
+      "Assembly-CSharp F valuetype System.Boolean Kingmaker.UnitLogic.Mechanics.Actions.ContextActionDispelMagic::OneRollForAll",
+      "Assembly-CSharp M valuetype System.Boolean Kingmaker.Utility.LinqExtensions::Any(System.Collections.Generic.IList`1<!!0>) this=False"
+    ],
+    "removed": [],
+    "exact_resolution_passed": true,
+    "exact_resolution_count": 4,
+    "verifier_source_sha256": "0095ae97b0cfd9ea95ecacde17c02f07bbc73bc0a7b2e7a390504d68a71e76a2",
+    "legacy_verifier_note": "Name-prefix matching also selected an unchanged two-argument Any overload (5 matches for 4 lines). Exact full-signature matching resolves precisely the four additions."
+  },
+  "evidence_boundary": {
+    "raw_new_coverage_logs_replayed": false,
+    "live_actor_or_command_execution": false,
+    "Unity_performance_benchmark": false,
+    "native_fixtures": "Scalar/layout readers, seeded inert buffs/contexts, native pure comparer/line predicate; no game actor initialization or damage roll",
+    "gameplay": "unplayed"
+  },
+  "package": {
+    "build_label": "review92-99",
+    "kind": "development-test",
+    "version": "0.3.60",
+    "source_branch": "codex/review-92-99",
+    "source_commit": "131309f620c6adcb495c58200dd214de7ff78283",
+    "development_base": "0019856805605c9b74e27ffbdfa6b8dd9c20b0f2",
+    "stack_head": "22ded8a802b39275f0f805d47d17c12db125f4a1",
+    "stack_prs": [
+      92,
+      93,
+      94,
+      95,
+      96,
+      97,
+      98,
+      99
+    ],
+    "dll": {
+      "assembly": "CompanionAI_Pathfinder, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null",
+      "mvid": "7ad87f85-5833-4798-baa5-4a5c9f0a9ffc",
+      "sha256": "9ce5dae82b6e3632d0a85d562c2ee1ead6bee8c825b41a90076a2281511f78a3",
+      "size": 1602048
+    },
+    "archive": "AI-Control-FACC-v0.3.60-dev-review92-99-131309f-UMM-test.zip",
+    "zip_sha256": "3406a64691bd47655900e584fcf12e8034ff0623eb293b63dcf35dbbb0c87533",
+    "manifest_sha256": "63ad9f152d4bacb44f021428193efad46aaf0d13380bb5691ebca1d935f2b5bf",
+    "checks_receipt": "docs/competence/REVIEW_92_99_CHECKS.json",
+    "build_provenance": "docs/competence/REVIEW_92_99_BUILD_PROVENANCE.json",
+    "build_provenance_sha256": "ef3fb564b263a4943dd634abf942ecb692cd2f7acd81e67ffd076518ee269521",
+    "toolchain": {
+      "dotnet_sdk": "8.0.426",
+      "csharp_compiler": "4.11.0-3.25569.22 (3fb752d4)"
+    },
+    "gameplay_status": "unplayed",
+    "release": false,
+    "archive_contents": [
+      "CompanionAI_Pathfinder.dll",
+      "Info.json"
+    ],
+    "identity_note": "Frozen checked DLL across later documentation commits; new startup MVID. Nothing merged, tagged or released."
+  },
+  "provenance_sha256": "ef3fb564b263a4943dd634abf942ecb692cd2f7acd81e67ffd076518ee269521",
+  "review_sha256": "57802b72c96e6e48186fc59f858726c7ea03aa162c40af8030e03d939108b488",
+  "private_report_sha256": {
+    "release.log": "7aefa9d7b47695a5105fb6b76e82e11f6b162085f91999734c3223e5942248fa",
+    "unit.log": "67a8399c48b6d83c18e19824f2aad43513ef3b31e546eda4f4047f945dc0b97a",
+    "strict.txt": "a34914fff4861c1124eee3e0b535465e2ab342e9e6b36bdaf093b308d964e99c",
+    "full-stock.txt": "8e0e45bca1f5d8c1b86661db1aedfa0234f40326b492f2f807221a97720a06bb",
+    "coverage.json": "6c9e48c9b2bc9cc64cbfe4f9317a8d6627305c282720f8c29fadf4f130c6a65f",
+    "full-coverage.json": "6c9e48c9b2bc9cc64cbfe4f9317a8d6627305c282720f8c29fadf4f130c6a65f",
+    "summon-kit-detail.txt": "c2ec48c0d04fd27a0325d1a42d3c4ab62a62a098138877a0a4776a2b48ec1a8c",
+    "refs-exact.log": "e9dc5034eb6f0d77fbbb57434a8a92cd5886f2c178c5cd6eac3c996cdebd093a",
+    "toggle.log": "91fcb1566d47009c580585cb3674134b2bb4ad2e35b262c78e9d9bf4c737f04a",
+    "tome.log": "bd33f6118e71d8eb677a070391ebcd71622b934e589e6afe31b30ca575c313a7",
+    "toybox.log": "c6a01087f84a1db0c5931a152f66546c5d46285a3a99c8f215f125f11c1fa6cd",
+    "supplementary.log": "3e397c70c74c9a1366070aab15861be2d11b875a0b278f0cb1b5e502057b5266",
+    "raw.log": "7f1c7f9659119e8938ab0af63b12eddfa4933025607c51b24862e1266562ebdb"
+  },
+  "report_diff_sha256": "0b54e9218072f6587a7ac2be0c6a1502bbb2bbcec48f71f09c5ac64a3d4fec46",
+  "integration": {
+    "merged": false,
+    "pushed_to_development": false,
+    "main_changed": false,
+    "tagged": false,
+    "released": false
+  }
+}

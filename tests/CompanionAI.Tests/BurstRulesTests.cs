@@ -7,6 +7,14 @@ namespace CompanionAI.Tests
     // ★ burst aim: the pure rules behind ground-aimed delayed bursts (docs/BURST_AIM_AND_TACTICS_PLAN.md §3).
     public class BurstRulesTests
     {
+        [Fact]
+        public void FullRealTimeTrackingCannotDiscardATurnBasedLandingWait()
+        {
+            Assert.False(BurstRules.TrackLanding(true, 256, 256));
+            Assert.True(BurstRules.TrackLanding(true, 255, 256));
+            Assert.True(BurstRules.TrackLanding(false, 256, 256));
+            Assert.True(BurstRules.TrackLanding(false, 257, 256));
+        }
         [Theory]
         // realTime, fullRound, fromItem, wand, immediate -> seconds (UnitUseAbility.m_CastTime)
         [InlineData(true, false, false, false, false, 2f)]

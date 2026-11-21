@@ -138,8 +138,9 @@ namespace ProfileAudit
                 var summed = Sum();
                 Check(ok && Enumerable.Range(0, 3).All(i => Math.Abs(once[i] - summed[i]) < 1e-5f) && SharedHdBudget.MaxBudget >= 150,
                     "a rolled pool in one pass equals the weighted forecasts of its rolls; Circle of Death's largest pool fits the bound");
-                var withKill = typeof(ValueModel).GetMethods(Hidden).Single(m => m.Name == "FusionValue" && m.GetParameters().Length == 17);
-                var args = new object[] { 0.5f, 1f, 0f, 0f, 0f, 0f, 30f, 20f, 10f, 2f, 0f, false, false, true, false, 0f, 0f };
+                // The kill overload, with the review's separate HP-damage parameters (review 92-99) left unset.
+                var withKill = typeof(ValueModel).GetMethods(Hidden).Single(m => m.Name == "FusionValue" && m.GetParameters().Length == 19);
+                var args = new object[] { 0.5f, 1f, 0f, 0f, 0f, 0f, 30f, 20f, 10f, 2f, 0f, false, false, true, false, 0f, 0f, null, null };
                 withKill.Invoke(null, args);
                 float killed = (float)args[15], killedControl = (float)args[16];
                 Check(Math.Abs(killed - 0.5f * (30f + 20f)) < 1e-3f && killedControl == 0f,

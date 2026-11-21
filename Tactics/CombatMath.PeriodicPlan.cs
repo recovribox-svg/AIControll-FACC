@@ -154,6 +154,8 @@ namespace CompanionAI_Pathfinder.Tactics
             new Dictionary<KeyValuePair<AbilityData, BlueprintBuff>, MechanicsContext>();
         private static int s_PeriodicRankFrame = -1;
 
+        private static void ClearPeriodicRankContexts() => s_PeriodicRankContexts.Clear();
+
         /// <summary>
         /// ★ coverage4 (C6a): a tick's dice number for <paramref name="ability"/>'s application of <paramref name="buff"/>: a fixed
         /// value, or the buff's caster-level rank, read as the game does in a buff context whose parent is the cast's (its
@@ -179,7 +181,8 @@ namespace CompanionAI_Pathfinder.Tactics
                 if (s_PeriodicRankContexts.Count > 128) s_PeriodicRankContexts.Clear();
                 s_PeriodicRankContexts[key] = context;
             }
-            return context != null ? Math.Max(0, EvaluateValue(value, context, 0)) : 0;
+            if (context == null) throw new InvalidOperationException("Periodic caster-level rank context is unread");
+            return Math.Max(0, EvaluateValue(value, context, 0));
         }
 
         private static bool Empty(ActionList actions) => actions?.Actions == null || actions.Actions.Length == 0;

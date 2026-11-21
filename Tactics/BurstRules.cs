@@ -14,6 +14,9 @@ namespace CompanionAI_Pathfinder.Tactics
 {
     public static class BurstRules
     {
+        /// <summary>The real-time tracking cap must not discard a turn-based landing wait. TB advances one turn at a
+        /// time; retain its lightweight landing entry even if a mode switch left the RT flight table full.</summary>
+        public static bool TrackLanding(bool realTime, int tracked, int realTimeLimit) => !realTime || tracked < realTimeLimit;
         /// <summary>The native cast time of a real-time standard spell (UnitUseAbility.m_CastTime).</summary>
         public const float StandardCastSeconds = 2f;
 

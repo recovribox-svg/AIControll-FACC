@@ -194,10 +194,87 @@ namespace CompanionAI_Pathfinder.Tactics
         internal static bool IsEnemyOnlyRecast(ContextActionOnRandomTargetsAround random)
         {
             var actions = random?.Actions?.Actions;
-            if (random == null || !random.OnEnemies || actions == null || actions.Length == 0) return false;
+            if (random?.GetType() != typeof(ContextActionOnRandomTargetsAround) || !random.OnEnemies || actions == null || actions.Length == 0) return false;
             foreach (var action in actions)
-                if (!(action is ContextActionCastSpell cast) || cast.Spell == null || ChildActionLists(action).Any(list => list != null && list.Length > 0))
+                if (!(action is ContextActionCastSpell cast) || cast.GetType() != typeof(ContextActionCastSpell) || cast.CastByTarget || cast.Spell == null ||
+                    !RecastsTargetOnly(cast.Spell) || ChildActionLists(action).Any(list => list != null && list.Length > 0))
                     return false;
+            return true;
+        }
+
+        private static readonly Dictionary<Kingmaker.UnitLogic.Abilities.Blueprints.BlueprintAbility, bool> TargetOnlyRecasts =
+            new Dictionary<Kingmaker.UnitLogic.Abilities.Blueprints.BlueprintAbility, bool>();
+
+        // OnEnemies restricts the next cast's anchor, not its footprint. In particular, casting Fireball at a random
+        // enemy can hit allies. Only omit a proven target-only control chain, including its self-recasts (Best Jokes).
+        private static bool RecastsTargetOnly(Kingmaker.UnitLogic.Abilities.Blueprints.BlueprintAbility spell)
+        {
+            if (TargetOnlyRecasts.TryGetValue(spell, out bool known)) return known;
+            var run = spell.GetComponent<AbilityEffectRunAction>();
+            bool safe = run?.GetType() == typeof(AbilityEffectRunAction) &&
+                !spell.GetComponents<Kingmaker.UnitLogic.Abilities.Components.Base.AbilitySelectTarget>().Any() &&
+                !spell.GetComponents<Kingmaker.UnitLogic.Abilities.Components.Base.AbilityApplyEffect>().Any(c => c != run) &&
+                spell.GetComponent<AdditionalAbilityEffectRunActionOnClickedTarget>() == null &&
+                spell.GetComponents<Kingmaker.UnitLogic.Abilities.Components.Base.AbilityDeliverEffect>()
+                    .All(c => c.GetType() == typeof(AbilityDeliverProjectile) && ((AbilityDeliverProjectile)c).Type == AbilityProjectileType.Simple) &&
+                TargetControlActions(run.Actions?.Actions, spell, 0);
+            if (TargetOnlyRecasts.Count >= 512) TargetOnlyRecasts.Clear();
+            TargetOnlyRecasts[spell] = safe;
+            return safe;
+        }
+
+        private static bool TargetControlActions(GameAction[] actions, Kingmaker.UnitLogic.Abilities.Blueprints.BlueprintAbility spell, int depth)
+        {
+            if (depth > 12) return false;
+            foreach (var action in actions ?? Array.Empty<GameAction>())
+            {
+                if (action == null) continue;
+                if (action.GetType() == typeof(ContextActionApplyBuff) && action is ContextActionApplyBuff apply && !apply.ToCaster)
+                {
+                    if (!TargetControlBuff(apply.Buff)) return false;
+                    continue;
+                }
+                if (action.GetType() == typeof(ContextActionOnRandomTargetsAround) && action is ContextActionOnRandomTargetsAround random)
+                {
+                    if (!random.OnEnemies || random.Actions?.Actions == null || random.Actions.Actions.Length == 0 ||
+                        random.Actions.Actions.Any(a => !(a is ContextActionCastSpell cast) || cast.GetType() != typeof(ContextActionCastSpell) ||
+                            cast.CastByTarget || cast.Spell != spell)) return false;
+                    continue; // same proven spell, on another enemy; no recursive metadata expansion
+                }
+                var type = action.GetType();
+                if (type != typeof(Conditional) && type != typeof(ContextActionConditionalSaved) && type != typeof(ContextActionSavingThrow)) return false;
+                foreach (var child in ChildActionLists(action)) if (!TargetControlActions(child, spell, depth + 1)) return false;
+            }
+            return true;
+        }
+
+        private static bool TargetControlBuff(BlueprintBuff buff)
+        {
+            if (buff?.ComponentsArray == null || BuffControl(buff) == ControlStrength.None) return false;
+            foreach (var component in buff.ComponentsArray)
+            {
+                if (component == null) continue;
+                var type = component.GetType();
+                if (type == typeof(SpellDescriptorComponent) || type == typeof(RemoveWhenCombatEnded) ||
+                    type == typeof(Kingmaker.UnitLogic.FactLogic.AddCondition) ||
+                    type == typeof(Kingmaker.Designers.Mechanics.Buffs.BuffStatusCondition)) continue;
+                if (type != typeof(AddBuffActions)) return false;
+                var tick = (AddBuffActions)component;
+                foreach (var list in new[] { tick.Activated, tick.Deactivated, tick.Dispose, tick.NewRound })
+                    if (!RemovalOnlyActions(list?.Actions, 0)) return false;
+            }
+            return true;
+        }
+
+        private static bool RemovalOnlyActions(GameAction[] actions, int depth)
+        {
+            if (depth > 8) return false;
+            foreach (var action in actions ?? Array.Empty<GameAction>())
+            {
+                if (action == null || action.GetType() == typeof(ContextActionRemoveSelf)) continue;
+                if (action.GetType() != typeof(ContextActionSavingThrow) && action.GetType() != typeof(ContextActionConditionalSaved)) return false;
+                foreach (var child in ChildActionLists(action)) if (!RemovalOnlyActions(child, depth + 1)) return false;
+            }
             return true;
         }
 
@@ -403,12 +480,12 @@ namespace CompanionAI_Pathfinder.Tactics
                 }
                 if (action is ContextActionKill && path != FusionSavePath.Failed && Fusion.SavingThrowType != SavingThrowType.Unknown)
                     LimitFusion("kill outside the shared failed-save branch", at);
-                if (action is ContextActionDealDamage || action is IDealDamageProvider)
+                if (action is ContextActionDealDamage || action is IDealDamageProvider || action is ContextActionDispelMagic)
                 {
                     fusionLastDamageSource = Math.Max(fusionLastDamageSource, fusionSourceOrdinal);
                     if (FusionDamagePaths == null) FusionDamagePaths = new Dictionary<GameAction, FusionSavePath>();
                     if (FusionDamagePaths.TryGetValue(action, out var previous) && previous != path)
-                        LimitFusion("shared damage action on different save branches", at);
+                        LimitFusion("shared effect action on different save branches", at);
                     else FusionDamagePaths[action] = path;
                 }
                 int childIndex = 0;

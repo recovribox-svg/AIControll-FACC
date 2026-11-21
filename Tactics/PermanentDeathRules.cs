@@ -20,7 +20,7 @@ namespace CompanionAI_Pathfinder.Tactics
         /// <summary>Below the veto, a permanent death costs this many times the ally's worth.</summary>
         public const float WorthMultiple = 100f;
 
-        public static bool Vetoed(float risk) => risk >= VetoRisk;
+        public static bool Vetoed(float risk) => float.IsNaN(risk) || risk >= VetoRisk;
 
         /// <summary>What a small chance of killing an ally for good costs, in damage-equivalent points.</summary>
         public static float Cost(float risk, float worth) =>
@@ -36,12 +36,16 @@ namespace CompanionAI_Pathfinder.Tactics
             public float Factor;
         }
 
-        /// <summary>Dice past this count are not distributed (no ability rolls that many); the group then counts at its most.</summary>
+        /// <summary>Dice past this count are unread for the distribution budget; they cannot prove a cast safe.</summary>
         public const int MaxDice = 200;
+        // Bound work before allocating or multiplying distributions. Unread/oversized rolls cannot prove safety.
+        internal const int MaxDistributionLength = 4096;
+        private const long MaxConvolutionProducts = 1000000;
+        private const int MaxCachedCells = 65536;
 
         /// <summary>
-        /// The chance the sum of <paramref name="groups"/> is at least <paramref name="threshold"/>, exactly (each group's own
-        /// distribution, convolved). 1 for a threshold at or below 0: any outcome reaches it.
+        /// The chance the sum of <paramref name="groups"/> is at least <paramref name="threshold"/>: exact within the
+        /// distribution budget, otherwise the conservative bound 1. A threshold at or below 0 is already reached.
         /// </summary>
         public static float ChanceAtLeast(IReadOnlyList<DiceGroup> groups, int threshold)
         {
@@ -51,9 +55,9 @@ namespace CompanionAI_Pathfinder.Tactics
             foreach (var g in groups)
             {
                 var pmf = GroupPmf(g);
-                if (pmf == null) continue;
+                if (pmf == null) return 1f;
                 total = Convolve(total, pmf);
-                if (total.Length > 200000) return 1f;   // guard: an absurd roll counts as reaching anything
+                if (total == null) return 1f;
             }
             double p = 0d;
             for (int i = Math.Min(threshold, total.Length); i < total.Length; i++) p += total[i];
@@ -62,24 +66,27 @@ namespace CompanionAI_Pathfinder.Tactics
 
         private static double[] GroupPmf(DiceGroup g)
         {
+            if (g.Count < 0 || g.Sides < 0 || g.Count > MaxDice || g.Sides > 100 ||
+                float.IsNaN(g.Factor) || float.IsInfinity(g.Factor)) return null;
             float factor = g.Factor > 0f ? g.Factor : 1f;
             int bonus = Math.Max(0, g.Bonus);
-            if (g.Sides <= 0 || g.Count <= 0 || g.Maximize || g.Count > MaxDice)
+            double maximum = Math.Floor(((long)g.Count * g.Sides + bonus) * (double)factor);
+            if (maximum >= MaxDistributionLength) return null;
+            if (g.Sides <= 0 || g.Count <= 0 || g.Maximize)
             {
-                int most = g.Sides > 0 && g.Count > 0 ? Math.Min(g.Count, MaxDice * 10) * g.Sides : 0;
-                int value = (int)Math.Floor((most + bonus) * factor);
-                if (value < 0) value = 0;
+                int value = (int)maximum;
                 var single = new double[value + 1];
                 single[value] = 1d;
                 return single;
             }
             var dice = DicePmf(g.Count, g.Sides);
-            int top = (int)Math.Floor((dice.Length - 1 + bonus) * factor);
+            if (dice == null) return null;
+            int top = (int)maximum;
             var result = new double[Math.Max(1, top + 1)];
             for (int s = 0; s < dice.Length; s++)
             {
                 if (dice[s] <= 0d) continue;
-                int v = (int)Math.Floor((s + bonus) * factor);
+                int v = (int)Math.Floor((s + (double)bonus) * factor);
                 if (v < 0) v = 0;
                 if (v >= result.Length) v = result.Length - 1;
                 result[v] += dice[s];
@@ -89,11 +96,14 @@ namespace CompanionAI_Pathfinder.Tactics
 
         private static readonly Dictionary<long, double[]> DiceCache = new Dictionary<long, double[]>();
         private static readonly object CacheLock = new object();
+        private static int s_CachedCells;
 
         /// <summary>P(sum of <paramref name="count"/> d<paramref name="sides"/> = s), cached: dice distributions never change.</summary>
         internal static double[] DicePmf(int count, int sides)
         {
-            long key = (long)count * 1000 + sides;
+            if (count < 0 || count > MaxDice || sides <= 0 || sides > 100 ||
+                (long)count * sides >= MaxDistributionLength) return null;
+            long key = ((long)count << 32) | (uint)sides;
             lock (CacheLock)
             {
                 if (DiceCache.TryGetValue(key, out var cached)) return cached;
@@ -101,15 +111,22 @@ namespace CompanionAI_Pathfinder.Tactics
                 double face = 1d / sides;
                 var die = new double[sides + 1];
                 for (int f = 1; f <= sides; f++) die[f] = face;
-                for (int i = 0; i < count; i++) pmf = Convolve(pmf, die);
-                if (DiceCache.Count > 512) DiceCache.Clear();
+                for (int i = 0; i < count; i++)
+                {
+                    pmf = Convolve(pmf, die);
+                    if (pmf == null) return null;
+                }
+                if (s_CachedCells + pmf.Length > MaxCachedCells) { DiceCache.Clear(); s_CachedCells = 0; }
                 DiceCache[key] = pmf;
+                s_CachedCells += pmf.Length;
                 return pmf;
             }
         }
 
         private static double[] Convolve(double[] a, double[] b)
         {
+            if ((long)a.Length + b.Length - 1 > MaxDistributionLength ||
+                (long)a.Length * b.Length > MaxConvolutionProducts) return null;
             var r = new double[a.Length + b.Length - 1];
             for (int i = 0; i < a.Length; i++)
             {
@@ -127,5 +144,14 @@ namespace CompanionAI_Pathfinder.Tactics
         /// </summary>
         public static int DamageToTrigger(float hpBeforeDown, int below) =>
             (int)Math.Floor(hpBeforeDown) - below + 1;
+
+        /// <summary>The native dust gate reads lethal HPLeft, even when temporary HP remain or nonlethal damage
+        /// has already knocked the recipient out. An already satisfied gate needs no further damage.</summary>
+        public static int DamageToTrigger(int hpLeft, int temporaryHp, int below)
+        {
+            if (hpLeft < below) return 0;
+            long needed = (long)hpLeft + Math.Max(0, temporaryHp) - below + 1;
+            return needed > int.MaxValue ? int.MaxValue : (int)needed;
+        }
     }
 }

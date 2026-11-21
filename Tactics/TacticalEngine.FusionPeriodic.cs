@@ -111,7 +111,11 @@ namespace CompanionAI_Pathfinder.Tactics
                     if (!assumeUnknown) return false;
                     rounds = horizonRounds;   // an ally's harm: the whole horizon when the duration is unread
                 }
-                float harm = PeriodicCarrierDamage(ability, buff, recipient, rounds, horizonRounds);
+                float harm;
+                try { harm = PeriodicCarrierDamage(ability, buff, recipient, rounds, horizonRounds); }
+                catch { if (!assumeUnknown) return false; harm = float.PositiveInfinity; }
+                if (float.IsNaN(harm) || float.IsInfinity(harm))
+                { if (!assumeUnknown) return false; harm = float.PositiveInfinity; }
                 if (harm <= 0f) continue;
                 if (saved)
                 {
@@ -229,7 +233,8 @@ namespace CompanionAI_Pathfinder.Tactics
                 if (savedFailed > 0f || savedPassed > 0f)
                 {
                     float fail = profile.Save != SavingThrowType.Unknown ? CombatMath.SaveFailChance(ability, profile.Save, enemy) : 1f;
-                    later += CombatMath.DeliveryChance(caster, enemy, ability, profile) * (fail * savedFailed + (1f - fail) * savedPassed);
+                    later += CombatMath.DeliveryChance(caster, enemy, ability, profile) * CombatMath.ShadowShare(ability, enemy) *
+                             (fail * savedFailed + (1f - fail) * savedPassed);
                 }
                 return later;
             }
@@ -255,9 +260,19 @@ namespace CompanionAI_Pathfinder.Tactics
                 if (failed <= 0f && passed <= 0f && savedFailed <= 0f && savedPassed <= 0f) return 0f;
                 float fail = profile.Fusion != null && profile.Save != SavingThrowType.Unknown ? CombatMath.SaveFailChance(ability, profile.Save, unit) : 1f;
                 float saveFail = profile.Save != SavingThrowType.Unknown ? CombatMath.SaveFailChance(ability, profile.Save, unit) : 1f;
-                return fail * failed + (1f - fail) * passed + saveFail * savedFailed + (1f - saveFail) * savedPassed;
+                // Avoid 0 * infinity turning a conservative unknown-harm sentinel into NaN on an impossible outcome.
+                // ★ Fusion coverage C6: an ordinary carrier behind a branch of the root save, by that branch's chance.
+                if (assumeUnknown && (fail > 0f && float.IsPositiveInfinity(failed) || fail < 1f && float.IsPositiveInfinity(passed) ||
+                                      saveFail > 0f && float.IsPositiveInfinity(savedFailed) ||
+                                      saveFail < 1f && float.IsPositiveInfinity(savedPassed)))
+                    return float.PositiveInfinity;
+                float expected = (fail > 0f ? fail * failed : 0f) + (fail < 1f ? (1f - fail) * passed : 0f) +
+                                 (saveFail > 0f ? saveFail * savedFailed : 0f) + (saveFail < 1f ? (1f - saveFail) * savedPassed : 0f);
+                return float.IsNaN(expected) || float.IsInfinity(expected) ? (assumeUnknown ? float.PositiveInfinity : 0f) : expected;
             }
-            catch { return 0f; }
+            // Unknown benefit earns nothing; unknown ally harm must not become a proof of zero damage. The friendly
+            // cost consumers cap this sentinel at the recipient's HP/worth, and Avoid Friendly Fire vetoes it.
+            catch { return assumeUnknown ? float.PositiveInfinity : 0f; }
         }
 
         /// <summary>

@@ -78,6 +78,20 @@ namespace ProfileAudit
                 Check(!IsEnemyOnlyRecast(allies) && !IsEnemyOnlyRecast(extra) &&
                       !IsEnemyOnlyRecast(null),
                     "a selector that can reach allies, or that adds its own effect, is not exempt");
+                var originalCast = (ContextActionCastSpell)selector.Actions.Actions.Single();
+                var fireballCast = (ContextActionCastSpell)typeof(object).GetMethod("MemberwiseClone", Hidden).Invoke(originalCast, null);
+                var fireballRef = new BlueprintAbilityReference();
+                typeof(BlueprintReferenceBase).GetField("deserializedGuid", Hidden).SetValue(fireballRef, Spell("Fireball").AssetGuid);
+                typeof(BlueprintReferenceBase).GetField("<Cached>k__BackingField", Hidden).SetValue(fireballRef, Spell("Fireball"));
+                typeof(ContextActionCastSpell).GetField("m_Spell", Hidden).SetValue(fireballCast, fireballRef);
+                var splash = new ContextActionOnRandomTargetsAround { OnEnemies = true,
+                    Actions = new ActionList { Actions = new GameAction[] { fireballCast } } };
+                Check(!IsEnemyOnlyRecast(splash), "OnEnemies selects a cast anchor; a recast Fireball can still splash allies and is not exempt");
+                var byTarget = (ContextActionCastSpell)typeof(object).GetMethod("MemberwiseClone", Hidden).Invoke(originalCast, null);
+                byTarget.CastByTarget = true;
+                Check(!IsEnemyOnlyRecast(new ContextActionOnRandomTargetsAround { OnEnemies = true,
+                    Actions = new ActionList { Actions = new GameAction[] { byTarget } } }),
+                    "a changed secondary caster cannot inherit the enemy-only control exemption");
 
                 // --- arcan's Explosive Runes / Hideous Laughter ---
                 var holder = all.Single(b => b.AssetGuid.ToString() == "4fcc9f0db7f6495497e5163b71aa7bcc");

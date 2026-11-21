@@ -5,6 +5,23 @@ namespace CompanionAI.Tests
 {
     public class FusionValueTests
     {
+        [Fact]
+        public void AbilityDamageUtilityDoesNotInventAnHpKillOrEraseControl()
+        {
+            ValueModel.FusionValue(0.5f, 1f, 60f, 0f, 0f, 0f, 20f, 50f, 40f, 2f, 0f, false, false,
+                out float damage, out float control, hitPointsOnFailure: 0f, hitPointsOnPass: 0f);
+            Assert.Equal(40f, control, 5);
+            Assert.Equal(0.5f * ValueModel.DamageValue(60f, 20f, 50f, 0f), damage, 5);
+        }
+
+        [Fact]
+        public void MixedHpDamageAndDrainUseOnlyTheHpPartToCancelControl()
+        {
+            ValueModel.FusionValue(1f, 1f, 60f, 0f, 0f, 0f, 20f, 50f, 40f, 2f, 0f, false, false,
+                out _, out float control, hitPointsOnFailure: 10f, hitPointsOnPass: 0f);
+            Assert.Equal((1f - ValueModel.KillChance(1f, 10f, 20f)) * 80f, control, 5);
+            Assert.True(control > 0f);
+        }
         [Fact] public void AShortStunDoesNotInheritTheLongSlow()
         {
             var e = new ValueModel.ControlEnvelope();

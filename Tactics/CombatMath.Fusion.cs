@@ -20,10 +20,11 @@ namespace CompanionAI_Pathfinder.Tactics
         internal sealed class FusionDamageRead
         {
             internal float Failed, Passed, FailChance;
+            internal float FailedHitPoints, PassedHitPoints;
             internal bool Known;
             /// <summary>★ Fusion coverage C8: a kill on that outcome (a pooled kill: Circle of Death's on a failed save).</summary>
             internal bool KillOnFailure, KillOnPass;
-            internal void Reset() { Failed = Passed = 0f; FailChance = 1f; Known = true; KillOnFailure = KillOnPass = false; }
+            internal void Reset() { Failed = Passed = FailedHitPoints = PassedHitPoints = 0f; FailChance = 1f; Known = true; KillOnFailure = KillOnPass = false; }
         }
 
         internal static float EstimateFusionDamage(AbilityData ability, AbilityProfile profile, UnitEntityData target,
@@ -36,6 +37,7 @@ namespace CompanionAI_Pathfinder.Tactics
                 float raw = EstimateAbilityDamageRaw(ability, profile, target, null, fusionRead: read);
                 float scale = raw > 0f ? AbilityDamageScale(ability, profile, target) : 1f;
                 read.Failed *= scale; read.Passed *= scale;
+                read.FailedHitPoints *= scale; read.PassedHitPoints *= scale;
                 return raw * scale;
             }
             finally { HeapSince(heap, ref EstimateBytes); }
@@ -64,8 +66,17 @@ namespace CompanionAI_Pathfinder.Tactics
                     if (FusionDamageFactor(profile, part.Key, 0f, evasion, improved) > 0f) read.KillOnPass = true;
                     continue;
                 }
-                read.Failed += unweighted * FusionDamageFactor(profile, part.Key, 1f, evasion, improved) * deliveries;
-                read.Passed += unweighted * FusionDamageFactor(profile, part.Key, 0f, evasion, improved) * deliveries;
+                float failed = unweighted * FusionDamageFactor(profile, part.Key, 1f, evasion, improved) * deliveries;
+                float passed = unweighted * FusionDamageFactor(profile, part.Key, 0f, evasion, improved) * deliveries;
+                read.Failed += failed;
+                read.Passed += passed;
+                // C5's DrainEquivalent is utility, not lethal HP damage. It must not manufacture a dropped
+                // recipient, cancel independent control, or make a dispel redundant.
+                if (part.Key is ContextActionDealDamage direct && IsHitPointDamage(direct))
+                {
+                    read.FailedHitPoints += failed;
+                    read.PassedHitPoints += passed;
+                }
             }
             read.Known = !(float.IsNaN(read.Failed) || float.IsInfinity(read.Failed) ||
                            float.IsNaN(read.Passed) || float.IsInfinity(read.Passed));

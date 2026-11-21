@@ -1067,6 +1067,7 @@ namespace CompanionAI_Pathfinder.Tactics
                         break;
                     case ContextActionDispelMagic dispel:
                         Dispels = true;
+                        m_Guards[dispel] = guards;
                         if (!DispelActions.Contains(dispel)) DispelActions.Add(dispel);
                         if (Fusion != null && !FusionDispelOrdinals.ContainsKey(dispel)) FusionDispelOrdinals[dispel] = fusionActionOrdinal;
                         // ★ v0.3.25 (potions): a dispel with no check removes what its filters take, always (RuleDispelMagic,
@@ -1077,7 +1078,6 @@ namespace CompanionAI_Pathfinder.Tactics
                             RemovesBuffs = true;
                             RemovedDescriptors |= dispel.Descriptor.Value;
                             m_Removals.Add(dispel);
-                            m_Guards[dispel] = guards;
                         }
                         break;
                     // ★ v0.3.19 (class audit B2): lengthens a buff the target already has (Witch Cackle and Chant: one
@@ -1686,6 +1686,34 @@ namespace CompanionAI_Pathfinder.Tactics
                 s_PoolAbility = m_PreviousAbility;
                 s_PoolReached = m_PreviousReached;
             }
+        }
+
+        /// <summary>
+        /// ★ Fusion coverage C8: one of <paramref name="action"/>'s own guards is a Hit Dice test alone (character level, fixed for
+        /// the whole cast) and rules it out for <paramref name="target"/>. A pool's shared value reads as covered unless a pool
+        /// outcome is already in force, so an unknown pool can only keep the action possible.
+        /// </summary>
+        internal bool RuledOutByHitDice(GameAction action, AbilityData ability, UnitEntityData target)
+        {
+            if (action == null || ability == null || target == null || !m_Guards.TryGetValue(action, out var guards)) return false;
+            bool scoped = s_PoolAbility != null && ReferenceEquals(s_PoolAbility, ability);
+            using (scoped ? default : PoolOutcome(ability, true))
+            {
+                foreach (var guard in guards)
+                {
+                    var conditions = guard.Checker?.Conditions;
+                    if (conditions == null || conditions.Length == 0) continue;
+                    bool hitDiceOnly = true;
+                    foreach (var c in conditions)
+                        if (c == null || c.GetType() != typeof(ContextConditionHitDice)) { hitDiceOnly = false; break; }
+                    if (!hitDiceOnly) continue;
+                    var subject = guard.OnCaster ? ability.Caster?.Unit : target;
+                    if (subject == null) continue;
+                    bool? result = CheckFor(guard.Checker, ability, subject, ability.Caster?.Unit);
+                    if (result.HasValue && result.Value != guard.Branch) return true;
+                }
+            }
+            return false;
         }
 
         /// <summary>

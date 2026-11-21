@@ -1,6 +1,7 @@
 // ★ coverage3 review / Fusion coverage C3 (21 November 2026, author's policy; docs/COVERAGE3_REVIEW.md): the chance a cast kills
 // a unit for good - Disintegrate's dust, a kill action, a buff that kills on activation. Read once per blueprint from its action
-// tree; priced per recipient with the exact dice (PermanentDeathRules). Read only: no actor, command or rule is changed.
+// tree; bounded per recipient, with exact dice only where the complete roll is readable (PermanentDeathRules).
+// Read only: no actor, command or rule is changed.
 // Native contracts (the supplied assembly): ContextConditionCompareTargetHP compares Target.HPLeft after the damage that runs
 // before it; ContextActionConditionalSaved runs Succeed on a passed save, Failed otherwise, and neither without a rolled save;
 // ContextActionKill sets State.MarkedForDeath; temporary HP absorb damage first (CombatMath.HpBeforeDown).
@@ -32,11 +33,14 @@ namespace CompanionAI_Pathfinder.Tactics
             internal readonly List<KeyValuePair<DeathPath, ContextActionDealDamage>> Damage = new List<KeyValuePair<DeathPath, ContextActionDealDamage>>();
             /// <summary>Dust gates: an HP comparison (Less <c>Below</c>) that applies a buff killing on activation.</summary>
             internal readonly List<KeyValuePair<DeathPath, int?>> Gates = new List<KeyValuePair<DeathPath, int?>>();
+            // A gate sees only the damage already executed, including the preceding payload of a fusion.
+            internal readonly List<int> GateDamageCounts = new List<int>();
             /// <summary>Direct kills: ContextActionKill, or a buff that kills on activation outside a dust gate.</summary>
             internal readonly List<DeathPath> Kills = new List<DeathPath>();
             /// <summary>★ Fusion coverage C8: each kill's action (null when unreadable), for its own conditions on a unit.</summary>
             internal readonly List<GameAction> KillActions = new List<GameAction>();
             internal bool SavePaths;
+            internal bool UnreadSavePaths;
             internal SavingThrowType Save = SavingThrowType.Unknown;
             internal bool Empty => Gates.Count == 0 && Kills.Count == 0;
         }
@@ -57,9 +61,13 @@ namespace CompanionAI_Pathfinder.Tactics
                 if (FusedDeathScans.TryGetValue(key, out var fused)) return fused;
                 var one = DeathScanOf(hack.Spell1);
                 var two = DeathScanOf(hack.Spell2);
-                fused = new DeathScan { SavePaths = one.SavePaths || two.SavePaths, Save = one.Save != SavingThrowType.Unknown ? one.Save : two.Save };
+                fused = new DeathScan { SavePaths = one.SavePaths || two.SavePaths,
+                    UnreadSavePaths = one.UnreadSavePaths || two.UnreadSavePaths,
+                    Save = one.Save != SavingThrowType.Unknown ? one.Save : two.Save };
                 fused.Damage.AddRange(one.Damage); fused.Damage.AddRange(two.Damage);
                 fused.Gates.AddRange(one.Gates); fused.Gates.AddRange(two.Gates);
+                fused.GateDamageCounts.AddRange(one.GateDamageCounts);
+                foreach (int count in two.GateDamageCounts) fused.GateDamageCounts.Add(one.Damage.Count + count);
                 fused.Kills.AddRange(one.Kills); fused.Kills.AddRange(two.Kills);
                 fused.KillActions.AddRange(one.KillActions); fused.KillActions.AddRange(two.KillActions);
                 if (FusedDeathScans.Count > 1024) FusedDeathScans.Clear();
@@ -103,7 +111,10 @@ namespace CompanionAI_Pathfinder.Tactics
 
         private static void ScanDeath(GameAction[] actions, DeathPath path, DeathScan scan, int depth)
         {
-            if (actions == null || depth > 10) return;
+            if (actions == null) return;
+            // The supplied Fafnheir selector reaches depth 13 without a kill. Scan that native graph completely;
+            // deeper unread branches still cannot certify safety. This is cold metadata work, once per blueprint.
+            if (depth > 16) { scan.Kills.Add(path); scan.KillActions.Add(null); return; }
             foreach (var action in actions)
             {
                 switch (action)
@@ -122,6 +133,11 @@ namespace CompanionAI_Pathfinder.Tactics
                         scan.Kills.Add(path);
                         scan.KillActions.Add(action);
                         continue;
+                    case ContextActionSavingThrow _:
+                        // A nested roll is not the root save. Until its full conjunction is priced, use an upper bound
+                        // for ally safety rather than relabelling a nested success/failure as a root outcome.
+                        scan.UnreadSavePaths = true;
+                        break;
                     case ContextActionApplyBuff apply when apply.Buff != null && !apply.ToCaster:
                         if (AbilityProfile.KillsOnStart(apply.Buff)) { scan.Kills.Add(path); scan.KillActions.Add(action); }
                         continue;
@@ -132,6 +148,7 @@ namespace CompanionAI_Pathfinder.Tactics
                         continue;
                     case Conditional conditional when DustGate(conditional, out int? below):
                         scan.Gates.Add(new KeyValuePair<DeathPath, int?>(path, below));
+                        scan.GateDamageCounts.Add(scan.Damage.Count);
                         // The dust buff itself is the gate; anything else in its branches is read as usual.
                         ScanDeathExceptDust(conditional.IfTrue?.Actions, path, scan, depth + 1);
                         ScanDeath(conditional.IfFalse?.Actions, path, scan, depth + 1);
@@ -165,6 +182,9 @@ namespace CompanionAI_Pathfinder.Tactics
             foreach (var c in conditions)
                 if (c is ContextConditionCompareTargetHP hp && !hp.Not) { compare = hp; break; }
             if (compare == null || !AppliesDust(conditional.IfTrue?.Actions)) return false;
+            // An OR with another condition may apply dust even above the HP threshold. Do not certify that gate
+            // from the HP comparison alone (extra AND terms are conservatively unread too).
+            if (conditions.Length != 1) return true;
             string type = CompareTypeField?.GetValue(compare)?.ToString();
             if (type != "Less") return true;   // another comparison still gates a kill: no number to price it by
             if (compare.Value != null && compare.Value.ValueType == ContextValueType.Simple) below = compare.Value.Value;
@@ -193,20 +213,27 @@ namespace CompanionAI_Pathfinder.Tactics
             try
             {
                 float reach;
-                try { reach = EffectChance(ability.Caster?.Unit, unit, ability, profile, damage: true); }
+                // EffectChance already contains the ordinary spell's save. The outcome blend below owns that roll;
+                // applying it twice can turn a vetoed death risk into an apparently acceptable one.
+                // Shadow damage/reality is deliberately not used to lower a permanent-death safety bound.
+                try { reach = DeliveryChance(ability.Caster?.Unit, unit, ability, profile); }
                 catch { reach = 1f; }
+                if (float.IsNaN(reach) || float.IsInfinity(reach)) reach = 1f;
                 if (!(reach > 0f)) return 0f;
+                // ★ Fusion coverage C8: no dust gate, and every kill ruled out for this unit by its own Hit Dice test: no death,
+                // whatever the saves (the unread nested-save bound below would otherwise apply to it).
+                if (scan.Gates.Count == 0 && AllKillsRuledOut(ability, profile, unit, scan)) return 0f;
+                if (scan.UnreadSavePaths) return Math.Min(1f, reach);
                 var save = profile.Fusion != null ? profile.Fusion.SavingThrowType : profile.Save != SavingThrowType.Unknown ? profile.Save : scan.Save;
-                float hp = HpBeforeDown(unit);
                 float risk;
-                if (!scan.SavePaths) risk = OutcomeDeath(ability, profile, unit, scan, DeathPath.Any, hp);
+                if (!scan.SavePaths) risk = OutcomeDeath(ability, profile, unit, scan, DeathPath.Any);
                 // Native: with no save rolled, ConditionalSaved runs neither branch - only the effects outside it.
-                else if (save == SavingThrowType.Unknown) risk = OutcomeDeath(ability, profile, unit, scan, DeathPath.Any, hp, branches: false);
+                else if (save == SavingThrowType.Unknown) risk = OutcomeDeath(ability, profile, unit, scan, DeathPath.Any, branches: false);
                 else
                 {
                     float fail = SaveFailChance(ability, save, unit);
-                    risk = fail * OutcomeDeath(ability, profile, unit, scan, DeathPath.Failed, hp) +
-                           (1f - fail) * OutcomeDeath(ability, profile, unit, scan, DeathPath.Passed, hp);
+                    risk = fail * OutcomeDeath(ability, profile, unit, scan, DeathPath.Failed) +
+                           (1f - fail) * OutcomeDeath(ability, profile, unit, scan, DeathPath.Passed);
                 }
                 return Math.Min(1f, Math.Max(0f, reach * risk));
             }
@@ -217,66 +244,79 @@ namespace CompanionAI_Pathfinder.Tactics
             }
         }
 
+        /// <summary>
+        /// ★ Fusion coverage C8: a kill action that one of its own guards rules out for <paramref name="unit"/> by a Hit Dice test
+        /// alone (character level is fixed for the whole cast; a pool reads as covered unless a pool outcome is in force). Other
+        /// conditions are not trusted here: an earlier part of the same cast can change them (knock the unit out, give it a fact).
+        /// A buff that kills on activation is never ruled out this way.
+        /// </summary>
         private static bool KillRuledOut(AbilityData ability, AbilityProfile profile, UnitEntityData unit, GameAction action)
         {
-            try
-            {
-                switch (action)
-                {
-                    case ContextActionKill kill: return profile.AppliesTo(kill, ability, unit) == EffectApplies.No;
-                    case ContextActionApplyBuff apply when apply.Buff != null:
-                        return profile.BuffAppliesTo(apply.Buff, ability, unit) == EffectApplies.No;
-                    default: return false;
-                }
-            }
+            try { return action is ContextActionKill kill && profile.RuledOutByHitDice(kill, ability, unit); }
             catch { return false; }
+        }
+
+        private static bool AllKillsRuledOut(AbilityData ability, AbilityProfile profile, UnitEntityData unit, DeathScan scan)
+        {
+            if (scan.Kills.Count == 0 || scan.KillActions.Count != scan.Kills.Count) return false;
+            for (int i = 0; i < scan.KillActions.Count; i++)
+                if (!KillRuledOut(ability, profile, unit, scan.KillActions[i])) return false;
+            return true;
         }
 
         private static bool OnPath(DeathPath effect, DeathPath outcome, bool branches) =>
             effect == DeathPath.Any || branches && effect == outcome;
 
         private static float OutcomeDeath(AbilityData ability, AbilityProfile profile, UnitEntityData unit, DeathScan scan,
-                                          DeathPath outcome, float hp, bool branches = true)
+                                          DeathPath outcome, bool branches = true)
         {
             for (int i = 0; i < scan.Kills.Count; i++)
             {
                 if (!OnPath(scan.Kills[i], outcome, branches)) continue;
-                // ★ Fusion coverage C8: a kill the game's own conditions rule out for this unit does not kill it (Circle of Death's
-                // at more than 9 Hit Dice; its 100 damage is friendly fire). Unknown still counts as a kill.
+                // ★ Fusion coverage C8: a kill its own Hit Dice test rules out for this unit does not kill it (Circle of Death's at
+                // more than 9 Hit Dice; its 100 damage is friendly fire). Anything else still counts as a kill.
                 if (i < scan.KillActions.Count && KillRuledOut(ability, profile, unit, scan.KillActions[i])) continue;
                 return 1f;
             }
-            int? below = null;
-            bool gated = false;
-            foreach (var gate in scan.Gates)
+            float risk = 0f;
+            for (int i = 0; i < scan.Gates.Count; i++)
             {
+                var gate = scan.Gates[i];
                 if (!OnPath(gate.Key, outcome, branches)) continue;
                 if (!gate.Value.HasValue) return 1f;   // a gate the scan cannot price counts as killing
-                below = gated ? Math.Max(below.Value, gate.Value.Value) : gate.Value.Value;
-                gated = true;
+                int need = PermanentDeathRules.DamageToTrigger(unit.HPLeft, unit.TemporaryHP, gate.Value.Value);
+                if (need <= 0) return 1f;
+                risk += GateDeath(ability, profile, unit, scan, outcome, branches, scan.GateDamageCounts[i], need);
+                if (risk >= 1f) return 1f;
             }
-            if (!gated) return 0f;
-            int need = PermanentDeathRules.DamageToTrigger(hp, below.Value);
-            if (need <= 0) return 1f;
-            var groups = new List<PermanentDeathRules.DiceGroup>(scan.Damage.Count);
+            // Multiple gates can be correlated: their sum is a conservative union bound, never a lower risk.
+            return risk;
+        }
+
+        private static float GateDeath(AbilityData ability, AbilityProfile profile, UnitEntityData unit, DeathScan scan,
+                                       DeathPath outcome, bool branches, int damageCount, int need)
+        {
+            var groups = new List<PermanentDeathRules.DiceGroup>(damageCount);
             var ctx = DamageContext(ability, profile, unit);
+            if (ctx == null) return 1f;
             int cl = Math.Max(1, ParamsOf(ability)?.CasterLevel ?? 1);
             DamageMetamagic(ability, out bool maximize, out bool empower);
-            foreach (var part in scan.Damage)
+            for (int i = 0; i < damageCount; i++)
             {
+                var part = scan.Damage[i];
                 if (!OnPath(part.Key, outcome, branches)) continue;
                 var dmg = part.Value;
+                // Raw blueprint dice do not bound native crits or bonuses added by damage handlers. An average critical
+                // factor cannot prove the tail safe either. Until those distributions are read, count the gate as reachable
+                // on this outcome rather than silently certifying a healthy ally safe (Disintegrate normally takes this path).
+                if (!dmg.IgnoreUnitModifiers || profile.NeedsAttackRoll && !dmg.IgnoreCritical || dmg.AddAdditionalDamage ||
+                    dmg.AddFavoredEnemyDamage || dmg.UseWeaponDamageModifiers || dmg.UseMinHPAfterDamage) return 1f;
                 float factor = (empower ? 1.5f : 1f) * (dmg.Half ? 0.5f : 1f);
                 // Half on a passed save; evasion is left out, so the risk is never lower than the game's.
                 if (dmg.HalfIfSaved && outcome == DeathPath.Passed) factor *= 0.5f;
-                if (dmg.ReadPreRolledFromSharedValue && ctx is AbilityExecutionContext rolled)
-                {
-                    AbilityProfile.SharedValueRange(rolled.Ability, ctx, dmg.PreRolledSharedValue, out _, out _, out int most);
-                    groups.Add(new PermanentDeathRules.DiceGroup { Count = 0, Sides = 0, Bonus = most, Factor = factor });
-                    continue;
-                }
+                if (dmg.ReadPreRolledFromSharedValue) return 1f; // an unread shared roll cannot establish safety
                 var value = dmg.Value;
-                if (value == null) continue;
+                if (value == null) return 1f;
                 int count = FusedDiceCount(ability, EvaluateValue(value.DiceCountValue, ctx, Math.Min(cl, 10)));
                 groups.Add(new PermanentDeathRules.DiceGroup
                 {
