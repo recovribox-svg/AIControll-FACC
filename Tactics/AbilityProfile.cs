@@ -1703,17 +1703,44 @@ namespace CompanionAI_Pathfinder.Tactics
                 {
                     var conditions = guard.Checker?.Conditions;
                     if (conditions == null || conditions.Length == 0) continue;
+                    var subject = guard.OnCaster ? ability.Caster?.Unit : target;
+                    if (subject == null) continue;
                     bool hitDiceOnly = true;
                     foreach (var c in conditions)
                         if (c == null || c.GetType() != typeof(ContextConditionHitDice)) { hitDiceOnly = false; break; }
-                    if (!hitDiceOnly) continue;
-                    var subject = guard.OnCaster ? ability.Caster?.Unit : target;
-                    if (subject == null) continue;
-                    bool? result = CheckFor(guard.Checker, ability, subject, ability.Caster?.Unit);
-                    if (result.HasValue && result.Value != guard.Branch) return true;
+                    if (hitDiceOnly)
+                    {
+                        bool? result = CheckFor(guard.Checker, ability, subject, ability.Caster?.Unit);
+                        if (result.HasValue && result.Value != guard.Branch) return true;
+                        continue;
+                    }
+                    // Mixed with other conditions: one Hit Dice test alone can still settle the checker - a false one in an
+                    // AND (the branch needs it true), a true one in an OR (the branch needs it false). Circle of Death's pool
+                    // test sits beside "not undead" this way.
+                    bool and = guard.Checker.Operation == Operation.And;
+                    if (and != guard.Branch) continue;
+                    foreach (var c in conditions)
+                    {
+                        if (c == null || c.GetType() != typeof(ContextConditionHitDice)) continue;
+                        bool? one = CheckFor(SingleChecker(c), ability, subject, ability.Caster?.Unit);
+                        if (one.HasValue && one.Value != and) return true;
+                    }
                 }
             }
             return false;
+        }
+
+        // One cached checker per condition, so the per-checker answer cache keeps working for it.
+        private static readonly Dictionary<Condition, ConditionsChecker> SingleCheckers = new Dictionary<Condition, ConditionsChecker>();
+
+        private static ConditionsChecker SingleChecker(Condition condition)
+        {
+            if (!SingleCheckers.TryGetValue(condition, out var checker))
+            {
+                if (SingleCheckers.Count > 1024) SingleCheckers.Clear();
+                SingleCheckers[condition] = checker = new ConditionsChecker { Operation = Operation.And, Conditions = new[] { condition } };
+            }
+            return checker;
         }
 
         /// <summary>

@@ -156,6 +156,22 @@ namespace ProfileAudit
                     "fused casts: the joint value with the pooled payload and without it, mixed by the forecast's chance");
                 Check(CallsNamed(Body(engine, "PermanentDeathVetoes"), "AllyReach") && Calls(Body(math, "OutcomeDeath"), math, "KillRuledOut"),
                     "the permanent-death rule needs the pool to reach the ally, and a kill its own conditions allow");
+                // Merged with review 92-99: its unread nested-save bound stays; a kill is ruled out only by its own Hit Dice test.
+                var risk = Body(math, "PermanentDeathRisk");
+                var ruled = Body(typeof(AbilityProfile), "RuledOutByHitDice");
+                Check(Calls(risk, math, "AllKillsRuledOut") && Calls(risk, math, "DeliveryChance") &&
+                      Calls(ruled, typeof(AbilityProfile), "SingleChecker") && Calls(ruled, typeof(AbilityProfile), "PoolOutcome") &&
+                      !CallsNamed(Body(math, "KillRuledOut"), "AppliesTo") && !CallsNamed(Body(math, "KillRuledOut"), "BuffAppliesTo"),
+                    "a kill counts as impossible only by its own Hit Dice test (character level is fixed for the cast), never by a condition the cast can change");
+                if (circle != null)
+                {
+                    var scan = math.GetMethod("DeathScanOf", Hidden, null, new[] { typeof(BlueprintAbility) }, null).Invoke(null, new object[] { circle });
+                    Check((bool)scan.GetType().GetField("UnreadSavePaths", Hidden).GetValue(scan),
+                        "Circle of Death's Fortitude save is nested: the review's unread-save bound prices an ally its Hit Dice test does not rule out");
+                }
+                var veto = Body(engine, "PermanentDeathVetoes");
+                Check(CallsNamed(veto, "PoolOutcome") && CallsNamed(veto, "PermanentDeathRisk") && CallsNamed(veto, "AllyReach"),
+                    "a pooled cast's death risk is mixed with and without the pool (a fused cast's other spell can kill either way)");
                 Check(Calls(Body(control, "TryForAim"), control, "RecipientOf") && Calls(Body(control, "TryForFusedAim"), control, "RecipientOf") &&
                       Calls(Body(control, "TryForAim"), control, "SpreadOrder") && Calls(Body(control, "TryForAim"), control, "TryOrdinaryRoll"),
                     "both forecasts read each recipient once per pool interval, in spread order, over the pool's rolled distribution");
