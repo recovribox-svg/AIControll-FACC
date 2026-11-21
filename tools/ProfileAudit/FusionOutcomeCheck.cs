@@ -101,9 +101,9 @@ namespace ProfileAudit
                 // ★ Fusion coverage C1: Molten Orb's main-target guard is read now; FUSION-DOT checks it is offered.
                 // ★ Fusion coverage C3: Disintegrate's dust gate is a stable guard now; PERMADEATH checks it is offered and that it
                 // is never used where it could kill an ally for good.
-                Gate("Fireball", "ReducePerson", SavingThrowType.Reflex, "carrier");
-                // ★ Fusion coverage C5: its negative levels are read now; its undead branch (temporary HP) still withholds it.
-                Gate("Fireball", "Enervation", SavingThrowType.Reflex, "carrier");
+                // ★ Fusion coverage C6: Reduce Person and Enervation are read now (CARRIERS); Curse of Magic Negation is not (its spell
+                // resistance also stands against the party's own later spells).
+                Gate("MoltenOrb", "CurseOfMagicNegation", SavingThrowType.Reflex, "carrier");
                 // ★ Fusion coverage C4: line delivery is read now; an unrelated structural refusal (a spawned area) still reports itself.
                 var line = Fuse("LightningBolt", "Fireball", SavingThrowType.Reflex);
                 Check((string)unsupported.GetValue(AbilityProfile.Get(line)) == null && Withheld(line) == null,

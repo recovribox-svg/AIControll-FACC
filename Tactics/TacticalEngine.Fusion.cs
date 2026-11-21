@@ -87,15 +87,35 @@ namespace CompanionAI_Pathfinder.Tactics
             else if (!profile.Damage.All(a => a is ContextActionDealDamage)) reason = "composite damage (a provider or a kill)";
             else if (profile.BuffApplications.Count > ValueModel.ControlEnvelope.Capacity) reason = "control occurrence bound";
             else if (!profile.TargetBuffs.All(b => profile.BuffApplications.Any(a => a.Buff == b))) reason = "control without a direct apply occurrence";
-            else if (profile.TargetBuffs.Any(b => (!AbilityProfile.IsHarmfulBuff(b) &&
-                         !profile.BuffApplications.Any(a => a.Buff == b && a.PeriodicDamageOnly)) || OnlyRevealUtility(b) ||
-                         b.GetComponent<Kingmaker.UnitLogic.FactLogic.ChangeFaction>() != null ||
-                         b.GetComponent<Kingmaker.UnitLogic.FactLogic.AddFacts>() != null ||
-                         PolymorphFacts.Form(b) != null ||
-                         b.GetComponent<Kingmaker.Designers.Mechanics.Buffs.BuffPoisonStatDamage>() != null)) reason = "support/reveal/fact-grant/form/faction/poison carrier";
+            else if (profile.TargetBuffs.FirstOrDefault(b => FusionCarrierKind(profile, b) != null) is BlueprintBuff carrier)
+            {
+                reason = "support/reveal/fact-grant/form/faction/poison carrier";
+                profile.FusionCarrierDetail = $"{carrier.name}: {FusionCarrierKind(profile, carrier)}";
+            }
             profile.FusionOutcomeMetadataReason = reason;
             profile.FusionOutcomeMetadataQualified = reason == null;
             return reason == null;
+        }
+
+        /// <summary>
+        /// Why a target buff keeps the joint outcome value out (the C6 carriers), or null: not harmful, reveal only, a faction
+        /// change, granted facts, a form, a poison.
+        /// </summary>
+        internal static string FusionCarrierKind(AbilityProfile profile, BlueprintBuff b)
+        {
+            if (b == null) return null;
+            // ★ Fusion coverage C6: a carrier read as only hindering, mixing or helping its bearer is priced by its own rule
+            // (no credit, the stat reader's net share never above nothing, temporary hit points as damage not taken).
+            var carrier = CombatMath.CarrierPlanOf(b).Kind;
+            if (!AbilityProfile.IsHarmfulBuff(b) && !profile.BuffApplications.Any(a => a.Buff == b && a.PeriodicDamageOnly) &&
+                carrier != CombatMath.CarrierKind.Hinders && carrier != CombatMath.CarrierKind.Mixed && carrier != CombatMath.CarrierKind.Benefit)
+                return "not harmful";
+            if (OnlyRevealUtility(b)) return "reveal only";
+            if (b.GetComponent<Kingmaker.UnitLogic.FactLogic.ChangeFaction>() != null) return "faction change";
+            if (b.GetComponent<Kingmaker.UnitLogic.FactLogic.AddFacts>() != null) return "granted facts";
+            if (PolymorphFacts.Form(b) != null) return "form";
+            if (b.GetComponent<Kingmaker.Designers.Mechanics.Buffs.BuffPoisonStatDamage>() != null) return "poison";
+            return null;
         }
 
         /// <summary>
@@ -154,6 +174,11 @@ namespace CompanionAI_Pathfinder.Tactics
                               savePath != AbilityProfile.FusionSavePath.Failed;
                 var buff = occurrence.Buff;
                 if (occurrence.PeriodicDamageOnly) continue; // omitted DOT benefit must not become generic lost turns
+                // ★ Fusion coverage C6: a carrier that hinders, mixes or helps its bearer adds no control; a round-tick control is
+                // priced by its saves (TickControl), below.
+                var carrierKind = CombatMath.CarrierPlanOf(occurrence.Buff).Kind;
+                if (carrierKind == CombatMath.CarrierKind.Hinders || carrierKind == CombatMath.CarrierKind.Mixed ||
+                    carrierKind == CombatMath.CarrierKind.Benefit) continue;
                 if (recipient.Buffs.HasFact(buff)) continue; // no new stacking or speculative refresh credit
                 bool pooled = profile.FusionSharedHd && profile.SharedHdBuffs.Contains(buff);
                 float reach = 1f;
@@ -195,6 +220,26 @@ namespace CompanionAI_Pathfinder.Tactics
                 // ★ Fusion coverage C9: an application behind a nested save lands with that save's outcome (its own fail chance).
                 share *= CombatMath.NestedSaveFactor(ability, profile, occurrence.Action, recipient);
                 if (share <= 0f) continue;
+                if (carrierKind == CombatMath.CarrierKind.PeriodicControl)
+                {
+                    if (!TryFusionApplicationRounds(ability, occurrence, recipient, ref durationContext, out float carrierDuration)) return false;
+                    if (TickControl(ability, buff, recipient, carrierDuration, Math.Min(ctx.ExpectedRounds, 3f), out float tickShare, out float tickRounds) &&
+                        tickShare > 0f && tickRounds > 0f)
+                    {
+                        tickShare *= CombatMath.NestedSaveFactor(ability, profile, occurrence.Action, recipient);
+                        if (onFailure && !envelope.Add(tickShare, tickRounds)) return false;
+                        if (onPass)
+                        {
+                            if (passEnvelope == null)
+                            {
+                                passEnvelope = ctx.FusionControlPassScratch ?? (ctx.FusionControlPassScratch = new ValueModel.ControlEnvelope());
+                                passEnvelope.Clear();
+                            }
+                            if (!passEnvelope.Add(tickShare, tickRounds)) return false;
+                        }
+                    }
+                    continue;
+                }
                 if (!TryFusionApplicationRounds(ability, occurrence, recipient, ref durationContext, out float duration)) return false;
                 float horizon = Math.Min(Math.Min(ctx.ExpectedRounds, 3f), duration);
                 if (sleeping && s_ActiveEnemies != null && s_ActiveEnemies.All(e => e == recipient) && ctx.Allies.Any(a => a != ctx.Unit))
@@ -279,7 +324,10 @@ namespace CompanionAI_Pathfinder.Tactics
                     out float laterFailed, out float laterPassed)) return false;
             if ((controlRounds > 0f || passRounds > 0f) && profile.IsAoE && profile.InOwnSideArea(ctx.Unit, enemy))
                 controlRounds = passRounds = 0f;
-            ValueModel.FusionValue(damageRead.FailChance, deliveryChance, damageRead.Failed, damageRead.Passed, laterFailed, laterPassed,
+            // ★ Fusion coverage C6: temporary hit points the cast gives the recipient (Enervation on an undead) absorb its damage.
+            CarrierBenefit(ability, profile, enemy, out float giftFailed, out float giftPassed);
+            ValueModel.FusionValue(damageRead.FailChance, deliveryChance, Math.Max(0f, damageRead.Failed - giftFailed),
+                Math.Max(0f, damageRead.Passed - giftPassed), laterFailed, laterPassed,
                 Math.Max(1f, enemy.HPLeft), CombatMath.TargetWorth(enemy), CombatMath.ControlWorth(enemy), controlRounds, passRounds,
                 RegenerationRuns(enemy), CombatMath.AbilityEndsRegeneration(profile, enemy), out damage, out control);
             // The share of delivered casts that leave some control behind: the failed outcome, the passed one or both.

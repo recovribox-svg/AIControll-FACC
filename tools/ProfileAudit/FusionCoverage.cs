@@ -185,6 +185,7 @@ namespace ProfileAudit
                             jointOutcomeMetadataQualified,
                             jointOutcomeMetadataReason,
                             sharedPoolReason,
+                            carrier = (string)typeof(AbilityProfile).GetField("FusionCarrierDetail", BindingFlags.NonPublic | BindingFlags.Instance).GetValue(profile),
                             damageActions = profile.Damage.Count, targetBuffs = profile.TargetBuffs.Count,
                             casterBuffs = profile.CasterBuffs.Count, heals = profile.Heals.Count, casterHeals = profile.CasterHeals.Count,
                             hasDetectableEffect = profile.HasDetectableEffect,

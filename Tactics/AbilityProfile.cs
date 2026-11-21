@@ -737,12 +737,19 @@ namespace CompanionAI_Pathfinder.Tactics
         }
 
         /// <summary>★ v0.3.12: flagged harmful by its blueprint, or it imposes a controlling condition.</summary>
-        internal static bool IsHarmfulBuff(BlueprintBuff buff)
+        internal static bool IsHarmfulBuff(BlueprintBuff buff) => IsHarmfulBuff(buff, carriers: true);
+
+        /// <param name="carriers">★ Fusion coverage C6: also a buff that only damages its bearer or controls it round by round
+        /// (CombatMath.Carriers.cs). The on-hit reader keeps the older rule: its debuff share would only guess at such damage.</param>
+        internal static bool IsHarmfulBuff(BlueprintBuff buff, bool carriers)
         {
             try
             {
                 return buff.Harmful || BuffControl(buff) != ControlStrength.None ||   // ★ v0.3.21: faction change, Command too
-                       TakesAwayOnly(buff) || KillsOnStart(buff);
+                       TakesAwayOnly(buff) || KillsOnStart(buff) || carriers &&
+                       // ★ Fusion coverage C6: it only damages its bearer, or puts a control on it round by round (CombatMath.Carriers.cs).
+                       CombatMath.CarrierPlanOf(buff).Kind is CombatMath.CarrierKind kind &&
+                       (kind == CombatMath.CarrierKind.Damage || kind == CombatMath.CarrierKind.PeriodicControl);
             }
             catch
             {
@@ -821,7 +828,11 @@ namespace CompanionAI_Pathfinder.Tactics
                 // ★ Fusion coverage C9: an ordinary spell's nested save under its declared root save (Phantasmal Killer's
                 // Fortitude save after its Will save, Banshee Blast's Will save) is read for its own fail chance.
                 if (ReferenceEquals(bp, Blueprint) && run.SavingThrowType != SavingThrowType.Unknown)
+                {
                     ReadNestedSaves(run.Actions?.Actions, null, 0, fusion: false);
+                    // ★ Fusion coverage C6: and which branch of the root save each application runs on.
+                    ReadRootSavePaths(run.Actions?.Actions, FusionSavePath.Both, false, 0);
+                }
                 Walk(run.Actions?.Actions, visited, depth, subject, 0, NoGuards);
             }
             // ★ v0.3.21 (gaps): actions run on the clicked unit or point besides the main effect
@@ -2360,6 +2371,36 @@ namespace CompanionAI_Pathfinder.Tactics
                     ReadNestedSaves(child, nested, depth + 1, fusion);
             }
         }
+
+        /// <summary>★ Fusion coverage C6: an ordinary spell's applications by the branch of its root save they run on.</summary>
+        private Dictionary<GameAction, FusionSavePath> ordinaryRootPaths;
+
+        private void ReadRootSavePaths(GameAction[] actions, FusionSavePath path, bool nested, int depth)
+        {
+            if (actions == null || depth > 12) return;
+            foreach (var action in actions)
+            {
+                if (action == null) continue;
+                if (action is ContextActionApplyBuff)
+                {
+                    if (ordinaryRootPaths == null) ordinaryRootPaths = new Dictionary<GameAction, FusionSavePath>();
+                    ordinaryRootPaths[action] = ordinaryRootPaths.TryGetValue(action, out var seen) && seen != path ? FusionSavePath.Both : path;
+                }
+                // Inside an independent nested save a ConditionalSaved reads that save, not the root (AbilityProfile.NestedSaves).
+                if (action is ContextActionSavingThrow) { foreach (var child in ChildActionLists(action)) ReadRootSavePaths(child, path, true, depth + 1); continue; }
+                if (action is ContextActionConditionalSaved saved && !nested && path == FusionSavePath.Both)
+                {
+                    ReadRootSavePaths(saved.Failed?.Actions, FusionSavePath.Failed, false, depth + 1);
+                    ReadRootSavePaths(saved.Succeed?.Actions, FusionSavePath.Passed, false, depth + 1);
+                    continue;
+                }
+                foreach (var child in ChildActionLists(action)) ReadRootSavePaths(child, path, nested, depth + 1);
+            }
+        }
+
+        /// <summary>★ C6: the root-save branch an ordinary spell's application runs on (Both when on either, or unread).</summary>
+        internal FusionSavePath OrdinaryRootPath(GameAction action) =>
+            ordinaryRootPaths != null && action != null && ordinaryRootPaths.TryGetValue(action, out var path) ? path : FusionSavePath.Both;
 
         /// <summary>★ C9: the nested save <paramref name="action"/> runs under, and its branch; false outside one (or unread).</summary>
         internal bool TryNestedSave(GameAction action, out ContextActionSavingThrow save, out FusionSavePath path)

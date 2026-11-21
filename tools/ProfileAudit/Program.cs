@@ -278,6 +278,11 @@ namespace ProfileAudit
             foreach (var line in lineLines) Console.WriteLine(line);
             File.WriteAllText(output, string.Join(Environment.NewLine, lineLines) + Environment.NewLine + File.ReadAllText(output));
             blocklistFailures += lineFailures;
+            // ★ Fusion coverage C6: the carrier buffs a spell puts on its target.
+            var carrierLines = CarrierCheck.Run(loaded.Values, out int carrierFailures);
+            foreach (var line in carrierLines) Console.WriteLine(line);
+            File.WriteAllText(output, string.Join(Environment.NewLine, carrierLines) + Environment.NewLine + File.ReadAllText(output));
+            blocklistFailures += carrierFailures;
             // ★ Fusion coverage, the remaining groups: fused dispels, Vampiric Touch and the later slices.
             var fusionRestLines = FusionRestCheck.Run(loaded.Values, out int fusionRestFailures);
             foreach (var line in fusionRestLines) Console.WriteLine(line);

@@ -1600,6 +1600,15 @@ namespace CompanionAI_Pathfinder.Tactics
             finally { HeapSince(heap, ref ChanceBytes); }
         }
 
+        /// <summary>★ Fusion coverage C6: the chance the ability reaches its target at all - spell resistance, a shadow's share,
+        /// the attack roll - without its save.</summary>
+        internal static float DeliveryChance(UnitEntityData caster, UnitEntityData enemy, AbilityData ability, AbilityProfile profile)
+        {
+            float p = SpellResistancePass(caster, enemy, ability) * ShadowShare(ability, enemy);
+            if (profile.NeedsAttackRoll) p *= SpellAttackHitChance(caster, enemy, ability);
+            return p;
+        }
+
         private static float EffectChanceCore(UnitEntityData caster, UnitEntityData enemy, AbilityData ability,
             AbilityProfile profile, bool damage, float? resistancePass)
         {

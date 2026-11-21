@@ -332,7 +332,8 @@ namespace ProfileAudit
         [ThreadStatic] private static string zeroBuff;
 
         private static readonly System.Reflection.MethodInfo IsHarmfulBuff =
-            typeof(CompanionAI_Pathfinder.Tactics.AbilityProfile).GetMethod("IsHarmfulBuff", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Static);
+            typeof(CompanionAI_Pathfinder.Tactics.AbilityProfile).GetMethod("IsHarmfulBuff", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Static,
+                null, new[] { typeof(Kingmaker.UnitLogic.Buffs.Blueprints.BlueprintBuff) }, null);
 
         private static readonly System.Reflection.MethodInfo SpellBoostOf =
             typeof(CompanionAI_Pathfinder.Tactics.TacticalEngine).GetMethod("SpellBoostOf", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Static);

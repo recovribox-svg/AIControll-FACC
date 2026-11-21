@@ -46,9 +46,15 @@ namespace ProfileAudit
                 Check(predicate(actualData) && !predicate(otherData) && !predicate(emptyData) && !predicate(null),
                     "actual Coup identity is recognized; unrelated/null abilities are unaffected");
                 for (int i = 0; i < 100; i++) { predicate(actualData); predicate(otherData); }
-                long before = GC.GetAllocatedBytesForCurrentThread(); int hits = 0;
-                for (int i = 0; i < 10000; i++) if (predicate((i & 1) == 0 ? actualData : otherData)) hits++;
-                long allocated = GC.GetAllocatedBytesForCurrentThread() - before;
+                // The best of three timed loops: a method the JIT tiers up mid-loop can allocate once on this thread, while a real
+                // per-call allocation shows in every loop (10,000 calls x at least 24 bytes).
+                long allocated = long.MaxValue; int hits = 0;
+                for (int attempt = 0; attempt < 3 && allocated != 0; attempt++)
+                {
+                    long before = GC.GetAllocatedBytesForCurrentThread(); hits = 0;
+                    for (int i = 0; i < 10000; i++) if (predicate((i & 1) == 0 ? actualData : otherData)) hits++;
+                    allocated = Math.Min(allocated, GC.GetAllocatedBytesForCurrentThread() - before);
+                }
                 Check(hits == 5000 && allocated == 0, "hot Coup identity guard allocates no GUID strings");
                 lines.Add($"COUP-REACH identity guard: 10000 warm calls, {allocated} bytes; inert ability wrappers, no actor");
 

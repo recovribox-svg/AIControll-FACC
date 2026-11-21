@@ -4197,6 +4197,9 @@ namespace CompanionAI_Pathfinder.Tactics
                         (ctx.FusionDamageScratch = new CombatMath.FusionDamageRead()) : null;
                     float dmg = fusionRead != null ? CombatMath.EstimateFusionDamage(ability, profile, enemy, fusionRead)
                                                   : CombatMath.EstimateAbilityDamage(ability, profile, enemy);
+                    // ★ Fusion coverage C6: an ordinary spell's temporary hit points on this target (Enervation on an undead)
+                    // absorb its damage; a fused cast's are taken in its joint value (TryFusionValues).
+                    if (fusionRead == null && profile.Fusion == null) dmg = Math.Max(0f, dmg - CarrierBenefitExpected(ability, profile, enemy));
                     if (burst != null && dmg > burst.Damage) burst.Damage = dmg;   // ★ burst aim: the re-check's fallback
                     float p = CombatMath.EffectChance(unit, enemy, ability, profile, damage: true);
                     // ★ coverage3 review: an ally under an enemy's control - its damage is friendly fire, never a gain; a
@@ -4225,7 +4228,8 @@ namespace CompanionAI_Pathfinder.Tactics
                     else
                     {
                         // ★ damage over time: the ticks it leaves, when it lands - HP and progress, not a kill now.
-                        float later = periodic ? p * PeriodicExpected(ability, profile, enemy, PeriodicHorizon(ctx), false) : 0f;
+                        // ★ Fusion coverage C6: and the carriers behind a branch of its root save, by that branch's chance.
+                        float later = periodic ? OrdinaryPeriodicLater(unit, ability, profile, enemy, PeriodicHorizon(ctx), p) : 0f;
                         part = DamageValue(enemy, dmg * p, p, CombatMath.AbilityEndsRegeneration(profile, enemy), later) * WakeFactor(enemy, dmg * p);
                         if (profile.Fusion != null) FusionValueFallback(ability, profile);
                     }
@@ -4644,8 +4648,10 @@ namespace CompanionAI_Pathfinder.Tactics
                     // ★ Fusion F7: nor for a pooled fusion - the forecast below would credit a sleep that the cast's own later
                     // damage wakes.
                     if (profile.FusionOutcomeEffectLocation != null || profile.FusionSharedHd) continue;
+                    // ★ Fusion coverage C6: temporary hit points the target gains are no debuff (CarrierBenefit prices them).
                     var buffs = profile.TargetBuffs.Where(b => (ForecastApplies(b, enemy) ?? profile.BuffAppliesTo(b, ability, enemy)) != EffectApplies.No &&
-                                                               !CombatMath.BuffImmune(enemy, b, ability)).ToList();
+                                                               !CombatMath.BuffImmune(enemy, b, ability) &&
+                                                               CombatMath.CarrierPlanOf(b).Kind != CombatMath.CarrierKind.Benefit).ToList();
                     // ★ v0.3.21: a pit holds by itself, with or without a buff.
                     if (buffs.Count == 0 && !profile.PitHolds(enemy)) continue;
                     if (profile.Pit != null && !profile.PitHolds(enemy)) continue;
@@ -4683,8 +4689,18 @@ namespace CompanionAI_Pathfinder.Tactics
                     // for one that also does something the reader cannot value (★ audit review: Symbol of Vulnerability's
                     // -4 saves come with a lower spell resistance and damage reduction).
                     float share = strength;
+                    // ★ Fusion coverage C6: a round-tick control (Phantasmal Putrefaction) is on for the rounds its saves leave it.
+                    bool ticked = false;
+                    if (buffs.Count == 1 && TickControl(ability, buffs[0], enemy, own > 0f ? own : effectRounds,
+                                                        Math.Min(ctx.ExpectedRounds, 3f), out float tickShare, out float tickRounds))
+                    {
+                        if (!(tickShare > 0f && tickRounds > 0f)) continue;
+                        share = tickShare * repeat;
+                        rounds = tickRounds;
+                        ticked = true;
+                    }
                     bool revealOnly = buffs.Count > 0 && buffs.All(OnlyRevealUtility);
-                    if (!revealOnly && !isMark && profile.ControlStrength == ControlStrength.None)
+                    if (!ticked && !revealOnly && !isMark && profile.ControlStrength == ControlStrength.None)
                     {
                         float byParts = DebuffShareOf(ctx, ability, enemy, buffs, out bool partial);
                         if (byParts >= 0f) share = partial ? Math.Max(byParts * repeat, strength) : byParts * repeat;

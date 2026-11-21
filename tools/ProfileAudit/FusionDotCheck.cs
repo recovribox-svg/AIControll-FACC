@@ -225,8 +225,9 @@ namespace ProfileAudit
                         $"C5: actual {a}/{b} ({save}) with ability damage is valued by the joint model (reason: {reason.GetValue(profile) ?? "none"})");
                 }
                 var enervation = Fuse("Fireball", "Enervation", SavingThrowType.Reflex);
-                Check(!((string)reason.GetValue(AbilityProfile.Get(enervation)) ?? "").Contains("non-HP") && !Qualified(enervation),
-                    "C5: Enervation's negative levels are read; its undead branch (temporary HP) still keeps it off the joint value");
+                Check(!((string)reason.GetValue(AbilityProfile.Get(enervation)) ?? "").Contains("non-HP") && Qualified(enervation) && Withheld(enervation) == null,
+                    "C5/C6: Enervation's negative levels are read, and its undead branch's temporary HP is damage the target will not take");
+                Check(Calls(Body(engine, "TryFusionValues"), engine, "CarrierBenefit"), "the joint value takes off the temporary HP a cast gives");
 
                 // --- 3. compiled routes ---
                 var values = Body(engine, "TryFusionValues");

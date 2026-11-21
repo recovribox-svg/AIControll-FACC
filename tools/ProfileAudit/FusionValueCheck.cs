@@ -76,7 +76,7 @@ namespace ProfileAudit
                         $"guards={typeof(AbilityProfile).GetProperty("FusionIndependentGuards",Hidden).GetValue(colourProfile)}, " +
                         $"paths={typeof(AbilityProfile).GetProperty("FusionBuffPathsConsistent",Hidden).GetValue(colourProfile)}");
                     foreach (var b in colourProfile.TargetBuffs)
-                        lines.Add($"FUSION-VALUE metadata buff {b.name}: harmful={typeof(AbilityProfile).GetMethod("IsHarmfulBuff",Hidden).Invoke(null,new object[]{b})}, " +
+                        lines.Add($"FUSION-VALUE metadata buff {b.name}: harmful={typeof(AbilityProfile).GetMethod("IsHarmfulBuff",Hidden,null,new[]{typeof(Kingmaker.UnitLogic.Buffs.Blueprints.BlueprintBuff)},null).Invoke(null,new object[]{b})}, " +
                             $"control={typeof(AbilityProfile).GetMethod("BuffControl",Hidden).Invoke(null,new object[]{b})}");
                 }
                 Check(colourQualified,
