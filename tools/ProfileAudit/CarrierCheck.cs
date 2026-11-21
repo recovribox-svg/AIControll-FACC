@@ -112,7 +112,7 @@ namespace ProfileAudit
                 var score = Body(engine, "ScoreAbility");
                 Check(Calls(score, engine, "CarrierBenefitExpected") && Calls(score, engine, "TickControl") && Calls(score, engine, "OrdinaryPeriodicLater"),
                     "ordinary spells: temporary HP given is damage not taken, round-tick control by its saves, carriers behind a save by that branch");
-                Check(Calls(Body(engine, "TryFusionValues"), engine, "CarrierBenefit") && Calls(Body(engine, "TryFusionControlRounds"), engine, "TickControl"),
+                Check(Calls(Body(engine, "TryFusionValuesOf"), engine, "CarrierBenefit") && Calls(Body(engine, "TryFusionControlRounds"), engine, "TickControl"),
                     "fused casts: the same in the joint value");
                 var counts = new Dictionary<string, int>();
                 foreach (var b in buffs)

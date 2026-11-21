@@ -234,6 +234,7 @@ namespace CompanionAI_Pathfinder.Tactics
         // F1: a hard veto must still allow the existing bounded cone re-aim, without formatting a penalty note.
         public bool FriendlyFireVeto;
         internal CombatMath.FusionDamageRead FusionDamageScratch;
+        internal CombatMath.FusionDamageRead FusionPoolReadScratch, FusionPoolMissScratch; // ★ Fusion coverage C8: a pool's two outcomes
         internal ValueModel.ControlEnvelope FusionControlScratch;
         internal ValueModel.ControlEnvelope FusionControlPassScratch; // ★ Fusion F4: the passed-save outcome
         internal SharedHdControl.Forecast FusionSharedHd; // ★ Fusion F7: this aim's pool forecast, for one ScoreAbility call
@@ -3992,6 +3993,7 @@ namespace CompanionAI_Pathfinder.Tactics
             Vector3 areaCenter = target.Position;
             SharedHdControl.TryForAim(ability, profile, actualAim, out var sharedHd);
             ctx.FusionSharedHd = profile.Fusion != null ? sharedHd : null; // ★ Fusion F7: read by TryFusionControlRounds
+            bool poolDamage = sharedHd?.PoolsDamage == true;   // ★ Fusion coverage C8: the pool spends on a kill or damage
             EffectApplies? ForecastApplies(Kingmaker.UnitLogic.Buffs.Blueprints.BlueprintBuff buff, UnitEntityData recipient,
                                           bool friendly = false)
             {
@@ -4048,7 +4050,8 @@ namespace CompanionAI_Pathfinder.Tactics
                 }
                 // ★ outcome2: a pool's selection is current-position only, but a fusion's other payload still
                 // reaches walking allies. Keep the existing area safety without predicting future pool consumption.
-                else if (ForecastWalkingAreaAllies(profile, sharedHd?.Supported == true))
+                // ★ Fusion coverage C8: a pool that deals damage counts allies walking in too, as covered (AllyReach).
+                else if (ForecastWalkingAreaAllies(profile, sharedHd?.Supported == true && !poolDamage))
                 {
                     Vector3 center = target.Position;
                     float radius = profile.AoERadius;
@@ -4076,7 +4079,7 @@ namespace CompanionAI_Pathfinder.Tactics
                 // Progressive viability and boss bypass use the same reachable-control recipients as valuation.
                 geometryChance = 0f;
                 geometryRecipients = new HashSet<UnitEntityData>(affectedEnemies.Where(u =>
-                    profile.SharedHdBuffs.Any(b => sharedHd.Eligibility(u, b) > 0f)));
+                    profile.SharedHdBuffs.Any(b => sharedHd.Eligibility(u, b) > 0f) || poolDamage && sharedHd.Reaches(u)));
             }
             // ★ v0.3.18 (AA-4): a chain goes on to the units nearest its first target within its radius, in the game's
             // order (AbilityDeliverChain): enemies, allies or both by its target type (Selective spares allies).
@@ -4147,7 +4150,7 @@ namespace CompanionAI_Pathfinder.Tactics
                 foreach (var ally in atRisk.Distinct())
                 {
                     if (ally == unit && burst == null && !profile.IsAoE) continue;
-                    if (PermanentDeathVetoes(ctx, ability, profile, ally, out float deathCost, out string deathWhy))
+                    if (PermanentDeathVetoes(ctx, ability, profile, ally, out float deathCost, out string deathWhy, poolDamage ? sharedHd : null))
                     {
                         ctx.FriendlyFireVeto = true;
                         why = deathWhy;
@@ -4193,6 +4196,13 @@ namespace CompanionAI_Pathfinder.Tactics
                 // first, with its own rules (no penetration, immunity only for spells that allow spell resistance).
                 foreach (var enemy in affectedEnemies)
                 {
+                    // ★ Fusion coverage C8 (docs/FUSION_COVERAGE_C6_C8.md): a Hit Dice pool that kills or deals damage (Circle of
+                    // Death). An ordinary cast's whole payload is the pool's: it is read as covered and weighed by the forecast's
+                    // chance. A fused cast's other spell lands either way: it is read without the pool here, and its joint value
+                    // mixes both outcomes (TryPooledFusionValues).
+                    float poolReach = poolDamage ? sharedHd.DamageEligibility(enemy) : 1f;
+                    if (poolDamage && profile.Fusion == null && poolReach <= 0f) continue;
+                    using var poolOutcome = poolDamage ? AbilityProfile.PoolOutcome(ability, profile.Fusion == null) : default;
                     var fusionRead = fusionOutcomes ? ctx.FusionDamageScratch ??
                         (ctx.FusionDamageScratch = new CombatMath.FusionDamageRead()) : null;
                     float dmg = fusionRead != null ? CombatMath.EstimateFusionDamage(ability, profile, enemy, fusionRead)
@@ -4207,6 +4217,14 @@ namespace CompanionAI_Pathfinder.Tactics
                     if (ctx.TurnedAllies.Count > 0 && ctx.TurnedAllies.Contains(enemy))
                     {
                         float expected = dmg * p;
+                        if (poolDamage)
+                        {
+                            float covered;
+                            using (AbilityProfile.PoolOutcome(ability, true))
+                                covered = CombatMath.KillApplies(ability, profile, enemy) ? Math.Max(1, enemy.HPLeft)
+                                    : profile.Fusion == null ? dmg : CombatMath.EstimateAbilityDamage(ability, profile, enemy);
+                            expected = p * (poolReach * covered + (1f - poolReach) * (profile.Fusion == null ? 0f : dmg));
+                        }
                         if (expected > 0f)
                         {
                             turnedCost += Math.Min(expected, Math.Max(0f, enemy.HPLeft)) * 2f +
@@ -4236,7 +4254,8 @@ namespace CompanionAI_Pathfinder.Tactics
                     float beneficialChance = part > 0f ? p * CombatMath.FusionDamageChance(ability, enemy, profile) : 0f;
                     // ★ v0.3.18 (AA-1): a kill action (Isekai's Instakill, Power Word Kill) removes the enemy when it lands:
                     // on a failed save and through spell resistance. It subsumes the damage, so the better of the two.
-                    if (CombatMath.KillApplies(ability, profile, enemy))
+                    // ★ Fusion coverage C8: a fused pool's kill is in its joint value already.
+                    if (!(poolDamage && profile.Fusion != null) && CombatMath.KillApplies(ability, profile, enemy))
                     {
                         // ★ Fusion coverage C9: and its nested save failed too, when the kill is behind one (Phantasmal Killer).
                         float pk = CombatMath.EffectChance(unit, enemy, ability, profile, damage: false) *
@@ -4245,6 +4264,13 @@ namespace CompanionAI_Pathfinder.Tactics
                         float killValue = ValueModel.DamageValue(hp * pk, hp, CombatMath.TargetWorth(enemy), pk);
                         part = Math.Max(part, killValue);
                         if (killValue > 0f) beneficialChance = Math.Max(beneficialChance, pk);
+                    }
+                    // ★ Fusion coverage C8: an ordinary pool's payload lands only when the pool still covers this enemy.
+                    if (poolDamage && profile.Fusion == null)
+                    {
+                        part *= poolReach;
+                        beneficialChance *= poolReach;
+                        p *= poolReach;
                     }
                     if (geometryChance.HasValue) geometryChance = Math.Max(geometryChance.Value, beneficialChance);
                     dmgValue += part;
@@ -4295,7 +4321,7 @@ namespace CompanionAI_Pathfinder.Tactics
                     List<string> caughtNames = null;
                     foreach (var a in hurt)
                     {
-                        float dmg = CombatMath.EstimateAbilityDamage(ability, profile, a);
+                        float dmg = poolDamage ? PooledAllyDamage(ability, profile, sharedHd, a) : CombatMath.EstimateAbilityDamage(ability, profile, a);
                         // ★ Fusion coverage C1: and the damage over time the cast leaves on it (burning, acid).
                         dmg += PeriodicAllyDamage(ability, profile, a, PeriodicHorizon(ctx));
                         if (dmg <= 0f) continue;

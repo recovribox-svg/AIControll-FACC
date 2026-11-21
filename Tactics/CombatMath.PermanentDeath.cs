@@ -34,6 +34,8 @@ namespace CompanionAI_Pathfinder.Tactics
             internal readonly List<KeyValuePair<DeathPath, int?>> Gates = new List<KeyValuePair<DeathPath, int?>>();
             /// <summary>Direct kills: ContextActionKill, or a buff that kills on activation outside a dust gate.</summary>
             internal readonly List<DeathPath> Kills = new List<DeathPath>();
+            /// <summary>★ Fusion coverage C8: each kill's action (null when unreadable), for its own conditions on a unit.</summary>
+            internal readonly List<GameAction> KillActions = new List<GameAction>();
             internal bool SavePaths;
             internal SavingThrowType Save = SavingThrowType.Unknown;
             internal bool Empty => Gates.Count == 0 && Kills.Count == 0;
@@ -59,6 +61,7 @@ namespace CompanionAI_Pathfinder.Tactics
                 fused.Damage.AddRange(one.Damage); fused.Damage.AddRange(two.Damage);
                 fused.Gates.AddRange(one.Gates); fused.Gates.AddRange(two.Gates);
                 fused.Kills.AddRange(one.Kills); fused.Kills.AddRange(two.Kills);
+                fused.KillActions.AddRange(one.KillActions); fused.KillActions.AddRange(two.KillActions);
                 if (FusedDeathScans.Count > 1024) FusedDeathScans.Clear();
                 FusedDeathScans[key] = fused;
                 return fused;
@@ -91,6 +94,7 @@ namespace CompanionAI_Pathfinder.Tactics
                 // An unreadable tree cannot prove a cast safe: it counts as able to kill (a direct kill on any outcome).
                 Main.Verbose($"[Math] permanent-death scan {blueprint.name}: {ex.Message}");
                 scan.Kills.Add(DeathPath.Any);
+                scan.KillActions.Add(null);
             }
             if (DeathScans.Count > 4096) DeathScans.Clear();
             DeathScans[blueprint] = scan;
@@ -116,9 +120,10 @@ namespace CompanionAI_Pathfinder.Tactics
                         continue;
                     case ContextActionKill _:
                         scan.Kills.Add(path);
+                        scan.KillActions.Add(action);
                         continue;
                     case ContextActionApplyBuff apply when apply.Buff != null && !apply.ToCaster:
-                        if (AbilityProfile.KillsOnStart(apply.Buff)) scan.Kills.Add(path);
+                        if (AbilityProfile.KillsOnStart(apply.Buff)) { scan.Kills.Add(path); scan.KillActions.Add(action); }
                         continue;
                     case ContextActionConditionalSaved saved:
                         scan.SavePaths = true;
@@ -212,13 +217,35 @@ namespace CompanionAI_Pathfinder.Tactics
             }
         }
 
+        private static bool KillRuledOut(AbilityData ability, AbilityProfile profile, UnitEntityData unit, GameAction action)
+        {
+            try
+            {
+                switch (action)
+                {
+                    case ContextActionKill kill: return profile.AppliesTo(kill, ability, unit) == EffectApplies.No;
+                    case ContextActionApplyBuff apply when apply.Buff != null:
+                        return profile.BuffAppliesTo(apply.Buff, ability, unit) == EffectApplies.No;
+                    default: return false;
+                }
+            }
+            catch { return false; }
+        }
+
         private static bool OnPath(DeathPath effect, DeathPath outcome, bool branches) =>
             effect == DeathPath.Any || branches && effect == outcome;
 
         private static float OutcomeDeath(AbilityData ability, AbilityProfile profile, UnitEntityData unit, DeathScan scan,
                                           DeathPath outcome, float hp, bool branches = true)
         {
-            foreach (var kill in scan.Kills) if (OnPath(kill, outcome, branches)) return 1f;
+            for (int i = 0; i < scan.Kills.Count; i++)
+            {
+                if (!OnPath(scan.Kills[i], outcome, branches)) continue;
+                // ★ Fusion coverage C8: a kill the game's own conditions rule out for this unit does not kill it (Circle of Death's
+                // at more than 9 Hit Dice; its 100 damage is friendly fire). Unknown still counts as a kill.
+                if (i < scan.KillActions.Count && KillRuledOut(ability, profile, unit, scan.KillActions[i])) continue;
+                return 1f;
+            }
             int? below = null;
             bool gated = false;
             foreach (var gate in scan.Gates)

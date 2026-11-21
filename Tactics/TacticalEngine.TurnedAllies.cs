@@ -220,12 +220,21 @@ namespace CompanionAI_Pathfinder.Tactics
         /// keeps the ordinary friendly-fire price.
         /// </summary>
         private static bool PermanentDeathVetoes(TacticalContext ctx, AbilityData ability, AbilityProfile profile, UnitEntityData ally,
-                                                 out float cost, out string why)
+                                                 out float cost, out string why, SharedHdControl.Forecast pool = null)
         {
             cost = 0f;
             why = null;
             if (ally == null || IsSummon(ally) || !CombatMath.CanKillPermanently(ability)) return false;
-            float risk = CombatMath.PermanentDeathRisk(ability, profile, ally);
+            float risk;
+            // ★ Fusion coverage C8: a Hit Dice pool's kill (Circle of Death) needs the pool to still cover the ally.
+            if (pool != null && pool.PoolsDamage)
+            {
+                float reach = pool.AllyReach(ally);
+                if (!(reach > 0f)) return false;
+                using (AbilityProfile.PoolOutcome(ability, true)) risk = CombatMath.PermanentDeathRisk(ability, profile, ally);
+                risk *= reach;
+            }
+            else risk = CombatMath.PermanentDeathRisk(ability, profile, ally);
             if (!(risk > 0f)) return false;
             if (PermanentDeathRules.Vetoed(risk))
             {
@@ -237,6 +246,20 @@ namespace CompanionAI_Pathfinder.Tactics
             }
             cost = PermanentDeathRules.Cost(risk, AllyWorth(ctx, ally));
             return false;
+        }
+
+        /// <summary>
+        /// ★ Fusion coverage C8: the damage a Hit Dice pool's cast does to an ally: with the pool covering it, by the forecast's
+        /// chance (an ally it did not select, walking in, is assumed covered), and a fused cast's other spell either way.
+        /// </summary>
+        private static float PooledAllyDamage(AbilityData ability, AbilityProfile profile, SharedHdControl.Forecast pool, UnitEntityData ally)
+        {
+            float reach = Math.Max(0f, Math.Min(1f, pool.AllyReach(ally)));
+            float covered = 0f, missed = 0f;
+            if (reach > 0f) using (AbilityProfile.PoolOutcome(ability, true)) covered = CombatMath.EstimateAbilityDamage(ability, profile, ally);
+            if (reach < 1f && profile.Fusion != null)
+                using (AbilityProfile.PoolOutcome(ability, false)) missed = CombatMath.EstimateAbilityDamage(ability, profile, ally);
+            return reach * covered + (1f - reach) * missed;
         }
     }
 }

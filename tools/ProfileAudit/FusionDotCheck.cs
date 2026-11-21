@@ -227,12 +227,12 @@ namespace ProfileAudit
                 var enervation = Fuse("Fireball", "Enervation", SavingThrowType.Reflex);
                 Check(!((string)reason.GetValue(AbilityProfile.Get(enervation)) ?? "").Contains("non-HP") && Qualified(enervation) && Withheld(enervation) == null,
                     "C5/C6: Enervation's negative levels are read, and its undead branch's temporary HP is damage the target will not take");
-                Check(Calls(Body(engine, "TryFusionValues"), engine, "CarrierBenefit"), "the joint value takes off the temporary HP a cast gives");
+                Check(Calls(Body(engine, "TryFusionValuesOf"), engine, "CarrierBenefit"), "the joint value takes off the temporary HP a cast gives");
 
                 // --- 3. compiled routes ---
-                var values = Body(engine, "TryFusionValues");
+                var values = Body(engine, "TryFusionValuesOf");
                 Check(Calls(values, engine, "TryPeriodicDamage") && Calls(values, engine, "PeriodicHorizon") &&
-                      values.Any(m => m is MethodInfo mi && mi.DeclaringType == typeof(ValueModel) && mi.Name == "FusionValue" && mi.GetParameters().Length == 15),
+                      values.Any(m => m is MethodInfo mi && mi.DeclaringType == typeof(ValueModel) && mi.Name == "FusionValue" && mi.GetParameters().Length == 17),
                     "the joint value takes each outcome's damage over time");
                 var periodic = Body(engine, "TryPeriodicDamage");
                 Check(Calls(periodic, engine, "TryFusionApplicationRounds") && Calls(periodic, engine, "PeriodicCarrierDamage") &&

@@ -1641,6 +1641,13 @@ namespace CompanionAI_Pathfinder.Tactics
             var types = checker.Conditions.OfType<ContextConditionHitDice>().Where(h => h.AddSharedValue)
                                .Select(h => h.SharedValue).Distinct().ToList();
             if (types.Count == 0) return Run(checker);
+            // ★ Fusion coverage C8: one outcome of the pool's forecast for this recipient (PoolOutcome): its Hit Dice limits
+            // hold, or none does. The forecast's chance weighs the outcomes (SharedHdControl).
+            if (s_PoolAbility != null && ReferenceEquals(s_PoolAbility, ability))
+            {
+                foreach (var t in types) context[t] = s_PoolReached ? PoolCovers : -PoolCovers;
+                return Run(checker);
+            }
             var ranges = types.Select(t =>
             {
                 SharedValueRange(ability, context, t, out int lo, out int mid, out int hi);
@@ -1654,6 +1661,38 @@ namespace CompanionAI_Pathfinder.Tactics
             foreach (var r in ranges) context[r.Type] = r.Mid;
             return Run(checker);
         }
+
+        // ★ Fusion coverage C8: the pool outcome scope. Larger than any level a limit is compared with; small enough for the sum.
+        private const int PoolCovers = 1 << 24;
+        [ThreadStatic] private static AbilityData s_PoolAbility;
+        [ThreadStatic] private static bool s_PoolReached;
+
+        internal readonly struct PoolOutcomeScope : IDisposable
+        {
+            private readonly bool m_Active;
+            private readonly AbilityData m_PreviousAbility;
+            private readonly bool m_PreviousReached;
+            internal PoolOutcomeScope(AbilityData ability, bool reached)
+            {
+                m_Active = true;
+                m_PreviousAbility = s_PoolAbility;
+                m_PreviousReached = s_PoolReached;
+                s_PoolAbility = ability;
+                s_PoolReached = reached;
+            }
+            public void Dispose()
+            {
+                if (!m_Active) return;
+                s_PoolAbility = m_PreviousAbility;
+                s_PoolReached = m_PreviousReached;
+            }
+        }
+
+        /// <summary>
+        /// ★ Fusion coverage C8: while open, <paramref name="ability"/>'s shared Hit Dice conditions read as covered
+        /// (<paramref name="reached"/>) or not, for one recipient's appraisal; the condition cache is not used for them.
+        /// </summary>
+        internal static PoolOutcomeScope PoolOutcome(AbilityData ability, bool reached) => new PoolOutcomeScope(ability, reached);
 
         /// <summary>
         /// ★ v0.3.17 (test5): the Hit Dice limits in this ability's branch conditions as the profile evaluates them, and
@@ -1948,6 +1987,10 @@ namespace CompanionAI_Pathfinder.Tactics
             // ★ v0.3.25 (test2 logs, performance): a struct key - the same parts as before (caster, target, ability blueprint,
             // metamagic, source item, spellbook, aim unit or its point to 0.1 m), without the string built for every
             // lookup, cache hits included.
+            // ★ Fusion coverage C8: a pool outcome in force for this ability is not a cached answer.
+            if (s_PoolAbility != null && ReferenceEquals(s_PoolAbility, ability) &&
+                (checker.Conditions ?? Array.Empty<Condition>()).Any(c => c is ContextConditionHitDice h && h.AddSharedValue))
+                return CheckUncached(checker, ability, target, aim);
             var key = new CheckerKey(caster, target, ability, aim);
             if (!CheckerCache.TryGetValue(checker, out var perUnit))
                 CheckerCache[checker] = perUnit = new CheckerResults { Frame = frame };
@@ -1992,6 +2035,22 @@ namespace CompanionAI_Pathfinder.Tactics
 
             perUnit.Results[key] = result;
             return result;
+        }
+
+        private static bool? CheckUncached(ConditionsChecker checker, AbilityData ability, UnitEntityData target, TargetWrapper aim)
+        {
+            if (!checker.Conditions.All(IsSafe)) return null;
+            try
+            {
+                var context = CombatMath.CreateContext(ability, aim);
+                if (context == null) return null;
+                using (context.GetDataScope(new TargetWrapper(target))) return WithSharedValues(checker, ability, context);
+            }
+            catch (Exception ex)
+            {
+                Main.Verbose($"[Profile] pooled condition check for {ability.Name} on {target.CharacterName}: {ex.Message}");
+                return null;
+            }
         }
 
         /// <summary>

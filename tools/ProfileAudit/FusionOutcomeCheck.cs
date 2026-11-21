@@ -151,7 +151,7 @@ namespace ProfileAudit
                     "the control reader fills a second envelope for the passed outcome");
                 Check(!Calls(rounds, "Trigger") && !Calls(rounds, "SaveFailChance") && !Calls(rounds, "FindPath"),
                     "the control reader adds no rule, save or path query");
-                var values = engine.GetMethod("TryFusionValues", Hidden);
+                var values = engine.GetMethod("TryFusionValuesOf", Hidden);
                 Check(Calls(values, "FusionValue") && Calls(values, "FusionOutcomeShare"), "the joint value weights each outcome's control by that outcome");
                 var catches = engine.GetMethod("FusionControlCatches", Hidden);
                 Check(Calls(catches, "TryFusionControlRounds"), "ally safety reads both outcomes through the same reader");

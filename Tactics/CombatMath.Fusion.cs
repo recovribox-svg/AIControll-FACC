@@ -21,7 +21,9 @@ namespace CompanionAI_Pathfinder.Tactics
         {
             internal float Failed, Passed, FailChance;
             internal bool Known;
-            internal void Reset() { Failed = Passed = 0f; FailChance = 1f; Known = true; }
+            /// <summary>★ Fusion coverage C8: a kill on that outcome (a pooled kill: Circle of Death's on a failed save).</summary>
+            internal bool KillOnFailure, KillOnPass;
+            internal void Reset() { Failed = Passed = 0f; FailChance = 1f; Known = true; KillOnFailure = KillOnPass = false; }
         }
 
         internal static float EstimateFusionDamage(AbilityData ability, AbilityProfile profile, UnitEntityData target,
@@ -40,7 +42,7 @@ namespace CompanionAI_Pathfinder.Tactics
         }
 
         private static void ReadFusionDamageOutcomes(AbilityProfile profile, List<KeyValuePair<GameAction, float>> parts,
-            float fail, bool evasion, bool improved, float deliveries, FusionDamageRead read)
+            float fail, bool evasion, bool improved, float deliveries, FusionDamageRead read, float killHp = 0f)
         {
             if (read == null || !read.Known) return;
             read.FailChance = fail;
@@ -53,6 +55,15 @@ namespace CompanionAI_Pathfinder.Tactics
                 float factor = FusionDamageFactor(profile, part.Key, fail, evasion, improved);
                 if (factor <= 0f) continue; // any omitted outcome has probability zero under this forecast
                 float unweighted = part.Value / factor;
+                // ★ Fusion coverage C8: a kill is certain on its outcome, not damage scaled with the rest. One behind a save of
+                // its own (a nested factor below 1) is not read.
+                if (part.Key is ContextActionKill)
+                {
+                    if (!(killHp > 0f) || unweighted < killHp * 0.999f) { read.Known = false; return; }
+                    if (FusionDamageFactor(profile, part.Key, 1f, evasion, improved) > 0f) read.KillOnFailure = true;
+                    if (FusionDamageFactor(profile, part.Key, 0f, evasion, improved) > 0f) read.KillOnPass = true;
+                    continue;
+                }
                 read.Failed += unweighted * FusionDamageFactor(profile, part.Key, 1f, evasion, improved) * deliveries;
                 read.Passed += unweighted * FusionDamageFactor(profile, part.Key, 0f, evasion, improved) * deliveries;
             }

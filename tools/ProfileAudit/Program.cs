@@ -283,6 +283,11 @@ namespace ProfileAudit
             foreach (var line in carrierLines) Console.WriteLine(line);
             File.WriteAllText(output, string.Join(Environment.NewLine, carrierLines) + Environment.NewLine + File.ReadAllText(output));
             blocklistFailures += carrierFailures;
+            // ★ Fusion coverage C8: shared Hit Dice pools that kill or deal damage (Circle of Death), rolled and spreading.
+            var hdPoolLines = HdPoolCheck.Run(loaded.Values, out int hdPoolFailures);
+            foreach (var line in hdPoolLines) Console.WriteLine(line);
+            File.WriteAllText(output, string.Join(Environment.NewLine, hdPoolLines) + Environment.NewLine + File.ReadAllText(output));
+            blocklistFailures += hdPoolFailures;
             // ★ Fusion coverage, the remaining groups: fused dispels, Vampiric Touch and the later slices.
             var fusionRestLines = FusionRestCheck.Run(loaded.Values, out int fusionRestFailures);
             foreach (var line in fusionRestLines) Console.WriteLine(line);

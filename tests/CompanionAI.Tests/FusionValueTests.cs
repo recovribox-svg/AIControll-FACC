@@ -141,5 +141,21 @@ namespace CompanionAI.Tests
             ValueModel.FusionValue(1, 1, 100, 0, 15, 40, 40, 3, true, true, out float stopped, out _);
             Assert.True(regenerating < stopped);
         }
+
+        // ★ Fusion coverage C8: a kill on an outcome takes the recipient out for certain; without one the value is unchanged.
+        [Fact] public void AKillOnTheFailedSaveIsCertainAndUnchangedWithout()
+        {
+            ValueModel.FusionValue(0.6f, 1f, 10f, 5f, 0f, 0f, 40f, 30f, 20f, 2f, 0f, false, false, out float plain, out float plainControl);
+            ValueModel.FusionValue(0.6f, 1f, 10f, 5f, 0f, 0f, 40f, 30f, 20f, 2f, 0f, false, false, false, false, out float same, out float sameControl);
+            Assert.Equal(plain, same); Assert.Equal(plainControl, sameControl);
+            ValueModel.FusionValue(0.6f, 1f, 10f, 5f, 0f, 0f, 40f, 30f, 20f, 2f, 0f, false, false, true, false, out float killed, out float killedControl);
+            // Failed: the HP left and the whole worth; passed: the ordinary 5 damage.
+            float passed = ValueModel.DamageValue(5f, 40f, 30f, ValueModel.KillChance(1f, 5f, 40f));
+            Assert.Equal(0.6f * (40f + 30f) + 0.4f * passed, killed, 3);
+            Assert.Equal(0f, killedControl);   // a killed recipient loses no further turns to the control
+            // A regenerating recipient is still killed (the kill marks it for death).
+            ValueModel.FusionValue(0.6f, 1f, 10f, 5f, 0f, 0f, 40f, 30f, 20f, 2f, 0f, true, false, true, false, out float regenerating, out _);
+            Assert.True(regenerating >= killed - 1e-3f);
+        }
     }
 }

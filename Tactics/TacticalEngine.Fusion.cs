@@ -84,7 +84,10 @@ namespace CompanionAI_Pathfinder.Tactics
                 profile.RemovesBuffs && profile.RemovedBuffs.Count == 0) reason = "dynamic removal dependency";
             else if (!profile.DealsDamage && profile.BuffApplications.Count == 0) reason = "no direct HP/control payload";
             // ★ Fusion coverage C5: ability damage and negative levels are read by their HP equivalent (CombatMath.DrainEquivalent).
-            else if (!profile.Damage.All(a => a is ContextActionDealDamage)) reason = "composite damage (a provider or a kill)";
+            // ★ Fusion coverage C8: a kill of a readable Hit Dice pool (Circle of Death) is priced on its outcome (TryPooledFusionValues).
+            else if (!profile.Damage.All(a => a is ContextActionDealDamage ||
+                                              a is ContextActionKill && SharedHdControl.FusedPools(ability, profile, a)))
+                reason = "composite damage (a provider or a kill)";
             else if (profile.BuffApplications.Count > ValueModel.ControlEnvelope.Capacity) reason = "control occurrence bound";
             else if (!profile.TargetBuffs.All(b => profile.BuffApplications.Any(a => a.Buff == b))) reason = "control without a direct apply occurrence";
             else if (profile.TargetBuffs.FirstOrDefault(b => FusionCarrierKind(profile, b) != null) is BlueprintBuff carrier)
@@ -293,7 +296,7 @@ namespace CompanionAI_Pathfinder.Tactics
         {
             var pool = ctx.FusionSharedHd;
             if (pool == null || !pool.Supported) return 0f;
-            float chance = 0f;
+            float chance = pool.PoolsDamage ? pool.DamageEligibility(recipient) : 0f;   // ★ Fusion coverage C8
             foreach (var buff in profile.SharedHdBuffs) chance = Math.Max(chance, pool.Eligibility(recipient, buff));
             return chance;
         }
@@ -315,6 +318,53 @@ namespace CompanionAI_Pathfinder.Tactics
             UnitEntityData enemy, CombatMath.FusionDamageRead damageRead, float deliveryChance,
             out float damage, out float control, out float controlShare)
         {
+            var pool = ctx.FusionSharedHd;
+            if (pool != null && pool.PoolsDamage) return TryPooledFusionValues(ctx, ability, profile, enemy, pool, deliveryChance,
+                out damage, out control, out controlShare);
+            return TryFusionValuesOf(ctx, ability, profile, enemy, damageRead, deliveryChance, out damage, out control, out controlShare);
+        }
+
+        /// <summary>
+        /// ★ Fusion coverage C8 (docs/FUSION_COVERAGE_C6_C8.md): a fused cast whose pooled spell kills or deals damage (Circle of
+        /// Death). Whether the pool still covers this recipient does not depend on its own save (SharedHdControl), so its value is
+        /// the joint value with the pooled payload, by that chance, and without it otherwise. The other spell reaches it either way.
+        /// </summary>
+        private static bool TryPooledFusionValues(TacticalContext ctx, AbilityData ability, AbilityProfile profile, UnitEntityData enemy,
+            SharedHdControl.Forecast pool, float deliveryChance, out float damage, out float control, out float controlShare)
+        {
+            damage = control = controlShare = 0f;
+            if (deliveryChance <= 0f) return true;
+            if (!pool.Supported) return false;
+            float reach = Math.Max(0f, Math.Min(1f, pool.DamageEligibility(enemy)));
+            float dR = 0f, cR = 0f, sR = 0f, dN = 0f, cN = 0f, sN = 0f;
+            if (reach > 0f)
+            {
+                var reached = ctx.FusionPoolReadScratch ?? (ctx.FusionPoolReadScratch = new CombatMath.FusionDamageRead());
+                using (AbilityProfile.PoolOutcome(ability, true)) CombatMath.EstimateFusionDamage(ability, profile, enemy, reached);
+                if (!TryFusionValuesOf(ctx, ability, profile, enemy, reached, deliveryChance, out dR, out cR, out sR)) return false;
+            }
+            if (reach < 1f)
+            {
+                var missed = ctx.FusionPoolMissScratch ?? (ctx.FusionPoolMissScratch = new CombatMath.FusionDamageRead());
+                if (profile.Damage.All(pool.Pools))
+                {
+                    // Nothing else deals damage: no damage on either outcome, under the cast's one save.
+                    missed.Reset();
+                    missed.FailChance = profile.Save != SavingThrowType.Unknown ? CombatMath.SaveFailChance(ability, profile.Save, enemy) : 1f;
+                }
+                else using (AbilityProfile.PoolOutcome(ability, false)) CombatMath.EstimateFusionDamage(ability, profile, enemy, missed);
+                if (!TryFusionValuesOf(ctx, ability, profile, enemy, missed, deliveryChance, out dN, out cN, out sN)) return false;
+            }
+            damage = reach * dR + (1f - reach) * dN;
+            control = reach * cR + (1f - reach) * cN;
+            controlShare = reach * sR + (1f - reach) * sN;
+            return true;
+        }
+
+        private static bool TryFusionValuesOf(TacticalContext ctx, AbilityData ability, AbilityProfile profile,
+            UnitEntityData enemy, CombatMath.FusionDamageRead damageRead, float deliveryChance,
+            out float damage, out float control, out float controlShare)
+        {
             damage = control = controlShare = 0f;
             if (deliveryChance <= 0f) return true; // whole-cast immunity/no delivery cannot be revived by a surviving buff
             if (!damageRead.Known ||
@@ -329,7 +379,8 @@ namespace CompanionAI_Pathfinder.Tactics
             ValueModel.FusionValue(damageRead.FailChance, deliveryChance, Math.Max(0f, damageRead.Failed - giftFailed),
                 Math.Max(0f, damageRead.Passed - giftPassed), laterFailed, laterPassed,
                 Math.Max(1f, enemy.HPLeft), CombatMath.TargetWorth(enemy), CombatMath.ControlWorth(enemy), controlRounds, passRounds,
-                RegenerationRuns(enemy), CombatMath.AbilityEndsRegeneration(profile, enemy), out damage, out control);
+                RegenerationRuns(enemy), CombatMath.AbilityEndsRegeneration(profile, enemy), damageRead.KillOnFailure,
+                damageRead.KillOnPass, out damage, out control);
             // The share of delivered casts that leave some control behind: the failed outcome, the passed one or both.
             controlShare = ValueModel.FusionOutcomeShare(damageRead.FailChance, controlRounds > 0f, passRounds > 0f);
             if (!profile.FusionValueQualifiedReported)

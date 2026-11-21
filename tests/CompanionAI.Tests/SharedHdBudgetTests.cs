@@ -120,5 +120,33 @@ namespace CompanionAI.Tests
             Assert.False(SharedHdBudget.TryForecast(4, recipients, out var p));
             Assert.Null(p);
         }
+
+        // ★ Fusion coverage C8: a rolled pool in one pass equals the chance-weighted forecasts of its rolls.
+        [Fact]
+        public void ARolledPoolInOnePassEqualsItsWeightedRolls()
+        {
+            var recipients = new[] { Target(3), Target(5, 0.5f), Target(2), Target(4) };
+            var budgets = new[] { 4, 6, 9, 12 };
+            var chances = new[] { 0.1f, 0.4f, 0.3f, 0.2f };
+            Assert.True(SharedHdBudget.TryForecast(budgets, chances, recipients, out var once));
+            var summed = new float[recipients.Length];
+            for (int k = 0; k < budgets.Length; k++)
+            {
+                Assert.True(SharedHdBudget.TryForecast(budgets[k], recipients, out var e));
+                for (int i = 0; i < summed.Length; i++) summed[i] += chances[k] * e[i];
+            }
+            for (int i = 0; i < summed.Length; i++) Assert.Equal(summed[i], once[i], 5);
+        }
+
+        [Fact]
+        public void CircleOfDeathSizedPoolsFitTheBounds()
+        {
+            // d4 per caster level at 20 (25 Intensified), half again empowered: 150.
+            Assert.True(SharedHdBudget.MaxBudget >= 150);
+            Assert.True(SharedHdBudget.TryForecast(new[] { 150 }, new[] { 1f }, new[] { Target(9), Target(12) }, out var p));
+            Assert.Equal(1f, p[0]); Assert.Equal(1f, p[1]);
+            Assert.False(SharedHdBudget.TryForecast(new[] { 4, 5 }, new[] { 1f }, new[] { Target(1) }, out var mismatched));
+            Assert.Null(mismatched);
+        }
     }
 }
