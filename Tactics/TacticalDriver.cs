@@ -437,6 +437,9 @@ namespace CompanionAI_Pathfinder.Tactics
                     {
                         // Arrived, not failed: the walk's end must not mark the touch as tried (LearnFromLastCommand).
                         Reconsider(unit, command);
+                        // ★ coverage2 review (finding 2): the next decision casts it from here even when the recipient has
+                        // moved a step out of reach since (TacticalEngine.TouchFromHere).
+                        CombatMemory.NoteTouchArrived(unit, ability.Blueprint, issued.FollowUpAim.Unit);
                         why = $"{issued.FollowUpAim.Unit.CharacterName} is in reach of its {ability.Name} touch - the walk to it ends";
                         return true;
                     }

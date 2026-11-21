@@ -1,3 +1,4 @@
+using System;
 using CompanionAI_Pathfinder.Tactics;
 using Xunit;
 
@@ -49,10 +50,11 @@ namespace CompanionAI.Tests
         public void WeaponHitsLandAfterLatencyWalkSwingsAndFlight()
         {
             float chained = DisruptRules.NextSwingSeconds;
-            Assert.Equal(0.7f, DisruptRules.WeaponHitSeconds(0, 0f, false, 2f, chained), 4);
-            Assert.Equal(1.4f, DisruptRules.WeaponHitSeconds(1, 0f, false, 2f, chained), 4);
-            Assert.Equal(1.2f, DisruptRules.WeaponHitSeconds(0, 0f, true, 15f, chained), 4);   // + 15 m / 30 m/s
-            Assert.Equal(2.7f, DisruptRules.WeaponHitSeconds(0, 2f, false, 2f, chained), 4);
+            // ★ coverage2 review (R4): the first melee swing measured 0.70 s; the first shot keeps 0.6 s.
+            Assert.Equal(0.8f, DisruptRules.WeaponHitSeconds(0, 0f, false, 2f, chained), 4);
+            Assert.Equal(1.5f, DisruptRules.WeaponHitSeconds(1, 0f, false, 2f, chained), 4);
+            Assert.Equal(1.2f, DisruptRules.WeaponHitSeconds(0, 0f, true, 15f, chained), 4);   // 0.1 + 0.6 + 15 m / 30 m/s
+            Assert.Equal(2.8f, DisruptRules.WeaponHitSeconds(0, 2f, false, 2f, chained), 4);
         }
 
         [Theory]
@@ -66,6 +68,28 @@ namespace CompanionAI.Tests
         public void AttacksFollowTheNativeSchedule(int attacks, bool chained, float spacing)
         {
             Assert.Equal(spacing, DisruptRules.SwingSpacing(attacks, chained), 4);
+        }
+
+        [Theory]
+        // ★ coverage2 review (R4): a bow's shots one measured animation (1.8 s) apart, sped up to fit the 6 s window.
+        [InlineData(1, 1.8f)]
+        [InlineData(2, 1.8f)]
+        [InlineData(3, 1.8f)]
+        [InlineData(4, 1.5f)]
+        [InlineData(5, 1.2f)]
+        public void BowShotsFollowTheirAnimation(int attacks, float spacing)
+        {
+            Assert.Equal(spacing, DisruptRules.SwingSpacing(attacks, true, bow: true), 4);
+            Assert.Equal(DisruptRules.SwingSpacing(attacks, true, 3f, true), Math.Min(1.8f, attacks > 1 ? 3f / attacks : 1.8f), 4);
+        }
+
+        [Fact]
+        public void ABowsSecondShotRarelyBeatsAShortCast()
+        {
+            // The old 0.7 s chain put a bow's second shot 1.4 s in, before a 2 s cast went off; measured, it lands 2.5 s in.
+            float spacing = DisruptRules.SwingSpacing(2, true, bow: true);
+            Assert.False(DisruptRules.InTime(DisruptRules.WeaponHitSeconds(1, 0f, true, 3f, spacing), 2f));
+            Assert.True(DisruptRules.InTime(DisruptRules.WeaponHitSeconds(0, 0f, true, 3f, spacing), 2f));
         }
 
         [Fact]
@@ -100,7 +124,7 @@ namespace CompanionAI.Tests
             // Movement and cooldown overlap, rather than being added and incorrectly hiding a timely allied hit.
             Assert.Equal(2f, DisruptRules.OrderedStartSeconds(2f, 1f));
             Assert.Equal(2f, DisruptRules.OrderedStartSeconds(1f, 2f));
-            Assert.True(DisruptRules.InTime(DisruptRules.WeaponHitSeconds(0, 2f, false, 0f, 2f), 3f));
+            Assert.True(DisruptRules.InTime(DisruptRules.WeaponHitSeconds(0, 2f, false, 0f, 2f), 3.1f));
         }
 
         [Fact]
@@ -117,10 +141,10 @@ namespace CompanionAI.Tests
         [Fact]
         public void AnAllysRunningAttackLandsOnItsSchedule()
         {
-            // 3-attack routine, 1 s into the command, next attack index 1: it starts at 2 s, lands 0.6 s later
-            Assert.Equal(1.6f, DisruptRules.RunningHitSeconds(1, 1, 2f, 1f, false, false, 2f), 4);
+            // 3-attack routine, 1 s into the command, next attack index 1: it starts at 2 s, lands 0.7 s later (measured swing)
+            Assert.Equal(1.7f, DisruptRules.RunningHitSeconds(1, 1, 2f, 1f, false, false, 2f), 4);
             Assert.Equal(0f, DisruptRules.RunningHitSeconds(0, 0, 2f, 1f, false, false, 2f), 4);          // under way: lands now
-            Assert.Equal(1.3f, DisruptRules.RunningHitSeconds(2, 1, 0.7f, 5f, true, false, 2f), 4);        // chained: one after the next
+            Assert.Equal(1.4f, DisruptRules.RunningHitSeconds(2, 1, 0.7f, 5f, true, false, 2f), 4);        // chained: one after the next
             Assert.Equal(1.1f, DisruptRules.RunningHitSeconds(0, 0, 0.7f, 0f, true, true, 15f), 4);        // + 15 m / 30 m/s flight
         }
 

@@ -86,6 +86,17 @@ namespace CompanionAI_Pathfinder.Tactics
         }
 
         /// <summary>
+        /// ★ evidence (docs/R_ITEMS_PLAN.md, R1): the same forecast for an issued attack, compared with the game's answer at the
+        /// roll (TimelineObserver). <paramref name="bySecond"/>: the forecast rests on this attack being the second engager.
+        /// </summary>
+        internal static bool ForecastFlank(UnitEntityData unit, UnitEntityData target, ItemEntityWeapon weapon, out bool bySecond)
+        {
+            bySecond = false;
+            try { return unit != null && target != null && PredictFlank(unit, target, weapon, out bySecond, out _); }
+            catch { return false; }
+        }
+
+        /// <summary>
         /// D2: whether <paramref name="target"/> will be flanked when <paramref name="unit"/>'s attack with
         /// <paramref name="weapon"/> lands, and whether that is new (this attack is the second engager).
         /// </summary>
@@ -101,9 +112,62 @@ namespace CompanionAI_Pathfinder.Tactics
             catch { cannot = true; }
             if (cannot || !AttackerEngages(unit, target, weapon)) return false;
             int others = OtherEngagers(target, unit, out partner);
-            bySecond = SneakRules.PredictsFlank(false, cannot, true, others);
-            if (!bySecond) partner = null;
+            // ★ coverage3 review (R1 evidence): real time, an ally already ordered to attack this target in melee and in reach
+            // before this attack lands will be an engager at the roll. Every one of the 14 "flanked but not forecast" attacks in
+            // the coverage2/3 logs had none counted at the decision and allies engaging with a command on the target at the roll.
+            int arriving = others == 0 ? ArrivingEngagers(target, unit, weapon) : 0;
+            bySecond = SneakRules.PredictsFlank(false, cannot, true, others + arriving);
+            if (!bySecond || others == 0) partner = null;   // an arriving ally's own gain is its own decision's
             return bySecond;
+        }
+
+        /// <summary>
+        /// ★ coverage3 review: real time, the party's units (and pets) not engaging <paramref name="target"/> now whose standard
+        /// command is a melee attack on it (UnitAttack) and that reach it - its own approach radius, at its speed - before
+        /// <paramref name="attacker"/>'s first hit lands (its walk to reach plus the measured first swing). Native RT flanking
+        /// counts an engager whose command targets the target (UnitCombatState.IsFlanked), which such an ally is on arrival.
+        /// An engager without a command on the target is not counted (it may turn elsewhere). Read only; no path query.
+        /// </summary>
+        internal static int ArrivingEngagers(UnitEntityData target, UnitEntityData attacker, ItemEntityWeapon weapon)
+        {
+            if (!CombatMemory.IsRealTime || target == null || attacker == null) return 0;
+            try
+            {
+                var party = Kingmaker.Game.Instance?.Player?.PartyAndPets;
+                if (party == null) return 0;
+                var engaged = target.CombatState?.EngagedBy;
+                float ourReach = weapon != null ? Kingmaker.UnitLogic.Commands.UnitAttack.GetApproachRadius(weapon, attacker, target) : 1.5f;
+                float ourAt = Math.Max(0f, TacticalEngine.HorizontalDistance(attacker.Position, target.Position) - ourReach) /
+                              Math.Max(BurstRules.MinWalkSpeed, attacker.CurrentSpeedMps) + DisruptRules.FirstSwingSeconds;
+                int count = 0;
+                foreach (var ally in party)
+                {
+                    if (ally == null || ally == attacker || ally.Descriptor?.State?.IsConscious != true) continue;
+                    if (!(ally.Commands?.Standard is Kingmaker.UnitLogic.Commands.UnitAttack attack) || attack.IsFinished ||
+                        attack.TargetUnit != target) continue;
+                    if (engaged != null && System.Linq.Enumerable.Contains(engaged, ally)) continue;   // counted, or not, as it is now
+                    var hand = ally.GetThreatHand()?.Weapon;
+                    if (hand?.Blueprint == null || !hand.Blueprint.IsMelee) continue;
+                    float gap = TacticalEngine.HorizontalDistance(ally.Position, target.Position) - attack.ApproachRadius;
+                    float arrives = Math.Max(0f, gap) / Math.Max(BurstRules.MinWalkSpeed, ally.CurrentSpeedMps);
+                    if (arrives <= ourAt) count++;
+                }
+                return count;
+            }
+            catch { return 0; }
+        }
+
+        /// <summary>Engagers of <paramref name="target"/> besides <paramref name="attacker"/> with no command on it (evidence only).</summary>
+        internal static int IdleEngagers(UnitEntityData target, UnitEntityData attacker)
+        {
+            int count = 0;
+            try
+            {
+                foreach (var e in target.CombatState.EngagedBy)
+                    if (e != null && e != attacker && !e.Commands.AnyCommandTargets(target)) count++;
+            }
+            catch { }
+            return count;
         }
 
         /// <summary>

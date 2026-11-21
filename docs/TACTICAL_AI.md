@@ -6832,3 +6832,138 @@ release. Draft task PR follows #81–90 only after author clearance.
 - **Play package:** review2fix1 (`d669ec1`, MVID `e1aa77fe`), whose code equals development.
 - **Open:** the death-trigger proposal (`DEATH_TRIGGER_SAFETY_PROPOSAL.md`) and REVIEW_86_89's R1–R7 need decisions.
 
+
+## 201. Magic Fusion coverage programme and slice C1: Molten Orb's main target, damage over time (17 November 2026, Claude)
+
+[Programme](FUSION_COVERAGE_PROGRAMME.md), [slice page](FUSION_MAIN_TARGET_DOT.md),
+[receipt](competence/FUSION_C1_CHECKS.json). At the author's request, after the #81–#91 integration. Both modes,
+valuation only. Not played.
+
+- **Programme.** It defines coverage: offered, valued by the joint model, and every effect priced. It records where
+  coverage stands (15,494 configurations; 8,709 offered; 4,521 with the joint value) and arcan's bar (7 of 8 fusions
+  fully offered; Explosive Runes / Hideous Laughter withheld). Slices C1–C11 follow, each with its native contract.
+  Damage over time on ordinary spells is a separate cross-cutting slice.
+- **C1.**
+  - "Is the main target" is a stable fusion guard, read against the scored aim.
+  - A buff whose whole effect is HP damage each round is a periodic damage carrier (`CombatMath.IsPeriodicDamageCarrier`).
+    Examples are Molten Orb's and Incendiary Runes' burning and Acid Arrow's acid.
+  - Its expected ticks within the horizon join the joint value on the outcome that applies it
+    (`TryFusionPeriodicDamage`, `ValueModel.FusionValue` with later damage). They also join the friendly-fire cost and
+    the burst re-check, which now prices allies under the ground aim.
+  - The shared periodic reader accepts `IgnoreUnitModifiers` and `UseDCFromContextSavingThrow`, both exact for round
+    ticks.
+- **Coverage:** offered 8,709 → 9,209, joint 4,521 → 5,039, none lost. Molten Orb 0 → 338; Acid Arrow 38 → 208 (188
+  joint).
+- **Checks** on `83ac4c1`:
+  - Release 0 warnings; 1,052 unit tests; 27 + 21 + 3 script tests.
+  - ProfileAudit `FUSION-DOT` 39 and `FUSION-OUTCOME` 33; every other line is unchanged.
+  - Native harnesses 98/14/10; 1 reference added, 1 removed.
+- **Package** `test-builds/AI-Control-FACC-v0.3.60-dev-fusiondot1-83ac4c1-UMM-test.zip`, MVID `add36407`.
+- **Next:** C2, Hideous Laughter's Best Jokes recast (arcan's Explosive Runes / Hideous Laughter).
+
+## 202. coverage2: R1–R7 decided, R2/R5, evidence logging, Fusion C2/C5, ordinary damage over time (20 November 2026, Claude)
+
+[Assessment](R_ITEMS_PLAN.md), [build page](COVERAGE2_BUILD.md), [receipt](competence/COVERAGE2_CHECKS.json). At the author's
+request: decide which of Codex's R1–R7 are worth doing; do now what needs no playtest; collect the evidence for the rest.
+The death-trigger proposal is set aside.
+
+- **R2.** The landing spot is registered for every real-time burst before admission. Only re-checks are capped (64), and
+  in-flight bursts have a memory guard (256). Nothing is dropped to make room, so a turn-based landing wait is never lost.
+- **R5.** For the burst forecast only, a started attack that keeps chasing its target counts as walking: native
+  `UnitCommandController.TickCommand` calls `TickApproaching` when `CanMoveAfterStart`. `WalkingCommand` and the spot
+  rules are unchanged.
+- **Evidence** (read only, one line per fight):
+  - `[Burst]`: cast time error, anchor at landing, ally walk-ins with no control price.
+  - `[Timing]` (`TimelineObserver`): swing timing; break forecasts against the actual first attack and cast end.
+  - `[Flank]`: the forecast against `TargetIsFlanked` / `IsFlanked` at the roll.
+- **R1, R3, R4** wait for that evidence. **R6 and R7** are not worth doing yet.
+- **Fusion C2.** Hideous Laughter's enemy-only random recast gets no credit and no ally harm, and the fused profile skips
+  it.
+- **Fusion C5.** Ability damage and negative levels join the joint value by their HP equivalent.
+- **Ordinary damage over time.** Carriers outside a save branch are priced as damage for six ordinary abilities, including
+  Acid Arrow, Molten Orb, Alchemist's Fire and Vrock Spores; the guessed debuff goes.
+- **Coverage:** offered 9,655 and joint 5,651, none lost. All eight fusions on arcan's bar are offered with the joint
+  value.
+- **Checks** on `72acfd1`:
+  - Release 0 warnings; 1,052 unit + 27/21/3 script tests.
+  - ProfileAudit sections: `BURST-AIM` 67, `EVIDENCE` 13, `FUSION-RECAST` 12, `FUSION-DOT` 42, `PERIODIC` 8 and
+    `FUSION-OUTCOME` 33. Every other line is unchanged, apart from the audit's own classification of the six ordinary
+    carrier abilities and the Vrock Spores summon line.
+  - Native harnesses 98/14/10; 4 references added, all present.
+- **Package** `test-builds/AI-Control-FACC-v0.3.60-dev-coverage2-72acfd1-UMM-test.zip`, MVID `5cfd7765`.
+- **Waits for the author:** C3 (Disintegrate, ally death policy).
+
+## 203. coverage2 playtest reviewed: real-time cast-lag bursts, touch arrival, R4 timing (20 November 2026, Claude)
+
+[Review](COVERAGE2_REVIEW.md), [receipt](competence/COVERAGE3_CHECKS.json). The author's coverage2 logs: 14 fights (5 TB,
+9 RT), 649 commands, each with an end row, and no AI Control exception. C2 and the damage-over-time pricing work as
+intended.
+
+- **Real-time cast lag** (both fixes on `claude/coverage2-review`, real time only):
+  - arcan's Incendiary Runes / Frigid Touch fusion caught allies in four of five real-time casts (76 HP). It went off
+    2–6 s after its decisions, with the area following the moving target, and nothing re-checked it.
+  - Real time, a cast time is now a lag like a delay or a flight (`BurstRules.LandsLater`, `GroundAimBurst`). Such a
+    burst gets ground aim, the pre-cast re-check and the shared landing spot.
+  - 83 exported around-bursts are affected; turn-based is unchanged.
+- **Touch arrival.**
+  - A real-time walk to touch range ended in reach, and the next decision found its moving recipient a step away and
+    walked again (10 such walks).
+  - For 1.5 s after such a walk, the touch is cast from where the caster stands when the recipient is within one 5-foot
+    step beyond reach. The game's own delivery walks the last step (`CombatMemory.NoteTouchArrived`, `TouchFromHere`).
+- **R1, R3, R4 decided** from the summary lines:
+  - R1 and R3: not built (0 wrong flank forecasts in 63; no unpriced walk-in).
+  - R4: first melee swing 0.7 s (measured 0.70, n = 72); bow shots 1.8 s apart, at most 6 s / N (measured 1.81, n = 34).
+- **Evidence fixes:**
+  - The start of a fight resets the timing tallies without a line; a stray summary had been logged at the start of fight 14.
+  - Flank misses are logged with the engagers counted at the decision and at the roll (first four per fight).
+- **Found, not changed:**
+  - A turn-based stall against a helpless enemy on a ledge inside the party's own Corrosive Bomb area.
+  - Tripper's three knock-outs.
+  - Performance unchanged (memory clean-ups).
+- **Checks** on `1ed420b`:
+  - Release 0 warnings; 1,059 unit + 27/21/3 script tests.
+  - ProfileAudit `BURST-AIM` 73, `EVIDENCE` 14, `CAST-DISRUPT` 50, every other line and the Fusion coverage unchanged.
+  - Native harnesses 98/14/10; 0 references added.
+- **Package** `test-builds/AI-Control-FACC-v0.3.60-dev-coverage3-1ed420b-UMM-test.zip`, MVID `60673199`. Unplayed;
+  manifest 0.3.60; no `main`, tag or release.
+
+## 204. coverage3 playtest reviewed: allies under an enemy's control, Fusion C3 and the permanent-death policy, burst readiness (21 November 2026, Claude)
+
+[Review](COVERAGE3_REVIEW.md), [receipt](competence/COVERAGE4_CHECKS.json). The author's coverage3 logs: 15 fights (6 TB,
+9 RT), 833 commands, every one but a last out-of-combat buff with an end row, and no AI Control exception. The coverage2
+fixes hold: arcan's bursts hurt no ally, and no touch heal chased its recipient.
+
+- **Allies under an enemy's control** (both modes, `TacticalEngine.TurnedAllies.cs`):
+  - An enemy's Dominate turned Seelah (fight 15). Four party members made weapon attacks on her, and she died.
+  - Native `ChangeFaction` keeps `FactionOriginal` for a temporary switch. Such a unit stays an enemy for danger and
+    control. It gets no weapon attack, walk to attack it, leap or Coup de Grace (`SparesTurnedAlly`). Damage to it is
+    priced as friendly fire.
+- **Fusion C3 and the author's permanent-death policy** (both modes, `CombatMath.PermanentDeath.cs`, `PermanentDeathRules`):
+  - A cast that could kill an ally for good is not used at 1 % risk or more, whatever the settings. Below 1 % it costs a
+    hundred times the ally's worth. Summons are exempt.
+  - Such casts are Disintegrate's dust (it kills on activation, not at a later round), a kill, or a buff that kills on
+    activation.
+  - The risk is exact: the reach chance times, per save outcome, the chance the dice take the HP left below the gate.
+  - The burst re-check cancels for it past the cancel limit.
+  - The dust gate is a stable fusion guard: 344 configurations newly offered with the joint value (9,999 / 5,995 of
+    15,494), none lost.
+- **Real-time burst readiness** (`ReadySeconds`, `DisruptRules.OrderedStartSeconds`):
+  - Bursts went off 0.8–4.2 s after their forecast. They had waited for the native start gate: action cooldown, and the
+    initiative of a surprised unit.
+  - The plan, lead, re-check and disruption timing now wait for it.
+  - The caster's own walk to its cast is no longer a walk-in (fight 13).
+- **Arriving flank partners** (real time, `CombatMath.ArrivingEngagers`):
+  - All 7 flank misses had allies arriving with an attack command on the target. Such an ally now counts when it
+    reaches the target first.
+- **Found, not changed:**
+  - freeing a dominated ally (dispel) is not valued;
+  - a nauseated unit inside two swarms found no exit within a short move (fight 10);
+  - an Alchemist's Fire splash hit a walking ally for 8 HP;
+  - performance is unchanged.
+- **Checks** on `361776c`:
+  - Release 0 warnings; 1,065 unit + 27/21/3 script tests.
+  - ProfileAudit new `PERMADEATH` 24, `BURST-AIM` 78, `EVIDENCE` 15, `SNEAK` 36, `FUSION-OUTCOME` 32, every other line
+    unchanged.
+  - Native harnesses 98/14/10; 7 references added, all resolved.
+- **Package** `test-builds/AI-Control-FACC-v0.3.60-dev-coverage4-361776c-UMM-test.zip`, MVID `248aa48c`. Unplayed;
+  manifest 0.3.60; no `main`, tag or release.

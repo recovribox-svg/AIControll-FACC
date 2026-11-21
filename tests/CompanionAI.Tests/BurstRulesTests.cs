@@ -36,6 +36,11 @@ namespace CompanionAI.Tests
             Assert.Equal(4f, BurstRules.LandingSeconds(0f, 2f, 2f, 0f));
             Assert.Equal(5.5f, BurstRules.LandingSeconds(1f, 2f, 2f, 0.5f));
             Assert.Equal(2f, BurstRules.LandingSeconds(-1f, 2f, -3f, -0.5f));   // negatives never shorten it
+            // ★ coverage3 review: a burst cast starts after its walk and the native wait for its action (the shared start rule).
+            Assert.Equal(3f, DisruptRules.OrderedStartSeconds(1f, 3f));
+            Assert.Equal(2f, DisruptRules.OrderedStartSeconds(2f, 0.5f));
+            Assert.Equal(0f, DisruptRules.OrderedStartSeconds(-1f, -2f));
+            Assert.Equal(7f, BurstRules.LandingSeconds(DisruptRules.OrderedStartSeconds(1f, 3f), 2f, 2f, 0f));
         }
 
         [Fact]
@@ -134,6 +139,22 @@ namespace CompanionAI.Tests
             Assert.True(BurstRules.MayCancel(0));
             Assert.True(BurstRules.MayCancel(1));
             Assert.False(BurstRules.MayCancel(2));
+        }
+
+        [Fact]
+        public void RealTimeCastTimeIsALagToo()
+        {
+            // coverage2 review, finding 1: a delay or a flight lands later in both modes.
+            Assert.True(BurstRules.LandsLater(true, false, 0f));
+            Assert.True(BurstRules.LandsLater(true, true, 0f));
+            // Real time, a 2 s cast picks its victims 2 s later (Incendiary Runes and its fusions).
+            float cast = BurstRules.CastSeconds(true, false, false, false, false);
+            Assert.Equal(BurstRules.StandardCastSeconds, cast);
+            Assert.True(BurstRules.LandsLater(false, true, cast));
+            // A wand or an Immediate animation goes off at once; turn-based, nobody moves during the cast.
+            Assert.False(BurstRules.LandsLater(false, true, BurstRules.CastSeconds(true, false, true, true, false)));
+            Assert.False(BurstRules.LandsLater(false, true, BurstRules.CastSeconds(true, false, false, false, true)));
+            Assert.False(BurstRules.LandsLater(false, false, BurstRules.CastSeconds(false, false, false, false, false)));
         }
 
         [Fact]
