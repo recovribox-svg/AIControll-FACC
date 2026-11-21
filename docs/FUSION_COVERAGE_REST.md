@@ -140,4 +140,4 @@ gave manual orders. Summon control on, as you planned.
 
 - A lined-up walk is cast on the next decision; in real time the enemies may have moved by then.
 - The lingering area's harm to enemies is not credited.
-- The C6 carriers and the shared Hit Dice pools above remain.
+- The C6 carriers and the shared Hit Dice pools above remain. (Both done later: [FUSION_COVERAGE_C6_C8.md](FUSION_COVERAGE_C6_C8.md).)

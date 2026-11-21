@@ -202,7 +202,11 @@ aims past allies and along enemies, and a lined-up walk (author-approved). Offer
   `DrainEquivalent`. Enervation's undead branch heals: it already reads per recipient. The value of a passed save keeps
   the same rules as for HP.
 
-### C6. Support, reveal, form and fact carriers (672 withheld, 2,434 on the simpler value)
+### C6. Support, reveal, form and fact carriers (672 withheld, 2,434 on the simpler value) — **implemented**
+
+**Done (21 November 2026, [FUSION_COVERAGE_C6_C8.md](FUSION_COVERAGE_C6_C8.md)):** the eleven carriers are read by mechanism
+(damage at its times, hindering and size changes with no credit, Enervation's undead temporary HP, Putrefaction's round
+saves), ordinary and fused. Offered 13,197 → 14,329, joint 8,635 → 12,927, none lost. Curse of Magic Negation stays unread.
 
 **C6a done (21 November 2026, [COVERAGE4_FOLLOWUPS.md](COVERAGE4_FOLLOWUPS.md) §3):**
 - Damage over time whose dice come from a caster-level rank on the buff itself is a periodic carrier. The rank is read
@@ -230,7 +234,12 @@ Polymorph's removal (its form is a C6 carrier), enchantments and extensions.
 - **Proposal.** Dispel Magic and Arcana Theft get the dispel worth per outcome. Baleful Polymorph's removal reads the
   buffs it actually removes, already listed by `BuffsRemovedFrom`.
 
-### C8. Shared Hit Dice beyond the supported pools (1,034) — **not done**
+### C8. Shared Hit Dice beyond the supported pools (1,034) — **implemented, cones and lines left**
+
+**Done (21 November 2026, [FUSION_COVERAGE_C6_C8.md](FUSION_COVERAGE_C6_C8.md)):** Circle of Death's kill pool, ordinary and
+fused: rolled pools, spreading delivery in distance order, the pool's reach in the joint value, friendly fire and the
+permanent-death rule. Offered +460, joint +460, none lost. Pools in cones and lines (234) stay withheld for a practical
+reason: their native order is frame by frame.
 
 **Assessed (21 November 2026, [FUSION_COVERAGE_REST.md](FUSION_COVERAGE_REST.md)):** in a fused cast Circle of Death's pool is the slot's own 2d6 Hit Dice (F7), so it
 would kill only a few weak creatures; not worth its code yet. Sleep and Rainbow Pattern in cone and line deliveries need
