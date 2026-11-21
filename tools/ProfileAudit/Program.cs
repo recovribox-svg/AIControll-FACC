@@ -273,6 +273,11 @@ namespace ProfileAudit
             foreach (var line in periodicLines) Console.WriteLine(line);
             File.WriteAllText(output, string.Join(Environment.NewLine, periodicLines) + Environment.NewLine + File.ReadAllText(output));
             blocklistFailures += periodicFailures;
+            // ★ coverage5: relief for hindered allies - dispels, removals and suppressions.
+            var reliefLines = ReliefCheck.Run(loaded.Values, out int reliefFailures);
+            foreach (var line in reliefLines) Console.WriteLine(line);
+            File.WriteAllText(output, string.Join(Environment.NewLine, reliefLines) + Environment.NewLine + File.ReadAllText(output));
+            blocklistFailures += reliefFailures;
             // ★ coverage4: freeing an ally under an enemy's control with a dispel or a removal.
             var freeingLines = FreeingCheck.Run(loaded.Values, out int freeingFailures);
             foreach (var line in freeingLines) Console.WriteLine(line);

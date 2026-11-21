@@ -75,19 +75,22 @@ namespace CompanionAI_Pathfinder.Tactics
         /// </summary>
         private static float DispelValue(TacticalContext ctx, ContextActionDispelMagic dispel, MechanicsContext source,
                                          UnitEntityData target, float horizon) =>
-            DispelValue(ctx, dispel, source, target, horizon, false, out _);
+            DispelValue(ctx, dispel, source, target, horizon, false, false, out _);
 
         /// <summary>
         /// ★ coverage4: the same, and <paramref name="freeChance"/>, the chance it takes off the effect that holds an ally under an
         /// enemy's control (TacticalEngine.TurnedAllies.cs). On such an ally that effect is worth what freeing it gives back
         /// (FreedWorth), and a buff the party gave it is a loss. <paramref name="allowAutomatic"/> also reads a dispel with no
-        /// check (it removes what it takes).
+        /// check (it removes what it takes). ★ coverage5: <paramref name="allowAlly"/> also prices a dispel on an ally - a harmful
+        /// effect taken off is relief (HarmWorth), a buff the party or the ally gave it is a loss.
         /// </summary>
         private static float DispelValue(TacticalContext ctx, ContextActionDispelMagic dispel, MechanicsContext source,
-                                         UnitEntityData target, float horizon, bool allowAutomatic, out float freeChance)
+                                         UnitEntityData target, float horizon, bool allowAutomatic, bool allowAlly, out float freeChance)
         {
             freeChance = 0f;
-            if (target == null || !ctx.Unit.IsEnemy(target)) return 0f;
+            if (target == null) return 0f;
+            bool ally = !ctx.Unit.IsEnemy(target);
+            if (ally && (!allowAlly || target.Descriptor?.State?.IsConscious != true)) return 0f;
             bool automatic = allowAutomatic && IsAutomaticDispel(dispel) && !(dispel.OnSuccess?.Actions?.Length > 0) &&
                              !(dispel.OnFail?.Actions?.Length > 0) && DispelStopField != null && DispelCountField != null &&
                              DispelMaxLevelField != null && DispelUseMaxCasterField != null && DispelMaxCasterField != null;
@@ -123,6 +126,14 @@ namespace CompanionAI_Pathfinder.Tactics
                 float worth;
                 bool hold = turned && HoldsUnderControl(buff);
                 if (hold) worth = FreedWorth(ctx, target, buff);
+                else if (ally)
+                {
+                    // ★ coverage5: relief for what works against the ally; a loss for what helps it.
+                    if (IsHarmfulOn(target, buff)) worth = HarmWorth(ctx, target, buff, horizon);
+                    else if (giver == target || OfPartySide(giver))
+                        worth = -EnemyBuffShare(buff, target) * AllyPerRound(target) * rounds;
+                    else worth = 0f;
+                }
                 // ★ coverage4: a buff the party gave the ally it frees is the ally's own, lost once it is back.
                 else if (turned && OfPartySide(giver)) worth = -EnemyBuffShare(buff, target) * ValueModel.PerRound(Level(target)) * rounds;
                 else
