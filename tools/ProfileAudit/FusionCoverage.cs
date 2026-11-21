@@ -125,6 +125,7 @@ namespace ProfileAudit
                         bool jointOutcomeMetadataQualified = structural == null && (bool)jointModel.Invoke(null, new object[] { ability, profile });
                         if (jointOutcomeMetadataQualified) jointMetadata++;
                         string jointOutcomeMetadataReason = structural ?? (string)jointReason.GetValue(profile);
+                        string sharedPoolReason = null;
                         if ((bool)sharedHd.GetValue(profile))
                         {
                             poolProfiles++;
@@ -133,7 +134,8 @@ namespace ProfileAudit
                             else if (primary == pool)
                             {
                                 reasons.Add(pool);
-                                Increment(poolWithheld, (string)withheldDetail.Invoke(null, new object[] { ability, profile }) ?? "not qualified");
+                                sharedPoolReason = (string)withheldDetail.Invoke(null, new object[] { ability, profile }) ?? "not qualified";
+                                Increment(poolWithheld, sharedPoolReason);
                             }
                             else poolAdmitted++;
                             details.Add(new { reason = "shared Hit Dice pool", location = "profile/shared-hd" });
@@ -182,6 +184,7 @@ namespace ProfileAudit
                             coneComponentResolved,
                             jointOutcomeMetadataQualified,
                             jointOutcomeMetadataReason,
+                            sharedPoolReason,
                             damageActions = profile.Damage.Count, targetBuffs = profile.TargetBuffs.Count,
                             casterBuffs = profile.CasterBuffs.Count, heals = profile.Heals.Count, casterHeals = profile.CasterHeals.Count,
                             hasDetectableEffect = profile.HasDetectableEffect,

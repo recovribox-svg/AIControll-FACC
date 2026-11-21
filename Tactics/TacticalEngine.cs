@@ -4157,6 +4157,15 @@ namespace CompanionAI_Pathfinder.Tactics
                 }
             }
 
+            // ★ Fusion coverage C10: a fused cast's lingering area (Obsidian Flow, Haunting Mists) is left at its main target and
+            // works on anyone in it; an ally it would cover, or a melee ally at its edge, refuses the cast (TacticalEngine.FusionLingering.cs).
+            if (LingeringAreaCatches(ctx, profile, actualAim?.Point ?? target.Position, out string lingeringWhy) is UnitEntityData lingeringAlly)
+            {
+                ctx.FriendlyFireVeto = true;
+                why = $"lingering area on {lingeringAlly.CharacterName} ({lingeringWhy})";
+                return 0f;
+            }
+
             // --- kineticist burn relief (Dark Elementalist Soul Power) ---
             if (profile.HealsBurn)
             {

@@ -144,6 +144,39 @@ namespace ProfileAudit
                       Calls(Body(engine, "ScoreAbility"), math, "KillNestedFactor") && Calls(Body(engine, "ScoreAbility"), math, "NestedBuffFactor") &&
                       Calls(Body(engine, "TryFusionControlRounds"), math, "NestedSaveFactor"),
                     "damage, kills and control behind a nested save are weighted by its fail or pass chance, ordinary and fused");
+                // --- C10: lingering areas (Obsidian Flow, Haunting Mists) ---
+                var process = typeof(Kingmaker.Controllers.AbilityExecutionProcess);
+                var clickedType = typeof(Kingmaker.UnitLogic.Abilities.Components.AdditionalAbilityEffectRunActionOnClickedTarget);
+                bool runsClicked = process.GetNestedTypes(BindingFlags.NonPublic | BindingFlags.Public).Concat(new[] { process })
+                    .SelectMany(t => t.GetMethods(Hidden | BindingFlags.DeclaredOnly)).Where(m => m.GetMethodBody() != null)
+                    .Select(m => SaveBoostCheck.ReferencedMembers(m).ToList())
+                    .Any(b => b.Any(x => x.DeclaringType == clickedType && x.Name == "Apply") && b.Any(x => x.Name == "get_Spell1") && b.Any(x => x.Name == "get_Spell2"));
+                Check(runsClicked, "native: a fused cast runs each source spell's clicked-target payload (once, at the main target)");
+                var friends = Body(typeof(AbilityData), "get_CanTargetAlly");
+                Check(Calls(friends, typeof(AbilityData), "GetDeliverBlueprint"), "native: the additional AoE blueprint shapes targeting (CanTargetAlly)");
+                var lingering = typeof(AbilityProfile).GetMethod("LingeringArea", Hidden);
+                object Area(string name) => lingering.Invoke(null, new object[] { Spell(name)?.GetComponent<Kingmaker.UnitLogic.Abilities.Components.AdditionalAbilityEffectRunActionOnClickedTarget>() });
+                Check(Area("ObsidianFlow") != null && Area("HauntingMists") != null &&
+                      Spell("ObsidianFlow").ComponentsArray.Any(c => c?.GetType().Name == "AdditionalAoeForMagicHack") &&
+                      Spell("HauntingMists").ComponentsArray.Any(c => c?.GetType().Name == "AdditionalAoeForMagicHack"),
+                    "actual Obsidian Flow and Haunting Mists: one lingering area each, marked as the fused cast's additional AoE");
+                var areas = typeof(AbilityProfile).GetField("FusionLingeringAreas", Hidden);
+                var mists = Fuse("HauntingMists", "Fireball", "Fireball", SavingThrowType.Reflex);
+                mists.MagicHackData.AdditionalAoeBlueprint = Spell("HauntingMists");
+                var mistsProfile = AbilityProfile.Get(mists);
+                Check(Unsupported(mistsProfile) == null && ((System.Collections.ICollection)areas.GetValue(mistsProfile)).Count == 1,
+                    "Haunting Mists with Fireball is offered: no RunAction of its own, its mists recorded as a lingering area");
+                var obsidian = Fuse("ObsidianFlow", "Snowball", "Snowball", SavingThrowType.Reflex);
+                obsidian.MagicHackData.AdditionalAoeBlueprint = Spell("ObsidianFlow");
+                Check(Unsupported(AbilityProfile.Get(obsidian)) == null, "Obsidian Flow with Snowball is offered, its additional AoE read");
+                var other = Fuse("Fireball", "Snowball", "Snowball", SavingThrowType.Reflex);
+                other.MagicHackData.AdditionalAoeBlueprint = Spell("Fireball");
+                Check(Unsupported(AbilityProfile.Get(other)) == "additional area delivery", "an additional AoE that is no lingering area stays withheld");
+                var catches = Body(engine, "LingeringAreaCatches");
+                Check(Calls(Body(engine, "ScoreAbility"), engine, "LingeringAreaCatches") && Calls(catches, engine, "AlliesWalkingInto") &&
+                      Calls(catches, engine, "UsesRangedWeapon"),
+                    "an ally the lingering area would cover, a melee ally at its edge or walking in, refuses the cast");
+
                 int nestedRead = 0, nestedUnread = 0; var names = new List<string>();
                 foreach (var a in abilities)
                 {
