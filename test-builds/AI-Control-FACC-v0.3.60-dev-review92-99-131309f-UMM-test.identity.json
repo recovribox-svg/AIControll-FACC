@@ -1,0 +1,42 @@
+{
+  "build_label": "review92-99",
+  "kind": "development-test",
+  "version": "0.3.60",
+  "source_branch": "codex/review-92-99",
+  "source_commit": "131309f620c6adcb495c58200dd214de7ff78283",
+  "development_base": "0019856805605c9b74e27ffbdfa6b8dd9c20b0f2",
+  "stack_head": "22ded8a802b39275f0f805d47d17c12db125f4a1",
+  "stack_prs": [
+    92,
+    93,
+    94,
+    95,
+    96,
+    97,
+    98,
+    99
+  ],
+  "dll": {
+    "assembly": "CompanionAI_Pathfinder, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null",
+    "mvid": "7ad87f85-5833-4798-baa5-4a5c9f0a9ffc",
+    "sha256": "9ce5dae82b6e3632d0a85d562c2ee1ead6bee8c825b41a90076a2281511f78a3",
+    "size": 1602048
+  },
+  "archive": "AI-Control-FACC-v0.3.60-dev-review92-99-131309f-UMM-test.zip",
+  "zip_sha256": "3406a64691bd47655900e584fcf12e8034ff0623eb293b63dcf35dbbb0c87533",
+  "manifest_sha256": "63ad9f152d4bacb44f021428193efad46aaf0d13380bb5691ebca1d935f2b5bf",
+  "checks_receipt": "docs/competence/REVIEW_92_99_CHECKS.json",
+  "build_provenance": "docs/competence/REVIEW_92_99_BUILD_PROVENANCE.json",
+  "build_provenance_sha256": "ef3fb564b263a4943dd634abf942ecb692cd2f7acd81e67ffd076518ee269521",
+  "toolchain": {
+    "dotnet_sdk": "8.0.426",
+    "csharp_compiler": "4.11.0-3.25569.22 (3fb752d4)"
+  },
+  "gameplay_status": "unplayed",
+  "release": false,
+  "archive_contents": [
+    "CompanionAI_Pathfinder.dll",
+    "Info.json"
+  ],
+  "identity_note": "Frozen checked DLL across later documentation commits; new startup MVID. Nothing merged, tagged or released."
+}

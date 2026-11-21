@@ -7037,3 +7037,27 @@ groups and approved additions for quality, such as moving to line up enemies.
   - Native harnesses 98/14/10; 7 references added, all compiled against the supplied assembly.
 - **Package** `test-builds/AI-Control-FACC-v0.3.60-dev-coverage6-b32057b-UMM-test.zip`, MVID `b63b47f2`. Unplayed;
   manifest 0.3.60; no `main`, tag or release.
+
+## 208. Critical review and correction of PRs #92–99 (21 November 2026, Codex)
+
+[Review/replay](REVIEW_92_99.md) · [checks](competence/REVIEW_92_99_CHECKS.json) ·
+[provenance](competence/REVIEW_92_99_BUILD_PROVENANCE.json). Stacked after #99 `22ded8a`; **nothing merged**.
+
+- Death safety separates resistance/attack delivery from the root save, lethal HP from temporary/nonlethal HP, and
+  damage before a dust gate from damage after it. Unread crit/modifier/nested-save cases remain upper bounds; logs say so.
+  Known allies receive fresh death rechecks, and downed original party members remain visible to the safety roster.
+- Fusion stat/level-drain utility is separate from actual HP for kill/control/dispel survival and interruption value.
+  Dominated companions retain their party damage cost, including periodic harm and the downed state.
+- Dispels preserve the native shared d20, complete-list caster-level order (including ties), zero-value suppressed
+  attempts, actual recipient/save paths and own-buff losses. Removals/suppressions require their real guards and filters.
+  Several dispel actions use a conservative overlap estimate; full native transition/bonus precision remains open.
+- A random enemy anchor alone cannot certify a recast safe. Best Jokes keeps a narrowly proved target-only exemption.
+  Failed periodic reads cannot certify zero ally harm; ranked child contexts expire with parent parameters.
+- Work is bounded before PMF allocation/convolution, DP allocation and expensive line spot validation. A full RT table
+  cannot discard the active TB landing wait. Timing evidence excludes non-damage concentration failures.
+- Checked **`131309f620c6adcb495c58200dd214de7ff78283`**: **1,096 unit + 27/21/3 scripts**, zero-warning/error Release, all ProfileAudit sections,
+  native **98/14/10**, Magus **44**. New totals: **PERMADEATH35/RELIEF24/RECAST14/DOT52/LINE22/BURST79/EVIDENCE16**.
+  Four new signatures resolve exactly. Both full matrices and summon detail equal the untouched #99 baseline on
+  completed inputs: **13,197 admitted / 8,635 joint**. Other normalized report rows are identical.
+- Frozen unplayed UMM **0.3.60** package: `test-builds/AI-Control-FACC-v0.3.60-dev-review92-99-131309f-UMM-test.zip`, module **`7ad87f85-5833-4798-baa5-4a5c9f0a9ffc`**.
+  The review records the native/fixture boundaries, conservative precision limits and TB/RT replay.
