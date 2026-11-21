@@ -4225,7 +4225,9 @@ namespace CompanionAI_Pathfinder.Tactics
                     // on a failed save and through spell resistance. It subsumes the damage, so the better of the two.
                     if (CombatMath.KillApplies(ability, profile, enemy))
                     {
-                        float pk = CombatMath.EffectChance(unit, enemy, ability, profile, damage: false);
+                        // ★ Fusion coverage C9: and its nested save failed too, when the kill is behind one (Phantasmal Killer).
+                        float pk = CombatMath.EffectChance(unit, enemy, ability, profile, damage: false) *
+                                   CombatMath.KillNestedFactor(ability, profile, enemy);
                         float hp = Math.Max(1, enemy.HPLeft);
                         float killValue = ValueModel.DamageValue(hp * pk, hp, CombatMath.TargetWorth(enemy), pk);
                         part = Math.Max(part, killValue);
@@ -4644,6 +4646,8 @@ namespace CompanionAI_Pathfinder.Tactics
                     if (profile.Control != CCType.None && AbilityClassifier.HasCCImmunity(enemy, profile.Control)) continue;
                     // Spell resistance and spell immunity: in the effect chance below (0 when immune).
                     float p = CombatMath.EffectChance(unit, enemy, ability, profile, damage: false);
+                    // ★ Fusion coverage C9: a buff behind a nested save lands only when that save fails too (Banshee Blast).
+                    p *= CombatMath.NestedBuffFactor(ability, profile, buffs, enemy);
                     // Forecast eligibility excludes this recipient's own SR/save, already priced in EffectChance.
                     // A recognized graph has exactly one dependent buff; unrelated effects retain ordinary credit.
                     if (sharedHd != null && buffs.Count > 0 && buffs.All(sharedHd.Controls))

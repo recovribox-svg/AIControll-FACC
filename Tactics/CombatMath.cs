@@ -906,7 +906,8 @@ namespace CompanionAI_Pathfinder.Tactics
                             : EvaluateDamageDice(ability, drain.Value, ctx, Math.Min(cl, 10), maximize, empower);
                         parts.Add(new KeyValuePair<GameAction, float>(drain,
                             (target != null ? DrainEquivalent(drain, KindOf(drain), amount, target) : amount) *
-                            FusionDamageFactor(profile, drain, fusionFail, fusionEvasion, fusionImproved)));
+                            FusionDamageFactor(profile, drain, fusionFail, fusionEvasion, fusionImproved) *
+                            NestedSaveFactor(ability, profile, drain, target)));
                         break;
                     }
                     case ContextActionDealDamage dmg:
@@ -930,14 +931,16 @@ namespace CompanionAI_Pathfinder.Tactics
                         parts.Add(new KeyValuePair<GameAction, float>(dmg,
                             (physicalBypass && dmg.DamageType?.Type == Kingmaker.RuleSystem.Rules.Damage.DamageType.Physical
                                 ? avg : AfterTargetReduction(target, dmg, avg, ability)) * swarmArea *
-                            FusionDamageFactor(profile, dmg, fusionFail, fusionEvasion, fusionImproved)));
+                            FusionDamageFactor(profile, dmg, fusionFail, fusionEvasion, fusionImproved) *
+                            NestedSaveFactor(ability, profile, dmg, target)));
                         break;
                     // A kill is valued apart (KillApplies): it lands on a failed save, not half on a passed one.
                     case ContextActionKill _:
                         break;
                     case IDealDamageProvider provider:
                         if (target != null) parts.Add(new KeyValuePair<GameAction, float>(action, PreviewDamage(ability, ctx, provider, target) *
-                            FusionDamageFactor(profile, action, fusionFail, fusionEvasion, fusionImproved)));
+                            FusionDamageFactor(profile, action, fusionFail, fusionEvasion, fusionImproved) *
+                            NestedSaveFactor(ability, profile, action, target)));
                         break;
                 }
             }
@@ -1420,6 +1423,50 @@ namespace CompanionAI_Pathfinder.Tactics
                     parts.Add(new KeyValuePair<GameAction, float>(action, PreviewHeal(ability, ctx, provider, target)));
             }
             return SumAlternatives(profile, parts);
+        }
+
+        /// <summary>
+        /// ★ Fusion coverage C9: the share of an action's outcome its nested save leaves (AbilityProfile.NestedSaves): the target's
+        /// fail chance on the nested save's failed branch, its pass chance on the passed one, 1 elsewhere. The nested save is
+        /// rolled at the cast's DC (ContextActionSavingThrow without a DC of its own), with Persistent as the root's.
+        /// </summary>
+        internal static float NestedSaveFactor(AbilityData ability, AbilityProfile profile, GameAction action, UnitEntityData target)
+        {
+            if (profile == null || target == null || !profile.TryNestedSave(action, out var save, out var path) ||
+                path == AbilityProfile.FusionSavePath.Both) return 1f;
+            float fail = SaveFailChance(ability, save.Type, target);
+            return path == AbilityProfile.FusionSavePath.Failed ? fail : 1f - fail;
+        }
+
+        /// <summary>★ C9: the nested share of the control these buffs bring: 1 when one of them is applied outside a nested save.</summary>
+        internal static float NestedBuffFactor(AbilityData ability, AbilityProfile profile, ICollection<Kingmaker.UnitLogic.Buffs.Blueprints.BlueprintBuff> buffs,
+                                               UnitEntityData target)
+        {
+            if (profile?.NestedSaves == null || buffs == null || buffs.Count == 0) return 1f;
+            float best = 0f;
+            bool any = false;
+            foreach (var application in profile.BuffApplications)
+            {
+                if (!buffs.Contains(application.Buff)) continue;
+                any = true;
+                best = Math.Max(best, NestedSaveFactor(ability, profile, application.Action, target));
+                if (best >= 1f) break;
+            }
+            return any ? best : 1f;
+        }
+
+        /// <summary>★ C9: the nested share of the ability's kill on this target (Phantasmal Killer: its Fortitude save failed too).</summary>
+        internal static float KillNestedFactor(AbilityData ability, AbilityProfile profile, UnitEntityData target)
+        {
+            float best = 0f;
+            bool any = false;
+            foreach (var action in profile.Damage)
+            {
+                if (!(action is ContextActionKill) || profile.AppliesTo(action, ability, target) == EffectApplies.No) continue;
+                any = true;
+                best = Math.Max(best, NestedSaveFactor(ability, profile, action, target));
+            }
+            return any ? best : 1f;
         }
 
         /// <summary>★ v0.3.18 (AA-1): one of the ability's kill actions (ContextActionKill) applies to this target.</summary>

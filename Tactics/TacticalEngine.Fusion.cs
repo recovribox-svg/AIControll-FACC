@@ -192,6 +192,8 @@ namespace CompanionAI_Pathfinder.Tactics
                     share *= repeat;
                 }
                 if (friendly && immuneConditions && share <= 0f && BuffPartsReader.Read(buff).Unread.Count > 0) return false;
+                // ★ Fusion coverage C9: an application behind a nested save lands with that save's outcome (its own fail chance).
+                share *= CombatMath.NestedSaveFactor(ability, profile, occurrence.Action, recipient);
                 if (share <= 0f) continue;
                 if (!TryFusionApplicationRounds(ability, occurrence, recipient, ref durationContext, out float duration)) return false;
                 float horizon = Math.Min(Math.Min(ctx.ExpectedRounds, 3f), duration);

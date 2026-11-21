@@ -41,7 +41,7 @@ namespace ProfileAudit
 
         internal static List<string> Run(IEnumerable<SimpleBlueprint> loaded, out int failures)
         {
-            int checks = 0, bad = 0; var lines = new List<string>();
+            int checks = 0, bad = 0; var lines = new List<string>(); string info = "";
             void Check(bool ok, string why) { checks++; if (!ok) { bad++; lines.Add("FUSION-REST FAILED: " + why); } }
             try
             {
@@ -107,10 +107,60 @@ namespace ProfileAudit
                     "Vampiric Touch with Fireball is offered: its caster temporary HP is left uncredited, as an ordinary one's");
                 Check(Calls(Body(typeof(AbilityProfile), "GetFusion"), typeof(AbilityProfile), "OwnResultTemporaryHp"),
                     "the fusion admission reads the caster payload through OwnResultTemporaryHp");
+
+                // --- C9: nested saves (Phantasmal Killer, Banshee Blast), ordinary and fused ---
+                var nestedRun = Body(typeof(ContextActionSavingThrow), "RunAction");
+                Check(nestedRun.Any(m => m.Name == "MakeSaveAlsoForMagicHack") && nestedRun.Any(m => m.Name == "get_MagicHackData") &&
+                      nestedRun.Any(m => m.Name == "Setup" && m.DeclaringType?.Name == "SavingThrowData"),
+                    "native: a nested save rolls in a fused cast only with MakeSaveAlsoForMagicHack, and sets the save its actions read");
+                Check(Body(typeof(Kingmaker.UnitLogic.Mechanics.MechanicsContext), "get_SavingThrow").Any(m => m.Name == "get_Current"),
+                    "native: a ConditionalSaved reads the current save data (the nested one inside it)");
+                var tryNested = typeof(AbilityProfile).GetMethod("TryNestedSave", Hidden);
+                string Nested(AbilityProfile p, Kingmaker.ElementsSystem.GameAction a)
+                {
+                    var args = new object[] { a, null, null };
+                    if (!(bool)tryNested.Invoke(p, args)) return null;
+                    return ((ContextActionSavingThrow)args[1]).Type + "/" + args[2];
+                }
+                var killer = AbilityProfile.Get(CasterPolicyCheck.Data(Spell("PhantasmalKiller")));
+                var kill = killer.Damage.FirstOrDefault(a => a is ContextActionKill);
+                var shock = killer.Damage.OfType<ContextActionDealDamage>().FirstOrDefault();
+                Check(killer.Save == SavingThrowType.Will && Nested(killer, kill) == "Fortitude/Failed" && Nested(killer, shock) == "Fortitude/Passed",
+                    "actual Phantasmal Killer: Will, then Fortitude - the kill on a failed Fortitude save, 3d6 on a passed one");
+                var banshee = AbilityProfile.Get(CasterPolicyCheck.Data(Spell("BansheeBlast")));
+                var applications = (System.Collections.IEnumerable)typeof(AbilityProfile).GetProperty("BuffApplications", Hidden).GetValue(banshee);
+                var firstApplication = applications.Cast<object>().FirstOrDefault();
+                var fright = (Kingmaker.ElementsSystem.GameAction)firstApplication?.GetType().GetField("Action", Hidden).GetValue(firstApplication);
+                Check(banshee.Save == SavingThrowType.Reflex && Nested(banshee, fright) == "Will/Failed" &&
+                      Nested(banshee, banshee.Damage.First()) == null,
+                    "actual Banshee Blast: its damage on the Reflex save, its fear behind a failed Will save");
+                var fusedKiller = AbilityProfile.Get(Fuse("PhantasmalKiller", "Fireball", "Fireball", SavingThrowType.Reflex));
+                Check(Unsupported(fusedKiller) == null && Nested(fusedKiller, fusedKiller.Damage.FirstOrDefault(a => a is ContextActionKill)) == "Fortitude/Failed",
+                    "fused Phantasmal Killer is offered: its Fortitude save is read (MakeSaveAlsoForMagicHack)");
+                var fusedBanshee = AbilityProfile.Get(Fuse("BansheeBlast", "Fireball", "BansheeBlast", SavingThrowType.Reflex));
+                Check(Unsupported(fusedBanshee) == null && fusedBanshee.IsProjectileCone, "fused Banshee Blast (its cone) is offered");
+                var math = typeof(CombatMath);
+                Check(Calls(Body(math, "EstimateAbilityDamageRaw"), math, "NestedSaveFactor") &&
+                      Calls(Body(engine, "ScoreAbility"), math, "KillNestedFactor") && Calls(Body(engine, "ScoreAbility"), math, "NestedBuffFactor") &&
+                      Calls(Body(engine, "TryFusionControlRounds"), math, "NestedSaveFactor"),
+                    "damage, kills and control behind a nested save are weighted by its fail or pass chance, ordinary and fused");
+                int nestedRead = 0, nestedUnread = 0; var names = new List<string>();
+                foreach (var a in abilities)
+                {
+                    var run = a.GetComponent<Kingmaker.UnitLogic.Abilities.Components.AbilityEffectRunAction>();
+                    if (run == null || run.SavingThrowType == SavingThrowType.Unknown) continue;
+                    AbilityProfile p;
+                    try { p = AbilityProfile.Get(CasterPolicyCheck.Data(a)); } catch { continue; }
+                    var map = typeof(AbilityProfile).GetProperty("NestedSaves", Hidden).GetValue(p);
+                    if (map == null) continue;
+                    if (typeof(AbilityProfile).GetProperty("NestedSaveRefusal", Hidden).GetValue(p) == null) { nestedRead++; if (names.Count < 10) names.Add(a.name); }
+                    else nestedUnread++;
+                }
+                info = $"; ordinary nested saves read on {nestedRead} abilities ({string.Join(", ", names)}{(nestedRead > names.Count ? ", ..." : "")}), {nestedUnread} left on the root save";
             }
             catch (Exception ex) { Check(false, "exception " + ex.GetType().Name + ": " + ex.Message); }
             failures = bad;
-            lines.Insert(0, $"FUSION-REST {checks} checks, {bad} failures");
+            lines.Insert(0, $"FUSION-REST {checks} checks, {bad} failures{info}");
             return lines;
         }
     }

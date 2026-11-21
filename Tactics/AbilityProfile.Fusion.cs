@@ -279,6 +279,8 @@ namespace CompanionAI_Pathfinder.Tactics
                 var run = spell.GetComponent<AbilityEffectRunAction>() ??
                           spell.GetComponent<AbilityEffectStickyTouch>()?.TouchDeliveryAbility?.GetComponent<AbilityEffectRunAction>();
                 if (run == null) { LimitFusion("source spell without a native RunAction payload", source); continue; }
+                // ★ Fusion coverage C9: a nested save the fused cast rolls too (MakeSaveAlsoForMagicHack) is read before the paths.
+                if (Fusion.SavingThrowType != SavingThrowType.Unknown) ReadNestedSaves(run.Actions?.Actions, null, 0, fusion: true);
                 InspectFusionPaths(run.Actions?.Actions, FusionSavePath.Both, 0, source);
                 // Separate visited sets preserve both applications when the two payloads reference a common child.
                 Walk(run.Actions?.Actions, new HashSet<Kingmaker.UnitLogic.Abilities.Blueprints.BlueprintAbility>(visited),
@@ -286,7 +288,7 @@ namespace CompanionAI_Pathfinder.Tactics
             }
         }
 
-        private void InspectFusionPaths(GameAction[] actions, FusionSavePath path, int depth, string location)
+        private void InspectFusionPaths(GameAction[] actions, FusionSavePath path, int depth, string location, bool nestedScope = false)
         {
             if (actions == null) return;
             if (depth > 12) { LimitFusion("payload recursion limit", location); return; }
@@ -302,6 +304,14 @@ namespace CompanionAI_Pathfinder.Tactics
                     else InspectFusionPaths(floor.Actions, path, depth + 1, at + "/common-buff-minimum");
                     continue;
                 }
+                // ★ Fusion coverage C9: inside a nested save's scope a ConditionalSaved reads that save (ContextData<SavingThrowData>),
+                // not the root's: its branches keep the root path, and the nested factor weights them (NestedSaves).
+                if (action is ContextActionConditionalSaved nestedSaved && nestedScope)
+                {
+                    InspectFusionPaths(nestedSaved.Failed?.Actions, path, depth + 1, at + "/nested-failed", true);
+                    InspectFusionPaths(nestedSaved.Succeed?.Actions, path, depth + 1, at + "/nested-passed", true);
+                    continue;
+                }
                 if (action is ContextActionConditionalSaved saved)
                 {
                     fusionRequiresSavedResult = true;
@@ -315,7 +325,15 @@ namespace CompanionAI_Pathfinder.Tactics
                     (saving.MakeSaveAlsoForMagicHack || Fusion.SavingThrowType == SavingThrowType.Unknown))
                 {
                     fusionHasIndependentSave = true;
-                    LimitFusion("independent nested saving throw", at);
+                    // ★ Fusion coverage C9: one independent save under a declared root save, at the cast's DC, read by
+                    // ReadNestedSaves: its branches are weighted by its own fail chance (CombatMath.NestedSaveFactor).
+                    if (Fusion.SavingThrowType != SavingThrowType.Unknown && !nestedScope && NestedSaveRefusal == null &&
+                        saving.Type != SavingThrowType.Unknown)
+                    {
+                        InspectFusionPaths(saving.Actions?.Actions, path, depth + 1, at + "/nested", true);
+                        continue;
+                    }
+                    LimitFusion("independent nested saving throw" + (NestedSaveRefusal != null ? ": " + NestedSaveRefusal : ""), at);
                 }
                 if (action is ContextActionSpawnAreaEffect || action is ContextActionSpawnMonster)
                     LimitFusion("spawned area or creature payload", at);

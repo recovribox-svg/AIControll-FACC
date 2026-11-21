@@ -818,6 +818,10 @@ namespace CompanionAI_Pathfinder.Tactics
             {
                 if (run.SavingThrowType != SavingThrowType.Unknown && Save == SavingThrowType.Unknown)
                     Save = run.SavingThrowType;
+                // ★ Fusion coverage C9: an ordinary spell's nested save under its declared root save (Phantasmal Killer's
+                // Fortitude save after its Will save, Banshee Blast's Will save) is read for its own fail chance.
+                if (ReferenceEquals(bp, Blueprint) && run.SavingThrowType != SavingThrowType.Unknown)
+                    ReadNestedSaves(run.Actions?.Actions, null, 0, fusion: false);
                 Walk(run.Actions?.Actions, visited, depth, subject, 0, NoGuards);
             }
             // ★ v0.3.21 (gaps): actions run on the clicked unit or point besides the main effect
@@ -2299,6 +2303,73 @@ namespace CompanionAI_Pathfinder.Tactics
                     if (SpawnsAllyArea(child, depth + 1)) return true;
             }
             return false;
+        }
+
+        /// <summary>
+        /// ★ Fusion coverage C9: an action inside an independent nested save (a ContextActionSavingThrow the cast rolls on top
+        /// of its root save), and the branch of that save it runs on. Native: ContextActionSavingThrow rolls its own save - in
+        /// a fused cast only with MakeSaveAlsoForMagicHack - at the cast's DC, and a ContextActionConditionalSaved inside it
+        /// reads that save (MechanicsContext.SavingThrow is ContextData&lt;SavingThrowData&gt;.Current).
+        /// </summary>
+        internal sealed class NestedSave
+        {
+            internal ContextActionSavingThrow Save;
+            internal FusionSavePath Path;
+        }
+
+        /// <summary>★ C9: the actions inside a nested save (null when there is none).</summary>
+        internal Dictionary<GameAction, NestedSave> NestedSaves { get; private set; }
+        /// <summary>★ C9: why a nested save is not read (its own DC, one inside another, a result read twice, half damage on it).</summary>
+        internal string NestedSaveRefusal { get; private set; }
+        private static readonly System.Reflection.FieldInfo NestedSaveIncreases =
+            HarmonyLib.AccessTools.Field(typeof(ContextActionSavingThrow), "m_ConditionalDCIncrease");
+
+        private void ReadNestedSaves(GameAction[] actions, NestedSave nested, int depth, bool fusion)
+        {
+            if (actions == null || depth > 12) return;
+            foreach (var action in actions)
+            {
+                if (action == null) continue;
+                if (nested != null)
+                {
+                    if (NestedSaves == null) NestedSaves = new Dictionary<GameAction, NestedSave>();
+                    if (!NestedSaves.ContainsKey(action)) NestedSaves[action] = nested;
+                    // Half damage on a save inside the scope halves on the nested save, which the root factor cannot say.
+                    if (action is ContextActionDealDamage half && half.HalfIfSaved) NestedSaveRefusal = NestedSaveRefusal ?? "half damage on the nested save";
+                }
+                if (action is ContextActionSavingThrow save && (!fusion || save.MakeSaveAlsoForMagicHack))
+                {
+                    if (nested != null) { NestedSaveRefusal = NestedSaveRefusal ?? "a saving throw inside another"; continue; }
+                    if (save.Type == SavingThrowType.Unknown || save.HasCustomDC || save.UseDCFromContextSavingThrow ||
+                        NestedSaveIncreases == null || NestedSaveIncreases.GetValue(save) is Array increases && increases.Length > 0)
+                    {
+                        NestedSaveRefusal = NestedSaveRefusal ?? "nested save with a DC of its own";
+                        continue;
+                    }
+                    ReadNestedSaves(save.Actions?.Actions, new NestedSave { Save = save, Path = FusionSavePath.Both }, depth + 1, fusion);
+                    continue;
+                }
+                if (action is ContextActionConditionalSaved saved && nested != null)
+                {
+                    if (nested.Path != FusionSavePath.Both) { NestedSaveRefusal = NestedSaveRefusal ?? "a nested save's result read twice"; continue; }
+                    ReadNestedSaves(saved.Failed?.Actions, new NestedSave { Save = nested.Save, Path = FusionSavePath.Failed }, depth + 1, fusion);
+                    ReadNestedSaves(saved.Succeed?.Actions, new NestedSave { Save = nested.Save, Path = FusionSavePath.Passed }, depth + 1, fusion);
+                    continue;
+                }
+                foreach (var child in ChildActionLists(action))
+                    ReadNestedSaves(child, nested, depth + 1, fusion);
+            }
+        }
+
+        /// <summary>★ C9: the nested save <paramref name="action"/> runs under, and its branch; false outside one (or unread).</summary>
+        internal bool TryNestedSave(GameAction action, out ContextActionSavingThrow save, out FusionSavePath path)
+        {
+            save = null;
+            path = FusionSavePath.Both;
+            if (NestedSaves == null || NestedSaveRefusal != null || action == null || !NestedSaves.TryGetValue(action, out var link)) return false;
+            save = link.Save;
+            path = link.Path;
+            return true;
         }
 
         internal static IEnumerable<GameAction[]> ChildActionLists(GameAction action)
