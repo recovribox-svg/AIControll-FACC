@@ -96,6 +96,8 @@ namespace CompanionAI_Pathfinder.Tactics
         /// for), and act from there on the next decision.
         /// </summary>
         public bool MoveFirst;
+        /// <summary>★ Fusion coverage C4: the walk lines enemies up for a line cast (one such walk a round).</summary>
+        public bool LineUpWalk;
         /// <summary>★ v0.3.29 test 4: a weapon attack's walk to a free side of its target, ended once the target is in reach.</summary>
         public bool WalkEndsInReach;
         /// <summary>★ S2: the walk goes to a free side of a crowded target first (Approach.Beside); the action follows on the next
@@ -243,6 +245,8 @@ namespace CompanionAI_Pathfinder.Tactics
         public readonly Dictionary<string, string> ReviveNotes = new Dictionary<string, string>();
         /// <summary>★ v0.3.17: approaches planned in this decision (TacticalEngine.PlanApproach), by target and range.</summary>
         internal readonly Dictionary<string, TacticalEngine.Approach> Approaches = new Dictionary<string, TacticalEngine.Approach>();
+        /// <summary>★ Fusion coverage C4: lined-up spots per line ability, once per decision (TacticalEngine.LineAim.cs).</summary>
+        internal readonly Dictionary<AbilityData, List<TacticalEngine.LineUp>> LineUps = new Dictionary<AbilityData, List<TacticalEngine.LineUp>>();
         /// <summary>★ v0.3.29 test 4: the other units' bodies - or, walking, where their walks end - read once (TacticalEngine.Spots.cs).</summary>
         internal List<TacticalEngine.Body> Bodies;
         /// <summary>★ burst aim: the ground-aimed burst being scored (TacticalEngine.Burst.cs), set around one ScoreAbility call.</summary>
@@ -3510,36 +3514,92 @@ namespace CompanionAI_Pathfinder.Tactics
                 string turnedNote = null;
                 // ★ v0.3.28 test 12: a cone that catches allies, cast from where the caster stands, is also tried turned past
                 // them (aimed at a point, TacticalEngine.ConeAim.cs); the better of the two aims is offered.
+                // ★ Fusion coverage C4: a line, cast from where the caster stands, is also tried turned past the allies it
+                // catches or along other enemies (TacticalEngine.LineAim.cs), the same way.
+                TargetWrapper turned = null;
                 if ((friendlyFire != null || ctx.FriendlyFireVeto) && !needsMove && profile.IsProjectileCone)
+                    turned = ConeAimPastAllies(ctx, ability, profile, target, geometryRecipients, out turnedNote);
+                else if (!needsMove && profile.IsProjectileLine)
+                    turned = LineAimAlong(ctx, ability, profile, target, geometryRecipients, out turnedNote);
+                if (turned != null)
                 {
-                    var turned = ConeAimPastAllies(ctx, ability, profile, target, geometryRecipients, out turnedNote);
-                    if (turned != null)
+                    var straightHits = ctx.ScoredInfusionHits;
+                    bool straightCounted = ctx.AimCounted;
+                    ctx.ScoredInfusionHits = straightHits == null ? null : new List<InfusionHit>();
+                    float turnedValue;
+                    string turnedWhy, turnedInfusion;
+                    IReadOnlyCollection<UnitEntityData> turnedRecipients;
+                    float? turnedChance;
+                    using (AbilityProfile.AimedAt(turned))
+                        turnedValue = ScoreAbility(ctx, ability, profile, slot, target, turned, ctx.Unit.Position,
+                            out turnedWhy, out turnedInfusion, out turnedRecipients, out turnedChance, valueActiveInfusions);
+                    if (turnedValue > value)
                     {
-                        var straightHits = ctx.ScoredInfusionHits;
-                        bool straightCounted = ctx.AimCounted;
-                        ctx.ScoredInfusionHits = straightHits == null ? null : new List<InfusionHit>();
-                        float turnedValue;
-                        string turnedWhy, turnedInfusion;
-                        IReadOnlyCollection<UnitEntityData> turnedRecipients;
-                        float? turnedChance;
-                        using (AbilityProfile.AimedAt(turned))
-                            turnedValue = ScoreAbility(ctx, ability, profile, slot, target, turned, ctx.Unit.Position,
-                                out turnedWhy, out turnedInfusion, out turnedRecipients, out turnedChance, valueActiveInfusions);
-                        if (turnedValue > value)
+                        wrapper = turned;
+                        value = turnedValue;
+                        why = turnedWhy;
+                        infusionNote = turnedInfusion;
+                        geometryRecipients = turnedRecipients;
+                        geometryChance = turnedChance;
+                        friendlyFire = ctx.FriendlyFireNote;
+                    }
+                    else
+                    {
+                        ctx.ScoredInfusionHits = straightHits;
+                        ctx.AimCounted = straightCounted;
+                        turnedNote = null;
+                    }
+                }
+                // ★ Fusion coverage C4 (author-approved movement): a line that would catch more enemies from a spot within this
+                // move walks there first (TacticalEngine.LineAim.cs) when that beats casting from here, walk paid for.
+                string lineUpNote = null;
+                bool lineUpWalk = false;
+                if (profile.IsProjectileLine && !summonPoint.HasValue && value > 0f && target != ctx.Unit && ctx.Unit.IsEnemy(target) &&
+                    (slot == ActionSlot.Standard || CombatMemory.IsRealTime && slot == ActionSlot.FullRound))
+                {
+                    bool lineLos = abilityNeedsLos ?? (abilityNeedsLos = new UnitUseAbility(ability, wrapper).NeedLoS).Value;
+                    var lineUp = LineUpFor(ctx, ability, profile, target, ability.GetApproachDistance(target), lineLos);
+                    var upAim = lineUp != null ? AbilityProfile.TargetOn(ability, target) : null;
+                    if (upAim != null)
+                    {
+                        float upWalk = RealTimeWalk(ctx, target, lineUp.Spot, out var upIntercept);
+                        var upRisk = MergeRisk(lineUp.Risk?.Copy(), upIntercept);
+                        var hereHits = ctx.ScoredInfusionHits;
+                        bool hereCounted = ctx.AimCounted;
+                        string hereFriendly = ctx.FriendlyFireNote;
+                        ctx.ScoredInfusionHits = hereHits == null ? null : new List<InfusionHit>();
+                        float upValue;
+                        string upWhy, upInfusion;
+                        IReadOnlyCollection<UnitEntityData> upRecipients;
+                        float? upChance;
+                        using (AbilityProfile.AimedAt(upAim))
+                            upValue = ScoreAbility(ctx, ability, profile, slot, target, upAim, lineUp.Spot,
+                                out upWhy, out upInfusion, out upRecipients, out upChance, valueActiveInfusions);
+                        float hereNet = ValueModel.WalkedNet(value, needsMove, walkFactor, risk?.StopChance ?? 0f, risk?.Cost ?? 0f);
+                        float upNet = ValueModel.WalkedNet(upValue, true, upWalk, upRisk?.StopChance ?? 0f, upRisk?.Cost ?? 0f);
+                        if (ValueModel.LineUpWorthIt(hereNet, upNet))
                         {
-                            wrapper = turned;
-                            value = turnedValue;
-                            why = turnedWhy;
-                            infusionNote = turnedInfusion;
-                            geometryRecipients = turnedRecipients;
-                            geometryChance = turnedChance;
+                            needsMove = true;
+                            approach = new Approach { Point = lineUp.Spot, Risk = lineUp.Risk };
+                            risk = upRisk;
+                            walkFactor = upWalk;
+                            wrapper = upAim;
+                            value = upValue;
+                            why = upWhy;
+                            infusionNote = upInfusion;
+                            geometryRecipients = upRecipients;
+                            geometryChance = upChance;
                             friendlyFire = ctx.FriendlyFireNote;
+                            turnedNote = null;
+                            lineUpWalk = true;
+                            lineUpNote = $"lines up {lineUp.Near.CharacterName} and {target.CharacterName}: {lineUp.Enemies} enemies " +
+                                         $"from {HorizontalDistance(ctx.Unit.Position, lineUp.Spot):F1} m away ({upNet:F1} vs {hereNet:F1} here)";
                         }
                         else
                         {
-                            ctx.ScoredInfusionHits = straightHits;
-                            ctx.AimCounted = straightCounted;
-                            turnedNote = null;
+                            ctx.ScoredInfusionHits = hereHits;
+                            ctx.AimCounted = hereCounted;
+                            ctx.FriendlyFireNote = hereFriendly;
                         }
                     }
                 }
@@ -3547,7 +3607,7 @@ namespace CompanionAI_Pathfinder.Tactics
                 // next decision. Issued as one command, the game stopped as soon as the target was in range - up to 1.6 m
                 // short of that spot - and the cone left from further back: allies fighting in front of the caster were
                 // behind its tip in the appraisal and inside it for real (test 11: Seelah and Camellia).
-                bool coneWalk = needsMove && approach != null && profile.IsProjectileCone;
+                bool coneWalk = needsMove && approach != null && profile.IsProjectileArea;   // ★ C4: and a line
                 bool infusionProspect = value <= 0f && ctx.ScoredInfusionHits?.Count > 0 && !needsMove &&
                     (ctx.Global?.AiManagesToggles ?? true) && ctx.InfusionProspects.Count < InfusionSearchBudget.MaxAims;
                 if (value <= 0f && !infusionProspect)
@@ -3681,12 +3741,14 @@ namespace CompanionAI_Pathfinder.Tactics
                             (infusionNote != null ? $" [infusion {infusionNote}]" : "") +
                             (turnedNote != null ? $" [{turnedNote}]" : "") +
                             (friendlyFire != null ? $" [{friendlyFire}]" : "") +
-                            (coneWalk && approach.Detours != true ? " [walks to its casting spot first]" : "") +
+                            (lineUpNote != null ? $" [walks first: {lineUpNote}]" :
+                             coneWalk && approach.Detours != true ? " [walks to its casting spot first]" : "") +
                             (burst != null ? $" [ground{(burst.Lead >= BurstRules.MinLeadMeters ? $" +{burst.Lead:F1} m" : "")}, lands in {burst.Landing:F1} s]" : ""),
                     Burst = burst,
                     CastRiskCost = provokeLoss,
                     AimAffected = aimAffected,
                     MoveFirst = approach?.Detours == true || coneWalk,
+                    LineUpWalk = lineUpWalk,
                     FreeSideWalk = approach?.Beside != null,
                     MovePoint = approach?.Detours == true || coneWalk ? approach.Point : (Vector3?)null,
                     ApproachRadius = approach?.Arrival ?? 0f,
@@ -3938,14 +4000,15 @@ namespace CompanionAI_Pathfinder.Tactics
                 if (!sharedHd.Supported) return friendly ? EffectApplies.Unknown : EffectApplies.No;
                 return sharedHd.Eligibility(recipient, buff) > 0f ? EffectApplies.Yes : EffectApplies.No;
             }
-            if (profile.IsProjectileCone)
+            if (profile.IsProjectileArea)
             {
                 // Query all relevant enemies and allies together. A failed ally query invalidates the whole aim,
                 // rather than silently making a harmful cone look safe. No actor is moved to preview the origin.
-                if (!ProjectileCone.TryCreate(ability, actualAim, castOrigin, out var cone) ||
+                // ★ Fusion coverage C4: a line the same way, by the native line query (ProjectileLine).
+                if (!ProjectileArea.TryCreate(profile, ability, actualAim, castOrigin, out var cone) ||
                     !cone.TryRecipients(ctx.Enemies.Concat(ctx.Allies).Concat(ctx.DownedAllies), out var recipients))
                 {
-                    why = "native cone geometry unavailable";
+                    why = profile.IsProjectileLine ? "native line geometry unavailable" : "native cone geometry unavailable";
                     return 0f;
                 }
                 var set = new HashSet<UnitEntityData>(recipients);
@@ -3994,7 +4057,7 @@ namespace CompanionAI_Pathfinder.Tactics
                     if (walkingIn != null) affectedAllies.AddRange(walkingIn);
                 }
             }
-            List<UnitEntityData> DownedRecipients() => profile.IsProjectileCone
+            List<UnitEntityData> DownedRecipients() => profile.IsProjectileArea
                 ? affectedAllies.Where(ctx.DownedAllies.Contains).ToList()
                 : UnitsAround(ctx.DownedAllies, areaCenter, profile.AoERadius)
                     .Where(u => profile.AreaReaches(ability, u)).ToList();
@@ -4008,7 +4071,7 @@ namespace CompanionAI_Pathfinder.Tactics
                 burst.Enemies = affectedEnemies.Count;
             }
             // ★ Fusion F7: not for a fused pool - its other payload reaches every recipient, covered or not.
-            if (sharedHd?.Supported == true && !profile.IsProjectileCone && profile.Fusion == null)
+            if (sharedHd?.Supported == true && !profile.IsProjectileArea && profile.Fusion == null)
             {
                 // Progressive viability and boss bypass use the same reachable-control recipients as valuation.
                 geometryChance = 0f;
@@ -5164,13 +5227,14 @@ namespace CompanionAI_Pathfinder.Tactics
                     // ★ v0.3.23 (build5 review): a cone leaves from the caster, so the step moves it. Orvath stepped for a
                     // Color Spray worth 130.5 there (turn-based fight 3, R3); from the new spot it caught fewer enemies (68.9)
                     // and he cast Grease instead. The step must keep every enemy the cone was valued on and add no ally.
-                    if (ProjectileCone.IsCone(stepCast.Ability.Blueprint) && stepCast.GeometryRecipients != null)
+                    // ★ Fusion coverage C4: a line leaves from the caster as well.
+                    if (AbilityProfile.Get(stepCast.Ability)?.IsProjectileArea == true && stepCast.GeometryRecipients != null)
                     {
                         var castAbility = stepCast.Ability;
                         var aim = new TargetWrapper(spellTarget);
                         var counted = stepCast.GeometryRecipients.ToList();
                         var range = keepsTarget;
-                        keepsTarget = p => range(p) && ConeKeepsRecipients(ctx, castAbility, aim, p, counted);
+                        keepsTarget = p => range(p) && ProjectileKeepsRecipients(ctx, castAbility, aim, p, counted);
                     }
                 }
                 if (ctx.HasRangedWeapon && ctx.PureMageWeapon && !castsInMelee)
@@ -5649,10 +5713,11 @@ namespace CompanionAI_Pathfinder.Tactics
         /// <paramref name="counted"/> (the recipients it was valued on) and no ally that was not among them. Any failed
         /// native query refuses the spot.
         /// </summary>
-        private static bool ConeKeepsRecipients(TacticalContext ctx, AbilityData ability, TargetWrapper aim, Vector3 origin,
-                                                List<UnitEntityData> counted)
+        private static bool ProjectileKeepsRecipients(TacticalContext ctx, AbilityData ability, TargetWrapper aim, Vector3 origin,
+                                                      List<UnitEntityData> counted)
         {
-            if (!ProjectileCone.TryCreate(ability, aim, origin, out var cone)) return false;
+            // ★ Fusion coverage C4: a line the same way (ProjectileArea).
+            if (!ProjectileArea.TryCreate(AbilityProfile.Get(ability), ability, aim, origin, out var cone)) return false;
             var allies = ctx.Allies.Concat(ctx.DownedAllies).Distinct().ToList();
             if (!cone.TryRecipients(ctx.Enemies.Concat(allies), out var reached)) return false;
             var there = new HashSet<UnitEntityData>(reached);
@@ -5817,6 +5882,7 @@ namespace CompanionAI_Pathfinder.Tactics
                                           oneMoveWalk: OneMoveWalk(c)))
                 {
                     command = walk;
+                    if (c.LineUpWalk) NoteLineUpWalk(unit);
                     c.Kind = CandidateKind.Move;
                     c.Slot = ActionSlot.Move;
                     CastOutcome.Forget(unit);

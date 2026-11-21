@@ -33,6 +33,24 @@ namespace CompanionAI_Pathfinder.Tactics
         public static float DeliveredSuccessChance(float effectChance, float deliveryChance) =>
             Clamp01(effectChance) * Clamp01(deliveryChance);
 
+        /// <summary>
+        /// ★ Fusion coverage C4: a cast's value once its walk is paid for - the same discounts the decision applies after scoring
+        /// (DeliveredBenefit's walk share, the real-time walk factor, the walk's stop chance and cost), without the delivery
+        /// chance both aims share. For comparing two aims of one cast, never added to a value.
+        /// </summary>
+        public static float WalkedNet(float scored, bool walks, float walkFactor, float stopChance, float cost) =>
+            !(scored > 0f) ? scored
+            : scored * (walks ? WalkThenCastFactor : 1f) * Clamp01(walkFactor) * (1f - Clamp01(stopChance)) - Math.Max(0f, cost);
+
+        /// <summary>★ C4: a walk to line enemies up must beat casting from here by this share and margin (it may not be worth a
+        /// walk for a sliver, and enemies move).</summary>
+        public const float LineUpGainShare = 1.15f;
+        public const float LineUpGainMargin = 0.5f;
+
+        /// <summary>★ C4: whether walking to the lined-up spot first beats casting from here (both as <see cref="WalkedNet"/>).</summary>
+        public static bool LineUpWorthIt(float hereNet, float lineUpNet) =>
+            lineUpNet > 0f && lineUpNet > Math.Max(0f, hereNet) * LineUpGainShare + LineUpGainMargin;
+
         // NaN counts as no chance: a failed native query must not raise a value.
         private static float Clamp01(float x) => x > 0f ? Math.Min(1f, x) : 0f;
     }

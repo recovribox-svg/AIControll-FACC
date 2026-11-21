@@ -153,7 +153,7 @@ namespace CompanionAI_Pathfinder.Tactics
                 Main.Warning($"[Cone] native recipient query unavailable ({key}, {ex.GetType().Name}: {ex.Message}); cone candidate omitted");
         }
 
-        internal sealed class Query
+        internal sealed class Query : IProjectileArea
         {
             private readonly AbilityDeliverProjectile m_Projectile;
             private readonly AbilityExecutionContext m_Context;

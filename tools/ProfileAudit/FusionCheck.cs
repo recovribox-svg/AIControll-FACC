@@ -59,8 +59,11 @@ namespace ProfileAudit
                 Check(before != AbilityDiscovery.Key(fused) && ledger != CombatMemory.AbilityKey(fused), "edited fusion does not inherit old discovery/failure/cast keys");
                 fused.MagicHackData.DeliverBlueprint = lightning;
                 var line = AbilityProfile.Get(fused);
-                Check(!ReferenceEquals(line, changed) && line.Blueprint == lightning && Unsupported(line) == "line delivery geometry",
-                    "delivery change invalidates metadata; unsupported line footprint cannot bypass friendly-fire safety");
+                // ★ Fusion coverage C4: the line footprint is read by the native line query now (LINE checks it); its recipients,
+                // allies included, are counted like a cone's, so it no longer needs the refusal to stay safe.
+                Check(!ReferenceEquals(line, changed) && line.Blueprint == lightning && Unsupported(line) == null &&
+                      line.IsProjectileLine && line.IsAoE && line.SelectsTargets,
+                    "delivery change invalidates metadata; a line footprint is read by the native line query (allies counted)");
                 var cc = AbilityProfile.Get(Fuse(slow, confusion, slow, SavingThrowType.Will));
                 Check(Unsupported(cc) == null, "Slow/Confusion control payload supported: " + Unsupported(cc));
                 Check(cc.TargetBuffs.Count >= 2 && cc.ControlStrength != ControlStrength.None && cc.Save == SavingThrowType.Will, "both real control effects retained with one selected save");
@@ -133,7 +136,10 @@ namespace ProfileAudit
                 var unknown = Fuse(fire, lightning, fire, SavingThrowType.Reflex);
                 unknown.MagicHackData.AdditionalAoeBlueprint = lightning;
                 Check(Unsupported(AbilityProfile.Get(unknown)) == "additional area delivery", "unknown extra delivery remains explicit fallback");
-                var bothBlocked = Fuse(fire, lightning, lightning, SavingThrowType.Reflex);
+                // ★ C4: the line no longer blocks; a spawned area (Grease) is the second blocker of this constructed case.
+                var grease = Spell("Grease");
+                Check(grease != null, "actual Grease fixture exists");
+                var bothBlocked = Fuse(fire, grease, fire, SavingThrowType.Reflex);
                 bothBlocked.MagicHackData.AdditionalAoeBlueprint = fire;
                 var blockedProfile = AbilityProfile.Get(bothBlocked);
                 var issues = (System.Collections.IEnumerable)typeof(AbilityProfile).GetProperty("FusionLimitations", Hidden).GetValue(blockedProfile);
@@ -143,12 +149,12 @@ namespace ProfileAudit
                     reasonSet.Add((string)issue.GetType().GetField("Reason").GetValue(issue));
                     located &= !string.IsNullOrEmpty((string)issue.GetType().GetField("Location").GetValue(issue));
                 }
-                Check(reasonSet.SetEquals(new[] { "line delivery geometry", "additional area delivery" }) && located,
+                Check(reasonSet.SetEquals(new[] { "spawned area or creature payload", "additional area delivery" }) && located,
                     "overlapping blockers retain both reasons/locations, rather than only the last gate");
                 Check(Unsupported(blockedProfile) == "additional area delivery", "diagnostic collection preserves existing admission reason");
                 var snapshotIssues = (System.Collections.IEnumerable)typeof(AbilityProfile).GetProperty("FusionLimitations", Hidden).GetValue(blockedProfile);
                 bothBlocked.MagicHackData.AdditionalAoeBlueprint = null;
-                Check(Unsupported(AbilityProfile.Get(bothBlocked)) == "line delivery geometry" &&
+                Check(Unsupported(AbilityProfile.Get(bothBlocked)) == "spawned area or creature payload" &&
                       snapshotIssues.Cast<object>().Count() == 2, "editing configuration rebuilds limitations without mutating prior metadata");
                 var partial = CasterPolicyCheck.Data(holder); partial.MagicHackData = new MagicHackData();
                 Check(Unsupported(AbilityProfile.Get(partial)) != null, "incomplete native data is withheld safely");

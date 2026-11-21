@@ -42,7 +42,7 @@ namespace CompanionAI_Pathfinder.Tactics
 
         /// <summary>An area aimed at a point that puts a revealing buff on the enemies in it.</summary>
         private static bool RevealsInArea(AbilityData ability, AbilityProfile profile) =>
-            ability.CanTargetPoint && profile != null && profile.IsAoE && !profile.IsProjectileCone &&
+            ability.CanTargetPoint && profile != null && profile.IsAoE && !profile.IsProjectileArea &&
             profile.AoETargets != Kingmaker.UnitLogic.Abilities.Components.TargetType.Ally &&
             profile.TargetBuffs.Any(RevealingBuff);
 

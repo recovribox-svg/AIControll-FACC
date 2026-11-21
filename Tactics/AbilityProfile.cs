@@ -276,7 +276,15 @@ namespace CompanionAI_Pathfinder.Tactics
         /// <summary>Actual root's simple projectile delivery; child effect abilities do not repeat their parent.</summary>
         public AbilityDeliverProjectile SimpleProjectiles { get; private set; }
         public bool IsProjectileCone => Cone != null;
-        public bool IsAoE => AoERadius > 0.01f || IsProjectileCone;
+        /// <summary>★ Fusion coverage C4: native line delivery this reader takes (ProjectileLine.Supported); its recipients are
+        /// queried from the game along the line. A line it does not take stays a single-target cast, as before.</summary>
+        public AbilityDeliverProjectile Line { get; private set; }
+        /// <summary>★ C4: why the actual cast's line delivery is not read (null when it is, or when it is no line).</summary>
+        public string UnreadLine { get; private set; }
+        public bool IsProjectileLine => Line != null;
+        /// <summary>★ C4: recipients come from a native projectile query (cone or line), not from a circle.</summary>
+        public bool IsProjectileArea => IsProjectileCone || IsProjectileLine;
+        public bool IsAoE => AoERadius > 0.01f || IsProjectileArea;
         /// <summary>
         /// ★ v0.3.18: the game picks the units in the area one by one (around-selector or cone), each with its own spell
         /// resistance check. Without it (spawned areas: Grease, Entangle, Web) the effect is applied once, to the aimed
@@ -566,8 +574,8 @@ namespace CompanionAI_Pathfinder.Tactics
             CasterProvokes = FindCasterProvoke(Blueprint);
 
             var around = Blueprint.GetComponent<AbilityTargetsAround>();
-            SelectsTargets = around != null || IsProjectileCone;
-            SelectsAround = around != null && !IsProjectileCone;
+            SelectsTargets = around != null || IsProjectileArea;
+            SelectsAround = around != null && !IsProjectileArea;
             // ★ burst aim: when the burst lands after the cast goes off (TacticalEngine.Burst.cs, BurstRules). Read from the
             // blueprint whose delivery the game runs: the cast's own, or the deliver spell of a fusion (GetDeliverBlueprint).
             try
@@ -840,6 +848,12 @@ namespace CompanionAI_Pathfinder.Tactics
             if (ReferenceEquals(bp, Blueprint) && projectile?.Type == AbilityProjectileType.Cone)
             {
                 Cone = projectile;
+            }
+            // ★ Fusion coverage C4: the same for a line, when its delivery is the ordinary native one (ProjectileLine.Supported).
+            if (ReferenceEquals(bp, Blueprint) && projectile?.Type == AbilityProjectileType.Line)
+            {
+                if (ProjectileLine.Supported(projectile, out string unreadLine)) Line = projectile;
+                else UnreadLine = unreadLine;
             }
             // ★ v0.3.18 (C2): a line or cone projectile makes no attack roll, whatever its flag says (the game's
             // AbilityDeliverProjectile only rolls for other shapes).

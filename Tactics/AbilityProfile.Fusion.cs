@@ -211,8 +211,11 @@ namespace CompanionAI_Pathfinder.Tactics
                 {
                     profile.Analyze();
                     if (snapshot.IsTouch) profile.NeedsAttackRoll = true;
-                    if (snapshot.DeliverBlueprint.GetComponent<AbilityDeliverProjectile>()?.Type == AbilityProjectileType.Line)
-                        profile.LimitFusion("line delivery geometry", "delivery");
+                    // ★ Fusion coverage C4: a line delivery is read by the native line query (ProjectileLine); only a line it
+                    // does not take (a custom or controlled projectile, several, one that follows the terrain) is withheld.
+                    if (snapshot.DeliverBlueprint.GetComponent<AbilityDeliverProjectile>()?.Type == AbilityProjectileType.Line &&
+                        !profile.IsProjectileLine)
+                        profile.LimitFusion("line delivery geometry" + (profile.UnreadLine != null ? ": " + profile.UnreadLine : ""), "delivery");
                     if (snapshot.AdditionalAoeBlueprint != null) profile.LimitFusion("additional area delivery", "delivery/additional");
                     if (profile.Heals.Count > 0 || profile.CasterHeals.Count > 0 || profile.CasterBuffs.Count > 0)
                         profile.LimitFusion("healing or caster-side payload", "profile/subjects");
