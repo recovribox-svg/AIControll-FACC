@@ -217,7 +217,13 @@ namespace CompanionAI_Pathfinder.Tactics
                         !profile.IsProjectileLine)
                         profile.LimitFusion("line delivery geometry" + (profile.UnreadLine != null ? ": " + profile.UnreadLine : ""), "delivery");
                     if (snapshot.AdditionalAoeBlueprint != null) profile.LimitFusion("additional area delivery", "delivery/additional");
-                    if (profile.Heals.Count > 0 || profile.CasterHeals.Count > 0 || profile.CasterBuffs.Count > 0)
+                    // ★ Fusion coverage C11: Vampiric Touch's caster-side payload - temporary HP equal to the damage the cast
+                    // dealt (TemporaryHitPointsFromAbilityValue, its shared value) - gives the caster something and takes nothing
+                    // from anyone. As for an ordinary Vampiric Touch it is not credited (caster buffs of a damaging cast are not
+                    // priced), so the fused cast is valued by what it does to its recipients alone. Any other healing or caster
+                    // payload stays withheld.
+                    if (profile.Heals.Count > 0 || profile.CasterHeals.Count > 0 ||
+                        profile.CasterBuffs.Count > 0 && !profile.CasterBuffs.All(OwnResultTemporaryHp))
                         profile.LimitFusion("healing or caster-side payload", "profile/subjects");
                     if (profile.Save == SavingThrowType.Unknown && profile.fusionRequiresSavedResult && !profile.fusionHasIndependentSave)
                         profile.LimitFusion("saved-result branch without a declared root save", "profile/save");
@@ -228,6 +234,35 @@ namespace CompanionAI_Pathfinder.Tactics
             FusionCache.Add(data, new FusionEntry { Holder = ability.Blueprint, Snapshot = snapshot, Profile = profile });
             _built++;
             return profile;
+        }
+
+        /// <summary>
+        /// ★ Fusion coverage C11: a caster buff that only gives temporary HP from the cast's own shared value (Vampiric Touch's
+        /// VampiricTouchBuff: TemporaryHitPointsFromAbilityValue, a descriptor, and a disabled trigger that removes itself).
+        /// </summary>
+        internal static bool OwnResultTemporaryHp(Kingmaker.UnitLogic.Buffs.Blueprints.BlueprintBuff buff)
+        {
+            if (buff == null) return false;
+            bool tempHp = false;
+            foreach (var component in buff.ComponentsArray)
+            {
+                switch (component)
+                {
+                    case null:
+                    case SpellDescriptorComponent _:
+                        continue;
+                    case Kingmaker.Designers.Mechanics.Buffs.TemporaryHitPointsFromAbilityValue thp
+                        when thp.Value != null && thp.Value.ValueType == Kingmaker.UnitLogic.Mechanics.ContextValueType.Shared:
+                        tempHp = true;
+                        continue;
+                    case Kingmaker.UnitLogic.Mechanics.Components.AddIncomingDamageTrigger trigger
+                        when trigger.Actions?.Actions != null && trigger.Actions.Actions.All(a => a is ContextActionRemoveSelf):
+                        continue;
+                    default:
+                        return false;
+                }
+            }
+            return tempHp;
         }
 
         /// <summary>AbilityEffectRunAction.Apply uses each spell's own RunAction, falling back to its sticky-touch

@@ -84,6 +84,8 @@ namespace CompanionAI_Pathfinder.Tactics
         public bool Dispels { get; private set; }
         /// <summary>★ v0.3.24: the dispel actions themselves, for the game's own eligibility rule (TacticalEngine.DispelCanTake).</summary>
         public readonly List<ContextActionDispelMagic> DispelActions = new List<ContextActionDispelMagic>();
+        /// <summary>★ Fusion coverage C7: each dispel's place in a fused cast's native action order (Spell 1, then Spell 2).</summary>
+        internal readonly Dictionary<ContextActionDispelMagic, int> FusionDispelOrdinals = new Dictionary<ContextActionDispelMagic, int>();
         public bool RemovesBuffs { get; private set; }
         public bool Enchants { get; private set; }
 
@@ -1051,6 +1053,7 @@ namespace CompanionAI_Pathfinder.Tactics
                     case ContextActionDispelMagic dispel:
                         Dispels = true;
                         if (!DispelActions.Contains(dispel)) DispelActions.Add(dispel);
+                        if (Fusion != null && !FusionDispelOrdinals.ContainsKey(dispel)) FusionDispelOrdinals[dispel] = fusionActionOrdinal;
                         // ★ v0.3.25 (potions): a dispel with no check removes what its filters take, always (RuleDispelMagic,
                         // CheckType.None): Lesser Restoration's fatigue, exhaustion and stat-penalty removals. A removal like
                         // any other: valued as a cleanse when the target has something it takes.
