@@ -8,7 +8,25 @@ Read [CONTRIBUTING.md](CONTRIBUTING.md) for shared branch ownership, Codex pull 
 Codex works on task branches and targets pull requests at `claude/dreamy-pasteur-b9h3rn`; Claude reviews and integrates them there.
 Keep `main` for author-authorized releases. Read [AGENTS.md](AGENTS.md) when coordinating agent work.
 
-**Current handover (21 November 2026, Claude): Fusion C6 carriers and C8 Hit Dice pools that kill, merged with Codex's
+**Current handover (21 November 2026, Claude): coverage7 playtest, partial review, on `claude/coverage7-review`, stacked on
+`claude/fusion-coverage-c6-c8` (draft PR #101). No code changed. The author asked Codex to finish the review and the fixes.**
+Read [docs/COVERAGE7_PLAYTEST_REVIEW.md](docs/COVERAGE7_PLAYTEST_REVIEW.md) and the
+[input fingerprints](docs/competence/COVERAGE7_PLAYTEST_INPUTS.json).
+
+- **Played:** coverage7, MVID `0aa40527`. 10 fights (5 TB, 5 RT), 928 commands, no AI Control exception.
+- **Holds:**
+  - no AI-caused friendly fire (all 141 HP party-on-party damage is the game's attacks of opportunity on dominated allies);
+  - no AI order aimed at a dominated ally; freeing by dispel works.
+- **Findings, with causes traced:**
+  1. Dispel Magic (Point) is valued by unit buffs and as freeing, though natively it only ends area effects.
+  2. A removal from the caster only (Vermlek's Abandon Flesh) counts as removing anything (`CanRemove`): 4 casts at full HP.
+  3. A successful dispel is logged "did nothing".
+  4. Real time: plain advances "around" the party's area are refused at issue every decision (movement: ask the author).
+- **Open:** possibly a dominated Aeiluvetar driven by AI Control (fight 8), and performance (GC over 1 s; touch-buff spot
+  searches). The page lists what is not yet reviewed.
+- **Next:** Codex continues on its own branch from this one, with a draft PR stacked on it. No merge, `main`, tag or release.
+
+**Earlier handover (21 November 2026, Claude): Fusion C6 carriers and C8 Hit Dice pools that kill, merged with Codex's
 PR #100 corrections, on `claude/fusion-coverage-c6-c8`, stacked on `codex/review-92-99` (draft PR #100). Not played,
 nothing merged.** Read [docs/FUSION_COVERAGE_C6_C8.md](docs/FUSION_COVERAGE_C6_C8.md), `docs/TACTICAL_AI.md` §209 and the
 [receipt](docs/competence/COVERAGE7_CHECKS.json).
