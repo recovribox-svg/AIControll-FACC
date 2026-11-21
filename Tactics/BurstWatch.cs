@@ -219,7 +219,7 @@ namespace CompanionAI_Pathfinder.Tactics
                 Entries.Add(new Entry
                 {
                     Unit = unit, Command = command, Plan = plan, NextCheck = Now + BurstRules.RecheckSeconds, Recheck = recheck,
-                    PredictedActAt = plan.RealTime ? Now + plan.Walk + plan.Cast : double.NaN
+                    PredictedActAt = plan.RealTime ? Now + DisruptRules.OrderedStartSeconds(plan.Walk, plan.Wait) + plan.Cast : double.NaN
                 });
                 s_Watched++;
                 if (Entries.Count > s_PeakWatches) s_PeakWatches = Entries.Count;
@@ -343,7 +343,8 @@ namespace CompanionAI_Pathfinder.Tactics
                     Cancels.RemoveAll(c => now - c.At > BurstRules.CancelWindowSeconds);
                     int recent = 0;
                     foreach (var c in Cancels) if (c.Unit == unit && c.Blueprint == blueprint) recent++;
-                    if (!BurstRules.MayCancel(recent))
+                    // ★ Fusion coverage C3: a permanent death is never kept for the cancel limit's sake.
+                    if (verdict != BurstRules.Verdict.AllyPermanentDeath && !BurstRules.MayCancel(recent))
                     {
                         if (!e.LimitNoted)
                         {
@@ -376,6 +377,7 @@ namespace CompanionAI_Pathfinder.Tactics
                 case BurstRules.Verdict.AllyCaught: return $"{names} walks into it";
                 case BurstRules.Verdict.AllyCostsMore: return $"{names} would cost more than it is worth";
                 case BurstRules.Verdict.NothingInside: return "no enemy left where it lands";
+                case BurstRules.Verdict.AllyPermanentDeath: return $"it could kill {names} for good";
                 default: return verdict.ToString();
             }
         }
@@ -404,7 +406,9 @@ namespace CompanionAI_Pathfinder.Tactics
             else
             {
                 float walk = BurstRules.WalkSeconds(TacticalEngine.HorizontalDistance(unit.Position, plan.Point), plan.Range, unit.CurrentSpeedMps);
-                remaining = BurstRules.LandingSeconds(walk, plan.Cast, plan.Delay, flight);
+                // ★ coverage3 review: and the native wait before it may start, read again now.
+                remaining = BurstRules.LandingSeconds(DisruptRules.OrderedStartSeconds(walk, TacticalEngine.ReadySeconds(unit, plan.Ability)),
+                                                      plan.Cast, plan.Delay, flight);
             }
 
             float newCost = 0f;
@@ -421,7 +425,9 @@ namespace CompanionAI_Pathfinder.Tactics
                 if (!CanReadRosterUnit(u, unit)) continue;
                 if (u == unit) casterRead = true;
                 float reach = plan.Radius + u.Corpulence;
-                if (unit.IsEnemy(u))
+                // ★ coverage3 review: an ally under an enemy's control is still the party's - an ally here, not a target.
+                bool turned = TacticalEngine.IsTurnedAlly(u);
+                if (unit.IsEnemy(u) && !turned)
                 {
                     if (!u.Descriptor.State.IsConscious) continue;
                     var at = Predict(u, remaining, out bool walking);
@@ -430,13 +436,29 @@ namespace CompanionAI_Pathfinder.Tactics
                         enemies++;
                     continue;
                 }
-                if (!u.IsPlayerFaction && u != unit) continue;
+                if (!u.IsPlayerFaction && !turned && u != unit) continue;
                 if (plan.Allies.Contains(u)) continue;
                 bool inside;
-                var route = u.Descriptor.State.IsConscious ? TacticalEngine.ReadRoute(u, Route) : null;
-                if (route != null) inside = route.MayBeInside(plan.Point.x, plan.Point.z, reach, remaining);
-                else inside = Vector3.Distance(u.Position, plan.Point) <= reach;
+                if (u == unit && cmd.Executor == unit && !cmd.IsStarted)
+                    // ★ coverage3 review: the caster's own walk is this cast's approach, which stops at the cast's range from
+                    // the point (UnitCommand.IsUnitCloseEnough). The prediction's growing uncertainty cancelled arcan's best
+                    // burst for "arcan walks into it" (fight 13). Inside only if that stop, or where it stands, is.
+                    inside = Math.Min(Vector3.Distance(u.Position, plan.Point), Math.Max(0f, plan.Range)) <= reach;
+                else
+                {
+                    var route = u.Descriptor.State.IsConscious ? TacticalEngine.ReadRoute(u, Route) : null;
+                    if (route != null) inside = route.MayBeInside(plan.Point.x, plan.Point.z, reach, remaining);
+                    else inside = Vector3.Distance(u.Position, plan.Point) <= reach;
+                }
                 if (!inside || !profile.AreaReaches(plan.Ability, u)) continue;
+                // ★ Fusion coverage C3 (author's policy): an ally who may now be killed for good cancels the cast, whatever the
+                // settings and the cancel limit.
+                if (PermanentDeathTo(e, u, profile))
+                {
+                    names = u.CharacterName;
+                    newAllies = 1;
+                    return BurstRules.Verdict.AllyPermanentDeath;
+                }
                 // ★ A3: its damage, and what the burst's control would cost it by the decision's own rule (AllyControl).
                 float damage = DamageTo(e, u, profile);
                 float control = 0f;
@@ -454,6 +476,18 @@ namespace CompanionAI_Pathfinder.Tactics
             if (caught != null) names = string.Join(", ", caught);
             // A plan that counted no enemy (its value came from elsewhere) is not cancelled for having none.
             return BurstRules.Judge(plan.AvoidFriendlyFire, newAllies, newCost, plan.Value, plan.Enemies > 0 ? enemies : 1);
+        }
+
+        /// <summary>★ Fusion coverage C3: whether this burst may kill <paramref name="ally"/> for good (a summon excepted).</summary>
+        private static bool PermanentDeathTo(Entry e, UnitEntityData ally, AbilityProfile profile)
+        {
+            if (!CombatMath.CanKillPermanently(e.Plan.Ability) || TacticalEngine.IsSummonUnit(ally)) return false;
+            try
+            {
+                using (AbilityProfile.AimedAt(new TargetWrapper(e.Plan.Point)))
+                    return PermanentDeathRules.Vetoed(CombatMath.PermanentDeathRisk(e.Plan.Ability, profile, ally));
+            }
+            catch { return true; }
         }
 
         /// <summary>A3/A-P1: an ally's damage from this burst, estimated once per watch.</summary>

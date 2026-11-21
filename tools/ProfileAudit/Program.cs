@@ -273,6 +273,11 @@ namespace ProfileAudit
             foreach (var line in periodicLines) Console.WriteLine(line);
             File.WriteAllText(output, string.Join(Environment.NewLine, periodicLines) + Environment.NewLine + File.ReadAllText(output));
             blocklistFailures += periodicFailures;
+            // ★ coverage3 review / Fusion coverage C3: casts that could kill an ally for good; allies under an enemy's control.
+            var permadeathLines = PermanentDeathCheck.Run(loaded.Values, out int permadeathFailures);
+            foreach (var line in permadeathLines) Console.WriteLine(line);
+            File.WriteAllText(output, string.Join(Environment.NewLine, permadeathLines) + Environment.NewLine + File.ReadAllText(output));
+            blocklistFailures += permadeathFailures;
             // ★ Fusion coverage C2: Hideous Laughter's Best Jokes recast on a random enemy.
             var fusionRecastLines = FusionRecastCheck.Run(loaded.Values, out int fusionRecastFailures);
             foreach (var line in fusionRecastLines) Console.WriteLine(line);

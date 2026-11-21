@@ -36,6 +36,11 @@ namespace CompanionAI.Tests
             Assert.Equal(4f, BurstRules.LandingSeconds(0f, 2f, 2f, 0f));
             Assert.Equal(5.5f, BurstRules.LandingSeconds(1f, 2f, 2f, 0.5f));
             Assert.Equal(2f, BurstRules.LandingSeconds(-1f, 2f, -3f, -0.5f));   // negatives never shorten it
+            // ★ coverage3 review: a burst cast starts after its walk and the native wait for its action (the shared start rule).
+            Assert.Equal(3f, DisruptRules.OrderedStartSeconds(1f, 3f));
+            Assert.Equal(2f, DisruptRules.OrderedStartSeconds(2f, 0.5f));
+            Assert.Equal(0f, DisruptRules.OrderedStartSeconds(-1f, -2f));
+            Assert.Equal(7f, BurstRules.LandingSeconds(DisruptRules.OrderedStartSeconds(1f, 3f), 2f, 2f, 0f));
         }
 
         [Fact]

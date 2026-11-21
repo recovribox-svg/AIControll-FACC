@@ -99,7 +99,8 @@ namespace ProfileAudit
                         $"{a}/{b} ({save}) stays withheld by the outcome gate for '{expected}' (withheld: {why ?? "no"}, reason: {reason.GetValue(profile) ?? "none"})");
                 }
                 // ★ Fusion coverage C1: Molten Orb's main-target guard is read now; FUSION-DOT checks it is offered.
-                Gate("Fireball", "Disintegrate", SavingThrowType.Reflex, "ContextConditionCompareTargetHP");
+                // ★ Fusion coverage C3: Disintegrate's dust gate is a stable guard now; PERMADEATH checks it is offered and that it
+                // is never used where it could kill an ally for good.
                 Gate("Fireball", "ReducePerson", SavingThrowType.Reflex, "carrier");
                 // ★ Fusion coverage C5: its negative levels are read now; its undead branch (temporary HP) still withholds it.
                 Gate("Fireball", "Enervation", SavingThrowType.Reflex, "carrier");

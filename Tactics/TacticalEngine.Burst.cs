@@ -34,7 +34,9 @@ namespace CompanionAI_Pathfinder.Tactics
             /// <summary>The native approach distance to a point (AbilityData.GetApproachDistance).</summary>
             public float Range;
             public float Walk, Cast, Delay, Flight;
-            public float Landing => BurstRules.LandingSeconds(Walk, Cast, Delay, Flight);
+            /// <summary>★ coverage3 review: the native wait before the command may start (ReadySeconds); the walk runs meanwhile.</summary>
+            public float Wait;
+            public float Landing => BurstRules.LandingSeconds(DisruptRules.OrderedStartSeconds(Walk, Wait), Cast, Delay, Flight);
             /// <summary>Metres between where the anchor stood and the point.</summary>
             public float Lead;
             public bool RealTime;
@@ -59,7 +61,7 @@ namespace CompanionAI_Pathfinder.Tactics
                 string anchor = Anchor?.CharacterName ?? "?";
                 string where = Lead >= BurstRules.MinLeadMeters
                     ? $"{Lead:F1} m ahead of {anchor}{(OnPath ? " along its path" : "")}" : $"where {anchor} stands";
-                return $"ground {where}, lands in {Landing:F1} s (walk {Walk:F1} + cast {Cast:F1} + delay {Delay:F1} + flight {Flight:F1})";
+                return $"ground {where}, lands in {Landing:F1} s (walk {Walk:F1}{(Wait > Walk ? $", ready in {Wait:F1}" : "")} + cast {Cast:F1} + delay {Delay:F1} + flight {Flight:F1})";
             }
         }
 
@@ -98,6 +100,35 @@ namespace CompanionAI_Pathfinder.Tactics
             catch { return realTime ? BurstRules.StandardCastSeconds : 0f; }
         }
 
+        /// <summary>
+        /// ★ coverage3 review (R2 evidence): real time, the seconds before <paramref name="unit"/>'s command for
+        /// <paramref name="ability"/> may start, by the native gate (UnitCommandController: CanActInCombat and
+        /// !HasCooldownForCommand) - the action's cooldown, and the initiative wait of a surprised unit. Its walk to the cast
+        /// runs meanwhile (OrderedStartSeconds). Arcan's bursts went off 0.8-4.2 s after the forecast without it, and one
+        /// anchor stood 4.7 m from its point when it landed. 0 turn-based.
+        /// </summary>
+        internal static float ReadySeconds(UnitEntityData unit, AbilityData ability)
+        {
+            try
+            {
+                if (!CombatMemory.IsRealTime || unit?.CombatState == null || !unit.IsInCombat) return 0f;
+                var state = unit.CombatState;
+                var cooldown = state.Cooldown;
+                float wait = 0f;
+                if (state.IsWaitingInitiative && !state.NotSurprised) wait = Math.Max(wait, cooldown.Initiative);
+                var type = ability?.RuntimeActionType ?? UnitCommand.CommandType.Standard;
+                if (type == UnitCommand.CommandType.Swift) wait = Math.Max(wait, cooldown.SwiftAction);
+                else if (type == UnitCommand.CommandType.Move) wait = Math.Max(wait, cooldown.MoveAction);
+                else if (type == UnitCommand.CommandType.Standard)
+                {
+                    wait = Math.Max(wait, cooldown.StandardAction);
+                    // A running move command holds a standard one back too (HasCooldownForCommand); its end is not known here.
+                }
+                return float.IsNaN(wait) || float.IsInfinity(wait) ? 0f : Math.Max(0f, wait);
+            }
+            catch { return 0f; }
+        }
+
         /// <summary>The flight of the burst's projectile from the caster to <paramref name="point"/>; 0 without one.</summary>
         internal static float FlightSecondsTo(AbilityProfile profile, Vector3 from, Vector3 point) =>
             BurstRules.FlightSeconds(Vector3.Distance(from, point), profile.ProjectileSpeed, profile.ProjectileMinTime);
@@ -121,6 +152,7 @@ namespace CompanionAI_Pathfinder.Tactics
                 Range = ability.GetApproachDistance(null),
                 Cast = CastSecondsOf(ability, realTime),
                 Delay = profile.DeliverDelaySeconds,
+                Wait = ReadySeconds(ctx.Unit, ability),
                 RealTime = realTime,
                 AvoidFriendlyFire = ctx.Settings?.AvoidFriendlyFire ?? true
             };
@@ -128,7 +160,7 @@ namespace CompanionAI_Pathfinder.Tactics
             var route = realTime ? RouteOf(ctx, target) : null;
             if (route != null)
             {
-                float seconds = plan.Cast + plan.Delay + FlightSecondsTo(profile, eye, target.Position);
+                float seconds = plan.Wait + plan.Cast + plan.Delay + FlightSecondsTo(profile, eye, target.Position);
                 route.At(seconds, out float x, out float y, out float z);   // the height along its walk too
                 var lead = new Vector3(x, y, z);
                 if (HorizontalDistance(target.Position, lead) >= BurstRules.MinLeadMeters && InRangeNow(ctx.Unit, lead, plan.Range, needLos))
