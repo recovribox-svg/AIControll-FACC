@@ -8,7 +8,27 @@ Read [CONTRIBUTING.md](CONTRIBUTING.md) for shared branch ownership, Codex pull 
 Codex works on task branches and targets pull requests at `claude/dreamy-pasteur-b9h3rn`; Claude reviews and integrates them there.
 Keep `main` for author-authorized releases. Read [AGENTS.md](AGENTS.md) when coordinating agent work.
 
-**Current handover (21 November 2026, Claude): relief spells on `claude/relief-spells`, stacked on
+**Current handover (21 November 2026, Claude): the remaining Fusion groups on `claude/fusion-coverage-rest`, stacked on
+`claude/relief-spells` (draft PR #98). Not played, nothing merged.** Read [docs/FUSION_COVERAGE_REST.md](docs/FUSION_COVERAGE_REST.md),
+`docs/TACTICAL_AI.md` §207 and the [receipt](docs/competence/COVERAGE6_CHECKS.json).
+
+- **Request:** implement the remaining Fusion groups; additions for quality approved, such as moving to line up enemies.
+- **Change (both modes):**
+  - C4 lines: a line is an area (the game's `WouldTargetUnitLine`), ordinary and fused; re-aimed past allies and along
+    enemies; a lined-up walk within this move, once a round (author-approved movement).
+  - C7 fused dispels in the joint value; C9 nested saves (ordinary spells too: Phantasmal Killer's kill); C10 fused
+    lingering areas (not credited, refused near an ally); C11 Vampiric Touch fusions offered.
+- **Coverage:** offered 10,077 → 13,197, with the joint value 6,367 → 8,635, none lost. Left: C6 carriers (1,189) and
+  shared Hit Dice pools (1,108; Circle of Death's fused pool is the slot's 2d6, not worth its code yet).
+- **Checks** on `b32057b`:
+  - Release 0 warnings; 1,072 unit + 27/21/3 script tests.
+  - ProfileAudit new `LINE` 21 and `FUSION-REST` 27; `FUSION` 39, `FUSION-OUTCOME` 33; every other line unchanged.
+  - Native harnesses 98/14/10; 7 references added, all compiled against the supplied assembly.
+- **Package:** `test-builds/AI-Control-FACC-v0.3.60-dev-coverage6-b32057b-UMM-test.zip`, MVID `b63b47f2`. It contains
+  relief1. Manifest 0.3.60; no `main`, tag or release.
+- **Next:** the author plays coverage6 with summon control on (replay in the page).
+
+**Earlier handover (21 November 2026, Claude): relief spells on `claude/relief-spells`, stacked on
 `claude/coverage4-followups` (draft PR #97). Not played, nothing merged.** Read [docs/RELIEF_SPELLS.md](docs/RELIEF_SPELLS.md),
 `docs/TACTICAL_AI.md` §206 and the [receipt](docs/competence/RELIEF1_CHECKS.json).
 

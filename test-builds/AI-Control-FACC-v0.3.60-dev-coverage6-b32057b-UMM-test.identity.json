@@ -1,0 +1,42 @@
+{
+  "build_label": "coverage6",
+  "kind": "development-test",
+  "version": "0.3.60",
+  "source_branch": "claude/fusion-coverage-rest",
+  "source_commit": "b32057b3592cc7078b90735acb47fc5cc54db87b",
+  "stack": [
+    "claude/fusion-coverage-programme (C1, draft PR #92)",
+    "claude/review-r-items (R2, R5, evidence)",
+    "claude/fusion-coverage-c2-c5 (C2, C5, ordinary damage over time)",
+    "claude/coverage2-review (coverage2 log review fixes, draft PR #95)",
+    "claude/coverage3-review (coverage3 log review fixes, Fusion C3)",
+    "claude/coverage4-followups (dominated-ally release, partial swarm exits, Fusion C6a)",
+    "claude/relief-spells (dispels, removals and suppressions valued by what they end)",
+    "claude/fusion-coverage-rest (Fusion C4 lines, C7 dispels, C9 nested saves, C10 lingering areas, C11 Vampiric Touch)"
+  ],
+  "development_base": "0019856805605c9b74e27ffbdfa6b8dd9c20b0f2",
+  "dll": {
+    "assembly": "CompanionAI_Pathfinder, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null",
+    "mvid": "b63b47f2-f445-4007-8b04-8722dfeb4598",
+    "sha256": "13bf34752758fbde6d377594b6980c0c3a6ad8f256a5ef66c54271e7540443cc",
+    "size": 1594368
+  },
+  "archive": "AI-Control-FACC-v0.3.60-dev-coverage6-b32057b-UMM-test.zip",
+  "zip_sha256": "40981185f2d6b38f77648f81baf50421d7fac85b13e478aaddc9353a77157b11",
+  "manifest_sha256": "63ad9f152d4bacb44f021428193efad46aaf0d13380bb5691ebca1d935f2b5bf",
+  "checks_receipt": "docs/competence/COVERAGE6_CHECKS.json",
+  "build_provenance": "docs/competence/COVERAGE6_BUILD_PROVENANCE.json",
+  "build_provenance_sha256": "b4525f662471893bbfcda58350a0bc8838a7b66c3be09220d934eca2b7b2c418",
+  "toolchain": {
+    "dotnet_sdk": "8.0.428",
+    "csharp_compiler": "4.11.0-3.25569.22 (3fb752d4)"
+  },
+  "scope": "relief1 plus the remaining Fusion groups (docs/FUSION_COVERAGE_REST.md): line delivery read by the native line query for ordinary and fused casts, aimed along enemies and past allies, with a lined-up walk (author-approved); fused dispels in the joint value; nested saves (ordinary and fused); fused lingering areas (Obsidian Flow, Haunting Mists) with an ally refusal; Vampiric Touch fusions offered.",
+  "gameplay_status": "unplayed",
+  "release": false,
+  "archive_contents": [
+    "CompanionAI_Pathfinder.dll",
+    "Info.json"
+  ],
+  "identity_note": "Checked DLL is frozen across later documentation commits. No cross-machine byte identity or measured Unity speed-up claimed."
+}
