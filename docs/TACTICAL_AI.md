@@ -6989,3 +6989,27 @@ the coverage3 review.
   - Native harnesses 98/14/10; 0 references added.
 - **Package** `test-builds/AI-Control-FACC-v0.3.60-dev-coverage5-2b9d8ed-UMM-test.zip`, MVID `3d6cdb2b`. Unplayed;
   manifest 0.3.60; no `main`, tag or release.
+
+## 206. Relief spells: dispels, removals and suppressions valued by what they end (21 November 2026, Claude)
+
+[Page](RELIEF_SPELLS.md), [receipt](competence/RELIEF1_CHECKS.json). This answers the 0.3.52 user report "none of the
+magic-using characters ever cast Dispel Magic", and the author's question about confused allies.
+
+- **Cause.**
+  - Every dispel was worth the flat 2-point fallback, once a fight; Break Enchantment counted only its caster.
+  - Remove Fear and Unbreakable Heart were valued only by their save bonus (`SuppressBuffs` unread).
+  - Removals used a flat heuristic.
+- **Change** (both modes; `TacticalEngine.Relief.cs`):
+  - Ending an effect on an ally is worth its control or penalty share of the ally's output for the rounds it would
+    still act (`HarmWorth`), at most the ally's whole output.
+  - Dispels are priced in the native order on every unit they reach. On enemies, the buffs taken off are their loss.
+    On allies, harmful effects taken off are relief, and the party's own buffs, which natively can go first, are a loss.
+  - Suppressing buffs (Remove Fear, Unbreakable Heart) are worth what they switch off while they last.
+  - Unbreakable Heart can free a dominated ally, and may now be aimed at it.
+- **Not in the game:** Calm Emotions and Rectify State (tabletop spells).
+- **Checks** on `746d7a7`:
+  - Release 0 warnings; 1,066 unit + 27/21/3 script tests.
+  - ProfileAudit new `RELIEF` 16, every other line unchanged.
+  - Native harnesses 98/14/10; 0 references added.
+- **Package** `test-builds/AI-Control-FACC-v0.3.60-dev-relief1-746d7a7-UMM-test.zip`, MVID `5537a531`. Unplayed;
+  manifest 0.3.60; no `main`, tag or release.

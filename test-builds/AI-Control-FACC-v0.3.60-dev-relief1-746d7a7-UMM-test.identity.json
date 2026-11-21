@@ -1,0 +1,41 @@
+{
+  "build_label": "relief1",
+  "kind": "development-test",
+  "version": "0.3.60",
+  "source_branch": "claude/relief-spells",
+  "source_commit": "746d7a76521bfe99920b950d2e8d2ea2905b3bfd",
+  "stack": [
+    "claude/fusion-coverage-programme (C1, draft PR #92)",
+    "claude/review-r-items (R2, R5, evidence)",
+    "claude/fusion-coverage-c2-c5 (C2, C5, ordinary damage over time)",
+    "claude/coverage2-review (coverage2 log review fixes, draft PR #95)",
+    "claude/coverage3-review (coverage3 log review fixes, Fusion C3)",
+    "claude/coverage4-followups (dominated-ally release, partial swarm exits, Fusion C6a)",
+    "claude/relief-spells (dispels, removals and suppressions valued by what they end)"
+  ],
+  "development_base": "0019856805605c9b74e27ffbdfa6b8dd9c20b0f2",
+  "dll": {
+    "assembly": "CompanionAI_Pathfinder, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null",
+    "mvid": "5537a531-29f4-466c-9111-41c141e2ad26",
+    "sha256": "dbc08f1b1bd8a3d2e7ed19aaf7864beede1f7d87ea5a9be8dffd616edd66f0f9",
+    "size": 1568256
+  },
+  "archive": "AI-Control-FACC-v0.3.60-dev-relief1-746d7a7-UMM-test.zip",
+  "zip_sha256": "20045f24db7ceb3b567524d6f4c5ff4ea4595177deeb06f943a8239e4612d936",
+  "manifest_sha256": "63ad9f152d4bacb44f021428193efad46aaf0d13380bb5691ebca1d935f2b5bf",
+  "checks_receipt": "docs/competence/RELIEF1_CHECKS.json",
+  "build_provenance": "docs/competence/RELIEF1_BUILD_PROVENANCE.json",
+  "build_provenance_sha256": "71ae689e5982fe2573cc3639ac13c34476e1b34aeb34b93099b5f38ef19b468e",
+  "toolchain": {
+    "dotnet_sdk": "8.0.428",
+    "csharp_compiler": "4.11.0-3.25569.22 (3fb752d4)"
+  },
+  "scope": "coverage5 plus relief spells (docs/RELIEF_SPELLS.md): dispels priced by what they take off on enemies and allies (the party's own buffs a loss), removals by what they remove, suppressing buffs (Remove Fear, Unbreakable Heart) by what they switch off; Unbreakable Heart can free a dominated ally.",
+  "gameplay_status": "unplayed",
+  "release": false,
+  "archive_contents": [
+    "CompanionAI_Pathfinder.dll",
+    "Info.json"
+  ],
+  "identity_note": "Checked DLL is frozen across later documentation commits. No cross-machine byte identity or measured Unity speed-up claimed."
+}
