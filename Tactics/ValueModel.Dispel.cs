@@ -48,5 +48,24 @@ namespace CompanionAI_Pathfinder.Tactics
             }
             return total;
         }
+
+        /// <summary>
+        /// ★ coverage4 (freeing an ally under an enemy's control): the rounds an effect still holds within a horizon of
+        /// <paramref name="rounds"/> when its bearer re-saves each round and a pass ends it (Dominate's NewRound Will save,
+        /// ContextActionRemoveSelf on success): round k counts while every save before it has failed, (1 - p)^k, for the share
+        /// of that round inside the horizon. With no re-save (p = 0) it is the horizon itself.
+        /// </summary>
+        public static float HeldRounds(float rounds, float passChance)
+        {
+            if (!(rounds > 0f)) return 0f;
+            float stay = 1f - Clamp(passChance, 0f, 1f);
+            float held = 0f, still = 1f;
+            for (int k = 0; k < rounds && still > 0f; k++)
+            {
+                held += still * Math.Min(1f, rounds - k);
+                still *= stay;
+            }
+            return held;
+        }
     }
 }

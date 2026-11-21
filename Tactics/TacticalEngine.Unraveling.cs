@@ -74,9 +74,25 @@ namespace CompanionAI_Pathfinder.Tactics
         /// <paramref name="source"/> (see the file header). 0 for an ally target or nothing to take.
         /// </summary>
         private static float DispelValue(TacticalContext ctx, ContextActionDispelMagic dispel, MechanicsContext source,
-                                         UnitEntityData target, float horizon)
+                                         UnitEntityData target, float horizon) =>
+            DispelValue(ctx, dispel, source, target, horizon, false, out _);
+
+        /// <summary>
+        /// ★ coverage4: the same, and <paramref name="freeChance"/>, the chance it takes off the effect that holds an ally under an
+        /// enemy's control (TacticalEngine.TurnedAllies.cs). On such an ally that effect is worth what freeing it gives back
+        /// (FreedWorth), and a buff the party gave it is a loss. <paramref name="allowAutomatic"/> also reads a dispel with no
+        /// check (it removes what it takes).
+        /// </summary>
+        private static float DispelValue(TacticalContext ctx, ContextActionDispelMagic dispel, MechanicsContext source,
+                                         UnitEntityData target, float horizon, bool allowAutomatic, out float freeChance)
         {
-            if (target == null || !ctx.Unit.IsEnemy(target) || DispelUnsupported(dispel) != null) return 0f;
+            freeChance = 0f;
+            if (target == null || !ctx.Unit.IsEnemy(target)) return 0f;
+            bool automatic = allowAutomatic && IsAutomaticDispel(dispel) && !(dispel.OnSuccess?.Actions?.Length > 0) &&
+                             !(dispel.OnFail?.Actions?.Length > 0) && DispelStopField != null && DispelCountField != null &&
+                             DispelMaxLevelField != null && DispelUseMaxCasterField != null && DispelMaxCasterField != null;
+            if (!automatic && DispelUnsupported(dispel) != null) return 0f;
+            bool turned = ctx.TurnedAllies.Contains(target);
             int casterLevel = source?.Params?.CasterLevel ?? Level(ctx.Unit);
             if ((bool)DispelUseMaxCasterField.GetValue(dispel))
                 casterLevel = Math.Min(casterLevel, ((ContextValue)DispelMaxCasterField.GetValue(dispel)).Calculate(source));
@@ -89,6 +105,7 @@ namespace CompanionAI_Pathfinder.Tactics
                 ? Math.Max(1, ((ContextValue)DispelCountField.GetValue(dispel)).Calculate(source)) : 0;
 
             var tried = new List<KeyValuePair<int, KeyValuePair<float, float>>>();
+            var frees = turned ? new List<KeyValuePair<int, KeyValuePair<float, float>>>() : null;
             foreach (var buff in target.Buffs.Enumerable)
             {
                 var context = buff?.Context;
@@ -97,20 +114,33 @@ namespace CompanionAI_Pathfinder.Tactics
                 var giver = context.MaybeCaster;
                 if (dispel.OnlyTargetEnemyBuffs && (giver == null || !giver.IsEnemy(ctx.Unit))) continue;
                 int dc = check == RuleDispelMagic.CheckType.DC ? context.Params.DC : 11 + context.Params.CasterLevel;
-                float chance = ValueModel.DispelChance(dc - casterLevel - bonus);
+                float chance = automatic ? 1f : ValueModel.DispelChance(dc - casterLevel - bonus);
                 float rounds = buff.IsPermanent ? horizon : Math.Min(horizon, (float)buff.TimeLeft.TotalSeconds / 6f);
                 // ★ suppressed buffs (slice C2): only the rounds it acts after its suppressor ends (an enemy's Haste under
                 // its own polymorph, a curse under an Ameliorating hex) are worth taking off.
                 if (buff.IsSuppressed) rounds = SuppressionRules.ActiveRounds(rounds, BuffSuppression.SuppressedSeconds(buff) / 6f, horizon);
                 if (!(rounds > 0f)) continue;
-                bool ours = giver != null && giver.IsEnemy(target);
-                float share = ours ? -OwnDebuffShare(ctx, buff, target) : EnemyBuffShare(buff, target);
+                float worth;
+                bool hold = turned && HoldsUnderControl(buff);
+                if (hold) worth = FreedWorth(ctx, target, buff);
+                // ★ coverage4: a buff the party gave the ally it frees is the ally's own, lost once it is back.
+                else if (turned && OfPartySide(giver)) worth = -EnemyBuffShare(buff, target) * ValueModel.PerRound(Level(target)) * rounds;
+                else
+                {
+                    bool ours = giver != null && giver.IsEnemy(target);
+                    float share = ours ? -OwnDebuffShare(ctx, buff, target) : EnemyBuffShare(buff, target);
+                    worth = CombatMath.ControlWorth(target) * share * rounds;
+                }
                 tried.Add(new KeyValuePair<int, KeyValuePair<float, float>>(context.Params.CasterLevel,
-                    new KeyValuePair<float, float>(chance, CombatMath.ControlWorth(target) * share * rounds)));
+                    new KeyValuePair<float, float>(chance, worth)));
+                frees?.Add(new KeyValuePair<int, KeyValuePair<float, float>>(context.Params.CasterLevel,
+                    new KeyValuePair<float, float>(chance, hold ? 1f : 0f)));
             }
             if (tried.Count == 0) return 0f;
-            // The game sorts by caster level, highest first (List.Sort: equal levels in no set order).
+            // The game sorts by caster level, highest first (List.Sort: equal levels in no set order; OrderBy is stable).
             var ordered = tried.OrderByDescending(t => t.Key).Select(t => t.Value).ToList();
+            if (frees != null)
+                freeChance = Math.Min(1f, ValueModel.ExpectedDispelWorth(frees.OrderByDescending(t => t.Key).Select(t => t.Value).ToList(), stopAfter));
             return ValueModel.ExpectedDispelWorth(ordered, stopAfter);
         }
 

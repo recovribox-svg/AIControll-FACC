@@ -4905,6 +4905,17 @@ namespace CompanionAI_Pathfinder.Tactics
                 }
             }
 
+            // --- ★ coverage4 (author request): freeing an ally under an enemy's control (a dispel, a removal of the hold) ---
+            if (ctx.TurnedAllies.Count > 0 && (profile.DispelActions.Count > 0 || profile.RemovesAnything))
+            {
+                float freedValue = FreeingValue(ctx, ability, profile, target, affectedEnemies, out string freedNote);
+                if (freedValue > 0f)
+                {
+                    value += freedValue;
+                    reasons.Add(freedNote);
+                }
+            }
+
             // --- lengthening the caster's active effects (★ v0.3.19 class audit B2: Witch Cackle / Chant) ---
             if (profile.Extensions.Count > 0)
             {

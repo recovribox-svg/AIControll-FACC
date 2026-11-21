@@ -129,8 +129,10 @@ namespace CompanionAI_Pathfinder.Tactics
                 deal =>
                 {
                     var harm = new CombatMath.Affliction();
-                    float mean = ValueModel.PeriodicDiceMean(CombatMath.FusedDiceCount(ability, deal.Value.DiceCountValue.Value),
-                        deal.Value.DiceType.Sides(), deal.Value.BonusValue.Value, maximize, empower);
+                    // ★ coverage4 (C6a): a ranked number from the buff's own caster-level config (CombatMath.PeriodicRank).
+                    float mean = ValueModel.PeriodicDiceMean(
+                        CombatMath.FusedDiceCount(ability, CombatMath.PeriodicRank(ability, buff, recipient, deal.Value.DiceCountValue)),
+                        deal.Value.DiceType.Sides(), CombatMath.PeriodicRank(ability, buff, recipient, deal.Value.BonusValue), maximize, empower);
                     harm.HitPoints = CombatMath.AfterTargetReduction(recipient, deal, mean, ability);
                     return harm;
                 },
