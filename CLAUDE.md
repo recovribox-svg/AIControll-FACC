@@ -8,7 +8,154 @@ Read [CONTRIBUTING.md](CONTRIBUTING.md) for shared branch ownership, Codex pull 
 Codex works on task branches and targets pull requests at `claude/dreamy-pasteur-b9h3rn`; Claude reviews and integrates them there.
 Keep `main` for author-authorized releases. Read [AGENTS.md](AGENTS.md) when coordinating agent work.
 
-**Current handover (17 November 2026, Claude): PRs #81–#91 reviewed and merged into development (`2f77d02`) at the
+**Current handover (21 November 2026, Claude): relief spells on `claude/relief-spells`, stacked on
+`claude/coverage4-followups` (draft PR #97). Not played, nothing merged.** Read [docs/RELIEF_SPELLS.md](docs/RELIEF_SPELLS.md),
+`docs/TACTICAL_AI.md` §206 and the [receipt](docs/competence/RELIEF1_CHECKS.json).
+
+- **Report (0.3.52 user):** "none of the magic-using characters ever cast Dispel Magic".
+  - Cause: every dispel was worth a flat 2-point fallback; Break Enchantment counted only its caster.
+  - Remove Fear and Unbreakable Heart were valued only by their save bonus.
+- **Change (both modes):**
+  - Ending an effect on an ally (confusion, fear, a hold, a penalty) is worth its share of the ally's output for the
+    rounds it would still act.
+  - Dispels are priced in the native order on every unit they reach; the party's own buffs a dispel would take first
+    are a loss.
+  - Suppressing buffs (Remove Fear, Unbreakable Heart) are worth what they switch off while they last. Unbreakable Heart
+    can free a dominated ally.
+- **Checks** on `746d7a7`:
+  - Release 0 warnings; 1,066 unit + 27/21/3 script tests.
+  - ProfileAudit new `RELIEF` 16, every other line unchanged.
+  - Native harnesses 98/14/10; 0 references added.
+- **Package:** `test-builds/AI-Control-FACC-v0.3.60-dev-relief1-746d7a7-UMM-test.zip`, MVID `5537a531`. It contains
+  coverage5. Manifest 0.3.60; no `main`, tag or release.
+- **Next:** the author plays relief1 (replay in the page).
+
+**Earlier handover (21 November 2026, Claude): the author's coverage4 follow-ups on `claude/coverage4-followups`, stacked on
+`claude/coverage3-review` (draft PR #96). Not played, nothing merged.** Read [docs/COVERAGE4_FOLLOWUPS.md](docs/COVERAGE4_FOLLOWUPS.md),
+`docs/TACTICAL_AI.md` §205 and the [receipt](docs/competence/COVERAGE5_CHECKS.json).
+
+- **Changes:**
+  1. Both modes: a dispel or removal that frees an ally under an enemy's control is valued: the enemy's lost fighter plus
+     the ally back, for the rounds the hold would last (its round re-save). Dispels follow the game's order, and a party
+     buff dispelled first is a loss.
+  2. Movement (author-approved): with no full exit from several swarms, a spot that leaves one of them is tried
+     (Seelah, fight 10).
+  3. Fusion C6a: damage over time with a caster-level rank on the buff (Caustic Eruption) is a carrier. Offered 10,077,
+     joint 6,367 of 15,494, none lost.
+- **Checks** on `2b9d8ed`:
+  - Release 0 warnings; 1,066 unit + 27/21/3 script tests.
+  - ProfileAudit: new `FREEING` 12, `FUSION-DOT` 47, `SWARM-ESCAPE` 32; every other line unchanged.
+  - Native harnesses 98/14/10; 0 references added.
+- **Package:** `test-builds/AI-Control-FACC-v0.3.60-dev-coverage5-2b9d8ed-UMM-test.zip`, MVID `3d6cdb2b`. It contains
+  coverage4. Manifest 0.3.60; no `main`, tag or release.
+- **Next:** the author plays coverage5 (replay in the page). The rest of C6 needs a reader per spell (listed in the
+  programme page).
+
+**Earlier handover (21 November 2026, Claude): coverage3 playtest reviewed; fixes and Fusion C3 on
+`claude/coverage3-review`, stacked on `claude/coverage2-review` (draft PR #95). Not played, nothing merged.** Read
+[docs/COVERAGE3_REVIEW.md](docs/COVERAGE3_REVIEW.md), `docs/TACTICAL_AI.md` §204 and the
+[receipt](docs/competence/COVERAGE4_CHECKS.json).
+
+- **Log:** coverage3 MVID `60673199`; 15 fights (6 TB, 9 RT); 833 commands; no AI Control exception. The coverage2 fixes
+  hold: arcan's bursts hurt no ally, and no touch heal chased its recipient.
+- **Fixes:**
+  1. Both modes: an ally under an enemy's control (Dominate; native `FactionOriginal`) is stopped, not killed. No weapon
+     attack, walk, leap or Coup de Grace is aimed at it, and its damage is friendly fire. Seelah died to four party
+     members in fight 15.
+  2. Both modes, Fusion C3 and the author's policy: a cast that could kill an ally for good (Disintegrate's dust, a kill)
+     is not used at 1 % risk or more, whatever the settings. Below that it costs 100× the ally's worth; summons are
+     exempt. The risk is exact, from the dice. The dust gate is a stable fusion guard: offered 9,999, joint 5,995, none
+     lost.
+  3. Real time: burst forecasts, re-checks and disruption timing wait for the native start gate (action cooldown,
+     surprised initiative). The caster's own cast walk no longer cancels its burst.
+  4. Real time: an ally ordered to attack the target in melee that reaches it first counts toward a predicted flank.
+- **Found, not changed:** freeing a dominated ally is not valued, and a nauseated unit in two swarms found no exit (both
+  done in coverage5); an 8 HP splash; performance as before.
+- **Checks** on `361776c`:
+  - Release 0 warnings; 1,065 unit + 27/21/3 script tests.
+  - ProfileAudit: new `PERMADEATH` 24, `BURST-AIM` 78, `EVIDENCE` 15, `SNEAK` 36, `FUSION-OUTCOME` 32; every other line
+    unchanged.
+  - Native harnesses 98/14/10; 7 references added, all resolved.
+- **Package:** `test-builds/AI-Control-FACC-v0.3.60-dev-coverage4-361776c-UMM-test.zip`, MVID `248aa48c`. Manifest 0.3.60;
+  no `main`, tag or release.
+- **Next:** the author plays coverage4 (replay in the review page).
+
+**Earlier handover (20 November 2026, Claude): coverage2 playtest reviewed; fixes on `claude/coverage2-review`, stacked on
+the three coverage2 branches. Not played, nothing merged.** Read [docs/COVERAGE2_REVIEW.md](docs/COVERAGE2_REVIEW.md),
+`docs/TACTICAL_AI.md` §203 and the [receipt](docs/competence/COVERAGE3_CHECKS.json).
+
+- **Log:** coverage2 MVID `5cfd7765`; 14 fights (5 TB, 9 RT); 649 commands, each with an end row; no AI Control exception.
+  C2 and the damage-over-time pricing work as intended.
+- **Fixes (real time):**
+  1. A burst whose cast takes time gets ground aim, the pre-cast re-check and the shared landing spot
+     (`BurstRules.LandsLater`). Before, arcan's Incendiary Runes / Frigid Touch caught allies in 4 of 5 casts (76 HP).
+  2. A touch walk that ended in reach casts from there, within one step, for 1.5 s (`TouchFromHere`). This ends the heal
+     chase loop.
+- **R items:**
+  - R1 and R3 are not built (evidence).
+  - R4 is calibrated: first melee swing 0.7 s, bow shots 1.8 s apart, at most 6 s / N.
+  - Flank misses are now logged with their engagers.
+  - A stray `[Timing]` line at fight start is gone.
+- **Found, not changed:** a turn-based stall against a helpless enemy on a ledge; Tripper's knock-outs; performance as
+  before.
+- **Checks** on `1ed420b`:
+  - Release 0 warnings; 1,059 unit + 27/21/3 script tests.
+  - ProfileAudit: `BURST-AIM` 73, `EVIDENCE` 14, `CAST-DISRUPT` 50, every other line unchanged.
+  - Native harnesses 98/14/10; 0 references added.
+- **Package:** `test-builds/AI-Control-FACC-v0.3.60-dev-coverage3-1ed420b-UMM-test.zip`, MVID `60673199`. Manifest 0.3.60;
+  no `main`, tag or release.
+- **Next:**
+  1. The author plays coverage3 (replay in the review page).
+  2. C3 needs the author's policy on a permanent ally death (done in coverage4).
+
+**Earlier handover (20 November 2026, Claude): coverage2 - R1–R7 decided, R2/R5, evidence logging, Fusion C2/C5 and
+damage over time on ordinary spells. Three stacked branches, not played, nothing merged.** Read
+[docs/COVERAGE2_BUILD.md](docs/COVERAGE2_BUILD.md), [docs/R_ITEMS_PLAN.md](docs/R_ITEMS_PLAN.md),
+[docs/PERIODIC_DAMAGE.md](docs/PERIODIC_DAMAGE.md), `docs/TACTICAL_AI.md` §202 and the
+[receipt](docs/competence/COVERAGE2_CHECKS.json). The death-trigger proposal is set aside (author).
+
+- **Branches:** `claude/fusion-coverage-programme` (C1, draft PR #92) → `claude/review-r-items` (R2, R5, evidence) →
+  `claude/fusion-coverage-c2-c5` (C2, C5, ordinary damage over time).
+- **R items:**
+  - R2 and R5 are done.
+  - R1, R3 and R4 wait for the evidence lines `[Flank]`, `[Burst]` and `[Timing] fight summary`
+    (`TimelineObserver`, read only).
+  - R6 and R7 are not worth doing yet.
+- **Coverage:** offered 9,655 and joint 5,651 of 15,494, none lost. All eight fusions on arcan's bar are offered with the
+  joint value.
+- **Checks** on `72acfd1`:
+  - Release 0 warnings; 1,052 unit + 27/21/3 script tests.
+  - ProfileAudit: `BURST-AIM` 67, `EVIDENCE` 13, `FUSION-RECAST` 12, `FUSION-DOT` 42, `PERIODIC` 8.
+  - Native harnesses 98/14/10; 4 references added.
+- **Package:** `test-builds/AI-Control-FACC-v0.3.60-dev-coverage2-72acfd1-UMM-test.zip`, MVID `5cfd7765`. Manifest
+  0.3.60; no `main`, tag or release.
+- **Next:**
+  1. The author plays coverage2 and sends logs with the summary lines.
+  2. Calibrate R4 and decide R1 and R3 from them.
+  3. C3 needs the author's policy on a permanent ally death.
+
+**Earlier handover (17 November 2026, Claude): Magic Fusion coverage programme and its first slice C1 on
+`claude/fusion-coverage-programme` (from development `0019856`), draft PR into development. Not played.** Read
+[docs/FUSION_COVERAGE_PROGRAMME.md](docs/FUSION_COVERAGE_PROGRAMME.md), [docs/FUSION_MAIN_TARGET_DOT.md](docs/FUSION_MAIN_TARGET_DOT.md),
+`docs/TACTICAL_AI.md` §201 and the [receipt](docs/competence/FUSION_C1_CHECKS.json). Both modes, valuation only.
+- **Programme:** coverage = offered + joint value + every effect priced. 15,494 configurations: 8,709 offered, 4,521 joint
+  before C1. arcan's bar: 7 of 8 fully offered; Explosive Runes / Hideous Laughter withheld (C2). Slices C1–C11 are ordered
+  by the author's bar, then gain × use × risk.
+- **C1:** "is the main target" is a stable fusion guard (Molten Orb). A buff whose whole effect is HP damage each round
+  (`CombatMath.IsPeriodicDamageCarrier`: Molten Orb's and Incendiary Runes' burning, Acid Arrow's acid) is priced in the
+  joint value by save outcome (`TryFusionPeriodicDamage`). The ticks also join the friendly-fire cost and the burst
+  re-check. The periodic reader accepts `IgnoreUnitModifiers` and `UseDCFromContextSavingThrow` (both exact for ticks).
+- **Coverage:** offered 9,209 and joint 5,039, none lost. Molten Orb 0 → 338; Acid Arrow 38 → 208.
+- **Checks** on `83ac4c1`:
+  - Release 0 warnings; 1,052 unit + 27/21/3 script tests.
+  - ProfileAudit `FUSION-DOT` 39 and `FUSION-OUTCOME` 33; every other line is unchanged.
+  - Native harnesses 98/14/10; 1 reference added, 1 removed.
+- **Package** `test-builds/AI-Control-FACC-v0.3.60-dev-fusiondot1-83ac4c1-UMM-test.zip`, MVID `add36407`. Manifest 0.3.60;
+  no `main`, tag or release.
+- **Next:** the author plays fusiondot1 (replay in the slice page); then C2 (Hideous Laughter's Best Jokes recast). Open
+  from before: the death-trigger proposal and REVIEW_86_89's R1–R7.
+
+**Earlier handover (17 November 2026, Claude): PRs #81–#91 reviewed and merged into development (`2f77d02`) at the
 author's request.** Read `docs/TACTICAL_AI.md` §200 and the [receipt](docs/competence/INTEGRATION_81_91_CHECKS.json).
 - Merged in stack order; development's tree equals the checked #91 head `a0311d1`. Codex's #90 and #91 were re-read
   against the supplied assembly, and no defect was found.

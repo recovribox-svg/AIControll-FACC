@@ -1,0 +1,75 @@
+{
+ "task": "coverage4 follow-ups at the author's request: free a dominated ally with a dispel, movement for current deficiencies (swarm exits), Fusion coverage work possible now (C6a) - docs/COVERAGE4_FOLLOWUPS.md",
+ "date": "2026-11-21",
+ "author": "Claude",
+ "branch": "claude/coverage4-followups @ 2b9d8ed, stacked on claude/coverage3-review @ 392b273 (draft PR #96)",
+ "development_base": "0019856805605c9b74e27ffbdfa6b8dd9c20b0f2",
+ "checked_source": "2b9d8ed97c7575749b6eb77224e65e578f1402ae",
+ "toolchain": {
+  "dotnet_sdk": "8.0.428",
+  "csharp_compiler": "4.11.0-3.25569.22 (3fb752d4)",
+  "provenance": "docs/competence/COVERAGE5_BUILD_PROVENANCE.json"
+ },
+ "release_build": "0 warnings, 0 errors (real game references)",
+ "unit_tests": "1,066 pass (1 new: the held-rounds rule for an effect its bearer re-saves against each round)",
+ "script_tests": {
+  "BlueprintInventory": 27,
+  "InvocationLedger": 21,
+  "ProfileAudit supplement": 3
+ },
+ "profileaudit": {
+  "exit": 0,
+  "new_or_changed_sections": {
+   "FREEING": "12 checks (new): native dispel order and filters, the faction switch stopping on removal; actual Dominate Person (a faction switch its bearer ends with a passed Will save each round) and Dispel Magic (read by the dispel order, does not skip the party's buffs); the held-rounds rule; compiled routes",
+   "FUSION-DOT": "47 checks (was 42): dice from the buff's own caster-level rank are a carrier, a stat-based or other-type rank is not, the actual Caustic Eruption acid is a carrier, ranks read in a buff context once per cast, buff and frame",
+   "SWARM-ESCAPE": "32 checks (was 29): the partial exit runs only after the full one, leaves one swarm by its own native circles, is struck by fewer, passes the area and walk tests, and makes no path query itself",
+   "BUFF-SUPPRESS": "35 checks (unchanged count): reads the full DispelValue overload",
+   "PERIODIC": "8 checks; its export line now lists Caustic Eruption among the ordinary carriers behind a save"
+  },
+  "other_lines": "unchanged against the coverage4 audit on the same inputs",
+  "fusion_coverage": {
+   "configurations": 15494,
+   "offered": {
+    "coverage4": 9999,
+    "coverage5": 10077,
+    "gained": 78,
+    "lost": 0
+   },
+   "joint_value": {
+    "coverage4": 5995,
+    "coverage5": 6367,
+    "gained": 372,
+    "lost": 0
+   },
+   "gained_from": "Caustic Eruption"
+  },
+  "summon_kit_detail": "byte-identical",
+  "report_sha256": "ed2a9dcaf9f80692dd152fb7fbcbdb7f6804c94d9d99c32a255a29fca94f74d0",
+  "coverage_sha256": "19653f98522097cdf1a00329f7830971eeadf62c6c1590c22ecf1b22a999af9d"
+ },
+ "native_harnesses": {
+  "ToggleCosts": 98,
+  "TomeBurn": 14,
+  "ToyBoxSpend": 10
+ },
+ "signatures": {
+  "relative_to": "coverage4 (361776c)",
+  "added": [],
+  "removed": [],
+  "count": 2057
+ },
+ "not_run": [
+  "Supplementary Magus 44 corpus: inputs not in this environment; no Magus code is touched",
+  "No new playtest logs: these changes are unplayed"
+ ],
+ "package": {
+  "zip": "test-builds/AI-Control-FACC-v0.3.60-dev-coverage5-2b9d8ed-UMM-test.zip",
+  "identity": "test-builds/AI-Control-FACC-v0.3.60-dev-coverage5-2b9d8ed-UMM-test.identity.json",
+  "sha256": "test-builds/AI-Control-FACC-v0.3.60-dev-coverage5-2b9d8ed-UMM-test.sha256",
+  "mvid": "3d6cdb2b-74b2-40dd-9e5c-4cae541b1d7f",
+  "zip_sha256": "7df06d08fa6c69d6f7ecff22aecd6e94c2af7e51ea1c4c21a463ceebb538026f",
+  "dll_sha256": "b103ac49b7d22ef79db6f1266cb21e89318a2d8bfb9f86b4a3cce0b69d0fbee0",
+  "manifest": "0.3.60 (unchanged)"
+ },
+ "gameplay": "unplayed; no main, tag or release"
+}

@@ -1,0 +1,55 @@
+{
+ "task": "relief spells (author request, 0.3.52 user report): dispels, removals and suppressions valued by what they end on hindered allies - docs/RELIEF_SPELLS.md",
+ "date": "2026-11-21",
+ "author": "Claude",
+ "branch": "claude/relief-spells @ 746d7a7, stacked on claude/coverage4-followups @ cc862b9 (draft PR #97)",
+ "development_base": "0019856805605c9b74e27ffbdfa6b8dd9c20b0f2",
+ "checked_source": "746d7a76521bfe99920b950d2e8d2ea2905b3bfd",
+ "toolchain": {
+  "dotnet_sdk": "8.0.428",
+  "csharp_compiler": "4.11.0-3.25569.22 (3fb752d4)",
+  "provenance": "docs/competence/RELIEF1_BUILD_PROVENANCE.json"
+ },
+ "release_build": "0 warnings, 0 errors (real game references)",
+ "unit_tests": "1,066 pass",
+ "script_tests": {
+  "BlueprintInventory": 27,
+  "InvocationLedger": 21,
+  "ProfileAudit supplement": 3
+ },
+ "profileaudit": {
+  "exit": 0,
+  "new_or_changed_sections": {
+   "RELIEF": "16 checks (new): no friendly protection in RuleDispelMagic; a new suppressor re-checks the buffs on its bearer by context descriptor and school; actual Remove Fear (Frightened, Shaken), Unbreakable Heart (Confusion, Compulsion, Frightened), Confusion (hard control), Break Enchantment (area of allies, Enchantment/Transmutation, read), Dispel Magic and Greater Dispel Magic (read); Bless and Haste not suppressors; compiled routes"
+  },
+  "other_lines": "unchanged against coverage5 on the same inputs",
+  "fusion_coverage": "byte-identical (10,077 offered, 6,367 joint of 15,494)",
+  "summon_kit_detail": "byte-identical",
+  "report_sha256": "bf6ee3ac72f0fbb3b0a14564040071d674407c25e02059cb0b58c9bde19fb2be",
+  "coverage_sha256": "19653f98522097cdf1a00329f7830971eeadf62c6c1590c22ecf1b22a999af9d"
+ },
+ "native_harnesses": {
+  "ToggleCosts": 98,
+  "TomeBurn": 14,
+  "ToyBoxSpend": 10
+ },
+ "signatures": {
+  "relative_to": "coverage5 (2b9d8ed)",
+  "added": [],
+  "removed": [],
+  "count": 2057
+ },
+ "not_found": "Calm Emotions and Rectify State: not in the stock 2.7.0x data, the supplied exports or the supplied mods (tabletop spells)",
+ "not_run": [
+  "Supplementary Magus 44 corpus: inputs not in this environment; no Magus code is touched",
+  "No playtest: unplayed"
+ ],
+ "package": {
+  "zip": "test-builds/AI-Control-FACC-v0.3.60-dev-relief1-746d7a7-UMM-test.zip",
+  "mvid": "5537a531-29f4-466c-9111-41c141e2ad26",
+  "zip_sha256": "20045f24db7ceb3b567524d6f4c5ff4ea4595177deeb06f943a8239e4612d936",
+  "dll_sha256": "dbc08f1b1bd8a3d2e7ed19aaf7864beede1f7d87ea5a9be8dffd616edd66f0f9",
+  "manifest": "0.3.60 (unchanged)"
+ },
+ "gameplay": "unplayed; no main, tag or release"
+}

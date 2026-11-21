@@ -980,7 +980,9 @@ namespace CompanionAI_Pathfinder.Tactics
                                     (apply.Buff.GetComponent<SpellDescriptorComponent>()?.Descriptor.Value ?? SpellDescriptor.None) & ~SpellDescriptor.Compulsion) : CCType.None,
                                 FixedControl = Fusion != null && (apply.Buff.GetComponent<ChangeFaction>() != null ||
                                     apply.Buff.GetComponent<SetFleeOrApproachLogic>() != null) ? ControlStrength.Hard : ControlStrength.None,
-                                PeriodicDamageOnly = Fusion != null && IsSimplePeriodicDamageCarrier(apply.Buff),
+                                // ★ Fusion coverage C1; ordinary spells too (damage over time on ordinary spells).
+                                PeriodicDamageOnly = CombatMath.IsPeriodicDamageCarrier(apply.Buff),
+                                UnderSave = m_SaveDepth > 0,
                                 Extendable = !apply.Permanent && !apply.SameDuration && !apply.UseDurationSeconds &&
                                              apply.DurationValue != null && apply.DurationValue.IsExtendable
                             });
@@ -1130,20 +1132,35 @@ namespace CompanionAI_Pathfinder.Tactics
                     // ★ v0.3.18 (review): full damage on a failed save and less on a passed one are one damage, not two
                     // added together: the failed branch is walked, and the passed one only stands for "half on a save".
                     case ContextActionConditionalSaved saved when HasDirectDamage(saved.Failed) && HasDirectDamage(saved.Succeed):
-                        if (Fusion != null)
+                        m_SaveDepth++;   // ★ periodic damage on ordinary spells: an application here depends on the save
+                        try
                         {
+                            if (Fusion != null)
+                            {
+                                Walk(saved.Failed?.Actions, visited, abilityDepth, subject, depth + 1, guards);
+                                Walk(saved.Succeed?.Actions, visited, abilityDepth, subject, depth + 1, guards);
+                                continue;
+                            }
                             Walk(saved.Failed?.Actions, visited, abilityDepth, subject, depth + 1, guards);
-                            Walk(saved.Succeed?.Actions, visited, abilityDepth, subject, depth + 1, guards);
-                            continue;
                         }
-                        Walk(saved.Failed?.Actions, visited, abilityDepth, subject, depth + 1, guards);
+                        finally { m_SaveDepth--; }
                         HalfOnSave = true;
                         continue;
                 }
 
+                // ★ Fusion coverage C2: a fused cast's recast on random enemies (InspectFusionPaths) is neither credited nor
+                // read as the target's: the fused profile skips it whole.
+                if (Fusion != null && action is ContextActionOnRandomTargetsAround recast && IsEnemyOnlyRecast(recast)) continue;
+
                 var childSubject = ChildSubject(subject, action);
-                foreach (var child in ChildActionLists(action))
-                    Walk(child, visited, abilityDepth, childSubject, depth + 1, guards);
+                bool savedBranches = action is ContextActionConditionalSaved;
+                if (savedBranches) m_SaveDepth++;   // ★ periodic damage on ordinary spells: its branches depend on the save
+                try
+                {
+                    foreach (var child in ChildActionLists(action))
+                        Walk(child, visited, abilityDepth, childSubject, depth + 1, guards);
+                }
+                finally { if (savedBranches) m_SaveDepth--; }
 
                 foreach (var referenced in ReferencedAbilities(action))
                     AnalyzeAbility(referenced, visited, abilityDepth + 1, childSubject);
@@ -1385,6 +1402,9 @@ namespace CompanionAI_Pathfinder.Tactics
             internal CCType DescriptorControl;
             internal ControlStrength FixedControl;
             internal bool PeriodicDamageOnly;
+            /// <summary>★ Applied in a branch of a saving throw (ContextActionConditionalSaved): an ordinary spell's damage over
+            /// time is priced only when it does not depend on the save; a fused cast reads its save path instead.</summary>
+            internal bool UnderSave;
             public BlueprintBuff Buff;
             public EffectGuard[] Guards;
             /// <summary>Expected rounds, or a negative value when the duration depends on values only the cast knows.</summary>
@@ -1395,6 +1415,8 @@ namespace CompanionAI_Pathfinder.Tactics
         }
 
         private readonly List<BuffApplication> m_BuffApplications = new List<BuffApplication>();
+        /// <summary>The profile walk's depth inside saving-throw branches (BuffApplication.UnderSave).</summary>
+        private int m_SaveDepth;
         internal IReadOnlyList<BuffApplication> BuffApplications => m_BuffApplications;
         private readonly Dictionary<BlueprintBuff, ContextActionApplyBuff> m_Applications = new Dictionary<BlueprintBuff, ContextActionApplyBuff>();
 

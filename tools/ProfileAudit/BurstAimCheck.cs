@@ -42,34 +42,35 @@ namespace ProfileAudit
             body.Any(m => m.DeclaringType == type && m.Name == name);
 
         /// <summary>
-        /// The production overflow rule on a full list: with only casts that have not gone off it makes no room; with one
-        /// burst that has gone off among them, that one goes. The list is restored empty.
+        /// ★ R2 (docs/R_ITEMS_PLAN.md): the production capacity rule on a full list. With every re-check live, a new burst is
+        /// not re-checked, and nothing is dropped: a burst that has gone off keeps its turn-based landing wait. The list is
+        /// restored empty.
         /// </summary>
-        private static bool MakeRoomKeepsLiveWatches()
+        private static bool CapKeepsLandings()
         {
             var watch = typeof(BurstWatch);
             var entries = (System.Collections.IList)watch.GetField("Entries", Hidden).GetValue(null);
             var entryType = watch.GetNestedType("Entry", BindingFlags.NonPublic);
-            var max = (int)watch.GetField("MaxEntries", Hidden).GetValue(null);
-            var makeRoom = watch.GetMethod("MakeRoom", Hidden);
-            var landsAt = entryType.GetField("LandsAt");
-            object Entry(double at)
+            int max = (int)watch.GetField("MaxRechecked", Hidden).GetValue(null);
+            var rechecked = watch.GetMethod("Rechecked", Hidden);
+            object Entry(double at, bool recheck, UnitEntityData unit)
             {
                 var e = Activator.CreateInstance(entryType, true);
-                landsAt.SetValue(e, at);
+                entryType.GetField("LandsAt").SetValue(e, at);
+                entryType.GetField("Recheck").SetValue(e, recheck);
+                entryType.GetField("Unit").SetValue(e, unit);
                 return e;
             }
+            var caster = (UnitEntityData)RuntimeHelpers.GetUninitializedObject(typeof(UnitEntityData));
             try
             {
                 entries.Clear();
-                for (int i = 0; i < max; i++) entries.Add(Entry(double.NaN));
-                bool live = !(bool)makeRoom.Invoke(null, null) && entries.Count == max;
-                entries[max / 2] = Entry(20d);
-                entries[max - 1] = Entry(10d);
-                bool room = (bool)makeRoom.Invoke(null, null) && entries.Count == max - 1 &&
-                            entries.Cast<object>().Count(e => !double.IsNaN((double)landsAt.GetValue(e))) == 1 &&
-                            entries.Cast<object>().Any(e => (double)landsAt.GetValue(e) == 20d);
-                return live && room;
+                for (int i = 0; i < max; i++) entries.Add(Entry(double.NaN, true, null));
+                entries.Add(Entry(10d, false, caster));   // gone off, lands at 10 s (the offline clock reads 0)
+                bool full = (int)rechecked.Invoke(null, null) == max;
+                bool waits = (bool)watch.GetMethod("LandingPendingFor", Hidden).Invoke(null, new object[] { caster, 0d }) &&
+                             entries.Count == max + 1;
+                return full && waits;
             }
             finally { BurstWatch.Clear(); }
         }
@@ -106,9 +107,12 @@ namespace ProfileAudit
                 // --- A1 classification on the real exports ---
                 var all = loaded.OfType<BlueprintAbility>().ToList();
                 BlueprintAbility Spell(string name) => all.FirstOrDefault(b => b.name == name);
-                var groundAim = typeof(TacticalEngine).GetMethod("GroundAimBurst", Hidden) ??
+                // ★ coverage2 review: the overload that takes the mode (real time: a cast time is a lag too).
+                var groundAim = typeof(TacticalEngine).GetMethod("GroundAimBurst", Hidden, null,
+                                    new[] { typeof(AbilityData), typeof(AbilityProfile), typeof(bool) }, null) ??
                                 throw new MissingMethodException(typeof(TacticalEngine).FullName, "GroundAimBurst");
-                bool Ground(AbilityData a) => (bool)groundAim.Invoke(null, new object[] { a, AbilityProfile.Get(a) });
+                bool Ground(AbilityData a, bool realTime = false) =>
+                    (bool)groundAim.Invoke(null, new object[] { a, AbilityProfile.Get(a), realTime });
                 AbilityData Data(BlueprintAbility b) => CasterPolicyCheck.Data(b);
 
                 var poolRecipients = typeof(TacticalEngine).GetMethod("UseCurrentPoolRecipients", Hidden);
@@ -131,7 +135,19 @@ namespace ProfileAudit
                 Check(eye == null || !Ground(Data(eye)), "Eye of the Sun (enemy-only selector) keeps unit aim");
                 var sleep = Spell("Sleep");
                 Check(sleep != null && !AbilityProfile.Get(sleep).HasDeliveryLag && !Ground(Data(sleep)),
-                      "ordinary Sleep (no delivery lag) keeps unit aim");
+                      "ordinary Sleep (no delivery lag) keeps unit aim in turn-based combat");
+                // ★ coverage2 review (finding 1): real time, the 2 s cast is a lag too - the victims are picked around the
+                // anchor when the cast goes off.
+                var incendiary = Spell("IncendiaryRunes");
+                var incendiaryProfile = incendiary != null ? AbilityProfile.Get(incendiary) : null;
+                Check(incendiaryProfile != null && incendiaryProfile.SelectsAround && !incendiaryProfile.HasDeliveryLag &&
+                      incendiaryProfile.AoETargets == TargetType.Any && incendiary.CanTargetPoint,
+                      "Incendiary Runes: around-selector (Any), no delay or flight, can target a point");
+                Check(incendiary != null && !Ground(Data(incendiary)) && Ground(Data(incendiary), true),
+                      "Incendiary Runes keeps unit aim in turn-based combat and gets ground aim in real time (2 s cast)");
+                Check(runes != null && Ground(Data(runes), true), "Explosive Runes gets ground aim in real time too");
+                Check(slumber == null || !Ground(Data(slumber), true),
+                      "Deep Slumber (enemy-only selector) keeps unit aim in real time too");
                 if (runes != null)
                 {
                     var selective = Data(runes);
@@ -159,9 +175,21 @@ namespace ProfileAudit
                         var touch = Data(holder);
                         touch.MagicHackData = new MagicHackData { Spell1 = snowball, Spell2 = sleep, DeliverBlueprint = snowball,
                             SavingThrowType = Kingmaker.EntitySystem.Stats.SavingThrowType.Will, SpellSchool = SpellSchool.Enchantment, SpellLevel = 2 };
-                        Check(AbilityProfile.Get(touch).NeedsAttackRoll && !Ground(touch),
-                              "a fusion delivered by Snowball (an attack-roll projectile) keeps unit aim");
+                        Check(AbilityProfile.Get(touch).NeedsAttackRoll && !Ground(touch) && !Ground(touch, true),
+                              "a fusion delivered by Snowball (an attack-roll projectile) keeps unit aim in both modes");
                     }
+                    // ★ coverage2 review (finding 1): the fusion behind the real-time friendly hits.
+                    var incendiaryRunes = Spell("IncendiaryRunes");
+                    var frigid = Spell("FrigidTouchCast");
+                    if (incendiaryRunes != null && frigid != null)
+                    {
+                        var burning = Data(holder);
+                        burning.MagicHackData = new MagicHackData { Spell1 = incendiaryRunes, Spell2 = frigid, DeliverBlueprint = incendiaryRunes,
+                            SavingThrowType = Kingmaker.EntitySystem.Stats.SavingThrowType.Reflex, SpellSchool = SpellSchool.Abjuration, SpellLevel = 2 };
+                        Check(!Ground(burning) && Ground(burning, true),
+                              "the Incendiary Runes/Frigid Touch fusion (coverage2's real-time friendly hits) gets ground aim in real time only");
+                    }
+                    else Check(false, "Incendiary Runes and Frigid Touch are loaded");
                 }
                 else Check(false, "the fusion holder slot, Explosive Runes and Sleep are loaded");
 
@@ -184,8 +212,9 @@ namespace ProfileAudit
                     "the shared score path uses the independent-payload recipient policy");
 
                 // The whole export: which abilities qualify, and why projectile bursts may not resolve offline.
-                int delayed = 0, projectile = 0, unresolved = 0, enemyOnly = 0, grounded = 0;
+                int delayed = 0, projectile = 0, unresolved = 0, enemyOnly = 0, grounded = 0, castLag = 0;
                 var names = new List<string>();
+                var castLagNames = new List<string>();
                 foreach (var b in all)
                 {
                     var around = b.GetComponent<AbilityTargetsAround>();
@@ -193,7 +222,18 @@ namespace ProfileAudit
                     var flight = b.GetComponent<AbilityDeliverProjectile>();
                     bool delay = b.GetComponent<AbilityDeliverDelay>()?.DelaySeconds > 0f;
                     bool simple = flight != null && flight.Type == AbilityProjectileType.Simple;
-                    if (!delay && !simple) continue;
+                    if (!delay && !simple)
+                    {
+                        // ★ coverage2 review: real time only, its cast time is the lag.
+                        bool cg;
+                        try { cg = Ground(Data(b), true); } catch { cg = false; }
+                        if (cg)
+                        {
+                            castLag++;
+                            if (castLagNames.Count < 12) castLagNames.Add(b.name);
+                        }
+                        continue;
+                    }
                     if (delay) delayed++;
                     if (simple)
                     {
@@ -212,6 +252,9 @@ namespace ProfileAudit
                 lines.Add($"BURST-AIM exports: {delayed} around-bursts with a delivery delay, {projectile} with a simple projectile " +
                           $"({unresolved} whose projectile blueprint is not in these exports - the game loads it), {enemyOnly} enemy-only; " +
                           $"{grounded} get ground aim here: {string.Join(", ", names)}{(grounded > names.Count ? ", ..." : "")}");
+                lines.Add($"BURST-AIM exports (real time only, the cast is the lag): {castLag} around-bursts with neither delay nor " +
+                          $"flight get ground aim in real time: {string.Join(", ", castLagNames)}{(castLag > castLagNames.Count ? ", ..." : "")}");
+                Check(castLag >= 1, "the export classification finds the real-time cast-lag bursts");
                 Check(grounded >= 2 && delayed >= grounded - projectile, "the export classification finds the delayed bursts");
                 var fireball = Spell("Fireball");
                 var fireFlight = fireball?.GetComponent<AbilityDeliverProjectile>();
@@ -359,10 +402,62 @@ namespace ProfileAudit
                       Body(typeof(BurstWatch), "CanReadRosterUnit").Any(m => m.Name == "get_IsInGame") &&
                       !Body(typeof(BurstWatch), "CanReadRosterUnit").Any(SceneUnits),
                       "the re-check validates retained actors live without rescanning the scene");
+                // ★ R2: nothing is dropped to make room; only re-checks are capped, and the landing spot is shared first.
                 var track = Body(typeof(BurstWatch), "Track");
-                Check(Calls(track, typeof(BurstWatch), "MakeRoom") && !track.Any(m => m.Name == "RemoveAt"),
-                      "A-P1: Track makes room only through MakeRoom");
-                Check(MakeRoomKeepsLiveWatches(), "A-P1: a full watch list drops the burst landing first, never a cast that has not gone off");
+                Check(!track.Any(m => m.Name == "RemoveAt") && typeof(BurstWatch).GetMethod("MakeRoom", Hidden) == null &&
+                      Calls(track, typeof(BurstWatch), "Rechecked") &&
+                      (int)typeof(BurstWatch).GetField("MaxRechecked", Hidden).GetValue(null) == 64 &&
+                      (int)typeof(BurstWatch).GetField("MaxTracked", Hidden).GetValue(null) == 256,
+                      "R2: Track never drops an entry; it caps only the re-checks (64) and the bursts in flight (256)");
+                Check(Calls(track, typeof(CompanionAI_Pathfinder.Analysis.AoeDangerAnalyzer), "RegisterPendingBurst") &&
+                      Body(typeof(BurstWatch), "ShouldCancel").Any(m => m.Name == "Recheck"),
+                      "R2: the landing spot is registered for every real-time burst; the re-check skips one past the cap");
+                Check(CapKeepsLandings(), "R2: with every re-check live, a burst that has gone off keeps its turn-based landing wait");
+                Check(Body(typeof(BurstWatch), "Prune").Any(m => m.Name == "RemoveAll") &&
+                      Calls(Body(typeof(BurstWatch), "Prune"), typeof(BurstWatch), "ObserveLandings"),
+                      "R2: entries leave only when their cast ends unseen or their burst lands");
+                // ★ R5: a started attack that chases its target is read as a walk, for the burst forecast only.
+                Check(Body(typeof(UnitCommandController), "TickCommand").Any(m => m.Name == "get_CanMoveAfterStart") &&
+                      Body(typeof(UnitCommandController), "TickCommand").Any(m => m.Name == "TickApproaching") &&
+                      (bool)typeof(UnitAttack).GetProperty("CanMoveAfterStart").GetValue(RuntimeHelpers.GetUninitializedObject(typeof(UnitAttack))),
+                      "R5 native: a started attack keeps approaching its target (UnitCommandController.TickCommand, UnitAttack.CanMoveAfterStart)");
+                var pursuing = Body(engine, "PursuingAttack");
+                Check(Calls(Body(engine, "ReadRoute"), engine, "PursuingAttack") &&
+                      pursuing.Any(m => m.Name == "get_IsStarted") && pursuing.Any(m => m.Name == "get_CanMoveAfterStart") &&
+                      pursuing.Any(m => m.Name == "IsUnitCloseEnough") && pursuing.Any(m => m.Name == "get_CanMove"),
+                      "R5: the burst route reads a started attack that is not close enough and can move");
+                Check(Body(engine, "WalkingCommand").Any(m => m.Name == "get_IsStarted") &&
+                      !Calls(Body(engine, "WalkClaim"), engine, "PursuingAttack"),
+                      "R5: the shared walk claim of the spot rules is unchanged");
+                // ★ evidence for the next playtest (docs/R_ITEMS_PLAN.md).
+                Check(Calls(Body(typeof(BurstWatch), "ReportFight"), typeof(BurstWatch), "EvidenceSummary") &&
+                      Body(typeof(BurstWatch), "HandleUnitCommandDidAct").Any(m => m.Name == "PredictedActAt") &&
+                      Calls(Body(typeof(BurstWatch), "PendingLanding"), typeof(BurstWatch), "ObserveLandings") &&
+                      Calls(Body(typeof(BurstWatch), "PendingLanding"), typeof(BurstWatch), "LandingPendingFor") &&
+                      Body(typeof(BurstWatch), "Evaluate").Any(m => m.Name == "Unpriced"),
+                      "evidence: cast time, anchor at landing and unpriced walk-in allies reach the fight summary");
+                // ★ coverage3 review: a real-time cast starts only once its action may start (the native gate), and its walk runs
+                // meanwhile. The forecast, the re-check and the disruption timing wait for it.
+                var combat = typeof(Kingmaker.Controllers.Combat.UnitCombatState);
+                var gate = Body(typeof(UnitCommandController), "ShouldStartCommand");
+                Check(Calls(gate, combat, "get_CanActInCombat") && Calls(gate, combat, "HasCooldownForCommand"),
+                      "native: a real-time command starts once its unit may act and its action has no cooldown");
+                var canAct = Getter(combat, "CanActInCombat");
+                Check(Calls(canAct, combat, "get_IsWaitingInitiative") && Calls(canAct, combat, "get_NotSurprised"),
+                      "native: a unit waiting for its initiative acts only when it is not surprised");
+                var readyBody = Body(engine, "ReadySeconds");
+                Check(new[] { "get_IsWaitingInitiative", "get_NotSurprised", "get_Initiative", "get_StandardAction", "get_MoveAction",
+                              "get_SwiftAction", "get_RuntimeActionType" }.All(n => readyBody.Any(m => m.Name == n)) &&
+                      readyBody.Any(m => m.DeclaringType == typeof(CombatMemory) && m.Name == "get_IsRealTime"),
+                      "the wait reads the initiative and the action's own cooldown, in real time only");
+                Check(Calls(Body(engine, "PlanBurst"), engine, "ReadySeconds") &&
+                      Calls(Body(typeof(BurstWatch), "Evaluate"), engine, "ReadySeconds") &&
+                      Calls(Body(typeof(BurstWatch), "Evaluate"), typeof(DisruptRules), "OrderedStartSeconds") &&
+                      Calls(Body(engine, "AbilityDisruptBonus"), engine, "ReadySeconds") &&
+                      Calls(Body(engine, "WeaponDisruptValue"), engine, "ReadySeconds"),
+                      "the burst plan, its re-check and the disruption timing wait for the action before the cast or swing");
+                Check(DisruptRules.OrderedStartSeconds(1f, 3f) == 3f && DisruptRules.OrderedStartSeconds(2f, 0.5f) == 2f && DisruptRules.OrderedStartSeconds(-1f, -1f) == 0f,
+                      "pure rule: the walk and the wait run at the same time");
                 var combatEnd = engine.Assembly.GetTypes().SelectMany(t => t.GetMethods(Hidden)).FirstOrDefault(m => m.Name == "OnPartyCombatEnd");
                 Check(combatEnd != null && SaveBoostCheck.ReferencedMembers(combatEnd).Any(m => m.DeclaringType == typeof(BurstWatch) && m.Name == "ReportFight") &&
                       Calls(Body(typeof(BurstWatch), "Clear"), typeof(BurstWatch), "ReportFight"),

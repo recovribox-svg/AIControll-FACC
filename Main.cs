@@ -85,6 +85,7 @@ namespace CompanionAI_Pathfinder
                 // ★ v0.3.30 competence3: where the party saw enemies vanish into invisibility
                 Tactics.HiddenEnemies.Subscribe();
                 Tactics.BurstWatch.Subscribe();   // ★ burst aim
+                Tactics.TimelineObserver.Subscribe();   // ★ evidence for the next playtest (docs/R_ITEMS_PLAN.md)
 
                 // ★ v0.2.38: Pre-Buff Controller 초기화
                 PreBuffController.Initialize();
@@ -320,6 +321,7 @@ namespace CompanionAI_Pathfinder
                 Tactics.ProvokeObserver.Subscribe();
                 Tactics.HiddenEnemies.Subscribe();
                 Tactics.BurstWatch.Subscribe();   // ★ burst aim
+                Tactics.TimelineObserver.Subscribe();
             }
             else
             {
@@ -333,6 +335,7 @@ namespace CompanionAI_Pathfinder
                 Tactics.ProvokeObserver.Unsubscribe();
                 Tactics.HiddenEnemies.Unsubscribe();
                 Tactics.BurstWatch.Unsubscribe();   // ★ burst aim
+                Tactics.TimelineObserver.Unsubscribe();
                 MountPathHandler.Unsubscribe();
             }
 
