@@ -159,18 +159,25 @@ risk.
     enemy, weighted by `1 / eligible enemies`.
 - **Acceptance.** Explosive Runes / Hideous Laughter offered, with the joint value, for a caster without the fact.
 
-### C3. Disintegrate's "below this HP" marker (418) — **waits for the author**
+### C3. Disintegrate's "below this HP" marker (418) — **implemented**
 
-The marker (`DisintegrateBuff`) kills a creature below 0 HP at its next round tick. On an enemy that is only a kill that
-the damage already prices, except where regeneration would otherwise only knock it out. On an ally caught by a fused
-area, it turns a knockout into a permanent death. How heavily to weigh that is a policy decision for the author.
+**Done (21 November 2026, [COVERAGE3_REVIEW.md](COVERAGE3_REVIEW.md) finding 2):**
+- The dust gate is a stable fusion guard, applied only to a buff that kills on activation
+  (`StableFusionGuards(…, dust)`). On an enemy it is the kill that the joint value's damage already carries.
+- 344 configurations are newly offered, all with the joint value: offered 9,655 → 9,999, joint 5,651 → 5,995, none lost.
+  Of the 466 configurations this guard blocked in coverage3, the other 122 stay withheld for another payload: a
+  support or form carrier (100), a dispel dependency (12), a provider or kill (8), a dynamic removal (2). The heading's
+  418 is the earlier count.
+- **The author's policy on allies.** A cast that could kill an ally for good is not used at 1 % risk or more, whatever
+  the settings; below that it costs a hundred times the ally's worth. Summons are exempt. The risk is exact: the chance
+  the cast reaches the ally, times, per save outcome, the chance its damage takes the HP left below the gate
+  (`CombatMath.PermanentDeathRisk`, `PermanentDeathRules`). The burst re-check cancels for it past the cancel limit.
+- The same rule covers every direct kill and buff that kills on activation (39 in the exports), and allies under an
+  enemy's control.
 
-
-- **Native contract (verified).** After each damage action, `Conditional(ContextConditionCompareTargetHP Less)` applies a
-  permanent buff (`f7a6a7d2`, the dust). The guard reads the HP left after the damage.
-- **Proposal.** Treat it as a kill dependency, like the pooled "is unconscious" test of Fusion F7: the joint value
-  already carries the kill chance, and the marker adds no value of its own. The guard becomes stable only for an
-  application whose buff has no effect on a living unit. Check this on the dust buff's components.
+- **Native contract (verified).** After each damage action, `Conditional(ContextConditionCompareTargetHP Less 0)`
+  applies `DisintegrateBuff` (`f7a6a7d2`). The test reads the HP left after the damage. The buff kills on activation
+  (`ContextActionKill`, marked for death), not at a later round tick. Both outcomes of the Fortitude save carry the test.
 
 ### C4. Line delivery (1,016)
 

@@ -8,7 +8,36 @@ Read [CONTRIBUTING.md](CONTRIBUTING.md) for shared branch ownership, Codex pull 
 Codex works on task branches and targets pull requests at `claude/dreamy-pasteur-b9h3rn`; Claude reviews and integrates them there.
 Keep `main` for author-authorized releases. Read [AGENTS.md](AGENTS.md) when coordinating agent work.
 
-**Current handover (20 November 2026, Claude): coverage2 playtest reviewed; fixes on `claude/coverage2-review`, stacked on
+**Current handover (21 November 2026, Claude): coverage3 playtest reviewed; fixes and Fusion C3 on
+`claude/coverage3-review`, stacked on `claude/coverage2-review` (draft PR #95). Not played, nothing merged.** Read
+[docs/COVERAGE3_REVIEW.md](docs/COVERAGE3_REVIEW.md), `docs/TACTICAL_AI.md` §204 and the
+[receipt](docs/competence/COVERAGE4_CHECKS.json).
+
+- **Log:** coverage3 MVID `60673199`; 15 fights (6 TB, 9 RT); 833 commands; no AI Control exception. The coverage2 fixes
+  hold: arcan's bursts hurt no ally, and no touch heal chased its recipient.
+- **Fixes:**
+  1. Both modes: an ally under an enemy's control (Dominate; native `FactionOriginal`) is stopped, not killed. No weapon
+     attack, walk, leap or Coup de Grace is aimed at it, and its damage is friendly fire. Seelah died to four party
+     members in fight 15.
+  2. Both modes, Fusion C3 and the author's policy: a cast that could kill an ally for good (Disintegrate's dust, a kill)
+     is not used at 1 % risk or more, whatever the settings. Below that it costs 100× the ally's worth; summons are
+     exempt. The risk is exact, from the dice. The dust gate is a stable fusion guard: offered 9,999, joint 5,995, none
+     lost.
+  3. Real time: burst forecasts, re-checks and disruption timing wait for the native start gate (action cooldown,
+     surprised initiative). The caster's own cast walk no longer cancels its burst.
+  4. Real time: an ally ordered to attack the target in melee that reaches it first counts toward a predicted flank.
+- **Found, not changed:** freeing a dominated ally is not valued; a nauseated unit in two swarms found no exit; an
+  8 HP splash; performance as before.
+- **Checks** on `361776c`:
+  - Release 0 warnings; 1,065 unit + 27/21/3 script tests.
+  - ProfileAudit: new `PERMADEATH` 24, `BURST-AIM` 78, `EVIDENCE` 15, `SNEAK` 36, `FUSION-OUTCOME` 32; every other line
+    unchanged.
+  - Native harnesses 98/14/10; 7 references added, all resolved.
+- **Package:** `test-builds/AI-Control-FACC-v0.3.60-dev-coverage4-361776c-UMM-test.zip`, MVID `248aa48c`. Manifest 0.3.60;
+  no `main`, tag or release.
+- **Next:** the author plays coverage4 (replay in the review page).
+
+**Earlier handover (20 November 2026, Claude): coverage2 playtest reviewed; fixes on `claude/coverage2-review`, stacked on
 the three coverage2 branches. Not played, nothing merged.** Read [docs/COVERAGE2_REVIEW.md](docs/COVERAGE2_REVIEW.md),
 `docs/TACTICAL_AI.md` §203 and the [receipt](docs/competence/COVERAGE3_CHECKS.json).
 
@@ -34,7 +63,7 @@ the three coverage2 branches. Not played, nothing merged.** Read [docs/COVERAGE2
   no `main`, tag or release.
 - **Next:**
   1. The author plays coverage3 (replay in the review page).
-  2. C3 needs the author's policy on a permanent ally death.
+  2. C3 needs the author's policy on a permanent ally death (done in coverage4).
 
 **Earlier handover (20 November 2026, Claude): coverage2 - R1–R7 decided, R2/R5, evidence logging, Fusion C2/C5 and
 damage over time on ordinary spells. Three stacked branches, not played, nothing merged.** Read
