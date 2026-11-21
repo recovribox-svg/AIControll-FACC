@@ -261,21 +261,15 @@ namespace ProfileAudit
                 Check(rankCache.Count == 0, "a production same-frame reset actually clears the seeded periodic-rank memo");
                 var inertRecipient = (Kingmaker.EntitySystem.Entities.UnitEntityData)RuntimeHelpers.GetUninitializedObject(
                     typeof(Kingmaker.EntitySystem.Entities.UnitEntityData));
-                // Corrupt only a private occurrence clone to force the reader's error path; an uninitialized actor
-                // alone does not guarantee a failed read (an ordinary saved application may be skipped first).
-                var faultProfile = (AbilityProfile)typeof(object).GetMethod("MemberwiseClone", Hidden).Invoke(AbilityProfile.Get(arrow), null);
-                var originalOccurrence = ((IEnumerable)applications.GetValue(faultProfile)).Cast<object>()
-                    .First(o => (bool)o.GetType().GetField("PeriodicDamageOnly", Hidden).GetValue(o));
-                var faultOccurrence = typeof(object).GetMethod("MemberwiseClone", Hidden).Invoke(originalOccurrence, null);
-                faultOccurrence.GetType().GetField("Guards", Hidden).SetValue(faultOccurrence, null);
-                var faultList = (IList)Activator.CreateInstance(typeof(List<>).MakeGenericType(faultOccurrence.GetType()));
-                faultList.Add(faultOccurrence);
-                typeof(AbilityProfile).GetField("m_BuffApplications", Hidden).SetValue(faultProfile, faultList);
+                // Native UnitEntityData == null compares Descriptor, so seed a non-null inert descriptor to enter
+                // the reader. Its missing Buffs collection then forces the intended failure without any actor setup.
+                typeof(Kingmaker.EntitySystem.Entities.UnitEntityData).GetField("<Descriptor>k__BackingField", Hidden)
+                    .SetValue(inertRecipient, RuntimeHelpers.GetUninitializedObject(typeof(Kingmaker.UnitLogic.UnitDescriptor)));
                 var periodicExpected = engine.GetMethod("PeriodicExpected", Hidden);
                 float UnknownTick(bool safety) => (float)periodicExpected.Invoke(null, new object[] {
-                    arrow, faultProfile, inertRecipient, 3f, safety });
+                    arrow, AbilityProfile.Get(arrow), inertRecipient, 3f, safety });
                 Check(UnknownTick(false) == 0f && float.IsPositiveInfinity(UnknownTick(true)),
-                    "a failed periodic guard read omits benefit but retains unknown ally harm (isolated metadata fault injection)");
+                    "failed recipient reads omit periodic benefit but retain unknown ally harm (inert native-layout failure injection)");
                 var periodic = Body(engine, "TryPeriodicDamage");
                 Check(Calls(periodic, engine, "TryFusionApplicationRounds") && Calls(periodic, engine, "PeriodicCarrierDamage") &&
                       CallsNamed(periodic, "BuffImmune") && CallsNamed(periodic, "HasFact"),
