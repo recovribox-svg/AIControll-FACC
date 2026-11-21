@@ -10,6 +10,8 @@ using System.Collections.Generic;
 using Kingmaker.Blueprints.Items.Equipment;
 using Kingmaker.EntitySystem.Entities;
 using Kingmaker.UnitLogic.Abilities;
+using Kingmaker.UnitLogic.Commands;
+using Kingmaker.UnitLogic.Commands.Base;
 using Kingmaker.Utility;
 using Kingmaker.Visual.Animation.Kingmaker.Actions;
 using UnityEngine;
@@ -32,7 +34,9 @@ namespace CompanionAI_Pathfinder.Tactics
             /// <summary>The native approach distance to a point (AbilityData.GetApproachDistance).</summary>
             public float Range;
             public float Walk, Cast, Delay, Flight;
-            public float Landing => BurstRules.LandingSeconds(Walk, Cast, Delay, Flight);
+            /// <summary>★ coverage3 review: the native wait before the command may start (ReadySeconds); the walk runs meanwhile.</summary>
+            public float Wait;
+            public float Landing => BurstRules.LandingSeconds(DisruptRules.OrderedStartSeconds(Walk, Wait), Cast, Delay, Flight);
             /// <summary>Metres between where the anchor stood and the point.</summary>
             public float Lead;
             public bool RealTime;
@@ -57,7 +61,7 @@ namespace CompanionAI_Pathfinder.Tactics
                 string anchor = Anchor?.CharacterName ?? "?";
                 string where = Lead >= BurstRules.MinLeadMeters
                     ? $"{Lead:F1} m ahead of {anchor}{(OnPath ? " along its path" : "")}" : $"where {anchor} stands";
-                return $"ground {where}, lands in {Landing:F1} s (walk {Walk:F1} + cast {Cast:F1} + delay {Delay:F1} + flight {Flight:F1})";
+                return $"ground {where}, lands in {Landing:F1} s (walk {Walk:F1}{(Wait > Walk ? $", ready in {Wait:F1}" : "")} + cast {Cast:F1} + delay {Delay:F1} + flight {Flight:F1})";
             }
         }
 
@@ -65,11 +69,20 @@ namespace CompanionAI_Pathfinder.Tactics
         /// A1: a burst gets ground aim when it picks its victims around its anchor as it lands, can hurt allies (selector
         /// Any, not spared by Selective), lands after the cast goes off, makes no attack roll (a direct hit needs the unit)
         /// and the cast can target a point. An enemy-only burst is better aimed at the unit: it follows the target.
+        /// ★ coverage2 review (docs/COVERAGE2_REVIEW.md, finding 1): in real time the cast itself is a lag too. A burst
+        /// with no delay or flight still picks its victims around its anchor when the cast goes off, 2 s after it starts
+        /// (UnitUseAbility.m_CastTime, BurstRules.CastSeconds) and after any walk to cast. arcan's Incendiary Runes /
+        /// Frigid Touch fusion went off 2-6 s after its decisions and caught Orvath, Wenduag, Bandit and a summon in four of
+        /// five real-time casts (76 HP), while nothing re-checked it. Turn-based, nobody else moves during the cast.
         /// </summary>
-        internal static bool GroundAimBurst(AbilityData ability, AbilityProfile profile)
+        internal static bool GroundAimBurst(AbilityData ability, AbilityProfile profile) =>
+            GroundAimBurst(ability, profile, CombatMemory.IsRealTime);
+
+        internal static bool GroundAimBurst(AbilityData ability, AbilityProfile profile, bool realTime)
         {
             if (ability == null || profile == null) return false;
-            if (!profile.SelectsAround || !profile.IsAoE || !profile.HasDeliveryLag || profile.NeedsAttackRoll) return false;
+            if (!profile.SelectsAround || !profile.IsAoE || profile.NeedsAttackRoll) return false;
+            if (!BurstRules.LandsLater(profile.HasDeliveryLag, realTime, realTime ? CastSecondsOf(ability, true) : 0f)) return false;
             if (profile.AoETargets != Kingmaker.UnitLogic.Abilities.Components.TargetType.Any) return false;
             try { return ability.CanTargetPoint && !profile.SelectiveSparesAllies(ability); }
             catch { return false; }
@@ -85,6 +98,35 @@ namespace CompanionAI_Pathfinder.Tactics
                 return BurstRules.CastSeconds(realTime, ability.RequireFullRoundAction, ability.SourceItem != null, wand, immediate);
             }
             catch { return realTime ? BurstRules.StandardCastSeconds : 0f; }
+        }
+
+        /// <summary>
+        /// ★ coverage3 review (R2 evidence): real time, the seconds before <paramref name="unit"/>'s command for
+        /// <paramref name="ability"/> may start, by the native gate (UnitCommandController: CanActInCombat and
+        /// !HasCooldownForCommand) - the action's cooldown, and the initiative wait of a surprised unit. Its walk to the cast
+        /// runs meanwhile (OrderedStartSeconds). Arcan's bursts went off 0.8-4.2 s after the forecast without it, and one
+        /// anchor stood 4.7 m from its point when it landed. 0 turn-based.
+        /// </summary>
+        internal static float ReadySeconds(UnitEntityData unit, AbilityData ability)
+        {
+            try
+            {
+                if (!CombatMemory.IsRealTime || unit?.CombatState == null || !unit.IsInCombat) return 0f;
+                var state = unit.CombatState;
+                var cooldown = state.Cooldown;
+                float wait = 0f;
+                if (state.IsWaitingInitiative && !state.NotSurprised) wait = Math.Max(wait, cooldown.Initiative);
+                var type = ability?.RuntimeActionType ?? UnitCommand.CommandType.Standard;
+                if (type == UnitCommand.CommandType.Swift) wait = Math.Max(wait, cooldown.SwiftAction);
+                else if (type == UnitCommand.CommandType.Move) wait = Math.Max(wait, cooldown.MoveAction);
+                else if (type == UnitCommand.CommandType.Standard)
+                {
+                    wait = Math.Max(wait, cooldown.StandardAction);
+                    // A running move command holds a standard one back too (HasCooldownForCommand); its end is not known here.
+                }
+                return float.IsNaN(wait) || float.IsInfinity(wait) ? 0f : Math.Max(0f, wait);
+            }
+            catch { return 0f; }
         }
 
         /// <summary>The flight of the burst's projectile from the caster to <paramref name="point"/>; 0 without one.</summary>
@@ -110,6 +152,7 @@ namespace CompanionAI_Pathfinder.Tactics
                 Range = ability.GetApproachDistance(null),
                 Cast = CastSecondsOf(ability, realTime),
                 Delay = profile.DeliverDelaySeconds,
+                Wait = ReadySeconds(ctx.Unit, ability),
                 RealTime = realTime,
                 AvoidFriendlyFire = ctx.Settings?.AvoidFriendlyFire ?? true
             };
@@ -117,7 +160,7 @@ namespace CompanionAI_Pathfinder.Tactics
             var route = realTime ? RouteOf(ctx, target) : null;
             if (route != null)
             {
-                float seconds = plan.Cast + plan.Delay + FlightSecondsTo(profile, eye, target.Position);
+                float seconds = plan.Wait + plan.Cast + plan.Delay + FlightSecondsTo(profile, eye, target.Position);
                 route.At(seconds, out float x, out float y, out float z);   // the height along its walk too
                 var lead = new Vector3(x, y, z);
                 if (HorizontalDistance(target.Position, lead) >= BurstRules.MinLeadMeters && InRangeNow(ctx.Unit, lead, plan.Range, needLos))
@@ -165,6 +208,8 @@ namespace CompanionAI_Pathfinder.Tactics
 
         /// <summary>Walks read this session along the game's path, and walks that fell back to the straight line.</summary>
         internal static int RoutesOnPath, RoutesStraight;
+        /// <summary>★ R5: of those, walks of an attack that had already started and chases its target.</summary>
+        internal static int RoutesPursuing;
 
         /// <summary>
         /// ★ review follow-up A-R1 (author-approved): where <paramref name="unit"/>'s own walk takes it, as the game plans it.
@@ -173,12 +218,15 @@ namespace CompanionAI_Pathfinder.Tactics
         /// approach radius; future LOS can delay the true stop and is not proved here. Without a usable path of that
         /// walk (none yet, another walk's, longer than WalkRoute.MaxPoints) the straight walk to SpotRules.WalkEnd. Reads
         /// the agent's existing path only: no path search, raycast or world query. Null when the unit is not walking.
+        /// ★ R5 (docs/R_ITEMS_PLAN.md): a started attack that chases its target walks too (PursuingAttack). The burst
+        /// forecast is this method's only reader; WalkingCommand and the spot rules (WalkClaim) are unchanged.
         /// </summary>
         internal static WalkRoute ReadRoute(UnitEntityData unit, WalkRoute into)
         {
             try
             {
                 var command = WalkingCommand(unit);
+                if (command == null && (command = PursuingAttack(unit)) != null) RoutesPursuing++;
                 if (command == null) return null;
                 var route = into ?? new WalkRoute();
                 var from = unit.Position;
@@ -198,6 +246,32 @@ namespace CompanionAI_Pathfinder.Tactics
                 return route;
             }
             catch { return null; }
+        }
+
+        /// <summary>
+        /// ★ R5: an attack that has started and still chases its target. Native UnitCommandController.TickCommand keeps
+        /// calling TickApproaching for a started command when it can move after its start (UnitAttack.CanMoveAfterStart) and
+        /// the unit can move; TickApproaching walks it to the target while it is not close enough (IsUnitCloseEnough), by
+        /// the same MoveTo as before the start. A melee ally chasing the enemy a burst is aimed at walks where the burst lands.
+        /// </summary>
+        private static UnitCommand PursuingAttack(UnitEntityData unit)
+        {
+            try
+            {
+                var raw = unit?.Commands?.Raw;
+                if (raw == null || !unit.Descriptor.State.CanMove) return null;
+                int seen = 0;
+                foreach (var command in raw)
+                {
+                    if (++seen > 8) break;   // the game's command slots are few; no unbounded custom queue is scanned
+                    if (!(command is UnitAttack attack) || !attack.IsStarted || attack.IsFinished || attack.Executor != unit ||
+                        !attack.CanMoveAfterStart || attack.TargetUnit == null) continue;
+                    if (attack.IsUnitCloseEnough()) continue;   // in reach: it attacks where it stands
+                    return attack;
+                }
+            }
+            catch { }
+            return null;
         }
 
         /// <summary>

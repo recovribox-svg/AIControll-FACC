@@ -1,0 +1,39 @@
+{
+  "build_label": "coverage4",
+  "kind": "development-test",
+  "version": "0.3.60",
+  "source_branch": "claude/coverage3-review",
+  "source_commit": "361776c18cab9a048b8577569f9bb235d92d5154",
+  "stack": [
+    "claude/fusion-coverage-programme (C1, draft PR #92)",
+    "claude/review-r-items (R2, R5, evidence)",
+    "claude/fusion-coverage-c2-c5 (C2, C5, ordinary damage over time)",
+    "claude/coverage2-review (coverage2 log review fixes, draft PR #95)",
+    "claude/coverage3-review (coverage3 log review fixes, Fusion C3)"
+  ],
+  "development_base": "0019856805605c9b74e27ffbdfa6b8dd9c20b0f2",
+  "dll": {
+    "assembly": "CompanionAI_Pathfinder, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null",
+    "mvid": "248aa48c-27d9-45d0-86cd-303978c0fe79",
+    "sha256": "914d560ce1c4a35ccb97b7c3970ff92f76aa59ebadb6acd20a3392e0dcbc6a87",
+    "size": 1555968
+  },
+  "archive": "AI-Control-FACC-v0.3.60-dev-coverage4-361776c-UMM-test.zip",
+  "zip_sha256": "ef03a90ccb2cba87855da3e1c1b5d20ec8cc85391588ebd67e055b4056e3c6c0",
+  "manifest_sha256": "63ad9f152d4bacb44f021428193efad46aaf0d13380bb5691ebca1d935f2b5bf",
+  "checks_receipt": "docs/competence/COVERAGE4_CHECKS.json",
+  "build_provenance": "docs/competence/COVERAGE4_BUILD_PROVENANCE.json",
+  "build_provenance_sha256": "943cf35412b69796f7e763379a55f8b3fd87612eafa49f046c6429396982c0ca",
+  "toolchain": {
+    "dotnet_sdk": "8.0.428",
+    "csharp_compiler": "4.11.0-3.25569.22 (3fb752d4)"
+  },
+  "scope": "coverage3 plus the fixes from its playtest review (docs/COVERAGE3_REVIEW.md): allies under an enemy's control are stopped, not killed; Fusion C3 with the author's permanent-death policy; real-time burst forecasts wait for the native start gate; the caster's own cast walk is not a walk-in; arriving melee allies count toward a predicted flank.",
+  "gameplay_status": "unplayed",
+  "release": false,
+  "archive_contents": [
+    "CompanionAI_Pathfinder.dll",
+    "Info.json"
+  ],
+  "identity_note": "Checked DLL is frozen across later documentation commits. No cross-machine byte identity or measured Unity speed-up claimed."
+}

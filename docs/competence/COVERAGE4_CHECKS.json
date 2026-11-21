@@ -1,0 +1,96 @@
+{
+ "task": "coverage3 playtest review: findings and fixes, Fusion C3 with the author's permanent-death policy (docs/COVERAGE3_REVIEW.md)",
+ "date": "2026-11-21",
+ "author": "Claude",
+ "inputs": {
+  "Log.txt": {
+   "sha256": "1132e7a960644cf617301d42f8259fda485c499e7021aeb5587944dbac6fd01d",
+   "lines": 8069,
+   "startup_mvid": "60673199-52d7-4e60-8078-c91096ac9242 (coverage3)"
+  },
+  "combatLog.txt": {
+   "sha256": "0c4fb6f856f513140355bcdafcb568a8559fe93f97b8981868f4bc544b8f60fd",
+   "lines": 44784
+  },
+  "note": "private; not committed"
+ },
+ "author_policy": "A Disintegrate that would permanently kill an ally is weighed so that it is not used; at a genuinely high risk it is avoided entirely, whatever the circumstances. Implemented: veto at 1% risk or more, whatever the settings; below it, 100x the ally's worth; summons exempt.",
+ "branch": "claude/coverage3-review @ 361776c, stacked on claude/coverage2-review @ 5a80e54 (draft PR #95)",
+ "development_base": "0019856805605c9b74e27ffbdfa6b8dd9c20b0f2",
+ "checked_source": "361776c18cab9a048b8577569f9bb235d92d5154",
+ "toolchain": {
+  "dotnet_sdk": "8.0.428",
+  "csharp_compiler": "4.11.0-3.25569.22 (3fb752d4)",
+  "provenance": "docs/competence/COVERAGE4_BUILD_PROVENANCE.json"
+ },
+ "release_build": "0 warnings, 0 errors (real game references)",
+ "unit_tests": "1,065 pass (6 new: permanent-death veto threshold and cost, exact dice tails, convolution with Maximize/Empower/Half, Disintegrate by HP left, the trigger with temporary HP; the shared start rule added to the landing test)",
+ "script_tests": {
+  "BlueprintInventory": 27,
+  "InvocationLedger": 21,
+  "ProfileAudit supplement": 3
+ },
+ "profileaudit": {
+  "exit": 0,
+  "new_or_changed_sections": {
+   "PERMADEATH": "24 checks (new): native HP test, kill, saved branches and the temporary faction switch; the actual Disintegrate graphs (dust gate on both save outcomes, 5d6 passed, ranked 2d6/level failed); Fireball/Disintegrate scan and admission; no false positives on Fireball, Sleep, Hold Person, Explosive/Incendiary Runes, Acid Arrow; the export census (2 dust gates, 39 direct kills); the policy; compiled routes",
+   "BURST-AIM": "78 checks (was 73): the native start gate (CanActInCombat, HasCooldownForCommand, initiative and surprise), the wait read in real time only, and its use in the burst plan, the re-check and the disruption timing",
+   "EVIDENCE": "15 checks (was 14): a missed flank names the engagers with no command on the target",
+   "SNEAK": "36 checks: the prediction counts allies arriving from their own attack commands, with no path query or command",
+   "FUSION-OUTCOME": "32 checks (was 33): the Fireball/Disintegrate outcome-gate expectation moved to PERMADEATH, which checks it is now admitted"
+  },
+  "other_lines": "unchanged against the coverage3 audit on the same inputs",
+  "fusion_coverage": {
+   "configurations": 15494,
+   "offered": {
+    "coverage3": 9655,
+    "coverage4": 9999,
+    "gained": 344,
+    "lost": 0
+   },
+   "joint_value": {
+    "coverage3": 5651,
+    "coverage4": 5995,
+    "gained": 344,
+    "lost": 0
+   },
+   "gained_from": "Disintegrate fused with each of the other sources (16 configurations a pair)"
+  },
+  "summon_kit_detail": "byte-identical",
+  "report_sha256": "eaca64e5c646637d4299378dd1f33e40383205d62f4f3dc3d78b7559d0399a45",
+  "coverage_sha256": "2baf6b0c8a06dc1971f0fb5a4d27232b514d7899c18df122494f3e20cd555ff4"
+ },
+ "native_harnesses": {
+  "ToggleCosts": 98,
+  "TomeBurn": 14,
+  "ToyBoxSpend": 10
+ },
+ "signatures": {
+  "relative_to": "coverage3 (1ed420b)",
+  "added": [
+   "Assembly-CSharp F class Kingmaker.UnitLogic.Mechanics.ContextValue Kingmaker.UnitLogic.Mechanics.Conditions.ContextConditionCompareTargetHP::Value",
+   "Assembly-CSharp M class Kingmaker.Blueprints.BlueprintFaction Kingmaker.Blueprints.Root.BlueprintRoot::get_PlayerFaction() this=True",
+   "Assembly-CSharp M class Kingmaker.Blueprints.BlueprintFaction Kingmaker.UnitLogic.UnitDescriptor::get_Faction() this=True",
+   "Assembly-CSharp M class Kingmaker.Blueprints.BlueprintFaction Kingmaker.UnitLogic.UnitDescriptor::get_FactionOriginal() this=True",
+   "Assembly-CSharp M valuetype System.Boolean Kingmaker.Controllers.Combat.UnitCombatState::get_IsWaitingInitiative() this=True",
+   "Assembly-CSharp M valuetype System.Boolean Kingmaker.Controllers.Combat.UnitCombatState::get_NotSurprised() this=True",
+   "Assembly-CSharp M valuetype System.Single Kingmaker.Controllers.Combat.UnitCombatState/Cooldowns::get_Initiative() this=True"
+  ],
+  "removed": [],
+  "count": 2057,
+  "note": "all added members are on the real game assembly the build compiled against"
+ },
+ "not_run": [
+  "Supplementary Magus 44 corpus: inputs not in this environment; no Magus code is touched"
+ ],
+ "package": {
+  "zip": "test-builds/AI-Control-FACC-v0.3.60-dev-coverage4-361776c-UMM-test.zip",
+  "identity": "test-builds/AI-Control-FACC-v0.3.60-dev-coverage4-361776c-UMM-test.identity.json",
+  "sha256": "test-builds/AI-Control-FACC-v0.3.60-dev-coverage4-361776c-UMM-test.sha256",
+  "mvid": "248aa48c-27d9-45d0-86cd-303978c0fe79",
+  "zip_sha256": "ef03a90ccb2cba87855da3e1c1b5d20ec8cc85391588ebd67e055b4056e3c6c0",
+  "dll_sha256": "914d560ce1c4a35ccb97b7c3970ff92f76aa59ebadb6acd20a3392e0dcbc6a87",
+  "manifest": "0.3.60 (unchanged)"
+ },
+ "gameplay": "unplayed; no main, tag or release"
+}

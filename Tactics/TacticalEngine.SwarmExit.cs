@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using Kingmaker.EntitySystem.Entities;
 using Kingmaker.View.MapObjects.SriptZones;
 using CompanionAI_Pathfinder.Analysis;
@@ -78,6 +79,47 @@ namespace CompanionAI_Pathfinder.Tactics
             }
             // Actual native hazard clearance, then the existing gain/cost competition, supplies the exit criterion.
             return best;
+        }
+
+        /// <summary>
+        /// ★ coverage4 (author-approved movement change): when no spot within <paramref name="maximum"/> clears every swarm that
+        /// strikes the unit, the spots just outside one of them (twelve directions per swarm, its own native exit circles), kept
+        /// only where fewer of them strike (the native SwarmStrikes test) and the existing area and walkability tests pass. The
+        /// four with the fewest swarms left, then the shortest walk, are returned for the ordinary gain/cost pricing.
+        /// </summary>
+        private static List<(Vector3 point, string left, string still)> PartialSwarmExits(TacticalContext ctx,
+            List<(UnitEntityData swarm, CombatMath.SwarmSpace area)> striking, float maximum, List<Vector3> refused)
+        {
+            var unit = ctx.Unit;
+            var found = new List<(Vector3 point, int strikes, float distance, string left, string still)>();
+            var one = new List<(UnitEntityData swarm, CombatMath.SwarmSpace area)>(1) { default };
+            for (int s = 0; s < striking.Count; s++)
+            {
+                one[0] = striking[s];
+                var circles = SwarmExitCircles(ctx, one);
+                if (circles == null) continue;
+                for (int i = 0; i < 12; i++)
+                {
+                    float angle = i * 30f * Mathf.Deg2Rad, dx = Mathf.Cos(angle), dz = Mathf.Sin(angle);
+                    float distance = SwarmGeometry.ExitDistance(circles, unit.Position.x, unit.Position.z, dx, dz, maximum, 0.35f);
+                    if (!(distance > 0f)) continue;
+                    var point = unit.Position + new Vector3(dx, 0f, dz) * distance;
+                    bool near = false;
+                    if (refused != null) foreach (var q in refused) if (Vector3.Distance(point, q) <= 0.5f) { near = true; break; }
+                    if (near) continue;
+                    int strikes = 0;
+                    string still = null;
+                    foreach (var other in striking)
+                        if (CombatMath.SwarmStrikes(other.swarm, other.area, unit, point, null, SwarmTargets(ctx)))
+                        { strikes++; still = still == null ? other.swarm.CharacterName : still; }
+                    if (strikes >= striking.Count) continue;
+                    if (AoeDangerAnalyzer.EnteringDanger(unit, unit.Position, point, out _) > 0f) continue;
+                    if (CombatMemory.IsRealTime && !AoeDangerAnalyzer.IsPositionValid(unit.Position, point)) continue;
+                    found.Add((point, strikes, distance, striking[s].swarm.CharacterName, still));
+                }
+            }
+            return found.OrderBy(f => f.strikes).ThenBy(f => f.distance).Take(4)
+                        .Select(f => (f.point, f.left, f.still)).ToList();
         }
     }
 }

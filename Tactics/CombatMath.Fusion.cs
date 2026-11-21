@@ -65,14 +65,23 @@ namespace CompanionAI_Pathfinder.Tactics
         {
             if (ability?.MagicHackData == null) return EvaluateDice(value, context, fallbackLevel, maximize, empower);
             if (value == null) return 0f;
-            int count = EvaluateValue(value.DiceCountValue, context, fallbackLevel);
-            var component = ability.Spellbook?.Blueprint?.GetComponent<MagicHackSpellbookComponent>();
-            // ContextActionDealDamage.GetDamageInfo: this is an actual spellbook component query, not a copied cap table.
-            if (component != null) count = Math.Min(count, component.GetMaxDamageDicesForAction(ability.SpellLevel));
+            int count = FusedDiceCount(ability, EvaluateValue(value.DiceCountValue, context, fallbackLevel));
             int sides = value.DiceType.Sides();
             float dice = sides <= 0 ? 0f : count * (maximize ? sides : (sides + 1f) / 2f);
             float result = dice + EvaluateValue(value.BonusValue, context, 0);
             return empower ? result * 1.5f : result;
+        }
+
+        /// <summary>
+        /// ContextActionDealDamage.GetDamageInfo caps a fused cast's dice per action by its spellbook (an actual component
+        /// query, not a copied cap table). ★ Fusion coverage C1: a buff tick's context roots in the fused cast
+        /// (MechanicsContext.SourceAbilityContext), so its damage is capped the same way.
+        /// </summary>
+        internal static int FusedDiceCount(AbilityData ability, int count)
+        {
+            if (ability?.MagicHackData == null) return count;
+            var component = ability.Spellbook?.Blueprint?.GetComponent<MagicHackSpellbookComponent>();
+            return component != null ? Math.Min(count, component.GetMaxDamageDicesForAction(ability.SpellLevel)) : count;
         }
 
         internal static float FusionDamageFactor(AbilityProfile profile, GameAction action, float fail, bool evasion, bool improved)

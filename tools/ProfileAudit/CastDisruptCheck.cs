@@ -258,6 +258,14 @@ namespace ProfileAudit
                 Check(DisruptRules.SwingSpacing(3, false) == 2f && DisruptRules.SwingSpacing(3, true) == DisruptRules.NextSwingSeconds &&
                       !DisruptRules.InTime(DisruptRules.WeaponHitSeconds(1, 0f, false, 2f, DisruptRules.SwingSpacing(3, false)), 2f),
                       "F2: a 3-attack routine's second hit lands too late for a 2 s cast");
+                // ★ coverage2 review (R4): calibrated from the coverage2 [Timing] lines - the first melee swing 0.70 s (n = 72),
+                // a bow's shots one animation apart, 1.81 s (n = 34), sped up to fit the window (SpellSpeedScale).
+                Check(DisruptRules.FirstSwingSeconds == 0.7f && DisruptRules.BowSwingSeconds == 1.8f &&
+                      DisruptRules.SwingSpacing(2, true, bow: true) == 1.8f && DisruptRules.SwingSpacing(4, true, bow: true) == 1.5f &&
+                      !DisruptRules.InTime(DisruptRules.WeaponHitSeconds(1, 0f, true, 3f, DisruptRules.SwingSpacing(2, true, bow: true)), 2f),
+                      "R4: the measured first swing and bow shot gap; a bow's second shot no longer beats a 2 s cast");
+                Check(Calls(others, engine, "ProspectiveChainedAttacks"),
+                      "R4: an ally's ordered bow shots are spaced by the bow gap too");
             }
             catch (Exception ex)
             {

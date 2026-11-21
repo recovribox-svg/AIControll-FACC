@@ -243,7 +243,9 @@ namespace ProfileAudit
                       "C2/F3: a cleanse earns the share of the horizon a removed harmful buff acts after its suppressor ends");
                 Check(Calls(Body(Method(engine, "HasSomethingToDispel")), reader, "ActiveShare"),
                       "C2/F3: the dispel fallback skips buffs suppressed for the rest of the horizon");
-                var dispelValue = Body(Method(engine, "DispelValue"));
+                // ★ coverage4: the full overload carries the rule (the short one forwards to it).
+                var dispelValue = Body(engine.GetMethods(Hidden).Where(m => m.Name == "DispelValue")
+                                             .OrderByDescending(m => m.GetParameters().Length).First());
                 Check(Calls(dispelValue, reader, "SuppressedSeconds") && Calls(dispelValue, typeof(SuppressionRules), "ActiveRounds"),
                       "C2: a dispel's worth counts only the rounds a buff acts after its suppressor ends");
                 Check(Calls(Body(Method(reader, "ActiveShare")), typeof(SuppressionRules), "ActiveShare") &&

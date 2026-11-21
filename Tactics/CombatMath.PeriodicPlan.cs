@@ -14,6 +14,10 @@ using Kingmaker.UnitLogic.FactLogic;
 using Kingmaker.UnitLogic.Mechanics;
 using Kingmaker.UnitLogic.Mechanics.Actions;
 using Kingmaker.UnitLogic.Mechanics.Components;
+using Kingmaker.EntitySystem.Entities;
+using Kingmaker.UnitLogic.Abilities;
+using Kingmaker.Utility;
+using UnityEngine;
 
 namespace CompanionAI_Pathfinder.Tactics
 {
@@ -67,6 +71,114 @@ namespace CompanionAI_Pathfinder.Tactics
             return plan;
         }
 
+        private static readonly Dictionary<BlueprintBuff, bool> s_DamageCarriers = new Dictionary<BlueprintBuff, bool>();
+
+        /// <summary>
+        /// ★ Fusion coverage C1 (docs/FUSION_MAIN_TARGET_DOT.md): a buff whose whole effect is hit-point damage each
+        /// round, possibly ended by a save (Incendiary Runes' and Molten Orb's burning, Acid Arrow's acid). Only its round
+        /// actions and spell descriptors; fixed dice; no child buff, poison or activation. Metadata only, once per buff.
+        /// </summary>
+        internal static bool IsPeriodicDamageCarrier(BlueprintBuff buff)
+        {
+            if (buff == null) return false;
+            if (s_DamageCarriers.TryGetValue(buff, out bool known)) return known;
+            bool carrier = false;
+            try
+            {
+                var plan = PeriodicPlanOf(buff);
+                // ★ coverage4 (Fusion coverage C6a): or a rank config of the buff's own read from the caster level (Caustic
+                // Eruption's acid, 1d6 per two caster levels, at most 10): fixed by the cast's parameters, read in a buff
+                // context under the cast's (PeriodicRank).
+                carrier = plan != null && plan.Supported && plan.Round != null && plan.Poison == null &&
+                          plan.EnergyRemovals.Count == 0 && plan.HitPoints &&
+                          buff.ComponentsArray.All(c => c is AddFactContextActions || c is SpellDescriptorComponent || CasterLevelConfig(c)) &&
+                          buff.TickTime.TotalSeconds >= 1d && buff.TickTime < TimeSpan.MaxValue &&
+                          DamageOnlyTick(buff, plan.Round, 0);
+            }
+            catch { carrier = false; }
+            s_DamageCarriers[buff] = carrier;
+            return carrier;
+        }
+
+        private static bool DamageOnlyTick(BlueprintBuff buff, ActionList list, int depth)
+        {
+            if (depth > 8) return false;
+            foreach (var action in list?.Actions ?? Array.Empty<GameAction>())
+            {
+                if (action is ContextActionRemoveSelf) continue;
+                if (action is ContextActionDealDamage deal)
+                {
+                    if (KindOf(deal) != DealKind.HitPoints || !TickValue(buff, deal.Value.DiceCountValue) ||
+                        !TickValue(buff, deal.Value.BonusValue)) return false;
+                    continue;
+                }
+                if (action is ContextActionSavingThrow save)
+                {
+                    if (save.HasCustomDC && save.CustomDC.ValueType != ContextValueType.Simple) return false;
+                    var saved = (ContextActionConditionalSaved)save.Actions.Actions[0];
+                    if (!DamageOnlyTick(buff, saved.Failed, depth + 1) || !DamageOnlyTick(buff, saved.Succeed, depth + 1)) return false;
+                    continue;
+                }
+                return false; // a child buff or anything else is more than damage
+            }
+            return true;
+        }
+
+        /// <summary>A tick's dice number: a fixed non-negative value, or a rank the buff's own caster-level config gives.</summary>
+        private static bool TickValue(BlueprintBuff buff, ContextValue value)
+        {
+            if (value == null) return false;
+            if (value.ValueType == ContextValueType.Simple) return value.Value >= 0;
+            if (value.ValueType != ContextValueType.Rank) return false;
+            foreach (var config in buff.GetComponents<Kingmaker.UnitLogic.Mechanics.Components.ContextRankConfig>())
+                if (config.Type == value.ValueRank) return CasterLevelConfig(config);
+            return false;
+        }
+
+        /// <summary>A rank config read from the caster level only (no stat, class, buff rank or property of anyone).</summary>
+        private static bool CasterLevelConfig(BlueprintComponent component)
+        {
+            if (!(component is Kingmaker.UnitLogic.Mechanics.Components.ContextRankConfig config)) return false;
+            try
+            {
+                return RankBaseType != null && (Kingmaker.UnitLogic.Mechanics.Components.ContextRankBaseValueType)RankBaseType.GetValue(config) ==
+                       Kingmaker.UnitLogic.Mechanics.Components.ContextRankBaseValueType.CasterLevel;
+            }
+            catch { return false; }
+        }
+
+        private static readonly Dictionary<KeyValuePair<AbilityData, BlueprintBuff>, MechanicsContext> s_PeriodicRankContexts =
+            new Dictionary<KeyValuePair<AbilityData, BlueprintBuff>, MechanicsContext>();
+        private static int s_PeriodicRankFrame = -1;
+
+        /// <summary>
+        /// ★ coverage4 (C6a): a tick's dice number for <paramref name="ability"/>'s application of <paramref name="buff"/>: a fixed
+        /// value, or the buff's caster-level rank, read as the game does in a buff context whose parent is the cast's (its
+        /// caster level, fused spellbook and metamagic). The rank reads nobody's state, so one context per cast and buff
+        /// serves the decision's frame.
+        /// </summary>
+        internal static int PeriodicRank(AbilityData ability, BlueprintBuff buff, UnitEntityData recipient, ContextValue value)
+        {
+            if (value == null) return 0;
+            if (value.ValueType == ContextValueType.Simple) return value.Value;
+            int frame = Time.frameCount;
+            if (frame != s_PeriodicRankFrame) { s_PeriodicRankContexts.Clear(); s_PeriodicRankFrame = frame; }
+            var key = new KeyValuePair<AbilityData, BlueprintBuff>(ability, buff);
+            if (!s_PeriodicRankContexts.TryGetValue(key, out var context))
+            {
+                try
+                {
+                    var parent = CreateContext(ability, new TargetWrapper(recipient));
+                    context = new MechanicsContext(ability.Caster?.Unit, recipient.Descriptor, buff, parent);
+                    context.RecalculateRanks();
+                }
+                catch { context = null; }
+                if (s_PeriodicRankContexts.Count > 128) s_PeriodicRankContexts.Clear();
+                s_PeriodicRankContexts[key] = context;
+            }
+            return context != null ? Math.Max(0, EvaluateValue(value, context, 0)) : 0;
+        }
+
         private static bool Empty(ActionList actions) => actions?.Actions == null || actions.Actions.Length == 0;
         private static bool RemovesSelfOnly(ActionList actions) => actions?.Actions?.Length == 1 && actions.Actions[0]?.GetType() == typeof(ContextActionRemoveSelf);
         private static bool PeriodicValue(ContextValue value) => value != null &&
@@ -86,8 +198,10 @@ namespace CompanionAI_Pathfinder.Tactics
                 if (action.GetType() == typeof(ContextActionDealDamage))
                 {
                     var deal = (ContextActionDealDamage)action;
+                    // ★ Fusion coverage C1: IgnoreUnitModifiers only stops flat damage bonuses being added
+                    // (BaseDamage.AddModifier); resistance and immunity still apply. No estimate here adds those bonuses.
                     if (!PeriodicDice(deal.Value) || deal.Half || deal.HalfIfSaved || deal.ReadPreRolledFromSharedValue ||
-                        deal.AddAdditionalDamage || deal.AddFavoredEnemyDamage || deal.IgnoreUnitModifiers ||
+                        deal.AddAdditionalDamage || deal.AddFavoredEnemyDamage ||
                         deal.UseWeaponDamageModifiers || deal.UseMinHPAfterDamage || deal.WriteResultToSharedValue ||
                         deal.WriteRawResultToSharedValue || deal.WriteCriticalToSharedValue || deal.Drain || deal.IsAoE) return false;
                     if (KindOf(deal) == DealKind.HitPoints)
@@ -101,7 +215,10 @@ namespace CompanionAI_Pathfinder.Tactics
                 if (action.GetType() == typeof(ContextActionSavingThrow))
                 {
                     var save = (ContextActionSavingThrow)action;
-                    if (save.FromBuff || save.UseDCFromContextSavingThrow || save.Type == SavingThrowType.Unknown ||
+                    // ★ Fusion coverage C1: a round tick runs outside any saving-throw scope (MechanicsContext.SavingThrow
+                    // reads ContextData<SavingThrowData>.Current), so UseDCFromContextSavingThrow falls back to the
+                    // context's own DC there, and the tick rolls its own save, fused cast or not (ContextActionSavingThrow).
+                    if (save.FromBuff || save.Type == SavingThrowType.Unknown ||
                         save.HasCustomDC && !PeriodicValue(save.CustomDC) || PeriodicSaveIncreases == null ||
                         (PeriodicSaveIncreases.GetValue(save) is Array increases && increases.Length > 0) ||
                         save.Actions?.Actions?.Length != 1 || !(save.Actions.Actions[0] is ContextActionConditionalSaved) ||

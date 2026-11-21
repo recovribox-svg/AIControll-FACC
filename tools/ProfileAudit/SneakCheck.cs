@@ -117,6 +117,14 @@ namespace ProfileAudit
                 Check(Calls(predict, typeof(UnitCombatState), "get_IsFlanked") && Calls(predict, math, "AttackerEngages") &&
                       Calls(predict, math, "OtherEngagers") && Calls(predict, typeof(SneakRules), "PredictsFlank"),
                       "the prediction starts from the native state and adds this attacker as an engager");
+                // ★ coverage3 review: an ally ordered to attack the target in melee, reaching it before this attack lands.
+                Check(Calls(predict, math, "ArrivingEngagers"), "the prediction counts an ally arriving before this attack lands");
+                var arriving = Body(math, "ArrivingEngagers");
+                Check(new[] { "get_PartyAndPets", "get_Standard", "get_TargetUnit", "get_ApproachRadius", "get_EngagedBy", "GetThreatHand",
+                              "GetApproachRadius" }.All(n => arriving.Any(m => m.Name == n)) &&
+                      arriving.Any(m => m.DeclaringType == typeof(CombatMemory) && m.Name == "get_IsRealTime") &&
+                      !arriving.Any(m => m.Name == "Run" || m.Name == "Interrupt" || m.Name == "FindPath" || m.Name == "StartPath"),
+                      "arrivals are read from the allies' own attack commands, in real time, with no path query or command");
                 var others = Body(math, "OtherEngagers");
                 Check(Calls(others, typeof(UnitCombatState), "get_EngagedBy") && others.Any(m => m.Name == "AnyCommandTargets") &&
                       Calls(others, typeof(TurnBased.Controllers.CombatController), "IsInTurnBasedCombat"),
