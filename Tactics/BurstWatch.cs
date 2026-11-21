@@ -69,9 +69,10 @@ namespace CompanionAI_Pathfinder.Tactics
         private const int MaxRechecked = 64;
 
         /// <summary>
-        /// ★ R2: a memory guard on tracked bursts. An entry lives until its cast ends without going off or its burst lands,
+        /// ★ R2: a memory guard on tracked real-time bursts. An entry lives until its cast ends without going off or its burst lands,
         /// so the count is the bursts in flight. Nothing is ever dropped to make room; past this a burst is not tracked, and
-        /// its landing spot is still shared (registered before admission).
+        /// its landing spot is still shared (registered before admission). A TB landing entry is retained even if a mode
+        /// switch left this table full; the single active TB turn must still wait for its delivery.
         /// </summary>
         private const int MaxTracked = 256;
         private const int MaxLinesPerFight = 64;
@@ -204,7 +205,7 @@ namespace CompanionAI_Pathfinder.Tactics
                 if (plan.RealTime && profile != null)
                     Analysis.AoeDangerAnalyzer.RegisterPendingBurst(plan.Point, plan.Radius, plan.Ability.Name, profile.DealsDamage,
                         profile.ControlStrength != ControlStrength.None, command, plan.Landing);
-                if (Entries.Count >= MaxTracked)
+                if (!BurstRules.TrackLanding(plan.RealTime, Entries.Count, MaxTracked))
                 {
                     if (s_Untracked++ == 0)
                         Log($"[Burst] {unit.CharacterName}: {plan.Ability.Name} not tracked - {MaxTracked} bursts in flight; " +
@@ -396,6 +397,7 @@ namespace CompanionAI_Pathfinder.Tactics
             var cmd = e.Command;
             var profile = AbilityProfile.Get(plan.Ability);
             if (profile == null) return BurstRules.Verdict.Keep;
+            bool canKillPermanently = CombatMath.CanKillPermanently(plan.Ability);
             float flight = TacticalEngine.FlightSecondsTo(profile, unit.EyePosition, plan.Point);
             float remaining;
             if (cmd.IsStarted)
@@ -437,7 +439,10 @@ namespace CompanionAI_Pathfinder.Tactics
                     continue;
                 }
                 if (!u.IsPlayerFaction && !turned && u != unit) continue;
-                if (plan.Allies.Contains(u)) continue;
+                bool alreadyCounted = plan.Allies.Contains(u);
+                // A previously counted ally may have been wounded or lost protection since the decision. Keep the
+                // ordinary cost-cache fast path, but never let it skip a fresh permanent-death safety check.
+                if (alreadyCounted && !canKillPermanently) continue;
                 bool inside;
                 if (u == unit && cmd.Executor == unit && !cmd.IsStarted)
                     // ★ coverage3 review: the caster's own walk is this cast's approach, which stops at the cast's range from
@@ -459,6 +464,7 @@ namespace CompanionAI_Pathfinder.Tactics
                     newAllies = 1;
                     return BurstRules.Verdict.AllyPermanentDeath;
                 }
+                if (alreadyCounted) continue;
                 // ★ A3: its damage, and what the burst's control would cost it by the decision's own rule (AllyControl).
                 float damage = DamageTo(e, u, profile);
                 float control = 0f;
@@ -511,7 +517,8 @@ namespace CompanionAI_Pathfinder.Tactics
         }
 
         /// <summary>
-        /// A-P1: the units a re-check reads - in the game, alive and in combat - gathered once per frame for every watch.
+        /// A-P1: live combatants and original party members (including downed members no longer flagged in combat),
+        /// gathered once per frame for every watch. Native area delivery does not require an ally to be in combat.
         /// </summary>
         private static List<UnitEntityData> RosterNow()
         {
@@ -522,7 +529,7 @@ namespace CompanionAI_Pathfinder.Tactics
             foreach (var u in Game.Instance.State.Units)
             {
                 if (u == null || !u.IsInGame || u.Descriptor?.State == null || u.Descriptor.State.IsDead) continue;
-                if (!(u.CombatState?.IsInCombat ?? false)) continue;
+                if (!(u.CombatState?.IsInCombat ?? false) && !u.IsPlayerFaction && !TacticalEngine.IsTurnedAlly(u)) continue;
                 Roster.Add(u);
             }
             return Roster;
@@ -533,7 +540,7 @@ namespace CompanionAI_Pathfinder.Tactics
         private static bool CanReadRosterUnit(UnitEntityData unit, UnitEntityData caster)
         {
             if (unit == null || !unit.IsInGame || unit.Descriptor?.State == null || unit.Descriptor.State.IsDead) return false;
-            return ReferenceEquals(unit, caster) || unit.CombatState?.IsInCombat == true;
+            return ReferenceEquals(unit, caster) || unit.CombatState?.IsInCombat == true || unit.IsPlayerFaction || TacticalEngine.IsTurnedAlly(unit);
         }
 
         /// <summary>Where <paramref name="unit"/> will be in <paramref name="seconds"/> on its own walk, and whether it walks.</summary>

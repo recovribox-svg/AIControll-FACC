@@ -86,7 +86,10 @@ namespace CompanionAI_Pathfinder.Tactics
             var projectiles = component.Projectiles;
             if (projectiles.Length != 1) { why = $"{projectiles.Length} projectiles"; return false; }
             foreach (var projectile in projectiles)
-                if (projectile == null || projectile.FollowTerrain) { why = "projectile stopped by obstacles (FollowTerrain)"; return false; }
+            {
+                if (projectile == null) { why = "projectile blueprint unavailable"; return false; }
+                if (projectile.FollowTerrain) { why = "projectile stopped by obstacles (FollowTerrain)"; return false; }
+            }
             if (!(component.Length.Meters > 0f) || !(component.LineWidth.Meters > 0f)) { why = "no length or width"; return false; }
             return true;
         }

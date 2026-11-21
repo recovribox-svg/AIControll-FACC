@@ -24,6 +24,7 @@ using Kingmaker.UnitLogic.Mechanics;
 using Kingmaker.UnitLogic.Mechanics.Actions;
 using Kingmaker.UnitLogic.Mechanics.Components;
 using Kingmaker.UnitLogic.Mechanics.Conditions;
+using System.Runtime.CompilerServices;
 
 namespace ProfileAudit
 {
@@ -228,11 +229,43 @@ namespace ProfileAudit
                 Check(!((string)reason.GetValue(AbilityProfile.Get(enervation)) ?? "").Contains("non-HP") && !Qualified(enervation),
                     "C5: Enervation's negative levels are read; its undead branch (temporary HP) still keeps it off the joint value");
 
+                // Production scalar outcome assembly with actual damage-action identities: ability-damage utility is
+                // retained, but it must not enter the HP stream that cancels control or a dispel.
+                var hpProfile = AbilityProfile.Get(enervation);
+                var drainAction = AbilityProfile.Get(Spell("Enervation")).Damage.OfType<ContextActionDealDamage>().First();
+                var hpAction = AbilityProfile.Get(Spell("Fireball")).Damage.OfType<ContextActionDealDamage>().First();
+                var readType = math.GetNestedType("FusionDamageRead", Hidden);
+                var scalarRead = Activator.CreateInstance(readType, true);
+                readType.GetMethod("Reset", Hidden).Invoke(scalarRead, null);
+                math.GetMethod("ReadFusionDamageOutcomes", Hidden).Invoke(null, new object[] { hpProfile,
+                    new List<KeyValuePair<GameAction, float>> { new KeyValuePair<GameAction, float>(drainAction, 60f),
+                        new KeyValuePair<GameAction, float>(hpAction, 10f) }, 1f, false, false, 1f, scalarRead });
+                float Read(string field) => (float)readType.GetField(field, Hidden).GetValue(scalarRead);
+                Check((bool)readType.GetField("Known", Hidden).GetValue(scalarRead) && Math.Abs(Read("Failed") - 70f) < 0.001f &&
+                      Math.Abs(Read("FailedHitPoints") - 10f) < 0.001f,
+                    "C5: production outcome assembly retains 60 drain-equivalent utility plus 10 HP, with only 10 lethal HP");
+
                 // --- 3. compiled routes ---
                 var values = Body(engine, "TryFusionValues");
                 Check(Calls(values, engine, "TryPeriodicDamage") && Calls(values, engine, "PeriodicHorizon") &&
-                      values.Any(m => m is MethodInfo mi && mi.DeclaringType == typeof(ValueModel) && mi.Name == "FusionValue" && mi.GetParameters().Length == 15),
+                      values.Any(m => m is MethodInfo mi && mi.DeclaringType == typeof(ValueModel) && mi.Name == "FusionValue" && mi.GetParameters().Length == 17),
                     "the joint value takes each outcome's damage over time");
+                Check(values.Any(m => m.Name == "FailedHitPoints") && values.Any(m => m.Name == "PassedHitPoints"),
+                    "the joint value receives actual HP separately from drain-equivalent utility");
+                Check(Calls(Body(math, "ClearAttackCache"), math, "ClearPeriodicRankContexts") &&
+                      Calls(Body(math, "InfusionStateChanged"), math, "ClearAttackCache"),
+                    "C6a's caster-level rank contexts expire with their parent params, including same-frame previews");
+                var rankCache = (IDictionary)math.GetField("s_PeriodicRankContexts", Hidden).GetValue(null);
+                rankCache[new KeyValuePair<AbilityData, BlueprintBuff>(null, AbilityProfile.Get(Spell("CausticEruption")).TargetBuffs.First())] = null;
+                math.GetMethod("ClearAttackCache", Hidden).Invoke(null, null);
+                Check(rankCache.Count == 0, "a production same-frame reset actually clears the seeded periodic-rank memo");
+                var brokenRecipient = (Kingmaker.EntitySystem.Entities.UnitEntityData)RuntimeHelpers.GetUninitializedObject(
+                    typeof(Kingmaker.EntitySystem.Entities.UnitEntityData));
+                var periodicExpected = engine.GetMethod("PeriodicExpected", Hidden);
+                float UnknownTick(bool safety) => (float)periodicExpected.Invoke(null, new object[] {
+                    CasterPolicyCheck.Data(Spell("AcidArrow")), AbilityProfile.Get(Spell("AcidArrow")), brokenRecipient, 3f, safety });
+                Check(UnknownTick(false) == 0f && float.IsPositiveInfinity(UnknownTick(true)),
+                    "failed recipient reads omit periodic benefit but retain unknown ally harm (inert failure injection)");
                 var periodic = Body(engine, "TryPeriodicDamage");
                 Check(Calls(periodic, engine, "TryFusionApplicationRounds") && Calls(periodic, engine, "PeriodicCarrierDamage") &&
                       CallsNamed(periodic, "BuffImmune") && CallsNamed(periodic, "HasFact"),

@@ -1056,6 +1056,7 @@ namespace CompanionAI_Pathfinder.Tactics
                         break;
                     case ContextActionDispelMagic dispel:
                         Dispels = true;
+                        m_Guards[dispel] = guards;
                         if (!DispelActions.Contains(dispel)) DispelActions.Add(dispel);
                         if (Fusion != null && !FusionDispelOrdinals.ContainsKey(dispel)) FusionDispelOrdinals[dispel] = fusionActionOrdinal;
                         // ★ v0.3.25 (potions): a dispel with no check removes what its filters take, always (RuleDispelMagic,
@@ -1066,7 +1067,6 @@ namespace CompanionAI_Pathfinder.Tactics
                             RemovesBuffs = true;
                             RemovedDescriptors |= dispel.Descriptor.Value;
                             m_Removals.Add(dispel);
-                            m_Guards[dispel] = guards;
                         }
                         break;
                     // ★ v0.3.19 (class audit B2): lengthens a buff the target already has (Witch Cackle and Chant: one

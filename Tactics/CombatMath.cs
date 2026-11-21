@@ -361,6 +361,7 @@ namespace CompanionAI_Pathfinder.Tactics
             ClearGrappleReads();    // ★ G1: the grab and its odds are read with the routines, forgotten with them
             HitsOnTarget.Clear();   // ★ v0.3.20 (test3): read with the routines, forgotten with them
             ParamsCache.Clear();    // ★ v0.3.25 (test2 logs)
+            ClearPeriodicRankContexts(); // C6a's child ranks cannot outlive their parent's parameter cache.
             // ★ v0.3.28 test 6: the attack rolls and critical factors read with them (a preview changes prone in-frame).
             Rolls.Clear();
             CritStats.Clear();
@@ -1603,10 +1604,19 @@ namespace CompanionAI_Pathfinder.Tactics
         private static float EffectChanceCore(UnitEntityData caster, UnitEntityData enemy, AbilityData ability,
             AbilityProfile profile, bool damage, float? resistancePass)
         {
-            float p = (resistancePass ?? SpellResistancePass(caster, enemy, ability)) * ShadowShare(ability, enemy);
-            if (profile.NeedsAttackRoll) p *= SpellAttackHitChance(caster, enemy, ability);
+            float p = DeliveryChance(caster, enemy, ability, profile, resistancePass) * ShadowShare(ability, enemy);
             if (profile.Save != SavingThrowType.Unknown && !(damage && profile.Fusion != null))
                 p *= SaveEffectFactor(ability, profile, enemy, damage);
+            return p;
+        }
+
+        /// <summary>Resistance and attack delivery only. A caller that prices save outcomes itself must not apply the
+        /// ordinary effect's save factor again. Shadow reality is separate from delivery.</summary>
+        internal static float DeliveryChance(UnitEntityData caster, UnitEntityData target, AbilityData ability,
+                                             AbilityProfile profile, float? resistancePass = null)
+        {
+            float p = resistancePass ?? SpellResistancePass(caster, target, ability);
+            if (profile.NeedsAttackRoll) p *= SpellAttackHitChance(caster, target, ability);
             return p;
         }
 

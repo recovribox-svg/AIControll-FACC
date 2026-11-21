@@ -72,7 +72,8 @@ namespace ProfileAudit
                 var score = Body(engine, "ScoreAbility");
                 Check(Calls(score, engine, "FreeingValue"), "ScoreAbility adds the release of an ally under an enemy's control");
                 var freeing = Body(engine, "FreeingValue");
-                Check(new[] { "DispelValue", "FreedWorth", "HoldsUnderControl", "RemovesByNameOrDescriptor" }.All(n => Calls(freeing, engine, n)) &&
+                Check(new[] { "DispelValue", "FreedWorth", "HoldsUnderControl" }.All(n => Calls(freeing, engine, n)) &&
+                      freeing.Any(m => m.Name == "BuffsRemovedFrom") &&
                       Calls(freeing, typeof(CombatMath), "EffectChance"),
                     "the release: a dispel in the game's order or a removal of the hold, times the chance the cast reaches the ally");
                 var full = engine.GetMethods(Hidden).Where(m => m.Name == "DispelValue").OrderByDescending(m => m.GetParameters().Length).First();

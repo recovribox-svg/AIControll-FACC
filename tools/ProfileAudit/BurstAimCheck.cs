@@ -404,11 +404,14 @@ namespace ProfileAudit
                       "the re-check validates retained actors live without rescanning the scene");
                 // ★ R2: nothing is dropped to make room; only re-checks are capped, and the landing spot is shared first.
                 var track = Body(typeof(BurstWatch), "Track");
+                Check(Calls(track, typeof(BurstRules), "TrackLanding") && BurstRules.TrackLanding(false, 256, 256) &&
+                      !BurstRules.TrackLanding(true, 256, 256),
+                    "R2: a full real-time table cannot discard the active turn-based landing wait");
                 Check(!track.Any(m => m.Name == "RemoveAt") && typeof(BurstWatch).GetMethod("MakeRoom", Hidden) == null &&
                       Calls(track, typeof(BurstWatch), "Rechecked") &&
                       (int)typeof(BurstWatch).GetField("MaxRechecked", Hidden).GetValue(null) == 64 &&
                       (int)typeof(BurstWatch).GetField("MaxTracked", Hidden).GetValue(null) == 256,
-                      "R2: Track never drops an entry; it caps only the re-checks (64) and the bursts in flight (256)");
+                      "R2: Track never evicts an entry; it caps RT re-checks (64) and tracked RT bursts (256), retaining the active TB wait");
                 Check(Calls(track, typeof(CompanionAI_Pathfinder.Analysis.AoeDangerAnalyzer), "RegisterPendingBurst") &&
                       Body(typeof(BurstWatch), "ShouldCancel").Any(m => m.Name == "Recheck"),
                       "R2: the landing spot is registered for every real-time burst; the re-check skips one past the cap");

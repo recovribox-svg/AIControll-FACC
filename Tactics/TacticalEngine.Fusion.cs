@@ -281,7 +281,8 @@ namespace CompanionAI_Pathfinder.Tactics
                 controlRounds = passRounds = 0f;
             ValueModel.FusionValue(damageRead.FailChance, deliveryChance, damageRead.Failed, damageRead.Passed, laterFailed, laterPassed,
                 Math.Max(1f, enemy.HPLeft), CombatMath.TargetWorth(enemy), CombatMath.ControlWorth(enemy), controlRounds, passRounds,
-                RegenerationRuns(enemy), CombatMath.AbilityEndsRegeneration(profile, enemy), out damage, out control);
+                RegenerationRuns(enemy), CombatMath.AbilityEndsRegeneration(profile, enemy), out damage, out control,
+                damageRead.FailedHitPoints, damageRead.PassedHitPoints);
             // The share of delivered casts that leave some control behind: the failed outcome, the passed one or both.
             controlShare = ValueModel.FusionOutcomeShare(damageRead.FailChance, controlRounds > 0f, passRounds > 0f);
             if (!profile.FusionValueQualifiedReported)
@@ -289,6 +290,8 @@ namespace CompanionAI_Pathfinder.Tactics
                 profile.FusionValueQualifiedReported = true;
                 Main.Log($"[FusionValue] {ability.Name} -> {enemy.CharacterName}: forecast shared-save fail {damageRead.FailChance:P0}, " +
                     $"conditional damage fail/pass {damageRead.Failed:F1}/{damageRead.Passed:F1}" +
+                    (Math.Abs(damageRead.Failed - damageRead.FailedHitPoints) > 0.01f || Math.Abs(damageRead.Passed - damageRead.PassedHitPoints) > 0.01f
+                        ? $" (lethal HP {damageRead.FailedHitPoints:F1}/{damageRead.PassedHitPoints:F1}; remainder is drain-equivalent utility)" : "") +
                     (laterFailed > 0f || laterPassed > 0f ? $", damage over time fail/pass {laterFailed:F1}/{laterPassed:F1}" : "") +
                     $", control envelope {controlRounds:F2} round-equivalents" +
                     (profile.FusionOutcomeEffectLocation != null ? $" on a failed save, {passRounds:F2} on a passed save" : "") +

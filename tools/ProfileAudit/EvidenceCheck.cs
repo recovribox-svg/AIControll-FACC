@@ -35,6 +35,9 @@ namespace ProfileAudit
                     "native: a failed concentration check finishes the cast as failed, without acting");
                 Check(typeof(RuleCheckConcentration).GetProperty("Success")?.PropertyType == typeof(bool),
                     "native: RuleCheckConcentration carries its result (Success)");
+                var concentration = BuffSuppressCheck.Method(typeof(TimelineObserver), "OnEventDidTrigger", typeof(RuleCheckConcentration));
+                Check(SaveBoostCheck.ReferencedMembers(concentration).Any(m => m.DeclaringType == typeof(RuleCheckConcentration) && m.Name == "Damage"),
+                    "a break observation requires a damage concentration check; defensive/entangled failures are not damage breaks");
                 Check(typeof(RuleAttackWithWeapon).GetProperty("IsAttackOfOpportunity")?.PropertyType == typeof(bool) &&
                       typeof(RuleAttackRoll).GetProperty("RuleAttackWithWeapon") != null,
                     "native: an attack roll names its attack of opportunity");

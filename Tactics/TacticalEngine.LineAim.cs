@@ -7,7 +7,8 @@
 // (CorrectPosition). The lined-up spot is checked like an approach spot (PlanApproach): within this move, free, walkable, not in
 // a harmful area or a swarm's space, the cast in range and sight from it, priced by MoveRisk and the real-time walk. The walk is
 // issued first and the line is cast on the next decision from where the caster stands (the cone's MoveFirst rule).
-// Bounded: at most 8 enemies, 12 turned directions per aim, 2 lined-up spots per ability and decision, one walk a round.
+// Bounded: at most 8 extra enemies and 32 turned directions per aim; 8 native spot validations, 2 offered spots per ability
+// and decision, one walk a round.
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -28,6 +29,7 @@ namespace CompanionAI_Pathfinder.Tactics
         private static readonly float[] LineBetween = { 0.35f, 0.5f, 0.65f };
         private const int LineEnemiesConsidered = 8;
         private const int LineUpSpots = 2;
+        private const int LineUpChecks = 8;
         /// <summary>How far a lined-up spot stays behind the near enemy, beyond the two bodies: out of a 5 ft reach.</summary>
         private const float LineUpClearance = 2f;
 
@@ -69,8 +71,9 @@ namespace CompanionAI_Pathfinder.Tactics
             var seen = new HashSet<UnitEntityData>();
             foreach (var u in ctx.Enemies)
                 if (u != null && u != ctx.Unit && seen.Add(u))
-                    list.Add(new LineBody { Unit = u, X = u.EyePosition.x, Z = u.EyePosition.z, Radius = u.Corpulence, Enemy = true, Affectable = rule.CanAffect(u) });
-            foreach (var u in ctx.Allies.Concat(ctx.DownedAllies))
+                    list.Add(new LineBody { Unit = u, X = u.EyePosition.x, Z = u.EyePosition.z, Radius = u.Corpulence,
+                        Enemy = !ctx.TurnedAllies.Contains(u), Affectable = rule.CanAffect(u) });
+            foreach (var u in ctx.Allies.Concat(ctx.DownedAllies).Concat(ctx.TurnedAllies))
                 if (u != null && u != ctx.Unit && seen.Add(u))
                     list.Add(new LineBody { Unit = u, X = u.EyePosition.x, Z = u.EyePosition.z, Radius = u.Corpulence, Enemy = false, Affectable = rule.CanAffect(u) });
             return list;
@@ -146,7 +149,7 @@ namespace CompanionAI_Pathfinder.Tactics
                 if (!found) return null;
                 LineGeometry.Turn(ax, az, bestTurn, out float bx, out float bz);
                 float along = Math.Max(1f, Math.Min(HorizontalDistance(unit.Position, target.Position), 3f));
-                var point = new TargetWrapper(unit.Position + new Vector3(bx, 0f, bz) * along);
+                var point = new TargetWrapper(new Vector3(eye.x + bx * along, unit.Position.y, eye.z + bz * along));
                 if (!ability.CanTarget(point)) return null;
                 note = bestAllies < straightAllies
                     ? $"turned {bestTurn:+0;-0} deg past {bestAllies}/{straightAllies} allies"
@@ -229,7 +232,7 @@ namespace CompanionAI_Pathfinder.Tactics
                 if (spots.Count == 0) return plans;
                 var others = ctx.Allies.Concat(ctx.Enemies).Where(u => u != unit).ToList();
                 var aims = new HashSet<UnitEntityData>();
-                foreach (var entry in spots.OrderByDescending(s => s.Key))
+                foreach (var entry in spots.OrderByDescending(s => s.Key).Take(LineUpChecks))
                 {
                     if (plans.Count >= LineUpSpots) break;
                     var plan = entry.Value;
