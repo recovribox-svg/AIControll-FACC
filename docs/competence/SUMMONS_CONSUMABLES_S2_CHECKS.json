@@ -1,0 +1,151 @@
+{
+  "checked_source_commit": "3c8595d386f61564c0dca96c967dca2dd4f5f97c",
+  "baseline_source": "3340951d0dccb9e71f7b883a5aebad67bee83293",
+  "baseline_note": "Compared with S1 on identical inputs. Item and SUMMON-EFFECTS lines and both Fusion matrices match. Only teleport verdicts, their derived totals and summon kit rows changed.",
+  "dll": {
+    "assembly": "CompanionAI_Pathfinder, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null",
+    "mvid": "0dba3d92-6f8a-4473-a185-02666befd432",
+    "sha256": "2b17d6dee1402b4b9c7c905a1f6eeb1e50a06d2535f5a741847cfc6df383210f",
+    "size": 1670144
+  },
+  "package": {
+    "path": "test-builds/AI-Control-FACC-v0.3.60-dev-summon-s2-3c8595d-UMM-test.zip",
+    "sha256": "9bf0f5f661d74cf6a1ed2a82296102657e01a51f5b7707365e217b628c97315f"
+  },
+  "build_provenance": "docs/competence/SUMMONS_CONSUMABLES_S2_BUILD_PROVENANCE.json",
+  "release": {
+    "warnings": 0,
+    "errors": 0,
+    "real_game_references": true,
+    "log_sha256": "a97eb9d6757f73481adb01e35ef008984d5c89154d7dfb982700f83914e990ff"
+  },
+  "unit_tests": {
+    "passed": 1153,
+    "failed": 0,
+    "skipped": 0
+  },
+  "script_tests": {
+    "BlueprintInventory": 27,
+    "InvocationLedger": 21,
+    "ProfileAuditSupplement": 3
+  },
+  "profile_audit": {
+    "strict": {
+      "report_sha256": "d7001c17febca7e44ef6e1c847b22c8d0dc9a2b659726bc090a7b3b4a0b31698",
+      "matrix_sha256": "acd0b62097c834cb8617f33b9272a32f24f08da4b91c0b3499f3eccd779e1517",
+      "non_teleport_report_equal": false,
+      "matrix_byte_identical": true
+    },
+    "full_stock": {
+      "report_sha256": "55cc2d6493ee432a3b0f3f197079af3163f7eaf118070d6ddd2ed65c0dc79f04",
+      "matrix_sha256": "acd0b62097c834cb8617f33b9272a32f24f08da4b91c0b3499f3eccd779e1517",
+      "non_teleport_report_equal": false,
+      "matrix_byte_identical": true
+    },
+    "summon_detail_sha256": "9fd3d9a2fab3dbc276cf4afed8618d8a99ed0527520b2a82250eb66f3ad95adb",
+    "items_blueprint_fixtures": 13,
+    "items_blueprint_fixture_failures": 0,
+    "potions_read_guessed_unread": [
+      98,
+      15,
+      1
+    ],
+    "scrolls_read_guessed_unread": [
+      575,
+      63,
+      12
+    ],
+    "summon_effect_stock_fixtures": 13,
+    "summon_effect_stock_fixture_failures": 0,
+    "teleport_approach_checks": 10,
+    "teleport_approach_failures": 0,
+    "profile_report_deltas": {
+      "strict": {
+        "removed_lines": 37,
+        "added_lines": 38,
+        "changed_ability_verdicts": 29,
+        "verdict_names": [
+          "AxiomitePortal",
+          "AxiomitePortalQuickened",
+          "BloomPortal",
+          "ConjurationDimensionalStepsAbility",
+          "DarkLurkerDimensionDoor",
+          "DemonTeleport",
+          "DemonTeleport_Free",
+          "DemonTeleportDevilsAbility",
+          "DimensionalRetributionAbility",
+          "DimensionalRideAbility",
+          "DimensionDoor",
+          "DimensionDoorCasterOnly",
+          "DimensionDoorHell",
+          "DimensionDoorMassDLC",
+          "DLC3_FAB_DimensionalRetributionAbility_Stage1",
+          "DrunkenKiAbudantStep",
+          "GalluBossDemonTeleportAbility",
+          "HermitRevelationReclusesStride10Ability",
+          "KiAbudantStep",
+          "Omox_Ability_LiquidLeap",
+          "ScaledFistAbudantStep",
+          "Shrine_Ability_GreaterTeleport",
+          "Shrine_Ability_QuickenedGreaterTeleport",
+          "TravelBlessingMajorAbility",
+          "TravelDomainGreaterAbility",
+          "TravelDomainGreaterAbilitySeparatist",
+          "UncertanityPrincipleTeleport",
+          "Vrock_Ability_GreaterTeleport",
+          "WalkThroughSpaceBuffAbility"
+        ]
+      },
+      "full-stock": {
+        "removed_lines": 37,
+        "added_lines": 38,
+        "changed_ability_verdicts": 29,
+        "verdict_names": [
+          "AxiomitePortal",
+          "AxiomitePortalQuickened",
+          "BloomPortal",
+          "ConjurationDimensionalStepsAbility",
+          "DarkLurkerDimensionDoor",
+          "DemonTeleport",
+          "DemonTeleport_Free",
+          "DemonTeleportDevilsAbility",
+          "DimensionalRetributionAbility",
+          "DimensionalRideAbility",
+          "DimensionDoor",
+          "DimensionDoorCasterOnly",
+          "DimensionDoorHell",
+          "DimensionDoorMassDLC",
+          "DLC3_FAB_DimensionalRetributionAbility_Stage1",
+          "DrunkenKiAbudantStep",
+          "GalluBossDemonTeleportAbility",
+          "HermitRevelationReclusesStride10Ability",
+          "KiAbudantStep",
+          "Omox_Ability_LiquidLeap",
+          "ScaledFistAbudantStep",
+          "Shrine_Ability_GreaterTeleport",
+          "Shrine_Ability_QuickenedGreaterTeleport",
+          "TravelBlessingMajorAbility",
+          "TravelDomainGreaterAbility",
+          "TravelDomainGreaterAbilitySeparatist",
+          "UncertanityPrincipleTeleport",
+          "Vrock_Ability_GreaterTeleport",
+          "WalkThroughSpaceBuffAbility"
+        ]
+      },
+      "summon_kit_detail": {
+        "removed_lines": 29,
+        "added_lines": 25
+      }
+    }
+  },
+  "native_harnesses": {
+    "ToggleCosts": 98,
+    "TomeBurn": 14,
+    "ToyBoxSpend": 10
+  },
+  "not_run": [
+    "live turn-based or real-time play",
+    "live teleport replay",
+    "Unity profiling"
+  ]
+}

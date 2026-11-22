@@ -1,0 +1,26 @@
+{
+  "build_label": "summon-s2",
+  "kind": "development-test",
+  "version": "0.3.60",
+  "source_branch": "codex/summons-consumables-s2",
+  "source_commit": "3c8595d386f61564c0dca96c967dca2dd4f5f97c",
+  "base_commit": "d2e01ed4f2a70bbbee525b6f3cef5f036a166be2",
+  "dll": {
+    "assembly": "CompanionAI_Pathfinder, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null",
+    "mvid": "0dba3d92-6f8a-4473-a185-02666befd432",
+    "sha256": "2b17d6dee1402b4b9c7c905a1f6eeb1e50a06d2535f5a741847cfc6df383210f",
+    "size": 1670144
+  },
+  "archive": "AI-Control-FACC-v0.3.60-dev-summon-s2-3c8595d-UMM-test.zip",
+  "zip_sha256": "9bf0f5f661d74cf6a1ed2a82296102657e01a51f5b7707365e217b628c97315f",
+  "manifest_sha256": "63ad9f152d4bacb44f021428193efad46aaf0d13380bb5691ebca1d935f2b5bf",
+  "checks_receipt": "docs/competence/SUMMONS_CONSUMABLES_S2_CHECKS.json",
+  "build_provenance": "docs/competence/SUMMONS_CONSUMABLES_S2_BUILD_PROVENANCE.json",
+  "build_provenance_sha256": "e04509afe7a61b035e1f64cc525697bb8f63bd9371ddb11a551276a2907010e3",
+  "archive_contents": [
+    "CompanionAI_Pathfinder.dll",
+    "Info.json"
+  ],
+  "gameplay_status": "unplayed",
+  "release": false
+}
