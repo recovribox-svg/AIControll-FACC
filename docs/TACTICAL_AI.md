@@ -7398,3 +7398,59 @@ to be reviewed and corrected, without merging. S1, S2 and the summon-control def
   and summon detail byte-identical to #109's head on the same inputs; harnesses 98/14/10. One ToyBox harness process measured
   6,368 bytes in the shared `BUFF-CONTEXT` allocation check; two reruns and the other three processes measured 0 on the same DLL.
   No package: the v0.3.70 test build follows the review of S1 and S2.
+
+## 221. Review of Codex's summon slices S1 and S2, PRs #111–#112, and the v0.3.70 test build (22 November 2026, Claude)
+
+[Receipt](competence/SUMMONS_REVIEW_111_112_CHECKS.json). The author asked for S1 (#111) and S2 (#112) to be reviewed and
+corrected, and then for a test build recognised as v0.3.70. Branch `claude/summons-review` stacks on #112 and merges the
+consumables review (#110). It contains #106 → #112 and both reviews. Nothing is merged.
+
+- **S1 (#111): agreed with, after checking against the decompiled game.**
+  - Touch of Chaos keeps the worse of two dice (`ModifyD20`), so the threat it removes is `1 − pass` on the first attack.
+  - Song of Discord's nearest-attack redirect is credited only when the nearest unit is the enemy's own ally.
+  - Study Target and smites use the cached weapon routine of the same target and frame.
+  - Contagion's damage follows the buff's real tick interval (`Frequency.ToRounds`).
+  - Unholy Nimbus is withheld and named in the witness, since no safe forecast of its expiry blast exists.
+  - **Limits kept:** a mark scores 0 when its target is out of reach or no routine was read this frame. A smite's AC
+    part is not in the mark gain. Both undervalue rather than overvalue.
+- **S2 (#112): the native reading agrees with the game.** `AbilityCustomDimensionDoor.Deliver` offsets a unit aim by both
+  bodies plus the minimum weapon range in the target's facing. It moves the units `GetTargets` names, appends mounts
+  (`AddMounts`) and relaxes the points (`FreePlaceSelector.RelaxPoints`). `AbilityCustomTeleportation` uses the same offset,
+  carries the caster alone and does not relax. The landing price is the leap's (exposure plus what leaving costs the
+  party).
+- **Corrected:**
+  1. **No teleport was ever offered.** `AddTeleportApproach` had no caller. Teleport abilities were collected and then
+     dropped, and they no longer reached ordinary scoring either. The S2 package therefore never used them, in either
+     mode. The decision now calls the builder after real-path prices, so it competes with the final walk values. It is
+     not called in a preview, which plans no move. A new `TELEPORT-APPROACH` check fails on the S2 head and passes here.
+  2. A teleport aimed at an enemy (Vrock) was watched for an effect on that enemy, so each cast logged "did nothing to
+     its target". It is no longer watched; nothing was blocked by it.
+  3. The witness gives each unused teleport its reason: no legal aim, a combat policy, no gain, past the four-aim budget, or
+     "teleport route withheld" (an item, a cost, a mount, a held charge or a crowd). Before, those all read "no verified
+     safe teleport landing".
+- **Checks** on `2fca43d` (the code) and the packaged source `4d2b1ce` (Info.json 0.3.70 only):
+  - Release 0 warnings, 1,157 unit + 27/21/3 script tests.
+  - ProfileAudit exit 0. Report, Fusion matrix and summon detail are byte-identical to a local build of #112's head on the
+    same inputs, apart from the new check. The packaged DLL gives the same report.
+  - Harnesses 98/14/10 on the checked and the packaged DLL; no external reference added.
+- **Package:** [v0.3.70 summons1](../test-builds/AI-Control-FACC-v0.3.70-dev-summons1-4d2b1ce-UMM-test.zip?raw=true), startup
+  module `38994eec-a452-421b-a096-424a31dd2fb1`, UMM **0.3.70**, **unplayed**. It replaces the S2 package, whose teleports
+  never ran.
+
+### Replay for v0.3.70
+
+Play in turn-based and real-time combat, with **Control Summoned Creatures** on. Send `Log.txt` and `combatLog.txt`, and
+note the startup module line. Each fight writes an `[Unused]` row per unit at its end.
+
+1. **Teleports (S2).** A Vrock against a caster behind the enemy front line: once with a clear walk, once with a walk past
+   enemies or through an area. With the costly walk it should cast Greater Teleport, land in reach and attack next turn.
+   An Omox with its swift action: Liquid Leap and then an attack. Dimension Door (a Derakni or a companion) alone, then
+   with an ally beside the caster. Put an area or a swarm on the landing spot: the teleport should be withheld and the
+   ordinary walk still chosen.
+2. **Demon effects (S1).** Stunning Screech and Derakni Drone into a group, with and without an ally in reach. Touch of
+   Chaos on a weapon attacker and on a caster. Song of Discord with two enemies side by side, and with a party member
+   nearest. Study Target or a smite before a weapon attack on the same target.
+3. **Consumables (C1–C4).** Shield of Faith and a healing potion on a front-liner, easy fight against hard fight. A
+   Magic Missile scroll on a caster who still has the spell in a slot (the slot first). A cure potion handed to a badly
+   hurt adjacent companion. Freedom of Movement, Spell Resistance, Protection from Spells and Magical Vestment.
+4. **Not yet decided:** the summon-control default, and the shadow variants and Unholy Nimbus, wait for this playtest.

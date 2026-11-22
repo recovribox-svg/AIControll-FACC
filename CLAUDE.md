@@ -8,7 +8,24 @@ Read [CONTRIBUTING.md](CONTRIBUTING.md) for shared branch ownership, Codex pull 
 Codex works on task branches and targets pull requests at `claude/dreamy-pasteur-b9h3rn`; Claude reviews and integrates them there.
 Keep `main` for author-authorized releases. Read [AGENTS.md](AGENTS.md) when coordinating agent work.
 
-**Current handover (22 November 2026): summon abilities S2 available for review.**
+**Current handover (22 November 2026, Claude): S1 (#111) and S2 (#112) reviewed and corrected; v0.3.70 test build on
+`claude/summons-review`, stacked on #112 with the consumables review (#110) merged in. Nothing merged into development.**
+Read `docs/TACTICAL_AI.md` §221 and the [receipt](docs/competence/SUMMONS_REVIEW_111_112_CHECKS.json).
+- **S1:** agreed with (Touch of Chaos, Song of Discord, marks, Contagion ticks, Nimbus withheld). Limits kept: a mark
+  scores 0 out of reach or without a cached routine; a smite's AC part is not counted.
+- **S2:** the native reading agrees with the game, but `AddTeleportApproach` had no caller, so no teleport was ever offered
+  (and teleports had left ordinary scoring). Corrected: the decision calls it after real-path prices (not in a preview);
+  teleports aimed at an enemy are not watched for an effect on it; each unused teleport names its reason. A new
+  `TELEPORT-APPROACH` check fails on the S2 head.
+- **Checks** on `2fca43d`, package from `4d2b1ce` (Info.json 0.3.70): Release 0 warnings; 1,157 unit + 27/21/3 script tests;
+  ProfileAudit report equal to #112's head apart from the new check, Fusion matrix and summon detail byte-identical; the packaged
+  DLL gives the same report; harnesses 98/14/10; no external reference added.
+- **Package:** `test-builds/AI-Control-FACC-v0.3.70-dev-summons1-4d2b1ce-UMM-test.zip`, UMM **0.3.70**, MVID
+  `38994eec-a452-421b-a096-424a31dd2fb1`, **unplayed**. It replaces the S2 package. No `main`, tag or release.
+- **Next:** the author plays v0.3.70 (replay in §221), with summon control on. The summon-control default, shadow
+  variants and Unholy Nimbus are judged from that playtest.
+
+**Earlier handover (22 November 2026): summon abilities S2 available for review.**
 Stacked on #111. Checked source `3c8595d`, UMM **0.3.60**, startup module `0dba3d92-6f8a-4473-a185-02666befd432`.
 The package is unplayed. See [§219](docs/TACTICAL_AI.md#219-summon-abilities-s2-native-teleport-approaches-22-november-2026),
 [checks](docs/competence/SUMMONS_CONSUMABLES_S2_CHECKS.json) and [build provenance](docs/competence/SUMMONS_CONSUMABLES_S2_BUILD_PROVENANCE.json).
