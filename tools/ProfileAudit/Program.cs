@@ -273,6 +273,16 @@ namespace ProfileAudit
             foreach (var line in periodicLines) Console.WriteLine(line);
             File.WriteAllText(output, string.Join(Environment.NewLine, periodicLines) + Environment.NewLine + File.ReadAllText(output));
             blocklistFailures += periodicFailures;
+            // ★ Fusion coverage C4: native line delivery (Lightning Bolt, Acidic Spray, Fire Snake and their fusions).
+            var lineLines = LineCheck.Run(loaded.Values, out int lineFailures);
+            foreach (var line in lineLines) Console.WriteLine(line);
+            File.WriteAllText(output, string.Join(Environment.NewLine, lineLines) + Environment.NewLine + File.ReadAllText(output));
+            blocklistFailures += lineFailures;
+            // ★ Fusion coverage, the remaining groups: fused dispels, Vampiric Touch and the later slices.
+            var fusionRestLines = FusionRestCheck.Run(loaded.Values, out int fusionRestFailures);
+            foreach (var line in fusionRestLines) Console.WriteLine(line);
+            File.WriteAllText(output, string.Join(Environment.NewLine, fusionRestLines) + Environment.NewLine + File.ReadAllText(output));
+            blocklistFailures += fusionRestFailures;
             // ★ coverage5: relief for hindered allies - dispels, removals and suppressions.
             var reliefLines = ReliefCheck.Run(loaded.Values, out int reliefFailures);
             foreach (var line in reliefLines) Console.WriteLine(line);

@@ -76,7 +76,10 @@ namespace CompanionAI_Pathfinder.Tactics
             else if (!profile.FusionIndependentGuards) reason = profile.FusionGuardRefusal ?? "unread guard";
             else if (profile.Intimidation != null || profile.MarksForOwnAttacks || profile.Maneuvers.Count > 0) reason = "mark/skill/maneuver dependency";
             else if (profile.IsWeaponAttack || profile.MeleeAttack != null) reason = "weapon/queued melee dependency";
-            else if (profile.Dispels || profile.Enchants || profile.Extensions.Count > 0) reason = "dispel/enchantment/extension dependency";
+            else if (profile.Enchants || profile.Extensions.Count > 0) reason = "dispel/enchantment/extension dependency";
+            // ★ Fusion coverage C7: a dispel is priced by what it takes off every unit it reaches (TryDispelValue); it joins
+            // the joint value when that reading is exact and it cannot take off a buff the same cast applies.
+            else if (profile.Dispels && FusionDispelRefusal(profile) is string dispelRefusal) reason = "dispel/enchantment/extension dependency: " + dispelRefusal;
             else if (profile.RemovedDescriptors != SpellDescriptor.None ||
                 profile.RemovesBuffs && profile.RemovedBuffs.Count == 0) reason = "dynamic removal dependency";
             else if (!profile.DealsDamage && profile.BuffApplications.Count == 0) reason = "no direct HP/control payload";
@@ -93,6 +96,28 @@ namespace CompanionAI_Pathfinder.Tactics
             profile.FusionOutcomeMetadataReason = reason;
             profile.FusionOutcomeMetadataQualified = reason == null;
             return reason == null;
+        }
+
+        /// <summary>
+        /// ★ Fusion coverage C7: why a fused cast's dispel cannot join the joint outcome value, or null. Native contract
+        /// (ContextActionDispelMagic, RuleDispelMagic): a dispel tries the recipient's buffs by caster level, highest first, up
+        /// to its count; with OnlyTargetEnemyBuffs it skips a buff whose caster is not the dispeller's enemy, so it never takes
+        /// what the same cast put on an enemy. Without it, a dispel that runs after one of the cast's own buff applications
+        /// (Spell 1's actions, then Spell 2's) could take that buff off again, and the joint value would credit a control the
+        /// cast removes. Each dispel must also be read by the dispel order (DispelUnsupported, or one with no check).
+        /// </summary>
+        internal static string FusionDispelRefusal(AbilityProfile profile)
+        {
+            if (profile?.Fusion == null) return "not a fusion";
+            foreach (var dispel in profile.DispelActions)
+            {
+                if (DispelUnsupported(dispel) is string unread && !IsAutomaticDispel(dispel)) return unread;
+                if (dispel.OnlyTargetEnemyBuffs) continue;
+                if (!profile.FusionDispelOrdinals.TryGetValue(dispel, out int at)) return "dispel outside the fused payloads";
+                foreach (var application in profile.BuffApplications)
+                    if (!application.Action.ToCaster && application.ActionOrdinal < at) return "dispel after the cast's own buff";
+            }
+            return null;
         }
 
         /// <summary>
@@ -167,6 +192,8 @@ namespace CompanionAI_Pathfinder.Tactics
                     share *= repeat;
                 }
                 if (friendly && immuneConditions && share <= 0f && BuffPartsReader.Read(buff).Unread.Count > 0) return false;
+                // ★ Fusion coverage C9: an application behind a nested save lands with that save's outcome (its own fail chance).
+                share *= CombatMath.NestedSaveFactor(ability, profile, occurrence.Action, recipient);
                 if (share <= 0f) continue;
                 if (!TryFusionApplicationRounds(ability, occurrence, recipient, ref durationContext, out float duration)) return false;
                 float horizon = Math.Min(Math.Min(ctx.ExpectedRounds, 3f), duration);

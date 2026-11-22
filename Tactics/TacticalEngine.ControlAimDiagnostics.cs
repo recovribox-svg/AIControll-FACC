@@ -106,7 +106,7 @@ namespace CompanionAI_Pathfinder.Tactics
         private static ControlAimDiagnostics StartControlAimDiagnostics(AbilityProfile profile, bool capture)
         {
             // A cone's geometry set can include allies; this explanation is only for ordinary shared-HD areas.
-            try { return capture && !profile.IsProjectileCone && profile.SharedHdBuffs.Count > 0 ? new ControlAimDiagnostics() : null; }
+            try { return capture && !profile.IsProjectileArea && profile.SharedHdBuffs.Count > 0 ? new ControlAimDiagnostics() : null; }
             catch { return null; }
         }
 

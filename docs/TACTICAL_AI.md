@@ -7013,3 +7013,27 @@ magic-using characters ever cast Dispel Magic", and the author's question about 
   - Native harnesses 98/14/10; 0 references added.
 - **Package** `test-builds/AI-Control-FACC-v0.3.60-dev-relief1-746d7a7-UMM-test.zip`, MVID `5537a531`. Unplayed;
   manifest 0.3.60; no `main`, tag or release.
+
+## 207. Fusion coverage, the remaining groups: lines, dispels, nested saves, lingering areas, Vampiric Touch (21 November 2026, Claude)
+
+[Page](FUSION_COVERAGE_REST.md), [receipt](competence/COVERAGE6_CHECKS.json). The author asked for the remaining Fusion
+groups and approved additions for quality, such as moving to line up enemies.
+
+- **Result** (15,494 configurations): offered 10,077 → 13,197, with the joint value 6,367 → 8,635, none lost. Every
+  structural refusal is gone; 1,189 stay behind the outcome gate (C6 carriers) and 1,108 behind the shared Hit Dice gate.
+- **C4 lines** (both modes; `ProjectileLine`, `TacticalEngine.LineAim.cs`): a line is an area, its recipients from the
+  game's `WouldTargetUnitLine`, ordinary and fused. Turned aims past allies and along enemies; a lined-up walk within
+  this move when it beats casting from here by 15 % and 0.5, walk paid for, once a round (author-approved movement).
+- **C7 dispels:** a fused dispel joins the joint value when it runs before the cast's own buffs or takes only enemies'
+  buffs.
+- **C9 nested saves** (ordinary spells too): each action inside an independent nested save is weighted by that save's
+  fail or pass chance. Phantasmal Killer's kill was priced on its Will save alone.
+- **C10 lingering areas:** a fused cast's clicked-target area is read, not credited, and refuses the cast near an ally.
+- **C11 Vampiric Touch:** its own-result temporary HP no longer withholds the fusion.
+- **Checks** on `b32057b`:
+  - Release 0 warnings; 1,072 unit + 27/21/3 script tests.
+  - ProfileAudit: new `LINE` 21 (the pre-filter agrees with the game's `WouldTargetPointLine` on 4,000 of 4,000
+    samples) and `FUSION-REST` 27; `FUSION` 39, `FUSION-OUTCOME` 33; every other line unchanged.
+  - Native harnesses 98/14/10; 7 references added, all compiled against the supplied assembly.
+- **Package** `test-builds/AI-Control-FACC-v0.3.60-dev-coverage6-b32057b-UMM-test.zip`, MVID `b63b47f2`. Unplayed;
+  manifest 0.3.60; no `main`, tag or release.

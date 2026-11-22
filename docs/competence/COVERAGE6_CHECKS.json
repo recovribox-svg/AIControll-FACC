@@ -1,0 +1,79 @@
+{
+ "task": "the remaining Fusion coverage groups (author request and approval, including repositioning to line up enemies) - docs/FUSION_COVERAGE_REST.md",
+ "date": "2026-11-21",
+ "author": "Claude",
+ "branch": "claude/fusion-coverage-rest @ b32057b, stacked on claude/relief-spells @ c0b1c59 (draft PR #98)",
+ "development_base": "0019856805605c9b74e27ffbdfa6b8dd9c20b0f2",
+ "checked_source": "b32057b3592cc7078b90735acb47fc5cc54db87b",
+ "toolchain": {
+  "dotnet_sdk": "8.0.428",
+  "csharp_compiler": "4.11.0-3.25569.22 (3fb752d4)",
+  "provenance": "docs/competence/COVERAGE6_BUILD_PROVENANCE.json"
+ },
+ "release_build": "0 warnings, 0 errors (real game references)",
+ "unit_tests": "1,072 pass (6 new: LineGeometryTests)",
+ "script_tests": {
+  "BlueprintInventory": 27,
+  "InvocationLedger": 21,
+  "ProfileAudit supplement": 3
+ },
+ "profileaudit": {
+  "exit": 0,
+  "new_or_changed_sections": {
+   "LINE": "21 checks (new): native StepBasedDeliver/WouldTargetUnitLine/WouldTargetPointLine (width, no sight)/Deliver (eye, body, Length, MaxRange)/projectile stop at MaxRange; actual Lightning Bolt (120 ft, 5 ft), Fire Snake and Acidic Spray (50 ft); ordinary Lightning Bolt read as an area; Magic Deceiver line projectile does not follow the terrain; 108 line deliveries read, 6 not (4 terrain-following, 2 controlled); the flat pre-filter agrees with the game's WouldTargetPointLine on 4,000 of 4,000 samples; compiled routes",
+   "FUSION-REST": "27 checks (new): C7 (OnlyTargetEnemyBuffs native filter; Arcana Theft vs Dispel Magic; order rule), C11 (VampiricTouchBuff own-result temporary HP), C9 (native nested save in fused casts, ConditionalSaved reads the current save; actual Phantasmal Killer and Banshee Blast branches; fused forms offered; routes; ordinary nested saves read on 13 abilities, 8 left on the root save), C10 (fused clicked-target payload run at the main target; additional AoE shapes targeting only; actual Obsidian Flow and Haunting Mists; routes)",
+   "FUSION": "39 checks (was 38): a fused line is read by the native line query; the overlapping-blocker case uses a spawned area (Grease) as its second blocker",
+   "FUSION-OUTCOME": "33 checks (was 32): a fused line is no longer withheld; a spawned area still reports itself"
+  },
+  "other_lines": "unchanged against relief1 on the same inputs",
+  "fusion_coverage": {
+   "offered": "10,077 -> 13,197",
+   "offered_with_joint_value": "6,367 -> 8,635",
+   "of": 15494,
+   "lost": 0,
+   "by_slice": {
+    "C4 lines": "+842 offered, +410 joint",
+    "C7 dispels": "+80 offered, +504 joint",
+    "C11 Vampiric Touch": "+266 offered, +208 joint",
+    "C9 nested saves": "+948 offered, +420 joint",
+    "C10 lingering areas": "+984 offered, +726 joint"
+   },
+   "still_withheld": {
+    "outcome gate (support/reveal/form/faction/poison carriers, C6)": 1189,
+    "shared Hit Dice selection (C8)": 1108
+   }
+  },
+  "summon_kit_detail": "byte-identical",
+  "report_sha256": "16bc16d885862d067b0eda5ec622db123742271f51077b4b2d277068ebd06b78",
+  "coverage_sha256": "6af3bea685a2026c0e3872726f84bf4a3f7434024859036fcab851587bab422d"
+ },
+ "native_harnesses": {
+  "ToggleCosts": 98,
+  "TomeBurn": 14,
+  "ToyBoxSpend": 10
+ },
+ "signatures": {
+  "relative_to": "relief1 (746d7a7)",
+  "added_game_references": [
+   "AbilityDeliverProjectile::get_Length",
+   "AbilityDeliverProjectile::get_LineWidth",
+   "BlueprintProjectile::FollowTerrain",
+   "ReferenceArrayProxy<BlueprintProjectile>::GetEnumerator / Enumerator.get_Current / Enumerator.MoveNext",
+   "AddIncomingDamageTrigger::Actions"
+  ],
+  "removed": [],
+  "note": "all compiled against the supplied Assembly-CSharp; the native line predicates are bound by reflection and checked by LINE",
+  "count": 2069
+ },
+ "not_run": [
+  "Supplementary Magus 44 corpus: inputs not in this environment",
+  "No playtest: unplayed"
+ ],
+ "package": {
+  "zip": "test-builds/AI-Control-FACC-v0.3.60-dev-coverage6-b32057b-UMM-test.zip",
+  "mvid": "b63b47f2-f445-4007-8b04-8722dfeb4598",
+  "zip_sha256": "40981185f2d6b38f77648f81baf50421d7fac85b13e478aaddc9353a77157b11",
+  "dll_sha256": "13bf34752758fbde6d377594b6980c0c3a6ad8f256a5ef66c54271e7540443cc",
+  "manifest": "0.3.60"
+ }
+}

@@ -138,12 +138,13 @@ namespace CompanionAI_Pathfinder.Tactics
         {
             if (profile == null) return 1f;
             bool damage = profile.DealsDamage;
-            if (profile.IsProjectileCone)
+            // ★ Fusion coverage C4: a line's recipients come from the native line query, as a cone's do.
+            if (profile.IsProjectileArea)
             {
                 var aim = target != null ? AbilityProfile.TargetOn(ability, target)
                     : point.HasValue ? new Kingmaker.Utility.TargetWrapper(point.Value) : null;
-                if (!ProjectileCone.TryCreate(ability, aim, caster.Position, out var cone) ||
-                    !cone.TryRecipients(enemies, out var recipients)) return 0f;
+                if (!ProjectileArea.TryCreate(profile, ability, aim, caster.Position, out var shape) ||
+                    !shape.TryRecipients(enemies, out var recipients)) return 0f;
                 return recipients.Select(e => CombatMath.EffectChance(caster, e, ability, profile, damage))
                     .DefaultIfEmpty(0f).Max();
             }

@@ -158,6 +158,32 @@ namespace CompanionAI_Pathfinder.Tactics
 
         /// <summary>★ Fusion coverage C2: where a recast on random enemies was read (no credit, no harm), else null.</summary>
         internal string FusionEnemyRecastLocation { get; private set; }
+        /// <summary>
+        /// ★ Fusion coverage C10: the lingering areas a fused cast leaves at its main target. Native (AbilityExecutionProcess):
+        /// after the delivery, each source spell's AdditionalAbilityEffectRunActionOnClickedTarget runs once, at the main target
+        /// (Obsidian Flow's obsidian, Haunting Mists' mists). The area is not credited; an ally it would cover refuses the cast.
+        /// </summary>
+        internal readonly List<Kingmaker.UnitLogic.Abilities.Blueprints.BlueprintAbilityAreaEffect> FusionLingeringAreas =
+            new List<Kingmaker.UnitLogic.Abilities.Blueprints.BlueprintAbilityAreaEffect>();
+        /// <summary>★ C10: the source spells whose clicked-target payload is such an area (for the additional-AoE check).</summary>
+        internal readonly List<Kingmaker.UnitLogic.Abilities.Blueprints.BlueprintAbility> FusionLingeringSources =
+            new List<Kingmaker.UnitLogic.Abilities.Blueprints.BlueprintAbility>();
+
+        /// <summary>★ C10: a clicked-target payload that is one plain area spawn, or null.</summary>
+        internal static Kingmaker.UnitLogic.Abilities.Blueprints.BlueprintAbilityAreaEffect LingeringArea(AdditionalAbilityEffectRunActionOnClickedTarget clicked)
+        {
+            var actions = clicked?.Action?.Actions;
+            if (actions == null) return null;
+            Kingmaker.UnitLogic.Abilities.Blueprints.BlueprintAbilityAreaEffect area = null;
+            foreach (var action in actions)
+            {
+                if (action == null) continue;
+                if (area != null || action.GetType() != typeof(ContextActionSpawnAreaEffect)) return null;
+                area = ((ContextActionSpawnAreaEffect)action).AreaEffect;
+                if (area == null || !(area.Size.Meters > 0f)) return null;
+            }
+            return area;
+        }
 
         /// <summary>
         /// ★ Fusion coverage C2: a selector that keeps only the caster's enemies (native RunAction removes every unit that is
@@ -211,10 +237,23 @@ namespace CompanionAI_Pathfinder.Tactics
                 {
                     profile.Analyze();
                     if (snapshot.IsTouch) profile.NeedsAttackRoll = true;
-                    if (snapshot.DeliverBlueprint.GetComponent<AbilityDeliverProjectile>()?.Type == AbilityProjectileType.Line)
-                        profile.LimitFusion("line delivery geometry", "delivery");
-                    if (snapshot.AdditionalAoeBlueprint != null) profile.LimitFusion("additional area delivery", "delivery/additional");
-                    if (profile.Heals.Count > 0 || profile.CasterHeals.Count > 0 || profile.CasterBuffs.Count > 0)
+                    // ★ Fusion coverage C4: a line delivery is read by the native line query (ProjectileLine); only a line it
+                    // does not take (a custom or controlled projectile, several, one that follows the terrain) is withheld.
+                    if (snapshot.DeliverBlueprint.GetComponent<AbilityDeliverProjectile>()?.Type == AbilityProjectileType.Line &&
+                        !profile.IsProjectileLine)
+                        profile.LimitFusion("line delivery geometry" + (profile.UnreadLine != null ? ": " + profile.UnreadLine : ""), "delivery");
+                    // ★ Fusion coverage C10: native AdditionalAoeBlueprint only shapes targeting (the shown radius, CanTargetFriends
+                    // and CanTargetEnemies); recipients come from the deliver spell. It is read when its spell's extra is a
+                    // lingering area this profile carries.
+                    if (snapshot.AdditionalAoeBlueprint != null && !profile.FusionLingeringSources.Contains(snapshot.AdditionalAoeBlueprint))
+                        profile.LimitFusion("additional area delivery", "delivery/additional");
+                    // ★ Fusion coverage C11: Vampiric Touch's caster-side payload - temporary HP equal to the damage the cast
+                    // dealt (TemporaryHitPointsFromAbilityValue, its shared value) - gives the caster something and takes nothing
+                    // from anyone. As for an ordinary Vampiric Touch it is not credited (caster buffs of a damaging cast are not
+                    // priced), so the fused cast is valued by what it does to its recipients alone. Any other healing or caster
+                    // payload stays withheld.
+                    if (profile.Heals.Count > 0 || profile.CasterHeals.Count > 0 ||
+                        profile.CasterBuffs.Count > 0 && !profile.CasterBuffs.All(OwnResultTemporaryHp))
                         profile.LimitFusion("healing or caster-side payload", "profile/subjects");
                     if (profile.Save == SavingThrowType.Unknown && profile.fusionRequiresSavedResult && !profile.fusionHasIndependentSave)
                         profile.LimitFusion("saved-result branch without a declared root save", "profile/save");
@@ -227,6 +266,35 @@ namespace CompanionAI_Pathfinder.Tactics
             return profile;
         }
 
+        /// <summary>
+        /// ★ Fusion coverage C11: a caster buff that only gives temporary HP from the cast's own shared value (Vampiric Touch's
+        /// VampiricTouchBuff: TemporaryHitPointsFromAbilityValue, a descriptor, and a disabled trigger that removes itself).
+        /// </summary>
+        internal static bool OwnResultTemporaryHp(Kingmaker.UnitLogic.Buffs.Blueprints.BlueprintBuff buff)
+        {
+            if (buff == null) return false;
+            bool tempHp = false;
+            foreach (var component in buff.ComponentsArray)
+            {
+                switch (component)
+                {
+                    case null:
+                    case SpellDescriptorComponent _:
+                        continue;
+                    case Kingmaker.Designers.Mechanics.Buffs.TemporaryHitPointsFromAbilityValue thp
+                        when thp.Value != null && thp.Value.ValueType == Kingmaker.UnitLogic.Mechanics.ContextValueType.Shared:
+                        tempHp = true;
+                        continue;
+                    case Kingmaker.UnitLogic.Mechanics.Components.AddIncomingDamageTrigger trigger
+                        when trigger.Actions?.Actions != null && trigger.Actions.Actions.All(a => a is ContextActionRemoveSelf):
+                        continue;
+                    default:
+                        return false;
+                }
+            }
+            return tempHp;
+        }
+
         /// <summary>AbilityEffectRunAction.Apply uses each spell's own RunAction, falling back to its sticky-touch
         /// delivery only when that component is absent. It does not cast the two source spells separately.</summary>
         private void ReadFusionActions(HashSet<Kingmaker.UnitLogic.Abilities.Blueprints.BlueprintAbility> visited, int depth, EffectSubject subject)
@@ -236,11 +304,22 @@ namespace CompanionAI_Pathfinder.Tactics
             {
                 string source = "source" + (++sourceIndex);
                 fusionSourceOrdinal = sourceIndex;
-                if (spell.GetComponent<AdditionalAbilityEffectRunActionOnClickedTarget>() != null)
+                // ★ Fusion coverage C10: a clicked-target payload that is one lingering area is recorded (FusionLingeringAreas).
+                var clicked = spell.GetComponent<AdditionalAbilityEffectRunActionOnClickedTarget>();
+                var lingering = clicked != null ? LingeringArea(clicked) : null;
+                if (lingering != null)
+                {
+                    if (!FusionLingeringAreas.Contains(lingering)) FusionLingeringAreas.Add(lingering);
+                    if (!FusionLingeringSources.Contains(spell)) FusionLingeringSources.Add(spell);
+                }
+                else if (clicked != null)
                     LimitFusion("clicked-target secondary payload", source + "/clicked-target");
                 var run = spell.GetComponent<AbilityEffectRunAction>() ??
                           spell.GetComponent<AbilityEffectStickyTouch>()?.TouchDeliveryAbility?.GetComponent<AbilityEffectRunAction>();
-                if (run == null) { LimitFusion("source spell without a native RunAction payload", source); continue; }
+                // A source whose whole effect is its lingering area (Haunting Mists) adds no RunAction payload.
+                if (run == null) { if (lingering == null) LimitFusion("source spell without a native RunAction payload", source); continue; }
+                // ★ Fusion coverage C9: a nested save the fused cast rolls too (MakeSaveAlsoForMagicHack) is read before the paths.
+                if (Fusion.SavingThrowType != SavingThrowType.Unknown) ReadNestedSaves(run.Actions?.Actions, null, 0, fusion: true);
                 InspectFusionPaths(run.Actions?.Actions, FusionSavePath.Both, 0, source);
                 // Separate visited sets preserve both applications when the two payloads reference a common child.
                 Walk(run.Actions?.Actions, new HashSet<Kingmaker.UnitLogic.Abilities.Blueprints.BlueprintAbility>(visited),
@@ -248,7 +327,7 @@ namespace CompanionAI_Pathfinder.Tactics
             }
         }
 
-        private void InspectFusionPaths(GameAction[] actions, FusionSavePath path, int depth, string location)
+        private void InspectFusionPaths(GameAction[] actions, FusionSavePath path, int depth, string location, bool nestedScope = false)
         {
             if (actions == null) return;
             if (depth > 12) { LimitFusion("payload recursion limit", location); return; }
@@ -264,6 +343,14 @@ namespace CompanionAI_Pathfinder.Tactics
                     else InspectFusionPaths(floor.Actions, path, depth + 1, at + "/common-buff-minimum");
                     continue;
                 }
+                // ★ Fusion coverage C9: inside a nested save's scope a ConditionalSaved reads that save (ContextData<SavingThrowData>),
+                // not the root's: its branches keep the root path, and the nested factor weights them (NestedSaves).
+                if (action is ContextActionConditionalSaved nestedSaved && nestedScope)
+                {
+                    InspectFusionPaths(nestedSaved.Failed?.Actions, path, depth + 1, at + "/nested-failed", true);
+                    InspectFusionPaths(nestedSaved.Succeed?.Actions, path, depth + 1, at + "/nested-passed", true);
+                    continue;
+                }
                 if (action is ContextActionConditionalSaved saved)
                 {
                     fusionRequiresSavedResult = true;
@@ -277,7 +364,15 @@ namespace CompanionAI_Pathfinder.Tactics
                     (saving.MakeSaveAlsoForMagicHack || Fusion.SavingThrowType == SavingThrowType.Unknown))
                 {
                     fusionHasIndependentSave = true;
-                    LimitFusion("independent nested saving throw", at);
+                    // ★ Fusion coverage C9: one independent save under a declared root save, at the cast's DC, read by
+                    // ReadNestedSaves: its branches are weighted by its own fail chance (CombatMath.NestedSaveFactor).
+                    if (Fusion.SavingThrowType != SavingThrowType.Unknown && !nestedScope && NestedSaveRefusal == null &&
+                        saving.Type != SavingThrowType.Unknown)
+                    {
+                        InspectFusionPaths(saving.Actions?.Actions, path, depth + 1, at + "/nested", true);
+                        continue;
+                    }
+                    LimitFusion("independent nested saving throw" + (NestedSaveRefusal != null ? ": " + NestedSaveRefusal : ""), at);
                 }
                 if (action is ContextActionSpawnAreaEffect || action is ContextActionSpawnMonster)
                     LimitFusion("spawned area or creature payload", at);

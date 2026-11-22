@@ -104,9 +104,14 @@ namespace ProfileAudit
                 Gate("Fireball", "ReducePerson", SavingThrowType.Reflex, "carrier");
                 // ★ Fusion coverage C5: its negative levels are read now; its undead branch (temporary HP) still withholds it.
                 Gate("Fireball", "Enervation", SavingThrowType.Reflex, "carrier");
+                // ★ Fusion coverage C4: line delivery is read now; an unrelated structural refusal (a spawned area) still reports itself.
                 var line = Fuse("LightningBolt", "Fireball", SavingThrowType.Reflex);
-                Check((string)unsupported.GetValue(AbilityProfile.Get(line)) == "line delivery geometry" && Withheld(line) == "line delivery geometry",
-                    "an unrelated structural refusal (line delivery) is unchanged and reported as itself");
+                Check((string)unsupported.GetValue(AbilityProfile.Get(line)) == null && Withheld(line) == null,
+                    "a fused line (Lightning Bolt/Fireball) is no longer withheld by its delivery");
+                var spawned = Fuse("Grease", "Fireball", SavingThrowType.Reflex);
+                Check((string)unsupported.GetValue(AbilityProfile.Get(spawned)) == "spawned area or creature payload" &&
+                      Withheld(spawned) == "spawned area or creature payload",
+                    "an unrelated structural refusal (a spawned area) is unchanged and reported as itself");
 
                 // 4. Unchanged: a fusion with failed-branch control only carries no outcome requirement.
                 foreach (var a in new[] { Fuse("Slow", "ConfusionSpell", SavingThrowType.Will), Fuse("IncendiaryRunes", "Snowball", SavingThrowType.Reflex),

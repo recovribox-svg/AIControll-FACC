@@ -27,7 +27,7 @@ namespace CompanionAI_Pathfinder.Tactics
             explanation = null;
             if (!CombatMemory.IsRealTime || ctx?.Unit == null || !ctx.Unit.IsInCombat ||
                 !(ctx.Settings?.AvoidFriendlyFire ?? false) || !harmsAllies || wouldBeCaught == null ||
-                ability?.Blueprint == null || profile == null || !profile.IsAoE || profile.IsProjectileCone ||
+                ability?.Blueprint == null || profile == null || !profile.IsAoE || profile.IsProjectileArea ||
                 (profile.ControlStrength != ControlStrength.Soft && profile.ControlStrength != ControlStrength.Hard)) return null;
             try
             {

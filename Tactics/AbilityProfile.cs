@@ -84,6 +84,8 @@ namespace CompanionAI_Pathfinder.Tactics
         public bool Dispels { get; private set; }
         /// <summary>★ v0.3.24: the dispel actions themselves, for the game's own eligibility rule (TacticalEngine.DispelCanTake).</summary>
         public readonly List<ContextActionDispelMagic> DispelActions = new List<ContextActionDispelMagic>();
+        /// <summary>★ Fusion coverage C7: each dispel's place in a fused cast's native action order (Spell 1, then Spell 2).</summary>
+        internal readonly Dictionary<ContextActionDispelMagic, int> FusionDispelOrdinals = new Dictionary<ContextActionDispelMagic, int>();
         public bool RemovesBuffs { get; private set; }
         public bool Enchants { get; private set; }
 
@@ -276,7 +278,15 @@ namespace CompanionAI_Pathfinder.Tactics
         /// <summary>Actual root's simple projectile delivery; child effect abilities do not repeat their parent.</summary>
         public AbilityDeliverProjectile SimpleProjectiles { get; private set; }
         public bool IsProjectileCone => Cone != null;
-        public bool IsAoE => AoERadius > 0.01f || IsProjectileCone;
+        /// <summary>★ Fusion coverage C4: native line delivery this reader takes (ProjectileLine.Supported); its recipients are
+        /// queried from the game along the line. A line it does not take stays a single-target cast, as before.</summary>
+        public AbilityDeliverProjectile Line { get; private set; }
+        /// <summary>★ C4: why the actual cast's line delivery is not read (null when it is, or when it is no line).</summary>
+        public string UnreadLine { get; private set; }
+        public bool IsProjectileLine => Line != null;
+        /// <summary>★ C4: recipients come from a native projectile query (cone or line), not from a circle.</summary>
+        public bool IsProjectileArea => IsProjectileCone || IsProjectileLine;
+        public bool IsAoE => AoERadius > 0.01f || IsProjectileArea;
         /// <summary>
         /// ★ v0.3.18: the game picks the units in the area one by one (around-selector or cone), each with its own spell
         /// resistance check. Without it (spawned areas: Grease, Entangle, Web) the effect is applied once, to the aimed
@@ -566,8 +576,8 @@ namespace CompanionAI_Pathfinder.Tactics
             CasterProvokes = FindCasterProvoke(Blueprint);
 
             var around = Blueprint.GetComponent<AbilityTargetsAround>();
-            SelectsTargets = around != null || IsProjectileCone;
-            SelectsAround = around != null && !IsProjectileCone;
+            SelectsTargets = around != null || IsProjectileArea;
+            SelectsAround = around != null && !IsProjectileArea;
             // ★ burst aim: when the burst lands after the cast goes off (TacticalEngine.Burst.cs, BurstRules). Read from the
             // blueprint whose delivery the game runs: the cast's own, or the deliver spell of a fusion (GetDeliverBlueprint).
             try
@@ -808,6 +818,10 @@ namespace CompanionAI_Pathfinder.Tactics
             {
                 if (run.SavingThrowType != SavingThrowType.Unknown && Save == SavingThrowType.Unknown)
                     Save = run.SavingThrowType;
+                // ★ Fusion coverage C9: an ordinary spell's nested save under its declared root save (Phantasmal Killer's
+                // Fortitude save after its Will save, Banshee Blast's Will save) is read for its own fail chance.
+                if (ReferenceEquals(bp, Blueprint) && run.SavingThrowType != SavingThrowType.Unknown)
+                    ReadNestedSaves(run.Actions?.Actions, null, 0, fusion: false);
                 Walk(run.Actions?.Actions, visited, depth, subject, 0, NoGuards);
             }
             // ★ v0.3.21 (gaps): actions run on the clicked unit or point besides the main effect
@@ -840,6 +854,12 @@ namespace CompanionAI_Pathfinder.Tactics
             if (ReferenceEquals(bp, Blueprint) && projectile?.Type == AbilityProjectileType.Cone)
             {
                 Cone = projectile;
+            }
+            // ★ Fusion coverage C4: the same for a line, when its delivery is the ordinary native one (ProjectileLine.Supported).
+            if (ReferenceEquals(bp, Blueprint) && projectile?.Type == AbilityProjectileType.Line)
+            {
+                if (ProjectileLine.Supported(projectile, out string unreadLine)) Line = projectile;
+                else UnreadLine = unreadLine;
             }
             // ★ v0.3.18 (C2): a line or cone projectile makes no attack roll, whatever its flag says (the game's
             // AbilityDeliverProjectile only rolls for other shapes).
@@ -1037,6 +1057,7 @@ namespace CompanionAI_Pathfinder.Tactics
                     case ContextActionDispelMagic dispel:
                         Dispels = true;
                         if (!DispelActions.Contains(dispel)) DispelActions.Add(dispel);
+                        if (Fusion != null && !FusionDispelOrdinals.ContainsKey(dispel)) FusionDispelOrdinals[dispel] = fusionActionOrdinal;
                         // ★ v0.3.25 (potions): a dispel with no check removes what its filters take, always (RuleDispelMagic,
                         // CheckType.None): Lesser Restoration's fatigue, exhaustion and stat-penalty removals. A removal like
                         // any other: valued as a cleanse when the target has something it takes.
@@ -2282,6 +2303,73 @@ namespace CompanionAI_Pathfinder.Tactics
                     if (SpawnsAllyArea(child, depth + 1)) return true;
             }
             return false;
+        }
+
+        /// <summary>
+        /// ★ Fusion coverage C9: an action inside an independent nested save (a ContextActionSavingThrow the cast rolls on top
+        /// of its root save), and the branch of that save it runs on. Native: ContextActionSavingThrow rolls its own save - in
+        /// a fused cast only with MakeSaveAlsoForMagicHack - at the cast's DC, and a ContextActionConditionalSaved inside it
+        /// reads that save (MechanicsContext.SavingThrow is ContextData&lt;SavingThrowData&gt;.Current).
+        /// </summary>
+        internal sealed class NestedSave
+        {
+            internal ContextActionSavingThrow Save;
+            internal FusionSavePath Path;
+        }
+
+        /// <summary>★ C9: the actions inside a nested save (null when there is none).</summary>
+        internal Dictionary<GameAction, NestedSave> NestedSaves { get; private set; }
+        /// <summary>★ C9: why a nested save is not read (its own DC, one inside another, a result read twice, half damage on it).</summary>
+        internal string NestedSaveRefusal { get; private set; }
+        private static readonly System.Reflection.FieldInfo NestedSaveIncreases =
+            HarmonyLib.AccessTools.Field(typeof(ContextActionSavingThrow), "m_ConditionalDCIncrease");
+
+        private void ReadNestedSaves(GameAction[] actions, NestedSave nested, int depth, bool fusion)
+        {
+            if (actions == null || depth > 12) return;
+            foreach (var action in actions)
+            {
+                if (action == null) continue;
+                if (nested != null)
+                {
+                    if (NestedSaves == null) NestedSaves = new Dictionary<GameAction, NestedSave>();
+                    if (!NestedSaves.ContainsKey(action)) NestedSaves[action] = nested;
+                    // Half damage on a save inside the scope halves on the nested save, which the root factor cannot say.
+                    if (action is ContextActionDealDamage half && half.HalfIfSaved) NestedSaveRefusal = NestedSaveRefusal ?? "half damage on the nested save";
+                }
+                if (action is ContextActionSavingThrow save && (!fusion || save.MakeSaveAlsoForMagicHack))
+                {
+                    if (nested != null) { NestedSaveRefusal = NestedSaveRefusal ?? "a saving throw inside another"; continue; }
+                    if (save.Type == SavingThrowType.Unknown || save.HasCustomDC || save.UseDCFromContextSavingThrow ||
+                        NestedSaveIncreases == null || NestedSaveIncreases.GetValue(save) is Array increases && increases.Length > 0)
+                    {
+                        NestedSaveRefusal = NestedSaveRefusal ?? "nested save with a DC of its own";
+                        continue;
+                    }
+                    ReadNestedSaves(save.Actions?.Actions, new NestedSave { Save = save, Path = FusionSavePath.Both }, depth + 1, fusion);
+                    continue;
+                }
+                if (action is ContextActionConditionalSaved saved && nested != null)
+                {
+                    if (nested.Path != FusionSavePath.Both) { NestedSaveRefusal = NestedSaveRefusal ?? "a nested save's result read twice"; continue; }
+                    ReadNestedSaves(saved.Failed?.Actions, new NestedSave { Save = nested.Save, Path = FusionSavePath.Failed }, depth + 1, fusion);
+                    ReadNestedSaves(saved.Succeed?.Actions, new NestedSave { Save = nested.Save, Path = FusionSavePath.Passed }, depth + 1, fusion);
+                    continue;
+                }
+                foreach (var child in ChildActionLists(action))
+                    ReadNestedSaves(child, nested, depth + 1, fusion);
+            }
+        }
+
+        /// <summary>★ C9: the nested save <paramref name="action"/> runs under, and its branch; false outside one (or unread).</summary>
+        internal bool TryNestedSave(GameAction action, out ContextActionSavingThrow save, out FusionSavePath path)
+        {
+            save = null;
+            path = FusionSavePath.Both;
+            if (NestedSaves == null || NestedSaveRefusal != null || action == null || !NestedSaves.TryGetValue(action, out var link)) return false;
+            save = link.Save;
+            path = link.Path;
+            return true;
         }
 
         internal static IEnumerable<GameAction[]> ChildActionLists(GameAction action)

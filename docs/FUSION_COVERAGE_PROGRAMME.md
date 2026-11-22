@@ -179,7 +179,11 @@ risk.
   applies `DisintegrateBuff` (`f7a6a7d2`). The test reads the HP left after the damage. The buff kills on activation
   (`ContextActionKill`, marked for death), not at a later round tick. Both outcomes of the Fortitude save carry the test.
 
-### C4. Line delivery (1,016)
+### C4. Line delivery (1,016) — **implemented**
+
+**Done (21 November 2026, [FUSION_COVERAGE_REST.md](FUSION_COVERAGE_REST.md)):** the native line query (`WouldTargetUnitLine`) for ordinary and fused lines, turned
+aims past allies and along enemies, and a lined-up walk (author-approved). Offered +842, joint +410.
+
 
 - **Proposal.** A native line footprint (`AbilityDeliverProjectile` of type Line: its length and width, obstacles and
   Selective) shared by fusions and ordinary lines. Aim it like the cone adapter (`TacticalEngine.ConeAim.cs`), with a
@@ -216,27 +220,49 @@ risk.
 
   Each mechanism is its own sub-slice, with fixtures of the actual buffs.
 
-### C7. Dispel, enchantment, extension and dynamic removal (87 withheld, 1,010 on the simpler value)
+### C7. Dispel, enchantment, extension and dynamic removal (87 withheld, 1,010 on the simpler value) — **dispels implemented**
+
+**Done (21 November 2026, [FUSION_COVERAGE_REST.md](FUSION_COVERAGE_REST.md)):** a fused dispel joins the joint value when it runs before the cast's own buffs or takes
+only enemies' buffs (Arcana Theft). Offered +80, joint +504. Still open: a dispel after the cast's own buff (206), Baleful
+Polymorph's removal (its form is a C6 carrier), enchantments and extensions.
+
 
 - **Proposal.** Dispel Magic and Arcana Theft get the dispel worth per outcome. Baleful Polymorph's removal reads the
   buffs it actually removes, already listed by `BuffsRemovedFrom`.
 
-### C8. Shared Hit Dice beyond the supported pools (1,034)
+### C8. Shared Hit Dice beyond the supported pools (1,034) — **not done**
+
+**Assessed (21 November 2026, [FUSION_COVERAGE_REST.md](FUSION_COVERAGE_REST.md)):** in a fused cast Circle of Death's pool is the slot's own 2d6 Hit Dice (F7), so it
+would kill only a few weak creatures; not worth its code yet. Sleep and Rainbow Pattern in cone and line deliveries need
+the native delivery order read.
+
 
 - **Proposal.** Circle of Death keeps its Hit Dice pool in the shared value `Damage`, read with `SubHD`. It has a
   Fortitude save, and a kill or damage branch by Hit Dice. Extend `SharedHdControl` to the kill pool. Sleep and Rainbow
   Pattern under the deliveries not yet read follow the same reader.
 
-### C9. Nested saves (1,031)
+### C9. Nested saves (1,031) — **implemented**
+
+**Done (21 November 2026, [FUSION_COVERAGE_REST.md](FUSION_COVERAGE_REST.md)):** an independent nested save is read for ordinary and fused spells (Phantasmal Killer,
+Banshee Blast; 13 ordinary abilities). Offered +948, joint +420; none withheld by a nested save any more.
+
 
 - **Proposal.** Fusion F6 of [MAGIC_FUSION_PLAN.md](MAGIC_FUSION_PLAN.md): an explicit independent save node, starting
   with Phantasmal Killer and Banshee Blast.
 
-### C10. Secondary areas and clicked-target payloads (999)
+### C10. Secondary areas and clicked-target payloads (999) — **implemented (conservative)**
+
+**Done (21 November 2026, [FUSION_COVERAGE_REST.md](FUSION_COVERAGE_REST.md)):** the fused lingering area (Obsidian Flow, Haunting Mists) is read and refuses the cast
+near an ally; it is not credited. Offered +984, joint +726.
+
 
 - **Proposal.** Fusion F8: Obsidian Flow and Haunting Mists, with their own footprints, durations and future-path danger.
 
-### C11. Caster-side and healing payloads (310)
+### C11. Caster-side and healing payloads (310) — **Vampiric Touch implemented**
+
+**Done (21 November 2026, [FUSION_COVERAGE_REST.md](FUSION_COVERAGE_REST.md)):** Vampiric Touch's own-result temporary HP no longer withholds the fusion; not credited,
+as for an ordinary Vampiric Touch. Offered +266, joint +208.
+
 
 - **Proposal.** Fusion F4S: Vampiric Touch's temporary HP on the caster through the existing buff appraisal, never more
   than its marginal worth.

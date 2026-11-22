@@ -44,7 +44,7 @@ namespace CompanionAI_Pathfinder.Tactics
         {
             if (bosses.Count == 0) return false;
             if (recipients != null) return bosses.Any(recipients.Contains);
-            if (profile?.IsProjectileCone == true) return false;
+            if (profile?.IsProjectileArea == true) return false;
             if (target != null && bosses.Contains(target)) return true;
             if (profile == null || !profile.IsAoE) return false;
             Vector3? center = target?.Position ?? point;
