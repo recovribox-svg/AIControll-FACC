@@ -4,7 +4,7 @@ namespace CompanionAI_Pathfinder.Tactics
     {
         NotScored, Unavailable, CombatPolicy, ActionUnavailable, ScoreNotNeeded, Blocklist,
         SummonPolicy, Unread, CoupDelivery, FusionWithheld, PureMage, ConsumablePolicy, NoTarget,
-        NoApproach, ItemOnSummon, FriendlyFire, NoGain, ItemBar, SlotCopy, DelayedDelivery, TeleportLanding,
+        NoApproach, ItemOnSummon, FriendlyFire, NoGain, ItemBar, SlotCopy, DelayedDelivery, TeleportLanding, TeleportWithheld,
         /// <summary>A candidate was formed in this decision and lost to another option, or to a later selection bar.</summary>
         Scored
     }

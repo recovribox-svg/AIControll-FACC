@@ -63,6 +63,13 @@ namespace ProfileAudit
                   Calls(typeof(TacticalEngine), "CanOfferTeleport", "get_SourceItem"),
                   "one native relaxation route and a separate pre-issue check through the shared dispatcher");
 
+            // ★ summons review: the builder is reached from the decision itself, and a landing beside the enemy is not
+            // taken for a cast that did nothing to that enemy.
+            bool DecideCalls(string name) => typeof(TacticalEngine).GetMethods(all).Where(m => m.Name == "Decide")
+                .SelectMany(m => SaveBoostCheck.ReferencedMembers(m)).Any(member => member.Name == name);
+            Check(DecideCalls("AddTeleportApproach") && Calls(typeof(TacticalEngine), "Execute", "get_TeleportDelivery"),
+                  "the decision offers the teleport builder's option and its cast is not watched for an effect on the enemy");
+
             failures = failed;
             lines.Add($"TELEPORT-APPROACH {lines.Count} checks, {failed} failures");
             return lines;

@@ -85,8 +85,17 @@ namespace CompanionAI_Pathfinder.Tactics
             BlueprintComponent bestDelivery = null;
             float bestUnpriced = 0f;
             int aims = 0;
+            // ★ summons review: each teleport keeps the reason its last examined aim stopped at, for the [Unused] witness.
+            // One past the shared aim budget is not examined in this decision.
+            Dictionary<AbilityData, UnusedReason> why = null;
+            if (ctx.Unused != null)
+            {
+                why = new Dictionary<AbilityData, UnusedReason>(ctx.TeleportAbilities.Count);
+                foreach (var teleport in ctx.TeleportAbilities) why[teleport] = UnusedReason.ScoreNotNeeded;
+            }
             foreach (var ability in ctx.TeleportAbilities.OrderBy(SlotOf))
             {
+                if (why != null) why[ability] = UnusedReason.NoGain;
                 var slot = SlotOf(ability);
                 bool nextAttackNow = (slot == ActionSlot.Free || slot == ActionSlot.Swift ||
                                       slot == ActionSlot.Move && unit.HasMoveAction()) && ctx.HasStandard;
@@ -105,10 +114,12 @@ namespace CompanionAI_Pathfinder.Tactics
                     var enemy = approach.Target;
                     var aim = ability.CanTargetPoint ? new TargetWrapper(approach.RiskAt.Value) : new TargetWrapper(enemy);
                     if (!TryTeleportAnchor(unit, aim, out var beforeRelaxation) ||
-                        HorizontalDistance(unit.Position, beforeRelaxation) < 0.5f || MovingForTeleport(enemy)) continue;
+                        HorizontalDistance(unit.Position, beforeRelaxation) < 0.5f || MovingForTeleport(enemy))
+                    { if (why != null) why[ability] = UnusedReason.NoTarget; continue; }
                     if (!needLos.HasValue) needLos = new UnitUseAbility(ability, aim).NeedLoS;
                     if (!InRangeNow(unit, aim.Point, ability.GetApproachDistance(aim.Unit), needLos.Value) ||
-                        !ability.CanTarget(aim)) continue;
+                        !ability.CanTarget(aim))
+                    { if (why != null) why[ability] = UnusedReason.NoTarget; continue; }
 
                     var option = new Candidate
                     {
@@ -117,11 +128,16 @@ namespace CompanionAI_Pathfinder.Tactics
                         NeedLoS = needLos.Value, Key = $"teleport:{CombatMemory.AbilityKey(ability)}:{enemy.UniqueId}"
                     };
                     if (!Affordable(ctx, option) || memory.Failed.Contains(option.Key) ||
-                        SilentlyFailing(ctx, option) || PolicyBlocks(ctx, option)) continue;
+                        SilentlyFailing(ctx, option) || PolicyBlocks(ctx, option))
+                    { if (why != null) why[ability] = UnusedReason.CombatPolicy; continue; }
                     best = option; bestAim = aim; bestDelivery = delivery; bestApproach = approach; bestUnpriced = unpriced;
                 }
                 if (aims >= SpotRules.PricedSpots) break;
             }
+            if (why != null)
+                foreach (var entry in why)
+                    if (best == null || entry.Key != best.Ability)
+                        ctx.Unused.Record(ctx.Unused.Observe(entry.Key), entry.Value);
             if (best == null) return;
 
             int witness = ctx.Unused?.Observe(best.Ability) ?? -1;
