@@ -1,0 +1,36 @@
+{
+  "review": "docs/COVERAGE7_PLAYTEST_REVIEW.md",
+  "date": "2026-11-21",
+  "status": "partial review by Claude; Codex continues the review and the fixes",
+  "played_build": {
+    "package": "test-builds/AI-Control-FACC-v0.3.60-dev-coverage7-1ae78e7-UMM-test.zip",
+    "source": "1ae78e7",
+    "startup_mvid": "0aa40527-d88f-4dfb-977b-3c6b101daaee",
+    "umm_version": "0.3.60",
+    "evidence": "Log.txt line 3: [Build] v0.3.60 module=0aa40527-d88f-4dfb-977b-3c6b101daaee"
+  },
+  "inputs": [
+    {"file": "Log.txt", "sha256": "ceb55aa202bd02e3f592e8530b5ec157f5096b531d091bf6caf46062c985ed82", "lines_grep": 15240, "committed": false},
+    {"file": "combatLog.txt", "sha256": "2b2830dc919faabceeccd2d6ae989f7b842c7787d942e09c6b48598395b0b431", "lines_grep": 40847, "note": "contains lone carriage returns; Python universal newlines count 46322 lines", "committed": false},
+    {"file": "Manual_191_kala.zks", "sha256": "14e73116fbdfc28a5ec9ce3173e0950ad5aba289b859d16bc722890977b8266c", "kind": "zip archive (game save)", "committed": false}
+  ],
+  "counts": {
+    "fights": 10,
+    "turn_based_fights": [1, 2, 3, 4, 5],
+    "real_time_fights": [6, 7, 8, 9, 10],
+    "decision_rows": 1207,
+    "commands_issued": 928,
+    "commands_ended": 924,
+    "commands_refused_at_issue": 14,
+    "ended_without_acting": {"turn_based": 4, "real_time": 164},
+    "ai_control_exceptions": 0,
+    "party_on_party_damage_hp": 141,
+    "party_on_party_damage_source": "native attacks of opportunity on dominated allies only"
+  },
+  "context": {
+    "enemy_spawns": "RandomReinforcementsPerEncounter [Spawn] rows",
+    "summon_control": "on (Log.txt [Summon] rows)",
+    "rests_and_manual_orders": "not stated by the author"
+  },
+  "checks": "none: no code changed on claude/coverage7-review"
+}
