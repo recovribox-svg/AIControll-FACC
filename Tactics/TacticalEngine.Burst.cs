@@ -10,6 +10,8 @@ using System.Collections.Generic;
 using Kingmaker.Blueprints.Items.Equipment;
 using Kingmaker.EntitySystem.Entities;
 using Kingmaker.UnitLogic.Abilities;
+using Kingmaker.UnitLogic.Commands;
+using Kingmaker.UnitLogic.Commands.Base;
 using Kingmaker.Utility;
 using Kingmaker.Visual.Animation.Kingmaker.Actions;
 using UnityEngine;
@@ -165,6 +167,8 @@ namespace CompanionAI_Pathfinder.Tactics
 
         /// <summary>Walks read this session along the game's path, and walks that fell back to the straight line.</summary>
         internal static int RoutesOnPath, RoutesStraight;
+        /// <summary>★ R5: of those, walks of an attack that had already started and chases its target.</summary>
+        internal static int RoutesPursuing;
 
         /// <summary>
         /// ★ review follow-up A-R1 (author-approved): where <paramref name="unit"/>'s own walk takes it, as the game plans it.
@@ -173,12 +177,15 @@ namespace CompanionAI_Pathfinder.Tactics
         /// approach radius; future LOS can delay the true stop and is not proved here. Without a usable path of that
         /// walk (none yet, another walk's, longer than WalkRoute.MaxPoints) the straight walk to SpotRules.WalkEnd. Reads
         /// the agent's existing path only: no path search, raycast or world query. Null when the unit is not walking.
+        /// ★ R5 (docs/R_ITEMS_PLAN.md): a started attack that chases its target walks too (PursuingAttack). The burst
+        /// forecast is this method's only reader; WalkingCommand and the spot rules (WalkClaim) are unchanged.
         /// </summary>
         internal static WalkRoute ReadRoute(UnitEntityData unit, WalkRoute into)
         {
             try
             {
                 var command = WalkingCommand(unit);
+                if (command == null && (command = PursuingAttack(unit)) != null) RoutesPursuing++;
                 if (command == null) return null;
                 var route = into ?? new WalkRoute();
                 var from = unit.Position;
@@ -198,6 +205,32 @@ namespace CompanionAI_Pathfinder.Tactics
                 return route;
             }
             catch { return null; }
+        }
+
+        /// <summary>
+        /// ★ R5: an attack that has started and still chases its target. Native UnitCommandController.TickCommand keeps
+        /// calling TickApproaching for a started command when it can move after its start (UnitAttack.CanMoveAfterStart) and
+        /// the unit can move; TickApproaching walks it to the target while it is not close enough (IsUnitCloseEnough), by
+        /// the same MoveTo as before the start. A melee ally chasing the enemy a burst is aimed at walks where the burst lands.
+        /// </summary>
+        private static UnitCommand PursuingAttack(UnitEntityData unit)
+        {
+            try
+            {
+                var raw = unit?.Commands?.Raw;
+                if (raw == null || !unit.Descriptor.State.CanMove) return null;
+                int seen = 0;
+                foreach (var command in raw)
+                {
+                    if (++seen > 8) break;   // the game's command slots are few; no unbounded custom queue is scanned
+                    if (!(command is UnitAttack attack) || !attack.IsStarted || attack.IsFinished || attack.Executor != unit ||
+                        !attack.CanMoveAfterStart || attack.TargetUnit == null) continue;
+                    if (attack.IsUnitCloseEnough()) continue;   // in reach: it attacks where it stands
+                    return attack;
+                }
+            }
+            catch { }
+            return null;
         }
 
         /// <summary>

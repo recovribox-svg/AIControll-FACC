@@ -278,6 +278,11 @@ namespace ProfileAudit
             foreach (var line in burstLines) Console.WriteLine(line);
             File.WriteAllText(output, string.Join(Environment.NewLine, burstLines) + Environment.NewLine + File.ReadAllText(output));
             blocklistFailures += burstFailures;
+            // ★ evidence for the next playtest (docs/R_ITEMS_PLAN.md): what TimelineObserver reads, and that it only reads.
+            var evidenceLines = EvidenceCheck.Run(loaded.Values, out int evidenceFailures);
+            foreach (var line in evidenceLines) Console.WriteLine(line);
+            File.WriteAllText(output, string.Join(Environment.NewLine, evidenceLines) + Environment.NewLine + File.ReadAllText(output));
+            blocklistFailures += evidenceFailures;
             // ★ cast disruption: a hit before an enemy's cast goes off forces a concentration check (plan §4).
             var disruptLines = CastDisruptCheck.Run(loaded.Values, out int disruptFailures);
             foreach (var line in disruptLines) Console.WriteLine(line);

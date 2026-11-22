@@ -5860,6 +5860,7 @@ namespace CompanionAI_Pathfinder.Tactics
                 }
                 else CastOutcome.Forget(unit);   // its attacks must not count as the last ability's effect
             }
+            if (issued) TimelineObserver.NoteIssued(unit, c, command);   // ★ evidence (docs/R_ITEMS_PLAN.md): read only
             return issued;
         }
 
