@@ -8,7 +8,17 @@ Read [CONTRIBUTING.md](CONTRIBUTING.md) for shared branch ownership, Codex pull 
 Codex works on task branches and targets pull requests at `claude/dreamy-pasteur-b9h3rn`; Claude reviews and integrates them there.
 Keep `main` for author-authorized releases. Read [AGENTS.md](AGENTS.md) when coordinating agent work.
 
-**Current handover (22 November 2026, Claude): final plan for Codex to implement, on `claude/summons-consumables-plan`.**
+**Current handover (22 November 2026): Slice 0 and C1 available for review.**
+Source `f646225`, UMM **0.3.60**, module `41783dad-c121-40d8-a852-08756fba45ee`. The package is unplayed.
+Read [§214](docs/TACTICAL_AI.md#214-combat-consumables-c1-and-unused-ability-evidence-22-november-2026),
+the [checks](docs/competence/SUMMONS_CONSUMABLES_C1_CHECKS.json) and [build provenance](docs/competence/SUMMONS_CONSUMABLES_C1_BUILD_PROVENANCE.json).
+- Both combat modes now appraise potions by effect with continuous restraint on the buff benefit.
+  The bounded `[Unused]` witness and `ITEMS` audit record what reached existing scoring and why it was skipped.
+- Release 0 warnings, 1,133 unit tests, scripts 27/21/3, complete audits and native 98/14/10 pass.
+  Apart from `ITEMS`, the existing audit lines and Fusion/summon results match the same input baseline.
+- Use the replay in §214. C3, C2, C4, S1 and S2 are later slices in the plan.
+
+**Earlier handover (22 November 2026, Claude): final plan for Codex to implement, on `claude/summons-consumables-plan`.**
 Read [docs/SUMMONS_CONSUMABLES_PLAN.md](docs/SUMMONS_CONSUMABLES_PLAN.md) and its
 [evidence](docs/competence/SUMMONS_CONSUMABLES_EVIDENCE.json). The author's decisions are recorded at its end.
 - **Summons:** driven summons use the abilities the readers understand (54 casts of their own spells in coverage7). The

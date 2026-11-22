@@ -7188,3 +7188,32 @@ merged into development and `main` updated.
 - **Release:** `release/CompanionAI_Pathfinder_v0.3.60.zip` is byte-identical to the coverage8fix1 test build
   (MVID `a2be2e6f`). `Info.json` 0.3.60. `main` is fast-forwarded to development; the author creates the tag and the GitHub release.
 - **Played:** coverage8 (8 fights, no AI Control error). #105's corrections are not yet played.
+
+## 214. Combat consumables C1 and unused ability evidence (22 November 2026)
+
+Potion effects go through the existing per-recipient appraisal in both modes. A read buff's benefit takes
+`LimitedUseDiscount` instead of the 0.8 difficulty gate. Current dispel, relief and cleanse benefits keep their
+normal worth. Healing still uses `SpentHealValue` and the item bar still applies.
+
+The fight summary records the best observed value, accepted issues and last exclusion using fixed records.
+It emits one `[Unused]` row per observed unit or summon kind, capped at 16 groups and 32 entries each.
+It covers abilities discovered for the tactical scorer. Equivalent copies of the same item blueprint and
+ability are grouped. A capped roster, options discarded at discovery and specialized paths without an appraisal
+limit what can be inferred from this witness. No additional rule or path queries are required.
+
+`ITEMS` joins actual usable items to their current ability verdicts. The actual Neutralize Poison item is a
+poison-filtered dispel. Its live benefit depends on eligible poison, dispel chance and the existing harm reader.
+The audit reproduced 95/114 read potions, 570/650 read scrolls and 212/229 read wands. No item effect readers
+were expanded in C1.
+
+Checked source `f646225` passed a zero-warning real-reference Release build, 1,133 unit tests,
+27/21/3 script tests, strict/full ProfileAudit and native 98/14/10. Apart from `ITEMS`, audit report lines match
+the same input baseline. Both Fusion matrices and summon kit detail are byte-identical.
+[Checks](competence/SUMMONS_CONSUMABLES_C1_CHECKS.json) · [Compiler provenance](competence/SUMMONS_CONSUMABLES_C1_BUILD_PROVENANCE.json)
+
+The [UMM test package](../test-builds/AI-Control-FACC-v0.3.60-dev-items-c1-f646225-UMM-test.zip?raw=true) is **unplayed**. In turn-based and real time,
+give a front liner Shield of Faith and a healing potion. Compare an easy mixed fight against a harder melee
+fight. Check that healing urgency still behaves as before and that a low-value potion stays unused.
+Test Neutralize Poison against an eligible active poison and on a healthy actor with matching quick slots.
+Keep a driven summon in the same fights to confirm the `[Unused]` row is grouped by kind. Send both logs and
+the startup module `41783dad-c121-40d8-a852-08756fba45ee`.
