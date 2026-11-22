@@ -1,0 +1,229 @@
+{
+  "task": "coverage8 playtest and PR #104 review",
+  "date": "2026-11-22",
+  "branch": "codex/coverage8-review",
+  "checked_source_commit": "27a427ebffc18bad9090908fbf99329511ab8274",
+  "base": {
+    "branch": "claude/coverage7-followups",
+    "commit": "d8ff91d60d8b9e9f91b65051d56bab1a84da447e",
+    "pr": 104,
+    "gameplay_equivalent_played_source": "17e3e1e1c35843a519dcc408395c1e7ae73fe0e8"
+  },
+  "played_input_receipt": "docs/competence/COVERAGE8_PLAYTEST_INPUTS.json",
+  "review": "docs/COVERAGE8_PLAYTEST_REVIEW.md",
+  "dll": {
+    "assembly": "CompanionAI_Pathfinder, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null",
+    "mvid": "a2be2e6f-a510-45cc-a706-7edef3b0e100",
+    "sha256": "bd90aba517a219b0c14aa4c5493a120bf9da93e20121a44f69ab574805938841",
+    "size": 1639936
+  },
+  "package": {
+    "path": "test-builds/AI-Control-FACC-v0.3.60-dev-coverage8fix1-27a427e-UMM-test.zip",
+    "sha256": "a0df22db14f579a7490983d260936fed7e88ff02a50fd4f819da083d44e2fe86",
+    "size": 651531,
+    "manifest_version": "0.3.60"
+  },
+  "build_provenance": "docs/competence/COVERAGE8_REVIEW_BUILD_PROVENANCE.json",
+  "baseline": {
+    "commit": "d8ff91d60d8b9e9f91b65051d56bab1a84da447e",
+    "dll": {
+      "assembly": "CompanionAI_Pathfinder, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null",
+      "mvid": "c3a23d25-190b-43fe-8a1a-6e8aa8c6ccaf",
+      "sha256": "18d84889ad190504404f268a96bc76f54ff27d9d02abee544e993a7f8b7a227b",
+      "size": 1634816
+    },
+    "release_warnings": 0,
+    "unit_tests": 1118,
+    "native_harnesses": {
+      "ToggleCosts": 98,
+      "TomeBurn": 14,
+      "ToyBoxSpend": 10,
+      "MagusSupplementary": 44
+    }
+  },
+  "release_build": {
+    "warnings": 0,
+    "errors": 0,
+    "real_game_references": true,
+    "source_clean": true,
+    "log_sha256": "b60b59ff9caa3cb3baec03d9564985c88396a1d5b361792883d2c011c329a8d0"
+  },
+  "unit_tests": {
+    "passed": 1129,
+    "failed": 0,
+    "skipped": 0,
+    "new": 11,
+    "new_cases": "8 area-budget/risk cases and 3 first-hit/per-line probability counterexamples",
+    "log_sha256": "3cbd02f6d4902650e6c92a2fc6e3441dc4f91e533e86891bf0fa64e0f1f3458a"
+  },
+  "script_tests": {
+    "BlueprintInventory": 27,
+    "InvocationLedger": 21,
+    "ProfileAuditSupplement": 3
+  },
+  "profile_audit": {
+    "strict": {
+      "exit": 0,
+      "loaded": 44814,
+      "failed_blueprints": 0,
+      "abilities": 4808,
+      "reader_errors": 0,
+      "report_sha256": "468219d958418633c4029589a67758dee8e52e56bfdaa0ff09e59a4fd2659a13",
+      "command_log_sha256": "7773ea0b86ed98170054e5f9e80524b77d2c9033e5b3a7ca24553de365b4eb77"
+    },
+    "full_stock": {
+      "exit": 0,
+      "loaded": 45295,
+      "failed_blueprints": 0,
+      "abilities": 4849,
+      "reader_errors": 0,
+      "report_sha256": "c58138beaca20b058600c07981aebd42f1c0a2403bf659cedc82db35eef60493",
+      "command_log_sha256": "f119b9f0fc7116e73a828e18688f03f8eb2c5077e82165d69209132dfac38060"
+    },
+    "supplementary_magus": {
+      "exit": 0,
+      "loaded": 44818,
+      "failed_blueprints": 0,
+      "abilities": 4808,
+      "reader_errors": 0,
+      "report_sha256": "88184dc6455f5055594377ae899afbc965d11c17642c40742732aa6019c2f4f8",
+      "command_log_sha256": "8723b34de933a8e513306943ac935cf2858e564f38a091e086ae6005cb08bf5a",
+      "checks": 44
+    },
+    "new_section": {
+      "COVERAGE8-REVIEW": 25
+    },
+    "retained_sections": {
+      "COVERAGE7-FOLLOWUPS": 20,
+      "OFFENSIVE-AFFLICTION": 27
+    },
+    "comparison": {
+      "strict.txt": {
+        "normalized_equal": false,
+        "byte_equal": false,
+        "baseline_sha256": "71d12b5802edb4246d566ff5b1a3035882d1ba095c82b0358f0873fa59b9c1b2",
+        "corrected_sha256": "468219d958418633c4029589a67758dee8e52e56bfdaa0ff09e59a4fd2659a13",
+        "diff_file": "diff-strict.txt",
+        "diff_lines": 11,
+        "check_counts_changed": {
+          "COVERAGE8-REVIEW": {
+            "before": null,
+            "after": 25
+          }
+        }
+      },
+      "full-stock.txt": {
+        "normalized_equal": false,
+        "byte_equal": false,
+        "baseline_sha256": "7eecfd217a7aabe504bf82408776efb2062b305222a7700844712a06a55c5b0c",
+        "corrected_sha256": "c58138beaca20b058600c07981aebd42f1c0a2403bf659cedc82db35eef60493",
+        "diff_file": "diff-full-stock.txt",
+        "diff_lines": 11,
+        "check_counts_changed": {
+          "COVERAGE8-REVIEW": {
+            "before": null,
+            "after": 25
+          }
+        }
+      },
+      "summon-kit-detail.txt": {
+        "normalized_equal": true,
+        "byte_equal": true,
+        "baseline_sha256": "43d0c6402852d4cceefe0253946be94349293584142021f3811c54eca0a7cf35",
+        "corrected_sha256": "43d0c6402852d4cceefe0253946be94349293584142021f3811c54eca0a7cf35",
+        "diff_file": "diff-summon-kit-detail.txt",
+        "diff_lines": 0,
+        "check_counts_changed": {}
+      },
+      "coverage.json": {
+        "json_equal": true,
+        "byte_equal": true,
+        "baseline_sha256": "acd0b62097c834cb8617f33b9272a32f24f08da4b91c0b3499f3eccd779e1517",
+        "corrected_sha256": "acd0b62097c834cb8617f33b9272a32f24f08da4b91c0b3499f3eccd779e1517"
+      },
+      "full-coverage.json": {
+        "json_equal": true,
+        "byte_equal": true,
+        "baseline_sha256": "acd0b62097c834cb8617f33b9272a32f24f08da4b91c0b3499f3eccd779e1517",
+        "corrected_sha256": "acd0b62097c834cb8617f33b9272a32f24f08da4b91c0b3499f3eccd779e1517"
+      }
+    },
+    "comparison_scope": "Every line of strict and full reports compared on completed identical inputs, normalizing only baseline/final output-directory paths. Only the new 25-check section and its blank separators differ. Existing route checks were adapted without changing their counts.",
+    "coverage": {
+      "configurations": 15494,
+      "profile_accepted": 14789,
+      "profile_withheld": 705,
+      "admitted_and_joint_metadata_qualified": 13387,
+      "metadata_qualified_including_withheld": 13639,
+      "reader_errors": 0,
+      "byte_identical_to_baseline": true
+    },
+    "raw_export_negative_control": {
+      "expected_exit": 1,
+      "actual_exit": 1,
+      "loaded": 44811,
+      "failed": 1,
+      "note": "Known foreign-enum raw export fails closed and produces no verdicts. It is not silently accepted. Passing runs use the documented native-compatible inputs and missing-only stock supplements."
+    },
+    "harness_note": "Offline native metadata/contracts use documented runnable Unity stubs; no live actor, Rulebook cast, command or path execution. The package contains none of these harness dependencies."
+  },
+  "native_harnesses": {
+    "ToggleCosts": {
+      "checks": 98,
+      "failures": 0,
+      "includes_supplied_Psionics_provider": true,
+      "log_sha256": "798e420a33dce1f3a8095156729ac7fe6071cf993c41dd0a4514da54d947ed65"
+    },
+    "TomeBurn": {
+      "checks": 14,
+      "failures": 0,
+      "log_sha256": "388dafb41dda08710ec8450b2f6e8bdd1bb3f731d9d601e5121c34fb8f2f4ea0"
+    },
+    "ToyBoxSpend": {
+      "checks": 10,
+      "failures": 0,
+      "log_sha256": "cd895ade7514f50d2c8601b489e5c6f86f9826f8277879dc650bd1bda18f6a5d"
+    },
+    "MagusSupplementary": {
+      "checks": 44,
+      "failures": 0,
+      "log_sha256": "8723b34de933a8e513306943ac935cf2858e564f38a091e086ae6005cb08bf5a"
+    }
+  },
+  "added_external_references": {
+    "baseline": "d8ff91d60d8b9e9f91b65051d56bab1a84da447e",
+    "count": 1,
+    "signatures": [
+      "Assembly-CSharp M valuetype System.Boolean Kingmaker.View.MapObjects.AreaEffectView::Contains(valuetype UnityEngine.Vector3) this=True"
+    ],
+    "verification": "Exact full parameter/return signature resolved against the supplied assembly, no overload/prefix matching.",
+    "log_sha256": "b52d903247501ebc24709d20bea3c9ab3ff55681ea2176fb559602edcb096f03"
+  },
+  "performance": {
+    "bounds": "64 area records, 128 point-dispel recipients, 64 path points, 60m/6s path horizon; path callback reuses the already queried native route. Decision-local area values invalidate with the existing forecast version.",
+    "matched_Unity_before_after": false,
+    "measured_speedup_claimed": false,
+    "touch_planning_pruning_added": false
+  },
+  "not_run": [
+    "Gameplay of this corrected DLL",
+    "Live on-hit firing, removal heal, area dispel or through-area walk",
+    "Live faction handback or native interruption replay",
+    "Matched Unity performance benchmark"
+  ],
+  "remaining_limits": [
+    "Conservative opening-hit bound when native HadHit state is unknown; roll/moment-dependent riders withheld.",
+    "Rider HP remains utility rather than immediate lethal HP; stat/level mortality remains approximate.",
+    "Conditional removal losses remain conservative; unread deactivation/Dispose callbacks withhold healing.",
+    "Area utility and lingering/helpful effects remain heuristic; overlapping dispels use a conservative bound.",
+    "Long, complex, mounted or unread through-area routes withhold exceptional permission; native rerouting after issue can change a path.",
+    "No observed playtest execution of Point dispel, Abandon Flesh, priced crossing, Circle of Death or faction transition."
+  ],
+  "publication": {
+    "draft_pr": true,
+    "merged": false,
+    "pushed_to_main_or_development": false,
+    "tag_or_release": false,
+    "raw_private_inputs_committed": false
+  }
+}

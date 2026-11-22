@@ -1,5 +1,18 @@
 # Test builds
 
+## Coverage8 review corrections — 0.3.60 development test (22 November 2026)
+
+- [Complete UMM ZIP](AI-Control-FACC-v0.3.60-dev-coverage8fix1-27a427e-UMM-test.zip?raw=true) · [identity](AI-Control-FACC-v0.3.60-dev-coverage8fix1-27a427e-UMM-test.identity.json) · [checksum](AI-Control-FACC-v0.3.60-dev-coverage8fix1-27a427e-UMM-test.sha256).
+- Checked source **`27a427e`**, startup MVID **`a2be2e6f-a510-45cc-a706-7edef3b0e100`**, UMM **0.3.60**, **unplayed**.
+  Includes the unmerged #104 stack. The previous coverage8 package has now been played; [review/replay](../docs/COVERAGE8_PLAYTEST_REVIEW.md).
+- Corrects first-hit/per-line grapple forecasts, guarded removal healing, native point dispels and forecast lifetimes.
+  The approved RT crossing offer must validate its actual path against the quoted risk; other movement policies unchanged.
+- **1,129 units + 27/21/3 scripts**, zero-warning real-reference Release; every audit passes, new native-contract checks **25**.
+  Existing report lines, both Fusion matrices and summon detail unchanged. Native **98/14/10**, supplementary Magus **44**.
+- Frozen DLL and unchanged `Info.json` only. [Checks](../docs/competence/COVERAGE8_REVIEW_CHECKS.json),
+  [compiler/reference provenance](../docs/competence/COVERAGE8_REVIEW_BUILD_PROVENANCE.json). No merge or stable release.
+
+
 ## Next candidate: v0.3.60 coverage8 — coverage7 follow-ups on Codex's corrections (17e3e1e), unplayed
 
 - [Complete UMM ZIP](AI-Control-FACC-v0.3.60-dev-coverage8-17e3e1e-UMM-test.zip?raw=true) · [identity](AI-Control-FACC-v0.3.60-dev-coverage8-17e3e1e-UMM-test.identity.json) · [checksum](AI-Control-FACC-v0.3.60-dev-coverage8-17e3e1e-UMM-test.sha256).

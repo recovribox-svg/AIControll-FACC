@@ -7138,3 +7138,31 @@ The author approved what still needed approval, movement included.
 - The author played coverage7 with an infinite-health cheat. §210's HP discrepancy (Drow Magus at HP100% after 541 damage)
   is that cheat, not a defect, and that playtest exercised no low-HP behaviour.
 
+
+
+## 212. Coverage8 playtest and PR #104 corrections (22 November 2026)
+
+The coverage8 playtest (source `17e3e1e`, module `828dc676`, no cheats/rests between fights) shows successful low-HP healing,
+eight fights and no AI exception or issue rejection. It does not execute Point dispel, Abandon Flesh or a priced crossing.
+The [review](COVERAGE8_PLAYTEST_REVIEW.md) separates that evidence from native-contract counterexamples in PR #104.
+
+- Native `AbstractWeaponTrigger.IsSuitable` can retain `HadHit` when the opening attack misses or its weapon is unsuitable.
+  `OnHitRules.FiringHits` uses the conservative opening-hit bound for unknown state. Each attack/leap line keeps its own
+  pre-grab reach; rider reads expire with the existing attack forecast, even within one frame. No live trigger is mutated.
+- A deactivation heal needs a proved guarded caster removal, an active unsuppressed buff and an entirely readable plain
+  callback. The real Flesh Armor still reads 2d6+3; unread siblings/Dispose effects cannot promise a heal. Below-zero conscious
+  casters use native life state. Ordinary `HealGain` is unchanged.
+- Point dispels use the native area's `CheckBonus` branch and exact `AreaEffectView.Contains`, conservatively bound overlapping
+  dispel actions, and reuse decision-local area worth with forecast invalidation. Bounds never truncate away potential losses.
+- The author-approved RT crossing offer no longer grants permission from an old entry segment alone. Preparation/dispatch
+  reuse their actual native path and existing arrival trimming; a bounded quote must fit the original area cost/stop budget.
+  Newly entered hazards and ending inside are priced. Unread/pending, mounted or over-budget routes refuse this exception.
+  Pathfinding, retreat, ordinary walks/exits and target commitment are unchanged; native post-issue rerouting remains a limit.
+- Faction diagnostic memos/budget reset at fight boundaries and formatting occurs after deduplication. No control-policy retune.
+
+Checked source `27a427e`: Release **0 warnings/errors**, **1,129 unit + 27/21/3 scripts**, all audit sections pass with new
+`COVERAGE8-REVIEW` **25**. Every existing strict/full report line, both Fusion matrices and summon detail match the fresh
+same-input #104 baseline. Native harnesses **98/14/10**, supplementary Magus **44**, one new native signature resolved.
+Frozen unplayed UMM **0.3.60** package, module **`a2be2e6f-a510-45cc-a706-7edef3b0e100`**; [checks](competence/COVERAGE8_REVIEW_CHECKS.json)
+and [compiler provenance](competence/COVERAGE8_REVIEW_BUILD_PROVENANCE.json). No integration, live path/cast execution,
+touch-planning pruning or measured Unity speed-up. The replay and remaining precision limits are in the review.

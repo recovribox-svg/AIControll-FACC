@@ -1,0 +1,43 @@
+{
+  "task": "coverage8 playtest and PR #104 review",
+  "date": "2026-11-22",
+  "played_source_commit": "17e3e1e1c35843a519dcc408395c1e7ae73fe0e8",
+  "played_startup_mvid": "828dc676-d296-4f0a-9e9a-70b6f6487c09",
+  "manifest_version": "0.3.60",
+  "source_identity_note": "Source commit supplied by the author; the startup log confirms the MVID. PR #104 later documentation commits preserve the played gameplay source.",
+  "files": [
+    {
+      "name": "Log.txt",
+      "sha256": "504e834bb476fe3da29a2a54304a10449a206b2149b73572ce015be53e40d988",
+      "bytes": 1266244,
+      "logical_lines": 7699
+    },
+    {
+      "name": "combatLog.txt",
+      "sha256": "6112d6e46b5f268e4ccf926cfbb170b5017d93cb5c4f795e6b7ca2aabb6af45a",
+      "bytes": 703834,
+      "logical_lines": 17885
+    }
+  ],
+  "author_context": {
+    "health_cheats": false,
+    "rests": "between fights",
+    "manual_control": "not specified",
+    "spawns": "not specified for this playtest"
+  },
+  "privacy": "Raw logs, game DLLs, blueprint dumps and decompiles remain private and are not committed.",
+  "counts": {
+    "fights": 8,
+    "turn_based_fights": 3,
+    "real_time_fights": 5,
+    "measured_decisions": 1012,
+    "logged_hp_decisions": 449,
+    "issues": 328,
+    "terminals": 328,
+    "unacted_terminals": 62,
+    "issue_rejections": 0,
+    "ai_control_exceptions": 0
+  },
+  "count_scope": "Issue/terminal counts include out-of-combat permanent-buff commands; quiet real-time logging does not print every measured decision.",
+  "review": "docs/COVERAGE8_PLAYTEST_REVIEW.md"
+}
