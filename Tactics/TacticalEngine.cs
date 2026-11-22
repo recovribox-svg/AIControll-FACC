@@ -3441,6 +3441,11 @@ namespace CompanionAI_Pathfinder.Tactics
                 AbilityDiscovery.ReportOnce("value-selection|" + AbilityDiscovery.Key(ability),
                     () => $"[ValueSelection] {ability.Name}: common buff/fixed minimum duration only; longer selected outcome unpriced; " +
                           "ally checks retain the longer duration and possible refresh (first per configuration)");
+            if (profile.DelayedControlBurst != null)
+            {
+                unused?.Record(witness, UnusedReason.DelayedDelivery);
+                return none;
+            }
             if (!PureMagePolicy.AllowsAbility(ctx.Settings, ability, profile))
             { unused?.Record(witness, UnusedReason.PureMage); return none; }
             var targetingBlueprint = ability.GetDeliverBlueprint() ?? ability.Blueprint;
@@ -4876,12 +4881,17 @@ namespace CompanionAI_Pathfinder.Tactics
                     }
                     float enemyValue = revealOnly ? p * RevealCombatGain(ctx, enemy) * rounds * repeat
                                                  : p * CombatMath.ControlWorth(enemy) * share * rounds;
-                    // ★ v0.3.21: a poison's Constitution damage is lost hit points (CombatMath.PoisonHpLoss), valued like
-                    // damage; with no other control it replaces the plain-debuff guess.
+                    if (profile.WorstOfTwoAttacks != null || profile.RedirectCarrier != null)
+                        enemyValue = p * SummonDebuffWorth(ctx, ability, profile, enemy, rounds) * repeat;
+                    if (profile.AttackMark != null)
+                        enemyValue = p * OwnAttackMarkWorth(ctx, ability, profile.AttackMark, enemy, rounds);
+                    if (profile.StatDamageCarrier && profile.ControlStrength == ControlStrength.None &&
+                        buffs.All(CombatMath.HasPoisonStatDamage)) enemyValue = 0f;
+                    // Stat damage contributes damage-equivalent utility, never a hit-point kill quote.
                     float poisonHp = buffs.Sum(b => CombatMath.PoisonHpLoss(ability, b, enemy, ctx.ExpectedRounds));
                     if (poisonHp > 0f)
                     {
-                        float poisonValue = DamageValue(enemy, p * poisonHp, p);
+                        float poisonValue = DamageValue(enemy, 0f, 0f, onHitUtility: p * poisonHp);
                         enemyValue = profile.ControlStrength == ControlStrength.None ? poisonValue : enemyValue + poisonValue;
                     }
                     // ★ v0.3.18 (test10): what Demoralize adds or replaces for this caster (Frightening Thug, Hellknight,

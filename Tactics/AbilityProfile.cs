@@ -658,13 +658,16 @@ namespace CompanionAI_Pathfinder.Tactics
 
             // ★ v0.3.12: what it puts on its target is harmful, whatever the blueprint's intent flags say. Orvath's
             // Entangle (not flagged Harmful) was cast on himself as a "buff" of 9.4: its Entangled buff counted as an
-            // unrecognised beneficial buff. Abilities flagged helpful to allies, and personal abilities (their target
-            // is the caster: a condition there is a drawback, not an attack), keep their drawbacks out of this.
+            // unrecognised beneficial buff. A personal cast without outward delivery keeps its own drawbacks out of
+            // this. AbilityTargetsAround can deliver a condition from a personal cast to other creatures.
             // ★ v0.3.21 (verification audit): nor abilities that can only be aimed at allies - their harmful buff is the
             // price of the effect, not an attack: Lesser Restoration turns Exhausted into Fatigued, the Devil's Hell's Decree
             // dazzles the ally it empowers. Read as attacks, they were never offered.
-            AppliesHarmfulBuffs = !HelpfulToAllies && Blueprint.Range != AbilityRange.Personal && !AimsAtFriendsOnly(Blueprint) &&
-                                  TargetBuffs.Any(IsHarmfulBuff);
+            ReadSummonDebuffs();
+            bool outwardControl = around != null && AoETargets != TargetType.Ally && ControlStrength != ControlStrength.None;
+            AppliesHarmfulBuffs = !HelpfulToAllies &&
+                (Blueprint.Range == AbilityRange.Personal ? outwardControl : !AimsAtFriendsOnly(Blueprint)) &&
+                (WorstOfTwoAttacks != null || RedirectCarrier != null || TargetBuffs.Any(IsHarmfulBuff));
             if (Fusion != null)
             {
                 Save = Fusion.SavingThrowType;

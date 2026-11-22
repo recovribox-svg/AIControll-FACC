@@ -12,7 +12,7 @@ namespace CompanionAI_Pathfinder.Tactics
     {
         NotScored, Unavailable, CombatPolicy, ActionUnavailable, ScoreNotNeeded, Blocklist,
         SummonPolicy, Unread, CoupDelivery, FusionWithheld, PureMage, ConsumablePolicy, NoTarget,
-        NoApproach, ItemOnSummon, FriendlyFire, NoGain, ItemBar, SlotCopy
+        NoApproach, ItemOnSummon, FriendlyFire, NoGain, ItemBar, SlotCopy, DelayedDelivery
     }
 
     /// <summary>Bounded fight evidence. Stores identities and numbers, with no live rules or queries at report time.</summary>
@@ -177,6 +177,7 @@ namespace CompanionAI_Pathfinder.Tactics
                 case UnusedReason.NoGain: return "no positive effect";
                 case UnusedReason.ItemBar: return "below item bar";
                 case UnusedReason.SlotCopy: return "slot copy available";
+                case UnusedReason.DelayedDelivery: return "delayed delivery has no safe recipient forecast";
                 default: return best > 0f ? "scored but never issued" : "no score recorded";
             }
         }

@@ -37,6 +37,7 @@ namespace CompanionAI_Pathfinder.Tactics
         {
             public string Name;
             public float Worth;          // ValueModel.PerRound(CR)
+            public float FirstWeaponRollPass, WeaponHitDamage;
             public float Weapon;         // full attack on its likely victim, by the rules
             /// <summary>★ v0.3.28 test 12: the part of <see cref="Weapon"/> its hits' ability damage is worth.</summary>
             public float AbilityDamage;
@@ -181,6 +182,15 @@ namespace CompanionAI_Pathfinder.Tactics
             return a.Weapon >= other ? 1f : a.Weapon / (a.Weapon + other);
         }
 
+        internal static float WeaponThreatOnParty(UnitEntityData enemy, out float rollPass)
+        {
+            rollPass = 0f;
+            if (enemy == null || !Assessed.TryGetValue(enemy.UniqueId, out var a) || !(a.Weapon > 0f) ||
+                !(a.FirstWeaponRollPass > 0f) || !(a.WeaponHitDamage > 0f) || a.Victim == null || CombatMath.IsDisabled(a.Victim)) return 0f;
+            rollPass = a.FirstWeaponRollPass;
+            return a.WeaponHitDamage * AttackChance(enemy);
+        }
+
         // The cast and victim already selected by the bounded threat appraisal. Never rescan a kit for a buff.
         internal static bool TryMainCast(UnitEntityData enemy, UnitEntityData victim, out AbilityData cast, out float expectedHarm)
         {
@@ -291,7 +301,7 @@ namespace CompanionAI_Pathfinder.Tactics
             float cr = 1f;
             try { cr = Math.Max(1, enemy.Blueprint?.CR ?? 1); } catch { }
             a.Worth = ValueModel.PerRound(cr);
-            a.Weapon = 0f;
+            a.Weapon = a.FirstWeaponRollPass = a.WeaponHitDamage = 0f;
             a.AbilityDamage = 0f;
             a.AbilityStat = null;
             a.Spell = a.Heal = 0f;
@@ -314,6 +324,11 @@ namespace CompanionAI_Pathfinder.Tactics
                 {
                     var attack = CombatMath.EstimateWeaponAttack(enemy, victim, full: true);
                     a.Weapon = attack?.ExpectedDamage ?? 0f;
+                    if (attack != null && attack.FirstHitChance > 0f)
+                    {
+                        a.FirstWeaponRollPass = CombatMath.HitProbability(attack.FirstAttackBonus, attack.FirstArmorClass);
+                        a.WeaponHitDamage = a.Weapon;
+                    }
                     // ★ v0.3.28 test 12: the ability damage its hits deal (a Shadow's Strength touch).
                     // ★ test 13: in hit points. ★ test 14: everything its hits carry (a giant spider's poison, a Shadow's
                     // touch, negative levels, control: CombatMath.OnHitAffliction), and a swarm's round (the Mandragora swarm's

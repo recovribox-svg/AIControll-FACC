@@ -21,6 +21,57 @@ namespace CompanionAI_Pathfinder.Tactics
 {
     public static partial class TacticalEngine
     {
+        private static float OwnAttackMarkWorth(TacticalContext ctx, AbilityData ability, AbilityProfile.OwnAttackMark mark,
+                                                 UnitEntityData target, float rounds)
+        {
+            if (target == null || CombatMath.IsDisabled(target)) return 0f;
+            try
+            {
+                // A unique mark can remove another copy that still pays off. Keep its current appraisal until that
+                // fight target drops, including marks placed by hand. An oversized fight is outside this quote.
+                if (mark.Unique)
+                {
+                    if (ctx.Enemies.Count > 8) return 0f;
+                    foreach (var enemy in ctx.Enemies)
+                        if (enemy != target && !CombatMath.IsDisabled(enemy) &&
+                            enemy.Buffs.Enumerable.Any(b => b.Blueprint == mark.Buff && b.Context?.MaybeCaster == ctx.Unit))
+                            return 0f;
+                }
+
+                var wrapper = new Kingmaker.Utility.TargetWrapper(target);
+                var source = CombatMath.CreateContext(ability, wrapper);
+                var buffContext = new Kingmaker.UnitLogic.Mechanics.MechanicsContext(ctx.Unit, target.Descriptor,
+                    mark.Buff, source, wrapper);
+                buffContext.RecalculateRanks();
+
+                int Read(Kingmaker.UnitLogic.Mechanics.ContextValue value)
+                {
+                    if (value == null) return 0;
+                    if (value.ValueType == Kingmaker.UnitLogic.Mechanics.ContextValueType.Simple ||
+                        value.ValueType == Kingmaker.UnitLogic.Mechanics.ContextValueType.Rank)
+                        return Math.Max(0, value.Calculate(buffContext));
+                    if (value.ValueType != Kingmaker.UnitLogic.Mechanics.ContextValueType.Shared) return 0;
+                    var shared = mark.SharedValues.LastOrDefault(v => v.ValueType == value.ValueShared);
+                    if (shared != null)
+                        return Math.Max(0, (int)(CombatMath.EvaluateDice(shared.Value, buffContext, 0) * shared.Modifier));
+                    if (source == null) return 0;
+                    AbilityProfile.SharedValueRange(ability, source, value.ValueShared, out int minimum, out _, out _);
+                    return Math.Max(0, minimum);
+                }
+
+                int attack = Read(mark.Attack?.Value), damage = Read(mark.Damage?.Value);
+                Kingmaker.Enums.WeaponRangeType? onlyRange = mark.Attack?.CheckRangeType == true
+                    ? mark.Attack.RangeType : (Kingmaker.Enums.WeaponRangeType?)null;
+                bool full = ctx.CanFullAttack;
+                float gain = CombatMath.AttackMarkGain(ctx.Unit, target, full, attack, damage, mark.BypassesReduction, onlyRange);
+                // Standard marks spend this turn's attack. The engine still compares the remaining value with the
+                // main action, and uses its existing same-target coupling for all own-attack marks.
+                if (SlotOf(ability) == ActionSlot.Standard) rounds -= 1f;
+                return gain * Math.Max(0f, rounds);
+            }
+            catch { return 0f; }
+        }
+
         /// <summary>What a mark gives its caster against the marked enemy, read from the caster's own facts.</summary>
         internal sealed class CasterSideMark
         {
