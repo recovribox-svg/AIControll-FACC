@@ -8,7 +8,28 @@ Read [CONTRIBUTING.md](CONTRIBUTING.md) for shared branch ownership, Codex pull 
 Codex works on task branches and targets pull requests at `claude/dreamy-pasteur-b9h3rn`; Claude reviews and integrates them there.
 Keep `main` for author-authorized releases. Read [AGENTS.md](AGENTS.md) when coordinating agent work.
 
-**Current handover (21 November 2026, Claude): coverage3 playtest reviewed; fixes and Fusion C3 on
+**Current handover (21 November 2026, Claude): the author's coverage4 follow-ups on `claude/coverage4-followups`, stacked on
+`claude/coverage3-review` (draft PR #96). Not played, nothing merged.** Read [docs/COVERAGE4_FOLLOWUPS.md](docs/COVERAGE4_FOLLOWUPS.md),
+`docs/TACTICAL_AI.md` §205 and the [receipt](docs/competence/COVERAGE5_CHECKS.json).
+
+- **Changes:**
+  1. Both modes: a dispel or removal that frees an ally under an enemy's control is valued: the enemy's lost fighter plus
+     the ally back, for the rounds the hold would last (its round re-save). Dispels follow the game's order, and a party
+     buff dispelled first is a loss.
+  2. Movement (author-approved): with no full exit from several swarms, a spot that leaves one of them is tried
+     (Seelah, fight 10).
+  3. Fusion C6a: damage over time with a caster-level rank on the buff (Caustic Eruption) is a carrier. Offered 10,077,
+     joint 6,367 of 15,494, none lost.
+- **Checks** on `2b9d8ed`:
+  - Release 0 warnings; 1,066 unit + 27/21/3 script tests.
+  - ProfileAudit: new `FREEING` 12, `FUSION-DOT` 47, `SWARM-ESCAPE` 32; every other line unchanged.
+  - Native harnesses 98/14/10; 0 references added.
+- **Package:** `test-builds/AI-Control-FACC-v0.3.60-dev-coverage5-2b9d8ed-UMM-test.zip`, MVID `3d6cdb2b`. It contains
+  coverage4. Manifest 0.3.60; no `main`, tag or release.
+- **Next:** the author plays coverage5 (replay in the page). The rest of C6 needs a reader per spell (listed in the
+  programme page).
+
+**Earlier handover (21 November 2026, Claude): coverage3 playtest reviewed; fixes and Fusion C3 on
 `claude/coverage3-review`, stacked on `claude/coverage2-review` (draft PR #95). Not played, nothing merged.** Read
 [docs/COVERAGE3_REVIEW.md](docs/COVERAGE3_REVIEW.md), `docs/TACTICAL_AI.md` §204 and the
 [receipt](docs/competence/COVERAGE4_CHECKS.json).
@@ -26,8 +47,8 @@ Keep `main` for author-authorized releases. Read [AGENTS.md](AGENTS.md) when coo
   3. Real time: burst forecasts, re-checks and disruption timing wait for the native start gate (action cooldown,
      surprised initiative). The caster's own cast walk no longer cancels its burst.
   4. Real time: an ally ordered to attack the target in melee that reaches it first counts toward a predicted flank.
-- **Found, not changed:** freeing a dominated ally is not valued; a nauseated unit in two swarms found no exit; an
-  8 HP splash; performance as before.
+- **Found, not changed:** freeing a dominated ally is not valued, and a nauseated unit in two swarms found no exit (both
+  done in coverage5); an 8 HP splash; performance as before.
 - **Checks** on `361776c`:
   - Release 0 warnings; 1,065 unit + 27/21/3 script tests.
   - ProfileAudit: new `PERMADEATH` 24, `BURST-AIM` 78, `EVIDENCE` 15, `SNEAK` 36, `FUSION-OUTCOME` 32; every other line

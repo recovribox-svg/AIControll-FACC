@@ -200,6 +200,14 @@ risk.
 
 ### C6. Support, reveal, form and fact carriers (672 withheld, 2,434 on the simpler value)
 
+**C6a done (21 November 2026, [COVERAGE4_FOLLOWUPS.md](COVERAGE4_FOLLOWUPS.md) §3):**
+- Damage over time whose dice come from a caster-level rank on the buff itself is a periodic carrier. The rank is read
+  in a buff context under the cast's.
+- This covers Caustic Eruption: offered 9,999 → 10,077, joint 5,995 → 6,367, none lost.
+- Still in C6: Phantasmal Putrefaction (nested saves, nausea), Touch of Slime (spreading Constitution damage), Acidic
+  Spray (damage at the end), Reduce Person and Peer Through (size, resistances), Enervation (heals undead), Serenity,
+  Excruciating Deformation and Curse of Magic Negation.
+
 - **Proposal.** Split by mechanism, not into one bucket:
   - penalties through `DebuffShareOf` (Peer Through *, Curse of Magic Negation, Excruciating Deformation);
   - reveal utility through the existing hidden-enemy value;

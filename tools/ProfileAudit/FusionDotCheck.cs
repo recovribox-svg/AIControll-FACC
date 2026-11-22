@@ -11,6 +11,7 @@ using Kingmaker.Blueprints;
 using Kingmaker.Blueprints.Classes.Spells;
 using Kingmaker.ElementsSystem;
 using Kingmaker.EntitySystem.Stats;
+using Kingmaker.Enums;
 using Kingmaker.RuleSystem;
 using Kingmaker.RuleSystem.Rules.Damage;
 using Kingmaker.UnitLogic.Abilities;
@@ -132,6 +133,31 @@ namespace ProfileAudit
                     "a tick that applies a child buff is not damage only");
                 Check(!IsCarrier(With(new BlueprintComponent[] { Ticking(Fire(new ContextValue { ValueType = ContextValueType.Rank })) })),
                     "dice the cast's ranks decide are not priced as fixed");
+                // ★ coverage4 (C6a): a rank the buff's own config reads from the caster level is a fixed read of the cast.
+                ContextRankConfig Rank(AbilityRankType type, ContextRankBaseValueType from)
+                {
+                    var config = new ContextRankConfig();
+                    typeof(ContextRankConfig).GetField("m_Type", Hidden).SetValue(config, type);
+                    typeof(ContextRankConfig).GetField("m_BaseValueType", Hidden).SetValue(config, from);
+                    return config;
+                }
+                var ranked = new ContextValue { ValueType = ContextValueType.Rank, ValueRank = AbilityRankType.DamageDice };
+                Check(IsCarrier(With(new BlueprintComponent[] { Ticking(Fire(ranked)), Rank(AbilityRankType.DamageDice, ContextRankBaseValueType.CasterLevel) })),
+                    "dice from the buff's own caster-level rank are a carrier");
+                Check(!IsCarrier(With(new BlueprintComponent[] { Ticking(Fire(ranked)), Rank(AbilityRankType.DamageDice, ContextRankBaseValueType.StatBonus) })),
+                    "dice from a stat-based rank (someone's state) are not");
+                Check(!IsCarrier(With(new BlueprintComponent[] { Ticking(Fire(ranked)), Rank(AbilityRankType.DamageBonus, ContextRankBaseValueType.CasterLevel) })),
+                    "a rank config of another rank type does not read the dice");
+                var caustic = Buff("02a4d7303f0eeee408d7c7e5908ba339");
+                Check(caustic != null && Supported(caustic) && IsCarrier(caustic),
+                    "actual Caustic Eruption acid (1d6 per two caster levels a round, at most 10) is a periodic damage carrier");
+                var tickReader = engine.GetMethod("PeriodicCarrierDamage", Hidden);
+                var rankRead = math.GetMethod("PeriodicRank", Hidden);
+                Check(tickReader != null && rankRead != null &&
+                      BuffSuppressCheck.BodyWithLambdas(engine, "PeriodicCarrierDamage").Any(m => m.Name == "PeriodicRank") &&
+                      SaveBoostCheck.ReferencedMembers(rankRead).Any(m => m.Name == "RecalculateRanks") &&
+                      SaveBoostCheck.ReferencedMembers(rankRead).Any(m => m.Name == "get_frameCount"),
+                    "a tick's ranked dice are read in a buff context under the cast's, once per cast, buff and frame");
 
                 // The production tick reader on the actual Incendiary Runes burning: damage now, and a passed Reflex removes it.
                 var read = math.GetMethod("ReadPeriodicTick", Hidden);

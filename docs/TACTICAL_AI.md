@@ -6967,3 +6967,25 @@ fixes hold: arcan's bursts hurt no ally, and no touch heal chased its recipient.
   - Native harnesses 98/14/10; 7 references added, all resolved.
 - **Package** `test-builds/AI-Control-FACC-v0.3.60-dev-coverage4-361776c-UMM-test.zip`, MVID `248aa48c`. Unplayed;
   manifest 0.3.60; no `main`, tag or release.
+
+## 205. coverage4 follow-ups: freeing a dominated ally, partial swarm exits, Fusion C6a (21 November 2026, Claude)
+
+[Page](COVERAGE4_FOLLOWUPS.md), [receipt](competence/COVERAGE5_CHECKS.json). These are the author's three requests after
+the coverage3 review.
+
+- **Freeing a dominated ally** (both modes; `FreeingValue`, `FreedWorth`, `DispelValue`):
+  - A dispel or removal that can end the hold (native `ChangeFaction`; Dominate's round Will save removes it) is worth
+    the enemy's lost fighter plus the ally back, for the rounds the hold would last (`ValueModel.HeldRounds`).
+  - Dispels follow the game's order and count, so a party buff dispelled first is a loss.
+- **Partial swarm exits** (movement, author-approved; `PartialSwarmExits`):
+  - With no spot within a move clear of every striking swarm, spots that leave one of them are priced as any other way
+    out (Seelah in fight 10).
+- **Fusion C6a** (`IsPeriodicDamageCarrier`, `PeriodicRank`):
+  - Damage over time with a caster-level rank on the buff (Caustic Eruption) is a carrier.
+  - Offered 10,077 and joint 6,367 of 15,494, none lost.
+- **Checks** on `2b9d8ed`:
+  - Release 0 warnings; 1,066 unit + 27/21/3 script tests.
+  - ProfileAudit new `FREEING` 12, `FUSION-DOT` 47, `SWARM-ESCAPE` 32, every other line unchanged.
+  - Native harnesses 98/14/10; 0 references added.
+- **Package** `test-builds/AI-Control-FACC-v0.3.60-dev-coverage5-2b9d8ed-UMM-test.zip`, MVID `3d6cdb2b`. Unplayed;
+  manifest 0.3.60; no `main`, tag or release.

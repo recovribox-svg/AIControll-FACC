@@ -17,6 +17,18 @@ namespace CompanionAI.Tests
         [InlineData(-5, 1f)]
         public void ChanceIsTheD20Needed(int need, float expected) => Assert.Equal(expected, ValueModel.DispelChance(need), 3);
 
+        // ★ coverage4: an effect its bearer re-saves against each round holds (1 - p)^k for round k.
+        [Fact]
+        public void HeldRoundsFollowTheRoundSave()
+        {
+            Assert.Equal(3f, ValueModel.HeldRounds(3f, 0f), 3);                       // no re-save: the horizon
+            Assert.Equal(1f + 0.5f + 0.25f, ValueModel.HeldRounds(3f, 0.5f), 3);       // half pass each round
+            Assert.Equal(1f, ValueModel.HeldRounds(6f, 1f), 3);                        // the first save ends it: this round only
+            Assert.Equal(1f + 0.5f * 0.5f, ValueModel.HeldRounds(1.5f, 0.5f), 3);      // half of the second round in the horizon
+            Assert.Equal(0f, ValueModel.HeldRounds(0f, 0.3f), 3);
+            Assert.True(ValueModel.HeldRounds(6f, 0.3f) < ValueModel.HeldRounds(6f, 0.1f));
+        }
+
         [Fact]
         public void StopsAfterTheFirstSuccess()
         {

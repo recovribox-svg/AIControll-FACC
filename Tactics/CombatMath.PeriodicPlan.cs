@@ -14,6 +14,10 @@ using Kingmaker.UnitLogic.FactLogic;
 using Kingmaker.UnitLogic.Mechanics;
 using Kingmaker.UnitLogic.Mechanics.Actions;
 using Kingmaker.UnitLogic.Mechanics.Components;
+using Kingmaker.EntitySystem.Entities;
+using Kingmaker.UnitLogic.Abilities;
+using Kingmaker.Utility;
+using UnityEngine;
 
 namespace CompanionAI_Pathfinder.Tactics
 {
@@ -82,18 +86,21 @@ namespace CompanionAI_Pathfinder.Tactics
             try
             {
                 var plan = PeriodicPlanOf(buff);
+                // ★ coverage4 (Fusion coverage C6a): or a rank config of the buff's own read from the caster level (Caustic
+                // Eruption's acid, 1d6 per two caster levels, at most 10): fixed by the cast's parameters, read in a buff
+                // context under the cast's (PeriodicRank).
                 carrier = plan != null && plan.Supported && plan.Round != null && plan.Poison == null &&
                           plan.EnergyRemovals.Count == 0 && plan.HitPoints &&
-                          buff.ComponentsArray.All(c => c is AddFactContextActions || c is SpellDescriptorComponent) &&
+                          buff.ComponentsArray.All(c => c is AddFactContextActions || c is SpellDescriptorComponent || CasterLevelConfig(c)) &&
                           buff.TickTime.TotalSeconds >= 1d && buff.TickTime < TimeSpan.MaxValue &&
-                          DamageOnlyTick(plan.Round, 0);
+                          DamageOnlyTick(buff, plan.Round, 0);
             }
             catch { carrier = false; }
             s_DamageCarriers[buff] = carrier;
             return carrier;
         }
 
-        private static bool DamageOnlyTick(ActionList list, int depth)
+        private static bool DamageOnlyTick(BlueprintBuff buff, ActionList list, int depth)
         {
             if (depth > 8) return false;
             foreach (var action in list?.Actions ?? Array.Empty<GameAction>())
@@ -101,21 +108,75 @@ namespace CompanionAI_Pathfinder.Tactics
                 if (action is ContextActionRemoveSelf) continue;
                 if (action is ContextActionDealDamage deal)
                 {
-                    if (KindOf(deal) != DealKind.HitPoints || deal.Value.DiceCountValue.ValueType != ContextValueType.Simple ||
-                        deal.Value.BonusValue.ValueType != ContextValueType.Simple || deal.Value.DiceCountValue.Value < 0 ||
-                        deal.Value.BonusValue.Value < 0) return false;
+                    if (KindOf(deal) != DealKind.HitPoints || !TickValue(buff, deal.Value.DiceCountValue) ||
+                        !TickValue(buff, deal.Value.BonusValue)) return false;
                     continue;
                 }
                 if (action is ContextActionSavingThrow save)
                 {
                     if (save.HasCustomDC && save.CustomDC.ValueType != ContextValueType.Simple) return false;
                     var saved = (ContextActionConditionalSaved)save.Actions.Actions[0];
-                    if (!DamageOnlyTick(saved.Failed, depth + 1) || !DamageOnlyTick(saved.Succeed, depth + 1)) return false;
+                    if (!DamageOnlyTick(buff, saved.Failed, depth + 1) || !DamageOnlyTick(buff, saved.Succeed, depth + 1)) return false;
                     continue;
                 }
                 return false; // a child buff or anything else is more than damage
             }
             return true;
+        }
+
+        /// <summary>A tick's dice number: a fixed non-negative value, or a rank the buff's own caster-level config gives.</summary>
+        private static bool TickValue(BlueprintBuff buff, ContextValue value)
+        {
+            if (value == null) return false;
+            if (value.ValueType == ContextValueType.Simple) return value.Value >= 0;
+            if (value.ValueType != ContextValueType.Rank) return false;
+            foreach (var config in buff.GetComponents<Kingmaker.UnitLogic.Mechanics.Components.ContextRankConfig>())
+                if (config.Type == value.ValueRank) return CasterLevelConfig(config);
+            return false;
+        }
+
+        /// <summary>A rank config read from the caster level only (no stat, class, buff rank or property of anyone).</summary>
+        private static bool CasterLevelConfig(BlueprintComponent component)
+        {
+            if (!(component is Kingmaker.UnitLogic.Mechanics.Components.ContextRankConfig config)) return false;
+            try
+            {
+                return RankBaseType != null && (Kingmaker.UnitLogic.Mechanics.Components.ContextRankBaseValueType)RankBaseType.GetValue(config) ==
+                       Kingmaker.UnitLogic.Mechanics.Components.ContextRankBaseValueType.CasterLevel;
+            }
+            catch { return false; }
+        }
+
+        private static readonly Dictionary<KeyValuePair<AbilityData, BlueprintBuff>, MechanicsContext> s_PeriodicRankContexts =
+            new Dictionary<KeyValuePair<AbilityData, BlueprintBuff>, MechanicsContext>();
+        private static int s_PeriodicRankFrame = -1;
+
+        /// <summary>
+        /// ★ coverage4 (C6a): a tick's dice number for <paramref name="ability"/>'s application of <paramref name="buff"/>: a fixed
+        /// value, or the buff's caster-level rank, read as the game does in a buff context whose parent is the cast's (its
+        /// caster level, fused spellbook and metamagic). The rank reads nobody's state, so one context per cast and buff
+        /// serves the decision's frame.
+        /// </summary>
+        internal static int PeriodicRank(AbilityData ability, BlueprintBuff buff, UnitEntityData recipient, ContextValue value)
+        {
+            if (value == null) return 0;
+            if (value.ValueType == ContextValueType.Simple) return value.Value;
+            int frame = Time.frameCount;
+            if (frame != s_PeriodicRankFrame) { s_PeriodicRankContexts.Clear(); s_PeriodicRankFrame = frame; }
+            var key = new KeyValuePair<AbilityData, BlueprintBuff>(ability, buff);
+            if (!s_PeriodicRankContexts.TryGetValue(key, out var context))
+            {
+                try
+                {
+                    var parent = CreateContext(ability, new TargetWrapper(recipient));
+                    context = new MechanicsContext(ability.Caster?.Unit, recipient.Descriptor, buff, parent);
+                    context.RecalculateRanks();
+                }
+                catch { context = null; }
+                if (s_PeriodicRankContexts.Count > 128) s_PeriodicRankContexts.Clear();
+                s_PeriodicRankContexts[key] = context;
+            }
+            return context != null ? Math.Max(0, EvaluateValue(value, context, 0)) : 0;
         }
 
         private static bool Empty(ActionList actions) => actions?.Actions == null || actions.Actions.Length == 0;

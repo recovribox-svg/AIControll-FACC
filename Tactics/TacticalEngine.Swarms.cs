@@ -227,10 +227,22 @@ namespace CompanionAI_Pathfinder.Tactics
             string names = string.Join(", ", striking.Select(s => s.swarm.CharacterName).Distinct().Take(2));
             Candidate chosen = null;
             float bestSeen = float.NegativeInfinity;
+            var tries = new List<(Vector3 point, bool step, string left, string still)>();
             foreach (var (distance, step) in distances)
             {
                 var point = circles != null ? FindSwarmExitPoint(ctx, distance, step, circles, clear) : FindRetreatPoint(ctx, distance, clear);
-                if (!point.HasValue) continue;
+                if (point.HasValue) tries.Add((point.Value, step, null, null));
+            }
+            // ★ coverage4 (author-approved movement change): no spot within reach clears every swarm that strikes here. A
+            // cast-style swarm's space is its burst around any party member it can pick, so in a crowded melee overlapping
+            // swarms leave no full exit (Seelah, nauseated inside a Locust and a Vescavor Swarm, stood still for the rest of
+            // coverage3's fight 10). Try the spots that leave at least one of them, priced as any other way out.
+            if (tries.Count == 0 && circles != null && striking.Count > 1 && ctx.HasMove)
+                foreach (var (point, left, still) in PartialSwarmExits(ctx, striking, ctx.MoveRange > 0f ? ctx.MoveRange : unit.CurrentSpeedMps * 3f, refused))
+                    tries.Add((point, false, left, still));
+            foreach (var (pointAt, step, left, still) in tries)
+            {
+                Vector3? point = pointAt;
                 var risk = MoveRisk(ctx, point.Value, ownSafetyCounted: true);
                 float dangerThere = IncomingDamage(ctx, unit, point.Value);
                 // By the role's tolerance, as walking in is priced (MoveRisk's exposure): a tank that walks into a swarm
@@ -254,8 +266,8 @@ namespace CompanionAI_Pathfinder.Tactics
                 {
                     Kind = CandidateKind.Move, Slot = step ? ActionSlot.Free : ActionSlot.Move, Point = point, ApproachRadius = 0.3f,
                     Value = value,
-                    Label = $"{(step ? "5ft step" : "Move")} out of {names}'s swarm (danger {dangerHere:0.#}->{dangerThere:0.#})" +
-                            (risk?.Tag ?? ""),
+                    Label = $"{(step ? "5ft step" : "Move")} out of {left ?? names}'s swarm{(still != null ? $" (still in {still}'s)" : "")} " +
+                            $"(danger {dangerHere:0.#}->{dangerThere:0.#})" + (risk?.Tag ?? ""),
                     Key = step ? FiveFootStepKey + "#swarm" : "move:outofswarm",
                     Risk = risk, RiskAt = point, PreRiskValue = gain
                 };
@@ -263,7 +275,7 @@ namespace CompanionAI_Pathfinder.Tactics
             if (chosen != null) list.Add(chosen);
             else if (Main.VerboseOn && CombatMemory.FirstThisFight($"swarmstay|{unit.UniqueId}|{CombatMemory.Round}"))
                 Main.Verbose($"[Swarm] {unit.CharacterName}: struck by {names}'s swarm where it stands (danger here {dangerHere:0.#}); " +
-                             (float.IsNegativeInfinity(bestSeen) ? "no free spot out of its space within a step or a short move"
+                             (float.IsNegativeInfinity(bestSeen) ? "no free spot out of any of their spaces within a step or a move"
                                                                   : $"the best way out is worth {bestSeen:0.#}, not enough"));
         }
     }

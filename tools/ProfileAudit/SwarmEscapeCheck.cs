@@ -103,6 +103,15 @@ namespace ProfileAudit
                     m.Name.StartsWith("<AddOutOfSwarmCandidate>", StringComparison.Ordinal)).SelectMany(SaveBoostCheck.ReferencedMembers).ToArray();
                 Check(delegates.Any(m => m.Name == "Affordable") && delegates.Any(m => m.Name == "ReachesFrom") && delegates.Any(m => m.Name == "Slot"),
                     "offensive opportunity still checks affordability, reach and full-round action slot");
+                // ★ coverage4 (author-approved movement change): with no full exit, a spot that leaves one of several swarms.
+                Check(exit.Any(m => m.Name == "PartialSwarmExits") && exit.Any(m => m.Name == "FindSwarmExitPoint"),
+                    "the full exit is tried first; the partial one only when it found nothing");
+                var partial = SaveBoostCheck.ReferencedMembers(typeof(TacticalEngine).GetMethod("PartialSwarmExits", flags)).ToArray();
+                Check(new[] { "SwarmExitCircles", "ExitDistance", "SwarmStrikes", "EnteringDanger", "IsPositionValid" }
+                          .All(n => partial.Any(m => m.Name == n)),
+                    "a partial exit leaves one swarm by its own native circles, is struck by fewer, and passes the area and walk tests");
+                Check(!partial.Any(m => m.Name == "MoveRisk" || m.Name == "FindPath" || m.Name == "StartPath" || m.Name == "Run"),
+                    "the partial search itself makes no path query or command; the few spots it keeps are priced as any other exit");
             }
             catch (Exception ex) { bad++; lines.Add("SWARM-ESCAPE FAILED: " + ex.GetBaseException()); }
             failures = bad;

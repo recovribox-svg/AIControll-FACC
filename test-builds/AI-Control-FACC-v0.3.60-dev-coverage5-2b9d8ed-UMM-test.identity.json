@@ -1,0 +1,40 @@
+{
+  "build_label": "coverage5",
+  "kind": "development-test",
+  "version": "0.3.60",
+  "source_branch": "claude/coverage4-followups",
+  "source_commit": "2b9d8ed97c7575749b6eb77224e65e578f1402ae",
+  "stack": [
+    "claude/fusion-coverage-programme (C1, draft PR #92)",
+    "claude/review-r-items (R2, R5, evidence)",
+    "claude/fusion-coverage-c2-c5 (C2, C5, ordinary damage over time)",
+    "claude/coverage2-review (coverage2 log review fixes, draft PR #95)",
+    "claude/coverage3-review (coverage3 log review fixes, Fusion C3)",
+    "claude/coverage4-followups (dominated-ally release, partial swarm exits, Fusion C6a)"
+  ],
+  "development_base": "0019856805605c9b74e27ffbdfa6b8dd9c20b0f2",
+  "dll": {
+    "assembly": "CompanionAI_Pathfinder, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null",
+    "mvid": "3d6cdb2b-74b2-40dd-9e5c-4cae541b1d7f",
+    "sha256": "b103ac49b7d22ef79db6f1266cb21e89318a2d8bfb9f86b4a3cce0b69d0fbee0",
+    "size": 1563648
+  },
+  "archive": "AI-Control-FACC-v0.3.60-dev-coverage5-2b9d8ed-UMM-test.zip",
+  "zip_sha256": "7df06d08fa6c69d6f7ecff22aecd6e94c2af7e51ea1c4c21a463ceebb538026f",
+  "manifest_sha256": "63ad9f152d4bacb44f021428193efad46aaf0d13380bb5691ebca1d935f2b5bf",
+  "checks_receipt": "docs/competence/COVERAGE5_CHECKS.json",
+  "build_provenance": "docs/competence/COVERAGE5_BUILD_PROVENANCE.json",
+  "build_provenance_sha256": "b8a8eda77e11097a2d36df343ea21e0c8c7d3eed897688ff3de5d54caf306da6",
+  "toolchain": {
+    "dotnet_sdk": "8.0.428",
+    "csharp_compiler": "4.11.0-3.25569.22 (3fb752d4)"
+  },
+  "scope": "coverage4 plus the author's follow-ups (docs/COVERAGE4_FOLLOWUPS.md): a dispel or removal that frees an ally under an enemy's control is valued; with no full exit from several swarms, a spot that leaves one of them is tried; Fusion C6a, damage over time whose dice come from the buff's own caster-level rank (Caustic Eruption).",
+  "gameplay_status": "unplayed",
+  "release": false,
+  "archive_contents": [
+    "CompanionAI_Pathfinder.dll",
+    "Info.json"
+  ],
+  "identity_note": "Checked DLL is frozen across later documentation commits. No cross-machine byte identity or measured Unity speed-up claimed."
+}
