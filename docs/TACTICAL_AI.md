@@ -6926,3 +6926,44 @@ intended.
   - Native harnesses 98/14/10; 0 references added.
 - **Package** `test-builds/AI-Control-FACC-v0.3.60-dev-coverage3-1ed420b-UMM-test.zip`, MVID `60673199`. Unplayed;
   manifest 0.3.60; no `main`, tag or release.
+
+## 204. coverage3 playtest reviewed: allies under an enemy's control, Fusion C3 and the permanent-death policy, burst readiness (21 November 2026, Claude)
+
+[Review](COVERAGE3_REVIEW.md), [receipt](competence/COVERAGE4_CHECKS.json). The author's coverage3 logs: 15 fights (6 TB,
+9 RT), 833 commands, every one but a last out-of-combat buff with an end row, and no AI Control exception. The coverage2
+fixes hold: arcan's bursts hurt no ally, and no touch heal chased its recipient.
+
+- **Allies under an enemy's control** (both modes, `TacticalEngine.TurnedAllies.cs`):
+  - An enemy's Dominate turned Seelah (fight 15). Four party members made weapon attacks on her, and she died.
+  - Native `ChangeFaction` keeps `FactionOriginal` for a temporary switch. Such a unit stays an enemy for danger and
+    control. It gets no weapon attack, walk to attack it, leap or Coup de Grace (`SparesTurnedAlly`). Damage to it is
+    priced as friendly fire.
+- **Fusion C3 and the author's permanent-death policy** (both modes, `CombatMath.PermanentDeath.cs`, `PermanentDeathRules`):
+  - A cast that could kill an ally for good is not used at 1 % risk or more, whatever the settings. Below 1 % it costs a
+    hundred times the ally's worth. Summons are exempt.
+  - Such casts are Disintegrate's dust (it kills on activation, not at a later round), a kill, or a buff that kills on
+    activation.
+  - The risk is exact: the reach chance times, per save outcome, the chance the dice take the HP left below the gate.
+  - The burst re-check cancels for it past the cancel limit.
+  - The dust gate is a stable fusion guard: 344 configurations newly offered with the joint value (9,999 / 5,995 of
+    15,494), none lost.
+- **Real-time burst readiness** (`ReadySeconds`, `DisruptRules.OrderedStartSeconds`):
+  - Bursts went off 0.8–4.2 s after their forecast. They had waited for the native start gate: action cooldown, and the
+    initiative of a surprised unit.
+  - The plan, lead, re-check and disruption timing now wait for it.
+  - The caster's own walk to its cast is no longer a walk-in (fight 13).
+- **Arriving flank partners** (real time, `CombatMath.ArrivingEngagers`):
+  - All 7 flank misses had allies arriving with an attack command on the target. Such an ally now counts when it
+    reaches the target first.
+- **Found, not changed:**
+  - freeing a dominated ally (dispel) is not valued;
+  - a nauseated unit inside two swarms found no exit within a short move (fight 10);
+  - an Alchemist's Fire splash hit a walking ally for 8 HP;
+  - performance is unchanged.
+- **Checks** on `361776c`:
+  - Release 0 warnings; 1,065 unit + 27/21/3 script tests.
+  - ProfileAudit new `PERMADEATH` 24, `BURST-AIM` 78, `EVIDENCE` 15, `SNEAK` 36, `FUSION-OUTCOME` 32, every other line
+    unchanged.
+  - Native harnesses 98/14/10; 7 references added, all resolved.
+- **Package** `test-builds/AI-Control-FACC-v0.3.60-dev-coverage4-361776c-UMM-test.zip`, MVID `248aa48c`. Unplayed;
+  manifest 0.3.60; no `main`, tag or release.

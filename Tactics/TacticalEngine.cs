@@ -199,6 +199,8 @@ namespace CompanionAI_Pathfinder.Tactics
         public Dictionary<string, float> TooFar = new Dictionary<string, float>();
         /// <summary>★ v0.3.9: party members down (unconscious, not dead): only heals are aimed at them.</summary>
         public List<UnitEntityData> DownedAllies = new List<UnitEntityData>();
+        /// <summary>★ coverage3 review: enemies now, allies by their own side (Dominate): stopped, not killed (TurnedAllies.cs).</summary>
+        public HashSet<UnitEntityData> TurnedAllies = new HashSet<UnitEntityData>();
         internal List<UnitEntityData> SwarmRecipients;
         internal Dictionary<UnitEntityData, float> RevealCombatGains;
         internal Dictionary<UnitEntityData, CombatMath.AttachedSnapshot> AttachedDamage;
@@ -439,7 +441,7 @@ namespace CompanionAI_Pathfinder.Tactics
 
             var usable = candidates
                 .Where(c => PureMageAllows(ctx, c) && c.Value > 0f && Affordable(ctx, c) && !memory.Failed.Contains(c.Key) && !SilentlyFailing(ctx, c) &&
-                            !PolicyBlocks(ctx, c) && !PointlessAgainstHelpless(ctx, c, preview))
+                            !PolicyBlocks(ctx, c) && !PointlessAgainstHelpless(ctx, c, preview) && !SparesTurnedAlly(ctx, c))
                 .OrderByDescending(c => c.Value)
                 .ToList();
 
@@ -988,6 +990,8 @@ namespace CompanionAI_Pathfinder.Tactics
                         continue;
                     }
                     ctx.Enemies.Add(other);
+                    // ★ coverage3 review: an ally under an enemy's control (Dominate) is stopped, not killed.
+                    if (IsTurnedAlly(other)) { ctx.TurnedAllies.Add(other); NoteTurnedAlly(ctx, other); }
                 }
                 else if (other.IsPlayerFaction || other == unit)
                 {
@@ -3899,6 +3903,12 @@ namespace CompanionAI_Pathfinder.Tactics
                 why = "an ally is already casting it on this target";
                 return 0f;
             }
+            // ★ coverage3 review: a Coup de Grace kills; an ally under an enemy's control is stopped, not killed.
+            if (IsCoupDeGrace(ability) && ctx.TurnedAllies.Contains(target))
+            {
+                why = "an ally under an enemy's control";
+                return 0f;
+            }
             if (IsCoupDeGrace(ability))
                 return CoupDeGraceValue(ctx, ability, target, out why);
             // ★ G2: letting go of a grapple is worth the hold it ends, when that hold no longer pays.
@@ -4059,6 +4069,27 @@ namespace CompanionAI_Pathfinder.Tactics
                 return 0f;
             }
 
+            // ★ Fusion coverage C3 (author's policy): a cast that may kill an ally for good - Disintegrate's dust, a kill, a
+            // buff that kills on activation - is not used at the veto risk, whatever the settings; below it, it costs.
+            float permanentDeathCost = 0f;
+            if (CombatMath.CanKillPermanently(ability))
+            {
+                bool reachesAllies = (profile.IsAoE || chainCatchesAllies && affectedAllies.Count > 0) && !profile.SelectiveSparesAllies(ability);
+                IEnumerable<UnitEntityData> atRisk = ctx.TurnedAllies.Count > 0 ? affectedEnemies.Where(ctx.TurnedAllies.Contains) : Enumerable.Empty<UnitEntityData>();
+                if (reachesAllies) atRisk = atRisk.Concat(affectedAllies).Concat(DownedRecipients());
+                foreach (var ally in atRisk.Distinct())
+                {
+                    if (ally == unit && burst == null && !profile.IsAoE) continue;
+                    if (PermanentDeathVetoes(ctx, ability, profile, ally, out float deathCost, out string deathWhy))
+                    {
+                        ctx.FriendlyFireVeto = true;
+                        why = deathWhy;
+                        return 0f;
+                    }
+                    permanentDeathCost += deathCost;
+                }
+            }
+
             // --- kineticist burn relief (Dark Elementalist Soul Power) ---
             if (profile.HealsBurn)
             {
@@ -4079,6 +4110,8 @@ namespace CompanionAI_Pathfinder.Tactics
             {
                 float dmgValue = 0f;
                 float disrupt = 0f;   // ★ cast disruption: kept apart from the damage the friendly-fire rule weighs
+                float turnedCost = 0f;   // ★ coverage3 review: damage to allies under an enemy's control
+                List<string> turnedHurt = null;
                 // ★ v0.3.18 (C2): one resistance path - spell resistance (with penetration) and spell immunity in the
                 // effect chance, energy immunity and resistance in the damage estimate. A second analyser filtered here
                 // first, with its own rules (no penetration, immunity only for spells that allow spell resistance).
@@ -4090,6 +4123,19 @@ namespace CompanionAI_Pathfinder.Tactics
                                                   : CombatMath.EstimateAbilityDamage(ability, profile, enemy);
                     if (burst != null && dmg > burst.Damage) burst.Damage = dmg;   // ★ burst aim: the re-check's fallback
                     float p = CombatMath.EffectChance(unit, enemy, ability, profile, damage: true);
+                    // ★ coverage3 review: an ally under an enemy's control - its damage is friendly fire, never a gain; a
+                    // likely knock-out costs its worth (TacticalEngine.TurnedAllies.cs).
+                    if (ctx.TurnedAllies.Count > 0 && ctx.TurnedAllies.Contains(enemy))
+                    {
+                        float expected = dmg * p;
+                        if (expected > 0f)
+                        {
+                            turnedCost += Math.Min(expected, Math.Max(0f, enemy.HPLeft)) * 2f +
+                                          (expected >= enemy.HPLeft ? AllyWorth(ctx, enemy) : 0f);
+                            (turnedHurt ?? (turnedHurt = new List<string>())).Add(enemy.CharacterName);
+                        }
+                        continue;
+                    }
                     float part;
                     if (fusionRead != null && TryFusionValues(ctx, ability, profile, enemy, fusionRead, p, out float jointDamage,
                                                               out float jointControl, out float jointShare))
@@ -4180,6 +4226,14 @@ namespace CompanionAI_Pathfinder.Tactics
                     dmgValue -= allyCost;
                 }
 
+                // ★ coverage3 review: allies under an enemy's control the cast hurts. Not under Avoid Friendly Fire's veto - they
+                // are fighting the party - but never a gain (killing damage costs their worth above; the dust is vetoed).
+                if (turnedHurt != null)
+                {
+                    dmgValue -= turnedCost;
+                    string turnedNote = $"hurts {string.Join(", ", turnedHurt)} (under an enemy's control) -{turnedCost:F0}";
+                    ctx.FriendlyFireNote = ctx.FriendlyFireNote == null ? turnedNote : ctx.FriendlyFireNote + "; " + turnedNote;
+                }
                 if (dmgValue > 0f)
                 {
                     value += dmgValue * RoleWeight(ctx, "damage");
@@ -4199,6 +4253,13 @@ namespace CompanionAI_Pathfinder.Tactics
                     value += disrupt;
                     reasons.Add("disrupt");
                 }
+            }
+
+            // ★ Fusion coverage C3: a chance below the veto of killing an ally for good still costs a hundred times its worth.
+            if (permanentDeathCost > 0f)
+            {
+                value -= permanentDeathCost;
+                reasons.Add("permanent-death risk");
             }
 
             // ★ v0.3.21: a melee attack the ability makes besides its other effects (Death Attack, Blade from Shadows,

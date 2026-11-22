@@ -120,7 +120,9 @@ namespace CompanionAI_Pathfinder.Tactics
             /// <summary>The allies now caught cost more than the cast was worth.</summary>
             AllyCostsMore,
             /// <summary>No enemy is inside any more: the spell would be wasted.</summary>
-            NothingInside
+            NothingInside,
+            /// <summary>★ Fusion coverage C3: an ally may now be killed for good (the author's policy: never, whatever the settings).</summary>
+            AllyPermanentDeath
         }
 
         /// <summary>

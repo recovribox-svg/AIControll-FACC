@@ -436,6 +436,28 @@ namespace ProfileAudit
                       Calls(Body(typeof(BurstWatch), "PendingLanding"), typeof(BurstWatch), "LandingPendingFor") &&
                       Body(typeof(BurstWatch), "Evaluate").Any(m => m.Name == "Unpriced"),
                       "evidence: cast time, anchor at landing and unpriced walk-in allies reach the fight summary");
+                // ★ coverage3 review: a real-time cast starts only once its action may start (the native gate), and its walk runs
+                // meanwhile. The forecast, the re-check and the disruption timing wait for it.
+                var combat = typeof(Kingmaker.Controllers.Combat.UnitCombatState);
+                var gate = Body(typeof(UnitCommandController), "ShouldStartCommand");
+                Check(Calls(gate, combat, "get_CanActInCombat") && Calls(gate, combat, "HasCooldownForCommand"),
+                      "native: a real-time command starts once its unit may act and its action has no cooldown");
+                var canAct = Getter(combat, "CanActInCombat");
+                Check(Calls(canAct, combat, "get_IsWaitingInitiative") && Calls(canAct, combat, "get_NotSurprised"),
+                      "native: a unit waiting for its initiative acts only when it is not surprised");
+                var readyBody = Body(engine, "ReadySeconds");
+                Check(new[] { "get_IsWaitingInitiative", "get_NotSurprised", "get_Initiative", "get_StandardAction", "get_MoveAction",
+                              "get_SwiftAction", "get_RuntimeActionType" }.All(n => readyBody.Any(m => m.Name == n)) &&
+                      readyBody.Any(m => m.DeclaringType == typeof(CombatMemory) && m.Name == "get_IsRealTime"),
+                      "the wait reads the initiative and the action's own cooldown, in real time only");
+                Check(Calls(Body(engine, "PlanBurst"), engine, "ReadySeconds") &&
+                      Calls(Body(typeof(BurstWatch), "Evaluate"), engine, "ReadySeconds") &&
+                      Calls(Body(typeof(BurstWatch), "Evaluate"), typeof(DisruptRules), "OrderedStartSeconds") &&
+                      Calls(Body(engine, "AbilityDisruptBonus"), engine, "ReadySeconds") &&
+                      Calls(Body(engine, "WeaponDisruptValue"), engine, "ReadySeconds"),
+                      "the burst plan, its re-check and the disruption timing wait for the action before the cast or swing");
+                Check(DisruptRules.OrderedStartSeconds(1f, 3f) == 3f && DisruptRules.OrderedStartSeconds(2f, 0.5f) == 2f && DisruptRules.OrderedStartSeconds(-1f, -1f) == 0f,
+                      "pure rule: the walk and the wait run at the same time");
                 var combatEnd = engine.Assembly.GetTypes().SelectMany(t => t.GetMethods(Hidden)).FirstOrDefault(m => m.Name == "OnPartyCombatEnd");
                 Check(combatEnd != null && SaveBoostCheck.ReferencedMembers(combatEnd).Any(m => m.DeclaringType == typeof(BurstWatch) && m.Name == "ReportFight") &&
                       Calls(Body(typeof(BurstWatch), "Clear"), typeof(BurstWatch), "ReportFight"),

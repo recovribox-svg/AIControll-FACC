@@ -64,6 +64,9 @@ namespace ProfileAudit
                             observer, "LogFlankMiss") &&
                       Calls(Body(observer, "NoteFlank"), typeof(CombatMath), "OtherEngagers"),
                     "a flank the forecast missed is logged with the engagers counted at the decision and at the roll (bounded)");
+                Check(Calls(Body(observer, "NoteFlank"), typeof(CombatMath), "IdleEngagers") &&
+                      Body(observer, "LogFlankMiss").Any(m => m.Name == "IdleAtDecision"),
+                    "a missed flank names the engagers with no command on the target at the decision");
                 Check(Calls(Body(observer, "NoteFlank"), typeof(CombatMath), "ForecastFlank") &&
                       Calls(Body(typeof(CombatMath), "ForecastFlank"), typeof(CombatMath), "PredictFlank"),
                     "R1: the flank compared at the roll is the engine's own forecast");

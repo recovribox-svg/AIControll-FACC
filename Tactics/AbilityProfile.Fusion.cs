@@ -79,14 +79,15 @@ namespace CompanionAI_Pathfinder.Tactics
             get
             {
                 if (fusionIndependentGuards.HasValue) return fusionIndependentGuards.Value;
-                bool supported = BuffApplications.All(a => StableFusionGuards(a.Guards, FusionSharedHd && SharedHdBuffs.Contains(a.Buff))) &&
+                bool supported = BuffApplications.All(a => StableFusionGuards(a.Guards, FusionSharedHd && SharedHdBuffs.Contains(a.Buff),
+                                                                              KillsOnStart(a.Buff))) &&
                     Damage.All(a => !m_Guards.TryGetValue(a, out var guards) || StableFusionGuards(guards, false));
                 fusionIndependentGuards = supported;
                 return supported;
             }
         }
 
-        private bool StableFusionGuards(EffectGuard[] guards, bool pooled)
+        private bool StableFusionGuards(EffectGuard[] guards, bool pooled, bool dust = false)
         {
             foreach (var guard in guards)
             {
@@ -109,7 +110,11 @@ namespace CompanionAI_Pathfinder.Tactics
                         type != typeof(ContextConditionIsMainTarget) &&
                         // ★ Fusion F7: a pooled application's "is unconscious" test is the kill dependency the joint
                         // value already carries (no control for a recipient the cast's damage drops).
-                        !(pooled && type == typeof(ContextConditionIsUnconscious)))
+                        !(pooled && type == typeof(ContextConditionIsUnconscious)) &&
+                        // ★ Fusion coverage C3: Disintegrate's "HP left below 0" gate on a buff that only kills on activation
+                        // (the dust). On an enemy it is the kill the joint value's damage already carries; on an ally it is
+                        // a permanent death, priced and vetoed apart (CombatMath.PermanentDeathRisk, the author's policy).
+                        !(dust && type == typeof(ContextConditionCompareTargetHP)))
                     { FusionGuardRefusal = "mutable/unread guard " + type.Name; return false; }
                     if (!FusionConditionReferences.TryGetValue(type, out var fields))
                     {

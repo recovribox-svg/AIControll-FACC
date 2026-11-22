@@ -63,7 +63,7 @@ namespace CompanionAI_Pathfinder.Tactics
             public UnitCommand Command;
             public bool Predicted, BySecond;
             /// <summary>★ coverage2 review: other engagers the native rule counted at the decision, and how long ago it was.</summary>
-            public int OthersAtDecision;
+            public int OthersAtDecision, IdleAtDecision;
             public double At;
         }
         /// <summary>★ coverage2 review: detail lines for a flank the forecast missed, per fight.</summary>
@@ -142,7 +142,8 @@ namespace CompanionAI_Pathfinder.Tactics
             Flanks[unit] = new FlankRecord
             {
                 Target = c.Target, Command = command, Predicted = predicted, BySecond = bySecond,
-                OthersAtDecision = predicted ? -1 : CombatMath.OtherEngagers(c.Target, unit, out _), At = Now
+                OthersAtDecision = predicted ? -1 : CombatMath.OtherEngagers(c.Target, unit, out _),
+                IdleAtDecision = predicted ? -1 : CombatMath.IdleEngagers(c.Target, unit), At = Now
             };
         }
 
@@ -166,7 +167,8 @@ namespace CompanionAI_Pathfinder.Tactics
                 }
                 Main.Log($"[Flank] {attacker.CharacterName} -> {target.CharacterName}: flanked at the roll but not forecast " +
                          $"{Now - flank.At:0.0} s earlier ({(CombatMemory.IsRealTime ? "real time" : "turn-based")}); other engagers counted " +
-                         $"at the decision {flank.OthersAtDecision}, engaging at the roll: {(n > 0 ? engagers.ToString() : "none")} " +
+                         $"at the decision {flank.OthersAtDecision} (engaging it with no command on it {flank.IdleAtDecision}), " +
+                         $"engaging at the roll: {(n > 0 ? engagers.ToString() : "none")} " +
                          $"(first {MaxFlankMissDetails} per fight)");
             }
             catch { }

@@ -195,6 +195,8 @@ namespace CompanionAI_Pathfinder.Tactics
             var cast = CastingFor(ctx, enemy);
             if (cast == null || est == null) return 0f;
             float distance = ctx.Distance(enemy);
+            // ★ coverage3 review: the attack starts after its walk and the native wait for its standard action.
+            walkSeconds = DisruptRules.OrderedStartSeconds(walkSeconds, ReadySeconds(ctx.Unit, null));
             // ★ F2: the second attack follows on the native schedule (6 s / N apart unless chained), not a fixed swing.
             // ★ coverage2 review (R4): a bow's shots one animation apart (measured), not 0.7 s.
             bool bow = ProspectiveChainedAttacks(est.SecondWeapon);
@@ -341,6 +343,8 @@ namespace CompanionAI_Pathfinder.Tactics
             if (cast == null || !(damage > 0f)) return 0f;
             float walk = HorizontalDistance(ctx.Unit.Position, castOrigin) / Math.Max(BurstRules.MinWalkSpeed, ctx.Unit.CurrentSpeedMps);
             float lag = profile.DeliverDelaySeconds + FlightSecondsTo(profile, castOrigin, enemy.Position);
+            // ★ coverage3 review: the command starts after its walk and the native wait for its action, whichever is later.
+            walk = DisruptRules.OrderedStartSeconds(walk, ReadySeconds(ctx.Unit, ability));
             float at = DisruptRules.AbilityHitSeconds(walk, CastSecondsOf(ability, true), lag);
             float own = DisruptBonus(cast, hitChance, damage, at, 0f, 0f, float.MaxValue, out float chance);
             return AfterOrderedHits(ctx, enemy, cast, own, ref chance);   // ★ F2
