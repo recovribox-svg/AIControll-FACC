@@ -2093,7 +2093,7 @@ namespace CompanionAI_Pathfinder.Tactics
         public static float PoisonHpLoss(AbilityData ability, Kingmaker.UnitLogic.Buffs.Blueprints.BlueprintBuff buff, UnitEntityData target,
                                          float maxRounds)
         {
-            if (buff == null || target == null) return 0f;
+            if (target == null || !HasPoisonStatDamage(buff)) return 0f;
             try
             {
                 int dc = ParamsOf(ability)?.DC ?? 10;
