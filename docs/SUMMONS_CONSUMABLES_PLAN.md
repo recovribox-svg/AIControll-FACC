@@ -1,7 +1,8 @@
-# Summon abilities and combat consumables: investigation and plan
+# Summon abilities and combat consumables: final plan
 
-22 November 2026, Claude. Plan only: no code, manifest or package change. Base: development `6c4e96c` (v0.3.60).
-Evidence fingerprints: [competence/SUMMONS_CONSUMABLES_EVIDENCE.json](competence/SUMMONS_CONSUMABLES_EVIDENCE.json).
+22 November 2026. Investigation and plan by Claude; **Codex implements**, Claude reviews. The author's decisions are
+recorded at the end. No code, manifest or package change in this document's commits. Base: development `6c4e96c`
+(v0.3.60). Evidence fingerprints: [competence/SUMMONS_CONSUMABLES_EVIDENCE.json](competence/SUMMONS_CONSUMABLES_EVIDENCE.json).
 
 The author's two requests:
 1. Summons should use the spells and abilities they have, appropriately.
@@ -27,12 +28,12 @@ The author's two requests:
   - **Slice 0, first:** a bounded "why not used" witness and an offline item audit.
   - **Consumables:**
     - **C1:** potions valued like the spell they hold;
+    - **C3:** one consumable price in place of the 0.7 / 0.85 / 0.5 / 0 factors, slots before items;
     - **C2:** a potion handed to an ally;
-    - **C3:** one consumable price in place of the 0.7 / 0.85 / 0.5 / 0 factors;
     - **C4:** fixes to the readers' item misreads.
   - **Summons:**
     - **S1:** read the guessed effects in the author's demon roster, by mechanism;
-    - **S2:** teleports and leaps. This is movement, so it needs approval.
+    - **S2:** teleports and leaps (movement, approved by the author).
   - Each slice reuses the existing appraisals. None adds a path search or a cache that outlives a decision.
 
 ## Evidence: summons
@@ -129,28 +130,72 @@ recipient.
 
 | Rule | Effect |
 | --- | --- |
-| Potion with a heal | factor 1; the heal curve decides |
+| Potion with a heal | factor 1; the heal curve decides; the restoring part already has the easy-fight restraint (`ValueModel.SpentHealValue`) |
 | **Any other potion** | **0 below difficulty 0.8, 0.5 above**: buffs, cleanses, protections, Enlarge, Haste alike |
 | Scroll or wand | 0.7 × the game's Use Magic Device chance (`AbilityData.UseMagicDeviceDC`) |
-| Other usable (bombs, flasks) | 0.85 × that chance |
+| Other usable (flasks) | 0.85 × that chance |
+| Item spent as a material (Alchemical Weapon's flask) | 0.7 (scroll, wand) or 0.85, no Use Magic Device |
 | Every spent item | must still be worth 5 points after its risks (`MinSpentItemValue`) |
-| A guessed buff from an item | 0 (an item needs a clear effect; this is correct) |
+| A guessed buff from an item | 0 (an item needs a clear effect; this is correct and stays) |
+| Easy-fight restraint of offensive spell slots and daily bombs | not applied to items (`SourceItem == null` test) |
 | Potion for an ally | never built: `PotionForOther` is false, so the game anchors the potion on its owner |
 
 Difficulty (`enemy threat / party power`) had a median of 0.19, 0.34 and 0.38 in the last three logs.
 
+## Native contracts the slices rely on
+
+Read from the decompiled game. The implementer re-checks each against the supplied assembly before building on it.
+
+**Drinking a potion** (`AbilityData.GetDefaultActionType`):
+- a move action, or a swift action with Fast Potion while the swift action is free;
+- the engine reads this already (`TacticalEngine.SlotOf` uses `RuntimeActionType`), so a potion competes in the move slot.
+
+**A potion for another** (`AbilityData.PotionForOther`):
+- **Built by the action bar** as `new AbilityData(item.Ability) { PotionForOther = true }`
+  (`MechanicActionBarSlotItem.GetConvertedAbilityData`, `ActionBarSlot`).
+- **Action:** the item's `CustomItemAbilityActionType`, otherwise a standard action. The drinker's move-action rule does not
+  apply.
+- **Target:** `TargetAnchor` no longer forces the owner. A potion ability with Personal range still anchors on the owner,
+  so only potions whose ability can target friends are worth the conversion.
+- **Range:** `Caster.GetWeaponRange()` with no weapon: the minimum weapon range (5 ft) plus the giver's reach.
+- **Delivery:** `UnitUseAbility` switches to the sticky-touch delivery ability when there is one, and uses the touch
+  animation when the target is not the giver.
+- **Attacks of opportunity:** it provokes like drinking (`ProvokeAttackOfOpportunity`: a spell from a usable item without
+  a sticky touch).
+- **Identity:** native `Equals` and `GetHashCode` include the flag. The mod's option key (`AbilityDiscovery.Key`) does not
+  yet.
+
+**Use Magic Device:** `CombatMath.UseMagicDeviceChance` reads `AbilityData.UseMagicDeviceDC`. Unchanged by this plan.
+
+**Teleports** (`AbilityCustomTeleportation`, `AbilityCustomDimensionDoor`):
+- **Landing:** aimed at a unit, the caster lands in front of it, in its facing direction, at both bodies plus 5 ft.
+  Aimed at a point, at the point, relaxed among the bodies that travel.
+- **Restriction** (`IsTargetRestrictionPassed`, checked by `AbilityData.CanTarget`): the point is on the navmesh, not in
+  the fog of war and not on a disabled flying isle. A `DimensionDoorRestrictionIgnorance` component lifts the check.
+- **Dimension Door moves the units its settings name** (its `Radius`), not only the caster. Read who travels; do not
+  assume a solo jump.
+- `AlongPath` teleports land along the caster's path, at most a round's combat speed times their multiplier.
+
 ## Plan
 
 Both combat modes unless marked. Each slice keeps the existing value units, the native rule queries and the existing
-safety checks.
+safety checks (friendly fire, permanent death, blocklists, Pure Mage, consumable settings, no items on summons).
 
 ### Slice 0: why an ability or item was not used (diagnostics, both tracks)
 
-- **Change:** keep, per AI-driven unit and fight, the best value each kit ability and quick-slot item reached, and the
-  last rule that zeroed it. Examples: consumable factor, item bar, friendly-fire veto, no side to aim at, not available,
-  effect not understood, summon policy, Use Magic Device chance.
-- **Output:** at the fight's end, one `[Unused]` row per unit; summons are keyed by kind, so a pack reports once. For
-  example:
+- **Change:** keep, per AI-driven unit and fight, for each kit ability and quick-slot item:
+  - the best value it reached;
+  - how often it was chosen;
+  - the last rule that zeroed or excluded it.
+- **Reasons** are a small fixed set, recorded where scoring already returns:
+  - the gates in `AddAbilityCandidates` (not available, not affordable, no score needed);
+  - the early exits of `EvaluateAbility` (blocklist, consumable factor, Pure Mage, fusion withheld, Coup de Grace);
+  - the per-target skips (no side to aim at, out of range with no approach, friendly-fire veto, no item on a summon);
+  - the item bar or quick bar;
+  - effect not understood;
+  - removed by the summon policy (`SummonControl.Allowed`).
+- **Output:** at the fight's end, one `[Unused]` row per unit, listing only what was never chosen. Summons are keyed by
+  kind, so a pack reports once. For example:
 
   ```text
   [Unused] Vermlek: Mass Inflict Light Wounds best 0 (friendly fire on Schir, Orvath)
@@ -158,18 +203,19 @@ safety checks.
   ```
 
 - **Bounds:**
-  - one small record per ability per decision, written where scoring already returns;
-  - strings only at the fight's end;
+  - one small record per ability per decision, reused across decisions (no allocation once warm);
+  - strings built only at the fight's end;
   - at most 32 entries a unit and 16 units a fight;
-  - no new query.
-- **Offline:** a ProfileAudit section `ITEMS` makes the item table above reproducible. It joins every usable item to its
-  ability's verdict and the rule that would apply to it.
+  - no new rule, path or world query.
+- **Offline:** a ProfileAudit section `ITEMS` makes the item table above reproducible. It joins every usable item
+  (`BlueprintItemEquipmentUsable.m_Ability`) to its ability's verdict and the consumable rule that would apply to it.
 - **Why first:** the never-offered summon abilities and every item fix are judged against these rows.
 - **Acceptance:** the next log names a reason for every kit ability and quick-slot item never chosen.
 
 ### C1: potions valued like the spell they hold
 
-- **Change:** remove the potion difficulty gate. A potion's effect goes through the same appraisal as the spell:
+- **Change:** remove the potion difficulty gate in `ConsumableFactor`. A potion's effect goes through the same
+  appraisal as the spell:
   - buff parts (`AppraiseBuff`, including per-recipient stat links);
   - relief and cleanse (`TacticalEngine.Relief`);
   - typed energy protection;
@@ -177,11 +223,14 @@ safety checks.
   - heals, unchanged.
 - **Cleanses:**
   - A cleanse is worth something only when the drinker carries the effect it ends (poison, disease, blindness, a drain,
-    a curse). Then it is not held back by an easy fight: the harm is present now.
+    a curse).
+  - Then it is not held back by an easy fight: the harm is present now.
   - Death Ward and Protection from Evil are worth what they prevent from the enemies actually present, as their spells
     are.
-- **Restraint:** what C3 sets. Until C3 lands, buff potions use the spell slots' easy-fight restraint
-  (`ValueModel.LimitedUseDiscount`) instead of the binary gate.
+- **Restraint (author decision 1):** a buff potion in an easy fight takes the spell slots' restraint,
+  `ValueModel.LimitedUseDiscount(difficulty)`, on its value. That replaces the binary gate. C3 then makes this the price of
+  every item.
+- **Kept:** the item rule in `BuffQuality` (a guessed buff from an item is worth 0) and the item bar.
 - **Bounds:** no new reader or query. The potion's ability already has a profile.
 - **Acceptance:**
   - a poisoned companion with Neutralize Poison drinks it in an ordinary fight;
@@ -189,50 +238,65 @@ safety checks.
     options;
   - no potion is drunk at full value against a lone sleeping enemy.
 
+### C3: one consumable price, slots first
+
+- **Today:** fixed factors (0.7, 0.85, 0.5) and a gate. None of them knows what the item does or whether the unit has a
+  renewable way to do the same.
+- **Change:** an item's worth is its effect minus the price of spending it. One pure function in `ValueModel`, used by
+  `ConsumableFactor` for every usable item and every item spent as a material:
+  - **Restraint:** `LimitedUseDiscount(difficulty)` on the effect's value, the same as spell slots and daily bombs, so
+    consumables and slots compete on one footing.
+  - **No double restraint:**
+    - a healing item's restoring part keeps `SpentHealValue`, which already applies it;
+    - a cleanse of a harm present now takes none (C1).
+  - **Use Magic Device:** the game's chance, unchanged, for scrolls and wands not on the unit's list. Materials take none:
+    the class ability uses the item, the unit does not activate it.
+  - **Item bar:** unchanged (5 points after risks).
+- **Slots first (author decision 2):**
+  - An item copy of a spell (scroll, wand or potion) is not offered while the unit can cast the same spell blueprint from
+    its own spellbook now.
+  - "Can cast now" is the native availability of that spellbook option (slot or spontaneous slot left), and the option
+    must pass the blocklist and Pure Mage rules.
+  - The item is the backup once the slots are spent. A rest restores slots; an item is gold.
+  - The witness reason is "slot copy available".
+- **No scarcity pricing (author decision 3):** item counts, charges and gold are not read.
+- **Bounds:** pure formulas in `ValueModel` with unit tests. The slot-copy test reads the unit's own allowed abilities,
+  which the decision has already gathered.
+- **Acceptance:**
+  - in an easy fight a Magic Missile scroll and the same spell from a slot are held back by the same restraint;
+  - in a hard fight neither is held back;
+  - with a Magic Missile slot left, the scroll is not used;
+  - once the slots are spent, it is.
+
 ### C2: a potion handed to an adjacent ally
 
-- **Native contract:** `MechanicActionBarSlotItem.GetConvertedAbilityData` builds `new AbilityData(itemAbility)
-  { PotionForOther = true }`. `AbilityData.TargetAnchor` then uses the potion ability's own anchor (a touch) instead of
-  the owner. `UnitUseAbility` delivers it by touch, with the touch animation, and uses the sticky-touch delivery ability
-  when there is one.
 - **Change:**
-  - `AbilityDiscovery` adds this conversion for each potion in a quick slot, exactly as the action bar does.
-  - The engine values it on allies through the existing heal, buff and relief code, and walks to touch range through
-    the existing touch-approach rules. This is the same walk a touch spell makes, so no new movement policy.
+  - `AbilityDiscovery` adds the native conversion for each potion in a quick slot whose ability can target friends,
+    exactly as the action bar does.
+  - `AbilityDiscovery.Key` gains the `PotionForOther` flag, so drinking and handing over are separate options.
+  - The engine values it on allies through the existing heal, buff and relief code. Its action is the native one
+    (standard, unless the item says otherwise), read through `SlotOf`.
+  - It walks into the native range (5 ft plus reach) through the existing touch-approach rules, the same walk a touch
+    spell makes, so no new movement policy.
 - **Kept:**
   - no item on a summon (the existing rule);
-  - the consumable settings;
-  - the existing unit-key separation, so the self and other versions are separate options.
-- **Bounds:** one extra option per potion; allies already scored for touch heals; no extra path query beyond the
+  - the giver itself is served by the drinking option, not this one;
+  - the consumable settings, the C3 price and the provoke pricing.
+- **Bounds:** one extra option per such potion; allies already scored for touch heals; no extra path query beyond the
   existing touch preflight.
-- **Acceptance:** a companion with a healing potion feeds it to a badly hurt melee ally it can reach, when that beats its
-  own turn.
-
-### C3: one consumable price
-
-- **Today:** three fixed factors (0.7, 0.85, 0.5) and a gate. None of them knows what the item does, how many are left,
-  or whether the unit has a renewable way to do the same.
-- **Change:** an item's worth is its effect minus the price of spending it:
-  - **Restraint:** the share of the effect an easy fight takes off. This is `ValueModel.LimitedUseDiscount`, already
-    used for spell slots and daily bombs, so consumables and slots compete on one footing.
-  - **Use Magic Device:** the game's chance, unchanged, for scrolls and wands not on the user's list.
-  - **Item bar:** unchanged (5 points after risks).
-- **Default for slot or scroll of the same spell:** spend the renewable slot first, the scroll when slots are out. A rest
-  restores slots; a scroll is gold. This is close to today's behaviour, made explicit. It is an author choice (see
-  below).
-- **Bounds:** pure formulas in `ValueModel` with unit tests. Item counts and charges come from the item
-  (`ItemEntity.Count`, `Charges`) only if the author wants scarcity (below).
-- **Acceptance:** in an easy fight a Magic Missile scroll and the same spell from a slot compare by the same restraint;
-  in a hard fight neither is held back.
+- **Acceptance:**
+  - a companion with a healing potion feeds it to a badly hurt melee ally it can reach, when that beats its own turn;
+  - a Personal-range potion is never offered to an ally.
 
 ### C4: the readers' item misreads
 
 - **Change:** read the item effects the audit flags as misread or guessed, by mechanism:
-  - Freedom of Movement: immunity to grapple, paralysis, slow and entangle, valued against the enemies who can apply
+  - **Freedom of Movement:** immunity to grapple, paralysis, slow and entangle, valued against the enemies who can apply
     them, as typed protection is.
-  - True Seeing: concealment reveal, through the existing reveal value.
-  - Spell Resistance and Protection from Spells: worth the hostile spells present, through the existing resistance rule.
-  - Magical Vestment, already read for potions in v0.3.25: check that the scroll and potion forms agree.
+  - **True Seeing:** concealment reveal, through the existing reveal value.
+  - **Spell Resistance and Protection from Spells:** worth the hostile spells present, through the existing resistance
+    rule.
+  - **Magical Vestment**, already read for potions in v0.3.25: check that the scroll and potion forms agree.
 - **Acceptance:** each is a check in the `ITEMS` audit section on the actual blueprint.
 
 ### S1: the demons' guessed effects, read by mechanism
@@ -247,21 +311,26 @@ safety checks.
   - **Shadow spells:** confirm in play, through slice 0, that the variants reach the engine. Only if they do not, read
     the parent's variants as the action bar does.
   - **Guessed parts of read spells:** Enervation's temporary HP for undead, and the Contagion variants' stat damage
-    through the existing drain reader.
+    through the existing drain reader (`CombatMath.Drain`).
 - **Rule:** each mechanism is read from its native component's semantics, with a ProfileAudit check on the actual
   blueprint. A mechanism that cannot be read exactly stays withheld, not guessed higher.
 - **Bounds:** reading happens when a profile is built, once per blueprint, which is the summon's first decision.
   Nothing per decision.
-- **Acceptance:** `SUMMON-KITS` shows these Demonology rows read. In play, Vrock and Nalfeshnee use their screech and
-  nimbus when enemies are in range and allies are not.
+- **Acceptance:**
+  - `SUMMON-KITS` shows these Demonology rows read;
+  - in play, Vrock and Nalfeshnee use their screech and nimbus when enemies are in range and allies are not.
 
-### S2: teleports and leaps (movement: needs the author's approval)
+### S2: teleports and leaps (movement, approved by the author)
 
-- **Change:** Greater Teleport, Dimension Door, Liquid Leap and the like become another way to make an approach the engine
-  already plans: the same destination, with the walk's attacks of opportunity and area costs removed, and the cast's
-  action added. Overrun is a maneuver and stays separate.
-- **Native contract:** to be read before building: the custom teleport components, landing validity and range. Their
-  native checks decide; the engine adds no landing rule of its own.
+- **Change:** Greater Teleport, Dimension Door, Liquid Leap and the like become another way to make an approach the
+  engine already plans:
+  - the same destination, with the walk's attacks of opportunity and area costs removed, and the cast's action added;
+  - the landing is where the native component puts the caster (see the contracts above), and it is priced like any
+    end spot: areas, swarms, reach of the enemies there;
+  - any ally that travels with a Dimension Door is priced at its landing spot too.
+- **Kept:** Overrun is a maneuver and stays separate.
+- **Native checks decide:** landing validity and range are the component's restriction and the ability's range, through
+  `AbilityData.CanTarget`. The engine adds no landing rule of its own.
 - **Bounds:** only when an approach candidate already exists; at most the four free-side spots the approach already
   prices.
 - **Applies to:** summons first; companions with the same abilities get it too.
@@ -271,8 +340,7 @@ safety checks.
 ### Not planned, with reasons
 
 - **Summon resource or spell-policy change:** the guessed demon abilities are at will (checked above).
-- **Scarcity pricing by count or gold:** no evidence yet that items are wasted; slice 0 will show it. Offered as an author
-  choice below.
+- **Scarcity pricing by count or gold:** not yet (author decision 3). Slice 0 will show whether items are wasted.
 - **Coordinating several summons on one target:** the one case seen is consistent with spell resistance; replay first.
 - **Crowded summon approaches:** the shared approach topic, already tracked.
 
@@ -282,21 +350,25 @@ safety checks.
    rows.
 2. **C3**, then **C2** and **C4**.
 3. **S1**, roster first.
-4. **S2**, after the author's decision.
+4. **S2**.
+5. **Summon control default** (author decision 5): judged after the S1/S2 playtest. If that log shows no summon-control
+   defect and no other major summon gap, the default is switched on in its own commit, with the evidence. Otherwise it
+   stays off, and the remaining gaps are listed for the author.
 
 Each slice:
 - unit tests for its pure rules;
 - a ProfileAudit section on the actual blueprints, with every other report line unchanged on the same inputs;
 - the native harnesses unchanged;
-- a test package and a short replay;
-- no `main`, tag or release.
+- a checks receipt and build provenance under `docs/competence/`, a section in `docs/TACTICAL_AI.md`, and a handover entry
+  in `CLAUDE.md`;
+- a test package under `test-builds/` and a short replay for the author (turn-based and real time);
+- no `main`, tag or release; `Info.json` stays 0.3.60 until a release is authorized.
 
-## Decisions for the author
+## Decisions (author, 22 November 2026)
 
-1. **Buff potions in easy fights:** use the spell slots' restraint (my recommendation), or keep buff potions for hard
-   fights only?
-2. **Slot or scroll of the same spell:** slots first (my recommendation), or scrolls first?
-3. **Scarcity:** should the last potion of a stack be kept for higher stakes than the tenth? I recommend not yet, until
-   slice 0 shows waste.
-4. **S2 teleports and leaps:** approve as movement?
-5. **Summon control:** it stays experimental and off by default. Should it become on by default once S1 is played?
+1. **Buff potions in easy fights:** yes, with the spell slots' restraint.
+2. **Slot or item of the same spell:** slots first.
+3. **Scarcity pricing:** not yet.
+4. **S2 teleports and leaps:** approved as movement.
+5. **Summon control on by default:** only if summon control is polished enough and no other major summon expansion is
+   needed. Judged after S1 and S2 (order step 5).

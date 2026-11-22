@@ -8,17 +8,21 @@ Read [CONTRIBUTING.md](CONTRIBUTING.md) for shared branch ownership, Codex pull 
 Codex works on task branches and targets pull requests at `claude/dreamy-pasteur-b9h3rn`; Claude reviews and integrates them there.
 Keep `main` for author-authorized releases. Read [AGENTS.md](AGENTS.md) when coordinating agent work.
 
-**Current handover (22 November 2026, Claude): plan only, on `claude/summons-consumables-plan`.** Read
-[docs/SUMMONS_CONSUMABLES_PLAN.md](docs/SUMMONS_CONSUMABLES_PLAN.md) and its
-[evidence](docs/competence/SUMMONS_CONSUMABLES_EVIDENCE.json).
+**Current handover (22 November 2026, Claude): final plan for Codex to implement, on `claude/summons-consumables-plan`.**
+Read [docs/SUMMONS_CONSUMABLES_PLAN.md](docs/SUMMONS_CONSUMABLES_PLAN.md) and its
+[evidence](docs/competence/SUMMONS_CONSUMABLES_EVIDENCE.json). The author's decisions are recorded at its end.
 - **Summons:** driven summons use the abilities the readers understand (54 casts of their own spells in coverage7). The
   gaps are guessed effects in the author's demon roster, teleports and leaps, and no "why not used" line.
 - **Consumables:** readers understand most items (95/114 potions, 570/650 scrolls). Any potion without a heal is worth 0
   below difficulty 0.8, which held in over 90 % of decisions. The engine never builds the game's potion-for-an-ally option
   (`AbilityData.PotionForOther`).
-- **Slices:** 0 (diagnostics and an `ITEMS` audit), C1–C4 (consumables), S1 (demon effects), S2 (teleports, movement:
-  needs approval). Five author decisions are listed at the end of the plan.
-- No code, manifest or package change.
+- **Slices, in order:** 0 (diagnostics and an `ITEMS` audit) with C1; C3, C2, C4 (consumables); S1 (demon effects);
+  S2 (teleports and leaps, movement approved); then the summon-control default, judged after the S1/S2 playtest.
+- **Decisions:** buff potions take the spell slots' easy-fight restraint; slots before items of the same spell; no
+  scarcity pricing yet; S2 approved.
+- **Codex implements** on `codex/` task branches, one draft PR per slice into development; Claude reviews. No merge,
+  `main`, tag or release.
+- No code, manifest or package change in the plan's commits.
 
 **Earlier handover (22 November 2026, Claude): stable v0.3.60 released to the repository; PRs #92–#105 merged into
 development and `main` brought to it, at the author's request.** Read `docs/TACTICAL_AI.md` §213, the
