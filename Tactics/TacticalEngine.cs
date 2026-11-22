@@ -313,6 +313,8 @@ namespace CompanionAI_Pathfinder.Tactics
 
         public static Candidate Decide(UnitEntityData unit, TurnMemory memory)
         {
+            // ★ coverage7 follow-ups: the deciding unit's own faction state, for the domination timeline (ObserveFaction).
+            ObserveFaction(unit, IsTurnedAlly(unit), "AI Control decides for it");
             // ★ v0.3.17: how long a decision takes ([Perf] at the end of the fight) - nothing was measured before.
             AbilityProfile.TakeBuiltCount();
             CombatMath.ClearAttackCache();   // ★ v0.3.18: attack routines are read fresh for each decision
@@ -323,6 +325,8 @@ namespace CompanionAI_Pathfinder.Tactics
             s_StrikeReads = 0;
             s_StrikeReadTicks = 0;
             s_FreeSideSearches = s_NoFreeSide = 0;
+            s_ApproachHits = s_ApproachMisses = s_SpotSearches = 0;
+            s_ApproachTicks = s_SpotSearchTicks = 0;
             var chosen = Decide(unit, memory, preview: false, out _, timings);
             timings.Mark(DecisionStage.Finish);
             double ms = watch.Elapsed.TotalMilliseconds;
@@ -336,7 +340,7 @@ namespace CompanionAI_Pathfinder.Tactics
                          $"{(GC.CollectionCount(0) != collections ? "; memory clean-up ran" : "")}" +
                          $"{(EnemyThreat.Assessments != assessments ? "; enemies assessed" : "")}" +
                          $"{(s_StrikeReads > 0 ? $"; enemy attacks read for the drop chance {s_StrikeReads} ({s_StrikeReadTicks * 1000d / System.Diagnostics.Stopwatch.Frequency:F1} ms)" : "")}" +
-                         FreeSideNote() +
+                         FreeSideNote() + ApproachNote() +
                          $"{(GC.CollectionCount(0) == collections ? $"; heap +{(GC.GetTotalMemory(false) - heapBefore) / 1024} KB" : "")}); {timings.Describe()}");
             return chosen;
         }
@@ -976,7 +980,7 @@ namespace CompanionAI_Pathfinder.Tactics
                     if (other != unit && (!unit.IsEnemy(other) || turned) && IsRevivable(other) &&
                         Vector3.Distance(unit.Position, other.Position) < 30f)
                     {
-                        if (turned) { ctx.TurnedAllies.Add(other); NoteTurnedAlly(ctx, other); }
+                        if (turned) { ctx.TurnedAllies.Add(other); NoteTurnedAlly(ctx, other); ObserveFaction(other, true, "seen by " + ctx.Unit.CharacterName); }
                         else ctx.DownedAllies.Add(other);
                     }
                     // ★ v0.3.21 (gaps): a regenerating enemy at 0 HP is only down - it heals and stands up again - until damage
@@ -1000,7 +1004,7 @@ namespace CompanionAI_Pathfinder.Tactics
                     }
                     ctx.Enemies.Add(other);
                     // ★ coverage3 review: an ally under an enemy's control (Dominate) is stopped, not killed.
-                    if (IsTurnedAlly(other)) { ctx.TurnedAllies.Add(other); NoteTurnedAlly(ctx, other); }
+                    if (IsTurnedAlly(other)) { ctx.TurnedAllies.Add(other); NoteTurnedAlly(ctx, other); ObserveFaction(other, true, "seen by " + ctx.Unit.CharacterName); }
                 }
                 else if (other.IsPlayerFaction || other == unit)
                 {
@@ -2219,7 +2223,21 @@ namespace CompanionAI_Pathfinder.Tactics
             var unit = ctx.Unit;
             // Asked per ability and target: the same approach is computed once per decision.
             string key = $"{target.UniqueId}|{range:F1}|{alwaysExposure}|{orNearby}";
-            if (ctx.Approaches.TryGetValue(key, out var cached)) return cached;
+            if (ctx.Approaches.TryGetValue(key, out var cached)) { s_ApproachHits++; return cached; }
+            // ★ coverage7 follow-ups (Codex's performance proposal, step 1): time the misses and their spot search, for the
+            // slow-decision row (ApproachNote). Measurement only.
+            long missStart = System.Diagnostics.Stopwatch.GetTimestamp();
+            try { return PlanApproachMiss(ctx, unit, target, range, alwaysExposure, orNearby, key); }
+            finally
+            {
+                s_ApproachMisses++;
+                s_ApproachTicks += System.Diagnostics.Stopwatch.GetTimestamp() - missStart;
+            }
+        }
+
+        private static Approach PlanApproachMiss(TacticalContext ctx, UnitEntityData unit, UnitEntityData target, float range,
+                                                 bool alwaysExposure, bool orNearby, string key)
+        {
             var direct = ApproachPoint(unit, target, range);
             var plan = new Approach { Point = direct, Risk = MoveRisk(ctx, direct, alwaysExposure) };
             ctx.Approaches[key] = plan;
@@ -2252,6 +2270,8 @@ namespace CompanionAI_Pathfinder.Tactics
             // Real time reads other bodies' claims on every spot; turn-based only while it looks for a free side.
             bool spotClaims = realTime ? claims : takenNote != null;
             if (takenNote != null) s_FreeSideSearches++;
+            long searchStart = System.Diagnostics.Stopwatch.GetTimestamp();
+            s_SpotSearches++;
             try
             {
                 // ★ v0.3.18 (review): a spot around the area must be cheaper than walking straight through it (a mild
@@ -2337,8 +2357,21 @@ namespace CompanionAI_Pathfinder.Tactics
             {
                 Main.Verbose($"[Tactics] approach around an area for {unit.CharacterName}: {ex.Message}");
             }
+            s_SpotSearchTicks += System.Diagnostics.Stopwatch.GetTimestamp() - searchStart;
             ctx.Approaches[key] = plan;
             return plan;
+        }
+
+        // ★ coverage7 follow-ups: approach-planning counters for the slow-decision row (reset per decision).
+        private static int s_ApproachHits, s_ApproachMisses, s_SpotSearches;
+        private static long s_ApproachTicks, s_SpotSearchTicks;
+
+        private static string ApproachNote()
+        {
+            if (s_ApproachMisses == 0) return "";
+            double f = 1000d / System.Diagnostics.Stopwatch.Frequency;
+            return $"; approaches planned {s_ApproachMisses} ({s_ApproachTicks * f:F1} ms, {s_ApproachHits} reused), " +
+                   $"spot searches {s_SpotSearches} ({s_SpotSearchTicks * f:F1} ms)";
         }
 
         /// <summary>★ v0.3.9: what keeping an ally in the fight is worth: its damage-equivalent output for up to 3 rounds.</summary>
@@ -2446,9 +2479,8 @@ namespace CompanionAI_Pathfinder.Tactics
         /// after it are already cut from the estimate, its hold is valued here.</remarks>
         private static float DamageValue(UnitEntityData enemy, WeaponAttackEstimate est, float factor = 1f) =>
             est == null ? 0f : DamageValue(enemy, est.ExpectedDamage * factor,
-                                           est.AnyHitChance, est.EndsRegeneration, onHitUtility:
-                                           CombatMath.OnHitHp(est.Attacker, enemy,
-                                               (est.GrappleChance > 0f ? est.ExpectedAttacks : est.Attacks) * est.FirstHitChance)) + GrappleHold(enemy, est);
+                                           est.AnyHitChance, est.EndsRegeneration, onHitUtility: CombatMath.OnHitHp(est, enemy)) +
+                               GrappleHold(enemy, est);
 
         /// <summary>★ G1: the control horizon of this decision (min(expected rounds, 3), as for control effects).</summary>
         private static float s_GrappleHorizon = 3f;
@@ -3149,6 +3181,42 @@ namespace CompanionAI_Pathfinder.Tactics
         }
 
         /// <summary>
+        /// What <paramref name="heal"/> HP restored to <paramref name="ally"/> (conscious, below full) is worth: the restoring
+        /// part on the heal curve, and how much less likely it is to drop before its next turn. -1 when the ally is at or above
+        /// its heal threshold (no restoring worth). Shared by heal spells and the heal a removed caster buff gives
+        /// (coverage7 follow-ups: Abandon Flesh).
+        /// </summary>
+        private static float HealGain(TacticalContext ctx, AbilityData ability, UnitEntityData ally, float heal, out float restores)
+        {
+            restores = 0f;
+            float hp = CombatMath.HpPercent(ally);
+            float threshold = CombatMath.HealThreshold(ability, ctx.Unit, ally, ctx.Settings);
+            if (hp >= threshold) return -1f;
+
+            // ★ v0.3.18 (B4b): restoring HP is worth more the further below the threshold the ally is, on one
+            // continuous curve that reaches 0 at the threshold (ValueModel.HealPerHp). The danger of dropping is
+            // the drop-chance term below, and only there: 0.3.17 also counted it here (x1.25 when engaged, x1 / x2
+            // / x3 by HP band), and a heal was the best-valued option of the logs (median 18-21, weapons 7-8).
+            // ★ v0.3.17: a summon is worth half (AllyWorth) in this part too: at full HP Camellia walked into
+            // Grease to heal a summoned Dretch, the restoring part valued like a companion's (log 06aebf2d).
+            restores = heal * ValueModel.HealPerHp(hp, threshold) * (IsSummon(ally) ? ValueModel.SummonFactor : 1f);
+            // ★ v0.3.27 (0.3.26 log): a summon about to vanish gets nothing from HP it will not live to use.
+            if (IsSummon(ally)) restores *= Math.Min(1f, RoundsInFight(ctx, ally) / Math.Max(1f, ctx.ExpectedRounds));
+            float gain = restores;
+
+            // ★ v0.3.9: how much less likely the ally is to drop before its next turn. Lann at 25 % HP valued his
+            // potion at 5.9 against a 7.6 full attack, shot, and went down; the heal ignored who could hit him.
+            float danger = IncomingDamage(ctx, ally);
+            if (danger > 0f)
+            {
+                float before = Mathf.Exp(-Math.Max(1f, CombatMath.HpBeforeDown(ally)) / danger);
+                float after = Mathf.Exp(-(Math.Max(1f, CombatMath.HpBeforeDown(ally)) + heal) / danger);
+                gain += (before - after) * AllyWorth(ctx, ally);
+            }
+            return gain;
+        }
+
+        /// <summary>
         /// ★ v0.3.4: the "dispel" fallback needs a target: an enemy with a spell buff to strip (Dispel Magic), or an ally with
         /// a harmful effect. Treat Affliction kept a 2.0 "dispel" option on Orvath with nothing to treat in 0.3.3.
         /// </summary>
@@ -3383,6 +3451,10 @@ namespace CompanionAI_Pathfinder.Tactics
                 if (!helpfulOnly && (targetingBlueprint.CanTargetEnemies ||
                                      (ability.CanTargetPoint && (profile.HarmfulEffects || profile.DealsDamage || profile.Dispels))))
                     targets.AddRange(ctx.Enemies);
+                // ★ coverage7 follow-ups: a point-only dispel ends area effects at its point (PointDispelValue): also aimed
+                // where an ally stands inside an area (AbilityProfile.TargetOn falls back to that point).
+                if (profile.Dispels && ability.CanTargetPoint && !DispelTargetsUnits(profile))
+                    targets.AddRange(ctx.Allies.Where(AoeDangerAnalyzer.InAnyLiveArea));
                 // ★ coverage5: a helpful spell that may be aimed at another side and suppresses what holds an ally there
                 // (Unbreakable Heart: Compulsion) can free an ally under an enemy's control.
                 if (helpfulOnly && targetingBlueprint.CanTargetEnemies && ctx.TurnedAllies.Count > 0 && SuppressesOnRecipient(profile))
@@ -4452,31 +4524,10 @@ namespace CompanionAI_Pathfinder.Tactics
                         continue;
                     }
 
-                    float hp = CombatMath.HpPercent(ally);
-                    float threshold = CombatMath.HealThreshold(ability, unit, ally, ctx.Settings);
-                    if (hp >= threshold) continue;
-
-                    // ★ v0.3.18 (B4b): restoring HP is worth more the further below the threshold the ally is, on one
-                    // continuous curve that reaches 0 at the threshold (ValueModel.HealPerHp). The danger of dropping is
-                    // the drop-chance term below, and only there: 0.3.17 also counted it here (x1.25 when engaged, x1 / x2
-                    // / x3 by HP band), and a heal was the best-valued option of the logs (median 18-21, weapons 7-8).
-                    // ★ v0.3.17: a summon is worth half (AllyWorth) in this part too: at full HP Camellia walked into
-                    // Grease to heal a summoned Dretch, the restoring part valued like a companion's (log 06aebf2d).
-                    float restores = heal * ValueModel.HealPerHp(hp, threshold) * (IsSummon(ally) ? ValueModel.SummonFactor : 1f);
-                    // ★ v0.3.27 (0.3.26 log): a summon about to vanish gets nothing from HP it will not live to use.
-                    if (IsSummon(ally)) restores *= Math.Min(1f, RoundsInFight(ctx, ally) / Math.Max(1f, ctx.ExpectedRounds));
-                    healValue += restores;
+                    float gain = HealGain(ctx, ability, ally, heal, out float restores);
+                    if (gain < 0f) continue;   // at or above its heal threshold
+                    healValue += gain;
                     restoring += restores;
-
-                    // ★ v0.3.9: how much less likely the ally is to drop before its next turn. Lann at 25 % HP valued his
-                    // potion at 5.9 against a 7.6 full attack, shot, and went down; the heal ignored who could hit him.
-                    float danger = IncomingDamage(ctx, ally);
-                    if (danger > 0f)
-                    {
-                        float before = Mathf.Exp(-Math.Max(1f, CombatMath.HpBeforeDown(ally)) / danger);
-                        float after = Mathf.Exp(-(Math.Max(1f, CombatMath.HpBeforeDown(ally)) + heal) / danger);
-                        healValue += (before - after) * AllyWorth(ctx, ally);
-                    }
                 }
                 // ★ v0.3.25 (test1 logs): a used-up healing item (potion, scroll, wand charge) only tops HP up in an easy fight
                 // - the restoring part gets the easy-fight restraint spell slots and bombs have (ValueModel.SpentHealValue);
@@ -5217,6 +5268,14 @@ namespace CompanionAI_Pathfinder.Tactics
                 value -= removedCasterCost;
                 reasons.Add($"loses caster buff -{removedCasterCost:0.#}");
             }
+            // ★ coverage7 follow-ups: and the heal that buff's removal gives (its Deactivated actions: Abandon Flesh's 2d6+3),
+            // as worth as any heal of the caster - nothing at full HP, as the game's own AI keeps it for serious injury.
+            float removalHeal = CasterRemovalHeal(ctx, ability, profile, out float removalHp);
+            if (removalHeal > 0f)
+            {
+                value += removalHeal;
+                reasons.Add($"its removal heals ~{removalHp:0} +{removalHeal:0.#}");
+            }
 
             // ★ v0.3.24 (Psionics): what spending a held state of the caster costs (TacticalEngine.HeldStates.cs).
             float spent = SpentStateCost(ctx, ability, profile, target, out string spentNote);
@@ -5630,7 +5689,41 @@ namespace CompanionAI_Pathfinder.Tactics
                 CheckPath = risk?.Area == null,
                 Risk = risk, RiskAt = approach.Point   // ★ v0.3.20 (test8): its real walk is counted too
             });
+            AddThroughAreaAdvance(ctx, list, enemy, approach, around, radius, needLos, value, label, risk);
             return false;
+        }
+
+        /// <summary>
+        /// ★ coverage7 follow-ups (author-approved movement; Codex's coverage7 review, fight 7): real time, an advance whose
+        /// end lies clear of a harmful area while the game's own path to it enters one is refused at issue
+        /// (CommandDispatcher: "the path walks into ..."). Rebuilt each decision, Babau's and Schir's advances past the
+        /// party's Corrosive Bomb were refused 13 times and they stood idle, while walks to attack through it were priced
+        /// and issued. Once refused, the advance on that target is also offered priced as passing through the area where
+        /// that path enters it (AreaStayCost, as MoveRisk prices an attack walk into one; an area that can stop the walk
+        /// takes its share of the advance) and issued without the area check; it is chosen only if it still pays. Bounded:
+        /// one recorded crossing per unit and target (CombatMemory.AreaCrossing, 12 s while the unit stays within 1 m), no
+        /// extra path query.
+        /// </summary>
+        private static void AddThroughAreaAdvance(TacticalContext ctx, List<Candidate> list, UnitEntityData enemy, Approach approach, bool around,
+                                                  float radius, bool needLos, float value, string label, Disengage risk)
+        {
+            var unit = ctx.Unit;
+            if (!CombatMemory.AreaCrossing(unit, enemy, out var crossing)) return;
+            float danger = AoeDangerAnalyzer.EnteringDanger(unit, crossing.From, crossing.To, out string through, out float roundsLeft,
+                                                            out _, out float stop, out bool movementOnly, out float affect, out float linger);
+            if (!(danger > 0f)) return;
+            float cost = AreaStayCost(ctx, unit, danger, roundsLeft, endsInside: false, movementOnly, affect, linger,
+                                      () => ProvokeRisk(ctx, crossing.To, 1f, spoiledByHit: 0f)?.Cost ?? 0f);
+            list.Add(new Candidate
+            {
+                Kind = CandidateKind.Move, Slot = ActionSlot.Move, Target = enemy,
+                Point = around ? approach.Point : enemy.Position,
+                ApproachRadius = around ? approach.Arrival : radius, NeedLoS = !around && needLos,
+                Value = value * (1f - Mathf.Clamp01(stop)) - cost,
+                Label = label + $" [through {through ?? "area"}]", Key = $"move:adv:{enemy.UniqueId}:through",
+                CheckPath = false,
+                Risk = risk, RiskAt = approach.Point
+            });
         }
 
         /// <summary>

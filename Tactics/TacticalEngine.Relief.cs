@@ -26,7 +26,12 @@ using Kingmaker.UnitLogic.Buffs;
 using Kingmaker.UnitLogic.Buffs.Blueprints;
 using Kingmaker.UnitLogic.FactLogic;
 using Kingmaker.UnitLogic.Mechanics;
+using Kingmaker.UnitLogic.Mechanics.Actions;
 using Kingmaker.Utility;
+using UnityEngine;
+using Kingmaker.RuleSystem.Rules;
+using Kingmaker.UnitLogic.Abilities.Blueprints;
+using CompanionAI_Pathfinder.Analysis;
 
 namespace CompanionAI_Pathfinder.Tactics
 {
@@ -60,6 +65,52 @@ namespace CompanionAI_Pathfinder.Tactics
                 cost += RemovalRules.HelpfulLoss(EnemyBuffShare(buff, ctx.Unit), AllyPerRound(ctx.Unit), rounds, suppressed, horizon);
             }
             return cost;
+        }
+
+        /// <summary>
+        /// ★ coverage7 follow-ups: the heal a caster-buff removal gives its caster: each removed buff's Deactivated actions
+        /// (AddFactContextActions, run when the buff goes), plain ContextActionHealTarget with simple dice only, valued as
+        /// any heal (HealGain). Vermlek's Abandon Flesh ends its Flesh Armor for 2d6+3; the game's own AI uses it only when
+        /// seriously hurt (Vermlek_AiAction_AbandonFlesh: HealthConsideration 20/10).
+        /// </summary>
+        private static float CasterRemovalHeal(TacticalContext ctx, AbilityData ability, AbilityProfile profile, out float healed)
+        {
+            healed = 0f;
+            var caster = ctx.Unit;
+            if (profile.CasterRemovedBuffs.Count == 0 || caster?.Buffs == null) return 0f;
+            if (caster.HPLeft <= 0 || !caster.Descriptor.State.IsConscious) return 0f;
+            float total = 0f;
+            foreach (var blueprint in profile.CasterRemovedBuffs)
+            {
+                if (caster.Buffs.GetBuff(blueprint) == null) continue;
+                total += DeactivationHeal(blueprint);
+            }
+            float missing = caster.MaxHP - caster.HPLeft;
+            healed = Math.Min(total, missing);
+            if (!(healed > 0f)) return 0f;
+            float gain = HealGain(ctx, ability, caster, healed, out _);
+            return gain > 0f ? gain : 0f;
+        }
+
+        /// <summary>The average heal of a buff's Deactivated actions (simple dice only; anything else reads as no heal).</summary>
+        internal static float DeactivationHeal(BlueprintBuff buff)
+        {
+            float total = 0f;
+            if (buff == null) return 0f;
+            foreach (var component in Kingmaker.Blueprints.BlueprintExtenstions.GetComponents<Kingmaker.UnitLogic.Mechanics.Components.AddFactContextActions>(buff))
+            {
+                var actions = component?.Deactivated?.Actions;
+                if (actions == null) continue;
+                foreach (var action in actions)
+                {
+                    if (!(action is ContextActionHealTarget heal) || heal.Value == null) continue;
+                    var dice = heal.Value;
+                    if (dice.DiceCountValue == null || dice.DiceCountValue.ValueType != ContextValueType.Simple ||
+                        dice.BonusValue == null || dice.BonusValue.ValueType != ContextValueType.Simple) continue;
+                    total += CombatMath.DiceAverage(dice);
+                }
+            }
+            return total;
         }
 
         /// <summary>The rounds relief is counted for: as a cleanse's, the fight's expected rounds, at most three.</summary>
@@ -202,7 +253,12 @@ namespace CompanionAI_Pathfinder.Tactics
             if (profile.DispelActions.Count == 0) return false;
             // Its native area branch is not a unit-buff fallback. Treat the absent unit benefit as known zero,
             // rather than allowing a scoring anchor's buffs to create a fictitious 2-point dispel option.
-            if (!DispelTargetsUnits(profile)) { note = "point dispel: area benefit unread"; return true; }
+            if (!DispelTargetsUnits(profile))
+            {
+                // ★ coverage7 follow-ups: the native point branch ends the area effects at the point (PointDispelValue).
+                value = PointDispelValue(ctx, ability, profile, actualAim, out note);
+                return true;
+            }
             if (profile.Fusion == null && !profile.SelectsTargets && actualAim?.Unit == null) return true;
             bool readable = false;
             foreach (var dispel in profile.DispelActions)
@@ -246,6 +302,110 @@ namespace CompanionAI_Pathfinder.Tactics
             value = gain - loss;
             note = loss > 0f ? $"dispel +{gain:0.#} ({helped}) -{loss:0.#} ({hurt} lose own buffs)" : $"dispel +{gain:0.#} ({helped})";
             return true;
+        }
+
+        /// <summary>
+        /// ★ coverage7 follow-ups (Codex's review of the coverage7 playtest, finding 1): a point dispel
+        /// (ContextActionDispelMagic with no target unit) ends area effects, not buffs. Native contract
+        /// (ContextActionDispelMagic.RunAction / TryDispelAreaEffect): every area in the game's list, in its order, whose view
+        /// contains the point (not AllArea), with a caster and a source ability, passing the dispel's schools and descriptor
+        /// (and only an enemy's with OnlyEnemyAreaEffects), rolls RuleDispelMagic against 11 + the area's caster level (its DC
+        /// for CheckType.DC); it stops after its count (one for Dispel Magic). Each area is worth what it does to the units
+        /// inside over the rounds it still lasts within the relief horizon: relief for the party's (AllyPerRound), a loss for
+        /// the enemies' (ControlWorth), whoever cast it (AreaRemovalWorth). Ordered and counted as unit dispels are
+        /// (ValueModel.ExpectedDispelWorth). Babau cast it three times at an enemy's feet for the old 2-point fallback.
+        /// </summary>
+        private static float PointDispelValue(TacticalContext ctx, AbilityData ability, AbilityProfile profile, TargetWrapper aim,
+                                              out string note)
+        {
+            note = null;
+            Vector3 point;
+            try { if (aim == null) return 0f; point = aim.Point; } catch { return 0f; }
+            var areas = Kingmaker.Game.Instance?.State?.AreaEffects;
+            if (areas == null || ctx.Unit == null) return 0f;
+            float horizon = ReliefHorizon(ctx);
+            int casterLevel = CombatMath.ParamsOf(ability)?.CasterLevel ?? Level(ctx.Unit);
+            float total = 0f, lost = 0f;
+            int reached = 0;
+            var tried = new List<KeyValuePair<float, float>>();
+            foreach (var dispel in profile.DispelActions)
+            {
+                bool automatic = IsAutomaticDispel(dispel) && !(dispel.OnSuccess?.Actions?.Length > 0) && !(dispel.OnFail?.Actions?.Length > 0);
+                if (!automatic && DispelUnsupported(dispel) != null) continue;
+                if (DispelStopField == null || DispelCountField == null || DispelCheckField == null ||
+                    DispelUseMaxCasterField == null || DispelMaxCasterField == null) continue;
+                int level = casterLevel;
+                var maxCaster = (ContextValue)DispelMaxCasterField.GetValue(dispel);
+                if ((bool)DispelUseMaxCasterField.GetValue(dispel))
+                {
+                    if (maxCaster == null || !maxCaster.IsValueSimple) continue;   // a context-ranked cap is not read here
+                    level = Math.Min(level, maxCaster.Value);
+                }
+                if (dispel.ContextBonus != null && !dispel.ContextBonus.IsValueSimple) continue;
+                int bonus = dispel.CheckBonus + (dispel.ContextBonus?.Value ?? 0);
+                var check = (RuleDispelMagic.CheckType)DispelCheckField.GetValue(dispel);
+                var count = (ContextValue)DispelCountField.GetValue(dispel);
+                if ((bool)DispelStopField.GetValue(dispel) && (count == null || !count.IsValueSimple)) continue;
+                int stopAfter = (bool)DispelStopField.GetValue(dispel) ? Math.Max(1, count.Value) : 0;
+                tried.Clear();
+                foreach (var aoe in areas)
+                {
+                    if (aoe?.Blueprint == null || aoe.Blueprint.Shape == AreaEffectShape.AllArea) continue;
+                    if (!AoeDangerAnalyzer.CoversPoint(aoe, point, 0f)) continue;
+                    var context = aoe.Context;
+                    var areaCaster = context?.MaybeCaster;
+                    if (areaCaster == null || !(bool)context.SourceAbility || !DispelSchoolsMatch(dispel, context)) continue;
+                    if (dispel.OnlyEnemyAreaEffects && !areaCaster.IsEnemy(ctx.Unit)) continue;
+                    int dc = check == RuleDispelMagic.CheckType.DC ? context.Params.DC : 11 + context.Params.CasterLevel;
+                    float chance = automatic ? 1f : ValueModel.DispelChance(dc - level - bonus);
+                    tried.Add(new KeyValuePair<float, float>(chance, AreaRemovalWorth(ctx, aoe, horizon)));
+                }
+                if (tried.Count == 0) continue;
+                reached += tried.Count;
+                total += ValueModel.ExpectedDispelWorth(tried, stopAfter, dispel.OneRollForAll, out float loss);
+                lost += loss;
+            }
+            if (reached == 0) { note = "point dispel: no area to end there"; return 0f; }
+            note = lost > 0f ? $"ends areas {total + lost:+0.#;-0.#} -{lost:0.#} ({reached} there)" : $"ends areas {total:+0.#;-0.#} ({reached} there)";
+            return total;
+        }
+
+        /// <summary>
+        /// What ending <paramref name="aoe"/> is worth now: for each unit inside, its danger (AoeDangerAnalyzer.AreaDangerOn)
+        /// for the rounds the area still lasts within <paramref name="horizon"/>, a relief for the party (AllyPerRound) and a
+        /// loss for the enemies (ControlWorth). An ally under an enemy's control counts as neither.
+        /// </summary>
+        private static float AreaRemovalWorth(TacticalContext ctx, AreaEffectEntityData aoe, float horizon)
+        {
+            float rounds = Math.Min(horizon, AoeDangerAnalyzer.RoundsLeft(aoe));
+            if (!(rounds > 0f)) return 0f;
+            float worth = 0f;
+            try
+            {
+                var inside = aoe.InGameUnitsInside;
+                if (inside == null) return 0f;
+                foreach (var unit in inside)
+                {
+                    if (unit == null || unit.HPLeft <= 0 || ctx.TurnedAllies.Contains(unit)) continue;
+                    float danger = AoeDangerAnalyzer.AreaDangerOn(unit, aoe);
+                    if (!(danger > 0f)) continue;
+                    worth += ctx.Unit.IsEnemy(unit)
+                        ? -danger * CombatMath.ControlWorth(unit) * rounds
+                        : danger * AllyPerRound(unit) * rounds;
+                }
+            }
+            catch { return 0f; }
+            return worth;
+        }
+
+        /// <summary>ContextActionDispelMagic.CheckSchoolsAndDescriptor on an effect's context (a buff's or an area's).</summary>
+        private static bool DispelSchoolsMatch(ContextActionDispelMagic dispel, MechanicsContext context)
+        {
+            if (context == null) return false;
+            bool school = dispel.Schools.Length == 0 || dispel.Schools.Contains(context.SpellSchool);
+            bool descriptor = dispel.Descriptor.Value == SpellDescriptor.None ||
+                              (dispel.Descriptor.Value & context.SpellDescriptor) != SpellDescriptor.None;
+            return dispel.CheckSchoolOrDescriptor ? school || descriptor : school && descriptor;
         }
 
         /// <summary>A dispel's delivery and its own save path, rather than a second failed-root-save discount on an

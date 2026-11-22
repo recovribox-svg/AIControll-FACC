@@ -139,8 +139,7 @@ namespace CompanionAI_Pathfinder.Tactics
                             // Reuse the native checker under the fact's existing context. Restrict the proof to target
                             // buff presence: rank/shared-value/attack-event predicates are not known in this quote.
                             var conditions = conditional.ConditionsChecker?.Conditions;
-                            if (conditions != null && conditions.All(c => c != null && c.GetType() ==
-                                    typeof(Kingmaker.UnitLogic.Mechanics.Conditions.ContextConditionHasBuff)) &&
+                            if (conditions != null && conditions.All(c => c != null && ReadOnlyTargetFactCondition(c)) &&
                                 AbilityProfile.TryReadConditions(conditional.ConditionsChecker, context, victim, out bool yesBranch))
                                 WalkAffliction(yesBranch ? conditional.IfTrue : conditional.IfFalse, victim, dc, weight,
                                                fail, into, depth + 1, true, context);
@@ -164,6 +163,15 @@ namespace CompanionAI_Pathfinder.Tactics
                         break;
                 }
             }
+        }
+
+        /// <summary>A gate on what the target carries now: a buff (ContextConditionHasBuff) or, coverage7 follow-ups, any fact
+        /// (ContextConditionHasFact, a Shadow's touch). Both read the target's facts through the game's own checker.</summary>
+        private static bool ReadOnlyTargetFactCondition(Kingmaker.ElementsSystem.Condition c)
+        {
+            var type = c.GetType();
+            return type == typeof(Kingmaker.UnitLogic.Mechanics.Conditions.ContextConditionHasBuff) ||
+                   type == typeof(Kingmaker.UnitLogic.Mechanics.Conditions.ContextConditionHasFact);
         }
 
         private static void AddBuffAffliction(ContextActionApplyBuff apply, UnitEntityData victim, int dc, float weight, Affliction into, int depth,
@@ -296,6 +304,7 @@ namespace CompanionAI_Pathfinder.Tactics
         {
             s_HitSources.Clear();
             s_HasHitSources.Clear();
+            s_RiderReads.Clear();
         }
 
         /// <summary>
@@ -398,34 +407,100 @@ namespace CompanionAI_Pathfinder.Tactics
             return result;
         }
 
-        /// <summary>Positive on-hit benefit, separate from the conservative threat reader. Uses no actor preview or new cache.</summary>
-        private static Affliction OffensiveOnHitAffliction(UnitEntityData attacker, UnitEntityData victim)
+        /// <summary>coverage7 follow-ups: one on-hit rider of the attacker, read once a frame per attacker and victim. Which
+        /// attacks fire it (its weapon and attack filters) is applied per attack line by <see cref="OnHitHp"/>.</summary>
+        private sealed class OffensiveRider
         {
-            var result = new Affliction();
-            if (attacker == null || victim == null) return result;
+            public Kingmaker.UnitLogic.Mechanics.Components.AddInitiatorAttackWithWeaponTrigger Trigger;
+            public Kingmaker.EntitySystem.EntityFact Fact;
+            public Affliction Read;
+        }
+
+        private sealed class RiderReads
+        {
+            public int Frame;
+            public List<OffensiveRider> Riders;
+        }
+
+        private sealed class PairComparer : IEqualityComparer<KeyValuePair<UnitEntityData, UnitEntityData>>
+        {
+            public static readonly PairComparer Instance = new PairComparer();
+            public bool Equals(KeyValuePair<UnitEntityData, UnitEntityData> a, KeyValuePair<UnitEntityData, UnitEntityData> b) =>
+                ReferenceEquals(a.Key, b.Key) && ReferenceEquals(a.Value, b.Value);
+            public int GetHashCode(KeyValuePair<UnitEntityData, UnitEntityData> p) =>
+                System.Runtime.CompilerServices.RuntimeHelpers.GetHashCode(p.Key) * 397 ^
+                System.Runtime.CompilerServices.RuntimeHelpers.GetHashCode(p.Value);
+        }
+
+        private static readonly Dictionary<KeyValuePair<UnitEntityData, UnitEntityData>, RiderReads> s_RiderReads =
+            new Dictionary<KeyValuePair<UnitEntityData, UnitEntityData>, RiderReads>(PairComparer.Instance);
+
+        /// <summary>Positive on-hit benefit, separate from the conservative threat reader: each supported rider of
+        /// <paramref name="attacker"/>, read against <paramref name="victim"/> once a frame. No actor preview.</summary>
+        private static List<OffensiveRider> OffensiveRiders(UnitEntityData attacker, UnitEntityData victim)
+        {
+            var key = new KeyValuePair<UnitEntityData, UnitEntityData>(attacker, victim);
+            int frame = Time.frameCount;
+            if (s_RiderReads.TryGetValue(key, out var known) && known.Frame == frame) return known.Riders;
+            var riders = new List<OffensiveRider>();
             foreach (var source in SourcesOf(attacker, true))
             {
-                // The aggregate hit count has no per-weapon/attack-event identity. A filtered trigger cannot be
-                // credited on every hit (Schir's Bardiche disease was also credited to its gore).
                 try
                 {
-                    if (source.Fact == null || !source.Fact.Active || !UnfilteredAfflictionTrigger(source.Trigger)) continue;
+                    if (source.Fact == null || !source.Fact.Active || !SupportedOffensiveTrigger(source.Trigger)) continue;
                     var read = ReadOffensiveAffliction(source.Actions, victim, source.Dc, source.Fact?.MaybeContext);
-                    result.Add(read, 1f);
+                    if (!read.IsEmpty) riders.Add(new OffensiveRider { Trigger = source.Trigger, Fact = source.Fact, Read = read });
                 }
                 catch { } // An unavailable source earns no positive credit; conservative incoming harm is separate.
             }
-            return result;
+            if (s_RiderReads.Count > 256) s_RiderReads.Clear();
+            s_RiderReads[key] = new RiderReads { Frame = frame, Riders = riders };
+            return riders;
         }
 
-        private static bool UnfilteredAfflictionTrigger(Kingmaker.UnitLogic.Mechanics.Components.AddInitiatorAttackWithWeaponTrigger t) =>
+        /// <summary>
+        /// coverage7 follow-ups: the trigger flags the per-attack reader can apply. Codex's review withheld every filtered
+        /// rider, since the old aggregate hit count could not say which weapon hit (Schir's bardiche disease was credited to
+        /// its gore). With each attack line's weapon and hit chance (WeaponAttackEstimate.LineHits) the native weapon filters
+        /// (AbstractWeaponTrigger.IsSuitable: blueprint, type, category, range, fighter group, natural/unarmed, an item
+        /// enchantment's own weapon), the first attack and the first hit are exact. Flags that depend on the roll or the
+        /// moment (criticals, sneak attack, natural 20, distance, damage form, charge, extra or opportunity attacks, a full
+        /// attack, dueling weapons, auto-hits) stay withheld.
+        /// </summary>
+        private static bool SupportedOffensiveTrigger(Kingmaker.UnitLogic.Mechanics.Components.AddInitiatorAttackWithWeaponTrigger t) =>
             t != null && t.GetType() == typeof(Kingmaker.UnitLogic.Mechanics.Components.AddInitiatorAttackWithWeaponTrigger) &&
             t.OnlyHit && !t.OnMiss && !t.CriticalHit && !t.ActionsOnInitiator && !t.TriggerBeforeAttack &&
-            !t.OnlyOnFullAttack && !t.OnlyOnFirstAttack && !t.OnlyOnFirstHit && !t.OnlyNatural20 &&
-            !t.OnAttackOfOpportunity && !t.NotCriticalHit && !t.OnlySneakAttack && !t.NotSneakAttack &&
-            !t.CheckWeaponBlueprint && t.WeaponType == null && !t.CheckWeaponCategory && !t.CheckWeaponGroup &&
-            !t.CheckWeaponRangeType && !t.CheckPhysicalDamageForm && !t.ReduceHPToZero && !t.DamageMoreTargetMaxHP &&
-            !t.CheckDistance && !t.AllNaturalAndUnarmed && !t.DuelistWeapon && !t.NotExtraAttack && !t.OnCharge && !t.IgnoreAutoHit;
+            !t.OnlyOnFullAttack && !t.OnlyNatural20 && !t.OnAttackOfOpportunity && !t.NotCriticalHit &&
+            !t.OnlySneakAttack && !t.NotSneakAttack && !t.CheckPhysicalDamageForm && !t.ReduceHPToZero &&
+            !t.DamageMoreTargetMaxHP && !t.CheckDistance && !t.DuelistWeapon && !t.NotExtraAttack && !t.OnCharge && !t.IgnoreAutoHit;
+
+        /// <summary>The native weapon part of AbstractWeaponTrigger.IsSuitable, for one attack line's weapon: an item
+        /// enchantment fires only for its own weapon, then the blueprint filters (<see cref="RiderSuitsBlueprint"/>).</summary>
+        internal static bool RiderSuitsWeapon(Kingmaker.UnitLogic.Mechanics.Components.AddInitiatorAttackWithWeaponTrigger t,
+                                              Kingmaker.EntitySystem.EntityFact fact, Kingmaker.Items.ItemEntityWeapon weapon)
+        {
+            if (weapon == null) return false;
+            var owner = (fact as Kingmaker.Blueprints.Items.Ecnchantments.ItemEnchantment)?.Owner;
+            if (owner != null && !ReferenceEquals(owner, weapon)) return false;
+            return RiderSuitsBlueprint(t, weapon.Blueprint);
+        }
+
+        /// <summary>AbstractWeaponTrigger.IsSuitable's weapon filters on a weapon blueprint: the blueprint itself, else its
+        /// type, category, range type, fighter group and natural/unarmed type.</summary>
+        internal static bool RiderSuitsBlueprint(Kingmaker.UnitLogic.Mechanics.Components.AddInitiatorAttackWithWeaponTrigger t,
+                                                 Kingmaker.Blueprints.Items.Weapons.BlueprintItemWeapon blueprint)
+        {
+            if (t == null || blueprint == null) return false;
+            if (t.CheckWeaponBlueprint) return blueprint == t.WeaponBlueprint;
+            var type = t.WeaponType;
+            if (type != null && type != blueprint.Type) return false;
+            if (t.CheckWeaponCategory && t.Category != blueprint.Category) return false;
+            if (t.CheckWeaponRangeType && !t.RangeType.IsSuitableWeapon(blueprint)) return false;
+            if (t.CheckWeaponGroup && !Kingmaker.Blueprints.Items.Weapons.WeaponFighterGroupHelper.Contains(blueprint.FighterGroup, t.Group))
+                return false;
+            if (t.AllNaturalAndUnarmed && blueprint.Type != null && !blueprint.Type.IsNatural && !blueprint.Type.IsUnarmed) return false;
+            return true;
+        }
 
         private static Affliction ReadOffensiveAffliction(ActionList actions, UnitEntityData victim, int dc, MechanicsContext context)
         {
@@ -447,16 +522,35 @@ namespace CompanionAI_Pathfinder.Tactics
         }
 
         /// <summary>
-        /// What <paramref name="hits"/> weapon hits of <paramref name="attacker"/> (an attack's expected hits) are worth beyond
-        /// the hits' own damage on <paramref name="victim"/>, in hit points (AfflictionHp of Affliction.Repeated), once a frame
-        /// per pair and hit count: the party's own poisoned or draining weapons are valued with it.
+        /// What the weapon hits of <paramref name="est"/> are worth beyond their own damage on <paramref name="victim"/>, in hit
+        /// points (AfflictionHp): each supported rider of the attacker repeated over the hits that fire it, attack line by
+        /// attack line (OnHitRules.FiringHits). The party's own poisoned or draining weapons are valued with it.
         /// </summary>
-        internal static float OnHitHp(UnitEntityData attacker, UnitEntityData victim, float hits)
+        internal static float OnHitHp(WeaponAttackEstimate est, UnitEntityData victim)
         {
-            if (attacker == null || victim == null || !(hits > 0f) || !HasHitAfflictions(attacker)) return 0f;
-            return FrameCached($"onhit-hp|{attacker.UniqueId}|{victim.UniqueId}|{(int)Math.Round(hits * 20f)}",
-                () => (int)Math.Round(AfflictionHp(OffensiveOnHitAffliction(attacker, victim).Repeated(hits), victim) * 100f)) / 100f;
+            var attacker = est?.Attacker;
+            if (attacker == null || victim == null || !HasHitAfflictions(attacker)) return 0f;
+            var routine = est.RoutineIdentity as AttackRoutine;
+            var hits = est.LineHits;
+            if (routine == null || hits == null || hits.Length != routine.Lines.Count) return 0f;
+            var riders = OffensiveRiders(attacker, victim);
+            if (riders.Count == 0) return 0f;
+            // A grapple ends the routine early: each line counts by the share of the routine still running (ExpectedAttacks).
+            float reached = est.GrappleChance > 0f && est.Attacks > 0 ? Math.Min(1f, est.ExpectedAttacks / est.Attacks) : 1f;
+            var suits = s_LineSuits;
+            var total = new Affliction();
+            foreach (var rider in riders)
+            {
+                suits.Clear();
+                foreach (var line in routine.Lines) suits.Add(RiderSuitsWeapon(rider.Trigger, rider.Fact, line.Weapon));
+                float fired = OnHitRules.FiringHits(suits, hits, rider.Trigger.OnlyOnFirstAttack, rider.Trigger.OnlyOnFirstHit, reached);
+                if (fired > 0f) total.Add(rider.Read.Repeated(fired), 1f);
+            }
+            suits.Clear();
+            return total.IsEmpty ? 0f : AfflictionHp(total, victim);
         }
+
+        private static readonly List<bool> s_LineSuits = new List<bool>(8);
 
         /// <summary>
         /// The share of <paramref name="victim"/> one weapon hit of <paramref name="attacker"/> takes through its on-hit

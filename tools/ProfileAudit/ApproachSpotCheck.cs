@@ -81,7 +81,8 @@ namespace ProfileAudit
                 // The large engine methods name members of assemblies the offline harness does not carry: their IL is
                 // searched for each call's own token instead of resolving every member.
                 MethodInfo Own(Type type, string name) => type.GetMethods(Hidden).First(m => m.Name == name);
-                var plan = Own(typeof(TacticalEngine), "PlanApproach");
+                // coverage7 follow-ups: PlanApproach times its cache misses; the planning itself is PlanApproachMiss.
+                var plan = Own(typeof(TacticalEngine), "PlanApproachMiss");
                 Check(CallsToken(plan, applies) && CallsToken(plan, Own(typeof(TacticalEngine), "CellSpot")) &&
                       CallsToken(plan, Own(typeof(TacticalEngine), "CellFreeAt")) && CallsToken(plan, Own(typeof(TacticalEngine), "TakenAt")),
                       "PlanApproach reads spot claims and looks for a free cell");

@@ -260,6 +260,35 @@ namespace CompanionAI_Pathfinder.Tactics
             RefusedWalks[$"{unit.UniqueId}|{optionKey}"] = new KeyValuePair<Vector3, double>(unit.Position, GameSeconds + 12d);
         }
 
+        /// <summary>
+        /// ★ coverage7 follow-ups (author-approved movement): unit|target → where the game's path to an advance on that
+        /// target enters a harmful area, the unit's position then and until when it counts (12 s, as a refused walk, while
+        /// the unit stays within 1 m). The next advance on the target is also offered priced as passing through it.
+        /// </summary>
+        private static readonly Dictionary<string, AreaCrossingNote> AreaCrossings = new Dictionary<string, AreaCrossingNote>();
+
+        public struct AreaCrossingNote
+        {
+            public Vector3 Origin, From, To;
+            public double Until;
+        }
+
+        public static void NoteAreaCrossing(UnitEntityData unit, UnitEntityData target, Vector3 from, Vector3 to)
+        {
+            if (!IsRealTime || unit == null || target == null) return;
+            if (AreaCrossings.Count > 128) AreaCrossings.Clear();
+            AreaCrossings[$"{unit.UniqueId}|{target.UniqueId}"] =
+                new AreaCrossingNote { Origin = unit.Position, From = from, To = to, Until = GameSeconds + 12d };
+        }
+
+        public static bool AreaCrossing(UnitEntityData unit, UnitEntityData target, out AreaCrossingNote note)
+        {
+            note = default;
+            if (!IsRealTime || AreaCrossings.Count == 0 || unit == null || target == null) return false;
+            if (!AreaCrossings.TryGetValue($"{unit.UniqueId}|{target.UniqueId}", out note)) return false;
+            return GameSeconds <= note.Until && Vector3.Distance(unit.Position, note.Origin) <= 1f;
+        }
+
         public static bool WalkRefused(UnitEntityData unit, string optionKey)
         {
             if (!IsRealTime || RefusedWalks.Count == 0 || unit == null || optionKey == null) return false;
@@ -458,6 +487,7 @@ namespace CompanionAI_Pathfinder.Tactics
             CombatMath.ResetAfflictionSources(); // The fact-bearing on-hit readers cannot retain actors across fights.
             PendingCasts.Clear();
             RefusedWalks.Clear();
+            AreaCrossings.Clear();
             StuckSpots.Clear();   // ★ v0.3.29 test 6
             OutOfWalkingReachTargets.Clear();
             TouchArrivals.Clear();   // ★ coverage2 review
