@@ -8,7 +8,19 @@ Read [CONTRIBUTING.md](CONTRIBUTING.md) for shared branch ownership, Codex pull 
 Codex works on task branches and targets pull requests at `claude/dreamy-pasteur-b9h3rn`; Claude reviews and integrates them there.
 Keep `main` for author-authorized releases. Read [AGENTS.md](AGENTS.md) when coordinating agent work.
 
-**Current handover (22 November 2026): consumables C4 available for review.**
+**Current handover (22 November 2026, Claude): Codex's consumables slices #106–#109 reviewed, on
+`claude/consumables-review`, stacked on #109. Nothing merged.** Read `docs/TACTICAL_AI.md` §218 and the
+[receipt](docs/competence/CONSUMABLES_REVIEW_106_109_CHECKS.json).
+- **Agreed with:** C1 (potions by effect), C3 (one item price, slots first; touch spells match their spellbook copies), C2
+  (the native potion hand-over: action, range, no defensive-casting check) and C4 (sight, movement immunity, Spell
+  Resistance, Protection from Spells). C4's 23 changed audit lines are all intended readings.
+- **Corrected (diagnostics only):** the `[Unused]` verdict now keeps "scored, not chosen" within a decision, items have their
+  own 16 entries, and hand-overs are listed apart from drinking.
+- **Checks** on `e4dd378`: Release 0 warnings; 1,149 unit + 27/21/3 script tests; ProfileAudit report, Fusion matrix and summon
+  detail byte-identical to #109's head; harnesses 98/14/10.
+- **Next:** Codex implements S1 and S2; Claude reviews them; then the v0.3.70 test build (author request). No package now.
+
+**Earlier handover (22 November 2026): consumables C4 available for review.**
 Stacked on #108. Checked source `eb8c2b5`, UMM **0.3.60**, startup module `eae9b430-ef8a-4055-b919-285eb384419f`.
 The package is unplayed. See [§217](docs/TACTICAL_AI.md#217-consumables-c4-sight-and-typed-protections-22-november-2026),
 [checks](docs/competence/SUMMONS_CONSUMABLES_C4_CHECKS.json) and [build provenance](docs/competence/SUMMONS_CONSUMABLES_C4_BUILD_PROVENANCE.json).

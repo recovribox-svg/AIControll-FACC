@@ -7290,3 +7290,32 @@ Movement against a grappler and without one, and True Seeing against a concealed
 one. Try Spell Resistance against a resistible caster and Protection from Spells against a save spell with and
 without a competing Resistance bonus. Check Magical Vestment on armor and shield with and without an existing
 enhancement. Send the logs and startup module `eae9b430-ef8a-4055-b919-285eb384419f`.
+
+## 218. Review of Codex's consumables slices, PRs #106–#109 (22 November 2026, Claude)
+
+[Receipt](competence/CONSUMABLES_REVIEW_106_109_CHECKS.json). The author asked for Codex's work so far (#106 → #109, stacked)
+to be reviewed and corrected, without merging. S1, S2 and the summon-control default are still to come.
+
+- **Agreed with, after checking against the decompiled game:**
+  - #106 C1: potions appraised by effect; the 0.8 difficulty gate is gone.
+  - #107 C3: one restraint for every item, with healing, present relief and safety costs left out of it. Slots first
+    matches the spellbook copy by blueprint. `AbilityData.StickyTouch` is a held charge (`Fact?.StickyTouch`), so touch spells
+    such as Cure Light Wounds and Death Ward are matched correctly: their items name the same `…Cast` blueprint as the
+    spellbook.
+  - #108 C2: the hand-over is built exactly as the action bar builds it. The range is `GetWeaponRange()` (2 ft plus
+    reach, plus both bodies) and the action is Standard. No exported potion uses variants. Potions skip the native
+    defensive-casting check (`UnitUseAbility.OnTick`), so the engine's provoke price correctly leaves them out.
+  - #109 C4: `SavingThrowBonusAgainstAbilityType` and `AddSpellResistance` are read as the game applies them. All 23 changed
+    audit lines on the same inputs are the intended new readings. Freedom of Movement's remaining "+10 saves" part comes
+    from its separate Staggered immunity, so nothing is counted twice.
+- **Corrected (diagnostics only, both modes):**
+  1. The `[Unused]` verdict kept the last target's exclusion. An option that scored on one target and was out of range on
+     another read "out of range" rather than "scored, not chosen". Within one decision, a scored option now keeps that
+     verdict; the last decision still decides (`UnusedState`, four unit tests).
+  2. Quick-slot items have their own 16 entries. Kits of 92–108 abilities (coverage7) filled the 32 ability entries
+     before any item was seen.
+  3. A hand-over is listed as "… to an ally", apart from drinking.
+- **Checks** on `e4dd378`: Release 0 warnings; 1,149 unit + 27/21/3 script tests; ProfileAudit exit 0, report, Fusion matrix
+  and summon detail byte-identical to #109's head on the same inputs; harnesses 98/14/10. One ToyBox harness process measured
+  6,368 bytes in the shared `BUFF-CONTEXT` allocation check; two reruns and the other three processes measured 0 on the same DLL.
+  No package: the v0.3.70 test build follows the review of S1 and S2.
