@@ -7268,3 +7268,25 @@ The [UMM test package](../test-builds/AI-Control-FACC-v0.3.60-dev-items-c2-2f890
 healthy giver's quick slot, keep a badly injured companion adjacent and a summon nearby, and check which recipient
 is chosen. Repeat with the companion one walk away, then with an injured giver and a Personal potion. Verify that
 each completed use spends one item and that an approach alone spends none. Send both logs and module `a7db0656-cced-4fc8-a299-1314503fa3e3`.
+
+## 217. Consumables C4: sight and typed protections (22 November 2026)
+
+True Seeing and Freedom of Movement use the friendly native delivery for appraisal even when the touch wrapper
+permits both sides. True Seeing values concealment the recipient can overcome. Freedom of Movement values
+typed movement protection and retains eligible relief from effects already present. Spell Resistance forecasts
+the marginal change in penetration. Protection from Spells uses the native +8 Resistance bonus against spells
+and spell-like abilities, including the recipient's existing bonus. Against cast threats, these appraisals use
+the strongest already assessed matching threat and its forecast victim. Unknown payloads, layered SR and nested
+save routes receive no new credit. Magical Vestment item fixtures use the existing armor and shield enhancement
+reader.
+
+Checked source `eb8c2b5` passed the zero-warning real-reference Release build, 1,145 unit tests,
+27/21/3 script tests, both ProfileAudit scopes and native 98/14/10. Both Fusion coverage matrices match C2
+byte for byte. The only changes outside ITEMS are shared protection and sight readings and their totals.
+[Checks](competence/SUMMONS_CONSUMABLES_C4_CHECKS.json) · [Compiler provenance](competence/SUMMONS_CONSUMABLES_C4_BUILD_PROVENANCE.json)
+
+The [UMM test package](../test-builds/AI-Control-FACC-v0.3.60-dev-items-c4-eb8c2b5-UMM-test.zip?raw=true) is **unplayed**. In TB and RT, try Freedom of
+Movement against a grappler and without one, and True Seeing against a concealed enemy and against an exposed
+one. Try Spell Resistance against a resistible caster and Protection from Spells against a save spell with and
+without a competing Resistance bonus. Check Magical Vestment on armor and shield with and without an existing
+enhancement. Send the logs and startup module `eae9b430-ef8a-4055-b919-285eb384419f`.

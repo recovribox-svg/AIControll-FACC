@@ -8,7 +8,15 @@ Read [CONTRIBUTING.md](CONTRIBUTING.md) for shared branch ownership, Codex pull 
 Codex works on task branches and targets pull requests at `claude/dreamy-pasteur-b9h3rn`; Claude reviews and integrates them there.
 Keep `main` for author-authorized releases. Read [AGENTS.md](AGENTS.md) when coordinating agent work.
 
-**Current handover (22 November 2026): consumables C2 available for review.**
+**Current handover (22 November 2026): consumables C4 available for review.**
+Stacked on #108. Checked source `eb8c2b5`, UMM **0.3.60**, startup module `eae9b430-ef8a-4055-b919-285eb384419f`.
+The package is unplayed. See [§217](docs/TACTICAL_AI.md#217-consumables-c4-sight-and-typed-protections-22-november-2026),
+[checks](docs/competence/SUMMONS_CONSUMABLES_C4_CHECKS.json) and [build provenance](docs/competence/SUMMONS_CONSUMABLES_C4_BUILD_PROVENANCE.json).
+- Native friendly touch delivery and typed protections apply in TB and RT. Magical Vestment uses its pre-existing reader.
+- 1,145 units, 27/21/3 scripts, zero-warning Release, both audits and native 98/14/10 passed.
+- S1 and S2 follow. Touch of Chaos is a penalty on its recipient's rolls. Shadow variants and the control default await play evidence.
+
+**Earlier handover (22 November 2026): consumables C2 available for review.**
 This branch includes Slice 0/C1 and C3 (drafts #106 and #107). Checked source `2f890af`,
 UMM **0.3.60**, startup module `a7db0656-cced-4fc8-a299-1314503fa3e3`. The package is unplayed.
 Read [§216](docs/TACTICAL_AI.md#216-consumables-c2-hand-an-adjacent-ally-a-potion-22-november-2026),

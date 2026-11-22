@@ -1,0 +1,74 @@
+{
+  "checked_source_commit": "eb8c2b59e36594be39bdf671079f59a6695dee29",
+  "baseline_source": "2f890af",
+  "baseline_note": "Compared against C2 on identical inputs. Both Fusion matrices are byte-identical. Each audit has 23 replaced non-ITEMS lines, all shared protection/sight reader output and derived counts. Five summon detail rows changed for the same reason. Other report rows match.",
+  "dll": {
+    "assembly": "CompanionAI_Pathfinder, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null",
+    "mvid": "eae9b430-ef8a-4055-b919-285eb384419f",
+    "sha256": "3d123e61ebe0390076e15ab487bc84416f37e5c11e01f95596231f5e40dcb2fb",
+    "size": 1651712
+  },
+  "package": {
+    "path": "test-builds/AI-Control-FACC-v0.3.60-dev-items-c4-eb8c2b5-UMM-test.zip",
+    "sha256": "740800880dec92ab7d97dc8c3802f3d45e23745f861cdbd69f0474dab943fd32"
+  },
+  "build_provenance": "docs/competence/SUMMONS_CONSUMABLES_C4_BUILD_PROVENANCE.json",
+  "release": {
+    "warnings": 0,
+    "errors": 0,
+    "real_game_references": true,
+    "log_sha256": "e3f44aae514319be7ce3e0084cc78232b6801bbe330b4bc7d347c13a37f2598f"
+  },
+  "unit_tests": {
+    "passed": 1145,
+    "failed": 0,
+    "skipped": 0
+  },
+  "script_tests": {
+    "BlueprintInventory": 27,
+    "InvocationLedger": 21,
+    "ProfileAuditSupplement": 3
+  },
+  "profile_audit": {
+    "strict": {
+      "report_sha256": "8a7b67a338c9a2bca5fe16f9168bb8fd9aca5acf84d66dd8a597f4fd0d459db3",
+      "matrix_sha256": "acd0b62097c834cb8617f33b9272a32f24f08da4b91c0b3499f3eccd779e1517",
+      "non_items_report_equal": false,
+      "matrix_byte_identical": true
+    },
+    "full_stock": {
+      "report_sha256": "4b1c1fabe9444d4320bbed8e9ed8850abf39be6da42dc2c3912227a11effdc55",
+      "matrix_sha256": "acd0b62097c834cb8617f33b9272a32f24f08da4b91c0b3499f3eccd779e1517",
+      "non_items_report_equal": false,
+      "matrix_byte_identical": true
+    },
+    "summon_detail_sha256": "37a4b71a1346b9230b08fd2007392e70896bdd6e34660261bf6d94e6d104b972",
+    "items_blueprint_fixtures": 13,
+    "items_blueprint_fixture_failures": 0,
+    "potions_read_guessed_unread": [
+      98,
+      15,
+      1
+    ],
+    "scrolls_read_guessed_unread": [
+      573,
+      65,
+      12
+    ],
+    "wands_read_guessed_unread": [
+      212,
+      15,
+      2
+    ]
+  },
+  "native_harnesses": {
+    "ToggleCosts": 98,
+    "TomeBurn": 14,
+    "ToyBoxSpend": 10
+  },
+  "not_run": [
+    "live turn-based or real-time play",
+    "live item use",
+    "Unity profiling"
+  ]
+}
