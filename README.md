@@ -269,4 +269,8 @@ Requirements: the game with Unity Mod Manager installed, and the [.NET SDK](http
 - Based on the original CompanionAI for Pathfinder by veria (seyelive5), which built on patterns from CompanionAI for
   Rogue Trader.
 
-License: MIT.
+  ---
+
+## Permissions
+
+You are not allowed to upload this file to other sites under any circumstances. You must get permission from me before you are allowed to modify my files to improve it.
