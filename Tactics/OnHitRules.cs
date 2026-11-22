@@ -12,18 +12,21 @@ namespace CompanionAI_Pathfinder.Tactics
         /// <param name="suits">Whether each attack line's weapon passes the rider's weapon filters.</param>
         /// <param name="hits">Each attack line's chance to hit, in the same order.</param>
         /// <param name="firstAttackOnly">OnlyOnFirstAttack: the routine's first attack only.</param>
-        /// <param name="firstHitOnly">OnlyOnFirstHit: once, on the first suitable hit.</param>
-        /// <param name="reached">The share of the routine still running (a grapple ends it early).</param>
-        /// <returns>Expected firings: the sum of suitable lines' hit chances, or the chance of at least one suitable hit.</returns>
-        public static float FiringHits(IList<bool> suits, IList<float> hits, bool firstAttackOnly, bool firstHitOnly, float reached)
+        /// <param name="firstHitOnly">OnlyOnFirstHit: the native trigger also retains HadHit between routines.</param>
+        /// <param name="reached">An optional additional reach factor; production lines already include their individual reach.</param>
+        /// <param name="hadHit">Native state before this routine. Unknown stays true: a lower bound, since a missed or
+        /// unsuitable opening attack returns before the native HadHit reset.</param>
+        public static float FiringHits(IList<bool> suits, IList<float> hits, bool firstAttackOnly, bool firstHitOnly, float reached,
+                                       bool hadHit = true)
         {
             if (suits == null || hits == null || !(reached > 0f)) return 0f;
             int count = Math.Min(suits.Count, hits.Count);
-            if (firstAttackOnly) count = Math.Min(count, 1);
+            if (firstAttackOnly || firstHitOnly && hadHit) count = Math.Min(count, 1);
             float sum = 0f, none = 1f;
             for (int i = 0; i < count; i++)
             {
                 if (!suits[i]) continue;
+                if (float.IsNaN(hits[i]) || float.IsInfinity(hits[i])) return 0f;
                 float p = hits[i] < 0f ? 0f : hits[i] > 1f ? 1f : hits[i];
                 sum += p;
                 none *= 1f - p;

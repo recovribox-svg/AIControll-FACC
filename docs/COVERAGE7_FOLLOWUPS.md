@@ -1,5 +1,9 @@
 # Coverage7 follow-ups (coverage8)
 
+**Review update (22 November 2026):** coverage8 has now been played without health cheats, with rests between fights.
+See [the PR #104 review, corrections and next replay](COVERAGE8_PLAYTEST_REVIEW.md); the receipt below retains its original checked identity.
+
+
 22 November 2026, Claude. Codex finished the coverage7 review and its corrections in draft PR #103
 (`codex/coverage7-review`). The author asked me to take over, and approved anything not yet implemented that needs
 approval, movement included, if it is of acceptable quality and worth adding. Both modes unless marked. Not played.

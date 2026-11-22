@@ -8,7 +8,30 @@ Read [CONTRIBUTING.md](CONTRIBUTING.md) for shared branch ownership, Codex pull 
 Codex works on task branches and targets pull requests at `claude/dreamy-pasteur-b9h3rn`; Claude reviews and integrates them there.
 Keep `main` for author-authorized releases. Read [AGENTS.md](AGENTS.md) when coordinating agent work.
 
-**Current handover (22 November 2026, Claude): coverage7 follow-ups on `claude/coverage7-followups`, stacked on Codex's
+**Current handover (22 November 2026): coverage8 playtest and PR #104 corrections, unplayed; nothing merged.**
+Draft correction [PR #105](https://github.com/recovribox-svg/AIControll-FACC/pull/105), stacked on #104 for review.
+Read [the review and replay](docs/COVERAGE8_PLAYTEST_REVIEW.md), [checks](docs/competence/COVERAGE8_REVIEW_CHECKS.json),
+[compiler/reference provenance](docs/competence/COVERAGE8_REVIEW_BUILD_PROVENANCE.json) and §212.
+
+- Branch `codex/coverage8-review`, from #104 **`d8ff91d`**, stacked PR base **`claude/coverage7-followups`**. Preserve the stack;
+  this is a correction review, not integration into development.
+- Both modes: guarded/active caster-removal heals, native first-hit state bounds and per-line grapple reach, decision-scoped
+  rider invalidation, native point-dispel bonus/membership and bounded area-worth reuse. Faction diagnostic memos reset per fight.
+- Approved RT crossing follow-up: the already queried native route must fit its quoted area-risk budget before exceptional
+  permission is granted. Bounded sampling; mounted, unread and over-budget routes withhold permission. Other movement policies unchanged.
+- Played coverage8 **`17e3e1e`**, module **`828dc676`**, **no cheats, rests between fights**: 8 fights, 1,012 measured decisions,
+  328 issues/terminals, no AI exception or issue rejection. Healing works; no new Invocation spam violation established.
+  Point dispel, Abandon Flesh, priced crossing and Circle of Death were not issued; no faction transition appears.
+- Frozen checked source **`27a427ebffc18bad9090908fbf99329511ab8274`**, module **`a2be2e6f-a510-45cc-a706-7edef3b0e100`**; package
+  `test-builds/AI-Control-FACC-v0.3.60-dev-coverage8fix1-27a427e-UMM-test.zip`, UMM **0.3.60**, **unplayed**. Do not rebuild for documentation commits.
+- **1,129 units + 27/21/3 scripts**, Release **0 warnings/errors**, all strict/full audit sections pass; new **25** native-contract/
+  callback/counterexample checks. Every old report line, both Fusion matrices and summon detail equal the fresh #104 baseline.
+  Native **98/14/10**, supplementary Magus **44**, **1** added native signature resolved exactly.
+- Remaining: conservative unknown first-hit state, immediate rider-HP kill credit/stat mortality, unread callbacks, approximate
+  area/lingering/helpful utility, post-issue native rerouting and cancellation causes. No touch pruning or Unity speed-up claim.
+- Next: review the corrections and replay the page's six TB/RT checks with both logs. No merge, development/main push, tag or release.
+
+**Earlier handover (22 November 2026, Claude): coverage7 follow-ups on `claude/coverage7-followups`, stacked on Codex's
 `codex/coverage7-review` (draft PR #103). Not played, nothing merged.** Read [docs/COVERAGE7_FOLLOWUPS.md](docs/COVERAGE7_FOLLOWUPS.md),
 `docs/TACTICAL_AI.md` §211 and the [receipt](docs/competence/COVERAGE8_CHECKS.json).
 

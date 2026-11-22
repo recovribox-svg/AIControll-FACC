@@ -64,13 +64,13 @@ namespace ProfileAudit
                       !(bool)targetsUnits.Invoke(null, new object[] { pointProfile }),
                     "actual Dispel Magic (Point): a point-only dispel");
                 var pointValue = Body(engine, "PointDispelValue");
-                Check(Calls(pointValue, typeof(CompanionAI_Pathfinder.Analysis.AoeDangerAnalyzer), "CoversPoint") &&
+                Check(Calls(pointValue, typeof(CompanionAI_Pathfinder.Analysis.AoeDangerAnalyzer), "DispelCoversPoint") &&
                       Calls(pointValue, engine, "DispelSchoolsMatch") && Calls(pointValue, typeof(ValueModel), "ExpectedDispelWorth") &&
                       Calls(pointValue, engine, "AreaRemovalWorth") && Calls(pointValue, typeof(ValueModel), "DispelChance"),
                     "point dispel value: covered areas, native filters, ordered and counted chances, area worth");
                 Check(Calls(Body(engine, "TryDispelValue"), engine, "PointDispelValue"),
                     "a point-only dispel is priced by the areas it ends, not by unit buffs");
-                Check(Calls(Body(engine, "AreaRemovalWorth"), typeof(CompanionAI_Pathfinder.Analysis.AoeDangerAnalyzer), "AreaDangerOn"),
+                Check(Calls(Body(engine, "AreaRemovalWorthCore"), typeof(CompanionAI_Pathfinder.Analysis.AoeDangerAnalyzer), "AreaDangerOn"),
                     "an area's worth is its danger to the units inside");
                 var dispelChance = typeof(ValueModel).GetMethod("DispelChance");
                 Check(dispelChance != null && Math.Abs((float)dispelChance.Invoke(null, new object[] { 11 }) - 0.5f) < 0.001f,

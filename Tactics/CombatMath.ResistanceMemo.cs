@@ -8,6 +8,7 @@ namespace CompanionAI_Pathfinder.Tactics
     {
         [ThreadStatic] private static ResistanceScope s_ResistanceScope;
         private static int s_ResistanceVersion;
+        internal static int ForecastVersion => s_ResistanceVersion;
         internal static int ResistanceReads, ResistanceMemoHits;
 
         // Scope is one synchronous EvaluateAbility call. No result survives into the next ability evaluation/decision.

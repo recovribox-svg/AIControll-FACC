@@ -66,7 +66,7 @@ namespace CompanionAI_Pathfinder.Tactics
         // identities, not another cache and not a request to read or simulate the actor again.
         internal object RoutineIdentity;
         internal float RoutineLands;
-        /// <summary>coverage7 follow-ups: each attack line's hit chance, in the routine's line order, for on-hit riders that
+        /// <summary>Each attack line's marginal hit chance, including its chance of being reached, for on-hit riders that
         /// fire only for some weapons or attacks (CombatMath.OnHitHp reads the line's weapon from the routine).</summary>
         internal float[] LineHits;
         /// <summary>★ sneak attack (slice D2): this attack makes the target flanked, as its second engager, with
@@ -323,7 +323,7 @@ namespace CompanionAI_Pathfinder.Tactics
             {
                 var d = delta?.Invoke(line.Weapon, line.Index) ?? new KeyValuePair<int, float>(0, 0f);
                 float lineDamage = ExpectedWeaponLine(line, d.Key, d.Value, lands, out float p, out float perHit);
-                result.LineHits[lineAt++] = p;
+                result.LineHits[lineAt++] = p * (grapple != null ? run.Reach : 1f);
                 if (grapple != null) lineDamage = PriceGrabLine(line, grapple, lineDamage, p, ref run, ref freeDamage, ref natural);
                 if (MagusMechanics.WeaponDeliversTouch(line.Weapon?.Blueprint, trackTouch, line.Weapon == unit.Body.EmptyHandWeapon))
                 {
@@ -363,6 +363,7 @@ namespace CompanionAI_Pathfinder.Tactics
         {
             InvalidateResistanceMemo(); // State previews, including same-frame prone/infusion changes, invalidate open scopes.
             NewSwarmDecision(); // Dynamic source/availability snapshots must also expire between same-frame decisions.
+            ClearOffensiveRiderReads(); // Target facts and source state may change between decisions in the same frame.
             Routines.Clear();
             ClearGrappleReads();    // ★ G1: the grab and its odds are read with the routines, forgotten with them
             HitsOnTarget.Clear();   // ★ v0.3.20 (test3): read with the routines, forgotten with them

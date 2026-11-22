@@ -435,6 +435,8 @@ namespace CompanionAI_Pathfinder.Tactics
         private static readonly Dictionary<KeyValuePair<UnitEntityData, UnitEntityData>, RiderReads> s_RiderReads =
             new Dictionary<KeyValuePair<UnitEntityData, UnitEntityData>, RiderReads>(PairComparer.Instance);
 
+        internal static void ClearOffensiveRiderReads() => s_RiderReads.Clear();
+
         /// <summary>Positive on-hit benefit, separate from the conservative threat reader: each supported rider of
         /// <paramref name="attacker"/>, read against <paramref name="victim"/> once a frame. No actor preview.</summary>
         private static List<OffensiveRider> OffensiveRiders(UnitEntityData attacker, UnitEntityData victim)
@@ -463,7 +465,8 @@ namespace CompanionAI_Pathfinder.Tactics
         /// rider, since the old aggregate hit count could not say which weapon hit (Schir's bardiche disease was credited to
         /// its gore). With each attack line's weapon and hit chance (WeaponAttackEstimate.LineHits) the native weapon filters
         /// (AbstractWeaponTrigger.IsSuitable: blueprint, type, category, range, fighter group, natural/unarmed, an item
-        /// enchantment's own weapon), the first attack and the first hit are exact. Flags that depend on the roll or the
+        /// enchantment's own weapon) and the first attack are read. Unknown native HadHit state keeps a conservative
+        /// opening-hit bound for first-hit triggers. Flags that depend on the roll or the
         /// moment (criticals, sneak attack, natural 20, distance, damage form, charge, extra or opportunity attacks, a full
         /// attack, dueling weapons, auto-hits) stay withheld.
         /// </summary>
@@ -532,18 +535,19 @@ namespace CompanionAI_Pathfinder.Tactics
             if (attacker == null || victim == null || !HasHitAfflictions(attacker)) return 0f;
             var routine = est.RoutineIdentity as AttackRoutine;
             var hits = est.LineHits;
-            if (routine == null || hits == null || hits.Length != routine.Lines.Count) return 0f;
+            if (routine == null || hits == null || hits.Length == 0 || hits.Length != routine.Lines.Count) return 0f;
             var riders = OffensiveRiders(attacker, victim);
             if (riders.Count == 0) return 0f;
-            // A grapple ends the routine early: each line counts by the share of the routine still running (ExpectedAttacks).
-            float reached = est.GrappleChance > 0f && est.Attacks > 0 ? Math.Min(1f, est.ExpectedAttacks / est.Attacks) : 1f;
+            // LineHits includes each line's own chance of being reached, before that line can start a grapple.
             var suits = s_LineSuits;
             var total = new Affliction();
             foreach (var rider in riders)
             {
+                if (rider.Fact == null || !rider.Fact.Active) continue;
+                if ((rider.Trigger.OnlyOnFirstAttack || rider.Trigger.OnlyOnFirstHit) && routine.Lines[0].Index != 0) continue;
                 suits.Clear();
                 foreach (var line in routine.Lines) suits.Add(RiderSuitsWeapon(rider.Trigger, rider.Fact, line.Weapon));
-                float fired = OnHitRules.FiringHits(suits, hits, rider.Trigger.OnlyOnFirstAttack, rider.Trigger.OnlyOnFirstHit, reached);
+                float fired = OnHitRules.FiringHits(suits, hits, rider.Trigger.OnlyOnFirstAttack, rider.Trigger.OnlyOnFirstHit, 1f);
                 if (fired > 0f) total.Add(rider.Read.Repeated(fired), 1f);
             }
             suits.Clear();

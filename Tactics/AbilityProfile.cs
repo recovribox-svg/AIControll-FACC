@@ -484,6 +484,8 @@ namespace CompanionAI_Pathfinder.Tactics
 
         /// <summary>Removal actions (ContextActionRemoveBuff / ...ByDescriptor) on the target, with their branch.</summary>
         private readonly List<GameAction> m_Removals = new List<GameAction>();
+        private readonly List<KeyValuePair<BlueprintBuff, EffectGuard[]>> m_CasterRemovals =
+            new List<KeyValuePair<BlueprintBuff, EffectGuard[]>>();
 
         private AbilityProfile(BlueprintAbility blueprint)
         {
@@ -1112,8 +1114,11 @@ namespace CompanionAI_Pathfinder.Tactics
                         RemovesBuffs = true;
                         // ★ v0.3.24 (Psionics): a buff taken off the caster itself, whatever the ability is aimed at
                         // (TacticalEngine.HeldStates: spending a state such as psionic focus).
-                        if (remove.Buff != null && (remove.ToCaster || toCaster) && !CasterRemovedBuffs.Contains(remove.Buff))
-                            CasterRemovedBuffs.Add(remove.Buff);
+                        if (remove.Buff != null && (remove.ToCaster || toCaster))
+                        {
+                            if (!CasterRemovedBuffs.Contains(remove.Buff)) CasterRemovedBuffs.Add(remove.Buff);
+                            m_CasterRemovals.Add(new KeyValuePair<BlueprintBuff, EffectGuard[]>(remove.Buff, guards));
+                        }
                         if (!remove.ToCaster && subject == EffectSubject.Target && remove.Buff != null)
                         {
                             RemovedBuffs.Add(remove.Buff);
@@ -2135,6 +2140,19 @@ namespace CompanionAI_Pathfinder.Tactics
         public List<Kingmaker.UnitLogic.Buffs.Buff> BeneficialBuffsRemoved(AbilityData ability, UnitEntityData target)
         {
             return BuffsRemovedFrom(ability, target).Where(b => !IsHarmfulFor(b, target)).ToList();
+        }
+
+        /// <summary>Positive removal callbacks require a proved occurrence, not the flat caster-removal inventory.
+        /// Evaluate the original scoring target: the guard may be on it even when the removal itself is ToCaster.</summary>
+        internal bool CertainlyRemovesCasterBuff(BlueprintBuff buff, AbilityData ability, UnitEntityData target)
+        {
+            foreach (var removal in m_CasterRemovals)
+            {
+                if (removal.Key != buff) continue;
+                var applies = Evaluate(removal.Value, ability, target);
+                if (applies == EffectApplies.Yes || applies == EffectApplies.Unconditional) return true;
+            }
+            return false;
         }
 
         internal IEnumerable<Kingmaker.UnitLogic.Buffs.Buff> BuffsRemovedFrom(AbilityData ability, UnitEntityData target, bool certainOnly = false)

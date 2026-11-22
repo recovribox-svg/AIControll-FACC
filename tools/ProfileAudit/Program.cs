@@ -224,6 +224,10 @@ namespace ProfileAudit
             foreach (var line in c7FollowLines) Console.WriteLine(line);
             File.WriteAllText(output, string.Join(Environment.NewLine, c7FollowLines) + Environment.NewLine + Environment.NewLine + File.ReadAllText(output));
             blocklistFailures += c7FollowFailures;
+            var coverage8ReviewLines = Coverage8ReviewCheck.Run(loaded.Values, out int coverage8ReviewFailures);
+            foreach (var line in coverage8ReviewLines) Console.WriteLine(line);
+            File.WriteAllText(output, string.Join(Environment.NewLine, coverage8ReviewLines) + Environment.NewLine + Environment.NewLine + File.ReadAllText(output));
+            blocklistFailures += coverage8ReviewFailures;
             // ★ v0.3.28 test 15: swarm spaces.
             var swarmLines = SwarmAreaCheck.Run(loaded.Values, out int swarmFailures);
             foreach (var line in swarmLines) Console.WriteLine(line);
