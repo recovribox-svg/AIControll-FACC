@@ -8,7 +8,26 @@ Read [CONTRIBUTING.md](CONTRIBUTING.md) for shared branch ownership, Codex pull 
 Codex works on task branches and targets pull requests at `claude/dreamy-pasteur-b9h3rn`; Claude reviews and integrates them there.
 Keep `main` for author-authorized releases. Read [AGENTS.md](AGENTS.md) when coordinating agent work.
 
-**Current handover (22 November 2026): coverage7 playtest corrections, unplayed; nothing merged.**
+**Current handover (22 November 2026, Claude): coverage7 follow-ups on `claude/coverage7-followups`, stacked on Codex's
+`codex/coverage7-review` (draft PR #103). Not played, nothing merged.** Read [docs/COVERAGE7_FOLLOWUPS.md](docs/COVERAGE7_FOLLOWUPS.md),
+`docs/TACTICAL_AI.md` §211 and the [receipt](docs/competence/COVERAGE8_CHECKS.json).
+
+- **PR #103 (Codex):** reviewed against the decompiled game and agreed with; its build, tests, audit, Fusion matrix and
+  summon detail reproduce.
+- **Author:** approved anything still needing approval, movement included, if worth adding and of acceptable quality.
+- **Changes:**
+  1. Both modes: on-hit riders per attack line by the native weapon filters, first attack and first hit. Codex's
+     blanket withhold had dropped a Shadow's touch drain; target fact gates are read.
+  2. Both modes: Abandon Flesh's removal heal (2d6+3) is valued as any heal.
+  3. Both modes: point dispels are priced by the area effects they end, and aimed where an ally stands in an area.
+  4. Real time (movement): an advance refused for crossing an area is offered priced through it.
+  5. Approach-planning timings in slow rows; `[Faction]` rows. No pruning.
+- **Checks** on `17e3e1e`: Release 0 warnings; 1,118 unit + 27/21/3 script tests; ProfileAudit `COVERAGE7-FOLLOWUPS` 20,
+  `OFFENSIVE-AFFLICTION` 27, other lines identical; Fusion matrix and summon detail byte-identical; harnesses 98/14/10.
+- **Package:** `test-builds/AI-Control-FACC-v0.3.60-dev-coverage8-17e3e1e-UMM-test.zip`, MVID `828dc676`. Manifest 0.3.60.
+- **Next:** Codex reviews this PR; the author plays coverage8 (replay in the page, then Codex's coverage7 replay).
+
+**Earlier handover (22 November 2026, Codex): coverage7 playtest corrections, unplayed; nothing merged.**
 Read [the completed review](docs/COVERAGE7_PLAYTEST_REVIEW.md), [follow-up proposals](docs/COVERAGE7_FOLLOWUP_PROPOSALS.md),
 [checks](docs/competence/COVERAGE7_REVIEW_CHECKS.json), [provenance](docs/competence/COVERAGE7_REVIEW_BUILD_PROVENANCE.json) and §210.
 

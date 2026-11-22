@@ -1,0 +1,67 @@
+{
+  "recorded_at_utc": "2026-11-22T05:06:00.491190+00:00",
+  "checked_source_commit": "17e3e1e1c35843a519dcc408395c1e7ae73fe0e8",
+  "worktree_dirty_at_build": false,
+  "toolchain": {
+    "dotnet_sdk": "8.0.428",
+    "csharp_compiler": "4.11.0-3.25569.22 (3fb752d4)",
+    "components_sha256": {
+      "Roslyn/bincore/csc.dll": "1b1253cf4fb6ba61db478c9aee3711d8941daec264e57243fae76f5e0465f293",
+      "Roslyn/bincore/Microsoft.CodeAnalysis.dll": "cf1dbb093d0421db6b7f91b633673656922f2429857fa5b3fe44cdefb6298e36",
+      "Roslyn/bincore/Microsoft.CodeAnalysis.CSharp.dll": "c31e5f415a2ea22c849b40ef957c9d7eed6b9be0f723382c703eea9c2e34dc48",
+      "MSBuild.dll": "7bf0f72311ebcd230282eafab9ea3fa371497b0c156b7ed4b50212d86cbe3944"
+    },
+    "global_json": null,
+    "compiler_override": false
+  },
+  "effective_release_properties": {
+    "Configuration": "Release",
+    "TargetFramework": "net48",
+    "LangVersion": "latest",
+    "Deterministic": "true",
+    "ContinuousIntegrationBuild": "",
+    "DebugType": "portable",
+    "Optimize": "true",
+    "PathMap": "",
+    "MSBuildVersion": "17.11.71",
+    "NETCoreSdkVersion": "8.0.428",
+    "DefineConstants": "TRACE;RELEASE;NETFRAMEWORK;NET48;",
+    "Nullable": "disable",
+    "AllowUnsafeBlocks": "true",
+    "GenerateAssemblyInfo": "false",
+    "CheckForOverflowUnderflow": "false"
+  },
+  "resolved_packages": {
+    "Lib.Harmony/2.2.2": {
+      "type": "package",
+      "sha512": "70KvWz+DiUELxafsYL/LHxA/jH3PDWeApLo/VwtnrpTvRWQ/eUdPfS/l5funmhZWOy41QXw6UjVv+6C57Nx77A=="
+    },
+    "Microsoft.NETFramework.ReferenceAssemblies/1.0.3": {
+      "type": "package",
+      "sha512": "vUc9Npcs14QsyOD01tnv/m8sQUnGTGOw1BCmKcv77LBJY7OxhJ+zJF7UD/sCL3lYNFuqmQEVlkfS4Quif6FyYg=="
+    },
+    "Microsoft.NETFramework.ReferenceAssemblies.net48/1.0.3": {
+      "type": "package",
+      "sha512": "zMk4D+9zyiEWByyQ7oPImPN/Jhpj166Ky0Nlla4eXlNL8hI/BtSJsgR8Inldd4NNpIAH3oh8yym0W2DrhXdSLQ=="
+    }
+  },
+  "resolved_compiler_references": [],
+  "native_game_identity": {
+    "assembly": "Assembly-CSharp",
+    "mvid": "90a9869c-2792-4c7b-bfb7-5a8b33da7c82",
+    "sha256": "2cb7160b7154d4ffacc77b9c51b1eb26199e1294300f04fdfc073367b2ef8953",
+    "size": 11891712
+  },
+  "unity_mod_manager_identity": {
+    "assembly": "UnityModManager",
+    "mvid": "3e2067c0-cc53-4483-9367-ae51787c5913",
+    "sha256": "e0b97c482ec2bf66cb97e0a671a562bbe8501b6ed22df2aa03222137f16a35aa",
+    "size": 204800
+  },
+  "built_dll": {
+    "mvid": "828dc676-d296-4f0a-9e9a-70b6f6487c09",
+    "sha256": "71e5570604d1ad1e1148dac8d2a9ef5e88337f669a03346689b50d2387ba6897",
+    "size": 1634816
+  },
+  "reproduction_limit": "Compiler, source path/line endings, debug/Source Link metadata and reference bytes affect DLL identity; this records the inputs of this build, not byte identity with builds made elsewhere."
+}
