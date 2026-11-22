@@ -7166,3 +7166,25 @@ same-input #104 baseline. Native harnesses **98/14/10**, supplementary Magus **4
 Frozen unplayed UMM **0.3.60** package, module **`a2be2e6f-a510-45cc-a706-7edef3b0e100`**; [checks](competence/COVERAGE8_REVIEW_CHECKS.json)
 and [compiler provenance](competence/COVERAGE8_REVIEW_BUILD_PROVENANCE.json). No integration, live path/cast execution,
 touch-planning pruning or measured Unity speed-up. The replay and remaining precision limits are in the review.
+
+## 213. Stable v0.3.60: PRs #92–#105 integrated (22 November 2026, Claude)
+
+[Receipt](competence/INTEGRATION_92_105_CHECKS.json) · [release notes](../release/CHANGELOG_v0.3.60.md). The author asked for
+the next build to be a stable release, for Codex's PR #105 to be checked, and, if satisfactory, for every open PR to be
+merged into development and `main` updated.
+
+- **PR #105 (Codex):** agreed with. The native contracts it relies on were re-read in the decompiled game:
+  - the point-dispel area loop and its bonus (`RunAction`, `TryDispelAreaEffect`: `CheckBonus` only);
+  - `AreaEffectView.Contains` as point membership;
+  - `AbstractWeaponTrigger.IsSuitable` returning before the `HadHit` reset, so first-hit state can carry over.
+  The priced-crossing constraint is applied by the dispatcher in preflight and at issue.
+- **Merged** #92 → #105 in stack order (the stack is linear, no conflicts). Development's tree equals the #105 head.
+- **Checks** on the checked source `27a427e`:
+  - Release 0 warnings; 1,129 unit + 27/21/3 script tests;
+  - ProfileAudit exit 0, `COVERAGE8-REVIEW` 25, every other line identical to coverage8; Fusion matrix and summon detail
+    byte-identical;
+  - harnesses 98/14/10; one reference added, resolved.
+  The same audit, harnesses and reference dump pass on Codex's frozen packaged DLL itself.
+- **Release:** `release/CompanionAI_Pathfinder_v0.3.60.zip` is byte-identical to the coverage8fix1 test build
+  (MVID `a2be2e6f`). `Info.json` 0.3.60. `main` is fast-forwarded to development; the author creates the tag and the GitHub release.
+- **Played:** coverage8 (8 fights, no AI Control error). #105's corrections are not yet played.

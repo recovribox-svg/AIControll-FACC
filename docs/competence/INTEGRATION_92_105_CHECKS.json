@@ -1,0 +1,61 @@
+{
+ "task": "Author-requested stable release: review Codex's PR #105, merge every open PR (#92-#105) into development, release v0.3.60 and bring main to it",
+ "date": "2026-11-22",
+ "author": "Claude",
+ "development_before": "0019856805605c9b74e27ffbdfa6b8dd9c20b0f2",
+ "development_after_merges": "ac6744eb8adb6ac5c7579049ae98a8402b419733",
+ "merge_order_and_commits": {
+  "#92": "e564adf", "#93": "d53a034", "#94": "9adda40", "#95": "87a2ec9", "#96": "fab753c",
+  "#97": "0b58d7f", "#98": "96c3101", "#99": "1dcd88d", "#100": "68e9a9e", "#101": "6b555b0",
+  "#102": "3a0a59d", "#103": "db9597a", "#104": "c71817e", "#105": "ac6744e"
+ },
+ "stack": "Linear: each PR head is an ancestor of the next, and development 0019856 is an ancestor of #92. No conflicts.",
+ "tree_identity": "development ac6744e has exactly the tree of the #105 head f032cec (git diff empty); its code is the checked source 27a427e",
+ "review_of_105": {
+  "native_contracts_rechecked": [
+   "ContextActionDispelMagic.RunAction: with no target unit, every AreaEffects entry not AllArea whose View.Contains(point) is tried (TryDispelAreaEffect).",
+   "TryDispelAreaEffect adds CheckBonus only; ContextBonus belongs to TryDispelBuff. The PR's point-dispel bonus follows this.",
+   "AbstractWeaponTrigger.IsSuitable: a missed or weapon-unsuitable attack returns before the HadHit reset on the first attack, so HadHit can carry over between routines. The PR's opening-hit lower bound for unknown state is correct; with a clear state the chance of a first suitable hit is used.",
+   "AreaEffectView.Contains(Vector3) exists and is the one added native reference."
+  ],
+  "code_read": "Priced crossings: the candidate's PathConstraint is applied by the dispatcher in both preflight and issue (RealTimeWalkRefused queries the path whenever a constraint is present). The actual route's newly entered areas are priced with the same AreaStayCost/affect/duration readers; stop is summed (conservative). Removal heals need a proved guarded occurrence and an active, turned-on, unsuppressed buff with a fully readable plain callback. Point-dispel overlap keeps the best gain and every loss. Rider reads expire with ClearAttackCache; faction memos reset per fight.",
+  "verdict": "No defect found; satisfactory."
+ },
+ "checks_on_27a427e_here": {
+  "toolchain": {"dotnet_sdk": "8.0.428", "csharp_compiler": "4.11"},
+  "release_build": "0 warnings, 0 errors",
+  "unit_tests": 1129,
+  "script_tests": {"BlueprintInventory": 27, "InvocationLedger": 21, "ProfileAudit supplement": 3},
+  "profileaudit": {
+   "exit": 0,
+   "loaded": 45244,
+   "coverage8_review": 25,
+   "coverage7_followups": 20,
+   "offensive_affliction": 27,
+   "other_lines": "identical to Claude's coverage8 (#104) run on the same inputs, apart from the new section",
+   "fusion_coverage": "byte-identical to coverage8; 14,789 admitted / 13,387 joint of 15,494",
+   "summon_kit_detail": "byte-identical to coverage8",
+   "report_sha256": "40a610f7a8132231d5935f5f2c3522d8deada85392c3baf597bc13d30e88533b"
+  },
+  "native_harnesses": {"ToggleCosts": 98, "TomeBurn": 14, "ToyBoxSpend": 10},
+  "signatures_vs_104": "1 added (AreaEffectView.Contains), resolved in the supplied assembly",
+  "not_run_here": ["Supplementary Magus 44 corpus (stock fixtures not in this environment); Codex's receipt records 44 passing. No Magus code changed in #105."]
+ },
+ "release_package_checks": {
+  "package": "release/CompanionAI_Pathfinder_v0.3.60.zip",
+  "same_bytes_as": "test-builds/AI-Control-FACC-v0.3.60-dev-coverage8fix1-27a427e-UMM-test.zip (Codex's frozen checked build)",
+  "zip_sha256": "a0df22db14f579a7490983d260936fed7e88ff02a50fd4f819da083d44e2fe86",
+  "dll_sha256": "bd90aba517a219b0c14aa4c5493a120bf9da93e20121a44f69ab574805938841",
+  "mvid": "a2be2e6f-a510-45cc-a706-7edef3b0e100",
+  "info_json": "identical to the repository Info.json, version 0.3.60",
+  "profileaudit_on_this_dll": "exit 0; report byte-identical to the run on Claude's local build (sha256 above); Fusion matrix and summon detail byte-identical",
+  "native_harnesses_on_this_dll": {"ToggleCosts": 98, "TomeBurn": 14, "ToyBoxSpend": 10},
+  "foreign_references": "identical to Claude's local build"
+ },
+ "gameplay": {
+  "last_played": "coverage8, source 17e3e1e, module 828dc676: 8 fights (3 TB, 5 RT), 1,012 measured decisions, 328 issues/terminals, no AI Control exception, no cheats (Codex's review)",
+  "unplayed": "PR #105's corrections; Point dispel ending an area, Abandon Flesh's heal, a priced crossing and Circle of Death have not been issued in play"
+ },
+ "version": "0.3.60 (Info.json unchanged)",
+ "main": "fast-forwarded to development after the release commit; no tag or GitHub release (author action)"
+}

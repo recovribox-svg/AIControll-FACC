@@ -1,0 +1,29 @@
+{
+  "build_label": "v0.3.60 stable",
+  "kind": "stable-release-package",
+  "version": "0.3.60",
+  "source_branch": "claude/dreamy-pasteur-b9h3rn",
+  "source_commit": "27a427ebffc18bad9090908fbf99329511ab8274",
+  "integration_commit": "ac6744eb8adb6ac5c7579049ae98a8402b419733",
+  "integration_note": "Development after merging PRs #92-#105 in stack order; its tree equals the PR #105 head f032cec, whose code is the checked source 27a427e (later commits are documentation and packages only).",
+  "previous_release": "0.3.52",
+  "dll": {
+    "assembly": "CompanionAI_Pathfinder, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null",
+    "mvid": "a2be2e6f-a510-45cc-a706-7edef3b0e100",
+    "sha256": "bd90aba517a219b0c14aa4c5493a120bf9da93e20121a44f69ab574805938841",
+    "size": 1639936
+  },
+  "manifest_sha256": "63ad9f152d4bacb44f021428193efad46aaf0d13380bb5691ebca1d935f2b5bf",
+  "zip_sha256": "a0df22db14f579a7490983d260936fed7e88ff02a50fd4f819da083d44e2fe86",
+  "same_bytes_as": "test-builds/AI-Control-FACC-v0.3.60-dev-coverage8fix1-27a427e-UMM-test.zip",
+  "archive_contents": [
+    "CompanionAI_Pathfinder.dll",
+    "Info.json"
+  ],
+  "checks_receipt": "docs/competence/INTEGRATION_92_105_CHECKS.json",
+  "build_provenance": "docs/competence/COVERAGE8_REVIEW_BUILD_PROVENANCE.json",
+  "gameplay_status": "The last played build is coverage8 (source 17e3e1e, module 828dc676: 8 fights, no AI Control exception). This release adds PR #105's corrections on top of it; those corrections are not yet played.",
+  "scope": "Stable v0.3.60 requested by the author. Everything since v0.3.52: PRs #58-#105 (Magic Fusion coverage, delayed bursts aimed at the ground, cast disruption, suppressed buffs, sneak attack fortification and flanking, grapple and Grabber, Shifter forms, Coup de Grace reach, dominated allies, relief spells and point dispels, on-hit riders, crowded approaches, priced area crossings, playtest corrections and bounded diagnostics). See release/CHANGELOG_v0.3.60.md.",
+  "release": true,
+  "public_release_published": false
+}

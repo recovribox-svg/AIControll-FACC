@@ -8,7 +8,30 @@ Read [CONTRIBUTING.md](CONTRIBUTING.md) for shared branch ownership, Codex pull 
 Codex works on task branches and targets pull requests at `claude/dreamy-pasteur-b9h3rn`; Claude reviews and integrates them there.
 Keep `main` for author-authorized releases. Read [AGENTS.md](AGENTS.md) when coordinating agent work.
 
-**Current handover (22 November 2026): coverage8 playtest and PR #104 corrections, unplayed; nothing merged.**
+**Current handover (22 November 2026, Claude): stable v0.3.60 released to the repository; PRs #92–#105 merged into
+development and `main` brought to it, at the author's request.** Read `docs/TACTICAL_AI.md` §213, the
+[receipt](docs/competence/INTEGRATION_92_105_CHECKS.json) and the [release notes](release/CHANGELOG_v0.3.60.md).
+
+- **PR #105 (Codex):** reviewed against the decompiled game and agreed with:
+  - point-dispel loop and bonus (`TryDispelAreaEffect` adds `CheckBonus` only);
+  - `AreaEffectView.Contains` as point membership;
+  - first-hit state carry-over in `AbstractWeaponTrigger.IsSuitable`;
+  - the dispatcher applies the priced-crossing constraint.
+- **Merged** #92 → #105 in stack order, no conflicts (merge commits `e564adf` … `ac6744e`). Development's tree equals the #105
+  head; its code is the checked source `27a427e`.
+- **Checks** on `27a427e`:
+  - Release 0 warnings; 1,129 unit + 27/21/3 script tests;
+  - ProfileAudit exit 0, `COVERAGE8-REVIEW` 25, other lines identical to coverage8; Fusion matrix and summon detail byte-identical;
+  - harnesses 98/14/10.
+  The packaged DLL itself passes the same audit, harnesses and reference dump.
+- **Release:** `release/CompanionAI_Pathfinder_v0.3.60.zip`, MVID `a2be2e6f-a510-45cc-a706-7edef3b0e100`, ZIP SHA-256
+  `a0df22db…`. It is byte-identical to Codex's coverage8fix1 test build. `Info.json` 0.3.60.
+- **Author action:** create tag `v0.3.60` on `main` and the GitHub release (instructions in `release/README.md`).
+- **Played:** coverage8 (8 fights, no AI Control error). #105's corrections, Point dispel ending areas, Abandon Flesh,
+  priced crossings and Circle of Death are not yet seen in play.
+- **Next:** the author plays v0.3.60 (Codex's replay in `docs/COVERAGE8_PLAYTEST_REVIEW.md`). No PR is open.
+
+**Earlier handover (22 November 2026, Codex): coverage8 playtest and PR #104 corrections, unplayed; nothing merged.**
 Draft correction [PR #105](https://github.com/recovribox-svg/AIControll-FACC/pull/105), stacked on #104 for review.
 Read [the review and replay](docs/COVERAGE8_PLAYTEST_REVIEW.md), [checks](docs/competence/COVERAGE8_REVIEW_CHECKS.json),
 [compiler/reference provenance](docs/competence/COVERAGE8_REVIEW_BUILD_PROVENANCE.json) and §212.

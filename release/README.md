@@ -1,38 +1,52 @@
-# AI Control v0.3.29 — UMM package
+# AI Control v0.3.60 — UMM package
 
-**[Download CompanionAI_Pathfinder_v0.3.29.zip](CompanionAI_Pathfinder_v0.3.29.zip?raw=true)**
+**[Download CompanionAI_Pathfinder_v0.3.60.zip](CompanionAI_Pathfinder_v0.3.60.zip?raw=true)**
 
-The author asked for the door-opening work to be taken out, kept for a later version, and this version released
-(7 November 2026). It is development commit `811fae2`: v0.3.29 test 8 without the door work. Its highlights are fewer
-crowd blocks, real-time walks that end on time, cones that spare companions walking in, and no turns lost to walks that
-cannot happen. `Info.json` is 0.3.29. [Release notes](CHANGELOG_v0.3.29.md).
+The author asked for the next build to be a stable release (22 November 2026). It is development after PRs #92–#105,
+whose code is the checked source `27a427e`. The ZIP is byte-identical to the coverage8fix1 test build. Highlights: Magic
+Deceiver fusions almost all usable, late-landing bursts aimed where the enemy will be, enemy casts broken, dominated
+companions freed instead of killed, relief spells and point dispels, grapples, Shifter forms and on-hit effects.
+`Info.json` is 0.3.60. [Release notes](CHANGELOG_v0.3.60.md).
 
 ## Install
 
 1. Fully exit the game.
 2. Install/update the ZIP through Unity Mod Manager's **Mods** tab.
-3. UMM should display **0.3.29**. Existing settings remain under `CompanionAI_Pathfinder`.
+3. UMM should display **0.3.60**. Existing settings remain under `CompanionAI_Pathfinder`.
 4. The complete startup log identifies the package:
 
 ```text
-[Build] v0.3.29 module=b1371c3f-bb68-4d1c-b881-9753eb663685
+[Build] v0.3.60 module=a2be2e6f-a510-45cc-a706-7edef3b0e100
 ```
 
 The flat ZIP contains exactly `CompanionAI_Pathfinder.dll` and `Info.json`.
-- ZIP SHA-256: `c9b8ff16c5864e121c0fd9c42b1c6899778c1c121ead972fd748094a7c345a7c`
-- DLL SHA-256: `d9213172ccb30d4d34fe617e8d67665c9f2bcd71fd77ebba45644e31b655938f`
-- [Identity](CompanionAI_Pathfinder_v0.3.29.identity.json) · [Checksums](SHA256SUMS.txt)
+- ZIP SHA-256: `a0df22db14f579a7490983d260936fed7e88ff02a50fd4f819da083d44e2fe86`
+- DLL SHA-256: `bd90aba517a219b0c14aa4c5493a120bf9da93e20121a44f69ab574805938841`
+- [Identity](CompanionAI_Pathfinder_v0.3.60.identity.json) · [Checksums](SHA256SUMS.txt) ·
+  [Checks](../docs/competence/INTEGRATION_92_105_CHECKS.json)
+
+The last played build is coverage8 (8 fights, no AI Control error). The review corrections this release adds on top of
+it passed the automated checks but have not been played.
 
 ## Publish on GitHub — author action
 
 Claude prepared the package and brought `main` to the release revision; the author creates the GitHub release and tag
 (tag pushes from Claude are refused).
-- **Releases → Draft a new release.** Tag: **v0.3.29** (new tag). Target: **`main`**.
-- Title: `AI Control - Fully Autonomous Combat Companions v0.3.29`.
-- Description: paste [CHANGELOG_v0.3.29.md](CHANGELOG_v0.3.29.md).
+- **Releases → Draft a new release.** Tag: **v0.3.60** (new tag). Target: **`main`**.
+- Title: `AI Control - Fully Autonomous Combat Companions v0.3.60`.
+- Description: paste [CHANGELOG_v0.3.60.md](CHANGELOG_v0.3.60.md).
 - Attach **this ZIP** (download it above) as the release asset, then publish.
 
 ## Previous releases
+
+- [v0.3.52](CompanionAI_Pathfinder_v0.3.52.zip?raw=true) (startup
+  `[Build] v0.3.52 module=981a7b77-a654-4da1-9a22-68bc1c6a77bd`, details below).
+- [v0.3.51](CompanionAI_Pathfinder_v0.3.51.zip?raw=true) (startup
+  `[Build] v0.3.51 module=e31e626d-9c4b-4536-8b26-63433d3c7425`, details below).
+- [v0.3.50](CompanionAI_Pathfinder_v0.3.50.zip?raw=true) (startup
+  `[Build] v0.3.50 module=45ab748a-b0e9-4db9-b62a-3de2f4eff6fb`, details below).
+- [v0.3.29](CompanionAI_Pathfinder_v0.3.29.zip?raw=true) (tag `v0.3.29`, startup
+  `[Build] v0.3.29 module=b1371c3f-bb68-4d1c-b881-9753eb663685`, [notes](CHANGELOG_v0.3.29.md)).
 
 - [v0.3.28](CompanionAI_Pathfinder_v0.3.28.zip?raw=true) (tag `v0.3.28`, startup
   `[Build] v0.3.28 module=794e6682-f29b-426a-a940-680ed813c83c`, [notes](CHANGELOG_v0.3.28.md)).

@@ -5,14 +5,15 @@ replaces your companions' combat AI with a tactical one. Each companion estimate
 supported attacks, spells, abilities, items and movement, then chooses among them. It works in **turn-based** and
 **real-time** combat.
 
-**Current repository package: v0.3.52** —
-[download ZIP](https://github.com/recovribox-svg/AIControll-FACC/raw/refs/heads/main/release/CompanionAI_Pathfinder_v0.3.52.zip) ·
-[identity](release/CompanionAI_Pathfinder_v0.3.52.identity.json) ·
-[checksums](release/CompanionAI_Pathfinder_v0.3.52.sha256) ·
-[changes and playtest checklist](docs/V0352_PLAYTEST_REVIEW.md)
+**Current repository package: v0.3.60** —
+[download ZIP](https://github.com/recovribox-svg/AIControll-FACC/raw/refs/heads/main/release/CompanionAI_Pathfinder_v0.3.60.zip) ·
+[identity](release/CompanionAI_Pathfinder_v0.3.60.identity.json) ·
+[checksums](release/CompanionAI_Pathfinder_v0.3.60.sha256) ·
+[release notes](release/CHANGELOG_v0.3.60.md)
 
-The v0.3.52 package passed automated verification; its new behavior still needs confirmed turn-based and real-time
-playtesting. [Validation results](docs/competence/V0352_PLAYTEST_CHECKS.json) record the checks and their limits.
+Most of v0.3.60 was played in development builds. The review corrections from the last playtest passed automated
+verification but have not been played yet. [Validation results](docs/competence/INTEGRATION_92_105_CHECKS.json)
+record the checks and their limits.
 Published tags and release assets are listed separately under [GitHub Releases](https://github.com/recovribox-svg/AIControll-FACC/releases).
 
 ---
@@ -20,7 +21,7 @@ Published tags and release assets are listed separately under [GitHub Releases](
 ## Contents
 
 - [What it does](#what-it-does)
-- [What's new in v0.3.52](#whats-new-in-v0352)
+- [What's new in v0.3.60](#whats-new-in-v0360)
 - [Install](#install)
 - [Settings](#settings)
 - [Abilities AI must not use](#abilities-ai-must-not-use)
@@ -62,10 +63,11 @@ Published tags and release assets are listed separately under [GitHub Releases](
 - kineticist burn and infusions;
 - psionic focus (Psionics mod);
 - recognized Magus Spell Combat/Spellstrike mechanics, including ranged variants;
-- supported Shifter forms and native Magic Deceiver fusions.
+- Shifter forms with Shifter's Fury, and almost all Magic Deceiver fusions;
+- grapples, the Grabber toggle and Release Grapple.
 
 These examples describe supported mechanisms, not complete support for every class, archetype or modded ability.
-Grapple maintenance/release and broader summons competence remain ongoing work.
+Broader summons competence remains ongoing work.
 
 **Lets you choose spell spending.** *Conservative* uses the lowest viable spell level; *Standard* balances normal
 spending; *Aggressive* makes offensive spell slots more attractive. Target defenses, resource limits and risks still apply.
@@ -77,23 +79,29 @@ spending; *Aggressive* makes offensive spell slots more attractive. Target defen
 
 ---
 
-## What's new in v0.3.52
+## What's new in v0.3.60
 
-- Death from Above can compare the same supported combat-mode choices as ordinary weapon attacks.
-- Combat-mode AC scoring excludes recognized automatic swarm damage while retaining its threat to the party.
-- Debug logging suppresses repeated unchanged states and avoids unnecessary formatting when output is disabled.
-- Updated diagnostics and [the playtest review](docs/V0352_PLAYTEST_REVIEW.md) document unresolved behavior,
-  including Invocation transfers, no-effect Dazzling Display casts and some refused approaches.
+- **Magic Deceiver:** 14,789 of the game's 15,494 fusion combinations can be chosen (7,474 before), each fused effect valued.
+- **Late-landing bursts** (Explosive Runes, Fireball-like projectiles) are aimed where the enemy will be; real time
+  re-checks them and cancels them if a companion would be caught.
+- **Enemy casts** can be broken by a hit before they go off (real time).
+- **Dominated companions** are stopped, not killed, and freeing them is valued.
+- **Relief spells:** Dispel Magic, Break Enchantment, Remove Fear and Unbreakable Heart are valued by what they end;
+  Dispel Magic (Point) ends the enemy areas the party stands in.
+- **Grapples, Shifter forms, sneak attack** (fortification and flanking), on-hit effects, suppressed buffs and Coup de
+  Grace reach are read by the game's own rules.
+- **Movement:** crowded turn-based approaches take a free side; real-time advances through a harmful area are priced.
 
-The release archive includes a build identity and checksum. Packaging and automated checks do not establish that
-every supported mechanic has been exercised in game.
+Full list and known limitations: [release notes](release/CHANGELOG_v0.3.60.md). The release archive includes a build
+identity and checksum. Packaging and automated checks do not establish that every supported mechanic has been
+exercised in game.
 
 ---
 
 ## Install
 
 1. Install [Unity Mod Manager](https://www.nexusmods.com/site/mods/21) for the game (the mod requires version 0.27.0 or newer).
-2. Download [CompanionAI_Pathfinder_v0.3.52.zip](https://github.com/recovribox-svg/AIControll-FACC/raw/refs/heads/main/release/CompanionAI_Pathfinder_v0.3.52.zip).
+2. Download [CompanionAI_Pathfinder_v0.3.60.zip](https://github.com/recovribox-svg/AIControll-FACC/raw/refs/heads/main/release/CompanionAI_Pathfinder_v0.3.60.zip).
 3. **Fully exit the game.** In Unity Mod Manager, open the *Mods* tab and drag the ZIP onto the window.
    - Or extract it to `<game>\Mods\CompanionAI_Pathfinder\`.
 4. Start the game and press **Ctrl+F10** to open the settings.
@@ -200,7 +208,7 @@ What it does **not** change:
 2. Send `Log.txt` from the affected session:
    - where: `<game>\Wrath_Data\Managed\UnityModManager\Log.txt`, or the *Logs* tab in Unity Mod Manager;
    - its first lines identify your version, for example
-     `[Build] v0.3.52 module=981a7b77-a654-4da1-9a22-68bc1c6a77bd`.
+     `[Build] v0.3.60 module=a2be2e6f-a510-45cc-a706-7edef3b0e100`.
 3. If you have an exported `combatLog.txt`, include the matching session's file to help compare decisions with
    actual outcomes. Keep different builds/sessions clearly labelled.
 4. Debug logging is not needed unless asked for. When requested, enable it before reproducing the issue and retain
@@ -216,10 +224,10 @@ Selected actions are logged with candidate values; quiet real-time waits may be 
 
 ## Versions and test builds
 
-- **Repository packages:** [release folder](release/README.md), including v0.3.50, v0.3.51 and current v0.3.52,
+- **Repository packages:** [release folder](release/README.md), including v0.3.50–v0.3.52 and current v0.3.60,
   with identities, checksums and validation limits. Updating `main` does not create a GitHub Release.
 - **Published releases:** [GitHub Releases](https://github.com/recovribox-svg/AIControll-FACC/releases).
-- **Older release notes:** [v0.3.29](release/CHANGELOG_v0.3.29.md) · [v0.3.28](release/CHANGELOG_v0.3.28.md) · [v0.3.27](release/CHANGELOG_v0.3.27.md) ·
+- **Release notes:** [v0.3.60](release/CHANGELOG_v0.3.60.md) · [v0.3.29](release/CHANGELOG_v0.3.29.md) · [v0.3.28](release/CHANGELOG_v0.3.28.md) · [v0.3.27](release/CHANGELOG_v0.3.27.md) ·
   [v0.3.26](release/CHANGELOG_v0.3.26.md) · [v0.3.25](release/CHANGELOG_v0.3.25.md) ·
   [older](release/).
 - **Test builds:** development builds for play-testing, in [test-builds](test-builds/README.md). They are not releases.
