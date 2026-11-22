@@ -10,16 +10,12 @@ namespace CompanionAI_Pathfinder.Tactics
     {
         /// <summary>The shared scalar kernel for an ordinary quote and a held-buff removal quote.</summary>
         private static float ExpectedWeaponLine(AttackLine line, int attackChange, float damageChange, float lands,
-                                                 out float hit, out float perHit) =>
-            RepriceWeaponLine(line, attackChange, damageChange, lands, false, out hit, out perHit);
-
-        private static float RepriceWeaponLine(AttackLine line, int attackChange, float damageChange, float lands,
-                                                bool bypassReduction, out float hit, out float perHit)
+                                                 out float hit, out float perHit)
         {
             hit = HitProbability(line.AttackBonus + attackChange, line.ArmorClass) * lands;
             // Preserve the existing native-derived damage, DR, physical factor and critical model, including a
             // kinetic blade's separate blast. Removing physical damage cannot remove that blast or the sneak dice.
-            float modeChange = Math.Max(0f, line.RawPerHit + damageChange - (bypassReduction ? 0 : line.DamageReduction)) -
+            float modeChange = Math.Max(0f, line.RawPerHit + damageChange - line.DamageReduction) -
                                Math.Max(0f, line.RawPerHit - line.DamageReduction);
             perHit = Math.Max(0f, line.GameHit + modeChange * line.PhysicalFactor) + line.BladeBlast;
             float critExtra = hit * perHit * (ValueModel.CritFactor(line.ThreatChance, hit, line.CritMultiplier) - 1f);
@@ -48,7 +44,9 @@ namespace CompanionAI_Pathfinder.Tactics
                 int lineBonus = !onlyRange.HasValue || Kingmaker.Enums.WeaponRangeTypeHelper.IsSuitableWeapon(onlyRange.Value, line.Weapon.Blueprint)
                     ? attackBonus : 0;
                 float before = ExpectedWeaponLine(line, 0, 0f, lands, out _, out _);
-                float after = RepriceWeaponLine(line, lineBonus, damageBonus, lands, bypassReduction, out _, out _);
+                // Giving back this line's known DR before the normal subtraction cancels that subtraction only.
+                float recoverable = bypassReduction ? line.DamageReduction : 0f;
+                float after = ExpectedWeaponLine(line, lineBonus, damageBonus + recoverable, lands, out _, out _);
                 gain += Math.Max(0f, after - before);
             }
             return gain;
