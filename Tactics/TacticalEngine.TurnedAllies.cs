@@ -99,12 +99,13 @@ namespace CompanionAI_Pathfinder.Tactics
         /// the enemy loses a fighter (its control worth, as a hard control would take) and the party has its ally back (its
         /// worth per round; less while it cannot act anyway, half for a summon).
         /// </summary>
-        internal static float FreedWorth(TacticalContext ctx, UnitEntityData ally, Buff hold)
+        internal static float FreedWorth(TacticalContext ctx, UnitEntityData ally, Buff hold, float capRounds = float.PositiveInfinity)
         {
             try
             {
                 float horizon = ValueModel.Horizon(ctx.ExpectedRounds, 6f);
                 float rounds = hold.IsPermanent ? horizon : Math.Min(horizon, (float)hold.TimeLeft.TotalSeconds / 6f);
+                rounds = Math.Min(rounds, capRounds);   // ★ coverage5: a suppression frees it only while it lasts
                 if (!(rounds > 0f)) return 0f;
                 float pass = RoundSavePass(hold, ally);
                 float own = ValueModel.PerRound(Level(ally)) * (CombatMath.IsDisabled(ally) ? 0.4f : 1f) *
@@ -157,7 +158,7 @@ namespace CompanionAI_Pathfinder.Tactics
                                           List<UnitEntityData> affectedEnemies, out string note)
         {
             note = null;
-            if (ctx.TurnedAllies.Count == 0 || profile.DispelActions.Count == 0 && !profile.RemovesAnything) return 0f;
+            if (ctx.TurnedAllies.Count == 0 || profile.DispelActions.Count == 0 && !profile.RemovesAnything && profile.TargetBuffs.Count == 0) return 0f;
             float total = 0f;
             List<string> freed = null;
             var reached = new List<UnitEntityData>();
@@ -178,7 +179,7 @@ namespace CompanionAI_Pathfinder.Tactics
                 float best = 0f, chance = 0f;
                 foreach (var dispel in profile.DispelActions)
                 {
-                    float worth = DispelValue(ctx, dispel, source, ally, horizon, true, out float frees);
+                    float worth = DispelValue(ctx, dispel, source, ally, horizon, true, false, out float frees);
                     if (frees > 0f && worth > best) { best = worth; chance = frees; }
                 }
                 foreach (var buff in ally.Buffs.Enumerable)
@@ -187,6 +188,9 @@ namespace CompanionAI_Pathfinder.Tactics
                     float worth = FreedWorth(ctx, ally, buff);
                     if (worth > best) { best = worth; chance = 1f; }
                 }
+                // ★ coverage5: a buff that suppresses the hold (Unbreakable Heart: Compulsion) frees it while it lasts.
+                float suppressed = SuppressionRelief(ctx, ability, profile, ally, horizon, out bool freedBySuppression);
+                if (freedBySuppression && suppressed > best) { best = suppressed; chance = 1f; }
                 if (!(best > 0f)) continue;
                 total += reach * best;
                 (freed ?? (freed = new List<string>())).Add($"{ally.CharacterName} {reach * chance:P0}");

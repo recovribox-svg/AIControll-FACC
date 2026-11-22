@@ -8,7 +8,29 @@ Read [CONTRIBUTING.md](CONTRIBUTING.md) for shared branch ownership, Codex pull 
 Codex works on task branches and targets pull requests at `claude/dreamy-pasteur-b9h3rn`; Claude reviews and integrates them there.
 Keep `main` for author-authorized releases. Read [AGENTS.md](AGENTS.md) when coordinating agent work.
 
-**Current handover (21 November 2026, Claude): the author's coverage4 follow-ups on `claude/coverage4-followups`, stacked on
+**Current handover (21 November 2026, Claude): relief spells on `claude/relief-spells`, stacked on
+`claude/coverage4-followups` (draft PR #97). Not played, nothing merged.** Read [docs/RELIEF_SPELLS.md](docs/RELIEF_SPELLS.md),
+`docs/TACTICAL_AI.md` §206 and the [receipt](docs/competence/RELIEF1_CHECKS.json).
+
+- **Report (0.3.52 user):** "none of the magic-using characters ever cast Dispel Magic".
+  - Cause: every dispel was worth a flat 2-point fallback; Break Enchantment counted only its caster.
+  - Remove Fear and Unbreakable Heart were valued only by their save bonus.
+- **Change (both modes):**
+  - Ending an effect on an ally (confusion, fear, a hold, a penalty) is worth its share of the ally's output for the
+    rounds it would still act.
+  - Dispels are priced in the native order on every unit they reach; the party's own buffs a dispel would take first
+    are a loss.
+  - Suppressing buffs (Remove Fear, Unbreakable Heart) are worth what they switch off while they last. Unbreakable Heart
+    can free a dominated ally.
+- **Checks** on `746d7a7`:
+  - Release 0 warnings; 1,066 unit + 27/21/3 script tests.
+  - ProfileAudit new `RELIEF` 16, every other line unchanged.
+  - Native harnesses 98/14/10; 0 references added.
+- **Package:** `test-builds/AI-Control-FACC-v0.3.60-dev-relief1-746d7a7-UMM-test.zip`, MVID `5537a531`. It contains
+  coverage5. Manifest 0.3.60; no `main`, tag or release.
+- **Next:** the author plays relief1 (replay in the page).
+
+**Earlier handover (21 November 2026, Claude): the author's coverage4 follow-ups on `claude/coverage4-followups`, stacked on
 `claude/coverage3-review` (draft PR #96). Not played, nothing merged.** Read [docs/COVERAGE4_FOLLOWUPS.md](docs/COVERAGE4_FOLLOWUPS.md),
 `docs/TACTICAL_AI.md` §205 and the [receipt](docs/competence/COVERAGE5_CHECKS.json).
 

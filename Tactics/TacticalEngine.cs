@@ -3368,6 +3368,10 @@ namespace CompanionAI_Pathfinder.Tactics
                 if (!helpfulOnly && (targetingBlueprint.CanTargetEnemies ||
                                      (ability.CanTargetPoint && (profile.HarmfulEffects || profile.DealsDamage || profile.Dispels))))
                     targets.AddRange(ctx.Enemies);
+                // ★ coverage5: a helpful spell that may be aimed at another side and suppresses what holds an ally there
+                // (Unbreakable Heart: Compulsion) can free an ally under an enemy's control.
+                if (helpfulOnly && targetingBlueprint.CanTargetEnemies && ctx.TurnedAllies.Count > 0 && SuppressesOnRecipient(profile))
+                    targets.AddRange(ctx.TurnedAllies);
                 if (!harmfulOnly && (targetingBlueprint.CanTargetFriends || targetingBlueprint.CanTargetSelf))
                     targets.AddRange(ctx.Allies.Where(a => a == ctx.Unit ? targetingBlueprint.CanTargetSelf : targetingBlueprint.CanTargetFriends));
                 // ★ v0.3.21 (verification audit): a helpful area that can only be aimed at the ground (Rainbow Dome, Circle of
@@ -4896,7 +4900,9 @@ namespace CompanionAI_Pathfinder.Tactics
                     if (share < partial) partial = share;
                     bool fighting = (ally.CombatState?.IsEngaged ?? false) || ally == unit;
                     float ordinary = (2f + 2f * level) * horizon * (fighting ? 1f : 0.6f) * share;
-                    cleanseValue += Math.Max(ordinary, AttachedCleanseWorth(ctx, ability, profile, ally));
+                    // ★ coverage5: or what the removed effects cost the ally (confusion, fear, a hold), when that is more.
+                    cleanseValue += Math.Max(Math.Max(ordinary, RemovalRelief(ctx, profile, ally, horizon)),
+                                             AttachedCleanseWorth(ctx, ability, profile, ally));
                 }
                 if (cleanseValue > 0f)
                 {
@@ -4906,13 +4912,39 @@ namespace CompanionAI_Pathfinder.Tactics
             }
 
             // --- ★ coverage4 (author request): freeing an ally under an enemy's control (a dispel, a removal of the hold) ---
-            if (ctx.TurnedAllies.Count > 0 && (profile.DispelActions.Count > 0 || profile.RemovesAnything))
+            if (ctx.TurnedAllies.Count > 0 && (profile.DispelActions.Count > 0 || profile.RemovesAnything || SuppressesOnRecipient(profile)))
             {
                 float freedValue = FreeingValue(ctx, ability, profile, target, affectedEnemies, out string freedNote);
                 if (freedValue > 0f)
                 {
                     value += freedValue;
                     reasons.Add(freedNote);
+                }
+            }
+
+            // --- ★ coverage5 (author request, 0.3.52 user report): dispels priced by what they take off - an enemy's buffs, an
+            // ally's harmful effects, and the party's own buffs a dispel would take first (TacticalEngine.Relief.cs) ---
+            bool dispelPriced = false;
+            if (profile.DispelActions.Count > 0 &&
+                TryDispelValue(ctx, ability, profile, target, affectedEnemies, affectedAllies, out float dispelWorth, out string dispelNote))
+            {
+                dispelPriced = true;
+                if (dispelWorth != 0f)
+                {
+                    value += dispelWorth;
+                    reasons.Add(dispelNote);
+                }
+            }
+
+            // --- ★ coverage5: a buff that switches off what hinders an ally (Remove Fear, Unbreakable Heart: SuppressBuffs) ---
+            if (!targetIsEnemy && affectedAllies.Count > 0 && SuppressesOnRecipient(profile))
+            {
+                float reliefHorizon = ReliefHorizon(ctx), relief = 0f;
+                foreach (var ally in affectedAllies) relief += SuppressionRelief(ctx, ability, profile, ally, reliefHorizon, out _);
+                if (relief > 0f)
+                {
+                    value += relief * RoleWeight(ctx, "heal");
+                    reasons.Add("suppresses what hinders");
                 }
             }
 
@@ -4936,7 +4968,7 @@ namespace CompanionAI_Pathfinder.Tactics
             // ★ v0.3.1: not for abilities whose effect IS verifiable (damage, heal, cleanse): a zero value there means
             // "not useful now" - a healing potion at full HP fell through to the "dispel" fallback (2.0) in v0.3.0.
             // Items never use the dispel/utility fallback: a consumable is gone once used.
-            bool verifiable = profile.DealsDamage || profile.Heals.Count > 0 || (profile.RemovesFromTarget && !targetIsEnemy);
+            bool verifiable = profile.DealsDamage || profile.Heals.Count > 0 || (profile.RemovesFromTarget && !targetIsEnemy) || dispelPriced;
             if (value <= 0f && !verifiable &&
                 (profile.Enchants || profile.Summons || profile.Dispels || profile.RemovesBuffs || !profile.HasDetectableEffect))
             {
