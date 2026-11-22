@@ -80,7 +80,8 @@ namespace CompanionAI_Pathfinder.Tactics
             else if (profile.RemovedDescriptors != SpellDescriptor.None ||
                 profile.RemovesBuffs && profile.RemovedBuffs.Count == 0) reason = "dynamic removal dependency";
             else if (!profile.DealsDamage && profile.BuffApplications.Count == 0) reason = "no direct HP/control payload";
-            else if (!profile.Damage.All(a => a is ContextActionDealDamage d && CombatMath.IsHitPointDamage(d))) reason = "composite or non-HP damage";
+            // ★ Fusion coverage C5: ability damage and negative levels are read by their HP equivalent (CombatMath.DrainEquivalent).
+            else if (!profile.Damage.All(a => a is ContextActionDealDamage)) reason = "composite damage (a provider or a kill)";
             else if (profile.BuffApplications.Count > ValueModel.ControlEnvelope.Capacity) reason = "control occurrence bound";
             else if (!profile.TargetBuffs.All(b => profile.BuffApplications.Any(a => a.Buff == b))) reason = "control without a direct apply occurrence";
             else if (profile.TargetBuffs.Any(b => (!AbilityProfile.IsHarmfulBuff(b) &&
@@ -247,7 +248,7 @@ namespace CompanionAI_Pathfinder.Tactics
             if (!damageRead.Known ||
                 !TryFusionControlRounds(ctx, ability, profile, enemy, false, out float controlRounds, out float passRounds)) return false;
             // ★ Fusion coverage C1: damage over time the cast leaves on each outcome (burning, acid).
-            if (!TryFusionPeriodicDamage(ability, profile, enemy, FusionPeriodicHorizon(ctx), false,
+            if (!TryPeriodicDamage(ability, profile, enemy, PeriodicHorizon(ctx), false,
                     out float laterFailed, out float laterPassed)) return false;
             if ((controlRounds > 0f || passRounds > 0f) && profile.IsAoE && profile.InOwnSideArea(ctx.Unit, enemy))
                 controlRounds = passRounds = 0f;

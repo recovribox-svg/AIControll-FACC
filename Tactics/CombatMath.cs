@@ -892,8 +892,9 @@ namespace CompanionAI_Pathfinder.Tactics
                 // ★ v0.3.1: only the branch that runs for this target (Inflict Wounds heals undead, Cure harms them).
                 var applies = target != null ? Applies(action) : EffectApplies.Unconditional;
                 if (applies == EffectApplies.No) continue;
-                if (fusionRead != null && (applies == EffectApplies.Unknown ||
-                    !(action is ContextActionDealDamage direct) || KindOf(direct) != DealKind.HitPoints)) fusionRead.Known = false;
+                // ★ Fusion coverage C5: ability damage and negative levels join the shared-save outcomes as their HP equivalent
+                // (DrainEquivalent, the same rule the ordinary estimate uses); a provider or an unread branch stays unknown.
+                if (fusionRead != null && (applies == EffectApplies.Unknown || !(action is ContextActionDealDamage))) fusionRead.Known = false;
                 switch (action)
                 {
                     // ★ v0.3.28 test 13: ability damage and negative levels are worth what they take of the target's two other

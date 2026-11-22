@@ -8,7 +8,33 @@ Read [CONTRIBUTING.md](CONTRIBUTING.md) for shared branch ownership, Codex pull 
 Codex works on task branches and targets pull requests at `claude/dreamy-pasteur-b9h3rn`; Claude reviews and integrates them there.
 Keep `main` for author-authorized releases. Read [AGENTS.md](AGENTS.md) when coordinating agent work.
 
-**Current handover (17 November 2026, Claude): Magic Fusion coverage programme and its first slice C1 on
+**Current handover (20 November 2026, Claude): coverage2 - R1–R7 decided, R2/R5, evidence logging, Fusion C2/C5 and
+damage over time on ordinary spells. Three stacked branches, not played, nothing merged.** Read
+[docs/COVERAGE2_BUILD.md](docs/COVERAGE2_BUILD.md), [docs/R_ITEMS_PLAN.md](docs/R_ITEMS_PLAN.md),
+[docs/PERIODIC_DAMAGE.md](docs/PERIODIC_DAMAGE.md), `docs/TACTICAL_AI.md` §202 and the
+[receipt](docs/competence/COVERAGE2_CHECKS.json). The death-trigger proposal is set aside (author).
+
+- **Branches:** `claude/fusion-coverage-programme` (C1, draft PR #92) → `claude/review-r-items` (R2, R5, evidence) →
+  `claude/fusion-coverage-c2-c5` (C2, C5, ordinary damage over time).
+- **R items:**
+  - R2 and R5 are done.
+  - R1, R3 and R4 wait for the evidence lines `[Flank]`, `[Burst]` and `[Timing] fight summary`
+    (`TimelineObserver`, read only).
+  - R6 and R7 are not worth doing yet.
+- **Coverage:** offered 9,655 and joint 5,651 of 15,494, none lost. All eight fusions on arcan's bar are offered with the
+  joint value.
+- **Checks** on `72acfd1`:
+  - Release 0 warnings; 1,052 unit + 27/21/3 script tests.
+  - ProfileAudit: `BURST-AIM` 67, `EVIDENCE` 13, `FUSION-RECAST` 12, `FUSION-DOT` 42, `PERIODIC` 8.
+  - Native harnesses 98/14/10; 4 references added.
+- **Package:** `test-builds/AI-Control-FACC-v0.3.60-dev-coverage2-72acfd1-UMM-test.zip`, MVID `5cfd7765`. Manifest
+  0.3.60; no `main`, tag or release.
+- **Next:**
+  1. The author plays coverage2 and sends logs with the summary lines.
+  2. Calibrate R4 and decide R1 and R3 from them.
+  3. C3 needs the author's policy on a permanent ally death.
+
+**Earlier handover (17 November 2026, Claude): Magic Fusion coverage programme and its first slice C1 on
 `claude/fusion-coverage-programme` (from development `0019856`), draft PR into development. Not played.** Read
 [docs/FUSION_COVERAGE_PROGRAMME.md](docs/FUSION_COVERAGE_PROGRAMME.md), [docs/FUSION_MAIN_TARGET_DOT.md](docs/FUSION_MAIN_TARGET_DOT.md),
 `docs/TACTICAL_AI.md` §201 and the [receipt](docs/competence/FUSION_C1_CHECKS.json). Both modes, valuation only.

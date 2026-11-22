@@ -1,5 +1,5 @@
 // ★ Fusion coverage C1 (17 November 2026; docs/FUSION_MAIN_TARGET_DOT.md, docs/FUSION_COVERAGE_PROGRAMME.md): the damage
-// over time a fused cast leaves on each save outcome. Native contracts (supplied assembly):
+// over time a fused cast leaves on each save outcome; ordinary spells too (docs/PERIODIC_DAMAGE.md). Native contracts (supplied assembly):
 // - a buff's round ticks run in a context whose root is the fused cast (MechanicsContext.SourceAbilityContext): the fused
 //   spellbook's dice cap, the cast's DC and metamagic apply (ContextActionDealDamage.GetDamageInfo, Params);
 // - a tick runs outside any saving-throw scope, so a save in it is its own roll (ContextActionSavingThrow), against the
@@ -22,7 +22,7 @@ namespace CompanionAI_Pathfinder.Tactics
     {
         /// <summary>The rounds over which damage over time is counted: the fight's expected rounds, at most three (as for
         /// damage already attached to a unit, CombatMath.AttachedDamageOf).</summary>
-        internal static float FusionPeriodicHorizon(TacticalContext ctx) =>
+        internal static float PeriodicHorizon(TacticalContext ctx) =>
             Math.Min(CombatMath.AfflictionRounds, Math.Max(1f, ctx?.ExpectedRounds ?? CombatMath.AfflictionRounds));
 
         /// <summary>
@@ -60,21 +60,33 @@ namespace CompanionAI_Pathfinder.Tactics
         /// the later ticks with its chance. No credit for a carrier the recipient already has (no speculative refresh), and
         /// none where the native guards or immunity exclude it. False when a guard or a duration cannot be read; with
         /// <paramref name="assumeUnknown"/> (an ally's harm) an unreadable guard counts as applying instead.
+        /// ★ Ordinary spells (not fused): only a carrier applied whatever the save (outside a saving-throw branch) is priced,
+        /// on both outcomes - Acid Arrow's acid, Molten Orb's and Incendiary Runes' burning cast on their own.
         /// </summary>
-        internal static bool TryFusionPeriodicDamage(AbilityData ability, AbilityProfile profile, UnitEntityData recipient,
+        internal static bool TryPeriodicDamage(AbilityData ability, AbilityProfile profile, UnitEntityData recipient,
             float horizonRounds, bool assumeUnknown, out float failed, out float passed)
         {
             failed = passed = 0f;
-            if (profile?.Fusion == null || recipient == null || !HasPeriodicCarrier(profile)) return true;
+            if (profile == null || recipient == null || !HasPeriodicCarrier(profile)) return true;
             MechanicsContext durationContext = null;
+            bool fused = profile.Fusion != null;
             bool rootSave = profile.Save != SavingThrowType.Unknown;
             foreach (var occurrence in profile.BuffApplications)
             {
                 if (!occurrence.PeriodicDamageOnly) continue;
-                var path = profile.FusionBuffPath(occurrence.Action);
-                if (!rootSave && path != AbilityProfile.FusionSavePath.Both) continue;
-                bool onFailure = path != AbilityProfile.FusionSavePath.Passed;
-                bool onPass = rootSave && path != AbilityProfile.FusionSavePath.Failed;
+                bool onFailure, onPass;
+                if (fused)
+                {
+                    var path = profile.FusionBuffPath(occurrence.Action);
+                    if (!rootSave && path != AbilityProfile.FusionSavePath.Both) continue;
+                    onFailure = path != AbilityProfile.FusionSavePath.Passed;
+                    onPass = rootSave && path != AbilityProfile.FusionSavePath.Failed;
+                }
+                else
+                {
+                    if (occurrence.UnderSave) continue;   // its save is not modelled here: not priced, as before
+                    onFailure = onPass = true;
+                }
                 var buff = occurrence.Buff;
                 if (recipient.Buffs.HasFact(buff)) continue;
                 var applies = occurrence.Applies(ability, recipient);
@@ -126,7 +138,7 @@ namespace CompanionAI_Pathfinder.Tactics
             return Math.Max(0f, tick.Harm.HitPoints) * ValueModel.PeriodicWeight(ticks, tick.Survives);
         }
 
-        private static bool HasPeriodicCarrier(AbilityProfile profile)
+        internal static bool HasPeriodicCarrier(AbilityProfile profile)
         {
             var applications = profile.BuffApplications;
             for (int i = 0; i < applications.Count; i++)
@@ -138,17 +150,48 @@ namespace CompanionAI_Pathfinder.Tactics
         /// An ally's expected damage over time from the cast, both outcomes weighted by its chance to fail the root save.
         /// For the friendly-fire cost and the burst re-check; an unreadable guard or duration counts as applying.
         /// </summary>
-        internal static float FusionPeriodicAllyDamage(AbilityData ability, AbilityProfile profile, UnitEntityData ally, float horizonRounds)
+        internal static float PeriodicAllyDamage(AbilityData ability, AbilityProfile profile, UnitEntityData ally, float horizonRounds) =>
+            PeriodicExpected(ability, profile, ally, horizonRounds, true);
+
+        /// <summary>
+        /// The cast's expected damage over time on <paramref name="unit"/>: a fused cast's outcomes weighted by the chance to
+        /// fail its root save; an ordinary spell's, applied whatever the save. <paramref name="assumeUnknown"/>: an
+        /// unreadable guard or duration counts as applying (an ally's harm), else it gives nothing.
+        /// </summary>
+        internal static float PeriodicExpected(AbilityData ability, AbilityProfile profile, UnitEntityData unit, float horizonRounds,
+                                               bool assumeUnknown)
         {
-            if (profile?.Fusion == null || ally == null || !HasPeriodicCarrier(profile)) return 0f;
+            if (profile == null || unit == null || !HasPeriodicCarrier(profile)) return 0f;
             try
             {
-                if (!TryFusionPeriodicDamage(ability, profile, ally, horizonRounds, true, out float failed, out float passed)) return 0f;
+                if (!TryPeriodicDamage(ability, profile, unit, horizonRounds, assumeUnknown, out float failed, out float passed)) return 0f;
                 if (failed <= 0f && passed <= 0f) return 0f;
-                float fail = profile.Save != SavingThrowType.Unknown ? CombatMath.SaveFailChance(ability, profile.Save, ally) : 1f;
+                float fail = profile.Fusion != null && profile.Save != SavingThrowType.Unknown ? CombatMath.SaveFailChance(ability, profile.Save, unit) : 1f;
                 return fail * failed + (1f - fail) * passed;
             }
             catch { return 0f; }
+        }
+
+        /// <summary>
+        /// Every buff the cast applies to its targets is a periodic damage carrier priced as damage (TryPeriodicDamage): the
+        /// control section has nothing left to value, and must not guess a debuff for it.
+        /// </summary>
+        internal static bool CarriersOnly(AbilityProfile profile)
+        {
+            if (profile == null || profile.Pit != null || profile.TargetBuffs.Count == 0) return false;
+            bool fused = profile.Fusion != null;
+            foreach (var buff in profile.TargetBuffs)
+            {
+                bool seen = false;
+                foreach (var a in profile.BuffApplications)
+                {
+                    if (a.Buff != buff) continue;
+                    if (!a.PeriodicDamageOnly || !fused && a.UnderSave) return false;
+                    seen = true;
+                }
+                if (!seen) return false;
+            }
+            return true;
         }
     }
 }
