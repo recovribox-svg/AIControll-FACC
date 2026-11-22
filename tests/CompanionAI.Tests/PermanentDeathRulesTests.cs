@@ -17,6 +17,7 @@ namespace CompanionAI.Tests
             Assert.True(PermanentDeathRules.Vetoed(0.34f));
             Assert.False(PermanentDeathRules.Vetoed(0.0099f));
             Assert.False(PermanentDeathRules.Vetoed(0f));
+            Assert.True(PermanentDeathRules.Vetoed(float.NaN));
         }
 
         [Fact]
@@ -80,6 +81,46 @@ namespace CompanionAI.Tests
             Assert.Equal(11, PermanentDeathRules.DamageToTrigger(10f, 0));    // 10 HP: 11 damage leaves -1
             Assert.Equal(1, PermanentDeathRules.DamageToTrigger(0f, 0));      // 0 HP: any point
             Assert.Equal(-2, PermanentDeathRules.DamageToTrigger(-3f, 0));    // already below: always
+        }
+
+        [Theory]
+        [InlineData(-3, 30, 0, 0)] // temp HP do not undo an already satisfied lethal-HP gate
+        [InlineData(0, 30, 0, 31)]
+        [InlineData(10, 20, 0, 31)]
+        [InlineData(30, -5, 0, 31)]
+        [InlineData(10, 20, 15, 0)]
+        public void DustUsesLethalHpAndTemporaryAbsorptionSeparately(int hp, int temporary, int below, int expected) =>
+            Assert.Equal(expected, PermanentDeathRules.DamageToTrigger(hp, temporary, below));
+
+        [Theory]
+        [InlineData(int.MaxValue, 6, 0)]
+        [InlineData(2001, 6, 0)]
+        [InlineData(1, int.MaxValue, 0)]
+        [InlineData(0, 0, int.MaxValue)]
+        public void OversizedRollsCannotAllocateAnUnboundedDistributionOrProveSafety(int count, int sides, int bonus)
+        {
+            var groups = new[] { D(count, sides, bonus) };
+            long before = System.GC.GetAllocatedBytesForCurrentThread();
+            float risk = PermanentDeathRules.ChanceAtLeast(groups, 200000);
+            Assert.Equal(1f, risk);
+            Assert.True(System.GC.GetAllocatedBytesForCurrentThread() - before < 65536);
+        }
+
+        [Fact]
+        public void AConvolutionIsBoundedBeforeItRuns()
+        {
+            var groups = new[] { D(0, 0, 3000), D(0, 0, 3000) };
+            Assert.Equal(1f, PermanentDeathRules.ChanceAtLeast(groups, 6000));
+            Assert.Equal(1f, PermanentDeathRules.ChanceAtLeast(new[] { D(1, 6, factor: float.NaN) }, 100));
+            Assert.Equal(int.MaxValue, PermanentDeathRules.DamageToTrigger(int.MaxValue, int.MaxValue, int.MinValue));
+        }
+
+        [Fact]
+        public void ASmallScaleCannotOverflowABigBonusBeforeScaling()
+        {
+            var groups = new[] { D(1, 6, int.MaxValue, factor: 0.0000001f, maximize: true) };
+            Assert.Equal(1f, PermanentDeathRules.ChanceAtLeast(groups, 214));
+            Assert.Equal(0f, PermanentDeathRules.ChanceAtLeast(groups, 215));
         }
     }
 }

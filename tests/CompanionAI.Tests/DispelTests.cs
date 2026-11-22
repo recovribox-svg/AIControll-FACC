@@ -55,5 +55,50 @@ namespace CompanionAI.Tests
             var list = new[] { E(1f, 1f), E(1f, 2f), E(1f, 4f) };
             Assert.Equal(3f, ValueModel.ExpectedDispelWorth(list, 2), 3);
         }
+
+        [Fact]
+        public void ASharedRollCannotFailOneEqualDcThenPassTheNext()
+        {
+            var buffs = new[] { E(0.5f, 10f), E(0.5f, 4f) };
+            Assert.Equal(5f, ValueModel.ExpectedDispelWorth(buffs, 1, true), 4);
+            Assert.Equal(6f, ValueModel.ExpectedDispelWorth(buffs, 1, false), 4);
+        }
+
+        [Fact]
+        public void AZeroValueBuffStillConsumesARemoval()
+        {
+            var buffs = new[] { E(0.5f, 0f), E(0.75f, 20f) };
+            Assert.Equal(5f, ValueModel.ExpectedDispelWorth(buffs, 1, true), 4);
+            Assert.Equal(7.5f, ValueModel.ExpectedDispelWorth(buffs, 1, false), 4);
+            Assert.Equal(0f, ValueModel.ExpectedDispelWorth(new[] { E(1f, 0f), E(1f, 20f) }, 1, true));
+        }
+
+        [Theory]
+        [InlineData(true)]
+        [InlineData(false)]
+        public void ASpellKeepsItsEarlierDispelLossInsteadOfSelectingOnlyALaterGain(bool shared)
+        {
+            var buffs = new[] { E(1f, -12f), E(1f, 4f), E(1f, 20f) };
+            float net = ValueModel.ExpectedDispelWorth(buffs, 2, shared, out float loss);
+            Assert.Equal(-8f, net);
+            Assert.Equal(12f, loss);
+            Assert.Equal(4f, net + loss); // useful removal before accounting for its own-buff loss
+        }
+
+        [Theory]
+        [InlineData(0f, true, true, 1f)]
+        [InlineData(1f, true, true, 1f)]
+        [InlineData(0.25f, true, false, 0.25f)]
+        [InlineData(0.25f, false, true, 0.75f)]
+        public void AnUnconditionalDispelIsNotDiscountedByTheOtherPayloadsSave(float fail, bool onFail, bool onPass, float expected) =>
+            Assert.Equal(expected, ValueModel.DispelOutcomeShare(fail, onFail, onPass), 5);
+
+        [Fact]
+        public void RemovingBuffsFromAnEnemyDroppedByThatOutcomeEarnsNoBenefit() =>
+            Assert.Equal(0.75f, ValueModel.DispelOutcomeShare(0.25f, true, true, 0f, 1f), 5);
+
+        [Fact]
+        public void AnEnormousRemovalLimitNeedsNoEnormousStateArray() =>
+            Assert.Equal(3f, ValueModel.ExpectedDispelWorth(new[] { E(1f, 1f), E(1f, 2f) }, int.MaxValue), 5);
     }
 }

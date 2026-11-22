@@ -29,12 +29,12 @@ namespace CompanionAI_Pathfinder.Tactics
             foreach (var area in profile.FusionLingeringAreas)
                 if (area != null) radius = Math.Max(radius, area.Size.Meters);
             if (!(radius > 0f)) return null;
-            foreach (var ally in ctx.Allies.Concat(ctx.DownedAllies).Distinct())
+            foreach (var ally in ctx.Allies.Concat(ctx.DownedAllies).Concat(ctx.TurnedAllies).Distinct())
             {
                 if (ally == null) continue;
                 float d = HorizontalDistance(ally.Position, center);
                 if (d <= radius + ally.Corpulence) { why = $"inside its {radius:F1} m"; return ally; }
-                if (ally == ctx.Unit || UsesRangedWeapon(ally) || ctx.DownedAllies.Contains(ally)) continue;
+                if (ally == ctx.Unit || UsesRangedWeapon(ally) || ally.Descriptor?.State?.IsConscious != true) continue;
                 if (d <= radius + LingeringEdge + ally.Corpulence) { why = "fights at its edge"; return ally; }
                 var nearest = ctx.Enemies.OrderBy(e => Vector3.Distance(ally.Position, e.Position)).FirstOrDefault();
                 if (nearest != null && HorizontalDistance(nearest.Position, center) <= radius) { why = $"its enemy {nearest.CharacterName} is inside"; return ally; }

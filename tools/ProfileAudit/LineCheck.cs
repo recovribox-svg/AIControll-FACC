@@ -157,6 +157,8 @@ namespace ProfileAudit
                 var plan = Body(engine, "PlanLineUps");
                 Check(new[] { "EnteringDanger", "IsPositionValid", "StruckBySwarm", "MoveRisk", "IsUnitCloseEnough", "TakenAt" }.All(n => plan.Any(m => m.Name == n)),
                     "a lined-up spot is checked like an approach spot: free, walkable, no area or swarm, in range and sight, priced");
+                Check((int)engine.GetField("LineUpChecks", Hidden).GetRawConstantValue() == 8 && plan.Any(m => m.Name == "Take"),
+                    "native lined-up spot validations are bounded to eight, even when every proposed spot is rejected");
                 Check(Calls(Body(engine, "LineAimAlong"), lineType, "TryCreate") && Calls(Body(engine, "LineCount"), geometry, "Catches"),
                     "aims are pre-filtered by the native formula, then valued through the native query");
                 Check(Calls(Body(typeof(ProgressiveGate), "SuccessChance"), area, "TryCreate"),

@@ -20,8 +20,9 @@ namespace CompanionAI_Pathfinder.Tactics
         internal sealed class FusionDamageRead
         {
             internal float Failed, Passed, FailChance;
+            internal float FailedHitPoints, PassedHitPoints;
             internal bool Known;
-            internal void Reset() { Failed = Passed = 0f; FailChance = 1f; Known = true; }
+            internal void Reset() { Failed = Passed = FailedHitPoints = PassedHitPoints = 0f; FailChance = 1f; Known = true; }
         }
 
         internal static float EstimateFusionDamage(AbilityData ability, AbilityProfile profile, UnitEntityData target,
@@ -34,6 +35,7 @@ namespace CompanionAI_Pathfinder.Tactics
                 float raw = EstimateAbilityDamageRaw(ability, profile, target, null, fusionRead: read);
                 float scale = raw > 0f ? AbilityDamageScale(ability, profile, target) : 1f;
                 read.Failed *= scale; read.Passed *= scale;
+                read.FailedHitPoints *= scale; read.PassedHitPoints *= scale;
                 return raw * scale;
             }
             finally { HeapSince(heap, ref EstimateBytes); }
@@ -53,8 +55,17 @@ namespace CompanionAI_Pathfinder.Tactics
                 float factor = FusionDamageFactor(profile, part.Key, fail, evasion, improved);
                 if (factor <= 0f) continue; // any omitted outcome has probability zero under this forecast
                 float unweighted = part.Value / factor;
-                read.Failed += unweighted * FusionDamageFactor(profile, part.Key, 1f, evasion, improved) * deliveries;
-                read.Passed += unweighted * FusionDamageFactor(profile, part.Key, 0f, evasion, improved) * deliveries;
+                float failed = unweighted * FusionDamageFactor(profile, part.Key, 1f, evasion, improved) * deliveries;
+                float passed = unweighted * FusionDamageFactor(profile, part.Key, 0f, evasion, improved) * deliveries;
+                read.Failed += failed;
+                read.Passed += passed;
+                // C5's DrainEquivalent is utility, not lethal HP damage. It must not manufacture a dropped
+                // recipient, cancel independent control, or make a dispel redundant.
+                if (part.Key is ContextActionDealDamage direct && IsHitPointDamage(direct))
+                {
+                    read.FailedHitPoints += failed;
+                    read.PassedHitPoints += passed;
+                }
             }
             read.Known = !(float.IsNaN(read.Failed) || float.IsInfinity(read.Failed) ||
                            float.IsNaN(read.Passed) || float.IsInfinity(read.Passed));

@@ -17,6 +17,9 @@ using Kingmaker.UnitLogic.Buffs.Blueprints;
 using Kingmaker.UnitLogic.FactLogic;
 using Kingmaker.UnitLogic.Mechanics.Actions;
 using Kingmaker.UnitLogic.Mechanics.Conditions;
+using Kingmaker.UnitLogic.Abilities.Components;
+using Kingmaker.ElementsSystem;
+using Kingmaker.Designers.EventConditionActionSystem.Actions;
 
 namespace ProfileAudit
 {
@@ -36,6 +39,8 @@ namespace ProfileAudit
             internal readonly List<KeyValuePair<string, int?>> Gates = new List<KeyValuePair<string, int?>>();
             internal int Kills;
             internal bool SavePaths;
+            internal bool UnreadSavePaths;
+            internal List<int> GateDamageCounts;
             internal SavingThrowType Save;
             internal bool Empty => Gates.Count == 0 && Kills == 0;
 
@@ -48,6 +53,8 @@ namespace ProfileAudit
                     Gates.Add(new KeyValuePair<string, int?>(Pair(pair, "Key").ToString(), (int?)Pair(pair, "Value")));
                 Kills = ((ICollection)Field("Kills")).Count;
                 SavePaths = (bool)Field("SavePaths");
+                UnreadSavePaths = (bool)Field("UnreadSavePaths");
+                GateDamageCounts = ((IEnumerable<int>)Field("GateDamageCounts")).ToList();
                 Save = (SavingThrowType)Field("Save");
             }
 
@@ -110,6 +117,36 @@ namespace ProfileAudit
                 var fusedScan = Of(fused);
                 Check(fusedScan.Gates.Count == 2 && fusedScan.Damage.Count > scan.Damage.Count,
                     "Fireball/Disintegrate: the dust gates, and Fireball's damage before them as well as Disintegrate's");
+                var reverseScan = Of(Fuse("Disintegrate", "Fireball", SavingThrowType.Reflex));
+                int firstDamage = scan.Damage.Count;
+                Check(reverseScan.GateDamageCounts.SequenceEqual(scan.GateDamageCounts) &&
+                      reverseScan.GateDamageCounts.All(n => n <= firstDamage) && reverseScan.Damage.Count > firstDamage,
+                    "Disintegrate/Fireball: damage after a dust gate cannot contribute to that gate");
+                int fireDamage = Of(Spell("Fireball")).Damage.Count;
+                Check(fusedScan.GateDamageCounts.SequenceEqual(scan.GateDamageCounts.Select(n => fireDamage + n)),
+                    "Fireball/Disintegrate: preceding payload damage contributes to each later gate");
+                Check(PermanentDeathRules.DamageToTrigger(-3, 30, 0) == 0 && PermanentDeathRules.DamageToTrigger(10, 20, 0) == 31,
+                    "the dust comparison uses lethal HP, separately from temporary absorption and nonlethal knock-out");
+                var nativeGate = disintegrate.GetComponent<AbilityEffectRunAction>().Actions.Actions.OfType<ContextActionConditionalSaved>()
+                    .Single().Failed.Actions.OfType<Conditional>().Single();
+                var disjunctive = (Conditional)typeof(object).GetMethod("MemberwiseClone", Hidden).Invoke(nativeGate, null);
+                disjunctive.ConditionsChecker = new ConditionsChecker { Operation = Operation.Or,
+                    Conditions = nativeGate.ConditionsChecker.Conditions.Concat(new Condition[] { new ContextConditionCasterHasFact() }).ToArray() };
+                var gateArgs = new object[] { disjunctive, null };
+                Check((bool)typeof(CombatMath).GetMethod("DustGate", Hidden).Invoke(null, gateArgs) && gateArgs[1] == null,
+                    "an OR with another condition cannot prove dust is gated only by low HP");
+                // Exercise the production scanner on an isolated native-layout action tree, without executing it.
+                var scanType = typeof(CombatMath).GetNestedType("DeathScan", Hidden);
+                var pathType = typeof(CombatMath).GetNestedType("DeathPath", Hidden);
+                var nestedRaw = Activator.CreateInstance(scanType, true);
+                var nested = new ContextActionSavingThrow { Type = SavingThrowType.Fortitude, Actions = new ActionList {
+                    Actions = new GameAction[] { new ContextActionConditionalSaved { Succeed = new ActionList {
+                        Actions = new GameAction[] { new ContextActionKill() } }, Failed = new ActionList() } } } };
+                typeof(CombatMath).GetMethod("ScanDeath", Hidden).Invoke(null,
+                    new[] { (object)new GameAction[] { nested }, Enum.Parse(pathType, "Any"), nestedRaw, 0 });
+                var nestedScan = new Scan(nestedRaw);
+                Check(nestedScan.UnreadSavePaths && nestedScan.Kills == 1,
+                    "a nested success-branch kill is marked unread for safety, never mistaken for a root failure");
                 var independent = typeof(AbilityProfile).GetProperty("FusionIndependentGuards", Hidden);
                 var profile = AbilityProfile.Get(fused);
                 Check(independent != null && (bool)independent.GetValue(profile),
@@ -157,7 +194,26 @@ namespace ProfileAudit
                 var vetoes = Body(engine, "PermanentDeathVetoes");
                 Check(Calls(vetoes, typeof(CombatMath), "PermanentDeathRisk") && Calls(vetoes, typeof(PermanentDeathRules), "Vetoed") &&
                       Calls(vetoes, engine, "IsSummon"),
-                    "the veto reads the exact risk; a summon (which vanishes anyway) keeps the ordinary price");
+                    "the veto reads the risk bound; a summon (which vanishes anyway) keeps the ordinary price");
+                var risk = Body(typeof(CombatMath), "PermanentDeathRisk");
+                Check(Calls(risk, typeof(CombatMath), "DeliveryChance") && !Calls(risk, typeof(CombatMath), "EffectChance") &&
+                      risk.Any(m => m.Name == "UnreadSavePaths"),
+                    "death risk prices delivery and root outcomes separately; unread nested saves cannot certify safety");
+                var delivery = Body(typeof(CombatMath), "DeliveryChance");
+                Check(Calls(delivery, typeof(CombatMath), "SpellResistancePass") && Calls(delivery, typeof(CombatMath), "SpellAttackHitChance") &&
+                      !Calls(delivery, typeof(CombatMath), "SaveEffectFactor"),
+                    "delivery contains resistance and attack hit chance, with no duplicate save factor");
+                var gate = Body(typeof(CombatMath), "GateDeath");
+                Check(new[] { "IgnoreUnitModifiers", "IgnoreCritical", "get_NeedsAttackRoll" }.All(n => gate.Any(m => m.Name == n)) &&
+                      Body(typeof(ContextActionDealDamage), "GetDamageInfo").Any(m => m.Name == "get_IsCriticalConfirmed"),
+                    "raw dice cannot certify safety when native damage bonuses or critical tails are unread");
+                var outcome = Body(typeof(CombatMath), "OutcomeDeath");
+                Check(outcome.Any(m => m.Name == "get_HPLeft") && outcome.Any(m => m.Name == "get_TemporaryHP") &&
+                      !Calls(outcome, typeof(CombatMath), "HpBeforeDown"),
+                    "dust uses native lethal HP and temporary HP, not the nonlethal/drop forecast");
+                Check(Calls(score, engine, "IncludeDownedTurnedRecipients") &&
+                      Body(engine, "IncludeDownedTurnedRecipients").Any(m => m.Name == "get_IsConscious"),
+                    "downed dominated companions remain in the caught-enemy damage/death safety set");
                 // Decide has two overloads: the candidate filter is a lambda named after them.
                 var decide = new[] { engine }.Concat(engine.GetNestedTypes(BindingFlags.NonPublic | BindingFlags.Public))
                     .SelectMany(t => t.GetMethods(Hidden)).Where(m => m.Name.StartsWith("<Decide>", StringComparison.Ordinal))
@@ -168,6 +224,10 @@ namespace ProfileAudit
                 var evaluate = Body(typeof(BurstWatch), "Evaluate");
                 Check(Calls(evaluate, typeof(BurstWatch), "PermanentDeathTo") && Calls(evaluate, engine, "IsTurnedAlly"),
                     "the burst re-check cancels for an ally who could be killed for good, and counts a dominated ally as an ally");
+                Check(Calls(evaluate, typeof(CombatMath), "CanKillPermanently") &&
+                      Calls(Body(typeof(BurstWatch), "CanReadRosterUnit"), engine, "IsTurnedAlly") &&
+                      Body(typeof(BurstWatch), "RosterNow").Any(m => m.Name == "get_IsPlayerFaction"),
+                    "the known-ally fast skip is disabled for death checks; downed/out-of-combat original party members remain in the roster");
                 Check(Calls(Body(typeof(BurstWatch), "ShouldCancel"), typeof(BurstRules), "MayCancel"),
                     "the cancel limit still applies to every other verdict");
             }

@@ -1,5 +1,22 @@
 # Test builds
 
+## Review candidate: v0.3.60 review92-99 — corrections across PRs #92–99 (131309f), unplayed
+
+[UMM test ZIP](AI-Control-FACC-v0.3.60-dev-review92-99-131309f-UMM-test.zip?raw=true) · [Identity](AI-Control-FACC-v0.3.60-dev-review92-99-131309f-UMM-test.identity.json) · [Checksum](AI-Control-FACC-v0.3.60-dev-review92-99-131309f-UMM-test.sha256) · [Review/replay](../docs/REVIEW_92_99.md) · [Checks](../docs/competence/REVIEW_92_99_CHECKS.json)
+
+Complete unmerged #92–99 stack plus corrections to death safety, actual HP/drain utility, dispel rolls/order/save paths,
+dominated-ally handling, periodic error/cache handling and bounded line search. Read the review's precision limits.
+**Nothing merged.** UMM **0.3.60**, checked source **`131309f`**, startup module **`7ad87f85-5833-4798-baa5-4a5c9f0a9ffc`**.
+ZIP SHA-256 `3406a64691bd47655900e584fcf12e8034ff0623eb293b63dcf35dbbb0c87533`. Only the frozen mod DLL and unchanged Info.json are included.
+
+Real-reference Release **0 warnings/errors**, **1,096 unit + 27/21/3 scripts**, all ProfileAudit sections,
+native **98/14/10** and Magus **44** pass. Both Fusion matrices and summon detail equal the fresh #99 baseline on
+completed identical inputs: **13,197 admitted / 8,635 joint**. Four added signatures resolve exactly.
+[Compiler/reference provenance](../docs/competence/REVIEW_92_99_BUILD_PROVENANCE.json).
+
+Replay the review's TB/RT checklist and send both logs with module/spawn/rest/manual-order context. No gameplay
+stability or measured Unity speed-up is claimed. Historical packages below retain their own identities.
+
 ## Next review candidate: v0.3.60 review2fix1 — permanent stat preview work (d669ec1), unplayed
 
 [UMM test ZIP](AI-Control-FACC-v0.3.60-dev-review2fix1-d669ec1-UMM-test.zip?raw=true) · [Identity](AI-Control-FACC-v0.3.60-dev-review2fix1-d669ec1-UMM-test.identity.json) · [Checksum](AI-Control-FACC-v0.3.60-dev-review2fix1-d669ec1-UMM-test.sha256) · [Review/replay](../docs/REVIEW2_PLAYTEST.md) · [Checks](../docs/competence/REVIEW2_PLAYTEST_CHECKS.json)

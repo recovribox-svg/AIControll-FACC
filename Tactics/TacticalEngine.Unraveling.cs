@@ -86,8 +86,14 @@ namespace CompanionAI_Pathfinder.Tactics
         /// </summary>
         private static float DispelValue(TacticalContext ctx, ContextActionDispelMagic dispel, MechanicsContext source,
                                          UnitEntityData target, float horizon, bool allowAutomatic, bool allowAlly, out float freeChance)
+            => DispelValue(ctx, dispel, source, target, horizon, allowAutomatic, allowAlly, out freeChance, out _);
+
+        private static float DispelValue(TacticalContext ctx, ContextActionDispelMagic dispel, MechanicsContext source,
+                                         UnitEntityData target, float horizon, bool allowAutomatic, bool allowAlly,
+                                         out float freeChance, out float loss)
         {
             freeChance = 0f;
+            loss = 0f;
             if (target == null) return 0f;
             bool ally = !ctx.Unit.IsEnemy(target);
             if (ally && (!allowAlly || target.Descriptor?.State?.IsConscious != true)) return 0f;
@@ -102,14 +108,16 @@ namespace CompanionAI_Pathfinder.Tactics
             int bonus = dispel.CheckBonus + (dispel.ContextBonus?.Calculate(source) ?? 0);
             var check = (RuleDispelMagic.CheckType)DispelCheckField.GetValue(dispel);
             var maxLevel = (ContextValue)DispelMaxLevelField.GetValue(dispel);
-            bool levelCap = maxLevel != null && (maxLevel.Value != 0 || !maxLevel.IsValueSimple);
+            // Native TryDispelBuff does not apply the spell-level cap to NonSpellsOnly.
+            bool levelCap = Convert.ToInt32(DispelBuffTypeField.GetValue(dispel)) != 2 &&
+                            maxLevel != null && (maxLevel.Value != 0 || !maxLevel.IsValueSimple);
             int cap = levelCap ? maxLevel.Calculate(source) : int.MaxValue;
             int stopAfter = (bool)DispelStopField.GetValue(dispel)
                 ? Math.Max(1, ((ContextValue)DispelCountField.GetValue(dispel)).Calculate(source)) : 0;
 
             var tried = new List<KeyValuePair<int, KeyValuePair<float, float>>>();
             var frees = turned ? new List<KeyValuePair<int, KeyValuePair<float, float>>>() : null;
-            foreach (var buff in target.Buffs.Enumerable)
+            foreach (var buff in DispelOrder(target.Buffs.Enumerable))
             {
                 var context = buff?.Context;
                 if (context == null || !DispelCanTake(dispel, buff)) continue;
@@ -122,10 +130,13 @@ namespace CompanionAI_Pathfinder.Tactics
                 // ★ suppressed buffs (slice C2): only the rounds it acts after its suppressor ends (an enemy's Haste under
                 // its own polymorph, a curse under an Ameliorating hex) are worth taking off.
                 if (buff.IsSuppressed) rounds = SuppressionRules.ActiveRounds(rounds, BuffSuppression.SuppressedSeconds(buff) / 6f, horizon);
-                if (!(rounds > 0f)) continue;
+                // Even a wholly suppressed (zero-value) buff can be dispelled and consume the native removal limit.
+                // Keep that attempt in the ordered probability model.
+                rounds = Math.Max(0f, rounds);
                 float worth;
                 bool hold = turned && HoldsUnderControl(buff);
-                if (hold) worth = FreedWorth(ctx, target, buff);
+                if (!(rounds > 0f)) worth = 0f;
+                else if (hold) worth = FreedWorth(ctx, target, buff);
                 else if (ally)
                 {
                     // ★ coverage5: relief for what works against the ally; a loss for what helps it.
@@ -148,11 +159,20 @@ namespace CompanionAI_Pathfinder.Tactics
                     new KeyValuePair<float, float>(chance, hold ? 1f : 0f)));
             }
             if (tried.Count == 0) return 0f;
-            // The game sorts by caster level, highest first (List.Sort: equal levels in no set order; OrderBy is stable).
+            // DispelOrder sorted the complete native input before filtering, preserving its tie order here too.
             var ordered = tried.OrderByDescending(t => t.Key).Select(t => t.Value).ToList();
             if (frees != null)
-                freeChance = Math.Min(1f, ValueModel.ExpectedDispelWorth(frees.OrderByDescending(t => t.Key).Select(t => t.Value).ToList(), stopAfter));
-            return ValueModel.ExpectedDispelWorth(ordered, stopAfter);
+                freeChance = Math.Min(1f, ValueModel.ExpectedDispelWorth(frees.OrderByDescending(t => t.Key).Select(t => t.Value).ToList(), stopAfter, dispel.OneRollForAll));
+            return ValueModel.ExpectedDispelWorth(ordered, stopAfter, dispel.OneRollForAll, out loss);
+        }
+
+        /// <summary>Native RunAction sorts the complete buff list before TryDispelBuff filters it. Sorting only the
+        /// eligible records (or using a stable sort) can pick a different first buff among equal caster levels.</summary>
+        private static List<Buff> DispelOrder(IEnumerable<Buff> buffs)
+        {
+            var ordered = buffs.ToList();
+            ordered.Sort((a, b) => -(a?.Context?.Params?.CasterLevel ?? 0).CompareTo(b?.Context?.Params?.CasterLevel ?? 0));
+            return ordered;
         }
 
         /// <summary>What a buff does for the enemy carrying it, as the share of its worth the same penalty would take.</summary>

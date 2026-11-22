@@ -97,7 +97,11 @@ namespace CompanionAI_Pathfinder.Tactics
                     if (!assumeUnknown) return false;
                     rounds = horizonRounds;   // an ally's harm: the whole horizon when the duration is unread
                 }
-                float harm = PeriodicCarrierDamage(ability, buff, recipient, rounds, horizonRounds);
+                float harm;
+                try { harm = PeriodicCarrierDamage(ability, buff, recipient, rounds, horizonRounds); }
+                catch { if (!assumeUnknown) return false; harm = float.PositiveInfinity; }
+                if (float.IsNaN(harm) || float.IsInfinity(harm))
+                { if (!assumeUnknown) return false; harm = float.PositiveInfinity; }
                 if (harm <= 0f) continue;
                 if (onFailure) failed += harm;
                 if (onPass) passed += harm;
@@ -169,9 +173,15 @@ namespace CompanionAI_Pathfinder.Tactics
                 if (!TryPeriodicDamage(ability, profile, unit, horizonRounds, assumeUnknown, out float failed, out float passed)) return 0f;
                 if (failed <= 0f && passed <= 0f) return 0f;
                 float fail = profile.Fusion != null && profile.Save != SavingThrowType.Unknown ? CombatMath.SaveFailChance(ability, profile.Save, unit) : 1f;
-                return fail * failed + (1f - fail) * passed;
+                // Avoid 0 * infinity turning a conservative unknown-harm sentinel into NaN on an impossible outcome.
+                if (assumeUnknown && (fail > 0f && float.IsPositiveInfinity(failed) || fail < 1f && float.IsPositiveInfinity(passed)))
+                    return float.PositiveInfinity;
+                float expected = (fail > 0f ? fail * failed : 0f) + (fail < 1f ? (1f - fail) * passed : 0f);
+                return float.IsNaN(expected) || float.IsInfinity(expected) ? (assumeUnknown ? float.PositiveInfinity : 0f) : expected;
             }
-            catch { return 0f; }
+            // Unknown benefit earns nothing; unknown ally harm must not become a proof of zero damage. The friendly
+            // cost consumers cap this sentinel at the recipient's HP/worth, and Avoid Friendly Fire vetoes it.
+            catch { return assumeUnknown ? float.PositiveInfinity : 0f; }
         }
 
         /// <summary>

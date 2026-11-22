@@ -8,7 +8,29 @@ Read [CONTRIBUTING.md](CONTRIBUTING.md) for shared branch ownership, Codex pull 
 Codex works on task branches and targets pull requests at `claude/dreamy-pasteur-b9h3rn`; Claude reviews and integrates them there.
 Keep `main` for author-authorized releases. Read [AGENTS.md](AGENTS.md) when coordinating agent work.
 
-**Current handover (21 November 2026, Claude): the remaining Fusion groups on `claude/fusion-coverage-rest`, stacked on
+**Current handover (21 November 2026, Codex): critical review of PRs #92–99. Nothing merged.**
+Read [docs/REVIEW_92_99.md](docs/REVIEW_92_99.md), §208 of `docs/TACTICAL_AI.md`,
+[checks](docs/competence/REVIEW_92_99_CHECKS.json) and [provenance](docs/competence/REVIEW_92_99_BUILD_PROVENANCE.json).
+
+- Branch `codex/review-92-99`, stacked after #99 `22ded8a`; development remains `0019856`. All eight PR heads were
+  rechecked unchanged/open/draft/unmerged. Author explicitly prohibited integration.
+- Checked source **`131309f620c6adcb495c58200dd214de7ff78283`**, module **`7ad87f85-5833-4798-baa5-4a5c9f0a9ffc`**. Frozen complete UMM **0.3.60** package:
+  `test-builds/AI-Control-FACC-v0.3.60-dev-review92-99-131309f-UMM-test.zip`; identity/checksum beside it. Unplayed.
+- Corrections: separate death delivery/save/HP/gate ordering and conservative unread tails; fresh known-ally death checks;
+  dominated/downed-ally safety; actual HP separated from stat/level-drain utility; native shared dispel rolls, full-list
+  order, suppressed attempts, guards, save paths, survival and retained own-buff losses; narrow target-only recasts;
+  periodic unknown-harm handling and parent-cache invalidation; bounded PMF/DP/line work; TB delivery waits; clean timing evidence.
+- Checks: **1,096 unit + 27/21/3 scripts**, real-reference Release **0 warnings/errors**, all audits, native **98/14/10**
+  with Psionics, Magus **44**. Four added foreign signatures resolve exactly. Same-input matrices and summon detail
+  unchanged: **13,197 admitted / 8,635 joint**. Missing stock projectile inputs were completed; their GUID manifest and
+  reproduction steps are in the review. No raw native data/logs committed.
+- Limits: death-risk upper bounds can refuse healthy-ally casts; multi-action dispel utility remains conservative;
+  drain zero-stat/level deaths are not an HP distribution; C10 benefit, C6/C8 gaps and inherited engagement/timing/watch
+  snapshot approximations remain. The death-trigger proposal stays author-set-aside.
+- Next: review this correction with the eight-PR stack, then play the complete package's TB/RT replay. No permission to
+  merge, tag or release is inferred. Preserve the frozen DLL across documentation commits.
+
+**Earlier handover (21 November 2026, Claude): the remaining Fusion groups on `claude/fusion-coverage-rest`, stacked on
 `claude/relief-spells` (draft PR #98). Not played, nothing merged.** Read [docs/FUSION_COVERAGE_REST.md](docs/FUSION_COVERAGE_REST.md),
 `docs/TACTICAL_AI.md` §207 and the [receipt](docs/competence/COVERAGE6_CHECKS.json).
 

@@ -22,14 +22,49 @@ namespace CompanionAI_Pathfinder.Tactics
         /// <c>w</c> (negative for one of our own debuffs), stopping once <paramref name="stopAfter"/> are removed
         /// (0 = no limit: every buff is tried).
         /// </summary>
-        public static float ExpectedDispelWorth(IReadOnlyList<KeyValuePair<float, float>> chanceAndWorth, int stopAfter)
+        public static float ExpectedDispelWorth(IReadOnlyList<KeyValuePair<float, float>> chanceAndWorth, int stopAfter) =>
+            ExpectedDispelWorth(chanceAndWorth, stopAfter, false);
+
+        /// <summary>Targeted Dispel Magic reuses one d20 across attempts (OneRollForAll). Enumerating its twenty
+        /// outcomes preserves that dependence; the independent-roll recurrence remains for other dispels.</summary>
+        public static float ExpectedDispelWorth(IReadOnlyList<KeyValuePair<float, float>> chanceAndWorth, int stopAfter,
+                                                bool oneRollForAll) => ExpectedDispelWorth(chanceAndWorth, stopAfter, oneRollForAll, out _);
+
+        /// <summary>The same expectation, retaining the expected loss separately for a spell with several dispel actions.</summary>
+        public static float ExpectedDispelWorth(IReadOnlyList<KeyValuePair<float, float>> chanceAndWorth, int stopAfter,
+                                                bool oneRollForAll, out float loss)
         {
+            loss = 0f;
             if (chanceAndWorth == null || chanceAndWorth.Count == 0) return 0f;
-            if (stopAfter <= 0)
+            if (stopAfter <= 0 || stopAfter >= chanceAndWorth.Count)
             {
                 float all = 0f;
-                foreach (var e in chanceAndWorth) all += Clamp(e.Key, 0f, 1f) * e.Value;
+                foreach (var e in chanceAndWorth)
+                {
+                    float part = Clamp(e.Key, 0f, 1f) * e.Value;
+                    all += part;
+                    if (part < 0f) loss -= part;
+                }
                 return all;
+            }
+            if (oneRollForAll)
+            {
+                float sum = 0f;
+                for (int outcome = 0; outcome < 20; outcome++)
+                {
+                    // Midpoints avoid rounding at a 5% boundary; native caster-level/DC chances are multiples of 1/20.
+                    float quantile = (outcome + 0.5f) / 20f;
+                    int removed = 0;
+                    foreach (var e in chanceAndWorth)
+                    {
+                        if (!(quantile < Clamp(e.Key, 0f, 1f))) continue;
+                        sum += e.Value;
+                        if (e.Value < 0f) loss -= e.Value;
+                        if (++removed >= stopAfter) break;
+                    }
+                }
+                loss /= 20f;
+                return sum / 20f;
             }
             // reach[k] = chance of arriving at this buff with k removed so far (k < stopAfter).
             var reach = new float[stopAfter + 1];
@@ -41,7 +76,9 @@ namespace CompanionAI_Pathfinder.Tactics
                 for (int k = stopAfter - 1; k >= 0; k--)
                 {
                     if (reach[k] <= 0f) continue;
-                    total += reach[k] * p * e.Value;
+                    float part = reach[k] * p * e.Value;
+                    total += part;
+                    if (part < 0f) loss -= part;
                     reach[k + 1] += reach[k] * p;
                     reach[k] *= 1f - p;
                 }
@@ -66,6 +103,16 @@ namespace CompanionAI_Pathfinder.Tactics
                 still *= stay;
             }
             return held;
+        }
+
+        /// <summary>A fused dispel runs on its own root-save paths. Benefit on a recipient already dropped by that
+        /// outcome is redundant; costs of stripped friendly buffs need not claim that survival discount.</summary>
+        public static float DispelOutcomeShare(float failChance, bool onFailure, bool onPass,
+                                               float failedSurvival = 1f, float passedSurvival = 1f)
+        {
+            float fail = Clamp(failChance, 0f, 1f);
+            return (onFailure ? fail * Clamp(failedSurvival, 0f, 1f) : 0f) +
+                   (onPass ? (1f - fail) * Clamp(passedSurvival, 0f, 1f) : 0f);
         }
     }
 }

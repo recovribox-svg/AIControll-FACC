@@ -19,6 +19,7 @@ using Kingmaker.UnitLogic.FactLogic;
 using Kingmaker.UnitLogic.Mechanics;
 using Kingmaker.UnitLogic.Mechanics.Actions;
 using Kingmaker.Utility;
+using UnityEngine;
 
 namespace CompanionAI_Pathfinder.Tactics
 {
@@ -41,6 +42,22 @@ namespace CompanionAI_Pathfinder.Tactics
 
         /// <summary>A summoned creature (temporary: it is not killed for good).</summary>
         internal static bool IsSummonUnit(UnitEntityData unit) => IsSummon(unit);
+
+        /// <summary>A dominated companion remains ours after it falls. Native enemy-only and Selective areas can
+        /// still hit it, so retain it in the damage/death-safety recipients even though it is no longer a combat target.</summary>
+        private static void IncludeDownedTurnedRecipients(TacticalContext ctx, AbilityData ability, AbilityProfile profile,
+            Vector3 center, IReadOnlyCollection<UnitEntityData> geometry, List<UnitEntityData> enemies)
+        {
+            if (ctx.TurnedAllies.Count == 0 || !profile.IsAoE) return;
+            foreach (var ally in ctx.TurnedAllies)
+            {
+                if (ally.Descriptor?.State?.IsConscious != false || enemies.Contains(ally)) continue;
+                bool caught = profile.IsProjectileArea ? geometry != null && System.Linq.Enumerable.Contains(geometry, ally)
+                    : profile.AoETargets != Kingmaker.UnitLogic.Abilities.Components.TargetType.Ally &&
+                      Vector3.Distance(center, ally.Position) <= profile.AoERadius + ally.Corpulence && profile.AreaReaches(ability, ally);
+                if (caught) enemies.Add(ally);
+            }
+        }
 
         private static void NoteTurnedAlly(TacticalContext ctx, UnitEntityData ally)
         {
@@ -172,28 +189,41 @@ namespace CompanionAI_Pathfinder.Tactics
                 foreach (var buff in ally.Buffs.Enumerable) if (HoldsUnderControl(buff)) { held = true; break; }
                 if (!held) continue;
                 float reach;
-                try { reach = CombatMath.EffectChance(ctx.Unit, ally, ability, profile, damage: false); } catch { reach = 0f; }
+                try { reach = profile.Fusion != null ? 1f : CombatMath.EffectChance(ctx.Unit, ally, ability, profile, damage: false); } catch { reach = 0f; }
                 if (!(reach > 0f)) continue;
                 MechanicsContext source = null;
                 try { source = CombatMath.CreateContext(ability, new TargetWrapper(ally)); } catch { }
-                float best = 0f, chance = 0f;
+                float best = 0f, chance = 0f, ownLoss = 0f;
+                CombatMath.FusionDamageRead damageRead = null;
                 foreach (var dispel in profile.DispelActions)
                 {
-                    float worth = DispelValue(ctx, dispel, source, ally, horizon, true, false, out float frees);
-                    if (frees > 0f && worth > best) { best = worth; chance = frees; }
+                    var applies = profile.AppliesTo(dispel, ability, ally);
+                    if (applies == EffectApplies.No) continue;
+                    float worth = DispelValue(ctx, dispel, source, ally, horizon, true, false, out float frees, out float actionLoss);
+                    float gain = applies == EffectApplies.Unknown ? 0f : worth + actionLoss;
+                    if (applies == EffectApplies.Unknown) frees = 0f;
+                    if (profile.Fusion != null)
+                    {
+                        float factor = DispelEffectChance(ctx, ability, profile, dispel, ally, true, ref damageRead);
+                        gain *= factor;
+                        frees *= factor;
+                        actionLoss *= DispelEffectChance(ctx, ability, profile, dispel, ally, false, ref damageRead);
+                    }
+                    ownLoss += actionLoss;
+                    if (frees > 0f && gain > best) { best = gain; chance = frees; }
                 }
-                foreach (var buff in ally.Buffs.Enumerable)
+                foreach (var buff in profile.BuffsRemovedFrom(ability, ally, certainOnly: true))
                 {
-                    if (!HoldsUnderControl(buff) || !RemovesByNameOrDescriptor(profile, buff)) continue;
+                    if (!HoldsUnderControl(buff)) continue;
                     float worth = FreedWorth(ctx, ally, buff);
                     if (worth > best) { best = worth; chance = 1f; }
                 }
                 // ★ coverage5: a buff that suppresses the hold (Unbreakable Heart: Compulsion) frees it while it lasts.
                 float suppressed = SuppressionRelief(ctx, ability, profile, ally, horizon, out bool freedBySuppression);
                 if (freedBySuppression && suppressed > best) { best = suppressed; chance = 1f; }
-                if (!(best > 0f)) continue;
-                total += reach * best;
-                (freed ?? (freed = new List<string>())).Add($"{ally.CharacterName} {reach * chance:P0}");
+                total += reach * (best - ownLoss);
+                if (best > 0f && chance > 0f)
+                    (freed ?? (freed = new List<string>())).Add($"{ally.CharacterName} {reach * chance:P0}");
             }
             if (freed != null)
             {
@@ -202,15 +232,8 @@ namespace CompanionAI_Pathfinder.Tactics
                 ReportOnce($"freeing|{CombatMemory.Fight}|{ability.Blueprint.AssetGuid}|{ctx.Unit.UniqueId}",
                     () => $"[Tactics] {ctx.Unit.CharacterName}: {ability.Name} {text} = {total:F1} (first per fight, caster and ability)");
             }
+            else if (total < 0f) note = "strips party buffs from an ally under enemy control";
             return total;
-        }
-
-        private static bool RemovesByNameOrDescriptor(AbilityProfile profile, Buff buff)
-        {
-            if (profile.RemovedBuffs.Contains(buff.Blueprint)) return true;
-            var descriptor = buff.MaybeContext?.SpellDescriptor ?? Kingmaker.Blueprints.Classes.Spells.SpellDescriptor.None;
-            return profile.RemovedDescriptors != Kingmaker.Blueprints.Classes.Spells.SpellDescriptor.None &&
-                   (profile.RemovedDescriptors & descriptor) != Kingmaker.Blueprints.Classes.Spells.SpellDescriptor.None;
         }
 
         /// <summary>
@@ -226,13 +249,14 @@ namespace CompanionAI_Pathfinder.Tactics
             why = null;
             if (ally == null || IsSummon(ally) || !CombatMath.CanKillPermanently(ability)) return false;
             float risk = CombatMath.PermanentDeathRisk(ability, profile, ally);
-            if (!(risk > 0f)) return false;
+            if (risk <= 0f) return false; // NaN is unread, not a safe zero.
             if (PermanentDeathRules.Vetoed(risk))
             {
-                why = $"could kill {ally.CharacterName} for good ({risk:P0})";
+                string bound = float.IsNaN(risk) ? "unread risk" : $"risk bound {risk:P0}";
+                why = $"could kill {ally.CharacterName} for good ({bound})";
                 ReportOnce($"permadeath|{CombatMemory.Fight}|{ability.Blueprint.AssetGuid}|{ally.UniqueId}",
                     () => $"[Tactics] {ctx.Unit.CharacterName}: {ability.Name} not used - it could kill {ally.CharacterName} for good " +
-                          $"({risk:P0}: {ally.HPLeft} HP left) (first per fight, ability and ally)");
+                          $"({bound}: {ally.HPLeft} HP left) (first per fight, ability and ally)");
                 return true;
             }
             cost = PermanentDeathRules.Cost(risk, AllyWorth(ctx, ally));

@@ -76,10 +76,11 @@ namespace CompanionAI_Pathfinder.Tactics
         internal static void FusionValue(float failChance, float deliveryChance, float failedDamage, float passedDamage,
             float laterOnFailure, float laterOnPass, float hp, float damageWorth, float controlWorth,
             float controlRoundsOnFailure, float controlRoundsOnPass, bool regenerating, bool endsRegeneration,
-            out float damage, out float control)
+            out float damage, out float control, float? hitPointsOnFailure = null, float? hitPointsOnPass = null)
         {
             float fail = Clamp(failChance, 0f, 1f), delivery = Clamp(deliveryChance, 0f, 1f);
-            float failedKill = KillChance(1f, failedDamage, hp), passedKill = KillChance(1f, passedDamage, hp);
+            float failedKill = KillChance(1f, hitPointsOnFailure ?? failedDamage, hp);
+            float passedKill = KillChance(1f, hitPointsOnPass ?? passedDamage, hp);
             damage = delivery * (fail * DamageValue(failedDamage + Math.Max(0f, laterOnFailure), hp, damageWorth,
                                      RegeneratingKill(failedKill, regenerating, endsRegeneration)) +
                                 (1f - fail) * DamageValue(passedDamage + Math.Max(0f, laterOnPass), hp, damageWorth,

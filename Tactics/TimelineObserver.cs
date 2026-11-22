@@ -282,7 +282,7 @@ namespace CompanionAI_Pathfinder.Tactics
         {
             try
             {
-                if (Breaks.Count == 0 || evt?.Initiator == null || evt.Success) return;
+                if (Breaks.Count == 0 || evt?.Initiator == null || evt.Success || evt.Damage == null) return;
                 foreach (var r in Breaks)
                 {
                     if (r.Enemy != evt.Initiator || !double.IsNaN(r.EndedAt)) continue;
