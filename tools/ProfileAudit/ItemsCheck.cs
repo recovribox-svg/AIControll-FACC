@@ -32,7 +32,12 @@ namespace ProfileAudit
                         var ability = item.Ability;
                         if (ability == null) { unread++; continue; }
                         if (!verdicts.TryGetValue(ability, out string verdict))
-                            verdicts[ability] = verdict = Audit.VerdictOf(ability).Verdict;
+                        {
+                            var profile = AbilityProfile.Get(ability);
+                            // A transport blueprint can be priced when cast directly while its item remains outside S2.
+                            verdicts[ability] = verdict = SummonEffectsCheck.Property(profile, "TeleportDelivery") != null
+                                ? "nothing: item teleport approach unsupported" : Audit.VerdictOf(ability).Verdict;
+                        }
                         if (verdict != null && verdict.StartsWith("valued:", StringComparison.Ordinal)) read++;
                         else if (verdict != null && verdict.StartsWith("GUESSED:", StringComparison.Ordinal)) guessed++;
                         else unread++;

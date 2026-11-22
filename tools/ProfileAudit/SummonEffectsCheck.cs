@@ -14,7 +14,7 @@ namespace ProfileAudit
     internal static class SummonEffectsCheck
     {
         internal static object Property(AbilityProfile profile, string name) =>
-            typeof(AbilityProfile).GetProperty(name, BindingFlags.Instance | BindingFlags.NonPublic)?.GetValue(profile);
+            profile == null ? null : typeof(AbilityProfile).GetProperty(name, BindingFlags.Instance | BindingFlags.NonPublic)?.GetValue(profile);
 
         private static readonly MethodInfo CarrierPlan = typeof(CombatMath).GetMethod("CarrierPlanOf", BindingFlags.Static | BindingFlags.NonPublic);
         internal static bool IsBenefitCarrier(BlueprintBuff buff)

@@ -59,7 +59,8 @@ namespace ProfileAudit
             Check(Members(typeof(TacticalEngine), "QuoteTeleportLanding").Count(member => member.Name == "RelaxPoints") == 1 &&
                   !Calls(typeof(TacticalEngine), "ValidateTeleportIssue", "RelaxPoints") &&
                   Calls(typeof(TacticalEngine), "Execute", "ValidateTeleportIssue") &&
-                  Calls(typeof(TacticalEngine), "Execute", "get_ShouldUnitApproach"),
+                  Calls(typeof(TacticalEngine), "Execute", "get_ShouldUnitApproach") &&
+                  Calls(typeof(TacticalEngine), "CanOfferTeleport", "get_SourceItem"),
                   "one native relaxation route and a separate pre-issue check through the shared dispatcher");
 
             failures = failed;
