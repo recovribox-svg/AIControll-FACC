@@ -96,6 +96,9 @@ namespace CompanionAI_Pathfinder.Tactics
                           DamageOnlyTick(buff, plan.Round, 0);
             }
             catch { carrier = false; }
+            // ★ Fusion coverage C6 (CombatMath.Carriers.cs): or a buff whose whole effect is damage to its bearer at any of its
+            // times - when it lands, each round, when it ends, when the bearer attacks - with only hindrances beside it.
+            if (!carrier) carrier = CarrierPlanOf(buff).Kind == CarrierKind.Damage;
             s_DamageCarriers[buff] = carrier;
             return carrier;
         }

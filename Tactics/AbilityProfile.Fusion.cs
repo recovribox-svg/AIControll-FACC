@@ -67,6 +67,8 @@ namespace CompanionAI_Pathfinder.Tactics
         internal bool? FusionOutcomeMetadataQualified;
         internal string FusionOutcomeMetadataReason;
         internal string FusionGuardRefusal;
+        /// <summary>The C6 carrier buff that keeps the joint outcome value out, and its kind (diagnostic).</summary>
+        internal string FusionCarrierDetail;
         private bool fusionRequiresSavedResult, fusionHasIndependentSave;
         private int fusionSourceOrdinal;
         private int fusionActionOrdinal;

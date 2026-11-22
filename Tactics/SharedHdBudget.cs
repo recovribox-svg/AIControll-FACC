@@ -7,9 +7,12 @@ namespace CompanionAI_Pathfinder.Tactics
 {
     public static class SharedHdBudget
     {
-        public const int MaxBudget = 64;
+        // ★ Fusion coverage C8 (docs/FUSION_COVERAGE_C6_C8.md): Circle of Death's pool is d4 per caster level (up to 20, 25
+        // intensified), half again empowered: 150. Visits are read once per recipient and pool interval (SharedHdControl), so
+        // the bound on evaluations counts transitions, not native reads.
+        public const int MaxBudget = 160;
         public const int MaxRecipients = 128;
-        public const int MaxEvaluations = 8192;
+        public const int MaxEvaluations = 32768;
 
         // Native: bonus before Empower's integer half; ContextCalculateSharedValue's modifier afterwards.
         internal static int PoolTotal(int roll, int bonus, double modifier, bool empowerable, bool empowered)
@@ -55,15 +58,29 @@ namespace CompanionAI_Pathfinder.Tactics
         /// A supported graph spends after its save on either result, so saving throws are not transition inputs.
         /// Any unsupported/oversized forecast fails as a whole; no prefix of recipients is published.
         /// </summary>
-        public static bool TryForecast(int initialBudget, IReadOnlyList<Recipient> recipients, out float[] eligibility)
+        public static bool TryForecast(int initialBudget, IReadOnlyList<Recipient> recipients, out float[] eligibility) =>
+            TryForecast(new[] { initialBudget }, new[] { 1f }, recipients, out eligibility);
+
+        /// <summary>
+        /// ★ Fusion coverage C8: the same forecast for a rolled pool, in one pass. The chain is linear in its starting
+        /// distribution, so this equals the chance-weighted sum of one forecast per roll.
+        /// </summary>
+        public static bool TryForecast(IReadOnlyList<int> budgets, IReadOnlyList<float> chances, IReadOnlyList<Recipient> recipients,
+                                       out float[] eligibility)
         {
             eligibility = null;
-            if (initialBudget < 0 || initialBudget > MaxBudget || recipients == null || recipients.Count > MaxRecipients)
-                return false;
+            if (budgets == null || chances == null || budgets.Count == 0 || budgets.Count != chances.Count ||
+                recipients == null || recipients.Count > MaxRecipients) return false;
+            int top = 0;
+            for (int k = 0; k < budgets.Count; k++)
+            {
+                if (budgets[k] < 0 || budgets[k] > MaxBudget || float.IsNaN(chances[k]) || chances[k] < 0f) return false;
+                top = Math.Max(top, budgets[k]);
+            }
             var result = new float[recipients.Count];
-            var current = new float[initialBudget + 1];
+            var current = new float[top + 1];
             var next = new float[current.Length];
-            current[initialBudget] = 1f;
+            for (int k = 0; k < budgets.Count; k++) current[budgets[k]] += chances[k];
             int evaluations = 0;
             try
             {

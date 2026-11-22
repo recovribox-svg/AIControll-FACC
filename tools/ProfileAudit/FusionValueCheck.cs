@@ -44,7 +44,7 @@ namespace ProfileAudit
                 var classify = typeof(TacticalEngine).GetMethod("FusionOutcomeModel", Hidden);
                 var applications = typeof(AbilityProfile).GetProperty("BuffApplications", Hidden);
                 var ownControl = typeof(AbilityProfile).GetMethod("BuffControlOn", Hidden);
-                var joint = typeof(TacticalEngine).GetMethod("TryFusionValues", Hidden);
+                var joint = typeof(TacticalEngine).GetMethod("TryFusionValuesOf", Hidden);   // ★ C8: the joint value of one read
                 var getRounds = typeof(TacticalEngine).GetMethod("TryFusionControlRounds", Hidden);
                 Check(classify != null && applications != null && ownControl != null && joint != null && getRounds != null,
                     "production occurrence, qualification and shared-value contracts exist");
@@ -76,7 +76,7 @@ namespace ProfileAudit
                         $"guards={typeof(AbilityProfile).GetProperty("FusionIndependentGuards",Hidden).GetValue(colourProfile)}, " +
                         $"paths={typeof(AbilityProfile).GetProperty("FusionBuffPathsConsistent",Hidden).GetValue(colourProfile)}");
                     foreach (var b in colourProfile.TargetBuffs)
-                        lines.Add($"FUSION-VALUE metadata buff {b.name}: harmful={typeof(AbilityProfile).GetMethod("IsHarmfulBuff",Hidden).Invoke(null,new object[]{b})}, " +
+                        lines.Add($"FUSION-VALUE metadata buff {b.name}: harmful={typeof(AbilityProfile).GetMethod("IsHarmfulBuff",Hidden,null,new[]{typeof(Kingmaker.UnitLogic.Buffs.Blueprints.BlueprintBuff)},null).Invoke(null,new object[]{b})}, " +
                             $"control={typeof(AbilityProfile).GetMethod("BuffControl",Hidden).Invoke(null,new object[]{b})}");
                 }
                 Check(colourQualified,
@@ -90,7 +90,7 @@ namespace ProfileAudit
                 {
                     var read = Activator.CreateInstance(readType, true); readType.GetMethod("Reset", Hidden).Invoke(read, null);
                     capture.Invoke(null, new object[] { profile, new List<KeyValuePair<GameAction, float>> { new KeyValuePair<GameAction, float>(action, weighted) },
-                        0.5f, evasion, improved, 1f, read });
+                        0.5f, evasion, improved, 1f, read, 0f });
                     float f = (float)readType.GetField("Failed", Hidden).GetValue(read), p = (float)readType.GetField("Passed", Hidden).GetValue(read);
                     Check((bool)readType.GetField("Known", Hidden).GetValue(read) && Math.Abs(f-failed)<0.001f && Math.Abs(p-passed)<0.001f,
                         $"native half-save action preserves conditional outcomes ({evasion}/{improved}: {f}/{p})");

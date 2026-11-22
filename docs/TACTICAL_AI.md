@@ -7061,3 +7061,35 @@ groups and approved additions for quality, such as moving to line up enemies.
   completed inputs: **13,197 admitted / 8,635 joint**. Other normalized report rows are identical.
 - Frozen unplayed UMM **0.3.60** package: `test-builds/AI-Control-FACC-v0.3.60-dev-review92-99-131309f-UMM-test.zip`, module **`7ad87f85-5833-4798-baa5-4a5c9f0a9ffc`**.
   The review records the native/fixture boundaries, conservative precision limits and TB/RT replay.
+
+## 209. Fusion coverage C6 and C8, merged with the PR #100 corrections (21 November 2026, Claude)
+
+[Page](FUSION_COVERAGE_C6_C8.md), [receipt](competence/COVERAGE7_CHECKS.json). The author asked for the C6 carriers and the
+shared Hit Dice gate, unless a practical reason prevents a high-quality implementation, and invited limit fixes. Codex's
+review of #92–99 (§208, draft PR #100) arrived meanwhile; this branch merges it.
+
+- **Result** (15,494 configurations): offered 13,197 (PR #100) → 14,329 (C6) → 14,789 (C8), with the joint value 8,635 →
+  12,927 → 13,387, none lost. 705 stay withheld; 234 are pools in cones and lines.
+- **C6 carriers** (both modes): the eleven "not harmful" carrier buffs read from their components (damage when they land,
+  each round, at their end or when the bearer attacks; no credit for hindering or size changes; Enervation's undead
+  temporary HP as damage not taken; Phantasmal Putrefaction's nausea by its two round saves). Ordinary carriers behind a
+  root-save branch are priced by that branch. Curse of Magic Negation stays unread.
+- **C8 Hit Dice pools that kill** (both modes): Circle of Death and Undeath to Death. The forecast reads a save outcome
+  that kills or deals damage, the pool's exact rolled distribution in one pass, and a spreading area's distance order.
+  Ordinary casts weigh each recipient's payload by the chance the pool still covers it; fused casts mix the joint value
+  with and without it; a pooled kill is certain on its outcome. Cones and lines stay withheld: their native order is
+  frame by frame.
+- **Review of PR #100:** agreed, with the native contracts re-checked (shared dispel roll, unstable sort, double-counted
+  death save, skipped unread dice). To revisit with evidence: modifiable dust damage counted as certain.
+- **Merge:** drain stays out of the HP knock-out while a pooled kill is certain; the unknown-harm sentinel covers C6's
+  saved carriers; one `DeliveryChance` (PR #100's, without the shadow share); the death scan's kill list stays aligned.
+- **Limit fix (permanent death):** a kill is ruled out only by its own Hit Dice test, which is fixed for the cast (also
+  alone inside an AND or OR). With no dust gate and every kill ruled out, the cast cannot kill that ally for good.
+  Otherwise PR #100's nested-save bound stands, mixed over the pool's reach.
+- **Checks** on `1ae78e7`:
+  - Release 0 warnings; 1,101 unit + 27/21/3 script tests.
+  - ProfileAudit: new `HD-POOL` 26 and `CARRIERS` 29; `PERIODIC` 9, `FUSION-DOT` 53, `FUSION-OUTCOME` 32. Every other line
+    equals PR #100's head on the same inputs apart from the coverage line; summon detail +2 read pairs (C6).
+  - Native harnesses 98/14/10; 7 references added relative to PR #100, all compiled against the supplied assembly.
+- **Package** `test-builds/AI-Control-FACC-v0.3.60-dev-coverage7-1ae78e7-UMM-test.zip`, MVID `0aa40527`. It contains PR #100.
+  Unplayed; manifest 0.3.60; no `main`, tag or release.

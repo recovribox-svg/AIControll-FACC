@@ -226,8 +226,9 @@ namespace ProfileAudit
                         $"C5: actual {a}/{b} ({save}) with ability damage is valued by the joint model (reason: {reason.GetValue(profile) ?? "none"})");
                 }
                 var enervation = Fuse("Fireball", "Enervation", SavingThrowType.Reflex);
-                Check(!((string)reason.GetValue(AbilityProfile.Get(enervation)) ?? "").Contains("non-HP") && !Qualified(enervation),
-                    "C5: Enervation's negative levels are read; its undead branch (temporary HP) still keeps it off the joint value");
+                Check(!((string)reason.GetValue(AbilityProfile.Get(enervation)) ?? "").Contains("non-HP") && Qualified(enervation) && Withheld(enervation) == null,
+                    "C5/C6: Enervation's negative levels are read, and its undead branch's temporary HP is damage the target will not take");
+                Check(Calls(Body(engine, "TryFusionValuesOf"), engine, "CarrierBenefit"), "the joint value takes off the temporary HP a cast gives");
 
                 // Production scalar outcome assembly with actual damage-action identities: ability-damage utility is
                 // retained, but it must not enter the HP stream that cancels control or a dispel.
@@ -239,16 +240,16 @@ namespace ProfileAudit
                 readType.GetMethod("Reset", Hidden).Invoke(scalarRead, null);
                 math.GetMethod("ReadFusionDamageOutcomes", Hidden).Invoke(null, new object[] { hpProfile,
                     new List<KeyValuePair<GameAction, float>> { new KeyValuePair<GameAction, float>(drainAction, 60f),
-                        new KeyValuePair<GameAction, float>(hpAction, 10f) }, 1f, false, false, 1f, scalarRead });
+                        new KeyValuePair<GameAction, float>(hpAction, 10f) }, 1f, false, false, 1f, scalarRead, 0f });
                 float Read(string field) => (float)readType.GetField(field, Hidden).GetValue(scalarRead);
                 Check((bool)readType.GetField("Known", Hidden).GetValue(scalarRead) && Math.Abs(Read("Failed") - 70f) < 0.001f &&
                       Math.Abs(Read("FailedHitPoints") - 10f) < 0.001f,
                     "C5: production outcome assembly retains 60 drain-equivalent utility plus 10 HP, with only 10 lethal HP");
 
                 // --- 3. compiled routes ---
-                var values = Body(engine, "TryFusionValues");
+                var values = Body(engine, "TryFusionValuesOf");
                 Check(Calls(values, engine, "TryPeriodicDamage") && Calls(values, engine, "PeriodicHorizon") &&
-                      values.Any(m => m is MethodInfo mi && mi.DeclaringType == typeof(ValueModel) && mi.Name == "FusionValue" && mi.GetParameters().Length == 17),
+                      values.Any(m => m is MethodInfo mi && mi.DeclaringType == typeof(ValueModel) && mi.Name == "FusionValue" && mi.GetParameters().Length == 19),
                     "the joint value takes each outcome's damage over time");
                 Check(values.Any(m => m.Name == "FailedHitPoints") && values.Any(m => m.Name == "PassedHitPoints"),
                     "the joint value receives actual HP separately from drain-equivalent utility");

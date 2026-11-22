@@ -101,9 +101,9 @@ namespace ProfileAudit
                 // ★ Fusion coverage C1: Molten Orb's main-target guard is read now; FUSION-DOT checks it is offered.
                 // ★ Fusion coverage C3: Disintegrate's dust gate is a stable guard now; PERMADEATH checks it is offered and that it
                 // is never used where it could kill an ally for good.
-                Gate("Fireball", "ReducePerson", SavingThrowType.Reflex, "carrier");
-                // ★ Fusion coverage C5: its negative levels are read now; its undead branch (temporary HP) still withholds it.
-                Gate("Fireball", "Enervation", SavingThrowType.Reflex, "carrier");
+                // ★ Fusion coverage C6: Reduce Person and Enervation are read now (CARRIERS); Curse of Magic Negation is not (its spell
+                // resistance also stands against the party's own later spells).
+                Gate("MoltenOrb", "CurseOfMagicNegation", SavingThrowType.Reflex, "carrier");
                 // ★ Fusion coverage C4: line delivery is read now; an unrelated structural refusal (a spawned area) still reports itself.
                 var line = Fuse("LightningBolt", "Fireball", SavingThrowType.Reflex);
                 Check((string)unsupported.GetValue(AbilityProfile.Get(line)) == null && Withheld(line) == null,
@@ -151,7 +151,7 @@ namespace ProfileAudit
                     "the control reader fills a second envelope for the passed outcome");
                 Check(!Calls(rounds, "Trigger") && !Calls(rounds, "SaveFailChance") && !Calls(rounds, "FindPath"),
                     "the control reader adds no rule, save or path query");
-                var values = engine.GetMethod("TryFusionValues", Hidden);
+                var values = engine.GetMethod("TryFusionValuesOf", Hidden);
                 Check(Calls(values, "FusionValue") && Calls(values, "FusionOutcomeShare"), "the joint value weights each outcome's control by that outcome");
                 var catches = engine.GetMethod("FusionControlCatches", Hidden);
                 Check(Calls(catches, "TryFusionControlRounds"), "ally safety reads both outcomes through the same reader");

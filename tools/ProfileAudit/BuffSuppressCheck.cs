@@ -37,7 +37,11 @@ namespace ProfileAudit
         /// <summary>A method's body and the bodies of its lambdas and local functions (compiler-generated, named after it).</summary>
         internal static List<MemberInfo> BodyWithLambdas(Type type, string name)
         {
-            var members = Body(Method(type, name));
+            // Every overload of the name (TryPeriodicDamage has two since Fusion coverage C6).
+            var members = new List<MemberInfo>();
+            foreach (var overload in type.GetMethods(Hidden).Where(m => m.Name == name))
+                members.AddRange(Body(overload));
+            if (!type.GetMethods(Hidden).Any(m => m.Name == name)) throw new MissingMethodException(type.FullName, name);
             string prefix = "<" + name + ">";
             foreach (var holder in new[] { type }.Concat(type.GetNestedTypes(BindingFlags.NonPublic | BindingFlags.Public)))
                 foreach (var m in holder.GetMethods(Hidden).Where(m => m.Name.StartsWith(prefix, StringComparison.Ordinal)))

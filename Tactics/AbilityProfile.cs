@@ -737,12 +737,19 @@ namespace CompanionAI_Pathfinder.Tactics
         }
 
         /// <summary>★ v0.3.12: flagged harmful by its blueprint, or it imposes a controlling condition.</summary>
-        internal static bool IsHarmfulBuff(BlueprintBuff buff)
+        internal static bool IsHarmfulBuff(BlueprintBuff buff) => IsHarmfulBuff(buff, carriers: true);
+
+        /// <param name="carriers">★ Fusion coverage C6: also a buff that only damages its bearer or controls it round by round
+        /// (CombatMath.Carriers.cs). The on-hit reader keeps the older rule: its debuff share would only guess at such damage.</param>
+        internal static bool IsHarmfulBuff(BlueprintBuff buff, bool carriers)
         {
             try
             {
                 return buff.Harmful || BuffControl(buff) != ControlStrength.None ||   // ★ v0.3.21: faction change, Command too
-                       TakesAwayOnly(buff) || KillsOnStart(buff);
+                       TakesAwayOnly(buff) || KillsOnStart(buff) || carriers &&
+                       // ★ Fusion coverage C6: it only damages its bearer, or puts a control on it round by round (CombatMath.Carriers.cs).
+                       CombatMath.CarrierPlanOf(buff).Kind is CombatMath.CarrierKind kind &&
+                       (kind == CombatMath.CarrierKind.Damage || kind == CombatMath.CarrierKind.PeriodicControl);
             }
             catch
             {
@@ -821,7 +828,11 @@ namespace CompanionAI_Pathfinder.Tactics
                 // ★ Fusion coverage C9: an ordinary spell's nested save under its declared root save (Phantasmal Killer's
                 // Fortitude save after its Will save, Banshee Blast's Will save) is read for its own fail chance.
                 if (ReferenceEquals(bp, Blueprint) && run.SavingThrowType != SavingThrowType.Unknown)
+                {
                     ReadNestedSaves(run.Actions?.Actions, null, 0, fusion: false);
+                    // ★ Fusion coverage C6: and which branch of the root save each application runs on.
+                    ReadRootSavePaths(run.Actions?.Actions, FusionSavePath.Both, false, 0);
+                }
                 Walk(run.Actions?.Actions, visited, depth, subject, 0, NoGuards);
             }
             // ★ v0.3.21 (gaps): actions run on the clicked unit or point besides the main effect
@@ -1630,6 +1641,13 @@ namespace CompanionAI_Pathfinder.Tactics
             var types = checker.Conditions.OfType<ContextConditionHitDice>().Where(h => h.AddSharedValue)
                                .Select(h => h.SharedValue).Distinct().ToList();
             if (types.Count == 0) return Run(checker);
+            // ★ Fusion coverage C8: one outcome of the pool's forecast for this recipient (PoolOutcome): its Hit Dice limits
+            // hold, or none does. The forecast's chance weighs the outcomes (SharedHdControl).
+            if (s_PoolAbility != null && ReferenceEquals(s_PoolAbility, ability))
+            {
+                foreach (var t in types) context[t] = s_PoolReached ? PoolCovers : -PoolCovers;
+                return Run(checker);
+            }
             var ranges = types.Select(t =>
             {
                 SharedValueRange(ability, context, t, out int lo, out int mid, out int hi);
@@ -1643,6 +1661,93 @@ namespace CompanionAI_Pathfinder.Tactics
             foreach (var r in ranges) context[r.Type] = r.Mid;
             return Run(checker);
         }
+
+        // ★ Fusion coverage C8: the pool outcome scope. Larger than any level a limit is compared with; small enough for the sum.
+        private const int PoolCovers = 1 << 24;
+        [ThreadStatic] private static AbilityData s_PoolAbility;
+        [ThreadStatic] private static bool s_PoolReached;
+
+        internal readonly struct PoolOutcomeScope : IDisposable
+        {
+            private readonly bool m_Active;
+            private readonly AbilityData m_PreviousAbility;
+            private readonly bool m_PreviousReached;
+            internal PoolOutcomeScope(AbilityData ability, bool reached)
+            {
+                m_Active = true;
+                m_PreviousAbility = s_PoolAbility;
+                m_PreviousReached = s_PoolReached;
+                s_PoolAbility = ability;
+                s_PoolReached = reached;
+            }
+            public void Dispose()
+            {
+                if (!m_Active) return;
+                s_PoolAbility = m_PreviousAbility;
+                s_PoolReached = m_PreviousReached;
+            }
+        }
+
+        /// <summary>
+        /// ★ Fusion coverage C8: one of <paramref name="action"/>'s own guards is a Hit Dice test alone (character level, fixed for
+        /// the whole cast) and rules it out for <paramref name="target"/>. A pool's shared value reads as covered unless a pool
+        /// outcome is already in force, so an unknown pool can only keep the action possible.
+        /// </summary>
+        internal bool RuledOutByHitDice(GameAction action, AbilityData ability, UnitEntityData target)
+        {
+            if (action == null || ability == null || target == null || !m_Guards.TryGetValue(action, out var guards)) return false;
+            bool scoped = s_PoolAbility != null && ReferenceEquals(s_PoolAbility, ability);
+            using (scoped ? default : PoolOutcome(ability, true))
+            {
+                foreach (var guard in guards)
+                {
+                    var conditions = guard.Checker?.Conditions;
+                    if (conditions == null || conditions.Length == 0) continue;
+                    var subject = guard.OnCaster ? ability.Caster?.Unit : target;
+                    if (subject == null) continue;
+                    bool hitDiceOnly = true;
+                    foreach (var c in conditions)
+                        if (c == null || c.GetType() != typeof(ContextConditionHitDice)) { hitDiceOnly = false; break; }
+                    if (hitDiceOnly)
+                    {
+                        bool? result = CheckFor(guard.Checker, ability, subject, ability.Caster?.Unit);
+                        if (result.HasValue && result.Value != guard.Branch) return true;
+                        continue;
+                    }
+                    // Mixed with other conditions: one Hit Dice test alone can still settle the checker - a false one in an
+                    // AND (the branch needs it true), a true one in an OR (the branch needs it false). Circle of Death's pool
+                    // test sits beside "not undead" this way.
+                    bool and = guard.Checker.Operation == Operation.And;
+                    if (and != guard.Branch) continue;
+                    foreach (var c in conditions)
+                    {
+                        if (c == null || c.GetType() != typeof(ContextConditionHitDice)) continue;
+                        bool? one = CheckFor(SingleChecker(c), ability, subject, ability.Caster?.Unit);
+                        if (one.HasValue && one.Value != and) return true;
+                    }
+                }
+            }
+            return false;
+        }
+
+        // One cached checker per condition, so the per-checker answer cache keeps working for it.
+        private static readonly Dictionary<Condition, ConditionsChecker> SingleCheckers = new Dictionary<Condition, ConditionsChecker>();
+
+        private static ConditionsChecker SingleChecker(Condition condition)
+        {
+            if (!SingleCheckers.TryGetValue(condition, out var checker))
+            {
+                if (SingleCheckers.Count > 1024) SingleCheckers.Clear();
+                SingleCheckers[condition] = checker = new ConditionsChecker { Operation = Operation.And, Conditions = new[] { condition } };
+            }
+            return checker;
+        }
+
+        /// <summary>
+        /// ★ Fusion coverage C8: while open, <paramref name="ability"/>'s shared Hit Dice conditions read as covered
+        /// (<paramref name="reached"/>) or not, for one recipient's appraisal; the condition cache is not used for them.
+        /// </summary>
+        internal static PoolOutcomeScope PoolOutcome(AbilityData ability, bool reached) => new PoolOutcomeScope(ability, reached);
 
         /// <summary>
         /// ★ v0.3.17 (test5): the Hit Dice limits in this ability's branch conditions as the profile evaluates them, and
@@ -1937,6 +2042,10 @@ namespace CompanionAI_Pathfinder.Tactics
             // ★ v0.3.25 (test2 logs, performance): a struct key - the same parts as before (caster, target, ability blueprint,
             // metamagic, source item, spellbook, aim unit or its point to 0.1 m), without the string built for every
             // lookup, cache hits included.
+            // ★ Fusion coverage C8: a pool outcome in force for this ability is not a cached answer.
+            if (s_PoolAbility != null && ReferenceEquals(s_PoolAbility, ability) &&
+                (checker.Conditions ?? Array.Empty<Condition>()).Any(c => c is ContextConditionHitDice h && h.AddSharedValue))
+                return CheckUncached(checker, ability, target, aim);
             var key = new CheckerKey(caster, target, ability, aim);
             if (!CheckerCache.TryGetValue(checker, out var perUnit))
                 CheckerCache[checker] = perUnit = new CheckerResults { Frame = frame };
@@ -1981,6 +2090,22 @@ namespace CompanionAI_Pathfinder.Tactics
 
             perUnit.Results[key] = result;
             return result;
+        }
+
+        private static bool? CheckUncached(ConditionsChecker checker, AbilityData ability, UnitEntityData target, TargetWrapper aim)
+        {
+            if (!checker.Conditions.All(IsSafe)) return null;
+            try
+            {
+                var context = CombatMath.CreateContext(ability, aim);
+                if (context == null) return null;
+                using (context.GetDataScope(new TargetWrapper(target))) return WithSharedValues(checker, ability, context);
+            }
+            catch (Exception ex)
+            {
+                Main.Verbose($"[Profile] pooled condition check for {ability.Name} on {target.CharacterName}: {ex.Message}");
+                return null;
+            }
         }
 
         /// <summary>
@@ -2360,6 +2485,36 @@ namespace CompanionAI_Pathfinder.Tactics
                     ReadNestedSaves(child, nested, depth + 1, fusion);
             }
         }
+
+        /// <summary>★ Fusion coverage C6: an ordinary spell's applications by the branch of its root save they run on.</summary>
+        private Dictionary<GameAction, FusionSavePath> ordinaryRootPaths;
+
+        private void ReadRootSavePaths(GameAction[] actions, FusionSavePath path, bool nested, int depth)
+        {
+            if (actions == null || depth > 12) return;
+            foreach (var action in actions)
+            {
+                if (action == null) continue;
+                if (action is ContextActionApplyBuff)
+                {
+                    if (ordinaryRootPaths == null) ordinaryRootPaths = new Dictionary<GameAction, FusionSavePath>();
+                    ordinaryRootPaths[action] = ordinaryRootPaths.TryGetValue(action, out var seen) && seen != path ? FusionSavePath.Both : path;
+                }
+                // Inside an independent nested save a ConditionalSaved reads that save, not the root (AbilityProfile.NestedSaves).
+                if (action is ContextActionSavingThrow) { foreach (var child in ChildActionLists(action)) ReadRootSavePaths(child, path, true, depth + 1); continue; }
+                if (action is ContextActionConditionalSaved saved && !nested && path == FusionSavePath.Both)
+                {
+                    ReadRootSavePaths(saved.Failed?.Actions, FusionSavePath.Failed, false, depth + 1);
+                    ReadRootSavePaths(saved.Succeed?.Actions, FusionSavePath.Passed, false, depth + 1);
+                    continue;
+                }
+                foreach (var child in ChildActionLists(action)) ReadRootSavePaths(child, path, nested, depth + 1);
+            }
+        }
+
+        /// <summary>★ C6: the root-save branch an ordinary spell's application runs on (Both when on either, or unread).</summary>
+        internal FusionSavePath OrdinaryRootPath(GameAction action) =>
+            ordinaryRootPaths != null && action != null && ordinaryRootPaths.TryGetValue(action, out var path) ? path : FusionSavePath.Both;
 
         /// <summary>★ C9: the nested save <paramref name="action"/> runs under, and its branch; false outside one (or unread).</summary>
         internal bool TryNestedSave(GameAction action, out ContextActionSavingThrow save, out FusionSavePath path)

@@ -1,0 +1,101 @@
+{
+ "task": "Fusion coverage C6 (carrier buffs) and C8 (shared Hit Dice pools that kill or deal damage), merged with Codex's PR #100 corrections, plus the permanent-death kill-condition limit fix - docs/FUSION_COVERAGE_C6_C8.md",
+ "date": "2026-11-21",
+ "author": "Claude",
+ "branch": "claude/fusion-coverage-c6-c8 @ 1ae78e7 (C6 41142fc, C8 d90981a, merge of PR #100 d63d090, follow-up 1ae78e7), stacked on codex/review-92-99 @ 710beaf (draft PR #100)",
+ "development_base": "0019856805605c9b74e27ffbdfa6b8dd9c20b0f2",
+ "checked_source": "1ae78e714d9c7d5dfd21ec7682d26a3f2eec07a4",
+ "toolchain": {
+  "dotnet_sdk": "8.0.428",
+  "csharp_compiler": "4.11.0-3.25569.22 (3fb752d4)",
+  "provenance": "docs/competence/COVERAGE7_BUILD_PROVENANCE.json"
+ },
+ "release_build": "0 warnings, 0 errors (real game references)",
+ "unit_tests": "1,101 pass (PR #100's 1,096 + 5: CarrierTests 2, SharedHdBudgetTests 2, FusionValueTests 1)",
+ "script_tests": {
+  "BlueprintInventory": 27,
+  "InvocationLedger": 21,
+  "ProfileAudit supplement": 3
+ },
+ "review_of_pr_100": {
+  "verdict": "agree with the findings; checked natively: OneRollForAll/SetRollOverride, unstable caster-level sort before filtering, no roll for a filtered buff, the double-counted save in the permanent-death risk, skipped unread dice groups",
+  "would_revisit_with_evidence": "dust damage the game can modify (Disintegrate's) counts as certain to reach its gate (PR #100 precision limit 1)",
+  "merge_decisions": [
+   "joint value: drain utility kept out of the HP knock-out and a pooled kill certain on its outcome; a cast's temporary HP taken off the HP damage too",
+   "periodic: the unknown-harm sentinel also covers C6's carriers behind a save branch",
+   "dominated allies: damage over time in the cost, weighted by the pool's reach",
+   "one DeliveryChance (PR #100's, without the shadow share); the duplicate would have bound PR #100's death risk to the shadow-scaled version",
+   "death scan: the depth guard adds an empty kill action, keeping C8's list aligned",
+   "kills ruled out only by their own Hit Dice test (also inside an AND/OR); with no dust gate and every kill ruled out, no death; otherwise PR #100's nested-save bound, mixed over the pool's reach"
+  ]
+ },
+ "profileaudit": {
+  "exit": 0,
+  "relative_to": "PR #100 head 131309f, built and audited here on the same inputs (13,197 admitted / 8,635 joint reproduced)",
+  "new_or_changed_sections": {
+   "HD-POOL": "26 checks (new): native contracts (Hit Dice condition, SubHD, spread scheduling and approach, cone/line per-frame unit order, pool dice metamagic); actual Circle of Death plan and death-scan kill action; Sleep unchanged; fused Hold Person / Phantasmal Web with Circle of Death offered with the joint value; Fireball delivery keeps its refusal; cone pools withheld; one-pass distribution; certain kill; compiled routes including the merged permanent-death rule; census 7 ordinary pools read, 2 refused",
+   "CARRIERS": "29 checks (new, C6)",
+   "PERIODIC": "9 checks (was 8); ordinary abilities priced 6 -> 8",
+   "FUSION-DOT": "53 checks (was 52)",
+   "FUSION-OUTCOME": "32 checks (was 33): two carrier gates became one",
+   "route checks": "FUSION-DOT, FUSION-OUTCOME, FUSION-VALUE and CARRIERS read the joint value in TryFusionValuesOf"
+  },
+  "other_lines": "identical to PR #100 on the same inputs, apart from the coverage line",
+  "summon_kit_detail": "2 creature-ability pairs move from read-with-a-guessed-part to read (C6: 847 -> 849 read)",
+  "fusion_coverage": {
+   "of": 15494,
+   "offered": "13,197 (PR #100) -> 14,329 (C6) -> 14,789 (C8)",
+   "offered_with_joint_value": "8,635 -> 12,927 -> 13,387",
+   "lost": 0,
+   "still_withheld": {
+    "shared Hit Dice gate": {
+     "total": 492,
+     "cone or line delivery (frame-dependent native order)": 234,
+     "touch slot or extra area": 78,
+     "refused by the other spell": 180
+    },
+    "outcome gate": {
+     "total": 213,
+     "Phantasmal Killer kill": 64,
+     "Curse of Magic Negation": 64,
+     "Baleful Polymorph removal": 56,
+     "dispel after own buff": 28,
+     "guard fact": 1
+    }
+   }
+  },
+  "report_sha256": "b18368fd412490363ae287ad592a703cbcc235ff0881a5de78f5cbca2781d598",
+  "coverage_sha256": "d15355ec5844d2548909c8a81f0b91938a6c6aa8117728a4ab372f3b54618401"
+ },
+ "native_harnesses": {
+  "ToggleCosts": 98,
+  "TomeBurn": 14,
+  "ToyBoxSpend": 10
+ },
+ "signatures": {
+  "relative_to": "PR #100 package DLL (131309f)",
+  "added_game_references": [
+   "AddDamageResistanceEnergy::ValueMultiplier",
+   "AddDamageResistanceEnergy::UseValueMultiplier",
+   "AddSpellResistance::AllSpellResistancePenaltyDoNotUse",
+   "AddInitiatorAttackRollTrigger::OnOwner",
+   "BuffMovementSpeed::Value",
+   "ActionList::.ctor()",
+   "ConditionsChecker::.ctor()"
+  ],
+  "removed": [],
+  "note": "all compiled against the supplied Assembly-CSharp; the first six executed by CARRIERS on every loaded buff",
+  "count": 2080
+ },
+ "not_run": [
+  "Supplementary Magus 44 corpus: inputs not in this environment",
+  "No playtest: unplayed"
+ ],
+ "package": {
+  "zip": "test-builds/AI-Control-FACC-v0.3.60-dev-coverage7-1ae78e7-UMM-test.zip",
+  "mvid": "0aa40527-d88f-4dfb-977b-3c6b101daaee",
+  "zip_sha256": "cede6dda26703b63221cb4d15aecea90db898731588fc5c5d90911ad762b5bce",
+  "dll_sha256": "f90b77b979c2a2c61d84812d1009229714d2c7dd2264f9dfdf50b6be0bf1948d",
+  "manifest": "0.3.60"
+ }
+}

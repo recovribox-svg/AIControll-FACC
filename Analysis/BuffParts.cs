@@ -757,7 +757,7 @@ namespace CompanionAI_Pathfinder.Analysis
                         break;
                     // A debuff on the target; anything else it puts there (a mark of the bearer's) stays unread.
                     case Kingmaker.UnitLogic.Mechanics.Actions.ContextActionApplyBuff apply when apply.Buff != null && !apply.ToCaster &&
-                                                                                          CompanionAI_Pathfinder.Tactics.AbilityProfile.IsHarmfulBuff(apply.Buff):
+                                                                                          CompanionAI_Pathfinder.Tactics.AbilityProfile.IsHarmfulBuff(apply.Buff, carriers: false):
                         found.Add(new BuffPart { Kind = BuffPartKind.OnHitBuff, Owner = owner, HitBuff = apply.Buff, HitSave = save, Conditional = conditional });
                         break;
                     // ★ v0.3.21 (review): an empty buff on the target is a cooldown marker (True Judgment's), no effect.

@@ -76,15 +76,32 @@ namespace CompanionAI_Pathfinder.Tactics
         internal static void FusionValue(float failChance, float deliveryChance, float failedDamage, float passedDamage,
             float laterOnFailure, float laterOnPass, float hp, float damageWorth, float controlWorth,
             float controlRoundsOnFailure, float controlRoundsOnPass, bool regenerating, bool endsRegeneration,
-            out float damage, out float control, float? hitPointsOnFailure = null, float? hitPointsOnPass = null)
+            out float damage, out float control, float? hitPointsOnFailure = null, float? hitPointsOnPass = null) =>
+            FusionValue(failChance, deliveryChance, failedDamage, passedDamage, laterOnFailure, laterOnPass, hp, damageWorth,
+                controlWorth, controlRoundsOnFailure, controlRoundsOnPass, regenerating, endsRegeneration, false, false,
+                out damage, out control, hitPointsOnFailure, hitPointsOnPass);
+
+        /// <summary>
+        /// ★ Fusion coverage C8 (docs/FUSION_COVERAGE_C6_C8.md): an outcome with a kill (Circle of Death's on a failed save) takes the
+        /// recipient out for certain: its damage is the HP left and its kill chance 1, whatever its regeneration
+        /// (ContextActionKill marks it for death). Without a kill the value is unchanged to the last bit. The kill chance
+        /// otherwise comes from the outcome's actual HP damage only (review 92-99: drain utility is not an HP knock-out).
+        /// </summary>
+        internal static void FusionValue(float failChance, float deliveryChance, float failedDamage, float passedDamage,
+            float laterOnFailure, float laterOnPass, float hp, float damageWorth, float controlWorth,
+            float controlRoundsOnFailure, float controlRoundsOnPass, bool regenerating, bool endsRegeneration,
+            bool killOnFailure, bool killOnPass, out float damage, out float control,
+            float? hitPointsOnFailure = null, float? hitPointsOnPass = null)
         {
             float fail = Clamp(failChance, 0f, 1f), delivery = Clamp(deliveryChance, 0f, 1f);
-            float failedKill = KillChance(1f, hitPointsOnFailure ?? failedDamage, hp);
-            float passedKill = KillChance(1f, hitPointsOnPass ?? passedDamage, hp);
+            if (killOnFailure) failedDamage = Math.Max(failedDamage, Math.Max(1f, hp));
+            if (killOnPass) passedDamage = Math.Max(passedDamage, Math.Max(1f, hp));
+            float failedKill = killOnFailure ? 1f : KillChance(1f, hitPointsOnFailure ?? failedDamage, hp);
+            float passedKill = killOnPass ? 1f : KillChance(1f, hitPointsOnPass ?? passedDamage, hp);
             damage = delivery * (fail * DamageValue(failedDamage + Math.Max(0f, laterOnFailure), hp, damageWorth,
-                                     RegeneratingKill(failedKill, regenerating, endsRegeneration)) +
+                                     killOnFailure ? 1f : RegeneratingKill(failedKill, regenerating, endsRegeneration)) +
                                 (1f - fail) * DamageValue(passedDamage + Math.Max(0f, laterOnPass), hp, damageWorth,
-                                     RegeneratingKill(passedKill, regenerating, endsRegeneration)));
+                                     killOnPass ? 1f : RegeneratingKill(passedKill, regenerating, endsRegeneration)));
             // A recipient downed by this outcome cannot also lose the same future actions to its failed-save control.
             control = delivery * fail * (1f - failedKill) * Math.Max(0f, controlWorth) * Math.Max(0f, controlRoundsOnFailure);
             // Added only when present, so a fusion without such an effect keeps its value to the last bit.

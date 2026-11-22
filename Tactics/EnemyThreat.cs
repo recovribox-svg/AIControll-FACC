@@ -167,6 +167,18 @@ namespace CompanionAI_Pathfinder.Tactics
 
         /// <summary>The already assessed harm beyond HP (scores, negative levels, on-hit control), kept out of
         /// observed HP calibration. A dictionary lookup only; unknown/unread sources add no removal floor.</summary>
+        /// <summary>
+        /// ★ Fusion coverage C6: the chance the enemy makes an attack in a round (Serenity's damage). From its assessment: 1 when
+        /// its weapon is its best offence, its weapon's share against its best spell or heal otherwise, 0 without a weapon or an
+        /// assessment (nothing is credited for an enemy not yet assessed).
+        /// </summary>
+        internal static float AttackChance(UnitEntityData enemy)
+        {
+            if (enemy == null || !Assessed.TryGetValue(enemy.UniqueId, out var a) || !(a.Weapon > 0f)) return 0f;
+            float other = Math.Max(a.Spell, a.Heal);
+            return a.Weapon >= other ? 1f : a.Weapon / (a.Weapon + other);
+        }
+
         internal static float NonHitPointHarm(UnitEntityData enemy) =>
             enemy != null && Assessed.TryGetValue(enemy.UniqueId, out var a) ? a.AbilityDamage : 0f;
 

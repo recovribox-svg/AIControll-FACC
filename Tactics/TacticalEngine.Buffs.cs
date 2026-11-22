@@ -651,7 +651,7 @@ namespace CompanionAI_Pathfinder.Tactics
                     if (w <= 0f) continue;
                     if (p.Kind == BuffPartKind.OnHitKill)
                         onHitOnce = Math.Max(onHitOnce, w * CombatMath.TargetWorth(off.Enemy));
-                    else if (p.HitBuff != null && AbilityProfile.IsHarmfulBuff(p.HitBuff) && !off.Enemy.Buffs.HasFact(p.HitBuff) &&
+                    else if (p.HitBuff != null && AbilityProfile.IsHarmfulBuff(p.HitBuff, carriers: false) && !off.Enemy.Buffs.HasFact(p.HitBuff) &&
                              !CombatMath.BuffImmune(off.Enemy, p.HitBuff, null))
                         onHitRound = Math.Max(onHitRound, w * CombatMath.ControlWorth(off.Enemy) *
                                                           HarmShareIn(ctx, abilityCtx, off.Enemy, new List<BlueprintBuff> { p.HitBuff }));

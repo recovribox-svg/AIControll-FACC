@@ -27,6 +27,40 @@ namespace CompanionAI_Pathfinder.Tactics
         }
 
         /// <summary>Expected executions of an already weighted tick, while a native save/removal can end later ticks.</summary>
+        /// <summary>
+        /// ★ Fusion coverage C6: the chance a buff's end (its Deactivated actions) comes within the horizon: always when its
+        /// duration runs out there; otherwise only when one of its <paramref name="ticks"/> removes it (a removal deactivates it),
+        /// each tick keeping it on with <paramref name="survivesTick"/>.
+        /// </summary>
+        public static float CarrierEndChance(int ticks, float survivesTick, bool durationWithinHorizon)
+        {
+            if (durationWithinHorizon) return 1f;
+            if (ticks <= 0) return 0f;
+            float stay = Math.Max(0f, Math.Min(1f, survivesTick));
+            return (float)(1d - Math.Pow(stay, ticks));
+        }
+
+        /// <summary>
+        /// ★ Fusion coverage C6: rounds a round-tick control is on, over <paramref name="ticks"/> ticks (Phantasmal Putrefaction).
+        /// Each tick the bearer rolls a first save: a pass removes the buff and its control (a child); a failure while it has no
+        /// control yet rolls a second save, whose failure puts the control on until the buff goes. A round counts once the tick
+        /// at its start has left the control on.
+        /// </summary>
+        public static float TickControlRounds(float firstFail, float secondFail, int ticks)
+        {
+            if (ticks <= 0) return 0f;
+            double w = Math.Max(0f, Math.Min(1f, firstFail)), f = Math.Max(0f, Math.Min(1f, secondFail));
+            double free = 1d, held = 0d, rounds = 0d;
+            for (int t = 0; t < ticks; t++)
+            {
+                double nextHeld = free * w * f + held * w;
+                free = free * w * (1d - f);
+                held = nextHeld;
+                rounds += held;
+            }
+            return (float)rounds;
+        }
+
         public static float PeriodicWeight(int ticks, float survivesTick)
         {
             if (ticks <= 0) return 0f;

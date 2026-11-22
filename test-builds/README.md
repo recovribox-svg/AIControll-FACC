@@ -1,5 +1,17 @@
 # Test builds
 
+## Next candidate: v0.3.60 coverage7 — Fusion C6 carriers and C8 Hit Dice pools, on PR #100 (1ae78e7), unplayed
+
+[UMM test ZIP](AI-Control-FACC-v0.3.60-dev-coverage7-1ae78e7-UMM-test.zip?raw=true) · [Identity](AI-Control-FACC-v0.3.60-dev-coverage7-1ae78e7-UMM-test.identity.json) · [Checksum](AI-Control-FACC-v0.3.60-dev-coverage7-1ae78e7-UMM-test.sha256) · [Page/replay](../docs/FUSION_COVERAGE_C6_C8.md) · [Checks](../docs/competence/COVERAGE7_CHECKS.json)
+
+The review92-99 package below plus: carrier buffs read by mechanism (C6), Circle of Death's kill pool ordinary and fused
+(C8), and a kill ruled out for an ally only by its own Hit Dice test. **Nothing merged.** UMM **0.3.60**, checked source
+**`1ae78e7`**, startup module **`0aa40527-d88f-4dfb-977b-3c6b101daaee`**. ZIP SHA-256
+`cede6dda26703b63221cb4d15aecea90db898731588fc5c5d90911ad762b5bce`. Offered 14,789 / joint 13,387 of 15,494, none lost.
+Real-reference Release **0 warnings/errors**, **1,101 unit + 27/21/3 scripts**, all ProfileAudit sections, native
+**98/14/10**. [Compiler/reference provenance](../docs/competence/COVERAGE7_BUILD_PROVENANCE.json). Replay the page's
+checklist, then the review's.
+
 ## Review candidate: v0.3.60 review92-99 — corrections across PRs #92–99 (131309f), unplayed
 
 [UMM test ZIP](AI-Control-FACC-v0.3.60-dev-review92-99-131309f-UMM-test.zip?raw=true) · [Identity](AI-Control-FACC-v0.3.60-dev-review92-99-131309f-UMM-test.identity.json) · [Checksum](AI-Control-FACC-v0.3.60-dev-review92-99-131309f-UMM-test.sha256) · [Review/replay](../docs/REVIEW_92_99.md) · [Checks](../docs/competence/REVIEW_92_99_CHECKS.json)

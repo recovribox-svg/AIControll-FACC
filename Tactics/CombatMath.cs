@@ -895,7 +895,10 @@ namespace CompanionAI_Pathfinder.Tactics
                 if (applies == EffectApplies.No) continue;
                 // ★ Fusion coverage C5: ability damage and negative levels join the shared-save outcomes as their HP equivalent
                 // (DrainEquivalent, the same rule the ordinary estimate uses); a provider or an unread branch stays unknown.
-                if (fusionRead != null && (applies == EffectApplies.Unknown || !(action is ContextActionDealDamage))) fusionRead.Known = false;
+                // ★ Fusion coverage C8: a kill joins them as the target's HP on its outcome (only a pooled kill is admitted to the joint
+                // value: TacticalEngine.FusionOutcomeModel).
+                if (fusionRead != null && (applies == EffectApplies.Unknown ||
+                                           !(action is ContextActionDealDamage || action is ContextActionKill))) fusionRead.Known = false;
                 switch (action)
                 {
                     // ★ v0.3.28 test 13: ability damage and negative levels are worth what they take of the target's two other
@@ -936,6 +939,12 @@ namespace CompanionAI_Pathfinder.Tactics
                             NestedSaveFactor(ability, profile, dmg, target)));
                         break;
                     // A kill is valued apart (KillApplies): it lands on a failed save, not half on a passed one.
+                    // ★ Fusion coverage C8: in a fused cast's outcome read it is the HP it takes, on its own outcome.
+                    case ContextActionKill kill when fusionRead != null && target != null:
+                        parts.Add(new KeyValuePair<GameAction, float>(kill, Math.Max(1, target.HPLeft) *
+                            FusionDamageFactor(profile, kill, fusionFail, fusionEvasion, fusionImproved) *
+                            NestedSaveFactor(ability, profile, kill, target)));
+                        break;
                     case ContextActionKill _:
                         break;
                     case IDealDamageProvider provider:
@@ -948,7 +957,8 @@ namespace CompanionAI_Pathfinder.Tactics
             RememberFusionDamageChance(ability, target, profile, parts, fusionFail, fusionEvasion, fusionImproved);
             // Mitigation and per-roll bonuses above apply to every delivery separately, before their sum.
             int deliveries = oneProjectile ? 1 : ProjectileDeliveries(profile, ctx);
-            ReadFusionDamageOutcomes(profile, parts, fusionFail, fusionEvasion, fusionImproved, deliveries, fusionRead);
+            ReadFusionDamageOutcomes(profile, parts, fusionFail, fusionEvasion, fusionImproved, deliveries, fusionRead,
+                target != null ? Math.Max(1, target.HPLeft) : 0f);
             return SumAlternatives(profile, parts) * deliveries;
         }
 

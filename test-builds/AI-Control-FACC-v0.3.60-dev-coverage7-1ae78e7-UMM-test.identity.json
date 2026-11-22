@@ -1,0 +1,44 @@
+{
+  "build_label": "coverage7",
+  "kind": "development-test",
+  "version": "0.3.60",
+  "source_branch": "claude/fusion-coverage-c6-c8",
+  "source_commit": "1ae78e714d9c7d5dfd21ec7682d26a3f2eec07a4",
+  "stack": [
+    "claude/fusion-coverage-programme (C1, draft PR #92)",
+    "claude/review-r-items (R2, R5, evidence)",
+    "claude/fusion-coverage-c2-c5 (C2, C5, ordinary damage over time)",
+    "claude/coverage2-review (coverage2 log review fixes, draft PR #95)",
+    "claude/coverage3-review (coverage3 log review fixes, Fusion C3)",
+    "claude/coverage4-followups (dominated-ally release, partial swarm exits, Fusion C6a)",
+    "claude/relief-spells (dispels, removals and suppressions valued by what they end)",
+    "claude/fusion-coverage-rest (Fusion C4 lines, C7 dispels, C9 nested saves, C10 lingering areas, C11 Vampiric Touch)",
+    "codex/review-92-99 (review and corrections of #92-99, draft PR #100)",
+    "claude/fusion-coverage-c6-c8 (Fusion C6 carriers, C8 Hit Dice pools that kill, permanent-death kill conditions; merges PR #100)"
+  ],
+  "development_base": "0019856805605c9b74e27ffbdfa6b8dd9c20b0f2",
+  "dll": {
+    "assembly": "CompanionAI_Pathfinder, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null",
+    "mvid": "0aa40527-d88f-4dfb-977b-3c6b101daaee",
+    "sha256": "f90b77b979c2a2c61d84812d1009229714d2c7dd2264f9dfdf50b6be0bf1948d",
+    "size": 1622016
+  },
+  "archive": "AI-Control-FACC-v0.3.60-dev-coverage7-1ae78e7-UMM-test.zip",
+  "zip_sha256": "cede6dda26703b63221cb4d15aecea90db898731588fc5c5d90911ad762b5bce",
+  "manifest_sha256": "63ad9f152d4bacb44f021428193efad46aaf0d13380bb5691ebca1d935f2b5bf",
+  "checks_receipt": "docs/competence/COVERAGE7_CHECKS.json",
+  "build_provenance": "docs/competence/COVERAGE7_BUILD_PROVENANCE.json",
+  "build_provenance_sha256": "d4fabbd45a5f3d1238138b41e5893f28b97bd727381309ec22268aa7293c8e55",
+  "toolchain": {
+    "dotnet_sdk": "8.0.428",
+    "csharp_compiler": "4.11.0-3.25569.22 (3fb752d4)"
+  },
+  "scope": "PR #100 (Codex's corrections to #92-99) plus Fusion C6 (carrier buffs read by mechanism) and C8 (shared Hit Dice pools that kill or deal damage: rolled pools, spreading delivery, the pool's reach in the joint value, friendly fire and the permanent-death rule; a kill is ruled out only by its own Hit Dice test) - docs/FUSION_COVERAGE_C6_C8.md",
+  "gameplay_status": "unplayed",
+  "release": false,
+  "archive_contents": [
+    "CompanionAI_Pathfinder.dll",
+    "Info.json"
+  ],
+  "identity_note": "Checked DLL is frozen across later documentation commits. No cross-machine byte identity or measured Unity speed-up claimed."
+}

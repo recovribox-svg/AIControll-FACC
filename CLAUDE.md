@@ -8,7 +8,33 @@ Read [CONTRIBUTING.md](CONTRIBUTING.md) for shared branch ownership, Codex pull 
 Codex works on task branches and targets pull requests at `claude/dreamy-pasteur-b9h3rn`; Claude reviews and integrates them there.
 Keep `main` for author-authorized releases. Read [AGENTS.md](AGENTS.md) when coordinating agent work.
 
-**Current handover (21 November 2026, Codex): critical review of PRs #92–99. Nothing merged.**
+**Current handover (21 November 2026, Claude): Fusion C6 carriers and C8 Hit Dice pools that kill, merged with Codex's
+PR #100 corrections, on `claude/fusion-coverage-c6-c8`, stacked on `codex/review-92-99` (draft PR #100). Not played,
+nothing merged.** Read [docs/FUSION_COVERAGE_C6_C8.md](docs/FUSION_COVERAGE_C6_C8.md), `docs/TACTICAL_AI.md` §209 and the
+[receipt](docs/competence/COVERAGE7_CHECKS.json).
+
+- **Request:** the C6 carriers, then the shared Hit Dice gate unless a practical reason prevents it; fixes to limits
+  invited. Then: review Codex's PR #100 and continue.
+- **Change (both modes):**
+  - C6: the eleven carrier buffs read by mechanism; ordinary carriers behind a save branch priced. Curse of Magic
+    Negation stays unread.
+  - C8: Circle of Death's kill pool, ordinary and fused: rolled pools, spreading delivery in distance order, the pool's
+    reach in the joint value, friendly fire and the death rule. Pools in cones and lines stay withheld
+    (frame-dependent native order).
+  - Permanent death: a kill is ruled out only by its own Hit Dice test; otherwise PR #100's nested-save bound.
+- **PR #100:** agreed with; merged here, with the overlaps resolved (drain vs certain kill, one `DeliveryChance`, aligned
+  death scan). To revisit with evidence: modifiable dust damage counted as certain.
+- **Coverage:** offered 13,197 → 14,789, with the joint value 8,635 → 13,387, none lost; 705 withheld.
+- **Checks** on `1ae78e7`:
+  - Release 0 warnings; 1,101 unit + 27/21/3 script tests.
+  - ProfileAudit new `HD-POOL` 26 and `CARRIERS` 29; `PERIODIC` 9, `FUSION-DOT` 53, `FUSION-OUTCOME` 32; every other line
+    equals PR #100's head on the same inputs apart from the coverage line; summon detail +2 read pairs (C6).
+  - Native harnesses 98/14/10; 7 references added relative to PR #100, all compiled against the supplied assembly.
+- **Package:** `test-builds/AI-Control-FACC-v0.3.60-dev-coverage7-1ae78e7-UMM-test.zip`, MVID `0aa40527`. It contains
+  PR #100. Manifest 0.3.60; no `main`, tag or release.
+- **Next:** the author plays coverage7 with summon control on (replay in the page, then PR #100's replay).
+
+**Earlier handover (21 November 2026, Codex): critical review of PRs #92–99. Nothing merged.**
 Read [docs/REVIEW_92_99.md](docs/REVIEW_92_99.md), §208 of `docs/TACTICAL_AI.md`,
 [checks](docs/competence/REVIEW_92_99_CHECKS.json) and [provenance](docs/competence/REVIEW_92_99_BUILD_PROVENANCE.json).
 
