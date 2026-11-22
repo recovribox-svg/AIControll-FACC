@@ -253,10 +253,11 @@ namespace CompanionAI_Pathfinder.Tactics
         /// </summary>
         private static bool TryDispelValue(TacticalContext ctx, AbilityData ability, AbilityProfile profile, TargetWrapper actualAim,
                                            List<UnitEntityData> affectedEnemies, List<UnitEntityData> affectedAllies,
-                                           out float value, out string note)
+                                           out float value, out string note, out float outsideItemRestraint)
         {
             value = 0f;
             note = null;
+            outsideItemRestraint = 0f;
             if (profile.DispelActions.Count == 0) return false;
             // Its native area branch is not a unit-buff fallback. Treat the absent unit benefit as known zero,
             // rather than allowing a scoring anchor's buffs to create a fictitious 2-point dispel option.
@@ -264,6 +265,7 @@ namespace CompanionAI_Pathfinder.Tactics
             {
                 // ★ coverage7 follow-ups: the native point branch ends the area effects at the point (PointDispelValue).
                 value = PointDispelValue(ctx, ability, profile, actualAim, out note);
+                outsideItemRestraint = value;
                 return true;
             }
             if (profile.Fusion == null && !profile.SelectsTargets && actualAim?.Unit == null) return true;
@@ -302,6 +304,8 @@ namespace CompanionAI_Pathfinder.Tactics
                 // Sequential dispels may overlap. Do not invent independent full benefits or discard the losses of
                 // an earlier action by selecting a later positive net result. One action is exact; several use the
                 // best individual benefit minus all priced losses (a deliberately conservative overlap estimate).
+                // Keep present harm relief and lost helpful buffs outside the consumable restraint.
+                outsideItemRestraint += (ctx.Unit.IsEnemy(u) ? 0f : bestGain) - ownLoss;
                 float best = bestGain - ownLoss;
                 if (best == 0f) continue;
                 if (best > 0f) { gain += best; helped++; } else { loss -= best; hurt++; }
