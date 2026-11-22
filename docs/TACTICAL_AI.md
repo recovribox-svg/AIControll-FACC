@@ -7244,3 +7244,27 @@ scroll in the quick slot of a caster who can use Magic Missile from their own sp
 while a slot remains, then exhaust the slots and replay. Use an easy and a hard fight to compare the choice against
 weapons and cantrips. Also check an injured ally and a present harmful effect to confirm restorative urgency.
 Keep both logs and startup module `03f36260-38ab-4267-9324-5d5f3370f7c5`.
+
+## 216. Consumables C2: hand an adjacent ally a potion (22 November 2026)
+
+Both combat modes offer the same native `AbilityData.PotionForOther` conversion as the action bar for eligible
+quick-slot potions. Discovery treats the handoff and drinking as distinct options. Self, enemy and summoned recipients
+are excluded from the handoff. Personal-range potions keep their own drinking option.
+
+The handoff takes the action and reach returned by the native ability. Path preflight and dispatch share the existing
+touch approach when walking is needed. Native `UnitUseAbility.OnTick` exempts potions from defensive casting,
+including the handoff. A walk still carries its normal risk. The same item settings, blocklist, prices and item
+threshold apply to either option.
+
+The item audit confirms an actual cure can be offered as a handoff, while a Personal potion and an item outside a
+quick slot fail admission. It also verifies the separate key and the compiled native action, range and approach routes.
+
+Checked source `2f890af` passed a zero-warning real-reference Release build, 1,143 unit tests,
+27/21/3 scripts, both ProfileAudit scopes and native 98/14/10. The non-ITEMS report lines, Fusion matrices and summon
+kit detail match C3 on the same inputs.
+[Checks](competence/SUMMONS_CONSUMABLES_C2_CHECKS.json) · [Compiler provenance](competence/SUMMONS_CONSUMABLES_C2_BUILD_PROVENANCE.json)
+
+The [UMM test package](../test-builds/AI-Control-FACC-v0.3.60-dev-items-c2-2f890af-UMM-test.zip?raw=true) is **unplayed**. In TB and RT put a cure potion in a
+healthy giver's quick slot, keep a badly injured companion adjacent and a summon nearby, and check which recipient
+is chosen. Repeat with the companion one walk away, then with an injured giver and a Personal potion. Verify that
+each completed use spends one item and that an approach alone spends none. Send both logs and module `a7db0656-cced-4fc8-a299-1314503fa3e3`.

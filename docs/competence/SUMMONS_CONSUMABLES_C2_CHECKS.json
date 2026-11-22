@@ -1,0 +1,74 @@
+{
+  "checked_source_commit": "2f890af2df8cc66a130640993d2aa2dc4bc186b6",
+  "baseline_source": "27a427ebffc18bad9090908fbf99329511ab8274",
+  "baseline_note": "C2 matches the C3 non-ITEMS lines, both Fusion coverage matrices and summon-kit detail on the same inputs.",
+  "dll": {
+    "assembly": "CompanionAI_Pathfinder, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null",
+    "mvid": "a7db0656-cced-4fc8-a299-1314503fa3e3",
+    "sha256": "d3d8fecb98db25493fef6e4c5e0007229c2b9c021336e21ec2daa1bf42c0818f",
+    "size": 1646592
+  },
+  "package": {
+    "path": "test-builds/AI-Control-FACC-v0.3.60-dev-items-c2-2f890af-UMM-test.zip",
+    "sha256": "9002b497ba5292f6c7edfedbc6692409a23cadd093fb664857903eb77972ff3d"
+  },
+  "build_provenance": "docs/competence/SUMMONS_CONSUMABLES_C2_BUILD_PROVENANCE.json",
+  "release": {
+    "warnings": 0,
+    "errors": 0,
+    "real_game_references": true,
+    "log_sha256": "7912f254e200eb39ec434d4cc0866d38a114986490ff59dca9cb924f99ca3bba"
+  },
+  "unit_tests": {
+    "passed": 1143,
+    "failed": 0,
+    "skipped": 0
+  },
+  "script_tests": {
+    "BlueprintInventory": 27,
+    "InvocationLedger": 21,
+    "ProfileAuditSupplement": 3
+  },
+  "profile_audit": {
+    "strict": {
+      "report_sha256": "e66431bec285fc0d67177bbd6f86f59bf10268d06b7686a118e732f9f7241f68",
+      "matrix_sha256": "acd0b62097c834cb8617f33b9272a32f24f08da4b91c0b3499f3eccd779e1517",
+      "all_other_nonblank_report_lines_equal": true,
+      "matrix_byte_identical": true
+    },
+    "full_stock": {
+      "report_sha256": "4b4accb7c8c8ca95bcb42ad43b582c2848e8bd8bdce182d96f80ed7bd91c4c9c",
+      "matrix_sha256": "acd0b62097c834cb8617f33b9272a32f24f08da4b91c0b3499f3eccd779e1517",
+      "all_other_nonblank_report_lines_equal": true,
+      "matrix_byte_identical": true
+    },
+    "summon_detail_sha256": "43d0c6402852d4cceefe0253946be94349293584142021f3811c54eca0a7cf35",
+    "items_blueprint_fixtures": 7,
+    "items_blueprint_fixture_failures": 0,
+    "potions_read_guessed_unread": [
+      95,
+      18,
+      1
+    ],
+    "scrolls_read_guessed_unread": [
+      570,
+      68,
+      12
+    ],
+    "wands_read_guessed_unread": [
+      212,
+      15,
+      2
+    ]
+  },
+  "native_harnesses": {
+    "ToggleCosts": 98,
+    "TomeBurn": 14,
+    "ToyBoxSpend": 10
+  },
+  "not_run": [
+    "live turn-based or real-time play",
+    "live item use",
+    "Unity profiling"
+  ]
+}
