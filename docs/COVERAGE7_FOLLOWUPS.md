@@ -131,7 +131,8 @@ On `17e3e1e`:
 ## Replay (coverage8)
 
 Record the startup MVID `828dc676`. Send `Log.txt` and `combatLog.txt`, and say where you spawned enemies, rested, or
-gave manual orders.
+gave manual orders, and whether any cheat was on. The coverage7 playtest ran with infinite health (author), so no low-HP
+behaviour was seen; play at least the Vermlek and healing checks without it.
 
 1. **Summons with on-hit riders** (Schir, Quasit, a Shadow if one is summoned): their full attacks against ordinary
    enemies should not be dominated by a disease. With a filtered rider, compare the decision value with the hits on the
@@ -157,5 +158,5 @@ gave manual orders.
   one ally at a time.
 - The through-area advance uses the recorded entry segment. A different route to the same goal may cross elsewhere.
 - No pruning of touch planning yet; the new timings are for deciding it.
-- Codex's open items stand: mortality from stat or level drain, lingering hostility after a re-save, and the Drow Magus
-  HP reading.
+- Codex's open items stand: mortality from stat or level drain, and lingering hostility after a re-save. The Drow Magus
+  HP reading is closed: the author played coverage7 with an infinite-health cheat, so HP stayed full.

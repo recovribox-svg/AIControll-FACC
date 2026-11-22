@@ -7135,4 +7135,6 @@ The author approved what still needed approval, movement included.
 - Checks on `17e3e1e`: Release 0 warnings; 1,118 unit + 27/21/3 script tests; ProfileAudit new `COVERAGE7-FOLLOWUPS` 20,
   `OFFENSIVE-AFFLICTION` 27, every other line identical to Codex's head; Fusion matrix and summon detail byte-identical;
   native harnesses 98/14/10; 3 references added. Package coverage8, MVID `828dc676`, unplayed. Nothing merged.
+- The author played coverage7 with an infinite-health cheat. §210's HP discrepancy (Drow Magus at HP100% after 541 damage)
+  is that cheat, not a defect, and that playtest exercised no low-HP behaviour.
 

@@ -26,7 +26,7 @@ logical lines; combat references use event text and fight because the raw file h
 | 3 | Helpful caster buff stripped at full HP | Four casts + exact caster-removal graph; fixed, deactivation heal deferred. |
 | 4 | Real dispel marked no-reach | Native rule + confirmed removal; fixed before it can create a false block. |
 | 5 | Stat/level-drain deaths and obstructed routes | Death/route evidence is strong; mortality needs a separate design, and route-policy changes need movement approval. |
-| 6 | Lingering hostility, HP100% discrepancy, short cancellations | Anomalies observed; native state/cause not established, no guessed fix. |
+| 6 | Lingering hostility, short cancellations | Anomalies observed; native state/cause not established, no guessed fix. The HP100% discrepancy is closed: the author played with an infinite-health cheat. |
 | 7 | Expensive low-value touch planning | Ordering and slow timings confirmed; search-specific gain unmeasured, pruning deferred. |
 
 ## Confirmed defects fixed in both modes
@@ -113,10 +113,11 @@ dispel and later AoOs do not by themselves prove a second domination or a failed
   attacks for zero HP with 2-level drain. Bandit Alchemist suffers two 2-level drains and ordinary damage, but receives
   no AI decision/order in that fight (prone refusal at 12647). Exact life-state cause is not logged; no friendly damage
   caused these deaths. A statistical/death-state forecast remains a worthwhile separate design slice.
-- **Drow Magus, fight 7:** combat reports 541 HP damage while decisions stay at HP100%. The reader directly uses native
-  HPLeft/MaxHP/nonlethal, with no local health cache. The rested save cannot establish contemporaneous health or external
-  protection settings. Changing HP arithmetic or asserting a better retreat would be speculative. A bounded native
-  health/protection snapshot at damage and next decision is needed.
+- **Drow Magus, fight 7 (closed, not a defect):** combat reports 541 HP damage while decisions stay at HP100%. The reader
+  directly uses native HPLeft/MaxHP/nonlethal, with no local health cache. The author has since confirmed that this playtest
+  ran with an infinite-health cheat: companions took damage without losing HP, so HP100% was the true state. No health
+  snapshot is needed. In consequence this playtest exercised no low-HP behaviour (healing, drop risk, retreat, low-HP
+  Abandon Flesh). Deaths from stat or level drain are not HP deaths and stand.
 - **All six arcan Snowball/Shocking Grasp unacted casts** align with target deaths, once duplicate Mournful Shadows are
   separated by ID. No fusion-delivery defect follows from those interruptions.
 - **Deva's two Heal approaches** (11262, 11633) end via the explicit six-second no-progress guard, ~1 m short after
@@ -179,5 +180,6 @@ Replay both modes with summon control enabled:
 4. Reproduce domination/re-save and retain both logs plus exact actor IDs and native faction/group snapshots if possible.
 5. Explicitly exercise a new C6 carrier and an available ordinary Circle of Death; create a Circle of Death fusion to test
    that fused path. Keep sufficient native materials/resources and a valid target set.
-6. Retain swarm/level-drain deaths, native HP/protection context and touch-route interruptions. Movement proposals and
+6. Retain swarm/level-drain deaths and touch-route interruptions. Say whether any cheat is on; play without infinite
+   health where HP-dependent choices matter. Movement proposals and
    performance pruning require their separate approval/measurement; this package does not claim to fix those.

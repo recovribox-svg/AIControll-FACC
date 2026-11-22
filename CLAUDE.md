@@ -25,6 +25,8 @@ Keep `main` for author-authorized releases. Read [AGENTS.md](AGENTS.md) when coo
 - **Checks** on `17e3e1e`: Release 0 warnings; 1,118 unit + 27/21/3 script tests; ProfileAudit `COVERAGE7-FOLLOWUPS` 20,
   `OFFENSIVE-AFFLICTION` 27, other lines identical; Fusion matrix and summon detail byte-identical; harnesses 98/14/10.
 - **Package:** `test-builds/AI-Control-FACC-v0.3.60-dev-coverage8-17e3e1e-UMM-test.zip`, MVID `828dc676`. Manifest 0.3.60.
+- **Author:** coverage7 was played with an infinite-health cheat. The Drow Magus HP100% item is closed (not a defect);
+  that playtest showed no low-HP behaviour.
 - **Next:** Codex reviews this PR; the author plays coverage8 (replay in the page, then Codex's coverage7 replay).
 
 **Earlier handover (22 November 2026, Codex): coverage7 playtest corrections, unplayed; nothing merged.**
