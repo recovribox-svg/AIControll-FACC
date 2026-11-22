@@ -8,8 +8,27 @@ Read [CONTRIBUTING.md](CONTRIBUTING.md) for shared branch ownership, Codex pull 
 Codex works on task branches and targets pull requests at `claude/dreamy-pasteur-b9h3rn`; Claude reviews and integrates them there.
 Keep `main` for author-authorized releases. Read [AGENTS.md](AGENTS.md) when coordinating agent work.
 
-**Current handover (21 November 2026, Claude): coverage7 playtest, partial review, on `claude/coverage7-review`, stacked on
+**Current handover (22 November 2026): coverage7 playtest corrections, unplayed; nothing merged.**
+Read [the completed review](docs/COVERAGE7_PLAYTEST_REVIEW.md), [follow-up proposals](docs/COVERAGE7_FOLLOWUP_PROPOSALS.md),
+[checks](docs/competence/COVERAGE7_REVIEW_CHECKS.json), [provenance](docs/competence/COVERAGE7_REVIEW_BUILD_PROVENANCE.json) and §210.
+
+- Branch `codex/coverage7-review`, from PR #102 `e96b52b`, with draft PR base **`claude/coverage7-review`** as explicitly requested.
+- Corrected Point dispel unit valuation, named caster-only removals/helpful losses, native dispel reach evidence, and
+  positive on-hit disease timing/guards. On-hit utility is separate from HP kill/progress. Both combat modes.
+- No proven dominated-unit control bypass: successful native round re-save precedes AI return; later group-hostility
+  AoOs remain a replay question. No redundant ShouldControlUnit guard or movement/pruning change.
+- Source **`fd9cdda7e60262d4327955daf2ee5be22d3b7a02`**, module **`c61d3aec-6677-4035-b7fa-4614b894f909`**, UMM **0.3.60**, frozen package `test-builds/AI-Control-FACC-v0.3.60-dev-coverage7fix1-fd9cdda-UMM-test.zip`.
+- **1,110 units + 27/21/3 scripts**, Release **0 warnings/errors**, every audit passes; native **98/14/10**, Magus **44**,
+  **4** new native signatures resolved. Same-input coverage **14,789/13,387** and summon detail unchanged.
+- Limits: area-dispel benefit/deactivation healing unread, conditional caster costs conservative, filtered/contextual
+  own riders withheld, direct action-rider HP lacks immediate kill credit; incoming threat remains conservative.
+  C6/C8 execution, stat/level mortality, native hostility/HP/cancellation state, touch routes and measured pruning need replay.
+- Next: review and play the complete package using the six TB/RT checks. Movement proposals need author approval.
+  No merge, development/main push, tag or release. Preserve the validated DLL across later documentation commits.
+
+**Earlier handover (21 November 2026, Claude): coverage7 playtest, partial review, on `claude/coverage7-review`, stacked on
 `claude/fusion-coverage-c6-c8` (draft PR #101). No code changed. The author asked Codex to finish the review and the fixes.**
+The current review above supersedes this partial handover, including its friendly-damage attribution and open control/movement claims.
 Read [docs/COVERAGE7_PLAYTEST_REVIEW.md](docs/COVERAGE7_PLAYTEST_REVIEW.md) and the
 [input fingerprints](docs/competence/COVERAGE7_PLAYTEST_INPUTS.json).
 

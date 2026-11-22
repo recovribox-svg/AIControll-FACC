@@ -1,0 +1,29 @@
+{
+  "build_label": "coverage7fix1",
+  "kind": "development-test",
+  "version": "0.3.60",
+  "source_branch": "codex/coverage7-review",
+  "source_commit": "fd9cdda7e60262d4327955daf2ee5be22d3b7a02",
+  "base_branch": "claude/coverage7-review",
+  "base_commit": "e96b52b24fb9f1936256a4ba0f4aa50f904fc2bd",
+  "dll": {
+    "assembly": "CompanionAI_Pathfinder, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null",
+    "mvid": "c61d3aec-6677-4035-b7fa-4614b894f909",
+    "sha256": "2357281e3e65c4fbcb1c64d6ccceff66b6fcbe6991419ed28a5ac5caa1cbc23b",
+    "size": 1625600
+  },
+  "archive": "AI-Control-FACC-v0.3.60-dev-coverage7fix1-fd9cdda-UMM-test.zip",
+  "zip_sha256": "402eda0ef52d211e953c2bf6b73bc5d2b5b83c2c5bae491e917c8afff6f9d1cc",
+  "manifest_sha256": "63ad9f152d4bacb44f021428193efad46aaf0d13380bb5691ebca1d935f2b5bf",
+  "checks_receipt": "docs/competence/COVERAGE7_REVIEW_CHECKS.json",
+  "build_provenance": "docs/competence/COVERAGE7_REVIEW_BUILD_PROVENANCE.json",
+  "build_provenance_sha256": "c496bc7cb4c6e739002885a76e0eb43ab017fd559059c24b13013be4faaa80c6",
+  "played_input_module": "0aa40527-d88f-4dfb-977b-3c6b101daaee",
+  "gameplay_status": "unplayed",
+  "release": false,
+  "archive_contents": [
+    "CompanionAI_Pathfinder.dll",
+    "Info.json"
+  ],
+  "identity_note": "New startup MVID; frozen validated DLL. No game dependencies/audit shims/raw playtest data. No merge, tag or release."
+}

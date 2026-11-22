@@ -1,5 +1,15 @@
 # Test builds
 
+## Coverage7 playtest corrections — 0.3.60 development test (22 November 2026)
+
+- [Complete UMM ZIP](AI-Control-FACC-v0.3.60-dev-coverage7fix1-fd9cdda-UMM-test.zip?raw=true) · [identity](AI-Control-FACC-v0.3.60-dev-coverage7fix1-fd9cdda-UMM-test.identity.json) · [checksum](AI-Control-FACC-v0.3.60-dev-coverage7fix1-fd9cdda-UMM-test.sha256).
+- Source `fd9cdda7e60262d4327955daf2ee5be22d3b7a02`; module `c61d3aec-6677-4035-b7fa-4614b894f909`. Frozen checked DLL, UMM **0.3.60**, **unplayed**.
+- Fixes Point dispel unit valuation, caster removal filters/losses, native dispel reach and positive on-hit disease forecasts.
+- 1,110 unit tests,27/21/3 scripts, zero-warning real-reference Release, all audits/native harnesses pass.
+- [Review/replay](../docs/COVERAGE7_PLAYTEST_REVIEW.md), [checks](../docs/competence/COVERAGE7_REVIEW_CHECKS.json),
+  [compiler provenance](../docs/competence/COVERAGE7_REVIEW_BUILD_PROVENANCE.json). No movement/pruning change or integration.
+
+
 ## Next candidate: v0.3.60 coverage7 — Fusion C6 carriers and C8 Hit Dice pools, on PR #100 (1ae78e7), unplayed
 
 [UMM test ZIP](AI-Control-FACC-v0.3.60-dev-coverage7-1ae78e7-UMM-test.zip?raw=true) · [Identity](AI-Control-FACC-v0.3.60-dev-coverage7-1ae78e7-UMM-test.identity.json) · [Checksum](AI-Control-FACC-v0.3.60-dev-coverage7-1ae78e7-UMM-test.sha256) · [Page/replay](../docs/FUSION_COVERAGE_C6_C8.md) · [Checks](../docs/competence/COVERAGE7_CHECKS.json)
