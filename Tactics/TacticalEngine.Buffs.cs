@@ -307,6 +307,7 @@ namespace CompanionAI_Pathfinder.Tactics
             var energyProtection = new Dictionary<DamageEnergyType, List<EnergyLayer>>();
             float spellDc = 0f, spellLevel = 0f, spellPenetration = 0f;
             var onHit = new List<BuffPart>();
+            List<(BuffPart Part, float Amount)> protections = null;
             var castingStat = CastingStat(ally);
             bool sizeUp = false, forbidsSpells = false;
             BuffPart invisible = null;
@@ -322,7 +323,8 @@ namespace CompanionAI_Pathfinder.Tactics
                 // ★ v0.3.20 (test5): a bonus against one kind of effect or creature counts for the share of the enemies it
                 // works against; any other condition (a weapon kind) at half. Remove Fear's +4 against fear counted as +2
                 // to every save for each ally in its burst - up to 8.6 in a fight with no fear (0.3.20-test4 log).
-                if (p.Against != Kingmaker.Blueprints.Classes.Spells.SpellDescriptor.None) amount *= EnemyThreat.ShareUsing(p.Against);
+                if (p.Against != Kingmaker.Blueprints.Classes.Spells.SpellDescriptor.None &&
+                    p.Kind != BuffPartKind.MovementDescriptorImmunity) amount *= EnemyThreat.ShareUsing(p.Against);
                 else if (p.AgainstAlignment.HasValue) amount *= EnemyAlignmentShare(ctx, p.AgainstAlignment.Value);
                 else if (p.Conditional) amount *= 0.5f;
                 // ★ v0.3.21 (gaps): an on-hit effect counts on the share of hits it fires on.
@@ -331,6 +333,13 @@ namespace CompanionAI_Pathfinder.Tactics
                 if (p.FirstOnly && !oneAttack) amount /= Math.Max(1f, off.HitsPerRound);   // one hit, not each
                 switch (p.Kind)
                 {
+                    case BuffPartKind.SpellResistance:
+                    case BuffPartKind.SavesAgainstAbility:
+                    case BuffPartKind.ConditionImmunity:
+                    case BuffPartKind.GrappleImmunity:
+                    case BuffPartKind.MovementDescriptorImmunity:
+                        if (amount > 0f) (protections ?? (protections = new List<(BuffPart, float)>())).Add((p, amount));
+                        break;
                     case BuffPartKind.OnHitBuff:
                     case BuffPartKind.OnHitKill:
                         onHit.Add(p);
@@ -616,6 +625,12 @@ namespace CompanionAI_Pathfinder.Tactics
                             layer.Immunity, current.Resistance, current.Pooled));
                     keptPerRound += kept;
                     notes.Add($"{entry.Key} protection keeps {kept:0.#}/rd (matching {matching:0.#}/rd)");
+                }
+                if (protections != null)
+                {
+                    float kept = TypedProtectionPerRound(ctx, ally, def, protections);
+                    keptPerRound += kept;
+                    notes.Add($"matching spell/control protection keeps {kept:0.#}/rd");
                 }
                 float absorbed = ValueModel.TempHpAbsorbed(tempHp + conHp * 0.5f, def.Incoming, total) +
                                  ValueModel.MirrorImagesAbsorbed(images, imageHits, def.AttackPerHit > 0f ? def.AttackPerHit : def.AttackIncoming, total);

@@ -293,9 +293,10 @@ safety checks (friendly fire, permanent death, blocklists, Pure Mage, consumable
 - **Change:** read the item effects the audit flags as misread or guessed, by mechanism:
   - **Freedom of Movement:** immunity to grapple, paralysis, slow and entangle, valued against the enemies who can apply
     them, as typed protection is.
-  - **True Seeing:** concealment reveal, through the existing reveal value.
-  - **Spell Resistance and Protection from Spells:** worth the hostile spells present, through the existing resistance
-    rule.
+  - **True Seeing:** recipient sight through eligible invisibility, Blur and Displacement. Use the existing sight appraisal.
+  - **Spell Resistance:** price a marginal native penetration check against hostile spells that allow SR.
+  - **Protection from Spells:** price its Resistance bonus to saves against Spell or SpellLike abilities.
+    Its stacking and marginal benefit use the save rules.
   - **Magical Vestment**, already read for potions in v0.3.25: check that the scroll and potion forms agree.
 - **Acceptance:** each is a check in the `ITEMS` audit section on the actual blueprint.
 

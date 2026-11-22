@@ -43,6 +43,8 @@ namespace CompanionAI_Pathfinder.Tactics
             public string AbilityStat;
             public float Spell;          // its best castable harmful ability on that victim (and those around)
             public string SpellName;
+            public AbilityData MainCast;
+            public float MainCastVictimHarm;
             public float Heal;           // its best castable heal on its most hurt ally
             public string HealName, HealTarget;
             public float Offence;        // max(spell, weapon blended with what it dealt)
@@ -179,6 +181,18 @@ namespace CompanionAI_Pathfinder.Tactics
             return a.Weapon >= other ? 1f : a.Weapon / (a.Weapon + other);
         }
 
+        // The cast and victim already selected by the bounded threat appraisal. Never rescan a kit for a buff.
+        internal static bool TryMainCast(UnitEntityData enemy, UnitEntityData victim, out AbilityData cast, out float expectedHarm)
+        {
+            cast = null;
+            expectedHarm = 0f;
+            if (enemy == null || !Assessed.TryGetValue(enemy.UniqueId, out var a) ||
+                a.MainCast == null || a.Victim != victim || !(a.Spell > 0f)) return false;
+            cast = a.MainCast;
+            expectedHarm = a.MainCastVictimHarm * a.Spell / (a.Spell + Math.Max(a.Weapon, a.Heal));
+            return true;
+        }
+
         internal static float NonHitPointHarm(UnitEntityData enemy) =>
             enemy != null && Assessed.TryGetValue(enemy.UniqueId, out var a) ? a.AbilityDamage : 0f;
 
@@ -281,6 +295,8 @@ namespace CompanionAI_Pathfinder.Tactics
             a.AbilityDamage = 0f;
             a.AbilityStat = null;
             a.Spell = a.Heal = 0f;
+            a.MainCast = null;
+            a.MainCastVictimHarm = 0f;
             a.EnergyType = null;
             a.EnergyDamage = 0f;
             a.EnergyPerCast = 0f;
@@ -342,7 +358,7 @@ namespace CompanionAI_Pathfinder.Tactics
                         }
                     }
                     a.Spell = BestAbility(enemy, victim, party, usable, out a.SpellName, out a.EnergyType, out a.EnergyDamage,
-                        out a.EnergyPerCast);
+                        out a.EnergyPerCast, out a.MainCast, out a.MainCastVictimHarm);
                 }
                 a.Heal = BestHeal(enemy, enemies, usable, out a.HealName, out a.HealTarget);
             }
@@ -414,8 +430,11 @@ namespace CompanionAI_Pathfinder.Tactics
         /// in its area).
         /// </summary>
         private static float BestAbility(UnitEntityData enemy, UnitEntityData victim, List<UnitEntityData> party, List<AbilityData> usable,
-                                         out string name, out DamageEnergyType? energyType, out float energyDamage, out float energyPerCast)
+                                         out string name, out DamageEnergyType? energyType, out float energyDamage, out float energyPerCast,
+                                         out AbilityData mainCast, out float victimHarm)
         {
+            mainCast = null;
+            victimHarm = 0f;
             name = null;
             energyType = null;
             energyDamage = 0f;
@@ -432,6 +451,8 @@ namespace CompanionAI_Pathfinder.Tactics
                     if (value > best)
                     {
                         best = value;
+                        mainCast = ability;
+                        victimHarm = value / Math.Max(1f, area);
                         name = ability.Name;
                         energyType = SingleEnergy(profile);
                         energyDamage = energyType.HasValue ? damage * area : 0f;

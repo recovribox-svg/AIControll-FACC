@@ -32,6 +32,10 @@ namespace CompanionAI_Pathfinder.Tactics
         public static float SaveBoostShare(float before, float after) =>
             before > 0f && after > before ? (after - before) / before : 0f;
 
+        /// <summary>Share of a known harmful effect blocked by a marginal defence.</summary>
+        public static float PreventedEffectShare(float before, float after) =>
+            before > 0f && after >= 0f && after < before ? (before - after) / before : 0f;
+
         /// <summary>★ v0.3.30 competence2: Persistent - a passed save is rolled again at the same DC; resisting needs both.</summary>
         public static float PersistentFail(float fail) => 1f - (1f - fail) * (1f - fail);
 
