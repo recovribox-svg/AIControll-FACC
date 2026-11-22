@@ -672,6 +672,7 @@ namespace CompanionAI_Pathfinder.Tactics
             AppliesHarmfulBuffs = !HelpfulToAllies &&
                 (Blueprint.Range == AbilityRange.Personal ? outwardControl : !AimsAtFriendsOnly(Blueprint)) &&
                 (WorstOfTwoAttacks != null || RedirectCarrier != null || TargetBuffs.Any(IsHarmfulBuff));
+            ReadTeleportDelivery();
             if (Fusion != null)
             {
                 Save = Fusion.SavingThrowType;

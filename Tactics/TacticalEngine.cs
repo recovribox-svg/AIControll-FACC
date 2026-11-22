@@ -40,6 +40,8 @@ namespace CompanionAI_Pathfinder.Tactics
         public CandidateKind Kind;
         internal bool ShifterFury;
         internal TacticalEngine.GriffonPlan Griffon;
+        internal TacticalEngine.TeleportPlan Teleport;
+        internal float TeleportReach, TeleportPayoff;
         public ActionSlot Slot;
         public float Value;
         public UnitEntityData Target;
@@ -154,6 +156,7 @@ namespace CompanionAI_Pathfinder.Tactics
         /// Discovery itself stays unfiltered; every choice and prediction of the unit's own actions reads this view.</summary>
         internal BlockScope<Kingmaker.Blueprints.BlueprintGuid> Blocks;
         internal List<AbilityData> AllowedAbilities;
+        internal List<AbilityData> TeleportAbilities;
         internal Dictionary<(UnitEntityData, bool, bool), TacticalEngine.MagusPayload> MagusPayloads;
         internal AbilityData MagusPayloadSource;
         internal bool MagusPayloadIsRanged;
@@ -2848,7 +2851,9 @@ namespace CompanionAI_Pathfinder.Tactics
                 }
                 else if (ctx.HasMove && dist - reach <= ctx.MoveRange * 0.95f)
                 {
-                    float value = DamageValue(enemy, single) * weight * 0.9f * WakeFactor(enemy, single.ExpectedDamage);
+                    float attackWorth = DamageValue(enemy, single) * weight;
+                    float wake = WakeFactor(enemy, single.ExpectedDamage);
+                    float value = attackWorth * 0.9f * wake;
                     // ★ cast disruption (real time): a walk and one attack can still break a long cast.
                     value += WeaponDisruptBonus(ctx, enemy, single, false, BurstRules.WalkSeconds(dist, reach, unit.CurrentSpeedMps),
                                                 out string moveDisruptTag);
@@ -2904,6 +2909,8 @@ namespace CompanionAI_Pathfinder.Tactics
                         Risk = risk,
                         RiskAt = approach.Point,
                         PreRiskValue = preRisk,
+                        TeleportReach = reach,
+                        TeleportPayoff = attackWorth * wake,
                         Label = label,
                         Key = $"matk:{enemy.UniqueId}",
                         MoveFirst = approach.Detours,
@@ -2991,6 +2998,17 @@ namespace CompanionAI_Pathfinder.Tactics
                     long profileStarted = ctx.Timings != null ? System.Diagnostics.Stopwatch.GetTimestamp() : 0;
                     try { profile = AbilityProfile.Get(ability); }
                     finally { ctx.Timings?.NoteProfileRead(profileStarted); }
+                    if (profile?.TeleportDelivery != null)
+                    {
+                        available = available && TeleportSlotAvailable(ctx.Unit, slot);
+                        if (available && CanOfferTeleport(ctx, ability))
+                        {
+                            var teleports = ctx.TeleportAbilities ?? (ctx.TeleportAbilities = new List<AbilityData>(SpotRules.PricedSpots));
+                            if (teleports.Count < SpotRules.PricedSpots) teleports.Add(ability);
+                        }
+                        else ctx.Unused?.Record(witness, available ? UnusedReason.TeleportLanding : UnusedReason.ActionUnavailable);
+                        continue;
+                    }
                     bool futureOffence = profile != null && (profile.DealsDamage || profile.HarmfulEffects ||
                         profile.ControlStrength != ControlStrength.None || profile.Maneuvers.Count > 0 || profile.IsWeaponAttack);
                     bool spellOpportunity = futureSpellsNeeded && (ability.Blueprint.IsSpell || ability.SourceItem != null);
@@ -3476,6 +3494,7 @@ namespace CompanionAI_Pathfinder.Tactics
                 return charge != null ? new[] { charge } : none;
             }
             if (profile.GriffonAttack != null) return EvaluateGriffonAttack(ctx, ability, profile, onlyTarget);
+            if (profile.TeleportDelivery != null) return none;
 
             bool progressive = ctx.Settings.SpellPolicy == SpellResourcePolicy.Progressive && ability.Spellbook != null &&
                                ability.SourceItem == null;
@@ -5709,7 +5728,8 @@ namespace CompanionAI_Pathfinder.Tactics
 
             // Test[2]: the old 0.6 floor repeatedly pulled low-HP Lann back after withdrawing for an attack worth 0.5.
             // An advance must clear the ordinary action bar on its actual future payoff, like every other move.
-            float targetValue = Math.Max(DamageValue(enemy, est), refusedValue);
+            float weaponWorth = DamageValue(enemy, est);
+            float targetValue = Math.Max(weaponWorth, refusedValue);
             float value = targetValue * AdvanceShare;
             string label = $"Advance->{enemy.CharacterName}" + (beyondOneMove ? " (beyond one move)" : "");
             // ★ v0.3.28 (v0.3.27 turn-based log, fight 3): what the advance gives up - the attack the unit could make next
@@ -5779,7 +5799,8 @@ namespace CompanionAI_Pathfinder.Tactics
                 Value = value,
                 Label = label, Key = $"move:adv:{enemy.UniqueId}",
                 CheckPath = risk?.Area == null,
-                Risk = risk, RiskAt = approach.Point   // ★ v0.3.20 (test8): its real walk is counted too
+                Risk = risk, RiskAt = approach.Point,  // its real walk is counted too
+                TeleportReach = est.Reach, TeleportPayoff = weaponWorth
             });
             AddThroughAreaAdvance(ctx, list, enemy, approach, around, radius, needLos, value, label, risk);
             return false;
@@ -6152,6 +6173,7 @@ namespace CompanionAI_Pathfinder.Tactics
             if (!ValidateShifterIssue(unit, c, out failure)) return false;
             if (!ValidateMagusIssue(unit, c, out failure)) return false;
             if (!ValidateGriffonIssue(unit, c, out failure)) return false;
+            if (!ValidateTeleportIssue(unit, c, out failure)) return false;
             if (!PureMageAllowsIssue(unit, c))
             {
                 failure = "Pure Mage: physical action withheld";
@@ -6262,14 +6284,15 @@ namespace CompanionAI_Pathfinder.Tactics
                 failure = "no command";
                 return false;
             }
-            if (c.Griffon != null)
+            if (c.Griffon != null || c.Teleport != null)
             {
-                // A custom leap must start here. The dispatcher retains its normal safety and acceptance rules;
+                // A custom leap or teleport must start here. The dispatcher retains its normal safety and acceptance rules;
                 // this guard prevents a stale leap from turning into an ordinary, unpriced approach/path.
                 command.Init(unit);
                 if (command.ShouldUnitApproach)
                 {
-                    failure = "native leap would require an unpriced walking approach";
+                    failure = c.Teleport != null ? "native teleport would require an unpriced walking approach"
+                        : "native leap would require an unpriced walking approach";
                     return false;
                 }
             }
