@@ -8,7 +8,17 @@ Read [CONTRIBUTING.md](CONTRIBUTING.md) for shared branch ownership, Codex pull 
 Codex works on task branches and targets pull requests at `claude/dreamy-pasteur-b9h3rn`; Claude reviews and integrates them there.
 Keep `main` for author-authorized releases. Read [AGENTS.md](AGENTS.md) when coordinating agent work.
 
-**Current handover (22 November 2026): Slice 0 and C1 available for review.**
+**Current handover (22 November 2026): consumables C3 available for review.**
+The branch includes Slice 0 and C1 (draft #106). Checked source `3ee4882`, UMM **0.3.60**,
+startup module `03f36260-38ab-4267-9324-5d5f3370f7c5`. The package is unplayed.
+Read [§215](docs/TACTICAL_AI.md#215-consumables-c3-one-spend-price-and-slot-copies-first-22-november-2026),
+the [checks](docs/competence/SUMMONS_CONSUMABLES_C3_CHECKS.json) and [build provenance](docs/competence/SUMMONS_CONSUMABLES_C3_BUILD_PROVENANCE.json).
+- One spend restraint for usable items and usable materials. Native delivery, healing, active relief and safety costs retain their roles.
+- Use the same spellbook blueprint first while it is natively available and allowed. The witness identifies this choice.
+- 1,135 units, scripts 27/21/3, zero-warning Release, complete audits and native 98/14/10 pass.
+- The S1 plan distinguishes Unholy Nimbus's delayed blast. C2 and further slices are pending.
+
+**Earlier handover (22 November 2026): Slice 0 and C1 available for review.**
 Source `f646225`, UMM **0.3.60**, module `41783dad-c121-40d8-a852-08756fba45ee`. The package is unplayed.
 Read [§214](docs/TACTICAL_AI.md#214-combat-consumables-c1-and-unused-ability-evidence-22-november-2026),
 the [checks](docs/competence/SUMMONS_CONSUMABLES_C1_CHECKS.json) and [build provenance](docs/competence/SUMMONS_CONSUMABLES_C1_BUILD_PROVENANCE.json).

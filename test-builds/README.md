@@ -1,5 +1,14 @@
 # Test builds
 
+## Consumables C3 (22 November 2026)
+
+[UMM ZIP](AI-Control-FACC-v0.3.60-dev-items-c3-3ee4882-UMM-test.zip?raw=true) · [Identity](AI-Control-FACC-v0.3.60-dev-items-c3-3ee4882-UMM-test.identity.json) · [SHA-256](AI-Control-FACC-v0.3.60-dev-items-c3-3ee4882-UMM-test.sha256)
+ · [Checks and replay](../docs/TACTICAL_AI.md#215-consumables-c3-one-spend-price-and-slot-copies-first-22-november-2026).
+
+UMM **0.3.60**, checked source `3ee4882`, startup module `03f36260-38ab-4267-9324-5d5f3370f7c5`, **unplayed**.
+Includes Slice 0 and C1, with unified item pricing and spellbook copy precedence.
+
+
 ## Consumables C1 and unused ability evidence (22 November 2026)
 
 [UMM ZIP](AI-Control-FACC-v0.3.60-dev-items-c1-f646225-UMM-test.zip?raw=true) · [Identity](AI-Control-FACC-v0.3.60-dev-items-c1-f646225-UMM-test.identity.json) · [SHA-256](AI-Control-FACC-v0.3.60-dev-items-c1-f646225-UMM-test.sha256)

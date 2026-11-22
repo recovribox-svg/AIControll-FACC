@@ -7217,3 +7217,30 @@ fight. Check that healing urgency still behaves as before and that a low-value p
 Test Neutralize Poison against an eligible active poison and on a healthy actor with matching quick slots.
 Keep a driven summon in the same fights to confirm the `[Unused]` row is grouped by kind. Send both logs and
 the startup module `41783dad-c121-40d8-a852-08756fba45ee`.
+
+## 215. Consumables C3: one spend price and slot copies first (22 November 2026)
+
+Both combat modes price disposable items and usable materials with the same limited-use restraint as spell slots.
+The pricing separates discretionary benefit from present-harm relief, healing already priced through
+`SpentHealValue`, and known losses. Native Use Magic Device remains a delivery chance for the item activation.
+The item bar and friendly-fire, death and resource safety gates still apply. This slice uses no charge counts or gold.
+
+An available spellbook copy of the exact spell blueprint wins precedence over its potion, scroll or wand copy.
+The scorer indexes existing allowed book options within a decision and reads native availability for matching items.
+The book copy must pass combat admission and Pure Mage. The `[Unused]` witness records `slot copy available`.
+Eligibility follows native spellbook availability. Tactical positioning and the choice of which eligible action to
+take are handled by the existing rules.
+
+`ITEMS` verifies that the stock Magic Missile scroll resolves to the spellbook blueprint. The plan also records
+Unholy Nimbus's one-round buff and delayed callback for S1.
+
+Checked source `3ee4882` passed a zero-warning real-reference Release build, 1,135 unit tests,
+27/21/3 scripts, strict and full stock ProfileAudit and the 98/14/10 native harnesses. Apart from `ITEMS`,
+the audit reports, Fusion matrices and summon kit detail match the same-input baseline.
+[Checks](competence/SUMMONS_CONSUMABLES_C3_CHECKS.json) · [Compiler provenance](competence/SUMMONS_CONSUMABLES_C3_BUILD_PROVENANCE.json)
+
+The [UMM test package](../test-builds/AI-Control-FACC-v0.3.60-dev-items-c3-3ee4882-UMM-test.zip?raw=true) is **unplayed**. In TB and RT, put a Magic Missile
+scroll in the quick slot of a caster who can use Magic Missile from their own spellbook. Check `slot copy available`
+while a slot remains, then exhaust the slots and replay. Use an easy and a hard fight to compare the choice against
+weapons and cantrips. Also check an injured ally and a present harmful effect to confirm restorative urgency.
+Keep both logs and startup module `03f36260-38ab-4267-9324-5d5f3370f7c5`.
