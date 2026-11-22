@@ -71,6 +71,13 @@ namespace ProfileAudit
                 // --- compiled routes ---
                 var score = Body(engine, "ScoreAbility");
                 Check(Calls(score, engine, "FreeingValue"), "ScoreAbility adds the release of an ally under an enemy's control");
+                // A point-only dispel cannot free a dominated anchor, even when the scoring call supplied that unit.
+                var point = loaded.OfType<BlueprintAbility>().FirstOrDefault(b => b.name == "DispelMagicPoint");
+                var pointProfile = point != null ? AbilityProfile.Get(CasterPolicyCheck.Data(point)) : null;
+                var noUnitArgs = new object[] { null, null, pointProfile, null, null, null };
+                Check(pointProfile != null && (float)engine.GetMethod("FreeingValue", Hidden).Invoke(null, noUnitArgs) == 0f &&
+                      noUnitArgs[5] == null,
+                    "the actual point variant earns no freeing value and reads no actor");
                 var freeing = Body(engine, "FreeingValue");
                 Check(new[] { "DispelValue", "FreedWorth", "HoldsUnderControl" }.All(n => Calls(freeing, engine, n)) &&
                       freeing.Any(m => m.Name == "BuffsRemovedFrom") &&

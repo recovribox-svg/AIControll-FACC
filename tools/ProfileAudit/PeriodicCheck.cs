@@ -77,7 +77,7 @@ namespace ProfileAudit
                 Check(Calls(score, engine, "OrdinaryPeriodicLater") && Calls(score, engine, "CarriersOnly") &&
                       Calls(score, engine, "HasPeriodicCarrier") && Calls(score, engine, "PeriodicAllyDamage"),
                     "ScoreAbility prices the ticks on enemies and allies, and skips the control section for carriers only");
-                var value = engine.GetMethods(Hidden).Where(m => m.Name == "DamageValue" && m.GetParameters().Length == 5).ToList();
+                var value = engine.GetMethods(Hidden).Where(m => m.Name == "DamageValue" && m.GetParameters().Length == 6).ToList();
                 Check(value.Count == 1 && value[0].GetParameters()[4].Name == "laterDamage",
                     "the ordinary damage value takes later damage for HP and progress, not the kill now");
                 var periodic = Body(engine, "TryPeriodicDamage");

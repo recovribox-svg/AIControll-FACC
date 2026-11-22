@@ -7,7 +7,7 @@
 //   - every ability the engine issues is followed until the game's execution of it ends (IAbilityExecutionProcessHandler);
 //   - a touch spell (Cure X Wounds, Inflict X Wounds, potions of them) only counts once its touch has been delivered;
 //   - "something happened" = any rule the game rolled for that caster meanwhile: an attack roll, damage, a heal, a saving
-//     throw, a spell-resistance check, a buff applied, or a cast the game itself refused (spell failure, UMD) - those
+//     throw, a dispel attempt, a spell-resistance check, a buff applied, or a cast the game itself refused (spell failure, UMD) - those
 //     are reported in the combat log and are not silent; ★ v0.3.18 (AA-4): also a skill check made by the ability
 //     (Demoralize's Intimidate) and a combat maneuver roll, which a failed Demoralize or trip leaves as its only trace;
 //   - an ability whose effect the mod can verify (damage, heal, debuff, control) that produced none of these is a silent
@@ -42,6 +42,7 @@ namespace CompanionAI_Pathfinder.Tactics
         IGlobalRulebookHandler<RuleDealDamage>,
         IGlobalRulebookHandler<RuleHealDamage>,
         IGlobalRulebookHandler<RuleSavingThrow>,
+        IGlobalRulebookHandler<RuleDispelMagic>,
         IGlobalRulebookHandler<RuleSpellResistanceCheck>,
         IGlobalRulebookHandler<RuleSkillCheck>,
         IGlobalRulebookHandler<RuleCombatManeuver>
@@ -640,6 +641,21 @@ namespace CompanionAI_Pathfinder.Tactics
 
         public void OnEventAboutToTrigger(RuleSpellResistanceCheck evt)
         {
+        }
+
+        public void OnEventAboutToTrigger(RuleDispelMagic evt)
+        {
+        }
+
+        /// <summary>A failed dispel check still reached the buff's owner. It must not become a silent no-reach strike.
+        /// RuleDispelMagic.Context belongs to the dispelled buff/area; Reason.Context names the dispelling action.</summary>
+        public void OnEventDidTrigger(RuleDispelMagic evt)
+        {
+            if (evt != null)
+            {
+                Mark(evt.Initiator);
+                MarkReached(evt.Initiator, evt.Target, evt.Reason?.Context);
+            }
         }
 
         public void OnEventDidTrigger(RuleSpellResistanceCheck evt)

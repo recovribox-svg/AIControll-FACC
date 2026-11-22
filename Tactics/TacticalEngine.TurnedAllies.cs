@@ -175,7 +175,8 @@ namespace CompanionAI_Pathfinder.Tactics
                                           List<UnitEntityData> affectedEnemies, out string note)
         {
             note = null;
-            if (ctx.TurnedAllies.Count == 0 || profile.DispelActions.Count == 0 && !profile.RemovesAnything && profile.TargetBuffs.Count == 0) return 0f;
+            if (!DispelTargetsUnits(profile) || ctx.TurnedAllies.Count == 0 ||
+                profile.DispelActions.Count == 0 && !profile.RemovesAnything && profile.TargetBuffs.Count == 0) return 0f;
             float total = 0f;
             List<string> freed = null;
             var reached = new List<UnitEntityData>();

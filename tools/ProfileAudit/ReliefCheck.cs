@@ -89,6 +89,51 @@ namespace ProfileAudit
                         $"actual {name}: its dispel is read by the dispel order (no fallback)");
                 }
 
+                // The actual point variant has no unit recipient. Run the production read with no actor: it must
+                // return known zero before it can inspect a scoring anchor, context, or buff list.
+                var point = Spell("DispelMagicPoint");
+                var pointProfile = point != null ? AbilityProfile.Get(CasterPolicyCheck.Data(point)) : null;
+                var unitDispel = engine.GetMethod("DispelTargetsUnits", Hidden);
+                var greaterArea = Spell("DispelMagicGreaterArea");
+                var greaterAreaProfile = greaterArea != null ? AbilityProfile.Get(CasterPolicyCheck.Data(greaterArea)) : null;
+                Check(pointProfile != null && point.CanTargetPoint && !point.CanTargetSelf && !point.CanTargetFriends &&
+                      !point.CanTargetEnemies && !(bool)unitDispel.Invoke(null, new object[] { pointProfile }),
+                    "actual Dispel Magic Point has no unit-buff recipient");
+                Check(greaterAreaProfile != null && greaterArea.GetComponent<AbilityTargetsAround>() != null &&
+                      (bool)unitDispel.Invoke(null, new object[] { greaterAreaProfile }),
+                    "actual Greater Dispel Magic Area retains its target-selector unit branch");
+                var pointArgs = new object[] { null, null, pointProfile, null, null, null, 123f, null };
+                Check(pointProfile != null && (bool)engine.GetMethod("TryDispelValue", Hidden).Invoke(null, pointArgs) &&
+                      (float)pointArgs[6] == 0f,
+                    "point dispel is known zero, with no unit-buff fallback or actor read");
+                Check(Body(typeof(ContextActionDispelMagic), "RunAction").Any(m => m.Name == "TryDispelAreaEffect") &&
+                      Body(typeof(ContextActionDispelMagic), "RunAction").Any(m => m.Name == "get_Unit"),
+                    "native dispel branches between the target unit's buffs and point-containing area entities");
+
+                var abandon = Spell("Vermlek_Ability_AbandonFlesh");
+                var abandonProfile = abandon != null ? AbilityProfile.Get(CasterPolicyCheck.Data(abandon)) : null;
+                Check(abandonProfile != null && abandonProfile.CasterRemovedBuffs.Count == 1 &&
+                      abandonProfile.CasterRemovedBuffs[0].name == "Vermlek_Buff_FleshArmor" &&
+                      !abandonProfile.RemovesAnything && abandonProfile.DispelActions.Count == 0 &&
+                      !(bool)engine.GetMethod("CanRemove", Hidden).Invoke(null, new object[] { abandonProfile, null, false }),
+                    "actual Abandon Flesh's caster-only removal is filtered, not an arbitrary target cleanse");
+                var flesh = Buff("Vermlek_Buff_FleshArmor");
+                var named = (Buff)RuntimeHelpers.GetUninitializedObject(typeof(Buff));
+                typeof(Kingmaker.EntitySystem.EntityFact).GetField("<Blueprint>k__BackingField", Hidden).SetValue(named, flesh);
+                var other = (Buff)RuntimeHelpers.GetUninitializedObject(typeof(Buff));
+                typeof(Kingmaker.EntitySystem.EntityFact).GetField("<Blueprint>k__BackingField", Hidden).SetValue(other, confusion);
+                var canRemove = engine.GetMethod("CanRemove", Hidden);
+                Check(abandonProfile != null && flesh != null && confusion != null &&
+                      (bool)canRemove.Invoke(null, new object[] { abandonProfile, named, true }) &&
+                      !(bool)canRemove.Invoke(null, new object[] { abandonProfile, named, false }) &&
+                      !(bool)canRemove.Invoke(null, new object[] { abandonProfile, other, true }),
+                    "caster-only removal matches its named buff on the caster only, preserving a named self-cleanse");
+                var removalCost = Body(engine, "CasterRemovalCost");
+                Check(Calls(Body(engine, "ScoreAbility"), engine, "CasterRemovalCost") &&
+                      Calls(removalCost, engine, "EnemyBuffShare") && Calls(removalCost, engine, "IsHeldState") &&
+                      Calls(removalCost, typeof(RemovalRules), "HelpfulLoss"),
+                    "caster removal loses active helpful output; existing held-state costs are not duplicated");
+
                 var targetDispel = AbilityProfile.Get(Spell("DispelMagicTarget")).DispelActions.Single();
                 Check(targetDispel.OneRollForAll &&
                       Body(typeof(ContextActionDispelMagic), "TryDispelBuff").Any(m => m.Name == "SetRollOverride"),
@@ -125,6 +170,9 @@ namespace ProfileAudit
                 var score = Body(engine, "ScoreAbility");
                 Check(new[] { "TryDispelValue", "SuppressionRelief", "SuppressesOnRecipient", "RemovalRelief", "ReliefHorizon" }.All(n => Calls(score, engine, n)),
                     "ScoreAbility prices dispels, removals and suppressions by what they end");
+                Check(new[] { "HasSomethingToDispel", "CanRemove", "TryDispelValue", "RemovalRelief", "FreeingValue" }
+                      .All(n => Calls(Body(engine, n), engine, "DispelTargetsUnits")),
+                    "fallback, filtering, dispel relief, removal relief and freeing share the unit-recipient guard");
                 var dispel = Body(engine, "TryDispelValue");
                 Check(Calls(dispel, engine, "DispelValue") && Calls(dispel, engine, "DispelEffectChance") && dispel.Any(m => m.Name == "TurnedAllies"),
                     "a dispel is valued on every unit it reaches in the game's order; dominated allies are the release's");
