@@ -129,7 +129,7 @@ namespace CompanionAI_Pathfinder.Tactics
             {
                 var change = delta?.Invoke(line.Weapon, line.Index) ?? new KeyValuePair<int, float>(0, 0f);
                 float damage = ExpectedWeaponLine(line, change.Key, change.Value, current.RoutineLands, out float hit, out _);
-                result.LineHits[lineAt++] = hit;   // coverage7 follow-ups: per-attack riders (OnHitHp)
+                result.LineHits[lineAt++] = hit * (grapple != null ? run.Reach : 1f);
                 if (grapple != null) damage = PriceGrabLine(line, grapple, damage, hit, ref run, ref freeDamage, ref natural);
                 result.ExpectedDamage += damage;
                 if (line.Index == 0) result.FirstHitChance = hit;

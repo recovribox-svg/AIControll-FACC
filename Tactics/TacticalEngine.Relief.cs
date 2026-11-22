@@ -73,16 +73,19 @@ namespace CompanionAI_Pathfinder.Tactics
         /// any heal (HealGain). Vermlek's Abandon Flesh ends its Flesh Armor for 2d6+3; the game's own AI uses it only when
         /// seriously hurt (Vermlek_AiAction_AbandonFlesh: HealthConsideration 20/10).
         /// </summary>
-        private static float CasterRemovalHeal(TacticalContext ctx, AbilityData ability, AbilityProfile profile, out float healed)
+        private static float CasterRemovalHeal(TacticalContext ctx, AbilityData ability, AbilityProfile profile, UnitEntityData target,
+                                               out float healed)
         {
             healed = 0f;
             var caster = ctx.Unit;
             if (profile.CasterRemovedBuffs.Count == 0 || caster?.Buffs == null) return 0f;
-            if (caster.HPLeft <= 0 || !caster.Descriptor.State.IsConscious) return 0f;
+            if (!caster.Descriptor.State.IsConscious) return 0f;
             float total = 0f;
             foreach (var blueprint in profile.CasterRemovedBuffs)
             {
-                if (caster.Buffs.GetBuff(blueprint) == null) continue;
+                var active = caster.Buffs.GetBuff(blueprint);
+                if (active == null || !active.Active || !active.IsTurnedOn || active.IsSuppressed ||
+                    !profile.CertainlyRemovesCasterBuff(blueprint, ability, target)) continue;
                 total += DeactivationHeal(blueprint);
             }
             float missing = caster.MaxHP - caster.HPLeft;
@@ -99,14 +102,18 @@ namespace CompanionAI_Pathfinder.Tactics
             if (buff == null) return 0f;
             foreach (var component in Kingmaker.Blueprints.BlueprintExtenstions.GetComponents<Kingmaker.UnitLogic.Mechanics.Components.AddFactContextActions>(buff))
             {
+                if (component.GetType() != typeof(Kingmaker.UnitLogic.Mechanics.Components.AddFactContextActions) ||
+                    component.Dispose?.Actions?.Length > 0) return 0f;
                 var actions = component?.Deactivated?.Actions;
                 if (actions == null) continue;
                 foreach (var action in actions)
                 {
-                    if (!(action is ContextActionHealTarget heal) || heal.Value == null) continue;
+                    if (action == null || action.GetType() != typeof(ContextActionHealTarget)) return 0f;
+                    var heal = (ContextActionHealTarget)action;
+                    if (heal.Value == null) return 0f;
                     var dice = heal.Value;
                     if (dice.DiceCountValue == null || dice.DiceCountValue.ValueType != ContextValueType.Simple ||
-                        dice.BonusValue == null || dice.BonusValue.ValueType != ContextValueType.Simple) continue;
+                        dice.BonusValue == null || dice.BonusValue.ValueType != ContextValueType.Simple) return 0f;
                     total += CombatMath.DiceAverage(dice);
                 }
             }
@@ -325,7 +332,7 @@ namespace CompanionAI_Pathfinder.Tactics
             if (areas == null || ctx.Unit == null) return 0f;
             float horizon = ReliefHorizon(ctx);
             int casterLevel = CombatMath.ParamsOf(ability)?.CasterLevel ?? Level(ctx.Unit);
-            float total = 0f, lost = 0f;
+            float bestGain = 0f, lost = 0f;
             int reached = 0;
             var tried = new List<KeyValuePair<float, float>>();
             foreach (var dispel in profile.DispelActions)
@@ -341,31 +348,38 @@ namespace CompanionAI_Pathfinder.Tactics
                     if (maxCaster == null || !maxCaster.IsValueSimple) continue;   // a context-ranked cap is not read here
                     level = Math.Min(level, maxCaster.Value);
                 }
-                if (dispel.ContextBonus != null && !dispel.ContextBonus.IsValueSimple) continue;
-                int bonus = dispel.CheckBonus + (dispel.ContextBonus?.Value ?? 0);
+                // Native TryDispelAreaEffect adds CheckBonus only; ContextBonus is a buff-dispel branch input.
+                int bonus = dispel.CheckBonus;
                 var check = (RuleDispelMagic.CheckType)DispelCheckField.GetValue(dispel);
                 var count = (ContextValue)DispelCountField.GetValue(dispel);
                 if ((bool)DispelStopField.GetValue(dispel) && (count == null || !count.IsValueSimple)) continue;
                 int stopAfter = (bool)DispelStopField.GetValue(dispel) ? Math.Max(1, count.Value) : 0;
                 tried.Clear();
+                int scanned = 0;
                 foreach (var aoe in areas)
                 {
+                    if (++scanned > AreaQuoteRules.MaxAreas) { note = "point dispel: area budget exceeded"; return 0f; }
                     if (aoe?.Blueprint == null || aoe.Blueprint.Shape == AreaEffectShape.AllArea) continue;
-                    if (!AoeDangerAnalyzer.CoversPoint(aoe, point, 0f)) continue;
+                    if (!AoeDangerAnalyzer.DispelCoversPoint(aoe, point)) continue;
                     var context = aoe.Context;
                     var areaCaster = context?.MaybeCaster;
                     if (areaCaster == null || !(bool)context.SourceAbility || !DispelSchoolsMatch(dispel, context)) continue;
                     if (dispel.OnlyEnemyAreaEffects && !areaCaster.IsEnemy(ctx.Unit)) continue;
                     int dc = check == RuleDispelMagic.CheckType.DC ? context.Params.DC : 11 + context.Params.CasterLevel;
                     float chance = automatic ? 1f : ValueModel.DispelChance(dc - level - bonus);
-                    tried.Add(new KeyValuePair<float, float>(chance, AreaRemovalWorth(ctx, aoe, horizon)));
+                    float worth = AreaRemovalWorth(ctx, aoe, horizon);
+                    if (float.IsNaN(worth) || float.IsInfinity(worth)) { note = "point dispel: area worth unread"; return 0f; }
+                    tried.Add(new KeyValuePair<float, float>(chance, worth));
                 }
                 if (tried.Count == 0) continue;
                 reached += tried.Count;
-                total += ValueModel.ExpectedDispelWorth(tried, stopAfter, dispel.OneRollForAll, out float loss);
+                float net = ValueModel.ExpectedDispelWorth(tried, stopAfter, dispel.OneRollForAll, out float loss);
+                // Several dispel actions can end the same area only once. Keep one gain, retain every priced loss.
+                bestGain = Math.Max(bestGain, net + loss);
                 lost += loss;
             }
             if (reached == 0) { note = "point dispel: no area to end there"; return 0f; }
+            float total = bestGain - lost;
             note = lost > 0f ? $"ends areas {total + lost:+0.#;-0.#} -{lost:0.#} ({reached} there)" : $"ends areas {total:+0.#;-0.#} ({reached} there)";
             return total;
         }
@@ -377,6 +391,19 @@ namespace CompanionAI_Pathfinder.Tactics
         /// </summary>
         private static float AreaRemovalWorth(TacticalContext ctx, AreaEffectEntityData aoe, float horizon)
         {
+            if (ctx.AreaRemovalValues == null) ctx.AreaRemovalValues = new Dictionary<AreaEffectEntityData, float>();
+            if (ctx.AreaRemovalVersion != CombatMath.ForecastVersion)
+            {
+                ctx.AreaRemovalValues.Clear();
+                ctx.AreaRemovalVersion = CombatMath.ForecastVersion;
+            }
+            if (!ctx.AreaRemovalValues.TryGetValue(aoe, out float worth))
+                ctx.AreaRemovalValues[aoe] = worth = AreaRemovalWorthCore(ctx, aoe, horizon);
+            return worth;
+        }
+
+        private static float AreaRemovalWorthCore(TacticalContext ctx, AreaEffectEntityData aoe, float horizon)
+        {
             float rounds = Math.Min(horizon, AoeDangerAnalyzer.RoundsLeft(aoe));
             if (!(rounds > 0f)) return 0f;
             float worth = 0f;
@@ -384,9 +411,11 @@ namespace CompanionAI_Pathfinder.Tactics
             {
                 var inside = aoe.InGameUnitsInside;
                 if (inside == null) return 0f;
+                int scanned = 0;
                 foreach (var unit in inside)
                 {
-                    if (unit == null || unit.HPLeft <= 0 || ctx.TurnedAllies.Contains(unit)) continue;
+                    if (++scanned > AreaQuoteRules.MaxRecipients) return float.NaN;
+                    if (unit?.Descriptor?.State?.IsConscious != true || ctx.TurnedAllies.Contains(unit)) continue;
                     float danger = AoeDangerAnalyzer.AreaDangerOn(unit, aoe);
                     if (!(danger > 0f)) continue;
                     worth += ctx.Unit.IsEnemy(unit)
@@ -394,7 +423,7 @@ namespace CompanionAI_Pathfinder.Tactics
                         : danger * AllyPerRound(unit) * rounds;
                 }
             }
-            catch { return 0f; }
+            catch { return float.NaN; }
             return worth;
         }
 

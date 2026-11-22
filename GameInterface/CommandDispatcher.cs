@@ -532,6 +532,7 @@ namespace CompanionAI_Pathfinder.GameInterface
                                                 Func<IList<Vector3>, List<UnitEntityData>> pathAttackers, int pricedAttacks,
                                                 out string failure, bool diagnostics, Func<IList<Vector3>, string> pathConstraint)
         {
+            LastAreaCrossing = null; // A refusal belongs to this exact preparation attempt.
             failure = null;
             if (CombatController.IsInTurnBasedCombat() || !unit.IsInCombat || unit.RiderPart != null) return false;
             if (command is UnitMoveAlongPath || !command.ShouldUnitApproach) return false;
@@ -758,7 +759,7 @@ namespace CompanionAI_Pathfinder.GameInterface
         /// the command's approach radius of the target (flat), sampled every 0.25 m - an enemy standing in an area at the
         /// path's end is attacked from outside it. ★ v0.3.20 (test8): shared by the area and attack of opportunity checks.
         /// </summary>
-        private static List<Vector3> WalkToArrival(UnitEntityData unit, List<Vector3> points, UnitCommand command)
+        internal static List<Vector3> WalkToArrival(UnitEntityData unit, List<Vector3> points, UnitCommand command)
         {
             Vector3 target = command.ApproachPoint;
             float radius = Mathf.Max(0f, command.ApproachRadius);

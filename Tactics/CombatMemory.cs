@@ -483,11 +483,13 @@ namespace CompanionAI_Pathfinder.Tactics
         public static void ResetCombat()
         {
             Fight++;
+            TacticalEngine.ResetFactionObservations();
             TacticalEngine.ResetHeldStates();   // ★ v0.3.24
             CombatMath.ResetAfflictionSources(); // The fact-bearing on-hit readers cannot retain actors across fights.
             PendingCasts.Clear();
             RefusedWalks.Clear();
             AreaCrossings.Clear();
+            GameInterface.CommandDispatcher.LastAreaCrossing = null;
             StuckSpots.Clear();   // ★ v0.3.29 test 6
             OutOfWalkingReachTargets.Clear();
             TouchArrivals.Clear();   // ★ coverage2 review

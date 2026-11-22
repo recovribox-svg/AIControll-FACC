@@ -161,6 +161,9 @@ namespace CompanionAI_Pathfinder.Tactics
         /// the player, and casting another spell over it (which drops it) still pays for it (PriceHeldCharge).</summary>
         internal float ReservedChargeValue;
         internal DecisionTimings Timings;
+        // Point-dispel area worth is recipient-independent and lives only for this decision. NaN means unread.
+        internal Dictionary<AreaEffectEntityData, float> AreaRemovalValues;
+        internal int AreaRemovalVersion;
         // Native caster-only armor result, lazily read for an affected ability. Never retained across decisions.
         internal float? ArcaneCastingChance;
         public int Round;
@@ -314,7 +317,7 @@ namespace CompanionAI_Pathfinder.Tactics
         public static Candidate Decide(UnitEntityData unit, TurnMemory memory)
         {
             // ★ coverage7 follow-ups: the deciding unit's own faction state, for the domination timeline (ObserveFaction).
-            ObserveFaction(unit, IsTurnedAlly(unit), "AI Control decides for it");
+            ObserveFaction(unit, IsTurnedAlly(unit), unit);
             // ★ v0.3.17: how long a decision takes ([Perf] at the end of the fight) - nothing was measured before.
             AbilityProfile.TakeBuiltCount();
             CombatMath.ClearAttackCache();   // ★ v0.3.18: attack routines are read fresh for each decision
@@ -980,7 +983,7 @@ namespace CompanionAI_Pathfinder.Tactics
                     if (other != unit && (!unit.IsEnemy(other) || turned) && IsRevivable(other) &&
                         Vector3.Distance(unit.Position, other.Position) < 30f)
                     {
-                        if (turned) { ctx.TurnedAllies.Add(other); NoteTurnedAlly(ctx, other); ObserveFaction(other, true, "seen by " + ctx.Unit.CharacterName); }
+                        if (turned) { ctx.TurnedAllies.Add(other); NoteTurnedAlly(ctx, other); ObserveFaction(other, true, ctx.Unit); }
                         else ctx.DownedAllies.Add(other);
                     }
                     // ★ v0.3.21 (gaps): a regenerating enemy at 0 HP is only down - it heals and stands up again - until damage
@@ -1004,7 +1007,7 @@ namespace CompanionAI_Pathfinder.Tactics
                     }
                     ctx.Enemies.Add(other);
                     // ★ coverage3 review: an ally under an enemy's control (Dominate) is stopped, not killed.
-                    if (IsTurnedAlly(other)) { ctx.TurnedAllies.Add(other); NoteTurnedAlly(ctx, other); ObserveFaction(other, true, "seen by " + ctx.Unit.CharacterName); }
+                    if (IsTurnedAlly(other)) { ctx.TurnedAllies.Add(other); NoteTurnedAlly(ctx, other); ObserveFaction(other, true, ctx.Unit); }
                 }
                 else if (other.IsPlayerFaction || other == unit)
                 {
@@ -5270,7 +5273,7 @@ namespace CompanionAI_Pathfinder.Tactics
             }
             // ★ coverage7 follow-ups: and the heal that buff's removal gives (its Deactivated actions: Abandon Flesh's 2d6+3),
             // as worth as any heal of the caster - nothing at full HP, as the game's own AI keeps it for serious injury.
-            float removalHeal = CasterRemovalHeal(ctx, ability, profile, out float removalHp);
+            float removalHeal = CasterRemovalHeal(ctx, ability, profile, target, out float removalHp);
             if (removalHeal > 0f)
             {
                 value += removalHeal;
@@ -5708,22 +5711,51 @@ namespace CompanionAI_Pathfinder.Tactics
                                                   float radius, bool needLos, float value, string label, Disengage risk)
         {
             var unit = ctx.Unit;
+            // The dispatcher does not inspect a rider's route; this exceptional permission needs that inspection.
+            if (unit.RiderPart != null) return;
             if (!CombatMemory.AreaCrossing(unit, enemy, out var crossing)) return;
             float danger = AoeDangerAnalyzer.EnteringDanger(unit, crossing.From, crossing.To, out string through, out float roundsLeft,
                                                             out _, out float stop, out bool movementOnly, out float affect, out float linger);
             if (!(danger > 0f)) return;
             float cost = AreaStayCost(ctx, unit, danger, roundsLeft, endsInside: false, movementOnly, affect, linger,
                                       () => ProvokeRisk(ctx, crossing.To, 1f, spoiledByHit: 0f)?.Cost ?? 0f);
+            Vector3 crossingGoal = around ? approach.Point : enemy.Position;
+            float crossingRadius = around ? approach.Arrival : radius;
             list.Add(new Candidate
             {
                 Kind = CandidateKind.Move, Slot = ActionSlot.Move, Target = enemy,
-                Point = around ? approach.Point : enemy.Position,
-                ApproachRadius = around ? approach.Arrival : radius, NeedLoS = !around && needLos,
+                Point = crossingGoal,
+                ApproachRadius = crossingRadius, NeedLoS = !around && needLos,
                 Value = value * (1f - Mathf.Clamp01(stop)) - cost,
                 Label = label + $" [through {through ?? "area"}]", Key = $"move:adv:{enemy.UniqueId}:through",
                 CheckPath = false,
+                PathConstraint = path => ThroughAreaPathFailure(ctx, path, crossingGoal, crossingRadius, cost, Mathf.Clamp01(stop)),
                 Risk = risk, RiskAt = approach.Point
             });
+        }
+
+        private static string ThroughAreaPathFailure(TacticalContext ctx, IList<Vector3> path, Vector3 goal, float radius,
+                                                     float quotedCost, float quotedStop)
+        {
+            if (!CombatMemory.IsRealTime || path == null || path.Count == 0 || path.Count > AreaQuoteRules.MaxPathPoints)
+                return "area crossing: native route unavailable or over budget";
+            float length = 0f;
+            for (int i = 1; i < path.Count; i++) length += Vector3.Distance(path[i - 1], path[i]);
+            if (!AreaQuoteRules.PathWithinBudget(path.Count, length, ctx.Unit.CurrentSpeedMps))
+                return "area crossing: native route exceeds the quote horizon";
+            var walk = CommandDispatcher.WalkToArrival(ctx.Unit, path as List<Vector3> ?? path.ToList(), new UnitMoveTo(goal, radius));
+            if (!AoeDangerAnalyzer.TryQuotePathAreas(ctx.Unit, walk, out var areas))
+                return "area crossing: actual area risk unread";
+            float actualCost = 0f, actualStop = 0f;
+            foreach (var area in areas)
+            {
+                var effect = area.Effect;
+                actualCost += AreaStayCost(ctx, ctx.Unit, effect.DangerLevel, area.Rounds, area.EndsInside,
+                    area.MovementOnly, effect.AffectChance, effect.LingerRounds, () => 0f);
+                if (area.Stops) actualStop = Mathf.Clamp01(actualStop + effect.AffectChance);
+            }
+            return AreaQuoteRules.CoversActualRisk(quotedCost, quotedStop, actualCost, actualStop)
+                ? null : "area crossing: actual route exceeds its priced risk";
         }
 
         /// <summary>

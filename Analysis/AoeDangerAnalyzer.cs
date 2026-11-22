@@ -637,6 +637,11 @@ namespace CompanionAI_Pathfinder.Analysis
             catch { return 0f; }
         }
 
+        /// <summary>The exact point predicate used by ContextActionDispelMagic.RunAction, without the movement
+        /// planner's body-size or missing-view radius fallback.</summary>
+        public static bool DispelCoversPoint(AreaEffectEntityData aoe, Vector3 point) =>
+            IsLive(aoe) && aoe.Blueprint?.Shape != AreaEffectShape.AllArea && aoe.View != null && aoe.View.Contains(point);
+
         /// <summary>coverage7 follow-ups: the unit stands in some live area now (the game's own list of units inside).</summary>
         public static bool InAnyLiveArea(UnitEntityData unit)
         {

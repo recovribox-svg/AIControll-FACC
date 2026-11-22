@@ -80,16 +80,17 @@ namespace CompanionAI_Pathfinder.Tactics
         /// logs why party units still made attacks of opportunity on Aeiluvetar after her successful re-save; these rows give
         /// the next replay that state. A transition only, at most 16 rows a fight; no game state is changed.
         /// </summary>
-        private static void ObserveFaction(UnitEntityData unit, bool turned, string where)
+        private static void ObserveFaction(UnitEntityData unit, bool turned, UnitEntityData observer)
         {
             if (unit == null) return;
             try
             {
+                if (CombatMemory.Fight != s_FactionFight) ResetFactionObservations();
                 string id = unit.UniqueId;
                 bool known = s_TurnedState.TryGetValue(id, out bool was);
                 if (known && was == turned) return;
                 if (s_TurnedState.Count > 512) s_TurnedState.Clear();
-                if (!known && !turned) { s_TurnedState[id] = false; return; }   // nothing to report until it is turned once
+                if (!known && !turned) return; // No entry or string formatting until this unit has actually turned.
                 s_TurnedState[id] = turned;
                 if (s_FactionRows >= 16 || CombatMemory.Fight != s_FactionFight)
                 {
@@ -101,6 +102,7 @@ namespace CompanionAI_Pathfinder.Tactics
                 foreach (var buff in unit.Buffs)
                     if (buff?.Blueprint?.GetComponent<Kingmaker.UnitLogic.FactLogic.ChangeFaction>() != null) { by = buff.Name; break; }
                 var d = unit.Descriptor;
+                string where = observer == unit ? "AI Control decides for it" : "seen by " + observer?.CharacterName;
                 Main.Log($"[Faction] {unit.CharacterName}[{ShortId(unit)}] {(turned ? "turned" : "back")} ({where}): faction " +
                          $"{d?.Faction?.name ?? "?"}, original {d?.FactionOriginal?.name ?? "?"}, player faction {unit.IsPlayerFaction}, " +
                          $"directly controllable {unit.IsDirectlyControllable}, switched by {by ?? "none"}");
@@ -110,6 +112,13 @@ namespace CompanionAI_Pathfinder.Tactics
 
         private static readonly Dictionary<string, bool> s_TurnedState = new Dictionary<string, bool>();
         private static int s_FactionRows, s_FactionFight = -1;
+
+        internal static void ResetFactionObservations()
+        {
+            s_TurnedState.Clear();
+            s_FactionRows = 0;
+            s_FactionFight = CombatMemory.Fight;
+        }
 
         private static string ShortId(UnitEntityData unit)
         {

@@ -31,7 +31,32 @@ namespace CompanionAI.Tests
         [Fact]
         public void FirstHitOnlyFiresOnceAtMost()
         {
-            Assert.Equal(1f - 0.3f * 0.5f, OnHitRules.FiringHits(new[] { true, true }, new[] { 0.7f, 0.5f }, false, true, 1f), 4);
+            Assert.Equal(1f - 0.3f * 0.5f, OnHitRules.FiringHits(new[] { true, true }, new[] { 0.7f, 0.5f }, false, true, 1f, hadHit: false), 4);
+        }
+
+        [Fact]
+        public void UnknownHadHitCannotAssumeAnOpeningMissResetsTheNativeTrigger()
+        {
+            Assert.Equal(0.7f, OnHitRules.FiringHits(new[] { true, true }, new[] { 0.7f, 0.5f }, false, true, 1f), 4);
+            Assert.Equal(0f, OnHitRules.FiringHits(new[] { true, true }, new[] { 0f, 1f }, false, true, 1f));
+        }
+
+        [Fact]
+        public void UnsuitableOpeningWeaponDoesNotResetHadHit()
+        {
+            Assert.Equal(0f, OnHitRules.FiringHits(new[] { false, true }, new[] { 1f, 1f }, false, true, 1f));
+            Assert.Equal(1f, OnHitRules.FiringHits(new[] { false, true }, new[] { 1f, 1f }, false, true, 1f, hadHit: false));
+        }
+
+        [Fact]
+        public void GrappleReachBelongsToEachLineRatherThanTheRoutineAverage()
+        {
+            var run = ValueModel.GrappleRun.Begin();
+            float first = 0.8f * run.Reach;
+            run.Next(0.8f, true, 1f);
+            float second = 0.8f * run.Reach;
+            Assert.Equal(0.8f, OnHitRules.FiringHits(new[] { true, false }, new[] { first, second }, false, false, 1f), 4);
+            Assert.Equal(0.16f, OnHitRules.FiringHits(new[] { false, true }, new[] { first, second }, false, false, 1f), 4);
         }
 
         [Fact]
