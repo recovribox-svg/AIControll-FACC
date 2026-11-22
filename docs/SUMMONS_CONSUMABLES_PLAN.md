@@ -157,7 +157,7 @@ Read from the decompiled game. The implementer re-checks each against the suppli
   apply.
 - **Target:** `TargetAnchor` no longer forces the owner. A potion ability with Personal range still anchors on the owner,
   so only potions whose ability can target friends are worth the conversion.
-- **Range:** `Caster.GetWeaponRange()` with no weapon: the minimum weapon range (5 ft) plus the giver's reach.
+- **Range:** `Caster.GetWeaponRange()` with no weapon: the native minimum weapon range (2 ft in the checked assembly) plus the giver's reach. The approach distance adds both bodies.
 - **Delivery:** `UnitUseAbility` switches to the sticky-touch delivery ability when there is one, and uses the touch
   animation when the target is not the giver.
 - **Attacks of opportunity:** it provokes like drinking (`ProvokeAttackOfOpportunity`: a spell from a usable item without
@@ -168,10 +168,10 @@ Read from the decompiled game. The implementer re-checks each against the suppli
 **Use Magic Device:** `CombatMath.UseMagicDeviceChance` reads `AbilityData.UseMagicDeviceDC`. Unchanged by this plan.
 
 **Teleports** (`AbilityCustomTeleportation`, `AbilityCustomDimensionDoor`):
-- **Landing:** aimed at a unit, the caster lands in front of it, in its facing direction, at both bodies plus 5 ft.
+- **Landing:** aimed at a unit, the caster lands in front of it, in its facing direction, at both bodies plus the native minimum weapon range (2 ft in the checked assembly).
   Aimed at a point, at the point, relaxed among the bodies that travel.
 - **Restriction** (`IsTargetRestrictionPassed`, checked by `AbilityData.CanTarget`): the point is on the navmesh, not in
-  the fog of war and not on a disabled flying isle. A `DimensionDoorRestrictionIgnorance` component lifts the check.
+  the fog of war and not on a disabled flying isle. A `DimensionDoorRestrictionIgnorance` component lifts the check for `AbilityCustomDimensionDoor`. `AbilityCustomTeleportation` still runs its own restriction.
 - **Dimension Door moves the units its settings name** (its `Radius`), not only the caster. Read who travels; do not
   assume a solo jump.
 - `AlongPath` teleports land along the caster's path, at most a round's combat speed times their multiplier.
@@ -276,7 +276,7 @@ safety checks (friendly fire, permanent death, blocklists, Pure Mage, consumable
   - `AbilityDiscovery.Key` gains the `PotionForOther` flag, so drinking and handing over are separate options.
   - The engine values it on allies through the existing heal, buff and relief code. Its action is the native one
     (standard, unless the item says otherwise), read through `SlotOf`.
-  - It walks into the native range (5 ft plus reach) through the existing touch-approach rules, the same walk a touch
+  - It walks into the native approach distance through the existing touch-approach rules, the same walk a touch
     spell makes, so no new movement policy.
 - **Kept:**
   - no item on a summon (the existing rule);
