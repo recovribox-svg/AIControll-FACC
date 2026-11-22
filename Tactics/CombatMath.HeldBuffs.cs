@@ -35,8 +35,8 @@ namespace CompanionAI_Pathfinder.Tactics
             // The native weapon routes already read this frame supply the baseline. Reuse their reach,
             // DR, concealment and crit math. A mark alone does not request another weapon or path preview.
             var first = routine.Lines[0].Weapon;
-            if (first == null || Vector3.Distance(unit.Position, target.Position) >
-                routine.Reach + unit.Corpulence + target.Corpulence) return 0f;
+            if (first == null || !Kingmaker.UnitLogic.Commands.Base.UnitCommand.IsUnitCloseEnough(
+                target.Position, unit.Position, unit.EyePosition, routine.Reach, true, 0f)) return 0f;
             float lands = LandsPastDefences(unit, target);
             float gain = 0f;
             foreach (var line in routine.Lines)
