@@ -1,0 +1,41 @@
+{
+  "task": "Investigation and plan: summon ability use and combat consumables (author request, 22 November 2026)",
+  "base": "6c4e96c28e3d464c317d1a253095dae50244e94c",
+  "private_inputs": {
+    "coverage7_Log.txt": {"sha256": "ceb55aa202bd02e3f592e8530b5ec157f5096b531d091bf6caf46062c985ed82", "module": "0aa40527", "summon_control": "on"},
+    "coverage7_save.zks": {"sha256": "14e73116fbdfc28a5ec9ce3173e0950ad5aba289b859d16bc722890977b8266c", "used_for": "quick-slot contents (party.json, player.json)"},
+    "coverage2_Log.txt": {"sha256": "d0c040e8428d6f954a8b6d126acc467535992771d720444451aed598ce887a18"},
+    "coverage3_Log.txt": {"sha256": "1132e7a960644cf617301d42f8259fda485c499e7021aeb5587944dbac6fd01d"},
+    "profileaudit_report_on_27a427e": {"sha256": "40a610f7a8132231d5935f5f2c3522d8deada85392c3baf597bc13d30e88533b"},
+    "note": "Logs, saves, blueprint exports and decompiles stay private; only counts are recorded here."
+  },
+  "summons_coverage7": {
+    "decisions": {"Quasit": 93, "Abrikandilu": 52, "Babau": 70, "Incubus": 54, "Summoned Monadic Deva": 17, "Vermlek": 143, "Schir": 123},
+    "own_abilities_issued": {"Quasit": 20, "Abrikandilu": 14, "Babau": 4, "Incubus": 3, "Summoned Monadic Deva": 7, "Vermlek": 4, "Schir": 2},
+    "never_in_top_five": ["Vermlek: Inflict Light Wounds, Mass", "Schir: Protection from Good", "Summoned Monadic Deva: Holy Smite"],
+    "log_prints_top": 5,
+    "turn_based_end_turn_rows": "96 of 208",
+    "decision_cost_ms": {"median_range": "4-19", "first_decision_median_range": "77-218", "slowest": "about 1000, inside a memory clean-up"}
+  },
+  "summons_static": {
+    "source": "docs/competence/SUMMON_KITS_DETAIL.txt (S1 inventory)",
+    "demonology_guessed_or_unread_entries": 28,
+    "with_AbilityResourceLogic": 0,
+    "families": ["teleport/leap/overrun", "conditional area or self effects", "roll debuffs and target marks", "shadow spells", "guessed parts of read spells"]
+  },
+  "consumables": {
+    "item_reading": {
+      "Potion": {"items": 114, "read": 95, "guessed": 18, "unread": 1},
+      "Scroll": {"items": 650, "read": 570, "guessed": 68, "unread": 12},
+      "Wand": {"items": 229, "read": 212, "guessed": 15, "unread": 2},
+      "method": "every BlueprintItemEquipmentUsable in the exports joined by m_Ability to the audit's ability verdict"
+    },
+    "misreads": ["FreedomOfMovementCast read as a debuff", "TrueSeeingCast guessed as a debuff", "SpellResistance guessed", "ProtectionFromSpells guessed"],
+    "quick_slots_in_save": ["healing potions", "Shield of Faith", "Bear's Endurance", "Feather Step", "Death Ward", "Lesser Restoration", "Scroll of Magic Missile x3", "Scroll of Mage Armor x2", "Scroll of Death Ward", "Scroll of True Seeing", "Scroll of Ear-Piercing Scream", "Wand of Greater Invisibility", "Quicken rods x2"],
+    "items_used_in_three_logs": ["healing potions", "alchemist bombs", "Enlarge Person potion x1 (hard fight)", "Summon Monster VIII scroll x2"],
+    "potion_gate": "TacticalEngine.ConsumableFactor: no heal -> 0 below difficulty 0.8, 0.5 above",
+    "difficulty_at_least_0_8_share": {"coverage7": "1.4%", "coverage2": "6.3%", "coverage3": "9.6%"},
+    "difficulty_median": {"coverage7": 0.19, "coverage2": 0.34, "coverage3": 0.38},
+    "potion_for_other": "native AbilityData.PotionForOther, built only by the action bar (MechanicActionBarSlotItem.GetConvertedAbilityData, ActionBarSlot conversions); not referenced by the mod"
+  }
+}
