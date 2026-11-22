@@ -8,17 +8,12 @@ using Kingmaker.UnitLogic.Abilities.Blueprints;
 
 namespace CompanionAI_Pathfinder.Tactics
 {
-    internal enum UnusedReason : byte
-    {
-        NotScored, Unavailable, CombatPolicy, ActionUnavailable, ScoreNotNeeded, Blocklist,
-        SummonPolicy, Unread, CoupDelivery, FusionWithheld, PureMage, ConsumablePolicy, NoTarget,
-        NoApproach, ItemOnSummon, FriendlyFire, NoGain, ItemBar, SlotCopy, DelayedDelivery, TeleportLanding
-    }
-
     /// <summary>Bounded fight evidence. Stores identities and numbers, with no live rules or queries at report time.</summary>
     internal static class UnusedWitness
     {
-        internal const int MaxGroups = 16, MaxEntries = 32;
+        // ★ consumables review: quick-slot items have their own room. Big kits (Orvath 108, a Knight Commander 92 abilities
+        // in coverage7) filled the 32 ability entries before any item was seen, so the items track had no evidence for them.
+        internal const int MaxGroups = 16, MaxEntries = 32, MaxItemEntries = 16;
         private static readonly Group[] Groups = new Group[MaxGroups];
         private static int count;
 
@@ -26,18 +21,19 @@ namespace CompanionAI_Pathfinder.Tactics
         {
             internal object Key;
             internal UnitEntityData Unit;
-            private readonly Entry[] entries = new Entry[MaxEntries];
-            private int used;
-            private bool full;
+            private readonly Entry[] entries = new Entry[MaxEntries + MaxItemEntries];
+            private int used, abilities, items, decision;
+            private bool full, itemsFull;
 
             private struct Entry
             {
                 public BlueprintAbility Ability;
                 public BlueprintItemIdentity Identity;
-                public float Best;
-                public int Issued;
-                public UnusedReason Reason;
+                public UnusedState State;
             }
+
+            /// <summary>One decision of this unit (or summon kind) starts: its scored options are judged afresh.</summary>
+            internal void BeginDecision() => decision++;
 
             private readonly struct BlueprintItemIdentity
             {
@@ -63,7 +59,13 @@ namespace CompanionAI_Pathfinder.Tactics
                     if (ReferenceEquals(entries[i].Ability, ability.Blueprint) && entries[i].Identity.Matches(identity))
                         return i;
                 if (!add) return -1;
-                if (used == MaxEntries) { full = true; return -1; }
+                bool item = identity.Item != null;
+                if (item ? items == MaxItemEntries : abilities == MaxEntries)
+                {
+                    if (item) itemsFull = true; else full = true;
+                    return -1;
+                }
+                if (item) items++; else abilities++;
                 entries[used].Ability = ability.Blueprint;
                 entries[used].Identity = identity;
                 return used++;
@@ -71,20 +73,17 @@ namespace CompanionAI_Pathfinder.Tactics
 
             internal void Record(int index, UnusedReason reason, float value = 0f)
             {
-                if (index < 0) return;
-                ref var entry = ref entries[index];
-                if (value > entry.Best) entry.Best = value;
-                entry.Reason = reason;
+                if (index >= 0) entries[index].State.Record(reason, value, decision);
             }
 
             internal void Score(int index, float value)
             {
-                if (index >= 0 && value > entries[index].Best) entries[index].Best = value;
+                if (index >= 0) entries[index].State.Score(value, decision);
             }
 
             internal void NoteIssued(int index)
             {
-                if (index >= 0) entries[index].Issued++;
+                if (index >= 0) entries[index].State.Issued++;
             }
 
             internal void Report()
@@ -93,21 +92,24 @@ namespace CompanionAI_Pathfinder.Tactics
                 for (int i = 0; i < used; i++)
                 {
                     ref var entry = ref entries[i];
-                    if (entry.Issued != 0) continue;
+                    if (entry.State.Issued != 0) continue;
                     if (line.Length > 0) line.Append("; ");
                     if (entry.Identity.Item != null) line.Append("Item:").Append(entry.Identity.Item.name).Append('/');
-                    line.Append(entry.Ability.Name).Append(" best ").Append(entry.Best.ToString("0.#"))
-                        .Append(" (").Append(Describe(entry.Reason, entry.Best)).Append(')');
+                    line.Append(entry.Ability.Name);
+                    if (entry.Identity.ForOther) line.Append(" to an ally");
+                    line.Append(" best ").Append(entry.State.Best.ToString("0.#"))
+                        .Append(" (").Append(Describe(entry.State.Reason, entry.State.Best)).Append(')');
                 }
-                if (line.Length > 0 || full)
-                    Main.Log($"[Unused] {Unit.CharacterName}: {line}{(full ? " [32-entry cap]" : "")}");
+                if (line.Length > 0 || full || itemsFull)
+                    Main.Log($"[Unused] {Unit.CharacterName}: {line}{(full ? $" [{MaxEntries}-ability cap]" : "")}" +
+                             (itemsFull ? $" [{MaxItemEntries}-item cap]" : ""));
             }
 
             internal void Clear()
             {
                 Array.Clear(entries, 0, used);
-                used = 0;
-                full = false;
+                used = abilities = items = decision = 0;
+                full = itemsFull = false;
                 Key = null;
                 Unit = null;
             }
@@ -179,6 +181,7 @@ namespace CompanionAI_Pathfinder.Tactics
                 case UnusedReason.SlotCopy: return "slot copy available";
                 case UnusedReason.DelayedDelivery: return "delayed delivery has no safe recipient forecast";
                 case UnusedReason.TeleportLanding: return "no verified safe teleport landing";
+                case UnusedReason.Scored: return "scored, not chosen";
                 default: return best > 0f ? "scored but never issued" : "no score recorded";
             }
         }

@@ -50,6 +50,7 @@
     <Compile Include="..\..\Tactics\RemovalRules.cs" Link="RemovalRules.cs" />
     <Compile Include="..\..\Tactics\OnHitRules.cs" Link="OnHitRules.cs" />
     <Compile Include="../../Tactics/PotionHandoffRules.cs" Link="PotionHandoffRules.cs" />
+    <Compile Include="../../Tactics/UnusedState.cs" Link="UnusedState.cs" />
     <Compile Include="../../Tactics/AreaQuoteRules.cs" Link="AreaQuoteRules.cs" />
     <Compile Include="..\..\Tactics\ValueModel.OnKill.cs" Link="ValueModel.OnKill.cs" />
     <Compile Include="..\..\Tactics\ValueModel.UniqueBuff.cs" Link="ValueModel.UniqueBuff.cs" />

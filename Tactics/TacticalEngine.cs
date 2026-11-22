@@ -389,6 +389,7 @@ namespace CompanionAI_Pathfinder.Tactics
             if (ctx != null && !preview)
             {
                 ctx.Unused = UnusedWitness.For(unit);
+                ctx.Unused?.BeginDecision();
                 FightStats.NoteContext(ctx);
                 CoverageReport.ReportIfChanged(unit);   // ★ v0.3.17: diagnostics, once per fight at most
                 // ★ v0.3.18: what the enemies can deal to the party this round, as predicted (uncalibrated), once per round:
