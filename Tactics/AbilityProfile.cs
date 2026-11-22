@@ -664,7 +664,11 @@ namespace CompanionAI_Pathfinder.Tactics
             // price of the effect, not an attack: Lesser Restoration turns Exhausted into Fatigued, the Devil's Hell's Decree
             // dazzles the ally it empowers. Read as attacks, they were never offered.
             ReadSummonDebuffs();
-            bool outwardControl = around != null && AoETargets != TargetType.Ally && ControlStrength != ControlStrength.None;
+            // The unlabelled demon bursts select creatures with a native exclusion before applying hard control.
+            // Leave other personal effects, including self-costs with a target selector, on their ordinary route.
+            bool outwardControl = around != null && Blueprint.Type == AbilityType.Supernatural &&
+                AoETargets == TargetType.Any && ControlStrength == ControlStrength.Hard &&
+                m_AreaCondition?.Conditions.Any(c => c is ContextConditionHasFact excluded && excluded.Not) == true;
             AppliesHarmfulBuffs = !HelpfulToAllies &&
                 (Blueprint.Range == AbilityRange.Personal ? outwardControl : !AimsAtFriendsOnly(Blueprint)) &&
                 (WorstOfTwoAttacks != null || RedirectCarrier != null || TargetBuffs.Any(IsHarmfulBuff));
