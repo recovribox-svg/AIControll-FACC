@@ -980,7 +980,7 @@ namespace CompanionAI_Pathfinder.Tactics
                                     (apply.Buff.GetComponent<SpellDescriptorComponent>()?.Descriptor.Value ?? SpellDescriptor.None) & ~SpellDescriptor.Compulsion) : CCType.None,
                                 FixedControl = Fusion != null && (apply.Buff.GetComponent<ChangeFaction>() != null ||
                                     apply.Buff.GetComponent<SetFleeOrApproachLogic>() != null) ? ControlStrength.Hard : ControlStrength.None,
-                                PeriodicDamageOnly = Fusion != null && IsSimplePeriodicDamageCarrier(apply.Buff),
+                                PeriodicDamageOnly = Fusion != null && CombatMath.IsPeriodicDamageCarrier(apply.Buff),   // ★ Fusion coverage C1
                                 Extendable = !apply.Permanent && !apply.SameDuration && !apply.UseDurationSeconds &&
                                              apply.DurationValue != null && apply.DurationValue.IsExtendable
                             });
