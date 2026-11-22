@@ -9,6 +9,7 @@ Codex works on task branches and targets pull requests at `claude/dreamy-pasteur
 Keep `main` for author-authorized releases. Read [AGENTS.md](AGENTS.md) when coordinating agent work.
 
 **Current handover (22 November 2026): coverage8 playtest and PR #104 corrections, unplayed; nothing merged.**
+Draft correction [PR #105](https://github.com/recovribox-svg/AIControll-FACC/pull/105), stacked on #104 for review.
 Read [the review and replay](docs/COVERAGE8_PLAYTEST_REVIEW.md), [checks](docs/competence/COVERAGE8_REVIEW_CHECKS.json),
 [compiler/reference provenance](docs/competence/COVERAGE8_REVIEW_BUILD_PROVENANCE.json) and §212.
 

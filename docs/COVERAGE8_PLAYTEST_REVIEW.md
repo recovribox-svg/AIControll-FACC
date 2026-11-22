@@ -2,6 +2,7 @@
 
 22 November 2026. Corrections on `codex/coverage8-review`, stacked on PR #104 (`claude/coverage7-followups`,
 `d8ff91d60d8b9e9f91b65051d56bab1a84da447e`). No merge, development/main push, tag or release.
+Draft correction [PR #105](https://github.com/recovribox-svg/AIControll-FACC/pull/105) targets #104's branch for review.
 
 ## Evidence and scope
 
