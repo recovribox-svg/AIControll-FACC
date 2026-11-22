@@ -1,0 +1,551 @@
+{
+  "recorded_at_utc": "2026-11-22T04:35:13.767982+00:00",
+  "review": "docs/COVERAGE7_PLAYTEST_REVIEW.md",
+  "source_commit": "fd9cdda7e60262d4327955daf2ee5be22d3b7a02",
+  "source_branch": "codex/coverage7-review",
+  "base_branch": "claude/coverage7-review",
+  "base_commit": "e96b52b24fb9f1936256a4ba0f4aa50f904fc2bd",
+  "played_input_module": "0aa40527-d88f-4dfb-977b-3c6b101daaee",
+  "private_input_hashes_verified": [
+    {
+      "file": "Log.txt",
+      "sha256": "ceb55aa202bd02e3f592e8530b5ec157f5096b531d091bf6caf46062c985ed82"
+    },
+    {
+      "file": "combatLog.txt",
+      "sha256": "2b2830dc919faabceeccd2d6ae989f7b842c7787d942e09c6b48598395b0b431"
+    },
+    {
+      "file": "Manual_191_kala.zks",
+      "sha256": "14e73116fbdfc28a5ec9ce3173e0950ad5aba289b859d16bc722890977b8266c",
+      "kind": "zip archive (game save)"
+    }
+  ],
+  "author_context": {
+    "enemy_spawns": "RandomReinforcementsPerEncounter [Spawn] rows",
+    "summon_control": "on (Log.txt [Summon] rows)",
+    "rests_and_manual_orders": "Author: rests between fights; no manual control of dominated Aeiluvetar"
+  },
+  "baseline": {
+    "source": "e96b52b24fb9f1936256a4ba0f4aa50f904fc2bd",
+    "dll": {
+      "assembly": "CompanionAI_Pathfinder, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null",
+      "mvid": "bffecaf2-c308-4e28-8081-597edf79105c",
+      "sha256": "a2a970b4b48f57098fe854444ddceea122f0d8984ed77b6f16137ebc8e1f8ff6",
+      "size": 1622016
+    },
+    "unit_tests": 1101,
+    "foreign_signatures": 7,
+    "all_checks_passed": true,
+    "raw_expected_input_failure": true,
+    "reference_verification": "7 exact full signatures relative to prior reviewed stack DLL",
+    "source_equivalence": "e96b52b only docs/package changes after played1ae78e7; DLL identity not asserted equal",
+    "audits": {
+      "strict": {
+        "check_counts": {
+          "COUP-REACH": 32,
+          "DIAGNOSTIC-LOG": 22,
+          "GRIFFON-MODES": 29,
+          "GRIFFON-ATTACK": 47,
+          "BUFF-CONTEXT": 39,
+          "HELD-WEAPON": 46,
+          "CAST-BONUS": 2,
+          "REVEAL": 3,
+          "VALUE-SELECTION": 24,
+          "SHIFTER-FORMS": 21,
+          "CAMPAIGN-FLAG": 21,
+          "ABILITY-DISCOVERY": 19,
+          "JOINT-COST": 31,
+          "FOCUSED-SHOT": 47,
+          "FORM-REFERENCE": 14,
+          "SUMMON-KITS": 7,
+          "SUMMON-CONTROL": 70,
+          "SHIFTER": 48,
+          "ELDRITCH-ARCHER": 29,
+          "DISPEL-PENDING": 10,
+          "AREA-BOUNDS": 28,
+          "STATIC-DEBUFF": 17,
+          "AREA-EXIT": 28,
+          "IDLE-ADVANCE": 27,
+          "APPROACH-SPOT": 28,
+          "STEP-APPROACH": 13,
+          "MAGUS": 32,
+          "PROJECTILES": 29,
+          "GRAPPLE": 58,
+          "SNEAK": 36,
+          "BUFF-SUPPRESS": 35,
+          "CAST-DISRUPT": 50,
+          "EVIDENCE": 16,
+          "BURST-AIM": 79,
+          "FUSION-DOT": 53,
+          "FUSION-RECAST": 14,
+          "PERMADEATH": 35,
+          "FREEING": 12,
+          "RELIEF": 24,
+          "FUSION-REST": 27,
+          "HD-POOL": 26,
+          "CARRIERS": 29,
+          "LINE": 22,
+          "PERIODIC": 9,
+          "FUSION-POOL": 39,
+          "FUSION-OUTCOME": 32,
+          "FUSION-VALUE": 23,
+          "FUSION-CONE": 34,
+          "FUSION": 39,
+          "CASTER-POLICY": 36,
+          "RESISTANCE-MEMO": 18,
+          "ATTACHED": 24,
+          "REVEAL-VALUE": 7,
+          "SWARM-ESCAPE": 32,
+          "SWARM-PROTECTION": 14,
+          "SWARM-COVERAGE": 27,
+          "RANK-INCREMENT": 10,
+          "UNIQUE-REPLACEMENT": 57,
+          "BUFF-DEFENCE": 19,
+          "NATIVE-VIEW": 6
+        },
+        "sha256": "a3de6349331b4436c11f3ddb2ea67b0625d14679628f536700b0f8b19d288efe",
+        "headers": [
+          "SUMMON-KITS sources: 317 blueprints hold 453 spawn references (feature ability 114, spell-list spell 102, triggered: Buff 32, creature ability 18, ability, no static owner 18, item ability 16, triggered: Feature 14, triggered: WeaponEnchantment 2, triggered: AbilityAreaEffect 1); 232 party-plausible by static references; 4 abilities not read as summoning (nested spawn); 13 blueprints use a spawn route without the summon part (never driven)",
+          "SUMMON-KITS units: 232 unique loaded creatures from 447 resolved references (215 repeats; 88 creatures have more than one source); 190 linked to the caster by at least one source, 42 only unlinked; 146 reachable from a party-plausible linked source",
+          "SUMMON-KITS provenance: read from supplementary fixtures (not from a dump folder): 0 of 317 sources, 0 of 232 creatures, 0 of 442 distinct kit abilities; 174 supplementary blueprints loaded in all",
+          "SUMMON-KITS missing or dynamic: 6 references to 5 unit ids not loaded; 0 spawn actions name no unit; 232 creatures have unloaded kit references (88 ids); 93 creatures have a part the blueprint leaves to the running game; 95 name a brain that is not loaded",
+          "SUMMON-KITS kits: 14 swarm bodies (refused by the summon policy: the game's brain keeps them); 44 weapon-only kits (no active ability or toggle in the blueprint); 174 with active abilities or toggles"
+        ]
+      },
+      "full-stock": {
+        "check_counts": {
+          "COUP-REACH": 32,
+          "DIAGNOSTIC-LOG": 22,
+          "GRIFFON-MODES": 29,
+          "GRIFFON-ATTACK": 47,
+          "BUFF-CONTEXT": 39,
+          "HELD-WEAPON": 46,
+          "CAST-BONUS": 2,
+          "REVEAL": 3,
+          "VALUE-SELECTION": 24,
+          "SHIFTER-FORMS": 21,
+          "CAMPAIGN-FLAG": 21,
+          "ABILITY-DISCOVERY": 19,
+          "JOINT-COST": 31,
+          "FOCUSED-SHOT": 47,
+          "FORM-REFERENCE": 14,
+          "SUMMON-KITS": 8,
+          "SUMMON-CONTROL": 70,
+          "SHIFTER": 48,
+          "ELDRITCH-ARCHER": 29,
+          "DISPEL-PENDING": 10,
+          "AREA-BOUNDS": 28,
+          "STATIC-DEBUFF": 17,
+          "AREA-EXIT": 28,
+          "IDLE-ADVANCE": 27,
+          "APPROACH-SPOT": 28,
+          "STEP-APPROACH": 13,
+          "MAGUS": 44,
+          "PROJECTILES": 29,
+          "GRAPPLE": 58,
+          "SNEAK": 36,
+          "BUFF-SUPPRESS": 35,
+          "CAST-DISRUPT": 50,
+          "EVIDENCE": 16,
+          "BURST-AIM": 79,
+          "FUSION-DOT": 53,
+          "FUSION-RECAST": 14,
+          "PERMADEATH": 35,
+          "FREEING": 12,
+          "RELIEF": 24,
+          "FUSION-REST": 27,
+          "HD-POOL": 26,
+          "CARRIERS": 29,
+          "LINE": 22,
+          "PERIODIC": 9,
+          "FUSION-POOL": 39,
+          "FUSION-OUTCOME": 32,
+          "FUSION-VALUE": 23,
+          "FUSION-CONE": 34,
+          "FUSION": 39,
+          "CASTER-POLICY": 36,
+          "RESISTANCE-MEMO": 18,
+          "ATTACHED": 24,
+          "REVEAL-VALUE": 7,
+          "SWARM-ESCAPE": 32,
+          "SWARM-PROTECTION": 14,
+          "SWARM-COVERAGE": 27,
+          "RANK-INCREMENT": 10,
+          "UNIQUE-REPLACEMENT": 57,
+          "BUFF-DEFENCE": 19,
+          "NATIVE-VIEW": 6
+        },
+        "sha256": "ee56ace9bad0f3f93c35251ceec9aff125ae01cdd37c31f759dfda7d58467860",
+        "headers": [
+          "SUMMON-KITS sources: 323 blueprints hold 459 spawn references (feature ability 117, spell-list spell 102, triggered: Buff 33, ability, no static owner 20, creature ability 18, item ability 16, triggered: Feature 14, triggered: WeaponEnchantment 2, triggered: AbilityAreaEffect 1); 235 party-plausible by static references; 4 abilities not read as summoning (nested spawn); 13 blueprints use a spawn route without the summon part (never driven)",
+          "SUMMON-KITS units: 233 unique loaded creatures from 452 resolved references (219 repeats; 88 creatures have more than one source); 191 linked to the caster by at least one source, 42 only unlinked; 146 reachable from a party-plausible linked source",
+          "SUMMON-KITS external unit lists: 29 creature ids named by 1 list(s) for sources outside the loaded graphs; 29 loaded (20 that no loaded source summons), 0 not loaded; the list is the only evidence of the source (its ability graph, count, link and spawn-time buffs are not read)",
+          "SUMMON-KITS provenance: read from supplementary fixtures (not from a dump folder): 6 of 323 sources, 1 of 253 creatures, 2 of 456 distinct kit abilities; 654 supplementary blueprints loaded in all",
+          "SUMMON-KITS missing or dynamic: 7 references to 6 unit ids not loaded; 0 spawn actions name no unit; 3 creatures have unloaded kit references (3 ids); 107 creatures have a part the blueprint leaves to the running game; 0 name a brain that is not loaded"
+        ]
+      }
+    }
+  },
+  "result": {
+    "source": "fd9cdda7e60262d4327955daf2ee5be22d3b7a02",
+    "dll": {
+      "assembly": "CompanionAI_Pathfinder, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null",
+      "mvid": "c61d3aec-6677-4035-b7fa-4614b894f909",
+      "sha256": "2357281e3e65c4fbcb1c64d6ccceff66b6fcbe6991419ed28a5ac5caa1cbc23b",
+      "size": 1625600
+    },
+    "unit_tests": 1110,
+    "foreign_signatures": 4,
+    "all_checks_passed": true,
+    "raw_expected_input_failure": true,
+    "baseline_source": "e96b52b24fb9f1936256a4ba0f4aa50f904fc2bd",
+    "reference_verification": "Exact full normalized signatures relative to fresh coverage7 head DLL",
+    "audits": {
+      "strict": {
+        "check_counts": {
+          "COUP-REACH": 32,
+          "DIAGNOSTIC-LOG": 22,
+          "GRIFFON-MODES": 29,
+          "GRIFFON-ATTACK": 47,
+          "BUFF-CONTEXT": 39,
+          "HELD-WEAPON": 46,
+          "CAST-BONUS": 2,
+          "REVEAL": 3,
+          "VALUE-SELECTION": 24,
+          "SHIFTER-FORMS": 21,
+          "CAMPAIGN-FLAG": 21,
+          "ABILITY-DISCOVERY": 19,
+          "JOINT-COST": 31,
+          "FOCUSED-SHOT": 47,
+          "FORM-REFERENCE": 14,
+          "SUMMON-KITS": 7,
+          "SUMMON-CONTROL": 70,
+          "SHIFTER": 48,
+          "ELDRITCH-ARCHER": 29,
+          "DISPEL-PENDING": 10,
+          "AREA-BOUNDS": 28,
+          "STATIC-DEBUFF": 17,
+          "AREA-EXIT": 28,
+          "IDLE-ADVANCE": 27,
+          "APPROACH-SPOT": 28,
+          "STEP-APPROACH": 13,
+          "MAGUS": 32,
+          "PROJECTILES": 29,
+          "GRAPPLE": 58,
+          "SNEAK": 36,
+          "BUFF-SUPPRESS": 35,
+          "CAST-DISRUPT": 50,
+          "CAST-OUTCOME": 12,
+          "EVIDENCE": 16,
+          "BURST-AIM": 79,
+          "FUSION-DOT": 53,
+          "FUSION-RECAST": 14,
+          "PERMADEATH": 35,
+          "FREEING": 13,
+          "RELIEF": 32,
+          "FUSION-REST": 27,
+          "HD-POOL": 26,
+          "CARRIERS": 29,
+          "LINE": 22,
+          "PERIODIC": 9,
+          "FUSION-POOL": 39,
+          "FUSION-OUTCOME": 32,
+          "FUSION-VALUE": 23,
+          "FUSION-CONE": 34,
+          "FUSION": 39,
+          "CASTER-POLICY": 36,
+          "RESISTANCE-MEMO": 18,
+          "ATTACHED": 24,
+          "REVEAL-VALUE": 7,
+          "SWARM-ESCAPE": 32,
+          "SWARM-PROTECTION": 14,
+          "SWARM-COVERAGE": 27,
+          "OFFENSIVE-AFFLICTION": 18,
+          "RANK-INCREMENT": 10,
+          "UNIQUE-REPLACEMENT": 57,
+          "BUFF-DEFENCE": 19,
+          "NATIVE-VIEW": 6
+        },
+        "sha256": "2b4dc2ea727db5d58cf959ee7a4e70f702bf3b7982e45d0db873d1e569e3b9b0",
+        "all_other_nonblank_report_lines_identical": true,
+        "only_changes": "CAST-OUTCOME12 and OFFENSIVE-AFFLICTION18 added; FREEING12\u219213 and RELIEF24\u219232; extra blank separators only"
+      },
+      "full-stock": {
+        "check_counts": {
+          "COUP-REACH": 32,
+          "DIAGNOSTIC-LOG": 22,
+          "GRIFFON-MODES": 29,
+          "GRIFFON-ATTACK": 47,
+          "BUFF-CONTEXT": 39,
+          "HELD-WEAPON": 46,
+          "CAST-BONUS": 2,
+          "REVEAL": 3,
+          "VALUE-SELECTION": 24,
+          "SHIFTER-FORMS": 21,
+          "CAMPAIGN-FLAG": 21,
+          "ABILITY-DISCOVERY": 19,
+          "JOINT-COST": 31,
+          "FOCUSED-SHOT": 47,
+          "FORM-REFERENCE": 14,
+          "SUMMON-KITS": 8,
+          "SUMMON-CONTROL": 70,
+          "SHIFTER": 48,
+          "ELDRITCH-ARCHER": 29,
+          "DISPEL-PENDING": 10,
+          "AREA-BOUNDS": 28,
+          "STATIC-DEBUFF": 17,
+          "AREA-EXIT": 28,
+          "IDLE-ADVANCE": 27,
+          "APPROACH-SPOT": 28,
+          "STEP-APPROACH": 13,
+          "MAGUS": 44,
+          "PROJECTILES": 29,
+          "GRAPPLE": 58,
+          "SNEAK": 36,
+          "BUFF-SUPPRESS": 35,
+          "CAST-DISRUPT": 50,
+          "CAST-OUTCOME": 12,
+          "EVIDENCE": 16,
+          "BURST-AIM": 79,
+          "FUSION-DOT": 53,
+          "FUSION-RECAST": 14,
+          "PERMADEATH": 35,
+          "FREEING": 13,
+          "RELIEF": 32,
+          "FUSION-REST": 27,
+          "HD-POOL": 26,
+          "CARRIERS": 29,
+          "LINE": 22,
+          "PERIODIC": 9,
+          "FUSION-POOL": 39,
+          "FUSION-OUTCOME": 32,
+          "FUSION-VALUE": 23,
+          "FUSION-CONE": 34,
+          "FUSION": 39,
+          "CASTER-POLICY": 36,
+          "RESISTANCE-MEMO": 18,
+          "ATTACHED": 24,
+          "REVEAL-VALUE": 7,
+          "SWARM-ESCAPE": 32,
+          "SWARM-PROTECTION": 14,
+          "SWARM-COVERAGE": 27,
+          "OFFENSIVE-AFFLICTION": 18,
+          "RANK-INCREMENT": 10,
+          "UNIQUE-REPLACEMENT": 57,
+          "BUFF-DEFENCE": 19,
+          "NATIVE-VIEW": 6
+        },
+        "sha256": "0819701094da6ccf3f4f960ee156a930a7caf8d8c71c058832e71bd1922ed587",
+        "all_other_nonblank_report_lines_identical": true,
+        "only_changes": "CAST-OUTCOME12 and OFFENSIVE-AFFLICTION18 added; FREEING12\u219213 and RELIEF24\u219232; extra blank separators only"
+      }
+    },
+    "comparison": {
+      "strict.txt": {
+        "normalized_equal": false,
+        "byte_equal": false,
+        "baseline_sha256": "a3de6349331b4436c11f3ddb2ea67b0625d14679628f536700b0f8b19d288efe",
+        "corrected_sha256": "2b4dc2ea727db5d58cf959ee7a4e70f702bf3b7982e45d0db873d1e569e3b9b0",
+        "diff_file": "diff-strict.txt",
+        "diff_lines": 31,
+        "check_counts_changed": {
+          "OFFENSIVE-AFFLICTION": {
+            "before": null,
+            "after": 18
+          },
+          "CAST-OUTCOME": {
+            "before": null,
+            "after": 12
+          },
+          "FREEING": {
+            "before": 12,
+            "after": 13
+          },
+          "RELIEF": {
+            "before": 24,
+            "after": 32
+          }
+        }
+      },
+      "full-stock.txt": {
+        "normalized_equal": false,
+        "byte_equal": false,
+        "baseline_sha256": "ee56ace9bad0f3f93c35251ceec9aff125ae01cdd37c31f759dfda7d58467860",
+        "corrected_sha256": "0819701094da6ccf3f4f960ee156a930a7caf8d8c71c058832e71bd1922ed587",
+        "diff_file": "diff-full-stock.txt",
+        "diff_lines": 31,
+        "check_counts_changed": {
+          "OFFENSIVE-AFFLICTION": {
+            "before": null,
+            "after": 18
+          },
+          "CAST-OUTCOME": {
+            "before": null,
+            "after": 12
+          },
+          "FREEING": {
+            "before": 12,
+            "after": 13
+          },
+          "RELIEF": {
+            "before": 24,
+            "after": 32
+          }
+        }
+      },
+      "summon-kit-detail.txt": {
+        "normalized_equal": true,
+        "byte_equal": true,
+        "baseline_sha256": "43d0c6402852d4cceefe0253946be94349293584142021f3811c54eca0a7cf35",
+        "corrected_sha256": "43d0c6402852d4cceefe0253946be94349293584142021f3811c54eca0a7cf35",
+        "diff_file": "diff-summon-kit-detail.txt",
+        "diff_lines": 0,
+        "check_counts_changed": {}
+      },
+      "coverage.json": {
+        "json_equal": true,
+        "byte_equal": true,
+        "baseline_sha256": "acd0b62097c834cb8617f33b9272a32f24f08da4b91c0b3499f3eccd779e1517",
+        "corrected_sha256": "acd0b62097c834cb8617f33b9272a32f24f08da4b91c0b3499f3eccd779e1517"
+      },
+      "full-coverage.json": {
+        "json_equal": true,
+        "byte_equal": true,
+        "baseline_sha256": "acd0b62097c834cb8617f33b9272a32f24f08da4b91c0b3499f3eccd779e1517",
+        "corrected_sha256": "acd0b62097c834cb8617f33b9272a32f24f08da4b91c0b3499f3eccd779e1517"
+      }
+    },
+    "comparison_review": "Every line inspected; only two added sections and two check-count increases, plus blank separators. Every other report line identical on same inputs/output-path normalization.",
+    "provenance_sha256": "df5795c5eb03ef55dfa521b9eeaaf9f37e891132716e5000cf98dc689c6d722a",
+    "coverage_counts": {
+      "configurations": 15494,
+      "admitted": 14789,
+      "admitted_and_joint": 13387,
+      "metadata_qualified_including_withheld": 13639,
+      "reader_errors": 0,
+      "both_matrices_byte_identical": true
+    }
+  },
+  "same_input_comparison": {
+    "strict.txt": {
+      "normalized_equal": false,
+      "byte_equal": false,
+      "baseline_sha256": "a3de6349331b4436c11f3ddb2ea67b0625d14679628f536700b0f8b19d288efe",
+      "corrected_sha256": "2b4dc2ea727db5d58cf959ee7a4e70f702bf3b7982e45d0db873d1e569e3b9b0",
+      "diff_file": "diff-strict.txt",
+      "diff_lines": 31,
+      "check_counts_changed": {
+        "OFFENSIVE-AFFLICTION": {
+          "before": null,
+          "after": 18
+        },
+        "CAST-OUTCOME": {
+          "before": null,
+          "after": 12
+        },
+        "FREEING": {
+          "before": 12,
+          "after": 13
+        },
+        "RELIEF": {
+          "before": 24,
+          "after": 32
+        }
+      }
+    },
+    "full-stock.txt": {
+      "normalized_equal": false,
+      "byte_equal": false,
+      "baseline_sha256": "ee56ace9bad0f3f93c35251ceec9aff125ae01cdd37c31f759dfda7d58467860",
+      "corrected_sha256": "0819701094da6ccf3f4f960ee156a930a7caf8d8c71c058832e71bd1922ed587",
+      "diff_file": "diff-full-stock.txt",
+      "diff_lines": 31,
+      "check_counts_changed": {
+        "OFFENSIVE-AFFLICTION": {
+          "before": null,
+          "after": 18
+        },
+        "CAST-OUTCOME": {
+          "before": null,
+          "after": 12
+        },
+        "FREEING": {
+          "before": 12,
+          "after": 13
+        },
+        "RELIEF": {
+          "before": 24,
+          "after": 32
+        }
+      }
+    },
+    "summon-kit-detail.txt": {
+      "normalized_equal": true,
+      "byte_equal": true,
+      "baseline_sha256": "43d0c6402852d4cceefe0253946be94349293584142021f3811c54eca0a7cf35",
+      "corrected_sha256": "43d0c6402852d4cceefe0253946be94349293584142021f3811c54eca0a7cf35",
+      "diff_file": "diff-summon-kit-detail.txt",
+      "diff_lines": 0,
+      "check_counts_changed": {}
+    },
+    "coverage.json": {
+      "json_equal": true,
+      "byte_equal": true,
+      "baseline_sha256": "acd0b62097c834cb8617f33b9272a32f24f08da4b91c0b3499f3eccd779e1517",
+      "corrected_sha256": "acd0b62097c834cb8617f33b9272a32f24f08da4b91c0b3499f3eccd779e1517"
+    },
+    "full-coverage.json": {
+      "json_equal": true,
+      "byte_equal": true,
+      "baseline_sha256": "acd0b62097c834cb8617f33b9272a32f24f08da4b91c0b3499f3eccd779e1517",
+      "corrected_sha256": "acd0b62097c834cb8617f33b9272a32f24f08da4b91c0b3499f3eccd779e1517"
+    }
+  },
+  "package": {
+    "build_label": "coverage7fix1",
+    "kind": "development-test",
+    "version": "0.3.60",
+    "source_branch": "codex/coverage7-review",
+    "source_commit": "fd9cdda7e60262d4327955daf2ee5be22d3b7a02",
+    "base_branch": "claude/coverage7-review",
+    "base_commit": "e96b52b24fb9f1936256a4ba0f4aa50f904fc2bd",
+    "dll": {
+      "assembly": "CompanionAI_Pathfinder, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null",
+      "mvid": "c61d3aec-6677-4035-b7fa-4614b894f909",
+      "sha256": "2357281e3e65c4fbcb1c64d6ccceff66b6fcbe6991419ed28a5ac5caa1cbc23b",
+      "size": 1625600
+    },
+    "archive": "AI-Control-FACC-v0.3.60-dev-coverage7fix1-fd9cdda-UMM-test.zip",
+    "zip_sha256": "402eda0ef52d211e953c2bf6b73bc5d2b5b83c2c5bae491e917c8afff6f9d1cc",
+    "manifest_sha256": "63ad9f152d4bacb44f021428193efad46aaf0d13380bb5691ebca1d935f2b5bf",
+    "checks_receipt": "docs/competence/COVERAGE7_REVIEW_CHECKS.json",
+    "build_provenance": "docs/competence/COVERAGE7_REVIEW_BUILD_PROVENANCE.json",
+    "build_provenance_sha256": "c496bc7cb4c6e739002885a76e0eb43ab017fd559059c24b13013be4faaa80c6",
+    "played_input_module": "0aa40527-d88f-4dfb-977b-3c6b101daaee",
+    "gameplay_status": "unplayed",
+    "release": false,
+    "archive_contents": [
+      "CompanionAI_Pathfinder.dll",
+      "Info.json"
+    ],
+    "identity_note": "New startup MVID; frozen validated DLL. No game dependencies/audit shims/raw playtest data. No merge, tag or release."
+  },
+  "provenance_sha256": "c496bc7cb4c6e739002885a76e0eb43ab017fd559059c24b13013be4faaa80c6",
+  "review_sha256": "9f521abf68e82e0f489f6b9cc59a474c0960b3e9d83c35a1da7e92d71534ee08",
+  "evidence_boundary": {
+    "unplayed": true,
+    "live_game_actor_cast": false,
+    "unity_benchmark": false,
+    "save": "ZIP/JSON parsed as data; no execution/game deserialization",
+    "native_audit_fixtures": "Inert native layouts/scalars and static compiled routes; not a live game replay",
+    "new_C6_C8_playtest": "C6 forecast only; no Circle of Death cast or saved fusion; ordinary Sleep recipient/save evidence is separate"
+  },
+  "integration": {
+    "merged": false,
+    "pushed_to_development": false,
+    "main_changed": false,
+    "tagged": false,
+    "released": false
+  }
+}

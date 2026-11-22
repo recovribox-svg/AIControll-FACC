@@ -6,6 +6,30 @@ namespace CompanionAI.Tests
     /// <summary>★ v0.3.18: the engine's shared value formulas (Tactics/ValueModel.cs, docs/AI_TUNING_AUDIT.md C4/B2/B4b/B5/N5).</summary>
     public class ValueModelTests
     {
+        [Fact]
+        public void OnHitUtilityCannotCreateAnHpKillOrHpProgress()
+        {
+            Assert.Equal(40f, ValueModel.DamageWithConsequences(0f, 10f, 80f, 0f, 40f));
+            Assert.Equal(ValueModel.DamageValue(2f, 10f, 80f, 0f) + 40f,
+                ValueModel.DamageWithConsequences(2f, 10f, 80f, 0f, 40f));
+        }
+
+        [Fact]
+        public void CertainHpRemovalHasNoRemainingAfflictionBenefit()
+        {
+            Assert.Equal(ValueModel.DamageValue(10f, 10f, 80f, 1f),
+                ValueModel.DamageWithConsequences(10f, 10f, 80f, 1f, 40f));
+        }
+
+        [Fact]
+        public void OnHitUtilityIsDiscountedByActualHpRemovalOnly()
+        {
+            Assert.Equal(ValueModel.DamageValue(4f, 10f, 80f, 0.25f) + 30f,
+                ValueModel.DamageWithConsequences(4f, 10f, 80f, 0.25f, 40f));
+            Assert.Equal(ValueModel.DamageValue(4f, 10f, 80f, 0.25f),
+                ValueModel.DamageWithConsequences(4f, 10f, 80f, 0.25f, 0f));
+        }
+
         // --- C4: unchanged formulas, pinned to the 0.3.17 values ---
 
         [Fact]

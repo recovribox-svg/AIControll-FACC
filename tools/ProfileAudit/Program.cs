@@ -215,6 +215,10 @@ namespace ProfileAudit
             foreach (var line in afflictionLines) Console.WriteLine(line);
             File.WriteAllText(output, string.Join(Environment.NewLine, afflictionLines) + Environment.NewLine + Environment.NewLine + File.ReadAllText(output));
             blocklistFailures += afflictionFailures;
+            var offensiveAfflictionLines = OffensiveAfflictionCheck.Run(loaded.Values, out int offensiveAfflictionFailures);
+            foreach (var line in offensiveAfflictionLines) Console.WriteLine(line);
+            File.WriteAllText(output, string.Join(Environment.NewLine, offensiveAfflictionLines) + Environment.NewLine + Environment.NewLine + File.ReadAllText(output));
+            blocklistFailures += offensiveAfflictionFailures;
             // ★ v0.3.28 test 15: swarm spaces.
             var swarmLines = SwarmAreaCheck.Run(loaded.Values, out int swarmFailures);
             foreach (var line in swarmLines) Console.WriteLine(line);
@@ -328,6 +332,10 @@ namespace ProfileAudit
             foreach (var line in evidenceLines) Console.WriteLine(line);
             File.WriteAllText(output, string.Join(Environment.NewLine, evidenceLines) + Environment.NewLine + File.ReadAllText(output));
             blocklistFailures += evidenceFailures;
+            var castOutcomeLines = CastOutcomeCheck.Run(out int castOutcomeFailures);
+            foreach (var line in castOutcomeLines) Console.WriteLine(line);
+            File.WriteAllText(output, string.Join(Environment.NewLine, castOutcomeLines) + Environment.NewLine + Environment.NewLine + File.ReadAllText(output));
+            blocklistFailures += castOutcomeFailures;
             // ★ cast disruption: a hit before an enemy's cast goes off forces a concentration check (plan §4).
             var disruptLines = CastDisruptCheck.Run(loaded.Values, out int disruptFailures);
             foreach (var line in disruptLines) Console.WriteLine(line);

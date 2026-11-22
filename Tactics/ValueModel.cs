@@ -191,6 +191,12 @@ namespace CompanionAI_Pathfinder.Tactics
             return Math.Min(expectedDamage, hp) + threat * (kill + 0.25f * (1f - kill) * Math.Min(1f, expectedDamage / hp));
         }
 
+        /// <summary>On-hit stat damage, control and future ticks are utility, not immediate lethal HP.
+        /// They cannot manufacture an HP kill and retain value only while the victim stays in the fight.</summary>
+        public static float DamageWithConsequences(float expectedDamage, float hp, float threat, float hpKillChance, float utility) =>
+            DamageValue(expectedDamage, hp, threat, hpKillChance) +
+            Math.Max(0f, utility) * (1f - Clamp(hpKillChance, 0f, 1f));
+
         #endregion
 
         #region Healing (B4b)

@@ -1,209 +1,183 @@
-# Coverage7 playtest: partial review (handover to Codex)
+# Coverage7 playtest review and corrections
 
-21 November 2026, Claude. The author played the coverage7 package and supplied `Log.txt`, `combatLog.txt` and a save. They
-then asked Codex to finish the log review and the fixes. This page holds the findings so far, with their evidence and the
-proposed fixes. **No code is changed on this branch.**
+22 November 2026. Continued from PR #102, `claude/coverage7-review` at `e96b52b24fb9f1936256a4ba0f4aa50f904fc2bd`.
+Corrections are on `codex/coverage7-review`; its draft PR targets that review branch. No merge, development/main push,
+tag or release. This replaces the partial review; the original observations were checked rather than assumed true.
 
-- **Branch:** `claude/coverage7-review`, stacked on `claude/fusion-coverage-c6-c8` (draft PR #101), which is stacked on
-  `codex/review-92-99` (draft PR #100). Nothing is merged.
-- **Played build:** coverage7, startup MVID `0aa40527-d88f-4dfb-977b-3c6b101daaee` (Log.txt line 3), UMM 0.3.60.
-- **Inputs:** fingerprints in [COVERAGE7_PLAYTEST_INPUTS.json](competence/COVERAGE7_PLAYTEST_INPUTS.json). The raw logs and
-  the save are private and not committed.
+## Inputs and scope
 
-Line references:
-- `Log.txt` lines are `grep -n` numbers.
-- `combatLog.txt` has lone carriage returns, so its line numbers depend on the tool. It is cited here by fight and quoted
-  text instead.
+All three private upload hashes match [the input receipt](competence/COVERAGE7_PLAYTEST_INPUTS.json).
+The played DLL is coverage7, module `0aa40527-d88f-4dfb-977b-3c6b101daaee`, UMM 0.3.60. Ten fights: five TB, five RT;
+1,207 decision rows, 928 issues, 924 terminals, 14 issue refusals, no observed AI Control exception. Missing terminals
+are not automatically failures. The author confirms rests **between** fights and no manual control of dominated Aeiluvetar.
 
-## The session
+Reviewed all five TB fights (306 non-END choices), the named RT anomalies/losses, native rules, stock graphs and the
+save's spellbooks. The save was inspected as ZIP/JSON data, without game/type deserialization or execution: 21 members,
+13,584,021 declared uncompressed bytes, no traversal paths. It is an end-state snapshot after rest, not a combat replay.
+Raw logs/save, game references, blueprint dumps and decompiles remain private. `Log.txt` references below use its 15,240
+logical lines; combat references use event text and fight because the raw file has lone CRs.
 
-- 10 fights: 1–5 turn-based, 6–10 real time. Enemies came from RandomReinforcementsPerEncounter spawns.
-- 1,207 decision rows, 928 commands issued and 924 ended, 14 refused at issue. No AI Control exception.
-- **Party** (combat log headers): Orvath (Kineticist 6 / Isekai 4), Aeiluvetar (Guardian 5), Seelah (Witch 1 / Monk 1), Camellia
-  (Skald 2), Lann (Ranger 2), Wenduag (Shifter 8), Bandit Alchemist (Alchemist 4), Cambion Bard, Drow Magus (Magus 7), Bandit
-  (Rogue 6), arcan (Arcanist 4), Tripper (animal companion).
-- **Summons**, with summon control on: Orvath's demons (Incubus, Vermlek ×3, Schir ×2, Babau, Quasit, Abrikandilu), a
-  Knight Commander (Arcanist 20) and a Summoned Monadic Deva.
-- **Not known:** where the author rested or gave manual orders. Ask if it matters for a finding.
+## Findings ranked by evidence and impact
 
-## What holds
-
-- **No AI-caused friendly fire.** All party-on-party damage in the combat log (141 HP) is the game's own attacks of
-  opportunity on dominated allies:
-  - fight 5: Wenduag on the Bandit Alchemist, 15;
-  - fights 8–9: Aeiluvetar takes 120 HP from Schir, a Quasit, Babau and Wenduag, and shoots Lann once herself (6).
-- **No AI order is aimed at a dominated ally.** The coverage3 rule holds ("stopped, not killed", Log.txt 5439, 10125). Control
-  is still used on them (a Stun Bomb on Aeiluvetar, 10490).
-- **Freeing works.** Fight 5: Babau's Dispel Magic (Target) is valued for freeing the dominated Bandit Alchemist (Log.txt
-  5506–5516). The combat log confirms it: "Babau dispels Dominate Person from Bandit Alchemist".
-- **Flank forecasts are close.** The per-fight `[Flank]` summaries count 200 melee attacks, 186 forecast right.
-- Only one turn ended with a positive option left: Wenduag's Griffon Aspect at 1.6 (Log.txt 5735), below the buff margin.
-
-## Findings so far (ranked)
-
-### 1. Dispel Magic (Point) is valued as if it dispelled a unit (both modes)
-
-**Native contract** (decompiled assembly, `ContextActionDispelMagic.RunAction`):
-- With no target unit, the action dispels **area effects** whose view contains the point. Each must have a caster, a source
-  ability and pass the school and descriptor filters, and be an enemy's if `OnlyEnemyAreaEffects` is set
-  (`TryDispelAreaEffect`).
-- The blueprint `DispelMagicPoint` (`9f6daa93291737c40b8a432c374226a7`) can target only a point.
-- So the point variant never touches a unit's buffs.
-
-**Evidence:**
-- Babau cast `Dispel Magic (Point)->Mythic Schir(dispel)` three times in real time (Log.txt 6430 in fight 6, 7413 in fight 6,
-  14432 in fight 10). Each was worth the flat 2.0 fallback.
-- The combat log shows no dispel attempt for those casts. Three standard actions were wasted.
-- `FreeingValue` credited the point variant with freeing a unit: "Dispel Magic (Point) frees Bandit Alchemist 45% … = 28.3"
-  (Log.txt 5508). It lost to the Target variant (29.0) only by chance.
-
-**Cause:**
-- `TryDispelValue` already refuses a point-only dispel (`TacticalEngine.Relief.cs:173`).
-- So the old fallback runs: `HasSomethingToDispel(unit, target, …)` (`TacticalEngine.cs:3154`) reads the anchor unit's buffs.
-  It then adds +2 "dispel" (`TacticalEngine.cs:5151`).
-- `FreeingValue` (`TacticalEngine.TurnedAllies.cs:174`) does not check that the dispel can reach a unit.
-
-**Proposed fix:**
-- A dispel that can only take a point must not value unit buffs, in the fallback, in freeing or in relief.
-- Better, if the cost is in proportion: value it by the hostile spell areas it can end at the point, using the native filters
-  and the existing area danger to the allies inside (`AoeDangerAnalyzer`).
-- Check whether `Dispel Magic, Greater (Area)` and similar variants share the gap.
-
-### 2. A caster-only buff removal counts as removing anything (both modes)
-
-**Native:**
-- `Vermlek_Ability_AbandonFlesh` (`27695731aa092bc488c6092bfc68e31d`) is a swift action. It runs
-  `ContextActionRemoveBuff ToCaster` on `Vermlek_Buff_FleshArmor` (`3a4c5a3c73b6142428c5815373ed98f4`).
-- That buff gives +3 armour AC, and its `Deactivated` actions heal 2d6+3.
-- The game's own AI casts it only when seriously hurt (`Vermlek_AiAction_AbandonFlesh`: `InjurySerious`, HP borders 20 and 10,
-  and the swift action off cooldown).
-
-**Evidence:**
-- Four casts at 100 % HP, all in real time: Log.txt 9718, 10250, 12481, 13103. The Vermlek loses 3 AC for nothing.
-- Each was worth 2.0 "(dispel)". At 12481 it was taken over Aid Another at 5.8, because the swift action goes first.
-
-**Cause** (code path traced; which harmful buff was on the Vermlek is not in the log):
-- `AbilityProfile` puts a `ToCaster` removal in `CasterRemovedBuffs` only (`AbilityProfile.cs:1111–1121`). So `RemovedBuffs`
-  stays empty and `RemovesAnything` is false.
-- `CanRemove` (`TacticalEngine.cs:3183`) returns true for **any** buff when the profile has no dispel action and
-  `!RemovesAnything`.
-- So any harmful buff on the target passes `HasSomethingToDispel`, and the fallback adds +2.
-
-**Proposed fix:**
-- A profile whose only removals are from its caster is not "unfiltered". It removes the named caster buffs only. Removing the
-  caster's own helpful buff is a loss, not a cleanse.
-- Optionally, price the removed buff's `Deactivated` heal against the lost buff's worth. That makes Abandon Flesh worth using
-  when the Vermlek is low, as the native AI does.
-- Check the other `CasterRemovedBuffs` users (held states, `SpentStateCost`) for the same assumption.
-
-### 3. A successful dispel is logged as "did nothing" (both modes; diagnostics, possibly a block)
-
-**Evidence:**
-- Log.txt 5515: "[Cast] Babau: Dispel Magic (Target) did nothing to its target Bandit Alchemist … no attack roll, save, spell
-  resistance, damage or effect on it".
-- The combat log for the same cast says "Babau dispels Dominate Person from Bandit Alchemist".
-
-**To check:**
-- `CastOutcome.cs:380–400`: a `RuleDispelMagic` on the target, success or failure, should count as reaching it.
-- With `BlockOnNoReach`, two such verdicts block the ability on that target for the fight. That would stop a second freeing
-  attempt.
-
-**Also unexplained:** after the dispel, Tripper, Seelah and Wenduag still made attacks of opportunity on the Bandit Alchemist
-in fight 5, so the game still counted him hostile. Look for a second domination or a delayed faction restore before reading
-this as a defect.
-
-### 4. Plain advances refused, again and again, by the party's own area (real time)
-
-**Evidence** (fight 7, Log.txt 8640–9000):
-- 13 refused plain moves for Babau and Schir: "REJECTED UnitMoveTo 'Advance->… (around Corrosive Bomb)' … the path walks into
-  Corrosive Bomb". The free-side variants are refused for the same reason.
-- Each decision rebuilds the same three advances, each is refused at issue, and the summon waits ("idle advance unavailable",
-  8708, 8730).
-- Walks to attack through the same area are priced and issued instead (`[into Corrosive Bomb]`, `areaCheck=False`,
-  8687).
-- Whose area it was is not confirmed:
-  - no Corrosive Bomb is thrown in fight 7 before the refusals, and the area already affects Aeiluvetar early in the fight
-    (8003, Fortitude DC 24);
-  - the Bandit Alchemist threw one late in fight 6 (7268), and AutoDismissSpell queued fight 6's party areas at its end
-    (7622).
-
-**Cause:**
-- The "around" spot is chosen clear of the area, but the native path to it still crosses the area.
-- Plain moves are kept unchecked when the three selected-path checks are used up (`[Approach] … plain moves kept`). The
-  dispatcher's area gate then refuses them (`CommandDispatcher.cs:545–561`).
-- Nothing remembers the refusal across decisions.
-
-**Proposed fix (movement: ask the author before changing behaviour):**
-- (a) Price an advance's crossing the way an attack walk is priced, instead of a hard refusal.
-- Or (b) check the native path of the "around" and free-side spots when they are built (bounded), and drop those that cross.
-- Either way, remember a refused plain plan for the decision round, so the next decision does not rebuild it.
-
-### 5. Open question, high impact if true: was a dominated companion driven by AI Control? (fight 8)
-
-**Evidence:**
-- Log.txt 10125 logs Aeiluvetar as under an enemy's control. Later rows are AI Control decisions for her:
-  - 10634, 10718, 10757: "Move out of Fiendish Tick Swarm's swarm", nauseated;
-  - 10829: Focused Shot on the Distorted Mythic Dretch;
-  - 10872.
-- Party members made attacks of opportunity on her later in fight 8 and again in fight 9.
-- The combat log has one failed and one successful Will save against Dominate Person in fight 8.
-
-**To check:**
-- Establish the order of events: domination, a re-save or dispel freeing her, and a second domination.
-- If she was hostile while those orders were issued, `ShouldControlUnit` (`CustomBrainPatch.cs:144`, `IsDirectlyControllable`)
-  let a dominated unit through.
-- Also check fight 9: Dominate Person lasts days, so she may have started fight 9 dominated.
-
-### 6. Performance (both modes)
-
-The `[Perf]` summaries:
-- turn-based fights: party decisions at a median of 13–32 ms and a 95th percentile of 149–301 ms;
-- real-time fights: 95th percentile 94–198 ms, slowest 0.9–1.2 s.
-
-**Over one second:** every such decision ran a garbage collection ("memory clean-up ran"; stage heap −260 to −330 MB). Single
-decisions allocate 10–40 MB (Orvath, the Knight Commander). The allocation rate is the problem, not one stage.
-
-**Cheap options that cost a lot** (the `costliest:` field of the slow rows without a collection):
-
-| Ability | Cost per decision | Worth |
+| Priority | Finding | Evidence and disposition |
 | --- | --- | --- |
-| Light | 69–153 ms (0 contexts) | 0.0–0.1 |
-| Guidance | 114–129 ms | small |
-| Inflict Light Wounds | 80–188 ms | small |
-| Cure Light Wounds | 31–125 ms | small |
-| Aid Another | 5–52 ms | small |
+| 1 | Fictitious Point dispel/freeing value | Native contract + three wasted casts; fixed. |
+| 2 | Offensive disease/HP-kill overvaluation | Actual Schir graph + observed zero-HP hits; fixed conservatively. |
+| 3 | Helpful caster buff stripped at full HP | Four casts + exact caster-removal graph; fixed, deactivation heal deferred. |
+| 4 | Real dispel marked no-reach | Native rule + confirmed removal; fixed before it can create a false block. |
+| 5 | Stat/level-drain deaths and obstructed routes | Death/route evidence is strong; mortality needs a separate design, and route-policy changes need movement approval. |
+| 6 | Lingering hostility, HP100% discrepancy, short cancellations | Anomalies observed; native state/cause not established, no guessed fix. |
+| 7 | Expensive low-value touch planning | Ordering and slow timings confirmed; search-specific gain unmeasured, pruning deferred. |
 
-They are touch abilities on many recipients. These rows also count 20–40 "crowded approaches searched for a free side". So the
-cost is probably the free-side spot search per recipient, done before the value is known to be worth a walk.
+## Confirmed defects fixed in both modes
 
-**Proposed:** decide the recipient's value first, and plan the touch walk only when it can beat the current best option.
-Measure before and after on a replay.
+### 1. Point dispels earned fictitious unit value — high confidence, wasted standard actions
 
-## Not yet reviewed (for Codex)
+Babau used Dispel Magic (Point) three times for the old flat 2-point fallback (6430, 7413, 14432). It also earned
+28.3 freeing value on Bandit Alchemist (5508), despite the native action's point branch enumerating area effects,
+not unit buffs. `ContextActionDispelMagic.RunAction`/`TryDispelAreaEffect` and the actual Point blueprint confirm this.
 
-- **Fight 9 losses:** the Bandit Alchemist died ("CR3_Bandit_Human_Alchemist_Male … dies!") and so did a Vermlek. In fight 8,
-  three Quasits died. Check whether the AI's choices or positions contributed.
-- **Drow Magus, fight 7:** took 541 damage (Bulettes 390, Venomhodag 96, Dire Bear 41, a Vescavor Swarm 14) and cast while provoking ("casting
-  provokes 1", "ray provokes 1", Log.txt 8841). She shows 100 % HP in the decision rows. Check how her HP was read, and whether
-  stepping out first was the better choice.
-- **164 real-time commands ended without acting.** Most come in clusters on one target in the same instant, which is the target
-  dying (for example Log.txt 13553–13557, 13601–13607, 13842–13850). Not yet explained:
-  - Deva's "Approach to touch: Heal->Aeiluvetar(cleanse)", twice, after 9.1 s and 7.0 s (11262, 11633). Is this a touch chase,
-    and on a dominated ally?
-  - Aeiluvetar's "Move out of … swarm", four times, moving at most 0.5 m (10808, 10943, 11494, 11576). Does this tie in with
-    finding 5?
-  - arcan's "Snowball/Shocking Grasp", six times unacted.
-  - The Vermlek's and the Knight Commander's interrupted casts.
-- **C6/C8 evidence:**
-  - One `[FusionValue]` with C6 damage over time: Explosive Runes/Excruciating Deformation, Log.txt 449.
-  - Sleep's Hit Dice aim rows (`[HD-Aim]`, 6999, 7218, 10539).
-  - Hypnotism's pool credit is withheld ("shared-HD selector conditions are outside this forecast", 155).
-  - No Circle of Death was cast; the save's spell lists may show whether anyone could.
-- **The save** (`Manual_191_kala.zks`, a zip) holds the party's spellbooks, if needed for a coverage question. Open it only as
-  untrusted data, in its own directory.
-- **TB rows not yet read:** the turn-based fights 1–5, apart from the counts above.
+The fallback, freeing and relief routes now distinguish point-only delivery from unit delivery. Point-only dispels earn
+no unit-buff value. Greater Dispel Magic (Area) retains its `AbilityTargetsAround` unit branch; its additional clicked-point
+area action does not turn it into a point-only spell. Accurate area utility is deferred: it needs native area eligibility,
+order, filters, remaining danger, own-area loss and dispel chance. No flat substitute is invented.
 
-## Checks
+### 2. Caster-only removal looked like an unfiltered cleanse — high confidence, four full-HP casts
 
-No code changed: no build, package or audit was run for this branch. The coverage7 receipt
-([COVERAGE7_CHECKS.json](competence/COVERAGE7_CHECKS.json)) describes the played DLL.
+Vermlek's Abandon Flesh (9718, 10250, 12481, 13103) removes its own Flesh Armor; it cannot remove an arbitrary harmful
+buff from another recipient. `CanRemove` now preserves the named caster filter and the actual recipient, including a
+real named self-cleanse. Removing an active helpful caster buff costs its existing damage-equivalent output for active
+rounds within the short relief horizon. Suppression, expiry, reapplication and already-priced held states are respected.
+
+The stock Flesh Armor supplies +3 armor AC and a deactivation heal of 2d6+3. That heal is **not modelled** here: this
+prevents unsupported full-HP stripping but does not establish good low-HP Abandon Flesh use. Flat caster-removal metadata
+does not retain every conditional occurrence; its loss estimate can be conservative. No new actor cache is introduced.
+
+### 3. A real dispel could become a silent no-reach strike — high confidence
+
+At 5515 the observer said Babau's targeted dispel did nothing, while combat confirms it removed Dominate Person.
+`CastOutcome` now subscribes to `RuleDispelMagic`. A successful **or failed** native check is evidence that the action
+reached that buff's owner, so it cannot become a false no-reach block. Matching uses `Reason.Context`, the dispelling
+action's context; `RuleDispelMagic.Context` belongs to the removed buff/area. Targetless area checks do not claim to
+reach the scoring anchor. Inert native-layout fixtures exercise the actual observer and finish path; no live cast ran.
+
+### 4. Schir on-hit disease inflated swarm attacks — high confidence, new TB finding
+
+At 3775/3785 both Schirs prefer a 53.5-point full attack on Locust Swarm over Dire Bear (~40) and Venomhodag (~39).
+Combat records Bardiche/Gore hits for zero physical HP, but also native Disease saves. This does **not** prove the weapon
+immunity probe is broken: its fake native damage bundle already carries the weapon, and valid on-hit riders can fire
+on zero-HP hits.
+
+The actual Gray Pox graph is daily, but the old reader projected its NewRound actions as combat-round ticks. The successful
+save branch also has conditional Strength damage; choosing the larger branch invented that damage without establishing
+its target conditions. The corrected positive on-hit reader withholds unread conditions/trigger restrictions and respects
+native tick frequency. Weapon-/event-filtered or contextual own riders are withheld when the aggregate routine
+cannot prove them (including the actual Shadow feature); the inspected inner direct-damage action remains readable,
+which does not mean the whole kit is supported. Incoming threat retains its conservative reader. The utility of on-hit stat damage/control/later
+effects is also separate from immediate weapon HP: it cannot earn an HP kill or HP-progress bonus, and is discounted
+when actual HP damage removes the victim. Direct HP in separate on-hit action riders is also retained as utility,
+not an immediate kill distribution; ordinary weapon-bundle HP/energy damage keeps its existing native quote. That
+conservative limitation can under-credit a lethal rider. Stat/level-zero death still has no exact mortality distribution.
+
+## Domination: timeline and conclusion
+
+The proposed `ShouldControlUnit` bypass is **not established**. No redundant or buff-name-based control guard was added.
+
+1. Fight 8: Succubus starts Dominate Person at 9631; Aeiluvetar fails Will. The first turned-ally row is 10125.
+2. During that interval, native party AoOs hit her and her native shot hits Lann for 6. There are no AI Control orders
+   to her between the prior completion at 10080 and the next issue at 10637.
+3. She then succeeds Will against Dominate Person. The stock buff's NewRound branch grants that re-save and removes
+   itself on success. No second failed domination or later re-domination is recorded in fights 8–9.
+4. Native `FactionSwitcher.Stop`, `ChangeFaction.OnTurnOff` and faction setters restore faction/player authority,
+   update attack-faction state and interrupt commands. Her later AI swarm moves and enemy Focused Shots follow the
+   successful re-save. Existing `IsPlayerFaction`/`IsDirectlyControllable` checks enforce that native authority.
+5. Later party AoOs in fight 8 still treat her as hostile. Native `IsEnemy` also reads group relations, separately from
+   direct-control authority; this is a real unresolved hostility transition, not proof that domination persisted.
+   A second shot at Lann just after the save may have already launched; that is not proven either.
+6. Fight 9 contains no domination save, party AoO on her or allied shot. Final save faction/attack-faction metadata
+   matches the other party actors, but that later snapshot cannot reconstruct fight 8.
+
+A focused native/mod replay should record faction/original faction, group, attack-faction state, controllability and
+active ChangeFaction immediately before/after the re-save. Existing logs cannot settle the source of the lingering AoOs.
+
+The original “all 141 friendly HP are AoOs” claim was too broad: **135 HP are native AoOs**, plus **6 HP from dominated
+Aeiluvetar's ordinary native shot**. No AI-issued friendly-damage event was established. Similarly, fight 5's successful
+dispel and later AoOs do not by themselves prove a second domination or a failed removal.
+
+## Remaining review: losses and interruptions
+
+- **Fight 8:** three Quasits die after repeated Tick Swarm Constitution damage (13, 10 and 16 points respectively).
+  Prolonged exposure matters; movement/crowding/identity ambiguity prevents blaming an exact same-named Quasit's choice
+  without its ID. This motivates remaining-stat/level mortality and feasible escape work, not an arbitrary HP-health fix.
+- **Fight 9:** two Vermleks die, correcting the partial review's count of one. Their fatal sequences include Spectre
+  attacks for zero HP with 2-level drain. Bandit Alchemist suffers two 2-level drains and ordinary damage, but receives
+  no AI decision/order in that fight (prone refusal at 12647). Exact life-state cause is not logged; no friendly damage
+  caused these deaths. A statistical/death-state forecast remains a worthwhile separate design slice.
+- **Drow Magus, fight 7:** combat reports 541 HP damage while decisions stay at HP100%. The reader directly uses native
+  HPLeft/MaxHP/nonlethal, with no local health cache. The rested save cannot establish contemporaneous health or external
+  protection settings. Changing HP arithmetic or asserting a better retreat would be speculative. A bounded native
+  health/protection snapshot at damage and next decision is needed.
+- **All six arcan Snowball/Shocking Grasp unacted casts** align with target deaths, once duplicate Mournful Shadows are
+  separated by ID. No fusion-delivery defect follows from those interruptions.
+- **Deva's two Heal approaches** (11262, 11633) end via the explicit six-second no-progress guard, ~1 m short after
+  5.4/2.1 m movement. They spend no healing cast. This is a native/crowded touch-arrival limitation and stays a movement proposal.
+- **Four short Aeiluvetar swarm moves** and one Knight Commander Demoralize interruption lack a native cancellation
+  reason. Their short durations do not match the stuck guard; movement has no target, so do not call all target-death
+  cancellations. Other named Vermlek/Knight Commander interruptions correlate with actor or target deaths.
+- Four TB “unacted” advances actually move ~9 m for 3 s. The one rejected five-foot step immediately falls back to
+  Torrent. No additional TB-wide stall is established. Positive grapple releases and Griffon Shape are exercised.
+- The apparent attack on a commanded Ghoul is a false lead: the commanded `39D16` and attacked `39C3D` are different
+  same-name creatures. No stale-target/friendly-fire correction is warranted.
+
+## C6/C8 and the saved spell lists
+
+All twenty saved custom fusions appear in coverage. Three high-level combinations retain disclosed non-joint limits
+(Phantasmal Killer variants and Baleful Polymorph/Phantasmal Putrefaction); discovery is not complete joint modelling.
+
+The Excruciating Deformation fusion row at 449 is a forecast, not a cast: it loses to another option. No new broad C6
+carrier is issued. Rainbow Pattern/Fireball likewise has a pool forecast but is not cast. Fight 8 ordinary Sleep does
+reach two Dretches and both fail native saves; the two earlier fight 6 attempts are interrupted. Hypnotism's conditional
+pool stays explicitly withheld.
+
+Only Knight Commander knows ordinary Circle of Death, with five sixth-level slots in the snapshot; no saved fusion
+uses it. The log says it is natively unavailable (1354). Its stock requirement is ten Diamond Dust; the saved inventory
+has four, consistent with that refusal, without proving the earlier quantity or external cost overrides. Absence of a
+cast therefore does not prove missing admission. **New C6 execution and Circle of Death's C8 kill/fused paths remain unplayed.**
+
+## Performance and movement proposals
+
+See [bounded follow-up proposals](COVERAGE7_FOLLOWUP_PROPOSALS.md). No touch-pruning or movement behavior changed.
+
+There are 69 slow rows. All six over one second include the memory-clean-up marker. Light/Guidance/touch-heal timings
+include the whole ability and decision-local approach-cache misses, not just spot search. Heap deltas use
+`GC.GetTotalMemory(false)`: they are occupancy changes, not measured allocation bytes. There is no valid Unity/native-world
+before/after replay here, so no speed-up is claimed and the requested pruning is deferred pending that measurement.
+
+The endpoint/native-route mismatch in fight 7 is confirmed, but the claim that no refusal is remembered was wrong:
+dispatch refusals already have round memory plus a 12-second/1-metre exact-key guard. Preflight area failures have only
+invocation-local feedback. Same-name actors/targets further limit the repeat inference. The proposal reuses bounded
+native-route feedback and existing refusal memory while retaining the hazardous-route gate; it needs author approval.
+
+## Validation and next play
+
+Checked source **`fd9cdda7e60262d4327955daf2ee5be22d3b7a02`**: **1,110 unit tests**, **27/21/3 script tests**, real-reference Release **0 warnings/errors**. All strict/full-stock ProfileAudit sections pass, including **RELIEF 32, FREEING 13, CAST-OUTCOME 12, OFFENSIVE-AFFLICTION 18**. ToggleCosts/TomeBurn/ToyBoxSpend **98/14/10**, supplementary Magus **44**; **4** added foreign signatures resolve exactly. The fresh baseline is PR #102's head; its gameplay source equals played coverage7, but its rebuilt DLL is not claimed byte-identical.
+
+Every audit report line was compared on identical inputs. Only the new CAST-OUTCOME/OFFENSIVE-AFFLICTION sections and
+FREEING 12 → 13 / RELIEF 24 → 32 counts (plus separators) differ; every other report line is identical. The receipt records the comparison. Both 15,494-configuration Fusion JSON matrices are unchanged (**14,789 admitted / 13,387 joint**), as is summon-kit detail. Strict scope loads **44,814** records / **4,808** abilities without load/reader failures; full-stock scope also passes. The separately tested known raw-export enum mismatch remains an expected failing input control, not a hidden allowance.
+
+[Check receipt](competence/COVERAGE7_REVIEW_CHECKS.json) · [compiler/reference provenance](competence/COVERAGE7_REVIEW_BUILD_PROVENANCE.json). Offline scalar/layout fixtures and static routes are distinguished from live actor execution; no Unity benchmark or gameplay of this corrected DLL was run.
+
+[Complete 0.3.60 UMM test package](../test-builds/AI-Control-FACC-v0.3.60-dev-coverage7fix1-fd9cdda-UMM-test.zip?raw=true), module **`c61d3aec-6677-4035-b7fa-4614b894f909`**; ZIP SHA-256 `402eda0ef52d211e953c2bf6b73bc5d2b5b83c2c5bae491e917c8afff6f9d1cc`. Identity/checksum sidecars are beside it. **Unplayed**; preserve the checked DLL across documentation commits.
+
+Replay both modes with summon control enabled:
+
+1. Verify Point dispels no longer earn unit cleanse/freeing value; Target and Greater Area still do. Check successful and
+   resisted target dispels for absence of false “did nothing”/silent blocks.
+2. Vermlek at full HP should preserve Flesh Armor; do not expect optimal low-HP Abandon Flesh healing yet.
+3. Schir versus Locust Swarm and an ordinary enemy: zero physical HP cannot be promoted into an HP kill by disease utility;
+   daily disease ticks and unproved success-branch damage should not dominate its choices. Keep native rider results.
+4. Reproduce domination/re-save and retain both logs plus exact actor IDs and native faction/group snapshots if possible.
+5. Explicitly exercise a new C6 carrier and an available ordinary Circle of Death; create a Circle of Death fusion to test
+   that fused path. Keep sufficient native materials/resources and a valid target set.
+6. Retain swarm/level-drain deaths, native HP/protection context and touch-route interruptions. Movement proposals and
+   performance pruning require their separate approval/measurement; this package does not claim to fix those.

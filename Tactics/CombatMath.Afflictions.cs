@@ -97,7 +97,9 @@ namespace CompanionAI_Pathfinder.Tactics
             return result;
         }
 
-        private static void WalkAffliction(ActionList list, UnitEntityData victim, int dc, float weight, float? fail, Affliction into, int depth)
+        // Offensive benefit uses only proved branches; enemy harm retains the existing conservative upper forecast.
+        private static void WalkAffliction(ActionList list, UnitEntityData victim, int dc, float weight, float? fail, Affliction into, int depth,
+                                          bool offensive = false, MechanicsContext context = null)
         {
             var actions = list?.Actions;
             if (actions == null || depth > 12 || !(weight > 0.001f)) return;   // a swarm round nests 7 deep before its poison ticks
@@ -107,6 +109,8 @@ namespace CompanionAI_Pathfinder.Tactics
                 {
                     case ContextActionDealDamage deal:
                     {
+                        if (offensive && (deal.Value?.DiceCountValue?.ValueType != ContextValueType.Simple ||
+                                          deal.Value?.BonusValue?.ValueType != ContextValueType.Simple)) break;
                         float amount = DiceAverage(deal.Value) * weight;
                         var kind = KindOf(deal);
                         if (kind == DealKind.AbilityDamage) into.AddPoints(deal.AbilityType, amount);
@@ -118,18 +122,30 @@ namespace CompanionAI_Pathfinder.Tactics
                     {
                         int saveDc = save.HasCustomDC && save.CustomDC != null && save.CustomDC.ValueType == ContextValueType.Simple &&
                                      save.CustomDC.Value > 0 ? save.CustomDC.Value : dc;
-                        WalkAffliction(save.Actions, victim, dc, weight, SaveFail(victim, save.Type, saveDc), into, depth + 1);
+                        WalkAffliction(save.Actions, victim, dc, weight, SaveFail(victim, save.Type, saveDc), into, depth + 1, offensive, context);
                         break;
                     }
                     case ContextActionConditionalSaved saved:
                     {
                         float f = fail ?? 1f;
-                        WalkAffliction(saved.Failed, victim, dc, weight * f, fail, into, depth + 1);
-                        WalkAffliction(saved.Succeed, victim, dc, weight * (1f - f), fail, into, depth + 1);
+                        WalkAffliction(saved.Failed, victim, dc, weight * f, fail, into, depth + 1, offensive, context);
+                        WalkAffliction(saved.Succeed, victim, dc, weight * (1f - f), fail, into, depth + 1, offensive, context);
                         break;
                     }
                     case Kingmaker.Designers.EventConditionActionSystem.Actions.Conditional conditional:
                     {
+                        if (offensive)
+                        {
+                            // Reuse the native checker under the fact's existing context. Restrict the proof to target
+                            // buff presence: rank/shared-value/attack-event predicates are not known in this quote.
+                            var conditions = conditional.ConditionsChecker?.Conditions;
+                            if (conditions != null && conditions.All(c => c != null && c.GetType() ==
+                                    typeof(Kingmaker.UnitLogic.Mechanics.Conditions.ContextConditionHasBuff)) &&
+                                AbilityProfile.TryReadConditions(conditional.ConditionsChecker, context, victim, out bool yesBranch))
+                                WalkAffliction(yesBranch ? conditional.IfTrue : conditional.IfFalse, victim, dc, weight,
+                                               fail, into, depth + 1, true, context);
+                            break; // Unknown positive effects earn no credit; do not pick whichever branch is larger.
+                        }
                         var yes = new Affliction();
                         var no = new Affliction();
                         WalkAffliction(conditional.IfTrue, victim, dc, 1f, fail, yes, depth + 1);
@@ -138,19 +154,20 @@ namespace CompanionAI_Pathfinder.Tactics
                         break;
                     }
                     case Kingmaker.Assets.UnitLogic.Mechanics.Actions.ContextActionSwarmAttack swarm:
-                        WalkAffliction(swarm.AttackActions, victim, dc, weight, fail, into, depth + 1);
+                        WalkAffliction(swarm.AttackActions, victim, dc, weight, fail, into, depth + 1, offensive, context);
                         break;
                     case ContextActionOnSwarmTargets targets:
-                        WalkAffliction(targets.Actions, victim, dc, weight, fail, into, depth + 1);
+                        WalkAffliction(targets.Actions, victim, dc, weight, fail, into, depth + 1, offensive, context);
                         break;
                     case ContextActionApplyBuff apply:
-                        AddBuffAffliction(apply, victim, dc, weight, into, depth);
+                        AddBuffAffliction(apply, victim, dc, weight, into, depth, offensive, context);
                         break;
                 }
             }
         }
 
-        private static void AddBuffAffliction(ContextActionApplyBuff apply, UnitEntityData victim, int dc, float weight, Affliction into, int depth)
+        private static void AddBuffAffliction(ContextActionApplyBuff apply, UnitEntityData victim, int dc, float weight, Affliction into, int depth,
+                                              bool offensive = false, MechanicsContext context = null)
         {
             var buff = apply.Buff;
             if (buff == null || apply.ToCaster || BuffBlockedFor(victim, buff)) return;
@@ -171,7 +188,8 @@ namespace CompanionAI_Pathfinder.Tactics
                 float each = Average(poison.Value) + poison.Bonus;
                 if (each <= 0f) continue;
                 float doseFail = poison.SaveType == Kingmaker.EntitySystem.Stats.SavingThrowType.Unknown ? 1f : SaveFail(victim, poison.SaveType, dc);
-                int later = Math.Min(poison.Ticks - 1, Mathf.FloorToInt(AfflictionRounds - 1f));
+                int later = offensive && buff.Frequency != DurationRate.Rounds ? 0
+                    : Math.Min(poison.Ticks - 1, Mathf.FloorToInt(AfflictionRounds - 1f));
                 into.AddPoints(poison.Stat, weight * each * ValueModel.PoisonDoses(doseFail, Math.Max(0, later), poison.SuccesfullSaves));
             }
             // Its control (its conditions), for the rounds it lasts.
@@ -182,9 +200,13 @@ namespace CompanionAI_Pathfinder.Tactics
             // Its own round actions (a custom poison: MandragoraSwarmPoisonBuff), from the next round on.
             foreach (var round in Kingmaker.Blueprints.BlueprintExtenstions.GetComponents<Kingmaker.UnitLogic.Mechanics.Components.AddFactContextActions>(buff))
             {
+                // Native buff mechanics tick at BlueprintBuff.Frequency, not necessarily every combat round.
+                // A newly applied daily disease has no tick inside this three-round horizon.
+                if (offensive && (buff.Frequency != DurationRate.Rounds || buff.TickEachSecond ||
+                    Kingmaker.Blueprints.BlueprintExtenstions.GetComponent<Kingmaker.UnitLogic.Buffs.Components.SetBuffOnsetDelay>(buff) != null)) continue;
                 if (round.NewRound?.Actions == null || round.NewRound.Actions.Length == 0) continue;
                 var tick = new Affliction();
-                WalkAffliction(round.NewRound, victim, dc, 1f, null, tick, depth + 1);
+                WalkAffliction(round.NewRound, victim, dc, 1f, null, tick, depth + 1, offensive, context);
                 into.Add(tick, weight * Math.Max(1f, rounds - 1f));
             }
         }
@@ -263,9 +285,18 @@ namespace CompanionAI_Pathfinder.Tactics
             public ActionList Actions;
             public int Dc;
             public Kingmaker.EntitySystem.EntityFact Fact;
+            public Kingmaker.UnitLogic.Mechanics.Components.AddInitiatorAttackWithWeaponTrigger Trigger;
         }
 
         private static readonly Dictionary<string, List<AfflictionSource>> s_HitSources = new Dictionary<string, List<AfflictionSource>>();
+
+        /// <summary>The source list now retains its fact for native condition evaluation. Bound those references to
+        /// this combat, including creatures that leave without changing their fact count.</summary>
+        internal static void ResetAfflictionSources()
+        {
+            s_HitSources.Clear();
+            s_HasHitSources.Clear();
+        }
 
         /// <summary>
         /// The DC an attacker's fact gives its saves: the fact's own context (ContextCalculateAbilityParams), else the rule for
@@ -305,7 +336,7 @@ namespace CompanionAI_Pathfinder.Tactics
                 {
                     if (hits && component is Kingmaker.UnitLogic.Mechanics.Components.AddInitiatorAttackWithWeaponTrigger trigger &&
                         trigger.OnlyHit && !trigger.OnMiss && !trigger.CriticalHit && !trigger.ActionsOnInitiator && trigger.Action?.Actions?.Length > 0)
-                        list.Add(new AfflictionSource { Actions = trigger.Action, Dc = FactDc(unit, fact) });
+                        list.Add(new AfflictionSource { Actions = trigger.Action, Dc = FactDc(unit, fact), Fact = fact, Trigger = trigger });
                     if (!hits && component is Kingmaker.UnitLogic.Mechanics.Components.AddFactContextActions round &&
                         HasSwarmAttack(round.NewRound, 0))
                         list.Add(new AfflictionSource { Actions = round.NewRound, Dc = FactDc(unit, fact) });
@@ -367,6 +398,43 @@ namespace CompanionAI_Pathfinder.Tactics
             return result;
         }
 
+        /// <summary>Positive on-hit benefit, separate from the conservative threat reader. Uses no actor preview or new cache.</summary>
+        private static Affliction OffensiveOnHitAffliction(UnitEntityData attacker, UnitEntityData victim)
+        {
+            var result = new Affliction();
+            if (attacker == null || victim == null) return result;
+            foreach (var source in SourcesOf(attacker, true))
+            {
+                // The aggregate hit count has no per-weapon/attack-event identity. A filtered trigger cannot be
+                // credited on every hit (Schir's Bardiche disease was also credited to its gore).
+                try
+                {
+                    if (source.Fact == null || !source.Fact.Active || !UnfilteredAfflictionTrigger(source.Trigger)) continue;
+                    var read = ReadOffensiveAffliction(source.Actions, victim, source.Dc, source.Fact?.MaybeContext);
+                    result.Add(read, 1f);
+                }
+                catch { } // An unavailable source earns no positive credit; conservative incoming harm is separate.
+            }
+            return result;
+        }
+
+        private static bool UnfilteredAfflictionTrigger(Kingmaker.UnitLogic.Mechanics.Components.AddInitiatorAttackWithWeaponTrigger t) =>
+            t != null && t.GetType() == typeof(Kingmaker.UnitLogic.Mechanics.Components.AddInitiatorAttackWithWeaponTrigger) &&
+            t.OnlyHit && !t.OnMiss && !t.CriticalHit && !t.ActionsOnInitiator && !t.TriggerBeforeAttack &&
+            !t.OnlyOnFullAttack && !t.OnlyOnFirstAttack && !t.OnlyOnFirstHit && !t.OnlyNatural20 &&
+            !t.OnAttackOfOpportunity && !t.NotCriticalHit && !t.OnlySneakAttack && !t.NotSneakAttack &&
+            !t.CheckWeaponBlueprint && t.WeaponType == null && !t.CheckWeaponCategory && !t.CheckWeaponGroup &&
+            !t.CheckWeaponRangeType && !t.CheckPhysicalDamageForm && !t.ReduceHPToZero && !t.DamageMoreTargetMaxHP &&
+            !t.CheckDistance && !t.AllNaturalAndUnarmed && !t.DuelistWeapon && !t.NotExtraAttack && !t.OnCharge && !t.IgnoreAutoHit;
+
+        private static Affliction ReadOffensiveAffliction(ActionList actions, UnitEntityData victim, int dc, MechanicsContext context)
+        {
+            var result = new Affliction();
+            try { WalkAffliction(actions, victim, dc, 1f, null, result, 0, true, context); }
+            catch (Exception ex) { Main.Verbose($"[Math] positive on-hit forecast unavailable: {ex.GetType().Name}"); }
+            return result;
+        }
+
         /// <summary>What one round of <paramref name="swarm"/>'s swarm attack does to <paramref name="victim"/> in its space;
         /// empty for a unit without one.</summary>
         internal static Affliction SwarmRoundAffliction(UnitEntityData swarm, UnitEntityData victim)
@@ -387,7 +455,7 @@ namespace CompanionAI_Pathfinder.Tactics
         {
             if (attacker == null || victim == null || !(hits > 0f) || !HasHitAfflictions(attacker)) return 0f;
             return FrameCached($"onhit-hp|{attacker.UniqueId}|{victim.UniqueId}|{(int)Math.Round(hits * 20f)}",
-                () => (int)Math.Round(AfflictionHp(OnHitAffliction(attacker, victim).Repeated(hits), victim) * 100f)) / 100f;
+                () => (int)Math.Round(AfflictionHp(OffensiveOnHitAffliction(attacker, victim).Repeated(hits), victim) * 100f)) / 100f;
         }
 
         /// <summary>

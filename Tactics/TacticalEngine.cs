@@ -2420,15 +2420,16 @@ namespace CompanionAI_Pathfinder.Tactics
         /// ★ v0.3.21 (gaps): against a regenerating enemy whose regeneration runs, a kill is only a knock-down unless
         /// <paramref name="endsRegeneration"/> (ValueModel.RegeneratingKill).
         private static float DamageValue(UnitEntityData enemy, float expectedDamage, float landChance, bool endsRegeneration = false,
-                                         float laterDamage = 0f)
+                                         float laterDamage = 0f, float onHitUtility = 0f)
         {
             // ★ damage over time (docs/PERIODIC_DAMAGE.md): later ticks count for HP and progress, capped at the HP left; the
             // chance to kill now stays with the immediate damage. Without them the value is unchanged.
-            if (expectedDamage <= 0f && !(laterDamage > 0f)) return 0f;
+            if (expectedDamage <= 0f && !(laterDamage > 0f) && !(onHitUtility > 0f)) return 0f;
             float hp = Math.Max(1, enemy.HPLeft);
             float kill = landChance > 0f && expectedDamage > 0f ? ValueModel.KillChance(landChance, expectedDamage / landChance, hp) : 0f;
             kill = ValueModel.RegeneratingKill(kill, RegenerationRuns(enemy), endsRegeneration);
-            return ValueModel.DamageValue(expectedDamage + Math.Max(0f, laterDamage), hp, CombatMath.TargetWorth(enemy), kill);
+            return ValueModel.DamageWithConsequences(expectedDamage + Math.Max(0f, laterDamage), hp,
+                CombatMath.TargetWorth(enemy), kill, onHitUtility);
         }
 
         /// <summary>★ v0.3.21 (gaps): its regeneration keeps it alive now (not stopped this round by fire, acid...).</summary>
@@ -2444,10 +2445,10 @@ namespace CompanionAI_Pathfinder.Tactics
         /// <remarks>★ G1: and the grapple a hit of it may start (Grabber and its kin, <see cref="GrappleHold"/>): the attacks
         /// after it are already cut from the estimate, its hold is valued here.</remarks>
         private static float DamageValue(UnitEntityData enemy, WeaponAttackEstimate est, float factor = 1f) =>
-            est == null ? 0f : DamageValue(enemy, est.ExpectedDamage * factor +
+            est == null ? 0f : DamageValue(enemy, est.ExpectedDamage * factor,
+                                           est.AnyHitChance, est.EndsRegeneration, onHitUtility:
                                            CombatMath.OnHitHp(est.Attacker, enemy,
-                                               (est.GrappleChance > 0f ? est.ExpectedAttacks : est.Attacks) * est.FirstHitChance),
-                                           est.AnyHitChance, est.EndsRegeneration) + GrappleHold(enemy, est);
+                                               (est.GrappleChance > 0f ? est.ExpectedAttacks : est.Attacks) * est.FirstHitChance)) + GrappleHold(enemy, est);
 
         /// <summary>★ G1: the control horizon of this decision (min(expected rounds, 3), as for control effects).</summary>
         private static float s_GrappleHorizon = 3f;
@@ -3153,7 +3154,7 @@ namespace CompanionAI_Pathfinder.Tactics
         /// </summary>
         private static bool HasSomethingToDispel(UnitEntityData caster, UnitEntityData target, AbilityProfile profile, float horizon)
         {
-            if (target?.Buffs == null) return false;
+            if (target?.Buffs == null || !DispelTargetsUnits(profile)) return false;
             try
             {
                 bool enemy = caster.IsEnemy(target);
@@ -3166,8 +3167,8 @@ namespace CompanionAI_Pathfinder.Tactics
                     // ★ v0.3.24 (v0.3.23 logs): only what this ability can take off. Any harmful buff counted, so Treat
                     // Affliction (a dispel limited to afflictions) was valued 2.0 on everyone entangled or slowed, and
                     // Aeiluvetar spent a turn on it on Orvath (turn-based fight 13, R4).
-                    if (!enemy && harmful && CanRemove(profile, buff)) return true;
-                    if (enemy && profile.Dispels && !harmful && buff.Blueprint.IsFromSpell && CanRemove(profile, buff)) return true;
+                    if (!enemy && harmful && CanRemove(profile, buff, caster == target)) return true;
+                    if (enemy && profile.Dispels && !harmful && buff.Blueprint.IsFromSpell && CanRemove(profile, buff, caster == target)) return true;
                 }
             }
             catch { }
@@ -3180,12 +3181,17 @@ namespace CompanionAI_Pathfinder.Tactics
         /// descriptor; the dispel check itself is left to chance), or a named buff or descriptor removal. An ability
         /// with neither kind of action read is not filtered (as before).
         /// </summary>
-        private static bool CanRemove(AbilityProfile profile, Kingmaker.UnitLogic.Buffs.Buff buff)
+        private static bool CanRemove(AbilityProfile profile, Kingmaker.UnitLogic.Buffs.Buff buff, bool targetIsCaster)
         {
             try
             {
-                if (profile.DispelActions.Count == 0 && !profile.RemovesAnything) return true;
-                if (profile.DispelActions.Any(d => DispelCanTake(d, buff))) return true;
+                if (!DispelTargetsUnits(profile)) return false;
+                // Caster-only removals are a known filter. Their named buff counts only on the caster, never
+                // on an unrelated scoring recipient. Helpful removals are charged separately as a loss.
+                bool namedCasterRemoval = targetIsCaster && buff != null && profile.CasterRemovedBuffs.Contains(buff.Blueprint);
+                if (profile.DispelActions.Count == 0 && !profile.RemovesAnything)
+                    return profile.CasterRemovedBuffs.Count == 0 || namedCasterRemoval;
+                if (namedCasterRemoval || profile.DispelActions.Any(d => DispelCanTake(d, buff))) return true;
                 if (profile.RemovedBuffs.Contains(buff.Blueprint)) return true;
                 var descriptor = buff.MaybeContext?.SpellDescriptor ?? Kingmaker.Blueprints.Classes.Spells.SpellDescriptor.None;
                 return profile.RemovedDescriptors != Kingmaker.Blueprints.Classes.Spells.SpellDescriptor.None &&
@@ -5202,6 +5208,14 @@ namespace CompanionAI_Pathfinder.Tactics
                     ctx.Settings.SpellPolicy == SpellResourcePolicy.Aggressive, ability.Spellbook != null, ability.SourceItem != null);
                 value -= kept;
                 if (profile.ThrowsDailyBomb && kept >= 0.05f) reasons.Add($"daily bomb -{kept:0.#}");
+            }
+
+            // Removing a helpful caster buff is a loss even when it is not a restorable held state (Abandon Flesh).
+            float removedCasterCost = CasterRemovalCost(ctx, ability, profile, target);
+            if (removedCasterCost > 0f)
+            {
+                value -= removedCasterCost;
+                reasons.Add($"loses caster buff -{removedCasterCost:0.#}");
             }
 
             // ★ v0.3.24 (Psionics): what spending a held state of the caster costs (TacticalEngine.HeldStates.cs).

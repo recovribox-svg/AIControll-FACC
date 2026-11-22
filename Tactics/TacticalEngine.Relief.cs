@@ -32,6 +32,36 @@ namespace CompanionAI_Pathfinder.Tactics
 {
     public static partial class TacticalEngine
     {
+        /// <summary>ContextActionDispelMagic branches on its actual recipient: a point without a unit selector
+        /// removes area entities, never buffs on the unit used to score that point. Greater Area retains its
+        /// AbilityTargetsAround unit branch (and separately has a clicked-point action).</summary>
+        internal static bool DispelTargetsUnits(AbilityProfile profile)
+        {
+            var blueprint = profile?.Blueprint;
+            if (blueprint == null) return false;
+            bool pointOnly = blueprint.CanTargetPoint && !blueprint.CanTargetSelf &&
+                             !blueprint.CanTargetFriends && !blueprint.CanTargetEnemies;
+            return RemovalRules.CanDispelUnit(pointOnly, profile.SelectsTargets, profile.Fusion != null);
+        }
+
+        /// <summary>Helpful caster buffs explicitly spent by a removal, apart from the held states already charged
+        /// by SpentStateCost. This is lost output, not relief; Deactivated callbacks are not speculatively credited.</summary>
+        private static float CasterRemovalCost(TacticalContext ctx, AbilityData ability, AbilityProfile profile, UnitEntityData target)
+        {
+            if (profile.CasterRemovedBuffs.Count == 0 || ctx.Unit?.Buffs == null) return 0f;
+            float horizon = ReliefHorizon(ctx), cost = 0f;
+            foreach (var blueprint in profile.CasterRemovedBuffs)
+            {
+                var buff = ctx.Unit.Buffs.GetBuff(blueprint);
+                if (buff == null || IsHarmfulOn(ctx.Unit, buff) || profile.CasterBuffs.Contains(blueprint) ||
+                    (target == ctx.Unit && profile.TargetBuffs.Contains(blueprint)) || IsHeldState(ctx, ability, profile, buff)) continue;
+                float rounds = buff.IsPermanent ? horizon : (float)buff.TimeLeft.TotalSeconds / 6f;
+                float suppressed = buff.IsSuppressed ? BuffSuppression.SuppressedSeconds(buff) / 6f : 0f;
+                cost += RemovalRules.HelpfulLoss(EnemyBuffShare(buff, ctx.Unit), AllyPerRound(ctx.Unit), rounds, suppressed, horizon);
+            }
+            return cost;
+        }
+
         /// <summary>The rounds relief is counted for: as a cleanse's, the fight's expected rounds, at most three.</summary>
         private static float ReliefHorizon(TacticalContext ctx) => Math.Min(Math.Max(1f, ctx.ExpectedRounds), 3f);
 
@@ -73,7 +103,7 @@ namespace CompanionAI_Pathfinder.Tactics
         /// <summary>Removing harmful effects by name or descriptor (Remove Paralysis, Optimistic Smile...): what they cost the ally.</summary>
         private static float RemovalRelief(TacticalContext ctx, AbilityData ability, AbilityProfile profile, UnitEntityData ally, float horizon)
         {
-            if (!profile.RemovesAnything || ally?.Buffs == null) return 0f;
+            if (!profile.RemovesAnything || ally?.Buffs == null || !DispelTargetsUnits(profile)) return 0f;
             float total = 0f;
             foreach (var buff in profile.BuffsRemovedFrom(ability, ally, certainOnly: true))
                 total += HarmWorth(ctx, ally, buff, horizon);
@@ -170,9 +200,10 @@ namespace CompanionAI_Pathfinder.Tactics
             value = 0f;
             note = null;
             if (profile.DispelActions.Count == 0) return false;
-            // A point-only dispel removes area entities, not the buffs on the scoring anchor. That native branch is
-            // still outside this unit-buff reader; preserve its existing fallback instead of inventing a unit recipient.
-            if (profile.Fusion == null && !profile.SelectsTargets && actualAim?.Unit == null) return false;
+            // Its native area branch is not a unit-buff fallback. Treat the absent unit benefit as known zero,
+            // rather than allowing a scoring anchor's buffs to create a fictitious 2-point dispel option.
+            if (!DispelTargetsUnits(profile)) { note = "point dispel: area benefit unread"; return true; }
+            if (profile.Fusion == null && !profile.SelectsTargets && actualAim?.Unit == null) return true;
             bool readable = false;
             foreach (var dispel in profile.DispelActions)
                 if (DispelUnsupported(dispel) == null || IsAutomaticDispel(dispel)) { readable = true; break; }

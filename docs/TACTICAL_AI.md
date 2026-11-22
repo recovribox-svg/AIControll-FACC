@@ -7093,3 +7093,23 @@ review of #92–99 (§208, draft PR #100) arrived meanwhile; this branch merges 
   - Native harnesses 98/14/10; 7 references added relative to PR #100, all compiled against the supplied assembly.
 - **Package** `test-builds/AI-Control-FACC-v0.3.60-dev-coverage7-1ae78e7-UMM-test.zip`, MVID `0aa40527`. It contains PR #100.
   Unplayed; manifest 0.3.60; no `main`, tag or release.
+
+## 210. Coverage7 review: dispel outcomes, removal filters and offensive on-hit value (22 November 2026)
+
+[Review/replay](COVERAGE7_PLAYTEST_REVIEW.md) · [proposals](COVERAGE7_FOLLOWUP_PROPOSALS.md) ·
+[checks](competence/COVERAGE7_REVIEW_CHECKS.json) · [provenance](competence/COVERAGE7_REVIEW_BUILD_PROVENANCE.json).
+
+- Both modes: point-only dispels cannot earn unit-buff/freeing/relief value. Greater Area retains its native unit selector.
+- Caster-only removals match their named buff only on the caster; helpful active loss counts without double-pricing held states.
+  Deactivation heal and area-dispel benefit remain unread; guarded-removal cost is conservative.
+- RuleDispelMagic success or failure counts as cast reach through Reason.Context, avoiding false no-reach blocks.
+- Positive on-hit forecasting withholds unread guards/weapon-event filters and daily combat ticks; incoming harm retains
+  the old conservative model. Existing fact-source caches reset at combat reset and reject inactive positive sources.
+  On-hit utility no longer creates HP kills/progress; direct action-rider HP remains a disclosed conservative limitation.
+- Native round re-save precedes Aeiluvetar's AI return: no proved control bypass. Lingering group hostility, deaths from
+  stat/level drain and the HP/protection discrepancy require state-aware replay, not guessed movement/health fixes.
+- Touch pruning has no valid before/after measurement here; no speed-up claim or change. Movement proposal corrects
+  the partial review: exact dispatch-refusal memory already exists. No movement change without author approval.
+- Checked source `fd9cdda7e60262d4327955daf2ee5be22d3b7a02`, module `c61d3aec-6677-4035-b7fa-4614b894f909`; 1,110 unit tests, 27/21/3 script tests,
+  Release 0 warnings/errors, all audits, native 98/14/10, Magus 44 and added signatures pass.
+  Coverage 14,789/13,387 and summon detail are unchanged. Manifest 0.3.60; package remains unplayed. Nothing merged, tagged or released.
