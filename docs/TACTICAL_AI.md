@@ -7290,3 +7290,41 @@ Movement against a grappler and without one, and True Seeing against a concealed
 one. Try Spell Resistance against a resistible caster and Protection from Spells against a save spell with and
 without a competing Resistance bonus. Check Magical Vestment on armor and shield with and without an existing
 enhancement. Send the logs and startup module `eae9b430-ef8a-4055-b919-285eb384419f`.
+
+## 218. Summon abilities S1: immediate control, roll penalties and marks (22 November 2026)
+
+Both combat modes read the personal area's recipient selector for Stunning Screech (Fortitude, stun) and
+Derakni Drone (Will, confusion). The Drone can reach allies without the native exclusions. The engine uses
+the area appraisal's friendly-fire check. The launch remains a native cast.
+
+Touch of Chaos keeps the worse of two eligible dice. The appraisal estimates one weapon threat using the
+first attack's native-derived die threshold and the existing weapon damage forecast. It gives no new credit
+for saves or other rolls. A caster's Study Target or smite instead gets credit for the extra weapon output
+on that target. The appraisal reuses a weapon routine already read for this frame, applies supported attack
+and damage bonuses and known physical DR bypass, and charges a standard action one round of output. Extra
+conditional riders and spell damage bonuses receive no separate credit.
+
+Song of Discord selects its native one-round nearest-attack condition on half of its round ticks. Value is
+limited to a single possible redirection from the existing weapon threat. The reader checks the recipient's
+native group and known units, up to 24 entries combined, and requires a stationary, distinct opposing
+recipient in weapon range. A close alternative, active motion or an unresolved forecast earns zero.
+The appraisal does not forecast multiple ticks from current positions.
+
+The reader identifies Unholy Nimbus's one-round expiration callback and its native personal blast. AI use
+requires a safe forecast of the recipients when that callback executes. This build withholds the cast
+and records that reason in the fight witness. It recognises the direct blast separately. Contagion uses the
+same stat-damage model with its actual tick interval, which includes the initial application but excludes
+daily ticks inside a short fight. Enervation already deducts temporary HP granted to eligible undead,
+and the audit now reflects that appraisal.
+
+Checked source `3340951` passed a zero-warning Release against the real game references, 1,151 unit
+tests, scripts 27/21/3, both ProfileAudit scopes and native 98/14/10. Both scopes checked 13 stock summon
+effect fixtures. See the [checks](competence/SUMMONS_CONSUMABLES_S1_CHECKS.json) and
+[compiler provenance](competence/SUMMONS_CONSUMABLES_S1_BUILD_PROVENANCE.json).
+
+The [UMM test package](../test-builds/AI-Control-FACC-v0.3.60-dev-summon-s1-3340951-UMM-test.zip?raw=true) is **unplayed**. In TB and RT, compare Screech
+and Drone into a group of susceptible targets with and without an eligible ally in reach. Try Chaos against
+a weapon attacker and a caster. Try Song with two adjacent enemies and with a party member nearest, and
+compare the actual next-round recipient. Check whether Study or a smite precedes a weapon attack on the
+same target. If a Nalfeshnee has Nimbus or a shadow caster has variants, send its `[Unused]` entries and
+both logs with startup module `8a40df9e-f4d6-45eb-b5e9-3b39ffc3ddb2`.

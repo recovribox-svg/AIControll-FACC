@@ -1,5 +1,13 @@
 # Test builds
 
+## Summon abilities S1 (22 November 2026)
+
+[UMM ZIP](AI-Control-FACC-v0.3.60-dev-summon-s1-3340951-UMM-test.zip?raw=true) · [Identity](AI-Control-FACC-v0.3.60-dev-summon-s1-3340951-UMM-test.identity.json) · [SHA-256](AI-Control-FACC-v0.3.60-dev-summon-s1-3340951-UMM-test.sha256)
+ · [Checks and replay](../docs/TACTICAL_AI.md#218-summon-abilities-s1-immediate-control-roll-penalties-and-marks-22-november-2026).
+
+UMM **0.3.60**, checked source `3340951`, startup module `8a40df9e-f4d6-45eb-b5e9-3b39ffc3ddb2`, **unplayed**.
+
+
 ## Consumables C4 (22 November 2026)
 
 [UMM ZIP](AI-Control-FACC-v0.3.60-dev-items-c4-eb8c2b5-UMM-test.zip?raw=true) · [Identity](AI-Control-FACC-v0.3.60-dev-items-c4-eb8c2b5-UMM-test.identity.json) · [SHA-256](AI-Control-FACC-v0.3.60-dev-items-c4-eb8c2b5-UMM-test.sha256)
