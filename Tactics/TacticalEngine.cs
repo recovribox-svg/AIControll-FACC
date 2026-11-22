@@ -3443,7 +3443,7 @@ namespace CompanionAI_Pathfinder.Tactics
                     bool needLos = abilityNeedsLos ?? (abilityNeedsLos = new UnitUseAbility(ability, wrapper).NeedLoS).Value;
                     // ★ burst aim: a led ground point is where the cast is aimed; every other aim is at the target's spot.
                     Vector3 aimAt = burst != null ? burst.Point : target.Position;
-                    if (!InRangeNow(ctx.Unit, aimAt, range, needLos))
+                    if (!InRangeNow(ctx.Unit, aimAt, range, needLos) && !TouchFromHere(ctx, ability, target, range, needLos))
                     {
                         if (guardedTouch && !CriticalTouchHeal(ctx, ability, profile, target)) continue;
                         // ★ v0.3.16 (test3): the game measures range flat unless the height difference is over 1.5 m, then

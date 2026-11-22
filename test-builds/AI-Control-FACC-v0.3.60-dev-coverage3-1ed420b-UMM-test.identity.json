@@ -1,0 +1,38 @@
+{
+  "build_label": "coverage3",
+  "kind": "development-test",
+  "version": "0.3.60",
+  "source_branch": "claude/coverage2-review",
+  "source_commit": "1ed420b755b15ff10e5d464fc0857fa842797cd6",
+  "stack": [
+    "claude/fusion-coverage-programme (C1, draft PR #92)",
+    "claude/review-r-items (R2, R5, evidence)",
+    "claude/fusion-coverage-c2-c5 (C2, C5, ordinary damage over time)",
+    "claude/coverage2-review (coverage2 log review fixes)"
+  ],
+  "development_base": "0019856805605c9b74e27ffbdfa6b8dd9c20b0f2",
+  "dll": {
+    "assembly": "CompanionAI_Pathfinder, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null",
+    "mvid": "60673199-52d7-4e60-8078-c91096ac9242",
+    "sha256": "c20d1bff5e8b9dacaddcf5a2ab9e9d93c3843aeb5fb2b394ff7efe6ea641ebbd",
+    "size": 1543680
+  },
+  "archive": "AI-Control-FACC-v0.3.60-dev-coverage3-1ed420b-UMM-test.zip",
+  "zip_sha256": "c4ca9372bcf238b4ef7c0b4af93259fd013c2e709612eba094c615aa33d9432c",
+  "manifest_sha256": "63ad9f152d4bacb44f021428193efad46aaf0d13380bb5691ebca1d935f2b5bf",
+  "checks_receipt": "docs/competence/COVERAGE3_CHECKS.json",
+  "build_provenance": "docs/competence/COVERAGE3_BUILD_PROVENANCE.json",
+  "build_provenance_sha256": "81e0e7c2d185b885ce778d6d6d5f1b22c9a03d1ba9a1f589da06b2136e938940",
+  "toolchain": {
+    "dotnet_sdk": "8.0.428",
+    "csharp_compiler": "4.11.0-3.25569.22 (3fb752d4)"
+  },
+  "scope": "coverage2 plus the fixes from its playtest review (docs/COVERAGE2_REVIEW.md): real-time cast-lag bursts get ground aim and the pre-cast re-check, a touch walk that ended in reach casts, R4 timing calibrated from the measured lines, evidence fixes.",
+  "gameplay_status": "unplayed",
+  "release": false,
+  "archive_contents": [
+    "CompanionAI_Pathfinder.dll",
+    "Info.json"
+  ],
+  "identity_note": "Checked DLL is frozen across later documentation commits. No cross-machine byte identity or measured Unity speed-up claimed."
+}

@@ -54,9 +54,16 @@ namespace ProfileAudit
                 var engine = typeof(TacticalEngine);
                 Check(Calls(Body(engine, "Execute"), observer, "NoteIssued"), "an issued command is noted for the evidence");
                 var combatEnd = engine.Assembly.GetTypes().SelectMany(t => t.GetMethods(Hidden)).FirstOrDefault(m => m.Name == "OnPartyCombatEnd");
+                // ★ coverage2 review (finding 4): the start of a fight drops what was recorded since the last report without a
+                // line; reporting there printed a "fight summary" of attacks between two fights at the start of fight 14.
                 Check(combatEnd != null && SaveBoostCheck.ReferencedMembers(combatEnd).Any(m => m.DeclaringType == observer && m.Name == "ReportFight") &&
-                      Calls(Body(observer, "Clear"), observer, "ReportFight"),
-                    "each fight's evidence is logged when it ends (or when the next one starts without an end)");
+                      !Calls(Body(observer, "Clear"), observer, "ReportFight") && Calls(Body(observer, "Clear"), observer, "Reset") &&
+                      Calls(Body(observer, "ReportFight"), observer, "Reset"),
+                    "each fight's evidence is logged when it ends; the start of the next fight resets it without a line");
+                Check(Calls(SaveBoostCheck.ReferencedMembers(BuffSuppressCheck.Method(observer, "OnEventDidTrigger", typeof(RuleAttackRoll))),
+                            observer, "LogFlankMiss") &&
+                      Calls(Body(observer, "NoteFlank"), typeof(CombatMath), "OtherEngagers"),
+                    "a flank the forecast missed is logged with the engagers counted at the decision and at the roll (bounded)");
                 Check(Calls(Body(observer, "NoteFlank"), typeof(CombatMath), "ForecastFlank") &&
                       Calls(Body(typeof(CombatMath), "ForecastFlank"), typeof(CombatMath), "PredictFlank"),
                     "R1: the flank compared at the roll is the engine's own forecast");

@@ -8,7 +8,35 @@ Read [CONTRIBUTING.md](CONTRIBUTING.md) for shared branch ownership, Codex pull 
 Codex works on task branches and targets pull requests at `claude/dreamy-pasteur-b9h3rn`; Claude reviews and integrates them there.
 Keep `main` for author-authorized releases. Read [AGENTS.md](AGENTS.md) when coordinating agent work.
 
-**Current handover (20 November 2026, Claude): coverage2 - R1–R7 decided, R2/R5, evidence logging, Fusion C2/C5 and
+**Current handover (20 November 2026, Claude): coverage2 playtest reviewed; fixes on `claude/coverage2-review`, stacked on
+the three coverage2 branches. Not played, nothing merged.** Read [docs/COVERAGE2_REVIEW.md](docs/COVERAGE2_REVIEW.md),
+`docs/TACTICAL_AI.md` §203 and the [receipt](docs/competence/COVERAGE3_CHECKS.json).
+
+- **Log:** coverage2 MVID `5cfd7765`; 14 fights (5 TB, 9 RT); 649 commands, each with an end row; no AI Control exception.
+  C2 and the damage-over-time pricing work as intended.
+- **Fixes (real time):**
+  1. A burst whose cast takes time gets ground aim, the pre-cast re-check and the shared landing spot
+     (`BurstRules.LandsLater`). Before, arcan's Incendiary Runes / Frigid Touch caught allies in 4 of 5 casts (76 HP).
+  2. A touch walk that ended in reach casts from there, within one step, for 1.5 s (`TouchFromHere`). This ends the heal
+     chase loop.
+- **R items:**
+  - R1 and R3 are not built (evidence).
+  - R4 is calibrated: first melee swing 0.7 s, bow shots 1.8 s apart, at most 6 s / N.
+  - Flank misses are now logged with their engagers.
+  - A stray `[Timing]` line at fight start is gone.
+- **Found, not changed:** a turn-based stall against a helpless enemy on a ledge; Tripper's knock-outs; performance as
+  before.
+- **Checks** on `1ed420b`:
+  - Release 0 warnings; 1,059 unit + 27/21/3 script tests.
+  - ProfileAudit: `BURST-AIM` 73, `EVIDENCE` 14, `CAST-DISRUPT` 50, every other line unchanged.
+  - Native harnesses 98/14/10; 0 references added.
+- **Package:** `test-builds/AI-Control-FACC-v0.3.60-dev-coverage3-1ed420b-UMM-test.zip`, MVID `60673199`. Manifest 0.3.60;
+  no `main`, tag or release.
+- **Next:**
+  1. The author plays coverage3 (replay in the review page).
+  2. C3 needs the author's policy on a permanent ally death.
+
+**Earlier handover (20 November 2026, Claude): coverage2 - R1–R7 decided, R2/R5, evidence logging, Fusion C2/C5 and
 damage over time on ordinary spells. Three stacked branches, not played, nothing merged.** Read
 [docs/COVERAGE2_BUILD.md](docs/COVERAGE2_BUILD.md), [docs/R_ITEMS_PLAN.md](docs/R_ITEMS_PLAN.md),
 [docs/PERIODIC_DAMAGE.md](docs/PERIODIC_DAMAGE.md), `docs/TACTICAL_AI.md` §202 and the

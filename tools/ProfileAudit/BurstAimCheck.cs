@@ -107,9 +107,12 @@ namespace ProfileAudit
                 // --- A1 classification on the real exports ---
                 var all = loaded.OfType<BlueprintAbility>().ToList();
                 BlueprintAbility Spell(string name) => all.FirstOrDefault(b => b.name == name);
-                var groundAim = typeof(TacticalEngine).GetMethod("GroundAimBurst", Hidden) ??
+                // ★ coverage2 review: the overload that takes the mode (real time: a cast time is a lag too).
+                var groundAim = typeof(TacticalEngine).GetMethod("GroundAimBurst", Hidden, null,
+                                    new[] { typeof(AbilityData), typeof(AbilityProfile), typeof(bool) }, null) ??
                                 throw new MissingMethodException(typeof(TacticalEngine).FullName, "GroundAimBurst");
-                bool Ground(AbilityData a) => (bool)groundAim.Invoke(null, new object[] { a, AbilityProfile.Get(a) });
+                bool Ground(AbilityData a, bool realTime = false) =>
+                    (bool)groundAim.Invoke(null, new object[] { a, AbilityProfile.Get(a), realTime });
                 AbilityData Data(BlueprintAbility b) => CasterPolicyCheck.Data(b);
 
                 var poolRecipients = typeof(TacticalEngine).GetMethod("UseCurrentPoolRecipients", Hidden);
@@ -132,7 +135,19 @@ namespace ProfileAudit
                 Check(eye == null || !Ground(Data(eye)), "Eye of the Sun (enemy-only selector) keeps unit aim");
                 var sleep = Spell("Sleep");
                 Check(sleep != null && !AbilityProfile.Get(sleep).HasDeliveryLag && !Ground(Data(sleep)),
-                      "ordinary Sleep (no delivery lag) keeps unit aim");
+                      "ordinary Sleep (no delivery lag) keeps unit aim in turn-based combat");
+                // ★ coverage2 review (finding 1): real time, the 2 s cast is a lag too - the victims are picked around the
+                // anchor when the cast goes off.
+                var incendiary = Spell("IncendiaryRunes");
+                var incendiaryProfile = incendiary != null ? AbilityProfile.Get(incendiary) : null;
+                Check(incendiaryProfile != null && incendiaryProfile.SelectsAround && !incendiaryProfile.HasDeliveryLag &&
+                      incendiaryProfile.AoETargets == TargetType.Any && incendiary.CanTargetPoint,
+                      "Incendiary Runes: around-selector (Any), no delay or flight, can target a point");
+                Check(incendiary != null && !Ground(Data(incendiary)) && Ground(Data(incendiary), true),
+                      "Incendiary Runes keeps unit aim in turn-based combat and gets ground aim in real time (2 s cast)");
+                Check(runes != null && Ground(Data(runes), true), "Explosive Runes gets ground aim in real time too");
+                Check(slumber == null || !Ground(Data(slumber), true),
+                      "Deep Slumber (enemy-only selector) keeps unit aim in real time too");
                 if (runes != null)
                 {
                     var selective = Data(runes);
@@ -160,9 +175,21 @@ namespace ProfileAudit
                         var touch = Data(holder);
                         touch.MagicHackData = new MagicHackData { Spell1 = snowball, Spell2 = sleep, DeliverBlueprint = snowball,
                             SavingThrowType = Kingmaker.EntitySystem.Stats.SavingThrowType.Will, SpellSchool = SpellSchool.Enchantment, SpellLevel = 2 };
-                        Check(AbilityProfile.Get(touch).NeedsAttackRoll && !Ground(touch),
-                              "a fusion delivered by Snowball (an attack-roll projectile) keeps unit aim");
+                        Check(AbilityProfile.Get(touch).NeedsAttackRoll && !Ground(touch) && !Ground(touch, true),
+                              "a fusion delivered by Snowball (an attack-roll projectile) keeps unit aim in both modes");
                     }
+                    // ★ coverage2 review (finding 1): the fusion behind the real-time friendly hits.
+                    var incendiaryRunes = Spell("IncendiaryRunes");
+                    var frigid = Spell("FrigidTouchCast");
+                    if (incendiaryRunes != null && frigid != null)
+                    {
+                        var burning = Data(holder);
+                        burning.MagicHackData = new MagicHackData { Spell1 = incendiaryRunes, Spell2 = frigid, DeliverBlueprint = incendiaryRunes,
+                            SavingThrowType = Kingmaker.EntitySystem.Stats.SavingThrowType.Reflex, SpellSchool = SpellSchool.Abjuration, SpellLevel = 2 };
+                        Check(!Ground(burning) && Ground(burning, true),
+                              "the Incendiary Runes/Frigid Touch fusion (coverage2's real-time friendly hits) gets ground aim in real time only");
+                    }
+                    else Check(false, "Incendiary Runes and Frigid Touch are loaded");
                 }
                 else Check(false, "the fusion holder slot, Explosive Runes and Sleep are loaded");
 
@@ -185,8 +212,9 @@ namespace ProfileAudit
                     "the shared score path uses the independent-payload recipient policy");
 
                 // The whole export: which abilities qualify, and why projectile bursts may not resolve offline.
-                int delayed = 0, projectile = 0, unresolved = 0, enemyOnly = 0, grounded = 0;
+                int delayed = 0, projectile = 0, unresolved = 0, enemyOnly = 0, grounded = 0, castLag = 0;
                 var names = new List<string>();
+                var castLagNames = new List<string>();
                 foreach (var b in all)
                 {
                     var around = b.GetComponent<AbilityTargetsAround>();
@@ -194,7 +222,18 @@ namespace ProfileAudit
                     var flight = b.GetComponent<AbilityDeliverProjectile>();
                     bool delay = b.GetComponent<AbilityDeliverDelay>()?.DelaySeconds > 0f;
                     bool simple = flight != null && flight.Type == AbilityProjectileType.Simple;
-                    if (!delay && !simple) continue;
+                    if (!delay && !simple)
+                    {
+                        // ★ coverage2 review: real time only, its cast time is the lag.
+                        bool cg;
+                        try { cg = Ground(Data(b), true); } catch { cg = false; }
+                        if (cg)
+                        {
+                            castLag++;
+                            if (castLagNames.Count < 12) castLagNames.Add(b.name);
+                        }
+                        continue;
+                    }
                     if (delay) delayed++;
                     if (simple)
                     {
@@ -213,6 +252,9 @@ namespace ProfileAudit
                 lines.Add($"BURST-AIM exports: {delayed} around-bursts with a delivery delay, {projectile} with a simple projectile " +
                           $"({unresolved} whose projectile blueprint is not in these exports - the game loads it), {enemyOnly} enemy-only; " +
                           $"{grounded} get ground aim here: {string.Join(", ", names)}{(grounded > names.Count ? ", ..." : "")}");
+                lines.Add($"BURST-AIM exports (real time only, the cast is the lag): {castLag} around-bursts with neither delay nor " +
+                          $"flight get ground aim in real time: {string.Join(", ", castLagNames)}{(castLag > castLagNames.Count ? ", ..." : "")}");
+                Check(castLag >= 1, "the export classification finds the real-time cast-lag bursts");
                 Check(grounded >= 2 && delayed >= grounded - projectile, "the export classification finds the delayed bursts");
                 var fireball = Spell("Fireball");
                 var fireFlight = fireball?.GetComponent<AbilityDeliverProjectile>();

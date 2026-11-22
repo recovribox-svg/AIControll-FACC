@@ -6892,3 +6892,37 @@ The death-trigger proposal is set aside.
   - Native harnesses 98/14/10; 4 references added, all present.
 - **Package** `test-builds/AI-Control-FACC-v0.3.60-dev-coverage2-72acfd1-UMM-test.zip`, MVID `5cfd7765`.
 - **Waits for the author:** C3 (Disintegrate, ally death policy).
+
+## 203. coverage2 playtest reviewed: real-time cast-lag bursts, touch arrival, R4 timing (20 November 2026, Claude)
+
+[Review](COVERAGE2_REVIEW.md), [receipt](competence/COVERAGE3_CHECKS.json). The author's coverage2 logs: 14 fights (5 TB,
+9 RT), 649 commands, each with an end row, and no AI Control exception. C2 and the damage-over-time pricing work as
+intended.
+
+- **Real-time cast lag** (both fixes on `claude/coverage2-review`, real time only):
+  - arcan's Incendiary Runes / Frigid Touch fusion caught allies in four of five real-time casts (76 HP). It went off
+    2–6 s after its decisions, with the area following the moving target, and nothing re-checked it.
+  - Real time, a cast time is now a lag like a delay or a flight (`BurstRules.LandsLater`, `GroundAimBurst`). Such a
+    burst gets ground aim, the pre-cast re-check and the shared landing spot.
+  - 83 exported around-bursts are affected; turn-based is unchanged.
+- **Touch arrival.**
+  - A real-time walk to touch range ended in reach, and the next decision found its moving recipient a step away and
+    walked again (10 such walks).
+  - For 1.5 s after such a walk, the touch is cast from where the caster stands when the recipient is within one 5-foot
+    step beyond reach. The game's own delivery walks the last step (`CombatMemory.NoteTouchArrived`, `TouchFromHere`).
+- **R1, R3, R4 decided** from the summary lines:
+  - R1 and R3: not built (0 wrong flank forecasts in 63; no unpriced walk-in).
+  - R4: first melee swing 0.7 s (measured 0.70, n = 72); bow shots 1.8 s apart, at most 6 s / N (measured 1.81, n = 34).
+- **Evidence fixes:**
+  - The start of a fight resets the timing tallies without a line; a stray summary had been logged at the start of fight 14.
+  - Flank misses are logged with the engagers counted at the decision and at the roll (first four per fight).
+- **Found, not changed:**
+  - A turn-based stall against a helpless enemy on a ledge inside the party's own Corrosive Bomb area.
+  - Tripper's three knock-outs.
+  - Performance unchanged (memory clean-ups).
+- **Checks** on `1ed420b`:
+  - Release 0 warnings; 1,059 unit + 27/21/3 script tests.
+  - ProfileAudit `BURST-AIM` 73, `EVIDENCE` 14, `CAST-DISRUPT` 50, every other line and the Fusion coverage unchanged.
+  - Native harnesses 98/14/10; 0 references added.
+- **Package** `test-builds/AI-Control-FACC-v0.3.60-dev-coverage3-1ed420b-UMM-test.zip`, MVID `60673199`. Unplayed;
+  manifest 0.3.60; no `main`, tag or release.

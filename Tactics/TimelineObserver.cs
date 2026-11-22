@@ -62,7 +62,13 @@ namespace CompanionAI_Pathfinder.Tactics
             public UnitEntityData Target;
             public UnitCommand Command;
             public bool Predicted, BySecond;
+            /// <summary>★ coverage2 review: other engagers the native rule counted at the decision, and how long ago it was.</summary>
+            public int OthersAtDecision;
+            public double At;
         }
+        /// <summary>★ coverage2 review: detail lines for a flank the forecast missed, per fight.</summary>
+        private const int MaxFlankMissDetails = 4;
+        private static int s_FlankMissDetails;
         private static readonly Dictionary<UnitEntityData, FlankRecord> Flanks = new Dictionary<UnitEntityData, FlankRecord>();
         private static int s_FlankAgree, s_FlankFalse, s_FlankFalseBySecond, s_FlankMissed, s_FlankBySecond;
         private static float s_FlankFalseHeightMax;
@@ -100,9 +106,14 @@ namespace CompanionAI_Pathfinder.Tactics
         }
 
         /// <summary>A new fight: the counts of a fight that raised no end are reported first.</summary>
+        /// <summary>
+        /// A new fight starts: what was recorded since the last report is dropped without a line. ★ coverage2 review
+        /// (finding 4): it reported, so attacks that resolved between two fights printed a fight summary at the start of fight
+        /// 14 ("first melee swing n=1"). The end of a fight reports (CustomBrainPatch.OnPartyCombatEnd).
+        /// </summary>
         public static void Clear()
         {
-            ReportFight();
+            Reset();
         }
 
         /// <summary>
@@ -128,7 +139,37 @@ namespace CompanionAI_Pathfinder.Tactics
             var weapon = unit.GetFirstWeapon();
             if (weapon?.Blueprint == null || !weapon.Blueprint.IsMelee) return;
             bool predicted = CombatMath.ForecastFlank(unit, c.Target, weapon, out bool bySecond);
-            Flanks[unit] = new FlankRecord { Target = c.Target, Command = command, Predicted = predicted, BySecond = bySecond };
+            Flanks[unit] = new FlankRecord
+            {
+                Target = c.Target, Command = command, Predicted = predicted, BySecond = bySecond,
+                OthersAtDecision = predicted ? -1 : CombatMath.OtherEngagers(c.Target, unit, out _), At = Now
+            };
+        }
+
+        /// <summary>
+        /// ★ coverage2 review: the forecast said not flanked and the game said flanked at the roll (7 of 63 melee attacks in the
+        /// coverage2 log, none the other way). Who engaged the target at the roll, whether each one's command targeted it (the
+        /// real-time rule) and how many the decision counted - to tell a second engager that arrived during the attack from a
+        /// rule the forecast does not read. Read only, at most <see cref="MaxFlankMissDetails"/> lines a fight.
+        /// </summary>
+        private static void LogFlankMiss(UnitEntityData attacker, UnitEntityData target, FlankRecord flank)
+        {
+            try
+            {
+                var engagers = new StringBuilder();
+                int n = 0;
+                foreach (var e in target.CombatState.EngagedBy)
+                {
+                    if (e == null || e == attacker) continue;
+                    if (n++ > 0) engagers.Append(", ");
+                    engagers.Append(e.CharacterName).Append(e.Commands.AnyCommandTargets(target) ? " (its command targets it)" : " (no command on it)");
+                }
+                Main.Log($"[Flank] {attacker.CharacterName} -> {target.CharacterName}: flanked at the roll but not forecast " +
+                         $"{Now - flank.At:0.0} s earlier ({(CombatMemory.IsRealTime ? "real time" : "turn-based")}); other engagers counted " +
+                         $"at the decision {flank.OthersAtDecision}, engaging at the roll: {(n > 0 ? engagers.ToString() : "none")} " +
+                         $"(first {MaxFlankMissDetails} per fight)");
+            }
+            catch { }
         }
 
         private static void NoteBreak(UnitEntityData unit, Candidate c)
@@ -188,7 +229,11 @@ namespace CompanionAI_Pathfinder.Tactics
                             s_FlankFalseHeightMax = Math.Max(s_FlankFalseHeightMax, Math.Abs(attacker.Position.y - target.Position.y));
                         }
                     }
-                    else s_FlankMissed++;
+                    else
+                    {
+                        s_FlankMissed++;
+                        if (s_FlankMissDetails++ < MaxFlankMissDetails) LogFlankMiss(attacker, target, flank);
+                    }
                 }
                 if (!opportunity && CombatMemory.IsRealTime && attacker.IsPlayerFaction &&
                     attacker.Commands?.Standard is UnitAttack attack && attack.IsStarted && !attack.IsFinished)
@@ -271,8 +316,10 @@ namespace CompanionAI_Pathfinder.Tactics
                             gaps.Append($"; {(i + 1 == GapMelee.Length ? $"{i + 1}+" : $"{i + 1}")}-attack routines " +
                                         $"{GapMelee[i].Text()} apart (forecast {DisruptRules.SwingSpacing(i + 1, false):0.00} s)");
                     Main.Log($"[Timing] fight summary: party weapon attacks - first melee swing {FirstMelee.Text()} after the start " +
-                             $"(forecast {DisruptRules.FirstSwingSeconds:0.00} s), first ranged {FirstRanged.Text()}{gaps}" +
-                             (GapRanged.N > 0 ? $"; ranged attacks {GapRanged.Text()} apart (forecast {DisruptRules.NextSwingSeconds:0.00} s when chained)" : ""));
+                             $"(forecast {DisruptRules.FirstSwingSeconds:0.00} s), first ranged {FirstRanged.Text()} " +
+                             $"(forecast {DisruptRules.FirstRangedSwingSeconds:0.00} s){gaps}" +
+                             (GapRanged.N > 0 ? $"; ranged attacks {GapRanged.Text()} apart (forecast for a bow {DisruptRules.BowSwingSeconds:0.00} s, " +
+                                                $"at most 6 s / attacks)" : ""));
                 }
                 if (Breaks.Count > 0)
                 {
@@ -305,6 +352,11 @@ namespace CompanionAI_Pathfinder.Tactics
             {
                 Main.Verbose($"[Timing] report: {ex.Message}");
             }
+            Reset();
+        }
+
+        private static void Reset()
+        {
             FirstMelee.Clear(); FirstRanged.Clear(); GapRanged.Clear();
             foreach (var t in GapMelee) t.Clear();
             s_Attacks = new ConditionalWeakTable<UnitAttack, AttackTrack>();
@@ -313,6 +365,7 @@ namespace CompanionAI_Pathfinder.Tactics
             Flanks.Clear();
             s_FlankAgree = s_FlankFalse = s_FlankFalseBySecond = s_FlankMissed = s_FlankBySecond = 0;
             s_FlankFalseHeightMax = 0f;
+            s_FlankMissDetails = 0;
         }
 
         private static string SignedText(Tally t) =>

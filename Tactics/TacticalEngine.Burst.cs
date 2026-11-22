@@ -67,11 +67,20 @@ namespace CompanionAI_Pathfinder.Tactics
         /// A1: a burst gets ground aim when it picks its victims around its anchor as it lands, can hurt allies (selector
         /// Any, not spared by Selective), lands after the cast goes off, makes no attack roll (a direct hit needs the unit)
         /// and the cast can target a point. An enemy-only burst is better aimed at the unit: it follows the target.
+        /// ★ coverage2 review (docs/COVERAGE2_REVIEW.md, finding 1): in real time the cast itself is a lag too. A burst
+        /// with no delay or flight still picks its victims around its anchor when the cast goes off, 2 s after it starts
+        /// (UnitUseAbility.m_CastTime, BurstRules.CastSeconds) and after any walk to cast. arcan's Incendiary Runes /
+        /// Frigid Touch fusion went off 2-6 s after its decisions and caught Orvath, Wenduag, Bandit and a summon in four of
+        /// five real-time casts (76 HP), while nothing re-checked it. Turn-based, nobody else moves during the cast.
         /// </summary>
-        internal static bool GroundAimBurst(AbilityData ability, AbilityProfile profile)
+        internal static bool GroundAimBurst(AbilityData ability, AbilityProfile profile) =>
+            GroundAimBurst(ability, profile, CombatMemory.IsRealTime);
+
+        internal static bool GroundAimBurst(AbilityData ability, AbilityProfile profile, bool realTime)
         {
             if (ability == null || profile == null) return false;
-            if (!profile.SelectsAround || !profile.IsAoE || !profile.HasDeliveryLag || profile.NeedsAttackRoll) return false;
+            if (!profile.SelectsAround || !profile.IsAoE || profile.NeedsAttackRoll) return false;
+            if (!BurstRules.LandsLater(profile.HasDeliveryLag, realTime, realTime ? CastSecondsOf(ability, true) : 0f)) return false;
             if (profile.AoETargets != Kingmaker.UnitLogic.Abilities.Components.TargetType.Any) return false;
             try { return ability.CanTargetPoint && !profile.SelectiveSparesAllies(ability); }
             catch { return false; }

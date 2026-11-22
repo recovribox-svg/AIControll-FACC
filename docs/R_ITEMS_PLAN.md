@@ -48,3 +48,14 @@ The death-trigger proposal is set aside, at the author's request.
 | `[Timing] fight summary` | **R4.** The first-swing, swing-gap and arrow-speed constants are corrected from measured means. |
 | `[Burst] fight summary` (cast time error, anchor at landing) | Burst lead and walk forecast tuning. |
 | `[Burst] fight summary` (unpriced walk-in allies) | **R3.** Whether a fresh control read during the watch is worth its cost. |
+
+## Decided from the coverage2 playtest (20 November 2026)
+
+See [COVERAGE2_REVIEW.md](COVERAGE2_REVIEW.md).
+
+| Item | Evidence | Decision |
+| --- | --- | --- |
+| **R1** | 63 melee attacks: 0 forecast flanked wrongly, all 8 second-engager forecasts right, 7 flanked but not forecast | Not built. Each miss is now logged with its engagers. |
+| **R3** | No ally walked into a burst without a control price | Not built. |
+| **R4** | First melee swing 0.70 s (n = 72); bow shots 1.81 s apart (n = 34); 6 s / N confirmed | First melee swing 0.7 s; bow shots 1.8 s apart, at most 6 s / N. First ranged shot (two groups) and arrow speed unchanged. |
+| Burst lead | Only 5 Explosive Runes casts; each anchor was inside where it landed | No change. |
