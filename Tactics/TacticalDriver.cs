@@ -651,7 +651,16 @@ namespace CompanionAI_Pathfinder.Tactics
                     Main.Log($"[RT-Tactics] {unit.CharacterName}: '{candidate.Label}' could not be issued ({failure}) - trying next best");
                     TacticalDriver.RecordRejected(memory, candidate, failure);
                     if (failure != null && failure.StartsWith(GameInterface.CommandDispatcher.WalksIntoAreaFailure))
+                    {
                         CombatMemory.NoteRefusedWalk(unit, candidate.Key);
+                        // ★ coverage7 follow-ups (author-approved movement): a plain advance whose real path crosses the
+                        // area is offered once more, priced as passing through it (TacticalEngine.ThroughAreaAdvance).
+                        var crossing = GameInterface.CommandDispatcher.LastAreaCrossing;
+                        if (crossing != null && crossing.Unit == unit && candidate.Kind == CandidateKind.Move && candidate.Target != null &&
+                            candidate.CheckPath)
+                            CombatMemory.NoteAreaCrossing(unit, candidate.Target, crossing.From, crossing.To);
+                    }
+                    GameInterface.CommandDispatcher.LastAreaCrossing = null;
                 }
                 return false;
             }

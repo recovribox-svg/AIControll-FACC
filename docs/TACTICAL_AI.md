@@ -7113,3 +7113,28 @@ review of #92–99 (§208, draft PR #100) arrived meanwhile; this branch merges 
 - Checked source `fd9cdda7e60262d4327955daf2ee5be22d3b7a02`, module `c61d3aec-6677-4035-b7fa-4614b894f909`; 1,110 unit tests, 27/21/3 script tests,
   Release 0 warnings/errors, all audits, native 98/14/10, Magus 44 and added signatures pass.
   Coverage 14,789/13,387 and summon detail are unchanged. Manifest 0.3.60; package remains unplayed. Nothing merged, tagged or released.
+
+## 211. Coverage7 follow-ups on Codex's corrections (22 November 2026, Claude)
+
+[Page and replay](COVERAGE7_FOLLOWUPS.md) · [checks](competence/COVERAGE8_CHECKS.json) ·
+[provenance](competence/COVERAGE8_BUILD_PROVENANCE.json). Codex's PR #103 reviewed and its checks reproduced; agreed.
+The author approved what still needed approval, movement included.
+
+- Both modes: on-hit riders are credited per attack line by the native weapon filters (`AbstractWeaponTrigger.IsSuitable`:
+  blueprint, type, category, range, fighter group, natural; an enchantment's own weapon), first attack and first hit
+  (`WeaponAttackEstimate.LineHits`, `CombatMath.RiderSuitsWeapon`, `OnHitRules.FiringHits`). Target fact gates are read by
+  the native checker. Roll- and moment-dependent flags stay withheld.
+- Both modes: a caster-buff removal is also worth the heal its removal gives (`CasterRemovalHeal`; Abandon Flesh 2d6+3),
+  through the heal formula ordinary heals use (`HealGain`).
+- Both modes: point dispels are priced by the area effects they end at the point, in the game's order, filters, check and
+  count (`PointDispelValue`, `AreaRemovalWorth`), and aimed where an ally stands inside an area.
+- Real time (author-approved movement): once an advance's real path is refused for entering an area, it is offered priced
+  as passing through it (`AddThroughAreaAdvance`, `CombatMemory.AreaCrossing`).
+- Measurement: approach-planning misses and spot searches timed in the slow-decision row; `[Faction]` rows when an ally
+  turns or returns. No pruning.
+- Checks on `17e3e1e`: Release 0 warnings; 1,118 unit + 27/21/3 script tests; ProfileAudit new `COVERAGE7-FOLLOWUPS` 20,
+  `OFFENSIVE-AFFLICTION` 27, every other line identical to Codex's head; Fusion matrix and summon detail byte-identical;
+  native harnesses 98/14/10; 3 references added. Package coverage8, MVID `828dc676`, unplayed. Nothing merged.
+- The author played coverage7 with an infinite-health cheat. §210's HP discrepancy (Drow Magus at HP100% after 541 damage)
+  is that cheat, not a defect, and that playtest exercised no low-HP behaviour.
+

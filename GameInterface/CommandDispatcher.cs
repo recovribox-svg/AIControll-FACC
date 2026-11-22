@@ -556,9 +556,12 @@ namespace CompanionAI_Pathfinder.GameInterface
                     areaCheck, attackCheck, pricedAttacks);
                 if (pathConstraint != null && (failure = PathConstraintFailure(pathConstraint, walk)) != null) return true;
                 if (walk == null) return false;   // Other moves retain their existing no-answer policy.
-                if (areaCheck && PathEntersArea(unit, walk, command, out string area))
+                if (areaCheck && PathEntersArea(unit, walk, command, out string area, out Vector3 enterFrom, out Vector3 enterTo))
                 {
                     failure = $"{WalksIntoAreaFailure} {area}";
+                    // ★ coverage7 follow-ups: where the game's own path enters it, for a priced crossing next
+                    // (TacticalEngine: "[through X]" advances).
+                    LastAreaCrossing = new AreaCrossing { Unit = unit, From = enterFrom, To = enterTo };
                     return true;
                 }
                 return attackCheck && WalkProvokesMore(unit, walk, command, pathAttackers, pricedAttacks, out failure);
@@ -710,9 +713,24 @@ namespace CompanionAI_Pathfinder.GameInterface
             }
         }
 
-        private static bool PathEntersArea(UnitEntityData unit, List<Vector3> points, UnitCommand command, out string area)
+        private static bool PathEntersArea(UnitEntityData unit, List<Vector3> points, UnitCommand command, out string area) =>
+            PathEntersArea(unit, points, command, out area, out _, out _);
+
+        /// <summary>coverage7 follow-ups: a real-time walk the dispatcher refused because the game's own path enters a
+        /// harmful area: the unit and the path segment that enters it. Read and cleared by the real-time driver.</summary>
+        public sealed class AreaCrossing
+        {
+            public UnitEntityData Unit;
+            public Vector3 From, To;
+        }
+
+        public static AreaCrossing LastAreaCrossing;
+
+        private static bool PathEntersArea(UnitEntityData unit, List<Vector3> points, UnitCommand command, out string area,
+                                           out Vector3 enterFrom, out Vector3 enterTo)
         {
             area = null;
+            enterFrom = enterTo = Vector3.zero;
             try
             {
                 if (points == null || points.Count == 0) return false;
@@ -722,6 +740,8 @@ namespace CompanionAI_Pathfinder.GameInterface
                     if (Analysis.AoeDangerAnalyzer.EnteringDanger(unit, walk[i - 1], walk[i], out string name) > 0f)
                     {
                         area = name ?? "a harmful area";
+                        enterFrom = walk[i - 1];
+                        enterTo = walk[i];
                         return true;
                     }
                 }

@@ -65,7 +65,8 @@
   "context": {
     "enemy_spawns": "RandomReinforcementsPerEncounter [Spawn] rows",
     "summon_control": "on (Log.txt [Summon] rows)",
-    "rests_and_manual_orders": "Author: rests between fights; no manual control of dominated Aeiluvetar"
+    "rests_and_manual_orders": "Author: rests between fights; no manual control of dominated Aeiluvetar",
+    "cheats": "Author (22 November 2026): infinite-health cheat on; companions took damage without losing HP"
   },
   "checks": "See COVERAGE7_REVIEW_CHECKS.json; original played-package checks remain COVERAGE7_CHECKS.json"
 }

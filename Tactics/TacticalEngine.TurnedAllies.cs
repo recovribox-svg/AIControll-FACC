@@ -74,6 +74,50 @@ namespace CompanionAI_Pathfinder.Tactics
         }
 
         /// <summary>
+        /// ★ coverage7 follow-ups (Codex's coverage7 review, domination timeline): a party unit's faction state when it changes
+        /// between turned (an enemy's control) and not, as AI Control sees it: its current and original faction, whether it is
+        /// of the player's faction and directly controllable, and the effect that switched it. Codex could not settle from the
+        /// logs why party units still made attacks of opportunity on Aeiluvetar after her successful re-save; these rows give
+        /// the next replay that state. A transition only, at most 16 rows a fight; no game state is changed.
+        /// </summary>
+        private static void ObserveFaction(UnitEntityData unit, bool turned, string where)
+        {
+            if (unit == null) return;
+            try
+            {
+                string id = unit.UniqueId;
+                bool known = s_TurnedState.TryGetValue(id, out bool was);
+                if (known && was == turned) return;
+                if (s_TurnedState.Count > 512) s_TurnedState.Clear();
+                if (!known && !turned) { s_TurnedState[id] = false; return; }   // nothing to report until it is turned once
+                s_TurnedState[id] = turned;
+                if (s_FactionRows >= 16 || CombatMemory.Fight != s_FactionFight)
+                {
+                    if (CombatMemory.Fight != s_FactionFight) { s_FactionFight = CombatMemory.Fight; s_FactionRows = 0; }
+                    else return;
+                }
+                s_FactionRows++;
+                string by = null;
+                foreach (var buff in unit.Buffs)
+                    if (buff?.Blueprint?.GetComponent<Kingmaker.UnitLogic.FactLogic.ChangeFaction>() != null) { by = buff.Name; break; }
+                var d = unit.Descriptor;
+                Main.Log($"[Faction] {unit.CharacterName}[{ShortId(unit)}] {(turned ? "turned" : "back")} ({where}): faction " +
+                         $"{d?.Faction?.name ?? "?"}, original {d?.FactionOriginal?.name ?? "?"}, player faction {unit.IsPlayerFaction}, " +
+                         $"directly controllable {unit.IsDirectlyControllable}, switched by {by ?? "none"}");
+            }
+            catch { }
+        }
+
+        private static readonly Dictionary<string, bool> s_TurnedState = new Dictionary<string, bool>();
+        private static int s_FactionRows, s_FactionFight = -1;
+
+        private static string ShortId(UnitEntityData unit)
+        {
+            string id = unit?.UniqueId ?? "";
+            return id.Length > 5 ? id.Substring(id.Length - 5) : id;
+        }
+
+        /// <summary>
         /// An option that only hurts an ally under an enemy's control: a weapon attack on it (its damage is all it does), a walk
         /// to attack it, a leap at it, or a Coup de Grace. Spells and maneuvers stay: their control counts, their damage is
         /// friendly fire (ScoreAbility).

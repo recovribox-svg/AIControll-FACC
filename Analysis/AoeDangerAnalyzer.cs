@@ -626,6 +626,31 @@ namespace CompanionAI_Pathfinder.Analysis
             }
         }
 
+        /// <summary>
+        /// coverage7 follow-ups: how much <paramref name="aoe"/> works against <paramref name="unit"/> each round it stays inside
+        /// (EvaluateEffectDanger's level: its content times the chance it affects the unit, 0..1); 0 when it does not.
+        /// </summary>
+        public static float AreaDangerOn(UnitEntityData unit, AreaEffectEntityData aoe)
+        {
+            if (unit == null || !IsLive(aoe)) return 0f;
+            try { return EvaluateEffectDanger(unit, aoe, quiet: true)?.DangerLevel ?? 0f; }
+            catch { return 0f; }
+        }
+
+        /// <summary>coverage7 follow-ups: the unit stands in some live area now (the game's own list of units inside).</summary>
+        public static bool InAnyLiveArea(UnitEntityData unit)
+        {
+            try
+            {
+                var areaEffects = Game.Instance?.State?.AreaEffects;
+                if (unit == null || areaEffects == null) return false;
+                foreach (var aoe in areaEffects)
+                    if (IsLive(aoe) && aoe.Blueprint?.Shape != AreaEffectShape.AllArea && IsUnitInsideEffect(unit, aoe)) return true;
+            }
+            catch { }
+            return false;
+        }
+
         /// <summary>★ v0.3.28 test 15: <see cref="Covers"/> for a live area the caller found itself (a swarm's space,
         /// CombatMath.SwarmStrikes).</summary>
         public static bool CoversPoint(AreaEffectEntityData aoe, Vector3 point, float corpulence) => IsLive(aoe) && Covers(aoe, point, corpulence);

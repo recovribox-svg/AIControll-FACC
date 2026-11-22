@@ -66,6 +66,9 @@ namespace CompanionAI_Pathfinder.Tactics
         // identities, not another cache and not a request to read or simulate the actor again.
         internal object RoutineIdentity;
         internal float RoutineLands;
+        /// <summary>coverage7 follow-ups: each attack line's hit chance, in the routine's line order, for on-hit riders that
+        /// fire only for some weapons or attacks (CombatMath.OnHitHp reads the line's weapon from the routine).</summary>
+        internal float[] LineHits;
         /// <summary>★ sneak attack (slice D2): this attack makes the target flanked, as its second engager, with
         /// <see cref="FlankPartner"/> (the one other unit that counts as engaging it).</summary>
         public bool FlankedBySecond;
@@ -314,10 +317,13 @@ namespace CompanionAI_Pathfinder.Tactics
             var run = ValueModel.GrappleRun.Begin();
             float freeDamage = 0f;
             int natural = 0;
+            result.LineHits = new float[routine.Lines.Count];
+            int lineAt = 0;
             foreach (var line in routine.Lines)
             {
                 var d = delta?.Invoke(line.Weapon, line.Index) ?? new KeyValuePair<int, float>(0, 0f);
                 float lineDamage = ExpectedWeaponLine(line, d.Key, d.Value, lands, out float p, out float perHit);
+                result.LineHits[lineAt++] = p;
                 if (grapple != null) lineDamage = PriceGrabLine(line, grapple, lineDamage, p, ref run, ref freeDamage, ref natural);
                 if (MagusMechanics.WeaponDeliversTouch(line.Weapon?.Blueprint, trackTouch, line.Weapon == unit.Body.EmptyHandWeapon))
                 {

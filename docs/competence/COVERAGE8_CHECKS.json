@@ -1,0 +1,79 @@
+{
+  "slice": "coverage7 follow-ups (coverage8)",
+  "date": "2026-11-22",
+  "author": "Claude",
+  "checked_source_commit": "17e3e1e1c35843a519dcc408395c1e7ae73fe0e8",
+  "base": {
+    "branch": "codex/coverage7-review",
+    "commit": "8e1dd27",
+    "pr": 103
+  },
+  "dll": {
+    "mvid": "828dc676-d296-4f0a-9e9a-70b6f6487c09",
+    "sha256": "71e5570604d1ad1e1148dac8d2a9ef5e88337f669a03346689b50d2387ba6897"
+  },
+  "package": {
+    "path": "test-builds/AI-Control-FACC-v0.3.60-dev-coverage8-17e3e1e-UMM-test.zip",
+    "sha256": "e3fd89a3769406c321ef0ff2d7083c560be2c2124fb22100bcecdd3d58ec772d",
+    "manifest_version": "0.3.60"
+  },
+  "codex_head_reverification": {
+    "commit": "8e1dd27",
+    "release_build": "0 warnings, 0 errors",
+    "unit_tests": 1110,
+    "profile_audit": "exit 0; every line identical to the coverage7 baseline except CAST-OUTCOME 12, OFFENSIVE-AFFLICTION 18, FREEING 12->13, RELIEF 24->32",
+    "fusion_matrix": "byte-identical to coverage7 (14,789 admitted / 13,387 joint)",
+    "summon_detail": "byte-identical"
+  },
+  "release_build": {
+    "warnings": 0,
+    "errors": 0,
+    "references": "supplied game assembly (Managed) and UnityModManager"
+  },
+  "unit_tests": {
+    "passed": 1118,
+    "failed": 0,
+    "new": [
+      "OnHitRulesTests (8)"
+    ]
+  },
+  "script_tests": {
+    "BlueprintInventory": 27,
+    "InvocationLedger": 21,
+    "ProfileAudit supplement": 3
+  },
+  "profile_audit": {
+    "exit": 0,
+    "loaded": 45244,
+    "failed": 1,
+    "allowed": 1,
+    "failed_note": "the known raw-export enum mismatch, an allowed negative input",
+    "new_sections": {
+      "COVERAGE7-FOLLOWUPS": 20
+    },
+    "changed_sections": {
+      "OFFENSIVE-AFFLICTION": "18 -> 27",
+      "APPROACH-SPOT": "route check reads PlanApproachMiss; 28 checks unchanged"
+    },
+    "other_lines": "identical to Codex's head on the same inputs",
+    "fusion_matrix": "byte-identical to Codex's head and coverage7",
+    "summon_detail": "byte-identical",
+    "magus": "MAGUS 32 in this scope; the 44-check supplementary stock run was not repeated (no Magus code changed)"
+  },
+  "native_harnesses": {
+    "ToggleCosts": 98,
+    "TomeBurn": 14,
+    "ToyBoxSpend": 10
+  },
+  "added_external_references": [
+    "AbstractWeaponTrigger::Group (field)",
+    "ContextActionDispelMagic::OnlyEnemyAreaEffects (field)",
+    "SimpleBlueprint::op_Implicit"
+  ],
+  "added_references_note": "all three compile against the supplied assembly",
+  "not_run": [
+    "gameplay (unplayed)",
+    "Unity timing of the approach counters",
+    "live area dispels, through-area walks, on-hit firings"
+  ]
+}

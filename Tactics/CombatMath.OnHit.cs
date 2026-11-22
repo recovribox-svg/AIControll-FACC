@@ -62,7 +62,7 @@ namespace CompanionAI_Pathfinder.Tactics
         }
 
         /// <summary>The average of a fixed dice value (count dice + bonus; a value read from ranks counts as written).</summary>
-        private static float DiceAverage(ContextDiceValue value)
+        internal static float DiceAverage(ContextDiceValue value)
         {
             if (value == null) return 0f;
             int count = value.DiceCountValue?.Value ?? 0;

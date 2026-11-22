@@ -1,5 +1,15 @@
 # Test builds
 
+## Next candidate: v0.3.60 coverage8 — coverage7 follow-ups on Codex's corrections (17e3e1e), unplayed
+
+- [Complete UMM ZIP](AI-Control-FACC-v0.3.60-dev-coverage8-17e3e1e-UMM-test.zip?raw=true) · [identity](AI-Control-FACC-v0.3.60-dev-coverage8-17e3e1e-UMM-test.identity.json) · [checksum](AI-Control-FACC-v0.3.60-dev-coverage8-17e3e1e-UMM-test.sha256).
+- Source `17e3e1e`; startup MVID `828dc676-d296-4f0a-9e9a-70b6f6487c09`. UMM **0.3.60**, **unplayed**. Contains coverage7fix1.
+- On-hit riders per attack line; Abandon Flesh's removal heal; point dispels priced by the areas they end; real-time
+  advances priced through an area their real path crosses (author-approved); approach timings and faction rows.
+- 1,118 unit + 27/21/3 script tests, Release 0 warnings, ProfileAudit and native harnesses 98/14/10 pass.
+- [Page and replay](../docs/COVERAGE7_FOLLOWUPS.md), [checks](../docs/competence/COVERAGE8_CHECKS.json),
+  [compiler provenance](../docs/competence/COVERAGE8_BUILD_PROVENANCE.json). No merge, `main`, tag or release.
+
 ## Coverage7 playtest corrections — 0.3.60 development test (22 November 2026)
 
 - [Complete UMM ZIP](AI-Control-FACC-v0.3.60-dev-coverage7fix1-fd9cdda-UMM-test.zip?raw=true) · [identity](AI-Control-FACC-v0.3.60-dev-coverage7fix1-fd9cdda-UMM-test.identity.json) · [checksum](AI-Control-FACC-v0.3.60-dev-coverage7fix1-fd9cdda-UMM-test.sha256).
