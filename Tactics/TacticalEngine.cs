@@ -2958,7 +2958,7 @@ namespace CompanionAI_Pathfinder.Tactics
             long discoveryStarted = ctx.Timings != null ? System.Diagnostics.Stopwatch.GetTimestamp() : 0;
             try
             {
-                ctx.DiscoveredAbilities = AbilityDiscovery.Gather(ctx.Unit);
+                ctx.DiscoveredAbilities = AbilityDiscovery.Gather(ctx.Unit, includePotionHandoffs: !GameInterface.SummonControl.IsOrdinarySummon(ctx.Unit));
                 // ★ user-ability-blacklist: what the lists block is never appraised or offered (the same list when nothing is).
                 ctx.AllowedAbilities = UserAbilityPolicy.Allowed(ctx.Blocks, ctx.Unit, ctx.DiscoveredAbilities, ctx.Unused);
             }
@@ -3296,6 +3296,9 @@ namespace CompanionAI_Pathfinder.Tactics
             return dispel.CheckSchoolOrDescriptor ? school || descriptor : school && descriptor;
         }
 
+        private static bool CanReceivePotion(UnitEntityData unit, UnitEntityData target) =>
+            target != null && PotionHandoffRules.CanReceive(target == unit, unit.IsEnemy(target), IsSummon(target));
+
         private static ActionSlot SlotOf(AbilityData ability)
         {
             if (ability.RequireFullRoundAction) return ActionSlot.FullRound;
@@ -3456,6 +3459,7 @@ namespace CompanionAI_Pathfinder.Tactics
 
             var slot = SlotOf(ability);
             var targets = new List<UnitEntityData>();
+            bool handoff = ability.PotionForOther;
             bool selfOnly = ability.TargetAnchor == Kingmaker.UnitLogic.Abilities.Blueprints.AbilityTargetAnchor.Owner ||
                             ability.Range == AbilityRange.Personal;
 
@@ -3534,13 +3538,18 @@ namespace CompanionAI_Pathfinder.Tactics
             foreach (var target in targets.Distinct())
             {
                 if (onlyTarget != null && target != onlyTarget) continue;
+                if (handoff && !CanReceivePotion(ctx.Unit, target))
+                {
+                    unused?.Record(witness, IsSummon(target) ? UnusedReason.ItemOnSummon : UnusedReason.NoTarget);
+                    continue;
+                }
                 // Native factory uses a weapon only for an enemy. Helpful held touches retain normal ally delivery.
                 if (nativeWeaponCharge && ctx.Unit.IsEnemy(target)) continue;
                 bool guardedTouch = PureMagePolicy.IsActive(ctx.Settings) && SpellDelivery.IsPhysicalTouch(ability);
                 if (guardedTouch && ctx.Unit.IsEnemy(target))
                 { unused?.Record(witness, UnusedReason.PureMage); continue; }
                 var wrapper = summonPoint.HasValue ? new TargetWrapper(summonPoint.Value) : AbilityProfile.TargetOn(ability, target);
-                if (wrapper == null)
+                if (wrapper == null || handoff && wrapper.Unit != target)
                 {
                     unused?.Record(witness, UnusedReason.NoTarget);
                     controlAims?.Record(target, null, "no native target wrapper");
@@ -3963,7 +3972,7 @@ namespace CompanionAI_Pathfinder.Tactics
         {
             cast = roll = null;
             float loss = 0f;
-            // Potions and wands do not provoke (AbilityData.ProvokeAttackOfOpportunity); a potion is drunk, never cast.
+            // UnitUseAbility.OnTick skips its defensive casting check for every potion, including PotionForOther.
             // ★ v0.3.18 (review): the check is made for a standard-action command (UnitUseAbility.OnTick), and a
             // full-round cast is one too (AbilityData.RequireFullRoundAction needs RuntimeActionType Standard: a
             // spontaneous caster's metamagic, Summon Monster): only standard-slot casts were priced.
@@ -6148,6 +6157,11 @@ namespace CompanionAI_Pathfinder.Tactics
             // ★ summon control: a stale option of a summoned creature (a summoning spell, an item, a material component)
             // is refused before a walk or a boost is spent for it. A failed option: not offered again this turn.
             if (c.Ability != null && (failure = GameInterface.SummonControl.AbilityRefusal(unit, c.Ability)) != null) return false;
+            if (c.Ability?.PotionForOther == true && !CanReceivePotion(unit, c.Target))
+            {
+                failure = "potion handoff requires another non-summoned ally";
+                return false;
+            }
             if (c.InfusionSwitch != null) return ExecuteInfusionSwitch(unit, c, out command, out failure);
             // ★ v0.3.17: an approach around a harmful area walks to the spot it was priced for, then acts on the next
             // decision (as touch spells do in turn-based). The plain path the game would pick to the target goes through

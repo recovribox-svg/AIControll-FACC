@@ -7,8 +7,10 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using Kingmaker.Blueprints;
+using Kingmaker.Blueprints.Items.Equipment;
 using Kingmaker.EntitySystem.Entities;
 using Kingmaker.Items;
+using Kingmaker.Items.Slots;
 using Kingmaker.UnitLogic.Abilities;
 using Kingmaker.UnitLogic.Abilities.Blueprints;
 using Kingmaker.UnitLogic.Abilities.Components;
@@ -23,7 +25,9 @@ namespace CompanionAI_Pathfinder.Tactics
         /// known, metamagic (custom) and special spells. Variant parents are replaced by their variants. Not filtered by
         /// availability, consumable settings or blacklists: each engine applies those.
         /// </summary>
-        public static List<AbilityData> Gather(UnitEntityData unit)
+        public static List<AbilityData> Gather(UnitEntityData unit) => Gather(unit, false);
+
+        internal static List<AbilityData> Gather(UnitEntityData unit, bool includePotionHandoffs)
         {
             var seen = new HashSet<string>();
             var result = new List<AbilityData>();
@@ -128,6 +132,15 @@ namespace CompanionAI_Pathfinder.Tactics
                         continue;
                     }
                     Add(ability.Data);
+                    if (includePotionHandoffs &&
+                        ability.SourceItem is ItemEntityUsable potion &&
+                        potion.Blueprint.Type == UsableItemType.Potion &&
+                        CanOfferPotionHandoff(ability.Data, potion.HoldingSlot is UsableSlot) &&
+                        potion.Ability != null)
+                    {
+                        // MechanicActionBarSlotItem.GetConvertedAbilityData keeps the fact (and its source item).
+                        AddOne(new AbilityData(potion.Ability) { PotionForOther = true }, false);
+                    }
                 }
             }
             catch (Exception ex)
@@ -154,6 +167,13 @@ namespace CompanionAI_Pathfinder.Tactics
                            $"[Abilities] {unit.CharacterName}: left out {leftOut.Count} the game does not offer to the player: " +
                            string.Join(", ", leftOut.Distinct().Take(12)));
             return result;
+        }
+
+        internal static bool CanOfferPotionHandoff(AbilityData ability, bool quickSlot)
+        {
+            var delivery = ability?.GetDeliverBlueprint();
+            return delivery != null && PotionHandoffRules.CanOffer(quickSlot, delivery.CanTargetFriends,
+                ability.Range == AbilityRange.Personal);
         }
 
         // Every accepted converted option counts, including one reached directly through a variant/fact. Keep the
@@ -204,7 +224,8 @@ namespace CompanionAI_Pathfinder.Tactics
         /// </summary>
         public static string Key(AbilityData a) =>
             $"{a.Blueprint.AssetGuid}|{a.Spellbook?.Blueprint?.AssetGuid}|{a.SourceItem?.UniqueId}|{MetamagicTag(a)}" +
-            (a.ConvertedFrom != null ? $"|conv{SafeLevel(a.ConvertedFrom)}" : "") + AbilityProfile.FusionIdentityOf(a);
+            (a.ConvertedFrom != null ? $"|conv{SafeLevel(a.ConvertedFrom)}" : "") +
+            (a.PotionForOther ? "|potion-for-other" : "") + AbilityProfile.FusionIdentityOf(a);
 
         /// <summary>★ v0.3.18: conversions of one spell from slots of one level are the same option.</summary>
         private static string ConversionKey(AbilityData a) =>

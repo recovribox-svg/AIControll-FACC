@@ -221,6 +221,7 @@ namespace CompanionAI_Pathfinder.Tactics
         }
 
         private static bool TouchApproachFirst(Candidate c) => c.NeedsMove && c.Target != null && c.Ability != null &&
-            c.Ability.StickyTouch == null && c.Ability.Blueprint.StickyTouch != null && SpellDelivery.IsPhysicalTouch(c.Ability);
+            (c.Ability.PotionForOther || c.Ability.StickyTouch == null && c.Ability.Blueprint.StickyTouch != null &&
+             SpellDelivery.IsPhysicalTouch(c.Ability));
     }
 }
