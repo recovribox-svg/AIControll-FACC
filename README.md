@@ -1,4 +1,6 @@
-<a href='https://ko-fi.com/Y6B02B4UCN' target='_blank'><img height='36' style='border:0px;height:36px;' src='https://storage.ko-fi.com/cdn/kofi6.png?v=6' border='0' alt='Buy Me a Coffee at ko-fi.com' /></a>
+<a href="https://modholdmods.com/g/pathfinder-wotr/mods/340/ai-control-fully-autonomous-combat-companions"><img src="https://modholdmods.com/badge/m/340-dark.png" width="498" height="156" alt="Download AI Control on Modhold"></a>
+
+<a href='https://ko-fi.com/Y6B02B4UCN' target='_blank'><img height='36' style='border:0px;height:36px;' src='https://storage.ko-fi.com/cdn/kofi6.png?v=6' border='0' alt='Buy Me a Coffee at ko-fi.com' /></a>  
 
 # AI Control - Fully Autonomous Combat Companions
 
