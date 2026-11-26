@@ -472,7 +472,7 @@ namespace CompanionAI_Pathfinder.Tactics
                         break;
                     case BuffPartKind.ExtraAttack: extraAttacks = Math.Max(extraAttacks, amount); break;
                     case BuffPartKind.SizeUp: sizeUp = CombatMath.GrownCorpulence(ally, buffs) > 0f; break;
-                    case BuffPartKind.ForbidsSpells: forbidsSpells = !ignoreForbid; break;
+                    case BuffPartKind.ForbidsSpells: forbidsSpells |= !ignoreForbid && BanReaches(p, abilityCtx, ally); break;
                 }
             }
             if (sizeUp)
@@ -1397,6 +1397,8 @@ namespace CompanionAI_Pathfinder.Tactics
                 foreach (var u in read.UnreadFor(ctx.Unit)) unread.Add(u);
             }
             // ★ v0.3.70 playtest: a prohibition this toggle was seen to apply at run time (ToggleBansSpells) counts too.
+            // ★ v0.3.70 rage review: the stock Inspired Rage prohibition is now read from the effect buff's start actions
+            // (BuffParts.ReadGuardedBans); this stays for a prohibition another mod applies some other way.
             if (ally != ctx.Unit && ToggleBansSpells(toggleCtx) && !parts.Exists(x => x.Kind == BuffPartKind.ForbidsSpells))
                 parts.Add(new BuffPart { Kind = BuffPartKind.ForbidsSpells, Owner = toggleCtx.AssociatedBlueprint as BlueprintBuff });
             // ★ v0.3.30 test 2: mental stats are read for every recipient (StatUseOf), as for spells.
@@ -1406,6 +1408,28 @@ namespace CompanionAI_Pathfinder.Tactics
             // who accepted it (Inspired Rage on a caster) loses its spells: that counts here.
             return AppraiseParts(ctx, ctx.Unit, toggleCtx, level, buffs, parts, unread, ally, rounds, false, -1f,
                                  $"{ctx.Unit.UniqueId}|{toggleKey}|{ally.UniqueId}", ally == ctx.Unit, result);
+        }
+
+        /// <summary>
+        /// ★ v0.3.70 rage review: the game would forbid <paramref name="ally"/>'s spells by this part: not when it has the
+        /// prohibition's ignore feature (ForbidSpellCasting.OnTurnOn), nor when a branch on the way to the child buff that
+        /// forbids is not taken under <paramref name="context"/> (Inspired Rage from a skald with Master Skald). A condition
+        /// that cannot be read keeps the prohibition: its cost is not assumed away.
+        /// </summary>
+        internal static bool BanReaches(BuffPart part, MechanicsContext context, UnitEntityData ally)
+        {
+            try
+            {
+                if (part.ForbidIgnore != null && ally?.Descriptor != null && ally.Descriptor.HasFact(part.ForbidIgnore)) return false;
+                if (part.Guards == null) return true;
+                foreach (var (checker, branch) in part.Guards)
+                {
+                    bool? result = AbilityProfile.CheckSafe(checker, context, ally);
+                    if (result.HasValue && result.Value != branch) return false;
+                }
+            }
+            catch { }
+            return true;
         }
 
         /// <summary>The note of a toggle's last valuation (all recipients), for the "[Buff]" line.</summary>

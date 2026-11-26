@@ -261,6 +261,8 @@ namespace CompanionAI_Pathfinder.Tactics
                 float givenUp = Math.Max(0f, best - keeps);
                 float value = gain * (1f - (risk?.StopChance ?? 0f)) - (risk?.Cost ?? 0f) - givenUp;
                 bestSeen = Math.Max(bestSeen, value);
+                if (!step) NoteEscape(ctx, "move:outofswarm", $"Move out of {left ?? names}'s swarm", point.Value, gain, givenUp,
+                                      left == null ? clear : null);
                 if (value < MinMainValue || (chosen != null && value <= chosen.Value)) continue;
                 chosen = new Candidate
                 {

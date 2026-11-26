@@ -29,25 +29,52 @@ namespace CompanionAI_Pathfinder.Tactics
 
         internal sealed class TeleportPlan
         {
+            /// <summary>The unit the landing must be in reach of; null for an escape (★ v0.3.70 P1).</summary>
             internal UnitEntityData Anchor;
             internal Vector3 Origin, AnchorAt;
             internal float AnchorFacing, WeaponReach;
             internal int Frame;
             internal bool RealTime;
+            /// <summary>★ v0.3.70 P1: the anchor is an enemy (an approach) or an ally (a touch spell's recipient).</summary>
+            internal bool AnchorEnemy;
+            /// <summary>★ v0.3.70 P1: what the landing must keep (a cone's recipients, an escape's purpose and spot).</summary>
+            internal Func<Vector3, bool> Keeps;
             internal BlueprintComponent Delivery;
             internal List<UnitEntityData> Travellers;
             internal Vector3[] Starts, Landings;
             internal IReadOnlyList<UnitEntityData> Allies, Enemies, Downed;
         }
 
-        private static bool CanOfferTeleport(TacticalContext ctx, AbilityData ability)
+        /// <summary>
+        /// Null when the teleport can be offered, else why not (the [Unused] witness).
+        /// ★ v0.3.70 P3 (author-approved): an item's teleport (Evading Steps: Dimension Door, Mass once a day) under the item
+        /// settings, the native Use Magic Device chance and "spell slots first", as every other item ability (C3).
+        /// ★ v0.3.70 P1: a Pure Mage too - its escapes and casting spots; weapon approaches it never builds (PureMageAllows).
+        /// </summary>
+        private static UnusedReason? TeleportGate(TacticalContext ctx, AbilityData ability)
         {
-            return ability.SourceItem == null && !SpendsMaterial(ability) && BurnOf(ability) == 0 &&
-                ctx.Permissions.CanWalk && ctx.PureMageWeapon && ctx.Unit.View != null &&
+            if (ability.SourceItem != null)
+            {
+                if (!ConsumablePolicy.IsAllowed(ability) || !(ConsumableDeliveryChance(ctx, ability) > 0f)) return UnusedReason.ConsumablePolicy;
+                if (HasAvailableBookCopy(ctx, ability)) return UnusedReason.SlotCopy;
+            }
+            bool offered = !SpendsMaterial(ability) && BurnOf(ability) == 0 &&
+                ctx.Permissions.CanWalk && ctx.Unit.View != null &&
                 ctx.Unit.RiderPart == null && CastOutcome.HeldChargeOf(ctx.Unit) == null &&
                 ArmedRangedSpell(ctx.Unit) == null && !CombatMath.OnlyDisabledEnemiesLeft &&
                 ctx.Allies.Count + ctx.Enemies.Count + ctx.DownedAllies.Count <= MaxTeleportCombatants;
+            return offered ? (UnusedReason?)null : UnusedReason.TeleportWithheld;
         }
+
+        /// <summary>
+        /// The share of a teleport's gain left after the easy-fight restraint on what it spends: a slot, a daily use or an
+        /// item's charge (★ v0.3.70 P3: CostsNothing reads ItemEntity.IsSpendCharges). A free teleport keeps all of it.
+        /// </summary>
+        private static float TeleportReserve(TacticalContext ctx, AbilityData ability) =>
+            CostsNothing(ability) ? 1f : 1f - ValueModel.LimitedUseDiscount(ctx.Difficulty);
+
+        /// <summary>★ v0.3.70 P3: a used-up item (a scroll, a wand charge) needs the item bar; others only a positive value.</summary>
+        private static bool BelowItemBar(AbilityData ability, float value) => IsSpentItem(ability) && value < MinSpentItemValue;
 
         private static bool TeleportSlotAvailable(UnitEntityData unit, ActionSlot slot)
         {
@@ -68,6 +95,7 @@ namespace CompanionAI_Pathfinder.Tactics
             var unit = ctx.Unit;
             // The usual weapon/advance scoring supplied these destinations and prices. In a decision with a
             // teleport, examine at most the existing free-side budget of aims before one native relaxation.
+            // ★ v0.3.70 P1: and the casts that walk to their casting spot first (a touch, a cone's or a line's spot).
             var approaches = candidates.Where(c => c.TeleportReach > 0f && c.TeleportPayoff > 0f &&
                 c.RiskAt.HasValue && c.Target != null && !ctx.TurnedAllies.Contains(c.Target) &&
                 !CombatMath.IsDisabled(c.Target))
@@ -80,6 +108,10 @@ namespace CompanionAI_Pathfinder.Tactics
                 return;
             }
             float fromHere = candidates.Where(c => !WalksBeforeActing(c) && c.Offensive && Affordable(ctx, c))
+                .Select(c => c.Value).DefaultIfEmpty(0f).Max();
+            // ★ v0.3.70 P1: a helpful cast (a touch heal) is weighed against everything the unit could do from here.
+            float fromHereAny = candidates.Where(c => !WalksBeforeActing(c) && c.Teleport == null && Affordable(ctx, c) &&
+                                                      c.Slot != ActionSlot.Free && c.Slot != ActionSlot.Swift)
                 .Select(c => c.Value).DefaultIfEmpty(0f).Max();
 
             Candidate best = null;
@@ -103,12 +135,13 @@ namespace CompanionAI_Pathfinder.Tactics
                 bool nextAttackNow = (slot == ActionSlot.Free || slot == ActionSlot.Swift ||
                                       slot == ActionSlot.Move && unit.HasMoveAction()) && ctx.HasStandard;
                 var delivery = AbilityProfile.Get(ability).TeleportDelivery;
-                float reserve = CostsNothing(ability) ? 1f : 1f - ValueModel.LimitedUseDiscount(ctx.Difficulty);
+                float reserve = TeleportReserve(ctx, ability);
                 bool? needLos = null;
                 foreach (var approach in approaches)
                 {
                     if (aims++ >= SpotRules.PricedSpots) break;
-                    float alternative = nextAttackNow ? Math.Max(fromHere, Affordable(ctx, approach) ? approach.Value : 0f) : ctx.StayValue;
+                    float here = approach.Offensive ? fromHere : fromHereAny;
+                    float alternative = nextAttackNow ? Math.Max(here, Affordable(ctx, approach) ? approach.Value : 0f) : ctx.StayValue;
                     if (approach.Kind == CandidateKind.Move && nextAttackNow)
                         alternative = Math.Max(alternative, ctx.StayValue);
                     float unpriced = ValueModel.TeleportApproachWorth(approach.TeleportPayoff, alternative, nextAttackNow, AdvanceShare) * reserve;
@@ -128,7 +161,8 @@ namespace CompanionAI_Pathfinder.Tactics
                     {
                         Kind = CandidateKind.Ability, Slot = slot, Ability = ability, Target = aim.Unit,
                         Point = aim.Unit == null ? aim.Point : (Vector3?)null,
-                        NeedLoS = needLos.Value, Key = $"teleport:{CombatMemory.AbilityKey(ability)}:{enemy.UniqueId}"
+                        NeedLoS = needLos.Value, Key = $"teleport:{CombatMemory.AbilityKey(ability)}:{enemy.UniqueId}" +
+                                                       (approach.Kind == CandidateKind.Ability ? ":cast" : "")
                     };
                     if (!Affordable(ctx, option) || memory.Failed.Contains(option.Key) ||
                         SilentlyFailing(ctx, option) || PolicyBlocks(ctx, option))
@@ -144,7 +178,8 @@ namespace CompanionAI_Pathfinder.Tactics
             if (best == null) return;
 
             int witness = ctx.Unused?.Observe(best.Ability) ?? -1;
-            var plan = QuoteTeleportLanding(ctx, bestAim, bestDelivery, bestApproach);
+            var plan = QuoteTeleportLanding(ctx, bestAim, bestDelivery, bestApproach.Target, bestApproach.TeleportReach,
+                                            bestApproach.TeleportKeeps);
             if (plan == null)
             {
                 ctx.Unused?.Record(witness, UnusedReason.TeleportLanding);
@@ -153,7 +188,7 @@ namespace CompanionAI_Pathfinder.Tactics
             var abilityProfile = AbilityProfile.Get(best.Ability);
             var landing = plan.Landings[0];
             float payoff = bestUnpriced * ArcaneDeliveryChance(ctx, best.Ability, false) *
-                CombatMath.CastingConcentrationChance(unit, best.Ability);
+                CombatMath.CastingConcentrationChance(unit, best.Ability) * ConsumableDeliveryChance(ctx, best.Ability);
             float provoke = ProvokeLoss(ctx, best.Ability, abilityProfile, best.Slot, best.Target,
                 unit.Position, payoff, out _, out _);
             float exposure = ExposureCost(ctx, landing) + ValueModel.LeavesAlliesCost(PartyShift(ctx, landing), OwnFall(ctx, landing));
@@ -167,14 +202,146 @@ namespace CompanionAI_Pathfinder.Tactics
 
             best.Value = payoff - provoke - exposure;
             best.CastRiskCost = provoke;
-            if (!(best.Value > 0f))
+            if (!(best.Value > 0f) || BelowItemBar(best.Ability, best.Value))
             {
-                ctx.Unused?.Record(witness, UnusedReason.NoGain);
+                ctx.Unused?.Record(witness, best.Value > 0f ? UnusedReason.ItemBar : UnusedReason.NoGain, best.Value);
                 return;
             }
 
             best.Teleport = plan;
-            best.Label = $"{best.Ability.Name}->{plan.Anchor.CharacterName} (teleport approach, {plan.Travellers.Count - 1} passengers, landing risk {exposure:F1})";
+            string purpose = bestApproach.Kind == CandidateKind.Ability ? $"teleport to cast {bestApproach.Ability?.Name}" : "teleport approach";
+            best.Label = $"{(best.Ability.SourceItem != null ? "Item:" : "")}{best.Ability.Name}->{plan.Anchor.CharacterName} " +
+                         $"({purpose}, {plan.Travellers.Count - 1} passengers, landing risk {exposure:F1})";
+            candidates.Add(best);
+            ctx.Unused?.Score(witness, best.Value);
+        }
+
+        /// <summary>★ v0.3.70 P1: an escape walk priced this decision, for a teleport to replace.</summary>
+        internal sealed class EscapeQuote
+        {
+            internal string Key, Label;
+            internal Vector3 Point;
+            /// <summary>What reaching the spot is worth before the walk's risk; what the walk gives up besides.</summary>
+            internal float Gross, WalkGivenUp;
+            /// <summary>What the spot must still do (out of a reach, out of a swarm); null when nothing beyond safety.</summary>
+            internal Func<Vector3, bool> Holds;
+        }
+
+        private const int MaxEscapeQuotes = 8;
+        /// <summary>★ v0.3.70 P1: how far the native landing relaxation may move an escape from the spot it was priced at.</summary>
+        private const float EscapeDrift = 1.5f;
+
+        /// <summary>
+        /// ★ v0.3.70 P1: an escape walk's spot and worth, kept for <see cref="AddTeleportEscape"/> whatever the walk's own risk
+        /// leaves of it (a walk priced out by its attacks of opportunity is the one a teleport is for). Only while the unit has
+        /// a teleport aimed at a point.
+        /// </summary>
+        private static void NoteEscape(TacticalContext ctx, string key, string label, Vector3 point, float gross, float walkGivenUp,
+                                       Func<Vector3, bool> holds)
+        {
+            if (ctx.TeleportAbilities == null || !(gross > 0f) || !ctx.TeleportAbilities.Exists(a => a.CanTargetPoint)) return;
+            var quotes = ctx.EscapeQuotes ?? (ctx.EscapeQuotes = new List<EscapeQuote>(4));
+            if (quotes.Count >= MaxEscapeQuotes) return;
+            quotes.Add(new EscapeQuote { Key = key, Label = label, Point = point, Gross = gross, WalkGivenUp = Math.Max(0f, walkGivenUp), Holds = holds });
+        }
+
+        /// <summary>
+        /// ★ v0.3.70 P1 (author-approved movement): a point-aimed teleport (Dimension Door, Evading Steps) to an escape's spot
+        /// in place of the walk there: no attacks of opportunity and no area on the way, the cast's own provoke and the
+        /// action it takes priced. The same native landing and safety as an approach, one relaxation, both combat modes.
+        /// </summary>
+        private static void AddTeleportEscape(TacticalContext ctx, List<Candidate> candidates, TurnMemory memory)
+        {
+            if (ctx.TeleportAbilities == null || ctx.EscapeQuotes == null || ctx.EscapeQuotes.Count == 0) return;
+            var unit = ctx.Unit;
+            // A main-action teleport gives up the best main action this turn; the walk keeps it.
+            float bestMain = candidates.Where(c => (c.Slot == ActionSlot.Standard || c.Slot == ActionSlot.FullRound) &&
+                                                   c.Teleport == null && Affordable(ctx, c))
+                                       .Select(c => c.Value).DefaultIfEmpty(0f).Max();
+            var walks = new Dictionary<string, float>(StringComparer.Ordinal);
+            foreach (var c in candidates)
+                if (c.Kind == CandidateKind.Move && c.Key != null && (!walks.TryGetValue(c.Key, out float v) || c.Value > v))
+                    walks[c.Key] = c.Value;
+            var quotes = ctx.EscapeQuotes.OrderByDescending(q => q.Gross - q.WalkGivenUp).ToArray();
+
+            Candidate best = null;
+            EscapeQuote bestQuote = null;
+            TargetWrapper bestAim = null;
+            BlueprintComponent bestDelivery = null;
+            float bestUnpriced = 0f;
+            int aims = 0;
+            foreach (var ability in ctx.TeleportAbilities.Where(a => a.CanTargetPoint).OrderBy(SlotOf))
+            {
+                var slot = SlotOf(ability);
+                bool spendsMain = slot == ActionSlot.Standard || slot == ActionSlot.FullRound;
+                float bar = spendsMain ? MinMainValue : QuickBar(slot, ability);
+                float reserve = TeleportReserve(ctx, ability);
+                var delivery = AbilityProfile.Get(ability).TeleportDelivery;
+                bool? needLos = null;
+                foreach (var quote in quotes)
+                {
+                    if (aims >= SpotRules.PricedSpots) break;
+                    float unpriced = ValueModel.TeleportEscapeWorth(quote.Gross, quote.WalkGivenUp, bestMain, spendsMain, reserve);
+                    walks.TryGetValue(quote.Key, out float walk);
+                    if (unpriced < bar || unpriced <= Math.Max(bestUnpriced, walk)) continue;
+                    aims++;
+                    var aim = new TargetWrapper(quote.Point);
+                    if (!needLos.HasValue) needLos = new UnitUseAbility(ability, aim).NeedLoS;
+                    if (HorizontalDistance(unit.Position, quote.Point) < 0.5f ||
+                        !InRangeNow(unit, quote.Point, ability.GetApproachDistance(null), needLos.Value) || !ability.CanTarget(aim))
+                    { ctx.Unused?.Record(ctx.Unused.Observe(ability), UnusedReason.NoTarget); continue; }
+                    var option = new Candidate
+                    {
+                        Kind = CandidateKind.Ability, Slot = slot, Ability = ability, Point = quote.Point, NeedLoS = needLos.Value,
+                        Key = $"teleport-escape:{CombatMemory.AbilityKey(ability)}:{quote.Key}"
+                    };
+                    if (!Affordable(ctx, option) || memory.Failed.Contains(option.Key) || SilentlyFailing(ctx, option) ||
+                        PolicyBlocks(ctx, option))
+                    { ctx.Unused?.Record(ctx.Unused.Observe(ability), UnusedReason.CombatPolicy); continue; }
+                    best = option; bestQuote = quote; bestAim = aim; bestDelivery = delivery; bestUnpriced = unpriced;
+                }
+                if (aims >= SpotRules.PricedSpots) break;
+            }
+            if (best == null) return;
+
+            int witness = ctx.Unused?.Observe(best.Ability) ?? -1;
+            var spot = bestQuote.Point;
+            var holds = bestQuote.Holds;
+            Func<Vector3, bool> keeps = p => HorizontalDistance(p, spot) <= EscapeDrift && Math.Abs(p.y - spot.y) <= SpotRules.SameFloor &&
+                                             (holds == null || holds(p));
+            var plan = QuoteTeleportLanding(ctx, bestAim, bestDelivery, null, 0f, keeps);
+            if (plan == null)
+            {
+                ctx.Unused?.Record(witness, UnusedReason.TeleportLanding);
+                return;
+            }
+            var landing = plan.Landings[0];
+            float payoff = bestUnpriced * ArcaneDeliveryChance(ctx, best.Ability, false) *
+                CombatMath.CastingConcentrationChance(unit, best.Ability) * ConsumableDeliveryChance(ctx, best.Ability);
+            float provoke = ProvokeLoss(ctx, best.Ability, AbilityProfile.Get(best.Ability), best.Slot, null,
+                unit.Position, payoff, out _, out _);
+            // The escape's worth was priced at its spot: the relaxed landing's extra danger, and what leaving costs the others
+            // (the walk's MoveRisk charges both; its path parts are what the teleport saves).
+            float exposure = Math.Max(0f, SpotDrop(ctx, unit, landing) - SpotDrop(ctx, unit, spot)) * AllyWorth(ctx, unit) +
+                             ValueModel.LeavesAlliesCost(PartyShift(ctx, landing), 0f);
+            for (int i = 1; i < plan.Travellers.Count; i++)
+            {
+                var ally = plan.Travellers[i];
+                float before = StandingDropChance(ctx, ally, plan.Starts[i], unit, plan.Origin);
+                float after = StandingDropChance(ctx, ally, plan.Landings[i], unit, landing);
+                exposure += Math.Max(0f, after - before) * AllyWorth(ctx, ally);
+            }
+            best.Value = payoff - provoke - exposure;
+            best.CastRiskCost = provoke;
+            if (!(best.Value > 0f) || BelowItemBar(best.Ability, best.Value))
+            {
+                ctx.Unused?.Record(witness, best.Value > 0f ? UnusedReason.ItemBar : UnusedReason.NoGain, best.Value);
+                return;
+            }
+            best.Teleport = plan;
+            best.Label = $"{(best.Ability.SourceItem != null ? "Item:" : "")}{best.Ability.Name}->a spot " +
+                         $"(teleport escape: {bestQuote.Label}, {plan.Travellers.Count - 1} passengers, " +
+                         $"landing risk {exposure:F1}{(provoke > 0f ? $", casting provokes -{provoke:F1}" : "")})";
             candidates.Add(best);
             ctx.Unused?.Score(witness, best.Value);
         }
@@ -222,12 +389,13 @@ namespace CompanionAI_Pathfinder.Tactics
         private static bool MovingForTeleport(UnitEntityData unit) =>
             CombatMemory.IsRealTime && unit.View?.MovementAgent?.IsReallyMoving != false;
 
+        /// <param name="anchor">The unit the landing must be within <paramref name="reach"/> of; null for an escape.</param>
+        /// <param name="keeps">What the landing must keep besides (★ v0.3.70 P1).</param>
         private static TeleportPlan QuoteTeleportLanding(TacticalContext ctx, TargetWrapper aim, BlueprintComponent delivery,
-                                                          Candidate approach)
+                                                          UnitEntityData anchor, float reach, Func<Vector3, bool> keeps)
         {
             var unit = ctx.Unit;
-            var anchor = approach.Target;
-            if (MovingForTeleport(anchor) || !TryTeleportAnchor(unit, aim, out var basePoint)) return null;
+            if (anchor != null && MovingForTeleport(anchor) || !TryTeleportAnchor(unit, aim, out var basePoint)) return null;
             var travellers = TeleportTravellers(unit, delivery);
             if (travellers == null) return null;
             var landings = new Vector3[travellers.Count];
@@ -245,8 +413,9 @@ namespace CompanionAI_Pathfinder.Tactics
 
             var plan = new TeleportPlan
             {
-                Anchor = anchor, Origin = unit.Position, AnchorAt = anchor.Position, AnchorFacing = anchor.Orientation,
-                WeaponReach = approach.TeleportReach, Delivery = delivery, Frame = Time.frameCount,
+                Anchor = anchor, Origin = unit.Position, AnchorAt = anchor?.Position ?? Vector3.zero,
+                AnchorFacing = anchor?.Orientation ?? 0f, AnchorEnemy = anchor != null && unit.IsEnemy(anchor), Keeps = keeps,
+                WeaponReach = reach, Delivery = delivery, Frame = Time.frameCount,
                 RealTime = CombatMemory.IsRealTime, Travellers = travellers, Starts = starts, Landings = landings,
                 Allies = ctx.Allies, Enemies = ctx.Enemies, Downed = ctx.DownedAllies
             };
@@ -256,10 +425,11 @@ namespace CompanionAI_Pathfinder.Tactics
         private static bool TeleportLandingSafe(UnitEntityData unit, TeleportPlan plan)
         {
             var at = plan.Landings[0];
-            var enemy = plan.Anchor;
+            var anchor = plan.Anchor;
             var eye = unit.EyePosition - unit.Position;
             if (HorizontalDistance(unit.Position, at) < 0.5f ||
-                !UnitCommand.IsUnitCloseEnough(enemy.Position, at, at + eye, plan.WeaponReach, true, 0f)) return false;
+                anchor != null && !UnitCommand.IsUnitCloseEnough(anchor.Position, at, at + eye, plan.WeaponReach, true, 0f) ||
+                plan.Keeps != null && !plan.Keeps(at)) return false;
 
             bool Taken(UnitEntityData by, Vector3 point, float radius)
             {
@@ -311,11 +481,15 @@ namespace CompanionAI_Pathfinder.Tactics
                 var aim = candidate.Target == null ? new TargetWrapper(candidate.Point.Value) : new TargetWrapper(candidate.Target);
                 // Both drivers choose and issue synchronously. Refuse a retained quote from another frame;
                 // a fresh decision can make another native projection without an issue-time world scan.
+                // ★ v0.3.70 P1: an escape has no anchor; a touch spell's anchor is an ally.
+                bool anchorHolds = anchor == null
+                    ? candidate.Target == null
+                    : anchor.View != null && anchor.Position == plan.AnchorAt &&
+                      (aim.Unit == null || anchor.Orientation == plan.AnchorFacing) && !MovingForTeleport(anchor) &&
+                      !CombatMath.IsDisabled(anchor) && unit.IsEnemy(anchor) == plan.AnchorEnemy && !IsTurnedAlly(anchor);
                 if (candidate.Kind == CandidateKind.Ability && !candidate.NeedsMove && !candidate.MoveFirst &&
                     plan.Frame == Time.frameCount && plan.RealTime == CombatMemory.IsRealTime &&
-                    unit.Position == plan.Origin && anchor?.View != null && anchor.Position == plan.AnchorAt &&
-                    (aim.Unit == null || anchor.Orientation == plan.AnchorFacing) && !MovingForTeleport(anchor) &&
-                    !CombatMath.IsDisabled(anchor) && unit.IsEnemy(anchor) && !IsTurnedAlly(anchor) && unit.IsInCombat &&
+                    unit.Position == plan.Origin && anchorHolds && unit.IsInCombat &&
                     unit.State.CanMove &&
                     CastOutcome.HeldChargeOf(unit) == null && ArmedRangedSpell(unit) == null &&
                     ability?.Caster?.Unit == unit && ability.IsAvailable && SlotOf(ability) == candidate.Slot &&

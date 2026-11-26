@@ -53,10 +53,11 @@ namespace CompanionAI_Pathfinder.Tactics
         internal static bool TrySpellEdge(UnitEntityData ally, out float edge, out int samples) =>
             s_SpellEdges.TryGet(ally?.UniqueId, KindKeyOf(ally), out edge, out samples);
 
-        // ★ v0.3.70 playtest: the toggles whose buffs were seen forbidding an ally's spells. Tome of the Firebird and Mystical
-        // Mayhem (KRXLib) make Inspired Rage apply InspiredRageEffectBuffBeforeMasterSkald (ForbidSpellCasting) at run time,
-        // which the exported blueprints do not show, so the appraisal read no prohibition. Learnt from the game's own state:
+        // ★ v0.3.70 playtest: the toggles whose buffs were seen forbidding an ally's spells, learnt from the game's own state:
         // the banning buff's context chain names the toggle buff whose area applied it (MechanicsContext.ParentContext).
+        // ★ v0.3.70 rage review: the stock Inspired Rage prohibition is read from the blueprints now (InspiredRageEffectBuff
+        // applies InspiredRageEffectBuffBeforeMasterSkald behind a Conditional, BuffParts.ReadGuardedBans). This stays for a
+        // prohibition a mod applies in a way the reader does not follow.
         private const int MaxLearnedBans = 64;
         private static readonly HashSet<BlueprintBuff> s_BanningToggleBuffs = new HashSet<BlueprintBuff>();
         private static readonly HashSet<string> s_BanReadThisFight = new HashSet<string>(StringComparer.Ordinal);

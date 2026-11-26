@@ -42,6 +42,8 @@ namespace CompanionAI_Pathfinder.Tactics
         internal TacticalEngine.GriffonPlan Griffon;
         internal TacticalEngine.TeleportPlan Teleport;
         internal float TeleportReach, TeleportPayoff;
+        /// <summary>★ v0.3.70 P1: what a teleport's landing must keep for this option (a cone's or a line's recipients).</summary>
+        internal Func<Vector3, bool> TeleportKeeps;
         public ActionSlot Slot;
         public float Value;
         public UnitEntityData Target;
@@ -157,6 +159,8 @@ namespace CompanionAI_Pathfinder.Tactics
         internal BlockScope<Kingmaker.Blueprints.BlueprintGuid> Blocks;
         internal List<AbilityData> AllowedAbilities;
         internal List<AbilityData> TeleportAbilities;
+        /// <summary>★ v0.3.70 P1: the escape walks priced this decision (AddTeleportEscape replaces their walk).</summary>
+        internal List<TacticalEngine.EscapeQuote> EscapeQuotes;
         internal Dictionary<(UnitEntityData, bool, bool), TacticalEngine.MagusPayload> MagusPayloads;
         internal AbilityData MagusPayloadSource;
         internal bool MagusPayloadIsRanged;
@@ -302,7 +306,17 @@ namespace CompanionAI_Pathfinder.Tactics
         /// Weapon's flask: AbilityData.RequireMaterialComponent).</remarks>
         internal static bool CostsNothing(AbilityData ability) =>
             ability != null && ability.Spellbook == null && !(ability.SourceItem is ItemEntityUsable) && !SpendsLimitedUse(ability) &&
-            !SpendsMaterial(ability);
+            !SpendsMaterial(ability) && !SpendsItemCharge(ability);
+
+        /// <summary>
+        /// ★ v0.3.70 P3: an equipped item's ability that spends one of its charges (ItemEntity.IsSpendCharges, the game's rule
+        /// in SpendCharges): Evading Steps' one Dimension Door, Mass a day was read as free.
+        /// </summary>
+        private static bool SpendsItemCharge(AbilityData ability)
+        {
+            try { return ability?.SourceItem != null && ability.SourceItem.IsSpendCharges; }
+            catch { return false; }
+        }
 
         private static bool SpendsMaterial(AbilityData ability)
         {
@@ -428,6 +442,24 @@ namespace CompanionAI_Pathfinder.Tactics
             {
                 CastOutcome.Settle(unit);
                 CombatMemory.SettleCast(unit);
+                // ★ v0.3.70 P2 (author-approved): a summon declines an ally's area effect that forbids spells worth more to it
+                // than the effect. When that gives its spells back now, the decision reads the unit afresh.
+                bool spellsBack = false;
+                try { spellsBack = SwitchCostlyAccept(ctx); }
+                catch (Exception ex) { Main.Verbose($"[Toggle] {unit.CharacterName}: {ex.Message}"); }
+                if (spellsBack)
+                {
+                    var fresh = BuildContext(unit);
+                    if (fresh != null && fresh.Enemies.Count > 0)
+                    {
+                        fresh.Timings = timings;
+                        fresh.Unreachable = memory.Unreachable;
+                        fresh.TooFar = memory.TooFar;
+                        fresh.Unused = ctx.Unused;
+                        ctx = fresh;
+                        built = ctx;
+                    }
+                }
             }
             timings?.Mark(DecisionStage.Context);
 
@@ -457,6 +489,9 @@ namespace CompanionAI_Pathfinder.Tactics
             {
                 try { AddTeleportApproach(ctx, candidates, memory); }
                 catch (Exception ex) { Main.Error($"[Teleport] {unit.CharacterName}: approach unavailable: {ex.Message}"); }
+                // ★ v0.3.70 P1 (author-approved movement): and against the escape walks (withdraw, area exit, reach, swarm).
+                try { AddTeleportEscape(ctx, candidates, memory); }
+                catch (Exception ex) { Main.Error($"[Teleport] {unit.CharacterName}: escape unavailable: {ex.Message}"); }
             }
             // ★ v0.3.18 (AA-2): after the others, so a toggle that forbids spells is priced against the best spell.
             try { AddToggleCandidates(ctx, candidates, preview); } catch (Exception ex) { Main.Error($"[Tactics] toggle candidates: {ex}"); }
@@ -3014,12 +3049,13 @@ namespace CompanionAI_Pathfinder.Tactics
                     if (profile?.TeleportDelivery != null)
                     {
                         available = available && TeleportSlotAvailable(ctx.Unit, slot);
-                        if (available && CanOfferTeleport(ctx, ability))
+                        var gate = available ? TeleportGate(ctx, ability) : UnusedReason.ActionUnavailable;
+                        if (gate == null)
                         {
                             var teleports = ctx.TeleportAbilities ?? (ctx.TeleportAbilities = new List<AbilityData>(SpotRules.PricedSpots));
                             if (teleports.Count < SpotRules.PricedSpots) teleports.Add(ability);
                         }
-                        else ctx.Unused?.Record(witness, available ? UnusedReason.TeleportWithheld : UnusedReason.ActionUnavailable);
+                        else ctx.Unused?.Record(witness, gate.Value);
                         continue;
                     }
                     bool futureOffence = profile != null && (profile.DealsDamage || profile.HarmfulEffects ||
@@ -3614,6 +3650,7 @@ namespace CompanionAI_Pathfinder.Tactics
                 Disengage risk = null;
                 Approach approach = null;
                 float walkFactor = 1f;
+                float castRange = 0f;   // ★ v0.3.70 P1: a teleport to the casting spot must end within it
                 if (target != ctx.Unit && !summonPoint.HasValue)
                 {
                     float range;
@@ -3622,6 +3659,7 @@ namespace CompanionAI_Pathfinder.Tactics
                         if (!CoupDeGraceDelivery.TryRadius(ctx.Unit, ability, wrapper.Unit, coupWeapon, out range)) continue;
                     }
                     else range = ability.GetApproachDistance(wrapper.Unit);
+                    castRange = range;
                     // ★ v0.3.25 (test2 logs): the command's own rule (UnitUseAbility: no ILineOfSightIgnore component), read
                     // once per ability - a command was built for every target only to read it.
                     bool needLos = abilityNeedsLos ?? (abilityNeedsLos = new UnitUseAbility(ability, wrapper).NeedLoS).Value;
@@ -3939,6 +3977,23 @@ namespace CompanionAI_Pathfinder.Tactics
                     PreRiskValue = preRisk,
                     Key = $"abl:{CombatMemory.AbilityKey(ability)}{metamagic}:{target.UniqueId}"
                 };
+                // ★ v0.3.70 P1 (author-approved movement): a cast that walks to its casting spot first can be reached by a
+                // teleport instead (AddTeleportApproach): its value before the walk's risk, the range it needs from its
+                // recipient, and for a cone or a line the recipients it was valued on. Not a burst (its landing time is the
+                // walk's), nor a cast aimed at a point.
+                if (needsMove && approach != null && burst == null && wrapper.Unit != null && target != ctx.Unit &&
+                    castRange > 0f && (!coneWalk || geometryRecipients != null))
+                {
+                    candidate.TeleportReach = castRange;
+                    candidate.TeleportPayoff = preRisk;
+                    if (coneWalk)
+                    {
+                        var counted = geometryRecipients.ToList();
+                        var coneAim = wrapper;
+                        var castAbility = ability;
+                        candidate.TeleportKeeps = p => ProjectileKeepsRecipients(ctx, castAbility, coneAim, p, counted);
+                    }
+                }
                 if (burst != null) burst.Value = candidate.Value;   // ★ burst aim: what a re-check weighs new allies against
                 controlAims?.Record(target, value, why, geometryRecipients, needsMove, provokeLoss,
                     concentrationChance, risk?.StopChance ?? 0f, risk?.Cost ?? 0f);
@@ -5629,6 +5684,7 @@ namespace CompanionAI_Pathfinder.Tactics
                         float pHere = SpotDrop(ctx, unit, unit.Position);   // ★ v0.3.29 test 2 (R3)
                         float pThere = SpotDrop(ctx, unit, point.Value);
                         float value = (pHere - pThere) * AllyWorth(ctx, unit) * (1f - (risk?.StopChance ?? 0f)) - (risk?.Cost ?? 0f);
+                        NoteEscape(ctx, "move:withdraw", "Withdraw (low HP)", point.Value, (pHere - pThere) * AllyWorth(ctx, unit), 0f, null);
                         if (value >= MinMainValue)
                         {
                             list.Add(new Candidate
@@ -5956,6 +6012,8 @@ namespace CompanionAI_Pathfinder.Tactics
                 value = inside.Danger * perRound * (inside.RoundsLeft >= 1f ? 2f : 1f);
             string label = $"Leave {inside.Name ?? "area"}";
             float preRisk = value;
+            // ★ v0.3.70 P1: TeleportLandingSafe keeps a landing out of every harmful area; the melee unit's target is kept too.
+            NoteEscape(ctx, "move:leave-area", label, best.Value, preRisk, 0f, keepsTarget);
             var risk = MoveRisk(ctx, best.Value);
             if (risk != null)
             {

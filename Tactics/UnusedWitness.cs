@@ -181,7 +181,7 @@ namespace CompanionAI_Pathfinder.Tactics
                 case UnusedReason.SlotCopy: return "slot copy available";
                 case UnusedReason.DelayedDelivery: return "delayed delivery has no safe recipient forecast";
                 case UnusedReason.TeleportLanding: return "no verified safe teleport landing";
-                case UnusedReason.TeleportWithheld: return "teleport route withheld (item, cost, mount, held charge or crowd)";
+                case UnusedReason.TeleportWithheld: return "teleport route withheld (cost, mount, held charge or crowd)";
                 case UnusedReason.Scored: return "scored, not chosen";
                 default: return best > 0f ? "scored but never issued" : "no score recorded";
             }

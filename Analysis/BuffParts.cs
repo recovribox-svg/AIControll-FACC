@@ -164,6 +164,15 @@ namespace CompanionAI_Pathfinder.Analysis
         public bool CritOnly, FirstOnly;
         /// <summary>★ v0.3.21: the empty-hand weapon a <see cref="BuffPartKind.NaturalWeapon"/> part gives.</summary>
         public Kingmaker.Blueprints.Items.Weapons.BlueprintItemWeapon Natural;
+        /// <summary>
+        /// ★ v0.3.70 rage review: a <see cref="BuffPartKind.ForbidsSpells"/> part given by a child buff behind these
+        /// Conditionals (checker, branch taken). Inspired Rage's effect gives InspiredRageEffectBuffBeforeMasterSkald unless
+        /// the skald has Master Skald or Purt the Living. Checked under the giver's context; null when unconditional.
+        /// </summary>
+        public (Kingmaker.ElementsSystem.ConditionsChecker Checker, bool Branch)[] Guards;
+        /// <summary>★ v0.3.70 rage review: the recipient's fact that lifts the prohibition (ForbidSpellCasting.IgnoreFeature,
+        /// checked by the game in OnTurnOn).</summary>
+        public Kingmaker.Blueprints.Facts.BlueprintUnitFact ForbidIgnore;
 
         /// <summary>★ v0.3.21: a copy for some weapons only.</summary>
         public BuffPart ForWeapons(Func<Kingmaker.Blueprints.Items.Weapons.BlueprintItemWeapon, bool> weapon, BlueprintBuff owner)
@@ -179,7 +188,7 @@ namespace CompanionAI_Pathfinder.Analysis
             $"{Kind}{(Kind == BuffPartKind.Saves && SaveShare < 1f ? $"({Stat})" : "")}{(EnergyType.HasValue ? $"({EnergyType.Value})" : "")} " +
             (EnergyImmunity ? "immune" : Value != null && Value.ValueType != ContextValueType.Simple ? $"{Value.ValueType}" : $"{Fixed + (Value?.Value ?? 0) * Multiplier}") +
             (Descriptor != ModifierDescriptor.UntypedStackable ? $" {Descriptor}" : "") + (Conditional ? " (conditional)" : "") +
-            (CasterFact != null ? " (caster's)" : "");
+            (CasterFact != null ? " (caster's)" : "") + (Guards != null ? " (guarded)" : "");
     }
 
     public sealed class BuffPartList
@@ -403,8 +412,8 @@ namespace CompanionAI_Pathfinder.Analysis
                         if (size.SizeDelta > 0 || size.Size > Size.Medium)
                             list.Parts.Add(new BuffPart { Kind = BuffPartKind.SizeUp, Owner = owner });
                         break;
-                    case ForbidSpellCasting _:
-                        list.Parts.Add(new BuffPart { Kind = BuffPartKind.ForbidsSpells, Owner = owner });
+                    case ForbidSpellCasting forbid:
+                        list.Parts.Add(new BuffPart { Kind = BuffPartKind.ForbidsSpells, Owner = owner, ForbidIgnore = IgnoreOf(forbid) });
                         break;
                     case ArmorClassBonusAgainstAlignment aca:
                         list.Parts.Add(new BuffPart { Kind = BuffPartKind.ConditionalAC, Owner = owner, Descriptor = aca.Descriptor, Fixed = aca.Value, Value = aca.Bonus, Conditional = true, AgainstAlignment = aca.alignment });
@@ -695,6 +704,8 @@ namespace CompanionAI_Pathfinder.Analysis
                         // ★ v0.3.21 (gaps): a stat change made when the buff starts (BuffActionAddStatBonus: Ray of
                         // Enfeeblement's Strength penalty, a shared value of 1d6 + 1 per 2 levels, x-1).
                         ReadActivatedStats(owner, actions.Activated?.Actions, list, false, 0);
+                        // ★ v0.3.70 rage review: a spell prohibition a child buff gives behind conditions (Inspired Rage).
+                        ReadGuardedBans(actions.Activated?.Actions, list, null, 0);
                         break;
                     // ★ v0.3.21: Protective Luck (witch / shaman hex): whoever attacks the bearer gets misfortune before the
                     // roll (AddTargetBeforeAttackRollTrigger.ActionsOnAttacker -> a buff whose ModifyD20 rolls the attack
@@ -853,6 +864,60 @@ namespace CompanionAI_Pathfinder.Analysis
                         break;
                 }
             }
+        }
+
+        /// <summary>
+        /// ★ v0.3.70 rage review: child buffs that forbid spellcasting, applied by a buff's start actions behind Conditionals
+        /// (an unconditional child is read with the buff itself, BuffEffectAnalyzer.ChildBuffs). InspiredRageEffectBuff applies
+        /// InspiredRageEffectBuffBeforeMasterSkald (AsChild, ForbidSpellCasting) unless the skald has Master Skald or Purt the
+        /// Living: in the v0.3.70 playtest the reader followed no such branch, so the rage counted as a pure gain for every
+        /// summon whose attacks are spell-like. Only the prohibition is read here; the branch's other buffs stay as before.
+        /// </summary>
+        private static void ReadGuardedBans(Kingmaker.ElementsSystem.GameAction[] actions, BuffPartList list,
+                                            List<(Kingmaker.ElementsSystem.ConditionsChecker, bool)> guards, int depth)
+        {
+            if (actions == null || depth > 4) return;
+            foreach (var action in actions)
+            {
+                switch (action)
+                {
+                    case Kingmaker.UnitLogic.Mechanics.Actions.ContextActionApplyBuff apply
+                        when guards != null && apply.Buff != null && !apply.ToCaster:
+                    {
+                        var forbid = Kingmaker.Blueprints.BlueprintExtenstions.GetComponent<ForbidSpellCasting>(apply.Buff);
+                        if (forbid == null) break;
+                        var path = guards.ToArray();
+                        if (list.Parts.Any(x => x.Kind == BuffPartKind.ForbidsSpells && x.Owner == apply.Buff && SamePath(x.Guards, path))) break;
+                        list.Parts.Add(new BuffPart { Kind = BuffPartKind.ForbidsSpells, Owner = apply.Buff, Guards = path, ForbidIgnore = IgnoreOf(forbid) });
+                        break;
+                    }
+                    case Kingmaker.Designers.EventConditionActionSystem.Actions.Conditional branch:
+                    {
+                        var onTrue = guards == null ? new List<(Kingmaker.ElementsSystem.ConditionsChecker, bool)>() : new List<(Kingmaker.ElementsSystem.ConditionsChecker, bool)>(guards);
+                        onTrue.Add((branch.ConditionsChecker, true));
+                        ReadGuardedBans(branch.IfTrue?.Actions, list, onTrue, depth + 1);
+                        var onFalse = guards == null ? new List<(Kingmaker.ElementsSystem.ConditionsChecker, bool)>() : new List<(Kingmaker.ElementsSystem.ConditionsChecker, bool)>(guards);
+                        onFalse.Add((branch.ConditionsChecker, false));
+                        ReadGuardedBans(branch.IfFalse?.Actions, list, onFalse, depth + 1);
+                        break;
+                    }
+                }
+            }
+        }
+
+        private static bool SamePath((Kingmaker.ElementsSystem.ConditionsChecker Checker, bool Branch)[] a,
+                                     (Kingmaker.ElementsSystem.ConditionsChecker Checker, bool Branch)[] b)
+        {
+            if (a == null || b == null || a.Length != b.Length) return false;
+            for (int i = 0; i < a.Length; i++)
+                if (!ReferenceEquals(a[i].Checker, b[i].Checker) || a[i].Branch != b[i].Branch) return false;
+            return true;
+        }
+
+        private static Kingmaker.Blueprints.Facts.BlueprintUnitFact IgnoreOf(ForbidSpellCasting forbid)
+        {
+            try { return forbid.IgnoreFeature; }
+            catch { return null; }
         }
 
         /// <summary>★ v0.3.21: the parts of a feature a buff grants, marked with it (see <see cref="BuffPart.Granted"/>).</summary>
