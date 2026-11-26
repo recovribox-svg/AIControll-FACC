@@ -373,6 +373,7 @@ namespace CompanionAI_Pathfinder.Tactics
             Rolls.Clear();
             CritStats.Clear();
             CritFactors.Clear();
+            ClearEstimateMemo();    // ★ v0.3.70 features review: damage and effect chances read in the state before
         }
 
         // ★ v0.3.25 (test2 logs, performance): an ability's parameters (caster level, DC, spell level, metamagic) for the
@@ -754,6 +755,10 @@ namespace CompanionAI_Pathfinder.Tactics
         /// blade's: the blast's weapon damage modifiers are the blade's).</param>
         public static float EstimateAbilityDamage(AbilityData ability, AbilityProfile profile, UnitEntityData target, ItemEntityWeapon bladeWeapon)
         {
+            // ★ v0.3.70 features review: the same pair asked again in this frame (CombatMath.EstimateMemo.cs).
+            bool memo = ability != null && target != null && EstimateMemoUsable();
+            var key = memo ? new EstimateKey(ability, profile, target, bladeWeapon, 0) : default;
+            if (memo && DamageMemo.TryGetValue(key, out float known)) { DamageMemoHits++; return known; }
             long heap = HeapMark();
             try
             {
@@ -761,7 +766,9 @@ namespace CompanionAI_Pathfinder.Tactics
                 // ★ v0.3.20 (0.3.19 feedback): a kinetic blast's estimate times what its hits really dealt so far.
                 // ★ v0.3.28 test 6: and its critical hits (AbilityDamageScale). A blade's blast rides the blade's own attack,
                 // whose criticals the weapon routine counts.
-                return raw > 0f ? raw * AbilityDamageScale(ability, profile, target, bladeWeapon == null) : raw;
+                float value = raw > 0f ? raw * AbilityDamageScale(ability, profile, target, bladeWeapon == null) : raw;
+                if (memo) Remember(DamageMemo, key, value);
+                return value;
             }
             finally { HeapSince(heap, ref EstimateBytes); }
         }
@@ -1613,8 +1620,18 @@ namespace CompanionAI_Pathfinder.Tactics
         internal static float EffectChance(UnitEntityData caster, UnitEntityData enemy, AbilityData ability,
             AbilityProfile profile, bool damage, float? resistancePass)
         {
+            // ★ v0.3.70 features review: the same pair asked again in this frame (CombatMath.EstimateMemo.cs); a supplied
+            // resistance pass is a what-if and is not remembered.
+            bool memo = !resistancePass.HasValue && caster != null && enemy != null && ability != null && EstimateMemoUsable();
+            var key = memo ? new EstimateKey(caster, enemy, ability, profile, damage ? 1 : 0) : default;
+            if (memo && ChanceMemo.TryGetValue(key, out float known)) { ChanceMemoHits++; return known; }
             long heap = HeapMark();
-            try { return EffectChanceCore(caster, enemy, ability, profile, damage, resistancePass); }
+            try
+            {
+                float p = EffectChanceCore(caster, enemy, ability, profile, damage, resistancePass);
+                if (memo) Remember(ChanceMemo, key, p);
+                return p;
+            }
             finally { HeapSince(heap, ref ChanceBytes); }
         }
 

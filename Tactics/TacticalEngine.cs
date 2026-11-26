@@ -163,6 +163,8 @@ namespace CompanionAI_Pathfinder.Tactics
         internal List<AbilityData> TeleportAbilities;
         /// <summary>★ v0.3.70 P1: the escape walks priced this decision (AddTeleportEscape replaces their walk).</summary>
         internal List<TacticalEngine.EscapeQuote> EscapeQuotes;
+        /// <summary>★ v0.3.70 features review (log size): this decision's enemies with no free side (key, short note).</summary>
+        internal List<KeyValuePair<string, string>> NoFreeSideNotes;
         internal Dictionary<(UnitEntityData, bool, bool), TacticalEngine.MagusPayload> MagusPayloads;
         internal AbilityData MagusPayloadSource;
         internal bool MagusPayloadIsRanged;
@@ -644,6 +646,7 @@ namespace CompanionAI_Pathfinder.Tactics
             LogReachStandoffDiagnostics(ctx, candidates, chosen, memory);
             // ★ v0.3.20 (test8): a move priced on the straight line has the game's real walk counted before it is made.
             if (chosen?.RiskAt != null) chosen.CountPathAttackers = RealPathCounter(ctx, chosen);
+            FlushNoFreeSide(ctx);   // ★ v0.3.70 features review: one row for the decision's crowded enemies
             LogDecision(ctx, usable, chosen);
             NoteFastBombs(unit, chosen);   // ★ v0.3.23 (bombs task)
             NoteArcherChoice(ctx, usable, chosen);   // ★ v0.3.23 (quiver task)

@@ -19,7 +19,11 @@ namespace CompanionAI_Pathfinder.Tactics
     public static partial class TacticalEngine
     {
         private const int MaxTeleportTravellers = 4;
-        private const int MaxTeleportGroup = 16;
+        // ★ v0.3.70 features review: the native passenger selection (AbilityCustomDimensionDoor.GetTargets) walks the caster's
+        // group once, a distance test each; the travellers stay capped at four. A group of more than 16 withheld every group
+        // teleport of a party with its summons out (the Vrocks' Greater Teleport, Evading Steps: "no verified safe teleport
+        // landing" in the real-time session).
+        private const int MaxTeleportGroup = 96;
         // ★ v0.3.70 playtest: the safety loops are cheap (at most four travellers against the units in the fight); the one
         // costly step is the single native relaxation. A cap of 24 withheld every teleport in the mastermind save, whose
         // fights had 17-24 party units and summons and 8-13 enemies.
@@ -367,6 +371,13 @@ namespace CompanionAI_Pathfinder.Tactics
             if (source == null || !(range > 0f)) return;
             float walked = HorizontalDistance(unit.Position, source.Point);
             float rejoin = FightReach(ctx);
+            // ★ v0.3.70 features review: an Unlimited range is infinite (BlueprintAbility.GetRange); no spot farther than the
+            // farthest awake enemy plus the fight reach can rejoin the fight, so the search stays within that.
+            float farthest = 0f;
+            foreach (var e in ctx.Enemies)
+                if (!CombatMath.IsDisabled(e)) farthest = Math.Max(farthest, HorizontalDistance(unit.Position, e.Position));
+            range = Math.Min(range, farthest + rejoin);
+            if (!(range > 0f) || float.IsInfinity(range)) return;
             float worth = AllyWorth(ctx, unit);
             float atSpot = SpotDrop(ctx, unit, source.Point);
             var holds = source.Holds;

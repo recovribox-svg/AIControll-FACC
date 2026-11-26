@@ -36,10 +36,25 @@ namespace CompanionAI_Pathfinder.Tactics
         /// <summary>The party's fight started: check each character again at its first decision.</summary>
         public static void NewFight() => CheckedThisFight.Clear();
 
+        /// <summary>
+        /// ★ v0.3.70 features review (log size): who a report is kept for. A summon AI Control drives is reported once per
+        /// creature kind - each new Summoned Dog reprinted the same five toggle lines and two ability lines (15 times in six
+        /// real-time fights); a character by its own id.
+        /// </summary>
+        private static string ReportKey(UnitEntityData unit) =>
+            GameInterface.SummonControl.IsOrdinarySummon(unit) && unit.Blueprint != null
+                ? "kind:" + unit.Blueprint.AssetGuid : unit.UniqueId;
+
+        /// <summary>★ v0.3.70 features review: per report key, the toggle lines already printed this session (at most 64).</summary>
+        private static readonly Dictionary<string, HashSet<string>> PrintedToggleLines = new Dictionary<string, HashSet<string>>();
+        private const int MaxToggleLines = 64;
+
         /// <summary>Called at a character's decision; reports when its ability set is new or changed.</summary>
         public static void ReportIfChanged(UnitEntityData unit)
         {
-            if (unit == null || !CheckedThisFight.Add(unit.UniqueId)) return;
+            if (unit == null) return;
+            string key = ReportKey(unit);
+            if (!CheckedThisFight.Add(key)) return;
             try
             {
                 var abilities = AbilityDiscovery.Gather(unit);
@@ -57,16 +72,20 @@ namespace CompanionAI_Pathfinder.Tactics
                 // ★ v0.3.25 (log review): abilities and toggles are reported apart. A spent slot or a used-up item changes the
                 // ability set, and the whole block was printed again with every toggle line - 70 % of the [Coverage] bytes
                 // (171 of 241 lines in the 0.3.25-test1 log) were toggle lines repeated without a change.
-                if (!Reported.TryGetValue(unit.UniqueId, out int last) || last != hash)
+                if (!Reported.TryGetValue(key, out int last) || last != hash)
                 {
-                    Reported[unit.UniqueId] = hash;
-                    ReportAbilities(unit, abilities);
+                    Reported[key] = hash;
+                    ReportAbilities(unit, abilities, key);
                     ReportKineticist(unit, abilities);
                 }
-                if (!ReportedToggles.TryGetValue(unit.UniqueId, out int lastToggles) || lastToggles != toggleHash)
+                if (!ReportedToggles.TryGetValue(key, out int lastToggles) || lastToggles != toggleHash)
                 {
-                    ReportedToggles[unit.UniqueId] = toggleHash;
-                    foreach (var t in toggles) ReportToggle(unit, t);
+                    ReportedToggles[key] = toggleHash;
+                    // ★ v0.3.70 features review: only lines not printed before for this key. A new form's Fury toggles
+                    // changed the set every fight and reprinted every unchanged line (Wenduag: 24 identical Fury lines).
+                    if (!PrintedToggleLines.TryGetValue(key, out var printed))
+                        PrintedToggleLines[key] = printed = new HashSet<string>(StringComparer.Ordinal);
+                    foreach (var t in toggles) ReportToggle(unit, t, printed);
                 }
             }
             catch (Exception ex)
@@ -106,7 +125,7 @@ namespace CompanionAI_Pathfinder.Tactics
                      $"{blasts.Count} burn abilities: {string.Join("; ", blasts)}");
         }
 
-        private static void ReportAbilities(UnitEntityData unit, List<AbilityData> abilities)
+        private static void ReportAbilities(UnitEntityData unit, List<AbilityData> abilities, string key)
         {
             var understood = new List<string>();
             var unavailable = new List<string>();
@@ -148,8 +167,8 @@ namespace CompanionAI_Pathfinder.Tactics
             void Add(string list, List<string> names) { foreach (var n in names) entries.Add(list + ": " + n); }
             Add("understood", understood); Add("not available now", unavailable); Add("blacklisted", blacklisted);
             Add("held back by the item settings", itemPolicy); Add("on a 'must not use' list", listed); Add("effect not understood", unread);
-            bool first = !LastEntries.TryGetValue(unit.UniqueId, out var before);
-            LastEntries[unit.UniqueId] = entries;
+            bool first = !LastEntries.TryGetValue(key, out var before);
+            LastEntries[key] = entries;
             if (!first)
             {
                 var gone = MultisetMinus(before, entries);
@@ -261,7 +280,7 @@ namespace CompanionAI_Pathfinder.Tactics
             }
         }
 
-        private static void ReportToggle(UnitEntityData unit, ActivatableAbility toggle)
+        private static void ReportToggle(UnitEntityData unit, ActivatableAbility toggle, HashSet<string> printed)
         {
             var bp = toggle.Blueprint;
             string command;
@@ -284,13 +303,19 @@ namespace CompanionAI_Pathfinder.Tactics
                     buff = $", buff {b.name} [{string.Join(",", b.ComponentsArray?.Where(c => c != null).Select(c => c.GetType().Name).Distinct() ?? Enumerable.Empty<string>())}]";
             }
             catch { }
-            Main.Log($"[Coverage] {unit.CharacterName} toggle: {toggle.Name} - on={toggle.IsOn} started={toggle.IsStarted} " +
+            string line = $"[Coverage] {unit.CharacterName} toggle: {toggle.Name} - on={toggle.IsOn} started={toggle.IsStarted} " +
                      $"available={toggle.IsAvailable}; activation {bp.ActivationType}, action {command}" +
                      (bp.Group != ActivatableAbilityGroup.None ? $", group {bp.Group}" : "") +
                      $", ends with combat={bp.DeactivateIfCombatEnded}, off at once={bp.DeactivateImmediately}, " +
                      $"on by default={bp.IsOnByDefault}{(bp.HiddenInUI ? ", hidden" : "")}{resource}{buff}; " +
                      $"AI: {AiNote(unit, toggle)}" +
-                     (UserAbilityPolicy.Blocks(unit, toggle) ? " - on an 'Abilities AI must not use' list (never switched on by the AI)" : ""));
+                     (UserAbilityPolicy.Blocks(unit, toggle) ? " - on an 'Abilities AI must not use' list (never switched on by the AI)" : "");
+            if (printed != null)
+            {
+                if (printed.Contains(line)) return;
+                if (printed.Count < MaxToggleLines) printed.Add(line);
+            }
+            Main.Log(line);
         }
     }
 }

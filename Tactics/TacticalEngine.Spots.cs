@@ -8,6 +8,7 @@
 // an advance to that enemy is not offered (another enemy or action instead).
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using Kingmaker.EntitySystem.Entities;
 using Kingmaker.UnitLogic.Commands;
 using Kingmaker.UnitLogic.Commands.Base;
@@ -181,10 +182,33 @@ namespace CompanionAI_Pathfinder.Tactics
         private static bool SkipNoFreeSide(TacticalContext ctx, UnitEntityData enemy, Approach approach)
         {
             if (approach?.NoFreeSide == null) return false;
-            ReportOnce($"no-free-side|{CombatMemory.Fight}|{ctx.Unit.UniqueId}|{enemy.UniqueId}",
-                () => $"[Walk] {ctx.Unit.CharacterName}: no free side beside {enemy.CharacterName} ({approach.NoFreeSide}) - " +
-                      "no walk to it while that holds");
+            // ★ v0.3.70 features review (log size): 269 such rows, 61 KB of a 1.1 MB real-time log - one row per enemy, with
+            // the spot counts. Now one row a decision names the enemies new this fight and who takes their side; the counts
+            // go to the debug log. Marked as said only when the decision is logged (a preview's are dropped).
+            string key = $"{CombatMemory.Fight}|{ctx.Unit.UniqueId}|{enemy.UniqueId}";
+            if (s_NoFreeSideSaid.Contains(key)) return true;
+            var notes = ctx.NoFreeSideNotes ?? (ctx.NoFreeSideNotes = new List<KeyValuePair<string, string>>(4));
+            if (notes.Count >= 16 || notes.Exists(n => n.Key == key)) return true;
+            string detail = approach.NoFreeSide;
+            int cut = detail.IndexOf(';');
+            notes.Add(new KeyValuePair<string, string>(key, $"{enemy.CharacterName} ({(cut > 0 ? detail.Substring(0, cut) : detail)})"));
+            if (Main.VerboseOn) Main.Verbose($"[Walk] {ctx.Unit.CharacterName}: no free side beside {enemy.CharacterName} ({detail})");
             return true;
+        }
+
+        private static readonly HashSet<string> s_NoFreeSideSaid = new HashSet<string>(StringComparer.Ordinal);
+        private static int s_NoFreeSideFight = -1;
+
+        private static void FlushNoFreeSide(TacticalContext ctx)
+        {
+            var notes = ctx.NoFreeSideNotes;
+            if (notes == null || notes.Count == 0) return;
+            if (s_NoFreeSideFight != CombatMemory.Fight) { s_NoFreeSideFight = CombatMemory.Fight; s_NoFreeSideSaid.Clear(); }
+            if (s_NoFreeSideSaid.Count > 2048) s_NoFreeSideSaid.Clear();
+            foreach (var n in notes) s_NoFreeSideSaid.Add(n.Key);
+            Main.Log($"[Walk] {ctx.Unit.CharacterName}: no free side beside {string.Join(", ", notes.Select(n => n.Value))} - " +
+                     "no walk to them while that holds");
+            notes.Clear();
         }
 
         /// <summary>
