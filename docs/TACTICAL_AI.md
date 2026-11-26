@@ -7476,3 +7476,35 @@ Control exception. Both combat modes:
   `5256a3ed-ba04-4a0b-aa0b-68f206032ae3`, unplayed. Proposals P1–P3 (escape teleports, summons declining a rage, item
   teleports) and the drain-triage assessment are in the review page.
 
+## 223. v0.3.70 proposals P1–P3: escape and casting teleports, item teleports, summons decline a rage (26 November 2026, Claude)
+
+[Review page, section P1–P3](V0370_PLAYTEST_REVIEW.md#p1p3-implemented-26-november-2026) ·
+[receipt](competence/V0370_PROPOSALS_CHECKS.json). Author-approved, both combat modes, unplayed.
+
+- **P1 (movement):**
+  - Escape walks (withdraw, area exit, out of reach, out of a swarm) record their spot and worth (`NoteEscape`).
+    `AddTeleportEscape` offers a point-aimed teleport there, priced by `ValueModel.TeleportEscapeWorth`, the cast's
+    provoke and the landing.
+  - Walk-first casts (touch, cone, line) carry `TeleportReach`/`TeleportPayoff`/`TeleportKeeps` into the S2 approach.
+  - `TeleportPlan` may have no anchor (an escape) or an ally anchor (a touch heal).
+  - Pure Mages may teleport.
+- **P3:**
+  - `TeleportGate` replaces `CanOfferTeleport`. An item teleport passes `ConsumablePolicy`, the UMD chance and slots
+    first.
+  - `CostsNothing` reads `ItemEntity.IsSpendCharges`, so a charged item pays the limited-use reserve.
+- **P2:** `TacticalEngine.AcceptSwitch.cs`.
+  - A driven summon under a ban switches off the toggle its area's grant requires (`ContextConditionHasFact`) when its
+    spell edge beats the effect's per-round value (`ValueModel.DeclinesGrant`). It switches it back on with hysteresis
+    (`ReacceptsGrant`).
+  - The performer's toggle value counts such a summon as declining.
+- **Correction to §222:** Inspired Rage's ban is stock. `InspiredRageEffectBuff` applies
+  `InspiredRageEffectBuffBeforeMasterSkald` (AsChild) unless the skald has Master Skald or Purt the Living.
+  `BuffParts.ReadGuardedBans` reads it and `BanReaches` checks the branch and the native ignore feature. The run-time
+  learning stays as a fallback.
+- **Checks** on `e040d62`:
+  - Release 0 warnings; 1,166 unit + 27/21/3 script tests.
+  - ProfileAudit `V0370-PROPOSALS` 11 checks, only Inspired Rage's part line otherwise changed; Fusion matrix and summon
+    detail byte-identical.
+  - Harnesses 98/14/10; one external member added (`ItemEntity.get_IsSpendCharges`).
+- **Package:** `test-builds/AI-Control-FACC-v0.3.70-dev-proposals1-e040d62-UMM-test.zip`, module
+  `a8892900-11e1-4a95-b33d-926957a6ff43`, UMM 0.3.70, unplayed.

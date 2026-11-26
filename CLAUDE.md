@@ -8,7 +8,31 @@ Read [CONTRIBUTING.md](CONTRIBUTING.md) for shared branch ownership, Codex pull 
 Codex works on task branches and targets pull requests at `claude/dreamy-pasteur-b9h3rn`; Claude reviews and integrates them there.
 Keep `main` for author-authorized releases. Read [AGENTS.md](AGENTS.md) when coordinating agent work.
 
-**Current handover (26 November 2026, Claude): v0.3.70 playtest reviewed; fixes on `claude/v0370-playtest-review`, stacked on
+**Current handover (26 November 2026, Claude): P1–P3 implemented (author-approved) on `claude/v0370-playtest-review`
+(draft PR #116), stacked on `claude/summons-review` (draft PR #113). Not played, nothing merged.** Read
+[the review page's P1–P3 section](docs/V0370_PLAYTEST_REVIEW.md#p1p3-implemented-26-november-2026), `docs/TACTICAL_AI.md`
+§223 and the [receipt](docs/competence/V0370_PROPOSALS_CHECKS.json). Both combat modes.
+- **P1 (movement):**
+  - A point-aimed teleport replaces a risky escape walk (withdraw, area exit, out of reach, out of a swarm), priced at
+    the walk's spot.
+  - Walk-first touch, cone and line casts can be reached by a teleport.
+  - Pure Mages may teleport.
+- **P3:** item teleports (Evading Steps) pass the item rules. A charged item pays the limited-use reserve
+  (`ItemEntity.IsSpendCharges`).
+- **P2:** a summon AI Control drives switches off its rage acceptance toggle when its measured spell edge beats the
+  rage, and back on with hysteresis. The performer counts it as declining.
+- **Correction:** Inspired Rage's ban is stock (a guarded child of `InspiredRageEffectBuff`), not a mod's run-time buff.
+  It is now read from the blueprints.
+- **Checks** on `e040d62`:
+  - Release 0 warnings; 1,166 unit + 27/21/3 script tests.
+  - ProfileAudit `V0370-PROPOSALS` 11; one other line changed (the rage's part list); Fusion matrix and summon detail
+    byte-identical.
+  - Harnesses 98/14/10; one external member added.
+- **Package:** `test-builds/AI-Control-FACC-v0.3.70-dev-proposals1-e040d62-UMM-test.zip`, MVID
+  `a8892900-11e1-4a95-b33d-926957a6ff43`, UMM 0.3.70.
+- **Next:** the author plays it (replay in the review page). Drain triage, re-scoped, comes after that playtest.
+
+**Earlier handover (26 November 2026, Claude): v0.3.70 playtest reviewed; fixes on `claude/v0370-playtest-review`, stacked on
 `claude/summons-review` (draft PR #113). Not played, nothing merged.** Read [docs/V0370_PLAYTEST_REVIEW.md](docs/V0370_PLAYTEST_REVIEW.md),
 `docs/TACTICAL_AI.md` §222 and the [receipt](docs/competence/V0370_PLAYTEST_REVIEW_CHECKS.json).
 - **Logs:** v0.3.70 module `38994eec`; mastermind 8 fights (1,221 commands, party 16–24 against 8–13 enemies), overlord
