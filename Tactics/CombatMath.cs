@@ -1361,6 +1361,7 @@ namespace CompanionAI_Pathfinder.Tactics
             if (EnergyReadsTraced.Count > 4096) EnergyReadsTraced.Clear();
         }
 
+        private static bool s_EnergyNoteShown;
         private static float TraceEnergyRead(UnitEntityData target, ContextActionDealDamage dmg, AbilityData ability,
             bool infusion, float raw, float remaining, DamageObserver.Seen seen, string route, float? native)
         {
@@ -1380,7 +1381,10 @@ namespace CompanionAI_Pathfinder.Tactics
                         $"{(infusion ? "infusion" : "direct")} -> {target.CharacterName}: {dmg.DamageType.Energy}, raw={raw:F2}, " +
                         $"route={route}, native remaining={(native.HasValue ? native.Value.ToString("F2") : "not queried")}, " +
                         $"observed={(seen == null ? "none" : $"factor {seen.Factor:F2}, flat {seen.Flat}, immune {seen.Immune}, capped {seen.ReductionCapped}")}, " +
-                        $"remaining={remaining:F2} (first per creature kind and route this session; at most {MaxEnergyReadTraces} rows/fight)");
+                        $"remaining={remaining:F2}" +
+                        // ★ v0.3.70 features review (log size): the rule, once a session (it closed all 288 such rows).
+                        (s_EnergyNoteShown ? "" : $" (first per creature kind and route this session; at most {MaxEnergyReadTraces} rows/fight)"));
+                s_EnergyNoteShown = true;
             }
             catch { } // Diagnostic identity/formatting must never change the estimate or its fallback.
             return remaining;
