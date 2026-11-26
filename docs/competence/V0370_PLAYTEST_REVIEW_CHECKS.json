@@ -1,0 +1,87 @@
+{
+ "task": "Author request: review the v0.3.70 playtest logs (mastermind and overlord saves) for bad decisions and gaps; teleport use by summons and companions; check the 0.3.60 Blindness-vs-fusion report; assess the drain-aware triage proposal",
+ "date": "2026-11-26",
+ "author": "Claude",
+ "branch": "claude/v0370-playtest-review",
+ "stacked_on": "claude/summons-review f589791 (draft PR #113)",
+ "inputs": {
+  "mastermind_Log.txt": "5b68512f09d39ac3c000f28de58d22113593a5e1e16f7f783a62d0465e03307c",
+  "mastermind_combatLog.txt": "8745be47bfdd80e8efeacc1184cbc85c6943047a4bbc5b692baa634f81a49c05",
+  "overlord_Log.txt": "2e0b281311d249b6b2e4651dc1177d50f92baead4dafc4a0c7a21fee020812c7",
+  "overlord_combatLog.txt": "31645efbc62d55c86805a341852e6dccbe3e1ff991742df47a3795e1546c81dd",
+  "played_module": "38994eec-a452-421b-a096-424a31dd2fb1 (v0.3.70 summons1, both logs)",
+  "committed": false
+ },
+ "played": {
+  "mastermind": {
+   "fights": 8,
+   "commands": 1221,
+   "party_at_start": "16-24",
+   "enemies": "8-13"
+  },
+  "overlord": {
+   "fights": 12,
+   "commands": 388,
+   "party_at_start": "7-14"
+  },
+  "ai_exceptions": 0
+ },
+ "findings": {
+  "teleports_never_offered": "MaxTeleportCombatants 24; mastermind fights had 25-37 combatants. Also: SpellcastingForbidden under Inspired Rage (Vrock 45/125, Derakni 12/36 decisions); Pure Mage / item teleport (Knight Commander, Evading Steps) outside S2.",
+  "inspired_rage_spell_ban": "Tome of the Firebird and Mystical Mayhem (KRXLib) reference InspiredRageEffectBuffBeforeMasterSkald (ForbidSpellCasting, ignore feature InspiredRage); exports show the stock chain without a ban. Ban seen only after Camellia starts the song (0 rows before in every fight; fight 2 no song, no ban). Mean chosen value with/without ban: Shadow Demon 35.2/8.8, Nabasu 48.4/7.8, Brimorak 21.4/7.0, Derakni 41.3/23.6, Succubus 23.1/12.2, Vrock 18.7/24.5.",
+  "blindness": "Plain Blindness never chosen in mastermind; fusions above it whenever listed (39.3/21.3, 55.9/32.6, 42.1/25.8, 64.3/40.1). Native fused descriptor = Spell1|Spell2 (Excruciating Deformation adds Evil|Polymorph); fused spell level = max of parts. Bug: fusions share the native holder blueprint, so CastOutcome failure keys collided across fusions on a target.",
+  "drain": "Orvath (level 10) drained 2,4,6,8,10 by a Corpulent Spectre in fight 8 while paralyzed (Hold Person, Mass) and died; Camellia (level 2) died to one 2-level touch. No Death Ward or level-removing Restoration in either party."
+ },
+ "corrections": [
+  "MaxTeleportCombatants 24 -> 96",
+  "SpellEdgeMemory: a recipient's measured spell/spell-like edge per round is subtracted from a spell-forbidding buff's value for each round (AppraiseParts); unmeasured spellbook casters keep 0",
+  "LearnSpellBan: a ban buff seen on an AI unit is traced through MechanicsContext.ParentContext to the toggle buff that applied it; that toggle's recipients get the ForbidsSpells part (AppraiseToggleBuffs)",
+  "Toggle [Buff] rows list recipients the toggle costs beyond the first three",
+  "CastOutcome failure and area-miss keys carry AbilityProfile.FusionIdentityOf"
+ ],
+ "toolchain": {
+  "dotnet_sdk": "8.0.428"
+ },
+ "release_build": {
+  "warnings": 0,
+  "errors": 0,
+  "real_game_references": true,
+  "clean_worktree_for_package": true
+ },
+ "unit_tests": 1162,
+ "script_tests": {
+  "BlueprintInventory": 27,
+  "InvocationLedger": 21,
+  "ProfileAuditSupplement": 3
+ },
+ "profile_audit": {
+  "exit": 0,
+  "loaded": 45244,
+  "failed_allowed": 1,
+  "new_section": "V0370-REVIEW 5 checks, 0 failures",
+  "report_sha256": "eeff0ae4f1e604a988c3f479cc4cb2b1a706cfed033b4c576e40969858727578",
+  "fusion_matrix_sha256": "d15355ec5844d2548909c8a81f0b91938a6c6aa8117728a4ab372f3b54618401",
+  "summon_detail_sha256": "32970346adaf60712bccaa22b38772f24ea907c2838eae16ef14345decaf9380",
+  "versus_v0370_package": "report equal apart from the new V0370-REVIEW section; Fusion matrix and summon detail byte-identical (same inputs)",
+  "packaged_dll": "report, Fusion matrix and summon detail byte-identical to the checked DLL"
+ },
+ "native_harnesses": {
+  "ToggleCosts": 98,
+  "TomeBurn": 14,
+  "ToyBoxSpend": 10,
+  "on": "checked and packaged DLL"
+ },
+ "external_references": "SigDump lists identical to the v0.3.70 package",
+ "package": {
+  "archive": "test-builds/AI-Control-FACC-v0.3.70-dev-summons2-4d649ca-UMM-test.zip",
+  "umm_version": "0.3.70",
+  "source": "4d649ca",
+  "mvid": "5256a3ed-ba04-4a0b-aa0b-68f206032ae3",
+  "dll_sha256": "a1a217035a440dd230172037a2bdee7d217d1cb3b0d30c47e622532a641cbfed",
+  "zip_sha256": "d5abd58ff2a6fe9ce444a49a1fb7efb3dd70f8b07d99e757159b0587c27e8596",
+  "gameplay": "unplayed"
+ },
+ "not_run": [
+  "live turn-based or real-time play"
+ ]
+}

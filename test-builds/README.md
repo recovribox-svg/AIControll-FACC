@@ -1,5 +1,15 @@
 # Test builds
 
+## v0.3.70 playtest fixes: spell bans priced, teleports unblocked (26 November 2026)
+
+[UMM ZIP](AI-Control-FACC-v0.3.70-dev-summons2-4d649ca-UMM-test.zip?raw=true) · [Identity](AI-Control-FACC-v0.3.70-dev-summons2-4d649ca-UMM-test.identity.json) · [SHA-256](AI-Control-FACC-v0.3.70-dev-summons2-4d649ca-UMM-test.sha256)
+ · [Review and replay](../docs/V0370_PLAYTEST_REVIEW.md).
+
+UMM **0.3.70**, source `4d649ca`, startup module `5256a3ed-ba04-4a0b-aa0b-68f206032ae3`, **unplayed**. Contains everything
+in the v0.3.70 build below plus the playtest fixes: Inspired Rage priced for the spells it forbids, teleports offered in
+large fights, fusion failures kept per fusion.
+
+
 ## v0.3.70 test build: consumables and summon abilities, reviewed (22 November 2026)
 
 [UMM ZIP](AI-Control-FACC-v0.3.70-dev-summons1-4d2b1ce-UMM-test.zip?raw=true) · [Identity](AI-Control-FACC-v0.3.70-dev-summons1-4d2b1ce-UMM-test.identity.json) · [SHA-256](AI-Control-FACC-v0.3.70-dev-summons1-4d2b1ce-UMM-test.sha256)

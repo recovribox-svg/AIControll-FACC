@@ -8,7 +8,28 @@ Read [CONTRIBUTING.md](CONTRIBUTING.md) for shared branch ownership, Codex pull 
 Codex works on task branches and targets pull requests at `claude/dreamy-pasteur-b9h3rn`; Claude reviews and integrates them there.
 Keep `main` for author-authorized releases. Read [AGENTS.md](AGENTS.md) when coordinating agent work.
 
-**Current handover (22 November 2026, Claude): S1 (#111) and S2 (#112) reviewed and corrected; v0.3.70 test build on
+**Current handover (26 November 2026, Claude): v0.3.70 playtest reviewed; fixes on `claude/v0370-playtest-review`, stacked on
+`claude/summons-review` (draft PR #113). Not played, nothing merged.** Read [docs/V0370_PLAYTEST_REVIEW.md](docs/V0370_PLAYTEST_REVIEW.md),
+`docs/TACTICAL_AI.md` §222 and the [receipt](docs/competence/V0370_PLAYTEST_REVIEW_CHECKS.json).
+- **Logs:** v0.3.70 module `38994eec`; mastermind 8 fights (1,221 commands, party 16–24 against 8–13 enemies), overlord
+  12 fights; no AI Control exception.
+- **Fixes (both modes):**
+  1. A spell ban costs each recipient its measured spell edge (`SpellEdgeMemory`). A run-time ban (Inspired Rage under
+     Tome of the Firebird / Mystical Mayhem) is learnt from the banning buff's context chain.
+  2. The teleport crowd bound goes from 24 to 96. It withheld every teleport in the mastermind fights.
+  3. Fusion failure keys carry the fusion's identity (all fusions share the native holder blueprint).
+- **Blindness (0.3.60 report):** fusions always outscored plain Blindness here. Legitimate reasons for the plain spell:
+  union-descriptor immunity, burst friendly fire, damage that wakes a target. The shared-key bug is fixed.
+- **Drain triage:** worth adding, re-scoped. First the ally-side lethal-drain drop; then Death Ward/Restoration (absent
+  from both parties).
+- **Checks** on `4d649ca`: Release 0 warnings; 1,162 unit + 27/21/3 script tests; ProfileAudit `V0370-REVIEW` 5, other
+  lines and matrices unchanged; harnesses 98/14/10.
+- **Package:** `test-builds/AI-Control-FACC-v0.3.70-dev-summons2-4d649ca-UMM-test.zip`, MVID
+  `5256a3ed-ba04-4a0b-aa0b-68f206032ae3`, UMM 0.3.70.
+- **Awaiting the author:** P1 escape and casting-spot teleports (movement), P2 summons declining a rage, P3 item
+  teleports. Next: the author plays it (replay in the review page).
+
+**Earlier handover (22 November 2026, Claude): S1 (#111) and S2 (#112) reviewed and corrected; v0.3.70 test build on
 `claude/summons-review`, stacked on #112 with the consumables review (#110) merged in. Nothing merged into development.**
 Read `docs/TACTICAL_AI.md` §221 and the [receipt](docs/competence/SUMMONS_REVIEW_111_112_CHECKS.json).
 - **S1:** agreed with (Touch of Chaos, Song of Discord, marks, Contagion ticks, Nimbus withheld). Limits kept: a mark
