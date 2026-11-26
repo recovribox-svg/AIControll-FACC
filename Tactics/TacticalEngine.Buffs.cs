@@ -510,11 +510,21 @@ namespace CompanionAI_Pathfinder.Tactics
                     notes.Add($"unseen by {invisibleShare:P0}{(invisible.EndsOnAttack ? " until it attacks" : "")}");
                 }
             }
-            if (forbidsSpells && off.Caster)
+            // ★ v0.3.70 playtest: a prohibition costs what the recipient's own spells and spell-like abilities were worth
+            // over its best other main action in its own decisions (SpellEdgeMemory). A summon whose attacks are spell-like
+            // (a Shadow Demon's breath, a Nabasu's Enervation) has no spellbook and used to count as a pure gainer; a
+            // spellbook caster used to count 0 whatever its spells were worth. Unmeasured, a spellbook caster keeps 0.
+            float spellEdge = 0f;
+            if (forbidsSpells)
             {
-                result.Value = 0f;
-                result.Detail = "stops its spells";
-                return result;
+                if (TrySpellEdge(ally, out spellEdge, out _))
+                    notes.Add(spellEdge > 0f ? $"stops its spells (-{spellEdge:0.#}/rd, measured)" : "stops spells it does not need now");
+                else if (off.Caster)
+                {
+                    result.Value = 0f;
+                    result.Detail = "stops its spells";
+                    return result;
+                }
             }
 
             // --- offence: the recipient's own attacks ---
@@ -675,7 +685,7 @@ namespace CompanionAI_Pathfinder.Tactics
                 if (onHitOnce > 0f) notes.Add($"hits may kill {off.Enemy.CharacterName}");
             }
 
-            float offenceValue = offencePerRound * rounds + invisibleOnce + onHitOnce;
+            float offenceValue = offencePerRound * rounds + invisibleOnce + onHitOnce - SpellEdgeMemory.Loss(spellEdge, rounds);
             float currentIncoming = def.Incoming + CombatMath.AttachedDamageOf(ctx, ally).NextRisk;
             // ★ v0.3.50 review2: the holder already has this protection. Its removal raises current danger; do not
             // value another reduction below the already-protected baseline, especially at a d20/HP floor.
@@ -1386,6 +1396,9 @@ namespace CompanionAI_Pathfinder.Tactics
                 parts.AddRange(read.Parts);
                 foreach (var u in read.UnreadFor(ctx.Unit)) unread.Add(u);
             }
+            // ★ v0.3.70 playtest: a prohibition this toggle was seen to apply at run time (ToggleBansSpells) counts too.
+            if (ally != ctx.Unit && ToggleBansSpells(toggleCtx) && !parts.Exists(x => x.Kind == BuffPartKind.ForbidsSpells))
+                parts.Add(new BuffPart { Kind = BuffPartKind.ForbidsSpells, Owner = toggleCtx.AssociatedBlueprint as BlueprintBuff });
             // ★ v0.3.30 test 2: mental stats are read for every recipient (StatUseOf), as for spells.
             if (!HasReadableParts(parts)) return result;
             int level = Math.Max(1, ctx.Unit.Descriptor?.Progression?.CharacterLevel ?? 1);

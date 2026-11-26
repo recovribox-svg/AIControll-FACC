@@ -123,8 +123,14 @@ namespace CompanionAI_Pathfinder.Tactics
         /// <summary>
         /// Per target: an enemy immune to Color Spray (no save rolled, no buff) must not block Color Spray against others.
         /// </summary>
-        private static string FailureKey(UnitEntityData caster, BlueprintAbility blueprint, UnitEntityData target) =>
-            $"{caster?.UniqueId}|{blueprint?.AssetGuid}|{(target == null || target == caster ? "-" : target.UniqueId)}";
+        /// <remarks>★ v0.3.70 review: every Magic Deceiver fusion is an ability of one shared holder blueprint (one for
+        /// touch fusions, one for the others: the game's fusion builder), so a fusion's key carries its identity
+        /// (<paramref name="fusion"/>, AbilityProfile.FusionIdentityOf). Without it, one fusion that did nothing twice on a
+        /// target blocked every fusion on it for the fight, and an ordinary spell (Blindness) was left as the best.</remarks>
+        private static string FailureKey(UnitEntityData caster, BlueprintAbility blueprint, UnitEntityData target, string fusion = "") =>
+            $"{caster?.UniqueId}|{blueprint?.AssetGuid}{fusion}|{(target == null || target == caster ? "-" : target.UniqueId)}";
+
+        private static string FusionOf(AbilityData ability) => ability?.MagicHackData == null ? "" : AbilityProfile.FusionIdentityOf(ability);
 
         /// <summary>The touch-delivery ability of a touch spell (what a held charge is), or null.</summary>
         private static BlueprintAbility TouchDeliveryOf(BlueprintAbility blueprint)
@@ -155,7 +161,7 @@ namespace CompanionAI_Pathfinder.Tactics
                 Caster = caster,
                 Target = target,
                 Name = ability.Name,
-                Key = FailureKey(caster, ability.Blueprint, target),
+                Key = FailureKey(caster, ability.Blueprint, target, FusionOf(ability)),
                 Blueprint = ability.Blueprint,
                 TouchDelivery = TouchDeliveryOf(ability.Blueprint),
                 Command = command,
@@ -182,9 +188,10 @@ namespace CompanionAI_Pathfinder.Tactics
         public static bool IsBlocked(UnitEntityData caster, AbilityData ability, UnitEntityData target)
         {
             if (caster == null || ability?.Blueprint == null || Failures.Count == 0) return false;
-            if (Failures.TryGetValue(FailureKey(caster, ability.Blueprint, target), out int n) && n >= FailuresBeforeBlock) return true;
+            string fusion = FusionOf(ability);
+            if (Failures.TryGetValue(FailureKey(caster, ability.Blueprint, target, fusion), out int n) && n >= FailuresBeforeBlock) return true;
             var delivery = TouchDeliveryOf(ability.Blueprint);
-            return delivery != null && Failures.TryGetValue(FailureKey(caster, delivery, target), out n) && n >= FailuresBeforeBlock;
+            return delivery != null && Failures.TryGetValue(FailureKey(caster, delivery, target, fusion), out n) && n >= FailuresBeforeBlock;
         }
 
         /// <summary>★ v0.3.18 (test11): the caster's area of this ability was centred on <paramref name="enemy"/> twice
@@ -192,7 +199,7 @@ namespace CompanionAI_Pathfinder.Tactics
         public static bool AreaSkips(UnitEntityData caster, AbilityData ability, UnitEntityData enemy)
         {
             if (caster == null || ability?.Blueprint == null || enemy == null || AreaMisses.Count == 0) return false;
-            return AreaMisses.TryGetValue(FailureKey(caster, ability.Blueprint, enemy), out int n) && n >= FailuresBeforeBlock;
+            return AreaMisses.TryGetValue(FailureKey(caster, ability.Blueprint, enemy, FusionOf(ability)), out int n) && n >= FailuresBeforeBlock;
         }
 
         /// <summary>The touch spell whose charge the unit is holding now (UnitPartTouch), or null.</summary>
@@ -371,7 +378,7 @@ namespace CompanionAI_Pathfinder.Tactics
                 int misses = 0;
                 if (p.BlockOnNoReach && p.Ability?.Blueprint != null && p.Target != null)
                 {
-                    string missKey = FailureKey(p.Caster, p.Ability.Blueprint, p.Target);
+                    string missKey = FailureKey(p.Caster, p.Ability.Blueprint, p.Target, FusionOf(p.Ability));
                     AreaMisses.TryGetValue(missKey, out misses);
                     AreaMisses[missKey] = ++misses;
                 }
@@ -404,7 +411,7 @@ namespace CompanionAI_Pathfinder.Tactics
             // Only effects the mod can verify count as silent failures; the rest was watched for the log alone.
             if (success || !p.Verifiable) return;
             // A held charge's failure counts for the touch spell as a whole: the next scroll or potion of it fails alike.
-            string key = p.TouchDelivery != null ? FailureKey(p.Caster, p.TouchDelivery, p.Target) : p.Key;
+            string key = p.TouchDelivery != null ? FailureKey(p.Caster, p.TouchDelivery, p.Target, FusionOf(p.Ability)) : p.Key;
             Failures.TryGetValue(key, out int n);
             Failures[key] = ++n;
             Main.Log($"[Cast] {p.Caster.CharacterName}: {p.Name} did nothing in the game - {why} ({n}/{FailuresBeforeBlock})" +

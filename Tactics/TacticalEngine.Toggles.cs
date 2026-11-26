@@ -681,7 +681,9 @@ namespace CompanionAI_Pathfinder.Tactics
                 {
                     modelled += appraisal.Value * weight;
                     if (appraisal.Value > 0f) helped++;
-                    if (details.Count < 3) details.Add($"{ally.CharacterName} {appraisal.Value * weight:0.#} ({appraisal.Detail})");
+                    // ★ v0.3.70 playtest: a recipient it costs is named too (its spells stopped), beyond the first three.
+                    if (details.Count < 3 || appraisal.Value < 0f && details.Count < 6)
+                        details.Add($"{ally.CharacterName} {appraisal.Value * weight:0.#} ({appraisal.Detail})");
                     continue;
                 }
                 float best = 0f;

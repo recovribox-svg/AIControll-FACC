@@ -20,7 +20,10 @@ namespace CompanionAI_Pathfinder.Tactics
     {
         private const int MaxTeleportTravellers = 4;
         private const int MaxTeleportGroup = 16;
-        private const int MaxTeleportCombatants = 24;
+        // ★ v0.3.70 playtest: the safety loops are cheap (at most four travellers against the units in the fight); the one
+        // costly step is the single native relaxation. A cap of 24 withheld every teleport in the mastermind save, whose
+        // fights had 17-24 party units and summons and 8-13 enemies.
+        private const int MaxTeleportCombatants = 96;
         private static readonly MethodInfo DoorTargets = HarmonyLib.AccessTools.Method(typeof(AbilityCustomDimensionDoor), "GetTargets");
         private static readonly MethodInfo DoorMounts = HarmonyLib.AccessTools.Method(typeof(AbilityCustomDimensionDoor), "AddMounts");
 

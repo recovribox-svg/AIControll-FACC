@@ -501,6 +501,11 @@ namespace CompanionAI_Pathfinder.Tactics
             try { usable = CoupleSpellBoosts(ctx, usable); }
             catch (Exception ex) { Main.Error($"[Tactics] {unit.CharacterName} spell boosts: {ex.Message}"); }
             timings?.Mark(DecisionStage.Boosts);
+            // ★ v0.3.70 playtest: what this unit's spells are worth over its other main actions, for a prohibition's price.
+            if (!preview)
+            {
+                try { NoteSpellEdge(ctx, usable); } catch (Exception ex) { Main.Verbose($"[Tactics] spell edge: {ex.Message}"); }
+            }
             try { AddInfusionChoice(ctx, usable, preview); }
             catch (Exception ex) { ReportOnce($"infusion-search-error|{unit.UniqueId}|{ex.GetType().Name}",
                 $"[Kinetic] {unit.CharacterName}: substance search unavailable ({ex.GetType().Name}); retaining ordinary actions"); }
