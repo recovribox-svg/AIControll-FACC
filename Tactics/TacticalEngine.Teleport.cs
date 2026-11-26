@@ -262,6 +262,9 @@ namespace CompanionAI_Pathfinder.Tactics
             foreach (var c in candidates)
                 if (c.Kind == CandidateKind.Move && c.Key != null && (!walks.TryGetValue(c.Key, out float v) || c.Value > v))
                     walks[c.Key] = c.Value;
+            // ★ v0.3.70 F4 (author request): safe spots farther than a walk reaches, within the teleport's own range.
+            try { AddFarEscapes(ctx); }
+            catch (Exception ex) { Main.Verbose($"[Teleport] {unit.CharacterName}: far escape spots: {ex.Message}"); }
             var quotes = ctx.EscapeQuotes.OrderByDescending(q => q.Gross - q.WalkGivenUp).ToArray();
 
             Candidate best = null;
@@ -344,6 +347,65 @@ namespace CompanionAI_Pathfinder.Tactics
                          $"landing risk {exposure:F1}{(provoke > 0f ? $", casting provokes -{provoke:F1}" : "")})";
             candidates.Add(best);
             ctx.Unused?.Score(witness, best.Value);
+        }
+
+        /// <summary>
+        /// ★ v0.3.70 F4 (author request): an escape a teleport can make that a walk cannot - a safe spot at 60 % and 90 % of
+        /// the longest point teleport's range, where the walk's own spot is closer. Each spot still does what the escape is
+        /// for (out of the reach, out of the swarm, out of the area: the walk's own test), stays within one move and the
+        /// unit's reach of an enemy (it rejoins the fight next turn) and is priced by its own drop chance: the walk's worth
+        /// plus how much less likely the unit is to go down there than at the walk's spot. Two native-free spot searches
+        /// (12 directions each, FindRetreatPoint) from the most valuable escape; the landing itself is checked as any other.
+        /// </summary>
+        private static void AddFarEscapes(TacticalContext ctx)
+        {
+            var unit = ctx.Unit;
+            float range = 0f;
+            foreach (var teleport in ctx.TeleportAbilities)
+                if (teleport.CanTargetPoint) range = Math.Max(range, teleport.GetApproachDistance(null));
+            var source = ctx.EscapeQuotes.OrderByDescending(q => q.Gross - q.WalkGivenUp).FirstOrDefault();
+            if (source == null || !(range > 0f)) return;
+            float walked = HorizontalDistance(unit.Position, source.Point);
+            float rejoin = FightReach(ctx);
+            float worth = AllyWorth(ctx, unit);
+            float atSpot = SpotDrop(ctx, unit, source.Point);
+            var holds = source.Holds;
+            Func<Vector3, bool> accept = p => (holds == null || holds(p)) && !AoeDangerAnalyzer.IsPositionDangerous(unit, p) &&
+                ctx.Enemies.Any(e => !CombatMath.IsDisabled(e) && HorizontalDistance(p, e.Position) <= rejoin);
+            foreach (float share in new[] { 0.6f, 0.9f })
+            {
+                float distance = range * share;
+                if (distance < walked + 1.5f || ctx.EscapeQuotes.Count >= MaxEscapeQuotes) continue;
+                var point = FindRetreatPoint(ctx, distance, accept);
+                if (!point.HasValue) continue;
+                float gross = source.Gross + (atSpot - SpotDrop(ctx, unit, point.Value)) * worth;
+                if (!(gross > source.Gross)) continue;
+                ctx.EscapeQuotes.Add(new EscapeQuote
+                {
+                    // The walk's key: its value is what this spot must beat too.
+                    Key = source.Key, Label = $"{source.Label}, {distance:0} m away", Point = point.Value, Gross = gross,
+                    WalkGivenUp = source.WalkGivenUp, Holds = holds
+                });
+            }
+        }
+
+        /// <summary>
+        /// ★ v0.3.70 F4: how far from an enemy the unit can still fight next turn: its ranged weapon's reach, else a move and
+        /// its melee reach, and at least Close range (casters).
+        /// </summary>
+        private static float FightReach(TacticalContext ctx)
+        {
+            var unit = ctx.Unit;
+            float move = ctx.MoveRange > 0f ? ctx.MoveRange : unit.CurrentSpeedMps * 3f;
+            float reach = Math.Max(move + 2f, CasterApproachRadius + 1f);
+            try
+            {
+                var enemy = ctx.Enemies.FirstOrDefault(e => !CombatMath.IsDisabled(e));
+                var est = enemy == null ? null : CombatMath.EstimateWeaponAttack(unit, enemy, false);
+                if (est != null) reach = Math.Max(reach, est.IsRanged ? est.Reach : move + est.Reach);
+            }
+            catch { }
+            return reach;
         }
 
         // This offset is in the delivery coroutine. A unit aim uses the target's facing and both bodies;

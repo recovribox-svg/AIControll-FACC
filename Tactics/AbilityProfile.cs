@@ -81,6 +81,8 @@ namespace CompanionAI_Pathfinder.Tactics
         public bool Summons { get; private set; }
         /// <summary>★ v0.3.18 (test11): the creatures it summons (ContextActionSpawnMonster.Blueprint).</summary>
         public readonly List<Kingmaker.Blueprints.BlueprintUnit> SummonedUnits = new List<Kingmaker.Blueprints.BlueprintUnit>();
+        /// <summary>★ v0.3.70 F3: the spawn actions themselves (each creature's count and duration).</summary>
+        internal readonly List<ContextActionSpawnMonster> SpawnActions = new List<ContextActionSpawnMonster>();
         public bool Dispels { get; private set; }
         /// <summary>★ v0.3.24: the dispel actions themselves, for the game's own eligibility rule (TacticalEngine.DispelCanTake).</summary>
         public readonly List<ContextActionDispelMagic> DispelActions = new List<ContextActionDispelMagic>();
@@ -1079,6 +1081,7 @@ namespace CompanionAI_Pathfinder.Tactics
                     case ContextActionSpawnMonster spawn:
                         Summons = true;
                         if (spawn.Blueprint != null && !SummonedUnits.Contains(spawn.Blueprint)) SummonedUnits.Add(spawn.Blueprint);
+                        if (spawn.Blueprint != null && !SpawnActions.Contains(spawn) && SpawnActions.Count < 8) SpawnActions.Add(spawn);
                         break;
                     case ContextActionSpawnAreaEffect spawnArea:
                         WalkAreaEffect(spawnArea.AreaEffect, visited, abilityDepth, subject, depth, guards);
