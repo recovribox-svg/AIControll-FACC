@@ -529,6 +529,11 @@ namespace ProfileAudit
             File.WriteAllText(output, string.Join(Environment.NewLine, reviewLines) + Environment.NewLine + Environment.NewLine + File.ReadAllText(output));
             blocklistFailures += reviewFailures;
 
+            var features6Lines = V0370Features6Check.Run(loaded.Values, out int features6Failures);
+            foreach (var line in features6Lines) Console.WriteLine(line);
+            File.WriteAllText(output, string.Join(Environment.NewLine, features6Lines) + Environment.NewLine + Environment.NewLine + File.ReadAllText(output));
+            blocklistFailures += features6Failures;
+
             var features5Lines = V0370Features5Check.Run(loaded.Values, out int features5Failures);
             foreach (var line in features5Lines) Console.WriteLine(line);
             File.WriteAllText(output, string.Join(Environment.NewLine, features5Lines) + Environment.NewLine + Environment.NewLine + File.ReadAllText(output));

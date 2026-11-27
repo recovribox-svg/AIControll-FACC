@@ -195,6 +195,11 @@ namespace CompanionAI_Pathfinder.Tactics
         /// <summary>★ v0.3.16: why no "Leave area" option was offered while the unit stands in a harmful area (diagnostics).</summary>
         public string LeaveNote;
         public float HpPct;
+        /// <summary>
+        /// ★ v0.3.70 features6 review (author-approved): negative levels the unit carries, and its character level. The game kills
+        /// a unit once they reach its level (UnitLifeController), a second life bar beside its HP (<see cref="TacticalEngine.BadlyHurt"/>).
+        /// </summary>
+        public int Drained, Level;
         public List<UnitEntityData> Engagers = new List<UnitEntityData>();
 
         public List<UnitEntityData> Enemies = new List<UnitEntityData>();
@@ -936,6 +941,7 @@ namespace CompanionAI_Pathfinder.Tactics
             if (!Core.DiagnosticLogPolicy.WriteDecision(realTime, chosen != null, usable.Count > 0, Main.VerboseOn)) return;
             var sb = new StringBuilder();
             sb.Append($"[Tactics] {ctx.Unit.CharacterName} {(realTime ? "RT" : "R")}{ctx.Round} HP{ctx.HpPct * 100:F0}% ");
+            if (ctx.Drained > 0) sb.Append($"drained {ctx.Drained}/{ctx.Level} ");   // ★ features6 review
             // ★ v0.3.14: the unit's statuses and what they forbid ("{nauseated | nauseated: move only}").
             if (ctx.Status.Length > 0 || ctx.Permissions.Notes.Length > 0)
                 sb.Append($"{{{ctx.Status}{(ctx.Permissions.Notes.Length > 0 ? " | " + ctx.Permissions.Notes : "")}}} ");
@@ -991,6 +997,7 @@ namespace CompanionAI_Pathfinder.Tactics
                 HpPct = CombatMath.HpPercent(unit),
                 Blocks = UserAbilityPolicy.ScopeFor(unit)   // ★ user-ability-blacklist
             };
+            CombatMath.ReadDrain(unit, out ctx.Drained, out ctx.Level);
 
             ctx.HasStandard = unit.HasStandardAction();
             ctx.HasMove = unit.HasMoveAction();
@@ -1401,7 +1408,7 @@ namespace CompanionAI_Pathfinder.Tactics
             // full HP beside a Skeletal Champion, walked off to a Zombie (a 9-a-round hitter) for one attack of
             // opportunity priced 0.8, and was down before her next turn (0.3.20-test7 turn-based log, R2). A healthy
             // fighter walking up to an enemy without provoking keeps the old rule (its place is in melee).
-            if (alwaysExposure || ctx.HpPct < CautionBelow(ctx) || (risk != null && risk.Attacks > 0))
+            if (alwaysExposure || BadlyHurt(ctx) || (risk != null && risk.Attacks > 0))
             {
                 float exposure = ExposureCost(ctx, destination);
                 // ★ v0.3.28 (v0.3.27 turn-based log, fight 3): and what leaving costs the rest of the party. Seelah walked
@@ -1865,6 +1872,15 @@ namespace CompanionAI_Pathfinder.Tactics
         /// half its HP, a third for a tank, which holds the line longer.
         /// </summary>
         private static float CautionBelow(TacticalContext ctx) => ctx.Settings.Role == AIRole.Tank ? 0.35f : 0.5f;
+
+        /// <summary>
+        /// ★ v0.3.70 features6 review (author-approved): below the caution share of its HP, or with half its levels or more
+        /// drained (ValueModel.HalfDrained): the game kills a unit whose negative levels reach its character level. In
+        /// real-time fight 9 a Corpulent Spectre and a Cairn Wight Rogue drained arcan (Arcanist 4) to death at 98 % HP
+        /// and Aeiluvetar (Guardian 5); a withdrawal was only offered by HP, so arcan was never offered one.
+        /// </summary>
+        private static bool BadlyHurt(TacticalContext ctx) =>
+            ctx.HpPct < CautionBelow(ctx) || ValueModel.HalfDrained(ctx.Level, ctx.Drained);
 
         /// <summary>
         /// ★ v0.3.14 (test5): one attack of opportunity from each of <paramref name="attackers"/> on a unit with
@@ -5755,7 +5771,8 @@ namespace CompanionAI_Pathfinder.Tactics
             // ★ v0.3.10: valued like a heal - by how much less likely the unit is to drop before its next turn at the new
             // spot, including the attacks of opportunity for leaving melee. 0.3.9 offered it only when engaged and at
             // a fixed value: Lann (20 %, in the Large Water Elemental's reach) shot instead and went down.
-            if (ctx.HpPct < CautionBelow(ctx))
+            // ★ v0.3.70 features6 review (author-approved): or half drained (BadlyHurt).
+            if (BadlyHurt(ctx))
             {
                 float dangerHere = IncomingDamage(ctx, unit, unit.Position);
                 if (dangerHere > 0f)

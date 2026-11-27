@@ -23,6 +23,13 @@ namespace CompanionAI_Pathfinder.Tactics
         public static int LevelsBeforeDrainDeath(int characterLevel, int alreadyDrained) =>
             Math.Max(0, Math.Max(1, characterLevel) - Math.Max(0, alreadyDrained));
 
+        /// <summary>
+        /// ★ v0.3.70 features6 review (author-approved): half or more of a unit's levels drained - badly hurt, as below half its
+        /// HP (TacticalEngine.BadlyHurt): the next drain hits can kill it at any HP.
+        /// </summary>
+        public static bool HalfDrained(int characterLevel, int drained) =>
+            drained > 0 && drained * 2 >= Math.Max(1, characterLevel);
+
         /// <summary>Read non-HP harm is a lower bound on the value of removing its source. Keep the existing disabled
         /// discount; no extra class/tag multiplier and no change to the calibrated incoming-HP threat.</summary>
         public static float NonHitPointRemovalWorth(float ordinaryWorth, float nonHitPointHarm, bool disabled) =>
