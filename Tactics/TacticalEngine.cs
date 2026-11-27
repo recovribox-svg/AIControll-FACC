@@ -389,6 +389,7 @@ namespace CompanionAI_Pathfinder.Tactics
             if (ctx != null && !preview)
             {
                 ctx.Unused = UnusedWitness.For(unit);
+                ctx.Unused?.BeginDecision();
                 FightStats.NoteContext(ctx);
                 CoverageReport.ReportIfChanged(unit);   // ★ v0.3.17: diagnostics, once per fight at most
                 // ★ v0.3.18: what the enemies can deal to the party this round, as predicted (uncalibrated), once per round:
@@ -450,6 +451,13 @@ namespace CompanionAI_Pathfinder.Tactics
             try { AddMovementCandidates(ctx, candidates); } catch (Exception ex) { Main.Error($"[Tactics] movement candidates: {ex}"); }
             // ★ v0.3.20 (test8): an option whose real walk provoked more than its straight line, at the real walk's price.
             try { RepriceRealPaths(ctx, candidates, memory); } catch (Exception ex) { Main.Error($"[Tactics] real path prices: {ex}"); }
+            // ★ summons review (S2): a native teleport is offered against the weapon approaches and advances priced above
+            // (their final values and destinations). Not in a preview, which plans no move (and so no approach).
+            if (!preview)
+            {
+                try { AddTeleportApproach(ctx, candidates, memory); }
+                catch (Exception ex) { Main.Error($"[Teleport] {unit.CharacterName}: approach unavailable: {ex.Message}"); }
+            }
             // ★ v0.3.18 (AA-2): after the others, so a toggle that forbids spells is priced against the best spell.
             try { AddToggleCandidates(ctx, candidates, preview); } catch (Exception ex) { Main.Error($"[Tactics] toggle candidates: {ex}"); }
             try { AddShifterFuryCandidates(ctx, candidates); } catch (Exception ex) { Main.Error($"[Tactics] Shifter Fury candidates: {ex}"); }
@@ -3006,7 +3014,7 @@ namespace CompanionAI_Pathfinder.Tactics
                             var teleports = ctx.TeleportAbilities ?? (ctx.TeleportAbilities = new List<AbilityData>(SpotRules.PricedSpots));
                             if (teleports.Count < SpotRules.PricedSpots) teleports.Add(ability);
                         }
-                        else ctx.Unused?.Record(witness, available ? UnusedReason.TeleportLanding : UnusedReason.ActionUnavailable);
+                        else ctx.Unused?.Record(witness, available ? UnusedReason.TeleportWithheld : UnusedReason.ActionUnavailable);
                         continue;
                     }
                     bool futureOffence = profile != null && (profile.DealsDamage || profile.HarmfulEffects ||
@@ -6341,7 +6349,9 @@ namespace CompanionAI_Pathfinder.Tactics
                 // saves come later, summons, or Charge, whose attack the game makes after the ability ends. Twice nothing
                 // on that enemy, it is not aimed there again this fight - unless the ability runs its own logic, whose
                 // effect may come later too (logged only).
-                bool watch = profile != null && !profile.SpawnedAreas.Any() && !profile.Summons && !profile.IsCharge && profile.GriffonAttack == null;
+                // ★ summons review (S2): nor a teleport, which does nothing to the enemy it lands beside.
+                bool watch = profile != null && !profile.SpawnedAreas.Any() && !profile.Summons && !profile.IsCharge && profile.GriffonAttack == null &&
+                             profile.TeleportDelivery == null;
                 bool ownLogic = Kingmaker.Blueprints.BlueprintExtenstions.GetComponent<Kingmaker.UnitLogic.Abilities.Components.Base.AbilityCustomLogic>(c.Ability.Blueprint) != null;
                 // Blocking also needs effects on the target itself: an ability aimed at an enemy may only buff its caster.
                 bool rangedArm = NativeRangedStrike(unit, c.Ability);

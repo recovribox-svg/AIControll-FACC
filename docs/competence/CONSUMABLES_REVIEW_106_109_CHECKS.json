@@ -1,0 +1,36 @@
+{
+ "task": "Author request: review Codex's consumables PRs #106-#109, make corrections, do not merge",
+ "date": "2026-11-22",
+ "author": "Claude",
+ "branch": "claude/consumables-review",
+ "stacked_on": {"#106": "287694c", "#107": "636e245", "#108": "80e01f7", "#109": "1a303f1"},
+ "development": "6c4e96c (unchanged)",
+ "checked_source": "e4dd378",
+ "review": {
+  "#106 slice 0 + C1": "agreed with; witness corrected (below)",
+  "#107 C3": "agreed with. AbilityData.StickyTouch is the held charge (Fact?.StickyTouch), so slot copies of touch spells are indexed; 81 exported scroll/wand/potion items name the same ...Cast blueprint as the spellbook (Cure/Inflict, Death Ward, Shocking Grasp, Vampiric Touch, True Seeing).",
+  "#108 C2": "agreed with. Native: MechanicActionBarSlotItem.GetConvertedAbilityData; GetApproachDistance uses Caster.GetWeaponRange() (GameConsts.MinWeaponRange 2 ft + reach) plus bodies; GetDefaultActionType gives Standard unless the item overrides; UnitUseAbility.OnTick skips defensive casting for every potion. No exported potion ability has variants (0 of 114).",
+  "#109 C4": "agreed with. SavingThrowBonusAgainstAbilityType (Bonus + Value x rank, matched on the reason ability's Type) and AddSpellResistance read as applied. 23 replaced non-ITEMS report lines and 5 summon-detail rows versus #108 on the same inputs, all intended readings. Freedom of Movement's remaining ConditionalSaves 10 is its separate Staggered immunity."
+ },
+ "corrections": [
+  "UnusedState: within one decision a scored option keeps 'scored, not chosen'; the last decision decides (4 unit tests)",
+  "UnusedWitness: 16 item entries apart from the 32 ability entries (coverage7 kits of 92 and 108 abilities)",
+  "UnusedWitness: hand-overs listed as '... to an ally'"
+ ],
+ "toolchain": {"dotnet_sdk": "8.0.428"},
+ "release_build": {"warnings": 0, "errors": 0, "real_game_references": true, "clean_worktree": true},
+ "dll": {"mvid": "85862b90-ef68-440e-a0a8-bea7f51fafb8", "sha256": "de064214dc5afbc6a3348815f978a13f3bfa2eb3da9ce7adffa1372343189479", "size": 1652736, "packaged": false},
+ "unit_tests": 1149,
+ "script_tests": {"BlueprintInventory": 27, "InvocationLedger": 21, "ProfileAuditSupplement": 3},
+ "profile_audit": {
+  "exit": 0,
+  "loaded": 45244,
+  "report_sha256": "1a53d9431e37a8891d272ee1a68a712fd5a643f1798e3463a6afbc841aaa14e0",
+  "fusion_matrix_sha256": "d15355ec5844d2548909c8a81f0b91938a6c6aa8117728a4ab372f3b54618401",
+  "summon_detail_sha256": "50c683e8c8d190f65050af4248d994790d3561322d0fe9f6605cf7fa3b4469be",
+  "versus_109_head": "report, Fusion matrix and summon detail byte-identical (local build of 1a303f1, same inputs)"
+ },
+ "native_harnesses": {"ToggleCosts": 98, "TomeBurn": 14, "ToyBoxSpend": 10},
+ "harness_note": "The first ToyBox harness process measured 6,368 bytes over 10,000 calls in the shared BUFF-CONTEXT allocation check. Two reruns, the main audit and the other two harness processes measured 0 bytes on the same DLL. The check does not reach the changed code.",
+ "not_run": ["live turn-based or real-time play", "a test package (the v0.3.70 build follows the S1/S2 review)"]
+}

@@ -1,5 +1,15 @@
 # Test builds
 
+## v0.3.70 test build: consumables and summon abilities, reviewed (22 November 2026)
+
+[UMM ZIP](AI-Control-FACC-v0.3.70-dev-summons1-4d2b1ce-UMM-test.zip?raw=true) · [Identity](AI-Control-FACC-v0.3.70-dev-summons1-4d2b1ce-UMM-test.identity.json) · [SHA-256](AI-Control-FACC-v0.3.70-dev-summons1-4d2b1ce-UMM-test.sha256)
+ · [Review, checks and replay](../docs/TACTICAL_AI.md#221-review-of-codexs-summon-slices-s1-and-s2-prs-111112-and-the-v0370-test-build-22-november-2026-claude).
+
+UMM **0.3.70**, checked source `2fca43d`, packaged source `4d2b1ce`, startup module `38994eec-a452-421b-a096-424a31dd2fb1`, **unplayed**.
+Contains C1–C4, S1, S2 and both of Claude's reviews. The S2 package below never offered a teleport (its builder had no
+caller); play this one instead.
+
+
 ## Summon abilities S2 (22 November 2026)
 
 [UMM ZIP](AI-Control-FACC-v0.3.60-dev-summon-s2-3c8595d-UMM-test.zip?raw=true) · [Identity](AI-Control-FACC-v0.3.60-dev-summon-s2-3c8595d-UMM-test.identity.json) · [SHA-256](AI-Control-FACC-v0.3.60-dev-summon-s2-3c8595d-UMM-test.sha256)

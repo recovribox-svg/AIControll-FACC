@@ -1,0 +1,24 @@
+{
+  "build_label": "summons1",
+  "kind": "development-test",
+  "version": "0.3.70",
+  "source_branch": "claude/summons-review",
+  "source_commit": "4d2b1ce1dcbdebd9554dc2ebf298b4a0766168e6",
+  "base_commit": "961f6c2d03be6b3a1df1c2b971e86c1859c4d4a7",
+  "dll": {
+    "assembly": "CompanionAI_Pathfinder, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null",
+    "mvid": "38994eec-a452-421b-a096-424a31dd2fb1",
+    "sha256": "7d6032330eab05b71d0f606d2ff3d4e5a610c8b49d43c1d95ae046d691d06e62",
+    "size": 1671680
+  },
+  "archive": "AI-Control-FACC-v0.3.70-dev-summons1-4d2b1ce-UMM-test.zip",
+  "zip_sha256": "c5436fb4d0a00b9eaff7f763042f437df34aaa8284a4138847fd5441f2c69e69",
+  "manifest_sha256": "db493172a83ffb57d31faa01b35d91c9e256b1e6f2c603407bfe217028f42da9",
+  "checks_receipt": "docs/competence/SUMMONS_REVIEW_111_112_CHECKS.json",
+  "archive_contents": [
+    "CompanionAI_Pathfinder.dll",
+    "Info.json"
+  ],
+  "gameplay_status": "unplayed",
+  "release": false
+}

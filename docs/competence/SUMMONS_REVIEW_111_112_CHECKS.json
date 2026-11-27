@@ -1,0 +1,95 @@
+{
+ "task": "Author request: review Codex's PRs #111 (S1) and #112 (S2), make corrections, then build the test package recognised as v0.3.70; do not merge",
+ "date": "2026-11-22",
+ "author": "Claude",
+ "branch": "claude/summons-review",
+ "stacked_on": {
+  "#111 S1": "d2e01ed",
+  "#112 S2": "961f6c2",
+  "#110 consumables review": "2820f03 (merged, 50d9aaf)"
+ },
+ "contains": [
+  "#106 C1",
+  "#107 C3",
+  "#108 C2",
+  "#109 C4",
+  "#110 review corrections",
+  "#111 S1",
+  "#112 S2",
+  "this review's corrections"
+ ],
+ "checked_source": "2fca43d",
+ "packaged_source": "4d2b1ce (Info.json 0.3.70; no code change from 2fca43d)",
+ "review": {
+  "#111 S1": "agreed with. Touch of Chaos keeps the worse of two dice (ModifyD20), credited as 1 - pass on the first attack; Song of Discord redirect credited only when the nearest unit is the enemy's ally; marks use the cached routine of the same target and frame; Contagion ticks at Frequency.ToRounds; Unholy Nimbus withheld with a witness reason.",
+  "#111 S1 limits kept": [
+   "a mark scores 0 when its target is out of reach or no routine was read this frame",
+   "a smite's AC part is not in the mark gain"
+  ],
+  "#112 S2": "native reading agreed with: AbilityCustomDimensionDoor.Deliver offset (both bodies + MinWeaponRange in target facing), GetTargets travellers, AddMounts, FreePlaceSelector.RelaxPoints(points, radii, count, rootPoint = null); AbilityCustomTeleportation same offset, caster alone, RelaxPoints false. Landing price matches the Griffon leap."
+ },
+ "corrections": [
+  "AddTeleportApproach had no caller: teleports were collected and dropped, and no longer reached ordinary scoring, so the S2 package never used them in either mode. Decide now calls it after RepriceRealPaths, not in a preview.",
+  "A teleport aimed at an enemy is no longer watched by CastOutcome for an effect on that enemy (each Vrock cast logged 'did nothing to its target'; blockOnNoReach was already off).",
+  "[Unused] reasons per teleport: no legal aim, combat policy, no gain, past the four-aim budget, or TeleportWithheld (item, cost, mount, held charge, crowd), in place of 'no verified safe teleport landing'.",
+  "Merge: the S1/S2 reasons DelayedDelivery and TeleportLanding move into UnusedState beside Scored; the consumables review is section 220, S1/S2 stay 218/219."
+ ],
+ "new_audit_check": {
+  "name": "TELEPORT-APPROACH: the decision offers the teleport builder's option and its cast is not watched for an effect on the enemy",
+  "on_112_head_dll": "FAILED (1 of 11)",
+  "on_checked_dll": "passed (11 of 11)"
+ },
+ "toolchain": {
+  "dotnet_sdk": "8.0.428"
+ },
+ "release_build": {
+  "warnings": 0,
+  "errors": 0,
+  "real_game_references": true,
+  "clean_worktree_for_package": true
+ },
+ "dll_checked": {
+  "mvid": "e055ce83-0cf2-4e04-9812-67323924241c",
+  "sha256": "f73bdd17723c7866a03de91478eab4a5fccceab7eeca32e361a1de6eb4f398a5",
+  "size": 1671680
+ },
+ "dll_112_head_local": {
+  "mvid": "c52e148d-36e3-4fee-8b8e-166cca66412f",
+  "sha256": "0826b1307c080571255911c618cf7d8ecc21bc524a4be79829929039b13484b7"
+ },
+ "unit_tests": 1157,
+ "script_tests": {
+  "BlueprintInventory": 27,
+  "InvocationLedger": 21,
+  "ProfileAuditSupplement": 3
+ },
+ "profile_audit": {
+  "exit": 0,
+  "loaded": 45244,
+  "failed_allowed": 1,
+  "report_sha256": "b6607a6c1971d88f28c92952fc68aadaaefda0085567eacdb989a5fcab0b731c",
+  "fusion_matrix_sha256": "d15355ec5844d2548909c8a81f0b91938a6c6aa8117728a4ab372f3b54618401",
+  "summon_detail_sha256": "32970346adaf60712bccaa22b38772f24ea907c2838eae16ef14345decaf9380",
+  "versus_112_head": "report differs only by the new TELEPORT-APPROACH check (10 -> 11 checks); Fusion matrix and summon detail byte-identical (local build of 961f6c2, same inputs)",
+  "packaged_dll": "report, Fusion matrix and summon detail byte-identical to the checked DLL"
+ },
+ "native_harnesses": {
+  "ToggleCosts": 98,
+  "TomeBurn": 14,
+  "ToyBoxSpend": 10,
+  "on": "checked and packaged DLL"
+ },
+ "external_references": "SigDump lists identical (2,131 lines) for the #112 head and the checked DLL",
+ "package": {
+  "archive": "test-builds/AI-Control-FACC-v0.3.70-dev-summons1-4d2b1ce-UMM-test.zip",
+  "umm_version": "0.3.70",
+  "mvid": "38994eec-a452-421b-a096-424a31dd2fb1",
+  "dll_sha256": "7d6032330eab05b71d0f606d2ff3d4e5a610c8b49d43c1d95ae046d691d06e62",
+  "zip_sha256": "c5436fb4d0a00b9eaff7f763042f437df34aaa8284a4138847fd5441f2c69e69",
+  "gameplay": "unplayed",
+  "supersedes": "test-builds/AI-Control-FACC-v0.3.60-dev-summon-s2-3c8595d-UMM-test.zip (its teleports never ran)"
+ },
+ "not_run": [
+  "live turn-based or real-time play"
+ ]
+}
