@@ -1,6 +1,11 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Reflection;
+using Kingmaker.UnitLogic.Abilities;
+using Kingmaker.UnitLogic.Abilities.Blueprints;
+using Kingmaker.UnitLogic.Commands;
+using Kingmaker.UI.UnitSettings;
 using CompanionAI_Pathfinder.Tactics;
 using Kingmaker.Blueprints;
 using Kingmaker.Blueprints.Items.Equipment;
@@ -57,13 +62,43 @@ namespace ProfileAudit
                     lines.Add("ITEMS FAILED: Magic Missile scroll must resolve to the canonical spellbook blueprint");
                 }
                 else lines.Add("ITEMS Magic Missile scroll: shares its cast blueprint with the spellbook");
+
+                const BindingFlags all = BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static | BindingFlags.Instance;
+                var canOffer = typeof(AbilityDiscovery).GetMethod("CanOfferPotionHandoff", all);
+                var cure = items.Single(i => i.name == "PotionOfCureLightWounds").Ability;
+                bool Handoff(AbilityData ability, bool slot) => (bool)canOffer.Invoke(null, new object[] { ability, slot });
+                var drink = CasterPolicyCheck.Data(cure);
+                var give = CasterPolicyCheck.Data(cure);
+                give.PotionForOther = true;
+                var personal = items.Where(i => i.Type == UsableItemType.Potion && i.Ability != null)
+                    .Select(i => i.Ability).FirstOrDefault(a => a.Range == AbilityRange.Personal);
+                if (!Handoff(drink, true) || Handoff(drink, false) || AbilityDiscovery.Key(drink) == AbilityDiscovery.Key(give) ||
+                    personal == null || Handoff(CasterPolicyCheck.Data(personal), true))
+                {
+                    bad++;
+                    lines.Add("ITEMS FAILED: potion handoff must distinguish native identity, quick slot and Personal range");
+                }
+                else lines.Add("ITEMS potion handoff: actual cure and Personal potion, quick slot and separate option identity");
+
+                bool Calls(Type owner, string method, string member) =>
+                    SaveBoostCheck.ReferencedMembers(owner.GetMethod(method, all)).Any(m => m.Name == member);
+                if (!(Calls(typeof(MechanicActionBarSlotItem), "GetConvertedAbilityData", "set_PotionForOther") &&
+                      Calls(typeof(AbilityData), "GetDefaultActionType", "get_PotionForOther") &&
+                      Calls(typeof(AbilityData), "GetApproachDistance", "GetWeaponRange") &&
+                      Calls(typeof(UnitUseAbility), "OnTick", "get_SourceItemUsableBlueprint") &&
+                      Calls(typeof(TacticalEngine), "TouchApproachFirst", "get_PotionForOther")))
+                {
+                    bad++;
+                    lines.Add("ITEMS FAILED: native potion handoff conversion, range, action, or shared approach route");
+                }
+                else lines.Add("ITEMS potion handoff: native conversion, action, range and combat command routes");
             }
             catch (Exception ex)
             {
                 bad++;
                 lines.Add("ITEMS FAILED: " + ex.GetBaseException().Message);
             }
-            lines.Insert(0, $"ITEMS: item-to-ability joins, 5 blueprint fixtures, {bad} failures");
+            lines.Insert(0, $"ITEMS: item-to-ability joins, 7 blueprint fixtures, {bad} failures");
             failures = bad;
             return lines;
         }

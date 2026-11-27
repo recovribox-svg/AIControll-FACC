@@ -1,5 +1,14 @@
 # Test builds
 
+## Consumables C2 (22 November 2026)
+
+[UMM ZIP](AI-Control-FACC-v0.3.60-dev-items-c2-2f890af-UMM-test.zip?raw=true) · [Identity](AI-Control-FACC-v0.3.60-dev-items-c2-2f890af-UMM-test.identity.json) · [SHA-256](AI-Control-FACC-v0.3.60-dev-items-c2-2f890af-UMM-test.sha256)
+ · [Checks and replay](../docs/TACTICAL_AI.md#216-consumables-c2-hand-an-adjacent-ally-a-potion-22-november-2026).
+
+UMM **0.3.60**, checked source `2f890af`, startup module `a7db0656-cced-4fc8-a299-1314503fa3e3`, **unplayed**.
+Includes previous inventory and appraisal slices and adds native potion handoffs.
+
+
 ## Consumables C3 (22 November 2026)
 
 [UMM ZIP](AI-Control-FACC-v0.3.60-dev-items-c3-3ee4882-UMM-test.zip?raw=true) · [Identity](AI-Control-FACC-v0.3.60-dev-items-c3-3ee4882-UMM-test.identity.json) · [SHA-256](AI-Control-FACC-v0.3.60-dev-items-c3-3ee4882-UMM-test.sha256)

@@ -160,8 +160,8 @@ Read from the decompiled game. The implementer re-checks each against the suppli
 - **Range:** `Caster.GetWeaponRange()` with no weapon: the native minimum weapon range (2 ft in the checked assembly) plus the giver's reach. The approach distance adds both bodies.
 - **Delivery:** `UnitUseAbility` switches to the sticky-touch delivery ability when there is one, and uses the touch
   animation when the target is not the giver.
-- **Attacks of opportunity:** it provokes like drinking (`ProvokeAttackOfOpportunity`: a spell from a usable item without
-  a sticky touch).
+- **Attacks of opportunity:** `UnitUseAbility.OnTick` skips the defensive-casting check for all potions, including a
+  handoff. Moving into reach still uses the ordinary walking risk.
 - **Identity:** native `Equals` and `GetHashCode` include the flag. The mod's option key (`AbilityDiscovery.Key`) does not
   yet.
 

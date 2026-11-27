@@ -8,7 +8,17 @@ Read [CONTRIBUTING.md](CONTRIBUTING.md) for shared branch ownership, Codex pull 
 Codex works on task branches and targets pull requests at `claude/dreamy-pasteur-b9h3rn`; Claude reviews and integrates them there.
 Keep `main` for author-authorized releases. Read [AGENTS.md](AGENTS.md) when coordinating agent work.
 
-**Current handover (22 November 2026): consumables C3 available for review.**
+**Current handover (22 November 2026): consumables C2 available for review.**
+This branch includes Slice 0/C1 and C3 (drafts #106 and #107). Checked source `2f890af`,
+UMM **0.3.60**, startup module `a7db0656-cced-4fc8-a299-1314503fa3e3`. The package is unplayed.
+Read [§216](docs/TACTICAL_AI.md#216-consumables-c2-hand-an-adjacent-ally-a-potion-22-november-2026),
+the [checks](docs/competence/SUMMONS_CONSUMABLES_C2_CHECKS.json) and [build provenance](docs/competence/SUMMONS_CONSUMABLES_C2_BUILD_PROVENANCE.json).
+- Native potion handoff for eligible quick-slot potions in TB and RT, with the game action, target and range.
+- Existing touch approach and item safety apply. Handoff to self, enemies and summons is withheld.
+- 1,143 units, scripts 27/21/3, zero-warning Release, complete audits and native 98/14/10 pass.
+- C4 item readers, S1 and S2 remain pending.
+
+**Earlier handover (22 November 2026): consumables C3 available for review.**
 The branch includes Slice 0 and C1 (draft #106). Checked source `3ee4882`, UMM **0.3.60**,
 startup module `03f36260-38ab-4267-9324-5d5f3370f7c5`. The package is unplayed.
 Read [§215](docs/TACTICAL_AI.md#215-consumables-c3-one-spend-price-and-slot-copies-first-22-november-2026),
