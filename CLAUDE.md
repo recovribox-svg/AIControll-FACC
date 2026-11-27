@@ -8,7 +8,34 @@ Read [CONTRIBUTING.md](CONTRIBUTING.md) for shared branch ownership, Codex pull 
 Codex works on task branches and targets pull requests at `claude/dreamy-pasteur-b9h3rn`; Claude reviews and integrates them there.
 Keep `main` for author-authorized releases. Read [AGENTS.md](AGENTS.md) when coordinating agent work.
 
-**Current handover (26 November 2026, Claude): features F1–F4 (author requests) on `claude/v0370-features`, stacked on
+**Current handover (27 November 2026, Claude): features1 playtest reviewed; fixes on `claude/v0370-features-review`, stacked
+on `claude/v0370-features` (draft PR #117). Not played, nothing merged.** Read [docs/V0370_FEATURES_REVIEW.md](docs/V0370_FEATURES_REVIEW.md),
+`docs/TACTICAL_AI.md` §225 and the [receipt](docs/competence/V0370_FEATURES_REVIEW_CHECKS.json).
+- **Logs:**
+  - features1 module `82dcebbe`: 5 turn-based fights (451 decisions), then 6 real-time fights in a new session (1,225
+    decisions, 411 commands); no AI Control exception.
+  - The first session crashed at its first real-time fight; the author says too many enemies were spawned. Not
+    investigated, at the author's request.
+- **Fixes (both modes):**
+  1. A spell ban priced an unmeasured spellbook caster at 0. Inspired Rage started over the Knight Commander, which lost
+     its turn. Now estimated from the spellbook until measured (`ValueModel.UnmeasuredSpellEdge`).
+  2. Ability damage and effect chances are remembered for the frame (`CombatMath.EstimateMemo.cs`). A Shadow Demon's
+     breaths made ~900 estimates each, in an 844 ms decision.
+  3. Group teleports were withheld with the party's summons out (group bound 16, now 96).
+  4. F4 caps an infinite (Unlimited) teleport range.
+- **Logs (author request):** about 12 % smaller. Coverage once per summon kind, one free-side row a decision, `[Unused]`
+  only on change, the energy note once. `[Cmd]` rows are kept (the Invocation ledger parses them).
+- **Checks** on `ac71295`: Release 0 warnings; 1,176 unit + 27/21/3 script tests; ProfileAudit `V0370-FEATURE-REVIEW` 7,
+  every other line and matrix unchanged; harnesses 98/14/10; 0 external members added.
+- **Package:** `test-builds/AI-Control-FACC-v0.3.70-dev-features2-ac71295-UMM-test.zip`, MVID
+  `33fd9935-2a08-4977-9bf0-1891bf7e6538`, UMM 0.3.70.
+- **Open:**
+  - F2 was never offered; the new `[WeaponSet]` line will say why.
+  - Two Vrock coups de grace never started.
+  - Nobody freed the allies under the Nabasu's Hold Person, Mass.
+- **Next:** the author plays features2 (replay in the review page).
+
+**Earlier handover (26 November 2026, Claude): features F1–F4 (author requests) on `claude/v0370-features`, stacked on
 `claude/v0370-playtest-review` (draft PR #116). Not played, nothing merged.** Read [docs/V0370_FEATURES.md](docs/V0370_FEATURES.md),
 `docs/TACTICAL_AI.md` §224 and the [receipt](docs/competence/V0370_FEATURES_CHECKS.json).
 - **F1 (movement, turn-based):** a ranged-style unit with only its move action left takes a safer spot that keeps an

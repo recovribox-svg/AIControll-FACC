@@ -7530,3 +7530,29 @@ Control exception. Both combat modes:
 - **Package:** `test-builds/AI-Control-FACC-v0.3.70-dev-features1-a6cd4a9-UMM-test.zip`, module
   `82dcebbe-430b-479e-9e9b-58116176795e`, UMM 0.3.70.
 
+## 225. v0.3.70 features review: spell bans, cone performance, group teleports, log trims (27 November 2026, Claude)
+
+[Review page](V0370_FEATURES_REVIEW.md) · [receipt](competence/V0370_FEATURES_REVIEW_CHECKS.json). From the features1
+logs: five turn-based fights in one session, six real-time fights in another. Author request; unplayed.
+
+- **Spell ban (both modes):** `AppraiseParts` priced an unmeasured spellbook caster at 0, so Inspired Rage started over
+  the Knight Commander (a Pure Mage), which then lost its turn. Until measured, `ValueModel.UnmeasuredSpellEdge` estimates
+  it: a round of its caster level by the share of full casting its highest spell level gives, halved with a weapon.
+- **Performance (both modes):** `CombatMath.EstimateMemo.cs` remembers ability damage and effect chances for the frame.
+  Cones re-asked them per aim and spot (a Shadow Demon's breaths: ~900 estimates each, an 844 ms decision). Cleared by
+  `ClearAttackCache` with every state preview; not used under a pool outcome or a Magus roll.
+- **Teleports:** `MaxTeleportGroup` 16 → 96 (the crowd bound; travellers still at most four): group teleports were
+  withheld with the party's summons out. `AddFarEscapes` cuts an infinite (Unlimited) range to the farthest enemy plus
+  the fight reach.
+- **Log size (author request), about 12 %:**
+  - coverage once per summon kind, and only new toggle lines;
+  - one free-side row a decision;
+  - `[Unused]` entries only when their verdict changes;
+  - the energy-estimate note once a session;
+  - a `[WeaponSet]` line when a Mixed unit has no other set (F2 was never offered).
+- **Checks** on `ac71295`:
+  - Release 0 warnings; 1,176 unit + 27/21/3 script tests.
+  - ProfileAudit `V0370-FEATURE-REVIEW` 7 checks; every other line, the Fusion matrix and the summon detail unchanged.
+  - Harnesses 98/14/10; 0 external members added.
+- **Package:** `test-builds/AI-Control-FACC-v0.3.70-dev-features2-ac71295-UMM-test.zip`, module
+  `33fd9935-2a08-4977-9bf0-1891bf7e6538`, UMM 0.3.70.

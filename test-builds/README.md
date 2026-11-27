@@ -1,5 +1,14 @@
 # Test builds
 
+## v0.3.70 features review: spell bans, cone performance, group teleports, log trims (27 November 2026)
+
+[UMM ZIP](AI-Control-FACC-v0.3.70-dev-features2-ac71295-UMM-test.zip?raw=true) · [Identity](AI-Control-FACC-v0.3.70-dev-features2-ac71295-UMM-test.identity.json) · [SHA-256](AI-Control-FACC-v0.3.70-dev-features2-ac71295-UMM-test.sha256)
+ · [Review and replay](../docs/V0370_FEATURES_REVIEW.md).
+
+UMM **0.3.70**, source `ac71295`, startup module `33fd9935-2a08-4977-9bf0-1891bf7e6538`, **unplayed**. Contains features1
+below plus the fixes from its playtest: an unmeasured caster's spell ban is priced, cone/line damage is computed once per
+frame, group teleports work with summons out, and the log is about 12 % smaller. Play this one.
+
 ## v0.3.70 features: reposition, weapon sets, summon choice, far escape teleports (26 November 2026)
 
 [UMM ZIP](AI-Control-FACC-v0.3.70-dev-features1-a6cd4a9-UMM-test.zip?raw=true) · [Identity](AI-Control-FACC-v0.3.70-dev-features1-a6cd4a9-UMM-test.identity.json) · [SHA-256](AI-Control-FACC-v0.3.70-dev-features1-a6cd4a9-UMM-test.sha256)
@@ -7,7 +16,7 @@
 
 UMM **0.3.70**, source `a6cd4a9`, startup module `82dcebbe-430b-479e-9e9b-58116176795e`, **unplayed**. Contains proposals1
 below plus F1–F4: ranged units reposition with their leftover move action, Mixed characters switch weapon sets, summons
-priced by their creatures and the fight, escape teleports to safe spots up to the teleport's range. Play this one.
+priced by their creatures and the fight, escape teleports to safe spots up to the teleport's range.
 
 ## v0.3.70 proposals P1–P3: escape and casting teleports, item teleports, summons decline a rage (26 November 2026)
 
