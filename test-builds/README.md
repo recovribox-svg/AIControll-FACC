@@ -1,11 +1,24 @@
 # Test builds
 
+## v0.3.70 features5 review: faster walk pricing, one coup per target, fused-spell saves (27 November 2026)
+
+[UMM ZIP](AI-Control-FACC-v0.3.70-dev-features6-dbdc867-UMM-test.zip?raw=true) · [Identity](AI-Control-FACC-v0.3.70-dev-features6-dbdc867-UMM-test.identity.json) · [SHA-256](AI-Control-FACC-v0.3.70-dev-features6-dbdc867-UMM-test.sha256)
+ · [Review and replay](../docs/V0370_FEATURES5_REVIEW.md).
+
+UMM **0.3.70**, source `dbdc867`, startup module `73eef393-8d13-4837-85e7-df4922333fe7`, **unplayed**. Contains features5
+below plus the fixes from its playtest:
+- Both modes: walks are priced with each enemy's strike data read once, and allies a walk cannot concern are not read
+  again (same numbers; decisions took up to 2 s with 42-47 enemies).
+- In real time, an ally walking to cast on a target (a Coup de Grace, a debuff) counts as casting it: the others do not
+  walk to the same coup.
+- Saves against fused spells are named by the fusion and kept per fusion.
+
 ## v0.3.70 features3 review: re-decisions kept open, no Magus arrows at a dominated ally, weapon sets that switch (27 November 2026)
 
 [UMM ZIP](AI-Control-FACC-v0.3.70-dev-features5-bf7b1da-UMM-test.zip?raw=true) · [Identity](AI-Control-FACC-v0.3.70-dev-features5-bf7b1da-UMM-test.identity.json) · [SHA-256](AI-Control-FACC-v0.3.70-dev-features5-bf7b1da-UMM-test.sha256)
  · [Review and replay](../docs/V0370_FEATURES3_REVIEW.md).
 
-UMM **0.3.70**, source `bf7b1da`, startup module `cfc0deda-c511-4e3a-a423-bf5be1cf502c`, **unplayed**. Contains features3
+UMM **0.3.70**, source `bf7b1da`, startup module `cfc0deda-c511-4e3a-a423-bf5be1cf502c`, played 27 November 2026 (review: [V0370_FEATURES5_REVIEW.md](../docs/V0370_FEATURES5_REVIEW.md)). Contains features3
 below plus the fixes from its playtest:
 - In real time, a command dropped to decide again (after an HP loss, for instance) is no longer barred for the turn, and
   a pending self-heal or walk away is not dropped.

@@ -7604,3 +7604,38 @@ logs: five turn-based and seven real-time fights in one session. Author request;
   - Harnesses 98/14/10; one external member added (`ItemSlot.get_MaybeItem`, resolved), one removed.
 - **Package:** `test-builds/AI-Control-FACC-v0.3.70-dev-features5-bf7b1da-UMM-test.zip`, module
   `cfc0deda-c511-4e3a-a423-bf5be1cf502c`, UMM 0.3.70 (replaces features4).
+
+## 227. v0.3.70 features5 review: walk pricing read once, a walk to cast counts as the cast, fused-spell saves (27 November 2026, Claude)
+
+[Review page](V0370_FEATURES5_REVIEW.md) · [receipt](competence/V0370_FEATURES5_REVIEW_CHECKS.json). From the features5
+logs: six turn-based and seven real-time fights in one session, no party death. Unplayed.
+
+- **Performance (both modes, same numbers):**
+  - With 42–47 enemies, four decisions took over 1 s (the slowest 2,069 ms; 640 ms before). Most of it was walk pricing,
+    195–242 approaches a decision.
+  - Each priced spot read every ally's drop chance against every enemy, with native reads of the enemy's melee weapon,
+    reach and lying-down state each time.
+  - Now:
+    - the drop table reads each enemy's strike data once (`ReadStrike`, `RowStrikeShare`), and an ally's share where it
+      stands once (`OwnStrikeShare`);
+    - a walk re-reads only the allies an enemy whose choice it changes can pick (`MoverChangedRows`; all of them with a
+      swarm in the fight).
+  - The slow row names the drop-chance reads, their time and the allies skipped.
+- **Real time, a walk before a cast:** an ability that walks to its target first (around an area, to a free side, to
+  touch range) counts as being cast on it while it walks (`NotePendingWalk`). Case: three allies walked to the same
+  helpless Nabasu for a Coup de Grace.
+- **Saves against fused spells:** `[Save]` rows name the fusion (`AbilityData.Name`; the shared holder blueprint has no
+  name). Observations are kept per fusion (`AbilityProfile.FusionIdentityOf`).
+- **Observed:**
+  - The Bandit switched to his crossbow set in turn-based mode.
+  - The provoke re-decision fired once (a Nabasu's Coup de Grace).
+  - No dropped option was barred.
+  - Six real-time coups were all interrupted before acting.
+  - Five potions on Seelah at once all healed in full.
+- **Checks** on `dbdc867`:
+  - Release 0 warnings; 1,190 unit + 27/21/3 script tests.
+  - ProfileAudit `V0370-FEATURES5` 10 checks; every other line, the Fusion matrix and the summon detail unchanged, also
+    for the packaged DLL.
+  - Harnesses 98/14/10; no external member added or removed.
+- **Package:** `test-builds/AI-Control-FACC-v0.3.70-dev-features6-dbdc867-UMM-test.zip`, module
+  `73eef393-8d13-4837-85e7-df4922333fe7`, UMM 0.3.70.

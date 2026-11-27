@@ -30,6 +30,33 @@ namespace CompanionAI_Pathfinder.Tactics
             public float WeightSum, ReachSum, ZoneSum;
             /// <summary>CombatMath.Threat × the fight's danger scale.</summary>
             public float Threat;
+            /// <summary>
+            /// ★ features5 review (performance): what StrikeShareAt and FullStrikeLands read of this enemy on every call -
+            /// its melee weapon's reach and body, whether it lies down (turn-based), whether its full attack can land - read
+            /// once (<see cref="RowStrikeShare"/>). <see cref="StrikeUnread"/>: the reading failed (a share of 1, no full
+            /// attack, as those rules returned on a failed read).
+            /// </summary>
+            public byte Strike;
+            public float MeleeBase;
+            public bool StrikeProne, FullOk;
+            /// <summary>HeldThisRound and SingleAttackShare as first asked (both once a frame already).</summary>
+            public float Held = float.NaN, Single = float.NaN;
+            /// <summary>Per ally: its strike share where it stands (NaN until read). PartyShift asks it at every spot priced.</summary>
+            public float[] OwnShare;
+        }
+
+        private const byte StrikeUnread = 0, StrikeNoWeapon = 1, StrikeMelee = 2;
+
+        // ★ features5 review: drop-chance counters for the slow-decision row (reset per decision). Measurement only.
+        private static int s_DropReads, s_PartyReads, s_PartySkips;
+        private static long s_DropTicks;
+
+        private static string DropNote()
+        {
+            if (s_DropReads == 0) return "";
+            double f = 1000d / System.Diagnostics.Stopwatch.Frequency;
+            return $"; drop chances read {s_DropReads} ({s_DropTicks * f:F1} ms), allies re-read for walks {s_PartyReads} " +
+                   $"(unchanged, skipped {s_PartySkips})";
         }
 
         internal sealed class DropTable
@@ -39,6 +66,14 @@ namespace CompanionAI_Pathfinder.Tactics
             public Dictionary<UnitEntityData, int> Index;
             public float[] Corpulence;
             public DropRow[] Rows;
+            /// <summary>★ features5 review: a swarm row reads where the walker stands (SwarmDrop): PartyShift reads every ally.</summary>
+            public bool HasSwarm;
+            /// <summary>★ features5 review: PartyShift's rows whose choice the walk changes, and StandingDropChance's lists.</summary>
+            public readonly List<int> Changed = new List<int>();
+            public readonly List<(float chance, float drop)> Threats = new List<(float chance, float drop)>();
+            public readonly List<(UnitEntityData, float)> Heavy = new List<(UnitEntityData, float)>();
+            public readonly List<int> HeavyAt = new List<int>();
+            public int Depth;
 
             public int IndexOf(UnitEntityData unit) => unit != null && Index.TryGetValue(unit, out int i) ? i : -1;
         }
@@ -75,7 +110,8 @@ namespace CompanionAI_Pathfinder.Tactics
                 if (enemy == null || CombatMath.IsDisabled(enemy)) { row.Skip = true; continue; }
                 // ★ v0.3.28 test 15 (author-approved): a swarm strikes everyone in its space, it picks nobody.
                 row.Swarm = CombatMath.SwarmSpaceOf(enemy);
-                if (row.Swarm != null) continue;
+                if (row.Swarm != null) { table.HasSwarm = true; continue; }
+                ReadStrike(row, enemy);
                 int attack = 0;
                 try
                 {
@@ -148,5 +184,111 @@ namespace CompanionAI_Pathfinder.Tactics
 
         /// <summary>A sum of hit weights that only lost its members is empty, whatever the float rounding left of it.</summary>
         private static float Settled(float sum) => sum < 1e-6f ? 0f : sum;
+
+        /// <summary>
+        /// ★ features5 review (performance): the melee data StrikeShareAt and FullStrikeLands read on every call, read once
+        /// for the decision. Each read separately and failing as those rules fail: no share read (1), no full attack.
+        /// </summary>
+        private static void ReadStrike(DropRow row, UnitEntityData enemy)
+        {
+            try
+            {
+                var melee = enemy.GetThreatHandMelee()?.Weapon;
+                if (melee == null) row.Strike = StrikeNoWeapon;
+                else
+                {
+                    row.MeleeBase = Math.Max(1f, melee.AttackRange.Meters) + enemy.Corpulence;
+                    row.StrikeProne = !CombatMemory.IsRealTime && (enemy.Descriptor?.State?.Prone?.Active ?? false);
+                    row.Strike = StrikeMelee;
+                }
+            }
+            catch { row.Strike = StrikeUnread; }
+            try { row.FullOk = row.Strike == StrikeMelee && !(enemy.Body?.PrimaryHand?.MaybeWeapon?.Blueprint?.IsRanged ?? false); }
+            catch { row.FullOk = false; }
+        }
+
+        /// <summary>
+        /// ★ features5 review: <see cref="StrikeShareAt"/> from the row's data - the same rule (ValueModel.StrikeShare: in
+        /// reach or a 5-foot step of it, else one attack after a walk, each unless an area holds it; turn-based, lying down,
+        /// one attack in reach). 1 when it cannot be read.
+        /// </summary>
+        private static float RowStrikeShare(DropRow row, UnitEntityData who, Vector3 at, float whoCorpulence)
+        {
+            if (row.Strike != StrikeMelee) return 1f;
+            try
+            {
+                float reach = row.MeleeBase + whoCorpulence;
+                float distance = HorizontalDistance(row.Enemy.Position, at);
+                bool inReach = distance <= reach;
+                if (row.StrikeProne) return inReach ? RowSingle(row, who) : 0f;
+                if (inReach) return 1f;
+                bool inStep = distance <= reach + TurnBased.Controllers.TurnController.MetersOfFiveFootStep;
+                if (float.IsNaN(row.Held)) row.Held = HeldThisRound(row.Enemy);
+                return ValueModel.StrikeShare(false, inStep, row.Held, RowSingle(row, who));
+            }
+            catch
+            {
+                return 1f;
+            }
+        }
+
+        private static float RowSingle(DropRow row, UnitEntityData who)
+        {
+            if (float.IsNaN(row.Single)) row.Single = SingleAttackShare(row.Enemy, who);
+            return row.Single;
+        }
+
+        /// <summary>
+        /// ★ features5 review: the ally's strike share where it stands, once per decision (PartyShift asks it at every spot a
+        /// walk is priced at: allies × enemies native reads a spot before).
+        /// </summary>
+        private static float OwnStrikeShare(DropTable table, DropRow row, int index, UnitEntityData who, Vector3 at, float whoCorpulence)
+        {
+            if (row.OwnShare == null)
+            {
+                row.OwnShare = new float[table.AllyCount];
+                for (int i = 0; i < row.OwnShare.Length; i++) row.OwnShare[i] = float.NaN;
+            }
+            float share = row.OwnShare[index];
+            if (float.IsNaN(share)) row.OwnShare[index] = share = RowStrikeShare(row, who, at, whoCorpulence);
+            return share;
+        }
+
+        /// <summary>
+        /// ★ features5 review (performance): the rows whose choice of target a walk of <paramref name="mover"/> to
+        /// <paramref name="to"/> changes - the enemies whose reach or wider zone it leaves or enters. An ally in neither of
+        /// those enemies' reach or zone has the same chance to drop before and after (<see cref="StandingDropChance"/> differs
+        /// only through those rows' weight sums). Null when a swarm is in the fight: its row reads where the walker stands.
+        /// </summary>
+        private static List<int> MoverChangedRows(DropTable table, UnitEntityData mover, Vector3 to)
+        {
+            if (table.HasSwarm) return null;
+            var changed = table.Changed;
+            changed.Clear();
+            int m = table.IndexOf(mover);
+            if (m < 0) return changed;
+            float body = table.Corpulence[m];
+            for (int r = 0; r < table.Rows.Length; r++)
+            {
+                var row = table.Rows[r];
+                if (row.Skip || row.Swarm != null) continue;
+                bool inReach = row.Reach > 0f && HorizontalDistance(row.Enemy.Position, to) <= row.Reach + body;
+                bool inZone = Vector3.Distance(row.Enemy.Position, to) <= row.Zone + body;
+                if (inReach != row.InReach[m] || inZone != row.InZone[m]) changed.Add(r);
+            }
+            return changed;
+        }
+
+        /// <summary>The ally (table index) can be picked by one of the <paramref name="changed"/> rows (in its reach or zone).</summary>
+        private static bool ChangeTouches(DropTable table, List<int> changed, int index)
+        {
+            if (index < 0) return false;
+            foreach (int r in changed)
+            {
+                var row = table.Rows[r];
+                if (row.InReach[index] || row.InZone[index]) return true;
+            }
+            return false;
+        }
     }
 }

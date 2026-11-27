@@ -2080,7 +2080,7 @@ namespace CompanionAI_Pathfinder.Tactics
                     default: return 1f;
                 }
                 // ★ v0.3.15: contextual save bonuses the game applied the last time (SaveObserver).
-                var seen = SaveObserver.Lookup(target, save, ability.Blueprint);
+                var seen = SaveObserver.Lookup(target, save, ability);
                 if (seen != null)
                 {
                     if (seen.AutoPass) return 0f;

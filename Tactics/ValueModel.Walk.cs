@@ -60,6 +60,20 @@ namespace CompanionAI_Pathfinder.Tactics
             return (float)(1d - stays);
         }
 
+        /// <summary>★ features5 review: the same over a list, without an enumerator per call (the drop model asks it at
+        /// every spot a walk is priced at).</summary>
+        public static float CombinedDrop(System.Collections.Generic.List<(float chance, float drop)> threats)
+        {
+            double stays = 1d;
+            for (int i = 0; i < threats.Count; i++)
+            {
+                var t = threats[i];
+                if (!(t.chance > 0f) || !(t.drop > 0f)) continue;
+                stays *= 1d - Math.Min(1f, t.chance) * Math.Min(1f, t.drop);
+            }
+            return (float)(1d - stays);
+        }
+
         /// <summary>
         /// ★ v0.3.27 (author-approved): what a healthy unit's walk costs for where it ends - its higher chance to drop before
         /// its next turn there (above 2 %, as ExposureCost), times its worth and its role's tolerance - less what the allies
