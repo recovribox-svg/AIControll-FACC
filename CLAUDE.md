@@ -8,7 +8,16 @@ Read [CONTRIBUTING.md](CONTRIBUTING.md) for shared branch ownership, Codex pull 
 Codex works on task branches and targets pull requests at `claude/dreamy-pasteur-b9h3rn`; Claude reviews and integrates them there.
 Keep `main` for author-authorized releases. Read [AGENTS.md](AGENTS.md) when coordinating agent work.
 
-**Current handover (22 November 2026): summon abilities S1 available for review.**
+**Current handover (22 November 2026): summon abilities S2 available for review.**
+Stacked on #111. Checked source `3c8595d`, UMM **0.3.60**, startup module `0dba3d92-6f8a-4473-a185-02666befd432`.
+The package is unplayed. See [§219](docs/TACTICAL_AI.md#219-summon-abilities-s2-native-teleport-approaches-22-november-2026),
+[checks](docs/competence/SUMMONS_CONSUMABLES_S2_CHECKS.json) and [build provenance](docs/competence/SUMMONS_CONSUMABLES_S2_BUILD_PROVENANCE.json).
+- Native transport competes with existing weapon approaches. One relaxed landing forecast uses native passengers.
+  Issue repeats eligibility and safety checks without a second scan or a walking fallback.
+- 1,153 unit tests, 27/21/3 scripts, zero-warning Release, both audits and native 98/14/10 passed.
+- Review the first replay for summons and passengers in both combat modes. The default still needs S1/S2 playtest evidence.
+
+**Earlier handover (22 November 2026): summon abilities S1 available for review.**
 Stacked on #109. Checked source `3340951`, UMM **0.3.60**, startup module `8a40df9e-f4d6-45eb-b5e9-3b39ffc3ddb2`.
 The package is unplayed. See [§218](docs/TACTICAL_AI.md#218-summon-abilities-s1-immediate-control-roll-penalties-and-marks-22-november-2026),
 [checks](docs/competence/SUMMONS_CONSUMABLES_S1_CHECKS.json) and [build provenance](docs/competence/SUMMONS_CONSUMABLES_S1_BUILD_PROVENANCE.json).

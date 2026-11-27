@@ -196,6 +196,12 @@ namespace ProfileAudit
             if (p == null) { row.Verdict = "error"; row.Detail = "no profile"; return; }
             var parts = new List<string>();
 
+            if (SummonEffectsCheck.Property(p, "TeleportDelivery") != null)
+            {
+                row.Verdict = "valued: native teleport approach";
+                row.Detail = "existing weapon approach, checked traveller landings";
+                return;
+            }
             if (SummonEffectsCheck.Property(p, "DelayedControlBurst") is BlueprintAbility delayed)
             {
                 row.Verdict = "nothing: delayed control forecast withheld";

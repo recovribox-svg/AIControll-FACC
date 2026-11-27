@@ -7328,3 +7328,44 @@ a weapon attacker and a caster. Try Song with two adjacent enemies and with a pa
 compare the actual next-round recipient. Check whether Study or a smite precedes a weapon attack on the
 same target. If a Nalfeshnee has Nimbus or a shadow caster has variants, send its `[Unused]` entries and
 both logs with startup module `8a40df9e-f4d6-45eb-b5e9-3b39ffc3ddb2`.
+
+## 219. Summon abilities S2: native teleport approaches (22 November 2026)
+
+Vrock's Greater Teleport, Omox's Liquid Leap, Derakni's Dimension Door and supported pure transport spells
+can compete with a weapon approach the engine already plans. A quick leap scores only the extra attack value
+it offers over the existing alternatives. A cast that spends the attack is priced as an advance for a later
+attack. The quote uses the normal casting risk, limited-use discount, and landing exposure. It leaves out the
+walk's attacks of opportunity and hazards along the walk.
+
+The engine separately reads the native aim, approach distance, line of sight and action. For a unit aim the game
+offsets the landing along the target's facing. The native group selector supplies passengers. Their offsets are
+translated and Dimension Door applies the game's landing relaxation. The engine tests each result for weapon
+access for the caster and for area, swarm, body and navmesh safety for everyone. Passengers also pay the rise in
+their own estimated exposure. A moving anchor, travelling party member or active passenger action can rule out
+the quote. Issue requires the same frame, compatible state and safe quoted endpoints, and refuses a cast whose
+native command would first walk.
+
+One cast is quoted from at most four existing aims. The one author-approved obstacle scan is inside the native
+landing relaxation, called only after preselection. Issue uses the quoted geometry and checks current safety
+without a second relaxation. The safety quote is bounded to four total travellers and 24 known combatants, with
+a 16-member cap on native group selection. AlongPath uses mutable roaming state, so it is held out of this
+slice, along with mounted travel, cutscene abilities, mixed attack payloads and item versions. This slice uses
+weapon approaches. It adds no route search.
+
+Checked source `3c8595d` passed the zero-warning real-reference Release, 1,153 unit tests, scripts 27/21/3,
+both ProfileAudit scopes and native 98/14/10. The new audit passed ten stock or compiled-route checks in each
+scope. The Fusion matrices match S1 byte for byte.
+[Checks](competence/SUMMONS_CONSUMABLES_S2_CHECKS.json) · [Compiler provenance](competence/SUMMONS_CONSUMABLES_S2_BUILD_PROVENANCE.json)
+
+The [UMM test package](../test-builds/AI-Control-FACC-v0.3.60-dev-summon-s2-3c8595d-UMM-test.zip?raw=true) is **unplayed**. In TB and RT:
+
+1. Give a Vrock a weapon approach to a stationary caster behind the front line. Compare a safe walk against
+   one with a costly crossing. Verify Greater Teleport lands in reach, spends its standard action and lets
+   the next attack run normally.
+2. Try an Omox with its swift and standard actions available. Check whether Liquid Leap keeps the attack
+   available when it beats the existing walk. Repeat with an ally near the Omox's start.
+3. Try Derakni or a companion with Dimension Door first alone, then with a nearby ally. Put a harmful area
+   or a swarm on the projected caster landing, then on a passenger landing alone. Check the ordinary
+   approach is still considered when the teleport is withheld.
+4. Repeat the instant-control and Song of Discord checks from §218. Share both logs and startup module
+   `0dba3d92-6f8a-4473-a185-02666befd432`. Summon-control default and shadow variant decisions still depend on that played evidence.

@@ -174,7 +174,13 @@ Read from the decompiled game. The implementer re-checks each against the suppli
   the fog of war and not on a disabled flying isle. A `DimensionDoorRestrictionIgnorance` component lifts the check for `AbilityCustomDimensionDoor`. `AbilityCustomTeleportation` still runs its own restriction.
 - **Dimension Door moves the units its settings name** (its `Radius`), not only the caster. Read who travels; do not
   assume a solo jump.
-- `AlongPath` teleports land along the caster's path, at most a round's combat speed times their multiplier.
+- **AlongPath** uses the native roaming itinerary. `UnitPartRoaming.Advance` mutates its next point, so this route is
+  withheld from the preview and initial implementation.
+- **Aim and range** are separate reads. `AbilityData.CanTarget` checks the aim and its restrictions, and
+  `UnitUseAbility.Init` reads the native approach distance. The actual landing points can differ from the aims.
+- **Landing relaxation** scans the unit pool, even for one traveller using Dimension Door. The author approved one native
+  relaxation per decision after choosing the strongest of at most four screened aims. Issue rechecks travellers and landing
+  safety in the same frame without rerunning the scan.
 
 ## Plan
 
@@ -336,10 +342,10 @@ safety checks (friendly fire, permanent death, blocklists, Pure Mage, consumable
     end spot: areas, swarms, reach of the enemies there;
   - any ally that travels with a Dimension Door is priced at its landing spot too.
 - **Kept:** Overrun is a maneuver and stays separate.
-- **Native checks decide:** landing validity and range are the component's restriction and the ability's range, through
-  `AbilityData.CanTarget`. The engine adds no landing rule of its own.
-- **Bounds:** only when an approach candidate already exists; at most the four free-side spots the approach already
-  prices.
+- **Native checks decide:** check aim restrictions and approach distance separately, then confirm the real landing
+  for the caster and each passenger. The first implementation uses weapon approach candidates, with no new path search.
+- **Bounds:** at most four existing approach aims and one native relaxation. The normal choice still competes if
+  the best teleport is rejected.
 - **Applies to:** summons first; companions with the same abilities get it too.
 - **Acceptance:** a Vrock teleports next to a caster behind the enemy line instead of walking through it, and does not
   teleport into an area.

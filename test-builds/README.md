@@ -1,5 +1,14 @@
 # Test builds
 
+## Summon abilities S2 (22 November 2026)
+
+[UMM ZIP](AI-Control-FACC-v0.3.60-dev-summon-s2-3c8595d-UMM-test.zip?raw=true) · [Identity](AI-Control-FACC-v0.3.60-dev-summon-s2-3c8595d-UMM-test.identity.json) · [SHA-256](AI-Control-FACC-v0.3.60-dev-summon-s2-3c8595d-UMM-test.sha256)
+ · [Checks and replay](../docs/TACTICAL_AI.md#219-summon-abilities-s2-native-teleport-approaches-22-november-2026).
+
+UMM **0.3.60**, checked source `3c8595d`, startup module `0dba3d92-6f8a-4473-a185-02666befd432`, **unplayed**.
+Includes the earlier consumable and summon ability slices.
+
+
 ## Summon abilities S1 (22 November 2026)
 
 [UMM ZIP](AI-Control-FACC-v0.3.60-dev-summon-s1-3340951-UMM-test.zip?raw=true) · [Identity](AI-Control-FACC-v0.3.60-dev-summon-s1-3340951-UMM-test.identity.json) · [SHA-256](AI-Control-FACC-v0.3.60-dev-summon-s1-3340951-UMM-test.sha256)

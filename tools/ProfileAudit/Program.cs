@@ -519,6 +519,11 @@ namespace ProfileAudit
             File.WriteAllText(output, string.Join(Environment.NewLine, summonEffectLines) + Environment.NewLine + Environment.NewLine + File.ReadAllText(output));
             blocklistFailures += summonEffectFailures;
 
+            var teleportLines = TeleportApproachCheck.Run(loaded.Values, out int teleportFailures);
+            foreach (var line in teleportLines) Console.WriteLine(line);
+            File.WriteAllText(output, string.Join(Environment.NewLine, teleportLines) + Environment.NewLine + Environment.NewLine + File.ReadAllText(output));
+            blocklistFailures += teleportFailures;
+
             var itemLines = ItemsCheck.Run(loaded.Values, out int itemFailures);
             foreach (var line in itemLines) Console.WriteLine(line);
             File.WriteAllText(output, string.Join(Environment.NewLine, itemLines) + Environment.NewLine + Environment.NewLine + File.ReadAllText(output));
