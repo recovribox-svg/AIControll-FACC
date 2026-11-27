@@ -7639,3 +7639,26 @@ logs: six turn-based and seven real-time fights in one session, no party death. 
   - Harnesses 98/14/10; no external member added or removed.
 - **Package:** `test-builds/AI-Control-FACC-v0.3.70-dev-features6-dbdc867-UMM-test.zip`, module
   `73eef393-8d13-4837-85e7-df4922333fe7`, UMM 0.3.70.
+
+## 228. v0.3.70 features6 review: weapon-set switch priced fairly, half drained is badly hurt (27 November 2026, Claude)
+
+[Review page](V0370_FEATURES6_REVIEW.md) · [receipt](competence/V0370_FEATURES6_REVIEW_CHECKS.json). From the features6
+logs: five turn-based and nine real-time fights. arcan died twice and Aeiluvetar once, the fight-9 deaths by level drain.
+
+- **Weapon sets (both modes):** the switch compared the other set with the current weapon's options affordable that
+  moment.
+  - Camellia switched seven times, each "against 0", with her standard action spent.
+  - Now the current weapon's options count whatever the moment allows, else its price earlier this turn
+    (`WeaponSetRules.CurrentPrice`, `Fresh`); with neither, no switch.
+  - An attack after the switch needs the standard action.
+- **Drained levels (both modes, author-approved):** half or more of a unit's levels drained counts as badly hurt
+  (`BadlyHurt`, `ValueModel.HalfDrained`). The withdrawal is offered and a walk pays for its exposure, as below the HP
+  caution share. The game kills at negative levels = character level (`UnitLifeController.ForceTickOnUnit`). The header
+  names "drained N/L".
+- **Observed:**
+  - the slowest decision was 457 ms (9–11 enemies);
+  - seven of eight coups were delivered;
+  - fused-spell save rows are named;
+  - seven provoke re-decisions.
+- **Checks** on `6426eaa`: Release 0 warnings; 1,193 unit tests; ProfileAudit `V0370-FEATURES6`; every other line, the
+  Fusion matrix and the summon detail unchanged.

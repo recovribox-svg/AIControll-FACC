@@ -32,7 +32,7 @@ namespace CompanionAI_Pathfinder.Tactics
                 ctx.Permissions.MovementOnly || unit.RiderPart != null || ctx.Enemies.Count == 0) return;
             var body = unit.Body;
             if (body == null || body.IsPolymorphed || body.IsEquipmentSetChangeForbidden || !unit.CanChangeWeaponSet()) return;
-            if (s_SetSwitchFight != CombatMemory.Fight) { s_SetSwitchFight = CombatMemory.Fight; s_LastSetSwitch.Clear(); }
+            if (s_SetSwitchFight != CombatMemory.Fight) { s_SetSwitchFight = CombatMemory.Fight; s_LastSetSwitch.Clear(); s_CurrentPrice.Clear(); }
             if (s_LastSetSwitch.TryGetValue(unit.UniqueId, out int last) && ctx.Round - last < 2) return;
 
             int current = body.CurrentHandEquipmentSetIndex;
@@ -69,13 +69,23 @@ namespace CompanionAI_Pathfinder.Tactics
 
             bool realTime = CombatMemory.IsRealTime;
             // What the current weapon can do: from here, and at best (a walk to the enemy included).
+            // ★ features6 review: whether or not this moment's actions allow it. Camellia switched sets seven times in the
+            // features6 log, each time with her standard action spent (after Grease, Inspired Rage) and each time "against 0":
+            // real time lists the current weapon's options during the cooldown but they were skipped as unaffordable, and
+            // turn-based builds none once the standard action is spent. Her greataxe's Move+Attack was 10.8 a moment earlier
+            // against the crossbow's 3.4. In-place attacks the switch must beat now stay those it could make now.
             float currentBest = 0f, currentHere = 0f;
+            bool priced = false;
             foreach (var c in list)
             {
-                if (c.Kind != CandidateKind.WeaponAttack || !Affordable(ctx, c)) continue;
+                if (c.Kind != CandidateKind.WeaponAttack) continue;
+                priced = true;
                 currentBest = Math.Max(currentBest, c.Value);
-                if (!c.NeedsMove && !c.MoveFirst) currentHere = Math.Max(currentHere, c.Value);
+                if (!c.NeedsMove && !c.MoveFirst && Affordable(ctx, c)) currentHere = Math.Max(currentHere, c.Value);
             }
+            // Turn-based, once the standard action is spent this turn's earlier price stands; with none, no fair comparison.
+            if (!WeaponSetRules.CurrentPrice(priced, currentBest, PricedThisRound(unit, current, ctx.Round), out currentBest)) return;
+            if (priced) NoteCurrentPrice(unit, current, ctx.Round, currentBest);
 
             Vector3 eye = unit.EyePosition - unit.Position;
             float altFull = 0f, altNow = 0f;
@@ -94,7 +104,9 @@ namespace CompanionAI_Pathfinder.Tactics
                 float wake = WakeFactor(enemy, full.ExpectedDamage);
                 float fullValue = DamageValue(enemy, full.ExpectedDamage, full.AnyHitChance) * roleWeight * wake;
                 float nowValue = 0f;
-                if (!realTime)
+                // ★ features6 review: an attack after the switch this turn needs the standard action (Camellia switched after
+                // Inspired Rage and was credited a shot she could not take).
+                if (!realTime && ctx.HasStandard)
                 {
                     var single = CombatMath.EstimateWithWeapon(unit, enemy, weapon, full: false);
                     if (single != null) nowValue = DamageValue(enemy, single.ExpectedDamage, single.AnyHitChance) * roleWeight * wake;
@@ -127,6 +139,28 @@ namespace CompanionAI_Pathfinder.Tactics
             });
         }
 
+        private struct CurrentWeaponPrice
+        {
+            public int Set, Round;
+            public float Value;
+        }
+
+        /// <summary>★ features6 review: the current weapon's best option the last time it was priced, per unit (this fight).</summary>
+        private static readonly Dictionary<string, CurrentWeaponPrice> s_CurrentPrice = new Dictionary<string, CurrentWeaponPrice>(StringComparer.Ordinal);
+
+        private static float? PricedThisRound(UnitEntityData unit, int set, int round)
+        {
+            if (s_SetSwitchFight != CombatMemory.Fight) return null;   // cleared with the switch rounds
+            return s_CurrentPrice.TryGetValue(unit.UniqueId, out var p) && p.Set == set &&
+                   WeaponSetRules.Fresh(p.Round, round, CombatMemory.IsRealTime) ? p.Value : (float?)null;
+        }
+
+        private static void NoteCurrentPrice(UnitEntityData unit, int set, int round, float value)
+        {
+            if (s_CurrentPrice.Count >= 256 && !s_CurrentPrice.ContainsKey(unit.UniqueId)) return;
+            s_CurrentPrice[unit.UniqueId] = new CurrentWeaponPrice { Set = set, Round = round, Value = value };
+        }
+
         /// <summary>
         /// ★ features3 review: the weapon an inactive weapon set holds - its main hand's, else its off hand's - read from the
         /// slots' items (a shield is not a weapon). Null when it holds no weapon.
@@ -151,7 +185,7 @@ namespace CompanionAI_Pathfinder.Tactics
                     failure = "weapon set no longer available to switch to";
                     return false;
                 }
-                if (s_SetSwitchFight != CombatMemory.Fight) { s_SetSwitchFight = CombatMemory.Fight; s_LastSetSwitch.Clear(); }
+                if (s_SetSwitchFight != CombatMemory.Fight) { s_SetSwitchFight = CombatMemory.Fight; s_LastSetSwitch.Clear(); s_CurrentPrice.Clear(); }
                 if (s_LastSetSwitch.Count < 256) s_LastSetSwitch[unit.UniqueId] = CombatMemory.Round;
                 return true;
             }

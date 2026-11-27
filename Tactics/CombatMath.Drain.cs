@@ -41,6 +41,19 @@ namespace CompanionAI_Pathfinder.Tactics
             catch { return 0; }
         }
 
+        /// <summary>★ v0.3.70 features6 review: the unit's negative levels and character level (0 and 1 when unread).</summary>
+        internal static void ReadDrain(UnitEntityData unit, out int drained, out int level)
+        {
+            drained = 0;
+            level = 1;
+            try
+            {
+                level = Math.Max(1, unit?.Descriptor?.Progression?.CharacterLevel ?? 1);
+                drained = unit?.Get<Kingmaker.UnitLogic.Parts.UnitPartNegativeLevels>()?.Count ?? 0;
+            }
+            catch { }
+        }
+
         /// <summary>Read the native accumulated count without creating a part or caching mutable victim state.</summary>
         internal static int LevelsBeforeDrainDeath(UnitEntityData unit)
         {
