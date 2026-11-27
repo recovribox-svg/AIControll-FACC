@@ -1,5 +1,14 @@
 # Test builds
 
+## v0.3.70 features: reposition, weapon sets, summon choice, far escape teleports (26 November 2026)
+
+[UMM ZIP](AI-Control-FACC-v0.3.70-dev-features1-a6cd4a9-UMM-test.zip?raw=true) · [Identity](AI-Control-FACC-v0.3.70-dev-features1-a6cd4a9-UMM-test.identity.json) · [SHA-256](AI-Control-FACC-v0.3.70-dev-features1-a6cd4a9-UMM-test.sha256)
+ · [Features and replay](../docs/V0370_FEATURES.md).
+
+UMM **0.3.70**, source `a6cd4a9`, startup module `82dcebbe-430b-479e-9e9b-58116176795e`, **unplayed**. Contains proposals1
+below plus F1–F4: ranged units reposition with their leftover move action, Mixed characters switch weapon sets, summons
+priced by their creatures and the fight, escape teleports to safe spots up to the teleport's range. Play this one.
+
 ## v0.3.70 proposals P1–P3: escape and casting teleports, item teleports, summons decline a rage (26 November 2026)
 
 [UMM ZIP](AI-Control-FACC-v0.3.70-dev-proposals1-e040d62-UMM-test.zip?raw=true) · [Identity](AI-Control-FACC-v0.3.70-dev-proposals1-e040d62-UMM-test.identity.json) · [SHA-256](AI-Control-FACC-v0.3.70-dev-proposals1-e040d62-UMM-test.sha256)

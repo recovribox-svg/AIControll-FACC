@@ -18,6 +18,20 @@ namespace CompanionAI_Pathfinder.Tactics
         }
 
         /// <summary>
+        /// ★ v0.3.70 F1 (author request): what moving a ranged unit with its move action left, after its main action, to a
+        /// safer spot is worth: the lower chance to go down before its next turn times its worth, and the HP-reserve price of
+        /// the expected damage kept off (negative when the spot takes more), by the role's tolerance.
+        /// </summary>
+        internal static float RepositionGain(float dropHere, float dropThere, float worth, float incomingHere, float incomingThere,
+                                             float tolerance)
+        {
+            if (float.IsNaN(dropHere) || float.IsNaN(dropThere) || float.IsNaN(incomingHere) || float.IsNaN(incomingThere) ||
+                !(worth >= 0f) || !(tolerance >= 0f)) return 0f;
+            return ((dropHere - dropThere) * worth + (Math.Max(0f, incomingHere) - Math.Max(0f, incomingThere)) * HpReservePerPoint) *
+                   tolerance;
+        }
+
+        /// <summary>
         /// ★ v0.3.70 P1 (author-approved movement): a teleport to an escape walk's spot, before its landing and the cast's own
         /// risks: what reaching the spot is worth (<paramref name="gross"/>) less what the teleport gives up - the walk's own
         /// losses, and for a main-action teleport the best main action this turn (the walk keeps it) - with the easy-fight
@@ -46,6 +60,53 @@ namespace CompanionAI_Pathfinder.Tactics
             givenPerRound > Math.Max(0f, stoppedPerRound) * 1.25f + AcceptSwitchMargin;
 
         internal const float AcceptSwitchMargin = 0.5f;
+
+        /// <summary>
+        /// ★ v0.3.70 F2 (author request): what switching to the other weapon set is worth. <paramref name="altNow"/>: the
+        /// attack it allows after the switch this turn (turn-based: one attack, the move action is spent; real time: 0, the
+        /// attacks go on); then, for <paramref name="rounds"/> more rounds, what its full attack gains over the best the
+        /// current weapon can do (<paramref name="currentPerRound"/>, walking included), counted only past a margin: the
+        /// other set is estimated without its special abilities and off hand.
+        /// </summary>
+        internal static float WeaponSetSwitchWorth(float altNow, float altPerRound, float currentPerRound, float rounds)
+        {
+            float margin = Math.Max(0f, currentPerRound) * 1.2f + 1f;
+            float later = altPerRound > margin ? (altPerRound - Math.Max(0f, currentPerRound)) * Math.Max(0f, rounds) : 0f;
+            return Math.Max(0f, altNow) + later;
+        }
+
+        /// <summary>
+        /// ★ v0.3.70 F3 (author request): a summoned creature's worth per round before it has been seen fighting: an ally of
+        /// its CR (<see cref="PerRound"/>), half for a summon, by how it measures up to the enemies (its CR against theirs,
+        /// within half and one and a half).
+        /// </summary>
+        internal static float SummonPrior(float creatureCr, float enemyLevel)
+        {
+            float cr = Math.Max(0.5f, creatureCr), enemy = Math.Max(1f, enemyLevel);
+            return PerRound(cr) * SummonFactor * Clamp((cr + 3f) / (enemy + 3f), 0.5f, 1.5f);
+        }
+
+        /// <summary>
+        /// ★ v0.3.70 F3: the prior and what the kind has dealt per round so far, weighted by the rounds seen (at most 60 %
+        /// measured: a creature also holds enemies off, which its damage does not show).
+        /// </summary>
+        internal static float SummonPerRound(float prior, float measuredPerRound, int roundsSeen)
+        {
+            if (roundsSeen <= 0 || float.IsNaN(measuredPerRound)) return Math.Max(0f, prior);
+            float weight = Math.Min(0.6f, roundsSeen / (roundsSeen + 6f));
+            return Math.Max(0f, prior) * (1f - weight) + Math.Max(0f, measuredPerRound) * weight;
+        }
+
+        /// <summary>
+        /// ★ v0.3.70 F3: the share of <paramref name="newBodies"/> new creatures that have an enemy to fight: about two bodies
+        /// an enemy, less the party's summons already fighting; at least a quarter.
+        /// </summary>
+        internal static float SummonBodyShare(float newBodies, int fightingSummons, int enemies)
+        {
+            if (!(newBodies > 0f)) return 0f;
+            float room = 2f * Math.Max(1, enemies) - Math.Max(0, fightingSummons);
+            return Clamp(room / newBodies, 0.25f, 1f);
+        }
 
         /// <summary>
         /// ★ v0.3.23 (build5 review): the share of a new summon's worth left while <paramref name="ownSummons"/> creatures

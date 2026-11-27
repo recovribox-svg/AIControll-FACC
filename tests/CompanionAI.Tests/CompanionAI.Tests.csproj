@@ -52,6 +52,7 @@
     <Compile Include="../../Tactics/PotionHandoffRules.cs" Link="PotionHandoffRules.cs" />
     <Compile Include="../../Tactics/UnusedState.cs" Link="UnusedState.cs" />
     <Compile Include="../../Tactics/SpellEdgeMemory.cs" Link="SpellEdgeMemory.cs" />
+    <Compile Include="../../Tactics/SummonWorthMemory.cs" Link="SummonWorthMemory.cs" />
     <Compile Include="../../Tactics/AreaQuoteRules.cs" Link="AreaQuoteRules.cs" />
     <Compile Include="..\..\Tactics\ValueModel.OnKill.cs" Link="ValueModel.OnKill.cs" />
     <Compile Include="..\..\Tactics\ValueModel.UniqueBuff.cs" Link="ValueModel.UniqueBuff.cs" />

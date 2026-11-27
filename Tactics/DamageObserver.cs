@@ -307,6 +307,8 @@ namespace CompanionAI_Pathfinder.Tactics
                 var attacker = evt.Initiator;
                 var target = evt.Target;
                 if (attacker == null || target == null || !attacker.IsPlayerFaction || !attacker.IsEnemy(target)) return;
+                // ★ v0.3.70 F3: what each kind of summoned creature deals (TacticalEngine.SummonChoice.cs).
+                TacticalEngine.NoteSummonDamage(attacker, evt.Result);
                 float swarmArea = CombatMath.SwarmAreaFactor(evt.Reason.Ability, target,
                     evt.Reason.Context?.AssociatedBlueprint is Kingmaker.Blueprints.Area.BlueprintArea);
                 foreach (var result in evt.ResultList)

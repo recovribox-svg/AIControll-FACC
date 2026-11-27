@@ -32,7 +32,7 @@ namespace CompanionAI_Pathfinder.Tactics
 {
     /// <remarks>★ v0.3.18 (AA-2): Toggle - switch on an activatable ability whose activation is a game command
     /// (bardic performances, Rage family, shaman spirits): TacticalEngine.Toggles.cs.</remarks>
-    public enum CandidateKind { WeaponAttack, Ability, Move, Toggle }
+    public enum CandidateKind { WeaponAttack, Ability, Move, Toggle, WeaponSet }
     public enum ActionSlot { Free, Swift, Move, Standard, FullRound }
 
     public sealed class Candidate
@@ -44,6 +44,8 @@ namespace CompanionAI_Pathfinder.Tactics
         internal float TeleportReach, TeleportPayoff;
         /// <summary>★ v0.3.70 P1: what a teleport's landing must keep for this option (a cone's or a line's recipients).</summary>
         internal Func<Vector3, bool> TeleportKeeps;
+        /// <summary>★ v0.3.70 F2: the weapon set a <see cref="CandidateKind.WeaponSet"/> option switches to.</summary>
+        internal int WeaponSetIndex = -1;
         public ActionSlot Slot;
         public float Value;
         public UnitEntityData Target;
@@ -405,6 +407,8 @@ namespace CompanionAI_Pathfinder.Tactics
                 ctx.Unused = UnusedWitness.For(unit);
                 ctx.Unused?.BeginDecision();
                 FightStats.NoteContext(ctx);
+                // ★ v0.3.70 F3: the rounds the party's summons stood in the fight (their kind's damage per round).
+                try { NoteSummonRounds(ctx); } catch (Exception ex) { Main.Verbose($"[Summon] rounds: {ex.Message}"); }
                 CoverageReport.ReportIfChanged(unit);   // ★ v0.3.17: diagnostics, once per fight at most
                 // ★ v0.3.18: what the enemies can deal to the party this round, as predicted (uncalibrated), once per round:
                 // the next rounds compare it with what they really dealt (ValueModel.DangerScale).
@@ -469,6 +473,12 @@ namespace CompanionAI_Pathfinder.Tactics
             // ★ v0.3.18 (AA-3): each weapon option with its best attack modes.
             try { foreach (var c in candidates.Where(c => c.Kind == CandidateKind.WeaponAttack).ToList()) ChooseAttackModes(ctx, c); }
             catch (Exception ex) { Main.Error($"[Tactics] attack modes: {ex}"); }
+            // ★ v0.3.70 F2 (author request): a mixed-range unit's other weapon set (bow or blade), against the weapon options above.
+            if (!preview)
+            {
+                try { AddWeaponSetCandidate(ctx, candidates); }
+                catch (Exception ex) { Main.Verbose($"[Tactics] {unit.CharacterName}: weapon set: {ex.Message}"); }
+            }
             timings?.Mark(DecisionStage.Weapons);
             try { AddAbilityCandidates(ctx, candidates, captureControlAims: !preview); } catch (Exception ex) { Main.Error($"[Tactics] ability candidates: {ex}"); }
             try { AddMagusCastPlans(ctx, candidates, preview); } catch (Exception ex) { Main.Error($"[Magus] cast plans: {ex}"); }
@@ -5352,8 +5362,15 @@ namespace CompanionAI_Pathfinder.Tactics
                     // coverage report lists those abilities ("effect not understood").
                     if (profile.Summons)
                     {
-                        value += (3f + 3f * level) * Math.Min(ctx.ExpectedRounds, 4f) * 0.5f * (ctx.Enemies.Count >= 2 ? 1f : 0.6f) *
+                        // ★ v0.3.70 F3 (author request): what the creatures it brings are worth in this fight
+                        // (TacticalEngine.SummonChoice.cs); the spell-level formula only when no spawn action can be read.
+                        float? creatures = null;
+                        string creatureNote = null;
+                        try { creatures = SummonWorth(ctx, ability, profile, out creatureNote); }
+                        catch (Exception ex) { Main.Verbose($"[Summon] {ability.Name}: {ex.Message}"); }
+                        value += (creatures ?? (3f + 3f * level) * Math.Min(ctx.ExpectedRounds, 4f) * 0.5f * (ctx.Enemies.Count >= 2 ? 1f : 0.6f)) *
                                  CombatMath.ShadowShare(ability, null);   // ★ v0.3.21: a shadow summon is partly real
+                        if (creatureNote != null) reasons.Add(creatureNote);
                         // ★ v0.3.18 (test11): a creature that brings an area the game's AI will also drop on our melee
                         // fighters (a Dretch's Stinking Cloud) is worth less than one that does not, while the party has
                         // any: Orvath opened every fight with Summon Dretch, at the same value as Cambion and Quasit.
@@ -5703,6 +5720,10 @@ namespace CompanionAI_Pathfinder.Tactics
             AddOutOfReachCandidate(ctx, list, kept);
             // 2c) ★ v0.3.28 test 15 (author-approved): at any HP, out of the space of a swarm whose round strikes it.
             AddOutOfSwarmCandidate(ctx, list, kept);
+            // 2d) ★ v0.3.70 F1 (author request): turn-based, a ranged unit's leftover move action takes a safer spot it can still
+            // attack from.
+            try { AddRepositionCandidate(ctx, list, rangedStyle); }
+            catch (Exception ex) { Main.Verbose($"[Tactics] {unit.CharacterName}: reposition: {ex.Message}"); }
 
             // 3) Nothing to do from here: close the distance for this or the next turn.
             // ★ v0.3.14 (test5): not while only movement is possible (nauseated): arriving, the unit could not attack and
@@ -6346,6 +6367,13 @@ namespace CompanionAI_Pathfinder.Tactics
                 {
                     var move = new UnitMoveTo(c.Point ?? unit.Position, c.ApproachRadius) { NeedLoS = c.NeedLoS };
                     command = move;
+                    break;
+                }
+                case CandidateKind.WeaponSet:
+                {
+                    // ★ v0.3.70 F2: the game's own switch (a move action), as its mob AI issues it (BlueprintAiSwitchWeapon).
+                    if (!ValidateWeaponSetIssue(unit, c, out failure)) return false;
+                    command = new UnitSwitchHandEquipmentSet(c.WeaponSetIndex);
                     break;
                 }
             }

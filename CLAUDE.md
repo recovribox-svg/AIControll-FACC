@@ -8,7 +8,25 @@ Read [CONTRIBUTING.md](CONTRIBUTING.md) for shared branch ownership, Codex pull 
 Codex works on task branches and targets pull requests at `claude/dreamy-pasteur-b9h3rn`; Claude reviews and integrates them there.
 Keep `main` for author-authorized releases. Read [AGENTS.md](AGENTS.md) when coordinating agent work.
 
-**Current handover (26 November 2026, Claude): P1–P3 implemented (author-approved) on `claude/v0370-playtest-review`
+**Current handover (26 November 2026, Claude): features F1–F4 (author requests) on `claude/v0370-features`, stacked on
+`claude/v0370-playtest-review` (draft PR #116). Not played, nothing merged.** Read [docs/V0370_FEATURES.md](docs/V0370_FEATURES.md),
+`docs/TACTICAL_AI.md` §224 and the [receipt](docs/competence/V0370_FEATURES_CHECKS.json).
+- **F1 (movement, turn-based):** a ranged-style unit with only its move action left takes a safer spot that keeps an
+  enemy in range and sight.
+- **F2:** a Mixed unit switches between its melee and ranged weapon sets with the native move-action command when the
+  other set clearly beats its current weapon (inactive set priced by the game's attack rules).
+- **F3:** summons are priced by their creatures: count, duration, CR against the enemies, measured damage per round of
+  the kind, bodies per enemy. Variants of one spell now differ.
+- **F4:** escape teleports also try safe spots at 60 % and 90 % of their range, within reach of the fight.
+- **Checks** on `a6cd4a9`:
+  - Release 0 warnings; 1,172 unit + 27/21/3 script tests.
+  - ProfileAudit `V0370-FEATURES` 7; every other line, the Fusion matrix and the summon detail unchanged.
+  - Harnesses 98/14/10; 17 external members added.
+- **Package:** `test-builds/AI-Control-FACC-v0.3.70-dev-features1-a6cd4a9-UMM-test.zip`, MVID
+  `82dcebbe-430b-479e-9e9b-58116176795e`, UMM 0.3.70.
+- **Next:** the author plays it (replay in the feature page). Drain triage, re-scoped, after that playtest.
+
+**Earlier handover (26 November 2026, Claude): P1–P3 implemented (author-approved) on `claude/v0370-playtest-review`
 (draft PR #116), stacked on `claude/summons-review` (draft PR #113). Not played, nothing merged.** Read
 [the review page's P1–P3 section](docs/V0370_PLAYTEST_REVIEW.md#p1p3-implemented-26-november-2026), `docs/TACTICAL_AI.md`
 §223 and the [receipt](docs/competence/V0370_PROPOSALS_CHECKS.json). Both combat modes.

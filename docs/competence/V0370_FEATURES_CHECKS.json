@@ -1,0 +1,48 @@
+{
+ "task": "Author request: implement the feature proposals (F1 end-of-turn reposition for ranged units, F2 weapon-set switching for Mixed range, F3 context-aware summon choice) and F4 escape teleports to safe spots beyond a walk",
+ "date": "2026-11-26",
+ "author": "Claude",
+ "branch": "claude/v0370-features",
+ "base": "0dec6b9 (claude/v0370-playtest-review, draft PR #116)",
+ "source_commit": "a6cd4a993b70483a949d7196421d721dbdb142c5",
+ "references": {
+  "rogue_trader_commit": "Mythios-design/CompanionAI_v3 216cfad (read as inspiration only: PreferRanged units with movement left; moves when fewer melee enemies reach the tile or threat is lower; no weapon-range check)",
+  "demonology_cambion": "CR2_CambionStandard_Ranged (9125fbea): CompositeLongbow set 1, MasterworkScimitar set 2; brain Cambion_Brain_StandardRanged: AttackAiAction + SwitchToMeleeAiAcition (BlueprintAiSwitchWeapon SwitchTo Melee, ThreatedByConsideration); no switch back",
+  "summon_guide": "player guide used for candidate context; the parts not modelled are listed in docs/V0370_FEATURES.md"
+ },
+ "native_contracts": {
+  "weapon_switch": "UnitSwitchHandEquipmentSet(index): UnitCommand(CommandType.Move), OnAction sets Body.CurrentHandEquipmentSetIndex; UnitHelper.CanChangeWeaponSet: not forbidden, RT always, TB current unit with CombatController.CanChangeWeaponSet (standard or move left)",
+  "inactive_weapon": "HandSlot.UpdateActive -> ItemSlot.OnActiveChanged -> item OnWillUnequip (enchantments off); WeaponEnhancementBonus is an initiator RuleCalculateWeaponStats handler; RuleCalculateAttacksCount reads Body.PrimaryHand/SecondaryHand (active set)",
+  "summon_count": "ContextActionSpawnMonster: CountValue.Calculate(context) then ICalculateSummonUnitsCount handlers (ModifySummonsCount, BookOfDreamsSummonUnitsCountLogic: count-only); DurationValue.Calculate(context)",
+  "summon_casts": "SummonMonsterISingle, VSingle, Vd3, Vd4plus1, VIIISingle: m_IsFullRoundAction true"
+ },
+ "checks": {
+  "release_build": "0 warnings, 0 errors (real game references, UMM 0.33.2.0)",
+  "unit_tests": "1172 passed (6 new: V0370FeatureTests)",
+  "script_tests": "BlueprintInventory 27, InvocationLedger 21, ProfileAudit supplement 3: OK",
+  "profile_audit": "exit 0; new V0370-FEATURES 7 checks passed (native switch is a Move action; Summon Monster V variants: RedcapSummoned CR6 x 1, DireWolfSummon CR4 x 1D3+rank, MonitorLizardSummoned CR2 x 1D4+rank); every other report line identical to proposals1",
+  "fusion_matrix": "byte-identical",
+  "summon_kit_detail": "byte-identical",
+  "packaged_dll_audit": "same report as the pre-commit build",
+  "native_harnesses": "ToggleCosts 98, TomeBurn 14, ToyBoxSpend 10, failures 0",
+  "external_members": "17 added (HandsEquipmentSet hands/IsEmpty, UnitBody sets/index/IsEquipmentSetChangeForbidden, UnitSwitchHandEquipmentSet ctor, UnitHelper.CanChangeWeaponSet, RuleCalculateAttacksCount result fields, ItemSlot.Active, ContextActionSpawnMonster Count/Duration, ICalculateSummonUnitsCount, EventBus.RaiseEvent, Rounds.Value), all compiled against the supplied assembly",
+  "gameplay": "unplayed"
+ },
+ "package": {
+  "archive": "test-builds/AI-Control-FACC-v0.3.70-dev-features1-a6cd4a9-UMM-test.zip",
+  "umm_version": "0.3.70",
+  "source": "a6cd4a9",
+  "mvid": "82dcebbe-430b-479e-9e9b-58116176795e",
+  "dll_sha256": "ae89cc3331f99be83ebd7c5885f7045a0f24d52c850fccc5d90bb6430014e5c2",
+  "zip_sha256": "65a90b10e9228f7c3460ac5f7afecb35535f164e591d7b2467507af5aa761651",
+  "gameplay": "unplayed"
+ },
+ "limits": [
+  "F1 is turn-based only and tries two spot distances.",
+  "F2 estimates the inactive set's main hand only: special weapon abilities, the off hand and attack modes are left out (errs low); a 1.2x+1 margin and a two-round hold guard against flip-flop.",
+  "F3 prices creatures by CR and measured damage; touch AC, trip, immunity matching and AoE exposure are not modelled before a kind has fought.",
+  "F4 searches two distances from the most valuable escape walk only.",
+  "Not played."
+ ],
+ "merged": false
+}

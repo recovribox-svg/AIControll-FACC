@@ -7508,3 +7508,25 @@ Control exception. Both combat modes:
   - Harnesses 98/14/10; one external member added (`ItemEntity.get_IsSpendCharges`).
 - **Package:** `test-builds/AI-Control-FACC-v0.3.70-dev-proposals1-e040d62-UMM-test.zip`, module
   `a8892900-11e1-4a95-b33d-926957a6ff43`, UMM 0.3.70, unplayed.
+
+## 224. v0.3.70 features: reposition, weapon sets, summon choice, far escape teleports (26 November 2026, Claude)
+
+[Feature page](V0370_FEATURES.md) · [receipt](competence/V0370_FEATURES_CHECKS.json). Author requests, unplayed.
+
+- **F1 (movement, turn-based):** `AddRepositionCandidate`. A ranged-style unit with only its move action left takes a
+  safer spot that keeps an enemy in range and sight (`ValueModel.RepositionGain`, less `MoveRisk`).
+- **F2 (both modes):** `AddWeaponSetCandidate` / `CandidateKind.WeaponSet`. A Mixed unit switches sets with the native
+  `UnitSwitchHandEquipmentSet` (a move action) when the other set clearly beats its current weapon here.
+  `CombatMath.EstimateWithWeapon` prices the inactive weapon by the game's rules, its switched-off enhancement added back.
+- **F3 (both modes):** `SummonWorth`. Each spawn action is priced by its count (dice and native count handlers), duration,
+  creature CR against the enemies' level, the damage its kind dealt per round this session (`SummonWorthMemory`) and the
+  bodies' share of enemies to fight. Variants of one summon spell now differ.
+- **F4 (both modes):** `AddFarEscapes`. Escape teleports also try safe spots at 60 % and 90 % of their own range, within
+  reach of the fight, priced by their drop chance.
+- **Checks** on `a6cd4a9`:
+  - Release 0 warnings; 1,172 unit + 27/21/3 script tests.
+  - ProfileAudit `V0370-FEATURES` 7 checks; every other line, the Fusion matrix and the summon detail unchanged.
+  - Harnesses 98/14/10; 17 external members added.
+- **Package:** `test-builds/AI-Control-FACC-v0.3.70-dev-features1-a6cd4a9-UMM-test.zip`, module
+  `82dcebbe-430b-479e-9e9b-58116176795e`, UMM 0.3.70.
+
