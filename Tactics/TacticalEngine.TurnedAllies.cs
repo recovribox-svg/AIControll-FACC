@@ -141,8 +141,29 @@ namespace CompanionAI_Pathfinder.Tactics
                 if (IsCoupDeGrace(c.Ability)) return true;
                 var profile = AbilityProfile.Get(c.Ability);
                 if (profile != null && profile.IsWeaponAttack) return true;
+                // ★ v0.3.70 features3 review: a Magus spell the game delivers through a weapon attack on its target.
+                if (c.MagusSourceStrike || DeliveredByWeapon(ctx.Unit, c.Ability, profile)) return true;
             }
             return false;
+        }
+
+        /// <summary>
+        /// ★ v0.3.70 features3 review: with Spellstrike on, the game delivers this Magus spell through a weapon attack on an
+        /// enemy target - an Eldritch Archer's spell through its bow (UnitUseAbility.OnAction queues a UnitAttack), a touch
+        /// spell's charge through the melee weapon (UnitUseAbility.CreateCastCommand). A turned ally is an enemy to that test.
+        /// Real-time fights 10 and 11: the Drow Magus cast Flare on dominated Camellia (four arrows, all missed) and on dominated
+        /// Wenduag (an arrow for 13).
+        /// </summary>
+        private static bool DeliveredByWeapon(UnitEntityData unit, AbilityData ability, AbilityProfile profile)
+        {
+            try
+            {
+                var part = unit?.Get<Kingmaker.UnitLogic.Parts.UnitPartMagus>();
+                if (part == null || !part.Spellstrike.Active || ability == null) return false;
+                if (part.EldritchArcher) return NativeRangedStrike(unit, ability);
+                return MagusSpell(part, ability) && Kingmaker.UnitLogic.UnitHelper.GetThreatHand(unit) != null && MagusMechanics.PlainTouch(ability, profile);
+            }
+            catch { return false; }
         }
 
         /// <summary>★ coverage4: a buff that holds its bearer on another side (an enabled ChangeFaction: Dominate, a charm).</summary>

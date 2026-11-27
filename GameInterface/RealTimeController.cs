@@ -325,6 +325,8 @@ namespace CompanionAI_Pathfinder.GameInterface
                     (!legacy && Tactics.RealTimeTactics.ShouldEndArrivedWalk(unit, out replanWhy)))
                 {
                     Main.Log($"[RT] {unitName}: {replanWhy} - dropping the commands that have not started, deciding again");
+                    // ★ v0.3.70 features3 review: dropped to decide again, not failed - none of them is barred for the turn.
+                    if (!legacy) Tactics.RealTimeTactics.ReconsiderPending(unit);
                     unit.Commands.InterruptAll(c => c != null && !c.IsStarted && c.IsInterruptible && !c.Cutscene);
                     _lastDecisionTime[unitId] = currentTime;
                     return;

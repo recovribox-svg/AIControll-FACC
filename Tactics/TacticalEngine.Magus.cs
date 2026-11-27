@@ -283,9 +283,12 @@ namespace CompanionAI_Pathfinder.Tactics
             UnitEntityData weaponTarget = strike ? source.Target : null;
             WeaponAttackEstimate weapon = null;
             float best = 0f;
+            // ★ v0.3.70 features3 review: no weapon routine at an ally under an enemy's control (SparesTurnedAlly).
+            if (strike && ctx.TurnedAllies.Contains(source.Target)) return null;
             IEnumerable<UnitEntityData> targets = strike ? new[] { source.Target } : ctx.Enemies;
             foreach (var target in targets)
             {
+                if (ctx.TurnedAllies.Contains(target)) continue;
                 var attack = MagusWeapon(ctx, target, full, full, strike);
                 if (attack == null || !InRangeNow(ctx.Unit, target.Position, attack.Reach, true)) continue;
                 // Native item casts retain an existing charge unless they create another touch themselves.

@@ -109,7 +109,7 @@ namespace CompanionAI_Pathfinder.Tactics
                     }
                     if (line.Length > 0) line.Append("; ");
                     if (entry.Identity.Item != null) line.Append("Item:").Append(entry.Identity.Item.name).Append('/');
-                    line.Append(entry.Ability.Name);
+                    line.Append(AbilityDiscovery.LogName(entry.Ability));
                     if (entry.Identity.ForOther) line.Append(" to an ally");
                     line.Append(" best ").Append(entry.State.Best.ToString("0.#"))
                         .Append(" (").Append(Describe(entry.State.Reason, entry.State.Best)).Append(')');

@@ -100,9 +100,12 @@ namespace CompanionAI_Pathfinder.Tactics
             UnitEntityData target = strike ? source.Target : null;
             WeaponAttackEstimate weapon = null;
             float best = 0f;
+            // ★ v0.3.70 features3 review: no arrows at an ally under an enemy's control (SparesTurnedAlly).
+            if (strike && ctx.TurnedAllies.Contains(source.Target)) return null;
             IEnumerable<UnitEntityData> targets = strike ? new[] { source.Target } : ctx.Enemies;
             foreach (var enemy in targets)
             {
+                if (ctx.TurnedAllies.Contains(enemy)) continue;
                 var attack = MagusWeapon(ctx, enemy, full, full, strike, activeModes: false);
                 if (attack == null) continue;
                 float value = DamageValue(enemy, attack) * AttackWeight(ctx, enemy, true) * WakeFactor(enemy, attack.ExpectedDamage);

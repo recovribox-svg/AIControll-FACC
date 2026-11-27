@@ -171,6 +171,18 @@ namespace CompanionAI_Pathfinder.Tactics
             /// of areas are not: they are walks away.
             /// </summary>
             public bool WatchesWay;
+            /// <summary>
+            /// ★ v0.3.70 features3 review: the command already answers a loss of HP - a heal of the unit itself, or a walk away
+            /// (a withdrawal, a walk out of an area or a swarm). <see cref="ShouldReplanAfterDamage"/> leaves it running:
+            /// re-deciding is what that rule is for, and it would pick the same answer later.
+            /// </summary>
+            public bool AnswersHpLoss;
+            /// <summary>
+            /// ★ v0.3.70 features3 review (author-approved): the command provokes attacks of opportunity from an enemy that
+            /// threatens the unit (TacticalEngine.ProvokesWhenThreatened): a newcomer doing so before it starts is decided
+            /// again (<see cref="ShouldReplanOnNewThreat"/>).
+            /// </summary>
+            public bool ProvokesIfThreatened;
             /// <summary>★ v0.3.27: the enemies in the fight, and those engaging the unit, when the option was chosen.</summary>
             public HashSet<string> Enemies;
             public HashSet<string> Engagers;
@@ -236,6 +248,8 @@ namespace CompanionAI_Pathfinder.Tactics
                     if (issued.AreasPriced) continue;
                     if (issued.Areas != null && now.IsSubsetOf(issued.Areas)) continue;
                     issued.Areas = now;
+                    // ★ v0.3.70 features3 review: decided again, not failed - the option stays open (Reconsider).
+                    Reconsider(unit, command);
                     why = $"now in a harmful area while '{command.GetType().Name}' waited to start";
                     return true;
                 }
@@ -265,7 +279,19 @@ namespace CompanionAI_Pathfinder.Tactics
                     if (!IssuedAtHp.TryGetValue(command, out var issued) || !issued.WatchesWay) continue;
                     var to = command.ApproachPoint;
                     float left = TacticalEngine.HorizontalDistance(unit.Position, to) - Math.Max(0f, command.ApproachRadius);
-                    if (left <= 0.5f) continue;   // arrived: what is there was the option's to price
+                    if (left <= 0.5f)
+                    {
+                        // Arrived: what is there was the option's to price - unless the action provokes and an enemy that
+                        // did not threaten the unit when it was chosen does now (author-approved, features3 review).
+                        if (issued.ProvokesIfThreatened && NewThreatener(unit, issued) is UnitEntityData threat)
+                        {
+                            Reconsider(unit, command);
+                            why = $"{threat.CharacterName} now threatens it and '{command.GetType().Name}' would provoke " +
+                                  "(not counted when it was chosen)";
+                            return true;
+                        }
+                        continue;
+                    }
                     var target = command.TargetUnit;
 
                     foreach (var enemy in unit.CombatState.EngagedBy)
@@ -307,6 +333,26 @@ namespace CompanionAI_Pathfinder.Tactics
         }
 
         /// <summary>
+        /// ★ v0.3.70 features3 review (author-approved): an enemy engaging the unit now that did not when the command was
+        /// chosen, and that can make an attack of opportunity on it (the game's own simulated check, as the provoke price
+        /// uses). Null when there is none.
+        /// </summary>
+        private static UnitEntityData NewThreatener(UnitEntityData unit, IssueState issued)
+        {
+            foreach (var enemy in unit.CombatState.EngagedBy)
+            {
+                if (enemy == null || !enemy.Descriptor.State.IsConscious || !unit.IsEnemy(enemy)) continue;
+                bool counted = issued.Engagers != null && issued.Engagers.Contains(enemy.UniqueId);
+                bool canAttack;
+                try { canAttack = enemy.CombatState.AttackOfOpportunity(unit, tricksterAttack: false, simulate: true); }
+                catch { canAttack = false; }
+                if (RealTimeReplanRules.ReplanForProvoke(issued.ProvokesIfThreatened, started: false, threatenedNow: true, counted, canAttack))
+                    return enemy;
+            }
+            return null;
+        }
+
+        /// <summary>
         /// ★ v0.3.27: the walk is dropped to be decided again, not because it failed: its option stays open (the next
         /// decision learns nothing from the interrupted command), priced now with the newcomer.
         /// </summary>
@@ -317,6 +363,39 @@ namespace CompanionAI_Pathfinder.Tactics
             if (memory.LastCommand != command) return;
             memory.LastCommand = null;
             memory.LastCandidateKey = null;
+        }
+
+        /// <summary>
+        /// ★ v0.3.70 features3 review: the controller drops every command that has not started to decide again (any of the
+        /// re-decision rules above). None of them failed, so none is learnt from - also one dropped alongside the command a
+        /// rule looked at.
+        /// </summary>
+        public static void ReconsiderPending(UnitEntityData unit)
+        {
+            try
+            {
+                foreach (var command in unit.Commands.Raw)
+                    if (command != null && !command.IsStarted && !command.IsFinished && command.IsInterruptible && !command.Cutscene)
+                        Reconsider(unit, command);
+            }
+            catch (Exception ex) { Main.Verbose($"[RT-Tactics] {unit.CharacterName}: reconsider: {ex.Message}"); }
+        }
+
+        /// <summary>★ v0.3.70 features3 review: the option heals the unit itself, or walks it away (no target, no ability).</summary>
+        private static bool AnswersHpLoss(UnitEntityData unit, Candidate candidate)
+        {
+            bool walksAway = candidate.Kind == CandidateKind.Move && candidate.Target == null && candidate.Ability == null;
+            bool healsItself = false;
+            if (!walksAway && candidate.Ability != null && candidate.Target == unit)
+            {
+                try
+                {
+                    var profile = AbilityProfile.Get(candidate.Ability);
+                    healsItself = profile != null && (profile.Heals.Count > 0 || profile.CasterHeals.Count > 0);
+                }
+                catch { }
+            }
+            return RealTimeReplanRules.KeepsAfterDamage(healsItself, walksAway);
         }
 
         /// <summary>
@@ -507,6 +586,10 @@ namespace CompanionAI_Pathfinder.Tactics
         /// <summary>
         /// ★ v0.3.14 (test5): one of the unit's commands that the engine issued has not started, and since then the unit
         /// lost a quarter of its HP or more and is below half. Decided once per command.
+        /// ★ v0.3.70 features3 review: the option is decided again, not failed - it stays open (it was blocked for the rest
+        /// of the turn: Wenduag's Cure Critical Wounds potion, dropped at 34 -> 9 HP, could not be drunk again, and she died
+        /// drinking a smaller one). A heal of the unit itself and a walk away are left running: they are the answer this rule
+        /// looks for (a Cambion's walk out of a Locust Swarm was dropped, then blocked).
         /// </summary>
         public static bool ShouldReplanAfterDamage(UnitEntityData unit, out string why)
         {
@@ -517,11 +600,11 @@ namespace CompanionAI_Pathfinder.Tactics
                 foreach (var command in unit.Commands.Raw)
                 {
                     if (command == null || command.IsStarted || command.IsFinished) continue;
-                    if (!IssuedAtHp.TryGetValue(command, out var issued)) continue;
+                    if (!IssuedAtHp.TryGetValue(command, out var issued) || issued.AnswersHpLoss) continue;
                     int lost = issued.Hp - unit.HPLeft;
-                    if (lost >= max / 4 && unit.HPLeft < max / 2)
+                    if (RealTimeReplanRules.DropsAfterDamage(issued.Hp, unit.HPLeft, max))
                     {
-                        IssuedAtHp.Remove(command);
+                        Reconsider(unit, command);
                         why = $"lost {lost} HP ({issued.Hp} -> {unit.HPLeft}) while '{command.GetType().Name}' waited to start";
                         return true;
                     }
@@ -643,6 +726,8 @@ namespace CompanionAI_Pathfinder.Tactics
                                           (candidate.Label?.Contains(TacticalEngine.Disengage.IntoTag) ?? false),
                             // ★ v0.3.27 (0.3.26 log): what a walk to a target counted (ShouldReplanOnNewThreat).
                             WatchesWay = watches,
+                            AnswersHpLoss = AnswersHpLoss(unit, candidate),
+                            ProvokesIfThreatened = watches && TacticalEngine.ProvokesWhenThreatened(unit, candidate),
                             Enemies = watches ? new HashSet<string>(EnemiesInFight(unit).Select(e => e.UniqueId)) : null,
                             Engagers = watches ? EngagersOf(unit) : null
                         });

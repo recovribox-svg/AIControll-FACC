@@ -1,22 +1,37 @@
 # Test builds
 
+## v0.3.70 features3 review: re-decisions kept open, no Magus arrows at a dominated ally, weapon sets that switch (27 November 2026)
+
+[UMM ZIP](AI-Control-FACC-v0.3.70-dev-features5-bf7b1da-UMM-test.zip?raw=true) · [Identity](AI-Control-FACC-v0.3.70-dev-features5-bf7b1da-UMM-test.identity.json) · [SHA-256](AI-Control-FACC-v0.3.70-dev-features5-bf7b1da-UMM-test.sha256)
+ · [Review and replay](../docs/V0370_FEATURES3_REVIEW.md).
+
+UMM **0.3.70**, source `bf7b1da`, startup module `cfc0deda-c511-4e3a-a423-bf5be1cf502c`, **unplayed**. Contains features3
+below plus the fixes from its playtest:
+- In real time, a command dropped to decide again (after an HP loss, for instance) is no longer barred for the turn, and
+  a pending self-heal or walk away is not dropped.
+- A provoking action is decided again when an enemy reaches the unit before it starts.
+- A Magus spell the game would deliver through a weapon is not aimed at a dominated ally.
+- Mixed characters now switch to a ranged weapon set of any type, and back. The switch never saw another set's weapon.
+- The log has fewer repeated `[WeaponSet]` lines and no blank ability names.
+
+Play this one (it replaces the unplayed features4).
+
 ## v0.3.70 features review: spell bans, cone performance, group teleports, UI scale, suggested roles (27 November 2026)
 
 [UMM ZIP](AI-Control-FACC-v0.3.70-dev-features3-6f262cb-UMM-test.zip?raw=true) · [Identity](AI-Control-FACC-v0.3.70-dev-features3-6f262cb-UMM-test.identity.json) · [SHA-256](AI-Control-FACC-v0.3.70-dev-features3-6f262cb-UMM-test.sha256)
  · [Review and replay](../docs/V0370_FEATURES_REVIEW.md).
 
-UMM **0.3.70**, source `6f262cb`, startup module `e32d25e0-351a-4083-81d2-14ba5ba9d574`, **unplayed**. Contains features1 below plus the
+UMM **0.3.70**, source `6f262cb`, startup module `e32d25e0-351a-4083-81d2-14ba5ba9d574`, **played** (27 November). Contains features1 below plus the
 fixes from its playtest (an unmeasured caster's spell ban, cone/line damage once per frame, group teleports with summons
 out, a ~12 % smaller log), companions declining a costly Inspired Rage, the settings panel at UMM's UI scale (issue
-#114), roles and ranges suggested from each character's build (issue #115), and summon control on by default. Play this
-one.
+#114), roles and ranges suggested from each character's build (issue #115), and summon control on by default.
 
 ## v0.3.70 features: reposition, weapon sets, summon choice, far escape teleports (26 November 2026)
 
 [UMM ZIP](AI-Control-FACC-v0.3.70-dev-features1-a6cd4a9-UMM-test.zip?raw=true) · [Identity](AI-Control-FACC-v0.3.70-dev-features1-a6cd4a9-UMM-test.identity.json) · [SHA-256](AI-Control-FACC-v0.3.70-dev-features1-a6cd4a9-UMM-test.sha256)
  · [Features and replay](../docs/V0370_FEATURES.md).
 
-UMM **0.3.70**, source `a6cd4a9`, startup module `82dcebbe-430b-479e-9e9b-58116176795e`, **unplayed**. Contains proposals1
+UMM **0.3.70**, source `a6cd4a9`, startup module `82dcebbe-430b-479e-9e9b-58116176795e`, **played**. Contains proposals1
 below plus F1–F4: ranged units reposition with their leftover move action, Mixed characters switch weapon sets, summons
 priced by their creatures and the fight, escape teleports to safe spots up to the teleport's range.
 

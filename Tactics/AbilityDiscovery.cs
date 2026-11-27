@@ -245,6 +245,18 @@ namespace CompanionAI_Pathfinder.Tactics
             return $"[{data.MetamagicMask}{(data.HeightenLevel > 0 ? "+H" + data.HeightenLevel : "")}]";
         }
 
+        /// <summary>
+        /// ★ v0.3.70 features3 review: a name for the log - the display name, or the blueprint's own name when the display
+        /// name is empty (a Derakni's teleport read "Derakni: ... ;  best 0 (no verified safe teleport landing)").
+        /// </summary>
+        public static string LogName(Kingmaker.Blueprints.Facts.BlueprintUnitFact blueprint)
+        {
+            if (blueprint == null) return "?";
+            string name = null;
+            try { name = blueprint.Name; } catch { }
+            return string.IsNullOrWhiteSpace(name) ? blueprint.name ?? "?" : name;
+        }
+
         private static readonly HashSet<string> Reported = new HashSet<string>();
 
         /// <summary>★ v0.3.12: one normal log line per key (bounded), for failures that remove an option silently.</summary>

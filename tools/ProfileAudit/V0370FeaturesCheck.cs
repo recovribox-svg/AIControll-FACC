@@ -49,10 +49,11 @@ namespace ProfileAudit
                   Calls(engine, "AddWeaponSetCandidate", "CanChangeWeaponSet") && Calls(engine, "AddWeaponSetCandidate", "get_IsPolymorphed") &&
                   Calls(engine, "Execute", "ValidateWeaponSetIssue") && Calls(engine, "ValidateWeaponSetIssue", "CanChangeWeaponSet"),
                   "a Mixed-range unit's other weapon set is priced against its current weapon and switched by the native command");
-            Check(Calls(math, "EstimateWithWeapon", "InactiveEnhancement") && Calls(math, "EstimateWithWeapon", "IterativeAttacks") &&
-                  Calls(math, "EstimateWithWeapon", "ReadHitOnTarget") && Calls(math, "EstimateWithWeapon", "GetApproachRadius") &&
-                  Calls(math, "InactiveEnhancement", "get_HoldingSlot"),
-                  "the inactive set is estimated by the game's attack rules, its switched-off enhancement added back");
+            // ★ features3 review: the native weapon-stat rule applies an unwielded weapon's enchantments itself
+            // (RuleCalculateWeaponStats.ApplyEnchantmentsManually); the enhancement is no longer added back a second time.
+            Check(!Calls(math, "EstimateWithWeapon", "InactiveEnhancement") && Calls(math, "EstimateWithWeapon", "IterativeAttacks") &&
+                  Calls(math, "EstimateWithWeapon", "ReadHitOnTarget") && Calls(math, "EstimateWithWeapon", "GetApproachRadius"),
+                  "the inactive set is estimated by the game's attack rules, which apply its enchantments themselves");
 
             // --- F3: summon choice ---
             Check(Calls(engine, "ScoreAbility", "SummonWorth") && Calls(engine, "SummonWorth", "SummonCount") &&
