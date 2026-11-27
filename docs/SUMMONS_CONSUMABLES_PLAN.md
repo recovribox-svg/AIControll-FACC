@@ -304,14 +304,17 @@ safety checks (friendly fire, permanent death, blocklists, Pure Mage, consumable
 
 - **Change:** extend the existing readers to the mechanisms in the table above, roster first:
   - **Area effects with a save:** Value the condition on Stunning Screech, Derakni Drone and Song of Discord through
-    the existing area and control readers. Check each one's native target filters, save, immunity and timing.
+    the existing area and control readers for Screech and Drone. Song of Discord instead uses its native
+    round-tick random choice and nearest attack target. Credit one possible redirection only when the likely target
+    is on the opposing side of the caster and the forecast is clear. Check each cast's native filters, saves and timing.
   - **Unholy Nimbus:** the cast applies a one-round self buff. Its `AddFactContextActions.Deactivated` callback casts
     the separate self-centred blast. Price the callback's actual save and target filters at expected delivery, with
     uncertainty for who will still be in range. A current recipient list alone does not establish a reliable forecast.
     Withhold positive credit if the native callback or a safe delivery forecast is unreadable.
-  - **Roll debuffs and target marks:** Touch of Chaos (`ModifyD20`), Slayer's Study Target and the smite marks
-    (`AttackBonusAgainstTarget`, `DamageBonusAgainstTarget`, `IgnoreTargetDR`). Value them through the caster-side mark
-    reader (`TacticalEngine.Marks`), which already couples a mark to the unit's own attacks on that target.
+  - **Roll debuffs and target marks:** Touch of Chaos (`ModifyD20`) makes the recipient keep the worse of two
+    eligible d20 rolls. Appraise its effect on the existing enemy weapon forecast. Appraise Slayer's Study Target and
+    smite marks (`AttackBonusAgainstTarget`, `DamageBonusAgainstTarget`, `IgnoreTargetDR`) by the caster's own
+    weapon gains, using the existing coupling to the weapon target.
   - **Shadow spells:** confirm in play, through slice 0, that the variants reach the engine. Only if they do not, read
     the parent's variants as the action bar does.
   - **Guessed parts of read spells:** Enervation's temporary HP for undead, and the Contagion variants' stat damage

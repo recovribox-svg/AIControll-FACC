@@ -8,7 +8,20 @@ Read [CONTRIBUTING.md](CONTRIBUTING.md) for shared branch ownership, Codex pull 
 Codex works on task branches and targets pull requests at `claude/dreamy-pasteur-b9h3rn`; Claude reviews and integrates them there.
 Keep `main` for author-authorized releases. Read [AGENTS.md](AGENTS.md) when coordinating agent work.
 
-**Current handover (22 November 2026): consumables C4 available for review.**
+**Current handover (22 November 2026): summon abilities S1 available for review.**
+Stacked on #109. Checked source `3340951`, UMM **0.3.60**, startup module `8a40df9e-f4d6-45eb-b5e9-3b39ffc3ddb2`.
+The package is unplayed. See [§218](docs/TACTICAL_AI.md#218-summon-abilities-s1-immediate-control-roll-penalties-and-marks-22-november-2026),
+[checks](docs/competence/SUMMONS_CONSUMABLES_S1_CHECKS.json) and [build provenance](docs/competence/SUMMONS_CONSUMABLES_S1_BUILD_PROVENANCE.json).
+- The stock readers cover Screech, Drone, Chaos, Discord, Study and the supported smite components. Contagion follows the actual buff tick interval.
+- Nimbus's expiry blast has no safe future recipient forecast in this build. Shadow variants still need played evidence.
+- 1,151 unit tests, 27/21/3 scripts, zero-warning Release, both audits and native 98/14/10 passed.
+- S2 native review found that `AbilityData.CanTarget` checks the aim, while `UnitUseAbility.Init` separately reads
+  `GetApproachDistance`. Dimension Door offsets landings in target facing where applicable, translates passenger offsets,
+  appends mounts and can relax points. The Vrock and Omox abilities use the group-capable component. An `AlongPath` cast
+  calls `UnitPartRoaming.Advance`, which mutates its next point. Keep that call out of decision forecasts.
+- The summon-control default awaits play evidence.
+
+**Earlier handover (22 November 2026): consumables C4 available for review.**
 Stacked on #108. Checked source `eb8c2b5`, UMM **0.3.60**, startup module `eae9b430-ef8a-4055-b919-285eb384419f`.
 The package is unplayed. See [§217](docs/TACTICAL_AI.md#217-consumables-c4-sight-and-typed-protections-22-november-2026),
 [checks](docs/competence/SUMMONS_CONSUMABLES_C4_CHECKS.json) and [build provenance](docs/competence/SUMMONS_CONSUMABLES_C4_BUILD_PROVENANCE.json).

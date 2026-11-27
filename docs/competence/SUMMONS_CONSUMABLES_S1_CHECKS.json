@@ -1,0 +1,203 @@
+{
+  "checked_source_commit": "3340951d0dccb9e71f7b883a5aebad67bee83293",
+  "baseline_source": "eb8c2b59e36594be39bdf671079f59a6695dee29",
+  "baseline_note": "Compared with C4 on identical inputs. Combat ability, ITEMS and summon kit verdict differences are recorded below.",
+  "dll": {
+    "assembly": "CompanionAI_Pathfinder, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null",
+    "mvid": "8a40df9e-f4d6-45eb-b5e9-3b39ffc3ddb2",
+    "sha256": "660d4c2743d18718b6baaea8e4134a1ede936cf2d508ab75da17e7102cdc0ed3",
+    "size": 1661440
+  },
+  "package": {
+    "path": "test-builds/AI-Control-FACC-v0.3.60-dev-summon-s1-3340951-UMM-test.zip",
+    "sha256": "a6b670747ca88baeda856f6fb8a1ebb8b9eb7130f81dcbf4e2aab977547689f0"
+  },
+  "build_provenance": "docs/competence/SUMMONS_CONSUMABLES_S1_BUILD_PROVENANCE.json",
+  "release": {
+    "warnings": 0,
+    "errors": 0,
+    "real_game_references": true,
+    "log_sha256": "bad7e249bac7132d7043ee94294b6965c84be71355aa9bc3532607cf763e151f"
+  },
+  "unit_tests": {
+    "passed": 1151,
+    "failed": 0,
+    "skipped": 0
+  },
+  "script_tests": {
+    "BlueprintInventory": 27,
+    "InvocationLedger": 21,
+    "ProfileAuditSupplement": 3
+  },
+  "profile_audit": {
+    "strict": {
+      "report_sha256": "0f7ee779adfdf3ac9994aefb9756e9aa84366c4f3b67ae1d25008e4b75104e5c",
+      "matrix_sha256": "acd0b62097c834cb8617f33b9272a32f24f08da4b91c0b3499f3eccd779e1517",
+      "non_summon_effects_report_equal": false,
+      "matrix_byte_identical": true
+    },
+    "full_stock": {
+      "report_sha256": "8258fd856624452cb2cb51f3397a9788074407e929243b13a53b6ba710adec0b",
+      "matrix_sha256": "acd0b62097c834cb8617f33b9272a32f24f08da4b91c0b3499f3eccd779e1517",
+      "non_summon_effects_report_equal": false,
+      "matrix_byte_identical": true
+    },
+    "summon_detail_sha256": "277508ba584f640f59d36e293b451a22d3228c98c42ad512942c6eb43c2b214f",
+    "items_blueprint_fixtures": 13,
+    "items_blueprint_fixture_failures": 0,
+    "potions_read_guessed_unread": [
+      98,
+      15,
+      1
+    ],
+    "scrolls_read_guessed_unread": [
+      575,
+      63,
+      12
+    ],
+    "summon_effect_stock_fixtures": 13,
+    "summon_effect_stock_fixture_failures": 0,
+    "profile_report_deltas": {
+      "strict": {
+        "removed_lines": 65,
+        "added_lines": 70,
+        "changed_ability_verdicts": 46,
+        "added_control_ability_names": [
+          "DemonicFormIIDerakni_Drone",
+          "DerakniDroneAbility",
+          "EchoOfDeskari_Drone",
+          "Nalfeshnee_Ability_UnholyNimbusBlast",
+          "VrockStunningScreechAbility"
+        ],
+        "new_items_lines": [
+          "ITEMS Scroll: 575 read, 63 guessed, 12 unread of 650; shared spend restraint; native UMD when required"
+        ],
+        "verdict_names": [
+          "Nalfeshnee_Ability_UnholyNimbusCast",
+          "AllIsDarknessSmiteAbility",
+          "AloneInTheDarkSmite4thlevelABility",
+          "CelestialSmiteEvilAbility",
+          "ChallengeEvil",
+          "ChampionOfTheFaithSmiteAbility",
+          "FiendishSmiteGoodAbility",
+          "FinalJusticeAbility",
+          "HalfFiendSmiteGoodAbility",
+          "Kerz_Ability_Quarry",
+          "OtherworldlyCompanionCelestialAbility",
+          "OtherworldlyCompanionFiendishAbility",
+          "SlayerStudyTargetAbility",
+          "SlayerSwiftStudyTargetAbility",
+          "SmiteEvilCeleatialAbility",
+          "SongOfDiscord",
+          "DemonicFormIIDerakni_Drone",
+          "DerakniDroneAbility",
+          "EchoOfDeskari_Drone",
+          "Nalfeshnee_Ability_UnholyNimbusBlast",
+          "VrockStunningScreechAbility",
+          "BloodEnervationAbility",
+          "Enervation",
+          "ContagionBlindingSickness",
+          "ContagionBlindingSicknessResolve",
+          "ContagionCackleFever",
+          "ContagionCackleFeverResolve",
+          "ContagionMindFire",
+          "ContagionMindFireResolve",
+          "ContagionShakes",
+          "ContagionShakesResolve",
+          "PlagueStormBlindingSickness",
+          "PlagueStormCackleFever",
+          "PlagueStormMindFire",
+          "PlagueStormShakes",
+          "PoisonedDart",
+          "DrunkenKiSpitVenom",
+          "IronGolemBreathWeapon",
+          "Poison",
+          "PoisonBreath",
+          "PoisonCast",
+          "WitchHexHoarfrostAbility",
+          "ChaosDomainBaseAbility",
+          "ChaosDomainBaseAbilitySeparatist",
+          "LuckBlessingMajorAbility",
+          "Nalfeshnee_Ability_TouchOfChaos"
+        ]
+      },
+      "full-stock": {
+        "removed_lines": 64,
+        "added_lines": 69,
+        "changed_ability_verdicts": 46,
+        "added_control_ability_names": [
+          "DemonicFormIIDerakni_Drone",
+          "DerakniDroneAbility",
+          "EchoOfDeskari_Drone",
+          "Nalfeshnee_Ability_UnholyNimbusBlast",
+          "VrockStunningScreechAbility"
+        ],
+        "new_items_lines": [
+          "ITEMS Scroll: 575 read, 63 guessed, 12 unread of 650; shared spend restraint; native UMD when required"
+        ],
+        "verdict_names": [
+          "Nalfeshnee_Ability_UnholyNimbusCast",
+          "AllIsDarknessSmiteAbility",
+          "AloneInTheDarkSmite4thlevelABility",
+          "CelestialSmiteEvilAbility",
+          "ChallengeEvil",
+          "ChampionOfTheFaithSmiteAbility",
+          "FiendishSmiteGoodAbility",
+          "FinalJusticeAbility",
+          "HalfFiendSmiteGoodAbility",
+          "Kerz_Ability_Quarry",
+          "OtherworldlyCompanionCelestialAbility",
+          "OtherworldlyCompanionFiendishAbility",
+          "SlayerStudyTargetAbility",
+          "SlayerSwiftStudyTargetAbility",
+          "SmiteEvilCeleatialAbility",
+          "SongOfDiscord",
+          "DemonicFormIIDerakni_Drone",
+          "DerakniDroneAbility",
+          "EchoOfDeskari_Drone",
+          "Nalfeshnee_Ability_UnholyNimbusBlast",
+          "VrockStunningScreechAbility",
+          "BloodEnervationAbility",
+          "Enervation",
+          "ContagionBlindingSickness",
+          "ContagionBlindingSicknessResolve",
+          "ContagionCackleFever",
+          "ContagionCackleFeverResolve",
+          "ContagionMindFire",
+          "ContagionMindFireResolve",
+          "ContagionShakes",
+          "ContagionShakesResolve",
+          "PlagueStormBlindingSickness",
+          "PlagueStormCackleFever",
+          "PlagueStormMindFire",
+          "PlagueStormShakes",
+          "PoisonedDart",
+          "DrunkenKiSpitVenom",
+          "IronGolemBreathWeapon",
+          "Poison",
+          "PoisonBreath",
+          "PoisonCast",
+          "WitchHexHoarfrostAbility",
+          "ChaosDomainBaseAbility",
+          "ChaosDomainBaseAbilitySeparatist",
+          "LuckBlessingMajorAbility",
+          "Nalfeshnee_Ability_TouchOfChaos"
+        ]
+      },
+      "summon_kit_detail": {
+        "removed_lines": 139,
+        "added_lines": 114
+      }
+    }
+  },
+  "native_harnesses": {
+    "ToggleCosts": 98,
+    "TomeBurn": 14,
+    "ToyBoxSpend": 10
+  },
+  "not_run": [
+    "live turn-based or real-time play",
+    "live summon replay",
+    "Unity profiling"
+  ]
+}

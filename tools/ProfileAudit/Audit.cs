@@ -196,6 +196,13 @@ namespace ProfileAudit
             if (p == null) { row.Verdict = "error"; row.Detail = "no profile"; return; }
             var parts = new List<string>();
 
+            if (SummonEffectsCheck.Property(p, "DelayedControlBurst") is BlueprintAbility delayed)
+            {
+                row.Verdict = "nothing: delayed control forecast withheld";
+                row.Detail = "read expiration callback " + delayed.name;
+                return;
+            }
+
             // --- EvaluateAbility: the sides it may be aimed at ---
             if (p.IsCharge) { row.Verdict = "valued: by the rules (charge)"; return; }
             bool selfOnly = bp.Range == AbilityRange.Personal;
@@ -255,15 +262,19 @@ namespace ProfileAudit
                     bool mark = !p.HarmfulEffects && p.ControlStrength == ControlStrength.None;
                     if (mark && p.IsAoE) { }
                     else if (p.ControlStrength != ControlStrength.None) modelled.Add($"control {p.ControlStrength}");
+                    else if (SummonEffectsCheck.Property(p, "AttackMark") != null) modelled.Add("caster weapon mark");
+                    else if (SummonEffectsCheck.Property(p, "WorstOfTwoAttacks") != null) modelled.Add("worse of two attack rolls");
+                    else if (SummonEffectsCheck.Property(p, "RedirectCarrier") != null) modelled.Add("chance to redirect an attack");
                     else if (!mark)
                     {
-                        bool poison = p.TargetBuffs.Any(b => b.GetComponents<Kingmaker.Designers.Mechanics.Buffs.BuffPoisonStatDamage>()
-                                                                .Any(c => c.Stat == Kingmaker.EntitySystem.Stats.StatType.Constitution));
+                        bool poison = p.TargetBuffs.Any(CombatMath.HasPoisonStatDamage);
+                        bool benefit = p.DealsDamage && p.TargetBuffs.All(SummonEffectsCheck.IsBenefitCarrier);
                         var penalties = new[] { BuffPartKind.Attack, BuffPartKind.Damage, BuffPartKind.ArmorClass, BuffPartKind.Saves,
                                                 BuffPartKind.ConditionalSaves, BuffPartKind.Strength, BuffPartKind.Dexterity,
                                                 BuffPartKind.Constitution, BuffPartKind.MentalStat };
                         bool readable = p.TargetBuffs.SelectMany(b => BuffPartsReader.Read(b).Parts).Any(x => penalties.Contains(x.Kind));
-                        if (poison) modelled.Add("poison (Con as HP)");
+                        if (poison) modelled.Add("stat damage (native interval)");
+                        else if (benefit) modelled.Add("recipient temporary HP offsets damage");
                         else if (readable && p.TargetBuffs.Any(b => BuffPartsReader.Read(b).Unread.Count > 0))
                             modelled.Add("debuff by its penalties (at least 0.25: some unread)");
                         else if (readable) modelled.Add("debuff by its penalties");

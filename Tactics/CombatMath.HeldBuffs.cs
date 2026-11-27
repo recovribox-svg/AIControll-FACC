@@ -23,6 +23,35 @@ namespace CompanionAI_Pathfinder.Tactics
             return SneakRules.LineDamage(hit, perHit, line.Sneak, critExtra, line.Keep);
         }
 
+        internal static float AttackMarkGain(UnitEntityData unit, UnitEntityData target, bool full, int attackBonus,
+                                             float damageBonus, bool bypassReduction, Kingmaker.Enums.WeaponRangeType? onlyRange)
+        {
+            string key = $"{unit.UniqueId}|{target.UniqueId}|{full}";
+            if (!Routines.TryGetValue(key, out var routine) || routine.Frame != Time.frameCount || routine.Lines.Count == 0)
+            {
+                if (full) return AttackMarkGain(unit, target, false, attackBonus, damageBonus, bypassReduction, onlyRange);
+                return 0f;
+            }
+            // The native weapon routes already read this frame supply the baseline. Reuse their reach,
+            // DR, concealment and crit math. A mark alone does not request another weapon or path preview.
+            var first = routine.Lines[0].Weapon;
+            if (first == null || !Kingmaker.UnitLogic.Commands.Base.UnitCommand.IsUnitCloseEnough(
+                target.Position, unit.Position, unit.EyePosition, routine.Reach, true, 0f)) return 0f;
+            float lands = LandsPastDefences(unit, target);
+            float gain = 0f;
+            foreach (var line in routine.Lines)
+            {
+                int lineBonus = !onlyRange.HasValue || Kingmaker.Enums.WeaponRangeTypeHelper.IsSuitableWeapon(onlyRange.Value, line.Weapon.Blueprint)
+                    ? attackBonus : 0;
+                float before = ExpectedWeaponLine(line, 0, 0f, lands, out _, out _);
+                // Giving back this line's known DR before the normal subtraction cancels that subtraction only.
+                float recoverable = bypassReduction ? line.DamageReduction : 0f;
+                float after = ExpectedWeaponLine(line, lineBonus, damageBonus + recoverable, lands, out _, out _);
+                gain += Math.Max(0f, after - before);
+            }
+            return gain;
+        }
+
         /// <summary>
         /// Reprice only the exact routine behind the supplied quote while it remains in this frame's cache. No
         /// ReadRoutine, Rulebook, defence, magus-state or actor query is performed. A mixed-weapon routine is outside

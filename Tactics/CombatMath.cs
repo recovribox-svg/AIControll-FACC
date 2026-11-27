@@ -2087,10 +2087,13 @@ namespace CompanionAI_Pathfinder.Tactics
         /// kills: ValueModel.AbilityDamageEquivalent) - for Constitution the larger of the two readings; nothing for a score the
         /// target is immune to (AddImmunityToAbilityScoreDamage). Other scores counted as a plain debuff before.
         /// </summary>
+        public static bool HasPoisonStatDamage(Kingmaker.UnitLogic.Buffs.Blueprints.BlueprintBuff buff) =>
+            buff != null && buff.GetComponent<Kingmaker.Designers.Mechanics.Buffs.BuffPoisonStatDamage>() != null;
+
         public static float PoisonHpLoss(AbilityData ability, Kingmaker.UnitLogic.Buffs.Blueprints.BlueprintBuff buff, UnitEntityData target,
                                          float maxRounds)
         {
-            if (buff == null || target == null) return 0f;
+            if (target == null || !HasPoisonStatDamage(buff)) return 0f;
             try
             {
                 int dc = ParamsOf(ability)?.DC ?? 10;
@@ -2106,7 +2109,10 @@ namespace CompanionAI_Pathfinder.Tactics
                         case SavingThrowType.Reflex: fail = Mathf.Clamp((dc - target.Stats.SaveReflex.ModifiedValue - 1) / 20f, 0.05f, 0.95f); break;
                         case SavingThrowType.Will: fail = Mathf.Clamp((dc - target.Stats.SaveWill.ModifiedValue - 1) / 20f, 0.05f, 0.95f); break;
                     }
-                    int later = Math.Min(poison.Ticks - 1, Mathf.FloorToInt(Math.Max(0f, maxRounds - 1f)));
+                    // A disease activates once on application and ticks at the blueprint's own interval.
+                    int later = Math.Min(poison.Ticks - 1, ValueModel.PeriodicTicks(
+                        buff.TickTime.TotalSeconds, buff.TickTime.TotalSeconds, double.PositiveInfinity,
+                        Math.Max(0f, maxRounds - 1f) * ValueModel.RealTimeRoundSeconds));
                     float points = each * ValueModel.PoisonDoses(fail, Math.Max(0, later), poison.SuccesfullSaves);
                     byStat[poison.Stat] = (byStat.TryGetValue(poison.Stat, out float had) ? had : 0f) + points;
                 }
