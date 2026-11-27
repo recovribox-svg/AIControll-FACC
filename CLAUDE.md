@@ -8,32 +8,36 @@ Read [CONTRIBUTING.md](CONTRIBUTING.md) for shared branch ownership, Codex pull 
 Codex works on task branches and targets pull requests at `claude/dreamy-pasteur-b9h3rn`; Claude reviews and integrates them there.
 Keep `main` for author-authorized releases. Read [AGENTS.md](AGENTS.md) when coordinating agent work.
 
-**Current handover (27 November 2026, Claude): features1 playtest reviewed; fixes on `claude/v0370-features-review`, stacked
-on `claude/v0370-features` (draft PR #117). Not played, nothing merged.** Read [docs/V0370_FEATURES_REVIEW.md](docs/V0370_FEATURES_REVIEW.md),
-`docs/TACTICAL_AI.md` §225 and the [receipt](docs/competence/V0370_FEATURES_REVIEW_CHECKS.json).
+**Current handover (27 November 2026, Claude): features1 playtest reviewed, plus author requests; on
+`claude/v0370-features-review` (draft PR #118), stacked on `claude/v0370-features` (draft PR #117). Not played, nothing
+merged.** Read [docs/V0370_FEATURES_REVIEW.md](docs/V0370_FEATURES_REVIEW.md), `docs/TACTICAL_AI.md` §225 and the
+[receipt](docs/competence/V0370_FEATURES_REVIEW_CHECKS.json).
 - **Logs:**
   - features1 module `82dcebbe`: 5 turn-based fights (451 decisions), then 6 real-time fights in a new session (1,225
-    decisions, 411 commands); no AI Control exception.
-  - The first session crashed at its first real-time fight; the author says too many enemies were spawned. Not
-    investigated, at the author's request.
+    decisions); no AI Control exception.
+  - The first session's crash: the author says too many enemies were spawned. Not investigated.
 - **Fixes (both modes):**
-  1. A spell ban priced an unmeasured spellbook caster at 0. Inspired Rage started over the Knight Commander, which lost
-     its turn. Now estimated from the spellbook until measured (`ValueModel.UnmeasuredSpellEdge`).
-  2. Ability damage and effect chances are remembered for the frame (`CombatMath.EstimateMemo.cs`). A Shadow Demon's
-     breaths made ~900 estimates each, in an 844 ms decision.
-  3. Group teleports were withheld with the party's summons out (group bound 16, now 96).
-  4. F4 caps an infinite (Unlimited) teleport range.
-- **Logs (author request):** about 12 % smaller. Coverage once per summon kind, one free-side row a decision, `[Unused]`
-  only on change, the energy note once. `[Cmd]` rows are kept (the Invocation ledger parses them).
-- **Checks** on `ac71295`: Release 0 warnings; 1,176 unit + 27/21/3 script tests; ProfileAudit `V0370-FEATURE-REVIEW` 7,
-  every other line and matrix unchanged; harnesses 98/14/10; 0 external members added.
-- **Package:** `test-builds/AI-Control-FACC-v0.3.70-dev-features2-ac71295-UMM-test.zip`, MVID
-  `33fd9935-2a08-4977-9bf0-1891bf7e6538`, UMM 0.3.70.
+  1. A spell ban priced an unmeasured caster at 0; it is now estimated from the spellbook (`ValueModel.UnmeasuredSpellEdge`).
+  2. Per-frame memo of ability damage and effect chances (`CombatMath.EstimateMemo.cs`); cones re-asked them per aim.
+  3. Group teleports with the party's summons out (group bound 16 → 96).
+  4. F4 caps an infinite teleport range.
+- **Logs:** about 12 % smaller. `[Cmd]` rows are kept (the Invocation ledger parses them).
+- **Author requests:**
+  - Companions AI Control decides for decline a costly Inspired Rage (P2 extended from summons).
+  - Issue #114: the settings panel follows UMM's UI scale (`UI/UiScale.cs`).
+  - Issue #115: roles and ranges suggested from each character's build at first sight, plus buttons (`SuggestedSettings`).
+  - Summon control is on by default: an older settings file is switched on once, and the player's later choice is kept.
+- **Checks** on `6f262cb`:
+  - Release 0 warnings; 1,182 unit + 27/21/3 script tests.
+  - ProfileAudit `V0370-FEATURE-REVIEW` 11; `SUMMON-CONTROL` 71 (new default); every other line and matrix unchanged.
+  - Harnesses 98/14/10; 4 external members added, all resolved.
+- **Package:** `test-builds/AI-Control-FACC-v0.3.70-dev-features3-6f262cb-UMM-test.zip`, MVID
+  `e32d25e0-351a-4083-81d2-14ba5ba9d574`, UMM 0.3.70 (replaces the unplayed features2).
 - **Open:**
-  - F2 was never offered; the new `[WeaponSet]` line will say why.
+  - F2 was never offered (the new `[WeaponSet]` line will say why).
   - Two Vrock coups de grace never started.
-  - Nobody freed the allies under the Nabasu's Hold Person, Mass.
-- **Next:** the author plays features2 (replay in the review page).
+  - Nobody freed the allies under Hold Person, Mass.
+- **Next:** the author plays features3 (replay in the review page).
 
 **Earlier handover (26 November 2026, Claude): features F1–F4 (author requests) on `claude/v0370-features`, stacked on
 `claude/v0370-playtest-review` (draft PR #116). Not played, nothing merged.** Read [docs/V0370_FEATURES.md](docs/V0370_FEATURES.md),

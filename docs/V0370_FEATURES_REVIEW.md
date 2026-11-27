@@ -2,10 +2,11 @@
 
 The author played features1 (module `82dcebbe`): first five turn-based fights in one session, then six real-time fights
 in a second session. The first session ended in a crash at the start of its first real-time fight; the author put it
-down to spawning too many enemies and asked for it not to be investigated. Source of the fixes `ac71295` on
-`claude/v0370-features-review`, stacked on `claude/v0370-features` (draft PR #117). Package
-`test-builds/AI-Control-FACC-v0.3.70-dev-features2-ac71295-UMM-test.zip`, module `33fd9935-2a08-4977-9bf0-1891bf7e6538`,
-UMM 0.3.70, **unplayed**. [Receipt](competence/V0370_FEATURES_REVIEW_CHECKS.json).
+down to spawning too many enemies and asked for it not to be investigated. Source `6f262cb` on
+`claude/v0370-features-review` (draft PR #118), stacked on `claude/v0370-features` (draft PR #117). Package
+`test-builds/AI-Control-FACC-v0.3.70-dev-features3-6f262cb-UMM-test.zip`, module `e32d25e0-351a-4083-81d2-14ba5ba9d574`,
+UMM 0.3.70, **unplayed**. It replaces features2 (`ac71295`, never played) and adds the
+[author's requests](#additions-author-requests-27-november-2026) below. [Receipt](competence/V0370_FEATURES_REVIEW_CHECKS.json).
 
 ## The logs
 
@@ -93,6 +94,47 @@ decision reads is lost.
     last batch.
   - Unity's `Player.log` holds the same lines and the crash report, should one be needed.
 
+## Additions (author requests, 27 November 2026)
+
+1. **Companions decline a costly Inspired Rage** (author-approved; both modes). The summon rule (P2) now applies to any
+   unit AI Control decides for.
+   - A companion whose spells the rage would stop switches off "Inspire Rage — Accept Effect" when they are worth more
+     than the rage gives it, and back on with the existing margin.
+   - A caster not measured yet declines on its spellbook's estimate.
+   - Camellia counts such an ally as declined (0, not a loss) only when this engine makes its decisions: turn-based, or
+     real time without the old engine. Otherwise the loss stays priced (the fix above).
+   - In the turn-based case the rage then starts for Wenduag and the Bandit, and the Knight Commander keeps casting.
+   - The safeguards of the other managed toggles apply: only with "AI manages toggles" on, never a toggle the player
+     switched in the fight, and restored when the fight ends.
+2. **Issue #114, the settings panel ignored UMM's UI scale.**
+   - UMM scales its window through the skin's base font and its own styles. The panel set fixed fonts (12/14/18),
+     `<size=11>` rich-text tags and fixed widths and heights.
+   - All 108 sizes now go through `UnityModManager.UI.Scale` (`UI/UiScale.cs`), and the styles are rebuilt when the
+     scale changes.
+3. **Issue #115, roles and ranges from the build.**
+   - A character seen for the first time gets the role and range its build suggests (`SuggestedSettingsRules`),
+     read from its weapon, shield, spellbook and weapon feats:
+     - a bow or crossbow, a blasting kineticist, or a caster without weapon feats → Ranged;
+     - a weapon-trained full caster → Mixed;
+     - others → Melee;
+     - a divine full caster → Support;
+     - a melee fighter with a shield → Tank.
+   - Saved choices are never changed automatically. The panel has "Suggest from build" per character and "Suggest
+     roles for the whole party".
+   - Checked against the companions' default auto-level builds (Frostbird's guide):
+     - Seelah: Tank, Melee;
+     - Lann, Wenduag, Arueshalae: Ranged;
+     - Ember, Nenio: Ranged;
+     - Daeran, Sosiel: Support, Ranged;
+     - Camellia: Support, Mixed;
+     - Woljif, Greybor, Regill: Melee.
+   - Reading the character's actual build means it fits the default build when the game levels the companion, and a
+     custom build when it doesn't.
+4. **Summon control is on by default** (author decision).
+   - An older settings file, saved "off" while the option was experimental, is switched on once.
+   - Switched off afterwards, it stays off.
+   - The option is no longer labelled "experimental".
+
 ## Replay
 
 Both modes. Send `Log.txt` and `combatLog.txt`.
@@ -106,7 +148,13 @@ Both modes. Send `Log.txt` and `combatLog.txt`.
 3. **Group teleports:** the Vrocks with the full party and its summons out. Greater Teleport should now reach a landing
    quote ("… passengers, landing risk …") instead of "no verified safe teleport landing".
 4. **Weapon sets:** a Mixed companion. Look for its `[WeaponSet]` line, or for "Switch to … weapon set" options.
-5. **Log:**
+5. **Companions declining the rage:** Camellia's rage with the Knight Commander in it.
+   - Look for "Inspire Rage — Accept Effect off - … stops its spells" on the Knight Commander.
+   - Its spells should still be cast while Wenduag keeps the rage.
+6. **UI scale (#114):** set UMM's UI scale to 2 (Settings tab, Apply). The whole AI Control panel should grow with it.
+7. **Suggested roles (#115):** a new companion, or "Suggest roles for the whole party". A `[Settings] … suggested from
+   its build` line should appear per character. Summoned creatures are now driven without ticking the option.
+8. **Log:**
    - one `[Coverage]` block per summon kind;
    - one "no free side" row a decision;
    - `[Unused]` rows ending "(+N as last reported)".

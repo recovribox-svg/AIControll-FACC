@@ -7530,7 +7530,7 @@ Control exception. Both combat modes:
 - **Package:** `test-builds/AI-Control-FACC-v0.3.70-dev-features1-a6cd4a9-UMM-test.zip`, module
   `82dcebbe-430b-479e-9e9b-58116176795e`, UMM 0.3.70.
 
-## 225. v0.3.70 features review: spell bans, cone performance, group teleports, log trims (27 November 2026, Claude)
+## 225. v0.3.70 features review: spell bans, cone performance, group teleports, log trims, UI scale, suggested roles (27 November 2026, Claude)
 
 [Review page](V0370_FEATURES_REVIEW.md) · [receipt](competence/V0370_FEATURES_REVIEW_CHECKS.json). From the features1
 logs: five turn-based fights in one session, six real-time fights in another. Author request; unplayed.
@@ -7550,9 +7550,17 @@ logs: five turn-based fights in one session, six real-time fights in another. Au
   - `[Unused]` entries only when their verdict changes;
   - the energy-estimate note once a session;
   - a `[WeaponSet]` line when a Mixed unit has no other set (F2 was never offered).
-- **Checks** on `ac71295`:
-  - Release 0 warnings; 1,176 unit + 27/21/3 script tests.
-  - ProfileAudit `V0370-FEATURE-REVIEW` 7 checks; every other line, the Fusion matrix and the summon detail unchanged.
-  - Harnesses 98/14/10; 0 external members added.
-- **Package:** `test-builds/AI-Control-FACC-v0.3.70-dev-features2-ac71295-UMM-test.zip`, module
-  `33fd9935-2a08-4977-9bf0-1891bf7e6538`, UMM 0.3.70.
+- **Author requests:**
+  - Companions decline a costly rage (author-approved): `SwitchCostlyAccept` / `DrivenAllyDeclines` apply to any unit
+    this engine decides for (`AiDecidesFor`). An unmeasured caster declines on its spellbook estimate.
+  - Issue #114: `UI/UiScale.cs` routes every panel size through `UnityModManager.UI.Scale`.
+  - Issue #115: `SuggestedSettingsRules` / `SuggestedSettings` give a character seen first the role and range of its
+    build, with buttons for one character or the party. Saved choices are not touched.
+  - `ControlSummons` is on by default; an older settings file is switched on once (`SummonControlDefaultApplied`).
+- **Checks** on `6f262cb`:
+  - Release 0 warnings; 1,182 unit + 27/21/3 script tests.
+  - ProfileAudit `V0370-FEATURE-REVIEW` 11 checks; `SUMMON-CONTROL` 71 (its default checks follow the new default).
+    Every other line, the Fusion matrix and the summon detail are unchanged.
+  - Harnesses 98/14/10; 4 external members added, all resolved.
+- **Package:** `test-builds/AI-Control-FACC-v0.3.70-dev-features3-6f262cb-UMM-test.zip`, module
+  `e32d25e0-351a-4083-81d2-14ba5ba9d574`, UMM 0.3.70 (replaces features2).

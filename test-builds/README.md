@@ -1,13 +1,15 @@
 # Test builds
 
-## v0.3.70 features review: spell bans, cone performance, group teleports, log trims (27 November 2026)
+## v0.3.70 features review: spell bans, cone performance, group teleports, UI scale, suggested roles (27 November 2026)
 
-[UMM ZIP](AI-Control-FACC-v0.3.70-dev-features2-ac71295-UMM-test.zip?raw=true) · [Identity](AI-Control-FACC-v0.3.70-dev-features2-ac71295-UMM-test.identity.json) · [SHA-256](AI-Control-FACC-v0.3.70-dev-features2-ac71295-UMM-test.sha256)
+[UMM ZIP](AI-Control-FACC-v0.3.70-dev-features3-6f262cb-UMM-test.zip?raw=true) · [Identity](AI-Control-FACC-v0.3.70-dev-features3-6f262cb-UMM-test.identity.json) · [SHA-256](AI-Control-FACC-v0.3.70-dev-features3-6f262cb-UMM-test.sha256)
  · [Review and replay](../docs/V0370_FEATURES_REVIEW.md).
 
-UMM **0.3.70**, source `ac71295`, startup module `33fd9935-2a08-4977-9bf0-1891bf7e6538`, **unplayed**. Contains features1
-below plus the fixes from its playtest: an unmeasured caster's spell ban is priced, cone/line damage is computed once per
-frame, group teleports work with summons out, and the log is about 12 % smaller. Play this one.
+UMM **0.3.70**, source `6f262cb`, startup module `e32d25e0-351a-4083-81d2-14ba5ba9d574`, **unplayed**. Contains features1 below plus the
+fixes from its playtest (an unmeasured caster's spell ban, cone/line damage once per frame, group teleports with summons
+out, a ~12 % smaller log), companions declining a costly Inspired Rage, the settings panel at UMM's UI scale (issue
+#114), roles and ranges suggested from each character's build (issue #115), and summon control on by default. Play this
+one.
 
 ## v0.3.70 features: reposition, weapon sets, summon choice, far escape teleports (26 November 2026)
 

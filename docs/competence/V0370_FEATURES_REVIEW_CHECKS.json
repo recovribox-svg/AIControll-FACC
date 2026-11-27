@@ -4,7 +4,7 @@
  "author": "Claude",
  "branch": "claude/v0370-features-review",
  "base": "36289bd (claude/v0370-features, draft PR #117)",
- "source_commit": "ac712958fe2be2569b02f6415a26ebda42b49952",
+ "source_commit": "6f262cbf91a0b69b84858fc8c61f87286179430b",
  "inputs": {
   "turn_based_session": {
    "log_sha256": "b46fb1b634de683b582f76e2f6d3f53ea28325e761a7b7c7dff06d5d1c560313",
@@ -49,30 +49,39 @@
  ],
  "checks": {
   "release_build": "0 warnings, 0 errors (real game references, UMM 0.33.2.0)",
-  "unit_tests": "1176 passed (4 new: V0370FeatureReviewTests)",
+  "unit_tests": "1182 passed (10 new: V0370FeatureReviewTests 4, SuggestedSettingsTests 6)",
   "script_tests": "BlueprintInventory 27, InvocationLedger 21, ProfileAudit supplement 3: OK",
-  "profile_audit": "exit 0; new V0370-FEATURE-REVIEW 7 checks passed; every other report line identical to features1",
+  "profile_audit": "exit 0; new V0370-FEATURE-REVIEW 11 checks passed; SUMMON-CONTROL updated to the new default (70 -> 71 checks); every other report line identical to features1",
   "fusion_matrix": "byte-identical",
   "summon_kit_detail": "byte-identical",
   "packaged_dll_audit": "same report as the build from the commit",
   "native_harnesses": "ToggleCosts 98, TomeBurn 14, ToyBoxSpend 10, failures 0",
-  "external_members": "0 added, 0 removed against features1",
+  "external_members": "4 added against features1 (BlueprintSpellbook.IsArcane and MaxSpellLevel, Mathf.Approximately, UnityModManager.UI.Scale(float)), all compiled against the supplied assemblies; 0 removed",
   "gameplay": "unplayed"
  },
  "package": {
-  "archive": "test-builds/AI-Control-FACC-v0.3.70-dev-features2-ac71295-UMM-test.zip",
+  "archive": "test-builds/AI-Control-FACC-v0.3.70-dev-features3-6f262cb-UMM-test.zip",
   "umm_version": "0.3.70",
-  "source": "ac71295",
-  "mvid": "33fd9935-2a08-4977-9bf0-1891bf7e6538",
-  "dll_sha256": "ed3e4a90f049b7d4c0da04dc5836eaa96eaa08bfcad2818a66150fe8168de8b3",
-  "zip_sha256": "2c550a63607a46494a8f890648a49f08329d36e8da29ab6b8370699a287f3359",
-  "gameplay": "unplayed"
+  "source": "6f262cb",
+  "mvid": "e32d25e0-351a-4083-81d2-14ba5ba9d574",
+  "dll_sha256": "50c95cb880faa81719439650ea955191afa874605ce337cb3809f71b5bd81d99",
+  "zip_sha256": "f20ca6393723d8359b58da1d0860828603fed9eb1512a672019566d40963cab3",
+  "gameplay": "unplayed",
+  "replaces": "features2 (ac71295, unplayed)"
  },
  "limits": [
   "The unmeasured-caster estimate is a prior (a round of its caster level by spell-level share); it applies only until the caster's own decisions measure its spells.",
   "The memo lives one frame; it does not speed up the first estimate of each pair.",
   "Log savings are estimated by replaying the rules over these two logs.",
+  "The build suggestion is a heuristic on the equipped weapon, shield, spellbook and weapon feats; hybrid builds land on Mixed.",
+  "The UI scale fix is checked by IL (no fixed sizes left), not on screen.",
   "Not played."
  ],
- "merged": false
+ "merged": false,
+ "additions_author_requests": [
+  "Companions AI Control decides for decline a costly Inspired Rage (author-approved): P2 extended from summons to any unit this engine decides for; an unmeasured caster declines on its spellbook estimate; the performer counts it as declined only when this engine makes its decisions (TB, or RT without the old engine).",
+  "Issue #114: the settings panel follows UnityModManager's UI scale: all 108 fixed widths/heights/spaces/fonts/<size> tags go through UnityModManager.UI.Scale (UI/UiScale.cs); styles rebuilt when the scale changes.",
+  "Issue #115: role and range suggested from the character's build (SuggestedSettingsRules) for a character seen for the first time; saved choices never changed automatically; per-character and whole-party buttons. Checked against the companions' default auto-level builds (Frostbird, 'Companion Auto Level Builds').",
+  "Summon control on by default (author decision); an older settings file is switched on once (SummonControlDefaultApplied); switched off afterwards it stays off."
+ ]
 }
