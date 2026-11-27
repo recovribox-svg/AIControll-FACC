@@ -4103,6 +4103,36 @@ namespace CompanionAI_Pathfinder.Tactics
         }
 
         /// <summary>
+        /// ★ v0.3.70 features3 review (author-approved): the option provokes attacks of opportunity from an enemy that
+        /// threatens the unit when it is carried out, by the conditions <see cref="ProvokeLoss"/> and the weapon attacks price:
+        /// a standard-action cast with a defensive-casting check (not a potion), an ability whose own actions make the caster
+        /// provoke, a ranged attack roll at an enemy (a ray, a thrown bomb), and a ranged weapon's shot. Point Blank Master and
+        /// spell lists that ignore attacks of opportunity are read as there (ProvokeObserver).
+        /// </summary>
+        internal static bool ProvokesWhenThreatened(UnitEntityData unit, Candidate c)
+        {
+            if (unit == null || c == null) return false;
+            try
+            {
+                if (c.Kind == CandidateKind.WeaponAttack)
+                {
+                    var weapon = unit.GetFirstWeapon();
+                    return weapon?.Blueprint != null && weapon.Blueprint.IsRanged && ProvokeObserver.WeaponProvokes(unit, weapon);
+                }
+                var ability = c.Ability;
+                if (c.Kind != CandidateKind.Ability || ability == null) return false;
+                var profile = AbilityProfile.Get(ability);
+                bool cast = ability.RuntimeActionType == UnitCommand.CommandType.Standard && ability.ProvokeAttackOfOpportunity &&
+                            ability.SourceItemUsableBlueprint?.Type != UsableItemType.Potion;
+                bool caster = profile != null && profile.CasterProvokes;
+                bool roll = SpellDelivery.HasRangedAttackRoll(ability, profile) && c.Target != null && unit.IsEnemy(c.Target) &&
+                            ProvokeObserver.AbilityProvokes(unit, ability);
+                return RealTimeReplanRules.Provokes(cast, caster, roll);
+            }
+            catch { return false; }
+        }
+
+        /// <summary>
         /// ★ v0.3.12: the option damages, controls or debuffs an enemy: one of ScoreAbility's own reason tokens ("dmg",
         /// "dmg:cdg", "cc", "debuff"), matched exactly instead of by substring. Progressive's scope depends on it.
         /// </summary>

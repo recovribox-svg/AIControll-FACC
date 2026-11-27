@@ -28,6 +28,7 @@ namespace ProfileAudit
                 .SelectMany(m => SaveBoostCheck.ReferencedMembers(m)).Any(member => member.Name == name);
             var asm = typeof(TacticalEngine).Assembly;
             var rt = typeof(RealTimeTactics);
+            var math = typeof(CombatMath);
             var controller = asm.GetType("CompanionAI_Pathfinder.GameInterface.RealTimeController");
 
             // --- the re-decision rules ---
@@ -62,6 +63,43 @@ namespace ProfileAudit
                   "not aimed at an ally under an enemy's control");
             Check(Calls(engine, "PriceMagusCast", "TurnedAllies") && Calls(engine, "PriceEldritchCast", "TurnedAllies"),
                   "a Spell Combat follow-up is not priced at such an ally");
+
+            // --- re-decision for a provoking action (author-approved) ---
+            Check(Calls(rt, "ShouldReplanOnNewThreat", "NewThreatener") && Calls(rt, "ShouldReplanOnNewThreat", "ProvokesIfThreatened") &&
+                  Calls(rt, "NewThreatener", "ReplanForProvoke") && Calls(rt, "NewThreatener", "AttackOfOpportunity") &&
+                  Calls(rt, "Act", "ProvokesWhenThreatened"),
+                  "a provoking action waiting to start in place is decided again when a newcomer threatens the unit and can strike it");
+            Check(Calls(engine, "ProvokesWhenThreatened", "WeaponProvokes") && Calls(engine, "ProvokesWhenThreatened", "AbilityProvokes") &&
+                  Calls(engine, "ProvokesWhenThreatened", "HasRangedAttackRoll") && Calls(engine, "ProvokesWhenThreatened", "get_ProvokeAttackOfOpportunity") &&
+                  Calls(engine, "ProvokesWhenThreatened", "get_CasterProvokes") &&
+                  RealTimeReplanRules.ReplanForProvoke(true, false, true, false, true) &&
+                  !RealTimeReplanRules.ReplanForProvoke(true, false, true, countedWhenChosen: true, canAttack: true),
+                  "provoking is read as the decision prices it (casting check, caster-provoking actions, ranged attack rolls, " +
+                  "ranged shots); an engager counted when the action was chosen does not re-decide it");
+
+            // --- weapon sets: inactive sets read by their items, every ranged type ---
+            var gameAsm = typeof(Kingmaker.Items.Slots.WeaponSlot).Assembly;
+            var maybeWeapon = typeof(Kingmaker.Items.Slots.WeaponSlot).GetProperty("MaybeWeapon")?.GetGetMethod();
+            bool nativeEmptyHand = maybeWeapon != null && SaveBoostCheck.ReferencedMembers(maybeWeapon).Any(m => m.Name == "get_EmptyHandWeapon") &&
+                                   SaveBoostCheck.ReferencedMembers(maybeWeapon).Any(m => m.Name == "get_Active");
+            Check(nativeEmptyHand && Calls(engine, "AddWeaponSetCandidate", "InactiveSetWeapon") &&
+                  Calls(engine, "InactiveSetWeapon", "get_MaybeItem") && !Calls(engine, "InactiveSetWeapon", "get_MaybeWeapon"),
+                  "native WeaponSlot.MaybeWeapon gives the empty-hand weapon for an inactive slot; another set's weapon is read " +
+                  "from its slot's item");
+            var statsTrigger = typeof(Kingmaker.RuleSystem.Rules.RuleCalculateWeaponStats).GetMethod("OnTrigger");
+            bool nativeManual = statsTrigger != null && SaveBoostCheck.ReferencedMembers(statsTrigger).Any(m => m.Name == "ApplyEnchantmentsManually");
+            Check(nativeManual && !Calls(math, "EstimateWithWeapon", "InactiveEnhancement") && Calls(math, "EstimateWithWeapon", "get_CriticalMultiplier"),
+                  "an inactive weapon's enchantments are applied by the native weapon-stat rule (not wielded); its enhancement is " +
+                  "not added a second time");
+            var rangedCategories = new HashSet<string> { "Dart", "Javelin", "LightCrossbow", "HeavyCrossbow", "ThrowingAxe", "Shortbow",
+                "Longbow", "SlingStaff" };
+            var types = blueprints.OfType<Kingmaker.Blueprints.Items.Weapons.BlueprintWeaponType>()
+                .Where(t => rangedCategories.Contains(t.Category.ToString())).ToList();
+            var seen = new HashSet<string>(types.Select(t => t.Category.ToString()));
+            int notRanged = types.Count(t => !t.IsRanged);
+            Check(types.Count > 0 && notRanged == 0,
+                  $"every ranged weapon type in the exports is ranged to the game, so a set holding it is eligible: {types.Count} " +
+                  $"types of {seen.Count} categories ({string.Join(", ", seen.OrderBy(c => c))}), {notRanged} not ranged");
 
             // --- log fixes ---
             var witness = asm.GetType("CompanionAI_Pathfinder.Tactics.UnusedWitness+Group");

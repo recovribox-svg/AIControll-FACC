@@ -21,5 +21,20 @@ namespace CompanionAI_Pathfinder.Tactics
         /// away - is not dropped for it.
         /// </summary>
         public static bool KeepsAfterDamage(bool healsItself, bool walksAway) => healsItself || walksAway;
+
+        /// <summary>
+        /// ★ v0.3.70 features3 review (author-approved): the action provokes from an enemy threatening the unit - a
+        /// defensive-casting check, the ability's own provoking actions, or a ranged attack roll (a shot, a ray, a bomb).
+        /// </summary>
+        public static bool Provokes(bool castCheck, bool casterProvokes, bool rangedRoll) => castCheck || casterProvokes || rangedRoll;
+
+        /// <summary>
+        /// ★ v0.3.70 features3 review (author-approved): a provoking action that waits to start where the unit stands is decided
+        /// again when an enemy now threatens the unit that did not when it was chosen, and can make an attack of opportunity
+        /// on it. The Drow Magus (real-time fight 7) threw a Stun Bomb chosen with nothing near her; two Venomhodags reached
+        /// her while it waited, and the throw's two attacks of opportunity killed her.
+        /// </summary>
+        public static bool ReplanForProvoke(bool provokes, bool started, bool threatenedNow, bool countedWhenChosen, bool canAttack) =>
+            provokes && !started && threatenedNow && !countedWhenChosen && canAttack;
     }
 }

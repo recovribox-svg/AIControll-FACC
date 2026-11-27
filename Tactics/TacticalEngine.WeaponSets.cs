@@ -43,7 +43,11 @@ namespace CompanionAI_Pathfinder.Tactics
             for (int i = 0; i < sets.Count; i++)
             {
                 if (i == current || sets[i] == null || sets[i].IsEmpty()) continue;
-                var w = sets[i].PrimaryHand?.MaybeWeapon ?? sets[i].SecondaryHand?.MaybeWeapon;
+                // ★ features3 review (author report): the item in the slot, not WeaponSlot.MaybeWeapon - that getter gives the
+                // empty-hand weapon (unarmed, natural) for every slot that is not active, and an inactive set's slots never are.
+                // Every other set read as natural weapons only, so no switch was ever offered, whatever its weapon (darts,
+                // javelins, crossbows, throwing axes, bows, sling staves: all of the game's Ranged attack type).
+                var w = InactiveSetWeapon(sets[i]);
                 if (w?.Blueprint == null || w.Blueprint.IsRanged == currentRanged || w.Blueprint.IsNatural) continue;
                 index = i;
                 weapon = w;
@@ -121,6 +125,16 @@ namespace CompanionAI_Pathfinder.Tactics
                         $"{best.CharacterName} ({altFull:0.#}/rd against {currentBest:0.#} with {body.PrimaryHand?.MaybeWeapon?.Name ?? "the current set"})",
                 Key = $"weaponset:{index}"
             });
+        }
+
+        /// <summary>
+        /// ★ features3 review: the weapon an inactive weapon set holds - its main hand's, else its off hand's - read from the
+        /// slots' items (a shield is not a weapon). Null when it holds no weapon.
+        /// </summary>
+        internal static ItemEntityWeapon InactiveSetWeapon(Kingmaker.Items.HandsEquipmentSet set)
+        {
+            if (set == null) return null;
+            return set.PrimaryHand?.MaybeItem as ItemEntityWeapon ?? set.SecondaryHand?.MaybeItem as ItemEntityWeapon;
         }
 
         /// <summary>The switch still applies: the same set to switch to, not empty, and the game allows a change now.</summary>

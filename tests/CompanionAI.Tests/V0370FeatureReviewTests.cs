@@ -115,6 +115,29 @@ namespace CompanionAI.Tests
         }
 
         [Fact]
+        public void AnyProvokingPartMakesTheActionProvoke()
+        {
+            Assert.True(RealTimeReplanRules.Provokes(castCheck: true, casterProvokes: false, rangedRoll: false));   // a spell
+            Assert.True(RealTimeReplanRules.Provokes(false, false, rangedRoll: true));                              // a bomb, a shot
+            Assert.True(RealTimeReplanRules.Provokes(false, casterProvokes: true, false));
+            Assert.False(RealTimeReplanRules.Provokes(false, false, false));                                        // a melee attack
+        }
+
+        [Fact]
+        public void TheDrowMagusBombIsDecidedAgainWhenTheVenomhodagsArrive()
+        {
+            // A Stun Bomb waiting to start, chosen with nobody near; a Venomhodag now engages her and can strike.
+            Assert.True(RealTimeReplanRules.ReplanForProvoke(provokes: true, started: false, threatenedNow: true,
+                                                             countedWhenChosen: false, canAttack: true));
+            // Not when the engager was already priced, cannot make an attack of opportunity, the action does not provoke,
+            // or the throw has started.
+            Assert.False(RealTimeReplanRules.ReplanForProvoke(true, false, true, countedWhenChosen: true, true));
+            Assert.False(RealTimeReplanRules.ReplanForProvoke(true, false, true, false, canAttack: false));
+            Assert.False(RealTimeReplanRules.ReplanForProvoke(provokes: false, false, true, false, true));
+            Assert.False(RealTimeReplanRules.ReplanForProvoke(true, started: true, true, false, true));
+        }
+
+        [Fact]
         public void AHealOnItselfOrAWalkAwayIsTheAnswerAndIsKept()
         {
             Assert.True(RealTimeReplanRules.KeepsAfterDamage(healsItself: true, walksAway: false));   // the potion

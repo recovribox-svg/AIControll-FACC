@@ -177,6 +177,12 @@ namespace CompanionAI_Pathfinder.Tactics
             /// re-deciding is what that rule is for, and it would pick the same answer later.
             /// </summary>
             public bool AnswersHpLoss;
+            /// <summary>
+            /// ★ v0.3.70 features3 review (author-approved): the command provokes attacks of opportunity from an enemy that
+            /// threatens the unit (TacticalEngine.ProvokesWhenThreatened): a newcomer doing so before it starts is decided
+            /// again (<see cref="ShouldReplanOnNewThreat"/>).
+            /// </summary>
+            public bool ProvokesIfThreatened;
             /// <summary>★ v0.3.27: the enemies in the fight, and those engaging the unit, when the option was chosen.</summary>
             public HashSet<string> Enemies;
             public HashSet<string> Engagers;
@@ -273,7 +279,19 @@ namespace CompanionAI_Pathfinder.Tactics
                     if (!IssuedAtHp.TryGetValue(command, out var issued) || !issued.WatchesWay) continue;
                     var to = command.ApproachPoint;
                     float left = TacticalEngine.HorizontalDistance(unit.Position, to) - Math.Max(0f, command.ApproachRadius);
-                    if (left <= 0.5f) continue;   // arrived: what is there was the option's to price
+                    if (left <= 0.5f)
+                    {
+                        // Arrived: what is there was the option's to price - unless the action provokes and an enemy that
+                        // did not threaten the unit when it was chosen does now (author-approved, features3 review).
+                        if (issued.ProvokesIfThreatened && NewThreatener(unit, issued) is UnitEntityData threat)
+                        {
+                            Reconsider(unit, command);
+                            why = $"{threat.CharacterName} now threatens it and '{command.GetType().Name}' would provoke " +
+                                  "(not counted when it was chosen)";
+                            return true;
+                        }
+                        continue;
+                    }
                     var target = command.TargetUnit;
 
                     foreach (var enemy in unit.CombatState.EngagedBy)
@@ -312,6 +330,26 @@ namespace CompanionAI_Pathfinder.Tactics
                 Main.Verbose($"[RT-Tactics] {unit.CharacterName}: new-threat check: {ex.Message}");
             }
             return false;
+        }
+
+        /// <summary>
+        /// ★ v0.3.70 features3 review (author-approved): an enemy engaging the unit now that did not when the command was
+        /// chosen, and that can make an attack of opportunity on it (the game's own simulated check, as the provoke price
+        /// uses). Null when there is none.
+        /// </summary>
+        private static UnitEntityData NewThreatener(UnitEntityData unit, IssueState issued)
+        {
+            foreach (var enemy in unit.CombatState.EngagedBy)
+            {
+                if (enemy == null || !enemy.Descriptor.State.IsConscious || !unit.IsEnemy(enemy)) continue;
+                bool counted = issued.Engagers != null && issued.Engagers.Contains(enemy.UniqueId);
+                bool canAttack;
+                try { canAttack = enemy.CombatState.AttackOfOpportunity(unit, tricksterAttack: false, simulate: true); }
+                catch { canAttack = false; }
+                if (RealTimeReplanRules.ReplanForProvoke(issued.ProvokesIfThreatened, started: false, threatenedNow: true, counted, canAttack))
+                    return enemy;
+            }
+            return null;
         }
 
         /// <summary>
@@ -689,6 +727,7 @@ namespace CompanionAI_Pathfinder.Tactics
                             // ★ v0.3.27 (0.3.26 log): what a walk to a target counted (ShouldReplanOnNewThreat).
                             WatchesWay = watches,
                             AnswersHpLoss = AnswersHpLoss(unit, candidate),
+                            ProvokesIfThreatened = watches && TacticalEngine.ProvokesWhenThreatened(unit, candidate),
                             Enemies = watches ? new HashSet<string>(EnemiesInFight(unit).Select(e => e.UniqueId)) : null,
                             Engagers = watches ? EngagersOf(unit) : null
                         });
