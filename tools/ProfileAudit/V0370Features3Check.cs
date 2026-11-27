@@ -53,6 +53,16 @@ namespace ProfileAudit
                   "Wenduag's potion (34 -> 9 of 100 HP) and a walk out of a swarm are kept; an attack chosen at full HP is still " +
                   "re-decided at 97 -> 34; a fifth lost, or above half, changes nothing");
 
+            // --- allies under an enemy's control ---
+            var engine = typeof(TacticalEngine);
+            Check(Calls(engine, "SparesTurnedAlly", "DeliveredByWeapon") && Calls(engine, "SparesTurnedAlly", "MagusSourceStrike") &&
+                  Calls(engine, "DeliveredByWeapon", "NativeRangedStrike") && Calls(engine, "DeliveredByWeapon", "PlainTouch") &&
+                  Calls(engine, "DeliveredByWeapon", "Spellstrike"),
+                  "a Magus spell the game delivers through a weapon (an Eldritch Archer's bow, a melee Spellstrike touch) is " +
+                  "not aimed at an ally under an enemy's control");
+            Check(Calls(engine, "PriceMagusCast", "TurnedAllies") && Calls(engine, "PriceEldritchCast", "TurnedAllies"),
+                  "a Spell Combat follow-up is not priced at such an ally");
+
             // --- log fixes ---
             var witness = asm.GetType("CompanionAI_Pathfinder.Tactics.UnusedWitness+Group");
             var coverage = asm.GetType("CompanionAI_Pathfinder.Tactics.CoverageReport");
