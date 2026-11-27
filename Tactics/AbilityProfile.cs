@@ -353,7 +353,9 @@ namespace CompanionAI_Pathfinder.Tactics
         /// in the game's blueprints: read as harmful, they were only offered against enemies, which they cannot target,
         /// and were never cast.
         /// </summary>
-        public bool HarmfulToEnemies => Blueprint.EffectOnEnemy == AbilityEffectOnUnit.Harmful && !AimsAtFriendsOnly(Blueprint) && !OnlyOnCaster &&
+        internal bool FriendlyTouchDelivery { get; private set; }
+
+        public bool HarmfulToEnemies => !FriendlyTouchDelivery && Blueprint.EffectOnEnemy == AbilityEffectOnUnit.Harmful && !AimsAtFriendsOnly(Blueprint) && !OnlyOnCaster &&
                                         !(IsAoE && AoETargets == Kingmaker.UnitLogic.Abilities.Components.TargetType.Ally && !DealsDamage);
         // ★ v0.3.21 (verification audit): ...nor an area that reaches only allies (Holy Aura, Unholy Aura, Shield of Law,
         // Cloak of Chaos are flagged harmful to enemies: their buffs were never valued, only the caster's own).
@@ -378,7 +380,8 @@ namespace CompanionAI_Pathfinder.Tactics
         }
         /// <summary>★ v0.3.21 (verification audit): flagged helpful to allies and able to reach one. The Assassin's Death Attack
         /// is flagged helpful to allies and can only target an enemy: read as helpful only, it was never offered.</summary>
-        public bool HelpfulToAllies => Blueprint.EffectOnAlly == AbilityEffectOnUnit.Helpful && !AimsAtEnemiesOnly(Blueprint);
+        public bool HelpfulToAllies => FriendlyTouchDelivery ||
+            Blueprint.EffectOnAlly == AbilityEffectOnUnit.Helpful && !AimsAtEnemiesOnly(Blueprint);
 
         /// <summary>★ v0.3.21: the ability can only be aimed at an enemy and reaches nobody else.</summary>
         public static bool AimsAtEnemiesOnly(BlueprintAbility bp)
@@ -551,6 +554,11 @@ namespace CompanionAI_Pathfinder.Tactics
         {
             var visited = new HashSet<BlueprintAbility>();
             AnalyzeAbility(Blueprint, visited, 0, EffectSubject.Target);
+            // Certain friendly touch protections use a permissive hostile-labelled casting wrapper.
+            // The delivery's target restrictions and recognized payload establish its actual intent.
+            FriendlyTouchDelivery = AimsAtFriendsOnly(Blueprint.StickyTouch?.TouchDeliveryAbility) &&
+                !DealsDamage && TargetBuffs.Any(buff => BuffPartsReader.Read(buff).Parts.Any(p =>
+                    p.Kind == BuffPartKind.Sight || p.Kind == BuffPartKind.ConditionImmunity));
             BuffsLastOneRound = m_AllBuffs > 0 && m_ShortBuffs == m_AllBuffs;
             BuffsSpentByAttack = m_AllBuffs > 0 && m_SpentByAttackBuffs == m_AllBuffs;
             BuffsSpentByRoll = m_AllBuffs > 0 && !BuffsSpentByAttack && m_SpentByRollBuffs == m_AllBuffs;

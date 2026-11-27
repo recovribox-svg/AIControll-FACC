@@ -1,5 +1,13 @@
 # Test builds
 
+## Consumables C4 (22 November 2026)
+
+[UMM ZIP](AI-Control-FACC-v0.3.60-dev-items-c4-eb8c2b5-UMM-test.zip?raw=true) · [Identity](AI-Control-FACC-v0.3.60-dev-items-c4-eb8c2b5-UMM-test.identity.json) · [SHA-256](AI-Control-FACC-v0.3.60-dev-items-c4-eb8c2b5-UMM-test.sha256)
+ · [Checks and replay](../docs/TACTICAL_AI.md#217-consumables-c4-sight-and-typed-protections-22-november-2026).
+
+UMM **0.3.60**, checked source `eb8c2b5`, startup module `eae9b430-ef8a-4055-b919-285eb384419f`, **unplayed**.
+
+
 ## Consumables C2 (22 November 2026)
 
 [UMM ZIP](AI-Control-FACC-v0.3.60-dev-items-c2-2f890af-UMM-test.zip?raw=true) · [Identity](AI-Control-FACC-v0.3.60-dev-items-c2-2f890af-UMM-test.identity.json) · [SHA-256](AI-Control-FACC-v0.3.60-dev-items-c2-2f890af-UMM-test.sha256)

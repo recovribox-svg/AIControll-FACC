@@ -96,7 +96,12 @@ namespace CompanionAI_Pathfinder.Analysis
         CritAutoconfirm,
         /// <summary>★ v0.3.21: the weapon's critical threat range doubles (WeaponCriticalEdgeIncrease: keen) - not with
         /// Improved Critical, which sets the same flag (RuleCalculateWeaponStats.DoubleCriticalEdge).</summary>
-        CritRangeDouble
+        CritRangeDouble,
+        SpellResistance,
+        SavesAgainstAbility,
+        ConditionImmunity,
+        GrappleImmunity,
+        MovementDescriptorImmunity
     }
 
     public sealed class BuffPart
@@ -105,6 +110,8 @@ namespace CompanionAI_Pathfinder.Analysis
         /// <summary>The buff whose context evaluates the values (a child buff's own ranks).</summary>
         public BlueprintBuff Owner;
         public StatType Stat;
+        public Kingmaker.UnitLogic.Abilities.Blueprints.AbilityType AgainstAbilityType;
+        public Kingmaker.UnitLogic.UnitCondition ImmuneCondition;
         public ModifierDescriptor Descriptor = ModifierDescriptor.UntypedStackable;
         public int Fixed;
         public ContextValue Value;
@@ -576,6 +583,11 @@ namespace CompanionAI_Pathfinder.Analysis
                     }
                     // ★ v0.3.21 (verification audit): immunities - counted like a large save bonus against effects of that
                     // kind, for the share of the enemies that can use one (EnemyThreat.ShareUsing).
+                    case BuffDescriptorImmunity movementLayer when IsMovementProtection(owner) &&
+                         !movementLayer.CheckFact && movementLayer.IgnoreFeature == null:
+                        list.Parts.Add(new BuffPart { Kind = BuffPartKind.MovementDescriptorImmunity, Owner = owner,
+                            Fixed = 1, Against = movementLayer.Descriptor.Value });
+                        break;
                     case BuffDescriptorImmunity immune when immune.Descriptor.Value != Kingmaker.Blueprints.Classes.Spells.SpellDescriptor.None:
                         list.AddImmunity(owner, immune.Descriptor.Value, ImmunitySaves, immune.CheckFact);
                         break;
@@ -627,6 +639,24 @@ namespace CompanionAI_Pathfinder.Analysis
                             Kind = BuffPartKind.Sight, Owner = owner,
                             Fixed = sees.Condition == Kingmaker.UnitLogic.UnitCondition.TrueSeeing ? 2 : 1
                         });
+                        break;
+                    case AddSpellResistance sr when sr.Value != null && !sr.AddBonusToResistance &&
+                         !sr.AddCR && !sr.AllSpellResistancePenaltyDoNotUse:
+                        list.Parts.Add(new BuffPart { Kind = BuffPartKind.SpellResistance, Owner = owner, Value = sr.Value });
+                        break;
+                    case SavingThrowBonusAgainstAbilityType save when save.Bonus != null &&
+                         save.Bonus.ValueType == ContextValueType.Simple && save.Bonus.Value == 0 &&
+                         save.Value > 0 && !save.OnlyPositiveValue:
+                        list.Parts.Add(new BuffPart { Kind = BuffPartKind.SavesAgainstAbility, Owner = owner,
+                            Fixed = save.Value, Descriptor = save.ModifierDescriptor, AgainstAbilityType = save.AbilityType });
+                        break;
+                    case ManeuverImmunity maneuver when maneuver.Type == Kingmaker.RuleSystem.Rules.CombatManeuver.Grapple && IsMovementProtection(owner):
+                        list.Parts.Add(new BuffPart { Kind = BuffPartKind.GrappleImmunity, Owner = owner, Fixed = 1 });
+                        break;
+                    case AddConditionImmunity movement when RelevantMovementImmunity(movement.Condition) &&
+                         IsMovementProtection(owner):
+                        list.Parts.Add(new BuffPart { Kind = BuffPartKind.ConditionImmunity, Owner = owner,
+                            Fixed = 1, ImmuneCondition = movement.Condition });
                         break;
                     case AddConditionImmunity conditionImmune when ConditionDescriptor(conditionImmune.Condition) != Kingmaker.Blueprints.Classes.Spells.SpellDescriptor.None:
                         list.AddImmunity(owner, ConditionDescriptor(conditionImmune.Condition), ImmunitySaves, false);
@@ -885,6 +915,16 @@ namespace CompanionAI_Pathfinder.Analysis
         /// <summary>★ v0.3.21: an immunity reads as this many points of save bonus against its kind of effect.</summary>
         private const int ImmunitySaves = 10;
         /// <summary>★ v0.3.21: the kind of effect that imposes a condition (for immunity to it).</summary>
+        private static bool IsMovementProtection(BlueprintBuff owner) =>
+            owner?.GetComponent<ManeuverImmunity>()?.Type == Kingmaker.RuleSystem.Rules.CombatManeuver.Grapple &&
+            owner.ComponentsArray.OfType<AddConditionImmunity>().Any(c => RelevantMovementImmunity(c.Condition));
+
+        private static bool RelevantMovementImmunity(Kingmaker.UnitLogic.UnitCondition condition) =>
+            condition == Kingmaker.UnitLogic.UnitCondition.Paralyzed ||
+            condition == Kingmaker.UnitLogic.UnitCondition.Entangled ||
+            condition == Kingmaker.UnitLogic.UnitCondition.Slowed ||
+            condition == Kingmaker.UnitLogic.UnitCondition.CantMove;
+
         private static Kingmaker.Blueprints.Classes.Spells.SpellDescriptor ConditionDescriptor(Kingmaker.UnitLogic.UnitCondition condition)
         {
             switch (condition)

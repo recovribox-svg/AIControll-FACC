@@ -7,6 +7,7 @@ using Kingmaker.UnitLogic.Abilities.Blueprints;
 using Kingmaker.UnitLogic.Commands;
 using Kingmaker.UI.UnitSettings;
 using CompanionAI_Pathfinder.Tactics;
+using CompanionAI_Pathfinder.Analysis;
 using Kingmaker.Blueprints;
 using Kingmaker.Blueprints.Items.Equipment;
 
@@ -92,13 +93,41 @@ namespace ProfileAudit
                     lines.Add("ITEMS FAILED: native potion handoff conversion, range, action, or shared approach route");
                 }
                 else lines.Add("ITEMS potion handoff: native conversion, action, range and combat command routes");
+
+                IEnumerable<BuffPart> Parts(AbilityProfile profile) =>
+                    profile.TargetBuffs.Concat(profile.CasterBuffs).SelectMany(b => BuffPartsReader.Read(b).Parts);
+                Check("ScrollOfFreedomOfMovement", UsableItemType.Scroll, p => p.HelpfulToAllies && !p.HarmfulEffects &&
+                    Parts(p).Any(b => b.Kind == BuffPartKind.GrappleImmunity) &&
+                    Parts(p).Any(b => b.Kind == BuffPartKind.ConditionImmunity && b.ImmuneCondition == Kingmaker.UnitLogic.UnitCondition.Paralyzed) &&
+                    Parts(p).Any(b => b.Kind == BuffPartKind.MovementDescriptorImmunity));
+                Check("ScrollOfTrueSeeing", UsableItemType.Scroll, p => p.HelpfulToAllies && !p.HarmfulEffects &&
+                    Parts(p).Any(b => b.Kind == BuffPartKind.Sight && b.Fixed == 2));
+                Check("ScrollOfSpellResistance", UsableItemType.Scroll, p => Parts(p).Any(b => b.Kind == BuffPartKind.SpellResistance));
+                Check("PotionOfProtectionFromSpells", UsableItemType.Potion, p =>
+                    Parts(p).Count(b => b.Kind == BuffPartKind.SavesAgainstAbility && b.Fixed == 8 &&
+                        b.Descriptor == Kingmaker.Enums.ModifierDescriptor.Resistance) == 2 &&
+                    !Parts(p).Any(b => b.Kind == BuffPartKind.SpellResistance));
+
+                foreach (string slot in new[] { "Armor", "Shield" })
+                {
+                    var potion = items.SingleOrDefault(i => i.name == "PotionOfMagicalVestment" + slot)?.Ability;
+                    var scroll = items.SingleOrDefault(i => i.name == "ScrollOfMagicalVestment" + slot)?.Ability;
+                    if (potion == null || !ReferenceEquals(potion, scroll) ||
+                        !AbilityProfile.Get(potion).TargetBuffs.Any(b => b.ComponentsArray.Any(c =>
+                            c is Kingmaker.UnitLogic.FactLogic.BuffEnchantArmor)))
+                    {
+                        bad++;
+                        lines.Add("ITEMS FAILED: Magical Vestment " + slot + " must use the same enhancement carrier");
+                    }
+                    else lines.Add("ITEMS Magical Vestment " + slot + ": potion and scroll share the native enhancement carrier");
+                }
             }
             catch (Exception ex)
             {
                 bad++;
                 lines.Add("ITEMS FAILED: " + ex.GetBaseException().Message);
             }
-            lines.Insert(0, $"ITEMS: item-to-ability joins, 7 blueprint fixtures, {bad} failures");
+            lines.Insert(0, $"ITEMS: item-to-ability joins, 13 blueprint fixtures, {bad} failures");
             failures = bad;
             return lines;
         }

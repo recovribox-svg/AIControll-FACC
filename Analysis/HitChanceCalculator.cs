@@ -464,7 +464,8 @@ namespace CompanionAI_Pathfinder.Analysis
             AbilityData ability) => CalculateSpellResistance(caster, target, ability, null);
 
         internal static SpellResistanceResult CalculateSpellResistance(UnitEntityData caster, UnitEntityData target,
-            AbilityData ability, ICollection<Kingmaker.UnitLogic.Buffs.Blueprints.BlueprintBuff> excludedBypassSources)
+            AbilityData ability, ICollection<Kingmaker.UnitLogic.Buffs.Blueprints.BlueprintBuff> excludedBypassSources,
+            bool readPenetrationWithoutResistance = false)
         {
             var result = new SpellResistanceResult();
 
@@ -484,6 +485,7 @@ namespace CompanionAI_Pathfinder.Analysis
                 if ((bool)caster.Descriptor.State.Features.PrimalMagicEssence || IgnoresSpellResistance(caster, ability, excludedBypassSources))
                 {
                     result.PenetrationChance = 1.0f;
+                    if (readPenetrationWithoutResistance) result.AllowsSR = false;
                     return result;
                 }
 
@@ -511,7 +513,7 @@ namespace CompanionAI_Pathfinder.Analysis
                 }
 
                 result.TargetSR = srPart == null ? 0 : srContext != null ? srPart.GetValue(srContext) : srPart.GetValue(ability.Blueprint, caster);
-                if (result.TargetSR <= 0)
+                if (result.TargetSR <= 0 && !readPenetrationWithoutResistance)
                 {
                     result.PenetrationChance = 1.0f;
                     return result;
@@ -538,6 +540,7 @@ namespace CompanionAI_Pathfinder.Analysis
             {
                 Main.Error($"[HitChanceCalculator] CalculateSpellResistance error: {ex.Message}");
                 result.PenetrationChance = 0.8f;  // 폴백
+                if (readPenetrationWithoutResistance) result.AllowsSR = false;
             }
 
             return result;
