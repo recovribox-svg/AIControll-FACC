@@ -49,6 +49,14 @@ namespace ProfileAudit
             Check(edge > 0f && lost > 33.7f,
                   $"the turn-based rage case: a 20th-level six-circle Pure Mage loses {edge:0.#}/rd, more than the rage gave the rest (33.7)");
 
+            // --- companions decline a costly rage (author-approved) ---
+            Check(!Calls(engine, "SwitchCostlyAccept", "IsOrdinarySummon") && Calls(engine, "SwitchCostlyAccept", "Decline") &&
+                  Calls(engine, "Decline", "UnmeasuredSpellEdgeOf") && Calls(engine, "Decline", "PlayerOwnsToggle") &&
+                  Calls(engine, "DrivenAllyDeclines", "AiDecidesFor") && Calls(engine, "AiDecidesFor", "ShouldControlUnit") &&
+                  Calls(engine, "AiDecidesFor", "ShouldDrive") && Calls(engine, "AiDecidesFor", "get_RealTimeLegacyEngine"),
+                  "any unit AI Control decides for declines an ally effect that stops spells worth more (unmeasured: the " +
+                  "spellbook estimate); the performer counts it as declined only when this engine makes that unit's decisions");
+
             // --- teleports ---
             var group = engine.GetField("MaxTeleportGroup", all);
             var crowd = engine.GetField("MaxTeleportCombatants", all);

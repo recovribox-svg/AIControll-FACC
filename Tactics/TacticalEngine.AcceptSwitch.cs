@@ -22,8 +22,12 @@ namespace CompanionAI_Pathfinder.Tactics
     // Demon's choices fell from 35 to 9, the Nabasu's from 48 to 8. The game gives each recipient a toggle that decides
     // whether the area reaches it ("Inspire Rage - Accept Effect", InspiredRageAllyToggleSwitch): the area applies its buff
     // only to an ally with that toggle's buff (ContextConditionHasFact), and turning the toggle off removes the effect (its
-    // buff's Deactivated actions; the prohibition is the effect's child, AsChild). A player's party member is never switched:
-    // only summons, and never a toggle the player switched during the fight. The fight's end puts it back (RecordToggle).
+    // buff's Deactivated actions; the prohibition is the effect's child, AsChild). Never a toggle the player switched during
+    // the fight; the fight's end puts it back (RecordToggle).
+    // ★ v0.3.70 features review (author-approved): companions too, not only summons - any unit AI Control decides with the
+    // tactical engine. In the features1 turn-based log Camellia's rage silenced the Knight Commander: declining it keeps the
+    // rage for the martial allies and the caster's spells. A caster whose spells no decision has measured yet declines on the
+    // estimate from its spellbook (ValueModel.UnmeasuredSpellEdge).
     public static partial class TacticalEngine
     {
         private static readonly Dictionary<BlueprintAbilityAreaEffect, List<AreaGrant>> s_AcceptGrants =
@@ -65,13 +69,12 @@ namespace CompanionAI_Pathfinder.Tactics
         }
 
         /// <summary>
-        /// Performer side: <paramref name="ally"/>, a summon AI Control drives, will decline these grants (its acceptance toggle
-        /// is the AI's to switch), so a negative share counts nothing instead of a loss.
+        /// Performer side: <paramref name="ally"/>, a unit AI Control decides for, will decline these grants (its acceptance
+        /// toggle is the AI's to switch), so a negative share counts nothing instead of a loss.
         /// </summary>
-        private static bool DrivenSummonDeclines(UnitEntityData ally, IEnumerable<AreaGrant> grants)
+        private static bool DrivenAllyDeclines(UnitEntityData ally, IEnumerable<AreaGrant> grants)
         {
-            if (!(ModSettings.Instance?.AiManagesToggles ?? true) || !GameInterface.SummonControl.IsOrdinarySummon(ally) ||
-                !GameInterface.SummonControl.ShouldDrive(ally)) return false;
+            if (!(ModSettings.Instance?.AiManagesToggles ?? true) || !AiDecidesFor(ally)) return false;
             foreach (var grant in grants)
             {
                 var toggle = AcceptSwitchFor(ally, grant);
@@ -81,14 +84,29 @@ namespace CompanionAI_Pathfinder.Tactics
         }
 
         /// <summary>
-        /// Summon side, before the decision is scored: switch off the acceptance of an effect that forbids this summon's
+        /// ★ v0.3.70 features review: <paramref name="ally"/>'s decisions are this engine's - a summon AI Control drives, or a
+        /// party member under AI Control in turn-based combat, or in real time unless the old real-time engine is chosen (its
+        /// decisions never switch this toggle). Otherwise its loss stays priced.
+        /// </summary>
+        private static bool AiDecidesFor(UnitEntityData ally)
+        {
+            if (ally == null) return false;
+            if (GameInterface.SummonControl.IsOrdinarySummon(ally)) return GameInterface.SummonControl.ShouldDrive(ally);
+            if (!GameInterface.CustomBrainPatch.ShouldControlUnit(ally)) return false;
+            if (!CombatMemory.IsRealTime) return true;
+            var settings = ModSettings.Instance;
+            return (settings?.EnableInRealTime ?? true) && !(settings?.RealTimeLegacyEngine ?? false);
+        }
+
+        /// <summary>
+        /// Unit side, before the decision is scored: switch off the acceptance of an effect that forbids this summon's
         /// spells when their measured edge beats what the effect gives it; switch a declined one back on when the effect
         /// clearly gives more. True when the unit's spells were given back now (the caller rebuilds its context).
         /// </summary>
         private static bool SwitchCostlyAccept(TacticalContext ctx)
         {
             var unit = ctx.Unit;
-            if (!(ctx.Global?.AiManagesToggles ?? true) || !GameInterface.SummonControl.IsOrdinarySummon(unit)) return false;
+            if (!(ctx.Global?.AiManagesToggles ?? true)) return false;
             if (s_DeclinedFight != CombatMemory.Fight) { s_DeclinedFight = CombatMemory.Fight; s_Declined.Clear(); }
             try
             {
@@ -102,7 +120,14 @@ namespace CompanionAI_Pathfinder.Tactics
         private static bool Decline(TacticalContext ctx)
         {
             var unit = ctx.Unit;
-            if (!TrySpellEdge(unit, out float edge, out int samples)) return false;
+            // ★ v0.3.70 features review: a spellbook caster not measured yet declines on its spellbook's estimate.
+            if (!TrySpellEdge(unit, out float edge, out int samples))
+            {
+                samples = 0;
+                var off = OffenceOf(ctx, unit);
+                edge = off.Caster ? UnmeasuredSpellEdgeOf(unit, off) : 0f;
+                if (!(edge > 0f)) return false;
+            }
             foreach (var ban in unit.Buffs.Enumerable.ToList())
             {
                 var banBlueprint = ban?.Blueprint;
@@ -136,7 +161,7 @@ namespace CompanionAI_Pathfinder.Tactics
                     if (s_Declined.Count < 256) s_Declined[$"{unit.UniqueId}|{toggle.Blueprint.AssetGuid}"] = given.Value;
                     bool spellsBack = !unit.Descriptor.State.HasCondition(UnitCondition.SpellcastingForbidden);
                     Main.Log($"[Toggle] {unit.CharacterName}: {toggle.Name} off - {effect.Blueprint.name} stops its spells " +
-                             $"(-{edge:0.#}/rd, {samples} decisions) and gives {given.Value:0.#}/rd" +
+                             $"(-{edge:0.#}/rd, {(samples > 0 ? $"{samples} decisions" : "estimated from its spellbook")}) and gives {given.Value:0.#}/rd" +
                              (spellsBack ? "" : "; the prohibition ends when the area next updates"));
                     return spellsBack;
                 }
