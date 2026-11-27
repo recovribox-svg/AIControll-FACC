@@ -52,7 +52,11 @@ namespace CompanionAI_Pathfinder.Tactics
             if (weapon == null)
             {
                 // ★ v0.3.70 features review: neither playtest offered a switch; say once a session why it cannot apply.
-                ReportOnce($"weaponset-none|{unit.UniqueId}", () =>
+                // ★ features3 review: not for a creature fighting with natural weapons (it has no weapon sets to speak of),
+                // and once per summon kind (each Summoned Dog and Cambion printed its own line).
+                if (body.PrimaryHand?.MaybeWeapon?.Blueprint?.IsNatural ?? true) return;
+                string who = GameInterface.SummonControl.IsOrdinarySummon(unit) ? unit.Blueprint.AssetGuid.ToString() : unit.UniqueId;
+                ReportOnce($"weaponset-none|{who}", () =>
                     $"[WeaponSet] {unit.CharacterName}: Mixed range, but no other weapon set holds a " +
                     $"{(currentRanged ? "melee" : "ranged")} weapon ({sets.Count} set(s), current {current + 1}: " +
                     $"{body.PrimaryHand?.MaybeWeapon?.Name ?? "empty"}) - no switch to offer");

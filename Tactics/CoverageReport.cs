@@ -136,7 +136,7 @@ namespace CompanionAI_Pathfinder.Tactics
             var scope = UserAbilityPolicy.ScopeFor(unit);
             foreach (var ability in abilities)
             {
-                string name = ability.Name + AbilityDiscovery.MetamagicTag(ability);
+                string name = AbilityDiscovery.LogName(ability.Blueprint) + AbilityDiscovery.MetamagicTag(ability);
                 // ★ user-ability-blacklist
                 var source = UserAbilityPolicy.SourceOf(scope, ability);
                 if (source != BlockSource.None) { listed.Add($"{name} ({UserAbilityPolicy.Describe(source)})"); continue; }

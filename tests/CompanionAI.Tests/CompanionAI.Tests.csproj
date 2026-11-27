@@ -17,6 +17,7 @@
     <Compile Include="..\..\Tactics\CoupDeGraceRules.cs" Link="CoupDeGraceRules.cs" />
     <Compile Include="..\..\Tactics\RiskMath.cs" Link="RiskMath.cs" />
     <Compile Include="..\..\Tactics\ArrivalRule.cs" Link="ArrivalRule.cs" />
+    <Compile Include="..\..\Tactics\RealTimeReplanRules.cs" Link="RealTimeReplanRules.cs" />
     <Compile Include="..\..\Tactics\SpotRules.cs" Link="SpotRules.cs" />
     <Compile Include="..\..\Tactics\BurstRules.cs" Link="BurstRules.cs" />
     <Compile Include="..\..\Tactics\PermanentDeathRules.cs" Link="PermanentDeathRules.cs" />

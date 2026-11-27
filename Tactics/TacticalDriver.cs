@@ -171,6 +171,12 @@ namespace CompanionAI_Pathfinder.Tactics
             /// of areas are not: they are walks away.
             /// </summary>
             public bool WatchesWay;
+            /// <summary>
+            /// ★ v0.3.70 features3 review: the command already answers a loss of HP - a heal of the unit itself, or a walk away
+            /// (a withdrawal, a walk out of an area or a swarm). <see cref="ShouldReplanAfterDamage"/> leaves it running:
+            /// re-deciding is what that rule is for, and it would pick the same answer later.
+            /// </summary>
+            public bool AnswersHpLoss;
             /// <summary>★ v0.3.27: the enemies in the fight, and those engaging the unit, when the option was chosen.</summary>
             public HashSet<string> Enemies;
             public HashSet<string> Engagers;
@@ -236,6 +242,8 @@ namespace CompanionAI_Pathfinder.Tactics
                     if (issued.AreasPriced) continue;
                     if (issued.Areas != null && now.IsSubsetOf(issued.Areas)) continue;
                     issued.Areas = now;
+                    // ★ v0.3.70 features3 review: decided again, not failed - the option stays open (Reconsider).
+                    Reconsider(unit, command);
                     why = $"now in a harmful area while '{command.GetType().Name}' waited to start";
                     return true;
                 }
@@ -317,6 +325,39 @@ namespace CompanionAI_Pathfinder.Tactics
             if (memory.LastCommand != command) return;
             memory.LastCommand = null;
             memory.LastCandidateKey = null;
+        }
+
+        /// <summary>
+        /// ★ v0.3.70 features3 review: the controller drops every command that has not started to decide again (any of the
+        /// re-decision rules above). None of them failed, so none is learnt from - also one dropped alongside the command a
+        /// rule looked at.
+        /// </summary>
+        public static void ReconsiderPending(UnitEntityData unit)
+        {
+            try
+            {
+                foreach (var command in unit.Commands.Raw)
+                    if (command != null && !command.IsStarted && !command.IsFinished && command.IsInterruptible && !command.Cutscene)
+                        Reconsider(unit, command);
+            }
+            catch (Exception ex) { Main.Verbose($"[RT-Tactics] {unit.CharacterName}: reconsider: {ex.Message}"); }
+        }
+
+        /// <summary>★ v0.3.70 features3 review: the option heals the unit itself, or walks it away (no target, no ability).</summary>
+        private static bool AnswersHpLoss(UnitEntityData unit, Candidate candidate)
+        {
+            bool walksAway = candidate.Kind == CandidateKind.Move && candidate.Target == null && candidate.Ability == null;
+            bool healsItself = false;
+            if (!walksAway && candidate.Ability != null && candidate.Target == unit)
+            {
+                try
+                {
+                    var profile = AbilityProfile.Get(candidate.Ability);
+                    healsItself = profile != null && (profile.Heals.Count > 0 || profile.CasterHeals.Count > 0);
+                }
+                catch { }
+            }
+            return RealTimeReplanRules.KeepsAfterDamage(healsItself, walksAway);
         }
 
         /// <summary>
@@ -507,6 +548,10 @@ namespace CompanionAI_Pathfinder.Tactics
         /// <summary>
         /// ★ v0.3.14 (test5): one of the unit's commands that the engine issued has not started, and since then the unit
         /// lost a quarter of its HP or more and is below half. Decided once per command.
+        /// ★ v0.3.70 features3 review: the option is decided again, not failed - it stays open (it was blocked for the rest
+        /// of the turn: Wenduag's Cure Critical Wounds potion, dropped at 34 -> 9 HP, could not be drunk again, and she died
+        /// drinking a smaller one). A heal of the unit itself and a walk away are left running: they are the answer this rule
+        /// looks for (a Cambion's walk out of a Locust Swarm was dropped, then blocked).
         /// </summary>
         public static bool ShouldReplanAfterDamage(UnitEntityData unit, out string why)
         {
@@ -517,11 +562,11 @@ namespace CompanionAI_Pathfinder.Tactics
                 foreach (var command in unit.Commands.Raw)
                 {
                     if (command == null || command.IsStarted || command.IsFinished) continue;
-                    if (!IssuedAtHp.TryGetValue(command, out var issued)) continue;
+                    if (!IssuedAtHp.TryGetValue(command, out var issued) || issued.AnswersHpLoss) continue;
                     int lost = issued.Hp - unit.HPLeft;
-                    if (lost >= max / 4 && unit.HPLeft < max / 2)
+                    if (RealTimeReplanRules.DropsAfterDamage(issued.Hp, unit.HPLeft, max))
                     {
-                        IssuedAtHp.Remove(command);
+                        Reconsider(unit, command);
                         why = $"lost {lost} HP ({issued.Hp} -> {unit.HPLeft}) while '{command.GetType().Name}' waited to start";
                         return true;
                     }
@@ -643,6 +688,7 @@ namespace CompanionAI_Pathfinder.Tactics
                                           (candidate.Label?.Contains(TacticalEngine.Disengage.IntoTag) ?? false),
                             // ★ v0.3.27 (0.3.26 log): what a walk to a target counted (ShouldReplanOnNewThreat).
                             WatchesWay = watches,
+                            AnswersHpLoss = AnswersHpLoss(unit, candidate),
                             Enemies = watches ? new HashSet<string>(EnemiesInFight(unit).Select(e => e.UniqueId)) : null,
                             Engagers = watches ? EngagersOf(unit) : null
                         });
