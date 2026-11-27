@@ -1,5 +1,14 @@
 # Test builds
 
+## Consumables C1 and unused ability evidence (22 November 2026)
+
+[UMM ZIP](AI-Control-FACC-v0.3.60-dev-items-c1-f646225-UMM-test.zip?raw=true) · [Identity](AI-Control-FACC-v0.3.60-dev-items-c1-f646225-UMM-test.identity.json) · [SHA-256](AI-Control-FACC-v0.3.60-dev-items-c1-f646225-UMM-test.sha256)
+ · [Checks and replay](../docs/TACTICAL_AI.md#214-combat-consumables-c1-and-unused-ability-evidence-22-november-2026).
+
+UMM **0.3.60**, checked source `f646225`, startup module `41783dad-c121-40d8-a852-08756fba45ee`, **unplayed**.
+The package contains the frozen checked DLL and the original manifest.
+
+
 ## Coverage8 review corrections — 0.3.60 development test (22 November 2026)
 
 - [Complete UMM ZIP](AI-Control-FACC-v0.3.60-dev-coverage8fix1-27a427e-UMM-test.zip?raw=true) · [identity](AI-Control-FACC-v0.3.60-dev-coverage8fix1-27a427e-UMM-test.identity.json) · [checksum](AI-Control-FACC-v0.3.60-dev-coverage8fix1-27a427e-UMM-test.sha256).

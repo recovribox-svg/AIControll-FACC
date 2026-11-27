@@ -197,11 +197,15 @@ namespace CompanionAI_Pathfinder.Tactics
         /// The abilities AI Control may consider for this unit: the same list when nothing of it is blocked (no copy), else
         /// a copy without the blocked ones. Discovery itself stays unfiltered (AbilityDiscovery.Gather).
         /// </summary>
-        public static List<AbilityData> Allowed(BlockScope<BlueprintGuid> scope, UnitEntityData unit, List<AbilityData> abilities)
+        public static List<AbilityData> Allowed(BlockScope<BlueprintGuid> scope, UnitEntityData unit, List<AbilityData> abilities) =>
+            Allowed(scope, unit, abilities, null);
+
+        internal static List<AbilityData> Allowed(BlockScope<BlueprintGuid> scope, UnitEntityData unit, List<AbilityData> abilities,
+                                                  UnusedWitness.Group witness)
         {
             // ★ summon control: what a summoned creature never uses (summoning spells, items, material components) is
             // not offered either - one filter for every reader of the allowed list. The same list for any other unit.
-            abilities = GameInterface.SummonControl.Allowed(unit, abilities);
+            abilities = GameInterface.SummonControl.Allowed(unit, abilities, witness);
             if (scope.IsEmpty || abilities == null) return abilities;
             List<AbilityData> result = null;
             for (int i = 0; i < abilities.Count; i++)
@@ -218,6 +222,7 @@ namespace CompanionAI_Pathfinder.Tactics
                     result = new List<AbilityData>(abilities.Count);
                     for (int j = 0; j < i; j++) result.Add(abilities[j]);
                 }
+                witness?.Record(witness.Observe(ability), UnusedReason.Blocklist);
                 NoteSkipped(unit, ability.Blueprint.AssetGuid, ability.Name, source);
             }
             return result ?? abilities;

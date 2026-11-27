@@ -8,7 +8,33 @@ Read [CONTRIBUTING.md](CONTRIBUTING.md) for shared branch ownership, Codex pull 
 Codex works on task branches and targets pull requests at `claude/dreamy-pasteur-b9h3rn`; Claude reviews and integrates them there.
 Keep `main` for author-authorized releases. Read [AGENTS.md](AGENTS.md) when coordinating agent work.
 
-**Current handover (22 November 2026, Claude): stable v0.3.60 released to the repository; PRs #92–#105 merged into
+**Current handover (22 November 2026): Slice 0 and C1 available for review.**
+Source `f646225`, UMM **0.3.60**, module `41783dad-c121-40d8-a852-08756fba45ee`. The package is unplayed.
+Read [§214](docs/TACTICAL_AI.md#214-combat-consumables-c1-and-unused-ability-evidence-22-november-2026),
+the [checks](docs/competence/SUMMONS_CONSUMABLES_C1_CHECKS.json) and [build provenance](docs/competence/SUMMONS_CONSUMABLES_C1_BUILD_PROVENANCE.json).
+- Both combat modes now appraise potions by effect with continuous restraint on the buff benefit.
+  The bounded `[Unused]` witness and `ITEMS` audit record what reached existing scoring and why it was skipped.
+- Release 0 warnings, 1,133 unit tests, scripts 27/21/3, complete audits and native 98/14/10 pass.
+  Apart from `ITEMS`, the existing audit lines and Fusion/summon results match the same input baseline.
+- Use the replay in §214. C3, C2, C4, S1 and S2 are later slices in the plan.
+
+**Earlier handover (22 November 2026, Claude): final plan for Codex to implement, on `claude/summons-consumables-plan`.**
+Read [docs/SUMMONS_CONSUMABLES_PLAN.md](docs/SUMMONS_CONSUMABLES_PLAN.md) and its
+[evidence](docs/competence/SUMMONS_CONSUMABLES_EVIDENCE.json). The author's decisions are recorded at its end.
+- **Summons:** driven summons use the abilities the readers understand (54 casts of their own spells in coverage7). The
+  gaps are guessed effects in the author's demon roster, teleports and leaps, and no "why not used" line.
+- **Consumables:** readers understand most items (95/114 potions, 570/650 scrolls). Any potion without a heal is worth 0
+  below difficulty 0.8, which held in over 90 % of decisions. The engine never builds the game's potion-for-an-ally option
+  (`AbilityData.PotionForOther`).
+- **Slices, in order:** 0 (diagnostics and an `ITEMS` audit) with C1; C3, C2, C4 (consumables); S1 (demon effects);
+  S2 (teleports and leaps, movement approved); then the summon-control default, judged after the S1/S2 playtest.
+- **Decisions:** buff potions take the spell slots' easy-fight restraint; slots before items of the same spell; no
+  scarcity pricing yet; S2 approved.
+- **Codex implements** on `codex/` task branches, one draft PR per slice into development; Claude reviews. No merge,
+  `main`, tag or release.
+- No code, manifest or package change in the plan's commits.
+
+**Earlier handover (22 November 2026, Claude): stable v0.3.60 released to the repository; PRs #92–#105 merged into
 development and `main` brought to it, at the author's request.** Read `docs/TACTICAL_AI.md` §213, the
 [receipt](docs/competence/INTEGRATION_92_105_CHECKS.json) and the [release notes](release/CHANGELOG_v0.3.60.md).
 

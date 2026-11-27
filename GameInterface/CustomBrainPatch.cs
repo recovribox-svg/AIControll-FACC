@@ -468,6 +468,7 @@ namespace CompanionAI_Pathfinder.GameInterface
             Tactics.CastOutcome.ReportHeldCharges();
             // ★ v0.3.17: diagnostics are per fight
             Tactics.FightStats.Clear();
+            Tactics.UnusedWitness.Reset();
             // ★ v0.3.18 (review): per-fight observations also at the start - a loaded save in real time raises no
             // "combat ended" (Player.IsInCombat is not saved), so a retried fight kept the last attempt's blocks.
             Tactics.CastOutcome.Clear();
@@ -500,6 +501,7 @@ namespace CompanionAI_Pathfinder.GameInterface
             _ = ModInterop.BuffItToTheLimitActive;
             // ★ v0.3.17: [Perf] / [Calib] numbers of the fight that just ended
             Tactics.FightStats.Report();
+            Tactics.UnusedWitness.Report();
             Tactics.SaveObserver.ReportFight();
             Tactics.DamageObserver.ReportFight();
             Tactics.EnemyThreat.ReportFight();   // ★ v0.3.20 (test4)

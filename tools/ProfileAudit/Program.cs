@@ -514,6 +514,10 @@ namespace ProfileAudit
                 File.WriteAllText(output, string.Join(Environment.NewLine, coverageLines) + Environment.NewLine + File.ReadAllText(output));
                 blocklistFailures += coverageFailures;
             }
+            var itemLines = ItemsCheck.Run(loaded.Values, out int itemFailures);
+            foreach (var line in itemLines) Console.WriteLine(line);
+            File.WriteAllText(output, string.Join(Environment.NewLine, itemLines) + Environment.NewLine + Environment.NewLine + File.ReadAllText(output));
+            blocklistFailures += itemFailures;
             if (failed > 0)
             {
                 string partial = $"PARTIAL: loaded {loaded.Count}, failed {failed}, allowed {options.AllowFailures}. Failed blueprints:";

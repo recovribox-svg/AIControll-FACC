@@ -284,7 +284,10 @@ namespace CompanionAI_Pathfinder.GameInterface
         }
 
         /// <summary>The abilities an ordinary summon may be offered (the same list for every other unit).</summary>
-        public static List<AbilityData> Allowed(UnitEntityData unit, List<AbilityData> abilities)
+        public static List<AbilityData> Allowed(UnitEntityData unit, List<AbilityData> abilities) =>
+            Allowed(unit, abilities, null);
+
+        internal static List<AbilityData> Allowed(UnitEntityData unit, List<AbilityData> abilities, UnusedWitness.Group witness)
         {
             if (abilities == null || !IsOrdinarySummon(unit)) return abilities;
             List<AbilityData> result = null;
@@ -302,6 +305,7 @@ namespace CompanionAI_Pathfinder.GameInterface
                     result = new List<AbilityData>(abilities.Count);
                     for (int j = 0; j < i; j++) result.Add(abilities[j]);
                 }
+                witness?.Record(witness.Observe(ability), UnusedReason.SummonPolicy);
                 // Keyed by the creature's kind, not its id: a pack of one kind says it once, and nothing grows per summon.
                 AbilityDiscovery.ReportOnce($"summon-skip|{unit.Blueprint?.AssetGuid}|{ability.Blueprint?.AssetGuid}",
                     () => $"[Summon] {unit.CharacterName}: {ability.Name} not offered - {why}");

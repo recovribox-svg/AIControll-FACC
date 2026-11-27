@@ -161,6 +161,7 @@ namespace CompanionAI_Pathfinder.Tactics
         /// the player, and casting another spell over it (which drops it) still pays for it (PriceHeldCharge).</summary>
         internal float ReservedChargeValue;
         internal DecisionTimings Timings;
+        internal UnusedWitness.Group Unused;
         // Point-dispel area worth is recipient-independent and lives only for this decision. NaN means unread.
         internal Dictionary<AreaEffectEntityData, float> AreaRemovalValues;
         internal int AreaRemovalVersion;
@@ -382,6 +383,7 @@ namespace CompanionAI_Pathfinder.Tactics
             }
             if (ctx != null && !preview)
             {
+                ctx.Unused = UnusedWitness.For(unit);
                 FightStats.NoteContext(ctx);
                 CoverageReport.ReportIfChanged(unit);   // ★ v0.3.17: diagnostics, once per fight at most
                 // ★ v0.3.18: what the enemies can deal to the party this round, as predicted (uncalibrated), once per round:
@@ -2956,7 +2958,7 @@ namespace CompanionAI_Pathfinder.Tactics
             {
                 ctx.DiscoveredAbilities = AbilityDiscovery.Gather(ctx.Unit);
                 // ★ user-ability-blacklist: what the lists block is never appraised or offered (the same list when nothing is).
-                ctx.AllowedAbilities = UserAbilityPolicy.Allowed(ctx.Blocks, ctx.Unit, ctx.DiscoveredAbilities);
+                ctx.AllowedAbilities = UserAbilityPolicy.Allowed(ctx.Blocks, ctx.Unit, ctx.DiscoveredAbilities, ctx.Unused);
             }
             finally { ctx.Timings?.NoteDiscovery(discoveryStarted, ctx.DiscoveredAbilities?.Count ?? 0, ctx.AllowedAbilities?.Count ?? 0); }
             if (!ReferenceEquals(ctx.AllowedAbilities, ctx.DiscoveredAbilities)) ReserveBlockedCharge(ctx);
@@ -2968,6 +2970,7 @@ namespace CompanionAI_Pathfinder.Tactics
             bool attackFromHere = list.Any(c => ResolvesAttackFromHere(ctx, c));
             foreach (var ability in ctx.AllowedAbilities)   // ★ v0.3.14: shared with real time
             {
+                int witness = ctx.Unused?.Observe(ability) ?? -1;
                 long checksStarted = ctx.Timings != null ? System.Diagnostics.Stopwatch.GetTimestamp() : 0;
                 try
                 {
@@ -2975,8 +2978,9 @@ namespace CompanionAI_Pathfinder.Tactics
                     long availabilityStarted = ctx.Timings != null ? System.Diagnostics.Stopwatch.GetTimestamp() : 0;
                     try { isAvailable = ability.IsAvailable; }
                     finally { ctx.Timings?.NoteAvailability(availabilityStarted); }
-                    if (!isAvailable) continue;
-                    if (AbilityClassifier.IsBlacklistedForCombat(ability, valuedByEffect: true)) continue;
+                    if (!isAvailable) { ctx.Unused?.Record(witness, UnusedReason.Unavailable); continue; }
+                    if (AbilityClassifier.IsBlacklistedForCombat(ability, valuedByEffect: true))
+                    { ctx.Unused?.Record(witness, UnusedReason.CombatPolicy); continue; }
                     var slot = SlotOf(ability);
                     bool available = slot == ActionSlot.Free || slot == ActionSlot.Swift && ctx.HasSwift ||
                         slot == ActionSlot.Move && (ctx.HasMove || ctx.HasStandard) ||
@@ -2988,11 +2992,13 @@ namespace CompanionAI_Pathfinder.Tactics
                     bool futureOffence = profile != null && (profile.DealsDamage || profile.HarmfulEffects ||
                         profile.ControlStrength != ControlStrength.None || profile.Maneuvers.Count > 0 || profile.IsWeaponAttack);
                     bool spellOpportunity = futureSpellsNeeded && (ability.Blueprint.IsSpell || ability.SourceItem != null);
-                    if (!AbilityScoringPolicy.NeedsScore(available, futureOffence, ability.StickyTouch != null, spellOpportunity)) continue;
+                    if (!AbilityScoringPolicy.NeedsScore(available, futureOffence, ability.StickyTouch != null, spellOpportunity))
+                    { ctx.Unused?.Record(witness, UnusedReason.ActionUnavailable); continue; }
                     if (AbilityScoringPolicy.SkipUnaffordableOffence(available, ability.StickyTouch != null, spellOpportunity,
                                                                     CombatMemory.IsRealTime, attackFromHere))
                     {
                         ctx.Timings?.NoteSkippedAbility();
+                        ctx.Unused?.Record(witness, UnusedReason.ScoreNotNeeded);
                         continue;
                     }
 
@@ -3003,7 +3009,7 @@ namespace CompanionAI_Pathfinder.Tactics
                     int contexts = CombatMath.ContextsMade, estimates = CombatMath.DamageEstimates;
                     long estimateBytes = CombatMath.EstimateBytes, chanceBytes = CombatMath.ChanceBytes;
                     CombatMath.MeasureHeap = ctx.Timings != null;
-                    try { list.AddRange(EvaluateAbility(ctx, ability, captureControlAims: captureControlAims)); }
+                    try { list.AddRange(EvaluateAbility(ctx, ability, captureControlAims: captureControlAims, witness: witness)); }
                     finally { CombatMath.MeasureHeap = false; }
                     if (ctx.Timings != null)
                     {
@@ -3302,7 +3308,7 @@ namespace CompanionAI_Pathfinder.Tactics
         }
 
         /// <summary>Consumable policy multiplier; 0 means "do not use this item now".</summary>
-        private static float ConsumableFactor(TacticalContext ctx, AbilityData ability, AbilityProfile profile)
+        private static float ConsumableFactor(TacticalContext ctx, AbilityData ability)
         {
             if (!(ability.SourceItem is ItemEntityUsable item))
             {
@@ -3319,8 +3325,8 @@ namespace CompanionAI_Pathfinder.Tactics
             switch (item.Blueprint.Type)
             {
                 case UsableItemType.Potion:
-                    // Healing potions are judged by the heal scoring (urgency); others only in real fights.
-                    return profile.Heals.Count > 0 ? 1f : (ctx.Difficulty >= 0.8f ? 0.5f : 0f);
+                    // Each part of the potion receives its own appraisal in ScoreAbility.
+                    return 1f;
                 case UsableItemType.Scroll:
                 case UsableItemType.Wand:
                     return 0.7f * CombatMath.UseMagicDeviceChance(ability, ctx.Unit);
@@ -3372,24 +3378,27 @@ namespace CompanionAI_Pathfinder.Tactics
         /// </summary>
         private static IEnumerable<Candidate> EvaluateAbility(TacticalContext ctx, AbilityData ability,
                                                               UnitEntityData onlyTarget = null, bool valueActiveInfusions = true,
-                                                              bool captureControlAims = false, bool ignorePolicy = false)
+                                                              bool captureControlAims = false, bool ignorePolicy = false, int witness = -1)
         {
+            var unused = witness >= 0 ? ctx.Unused : null;
             using var resistanceReads = CombatMath.MemoizeResistance();
             var none = Enumerable.Empty<Candidate>();
             // ★ user-ability-blacklist: every caller (focus re-aims, kinetic recovery) gets nothing for a blocked ability;
             // ignorePolicy only for the price of a held charge kept for the player (ReserveBlockedCharge).
-            if (!ignorePolicy && UserAbilityPolicy.SourceOf(ctx.Blocks, ability) != BlockSource.None) return none;
+            if (!ignorePolicy && UserAbilityPolicy.SourceOf(ctx.Blocks, ability) != BlockSource.None)
+            { unused?.Record(witness, UnusedReason.Blocklist); return none; }
             var nativeMagus = ctx.Unit.Get<Kingmaker.UnitLogic.Parts.UnitPartMagus>();
             bool nativeWeaponCharge = !ignorePolicy && nativeMagus?.Spellstrike.Active == true && !nativeMagus.EldritchArcher &&
                 ReferenceEquals(MagusMechanics.Held(ctx.Unit), ability) && MagusSpell(nativeMagus, ability);
             var profile = AbilityProfile.Get(ability);
-            if (profile == null) return none;
+            if (profile == null) { unused?.Record(witness, UnusedReason.Unread); return none; }
             bool coup = IsCoupDeGrace(ability);
             ItemEntityWeapon coupWeapon = null;
             if (coup && !CoupDeGraceDelivery.TryWeapon(ctx.Unit, ability, out coupWeapon, out var coupFailure))
             {
                 AbilityDiscovery.ReportOnce("coup-delivery|" + AbilityDiscovery.Key(ability),
                     () => $"[CoupReach] {ability.Name}: {coupFailure}; AI cast withheld");
+                unused?.Record(witness, UnusedReason.CoupDelivery);
                 return none;
             }
             // ★ Fusion F4: one admission rule (FusionWithheld), also read by the coverage audit.
@@ -3400,6 +3409,7 @@ namespace CompanionAI_Pathfinder.Tactics
                     () => profile.FusionUnsupported != null
                         ? $"[Fusion] {ability.Name}: {profile.FusionUnsupported}; unsupported forecast, cast withheld"
                         : $"[Fusion] {ability.Name}: {fusionWithheld} ({FusionWithheldDetail(ability, profile) ?? "unknown"}); cast withheld");
+                unused?.Record(witness, UnusedReason.FusionWithheld);
                 return none;
             }
             if (profile.Fusion != null)
@@ -3411,11 +3421,12 @@ namespace CompanionAI_Pathfinder.Tactics
                 AbilityDiscovery.ReportOnce("value-selection|" + AbilityDiscovery.Key(ability),
                     () => $"[ValueSelection] {ability.Name}: common buff/fixed minimum duration only; longer selected outcome unpriced; " +
                           "ally checks retain the longer duration and possible refresh (first per configuration)");
-            if (!PureMagePolicy.AllowsAbility(ctx.Settings, ability, profile)) return none;
+            if (!PureMagePolicy.AllowsAbility(ctx.Settings, ability, profile))
+            { unused?.Record(witness, UnusedReason.PureMage); return none; }
             var targetingBlueprint = ability.GetDeliverBlueprint() ?? ability.Blueprint;
 
-            float consumable = ConsumableFactor(ctx, ability, profile);
-            if (consumable <= 0f) return none;
+            float consumable = ConsumableFactor(ctx, ability);
+            if (consumable <= 0f) { unused?.Record(witness, UnusedReason.ConsumablePolicy); return none; }
             // ★ v0.3.23 (bombs task): an item spent as the material component (Alchemical Weapon's flask) is used up too.
             bool spentMaterial = ability.SourceItem == null && ConsumablePolicy.SpentMaterial(ability) != null;
 
@@ -3427,6 +3438,8 @@ namespace CompanionAI_Pathfinder.Tactics
             if (profile.IsCharge)
             {
                 var charge = EvaluateCharge(ctx, ability);
+                if (charge != null) unused?.Score(witness, charge.Value);
+                else unused?.Record(witness, UnusedReason.NoApproach);
                 return charge != null ? new[] { charge } : none;
             }
             if (profile.GriffonAttack != null) return EvaluateGriffonAttack(ctx, ability, profile, onlyTarget);
@@ -3489,6 +3502,7 @@ namespace CompanionAI_Pathfinder.Tactics
                 if (summonPoint.HasValue) targets.Add(ctx.Unit);
             }
 
+            if (targets.Count == 0) unused?.Record(witness, UnusedReason.NoTarget);
             var controlAims = StartControlAimDiagnostics(profile, captureControlAims);
             bool? abilityNeedsLos = null;
             Candidate best = null, bestViable = null, bestBoss = null;
@@ -3499,10 +3513,12 @@ namespace CompanionAI_Pathfinder.Tactics
                 // Native factory uses a weapon only for an enemy. Helpful held touches retain normal ally delivery.
                 if (nativeWeaponCharge && ctx.Unit.IsEnemy(target)) continue;
                 bool guardedTouch = PureMagePolicy.IsActive(ctx.Settings) && SpellDelivery.IsPhysicalTouch(ability);
-                if (guardedTouch && ctx.Unit.IsEnemy(target)) continue;
+                if (guardedTouch && ctx.Unit.IsEnemy(target))
+                { unused?.Record(witness, UnusedReason.PureMage); continue; }
                 var wrapper = summonPoint.HasValue ? new TargetWrapper(summonPoint.Value) : AbilityProfile.TargetOn(ability, target);
                 if (wrapper == null)
                 {
+                    unused?.Record(witness, UnusedReason.NoTarget);
                     controlAims?.Record(target, null, "no native target wrapper");
                     continue;
                 }
@@ -3543,7 +3559,8 @@ namespace CompanionAI_Pathfinder.Tactics
                     Vector3 aimAt = burst != null ? burst.Point : target.Position;
                     if (!InRangeNow(ctx.Unit, aimAt, range, needLos) && !TouchFromHere(ctx, ability, target, range, needLos))
                     {
-                        if (guardedTouch && !CriticalTouchHeal(ctx, ability, profile, target)) continue;
+                        if (guardedTouch && !CriticalTouchHeal(ctx, ability, profile, target))
+                        { unused?.Record(witness, UnusedReason.PureMage); continue; }
                         // ★ v0.3.16 (test3): the game measures range flat unless the height difference is over 1.5 m, then
                         // by the larger of the flat distance and half the height (GeometryUtils.MechanicsDistance). Within
                         // reach on the ground but not by that rule, the target is over twice the reach above or below (a
@@ -3560,6 +3577,7 @@ namespace CompanionAI_Pathfinder.Tactics
                         bool walkable = slot == ActionSlot.Standard || CombatMemory.IsRealTime && slot == ActionSlot.FullRound;
                         if (!walkable || !ctx.HasMove || ctx.Distance(target) - range > ctx.MoveRange * 0.95f)
                         {
+                            unused?.Record(witness, UnusedReason.NoApproach);
                             controlAims?.Record(target, null, "outside native range/LoS; no affordable approach");
                             continue;
                         }
@@ -3580,7 +3598,8 @@ namespace CompanionAI_Pathfinder.Tactics
 
                 // ★ v0.3.18 (test10): no consumables on a summon - temporary, and worth half (Orvath used a Cure Light
                 // Wounds item on his Dretch).
-                if (ability.SourceItem != null && target != ctx.Unit && !ctx.Unit.IsEnemy(target) && IsSummon(target)) continue;
+                if (ability.SourceItem != null && target != ctx.Unit && !ctx.Unit.IsEnemy(target) && IsSummon(target))
+                { unused?.Record(witness, UnusedReason.ItemOnSummon); continue; }
                 float value;
                 string why;
                 string infusionNote;
@@ -3698,6 +3717,8 @@ namespace CompanionAI_Pathfinder.Tactics
                     (ctx.Global?.AiManagesToggles ?? true) && ctx.InfusionProspects.Count < InfusionSearchBudget.MaxAims;
                 if (value <= 0f && !infusionProspect)
                 {
+                    unused?.Record(witness, ctx.FriendlyFireVeto || friendlyFire != null ? UnusedReason.FriendlyFire :
+                        !profile.HasDetectableEffect ? UnusedReason.Unread : UnusedReason.NoGain, value);
                     controlAims?.Record(target, value, why, geometryRecipients, needsMove);
                     continue;
                 }
@@ -3734,6 +3755,7 @@ namespace CompanionAI_Pathfinder.Tactics
                     : spentMaterial || IsSpentItem(ability) ? MinSpentItemValue : QuickBar(slot, ability);
                 if (value < itemBar)
                 {
+                    unused?.Record(witness, UnusedReason.ItemBar, value);
                     controlAims?.Record(target, value, "below item threshold before risks", geometryRecipients, needsMove);
                     continue;
                 }
@@ -3766,6 +3788,7 @@ namespace CompanionAI_Pathfinder.Tactics
                 if (risk != null) value = value * (1f - risk.StopChance) - risk.Cost;
                 if (itemBar > 0f && value < itemBar)
                 {
+                    unused?.Record(witness, UnusedReason.ItemBar, value);
                     controlAims?.Record(target, value, "below item threshold after risks", geometryRecipients, needsMove);
                     continue;
                 }
@@ -3849,6 +3872,7 @@ namespace CompanionAI_Pathfinder.Tactics
                 if (burst != null) burst.Value = candidate.Value;   // ★ burst aim: what a re-check weighs new allies against
                 controlAims?.Record(target, value, why, geometryRecipients, needsMove, provokeLoss,
                     concentrationChance, risk?.StopChance ?? 0f, risk?.Cost ?? 0f);
+                unused?.Score(witness, value);
                 if (Better(candidate, best)) best = candidate;
                 if (infusionProspect) ctx.InfusionProspects.Add(candidate);
                 if (!progressive || !candidate.Offensive) continue;
@@ -4038,6 +4062,7 @@ namespace CompanionAI_Pathfinder.Tactics
             int level = Math.Max(0, ability.SpellLevel);
             float value = 0f;
             float slotSensitive = 0f;   // ★ v0.3.17: the damage and control parts (spell-slot discount)
+            bool potion = ability.SourceItem is ItemEntityUsable item && item.Blueprint.Type == UsableItemType.Potion;
             ctx.AimCounted = false;
             ctx.FriendlyFireNote = null;
             ctx.FriendlyFireVeto = false;
@@ -5053,7 +5078,7 @@ namespace CompanionAI_Pathfinder.Tactics
                 }
                 if (buffValue > 0f)
                 {
-                    value += buffValue;
+                    value += potion ? ValueModel.PotionBuffValue(buffValue, ctx.Difficulty) : buffValue;
                     reasons.Add("buff");
                 }
             }
@@ -5072,7 +5097,7 @@ namespace CompanionAI_Pathfinder.Tactics
                 float auraValue = AuraValue(ctx, ability, profile, target, targetIsEnemy, out string auraNote);
                 if (auraValue > 0f)
                 {
-                    value += auraValue;
+                    value += potion ? ValueModel.PotionBuffValue(auraValue, ctx.Difficulty) : auraValue;
                     reasons.Add(auraNote ?? "aura");
                 }
             }
@@ -5236,9 +5261,9 @@ namespace CompanionAI_Pathfinder.Tactics
                         if (enchant != null && enchant.Modelled)
                         {
                             if (enchant.Value <= 0f) { why = $"nothing to gain ({enchant.Detail})"; return 0f; }
-                            value += enchant.Value;
+                            value += potion ? ValueModel.PotionBuffValue(enchant.Value, ctx.Difficulty) : enchant.Value;
                         }
-                        else
+                        else if (!potion)
                             value += ValueModel.BuffPerRound(level) * ctx.ExpectedRounds * 0.5f * RoleWeight(ctx, "buff");
                         reasons.Add("enchant");
                     }
@@ -6197,6 +6222,7 @@ namespace CompanionAI_Pathfinder.Tactics
             {
                 // ★ burst aim: a ground-aimed burst keeps its anchor enemy in the cast bookkeeping, as a unit aim did.
                 var aimed = c.Target ?? c.Burst?.Anchor;
+                UnusedWitness.Issued(unit, c.Ability);
                 CombatMemory.RecordCast(unit, c.Ability, aimed, command);
                 CombatMemory.NotePendingCast(unit, c.Ability, aimed, command);   // ★ v0.3.18 (test10): real time
                 if (c.Burst != null) BurstWatch.Track(unit, command, c.Burst);   // ★ burst aim (A3-A5)
