@@ -89,10 +89,24 @@ namespace CompanionAI_Pathfinder.Tactics
             internal void Report()
             {
                 var line = new StringBuilder();
+                int unchanged = 0;
+                string group = Key is UnitEntityData u ? u.UniqueId : (Key as SimpleBlueprint)?.AssetGuid.ToString();
                 for (int i = 0; i < used; i++)
                 {
                     ref var entry = ref entries[i];
                     if (entry.State.Issued != 0) continue;
+                    // ★ v0.3.70 features review (log size): an option whose verdict is the one last reported for this unit or
+                    // summon kind is counted, not repeated ("Treat Affliction best 0 (summon policy)" every fight, 90 KB of
+                    // a 1.1 MB log). Options that competed and lost ("scored, not chosen") are always listed.
+                    var reason = entry.State.Reason;
+                    if (group != null && reason != UnusedReason.Scored)
+                    {
+                        string key = group + "|" + entry.Ability.AssetGuid + "|" + (entry.Identity.Item?.AssetGuid.ToString() ?? "") +
+                                     "|" + (entry.Identity.Book?.AssetGuid.ToString() ?? "") + (entry.Identity.ForOther ? "|other" : "");
+                        if (LastReported.TryGetValue(key, out var last) && last == reason) { unchanged++; continue; }
+                        if (LastReported.Count >= MaxLastReported) LastReported.Clear();
+                        LastReported[key] = reason;
+                    }
                     if (line.Length > 0) line.Append("; ");
                     if (entry.Identity.Item != null) line.Append("Item:").Append(entry.Identity.Item.name).Append('/');
                     line.Append(entry.Ability.Name);
@@ -102,7 +116,8 @@ namespace CompanionAI_Pathfinder.Tactics
                 }
                 if (line.Length > 0 || full || itemsFull)
                     Main.Log($"[Unused] {Unit.CharacterName}: {line}{(full ? $" [{MaxEntries}-ability cap]" : "")}" +
-                             (itemsFull ? $" [{MaxItemEntries}-item cap]" : ""));
+                             (itemsFull ? $" [{MaxItemEntries}-item cap]" : "") +
+                             (unchanged > 0 ? $" (+{unchanged} as last reported)" : ""));
             }
 
             internal void Clear()
@@ -114,6 +129,11 @@ namespace CompanionAI_Pathfinder.Tactics
                 Unit = null;
             }
         }
+
+        /// <summary>★ v0.3.70 features review: the verdict last reported per unit or summon kind and option, this session.</summary>
+        private static readonly System.Collections.Generic.Dictionary<string, UnusedReason> LastReported =
+            new System.Collections.Generic.Dictionary<string, UnusedReason>(StringComparer.Ordinal);
+        private const int MaxLastReported = 4096;
 
         private static object KeyFor(UnitEntityData unit) =>
             SummonControl.IsOrdinarySummon(unit) && unit.Blueprint != null ? (object)unit.Blueprint : unit;

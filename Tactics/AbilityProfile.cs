@@ -1689,6 +1689,8 @@ namespace CompanionAI_Pathfinder.Tactics
         // ★ Fusion coverage C8: the pool outcome scope. Larger than any level a limit is compared with; small enough for the sum.
         private const int PoolCovers = 1 << 24;
         [ThreadStatic] private static AbilityData s_PoolAbility;
+        /// <summary>★ v0.3.70 features review: a pool outcome is in force (CombatMath's per-frame memo stands aside).</summary>
+        internal static bool PoolOutcomeActive => s_PoolAbility != null;
         [ThreadStatic] private static bool s_PoolReached;
 
         internal readonly struct PoolOutcomeScope : IDisposable

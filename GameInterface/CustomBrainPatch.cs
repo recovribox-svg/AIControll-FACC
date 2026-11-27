@@ -188,6 +188,8 @@ namespace CompanionAI_Pathfinder.GameInterface
             string unitId = unit.UniqueId;
             string unitName = unit.Descriptor?.CharacterName ?? "Unknown";
             var charSettings = settings.GetOrCreateSettings(unitId, unitName);
+            // ★ v0.3.70 features review (issue #115): a character seen for the first time gets its build's role and range.
+            if (charSettings.SuggestionPending) SuggestedSettings.EnsureApplied(unit, charSettings);
             if (!charSettings.EnableCustomAI) { reason = "AI is off for this character"; return false; }
 
             return true;

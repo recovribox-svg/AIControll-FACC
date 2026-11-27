@@ -22,7 +22,8 @@ namespace CompanionAI_Pathfinder.Tactics
         // per-spell messages or another heap sample; native availability/profile times are subsets of pre-score checks.
         private long discovery, preScoreChecks, availability, profiles;
         private int gathered, allowed, availabilityChecks, profileReads;
-        private readonly int resistanceAtStart = CombatMath.ResistanceReads, resistanceHitsAtStart = CombatMath.ResistanceMemoHits;
+        private readonly int resistanceAtStart = CombatMath.ResistanceReads, resistanceHitsAtStart = CombatMath.ResistanceMemoHits,
+            damageHitsAtStart = CombatMath.DamageMemoHits, chanceHitsAtStart = CombatMath.ChanceMemoHits;
 
         internal DecisionTimings() { previous = started; }
         internal double ElapsedMilliseconds => Milliseconds(Stopwatch.GetTimestamp() - started);
@@ -124,6 +125,7 @@ namespace CompanionAI_Pathfinder.Tactics
             $"pre-score checks={Milliseconds(preScoreChecks):F1} (native availability {Milliseconds(availability):F1}/{availabilityChecks} checks, " +
             $"profile reads {Milliseconds(profiles):F1}/{profileReads}; both included in pre-score checks)" +
             $"; SR forecasts={CombatMath.ResistanceReads - resistanceAtStart}, reused={CombatMath.ResistanceMemoHits - resistanceHitsAtStart}" +
+            $"; damage estimates reused={CombatMath.DamageMemoHits - damageHitsAtStart}, effect chances reused={CombatMath.ChanceMemoHits - chanceHitsAtStart}" +
             (costlyNames[0] == null ? "" : "; costliest: " + string.Join(", ", System.Linq.Enumerable.Range(0, 3)
                 .Where(i => costlyNames[i] != null)
                 .Select(i => $"{costlyNames[i]} {Milliseconds(costlyTicks[i]):F1} ms ({costlyCandidates[i]} options" +

@@ -10,6 +10,8 @@
     <Compile Include="..\..\Core\DiagnosticChangeLog.cs" Link="DiagnosticChangeLog.cs" />
     <Compile Include="..\..\Core\PathEndDiagnosticLog.cs" Link="PathEndDiagnosticLog.cs" />
     <Compile Include="..\..\Tactics\SpellTierPolicy.cs" Link="SpellTierPolicy.cs" />
+    <Compile Include="..\..\Settings\SettingsEnums.cs" Link="SettingsEnums.cs" />
+    <Compile Include="..\..\Settings\SuggestedSettingsRules.cs" Link="SuggestedSettingsRules.cs" />
     <Compile Include="..\..\Tactics\SummonRules.cs" Link="SummonRules.cs" />
     <Compile Include="..\..\Tactics\ActionRules.cs" Link="ActionRules.cs" />
     <Compile Include="..\..\Tactics\CoupDeGraceRules.cs" Link="CoupDeGraceRules.cs" />

@@ -1,0 +1,24 @@
+{
+  "build_label": "features3",
+  "kind": "development-test",
+  "version": "0.3.70",
+  "source_branch": "claude/v0370-features-review",
+  "source_commit": "6f262cb",
+  "base_commit": "36289bd (claude/v0370-features)",
+  "dll": {
+    "assembly": "CompanionAI_Pathfinder, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null",
+    "mvid": "e32d25e0-351a-4083-81d2-14ba5ba9d574",
+    "sha256": "50c95cb880faa81719439650ea955191afa874605ce337cb3809f71b5bd81d99",
+    "size": 1712128
+  },
+  "archive": "AI-Control-FACC-v0.3.70-dev-features3-6f262cb-UMM-test.zip",
+  "zip_sha256": "f20ca6393723d8359b58da1d0860828603fed9eb1512a672019566d40963cab3",
+  "manifest_sha256": "db493172a83ffb57d31faa01b35d91c9e256b1e6f2c603407bfe217028f42da9",
+  "checks_receipt": "docs/competence/V0370_FEATURES_REVIEW_CHECKS.json",
+  "archive_contents": [
+    "CompanionAI_Pathfinder.dll",
+    "Info.json"
+  ],
+  "gameplay_status": "unplayed",
+  "release": false
+}

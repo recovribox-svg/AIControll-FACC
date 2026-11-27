@@ -513,7 +513,8 @@ namespace CompanionAI_Pathfinder.Tactics
             // ★ v0.3.70 playtest: a prohibition costs what the recipient's own spells and spell-like abilities were worth
             // over its best other main action in its own decisions (SpellEdgeMemory). A summon whose attacks are spell-like
             // (a Shadow Demon's breath, a Nabasu's Enervation) has no spellbook and used to count as a pure gainer; a
-            // spellbook caster used to count 0 whatever its spells were worth. Unmeasured, a spellbook caster keeps 0.
+            // spellbook caster used to count 0 whatever its spells were worth. ★ v0.3.70 features review: unmeasured, a
+            // spellbook caster is priced by an estimate from its spellbook (it counted 0, and lost its turn to the ban).
             float spellEdge = 0f;
             if (forbidsSpells)
             {
@@ -521,9 +522,15 @@ namespace CompanionAI_Pathfinder.Tactics
                     notes.Add(spellEdge > 0f ? $"stops its spells (-{spellEdge:0.#}/rd, measured)" : "stops spells it does not need now");
                 else if (off.Caster)
                 {
-                    result.Value = 0f;
-                    result.Detail = "stops its spells";
-                    return result;
+                    // ★ v0.3.70 features review: not measured yet - estimated from its spellbook (ValueModel.UnmeasuredSpellEdge).
+                    spellEdge = UnmeasuredSpellEdgeOf(ally, off);
+                    if (!(spellEdge > 0f))
+                    {
+                        result.Value = 0f;
+                        result.Detail = "stops its spells";
+                        return result;
+                    }
+                    notes.Add($"stops its spells (-{spellEdge:0.#}/rd, estimated before its first decision)");
                 }
             }
 
@@ -1175,6 +1182,23 @@ namespace CompanionAI_Pathfinder.Tactics
                 return Mathf.Clamp(Avg(bigger) - Avg(current), 0f, 6f * Math.Max(1, steps));
             }
             catch { return 1f; }
+        }
+
+        /// <summary>★ v0.3.70 features review: an unmeasured caster's spell edge, from its best spellbook.</summary>
+        private static float UnmeasuredSpellEdgeOf(UnitEntityData ally, Offence off)
+        {
+            int casterLevel = 0, maxSpellLevel = 0;
+            try
+            {
+                foreach (var book in ally.Descriptor.Spellbooks)
+                {
+                    if (book == null || book.CasterLevel <= 0) continue;
+                    casterLevel = Math.Max(casterLevel, book.CasterLevel);
+                    maxSpellLevel = Math.Max(maxSpellLevel, book.MaxSpellLevel);
+                }
+            }
+            catch { return 0f; }
+            return ValueModel.UnmeasuredSpellEdge(casterLevel, maxSpellLevel, off.DamagePerRound > 0f);
         }
 
         private static Offence OffenceOf(TacticalContext ctx, UnitEntityData ally)

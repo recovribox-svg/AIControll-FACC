@@ -681,8 +681,9 @@ namespace CompanionAI_Pathfinder.Tactics
                 {
                     // ★ v0.3.70 P2 (author-approved): a summon AI Control drives declines an effect it loses by (its own
                     // acceptance toggle, TacticalEngine.AcceptSwitch.cs): its share is nothing rather than a loss.
+                    // ★ v0.3.70 features review (author-approved): a companion AI Control decides for, too.
                     if (appraisal.Value < 0f && p.Area != null &&
-                        DrivenSummonDeclines(ally, useful.Where(r => r.Grant != null).Select(r => r.Grant)))
+                        DrivenAllyDeclines(ally, useful.Where(r => r.Grant != null).Select(r => r.Grant)))
                     {
                         if (details.Count < 6) details.Add($"{ally.CharacterName} declines it ({appraisal.Value * weight:0.#}: {appraisal.Detail})");
                         continue;

@@ -49,7 +49,15 @@ namespace CompanionAI_Pathfinder.Tactics
                 weapon = w;
                 break;
             }
-            if (weapon == null) return;
+            if (weapon == null)
+            {
+                // ★ v0.3.70 features review: neither playtest offered a switch; say once a session why it cannot apply.
+                ReportOnce($"weaponset-none|{unit.UniqueId}", () =>
+                    $"[WeaponSet] {unit.CharacterName}: Mixed range, but no other weapon set holds a " +
+                    $"{(currentRanged ? "melee" : "ranged")} weapon ({sets.Count} set(s), current {current + 1}: " +
+                    $"{body.PrimaryHand?.MaybeWeapon?.Name ?? "empty"}) - no switch to offer");
+                return;
+            }
 
             bool realTime = CombatMemory.IsRealTime;
             // What the current weapon can do: from here, and at best (a walk to the enemy included).

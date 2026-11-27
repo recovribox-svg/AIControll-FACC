@@ -53,6 +53,22 @@ namespace CompanionAI_Pathfinder.Tactics
             stoppedPerRound > Math.Max(0f, givenPerRound) + AcceptSwitchMargin;
 
         /// <summary>
+        /// ★ v0.3.70 features review (turn-based log): a spellbook caster whose spells no decision of its own has measured yet
+        /// (its first turn of the session has not come) still loses them to a prohibition. Camellia's Inspired Rage counted the
+        /// Knight Commander, a Pure Mage, as 0 - "stops its spells" - and the Knight Commander then ended its turn having cast
+        /// nothing. Until its own decisions measure it (SpellEdgeMemory), its spells are taken as a round of a unit of its caster
+        /// level (<see cref="PerRound"/>) by the share of full casting its highest spell level gives (a ninth-level caster's 5th
+        /// circle is a little over half), halved when it also has a weapon attack it uses. Measured edges replace it.
+        /// </summary>
+        internal static float UnmeasuredSpellEdge(int casterLevel, int maxSpellLevel, bool usesWeapon)
+        {
+            if (casterLevel <= 0 || maxSpellLevel <= 0) return 0f;
+            float full = Math.Max(1f, (casterLevel + 1) / 2f);
+            float share = Math.Min(1f, maxSpellLevel / full);
+            return PerRound(casterLevel) * share * (usesWeapon ? 0.5f : 1f);
+        }
+
+        /// <summary>
         /// ★ v0.3.70 P2: a declined effect is accepted again when what it gives clearly beats what it stops (a quarter more and
         /// the margin), so the switch does not flip back and forth between two close values.
         /// </summary>

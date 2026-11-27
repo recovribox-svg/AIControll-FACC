@@ -94,8 +94,8 @@ namespace ProfileAudit
                   Calls(engine, "SwitchCostlyAccept", "Reaccept") && Calls(engine, "Decline", "AcceptSwitchFor") &&
                   Calls(engine, "Decline", "HeldGrantPerRound") && Calls(engine, "Decline", "DeclinesGrant") &&
                   Calls(engine, "Decline", "PlayerOwnsToggle") && Calls(engine, "Decline", "RecordToggle") &&
-                  Calls(engine, "Reaccept", "ReacceptsGrant") && Calls(engine, "ToggleValue", "DrivenSummonDeclines") &&
-                  Calls(engine, "DrivenSummonDeclines", "ShouldDrive"),
+                  Calls(engine, "Reaccept", "ReacceptsGrant") && Calls(engine, "ToggleValue", "DrivenAllyDeclines") &&
+                  Calls(engine, "DrivenAllyDeclines", "AiDecidesFor") && Calls(engine, "AiDecidesFor", "ShouldDrive"),
                   "a driven summon declines an effect it loses by and takes it back when it gives more; the performer counts it as declined");
 
             // --- P3: item teleports ---

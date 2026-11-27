@@ -7530,3 +7530,37 @@ Control exception. Both combat modes:
 - **Package:** `test-builds/AI-Control-FACC-v0.3.70-dev-features1-a6cd4a9-UMM-test.zip`, module
   `82dcebbe-430b-479e-9e9b-58116176795e`, UMM 0.3.70.
 
+## 225. v0.3.70 features review: spell bans, cone performance, group teleports, log trims, UI scale, suggested roles (27 November 2026, Claude)
+
+[Review page](V0370_FEATURES_REVIEW.md) · [receipt](competence/V0370_FEATURES_REVIEW_CHECKS.json). From the features1
+logs: five turn-based fights in one session, six real-time fights in another. Author request; unplayed.
+
+- **Spell ban (both modes):** `AppraiseParts` priced an unmeasured spellbook caster at 0, so Inspired Rage started over
+  the Knight Commander (a Pure Mage), which then lost its turn. Until measured, `ValueModel.UnmeasuredSpellEdge` estimates
+  it: a round of its caster level by the share of full casting its highest spell level gives, halved with a weapon.
+- **Performance (both modes):** `CombatMath.EstimateMemo.cs` remembers ability damage and effect chances for the frame.
+  Cones re-asked them per aim and spot (a Shadow Demon's breaths: ~900 estimates each, an 844 ms decision). Cleared by
+  `ClearAttackCache` with every state preview; not used under a pool outcome or a Magus roll.
+- **Teleports:** `MaxTeleportGroup` 16 → 96 (the crowd bound; travellers still at most four): group teleports were
+  withheld with the party's summons out. `AddFarEscapes` cuts an infinite (Unlimited) range to the farthest enemy plus
+  the fight reach.
+- **Log size (author request), about 12 %:**
+  - coverage once per summon kind, and only new toggle lines;
+  - one free-side row a decision;
+  - `[Unused]` entries only when their verdict changes;
+  - the energy-estimate note once a session;
+  - a `[WeaponSet]` line when a Mixed unit has no other set (F2 was never offered).
+- **Author requests:**
+  - Companions decline a costly rage (author-approved): `SwitchCostlyAccept` / `DrivenAllyDeclines` apply to any unit
+    this engine decides for (`AiDecidesFor`). An unmeasured caster declines on its spellbook estimate.
+  - Issue #114: `UI/UiScale.cs` routes every panel size through `UnityModManager.UI.Scale`.
+  - Issue #115: `SuggestedSettingsRules` / `SuggestedSettings` give a character seen first the role and range of its
+    build, with buttons for one character or the party. Saved choices are not touched.
+  - `ControlSummons` is on by default; an older settings file is switched on once (`SummonControlDefaultApplied`).
+- **Checks** on `6f262cb`:
+  - Release 0 warnings; 1,182 unit + 27/21/3 script tests.
+  - ProfileAudit `V0370-FEATURE-REVIEW` 11 checks; `SUMMON-CONTROL` 71 (its default checks follow the new default).
+    Every other line, the Fusion matrix and the summon detail are unchanged.
+  - Harnesses 98/14/10; 4 external members added, all resolved.
+- **Package:** `test-builds/AI-Control-FACC-v0.3.70-dev-features3-6f262cb-UMM-test.zip`, module
+  `e32d25e0-351a-4083-81d2-14ba5ba9d574`, UMM 0.3.70 (replaces features2).

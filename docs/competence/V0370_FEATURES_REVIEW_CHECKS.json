@@ -1,0 +1,87 @@
+{
+ "task": "Author request: review the features1 turn-based and real-time logs for bad or broken decisions and functionality gaps, bugfix; and optimise the logs",
+ "date": "2026-11-27",
+ "author": "Claude",
+ "branch": "claude/v0370-features-review",
+ "base": "36289bd (claude/v0370-features, draft PR #117)",
+ "source_commit": "6f262cbf91a0b69b84858fc8c61f87286179430b",
+ "inputs": {
+  "turn_based_session": {
+   "log_sha256": "b46fb1b634de683b582f76e2f6d3f53ea28325e761a7b7c7dff06d5d1c560313",
+   "combat_log_sha256": "079dd8063bd871749da68e4e64f324b8ebc2bdbec7fd8652fa7b463bea0b8a85",
+   "module": "82dcebbe-430b-479e-9e9b-58116176795e",
+   "fights": "5 turn-based (+ the start of a real-time one, crashed: author says too many enemies spawned; not investigated)",
+   "decisions": 451,
+   "commands": "274 issued, 268 ended"
+  },
+  "real_time_session": {
+   "log_sha256": "df5b3da35c8bd7302cfe93d2d51ee7ee73f6ad9b967300cb9d5eaa35b05e71b3",
+   "combat_log_sha256": "d9043d6609b5b68885a4601468ffdc4ebca7762aaa4304a9a917903bd98509c5",
+   "module": "82dcebbe-430b-479e-9e9b-58116176795e",
+   "fights": 6,
+   "decisions": 1225,
+   "commands": "411 issued, 410 ended: 266 success, 28 interrupted after acting, 115 before acting, 1 fail"
+  },
+  "note": "Raw logs stay private; only their fingerprints are recorded."
+ },
+ "findings_fixed": [
+  "Inspired Rage priced the Knight Commander (unmeasured spellbook caster, Pure Mage) at 0; the ban then cost it its turn (TB fight 1). ValueModel.UnmeasuredSpellEdge estimates it from the spellbook until measured.",
+  "Cone/line aims re-asked the same ability damage and effect chance: Shadow Demon Dragon's Breath ~900 estimates each, 844 ms decision with a GC. Per-frame memo (CombatMath.EstimateMemo.cs), cleared with ClearAttackCache; not used under a pool outcome or a Magus roll.",
+  "Group teleports withheld when the party group (summons included) exceeded 16: MaxTeleportGroup now the crowd bound (96), travellers still at most 4.",
+  "F4: an Unlimited teleport range is infinite (BlueprintAbility.GetRange); the far-escape distance is cut to the farthest awake enemy plus the fight reach."
+ ],
+ "log_trims": {
+  "estimated_saving": "about 12 % of each played log (RT 1149 KB -> ~1014 KB; TB 816 KB -> ~717 KB), plus the energy-estimate note (~10 KB a log)",
+  "changes": [
+   "coverage keyed per summon kind; only new toggle lines",
+   "no-free-side: one row a decision, spot counts in the debug log",
+   "[Unused]: an entry only when its verdict changes, '(+N as last reported)'",
+   "energy-estimate rule note once a session",
+   "[WeaponSet] once-a-session line for a Mixed unit with no other set (diagnostic)"
+  ],
+  "kept": "[Cmd] rows (parsed by tools/InvocationLedger), decision and slow-decision rows, debug rows"
+ },
+ "observed_not_changed": [
+  "Nabasu Hold Person, Mass held up to nine party members three times; no freeing dispel chosen (single-target dispels against 400+ damage options); no party death, no enemy coup de grace.",
+  "Two Vrock coups de grace never started (4-5 s, interrupted); cause unproven; Wenduag's succeeded.",
+  "F2 never offered in either session; the new [WeaponSet] line will say why.",
+  "UMM writes the mod log in batches of 100 lines or 0.5 s; a crash loses the last batch; Player.log holds them and Unity's crash report."
+ ],
+ "checks": {
+  "release_build": "0 warnings, 0 errors (real game references, UMM 0.33.2.0)",
+  "unit_tests": "1182 passed (10 new: V0370FeatureReviewTests 4, SuggestedSettingsTests 6)",
+  "script_tests": "BlueprintInventory 27, InvocationLedger 21, ProfileAudit supplement 3: OK",
+  "profile_audit": "exit 0; new V0370-FEATURE-REVIEW 11 checks passed; SUMMON-CONTROL updated to the new default (70 -> 71 checks); every other report line identical to features1",
+  "fusion_matrix": "byte-identical",
+  "summon_kit_detail": "byte-identical",
+  "packaged_dll_audit": "same report as the build from the commit",
+  "native_harnesses": "ToggleCosts 98, TomeBurn 14, ToyBoxSpend 10, failures 0",
+  "external_members": "4 added against features1 (BlueprintSpellbook.IsArcane and MaxSpellLevel, Mathf.Approximately, UnityModManager.UI.Scale(float)), all compiled against the supplied assemblies; 0 removed",
+  "gameplay": "unplayed"
+ },
+ "package": {
+  "archive": "test-builds/AI-Control-FACC-v0.3.70-dev-features3-6f262cb-UMM-test.zip",
+  "umm_version": "0.3.70",
+  "source": "6f262cb",
+  "mvid": "e32d25e0-351a-4083-81d2-14ba5ba9d574",
+  "dll_sha256": "50c95cb880faa81719439650ea955191afa874605ce337cb3809f71b5bd81d99",
+  "zip_sha256": "f20ca6393723d8359b58da1d0860828603fed9eb1512a672019566d40963cab3",
+  "gameplay": "unplayed",
+  "replaces": "features2 (ac71295, unplayed)"
+ },
+ "limits": [
+  "The unmeasured-caster estimate is a prior (a round of its caster level by spell-level share); it applies only until the caster's own decisions measure its spells.",
+  "The memo lives one frame; it does not speed up the first estimate of each pair.",
+  "Log savings are estimated by replaying the rules over these two logs.",
+  "The build suggestion is a heuristic on the equipped weapon, shield, spellbook and weapon feats; hybrid builds land on Mixed.",
+  "The UI scale fix is checked by IL (no fixed sizes left), not on screen.",
+  "Not played."
+ ],
+ "merged": false,
+ "additions_author_requests": [
+  "Companions AI Control decides for decline a costly Inspired Rage (author-approved): P2 extended from summons to any unit this engine decides for; an unmeasured caster declines on its spellbook estimate; the performer counts it as declined only when this engine makes its decisions (TB, or RT without the old engine).",
+  "Issue #114: the settings panel follows UnityModManager's UI scale: all 108 fixed widths/heights/spaces/fonts/<size> tags go through UnityModManager.UI.Scale (UI/UiScale.cs); styles rebuilt when the scale changes.",
+  "Issue #115: role and range suggested from the character's build (SuggestedSettingsRules) for a character seen for the first time; saved choices never changed automatically; per-character and whole-party buttons. Checked against the companions' default auto-level builds (Frostbird, 'Companion Auto Level Builds').",
+  "Summon control on by default (author decision); an older settings file is switched on once (SummonControlDefaultApplied); switched off afterwards it stays off."
+ ]
+}
