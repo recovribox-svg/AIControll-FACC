@@ -1,0 +1,56 @@
+{
+ "task": "Author request: review the features5 logs (turn-based and real time, one session) for bad or broken decisions and functionality gaps, and bugfix (evidence-based, high-performance, feasible and integrated)",
+ "date": "2026-11-27",
+ "author": "Claude",
+ "branch": "claude/v0370-features5-review",
+ "base": "b89a168 (claude/v0370-features3-review, draft PR #119)",
+ "source_commit": "dbdc867",
+ "inputs": {
+  "log_sha256": "f63b04c6d2dd950367eeceaf18316651f8a2cb4944e359952bce6d63b2f58d68",
+  "combat_log_sha256": "0b057c898dd53e9820b1f6cfd92d062bf34a37a91729e2f9b5471de723869b48",
+  "module": "cfc0deda-c511-4e3a-a423-bf5be1cf502c",
+  "fights": "6 turn-based, then 7 real-time",
+  "decisions": "356 turn-based, 1643 real-time",
+  "commands": "turn-based 209 issued; real-time 426 issued, 415 ended: 258 success, 33 interrupted after acting, 122 before acting, 2 fail",
+  "note": "Raw logs stay private; only their fingerprints are recorded. The author confirmed Camellia's other weapon set holds a starknife (melee)."
+ },
+ "findings_fixed": [
+  "Both modes (performance, same numbers): real-time fights 7 and 12 (42 and 47 enemies) had four decisions over 1 s, the slowest 2,069 ms (640 ms in the previous log). Approach planning took 400-950 ms of them (195-242 approaches a decision): every priced spot read each ally's drop chance against every enemy, with native reads of the enemy's melee weapon, reach and lying-down state per pair. The drop table now reads each enemy's strike data once (ReadStrike, RowStrikeShare), an ally's share where it stands once (OwnStrikeShare), and a walk re-reads only the allies an enemy whose target choice it changes can pick (MoverChangedRows, ChangeTouches; every ally with a swarm in the fight). Lists reused; ValueModel.CombinedDrop(List) without an enumerator. The slow row names drop-chance reads, time and skipped allies.",
+  "Real time: an ability that walks to its target first (around an area, to a free side, to touch range) was not a cast command, so CombatMemory.CastPendingByOther did not see it: the Vrock, a Shadow Demon and Seelah each walked to the same helpless Nabasu for a Coup de Grace (fight 9). Such a walk now counts as the cast while it runs (NotePendingWalk); its end clears it.",
+  "Log and saves: every Magic Fusion is cast through one native holder ability with no name. [Save] rows read \"Knight Commander's : ...\" (69 rows) and observations (a target's automatic pass or contextual bonus) were shared by every fusion. Rows now name the fusion (AbilityData.Name) and observations and fight tallies are kept per fusion (AbilityProfile.FusionIdentityOf)."
+ ],
+ "features5_observed": {
+  "weapon_sets": "The Bandit switched to his Light Crossbow +5 set twice in turn-based mode (move action, then the attack) and kept it; no switch back offered (crossbow priced above the Shortsword +1). Camellia: no ranged weapon in another set (a starknife, melee; author).",
+  "redecisions": "no option dropped to decide again was barred afterwards; the Vrock's Stunning Screech dropped at 73 -> 20 HP was chosen again",
+  "provoke_redecision": "once (fight 10): a Quickwood Sprout reached a Nabasu walking to a Coup de Grace; the new decision priced the attacks of opportunity and chose Enervation",
+  "domination": "not exercised",
+  "deaths": "no party member died"
+ },
+ "observed_not_changed": [
+  "Six real-time coups de grace issued, none delivered (all interrupted before acting). The Nabasu was held by Phantasmal Web (entangled, cannot move); its state at the coup is not in the log (Tabletop Tweaks' coup). Holding other attacks off a coup target is a commitment change for the author.",
+  "Five Cure Critical Wounds on Seelah in two bursts (fight 9) all healed in full (about 150 max HP): no waste, no heal coordination added.",
+  "70 commands ended before acting with no AI Control reason (66 real-time); samples checked came as the target died.",
+  "Turn-based Vrock full attacks with a step needing 2.5-8 m were withheld by the path check before issue; the next option was taken."
+ ],
+ "checks": {
+  "release_build": "0 warnings, 0 errors (real game references, UMM 0.33.2.0)",
+  "unit_tests": "1190 passed (3 new: V0370Features5ReviewTests)",
+  "script_tests": "BlueprintInventory 27, InvocationLedger 21, ProfileAudit supplement 3: OK",
+  "profile_audit": "exit 0; new V0370-FEATURES5 10 checks passed (call routes, the native Coup de Grace target restriction, the skip's TargetChance ground); every other report line identical to features5",
+  "fusion_matrix": "byte-identical",
+  "summon_kit_detail": "byte-identical",
+  "packaged_dll_audit": "the packaged DLL gives the same report, Fusion matrix and summon detail",
+  "native_harnesses": "ToggleCosts 98, TomeBurn 14, ToyBoxSpend 10, failures 0",
+  "external_members": "0 added, 0 removed",
+  "gameplay": "unplayed"
+ },
+ "package": {
+  "archive": "test-builds/AI-Control-FACC-v0.3.70-dev-features6-dbdc867-UMM-test.zip",
+  "zip_sha256": "5d4db86d6a1310486dafb385d7b45a48565c3697c39d67dab9917fae6cab21de",
+  "dll_sha256": "aa9b73388bcb6f8aa9c8acbe5a0573dad02046f9cf27095ef73ea8933ad5571b",
+  "mvid": "73eef393-8d13-4837-85e7-df4922333fe7",
+  "manifest": "Info.json 0.3.70 (unchanged)",
+  "status": "unplayed"
+ },
+ "not_done": "No merge, main, tag or release."
+}

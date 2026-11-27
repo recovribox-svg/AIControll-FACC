@@ -8,7 +8,36 @@ Read [CONTRIBUTING.md](CONTRIBUTING.md) for shared branch ownership, Codex pull 
 Codex works on task branches and targets pull requests at `claude/dreamy-pasteur-b9h3rn`; Claude reviews and integrates them there.
 Keep `main` for author-authorized releases. Read [AGENTS.md](AGENTS.md) when coordinating agent work.
 
-**Current handover (27 November 2026, Claude): features3 playtest reviewed and fixed, plus two author requests, on
+**Current handover (27 November 2026, Claude): features5 playtest reviewed and fixed on `claude/v0370-features5-review`
+(draft PR), stacked on `claude/v0370-features3-review` (draft PR #119). Not played, nothing merged.** Read
+[docs/V0370_FEATURES5_REVIEW.md](docs/V0370_FEATURES5_REVIEW.md), `docs/TACTICAL_AI.md` §227 and the
+[receipt](docs/competence/V0370_FEATURES5_REVIEW_CHECKS.json).
+- **Log:** features5 module `cfc0deda`, one session: 6 turn-based fights (356 decisions), then 7 real-time fights (1,643
+  decisions); no AI Control exception, no party death. Real-time fights 7 and 12 had 42 and 47 enemies.
+- **Fixes:**
+  1. Both modes, performance (same numbers): four decisions over 1 s (slowest 2,069 ms), mostly walk pricing. The drop
+     model reads each enemy's strike data once (`RowStrikeShare`, `OwnStrikeShare`). A walk re-reads only allies an enemy
+     whose choice it changes can pick (`MoverChangedRows`). The slow row names the drop-chance reads.
+  2. Real time: an ability that walks to its target first counts as being cast on it (`NotePendingWalk`). Three allies
+     walked to the same helpless Nabasu for a Coup de Grace.
+  3. Saves against fused spells: named by the fusion (`AbilityData.Name`), kept per fusion (`FusionIdentityOf`).
+- **Seen working:**
+  - the Bandit's crossbow switch (turn-based);
+  - one provoke re-decision;
+  - no dropped option barred.
+  Camellia's other set holds a starknife (melee; author), so her "no ranged weapon" line is right.
+- **Open:** six real-time coups were all interrupted before acting (state not in the log). Holding attacks off a coup
+  target would be a commitment change for the author.
+- **Checks** on `dbdc867`:
+  - Release 0 warnings; 1,190 unit + 27/21/3 script tests.
+  - ProfileAudit `V0370-FEATURES5` 10; every other line, the Fusion matrix and the summon detail unchanged, also for the
+    packaged DLL.
+  - Harnesses 98/14/10; no external member added or removed.
+- **Package:** `test-builds/AI-Control-FACC-v0.3.70-dev-features6-dbdc867-UMM-test.zip`, MVID
+  `73eef393-8d13-4837-85e7-df4922333fe7`, UMM 0.3.70.
+- **Next:** the author plays features6 (replay in the review page).
+
+**Earlier handover (27 November 2026, Claude): features3 playtest reviewed and fixed, plus two author requests, on
 `claude/v0370-features3-review` (draft PR #119), stacked on `claude/v0370-features-review` (draft PR #118). Not played, nothing
 merged.** Read
 [docs/V0370_FEATURES3_REVIEW.md](docs/V0370_FEATURES3_REVIEW.md), `docs/TACTICAL_AI.md` §226 and the
