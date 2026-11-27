@@ -48,7 +48,14 @@ namespace CompanionAI_Pathfinder.Settings
 
             // Combat Mode Settings
             ["CombatModeSettings"] = new() { { Language.English, "Combat Mode Settings" }, { Language.Korean, "전투 모드 설정" } },
-            ["ControlSummons"] = new() { { Language.English, "Control Summoned Creatures (experimental)" }, { Language.Korean, "소환수 제어 (실험적)" } },
+            ["ControlSummons"] = new() { { Language.English, "Control Summoned Creatures" }, { Language.Korean, "소환수 제어" } },
+            // ★ v0.3.70 features review (issue #115)
+            ["SuggestFromBuild"] = new() { { Language.English, "Suggest from build" }, { Language.Korean, "빌드에서 추천" } },
+            ["SuggestPartyFromBuild"] = new() { { Language.English, "Suggest roles for the whole party" }, { Language.Korean, "파티 전체 역할 추천" } },
+            ["SuggestFromBuildDesc"] = new() {
+                { Language.English, "Sets role and range from the character's build as it is now: a bow or crossbow, a blasting kineticist or a caster without weapon feats keeps its distance (Ranged); a weapon-trained full caster stays Mixed; others fight in melee; a divine full caster supports, a melee fighter with a shield tanks. Characters seen for the first time get this automatically; saved choices are never changed unless you press a button." },
+                { Language.Korean, "캐릭터의 현재 빌드로 역할과 거리를 설정합니다: 활·석궁, 블래스트 키네티시스트, 무기 재주가 없는 시전자는 원거리, 무기 재주가 있는 9서클 시전자는 혼합, 그 외는 근접. 신성 9서클 시전자는 서포터, 방패를 든 근접 전사는 탱커. 처음 보는 캐릭터에는 자동으로 적용되며, 저장된 선택은 버튼을 누를 때만 바뀝니다." }
+            },
             ["ControlSummonsDesc"] = new() {
                 { Language.English, "In combat, AI Control also decides for the creatures summoned by characters it controls (not pets, not swarms, not a summon's own summons). They use their own abilities, their summoner's blocklist, friendly-fire rule and spell policy, and never the party's items. Real time needs the current engine: the old real-time engine does not drive summons. Off: the game's AI drives them, as before." },
                 { Language.Korean, "전투 중 AI Control이 제어하는 캐릭터가 소환한 크리처(펫, 스웜, 소환수의 소환수 제외)도 AI Control이 결정합니다. 소환수는 자신의 능력과 소환자의 차단 목록, 아군 오사 방지 규칙, 주문 정책을 사용하며 파티의 아이템은 사용하지 않습니다. 실시간에서는 현재 엔진이 필요합니다(이전 실시간 엔진은 소환수를 제어하지 않음). 끄면 기존처럼 게임 AI가 제어합니다." }
@@ -297,12 +304,6 @@ namespace CompanionAI_Pathfinder.Settings
     /// <summary>
     /// 거리 선호도
     /// </summary>
-    public enum RangePreference
-    {
-        Mixed,      // 혼합 - 상황에 따라
-        Melee,      // 근접 - 적에게 접근
-        Ranged      // 원거리 - 거리 유지
-    }
 
     /// <summary>★ v0.3.7: how a caster spends spell slots on offensive spells (orthogonal to role and range).</summary>
     public enum SpellResourcePolicy
@@ -313,15 +314,6 @@ namespace CompanionAI_Pathfinder.Settings
         Aggressive = 2
     }
 
-    /// <summary>
-    /// AI 역할
-    /// </summary>
-    public enum AIRole
-    {
-        DPS,        // 딜러 - 공격 우선
-        Tank,       // 탱커 - 방어, 도발
-        Support     // 서포터 - 힐, 버프
-    }
 
     /// <summary>
     /// 개별 캐릭터 설정
@@ -335,6 +327,11 @@ namespace CompanionAI_Pathfinder.Settings
         /// <summary>★ pure-mage: opt-in casting discipline, active only with the Ranged preference.</summary>
         public bool PureMage { get; set; } = false;
         public AIRole Role { get; set; } = AIRole.DPS;
+        /// <summary>
+        /// ★ v0.3.70 features review (issue #115): made this session and not yet given the role and range its build suggests
+        /// (Settings/SuggestedSettings.cs). False for every entry of an older settings file, so saved choices are kept.
+        /// </summary>
+        public bool SuggestionPending { get; set; } = false;
 
         // 전투 행동
         public int HealAtHPPercent { get; set; } = 30;
@@ -367,9 +364,12 @@ namespace CompanionAI_Pathfinder.Settings
         public bool ControlCompanions { get; set; } = true;
         /// <summary>
         /// ★ summon control: AI Control also drives the summoned creatures of the characters it drives (in combat, the
-        /// tactical engine). Off by default; a settings file without it loads off (GameInterface/SummonControl.cs).
+        /// tactical engine). ★ v0.3.70 features review (author decision): on by default. A settings file from before is
+        /// switched on once (<see cref="SummonControlDefaultApplied"/>); switched off afterwards, it stays off.
         /// </summary>
-        public bool ControlSummons { get; set; } = false;
+        public bool ControlSummons { get; set; } = true;
+        /// <summary>★ v0.3.70 features review: the one-time switch of summon control to its new default has been made.</summary>
+        public bool SummonControlDefaultApplied { get; set; } = true;
 
         // 전투 모드 설정
         public bool EnableInTurnBased { get; set; } = true;
@@ -512,7 +512,8 @@ namespace CompanionAI_Pathfinder.Settings
                     CharacterId = characterId,
                     CharacterName = characterName ?? characterId,
                     EnableCustomAI = true,
-                    RangePreference = RangePreference.Mixed
+                    RangePreference = RangePreference.Mixed,
+                    SuggestionPending = true   // ★ issue #115: role and range from its build at first sight
                 };
                 CharacterSettings[characterId] = settings;
             }
@@ -548,6 +549,18 @@ namespace CompanionAI_Pathfinder.Settings
                         {
                             if (json.IndexOf("\"" + nameof(AiManagesToggles) + "\"", StringComparison.Ordinal) < 0)
                                 settings.AiManagesToggles = settings.AiStartsToggles && settings.AiSwitchesCombatModes;
+                        }
+                        catch { }
+                        // ★ v0.3.70 features review (author decision): summon control is on by default now. It was an
+                        // experimental opt-in, saved off in every older file; such a file is switched on once.
+                        try
+                        {
+                            if (json.IndexOf("\"" + nameof(SummonControlDefaultApplied) + "\"", StringComparison.Ordinal) < 0)
+                            {
+                                settings.ControlSummons = true;
+                                settings.SummonControlDefaultApplied = true;
+                                Main.Log("Settings: summon control is on by default from this version (it can be switched off in the panel)");
+                            }
                         }
                         catch { }
                         settings.NormalizeBlocklists();   // ★ user-ability-blacklist

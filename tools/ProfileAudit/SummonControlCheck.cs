@@ -60,11 +60,14 @@ namespace ProfileAudit
             void Check(bool ok, string why) { checks++; if (!ok) { bad++; lines.Add("SUMMON-CONTROL FAILED: " + why); } }
             try
             {
-                // --- settings: off by default, old files load off, no row for a read ---
+                // --- settings: ★ v0.3.70 features review (author decision) on by default; a file without the switch loads
+                // it on; a file where the player switched it off after the default changed keeps it off ---
                 var fresh = new ModSettings();
-                Check(!fresh.ControlSummons, "a new settings object has summon control off");
+                Check(fresh.ControlSummons, "a new settings object has summon control on");
                 var old = JsonConvert.DeserializeObject<ModSettings>("{\"ControlCompanions\":true}");
-                Check(old != null && !old.ControlSummons, "a settings file without the switch loads it off");
+                Check(old != null && old.ControlSummons, "a settings file without the switch loads it on");
+                var chosenOff = JsonConvert.DeserializeObject<ModSettings>("{\"ControlSummons\":false,\"SummonControlDefaultApplied\":true}");
+                Check(chosenOff != null && !chosenOff.ControlSummons, "the player's later choice to switch it off is kept");
                 var on = JsonConvert.DeserializeObject<ModSettings>(JsonConvert.SerializeObject(new ModSettings { ControlSummons = true }));
                 Check(on.ControlSummons, "the switch survives a Newtonsoft round trip");
                 Check(fresh.PeekSettings("summon-1") == null && fresh.CharacterSettings.Count == 0, "a read-only lookup creates no row");

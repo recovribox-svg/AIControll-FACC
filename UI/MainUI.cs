@@ -43,7 +43,7 @@ namespace CompanionAI_Pathfinder.UI
 
             try
             {
-                _scrollPosition = GUILayout.BeginScrollView(_scrollPosition, GUILayout.Height(600));
+                _scrollPosition = GUILayout.BeginScrollView(_scrollPosition, UiScale.H(600));
                 GUILayout.BeginVertical("box");
 
                 DrawHeader();
@@ -71,27 +71,22 @@ namespace CompanionAI_Pathfinder.UI
             }
         }
 
+        private static float _stylesScale = -1f;
+
         private static void InitStyles()
         {
-            if (_headerStyle == null)
-            {
-                _headerStyle = new GUIStyle(GUI.skin.label) { fontSize = 18, fontStyle = FontStyle.Bold, richText = true };
-            }
-            if (_boldLabelStyle == null)
-            {
-                _boldLabelStyle = new GUIStyle(GUI.skin.label) { fontSize = 14, fontStyle = FontStyle.Bold, richText = true };
-            }
-            if (_descriptionStyle == null)
-            {
-                _descriptionStyle = new GUIStyle(GUI.skin.label) { fontSize = 12, richText = true, wordWrap = true };
-            }
-            if (_boxStyle == null)
-            {
-                _boxStyle = new GUIStyle(GUI.skin.box) { padding = new RectOffset(10, 10, 10, 10) };
-            }
+            // ★ v0.3.70 features review (issue #114): the styles follow UMM's UI scale, and are made again when it changes.
+            float scale = UiScale.Factor;
+            if (_headerStyle != null && Mathf.Approximately(scale, _stylesScale)) return;
+            _stylesScale = scale;
+            int pad = Mathf.RoundToInt(UiScale.Px(10));
+            _headerStyle = new GUIStyle(GUI.skin.label) { fontSize = UiScale.Font(18), fontStyle = FontStyle.Bold, richText = true };
+            _boldLabelStyle = new GUIStyle(GUI.skin.label) { fontSize = UiScale.Font(14), fontStyle = FontStyle.Bold, richText = true };
+            _descriptionStyle = new GUIStyle(GUI.skin.label) { fontSize = UiScale.Font(12), richText = true, wordWrap = true };
+            _boxStyle = new GUIStyle(GUI.skin.box) { padding = new RectOffset(pad, pad, pad, pad) };
         }
 
-        private static void DrawDivider() => GUILayout.Space(10);
+        private static void DrawDivider() => UiScale.Space(10);
 
         private static void DrawHeader()
         {
@@ -106,7 +101,7 @@ namespace CompanionAI_Pathfinder.UI
         {
             GUILayout.BeginVertical(_boxStyle);
             GUILayout.Label($"<b>{L("Status")}</b>", _boldLabelStyle);
-            GUILayout.Space(5);
+            UiScale.Space(5);
 
             // 모드 활성화 상태
             string enabledColor = Main.Enabled ? "#00FF00" : "#FF0000";
@@ -126,13 +121,13 @@ namespace CompanionAI_Pathfinder.UI
             GUILayout.Label($"{L("ProcessedUnits")}: <color=#00BFFF>{Main.ProcessedUnits}</color>");
 
             // ★ v0.2.38: Pre-Buff 버튼
-            GUILayout.Space(10);
+            UiScale.Space(10);
             GUILayout.BeginHorizontal();
-            if (GUILayout.Button($"<color=#FFD700><b>⚔ {L("PreBuffParty")}</b></color>", GUILayout.Width(200), GUILayout.Height(35)))
+            if (GUILayout.Button($"<color=#FFD700><b>⚔ {L("PreBuffParty")}</b></color>", UiScale.W(200), UiScale.H(35)))
             {
                 PreBuffController.TriggerPartyBuff();
             }
-            GUILayout.Label($"<color=#888888><size=11>{L("PreBuffPartyDesc")}</size></color>", _descriptionStyle);
+            GUILayout.Label($"<color=#888888>{UiScale.Size(11)}{L("PreBuffPartyDesc")}</size></color>", _descriptionStyle);
             GUILayout.EndHorizontal();
 
             GUILayout.EndVertical();
@@ -160,11 +155,11 @@ namespace CompanionAI_Pathfinder.UI
         {
             GUILayout.BeginVertical(_boxStyle);
             GUILayout.Label($"<b>{L("GlobalSettings")}</b>", _boldLabelStyle);
-            GUILayout.Space(5);
+            UiScale.Space(5);
 
             // Language
             GUILayout.BeginHorizontal();
-            GUILayout.Label($"<b>{L("Language")}:</b>", _boldLabelStyle, GUILayout.Width(80));
+            GUILayout.Label($"<b>{L("Language")}:</b>", _boldLabelStyle, UiScale.W(80));
 
             foreach (Language lang in Enum.GetValues(typeof(Language)))
             {
@@ -172,7 +167,7 @@ namespace CompanionAI_Pathfinder.UI
                 string langName = lang == Language.English ? "English" : "한국어";
                 string buttonText = isSelected ? $"<color=#00FF00><b>{langName}</b></color>" : $"<color=#D8D8D8>{langName}</color>";
 
-                if (GUILayout.Button(buttonText, GUI.skin.button, GUILayout.Width(LANG_BUTTON_WIDTH), GUILayout.Height(30)))
+                if (GUILayout.Button(buttonText, GUI.skin.button, UiScale.W(LANG_BUTTON_WIDTH), UiScale.H(30)))
                 {
                     ModSettings.Instance.UILanguage = lang;
                     Localization.CurrentLanguage = lang;
@@ -181,7 +176,7 @@ namespace CompanionAI_Pathfinder.UI
             }
             GUILayout.FlexibleSpace();
             GUILayout.EndHorizontal();
-            GUILayout.Space(5);
+            UiScale.Space(5);
 
             // Debug Logging
             ModSettings.Instance.EnableDebugLogging = DrawCheckbox(ModSettings.Instance.EnableDebugLogging, L("EnableDebugLogging"));
@@ -196,24 +191,24 @@ namespace CompanionAI_Pathfinder.UI
         {
             GUILayout.BeginVertical(_boxStyle);
             GUILayout.Label($"<b>{L("UnitControlSettings")}</b>", _boldLabelStyle);
-            GUILayout.Space(5);
+            UiScale.Space(5);
 
             // 주인공 제어
             bool prevControlMain = ModSettings.Instance.ControlMainCharacter;
             ModSettings.Instance.ControlMainCharacter = DrawCheckbox(ModSettings.Instance.ControlMainCharacter, L("ControlMainCharacter"));
-            GUILayout.Label($"<color=#888888><size=11>{L("ControlMainCharacterDesc")}</size></color>", _descriptionStyle);
-            GUILayout.Space(5);
+            GUILayout.Label($"<color=#888888>{UiScale.Size(11)}{L("ControlMainCharacterDesc")}</size></color>", _descriptionStyle);
+            UiScale.Space(5);
 
             // 동료 제어
             bool prevControlCompanions = ModSettings.Instance.ControlCompanions;
             ModSettings.Instance.ControlCompanions = DrawCheckbox(ModSettings.Instance.ControlCompanions, L("ControlCompanions"));
-            GUILayout.Label($"<color=#888888><size=11>{L("ControlCompanionsDesc")}</size></color>", _descriptionStyle);
-            GUILayout.Space(5);
+            GUILayout.Label($"<color=#888888>{UiScale.Size(11)}{L("ControlCompanionsDesc")}</size></color>", _descriptionStyle);
+            UiScale.Space(5);
 
             // ★ summon control: one global switch, off by default; no per-summon rows.
             bool prevControlSummons = ModSettings.Instance.ControlSummons;
             ModSettings.Instance.ControlSummons = DrawCheckbox(ModSettings.Instance.ControlSummons, L("ControlSummons"));
-            GUILayout.Label($"<color=#888888><size=11>{L("ControlSummonsDesc")}</size></color>", _descriptionStyle);
+            GUILayout.Label($"<color=#888888>{UiScale.Size(11)}{L("ControlSummonsDesc")}</size></color>", _descriptionStyle);
 
             // 변경시 저장
             if (prevControlMain != ModSettings.Instance.ControlMainCharacter ||
@@ -233,7 +228,7 @@ namespace CompanionAI_Pathfinder.UI
         {
             GUILayout.BeginVertical(_boxStyle);
             GUILayout.Label($"<b>{L("CombatModeSettings")}</b>", _boldLabelStyle);
-            GUILayout.Space(5);
+            UiScale.Space(5);
 
             bool prevBossBypass = ModSettings.Instance.ProgressiveBossBypass;
             bool prevTurnBased = ModSettings.Instance.EnableInTurnBased;
@@ -242,74 +237,74 @@ namespace CompanionAI_Pathfinder.UI
 
             // 턴제 모드
             ModSettings.Instance.EnableInTurnBased = DrawCheckbox(ModSettings.Instance.EnableInTurnBased, L("EnableInTurnBased"));
-            GUILayout.Space(3);
+            UiScale.Space(3);
 
             // 실시간 모드
             ModSettings.Instance.EnableInRealTime = DrawCheckbox(ModSettings.Instance.EnableInRealTime, L("EnableInRealTime"));
             // ★ v0.3.14
             if (ModSettings.Instance.EnableInRealTime)
             {
-                GUILayout.BeginHorizontal(); GUILayout.Space(20);
+                GUILayout.BeginHorizontal(); UiScale.Space(20);
                 bool legacy = DrawCheckbox(ModSettings.Instance.RealTimeLegacyEngine, L("RealTimeLegacyEngine"));
                 GUILayout.EndHorizontal();
-                GUILayout.Label($"<color=#888888><size=11>{L("RealTimeLegacyEngineDesc")}</size></color>", _descriptionStyle);
+                GUILayout.Label($"<color=#888888>{UiScale.Size(11)}{L("RealTimeLegacyEngineDesc")}</size></color>", _descriptionStyle);
                 if (legacy != ModSettings.Instance.RealTimeLegacyEngine) { ModSettings.Instance.RealTimeLegacyEngine = legacy; ModSettings.Save(); }
             }
-            GUILayout.Space(3);
+            UiScale.Space(3);
 
             // 실시간 결정 간격
             GUILayout.BeginHorizontal();
-            GUILayout.Label($"{L("RealTimeDecisionInterval")}:", GUILayout.Width(200));
+            GUILayout.Label($"{L("RealTimeDecisionInterval")}:", UiScale.W(200));
             ModSettings.Instance.RealTimeDecisionInterval = GUILayout.HorizontalSlider(
-                ModSettings.Instance.RealTimeDecisionInterval, 0.2f, 2.0f, GUILayout.Width(150));
-            GUILayout.Label($"<color=#00FF00>{ModSettings.Instance.RealTimeDecisionInterval:F1}s</color>", GUILayout.Width(50));
+                ModSettings.Instance.RealTimeDecisionInterval, 0.2f, 2.0f, UiScale.W(150));
+            GUILayout.Label($"<color=#00FF00>{ModSettings.Instance.RealTimeDecisionInterval:F1}s</color>", UiScale.W(50));
             GUILayout.EndHorizontal();
-            GUILayout.Label($"<color=#888888><size=11>{L("RealTimeDecisionIntervalDesc")}</size></color>", _descriptionStyle);
-            GUILayout.Space(3);
+            GUILayout.Label($"<color=#888888>{UiScale.Size(11)}{L("RealTimeDecisionIntervalDesc")}</size></color>", _descriptionStyle);
+            UiScale.Space(3);
 
             // ★ v0.3.7: Progressive boss bypass (global)
             ModSettings.Instance.ProgressiveBossBypass = DrawCheckbox(ModSettings.Instance.ProgressiveBossBypass, L("ProgressiveBossBypass"));
-            GUILayout.Label($"<color=#888888><size=11>{L("ProgressiveBossBypassDesc")}</size></color>", _descriptionStyle);
-            GUILayout.Space(3);
+            GUILayout.Label($"<color=#888888>{UiScale.Size(11)}{L("ProgressiveBossBypassDesc")}</size></color>", _descriptionStyle);
+            UiScale.Space(3);
 
             // ★ v0.3.19: one switch for activatable abilities; the player-click rule only matters while it is on.
             bool prevToggles = ModSettings.Instance.AiManagesToggles;
             ModSettings.Instance.AiManagesToggles = DrawCheckbox(ModSettings.Instance.AiManagesToggles, L("AiManagesToggles"));
-            GUILayout.Label($"<color=#888888><size=11>{L("AiManagesTogglesDesc")}</size></color>", _descriptionStyle);
+            GUILayout.Label($"<color=#888888>{UiScale.Size(11)}{L("AiManagesTogglesDesc")}</size></color>", _descriptionStyle);
             bool prevRespect = ModSettings.Instance.RespectPlayerToggles;
             if (ModSettings.Instance.AiManagesToggles)
             {
                 GUILayout.BeginHorizontal();
-                GUILayout.Space(25);
+                UiScale.Space(25);
                 GUILayout.BeginVertical();
                 ModSettings.Instance.RespectPlayerToggles = DrawCheckbox(ModSettings.Instance.RespectPlayerToggles, L("RespectPlayerToggles"));
-                GUILayout.Label($"<color=#888888><size=11>{L("RespectPlayerTogglesDesc")}</size></color>", _descriptionStyle);
+                GUILayout.Label($"<color=#888888>{UiScale.Size(11)}{L("RespectPlayerTogglesDesc")}</size></color>", _descriptionStyle);
                 GUILayout.EndVertical();
                 GUILayout.EndHorizontal();
             }
-            GUILayout.Space(3);
+            UiScale.Space(3);
 
             // ★ v0.3.19
             bool prevSelfBuffs = ModSettings.Instance.AiRecastsSelfBuffs;
             ModSettings.Instance.AiRecastsSelfBuffs = DrawCheckbox(ModSettings.Instance.AiRecastsSelfBuffs, L("AiRecastsSelfBuffs"));
-            GUILayout.Label($"<color=#888888><size=11>{L("AiRecastsSelfBuffsDesc")}</size></color>", _descriptionStyle);
+            GUILayout.Label($"<color=#888888>{UiScale.Size(11)}{L("AiRecastsSelfBuffsDesc")}</size></color>", _descriptionStyle);
             if (GameInterface.ModInterop.BuffItToTheLimitActive &&
                 (ModSettings.Instance.AiManagesToggles || ModSettings.Instance.AiRecastsSelfBuffs))
-                GUILayout.Label($"<color=#FFD700><size=12>{L("BuffItDetected")}</size></color>", _descriptionStyle);
-            GUILayout.Space(3);
+                GUILayout.Label($"<color=#FFD700>{UiScale.Size(12)}{L("BuffItDetected")}</size></color>", _descriptionStyle);
+            UiScale.Space(3);
 
             // ★ v0.3.20 (audit INT-001)
             bool prevTrapSteer = ModSettings.Instance.SteerPlayerWalksAroundTraps;
             ModSettings.Instance.SteerPlayerWalksAroundTraps = DrawCheckbox(ModSettings.Instance.SteerPlayerWalksAroundTraps, L("SteerPlayerWalksAroundTraps"));
-            GUILayout.Label($"<color=#888888><size=11>{L("SteerPlayerWalksAroundTrapsDesc")}</size></color>", _descriptionStyle);
-            GUILayout.Space(3);
+            GUILayout.Label($"<color=#888888>{UiScale.Size(11)}{L("SteerPlayerWalksAroundTrapsDesc")}</size></color>", _descriptionStyle);
+            UiScale.Space(3);
 
             // ★ v0.3.21
             bool prevWrathFirst = ModSettings.Instance.WrathTacticsFirst;
             ModSettings.Instance.WrathTacticsFirst = DrawCheckbox(ModSettings.Instance.WrathTacticsFirst, L("WrathTacticsFirst"));
-            GUILayout.Label($"<color=#888888><size=11>{L("WrathTacticsFirstDesc")}</size></color>", _descriptionStyle);
+            GUILayout.Label($"<color=#888888>{UiScale.Size(11)}{L("WrathTacticsFirstDesc")}</size></color>", _descriptionStyle);
             if (GameInterface.ModInterop.WrathTacticsActive)
-                GUILayout.Label($"<color=#FFD700><size=12>{L("WrathTacticsDetected")}</size></color>", _descriptionStyle);
+                GUILayout.Label($"<color=#FFD700>{UiScale.Size(12)}{L("WrathTacticsDetected")}</size></color>", _descriptionStyle);
 
             // 변경시 저장
             if (prevBossBypass != ModSettings.Instance.ProgressiveBossBypass ||
@@ -336,34 +331,34 @@ namespace CompanionAI_Pathfinder.UI
             var settings = ModSettings.Instance;
             GUILayout.BeginVertical(_boxStyle);
             GUILayout.Label($"<b>{L("ConsumableSettings")}</b>", _boldLabelStyle);
-            GUILayout.Label($"<color=#888888><size=11>{L("ConsumableSettingsDesc")}</size></color>", _descriptionStyle);
-            GUILayout.Space(5);
+            GUILayout.Label($"<color=#888888>{UiScale.Size(11)}{L("ConsumableSettingsDesc")}</size></color>", _descriptionStyle);
+            UiScale.Space(5);
 
             bool changed = false;
             bool v;
             v = DrawCheckbox(settings.UseConsumables, L("UseConsumables")); changed |= v != settings.UseConsumables; settings.UseConsumables = v;
             if (settings.UseConsumables)
             {
-                GUILayout.BeginHorizontal(); GUILayout.Space(20);
+                GUILayout.BeginHorizontal(); UiScale.Space(20);
                 v = DrawCheckbox(settings.UsePotions, L("UsePotions")); changed |= v != settings.UsePotions; settings.UsePotions = v;
                 GUILayout.EndHorizontal();
-                GUILayout.BeginHorizontal(); GUILayout.Space(20);
+                GUILayout.BeginHorizontal(); UiScale.Space(20);
                 v = DrawCheckbox(settings.UseScrollsAndWands, L("UseScrollsAndWands")); changed |= v != settings.UseScrollsAndWands; settings.UseScrollsAndWands = v;
                 GUILayout.EndHorizontal();
-                GUILayout.BeginHorizontal(); GUILayout.Space(20);
+                GUILayout.BeginHorizontal(); UiScale.Space(20);
                 v = DrawCheckbox(settings.UseThrownItems, L("UseThrownItems")); changed |= v != settings.UseThrownItems; settings.UseThrownItems = v;
                 GUILayout.EndHorizontal();
 
                 GUILayout.BeginHorizontal();
-                GUILayout.Label($"{L("PotionHealThreshold")}:", GUILayout.Width(260));
-                int threshold = Mathf.RoundToInt(GUILayout.HorizontalSlider(settings.PotionHealThresholdPercent, 10f, 90f, GUILayout.Width(150)));
-                GUILayout.Label($"<color=#00FF00>{threshold}%</color>", GUILayout.Width(50));
+                GUILayout.Label($"{L("PotionHealThreshold")}:", UiScale.W(260));
+                int threshold = Mathf.RoundToInt(GUILayout.HorizontalSlider(settings.PotionHealThresholdPercent, 10f, 90f, UiScale.W(150)));
+                GUILayout.Label($"<color=#00FF00>{threshold}%</color>", UiScale.W(50));
                 GUILayout.EndHorizontal();
                 if (threshold != settings.PotionHealThresholdPercent) { settings.PotionHealThresholdPercent = threshold; changed = true; }
             }
             // ★ v0.3.13
             v = DrawCheckbox(settings.PetsUseItems, L("PetsUseItems")); changed |= v != settings.PetsUseItems; settings.PetsUseItems = v;
-            GUILayout.Label($"<color=#888888><size=11>{L("PetsUseItemsDesc")}</size></color>", _descriptionStyle);
+            GUILayout.Label($"<color=#888888>{UiScale.Size(11)}{L("PetsUseItemsDesc")}</size></color>", _descriptionStyle);
 
             if (changed) ModSettings.Save();
             GUILayout.EndVertical();
@@ -372,13 +367,13 @@ namespace CompanionAI_Pathfinder.UI
         private static bool DrawCheckbox(bool value, string label)
         {
             GUILayout.BeginHorizontal();
-            string checkIcon = value ? "<size=18><b><color=green>☑</color></b></size>" : "<size=18><b>☐</b></size>";
+            string checkIcon = value ? $"{UiScale.Size(18)}<b><color=green>☑</color></b></size>" : $"{UiScale.Size(18)}<b>☐</b></size>";
 
-            if (GUILayout.Button(checkIcon, GUI.skin.box, GUILayout.Width(CHECKBOX_SIZE), GUILayout.Height(CHECKBOX_SIZE)))
+            if (GUILayout.Button(checkIcon, GUI.skin.box, UiScale.W(CHECKBOX_SIZE), UiScale.H(CHECKBOX_SIZE)))
                 value = !value;
 
-            GUILayout.Space(5);
-            if (GUILayout.Button($"<size=13>{label}</size>", GUI.skin.label, GUILayout.Height(CHECKBOX_SIZE)))
+            UiScale.Space(5);
+            if (GUILayout.Button($"{UiScale.Size(13)}{label}</size>", GUI.skin.label, UiScale.H(CHECKBOX_SIZE)))
                 value = !value;
 
             GUILayout.EndHorizontal();
@@ -389,7 +384,7 @@ namespace CompanionAI_Pathfinder.UI
         {
             GUILayout.BeginVertical(_boxStyle);
             GUILayout.Label($"<b>{L("PartyMembers")}</b>", _boldLabelStyle);
-            GUILayout.Space(5);
+            UiScale.Space(5);
 
             var characters = GetPartyMembers();
             if (characters.Count == 0)
@@ -401,13 +396,30 @@ namespace CompanionAI_Pathfinder.UI
 
             // Header
             GUILayout.BeginHorizontal();
-            GUILayout.Label($"<b>{L("AI")}</b>", GUILayout.Width(50));
-            GUILayout.Label($"<b>{L("Character")}</b>", GUILayout.Width(CHAR_NAME_WIDTH));
-            GUILayout.Label($"<b>{L("Role")}</b>", GUILayout.Width(ROLE_LABEL_WIDTH));
-            GUILayout.Label($"<b>{L("Range")}</b>", GUILayout.Width(RANGE_LABEL_WIDTH));
+            GUILayout.Label($"<b>{L("AI")}</b>", UiScale.W(50));
+            GUILayout.Label($"<b>{L("Character")}</b>", UiScale.W(CHAR_NAME_WIDTH));
+            GUILayout.Label($"<b>{L("Role")}</b>", UiScale.W(ROLE_LABEL_WIDTH));
+            GUILayout.Label($"<b>{L("Range")}</b>", UiScale.W(RANGE_LABEL_WIDTH));
             GUILayout.FlexibleSpace();
             GUILayout.EndHorizontal();
-            GUILayout.Space(5);
+            UiScale.Space(5);
+
+            // ★ v0.3.70 features review (issue #115): the role and range each character's build suggests, for the whole party.
+            GUILayout.BeginHorizontal();
+            if (GUILayout.Button(L("SuggestPartyFromBuild"), GUI.skin.button, UiScale.W(300), UiScale.H(30)))
+            {
+                foreach (var character in characters)
+                {
+                    if (character.Unit == null) continue;
+                    var s = ModSettings.Instance.GetOrCreateSettings(character.Id, character.Name);
+                    string why = SuggestedSettings.Apply(character.Unit, s);
+                    Main.Log($"[Settings] {character.Name}: role {s.Role}, range {s.RangePreference} suggested from its build ({why})");
+                }
+                ModSettings.Save();
+            }
+            GUILayout.EndHorizontal();
+            GUILayout.Label($"<color=#888888>{UiScale.Size(11)}{L("SuggestFromBuildDesc")}</size></color>", _descriptionStyle);
+            UiScale.Space(5);
 
             foreach (var character in characters)
                 DrawCharacterRow(character);
@@ -418,12 +430,13 @@ namespace CompanionAI_Pathfinder.UI
         private static void DrawCharacterRow(CharacterInfo character)
         {
             var settings = ModSettings.Instance.GetOrCreateSettings(character.Id, character.Name);
+            if (settings.SuggestionPending && character.Unit != null) SuggestedSettings.EnsureApplied(character.Unit, settings);
 
             GUILayout.BeginHorizontal("box");
 
             // AI Toggle
-            string checkIcon = settings.EnableCustomAI ? "<size=16><b><color=green>☑</color></b></size>" : "<size=16><b>☐</b></size>";
-            if (GUILayout.Button(checkIcon, GUI.skin.box, GUILayout.Width(CHECKBOX_SIZE), GUILayout.Height(CHECKBOX_SIZE)))
+            string checkIcon = settings.EnableCustomAI ? $"{UiScale.Size(16)}<b><color=green>☑</color></b></size>" : $"{UiScale.Size(16)}<b>☐</b></size>";
+            if (GUILayout.Button(checkIcon, GUI.skin.box, UiScale.W(CHECKBOX_SIZE), UiScale.H(CHECKBOX_SIZE)))
             {
                 settings.EnableCustomAI = !settings.EnableCustomAI;
                 ModSettings.Save();
@@ -434,7 +447,7 @@ namespace CompanionAI_Pathfinder.UI
             string marker = character.IsMainCharacter ? " <color=#FFD700>★</color>" :
                            character.IsPet ? $" <color=#90EE90>(Pet: {character.OwnerName})</color>" : "";
             string buttonText = isSelected ? $"<b>▼ {character.Name}{marker}</b>" : $"▶ {character.Name}{marker}";
-            if (GUILayout.Button(buttonText, GUI.skin.button, GUILayout.Width(CHAR_NAME_WIDTH), GUILayout.Height(CHECKBOX_SIZE)))
+            if (GUILayout.Button(buttonText, GUI.skin.button, UiScale.W(CHAR_NAME_WIDTH), UiScale.H(CHECKBOX_SIZE)))
             {
                 if (isSelected) { _selectedCharacterId = ""; _editingSettings = null; }
                 else { _selectedCharacterId = character.Id; _editingSettings = settings; }
@@ -442,11 +455,11 @@ namespace CompanionAI_Pathfinder.UI
 
             // v0.2.3: Role
             string roleColor = GetRoleColor(settings.Role);
-            GUILayout.Label($"<color={roleColor}><b>{Localization.GetRoleName(settings.Role)}</b></color>", GUILayout.Width(ROLE_LABEL_WIDTH), GUILayout.Height(CHECKBOX_SIZE));
+            GUILayout.Label($"<color={roleColor}><b>{Localization.GetRoleName(settings.Role)}</b></color>", UiScale.W(ROLE_LABEL_WIDTH), UiScale.H(CHECKBOX_SIZE));
 
             // Range
             string rangeColor = GetRangeColor(settings.RangePreference);
-            GUILayout.Label($"<color={rangeColor}><b>{Localization.GetRangeName(settings.RangePreference)}</b></color>", GUILayout.Width(RANGE_LABEL_WIDTH), GUILayout.Height(CHECKBOX_SIZE));
+            GUILayout.Label($"<color={rangeColor}><b>{Localization.GetRangeName(settings.RangePreference)}</b></color>", UiScale.W(RANGE_LABEL_WIDTH), UiScale.H(CHECKBOX_SIZE));
 
             GUILayout.FlexibleSpace();
             GUILayout.EndHorizontal();
@@ -454,6 +467,13 @@ namespace CompanionAI_Pathfinder.UI
             if (isSelected && _editingSettings != null)
             {
                 GUILayout.BeginVertical("box");
+                // ★ v0.3.70 features review (issue #115): this character's role and range from its build.
+                if (character.Unit != null && GUILayout.Button(L("SuggestFromBuild"), GUI.skin.button, UiScale.W(220), UiScale.H(30)))
+                {
+                    string why = SuggestedSettings.Apply(character.Unit, _editingSettings);
+                    Main.Log($"[Settings] {character.Name}: role {_editingSettings.Role}, range {_editingSettings.RangePreference} suggested from its build ({why})");
+                    ModSettings.Save();
+                }
                 DrawCharacterAISettings();
                 // ★ user-ability-blacklist: the character's "Abilities AI must not use" (collapsed until opened).
                 AbilityBlocklistUI.DrawForCharacter(character.Unit, character.Id, character.Name, _boldLabelStyle, _descriptionStyle);
@@ -482,13 +502,13 @@ namespace CompanionAI_Pathfinder.UI
         {
             if (_editingSettings == null) return;
 
-            GUILayout.Space(5);
+            UiScale.Space(5);
             DrawRoleSelection();
-            GUILayout.Space(5);
+            UiScale.Space(5);
             DrawRangePreferenceSelection();
-            GUILayout.Space(5);
+            UiScale.Space(5);
             DrawSpellPolicySelection();
-            GUILayout.Space(5);
+            UiScale.Space(5);
         }
 
         /// <summary>★ v0.3.7: per-character spell-resource policy (Standard / Progressive).</summary>
@@ -496,7 +516,7 @@ namespace CompanionAI_Pathfinder.UI
         {
             GUILayout.Label($"<b>{L("SpellPolicy")}</b>", _boldLabelStyle);
             GUILayout.Label($"<color=#D8D8D8><i>{L("SpellPolicyDescHeader")}</i></color>", _descriptionStyle);
-            GUILayout.Space(5);
+            UiScale.Space(5);
 
             GUILayout.BeginHorizontal();
             foreach (SpellResourcePolicy policy in Enum.GetValues(typeof(SpellResourcePolicy)))
@@ -504,14 +524,14 @@ namespace CompanionAI_Pathfinder.UI
                 bool isSelected = _editingSettings.SpellPolicy == policy;
                 string name = Localization.GetSpellPolicyName(policy);
                 string btnText = isSelected ? $"<color=#87CEEB><b>{name}</b></color>" : $"<color=#D8D8D8>{name}</color>";
-                if (GUILayout.Toggle(isSelected, btnText, GUI.skin.button, GUILayout.Width(RANGE_BUTTON_WIDTH), GUILayout.Height(BUTTON_HEIGHT)) && !isSelected)
+                if (GUILayout.Toggle(isSelected, btnText, GUI.skin.button, UiScale.W(RANGE_BUTTON_WIDTH), UiScale.H(BUTTON_HEIGHT)) && !isSelected)
                 {
                     _editingSettings.SpellPolicy = policy;
                     ModSettings.Save();
                 }
             }
             GUILayout.EndHorizontal();
-            GUILayout.Space(5);
+            UiScale.Space(5);
             GUILayout.Label($"<color=#D8D8D8><i>{Localization.GetSpellPolicyDescription(_editingSettings.SpellPolicy)}</i></color>", _descriptionStyle);
         }
 
@@ -520,7 +540,7 @@ namespace CompanionAI_Pathfinder.UI
         {
             GUILayout.Label($"<b>{L("RolePreference")}</b>", _boldLabelStyle);
             GUILayout.Label($"<color=#D8D8D8><i>{L("RolePreferenceDesc")}</i></color>", _descriptionStyle);
-            GUILayout.Space(5);
+            UiScale.Space(5);
 
             GUILayout.BeginHorizontal();
             foreach (AIRole role in Enum.GetValues(typeof(AIRole)))
@@ -530,14 +550,14 @@ namespace CompanionAI_Pathfinder.UI
                 string roleName = Localization.GetRoleName(role);
                 string btnText = isSelected ? $"<color={roleColor}><b>{roleName}</b></color>" : $"<color=#D8D8D8>{roleName}</color>";
 
-                if (GUILayout.Toggle(isSelected, btnText, GUI.skin.button, GUILayout.Width(ROLE_BUTTON_WIDTH), GUILayout.Height(BUTTON_HEIGHT)) && !isSelected)
+                if (GUILayout.Toggle(isSelected, btnText, GUI.skin.button, UiScale.W(ROLE_BUTTON_WIDTH), UiScale.H(BUTTON_HEIGHT)) && !isSelected)
                 {
                     _editingSettings.Role = role;
                     ModSettings.Save();
                 }
             }
             GUILayout.EndHorizontal();
-            GUILayout.Space(5);
+            UiScale.Space(5);
             GUILayout.Label($"<color=#D8D8D8><i>{Localization.GetRoleDescription(_editingSettings.Role)}</i></color>", _descriptionStyle);
         }
 
@@ -545,7 +565,7 @@ namespace CompanionAI_Pathfinder.UI
         {
             GUILayout.Label($"<b>{L("RangePreference")}</b>", _boldLabelStyle);
             GUILayout.Label($"<color=#D8D8D8><i>{L("RangePreferenceDesc")}</i></color>", _descriptionStyle);
-            GUILayout.Space(5);
+            UiScale.Space(5);
 
             GUILayout.BeginHorizontal();
             foreach (RangePreference range in Enum.GetValues(typeof(RangePreference)))
@@ -555,14 +575,14 @@ namespace CompanionAI_Pathfinder.UI
                 string rangeName = Localization.GetRangeName(range);
                 string btnText = isSelected ? $"<color={rangeColor}><b>{rangeName}</b></color>" : $"<color=#D8D8D8>{rangeName}</color>";
 
-                if (GUILayout.Toggle(isSelected, btnText, GUI.skin.button, GUILayout.Width(RANGE_BUTTON_WIDTH), GUILayout.Height(BUTTON_HEIGHT)) && !isSelected)
+                if (GUILayout.Toggle(isSelected, btnText, GUI.skin.button, UiScale.W(RANGE_BUTTON_WIDTH), UiScale.H(BUTTON_HEIGHT)) && !isSelected)
                 {
                     _editingSettings.RangePreference = range;
                     ModSettings.Save();
                 }
             }
             GUILayout.EndHorizontal();
-            GUILayout.Space(5);
+            UiScale.Space(5);
             GUILayout.Label($"<color=#D8D8D8><i>{Localization.GetRangeDescription(_editingSettings.RangePreference)}</i></color>", _descriptionStyle);
             if (_editingSettings.RangePreference == RangePreference.Ranged)
             {

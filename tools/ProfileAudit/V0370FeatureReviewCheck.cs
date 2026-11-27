@@ -75,6 +75,41 @@ namespace ProfileAudit
                   witness != null && Calls(witness, "Report", "TryGetValue"),
                   "coverage is reported once per summon kind; free-side refusals one row a decision; unused verdicts only when changed");
 
+            // --- issue #114: the settings panel follows UMM's UI scale ---
+            var mainUi = asm.GetType("CompanionAI_Pathfinder.UI.MainUI");
+            var blocklistUi = asm.GetType("CompanionAI_Pathfinder.UI.AbilityBlocklistUI");
+            int fixedSizes = 0;
+            foreach (var type in new[] { mainUi, blocklistUi })
+                foreach (var m in type?.GetMethods(all).Where(m => m.DeclaringType == type && m.GetMethodBody() != null) ?? Enumerable.Empty<MethodInfo>())
+                    fixedSizes += SaveBoostCheck.ReferencedMembers(m).Count(r => r.DeclaringType?.Name == "GUILayout" &&
+                        (r.Name == "Width" || r.Name == "Height" || r.Name == "Space"));
+            Check(mainUi != null && blocklistUi != null && fixedSizes == 0 && Calls(mainUi, "InitStyles", "Font") &&
+                  Calls(mainUi, "InitStyles", "get_Factor"),
+                  $"every width, height, space, font and rich-text size of the panel goes through UMM's UI scale ({fixedSizes} fixed left)");
+
+            // --- issue #115: role and range from the build, for a character seen first ---
+            var settingsType = asm.GetType("CompanionAI_Pathfinder.Settings.ModSettings");
+            var charType = asm.GetType("CompanionAI_Pathfinder.Settings.CharacterSettings");
+            var brain = asm.GetType("CompanionAI_Pathfinder.GameInterface.CustomBrainPatch");
+            bool pendingDefault = true;
+            try { pendingDefault = (bool)charType.GetProperty("SuggestionPending").GetValue(Activator.CreateInstance(charType)); } catch { }
+            var shield = CompanionAI_Pathfinder.Settings.SuggestedSettingsRules.Suggest(
+                new CompanionAI_Pathfinder.Settings.SuggestedSettingsRules.BuildFacts { Shield = true });
+            var cleric = CompanionAI_Pathfinder.Settings.SuggestedSettingsRules.Suggest(
+                new CompanionAI_Pathfinder.Settings.SuggestedSettingsRules.BuildFacts { FullCaster = true, Divine = true });
+            Check(!pendingDefault && Calls(settingsType, "GetOrCreateSettings", "set_SuggestionPending") &&
+                  Calls(brain, "ShouldControlUnit", "EnsureApplied") && Calls(mainUi, "DrawCharacterRow", "EnsureApplied") &&
+                  shield.Role == CompanionAI_Pathfinder.Settings.AIRole.Tank && cleric.Role == CompanionAI_Pathfinder.Settings.AIRole.Support &&
+                  cleric.Range == CompanionAI_Pathfinder.Settings.RangePreference.Ranged,
+                  "a character seen for the first time gets the role and range its build suggests (saved entries untouched); " +
+                  $"sword and shield -> {shield.Role}/{shield.Range}, divine full caster -> {cleric.Role}/{cleric.Range}");
+
+            // --- author decision: summon control on by default ---
+            bool summonsOn = false;
+            try { summonsOn = (bool)settingsType.GetProperty("ControlSummons").GetValue(Activator.CreateInstance(settingsType, true)); } catch { }
+            Check(summonsOn && Calls(settingsType, "Load", "set_SummonControlDefaultApplied") && Calls(settingsType, "Load", "set_ControlSummons"),
+                  "summon control is on by default; an older settings file is switched on once, and stays as the player sets it afterwards");
+
             failures = failed;
             lines.Add($"V0370-FEATURE-REVIEW {lines.Count} checks, {failed} failures");
             return lines;

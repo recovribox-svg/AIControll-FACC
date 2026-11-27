@@ -40,3 +40,53 @@ namespace CompanionAI.Tests
         }
     }
 }
+
+namespace CompanionAI.Tests
+{
+    using CompanionAI_Pathfinder.Settings;
+    using F = CompanionAI_Pathfinder.Settings.SuggestedSettingsRules.BuildFacts;
+
+    /// <summary>★ issue #115: roles and ranges suggested from a build, checked on the companions' default builds.</summary>
+    public sealed class SuggestedSettingsTests
+    {
+        private static void Expect(F facts, AIRole role, RangePreference range)
+        {
+            var s = SuggestedSettingsRules.Suggest(facts);
+            Assert.Equal(role, s.Role);
+            Assert.Equal(range, s.Range);
+            Assert.False(string.IsNullOrEmpty(s.Why));
+        }
+
+        [Fact]
+        public void SeelahPaladinWithShieldTanks() => Expect(new F { Shield = true }, AIRole.Tank, RangePreference.Melee);
+
+        [Fact]
+        public void ArchersKeepTheirDistance()
+        {
+            Expect(new F { RangedWeapon = true }, AIRole.DPS, RangePreference.Ranged);   // Lann, Wenduag, Arueshalae
+            // A Thundercaller with a heavy crossbow, or an archer with a buckler, still shoots from range.
+            Expect(new F { RangedWeapon = true, Shield = true }, AIRole.DPS, RangePreference.Ranged);
+        }
+
+        [Fact]
+        public void CastersWithoutWeaponFeatsStayBack()
+        {
+            Expect(new F { FullCaster = true }, AIRole.DPS, RangePreference.Ranged);                 // Ember, Nenio
+            Expect(new F { FullCaster = true, Divine = true }, AIRole.Support, RangePreference.Ranged); // Daeran, Sosiel
+        }
+
+        [Fact]
+        public void WeaponTrainedDivineCasterSupportsFromMixedRange() =>
+            Expect(new F { FullCaster = true, Divine = true, WeaponFeats = true }, AIRole.Support, RangePreference.Mixed); // Camellia
+
+        [Fact]
+        public void MartialsAndPartialCastersFightInMelee()
+        {
+            Expect(new F(), AIRole.DPS, RangePreference.Melee);                       // Greybor, Regill, Woljif, Ulbrig
+            Expect(new F { WeaponFeats = true }, AIRole.DPS, RangePreference.Melee);
+        }
+
+        [Fact]
+        public void BlastingKineticistIsRanged() => Expect(new F { BlastKineticist = true }, AIRole.DPS, RangePreference.Ranged);
+    }
+}

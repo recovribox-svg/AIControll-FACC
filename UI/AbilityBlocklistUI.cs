@@ -86,8 +86,8 @@ namespace CompanionAI_Pathfinder.UI
             if (open)
             {
                 GUILayout.Label($"<color=#D8D8D8><i>{L("BL_SharedDesc")}</i></color>", description);
-                GUILayout.Label($"<color=#888888><size=11>{L("BL_Boundary")}</size></color>", description);
-                GUILayout.Space(5);
+                GUILayout.Label($"<color=#888888>{UiScale.Size(11)}{L("BL_Boundary")}</size></color>", description);
+                UiScale.Space(5);
                 if (list.Count == 0) GUILayout.Label($"<color=#D8D8D8><i>{L("BL_NoShared")}</i></color>", description);
                 else
                 {
@@ -98,8 +98,8 @@ namespace CompanionAI_Pathfinder.UI
                     {
                         var entry = list[i];
                         GUILayout.BeginHorizontal("box");
-                        GUILayout.Label(EntryText(entry), GUILayout.Width(NameWidth + StatusWidth));
-                        if (GUILayout.Button(L("BL_Remove"), GUILayout.Width(120f), GUILayout.Height(ButtonHeight))) remove = entry;
+                        GUILayout.Label(EntryText(entry), UiScale.W(NameWidth + StatusWidth));
+                        if (GUILayout.Button(L("BL_Remove"), UiScale.W(120f), UiScale.H(ButtonHeight))) remove = entry;
                         GUILayout.FlexibleSpace();
                         GUILayout.EndHorizontal();
                     }
@@ -125,7 +125,7 @@ namespace CompanionAI_Pathfinder.UI
             }
             int own = settings.GetOrCreateSettings(unitId, unitName).BlockedAbilities?.Count ?? 0;
             int shared = settings.SharedBlockedAbilities?.Count ?? 0;
-            GUILayout.Space(5);
+            UiScale.Space(5);
             bool open = s_Open;   // the pass that sees the click still draws the old state
             if (GUILayout.Button($"<b>{(open ? "▼" : "▶")} {L("BL_Title")}</b> <color=#D8D8D8>({string.Format(L("BL_Count"), own, shared)})</color>", bold))
             {
@@ -134,8 +134,8 @@ namespace CompanionAI_Pathfinder.UI
             }
             if (!open) return;
 
-            GUILayout.Label($"<color=#888888><size=11>{L("BL_Boundary")}</size></color>", description);
-            GUILayout.Label($"<color=#888888><size=11>{L("BL_CharacterDesc")}</size></color>", description);
+            GUILayout.Label($"<color=#888888>{UiScale.Size(11)}{L("BL_Boundary")}</size></color>", description);
+            GUILayout.Label($"<color=#888888>{UiScale.Size(11)}{L("BL_CharacterDesc")}</size></color>", description);
             if (unit == null)
             {
                 GUILayout.Label($"<color=#D8D8D8><i>{L("BL_NoUnit")}</i></color>", description);
@@ -148,19 +148,19 @@ namespace CompanionAI_Pathfinder.UI
 
             // Search, refresh, filter.
             GUILayout.BeginHorizontal();
-            GUILayout.Label(L("BL_Search"), GUILayout.Width(70f));
-            s_Search = GUILayout.TextField(s_Search ?? "", GUILayout.Width(260f)) ?? "";
-            GUILayout.Space(10);
-            if (GUILayout.Button(L("BL_Refresh"), GUILayout.Width(120f), GUILayout.Height(ButtonHeight))) s_Rows = null;
-            GUILayout.Space(10);
-            if (GUILayout.Button((s_BlockedOnly ? "☑ " : "☐ ") + L("BL_BlockedOnly"), GUI.skin.label, GUILayout.Height(ButtonHeight)))
+            GUILayout.Label(L("BL_Search"), UiScale.W(70f));
+            s_Search = GUILayout.TextField(s_Search ?? "", UiScale.W(260f)) ?? "";
+            UiScale.Space(10);
+            if (GUILayout.Button(L("BL_Refresh"), UiScale.W(120f), UiScale.H(ButtonHeight))) s_Rows = null;
+            UiScale.Space(10);
+            if (GUILayout.Button((s_BlockedOnly ? "☑ " : "☐ ") + L("BL_BlockedOnly"), GUI.skin.label, UiScale.H(ButtonHeight)))
             {
                 s_BlockedOnly = !s_BlockedOnly;
                 if (s_BlockedOnly) s_HideBlocked = false;
             }
             // ★ v0.3.28: catalogue view only, mutually exclusive with "Show blocked only"; neither edits a block list.
-            GUILayout.Space(10);
-            if (GUILayout.Button((s_HideBlocked ? "☑ " : "☐ ") + L("BL_HideBlocked"), GUI.skin.label, GUILayout.Height(ButtonHeight)))
+            UiScale.Space(10);
+            if (GUILayout.Button((s_HideBlocked ? "☑ " : "☐ ") + L("BL_HideBlocked"), GUI.skin.label, UiScale.H(ButtonHeight)))
             {
                 s_HideBlocked = !s_HideBlocked;
                 if (s_HideBlocked) s_BlockedOnly = false;
@@ -170,12 +170,12 @@ namespace CompanionAI_Pathfinder.UI
 
             // Where new blocks go.
             GUILayout.BeginHorizontal();
-            GUILayout.Label(L("BL_BlockFor"), GUILayout.Width(180f));
-            if (GUILayout.Toggle(!s_AddShared, L("BL_ThisCharacter"), GUI.skin.button, GUILayout.Width(150f), GUILayout.Height(ButtonHeight))) s_AddShared = false;
-            if (GUILayout.Toggle(s_AddShared, L("BL_Everyone"), GUI.skin.button, GUILayout.Width(150f), GUILayout.Height(ButtonHeight))) s_AddShared = true;
+            GUILayout.Label(L("BL_BlockFor"), UiScale.W(180f));
+            if (GUILayout.Toggle(!s_AddShared, L("BL_ThisCharacter"), GUI.skin.button, UiScale.W(150f), UiScale.H(ButtonHeight))) s_AddShared = false;
+            if (GUILayout.Toggle(s_AddShared, L("BL_Everyone"), GUI.skin.button, UiScale.W(150f), UiScale.H(ButtonHeight))) s_AddShared = true;
             GUILayout.FlexibleSpace();
             GUILayout.EndHorizontal();
-            GUILayout.Space(5);
+            UiScale.Space(5);
 
             int revision = UserAbilityPolicy.Revision;
             if (layout && (s_View == null || s_ViewSearch != s_Search || s_ViewBlockedOnly != s_BlockedOnly ||
@@ -194,13 +194,13 @@ namespace CompanionAI_Pathfinder.UI
 
             if (s_Missing.Count > 0)
             {
-                GUILayout.Space(5);
+                UiScale.Space(5);
                 GUILayout.Label($"<color=#D8D8D8>{L("BL_NotFound")}</color>", description);
                 foreach (var entry in s_Missing)
                 {
                     GUILayout.BeginHorizontal("box");
-                    GUILayout.Label(EntryText(entry), GUILayout.Width(NameWidth + StatusWidth));
-                    if (GUILayout.Button(L("BL_Remove"), GUILayout.Width(120f), GUILayout.Height(ButtonHeight)))
+                    GUILayout.Label(EntryText(entry), UiScale.W(NameWidth + StatusWidth));
+                    if (GUILayout.Button(L("BL_Remove"), UiScale.W(120f), UiScale.H(ButtonHeight)))
                         edit = Ask(false, entry.Guid, entry.Name, entry.Kind, false);
                     GUILayout.FlexibleSpace();
                     GUILayout.EndHorizontal();
@@ -216,32 +216,32 @@ namespace CompanionAI_Pathfinder.UI
             GUILayout.BeginHorizontal("box");
             string variant = row.FamilyName != null ? ", " + string.Format(L("BL_VariantOf"), row.FamilyName) : "";
             GUILayout.Label($"{(exact != BlockSource.None || family != BlockSource.None ? "<color=#FF8C69>" : "<color=#FFFFFF>")}{row.Name}</color> " +
-                            $"<color=#888888><size=11>({row.TagText}{variant})</size></color>", GUILayout.Width(NameWidth));
+                            $"<color=#888888>{UiScale.Size(11)}({row.TagText}{variant})</size></color>", UiScale.W(NameWidth));
             string status = "";
             if ((exact & BlockSource.Character) != 0) status = L("BL_BlockedHere");
             if ((exact & BlockSource.Shared) != 0) status += (status.Length > 0 ? "; " : "") + L("BL_BlockedShared");
             if (family != BlockSource.None)
                 status += (status.Length > 0 ? "; " : "") + string.Format(L("BL_BlockedFamily"), row.FamilyName) +
                           $" ({((family & BlockSource.Shared) != 0 ? L("BL_Everyone") : L("BL_ThisCharacter"))})";
-            GUILayout.Label($"<color=#FF8C69><size=11>{status}</size></color>", GUILayout.Width(StatusWidth));
+            GUILayout.Label($"<color=#FF8C69>{UiScale.Size(11)}{status}</size></color>", UiScale.W(StatusWidth));
 
             if (exact == BlockSource.None && family == BlockSource.None)
             {
-                if (GUILayout.Button(L("BL_Block"), GUILayout.Width(110f), GUILayout.Height(ButtonHeight)))
+                if (GUILayout.Button(L("BL_Block"), UiScale.W(110f), UiScale.H(ButtonHeight)))
                     edit = Ask(s_AddShared, row.Guid, row.Name, row.Kind, true);
-                if (row.FamilyGuid != null && GUILayout.Button(L("BL_BlockAllVariants"), GUILayout.Width(170f), GUILayout.Height(ButtonHeight)))
+                if (row.FamilyGuid != null && GUILayout.Button(L("BL_BlockAllVariants"), UiScale.W(170f), UiScale.H(ButtonHeight)))
                     edit = Ask(s_AddShared, row.FamilyGuid, row.FamilyName, AbilityBlockEntry.AbilityKind, true);
             }
             else
             {
                 // Removal at the list that blocks it (a character's own entry cannot lift a shared one).
-                if ((exact & BlockSource.Character) != 0 && GUILayout.Button(L("BL_UnblockHere"), GUILayout.Height(ButtonHeight)))
+                if ((exact & BlockSource.Character) != 0 && GUILayout.Button(L("BL_UnblockHere"), UiScale.H(ButtonHeight)))
                     edit = Ask(false, row.Guid, row.Name, row.Kind, false);
-                if ((exact & BlockSource.Shared) != 0 && GUILayout.Button(L("BL_UnblockShared"), GUILayout.Height(ButtonHeight)))
+                if ((exact & BlockSource.Shared) != 0 && GUILayout.Button(L("BL_UnblockShared"), UiScale.H(ButtonHeight)))
                     edit = Ask(true, row.Guid, row.Name, row.Kind, false);
-                if ((family & BlockSource.Character) != 0 && GUILayout.Button(L("BL_UnblockFamilyHere"), GUILayout.Height(ButtonHeight)))
+                if ((family & BlockSource.Character) != 0 && GUILayout.Button(L("BL_UnblockFamilyHere"), UiScale.H(ButtonHeight)))
                     edit = Ask(false, row.FamilyGuid, row.FamilyName, AbilityBlockEntry.AbilityKind, false);
-                if ((family & BlockSource.Shared) != 0 && GUILayout.Button(L("BL_UnblockFamilyShared"), GUILayout.Height(ButtonHeight)))
+                if ((family & BlockSource.Shared) != 0 && GUILayout.Button(L("BL_UnblockFamilyShared"), UiScale.H(ButtonHeight)))
                     edit = Ask(true, row.FamilyGuid, row.FamilyName, AbilityBlockEntry.AbilityKind, false);
             }
             GUILayout.FlexibleSpace();
@@ -251,9 +251,9 @@ namespace CompanionAI_Pathfinder.UI
         private static void DrawPager(ref int page, int pages)
         {
             GUILayout.BeginHorizontal();
-            if (GUILayout.Button(L("BL_Prev"), GUILayout.Width(120f), GUILayout.Height(ButtonHeight)) && page > 0) page--;
-            GUILayout.Label(string.Format(L("BL_Page"), page + 1, pages), GUILayout.Width(110f), GUILayout.Height(ButtonHeight));
-            if (GUILayout.Button(L("BL_Next"), GUILayout.Width(120f), GUILayout.Height(ButtonHeight)) && page < pages - 1) page++;
+            if (GUILayout.Button(L("BL_Prev"), UiScale.W(120f), UiScale.H(ButtonHeight)) && page > 0) page--;
+            GUILayout.Label(string.Format(L("BL_Page"), page + 1, pages), UiScale.W(110f), UiScale.H(ButtonHeight));
+            if (GUILayout.Button(L("BL_Next"), UiScale.W(120f), UiScale.H(ButtonHeight)) && page < pages - 1) page++;
             GUILayout.FlexibleSpace();
             GUILayout.EndHorizontal();
         }
@@ -262,7 +262,7 @@ namespace CompanionAI_Pathfinder.UI
         {
             string name = string.IsNullOrEmpty(entry.Name) ? entry.Guid : entry.Name;
             string kind = entry.Kind == AbilityBlockEntry.ToggleKind ? L("BL_KindToggle") : L("BL_KindAbility");
-            return $"{name} <color=#888888><size=11>({kind}, {entry.Guid})</size></color>";
+            return $"{name} <color=#888888>{UiScale.Size(11)}({kind}, {entry.Guid})</size></color>";
         }
 
         /// <summary>The catalogue: the character's abilities as AI Control discovers them, and its visible toggles.</summary>
