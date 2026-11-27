@@ -13,6 +13,7 @@ using Kingmaker.EntitySystem.Entities;
 using Kingmaker.EntitySystem.Stats;
 using Kingmaker.PubSubSystem;
 using Kingmaker.RuleSystem.Rules;
+using Kingmaker.UnitLogic.Abilities;
 using Kingmaker.UnitLogic.Abilities.Blueprints;
 
 namespace CompanionAI_Pathfinder.Tactics
@@ -65,11 +66,12 @@ namespace CompanionAI_Pathfinder.Tactics
 
         private static readonly Dictionary<string, FightTally> Fight = new Dictionary<string, FightTally>();
 
-        private static void Tally(UnitEntityData caster, BlueprintAbility ability, RuleSavingThrow evt, float passChance)
+        private static void Tally(UnitEntityData caster, BlueprintAbility ability, string fusion, string name, RuleSavingThrow evt,
+                                  float passChance)
         {
-            string key = $"{caster.UniqueId}|{ability.AssetGuid}";
+            string key = $"{caster.UniqueId}|{ability.AssetGuid}{fusion}";
             if (!Fight.TryGetValue(key, out var t))
-                Fight[key] = t = new FightTally { Caster = caster.CharacterName, Ability = ability.Name };
+                Fight[key] = t = new FightTally { Caster = caster.CharacterName, Ability = name };
             t.Saves++;
             if (evt.IsPassed) t.Passed++;
             t.Expected += passChance;
@@ -105,16 +107,30 @@ namespace CompanionAI_Pathfinder.Tactics
             Reported.Clear();
         }
 
-        private static string Key(string who, SavingThrowType type, BlueprintAbility ability) =>
-            $"{who}|{type}|{ability?.AssetGuid}";
+        /// <remarks>★ features5 review: with the fused spell's identity (AbilityProfile.FusionIdentityOf). Every Magic Fusion
+        /// is cast through one native holder ability: what a target showed against one fusion (an automatic pass against a
+        /// mind-affecting part) was read for all of them.</remarks>
+        private static string Key(string who, SavingThrowType type, BlueprintAbility ability, string fusion) =>
+            $"{who}|{type}|{ability?.AssetGuid}{fusion}";
 
         /// <summary>What the game showed for <paramref name="target"/>'s saves of this type against this ability, or null.</summary>
-        public static Seen Lookup(UnitEntityData target, SavingThrowType type, BlueprintAbility ability)
+        public static Seen Lookup(UnitEntityData target, SavingThrowType type, AbilityData ability)
         {
-            if (target == null || ability == null || ByUnit.Count == 0 && ByKind.Count == 0) return null;
-            if (ByUnit.TryGetValue(Key(target.UniqueId, type, ability), out var seen)) return seen;
+            var blueprint = ability?.Blueprint;
+            if (target == null || blueprint == null || ByUnit.Count == 0 && ByKind.Count == 0) return null;
+            string fusion = AbilityProfile.FusionIdentityOf(ability);
+            if (ByUnit.TryGetValue(Key(target.UniqueId, type, blueprint, fusion), out var seen)) return seen;
             string kind = target.Blueprint?.AssetGuid.ToString();
-            return kind != null && ByKind.TryGetValue(Key(kind, type, ability), out seen) ? seen : null;
+            return kind != null && ByKind.TryGetValue(Key(kind, type, blueprint, fusion), out seen) ? seen : null;
+        }
+
+        /// <summary>★ features5 review: the name the cast had - a fused spell's own ("Phantasmal Web/Boneshatter"; its holder
+        /// blueprint has none) - else the blueprint's (AbilityDiscovery.LogName).</summary>
+        private static string SaveName(AbilityData data, BlueprintAbility ability)
+        {
+            string name = null;
+            try { name = data?.Name; } catch { }
+            return string.IsNullOrWhiteSpace(name) ? AbilityDiscovery.LogName(ability) : name;
         }
 
         public void OnEventAboutToTrigger(RuleSavingThrow evt)
@@ -131,8 +147,11 @@ namespace CompanionAI_Pathfinder.Tactics
                 var target = evt.Initiator;
                 var caster = evt.Reason?.Caster;
                 if (target == null || caster == null || !caster.IsPlayerFaction || !caster.IsEnemy(target)) return;
-                var ability = evt.Reason?.Ability?.Blueprint ?? evt.Reason?.Context?.SourceAbility;
+                var data = evt.Reason?.Ability;
+                var ability = data?.Blueprint ?? evt.Reason?.Context?.SourceAbility;
                 if (ability == null) return;
+                string fusion = AbilityProfile.FusionIdentityOf(data);
+                string name = SaveName(data, ability);
                 StatType statType = RuleSavingThrow.GetStatFromSavingThrow(evt.Type);
                 int plain = target.Stats.GetStat(statType)?.ModifiedValue ?? evt.StatValue;
                 // ★ v0.3.17: every save against the party's abilities, with the chance it had: tells bad luck from a wrong
@@ -141,16 +160,16 @@ namespace CompanionAI_Pathfinder.Tactics
                 float passChance = evt.AutoPass ? 1f : Math.Max(0.05f, Math.Min(0.95f, (21 - needed) / 20f));
                 // ★ v0.3.19 (release): each roll at verbose level only; the normal log gets one line per caster and ability
                 // at the end of the fight (ReportFight) - saves made, passed, the chance expected and the DCs.
-                Tally(caster, ability, evt, passChance);
-                Main.Verbose($"[Save] {target.CharacterName} vs {caster.CharacterName}'s {ability.Name}: {evt.Type} " +
+                Tally(caster, ability, fusion, name, evt, passChance);
+                Main.Verbose($"[Save] {target.CharacterName} vs {caster.CharacterName}'s {name}: {evt.Type} " +
                          (evt.AutoPass ? "passes automatically" : $"{(int)evt.D20}+{evt.StatValue}{(evt.SuccessBonus != 0 ? $"+{evt.SuccessBonus}" : "")} vs DC {evt.DifficultyClass}") +
                          $" - {(evt.IsPassed ? "passed" : "failed")} (passes on {needed}+, {passChance:P0})");
                 var seen = new Seen { Delta = evt.StatValue - plain, AutoPass = evt.AutoPass };
-                ByUnit[Key(target.UniqueId, evt.Type, ability)] = seen;
+                ByUnit[Key(target.UniqueId, evt.Type, ability, fusion)] = seen;
                 string kind = target.Blueprint?.AssetGuid.ToString();
-                if (kind != null) ByKind[Key(kind, evt.Type, ability)] = seen;
-                if ((seen.AutoPass || seen.Delta != 0) && Reported.Add(Key(target.UniqueId, evt.Type, ability)))
-                    Main.Log($"[Save] {target.CharacterName}: {evt.Type} save against {ability.Name} " +
+                if (kind != null) ByKind[Key(kind, evt.Type, ability, fusion)] = seen;
+                if ((seen.AutoPass || seen.Delta != 0) && Reported.Add(Key(target.UniqueId, evt.Type, ability, fusion)))
+                    Main.Log($"[Save] {target.CharacterName}: {evt.Type} save against {name} " +
                              (seen.AutoPass ? "passes automatically" : $"{(seen.Delta > 0 ? "+" : "")}{seen.Delta} beyond its save stat") +
                              "; estimates use this");
             }

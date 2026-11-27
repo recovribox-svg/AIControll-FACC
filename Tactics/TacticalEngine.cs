@@ -354,6 +354,8 @@ namespace CompanionAI_Pathfinder.Tactics
             s_FreeSideSearches = s_NoFreeSide = 0;
             s_ApproachHits = s_ApproachMisses = s_SpotSearches = 0;
             s_ApproachTicks = s_SpotSearchTicks = 0;
+            s_DropReads = s_PartyReads = s_PartySkips = 0;
+            s_DropTicks = 0;
             var chosen = Decide(unit, memory, preview: false, out _, timings);
             timings.Mark(DecisionStage.Finish);
             double ms = watch.Elapsed.TotalMilliseconds;
@@ -367,7 +369,7 @@ namespace CompanionAI_Pathfinder.Tactics
                          $"{(GC.CollectionCount(0) != collections ? "; memory clean-up ran" : "")}" +
                          $"{(EnemyThreat.Assessments != assessments ? "; enemies assessed" : "")}" +
                          $"{(s_StrikeReads > 0 ? $"; enemy attacks read for the drop chance {s_StrikeReads} ({s_StrikeReadTicks * 1000d / System.Diagnostics.Stopwatch.Frequency:F1} ms)" : "")}" +
-                         FreeSideNote() + ApproachNote() +
+                         FreeSideNote() + ApproachNote() + DropNote() +
                          $"{(GC.CollectionCount(0) == collections ? $"; heap +{(GC.GetTotalMemory(false) - heapBefore) / 1024} KB" : "")}); {timings.Describe()}");
             return chosen;
         }
@@ -1452,58 +1454,86 @@ namespace CompanionAI_Pathfinder.Tactics
         /// </summary>
         private static float StandingDropChance(TacticalContext ctx, UnitEntityData who, Vector3 at, UnitEntityData mover, Vector3 moverAt)
         {
-            Vector3 PositionOf(UnitEntityData a) => a == who ? at : a == mover ? moverAt : a.Position;
-            float hp = Math.Max(1f, CombatMath.HpBeforeDown(who));
-            var threats = new List<(float chance, float drop)>();
-            List<(UnitEntityData, float)> heavy = null;   // ★ v0.3.29 test 2 (R3): melee full attacks that land there
-            List<int> heavyAt = null;
+            long start = System.Diagnostics.Stopwatch.GetTimestamp();
             // ★ v0.3.30 competence3: what does not depend on where anyone stands is read once per decision
             // (TacticalEngine.DropModel.cs); only the unit asked about and the walker are put where they would stand.
             var table = DropTableOf(ctx);
-            int whoIndex = table.IndexOf(who);
-            int moverIndex = mover == who ? -1 : table.IndexOf(mover);
-            foreach (var row in table.Rows)
+            // ★ features5 review (performance): the lists are the table's own (StandingDropChance does not call itself; a
+            // nested call gets its own), and each enemy's melee strike data is read once (RowStrikeShare).
+            bool own = table.Depth++ == 0;
+            var threats = own ? table.Threats : new List<(float chance, float drop)>();
+            var heavy = own ? table.Heavy : new List<(UnitEntityData, float)>();   // ★ v0.3.29 test 2 (R3): melee full attacks that land there
+            var heavyAt = own ? table.HeavyAt : new List<int>();
+            threats.Clear();
+            heavy.Clear();
+            heavyAt.Clear();
+            try
             {
-                if (row.Skip) continue;
-                var enemy = row.Enemy;
-                if (row.Swarm != null)
+                float hp = Math.Max(1f, CombatMath.HpBeforeDown(who));
+                int whoIndex = table.IndexOf(who);
+                int moverIndex = mover == who ? -1 : table.IndexOf(mover);
+                // The unit's own spot: its strike shares there are read once per decision (OwnStrikeShare).
+                bool atOwn = whoIndex >= 0 && at.x == who.Position.x && at.y == who.Position.y && at.z == who.Position.z;
+                float whoBody = 0f;
+                bool rows = true;
+                try { whoBody = who.Corpulence; } catch { rows = false; }   // the rules' own reads, which fail the same way
+                foreach (var row in table.Rows)
                 {
-                    var swarm = SwarmDrop(ctx, enemy, row.Swarm, who, at, PositionOf, hp);
-                    if (swarm.chance > 0f) threats.Add(swarm);
-                    continue;
+                    if (row.Skip) continue;
+                    var enemy = row.Enemy;
+                    if (row.Swarm != null)
+                    {
+                        var swarm = SwarmDropAt(ctx, enemy, row.Swarm, who, at, mover, moverAt, hp);
+                        if (swarm.chance > 0f) threats.Add(swarm);
+                        continue;
+                    }
+                    float reachSum = row.ReachSum, zoneSum = row.ZoneSum;
+                    Replace(table, row, moverIndex, moverAt, ref reachSum, ref zoneSum, out _, out _);
+                    Replace(table, row, whoIndex, at, ref reachSum, ref zoneSum, out bool whoInReach, out bool whoInZone);
+                    float whoWeight = whoIndex >= 0 ? row.Weight[whoIndex] : 0f;
+                    bool ranged = row.Ranged;
+                    float reach = row.Reach;
+                    float chance = ValueModel.TargetChance(whoInReach, reach > 0f ? Settled(reachSum) : 0f, whoInZone, Settled(zoneSum), whoWeight);
+                    if (chance <= 0f) continue;
+                    float mean = row.WeightSum / Math.Max(1, ctx.Allies.Count);
+                    // ★ v0.3.28 test 7: as much of its round as reaches the spot (StrikeShareAt).
+                    float share = ranged ? 1f
+                                : !rows ? StrikeShareAt(enemy, who, at)
+                                : atOwn ? OwnStrikeShare(table, row, whoIndex, who, at, whoBody)
+                                : RowStrikeShare(row, who, at, whoBody);
+                    float threat = row.Threat * (mean > 0f ? whoWeight / mean : 1f) * share;
+                    if (!ranged && (rows ? row.FullOk && share >= 0.999f : FullStrikeLands(enemy, who, at)))
+                    {
+                        heavy.Add((enemy, chance));
+                        heavyAt.Add(threats.Count);
+                    }
+                    threats.Add((chance, RiskMath.RoundDropChance(hp, threat)));
                 }
-                float reachSum = row.ReachSum, zoneSum = row.ZoneSum;
-                Replace(table, row, moverIndex, moverAt, ref reachSum, ref zoneSum, out _, out _);
-                Replace(table, row, whoIndex, at, ref reachSum, ref zoneSum, out bool whoInReach, out bool whoInZone);
-                float whoWeight = whoIndex >= 0 ? row.Weight[whoIndex] : 0f;
-                bool ranged = row.Ranged;
-                float reach = row.Reach;
-                float chance = ValueModel.TargetChance(whoInReach, reach > 0f ? Settled(reachSum) : 0f, whoInZone, Settled(zoneSum), whoWeight);
-                if (chance <= 0f) continue;
-                float mean = row.WeightSum / Math.Max(1, ctx.Allies.Count);
-                // ★ v0.3.28 test 7: as much of its round as reaches the spot (StrikeShareAt).
-                float threat = row.Threat * (mean > 0f ? whoWeight / mean : 1f) *
-                               (ranged ? 1f : StrikeShareAt(enemy, who, at));
-                if (!ranged && FullStrikeLands(enemy, who, at))
+                // ★ v0.3.29 test 2 (author-approved, R3): a heavy hitter's real hits, where they drop it more often than the mean says.
+                if (heavy.Count > 0)
                 {
-                    (heavy ?? (heavy = new List<(UnitEntityData, float)>())).Add((enemy, chance));
-                    (heavyAt ?? (heavyAt = new List<int>())).Add(threats.Count);
+                    var drops = HeavyHitDrops(heavy, who, hp);
+                    for (int i = 0; i < drops.Length; i++)
+                    {
+                        var t = threats[heavyAt[i]];
+                        if (drops[i] > t.drop) threats[heavyAt[i]] = (t.chance, drops[i]);
+                    }
                 }
-                threats.Add((chance, RiskMath.RoundDropChance(hp, threat)));
+                return ValueModel.WithBackgroundDrop(ValueModel.CombinedDrop(threats),
+                    RiskMath.RoundDropChance(hp, CombatMath.AttachedDamageOf(ctx, who).NextRisk));
             }
-            // ★ v0.3.29 test 2 (author-approved, R3): a heavy hitter's real hits, where they drop it more often than the mean says.
-            if (heavy != null)
+            finally
             {
-                var drops = HeavyHitDrops(heavy, who, hp);
-                for (int i = 0; i < drops.Length; i++)
-                {
-                    var t = threats[heavyAt[i]];
-                    if (drops[i] > t.drop) threats[heavyAt[i]] = (t.chance, drops[i]);
-                }
+                table.Depth--;
+                s_DropReads++;
+                s_DropTicks += System.Diagnostics.Stopwatch.GetTimestamp() - start;
             }
-            return ValueModel.WithBackgroundDrop(ValueModel.CombinedDrop(threats),
-                RiskMath.RoundDropChance(hp, CombatMath.AttachedDamageOf(ctx, who).NextRisk));
         }
+
+        /// <summary>★ features5 review: SwarmDrop with the two units moved - the delegate only where a swarm needs it.</summary>
+        private static (float chance, float drop) SwarmDropAt(TacticalContext ctx, UnitEntityData swarm, CombatMath.SwarmSpace area,
+                                                              UnitEntityData who, Vector3 at, UnitEntityData mover, Vector3 moverAt, float hp) =>
+            SwarmDrop(ctx, swarm, area, who, at, a => a == who ? at : a == mover ? moverAt : a.Position, hp);
 
         /// <summary>
         /// ★ v0.3.27 (author-approved): the price of a healthy unit's walk to <paramref name="destination"/> for where it
@@ -1581,9 +1611,16 @@ namespace CompanionAI_Pathfinder.Tactics
             float shift = 0f;
             try
             {
+                // ★ features5 review (performance): with 42-47 enemies, walks priced at ~240 spots a decision and an ally's
+                // drop chance read at each (allies × enemies a spot), one decision took 1-2 s. An ally that none of the enemies
+                // whose choice the walk changes can pick (MoverChangedRows) keeps its chance exactly: it is not read again.
+                var table = DropTableOf(ctx);
+                var changed = MoverChangedRows(table, unit, destination);
                 foreach (var ally in ctx.Allies)
                 {
                     if (ally == unit || ally?.Descriptor?.State?.IsConscious != true) continue;
+                    if (changed != null && !ChangeTouches(table, changed, table.IndexOf(ally))) { s_PartySkips++; continue; }
+                    s_PartyReads++;
                     if (!ctx.PartyDropHere.TryGetValue(ally, out float before))
                         ctx.PartyDropHere[ally] = before = StandingDropChance(ctx, ally, ally.Position, unit, unit.Position);
                     float after = StandingDropChance(ctx, ally, ally.Position, unit, destination);
@@ -6291,6 +6328,18 @@ namespace CompanionAI_Pathfinder.Tactics
         /// priced again with it).</summary>
         private static int PricedAttacks(Candidate c) => c.PathAttackers?.Count ?? c.Risk?.Attacks ?? 0;
 
+        /// <summary>
+        /// ★ features5 review (real time): an ability that walks to its target first counts as being cast on it while the walk
+        /// runs (CombatMemory.CastPendingByOther), as its cast will once it is issued. In fight 9 the Vrock, a Shadow Demon
+        /// and Seelah each walked to the same helpless Nabasu to deliver a Coup de Grace, one after the other: the walks were
+        /// not cast commands, so none of the others saw it coming. The walk's end clears it (the cast is noted again).
+        /// </summary>
+        private static void NotePendingWalk(UnitEntityData unit, Candidate c, UnitCommand walk)
+        {
+            if (c.Kind != CandidateKind.Ability || c.Ability == null) return;
+            CombatMemory.NotePendingCast(unit, c.Ability, c.Target ?? c.Burst?.Anchor, walk);
+        }
+
         public static bool Execute(UnitEntityData unit, Candidate c, out UnitCommand command, out string failure)
         {
             command = null;
@@ -6332,6 +6381,7 @@ namespace CompanionAI_Pathfinder.Tactics
                 {
                     command = walk;
                     if (c.LineUpWalk) NoteLineUpWalk(unit);
+                    NotePendingWalk(unit, c, walk);
                     c.Kind = CandidateKind.Move;
                     c.Slot = ActionSlot.Move;
                     CastOutcome.Forget(unit);
@@ -6381,6 +6431,7 @@ namespace CompanionAI_Pathfinder.Tactics
                                                   pathAttackers: c.CountPathAttackers, pricedAttacks: PricedAttacks(c)))
                         {
                             command = approach;
+                            NotePendingWalk(unit, c, approach);
                             c.Kind = CandidateKind.Move;
                             c.Slot = ActionSlot.Move;
                             return true;
