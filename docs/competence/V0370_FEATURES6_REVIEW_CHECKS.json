@@ -1,0 +1,42 @@
+{
+ "task": "Author request: review the features6 logs (turn-based and real time, one session) for bad or broken decisions and functionality gaps, and bugfix; then merge every open PR into development, apply main's README commits, and release",
+ "date": "2026-11-27",
+ "author": "Claude",
+ "branch": "claude/v0370-features6-review",
+ "base": "8c4686f (claude/v0370-features5-review, draft PR #120)",
+ "source_commit": "6426eaa",
+ "inputs": {
+  "log_sha256": "66e11c24cd24b21b111ceb7043c7e3644f2f7ae226468e99f348d10e8551fd33",
+  "combat_log_sha256": "502f41b51370524116a303f3a98d34da668a0cc2c35bcf5e64a6984d3344b466",
+  "module": "73eef393-8d13-4837-85e7-df4922333fe7",
+  "fights": "5 turn-based, then 9 real-time",
+  "decisions": "519 turn-based, 2066 real-time",
+  "commands": "turn-based 295 issued; real-time 583 issued: 399 success, 39 interrupted after acting, 140 before acting, 3 fail",
+  "note": "Raw logs stay private; only their fingerprints are recorded. The combat log names arcan MagusArmored and Aeiluvetar EnigmaticCoConspiratorCompanionUnit."
+ },
+ "findings_fixed": [
+  "Both modes: the weapon-set switch compared the other set with the current weapon's options affordable at that moment. Real time lists them during the cooldown but they were skipped; turn-based builds none once the standard action is spent. Camellia switched seven times, each 'against 0', every time with her standard action spent; in turn-based fight 2 she switched to the crossbow (3.4/rd) after Inspired Rage and ended her turn, the greataxe's Move+Attack having been 10.8. The current weapon is priced by its options whatever the moment allows, else its price earlier this turn (WeaponSetRules); with neither, no switch. An attack after the switch this turn needs the standard action.",
+  "Both modes (author-approved): arcan (Arcanist 4) and Aeiluvetar (Guardian 5) were drained to death in real-time fight 9 by a Corpulent Spectre (2 levels a touch) and a Cairn Wight Rogue (1 a hit), arcan at 98 % HP. The game kills at negative levels = character level (UnitLifeController.ForceTickOnUnit). A withdrawal was offered only below half HP. Half or more of the levels drained now counts as badly hurt (TacticalEngine.BadlyHurt, ValueModel.HalfDrained): the withdrawal is offered and walks pay exposure, priced as before. The header names 'drained N/L'."
+ ],
+ "features6_observed": {
+  "performance": "slowest decision 457 ms, none over 500 ms; fights had 9-11 enemies (42-47 last time); drop-chance reads 1-14 ms a slow decision, up to 408 allies skipped",
+  "coups": "8 issued, 7 delivered; no two allies walked to one target",
+  "fused_saves": "[Save] rows name the fusion; no blank names",
+  "provoke_redecisions": 7
+ },
+ "observed_not_changed": [
+  "arcan's fight-11 death: surrounded at the start (39 HP lost while his first cast waited for its cooldown); three provoke re-decisions each chose another provoking cast; no time lost; three melee hits killed him.",
+  "Wenduag's potion for the Drow Magus failed: her grab caught a skeleton as the command started (standard actions forbidden); she was free when she chose it.",
+  "arcan's Lesser Restoration item failed its Use Magic Device check (20 vs 23).",
+  "Nine idle 'nothing worth doing' turns: best options withheld before issue (path through Grease) or 0 against incorporeal last enemies."
+ ],
+ "checks": {
+  "release_build": "0 warnings, 0 errors (real game references, UMM 0.33.2.0)",
+  "unit_tests": "1193 passed (3 new: V0370Features6ReviewTests)",
+  "profile_audit": "exit 0 after the check's member-name fix; new V0370-FEATURES6 5 checks (native UnitLifeController drain-death contract); every other report line identical to features6",
+  "fusion_matrix": "byte-identical",
+  "summon_kit_detail": "byte-identical",
+  "release": "the release receipt records the integrated development head's checks and package"
+ },
+ "not_done": "Gameplay of these fixes is unplayed; they ship in the v0.3.70 release at the author's request."
+}

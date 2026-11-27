@@ -31,7 +31,7 @@ namespace ProfileAudit
 
             // --- weapon sets ---
             Check(Calls(engine, "AddWeaponSetCandidate", "CurrentPrice") && Calls(engine, "AddWeaponSetCandidate", "PricedThisRound") &&
-                  Calls(engine, "AddWeaponSetCandidate", "NoteCurrentPrice") && Calls(engine, "AddWeaponSetCandidate", "get_HasStandard"),
+                  Calls(engine, "AddWeaponSetCandidate", "NoteCurrentPrice") && Calls(engine, "AddWeaponSetCandidate", "HasStandard"),
                   "the switch compares with the current weapon's options whatever this moment's actions allow, else its price " +
                   "earlier this turn; an attack after the switch needs the standard action");
             bool priced = WeaponSetRules.CurrentPrice(false, 0f, 10.8f, out float price) && price == 10.8f &&
