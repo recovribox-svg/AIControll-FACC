@@ -1,15 +1,20 @@
 # Test builds
 
-## v0.3.70 features3 review: re-decisions kept open, no Magus arrows at a dominated ally (27 November 2026)
+## v0.3.70 features3 review: re-decisions kept open, no Magus arrows at a dominated ally, weapon sets that switch (27 November 2026)
 
-[UMM ZIP](AI-Control-FACC-v0.3.70-dev-features4-7131634-UMM-test.zip?raw=true) · [Identity](AI-Control-FACC-v0.3.70-dev-features4-7131634-UMM-test.identity.json) · [SHA-256](AI-Control-FACC-v0.3.70-dev-features4-7131634-UMM-test.sha256)
+[UMM ZIP](AI-Control-FACC-v0.3.70-dev-features5-bf7b1da-UMM-test.zip?raw=true) · [Identity](AI-Control-FACC-v0.3.70-dev-features5-bf7b1da-UMM-test.identity.json) · [SHA-256](AI-Control-FACC-v0.3.70-dev-features5-bf7b1da-UMM-test.sha256)
  · [Review and replay](../docs/V0370_FEATURES3_REVIEW.md).
 
-UMM **0.3.70**, source `7131634`, startup module `5303e299-817e-40eb-8592-5958d5eff1fa`, **unplayed**. Contains features3
-below plus the fixes from its playtest. In real time, a command dropped to decide again (after an HP loss, for instance)
-is no longer barred for the turn, and a pending self-heal or walk away is not dropped. A Magus spell the game would
-deliver through a weapon is not aimed at a dominated ally. The log has fewer repeated `[WeaponSet]` lines and no blank
-ability names. Play this one.
+UMM **0.3.70**, source `bf7b1da`, startup module `cfc0deda-c511-4e3a-a423-bf5be1cf502c`, **unplayed**. Contains features3
+below plus the fixes from its playtest:
+- In real time, a command dropped to decide again (after an HP loss, for instance) is no longer barred for the turn, and
+  a pending self-heal or walk away is not dropped.
+- A provoking action is decided again when an enemy reaches the unit before it starts.
+- A Magus spell the game would deliver through a weapon is not aimed at a dominated ally.
+- Mixed characters now switch to a ranged weapon set of any type, and back. The switch never saw another set's weapon.
+- The log has fewer repeated `[WeaponSet]` lines and no blank ability names.
+
+Play this one (it replaces the unplayed features4).
 
 ## v0.3.70 features review: spell bans, cone performance, group teleports, UI scale, suggested roles (27 November 2026)
 

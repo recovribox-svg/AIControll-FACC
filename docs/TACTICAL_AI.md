@@ -7565,7 +7565,7 @@ logs: five turn-based fights in one session, six real-time fights in another. Au
 - **Package:** `test-builds/AI-Control-FACC-v0.3.70-dev-features3-6f262cb-UMM-test.zip`, module
   `e32d25e0-351a-4083-81d2-14ba5ba9d574`, UMM 0.3.70 (replaces features2).
 
-## 226. v0.3.70 features3 review: re-decisions kept open, no Magus weapon delivery at a dominated ally (27 November 2026, Claude)
+## 226. v0.3.70 features3 review: re-decisions kept open, no Magus weapon delivery at a dominated ally, weapon sets read, provoking actions re-decided (27 November 2026, Claude)
 
 [Review page](V0370_FEATURES3_REVIEW.md) · [receipt](competence/V0370_FEATURES3_REVIEW_CHECKS.json). From the features3
 logs: five turn-based and seven real-time fights in one session. Author request; unplayed.
@@ -7583,16 +7583,24 @@ logs: five turn-based and seven real-time fights in one session. Author request;
 - **Log:**
   - `[WeaponSet]` once per summon kind, never for natural-weapon creatures;
   - empty display names logged by blueprint name (`AbilityDiscovery.LogName`).
+- **Weapon sets (both modes; author report):**
+  - `WeaponSlot.MaybeWeapon` gives the empty-hand weapon for an inactive slot. F2 read the other sets through it and
+    never saw their weapons, so no switch was ever offered.
+  - They are now read from the slots' items (`InactiveSetWeapon`). Every ranged type (all of the game's Ranged attack
+    type) is eligible.
+  - The other set's enhancement is no longer added twice: `RuleCalculateWeaponStats.ApplyEnchantmentsManually` applies
+    an unwielded weapon's enchantments natively.
+- **Provoking action (real time, author-approved):** `ShouldReplanOnNewThreat` also re-decides an in-place action that
+  provokes (`ProvokesWhenThreatened`) once an enemy not counted when it was chosen threatens the unit and can make an
+  attack of opportunity. This is the Drow Magus's death.
 - **Observed:**
-  - F2 was not offered: no Mixed character has a second set of the other kind.
   - Group teleports are now quoted.
   - The rage decline works for companions.
   - The slowest decision was 640 ms (844 before).
-  - Proposed, not made: re-decide when a newly arrived enemy threatens a pending action that provokes (the Drow Magus's
-    death).
-- **Checks** on `7131634`:
-  - Release 0 warnings; 1,185 unit + 27/21/3 script tests.
-  - ProfileAudit `V0370-FEATURES3` 9 checks; every other line, the Fusion matrix and the summon detail unchanged.
-  - Harnesses 98/14/10; no external member added or removed.
-- **Package:** `test-builds/AI-Control-FACC-v0.3.70-dev-features4-7131634-UMM-test.zip`, module
-  `5303e299-817e-40eb-8592-5958d5eff1fa`, UMM 0.3.70.
+- **Checks** on `bf7b1da`:
+  - Release 0 warnings; 1,187 unit + 27/21/3 script tests.
+  - ProfileAudit `V0370-FEATURES3` 14 checks; the F2 estimate check follows the corrected contract; every other line,
+    the Fusion matrix and the summon detail unchanged.
+  - Harnesses 98/14/10; one external member added (`ItemSlot.get_MaybeItem`, resolved), one removed.
+- **Package:** `test-builds/AI-Control-FACC-v0.3.70-dev-features5-bf7b1da-UMM-test.zip`, module
+  `cfc0deda-c511-4e3a-a423-bf5be1cf502c`, UMM 0.3.70 (replaces features4).

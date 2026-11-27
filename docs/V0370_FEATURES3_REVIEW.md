@@ -1,9 +1,10 @@
 # v0.3.70 features3 playtest: review and fixes (27 November 2026, Claude)
 
 The author played features3 (module `e32d25e0`) in one session: five turn-based fights, then seven real-time fights.
-Source `7131634` on `claude/v0370-features3-review`, stacked on `claude/v0370-features-review` (draft PR #118). Package
-`test-builds/AI-Control-FACC-v0.3.70-dev-features4-7131634-UMM-test.zip`, module `5303e299-817e-40eb-8592-5958d5eff1fa`,
-UMM 0.3.70, **unplayed**. [Receipt](competence/V0370_FEATURES3_REVIEW_CHECKS.json). The previous review is
+Source `bf7b1da` on `claude/v0370-features3-review`, stacked on `claude/v0370-features-review` (draft PR #118). Package
+`test-builds/AI-Control-FACC-v0.3.70-dev-features5-bf7b1da-UMM-test.zip`, module `cfc0deda-c511-4e3a-a423-bf5be1cf502c`,
+UMM 0.3.70, **unplayed**. It replaces features4 (`7131634`, never played) and adds the two follow-ups the author asked for
+(fixes 4 and 5). [Receipt](competence/V0370_FEATURES3_REVIEW_CHECKS.json). The previous review is
 [V0370_FEATURES_REVIEW.md](V0370_FEATURES_REVIEW.md).
 
 ## The logs
@@ -32,11 +33,8 @@ UMM 0.3.70, **unplayed**. [Receipt](competence/V0370_FEATURES3_REVIEW_CHECKS.jso
   - 28 decisions over 250 ms in 12 fights.
 - **Group teleports:** Greater Teleport now gets a landing quote with the summons out ("2 passengers, landing risk 0.0").
   It lost to a weapon attack (0.7 against 9.7).
-- **F2, weapon sets:** the new `[WeaponSet]` line answers why it was never offered. No Mixed character has a second weapon
-  set of the other kind:
-  - Camellia (greataxe) and the Bandit (shortsword) have no bow set;
-  - the Drow Magus (longbow) has no melee set.
-  - To see F2 work, put a bow in Camellia's second set.
+- **F2, weapon sets:** never offered, though Camellia and the Bandit had a ranged weapon in another set (author report).
+  The new `[WeaponSet]` line said no other set held one; that line had the same bug as the switch (fix 4).
 - **Suggested roles (#115):** applied to each newly recruited character (Bandit Conjurer, Bandit Alchemist, Cambion Bard, a
   new Drow Magus). Every `[Settings]` row is a new character id; characters with saved settings kept them.
 - **Summon control on by default:** 50 summon turns taken over in turn-based mode.
@@ -69,6 +67,27 @@ UMM 0.3.70, **unplayed**. [Receipt](competence/V0370_FEATURES3_REVIEW_CHECKS.jso
      Dogs, Vrocks and Cambions each printed their own);
    - an ability with an empty display name is logged by its blueprint name. A Derakni's teleport read
      "Derakni: … ;  best 0".
+4. **Both modes, weapon sets (F2) never saw another set's weapon** (author report: Camellia and the Bandit had a non-bow
+   ranged weapon there).
+   - The game's `WeaponSlot.MaybeWeapon` gives the character's empty-hand weapon (unarmed, a natural weapon) for any
+     slot that is not active, and an inactive weapon set's slots never are.
+   - F2 read the other sets through it, saw natural weapons only, and never offered a switch, whatever weapon they held.
+   - Other sets are now read from their slots' items (`InactiveSetWeapon`).
+   - Every ranged type is eligible: darts, javelins, light and heavy crossbows, throwing axes, bows and sling staves all
+     have the game's Ranged attack type. The audit checks the 15 such types in the exports.
+   - The other set's weapon is priced by the game's own attack, weapon-stat and range rules. That covers each type's
+     range increment, a thrown weapon's or composite bow's Strength, and non-proficiency.
+   - Its enhancement was added twice: the weapon-stat rule already applies the enchantments of a weapon its attacker
+     does not wield (`RuleCalculateWeaponStats.ApplyEnchantmentsManually`), as for an inactive set's item.
+   - No reload rule exists for crossbows in the game, so they are priced like bows.
+5. **Real time, re-decision for a provoking action (author-approved):**
+   - A provoking action waiting to start where the unit stands is decided again when an enemy now threatens the unit
+     that did not when it was chosen, and can make an attack of opportunity on it.
+   - Provoking actions are a cast with a defensive-casting check, a shot, a ray, a thrown bomb, or an ability that makes
+     its caster provoke (`TacticalEngine.ProvokesWhenThreatened`, the same conditions the decision prices).
+   - The new decision prices the attacks of opportunity as usual: it may cast defensively, step away, strike, or keep
+     the action. An engager counted when the action was chosen changes nothing.
+   - This is the Drow Magus's case (below).
 
 ## Observed, not changed
 
@@ -78,8 +97,7 @@ UMM 0.3.70, **unplayed**. [Receipt](competence/V0370_FEATURES3_REVIEW_CHECKS.jso
     her.
   - The log cannot tell whether her throw had started when the bites came. The HP-loss rule only drops a command that
     has not started.
-  - The change would be a new re-decision trigger: a newly arrived enemy threatening a pending action that provokes, not
-    only a walk. It changes when a choice is reconsidered, so it is proposed here, not made.
+  - Fix 5 (author-approved) re-decides such a throw while it has not started.
 - **Unexplained real-time interrupts:** about 83 commands ended before acting with no AI Control reason in the log.
   - Several ended together (six at once in fight 9). Many came as their target died: Orvath's Command Undead on a Ghoul
     Huntmaster that Chain Lightning killed.
@@ -106,7 +124,15 @@ Both modes. Send `Log.txt` and `combatLog.txt`.
 3. **Domination with the Eldritch Archer:** a Succubus fight.
    - There should be no "… [native Ranged Spell Combat]" row aimed at a dominated ally.
    - The combat log should show no Drow Magus arrows at one.
-4. **Weapon sets:** put a bow in Camellia's second set, range Mixed. Look for a "Switch to … weapon set" option.
-5. **Log:** one `[WeaponSet]` line per summon kind and none for natural-weapon creatures; no blank ability names in
+4. **Weapon sets:** keep Camellia's and the Bandit's ranged weapons in another set, range Mixed. Any ranged type works.
+   - Look for "Switch to ranged weapon set N (…)" when nothing is in reach, and "Switch to melee …" back when an enemy
+     stands next to them.
+   - The switch is a move action and is not repeated within two rounds.
+   - Both modes.
+5. **Provoking action (real time):** a caster or archer that chose a cast, shot or bomb with nobody near.
+   - When an enemy reaches it before the action starts, look for "[RT] … now threatens it and '…' would provoke - dropping
+     the commands that have not started".
+   - Look for a new decision that prices the attacks of opportunity.
+6. **Log:** one `[WeaponSet]` line per summon kind and none for natural-weapon creatures; no blank ability names in
    `[Unused]` or `[Coverage]`.
-6. **Not visible in the log:** issue #114 (UMM's UI scale), the previous replay's item 6.
+7. **Not visible in the log:** issue #114 (UMM's UI scale), the previous replay's item 6.
