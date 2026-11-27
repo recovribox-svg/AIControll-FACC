@@ -7662,3 +7662,29 @@ logs: five turn-based and nine real-time fights. arcan died twice and Aeiluvetar
   - seven provoke re-decisions.
 - **Checks** on `6426eaa`: Release 0 warnings; 1,193 unit tests; ProfileAudit `V0370-FEATURES6`; every other line, the
   Fusion matrix and the summon detail unchanged.
+
+## 229. Stable v0.3.70: PRs #106–#121 integrated (27 November 2026, Claude)
+
+[Receipt](competence/INTEGRATION_106_121_CHECKS.json) · [release notes](../release/CHANGELOG_v0.3.70.md). The author
+asked for every open PR to be merged into development, for main's two README commits to be applied, and for the next
+build to be a release.
+
+- **Merged:** development was first fast-forwarded to `main` (the Modhold and Ko-fi badges). Then the PRs went in with
+  merge commits, in stack order:
+  - #106, #107, #108, #109;
+  - #111, #112;
+  - #113, which brings #110 and its resolved merge with #111;
+  - #116 → #121.
+  #110 and #111 are siblings on #109, so merging #111 straight after #110 conflicts; #113 carries that resolution. No
+  conflict in this order.
+  - The stacked PRs were retargeted to development before the push, so GitHub records all of #106–#121 as merged.
+  - The integrated tree equals the #121 head apart from main's README lines.
+- **Checks** on the integrated head `14e9d11`:
+  - Release 0 warnings; 1,193 unit + 27/21/3 script tests.
+  - ProfileAudit exit 0, `V0370-FEATURES6` 5 after its check's member-name fix (`HasStandard` is a field); every other
+    line, the Fusion matrix (14,789 of 15,494 offered) and the summon detail identical to the features6 review run.
+  - Harnesses 98/14/10 on the release DLL; no external member added or removed.
+- **Release:** `release/CompanionAI_Pathfinder_v0.3.70.zip`, built from the integrated head (MVID `670ef6c7`).
+  - It is not a played test package: it adds the features6 review's two corrections to features6.
+  - `Info.json` 0.3.70. `main` is fast-forwarded to development; the author creates the tag and the GitHub release.
+- **Played:** features6 (14 fights, no AI Control error). The weapon-set and drain corrections are not yet played.

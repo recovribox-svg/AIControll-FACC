@@ -1,43 +1,53 @@
-# AI Control v0.3.60 — UMM package
+# AI Control v0.3.70 — UMM package
 
-**[Download CompanionAI_Pathfinder_v0.3.60.zip](CompanionAI_Pathfinder_v0.3.60.zip?raw=true)**
+**[Download CompanionAI_Pathfinder_v0.3.70.zip](CompanionAI_Pathfinder_v0.3.70.zip?raw=true)**
 
-The author asked for the next build to be a stable release (22 November 2026). It is development after PRs #92–#105,
-whose code is the checked source `27a427e`. The ZIP is byte-identical to the coverage8fix1 test build. Highlights: Magic
-Deceiver fusions almost all usable, late-landing bursts aimed where the enemy will be, enemy casts broken, dominated
-companions freed instead of killed, relief spells and point dispels, grapples, Shifter forms and on-hit effects.
-`Info.json` is 0.3.60. [Release notes](CHANGELOG_v0.3.60.md).
+The author asked for the next build to be a stable release (27 November 2026). It is development after main's README
+commits and PRs #106–#121, built from the integrated head. Highlights:
+- potions and scrolls valued by effect, and potions handed to an adjacent ally;
+- summons driven by default, with their own abilities;
+- teleports and leaps to reach, escape and cast;
+- weapon-set switching for Mixed range, and repositioning;
+- roles suggested from each build;
+- faster decisions in large fights.
+
+`Info.json` is 0.3.70. [Release notes](CHANGELOG_v0.3.70.md).
 
 ## Install
 
 1. Fully exit the game.
 2. Install/update the ZIP through Unity Mod Manager's **Mods** tab.
-3. UMM should display **0.3.60**. Existing settings remain under `CompanionAI_Pathfinder`.
+3. UMM should display **0.3.70**. Existing settings remain under `CompanionAI_Pathfinder`. Control Summoned Creatures is
+   switched on once for an older settings file.
 4. The complete startup log identifies the package:
 
 ```text
-[Build] v0.3.60 module=a2be2e6f-a510-45cc-a706-7edef3b0e100
+[Build] v0.3.70 module=670ef6c7-58c0-4bc5-ba40-add2fcb55ba7
 ```
 
 The flat ZIP contains exactly `CompanionAI_Pathfinder.dll` and `Info.json`.
-- ZIP SHA-256: `a0df22db14f579a7490983d260936fed7e88ff02a50fd4f819da083d44e2fe86`
-- DLL SHA-256: `bd90aba517a219b0c14aa4c5493a120bf9da93e20121a44f69ab574805938841`
-- [Identity](CompanionAI_Pathfinder_v0.3.60.identity.json) · [Checksums](SHA256SUMS.txt) ·
-  [Checks](../docs/competence/INTEGRATION_92_105_CHECKS.json)
+- ZIP SHA-256: `30ded758d27e100c90954deae82340f957e468e16477685426babb6afbeb3e02`
+- DLL SHA-256: `94a5a49ed0decc36bdd51ee7bd420e484b447f17cb2de5435b6df514cc6cef00`
+- [Identity](CompanionAI_Pathfinder_v0.3.70.identity.json) · [Checksums](SHA256SUMS.txt) ·
+  [Checks](../docs/competence/INTEGRATION_106_121_CHECKS.json)
 
-The last played build is coverage8 (8 fights, no AI Control error). The review corrections this release adds on top of
+The last played build is features6 (14 fights, no AI Control error). The two corrections this release adds on top of
 it passed the automated checks but have not been played.
 
 ## Publish on GitHub — author action
 
 Claude prepared the package and brought `main` to the release revision; the author creates the GitHub release and tag
 (tag pushes from Claude are refused).
-- **Releases → Draft a new release.** Tag: **v0.3.60** (new tag). Target: **`main`**.
-- Title: `AI Control - Fully Autonomous Combat Companions v0.3.60`.
-- Description: paste [CHANGELOG_v0.3.60.md](CHANGELOG_v0.3.60.md).
+- **Releases → Draft a new release.** Tag: **v0.3.70** (new tag). Target: **`main`**.
+- Title: `AI Control - Fully Autonomous Combat Companions v0.3.70`.
+- Description: paste [CHANGELOG_v0.3.70.md](CHANGELOG_v0.3.70.md).
 - Attach **this ZIP** (download it above) as the release asset, then publish.
 
 ## Previous releases
+
+- [v0.3.60](CompanionAI_Pathfinder_v0.3.60.zip?raw=true) (startup
+  `[Build] v0.3.60 module=a2be2e6f-a510-45cc-a706-7edef3b0e100`, [notes](CHANGELOG_v0.3.60.md),
+  [identity](CompanionAI_Pathfinder_v0.3.60.identity.json)).
 
 - [v0.3.52](CompanionAI_Pathfinder_v0.3.52.zip?raw=true) (startup
   `[Build] v0.3.52 module=981a7b77-a654-4da1-9a22-68bc1c6a77bd`, details below).

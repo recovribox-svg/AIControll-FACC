@@ -1,0 +1,97 @@
+{
+ "task": "Author request: review all open PRs and merge them into development, apply main's two README commits, and make the next build the v0.3.70 release",
+ "date": "2026-11-27",
+ "author": "Claude",
+ "development_before": "6c4e96c",
+ "main_before": "1d76b17 (development 6c4e96c plus README commits f73deff and 1d76b17: Modhold and Ko-fi badges)",
+ "integration": {
+  "method": "Development fast-forwarded to main, then each PR merged with --no-ff in stack order; the stacked PRs #116-#121 retargeted to development and every PR marked ready before the push, so GitHub records each as merged.",
+  "order": [
+   {
+    "pr": 106,
+    "head": "287694c"
+   },
+   {
+    "pr": 107,
+    "head": "636e245"
+   },
+   {
+    "pr": 108,
+    "head": "80e01f7"
+   },
+   {
+    "pr": 109,
+    "head": "1a303f1"
+   },
+   {
+    "pr": 111,
+    "head": "d2e01ed"
+   },
+   {
+    "pr": 112,
+    "head": "961f6c2"
+   },
+   {
+    "pr": 113,
+    "head": "f589791",
+    "note": "contains #110 (2820f03) and the resolved #110/#111 merge"
+   },
+   {
+    "pr": 116,
+    "head": "0dec6b9"
+   },
+   {
+    "pr": 117,
+    "head": "36289bd"
+   },
+   {
+    "pr": 118,
+    "head": "2fd2ca0"
+   },
+   {
+    "pr": 119,
+    "head": "b89a168"
+   },
+   {
+    "pr": 120,
+    "head": "8c4686f"
+   },
+   {
+    "pr": 121,
+    "head": "8bc8642"
+   }
+  ],
+  "conflicts": "None in this order. #110 and #111 are siblings on #109; merging #111 straight after #110 conflicts (CLAUDE.md, Tactics/UnusedWitness.cs, docs/TACTICAL_AI.md), and #113 already carries that resolution.",
+  "integrated_head": "14e9d112df88c64d628143e3bacad6f97605bfe5",
+  "tree_check": "The integrated tree equals the PR #121 head 8bc8642 except README.md, which carries main's badge lines.",
+  "github_state": "#106-#121 all merged (closed) on GitHub, #110 included.",
+  "review": "Every PR in the stack was reviewed when it was written (#106-#109 and #111-#112 in #110/#113, the rest in their own review pages). The last one, #121, is the features6 review; its audit check's member name was corrected (HasStandard is a field) and the audit re-run here."
+ },
+ "release": {
+  "version": "0.3.70",
+  "package": "release/CompanionAI_Pathfinder_v0.3.70.zip",
+  "identity": "release/CompanionAI_Pathfinder_v0.3.70.identity.json",
+  "mvid": "670ef6c7-58c0-4bc5-ba40-add2fcb55ba7",
+  "dll_sha256": "94a5a49ed0decc36bdd51ee7bd420e484b447f17cb2de5435b6df514cc6cef00",
+  "zip_sha256": "30ded758d27e100c90954deae82340f957e468e16477685426babb6afbeb3e02",
+  "built_from": "14e9d112df88c64d628143e3bacad6f97605bfe5",
+  "note": "A new build, not a played test package: it adds the features6 review's corrections to features6 (dbdc867)."
+ },
+ "toolchain": {
+  "sdk": "8.0.428",
+  "roslyn": "4.11.0-3.25569.22 (3fb752d4)",
+  "references": "supplied game Managed folder and UnityModManager (same inputs as the features reviews)"
+ },
+ "checks_on_integrated_head": {
+  "release_build": "0 warnings, 0 errors",
+  "unit_tests": "1193 passed",
+  "script_tests": "BlueprintInventory, InvocationLedger and summon-kit supplement suites OK (27/21/3)",
+  "profile_audit": "exit 0; 45,244 loaded, the one known failure allowed; V0370-FEATURES6 5 checks, 0 failures; every other report line identical to the features6 review run (8bc8642)",
+  "fusion_coverage": "byte-identical: 15,494 configurations, 14,789 offered, 705 withheld, 0 reader errors",
+  "summon_kit_detail": "byte-identical",
+  "native_harnesses": "ToggleCosts 98, TomeBurn 14, ToyBoxSpend 10 checks, 0 failures (run against the release DLL)",
+  "external_signatures": "0 added, 0 removed relative to the features6 review build"
+ },
+ "gameplay": "The last played build is features6 (module 73eef393): 5 turn-based and 9 real-time fights, no AI Control exception. The release's two corrections on top of it are unplayed.",
+ "not_done": "The tag v0.3.70 and the GitHub release are the author's (tag pushes from Claude are refused)."
+}

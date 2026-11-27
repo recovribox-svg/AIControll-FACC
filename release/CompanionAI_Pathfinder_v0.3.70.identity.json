@@ -1,0 +1,28 @@
+{
+  "build_label": "v0.3.70 stable",
+  "kind": "stable-release-package",
+  "version": "0.3.70",
+  "source_branch": "claude/dreamy-pasteur-b9h3rn",
+  "source_commit": "14e9d112df88c64d628143e3bacad6f97605bfe5",
+  "integration_commit": "14e9d112df88c64d628143e3bacad6f97605bfe5",
+  "integration_note": "Development after main's two README commits and PRs #106-#121 merged in stack order (#110 through #113). Its tree equals the PR #121 head 8bc8642 apart from main's README badge lines; that head's code is 6426eaa. The DLL was built from this commit and is the one checked.",
+  "previous_release": "0.3.60",
+  "dll": {
+    "assembly": "CompanionAI_Pathfinder, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null",
+    "mvid": "670ef6c7-58c0-4bc5-ba40-add2fcb55ba7",
+    "sha256": "94a5a49ed0decc36bdd51ee7bd420e484b447f17cb2de5435b6df514cc6cef00",
+    "size": 1719296
+  },
+  "manifest_sha256": "db493172a83ffb57d31faa01b35d91c9e256b1e6f2c603407bfe217028f42da9",
+  "zip_sha256": "30ded758d27e100c90954deae82340f957e468e16477685426babb6afbeb3e02",
+  "zip_size": 687914,
+  "archive_contents": [
+    "CompanionAI_Pathfinder.dll",
+    "Info.json"
+  ],
+  "checks_receipt": "docs/competence/INTEGRATION_106_121_CHECKS.json",
+  "gameplay_status": "The last played build is features6 (source dbdc867, module 73eef393: 5 turn-based and 9 real-time fights, no AI Control exception). This release adds the features6 review's two corrections (weapon-set comparison, half drained counts as badly hurt); they are not yet played.",
+  "scope": "Stable v0.3.70 requested by the author. Everything since v0.3.60: PRs #106-#121 (consumables by effect, potion hand-over, summon abilities and summon control on by default, teleports and leaps, escape and casting-spot teleports, spell bans, weapon-set switching, repositioning, summon choice, suggested roles, UI scale, performance and playtest corrections). See release/CHANGELOG_v0.3.70.md.",
+  "release": true,
+  "public_release_published": false
+}

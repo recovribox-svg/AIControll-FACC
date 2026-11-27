@@ -1,11 +1,15 @@
 # Test builds
 
+**The current package is the stable [v0.3.70 release](../release/README.md)** (27 November 2026). It adds the features6
+review's corrections (weapon-set comparison, half drained counts as badly hurt) to the features6 build below. The test
+builds here are not releases.
+
 ## v0.3.70 features5 review: faster walk pricing, one coup per target, fused-spell saves (27 November 2026)
 
 [UMM ZIP](AI-Control-FACC-v0.3.70-dev-features6-dbdc867-UMM-test.zip?raw=true) · [Identity](AI-Control-FACC-v0.3.70-dev-features6-dbdc867-UMM-test.identity.json) · [SHA-256](AI-Control-FACC-v0.3.70-dev-features6-dbdc867-UMM-test.sha256)
  · [Review and replay](../docs/V0370_FEATURES5_REVIEW.md).
 
-UMM **0.3.70**, source `dbdc867`, startup module `73eef393-8d13-4837-85e7-df4922333fe7`, **unplayed**. Contains features5
+UMM **0.3.70**, source `dbdc867`, startup module `73eef393-8d13-4837-85e7-df4922333fe7`, played (features6 review). Contains features5
 below plus the fixes from its playtest:
 - Both modes: walks are priced with each enemy's strike data read once, and allies a walk cannot concern are not read
   again (same numbers; decisions took up to 2 s with 42-47 enemies).

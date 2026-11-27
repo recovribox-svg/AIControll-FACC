@@ -9,14 +9,14 @@ replaces your companions' combat AI with a tactical one. Each companion estimate
 supported attacks, spells, abilities, items and movement, then chooses among them. It works in **turn-based** and
 **real-time** combat.
 
-**Current repository package: v0.3.60** —
-[download ZIP](https://github.com/recovribox-svg/AIControll-FACC/raw/refs/heads/main/release/CompanionAI_Pathfinder_v0.3.60.zip) ·
-[identity](release/CompanionAI_Pathfinder_v0.3.60.identity.json) ·
-[checksums](release/CompanionAI_Pathfinder_v0.3.60.sha256) ·
-[release notes](release/CHANGELOG_v0.3.60.md)
+**Current repository package: v0.3.70** —
+[download ZIP](https://github.com/recovribox-svg/AIControll-FACC/raw/refs/heads/main/release/CompanionAI_Pathfinder_v0.3.70.zip) ·
+[identity](release/CompanionAI_Pathfinder_v0.3.70.identity.json) ·
+[checksums](release/CompanionAI_Pathfinder_v0.3.70.sha256) ·
+[release notes](release/CHANGELOG_v0.3.70.md)
 
-Most of v0.3.60 was played in development builds. The review corrections from the last playtest passed automated
-verification but have not been played yet. [Validation results](docs/competence/INTEGRATION_92_105_CHECKS.json)
+Most of v0.3.70 was played in development builds. The two corrections from the last playtest passed automated
+verification but have not been played yet. [Validation results](docs/competence/INTEGRATION_106_121_CHECKS.json)
 record the checks and their limits.
 Published tags and release assets are listed separately under [GitHub Releases](https://github.com/recovribox-svg/AIControll-FACC/releases).
 
@@ -25,7 +25,7 @@ Published tags and release assets are listed separately under [GitHub Releases](
 ## Contents
 
 - [What it does](#what-it-does)
-- [What's new in v0.3.60](#whats-new-in-v0360)
+- [What's new in v0.3.70](#whats-new-in-v0370)
 - [Install](#install)
 - [Settings](#settings)
 - [Abilities AI must not use](#abilities-ai-must-not-use)
@@ -83,20 +83,21 @@ spending; *Aggressive* makes offensive spell slots more attractive. Target defen
 
 ---
 
-## What's new in v0.3.60
+## What's new in v0.3.70
 
-- **Magic Deceiver:** 14,789 of the game's 15,494 fusion combinations can be chosen (7,474 before), each fused effect valued.
-- **Late-landing bursts** (Explosive Runes, Fireball-like projectiles) are aimed where the enemy will be; real time
-  re-checks them and cancels them if a companion would be caught.
-- **Enemy casts** can be broken by a hit before they go off (real time).
-- **Dominated companions** are stopped, not killed, and freeing them is valued.
-- **Relief spells:** Dispel Magic, Break Enchantment, Remove Fear and Unbreakable Heart are valued by what they end;
-  Dispel Magic (Point) ends the enemy areas the party stands in.
-- **Grapples, Shifter forms, sneak attack** (fortification and flanking), on-hit effects, suppressed buffs and Coup de
-  Grace reach are read by the game's own rules.
-- **Movement:** crowded turn-based approaches take a free side; real-time advances through a harmful area are priced.
+- **Potions and scrolls** are valued by what they do; a companion can hand an adjacent ally a quick-slot potion.
+- **Summons** are driven by AI Control by default and use their own abilities. Each summon spell is priced by its
+  creatures against these enemies.
+- **Teleports and leaps** (Dimension Door, Shadow Walk, demon teleports) reach enemies, escape danger and reach a
+  casting spot.
+- **Mixed range** characters switch between their melee and ranged weapon sets; ranged characters reposition with
+  movement they have left (turn-based).
+- **Spell bans** such as Inspired Rage's cost each recipient its spells; summons and companions decline a rage that
+  costs more than it gives.
+- **Settings:** the panel follows Unity Mod Manager's UI scale, and *Suggest from build* sets roles and ranges.
+- **Faster decisions** in large fights.
 
-Full list and known limitations: [release notes](release/CHANGELOG_v0.3.60.md). The release archive includes a build
+Full list and known limitations: [release notes](release/CHANGELOG_v0.3.70.md). The release archive includes a build
 identity and checksum. Packaging and automated checks do not establish that every supported mechanic has been
 exercised in game.
 
@@ -105,7 +106,7 @@ exercised in game.
 ## Install
 
 1. Install [Unity Mod Manager](https://www.nexusmods.com/site/mods/21) for the game (the mod requires version 0.27.0 or newer).
-2. Download [CompanionAI_Pathfinder_v0.3.60.zip](https://github.com/recovribox-svg/AIControll-FACC/raw/refs/heads/main/release/CompanionAI_Pathfinder_v0.3.60.zip).
+2. Download [CompanionAI_Pathfinder_v0.3.70.zip](https://github.com/recovribox-svg/AIControll-FACC/raw/refs/heads/main/release/CompanionAI_Pathfinder_v0.3.70.zip).
 3. **Fully exit the game.** In Unity Mod Manager, open the *Mods* tab and drag the ZIP onto the window.
    - Or extract it to `<game>\Mods\CompanionAI_Pathfinder\`.
 4. Start the game and press **Ctrl+F10** to open the settings.
@@ -127,7 +128,7 @@ Open with **Ctrl+F10**. The defaults suit most players.
 |---|---|---|
 | Control Companions | On | The AI fights for your companions. |
 | Control Main Character | Off | The AI also fights for your main character. |
-| Control Summoned Creatures (experimental) | Off | In combat, the AI also decides for creatures summoned by the characters it controls (not pets, swarms or a summon's own summons). They use their own abilities, their summoner's blocklist, friendly-fire rule and spell policy, and never the party's items. Real time needs the current engine. |
+| Control Summoned Creatures | On | In combat, the AI also decides for creatures summoned by the characters it controls (not pets, swarms or a summon's own summons). They use their own abilities, their summoner's blocklist, friendly-fire rule and spell policy, and never the party's items. Real time needs the current engine. |
 | Enable in Turn-Based / Real-Time Mode | On / On | Choose the combat modes the AI runs in. |
 | Per character: AI on/off | On | Switch the AI off for single characters in *Party Members*. |
 
@@ -139,6 +140,7 @@ Open with **Ctrl+F10**. The defaults suit most players.
 | Range: Mixed / Melee / Ranged | Where the character prefers to fight. Ranged remains usable by noncasters and does not itself forbid weapon attacks. |
 | Pure Mage (under Ranged) | Optional, off by default. Disables ordinary physical attacks in favor of spells/cantrips; supported exceptions and existing safety checks apply. Mixed/Melee suspend the setting. |
 | Spell Use: Conservative / Standard / Aggressive | Controls offensive spell-slot spending. Conservative was previously labelled Progressive. Cantrips, buffs, heals and items retain their own policies. |
+| Suggest from build (button) | Sets role and range from the character's weapons, feats and spellcasting. Characters seen for the first time get this automatically; *Suggest roles for the whole party* does it for everyone. Saved choices change only when you press a button. |
 | Abilities AI must not use | See [below](#abilities-ai-must-not-use). |
 
 ### Behaviour
@@ -212,7 +214,7 @@ What it does **not** change:
 2. Send `Log.txt` from the affected session:
    - where: `<game>\Wrath_Data\Managed\UnityModManager\Log.txt`, or the *Logs* tab in Unity Mod Manager;
    - its first lines identify your version, for example
-     `[Build] v0.3.60 module=a2be2e6f-a510-45cc-a706-7edef3b0e100`.
+     `[Build] v0.3.70 module=670ef6c7-58c0-4bc5-ba40-add2fcb55ba7`.
 3. If you have an exported `combatLog.txt`, include the matching session's file to help compare decisions with
    actual outcomes. Keep different builds/sessions clearly labelled.
 4. Debug logging is not needed unless asked for. When requested, enable it before reproducing the issue and retain
@@ -228,10 +230,10 @@ Selected actions are logged with candidate values; quiet real-time waits may be 
 
 ## Versions and test builds
 
-- **Repository packages:** [release folder](release/README.md), including v0.3.50–v0.3.52 and current v0.3.60,
+- **Repository packages:** [release folder](release/README.md), including v0.3.50–v0.3.60 and current v0.3.70,
   with identities, checksums and validation limits. Updating `main` does not create a GitHub Release.
 - **Published releases:** [GitHub Releases](https://github.com/recovribox-svg/AIControll-FACC/releases).
-- **Release notes:** [v0.3.60](release/CHANGELOG_v0.3.60.md) · [v0.3.29](release/CHANGELOG_v0.3.29.md) · [v0.3.28](release/CHANGELOG_v0.3.28.md) · [v0.3.27](release/CHANGELOG_v0.3.27.md) ·
+- **Release notes:** [v0.3.70](release/CHANGELOG_v0.3.70.md) · [v0.3.60](release/CHANGELOG_v0.3.60.md) · [v0.3.29](release/CHANGELOG_v0.3.29.md) · [v0.3.28](release/CHANGELOG_v0.3.28.md) · [v0.3.27](release/CHANGELOG_v0.3.27.md) ·
   [v0.3.26](release/CHANGELOG_v0.3.26.md) · [v0.3.25](release/CHANGELOG_v0.3.25.md) ·
   [older](release/).
 - **Test builds:** development builds for play-testing, in [test-builds](test-builds/README.md). They are not releases.

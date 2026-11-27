@@ -8,7 +8,30 @@ Read [CONTRIBUTING.md](CONTRIBUTING.md) for shared branch ownership, Codex pull 
 Codex works on task branches and targets pull requests at `claude/dreamy-pasteur-b9h3rn`; Claude reviews and integrates them there.
 Keep `main` for author-authorized releases. Read [AGENTS.md](AGENTS.md) when coordinating agent work.
 
-**Current handover (27 November 2026, Claude): features5 playtest reviewed and fixed on `claude/v0370-features5-review`
+**Current handover (27 November 2026, Claude): stable v0.3.70 released to the repository; PRs #106–#121 merged into
+development and `main` brought to it, at the author's request.** Read `docs/TACTICAL_AI.md` §229, the
+[receipt](docs/competence/INTEGRATION_106_121_CHECKS.json) and the [release notes](release/CHANGELOG_v0.3.70.md).
+- **features6 review (PR #121):** read [docs/V0370_FEATURES6_REVIEW.md](docs/V0370_FEATURES6_REVIEW.md) and §228.
+  - Log: features6 module `73eef393`, 5 turn-based + 9 real-time fights; no AI Control exception.
+  - Both modes, weapon sets: the switch is compared with the current weapon's price whatever this moment's actions allow
+    (`WeaponSetRules`). Camellia switched "against 0" seven times.
+  - Both modes, author-approved: half or more of the levels drained counts as badly hurt (`BadlyHurt`,
+    `ValueModel.HalfDrained`). arcan and Aeiluvetar were drained to death.
+- **Merged:**
+  - Development was first fast-forwarded to `main` (README badges).
+  - Then, with merge commits: #106–#109, #111, #112, #113 (brings #110), #116–#121. No conflict in this order.
+  - GitHub shows #106–#121 merged. The integrated tree equals the #121 head apart from main's README lines.
+- **Checks** on the integrated head `14e9d11`:
+  - Release 0 warnings; 1,193 unit + 27/21/3 script tests.
+  - ProfileAudit exit 0, `V0370-FEATURES6` 5; every other line, the Fusion matrix and the summon detail unchanged.
+  - Harnesses 98/14/10; no external member added or removed.
+- **Release:** `release/CompanionAI_Pathfinder_v0.3.70.zip`, MVID `670ef6c7-58c0-4bc5-ba40-add2fcb55ba7`, ZIP SHA-256
+  `30ded758…`. Built from `14e9d11`; it is not a played test package. `Info.json` 0.3.70.
+- **Author action:** create tag `v0.3.70` on `main` and the GitHub release (instructions in `release/README.md`).
+- **Played:** features6 (14 fights). The weapon-set and drain corrections are not yet played.
+- **Next:** the author plays v0.3.70 (replay in the features6 review page). No PR is open.
+
+**Earlier handover (27 November 2026, Claude): features5 playtest reviewed and fixed on `claude/v0370-features5-review`
 (draft PR), stacked on `claude/v0370-features3-review` (draft PR #119). Not played, nothing merged.** Read
 [docs/V0370_FEATURES5_REVIEW.md](docs/V0370_FEATURES5_REVIEW.md), `docs/TACTICAL_AI.md` §227 and the
 [receipt](docs/competence/V0370_FEATURES5_REVIEW_CHECKS.json).
