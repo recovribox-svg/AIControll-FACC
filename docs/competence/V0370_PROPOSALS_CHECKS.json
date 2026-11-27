@@ -1,0 +1,45 @@
+{
+ "task": "Author approval: implement proposals P1 (escape and casting-spot teleports, movement), P2 (summons AI Control drives decline a rage they lose by) and P3 (item teleports) from the v0.3.70 playtest review",
+ "date": "2026-11-26",
+ "author": "Claude",
+ "branch": "claude/v0370-playtest-review",
+ "base": "7b3da41 (draft PR #116)",
+ "source_commit": "e040d62bd327ae909aace8ad4310bd38e8b4820e",
+ "native_contracts": {
+  "spell_ban": "ForbidSpellCasting.OnTurnOn adds SpellcastingForbidden unless the owner has IgnoreFeature; InspiredRageEffectBuff (75b39787) Activated: Conditional(CasterHasFact Not MasterSkald, CasterHasFact Not PurtTheLivingFeature) -> ApplyBuff InspiredRageEffectBuffBeforeMasterSkald (345d36cd, AsChild, permanent; ForbidSpellCasting, IgnoreFeature InspiredRage)",
+  "accept_switch": "InspiredRageArea grants of InspiredRageEffectBuff need ContextConditionHasFact(InspiredRageAllyToggleSwitchBuff 9fd2dd27); the toggle InspiredRageAllyToggleSwitch (180e06c0) is Immediately-activated, on by default; its buff's Deactivated removes InspiredRageEffectBuff and its Mythic variant",
+  "context_chain": "ContextActionApplyBuff -> UnitDescriptor.AddBuff(parent.CloneFor(buff)); the ban's parent is the effect's context, whose parent is the area's",
+  "item_charges": "ItemEntity.IsSpendCharges = BlueprintItemEquipment.GainAbility && SpendCharges; EvadingStepsItem: feet, ability DimensionDoor (Dimension Door, Mass in the log), 1 charge, restored on rest"
+ },
+ "corrections": {
+  "v0370_review_finding_2": "The review said Tome of the Firebird / Mystical Mayhem applied the ban at run time and that the exports showed none. Wrong: the ban is stock, applied as a guarded child of InspiredRageEffectBuff, which the buff reader did not follow. Now read statically (BuffParts.ReadGuardedBans, BanReaches); the run-time learning stays as a fallback."
+ },
+ "checks": {
+  "release_build": "0 warnings, 0 errors (real game references, UMM 0.33.2.0)",
+  "unit_tests": "1166 passed (4 new: V0370ProposalTests)",
+  "script_tests": "BlueprintInventory 27, InvocationLedger 21, ProfileAudit supplement 3: OK",
+  "profile_audit": "exit 0 (one known Achaekek enum failure allowed); new V0370-PROPOSALS 11 checks passed; V0370-REVIEW 5 and TELEPORT-APPROACH unchanged counts, all passed; only other report change: InspiredRageAbility part list shows 'ForbidsSpells 0 (guarded)'",
+  "fusion_matrix": "byte-identical to the summons2 package's audit",
+  "summon_kit_detail": "byte-identical to the summons2 package's audit",
+  "packaged_dll_audit": "same report as the pre-commit build on identical inputs",
+  "native_harnesses": "ToggleCosts 98, TomeBurn 14, ToyBoxSpend 10, failures 0",
+  "external_members": "1 added: Assembly-CSharp Kingmaker.Items.ItemEntity::get_IsSpendCharges (compiled against the supplied assembly)",
+  "gameplay": "unplayed"
+ },
+ "package": {
+  "archive": "test-builds/AI-Control-FACC-v0.3.70-dev-proposals1-e040d62-UMM-test.zip",
+  "umm_version": "0.3.70",
+  "source": "e040d62",
+  "mvid": "a8892900-11e1-4a95-b33d-926957a6ff43",
+  "dll_sha256": "e7045461fe3c1a0b8deedc7c8eb327c4aa8cd12fc6c9459f1762f8a5b448c8a9",
+  "zip_sha256": "07ef1b07ed6b555ef643e09d9646305d8f0b3c6fa8fed0f54538b23a045bcbcf",
+  "gameplay": "unplayed"
+ },
+ "limits": [
+  "A summon with no measured spell edge (own or its kind's) keeps the rage.",
+  "An escape landing is priced at the walk's spot plus up to 1.5 m of native relaxation; no farther spot is searched.",
+  "Unit-aimed teleports (Vrock Greater Teleport) still only approach enemies; bursts are not casting-spot teleports.",
+  "Not played."
+ ],
+ "merged": false
+}

@@ -60,7 +60,8 @@ namespace ProfileAudit
                   !Calls(typeof(TacticalEngine), "ValidateTeleportIssue", "RelaxPoints") &&
                   Calls(typeof(TacticalEngine), "Execute", "ValidateTeleportIssue") &&
                   Calls(typeof(TacticalEngine), "Execute", "get_ShouldUnitApproach") &&
-                  Calls(typeof(TacticalEngine), "CanOfferTeleport", "get_SourceItem"),
+                  // ★ v0.3.70 P3: an item's teleport is gated by the item rules (CanOfferTeleport withheld every item).
+                  Calls(typeof(TacticalEngine), "TeleportGate", "get_SourceItem"),
                   "one native relaxation route and a separate pre-issue check through the shared dispatcher");
 
             // ★ summons review: the builder is reached from the decision itself, and a landing beside the enemy is not

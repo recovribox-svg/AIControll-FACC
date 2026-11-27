@@ -1,5 +1,25 @@
 # Test builds
 
+## v0.3.70 proposals P1–P3: escape and casting teleports, item teleports, summons decline a rage (26 November 2026)
+
+[UMM ZIP](AI-Control-FACC-v0.3.70-dev-proposals1-e040d62-UMM-test.zip?raw=true) · [Identity](AI-Control-FACC-v0.3.70-dev-proposals1-e040d62-UMM-test.identity.json) · [SHA-256](AI-Control-FACC-v0.3.70-dev-proposals1-e040d62-UMM-test.sha256)
+ · [Review, proposals and replay](../docs/V0370_PLAYTEST_REVIEW.md#p1p3-implemented-26-november-2026).
+
+UMM **0.3.70**, source `e040d62`, startup module `a8892900-11e1-4a95-b33d-926957a6ff43`, **unplayed**. Contains the
+playtest fixes below plus the author-approved P1–P3: a point-aimed teleport in place of a risky escape walk or a walk to a
+casting spot, item teleports (Evading Steps), and AI-driven summons switching off a rage that costs them their spells.
+Play this one instead of the build below.
+
+## v0.3.70 playtest fixes: spell bans priced, teleports unblocked (26 November 2026)
+
+[UMM ZIP](AI-Control-FACC-v0.3.70-dev-summons2-4d649ca-UMM-test.zip?raw=true) · [Identity](AI-Control-FACC-v0.3.70-dev-summons2-4d649ca-UMM-test.identity.json) · [SHA-256](AI-Control-FACC-v0.3.70-dev-summons2-4d649ca-UMM-test.sha256)
+ · [Review and replay](../docs/V0370_PLAYTEST_REVIEW.md).
+
+UMM **0.3.70**, source `4d649ca`, startup module `5256a3ed-ba04-4a0b-aa0b-68f206032ae3`, **unplayed**. Contains everything
+in the v0.3.70 build below plus the playtest fixes: Inspired Rage priced for the spells it forbids, teleports offered in
+large fights, fusion failures kept per fusion.
+
+
 ## v0.3.70 test build: consumables and summon abilities, reviewed (22 November 2026)
 
 [UMM ZIP](AI-Control-FACC-v0.3.70-dev-summons1-4d2b1ce-UMM-test.zip?raw=true) · [Identity](AI-Control-FACC-v0.3.70-dev-summons1-4d2b1ce-UMM-test.identity.json) · [SHA-256](AI-Control-FACC-v0.3.70-dev-summons1-4d2b1ce-UMM-test.sha256)

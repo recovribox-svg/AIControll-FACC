@@ -472,7 +472,7 @@ namespace CompanionAI_Pathfinder.Tactics
                         break;
                     case BuffPartKind.ExtraAttack: extraAttacks = Math.Max(extraAttacks, amount); break;
                     case BuffPartKind.SizeUp: sizeUp = CombatMath.GrownCorpulence(ally, buffs) > 0f; break;
-                    case BuffPartKind.ForbidsSpells: forbidsSpells = !ignoreForbid; break;
+                    case BuffPartKind.ForbidsSpells: forbidsSpells |= !ignoreForbid && BanReaches(p, abilityCtx, ally); break;
                 }
             }
             if (sizeUp)
@@ -510,11 +510,21 @@ namespace CompanionAI_Pathfinder.Tactics
                     notes.Add($"unseen by {invisibleShare:P0}{(invisible.EndsOnAttack ? " until it attacks" : "")}");
                 }
             }
-            if (forbidsSpells && off.Caster)
+            // ★ v0.3.70 playtest: a prohibition costs what the recipient's own spells and spell-like abilities were worth
+            // over its best other main action in its own decisions (SpellEdgeMemory). A summon whose attacks are spell-like
+            // (a Shadow Demon's breath, a Nabasu's Enervation) has no spellbook and used to count as a pure gainer; a
+            // spellbook caster used to count 0 whatever its spells were worth. Unmeasured, a spellbook caster keeps 0.
+            float spellEdge = 0f;
+            if (forbidsSpells)
             {
-                result.Value = 0f;
-                result.Detail = "stops its spells";
-                return result;
+                if (TrySpellEdge(ally, out spellEdge, out _))
+                    notes.Add(spellEdge > 0f ? $"stops its spells (-{spellEdge:0.#}/rd, measured)" : "stops spells it does not need now");
+                else if (off.Caster)
+                {
+                    result.Value = 0f;
+                    result.Detail = "stops its spells";
+                    return result;
+                }
             }
 
             // --- offence: the recipient's own attacks ---
@@ -675,7 +685,7 @@ namespace CompanionAI_Pathfinder.Tactics
                 if (onHitOnce > 0f) notes.Add($"hits may kill {off.Enemy.CharacterName}");
             }
 
-            float offenceValue = offencePerRound * rounds + invisibleOnce + onHitOnce;
+            float offenceValue = offencePerRound * rounds + invisibleOnce + onHitOnce - SpellEdgeMemory.Loss(spellEdge, rounds);
             float currentIncoming = def.Incoming + CombatMath.AttachedDamageOf(ctx, ally).NextRisk;
             // ★ v0.3.50 review2: the holder already has this protection. Its removal raises current danger; do not
             // value another reduction below the already-protected baseline, especially at a d20/HP floor.
@@ -1386,6 +1396,11 @@ namespace CompanionAI_Pathfinder.Tactics
                 parts.AddRange(read.Parts);
                 foreach (var u in read.UnreadFor(ctx.Unit)) unread.Add(u);
             }
+            // ★ v0.3.70 playtest: a prohibition this toggle was seen to apply at run time (ToggleBansSpells) counts too.
+            // ★ v0.3.70 rage review: the stock Inspired Rage prohibition is now read from the effect buff's start actions
+            // (BuffParts.ReadGuardedBans); this stays for a prohibition another mod applies some other way.
+            if (ally != ctx.Unit && ToggleBansSpells(toggleCtx) && !parts.Exists(x => x.Kind == BuffPartKind.ForbidsSpells))
+                parts.Add(new BuffPart { Kind = BuffPartKind.ForbidsSpells, Owner = toggleCtx.AssociatedBlueprint as BlueprintBuff });
             // ★ v0.3.30 test 2: mental stats are read for every recipient (StatUseOf), as for spells.
             if (!HasReadableParts(parts)) return result;
             int level = Math.Max(1, ctx.Unit.Descriptor?.Progression?.CharacterLevel ?? 1);
@@ -1393,6 +1408,28 @@ namespace CompanionAI_Pathfinder.Tactics
             // who accepted it (Inspired Rage on a caster) loses its spells: that counts here.
             return AppraiseParts(ctx, ctx.Unit, toggleCtx, level, buffs, parts, unread, ally, rounds, false, -1f,
                                  $"{ctx.Unit.UniqueId}|{toggleKey}|{ally.UniqueId}", ally == ctx.Unit, result);
+        }
+
+        /// <summary>
+        /// ★ v0.3.70 rage review: the game would forbid <paramref name="ally"/>'s spells by this part: not when it has the
+        /// prohibition's ignore feature (ForbidSpellCasting.OnTurnOn), nor when a branch on the way to the child buff that
+        /// forbids is not taken under <paramref name="context"/> (Inspired Rage from a skald with Master Skald). A condition
+        /// that cannot be read keeps the prohibition: its cost is not assumed away.
+        /// </summary>
+        internal static bool BanReaches(BuffPart part, MechanicsContext context, UnitEntityData ally)
+        {
+            try
+            {
+                if (part.ForbidIgnore != null && ally?.Descriptor != null && ally.Descriptor.HasFact(part.ForbidIgnore)) return false;
+                if (part.Guards == null) return true;
+                foreach (var (checker, branch) in part.Guards)
+                {
+                    bool? result = AbilityProfile.CheckSafe(checker, context, ally);
+                    if (result.HasValue && result.Value != branch) return false;
+                }
+            }
+            catch { }
+            return true;
         }
 
         /// <summary>The note of a toggle's last valuation (all recipients), for the "[Buff]" line.</summary>

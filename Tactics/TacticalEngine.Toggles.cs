@@ -659,13 +659,13 @@ namespace CompanionAI_Pathfinder.Tactics
             foreach (var ally in ToggleRecipients(ctx, p, enemies: false))
             {
                 // What reaches this ally: a self buff, or the area's grants whose conditions hold for it.
-                var reaching = new List<(BlueprintBuff Buff, float Weight)>();
-                if (p.Area == null) reaching.Add((p.SelfBuff, 1f));
+                var reaching = new List<(BlueprintBuff Buff, float Weight, AreaGrant Grant)>();
+                if (p.Area == null) reaching.Add((p.SelfBuff, 1f, null));
                 else
                     foreach (var grant in p.Grants)
                     {
                         float w = GrantReaches(grant, toggleCtx, ally);
-                        if (w > 0f) reaching.Add((grant.Buff, w));
+                        if (w > 0f) reaching.Add((grant.Buff, w, grant));
                     }
                 // ★ v0.3.21 (audit review): harmful by what it does too (AbilityProfile.IsHarmfulBuff), not only the flag.
                 var useful = reaching.Where(r => r.Buff != null && !AbilityProfile.IsHarmfulBuff(r.Buff) && !ally.Buffs.HasFact(r.Buff) &&
@@ -679,9 +679,19 @@ namespace CompanionAI_Pathfinder.Tactics
                     : new BuffAppraisal();
                 if (appraisal.Modelled)
                 {
+                    // ★ v0.3.70 P2 (author-approved): a summon AI Control drives declines an effect it loses by (its own
+                    // acceptance toggle, TacticalEngine.AcceptSwitch.cs): its share is nothing rather than a loss.
+                    if (appraisal.Value < 0f && p.Area != null &&
+                        DrivenSummonDeclines(ally, useful.Where(r => r.Grant != null).Select(r => r.Grant)))
+                    {
+                        if (details.Count < 6) details.Add($"{ally.CharacterName} declines it ({appraisal.Value * weight:0.#}: {appraisal.Detail})");
+                        continue;
+                    }
                     modelled += appraisal.Value * weight;
                     if (appraisal.Value > 0f) helped++;
-                    if (details.Count < 3) details.Add($"{ally.CharacterName} {appraisal.Value * weight:0.#} ({appraisal.Detail})");
+                    // ★ v0.3.70 playtest: a recipient it costs is named too (its spells stopped), beyond the first three.
+                    if (details.Count < 3 || appraisal.Value < 0f && details.Count < 6)
+                        details.Add($"{ally.CharacterName} {appraisal.Value * weight:0.#} ({appraisal.Detail})");
                     continue;
                 }
                 float best = 0f;
