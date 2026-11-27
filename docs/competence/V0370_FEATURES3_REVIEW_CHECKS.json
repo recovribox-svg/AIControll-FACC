@@ -1,0 +1,63 @@
+{
+ "task": "Author request: review the features3 logs (turn-based and real time, one session) for bad or broken decisions and functionality gaps, and bugfix",
+ "date": "2026-11-27",
+ "author": "Claude",
+ "branch": "claude/v0370-features3-review",
+ "base": "2fd2ca0 (claude/v0370-features-review, draft PR #118)",
+ "source_commit": "713163421a0b131137f566e872720e28fa058842",
+ "inputs": {
+  "log_sha256": "6b172139f7b2dee7b0726982a2f5f29e9c74d900015c2c741caa194f6df2c478",
+  "combat_log_sha256": "86efb3349799d43d158c3fc82309d5782ea422602e5e920a591e84b9d58c5fda",
+  "module": "e32d25e0-351a-4083-81d2-14ba5ba9d574",
+  "fights": "5 turn-based, then 7 real-time",
+  "decisions": "408 turn-based, 2341 real-time",
+  "commands": "turn-based 213 issued; real-time 550 issued, 543 ended: 345 success, 56 interrupted after acting, 138 before acting, 4 fail",
+  "note": "Raw logs stay private; only their fingerprints are recorded."
+ },
+ "findings_fixed": [
+  "Real time: a command dropped to decide again (HP loss, a new area, a new threat, an arrived walk, or alongside) was learnt from as a failure and barred for the turn. Fight 8: Wenduag's Griffon Aspect and then her Cure Critical Wounds potion (dropped at 34 -> 9 HP) were barred; she drank a smaller potion and died. A Cambion's walk out of a Locust Swarm was dropped and barred the same way. RealTimeTactics.ReconsiderPending keeps every dropped option open; a pending heal of the unit itself or a walk away is not dropped for an HP loss (RealTimeReplanRules).",
+  "Both modes: with Spellstrike on, the game delivers a Magus spell cast at an enemy through a weapon attack (Eldritch Archer: UnitUseAbility.OnAction queues a UnitAttack; melee touch: UnitUseAbility.CreateCastCommand). A dominated ally is an enemy to that test; the Drow Magus's Flare put four arrows at dominated Camellia (all missed) and one into dominated Wenduag (13). SparesTurnedAlly now spares such casts (DeliveredByWeapon, MagusSourceStrike); Spell Combat follow-ups are not priced at a turned ally.",
+  "Log: the [WeaponSet] note once per summon kind and never for natural-weapon creatures; abilities with an empty display name logged by blueprint name (AbilityDiscovery.LogName) in [Unused] and [Coverage]."
+ ],
+ "features3_observed": {
+  "rage_decline": "Knight Commander switched Accept Effect off in three turn-based fights (spells 375-502/rd against 0), the Derakni twice; both back on after the fight",
+  "performance": "slowest decision 640 ms (Orvath, first decision of fight 1, 190 ms first threat reading) against 844 ms before; slow rows reuse 600-3500 damage estimates and 500-4600 effect chances; 28 decisions over 250 ms",
+  "group_teleport": "Greater Teleport quoted with summons out (2 passengers, landing risk 0.0); lost to a weapon attack",
+  "weapon_sets": "F2 not offered: no Mixed character has a second set with the other kind of weapon (Camellia greataxe, Bandit shortsword, Drow Magus longbow)",
+  "suggested_roles": "applied to newly recruited characters only; saved settings kept",
+  "summon_control": "on by default; 50 summon turns taken over in turn-based mode"
+ },
+ "observed_not_changed": [
+  "Drow Magus death (real-time fight 7): a Stun Bomb chosen when nothing threatened her; two Venomhodags bit her, then the throw provoked two attacks of opportunity that killed her. Whether the throw had started when the bites came is not in the log. Proposed, not made: re-decide when a newly arrived enemy threatens a pending provoking action.",
+  "About 83 real-time commands ended before acting with no AI Control reason; several at once, many as their target died; probably the game's or the player's.",
+  "Coups de grace: 4 issued, 1 succeeded, 3 interrupted before acting (target dead or no longer helpless).",
+  "Domination: freeing offered (Dispel Magic 30) but Ki Shout on the Succubus (71) won; others used Daze and Command.",
+  "Grease scored up to 299 (area prone at DC 23 on low-Reflex brutes); consistent with the control model.",
+  "Incorporeal last enemies valued about 0 at difficulty 0.10 (easy-fight restraint)."
+ ],
+ "checks": {
+  "release_build": "0 warnings, 0 errors (real game references, UMM 0.33.2.0)",
+  "unit_tests": "1185 passed (3 new: RealTimeReplanRulesTests)",
+  "script_tests": "BlueprintInventory 27, InvocationLedger 21, ProfileAudit supplement 3: OK",
+  "profile_audit": "exit 0; new V0370-FEATURES3 9 checks passed; every other report line identical to features3",
+  "fusion_matrix": "byte-identical",
+  "summon_kit_detail": "byte-identical",
+  "packaged_dll_audit": "run on the packaged DLL",
+  "native_harnesses": "ToggleCosts 98, TomeBurn 14, ToyBoxSpend 10, failures 0",
+  "external_members": "0 added, 0 removed against features3",
+  "gameplay": "unplayed"
+ },
+ "package": {
+  "archive": "test-builds/AI-Control-FACC-v0.3.70-dev-features4-7131634-UMM-test.zip",
+  "zip_sha256": "78bd3dc7525f5bda1f2c71cafbfc8cd846cfae1ea2ee5e05ad12f2b5e94bd433",
+  "dll_sha256": "1fe2d98ad7083e386afe82698b20d45c8261b96bca321eeee2cb97927d1ee485",
+  "mvid": "5303e299-817e-40eb-8592-5958d5eff1fa",
+  "manifest": "Info.json 0.3.70 (unchanged)",
+  "status": "unplayed"
+ },
+ "limits": [
+  "The re-decision fix is real time only; turn-based has no such drop rule.",
+  "A spell the game would deliver through the weapon is withheld at a dominated ally; it is not cast with Spellstrike switched off instead. Spells that are not delivered by a weapon (Daze, Command) are unchanged."
+ ],
+ "merged": false
+}

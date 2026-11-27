@@ -8,7 +8,35 @@ Read [CONTRIBUTING.md](CONTRIBUTING.md) for shared branch ownership, Codex pull 
 Codex works on task branches and targets pull requests at `claude/dreamy-pasteur-b9h3rn`; Claude reviews and integrates them there.
 Keep `main` for author-authorized releases. Read [AGENTS.md](AGENTS.md) when coordinating agent work.
 
-**Current handover (27 November 2026, Claude): features1 playtest reviewed, plus author requests; on
+**Current handover (27 November 2026, Claude): features3 playtest reviewed and fixed, on `claude/v0370-features3-review`,
+stacked on `claude/v0370-features-review` (draft PR #118). Not played, nothing merged.** Read
+[docs/V0370_FEATURES3_REVIEW.md](docs/V0370_FEATURES3_REVIEW.md), `docs/TACTICAL_AI.md` §226 and the
+[receipt](docs/competence/V0370_FEATURES3_REVIEW_CHECKS.json).
+- **Log:** features3 module `e32d25e0`, one session: 5 turn-based fights (408 decisions), then 7 real-time fights
+  (2,341 decisions); no AI Control exception. The Drow Magus (fight 7) and Wenduag (fight 8) died.
+- **Fixes:**
+  1. Real time: a command dropped to decide again is no longer barred for the turn (`RealTimeTactics.ReconsiderPending`).
+     After an HP loss, a pending self-heal or walk away is left running (`RealTimeReplanRules`). Wenduag's potion was
+     dropped, barred, and she died on a smaller one.
+  2. Both modes: a Magus spell the game delivers through a weapon is not aimed at a dominated ally (`DeliveredByWeapon`).
+     The Drow Magus's Flare put arrows into dominated Camellia and Wenduag.
+  3. Log: `[WeaponSet]` once per summon kind, none for natural weapons; blank ability names logged by blueprint name.
+- **Seen working:**
+  - the companions' rage decline (Knight Commander);
+  - group teleport quotes;
+  - performance: slowest decision 640 ms, against 844 before.
+  - F2 is not offered because no Mixed character has a second set of the other kind.
+- **Proposed, not made:** re-decide when a newly arrived enemy threatens a pending action that provokes (the Drow Magus's
+  death; the log cannot show whether her throw had started).
+- **Checks** on `7131634`:
+  - Release 0 warnings; 1,185 unit + 27/21/3 script tests.
+  - ProfileAudit `V0370-FEATURES3` 9; every other line and matrix unchanged.
+  - Harnesses 98/14/10; no external member added.
+- **Package:** `test-builds/AI-Control-FACC-v0.3.70-dev-features4-7131634-UMM-test.zip`, MVID
+  `5303e299-817e-40eb-8592-5958d5eff1fa`, UMM 0.3.70.
+- **Next:** the author plays features4 (replay in the review page).
+
+**Earlier handover (27 November 2026, Claude): features1 playtest reviewed, plus author requests; on
 `claude/v0370-features-review` (draft PR #118), stacked on `claude/v0370-features` (draft PR #117). Not played, nothing
 merged.** Read [docs/V0370_FEATURES_REVIEW.md](docs/V0370_FEATURES_REVIEW.md), `docs/TACTICAL_AI.md` §225 and the
 [receipt](docs/competence/V0370_FEATURES_REVIEW_CHECKS.json).
