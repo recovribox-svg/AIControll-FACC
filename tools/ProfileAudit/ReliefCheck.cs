@@ -102,7 +102,7 @@ namespace ProfileAudit
                 Check(greaterAreaProfile != null && greaterArea.GetComponent<AbilityTargetsAround>() != null &&
                       (bool)unitDispel.Invoke(null, new object[] { greaterAreaProfile }),
                     "actual Greater Dispel Magic Area retains its target-selector unit branch");
-                var pointArgs = new object[] { null, null, pointProfile, null, null, null, 123f, null };
+                var pointArgs = new object[] { null, null, pointProfile, null, null, null, 123f, null, 0f };
                 Check(pointProfile != null && (bool)engine.GetMethod("TryDispelValue", Hidden).Invoke(null, pointArgs) &&
                       (float)pointArgs[6] == 0f,
                     "point dispel is known zero, with no unit-buff fallback or actor read");

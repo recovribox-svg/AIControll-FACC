@@ -46,6 +46,11 @@ namespace CompanionAI_Pathfinder.Tactics
                 if (material == null) return true;
                 type = material.Type;
             }
+            return IsAllowed(type);
+        }
+
+        internal static bool IsAllowed(UsableItemType type)
+        {
             var g = ModSettings.Instance;
             if (g == null || !g.UseConsumables) return false;
             switch (type)

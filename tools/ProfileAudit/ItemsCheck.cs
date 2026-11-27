@@ -31,9 +31,7 @@ namespace ProfileAudit
                         else if (verdict != null && verdict.StartsWith("GUESSED:", StringComparison.Ordinal)) guessed++;
                         else unread++;
                     }
-                    string price = group.Key == UsableItemType.Potion ? "buff restraint only; native harm removal and heal appraisal"
-                        : group.Key == UsableItemType.Scroll || group.Key == UsableItemType.Wand ? "0.7 x native UMD chance"
-                        : "0.85 x native UMD chance";
+                    const string price = "shared spend restraint; native UMD when required";
                     lines.Add($"ITEMS {group.Key}: {read} read, {guessed} guessed, {unread} unread of {read + guessed + unread}; {price}");
                 }
 
@@ -52,13 +50,20 @@ namespace ProfileAudit
                 Check("PotionOfNeutralizePoison", UsableItemType.Potion, p => p.DispelActions.Any(d => (d.Descriptor.Value & Kingmaker.Blueprints.Classes.Spells.SpellDescriptor.Poison) != 0));
                 Check("PotionOfShieldOfFaith", UsableItemType.Potion, p => p.TargetBuffs.Count + p.CasterBuffs.Count > 0);
                 Check("ScrollOfMagicMissile", UsableItemType.Scroll, p => p.DealsDamage);
+                var missile = items.FirstOrDefault(i => i.name == "ScrollOfMagicMissile")?.Ability;
+                if (missile == null || !blueprints.Any(b => b == missile) || missile.name != "MagicMissile")
+                {
+                    bad++;
+                    lines.Add("ITEMS FAILED: Magic Missile scroll must resolve to the canonical spellbook blueprint");
+                }
+                else lines.Add("ITEMS Magic Missile scroll: shares its cast blueprint with the spellbook");
             }
             catch (Exception ex)
             {
                 bad++;
                 lines.Add("ITEMS FAILED: " + ex.GetBaseException().Message);
             }
-            lines.Insert(0, $"ITEMS: item-to-ability joins, 4 blueprint fixtures, {bad} failures");
+            lines.Insert(0, $"ITEMS: item-to-ability joins, 5 blueprint fixtures, {bad} failures");
             failures = bad;
             return lines;
         }

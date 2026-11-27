@@ -162,6 +162,8 @@ namespace CompanionAI_Pathfinder.Tactics
         internal float ReservedChargeValue;
         internal DecisionTimings Timings;
         internal UnusedWitness.Group Unused;
+        internal Dictionary<BlueprintAbility, List<AbilityData>> BookCopies;
+        internal Dictionary<BlueprintAbility, bool> BookCopyAvailable;
         // Point-dispel area worth is recipient-independent and lives only for this decision. NaN means unread.
         internal Dictionary<AreaEffectEntityData, float> AreaRemovalValues;
         internal int AreaRemovalVersion;
@@ -3307,32 +3309,47 @@ namespace CompanionAI_Pathfinder.Tactics
             }
         }
 
-        /// <summary>Consumable policy multiplier; 0 means "do not use this item now".</summary>
-        private static float ConsumableFactor(TacticalContext ctx, AbilityData ability)
-        {
-            if (!(ability.SourceItem is ItemEntityUsable item))
-            {
-                // ★ v0.3.23 (bombs task): a usable item spent as the ability's material component (Grenadier Alchemical
-                // Weapon's flask) is conserved like the same item used directly - the player's item settings, then the
-                // item type's factor. No Use Magic Device: the class ability uses the item, the unit does not activate it.
-                var material = ConsumablePolicy.SpentMaterial(ability);
-                if (material == null) return 1f;
-                if (!ConsumablePolicy.IsAllowed(ability)) return 0f;
-                return material.Type == UsableItemType.Scroll || material.Type == UsableItemType.Wand ? 0.7f : 0.85f;
-            }
-            if (!ConsumablePolicy.IsAllowed(ability)) return 0f;
+        /// <summary>Only the direct activation is subject to the item's native UMD check.</summary>
+        private static float ConsumableDeliveryChance(TacticalContext ctx, AbilityData ability) =>
+            ability.SourceItem is ItemEntityUsable ? CombatMath.UseMagicDeviceChance(ability, ctx.Unit) : 1f;
 
-            switch (item.Blueprint.Type)
+        /// <summary>Decision-local index of spellbook copies. Native availability is read only for a matching item.</summary>
+        private static bool HasAvailableBookCopy(TacticalContext ctx, AbilityData item)
+        {
+            if (!(item.SourceItem is ItemEntityUsable source) || ctx.AllowedAbilities == null) return false;
+            switch (source.Blueprint.Type)
             {
                 case UsableItemType.Potion:
-                    // Each part of the potion receives its own appraisal in ScoreAbility.
-                    return 1f;
                 case UsableItemType.Scroll:
-                case UsableItemType.Wand:
-                    return 0.7f * CombatMath.UseMagicDeviceChance(ability, ctx.Unit);
-                default:
-                    return 0.85f * CombatMath.UseMagicDeviceChance(ability, ctx.Unit);
+                case UsableItemType.Wand: break;
+                default: return false;
             }
+
+            if (ctx.BookCopies == null)
+            {
+                ctx.BookCopies = new Dictionary<BlueprintAbility, List<AbilityData>>();
+                ctx.BookCopyAvailable = new Dictionary<BlueprintAbility, bool>();
+                foreach (var book in ctx.AllowedAbilities)
+                {
+                    if (book.Spellbook == null || book.SourceItem != null || book.StickyTouch != null) continue;
+                    if (!ctx.BookCopies.TryGetValue(book.Blueprint, out var copies))
+                        ctx.BookCopies.Add(book.Blueprint, copies = new List<AbilityData>());
+                    copies.Add(book);
+                }
+            }
+            if (!ctx.BookCopies.TryGetValue(item.Blueprint, out var matching)) return false;
+            if (ctx.BookCopyAvailable.TryGetValue(item.Blueprint, out bool found)) return found;
+            foreach (var copy in matching)
+            {
+                if (copy.IsAvailable && !AbilityClassifier.IsBlacklistedForCombat(copy, valuedByEffect: true) &&
+                    PureMagePolicy.AllowsAbility(ctx.Settings, copy, AbilityProfile.Get(copy)))
+                {
+                    found = true;
+                    break;
+                }
+            }
+            ctx.BookCopyAvailable[item.Blueprint] = found;
+            return found;
         }
 
         private static float ArcaneDeliveryChance(TacticalContext ctx, AbilityData ability, bool explain)
@@ -3425,10 +3442,17 @@ namespace CompanionAI_Pathfinder.Tactics
             { unused?.Record(witness, UnusedReason.PureMage); return none; }
             var targetingBlueprint = ability.GetDeliverBlueprint() ?? ability.Blueprint;
 
-            float consumable = ConsumableFactor(ctx, ability);
-            if (consumable <= 0f) { unused?.Record(witness, UnusedReason.ConsumablePolicy); return none; }
-            // ★ v0.3.23 (bombs task): an item spent as the material component (Alchemical Weapon's flask) is used up too.
-            bool spentMaterial = ability.SourceItem == null && ConsumablePolicy.SpentMaterial(ability) != null;
+            var sourceItem = ability.SourceItem as ItemEntityUsable;
+            var material = ability.SourceItem == null ? ConsumablePolicy.SpentMaterial(ability) : null;
+            var pricedItem = sourceItem?.Blueprint ?? material;
+            if (pricedItem != null && !ConsumablePolicy.IsAllowed(pricedItem.Type))
+            { unused?.Record(witness, UnusedReason.ConsumablePolicy); return none; }
+            if (!ignorePolicy && HasAvailableBookCopy(ctx, ability))
+            { unused?.Record(witness, UnusedReason.SlotCopy); return none; }
+            float itemDelivery = ConsumableDeliveryChance(ctx, ability);
+            if (!(itemDelivery > 0f)) { unused?.Record(witness, UnusedReason.ConsumablePolicy); return none; }
+            // A class ability may consume a usable item without activating it.
+            bool spentMaterial = material != null;
 
             var slot = SlotOf(ability);
             var targets = new List<UnitEntityData>();
@@ -3612,7 +3636,7 @@ namespace CompanionAI_Pathfinder.Tactics
                 {
                     using (AbilityProfile.AimedAt(wrapper))   // ★ v0.3.18 (test10): conditions see the real main target
                         value = ScoreAbility(ctx, ability, profile, slot, target, wrapper, approach?.Point ?? ctx.Unit.Position,
-                            out why, out infusionNote, out geometryRecipients, out geometryChance, valueActiveInfusions);
+                            out why, out infusionNote, out geometryRecipients, out geometryChance, valueActiveInfusions, pricedItem != null);
                 }
                 finally { ctx.Burst = null; }
                 string friendlyFire = ctx.FriendlyFireNote;
@@ -3637,7 +3661,7 @@ namespace CompanionAI_Pathfinder.Tactics
                     float? turnedChance;
                     using (AbilityProfile.AimedAt(turned))
                         turnedValue = ScoreAbility(ctx, ability, profile, slot, target, turned, ctx.Unit.Position,
-                            out turnedWhy, out turnedInfusion, out turnedRecipients, out turnedChance, valueActiveInfusions);
+                            out turnedWhy, out turnedInfusion, out turnedRecipients, out turnedChance, valueActiveInfusions, pricedItem != null);
                     if (turnedValue > value)
                     {
                         wrapper = turned;
@@ -3679,7 +3703,7 @@ namespace CompanionAI_Pathfinder.Tactics
                         float? upChance;
                         using (AbilityProfile.AimedAt(upAim))
                             upValue = ScoreAbility(ctx, ability, profile, slot, target, upAim, lineUp.Spot,
-                                out upWhy, out upInfusion, out upRecipients, out upChance, valueActiveInfusions);
+                                out upWhy, out upInfusion, out upRecipients, out upChance, valueActiveInfusions, pricedItem != null);
                         float hereNet = ValueModel.WalkedNet(value, needsMove, walkFactor, risk?.StopChance ?? 0f, risk?.Cost ?? 0f);
                         float upNet = ValueModel.WalkedNet(upValue, true, upWalk, upRisk?.StopChance ?? 0f, upRisk?.Cost ?? 0f);
                         if (ValueModel.LineUpWorthIt(hereNet, upNet))
@@ -3737,7 +3761,7 @@ namespace CompanionAI_Pathfinder.Tactics
                 }
                 // ★ v0.3.17 (test3): does the aimed enemy itself get any of the value, or only the others in the area?
                 bool aimAffected = !(profile.IsAoE && target != ctx.Unit && ctx.Unit.IsEnemy(target)) || ctx.AimCounted;
-                value *= consumable;
+                value *= itemDelivery;
                 // ★ v0.3.18 (test10): an item is spent for good - not for a sliver of value (healing potions were drunk for
                 // 0.8-1.4, Lann drank five Cure Light Wounds in one fight). The bar of a quick action, whatever its slot.
                 // ★ v0.3.19 (test7): one that is used up (potion, scroll, wand charge) needs more: Seelah drank a Cure
@@ -3834,7 +3858,7 @@ namespace CompanionAI_Pathfinder.Tactics
                     InfusionAim = ctx.ScoredInfusionHits == null ? null : new InfusionAim
                     {
                         Hits = ctx.ScoredInfusionHits,
-                        DeliveryFactor = ValueModel.InfusionDeliveryFactor(consumable, needsMove, deliveryChance,
+                        DeliveryFactor = ValueModel.InfusionDeliveryFactor(itemDelivery, needsMove, deliveryChance,
                             provoke?.StopChance ?? 0f, concentrationChance, archerTouch, risk?.StopChance ?? 0f)
                     },
                     GeometryRecipients = geometryRecipients,
@@ -4052,7 +4076,7 @@ namespace CompanionAI_Pathfinder.Tactics
                                           UnitEntityData target, TargetWrapper actualAim, Vector3 castOrigin,
                                           out string why, out string infusionNote,
                                           out IReadOnlyCollection<UnitEntityData> geometryRecipients, out float? geometryChance,
-                                          bool valueActiveInfusions)
+                                          bool valueActiveInfusions, bool consumable = false)
         {
             infusionNote = null;
             geometryRecipients = null;
@@ -4062,7 +4086,7 @@ namespace CompanionAI_Pathfinder.Tactics
             int level = Math.Max(0, ability.SpellLevel);
             float value = 0f;
             float slotSensitive = 0f;   // ★ v0.3.17: the damage and control parts (spell-slot discount)
-            bool potion = ability.SourceItem is ItemEntityUsable item && item.Blueprint.Type == UsableItemType.Potion;
+            float outsideItemRestraint = 0f;
             ctx.AimCounted = false;
             ctx.FriendlyFireNote = null;
             ctx.FriendlyFireVeto = false;
@@ -4093,7 +4117,10 @@ namespace CompanionAI_Pathfinder.Tactics
                 return GrappleReleaseValue(ctx, ability, out why);
             // ★ v0.3.18 (AA-4): Vital Strike and Cleave are weapon attacks (TacticalEngine.Martial.cs).
             if (profile.IsWeaponAttack)
-                return WeaponAbilityValue(ctx, ability, profile, target, out why);
+            {
+                float weaponValue = WeaponAbilityValue(ctx, ability, profile, target, out why);
+                return consumable ? ValueModel.ConsumableWorth(weaponValue, 0f, ctx.Difficulty) : weaponValue;
+            }
 
             List<UnitEntityData> affectedEnemies = targetIsEnemy ? new List<UnitEntityData> { target } : new List<UnitEntityData>();
             List<UnitEntityData> affectedAllies = targetIsEnemy ? new List<UnitEntityData>() : new List<UnitEntityData> { target };
@@ -4302,6 +4329,7 @@ namespace CompanionAI_Pathfinder.Tactics
             {
                 float dmgValue = 0f;
                 float disrupt = 0f;   // ★ cast disruption: kept apart from the damage the friendly-fire rule weighs
+                float friendlyDamageCost = 0f;
                 float turnedCost = 0f;   // ★ coverage3 review: damage to allies under an enemy's control
                 List<string> turnedHurt = null;
                 // ★ v0.3.18 (C2): one resistance path - spell resistance (with penetration) and spell immunity in the
@@ -4452,6 +4480,7 @@ namespace CompanionAI_Pathfinder.Tactics
                     { ctx.FriendlyFireVeto = true; why = "friendly fire"; return 0f; }
                     if (allyCost > 0f) ctx.FriendlyFireNote = $"catches {string.Join(", ", caughtNames)} -{allyCost:F0}";
                     dmgValue -= allyCost;
+                    friendlyDamageCost = allyCost;
                 }
 
                 // ★ coverage3 review: allies under an enemy's control the cast hurts. Not under Avoid Friendly Fire's veto - they
@@ -4464,17 +4493,20 @@ namespace CompanionAI_Pathfinder.Tactics
                 }
                 if (dmgValue > 0f)
                 {
-                    value += dmgValue * RoleWeight(ctx, "damage");
-                    slotSensitive += dmgValue * RoleWeight(ctx, "damage");
+                    float damageRole = RoleWeight(ctx, "damage");
+                    value += dmgValue * damageRole;
+                    slotSensitive += dmgValue * damageRole;
+                    if (consumable) outsideItemRestraint -= (friendlyDamageCost + turnedCost) * damageRole;
                     reasons.Add("dmg");
                 }
                 // ★ v0.3.28 test 12: when the allies it catches cost more than the enemies are worth, the difference counts
                 // against the option. It was cut off at nothing, so the area's other parts (a debuff, an infusion's
                 // effect) still made it worth casting into the party.
-                else if (dmgValue < 0f && ctx.FriendlyFireNote != null)
+                else if (dmgValue <= 0f && ctx.FriendlyFireNote != null)
                 {
                     value += dmgValue;
-                    reasons.Add("friendly fire");
+                    if (consumable) outsideItemRestraint -= friendlyDamageCost + turnedCost;
+                    if (dmgValue < 0f) reasons.Add("friendly fire");
                 }
                 if (disrupt > 0f)
                 {
@@ -4487,6 +4519,7 @@ namespace CompanionAI_Pathfinder.Tactics
             if (permanentDeathCost > 0f)
             {
                 value -= permanentDeathCost;
+                if (consumable) outsideItemRestraint -= permanentDeathCost;
                 reasons.Add("permanent-death risk");
             }
 
@@ -4565,7 +4598,9 @@ namespace CompanionAI_Pathfinder.Tactics
                     healValue = ValueModel.SpentHealValue(restoring, healValue - restoring, ctx.Difficulty);
                 if (healValue > 0f)
                 {
-                    value += healValue * RoleWeight(ctx, "heal");
+                    float healWorth = healValue * RoleWeight(ctx, "heal");
+                    value += healWorth;
+                    if (consumable) outsideItemRestraint += healWorth;
                     reasons.Add("heal");
                     if (reviveNote != null) ctx.ReviveNotes[ReviveNoteKey(ability, reviveTarget)] = reviveNote;
                 }
@@ -4858,6 +4893,7 @@ namespace CompanionAI_Pathfinder.Tactics
                     if (enemy == target && enemyValue > 0f) ctx.AimCounted = true;
                 }
                 controlValue -= allyControlCost;
+                if (consumable) outsideItemRestraint -= allyControlCost;
                 if (controlValue > 0f)
                 {
                     value += controlValue;
@@ -5078,7 +5114,7 @@ namespace CompanionAI_Pathfinder.Tactics
                 }
                 if (buffValue > 0f)
                 {
-                    value += potion ? ValueModel.PotionBuffValue(buffValue, ctx.Difficulty) : buffValue;
+                    value += buffValue;
                     reasons.Add("buff");
                 }
             }
@@ -5097,7 +5133,7 @@ namespace CompanionAI_Pathfinder.Tactics
                 float auraValue = AuraValue(ctx, ability, profile, target, targetIsEnemy, out string auraNote);
                 if (auraValue > 0f)
                 {
-                    value += potion ? ValueModel.PotionBuffValue(auraValue, ctx.Difficulty) : auraValue;
+                    value += auraValue;
                     reasons.Add(auraNote ?? "aura");
                 }
             }
@@ -5123,7 +5159,9 @@ namespace CompanionAI_Pathfinder.Tactics
                 }
                 if (cleanseValue > 0f)
                 {
-                    value += cleanseValue * RoleWeight(ctx, "heal");
+                    float cleanseWorth = cleanseValue * RoleWeight(ctx, "heal");
+                    value += cleanseWorth;
+                    if (consumable) outsideItemRestraint += cleanseWorth;
                     reasons.Add(partial < 1f ? $"cleanse ({partial:P0} after suppression)" : "cleanse");
                 }
             }
@@ -5135,6 +5173,7 @@ namespace CompanionAI_Pathfinder.Tactics
                 if (freedValue != 0f)
                 {
                     value += freedValue;
+                    if (consumable) outsideItemRestraint += freedValue;
                     reasons.Add(freedNote);
                 }
             }
@@ -5143,9 +5182,10 @@ namespace CompanionAI_Pathfinder.Tactics
             // ally's harmful effects, and the party's own buffs a dispel would take first (TacticalEngine.Relief.cs) ---
             bool dispelPriced = false;
             if (profile.DispelActions.Count > 0 &&
-                TryDispelValue(ctx, ability, profile, actualAim, affectedEnemies, affectedAllies, out float dispelWorth, out string dispelNote))
+                TryDispelValue(ctx, ability, profile, actualAim, affectedEnemies, affectedAllies, out float dispelWorth, out string dispelNote, out float dispelOutsideRestraint))
             {
                 dispelPriced = true;
+                if (consumable) outsideItemRestraint += dispelOutsideRestraint;
                 if (dispelWorth != 0f)
                 {
                     value += dispelWorth;
@@ -5160,7 +5200,9 @@ namespace CompanionAI_Pathfinder.Tactics
                 foreach (var ally in affectedAllies) relief += SuppressionRelief(ctx, ability, profile, ally, reliefHorizon, out _);
                 if (relief > 0f)
                 {
-                    value += relief * RoleWeight(ctx, "heal");
+                    float reliefWorth = relief * RoleWeight(ctx, "heal");
+                    value += reliefWorth;
+                    if (consumable) outsideItemRestraint += reliefWorth;
                     reasons.Add("suppresses what hinders");
                 }
             }
@@ -5261,9 +5303,9 @@ namespace CompanionAI_Pathfinder.Tactics
                         if (enchant != null && enchant.Modelled)
                         {
                             if (enchant.Value <= 0f) { why = $"nothing to gain ({enchant.Detail})"; return 0f; }
-                            value += potion ? ValueModel.PotionBuffValue(enchant.Value, ctx.Difficulty) : enchant.Value;
+                            value += enchant.Value;
                         }
-                        else if (!potion)
+                        else if (!consumable)
                             value += ValueModel.BuffPerRound(level) * ctx.ExpectedRounds * 0.5f * RoleWeight(ctx, "buff");
                         reasons.Add("enchant");
                     }
@@ -5280,7 +5322,7 @@ namespace CompanionAI_Pathfinder.Tactics
             // ★ v0.3.23 (bombs task): an Alchemist's daily bombs are such a resource too (AbilityProfile.ThrowsDailyBomb), with
             // the same easy-fight restraint (ValueModel.LimitedUseDiscount): a bomb a little better than the crossbow in a
             // fight the party is winning easily stays in the bag; in a hard fight nothing is taken off.
-            if (ability.SourceItem == null && ability.StickyTouch == null && slotSensitive > 0f &&
+            if (!consumable && ability.SourceItem == null && ability.StickyTouch == null && slotSensitive > 0f &&
                 (level > 0 && ability.Spellbook != null || profile.ThrowsDailyBomb && ability.Spellbook == null))
             {
                 float kept = slotSensitive * ValueModel.OffensiveSlotDiscount(ctx.Difficulty,
@@ -5294,6 +5336,7 @@ namespace CompanionAI_Pathfinder.Tactics
             if (removedCasterCost > 0f)
             {
                 value -= removedCasterCost;
+                if (consumable) outsideItemRestraint -= removedCasterCost;
                 reasons.Add($"loses caster buff -{removedCasterCost:0.#}");
             }
             // ★ coverage7 follow-ups: and the heal that buff's removal gives (its Deactivated actions: Abandon Flesh's 2d6+3),
@@ -5302,6 +5345,7 @@ namespace CompanionAI_Pathfinder.Tactics
             if (removalHeal > 0f)
             {
                 value += removalHeal;
+                if (consumable) outsideItemRestraint += removalHeal;
                 reasons.Add($"its removal heals ~{removalHp:0} +{removalHeal:0.#}");
             }
 
@@ -5310,11 +5354,12 @@ namespace CompanionAI_Pathfinder.Tactics
             if (spent > 0f)
             {
                 value -= spent;
+                if (consumable) outsideItemRestraint -= spent;
                 reasons.Add(spentNote);
             }
 
             why = reasons.Count > 0 ? string.Join("+", reasons) : "none";
-            return value;
+            return consumable ? ValueModel.ConsumableWorth(value, outsideItemRestraint, ctx.Difficulty) : value;
         }
 
         #endregion

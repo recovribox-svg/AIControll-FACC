@@ -48,9 +48,10 @@ namespace CompanionAI_Pathfinder.Tactics
         public static float SpentHealValue(float restoring, float other, float difficulty) =>
             Math.Max(0f, restoring) * (1f - LimitedUseDiscount(difficulty)) + Math.Max(0f, other);
 
-        /// <summary>Restraint applies to the potion's buff benefit. Live cleanse and HP gain are priced separately.</summary>
-        public static float PotionBuffValue(float benefit, float difficulty) =>
-            benefit * (1f - LimitedUseDiscount(difficulty));
+        /// <summary>Price the discretionary benefit only. The signed remainder contains already priced healing,
+        /// relief from present harm and costs that an easy fight does not make cheaper.</summary>
+        public static float ConsumableWorth(float net, float outsideRestraint, float difficulty) =>
+            net - Math.Max(0f, net - outsideRestraint) * LimitedUseDiscount(difficulty);
 
         /// <summary>What an easy fight leaves of a limited option's damage and control at the least.</summary>
         public const float MinLimitedUseShare = 0.55f;

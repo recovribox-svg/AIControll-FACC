@@ -75,7 +75,7 @@ creatures. Grouped by mechanism:
 | Mechanism | Examples (creature) | Reading now |
 | --- | --- | --- |
 | Teleport, leap, overrun | Greater Teleport (Vrock), Dimension Door (Derakni), Liquid Leap (Omox), Overrun (Vavakia) | no value: never used |
-| Self or area effects with a condition or combat trigger | Unholy Nimbus (Nalfeshnee), Stunning Screech (Vrock), Derakni Drone, Song of Discord (Gallu) | old quality guess |
+| Self or area effects with a condition or delayed delivery | Unholy Nimbus (Nalfeshnee), Stunning Screech (Vrock), Derakni Drone, Song of Discord (Gallu) | old quality guess |
 | Debuffs on rolls and target marks | Touch of Chaos (Nalfeshnee), Slayer's Study Target (Painajai) | guessed debuff |
 | Shadow spells | Shadow Conjuration / Evocation (Shadow Demon, Coloxus) | parent unread; variants may expand at run time |
 | Guessed parts of read spells | Enervation's temporary HP, the Contagion variants' stat damage, Enslave Soul | main effect read, a part guessed |
@@ -302,9 +302,12 @@ safety checks (friendly fire, permanent death, blocklists, Pure Mage, consumable
 ### S1: the demons' guessed effects, read by mechanism
 
 - **Change:** extend the existing readers to the mechanisms in the table above, roster first:
-  - **Area effects with a save:** Stunning Screech, Unholy Nimbus, Derakni Drone and Song of Discord are an area cast
-    whose buff applies a condition after a save. Value them through the existing area and control readers
-    (`AddCondition` → control strength; `CombatStateTrigger` read as the native trigger, not guessed).
+  - **Area effects with a save:** Value the condition on Stunning Screech, Derakni Drone and Song of Discord through
+    the existing area and control readers. Check each one's native target filters, save, immunity and timing.
+  - **Unholy Nimbus:** the cast applies a one-round self buff. Its `AddFactContextActions.Deactivated` callback casts
+    the separate self-centred blast. Price the callback's actual save and target filters at expected delivery, with
+    uncertainty for who will still be in range. A current recipient list alone does not establish a reliable forecast.
+    Withhold positive credit if the native callback or a safe delivery forecast is unreadable.
   - **Roll debuffs and target marks:** Touch of Chaos (`ModifyD20`), Slayer's Study Target and the smite marks
     (`AttackBonusAgainstTarget`, `DamageBonusAgainstTarget`, `IgnoreTargetDR`). Value them through the caster-side mark
     reader (`TacticalEngine.Marks`), which already couples a mark to the unit's own attacks on that target.
