@@ -9,7 +9,8 @@ namespace ProfileAudit
 {
     /// <summary>
     /// ★ v0.3.70 release review: a hold is weighed against the holder's lost turn only when letting go gives it an action back
-    /// this round; a melee attacker gains +4 more against a helpless ally (the game's RuleCalculateAC).
+    /// this round; a badly hurt holder's hold costs the withdrawal letting go would allow; a melee attacker gains +4 more
+    /// against a helpless ally (the game's RuleCalculateAC).
     /// </summary>
     internal static class V0370ReleaseReviewCheck
     {
@@ -43,6 +44,30 @@ namespace ProfileAudit
             Check(ValueModel.GrappleKeepValue(0.46f, 3f, 29.9f, 28f, 14.3f, 0.5f, 1f, true) < -0.5f &&
                   ValueModel.GrappleKeepValue(0.46f, 3f, 29.9f, 28f, 14.3f, 0.5f, 1f, false) > 0f,
                   "Wenduag's Corrupted Jungle Bulette: let go at once with her turn charged, kept while her full attack's actions are spent");
+
+            // --- the holder's own danger (the G1 limit) ---
+            Check(Calls(engine, "GrappleReleaseValue", "BadlyHurt") && Calls(engine, "GrappleReleaseValue", "WalksOnRelease") &&
+                  Calls(engine, "GrappleReleaseValue", "WithdrawWorth") && Calls(engine, "GrappleReleaseValue", "GrappleKeepWhileStuck") &&
+                  Calls(engine, "AddMovementCandidates", "WithdrawWorth") && Calls(engine, "WithdrawWorth", "FindRetreatPoint") &&
+                  Calls(engine, "WithdrawWorth", "MoveRisk") && Calls(engine, "WithdrawWorth", "SpotDrop"),
+                  "a badly hurt holder's keep value is charged the withdrawal letting go allows, priced by the withdraw option's own code");
+            var init = typeof(Kingmaker.UnitLogic.Parts.UnitPartGrappleInitiator).GetMethod("Init", all);
+            var dispose = typeof(Kingmaker.UnitLogic.Parts.UnitPartGrappleInitiator).GetMethod("OnDispose", all);
+            var counts = typeof(Kingmaker.UnitLogic.UnitState).GetField("m_Conditions", all);
+            var canMove = typeof(Kingmaker.UnitLogic.UnitState).GetProperty("CanMove", all)?.GetGetMethod(true);
+            Check(init != null && dispose != null && SaveBoostCheck.ReferencedMembers(init).Any(m => m.Name == "AddCondition") &&
+                  SaveBoostCheck.ReferencedMembers(dispose).Any(m => m.Name == "RemoveCondition") &&
+                  counts?.FieldType == typeof(sbyte[]) && canMove != null &&
+                  SaveBoostCheck.ReferencedMembers(canMove).Any(m => m.Name == "HasCondition"),
+                  "native: the hold adds a CantMove its dispose removes, and UnitState.CanMove reads the condition counts");
+            var holderBuffs = blueprints.OfType<Kingmaker.UnitLogic.Buffs.Blueprints.BlueprintBuff>()
+                .Where(b => b.ComponentsArray?.OfType<Kingmaker.UnitLogic.FactLogic.ShifterGrabInitiatorBuff>().Any() == true).ToList();
+            Check(holderBuffs.Count > 0 && holderBuffs.All(b => !b.ComponentsArray.OfType<Kingmaker.UnitLogic.FactLogic.AddCondition>()
+                      .Any(c => c.Condition == Kingmaker.UnitLogic.UnitCondition.CantMove)),
+                  $"the {holderBuffs.Count} grab holder buffs add no CantMove of their own, so letting go frees the holder's walk");
+            Check(ValueModel.GrappleKeepWhileStuck(28.5f, 35f) < -0.5f && ValueModel.GrappleReleaseValue(ValueModel.GrappleKeepWhileStuck(28.5f, 35f), out _) > 0f &&
+                  ValueModel.GrappleKeepWhileStuck(28.5f, 0f) == 28.5f && ValueModel.GrappleKeepWhileStuck(28.5f, float.NaN) == 28.5f,
+                  "Wenduag's Rustclaw hold (keep +28.5): let go when badly hurt with a withdrawal worth 35, unchanged without one");
 
             // --- a helpless ally in melee ---
             var ac = typeof(Kingmaker.RuleSystem.Rules.RuleCalculateAC).GetMethod("OnTrigger", all);

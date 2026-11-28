@@ -9,6 +9,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Reflection;
 using Kingmaker.Blueprints;
 using Kingmaker.Blueprints.Items.Weapons;
 using Kingmaker.Designers.EventConditionActionSystem.Actions;
@@ -446,6 +447,37 @@ namespace CompanionAI_Pathfinder.Tactics
         /// CMBBonusForManeuver added by hand (a RuleCombatManeuver handler), its Dexterity change already in the holder's
         /// Dexterity (a live modifier now). Read once a decision by the release appraisal; no roll and no change.
         /// </summary>
+        private static readonly FieldInfo s_ConditionCounts = HarmonyLib.AccessTools.Field(typeof(UnitState), "m_Conditions");
+
+        /// <summary>
+        /// ★ v0.3.70 release review: whether <paramref name="holder"/> could walk once it lets go - the native
+        /// UnitState.CanMove test with this hold's own CantMove taken away. UnitPartGrappleInitiator.Init adds exactly one
+        /// CantMove (the grab forms' holder buffs add none) and its dispose removes it. Not when another source also bans
+        /// movement (a second CantMove, MovementBan, ForceMove, helpless, dazed, stunned, prone, held itself), or the holder
+        /// is overloaded (the encumbrance setting is not read: assumed to bind). An animation that holds it still now is
+        /// the hold's own and ends with it. Unreadable: false, so the hold is priced as before.
+        /// </summary>
+        internal static bool WalksOnRelease(UnitEntityData holder)
+        {
+            try
+            {
+                var state = holder?.Descriptor?.State;
+                if (state == null || holder.Get<UnitPartGrappleInitiator>() == null) return false;
+                if (state.CanMove) return true;
+                if (holder.Get<UnitPartGrappleTarget>() != null || state.IsHelpless || state.Prone.Active ||
+                    state.HasCondition(UnitCondition.Dazed) || state.HasCondition(UnitCondition.Stunned) ||
+                    state.HasCondition(UnitCondition.MovementBan) || state.HasCondition(UnitCondition.ForceMove) ||
+                    holder.Descriptor.Encumbrance == Encumbrance.Overload)
+                    return false;
+                return s_ConditionCounts?.GetValue(state) is sbyte[] counts && (int)UnitCondition.CantMove < counts.Length &&
+                       counts[(int)UnitCondition.CantMove] <= 1;
+            }
+            catch
+            {
+                return false;
+            }
+        }
+
         internal static HeldGrapple ReadHold(UnitEntityData holder)
         {
             try

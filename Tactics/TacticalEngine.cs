@@ -2688,9 +2688,21 @@ namespace CompanionAI_Pathfinder.Tactics
             // not the grapple's restriction). Until then the hold costs it nothing and the victim's held turn still comes.
             bool turnNow = ctx.HasStandard || ctx.HasMove;
             float keep = ValueModel.GrappleKeepValue(persist, s_GrappleHorizon, worth, holder, held.FreeDamage, nowShare, pinnedShare, turnNow);
+            // ★ v0.3.70 release review (author request, the known G1 limit): a hold keeps its holder where it stands - it
+            // cannot move while it holds. Badly hurt, with a move to make, letting go lets it withdraw: keeping costs that
+            // withdrawal's worth, priced as the withdraw option is (WithdrawWorth). Wenduag kept Rustclaw at "keep +28.5"
+            // while it clawed her down. A healthy holder, or one with nowhere safer to go, is priced as before.
+            // Turn-based it needs its move action; in real time walking is free once the hold's CantMove is gone (the
+            // context reads CanMove there, false while it holds, so the withdrawal's walk is the usual round of it).
+            float stuck = 0f;
+            bool realTime = CombatMemory.IsRealTime;
+            if ((realTime || ctx.HasMove) && BadlyHurt(ctx) && CombatMath.WalksOnRelease(unit))
+                stuck = Math.Max(0f, WithdrawWorth(ctx, out _, out _, out _, realTime ? unit.CurrentSpeedMps * 6f : ctx.MoveRange));
+            keep = ValueModel.GrappleKeepWhileStuck(keep, stuck);
             float net = ValueModel.GrappleRoundNet(worth, holder, held.FreeDamage, pinnedShare);
             string detail = $"{victim.CharacterName} {(held.Pinned ? "pinned" : "held")}, keep {keep:+0.0;-0.0} (victim {worth:F1}, holder " +
-                            $"{holder:F1} per round{(turnNow ? "" : ", no action to regain this round")}, free natural hit {held.FreeDamage:F1}, " +
+                            $"{holder:F1} per round{(turnNow ? "" : ", no action to regain this round")}" +
+                            $"{(stuck > 0f ? $", held where a withdrawal is worth {stuck:F1}" : "")}, free natural hit {held.FreeDamage:F1}, " +
                             $"a later round {net:+0.0;-0.0}, lasts {persist:P0}/round)";
             float release = ValueModel.GrappleReleaseValue(keep, out why);
             AbilityDiscovery.ReportOnce($"grapplekeep|{CombatMemory.Fight}|{unit.UniqueId}|{victim.UniqueId}|{(keep < -0.5f ? 1 : 0)}",
@@ -5779,31 +5791,19 @@ namespace CompanionAI_Pathfinder.Tactics
             // ★ v0.3.70 features6 review (author-approved): or half drained (BadlyHurt).
             if (BadlyHurt(ctx))
             {
-                float dangerHere = IncomingDamage(ctx, unit, unit.Position);
-                if (dangerHere > 0f)
+                float value = WithdrawWorth(ctx, out var point, out var risk, out float preRisk);
+                if (point.HasValue)
                 {
-                    var point = FindRetreatPoint(ctx, ctx.HasMove ? ctx.MoveRange : unit.CurrentSpeedMps * 3f);
-                    if (point.HasValue)
+                    NoteEscape(ctx, "move:withdraw", "Withdraw (low HP)", point.Value, preRisk, 0f, null);
+                    if (value >= MinMainValue)
                     {
-                        // ★ v0.3.18 (review): the walk is priced like every other move (MoveRisk: the game's own
-                        // disengage checks, Mobility, the attacks' drop chance, areas on the way). A flat half of the
-                        // engagers' Threat was added to the danger there, outside the danger scale: once the fight's
-                        // calibration lowered the scale, withdrawing from a single enemy was never worth it.
-                        var risk = MoveRisk(ctx, point.Value, ownSafetyCounted: true);   // ★ v0.3.28 test 2: pHere - pThere below
-                        float pHere = SpotDrop(ctx, unit, unit.Position);   // ★ v0.3.29 test 2 (R3)
-                        float pThere = SpotDrop(ctx, unit, point.Value);
-                        float value = (pHere - pThere) * AllyWorth(ctx, unit) * (1f - (risk?.StopChance ?? 0f)) - (risk?.Cost ?? 0f);
-                        NoteEscape(ctx, "move:withdraw", "Withdraw (low HP)", point.Value, (pHere - pThere) * AllyWorth(ctx, unit), 0f, null);
-                        if (value >= MinMainValue)
+                        list.Add(new Candidate
                         {
-                            list.Add(new Candidate
-                            {
-                                Kind = CandidateKind.Move, Slot = ActionSlot.Move, Point = point, ApproachRadius = 0.3f,
-                                Value = value,
-                                Label = "Withdraw (low HP)" + (risk?.Tag ?? ""), Key = "move:withdraw",
-                                Risk = risk, RiskAt = point, PreRiskValue = (pHere - pThere) * AllyWorth(ctx, unit)
-                            });
-                        }
+                            Kind = CandidateKind.Move, Slot = ActionSlot.Move, Point = point, ApproachRadius = 0.3f,
+                            Value = value,
+                            Label = "Withdraw (low HP)" + (risk?.Tag ?? ""), Key = "move:withdraw",
+                            Risk = risk, RiskAt = point, PreRiskValue = preRisk
+                        });
                     }
                 }
             }
@@ -6225,6 +6225,35 @@ namespace CompanionAI_Pathfinder.Tactics
             var there = new HashSet<UnitEntityData>(reached);
             return counted.Where(u => ctx.Enemies.Contains(u)).All(there.Contains) &&
                    allies.Where(there.Contains).All(counted.Contains);
+        }
+
+        /// <summary>
+        /// The withdrawal a badly hurt unit could make: how much less likely it is to drop before its next turn at the
+        /// retreat spot than here (SpotDrop), times its worth, past the walk's own risk (MoveRisk). Zero and no spot when
+        /// no enemy threatens it here or no retreat spot is found. <paramref name="preRisk"/> is the gain before the walk's
+        /// risk; <paramref name="distance"/> the walk's length when not the move this decision has. Shared by the withdraw
+        /// option and Release Grapple (★ v0.3.70 release review: a hold keeps its holder there).
+        /// </summary>
+        private static float WithdrawWorth(TacticalContext ctx, out Vector3? point, out Disengage risk, out float preRisk,
+                                           float? distance = null)
+        {
+            var unit = ctx.Unit;
+            point = null;
+            risk = null;
+            preRisk = 0f;
+            float dangerHere = IncomingDamage(ctx, unit, unit.Position);
+            if (!(dangerHere > 0f)) return 0f;
+            point = FindRetreatPoint(ctx, distance ?? (ctx.HasMove ? ctx.MoveRange : unit.CurrentSpeedMps * 3f));
+            if (!point.HasValue) return 0f;
+            // ★ v0.3.18 (review): the walk is priced like every other move (MoveRisk: the game's own
+            // disengage checks, Mobility, the attacks' drop chance, areas on the way). A flat half of the
+            // engagers' Threat was added to the danger there, outside the danger scale: once the fight's
+            // calibration lowered the scale, withdrawing from a single enemy was never worth it.
+            risk = MoveRisk(ctx, point.Value, ownSafetyCounted: true);   // ★ v0.3.28 test 2: pHere - pThere below
+            float pHere = SpotDrop(ctx, unit, unit.Position);   // ★ v0.3.29 test 2 (R3)
+            float pThere = SpotDrop(ctx, unit, point.Value);
+            preRisk = (pHere - pThere) * AllyWorth(ctx, unit);
+            return preRisk * (1f - (risk?.StopChance ?? 0f)) - (risk?.Cost ?? 0f);
         }
 
         private static Vector3? FindRetreatPoint(TacticalContext ctx, float distance, Func<Vector3, bool> accept = null)

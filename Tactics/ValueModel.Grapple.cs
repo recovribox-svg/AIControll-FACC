@@ -136,6 +136,14 @@ namespace CompanionAI_Pathfinder.Tactics
         }
 
         /// <summary>
+        /// ★ v0.3.70 release review: keeping a hold while letting go would let the holder withdraw: the keep value less what
+        /// that withdrawal is worth (<paramref name="withdrawWorth"/>, 0 when the holder is not badly hurt or has nowhere
+        /// safer to go).
+        /// </summary>
+        public static float GrappleKeepWhileStuck(float keep, float withdrawWorth) =>
+            withdrawWorth > 0f && !float.IsNaN(withdrawWorth) && !float.IsInfinity(withdrawWorth) ? keep - withdrawWorth : keep;
+
+        /// <summary>
         /// The free release's offer and reason from the hold's price. Keep the existing half-point margin. A positive
         /// offer must carry a reason: it passes through ordinary ability classification before either mode can issue it.
         /// </summary>
