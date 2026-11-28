@@ -7688,3 +7688,24 @@ build to be a release.
   - It is not a played test package: it adds the features6 review's two corrections to features6.
   - `Info.json` 0.3.70. `main` is fast-forwarded to development; the author creates the tag and the GitHub release.
 - **Played:** features6 (14 fights, no AI Control error). The weapon-set and drain corrections are not yet played.
+
+## 230. v0.3.70 release review: a fresh grapple kept until the holder can act, helpless allies in melee (28 November 2026, Claude)
+
+[Review page](V0370_RELEASE_REVIEW.md) · [receipt](competence/V0370_RELEASE_REVIEW_CHECKS.json). From the release's
+logs: four turn-based and five real-time fights, no AI Control exception. Next build numbered 0.5.0 (author request).
+
+- **Grapples (both modes):** the keep test charged the holder's lost turn right after the grab, with the attack's
+  standard and move actions already spent.
+  - Wenduag let go of three holds at once, among them a Corrupted Jungle Bulette priced "hold +61" and released at
+    "keep −5.3".
+  - Now that turn counts only while either action is still to use: the game's `HasStandardAction` / `HasMoveAction`,
+    which read what is used, not the grapple's restriction (`GrappleKeepValue(…, holderTurnNow)`).
+- **Helpless allies (both modes):** the drop model adds the game's +4 for melee against a helpless target, as for prone
+  (`RuleCalculateAC`, `ValueModel.MeleeDefenceLoss`).
+- **Observed:**
+  - Hold Person, Mass held up to seven allies; freeing one is priced at its output and lost to Chain Lightning on summoned
+    skeletons. A held ally's added danger in the freeing value is a proposal.
+  - The weapon-set switch, the drain header and Release Grapple work as intended.
+- **Checks** on `6984927`: Release 0 warnings; 1,195 unit tests; ProfileAudit `V0370-RELEASE-REVIEW` 5; every other line,
+  the Fusion matrix and the summon detail unchanged; harnesses 98/14/10; one external member added
+  (`UnitState.get_IsHelpless`, resolved).

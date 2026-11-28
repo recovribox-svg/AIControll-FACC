@@ -1,8 +1,18 @@
 # Test builds
 
-**The current package is the stable [v0.3.70 release](../release/README.md)** (27 November 2026). It adds the features6
-review's corrections (weapon-set comparison, half drained counts as badly hurt) to the features6 build below. The test
-builds here are not releases.
+## v0.5.0 review1: a fresh grapple kept until the holder can act, helpless allies in melee (28 November 2026)
+
+[UMM ZIP](AI-Control-FACC-v0.5.0-dev-review1-6984927-UMM-test.zip?raw=true) · [Identity](AI-Control-FACC-v0.5.0-dev-review1-6984927-UMM-test.identity.json) · [SHA-256](AI-Control-FACC-v0.5.0-dev-review1-6984927-UMM-test.sha256)
+ · [Review and replay](../docs/V0370_RELEASE_REVIEW.md).
+
+UMM **0.5.0**, source `6984927`, startup module `6c29737a-1d7e-4ef2-9952-e1b1103efb0a`, **unplayed**. The v0.3.70 release
+plus the fixes from its playtest:
+- Both modes: right after a grab, the hold is kept while the holder's actions are spent; it is weighed against the
+  holder's lost turn once it has one to lose. Wenduag let go of three fresh holds at once.
+- Both modes: melee attacks on a helpless (held, asleep) ally are read with the game's +4 to hit.
+
+The stable package is the [v0.3.70 release](../release/README.md) (27 November 2026): the features6 build below plus its
+review's corrections. The test builds here are not releases.
 
 ## v0.3.70 features5 review: faster walk pricing, one coup per target, fused-spell saves (27 November 2026)
 
