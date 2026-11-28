@@ -2683,10 +2683,15 @@ namespace CompanionAI_Pathfinder.Tactics
             float holder = ValueModel.PerRound(Level(unit));
             float pinnedShare = ControlShare(ControlStrength.Hard, false, false);
             float nowShare = held.Pinned ? pinnedShare : ControlShare(ControlStrength.Soft, false, false);
-            float keep = ValueModel.GrappleKeepValue(persist, s_GrappleHorizon, worth, holder, held.FreeDamage, nowShare, pinnedShare);
+            // ★ v0.3.70 release review: letting go gives the holder its turn back only if it has one to use: the standard or
+            // move action the grab's attack spent (the game's own HasStandardAction / HasMoveAction, which read what is used,
+            // not the grapple's restriction). Until then the hold costs it nothing and the victim's held turn still comes.
+            bool turnNow = ctx.HasStandard || ctx.HasMove;
+            float keep = ValueModel.GrappleKeepValue(persist, s_GrappleHorizon, worth, holder, held.FreeDamage, nowShare, pinnedShare, turnNow);
             float net = ValueModel.GrappleRoundNet(worth, holder, held.FreeDamage, pinnedShare);
             string detail = $"{victim.CharacterName} {(held.Pinned ? "pinned" : "held")}, keep {keep:+0.0;-0.0} (victim {worth:F1}, holder " +
-                            $"{holder:F1} per round, free natural hit {held.FreeDamage:F1}, a later round {net:+0.0;-0.0}, lasts {persist:P0}/round)";
+                            $"{holder:F1} per round{(turnNow ? "" : ", no action to regain this round")}, free natural hit {held.FreeDamage:F1}, " +
+                            $"a later round {net:+0.0;-0.0}, lasts {persist:P0}/round)";
             float release = ValueModel.GrappleReleaseValue(keep, out why);
             AbilityDiscovery.ReportOnce($"grapplekeep|{CombatMemory.Fight}|{unit.UniqueId}|{victim.UniqueId}|{(keep < -0.5f ? 1 : 0)}",
                 () => $"[Grapple] {unit.CharacterName}: {(release > 0f ? $"release offer {release:F1}:" : "keeping the hold is preferred:")} {detail}");

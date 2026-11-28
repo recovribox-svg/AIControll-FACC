@@ -46,6 +46,14 @@ namespace CompanionAI_Pathfinder.Tactics
             Math.Min(0.95f, Math.Max(0.05f, (21 + attackBonus - armorClass) / 20f));
 
         /// <summary>
+        /// ★ v0.3.70 release review: what a melee attacker gains against the target's state, by the game's RuleCalculateAC:
+        /// -4 AC against melee while prone, -4 more while helpless (held, asleep, paralysed). Nothing for a ranged attacker
+        /// (prone's +4 against ranged is left out, as before).
+        /// </summary>
+        public static int MeleeDefenceLoss(bool melee, bool prone, bool helpless) =>
+            melee ? (prone ? 4 : 0) + (helpless ? 4 : 0) : 0;
+
+        /// <summary>
         /// ★ v0.3.27: the chance a party member goes down before its next turn when each enemy comes for it with chance
         /// <c>Item1</c> and then drops it with chance <c>Item2</c>: 1 - Π(1 - chance × drop).
         /// </summary>
