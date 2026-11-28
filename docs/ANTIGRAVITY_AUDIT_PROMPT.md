@@ -132,11 +132,10 @@ If a check cannot run, say why. Never report a check you did not run as passed.
 
 > **The author fills this block in before sending the prompt.**
 >
-> - Logs attached: **[YES / NO]**
-> - Files and where they are in your workspace: `[Log.txt path]`, `[combatLog.txt path]`
-> - Build that was played: `[startup line, e.g. [Build] v0.5.0 module=1a48f45f-a51a-4efa-b27e-657806359176]`
-> - Session: `[turn-based / real-time fights, roughly how many, party, difficulty, mods on, spawned or story fights,
->   rests between fights, manual orders given, anything odd you noticed, e.g. stutters or FPS with the settings panel open]`
+> - Logs attached: **[YES]**
+> - Files `[Log.txt]`, `[combatLog.txt]`, `[Manual_210_0_5_0_test.zks]`, `[general_settings.json]`
+> - Build that was played: `[startup line, [Build] v0.5.0 module=1a48f45f-a51a-4efa-b27e-657806359176]`
+> - Session: `[turn-based / real-time fights, custom difficulty, spawned fights, rests between fights, no manual orders given]`
 
 If logs are attached:
 
