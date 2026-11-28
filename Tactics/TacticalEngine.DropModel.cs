@@ -92,6 +92,7 @@ namespace CompanionAI_Pathfinder.Tactics
                 Index = new Dictionary<UnitEntityData, int>(n), Corpulence = new float[n], Rows = new DropRow[ctx.Enemies.Count],
             };
             var prone = new bool[n];
+            var helpless = new bool[n];
             var armor = new int[n];
             for (int i = 0; i < n; i++)
             {
@@ -99,6 +100,7 @@ namespace CompanionAI_Pathfinder.Tactics
                 if (a != null && !table.Index.ContainsKey(a)) table.Index[a] = i;
                 try { table.Corpulence[i] = a?.Corpulence ?? 0f; } catch { table.Corpulence[i] = 0f; }
                 try { prone[i] = a?.Descriptor?.State?.Prone?.Active ?? false; } catch { prone[i] = false; }
+                try { helpless[i] = a?.Descriptor?.State?.IsHelpless ?? false; } catch { helpless[i] = false; }
                 try { armor[i] = a?.Stats.AC.ModifiedValue ?? 0; } catch { armor[i] = int.MinValue; }
             }
             for (int e = 0; e < ctx.Enemies.Count; e++)
@@ -137,10 +139,14 @@ namespace CompanionAI_Pathfinder.Tactics
                     float w;
                     // ★ v0.3.28 test 3: past concealment and mirror images (CombatMath.LandsPastDefences), and +4 in melee
                     // against a prone unit (the game's RuleCalculateAC; the weapon estimate reads that rule itself).
+                    // ★ v0.3.70 release review: and +4 more in melee against a helpless one (the same rule: IsHelpless, melee).
+                    // Its AC already carries the helpless penalty (UnitStatusEffectHelpless). The Bandit and arcan died held
+                    // by Hold Person, Mass; a held ally was read as hit like a standing one by every melee enemy.
                     try
                     {
                         if (armor[i] == int.MinValue) throw new InvalidOperationException();
-                        w = ValueModel.HitWeight(attack + (!row.Ranged && prone[i] ? 4 : 0), armor[i]) * CombatMath.LandsPastDefences(enemy, a);
+                        w = ValueModel.HitWeight(attack + ValueModel.MeleeDefenceLoss(!row.Ranged, prone[i], helpless[i]), armor[i]) *
+                            CombatMath.LandsPastDefences(enemy, a);
                     }
                     catch { w = 0.5f; }
                     row.Weight[i] = w;

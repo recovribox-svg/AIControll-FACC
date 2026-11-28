@@ -115,13 +115,33 @@ namespace CompanionAI_Pathfinder.Tactics
         /// </summary>
         public static float GrappleKeepValue(float persist, float horizon, float victimWorth, float holderWorth, float freeDamage,
                                              float nowShare, float pinnedShare)
+            => GrappleKeepValue(persist, horizon, victimWorth, holderWorth, freeDamage, nowShare, pinnedShare, true);
+
+        /// <summary>
+        /// ★ v0.3.70 release review: the same, where letting go this round gives the holder back
+        /// <paramref name="holderTurnNow"/>: its standard or move action, if either is still to use. Right after the grab the
+        /// attack has spent them (real time: its cooldown; turn-based: this turn), so keeping costs the holder nothing this round
+        /// and the victim's held turn - the one the grab was priced for (<see cref="GrappleHoldValue"/>) - still comes. The holder
+        /// weighs keeping against its lost turn when it has a turn to lose. Wenduag grabbed a Corrupted Jungle Bulette with a full
+        /// attack (hold +61 if it starts) and let it go 1.5 s later, her actions spent, at "keep -5.3".
+        /// </summary>
+        public static float GrappleKeepValue(float persist, float horizon, float victimWorth, float holderWorth, float freeDamage,
+                                             float nowShare, float pinnedShare, bool holderTurnNow)
         {
             if (horizon <= 0f) return 0f;
-            float now = (Math.Max(0f, victimWorth) * Clamp(nowShare, 0f, 1f) - Math.Max(0f, holderWorth) * Clamp(pinnedShare, 0f, 1f)) *
-                        Math.Min(1f, horizon);
+            float holderNow = holderTurnNow ? Math.Max(0f, holderWorth) * Clamp(pinnedShare, 0f, 1f) : 0f;
+            float now = (Math.Max(0f, victimWorth) * Clamp(nowShare, 0f, 1f) - holderNow) * Math.Min(1f, horizon);
             float later = GrappleHeldRounds(persist, horizon) * GrappleRoundNet(victimWorth, holderWorth, freeDamage, pinnedShare);
             return now + Math.Max(0f, later);
         }
+
+        /// <summary>
+        /// ★ v0.3.70 release review: keeping a hold while letting go would let the holder withdraw: the keep value less what
+        /// that withdrawal is worth (<paramref name="withdrawWorth"/>, 0 when the holder is not badly hurt or has nowhere
+        /// safer to go).
+        /// </summary>
+        public static float GrappleKeepWhileStuck(float keep, float withdrawWorth) =>
+            withdrawWorth > 0f && !float.IsNaN(withdrawWorth) && !float.IsInfinity(withdrawWorth) ? keep - withdrawWorth : keep;
 
         /// <summary>
         /// The free release's offer and reason from the hold's price. Keep the existing half-point margin. A positive

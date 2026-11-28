@@ -8,7 +8,34 @@ Read [CONTRIBUTING.md](CONTRIBUTING.md) for shared branch ownership, Codex pull 
 Codex works on task branches and targets pull requests at `claude/dreamy-pasteur-b9h3rn`; Claude reviews and integrates them there.
 Keep `main` for author-authorized releases. Read [AGENTS.md](AGENTS.md) when coordinating agent work.
 
-**Current handover (27 November 2026, Claude): stable v0.3.70 released to the repository; PRs #106–#121 merged into
+**Current handover (28 November 2026, Claude): v0.3.70 release playtest reviewed and fixed; PR #122 merged into
+development at the author's request. Not played. Next build numbered 0.5.0 (author request).** Read
+[docs/V0370_RELEASE_REVIEW.md](docs/V0370_RELEASE_REVIEW.md), `docs/TACTICAL_AI.md` §230 and the
+[receipt](docs/competence/V0370_RELEASE_REVIEW_CHECKS.json).
+- **Log:** v0.3.70 module `670ef6c7`, one session: 4 turn-based fights (374 decisions), then 5 real-time fights (1,950);
+  no AI Control exception. Up to 26 enemies; several party deaths, two of them held by Hold Person, Mass.
+- **Fixes (both modes):**
+  1. Right after a grab, the hold is weighed without the holder's lost turn while its standard and move actions are spent
+     (`GrappleKeepValue(…, holderTurnNow)`; native `HasStandardAction` / `HasMoveAction`). Wenduag let go of three fresh
+     holds at once.
+  2. The drop model adds the game's +4 for melee against a helpless ally (`RuleCalculateAC`, `ValueModel.MeleeDefenceLoss`).
+  3. Review2 (author request; the G1 limit): a badly hurt holder's keep value is less the withdrawal letting go allows.
+     - `ValueModel.GrappleKeepWhileStuck`, with `WithdrawWorth` shared with the withdraw option.
+     - Only when the hold's `CantMove` is all that stops the walk (`CombatMath.WalksOnRelease`).
+     - Turn-based, the holder needs its move action.
+- **Not added (decided):** a held ally's added danger in the freeing value. At most the ally's worth (30–76 here), far
+  below the 380–640 Chain Lightning scored; no enemy Coup de Grace on a held ally was seen.
+- **Seen working:** the weapon-set switch, the drain header, Release Grapple, Bomb of Paralysis.
+- **Checks** on `ffb3e0b`:
+  - Release 0 warnings; 1,196 unit + 27/21/3 script tests.
+  - ProfileAudit `V0370-RELEASE-REVIEW` 9; every other line, the Fusion matrix and the summon detail unchanged.
+  - Harnesses 98/14/10; one external member added (`UnitDescriptor.get_Encumbrance`, defined in the supplied assembly).
+- **Package:** `test-builds/AI-Control-FACC-v0.5.0-dev-review2-ffb3e0b-UMM-test.zip`, MVID
+  `1a48f45f-a51a-4efa-b27e-657806359176`, UMM 0.5.0. It replaces the unplayed review1.
+- **Merged:** PR #122 into development with a merge commit. No `main`, tag or release.
+- **Next:** the author plays review2 (replay in the review page).
+
+**Earlier handover (27 November 2026, Claude): stable v0.3.70 released to the repository; PRs #106–#121 merged into
 development and `main` brought to it, at the author's request.** Read `docs/TACTICAL_AI.md` §229, the
 [receipt](docs/competence/INTEGRATION_106_121_CHECKS.json) and the [release notes](release/CHANGELOG_v0.3.70.md).
 - **features6 review (PR #121):** read [docs/V0370_FEATURES6_REVIEW.md](docs/V0370_FEATURES6_REVIEW.md) and §228.
