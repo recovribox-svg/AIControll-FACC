@@ -3,11 +3,14 @@
 ## Read before editing
 
 Read [CONTRIBUTING.md](CONTRIBUTING.md) for branch ownership, review, testing, and release rules.
-Read [CLAUDE.md](CLAUDE.md) for the shared architecture and game-specific constraints; its technical guidance applies to Codex too.
+Read [CLAUDE.md](CLAUDE.md) for the shared architecture and game-specific constraints; its technical guidance applies to Codex and Antigravity too.
 Consult the relevant design and investigation documents linked there before changing a subsystem.
 Keep shared process rules in CONTRIBUTING.md and technical architecture in CLAUDE.md rather than duplicating them here.
 
-## Codex workflow
+## Codex and Antigravity workflow
+
+Antigravity (Google Antigravity) joined on 28 November 2026 as an interim reviewer and coder. Everything below that
+names Codex applies to it in the same way, with `antigravity/<task>` branches.
 
 - Work on one `codex/<task>` branch per assigned task, based on the current remote `claude/dreamy-pasteur-b9h3rn`.
 - Inspect the checkout, current remote development state, and open pull requests before editing. Do not assume a preloaded checkout is current.
