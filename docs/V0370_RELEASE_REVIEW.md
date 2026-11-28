@@ -39,6 +39,22 @@ at the author's request. The previous review is [V0370_FEATURES6_REVIEW.md](V037
    target, as against a prone one. The drop model counted prone only, so a held ally was read as hit like a standing one
    by every melee enemy. It now adds both (`ValueModel.MeleeDefenceLoss`). The helpless AC penalty itself
    (`UnitStatusEffectHelpless`) was already in the AC read.
+3. **Both modes, the holder's own danger (author request, review2):** Wenduag kept her hold on Rustclaw in fight 7
+   (keep +28.5) while it clawed her from full HP to 11 %.
+   - A hold keeps its holder where it stands: the game's `UnitPartGrappleInitiator` adds `CantMove` while it holds, so
+     a badly hurt holder could not withdraw, and the keep value did not count that.
+   - Now, when the holder is badly hurt, keeping the hold costs the withdrawal that letting go would allow
+     (`ValueModel.GrappleKeepWhileStuck`). The withdrawal is priced by the withdraw option's own code (`WithdrawWorth`,
+     now shared by both): drop chance here against the retreat spot, the walk's attacks of opportunity and areas.
+   - It counts only when the hold is all that stops the holder walking (`CombatMath.WalksOnRelease`). Another
+     `CantMove`, a movement ban, being held itself, prone, dazed, stunned or overloaded means no withdrawal. The grab
+     forms' six holder buffs add no `CantMove` of their own.
+   - Turn-based, the holder needs its move action (Release Grapple is free). In real time, walking is free once the hold
+     ends.
+   - The `[Grapple]` row says "held where a withdrawal is worth N".
+   - At full HP nothing changes: a healthy fighter's place is in melee, as for the withdraw option. In the log the
+     Rustclaw hold was weighed once, at full HP. Wenduag had no other decision before she dropped, so this playtest
+     cannot show the new rule acting.
 
 ## Seen working
 
@@ -59,22 +75,28 @@ at the author's request. The previous review is [V0370_FEATURES6_REVIEW.md](V037
   - Only the Knight Commander could free them, one at a time (Dispel Magic and Greater Dispel Magic, targeted). Freeing an
     ally is worth its output for the rounds it would stay held, about 40–60 points after the dispel's chance.
   - Chain Lightning on many summoned skeletons scored 380–640, so he cast it.
-  - A held ally's added danger is not in the freeing value yet. Pricing it needs the drop chance with the helpless state
-    removed; a proposal for after this playtest.
-- **Wenduag held Rustclaw** in fight 7 (keep +28.5) while it clawed her from full HP to 11 %. The holder's own danger
-  is not in the keep value (a known G1 limit).
+  - **Not changed (decided in review2): a held ally's added danger in the freeing value.** It would not change these
+    decisions, and it would cost a second drop table per held ally.
+    - The added danger is at most the ally's worth: 30–76 points for these characters. Freeing would rise from about
+      40–60 to at most about 100–130, still far below the 380–640 of Chain Lightning on the summoned skeletons.
+    - No enemy used a Coup de Grace on a held ally in this playtest.
+    - Fix 2 already reads held allies as easier to hit in melee, which is what raises heals and protection on them.
+    - Worth revisiting if a playtest shows a freeing dispel losing narrowly to a weak option while the held ally is
+      in danger.
 - **Healing:** Orvath drank Cure Critical Wounds four times while Camellia and Seelah handed him two more. He was at
   35–58 % of a large HP pool, so none was wasted.
 - **Camellia** died at once to a Nabasu's drain (2 negative levels in one hit).
 
 ## Replay
 
-1. A grab-capable form (Wenduag with Grabber) in real time against a strong melee enemy. The `[Grapple]` row right after
+1. A grab-capable form (Wenduag with Grabber) in real time against a strong melee enemy (review1 and review2). The `[Grapple]` row right after
    the grab should read "no action to regain this round" and keep the hold. It is weighed again when her actions come
    back.
 2. The same in turn-based: no release on the turn of the grab; at the start of the next turn the hold is weighed with her
    turn.
 3. A fight with Hold Person, Mass (or Sleep) on the party: melee enemies are read as hitting a held ally harder. Heals and
    protection on that ally should rank higher than before.
+4. A grab held against an enemy that keeps hitting the holder: once the holder is below half HP, a `[Grapple]` row
+   should name "held where a withdrawal is worth N". If N outweighs the hold, the holder lets go and withdraws.
 
-Send `Log.txt` and `combatLog.txt`; the startup line is `[Build] v0.5.0 module=6c29737a-1d7e-4ef2-9952-e1b1103efb0a`.
+Send `Log.txt` and `combatLog.txt`; the startup line is `[Build] v0.5.0 module=1a48f45f-a51a-4efa-b27e-657806359176`.

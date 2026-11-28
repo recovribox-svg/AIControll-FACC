@@ -1,18 +1,18 @@
 {
-  "build_label": "v0.5.0 review1",
+  "build_label": "v0.5.0 review2",
   "kind": "development-test",
   "version": "0.5.0",
   "source_branch": "claude/v0370-release-review",
-  "source_commit": "6984927",
+  "source_commit": "ffb3e0b",
   "base_commit": "8f61ed2 (claude/dreamy-pasteur-b9h3rn, after the v0.3.70 release)",
   "dll": {
     "assembly": "CompanionAI_Pathfinder, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null",
-    "mvid": "6c29737a-1d7e-4ef2-9952-e1b1103efb0a",
-    "sha256": "c0a3cd4e37a0fbef6707a3309391a4d64268ac2701e29059e39c56295db189e9",
-    "size": 1719808
+    "mvid": "1a48f45f-a51a-4efa-b27e-657806359176",
+    "sha256": "d3372083016d94ca4239b196860f62c0b7eedf216d089f4417bbc0a62f1720fd",
+    "size": 1720832
   },
-  "archive": "AI-Control-FACC-v0.5.0-dev-review1-6984927-UMM-test.zip",
-  "zip_sha256": "808fd22efe7d14a810ed32410e48c3765b52eef0ee99a575239b268889d4d876",
+  "archive": "AI-Control-FACC-v0.5.0-dev-review2-ffb3e0b-UMM-test.zip",
+  "zip_sha256": "a1ec9bc3299529a7b116394e134d9c1b544d3c4f2e8941fbbd78da96fd7a3b4d",
   "manifest_sha256": "4de085a184d686c2798aa902138466215bd8fd6e11f2e3146783689e3bc43020",
   "checks_receipt": "docs/competence/V0370_RELEASE_REVIEW_CHECKS.json",
   "archive_contents": [
@@ -20,5 +20,6 @@
     "Info.json"
   ],
   "gameplay_status": "unplayed",
-  "release": false
+  "release": false,
+  "replaces": "v0.5.0 review1 (6984927, unplayed)"
 }

@@ -1,10 +1,10 @@
 {
- "task": "Author request: review the v0.3.70 release logs (turn-based and real time, one session) for bad decisions and functionality gaps, and bugfix; next build numbered 0.5.0",
+ "task": "Author request: review the v0.3.70 release logs (turn-based and real time, one session) for bad decisions and functionality gaps, and bugfix; next build numbered 0.5.0; then (author request) fix the grapple holder's own danger, and add the freeing-danger proposal only if it improves decisions",
  "date": "2026-11-28",
  "author": "Claude",
  "branch": "claude/v0370-release-review",
  "base": "8f61ed2 (claude/dreamy-pasteur-b9h3rn after the v0.3.70 release)",
- "source_commit": "6984927",
+ "source_commit": "ffb3e0b",
  "inputs": {
   "log_sha256": "3c09a7ad6f148d5435595d225b08d371d894214db545e6b04ac5db1ef75a86de",
   "combat_log_sha256": "d578fddfeade1108b3e033542f582737a72de8168d5ca948d7babe0c541abee8",
@@ -16,11 +16,12 @@
  },
  "findings_fixed": [
   "Both modes: right after a grab the keep test charged the holder's lost turn although its standard and move actions were spent, so releasing gave nothing back this round and the victim's held turn (what the grab was priced for) had not come. Wenduag released three holds at once in real-time fight 8 (Corrupted Jungle Bulette: hold +61 if it starts, keep -5.3 1.5 s later). The holder's turn now counts only while its standard or move action is still to use (native HasStandardAction / HasMoveAction).",
-  "Both modes: the drop model gave melee attackers +4 against a prone ally but not the game's +4 against a helpless one (RuleCalculateAC); held allies were read as hit like standing ones."
+  "Both modes: the drop model gave melee attackers +4 against a prone ally but not the game's +4 against a helpless one (RuleCalculateAC); held allies were read as hit like standing ones.",
+  "Both modes (review2, author request; the known G1 limit): a hold keeps its holder in place (native UnitPartGrappleInitiator adds CantMove), and the keep value ignored that a badly hurt holder could withdraw once it let go. Wenduag kept Rustclaw (keep +28.5) while it clawed her from full HP to 11 %. The keep value now subtracts the withdrawal a release allows (WithdrawWorth, shared with the withdraw option), only when the hold's CantMove is all that stops the walk (WalksOnRelease); turn-based it needs the move action. The Rustclaw hold was weighed once, at full HP, so the log cannot show the rule acting."
  ],
  "observed_not_changed": [
-  "Hold Person, Mass held five allies in turn-based fight 4 and seven in real-time fight 6 for up to six rounds; the Bandit and arcan died held. Only the Knight Commander could free them, one at a time; freeing is priced at the ally's output (about 40-60) and Chain Lightning on many summoned skeletons scored 380-640. A held ally's added danger in the freeing value is a proposal.",
-  "Wenduag kept a hold on Rustclaw (keep +28.5) while it clawed her from full HP to 11 %: the holder's own danger is not in the keep value (known G1 limit).",
+  "Hold Person, Mass held five allies in turn-based fight 4 and seven in real-time fight 6 for up to six rounds; the Bandit and arcan died held. Only the Knight Commander could free them, one at a time; freeing is priced at the ally's output (about 40-60) and Chain Lightning on many summoned skeletons scored 380-640.",
+  "Freeing-danger proposal: not added (review2). A held ally's added danger is at most its worth (30-76 here), so freeing (about 40-60) would rise to at most about 100-130, below Chain Lightning's 380-640; no enemy Coup de Grace on a held ally was seen; the helpless +4 in the drop model already raises heals and protection on held allies.",
   "Overlapping Cure Critical Wounds on Orvath (35-58 % HP of a large pool): no overheal.",
   "Bomb of Paralysis is labelled with the thrower (aimed at its own spot) and caught only enemies.",
   "Weapon-set switches 'against 0': the current weapon had no positive option (provoking shots, no reachable melee target)."
@@ -28,20 +29,22 @@
  "checks": {
   "toolchain": "SDK 8.0.428, Roslyn 4.11.0-3.25569.22 (3fb752d4)",
   "release_build": "0 warnings, 0 errors (real game references)",
-  "unit_tests": "1195 passed (2 new: V0370ReleaseReviewTests)",
+  "unit_tests": "1196 passed (3 in V0370ReleaseReviewTests; 1 new in review2)",
   "script_tests": "27/21/3 OK",
-  "profile_audit": "exit 0; new V0370-RELEASE-REVIEW 5 checks (native HasStandardAction reads what is used, native RuleCalculateAC helpless melee); every other report line identical to the v0.3.70 release run",
+  "profile_audit": "exit 0; V0370-RELEASE-REVIEW 9 checks (review2 adds 4: the keep-value route through BadlyHurt, WalksOnRelease, WithdrawWorth and GrappleKeepWhileStuck; native hold CantMove and condition counts; the 6 grab holder buffs add no CantMove; the Rustclaw value case); every other report line identical to review1 and to the v0.3.70 release run",
   "fusion_matrix": "byte-identical",
   "summon_kit_detail": "byte-identical",
   "native_harnesses": "98/14/10, 0 failures",
-  "external_signatures": "1 added: Kingmaker.UnitLogic.UnitState::get_IsHelpless (defined in Assembly-CSharp; the build and the audit's native check resolve it); 0 removed"
+  "external_signatures": "review2 vs review1: 1 added: Kingmaker.UnitLogic.UnitDescriptor::get_Encumbrance (defined in the supplied Assembly-CSharp; the build compiles against it); 0 removed. review1: 1 added (UnitState::get_IsHelpless)."
  },
  "package": {
-  "zip": "test-builds/AI-Control-FACC-v0.5.0-dev-review1-6984927-UMM-test.zip",
+  "zip": "test-builds/AI-Control-FACC-v0.5.0-dev-review2-ffb3e0b-UMM-test.zip",
   "version": "0.5.0",
-  "mvid": "6c29737a-1d7e-4ef2-9952-e1b1103efb0a",
-  "dll_sha256": "c0a3cd4e37a0fbef6707a3309391a4d64268ac2701e29059e39c56295db189e9",
-  "zip_sha256": "808fd22efe7d14a810ed32410e48c3765b52eef0ee99a575239b268889d4d876"
+  "mvid": "1a48f45f-a51a-4efa-b27e-657806359176",
+  "dll_sha256": "d3372083016d94ca4239b196860f62c0b7eedf216d089f4417bbc0a62f1720fd",
+  "zip_sha256": "a1ec9bc3299529a7b116394e134d9c1b544d3c4f2e8941fbbd78da96fd7a3b4d",
+  "replaces": "review1 6c29737a (unplayed, removed)"
  },
- "not_done": "Gameplay of these fixes is unplayed."
+ "not_done": "Gameplay of these fixes is unplayed.",
+ "review1_source_commit": "6984927"
 }

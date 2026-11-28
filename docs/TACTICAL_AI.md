@@ -7689,7 +7689,7 @@ build to be a release.
   - `Info.json` 0.3.70. `main` is fast-forwarded to development; the author creates the tag and the GitHub release.
 - **Played:** features6 (14 fights, no AI Control error). The weapon-set and drain corrections are not yet played.
 
-## 230. v0.3.70 release review: a fresh grapple kept until the holder can act, helpless allies in melee (28 November 2026, Claude)
+## 230. v0.3.70 release review: a fresh grapple kept until the holder can act, a hurt holder's danger, helpless allies in melee (28 November 2026, Claude)
 
 [Review page](V0370_RELEASE_REVIEW.md) · [receipt](competence/V0370_RELEASE_REVIEW_CHECKS.json). From the release's
 logs: four turn-based and five real-time fights, no AI Control exception. Next build numbered 0.5.0 (author request).
@@ -7702,10 +7702,26 @@ logs: four turn-based and five real-time fights, no AI Control exception. Next b
     which read what is used, not the grapple's restriction (`GrappleKeepValue(…, holderTurnNow)`).
 - **Helpless allies (both modes):** the drop model adds the game's +4 for melee against a helpless target, as for prone
   (`RuleCalculateAC`, `ValueModel.MeleeDefenceLoss`).
+- **The holder's own danger (both modes, review2, author request; the known G1 limit):**
+  - A hold keeps its holder in place: native `UnitPartGrappleInitiator.Init` adds `CantMove`, and its dispose removes it.
+  - A badly hurt holder's keep value is now less the withdrawal letting go allows (`ValueModel.GrappleKeepWhileStuck`).
+    It is priced by `WithdrawWorth`, which the withdraw option now shares (no change to that option).
+  - The withdrawal counts only when the hold's `CantMove` is the only thing stopping the walk
+    (`CombatMath.WalksOnRelease`, which reads the native condition count). Turn-based, the holder also needs its move
+    action; in real time walking is free.
+  - Wenduag kept Rustclaw at "keep +28.5" from full HP until she dropped. That hold was weighed once, at full HP, so the
+    log cannot show the new rule acting.
 - **Observed:**
   - Hold Person, Mass held up to seven allies; freeing one is priced at its output and lost to Chain Lightning on summoned
-    skeletons. A held ally's added danger in the freeing value is a proposal.
+    skeletons.
+  - A held ally's added danger in the freeing value is **not added** (review2). At most it adds the ally's worth (30–76
+    here), far below the 380–640 Chain Lightning scored. No enemy used a Coup de Grace on a held ally. The helpless +4
+    above already raises heals and protection on held allies.
   - The weapon-set switch, the drain header and Release Grapple work as intended.
-- **Checks** on `6984927`: Release 0 warnings; 1,195 unit tests; ProfileAudit `V0370-RELEASE-REVIEW` 5; every other line,
-  the Fusion matrix and the summon detail unchanged; harnesses 98/14/10; one external member added
-  (`UnitState.get_IsHelpless`, resolved).
+- **Checks:**
+  - review1 on `6984927`: Release 0 warnings; 1,195 unit tests; ProfileAudit `V0370-RELEASE-REVIEW` 5; every other line,
+    the Fusion matrix and the summon detail unchanged; harnesses 98/14/10; one external member added
+    (`UnitState.get_IsHelpless`, resolved).
+  - review2 on `ffb3e0b`: Release 0 warnings; 1,196 unit + 27/21/3 script tests; `V0370-RELEASE-REVIEW` 9 checks; every
+    other line, the Fusion matrix and the summon detail unchanged from review1; harnesses 98/14/10; one external member
+    added (`UnitDescriptor.get_Encumbrance`, defined in the supplied Assembly-CSharp).
